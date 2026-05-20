@@ -4,8 +4,6 @@ import {
   CalendarDays,
   Check,
   ChevronRight,
-  Coffee,
-  Home,
   Lock,
   MapPin,
   MessageCircle,
@@ -16,14 +14,13 @@ import {
   Send,
   ShieldCheck,
   Sparkles,
-  Store,
   UserRound,
   UsersRound,
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-type Tab = "today" | "corners" | "places" | "me";
+type Tab = "today" | "corners" | "rooms" | "me";
 type SignalType = "Plan" | "Ask" | "Vibe Check" | "Drop" | "Find";
 
 type Signal = {
@@ -464,12 +461,11 @@ function App() {
               requestedSignalIds={requestedSignalIds}
               savedSignalIds={savedSignalIds}
               signalUsedToday={signalUsedToday}
-              incomingRequests={incomingRequests}
               miniRoom={miniRoom}
               setSignalSheetOpen={setSignalSheetOpen}
               setRequestedSignalIds={setRequestedSignalIds}
               setSavedSignalIds={setSavedSignalIds}
-              onAcceptRequest={acceptSignalRequest}
+              goToRooms={() => setTab("rooms")}
               openMiniRoom={() => setRoomSheetOpen(true)}
             />
           )}
@@ -481,7 +477,14 @@ function App() {
               joinCorner={joinCorner}
             />
           )}
-          {tab === "places" && <PlacesScreen />}
+          {tab === "rooms" && (
+            <RoomsScreen
+              incomingRequests={incomingRequests}
+              miniRoom={miniRoom}
+              onAcceptRequest={acceptSignalRequest}
+              openMiniRoom={() => setRoomSheetOpen(true)}
+            />
+          )}
           {tab === "me" && (
             <MeScreen
               profileName={profileName}
@@ -685,12 +688,11 @@ function TodayScreen({
   requestedSignalIds,
   savedSignalIds,
   signalUsedToday,
-  incomingRequests,
   miniRoom,
   setSignalSheetOpen,
   setRequestedSignalIds,
   setSavedSignalIds,
-  onAcceptRequest,
+  goToRooms,
   openMiniRoom,
 }: {
   city: string;
@@ -698,12 +700,11 @@ function TodayScreen({
   requestedSignalIds: number[];
   savedSignalIds: number[];
   signalUsedToday: boolean;
-  incomingRequests: SignalRequest[];
   miniRoom: MiniRoom | null;
   setSignalSheetOpen: (open: boolean) => void;
   setRequestedSignalIds: React.Dispatch<React.SetStateAction<number[]>>;
   setSavedSignalIds: React.Dispatch<React.SetStateAction<number[]>>;
-  onAcceptRequest: (request: SignalRequest) => void;
+  goToRooms: () => void;
   openMiniRoom: () => void;
 }) {
   return (
@@ -735,12 +736,25 @@ function TodayScreen({
         </span>
       </section>
 
-      <ConnectionFlowPanel
-        incomingRequests={incomingRequests}
-        miniRoom={miniRoom}
-        onAcceptRequest={onAcceptRequest}
-        openMiniRoom={openMiniRoom}
-      />
+      {miniRoom ? (
+        <button className="room-peek today-room-peek" onClick={openMiniRoom}>
+          <span>
+            <strong>{miniRoom.title}</strong>
+            <small>
+              {miniRoom.members.length} people - room expires in {miniRoom.expires}
+            </small>
+          </span>
+          <ChevronRight size={18} />
+        </button>
+      ) : (
+        <button className="room-peek today-room-peek soft" onClick={goToRooms}>
+          <span>
+            <strong>Requests live in Rooms</strong>
+            <small>Signals stay public. Conversations stay accepted.</small>
+          </span>
+          <ChevronRight size={18} />
+        </button>
+      )}
 
       <section className="signal-stack" aria-label="Signals">
         {signals.map((signal) => (
@@ -770,7 +784,7 @@ function TodayScreen({
   );
 }
 
-function ConnectionFlowPanel({
+function RoomsScreen({
   incomingRequests,
   miniRoom,
   onAcceptRequest,
@@ -782,73 +796,87 @@ function ConnectionFlowPanel({
   openMiniRoom: () => void;
 }) {
   return (
-    <section className="flow-panel">
-      <header className="flow-header">
+    <div className="screen-stack">
+      <section className="rooms-hero">
         <div>
-          <p className="eyebrow">Signal flow</p>
-          <h2>Requests do not become DMs.</h2>
+          <p className="eyebrow">Rooms</p>
+          <h1>Requests do not become DMs.</h1>
+          <p>
+            People can knock from a signal. You choose who enters the mini room.
+          </p>
         </div>
         <MessageCircle size={22} />
-      </header>
-      <div className="flow-steps" aria-label="Signal room flow">
-        <span>Signal</span>
-        <ChevronRight size={14} />
-        <span>Request</span>
-        <ChevronRight size={14} />
-        <span>Mini room</span>
-      </div>
+      </section>
 
-      {incomingRequests.length > 0 ? (
-        <div className="request-stack">
-          {incomingRequests.map((request) => (
-            <article className="request-card" key={request.id}>
-              <div className="request-copy">
-                <span className="tiny-avatar">{request.name.slice(0, 1)}</span>
-                <div>
-                  <strong>{request.name}</strong>
-                  <small>{request.meta}</small>
-                  <p>{request.note}</p>
+      <section className="flow-panel">
+        <div className="flow-steps" aria-label="Signal room flow">
+          <span>Signal</span>
+          <ChevronRight size={14} />
+          <span>Request</span>
+          <ChevronRight size={14} />
+          <span>Mini room</span>
+        </div>
+
+        {incomingRequests.length > 0 ? (
+          <div className="request-stack">
+            {incomingRequests.map((request) => (
+              <article className="request-card" key={request.id}>
+                <div className="request-copy">
+                  <span className="tiny-avatar">{request.name.slice(0, 1)}</span>
+                  <div className="request-body">
+                    <strong>{request.name}</strong>
+                    <small>{request.meta}</small>
+                    <p>{request.note}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="tag-row compact">
-                {request.badges.map((badge) => (
-                  <span key={badge}>
-                    <BadgeCheck size={12} />
-                    {badge}
-                  </span>
-                ))}
-              </div>
-              <div className="request-actions">
-                <button className="secondary-button tight">Pass</button>
-                <button
-                  className="primary-button tight"
-                  onClick={() => onAcceptRequest(request)}
-                >
-                  Accept
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <div className="empty-request-card">
-          <Bell size={18} />
-          <span>No waiting requests. Your room stays quiet.</span>
-        </div>
-      )}
+                <div className="tag-row compact">
+                  {request.badges.map((badge) => (
+                    <span key={badge}>
+                      <BadgeCheck size={12} />
+                      {badge}
+                    </span>
+                  ))}
+                </div>
+                <div className="request-actions">
+                  <button className="secondary-button tight">Pass</button>
+                  <button
+                    className="primary-button tight"
+                    onClick={() => onAcceptRequest(request)}
+                  >
+                    Accept
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-request-card">
+            <Bell size={18} />
+            <span>No waiting requests. Your room stays quiet.</span>
+          </div>
+        )}
+      </section>
 
-      {miniRoom && (
-        <button className="room-peek" onClick={openMiniRoom}>
-          <span>
-            <strong>{miniRoom.title}</strong>
-            <small>
-              {miniRoom.members.length} people - expires in {miniRoom.expires}
-            </small>
-          </span>
-          <ChevronRight size={18} />
-        </button>
-      )}
-    </section>
+      <section className="active-room-section">
+        <p className="eyebrow">Active mini room</p>
+        {miniRoom ? (
+          <button className="room-peek" onClick={openMiniRoom}>
+            <span>
+              <strong>{miniRoom.title}</strong>
+              <small>
+                {miniRoom.members.length} people - expires in {miniRoom.expires}
+              </small>
+            </span>
+            <ChevronRight size={18} />
+          </button>
+        ) : (
+          <div className="empty-request-card">
+            <MessageCircle size={18} />
+            <span>Accept a request to open a temporary room.</span>
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
 
@@ -960,7 +988,7 @@ function CornersScreen({
                 ))}
               </div>
               <small>
-                {corner.members} members · {corner.requirement}
+                {corner.members} members - {corner.requirement}
               </small>
             </div>
             {corner.joined ? (
@@ -985,8 +1013,16 @@ function CornersScreen({
 
       {activeCorner && activeCorner.joined && (
         <section className="lounge-section">
-          <p className="eyebrow">{activeCorner.name}</p>
-          <h2>Lounge</h2>
+          <div className="lounge-heading">
+            <div>
+              <p className="eyebrow">{activeCorner.name}</p>
+              <h2>Corner lounge</h2>
+            </div>
+            <MessageCircle size={21} />
+          </div>
+          <p className="lounge-note">
+            This is the persistent group room for people already inside this corner.
+          </p>
           <div className="lounge-tabs">
             <span>Signals</span>
             <span>Talk</span>
@@ -1001,6 +1037,16 @@ function CornersScreen({
               <strong>You</strong>
               <span>Down if it stays low-key.</span>
             </div>
+            <div className="message-bubble">
+              <strong>Sora</strong>
+              <span>Should we make this a signal or keep it inside the corner?</span>
+            </div>
+          </div>
+          <div className="corner-composer">
+            <span>Write to {activeCorner.name}</span>
+            <button title="Send corner message">
+              <Send size={16} />
+            </button>
           </div>
         </section>
       )}
@@ -1065,7 +1111,7 @@ function MeScreen({
           <button className="status-pill filled">free plan</button>
         </div>
         <h1>{profileName || "Corner user"}</h1>
-        <p>{city} · mood photos over face-first profiles</p>
+        <p>{city} - mood photos over face-first profiles</p>
         <div className="tag-row">
           {selectedTags.map((tag) => (
             <span key={tag}>{tag}</span>
@@ -1292,7 +1338,7 @@ function BottomNav({ tab, setTab }: { tab: Tab; setTab: (tab: Tab) => void }) {
   const navItems = [
     { id: "today", label: "Today", icon: CalendarDays },
     { id: "corners", label: "Corners", icon: UsersRound },
-    { id: "places", label: "Places", icon: Store },
+    { id: "rooms", label: "Rooms", icon: MessageCircle },
     { id: "me", label: "Me", icon: UserRound },
   ] as const;
 
