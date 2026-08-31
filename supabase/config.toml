@@ -1,0 +1,56 @@
+project_id = "gling"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[db.migrations]
+enabled = true
+
+[db.seed]
+enabled = false
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1"
+
+[local_smtp]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "10MiB"
+
+[auth]
+enabled = true
+site_url = "gling://auth/callback"
+additional_redirect_urls = ["gling://auth/callback", "http://localhost:*/auth/callback", "exp://192.168.1.71:8090/--/auth/callback"]
+jwt_expiry = 3600
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[functions.draft-post]
+verify_jwt = true
+
+[functions.public-post]
+verify_jwt = false
+
+[functions.safety-monitor]
+verify_jwt = false

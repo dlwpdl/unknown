@@ -1,4 +1,6 @@
-# Welcome to your Expo app 👋
+# 글링
+
+Expo SDK 57과 Expo Router로 만든 글링 모바일 앱입니다.
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 

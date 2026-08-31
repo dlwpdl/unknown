@@ -31,13 +31,22 @@ yarn-error.*
 *.pem
 
 # local env files
-.env*.local
+.env
+.env.*
+!.env.example
 
 # typescript
 *.tsbuildinfo
 
-example
-
 # generated native folders
 /ios
 /android
+
+# Supabase local state
+/supabase/.temp/
+/supabase/.branches/
+
+# Local analysis and internal QA artifacts
+/graphify-out/
+/src/graphify-out/
+/assets/internal/

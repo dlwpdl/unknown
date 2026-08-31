@@ -1,6 +1,6 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * 글링 디자인 토큰 — landing/index.html 팔레트와 동일 계열.
+ * 템플릿 키(text/background/...)는 유지하고 브랜드 키를 추가했다.
  */
 
 import '@/global.css';
@@ -9,18 +9,28 @@ import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    text: '#21252C',              // ink
+    background: '#FAF9F5',        // paper
+    backgroundElement: '#F1EFE8', // chip
+    backgroundSelected: '#E8E5DC',
+    textSecondary: '#5B6270',     // sub
+    card: '#FFFFFF',
+    line: '#E5E3DB',
+    accent: '#BE3B2A',            // 인주
+    accentInk: '#FFFFFF',
+    navy: '#34506B',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    text: '#EAE9E2',
+    background: '#15181C',
+    backgroundElement: '#23272E',
+    backgroundSelected: '#2B3037',
+    textSecondary: '#9AA0A8',
+    card: '#1C2026',
+    line: '#2B3037',
+    accent: '#E15A44',
+    accentInk: '#1A0E0B',
+    navy: '#8FB0CC',
   },
 } as const;
 
@@ -61,5 +71,6 @@ export const Spacing = {
   six: 64,
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
+// 네이티브 탭바 자체 높이 (세이프에어리어 제외). 실제 하단 점유 = TabBarHeight + insets.bottom
+export const TabBarHeight = Platform.select({ ios: 49, android: 64 }) ?? 49;
 export const MaxContentWidth = 800;
