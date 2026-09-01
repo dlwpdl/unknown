@@ -24,23 +24,23 @@ export type CompletedProfile = {
 export function ProfileOnboarding({
   visible,
   userId,
-  kakaoNickname,
-  kakaoPhoto,
+  socialNickname,
+  socialPhoto,
   reactivating = false,
   onComplete,
 }: {
   visible: boolean;
   userId: string;
-  kakaoNickname?: string;
-  kakaoPhoto: string | null;
+  socialNickname?: string;
+  socialPhoto: string | null;
   reactivating?: boolean;
   onComplete: (profile: CompletedProfile) => void;
 }) {
   const theme = useTheme();
-  const initialNickname = normalizedNickname(kakaoNickname) ?? generateNickname('ko');
+  const initialNickname = normalizedNickname(socialNickname) ?? generateNickname('ko');
   const [nickname, setNickname] = useState(initialNickname);
   const [cityId, setCityId] = useState('vancouver');
-  const [photoUri, setPhotoUri] = useState<string | null>(kakaoPhoto);
+  const [photoUri, setPhotoUri] = useState<string | null>(socialPhoto);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,9 +66,9 @@ export function ProfileOnboarding({
     }
   };
 
-  const useKakao = () => {
-    setNickname(normalizedNickname(kakaoNickname) ?? nickname);
-    setPhotoUri(kakaoPhoto);
+  const useSocialProfile = () => {
+    setNickname(normalizedNickname(socialNickname) ?? nickname);
+    setPhotoUri(socialPhoto);
     setPhotoBase64(null);
     setError(null);
   };
@@ -141,9 +141,9 @@ export function ProfileOnboarding({
                 <Pressable onPress={() => void pickPhoto()} accessibilityRole="button" style={[styles.smallButton, { borderColor: theme.line }]}>
                   <ThemedText type="smallBold">{t.onboarding.choosePhoto}</ThemedText>
                 </Pressable>
-                {(kakaoNickname || kakaoPhoto) && (
-                  <Pressable onPress={useKakao} accessibilityRole="button" style={[styles.smallButton, { borderColor: theme.line }]}>
-                    <ThemedText type="smallBold">{t.onboarding.useKakao}</ThemedText>
+                {(socialNickname || socialPhoto) && (
+                  <Pressable onPress={useSocialProfile} accessibilityRole="button" style={[styles.smallButton, { borderColor: theme.line }]}>
+                    <ThemedText type="smallBold">{t.onboarding.useSocial}</ThemedText>
                   </Pressable>
                 )}
                 <Pressable onPress={() => { setPhotoUri(null); setPhotoBase64(null); }} accessibilityRole="button">

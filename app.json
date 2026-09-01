@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "글링",
+    "name": "gling",
     "slug": "gling",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -47,6 +47,7 @@
       "expo-asset"
     ],
     "experiments": {
+      "baseUrl": "/gling",
       "typedRoutes": true,
       "reactCompiler": true
     }

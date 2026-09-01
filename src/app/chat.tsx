@@ -25,7 +25,7 @@ export default function ChatScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { conversationId } = useLocalSearchParams<{ conversationId?: string }>();
-  const { isAuthed, signInKakao, signInDev, isAuthLoading, authError, isVerified, promptVerify, me } = useAuth();
+  const { isAuthed, signInGoogle, signInKakao, signInDev, isAuthLoading, authError, isVerified, promptVerify, me } = useAuth();
   const [conversations, setConversations] = useState<ConversationPreview[]>([]);
   const [openConversation, setOpenConversation] = useState<ConversationPreview | null>(null);
   const [loading, setLoading] = useState(false);
@@ -87,6 +87,7 @@ export default function ChatScreen() {
     return (
       <LoginPanel
         reason={t.auth.reasonChat}
+        onGoogle={signInGoogle}
         onKakao={signInKakao}
         onDevLogin={signInDev}
         loading={isAuthLoading}

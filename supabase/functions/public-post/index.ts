@@ -37,8 +37,8 @@ function page(title: string, body: string, author: string, status: number, id = 
   const image = imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="게시글 사진">` : '';
   return new Response(`<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${safeTitle} · 글링</title><meta name="description" content="${escapeHtml(body.slice(0, 160))}">
-<meta property="og:type" content="article"><meta property="og:site_name" content="글링"><meta property="og:title" content="${safeTitle}"><meta property="og:description" content="${escapeHtml(body.slice(0, 160))}">${imageMeta}
+<title>${safeTitle} · gling</title><meta name="description" content="${escapeHtml(body.slice(0, 160))}">
+<meta property="og:type" content="article"><meta property="og:site_name" content="gling"><meta property="og:title" content="${safeTitle}"><meta property="og:description" content="${escapeHtml(body.slice(0, 160))}">${imageMeta}
 <style>body{margin:0;background:#f7f5ef;color:#17233f;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}main{max-width:680px;margin:0 auto;padding:32px 20px 72px}.logo{font-weight:800;color:#ef5b45;font-size:24px}article{margin-top:28px;background:#fff;border:1px solid #e3dfd5;border-radius:18px;padding:24px}h1{font-size:26px;line-height:1.3;margin:10px 0 14px}p{font-size:16px;line-height:1.7;white-space:pre-wrap}.author{color:#687085;font-size:14px}img{width:100%;max-height:520px;object-fit:cover;border-radius:12px;margin:14px 0}a{display:block;margin-top:24px;text-align:center;background:#ef5b45;color:#fff;text-decoration:none;padding:15px;border-radius:999px;font-weight:700}</style>
 </head><body><main><div class="logo">gling</div><article><div class="author">${safeAuthor}</div><h1>${safeTitle}</h1>${image}<p>${safeBody}</p><a href="${deepLink}">카카오 로그인하고 참여하기</a></article></main></body></html>`, {
     status,

@@ -37,7 +37,7 @@ file_size_limit = "10MiB"
 [auth]
 enabled = true
 site_url = "gling://auth/callback"
-additional_redirect_urls = ["gling://auth/callback", "http://localhost:*/auth/callback", "exp://192.168.1.71:8090/--/auth/callback"]
+additional_redirect_urls = ["gling://auth/callback", "http://localhost:*/auth/callback", "http://localhost:*/gling/auth/callback", "https://dlwpdl.github.io/gling/auth/callback", "exp://192.168.1.71:8090/--/auth/callback"]
 jwt_expiry = 3600
 enable_signup = true
 enable_anonymous_sign_ins = false

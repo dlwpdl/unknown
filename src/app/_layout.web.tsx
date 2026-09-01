@@ -13,11 +13,22 @@ export default function WebLayout() {
   const colorScheme = useColorScheme();
   const segments = useSegments();
   const pathname = usePathname();
-  const standalone = pathname === '/'
-    || segments[0] === 'admin'
+  const publicSite = pathname === '/'
+    || pathname === '/terms'
+    || pathname === '/privacy'
+    || pathname === '/account-deletion';
+  const standalone = segments[0] === 'admin'
     || segments[0] === 'auth'
     || segments[0] === 'post'
     || segments[0] === 'notifications';
+
+  if (publicSite) {
+    return (
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Slot />
+      </ThemeProvider>
+    );
+  }
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

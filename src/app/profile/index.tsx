@@ -23,7 +23,7 @@ import type { Post } from '@/lib/types';
 export default function ProfileScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { isAuthed, signInKakao, signInDev, isAuthLoading, authError, isVerified, trustLevel, me, promptVerify, setProfilePhoto } = useAuth();
+  const { isAuthed, signInGoogle, signInKakao, signInDev, isAuthLoading, authError, isVerified, trustLevel, me, promptVerify, setProfilePhoto } = useAuth();
   const [savedOpen, setSavedOpen] = useState(false);
   const [savedDetail, setSavedDetail] = useState<Post | null>(null);
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
@@ -58,6 +58,7 @@ export default function ProfileScreen() {
     return (
       <LoginPanel
         reason={t.auth.reasonProfile}
+        onGoogle={signInGoogle}
         onKakao={signInKakao}
         onDevLogin={signInDev}
         loading={isAuthLoading}

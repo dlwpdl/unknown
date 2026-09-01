@@ -49,42 +49,42 @@ const CITY_COPY: Record<string, Pick<WebHomeCitySummary, 'headline' | 'blurb' | 
 
 export const WEB_HERO_METRICS = [
   { label: '출시 도시', value: '밴쿠버 · 토론토' },
-  { label: '게시 리듬', value: '하루 한 편' },
+  { label: '운영 기준', value: '의견보다 행위' },
   { label: '관계 전환', value: '댓글 -> DM -> 모임' },
 ] as const;
 
 export const WEB_FEATURES = [
   {
-    kicker: 'Daily feed',
-    title: '하루 한 편 리듬으로 피드 밀도를 지킵니다.',
-    body: '양보다 읽힘을 우선하는 구조라서, 커뮤니티 초기에 더 중요한 질문과 반응이 먼저 살아납니다.',
+    kicker: 'Open expression',
+    title: '정치적 입장과 의견은 제한하지 않습니다.',
+    body: '생각이 다르거나 운영진을 비판한다는 이유로 글과 계정을 제한하지 않습니다.',
   },
   {
-    kicker: 'Contextual chat',
-    title: '댓글, DM, 모임 신청이 한 흐름으로 이어집니다.',
-    body: '정보 글, 후기 글, 동네 제안이 외부 메신저로 흩어지기 전에 관계로 이어지는 흐름을 만듭니다.',
+    kicker: 'Clear boundaries',
+    title: '불법과 직접적인 괴롭힘에는 분명한 선을 둡니다.',
+    body: '협박, 신상 공개, 사기, 반복적인 욕설처럼 다른 사람의 안전과 참여를 해치는 행위만 제한합니다.',
   },
   {
-    kicker: 'City-first',
-    title: '도시 단위로 커뮤니티를 분리해 온도를 맞춥니다.',
-    body: '밴쿠버와 토론토는 같은 한인 앱 안에서도 전혀 다른 템포와 질문을 가지기 때문에, 피드와 대화가 분리되어야 합니다.',
+    kicker: 'Accountable operations',
+    title: '운영진의 판단도 설명하고 기록합니다.',
+    body: '조치 이유를 알리고 이의를 제기할 수 있게 해 운영자가 커뮤니티 위에 서지 않도록 합니다.',
   },
 ] as const;
 
 export const WEB_STORY_BLOCKS = [
   {
     id: 'what',
-    kicker: 'What Gling Is',
-    title: '도시 생활권을 위한\n북미 한인 커뮤니티 앱입니다.',
-    body: '정착, 맛집, 교통, 주거, 산책, 소모임 같은 생활 질문이 도시 안에서 해결되도록 설계했습니다.',
-    points: ['도시별 피드 분리', '실제 동네 중심 질문', '모임 카드와 함께 확장'],
+    kicker: 'What gling Is',
+    title: '다른 생각이 함께 머무는\n캐나다 한인 커뮤니티입니다.',
+    body: '정치, 정착, 맛집, 교통, 주거, 일상까지 주제와 관점에 눈치 보지 않고 이야기할 수 있습니다.',
+    points: ['정치·생활·지역 이야기', '의견이 아닌 행위를 기준으로 운영', '운영 조치에 이의 제기'],
     image: 'feed' as const,
   },
   {
     id: 'how',
     kicker: 'How Community Moves',
-    title: '댓글에서 DM,\n그리고 모임까지 이어지는 흐름입니다.',
-    body: '댓글은 공개 반응의 입구가 되고, 더 깊은 대화는 DM으로 이어지고, 필요하면 모임 신청으로 연결됩니다.',
+    title: '글에서 댓글, DM,\n그리고 실제 만남까지.',
+    body: '다른 의견은 공개 대화로 이어지고, 더 깊은 이야기는 DM과 지역 모임으로 자연스럽게 연결됩니다.',
     points: ['댓글에서 바로 반응', 'DM으로 자연스럽게 이동', '인증 기준에 맞는 모임 참여'],
     image: 'flow' as const,
   },
@@ -104,12 +104,12 @@ export const WEB_POLICY_ITEMS = [
   {
     id: 'admin-review',
     title: '관리자 열람',
-    body: '권한 있는 운영자는 신고와 안전 운영 목적상 글, 댓글, 사용자 이력, 대화를 검토할 수 있으며 기록이 남습니다.',
+    body: '권한 있는 관리자는 신고 여부와 관계없이 안전 운영에 필요한 콘텐츠와 대화를 검토할 수 있으며 모든 접근과 조치를 기록합니다.',
   },
   {
     id: 'ai-review',
     title: 'AI 분석',
-    body: 'AI는 위험 탐지와 우선순위 분류 보조에 쓰이며, 사람 검토 없이 영구 제재를 확정하지 않습니다.',
+    body: '모든 새 글·댓글·대화는 위험 탐지 대상입니다. AI는 우선순위만 보조하며 사람 검토 없이 영구 제재를 확정하지 않습니다.',
   },
   {
     id: 'appeal',
@@ -143,7 +143,11 @@ export const WEB_FOOTER_GROUPS = [
   },
   {
     title: 'Policy',
-    links: WEB_POLICY_ITEMS.map((item) => ({ label: item.title, href: `#policy-${item.id}` })),
+    links: [
+      { label: '이용약관', href: 'terms' },
+      { label: '개인정보처리방침', href: 'privacy' },
+      { label: '계정 삭제', href: 'account-deletion' },
+    ],
   },
 ] as const;
 

@@ -1,6 +1,7 @@
 import './index.web.css';
 
 import { Asset } from 'expo-asset';
+import Head from 'expo-router/head';
 import { useState, type FormEvent } from 'react';
 
 import {
@@ -60,7 +61,7 @@ function WaitlistForm({
       <div className="site-waitlist-head">
         <div>
           <span className="site-pill">{city.launchNote}</span>
-          <h2 id={`${inputId}-title`}>{source === 'hero' ? '첫 기수 등록' : `${city.name} 오픈 알림`}</h2>
+          <h2 id={`${inputId}-title`}>{source === 'hero' ? '오픈 알림 받기' : `${city.name} 오픈 알림`}</h2>
         </div>
         <strong>{city.name}</strong>
       </div>
@@ -78,13 +79,13 @@ function WaitlistForm({
             required
             autoComplete="email"
           />
-          <button type="submit">대기열 등록</button>
+          <button type="submit">오픈 알림 신청</button>
         </div>
       </form>
 
       <div className="site-inline-list" aria-label="대기열 안내">
-        <span>{city.postCount}개 시드 글 기준 구조 점검</span>
-        <span>{city.meetupCount}개 모임 흐름 준비</span>
+        <span>{city.postCount}개의 이야기 준비</span>
+        <span>{city.meetupCount}개의 모임 준비</span>
         <span>문의: gling@ej-entertainment.com</span>
       </div>
 
@@ -122,18 +123,22 @@ export default function WebHome() {
 
   return (
     <div className="site-page">
+      <Head>
+        <title>gling | 캐나다 한인 커뮤니티의 새로운 선택</title>
+        <meta name="description" content="규칙으로 조용한 곳보다 대화로 살아 있는 곳. 다르게 생각해도 함께 이야기할 수 있는 캐나다 한인 커뮤니티 gling입니다." />
+      </Head>
       <div className="site-shell">
         <header className="site-topbar">
           <a className="site-brand" href="#top">
-            <img className="site-brand-icon" src={appIconSrc} alt="글링 앱 아이콘" />
-            <img className="site-brand-wordmark" src={wordmarkSrc} alt="Gling" />
+            <img className="site-brand-icon" src={appIconSrc} alt="gling 앱 아이콘" />
+            <img className="site-brand-wordmark" src={wordmarkSrc} alt="gling" />
           </a>
 
           <nav className="site-nav" aria-label="사이트 섹션">
             <a href="#about">About</a>
             <a href="#community">Community</a>
             <a href="#cities">Cities</a>
-            <a href="#trust">Trust</a>
+            <a href="#trust">Principles</a>
             <a href="#download">Download</a>
           </nav>
         </header>
@@ -141,11 +146,11 @@ export default function WebHome() {
         <main>
           <section className="site-hero" id="top">
             <div className="site-hero-copy">
-              <span className="site-kicker">North America Korean Community App</span>
-              <h1>{`북미 한인 도시 커뮤니티를\n앱 안으로 다시 모읍니다.`}</h1>
+              <span className="site-kicker">캐나다 한인 커뮤니티의 새로운 선택</span>
+              <h1>{`규칙으로 조용한 곳보다,\n대화로 살아 있는 곳.`}</h1>
               <p className="site-lead">
-                글링은 밴쿠버와 토론토에서 먼저 열리는 커뮤니티 앱입니다. 생활 질문, 동네 정보, 댓글,
-                DM, 모임 제안을 한 흐름으로 묶어 도시 단위 커뮤니티가 실제로 살아나게 만듭니다.
+                다르게 생각해도, 함께 이야기할 수 있도록. gling은 정치, 생활, 지역 정보와 일상에 대한
+                다양한 의견을 열어두고 불법 콘텐츠와 사람을 향한 욕설·괴롭힘만 분명하게 제한합니다.
               </p>
 
               <div className="site-city-switch" role="tablist" aria-label="출시 도시 선택">
@@ -193,7 +198,7 @@ export default function WebHome() {
               <div className="site-stage">
                 <div className="site-stage-plane">
                   <figure className="site-stage-shot is-phone">
-                    <img src={feedScreenshotSrc} alt="글링 피드 화면" />
+                    <img src={feedScreenshotSrc} alt="gling 피드 화면" />
                   </figure>
                   <article className="site-stage-note is-city">
                     <span>{activeCity.name}</span>
@@ -201,7 +206,7 @@ export default function WebHome() {
                   </article>
                   <article className="site-stage-dock" aria-label="커뮤니티 흐름">
                     <span>댓글 - DM - 모임</span>
-                    <strong>도시 안에서 대화가 이어집니다.</strong>
+                    <strong>다르게 생각해도 대화는 이어집니다.</strong>
                   </article>
                 </div>
               </div>
@@ -218,11 +223,11 @@ export default function WebHome() {
 
           <section className="site-section" id="about">
             <div className="site-section-head">
-              <span className="site-kicker">About Gling</span>
-              <h2>{`무슨 앱인지\n첫 화면에서 바로\n이해되게 만듭니다.`}</h2>
+              <span className="site-kicker">Why gling</span>
+              <h2>{`같은 생각을 요구하지 않는\n커뮤니티가 필요합니다.`}</h2>
               <p>
-                Mobbin에서 반복해서 보이는 좋은 제품 사이트 패턴은 명확합니다. 첫 화면은 앱이 무엇인지
-                바로 설명하고, 이후 섹션은 핵심 기능과 신뢰 요소를 한 덩어리씩 보여줍니다.
+                gling은 불편한 의견까지도 대화의 일부로 남겨둡니다. 운영은 관점을 판단하지 않고, 법을
+                어기거나 다른 사람의 안전과 참여를 직접 해치는 행위에만 개입합니다.
               </p>
             </div>
 
@@ -257,7 +262,7 @@ export default function WebHome() {
                   <figure className="site-visual-frame">
                     <img
                       src={block.image === 'feed' ? feedScreenshotSrc : flowScreenshotSrc}
-                      alt={block.image === 'feed' ? '글링 피드 미리보기' : '글링 모임/대화 흐름 미리보기'}
+                      alt={block.image === 'feed' ? 'gling 피드 미리보기' : 'gling 모임과 대화 흐름 미리보기'}
                     />
                   </figure>
                   <div className="site-chip-cloud" aria-hidden="true">
@@ -272,11 +277,11 @@ export default function WebHome() {
 
           <section className="site-section" id="cities">
             <div className="site-section-head">
-              <span className="site-kicker">Where We Open First</span>
-              <h2>{`밴쿠버와 토론토에서 먼저 열고,\n다음 도시는 수요로 정합니다.`}</h2>
+              <span className="site-kicker">Where gling Starts</span>
+              <h2>{`밴쿠버와 토론토에서\n새로운 대화를 시작합니다.`}</h2>
               <p>
-                도시 밀도가 없는 커뮤니티는 첫날부터 비어 보입니다. 그래서 글링은 도시를 한꺼번에 열지
-                않고, 서비스중 도시와 대기열 도시를 분리해서 운영합니다.
+                첫날부터 사람과 이야기가 있는 피드를 만들기 위해 밴쿠버와 토론토부터 시작합니다. 다음
+                도시는 기다리는 사람이 충분히 모인 곳부터 차례로 엽니다.
               </p>
             </div>
 
@@ -307,17 +312,17 @@ export default function WebHome() {
 
           <section className="site-section site-trust-section" id="trust">
             <div className="site-section-head">
-              <span className="site-kicker">Trust And Policy</span>
-              <h2>{`정책과 운영 원칙도\n메인에서 같이 공개합니다.`}</h2>
+              <span className="site-kicker">Freedom With Clear Boundaries</span>
+              <h2>{`생각은 자유롭게,\n대화는 책임 있게.`}</h2>
               <p>
-                개인정보처리방침, 보존 기간, 관리자 열람, AI 분석, 이의 제기, 문의처는 서비스 소개와 같은
-                레벨에서 보여줘야 합니다.
+                정치적 입장, 소수 의견, 운영진 비판은 제재 이유가 아닙니다. 불법 콘텐츠, 협박, 신상 공개,
+                사기, 반복적인 욕설·괴롭힘처럼 다른 사람을 직접 해치는 행위만 제한합니다.
               </p>
             </div>
 
             <div className="site-trust-layout">
               <figure className="site-trust-shot">
-                <img src={trustScreenshotSrc} alt="글링 trust 화면" />
+                <img src={trustScreenshotSrc} alt="gling 운영 원칙 화면" />
               </figure>
 
               <div className="site-policy-grid">
@@ -334,11 +339,11 @@ export default function WebHome() {
           <section className="site-section" id="download">
             <div className="site-download-band">
               <div className="site-download-copy">
-                <span className="site-kicker">Download And First Cohort</span>
-                <h2>{`스토어 오픈 전에는\n대기열이 가장 강한 CTA입니다.`}</h2>
+                <span className="site-kicker">Join gling</span>
+                <h2>{`다른 생각도 머물 수 있는\n첫 커뮤니티를 함께 만드세요.`}</h2>
                 <p>
-                  실제 App Store와 Google Play 링크는 출시 시점에 연결합니다. 지금은 첫 도시의 초기 밀도를
-                  맞추기 위해 오픈 알림과 대기열 등록을 먼저 받습니다.
+                  밴쿠버와 토론토에서 먼저 시작합니다. 지금 오픈 알림을 신청하면 스토어 링크와 첫 커뮤니티
+                  소식을 가장 먼저 보내드립니다.
                 </p>
                 <div className="site-button-row">
                   <StoreLink label="App Store" />
@@ -347,8 +352,8 @@ export default function WebHome() {
               </div>
 
               <div className="site-download-brand">
-                <img className="site-download-icon" src={appIconSrc} alt="글링 앱 아이콘" />
-                <img className="site-download-wordmark" src={wordmarkSrc} alt="Gling" />
+                <img className="site-download-icon" src={appIconSrc} alt="gling 앱 아이콘" />
+                <img className="site-download-wordmark" src={wordmarkSrc} alt="gling" />
               </div>
             </div>
 
@@ -364,10 +369,10 @@ export default function WebHome() {
 
         <footer className="site-footer">
           <div className="site-footer-brand">
-            <img src={wordmarkSrc} alt="Gling" />
+            <img src={wordmarkSrc} alt="gling" />
             <p>
-              북미 한인 생활권을 위한 도시 커뮤니티 앱. 밴쿠버와 토론토에서 먼저 열리고, 다음 도시는 대기열
-              밀도 기준으로 확장합니다.
+              규칙으로 조용한 곳보다 대화로 살아 있는 곳. 다르게 생각해도 함께 이야기할 수 있는 캐나다
+              한인 커뮤니티입니다.
             </p>
             <a href="mailto:gling@ej-entertainment.com">gling@ej-entertainment.com</a>
           </div>

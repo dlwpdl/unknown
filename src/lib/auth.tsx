@@ -17,10 +17,11 @@ import { supabase } from '@/lib/supabase';
 import type { TrustLevel } from '@/lib/trust';
 
 // 2단 인증 게이트 (원페이저 정체성 모델)
-//  L0 = 카카오 로그인 → 표현: 글쓰기·댓글·상세·내 프로필
+//  L0 = 소셜 로그인 → 표현: 글쓰기·댓글·상세·내 프로필
 //  L2 = 전화 인증 → 만남: 대화(DM)·모임 참여·거래 카테고리
-// 전화 인증만 mock이며 Kakao OAuth 세션은 Supabase가 관리한다.
+// 전화 인증만 mock이며 OAuth 세션은 Supabase가 관리한다.
 type Level = 0 | 1 | 2; // 0 게스트 · 1 소셜 · 2 전화인증
+type OAuthProvider = 'google' | 'kakao';
 
 type Me = { id: string; nickname: string; photoUri: string | null };
 
@@ -39,6 +40,7 @@ type AuthValue = {
   isAdmin: boolean;
   isAuthLoading: boolean;
   authError: string | null;
+  signInGoogle: () => Promise<void>;
   signInKakao: () => Promise<void>;
   signInDev: (email: string, password: string) => Promise<void>;
   verifyPhone: () => void;
@@ -108,13 +110,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signInKakao = useCallback(async () => {
+  const signInOAuth = useCallback(async (provider: OAuthProvider) => {
     setAuthError(null);
     setSigningIn(true);
     try {
       const redirectTo = Linking.createURL('auth/callback');
       const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'kakao',
+        provider,
         options: {
           redirectTo,
           skipBrowserRedirect: true,
@@ -135,6 +137,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSigningIn(false);
     }
   }, []);
+  const signInGoogle = useCallback(() => signInOAuth('google'), [signInOAuth]);
+  const signInKakao = useCallback(() => signInOAuth('kakao'), [signInOAuth]);
   const signInDev = useCallback(async (email: string, password: string) => {
     if (!canUseDevPasswordLogin(__DEV__)) return;
     setSigningIn(true);
@@ -200,10 +204,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const level: Level = session ? (phoneVerified ? 2 : 1) : 0;
   const metadata = session?.user.user_metadata;
   const isAdmin = isAdminRole(session?.user.app_metadata);
-  const kakaoNickname = [metadata?.user_name, metadata?.nickname, metadata?.name].find(
+  const socialNickname = [metadata?.user_name, metadata?.nickname, metadata?.name, metadata?.full_name].find(
     (value): value is string => typeof value === 'string' && value.trim().length > 0,
   );
-  const kakaoPhoto = [metadata?.avatar_url, metadata?.picture, metadata?.profile_image_url].find(
+  const socialPhoto = [metadata?.avatar_url, metadata?.picture, metadata?.profile_image_url].find(
     (value): value is string => typeof value === 'string' && value.startsWith('http'),
   ) ?? null;
 
@@ -222,13 +226,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthValue>(
     () => ({
       level,
-      me: { id: session?.user.id ?? 'me', nickname: activeProfile?.nickname ?? kakaoNickname ?? '밴쿠버뉴비', photoUri: activeProfile ? profilePhotoUri ?? kakaoPhoto : kakaoPhoto },
+      me: { id: session?.user.id ?? 'me', nickname: activeProfile?.nickname ?? socialNickname ?? '밴쿠버뉴비', photoUri: activeProfile ? profilePhotoUri ?? socialPhoto : socialPhoto },
       isAuthed: level >= 1,
       isVerified: trustLevel >= 2,
       trustLevel,
       isAdmin,
       isAuthLoading: !sessionReady || signingIn,
       authError,
+      signInGoogle,
       signInKakao,
       signInDev,
       verifyPhone,
@@ -242,13 +247,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       trustLevel,
       session?.user,
       activeProfile,
-      kakaoNickname,
-      kakaoPhoto,
+      socialNickname,
+      socialPhoto,
       profilePhotoUri,
       sessionReady,
       signingIn,
       authError,
       isAdmin,
+      signInGoogle,
       signInKakao,
       signInDev,
       verifyPhone,
@@ -266,6 +272,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         <LoginPanel
           mode={mode}
           reason={reason}
+          onGoogle={signInGoogle}
           onKakao={signInKakao}
           onDevLogin={signInDev}
           onVerify={verifyPhone}
@@ -287,8 +294,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         <ProfileOnboarding
           visible={missingProfileUserId === session.user.id}
           userId={session.user.id}
-          kakaoNickname={kakaoNickname}
-          kakaoPhoto={kakaoPhoto}
+          socialNickname={socialNickname}
+          socialPhoto={socialPhoto}
           reactivating={activeProfile?.account_status === 'reactivation_pending'}
           onComplete={completeProfile}
         />

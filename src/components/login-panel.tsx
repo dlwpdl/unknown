@@ -9,11 +9,12 @@ import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 
 // 인증 게이트 화면. 인라인(채팅·나 탭)과 모달(상세·글쓰기·참여) 양쪽에서 재사용.
-//  mode 'login'  = Supabase 카카오 로그인.
+//  mode 'login'  = Supabase 소셜 로그인.
 //  mode 'verify' = L2 전화 인증. mock: 버튼이 바로 인증 완료.
 export function LoginPanel({
   mode = 'login',
   reason,
+  onGoogle,
   onKakao,
   onDevLogin,
   onVerify,
@@ -23,6 +24,7 @@ export function LoginPanel({
 }: {
   mode?: 'login' | 'verify';
   reason?: string;
+  onGoogle?: () => void;
   onKakao?: () => void;
   onDevLogin?: (email: string, password: string) => void;
   onVerify?: () => void;
@@ -61,6 +63,18 @@ export function LoginPanel({
           </Pressable>
         ) : (
           <View style={styles.actions}>
+            {onGoogle && (
+              <Pressable
+                onPress={onGoogle}
+                disabled={loading}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: loading, busy: loading }}
+                style={[styles.btn, styles.googleButton, { borderColor: theme.line, opacity: loading ? 0.6 : 1 }]}>
+                <ThemedText type="smallBold" style={{ color: '#1F1F1F', fontSize: 16 }}>
+                  {loading ? t.auth.googleLoading : t.auth.google}
+                </ThemedText>
+              </Pressable>
+            )}
             <Pressable
               onPress={onKakao}
               disabled={loading}
@@ -159,6 +173,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 999,
     paddingVertical: 15,
+  },
+  googleButton: {
+    borderWidth: 1,
+    backgroundColor: '#FFFFFF',
   },
   error: { textAlign: 'center', fontSize: 12 },
   note: {

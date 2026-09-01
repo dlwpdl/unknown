@@ -60,15 +60,15 @@
   - Verify: 신규 사용자로 프로필 생성 후 자신의 행만 수정 가능한지 확인
   - Files: 프로필 화면과 인증 컨텍스트 관련 파일
 
-- [x] 카카오 단일 로그인 앱 연결
-  - Acceptance: 앱에는 카카오 로그인만 보이고 PKCE 콜백을 검증해 Supabase 세션을 만들고 복원·종료한다.
+- [x] 카카오·Google 소셜 로그인 앱 연결
+  - Acceptance: 앱에는 카카오와 Google 로그인이 보이고 PKCE 콜백을 검증해 같은 Supabase 세션 체계로 만들고 복원·종료한다.
   - Verify: `npm run test:auth && npm run typecheck` 및 Expo 웹 렌더링 확인
   - Files: `src/lib/auth.tsx`, `src/lib/kakao-auth.ts`, `src/components/login-panel.tsx`, `src/i18n/ko.ts`, `app.json`
 
-- [ ] 카카오 공급자 활성화와 실제 기기 검증
-  - Acceptance: Supabase Redirect allow list에 `gling://auth/callback`을 등록하고 Kakao만 활성화한 뒤 개발 빌드에서 로그인·로그아웃이 동작하며 첫 카카오 계정에 관리자 역할을 이전한다.
+- [ ] 카카오·Google 공급자 활성화와 실제 기기 검증
+  - Acceptance: Supabase Redirect allow list에 `gling://auth/callback`을 등록하고 두 공급자를 활성화한 뒤 개발 빌드에서 로그인·로그아웃이 동작하며 운영 계정에 관리자 역할을 지정한다.
   - Verify: iOS·Android 개발 빌드와 Supabase Auth 사용자·JWT 역할 확인
-  - Files: Kakao Developers와 Supabase Auth 운영 설정
+  - Files: Kakao Developers, Google Cloud와 Supabase Auth 운영 설정
 
 - [x] 관리자 웹 MVP
   - Acceptance: `/admin`에서 관리자만 전체 신고·사용자·게시글·대화를 조회하고 사용자 활동을 확인하며 신고를 처리한다. 관리자 열람은 감사 로그에 남는다.

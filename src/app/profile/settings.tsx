@@ -20,6 +20,7 @@ export default function SettingsScreen() {
   const { hapticsEnabled, play, setHapticsEnabled, setSoundEnabled, soundEnabled } = useInteractionFeedback();
   const [deleting, setDeleting] = useState(false);
   const supportEmail = process.env.EXPO_PUBLIC_SUPPORT_EMAIL;
+  const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://dlwpdl.github.io/gling').replace(/\/$/, '');
 
   if (isAuthLoading) return <ActivityIndicator color={theme.accent} style={{ flex: 1 }} />;
   if (!isAuthed) return <Redirect href="/profile" />;
@@ -129,6 +130,14 @@ export default function SettingsScreen() {
           <Pressable onPress={openSupport} accessibilityRole="link" style={[styles.action, { borderColor: theme.line }]}>
             <ThemedText type="smallBold">{t.profile.support}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{supportEmail ?? t.profile.supportNeedsSetup}</ThemedText>
+          </Pressable>
+
+          <Pressable onPress={() => void Linking.openURL(`${publicSiteUrl}/terms`)} accessibilityRole="link" style={[styles.action, { borderColor: theme.line }]}>
+            <ThemedText type="smallBold">이용약관</ThemedText>
+          </Pressable>
+
+          <Pressable onPress={() => void Linking.openURL(`${publicSiteUrl}/privacy`)} accessibilityRole="link" style={[styles.action, { borderColor: theme.line }]}>
+            <ThemedText type="smallBold">개인정보처리방침</ThemedText>
           </Pressable>
 
           {me.photoUri && (

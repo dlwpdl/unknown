@@ -2,11 +2,11 @@
 // 영어 확장 시: en.ts 추가 + 로케일 스위치만 붙이면 됨 (expo-localization).
 
 export const t = {
-  appName: '글링',
+  appName: 'gling',
 
   trust: {
     accessibilityLabel: (level: 1 | 2 | 3) =>
-      `L${level} 인증 · ${level === 1 ? '카카오 계정 확인' : level === 2 ? '전화번호 확인' : '신분증과 얼굴 대조 완료'}`,
+      `L${level} 인증 · ${level === 1 ? '소셜 계정 확인' : level === 2 ? '전화번호 확인' : '신분증과 얼굴 대조 완료'}`,
   },
 
   tabs: {
@@ -143,17 +143,19 @@ export const t = {
   },
 
   auth: {
-    // L0 카카오 로그인 (무료)
+    // L0 소셜 로그인 (무료)
     tagline: '해외에서 나누는 우리들의 일상',
     reasonDetail: '이 글을 마저 보려면 로그인이 필요해요',
     reasonProfile: '내 프로필은 로그인하고 볼 수 있어요',
     reasonWrite: '오늘의 한 편을 쓰려면 로그인이 필요해요',
-    reasonLike: '공감하려면 카카오 로그인이 필요해요',
-    reasonSave: '글을 저장하려면 카카오 로그인이 필요해요',
-    reasonShare: '글을 공유하려면 카카오 로그인이 필요해요',
-    reasonComment: '댓글을 남기려면 카카오 로그인이 필요해요',
-    reasonReport: '신고하려면 카카오 로그인이 필요해요',
-    reasonChatLogin: '대화를 시작하려면 카카오 로그인이 필요해요',
+    reasonLike: '공감하려면 로그인이 필요해요',
+    reasonSave: '글을 저장하려면 로그인이 필요해요',
+    reasonShare: '글을 공유하려면 로그인이 필요해요',
+    reasonComment: '댓글을 남기려면 로그인이 필요해요',
+    reasonReport: '신고하려면 로그인이 필요해요',
+    reasonChatLogin: '대화를 시작하려면 로그인이 필요해요',
+    google: 'Google로 시작하기',
+    googleLoading: 'Google 연결 중…',
     kakao: '카카오로 시작하기',
     kakaoLoading: '카카오 연결 중…',
     devLoginTitle: '개발 계정 로그인',
@@ -162,11 +164,11 @@ export const t = {
     devLoginCta: '실제 개발 세션으로 시작',
     devLoginError: '개발 계정 정보를 확인해주세요.',
     close: '둘러보기',
-    loginNote: '카카오 계정으로 간편하게 시작해요.',
-    loginError: '카카오 로그인에 실패했어요. 잠시 후 다시 시도해주세요.',
+    loginNote: 'Google 또는 카카오 계정으로 간편하게 시작해요.',
+    loginError: '로그인에 실패했어요. 잠시 후 다시 시도해주세요.',
     signOutError: '로그아웃하지 못했어요. 잠시 후 다시 시도해주세요.',
     deletedTitle: '탈퇴한 계정이에요',
-    deletedBody: '이 카카오 계정은 재가입이 잠겨 있습니다. 관리자 승인 후 프로필을 다시 만들 수 있어요.',
+    deletedBody: '이 소셜 계정은 재가입이 잠겨 있습니다. 관리자 승인 후 프로필을 다시 만들 수 있어요.',
     suspendedTitle: '계정 이용이 제한됐어요',
     suspendedBody: '운영팀의 조치로 새 활동을 할 수 없습니다. 기존 운영 기록은 보관됩니다.',
     // L1 게이트 (대화·참여는 로그인만)
@@ -181,17 +183,17 @@ export const t = {
 
   onboarding: {
     step: '프로필 설정',
-    title: '글링에서 쓸 이름을 골라주세요',
+    title: 'gling에서 쓸 이름을 골라주세요',
     body: '실명 대신 편하게 부를 닉네임으로 활동해요.',
     nickname: '닉네임',
     nicknamePlaceholder: '2~20자 닉네임',
     koreanRandom: '한글 이름 추천',
     englishRandom: 'English name',
-    useKakao: '카카오 프로필 사용',
+    useSocial: '소셜 프로필 사용',
     choosePhoto: '사진 바꾸기',
     removePhoto: '사진 없이',
     city: '주로 볼 지역',
-    submit: '글링 시작하기',
+    submit: 'gling 시작하기',
     saving: '프로필 만드는 중…',
     errorNickname: '닉네임은 2~20자로 입력해주세요.',
     errorDuplicate: '이미 사용 중인 닉네임이에요. 다른 이름을 골라주세요.',
@@ -261,7 +263,7 @@ export const t = {
     keepWaiting: '계속 기다리기',
     cancelRequest: '요청 취소',
     requested: '대화 요청을 보냈어요. 상대가 수락하면 대화가 열려요. (슬롯 1 사용)',
-    verifiedL1: '카카오 계정을 확인한 이웃이에요',
+    verifiedL1: '소셜 계정을 확인한 이웃이에요',
     verifiedL2: '전화 인증을 마친 이웃이에요',
     verifiedL3: '신원 인증까지 마친 이웃이에요',
     unverified: '아직 전화 인증을 하지 않은 이웃이에요',
@@ -309,20 +311,20 @@ export const t = {
     signOutTitle: '로그아웃할까요?',
     signOutBody: '다시 로그인하면 글과 저장 목록을 이어서 볼 수 있어요.',
     support: '고객 문의',
-    supportSubject: '글링 고객 문의',
+    supportSubject: 'gling 고객 문의',
     supportNeedsSetup: '문의 이메일 설정 필요',
     supportUnavailableTitle: '문의 이메일을 준비 중이에요',
     supportUnavailableBody: '운영 이메일이 연결되면 설정에서 바로 메일을 보낼 수 있어요.',
     deleteAccount: '계정 탈퇴',
     deleting: '탈퇴 처리 중…',
-    deleteTitle: '글링을 탈퇴할까요?',
-    deleteWarning: '탈퇴하면 게시글·댓글·대화와 활동 데이터가 영구 삭제되고, 관리자 승인 없이는 같은 카카오 계정으로 다시 가입할 수 없습니다.',
+    deleteTitle: 'gling을 탈퇴할까요?',
+    deleteWarning: '탈퇴하면 게시글·댓글·대화와 활동 데이터가 영구 삭제되고, 관리자 승인 없이는 같은 소셜 계정으로 다시 가입할 수 없습니다.',
     deleteContinue: '내용 확인',
     deleteFinalTitle: '정말 탈퇴할까요?',
     deleteFinalBody: '한 번 탈퇴하면 절대 다시 가입할 수 없습니다. 재가입은 관리자가 잠금을 풀어준 경우에만 가능합니다.',
     deleteConfirm: '영구 탈퇴',
     deleteErrorTitle: '탈퇴하지 못했어요',
     deleteErrorBody: '연결 상태를 확인하고 다시 시도해주세요.',
-    version: '글링 1.0.0',
+    version: 'gling 1.0.0',
   },
 } as const;
