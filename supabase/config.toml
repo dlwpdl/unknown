@@ -32,7 +32,7 @@ port = 54324
 
 [storage]
 enabled = true
-file_size_limit = "10MiB"
+file_size_limit = "50MiB"
 
 [auth]
 enabled = true
@@ -44,7 +44,13 @@ enable_anonymous_sign_ins = false
 
 [auth.email]
 enable_signup = true
-enable_confirmations = false
+enable_confirmations = true
+max_frequency = "1m0s"
+otp_length = 8
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
 
 [functions.draft-post]
 verify_jwt = true
