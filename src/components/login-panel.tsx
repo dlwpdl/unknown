@@ -1,6 +1,8 @@
 import { Image } from 'expo-image';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Linking from 'expo-linking';
 import { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, useColorScheme, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, TextInput, useColorScheme, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -8,35 +10,28 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 
-// 인증 게이트 화면. 인라인(채팅·나 탭)과 모달(상세·글쓰기·참여) 양쪽에서 재사용.
-//  mode 'login'  = Supabase 소셜 로그인.
-//  mode 'verify' = L2 전화 인증. mock: 버튼이 바로 인증 완료.
 export function LoginPanel({
-  mode = 'login',
   reason,
-  onGoogle,
+  onApple,
   onKakao,
   onDevLogin,
-  onVerify,
   loading = false,
   error,
   onClose,
 }: {
-  mode?: 'login' | 'verify';
   reason?: string;
-  onGoogle?: () => void;
+  onApple?: () => void;
   onKakao?: () => void;
   onDevLogin?: (email: string, password: string) => void;
-  onVerify?: () => void;
   loading?: boolean;
   error?: string | null;
   onClose?: () => void;
 }) {
   const theme = useTheme();
   const dark = useColorScheme() === 'dark';
-  const isVerify = mode === 'verify';
   const [devEmail, setDevEmail] = useState('');
   const [devPassword, setDevPassword] = useState('');
+  const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://dlwpdl.github.io/gling').replace(/\/$/, '');
 
   return (
     <ThemedView style={styles.wrap}>
@@ -49,31 +44,20 @@ export function LoginPanel({
           accessibilityLabel={t.appName}
         />
         <ThemedText type="small" themeColor="textSecondary" style={styles.tagline}>
-          {reason ?? (isVerify ? t.auth.verifyTitle : t.auth.tagline)}
+          {reason ?? t.auth.tagline}
         </ThemedText>
 
-        {isVerify ? (
-          <Pressable
-            onPress={onVerify}
-            accessibilityRole="button"
-            style={[styles.btn, { backgroundColor: theme.accent }]}>
-            <ThemedText type="smallBold" style={{ color: theme.accentInk, fontSize: 16 }}>
-              {t.auth.verifyCta}
-            </ThemedText>
-          </Pressable>
-        ) : (
-          <View style={styles.actions}>
-            {onGoogle && (
-              <Pressable
-                onPress={onGoogle}
-                disabled={loading}
-                accessibilityRole="button"
-                accessibilityState={{ disabled: loading, busy: loading }}
-                style={[styles.btn, styles.googleButton, { borderColor: theme.line, opacity: loading ? 0.6 : 1 }]}>
-                <ThemedText type="smallBold" style={{ color: '#1F1F1F', fontSize: 16 }}>
-                  {loading ? t.auth.googleLoading : t.auth.google}
-                </ThemedText>
-              </Pressable>
+        <View style={styles.actions}>
+            {Platform.OS === 'ios' && onApple && (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={dark
+                  ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                  : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                cornerRadius={24}
+                onPress={onApple}
+                style={[styles.appleButton, { opacity: loading ? 0.6 : 1 }]}
+              />
             )}
             <Pressable
               onPress={onKakao}
@@ -120,7 +104,6 @@ export function LoginPanel({
               </View>
             )}
           </View>
-        )}
 
         {!!error && (
           <ThemedText accessibilityRole="alert" type="small" style={[styles.error, { color: theme.accent }]}>
@@ -129,8 +112,18 @@ export function LoginPanel({
         )}
 
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>
-          {isVerify ? t.auth.verifyNote : t.auth.loginNote}
+          {t.auth.loginNote}
         </ThemedText>
+
+        <View style={styles.legalLinks}>
+          <Pressable onPress={() => void Linking.openURL(`${publicSiteUrl}/terms`)} accessibilityRole="link">
+            <ThemedText type="small" themeColor="textSecondary">이용약관</ThemedText>
+          </Pressable>
+          <ThemedText type="small" themeColor="textSecondary">·</ThemedText>
+          <Pressable onPress={() => void Linking.openURL(`${publicSiteUrl}/privacy`)} accessibilityRole="link">
+            <ThemedText type="small" themeColor="textSecondary">개인정보처리방침</ThemedText>
+          </Pressable>
+        </View>
 
         {onClose && (
           <Pressable onPress={onClose} accessibilityRole="button" style={styles.close}>
@@ -174,10 +167,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingVertical: 15,
   },
-  googleButton: {
-    borderWidth: 1,
-    backgroundColor: '#FFFFFF',
-  },
+  appleButton: { width: '100%', height: 50 },
   error: { textAlign: 'center', fontSize: 12 },
   note: {
     textAlign: 'center',
@@ -185,6 +175,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.two,
     maxWidth: 280,
   },
+  legalLinks: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   close: {
     marginTop: Spacing.four,
     paddingVertical: Spacing.two,

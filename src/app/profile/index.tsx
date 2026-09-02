@@ -23,7 +23,7 @@ import type { Post } from '@/lib/types';
 export default function ProfileScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { isAuthed, signInGoogle, signInKakao, signInDev, isAuthLoading, authError, isVerified, trustLevel, me, promptVerify, setProfilePhoto } = useAuth();
+  const { isAuthed, signInApple, signInKakao, signInDev, isAuthLoading, authError, trustLevel, me, setProfilePhoto } = useAuth();
   const [savedOpen, setSavedOpen] = useState(false);
   const [savedDetail, setSavedDetail] = useState<Post | null>(null);
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
@@ -58,7 +58,7 @@ export default function ProfileScreen() {
     return (
       <LoginPanel
         reason={t.auth.reasonProfile}
-        onGoogle={signInGoogle}
+        onApple={signInApple}
         onKakao={signInKakao}
         onDevLogin={signInDev}
         loading={isAuthLoading}
@@ -111,7 +111,7 @@ export default function ProfileScreen() {
             <ThemedText type="subtitle" style={styles.nick}>
               {me.nickname}
             </ThemedText>
-            <TrustBadge verified={isVerified} trustLevel={trustLevel === 1 ? undefined : trustLevel} />
+            <TrustBadge trustLevel={trustLevel === 1 ? undefined : trustLevel} />
           </View>
           <ThemedText type="small" themeColor="textSecondary">
             {t.profile.location(cityName, summary?.neighborhood)}
@@ -134,16 +134,6 @@ export default function ProfileScreen() {
               void refreshSaved();
             }}>
             <ThemedText type="small">{t.profile.saved}</ThemedText>
-          </Pressable>
-          <View style={[styles.divider, { backgroundColor: theme.line }]} />
-          <Pressable
-            style={styles.menuRow}
-            accessibilityRole="button"
-            disabled={isVerified}
-            onPress={() => promptVerify()}>
-            <ThemedText type="smallBold" style={{ color: isVerified ? theme.textSecondary : theme.accent }}>
-              {isVerified ? t.profile.verifyDone : t.profile.verifyCta}
-            </ThemedText>
           </Pressable>
           <View style={[styles.divider, { backgroundColor: theme.line }]} />
           <Pressable

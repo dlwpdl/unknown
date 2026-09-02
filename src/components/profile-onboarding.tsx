@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
+import * as Linking from 'expo-linking';
 import { useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,31 +20,39 @@ export type CompletedProfile = {
   city_id: string;
   avatar_path: string | null;
   photoUri: string | null;
+  ai_safety_consent_at: string;
 };
+
+type ExistingProfile = Pick<CompletedProfile, 'nickname' | 'city_id' | 'avatar_path' | 'photoUri'>;
+
+const CONSENT_VERSION = '2026-09-02';
 
 export function ProfileOnboarding({
   visible,
   userId,
   socialNickname,
   socialPhoto,
-  reactivating = false,
+  existingProfile,
   onComplete,
 }: {
   visible: boolean;
   userId: string;
   socialNickname?: string;
   socialPhoto: string | null;
-  reactivating?: boolean;
+  existingProfile?: ExistingProfile | null;
   onComplete: (profile: CompletedProfile) => void;
 }) {
   const theme = useTheme();
-  const initialNickname = normalizedNickname(socialNickname) ?? generateNickname('ko');
+  const initialNickname = existingProfile?.nickname ?? normalizedNickname(socialNickname) ?? generateNickname('ko');
   const [nickname, setNickname] = useState(initialNickname);
-  const [cityId, setCityId] = useState('vancouver');
-  const [photoUri, setPhotoUri] = useState<string | null>(socialPhoto);
+  const [cityId, setCityId] = useState(existingProfile?.city_id ?? 'vancouver');
+  const [photoUri, setPhotoUri] = useState<string | null>(existingProfile?.photoUri ?? socialPhoto);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
+  const [accepted, setAccepted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const consentOnly = existingProfile != null;
+  const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://dlwpdl.github.io/gling').replace(/\/$/, '');
 
   const pickPhoto = async () => {
     try {
@@ -75,6 +84,10 @@ export function ProfileOnboarding({
 
   const save = async () => {
     const cleanNickname = nickname.trim();
+    if (!accepted) {
+      setError(t.onboarding.errorConsent);
+      return;
+    }
     if (cleanNickname.length < 2 || cleanNickname.length > 20) {
       setError(t.onboarding.errorNickname);
       return;
@@ -82,7 +95,7 @@ export function ProfileOnboarding({
 
     setSaving(true);
     setError(null);
-    let avatarPath: string | null = null;
+    let avatarPath: string | null = existingProfile?.avatar_path ?? null;
     try {
       if (photoBase64) {
         avatarPath = `${userId}/avatar.jpg`;
@@ -94,23 +107,24 @@ export function ProfileOnboarding({
         if (upload.error) throw upload.error;
       }
 
-      const created = reactivating
-        ? await supabase.rpc('reactivate_profile', { p_nickname: cleanNickname, p_city_id: cityId })
-        : await supabase.from('profiles').insert({
-            id: userId,
-            nickname: cleanNickname,
-            city_id: cityId,
-            avatar_path: avatarPath,
-          });
+      const created = await supabase.rpc('create_profile_with_consent', {
+        p_nickname: cleanNickname,
+        p_city_id: cityId,
+        p_avatar_path: avatarPath,
+        p_version: CONSENT_VERSION,
+      });
       if (created.error) {
         setError(created.error.code === '23505' ? t.onboarding.errorDuplicate : t.onboarding.errorGeneric);
         return;
       }
-      if (reactivating && avatarPath) {
-        const avatar = await supabase.from('profiles').update({ avatar_path: avatarPath }).eq('id', userId);
-        if (avatar.error) throw avatar.error;
-      }
-      onComplete({ id: userId, nickname: cleanNickname, city_id: cityId, avatar_path: avatarPath, photoUri });
+      onComplete({
+        id: userId,
+        nickname: cleanNickname,
+        city_id: cityId,
+        avatar_path: avatarPath,
+        photoUri,
+        ai_safety_consent_at: new Date().toISOString(),
+      });
     } catch {
       setError(t.onboarding.errorGeneric);
     } finally {
@@ -125,11 +139,11 @@ export function ProfileOnboarding({
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <ThemedText type="smallBold" style={{ color: theme.accent }}>{t.onboarding.step}</ThemedText>
             <View style={styles.copy}>
-              <ThemedText type="title" style={styles.title}>{t.onboarding.title}</ThemedText>
-              <ThemedText themeColor="textSecondary">{t.onboarding.body}</ThemedText>
+              <ThemedText type="title" style={styles.title}>{consentOnly ? t.onboarding.consentTitle : t.onboarding.title}</ThemedText>
+              <ThemedText themeColor="textSecondary">{consentOnly ? t.onboarding.consentBody : t.onboarding.body}</ThemedText>
             </View>
 
-            <View style={styles.photoSection}>
+            {!consentOnly && <View style={styles.photoSection}>
               <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}>
                 {photoUri ? (
                   <Image source={{ uri: photoUri }} style={styles.avatarImage} contentFit="cover" />
@@ -150,9 +164,9 @@ export function ProfileOnboarding({
                   <ThemedText type="small" themeColor="textSecondary">{t.onboarding.removePhoto}</ThemedText>
                 </Pressable>
               </View>
-            </View>
+            </View>}
 
-            <View style={styles.field}>
+            {!consentOnly && <View style={styles.field}>
               <ThemedText type="smallBold">{t.onboarding.nickname}</ThemedText>
               <TextInput
                 value={nickname}
@@ -171,9 +185,9 @@ export function ProfileOnboarding({
                   <ThemedText type="smallBold">{t.onboarding.englishRandom}</ThemedText>
                 </Pressable>
               </View>
-            </View>
+            </View>}
 
-            <View style={styles.field}>
+            {!consentOnly && <View style={styles.field}>
               <ThemedText type="smallBold">{t.onboarding.city}</ThemedText>
               <View style={styles.cityRow}>
                 {CITIES.filter(({ state }) => state === 'open').map((city) => {
@@ -190,6 +204,25 @@ export function ProfileOnboarding({
                   );
                 })}
               </View>
+            </View>}
+
+            <Pressable
+              onPress={() => { setAccepted((current) => !current); setError(null); }}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: accepted }}
+              style={[styles.consent, { backgroundColor: theme.card, borderColor: accepted ? theme.accent : theme.line }]}>
+              <View style={[styles.checkbox, { backgroundColor: accepted ? theme.accent : 'transparent', borderColor: accepted ? theme.accent : theme.line }]}>
+                {accepted && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✓</ThemedText>}
+              </View>
+              <ThemedText type="small" style={styles.consentText}>{t.onboarding.consentLabel}</ThemedText>
+            </Pressable>
+            <View style={styles.legalLinks}>
+              <Pressable onPress={() => void Linking.openURL(`${publicSiteUrl}/terms`)} accessibilityRole="link">
+                <ThemedText type="smallBold" style={{ color: theme.accent }}>이용약관</ThemedText>
+              </Pressable>
+              <Pressable onPress={() => void Linking.openURL(`${publicSiteUrl}/privacy`)} accessibilityRole="link">
+                <ThemedText type="smallBold" style={{ color: theme.accent }}>개인정보처리방침</ThemedText>
+              </Pressable>
             </View>
 
             {!!error && <ThemedText accessibilityRole="alert" type="small" style={{ color: theme.accent }}>{error}</ThemedText>}
@@ -204,7 +237,7 @@ export function ProfileOnboarding({
               style={[styles.submit, { backgroundColor: theme.accent, opacity: saving ? 0.65 : 1 }]}>
               {saving && <ActivityIndicator color={theme.accentInk} />}
               <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
-                {saving ? t.onboarding.saving : t.onboarding.submit}
+                {saving ? t.onboarding.saving : consentOnly ? t.onboarding.consentSubmit : t.onboarding.submit}
               </ThemedText>
             </Pressable>
           </View>
@@ -241,6 +274,10 @@ const styles = StyleSheet.create({
   pill: { minHeight: 40, justifyContent: 'center', paddingHorizontal: Spacing.three, borderRadius: 999 },
   cityRow: { flexDirection: 'row', gap: Spacing.two },
   cityButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.four, borderRadius: 8 },
+  consent: { minHeight: 64, flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two, padding: Spacing.three, borderWidth: 1, borderRadius: 10 },
+  checkbox: { width: 22, height: 22, borderRadius: 5, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  consentText: { flex: 1 },
+  legalLinks: { flexDirection: 'row', gap: Spacing.three },
   footer: { padding: Spacing.three, borderTopWidth: 1 },
   submit: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.two, borderRadius: 10 },
 });

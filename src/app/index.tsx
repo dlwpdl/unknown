@@ -28,6 +28,7 @@ import { useAuth } from '@/lib/auth';
 import { parseAiDraftResponse } from '@/lib/ai-draft';
 import {
   createCommunityPost,
+  isContentRejected,
   loadDailyQuota,
   loadTrendingHashtags,
   loadUnreadNotificationCount,
@@ -49,7 +50,7 @@ export default function FeedScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { compose } = useLocalSearchParams<{ compose?: string }>();
-  const { isAuthed, isVerified, promptLogin, promptVerify, me } = useAuth();
+  const { isAuthed, promptLogin, me } = useAuth();
   const { play } = useInteractionFeedback();
   const insets = useSafeAreaInsets();
   const bottomClear = insets.bottom + TabBarHeight; // 탭바 + 홈 인디케이터 실측 높이
@@ -165,7 +166,7 @@ export default function FeedScreen() {
     setSearching(true);
   };
 
-  // 게스트는 피드만 훑음. 표현(상세·글쓰기)=L0, 만남(참여)은 인증 방만 L2
+  // 게스트는 피드만 훑고, 상세·글쓰기·참여는 로그인 후 사용한다.
   const openDetail = (post: Post) => {
     if (!isAuthed) {
       setPendingPost(post); // 로그인 성공하면 이어서 열기
@@ -196,8 +197,6 @@ export default function FeedScreen() {
   }, [isAuthed, pendingPost]);
   const onJoin = (post: Post) => {
     if (!isAuthed) return promptLogin(t.auth.reasonJoinLogin);
-    // L2는 방장이 '인증 멤버만'으로 잠근 방에서만 강제 (안전은 배지+경고로)
-    if (post.room?.verifiedOnly && !isVerified) return promptVerify(t.auth.reasonVerifiedRoom);
     if (post.author.id === me.id) return Alert.alert(t.chat.ownMeetupTitle, t.chat.ownMeetupBody);
     setJoinMessage('');
     setJoinPost(post);
@@ -336,7 +335,11 @@ export default function FeedScreen() {
       play('warning');
       const dailyLimit = typeof error === 'object' && error !== null && 'message' in error
         && String(error.message).includes('DAILY_POST_LIMIT_REACHED');
-      Alert.alert(dailyLimit ? t.feed.capReachedTitle : t.write.submitErrorTitle, dailyLimit ? t.feed.capReachedBody : t.write.submitErrorBody);
+      const contentRejected = isContentRejected(error);
+      Alert.alert(
+        dailyLimit ? t.feed.capReachedTitle : contentRejected ? t.safety.contentBlockedTitle : t.write.submitErrorTitle,
+        dailyLimit ? t.feed.capReachedBody : contentRejected ? t.safety.contentBlockedBody : t.write.submitErrorBody,
+      );
     } finally {
       setSubmitting(false);
     }

@@ -23,7 +23,7 @@ import { supabase } from '@/lib/supabase';
 
 export function AdminScreen() {
   const { safety } = useLocalSearchParams<{ safety?: string }>();
-  const { isAuthed, isAdmin, isAuthLoading, authError, signInGoogle, signInKakao, signInDev, signOut } = useAuth();
+  const { isAuthed, isAdmin, isAuthLoading, authError, signInApple, signInKakao, signInDev, signOut } = useAuth();
   const [section, setSection] = useState<AdminSection>(safety ? 'safety' : 'overview');
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -135,7 +135,7 @@ export function AdminScreen() {
 
   if (isAuthLoading) return <CenteredState title="관리자 세션을 확인하는 중입니다." />;
   if (!isAuthed && !localPreview) {
-    return <LoginPanel reason={localPreviewAllowed ? '로컬 관리자 미리보기입니다. 버튼을 누르면 바로 열립니다.' : '관리자 계정으로 로그인해주세요.'} onGoogle={localPreviewAllowed ? undefined : signInGoogle} onKakao={localPreviewAllowed ? () => setLocalPreview(true) : signInKakao} onDevLogin={signInDev} loading={isAuthLoading} error={authError} />;
+    return <LoginPanel reason={localPreviewAllowed ? '로컬 관리자 미리보기입니다. 버튼을 누르면 바로 열립니다.' : '관리자 계정으로 로그인해주세요.'} onApple={localPreviewAllowed ? undefined : signInApple} onKakao={localPreviewAllowed ? () => setLocalPreview(true) : signInKakao} onDevLogin={signInDev} loading={isAuthLoading} error={authError} />;
   }
   if (!isAdmin && !localPreview) {
     return <CenteredState title="관리자 권한이 없습니다." body="현재 계정에는 admin 역할이 지정되지 않았습니다." action="다른 계정으로 로그인" onAction={() => void signOut()} />;

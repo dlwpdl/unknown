@@ -22,7 +22,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
-import { addPostComment, loadPostCommentsPage, startDirectConversation, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
+import { addPostComment, isContentRejected, loadPostCommentsPage, startDirectConversation, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 import type { Post, PostComment } from '@/lib/types';
@@ -132,9 +132,12 @@ export function PostDetail({
       onCommentCountChange?.(nextTotal);
       setDraft('');
       play('message');
-    } catch {
+    } catch (error) {
       play('warning');
-      Alert.alert(t.detail.sendErrorTitle, t.detail.sendErrorBody);
+      Alert.alert(
+        isContentRejected(error) ? t.safety.contentBlockedTitle : t.detail.sendErrorTitle,
+        isContentRejected(error) ? t.safety.contentBlockedBody : t.detail.sendErrorBody,
+      );
     } finally {
       setSending(false);
     }

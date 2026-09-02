@@ -23,6 +23,14 @@ Deno.serve(async (request) => {
     );
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return jsonError('AUTH_REQUIRED', '로그인이 필요합니다.', 401);
+    const consent = await supabase
+      .from('profiles')
+      .select('ai_safety_consent_at')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (consent.error || !consent.data?.ai_safety_consent_at) {
+      return jsonError('AI_CONSENT_REQUIRED', 'AI 데이터 처리 동의가 필요합니다.', 403);
+    }
 
     const input = await request.json();
     const validationError = validateInput(input);
@@ -46,7 +54,7 @@ Deno.serve(async (request) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5.4-mini',
+        model: 'gpt-5-mini',
         store: false,
         input: [{
           role: 'user',

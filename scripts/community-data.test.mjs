@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildPostImagePath, deleteMyAccount } from '../src/lib/community-data.ts';
+import { buildPostImagePath, deleteMyAccount, isContentRejected } from '../src/lib/community-data.ts';
+
+test('서버 콘텐츠 필터 오류만 사용자 안내 대상으로 구분한다', () => {
+  assert.equal(isContentRejected({ message: 'CONTENT_NOT_ALLOWED' }), true);
+  assert.equal(isContentRejected(new Error('network unavailable')), false);
+});
 
 test('게시글 이미지는 사용자 폴더와 MIME 확장자를 사용한다', () => {
   assert.equal(
@@ -22,10 +27,6 @@ test('탈퇴 처리 전에 사용자 Storage 폴더를 비운다', async () => {
   const calls = [];
   const listed = new Set();
   const client = {
-    rpc: async (name, input) => {
-      calls.push(`rpc:${name}:${input.p_confirmation}`);
-      return { data: null, error: null };
-    },
     storage: {
       from: (bucket) => ({
         list: async (folder) => {
@@ -40,9 +41,15 @@ test('탈퇴 처리 전에 사용자 Storage 폴더를 비운다', async () => {
         },
       }),
     },
+    functions: {
+      invoke: async (name, input) => {
+        calls.push(`function:${name}:${input.body.confirmation}:${input.body.appleAuthorizationCode}`);
+        return { data: { deleted: true }, error: null };
+      },
+    },
   };
 
-  await deleteMyAccount(client, 'user-1');
+  await deleteMyAccount(client, 'user-1', 'apple-code');
 
   assert.deepEqual(calls, [
     'list:avatars:user-1',
@@ -51,6 +58,6 @@ test('탈퇴 처리 전에 사용자 Storage 폴더를 비운다', async () => {
     'list:post-images:user-1',
     'remove:post-images:user-1/one.jpg,user-1/two.png',
     'list:post-images:user-1',
-    'rpc:delete_my_account:탈퇴합니다',
+    'function:delete-account:탈퇴합니다:apple-code',
   ]);
 });

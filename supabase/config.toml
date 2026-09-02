@@ -60,3 +60,6 @@ verify_jwt = false
 
 [functions.safety-monitor]
 verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = true

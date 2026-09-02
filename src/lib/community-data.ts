@@ -11,6 +11,13 @@ const IMAGE_EXTENSIONS: Record<string, string> = {
 
 export const POST_QUOTA_CHANGED_EVENT = 'postQuotaChanged';
 
+export function isContentRejected(error: unknown) {
+  return typeof error === 'object'
+    && error !== null
+    && 'message' in error
+    && String(error.message).includes('CONTENT_NOT_ALLOWED');
+}
+
 export type PostDraftImage = { base64: string; mimeType: string };
 export type ReportTarget = 'user' | 'post' | 'comment' | 'message';
 export type ReportReason = 'spam' | 'harassment' | 'hate' | 'sexual' | 'privacy' | 'other';
@@ -340,7 +347,7 @@ export async function markNotificationsRead(client: SupabaseClient, ids?: string
   return result.data as number;
 }
 
-export async function deleteMyAccount(client: SupabaseClient, userId: string) {
+export async function deleteMyAccount(client: SupabaseClient, userId: string, appleAuthorizationCode: string | null = null) {
   for (const bucket of ['avatars', 'post-images']) {
     while (true) {
       const listed = await client.storage.from(bucket).list(userId, { limit: 100 });
@@ -353,7 +360,9 @@ export async function deleteMyAccount(client: SupabaseClient, userId: string) {
     }
   }
 
-  const result = await client.rpc('delete_my_account', { p_confirmation: '탈퇴합니다' });
+  const result = await client.functions.invoke('delete-account', {
+    body: { confirmation: '탈퇴합니다', appleAuthorizationCode },
+  });
   if (result.error) throw result.error;
 }
 

@@ -36,11 +36,18 @@ Deno.serve(async (request) => {
   let reviewed = 0;
   let alerted = 0;
   let failed = 0;
+  let alertDeliveryFailed = 0;
   for (const item of claimed.data ?? []) {
     try {
       const content = await loadContent(supabase, item.target_type, item.target_id);
       if (!content) throw new Error('CONTENT_NOT_FOUND');
-      const result = await analyze(openAiKey, item.target_type, content);
+      const consent = await supabase
+        .from('profiles')
+        .select('ai_safety_consent_at')
+        .eq('id', content.authorId)
+        .maybeSingle();
+      if (consent.error || !consent.data?.ai_safety_consent_at) throw new Error('AI_CONSENT_REQUIRED');
+      const result = await analyze(openAiKey, item.target_type, content.text);
       const completed = await supabase.rpc('complete_safety_review', {
         p_queue_id: item.id,
         p_risk_score: result.riskScore,
@@ -54,6 +61,12 @@ Deno.serve(async (request) => {
         const alert = await supabase.rpc('raise_safety_alert', { p_queue_id: item.id });
         if (alert.error) throw alert.error;
         alerted += 1;
+        try {
+          await sendAdminEmail(item.id, item.target_type, result.riskLevel);
+        } catch (error) {
+          alertDeliveryFailed += 1;
+          console.error('admin alert delivery failed', error instanceof Error ? error.message : 'unknown');
+        }
       }
     } catch (error) {
       failed += 1;
@@ -69,18 +82,38 @@ Deno.serve(async (request) => {
     }
   }
 
-  return json({ claimed: claimed.data?.length ?? 0, reviewed, alerted, failed });
+  return json({ claimed: claimed.data?.length ?? 0, reviewed, alerted, failed, alertDeliveryFailed });
 });
 
 async function loadContent(client, targetType: string, targetId: string) {
   const table = targetType === 'post' ? 'posts' : targetType === 'comment' ? 'comments' : 'messages';
-  const columns = targetType === 'post' ? 'title,body,hashtags' : 'body';
+  const columns = targetType === 'post' ? 'title,body,hashtags,author_id' : targetType === 'comment' ? 'body,author_id' : 'body,sender_id';
   const result = await client.from(table).select(columns).eq('id', targetId).maybeSingle();
   if (result.error) throw result.error;
   if (!result.data) return null;
-  return targetType === 'post'
-    ? `${result.data.title}\n${result.data.body}\n${(result.data.hashtags ?? []).join(' ')}`
-    : result.data.body;
+  return {
+    authorId: targetType === 'message' ? result.data.sender_id : result.data.author_id,
+    text: targetType === 'post'
+      ? `${result.data.title}\n${result.data.body}\n${(result.data.hashtags ?? []).join(' ')}`
+      : result.data.body,
+  };
+}
+
+async function sendAdminEmail(queueId: number, targetType: string, riskLevel: string) {
+  const apiKey = Deno.env.get('RESEND_API_KEY');
+  const to = Deno.env.get('ADMIN_ALERT_EMAIL');
+  if (!apiKey || !to) throw new Error('ADMIN_EMAIL_NOT_CONFIGURED');
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'gling safety <onboarding@resend.dev>',
+      to: [to],
+      subject: `[gling] ${riskLevel} 안전 알림`,
+      text: `안전 검토 큐 ${queueId} (${targetType})에서 ${riskLevel} 위험이 감지됐습니다. 관리자 화면에서 즉시 확인하세요.`,
+    }),
+  });
+  if (!response.ok) throw new Error(`ADMIN_EMAIL_${response.status}`);
 }
 
 async function analyze(openAiKey: string, targetType: string, content: string) {
@@ -88,7 +121,7 @@ async function analyze(openAiKey: string, targetType: string, content: string) {
     method: 'POST',
     headers: { Authorization: `Bearer ${openAiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'gpt-5.4-mini',
+      model: 'gpt-5-mini',
       store: false,
       input: [{
         role: 'user',

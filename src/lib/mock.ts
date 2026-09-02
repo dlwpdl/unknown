@@ -280,4 +280,14 @@ export const MOCK_POSTS: Post[] = [
     commentList: [{ id: 'c1', nickname: '영앤블루어', body: '여기 김치전도 꼭 시키세요. 진심임' }],
     saves: 40,
   },
-];
+].map((post) => ({
+  ...post,
+  author: { ...post.author, nickname: `${post.author.nickname}·예시`, verified: false, trustLevel: undefined },
+  commentList: post.commentList?.map((comment) => ({
+    ...comment,
+    nickname: `${comment.nickname}·예시`,
+    verified: false,
+    trustLevel: undefined,
+  })),
+  room: post.room ? { ...post.room, verifiedOnly: false } : undefined,
+}));

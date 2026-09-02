@@ -19,6 +19,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import {
+  isContentRejected,
   loadConversationMessages,
   sendDirectMessage,
   type ChatMessageRecord,
@@ -90,9 +91,9 @@ export function ChatRoom({
       ]);
       setDraft('');
       play('message');
-    } catch {
+    } catch (error) {
       play('warning');
-      setError(t.chat.sendError);
+      setError(isContentRejected(error) ? t.safety.contentBlockedBody : t.chat.sendError);
     } finally {
       setSending(false);
     }

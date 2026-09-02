@@ -1,6 +1,6 @@
 begin;
 
-select plan(19);
+select plan(20);
 
 select col_type_is('public', 'profiles', 'account_status', 'text', 'profiles expose an account lifecycle state');
 select has_function('public', 'delete_my_account', array['text'], 'account deletion is server controlled');
@@ -182,6 +182,14 @@ select results_eq(
   $$select account_status || ':' || nickname::text || ':' || city_id from public.profiles where id = '71111111-1111-1111-1111-111111111111'$$,
   array['active:돌아온사용자:toronto'],
   'reactivation restores an active public profile'
+);
+
+reset role;
+delete from auth.users where id = '71111111-1111-1111-1111-111111111111';
+select results_eq(
+  $$select count(*)::integer from public.profiles where id = '71111111-1111-1111-1111-111111111111'$$,
+  array[0],
+  'deleting the auth account removes the remaining profile record'
 );
 
 select * from finish();

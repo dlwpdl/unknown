@@ -13,10 +13,11 @@ export default function WebLayout() {
   const colorScheme = useColorScheme();
   const segments = useSegments();
   const pathname = usePathname();
+  const publicPathname = pathname.replace(/\/$/, '');
   const publicSite = pathname === '/'
-    || pathname === '/terms'
-    || pathname === '/privacy'
-    || pathname === '/account-deletion';
+    || publicPathname.endsWith('/terms')
+    || publicPathname.endsWith('/privacy')
+    || publicPathname.endsWith('/account-deletion');
   const standalone = segments[0] === 'admin'
     || segments[0] === 'auth'
     || segments[0] === 'post'

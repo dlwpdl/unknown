@@ -25,7 +25,7 @@ export default function ChatScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { conversationId } = useLocalSearchParams<{ conversationId?: string }>();
-  const { isAuthed, signInGoogle, signInKakao, signInDev, isAuthLoading, authError, isVerified, promptVerify, me } = useAuth();
+  const { isAuthed, signInApple, signInKakao, signInDev, isAuthLoading, authError, me } = useAuth();
   const [conversations, setConversations] = useState<ConversationPreview[]>([]);
   const [openConversation, setOpenConversation] = useState<ConversationPreview | null>(null);
   const [loading, setLoading] = useState(false);
@@ -87,7 +87,7 @@ export default function ChatScreen() {
     return (
       <LoginPanel
         reason={t.auth.reasonChat}
-        onGoogle={signInGoogle}
+        onApple={signInApple}
         onKakao={signInKakao}
         onDevLogin={signInDev}
         loading={isAuthLoading}
@@ -109,15 +109,6 @@ export default function ChatScreen() {
         <View style={[styles.safety, { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}>
           <ThemedText type="smallBold" style={{ fontSize: 13, color: theme.accent }}>{t.safety.meetTitle}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12.5 }}>{t.safety.meetBody}</ThemedText>
-          {!isVerified && (
-            <ThemedText
-              type="smallBold"
-              style={{ fontSize: 12.5, color: theme.navy }}
-              onPress={() => promptVerify()}
-              accessibilityRole="button">
-              {t.auth.verifyTitle} →
-            </ThemedText>
-          )}
         </View>
 
         <View style={[styles.slotChip, { backgroundColor: theme.backgroundElement }]}>

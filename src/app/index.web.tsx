@@ -2,7 +2,7 @@ import './index.web.css';
 
 import { Asset } from 'expo-asset';
 import Head from 'expo-router/head';
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 
 import {
   WEB_CATEGORY_LABELS,
@@ -16,23 +16,11 @@ import {
   type WebHomeCitySummary,
 } from '@/lib/web-home';
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 const appIconSrc = Asset.fromModule(require('@/assets/brand/gling-app-icon.png')).uri;
 const wordmarkSrc = Asset.fromModule(require('@/assets/brand/gling-wordmark.png')).uri;
 const feedScreenshotSrc = Asset.fromModule(require('@/assets/marketing/landing/gling-feed-highres.png')).uri;
 const flowScreenshotSrc = Asset.fromModule(require('@/assets/marketing/landing/community-flow-highres.png')).uri;
 const trustScreenshotSrc = Asset.fromModule(require('@/assets/marketing/landing/trust-badges-highres.png')).uri;
-
-function storeInterest(cityId: string, email: string, source: 'hero' | 'download') {
-  try {
-    const next = JSON.parse(window.localStorage.getItem('gl-web-interest') || '[]');
-    next.push({ cityId, email, source, at: new Date().toISOString() });
-    window.localStorage.setItem('gl-web-interest', JSON.stringify(next));
-  } catch {
-    // ponytail: demo capture only, local storage failure should not block the CTA.
-  }
-}
 
 function StoreLink({ label }: { label: string }) {
   return (
@@ -47,15 +35,14 @@ function WaitlistForm({
   city,
   inputId,
   source,
-  status,
-  onSubmit,
 }: {
   city: WebHomeCitySummary;
   inputId: string;
   source: 'hero' | 'download';
-  status: string;
-  onSubmit: (event: FormEvent<HTMLFormElement>, source: 'hero' | 'download') => void;
 }) {
+  const subject = encodeURIComponent(`gling ${city.name} 오픈 알림 신청`);
+  const body = encodeURIComponent(`${city.name} 출시 소식을 받고 싶습니다.\n\n회신받을 이메일: `);
+
   return (
     <section className="site-waitlist-card" aria-labelledby={`${inputId}-title`}>
       <div className="site-waitlist-head">
@@ -68,30 +55,18 @@ function WaitlistForm({
 
       <p className="site-waitlist-copy">{city.headline}</p>
 
-      <form onSubmit={(event) => onSubmit(event, source)}>
-        <label htmlFor={inputId}>이메일 주소</label>
-        <div className="site-form-row">
-          <input
-            id={inputId}
-            type="email"
-            name="email"
-            placeholder="you@example.com"
-            required
-            autoComplete="email"
-          />
-          <button type="submit">오픈 알림 신청</button>
-        </div>
-      </form>
+      <a
+        id={inputId}
+        className="site-primary-button"
+        href={`mailto:gling@ej-entertainment.com?subject=${subject}&body=${body}`}>
+        이메일로 오픈 알림 신청
+      </a>
 
       <div className="site-inline-list" aria-label="대기열 안내">
         <span>{city.postCount}개의 이야기 준비</span>
         <span>{city.meetupCount}개의 모임 준비</span>
         <span>문의: gling@ej-entertainment.com</span>
       </div>
-
-      <p className={`site-status${status ? '' : ' is-hidden'}`} role="status">
-        {status}
-      </p>
     </section>
   );
 }
@@ -99,27 +74,7 @@ function WaitlistForm({
 export default function WebHome() {
   const cities = listWebHomeCities();
   const [cityId, setCityId] = useState(cities[0].id);
-  const [heroStatus, setHeroStatus] = useState('');
-  const [downloadStatus, setDownloadStatus] = useState('');
   const activeCity = getWebHomeCitySummary(cityId);
-
-  const submitWaitlist = (event: FormEvent<HTMLFormElement>, source: 'hero' | 'download') => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    if (!form.reportValidity()) return;
-
-    const email = String(new FormData(form).get('email') || '').trim();
-    if (!EMAIL_PATTERN.test(email)) return;
-
-    storeInterest(activeCity.id, email, source);
-    const message = `${activeCity.name} 오픈 알림 대기열에 등록했습니다. 스토어 링크가 준비되면 ${email}로 먼저 안내합니다.`;
-    if (source === 'hero') {
-      setHeroStatus(message);
-    } else {
-      setDownloadStatus(message);
-    }
-    form.reset();
-  };
 
   return (
     <div className="site-page">
@@ -215,8 +170,6 @@ export default function WebHome() {
                 city={activeCity}
                 inputId="hero-email"
                 source="hero"
-                status={heroStatus}
-                onSubmit={submitWaitlist}
               />
             </div>
           </section>
@@ -361,8 +314,6 @@ export default function WebHome() {
               city={activeCity}
               inputId="download-email"
               source="download"
-              status={downloadStatus}
-              onSubmit={submitWaitlist}
             />
           </section>
         </main>

@@ -1,8 +1,9 @@
 import type { Session } from '@supabase/supabase-js';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { LoginPanel } from '@/components/login-panel';
 import { ProfileOnboarding, type CompletedProfile } from '@/components/profile-onboarding';
@@ -13,15 +14,12 @@ import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { isAdminRole } from '@/lib/admin';
 import { canUseDevPasswordLogin, getOAuthCode } from '@/lib/kakao-auth';
+import { CONTACT_EMAIL } from '@/lib/legal-documents';
 import { supabase } from '@/lib/supabase';
 import type { TrustLevel } from '@/lib/trust';
 
-// 2단 인증 게이트 (원페이저 정체성 모델)
-//  L0 = 소셜 로그인 → 표현: 글쓰기·댓글·상세·내 프로필
-//  L2 = 전화 인증 → 만남: 대화(DM)·모임 참여·거래 카테고리
-// 전화 인증만 mock이며 OAuth 세션은 Supabase가 관리한다.
-type Level = 0 | 1 | 2; // 0 게스트 · 1 소셜 · 2 전화인증
-type OAuthProvider = 'google' | 'kakao';
+type Level = 0 | 1;
+type OAuthProvider = 'kakao';
 
 type Me = { id: string; nickname: string; photoUri: string | null };
 
@@ -29,25 +27,25 @@ type ProfileRecord = Pick<CompletedProfile, 'id' | 'nickname' | 'city_id' | 'ava
   verification_level?: TrustLevel;
   account_status?: 'active' | 'suspended' | 'deleted' | 'reactivation_pending';
   account_status_note?: string | null;
+  ai_safety_consent_at?: string | null;
 };
 
 type AuthValue = {
   level: Level;
   me: Me; // 내 부캐 (mock — 온보딩 구현 시 설정값으로 교체)
   isAuthed: boolean; // L0+ (로그인됨)
-  isVerified: boolean; // L2 (전화 인증됨)
+  isVerified: boolean;
   trustLevel: TrustLevel;
   isAdmin: boolean;
   isAuthLoading: boolean;
   authError: string | null;
-  signInGoogle: () => Promise<void>;
+  signInApple: () => Promise<void>;
+  prepareAppleAccountDeletion: () => Promise<string | null>;
   signInKakao: () => Promise<void>;
   signInDev: (email: string, password: string) => Promise<void>;
-  verifyPhone: () => void;
   signOut: () => Promise<void>;
   setProfilePhoto: (uri: string | null, base64?: string) => Promise<void>;
   promptLogin: (reason?: string) => void; // L0 게이트
-  promptVerify: (reason?: string) => void; // L2 게이트
 };
 
 WebBrowser.maybeCompleteAuthSession();
@@ -63,10 +61,8 @@ export function useAuth(): AuthValue {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
-  const [phoneVerified, setPhoneVerified] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [mode, setMode] = useState<'login' | 'verify'>('login');
   const [reason, setReason] = useState<string | undefined>();
   const [visible, setVisible] = useState(false);
   const [profilePhotoUri, setProfilePhotoUri] = useState<string | null>(null);
@@ -77,13 +73,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true;
     if (!session) return;
     void supabase.from('profiles')
-      .select('id,nickname,city_id,avatar_path,verification_level,account_status,account_status_note')
+      .select('id,nickname,city_id,avatar_path,verification_level,account_status,account_status_note,ai_safety_consent_at')
       .eq('id', session.user.id)
       .maybeSingle()
       .then(async ({ data, error }) => {
         if (!active || error) return;
         setProfile(data);
-        setMissingProfileUserId(data == null || data.account_status === 'reactivation_pending' ? session.user.id : null);
+        setMissingProfileUserId(
+          data == null
+            || data.account_status === 'reactivation_pending'
+            || (data.account_status === 'active' && !data.ai_safety_consent_at)
+            ? session.user.id
+            : null,
+        );
         if (data?.avatar_path) {
           const signed = await supabase.storage.from('avatars').createSignedUrl(data.avatar_path, 3600);
           if (active && signed.data?.signedUrl) setProfilePhotoUri(signed.data.signedUrl);
@@ -108,6 +110,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       active = false;
       data.subscription.unsubscribe();
     };
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    const subscription = AppleAuthentication.addRevokeListener(() => void supabase.auth.signOut());
+    return () => subscription.remove();
   }, []);
 
   const signInOAuth = useCallback(async (provider: OAuthProvider) => {
@@ -137,8 +145,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSigningIn(false);
     }
   }, []);
-  const signInGoogle = useCallback(() => signInOAuth('google'), [signInOAuth]);
   const signInKakao = useCallback(() => signInOAuth('kakao'), [signInOAuth]);
+  const signInApple = useCallback(async () => {
+    setAuthError(null);
+    setSigningIn(true);
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credential.identityToken || !credential.authorizationCode) throw new Error('APPLE_CREDENTIAL_MISSING');
+      const { error } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+        access_token: credential.authorizationCode,
+      });
+      if (error) throw error;
+      const fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
+        .filter(Boolean)
+        .join(' ');
+      const metadata = { apple_user_id: credential.user, ...(fullName ? { full_name: fullName } : {}) };
+      const updated = await supabase.auth.updateUser({ data: metadata });
+      if (updated.error) throw updated.error;
+      setVisible(false);
+    } catch (error) {
+      if ((error as { code?: string }).code !== 'ERR_REQUEST_CANCELED') setAuthError(t.auth.loginError);
+    } finally {
+      setSigningIn(false);
+    }
+  }, []);
+  const prepareAppleAccountDeletion = useCallback(async () => {
+    const usesApple = session?.user.identities?.some((identity) => identity.provider === 'apple')
+      || session?.user.app_metadata?.provider === 'apple';
+    if (!usesApple) return null;
+    const appleUserId = session?.user.user_metadata?.apple_user_id;
+    if (typeof appleUserId !== 'string' || !appleUserId) throw new Error('APPLE_USER_ID_MISSING');
+    const credential = await AppleAuthentication.refreshAsync({ user: appleUserId });
+    if (!credential.authorizationCode) throw new Error('APPLE_AUTHORIZATION_CODE_MISSING');
+    return credential.authorizationCode;
+  }, [session]);
   const signInDev = useCallback(async (email: string, password: string) => {
     if (!canUseDevPasswordLogin(__DEV__)) return;
     setSigningIn(true);
@@ -153,10 +200,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSigningIn(false);
     }
   }, []);
-  const verifyPhone = useCallback(() => {
-    setPhoneVerified(true);
-    setVisible(false);
-  }, []);
   const signOut = useCallback(async () => {
     setAuthError(null);
     const { error } = await supabase.auth.signOut();
@@ -164,7 +207,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthError(t.auth.signOutError);
       return;
     }
-    setPhoneVerified(false);
     setProfilePhotoUri(null);
     setProfile(null);
     setMissingProfileUserId(null);
@@ -190,18 +232,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [profile, session]);
   const promptLogin = useCallback((r?: string) => {
     setAuthError(null);
-    setMode('login');
-    setReason(r);
-    setVisible(true);
-  }, []);
-  const promptVerify = useCallback((r?: string) => {
-    setAuthError(null);
-    setMode('verify');
     setReason(r);
     setVisible(true);
   }, []);
 
-  const level: Level = session ? (phoneVerified ? 2 : 1) : 0;
+  const level: Level = session ? 1 : 0;
   const metadata = session?.user.user_metadata;
   const isAdmin = isAdminRole(session?.user.app_metadata);
   const socialNickname = [metadata?.user_name, metadata?.nickname, metadata?.name, metadata?.full_name].find(
@@ -221,7 +256,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const lockedStatus = activeProfile?.account_status === 'deleted' || activeProfile?.account_status === 'suspended'
     ? activeProfile.account_status
     : null;
-  const trustLevel: TrustLevel = activeProfile?.verification_level ?? (level >= 2 ? 2 : 1);
+  const trustLevel: TrustLevel = activeProfile?.verification_level ?? 1;
 
   const value = useMemo<AuthValue>(
     () => ({
@@ -233,14 +268,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin,
       isAuthLoading: !sessionReady || signingIn,
       authError,
-      signInGoogle,
+      signInApple,
+      prepareAppleAccountDeletion,
       signInKakao,
       signInDev,
-      verifyPhone,
       signOut,
       setProfilePhoto,
       promptLogin,
-      promptVerify,
     }),
     [
       level,
@@ -254,14 +288,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signingIn,
       authError,
       isAdmin,
-      signInGoogle,
+      signInApple,
+      prepareAppleAccountDeletion,
       signInKakao,
       signInDev,
-      verifyPhone,
       signOut,
       setProfilePhoto,
       promptLogin,
-      promptVerify,
     ],
   );
 
@@ -270,12 +303,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
       <Modal visible={visible} animationType="slide" onRequestClose={() => setVisible(false)}>
         <LoginPanel
-          mode={mode}
           reason={reason}
-          onGoogle={signInGoogle}
+          onApple={signInApple}
           onKakao={signInKakao}
           onDevLogin={signInDev}
-          onVerify={verifyPhone}
           loading={signingIn}
           error={authError}
           onClose={() => setVisible(false)}
@@ -292,11 +323,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       </Modal>
       {session && (
         <ProfileOnboarding
+          key={`${session.user.id}:${activeProfile?.account_status ?? 'new'}:${activeProfile?.ai_safety_consent_at ?? 'missing'}`}
           visible={missingProfileUserId === session.user.id}
           userId={session.user.id}
           socialNickname={socialNickname}
           socialPhoto={socialPhoto}
-          reactivating={activeProfile?.account_status === 'reactivation_pending'}
+          existingProfile={activeProfile?.account_status === 'active' ? {
+            nickname: activeProfile.nickname,
+            city_id: activeProfile.city_id,
+            avatar_path: activeProfile.avatar_path,
+            photoUri: profilePhotoUri,
+          } : null}
           onComplete={completeProfile}
         />
       )}
@@ -314,7 +351,7 @@ function AccountLockedPanel({
   onSignOut: () => Promise<void>;
 }) {
   const theme = useTheme();
-  const supportEmail = process.env.EXPO_PUBLIC_SUPPORT_EMAIL;
+  const supportEmail = process.env.EXPO_PUBLIC_SUPPORT_EMAIL ?? CONTACT_EMAIL;
   return (
     <ThemedView style={styles.lockedScreen}>
       <View style={[styles.lockedCard, { backgroundColor: theme.card, borderColor: theme.line }]}>

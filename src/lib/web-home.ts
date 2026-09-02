@@ -83,9 +83,9 @@ export const WEB_STORY_BLOCKS = [
   {
     id: 'how',
     kicker: 'How Community Moves',
-    title: '글에서 댓글, DM,\n그리고 실제 만남까지.',
+    title: '글에서 댓글, DM,\n그리고 실제 모임까지.',
     body: '다른 의견은 공개 대화로 이어지고, 더 깊은 이야기는 DM과 지역 모임으로 자연스럽게 연결됩니다.',
-    points: ['댓글에서 바로 반응', 'DM으로 자연스럽게 이동', '인증 기준에 맞는 모임 참여'],
+    points: ['댓글에서 바로 반응', 'DM으로 자연스럽게 이동', '관심사가 맞는 모임 참여'],
     image: 'flow' as const,
   },
 ] as const;
@@ -119,7 +119,7 @@ export const WEB_POLICY_ITEMS = [
   {
     id: 'contact',
     title: '문의처',
-    body: '운영 및 정책 문의는 임시로 gling@ej-entertainment.com 으로 받고 있으며 출시 전 운영 채널로 교체할 예정입니다.',
+    body: '운영, 정책, 개인정보 및 계정 삭제 문의는 gling@ej-entertainment.com 으로 받습니다.',
   },
 ] as const;
 

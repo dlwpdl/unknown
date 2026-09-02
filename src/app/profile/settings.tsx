@@ -10,16 +10,17 @@ import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { deleteMyAccount } from '@/lib/community-data';
+import { CONTACT_EMAIL } from '@/lib/legal-documents';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 
 export default function SettingsScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { isAuthed, isAuthLoading, me, setProfilePhoto, signOut } = useAuth();
+  const { isAuthed, isAuthLoading, me, prepareAppleAccountDeletion, setProfilePhoto, signOut } = useAuth();
   const { hapticsEnabled, play, setHapticsEnabled, setSoundEnabled, soundEnabled } = useInteractionFeedback();
   const [deleting, setDeleting] = useState(false);
-  const supportEmail = process.env.EXPO_PUBLIC_SUPPORT_EMAIL;
+  const supportEmail = process.env.EXPO_PUBLIC_SUPPORT_EMAIL ?? CONTACT_EMAIL;
   const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://dlwpdl.github.io/gling').replace(/\/$/, '');
 
   if (isAuthLoading) return <ActivityIndicator color={theme.accent} style={{ flex: 1 }} />;
@@ -52,7 +53,8 @@ export default function SettingsScreen() {
   const deleteAccount = async () => {
     setDeleting(true);
     try {
-      await deleteMyAccount(supabase, me.id);
+      const appleAuthorizationCode = await prepareAppleAccountDeletion();
+      await deleteMyAccount(supabase, me.id, appleAuthorizationCode);
       await signOut();
       router.replace('/');
     } catch {
@@ -86,11 +88,6 @@ export default function SettingsScreen() {
             <View style={styles.row}>
               <ThemedText type="small">{t.profile.nickname}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">{me.nickname}</ThemedText>
-            </View>
-            <View style={[styles.divider, { backgroundColor: theme.line }]} />
-            <View style={styles.row}>
-              <ThemedText type="small">{t.profile.area}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">{t.profile.location('', null)}</ThemedText>
             </View>
           </View>
 
