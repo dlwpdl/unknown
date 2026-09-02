@@ -27,14 +27,14 @@ set local role anon;
 
 select results_eq(
   $$select count(*)::integer from public.get_public_feed('vancouver', 100)$$,
-  array[10],
+  array[20],
   'the Vancouver seed feed is visible'
 );
 select results_eq(
   $$select count(*)::integer from public.get_public_comments(
       array(select id from public.get_public_feed(null, 100))
     )$$,
-  array[22],
+  array[62],
   'seed comments are visible through the public function'
 );
 

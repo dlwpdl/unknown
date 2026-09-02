@@ -27,7 +27,7 @@ select results_eq(
   'new content is queued by trigger'
 );
 select results_eq(
-  $$select count(*)::integer from public.profiles where id between '10000000-0000-0000-0000-000000000001'::uuid and '10000000-0000-0000-0000-000000000017'::uuid and verification_level = 3$$,
+  $$select count(*)::integer from public.profiles where id between '10000000-0000-0000-0000-000000000001'::uuid and '10000000-0000-0000-0000-000000000037'::uuid and verification_level = 3$$,
   array[0],
   'fictional seed hosts do not claim L3 identity verification'
 );

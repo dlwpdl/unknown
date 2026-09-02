@@ -19,27 +19,27 @@ select results_eq(
 );
 select results_eq(
   $$select count(*)::integer from public.profiles$$,
-  array[17],
-  'seventeen mock profiles are seeded'
+  array[37],
+  'thirty-seven mock profiles are seeded'
 );
 select results_eq(
   $$select count(*)::integer from public.posts$$,
-  array[15],
-  'fifteen mock posts are seeded'
+  array[35],
+  'thirty-five mock posts are seeded'
 );
 select results_eq(
   $$select count(*)::integer from public.comments$$,
-  array[22],
-  'twenty-two mock comments are seeded'
+  array[62],
+  'sixty-two mock comments are seeded'
 );
 select results_eq(
   $$select count(*)::integer from public.posts where room_preview is not null$$,
-  array[4],
-  'only four meetup room previews are preserved'
+  array[6],
+  'six meetup room previews are preserved'
 );
 select results_eq(
   $$select coalesce(sum(comment_count), 0)::integer from public.posts$$,
-  array[22],
+  array[62],
   'post comment counters match seeded comments'
 );
 select results_eq(
@@ -54,7 +54,7 @@ select results_eq(
   $$select count(*)::integer
     from public.profiles
     where id between '10000000-0000-0000-0000-000000000001'::uuid
-      and '10000000-0000-0000-0000-000000000017'::uuid
+      and '10000000-0000-0000-0000-000000000037'::uuid
       and verification_level = 3$$,
   array[0],
   'seed profiles never claim identity and face verification'

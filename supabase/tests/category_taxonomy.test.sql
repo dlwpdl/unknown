@@ -34,7 +34,7 @@ select results_eq(
 
 select results_eq(
   $$select count(*)::integer from public.posts$$,
-  array[15],
+  array[35],
   'all seeded posts are preserved'
 );
 
