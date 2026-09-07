@@ -42,8 +42,8 @@ export default function AppTabs() {
       <NativeTabs.Trigger name="compose">
         <NativeTabs.Trigger.Label>{t.feed.write}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          src={require('@/assets/brand/gling-mark-light.png')}
-          renderingMode="original"
+          sf="square.and.pencil"
+          md="edit_square"
         />
         <NativeTabs.Trigger.Badge>{t.feed.remaining(quota.used, quota.max)}</NativeTabs.Trigger.Badge>
       </NativeTabs.Trigger>

@@ -1,5 +1,19 @@
 # 글링 Supabase 백엔드 작업
 
+## iOS release preparation — 2026-09-06
+
+- [x] Dependency and backend checks
+  - Acceptance: SDK compatibility, unit tests, typecheck, lint and existing DB policy tests pass; production provider status is recorded.
+  - Verify: `npx expo install --check`, `node --experimental-strip-types --test scripts/*.test.mjs`, `npm run typecheck`, `npm run lint`, `npx supabase test db`.
+- [x] Native build and screenshots (depends on dependency checks)
+  - Acceptance: an iOS Release build runs without Metro; real simulator screenshots are stored with device details; signing status is recorded separately.
+  - Verify: Xcode build/archive output and simulator launch.
+- [x] Store submission materials (depends on build evidence)
+  - Acceptance: Korean metadata, privacy/age-rating drafts, review steps, rollback and remaining external requirements are documented without treating unverified operations as complete.
+  - Verify: metadata lengths, live policy URLs, artifact paths and `git push origin mobile-app`.
+
+## Existing backend work
+
 - [x] 데이터베이스 기반
   - Acceptance: 일상 글·프로필·댓글·반응·대화·신고 스키마와 Storage 정책이 있다.
   - Verify: `npx supabase db reset`

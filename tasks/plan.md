@@ -1,5 +1,15 @@
 # Implementation Plan: 글링 Supabase 백엔드 v1
 
+## Release preparation — 2026-09-06
+
+Use only `dlwpdl/gling` (`mobile-app`). Follow ROTTERY's existing release deliverables: store metadata, native screenshots, a verified iOS build, and an evidence-based submission checklist. Reuse Gling's Expo configuration, public policy pages and Supabase backend.
+
+1. Check installed SDK compatibility, existing unit/DB tests and production authentication settings. Fix only reproduced release blockers.
+2. Verify an iOS Release build and capture actual simulator screens. Keep build products outside version control.
+3. Prepare Korean store metadata, privacy/age-rating drafts, review instructions and exact remaining account/device checks. Document rollback and push verified changes to the existing repository.
+
+Acceptance: commands and artifacts are reproducible; no claim of working production Apple login, successful signing, TestFlight upload or store submission without direct verification. Preserve ADR-0001's full-content safety monitoring and explicit AI consent.
+
 ## Overview
 
 기존 만남 중심 SQL 초안을 일상 공유 중심 스키마로 줄이고, RLS와 정책 테스트를 먼저 완성한 뒤 Expo 클라이언트를 연결한다.
