@@ -1,5 +1,6 @@
 import { DarkTheme, DefaultTheme, Slot, ThemeProvider, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
@@ -15,6 +16,7 @@ export default function TabLayout() {
   const standalone = segments[0] === 'post' || segments[0] === 'auth' || segments[0] === 'notifications';
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <StatusBar style="auto" />
       <AuthProvider>
         <InteractionFeedbackProvider>
           <AnimatedSplashOverlay />

@@ -12,6 +12,13 @@
   - Acceptance: Korean metadata, privacy/age-rating drafts, review steps, rollback and remaining external requirements are documented without treating unverified operations as complete.
   - Verify: metadata lengths, live policy URLs, artifact paths and `git push origin mobile-app`.
 
+## Android registration — 2026-09-06
+
+- [x] Verify the existing Play Console account and create/reuse Gling's app record.
+- [x] Generate Android, verify a signed API 36 AAB and document the protected upload key location.
+- [x] Save Korean listing material and an uploaded build, record remaining publication requirements, then push to `origin/mobile-app`.
+  - Evidence: `tasks/google-play-release-2026-09-06.md`; this registration commit is delivered through `origin/mobile-app`.
+
 ## Existing backend work
 
 - [x] 데이터베이스 기반

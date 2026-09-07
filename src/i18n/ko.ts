@@ -162,7 +162,7 @@ export const t = {
     devLoginCta: '실제 개발 세션으로 시작',
     devLoginError: '개발 계정 정보를 확인해주세요.',
     close: '둘러보기',
-    loginNote: 'Apple 또는 카카오 계정으로 간편하게 시작해요.',
+    loginNote: '소셜 계정으로 간편하게 시작해요.',
     loginError: '로그인에 실패했어요. 잠시 후 다시 시도해주세요.',
     signOutError: '로그아웃하지 못했어요. 잠시 후 다시 시도해주세요.',
     deletedTitle: '탈퇴한 계정이에요',

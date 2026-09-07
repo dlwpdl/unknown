@@ -10,6 +10,10 @@ Use only `dlwpdl/gling` (`mobile-app`). Follow ROTTERY's existing release delive
 
 Acceptance: commands and artifacts are reproducible; no claim of working production Apple login, successful signing, TestFlight upload or store submission without direct verification. Preserve ADR-0001's full-content safety monitoring and explicit AI consent.
 
+## Android registration — 2026-09-06
+
+Reuse the existing Eunsense Studio Play Console account and `dlwpdl/gling`. Check for an existing app before creating its listing. Set Android package `com.dlwpdl.gling`, build a signed API 36 Android App Bundle with local native tools, and upload a draft/internal-test release. Keep upload keys outside Git. Reuse the Korean description and policy URLs; verify Android-specific permissions and login behavior, and record actual Console state without claiming public release.
+
 ## Overview
 
 기존 만남 중심 SQL 초안을 일상 공유 중심 스키마로 줄이고, RLS와 정책 테스트를 먼저 완성한 뒤 Expo 클라이언트를 연결한다.

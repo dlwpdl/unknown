@@ -83,6 +83,9 @@
       }
     },
     "android": {
+      "package": "com.dlwpdl.gling",
+      "versionCode": 1,
+      "blockedPermissions": ["android.permission.SYSTEM_ALERT_WINDOW"],
       "adaptiveIcon": {
         "backgroundColor": "#BE3B2A",
         "foregroundImage": "./assets/brand/gling-mark-light.png",
