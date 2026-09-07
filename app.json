@@ -13,6 +13,9 @@
       "appleTeamId": "P3X3452TDZ",
       "buildNumber": "1",
       "usesAppleSignIn": true,
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "privacyManifests": {
         "NSPrivacyTracking": false,
         "NSPrivacyCollectedDataTypes": [

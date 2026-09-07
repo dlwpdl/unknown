@@ -10,13 +10,14 @@
 - Bundle ID `com.dlwpdl.gling`, Apple Team `P3X3452TDZ`, 버전 `1.0.0`, 빌드 `1`, iPhone 대상.
 - 한국어 이름·부제·카테고리·소개·프로모션·키워드·지원/마케팅/개인정보 URL을 초안에 저장했습니다. 출시 방식은 수동입니다.
 - 고객지원은 기존 앱·정책의 `gling@ej-entertainment.com`을 유지합니다.
-- 6.9인치 스크린샷 3장도 저장했고 6.5인치는 동일 자료를 사용합니다. TestFlight에서 `1.0.0 (1)`의 업로드 처리 중 상태를 확인했습니다. 테스터 초대와 공개 심사 제출은 하지 않았습니다.
+- 6.9인치 스크린샷 3장도 저장했고 6.5인치는 동일 자료를 사용합니다. TestFlight의 `1.0.0 (1)` 처리가 완료되어 ‘제출 준비 완료’ 상태를 확인했습니다. 테스터 초대와 공개 심사 제출은 하지 않았습니다.
 - [한국어 메타데이터와 심사 메모 초안](app-store-metadata-ko-KR.md), [실제 화면 자료](../release/app-store/README.md).
 
 ## 변경 사항
 
 - Expo SDK 57 호환 검사에 맞춰 기존 Expo, Router, Image Picker, Expo UI의 패치 버전을 갱신했습니다. 새 기능용 의존성은 추가하지 않았습니다.
 - 글쓰기 탭에 큰 원본 브랜드 이미지가 그대로 표시되어 본문을 덮는 iOS 오류를 고쳤습니다. 다른 탭과 같은 SF Symbol / Material 아이콘 경로를 재사용했습니다.
+- 첫 업로드의 수출 규정 질문에 현재 앱의 OS 제공 통신·인증 범위에 맞게 답변했습니다. 다음 빌드부터 같은 정보가 포함되도록 `ios.config.usesNonExemptEncryption=false`를 추가하고 Expo introspect 결과의 `ITSAppUsesNonExemptEncryption=false`를 검증했습니다. 업로드한 빌드 1은 App Store Connect에서 질문에 답변한 상태이며 이 plist 설정은 다음 빌드에 반영됩니다. [Apple 암호화 안내](https://developer.apple.com/documentation/security/complying-with-encryption-export-regulations)를 참조했습니다.
 - 기존 Node 테스트 전체를 실행하는 `npm test` 명령과 실제 프로젝트 README를 정리했습니다.
 - DB migration, 운영 데이터, 기존 안전 정책은 변경하지 않았습니다.
 
@@ -76,4 +77,4 @@ App Store Connect 업로드도 성공했습니다(`Uploaded gling`, 2026-09-06 1
 
 ## 배포와 되돌리기
 
-`mobile-app` 푸시는 기존 GitHub Pages 워크플로를 실행합니다. 변경을 되돌려야 하면 이번 출시 준비 커밋을 revert한 후 같은 브랜치에 푸시합니다. DB migration 변경이 없어 DB 롤백은 필요하지 않습니다. TestFlight에 올린 빌드가 있어도 공개 심사는 별도로 제출해야 하며, 운영 필수 검증이 완료되기 전에는 제출하지 않습니다.
+출시 준비 커밋 `cfb76d2`를 기존 `origin/mobile-app`에 푸시했습니다. [해당 커밋의 GitHub Pages 배포](https://github.com/dlwpdl/gling/actions/runs/34073755294)가 성공했습니다. `mobile-app` 푸시는 기존 GitHub Pages 워크플로를 실행합니다. 변경을 되돌려야 하면 이번 출시 준비 커밋을 revert한 후 같은 브랜치에 푸시합니다. DB migration 변경이 없어 DB 롤백은 필요하지 않습니다. TestFlight에 올린 빌드가 있어도 공개 심사는 별도로 제출해야 하며, 운영 필수 검증이 완료되기 전에는 제출하지 않습니다.
