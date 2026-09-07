@@ -1,5 +1,7 @@
 # 글링
 
+브랜드와 앱 표시 이름은 **글링**, 영문 로고는 **gling**을 사용합니다. Google Play 등록명은 `글링`입니다. App Store에서는 단독 이름이 이미 사용 중이므로 `글링 - 캐나다 한인 커뮤니티`를 사용합니다. `app.json`의 한글 홈 화면 이름은 다음 네이티브 빌드부터 적용됩니다.
+
 밴쿠버·토론토 한인 커뮤니티. Expo SDK 57, React Native, Supabase를 사용합니다.
 
 저장소는 **[dlwpdl/gling](https://github.com/dlwpdl/gling)**, 앱 작업 브랜치는 `mobile-app`입니다.

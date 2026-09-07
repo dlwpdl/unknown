@@ -4,7 +4,7 @@
 
 - 기존 Eunsense Studio 계정 `4802509944213002773`에 [글링](https://play.google.com/console/u/0/developers/4802509944213002773/app/4972349784406622597/app-dashboard)을 등록했다. 다른 GitHub 저장소나 개발자 계정은 만들지 않았다.
 - Play 앱 ID: `4972349784406622597`. 패키지: `com.dlwpdl.gling`. 무료 앱, 소셜 카테고리, 기본 언어 `ko-KR`.
-- 이름: `글링 - 캐나다 한인 커뮤니티` (16/30자).
+- 이름: `글링` (2/30자). 브랜드 확정 후 기존 `글링 - 캐나다 한인 커뮤니티`에서 변경했다. `app.json`의 홈 화면 이름도 `글링`으로 설정했으며 이미 업로드된 빌드 1에는 포함되지 않아 다음 네이티브 빌드부터 적용된다.
 - 간단한 설명: `밴쿠버·토론토 한인들의 일상, 정착 정보, 맛집과 모임을 한국어로 나누세요.` (42/80자).
 - 자세한 설명: [App Store 메타데이터](app-store-metadata-ko-KR.md)의 설명 820자를 재사용했다.
 - 지원 이메일 `gling@ej-entertainment.com`, 웹사이트 `https://dlwpdl.github.io/gling`, 개인정보처리방침 `https://dlwpdl.github.io/gling/privacy`를 저장했다.
