@@ -2,6 +2,8 @@
 
 작성: 2026-09-06. [App Store Connect 앱 6809273242](https://appstoreconnect.apple.com/apps/6809273242/distribution/ios/version/inflight)에 이름·부제·카테고리·설명·프로모션·키워드·지원/마케팅/개인정보 URL과 버전 1.0.0을 저장했습니다. 수동 출시로 설정한 제출 준비 초안이며 심사에 제출하지 않았습니다. 개인정보 설문, 연령 등급과 아래 심사 메모는 아직 문서 초안입니다. [출시 상태](release-status-2026-09-06.md)의 필수 항목을 완료한 뒤 제출합니다.
 
+2026-09-07: 같은 문구의 [CLI용 JSON과 검증·인증 상태](../release/app-store/README.md#app-store-connect-cli-500)를 준비했습니다. 문구를 변경할 때는 해당 JSON도 함께 갱신합니다.
+
 ## 앱 정보
 
 - 이름: `글링 - 캐나다 한인 커뮤니티`

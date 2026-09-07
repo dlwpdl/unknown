@@ -18,6 +18,9 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# App Store Connect CLI local credentials and review artifacts
+/.asc/
+
 # Metro
 .metro-health-check*
 
