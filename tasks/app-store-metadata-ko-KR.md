@@ -20,8 +20,8 @@
 - 마케팅 URL: `https://dlwpdl.github.io/gling`
 - 개인정보 선택 / 계정 삭제 URL: `https://dlwpdl.github.io/gling/account-deletion`
 - 현재 앱·정책의 고객지원 이메일: `gling@ej-entertainment.com`
-- 저작권: `2026 Eunsense Studio` — 계정 소유자의 실제 권리자 표기 확인 필요
-- 키워드: `캐나다,한인,밴쿠버,토론토,교민,유학,이민,정착,생활,맛집,동네,모임,커뮤니티`
+- 저작권: `2026 Eunsense Studio` — Rottery의 기존 등록 정보를 확인하고 2026-09-07에 글링에도 저장.
+- 키워드: `교민,유학,이민,정착,생활,맛집,모임` — 이름·부제에 있는 중복 단어는 CLI 검사 결과에 따라 제거.
 
 ## 프로모션 텍스트
 
@@ -68,9 +68,10 @@ Camera and photo-library access are optional and requested when choosing or taki
 
 ## 심사 연락처
 
-- 이름: Eunseok Choi (Rottery에서 사용한 연락처 기준; 최종 확인 필요)
-- 이메일: 현재 앱 고객지원 메일과 일치하도록 설정
-- 전화번호: 계정 소유자 확인 필요
+- 이름: Eunseok Choi (Rottery의 기존 등록 정보 확인)
+- 이메일: `gling@ej-entertainment.com` (글링의 기존 고객지원 주소)
+- 전화번호: Rottery의 등록 번호를 TestFlight 연락처에 저장. 전화번호 자체는 Git에 기록하지 않음.
+- 위 연락처는 TestFlight에 반영했다. App Store 심사 정보는 실제 심사 로그인 수단을 준비한 뒤 생성해야 한다.
 
 ## App Privacy 답변 초안
 
@@ -96,7 +97,7 @@ Camera and photo-library access are optional and requested when choosing or taki
 - 무제한 웹 접근: 내장 웹 브라우저 제공 여부와 외부 링크 동작을 기준으로 최종 답변.
 - 욕설·폭력·성적 내용 등의 빈도: UGC의 실제 운영 범위와 현재 Apple 질문지에 따라 답변. 모두 없음으로 일괄 처리하지 않음.
 - Kids 카테고리 대상 아님. 개인정보처리방침의 만 13세 미만 대상 아님 표기는 Apple 연령 등급과 별도이며 등급을 미리 확정하지 않음.
-- 배포 국가, 가격, 수출 규정, EU 거래자 정보, 실제 저작권자와 심사 연락처는 계정 소유자 확인 후 확정.
+- 가격은 무료(CAD 0, 기준 지역 CAN), 수출 규정은 면제 암호화, 저작권은 위 표기로 저장했다. 배포 국가, 연령·개인정보 설문, 심사 로그인과 필요한 거래자 정보는 남아 있다.
 
 ## 공식 참고
 
