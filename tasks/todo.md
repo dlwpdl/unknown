@@ -81,15 +81,15 @@
   - Verify: 신규 사용자로 프로필 생성 후 자신의 행만 수정 가능한지 확인
   - Files: 프로필 화면과 인증 컨텍스트 관련 파일
 
-- [x] 카카오·Google 소셜 로그인 앱 연결
-  - Acceptance: 앱에는 카카오와 Google 로그인이 보이고 PKCE 콜백을 검증해 같은 Supabase 세션 체계로 만들고 복원·종료한다.
+- [x] 카카오 소셜 로그인과 iOS Apple 로그인 앱 연결
+  - Acceptance: Android에는 카카오, iOS에는 카카오와 Apple 로그인을 표시한다. 카카오 PKCE 콜백을 검증하고 기존 Supabase 세션 체계를 사용한다. Google은 현재 사용자 요구에서 제외한다. 실제 운영 로그인 성공은 아래 별도 검증 항목을 따른다.
   - Verify: `npm run test:auth && npm run typecheck` 및 Expo 웹 렌더링 확인
   - Files: `src/lib/auth.tsx`, `src/lib/kakao-auth.ts`, `src/components/login-panel.tsx`, `src/i18n/ko.ts`, `app.json`
 
-- [ ] 카카오·Google 공급자 활성화와 실제 기기 검증
-  - Acceptance: Supabase Redirect allow list에 `gling://auth/callback`을 등록하고 두 공급자를 활성화한 뒤 개발 빌드에서 로그인·로그아웃이 동작하며 운영 계정에 관리자 역할을 지정한다.
-  - Verify: iOS·Android 개발 빌드와 Supabase Auth 사용자·JWT 역할 확인
-  - Files: Kakao Developers, Google Cloud와 Supabase Auth 운영 설정
+- [ ] 카카오·Apple 운영 설정과 실제 계정 검증
+  - Acceptance: Release 빌드에서 실제 계정 로그인·프로필 생성·세션 복원·로그아웃·탈퇴와 외부 공급자 연결 해제를 확인한다. 카카오는 활성, Apple은 비활성 상태이며 카카오 연결 해제 구현이 남았다.
+  - Verify: [2026-09-07 인증 검증 기록](auth-verification-2026-09-07.md). 자동 검사 200개 통과와 실제 계정 인증은 구분한다.
+  - Files: Kakao Developers, Apple Developer와 Supabase Auth 운영 설정
 
 - [x] 관리자 웹 MVP
   - Acceptance: `/admin`에서 관리자만 전체 신고·사용자·게시글·대화를 조회하고 사용자 활동을 확인하며 신고를 처리한다. 관리자 열람은 감사 로그에 남는다.
