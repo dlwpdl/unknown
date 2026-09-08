@@ -1,7 +1,32 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { mapPublicFeed } from '../src/lib/feed-data.ts';
+import { groupJournalPosts, mapPublicFeed } from '../src/lib/feed-data.ts';
+
+test('저널은 첫 사진과 모임 두 개를 중복 없이 보여주고 다음 페이지를 위로 옮기지 않는다', () => {
+  const posts = Object.freeze([
+    { id: 'question' },
+    { id: 'meetup-photo', room: { id: 'room-1' }, imageUris: ['https://example.com/room.jpg'] },
+    { id: 'photo', imageUris: ['https://example.com/photo.jpg'] },
+    { id: 'meetup-2', room: { id: 'room-2' } },
+    { id: 'meetup-3', room: { id: 'room-3' } },
+    { id: 'photo-2', imageUris: ['https://example.com/next.jpg'] },
+  ]);
+  const { featured, meetups, remaining } = groupJournalPosts(posts);
+  assert.equal(featured.id, 'photo');
+  assert.deepEqual(meetups.map(p => p.id), ['meetup-photo', 'meetup-2']);
+  assert.deepEqual(remaining.map(p => p.id), ['question', 'meetup-3', 'photo-2']);
+  assert.equal(new Set([featured, ...meetups, ...remaining].map(p => p.id)).size, posts.length);
+  assert.equal(posts[0].id, 'question');
+  assert.deepEqual(groupJournalPosts([]), { featured: undefined, meetups: [], remaining: [] });
+  const textOnly = Array.from({ length: 30 }, (_, i) => ({ id: `text-${i}`, imageUris: [] }));
+  assert.deepEqual(groupJournalPosts(textOnly).remaining, textOnly);
+  const appended = [...textOnly, posts[2], posts[1]];
+  const nextPage = groupJournalPosts(appended);
+  assert.equal(nextPage.featured, undefined);
+  assert.deepEqual(nextPage.meetups, []);
+  assert.deepEqual(nextPage.remaining, appended);
+});
 
 test('공개 피드 행과 댓글을 앱 카드 형식으로 연결한다', () => {
   const now = Date.parse('2026-08-26T12:00:00Z');

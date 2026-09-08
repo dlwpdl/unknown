@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image } from 'expo-image';
+import { SymbolView } from 'expo-symbols';
+import { useReducedMotion } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -17,11 +19,12 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { DailyChip, todayLabel } from '@/components/daily-chip';
 import { PostCard } from '@/components/post-card';
 import { PostDetail } from '@/components/post-detail';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
+import { Colors, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
@@ -36,7 +39,7 @@ import {
   recordPostView,
   requestMeetupJoin,
 } from '@/lib/community-data';
-import { loadPublicFeed } from '@/lib/feed-data';
+import { groupJournalPosts, loadPublicFeed } from '@/lib/feed-data';
 import { addHashtag, canonicalizeHashtag, getSuggestedHashtags, parseHashtags } from '@/lib/hashtags';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES, INITIAL_QUOTA, MOCK_POSTS, TAGS } from '@/lib/mock';
@@ -48,6 +51,7 @@ type DraftImage = { uri: string; base64: string; mimeType: string };
 
 export default function FeedScreen() {
   const theme = useTheme();
+  const reducedMotion = useReducedMotion();
   const router = useRouter();
   const { compose } = useLocalSearchParams<{ compose?: string }>();
   const { isAuthed, promptLogin, me } = useAuth();
@@ -120,6 +124,8 @@ export default function FeedScreen() {
         : [],
     [cityOpen, cityPosts, tagFilter],
   );
+
+  const journal = useMemo(() => groupJournalPosts(feedData), [feedData]);
 
   // 검색: 제목·내용·닉네임·동네·해시태그 부분일치 ('#' 입력은 무시)
   // 영문 동네명도 매칭 (Coquitlam → 코퀴틀람) — 표기 파편화 방지
@@ -363,7 +369,7 @@ export default function FeedScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <FlatList
-          data={feedData}
+          data={journal.remaining}
           onEndReached={() => void loadMorePosts()}
           onEndReachedThreshold={0.4}
           refreshing={refreshing}
@@ -373,41 +379,50 @@ export default function FeedScreen() {
           }}
           keyExtractor={(p) => p.id}
           contentContainerStyle={[styles.listContent, { paddingBottom: bottomClear + Spacing.three }]}
-          ItemSeparatorComponent={() => <View style={{ height: Spacing.two + 2 }} />}
+          ItemSeparatorComponent={() => <View style={{ height: Spacing.four }} />}
           ListHeaderComponent={
             <View style={styles.header}>
               <View style={styles.headRow}>
+                <Image
+                  source={require('@/assets/brand/gling-wordmark.png')}
+                  style={styles.wordmark}
+                  contentFit="contain"
+                  tintColor={theme === Colors.dark ? theme.text : undefined}
+                  accessibilityLabel={t.appName}
+                />
                 <Pressable
-                  onPress={() => setCityPicker(true)}
+                  onPress={() => { play('selection'); setCityPicker(true); }}
                   accessibilityRole="button"
-                  accessibilityLabel={t.feed.cityPickerTitle}>
-                  <ThemedText type="subtitle" style={styles.city}>
-                    {city.name} <ThemedText themeColor="textSecondary">▾</ThemedText>
-                  </ThemedText>
+                  accessibilityLabel={`${city.name}, ${t.feed.cityPickerTitle}`}
+                  style={({ pressed }) => [styles.cityButton, pressed && styles.chipPressed]}>
+                  <ThemedText type="smallBold" numberOfLines={1} style={styles.city}>{city.name}</ThemedText>
+                  <SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={14} tintColor={theme.text} />
                 </Pressable>
-                <View style={styles.headActions}>
-                  {isAuthed && (
-                    <Pressable
-                      onPress={() => router.push('/notifications')}
-                      accessibilityRole="button"
-                      accessibilityLabel={t.notifications.open}
-                      style={styles.notificationButton}>
-                      <ThemedText type="smallBold">{t.notifications.title}</ThemedText>
-                      {unreadCount > 0 && (
-                        <View style={[styles.unreadBadge, { backgroundColor: theme.accent }]}>
-                          <ThemedText type="smallBold" style={styles.unreadText}>{Math.min(unreadCount, 99)}</ThemedText>
-                        </View>
-                      )}
-                    </Pressable>
-                  )}
+                {isAuthed && (
                   <Pressable
-                    onPress={() => openSearch()}
+                    onPress={() => router.push('/notifications')}
                     accessibilityRole="button"
-                    accessibilityLabel={t.search.placeholder}
-                    style={styles.searchBtn}>
-                    <ThemedText type="smallBold">{t.search.open}</ThemedText>
+                    accessibilityLabel={unreadCount > 0 ? `${t.notifications.open}, ${unreadCount}` : t.notifications.open}
+                    style={({ pressed }) => [styles.iconButton, pressed && styles.chipPressed]}>
+                    <SymbolView name={{ ios: 'bell', android: 'notifications', web: 'notifications' }} size={22} tintColor={theme.text} />
+                    {unreadCount > 0 && (
+                      <View style={[styles.unreadBadge, { backgroundColor: theme.accent }]}>
+                        <ThemedText type="smallBold" style={[styles.unreadText, { color: theme.accentInk }]}>{Math.min(unreadCount, 99)}</ThemedText>
+                      </View>
+                    )}
                   </Pressable>
-                </View>
+                )}
+                <Pressable
+                  onPress={() => openSearch()}
+                  accessibilityRole="button"
+                  accessibilityLabel={t.search.placeholder}
+                  style={({ pressed }) => [styles.iconButton, pressed && styles.chipPressed]}>
+                  <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={23} tintColor={theme.text} />
+                </Pressable>
+              </View>
+              <View style={styles.journalIntro}>
+                <ThemedText type="smallBold" themeColor="textSecondary" style={styles.journalDate}>{todayLabel()}</ThemedText>
+                <ThemedText accessibilityRole="header" style={styles.journalTitle}>{t.feed.journalTitle}</ThemedText>
               </View>
               {cityOpen && (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
@@ -417,58 +432,70 @@ export default function FeedScreen() {
                     return (
                       <Pressable
                         key={id ?? 'all'}
-                        onPress={() => {
-                          play('selection');
-                          setTagFilter(id);
-                        }}
+                        onPress={() => { play('selection'); setTagFilter(id); }}
                         accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
                         style={({ pressed }) => [
                           styles.filterChip,
-                          { backgroundColor: active ? theme.accent : theme.backgroundElement },
+                          { backgroundColor: active ? theme.accent : 'transparent' },
                           pressed && styles.chipPressed,
                         ]}>
-                        <ThemedText
-                          type="smallBold"
-                          style={{ fontSize: 13, color: active ? theme.accentInk : theme.textSecondary }}>
-                          {label}
-                        </ThemedText>
+                        <ThemedText type="smallBold" style={{ color: active ? theme.accentInk : theme.textSecondary }}>{label}</ThemedText>
                       </Pressable>
                     );
                   })}
                 </ScrollView>
               )}
-              {cityOpen && (
-                <View style={styles.popularRow}>
-                  <ThemedText type="smallBold" themeColor="textSecondary" style={styles.popularLabel}>
-                    {t.feed.popularHashtags}
-                  </ThemedText>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.hashtagBar}>
-                    {popularTags.map((hashtag) => (
-                      <Pressable
-                        key={hashtag}
-                        onPress={() => {
-                          play('selection');
-                          openSearch(hashtag);
-                        }}
-                        accessibilityRole="button"
-                        accessibilityLabel={`#${hashtag}`}
-                        style={({ pressed }) => pressed && styles.chipPressed}>
-                        <ThemedText type="smallBold" style={{ fontSize: 12, color: theme.navy }}>
-                          {'#' + hashtag}
+              {journal.featured && (
+                <View style={styles.featured}>
+                  <PostCard
+                    key={journal.featured.id}
+                    post={journal.featured}
+                    onPress={() => openDetail(journal.featured!)}
+                    onHashtag={openSearch}
+                  />
+                </View>
+              )}
+              {journal.meetups.length > 0 && (
+                <View style={styles.meetupSection}>
+                  <View style={styles.sectionHeading}>
+                    <ThemedText accessibilityRole="header" style={styles.sectionTitle}>{t.feed.meetupHeading}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">{t.feed.meetupSubheading}</ThemedText>
+                  </View>
+                  {journal.meetups.map((post) => (
+                    <View key={post.id} style={[styles.meetupPreview, { backgroundColor: theme.backgroundElement }]}>
+                      <SymbolView name={{ ios: 'person.2', android: 'group', web: 'group' }} size={28} tintColor={theme.accent} />
+                      <Pressable onPress={() => openDetail(post)} accessibilityRole="button" style={({ pressed }) => [styles.meetupCopy, pressed && styles.chipPressed]}>
+                        <ThemedText type="smallBold" numberOfLines={2}>{post.title}</ThemedText>
+                        <ThemedText type="small" themeColor="textSecondary">
+                          {[post.author.neighborhood, t.feed.members(post.room!.memberCount, post.room!.capacity)].filter(Boolean).join(' · ')}
                         </ThemedText>
                       </Pressable>
-                    ))}
-                  </ScrollView>
+                      <Pressable onPress={() => onJoin(post)} accessibilityRole="button" accessibilityLabel={`${post.title}, ${t.feed.joinRoom}`} style={styles.iconButton}>
+                        <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} size={22} tintColor={theme.text} />
+                      </Pressable>
+                    </View>
+                  ))}
                 </View>
+              )}
+              {journal.remaining.length > 0 && (journal.featured || journal.meetups.length > 0) && (
+                <ThemedText accessibilityRole="header" style={[styles.sectionTitle, styles.latestHeading]}>{t.feed.latestHeading}</ThemedText>
               )}
             </View>
           }
           ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText> : null}
           ListEmptyComponent={
-            cityOpen ? null : (
+            cityOpen ? (
+              feedData.length === 0 ? (
+                <View style={styles.soon}>
+                  <ThemedText accessibilityRole="header" style={styles.soonTitle}>{t.feed.emptyTitle}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary" style={styles.soonBody}>{t.feed.emptyBody}</ThemedText>
+                  <Pressable onPress={openWriter} accessibilityRole="button" style={[styles.soonCta, { backgroundColor: theme.accent }]}>
+                    <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{t.feed.write}</ThemedText>
+                  </Pressable>
+                </View>
+              ) : null
+            ) : (
               <View style={styles.soon}>
                 <ThemedText type="subtitle" style={styles.soonTitle}>
                   {t.feed.soonTitle(city.name)}
@@ -500,7 +527,7 @@ export default function FeedScreen() {
       </SafeAreaView>
 
       {/* 검색: 제목·내용·해시태그. 입력 전엔 인기 해시태그 칩 (당근 검색 패턴) */}
-      <Modal visible={searching} animationType="slide" onRequestClose={() => setSearching(false)}>
+      <Modal visible={searching} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setSearching(false)}>
         <ThemedView style={styles.writer}>
           <SafeAreaView style={{ flex: 1 }}>
             <View style={styles.searchHead}>
@@ -577,7 +604,7 @@ export default function FeedScreen() {
       {/* 글 상세 (로그인 게이트 통과 시) — pageSheet: 상단 여백·스와이프 닫기 네이티브 제공 */}
       <Modal
         visible={!!detailPost}
-        animationType="slide"
+        animationType={reducedMotion ? 'none' : 'slide'}
         presentationStyle="pageSheet"
         onRequestClose={() => setDetailPost(null)}>
         {detailPost && (
@@ -625,65 +652,64 @@ export default function FeedScreen() {
         </View>
       </Modal>
 
-      {/* 지역 선택: 큰 도시만. 열린 도시(밴쿠버)만 피드, 나머지는 '곧' 배지 */}
-      <Modal visible={cityPicker} animationType="slide" onRequestClose={() => setCityPicker(false)}>
-        <ThemedView style={styles.writer}>
-          <SafeAreaView style={{ flex: 1 }}>
-            <View style={styles.writerHead}>
-              <View style={{ width: 40 }} />
-              <ThemedText type="smallBold">{t.feed.cityPickerTitle}</ThemedText>
-              <Pressable onPress={() => setCityPicker(false)} accessibilityRole="button">
-                <ThemedText type="small" themeColor="textSecondary">
-                  {t.write.cancel}
-                </ThemedText>
-              </Pressable>
-            </View>
-            <FlatList
-              data={CITIES}
-              keyExtractor={(c) => c.id}
-              contentContainerStyle={{ paddingHorizontal: Spacing.three }}
-              ItemSeparatorComponent={() => <View style={{ height: Spacing.two }} />}
-              renderItem={({ item }) => {
-                const selected = item.id === city.id;
-                const open = item.state === 'open';
-                return (
-                  <Pressable
-                    onPress={() => {
-                      setCity(item);
-                      setCityPicker(false);
-                    }}
-                    accessibilityRole="button"
-                    style={[
-                      styles.cityRow,
-                      { backgroundColor: theme.card, borderColor: selected ? theme.accent : theme.line },
-                    ]}>
-                    <View>
-                      <ThemedText type="smallBold">{item.name}</ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12 }}>
-                        {item.province}
-                      </ThemedText>
-                    </View>
-                    <View
-                      style={[
-                        styles.cityBadge,
-                        { backgroundColor: open ? theme.accent : theme.backgroundElement },
-                      ]}>
-                      <ThemedText
-                        type="smallBold"
-                        style={{ fontSize: 11, color: open ? theme.accentInk : theme.textSecondary }}>
-                        {open ? t.feed.cityOpen : t.feed.citySoon}
-                      </ThemedText>
-                    </View>
-                  </Pressable>
-                );
-              }}
-            />
-          </SafeAreaView>
-        </ThemedView>
+      {/* 도시 선택은 iOS의 네이티브 pageSheet와 Android의 하단 모달을 사용한다. */}
+      <Modal
+        visible={cityPicker}
+        animationType={reducedMotion ? 'none' : 'slide'}
+        presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'overFullScreen'}
+        transparent={Platform.OS !== 'ios'}
+        allowSwipeDismissal
+        onRequestClose={() => setCityPicker(false)}>
+        <View style={[styles.cityBackdrop, Platform.OS === 'ios' && { backgroundColor: theme.background }]}>
+          {Platform.OS !== 'ios' && (
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => setCityPicker(false)} accessibilityRole="button" accessibilityLabel={t.write.cancel} />
+          )}
+          <ThemedView style={[styles.citySheet, Platform.OS === 'ios' && styles.citySheetIOS]}>
+            <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
+              <View style={styles.citySheetHead}>
+                <ThemedText accessibilityRole="header" style={styles.cityPickerTitle}>{t.feed.cityPickerTitle}</ThemedText>
+                <Pressable onPress={() => setCityPicker(false)} accessibilityRole="button" accessibilityLabel={t.write.cancel} style={styles.iconButton}>
+                  <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={21} tintColor={theme.text} />
+                </Pressable>
+              </View>
+              <FlatList
+                data={CITIES}
+                keyExtractor={(c) => c.id}
+                contentContainerStyle={styles.cityList}
+                ListHeaderComponent={<ThemedText type="default" themeColor="textSecondary" style={styles.cityPickerBody}>{t.feed.cityPickerBody}</ThemedText>}
+                ListFooterComponent={<ThemedText type="small" themeColor="textSecondary" style={styles.cityPickerNote}>{t.feed.cityPickerNote}</ThemedText>}
+                renderItem={({ item }) => {
+                  const selected = item.id === city.id;
+                  const open = item.state === 'open';
+                  return (
+                    <Pressable
+                      onPress={() => { play('selection'); setCity(item); setCityPicker(false); }}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      accessibilityLabel={`${item.name}, ${selected ? t.feed.citySelected : open ? t.feed.cityOpen : t.feed.citySoon}`}
+                      style={({ pressed }) => [styles.cityRow, { borderColor: theme.line }, pressed && styles.chipPressed]}>
+                      <View style={styles.cityName}>
+                        <ThemedText style={[styles.cityRowTitle, { color: selected ? theme.accent : theme.text }]}>{item.name}</ThemedText>
+                        <ThemedText type="small" themeColor="textSecondary">{item.province}</ThemedText>
+                      </View>
+                      {selected ? (
+                        <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={23} tintColor={theme.accent} />
+                      ) : (
+                        <View style={[styles.cityBadge, { backgroundColor: theme.backgroundElement }]}>
+                          <ThemedText type="small" themeColor="textSecondary">{open ? t.feed.cityOpen : t.feed.citySoon}</ThemedText>
+                        </View>
+                      )}
+                    </Pressable>
+                  );
+                }}
+              />
+            </SafeAreaView>
+          </ThemedView>
+        </View>
       </Modal>
 
       {/* 글쓰기: 태그 선선택 → 태그별 안내문 (당근 패턴) */}
-      <Modal visible={writing} animationType="slide" onRequestClose={() => setWriting(false)}>
+      <Modal visible={writing} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setWriting(false)}>
         <ThemedView style={styles.writer}>
           <SafeAreaView style={{ flex: 1 }}>
             <KeyboardAvoidingView
@@ -710,6 +736,7 @@ export default function FeedScreen() {
               <ScrollView
                 keyboardShouldPersistTaps="handled"
                 contentContainerStyle={styles.writerScroll}>
+                <View style={styles.writerQuota}><DailyChip quota={quota} /></View>
                 <View style={[styles.aiCard, { backgroundColor: theme.card, borderColor: theme.line }]}>
                   <View style={styles.aiCopy}>
                     <ThemedText type="smallBold">{t.write.aiTitle}</ThemedText>
@@ -874,46 +901,29 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
   },
   listContent: {
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.four,
   },
-  header: {
-    gap: Spacing.three,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.three,
-  },
-  city: {
-    fontSize: 22,
-    lineHeight: 30,
-    fontWeight: 700,
-  },
-  headRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  notificationButton: { minHeight: 36, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center' },
-  unreadBadge: { position: 'absolute', top: -2, right: -4, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
-  unreadText: { color: '#FFFFFF', fontSize: 9, lineHeight: 12, fontVariant: ['tabular-nums'] },
-  searchBtn: {
-    padding: 6,
-  },
-  chipBar: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-  },
-  filterChip: {
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-  },
-  chipPressed: {
-    opacity: 0.72,
-    transform: [{ scale: 0.95 }],
-  },
-  popularRow: {
-    gap: Spacing.two,
-  },
+  header: { paddingTop: Spacing.two, paddingBottom: Spacing.four },
+  headRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  wordmark: { width: 64, height: 36 },
+  cityButton: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, marginLeft: 'auto', minHeight: 44, flexShrink: 1, paddingHorizontal: Spacing.one },
+  city: { fontSize: 16, lineHeight: 24, flexShrink: 1 },
+  iconButton: { width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  unreadBadge: { position: 'absolute', top: 0, right: 0, minWidth: 18, borderRadius: 9, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
+  unreadText: { fontSize: 10, lineHeight: 14, fontVariant: ['tabular-nums'] },
+  journalIntro: { paddingTop: Spacing.four, gap: Spacing.two },
+  journalDate: { fontSize: 12, lineHeight: 18, letterSpacing: 0.8 },
+  journalTitle: { fontSize: 32, lineHeight: 40, fontWeight: 700, letterSpacing: -1 },
+  chipBar: { flexDirection: 'row', gap: Spacing.one, paddingTop: Spacing.three },
+  filterChip: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 999, paddingHorizontal: 14, paddingVertical: Spacing.two },
+  chipPressed: { opacity: 0.65 },
+  featured: { marginTop: Spacing.three },
+  meetupSection: { marginTop: Spacing.four, gap: Spacing.three },
+  meetupPreview: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, padding: Spacing.three, borderRadius: 20 },
+  meetupCopy: { flex: 1, minHeight: 44, justifyContent: 'center', gap: Spacing.one },
+  sectionHeading: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: Spacing.two },
+  sectionTitle: { fontSize: 20, lineHeight: 28, fontWeight: 700, letterSpacing: -0.5 },
+  latestHeading: { marginTop: Spacing.four },
   popularLabel: {
     fontSize: 12,
   },
@@ -975,20 +985,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingVertical: 12,
   },
-  cityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: 14,
-  },
-  cityBadge: {
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
+  cityBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(20,24,30,0.3)' },
+  citySheet: { height: '88%', borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden' },
+  citySheetIOS: { height: '100%' },
+  citySheetHead: { flexDirection: 'row', alignItems: 'center', padding: Spacing.four, gap: Spacing.two },
+  cityPickerTitle: { flex: 1, fontSize: 24, lineHeight: 32, fontWeight: 700, letterSpacing: -0.5 },
+  cityList: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.four },
+  cityPickerBody: { marginBottom: Spacing.three },
+  cityPickerNote: { marginTop: Spacing.four },
+  cityRow: { minHeight: 80, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, paddingVertical: Spacing.three, gap: Spacing.three },
+  cityName: { flex: 1, gap: Spacing.one },
+  cityRowTitle: { fontSize: 17, lineHeight: 24, fontWeight: 600 },
+  cityBadge: { borderRadius: 8, paddingHorizontal: Spacing.two, paddingVertical: Spacing.one },
+  writerQuota: { marginHorizontal: Spacing.three, marginBottom: Spacing.three },
   writer: {
     flex: 1,
   },

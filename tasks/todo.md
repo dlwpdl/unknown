@@ -105,3 +105,13 @@
   - Acceptance: 공유 중복, 입력·호출 제한, 모임 승인, 알림, 관리자 조치, 탈퇴 잠금과 페이지네이션이 서버 규칙으로 연결된다.
   - Verify: `node --experimental-strip-types --test scripts/*.test.mjs && npx supabase db reset && npx supabase test db && npm run typecheck && npm run lint && npx expo export --platform web`
   - Files: `tasks/community-hardening-spec.md`, 신규 migration·pgTAP, 관련 앱 데이터/UI 파일
+# B안 동네 저널 리디자인
+
+- [x] 첫 사진 1개·모임 2개 배치의 중복/페이지 순서 회귀 검사와 구현
+  - Verify: `node --experimental-strip-types --test scripts/feed-data.test.mjs`
+- [x] B 피드·사진/텍스트 카드·도시 시트·작성 횟수 안내 반영
+  - Acceptance: 승인된 시안의 위계와 기존 데이터·권한·9개 카테고리·4개 탭 보존
+  - Verify: `npm test`, `npm run typecheck`, `npm run lint`
+- [x] iOS 시뮬레이터와 Android 번들 검증 후 화면 증거와 변경 기록 저장
+  - Acceptance: 사진 없음/있음·도시·검색·큰 글자·다크 모드 확인, 출시와 구분
+  - Evidence: `journal-redesign-spec.md`의 검증 결과와 `output/design/gling-redesign/implemented/` 화면

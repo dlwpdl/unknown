@@ -11,6 +11,7 @@ export const t = {
 
   tabs: {
     today: '오늘',
+    write: '글쓰기',
     chat: '채팅',
     profile: '나',
   },
@@ -26,13 +27,24 @@ export const t = {
   },
 
   feed: {
+    journalTitle: '우리 동네의\n오늘을 펼치다.',
+    meetupHeading: '함께할 모임',
+    meetupSubheading: '동네에서 만나요',
+    latestHeading: '이웃의 이야기',
+    emptyTitle: '첫 이야기를 기다리고 있어요',
+    emptyBody: '작은 일상이나 궁금한 이야기를 이웃과 나눠보세요.',
+    postImage: '게시글 사진',
+    hashtagFilter: (hashtag: string) => `#${hashtag} 필터`,
     cityVancouver: '밴쿠버',
-    cityPickerTitle: '지역 선택',
-    cityOpen: '지금 열림',
-    citySoon: '곧',
-    soonTitle: (name: string) => `${name}는 곧 열려요`,
-    soonBody: '대기열에 이름을 올려두면, 열리는 날 제일 먼저 알려드릴게요.',
-    soonCta: '대기열 서기',
+    cityPickerTitle: '어느 동네로 갈까요?',
+    cityPickerBody: '가까운 도시의 이야기를 둘러보세요.',
+    cityPickerNote: '기기 위치 권한 없이 직접 선택합니다.',
+    cityOpen: '운영 중',
+    citySoon: '준비 중',
+    citySelected: '선택됨',
+    soonTitle: (name: string) => `${name}, 곧 열려요`,
+    soonBody: '지금 열려 있는 도시의 이야기를 먼저 둘러보세요.',
+    soonCta: '다른 도시 둘러보기',
     // 앱 언어: 단위는 '한 편'(브랜드), 동사는 자연어 '올리다'
     remaining: (used: number, max: number) => {
       const left = max - used;
@@ -64,6 +76,7 @@ export const t = {
 
   write: {
     title: '오늘의 한 편',
+    remaining: (used: number, max: number) => `오늘 ${Math.max(0, max - used)}편 남음`,
     pickTag: '어떤 이야기인가요?',
     titlePlaceholder: '제목',
     hashtagPlaceholder: '해시태그 최대 5개 (예: 워홀 핫딜)',
@@ -92,7 +105,7 @@ export const t = {
     validationTitle: '내용을 조금 더 적어주세요',
     validationBody: '제목과 본문을 모두 입력해야 올릴 수 있어요.',
     successTitle: '글을 올렸어요',
-    successBody: '피드 맨 위에서 바로 확인할 수 있어요.',
+    successBody: '피드에서 올린 글을 확인할 수 있어요.',
     submitErrorTitle: '글을 올리지 못했어요',
     submitErrorBody: '연결과 로그인 상태를 확인하고 다시 시도해주세요.',
     roomNote: '이 카테고리 글에는 대화용 오픈챗이 자동으로 열려요',

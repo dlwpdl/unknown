@@ -1,5 +1,11 @@
 # Implementation Plan: 글링 Supabase 백엔드 v1
 
+## B안 동네 저널 리디자인 — 2026-09-07
+
+승인된 B 시안과 A의 읽기 편한 텍스트 구성을 `journal-redesign-spec.md` 기준으로 실제 앱에 반영한다.
+기존 피드 순서에서 첫 사진과 모임을 중복 없이 묶는 회귀 검사를 먼저 만들고, 오늘 피드/도시 시트와 공유 PostCard를 독립적으로 수정한다.
+작성 횟수는 작성 화면으로 옮기고 네이티브 탭·권한·안전 동작을 보존한다. 전체 검사와 iOS/Android 번들·실제 시뮬레이터 화면을 검증한다.
+
 ## Release preparation — 2026-09-06
 
 Use only `dlwpdl/gling` (`mobile-app`). Follow ROTTERY's existing release deliverables: store metadata, native screenshots, a verified iOS build, and an evidence-based submission checklist. Reuse Gling's Expo configuration, public policy pages and Supabase backend.
