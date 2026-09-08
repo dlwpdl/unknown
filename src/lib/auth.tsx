@@ -13,7 +13,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { isAdminRole } from '@/lib/admin';
-import { canUseDevPasswordLogin, getOAuthCode } from '@/lib/kakao-auth';
+import { canUseDevPasswordLogin, getOAuthCallbackPath, getOAuthCode } from '@/lib/kakao-auth';
 import { CONTACT_EMAIL } from '@/lib/legal-documents';
 import { supabase } from '@/lib/supabase';
 import type { TrustLevel } from '@/lib/trust';
@@ -122,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthError(null);
     setSigningIn(true);
     try {
-      const redirectTo = Linking.createURL('auth/callback');
+      const redirectTo = Linking.createURL(getOAuthCallbackPath(Platform.OS, process.env.EXPO_BASE_URL));
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {

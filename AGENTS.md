@@ -2,6 +2,10 @@
 
 Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing any code.
 
+# Orca browser workspace
+
+Keep Gling account, store, and test browser tabs in the existing `Git → gling` folder workspace. Do not create them under Rottery, TMS, or the separate `mobile` Git workspace. Verify the visible browser tab when the user asks to open a page; CLI tab selection alone may leave the terminal visible.
+
 # Non-negotiable safety operations
 
 Follow `docs/decisions/0001-safety-monitoring-and-admin-access.md` for every moderation, messaging, privacy, admin, and AI-monitoring change. The owner has explicitly fixed this policy: automated server-side safety monitoring and authorized admin review cover all posts, comments, and conversations, not only reported content. Do not narrow that scope unless the owner explicitly supersedes the decision.

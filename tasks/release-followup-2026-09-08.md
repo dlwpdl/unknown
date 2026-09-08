@@ -24,8 +24,10 @@ Android 내부 테스트 `1.0.0 (4)`를 출시했다. iOS 빌드 4 업로드와 
 - Apple 토큰 API에 의도적으로 잘못된 코드를 전달한 확인은 `invalid_grant`였다. 클라이언트 자격 증명이 인식되는 검증이며, 실제 로그인·연결 해제 성공을 의미하지 않는다.
 - 기존 탈퇴 호출은 외부 계정 재인증 전에 클라이언트가 이미지를 삭제했다. 이제 공통 클라이언트 함수는 서버만 호출한다. 서버에서 인증된 사용자와 연결 계정을 확인하고 Apple 토큰 철회/Kakao 연결 해제 성공 후에만 이미지 → 앱 데이터 → 인증 계정을 삭제한다.
 - Apple 재인증 결과의 사용자 식별자가 로그인한 Apple 사용자와 일치해야 한다. Kakao 연결 해제는 요청 본문의 ID 대신 인증 서버가 반환한 본인 식별자를 사용한다. 연결 해제 실패·응답 ID 불일치·통신 오류 시 파일과 계정 데이터 삭제를 중단한다. Kakao의 이미 연결 해제됨(`400/-101`) 응답은 재시도를 허용한다.
-- **`KAKAO_ADMIN_KEY`는 아직 미설정이다.** 카카오 개발자 콘솔은 로그인 화면이며 이용 가능한 저장 로그인 정보가 없었다. 키가 없는 동안 Kakao 탈퇴는 `503 KAKAO_UNLINK_NOT_CONFIGURED`로 중단된다. 이 상태를 정상 탈퇴 완료로 표시하지 않는다.
-- `delete-account` 운영 배포는 **ACTIVE, 함수 버전 4, verify_jwt=true**다. 별도 일회용 Auth 사용자로 실제 ES256 세션을 발급해 잘못된 확인 문구를 전달했을 때 `400 CONFIRMATION_REQUIRED`를 받았다. 검사 계정은 정리했고 개인 계정이나 서비스 콘텐츠는 삭제하지 않았다.
+- **`KAKAO_ADMIN_KEY` 운영 등록을 완료했다.** 소유자가 로그인한 Kakao 앱 `1558027`의 기존 Default Admin Key를 사용했다. Kakao 사용자 목록 조회 API의 HTTP 200과 Supabase에 저장된 키의 SHA-256 일치를 확인했다. 실제 개인 계정 연결 해제나 삭제는 실행하지 않았다. TestFlight What to Test에서도 키 미등록 안내를 수정했다.
+- Kakao REST 키와 등록된 Supabase callback 주소를 대조하고, 현재 콘솔의 OAuth client secret을 Supabase에 다시 저장해 HTTP 200을 확인했다. 관리 API가 반환하는 secret 표현으로는 기존 값의 일치 여부를 판정할 수 없으므로, 과거 secret 불일치나 실제 로그인 성공을 입증한 것은 아니다. 의도적으로 잘못된 인증 코드의 Kakao 응답은 `invalid_grant / KOE320`이었다.
+- `delete-account` 운영 배포는 **ACTIVE, 함수 버전 5, verify_jwt=true**다. 앞서 별도 일회용 Auth 사용자로 실제 ES256 세션을 발급해 잘못된 확인 문구를 전달했을 때 `400 CONFIRMATION_REQUIRED`를 받았다. 검사 계정은 정리했고 개인 계정이나 서비스 콘텐츠는 삭제하지 않았다.
+- 웹 로그인 요청에서 복귀 주소가 `https://dlwpdl.github.io/auth/callback`으로 생성되는 오류를 확인했다. 공통 OAuth 경로 생성에 Expo의 기존 웹 배포 경로를 반영해 `/gling/auth/callback`을 유지하도록 수정했다. iOS·Android는 기존 `auth/callback` 경로를 유지하며 네이티브 빌드 번호는 변경하지 않았다.
 
 Apple client secret은 **2027-02-05 08:47:56 UTC**에 만료된다. **2027-01-06 이전 갱신**을 운영 작업으로 잡아야 한다. 키와 생성 메타데이터는 `~/Library/Application Support/gling/credentials/`에 있으며 디렉터리는 0700, 비밀 파일은 0600이다. 원본 `AuthKey_F5N57692CC.p8`로 새 client secret을 생성해 운영 secret을 교체한다. 키 본문과 JWT, OpenAI·Resend 키는 Git에 저장하지 않는다.
 
@@ -37,7 +39,7 @@ Apple client secret은 **2027-02-05 08:47:56 UTC**에 만료된다. **2027-01-06
 
 ## 검증과 산출물
 
-`npm test` **39/39**, `npm run typecheck`, `npm run lint` 통과. 새 검사 `scripts/delete-account.test.mjs`는 실제 Edge Function 진입점을 기존 Supabase SDK와 모의 외부 응답으로 실행한다. 실패 시 데이터 보존, 본인 식별자, 재시도, 정상 삭제 순서를 검사한다. DB migration 변경은 없으며 기존 162개 DB 검사는 반복하지 않았다.
+`npm test` **40/40**, `npm run typecheck`, `npm run lint` 통과. `scripts/delete-account.test.mjs`는 실제 Edge Function 진입점을 기존 Supabase SDK와 모의 외부 응답으로 실행한다. 실패 시 데이터 보존, 본인 식별자, 재시도, 정상 삭제 순서를 검사한다. `scripts/kakao-auth.test.mjs`에 웹 배포 경로와 iOS·Android 경로를 확인하는 회귀 검사를 추가했다. DB migration 변경은 없으며 기존 162개 DB 검사는 반복하지 않았다.
 
 iOS archive·App Store export, Android `bundleRelease`·`assembleRelease`가 성공했다. iOS 서명과 IPA의 Bundle ID·버전·빌드 번호를 검사했다. Android 업로드 인증서, versionCode 4, target SDK 36, 비디버그 빌드, 불필요한 오버레이·마이크 권한 없음과 16KB 정렬을 확인했다. 네이티브 의존성의 기존 빌드 경고까지 모두 제거됐다는 뜻은 아니다.
 
@@ -53,9 +55,11 @@ iOS archive·App Store export, Android `bundleRelease`·`assembleRelease`가 성
 
 작업 로그와 원격 상태 증거는 `/tmp/gling-auth-followup-2026-09-08/`에 있다. 현재 Expo prebuild 결과의 iOS workspace/scheme은 `ios/app.xcworkspace` / `app`이며 prebuild 뒤 `pod install --project-directory=ios`가 필요하다.
 
+글링 관련 Orca 브라우저는 모두 기존 **Git → gling 폴더 워크스페이스**에 모았다. 다른 프로젝트 아래의 글링 중복 탭 5개를 닫았다. CLI의 탭 선택만으로는 실제 화면이 터미널에 머물 수 있어, 카카오 탭을 직접 클릭하고 화면에 표시되는 것까지 확인했다.
+
 ## 다음 검증과 중단 방법
 
-1. 열린 카카오 개발자 콘솔에서 계정 인증 후 Gling 앱의 Admin Key를 서버에 등록한다. 별도의 심사용/탈퇴 검증용 카카오 계정을 준비한다. 소유자의 개인 계정은 삭제 검사에 사용하지 않는다.
+1. 별도의 심사용/탈퇴 검증용 카카오 계정을 준비한다. 소유자의 개인 계정은 삭제 검사에 사용하지 않는다. Admin Key 등록은 완료됐다.
 2. 빌드 4에서 실제 Kakao/Apple 가입, 동의, 앱 복귀, 재실행 세션 복원, 재로그인과 테스트 계정 탈퇴를 확인한다. 정상 계정에서 글·댓글·대화·신고·차단과 관리자 경보의 실제 수신을 확인한다.
 3. Google 로그인 세부정보 → 타겟층 → 작성된 데이터 보안 초안 확정을 진행하고, 아동 안전 표준 등 남은 앱 콘텐츠 선언을 검토한다. 공개 출시에는 Console에 표시된 **12명 이상·14일 이상 비공개 테스트**가 별도로 필요하다. 내부 테스트 활성화는 이 조건을 충족하지 않는다.
 4. 문제 발생 시 Play 내부 트랙의 `트랙 일시중지`로 추가 제공을 중단한다. iOS는 아직 공개 제출 전이다. 이전 서버 원본은 `/tmp/gling-auth-followup-2026-09-08/rollback/`에 보관했지만 외부 연결 해제 누락과 클라이언트 선삭제 문제를 되살리는 단순 롤백은 피한다. 원인을 수정하고 버전 코드를 증가시킨 빌드를 배포한다.

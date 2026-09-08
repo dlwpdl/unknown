@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { canUseDevPasswordLogin, getOAuthCode } from '../src/lib/kakao-auth.ts';
+import { canUseDevPasswordLogin, getOAuthCallbackPath, getOAuthCode } from '../src/lib/kakao-auth.ts';
+
+test('웹 OAuth는 배포 하위 경로를 유지하고 네이티브 콜백은 바꾸지 않는다', () => {
+  assert.equal(getOAuthCallbackPath('web', '/gling'), '/gling/auth/callback');
+  assert.equal(getOAuthCallbackPath('web', '/gling/'), '/gling/auth/callback');
+  assert.equal(getOAuthCallbackPath('web'), '/auth/callback');
+  assert.equal(getOAuthCallbackPath('ios', '/gling'), 'auth/callback');
+  assert.equal(getOAuthCallbackPath('android', '/gling'), 'auth/callback');
+});
 
 test('실제 개발 계정 로그인은 개발 빌드에서만 노출한다', () => {
   assert.equal(canUseDevPasswordLogin(true), true);

@@ -2,6 +2,10 @@ export function canUseDevPasswordLogin(dev: boolean) {
   return dev;
 }
 
+export function getOAuthCallbackPath(platform: string, webBaseUrl = '') {
+  return platform === 'web' ? `${webBaseUrl.replace(/\/+$/, '')}/auth/callback` : 'auth/callback';
+}
+
 export function getOAuthCode(callbackUrl: string, expectedRedirectUrl: string) {
   const callback = new URL(callbackUrl);
   const expected = new URL(expectedRedirectUrl);
