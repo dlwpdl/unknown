@@ -1,16 +1,16 @@
 # App Store 화면 자료
 
-`ios-6.9/`의 PNG 3장은 2026-09-06에 iPhone 16 Pro Max / iOS 18.4 시뮬레이터에서 실행한 실제 iOS Release 1.0.0 (1) 화면입니다. 각각 1320×2868 픽셀이며 이미지 편집이나 가상 UI 합성을 하지 않았습니다.
+`ios-6.9/`의 PNG 3장은 2026-09-07에 iPhone 16 Pro Max / iOS 18.4 시뮬레이터에서 실행한 실제 iOS Release 1.0.0 (2)의 B 동네 저널 디자인입니다. 각각 1320×2868 픽셀이며 이미지 편집이나 가상 UI 합성을 하지 않았습니다.
 
 1. `01-vancouver.png`: 밴쿠버 피드와 모임 카드
 2. `02-toronto.png`: 토론토 피드
 3. `03-cities.png`: 운영 중인 도시와 준비 중인 도시
 
-App Store Connect의 한국어 6.9인치 슬롯에 위 순서로 3장 업로드했으며, 6.5인치 슬롯도 이 자료를 사용하도록 표시됩니다.
+App Store Connect의 기존 한국어 6.9인치 슬롯(API의 `APP_IPHONE_67`)을 위 순서의 새 이미지 3장으로 교체했습니다. 새 이미지가 모두 `COMPLETE`이고 원격 체크섬이 로컬과 일치함을 확인한 뒤 이전 3장을 삭제했습니다.
 
-화면의 예시 게시글 표기를 유지했습니다. 로그인 없이 피드·지역 선택을 확인했고, 상세 글 탭 시 로그인 안내와 둘러보기 복귀를 확인했습니다. Apple/Kakao 인증 완료나 로그인 이후 흐름은 이 자료의 검증 범위에 포함되지 않습니다.
+화면의 예시 게시글 표기를 유지했습니다. 서버 시드와 앱에 포함된 예시 데이터가 표시된 실제 화면입니다. 로그인 없이 피드·지역 선택, 글쓰기 로그인 안내와 둘러보기 복귀를 확인했습니다. Apple/Kakao 인증 완료나 로그인 이후 흐름은 이 자료의 검증 범위에 포함되지 않습니다.
 
-재현: [출시 기록](../../tasks/release-status-2026-09-06.md)의 Release 빌드를 시뮬레이터에 설치하고 `xcrun simctl io <device-udid> screenshot <path.png>`로 저장합니다. 첫 화면의 글쓰기 탭이 정상 크기로 표시되는지도 확인합니다.
+재현: [빌드 2 업데이트 기록](../../tasks/store-update-2026-09-07.md)의 Release 빌드를 시뮬레이터에 설치하고 `xcrun simctl io <device-udid> screenshot <path.png>`로 저장합니다. 현재 생성되는 workspace와 scheme 이름은 `app`입니다.
 
 ## App Store Connect CLI 5.0.0
 
@@ -23,7 +23,7 @@ asc metadata validate --dir release/app-store/metadata --check-urls
 asc --profile gling status --app 6809273242
 asc --profile gling metadata apply --app 6809273242 --version 1.0.0 --platform IOS --dir release/app-store/metadata --dry-run
 asc --profile gling validate --app 6809273242 --version 1.0.0 --platform IOS --check-urls
-asc --profile gling validate testflight --app 6809273242 --build-id b6712770-ae17-4267-90f0-37ab3bac8b39
+asc --profile gling validate testflight --app 6809273242 --build-id 292241c4-188a-498e-963c-45b0b369af32
 asc --profile gling builds next-build-number --app 6809273242 --version 1.0.0 --platform IOS
 ```
 
@@ -38,10 +38,10 @@ API 인증과 `asc web auth login`은 별개입니다. 현재 CLI 웹 세션은 
 - 이름·부제와 중복된 검색 키워드 제거. 적용 후 메타데이터 차이는 0건입니다.
 - TestFlight 심사 연락처와 한국어 테스트 안내. 이름·전화번호는 Rottery의 등록 정보를 재사용하고 이메일은 글링의 기존 지원 주소를 사용했습니다. 안내에는 인증 이후 기능과 안전 처리의 추가 검증 필요성을 명시했습니다.
 
-`validate testflight`는 오류·경고 0입니다. 빌드 `1.0.0 (1)`은 `VALID`, 수출 규정 응답은 `usesNonExemptEncryption=false`이며 다음 빌드 번호는 `2`입니다. 이 결과는 테스터 배포나 외부 베타 심사 승인을 의미하지 않습니다. 앱은 계속 수동 출시의 `PREPARE_FOR_SUBMISSION` 상태입니다.
+새 빌드 `1.0.0 (2)`를 업로드하고 기존 버전 초안에 연결했습니다. 빌드는 `VALID`, `validate testflight`는 오류·경고 0이며 수출 규정 응답은 `usesNonExemptEncryption=false`입니다. [한국어 변경 안내](../notes-1.0.0-2-ko.txt)와 남은 검증 범위를 What to Test에 저장했습니다. 이 결과는 테스터 배포나 외부 베타 심사 승인을 의미하지 않습니다. 앱은 계속 수동 출시의 `PREPARE_FOR_SUBMISSION` 상태입니다.
 
 공개 심사 `validate`는 오류 26개, 경고 0개를 보고합니다: 연령 설문 미응답 24개, 심사 정보 미생성 1개, 배포 국가 미설정 1개입니다. Apple은 연령 설문의 부분 저장을 거절했고, CLI는 심사 로그인 필요 설정에 실제 사용자 이름·암호를 요구하므로 임의 응답이나 가짜 계정을 넣지 않았습니다. App Privacy 미작성과 운영 필수 검증은 이 오류 개수와 별개로 남습니다.
 
-원격 상태를 확인한 뒤 `--dry-run`의 변경 내역을 검토하고 필요한 메타데이터만 반영합니다. 다음 네이티브 업로드는 조회한 새 빌드 번호를 사용해 `글링` 홈 화면 이름과 수출 규정 설정을 포함합니다. [출시 기록의 운영 필수 작업](../../tasks/release-status-2026-09-06.md#심사-제출-전-필수-작업)과 심사 연락처·개인정보·연령 등급 확인은 계속 남아 있습니다. 로컬 메타데이터 검증 통과는 심사 제출 준비 완료를 의미하지 않습니다.
+원격 상태를 확인한 뒤 `--dry-run`의 변경 내역을 검토하고 필요한 메타데이터만 반영합니다. 빌드 2에는 `글링` 홈 화면 이름과 수출 규정 설정이 포함됐습니다. [출시 기록의 운영 필수 작업](../../tasks/release-status-2026-09-06.md#심사-제출-전-필수-작업)과 심사 연락처·개인정보·연령 등급 확인은 계속 남아 있습니다. 로컬 메타데이터 검증 통과는 심사 제출 준비 완료를 의미하지 않습니다.
 
 명령 출처: 설치된 CLI의 `--help` 및 [CLI 프로젝트 문서](https://github.com/rorkai/App-Store-Connect-CLI).

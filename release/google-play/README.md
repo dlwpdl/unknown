@@ -2,9 +2,11 @@
 
 - `icon-512.png`: 기존 `assets/brand/gling-app-icon.png`를 macOS `sips -z 512 512`로 내보낸 512×512 PNG.
 - `feature-graphic.png`: 기존 글링 로고·아이콘을 참조해 생성한 홍보 이미지. 1024×500 PNG로 `sips` 내보내기 후 한국어 문구와 로고를 확인했다.
-- `phone/`: Android 16(API 36), Pixel 9 에뮬레이터의 실제 Release 1.0.0 (1) 화면. 화면 크기 1080×1920, 밀도 420dpi. `adb exec-out screencap -p`로 촬영했으며 화면 합성·보정은 하지 않았다. 예시 게시글 표기를 유지했다.
+- `phone/`: 2026-09-07에 Android 16(API 36), Pixel 9 에뮬레이터에서 촬영한 실제 Release 1.0.0 (2)의 B 동네 저널 디자인. 화면 크기 1080×1920, 밀도 420dpi. `adb exec-out screencap -p`로 촬영했으며 화면 합성·보정은 하지 않았다. 예시 게시글 표기를 유지했다.
 
 화면 순서: 밴쿠버 피드, 토론토 피드, 도시 선택, 맛집 카테고리. 로그인 없이 탐색하는 화면이며 실제 계정 인증 성공을 의미하지 않는다.
+
+빌드 2의 서명된 AAB·APK, 새 스크린샷 4장과 [한국어 변경 안내](../notes-1.0.0-2-ko.txt)를 준비했다. 현재 Eunsense Studio의 Play Console 로그인 복구를 기다리고 있어 원격 스크린샷과 내부 테스트 초안은 아직 빌드 1 상태다. 업로드 대상과 보관 위치는 [빌드 2 업데이트 기록](../../tasks/store-update-2026-09-07.md)에 있다.
 
 ## 홍보 이미지 생성 기록
 
