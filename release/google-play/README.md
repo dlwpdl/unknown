@@ -6,7 +6,7 @@
 
 화면 순서: 밴쿠버 피드, 토론토 피드, 도시 선택, 맛집 카테고리. 로그인 없이 탐색하는 화면이며 실제 계정 인증 성공을 의미하지 않는다.
 
-빌드 2의 서명된 AAB·APK, 새 스크린샷 4장과 [한국어 변경 안내](../notes-1.0.0-2-ko.txt)를 준비했다. 현재 Eunsense Studio의 Play Console 로그인 복구를 기다리고 있어 원격 스크린샷과 내부 테스트 초안은 아직 빌드 1 상태다. 업로드 대상과 보관 위치는 [빌드 2 업데이트 기록](../../tasks/store-update-2026-09-07.md)에 있다.
+2026-09-07에 오르카 브라우저의 기존 Eunsense Studio 로그인으로 새 스크린샷 4장을 위 순서로 교체하고 저장했다. 페이지를 다시 열어 원격 이미지 URL과 순서를 검증했다. 서명된 AAB 빌드 2도 업로드·처리를 마쳤으며, 기존 내부 테스트 초안에 빌드 2만 선택하고 [한국어 변경 안내](../notes-1.0.0-2-ko.txt)를 저장했다. 테스터 배포와 공개 출시는 아직 진행하지 않았다. 업로드 결과와 파일 보관 위치는 [빌드 2 업데이트 기록](../../tasks/store-update-2026-09-07.md)에 있다.
 
 ## 홍보 이미지 생성 기록
 
@@ -18,4 +18,4 @@ BrandKit에서 Gling 검색, Mobbin의 Circle 화면 구성 및 Pinterest의 커
 Use case: ads-marketing. Create ONE finished Google Play feature graphic for Gling, a Korean community app in Canada. Required final canvas exactly 1024 x 500 px, landscape. Input image 1 is the exact existing Gling logotype and mark; preserve its lettering and logo geometry faithfully. Input image 2 gives the existing warm vermilion #BE3B2A and cream palette; it is a brand reference, not a second icon to put in the graphic. Use a warm ivory #FAF9F6 background, ample negative space, crisp minimal graphic design, large dark navy typography. Place the Gling lockup clearly in the upper left. Main Korean headline, exactly: '캐나다의 오늘을' on one line and '한국어로.' on the next, medium large, clean bold Korean sans. Small supporting line exactly '밴쿠버 · 토론토'. On the right, a simple oversized vermilion Gling ring-and-dot brand mark with a restrained paper-like texture, enough whitespace around it. Keep content comfortably inside 60-pixel margins. No device mockups, no fabricated app screens, no people, no Google Play or Apple badges, no awards, no ratings, no download counts, no calls to action. This is the same existing brand, not a logo redesign. Flat, calm, professionally typeset, highly legible.
 ```
 
-빌드·서명·Play Console 상태는 [Android 출시 기록](../../tasks/google-play-release-2026-09-06.md)에 기록한다.
+최초 등록·서명 설정은 [Android 출시 기록](../../tasks/google-play-release-2026-09-06.md), 현재 스토어 반영 상태는 [빌드 2 업데이트 기록](../../tasks/store-update-2026-09-07.md)을 따른다.

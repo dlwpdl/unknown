@@ -7,7 +7,10 @@
 - [App Store Connect](https://appstoreconnect.apple.com/apps/6809273242/distribution/ios/version/inflight): 새 빌드 `292241c4-188a-498e-963c-45b0b369af32`가 `VALID`이고 기존 버전 `1fe513b3-ec8d-4b00-bc4e-09c6a5087088`에 연결됐다. 상태는 `PREPARE_FOR_SUBMISSION`, 수동 출시다.
 - 한국어 스크린샷 세트 `4c961af8-7a85-42c4-b603-c002f5092525`의 이미지 3장을 교체했다. 새 이미지의 `COMPLETE`와 MD5 일치를 확인한 뒤 이전 3장을 삭제했고, 최종 개수·순서·체크섬을 다시 검증했다.
 - [한국어 변경 안내](../release/notes-1.0.0-2-ko.txt)와 남은 검증 범위를 TestFlight What to Test에 저장했다. 테스터 초대·배포·심사 제출은 하지 않았다.
-- [Google Play Console](https://play.google.com/console/u/0/developers/4802509944213002773/app/4972349784406622597/app-dashboard): Eunsense Studio 로그인 세션이 없어 **빌드 2 업로드와 스크린샷 교체는 대기 중**이다. 기존 내부 테스트 트랙 `4701555384444643122`의 빌드 1 초안이 마지막으로 확인된 상태다. 다른 계정이나 앱에는 변경하지 않았다.
+- [Google Play Console](https://play.google.com/console/u/0/developers/4802509944213002773/app/4972349784406622597/app-dashboard): 오르카 브라우저의 기존 Eunsense Studio 로그인으로 **빌드 2 업로드·처리와 스크린샷 교체를 완료**했다. 기존 내부 테스트 트랙 `4701555384444643122`의 [릴리스 1 초안](https://play.google.com/console/u/0/developers/4802509944213002773/app/4972349784406622597/tracks/4701555384444643122/releases/1/review)을 출시명 `1.0.0 (2)`로 저장했다. 빌드 2만 선택하고 한국어 변경 안내를 입력했으며, 이전 빌드 1은 아티팩트 라이브러리에 남겼다.
+- Google Play 한국어 등록정보의 새 스크린샷 4장을 밴쿠버·토론토·도시 선택·맛집 순서로 저장했다. 페이지를 다시 열어 4장의 원격 URL과 순서가 저장 전 검증한 새 이미지와 일치하는지 확인했다. 기존 아이콘·홍보 이미지·설명은 유지했다.
+
+Play Console 접근은 오르카의 `default` 브라우저 프로필을 재사용했다. 별도 Playwright/Chrome 세션과 구분해야 하며, 사용자의 추가 로그인은 필요하지 않았다.
 
 새 iOS 스크린샷 ID는 순서대로 `109f70ce-b208-4e2e-af3d-a0bcd2cf5318`, `5112cc08-8024-4a67-ad64-d55c069ceb07`, `4d515388-d27c-4d5d-b393-26fef76f5e08`이다.
 
@@ -31,16 +34,17 @@ Android는 [기존 출시 명령](google-play-release-2026-09-06.md#빌드서명
 - IPA의 실제 번들 ID·표시명·버전·빌드 번호·암호화 선언을 확인했다. `codesign --verify --deep --strict`와 App Store entitlement 검사 통과.
 - AAB의 `jarsigner -verify`, APK의 `apksigner verify`와 16KB zip 정렬 검사 통과. targetSdk 36, versionCode 2, 비디버그 빌드이며 SYSTEM_ALERT_WINDOW·RECORD_AUDIO 권한이 없다.
 - `asc validate testflight`는 새 빌드 기준 오류 0·경고 0. Apple 처리 완료와 버전의 빌드 연결을 API로 재조회했다.
+- Google Play에서 버전 코드 2, 최소 API 24, targetSdk 36, ABI 4개와 네이티브 디버그 기호 첨부를 확인했다. 저장 후 새로고침해 빌드 2만 포함된 초안과 한국어 출시 노트가 유지되는지 검증했다. 검토 화면의 경고 2개는 테스터 미지정과 ReTrace 가독화 파일 미첨부다. 현재 빌드는 R8/ProGuard 난독화를 사용하지 않아 매핑 파일이 생성되지 않는다.
 - [iOS 스크린샷](../release/app-store/README.md) 3장은 iPhone 16 Pro Max / iOS 18.4 Release의 1320×2868 화면이다. 도시 선택, 글쓰기 로그인 안내와 둘러보기 복귀를 확인했다. 시뮬레이터에서 토론토가 잠시 빈 상태로 표시된 뒤 재시작 후 예시 피드를 확인했으므로 실시간 피드의 안정성은 실기기에서도 재확인해야 한다.
 - [Android 스크린샷](../release/google-play/README.md) 4장은 Pixel 9 / Android 16(API 36) Release의 1080×1920 화면이다. 설치·실행·밴쿠버/토론토 전환·맛집 필터·게스트 글쓰기 로그인 안내를 확인했다. 로그인 안내와 도시 시트에서 시스템 뒤로가기로 피드에 복귀했고, 확인한 AndroidRuntime·ReactNativeJS 오류 로그는 비어 있었다. 창 렌더러가 멈춰 최종 검증은 같은 AVD를 `-no-window -no-audio -gpu swiftshader`로 다시 실행했다.
 - 이미지는 실제 앱에서 촬영했으며 서버 시드와 앱에 포함된 예시 게시글 표기를 유지했다. 디자인 보고서의 합성 사진은 넣지 않았다. Apple/Kakao 계정 인증 완료, 로그인 후 작성·댓글·메시지 전체 흐름, iOS 시트의 손가락 드래그는 이번 검증에 포함되지 않는다.
 
 ## 이어서 할 일과 되돌리기
 
-Play Console의 Eunsense Studio 로그인을 복구하면 위 AAB를 기존 내부 테스트 초안에 올리고, 변경 안내와 `release/google-play/phone/`의 PNG 4장을 반영한 뒤 저장 결과를 재조회한다.
+양쪽 스토어의 빌드·스크린샷·변경 안내 반영은 완료했다. Google Play의 `저장 및 출시`는 실행하지 않았고 내부 테스터도 지정하지 않았다. 실제 계정 기능과 운영 준비를 검증한 뒤 테스트 대상을 정하고 배포한다.
 
 공개 심사 검사는 기존 필수 누락 26개(연령 설문 24개, 심사 정보, 배포 국가)를 보고했다. App Privacy, 실제 인증, 서버 안전 분석·관리자 알림과 테스트 요건 등은 [기존 출시 기록](release-status-2026-09-06.md#심사-제출-전-필수-작업)을 따른다. 빌드·이미지 업데이트는 공개 출시 완료를 의미하지 않는다.
 
-문제가 생기면 ASC 초안의 선택 빌드를 기존 빌드 `b6712770-ae17-4267-90f0-37ab3bac8b39`로 돌리고 Git의 이전 스크린샷을 다시 올린다. DB·서버 설정 변경은 없다.
+문제가 생기면 ASC 초안의 선택 빌드를 기존 빌드 `b6712770-ae17-4267-90f0-37ab3bac8b39`로 돌리고 Git의 이전 스크린샷을 다시 올린다. Google Play는 아티팩트 라이브러리의 빌드 1과 기존 이미지로 초안을 되돌릴 수 있다. DB·서버 설정 변경은 없다.
 
 기준: [Apple 빌드 업로드](https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds/), [Apple 스크린샷 규격](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/), [Google Play 버전 준비](https://support.google.com/googleplay/android-developer/answer/9859348), [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/).
