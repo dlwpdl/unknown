@@ -128,6 +128,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         options: {
           redirectTo,
           skipBrowserRedirect: true,
+          // Override Supabase's default account_email scope; Kakao has not approved it for this app.
+          queryParams: { scope: 'profile_nickname profile_image' },
         },
       });
       if (error || !data.url) throw new Error('OAUTH_START_FAILED');
