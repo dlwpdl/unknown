@@ -347,19 +347,7 @@ export async function markNotificationsRead(client: SupabaseClient, ids?: string
   return result.data as number;
 }
 
-export async function deleteMyAccount(client: SupabaseClient, userId: string, appleAuthorizationCode: string | null = null) {
-  for (const bucket of ['avatars', 'post-images']) {
-    while (true) {
-      const listed = await client.storage.from(bucket).list(userId, { limit: 100 });
-      if (listed.error) throw listed.error;
-      if (!listed.data.length) break;
-      const removed = await client.storage.from(bucket).remove(
-        listed.data.map(({ name }) => `${userId}/${name}`),
-      );
-      if (removed.error) throw removed.error;
-    }
-  }
-
+export async function deleteMyAccount(client: SupabaseClient, appleAuthorizationCode: string | null = null) {
   const result = await client.functions.invoke('delete-account', {
     body: { confirmation: '탈퇴합니다', appleAuthorizationCode },
   });

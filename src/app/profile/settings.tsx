@@ -54,7 +54,7 @@ export default function SettingsScreen() {
     setDeleting(true);
     try {
       const appleAuthorizationCode = await prepareAppleAccountDeletion();
-      await deleteMyAccount(supabase, me.id, appleAuthorizationCode);
+      await deleteMyAccount(supabase, appleAuthorizationCode);
       await signOut();
       router.replace('/');
     } catch {

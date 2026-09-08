@@ -23,24 +23,9 @@ test('Storage가 허용하지 않는 이미지 형식은 업로드 전에 거부
   assert.throws(() => buildPostImagePath('user-1', 'image/gif', 1234), /UNSUPPORTED_IMAGE_TYPE/);
 });
 
-test('탈퇴 처리 전에 사용자 Storage 폴더를 비운다', async () => {
+test('탈퇴 검증과 파일 삭제를 서버에 맡기고 실패를 호출자에게 전달한다', async () => {
   const calls = [];
-  const listed = new Set();
   const client = {
-    storage: {
-      from: (bucket) => ({
-        list: async (folder) => {
-          calls.push(`list:${bucket}:${folder}`);
-          if (listed.has(bucket)) return { data: [], error: null };
-          listed.add(bucket);
-          return { data: bucket === 'avatars' ? [{ name: 'avatar.jpg' }] : [{ name: 'one.jpg' }, { name: 'two.png' }], error: null };
-        },
-        remove: async (paths) => {
-          calls.push(`remove:${bucket}:${paths.join(',')}`);
-          return { data: null, error: null };
-        },
-      }),
-    },
     functions: {
       invoke: async (name, input) => {
         calls.push(`function:${name}:${input.body.confirmation}:${input.body.appleAuthorizationCode}`);
@@ -49,15 +34,11 @@ test('탈퇴 처리 전에 사용자 Storage 폴더를 비운다', async () => {
     },
   };
 
-  await deleteMyAccount(client, 'user-1', 'apple-code');
+  await deleteMyAccount(client, 'apple-code');
 
   assert.deepEqual(calls, [
-    'list:avatars:user-1',
-    'remove:avatars:user-1/avatar.jpg',
-    'list:avatars:user-1',
-    'list:post-images:user-1',
-    'remove:post-images:user-1/one.jpg,user-1/two.png',
-    'list:post-images:user-1',
     'function:delete-account:탈퇴합니다:apple-code',
   ]);
+  client.functions.invoke = async () => ({ error: new Error('APPLE_REVOCATION_FAILED') });
+  await assert.rejects(deleteMyAccount(client, 'apple-code'), /APPLE_REVOCATION_FAILED/);
 });

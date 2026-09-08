@@ -1,5 +1,7 @@
 # 글링 iOS 출시 준비 — 2026-09-06
 
+**최신 상태(2026-09-08):** 빌드 4 양쪽 업로드, Android 내부 테스트 출시, Apple 인증·안전 모니터링 키 설정, App Privacy 게시와 iOS 필수 정보 보완을 완료했다. 남은 실제 로그인·탈퇴 검증 및 Google 심사 계정 준비는 [후속 기록](release-followup-2026-09-08.md)을 따른다. 아래는 작업 당시 기록이다.
+
 현재 상태: 코드·배포용 빌드·스토어 초안 준비. 운영 인증과 안전 모니터링 검증이 남아 있어 심사 제출 및 공개 출시는 하지 않았습니다. 이후 진행한 Android 등록·검증은 [Google Play 출시 기록](google-play-release-2026-09-06.md)을 참조합니다.
 
 2026-09-07 추가: App Store Connect CLI 5.0.0을 소유자가 발급한 API 키로 macOS Keychain에 연결했습니다. 무료 가격·저작권·콘텐츠 권리·검색 키워드와 TestFlight 연락처·테스트 안내를 저장하고 재조회했습니다. TestFlight 등록 정보 검사는 오류 0이며, 공개 심사는 연령 설문 24개·심사 정보·배포 국가의 필수 누락과 App Privacy 미작성, 아래 운영 검증이 남아 있습니다. [CLI 실행 명령과 현재 상태](../release/app-store/README.md#app-store-connect-cli-500)를 참조합니다.
