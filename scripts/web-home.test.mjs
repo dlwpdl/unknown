@@ -13,7 +13,7 @@ test('getWebHomeCitySummary falls back to Vancouver', () => {
   assert.equal(getWebHomeCitySummary('missing').id, 'vancouver');
 });
 
-test('listWebHomeCities keeps the live launch cities with real content counts', () => {
+test('launch cities stay in order without presenting mock counts as live activity', () => {
   const cities = listWebHomeCities();
   const openCities = cities.filter((city) => city.state === 'open');
   const vancouver = getWebHomeCitySummary('vancouver');
@@ -21,9 +21,13 @@ test('listWebHomeCities keeps the live launch cities with real content counts', 
 
   assert.equal(openCities.length, 2);
   assert.deepEqual(openCities.map((city) => city.id), ['vancouver', 'toronto']);
-  assert.ok(vancouver.postCount > 0);
-  assert.ok(vancouver.neighborhoodCount > 0);
-  assert.ok(toronto.postCount > 0);
+  for (const city of [vancouver, toronto]) {
+    assert.equal(city.launchNote, '출시 준비 중');
+    assert.equal(city.stateLabel, '출시 준비 중');
+    assert.ok(!('postCount' in city));
+    assert.ok(!('meetupCount' in city));
+    assert.ok(!('neighborhoodCount' in city));
+  }
 });
 
 test('WEB_POLICY_ITEMS keeps every required trust disclosure', () => {

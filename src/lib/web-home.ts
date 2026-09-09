@@ -1,4 +1,4 @@
-import { CITIES, MOCK_POSTS, TAGS } from './mock.ts';
+import { CITIES, TAGS } from './mock.ts';
 
 export type WebHomeCitySummary = {
   id: string;
@@ -9,48 +9,45 @@ export type WebHomeCitySummary = {
   headline: string;
   blurb: string;
   launchNote: string;
-  postCount: number;
-  meetupCount: number;
-  neighborhoodCount: number;
 };
 
 const CITY_COPY: Record<string, Pick<WebHomeCitySummary, 'headline' | 'blurb' | 'launchNote'>> = {
   vancouver: {
-    headline: '밴쿠버 피드는 정착 정보와 동네 일상이 같은 속도로 올라옵니다.',
-    blurb: '킷실라노, 버나비, 코퀴틀람, 다운타운처럼 실제 생활권의 질문과 만남이 함께 쌓입니다.',
-    launchNote: '서비스중',
+    headline: '비 오는 날의 산책길부터, 오늘 저녁 함께 먹을 한 끼까지.',
+    blurb: '킷실라노, 버나비, 코퀴틀람, 다운타운. 가까운 생활권의 작은 질문과 일상을 나눠요.',
+    launchNote: '출시 준비 중',
   },
   toronto: {
-    headline: '토론토 피드는 출근길 정보, 동네 추천, 모임 제안이 더 빠르게 순환합니다.',
-    blurb: '노스욕, 미시사가, 영앤블루어처럼 이동 반경이 넓은 도시에서 글과 대화의 연결성이 더 중요합니다.',
-    launchNote: '서비스중',
+    headline: '출근길에 발견한 풍경부터, 주말에 가보고 싶은 동네까지.',
+    blurb: '노스욕, 미시사가, 영앤블루어. 넓은 도시에서도 서로의 하루를 가까이에서 나눠요.',
+    launchNote: '출시 준비 중',
   },
   montreal: {
-    headline: '몬트리올은 다음 기수에서 열릴 후보 도시입니다.',
-    blurb: '도시별 밀도를 먼저 만든 뒤 순차적으로 여는 방식이라 대기열 수요를 먼저 모읍니다.',
-    launchNote: '대기열 예정',
+    headline: '몬트리올은 앞으로 함께할 후보 도시예요.',
+    blurb: '한국어로 나누는 몬트리올의 일상. 확장 일정은 아직 정해지지 않았어요.',
+    launchNote: '추후 검토',
   },
   calgary: {
-    headline: '캘거리는 대기열 도시로 쌓아 두고 있습니다.',
-    blurb: '열리기 전부터 정착, 교통, 주거 수요를 모아 첫날 빈 피드가 생기지 않게 만듭니다.',
-    launchNote: '대기열 예정',
+    headline: '캘거리의 이야기도 기다리고 있어요.',
+    blurb: '정착부터 동네 생활까지. 확장 일정은 아직 정해지지 않았어요.',
+    launchNote: '추후 검토',
   },
   winnipeg: {
-    headline: '위니펙도 초기 관심 도시군에 포함됩니다.',
-    blurb: '작은 도시일수록 글에서 대화와 모임으로 이어지는 구조가 먼저 필요합니다.',
-    launchNote: '대기열 예정',
+    headline: '위니펙은 앞으로 함께할 후보 도시예요.',
+    blurb: '가까운 이웃과 나누는 생활 이야기. 확장 일정은 아직 정해지지 않았어요.',
+    launchNote: '추후 검토',
   },
   saskatoon: {
-    headline: '사스카툰은 수요가 모이면 다음 웨이브에 포함됩니다.',
-    blurb: '도시 규모가 작아도 생활 질문과 동네 관계는 충분히 독립된 커뮤니티가 됩니다.',
-    launchNote: '대기열 예정',
+    headline: '사스카툰의 이야기도 기다리고 있어요.',
+    blurb: '우리 동네의 작은 질문과 만남. 확장 일정은 아직 정해지지 않았어요.',
+    launchNote: '추후 검토',
   },
 };
 
 export const WEB_HERO_METRICS = [
-  { label: '출시 도시', value: '밴쿠버 · 토론토' },
-  { label: '운영 기준', value: '의견보다 행위' },
-  { label: '관계 전환', value: '댓글 -> DM -> 모임' },
+  { label: '먼저 만날 도시', value: '밴쿠버 · 토론토' },
+  { label: '함께 나눌 주제', value: '9개의 카테고리' },
+  { label: '출시 준비 중', value: 'iOS · Android' },
 ] as const;
 
 export const WEB_FEATURES = [
@@ -74,19 +71,19 @@ export const WEB_FEATURES = [
 export const WEB_STORY_BLOCKS = [
   {
     id: 'what',
-    kicker: 'What gling Is',
-    title: '다른 생각이 함께 머무는\n캐나다 한인 커뮤니티입니다.',
-    body: '정치, 정착, 맛집, 교통, 주거, 일상까지 주제와 관점에 눈치 보지 않고 이야기할 수 있습니다.',
-    points: ['정치·생활·지역 이야기', '의견이 아닌 행위를 기준으로 운영', '운영 조치에 이의 제기'],
+    kicker: '01 · 이웃의 이야기',
+    title: '작은 질문도,\n반가운 이야기가 되도록.',
+    body: '오늘 발견한 맛집, 처음이라 낯선 정착 질문, 취향이 닮은 모임. 글과 댓글에서 시작한 대화를 이웃과 이어가세요.',
+    points: ['도시별 피드와 9개의 생활 주제', '글과 댓글로 나누는 동네 이야기', 'DM과 모임으로 이어지는 대화'],
     image: 'feed' as const,
   },
   {
     id: 'how',
-    kicker: 'How Community Moves',
-    title: '글에서 댓글, DM,\n그리고 실제 모임까지.',
-    body: '다른 의견은 공개 대화로 이어지고, 더 깊은 이야기는 DM과 지역 모임으로 자연스럽게 연결됩니다.',
-    points: ['댓글에서 바로 반응', 'DM으로 자연스럽게 이동', '관심사가 맞는 모임 참여'],
-    image: 'flow' as const,
+    kicker: '02 · 가까운 동네부터',
+    title: '어느 동네로\n갈까요?',
+    body: '내가 사는 도시도, 다음에 가보고 싶은 도시도. 직접 동네를 골라 그곳의 이야기를 펼쳐보세요.',
+    points: ['밴쿠버 · 토론토에서 시작', '기기 위치 권한 없이 직접 도시 선택', '다음 도시의 일정은 추후 안내'],
+    image: 'cities' as const,
   },
 ] as const;
 
@@ -125,24 +122,22 @@ export const WEB_POLICY_ITEMS = [
 
 export const WEB_FOOTER_GROUPS = [
   {
-    title: 'Site',
+    title: '글링',
     links: [
-      { label: 'About', href: '#about' },
-      { label: 'Community', href: '#community' },
-      { label: 'Cities', href: '#cities' },
-      { label: 'Trust', href: '#trust' },
+      { label: '소개', href: '#about' },
+      { label: '앱 둘러보기', href: '#community' },
+      { label: '시작하는 도시', href: '#cities' },
+      { label: '운영 원칙', href: '#trust' },
     ],
   },
   {
-    title: 'Download',
+    title: '출시 소식',
     links: [
-      { label: 'Waitlist', href: '#download' },
-      { label: 'App Store 알림', href: '#download' },
-      { label: 'Google Play 알림', href: '#download' },
+      { label: '오픈 알림 신청', href: '#download' },
     ],
   },
   {
-    title: 'Policy',
+    title: '정책',
     links: [
       { label: '이용약관', href: 'terms' },
       { label: '개인정보처리방침', href: 'privacy' },
@@ -152,13 +147,10 @@ export const WEB_FOOTER_GROUPS = [
 ] as const;
 
 function buildCitySummary(city: (typeof CITIES)[number]): WebHomeCitySummary {
-  const posts = MOCK_POSTS.filter((post) => post.cityId === city.id);
-  const neighborhoods = new Set(posts.map((post) => post.author.neighborhood).filter(Boolean));
-  const meetups = posts.filter((post) => post.room).length;
   const copy = CITY_COPY[city.id] ?? {
     headline: `${city.name} 커뮤니티는 준비 중입니다.`,
-    blurb: '도시 밀도가 충분히 모이면 다음 웨이브로 열립니다.',
-    launchNote: city.state === 'open' ? '서비스중' : '대기열 예정',
+    blurb: '확장 일정은 추후 안내합니다.',
+    launchNote: city.state === 'open' ? '출시 준비 중' : '추후 검토',
   };
 
   return {
@@ -170,9 +162,6 @@ function buildCitySummary(city: (typeof CITIES)[number]): WebHomeCitySummary {
     headline: copy.headline,
     blurb: copy.blurb,
     launchNote: copy.launchNote,
-    postCount: posts.length,
-    meetupCount: meetups,
-    neighborhoodCount: neighborhoods.size,
   };
 }
 
@@ -190,4 +179,4 @@ export function getWebHomeCitySummary(cityId: string | null | undefined) {
   return cities.find((city) => city.id === cityId) ?? cities[0];
 }
 
-export const WEB_CATEGORY_LABELS = TAGS.slice(0, 6).map((tag) => tag.label);
+export const WEB_CATEGORY_LABELS = TAGS.map((tag) => tag.label);

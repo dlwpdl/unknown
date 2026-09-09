@@ -2,8 +2,9 @@ import './index.web.css';
 
 import { Asset } from 'expo-asset';
 import Head from 'expo-router/head';
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 
+import { Colors } from '@/constants/theme';
 import {
   WEB_CATEGORY_LABELS,
   WEB_FEATURES,
@@ -18,56 +19,35 @@ import {
 
 const appIconSrc = Asset.fromModule(require('@/assets/brand/gling-app-icon.png')).uri;
 const wordmarkSrc = Asset.fromModule(require('@/assets/brand/gling-wordmark.png')).uri;
-const feedScreenshotSrc = Asset.fromModule(require('@/assets/marketing/landing/gling-feed-highres.png')).uri;
-const flowScreenshotSrc = Asset.fromModule(require('@/assets/marketing/landing/community-flow-highres.png')).uri;
-const trustScreenshotSrc = Asset.fromModule(require('@/assets/marketing/landing/trust-badges-highres.png')).uri;
+// Reuse the real B-design store captures so the website and store show the same app.
+const vancouverScreenshotSrc = Asset.fromModule(require('../../release/app-store/ios-6.9/01-vancouver.png')).uri;
+const torontoScreenshotSrc = Asset.fromModule(require('../../release/app-store/ios-6.9/02-toronto.png')).uri;
+const citiesScreenshotSrc = Asset.fromModule(require('../../release/app-store/ios-6.9/03-cities.png')).uri;
+const siteColors = {
+  '--bg': Colors.light.background,
+  '--surface': Colors.light.backgroundElement,
+  '--line': Colors.light.line,
+  '--text': Colors.light.text,
+  '--muted': Colors.light.textSecondary,
+  '--accent': Colors.light.accent,
+  '--accent-ink': Colors.light.accentInk,
+  '--navy': Colors.light.navy,
+} as CSSProperties;
 
-function StoreLink({ label }: { label: string }) {
-  return (
-    <a className="site-store-link" href="#download">
-      <strong>{label}</strong>
-      <span>오픈 알림 받기</span>
-    </a>
-  );
-}
-
-function WaitlistForm({
-  city,
-  inputId,
-  source,
-}: {
-  city: WebHomeCitySummary;
-  inputId: string;
-  source: 'hero' | 'download';
-}) {
-  const subject = encodeURIComponent(`gling ${city.name} 오픈 알림 신청`);
+function LaunchNotice({ city }: { city: WebHomeCitySummary }) {
+  const subject = encodeURIComponent(`글링 ${city.name} 오픈 알림 신청`);
   const body = encodeURIComponent(`${city.name} 출시 소식을 받고 싶습니다.\n\n회신받을 이메일: `);
 
   return (
-    <section className="site-waitlist-card" aria-labelledby={`${inputId}-title`}>
-      <div className="site-waitlist-head">
-        <div>
-          <span className="site-pill">{city.launchNote}</span>
-          <h2 id={`${inputId}-title`}>{source === 'hero' ? '오픈 알림 받기' : `${city.name} 오픈 알림`}</h2>
-        </div>
-        <strong>{city.name}</strong>
-      </div>
-
-      <p className="site-waitlist-copy">{city.headline}</p>
-
-      <a
-        id={inputId}
-        className="site-primary-button"
-        href={`mailto:gling@ej-entertainment.com?subject=${subject}&body=${body}`}>
-        이메일로 오픈 알림 신청
+    <div className="site-waitlist-card">
+      <span className="site-kicker">{city.launchNote}</span>
+      <h3>{city.name}에서 만나요.</h3>
+      <p>출시일과 설치 링크가 준비되면 소식을 전할게요.</p>
+      <a className="site-primary-button" href={`mailto:gling@ej-entertainment.com?subject=${subject}&body=${body}`}>
+        이메일로 오픈 알림 신청 <span aria-hidden="true">↗</span>
       </a>
-
-      <div className="site-inline-list" aria-label="대기열 안내">
-        <span>{city.postCount}개의 이야기 준비</span>
-        <span>{city.meetupCount}개의 모임 준비</span>
-        <span>문의: gling@ej-entertainment.com</span>
-      </div>
-    </section>
+      <p className="site-caption">메일 앱이 열려요. 신청 메일을 보내면 접수됩니다.</p>
+    </div>
   );
 }
 
@@ -75,269 +55,168 @@ export default function WebHome() {
   const cities = listWebHomeCities();
   const [cityId, setCityId] = useState(cities[0].id);
   const activeCity = getWebHomeCitySummary(cityId);
+  const feedScreenshotSrc = activeCity.id === 'toronto' ? torontoScreenshotSrc : vancouverScreenshotSrc;
 
   return (
-    <div className="site-page">
+    <div className="site-page" style={siteColors} lang="ko">
       <Head>
-        <title>gling | 캐나다 한인 커뮤니티의 새로운 선택</title>
-        <meta name="description" content="규칙으로 조용한 곳보다 대화로 살아 있는 곳. 다르게 생각해도 함께 이야기할 수 있는 캐나다 한인 커뮤니티 gling입니다." />
+        <title>글링 | 우리 동네의 오늘을 펼치다</title>
+        <link rel="icon" type="image/png" href={appIconSrc} />
+        <meta name="description" content="밴쿠버·토론토의 일상과 동네 정보를 한국어로 나누는 커뮤니티, 글링. 가까운 이웃의 이야기와 모임을 만날 준비를 하고 있어요." />
       </Head>
+      <a className="site-skip-link" href="#main">본문으로 바로가기</a>
       <div className="site-shell">
         <header className="site-topbar">
-          <a className="site-brand" href="#top">
-            <img className="site-brand-icon" src={appIconSrc} alt="gling 앱 아이콘" />
-            <img className="site-brand-wordmark" src={wordmarkSrc} alt="gling" />
+          <a className="site-brand" href="#top" aria-label="글링 처음으로">
+            <img src={wordmarkSrc} width="96" alt="gling" />
           </a>
-
           <nav className="site-nav" aria-label="사이트 섹션">
-            <a href="#about">About</a>
-            <a href="#community">Community</a>
-            <a href="#cities">Cities</a>
-            <a href="#trust">Principles</a>
-            <a href="#download">Download</a>
+            <a href="#community">앱 둘러보기</a>
+            <a href="#cities">시작하는 도시</a>
+            <a href="#download" className="site-nav-cta">출시 소식 <span aria-hidden="true">↗</span></a>
           </nav>
         </header>
 
-        <main>
-          <section className="site-hero" id="top">
+        <main id="main" tabIndex={-1}>
+          <section className="site-hero" id="top" aria-labelledby="hero-title">
             <div className="site-hero-copy">
-              <span className="site-kicker">캐나다 한인 커뮤니티의 새로운 선택</span>
-              <h1>{`규칙으로 조용한 곳보다,\n대화로 살아 있는 곳.`}</h1>
-              <p className="site-lead">
-                다르게 생각해도, 함께 이야기할 수 있도록. gling은 정치, 생활, 지역 정보와 일상에 대한
-                다양한 의견을 열어두고 불법 콘텐츠와 사람을 향한 욕설·괴롭힘만 분명하게 제한합니다.
-              </p>
-
-              <div className="site-city-switch" role="tablist" aria-label="출시 도시 선택">
+              <span className="site-kicker">캐나다의 오늘을, 한국어로.</span>
+              <h1 id="hero-title">우리 동네의<br /><em>오늘을 펼치다.</em></h1>
+              <p className="site-lead">낯선 도시가 조금 더 가까워지는 이야기.<br />작은 질문부터 취향이 닮은 모임까지,<br />글링에서 이웃의 하루를 만나세요.</p>
+              <div className="site-city-switch" role="group" aria-label="미리 볼 도시 선택">
                 {cities.filter((city) => city.state === 'open').map((city) => (
-                  <button
-                    key={city.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={city.id === activeCity.id}
-                    className={city.id === activeCity.id ? 'is-active' : undefined}
-                    onClick={() => setCityId(city.id)}>
+                  <button key={city.id} type="button" aria-pressed={city.id === activeCity.id}
+                    aria-controls="city-preview" onClick={() => setCityId(city.id)}>
                     {city.name}
                   </button>
                 ))}
               </div>
-
+              <p className="site-city-line" aria-live="polite">{activeCity.headline}</p>
               <div className="site-button-row">
-                <a className="site-primary-button" href="#download">첫 기수 참여</a>
-                <StoreLink label="App Store" />
-                <StoreLink label="Google Play" />
+                <a className="site-primary-button" href="#download">오픈 알림 받기 <span aria-hidden="true">↗</span></a>
+                <a className="site-text-link" href="#community">앱 둘러보기 <span aria-hidden="true">↓</span></a>
               </div>
-
-              <div className="site-metric-row">
-                {WEB_HERO_METRICS.map((metric) => (
-                  <article key={metric.label} className="site-metric-card">
-                    <span>{metric.label}</span>
-                    <strong>{metric.value}</strong>
-                  </article>
-                ))}
-              </div>
-
-              <article className="site-hero-city-card">
-                <span>{activeCity.launchNote}</span>
-                <strong>{activeCity.name}</strong>
-                <p>{activeCity.blurb}</p>
-                <div className="site-inline-list">
-                  <span>{activeCity.postCount} posts</span>
-                  <span>{activeCity.meetupCount} meetups</span>
-                  <span>{activeCity.neighborhoodCount} neighborhoods</span>
-                </div>
-              </article>
+              <p className="site-caption">iOS · Android 출시 준비 중</p>
             </div>
-
-            <div className="site-hero-side">
+            <figure className="site-hero-preview" id="city-preview">
               <div className="site-stage">
-                <div className="site-stage-plane">
-                  <figure className="site-stage-shot is-phone">
-                    <img src={feedScreenshotSrc} alt="gling 피드 화면" />
-                  </figure>
-                  <article className="site-stage-note is-city">
-                    <span>{activeCity.name}</span>
-                    <strong>{activeCity.headline}</strong>
-                  </article>
-                  <article className="site-stage-dock" aria-label="커뮤니티 흐름">
-                    <span>댓글 - DM - 모임</span>
-                    <strong>다르게 생각해도 대화는 이어집니다.</strong>
-                  </article>
-                </div>
+                <img className="site-phone" src={feedScreenshotSrc} width="1320" height="2868"
+                  alt={`글링 ${activeCity.name} 앱 화면. 우리 동네의 오늘, 카테고리, 예시 모임과 게시글.`} />
               </div>
-
-              <WaitlistForm
-                city={activeCity}
-                inputId="hero-email"
-                source="hero"
-              />
-            </div>
+              <figcaption className="site-caption">실제 앱 화면 · 게시글과 모임, 반응 수는 예시입니다.</figcaption>
+            </figure>
           </section>
 
-          <section className="site-section" id="about">
-            <div className="site-section-head">
-              <span className="site-kicker">Why gling</span>
-              <h2>{`같은 생각을 요구하지 않는\n커뮤니티가 필요합니다.`}</h2>
-              <p>
-                gling은 불편한 의견까지도 대화의 일부로 남겨둡니다. 운영은 관점을 판단하지 않고, 법을
-                어기거나 다른 사람의 안전과 참여를 직접 해치는 행위에만 개입합니다.
-              </p>
-            </div>
+          <dl className="site-metric-row">
+            {WEB_HERO_METRICS.map((metric) => (
+              <div key={metric.label}><dt>{metric.label}</dt><dd>{metric.value}</dd></div>
+            ))}
+          </dl>
 
-            <div className="site-feature-grid">
-              {WEB_FEATURES.map((feature) => (
-                <article key={feature.title} className="site-feature-card">
-                  <span>{feature.kicker}</span>
-                  <strong>{feature.title}</strong>
-                  <p>{feature.body}</p>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section className="site-section" id="community">
+          <section className="site-section" id="community" aria-label="앱 둘러보기">
             {WEB_STORY_BLOCKS.map((block, index) => (
-              <div
-                key={block.id}
-                className={`site-story-grid${index % 2 === 1 ? ' is-reversed' : ''}`}>
+              <article key={block.id} className={`site-story-grid${index % 2 === 1 ? ' is-reversed' : ''}`}>
                 <div className="site-story-copy">
                   <span className="site-kicker">{block.kicker}</span>
                   <h2>{block.title}</h2>
                   <p>{block.body}</p>
                   <ul className="site-story-points">
-                    {block.points.map((point) => (
-                      <li key={point}>{point}</li>
-                    ))}
+                    {block.points.map((point) => <li key={point}>{point}</li>)}
                   </ul>
+                  {block.image === 'feed' && (
+                    <ul className="site-chip-cloud" aria-label="글링 카테고리">
+                      {WEB_CATEGORY_LABELS.map((item) => <li key={item}>{item}</li>)}
+                    </ul>
+                  )}
                 </div>
-
-                <div className={`site-visual-panel is-${block.image}`}>
-                  <figure className="site-visual-frame">
-                    <img
-                      src={block.image === 'feed' ? feedScreenshotSrc : flowScreenshotSrc}
-                      alt={block.image === 'feed' ? 'gling 피드 미리보기' : 'gling 모임과 대화 흐름 미리보기'}
-                    />
-                  </figure>
-                  <div className="site-chip-cloud" aria-hidden="true">
-                    {(block.image === 'feed' ? WEB_CATEGORY_LABELS : ['신고', '열람 기록', '이의 제기']).map((item) => (
-                      <span key={item}>{item}</span>
-                    ))}
-                  </div>
-                </div>
-              </div>
+                <figure className="site-story-preview">
+                  <img className="site-phone" src={block.image === 'feed' ? torontoScreenshotSrc : citiesScreenshotSrc}
+                    width="1320" height="2868" loading="lazy"
+                    alt={block.image === 'feed' ? '글링 토론토의 예시 게시글과 모임' : '글링 앱의 도시 선택 화면'} />
+                  <figcaption className="site-caption">
+                    {block.image === 'feed' ? '실제 앱 화면 · 게시글과 모임, 반응 수는 예시입니다.' : '테스트 앱 화면 · 공개 출시는 준비 중입니다.'}
+                  </figcaption>
+                </figure>
+              </article>
             ))}
           </section>
 
-          <section className="site-section" id="cities">
+          <section className="site-section" id="cities" aria-labelledby="cities-title">
             <div className="site-section-head">
-              <span className="site-kicker">Where gling Starts</span>
-              <h2>{`밴쿠버와 토론토에서\n새로운 대화를 시작합니다.`}</h2>
-              <p>
-                첫날부터 사람과 이야기가 있는 피드를 만들기 위해 밴쿠버와 토론토부터 시작합니다. 다음
-                도시는 기다리는 사람이 충분히 모인 곳부터 차례로 엽니다.
-              </p>
+              <span className="site-kicker">먼저, 두 도시에서</span>
+              <h2 id="cities-title">우리가 사는 곳에서<br />이야기는 시작되니까.</h2>
+              <p>밴쿠버와 토론토부터 준비하고 있어요. 다음 도시의 출시 일정은 추후 안내할게요.</p>
             </div>
-
             <div className="site-city-grid">
               {cities.map((city) => (
                 <article key={city.id} className={`site-city-card is-${city.state}`}>
-                  <span>{city.stateLabel}</span>
-                  <strong>{city.name}</strong>
+                  <div className="site-city-card-head"><span>{city.province}</span><span>{city.stateLabel}</span></div>
+                  <h3>{city.name}</h3>
                   <p>{city.blurb}</p>
-                  <dl>
-                    <div>
-                      <dt>Posts</dt>
-                      <dd>{city.postCount}</dd>
-                    </div>
-                    <div>
-                      <dt>Meetups</dt>
-                      <dd>{city.meetupCount}</dd>
-                    </div>
-                    <div>
-                      <dt>Areas</dt>
-                      <dd>{city.neighborhoodCount}</dd>
-                    </div>
-                  </dl>
                 </article>
               ))}
             </div>
           </section>
 
-          <section className="site-section site-trust-section" id="trust">
+          <section className="site-section" id="about" aria-labelledby="about-title">
             <div className="site-section-head">
-              <span className="site-kicker">Freedom With Clear Boundaries</span>
-              <h2>{`생각은 자유롭게,\n대화는 책임 있게.`}</h2>
-              <p>
-                정치적 입장, 소수 의견, 운영진 비판은 제재 이유가 아닙니다. 불법 콘텐츠, 협박, 신상 공개,
-                사기, 반복적인 욕설·괴롭힘처럼 다른 사람을 직접 해치는 행위만 제한합니다.
-              </p>
+              <span className="site-kicker">우리가 지키는 것</span>
+              <h2 id="about-title">생각은 자유롭게,<br />대화는 책임 있게.</h2>
+              <p>정치적 입장, 소수 의견, 운영진 비판은 제재 이유가 아닙니다. 다른 사람의 안전과 참여를 직접 해치는 행위에는 분명한 기준을 둡니다.</p>
             </div>
-
-            <div className="site-trust-layout">
-              <figure className="site-trust-shot">
-                <img src={trustScreenshotSrc} alt="gling 운영 원칙 화면" />
-              </figure>
-
-              <div className="site-policy-grid">
-                {WEB_POLICY_ITEMS.map((item) => (
-                  <article key={item.id} id={`policy-${item.id}`} className="site-policy-card">
-                    <span>{item.title}</span>
-                    <p>{item.body}</p>
-                  </article>
-                ))}
-              </div>
+            <div className="site-feature-grid">
+              {WEB_FEATURES.map((feature) => (
+                <article key={feature.title} className="site-feature-card">
+                  <span className="site-kicker">{feature.kicker}</span>
+                  <h3>{feature.title}</h3><p>{feature.body}</p>
+                </article>
+              ))}
             </div>
           </section>
 
-          <section className="site-section" id="download">
+          <section className="site-section site-trust-section" id="trust" aria-labelledby="trust-title">
+            <div className="site-section-head">
+              <span className="site-kicker">함께 알고 시작해요</span>
+              <h2 id="trust-title">신뢰는, 보이는 원칙에서.</h2>
+              <p>데이터를 어떻게 사용하고, 대화를 어떻게 지키는지 안내합니다.</p>
+            </div>
+            <div className="site-policy-grid">
+              {WEB_POLICY_ITEMS.map((item) => (
+                <article key={item.id} id={`policy-${item.id}`} className="site-policy-card">
+                  <h3>{item.title}</h3><p>{item.body}</p>
+                </article>
+              ))}
+            </div>
+            <a className="site-text-link" href="privacy">개인정보처리방침 읽기 <span aria-hidden="true">↗</span></a>
+          </section>
+
+          <section className="site-section" id="download" aria-labelledby="download-title">
             <div className="site-download-band">
               <div className="site-download-copy">
-                <span className="site-kicker">Join gling</span>
-                <h2>{`다른 생각도 머물 수 있는\n첫 커뮤니티를 함께 만드세요.`}</h2>
-                <p>
-                  밴쿠버와 토론토에서 먼저 시작합니다. 지금 오픈 알림을 신청하면 스토어 링크와 첫 커뮤니티
-                  소식을 가장 먼저 보내드립니다.
-                </p>
-                <div className="site-button-row">
-                  <StoreLink label="App Store" />
-                  <StoreLink label="Google Play" />
+                <img className="site-download-icon" src={appIconSrc} width="64" height="64" loading="lazy" alt="글링 앱 아이콘" />
+                <span className="site-kicker">곧, 우리 동네에서</span>
+                <h2 id="download-title">첫 이야기를<br />함께 펼쳐요.</h2>
+                <p>밴쿠버와 토론토에서 시작하는 글링.<br />가까운 이웃이 될 여러분을 기다립니다.</p>
+                <div className="site-store-status" aria-label="스토어 출시 상태">
+                  <span>App Store · 출시 준비 중</span><span>Google Play · 출시 준비 중</span>
                 </div>
               </div>
-
-              <div className="site-download-brand">
-                <img className="site-download-icon" src={appIconSrc} alt="gling 앱 아이콘" />
-                <img className="site-download-wordmark" src={wordmarkSrc} alt="gling" />
-              </div>
+              <LaunchNotice city={activeCity} />
             </div>
-
-            <WaitlistForm
-              city={activeCity}
-              inputId="download-email"
-              source="download"
-            />
           </section>
         </main>
 
         <footer className="site-footer">
           <div className="site-footer-brand">
-            <img src={wordmarkSrc} alt="gling" />
-            <p>
-              규칙으로 조용한 곳보다 대화로 살아 있는 곳. 다르게 생각해도 함께 이야기할 수 있는 캐나다
-              한인 커뮤니티입니다.
-            </p>
-            <a href="mailto:gling@ej-entertainment.com">gling@ej-entertainment.com</a>
+            <img src={wordmarkSrc} width="92" loading="lazy" alt="gling" />
+            <p>캐나다의 오늘을, 한국어로.<br />밴쿠버 · 토론토에서 시작하는 글링.</p>
+            <a href="mailto:gling@ej-entertainment.com">운영팀에 문의하기 ↗</a>
           </div>
-
           <div className="site-footer-columns">
             {WEB_FOOTER_GROUPS.map((group) => (
-              <section key={group.title}>
-                <strong>{group.title}</strong>
-                {group.links.map((link) => (
-                  <a key={link.label} href={link.href}>
-                    {link.label}
-                  </a>
-                ))}
-              </section>
+              <div key={group.title}><strong>{group.title}</strong>
+                {group.links.map((link) => <a key={link.label} href={link.href}>{link.label}</a>)}
+              </div>
             ))}
           </div>
         </footer>
