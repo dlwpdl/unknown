@@ -133,7 +133,7 @@ export function PostCard({
         </Pressable>
       )}
 
-      <View style={styles.content}>
+      <View style={[styles.content, photo && styles.photoContent]}>
         <Pressable
           onPress={onPress}
           disabled={!onPress}
@@ -198,7 +198,7 @@ export function PostCard({
                 )}
               </View>
               <ThemedText type="small" themeColor="textSecondary" style={styles.meta}>
-                {post.createdAtLabel} · {t.feed.views(post.views)}
+                {post.createdAtLabel}
               </ThemedText>
             </View>
           </Pressable>
@@ -319,6 +319,16 @@ export function PostCard({
               {shareCount}
             </ThemedText>
           </Pressable>
+          <View style={styles.reaction} accessible accessibilityLabel={t.feed.views(post.views)}>
+            <SymbolView
+              name={{ ios: 'eye', android: 'visibility', web: 'visibility' }}
+              size={20}
+              tintColor={theme.textSecondary}
+            />
+            <ThemedText type="small" themeColor="textSecondary" style={styles.footItem}>
+              {post.views}
+            </ThemedText>
+          </View>
         </View>
       </View>
       <ReportSheet
@@ -337,13 +347,14 @@ const styles = StyleSheet.create({
   card: { overflow: 'hidden' },
   photoCard: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 24 },
   textCard: { borderBottomWidth: StyleSheet.hairlineWidth },
-  content: { padding: Spacing.three },
+  content: { paddingVertical: Spacing.three },
+  photoContent: { paddingHorizontal: Spacing.three },
   pressed: { opacity: 0.65 },
   postImage: { width: '100%', aspectRatio: 16 / 10 },
   category: { fontSize: 12, lineHeight: 18, marginBottom: Spacing.two },
-  title: { fontSize: 20, lineHeight: 28, fontWeight: '700', letterSpacing: -0.4 },
-  photoTitle: { fontSize: 24, lineHeight: 32, letterSpacing: -0.6 },
-  body: { fontSize: 16, lineHeight: 24, fontWeight: '400', marginTop: Spacing.two },
+  title: { fontSize: 18, lineHeight: 26, fontWeight: '700', letterSpacing: -0.4 },
+  photoTitle: { fontSize: 20, lineHeight: 28, letterSpacing: -0.5 },
+  body: { fontSize: 15, lineHeight: 22, fontWeight: '400', marginTop: Spacing.two },
   hashRow: { flexDirection: 'row', flexWrap: 'wrap', columnGap: Spacing.three },
   hash: { minHeight: 44, minWidth: 44, maxWidth: '100%', flexShrink: 1, justifyContent: 'center' },
   head: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginTop: Spacing.two },
@@ -359,7 +370,7 @@ const styles = StyleSheet.create({
   roomCopy: { flex: 1 },
   roomTitle: { fontSize: 15, lineHeight: 22 },
   join: { minHeight: 44, borderRadius: 12, paddingHorizontal: 12, paddingVertical: Spacing.two, alignItems: 'center', justifyContent: 'center' },
-  foot: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: Spacing.two, borderTopWidth: StyleSheet.hairlineWidth, marginTop: Spacing.three, paddingTop: Spacing.one },
+  foot: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: Spacing.two, borderTopWidth: StyleSheet.hairlineWidth, marginTop: Spacing.three, paddingTop: Spacing.one },
   reaction: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.one, minWidth: 44, minHeight: 44 },
   footItem: { fontVariant: ['tabular-nums'] },
 });

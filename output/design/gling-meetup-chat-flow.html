@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>글링 · 모임과 대화의 두 입구</title>
+  <style>
+    .report{min-width:0;width:100%}
+    :root{color-scheme:light;--paper:#FAF9F5;--ink:#21252C;--red:#BE3B2A;--sub:#626874;--line:#e5e3db;--wash:#f1efe8;font:16px/1.5 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;color:var(--ink);background:var(--paper)}
+    *{box-sizing:border-box}body{margin:0}h1,h2,h3,p{margin:0}button,input{font:inherit;color:inherit}button{cursor:pointer;touch-action:manipulation}button:active{opacity:.65}button:disabled{cursor:default;opacity:.65}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #34506b;outline-offset:2px}a{color:#34506b}svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+    main{max-width:1120px;margin:auto;padding:40px 24px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,390px);gap:56px;align-items:start}.eyebrow{color:var(--red);font-size:12px;font-weight:700;letter-spacing:.08em}h1{font-size:36px;line-height:1.25;letter-spacing:-1px;margin:12px 0 20px}.lead{font-size:17px;line-height:1.65}.report h2{font-size:18px;margin:30px 0 12px}.report p{margin-bottom:16px}.report .muted,.report li{color:var(--sub);font-size:14px}.report ol{padding-left:22px}.report li{margin:10px 0}.recommend{display:inline-block;margin-bottom:16px;padding:5px 9px;border:1px solid #dcb4a9;border-radius:6px;color:var(--red);font-size:13px;font-weight:700}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:13px;min-width:370px}th,td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:12px 10px}th{color:var(--sub);font-weight:500}td:first-child{width:34%;font-weight:650}tr.chosen{background:#f5eee6}.reset{min-height:44px;padding:8px 14px;background:transparent;border:1px solid var(--line);border-radius:10px}.proof{padding:12px 14px;background:var(--wash);border-radius:10px;font-size:13px;line-height:1.6;min-height:66px}.sources{font-size:13px;color:var(--sub)}
+    .phone{position:sticky;top:24px;border:1px solid var(--line);border-radius:28px;overflow:hidden;background:var(--paper);font-size:15px}.status{height:36px;padding:10px 20px 0;display:flex;justify-content:space-between;font-size:12px;font-weight:700}.screen{height:620px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}.screen::-webkit-scrollbar{display:none}.app-head{padding:14px 16px 12px}.brand-row{display:flex;align-items:center;gap:10px;margin-bottom:18px}.wordmark{font-size:24px;letter-spacing:-1px;font-weight:800;color:var(--red)}.city{font-size:12px;color:var(--sub);margin-right:auto}.icon{display:grid;place-items:center;width:44px;height:44px;border:0;background:transparent;border-radius:50%}.app-head h2{font-size:25px;line-height:34px;letter-spacing:-.6px}.intro{font-size:13px;color:var(--sub);margin-top:4px}.filters{display:flex;gap:6px;padding:0 16px 16px}.filters button{min-height:44px;padding:8px 15px;border:1px solid var(--line);border-radius:22px;background:transparent;font-size:13px;font-weight:650}.filters [aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}.list{padding:0 16px 24px}.section-label{font-size:12px;font-weight:650;color:var(--sub);margin:18px 0 4px}.group-card{padding:20px 0;border-bottom:1px solid var(--line)}.group-top{display:flex;gap:12px;align-items:flex-start}.avatar{display:grid;place-items:center;width:44px;height:44px;flex-shrink:0;border-radius:14px;background:#eae9df;color:#34506b;font-weight:750;font-size:18px}.group-copy{min-width:0;flex:1}.group-card h3{font-size:17px;line-height:25px;letter-spacing:-.3px}.meta{font-size:12px;line-height:18px;color:var(--sub);margin-top:3px}.tag{display:inline-block;border:1px solid var(--line);padding:1px 6px;border-radius:5px;font-size:11px;color:var(--sub);margin-left:5px;white-space:nowrap}.tag.joined{color:var(--red);border-color:#dcb4a9}.group-card .description{font-size:14px;line-height:21px;color:var(--sub);margin-top:12px}.row-actions{display:flex;gap:8px;margin-top:14px}.action{min-height:44px;border:1px solid var(--line);border-radius:10px;background:transparent;padding:9px 12px;font-size:13px;font-weight:650;display:flex;align-items:center;justify-content:center;gap:7px}.row-actions .action{flex:1}.action.primary{background:var(--red);border-color:var(--red);color:white}.unread{display:inline-grid;place-items:center;background:var(--red);color:#fff;min-width:19px;height:19px;border-radius:10px;font-size:11px;padding:0 5px}.primary .unread{background:white;color:var(--red)}
+    .back-head{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:2}.back{display:flex;align-items:center;gap:2px;min-height:44px;padding:4px 6px;border:0;background:transparent;color:var(--red);font-size:13px;white-space:nowrap}.back-head h2{font-size:16px;line-height:23px;letter-spacing:-.2px}.back-head .meta{margin:0}.detail{padding:24px 16px}.detail .avatar{width:60px;height:60px;font-size:26px;margin-bottom:16px}.detail h3{font-size:22px;line-height:30px;letter-spacing:-.5px}.detail p{font-size:14px;line-height:23px;color:var(--sub);margin:18px 0}.detail .action{width:100%;margin-top:22px}.detail dl{margin:24px 0;border-top:1px solid var(--line);font-size:13px}.detail dl div{display:flex;padding:12px 0;border-bottom:1px solid var(--line)}dt{color:var(--sub);min-width:72px}dd{margin:0}.notice{padding:12px;border-radius:10px;background:var(--wash);font-size:13px!important}.conversation{width:100%;display:flex;gap:12px;align-items:center;text-align:left;padding:18px 0;border:0;border-bottom:1px solid var(--line);background:transparent;min-height:100px}.conversation .copy{flex:1;min-width:0}.conversation strong{font-size:15px;line-height:23px}.last{font-size:13px;color:var(--sub);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:240px;margin-top:4px}.room-body{padding:18px 16px 24px;min-height:460px}.day{text-align:center;color:var(--sub);font-size:11px;margin-bottom:22px}.message{margin-bottom:18px;display:flex;flex-direction:column;align-items:flex-start}.message.mine{align-items:flex-end}.sender{font-size:11px;color:var(--sub);margin-bottom:5px}.bubble{padding:10px 12px;background:var(--wash);border-radius:3px 14px 14px;max-width:88%;font-size:14px;line-height:21px;white-space:pre-wrap;overflow-wrap:anywhere}.mine .bubble{background:#f2e2db;border-radius:14px 3px 14px 14px}.composer{display:flex;align-items:center;gap:8px;padding:10px 12px;border-top:1px solid var(--line);background:var(--paper);position:sticky;bottom:0}.composer input{width:0;min-width:0;flex:1;min-height:44px;border:1px solid var(--line);border-radius:22px;padding:10px 14px;background:#fff;font-size:16px}.send{width:44px;height:44px;border:0;border-radius:50%;display:grid;place-items:center;background:var(--red);color:white}.bottom{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:8px 8px 18px;border-top:1px solid var(--line);background:var(--paper)}.bottom button{position:relative;min-height:50px;min-width:44px;border:0;border-radius:10px;background:transparent;color:var(--sub);font-size:11px;font-weight:650;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px}.bottom [aria-current=page]{color:var(--red)}.bottom .unread{position:absolute;top:0;right:5px;font-size:10px;min-width:16px;height:16px}.bottom .write{color:var(--red)}
+    @media(max-width:800px){main{grid-template-columns:1fr;gap:28px;padding:28px 16px}.phone{position:static;width:100%;max-width:390px;margin:auto}.screen{height:min(620px,72svh)}h1{font-size:30px}.report{max-width:580px;margin:auto}.table-wrap{max-width:100%}}@media(prefers-contrast:more){:root{--sub:#343a42;--line:#92948f}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}@media print{main{display:block;padding:0}.phone{position:static;width:390px;margin:24px auto;break-inside:avoid}.reset{display:none}}
+  </style>
+</head>
+<body>
+  <svg hidden aria-hidden="true"><defs>
+    <symbol id="today" viewBox="0 0 24 24"><path d="M4 3h16v18H4ZM8 7h8M8 11h8M8 15h4"/></symbol>
+    <symbol id="people" viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M2 21v-2a7 7 0 0 1 14 0v2M16 4a3 3 0 0 1 0 6M18 14a6 6 0 0 1 4 5v2"/></symbol>
+    <symbol id="plus" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M12 7v10M7 12h10"/></symbol>
+    <symbol id="chat" viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2v-9.5A8.5 8.5 0 1 1 21 11.5Z"/></symbol>
+    <symbol id="bell" viewBox="0 0 24 24"><path d="M5 10a7 7 0 0 1 14 0v6l2 2H3l2-2ZM10 21h4"/></symbol>
+    <symbol id="back" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></symbol>
+    <symbol id="send" viewBox="0 0 24 24"><path d="M12 19V5m-6 6 6-6 6 6"/></symbol>
+    <symbol id="search" viewBox="0 0 24 24"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/></symbol>
+    <symbol id="profile" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></symbol>
+  </defs></svg>
+  <main>
+    <section class="report" aria-labelledby="report-title">
+      <div class="eyebrow">GLING · 모임 / 채팅 UX</div>
+      <h1 id="report-title">같은 모임방으로,<br>자연스러운 두 개의 입구.</h1>
+      <span class="recommend">추천 · 대화 통합 + 모임에서 바로 열기</span>
+      <p class="lead">모임은 소개와 가입을 살피는 곳.<br>채팅은 내 대화를 모아 보는 곳.<br>어디서 대화를 열어도, 뒤로 가면 들어온 자리로 돌아와요.</p>
+      <h2>공개 여부와 가입 상태는 별개</h2>
+      <p class="muted"><strong>내 모임 / 둘러보기</strong>로 목록을 나눕니다. 공개 모임에도 ‘가입됨·신청 중’이 붙을 수 있어요. 가입한 비공개 모임은 내 모임에서 찾고, 대화는 가입이 완료된 멤버만 엽니다.</p>
+      <div class="table-wrap"><table><thead><tr><th>방식</th><th>이용 흐름과 판단</th></tr></thead><tbody>
+        <tr><td>모임 안에서만 대화</td><td>모임과 대화가 가까워요. 여러 모임의 새 메시지는 각각 찾아가야 해요.</td></tr>
+        <tr><td>채팅 탭으로 강제 전환</td><td>대화 목록은 한곳에 모여요. 모임을 보던 위치로 돌아가는 과정이 끊겨요.</td></tr>
+        <tr class="chosen"><td>통합 대화 + 두 입구<br><span class="recommend">추천</span></td><td>채팅에서 전체·모임·개인 대화를 모아 봐요. 모임에서도 같은 방을 바로 열고, 원래 목록과 스크롤로 돌아와요.</td></tr>
+      </tbody></table></div>
+      <h2>시안에서 직접 확인하기</h2>
+      <ol>
+        <li>내 모임의 <strong>퇴근길 30분 산책 → 대화 열기</strong>. 메시지를 적고 보내기를 누른 뒤, 왼쪽 위 ‘모임’으로 돌아오세요.</li>
+        <li>하단 <strong>채팅 → 모임 → 퇴근길 30분 산책</strong>. 같은 기록과 읽음 상태를 확인하고 ‘채팅’으로 돌아오세요.</li>
+        <li><strong>모임 → 둘러보기 → 주말 한 끼 같이 → 소개 열기 → 참여 신청</strong>. 신청 중으로 바뀌고 대화 입구는 생기지 않아요.</li>
+      </ol>
+      <p id="proof" class="proof" role="status" aria-live="polite"></p>
+      <button id="reset" class="reset" type="button">처음 상태로 되돌리기</button>
+      <h2>시안 범위와 근거</h2>
+      <p class="muted">모임·채팅 동선만 동작하는 로컬 시안입니다. 메시지와 참여 신청은 이 파일 안에서만 바뀌며, 실제 사람에게 전송하거나 서버에 저장하지 않습니다. 새로고침하면 초기화됩니다.</p>
+      <p class="sources"><a href="https://mobbin.com/screens/025af32f-463e-42c5-ba97-24166ca1d3e2" target="_blank" rel="noreferrer">Lex의 Explore Groups / Your Groups와 Joined 표시</a>, <a href="https://mobbin.com/screens/dc303f4c-acb2-43a6-aeba-00814a8577c6" target="_blank" rel="noreferrer">WhatsApp의 개인·그룹 대화 목록과 필터</a>를 참고했습니다. 두 입구에서 같은 방을 열고 복귀하는 동선은 글링을 위한 제안입니다.</p>
+      <p class="sources"><a href="https://developer.apple.com/design/human-interface-guidelines/tab-bars" target="_blank" rel="noreferrer">Apple의 탭별 탐색 상태 보존</a>과 <a href="https://developer.apple.com/design/human-interface-guidelines/modality" target="_blank" rel="noreferrer">짧고 단순한 모달 사용 원칙</a>에 맞춰, 대화는 모달을 중첩하지 않고 현재 탭 안에서 엽니다. 44pt 이상의 터치 영역과 동작 줄이기를 적용했습니다.</p>
+      <p class="muted">현재 실제 앱은 모임 승인 시 주최자와의 1:1 대화만 생성하므로, 이 안을 적용하려면 그룹 멤버십과 공통 모임방 구현이 추가로 필요합니다.</p>
+    </section>
+    <section class="phone" aria-label="글링 모임과 채팅 동선 시안">
+      <div class="status" aria-hidden="true"><span>9:41</span><span>●●● ▰</span></div>
+      <div id="screen" class="screen"></div>
+      <nav id="bottom" class="bottom" aria-label="글링 하단 메뉴"></nav>
+    </section>
+  </main>
+  <script>
+    const initial = {
+      groups: [
+        {id:'book',name:'한 달에 한 권',city:'밴쿠버 · 마운트플레전트',letter:'책',visibility:'private',membership:'joined',members:4,room:'book-room',description:'각자 읽은 책 한 권을 가져와 편하게 이야기해요. 완독하지 않아도 괜찮아요.'},
+        {id:'walk',name:'퇴근길 30분 산책',city:'밴쿠버 · 다운타운',letter:'걷',visibility:'public',membership:'joined',members:5,room:'walk-room',description:'퇴근 후 잠깐 걷고 싶은 날, 동네에서 만나요. 그날의 시간과 날씨는 모임방에서 함께 정해요.'},
+        {id:'coffee',name:'주말 커피 한 잔',city:'밴쿠버 · 키칠라노',letter:'커',visibility:'public',membership:'pending',members:6,room:null,description:'가까운 카페에서 주말을 시작해요. 참여 신청을 확인한 뒤 모임방에서 이야기 나눠요.'},
+        {id:'meal',name:'주말 한 끼 같이',city:'밴쿠버 · 다운타운',letter:'밥',visibility:'public',membership:'none',members:5,room:null,description:'가보고 싶던 식당에서 천천히 한 끼 나눠요. 참여가 승인되면 멤버들과 장소와 시간을 정할 수 있어요.'}
+      ],
+      rooms: {
+        'walk-room':{name:'퇴근길 30분 산책',letter:'걷',group:'walk',unread:3,draft:'',messages:[{sender:'민지',text:'오늘은 6시 반쯤 걸을 수 있어요.'},{sender:'지훈',text:'좋아요. 도서관 앞에서 만날까요?'},{sender:'민지',text:'비가 오면 여기서 다시 이야기해요.'}]},
+        'book-room':{name:'한 달에 한 권',letter:'책',group:'book',unread:0,draft:'',messages:[{sender:'소연',text:'이번 달은 각자 좋아하는 책 한 권씩 가져와요.'}]},
+        'personal-room':{name:'단풍산책',letter:'단',group:null,unread:1,draft:'',messages:[{sender:'단풍산책',text:'알려주신 식당 잘 다녀왔어요. 고마워요!'}]}
+      }
+    };
+    let data = structuredClone(initial);
+    let state = {tab:'meetups',filters:{meetups:'mine',chats:'all'},paths:{meetups:[],chats:[]},scroll:{}};
+    const screen = document.querySelector('#screen');
+    const proof = document.querySelector('#proof');
+    const esc = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    const icon = name => `<svg aria-hidden="true"><use href="#${name}"/></svg>`;
+    const current = () => state.paths[state.tab].at(-1);
+    const viewKey = () => `${state.tab}:${state.filters[state.tab]}:${state.paths[state.tab].map(p=>p.type+'-'+p.id).join('/')}`;
+    const saveScroll = () => {state.scroll[viewKey()] = screen.scrollTop;};
+    const groupById = id => data.groups.find(group => group.id === id);
+    const membershipLabel = group => ({joined:'가입됨',pending:'신청 중',none:'참여 가능'}[group.membership]);
+    const badge = count => count ? `<span class="unread" aria-label="읽지 않은 메시지 ${count}개">${count}</span>` : '';
+    const availableRooms = () => Object.entries(data.rooms).filter(([,room]) => !room.group || groupById(room.group).membership === 'joined');
+    function backLabel() {const path=state.paths[state.tab];return path.length>1&&path.at(-2).type==='detail'?'모임 소개':state.tab==='meetups'?'모임':'채팅';}
+    function backHead(title,subtitle='') {return `<header class="back-head"><button type="button" class="back" data-action="back" aria-label="${backLabel()}으로 돌아가기">${icon('back')}${backLabel()}</button><div><h2 id="screen-title" tabindex="-1">${esc(title)}</h2>${subtitle?`<div class="meta">${esc(subtitle)}</div>`:''}</div></header>`;}
+    function rootHead(title,subtitle) {return `<header class="app-head"><div class="brand-row"><span class="wordmark">gling</span><span class="city">밴쿠버</span><button class="icon" type="button" data-action="static" aria-label="검색">${icon('search')}</button><button class="icon" type="button" data-action="static" aria-label="내 프로필">${icon('profile')}</button></div><h2 id="screen-title" tabindex="-1">${title}</h2><p class="intro">${subtitle}</p></header>`;}
+    function filters(options) {return `<div class="filters" role="group" aria-label="${state.tab==='meetups'?'모임':'대화'} 목록 필터">${options.map(([id,label])=>`<button type="button" id="filter-${id}" data-action="filter" data-id="${id}" aria-pressed="${state.filters[state.tab]===id}">${label}</button>`).join('')}</div>`;}
+    function groupCard(group) {return `<article class="group-card"><div class="group-top"><span class="avatar" aria-hidden="true">${group.letter}</span><div class="group-copy"><h3>${group.name}</h3><div class="meta">${group.city} · ${group.members}명</div><div class="meta">${group.visibility==='public'?'공개 모임':'비공개 모임'}<span class="tag ${group.membership==='joined'?'joined':''}">${membershipLabel(group)}</span></div></div></div><p class="description">${group.description}</p><div class="row-actions"><button class="action" type="button" id="intro-${group.id}" data-action="detail" data-id="${group.id}" aria-label="${group.name} 소개 열기">소개 열기</button>${group.membership==='joined'?`<button class="action primary" type="button" id="open-${group.id}" data-action="room" data-id="${group.room}" aria-label="${group.name} 대화 열기">대화 열기 ${badge(data.rooms[group.room].unread)}</button>`:''}</div></article>`;}
+    function groupList() {const mine=state.filters.meetups==='mine';const joined=data.groups.filter(g=>g.membership==='joined');const pending=data.groups.filter(g=>g.membership==='pending');return rootHead('모임','익숙한 이웃과, 새로운 만남.')+filters([['mine','내 모임'],['explore','둘러보기']])+`<div class="list">${mine?`<p class="section-label">가입한 모임 ${joined.length}</p>${joined.map(groupCard).join('')}${pending.length?`<p class="section-label">참여 신청 중 ${pending.length}</p>${pending.map(groupCard).join('')}`:''}`:`<p class="section-label">밴쿠버의 공개 모임</p>${data.groups.filter(g=>g.visibility==='public').map(groupCard).join('')}`}</div>`;}
+    function groupDetail(group) {return backHead('모임 소개')+`<article class="detail"><div class="avatar" aria-hidden="true">${group.letter}</div><h3>${group.name}</h3><div class="meta">${group.city}<span class="tag joined">${membershipLabel(group)}</span></div><p>${group.description}</p><dl><div><dt>공개 범위</dt><dd>${group.visibility==='public'?'공개 모임':'비공개 모임'}</dd></div><div><dt>멤버</dt><dd>${group.members}명</dd></div><div><dt>참여 방식</dt><dd>신청 후 주최자 확인</dd></div></dl>${group.membership==='joined'?`<button class="action primary" id="detail-chat" type="button" data-action="room" data-id="${group.room}">모임 대화 열기 ${badge(data.rooms[group.room].unread)}</button>`:group.membership==='pending'?'<p class="notice">참여 신청을 보냈어요. 주최자가 승인하면 모임 대화를 시작할 수 있어요.</p><button class="action" type="button" disabled>참여 신청 중</button>':`<p class="notice">모임에 참여하면 멤버들과 시간과 장소를 함께 정할 수 있어요.</p><button class="action primary" id="request-join" type="button" data-action="join" data-id="${group.id}">참여 신청</button>`}</article>`;}
+    function chatList() {const mode=state.filters.chats;const rooms=availableRooms().filter(([,r])=>mode==='all'||(mode==='groups'?!!r.group:!r.group));return rootHead('채팅','함께하는 모임부터, 반가운 개인 대화까지.')+filters([['all','전체'],['groups','모임'],['direct','개인']])+`<div class="list">${rooms.map(([id,room])=>`<button type="button" id="chat-${id}" class="conversation" data-action="room" data-id="${id}" aria-label="${esc(room.name)} 대화 열기${room.unread?', 읽지 않은 메시지 '+room.unread+'개':''}"><span class="avatar" aria-hidden="true">${room.letter}</span><span class="copy"><strong>${esc(room.name)}</strong><span class="tag">${room.group?'모임':'개인'}</span><p class="last">${esc(room.messages.at(-1).text)}</p></span>${badge(room.unread)}</button>`).join('')}</div>`;}
+    function roomView(room) {return backHead(room.name,room.group?`모임 대화 · ${groupById(room.group).members}명`:'개인 대화')+`<div class="room-body"><p class="day">오늘</p>${room.messages.map(m=>`<div class="message ${m.sender==='나'?'mine':''}"><span class="sender">${esc(m.sender)}</span><p class="bubble">${esc(m.text)}</p></div>`).join('')}</div><form class="composer" id="message-form"><input id="message-input" aria-label="메시지" maxlength="500" placeholder="메시지를 입력하세요" autocomplete="off" value="${esc(room.draft)}"><button type="submit" class="send" aria-label="메시지 보내기">${icon('send')}</button></form>`;}
+    function render(focusId) {
+      const page=current();screen.innerHTML=page?.type==='room'?roomView(data.rooms[page.id]):page?.type==='detail'?groupDetail(groupById(page.id)):state.tab==='meetups'?groupList():chatList();
+      const unread=availableRooms().reduce((sum,[,r])=>sum+r.unread,0);
+      document.querySelector('#bottom').innerHTML=[['today','오늘','today'],['meetups','모임','people'],['compose','글쓰기','plus'],['chats','채팅','chat'],['notifications','알림','bell']].map(([id,label,glyph])=>`<button type="button" class="${id==='compose'?'write':''}" data-action="${id==='meetups'||id==='chats'?'tab':'static'}" data-id="${id}" ${state.tab===id?'aria-current="page"':''}>${icon(glyph)}${label}${id==='chats'?badge(unread):''}</button>`).join('');
+      screen.scrollTop=state.scroll[viewKey()]||0;
+      proof.textContent=`산책 모임방 · 기록 ${data.rooms['walk-room'].messages.length}개 · 읽지 않음 ${data.rooms['walk-room'].unread}개. 현재 입구: ${state.tab==='meetups'?'모임':'채팅'}${page?.type==='room'?' → 대화방':''}.`;
+      if(focusId)document.getElementById(focusId)?.focus({preventScroll:true});
+    }
+    function openRoom(id,returnFocus) {const room=data.rooms[id];if(!room||(room.group&&groupById(room.group).membership!=='joined'))return false;saveScroll();room.unread=0;state.paths[state.tab].push({type:'room',id,returnFocus});render('screen-title');return true;}
+    function goBack() {if(!current())return;saveScroll();const previous=state.paths[state.tab].pop();render(previous.returnFocus||'screen-title');}
+    function chooseTab(id) {saveScroll();state.tab=id;render('screen-title');}
+    function chooseFilter(id) {saveScroll();state.filters[state.tab]=id;render('filter-'+id);}
+    function requestJoin(id) {const group=groupById(id);if(!group||group.membership!=='none')return false;group.membership='pending';render('screen-title');proof.textContent='참여 신청 상태로 바뀌었습니다. 모임방은 아직 열리지 않습니다. 실제 신청은 전송되지 않았습니다.';return true;}
+    document.querySelector('.phone').addEventListener('click',event=>{
+      const button=event.target.closest('button[data-action]');if(!button||button.disabled)return;const {action,id}=button.dataset;
+      if(action==='back')goBack();
+      else if(action==='room')openRoom(id,button.id);
+      else if(action==='tab')chooseTab(id);
+      else if(action==='filter')chooseFilter(id);
+      else if(action==='detail'){saveScroll();state.paths[state.tab].push({type:'detail',id,returnFocus:button.id});render('screen-title');}
+      else if(action==='join')requestJoin(id);
+      else proof.textContent='이 시안에서는 모임·채팅 동선을 확인할 수 있습니다. 다른 메뉴는 배치만 표시합니다.';
+    });
+    screen.addEventListener('input',event=>{if(event.target.id==='message-input'&&current()?.type==='room')data.rooms[current().id].draft=event.target.value;});
+    screen.addEventListener('submit',event=>{if(event.target.id!=='message-form')return;event.preventDefault();const room=data.rooms[current().id];const text=room.draft.trim();if(!text)return;room.messages.push({sender:'나',text});room.draft='';render('message-input');screen.scrollTop=screen.scrollHeight;proof.textContent='이 파일 안에 메시지를 추가했습니다. 다른 입구에서도 같은 기록을 확인할 수 있습니다. 실제 전송은 하지 않았습니다.';});
+    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&current()){event.preventDefault();goBack();}});
+    document.querySelector('#reset').addEventListener('click',()=>{data=structuredClone(initial);state={tab:'meetups',filters:{meetups:'mine',chats:'all'},paths:{meetups:[],chats:[]},scroll:{}};render();});
+    render();
+  </script>
+</body>
+</html>

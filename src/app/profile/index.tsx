@@ -30,6 +30,9 @@ export default function ProfileScreen() {
   const [savedLoading, setSavedLoading] = useState(false);
   const [savedError, setSavedError] = useState(false);
   const [summary, setSummary] = useState<ProfileSummary | null>(null);
+  const updateViewCount = useCallback((postId: string, count: number) => {
+    setSavedPosts((current) => current.map((item) => item.id === postId ? { ...item, views: count } : item));
+  }, []);
 
   useEffect(() => {
     if (!isAuthed) return;
@@ -87,7 +90,7 @@ export default function ProfileScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <View style={styles.hero}>
           <Pressable
             onPress={pickProfilePhoto}
@@ -191,7 +194,7 @@ export default function ProfileScreen() {
             animationType="slide"
             presentationStyle="pageSheet"
             onRequestClose={() => setSavedDetail(null)}>
-            {savedDetail && <PostDetail post={savedDetail} onClose={() => setSavedDetail(null)} />}
+            {savedDetail && <PostDetail post={savedDetail} onClose={() => setSavedDetail(null)} onViewCountChange={updateViewCount} />}
           </Modal>
         </ThemedView>
       </Modal>

@@ -15,7 +15,7 @@ import { t } from '@/i18n/ko';
 import { isAdminRole } from '@/lib/admin';
 import { canUseDevPasswordLogin, getOAuthCallbackPath, getOAuthCode } from '@/lib/kakao-auth';
 import { CONTACT_EMAIL } from '@/lib/legal-documents';
-import { supabase } from '@/lib/supabase';
+import { signInReviewAccount, supabase } from '@/lib/supabase';
 import type { TrustLevel } from '@/lib/trust';
 
 type Level = 0 | 1;
@@ -43,6 +43,7 @@ type AuthValue = {
   prepareAppleAccountDeletion: () => Promise<string | null>;
   signInKakao: () => Promise<void>;
   signInDev: (email: string, password: string) => Promise<void>;
+  signInReview: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   setProfilePhoto: (uri: string | null, base64?: string) => Promise<void>;
   promptLogin: (reason?: string) => void; // L0 게이트
@@ -58,7 +59,7 @@ export function useAuth(): AuthValue {
   return ctx;
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children, publicPage = false }: { children: ReactNode; publicPage?: boolean }) {
   const [session, setSession] = useState<Session | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
@@ -202,6 +203,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSigningIn(false);
     }
   }, []);
+  const signInReview = useCallback(async (email: string, password: string) => {
+    setSigningIn(true);
+    setAuthError(null);
+    try {
+      await signInReviewAccount(email, password);
+      setVisible(false);
+    } catch {
+      setAuthError(t.auth.reviewLoginError);
+    } finally {
+      setSigningIn(false);
+    }
+  }, []);
   const signOut = useCallback(async () => {
     setAuthError(null);
     const { error } = await supabase.auth.signOut();
@@ -274,6 +287,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       prepareAppleAccountDeletion,
       signInKakao,
       signInDev,
+      signInReview,
       signOut,
       setProfilePhoto,
       promptLogin,
@@ -294,6 +308,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       prepareAppleAccountDeletion,
       signInKakao,
       signInDev,
+      signInReview,
       signOut,
       setProfilePhoto,
       promptLogin,
@@ -303,7 +318,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={value}>
       {children}
-      <Modal visible={visible} animationType="slide" onRequestClose={() => setVisible(false)}>
+      <Modal visible={!publicPage && visible} animationType="slide" onRequestClose={() => setVisible(false)}>
         <LoginPanel
           reason={reason}
           onApple={signInApple}
@@ -314,7 +329,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           onClose={() => setVisible(false)}
         />
       </Modal>
-      <Modal visible={lockedStatus != null} animationType="fade" onRequestClose={() => {}}>
+      <Modal visible={!publicPage && lockedStatus != null} animationType="fade" onRequestClose={() => {}}>
         {lockedStatus && (
           <AccountLockedPanel
             status={lockedStatus}
@@ -326,7 +341,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {session && (
         <ProfileOnboarding
           key={`${session.user.id}:${activeProfile?.account_status ?? 'new'}:${activeProfile?.ai_safety_consent_at ?? 'missing'}`}
-          visible={missingProfileUserId === session.user.id}
+          visible={!publicPage && missingProfileUserId === session.user.id}
           userId={session.user.id}
           socialNickname={socialNickname}
           socialPhoto={socialPhoto}

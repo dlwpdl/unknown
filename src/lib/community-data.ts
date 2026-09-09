@@ -158,6 +158,9 @@ export async function toggleCommentReaction(
 export async function recordPostView(client: SupabaseClient, postId: string) {
   const result = await client.rpc('record_post_view', { post_id: postId });
   if (result.error) throw result.error;
+  const updated = await client.rpc('get_public_post', { p_post_id: postId }).select('view_count').single();
+  if (updated.error) throw updated.error;
+  return updated.data.view_count as number;
 }
 
 export async function recordPostShare(client: SupabaseClient, postId: string) {

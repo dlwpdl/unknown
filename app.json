@@ -11,8 +11,11 @@
       "icon": "./assets/brand/gling-app-icon.png",
       "bundleIdentifier": "com.dlwpdl.gling",
       "appleTeamId": "P3X3452TDZ",
-      "buildNumber": "4",
+      "buildNumber": "6",
       "usesAppleSignIn": true,
+      "infoPlist": {
+        "CFBundleName": "글링"
+      },
       "config": {
         "usesNonExemptEncryption": false
       },
@@ -84,7 +87,7 @@
     },
     "android": {
       "package": "com.dlwpdl.gling",
-      "versionCode": 4,
+      "versionCode": 6,
       "blockedPermissions": ["android.permission.SYSTEM_ALERT_WINDOW"],
       "adaptiveIcon": {
         "backgroundColor": "#BE3B2A",

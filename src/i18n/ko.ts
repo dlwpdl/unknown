@@ -2,7 +2,7 @@
 // 영어 확장 시: en.ts 추가 + 로케일 스위치만 붙이면 됨 (expo-localization).
 
 export const t = {
-  appName: 'gling',
+  appName: '글링',
 
   trust: {
     accessibilityLabel: (level: 1 | 2 | 3) =>
@@ -11,9 +11,11 @@ export const t = {
 
   tabs: {
     today: '오늘',
+    meetups: '모임',
     write: '글쓰기',
     chat: '채팅',
     profile: '나',
+    notifications: '알림',
   },
 
   notifications: {
@@ -30,6 +32,9 @@ export const t = {
     journalTitle: '우리 동네의\n오늘을 펼치다.',
     meetupHeading: '함께할 모임',
     meetupSubheading: '동네에서 만나요',
+    meetupTitle: '같이할 때,\n더 좋은 하루.',
+    meetupEmptyTitle: '첫 모임을 기다리고 있어요',
+    meetupEmptyBody: '함께하고 싶은 일이나 가볍게 만날 모임을 올려보세요.',
     latestHeading: '이웃의 이야기',
     emptyTitle: '첫 이야기를 기다리고 있어요',
     emptyBody: '작은 일상이나 궁금한 이야기를 이웃과 나눠보세요.',
@@ -39,7 +44,6 @@ export const t = {
     cityPickerTitle: '어느 동네로 갈까요?',
     cityPickerBody: '가까운 도시의 이야기를 둘러보세요.',
     cityPickerNote: '기기 위치 권한 없이 직접 선택합니다.',
-    cityOpen: '운영 중',
     citySoon: '준비 중',
     citySelected: '선택됨',
     soonTitle: (name: string) => `${name}, 곧 열려요`,
@@ -160,6 +164,7 @@ export const t = {
     tagline: '해외에서 나누는 우리들의 일상',
     reasonDetail: '이 글을 마저 보려면 로그인이 필요해요',
     reasonProfile: '내 프로필은 로그인하고 볼 수 있어요',
+    reasonNotifications: '알림을 보려면 로그인이 필요해요',
     reasonWrite: '오늘의 한 편을 쓰려면 로그인이 필요해요',
     reasonLike: '공감하려면 로그인이 필요해요',
     reasonSave: '글을 저장하려면 로그인이 필요해요',
@@ -174,6 +179,12 @@ export const t = {
     devPassword: '비밀번호',
     devLoginCta: '실제 개발 세션으로 시작',
     devLoginError: '개발 계정 정보를 확인해주세요.',
+    reviewLoginTitle: '심사용 계정 로그인 / Review access',
+    reviewEmail: '심사 계정 이메일 / Review email',
+    reviewPassword: '비밀번호 / Password',
+    reviewLoginCta: '심사 계정으로 로그인 / Sign in',
+    reviewLoginNote: '앱 심사를 위해 미리 발급된 계정만 사용할 수 있어요. Only pre-issued review accounts can sign in.',
+    reviewLoginError: '심사 계정 정보를 확인해주세요. Check your review credentials.',
     close: '둘러보기',
     loginNote: '소셜 계정으로 간편하게 시작해요.',
     loginError: '로그인에 실패했어요. 잠시 후 다시 시도해주세요.',

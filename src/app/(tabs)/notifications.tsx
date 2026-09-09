@@ -1,11 +1,12 @@
-import { Redirect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { LoginPanel } from '@/components/login-panel';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
@@ -15,12 +16,13 @@ import { supabase } from '@/lib/supabase';
 export default function NotificationsScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { isAuthed, isAuthLoading, me } = useAuth();
+  const { isAuthed, isAuthLoading, me, signInApple, signInKakao, signInDev, authError } = useAuth();
   const [rows, setRows] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
+    setLoading(true);
     setError(false);
     try {
       const next = await loadNotifications(supabase, me.id);
@@ -37,23 +39,19 @@ export default function NotificationsScreen() {
     }
   }, [me.id]);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (!isAuthed) return;
-    const timer = setTimeout(() => void load(), 0);
-    return () => clearTimeout(timer);
-  }, [isAuthed, load]);
+    void load();
+  }, [isAuthed, load]));
 
   if (isAuthLoading) return <ActivityIndicator color={theme.accent} style={styles.center} />;
-  if (!isAuthed) return <Redirect href="/profile" />;
+  if (!isAuthed) return <LoginPanel reason={t.auth.reasonNotifications} onApple={signInApple} onKakao={signInKakao} onDevLogin={signInDev} loading={isAuthLoading} error={authError} />;
 
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView style={styles.safeArea}>
         <View style={[styles.header, { borderBottomColor: theme.line }]}>
           <ThemedText type="subtitle">{t.notifications.title}</ThemedText>
-          <Pressable onPress={() => router.back()} accessibilityRole="button">
-            <ThemedText type="smallBold" style={{ color: theme.accent }}>{t.notifications.close}</ThemedText>
-          </Pressable>
         </View>
         {loading ? (
           <ActivityIndicator color={theme.accent} style={styles.center} accessibilityLabel={t.notifications.loading} />
@@ -93,7 +91,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, alignItems: 'center' },
   safeArea: { flex: 1, width: '100%', maxWidth: MaxContentWidth },
   header: { minHeight: 56, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1 },
-  list: { padding: Spacing.three, gap: Spacing.two, flexGrow: 1 },
+  list: { padding: Spacing.three, paddingBottom: TabBarHeight + Spacing.three, gap: Spacing.two, flexGrow: 1 },
   row: { minHeight: 72, padding: Spacing.three, gap: Spacing.one, justifyContent: 'center', borderWidth: 1, borderRadius: 12 },
   center: { flex: 1, textAlign: 'center', paddingTop: Spacing.five },
 });

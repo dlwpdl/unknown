@@ -28,15 +28,14 @@ import { Colors, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/them
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
+import { useCommunityCity } from '@/lib/community-city';
 import { parseAiDraftResponse } from '@/lib/ai-draft';
 import {
   createCommunityPost,
   isContentRejected,
   loadDailyQuota,
   loadTrendingHashtags,
-  loadUnreadNotificationCount,
   POST_QUOTA_CHANGED_EVENT,
-  recordPostView,
   requestMeetupJoin,
 } from '@/lib/community-data';
 import { groupJournalPosts, loadPublicFeed } from '@/lib/feed-data';
@@ -44,12 +43,11 @@ import { addHashtag, canonicalizeHashtag, getSuggestedHashtags, parseHashtags } 
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES, INITIAL_QUOTA, MOCK_POSTS, TAGS } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
-import { views } from '@/lib/views';
-import type { City, Post, Tag } from '@/lib/types';
+import type { Post, Tag } from '@/lib/types';
 
 type DraftImage = { uri: string; base64: string; mimeType: string };
 
-export default function FeedScreen() {
+export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: boolean }) {
   const theme = useTheme();
   const reducedMotion = useReducedMotion();
   const router = useRouter();
@@ -60,7 +58,7 @@ export default function FeedScreen() {
   const bottomClear = insets.bottom + TabBarHeight; // 탭바 + 홈 인디케이터 실측 높이
   const [posts, setPosts] = useState<Post[]>(MOCK_POSTS);
   const [quota, setQuota] = useState(INITIAL_QUOTA);
-  const [city, setCity] = useState<City>(CITIES[0]);
+  const { city, setCity } = useCommunityCity();
   const [cityPicker, setCityPicker] = useState(false);
   const [writing, setWriting] = useState(false);
   const [tag, setTag] = useState<Tag>(TAGS[0]);
@@ -72,7 +70,7 @@ export default function FeedScreen() {
   const [aiDraftReady, setAiDraftReady] = useState(false);
   const [detailPost, setDetailPost] = useState<Post | null>(null);
   const [pendingPost, setPendingPost] = useState<Post | null>(null); // 로그인 후 이어서 열 글
-  const [tagFilter, setTagFilter] = useState<number | null>(null); // 카테고리 칩
+  const [tagFilter, setTagFilter] = useState<number | null>(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null); // 카테고리 칩
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -81,7 +79,6 @@ export default function FeedScreen() {
   const [searchResults, setSearchResults] = useState<Post[]>([]);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [joinPost, setJoinPost] = useState<Post | null>(null);
   const [joinMessage, setJoinMessage] = useState('');
   const [joining, setJoining] = useState(false);
@@ -125,7 +122,9 @@ export default function FeedScreen() {
     [cityOpen, cityPosts, tagFilter],
   );
 
-  const journal = useMemo(() => groupJournalPosts(feedData), [feedData]);
+  const journal = useMemo(() => meetupsOnly
+    ? { featured: undefined, meetups: [], remaining: feedData }
+    : groupJournalPosts(feedData), [feedData, meetupsOnly]);
 
   // 검색: 제목·내용·닉네임·동네·해시태그 부분일치 ('#' 입력은 무시)
   // 영문 동네명도 매칭 (Coquitlam → 코퀴틀람) — 표기 파편화 방지
@@ -157,15 +156,6 @@ export default function FeedScreen() {
     return () => clearTimeout(timer);
   }, [canonicalQuery, city.id, q, searching]);
 
-  useEffect(() => {
-    if (!isAuthed) return;
-    const refreshUnread = () => void loadUnreadNotificationCount(supabase, me.id).then(setUnreadCount).catch(() => {});
-    refreshUnread();
-    const channel = supabase.channel(`notification-count:${me.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${me.id}` }, refreshUnread)
-      .subscribe();
-    return () => { void supabase.removeChannel(channel); };
-  }, [isAuthed, me.id]);
 
   const openSearch = (initial?: string) => {
     setQuery(initial ?? '');
@@ -178,20 +168,15 @@ export default function FeedScreen() {
       setPendingPost(post); // 로그인 성공하면 이어서 열기
       return promptLogin(t.auth.reasonDetail);
     }
-    const firstView = !views.has(post.id);
-    if (firstView) {
-      views.mark(post.id);
-      setPosts((current) => current.map((item) => item.id === post.id ? { ...item, views: item.views + 1 } : item));
-      void recordPostView(supabase, post.id).catch(() => {
-        views.unmark(post.id);
-        setPosts((current) => current.map((item) => item.id === post.id ? { ...item, views: Math.max(0, item.views - 1) } : item));
-        setDetailPost((current) => current?.id === post.id ? { ...current, views: Math.max(0, current.views - 1) } : current);
-      });
-    }
-    setDetailPost(firstView ? { ...post, views: post.views + 1 } : post);
+    setDetailPost(post);
   };
 
-  // 테스트 UX: 소셜 로그인(mock) 직후 보려던 글 자동 오픈
+  const updateViewCount = useCallback((postId: string, count: number) => {
+    setPosts((current) => current.map((item) => item.id === postId ? { ...item, views: count } : item));
+    setSearchResults((current) => current.map((item) => item.id === postId ? { ...item, views: count } : item));
+  }, []);
+
+  // 로그인 직후 보려던 글을 이어서 연다.
   useEffect(() => {
     if (isAuthed && pendingPost) {
       const timer = setTimeout(() => {
@@ -328,7 +313,7 @@ export default function FeedScreen() {
       const nextQuota = await loadDailyQuota(supabase);
       setQuota(nextQuota);
       DeviceEventEmitter.emit(POST_QUOTA_CHANGED_EVENT, nextQuota);
-      setTagFilter(null);
+      setTagFilter(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null);
       setTitle('');
       setBody('');
       setHashtagInput('');
@@ -369,7 +354,9 @@ export default function FeedScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <FlatList
-          data={journal.remaining}
+          data={[null, ...journal.remaining]}
+          stickyHeaderIndices={[0]}
+          stickyHeaderHiddenOnScroll={!reducedMotion}
           onEndReached={() => void loadMorePosts()}
           onEndReachedThreshold={0.4}
           refreshing={refreshing}
@@ -377,12 +364,11 @@ export default function FeedScreen() {
             setRefreshing(true);
             void refreshFeed().catch(() => Alert.alert(t.feed.refreshErrorTitle, t.feed.refreshErrorBody)).finally(() => setRefreshing(false));
           }}
-          keyExtractor={(p) => p.id}
+          keyExtractor={(p) => p?.id ?? 'journal-intro'}
           contentContainerStyle={[styles.listContent, { paddingBottom: bottomClear + Spacing.three }]}
-          ItemSeparatorComponent={() => <View style={{ height: Spacing.four }} />}
+          ItemSeparatorComponent={({ leadingItem }) => leadingItem == null ? null : <View style={{ height: Spacing.four }} />}
           ListHeaderComponent={
-            <View style={styles.header}>
-              <View style={styles.headRow}>
+              <View style={[styles.headRow, { backgroundColor: theme.background }]}>
                 <Image
                   source={require('@/assets/brand/gling-wordmark.png')}
                   style={styles.wordmark}
@@ -398,20 +384,6 @@ export default function FeedScreen() {
                   <ThemedText type="smallBold" numberOfLines={1} style={styles.city}>{city.name}</ThemedText>
                   <SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={14} tintColor={theme.text} />
                 </Pressable>
-                {isAuthed && (
-                  <Pressable
-                    onPress={() => router.push('/notifications')}
-                    accessibilityRole="button"
-                    accessibilityLabel={unreadCount > 0 ? `${t.notifications.open}, ${unreadCount}` : t.notifications.open}
-                    style={({ pressed }) => [styles.iconButton, pressed && styles.chipPressed]}>
-                    <SymbolView name={{ ios: 'bell', android: 'notifications', web: 'notifications' }} size={22} tintColor={theme.text} />
-                    {unreadCount > 0 && (
-                      <View style={[styles.unreadBadge, { backgroundColor: theme.accent }]}>
-                        <ThemedText type="smallBold" style={[styles.unreadText, { color: theme.accentInk }]}>{Math.min(unreadCount, 99)}</ThemedText>
-                      </View>
-                    )}
-                  </Pressable>
-                )}
                 <Pressable
                   onPress={() => openSearch()}
                   accessibilityRole="button"
@@ -419,12 +391,23 @@ export default function FeedScreen() {
                   style={({ pressed }) => [styles.iconButton, pressed && styles.chipPressed]}>
                   <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={23} tintColor={theme.text} />
                 </Pressable>
+                <Pressable
+                  onPress={() => { play('selection'); router.push('/profile'); }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t.tabs.profile}
+                  style={({ pressed }) => [styles.iconButton, pressed && styles.chipPressed]}>
+                  <SymbolView name={{ ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} size={24} tintColor={theme.text} />
+                </Pressable>
               </View>
+          }
+          ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText> : null}
+          renderItem={({ item }) => item == null ? (
+            <View style={styles.header}>
               <View style={styles.journalIntro}>
                 <ThemedText type="smallBold" themeColor="textSecondary" style={styles.journalDate}>{todayLabel()}</ThemedText>
-                <ThemedText accessibilityRole="header" style={styles.journalTitle}>{t.feed.journalTitle}</ThemedText>
+                <ThemedText accessibilityRole="header" style={styles.journalTitle}>{meetupsOnly ? t.feed.meetupTitle : t.feed.journalTitle}</ThemedText>
               </View>
-              {cityOpen && (
+              {cityOpen && !meetupsOnly && (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
                   {[null, ...TAGS.map((tg) => tg.id)].map((id) => {
                     const label = id == null ? t.feed.filterAll : TAGS.find((tg) => tg.id === id)!.label;
@@ -481,15 +464,12 @@ export default function FeedScreen() {
               {journal.remaining.length > 0 && (journal.featured || journal.meetups.length > 0) && (
                 <ThemedText accessibilityRole="header" style={[styles.sectionTitle, styles.latestHeading]}>{t.feed.latestHeading}</ThemedText>
               )}
-            </View>
-          }
-          ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText> : null}
-          ListEmptyComponent={
+              {
             cityOpen ? (
               feedData.length === 0 ? (
                 <View style={styles.soon}>
-                  <ThemedText accessibilityRole="header" style={styles.soonTitle}>{t.feed.emptyTitle}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary" style={styles.soonBody}>{t.feed.emptyBody}</ThemedText>
+                  <ThemedText accessibilityRole="header" style={styles.soonTitle}>{meetupsOnly ? t.feed.meetupEmptyTitle : t.feed.emptyTitle}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary" style={styles.soonBody}>{meetupsOnly ? t.feed.meetupEmptyBody : t.feed.emptyBody}</ThemedText>
                   <Pressable onPress={openWriter} accessibilityRole="button" style={[styles.soonCta, { backgroundColor: theme.accent }]}>
                     <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{t.feed.write}</ThemedText>
                   </Pressable>
@@ -513,8 +493,9 @@ export default function FeedScreen() {
                 </Pressable>
               </View>
             )
-          }
-          renderItem={({ item }) => (
+              }
+            </View>
+          ) : (
             <PostCard
               post={item}
               onPress={() => openDetail(item)}
@@ -610,6 +591,7 @@ export default function FeedScreen() {
         {detailPost && (
           <PostDetail
             post={detailPost}
+            onViewCountChange={updateViewCount}
             onClose={() => setDetailPost(null)}
             onJoin={() => onJoin(detailPost)}
             onCommentCountChange={(count) => {
@@ -686,19 +668,20 @@ export default function FeedScreen() {
                       onPress={() => { play('selection'); setCity(item); setCityPicker(false); }}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
-                      accessibilityLabel={`${item.name}, ${selected ? t.feed.citySelected : open ? t.feed.cityOpen : t.feed.citySoon}`}
+                      accessibilityLabel={[item.name, !open && t.feed.citySoon, selected && t.feed.citySelected].filter(Boolean).join(', ')}
                       style={({ pressed }) => [styles.cityRow, { borderColor: theme.line }, pressed && styles.chipPressed]}>
                       <View style={styles.cityName}>
                         <ThemedText style={[styles.cityRowTitle, { color: selected ? theme.accent : theme.text }]}>{item.name}</ThemedText>
                         <ThemedText type="small" themeColor="textSecondary">{item.province}</ThemedText>
                       </View>
-                      {selected ? (
-                        <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={23} tintColor={theme.accent} />
-                      ) : (
-                        <View style={[styles.cityBadge, { backgroundColor: theme.backgroundElement }]}>
-                          <ThemedText type="small" themeColor="textSecondary">{open ? t.feed.cityOpen : t.feed.citySoon}</ThemedText>
-                        </View>
-                      )}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+                        {!open && (
+                          <View style={[styles.cityBadge, { backgroundColor: theme.backgroundElement }]}>
+                            <ThemedText type="small" themeColor="textSecondary">{t.feed.citySoon}</ThemedText>
+                          </View>
+                        )}
+                        {selected && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={23} tintColor={theme.accent} />}
+                      </View>
                     </Pressable>
                   );
                 }}
@@ -901,19 +884,19 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
   },
   listContent: {
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.three,
   },
   header: { paddingTop: Spacing.two, paddingBottom: Spacing.four },
-  headRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  headRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, paddingVertical: Spacing.two },
   wordmark: { width: 64, height: 36 },
   cityButton: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, marginLeft: 'auto', minHeight: 44, flexShrink: 1, paddingHorizontal: Spacing.one },
-  city: { fontSize: 16, lineHeight: 24, flexShrink: 1 },
+  city: { fontSize: 14, lineHeight: 20, flexShrink: 1 },
   iconButton: { width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   unreadBadge: { position: 'absolute', top: 0, right: 0, minWidth: 18, borderRadius: 9, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
   unreadText: { fontSize: 10, lineHeight: 14, fontVariant: ['tabular-nums'] },
   journalIntro: { paddingTop: Spacing.four, gap: Spacing.two },
   journalDate: { fontSize: 12, lineHeight: 18, letterSpacing: 0.8 },
-  journalTitle: { fontSize: 32, lineHeight: 40, fontWeight: 700, letterSpacing: -1 },
+  journalTitle: { fontSize: 28, lineHeight: 36, fontWeight: 700, letterSpacing: -0.8 },
   chipBar: { flexDirection: 'row', gap: Spacing.one, paddingTop: Spacing.three },
   filterChip: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 999, paddingHorizontal: 14, paddingVertical: Spacing.two },
   chipPressed: { opacity: 0.65 },
@@ -922,7 +905,7 @@ const styles = StyleSheet.create({
   meetupPreview: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, padding: Spacing.three, borderRadius: 20 },
   meetupCopy: { flex: 1, minHeight: 44, justifyContent: 'center', gap: Spacing.one },
   sectionHeading: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: Spacing.two },
-  sectionTitle: { fontSize: 20, lineHeight: 28, fontWeight: 700, letterSpacing: -0.5 },
+  sectionTitle: { fontSize: 18, lineHeight: 26, fontWeight: 700, letterSpacing: -0.4 },
   latestHeading: { marginTop: Spacing.four },
   popularLabel: {
     fontSize: 12,

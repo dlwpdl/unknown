@@ -6,37 +6,42 @@ import {
   TabTriggerSlotProps,
   TabListProps,
 } from 'expo-router/ui';
-import { Image } from 'expo-image';
-import { usePathname, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { DeviceEventEmitter, Pressable, View, StyleSheet, useColorScheme } from 'react-native';
+import { SymbolView } from 'expo-symbols';
+import { usePathname } from 'expo-router';
+import { useEffect, useRef } from 'react';
+import { Pressable, View, StyleSheet } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
-import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { t } from '@/i18n/ko';
-import { useAuth } from '@/lib/auth';
-import { loadDailyQuota, POST_QUOTA_CHANGED_EVENT } from '@/lib/community-data';
+import { useTheme } from '@/hooks/use-theme';
+import { useUnreadCount } from '@/hooks/use-unread-count';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { INITIAL_QUOTA } from '@/lib/mock';
-import { supabase } from '@/lib/supabase';
-import type { DailyQuota } from '@/lib/types';
 
 export default function AppTabs() {
+  const pathname = usePathname();
+  const unreadCount = useUnreadCount();
   return (
     <Tabs>
       <AnimatedTabSlot />
-      <TabList asChild>
+      <TabList asChild style={pathname === '/' ? { display: 'none' } : undefined}>
         <CustomTabList>
           <TabTrigger name="home" href="/" asChild>
-            <TabButton>{t.tabs.today}</TabButton>
+            <TabButton icon="today">{t.tabs.today}</TabButton>
+          </TabTrigger>
+          <TabTrigger name="meetups" href="/meetups" asChild>
+            <TabButton icon="groups">{t.tabs.meetups}</TabButton>
+          </TabTrigger>
+          <TabTrigger name="compose" href="/compose" asChild>
+            <TabButton icon="edit_square">{t.tabs.write}</TabButton>
           </TabTrigger>
           <TabTrigger name="chat" href="/chat" asChild>
-            <TabButton>{t.tabs.chat}</TabButton>
+            <TabButton icon="forum">{t.tabs.chat}</TabButton>
           </TabTrigger>
-          <TabTrigger name="profile" href="/profile" asChild>
-            <TabButton>{t.tabs.profile}</TabButton>
+          <TabTrigger name="notifications" href="/notifications" asChild>
+            <TabButton icon="notifications" badge={unreadCount}>{t.tabs.notifications}</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
@@ -73,7 +78,8 @@ function AnimatedTabSlot() {
   );
 }
 
-export function TabButton({ children, isFocused, onPress, ...props }: TabTriggerSlotProps) {
+export function TabButton({ children, icon, badge = 0, isFocused, onPress, ...props }: TabTriggerSlotProps & { icon: 'today' | 'groups' | 'edit_square' | 'forum' | 'notifications'; badge?: number }) {
+  const theme = useTheme();
   const { play } = useInteractionFeedback();
   return (
     <Pressable
@@ -82,60 +88,23 @@ export function TabButton({ children, isFocused, onPress, ...props }: TabTrigger
         play('selection');
         onPress?.(event);
       }}
-      style={({ pressed }) => pressed && styles.pressed}>
-      <ThemedView
-        type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
-        style={styles.tabButtonView}>
-        <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
+      style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}>
+      <View style={styles.tabButtonView}>
+        <SymbolView name={{ web: icon }} size={22} tintColor={isFocused ? theme.accent : theme.textSecondary} />
+        {badge > 0 && <View style={[styles.badge, { backgroundColor: theme.accent }]}><ThemedText style={{ color: theme.accentInk, fontSize: 10, lineHeight: 14 }}>{badge > 99 ? '99+' : badge}</ThemedText></View>}
+        <ThemedText type="small" style={{ fontSize: 11, color: isFocused ? theme.accent : theme.textSecondary }}>
           {children}
         </ThemedText>
-      </ThemedView>
+      </View>
     </Pressable>
   );
 }
 
 export function CustomTabList(props: TabListProps) {
-  const dark = useColorScheme() === 'dark';
-  const router = useRouter();
-  const { isAuthed, me } = useAuth();
-  const { play } = useInteractionFeedback();
-  const [quota, setQuota] = useState<DailyQuota>(INITIAL_QUOTA);
-
-  useEffect(() => {
-    if (!isAuthed) return;
-    let active = true;
-    void loadDailyQuota(supabase).then((next) => active && setQuota(next)).catch(() => {});
-    const subscription = DeviceEventEmitter.addListener(POST_QUOTA_CHANGED_EVENT, setQuota);
-    return () => {
-      active = false;
-      subscription.remove();
-    };
-  }, [isAuthed, me.id]);
-
+  const theme = useTheme();
   return (
-    <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={styles.innerContainer}>
-        <Pressable
-          onPress={() => {
-            play('selection');
-            router.push({ pathname: '/', params: { compose: '1' } });
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={`${t.feed.write} ${t.feed.remaining(quota.used, quota.max)}`}
-          style={({ pressed }) => [styles.writeEntry, pressed && styles.pressed]}>
-          <Image
-            source={require('@/assets/brand/gling-wordmark.png')}
-            style={styles.brandLogo}
-            contentFit="contain"
-            tintColor={dark ? Colors.dark.text : undefined}
-          />
-          <View style={[styles.quotaBadge, { backgroundColor: quota.used < quota.max ? Colors.light.accent : Colors.light.textSecondary }]}>
-            <ThemedText type="smallBold" style={styles.quotaText}>{t.feed.remaining(quota.used, quota.max)}</ThemedText>
-          </View>
-        </Pressable>
-
-        {props.children}
-      </ThemedView>
+    <View {...props} style={[styles.tabListContainer, { backgroundColor: theme.background, borderTopColor: theme.line }, props.style]}>
+      <ThemedView style={styles.innerContainer}>{props.children}</ThemedView>
     </View>
   );
 }
@@ -150,32 +119,30 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 10,
-    padding: Spacing.three,
+    borderTopWidth: StyleSheet.hairlineWidth,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
   },
   innerContainer: {
     paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.five,
-    borderRadius: Spacing.five,
+    paddingHorizontal: Spacing.two,
     flexDirection: 'row',
     alignItems: 'center',
     flexGrow: 1,
     gap: Spacing.two,
     maxWidth: MaxContentWidth,
   },
-  writeEntry: { position: 'relative', width: 112, minHeight: 36, marginRight: 'auto', justifyContent: 'center' },
-  brandLogo: { width: 72, height: 32 },
-  quotaBadge: { position: 'absolute', top: -2, right: 0, minWidth: 30, height: 18, borderRadius: 999, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
-  quotaText: { color: Colors.light.accentInk, fontSize: 10, lineHeight: 13, fontVariant: ['tabular-nums'] },
+  tabButton: { flex: 1, minWidth: 44, minHeight: 48 },
+  badge: { position: 'absolute', right: 4, top: 0, borderRadius: 8, minWidth: 14, paddingHorizontal: 3, alignItems: 'center' },
   pressed: {
     opacity: 0.72,
-    transform: [{ scale: 0.96 }],
   },
   tabButtonView: {
     paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
+    paddingHorizontal: Spacing.one,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
   },
 });

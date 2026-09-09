@@ -1,10 +1,13 @@
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
+import { Pressable } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 
 export default function ProfileLayout() {
   const theme = useTheme();
+  const router = useRouter();
 
   return (
     <Stack
@@ -15,7 +18,14 @@ export default function ProfileLayout() {
         headerShadowVisible: false,
         headerBackButtonDisplayMode: 'minimal',
       }}>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="index" options={{
+        title: t.tabs.profile,
+        headerLeft: () => (
+          <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/')} accessibilityRole="button" accessibilityLabel={t.notifications.close} style={{ minWidth: 44, minHeight: 44, justifyContent: 'center' }}>
+            <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} />
+          </Pressable>
+        ),
+      }} />
       <Stack.Screen name="guidelines" options={{ title: t.profile.guidelines }} />
       <Stack.Screen name="settings" options={{ title: t.profile.settings }} />
     </Stack>

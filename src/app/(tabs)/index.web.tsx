@@ -1,4 +1,4 @@
-import './index.web.css';
+import '../index.web.css';
 
 import { Asset } from 'expo-asset';
 import Head from 'expo-router/head';
@@ -20,9 +20,9 @@ import {
 const appIconSrc = Asset.fromModule(require('@/assets/brand/gling-app-icon.png')).uri;
 const wordmarkSrc = Asset.fromModule(require('@/assets/brand/gling-wordmark.png')).uri;
 // Reuse the real B-design store captures so the website and store show the same app.
-const vancouverScreenshotSrc = Asset.fromModule(require('../../release/app-store/ios-6.9/01-vancouver.png')).uri;
-const torontoScreenshotSrc = Asset.fromModule(require('../../release/app-store/ios-6.9/02-toronto.png')).uri;
-const citiesScreenshotSrc = Asset.fromModule(require('../../release/app-store/ios-6.9/03-cities.png')).uri;
+const vancouverScreenshotSrc = Asset.fromModule(require('../../../release/app-store/ios-6.9/01-vancouver.png')).uri;
+const torontoScreenshotSrc = Asset.fromModule(require('../../../release/app-store/ios-6.9/02-toronto.png')).uri;
+const citiesScreenshotSrc = Asset.fromModule(require('../../../release/app-store/ios-6.9/03-cities.png')).uri;
 const siteColors = {
   '--bg': Colors.light.background,
   '--surface': Colors.light.backgroundElement,

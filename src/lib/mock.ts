@@ -282,10 +282,9 @@ export const MOCK_POSTS: Post[] = [
   },
 ].map((post) => ({
   ...post,
-  author: { ...post.author, nickname: `${post.author.nickname}·예시`, verified: false, trustLevel: undefined },
+  author: { ...post.author, verified: false, trustLevel: undefined },
   commentList: post.commentList?.map((comment) => ({
     ...comment,
-    nickname: `${comment.nickname}·예시`,
     verified: false,
     trustLevel: undefined,
   })),

@@ -1,6 +1,6 @@
 begin;
 
-select plan(14);
+select plan(17);
 
 select has_column('public', 'posts', 'hashtags', 'posts preserve mock hashtags');
 select has_column('public', 'posts', 'room_preview', 'posts preserve mock room previews');
@@ -24,8 +24,8 @@ select results_eq(
 );
 select results_eq(
   $$select count(*)::integer from public.posts$$,
-  array[35],
-  'thirty-five mock posts are seeded'
+  array[53],
+  'fifty-three mock posts are seeded'
 );
 select results_eq(
   $$select count(*)::integer from public.comments$$,
@@ -67,6 +67,19 @@ select ok(
     'insert'
   ),
   'clients cannot self-assign verification level'
+);
+
+select results_eq(
+  $$select count(*)::integer from (select city_id, tag_id from public.posts where id between '20000000-0000-0000-0000-000000000036' and '20000000-0000-0000-0000-000000000053' group by city_id, tag_id) as launch_examples$$,
+  array[18], 'launch examples cover nine categories in each launch city'
+);
+select results_eq(
+  $$select count(*)::integer from public.posts p join public.profiles author on author.id = p.author_id where p.id between '20000000-0000-0000-0000-000000000036' and '20000000-0000-0000-0000-000000000053' and (p.title like '[예시] %' or p.body like '%목업 게시글%' or p.body like '%예시%' or author.nickname::text like '%·예시')$$,
+  array[0], 'seed display copy has no example labels'
+);
+select results_eq(
+  $$select coalesce(sum(like_count + save_count + comment_count + view_count + share_count), 0)::integer from public.posts where id between '20000000-0000-0000-0000-000000000036' and '20000000-0000-0000-0000-000000000053'$$,
+  array[0], 'new examples do not fabricate engagement'
 );
 
 select * from finish();

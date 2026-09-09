@@ -1,8 +1,9 @@
 import { Image } from 'expo-image';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
+import { router } from 'expo-router';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, TextInput, useColorScheme, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, useColorScheme, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -15,6 +16,7 @@ export function LoginPanel({
   onApple,
   onKakao,
   onDevLogin,
+  onReviewLogin,
   loading = false,
   error,
   onClose,
@@ -23,19 +25,22 @@ export function LoginPanel({
   onApple?: () => void;
   onKakao?: () => void;
   onDevLogin?: (email: string, password: string) => void;
+  onReviewLogin?: (email: string, password: string) => void;
   loading?: boolean;
   error?: string | null;
   onClose?: () => void;
 }) {
   const theme = useTheme();
   const dark = useColorScheme() === 'dark';
-  const [devEmail, setDevEmail] = useState('');
-  const [devPassword, setDevPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const passwordLogin = onReviewLogin ?? (__DEV__ ? onDevLogin : undefined);
   const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://dlwpdl.github.io/gling').replace(/\/$/, '');
 
   return (
     <ThemedView style={styles.wrap}>
-      <View style={styles.center}>
+      <KeyboardAvoidingView style={styles.wrap} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={styles.center} keyboardShouldPersistTaps="handled">
         <Image
           source={require('@/assets/brand/gling-wordmark.png')}
           style={styles.brandLogo}
@@ -59,7 +64,7 @@ export function LoginPanel({
                 style={[styles.appleButton, { opacity: loading ? 0.6 : 1 }]}
               />
             )}
-            <Pressable
+            {onKakao && <Pressable
               onPress={onKakao}
               disabled={loading}
               accessibilityRole="button"
@@ -68,38 +73,38 @@ export function LoginPanel({
               <ThemedText type="smallBold" style={{ color: '#191600', fontSize: 16 }}>
                 {loading ? t.auth.kakaoLoading : t.auth.kakao}
               </ThemedText>
-            </Pressable>
-            {__DEV__ && onDevLogin && (
+            </Pressable>}
+            {passwordLogin && (
               <View style={[styles.devBox, { borderColor: theme.line }]}>
-                <ThemedText type="smallBold">{t.auth.devLoginTitle}</ThemedText>
+                <ThemedText type="smallBold">{onReviewLogin ? t.auth.reviewLoginTitle : t.auth.devLoginTitle}</ThemedText>
                 <TextInput
-                  value={devEmail}
-                  onChangeText={setDevEmail}
+                  value={email}
+                  onChangeText={setEmail}
                   autoCapitalize="none"
                   autoComplete="email"
                   keyboardType="email-address"
-                  placeholder={t.auth.devEmail}
+                  placeholder={onReviewLogin ? t.auth.reviewEmail : t.auth.devEmail}
                   placeholderTextColor={theme.textSecondary}
-                  accessibilityLabel={t.auth.devEmail}
+                  accessibilityLabel={onReviewLogin ? t.auth.reviewEmail : t.auth.devEmail}
                   style={[styles.devInput, { color: theme.text, borderColor: theme.line }]}
                 />
                 <TextInput
-                  value={devPassword}
-                  onChangeText={setDevPassword}
+                  value={password}
+                  onChangeText={setPassword}
                   secureTextEntry
                   autoComplete="current-password"
-                  placeholder={t.auth.devPassword}
+                  placeholder={onReviewLogin ? t.auth.reviewPassword : t.auth.devPassword}
                   placeholderTextColor={theme.textSecondary}
-                  accessibilityLabel={t.auth.devPassword}
+                  accessibilityLabel={onReviewLogin ? t.auth.reviewPassword : t.auth.devPassword}
                   style={[styles.devInput, { color: theme.text, borderColor: theme.line }]}
                 />
                 <Pressable
-                  onPress={() => onDevLogin(devEmail, devPassword)}
-                  disabled={loading || !devEmail.trim() || !devPassword}
+                  onPress={() => passwordLogin(email, password)}
+                  disabled={loading || !email.trim() || !password}
                   accessibilityRole="button"
-                  accessibilityState={{ disabled: loading || !devEmail.trim() || !devPassword, busy: loading }}
-                  style={[styles.devButton, { borderColor: theme.line, opacity: !devEmail.trim() || !devPassword ? 0.5 : 1 }]}>
-                  <ThemedText type="smallBold">{t.auth.devLoginCta}</ThemedText>
+                  accessibilityState={{ disabled: loading || !email.trim() || !password, busy: loading }}
+                  style={[styles.devButton, { borderColor: theme.line, opacity: !email.trim() || !password ? 0.5 : 1 }]}>
+                  <ThemedText type="smallBold">{onReviewLogin ? t.auth.reviewLoginCta : t.auth.devLoginCta}</ThemedText>
                 </Pressable>
               </View>
             )}
@@ -112,8 +117,17 @@ export function LoginPanel({
         )}
 
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>
-          {t.auth.loginNote}
+          {onReviewLogin ? t.auth.reviewLoginNote : t.auth.loginNote}
         </ThemedText>
+
+        {!onReviewLogin && (
+          <Pressable
+            onPress={() => { onClose?.(); router.push('/auth/review'); }}
+            accessibilityRole="link"
+            style={styles.reviewLink}>
+            <ThemedText type="small" themeColor="textSecondary">{t.auth.reviewLoginTitle}</ThemedText>
+          </Pressable>
+        )}
 
         <View style={styles.legalLinks}>
           <Pressable onPress={() => void Linking.openURL(`${publicSiteUrl}/terms`)} accessibilityRole="link">
@@ -132,7 +146,8 @@ export function LoginPanel({
             </ThemedText>
           </Pressable>
         )}
-      </View>
+      </ScrollView>
+      </KeyboardAvoidingView>
     </ThemedView>
   );
 }
@@ -142,13 +157,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   center: {
-    flex: 1,
+    flexGrow: 1,
     width: '100%',
     maxWidth: 440,
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.five,
+    paddingVertical: Spacing.four,
     gap: Spacing.two,
   },
   brandLogo: { width: 180, height: 80 },
@@ -175,6 +191,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.two,
     maxWidth: 280,
   },
+  reviewLink: { minHeight: 44, justifyContent: 'center' },
   legalLinks: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   close: {
     marginTop: Spacing.four,

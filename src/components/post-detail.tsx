@@ -22,7 +22,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
-import { addPostComment, isContentRejected, loadPostCommentsPage, startDirectConversation, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
+import { addPostComment, isContentRejected, loadPostCommentsPage, recordPostView, startDirectConversation, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 import type { Post, PostComment } from '@/lib/types';
@@ -51,11 +51,13 @@ export function PostDetail({
   onClose,
   onJoin,
   onCommentCountChange,
+  onViewCountChange,
 }: {
   post: Post;
   onClose: () => void;
   onJoin?: () => void;
   onCommentCountChange?: (count: number) => void;
+  onViewCountChange?: (postId: string, count: number) => void;
 }) {
   const theme = useTheme();
   const router = useRouter();
@@ -70,6 +72,19 @@ export function PostDetail({
   const [reportSelection, setReportSelection] = useState<ReportSelection | null>(null);
   const [commentTotal, setCommentTotal] = useState(post.comments);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [viewCount, setViewCount] = useState(post.views);
+
+  useEffect(() => {
+    if (!isAuthed) return;
+    let active = true;
+    // The database counts each (post, account) once, across app restarts and devices.
+    void recordPostView(supabase, post.id).then((count) => {
+      if (!active) return;
+      setViewCount(count);
+      onViewCountChange?.(post.id, count);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [isAuthed, me.id, onViewCountChange, post.id]);
 
   useEffect(() => {
     let active = true;
@@ -171,7 +186,7 @@ export function PostDetail({
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scroll}>
           <PostCard
-            post={post}
+            post={{ ...post, views: viewCount }}
             onJoin={onJoin}
             onAuthor={() =>
               setSheetUser({

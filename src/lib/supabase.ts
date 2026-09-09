@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 
+import { isReviewUser } from '@/lib/review-access';
+
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 if (!supabaseUrl || !supabasePublishableKey) {
@@ -21,3 +23,22 @@ export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
     flowType: 'pkce',
   },
 });
+
+// Validate review access before storing any session in the main app client.
+const reviewAuth = createClient(supabaseUrl, supabasePublishableKey, {
+  auth: { storageKey: 'gling-review-staging', persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+}).auth;
+
+export async function signInReviewAccount(email: string, password: string): Promise<void> {
+  const { data, error } = await reviewAuth.signInWithPassword({ email: email.trim(), password });
+  if (error) throw error;
+  if (!data.session || !isReviewUser(data.user)) {
+    await reviewAuth.signOut({ scope: 'local' });
+    throw new Error('REVIEW_ACCESS_DENIED');
+  }
+  const result = await supabase.auth.setSession(data.session);
+  if (result.error) {
+    await reviewAuth.signOut({ scope: 'local' });
+    throw result.error;
+  }
+}
