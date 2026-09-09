@@ -1,6 +1,6 @@
 begin;
 
-select plan(17);
+select plan(18);
 
 select has_column('public', 'posts', 'hashtags', 'posts preserve mock hashtags');
 select has_column('public', 'posts', 'room_preview', 'posts preserve mock room previews');
@@ -24,8 +24,8 @@ select results_eq(
 );
 select results_eq(
   $$select count(*)::integer from public.posts$$,
-  array[53],
-  'fifty-three mock posts are seeded'
+  array[54],
+  'fifty-four mock posts are seeded'
 );
 select results_eq(
   $$select count(*)::integer from public.comments$$,
@@ -80,6 +80,17 @@ select results_eq(
 select results_eq(
   $$select coalesce(sum(like_count + save_count + comment_count + view_count + share_count), 0)::integer from public.posts where id between '20000000-0000-0000-0000-000000000036' and '20000000-0000-0000-0000-000000000053'$$,
   array[0], 'new examples do not fabricate engagement'
+);
+
+select results_eq(
+  $$select count(*)::integer from public.posts p
+    join public.safety_review_queue q on q.target_type = 'post' and q.target_id = p.id
+    where p.id = '20000000-0000-0000-0000-000000000054'
+      and p.author_id = '10000000-0000-0000-0000-000000000021'
+      and p.city_id = 'vancouver' and p.status = 'published'
+      and p.body like '%Vlad D%Unsplash%'
+      and p.image_paths = array['10000000-0000-0000-0000-000000000021/vancouver-coal-harbour.jpg']$$,
+  array[1], 'real Vancouver photo has credit, the managed author and a safety queue entry'
 );
 
 select * from finish();
