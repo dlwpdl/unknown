@@ -2,7 +2,7 @@
 
 ## 목적과 범위
 
-사용자가 요청한 회원·콘텐츠·멤버십·트래픽·구매·운영 로그를 기존 `/admin` 웹 콘솔의 독립된 분석 화면에서 조회한다. 일반 앱의 탭바와 분리하고 기존 관리자 권한 및 감사 기록을 재사용한다. 추가 서비스나 의존성을 도입하지 않는다.
+사용자가 요청한 회원·콘텐츠·멤버십·트래픽·구매·운영 로그를 로컬 전용 관리자 콘솔에서 조회한다. 일반 앱의 빌드와 분리하고 기존 관리자 권한 및 감사 기록을 재사용한다. 추가 서비스나 의존성을 도입하지 않는다.
 
 - 기간 7/30/90일, 도시, 현재 멤버십 필터. 목 계정·심사 계정·관리자 계정은 기본 제외하고 명시적으로 포함할 수 있다.
 - 전체 회원, 기간 신규 가입·글·활동 회원, 실제 중복 제거 조회 기록, 일별 추이, 회원 목록과 최근 로그인·접속 기록.
@@ -13,13 +13,17 @@
 
 ## 구현과 명령
 
-관리자는 `/admin`의 전용 이메일·비밀번호 로그인으로 진입한다. 기존 사전 등록 관리자 계정만 허용하며, 일반 회원 가입 경로와 심사 계정 링크를 노출하지 않는다. 서버의 관리자 역할 검사와 감사 기록은 동일하게 적용한다.
+관리자는 `npm run admin` 실행 후 `http://127.0.0.1:8181/`에서 전용 이메일·비밀번호 로그인으로 진입한다. 기존 사전 등록 관리자 계정만 허용하며, 일반 회원 가입 경로와 심사 계정 링크를 노출하지 않는다. 서버의 관리자 역할 검사와 감사 기록은 동일하게 적용한다.
+
+2026-09-10 사용자 요청으로 공개 `/admin` 경로를 제거했다. 공개 라우트는 `src/app`, 관리자 라우트는 `src/admin`으로 분리한다. 관리자 빌드에만 Expo Router의 root 설정을 적용하며, CI에서는 관리자 빌드를 거부한다. 관리자 정적 파일은 Git에서 제외한 `.admin-dist`에 내보내고 Python 표준 HTTP 서버를 **127.0.0.1에만 바인딩**한다. 공개 배포 전 `npm run check:public-web`으로 관리자 경로·대시보드 코드가 포함되지 않았는지 검사한다. 수동으로 관리자 출력물을 호스팅하거나 터널을 열지 않는다.
+
+설정 근거: [Expo 앱 설정](https://docs.expo.dev/workflow/configuration/), [Router root 설정](https://docs.expo.dev/router/reference/src-directory/#custom-directory). 비표준 root는 로컬 관리자 빌드에만 사용하며 일반 앱의 기본 root는 유지한다.
 
 Expo SDK 57 / React Native Web / Supabase Postgres RPC. `src/components/admin/`에 분석 화면, `src/lib/admin-analytics.ts`에 계약과 조회, 기존 인증 트리에 작은 방문 수집기, `supabase/migrations/0031_admin_analytics.sql`에 서버 집계와 비공개 원자료를 둔다.
 
 스타일은 기존 `Colors.light`와 `Spacing`을 사용한다. 예: `if (!private.is_admin())`에 해당하는 서버 검사 이후에만 집계·목록을 반환한다. 성공 예시는 `totalMembers: 5`, 수집 전 값은 `null` 또는 시작 시각과 명확한 안내다.
 
-검증: `npm test`, `npm run typecheck`, `npm run lint`, `npx supabase test db`, `npx expo export --platform web --output-dir /tmp/gling-admin-web`. pgTAP으로 권한 거부, 기간·등급 필터, 목 계정 제외, 접속 중복 처리, webhook 중복·테스트 제외를 확인한다. Orca의 Git → gling에서 실제 UI·반응형·키보드·오류 상태를 확인한다.
+검증: `npm test`, `npm run typecheck`, `npm run lint`, `npx supabase test db`. 공개 빌드는 `npx expo export --platform web` 후 `npm run check:public-web`, 로컬 관리자는 `npm run admin`으로 확인한다. pgTAP으로 권한 거부, 기간·등급 필터, 목 계정 제외, 접속 중복 처리, webhook 중복·테스트 제외를 확인한다. Orca의 Git → gling에서 실제 UI·반응형·키보드·오류 상태를 확인한다.
 
 ## 순서와 경계
 

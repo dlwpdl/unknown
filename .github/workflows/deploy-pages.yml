@@ -34,6 +34,7 @@ jobs:
           EXPO_PUBLIC_SHARE_URL: ${{ secrets.EXPO_PUBLIC_SHARE_URL }}
           EXPO_PUBLIC_APP_URL: https://gling.ej-entertainment.com
           EXPO_PUBLIC_SUPPORT_EMAIL: gling@ej-entertainment.com
+      - run: npm run check:public-web
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
