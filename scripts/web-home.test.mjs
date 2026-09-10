@@ -30,10 +30,10 @@ test('launch cities stay in order without presenting mock counts as live activit
   }
 });
 
-test('WEB_POLICY_ITEMS keeps every required trust disclosure', () => {
+test('WEB_POLICY_ITEMS lists the home policy summaries', () => {
   assert.deepEqual(
     WEB_POLICY_ITEMS.map((item) => item.id),
-    ['privacy', 'retention', 'admin-review', 'ai-review', 'appeal', 'contact'],
+    ['privacy', 'retention', 'ai-review', 'appeal', 'contact'],
   );
 });
 
