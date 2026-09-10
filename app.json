@@ -87,7 +87,7 @@
     },
     "android": {
       "package": "com.dlwpdl.gling",
-      "versionCode": 6,
+      "versionCode": 7,
       "blockedPermissions": ["android.permission.SYSTEM_ALERT_WINDOW"],
       "adaptiveIcon": {
         "backgroundColor": "#BE3B2A",
