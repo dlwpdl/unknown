@@ -37,7 +37,7 @@
 1. App Store Connect의 유료 앱 계약이 아직 `신규` 상태다. 계약자 확인·동의와 이후 은행/세금 정보 등록을 완료해야 한다. 글링 폴더의 App Store Connect 탭에 계약 검토 화면을 열어뒀다. 가격 확정 후 Apple 구독 그룹·상품, Google 구독·기본 요금제를 등록하고 RevenueCat 상품과 현재 Offering에 위 package ID로 연결한다. Apple 그룹은 프리미엄이 상위 등급이며 기간만 다른 상품은 같은 등급으로 둔다.
 2. Google Play 판매자 결제 프로필을 연결한다. 현재 계정에는 미국·한국·캐나다 기존 프로필이 보이며, 수익 수령 국가·프로필 선택을 사용자에게 확인해야 한다. Orca의 `Git → gling` 안 결제 프로필 탭에 선택 화면을 열어뒀다.
 3. Google Play 서비스 계정 연결과 RevenueCat Android 앱·공개 SDK 키 설정을 완료한다. 현재 Android 키가 없어 Android 결제는 준비 중이다.
-4. 양 스토어 sandbox에서 실제 구매, 갱신, 복원, 해지·만료·환불과 등급 변경을 검증한 다음 스토어 제출용 빌드를 올린다. Webhook 테스트와 DB 테스트는 실제 구매 검증을 대신하지 않는다.
+4. 양 스토어 sandbox에서 실제 구매, 갱신, 복원, 해지·만료·환불과 등급 변경을 검증하고, 구매 내역 처리에 맞춰 스토어 개인정보·데이터 보안 신고를 갱신한 다음 제출용 빌드를 올린다. Webhook 테스트와 DB 테스트는 실제 구매 검증을 대신하지 않는다.
 5. 내 글 홍보/노출권 상품은 별도 후속 범위다. 이번 구독에 포함하거나 혜택으로 판매하지 않는다.
 
 ## 검증
@@ -48,7 +48,9 @@
 - 운영 심사 계정의 `get_membership` 및 RevenueCat 서버 동기화 성공. 비인증 요청 401 확인.
 - Orca 실제 웹에서 멤버십 표시·선택·접근성 상태와 내 모임/공개 모임 구분 확인.
 - 최신 web export 성공: `/tmp/gling-subscription-web`.
+- 구현 커밋 `48017f9`를 `dlwpdl/gling`의 `mobile-app`에 푸시했다. [GitHub Pages 배포](https://github.com/dlwpdl/gling/actions/runs/34450525417) 성공. 운영 도메인의 배포 JS에서 RevenueCat 개인정보 안내와 `gling@ej-entertainment.com` 반영을 확인했다.
 - RevenueCat SDK 포함 iOS Release 빌드 성공. 연결된 iPhone X에 설치 완료. `idevicedebug --detach run com.dlwpdl.gling` 정상 종료로 실행 요청 완료. 실제 결제 동작은 상품 연결 후 검증해야 한다.
 - 설치 바이너리: `/tmp/gling-subscription-device/Build/Products/Release-iphoneos/app.app`.
+- Android `:app:assembleRelease` 성공. 기존 JDK 17·Android SDK·업로드 키로 RevenueCat SDK까지 컴파일했다. APK: `android/app/build/outputs/apk/release/app-release.apk`. Android 실제 구매는 서비스 계정·상품·SDK 키 연결 후 검증한다.
 
 디자인 조사 근거: [구독 디자인 메모](subscription-design-2026-09-09.md).
