@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 import { Image } from 'expo-image';
-import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
-import { ADMIN_SECTIONS, type AdminSection } from '@/lib/admin';
+import { ADMIN_SECTIONS, adminOptionKeys, type AdminSection } from '@/lib/admin';
 import type { AdminCounts } from '@/lib/admin-data';
 
 export function AdminShell({
@@ -52,7 +52,9 @@ export function AdminShell({
                 key={item.id}
                 onPress={() => onSection(item.id)}
                 accessibilityRole="tab"
-                accessibilityState={{ selected: active }}
+                aria-selected={active}
+                tabIndex={active ? 0 : -1}
+                {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})}
                 style={[styles.navItem, active && styles.navItemActive]}>
                 <ThemedText type="smallBold" style={active ? styles.navTextActive : styles.navText}>
                   {item.label}

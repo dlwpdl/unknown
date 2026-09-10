@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 
 import { isReviewUser } from '@/lib/review-access';
+import { isAdminRole } from '@/lib/admin';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -24,21 +25,25 @@ export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
   },
 });
 
-// Validate review access before storing any session in the main app client.
-const reviewAuth = createClient(supabaseUrl, supabasePublishableKey, {
+// Validate review/admin access before storing any session in the main app client.
+const restrictedAuth = createClient(supabaseUrl, supabasePublishableKey, {
   auth: { storageKey: 'gling-review-staging', persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
 }).auth;
 
-export async function signInReviewAccount(email: string, password: string): Promise<void> {
-  const { data, error } = await reviewAuth.signInWithPassword({ email: email.trim(), password });
+async function signInRestrictedAccount(email: string, password: string, kind: 'review' | 'admin'): Promise<void> {
+  const { data, error } = await restrictedAuth.signInWithPassword({ email: email.trim(), password });
   if (error) throw error;
-  if (!data.session || !isReviewUser(data.user)) {
-    await reviewAuth.signOut({ scope: 'local' });
-    throw new Error('REVIEW_ACCESS_DENIED');
+  const allowed = kind === 'admin' ? isAdminRole(data.user?.app_metadata) : isReviewUser(data.user);
+  if (!data.session || !allowed) {
+    await restrictedAuth.signOut({ scope: 'local' });
+    throw new Error(kind === 'admin' ? 'ADMIN_ACCESS_DENIED' : 'REVIEW_ACCESS_DENIED');
   }
   const result = await supabase.auth.setSession(data.session);
   if (result.error) {
-    await reviewAuth.signOut({ scope: 'local' });
+    await restrictedAuth.signOut({ scope: 'local' });
     throw result.error;
   }
 }
+
+export const signInReviewAccount = (email: string, password: string) => signInRestrictedAccount(email, password, 'review');
+export const signInAdminAccount = (email: string, password: string) => signInRestrictedAccount(email, password, 'admin');

@@ -1,6 +1,6 @@
 export type ReportStatus = 'open' | 'actioned' | 'dismissed';
 export type ReportFilter = 'all' | ReportStatus;
-export type AdminSection = 'overview' | 'safety' | 'reports' | 'users' | 'posts' | 'conversations';
+export type AdminSection = 'analytics' | 'overview' | 'safety' | 'reports' | 'users' | 'posts' | 'conversations';
 
 const REPORT_REASON_LABELS: Record<string, string> = {
   spam: '스팸',
@@ -19,6 +19,7 @@ const REPORT_TARGET_LABELS: Record<string, string> = {
 };
 
 export const ADMIN_SECTIONS: { id: AdminSection; label: string }[] = [
+  { id: 'analytics', label: '분석' },
   { id: 'overview', label: '현황' },
   { id: 'safety', label: 'AI 안전' },
   { id: 'reports', label: '신고' },
@@ -29,6 +30,19 @@ export const ADMIN_SECTIONS: { id: AdminSection; label: string }[] = [
 
 export function canUseLocalAdminPreview(dev: boolean, hostname: string) {
   return dev && ['localhost', '127.0.0.1', '::1'].includes(hostname);
+}
+
+// React Native Web exposes these groups as divs, so provide their native keyboard behavior.
+export function adminOptionKeys(event: { key: string; currentTarget: HTMLElement; preventDefault: () => void }) {
+  if (event.key === ' ') { event.preventDefault(); event.currentTarget.click(); return; }
+  if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+  const options = Array.from(event.currentTarget.closest('[role="tablist"], [role="radiogroup"]')?.querySelectorAll<HTMLElement>('[role="tab"], [role="radio"]') ?? []);
+  if (!options.length) return;
+  event.preventDefault();
+  const index = options.indexOf(event.currentTarget);
+  const next = event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1 : (index + (['ArrowLeft', 'ArrowUp'].includes(event.key) ? -1 : 1) + options.length) % options.length;
+  options[next].focus();
+  options[next].click();
 }
 
 export function isAdminRole(appMetadata: Record<string, unknown> | null | undefined) {

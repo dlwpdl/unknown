@@ -23,10 +23,15 @@ Deno.serve(async (request) => {
   const webhookSecret = Deno.env.get('REVENUECAT_WEBHOOK_SECRET');
   const isWebhook = !!webhookSecret && authorization === `Bearer ${webhookSecret}`;
   let userIds: string[];
+  let webhookEvent: Record<string, unknown> | undefined;
   if (isWebhook) {
     const body = await request.text();
     if (body.length > 65_536) return json({ error: 'INVALID_WEBHOOK' }, 400);
-    try { userIds = webhookUserIds(JSON.parse(body)); }
+    try {
+      const parsed = JSON.parse(body);
+      userIds = webhookUserIds(parsed);
+      webhookEvent = parsed.event;
+    }
     catch { return json({ error: 'INVALID_WEBHOOK' }, 400); }
   } else {
     const { data: { user }, error } = await userClient.auth.getUser();
@@ -42,6 +47,10 @@ Deno.serve(async (request) => {
   const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, options);
   const sandboxUsers = new Set((Deno.env.get('REVENUECAT_SANDBOX_USER_IDS') ?? '').split(',').map((id) => id.trim()));
   try {
+    if (webhookEvent) {
+      const recorded = await admin.rpc('record_payment_event', { p_event: webhookEvent });
+      if (recorded.error) throw recorded.error;
+    }
     // Re-read authoritative state for every delivery, including retries and transfers.
     // Repeated snapshots never increment allowances; older snapshots cannot replace newer ones.
     await Promise.all(userIds.map(async (userId) => {

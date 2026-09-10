@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
+import { AdminAnalyticsView } from '@/components/admin/admin-analytics';
 import { AdminSectionView } from '@/components/admin/admin-section';
 import { AdminShell } from '@/components/admin/admin-shell';
 import { AdminUserDetail } from '@/components/admin/admin-user-detail';
@@ -23,8 +24,9 @@ import { supabase } from '@/lib/supabase';
 
 export function AdminScreen() {
   const { safety } = useLocalSearchParams<{ safety?: string }>();
-  const { isAuthed, isAdmin, isAuthLoading, authError, signInApple, signInKakao, signInDev, signOut } = useAuth();
-  const [section, setSection] = useState<AdminSection>(safety ? 'safety' : 'overview');
+  const { isAuthed, isAdmin, isAuthLoading, authError, signInApple, signInKakao, signInAdmin, signOut } = useAuth();
+  const [section, setSection] = useState<AdminSection>(safety ? 'safety' : 'analytics');
+  const [analyticsRefresh, setAnalyticsRefresh] = useState(0);
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,9 +40,11 @@ export function AdminScreen() {
     typeof location === 'undefined' ? '' : location.hostname,
   );
   const hasAdminAccess = isAdmin || localPreview;
+  const needsOperations = section !== 'analytics';
 
   const refresh = useCallback(async () => {
     if (!hasAdminAccess) return;
+    if (!needsOperations) { setAnalyticsRefresh((value) => value + 1); return; }
     setLoading(true);
     setError(null);
     try {
@@ -51,11 +55,11 @@ export function AdminScreen() {
     } finally {
       setLoading(false);
     }
-  }, [hasAdminAccess, localPreview]);
+  }, [hasAdminAccess, localPreview, needsOperations]);
 
   useEffect(() => {
     let active = true;
-    if (!hasAdminAccess) return;
+    if (!hasAdminAccess || !needsOperations) return;
     const request = localPreview ? Promise.resolve(getLocalAdminDashboard()) : loadAdminDashboard(supabase);
     void request
       .then((next) => {
@@ -69,7 +73,7 @@ export function AdminScreen() {
         setLoading(false);
       });
     return () => { active = false; };
-  }, [hasAdminAccess, localPreview]);
+  }, [hasAdminAccess, localPreview, needsOperations]);
 
   const profiles = useMemo(
     () => new Map(data?.profiles.map((profile) => [profile.id, profile]) ?? []),
@@ -103,7 +107,7 @@ export function AdminScreen() {
       setExhausted((current) => new Set(current).add(section));
       return;
     }
-    if (!data || section === 'overview' || exhausted.has(section)) return;
+    if (!data || section === 'overview' || section === 'analytics' || exhausted.has(section)) return;
     const offset = section === 'reports'
       ? data.reports.length
       : section === 'safety'
@@ -135,20 +139,20 @@ export function AdminScreen() {
 
   if (isAuthLoading) return <CenteredState title="관리자 세션을 확인하는 중입니다." />;
   if (!isAuthed && !localPreview) {
-    return <LoginPanel reason={localPreviewAllowed ? '로컬 관리자 미리보기입니다. 버튼을 누르면 바로 열립니다.' : '관리자 계정으로 로그인해주세요.'} onApple={localPreviewAllowed ? undefined : signInApple} onKakao={localPreviewAllowed ? () => setLocalPreview(true) : signInKakao} onDevLogin={signInDev} loading={isAuthLoading} error={authError} />;
+    return <LoginPanel reason={localPreviewAllowed ? '로컬 관리자 미리보기입니다. 버튼을 누르면 바로 열립니다.' : '관리자 계정으로 로그인해주세요.'} onApple={localPreviewAllowed ? undefined : signInApple} onKakao={localPreviewAllowed ? () => setLocalPreview(true) : signInKakao} onAdminLogin={signInAdmin} loading={isAuthLoading} error={authError} />;
   }
   if (!isAdmin && !localPreview) {
     return <CenteredState title="관리자 권한이 없습니다." body="현재 계정에는 admin 역할이 지정되지 않았습니다." action="다른 계정으로 로그인" onAction={() => void signOut()} />;
   }
-  if (!data) {
+  if (!data && needsOperations) {
     return <CenteredState title={loading ? '운영 데이터를 불러오는 중입니다.' : '운영 데이터를 열 수 없습니다.'} body={error ?? undefined} action={loading ? undefined : '다시 시도'} onAction={loading ? undefined : () => void refresh()} />;
   }
 
   return (
-    <AdminShell activeSection={section} counts={data.counts} busy={loading} onSection={setSection} onRefresh={() => void refresh()} onSignOut={localPreview ? () => { setLocalPreview(false); setData(null); } : () => void signOut()}>
+    <AdminShell activeSection={section} counts={data?.counts ?? { reports: 0, openReports: 0, profiles: 0, posts: 0, messages: 0, safetyPending: 0, safetyHigh: 0 }} busy={needsOperations && loading} onSection={(next) => { if (!needsOperations && next !== 'analytics') { setLoading(true); setError(null); } setSection(next); }} onRefresh={() => void refresh()} onSignOut={localPreview ? () => { setLocalPreview(false); setData(null); } : () => void signOut()}>
       {localPreview && <View accessibilityRole="alert" style={styles.preview}><ThemedText type="smallBold">로컬 미리보기 · 실제 운영 데이터와 권한은 변경되지 않습니다.</ThemedText></View>}
-      {!!error && <View accessibilityRole="alert" style={styles.error}><ThemedText style={styles.errorText}>{error}</ThemedText></View>}
-      <AdminSectionView
+      {!!error && needsOperations && <View accessibilityRole="alert" style={styles.error}><ThemedText style={styles.errorText}>{error}</ThemedText></View>}
+      {section === 'analytics' ? <AdminAnalyticsView localPreview={localPreview} onUser={setSelectedUserId} refreshSignal={analyticsRefresh} /> : data && <AdminSectionView
         section={section}
         data={data}
         resolving={resolving}
@@ -157,11 +161,11 @@ export function AdminScreen() {
         onUser={setSelectedUserId}
         onResolve={confirmResolve}
         onLoadMore={() => void loadMore()}
-      />
+      />}
       <AdminUserDetail
         userId={selectedUserId}
         profiles={profiles}
-        localData={localPreview ? data : undefined}
+        localData={localPreview ? data ?? undefined : undefined}
         onStatusChange={localPreview ? undefined : async (userId, status) => {
           await setAdminAccountStatus(supabase, userId, status);
           await refresh();

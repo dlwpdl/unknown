@@ -280,7 +280,7 @@ export async function loadAdminUserActivity(client: SupabaseClient, userId: stri
 
 export async function loadMoreAdminData(
   client: SupabaseClient,
-  section: Exclude<AdminSection, 'overview'>,
+  section: Exclude<AdminSection, 'overview' | 'analytics'>,
   offset: number,
 ): Promise<AdminSectionPage> {
   await logAdminAccess(client, section === 'conversations' ? 'messages' : section);

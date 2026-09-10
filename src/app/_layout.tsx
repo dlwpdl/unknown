@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { AppActivity } from '@/components/app-activity';
 import { AuthProvider } from '@/lib/auth';
 import { InteractionFeedbackProvider } from '@/lib/interaction-feedback';
 import { MembershipProvider } from '@/lib/membership-provider';
@@ -16,6 +17,7 @@ export default function TabLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <StatusBar style="auto" />
       <AuthProvider>
+        <AppActivity />
         <MembershipProvider>
         <InteractionFeedbackProvider>
           <AnimatedSplashOverlay />

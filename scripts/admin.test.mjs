@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  adminOptionKeys,
   canUseLocalAdminPreview,
   canResolveReport,
   filterAdminReports,
@@ -10,6 +11,28 @@ import {
   reportStatusLabel,
   reportTargetLabel,
 } from '../src/lib/admin.ts';
+
+test('관리자 필터와 탭은 화살표로 순환하고 Space로 선택한다', () => {
+  const actions = [];
+  const options = [0, 1, 2].map((index) => ({
+    focus: () => actions.push(`focus:${index}`),
+    click: () => actions.push(`click:${index}`),
+    closest: () => ({ querySelectorAll: () => options }),
+  }));
+  const event = (key, index) => ({ key, currentTarget: options[index], preventDefault: () => actions.push('prevent') });
+  adminOptionKeys(event('ArrowRight', 2));
+  assert.deepEqual(actions.splice(0), ['prevent', 'focus:0', 'click:0']);
+  adminOptionKeys(event('ArrowLeft', 0));
+  assert.deepEqual(actions.splice(0), ['prevent', 'focus:2', 'click:2']);
+  adminOptionKeys(event('Home', 2));
+  assert.deepEqual(actions.splice(0), ['prevent', 'focus:0', 'click:0']);
+  adminOptionKeys(event('End', 0));
+  assert.deepEqual(actions.splice(0), ['prevent', 'focus:2', 'click:2']);
+  adminOptionKeys(event(' ', 1));
+  assert.deepEqual(actions.splice(0), ['prevent', 'click:1']);
+  adminOptionKeys(event('Tab', 1));
+  assert.deepEqual(actions, []);
+});
 
 test('관리자 로그인 우회는 개발 중 localhost에서만 허용한다', () => {
   assert.equal(canUseLocalAdminPreview(true, 'localhost'), true);

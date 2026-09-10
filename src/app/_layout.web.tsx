@@ -3,6 +3,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { AppActivity } from '@/components/app-activity';
 import { AuthProvider } from '@/lib/auth';
 import { InteractionFeedbackProvider } from '@/lib/interaction-feedback';
 import { MembershipProvider } from '@/lib/membership-provider';
@@ -16,6 +17,7 @@ export default function WebLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AuthProvider publicPage={publicPage}>
+        <AppActivity />
         <MembershipProvider>
         <InteractionFeedbackProvider>
           <AnimatedSplashOverlay />

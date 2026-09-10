@@ -15,7 +15,7 @@ import { t } from '@/i18n/ko';
 import { isAdminRole } from '@/lib/admin';
 import { canUseDevPasswordLogin, getOAuthCallbackPath, getOAuthCode } from '@/lib/kakao-auth';
 import { CONTACT_EMAIL } from '@/lib/legal-documents';
-import { signInReviewAccount, supabase } from '@/lib/supabase';
+import { signInAdminAccount, signInReviewAccount, supabase } from '@/lib/supabase';
 import type { TrustLevel } from '@/lib/trust';
 
 type Level = 0 | 1;
@@ -44,6 +44,7 @@ type AuthValue = {
   signInKakao: () => Promise<void>;
   signInDev: (email: string, password: string) => Promise<void>;
   signInReview: (email: string, password: string) => Promise<void>;
+  signInAdmin: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   setProfilePhoto: (uri: string | null, base64?: string) => Promise<void>;
   promptLogin: (reason?: string) => void; // L0 게이트
@@ -226,6 +227,13 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     setProfile(null);
     setMissingProfileUserId(null);
   }, []);
+  const signInAdmin = useCallback(async (email: string, password: string) => {
+    setSigningIn(true);
+    setAuthError(null);
+    try { await signInAdminAccount(email, password); }
+    catch { setAuthError('관리자 계정 정보와 접근 권한을 확인해주세요.'); }
+    finally { setSigningIn(false); }
+  }, []);
   const setProfilePhoto = useCallback(async (uri: string | null, base64?: string) => {
     if (!session) return;
     let avatarPath: string | null = null;
@@ -288,6 +296,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       signInKakao,
       signInDev,
       signInReview,
+      signInAdmin,
       signOut,
       setProfilePhoto,
       promptLogin,
@@ -309,6 +318,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       signInKakao,
       signInDev,
       signInReview,
+      signInAdmin,
       signOut,
       setProfilePhoto,
       promptLogin,

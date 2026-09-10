@@ -17,6 +17,7 @@ export function LoginPanel({
   onKakao,
   onDevLogin,
   onReviewLogin,
+  onAdminLogin,
   loading = false,
   error,
   onClose,
@@ -26,6 +27,7 @@ export function LoginPanel({
   onKakao?: () => void;
   onDevLogin?: (email: string, password: string) => void;
   onReviewLogin?: (email: string, password: string) => void;
+  onAdminLogin?: (email: string, password: string) => void;
   loading?: boolean;
   error?: string | null;
   onClose?: () => void;
@@ -34,7 +36,7 @@ export function LoginPanel({
   const dark = useColorScheme() === 'dark';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const passwordLogin = onReviewLogin ?? (__DEV__ ? onDevLogin : undefined);
+  const passwordLogin = onAdminLogin ?? onReviewLogin ?? (__DEV__ ? onDevLogin : undefined);
   const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/$/, '');
 
   return (
@@ -76,16 +78,16 @@ export function LoginPanel({
             </Pressable>}
             {passwordLogin && (
               <View style={[styles.devBox, { borderColor: theme.line }]}>
-                <ThemedText type="smallBold">{onReviewLogin ? t.auth.reviewLoginTitle : t.auth.devLoginTitle}</ThemedText>
+                <ThemedText type="smallBold">{onAdminLogin ? '관리자 계정 로그인' : onReviewLogin ? t.auth.reviewLoginTitle : t.auth.devLoginTitle}</ThemedText>
                 <TextInput
                   value={email}
                   onChangeText={setEmail}
                   autoCapitalize="none"
                   autoComplete="email"
                   keyboardType="email-address"
-                  placeholder={onReviewLogin ? t.auth.reviewEmail : t.auth.devEmail}
+                  placeholder={onAdminLogin ? '관리자 이메일' : onReviewLogin ? t.auth.reviewEmail : t.auth.devEmail}
                   placeholderTextColor={theme.textSecondary}
-                  accessibilityLabel={onReviewLogin ? t.auth.reviewEmail : t.auth.devEmail}
+                  accessibilityLabel={onAdminLogin ? '관리자 이메일' : onReviewLogin ? t.auth.reviewEmail : t.auth.devEmail}
                   style={[styles.devInput, { color: theme.text, borderColor: theme.line }]}
                 />
                 <TextInput
@@ -93,9 +95,9 @@ export function LoginPanel({
                   onChangeText={setPassword}
                   secureTextEntry
                   autoComplete="current-password"
-                  placeholder={onReviewLogin ? t.auth.reviewPassword : t.auth.devPassword}
+                  placeholder={onAdminLogin ? '관리자 비밀번호' : onReviewLogin ? t.auth.reviewPassword : t.auth.devPassword}
                   placeholderTextColor={theme.textSecondary}
-                  accessibilityLabel={onReviewLogin ? t.auth.reviewPassword : t.auth.devPassword}
+                  accessibilityLabel={onAdminLogin ? '관리자 비밀번호' : onReviewLogin ? t.auth.reviewPassword : t.auth.devPassword}
                   style={[styles.devInput, { color: theme.text, borderColor: theme.line }]}
                 />
                 <Pressable
@@ -104,7 +106,7 @@ export function LoginPanel({
                   accessibilityRole="button"
                   accessibilityState={{ disabled: loading || !email.trim() || !password, busy: loading }}
                   style={[styles.devButton, { borderColor: theme.line, opacity: !email.trim() || !password ? 0.5 : 1 }]}>
-                  <ThemedText type="smallBold">{onReviewLogin ? t.auth.reviewLoginCta : t.auth.devLoginCta}</ThemedText>
+                  <ThemedText type="smallBold">{onAdminLogin ? '관리자 로그인' : onReviewLogin ? t.auth.reviewLoginCta : t.auth.devLoginCta}</ThemedText>
                 </Pressable>
               </View>
             )}
@@ -117,10 +119,10 @@ export function LoginPanel({
         )}
 
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>
-          {onReviewLogin ? t.auth.reviewLoginNote : t.auth.loginNote}
+          {onAdminLogin ? '사전에 등록된 관리자 계정만 접근할 수 있습니다.' : onReviewLogin ? t.auth.reviewLoginNote : t.auth.loginNote}
         </ThemedText>
 
-        {!onReviewLogin && (
+        {!onReviewLogin && !onAdminLogin && (
           <Pressable
             onPress={() => { onClose?.(); router.push('/auth/review'); }}
             accessibilityRole="link"
