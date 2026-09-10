@@ -33,7 +33,7 @@ select results_eq(
 );
 
 select results_eq(
-  $$select count(*)::integer from public.posts$$,
+  $$select count(*)::integer from public.posts where id between '20000000-0000-0000-0000-000000000001' and '20000000-0000-0000-0000-000000000035'$$,
   array[35],
   'all seeded posts are preserved'
 );

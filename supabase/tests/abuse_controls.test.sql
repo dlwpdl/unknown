@@ -17,6 +17,11 @@ values
   ('51111111-1111-1111-1111-111111111111', '제한사용자일', 'vancouver', 4),
   ('52222222-2222-2222-2222-222222222222', '제한사용자이', 'vancouver', 4);
 
+-- The two-post safety fixture now uses a verified subscription, not a legacy profile override.
+select public.apply_membership_snapshot('51111111-1111-1111-1111-111111111111',
+  jsonb_build_array(jsonb_build_object('tier','plus','expires_at',now()+interval '30 days',
+    'product_id','plus_monthly','store','app_store','will_renew',true)), now());
+
 create temporary table abuse_state (post_id uuid, conversation_id uuid);
 grant select, insert, update on abuse_state to authenticated;
 grant select on abuse_state to anon;

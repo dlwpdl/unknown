@@ -125,6 +125,10 @@ export default function ProfileScreen() {
         </View>
 
         <View style={[styles.menu, { backgroundColor: theme.card, borderColor: theme.line }]}>
+          <Pressable style={styles.menuRow} accessibilityRole="button" onPress={() => router.push('/profile/membership')}>
+            <ThemedText type="smallBold" themeColor="accent">멤버십</ThemedText>
+          </Pressable>
+          <View style={[styles.divider, { backgroundColor: theme.line }]} />
           <Pressable style={styles.menuRow} accessibilityRole="button" onPress={() => router.push('/notifications')}>
             <ThemedText type="small">{t.notifications.title}</ThemedText>
           </Pressable>

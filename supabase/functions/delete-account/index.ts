@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { deleteRevenueCatCustomer } from '../_shared/membership.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -22,6 +23,8 @@ Deno.serve(async (request) => {
   });
   const { data: { user }, error: userError } = await userClient.auth.getUser();
   if (userError || !user) return json({ error: 'AUTH_REQUIRED' }, 401);
+  const billingKey = Deno.env.get('REVENUECAT_SECRET_API_KEY');
+  if (!billingKey) return json({ error: 'BILLING_DELETE_NOT_CONFIGURED' }, 503);
 
   const providers = Array.isArray(user.app_metadata?.providers)
     ? user.app_metadata.providers
@@ -44,6 +47,10 @@ Deno.serve(async (request) => {
     const unlinked = await unlinkKakao(kakaoId, kakaoAdminKey).catch(() => false);
     if (!unlinked) return json({ error: 'KAKAO_UNLINK_FAILED' }, 502);
   }
+
+  // A customer-data deletion does not cancel a store subscription; the app explains this before confirmation.
+  try { await deleteRevenueCatCustomer(user.id, billingKey); }
+  catch { return json({ error: 'BILLING_DELETE_FAILED' }, 502); }
 
   const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
     auth: { persistSession: false, autoRefreshToken: false },

@@ -231,6 +231,7 @@ export function PostCard({
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary" style={styles.meta}>
                   {[
+                    post.room.closed ? t.meetup.closed : null,
                     post.room.verifiedOnly ? t.feed.roomGate : null,
                     t.feed.members(post.room.memberCount, post.room.capacity),
                   ]
@@ -239,7 +240,7 @@ export function PostCard({
                 </ThemedText>
               </View>
             </View>
-            {onJoin && (
+            {onJoin && !post.room.closed && (
               <Pressable
                 onPress={onJoin}
                 style={({ pressed }) => [styles.join, { backgroundColor: theme.accent }, pressed && styles.pressed]}

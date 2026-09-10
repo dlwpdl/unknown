@@ -71,3 +71,7 @@ verify_jwt = false
 
 [functions.delete-account]
 verify_jwt = true
+
+# This endpoint verifies either the user's JWT or the RevenueCat webhook secret itself.
+[functions.membership]
+verify_jwt = false

@@ -26,7 +26,7 @@ select ok(
 set local role anon;
 
 select results_eq(
-  $$select count(*)::integer from public.get_public_feed('vancouver', 100)$$,
+  $$select count(*)::integer from public.get_public_feed('vancouver', 100) where id between '20000000-0000-0000-0000-000000000001' and '20000000-0000-0000-0000-000000000035'$$,
   array[20],
   'the Vancouver seed feed is visible'
 );

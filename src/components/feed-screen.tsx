@@ -20,6 +20,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DailyChip, todayLabel } from '@/components/daily-chip';
+import { MyMeetups } from '@/components/my-meetups';
 import { PostCard } from '@/components/post-card';
 import { PostDetail } from '@/components/post-detail';
 import { ThemedText } from '@/components/themed-text';
@@ -32,18 +33,20 @@ import { useCommunityCity } from '@/lib/community-city';
 import { parseAiDraftResponse } from '@/lib/ai-draft';
 import {
   createCommunityPost,
+  getCommunityActionError,
   isContentRejected,
   loadDailyQuota,
   loadTrendingHashtags,
+  MEETUPS_CHANGED_EVENT,
   POST_QUOTA_CHANGED_EVENT,
   requestMeetupJoin,
 } from '@/lib/community-data';
-import { groupJournalPosts, loadPublicFeed } from '@/lib/feed-data';
+import { groupJournalPosts, loadPublicFeed, loadPublicPost } from '@/lib/feed-data';
 import { addHashtag, canonicalizeHashtag, getSuggestedHashtags, parseHashtags } from '@/lib/hashtags';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES, INITIAL_QUOTA, MOCK_POSTS, TAGS } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
-import type { Post, Tag } from '@/lib/types';
+import type { DailyQuota, Post, Tag } from '@/lib/types';
 
 type DraftImage = { uri: string; base64: string; mimeType: string };
 
@@ -90,6 +93,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   }, [city.id, tagFilter]);
 
   useEffect(() => {
+    const listener = DeviceEventEmitter.addListener(MEETUPS_CHANGED_EVENT, () => void refreshFeed().catch(() => {}));
+    return () => listener.remove();
+  }, [refreshFeed]);
+
+  useEffect(() => {
     let active = true;
     void loadPublicFeed(supabase, city.id, tagFilter)
       .then((next) => {
@@ -106,10 +114,15 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
 
   useEffect(() => {
     if (!isAuthed) return;
-    void loadDailyQuota(supabase).then((next) => {
-      setQuota(next);
-      DeviceEventEmitter.emit(POST_QUOTA_CHANGED_EVENT, next);
-    }).catch(() => {});
+    let active = true;
+    const refreshQuota = () => void loadDailyQuota(supabase)
+      .then((next) => { if (active) setQuota(next); }).catch(() => {});
+    refreshQuota();
+    const listener = DeviceEventEmitter.addListener(POST_QUOTA_CHANGED_EVENT, (next?: DailyQuota) => {
+      if (next) setQuota(next);
+      else refreshQuota();
+    });
+    return () => { active = false; listener.remove(); };
   }, [isAuthed, me.id]);
 
   const cityOpen = city.state === 'open';
@@ -117,9 +130,9 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const feedData = useMemo(
     () =>
       cityOpen
-        ? cityPosts.filter((p) => tagFilter == null || p.tag.id === tagFilter)
+        ? cityPosts.filter((p) => (tagFilter == null || p.tag.id === tagFilter) && (!meetupsOnly || !p.room?.closed))
         : [],
-    [cityOpen, cityPosts, tagFilter],
+    [cityOpen, cityPosts, meetupsOnly, tagFilter],
   );
 
   const journal = useMemo(() => meetupsOnly
@@ -186,8 +199,17 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       return () => clearTimeout(timer);
     }
   }, [isAuthed, pendingPost]);
+  const showActionError = useCallback((code: keyof typeof t.actionErrors) => {
+    const message = t.actionErrors[code];
+    Alert.alert(message.title, message.body, [
+      { text: t.write.cancel, style: 'cancel' },
+      ...(message.membership ? [{ text: '멤버십 보기', onPress: () => { setWriting(false); setJoinPost(null); setDetailPost(null); router.push('/profile/membership'); } }] : []),
+    ]);
+  }, [router]);
+
   const onJoin = (post: Post) => {
     if (!isAuthed) return promptLogin(t.auth.reasonJoinLogin);
+    if (post.room?.closed) return showActionError('MEETUP_CLOSED');
     if (post.author.id === me.id) return Alert.alert(t.chat.ownMeetupTitle, t.chat.ownMeetupBody);
     setJoinMessage('');
     setJoinPost(post);
@@ -198,27 +220,37 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     setJoining(true);
     try {
       await requestMeetupJoin(supabase, joinPost.id, joinMessage);
+      DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
       play('meetup');
       setJoinPost(null);
       setJoinMessage('');
       Alert.alert(t.chat.joinDoneTitle, t.chat.joinDoneBody);
-    } catch {
+    } catch (error) {
       play('warning');
-      Alert.alert(t.chat.startErrorTitle, t.chat.startErrorBody);
+      const code = getCommunityActionError(error);
+      if (code) showActionError(code);
+      else Alert.alert(t.chat.startErrorTitle, t.chat.startErrorBody);
     } finally {
       setJoining(false);
     }
   };
 
+  const showPostLimit = useCallback(() => {
+    Alert.alert(t.feed.capReachedTitle, t.feed.capReachedBody, [
+      { text: t.write.cancel, style: 'cancel' },
+      { text: '멤버십 보기', onPress: () => { setWriting(false); router.push('/profile/membership'); } },
+    ]);
+  }, [router]);
+
   const openWriter = useCallback(() => {
     if (!isAuthed) return promptLogin(t.auth.reasonWrite);
     // ponytail: 캡 검사는 서버(create_post RPC)가 최종 강제 — 여긴 UX용 사전 안내만
     if (quota.used >= quota.max) {
-      Alert.alert(t.feed.capReachedTitle, t.feed.capReachedBody);
+      showPostLimit();
       return;
     }
     setWriting(true);
-  }, [isAuthed, promptLogin, quota.max, quota.used]);
+  }, [isAuthed, promptLogin, quota.max, quota.used, showPostLimit]);
 
   useEffect(() => {
     if (compose !== '1') return;
@@ -310,6 +342,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         image: draftImage ? { base64: draftImage.base64, mimeType: draftImage.mimeType } : undefined,
       });
       setPosts((prev) => [post, ...prev.filter(({ id }) => id !== post.id)]);
+      if (post.room) DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
       const nextQuota = await loadDailyQuota(supabase);
       setQuota(nextQuota);
       DeviceEventEmitter.emit(POST_QUOTA_CHANGED_EVENT, nextQuota);
@@ -327,9 +360,12 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       const dailyLimit = typeof error === 'object' && error !== null && 'message' in error
         && String(error.message).includes('DAILY_POST_LIMIT_REACHED');
       const contentRejected = isContentRejected(error);
-      Alert.alert(
-        dailyLimit ? t.feed.capReachedTitle : contentRejected ? t.safety.contentBlockedTitle : t.write.submitErrorTitle,
-        dailyLimit ? t.feed.capReachedBody : contentRejected ? t.safety.contentBlockedBody : t.write.submitErrorBody,
+      const actionError = getCommunityActionError(error);
+      if (dailyLimit) showPostLimit();
+      else if (actionError) showActionError(actionError);
+      else Alert.alert(
+        contentRejected ? t.safety.contentBlockedTitle : t.write.submitErrorTitle,
+        contentRejected ? t.safety.contentBlockedBody : t.write.submitErrorBody,
       );
     } finally {
       setSubmitting(false);
@@ -407,6 +443,14 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 <ThemedText type="smallBold" themeColor="textSecondary" style={styles.journalDate}>{todayLabel()}</ThemedText>
                 <ThemedText accessibilityRole="header" style={styles.journalTitle}>{meetupsOnly ? t.feed.meetupTitle : t.feed.journalTitle}</ThemedText>
               </View>
+              {meetupsOnly && <>
+                <MyMeetups onOpen={async (postId) => {
+                  const post = await loadPublicPost(supabase, postId);
+                  if (!post) throw new Error('POST_NOT_FOUND');
+                  openDetail(post);
+                }} />
+                {cityOpen && <ThemedText accessibilityRole="header" style={styles.sectionTitle}>{t.meetup.discover}</ThemedText>}
+              </>}
               {cityOpen && !meetupsOnly && (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
                   {[null, ...TAGS.map((tg) => tg.id)].map((id) => {
@@ -556,7 +600,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               </View>
             ) : (
               <FlatList
-                data={searchResults}
+                data={searchResults.filter((post) => !meetupsOnly || !post.room?.closed)}
                 keyExtractor={(p) => p.id}
                 contentContainerStyle={styles.listContent}
                 ItemSeparatorComponent={() => <View style={{ height: Spacing.two + 2 }} />}

@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, DeviceEventEmitter, FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ChatRoom } from '@/components/chat-room';
@@ -14,7 +14,9 @@ import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import {
   loadConversations,
+  getCommunityActionError,
   loadPendingMeetupRequests,
+  MEETUPS_CHANGED_EVENT,
   respondMeetupRequest,
   type ConversationPreview,
   type MeetupRequest,
@@ -70,14 +72,19 @@ export default function ChatScreen() {
     setRequestBusy(request.id);
     try {
       const nextConversationId = await respondMeetupRequest(supabase, request.id, response);
+      DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
       setRequests((current) => current.filter(({ id }) => id !== request.id));
       Alert.alert(t.chat.requestHandled);
       if (nextConversationId) {
         await refresh();
         router.setParams({ conversationId: nextConversationId });
       }
-    } catch {
-      Alert.alert(t.chat.requestError);
+    } catch (error) {
+      const code = getCommunityActionError(error);
+      const message = code ? t.actionErrors[code] : null;
+      if (message) Alert.alert(message.title, message.body);
+      else Alert.alert(t.chat.requestError);
+      if (code === 'MEETUP_CLOSED') await refresh();
     } finally {
       setRequestBusy(null);
     }

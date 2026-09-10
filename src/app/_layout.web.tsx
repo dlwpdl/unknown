@@ -5,6 +5,7 @@ import { useColorScheme } from 'react-native';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { AuthProvider } from '@/lib/auth';
 import { InteractionFeedbackProvider } from '@/lib/interaction-feedback';
+import { MembershipProvider } from '@/lib/membership-provider';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -15,10 +16,12 @@ export default function WebLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AuthProvider publicPage={publicPage}>
+        <MembershipProvider>
         <InteractionFeedbackProvider>
           <AnimatedSplashOverlay />
           <Stack screenOptions={{ headerShown: false }} />
         </InteractionFeedbackProvider>
+        </MembershipProvider>
       </AuthProvider>
     </ThemeProvider>
   );

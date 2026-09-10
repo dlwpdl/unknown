@@ -22,7 +22,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
-import { addPostComment, isContentRejected, loadPostCommentsPage, recordPostView, startDirectConversation, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
+import { addPostComment, getCommunityActionError, isContentRejected, loadPostCommentsPage, recordPostView, startDirectConversation, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 import type { Post, PostComment } from '@/lib/types';
@@ -165,10 +165,17 @@ export function PostDetail({
       const conversationId = await startDirectConversation(supabase, u.id);
       setSheetUser(null);
       play('message');
+      onClose();
       router.push({ pathname: '/chat', params: { conversationId } });
-    } catch {
+    } catch (error) {
       play('warning');
-      Alert.alert(t.chat.startErrorTitle, t.chat.startErrorBody);
+      const code = getCommunityActionError(error);
+      const message = code ? t.actionErrors[code] : null;
+      if (message) Alert.alert(message.title, message.body, [
+        { text: t.write.cancel, style: 'cancel' },
+        ...(message.membership ? [{ text: '멤버십 보기', onPress: () => { setSheetUser(null); onClose(); router.push('/profile/membership'); } }] : []),
+      ]);
+      else Alert.alert(t.chat.startErrorTitle, t.chat.startErrorBody);
     }
   };
 

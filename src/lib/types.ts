@@ -41,6 +41,7 @@ export interface RoomPreview {
   memberCount: number;
   capacity?: number;
   verifiedOnly: boolean;
+  closed?: boolean;
 }
 
 export interface PostComment {

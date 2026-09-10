@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { attachSignedPostImages, loadPublicPost, mapPublicFeed, type FeedCursor, type PublicCommentRow, type PublicFeedRow } from './feed-data.ts';
-import type { DailyQuota, Post, PostComment, Tag } from './types.ts';
+import type { DailyQuota, Post, PostComment, RoomPreview, Tag } from './types.ts';
 
 const IMAGE_EXTENSIONS: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -10,12 +10,19 @@ const IMAGE_EXTENSIONS: Record<string, string> = {
 };
 
 export const POST_QUOTA_CHANGED_EVENT = 'postQuotaChanged';
+export const MEETUPS_CHANGED_EVENT = 'meetupsChanged';
 
 export function isContentRejected(error: unknown) {
   return typeof error === 'object'
     && error !== null
     && 'message' in error
     && String(error.message).includes('CONTENT_NOT_ALLOWED');
+}
+
+export function getCommunityActionError(error: unknown) {
+  const message = typeof error === 'object' && error !== null && 'message' in error ? String(error.message) : '';
+  return (['REQUESTER_MEETUP_LIMIT_REACHED', 'MEETUP_LIMIT_REACHED', 'MEETUP_CLOSED', 'DAILY_CONVERSATION_LIMIT_REACHED'] as const)
+    .find((code) => message.includes(code)) ?? null;
 }
 
 export type PostDraftImage = { base64: string; mimeType: string };
@@ -56,6 +63,8 @@ export type MeetupRequest = {
   requester: { nickname: string; verification_level: number } | null;
   post: { title: string } | null;
 };
+
+export type MyMeetup = { id: string; title: string; cityId: string; role: 'host' | 'approved' | 'pending' };
 
 export type ProfileSummary = {
   cityId: string;
@@ -290,6 +299,33 @@ export async function requestMeetupJoin(client: SupabaseClient, postId: string, 
   const result = await client.rpc('request_meetup_join', { p_post_id: postId, p_message: message.trim() });
   if (result.error) throw result.error;
   return result.data as string;
+}
+
+export async function loadMyMeetups(client: SupabaseClient, userId: string): Promise<MyMeetup[]> {
+  const fields = 'id,title,city_id,status,room_preview';
+  const [owned, requested] = await Promise.all([
+    client.from('posts').select(fields).eq('author_id', userId).eq('status', 'published')
+      .not('room_preview', 'is', null).or('room_preview->>closed.is.null,room_preview->>closed.eq.false')
+      .order('created_at', { ascending: false }),
+    client.from('meetup_requests').select(`status,post:posts!meetup_requests_post_id_fkey(${fields})`)
+      .eq('requester_id', userId).in('status', ['approved', 'pending'])
+      .order('status').order('created_at', { ascending: false }),
+  ]);
+  if (owned.error) throw owned.error;
+  if (requested.error) throw requested.error;
+  type Row = { id: string; title: string; city_id: string; status: string; room_preview: RoomPreview | null };
+  const entries = [
+    ...((owned.data ?? []) as unknown as Row[]).map((post) => ({ post, role: 'host' as const })),
+    ...((requested.data ?? []) as unknown as { post: Row | null; status: 'approved' | 'pending' }[])
+      .map(({ post, status }) => ({ post, role: status })),
+  ];
+  return entries.flatMap(({ post, role }) => post?.status === 'published' && post.room_preview && !post.room_preview.closed
+    ? [{ id: post.id, title: post.title, cityId: post.city_id, role }] : []);
+}
+
+export async function leaveMeetup(client: SupabaseClient, postId: string) {
+  const result = await client.rpc('leave_meetup', { p_post_id: postId });
+  if (result.error) throw result.error;
 }
 
 export async function loadPendingMeetupRequests(client: SupabaseClient, hostId: string) {

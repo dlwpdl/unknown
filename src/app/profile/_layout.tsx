@@ -1,6 +1,7 @@
 import { Stack, useRouter } from 'expo-router';
 import { Pressable } from 'react-native';
 import { SymbolView } from 'expo-symbols';
+import { useReducedMotion } from 'react-native-reanimated';
 
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
@@ -8,6 +9,7 @@ import { t } from '@/i18n/ko';
 export default function ProfileLayout() {
   const theme = useTheme();
   const router = useRouter();
+  const reducedMotion = useReducedMotion();
 
   return (
     <Stack
@@ -27,6 +29,7 @@ export default function ProfileLayout() {
         ),
       }} />
       <Stack.Screen name="guidelines" options={{ title: t.profile.guidelines }} />
+      <Stack.Screen name="membership" options={{ title: '멤버십', animation: reducedMotion ? 'none' : 'default' }} />
       <Stack.Screen name="settings" options={{ title: t.profile.settings }} />
     </Stack>
   );

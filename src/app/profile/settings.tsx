@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/auth';
 import { deleteMyAccount } from '@/lib/community-data';
 import { CONTACT_EMAIL } from '@/lib/legal-documents';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { useMembership } from '@/lib/membership-provider';
 import { supabase } from '@/lib/supabase';
 
 export default function SettingsScreen() {
@@ -19,6 +20,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { isAuthed, isAuthLoading, me, prepareAppleAccountDeletion, setProfilePhoto, signOut } = useAuth();
   const { hapticsEnabled, play, setHapticsEnabled, setSoundEnabled, soundEnabled } = useInteractionFeedback();
+  const { manage } = useMembership();
   const [deleting, setDeleting] = useState(false);
   const supportEmail = process.env.EXPO_PUBLIC_SUPPORT_EMAIL ?? CONTACT_EMAIL;
   const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/$/, '');
@@ -67,6 +69,7 @@ export default function SettingsScreen() {
   const confirmDelete = () =>
     Alert.alert(t.profile.deleteTitle, t.profile.deleteWarning, [
       { text: t.profile.cancel, style: 'cancel' },
+      { text: '구독 관리', onPress: () => void manage() },
       {
         text: t.profile.deleteContinue,
         style: 'destructive',

@@ -59,3 +59,11 @@ test('공개 피드 행과 댓글을 앱 카드 형식으로 연결한다', () =
   assert.equal(posts[0].shares, 6);
   assert.deepEqual(posts[0].imagePaths, ['user-1/photo.jpg']);
 });
+
+test('종료된 모임은 모임 소개에서 제외하되 게시글 기록은 남긴다', () => {
+  const closed = { id: 'closed', room: { id: 'old-room', closed: true } };
+  const open = { id: 'open', room: { id: 'current-room', closed: false } };
+  const journal = groupJournalPosts([closed, open]);
+  assert.deepEqual(journal.meetups, [open]);
+  assert.deepEqual(journal.remaining, [closed]);
+});

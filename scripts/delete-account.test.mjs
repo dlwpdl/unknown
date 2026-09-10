@@ -14,6 +14,7 @@ test('탈퇴는 본인 공급자 연결 해제를 확인한 뒤에만 파일과 
     SUPABASE_URL: 'https://gling-test.supabase.co', SUPABASE_ANON_KEY: 'test-anon',
     SUPABASE_SERVICE_ROLE_KEY: 'test-service', KAKAO_ADMIN_KEY: 'test-kakao',
     APPLE_CLIENT_SECRET: 'test-apple',
+    REVENUECAT_SECRET_API_KEY: 'test-revenuecat',
   };
   let handler;
   globalThis.Deno = { env: { get: (key) => env[key] }, serve: (fn) => { handler = fn; } };
@@ -22,6 +23,7 @@ test('탈퇴는 본인 공급자 연결 해제를 확인한 뒤에만 파일과 
   let provider = 'kakao';
   let providerResult = 'ok';
   let storageFails = false;
+  let billingStatus = 200;
   const calls = [];
   const listed = new Set();
   const user = () => ({
@@ -47,6 +49,11 @@ test('탈퇴는 본인 공급자 연결 해제를 확인한 뒤에만 파일과 
       return Response.json({ id_token: `header.${Buffer.from(JSON.stringify({ sub })).toString('base64url')}.signature`, refresh_token: 'test-refresh' });
     }
     if (path === '/auth/revoke') return new Response(null, { status: 200 });
+    if (path === `/v1/subscribers/${user().id}`) {
+      assert.equal(request.method, 'DELETE');
+      assert.equal(request.headers.get('authorization'), 'Bearer test-revenuecat');
+      return new Response(null, { status: billingStatus });
+    }
     if (path.startsWith('/storage/v1/object/list/')) {
       if (storageFails) return Response.json({ message: 'storage failed' }, { status: 500 });
       const files = listed.has(path) ? [] : [{ name: 'photo.jpg', id: 'photo' }];
@@ -77,10 +84,17 @@ test('탈퇴는 본인 공급자 연결 해제를 확인한 뒤에만 파일과 
   for (providerResult of ['ok', 'already']) {
     assert.equal((await run()).status, 200);
     assert.equal(calls[1], 'POST /v1/user/unlink');
-    assert.equal(calls[2], 'POST /storage/v1/object/list/avatars');
+    assert.equal(calls[2], `DELETE /v1/subscribers/${user().id}`);
+    assert.equal(calls[3], 'POST /storage/v1/object/list/avatars');
     assert.equal(calls.at(-2), 'POST /rest/v1/rpc/delete_my_account');
     assert.equal(calls.at(-1), `DELETE /auth/v1/admin/users/${user().id}`);
   }
+  billingStatus = 503;
+  assert.equal((await run()).status, 502);
+  assert.equal(calls.some((call) => call.includes('/storage/') || call.includes('/rpc/') || call.includes('/admin/users/')), false);
+  billingStatus = 404;
+  assert.equal((await run()).status, 200, 'already deleted billing customers allow deletion retries');
+  billingStatus = 200;
   storageFails = true;
   assert.equal((await run()).status, 500);
   assert.equal(calls.some((call) => call.includes('/rpc/') || call.includes('/admin/users/')), false);
@@ -92,5 +106,6 @@ test('탈퇴는 본인 공급자 연결 해제를 확인한 뒤에만 파일과 
   providerResult = 'ok';
   assert.equal((await run()).status, 200);
   assert.equal(calls[2], 'POST /auth/revoke');
-  assert.equal(calls[3], 'POST /storage/v1/object/list/avatars');
+  assert.equal(calls[3], `DELETE /v1/subscribers/${user().id}`);
+  assert.equal(calls[4], 'POST /storage/v1/object/list/avatars');
 });
