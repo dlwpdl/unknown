@@ -27,7 +27,7 @@ AdMob 계정의 `Set up app-ads.txt` 안내에서 확인한 정확한 내용:
 google.com, pub-2361293253164911, DIRECT, f08c47fec0942fa0
 ```
 
-글링 전용 도메인을 정한 뒤 **해당 도메인의 루트 `/app-ads.txt`**에 게시한다. 현재는 게시하지 않았다. `/gling/app-ads.txt`처럼 프로젝트 하위 경로에 두는 것으로 루트 파일을 대신하지 않는다. 다른 프로젝트가 사용하는 도메인 루트는 변경하지 않는다.
+글링 전용 주소는 `https://gling.ej-entertainment.com`이다. `public/app-ads.txt`를 Expo 정적 내보내기로 **해당 호스트의 루트 `/app-ads.txt`**에 게시한다. `/gling/app-ads.txt`처럼 프로젝트 하위 경로에 두는 것으로 루트 파일을 대신하지 않는다. 공통 도메인 루트와 다른 앱은 변경하지 않는다. 파일 게시와 AdMob 크롤러의 검증 완료는 별개다.
 
 Google Play의 개발자 웹사이트와 App Store의 Marketing URL을 같은 글링 도메인으로 연결하고, 공개 스토어 등록을 AdMob에 연결한 뒤 app-ads.txt 검증 상태를 확인한다. AdMob은 스토어에 등록된 웹사이트의 호스트를 기준으로 파일을 찾는다. [Google app-ads.txt 설정 안내](https://support.google.com/admob/answer/9363762?hl=en)
 
