@@ -21,7 +21,7 @@ export default function SettingsScreen() {
   const { hapticsEnabled, play, setHapticsEnabled, setSoundEnabled, soundEnabled } = useInteractionFeedback();
   const [deleting, setDeleting] = useState(false);
   const supportEmail = process.env.EXPO_PUBLIC_SUPPORT_EMAIL ?? CONTACT_EMAIL;
-  const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://dlwpdl.github.io/gling').replace(/\/$/, '');
+  const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/$/, '');
 
   if (isAuthLoading) return <ActivityIndicator color={theme.accent} style={{ flex: 1 }} />;
   if (!isAuthed) return <Redirect href="/profile" />;

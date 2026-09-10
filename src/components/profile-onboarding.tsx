@@ -52,7 +52,7 @@ export function ProfileOnboarding({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const consentOnly = existingProfile != null;
-  const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://dlwpdl.github.io/gling').replace(/\/$/, '');
+  const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/$/, '');
 
   const pickPhoto = async () => {
     try {

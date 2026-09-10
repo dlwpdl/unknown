@@ -35,7 +35,7 @@ export function LoginPanel({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const passwordLogin = onReviewLogin ?? (__DEV__ ? onDevLogin : undefined);
-  const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://dlwpdl.github.io/gling').replace(/\/$/, '');
+  const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/$/, '');
 
   return (
     <ThemedView style={styles.wrap}>
