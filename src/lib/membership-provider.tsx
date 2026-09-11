@@ -67,13 +67,19 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       if (currentUser.current !== userId || generation.current !== requestGeneration) return;
       setState({ userId, value: result.data as MembershipSnapshot });
       if (!purchaseUnavailableReason()) {
-        setOffersLoading(true);
-        const available = await withPurchases(userId, (sdk) => sdk.getOfferings());
-        if (currentUser.current !== userId || generation.current !== requestGeneration) return;
-        const items = available.current?.availablePackages ?? [];
-        packages.current = { userId, values: new Map(items.map((item) => [item.identifier, item])) };
-        setOffers({ userId, values: items.map(membershipOffer).filter((offer): offer is MembershipOffer => offer !== null) });
         await sync(requestGeneration);
+        if (currentUser.current !== userId || generation.current !== requestGeneration) return;
+        setOffersLoading(true);
+        packages.current = null; setOffers(null);
+        try {
+          const available = await withPurchases(userId, (sdk) => sdk.getOfferings());
+          if (currentUser.current !== userId || generation.current !== requestGeneration) return;
+          const items = available.current?.availablePackages ?? [];
+          packages.current = { userId, values: new Map(items.map((item) => [item.identifier, item])) };
+          setOffers({ userId, values: items.map(membershipOffer).filter((offer): offer is MembershipOffer => offer !== null) });
+        } catch {
+          if (currentUser.current === userId && generation.current === requestGeneration) setError('구독 상품을 불러오지 못했어요. 현재 멤버십은 계속 이용할 수 있어요.');
+        }
       }
     } catch {
       if (currentUser.current === userId && generation.current === requestGeneration) setError('멤버십 정보를 확인하지 못했어요. 잠시 후 다시 확인해 주세요.');

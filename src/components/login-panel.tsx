@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useFonts } from 'expo-font';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
@@ -15,6 +16,7 @@ export function LoginPanel({
   reason,
   onApple,
   onKakao,
+  onGoogle,
   onDevLogin,
   onReviewLogin,
   onAdminLogin,
@@ -25,6 +27,7 @@ export function LoginPanel({
   reason?: string;
   onApple?: () => void;
   onKakao?: () => void;
+  onGoogle?: () => void;
   onDevLogin?: (email: string, password: string) => void;
   onReviewLogin?: (email: string, password: string) => void;
   onAdminLogin?: (email: string, password: string) => void;
@@ -34,6 +37,7 @@ export function LoginPanel({
 }) {
   const theme = useTheme();
   const dark = useColorScheme() === 'dark';
+  const [googleFontLoaded] = useFonts({ GoogleSansMedium: require('@/assets/fonts/GoogleSans-Medium.ttf') });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const passwordLogin = onAdminLogin ?? onReviewLogin ?? (__DEV__ ? onDevLogin : undefined);
@@ -74,9 +78,20 @@ export function LoginPanel({
               accessibilityState={{ disabled: loading, busy: loading }}
               style={[styles.btn, { backgroundColor: '#FEE500', opacity: loading ? 0.6 : 1 }]}>
               <ThemedText type="smallBold" style={{ color: '#191600', fontSize: 16 }}>
-                {loading ? t.auth.kakaoLoading : t.auth.kakao}
+                {t.auth.kakao}
               </ThemedText>
             </Pressable>}
+            {onGoogle && <Pressable
+              onPress={onGoogle}
+              disabled={loading}
+              accessibilityRole="button"
+              accessibilityLabel={t.auth.google}
+              accessibilityState={{ disabled: loading, busy: loading }}
+              style={[styles.btn, styles.googleButton, { opacity: loading ? 0.6 : 1 }]}>
+              <Image source={require('@/assets/brand/google-g.png')} style={styles.googleIcon} contentFit="contain" accessible={false} />
+              <ThemedText type="small" style={[styles.googleText, googleFontLoaded && { fontFamily: 'GoogleSansMedium' }]}>{t.auth.google}</ThemedText>
+            </Pressable>}
+            {loading && <ThemedText type="small" themeColor="textSecondary" accessibilityRole="progressbar" style={styles.note}>{t.auth.connecting}</ThemedText>}
             {passwordLogin && (
               <View style={[styles.devBox, { borderColor: theme.line }]}>
                 <ThemedText type="smallBold">{onAdminLogin ? '관리자 계정 로그인' : onReviewLogin ? t.auth.reviewLoginTitle : t.auth.devLoginTitle}</ThemedText>
@@ -187,6 +202,9 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
   },
   appleButton: { width: '100%', height: 50 },
+  googleButton: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#747775', flexDirection: 'row', justifyContent: 'center', gap: 12, paddingHorizontal: 16, minHeight: 50 },
+  googleIcon: { width: 20, height: 20 },
+  googleText: { color: '#1F1F1F', fontSize: 16, flexShrink: 1 },
   error: { textAlign: 'center', fontSize: 12 },
   note: {
     textAlign: 'center',

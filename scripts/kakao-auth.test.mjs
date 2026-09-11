@@ -30,6 +30,10 @@ test('iOS는 글링 도메인에서 시작하며 등록된 카카오 PKCE 요청
   native.searchParams.set('code_challenge', 'ABcd.ef~_-'.repeat(6));
   native.searchParams.set('code_challenge_method', 'plain');
   assert.equal(visit(native.href).destination, native.href);
+  const google = new URL(authorize);
+  google.searchParams.set('provider', 'google');
+  google.searchParams.delete('scope');
+  assert.equal(visit(google.href).destination, google.href);
   for (const invalid of [
     authorize.href.replace('wjvahbdwmctzpkndqaxa.supabase.co', 'evil.example'),
     authorize.href.replace('/auth/v1/authorize', '/redirect'),

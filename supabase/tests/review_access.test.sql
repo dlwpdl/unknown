@@ -1,15 +1,18 @@
 begin;
-select plan(14);
+select plan(19);
 
 select is(public.gling_before_user_created('{"user":{"app_metadata":{"provider":"kakao"}}}'), '{}'::jsonb, 'Kakao signup remains open');
 select is(public.gling_before_user_created('{"user":{"app_metadata":{"provider":"apple"}}}'), '{}'::jsonb, 'Apple signup remains open');
+select is(public.gling_before_user_created('{"user":{"app_metadata":{"provider":"google"}}}'), '{}'::jsonb, 'Google signup is available');
+select is(public.gling_before_user_created('{"user":{"app_metadata":{"provider":"email"},"user_metadata":{"provider":"google"}}}') #>> '{error,http_code}', '403', 'user metadata cannot impersonate a Google provider');
 select is(public.gling_before_user_created('{"user":{"app_metadata":{"provider":"email"},"user_metadata":{"review_access":true,"role":"admin"}}}') #>> '{error,http_code}', '403', 'public email signup cannot spoof trusted metadata');
 
 insert into auth.users (id, email, raw_app_meta_data) values
 ('9aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1', 'review-access-test@example.com', '{"provider":"email","review_access":true}'),
 ('9aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2', 'review-access-member@example.com', '{"provider":"email"}'),
 ('9aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3', 'review-access-social@example.com', '{"provider":"kakao"}'),
-('9aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4', 'review-access-admin@example.com', '{"provider":"email","role":"admin"}');
+('9aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4', 'review-access-admin@example.com', '{"provider":"email","role":"admin"}'),
+('9aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa5', 'review-access-google@example.com', '{"provider":"google"}');
 
 select is(public.gling_access_token_hook('{"user_id":"9aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1","authentication_method":"password","claims":{"role":"authenticated"}}'), '{"claims":{"role":"authenticated"}}'::jsonb, 'review password keeps ordinary claims');
 select is(public.gling_access_token_hook('{"user_id":"9aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1","authentication_method":"token_refresh","claims":{}}'), '{"claims":{}}'::jsonb, 'review sessions refresh');
@@ -19,6 +22,9 @@ select is(public.gling_access_token_hook('{"user_id":"9aaaaaaa-aaaa-aaaa-aaaa-aa
 select is(public.gling_access_token_hook('{"user_id":"9aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3","authentication_method":"token_refresh","claims":{"amr":[{"method":"oauth"}]}}') -> 'claims', '{"amr":[{"method":"oauth"}]}'::jsonb, 'social sessions refresh');
 select is(public.gling_access_token_hook('{"user_id":"9aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3","authentication_method":"token_refresh","claims":{"amr":[{"method":"password"}]}}') #>> '{error,http_code}', '403', 'old non-social sessions cannot refresh');
 select is(public.gling_access_token_hook('{"user_id":"9aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4","authentication_method":"password","claims":{}}'), '{"claims":{}}'::jsonb, 'existing admin authentication remains available');
+select is(public.gling_access_token_hook('{"user_id":"9aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa5","authentication_method":"oauth","claims":{}}'), '{"claims":{}}'::jsonb, 'Google OAuth is allowed');
+select is(public.gling_access_token_hook('{"user_id":"9aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa5","authentication_method":"token_refresh","claims":{"amr":[{"method":"oauth"}]}}') -> 'claims', '{"amr":[{"method":"oauth"}]}'::jsonb, 'Google OAuth sessions refresh');
+select is(public.gling_access_token_hook('{"user_id":"9aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa5","authentication_method":"password","claims":{}}') #>> '{error,http_code}', '403', 'Google accounts cannot bypass social-only access by adding passwords');
 
 update auth.users set raw_app_meta_data = '{"provider":"email"}' where id = '9aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1';
 select is(public.gling_access_token_hook('{"user_id":"9aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1","authentication_method":"token_refresh","claims":{"app_metadata":{"review_access":true}}}') #>> '{error,http_code}', '403', 'revoking the marker denies refresh despite old claims');

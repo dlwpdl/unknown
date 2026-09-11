@@ -12,7 +12,7 @@ test('cancel, dismiss and browser failure release the shared login state for ret
   const refs = [];
   const effects = [];
   let stateIndex = 0, refIndex = 0, mounted = false;
-  let browserCalls = 0, appleCalls = 0, exchangeCalls = 0, complete, fail;
+  let browserCalls = 0, appleCalls = 0, exchangeCalls = 0, complete, fail, oauthOptions;
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/lib/auth.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
@@ -36,7 +36,7 @@ test('cancel, dismiss and browser failure release the shared login state for ret
     if (name === '@/lib/supabase') return { supabase: { auth: {
       async getSession() { return { data: { session: null } }; },
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
-      async signInWithOAuth() { return { data: { url: 'https://wjvahbdwmctzpkndqaxa.supabase.co/auth/v1/authorize' } }; },
+      async signInWithOAuth(options) { oauthOptions = options; return { data: { url: 'https://wjvahbdwmctzpkndqaxa.supabase.co/auth/v1/authorize' } }; },
       async exchangeCodeForSession() { exchangeCalls++; return {}; },
     } } };
     if (name === '@/lib/kakao-auth') return kakao;
@@ -51,22 +51,25 @@ test('cancel, dismiss and browser failure release the shared login state for ret
   for (const effect of effects) effect();
   await Promise.resolve();
   assert.equal(render().isAuthLoading, false);
-  for (const outcome of ['cancel', 'dismiss', 'error']) {
+  for (const provider of ['Kakao', 'Google']) for (const outcome of ['cancel', 'dismiss', 'error', 'success']) {
     const auth = render();
     const before = browserCalls;
-    const first = auth.signInKakao();
-    const duplicate = auth.signInKakao();
+    const exchangesBefore = exchangeCalls;
+    const first = auth[`signIn${provider}`]();
+    const duplicate = auth[`signIn${provider}`]();
     await auth.signInApple();
     await Promise.resolve();
     assert.equal(browserCalls, before + 1);
+    assert.equal(oauthOptions.provider, provider.toLowerCase());
+    assert.equal(oauthOptions.options.queryParams?.scope, provider === 'Kakao' ? 'profile_nickname profile_image' : undefined);
     assert.equal(appleCalls, 0);
     assert.equal(render().isAuthLoading, true);
     if (outcome === 'error') fail(new Error('Browser unavailable'));
-    else complete({ type: outcome });
+    else complete({ type: outcome, url: 'gling://auth/callback?code=valid-code' });
     await Promise.all([first, duplicate]);
     assert.equal(render().isAuthLoading, false);
     assert.equal(render().authError, outcome === 'error' ? '로그인 오류' : null);
-    assert.equal(exchangeCalls, 0);
+    assert.equal(exchangeCalls, exchangesBefore + (outcome === 'success' ? 1 : 0));
   }
   await render().signInApple();
   assert.equal(appleCalls, 1);

@@ -157,7 +157,7 @@ function PromotionsScreen() {
   };
 
   if (auth.isAuthLoading) return <ActivityIndicator style={styles.container} color={theme.accent} accessibilityLabel="로그인 확인 중" />;
-  if (!auth.isAuthed) return <LoginPanel reason="홍보 크레딧과 내 글을 확인하려면 로그인해 주세요." onApple={auth.signInApple} onKakao={auth.signInKakao} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} />;
+  if (!auth.isAuthed) return <LoginPanel reason="홍보 크레딧과 내 글을 확인하려면 로그인해 주세요." onApple={auth.signInApple} onKakao={auth.signInKakao} onGoogle={auth.signInGoogle} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} />;
   const card = [styles.card, { backgroundColor: theme.card, borderColor: theme.line }];
   return <ThemedView style={styles.container}><SafeAreaView edges={['bottom']} style={styles.safeArea}><ScrollView contentContainerStyle={styles.content}>
     <View style={styles.intro}><ThemedText type="smallBold" themeColor="accent">내 글을 더 멀리</ThemedText><ThemedText type="subtitle" accessibilityRole="header">홍보 크레딧</ThemedText><ThemedText type="small" themeColor="textSecondary">미리 구매하고, 알리고 싶은 글에 사용해요.</ThemedText></View>

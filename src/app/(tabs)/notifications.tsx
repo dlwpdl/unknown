@@ -16,7 +16,7 @@ import { supabase } from '@/lib/supabase';
 export default function NotificationsScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { isAuthed, isAuthLoading, me, signInApple, signInKakao, signInDev, authError } = useAuth();
+  const { isAuthed, isAuthLoading, me, signInApple, signInKakao, signInGoogle, signInDev, authError } = useAuth();
   const [rows, setRows] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -45,7 +45,7 @@ export default function NotificationsScreen() {
   }, [isAuthed, load]));
 
   if (isAuthLoading) return <ActivityIndicator color={theme.accent} style={styles.center} />;
-  if (!isAuthed) return <LoginPanel reason={t.auth.reasonNotifications} onApple={signInApple} onKakao={signInKakao} onDevLogin={signInDev} loading={isAuthLoading} error={authError} />;
+  if (!isAuthed) return <LoginPanel reason={t.auth.reasonNotifications} onApple={signInApple} onKakao={signInKakao} onGoogle={signInGoogle} onDevLogin={signInDev} loading={isAuthLoading} error={authError} />;
 
   return (
     <ThemedView style={styles.screen}>

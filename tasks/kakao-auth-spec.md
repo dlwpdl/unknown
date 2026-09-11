@@ -4,6 +4,8 @@
 
 앱에서 카카오와 Google 로그인을 제공하고 하나의 Supabase 세션 체계로 생성·복원·종료한다. 소셜 로그인은 외부 계정 소유 확인이며 국적·실명 인증으로 표시하지 않는다.
 
+2026-09-11: 소유자가 Google 로그인 재추가를 요청했다. iOS는 기존 Apple·카카오에 Google을, Android·웹은 카카오에 Google을 추가한다. 기존 온보딩·동의·계정 상태 검증을 그대로 적용한다. Google에는 Kakao 전용 scope를 보내지 않으며, iOS의 소유 도메인 진입과 PKCE 콜백 검증 및 취소 후 재시도를 두 공급자에 적용한다. Google 설정과 실제 인증 결과가 확인되기 전에는 배포 완료로 표시하지 않는다.
+
 개발 빌드에서는 실제 Supabase 개발 계정과 localhost 관리자 미리보기를 제공한다. 배포 빌드에서는 이 우회를 노출하지 않고 실제 OAuth 경로만 유지한다.
 
 ## Tech Stack
@@ -40,6 +42,7 @@ await supabase.auth.exchangeCodeForSession(code);
 ## Boundaries
 
 - Always: PKCE, 정확한 콜백 URL 검증, 공개 키만 앱에 저장
+- Always: 기존 심사 계정·관리자 계정 경계와 Apple 로그인 유지, 모든 일반 로그인 진입 화면에 같은 Google 옵션 제공
 - Ask first: Supabase 공급자 설정 변경, 기존 관리자 역할 이전
 - Never: Client Secret을 앱 환경 변수나 저장소에 추가, 소셜 로그인을 국적·실명 인증으로 표시
 

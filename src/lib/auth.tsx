@@ -19,7 +19,7 @@ import { signInAdminAccount, signInReviewAccount, supabase } from '@/lib/supabas
 import type { TrustLevel } from '@/lib/trust';
 
 type Level = 0 | 1;
-type OAuthProvider = 'kakao';
+type OAuthProvider = 'kakao' | 'google';
 
 type Me = { id: string; nickname: string; photoUri: string | null };
 
@@ -42,6 +42,7 @@ type AuthValue = {
   signInApple: () => Promise<void>;
   prepareAppleAccountDeletion: () => Promise<string | null>;
   signInKakao: () => Promise<void>;
+  signInGoogle: () => Promise<void>;
   signInDev: (email: string, password: string) => Promise<void>;
   signInReview: (email: string, password: string) => Promise<void>;
   signInAdmin: (email: string, password: string) => Promise<void>;
@@ -134,7 +135,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
           redirectTo,
           skipBrowserRedirect: true,
           // Override Supabase's default account_email scope; Kakao has not approved it for this app.
-          queryParams: { scope: 'profile_nickname profile_image' },
+          queryParams: provider === 'kakao' ? { scope: 'profile_nickname profile_image' } : undefined,
         },
       });
       if (error || !data.url) throw new Error('OAUTH_START_FAILED');
@@ -154,6 +155,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     }
   }, []);
   const signInKakao = useCallback(() => signInOAuth('kakao'), [signInOAuth]);
+  const signInGoogle = useCallback(() => signInOAuth('google'), [signInOAuth]);
   const signInApple = useCallback(async () => {
     if (signInInFlight.current) return;
     signInInFlight.current = true;
@@ -308,6 +310,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       signInApple,
       prepareAppleAccountDeletion,
       signInKakao,
+      signInGoogle,
       signInDev,
       signInReview,
       signInAdmin,
@@ -330,6 +333,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       signInApple,
       prepareAppleAccountDeletion,
       signInKakao,
+      signInGoogle,
       signInDev,
       signInReview,
       signInAdmin,
@@ -347,6 +351,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
           reason={reason}
           onApple={signInApple}
           onKakao={signInKakao}
+          onGoogle={signInGoogle}
           onDevLogin={signInDev}
           loading={signingIn}
           error={authError}

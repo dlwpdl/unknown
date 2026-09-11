@@ -96,7 +96,7 @@ export default function ChatScreen() {
     } finally { processing.current = false; if (currentUser.current === owner) setRequestBusy(null); }
   };
 
-  if (!auth.isAuthed) return <LoginPanel reason={t.auth.reasonChat} onApple={auth.signInApple} onKakao={auth.signInKakao} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} />;
+  if (!auth.isAuthed) return <LoginPanel reason={t.auth.reasonChat} onApple={auth.signInApple} onKakao={auth.signInKakao} onGoogle={auth.signInGoogle} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} />;
   return <ThemedView style={styles.container}><SafeAreaView style={styles.safeArea} edges={['top']}>
     <FlatList data={displayed} keyExtractor={(item) => item.id} contentContainerStyle={styles.list}
       refreshing={loading} onRefresh={() => void changed()}
