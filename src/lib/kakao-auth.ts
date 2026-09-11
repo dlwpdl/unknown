@@ -6,6 +6,14 @@ export function getOAuthCallbackPath(platform: string, webBaseUrl = '') {
   return platform === 'web' ? `${webBaseUrl.replace(/\/+$/, '')}/auth/callback` : 'auth/callback';
 }
 
+export function getKakaoAuthSessionUrl(authorizeUrl: string, platform: string) {
+  // The iOS consent sheet names the first host. Start on our owned sign-in page;
+  // keep the existing Supabase PKCE flow and registered callback intact.
+  return platform === 'ios'
+    ? `https://gling.ej-entertainment.com/auth/kakao.html#${encodeURIComponent(authorizeUrl)}`
+    : authorizeUrl;
+}
+
 export function getOAuthCode(callbackUrl: string, expectedRedirectUrl: string) {
   const callback = new URL(callbackUrl);
   const expected = new URL(expectedRedirectUrl);

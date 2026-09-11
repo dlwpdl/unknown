@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>글링 · 카카오 로그인</title>
+<style>body{margin:0;min-height:100svh;display:grid;place-content:center;padding:24px;box-sizing:border-box;background:#faf9f6;color:#242b32;font:16px/1.6 system-ui;text-align:center}h1{font-size:24px}p{max-width:28em}</style>
+<h1>글링</h1>
+<p id="status" role="status">카카오 로그인으로 연결하고 있어요.</p>
+<noscript>로그인 창을 닫고 글링 앱에서 다시 시도해 주세요.</noscript>
+<script>
+try {
+  // The fragment never reaches hosting logs. Accept only this app's Kakao
+  // authorize endpoint and native callback, never an arbitrary redirect.
+  const url = new URL(decodeURIComponent(location.hash.slice(1)));
+  const params = url.searchParams;
+  const allowed = ['provider', 'redirect_to', 'code_challenge', 'code_challenge_method', 'scope', 'skip_http_redirect'];
+  if (url.origin !== 'https://wjvahbdwmctzpkndqaxa.supabase.co'
+    || url.pathname !== '/auth/v1/authorize' || url.username || url.password || url.hash
+    || [...params.keys()].some(key => !allowed.includes(key) || params.getAll(key).length !== 1)
+    || params.get('provider') !== 'kakao' || params.get('redirect_to') !== 'gling://auth/callback'
+    || !/^[A-Za-z0-9_~-]{43,128}$/.test(params.get('code_challenge') || '')
+    || !['s256', 'plain'].includes(params.get('code_challenge_method'))
+    || params.get('scope') !== 'profile_nickname profile_image') throw new Error('INVALID_AUTH_REQUEST');
+  history.replaceState(null, '', location.pathname);
+  location.replace(url.href);
+} catch {
+  document.getElementById('status').textContent = '로그인 창을 닫고 글링 앱에서 다시 시도해 주세요.';
+}
+</script>
+</html>

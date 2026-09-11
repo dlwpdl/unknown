@@ -13,7 +13,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { isAdminRole } from '@/lib/admin';
-import { canUseDevPasswordLogin, getOAuthCallbackPath, getOAuthCode } from '@/lib/kakao-auth';
+import { canUseDevPasswordLogin, getKakaoAuthSessionUrl, getOAuthCallbackPath, getOAuthCode } from '@/lib/kakao-auth';
 import { CONTACT_EMAIL } from '@/lib/legal-documents';
 import { signInAdminAccount, signInReviewAccount, supabase } from '@/lib/supabase';
 import type { TrustLevel } from '@/lib/trust';
@@ -136,7 +136,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       });
       if (error || !data.url) throw new Error('OAUTH_START_FAILED');
 
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      const result = await WebBrowser.openAuthSessionAsync(getKakaoAuthSessionUrl(data.url, Platform.OS), redirectTo);
       if (result.type !== 'success') return;
 
       const code = getOAuthCode(result.url, redirectTo);
