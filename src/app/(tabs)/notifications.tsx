@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { LoginPanel } from '@/components/login-panel';
-import { ThemedView } from '@/components/themed-view';
+import { TabContent } from '@/components/tab-content';
 import { MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
@@ -48,7 +48,7 @@ export default function NotificationsScreen() {
   if (!isAuthed) return <LoginPanel reason={t.auth.reasonNotifications} onApple={signInApple} onKakao={signInKakao} onGoogle={signInGoogle} onDevLogin={signInDev} loading={isAuthLoading} error={authError} />;
 
   return (
-    <ThemedView style={styles.screen}>
+    <TabContent style={styles.screen}>
       <SafeAreaView style={styles.safeArea}>
         <View style={[styles.header, { borderBottomColor: theme.line }]}>
           <ThemedText type="subtitle">{t.notifications.title}</ThemedText>
@@ -79,7 +79,7 @@ export default function NotificationsScreen() {
           />
         )}
       </SafeAreaView>
-    </ThemedView>
+    </TabContent>
   );
 }
 

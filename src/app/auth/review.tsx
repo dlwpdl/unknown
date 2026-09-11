@@ -13,7 +13,7 @@ export default function ReviewAccessRoute() {
       onReviewLogin={signInReview}
       loading={isAuthLoading}
       error={authError}
-      onClose={() => router.replace('/profile')}
+      onClose={() => router.canGoBack() ? router.back() : router.replace('/profile')}
     />
   );
 }

@@ -8,7 +8,7 @@ import { ChatRoom } from '@/components/chat-room';
 import { LoginPanel } from '@/components/login-panel';
 import { RelationshipSlotCard } from '@/components/relationship-slot-card';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { TabContent } from '@/components/tab-content';
 import { TrustBadge } from '@/components/trust-badge';
 import { MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -97,7 +97,7 @@ export default function ChatScreen() {
   };
 
   if (!auth.isAuthed) return <LoginPanel reason={t.auth.reasonChat} onApple={auth.signInApple} onKakao={auth.signInKakao} onGoogle={auth.signInGoogle} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} />;
-  return <ThemedView style={styles.container}><SafeAreaView style={styles.safeArea} edges={['top']}>
+  return <TabContent style={styles.container}><SafeAreaView style={styles.safeArea} edges={['top']}>
     <FlatList data={displayed} keyExtractor={(item) => item.id} contentContainerStyle={styles.list}
       refreshing={loading} onRefresh={() => void changed()}
       ListHeaderComponent={<View style={styles.header}>
@@ -124,9 +124,9 @@ export default function ChatScreen() {
           <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{item.status === 'pending' ? item.requesterId === userId ? t.chat.sentRequest : t.chat.receivedRequest : item.status === 'ended' ? t.chat.ended : item.latestBody ?? t.chat.newConversation}</ThemedText></View>
         <ThemedText type="smallBold" themeColor="textSecondary">›</ThemedText>
       </Pressable>} />
-  </SafeAreaView><Modal visible={!!openConversation} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" onRequestClose={() => { setSelection(null); router.setParams({ conversationId: undefined }); }}>
+  </SafeAreaView><Modal visible={!!openConversation} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" allowSwipeDismissal onRequestClose={() => { setSelection(null); router.setParams({ conversationId: undefined }); }}>
     {openConversation && <ChatRoom key={`${userId}:${openConversation.id}`} conversation={openConversation} currentUserId={auth.me.id} onChanged={changed} onClose={() => { setSelection(null); router.setParams({ conversationId: undefined }); void changed(); }} />}
-  </Modal></ThemedView>;
+  </Modal></TabContent>;
 }
 
 const styles = StyleSheet.create({

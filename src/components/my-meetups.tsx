@@ -103,10 +103,11 @@ export function MyMeetups({ onOpen }: { onOpen: (postId: string) => Promise<void
       {error && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{t.meetup.loadError}</ThemedText>}
       {!loading && !error && items.length === 0 && <ThemedText type="small" themeColor="textSecondary">{t.meetup.empty}</ThemedText>}
       {items.map((meetup) => <View key={meetup.id} style={[styles.meetup, { backgroundColor: theme.card, borderColor: theme.line }]}>
-        <Pressable onPress={() => void open(meetup)} accessibilityRole="button" disabled={!!busy} accessibilityState={{ disabled: !!busy }} style={({ pressed }) => [styles.copy, { opacity: pressed ? 0.7 : 1 }]}>
+        <Pressable onPress={() => void open(meetup)} accessibilityRole="button" disabled={!!busy} accessibilityState={{ disabled: !!busy, busy: busy === meetup.id }} style={({ pressed }) => [styles.copy, { opacity: pressed ? 0.7 : 1 }]}>
           <ThemedText type="smallBold" themeColor="accent">{t.meetup[meetup.role]}</ThemedText>
           <ThemedText type="smallBold">{meetup.title}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{CITIES.find(({ id }) => id === meetup.cityId)?.name ?? meetup.cityId}</ThemedText>
+          {busy === meetup.id && <ActivityIndicator color={theme.accent} accessibilityLabel="모임 처리 중" />}
         </Pressable>
         {meetup.role !== 'pending' && meetup.conversationId && <Pressable
           onPress={() => router.push({ pathname: '/chat', params: { conversationId: meetup.conversationId! } })}

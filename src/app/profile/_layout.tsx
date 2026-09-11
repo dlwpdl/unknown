@@ -14,24 +14,27 @@ export default function ProfileLayout() {
 
   return (
     <Stack
-      screenOptions={{
+      screenOptions={({ route }) => ({
         contentStyle: { backgroundColor: theme.background },
         headerStyle: { backgroundColor: theme.background },
         headerTintColor: theme.text,
         headerShadowVisible: false,
         headerBackButtonDisplayMode: 'minimal',
-      }}>
-      <Stack.Screen name="index" options={{
-        title: t.tabs.profile,
+        animation: reducedMotion ? 'none' : 'default',
         headerLeft: () => (
-          <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/')} accessibilityRole="button" accessibilityLabel={t.notifications.close} style={{ minWidth: 44, minHeight: 44, justifyContent: 'center' }}>
+          <Pressable
+            onPress={() => router.canGoBack() ? router.back() : router.replace(route.name === 'index' ? '/' : '/profile')}
+            accessibilityRole="button"
+            accessibilityLabel="뒤로가기"
+            style={({ pressed }) => ({ minWidth: 44, minHeight: 44, justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
             <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} />
           </Pressable>
         ),
-      }} />
+      })}>
+      <Stack.Screen name="index" options={{ title: t.tabs.profile }} />
       <Stack.Screen name="guidelines" options={{ title: t.profile.guidelines }} />
-      <Stack.Screen name="membership" options={{ title: '멤버십', animation: reducedMotion ? 'none' : 'default' }} />
-      <Stack.Screen name="promotions" options={{ title: PROMOTIONS_PREVIEW_ENABLED ? '홍보 크레딧' : '', headerShown: PROMOTIONS_PREVIEW_ENABLED, animation: reducedMotion ? 'none' : 'default' }} />
+      <Stack.Screen name="membership" options={{ title: '멤버십' }} />
+      <Stack.Screen name="promotions" options={{ title: PROMOTIONS_PREVIEW_ENABLED ? '홍보 크레딧' : '', headerShown: PROMOTIONS_PREVIEW_ENABLED }} />
       <Stack.Screen name="settings" options={{ title: t.profile.settings }} />
     </Stack>
   );

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -17,12 +17,13 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DailyChip, todayLabel } from '@/components/daily-chip';
 import { MyMeetups } from '@/components/my-meetups';
 import { PostCard } from '@/components/post-card';
 import { PostDetail } from '@/components/post-detail';
+import { TabContent } from '@/components/tab-content';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
@@ -75,6 +76,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [pendingPost, setPendingPost] = useState<Post | null>(null); // 로그인 후 이어서 열 글
   const [tagFilter, setTagFilter] = useState<number | null>(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null); // 카테고리 칩
   const [searching, setSearching] = useState(false);
+  const searchSelection = useRef<Post | null>(null);
   const [query, setQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -387,7 +389,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <TabContent style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <FlatList
           data={[null, ...journal.remaining]}
@@ -552,8 +554,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       </SafeAreaView>
 
       {/* 검색: 제목·내용·해시태그. 입력 전엔 인기 해시태그 칩 (당근 검색 패턴) */}
-      <Modal visible={searching} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setSearching(false)}>
-        <ThemedView style={styles.writer}>
+      <Modal visible={searching} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setSearching(false)}
+        onDismiss={() => {
+          const post = searchSelection.current;
+          searchSelection.current = null;
+          if (post) openDetail(post);
+        }}>
+        <SafeAreaProvider style={[styles.writer, { backgroundColor: theme.background }]}>
           <SafeAreaView style={{ flex: 1 }}>
             <View style={styles.searchHead}>
               <TextInput
@@ -613,8 +620,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   <PostCard
                     post={item}
                     onPress={() => {
+                      // iOS must finish dismissing search before presenting detail or login.
+                      if (Platform.OS === 'ios') searchSelection.current = item;
                       setSearching(false);
-                      openDetail(item);
+                      if (Platform.OS !== 'ios') openDetail(item);
                     }}
                     onJoin={() => void onJoin(item)}
                     onHashtag={setQuery}
@@ -623,7 +632,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               />
             )}
           </SafeAreaView>
-        </ThemedView>
+        </SafeAreaProvider>
       </Modal>
 
       {/* 글 상세 (로그인 게이트 통과 시) — pageSheet: 상단 여백·스와이프 닫기 네이티브 제공 */}
@@ -631,6 +640,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         visible={!!detailPost}
         animationType={reducedMotion ? 'none' : 'slide'}
         presentationStyle="pageSheet"
+        allowSwipeDismissal
         onRequestClose={() => setDetailPost(null)}>
         {detailPost && (
           <PostDetail
@@ -737,7 +747,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
 
       {/* 글쓰기: 태그 선선택 → 태그별 안내문 (당근 패턴) */}
       <Modal visible={writing} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setWriting(false)}>
-        <ThemedView style={styles.writer}>
+        <SafeAreaProvider style={[styles.writer, { backgroundColor: theme.background }]}>
           <SafeAreaView style={{ flex: 1 }}>
             <KeyboardAvoidingView
               style={{ flex: 1 }}
@@ -911,9 +921,9 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               </ScrollView>
             </KeyboardAvoidingView>
           </SafeAreaView>
-        </ThemedView>
+        </SafeAreaProvider>
       </Modal>
-    </ThemedView>
+    </TabContent>
   );
 }
 

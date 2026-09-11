@@ -3,10 +3,9 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
 import { useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
@@ -134,7 +133,7 @@ export function ProfileOnboarding({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={() => {}}>
-      <ThemedView style={styles.screen}>
+      <SafeAreaProvider style={[styles.screen, { backgroundColor: theme.background }]}>
         <SafeAreaView style={styles.safeArea}>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <ThemedText type="smallBold" style={{ color: theme.accent }}>{t.onboarding.step}</ThemedText>
@@ -242,7 +241,7 @@ export function ProfileOnboarding({
             </Pressable>
           </View>
         </SafeAreaView>
-      </ThemedView>
+      </SafeAreaProvider>
     </Modal>
   );
 }

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useReducedMotion } from 'react-native-reanimated';
 
 import { LoginPanel } from '@/components/login-panel';
 import { PostCard } from '@/components/post-card';
@@ -24,6 +25,7 @@ import type { Post } from '@/lib/types';
 export default function ProfileScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const reducedMotion = useReducedMotion();
   const { isAuthed, signInApple, signInKakao, signInGoogle, signInDev, isAuthLoading, authError, trustLevel, me, setProfilePhoto } = useAuth();
   const [savedOpen, setSavedOpen] = useState(false);
   const [savedDetail, setSavedDetail] = useState<Post | null>(null);
@@ -166,8 +168,9 @@ export default function ProfileScreen() {
 
       <Modal
         visible={savedOpen}
-        animationType="slide"
+        animationType={reducedMotion ? 'none' : 'slide'}
         presentationStyle="pageSheet"
+        allowSwipeDismissal
         onRequestClose={() => setSavedOpen(false)}>
         <ThemedView style={{ flex: 1 }}>
           <View style={[styles.sheetHead, { borderBottomColor: theme.line }]}>
@@ -200,8 +203,9 @@ export default function ProfileScreen() {
           />
           <Modal
             visible={!!savedDetail}
-            animationType="slide"
+            animationType={reducedMotion ? 'none' : 'slide'}
             presentationStyle="pageSheet"
+            allowSwipeDismissal
             onRequestClose={() => setSavedDetail(null)}>
             {savedDetail && <PostDetail post={savedDetail} onClose={() => setSavedDetail(null)} onViewCountChange={updateViewCount} />}
           </Modal>

@@ -4,6 +4,7 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { LoginPanel } from '@/components/login-panel';
 import { ProfileOnboarding, type CompletedProfile } from '@/components/profile-onboarding';
@@ -347,6 +348,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     <AuthContext.Provider value={value}>
       {children}
       <Modal visible={!publicPage && visible} animationType="slide" onRequestClose={() => setVisible(false)}>
+        <SafeAreaProvider>
         <LoginPanel
           reason={reason}
           onApple={signInApple}
@@ -357,6 +359,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
           error={authError}
           onClose={() => setVisible(false)}
         />
+        </SafeAreaProvider>
       </Modal>
       <Modal visible={!publicPage && lockedStatus != null} animationType="fade" onRequestClose={() => {}}>
         {lockedStatus && (

@@ -42,7 +42,8 @@ export default function SettingsScreen() {
         style: 'destructive',
         onPress: () => {
           signOut();
-          router.back();
+          if (router.canGoBack()) router.back();
+          else router.replace('/');
         },
       },
     ]);
