@@ -9,6 +9,7 @@ export const ACTIVITY_KINDS = {
 export type ActivityKind = keyof typeof ACTIVITY_KINDS;
 export type AdminDirectoryProfile = AdminProfile & {
   email: string | null; login_name: string | null; email_confirmed_at: string | null;
+  session_ip: string | null; session_created_at: string | null; session_updated_at: string | null;
   last_sign_in_at: string | null; auth_role: string; providers: string[];
   account_type: 'example' | 'admin' | 'review' | 'member';
 };

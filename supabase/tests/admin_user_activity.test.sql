@@ -1,5 +1,5 @@
 begin;
-select plan(16);
+select plan(20);
 select has_function('public','search_admin_users',array['text','integer'],'admin directory RPC exists');
 select has_function('public','get_admin_user_overview',array['uuid'],'admin identity RPC exists');
 insert into auth.users(id,email,raw_app_meta_data,raw_user_meta_data) values
@@ -19,6 +19,10 @@ insert into public.conversations(id,user_low_id,user_high_id) values
 insert into public.messages(conversation_id,sender_id,body) values
 ('77770000-6666-6666-6666-666666666666','77770000-1111-1111-1111-111111111111','본인 메시지'),
 ('77770000-6666-6666-6666-666666666666','77770000-3333-3333-3333-333333333333','상대 메시지');
+insert into auth.sessions(id,user_id,ip,created_at,updated_at,refresh_token_hmac_key) values
+('77770000-8888-8888-8888-888888888881','77770000-1111-1111-1111-111111111111','192.0.2.10','2026-09-01','2026-09-01','session-secret-must-not-leak'),
+('77770000-8888-8888-8888-888888888882','77770000-1111-1111-1111-111111111111','2001:db8::10','2026-09-02','2026-09-02','session-secret-must-not-leak'),
+('77770000-8888-8888-8888-888888888883','77770000-3333-3333-3333-333333333333','198.51.100.8','2026-09-03','2026-09-03','session-secret-must-not-leak');
 select set_config('request.jwt.claims','{"sub":"77770000-1111-1111-1111-111111111111","role":"authenticated","user_metadata":{"role":"admin"}}',true);
 set local role authenticated;
 select throws_ok($$select public.search_admin_users()$$,'P0001','ADMIN_REQUIRED','editable metadata cannot grant directory access');
@@ -43,5 +47,9 @@ select is((public.get_admin_user_activity('77770000-1111-1111-1111-111111111111'
 select is((public.get_admin_user_activity('77770000-1111-1111-1111-111111111111','message')->>'total')::int,1,'own activity excludes peer messages');
 select is((public.get_admin_user_activity('77770000-1111-1111-1111-111111111111',p_conversation_id=>'77770000-6666-6666-6666-666666666666')->>'total')::int,2,'conversation context includes both speakers');
 select ok(exists(select 1 from public.admin_access_logs where actor_id=auth.uid() and subject_user_id='77770000-1111-1111-1111-111111111111' and scope='user_detail'),'identity and timeline reads are attributable');
+select is(public.get_admin_user_overview('77770000-1111-1111-1111-111111111111')#>>'{profile,session_ip}','2001:db8::10','latest session preserves IPv6');
+select is((public.get_admin_user_activity('77770000-1111-1111-1111-111111111111','account',p_query=>'192.0.2.10')->>'total')::int,1,'retained IPv4 session can be searched');
+select is((public.get_admin_user_activity('77770000-1111-1111-1111-111111111111','account',p_query=>'198.51.100.8')->>'total')::int,0,'another account session is excluded');
+select ok(not (public.get_admin_user_overview('77770000-1111-1111-1111-111111111111')::text||public.get_admin_user_activity('77770000-1111-1111-1111-111111111111')::text like '%session-secret-must-not-leak%'),'session secrets never leave the auth schema');
 select * from finish();
 rollback;

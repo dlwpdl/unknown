@@ -65,7 +65,12 @@ export function AdminUserReview({ userId, profiles, onStatusChange }: {
       <Field label="실명인증" value="미도입 · 신뢰 단계와 별개" />
       <Field label="생년월일 · 나이" value="미수집" />
       <Field label="권한 · 신뢰" value={`${profile.auth_role} · 신뢰 ${profile.verification_level}`} />
-      <Field label="지역" value={[profile.city_id, profile.neighborhood].filter(Boolean).join(' · ') || '미제공'} />
+      <Field label="등록 지역 · 회원 선택" value={[profile.city_id, profile.neighborhood].filter(Boolean).join(' · ') || '미제공'} />
+      <Field label="GPS 현재 위치" value="미수집" />
+      <Field label="최근 인증 세션 IP" value={profile.session_ip ?? '기록 없음'} />
+      {profile.session_created_at && <Field label="해당 세션 생성" value={formatDate(profile.session_created_at)} />}
+      {profile.session_updated_at && <Field label="해당 세션 갱신" value={formatDate(profile.session_updated_at)} />}
+      <ThemedText type="small" style={styles.muted}>인증 서버에 남아 있는 세션 기록입니다. 공유망·VPN·인증 경로에 따라 IP가 달라질 수 있으며 현재 위치를 증명하지 않습니다. 보관 중인 다른 세션은 아래 계정 활동에서 조회합니다.</ThemedText>
       <Field label="가입" value={formatDate(profile.created_at)} />
       <Field label="최근 로그인" value={profile.last_sign_in_at ? formatDate(profile.last_sign_in_at) : '기록 없음'} />
       {overview.identities.map((identity) => <Field key={`${identity.provider}:${identity.provider_id}`} label={`${identity.provider} 계정 ID`} value={identity.provider_id} />)}
