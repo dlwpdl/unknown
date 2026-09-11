@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { AdminReportQueue } from '@/components/admin/admin-report-queue';
+import { AdminUserDirectoryPanel } from '@/components/admin/admin-user-directory';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import type { AdminSection } from '@/lib/admin';
@@ -16,6 +17,7 @@ export function AdminSectionView({
   onUser,
   onResolve,
   onLoadMore,
+  localPreview = false,
 }: {
   section: AdminSection;
   data: AdminDashboardData;
@@ -25,6 +27,7 @@ export function AdminSectionView({
   onUser: (userId: string) => void;
   onResolve: (reportId: string, action: 'dismissed' | 'warned' | 'blocked', note: string) => void;
   onLoadMore: () => void;
+  localPreview?: boolean;
 }) {
   const [query, setQuery] = useState('');
   const compactUsers = useWindowDimensions().width < 560;
@@ -89,6 +92,7 @@ export function AdminSectionView({
   const search = <TextInput value={query} onChangeText={setQuery} placeholder="닉네임, 제목, 내용 또는 ID 검색" placeholderTextColor={Colors.light.textSecondary} accessibilityRole="search" accessibilityLabel="관리 데이터 검색" returnKeyType="search" style={styles.search} />;
 
   if (section === 'users') {
+    if (!localPreview) return <AdminUserDirectoryPanel onUser={onUser} refreshData={data} />;
     const rows = data.profiles.filter((profile) => matches(needle, profile.nickname, profile.neighborhood, profile.city_id, profile.id));
     return <View style={styles.section}><SectionHeading title="사용자" description="사용자를 선택하면 글·댓글·대화·신고 이력을 함께 봅니다." />{search}<View style={styles.userRows}>{rows.map((profile, index) => <UserRow key={profile.id} profile={profile} compact={compactUsers} last={index === rows.length - 1} onPress={() => onUser(profile.id)} />)}{rows.length === 0 && <Empty />}</View><LoadMore loading={loadingMore} noMore={noMore} onPress={onLoadMore} /></View>;
   }

@@ -1,17 +1,16 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { AdminUserReview } from '@/components/admin/admin-user-review';
 import { Colors, Spacing } from '@/constants/theme';
 import { reportReasonLabel, reportStatusLabel, reportTargetLabel } from '@/lib/admin';
 import {
   getLocalAdminUserActivity,
-  loadAdminUserActivity,
   type AdminDashboardData,
   type AdminProfile,
   type AdminUserActivity,
 } from '@/lib/admin-data';
-import { supabase } from '@/lib/supabase';
 
 export function AdminUserDetail({
   userId,
@@ -26,49 +25,16 @@ export function AdminUserDetail({
   onStatusChange?: (userId: string, status: 'active' | 'reactivation_pending') => Promise<void>;
   onClose: () => void;
 }) {
-  const [result, setResult] = useState<{
-    userId: string;
-    activity: AdminUserActivity | null;
-    error: string | null;
-  } | null>(null);
-  const [statusBusy, setStatusBusy] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    if (!userId || localData) return;
-    void loadAdminUserActivity(supabase, userId)
-      .then((activity) => active && setResult({ userId, activity, error: null }))
-      .catch(() => active && setResult({ userId, activity: null, error: '사용자 활동을 불러오지 못했습니다.' }));
-    return () => { active = false; };
-  }, [localData, userId]);
-
-  const activity = userId && localData
-    ? getLocalAdminUserActivity(localData, userId)
-    : result?.userId === userId ? result.activity : null;
-  const error = localData ? null : result?.userId === userId ? result.error : null;
-
-  const changeStatus = async (status: 'active' | 'reactivation_pending') => {
-    if (!userId || !onStatusChange || statusBusy) return;
-    setStatusBusy(true);
-    try {
-      await onStatusChange(userId, status);
-      setResult((current) => current?.activity ? {
-        ...current,
-        activity: { ...current.activity, profile: { ...current.activity.profile, account_status: status } },
-      } : current);
-    } finally {
-      setStatusBusy(false);
-    }
-  };
+  const activity = userId && localData ? getLocalAdminUserActivity(localData, userId) : null;
 
   return (
     <Modal visible={userId != null} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View style={styles.sheet} accessibilityViewIsModal accessibilityLabel="사용자 전체 활동">
           <View style={styles.header}>
-            <View>
+            <View style={{ flex: 1, minWidth: 0 }}>
               <ThemedText type="subtitle" accessibilityRole="header">사용자 전체 활동</ThemedText>
-              <ThemedText type="small" style={styles.muted}>{userId}</ThemedText>
+              <ThemedText type="small" numberOfLines={1} style={styles.muted}>{userId}</ThemedText>
             </View>
             <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="사용자 상세 닫기" style={styles.close}>
               <ThemedText type="smallBold">닫기</ThemedText>
@@ -76,9 +42,7 @@ export function AdminUserDetail({
           </View>
 
           <ScrollView contentContainerStyle={styles.body}>
-            {error && <View accessibilityRole="alert" style={styles.notice}><ThemedText style={styles.danger}>{error}</ThemedText></View>}
-            {!error && !activity && <View accessibilityRole="progressbar" style={styles.notice}><ThemedText style={styles.muted}>활동 기록을 불러오는 중입니다.</ThemedText></View>}
-            {activity && <ActivityContent activity={activity} profiles={profiles} statusBusy={statusBusy} onStatusChange={onStatusChange ? changeStatus : undefined} />}
+            {userId && !localData ? <AdminUserReview key={userId} userId={userId} profiles={profiles} onStatusChange={onStatusChange} /> : activity ? <ActivityContent activity={activity} profiles={profiles} /> : null}
           </ScrollView>
         </View>
       </View>
@@ -89,13 +53,9 @@ export function AdminUserDetail({
 function ActivityContent({
   activity,
   profiles,
-  statusBusy,
-  onStatusChange,
 }: {
   activity: AdminUserActivity;
   profiles: Map<string, AdminProfile>;
-  statusBusy: boolean;
-  onStatusChange?: (status: 'active' | 'reactivation_pending') => Promise<void>;
 }) {
   const status = activity.profile.account_status;
   return (
@@ -110,16 +70,7 @@ function ActivityContent({
           <ThemedText type="smallBold" style={status === 'active' ? styles.muted : styles.danger}>계정 상태 · {accountStatusLabel(status)}</ThemedText>
           {!!activity.profile.bio && <ThemedText>{activity.profile.bio}</ThemedText>}
           {!!activity.profile.account_status_note && <ThemedText type="small" style={styles.muted}>{activity.profile.account_status_note}</ThemedText>}
-          {onStatusChange && status === 'deleted' && (
-            <Pressable onPress={() => void onStatusChange('reactivation_pending')} disabled={statusBusy} accessibilityRole="button" style={styles.statusButton}>
-              <ThemedText type="smallBold">{statusBusy ? '처리 중' : '재가입 허용'}</ThemedText>
-            </Pressable>
-          )}
-          {onStatusChange && status === 'suspended' && (
-            <Pressable onPress={() => void onStatusChange('active')} disabled={statusBusy} accessibilityRole="button" style={styles.statusButton}>
-              <ThemedText type="smallBold">{statusBusy ? '처리 중' : '이용 제한 해제'}</ThemedText>
-            </Pressable>
-          )}
+
         </View>
       </View>
 

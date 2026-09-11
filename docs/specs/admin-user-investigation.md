@@ -1,0 +1,47 @@
+# 관리자 회원 식별·활동 상세 보강 — 2026-09-11
+
+## 목적과 범위
+
+사용자가 요청한 관리자 계정 확인, 회원 식별, 특정 회원 전체 활동 검토를 기존 로컬 운영 콘솔에서 강화한다. 닉네임과 별도로 고정 회원 ID, 로그인 이메일·공급자 ID, 로그인 프로필 이름, 역할, 최근 로그인·가입 시각을 제공한다. 이름은 수정 가능한 로그인 프로필 정보이며 실명인증 결과로 표시하지 않는다. 현재 미수집인 생년월일·나이는 미수집으로 표시한다. 신규 본인확인·생년월일 수집, 유료 인증, IP 수집이나 보관기간 변경은 이번 구현에 포함하지 않는다.
+
+전체란 **현재 DB에 남아 있는 명시된 활동 유형**이다. 기존 100/500개 상한으로 잘린 화면을 완전한 이력이라고 부르지 않는다. 종류·기간·본문/ID 검색, 안정적인 커서 페이지, 대화별 앞뒤 메시지와 정확한 조회 범위를 제공한다. 사용자가 직접 보낸 메시지와 대화 상대의 맥락을 구분한다. 삭제된 원문·과거 닉네임·이전 상태 중 미기록 부분은 복구하거나 추정하지 않는다. 수사 자료 보존은 별도의 정당한 요청·보존 절차가 필요하다.
+
+## 구현 계약·순서
+
+1. 기존 PostgreSQL에 관리자 전용 회원 검색, 식별 요약, 활동 페이지 RPC를 추가한다. 서버 역할 확인 후 기존 감사 로그에 주체·대상·조회 범위를 남긴다. auth 데이터는 명시한 필드만 반환하고 토큰·비밀번호·원본 metadata 객체를 반환하지 않는다. 일반 회원·익명 접근을 차단한다.
+2. 기존 목록에서 닉네임/회원 ID/이메일/프로필 이름을 서버 검색한다. 상세에는 식별 정보, 활동별 저장 건수, 종류/기간/검색 필터, 50개씩 이전 기록, 대화 맥락을 표시한다. 현재 로그인한 관리자의 이메일·서버 역할도 확인 가능하게 한다.
+3. pgTAP으로 권한·개인정보 노출·감사 기록·검색·100개 초과/동일 시각 페이지·상대 메시지 범위를 검증한다. 타입·기존 테스트와 로컬 UI를 검증하고 운영 RPC와 로컬 관리자 빌드를 적용한다. 공개 사이트/앱 바이너리는 배포하지 않는다.
+
+## 구조·명령·스타일
+
+Expo SDK 57, React Native Web, 기존 Supabase RPC와 `Colors.light`/`Spacing`을 사용한다. SQL은 `supabase/migrations/0035_admin_user_activity.sql`, DB 검사는 `supabase/tests/admin_user_activity.test.sql`, 화면은 `src/components/admin/`, 데이터 계약은 `src/lib/admin-user-data.ts`에 둔다. 예: `if not private.is_admin() then raise exception 'ADMIN_REQUIRED'; end if;` 다음에만 비공개 데이터를 읽는다.
+
+검증 명령: `npx --no-install supabase test db supabase/tests/admin_user_activity.test.sql`, `npm test`, `npm run typecheck`, `npm run lint`, `GLING_LOCAL_ADMIN=1 npx expo export --platform web --output-dir .admin-dist`. 기존 `python3 scripts/serve-admin.py`가 제공하는 `http://127.0.0.1:8181`을 Orca **Git → gling**에서 확인한다. 새 의존성은 필요하지 않다.
+
+## 수용 조건
+
+- 관리자 계정의 role과 신뢰 단계는 별개로 표시하며 서로 추론하지 않는다.
+- 검색은 첫 50명에 한정되지 않고 서버 전체를 대상으로 한다. 미제공 이메일/이름과 예시·심사·운영 계정을 구분한다.
+- 읽기는 서버에서 권한 확인과 감사 기록을 함께 수행한다. 실패 시 개인정보 대신 명시적 오류를 표시한다.
+- 날짜·종류·검색 변경 후 이전 대상의 결과가 섞이지 않는다. 같은 시각의 기록도 중복·누락 없이 다음 페이지로 이어진다.
+- 글·댓글·본인 메시지·관련 대화·신고 양방향·모임 신청·반응·차단·접속 집계·결제·안전 검토 중 저장된 기록을 확인한다. 읽기 실패와 기록 0을 구분한다.
+- 삭제/신규 추적/실명인증/외부 전송/새 관리자 지정은 실행하지 않는다. 로컬 전용 접근과 접근성·키보드 조작을 유지한다.
+
+## 조사 근거와 한계
+
+2026-09-11 직접 확인: 지정 소유자 계정은 Google 로그인, `app_metadata.role=admin`, 프로필 신뢰 단계 1이다. 개인 식별 원자료는 Git에 남기지 않는다. 기존 상세는 글/댓글/대화 100개, 메시지 500개 제한이 있다.
+
+[Apple](https://support.apple.com/guide/iphone/sign-in-with-apple-iph238921d37/ios)은 로그인 이름을 사용자가 편집할 수 있고 이메일을 숨길 수 있다. [카카오 동의항목](https://developers.kakao.com/docs/ko/kakaologin/utilize)은 이름·생일·출생연도별 권한과 동의를 구분한다. 외부 계정의 본인확인이 모든 앱으로 자동 전달되는 것은 아니다. [캐나다 개인정보위 수집 최소화](https://www.priv.gc.ca/en/privacy-topics/privacy-laws-in-canada/the-personal-information-protection-and-electronic-documents-act-pipeda/p_principle/principles/p_collection/) 및 [BC 적용 안내](https://www.oipc.bc.ca/about/legislation/)를 확인했다. 새 법적 의무·보관기간을 이 구현에서 단정하지 않는다.
+
+디자인: [Outseta 회원 상세](https://mobbin.com/screens/8bbb60b6-8760-4fb6-ba6c-d23b194da636)의 계정 정보/이력/활동 분리를 실제 화면으로 확인했다. [Pinterest 활동 목록](https://www.pinterest.com/pin/348466089936517960/)을 검색했다. BrandKit은 미설정 템플릿이라 기존 글링 토큰을 유지한다. Kroma는 Serper 인증키 부재로 실패했으며 새 서비스 가입/비용은 발생시키지 않는다.
+
+## 완료·검증 — 2026-09-11
+
+운영 Supabase 0035 마이그레이션을 트랜잭션으로 적용하고 로컬 관리자 번들을 갱신했다. 공개 웹과 앱 바이너리는 배포하지 않았다.
+
+- 전체 DB 검사 23개 파일/323개 통과. 신규 16개 검사는 일반 회원·익명 접근 차단, 수정 가능한 metadata 권한 위장 차단, 원본 비밀 metadata 미노출, 감사 기록, 동일 시각 댓글 105개 페이지 및 대화 양쪽 발신자를 확인한다.
+- Node 80개, TypeScript, ESLint 통과. 공개 웹 임시 빌드와 `check-public-web.mjs` 검사 통과.
+- Orca 실제 관리자 세션: 소유자 이메일 검색 1건, 관리자 역할·이름 출처·계정 ID·생년월일 미수집 표시, 활동 종류/빈 결과, 잘못된 날짜 안내를 확인했다. 키보드 ArrowLeft DOM 이벤트로 라디오 선택·초점 이동을 검증했다. 데스크톱 및 375px 스크린샷 확인, 가로 넘침 없음, 콘솔 오류 없음.
+- 개인정보가 있는 스크린샷과 운영 적용 영수증은 Git 밖의 로컬 비공개 operations 디렉터리에 보관한다.
+
+한계: 과거 닉네임/상태 변경, 삭제된 원문, 미수집 클릭 이력을 복원하지 않는다. 실명인증·새 생년월일 수집·보존기간 변경·법적 보존 기능은 구현하지 않았다.

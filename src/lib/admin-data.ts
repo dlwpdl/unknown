@@ -245,37 +245,6 @@ export async function loadAdminDashboard(client: SupabaseClient): Promise<AdminD
   };
 }
 
-export async function loadAdminUserActivity(client: SupabaseClient, userId: string): Promise<AdminUserActivity> {
-  await logAdminAccess(client, 'user_detail', userId);
-
-  const [profile, posts, comments, conversations, reports] = await Promise.all([
-    client.from('profiles').select('*').eq('id', userId).single(),
-    client.from('posts').select('*').eq('author_id', userId).order('created_at', { ascending: false }).limit(100),
-    client.from('comments').select('*').eq('author_id', userId).order('created_at', { ascending: false }).limit(100),
-    client.rpc('get_admin_user_conversations', { p_user_id: userId }),
-    client.from('reports').select('*').eq('reported_user_id', userId).order('created_at', { ascending: false }).limit(100),
-  ]);
-  const conversationRows = dataOrThrow<AdminConversation[]>(conversations);
-  const conversationIds = conversationRows.map(({ id }) => id);
-  const messages = conversationIds.length
-    ? await client
-        .from('messages')
-        .select('*')
-        .in('conversation_id', conversationIds)
-        .order('created_at', { ascending: false })
-        .limit(500)
-    : { data: [] as AdminMessage[], error: null };
-
-  return {
-    profile: dataOrThrow<AdminProfile>(profile),
-    posts: dataOrThrow<AdminPost[]>(posts),
-    comments: dataOrThrow<AdminComment[]>(comments),
-    conversations: conversationRows,
-    messages: dataOrThrow<AdminMessage[]>(messages),
-    reports: dataOrThrow<AdminReport[]>(reports),
-  };
-}
-
 export async function loadMoreAdminData(
   client: SupabaseClient,
   section: Exclude<AdminSection, 'overview' | 'analytics'>,

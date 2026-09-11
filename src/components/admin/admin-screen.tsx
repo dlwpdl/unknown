@@ -155,6 +155,7 @@ export function AdminScreen() {
       {section === 'analytics' ? <AdminAnalyticsView localPreview={localPreview} onUser={setSelectedUserId} refreshSignal={analyticsRefresh} /> : data && <AdminSectionView
         section={section}
         data={data}
+        localPreview={localPreview}
         resolving={resolving}
         loadingMore={loadingMore}
         noMore={exhausted.has(section)}

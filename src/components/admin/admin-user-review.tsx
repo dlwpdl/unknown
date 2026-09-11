@@ -1,0 +1,166 @@
+import { useEffect, useRef, useState } from 'react';
+import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ThemedText } from '@/components/themed-text';
+import { Colors, Spacing } from '@/constants/theme';
+import { adminOptionKeys } from '@/lib/admin';
+import type { AdminProfile } from '@/lib/admin-data';
+import {
+  ACCOUNT_TYPES, ACTIVITY_KINDS, EMPTY_ACTIVITY_FILTERS, activityParams,
+  loadAdminUserOverview, loadAdminUserActivityPage, mergeActivityRows,
+  type ActivityFilters, type ActivityKind, type AdminActivityPage, type AdminUserOverview,
+} from '@/lib/admin-user-data';
+import { supabase } from '@/lib/supabase';
+
+export function AdminUserReview({ userId, profiles, onStatusChange }: {
+  userId: string; profiles: Map<string, AdminProfile>;
+  onStatusChange?: (userId: string, status: 'active' | 'reactivation_pending') => Promise<void>;
+}) {
+  const [overview, setOverview] = useState<AdminUserOverview | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
+  const [statusBusy, setStatusBusy] = useState(false);
+  const [filters, setFilters] = useState<ActivityFilters>(EMPTY_ACTIVITY_FILTERS);
+  const [draft, setDraft] = useState<ActivityFilters>(EMPTY_ACTIVITY_FILTERS);
+  const [filterError, setFilterError] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    void loadAdminUserOverview(supabase, userId)
+      .then((value) => { if (active) setOverview(value); })
+      .catch(() => { if (active) setError('회원 상세를 불러오지 못했습니다. 관리자 권한과 연결을 확인해주세요.'); });
+    return () => { active = false; };
+  }, [userId, retry]);
+  const apply = () => {
+    try { activityParams(userId, draft); setFilters({ ...draft }); setFilterError(null); }
+    catch (error) { setFilterError(error instanceof Error ? error.message : '조회 조건을 확인해주세요.'); }
+  };
+  const chooseKind = (kind: ActivityKind) => {
+    const next = { ...filters, kind, conversationId: null };
+    setFilters(next); setDraft(next); setFilterError(null);
+  };
+  const conversation = (id: string | null) => {
+    const next = { ...EMPTY_ACTIVITY_FILTERS, conversationId: id };
+    setFilters(next); setDraft(next); setFilterError(null);
+  };
+  const changeStatus = async (status: 'active' | 'reactivation_pending') => {
+    if (!onStatusChange || statusBusy) return;
+    setStatusBusy(true);
+    try { await onStatusChange(userId, status); setOverview(null); setError(null); setRetry((value) => value + 1); }
+    catch { setError('계정 상태를 변경하지 못했습니다. 다시 확인해주세요.'); }
+    finally { setStatusBusy(false); }
+  };
+  if (!overview) return <View style={styles.section}>
+    <ThemedText accessibilityRole={error ? 'alert' : 'progressbar'}>{error ?? '회원 식별 정보를 불러오는 중입니다.'}</ThemedText>
+    {error && <Button label="다시 시도" onPress={() => { setError(null); setRetry((value) => value + 1); }} />}
+  </View>;
+  const profile = overview.profile;
+  return <View style={styles.section}>
+    <View style={styles.card}>
+      <ThemedText type="title" accessibilityRole="header">{profile.nickname}</ThemedText>
+      <ThemedText type="smallBold">{ACCOUNT_TYPES[profile.account_type]} · {statusLabel(profile.account_status)}</ThemedText>
+      <Field label="회원 ID" value={profile.id} />
+      <Field label="로그인 이메일" value={profile.email ?? '미제공'} />
+      <Field label="이메일 확인" value={profile.email_confirmed_at ? formatDate(profile.email_confirmed_at) : '확인 기록 없음'} />
+      <Field label="로그인 프로필 이름" value={profile.login_name ?? '미제공'} />
+      <ThemedText type="small" style={styles.muted}>프로필 이름은 변경 가능한 계정 정보입니다. 실명인증 결과가 아닙니다.</ThemedText>
+      <Field label="실명인증" value="미도입 · 신뢰 단계와 별개" />
+      <Field label="생년월일 · 나이" value="미수집" />
+      <Field label="권한 · 신뢰" value={`${profile.auth_role} · 신뢰 ${profile.verification_level}`} />
+      <Field label="지역" value={[profile.city_id, profile.neighborhood].filter(Boolean).join(' · ') || '미제공'} />
+      <Field label="가입" value={formatDate(profile.created_at)} />
+      <Field label="최근 로그인" value={profile.last_sign_in_at ? formatDate(profile.last_sign_in_at) : '기록 없음'} />
+      {overview.identities.map((identity) => <Field key={`${identity.provider}:${identity.provider_id}`} label={`${identity.provider} 계정 ID`} value={identity.provider_id} />)}
+      {!!profile.bio && <Field label="소개" value={profile.bio} />}
+      {!!profile.account_status_note && <Field label="최근 상태 메모" value={profile.account_status_note} />}
+      {onStatusChange && profile.account_status === 'suspended' && <Button disabled={statusBusy} label="이용 제한 해제" onPress={() => void changeStatus('active')} />}
+      {onStatusChange && profile.account_status === 'deleted' && <Button disabled={statusBusy} label="재가입 허용" onPress={() => void changeStatus('reactivation_pending')} />}
+      {error && <ThemedText accessibilityRole="alert" style={styles.error}>{error}</ThemedText>}
+    </View>
+    <ThemedText type="subtitle" accessibilityRole="header">저장된 활동</ThemedText>
+    <ThemedText type="small" style={styles.muted}>아래 건수는 현재 남아 있는 기록입니다. 삭제된 원문과 기록하지 않은 과거 변경은 포함되지 않습니다. 접속은 30분 구간 집계이며 최대 90일 보관됩니다.</ThemedText>
+    <View style={styles.metrics}>{overview.counts.map((item) => <Pressable key={item.kind} accessibilityRole="button" onPress={() => chooseKind(item.kind)} style={styles.metric}>
+      <ThemedText type="small">{ACTIVITY_KINDS[item.kind]}</ThemedText><ThemedText type="subtitle">{item.count}</ThemedText>
+    </Pressable>)}</View>
+    <View style={styles.card}>
+      <ThemedText type="subtitle" accessibilityRole="header">{filters.conversationId ? '대화 맥락' : '시간순 활동'}</ThemedText>
+      {filters.conversationId && <><ThemedText selectable type="small">대화 {filters.conversationId} · 상대방 메시지 포함</ThemedText><Button label="회원 전체 활동으로 돌아가기" onPress={() => conversation(null)} /></>}
+      {!filters.conversationId && <View accessibilityRole="radiogroup" accessibilityLabel="활동 종류" style={styles.filters}>{Object.entries(ACTIVITY_KINDS).map(([kind, label]) => <Pressable key={kind} accessibilityRole="radio" aria-checked={filters.kind === kind} tabIndex={filters.kind === kind ? 0 : -1} {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})} onPress={() => chooseKind(kind as ActivityKind)} style={[styles.chip, filters.kind === kind && styles.selected]}><ThemedText type="small">{label}</ThemedText></Pressable>)}</View>}
+      <View style={styles.filters}>
+        <TextInput accessibilityLabel="활동 시작일" placeholder="시작일 YYYY-MM-DD" value={draft.from} onChangeText={(from) => setDraft({ ...draft, from })} style={styles.input} maxLength={10} />
+        <TextInput accessibilityLabel="활동 종료일" placeholder="종료일 YYYY-MM-DD" value={draft.until} onChangeText={(until) => setDraft({ ...draft, until })} style={styles.input} maxLength={10} />
+      </View>
+      <TextInput accessibilityLabel="활동 내용 또는 ID 검색" placeholder="내용, 상태 또는 ID 검색" value={draft.query} onChangeText={(query) => setDraft({ ...draft, query })} onSubmitEditing={apply} maxLength={200} style={styles.input} />
+      <ThemedText type="small" style={styles.muted}>날짜 기준: {Intl.DateTimeFormat().resolvedOptions().timeZone} · 종료일 포함</ThemedText>
+      <Button label="조회 조건 적용" onPress={apply} />
+      {filterError && <ThemedText accessibilityRole="alert" style={styles.error}>{filterError}</ThemedText>}
+    </View>
+    <ActivityTimeline key={JSON.stringify(filters)} userId={userId} filters={filters} profiles={profiles} nickname={profile.nickname} onConversation={conversation} />
+  </View>;
+}
+
+function ActivityTimeline({ userId, filters, profiles, nickname, onConversation }: {
+  userId: string; filters: ActivityFilters; profiles: Map<string, AdminProfile>; nickname: string; onConversation: (id: string) => void;
+}) {
+  const [page, setPage] = useState<AdminActivityPage | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(true);
+  const [retry, setRetry] = useState(0);
+  const revision = useRef(0);
+  useEffect(() => {
+    const id = ++revision.current;
+    void loadAdminUserActivityPage(supabase, userId, filters)
+      .then((data) => { if (id === revision.current) setPage(data); })
+      .catch(() => { if (id === revision.current) setError('활동을 불러오지 못했습니다. 기록 없음으로 처리하지 않았습니다.'); })
+      .finally(() => { if (id === revision.current) setBusy(false); });
+    return () => { revision.current = id + 1; };
+  }, [filters, userId, retry]);
+  const more = async () => {
+    if (!page?.nextCursor || busy) return;
+    const id = revision.current;
+    setBusy(true); setError(null);
+    try {
+      const next = await loadAdminUserActivityPage(supabase, userId, filters, page.nextCursor);
+      if (id === revision.current) setPage({ ...next, rows: mergeActivityRows(page.rows, next.rows) });
+    } catch { if (id === revision.current) setError('이전 활동을 불러오지 못했습니다. 다시 시도할 수 있습니다.'); }
+    finally { if (id === revision.current) setBusy(false); }
+  };
+  return <View style={styles.section}>
+    {page && <ThemedText accessibilityLiveRegion="polite">조건에 맞는 {page.total}건 중 {page.rows.length}건 표시 · 최신순</ThemedText>}
+    {busy && !page && <ThemedText accessibilityRole="progressbar">활동을 불러오는 중입니다.</ThemedText>}
+    {error && <><ThemedText accessibilityRole="alert" style={styles.error}>{error}</ThemedText><Button label="다시 시도" onPress={() => { if (page) void more(); else { setError(null); setBusy(true); setRetry((value) => value + 1); } }} /></>}
+    {page?.rows.map((event) => <View key={event.event_key} style={styles.card}>
+      <ThemedText type="small" style={styles.muted}>{ACTIVITY_KINDS[event.kind]} · {formatDate(event.occurred_at)}{event.state ? ` · ${statusLabel(event.state)}` : ''}</ThemedText>
+      <ThemedText type="smallBold">{event.title}</ThemedText>
+      <ThemedText selectable>{event.body || '추가 내용 없음'}</ThemedText>
+      {event.actor_id && <ThemedText selectable type="small" style={styles.muted}>행위자 · {event.actor_id === userId ? `${nickname} (본인)` : profiles.get(event.actor_id)?.nickname ?? event.actor_id}</ThemedText>}
+      <ThemedText selectable type="small" style={styles.id}>{event.event_key}</ThemedText>
+      {event.context_id && <ThemedText selectable type="small" style={styles.id}>관련 ID · {event.context_id}</ThemedText>}
+      {!filters.conversationId && event.context_id && ['message','conversation'].includes(event.kind) && <Button label="이 대화 앞뒤 내용 보기" onPress={() => onConversation(event.context_id!)} />}
+    </View>)}
+    {page?.total === 0 && <ThemedText>이 조건에 맞는 저장된 활동이 없습니다.</ThemedText>}
+    {page?.nextCursor && <Button label={busy ? '불러오는 중' : '이전 활동 50개 더 보기'} disabled={busy} onPress={() => void more()} />}
+    {page && !page.nextCursor && page.total > 0 && <ThemedText type="small" style={styles.muted}>이 조건의 저장된 기록을 끝까지 불러왔습니다. 삭제된 기록은 복구되지 않습니다.</ThemedText>}
+  </View>;
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return <View style={styles.field}><ThemedText type="small" style={styles.muted}>{label}</ThemedText><ThemedText selectable>{value}</ThemedText></View>;
+}
+function Button({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) {
+  return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={[styles.button, disabled && { opacity: 0.55 }]}><ThemedText type="smallBold">{label}</ThemedText></Pressable>;
+}
+function formatDate(value: string) { return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'medium' }).format(new Date(value)); }
+function statusLabel(value: string) {
+  return ({ active: '정상', suspended: '이용 제한', deleted: '삭제됨', reactivation_pending: '재가입 허용', published: '게시중', removed: '숨김', pending: '대기', approved: '승인', rejected: '거절', cancelled: '취소', ended: '종료', open: '미처리', actioned: '조치함', dismissed: '기각', warned: '경고', blocked: '차단' } as Record<string, string>)[value] ?? value;
+}
+const styles = StyleSheet.create({
+  section: { gap: Spacing.three }, card: { padding: Spacing.three, gap: Spacing.two, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
+  field: { gap: 2 }, muted: { color: Colors.light.textSecondary }, error: { color: Colors.light.accent },
+  metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  metric: { minWidth: 90, flexGrow: 1, padding: Spacing.two, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8 },
+  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  chip: { minHeight: 38, paddingHorizontal: Spacing.two, justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 6 },
+  selected: { borderColor: Colors.light.accent, backgroundColor: Colors.light.backgroundSelected },
+  input: { minHeight: 44, flexGrow: 1, minWidth: 150, paddingHorizontal: Spacing.two, color: Colors.light.text, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 6, backgroundColor: Colors.light.card },
+  button: { minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.three, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8 },
+  id: { fontFamily: 'monospace', fontSize: 11, color: Colors.light.textSecondary },
+});
