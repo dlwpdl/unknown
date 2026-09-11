@@ -62,7 +62,8 @@ export function LoginPanel({
                   ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
                   : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
                 cornerRadius={24}
-                onPress={onApple}
+                onPress={() => { if (!loading) onApple(); }}
+                accessibilityState={{ disabled: loading, busy: loading }}
                 style={[styles.appleButton, { opacity: loading ? 0.6 : 1 }]}
               />
             )}

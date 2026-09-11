@@ -3,6 +3,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, DeviceEventEmitter, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { RelationshipSlotCard } from '@/components/relationship-slot-card';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
@@ -18,7 +19,7 @@ export function MyMeetups({ onOpen }: { onOpen: (postId: string) => Promise<void
   const router = useRouter();
   const { isAuthed, me, promptLogin } = useAuth();
   const { play } = useInteractionFeedback();
-  const { membership, refresh: refreshMembership } = useMembership();
+  const { membership, loading: membershipLoading, refresh: refreshMembership } = useMembership();
   const userId = isAuthed ? me.id : null;
   const currentUser = useRef(userId);
   useLayoutEffect(() => { currentUser.current = userId; }, [userId]);
@@ -96,11 +97,8 @@ export function MyMeetups({ onOpen }: { onOpen: (postId: string) => Promise<void
     {!isAuthed ? <Pressable onPress={() => promptLogin(t.auth.reasonJoinLogin)} accessibilityRole="button" style={[styles.empty, { borderColor: theme.line }]}>
       <ThemedText type="small" themeColor="accent">로그인하고 내 모임 보기</ThemedText>
     </Pressable> : <>
-      {membership && <View style={styles.slots}>
-        <ThemedText type="smallBold">{t.chat.slotSummary(membership.meetupsUsed, membership.meetupSlotsLocked, membership.meetupSlotsAvailable, membership.meetupLimit)}</ThemedText>
-        {membership.meetupUnlocksAt?.[0] && <ThemedText type="small" themeColor="accent">{t.chat.slotUnlock(membership.meetupUnlocksAt[0])}</ThemedText>}
-        <ThemedText type="small" themeColor="textSecondary">{t.meetup.pendingNote}</ThemedText>
-      </View>}
+      <RelationshipSlotCard kind="meetup" membership={membership} loading={membershipLoading} />
+      <ThemedText type="small" themeColor="textSecondary">{t.meetup.pendingNote}</ThemedText>
       {loading && items.length === 0 && <ActivityIndicator color={theme.accent} accessibilityLabel="내 모임 불러오는 중" />}
       {error && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{t.meetup.loadError}</ThemedText>}
       {!loading && !error && items.length === 0 && <ThemedText type="small" themeColor="textSecondary">{t.meetup.empty}</ThemedText>}
@@ -131,5 +129,4 @@ const styles = StyleSheet.create({
   copy: { flexGrow: 1, flexBasis: 160, minHeight: 44, padding: Spacing.two, gap: Spacing.one },
   action: { minHeight: 44, minWidth: 44, padding: Spacing.two, alignItems: 'center', justifyContent: 'center' },
   empty: { minHeight: 44, borderWidth: 1, borderRadius: 12, padding: Spacing.three },
-  slots: { gap: Spacing.one, paddingBottom: Spacing.two },
 });

@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ChatRoom } from '@/components/chat-room';
 import { LoginPanel } from '@/components/login-panel';
+import { RelationshipSlotCard } from '@/components/relationship-slot-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TrustBadge } from '@/components/trust-badge';
@@ -27,7 +28,7 @@ export default function ChatScreen() {
   const { conversationId, view } = useLocalSearchParams<{ conversationId?: string; view?: string }>();
   const auth = useAuth();
   const userId = auth.isAuthed ? auth.me.id : null;
-  const { membership, refresh: refreshMembership } = useMembership();
+  const { membership, loading: membershipLoading, refresh: refreshMembership } = useMembership();
   const currentUser = useRef(userId);
   const version = useRef(0);
   const processing = useRef(false);
@@ -102,11 +103,7 @@ export default function ChatScreen() {
       ListHeaderComponent={<View style={styles.header}>
         <View style={styles.headRow}><ThemedText type="subtitle" style={styles.heading}>{t.tabs.chat}</ThemedText><Pressable onPress={() => void changed()} accessibilityRole="button" disabled={loading} accessibilityState={{ disabled: loading }} style={styles.action}><ThemedText type="smallBold" themeColor="accent">{t.chat.refresh}</ThemedText></Pressable></View>
         <View style={[styles.safety, { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}><ThemedText type="smallBold" themeColor="accent">{t.safety.meetTitle}</ThemedText><ThemedText type="small" themeColor="textSecondary">{t.safety.meetBody}</ThemedText></View>
-        <View style={styles.slots}><ThemedText type="smallBold">1:1 대화 자리</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">{membership ? t.chat.slotSummary(membership.conversationsUsed, membership.conversationSlotsLocked, membership.conversationSlotsAvailable, membership.conversationLimit) : t.chat.slotsLoading}</ThemedText>
-          {membership?.conversationUnlocksAt?.[0] && <ThemedText type="small" themeColor="accent">{t.chat.slotUnlock(membership.conversationUnlocksAt[0])}</ThemedText>}
-          <Pressable onPress={() => router.push('/profile/membership')} accessibilityRole="button" style={styles.membershipLink}><ThemedText type="smallBold" themeColor="accent">멤버십과 모임 자리 보기</ThemedText></Pressable>
-        </View>
+        <RelationshipSlotCard kind="conversation" membership={membership} loading={membershipLoading} onMembershipPress={() => router.push('/profile/membership')} />
         <View style={styles.filters}>{([['all', t.chat.all], ['group', t.chat.groups], ['direct', t.chat.direct], ['requests', `${t.chat.requestTab} ${pendingCount}`]] as const).map(([key, label]) => <Pressable key={key} onPress={() => setFilter(key)} accessibilityRole="tab" accessibilityState={{ selected: filter === key }} style={[styles.filter, { backgroundColor: filter === key ? theme.accent : theme.backgroundElement }]}><ThemedText type="smallBold" style={{ color: filter === key ? theme.accentInk : theme.text }}>{label}</ThemedText></Pressable>)}</View>
         {filter === 'requests' && <>
           <ThemedText type="small" themeColor="textSecondary">{t.chat.pendingBody}</ThemedText>
@@ -140,9 +137,7 @@ const styles = StyleSheet.create({
   headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   heading: { fontSize: 22, lineHeight: 30, fontWeight: 700, paddingVertical: Spacing.two },
   safety: { borderWidth: 1, borderRadius: 10, padding: Spacing.three, gap: Spacing.one },
-  slots: { gap: Spacing.one, paddingTop: Spacing.two },
   action: { minWidth: 44, minHeight: 44, padding: Spacing.two, justifyContent: 'center' },
-  membershipLink: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   filter: { minHeight: 44, paddingHorizontal: Spacing.three, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   request: { borderWidth: 1, borderRadius: 12, padding: Spacing.three, gap: Spacing.two },

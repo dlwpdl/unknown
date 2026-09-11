@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, V
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoginPanel } from '@/components/login-panel';
+import { RelationshipSlotCard } from '@/components/relationship-slot-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -70,20 +71,15 @@ export default function MembershipScreen() {
                   <ThemedText type="smallBold" style={styles.numbers}>{used} / {limit}{unit}</ThemedText>
                 </View>
               ))}
-              {[
-                { label: '모임 자리', active: membership.meetupsUsed, locked: membership.meetupSlotsLocked, available: membership.meetupSlotsAvailable, limit: membership.meetupLimit, unlocks: membership.meetupUnlocksAt },
-                { label: '1:1 대화 자리', active: membership.conversationsUsed, locked: membership.conversationSlotsLocked, available: membership.conversationSlotsAvailable, limit: membership.conversationLimit, unlocks: membership.conversationUnlocksAt },
-              ].map((slot) => <View key={slot.label} style={styles.slotDetail}>
-                <ThemedText type="smallBold">{slot.label}</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">{t.chat.slotSummary(slot.active, slot.locked, slot.available, slot.limit)}</ThemedText>
-                {slot.unlocks?.[0] && <ThemedText type="small" themeColor="accent">{t.chat.slotUnlock(slot.unlocks[0])}</ThemedText>}
-              </View>)}
-              <ThemedText type="small" themeColor="textSecondary" style={styles.statusNote}>{t.chat.slotsNote}</ThemedText>
               {membership.expiresAt && membership.tier !== 'free' && <ThemedText type="small" themeColor="textSecondary" style={styles.statusNote}>
                 {new Date(membership.expiresAt).toLocaleDateString('ko-KR')} {membership.willRenew === true ? '갱신 예정' : membership.willRenew === false ? '까지 이용 가능' : '이용 기간 종료 예정'}
               </ThemedText>}
             </>}
           </View>
+
+          <RelationshipSlotCard kind="meetup" membership={membership} loading={loading} />
+          <RelationshipSlotCard kind="conversation" membership={membership} loading={loading} />
+          <ThemedText type="small" themeColor="textSecondary">{t.chat.slotsNote}</ThemedText>
 
           <View style={styles.freePlan}>
             <ThemedText type="smallBold">베이직 · 무료</ThemedText>
@@ -165,7 +161,6 @@ const styles = StyleSheet.create({
   flexText: { flexShrink: 1 },
   numbers: { fontVariant: ['tabular-nums'] },
   statusNote: { padding: Spacing.three, paddingTop: Spacing.two },
-  slotDetail: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: Spacing.one },
   freePlan: { gap: Spacing.one, paddingVertical: Spacing.two },
   plan: { borderWidth: 2, borderRadius: 12, padding: Spacing.three, gap: Spacing.one },
   planHeading: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.two },

@@ -2,7 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { LoginPanel } from '@/components/login-panel';
@@ -64,6 +64,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
   const [session, setSession] = useState<Session | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
+  const signInInFlight = useRef(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [reason, setReason] = useState<string | undefined>();
   const [visible, setVisible] = useState(false);
@@ -121,6 +122,8 @@ export function AuthProvider({ children, publicPage = false }: { children: React
   }, []);
 
   const signInOAuth = useCallback(async (provider: OAuthProvider) => {
+    if (signInInFlight.current) return;
+    signInInFlight.current = true;
     setAuthError(null);
     setSigningIn(true);
     try {
@@ -146,11 +149,14 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     } catch {
       setAuthError(t.auth.loginError);
     } finally {
+      signInInFlight.current = false;
       setSigningIn(false);
     }
   }, []);
   const signInKakao = useCallback(() => signInOAuth('kakao'), [signInOAuth]);
   const signInApple = useCallback(async () => {
+    if (signInInFlight.current) return;
+    signInInFlight.current = true;
     setAuthError(null);
     setSigningIn(true);
     try {
@@ -177,6 +183,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     } catch (error) {
       if ((error as { code?: string }).code !== 'ERR_REQUEST_CANCELED') setAuthError(t.auth.loginError);
     } finally {
+      signInInFlight.current = false;
       setSigningIn(false);
     }
   }, []);
@@ -191,7 +198,8 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     return credential.authorizationCode;
   }, [session]);
   const signInDev = useCallback(async (email: string, password: string) => {
-    if (!canUseDevPasswordLogin(__DEV__)) return;
+    if (!canUseDevPasswordLogin(__DEV__) || signInInFlight.current) return;
+    signInInFlight.current = true;
     setSigningIn(true);
     setAuthError(null);
     try {
@@ -201,10 +209,13 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     } catch {
       setAuthError(t.auth.devLoginError);
     } finally {
+      signInInFlight.current = false;
       setSigningIn(false);
     }
   }, []);
   const signInReview = useCallback(async (email: string, password: string) => {
+    if (signInInFlight.current) return;
+    signInInFlight.current = true;
     setSigningIn(true);
     setAuthError(null);
     try {
@@ -213,6 +224,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     } catch {
       setAuthError(t.auth.reviewLoginError);
     } finally {
+      signInInFlight.current = false;
       setSigningIn(false);
     }
   }, []);
@@ -228,11 +240,13 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     setMissingProfileUserId(null);
   }, []);
   const signInAdmin = useCallback(async (email: string, password: string) => {
+    if (signInInFlight.current) return;
+    signInInFlight.current = true;
     setSigningIn(true);
     setAuthError(null);
     try { await signInAdminAccount(email, password); }
     catch { setAuthError('관리자 계정 정보와 접근 권한을 확인해주세요.'); }
-    finally { setSigningIn(false); }
+    finally { signInInFlight.current = false; setSigningIn(false); }
   }, []);
   const setProfilePhoto = useCallback(async (uri: string | null, base64?: string) => {
     if (!session) return;
