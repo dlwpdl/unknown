@@ -19,6 +19,12 @@ export type MembershipSnapshot = {
   meetupsUsed: number;
   conversationsUsed: number;
   conversationPeriod: 'day' | 'active';
+  meetupSlotsLocked: number;
+  meetupSlotsAvailable: number;
+  meetupUnlocksAt: string[];
+  conversationSlotsLocked: number;
+  conversationSlotsAvailable: number;
+  conversationUnlocksAt: string[];
 };
 
 export type MembershipOffer = {

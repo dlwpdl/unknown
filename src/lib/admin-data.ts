@@ -39,8 +39,9 @@ export type AdminComment = {
 
 export type AdminConversation = {
   id: string;
-  user_low_id: string;
-  user_high_id: string;
+  user_low_id: string | null;
+  user_high_id: string | null;
+  group_post_id?: string | null;
   created_at: string;
 };
 
@@ -168,7 +169,9 @@ export function getLocalAdminUserActivity(data: AdminDashboardData, userId: stri
   const profile = data.profiles.find(({ id }) => id === userId);
   if (!profile) return null;
   const conversations = data.conversations.filter(
-    ({ user_low_id, user_high_id }) => user_low_id === userId || user_high_id === userId,
+    ({ id, user_low_id, user_high_id, group_post_id }) => user_low_id === userId || user_high_id === userId
+      || data.posts.some((post) => post.id === group_post_id && post.author_id === userId)
+      || data.messages.some((message) => message.conversation_id === id && message.sender_id === userId),
   );
   const conversationIds = new Set(conversations.map(({ id }) => id));
   return {
@@ -249,12 +252,7 @@ export async function loadAdminUserActivity(client: SupabaseClient, userId: stri
     client.from('profiles').select('*').eq('id', userId).single(),
     client.from('posts').select('*').eq('author_id', userId).order('created_at', { ascending: false }).limit(100),
     client.from('comments').select('*').eq('author_id', userId).order('created_at', { ascending: false }).limit(100),
-    client
-      .from('conversations')
-      .select('*')
-      .or(`user_low_id.eq.${userId},user_high_id.eq.${userId}`)
-      .order('created_at', { ascending: false })
-      .limit(100),
+    client.rpc('get_admin_user_conversations', { p_user_id: userId }),
     client.from('reports').select('*').eq('reported_user_id', userId).order('created_at', { ascending: false }).limit(100),
   ]);
   const conversationRows = dataOrThrow<AdminConversation[]>(conversations);

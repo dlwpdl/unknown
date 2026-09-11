@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { MEMBERSHIP_LIMITS, type MembershipOffer } from '@/lib/membership';
@@ -36,7 +37,7 @@ export default function MembershipScreen() {
   const periods = (['month', 'year'] as const).filter((value) => offers.some((offer) => offer.tier === selection.tier && offer.period === value));
   const currentProduct = !!membership && membership.tier !== 'free' && !!selectedOffer && selectedOffer.productId === membership.productId;
   const purchaseDisabled = busy || loading || offersLoading || !selectedOffer || !membership || !!purchaseUnavailableReason || currentProduct;
-  const conversationLabel = membership?.conversationPeriod === 'day' ? '하루 새 1:1 대화' : membership?.conversationPeriod === 'active' ? '참여 중인 1:1 대화' : '1:1 대화';
+  const conversationLabel = '동시에 유지하는 1:1 대화';
   const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/$/, '');
   const leave = () => router.canGoBack() ? router.back() : router.replace('/profile');
   const openLegal = (slug: 'terms' | 'privacy') => void Linking.openURL(`${publicSiteUrl}/${slug}`)
@@ -63,14 +64,21 @@ export default function MembershipScreen() {
             {membership && <>
               {[
                 ['오늘 글 작성', membership.postsUsed, membership.postLimit, '편'],
-                ['참여 중인 모임', membership.meetupsUsed, membership.meetupLimit, '개'],
-                [conversationLabel, membership.conversationsUsed, membership.conversationLimit, '개'],
               ].map(([label, used, limit, unit]) => (
                 <View key={label} style={[styles.row, { borderTopWidth: 1, borderTopColor: theme.line }]}>
                   <ThemedText type="small" themeColor="textSecondary" style={styles.flexText}>{label}</ThemedText>
                   <ThemedText type="smallBold" style={styles.numbers}>{used} / {limit}{unit}</ThemedText>
                 </View>
               ))}
+              {[
+                { label: '모임 자리', active: membership.meetupsUsed, locked: membership.meetupSlotsLocked, available: membership.meetupSlotsAvailable, limit: membership.meetupLimit, unlocks: membership.meetupUnlocksAt },
+                { label: '1:1 대화 자리', active: membership.conversationsUsed, locked: membership.conversationSlotsLocked, available: membership.conversationSlotsAvailable, limit: membership.conversationLimit, unlocks: membership.conversationUnlocksAt },
+              ].map((slot) => <View key={slot.label} style={styles.slotDetail}>
+                <ThemedText type="smallBold">{slot.label}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">{t.chat.slotSummary(slot.active, slot.locked, slot.available, slot.limit)}</ThemedText>
+                {slot.unlocks?.[0] && <ThemedText type="small" themeColor="accent">{t.chat.slotUnlock(slot.unlocks[0])}</ThemedText>}
+              </View>)}
+              <ThemedText type="small" themeColor="textSecondary" style={styles.statusNote}>{t.chat.slotsNote}</ThemedText>
               {membership.expiresAt && membership.tier !== 'free' && <ThemedText type="small" themeColor="textSecondary" style={styles.statusNote}>
                 {new Date(membership.expiresAt).toLocaleDateString('ko-KR')} {membership.willRenew === true ? '갱신 예정' : membership.willRenew === false ? '까지 이용 가능' : '이용 기간 종료 예정'}
               </ThemedText>}
@@ -81,6 +89,11 @@ export default function MembershipScreen() {
             <ThemedText type="smallBold">베이직 · 무료</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">하루 글 {MEMBERSHIP_LIMITS.free.posts}편 · 모임 {MEMBERSHIP_LIMITS.free.meetups}개</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{conversationLabel} {MEMBERSHIP_LIMITS.free.conversations}개</ThemedText>
+          </View>
+          <View style={styles.freePlan}>
+            <ThemedText type="smallBold">수락한 관계에 집중해요</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">모임은 방장 승인 후, 1:1 대화는 상대 수락 후 자리를 사용해요. 모임에서 나가면 내 자리 1개가 24시간 잠겨요.</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">1:1 대화는 누가 종료하든 처음 요청한 사람의 자리만 24시간 잠겨요. 수락한 사람의 자리는 바로 돌아와요.</ThemedText>
           </View>
 
           {plans.map((plan) => {
@@ -152,6 +165,7 @@ const styles = StyleSheet.create({
   flexText: { flexShrink: 1 },
   numbers: { fontVariant: ['tabular-nums'] },
   statusNote: { padding: Spacing.three, paddingTop: Spacing.two },
+  slotDetail: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: Spacing.one },
   freePlan: { gap: Spacing.one, paddingVertical: Spacing.two },
   plan: { borderWidth: 2, borderRadius: 12, padding: Spacing.three, gap: Spacing.one },
   planHeading: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.two },

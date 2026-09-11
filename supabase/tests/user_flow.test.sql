@@ -114,6 +114,14 @@ select results_eq(
 
 update flow_state
 set conversation_id = public.start_conversation('41111111-1111-1111-1111-111111111111');
+reset role;
+select set_config('request.jwt.claims','{"sub":"41111111-1111-1111-1111-111111111111","role":"authenticated"}',true);
+set local role authenticated;
+select public.respond_direct_conversation((select conversation_id from flow_state),'accepted');
+reset role;
+select set_config('request.jwt.claims','{"sub":"42222222-2222-2222-2222-222222222222","role":"authenticated"}',true);
+set local role authenticated;
+
 update flow_state
 set message_id = public.send_message(conversation_id, '모임에 참여하고 싶어요.');
 select results_eq(
@@ -127,7 +135,7 @@ values ('42222222-2222-2222-2222-222222222222', '41111111-1111-1111-1111-1111111
 select throws_ok(
   $$select public.send_message((select conversation_id from flow_state), '차단 뒤 메시지')$$,
   'P0001',
-  'BLOCKED',
+  'CONVERSATION_NOT_ACTIVE',
   'blocking stops later messages'
 );
 select results_eq(

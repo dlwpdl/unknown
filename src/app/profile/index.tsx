@@ -17,6 +17,7 @@ import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { loadProfileSummary, loadSavedPosts, type ProfileSummary } from '@/lib/community-data';
 import { CITIES } from '@/lib/mock';
+import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
 
@@ -129,6 +130,10 @@ export default function ProfileScreen() {
             <ThemedText type="smallBold" themeColor="accent">멤버십</ThemedText>
           </Pressable>
           <View style={[styles.divider, { backgroundColor: theme.line }]} />
+          {PROMOTIONS_PREVIEW_ENABLED && <><Pressable style={styles.menuRow} accessibilityRole="button" onPress={() => router.push('/profile/promotions')}>
+            <ThemedText type="small">홍보 크레딧</ThemedText>
+          </Pressable>
+          <View style={[styles.divider, { backgroundColor: theme.line }]} /></>}
           <Pressable style={styles.menuRow} accessibilityRole="button" onPress={() => router.push('/notifications')}>
             <ThemedText type="small">{t.notifications.title}</ThemedText>
           </Pressable>

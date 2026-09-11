@@ -21,7 +21,7 @@ export function isContentRejected(error: unknown) {
 
 export function getCommunityActionError(error: unknown) {
   const message = typeof error === 'object' && error !== null && 'message' in error ? String(error.message) : '';
-  return (['REQUESTER_MEETUP_LIMIT_REACHED', 'MEETUP_LIMIT_REACHED', 'MEETUP_CLOSED', 'DAILY_CONVERSATION_LIMIT_REACHED'] as const)
+  return (['REQUESTER_MEETUP_LIMIT_REACHED', 'MEETUP_LIMIT_REACHED', 'MEETUP_CLOSED', 'DAILY_CONVERSATION_LIMIT_REACHED', 'OTHER_CONVERSATION_LIMIT_REACHED', 'CONVERSATION_LIMIT_REACHED', 'REQUEST_COOLDOWN', 'PENDING_REQUEST_LIMIT', 'REQUEST_EXPIRED', 'CONVERSATION_NOT_ACTIVE', 'REQUEST_ALREADY_RESOLVED', 'RATE_LIMITED'] as const)
     .find((code) => message.includes(code)) ?? null;
 }
 
@@ -31,6 +31,12 @@ export type ReportReason = 'spam' | 'harassment' | 'hate' | 'sexual' | 'privacy'
 
 export type ConversationPreview = {
   id: string;
+  kind: 'direct' | 'group';
+  status: 'pending' | 'active' | 'ended' | 'rejected' | 'cancelled';
+  requesterId: string | null;
+  groupPostId: string | null;
+  title: string;
+  isGroupHost: boolean;
   otherUser: { id: string; nickname: string; verificationLevel: number };
   latestBody: string | null;
   latestAt: string;
@@ -42,6 +48,7 @@ export type ChatMessageRecord = {
   sender_id: string;
   body: string;
   created_at: string;
+  sender_nickname: string | null;
 };
 
 export type AppNotification = {
@@ -64,7 +71,7 @@ export type MeetupRequest = {
   post: { title: string } | null;
 };
 
-export type MyMeetup = { id: string; title: string; cityId: string; role: 'host' | 'approved' | 'pending' };
+export type MyMeetup = { id: string; title: string; cityId: string; role: 'host' | 'approved' | 'pending'; conversationId: string | null };
 
 export type ProfileSummary = {
   cityId: string;
@@ -206,13 +213,21 @@ export async function blockUser(client: SupabaseClient, userId: string, blockedU
 export async function startDirectConversation(
   client: SupabaseClient,
   otherUserId: string,
-  initialMessage?: string,
 ) {
   const conversation = await client.rpc('start_conversation', { other_user_id: otherUserId });
   if (conversation.error) throw conversation.error;
-  const conversationId = conversation.data as string;
-  if (initialMessage?.trim()) await sendDirectMessage(client, conversationId, initialMessage);
-  return conversationId;
+  return conversation.data as string;
+}
+
+export async function respondDirectConversation(client: SupabaseClient, conversationId: string, response: 'accepted' | 'rejected' | 'cancelled') {
+  const result = await client.rpc('respond_direct_conversation', { p_conversation_id: conversationId, p_response: response });
+  if (result.error) throw result.error;
+  return result.data as string | null;
+}
+
+export async function endConversation(client: SupabaseClient, conversationId: string) {
+  const result = await client.rpc('end_conversation', { p_conversation_id: conversationId });
+  if (result.error) throw result.error;
 }
 
 export async function sendDirectMessage(client: SupabaseClient, conversationId: string, body: string) {
@@ -226,21 +241,40 @@ export async function sendDirectMessage(client: SupabaseClient, conversationId: 
 
 export async function loadConversations(client: SupabaseClient, userId: string): Promise<ConversationPreview[]> {
   void userId;
-  const result = await client.rpc('get_conversation_previews', {
-    p_limit: 30,
-    p_before_created: null,
-    p_before_id: null,
-  });
-  if (result.error) throw result.error;
-  return ((result.data ?? []) as {
+  type Row = {
     id: string;
     other_user_id: string;
     other_nickname: string;
     other_verification_level: number;
     latest_body: string | null;
     latest_at: string;
-  }[]).map((row) => ({
+    kind: ConversationPreview['kind'];
+    status: ConversationPreview['status'];
+    requester_id: string | null;
+    group_post_id: string | null;
+    title: string;
+    is_group_host: boolean;
+  };
+  const rows: Row[] = [];
+  let cursor: Row | undefined;
+  // Existing cursor RPC: do not hide active rooms behind the first page of history.
+  do {
+    const result = await client.rpc('get_conversation_previews', {
+      p_limit: 50, p_before_created: cursor?.latest_at ?? null, p_before_id: cursor?.id ?? null,
+    });
+    if (result.error) throw result.error;
+    const page = (result.data ?? []) as Row[];
+    rows.push(...page);
+    cursor = page.length === 50 ? page.at(-1) : undefined;
+  } while (cursor);
+  return Array.from(new Map(rows.map((row) => [row.id, row])).values()).map((row) => ({
     id: row.id,
+    kind: row.kind,
+    status: row.status,
+    requesterId: row.requester_id,
+    groupPostId: row.group_post_id,
+    title: row.title,
+    isGroupHost: row.is_group_host,
     otherUser: { id: row.other_user_id, nickname: row.other_nickname, verificationLevel: row.other_verification_level },
     latestBody: row.latest_body,
     latestAt: row.latest_at,
@@ -250,14 +284,15 @@ export async function loadConversations(client: SupabaseClient, userId: string):
 export async function loadConversationMessages(client: SupabaseClient, conversationId: string, before?: string) {
   let query = client
     .from('messages')
-    .select('*')
+    .select('*,sender:profiles!messages_sender_id_fkey(nickname)')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: false })
     .limit(50);
   if (before) query = query.lt('created_at', before);
   const result = await query;
   if (result.error) throw result.error;
-  return ((result.data ?? []) as ChatMessageRecord[]).reverse();
+  return ((result.data ?? []) as (Omit<ChatMessageRecord, 'sender_nickname'> & { sender: { nickname: string } | null })[])
+    .map(({ sender, ...message }) => ({ ...message, sender_nickname: sender?.nickname ?? null })).reverse();
 }
 
 export async function loadSavedPosts(client: SupabaseClient, cursor: FeedCursor | null = null) {
@@ -303,16 +338,19 @@ export async function requestMeetupJoin(client: SupabaseClient, postId: string, 
 
 export async function loadMyMeetups(client: SupabaseClient, userId: string): Promise<MyMeetup[]> {
   const fields = 'id,title,city_id,status,room_preview';
-  const [owned, requested] = await Promise.all([
+  const [owned, requested, rooms] = await Promise.all([
     client.from('posts').select(fields).eq('author_id', userId).eq('status', 'published')
       .not('room_preview', 'is', null).or('room_preview->>closed.is.null,room_preview->>closed.eq.false')
       .order('created_at', { ascending: false }),
     client.from('meetup_requests').select(`status,post:posts!meetup_requests_post_id_fkey(${fields})`)
       .eq('requester_id', userId).in('status', ['approved', 'pending'])
       .order('status').order('created_at', { ascending: false }),
+    client.from('conversations').select('id,group_post_id').eq('kind', 'group').eq('status', 'active'),
   ]);
   if (owned.error) throw owned.error;
   if (requested.error) throw requested.error;
+  if (rooms.error) throw rooms.error;
+  const roomIds = new Map((rooms.data ?? []).map((room) => [room.group_post_id, room.id]));
   type Row = { id: string; title: string; city_id: string; status: string; room_preview: RoomPreview | null };
   const entries = [
     ...((owned.data ?? []) as unknown as Row[]).map((post) => ({ post, role: 'host' as const })),
@@ -320,7 +358,7 @@ export async function loadMyMeetups(client: SupabaseClient, userId: string): Pro
       .map(({ post, status }) => ({ post, role: status })),
   ];
   return entries.flatMap(({ post, role }) => post?.status === 'published' && post.room_preview && !post.room_preview.closed
-    ? [{ id: post.id, title: post.title, cityId: post.city_id, role }] : []);
+    ? [{ id: post.id, title: post.title, cityId: post.city_id, role, conversationId: role === 'pending' ? null : roomIds.get(post.id) ?? null }] : []);
 }
 
 export async function leaveMeetup(client: SupabaseClient, postId: string) {

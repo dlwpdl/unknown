@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, DeviceEventEmitter, Pressable, StyleSheet, View } from 'react-native';
 
@@ -15,9 +15,10 @@ import { supabase } from '@/lib/supabase';
 
 export function MyMeetups({ onOpen }: { onOpen: (postId: string) => Promise<void> }) {
   const theme = useTheme();
+  const router = useRouter();
   const { isAuthed, me, promptLogin } = useAuth();
   const { play } = useInteractionFeedback();
-  const { refresh: refreshMembership } = useMembership();
+  const { membership, refresh: refreshMembership } = useMembership();
   const userId = isAuthed ? me.id : null;
   const currentUser = useRef(userId);
   useLayoutEffect(() => { currentUser.current = userId; }, [userId]);
@@ -34,7 +35,7 @@ export function MyMeetups({ onOpen }: { onOpen: (postId: string) => Promise<void
     setLoading(true); setError(false);
     try {
       const next = await loadMyMeetups(supabase, userId);
-      if (requestVersion.current === version) setResult({ userId, items: next });
+      if (currentUser.current === userId && requestVersion.current === version) setResult({ userId, items: next });
     } catch {
       if (requestVersion.current === version) setError(true);
     } finally {
@@ -44,9 +45,10 @@ export function MyMeetups({ onOpen }: { onOpen: (postId: string) => Promise<void
 
   useFocusEffect(useCallback(() => {
     void refresh();
+    void refreshMembership();
     const listener = DeviceEventEmitter.addListener(MEETUPS_CHANGED_EVENT, () => void refresh());
     return () => { requestVersion.current += 1; listener.remove(); };
-  }, [refresh]));
+  }, [refresh, refreshMembership]));
 
   const changeMeetup = async (meetup: MyMeetup) => {
     if (busy || !userId) return;
@@ -94,6 +96,11 @@ export function MyMeetups({ onOpen }: { onOpen: (postId: string) => Promise<void
     {!isAuthed ? <Pressable onPress={() => promptLogin(t.auth.reasonJoinLogin)} accessibilityRole="button" style={[styles.empty, { borderColor: theme.line }]}>
       <ThemedText type="small" themeColor="accent">로그인하고 내 모임 보기</ThemedText>
     </Pressable> : <>
+      {membership && <View style={styles.slots}>
+        <ThemedText type="smallBold">{t.chat.slotSummary(membership.meetupsUsed, membership.meetupSlotsLocked, membership.meetupSlotsAvailable, membership.meetupLimit)}</ThemedText>
+        {membership.meetupUnlocksAt?.[0] && <ThemedText type="small" themeColor="accent">{t.chat.slotUnlock(membership.meetupUnlocksAt[0])}</ThemedText>}
+        <ThemedText type="small" themeColor="textSecondary">{t.meetup.pendingNote}</ThemedText>
+      </View>}
       {loading && items.length === 0 && <ActivityIndicator color={theme.accent} accessibilityLabel="내 모임 불러오는 중" />}
       {error && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{t.meetup.loadError}</ThemedText>}
       {!loading && !error && items.length === 0 && <ThemedText type="small" themeColor="textSecondary">{t.meetup.empty}</ThemedText>}
@@ -103,6 +110,11 @@ export function MyMeetups({ onOpen }: { onOpen: (postId: string) => Promise<void
           <ThemedText type="smallBold">{meetup.title}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{CITIES.find(({ id }) => id === meetup.cityId)?.name ?? meetup.cityId}</ThemedText>
         </Pressable>
+        {meetup.role !== 'pending' && meetup.conversationId && <Pressable
+          onPress={() => router.push({ pathname: '/chat', params: { conversationId: meetup.conversationId! } })}
+          accessibilityRole="button" style={styles.action}>
+          <ThemedText type="smallBold" themeColor="accent">{t.meetup.openChat}</ThemedText>
+        </Pressable>}
         <Pressable onPress={() => confirmChange(meetup)} accessibilityRole="button" disabled={!!busy} accessibilityState={{ disabled: !!busy, busy: busy === meetup.id }} style={styles.action}>
           <ThemedText type="small" themeColor="textSecondary">{meetup.role === 'host' ? t.meetup.end : meetup.role === 'pending' ? t.meetup.cancelRequest : t.meetup.leave}</ThemedText>
         </Pressable>
@@ -119,4 +131,5 @@ const styles = StyleSheet.create({
   copy: { flexGrow: 1, flexBasis: 160, minHeight: 44, padding: Spacing.two, gap: Spacing.one },
   action: { minHeight: 44, minWidth: 44, padding: Spacing.two, alignItems: 'center', justifyContent: 'center' },
   empty: { minHeight: 44, borderWidth: 1, borderRadius: 12, padding: Spacing.three },
+  slots: { gap: Spacing.one, paddingBottom: Spacing.two },
 });

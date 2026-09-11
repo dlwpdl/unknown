@@ -13,8 +13,10 @@ test('only authenticated provider webhooks record purchases, and persistence fai
   t.after(() => { delete globalThis.Deno; });
   await import('../supabase/functions/membership/index.ts');
   const userId = '11111111-1111-4111-8111-111111111111';
-  const event = { id: 'purchase', type: 'INITIAL_PURCHASE', app_user_id: userId };
+  let event = { id: 'purchase', type: 'INITIAL_PURCHASE', app_user_id: userId };
   let recorded = 0;
+  let creditsRecorded = 0;
+  let failCredits = false;
   let fail = false;
   t.mock.method(globalThis, 'fetch', async (input, init) => {
     const request = new Request(input, init);
@@ -25,6 +27,14 @@ test('only authenticated provider webhooks record purchases, and persistence fai
       assert.deepEqual((await request.json()).p_event, event);
       recorded++;
       return fail ? Response.json({ message: 'offline' }, { status: 500 }) : new Response(null, { status: 204 });
+    }
+    if (path === '/rest/v1/rpc/record_promotion_purchase') {
+      assert.equal(request.headers.get('authorization'), 'Bearer server');
+      const purchase = (await request.json()).p_event;
+      assert.equal(purchase.credits, 900);
+      assert.equal(purchase.user_id, userId);
+      creditsRecorded++;
+      return failCredits ? Response.json({ message: 'offline' }, { status: 500 }) : new Response(null, { status: 204 });
     }
     if (path === '/rest/v1/profiles') return Response.json({ account_status: 'active' });
     if (path === `/v1/subscribers/${userId}`) return Response.json({ request_date_ms: Date.now(), subscriber: { entitlements: {}, subscriptions: {} } });
@@ -41,4 +51,17 @@ test('only authenticated provider webhooks record purchases, and persistence fai
   assert.equal(recorded, 1);
   fail = true;
   assert.equal((await run('webhook')).status, 502, 'RevenueCat must retry a failed log write');
+  fail = false;
+  event = { ...event, id: 'credits-purchase', type: 'NON_RENEWING_PURCHASE', app_id: 'appfaedf65971',
+    product_id: 'com.dlwpdl.gling.credits.900', transaction_id: 'verified-transaction',
+    store: 'APP_STORE', environment: 'PRODUCTION', event_timestamp_ms: Date.now() };
+  assert.equal((await run('webhook')).status, 200);
+  assert.equal(creditsRecorded, 0, 'unfinished credits stay disabled on the server by default');
+  env.PROMOTION_CREDITS_ENABLED = '1';
+  assert.equal((await run('user-session')).status, 200);
+  assert.equal(creditsRecorded, 0, 'client purchase body cannot grant credits even when enabled');
+  assert.equal((await run('webhook')).status, 200);
+  assert.equal(creditsRecorded, 1, 'authenticated store event can be persisted when explicitly enabled');
+  failCredits = true;
+  assert.equal((await run('webhook')).status, 502, 'credit persistence failures are retried, not acknowledged');
 });

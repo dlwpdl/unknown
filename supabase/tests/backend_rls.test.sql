@@ -87,6 +87,14 @@ create temporary table test_state (
 insert into test_state (conversation_id)
 select public.start_conversation('22222222-2222-2222-2222-222222222222');
 
+reset role;
+select set_config('request.jwt.claims','{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}',true);
+set local role authenticated;
+select public.respond_direct_conversation((select conversation_id from test_state),'accepted');
+reset role;
+select set_config('request.jwt.claims','{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}',true);
+set local role authenticated;
+
 update test_state
 set message_id = public.send_message(conversation_id, '검증할 대화');
 

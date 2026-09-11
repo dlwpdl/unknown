@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { parseRevenueCatMembership, webhookUserIds } from '../_shared/membership.ts';
+import { parsePromotionPurchase } from '../_shared/promotions.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -50,6 +51,16 @@ Deno.serve(async (request) => {
     if (webhookEvent) {
       const recorded = await admin.rpc('record_payment_event', { p_event: webhookEvent });
       if (recorded.error) throw recorded.error;
+      // Kept off for the initial launch; UI hiding alone is not a payment boundary.
+      if (Deno.env.get('PROMOTION_CREDITS_ENABLED') === '1') {
+        const purchase = parsePromotionPurchase(webhookEvent, {
+          allowSandbox: sandboxUsers.has(String(webhookEvent.app_user_id).toLowerCase()),
+        });
+        if (purchase) {
+          const credited = await admin.rpc('record_promotion_purchase', { p_event: purchase });
+          if (credited.error) throw credited.error;
+        }
+      }
     }
     // Re-read authoritative state for every delivery, including retries and transfers.
     // Repeated snapshots never increment allowances; older snapshots cannot replace newer ones.

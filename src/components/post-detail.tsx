@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   Alert,
@@ -24,6 +24,7 @@ import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { addPostComment, getCommunityActionError, isContentRejected, loadPostCommentsPage, recordPostView, startDirectConversation, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 import { supabase } from '@/lib/supabase';
 import type { Post, PostComment } from '@/lib/types';
 
@@ -73,6 +74,11 @@ export function PostDetail({
   const [commentTotal, setCommentTotal] = useState(post.comments);
   const [loadingMore, setLoadingMore] = useState(false);
   const [viewCount, setViewCount] = useState(post.views);
+  const [requestingChat, setRequestingChat] = useState(false);
+  const requestBusy = useRef(false);
+  const currentUser = useRef(isAuthed ? me.id : null);
+  useLayoutEffect(() => { currentUser.current = isAuthed ? me.id : null; }, [isAuthed, me.id]);
+  useEffect(() => () => { currentUser.current = null; }, []);
 
   useEffect(() => {
     if (!isAuthed) return;
@@ -160,14 +166,19 @@ export function PostDetail({
 
   const requestChat = async (u: SheetUser) => {
     if (!isAuthed) return promptLogin(t.auth.reasonChatLogin);
-    if (!u.id) return;
+    if (!u.id || requestBusy.current) return;
+    const owner = me.id;
+    requestBusy.current = true;
+    setRequestingChat(true);
     try {
       const conversationId = await startDirectConversation(supabase, u.id);
+      if (currentUser.current !== owner) return;
       setSheetUser(null);
       play('message');
       onClose();
-      router.push({ pathname: '/chat', params: { conversationId } });
+      router.push({ pathname: '/chat', params: { conversationId, view: 'requests' } });
     } catch (error) {
+      if (currentUser.current !== owner) return;
       play('warning');
       const code = getCommunityActionError(error);
       const message = code ? t.actionErrors[code] : null;
@@ -176,7 +187,7 @@ export function PostDetail({
         ...(message.membership ? [{ text: '멤버십 보기', onPress: () => { setSheetUser(null); onClose(); router.push('/profile/membership'); } }] : []),
       ]);
       else Alert.alert(t.chat.startErrorTitle, t.chat.startErrorBody);
-    }
+    } finally { requestBusy.current = false; if (currentUser.current === owner) setRequestingChat(false); }
   };
 
   return (
@@ -206,6 +217,12 @@ export function PostDetail({
               })
             }
           />
+          {PROMOTIONS_PREVIEW_ENABLED && isAuthed && post.author.id === me.id && <Pressable
+            accessibilityRole="button"
+            onPress={() => { onClose(); router.push({ pathname: '/profile/promotions', params: { postId: post.id } }); }}
+            style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.three, paddingVertical: Spacing.two }}>
+            <ThemedText type="smallBold" themeColor="accent">이 글 끌어올리기</ThemedText>
+          </Pressable>}
           <View style={styles.comments}>
             {comments.map((c) => (
               <View
@@ -355,11 +372,14 @@ export function PostDetail({
                 </ThemedText>
                 {!sheetUser.mine && sheetUser.id && (
                   <>
+                    <ThemedText type="small" themeColor="textSecondary">{t.chat.requesterRisk}</ThemedText>
                     <Pressable
                       onPress={() => void requestChat(sheetUser)}
                       accessibilityRole="button"
-                      style={[styles.sheetCta, { backgroundColor: theme.accent }]}>
-                      <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{t.profileSheet.chatRequest}</ThemedText>
+                      disabled={requestingChat}
+                      accessibilityState={{ disabled: requestingChat, busy: requestingChat }}
+                      style={[styles.sheetCta, { backgroundColor: theme.accent, opacity: requestingChat ? 0.55 : 1 }]}>
+                      <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{requestingChat ? t.chat.joinSending : t.profileSheet.chatRequest}</ThemedText>
                     </Pressable>
                     <Pressable
                       onPress={() => {
