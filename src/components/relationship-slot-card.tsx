@@ -8,7 +8,6 @@ import { t } from '@/i18n/ko';
 import type { MembershipSnapshot } from '@/lib/membership';
 
 type Kind = 'meetup' | 'conversation';
-type SlotState = 'active' | 'locked' | 'available';
 const tierNames = { free: '베이직', plus: '플러스', premium: '프리미엄' };
 
 export function relationshipSlotData(membership: MembershipSnapshot | null, kind: Kind) {
@@ -18,9 +17,8 @@ export function relationshipSlotData(membership: MembershipSnapshot | null, kind
     : [membership.conversationsUsed, membership.conversationSlotsLocked, membership.conversationSlotsAvailable, membership.conversationLimit, membership.conversationUnlocksAt] as const;
   if (![active, locked, available, limit].every((value) => Number.isInteger(value) && value >= 0)
     || ![3, 5, 10].includes(limit) || available !== Math.max(0, limit - active - locked)) return null;
-  const slots: SlotState[] = Array.from({ length: limit }, (_, index) => index < active ? 'active' : index < active + locked ? 'locked' : 'available');
   const unlockAt = locked > 0 ? unlocks?.filter((value) => Number.isFinite(Date.parse(value))).sort((a, b) => Date.parse(a) - Date.parse(b))[0] : undefined;
-  return { active, locked, available, limit, slots, unlockAt, overLimit: active + locked > limit };
+  return { active, locked, available, limit, unlockAt, overLimit: active + locked > limit };
 }
 
 export function RelationshipSlotCard({ kind, membership, loading = false, onMembershipPress }: {
@@ -33,7 +31,7 @@ export function RelationshipSlotCard({ kind, membership, loading = false, onMemb
   const summary = data
     ? `${title}, 전체 ${data.limit}개 중 남은 자리 ${data.available}개, 사용 중 ${data.active}개, 24시간 잠금 ${data.locked}개.${data.unlockAt ? ` ${t.chat.slotUnlock(data.unlockAt)}` : ''}`
     : `${title}, ${unknown}`;
-  const colors = { active: theme.accent, locked: theme.navy, available: theme.textSecondary };
+  const colors = { active: theme.accent, locked: theme.navy };
 
   return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
     <View style={styles.content}>
@@ -47,20 +45,15 @@ export function RelationshipSlotCard({ kind, membership, loading = false, onMemb
             <View style={styles.numberRow}><ThemedText style={[styles.number, { color: data?.available ? theme.accent : theme.text }]}>{data ? data.available : '—'}</ThemedText><ThemedText type="smallBold">자리 남음</ThemedText></View>
             <ThemedText type="small" themeColor="textSecondary">{data ? `전체 ${data.limit}자리` : loading ? '확인 중' : '확인 필요'}</ThemedText>
           </View>
-          <View style={styles.track}>
-            {data ? data.slots.map((state, index) => <View key={index} style={[styles.slot, {
-              backgroundColor: state === 'active' ? theme.accent : state === 'locked' ? theme.backgroundElement : theme.card,
-              borderColor: colors[state], borderStyle: state === 'available' ? 'dashed' : 'solid',
-            }]}>
-              <SymbolView size={12} tintColor={state === 'active' ? theme.accentInk : colors[state]} name={state === 'active'
-                ? { ios: 'checkmark', android: 'check', web: 'check' }
-                : state === 'locked' ? { ios: 'lock.fill', android: 'lock', web: 'lock' }
-                  : { ios: 'plus', android: 'add', web: 'add' }} />
-            </View>) : <View style={[styles.unknownTrack, { backgroundColor: theme.backgroundElement }]} />}
+          <View style={[styles.track, { backgroundColor: theme.line }]}>
+            {data && <>
+              <View style={{ width: `${Math.min(data.active, data.limit) / data.limit * 100}%`, backgroundColor: theme.accent }} />
+              <View style={{ width: `${Math.min(data.locked, Math.max(0, data.limit - data.active)) / data.limit * 100}%`, backgroundColor: theme.navy }} />
+            </>}
           </View>
           {data ? <View style={styles.legend}>
-            {([['active', '사용 중', data.active], ['locked', '24h 잠금', data.locked], ['available', '남음', data.available]] as const).map(([state, label, count]) => <View key={state} style={styles.legendItem}>
-              <ThemedText type="small" style={{ color: state === 'active' ? theme.text : colors[state] }}>{label}</ThemedText><ThemedText type="smallBold" style={styles.tabular}>{count}</ThemedText>
+            {([['active', '사용 중', data.active], ['locked', '24h 잠금', data.locked]] as const).map(([state, label, count]) => <View key={state} style={styles.legendItem}>
+              <View style={[styles.dot, { backgroundColor: colors[state] }]} /><ThemedText type="small" themeColor="textSecondary">{label}</ThemedText><ThemedText type="smallBold" style={styles.tabular}>{count}</ThemedText>
             </View>)}
           </View> : <ThemedText type="small" themeColor="textSecondary">{unknown}</ThemedText>}
           {data?.unlockAt && <View style={styles.unlock}><SymbolView name={{ ios: 'clock', android: 'schedule', web: 'schedule' }} size={14} tintColor={theme.navy} /><ThemedText type="small" themeColor="navy" style={styles.flex}>{t.chat.slotUnlock(data.unlockAt)}</ThemedText></View>}
@@ -81,12 +74,11 @@ const styles = StyleSheet.create({
   tier: { borderRadius: 6, paddingHorizontal: Spacing.two, paddingVertical: Spacing.half },
   remaining: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two, marginBottom: Spacing.two },
   numberRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: Spacing.two },
-  number: { fontSize: 28, lineHeight: 36, fontWeight: 700, fontVariant: ['tabular-nums'] },
-  track: { flexDirection: 'row', gap: Spacing.one, marginBottom: Spacing.two },
-  slot: { flex: 1, height: 24, borderWidth: 1, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
-  unknownTrack: { width: '100%', height: 24, borderRadius: 4 },
+  number: { fontSize: 24, lineHeight: 32, fontWeight: 700, fontVariant: ['tabular-nums'] },
+  track: { flexDirection: 'row', height: Spacing.two, borderRadius: Spacing.one, overflow: 'hidden', marginBottom: Spacing.two },
   legend: { flexDirection: 'row', flexWrap: 'wrap', columnGap: Spacing.three, rowGap: Spacing.one },
-  legendItem: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: Spacing.one },
+  legendItem: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.one },
+  dot: { width: Spacing.one, height: Spacing.one, borderRadius: Spacing.half },
   tabular: { fontVariant: ['tabular-nums'] },
   unlock: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, marginTop: Spacing.two },
   flex: { flexShrink: 1 },
