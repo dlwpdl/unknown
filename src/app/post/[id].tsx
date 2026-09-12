@@ -7,17 +7,22 @@ import { PostDetail } from '@/components/post-detail';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
+import { useAuth } from '@/lib/auth';
 import { loadPublicPost } from '@/lib/feed-data';
 import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
 
 export default function SharedPostRoute() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, commentId } = useLocalSearchParams<{ id: string; commentId?: string }>();
   const postId = typeof id === 'string' ? id : '';
+  const targetCommentId = typeof commentId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(commentId) ? commentId.toLowerCase() : undefined;
+  const { isAuthed, me } = useAuth();
+  const owner = isAuthed ? me.id : 'guest';
+  const requestKey = `${postId}:${owner}`;
   const router = useRouter();
   const theme = useTheme();
   const [result, setResult] = useState<{ id: string; post: Post | null; failed: boolean } | null>(null);
-  const current = result?.id === postId ? result : null;
+  const current = result?.id === requestKey ? result : null;
   const loading = Boolean(postId) && !current;
   const goBack = () => router.canGoBack() ? router.back() : router.replace('/');
 
@@ -25,16 +30,16 @@ export default function SharedPostRoute() {
     if (!postId) return;
     let active = true;
     void loadPublicPost(supabase, postId)
-      .then((post) => { if (active) setResult({ id: postId, post, failed: false }); })
-      .catch(() => { if (active) setResult({ id: postId, post: null, failed: true }); });
+      .then((post) => { if (active) setResult({ id: requestKey, post, failed: false }); })
+      .catch(() => { if (active) setResult({ id: requestKey, post: null, failed: true }); });
     return () => { active = false; };
-  }, [postId]);
+  }, [postId, requestKey]);
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         {current?.post ? (
-          <PostDetail post={current.post} onClose={goBack} />
+          <PostDetail post={current.post} commentId={targetCommentId} onClose={goBack} />
         ) : (
           <>
             <View style={styles.header}>

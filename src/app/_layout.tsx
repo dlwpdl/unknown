@@ -5,6 +5,7 @@ import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { AppActivity } from '@/components/app-activity';
+import { NotificationObserver } from '@/components/notification-observer';
 import { AuthProvider } from '@/lib/auth';
 import { InteractionFeedbackProvider } from '@/lib/interaction-feedback';
 import { MembershipProvider } from '@/lib/membership-provider';
@@ -18,6 +19,7 @@ export default function TabLayout() {
       <StatusBar style="auto" />
       <AuthProvider>
         <AppActivity />
+        <NotificationObserver />
         <MembershipProvider>
         <InteractionFeedbackProvider>
           <AnimatedSplashOverlay />

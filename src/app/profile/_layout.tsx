@@ -36,6 +36,7 @@ export default function ProfileLayout() {
       <Stack.Screen name="membership" options={{ title: '멤버십' }} />
       <Stack.Screen name="promotions" options={{ title: PROMOTIONS_PREVIEW_ENABLED ? '홍보 크레딧' : '', headerShown: PROMOTIONS_PREVIEW_ENABLED }} />
       <Stack.Screen name="settings" options={{ title: t.profile.settings }} />
+      <Stack.Screen name="notifications" options={{ title: '알림 설정' }} />
     </Stack>
   );
 }

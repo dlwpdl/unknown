@@ -57,6 +57,10 @@ export interface PostComment {
   verified?: boolean; // true면 L2, false/없음이면 L1
   trustLevel?: 2 | 3;
   createdAt?: string;
+  parentId?: string; // 답글의 루트 댓글
+  replyToId?: string; // 직접 답하는 댓글 (답글도 가능)
+  replyToNickname?: string;
+  replyCount?: number;
 }
 
 export interface Post {

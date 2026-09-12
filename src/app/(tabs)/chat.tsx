@@ -63,7 +63,10 @@ export default function ChatScreen() {
     finally { if (currentUser.current === userId && version.current === request) setLoading(false); }
   }, [conversationId, userId]);
   const changed = useCallback(async () => { await Promise.all([refresh(), refreshMembership()]); }, [refresh, refreshMembership]);
-  useFocusEffect(useCallback(() => { void changed(); return () => { version.current += 1; }; }, [changed]));
+  useFocusEffect(useCallback(() => {
+    if (view === 'requests' && !conversationId) { setFilter('requests'); setSelection(null); }
+    void changed(); return () => { version.current += 1; };
+  }, [changed, conversationId, view]));
   useEffect(() => {
     if (!userId) return;
     const channel = supabase.channel(`inbox:${userId}`)

@@ -19,6 +19,7 @@ import { CONTACT_EMAIL } from '@/lib/legal-documents';
 import { CommunityLocationProvider } from '@/lib/location-provider';
 import { CITIES } from '@/lib/mock';
 import { signInAdminAccount, signInReviewAccount, supabase } from '@/lib/supabase';
+import { unregisterPushDevice } from '@/lib/push-notifications';
 import type { TrustLevel } from '@/lib/trust';
 
 type Level = 0 | 1;
@@ -242,6 +243,15 @@ export function AuthProvider({ children, publicPage = false }: { children: React
   }, []);
   const signOut = useCallback(async () => {
     setAuthError(null);
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    // Supabase may clear the local session even when remote logout fails.
+    // Revoke push first so an offline logout cannot leave an active device binding.
+    try {
+      if (currentSession) await unregisterPushDevice(supabase, currentSession.user.id);
+    } catch {
+      setAuthError(t.auth.signOutError);
+      return;
+    }
     const { error } = await supabase.auth.signOut();
     if (error) {
       setAuthError(t.auth.signOutError);

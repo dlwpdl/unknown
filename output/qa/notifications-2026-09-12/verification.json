@@ -1,0 +1,48 @@
+{
+  "recordedAt": "2026-09-12T21:54:15.791174+00:00",
+  "tests": {
+    "javascript": 110,
+    "postgres": 532,
+    "typecheck": "passed",
+    "lint": "passed",
+    "publicAdminExclusion": "passed"
+  },
+  "production": {
+    "migrations": [
+      "0040",
+      "0041"
+    ],
+    "pushFunction": "deployed but returns503 without server secret",
+    "devices": 0,
+    "queued": 0,
+    "actualRemotePushReceived": false
+  },
+  "sourceSha256": {
+    "src/components/post-detail.tsx": "381e76bf4fcf5dfac98e1ab010e15569309f33ccb1540e8735a9942a06c89ceb",
+    "src/app/profile/notifications.tsx": "25183c3f3185750399e78a0a99c9f33393f632d2fd64f92b20ea318a3058087d",
+    "src/components/notification-observer.tsx": "d970efc83a35c266bbc15894c13faa02ebb484ba28a6c4570af4e401ab56f298",
+    "src/lib/push-notifications.ts": "9f1718c76c100b9426efa468ee1beb6047d1b19335c416bb95420f36b85a46c2",
+    "supabase/migrations/0040_comment_threads_notifications.sql": "abf81c13df6184235c3c8075ea15935f0117a3556a697f8bd7a3906d3744caa5",
+    "supabase/migrations/0041_push_notifications.sql": "e7e7d4beab53fcfd167dd7aabc0595ae00079e0ecd39cec85ff9e0d4f6407059"
+  },
+  "artifacts": {
+    "/tmp/gling-city-simulator/Build/Products/Release-iphonesimulator/app.app/main.jsbundle": "6ffb81db52b47ffd458913b67c9b4fb3993b85c1f2f58754935659aa18666723",
+    "/tmp/gling-notifications-qa.apk": "6887eeb36c9689aa3f4582958d0996b4a41d2c3ce941287b096342f4d8d3c97f"
+  },
+  "screenshots": {
+    "ios-settings.png": "12375130ad6f1153ccd1cf8e882dc7661f98d4f8bc2592f5cdd094756b687b8e",
+    "ios-settings-largest-text.png": "be6403310282710d54787acc832cadf3f7fce296ff94e3f60ba48f679c4bb528",
+    "web-comment-320-text180.png": "e864b786dbc05e00eae516059f550d327302914f6966e90f0e765d95f9e72a7d",
+    "android-settings.png": "7bf33ecb993aba0c8270223f60b651f7f7919e6abaaa5148fabf8245423ae64c",
+    "web-comment-390.png": "fea74166a289012fcd921d3a03ce8c2e4c13eed6442249866e6b6a9b816910be"
+  },
+  "iosDevice": "583E7BFD-5CB4-42EC-B15C-1D4D5986FA39",
+  "androidDevice": "Gling_Ads_Play_API_36/emulator-5556",
+  "notes": [
+    "iOS release simulator and Android release APK both built and launched. Android used the existing store review account.",
+    "iOS post_likes was turned off, persisted across restart, then restored true. Push/discovery stayed off.",
+    "iOS maximum Dynamic Type content wraps; native navigation title is visually absent at the largest size. Font restored to large.",
+    "Android artifact predates a web-only activeThumbColor addition; that prop is omitted on native platforms.",
+    "Web comment mocks and exact screenshot bundle provenance are in web-comment-qa.md."
+  ]
+}

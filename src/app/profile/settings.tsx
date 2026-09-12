@@ -99,6 +99,9 @@ export default function SettingsScreen() {
           </View>
 
           <PersonalInfoCard userId={me.id} />
+          <Pressable accessibilityRole="button" style={styles.row} onPress={() => router.push('/profile/notifications')}>
+            <ThemedText>알림 설정</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText>
+          </Pressable>
           {adsSupported && !testAds && <Pressable accessibilityRole="button" style={styles.row} onPress={() => {
             void showAdPrivacyOptions().then((shown) => {
               if (!shown) Alert.alert('광고 개인정보 설정', '현재 지역에서 변경할 광고 동의 설정이 없습니다. 글링은 개인 맞춤 광고를 요청하지 않습니다.');

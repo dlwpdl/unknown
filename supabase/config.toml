@@ -76,3 +76,7 @@ verify_jwt = true
 # This endpoint verifies either the user's JWT or the RevenueCat webhook secret itself.
 [functions.membership]
 verify_jwt = false
+
+# Scheduled server worker authenticates x-push-secret before claiming any work.
+[functions.push-notifications]
+verify_jwt = false

@@ -58,10 +58,10 @@ test('every profile header can go back or leave a direct entry, with accessible 
 });
 
 test('shared posts remain escapable during loading, failure and absence, and never show an old ID response', async () => {
-  let id = 'first', hasHistory = false, cursor = 0, effect, cleanup, effectId;
+  let id = 'first', commentId, hasHistory = false, cursor = 0, effect, cleanup, effectId, accountId = 'first-account';
   const states = [], requests = new Map(), actions = [];
   const SharedPostRoute = screen('../src/app/post/[id].tsx', {
-    'expo-router': { useLocalSearchParams: () => ({ id }), useRouter: () => ({
+    'expo-router': { useLocalSearchParams: () => ({ id, commentId }), useRouter: () => ({
       canGoBack: () => hasHistory, back: () => actions.push('back'), replace: path => actions.push(path),
     }) },
     react: {
@@ -70,7 +70,8 @@ test('shared posts remain escapable during loading, failure and absence, and nev
         if (!(index in states)) states[index] = initial;
         return [states[index], next => { states[index] = next; }];
       },
-      useEffect(run, [nextId]) {
+      useEffect(run, dependencies) {
+        const nextId = dependencies.join(':');
         if (nextId !== effectId) effect = () => { cleanup?.(); cleanup = run(); effectId = nextId; };
       },
     },
@@ -78,6 +79,7 @@ test('shared posts remain escapable during loading, failure and absence, and nev
     '@/components/post-detail': { PostDetail: 'PostDetail' },
     '@/components/themed-text': { ThemedText: 'Text' },
     '@/components/themed-view': { ThemedView: 'View' },
+    '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: accountId } }) },
     '@/lib/supabase': { supabase: {} },
     '@/lib/feed-data': { loadPublicPost(_, postId) {
       return new Promise((resolve, reject) => requests.set(postId, { resolve, reject }));
@@ -104,6 +106,14 @@ test('shared posts remain escapable during loading, failure and absence, and nev
   await flush();
   tree = render();
   assert.equal(detail(tree).props.post.id, 'first');
+  commentId = '40111111-1111-1111-1111-111111111111';
+  assert.equal(detail(render()).props.commentId, commentId);
+  commentId = '40AAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA';
+  assert.equal(detail(render()).props.commentId, commentId.toLowerCase());
+  commentId = ['40111111-1111-1111-1111-111111111111'];
+  assert.equal(detail(render()).props.commentId, undefined);
+  commentId = 'invalid';
+  assert.equal(detail(render()).props.commentId, undefined);
   hasHistory = true;
   detail(tree).props.onClose();
   assert.equal(actions.at(-1), 'back');
@@ -123,6 +133,13 @@ test('shared posts remain escapable during loading, failure and absence, and nev
   requests.get('slow').resolve({ id: 'slow' });
   await flush();
   assert.equal(detail(render()).props.post.id, 'latest');
+  accountId = 'second-account';
+  tree = render();
+  assert.equal(detail(tree), undefined, 'account changes hide cached account-specific post fields immediately');
+  commit();
+  requests.get('latest').resolve({ id: 'latest', likedByMe: false });
+  await flush();
+  assert.equal(detail(render()).props.post.likedByMe, false);
 
   id = 'stale-error';
   render(); commit();

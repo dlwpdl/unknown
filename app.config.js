@@ -10,5 +10,12 @@ module.exports = ({ config }) => {
       ...(localAdmin ? { typedRoutes: false, baseUrl: '' }
         : process.env.GLING_WEB_BASE_URL ? { baseUrl: process.env.GLING_WEB_BASE_URL } : {}),
     },
+    ...(process.env.EXPO_PUBLIC_EAS_PROJECT_ID ? {
+      extra: { ...config.extra, eas: { ...config.extra?.eas, projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID } },
+    } : {}),
+    android: {
+      ...config.android,
+      ...(process.env.GLING_GOOGLE_SERVICES_FILE ? { googleServicesFile: process.env.GLING_GOOGLE_SERVICES_FILE } : {}),
+    },
   };
 };

@@ -54,6 +54,7 @@ export type ChatMessageRecord = {
 export type AppNotification = {
   id: string;
   kind: string;
+  category: string;
   body: string;
   route: string | null;
   read_at: string | null;
@@ -392,8 +393,8 @@ export async function respondMeetupRequest(
 
 export async function loadNotifications(client: SupabaseClient, userId: string) {
   const result = await client
-    .from('notifications')
-    .select('id,kind,body,route,read_at,created_at')
+    .from('user_notifications')
+    .select('id,kind,category,body,route,read_at,created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(50);
@@ -402,7 +403,7 @@ export async function loadNotifications(client: SupabaseClient, userId: string) 
 }
 
 export async function loadUnreadNotificationCount(client: SupabaseClient, userId: string) {
-  const result = await client.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', userId).is('read_at', null);
+  const result = await client.from('user_notifications').select('*', { count: 'exact', head: true }).eq('user_id', userId).is('read_at', null);
   if (result.error) throw result.error;
   return result.count ?? 0;
 }

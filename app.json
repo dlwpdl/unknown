@@ -113,6 +113,13 @@
     "plugins": [
       "expo-router",
       [
+        "expo-notifications",
+        {
+          "color": "#BE3B2A",
+          "defaultChannel": "gling-activity"
+        }
+      ],
+      [
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-2361293253164911~5342813202",
