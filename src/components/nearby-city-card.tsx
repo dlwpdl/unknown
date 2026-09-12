@@ -18,6 +18,7 @@ export function NearbyCityCard({ onSelect, onFix, settings = false }: {
   const recommended = CITIES.find((city) => city.id === location.cityId);
   return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
     <ThemedText type="smallBold">내 도시에서 시작하기</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary">GPS로 가까운 도시의 커뮤니티를 찾아 주변 동네 소식을 볼 수 있어요. 직접 선택해 저장한 선호 지역이 우선 적용돼요.</ThemedText>
     <ThemedText type="small" themeColor="textSecondary">위치 공유에 동의하면 로그인과 글·모임 작성 때만 위치를 한 번 확인해요. 공개되는 정보는 선택한 도시뿐이에요.</ThemedText>
     {!location.enabled && <ThemedText type="small" themeColor="textSecondary">좌표·정확도·측정 시각은 안전 운영을 위해 30일 보관하며 권한 있는 관리자만 조회해요. 설정에서 공유를 끄고 삭제할 수 있어요. 동의 없이 도시를 직접 골라도 돼요.</ThemedText>}
     {!!location.message && <ThemedText type="small" accessibilityLiveRegion="polite">{location.message}</ThemedText>}

@@ -44,7 +44,7 @@ export default function ProfileScreen() {
       .then((next) => active && setSummary(next))
       .catch(() => active && setSummary(null));
     return () => { active = false; };
-  }, [isAuthed, me.id]);
+  }, [isAuthed, me.id, me.cityId]);
 
   const refreshSaved = useCallback(async () => {
     if (!isAuthed) return;

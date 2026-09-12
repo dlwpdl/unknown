@@ -46,7 +46,7 @@ export function AdminAnalyticsView({ localPreview, onUser, refreshSignal = 0 }: 
       </View>
       <View style={styles.filters}>
         <Choices label="조회 기간" values={[7, 30, 90].map((days) => ({ key: String(days), label: `${days}일` }))} selected={String(filters.days)} onSelect={(value) => filter({ days: Number(value) as AnalyticsFilters['days'] })} />
-        <Choices label="도시" values={[{ key: '', label: '전체 도시' }, ...CITIES.filter((city) => city.state === 'open').map((city) => ({ key: city.id, label: city.name }))]} selected={filters.city ?? ''} onSelect={(city) => filter({ city: city || null })} />
+        <Choices label="선호 지역" values={[{ key: '', label: '전체 도시' }, ...CITIES.map((city) => ({ key: city.id, label: city.name }))]} selected={filters.city ?? ''} onSelect={(city) => filter({ city: city || null })} />
         <Choices label="현재 멤버십" values={Object.entries(TIERS).map(([key, label]) => ({ key, label }))} selected={filters.tier} onSelect={(tier) => filter({ tier: tier as AnalyticsFilters['tier'] })} />
         <View style={styles.switchRow}><Switch value={filters.includeInternal} onValueChange={(includeInternal) => filter({ includeInternal })} accessibilityLabel="목·심사·관리자 계정 포함" trackColor={{ true: Colors.light.accent }} /><ThemedText type="small">목·심사·관리자 계정 포함</ThemedText></View>
       </View>
@@ -71,7 +71,7 @@ export function AdminAnalyticsView({ localPreview, onUser, refreshSignal = 0 }: 
 function Overview({ data }: { data: AdminAnalytics | null }) {
   return <>
     <View style={styles.metrics}>
-      <Metric label="전체 회원" value={data?.counts.members} detail="현재 도시·등급 기준 누계" />
+      <Metric label="전체 회원" value={data?.counts.members} detail="현재 선호 지역·등급 기준 누계" />
       <Metric label="신규 가입" value={data?.counts.newMembers} detail="선택 기간 가입 회원" />
       <Metric label="활동 회원" value={data?.counts.activeUsers} detail={data ? `${data.collectionStartedAt.slice(0, 10)} 수집 시작 · 중복 제외` : '기간 내 화면 방문 회원 · 중복 제외'} />
       <Metric label="작성 글" value={data?.counts.posts} detail="선택 기간 작성" />
@@ -79,7 +79,7 @@ function Overview({ data }: { data: AdminAnalytics | null }) {
     <DailyActivity data={data} />
     <View style={styles.breakdowns}>
       <Distribution title="현재 멤버십" rows={data?.memberships} label={tierLabel} />
-      <Distribution title="회원 도시" rows={data?.cities} label={cityLabel} />
+      <Distribution title="선호 지역별 회원" rows={data?.cities} label={cityLabel} note="회원이 현재 저장한 선호 지역 기준입니다. 지역 변경 후 새로고침하면 집계에 반영됩니다." />
       <Distribution title="연령대" rows={data?.ages} label={ageLabel} note="입력한 생년월일에서 계산한 만 나이 기준입니다. 미입력 회원은 미확인으로 표시합니다." />
     </View>
   </>;
@@ -108,8 +108,8 @@ function DailyActivity({ data }: { data: AdminAnalytics | null }) {
 function Members({ data, filters, onUser, onPage }: { data: AdminAnalytics | null; filters: AnalyticsFilters; onUser: (id: string) => void; onPage: (offset: number) => void }) {
   const rows = data?.members ?? [];
   return <View style={styles.section}>
-    <SectionTitle title="회원 목록" note="현재 도시·멤버십 기준 전체 회원입니다. 선택 기간과 관계없이 가입순으로 표시합니다." />
-    <DataTable headers={['회원', '도시', '현재 멤버십', '가입일', '최근 로그인', '상태']} rows={rows.map((member) => ({ key: member.id, cells: [<UserLink key="user" id={member.id} nickname={`${member.nickname}${member.internal ? ' · 내부' : ''}`} onUser={onUser} />, cityLabel(member.city), tierLabel(member.tier), date(member.createdAt), date(member.lastSignIn), statusLabel(member.status)] }))} />
+    <SectionTitle title="회원 목록" note="현재 선호 지역·멤버십 기준 전체 회원입니다. 회원을 선택하면 선호 지역과 최근 GPS 기준 가까운 도시를 함께 확인할 수 있습니다." />
+    <DataTable headers={['회원', '선호 지역', '현재 멤버십', '가입일', '최근 로그인', '상태']} rows={rows.map((member) => ({ key: member.id, cells: [<UserLink key="user" id={member.id} nickname={`${member.nickname}${member.internal ? ' · 내부' : ''}`} onUser={onUser} />, cityLabel(member.city), tierLabel(member.tier), date(member.createdAt), date(member.lastSignIn), statusLabel(member.status)] }))} />
     <View style={styles.headingRow}>
       <ThemedText type="small" style={styles.muted}>{data ? `${number(data.counts.members)}명 중 ${rows.length ? `${filters.offset + 1}–${filters.offset + rows.length}` : '0'}명` : '운영 데이터 미연결'} · {ADMIN_PAGE_SIZE}명씩</ThemedText>
       <View style={styles.choices}><Action label="이전 회원" disabled={!data || filters.offset === 0} onPress={() => onPage(Math.max(0, filters.offset - ADMIN_PAGE_SIZE))} /><Action label="다음 회원" disabled={!data || filters.offset + rows.length >= data.counts.members} onPress={() => onPage(filters.offset + ADMIN_PAGE_SIZE)} /></View>

@@ -1,5 +1,5 @@
 begin;
-select plan(21);
+select plan(23);
 select has_function('public','get_location_preference',array[]::text[],'location preferences exist');
 insert into auth.users(id,email,raw_app_meta_data) values
 ('88880000-1111-1111-1111-111111111111','location@example.test','{}'),
@@ -29,10 +29,15 @@ set local role authenticated;
 select lives_ok($$select public.record_location_event(49.28,-123.12,100,now(),p_post_id=>'88880000-5555-5555-5555-555555555555',p_user_id=>auth.uid())$$,'published meetup accepts a fresh location');
 reset role;
 select is((select kind from private.location_events where post_id is not null),'meetup','meetup context comes from the actual post');
+set local role authenticated;
+update public.profiles set city_id='toronto',neighborhood=null where id=auth.uid();
+reset role;
 
 select set_config('request.jwt.claims','{"sub":"88880000-2222-2222-2222-222222222222","role":"authenticated","app_metadata":{"role":"admin"}}',true);
 set local role authenticated;
 select is(public.get_admin_user_overview('88880000-1111-1111-1111-111111111111')#>>'{location_snapshot,latitude}','49.28','admin overview shows device snapshot');
+select is(public.get_admin_user_overview('88880000-1111-1111-1111-111111111111')#>>'{profile,city_id}','toronto','admin shows updated preference separately from Vancouver GPS snapshot');
+select is(public.get_admin_user_overview('88880000-2222-2222-2222-222222222222')->'location_snapshot','null'::jsonb,'a saved city does not fabricate a GPS snapshot');
 select is((public.get_admin_user_activity('88880000-1111-1111-1111-111111111111','account',p_query=>'위치 기록')->>'total')::int,1,'existing audited timeline includes location');
 reset role;
 select ok(exists(select 1 from public.admin_access_logs where actor_id='88880000-2222-2222-2222-222222222222' and subject_user_id='88880000-1111-1111-1111-111111111111' and scope='user_detail'),'coordinate reads are audited');

@@ -1,5 +1,5 @@
 begin;
-select plan(14);
+select plan(20);
 select has_function('public','get_admin_analytics',array['integer','text','text','boolean','integer'],'admin analytics RPC exists');
 insert into public.cities values ('analytics-test','분석검사','BC','UTC',true);
 insert into auth.users(id,email,raw_app_meta_data) values
@@ -36,5 +36,19 @@ select public.record_payment_event('{"id":"qa-sandbox","type":"INITIAL_PURCHASE"
 set local role authenticated;
 select is((public.get_admin_analytics(7,'analytics-test')->'purchases'->0->>'amount')::numeric,14.99,'duplicate and sandbox events cannot inflate revenue');
 select throws_ok($$select public.record_payment_event('{}')$$,'42501',null,'even admins cannot forge store purchases from a client');
+reset role;
+insert into public.cities values ('analytics-moved','이사지역','ON','UTC',true);
+select set_config('request.jwt.claims','{"sub":"77777777-1111-1111-1111-111111111111","role":"authenticated"}',true);
+set local role authenticated;
+select lives_ok($$update public.profiles set city_id='analytics-moved',neighborhood=null where id=auth.uid()$$,'members can save their new preferred region');
+with changed as (update public.profiles set city_id='analytics-moved' where id='77777777-2222-2222-2222-222222222222' returning id)
+select is(count(*),0::bigint,'members cannot move another account') from changed;
+select throws_ok($$update public.profiles set city_id='not-a-city' where id=auth.uid()$$,'23503',null,'unknown regions are rejected by the database');
+reset role;
+select set_config('request.jwt.claims','{"sub":"77777777-3333-3333-3333-333333333333","role":"authenticated","app_metadata":{"role":"admin"}}',true);
+set local role authenticated;
+select is((public.get_admin_analytics(7,'analytics-test')->'counts'->>'members')::integer,0,'previous region loses the moved member');
+select is((public.get_admin_analytics(7,'analytics-moved')->'counts'->>'members')::integer,1,'new region gains the member without duplication');
+select is(public.get_admin_analytics(7,'analytics-moved')->'members'->0->>'city','analytics-moved','admin member list uses the saved region');
 select * from finish();
 rollback;

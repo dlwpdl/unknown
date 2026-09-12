@@ -53,7 +53,7 @@ export function AdminUserDirectoryPanel({ onUser, refreshData }: { onUser: (id: 
     {result && <>
       <ThemedText type="small" style={styles.muted}>검색 결과 {result.total}명 · {result.rows.length}명 표시 · 이름은 실명인증 정보가 아닙니다.</ThemedText>
       <View style={styles.rows}>
-        {!compact && <View style={styles.tableHeading} aria-hidden><ThemedText type="small" style={[styles.identity, styles.muted]}>회원 · ID</ThemedText><ThemedText type="small" style={[styles.login, styles.muted]}>로그인 정보</ThemedText><ThemedText type="small" style={[styles.region, styles.muted]}>지역 · 계정 유형</ThemedText><View style={styles.chevronSpace} /></View>}
+        {!compact && <View style={styles.tableHeading} aria-hidden><ThemedText type="small" style={[styles.identity, styles.muted]}>회원 · ID</ThemedText><ThemedText type="small" style={[styles.login, styles.muted]}>로그인 정보</ThemedText><ThemedText type="small" style={[styles.region, styles.muted]}>선호 지역 · 계정 유형</ThemedText><View style={styles.chevronSpace} /></View>}
         {result.rows.map((profile, index) => <Pressable key={profile.id} accessibilityRole="button" accessibilityLabel={`${profile.nickname}, ${profile.email ?? '이메일 미제공'}, 상세 활동 보기`} onPress={() => onUser(profile.id)} style={({ pressed }) => [styles.row, index === result.rows.length - 1 && styles.lastRow, pressed && styles.rowPressed]}>
         <View style={[styles.rowContent, compact && styles.rowContentCompact]}>
           <View style={styles.identity}>

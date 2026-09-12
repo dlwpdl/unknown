@@ -17,6 +17,7 @@ import { isAdminRole } from '@/lib/admin';
 import { canUseDevPasswordLogin, getKakaoAuthSessionUrl, getOAuthCallbackPath, getOAuthCode } from '@/lib/kakao-auth';
 import { CONTACT_EMAIL } from '@/lib/legal-documents';
 import { CommunityLocationProvider } from '@/lib/location-provider';
+import { CITIES } from '@/lib/mock';
 import { signInAdminAccount, signInReviewAccount, supabase } from '@/lib/supabase';
 import type { TrustLevel } from '@/lib/trust';
 
@@ -50,6 +51,7 @@ type AuthValue = {
   signInAdmin: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   setProfilePhoto: (uri: string | null, base64?: string) => Promise<void>;
+  setProfileCity: (cityId: string) => Promise<void>;
   promptLogin: (reason?: string) => void; // L0 게이트
 };
 
@@ -283,6 +285,15 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     setVisible(true);
   }, []);
 
+  const setProfileCity = useCallback(async (cityId: string) => {
+    if (!session || !CITIES.some((city) => city.id === cityId)) throw new Error('INVALID_PROFILE_CITY');
+    const { data, error } = await supabase.from('profiles')
+      .update({ city_id: cityId, neighborhood: null })
+      .eq('id', session.user.id).select('id,city_id').single();
+    if (error || data?.id !== session.user.id || data.city_id !== cityId) throw error ?? new Error('CITY_UPDATE_FAILED');
+    setProfile((current) => current?.id === session.user.id ? { ...current, city_id: cityId } : current);
+  }, [session]);
+
   const level: Level = session ? 1 : 0;
   const metadata = session?.user.user_metadata;
   const isAdmin = isAdminRole(session?.user.app_metadata);
@@ -324,6 +335,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       signInAdmin,
       signOut,
       setProfilePhoto,
+      setProfileCity,
       promptLogin,
     }),
     [
@@ -347,6 +359,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       signInAdmin,
       signOut,
       setProfilePhoto,
+      setProfileCity,
       promptLogin,
     ],
   );

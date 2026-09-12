@@ -65,7 +65,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const bottomClear = insets.bottom + TabBarHeight; // 탭바 + 홈 인디케이터 실측 높이
   const [posts, setPosts] = useState<Post[]>(MOCK_POSTS);
   const [quota, setQuota] = useState(INITIAL_QUOTA);
-  const { city, setCity } = useCommunityCity();
+  const { city, setCity, selectCity, saving: savingCity } = useCommunityCity();
   const location = useCommunityLocation();
   const [draftCity, setDraftCity] = useState(city);
   const draftLocation = useRef<(LocationFix & { userId: string }) | null>(null);
@@ -133,7 +133,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       else refreshQuota();
     });
     return () => { active = false; listener.remove(); };
-  }, [isAuthed, me.id]);
+  }, [isAuthed, me.id, me.cityId]);
 
   const cityOpen = city.state === 'open';
   const cityPosts = useMemo(() => posts.filter((p) => p.cityId === city.id), [posts, city.id]);
@@ -466,7 +466,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText> : null}
           renderItem={({ item }) => item == null ? (
             <View style={styles.header}>
-              {isAuthed && !meetupsOnly && <NearbyCityCard onSelect={(id) => { const next = CITIES.find((item) => item.id === id); if (next) setCity(next); }} />}
+              {isAuthed && !meetupsOnly && <NearbyCityCard onSelect={(id) => { const next = CITIES.find((item) => item.id === id); if (next) void selectCity(next); }} />}
               <View style={styles.journalIntro}>
                 <ThemedText type="smallBold" themeColor="textSecondary" style={styles.journalDate}>{todayLabel()}</ThemedText>
                 <ThemedText accessibilityRole="header" style={styles.journalTitle}>{meetupsOnly ? t.feed.meetupTitle : t.feed.journalTitle}</ThemedText>
@@ -745,9 +745,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   const open = item.state === 'open';
                   return (
                     <Pressable
-                      onPress={() => { play('selection'); setCity(item); setCityPicker(false); }}
+                      disabled={savingCity}
+                      onPress={async () => { play('selection'); if (await selectCity(item)) setCityPicker(false); }}
                       accessibilityRole="button"
-                      accessibilityState={{ selected }}
+                      accessibilityState={{ selected, disabled: savingCity, busy: savingCity }}
                       accessibilityLabel={[item.name, !open && t.feed.citySoon, selected && t.feed.citySelected].filter(Boolean).join(', ')}
                       style={({ pressed }) => [styles.cityRow, { borderColor: theme.line }, pressed && styles.chipPressed]}>
                       <View style={styles.cityName}>

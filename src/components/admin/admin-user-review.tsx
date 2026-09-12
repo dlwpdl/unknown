@@ -10,6 +10,8 @@ import {
   type ActivityFilters, type ActivityKind, type AdminActivityPage, type AdminUserOverview,
 } from '@/lib/admin-user-data';
 import { supabase } from '@/lib/supabase';
+import { nearbyCommunity } from '@/lib/location';
+import { CITIES } from '@/lib/mock';
 
 export function AdminUserReview({ userId, profiles, onStatusChange }: {
   userId: string; profiles: Map<string, AdminProfile>;
@@ -53,6 +55,11 @@ export function AdminUserReview({ userId, profiles, onStatusChange }: {
     {error && <Button label="다시 시도" onPress={() => { setError(null); setRetry((value) => value + 1); }} />}
   </View>;
   const profile = overview.profile;
+  const snapshot = overview.location_snapshot;
+  const measuredAt = snapshot ? Date.parse(snapshot.measured_at) : NaN;
+  // Evaluate the recorded fix at measurement time, not as a fresh/live location.
+  const gpsCityId = snapshot ? nearbyCommunity({ ...snapshot, measuredAt, mocked: false }, measuredAt) : null;
+  const gpsCity = CITIES.find((city) => city.id === gpsCityId);
   return <View style={styles.section}>
     <View style={styles.profileHeading}>
       <View style={styles.avatar} aria-hidden accessibilityElementsHidden><ThemedText type="subtitle" style={styles.accent}>{profile.nickname.trim().slice(0, 1)}</ThemedText></View>
@@ -81,13 +88,14 @@ export function AdminUserReview({ userId, profiles, onStatusChange }: {
     </View>
     <View style={styles.card}>
       <GroupTitle title="위치 · 접속" />
-      <Field label="등록 지역 · 회원 선택" value={[profile.city_id, profile.neighborhood].filter(Boolean).join(' · ') || '미제공'} />
+      <Field label="선호 지역 · 회원 선택" value={[CITIES.find((city) => city.id === profile.city_id)?.name ?? profile.city_id, profile.neighborhood].filter(Boolean).join(' · ') || '미제공'} />
+      <Field label="GPS 기준 가까운 도시" value={snapshot ? gpsCity?.name ?? '연결 가능한 도시 없음 · 지원 범위 또는 정확도 확인 필요' : '보관 중인 기록 없음'} />
       <Field label="최근 기기 위치 기록" value={overview.location_snapshot ? `${overview.location_snapshot.latitude}, ${overview.location_snapshot.longitude} · 반경 ${overview.location_snapshot.accuracy}m` : '보관 중인 기록 없음'} />
       {overview.location_snapshot && <>
         <Field label="위치 측정 시각" value={formatDate(overview.location_snapshot.measured_at)} />
         <Field label="서버 수신 시각" value={formatDate(overview.location_snapshot.received_at)} />
       </>}
-      <ThemedText type="small" style={styles.muted}>동의한 사용자의 로그인·글 작성 시점에 기기가 보고한 위치입니다. 실시간 위치나 신원 인증이 아니며 30일 지난 기록은 조회되지 않습니다.</ThemedText>
+      <ThemedText type="small" style={styles.muted}>선호 지역은 회원이 저장한 선택이며 지역별 회원 수 집계 기준입니다. GPS 도시는 동의한 사용자의 최근 측정 위치에 가까운 지원 커뮤니티입니다. 로그인·글·모임 작성 시점의 기록으로, 실시간 위치나 신원 인증이 아니며 30일 지난 기록은 조회되지 않습니다.</ThemedText>
       <Field label="최근 인증 세션 IP" value={profile.session_ip ?? '기록 없음'} />
       {profile.session_created_at && <Field label="해당 세션 생성" value={formatDate(profile.session_created_at)} />}
       {profile.session_updated_at && <Field label="해당 세션 갱신" value={formatDate(profile.session_updated_at)} />}

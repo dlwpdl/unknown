@@ -14,4 +14,7 @@ test('only fresh, usable fixes recommend an open nearby community', () => {
     { measuredAt: now - 300001 }, { measuredAt: now + 30001 },
   ]) assert.equal(nearbyCommunity({ ...fix, ...changed }, now), null);
   assert.equal(isFreshLocation({ ...fix, measuredAt: now - 300000 }, now), true);
+  const recorded = { ...fix, measuredAt: now - 86400000 };
+  assert.equal(nearbyCommunity(recorded, now), null, 'yesterday is not a live recommendation');
+  assert.equal(nearbyCommunity(recorded, recorded.measuredAt), 'vancouver', 'admin can label a historical snapshot at its recorded time');
 });
