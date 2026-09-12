@@ -12,5 +12,125 @@
     "main.jsbundle": "f71d825198a5c1e8508ad226b9d5700d3b2d47514414a2a9e1fc4c0e989ad351",
     "app": "30fedb8d12c43d3e63f7fd3b7240f475aa607c182f55e3cd073187ddc2a6c48e"
   },
-  "previous_ui": "City picker open, Vancouver selected. Return to this view after QA without changing selection."
+  "previous_ui": "City picker open, Vancouver selected. Return to this view after QA without changing selection.",
+  "verified_at": "2026-09-12T14:04:34-07:00",
+  "native_frame_sample_at": "2026-09-12T14:02:42-07:00",
+  "native_frame_checks": [
+    {
+      "native_ad": "0x15f39ad00",
+      "bounds": [
+        0,
+        0,
+        408,
+        402.3330078125
+      ],
+      "cta_rect": [
+        338.3333435058594,
+        357.6666564941406,
+        69.66665649414062,
+        44
+      ],
+      "cta_bottom": 401.6666564941406,
+      "cta_bottom_inset_pt": 0.666351318359375,
+      "all_six_native_cgrect_contains": true
+    },
+    {
+      "native_ad": "0x15abfb700",
+      "bounds": [
+        0,
+        0,
+        408,
+        402.33349609375
+      ],
+      "cta_rect": [
+        338.3333435058594,
+        357.6666564941406,
+        69.66665649414062,
+        44
+      ],
+      "cta_bottom": 401.6666564941406,
+      "cta_bottom_inset_pt": 0.666839599609375,
+      "all_six_native_cgrect_contains": true
+    },
+    {
+      "native_ad": "0x15d23d400",
+      "bounds": [
+        0,
+        0,
+        408,
+        402.333251953125
+      ],
+      "cta_rect": [
+        338.3333435058594,
+        357.6666564941406,
+        69.66665649414062,
+        44
+      ],
+      "cta_bottom": 401.6666564941406,
+      "cta_bottom_inset_pt": 0.666595458984375,
+      "all_six_native_cgrect_contains": true
+    }
+  ],
+  "native_cgrect_contains_pass": 18,
+  "native_cgrect_contains_fail": 0,
+  "validator_text": "No implementation issues found",
+  "screenshots": [
+    {
+      "file": "ad-full-validator-pass.png",
+      "sha256": "4136068467a85197636ec0e1996f2ce57d85ea0691a4eaa107986cacf60922aa",
+      "dimensions": [
+        1320,
+        2868
+      ],
+      "captured_at": "2026-09-12T14:03:01-07:00",
+      "source_bundle_sha256": "f71d825198a5c1e8508ad226b9d5700d3b2d47514414a2a9e1fc4c0e989ad351"
+    },
+    {
+      "file": "ad-validator-pass.png",
+      "sha256": "53e808da7548c80eea030afe298384e7cd5a7f006022bd921a37776c130b1092",
+      "dimensions": [
+        1320,
+        2868
+      ],
+      "captured_at": "2026-09-12T14:02:44-07:00",
+      "source_bundle_sha256": "f71d825198a5c1e8508ad226b9d5700d3b2d47514414a2a9e1fc4c0e989ad351"
+    },
+    {
+      "file": "before-install.png",
+      "sha256": "bc6aa0d0d466a706b656db6770498eb41b27d31c8fe273feabe602240862a129",
+      "dimensions": [
+        1320,
+        2868
+      ],
+      "captured_at": "2026-09-12T14:01:31-07:00",
+      "source_bundle_sha256": "0875e7b41079fa3cc261d68ac993ab8a68656687ab8223765adebc4963b2510a"
+    },
+    {
+      "file": "existing-pending-chat-safety.png",
+      "sha256": "60a9f385121f97ded8afc328df70d2a19eb4414fc3994a75b9456ad1c4deffab",
+      "dimensions": [
+        1320,
+        2868
+      ],
+      "captured_at": "2026-09-12T14:03:43-07:00",
+      "source_bundle_sha256": "f71d825198a5c1e8508ad226b9d5700d3b2d47514414a2a9e1fc4c0e989ad351"
+    },
+    {
+      "file": "restored-city-picker.png",
+      "sha256": "e53d23f9920ceb118ba3368780e368d9ce481f5bf59ae7001a7a7aecff0187d6",
+      "dimensions": [
+        1320,
+        2868
+      ],
+      "captured_at": "2026-09-12T14:04:33-07:00",
+      "source_bundle_sha256": "f71d825198a5c1e8508ad226b9d5700d3b2d47514414a2a9e1fc4c0e989ad351"
+    }
+  ],
+  "chat_qa": {
+    "existing_pending_notice_visible": true,
+    "active_ended_not_observed": true,
+    "new_conversations_messages_or_level_changes": false
+  },
+  "restored_ui": "City picker open, Vancouver still selected; app session and data retained.",
+  "debugger_detached": true
 }

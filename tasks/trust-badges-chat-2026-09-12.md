@@ -13,3 +13,5 @@
 디자인 근거: BrandKit의 글링 항목은 앞선 조사에서 없어 저장소 테마를 사용한다. Mobbin에서 실제 확인한 [Fiverr 대화](https://mobbin.com/screens/e8cc9b07-958f-408f-8f78-126f036abbf6)의 작은 상단 안전 안내, [Vestiaire Collective 대화](https://mobbin.com/screens/3c373635-7634-4552-b66c-298c89500d3d)의 메시지 앞 주의 문구를 참고했다. Pinterest는 보조 검색으로만 사용했다. Kroma는 API 키 미설정 상태다. 새 의존성·유료 서비스·DB 변경은 없다.
 
 검증: 타입·린트·Node 89/89 통과. 새 주의 안내 검사는 수정 전 실패·수정 후 통과했고, 직접/그룹·요청/활성/종료/거절/취소·인증 1/2/3의 30개 조합을 확인했다. iOS 시뮬레이터/실기기 대상 Release와 Android 서명 APK/AAB, 공개 웹 export 및 관리자 코드 제외 검사도 통과했다. 실제 인증 업체 연동·이메일 인증 조건 변경·새 스토어 배포는 완료 범위에 포함하지 않는다.
+
+최종 iOS 설치본에서 기존 대기 중인 1:1 요청을 읽기만 해 주의 안내 표시를 직접 확인했다. 요청 수락·취소·새 메시지·인증 등급 변경은 실행하지 않았다. 원본 캡처는 비공개 `~/Library/Application Support/gling/operations/existing-pending-chat-safety-2026-09-12.png`에 보관한다.
