@@ -20,6 +20,8 @@ import {
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DailyChip, todayLabel } from '@/components/daily-chip';
+import { FeedAd } from '@/components/feed-ad';
+import { adsSupported, feedAdPosition } from '@/lib/ads';
 import { MyMeetups } from '@/components/my-meetups';
 import { NearbyCityCard } from '@/components/nearby-city-card';
 import { PostCard } from '@/components/post-card';
@@ -464,7 +466,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               </View>
           }
           ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText> : null}
-          renderItem={({ item }) => item == null ? (
+          renderItem={({ item, index }) => item == null ? (
             <View style={styles.header}>
               {isAuthed && !meetupsOnly && <NearbyCityCard onSelect={(id) => { const next = CITIES.find((item) => item.id === id); if (next) void selectCity(next); }} />}
               <View style={styles.journalIntro}>
@@ -568,12 +570,12 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               }
             </View>
           ) : (
-            <PostCard
+            <View><PostCard
               post={item}
               onPress={() => openDetail(item)}
               onJoin={() => void onJoin(item)}
               onHashtag={openSearch}
-            />
+            />{!meetupsOnly && adsSupported && feedAdPosition(index - 1) && <FeedAd />}</View>
           )}
         />
 

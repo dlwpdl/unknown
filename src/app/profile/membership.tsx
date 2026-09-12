@@ -33,7 +33,7 @@ export default function MembershipScreen() {
   }, [auth.isAuthed, refresh]));
   const [selection, setSelection] = useState<{ tier: MembershipOffer['tier']; period: MembershipOffer['period'] }>({ tier: 'premium', period: 'month' });
   const [rulesExpanded, setRulesExpanded] = useState(false);
-  const [plansExpanded, setPlansExpanded] = useState(false);
+  const [plansExpanded, setPlansExpanded] = useState(true);
   const selectedOffer = offers.find((offer) => offer.tier === selection.tier && offer.period === selection.period)
     ?? offers.find((offer) => offer.tier === selection.tier);
   const period = selectedOffer?.period ?? selection.period;

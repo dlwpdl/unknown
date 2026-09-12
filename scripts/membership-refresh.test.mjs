@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 test('store catalog failure preserves synchronized membership and clears stale purchase offers', async () => {
-  const hooks = []; let cursor = 0, catalogFails = false, rpcFails = false, synced = 0;
+  const hooks = []; let cursor = 0, catalogFails = false, catalogEmpty = false, rpcFails = false, synced = 0;
   const current = { tier: 'premium', productId: 'premium', postLimit: 5, postsUsed: 1 };
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/lib/membership-provider.tsx', import.meta.url), 'utf8'), {
@@ -28,7 +28,7 @@ test('store catalog failure preserves synchronized membership and clears stale p
     if (name === '@/lib/purchases') return { purchaseUnavailableReason: () => null, withPurchases: async (_, fn) => fn({
       getOfferings: async () => {
         if (catalogFails) throw new Error('STORE_PRODUCTS_UNAVAILABLE');
-        return { current: { availablePackages: [{ identifier: 'premium' }] } };
+        return { current: { availablePackages: catalogEmpty ? [] : [{ identifier: 'premium' }] } };
       },
     }) };
     if (name === '@/lib/supabase') return { supabase: {
@@ -49,6 +49,9 @@ test('store catalog failure preserves synchronized membership and clears stale p
   assert.match(value.error, /구독 상품/);
   assert.equal(value.loading, false);
   assert.equal(value.offersLoading, false);
+  catalogFails = false; catalogEmpty = true;
+  await value.refresh();
+  assert.match(render().error, /스토어.*상품/, 'an empty store catalog must not silently look ready');
   rpcFails = true;
   await value.refresh();
   assert.match(render().error, /멤버십 정보/);

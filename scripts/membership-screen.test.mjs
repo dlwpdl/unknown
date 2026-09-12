@@ -6,7 +6,7 @@ import ts from 'typescript';
 
 import { MEMBERSHIP_LIMITS } from '../src/lib/membership.ts';
 
-test('membership overview reveals details on demand and preserves quota and checkout safeguards', () => {
+test('membership opens checkout immediately and preserves quota and purchase safeguards', () => {
   let states = [], cursor = 0, restored = 0, purchased = 0;
   const value = { membership: { tier: 'free', postsUsed: 0, postLimit: 1 }, offers: [], loading: false,
     offersLoading: false, busy: false, purchaseUnavailableReason: null,
@@ -45,7 +45,8 @@ test('membership overview reveals details on demand and preserves quota and chec
   let tree = render();
   assert.equal(nodes(tree).filter(node => node.type === 'RelationshipSlotCard').length, 2);
   assert.match(text(tree), /1편 남음/);
-  assert.doesNotMatch(text(tree), /처음 요청한 사람|구독 준비 중|구독하기/);
+  assert.doesNotMatch(text(tree), /처음 요청한 사람/);
+  assert.equal(button(tree, '구독 준비 중').props.disabled, true, 'checkout is visible immediately but requires a store offer');
   assert.equal(button(tree, '자리 사용 · 24시간 잠금 안내').props.accessibilityState.expanded, false);
   assert.equal(button(tree, '자리 사용 · 24시간 잠금 안내').props['aria-expanded'], false);
   button(tree, '자리 사용 · 24시간 잠금 안내').props.onPress();
@@ -55,6 +56,9 @@ test('membership overview reveals details on demand and preserves quota and chec
   assert.match(text(tree), /처음 요청한 사람의 자리만 24시간/);
   button(tree, '자리 사용 · 24시간 잠금 안내').props.onPress();
   assert.doesNotMatch(text(render()), /처음 요청한 사람/);
+  button(tree, '멤버십 비교베이직 · 플러스 · 프리미엄').props.onPress();
+  tree = render();
+  assert.doesNotMatch(text(tree), /구독 준비 중/);
   button(tree, '멤버십 비교베이직 · 플러스 · 프리미엄').props.onPress();
   tree = render();
   assert.equal(button(tree, '구독 준비 중').props.disabled, true);

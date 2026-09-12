@@ -75,8 +75,10 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
           const available = await withPurchases(userId, (sdk) => sdk.getOfferings());
           if (currentUser.current !== userId || generation.current !== requestGeneration) return;
           const items = available.current?.availablePackages ?? [];
+          const offers = items.map(membershipOffer).filter((offer): offer is MembershipOffer => offer !== null);
           packages.current = { userId, values: new Map(items.map((item) => [item.identifier, item])) };
-          setOffers({ userId, values: items.map(membershipOffer).filter((offer): offer is MembershipOffer => offer !== null) });
+          setOffers({ userId, values: offers });
+          if (!offers.length) setError('스토어에서 구매 가능한 구독 상품을 받지 못했어요. 최신 테스트 앱과 스토어 계정을 확인한 뒤 다시 시도해 주세요.');
         } catch {
           if (currentUser.current === userId && generation.current === requestGeneration) setError('구독 상품을 불러오지 못했어요. 현재 멤버십은 계속 이용할 수 있어요.');
         }

@@ -16,6 +16,7 @@ import { CONTACT_EMAIL } from '@/lib/legal-documents';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useMembership } from '@/lib/membership-provider';
 import { supabase } from '@/lib/supabase';
+import { adsSupported, showAdPrivacyOptions, testAds } from '@/lib/ads';
 
 export default function SettingsScreen() {
   const theme = useTheme();
@@ -98,6 +99,11 @@ export default function SettingsScreen() {
           </View>
 
           <PersonalInfoCard userId={me.id} />
+          {adsSupported && !testAds && <Pressable accessibilityRole="button" style={styles.row} onPress={() => {
+            void showAdPrivacyOptions().then((shown) => {
+              if (!shown) Alert.alert('광고 개인정보 설정', '현재 지역에서 변경할 광고 동의 설정이 없습니다. 글링은 개인 맞춤 광고를 요청하지 않습니다.');
+            }).catch(() => Alert.alert('광고 설정을 열지 못했어요', '잠시 후 다시 시도해 주세요.'));
+          }}><ThemedText>광고 개인정보 설정</ThemedText></Pressable>}
 
           <ThemedText type="smallBold" themeColor="textSecondary">
             {t.profile.feedback}
