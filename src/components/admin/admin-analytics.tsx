@@ -80,7 +80,7 @@ function Overview({ data }: { data: AdminAnalytics | null }) {
     <View style={styles.breakdowns}>
       <Distribution title="현재 멤버십" rows={data?.memberships} label={tierLabel} />
       <Distribution title="회원 도시" rows={data?.cities} label={cityLabel} />
-      <Distribution title="연령대" rows={data?.ages} label={ageLabel} note="제공된 연령대만 집계합니다. 미확인 회원을 포함한 전체 분포입니다." />
+      <Distribution title="연령대" rows={data?.ages} label={ageLabel} note="입력한 생년월일에서 계산한 만 나이 기준입니다. 미입력 회원은 미확인으로 표시합니다." />
     </View>
   </>;
 }
@@ -114,7 +114,7 @@ function Members({ data, filters, onUser, onPage }: { data: AdminAnalytics | nul
       <ThemedText type="small" style={styles.muted}>{data ? `${number(data.counts.members)}명 중 ${rows.length ? `${filters.offset + 1}–${filters.offset + rows.length}` : '0'}명` : '운영 데이터 미연결'} · {ADMIN_PAGE_SIZE}명씩</ThemedText>
       <View style={styles.choices}><Action label="이전 회원" disabled={!data || filters.offset === 0} onPress={() => onPage(Math.max(0, filters.offset - ADMIN_PAGE_SIZE))} /><Action label="다음 회원" disabled={!data || filters.offset + rows.length >= data.counts.members} onPress={() => onPage(filters.offset + ADMIN_PAGE_SIZE)} /></View>
     </View>
-    <View style={styles.breakdowns}><Distribution title="현재 멤버십" rows={data?.memberships} label={tierLabel} /><Distribution title="연령대" rows={data?.ages} label={ageLabel} note="미제공 연령대는 추정하지 않습니다." /></View>
+    <View style={styles.breakdowns}><Distribution title="현재 멤버십" rows={data?.memberships} label={tierLabel} /><Distribution title="연령대" rows={data?.ages} label={ageLabel} note="본인 입력 생년월일 기준이며, 미입력 연령은 추정하지 않습니다." /></View>
   </View>;
 }
 

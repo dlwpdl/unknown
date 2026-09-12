@@ -9,6 +9,7 @@ export const ACTIVITY_KINDS = {
 export type ActivityKind = keyof typeof ACTIVITY_KINDS;
 export type AdminDirectoryProfile = AdminProfile & {
   email: string | null; login_name: string | null; email_confirmed_at: string | null;
+  full_name: string | null; date_of_birth: string | null; age: number | null; personal_info_updated_at: string | null;
   session_ip: string | null; session_created_at: string | null; session_updated_at: string | null;
   last_sign_in_at: string | null; auth_role: string; providers: string[];
   account_type: 'example' | 'admin' | 'review' | 'member';
@@ -18,7 +19,7 @@ export type AdminUserDirectory = {
   rows: AdminDirectoryProfile[]; total: number; viewer: { id: string; email: string | null; role: string };
 };
 export type AdminUserOverview = {
-  profile: AdminDirectoryProfile; identity_verified: false; date_of_birth: null; age: null; generatedAt: string;
+  profile: AdminDirectoryProfile; identity_verified: false; date_of_birth: string | null; age: number | null; generatedAt: string;
   location_snapshot?: { latitude: number; longitude: number; accuracy: number; measured_at: string; received_at: string; kind: 'login' | 'post' | 'meetup' } | null;
   identities: { provider: string; provider_id: string; created_at: string; last_sign_in_at: string | null }[];
   counts: { kind: Exclude<ActivityKind, 'all'>; count: number }[];

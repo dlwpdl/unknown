@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { NearbyCityCard } from '@/components/nearby-city-card';
+import { PersonalInfoCard } from '@/components/personal-info-card';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -95,6 +96,8 @@ export default function SettingsScreen() {
               <ThemedText type="small" themeColor="textSecondary">{me.nickname}</ThemedText>
             </View>
           </View>
+
+          <PersonalInfoCard userId={me.id} />
 
           <ThemedText type="smallBold" themeColor="textSecondary">
             {t.profile.feedback}

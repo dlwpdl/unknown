@@ -1,17 +1,19 @@
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { NearbyCityCard } from '@/components/nearby-city-card';
+import { PersonalInfoFields, type PersonalInfoDraft } from '@/components/personal-info-fields';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { CITIES } from '@/lib/mock';
 import { generateNickname } from '@/lib/nickname';
+import { PERSONAL_INFO_VERSION, validatePersonalInfo } from '@/lib/personal-info';
 import { supabase } from '@/lib/supabase';
 
 export type CompletedProfile = {
@@ -51,6 +53,10 @@ export function ProfileOnboarding({
   const [accepted, setAccepted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [personalInfo, setPersonalInfo] = useState<PersonalInfoDraft>({ fullName: '', dateOfBirth: '', accepted: false });
+  const active = useRef(true);
+  const savingLock = useRef(false);
+  useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   const consentOnly = existingProfile != null;
   const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/$/, '');
 
@@ -83,6 +89,7 @@ export function ProfileOnboarding({
   };
 
   const save = async () => {
+    if (savingLock.current) return;
     const cleanNickname = nickname.trim();
     if (!accepted) {
       setError(t.onboarding.errorConsent);
@@ -92,7 +99,13 @@ export function ProfileOnboarding({
       setError(t.onboarding.errorNickname);
       return;
     }
+    const fullName = personalInfo.fullName.trim();
+    const dateOfBirth = personalInfo.dateOfBirth.trim();
+    const personalInfoError = consentOnly ? null : validatePersonalInfo(fullName, dateOfBirth);
+    if (personalInfoError) { setError(personalInfoError); return; }
+    if (!consentOnly && fullName && !personalInfo.accepted) { setError('이름·생년월일 수집·이용에 별도로 동의해주세요. 입력하지 않아도 가입할 수 있어요.'); return; }
 
+    savingLock.current = true;
     setSaving(true);
     setError(null);
     let avatarPath: string | null = existingProfile?.avatar_path ?? null;
@@ -107,12 +120,20 @@ export function ProfileOnboarding({
         if (upload.error) throw upload.error;
       }
 
-      const created = await supabase.rpc('create_profile_with_consent', {
+      if (!active.current) return;
+      const created = await supabase.rpc(consentOnly ? 'create_profile_with_consent' : 'create_profile_with_personal_info', {
         p_nickname: cleanNickname,
         p_city_id: cityId,
         p_avatar_path: avatarPath,
         p_version: CONSENT_VERSION,
+        ...(!consentOnly ? {
+          p_full_name: fullName || null,
+          p_date_of_birth: dateOfBirth || null,
+          p_personal_info_version: fullName ? PERSONAL_INFO_VERSION : null,
+          p_user_id: userId,
+        } : {}),
       });
+      if (!active.current) return;
       if (created.error) {
         setError(created.error.code === '23505' ? t.onboarding.errorDuplicate : t.onboarding.errorGeneric);
         return;
@@ -126,9 +147,10 @@ export function ProfileOnboarding({
         ai_safety_consent_at: new Date().toISOString(),
       });
     } catch {
-      setError(t.onboarding.errorGeneric);
+      if (active.current) setError(t.onboarding.errorGeneric);
     } finally {
-      setSaving(false);
+      savingLock.current = false;
+      if (active.current) setSaving(false);
     }
   };
 
@@ -207,9 +229,12 @@ export function ProfileOnboarding({
               </View>
             </View>}
 
+            {!consentOnly && <PersonalInfoFields value={personalInfo} disabled={saving} onChange={(value) => { setPersonalInfo(value); setError(null); }} />}
+
             <Pressable
               onPress={() => { setAccepted((current) => !current); setError(null); }}
               accessibilityRole="checkbox"
+              aria-checked={accepted}
               accessibilityState={{ checked: accepted }}
               style={[styles.consent, { backgroundColor: theme.card, borderColor: accepted ? theme.accent : theme.line }]}>
               <View style={[styles.checkbox, { backgroundColor: accepted ? theme.accent : 'transparent', borderColor: accepted ? theme.accent : theme.line }]}>

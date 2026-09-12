@@ -41,7 +41,7 @@ export function AdminUserDirectoryPanel({ onUser, refreshData }: { onUser: (id: 
   return <View style={styles.section}>
     <View style={styles.heading}>
       <ThemedText type="title" accessibilityRole="header" style={styles.title}>사용자</ThemedText>
-      <ThemedText type="small" style={styles.muted}>닉네임·이메일·로그인 프로필 이름·회원 ID로 전체 회원을 검색합니다.</ThemedText>
+      <ThemedText type="small" style={styles.muted}>닉네임·이메일·입력한 이름·로그인 프로필 이름·회원 ID로 전체 회원을 검색합니다.</ThemedText>
     </View>
     {result && <View style={styles.viewer}><ThemedText selectable type="small" style={styles.muted}>현재 관리자 · {result.viewer.email ?? result.viewer.id} · {result.viewer.role}</ThemedText></View>}
     <View style={styles.searchRow}>
@@ -58,10 +58,13 @@ export function AdminUserDirectoryPanel({ onUser, refreshData }: { onUser: (id: 
         <View style={[styles.rowContent, compact && styles.rowContentCompact]}>
           <View style={styles.identity}>
             <ThemedText type="smallBold">{profile.nickname}</ThemedText>
+            <ThemedText type="small">{profile.full_name ?? '입력 이름 미제공'}</ThemedText>
+            <ThemedText type="small" style={styles.muted}>{profile.date_of_birth ? `${profile.date_of_birth}${profile.age != null ? ` · 만 ${profile.age}세` : ''}` : '생년월일 미제공'}</ThemedText>
             <ThemedText type="small" style={styles.id}>{profile.id}</ThemedText>
           </View>
           <View style={styles.login}>
-            <ThemedText type="small">{profile.login_name ?? '이름 미제공'} · {profile.providers.join(' · ') || '연결 공급자 없음'}</ThemedText>
+            <ThemedText type="small">로그인 이름 · {profile.login_name ?? '미제공'}</ThemedText>
+            <ThemedText type="small" style={styles.muted}>{profile.providers.join(' · ') || '연결 공급자 없음'}</ThemedText>
             <ThemedText type="small" style={styles.muted}>{profile.email ?? '이메일 미제공'}</ThemedText>
           </View>
           <View style={[styles.region, compact && styles.regionCompact]}>

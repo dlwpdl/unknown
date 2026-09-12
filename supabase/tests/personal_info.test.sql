@@ -1,0 +1,62 @@
+begin;
+select plan(30);
+select has_function('public','get_my_personal_info',array[]::text[],'members can read their private information');
+insert into auth.users(id,email,raw_app_meta_data,raw_user_meta_data) values
+('99990000-1111-1111-1111-111111111111','personal-info@example.test','{}','{"birthdate":"1980-01-01","full_name":"Social Name"}'),
+('99990000-2222-2222-2222-222222222222','personal-admin@example.test','{"role":"admin"}','{}'),
+('99990000-3333-3333-3333-333333333333','personal-new@example.test','{}','{}');
+insert into public.profiles(id,nickname,city_id) values
+('99990000-1111-1111-1111-111111111111','개인정보검사','vancouver'),
+('99990000-2222-2222-2222-222222222222','개인정보관리자','vancouver');
+select set_config('request.jwt.claims','{"sub":"99990000-1111-1111-1111-111111111111","role":"authenticated"}',true);
+set local role authenticated;
+select is(public.get_my_personal_info()->'date_of_birth','null'::jsonb,'unapproved metadata is not backfilled');
+select throws_ok($$select public.save_my_personal_info('회원 이름','2000-02-29',null,auth.uid())$$,'P0001','PERSONAL_INFO_CONSENT_REQUIRED','explicit consent version is required');
+select throws_ok($$select public.save_my_personal_info('회원 이름','2000-02-29','2026-09-12','99990000-2222-2222-2222-222222222222')$$,'P0001','AUTH_CONTEXT_CHANGED','account switching cannot save against another account');
+select throws_ok($$select public.save_my_personal_info('', '2000-01-01','2026-09-12',auth.uid())$$,'P0001','INVALID_PERSONAL_INFO','partial input is rejected');
+select throws_ok($$select public.save_my_personal_info(E'A\nB','2000-01-01','2026-09-12',auth.uid())$$,'P0001','INVALID_PERSONAL_INFO','control characters are rejected');
+select throws_ok($$select public.save_my_personal_info('회원',(now() at time zone 'utc')::date+1,'2026-09-12',auth.uid())$$,'P0001','INVALID_PERSONAL_INFO','future birthdays are rejected');
+select throws_ok($$select public.save_my_personal_info('회원','2025-02-29','2026-09-12',auth.uid())$$,'22008',null,'impossible calendar date is rejected');
+select lives_ok($$select public.save_my_personal_info(' 王 ','2000-02-29','2026-09-12',auth.uid())$$,'self-reported personal info can be saved');
+select is(public.get_my_personal_info()->>'full_name','王','international names are trimmed');
+select is((public.get_my_personal_info()->>'age')::int,extract(year from age((now() at time zone 'utc')::date,date '2000-02-29'))::int,'age is computed from the UTC date');
+select throws_ok($$select * from private.personal_info$$,'42501',null,'direct member access is forbidden');
+select throws_ok($$select public.get_admin_user_overview(auth.uid())$$,'P0001','ADMIN_REQUIRED','member cannot use the administrator path');
+reset role;
+select ok(not exists(select 1 from information_schema.columns where table_schema='public' and table_name='profiles' and column_name in ('full_name','date_of_birth')),'public profile has no private name or date columns');
+select set_config('request.jwt.claims','{"sub":"99990000-2222-2222-2222-222222222222","role":"authenticated","app_metadata":{"role":"admin"}}',true);
+set local role authenticated;
+select is(public.get_my_personal_info()->'full_name','null'::jsonb,'own read never returns another member data');
+select is(public.get_admin_user_overview('99990000-1111-1111-1111-111111111111')#>>'{profile,full_name}','王','audited overview returns input name');
+select is(public.get_admin_user_overview('99990000-1111-1111-1111-111111111111')->>'date_of_birth','2000-02-29','overview returns real date rather than hard-coded null');
+select is(public.get_admin_user_overview('99990000-1111-1111-1111-111111111111')->>'identity_verified','false','input never claims verified identity');
+select is(public.search_admin_users('王')->>'total','1','admin can find a member by input name');
+select ok(exists(select 1 from jsonb_array_elements(public.get_admin_analytics(p_include_internal=>true)->'ages') a where a->>'key'=((extract(year from age((now() at time zone 'utc')::date,date '2000-02-29'))::int/10)*10)::text||'대' and (a->>'count')::int>0),'age distribution uses declared birthday');
+reset role;
+select ok(exists(select 1 from public.admin_access_logs where actor_id='99990000-2222-2222-2222-222222222222' and subject_user_id='99990000-1111-1111-1111-111111111111' and scope='user_detail'),'private identity reads are audited');
+select set_config('request.jwt.claims','{"sub":"99990000-1111-1111-1111-111111111111","role":"authenticated"}',true);
+set local role authenticated;
+select public.save_my_personal_info(null,null,'2026-09-12',auth.uid());
+select is(public.get_my_personal_info()->'date_of_birth','null'::jsonb,'withdrawal removes stored information');
+select public.save_my_personal_info('다시 저장','2000-01-01','2026-09-12',auth.uid());
+reset role;
+update public.profiles set account_status='deleted' where id='99990000-1111-1111-1111-111111111111';
+select is((select count(*)::int from private.personal_info where user_id='99990000-1111-1111-1111-111111111111'),0,'account deletion purges identity before external account cleanup');
+select set_config('request.jwt.claims','{"sub":"99990000-3333-3333-3333-333333333333","role":"authenticated"}',true);
+set local role authenticated;
+select throws_ok($$select public.create_profile_with_personal_info('가입검사','vancouver',null,'2026-09-02','신규회원','2000-01-01',null,auth.uid())$$,'P0001','PERSONAL_INFO_CONSENT_REQUIRED','invalid personal consent rolls back onboarding');
+reset role;
+select ok(not exists(select 1 from public.profiles where id='99990000-3333-3333-3333-333333333333'),'failed atomic onboarding leaves no partial profile');
+set local role authenticated;
+select lives_ok($$select public.create_profile_with_personal_info('가입검사','vancouver',null,'2026-09-02',null,null,null,auth.uid())$$,'onboarding works without optional personal information');
+select lives_ok($$select public.save_my_personal_info('New Member','2000-01-01','2026-09-12',auth.uid())$$,'existing member can later add personal information');
+select public.save_my_personal_info('Updated Member','2001-02-03','2026-09-12',auth.uid());
+select is(public.get_my_personal_info()->>'date_of_birth','2001-02-03','corrections replace the current value');
+reset role;
+delete from auth.users where id='99990000-3333-3333-3333-333333333333';
+select is((select count(*)::int from private.personal_info),0,'hard account deletion cascades private information');
+set local role anon;
+select throws_ok($$select public.get_my_personal_info()$$,'42501',null,'anonymous personal-info reads are forbidden');
+reset role;
+select * from finish();
+rollback;

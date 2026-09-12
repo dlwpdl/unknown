@@ -124,3 +124,12 @@
 - [x] Apply Apple Design to admin layout, member directory/detail and controls.
 - [ ] Validate GPS on devices and update store disclosures for the next native binary (not build 11).
 - Evidence: `tasks/location-admin-2026-09-12.md`.
+
+## 2026-09-12 — Private member name and birth date
+
+- [x] Private self-reported name/DOB RPCs, computed age, validation and deletion/security checks.
+- [x] Optional explicit-consent entry in onboarding/settings and audited admin name/DOB/age display.
+- [x] Build, browser verification and deployment record.
+- [ ] Kakao additional name/birthday/birthyear permissions, then verified-provider import. D-U-N-S/Biz app registration is already complete.
+- [ ] Next native binary: device input/accessibility checks and store privacy declarations.
+- Evidence: `tasks/personal-info-2026-09-12.md`.

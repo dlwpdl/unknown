@@ -198,3 +198,7 @@ Reuse the existing Eunsense Studio Play Console account and `dlwpdl/gling`. Chec
 Follow docs/specs/one-shot-location.md: foreground GPS, nearby community choice, private consent/30-day records, audited admin history, disclosure and native verification.
 
 Apple Design admin refinement and verification: `tasks/location-admin-2026-09-12.md`. Native GPS acceptance checks are tracked separately from backend/admin delivery.
+
+## 2026-09-12 — Private member name and birth date
+
+Follow `docs/specs/personal-info.md`: private storage and date/security checks → optional onboarding/settings entry and audited admin display → browser/build verification and additive deployment. No paid identity verification; no fabricated/backfilled personal data.

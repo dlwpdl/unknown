@@ -64,10 +64,12 @@ export function AdminUserReview({ userId, profiles, onStatusChange }: {
       <Field label="회원 ID" value={profile.id} />
       <Field label="로그인 이메일" value={profile.email ?? '미제공'} />
       <Field label="이메일 확인" value={profile.email_confirmed_at ? formatDate(profile.email_confirmed_at) : '확인 기록 없음'} />
+      <Field label="입력한 이름 · 비공개" value={profile.full_name ?? '미제공'} />
+      <Field label="생년월일 · 만 나이" value={profile.date_of_birth ? `${profile.date_of_birth}${profile.age != null ? ` · 만 ${profile.age}세` : ''}` : '미제공'} />
+      {profile.personal_info_updated_at && <Field label="개인정보 갱신" value={formatDate(profile.personal_info_updated_at)} />}
       <Field label="로그인 프로필 이름" value={profile.login_name ?? '미제공'} />
-      <ThemedText type="small" style={styles.muted}>프로필 이름은 변경 가능한 계정 정보입니다. 실명인증 결과가 아닙니다.</ThemedText>
+      <ThemedText type="small" style={styles.muted}>이름·생년월일은 본인이 별도 동의 후 입력한 정보입니다. 소셜 로그인 프로필 이름과 분리되며, 두 정보 모두 실명인증 결과가 아닙니다.</ThemedText>
       <Field label="실명인증" value="미도입 · 신뢰 단계와 별개" />
-      <Field label="생년월일 · 나이" value="미수집" />
       <Field label="권한 · 신뢰" value={`${profile.auth_role} · 신뢰 ${profile.verification_level}`} />
       <Field label="가입" value={formatDate(profile.created_at)} />
       <Field label="최근 로그인" value={profile.last_sign_in_at ? formatDate(profile.last_sign_in_at) : '기록 없음'} />
