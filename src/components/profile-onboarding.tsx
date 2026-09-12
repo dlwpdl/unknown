@@ -6,6 +6,7 @@ import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, TextInput,
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { NearbyCityCard } from '@/components/nearby-city-card';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
@@ -188,6 +189,7 @@ export function ProfileOnboarding({
 
             {!consentOnly && <View style={styles.field}>
               <ThemedText type="smallBold">{t.onboarding.city}</ThemedText>
+              <NearbyCityCard onSelect={setCityId} />
               <View style={styles.cityRow}>
                 {CITIES.filter(({ state }) => state === 'open').map((city) => {
                   const selected = city.id === cityId;

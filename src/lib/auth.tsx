@@ -16,13 +16,14 @@ import { t } from '@/i18n/ko';
 import { isAdminRole } from '@/lib/admin';
 import { canUseDevPasswordLogin, getKakaoAuthSessionUrl, getOAuthCallbackPath, getOAuthCode } from '@/lib/kakao-auth';
 import { CONTACT_EMAIL } from '@/lib/legal-documents';
+import { CommunityLocationProvider } from '@/lib/location-provider';
 import { signInAdminAccount, signInReviewAccount, supabase } from '@/lib/supabase';
 import type { TrustLevel } from '@/lib/trust';
 
 type Level = 0 | 1;
 type OAuthProvider = 'kakao' | 'google';
 
-type Me = { id: string; nickname: string; photoUri: string | null };
+type Me = { id: string; nickname: string; photoUri: string | null; cityId?: string };
 
 type ProfileRecord = Pick<CompletedProfile, 'id' | 'nickname' | 'city_id' | 'avatar_path'> & {
   verification_level?: TrustLevel;
@@ -65,6 +66,8 @@ export function useAuth(): AuthValue {
 export function AuthProvider({ children, publicPage = false }: { children: ReactNode; publicPage?: boolean }) {
   const [session, setSession] = useState<Session | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
+  const [loginKey, setLoginKey] = useState<string | null>(null);
+  const observedLogin = useRef<string | null>(null);
   const [signingIn, setSigningIn] = useState(false);
   const signInInFlight = useRef(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -106,8 +109,12 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       setSession(data.session);
       setSessionReady(true);
     });
-    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!active) return;
+      const nextLogin = nextSession?.user.last_sign_in_at ?? null;
+      if (event === 'SIGNED_IN' && nextLogin && nextLogin !== observedLogin.current) setLoginKey(nextLogin);
+      if (!nextSession) setLoginKey(null);
+      observedLogin.current = nextLogin;
       setSession(nextSession);
       setSessionReady(true);
     });
@@ -301,7 +308,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
   const value = useMemo<AuthValue>(
     () => ({
       level,
-      me: { id: session?.user.id ?? 'me', nickname: activeProfile?.nickname ?? socialNickname ?? '밴쿠버뉴비', photoUri: activeProfile ? profilePhotoUri ?? socialPhoto : socialPhoto },
+      me: { id: session?.user.id ?? 'me', nickname: activeProfile?.nickname ?? socialNickname ?? '밴쿠버뉴비', photoUri: activeProfile ? profilePhotoUri ?? socialPhoto : socialPhoto, cityId: activeProfile?.city_id },
       isAuthed: level >= 1,
       isVerified: trustLevel >= 2,
       trustLevel,
@@ -346,6 +353,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
 
   return (
     <AuthContext.Provider value={value}>
+      <CommunityLocationProvider userId={!publicPage && !lockedStatus ? session?.user.id ?? null : null} loginKey={loginKey}>
       {children}
       <Modal visible={!publicPage && visible} animationType="slide" onRequestClose={() => setVisible(false)}>
         <SafeAreaProvider>
@@ -386,6 +394,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
           onComplete={completeProfile}
         />
       )}
+      </CommunityLocationProvider>
     </AuthContext.Provider>
   );
 }

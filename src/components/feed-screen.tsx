@@ -21,6 +21,7 @@ import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-
 
 import { DailyChip, todayLabel } from '@/components/daily-chip';
 import { MyMeetups } from '@/components/my-meetups';
+import { NearbyCityCard } from '@/components/nearby-city-card';
 import { PostCard } from '@/components/post-card';
 import { PostDetail } from '@/components/post-detail';
 import { TabContent } from '@/components/tab-content';
@@ -31,6 +32,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
+import { nearbyCommunity, type LocationFix } from '@/lib/location';
+import { useCommunityLocation } from '@/lib/location-provider';
 import { parseAiDraftResponse } from '@/lib/ai-draft';
 import {
   createCommunityPost,
@@ -63,6 +66,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [posts, setPosts] = useState<Post[]>(MOCK_POSTS);
   const [quota, setQuota] = useState(INITIAL_QUOTA);
   const { city, setCity } = useCommunityCity();
+  const location = useCommunityLocation();
+  const [draftCity, setDraftCity] = useState(city);
+  const draftLocation = useRef<(LocationFix & { userId: string }) | null>(null);
+  const writerRevision = useRef(0);
+  const manualDraftCity = useRef(false);
   const [cityPicker, setCityPicker] = useState(false);
   const [writing, setWriting] = useState(false);
   const [tag, setTag] = useState<Tag>(TAGS[0]);
@@ -251,8 +259,23 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       showPostLimit();
       return;
     }
+    if (writing) return;
+    const revision = ++writerRevision.current;
+    manualDraftCity.current = false;
+    draftLocation.current = null;
+    setDraftCity(city);
     setWriting(true);
-  }, [isAuthed, promptLogin, quota.max, quota.used, showPostLimit]);
+    void location.capture().then((fix) => {
+      if (revision !== writerRevision.current) return;
+      draftLocation.current = fix;
+      const recommended = fix && CITIES.find((item) => item.id === nearbyCommunity(fix));
+      if (recommended && !manualDraftCity.current) setDraftCity(recommended);
+    });
+  }, [isAuthed, promptLogin, quota.max, quota.used, showPostLimit, writing, city, location]);
+
+  useEffect(() => {
+    if (!writing) { writerRevision.current++; draftLocation.current = null; }
+  }, [writing]);
 
   useEffect(() => {
     if (compose !== '1') return;
@@ -305,7 +328,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         body: {
           imageBase64: draftImage.base64,
           mimeType: draftImage.mimeType,
-          cityName: city.name,
+          cityName: draftCity.name,
           selectedCategory: tag.slug,
           titleHint: title.trim() || undefined,
           bodyHint: body.trim() || undefined,
@@ -336,13 +359,15 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     try {
       const post = await createCommunityPost(supabase, {
         userId: me.id,
-        cityId: city.id,
+        cityId: draftCity.id,
         tag,
         title: title.trim(),
         body: body.trim(),
         hashtags,
         image: draftImage ? { base64: draftImage.base64, mimeType: draftImage.mimeType } : undefined,
       });
+      void location.record(draftLocation.current, post.id);
+      setCity(draftCity);
       setPosts((prev) => [post, ...prev.filter(({ id }) => id !== post.id)]);
       if (post.room) DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
       const nextQuota = await loadDailyQuota(supabase);
@@ -441,6 +466,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText> : null}
           renderItem={({ item }) => item == null ? (
             <View style={styles.header}>
+              {isAuthed && !meetupsOnly && <NearbyCityCard onSelect={(id) => { const next = CITIES.find((item) => item.id === id); if (next) setCity(next); }} />}
               <View style={styles.journalIntro}>
                 <ThemedText type="smallBold" themeColor="textSecondary" style={styles.journalDate}>{todayLabel()}</ThemedText>
                 <ThemedText accessibilityRole="header" style={styles.journalTitle}>{meetupsOnly ? t.feed.meetupTitle : t.feed.journalTitle}</ThemedText>
@@ -774,6 +800,18 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 keyboardShouldPersistTaps="handled"
                 contentContainerStyle={styles.writerScroll}>
                 <View style={styles.writerQuota}><DailyChip quota={quota} /></View>
+                <ThemedText type="smallBold">이 글을 나눌 도시 · {draftCity.name}</ThemedText>
+                <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                  {CITIES.filter((item) => item.state === 'open').map((item) => <Pressable key={item.id} accessibilityRole="button" accessibilityState={{ selected: draftCity.id === item.id }}
+                    onPress={() => { manualDraftCity.current = true; setDraftCity(item); }}
+                    style={[styles.secondaryButton, { backgroundColor: draftCity.id === item.id ? theme.backgroundElement : theme.card }]}>
+                    <ThemedText type="smallBold">{item.name}</ThemedText>
+                  </Pressable>)}
+                </View>
+                {writing && <NearbyCityCard onFix={(fix) => { draftLocation.current = fix; }} onSelect={(id) => {
+                  const next = CITIES.find((item) => item.id === id);
+                  if (next) { manualDraftCity.current = true; setDraftCity(next); }
+                }} />}
                 <View style={[styles.aiCard, { backgroundColor: theme.card, borderColor: theme.line }]}>
                   <View style={styles.aiCopy}>
                     <ThemedText type="smallBold">{t.write.aiTitle}</ThemedText>

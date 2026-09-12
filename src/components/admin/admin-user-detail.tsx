@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { AdminUserReview } from '@/components/admin/admin-user-review';
@@ -26,22 +26,23 @@ export function AdminUserDetail({
   onClose: () => void;
 }) {
   const activity = userId && localData ? getLocalAdminUserActivity(localData, userId) : null;
+  const compact = useWindowDimensions().width < 560;
 
   return (
     <Modal visible={userId != null} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <View style={styles.sheet} accessibilityViewIsModal accessibilityLabel="사용자 전체 활동">
-          <View style={styles.header}>
+        <View nativeID="gling-admin-detail" style={styles.sheet} accessibilityViewIsModal accessibilityLabel="사용자 전체 활동">
+          <View style={[styles.header, compact && styles.headerCompact]}>
             <View style={{ flex: 1, minWidth: 0 }}>
-              <ThemedText type="subtitle" accessibilityRole="header">사용자 전체 활동</ThemedText>
+              <ThemedText accessibilityRole="header" style={styles.title}>회원 상세 · 활동</ThemedText>
               <ThemedText type="small" numberOfLines={1} style={styles.muted}>{userId}</ThemedText>
             </View>
-            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="사용자 상세 닫기" style={styles.close}>
+            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="사용자 상세 닫기" style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
               <ThemedText type="smallBold">닫기</ThemedText>
             </Pressable>
           </View>
 
-          <ScrollView contentContainerStyle={styles.body}>
+          <ScrollView contentContainerStyle={[styles.body, compact && styles.bodyCompact]}>
             {userId && !localData ? <AdminUserReview key={userId} userId={userId} profiles={profiles} onStatusChange={onStatusChange} /> : activity ? <ActivityContent activity={activity} profiles={profiles} /> : null}
           </ScrollView>
         </View>
@@ -112,10 +113,13 @@ function formatDate(value: string) { return new Intl.DateTimeFormat('ko-KR', { d
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, alignItems: 'flex-end', backgroundColor: 'rgba(24, 26, 29, 0.35)' },
-  sheet: { width: 680, maxWidth: '100%', height: '100%', backgroundColor: Colors.light.background, borderLeftWidth: 1, borderLeftColor: Colors.light.line },
+  sheet: { width: 720, maxWidth: '100%', height: '100%', backgroundColor: Colors.light.background, borderLeftWidth: 1, borderLeftColor: Colors.light.line },
   header: { minHeight: 76, paddingHorizontal: Spacing.four, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three, borderBottomWidth: 1, borderBottomColor: Colors.light.line, backgroundColor: Colors.light.card },
-  close: { minHeight: 40, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8 },
+  headerCompact: { paddingHorizontal: Spacing.three }, title: { fontSize: 17, lineHeight: 24, fontWeight: 600 },
+  close: { minHeight: 44, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.background },
+  pressed: { opacity: 0.65 },
   body: { padding: Spacing.four, gap: Spacing.four, paddingBottom: Spacing.six },
+  bodyCompact: { padding: Spacing.three, paddingBottom: Spacing.six },
   muted: { color: Colors.light.textSecondary },
   danger: { color: Colors.light.accent },
   notice: { minHeight: 160, alignItems: 'center', justifyContent: 'center' },

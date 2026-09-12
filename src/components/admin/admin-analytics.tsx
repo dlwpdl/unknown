@@ -39,9 +39,8 @@ export function AdminAnalyticsView({ localPreview, onUser, refreshSignal = 0 }: 
     <View style={styles.section}>
       <View style={styles.headingRow}>
         <View style={styles.heading}>
-          <ThemedText type="smallBold" style={styles.accent}>GLING / INSIGHTS</ThemedText>
           <ThemedText accessibilityRole="header" style={styles.title}>운영 분석</ThemedText>
-          <ThemedText type="small" style={styles.muted}>사람이 모이고, 이야기가 이어지는 흐름.</ThemedText>
+          <ThemedText type="small" style={styles.muted}>회원·활동·결제 흐름을 한눈에 확인합니다.</ThemedText>
         </View>
         <Action label="분석 새로고침" disabled={loading || localPreview} onPress={() => setRetry((value) => value + 1)} />
       </View>
@@ -158,7 +157,7 @@ function DataTable({ headers, rows }: { headers: string[]; rows: { key: string; 
   return <ScrollView horizontal style={styles.tableScroll} accessibilityLabel={`${headers.join(', ')} 목록. 좌우로 스크롤할 수 있습니다.`}>
     <View role="table" style={[styles.table, { minWidth: headers.length * 142 }]}>
       <View role="row" style={styles.tableHeader}>{headers.map((header) => <View role="columnheader" key={header} style={styles.cell}><ThemedText type="smallBold" style={styles.muted}>{header}</ThemedText></View>)}</View>
-      {rows.map((row) => <View role="row" key={row.key} style={styles.tableRow}>{row.cells.map((cell, index) => <View role="cell" key={index} style={styles.cell}>{typeof cell === 'string' || typeof cell === 'number' ? <ThemedText type="small" selectable>{cell}</ThemedText> : cell}</View>)}</View>)}
+      {rows.map((row, rowIndex) => <View role="row" key={row.key} style={[styles.tableRow, rowIndex % 2 === 1 && styles.tableRowAlternate]}>{row.cells.map((cell, index) => <View role="cell" key={index} style={styles.cell}>{typeof cell === 'string' || typeof cell === 'number' ? <ThemedText type="small" selectable style={styles.tableValue}>{cell}</ThemedText> : cell}</View>)}</View>)}
     </View>
   </ScrollView>;
 }
@@ -207,22 +206,22 @@ const styles = StyleSheet.create({
   section: { gap: Spacing.four },
   heading: { gap: Spacing.one, flexShrink: 1 },
   headingRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.three },
-  title: { fontSize: 30, lineHeight: 38, fontWeight: 700, letterSpacing: -0.5 },
-  sectionTitle: { fontSize: 17, lineHeight: 24, fontWeight: 700 },
+  title: { fontSize: 30, lineHeight: 38, fontWeight: 600, letterSpacing: -0.6 },
+  sectionTitle: { fontSize: 17, lineHeight: 24, fontWeight: 600 },
   accent: { color: Colors.light.accent },
   muted: { color: Colors.light.textSecondary },
-  filters: { padding: Spacing.three, gap: Spacing.three, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
+  filters: { padding: Spacing.three, gap: Spacing.three, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 10, backgroundColor: Colors.light.card },
   choiceGroup: { gap: Spacing.two, maxWidth: '100%' },
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
-  choice: { minHeight: 40, paddingHorizontal: Spacing.two, justifyContent: 'center', borderRadius: 6, borderWidth: 1, borderColor: Colors.light.line },
-  choiceSelected: { backgroundColor: Colors.light.background, borderColor: Colors.light.accent },
+  choice: { minHeight: 44, paddingHorizontal: Spacing.three, justifyContent: 'center', borderRadius: 8, borderWidth: 1, borderColor: 'transparent', backgroundColor: Colors.light.backgroundElement },
+  choiceSelected: { backgroundColor: Colors.light.card, borderColor: Colors.light.accent },
   switchRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, flexWrap: 'wrap' },
   tabs: { gap: Spacing.three, borderBottomWidth: 1, borderBottomColor: Colors.light.line },
   tab: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.two, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   selectedTab: { borderBottomColor: Colors.light.accent },
   metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.three },
-  metric: { flexBasis: 180, flexGrow: 1, minWidth: 0, gap: Spacing.two, padding: Spacing.three, borderTopWidth: 2, borderTopColor: Colors.light.accent, backgroundColor: Colors.light.card },
-  metricValue: { fontSize: 30, lineHeight: 36, fontWeight: 600, fontVariant: ['tabular-nums'] },
+  metric: { flexBasis: 150, flexGrow: 1, minWidth: 0, gap: Spacing.two, padding: Spacing.three, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 10, backgroundColor: Colors.light.card },
+  metricValue: { fontSize: 30, lineHeight: 36, fontWeight: 600, letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
   breakdowns: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.three },
   distribution: { flexBasis: 240, flexGrow: 1, minWidth: 0, gap: Spacing.three, padding: Spacing.three, backgroundColor: Colors.light.card, borderRadius: 8, borderWidth: 1, borderColor: Colors.light.line },
   distributionRow: { gap: Spacing.two },
@@ -241,7 +240,9 @@ const styles = StyleSheet.create({
   table: { flex: 1, backgroundColor: Colors.light.card },
   tableHeader: { flexDirection: 'row', backgroundColor: Colors.light.backgroundElement },
   tableRow: { minHeight: 56, flexDirection: 'row', borderTopWidth: 1, borderTopColor: Colors.light.line },
-  cell: { flex: 1, minWidth: 142, paddingHorizontal: Spacing.two, paddingVertical: Spacing.two, justifyContent: 'center' },
+  tableRowAlternate: { backgroundColor: Colors.light.background },
+  tableValue: { fontVariant: ['tabular-nums'] },
+  cell: { flex: 1, minWidth: 142, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, justifyContent: 'center' },
   userLink: { minHeight: 44, justifyContent: 'center' },
   action: { alignSelf: 'flex-start', minHeight: 44, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
   disabled: { opacity: 0.45 },

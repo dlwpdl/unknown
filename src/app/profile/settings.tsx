@@ -1,9 +1,10 @@
 import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Switch, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { NearbyCityCard } from '@/components/nearby-city-card';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -84,7 +85,7 @@ export default function SettingsScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <View style={styles.content}>
+        <ScrollView contentContainerStyle={styles.content}>
           <ThemedText type="smallBold" themeColor="textSecondary">
             {t.profile.account}
           </ThemedText>
@@ -98,6 +99,7 @@ export default function SettingsScreen() {
           <ThemedText type="smallBold" themeColor="textSecondary">
             {t.profile.feedback}
           </ThemedText>
+          <NearbyCityCard settings />
           <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
             <View style={styles.row}>
               <ThemedText type="small">{t.profile.soundEffects}</ThemedText>
@@ -173,7 +175,7 @@ export default function SettingsScreen() {
           <ThemedText type="small" themeColor="textSecondary" style={styles.version}>
             {t.profile.version}
           </ThemedText>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );

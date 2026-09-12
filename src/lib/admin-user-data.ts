@@ -19,6 +19,7 @@ export type AdminUserDirectory = {
 };
 export type AdminUserOverview = {
   profile: AdminDirectoryProfile; identity_verified: false; date_of_birth: null; age: null; generatedAt: string;
+  location_snapshot?: { latitude: number; longitude: number; accuracy: number; measured_at: string; received_at: string; kind: 'login' | 'post' | 'meetup' } | null;
   identities: { provider: string; provider_id: string; created_at: string; last_sign_in_at: string | null }[];
   counts: { kind: Exclude<ActivityKind, 'all'>; count: number }[];
 };

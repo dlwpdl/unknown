@@ -115,3 +115,12 @@
 - [x] iOS 시뮬레이터와 Android 번들 검증 후 화면 증거와 변경 기록 저장
   - Acceptance: 사진 없음/있음·도시·검색·큰 글자·다크 모드 확인, 출시와 구분
   - Evidence: `journal-redesign-spec.md`의 검증 결과와 `output/design/gling-redesign/implemented/` 화면
+
+## 2026-09-11 Optional one-shot location
+- [x] Trace login, onboarding, writer and admin paths; inspect design references.
+- [x] Write spec and failing Node/DB checks.
+- [x] Implement consent, one-shot city recommendation and private event records.
+- [x] Verify native permission configuration, retention/access tests and admin Orca UI; prepare native release notes.
+- [x] Apply Apple Design to admin layout, member directory/detail and controls.
+- [ ] Validate GPS on devices and update store disclosures for the next native binary (not build 11).
+- Evidence: `tasks/location-admin-2026-09-12.md`.

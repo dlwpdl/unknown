@@ -193,3 +193,8 @@ Reuse the existing Eunsense Studio Play Console account and `dlwpdl/gling`. Chec
 ### Checkpoint
 
 - [ ] `tasks/community-hardening-spec.md` 성공 기준과 전체 자동 검증 통과
+
+## 2026-09-11 Optional one-shot location
+Follow docs/specs/one-shot-location.md: foreground GPS, nearby community choice, private consent/30-day records, audited admin history, disclosure and native verification.
+
+Apple Design admin refinement and verification: `tasks/location-admin-2026-09-12.md`. Native GPS acceptance checks are tracked separately from backend/admin delivery.

@@ -113,7 +113,7 @@ function SectionHeading({ title, description }: { title: string; description: st
 function UserRow({ profile, compact, last, onPress }: { profile: AdminProfile; compact: boolean; last: boolean; onPress: () => void }) {
   const location = `${profile.city_id ?? '지역 삭제됨'}${profile.neighborhood ? ` · ${profile.neighborhood}` : ''}`;
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${profile.nickname}, ${location}, 신뢰 ${profile.verification_level}, ${profile.id}`} style={[styles.userRow, last && styles.userRowLast]}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${profile.nickname}, ${location}, 신뢰 ${profile.verification_level}, ${profile.id}`} style={({ pressed }) => [styles.userRow, last && styles.userRowLast, pressed && styles.pressed]}>
       <View style={styles.userAvatar} accessibilityElementsHidden>
         <ThemedText type="smallBold" style={styles.userAvatarText}>{profile.nickname.trim().slice(0, 1)}</ThemedText>
       </View>
@@ -151,12 +151,12 @@ const styles = StyleSheet.create({
   section: { gap: Spacing.four },
   heading: { gap: Spacing.one },
   subheading: { gap: Spacing.one },
-  title: { fontSize: 30, lineHeight: 38 },
+  title: { fontSize: 30, lineHeight: 38, letterSpacing: -0.6 },
   muted: { color: Colors.light.textSecondary },
   metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.three },
-  metric: { minWidth: 160, flexGrow: 1, padding: Spacing.four, gap: Spacing.two, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 6, backgroundColor: Colors.light.card },
+  metric: { flexBasis: 150, minWidth: 0, flexGrow: 1, padding: Spacing.three, gap: Spacing.two, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 10, backgroundColor: Colors.light.card },
   metricUrgent: { borderColor: '#E8B8AE', backgroundColor: '#FDF6F4' },
-  metricValue: { fontSize: 30, lineHeight: 34 },
+  metricValue: { fontSize: 30, lineHeight: 36, fontVariant: ['tabular-nums'] },
   urgent: { color: Colors.light.accent },
   search: { minHeight: 44, paddingHorizontal: Spacing.three, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, color: Colors.light.text, backgroundColor: Colors.light.card },
   rows: { gap: Spacing.two },
@@ -176,4 +176,5 @@ const styles = StyleSheet.create({
   empty: { minHeight: 160, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 10, backgroundColor: Colors.light.card },
   more: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
   moreDisabled: { opacity: 0.55 },
+  pressed: { backgroundColor: Colors.light.backgroundElement },
 });

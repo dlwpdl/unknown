@@ -1,0 +1,12 @@
+:is(#gling-admin-console, #gling-admin-detail) :is([role='button'], [role='tab'], [role='radio'], input):focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+:is(#gling-admin-console, #gling-admin-detail) input {
+  font: inherit;
+}
+
+:is(#gling-admin-console, #gling-admin-detail) :is(input, [role='button'], [role='tab'], [role='radio']) {
+  -webkit-tap-highlight-color: transparent;
+}
