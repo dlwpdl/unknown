@@ -1,0 +1,63 @@
+{
+  "device": "583E7BFD-5CB4-42EC-B15C-1D4D5986FA39",
+  "source_app": "/tmp/gling-ads-simulator/Build/Products/Release-iphonesimulator/app.app",
+  "installed_app": "/Users/ash/Library/Developer/CoreSimulator/Devices/583E7BFD-5CB4-42EC-B15C-1D4D5986FA39/data/Containers/Bundle/Application/D8628E13-C6BD-4F9F-BCB0-45B6A60FE653/app.app",
+  "start": "2026-09-12T13:48:08-07:00",
+  "launch": "com.dlwpdl.gling: 3919",
+  "pid": 3919,
+  "bundle_id": "com.dlwpdl.gling",
+  "version": "1.0.0",
+  "build": "11",
+  "sha256": {
+    "main.jsbundle": "0875e7b41079fa3cc261d68ac993ab8a68656687ab8223765adebc4963b2510a",
+    "app": "30fedb8d12c43d3e63f7fd3b7240f475aa607c182f55e3cd073187ddc2a6c48e"
+  },
+  "screenshots": [
+    {
+      "file": "ios-ad-card-validator.png",
+      "sha256": "e3cd44af1e2b940be3fb598020245b21db2d570f624f94e308062813f08c4cdd",
+      "dimensions": [
+        1320,
+        2868
+      ],
+      "captured_at": "2026-09-12T13:48:53-07:00"
+    },
+    {
+      "file": "ios-ad-card.png",
+      "sha256": "1b4e31803dcbd6637eeb2390ae2cb63819c2e80ae8b28e18ff14ea7b2d3f4ae7",
+      "dimensions": [
+        1320,
+        2868
+      ],
+      "captured_at": "2026-09-12T13:49:20-07:00"
+    },
+    {
+      "file": "native-ad-validator.png",
+      "sha256": "b92868dcfc052f27414328ed4d1cc411e6dfa52b6a130e4dbd812582ab85748a",
+      "dimensions": [
+        1320,
+        2868
+      ],
+      "captured_at": "2026-09-12T13:49:07-07:00"
+    },
+    {
+      "file": "settings-nearby-collapsed.png",
+      "sha256": "2bd4f34b1e43268ce2879de005ec4ec83f61c66fdea57802a7ded43fee719509",
+      "dimensions": [
+        1320,
+        2868
+      ],
+      "captured_at": "2026-09-12T13:49:54-07:00"
+    },
+    {
+      "file": "settings-nearby-expanded.png",
+      "sha256": "1b5b942005d5e86bff23694ca0eafdb67ebdd6caf2c98cbec49ab1361b282315",
+      "dimensions": [
+        1320,
+        2868
+      ],
+      "captured_at": "2026-09-12T13:50:13-07:00"
+    }
+  ],
+  "verified_at": "2026-09-12T13:51:22-07:00"
+}

@@ -1,0 +1,1032 @@
+{
+  "ads": [
+    {
+      "address": "0x15f39ad00",
+      "bounds": [
+        0,
+        0,
+        408,
+        402.3330078125
+      ],
+      "hidden": false,
+      "frame": [
+        0,
+        0,
+        408,
+        402.3330078125
+      ],
+      "window_rect": [
+        16,
+        7605.666656494141,
+        408,
+        402.3330078125
+      ],
+      "wrapper_class": "RNGoogleMobileAdsNativeView",
+      "class": "GADNativeAdView",
+      "wrapper_bounds": [
+        0,
+        0,
+        408,
+        402.3330078125
+      ],
+      "wrapper_frame": [
+        16,
+        10844.66665649414,
+        408,
+        402.3330078125
+      ],
+      "assets": [
+        {
+          "frame": [
+            0,
+            26,
+            408,
+            26
+          ],
+          "present": true,
+          "asset": "headlineView",
+          "rect_in_native_ad": [
+            0,
+            26,
+            408,
+            26
+          ],
+          "tag": 6686,
+          "address": "0x15f38bb80",
+          "hidden": false,
+          "cgrect_contains": true,
+          "ancestors_to_native_ad": [
+            {
+              "bounds": [
+                0,
+                0,
+                408,
+                26
+              ],
+              "frame": [
+                0,
+                26,
+                408,
+                26
+              ],
+              "class": "RCTParagraphComponentView",
+              "tag": 6686,
+              "address": "0x15f38bb80"
+            }
+          ],
+          "class": "RCTParagraphComponentView",
+          "bounds": [
+            0,
+            0,
+            408,
+            26
+          ],
+          "is_descendant": true
+        },
+        {
+          "frame": [
+            0,
+            60,
+            408,
+            44
+          ],
+          "present": true,
+          "asset": "bodyView",
+          "rect_in_native_ad": [
+            0,
+            60,
+            408,
+            44
+          ],
+          "tag": 6690,
+          "address": "0x15f38b480",
+          "hidden": false,
+          "cgrect_contains": true,
+          "ancestors_to_native_ad": [
+            {
+              "bounds": [
+                0,
+                0,
+                408,
+                44
+              ],
+              "frame": [
+                0,
+                60,
+                408,
+                44
+              ],
+              "class": "RCTParagraphComponentView",
+              "tag": 6690,
+              "address": "0x15f38b480"
+            }
+          ],
+          "class": "RCTParagraphComponentView",
+          "bounds": [
+            0,
+            0,
+            408,
+            44
+          ],
+          "is_descendant": true
+        },
+        {
+          "frame": [
+            0,
+            363.6666564941406,
+            32,
+            32
+          ],
+          "present": true,
+          "asset": "iconView",
+          "rect_in_native_ad": [
+            0,
+            363.6666564941406,
+            32,
+            32
+          ],
+          "tag": 6694,
+          "address": "0x15f3d0000",
+          "hidden": false,
+          "cgrect_contains": true,
+          "ancestors_to_native_ad": [
+            {
+              "bounds": [
+                0,
+                0,
+                32,
+                32
+              ],
+              "frame": [
+                0,
+                363.6666564941406,
+                32,
+                32
+              ],
+              "class": "RCTImageComponentView",
+              "tag": 6694,
+              "address": "0x15f3d0000"
+            }
+          ],
+          "class": "RCTImageComponentView",
+          "bounds": [
+            0,
+            0,
+            32,
+            32
+          ],
+          "is_descendant": true
+        },
+        {
+          "frame": [
+            40,
+            369.9999895095825,
+            108.66667175292969,
+            19
+          ],
+          "present": true,
+          "asset": "advertiserView",
+          "rect_in_native_ad": [
+            40,
+            369.9999895095825,
+            108.66667175292969,
+            19
+          ],
+          "tag": 6698,
+          "address": "0x15f3d0380",
+          "hidden": false,
+          "cgrect_contains": true,
+          "ancestors_to_native_ad": [
+            {
+              "bounds": [
+                0,
+                0,
+                108.66667175292969,
+                19
+              ],
+              "frame": [
+                40,
+                369.9999895095825,
+                108.66667175292969,
+                19
+              ],
+              "class": "RCTParagraphComponentView",
+              "tag": 6698,
+              "address": "0x15f3d0380"
+            }
+          ],
+          "class": "RCTParagraphComponentView",
+          "bounds": [
+            0,
+            0,
+            108.66667175292969,
+            19
+          ],
+          "is_descendant": true
+        },
+        {
+          "frame": [
+            338.3333435058594,
+            357.6666564941406,
+            69.66665649414062,
+            44
+          ],
+          "present": true,
+          "asset": "callToActionView",
+          "rect_in_native_ad": [
+            338.3333435058594,
+            357.6666564941406,
+            69.66665649414062,
+            44
+          ],
+          "tag": 6704,
+          "address": "0x15f3d0700",
+          "hidden": false,
+          "cgrect_contains": true,
+          "ancestors_to_native_ad": [
+            {
+              "bounds": [
+                0,
+                0,
+                69.66665649414062,
+                44
+              ],
+              "frame": [
+                338.3333435058594,
+                357.6666564941406,
+                69.66665649414062,
+                44
+              ],
+              "class": "RCTParagraphComponentView",
+              "tag": 6704,
+              "address": "0x15f3d0700"
+            }
+          ],
+          "class": "RCTParagraphComponentView",
+          "bounds": [
+            0,
+            0,
+            69.66665649414062,
+            44
+          ],
+          "is_descendant": true
+        },
+        {
+          "frame": [
+            0,
+            0,
+            408,
+            229.3330078125
+          ],
+          "present": true,
+          "asset": "mediaView",
+          "rect_in_native_ad": [
+            0,
+            120,
+            408,
+            229.3330078125
+          ],
+          "tag": 0,
+          "address": "0x10b80e300",
+          "hidden": false,
+          "cgrect_contains": true,
+          "ancestors_to_native_ad": [
+            {
+              "bounds": [
+                0,
+                0,
+                408,
+                229.3330078125
+              ],
+              "frame": [
+                0,
+                0,
+                408,
+                229.3330078125
+              ],
+              "class": "GADMediaView",
+              "tag": 0,
+              "address": "0x10b80e300"
+            },
+            {
+              "bounds": [
+                0,
+                0,
+                408,
+                229.3330078125
+              ],
+              "frame": [
+                0,
+                120,
+                408,
+                229.3330078125
+              ],
+              "class": "RNGoogleMobileAdsMediaView",
+              "tag": 6692,
+              "address": "0x15f1a2680"
+            }
+          ],
+          "class": "GADMediaView",
+          "bounds": [
+            0,
+            0,
+            408,
+            229.3330078125
+          ],
+          "is_descendant": true
+        },
+        {
+          "asset": "adChoicesView",
+          "present": false
+        }
+      ],
+      "wrapper_address": "0x15f38ad80"
+    },
+    {
+      "address": "0x15abfb700",
+      "bounds": [
+        0,
+        0,
+        408,
+        402.33349609375
+      ],
+      "hidden": false,
+      "frame": [
+        0,
+        0,
+        408,
+        402.33349609375
+      ],
+      "window_rect": [
+        16,
+        3874.0001525878906,
+        408,
+        402.33349609375
+      ],
+      "wrapper_class": "RNGoogleMobileAdsNativeView",
+      "class": "GADNativeAdView",
+      "wrapper_bounds": [
+        0,
+        0,
+        408,
+        402.33349609375
+      ],
+      "wrapper_frame": [
+        16,
+        7113.000152587891,
+        408,
+        402.33349609375
+      ],
+      "assets": [
+        {
+          "frame": [
+            0,
+            26,
+            408,
+            26
+          ],
+          "present": true,
+          "asset": "headlineView",
+          "rect_in_native_ad": [
+            0,
+            26,
+            408,
+            26
+          ],
+          "tag": 6038,
+          "address": "0x15ab93800",
+          "hidden": false,
+          "cgrect_contains": true,
+          "ancestors_to_native_ad": [
+            {
+              "bounds": [
+                0,
+                0,
+                408,
+                26
+              ],
+              "frame": [
+                0,
+                26,
+                408,
+                26
+              ],
+              "class": "RCTParagraphComponentView",
+              "tag": 6038,
+              "address": "0x15ab93800"
+            }
+          ],
+          "class": "RCTParagraphComponentView",
+          "bounds": [
+            0,
+            0,
+            408,
+            26
+          ],
+          "is_descendant": true
+        },
+        {
+          "frame": [
+            0,
+            60,
+            408,
+            44
+          ],
+          "present": true,
+          "asset": "bodyView",
+          "rect_in_native_ad": [
+            0,
+            60,
+            408,
+            44
+          ],
+          "tag": 6042,
+          "address": "0x15ab93b80",
+          "hidden": false,
+          "cgrect_contains": true,
+          "ancestors_to_native_ad": [
+            {
+              "bounds": [
+                0,
+                0,
+                408,
+                44
+              ],
+              "frame": [
+                0,
+                60,
+                408,
+                44
+              ],
+              "class": "RCTParagraphComponentView",
+              "tag": 6042,
+              "address": "0x15ab93b80"
+            }
+          ],
+          "class": "RCTParagraphComponentView",
+          "bounds": [
+            0,
+            0,
+            408,
+            44
+          ],
+          "is_descendant": true
+        },
+        {
+          "frame": [
+            0,
+            363.6666564941406,
+            32,
+            32
+          ],
+          "present": true,
+          "asset": "iconView",
+          "rect_in_native_ad": [
+            0,
+            363.6666564941406,
+            32,
+            32
+          ],
+          "tag": 6046,
+          "address": "0x159db4380",
+          "hidden": false,
+          "cgrect_contains": true,
+          "ancestors_to_native_ad": [
+            {
+              "bounds": [
+                0,
+                0,
+                32,
+                32
+              ],
+              "frame": [
+                0,
+                363.6666564941406,
+                32,
+                32
+              ],
+              "class": "RCTImageComponentView",
+              "tag": 6046,
+              "address": "0x159db4380"
+            }
+          ],
+          "class": "RCTImageComponentView",
+          "bounds": [
+            0,
+            0,
+            32,
+            32
+          ],
+          "is_descendant": true
+        },
+        {
+          "frame": [
+            40,
+            369.9999895095825,
+            108.66667175292969,
+            19
+          ],
+          "present": true,
+          "asset": "advertiserView",
+          "rect_in_native_ad": [
+            40,
+            369.9999895095825,
+            108.66667175292969,
+            19
+          ],
+          "tag": 6050,
+          "address": "0x15aba8000",
+          "hidden": false,
+          "cgrect_contains": true,
+          "ancestors_to_native_ad": [
+            {
+              "bounds": [
+                0,
+                0,
+                108.66667175292969,
+                19
+              ],
+              "frame": [
+                40,
+                369.9999895095825,
+                108.66667175292969,
+                19
+              ],
+              "class": "RCTParagraphComponentView",
+              "tag": 6050,
+              "address": "0x15aba8000"
+            }
+          ],
+          "class": "RCTParagraphComponentView",
+          "bounds": [
+            0,
+            0,
+            108.66667175292969,
+            19
+          ],
+          "is_descendant": true
+        },
+        {
+          "frame": [
+            338.3333435058594,
+            357.6666564941406,
+            69.66665649414062,
+            44
+          ],
+          "present": true,
+          "asset": "callToActionView",
+          "rect_in_native_ad": [
+            338.3333435058594,
+            357.6666564941406,
+            69.66665649414062,
+            44
+          ],
+          "tag": 6056,
+          "address": "0x15aba8380",
+          "hidden": false,
+          "cgrect_contains": true,
+          "ancestors_to_native_ad": [
+            {
+              "bounds": [
+                0,
+                0,
+                69.66665649414062,
+                44
+              ],
+              "frame": [
+                338.3333435058594,
+                357.6666564941406,
+                69.66665649414062,
+                44
+              ],
+              "class": "RCTParagraphComponentView",
+              "tag": 6056,
+              "address": "0x15aba8380"
+            }
+          ],
+          "class": "RCTParagraphComponentView",
+          "bounds": [
+            0,
+            0,
+            69.66665649414062,
+            44
+          ],
+          "is_descendant": true
+        },
+        {
+          "frame": [
+            0,
+            0,
+            408,
+            229.33349609375
+          ],
+          "present": true,
+          "asset": "mediaView",
+          "rect_in_native_ad": [
+            0,
+            120,
+            408,
+            229.33349609375
+          ],
+          "tag": 0,
+          "address": "0x108be7640",
+          "hidden": false,
+          "cgrect_contains": true,
+          "ancestors_to_native_ad": [
+            {
+              "bounds": [
+                0,
+                0,
+                408,
+                229.33349609375
+              ],
+              "frame": [
+                0,
+                0,
+                408,
+                229.33349609375
+              ],
+              "class": "GADMediaView",
+              "tag": 0,
+              "address": "0x108be7640"
+            },
+            {
+              "bounds": [
+                0,
+                0,
+                408,
+                229.33349609375
+              ],
+              "frame": [
+                0,
+                120,
+                408,
+                229.33349609375
+              ],
+              "class": "RNGoogleMobileAdsMediaView",
+              "tag": 6044,
+              "address": "0x159db4700"
+            }
+          ],
+          "class": "GADMediaView",
+          "bounds": [
+            0,
+            0,
+            408,
+            229.33349609375
+          ],
+          "is_descendant": true
+        },
+        {
+          "asset": "adChoicesView",
+          "present": false
+        }
+      ],
+      "wrapper_address": "0x15b75bb80"
+    },
+    {
+      "address": "0x15d23d400",
+      "bounds": [
+        0,
+        0,
+        408,
+        402.333251953125
+      ],
+      "hidden": false,
+      "frame": [
+        0,
+        0,
+        408,
+        402.333251953125
+      ],
+      "window_rect": [
+        16,
+        54.666656494140625,
+        408,
+        402.333251953125
+      ],
+      "wrapper_class": "RNGoogleMobileAdsNativeView",
+      "class": "GADNativeAdView",
+      "wrapper_bounds": [
+        0,
+        0,
+        408,
+        402.333251953125
+      ],
+      "wrapper_frame": [
+        16,
+        3293.6666564941406,
+        408,
+        402.333251953125
+      ],
+      "assets": [
+        {
+          "frame": [
+            0,
+            26,
+            408,
+            26
+          ],
+          "present": true,
+          "asset": "headlineView",
+          "rect_in_native_ad": [
+            0,
+            26,
+            408,
+            26
+          ],
+          "tag": 6004,
+          "address": "0x15b759c00",
+          "hidden": false,
+          "cgrect_contains": true,
+          "ancestors_to_native_ad": [
+            {
+              "bounds": [
+                0,
+                0,
+                408,
+                26
+              ],
+              "frame": [
+                0,
+                26,
+                408,
+                26
+              ],
+              "class": "RCTParagraphComponentView",
+              "tag": 6004,
+              "address": "0x15b759c00"
+            }
+          ],
+          "class": "RCTParagraphComponentView",
+          "bounds": [
+            0,
+            0,
+            408,
+            26
+          ],
+          "is_descendant": true
+        },
+        {
+          "frame": [
+            0,
+            60,
+            408,
+            44
+          ],
+          "present": true,
+          "asset": "bodyView",
+          "rect_in_native_ad": [
+            0,
+            60,
+            408,
+            44
+          ],
+          "tag": 6008,
+          "address": "0x15b759f80",
+          "hidden": false,
+          "cgrect_contains": true,
+          "ancestors_to_native_ad": [
+            {
+              "bounds": [
+                0,
+                0,
+                408,
+                44
+              ],
+              "frame": [
+                0,
+                60,
+                408,
+                44
+              ],
+              "class": "RCTParagraphComponentView",
+              "tag": 6008,
+              "address": "0x15b759f80"
+            }
+          ],
+          "class": "RCTParagraphComponentView",
+          "bounds": [
+            0,
+            0,
+            408,
+            44
+          ],
+          "is_descendant": true
+        },
+        {
+          "frame": [
+            0,
+            363.6666564941406,
+            32,
+            32
+          ],
+          "present": true,
+          "asset": "iconView",
+          "rect_in_native_ad": [
+            0,
+            363.6666564941406,
+            32,
+            32
+          ],
+          "tag": 6012,
+          "address": "0x15b75a680",
+          "hidden": false,
+          "cgrect_contains": true,
+          "ancestors_to_native_ad": [
+            {
+              "bounds": [
+                0,
+                0,
+                32,
+                32
+              ],
+              "frame": [
+                0,
+                363.6666564941406,
+                32,
+                32
+              ],
+              "class": "RCTImageComponentView",
+              "tag": 6012,
+              "address": "0x15b75a680"
+            }
+          ],
+          "class": "RCTImageComponentView",
+          "bounds": [
+            0,
+            0,
+            32,
+            32
+          ],
+          "is_descendant": true
+        },
+        {
+          "frame": [
+            40,
+            369.9999895095825,
+            108.66667175292969,
+            19
+          ],
+          "present": true,
+          "asset": "advertiserView",
+          "rect_in_native_ad": [
+            40,
+            369.9999895095825,
+            108.66667175292969,
+            19
+          ],
+          "tag": 6016,
+          "address": "0x15b75aa00",
+          "hidden": false,
+          "cgrect_contains": true,
+          "ancestors_to_native_ad": [
+            {
+              "bounds": [
+                0,
+                0,
+                108.66667175292969,
+                19
+              ],
+              "frame": [
+                40,
+                369.9999895095825,
+                108.66667175292969,
+                19
+              ],
+              "class": "RCTParagraphComponentView",
+              "tag": 6016,
+              "address": "0x15b75aa00"
+            }
+          ],
+          "class": "RCTParagraphComponentView",
+          "bounds": [
+            0,
+            0,
+            108.66667175292969,
+            19
+          ],
+          "is_descendant": true
+        },
+        {
+          "frame": [
+            338.3333435058594,
+            357.6666564941406,
+            69.66665649414062,
+            44
+          ],
+          "present": true,
+          "asset": "callToActionView",
+          "rect_in_native_ad": [
+            338.3333435058594,
+            357.6666564941406,
+            69.66665649414062,
+            44
+          ],
+          "tag": 6022,
+          "address": "0x15b75ad80",
+          "hidden": false,
+          "cgrect_contains": true,
+          "ancestors_to_native_ad": [
+            {
+              "bounds": [
+                0,
+                0,
+                69.66665649414062,
+                44
+              ],
+              "frame": [
+                338.3333435058594,
+                357.6666564941406,
+                69.66665649414062,
+                44
+              ],
+              "class": "RCTParagraphComponentView",
+              "tag": 6022,
+              "address": "0x15b75ad80"
+            }
+          ],
+          "class": "RCTParagraphComponentView",
+          "bounds": [
+            0,
+            0,
+            69.66665649414062,
+            44
+          ],
+          "is_descendant": true
+        },
+        {
+          "frame": [
+            0,
+            0,
+            408,
+            229.333251953125
+          ],
+          "present": true,
+          "asset": "mediaView",
+          "rect_in_native_ad": [
+            0,
+            120,
+            408,
+            229.333251953125
+          ],
+          "tag": 0,
+          "address": "0x10b807100",
+          "hidden": false,
+          "cgrect_contains": true,
+          "ancestors_to_native_ad": [
+            {
+              "bounds": [
+                0,
+                0,
+                408,
+                229.333251953125
+              ],
+              "frame": [
+                0,
+                0,
+                408,
+                229.333251953125
+              ],
+              "class": "GADMediaView",
+              "tag": 0,
+              "address": "0x10b807100"
+            },
+            {
+              "bounds": [
+                0,
+                0,
+                408,
+                229.333251953125
+              ],
+              "frame": [
+                0,
+                120,
+                408,
+                229.333251953125
+              ],
+              "class": "RNGoogleMobileAdsMediaView",
+              "tag": 6010,
+              "address": "0x15b75a300"
+            }
+          ],
+          "class": "GADMediaView",
+          "bounds": [
+            0,
+            0,
+            408,
+            229.333251953125
+          ],
+          "is_descendant": true
+        },
+        {
+          "asset": "adChoicesView",
+          "present": false
+        }
+      ],
+      "wrapper_address": "0x15b759500"
+    }
+  ],
+  "ad_count": 3,
+  "visited_views": 1977
+}

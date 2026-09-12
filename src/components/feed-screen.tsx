@@ -468,7 +468,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText> : null}
           renderItem={({ item, index }) => item == null ? (
             <View style={styles.header}>
-              {isAuthed && !meetupsOnly && <NearbyCityCard onSelect={(id) => { const next = CITIES.find((item) => item.id === id); if (next) void selectCity(next); }} />}
+              {isAuthed && !meetupsOnly && <NearbyCityCard onChooseCity={() => setCityPicker(true)} onSelect={(id) => { const next = CITIES.find((item) => item.id === id); if (next) void selectCity(next); }} />}
               <View style={styles.journalIntro}>
                 <ThemedText type="smallBold" themeColor="textSecondary" style={styles.journalDate}>{todayLabel()}</ThemedText>
                 <ThemedText accessibilityRole="header" style={styles.journalTitle}>{meetupsOnly ? t.feed.meetupTitle : t.feed.journalTitle}</ThemedText>

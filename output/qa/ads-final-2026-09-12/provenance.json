@@ -1,0 +1,16 @@
+{
+  "device": "583E7BFD-5CB4-42EC-B15C-1D4D5986FA39",
+  "source_app": "/tmp/gling-ads-simulator/Build/Products/Release-iphonesimulator/app.app",
+  "installed_app": "/Users/ash/Library/Developer/CoreSimulator/Devices/583E7BFD-5CB4-42EC-B15C-1D4D5986FA39/data/Containers/Bundle/Application/C2A99210-3017-4BD4-81A3-7A72998645AC/app.app",
+  "start": "2026-09-12T14:01:34-07:00",
+  "launch": "com.dlwpdl.gling: 74096",
+  "pid": 74096,
+  "bundle_id": "com.dlwpdl.gling",
+  "version": "1.0.0",
+  "build": "11",
+  "sha256": {
+    "main.jsbundle": "f71d825198a5c1e8508ad226b9d5700d3b2d47514414a2a9e1fc4c0e989ad351",
+    "app": "30fedb8d12c43d3e63f7fd3b7240f475aa607c182f55e3cd073187ddc2a6c48e"
+  },
+  "previous_ui": "City picker open, Vancouver selected. Return to this view after QA without changing selection."
+}

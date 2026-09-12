@@ -5,7 +5,7 @@
 ## 앱 수정
 
 - 광고는 AdMob 등록만 있었고 앱 SDK·노출 위치가 없었다. 기존 피드에 네이티브 광고를 연결했다. 일반 글 5개 뒤부터 10개 간격이며 모임 피드·웹·Expo Go에는 표시하지 않는다. 광고 표시·AdChoices 공간·이미지 비율·SDK 클릭 처리를 유지하고, 로드 실패 시 피드를 계속 사용할 수 있다.
-- `react-native-google-mobile-ads`를 Expo 57 기본 Kotlin 구성과 함께 빌드되는 **16.3.0**으로 고정했다. Android Google Mobile Ads 25.0.0 / UMP 4.0.0, iOS 13.1.0 / UMP 3.1.0이다. 16.5.0의 Kotlin 메타데이터 충돌 때문에 버전을 조정했으며 Kotlin 강제 업그레이드나 별도 빌드 플러그인은 남기지 않았다.
+- `react-native-google-mobile-ads`를 **16.3.4**로 고정했다. Android Google Mobile Ads 25.0.0 / UMP 4.0.0, iOS 13.1.0 / UMP 3.1.0이다. 16.5.0은 Expo 57 기본 Kotlin과 메타데이터가 충돌했고, 처음 선택한 16.3.0은 iOS bridgeless 환경에서 미디어·광고 자산 등록에 실패했다. [공식 16.3.4 패치](https://github.com/invertase/react-native-google-mobile-ads/releases/tag/v16.3.4)가 iOS 등록 경로를 수정하면서 호환되는 Android SDK를 유지한다. Kotlin 강제 업그레이드·별도 빌드 플러그인·SDK 자체 수정은 남기지 않았다.
 - 기본값은 Release도 Google 테스트 광고다. `EXPO_PUBLIC_ADS_MODE=live`일 때만 실제 광고 단위를 사용하고 UMP의 광고 요청 가능 여부를 먼저 확인한다. 개인 맞춤 광고를 요청하지 않으며 설정에서 개인정보 선택을 변경하면 기존 광고도 해제한다. 광고 SDK에 회원 이름·생년월일·GPS 좌표·게시글·대화를 전달하지 않는다.
 - 멤버십 비교·가격·구매 버튼을 처음부터 펼쳐 보인다. 스토어 상품이 없을 때 원인을 안내한다. 실제 스토어 가격, 계정별 구매·복원 및 서버 검증 조건은 유지한다.
 - 개인정보처리방침에 SDK가 처리하는 광고 정보와 설정 경로를 반영했다. 웹 공개 문서 배포와 스토어 데이터 신고는 새 릴리스에 반영해야 한다.
@@ -22,14 +22,14 @@
 
 ## 검증
 
-- `npm run typecheck`, `npm run lint`, `npm test`: 통과, Node **86/86**. 빈 상품 목록 회귀 검사는 수정 전 실패·수정 후 통과를 확인했다. 광고 위치, 플랫폼, 테스트 광고 기본값, 동의 전 초기화 차단, 중복 초기화, 선택 변경 후 해제도 검사한다.
-- 웹 export 및 `node scripts/check-public-web.mjs /tmp/gling-ads-web`: 통과. 웹에 네이티브 광고 SDK나 관리자 화면을 포함하지 않는다.
+- `npm run typecheck`, `npm run lint`, `npm test`: 통과, Node **89/89**. 빈 상품 목록 회귀 검사는 수정 전 실패·수정 후 통과를 확인했다. 광고 위치, 플랫폼, 테스트 광고 기본값, 동의 전 초기화 차단, 중복 초기화, 선택 변경 후 해제도 검사한다.
+- 웹 export 및 `node scripts/check-public-web.mjs /tmp/gling-final-ui-web`: 통과. 웹에 네이티브 광고 SDK나 관리자 화면을 포함하지 않는다.
 - iOS 실제 기기 대상 Release 빌드 및 `codesign --verify --deep --strict`: 통과. `/tmp/gling-ads-device/Build/Products/Release-iphoneos/app.app`, 빌드 11, iOS AdMob App ID·측정 초기화 지연 설정 확인.
 - Android `:app:bundleRelease :app:assembleRelease`: 통과. `android/app/build/outputs/{apk,bundle}/release/`에 APK/AAB 생성. APK 서명 SHA-256 `413e75957cf604fd225a37527cce90b7379f3226b572f2b589c77396dcbfefbd` 일치.
 - iOS·Android 최종 번들 안에 각각 올바른 RevenueCat 공개 키가 들어 있는 것도 확인했다. 키 값은 출력하지 않았다.
-- Android 정식 Google Play API 36 이미지에 같은 APK를 설치해 **실제 피드의 Google 테스트 광고 제목·본문·이미지·설치 버튼 표시**를 확인했다. 클릭·설치는 실행하지 않았다. 비공개 실제 캡처: `~/Library/Application Support/gling/operations/ads-android-2026-09-12.png`.
+- Android 정식 Google Play API 36 이미지에 최종 **16.3.4** APK를 설치해 **실제 피드의 Google 테스트 광고 제목·본문·이미지·설치 버튼 표시**를 확인했다. 클릭·설치는 실행하지 않았다. APK SHA-256은 `e5b190321192b6b1b06b8e92f64cb6c1d073807bcc6eb8f5e5d79ada3c9b80d2`, 비공개 실제 캡처는 `~/Library/Application Support/gling/operations/ads-android-final-ui-2026-09-12.png`다.
 - 초기 Google APIs 에뮬레이터에서는 `Incorrect native ad response. Click actions were not properly specified`로 실패했다. 해당 이미지의 기본 Play Store 모듈이 `market://` 링크를 처리하지 못했다. 정식 Play 이미지에서 정상 표시되어 추가 앱 변경은 하지 않았다. 테스트용 AVD `Gling_Ads_Play_API_36`를 남겼고 Android 에뮬레이터 프로세스는 종료했다.
-- iOS 시뮬레이터 Release 빌드도 통과했고 광고가 로드되어 접근성 트리에 포함되는 것을 확인했다. 화면 캡처 중 다른 글링 QA 세션과 Orca 시뮬레이터 제어가 겹쳐 기기가 종료됐다. 이를 광고 표시 완료로 기록하지 않는다. 다른 QA 세션은 유지하고 제 시뮬레이터 조작을 중단했다.
+- iOS 16.3.0의 별도 네이티브 QA에서 광고 문구는 보였지만 미디어가 비고 모든 자산에 `Cannot find NativeAssetView`가 발생했다. SDK가 bridgeless 환경에서 없는 `RCTBridge.currentBridge`와 `uiManager`를 사용한 것이 원인이었다. 16.3.4로 변경한 뒤 시뮬레이터·실기기 대상 Release 빌드를 다시 통과했다. 최종 시뮬레이터 번들 SHA-256은 `f71d825198a5c1e8508ad226b9d5700d3b2d47514414a2a9e1fc4c0e989ad351`, 실행 파일은 `30fedb8d12c43d3e63f7fd3b7240f475aa607c182f55e3cd073187ddc2a6c48e`다. 같은 QA 기기에서 미디어·AdChoices 표시와 자산 등록 오류 0을 확인했다. 남은 자산 경계 경고는 LLDB에서 CTA 하단이 부모를 약 1/3pt 초과하는 소수점 반올림 문제로 확인했다. 내부 마지막 행 아래에 1pt 여백을 추가한 최종 빌드에서 Google 검증기 **No implementation issues found**, 실제 네이티브 광고 3개 × 자산 6개 모두 부모 경계 포함을 확인했다. 상세는 [광고·위치 카드 기록](feed-cards-design-2026-09-12.md)을 따른다.
 - 별도 글링 QA가 같은 광고 포함 설치본을 `GLING Membership QA` 시뮬레이터에서 재검증했다. `latest-monthly.png`·`latest-yearly-plus.png`를 직접 검토해 4개 실제 USD 가격과 월/연 선택을 확인했다. Apple 구매 로그인창 진입 후 Sandbox 인증 실패로 취소 안내에 돌아왔고 무료 등급·버튼 상태를 유지했다는 QA 결과를 받았다. 구매 완료·복원·유료 혜택 반영 성공으로 기록하지 않는다. 상세 설치본 출처와 후속 결과는 별도 `tasks/membership-native-qa-2026-09-12.md` 기록을 따른다.
 
 ## 남은 실제 운영 조건

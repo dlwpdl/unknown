@@ -30,26 +30,34 @@ export function FeedAd() {
   }, [revision]);
   if (!loaded) return null;
   const { ad, sdk: { NativeAdView, NativeAsset, NativeAssetType, NativeMediaView } } = loaded;
-  return <NativeAdView nativeAd={ad} style={[styles.ad, { borderColor: theme.line }]}>
-    <View style={styles.identity}>
-      {ad.icon && <NativeAsset assetType={NativeAssetType.ICON}><Image source={{ uri: ad.icon.url }} style={styles.icon} /></NativeAsset>}
-      <View style={styles.advertiser}>
-        <Text style={[styles.label, { color: theme.textSecondary }]}>광고</Text>
-        {!!ad.advertiser && <NativeAsset assetType={NativeAssetType.ADVERTISER}><Text style={{ color: theme.text }}>{ad.advertiser}</Text></NativeAsset>}
+  // Fabric insets the native content view by padding/borders; keep those on the outer View.
+  return <View style={[styles.ad, { backgroundColor: theme.background, borderColor: theme.line }]}>
+    <NativeAdView nativeAd={ad}>
+      <Text accessibilityLabel="광고" style={[styles.category, { color: theme.textSecondary }]}>Ad</Text>
+      <NativeAsset assetType={NativeAssetType.HEADLINE}><Text style={[styles.headline, { color: theme.text }]}>{ad.headline}</Text></NativeAsset>
+      {!!ad.body && <NativeAsset assetType={NativeAssetType.BODY}><Text style={[styles.body, { color: theme.textSecondary }]}>{ad.body}</Text></NativeAsset>}
+      <NativeMediaView resizeMode="contain" style={styles.media} />
+      <View style={styles.footer}>
+        <View style={styles.identity}>
+          {ad.icon && <NativeAsset assetType={NativeAssetType.ICON}><Image source={{ uri: ad.icon.url }} style={styles.icon} /></NativeAsset>}
+          {!!ad.advertiser && <NativeAsset assetType={NativeAssetType.ADVERTISER}><Text style={[styles.advertiser, { color: theme.text }]}>{ad.advertiser}</Text></NativeAsset>}
+        </View>
+        {!!ad.callToAction && <NativeAsset assetType={NativeAssetType.CALL_TO_ACTION}><Text accessibilityRole="link" style={[styles.action, { color: theme.accent }]}>{ad.callToAction}</Text></NativeAsset>}
       </View>
-    </View>
-    <NativeAsset assetType={NativeAssetType.HEADLINE}><Text style={[styles.headline, { color: theme.text }]}>{ad.headline}</Text></NativeAsset>
-    {!!ad.body && <NativeAsset assetType={NativeAssetType.BODY}><Text style={[styles.body, { color: theme.textSecondary }]}>{ad.body}</Text></NativeAsset>}
-    <NativeMediaView resizeMode="contain" style={styles.media} />
-    {!!ad.callToAction && <NativeAsset assetType={NativeAssetType.CALL_TO_ACTION}><Text style={[styles.action, { color: theme.accent }]}>{ad.callToAction}</Text></NativeAsset>}
-  </NativeAdView>;
+    </NativeAdView>
+  </View>;
 }
 
 const styles = StyleSheet.create({
-  ad: { marginTop: Spacing.four, paddingTop: Spacing.three, gap: Spacing.two, borderTopWidth: StyleSheet.hairlineWidth },
-  identity: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingRight: 32 },
-  advertiser: { flex: 1, gap: Spacing.one }, icon: { width: 32, height: 32, borderRadius: 6 },
-  label: { fontSize: 12, lineHeight: 18 }, headline: { fontSize: 18, lineHeight: 26, fontWeight: '600' },
-  body: { fontSize: 14, lineHeight: 21 }, media: { width: '100%', minHeight: 160, aspectRatio: 1.8 },
-  action: { minHeight: 44, paddingVertical: 12, fontSize: 14, fontWeight: '600' },
+  ad: { marginTop: Spacing.four, paddingVertical: Spacing.three, borderBottomWidth: StyleSheet.hairlineWidth },
+  category: { minWidth: 15, minHeight: 18, paddingRight: 32, marginBottom: Spacing.two, fontSize: 12, lineHeight: 18, fontWeight: '700' },
+  headline: { fontSize: 18, lineHeight: 26, fontWeight: '700', letterSpacing: -0.4 },
+  body: { marginTop: Spacing.two, fontSize: 15, lineHeight: 22, fontWeight: '400' },
+  media: { marginTop: Spacing.three, width: '100%', minHeight: 160, aspectRatio: 16 / 9 },
+  // iOS can round the last asset 1/3 pt beyond its parent; leave one point inside the ad bounds.
+  footer: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two, marginTop: Spacing.two, marginBottom: 1 },
+  identity: { flexGrow: 1, flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 44 },
+  advertiser: { flexShrink: 1, fontSize: 13, lineHeight: 19, fontWeight: '700' },
+  icon: { width: 32, height: 32, borderRadius: 6 },
+  action: { minHeight: 44, paddingVertical: 12, fontSize: 13, lineHeight: 19, fontWeight: '700', flexShrink: 1 },
 });
