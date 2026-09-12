@@ -6,7 +6,7 @@ export const t = {
 
   trust: {
     accessibilityLabel: (level: 1 | 2 | 3) =>
-      `L${level} 인증 · ${level === 1 ? '소셜 계정 확인' : level === 2 ? '전화번호 확인' : '신분증과 얼굴 대조 완료'}`,
+      `Lv${level} 인증 · ${level === 1 ? '소셜 계정 확인' : level === 2 ? '전화번호 실명 인증 완료' : '신분증과 본인 촬영 대조 완료'}`,
   },
 
   tabs: {
@@ -173,6 +173,8 @@ export const t = {
     loadOlder: '이전 메시지 더 보기',
     empty: '아직 대화가 없어요. 피드에서 마음에 드는 글부터 찾아보세요.',
     newConversation: '아직 메시지가 없어요. 먼저 인사해보세요.',
+    unverifiedNotice: '상대방은 아직 실명 인증을 완료하지 않았어요.',
+    unverifiedSafety: '처음 만날 때는 공개된 장소를 이용하고, 개인정보나 금전 요청에 주의하세요.',
     messagePlaceholder: '메시지 보내기…',
     send: '전송',
     sending: '전송 중…',
@@ -355,8 +357,8 @@ export const t = {
     cancelRequest: '요청 취소',
     requested: '대화 요청을 보냈어요. 상대가 수락하면 양쪽이 각각 자리 1개를 사용해요.',
     verifiedL1: '소셜 계정을 확인한 이웃이에요',
-    verifiedL2: '추가 확인 절차를 마친 이웃이에요',
-    verifiedL3: '신원 인증까지 마친 이웃이에요',
+    verifiedL2: '전화번호 실명 인증을 마친 이웃이에요',
+    verifiedL3: '신분증과 본인 촬영 대조를 마친 이웃이에요',
     self: '내 부캐예요',
   },
 

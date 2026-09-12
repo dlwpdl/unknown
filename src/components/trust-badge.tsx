@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
-import { StyleSheet, Text, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
+import { StyleSheet } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
@@ -24,15 +25,15 @@ export function TrustBadge({ verified, trustLevel }: { verified?: boolean; trust
   }
 
   return (
-    <View
+    <SymbolView
       accessible
       accessibilityRole="image"
       accessibilityLabel={t.trust.accessibilityLabel(level)}
-      style={[styles.badge, { backgroundColor: theme.card, borderColor: theme.accent }]}>
-      <View style={[styles.gap, { backgroundColor: theme.card }]} />
-      <View style={[styles.dot, { backgroundColor: theme.textSecondary }]} />
-      <Text style={[styles.label, { color: theme.accent }]}>L2</Text>
-    </View>
+      name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+      size={18}
+      weight="bold"
+      tintColor={theme.accent}
+    />
   );
 }
 
@@ -41,36 +42,5 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-  },
-  badge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2.25,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'visible',
-  },
-  gap: {
-    position: 'absolute',
-    width: 7,
-    height: 5,
-    right: -2,
-    top: -1,
-    transform: [{ rotate: '35deg' }],
-  },
-  dot: {
-    position: 'absolute',
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    right: -1,
-    top: -1,
-  },
-  label: {
-    fontSize: 7.5,
-    lineHeight: 9,
-    fontWeight: '800',
-    letterSpacing: -0.4,
   },
 });

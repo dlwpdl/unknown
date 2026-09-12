@@ -12,13 +12,14 @@ const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/cha
 const direct = { id: 'room', kind: 'direct', status: 'pending', requesterId: 'sender', isGroupHost: false,
   groupPostId: null, title: '대화', otherUser: { id: 'sender', nickname: '요청한 이웃', verificationLevel: 1 }, latestAt: '', latestBody: null };
 
-function loadRoom(userId = 'recipient') {
+function loadRoom(userId = 'recipient', messagesLoaded = false) {
   const exports = {};
   const effects = [];
   const subscriptions = [];
   let messageReads = 0;
   const channel = { on(_event, filter) { subscriptions.push(filter.table); return this; }, subscribe() { return this; } };
-  const react = { useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}],
+  let stateIndex = 0;
+  const react = { useState: initial => [stateIndex++ === 3 && messagesLoaded ? false : typeof initial === 'function' ? initial() : initial, () => {}],
     useRef: value => ({ current: value }), useCallback: fn => fn, useEffect: fn => effects.push(fn), useLayoutEffect: fn => fn() };
   const native = new Proxy({ StyleSheet: { create: value => value }, Platform: { OS: 'ios' }, AppState: { addEventListener: () => ({ remove() {} }) } }, { get: (target, key) => target[key] ?? key });
   vm.runInNewContext(source, { exports, require(name) {
@@ -78,4 +79,14 @@ test('missing slot data is unknown, not zero capacity; pending cancellation copy
   assert.equal(t.chat.slotSummary(1, undefined, undefined, 3), '자리 정보를 확인하고 있어요');
   assert.match(t.profileSheet.pendingCancelBody, /자리를 사용하지 않아/);
   assert.match(t.actionErrors.REQUEST_COOLDOWN.body, /대화 자리가 잠기는 것은 아니에요/);
+});
+
+test('direct requests and conversations show a safety notice only for an unverified counterpart', () => {
+  const contains = (value, text) => value === text || !!value && typeof value === 'object' && Object.values(value).some(child => contains(child, text));
+  for (const kind of ['direct', 'group']) for (const status of ['pending', 'active', 'ended', 'rejected', 'cancelled']) for (const verificationLevel of [1, 2, 3]) {
+    const room = loadRoom('recipient', true);
+    const conversation = { ...direct, kind, status, otherUser: { ...direct.otherUser, verificationLevel } };
+    const tree = room.exports.ChatRoom({ conversation, currentUserId: 'recipient', onClose() {}, onChanged: async () => {} });
+    assert.equal(contains(tree, '상대방은 아직 실명 인증을 완료하지 않았어요.'), kind === 'direct' && ['pending', 'active', 'ended'].includes(status) && verificationLevel === 1);
+  }
 });

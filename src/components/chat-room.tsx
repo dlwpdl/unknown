@@ -65,6 +65,11 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const group = conversation.kind === 'group';
   const requestedByMe = conversation.requesterId === currentUserId;
   const title = group ? conversation.title : conversation.otherUser.nickname;
+  const verificationNotice = !group && ![2, 3].includes(conversation.otherUser.verificationLevel)
+    ? <View accessible style={[styles.safetyNotice, { backgroundColor: theme.backgroundElement }]}>
+      <ThemedText type="smallBold">{t.chat.unverifiedNotice}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{t.chat.unverifiedSafety}</ThemedText>
+    </View> : null;
 
   const refreshMessages = useCallback(async () => {
     if (!access.read || !valid()) return;
@@ -156,11 +161,11 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     <View style={[styles.head, { borderBottomColor: theme.line }]}><View style={styles.titleRow}><ThemedText type="smallBold" style={styles.title}>{title}</ThemedText>{!group && <TrustBadge verified={conversation.otherUser.verificationLevel >= 2} trustLevel={conversation.otherUser.verificationLevel === 3 ? 3 : conversation.otherUser.verificationLevel === 2 ? 2 : undefined} />}</View><RoomAction label={t.detail.close} onPress={onClose} /></View>
     <View style={styles.toolbar}>{access.write && <RoomAction label={group ? conversation.isGroupHost ? t.meetup.end : t.meetup.leave : t.chat.end} onPress={() => setConfirmEnd(true)} />}{!group && <><RoomAction label={t.report.short} onPress={() => setReport({ targetType: 'user', targetId: conversation.otherUser.id, reportedUserId: conversation.otherUser.id, reportedNickname: conversation.otherUser.nickname })} /><RoomAction label={t.chat.block} onPress={() => void block(conversation.otherUser.id)} /></>}</View>
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      {status === 'pending' ? <ScrollView contentContainerStyle={styles.request}><ThemedText type="smallBold">{requestedByMe ? t.chat.requestSent : t.chat.receivedRequest}</ThemedText><ThemedText type="small" themeColor="textSecondary">{t.chat.pendingBody}</ThemedText><ThemedText type="small">{requestedByMe ? t.chat.requesterRisk : t.chat.acceptBody}</ThemedText>
+      {status === 'pending' ? <ScrollView contentContainerStyle={styles.request}>{verificationNotice}<ThemedText type="smallBold">{requestedByMe ? t.chat.requestSent : t.chat.receivedRequest}</ThemedText><ThemedText type="small" themeColor="textSecondary">{t.chat.pendingBody}</ThemedText><ThemedText type="small">{requestedByMe ? t.chat.requesterRisk : t.chat.acceptBody}</ThemedText>
         {requestedByMe ? <RoomAction label={t.chat.cancelRequest} onPress={() => void respond('cancelled')} disabled={busy} /> : <><RoomAction label={confirmAccept ? '확인하고 수락' : t.chat.accept} onPress={() => confirmAccept ? void respond('accepted') : setConfirmAccept(true)} disabled={busy} primary />{confirmAccept && <ThemedText type="small" themeColor="accent">내 대화 자리 1개를 사용해요. 양쪽에 빈자리가 있을 때 수락할 수 있어요.</ThemedText>}<RoomAction label={t.chat.reject} onPress={() => void respond('rejected')} disabled={busy} /></>}
       </ScrollView> : access.read ? loading && messages.length === 0 ? <View style={styles.center}><ActivityIndicator color={theme.accent} accessibilityLabel={t.chat.loading} /></View> : <FlatList data={messages} keyExtractor={(message) => message.id} contentContainerStyle={styles.scroll}
         ListEmptyComponent={<ThemedText type="small" themeColor="textSecondary" style={styles.empty}>{access.write ? t.chat.newConversation : t.chat.endedBody}</ThemedText>}
-        ListHeaderComponent={hasOlder && messages.length > 0 ? <RoomAction label={loadingOlder ? t.feed.loadingMore : t.chat.loadOlder} onPress={() => void loadOlder()} disabled={loadingOlder} /> : null}
+        ListHeaderComponent={<>{hasOlder && messages.length > 0 && <RoomAction label={loadingOlder ? t.feed.loadingMore : t.chat.loadOlder} onPress={() => void loadOlder()} disabled={loadingOlder} />}{verificationNotice}</>}
         renderItem={({ item: message }) => {
           const author = conversationSender(message, conversation);
           if (message.sender_id === currentUserId) return <View style={[styles.bubbleMine, { backgroundColor: theme.accent }]}><ThemedText type="small" style={{ color: theme.accentInk }}>{message.body}</ThemedText></View>;
@@ -184,6 +189,7 @@ const styles = StyleSheet.create({
   toolbar: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', paddingHorizontal: Spacing.two },
   action: { minWidth: 44, minHeight: 44, borderRadius: 12, paddingHorizontal: Spacing.two, paddingVertical: Spacing.two, justifyContent: 'center', alignItems: 'center' },
   request: { padding: Spacing.three, gap: Spacing.three },
+  safetyNotice: { padding: Spacing.three, borderRadius: 12, gap: Spacing.one },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { padding: Spacing.three, gap: Spacing.three },
   empty: { textAlign: 'center', paddingVertical: Spacing.five },
