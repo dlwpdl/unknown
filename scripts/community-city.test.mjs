@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 test('preferred city persists before switching, survives remounts, and isolates accounts and failures', async () => {
-  const cities = [{ id: 'vancouver' }, { id: 'toronto' }, { id: 'calgary' }];
+  const cities = [{ id: 'vancouver', state: 'open' }, { id: 'toronto', state: 'open' }, { id: 'calgary', state: 'soon' }];
   let hooks = [], cursor = 0, fail = false, release;
   let auth = { isAuthed: true, me: { id: 'a', cityId: 'vancouver' } };
   let saved = 'vancouver', writes = 0;
@@ -38,6 +38,8 @@ test('preferred city persists before switching, survives remounts, and isolates 
   } });
   const render = () => { cursor = 0; return exports.CommunityCityProvider({}).props.value; };
   assert.equal(render().city.id, 'vancouver', 'saved preference wins over nearby GPS city');
+  assert.equal(await render().selectCity({ ...cities[2], state: 'open' }), false, 'catalog availability wins over caller-provided state');
+  assert.equal(writes, 0, 'upcoming cities never reach profile storage');
   release = true;
   const saving = render().selectCity(cities[1]);
   assert.equal(render().city.id, 'vancouver', 'do not claim success before storage completes');
@@ -63,8 +65,9 @@ test('preferred city persists before switching, survives remounts, and isolates 
   assert.equal(render().city.id, 'vancouver', 'previous account selection must not leak');
   auth = { isAuthed: false, me: { id: 'me' } };
   const before = writes;
-  assert.equal(await render().selectCity(cities[2]), true);
-  assert.equal(render().city.id, 'calgary');
+  assert.equal(await render().selectCity(cities[2]), false, 'upcoming cities are unavailable to guests too');
+  assert.equal(await render().selectCity(cities[1]), true);
+  assert.equal(render().city.id, 'toronto');
   assert.equal(writes, before, 'guest browsing does not write a member profile');
 });
 

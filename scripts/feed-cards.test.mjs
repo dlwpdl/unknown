@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { CITIES } from '../src/lib/mock.ts';
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 const text = tree => typeof tree === 'string' ? tree : tree && typeof tree === 'object' ? [tree.props?.children].flat(Infinity).map(text).join('') : '';
@@ -14,7 +15,7 @@ function load(file, imports) {
   vm.runInNewContext(source, { exports, require(name) {
     if (name in imports) return imports[name];
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if (name === 'react-native') return { View: 'View', Text: 'Text', Image: 'Image', Pressable: 'Pressable', StyleSheet: { create: value => value, hairlineWidth: 1 } };
+    if (name === 'react-native') return { View: 'View', Text: 'Text', TextInput: 'TextInput', SectionList: 'SectionList', KeyboardAvoidingView: 'KeyboardAvoidingView', useWindowDimensions: () => ({ fontScale: 1 }), Platform: { OS: 'ios' }, Image: 'Image', Pressable: 'Pressable', StyleSheet: { create: value => value, hairlineWidth: 1 } };
     if (name === 'expo-symbols') return { SymbolView: 'SymbolView' };
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };
     if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, four: 24 } };
@@ -65,6 +66,45 @@ test('location collection requires the visible disclosure and a separate consent
   button(render(), '위치 다시 확인').props.onPress();
   await Promise.resolve();
   assert.equal(captures, 2, 'previously enabled sharing can refresh without another disclosure step');
+});
+
+test('city picker searches Canadian cities and keeps upcoming cities and the US tab disabled', async () => {
+  let query = '', selected = null, closed = 0;
+  const { CityPicker } = load('city-picker', {
+    react: { useState: () => [query, next => { query = next; }] },
+    '@/lib/mock': { CITIES },
+    '@/i18n/ko': { t: (await import('../src/i18n/ko.ts')).t },
+    '@/lib/community-city': { useCommunityCity: () => ({ city: CITIES[0], saving: false, selectCity: async city => { selected = city.id; return true; } }) },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+  });
+  const render = () => CityPicker({ onClose: () => { closed++; } });
+  const list = () => nodes(render()).find(node => node.type === 'SectionList').props;
+  assert.deepEqual(Array.from(list().sections, section => section.data.length), [2, 9]);
+  for (const [id, province] of Object.entries({ ottawa: 'ON', edmonton: 'AB', regina: 'SK', 'saint-john': 'NB', halifax: 'NS' })) {
+    const city = CITIES.find(city => city.id === id);
+    assert.equal(city.province, province);
+    assert.equal(city.state, 'soon');
+    const row = list().renderItem({ item: city });
+    assert.equal(row.props.disabled, true);
+    assert.equal(row.props.accessibilityState.disabled, true);
+    await row.props.onPress();
+    assert.equal(selected, null);
+    assert.equal(closed, 0);
+  }
+  const usa = nodes(render()).find(node => node.props?.accessibilityLabel === '미국, 준비 중');
+  assert.equal(usa.props.disabled, true);
+  assert.equal(usa.props.accessibilityState.disabled, true);
+  for (const [search, ids] of [[' Ottawa ', ['ottawa']], ['ON', ['toronto', 'ottawa']], ['NB', ['saint-john']], ['세인트존스', ['saint-john']], ['에드먼턴', ['edmonton']], ['NS', ['halifax']], ['missing-city', []]]) {
+    nodes(render()).find(node => node.type === 'TextInput').props.onChangeText(search);
+    assert.deepEqual(Array.from(list().sections).flatMap(section => section.data.map(city => city.id)), ids);
+  }
+  assert.equal(text(list().ListEmptyComponent), '일치하는 도시가 없어요.');
+  nodes(render()).find(node => node.props?.accessibilityLabel === '도시 검색 지우기').props.onPress();
+  assert.equal(query, '');
+  assert.equal(list().renderItem({ item: CITIES[0] }).props.accessibilityState.selected, true);
+  await list().renderItem({ item: CITIES[1] }).props.onPress();
+  assert.equal(selected, 'toronto');
+  assert.equal(closed, 1);
 });
 
 test('native ads keep attribution and required assets inside an uninset native view', () => {

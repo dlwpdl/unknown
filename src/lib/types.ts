@@ -5,7 +5,9 @@ export type CityState = 'open' | 'soon'; // soon = 대기열(cohort 전). DB cit
 export interface City {
   id: string;
   name: string;
-  province: string; // BC · ON · QC · MB · SK · AB
+  englishName: string;
+  aliases?: string[];
+  province: string; // Canadian province or territory abbreviation
   state: CityState;
 }
 

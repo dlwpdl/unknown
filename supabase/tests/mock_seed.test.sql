@@ -1,6 +1,6 @@
 begin;
 
-select plan(18);
+select plan(20);
 
 select has_column('public', 'posts', 'hashtags', 'posts preserve mock hashtags');
 select has_column('public', 'posts', 'room_preview', 'posts preserve mock room previews');
@@ -9,8 +9,20 @@ select has_column('public', 'tags', 'kind', 'tags preserve post or meetup kind')
 
 select results_eq(
   $$select count(*)::integer from public.cities$$,
-  array[6],
-  'six mock cities are seeded'
+  array[11],
+  'eleven Canadian cities are registered'
+);
+select results_eq(
+  $$select id from public.cities where is_open order by id$$,
+  array['toronto', 'vancouver']::text[],
+  'only the two existing launch cities are open'
+);
+select results_eq(
+  $$select id || ':' || province from public.cities
+    where id in ('ottawa', 'edmonton', 'regina', 'saint-john', 'halifax') and not is_open
+    order by id$$,
+  array['edmonton:AB', 'halifax:NS', 'ottawa:ON', 'regina:SK', 'saint-john:NB']::text[],
+  'five new cities have the requested provinces and remain closed'
 );
 select results_eq(
   $$select count(*)::integer from public.tags$$,

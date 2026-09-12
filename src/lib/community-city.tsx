@@ -26,7 +26,7 @@ export function CommunityCityProvider({ children }: { children: ReactNode }) {
   // Navigation after posting only changes the view; explicit city selection saves the preference.
   const setCity = (next: City) => setSelected({ userId, city: next });
   const selectCity = async (next: City) => {
-    if (inFlight.current || !CITIES.some((item) => item.id === next.id)) return false;
+    if (inFlight.current || !CITIES.some((item) => item.id === next.id && item.state === 'open')) return false;
     if (!userId) { setCity(next); return true; }
     if (next.id === me.cityId) { setSelected(null); return true; }
     inFlight.current = true; setSaving(true);

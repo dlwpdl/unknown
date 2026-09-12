@@ -20,6 +20,7 @@ import {
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DailyChip, todayLabel } from '@/components/daily-chip';
+import { CityPicker } from '@/components/city-picker';
 import { FeedAd } from '@/components/feed-ad';
 import { adsSupported, feedAdPosition } from '@/lib/ads';
 import { MyMeetups } from '@/components/my-meetups';
@@ -67,7 +68,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const bottomClear = insets.bottom + TabBarHeight; // 탭바 + 홈 인디케이터 실측 높이
   const [posts, setPosts] = useState<Post[]>(MOCK_POSTS);
   const [quota, setQuota] = useState(INITIAL_QUOTA);
-  const { city, setCity, selectCity, saving: savingCity } = useCommunityCity();
+  const { city, setCity, selectCity } = useCommunityCity();
   const location = useCommunityLocation();
   const [draftCity, setDraftCity] = useState(city);
   const draftLocation = useRef<(LocationFix & { userId: string }) | null>(null);
@@ -730,45 +731,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           )}
           <ThemedView style={[styles.citySheet, Platform.OS === 'ios' && styles.citySheetIOS]}>
             <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
-              <View style={styles.citySheetHead}>
-                <ThemedText accessibilityRole="header" style={styles.cityPickerTitle}>{t.feed.cityPickerTitle}</ThemedText>
-                <Pressable onPress={() => setCityPicker(false)} accessibilityRole="button" accessibilityLabel={t.write.cancel} style={styles.iconButton}>
-                  <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={21} tintColor={theme.text} />
-                </Pressable>
-              </View>
-              <FlatList
-                data={CITIES}
-                keyExtractor={(c) => c.id}
-                contentContainerStyle={styles.cityList}
-                ListHeaderComponent={<ThemedText type="default" themeColor="textSecondary" style={styles.cityPickerBody}>{t.feed.cityPickerBody}</ThemedText>}
-                ListFooterComponent={<ThemedText type="small" themeColor="textSecondary" style={styles.cityPickerNote}>{t.feed.cityPickerNote}</ThemedText>}
-                renderItem={({ item }) => {
-                  const selected = item.id === city.id;
-                  const open = item.state === 'open';
-                  return (
-                    <Pressable
-                      disabled={savingCity}
-                      onPress={async () => { play('selection'); if (await selectCity(item)) setCityPicker(false); }}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected, disabled: savingCity, busy: savingCity }}
-                      accessibilityLabel={[item.name, !open && t.feed.citySoon, selected && t.feed.citySelected].filter(Boolean).join(', ')}
-                      style={({ pressed }) => [styles.cityRow, { borderColor: theme.line }, pressed && styles.chipPressed]}>
-                      <View style={styles.cityName}>
-                        <ThemedText style={[styles.cityRowTitle, { color: selected ? theme.accent : theme.text }]}>{item.name}</ThemedText>
-                        <ThemedText type="small" themeColor="textSecondary">{item.province}</ThemedText>
-                      </View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
-                        {!open && (
-                          <View style={[styles.cityBadge, { backgroundColor: theme.backgroundElement }]}>
-                            <ThemedText type="small" themeColor="textSecondary">{t.feed.citySoon}</ThemedText>
-                          </View>
-                        )}
-                        {selected && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={23} tintColor={theme.accent} />}
-                      </View>
-                    </Pressable>
-                  );
-                }}
-              />
+              {cityPicker && <CityPicker onClose={() => setCityPicker(false)} />}
             </SafeAreaView>
           </ThemedView>
         </View>
@@ -1066,15 +1029,6 @@ const styles = StyleSheet.create({
   cityBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(20,24,30,0.3)' },
   citySheet: { height: '88%', borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden' },
   citySheetIOS: { height: '100%' },
-  citySheetHead: { flexDirection: 'row', alignItems: 'center', padding: Spacing.four, gap: Spacing.two },
-  cityPickerTitle: { flex: 1, fontSize: 24, lineHeight: 32, fontWeight: 700, letterSpacing: -0.5 },
-  cityList: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.four },
-  cityPickerBody: { marginBottom: Spacing.three },
-  cityPickerNote: { marginTop: Spacing.four },
-  cityRow: { minHeight: 80, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, paddingVertical: Spacing.three, gap: Spacing.three },
-  cityName: { flex: 1, gap: Spacing.one },
-  cityRowTitle: { fontSize: 17, lineHeight: 24, fontWeight: 600 },
-  cityBadge: { borderRadius: 8, paddingHorizontal: Spacing.two, paddingVertical: Spacing.one },
   writerQuota: { marginHorizontal: Spacing.three, marginBottom: Spacing.three },
   writer: {
     flex: 1,

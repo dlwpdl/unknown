@@ -1,0 +1,26 @@
+{
+  "capturedAt": "2026-09-12T21:24:23.759053+00:00",
+  "device": "583E7BFD-5CB4-42EC-B15C-1D4D5986FA39",
+  "platform": "iOS 26.5 iPhone 16 Pro Max",
+  "appPath": "/tmp/gling-city-simulator/Build/Products/Release-iphonesimulator/app.app",
+  "sha256": {
+    "main.jsbundle": "2dff5b30f51e17787864fd7828b33ad4bf1b062d4f1805f4fdddaf0d14926106",
+    "app": "9c64982f8bd02adef2512f734e5079a8dcc6bb115a5712d65f486fbcda00a6f7"
+  },
+  "checks": {
+    "nativeKoreanSearch": true,
+    "usAndUpcomingDisabled": true,
+    "upcomingTapDoesNotSelect": true,
+    "reopenResetsQuery": true,
+    "dynamicTypeLiveChange": "largest accessibility size relayout verified; original size restored",
+    "currentCity": "vancouver",
+    "adminOttawaFilterNoError": true,
+    "javascriptTests": 90,
+    "catalogSQLTests": 20
+  },
+  "screenshots": [
+    "cities-default.png",
+    "cities-search-ottawa.png",
+    "cities-large-text.png"
+  ]
+}
