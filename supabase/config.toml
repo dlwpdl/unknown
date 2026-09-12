@@ -2,7 +2,8 @@ project_id = "gling"
 
 [api]
 enabled = true
-port = 54321
+# 54321 is reserved for the owner's local admin dashboard.
+port = 54331
 schemas = ["public", "graphql_public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000

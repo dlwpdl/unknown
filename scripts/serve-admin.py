@@ -16,4 +16,4 @@ class AdminHandler(SimpleHTTPRequestHandler):
 
 if __name__ == '__main__':
     directory = Path(__file__).resolve().parents[1] / '.admin-dist'
-    ThreadingHTTPServer(('127.0.0.1', 8181), partial(AdminHandler, directory=directory)).serve_forever()
+    ThreadingHTTPServer(('127.0.0.1', 54321), partial(AdminHandler, directory=directory)).serve_forever()
