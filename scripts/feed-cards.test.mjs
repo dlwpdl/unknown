@@ -25,6 +25,29 @@ function load(file, imports) {
   return exports;
 }
 
+test('choosing a post city changes only the draft and keeps upcoming cities unavailable', async () => {
+  let selected = CITIES[0], closed = 0;
+  const { CityPicker } = load('city-picker', {
+    react: { useState: () => ['', () => {}] },
+    '@/lib/mock': { CITIES },
+    '@/i18n/ko': { t: (await import('../src/i18n/ko.ts')).t },
+    '@/lib/community-city': { useCommunityCity: () => ({ city: CITIES[0], saving: false, selectCity: () => assert.fail('post city must not save profile preferences') }) },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+  });
+  const render = () => CityPicker({ onClose: () => { closed++; }, draft: { city: selected, onSelect: city => { selected = city; } } });
+  const list = () => nodes(render()).find(node => node.type === 'SectionList').props;
+  const toronto = CITIES.find(city => city.id === 'toronto');
+  await list().renderItem({ item: toronto }).props.onPress();
+  assert.equal(selected.id, 'toronto');
+  assert.equal(closed, 1);
+  assert.equal(list().renderItem({ item: toronto }).props.accessibilityState.selected, true);
+  assert.match(text(list().ListFooterComponent), /이 글/);
+  assert.doesNotMatch(text(list().ListFooterComponent), /프로필에 저장/);
+  await list().renderItem({ item: CITIES.find(city => city.state === 'soon') }).props.onPress();
+  assert.equal(selected.id, 'toronto');
+  assert.equal(closed, 1);
+});
+
 test('location collection requires the visible disclosure and a separate consent action', async () => {
   let open = false, captures = 0, selected = null, manual = 0, received = null;
   const fix = { userId: 'member' };

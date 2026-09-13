@@ -8,6 +8,7 @@ import {
   Alert,
   DeviceEventEmitter,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -15,11 +16,12 @@ import {
   ScrollView,
   StyleSheet,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { DailyChip, todayLabel } from '@/components/daily-chip';
+import { todayLabel } from '@/components/daily-chip';
 import { CityPicker } from '@/components/city-picker';
 import { FeedAd } from '@/components/feed-ad';
 import { adsSupported, feedAdPosition } from '@/lib/ads';
@@ -35,7 +37,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
-import { nearbyCommunity, type LocationFix } from '@/lib/location';
+import type { LocationFix } from '@/lib/location';
 import { useCommunityLocation } from '@/lib/location-provider';
 import { parseAiDraftResponse } from '@/lib/ai-draft';
 import {
@@ -60,6 +62,7 @@ type DraftImage = { uri: string; base64: string; mimeType: string };
 export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: boolean }) {
   const theme = useTheme();
   const reducedMotion = useReducedMotion();
+  const { fontScale } = useWindowDimensions();
   const router = useRouter();
   const { compose } = useLocalSearchParams<{ compose?: string }>();
   const { isAuthed, promptLogin, me } = useAuth();
@@ -73,7 +76,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [draftCity, setDraftCity] = useState(city);
   const draftLocation = useRef<(LocationFix & { userId: string }) | null>(null);
   const writerRevision = useRef(0);
-  const manualDraftCity = useRef(false);
+  const [writerPanel, setWriterPanel] = useState<'city' | 'category' | 'hashtags' | null>(null);
   const [cityPicker, setCityPicker] = useState(false);
   const [writing, setWriting] = useState(false);
   const [tag, setTag] = useState<Tag>(TAGS[0]);
@@ -264,17 +267,15 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     }
     if (writing) return;
     const revision = ++writerRevision.current;
-    manualDraftCity.current = false;
     draftLocation.current = null;
-    setDraftCity(city);
+    if (!title.trim() && !body.trim() && !hashtagInput.trim() && !draftImage) setDraftCity(city);
+    setWriterPanel(null);
     setWriting(true);
     void location.capture().then((fix) => {
       if (revision !== writerRevision.current) return;
       draftLocation.current = fix;
-      const recommended = fix && CITIES.find((item) => item.id === nearbyCommunity(fix));
-      if (recommended && !manualDraftCity.current) setDraftCity(recommended);
     });
-  }, [isAuthed, promptLogin, quota.max, quota.used, showPostLimit, writing, city, location]);
+  }, [isAuthed, promptLogin, quota.max, quota.used, showPostLimit, writing, city, location, title, body, hashtagInput, draftImage]);
 
   useEffect(() => {
     if (!writing) { writerRevision.current++; draftLocation.current = null; }
@@ -589,7 +590,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           searchSelection.current = null;
           if (post) openDetail(post);
         }}>
-        <SafeAreaProvider style={[styles.writer, { backgroundColor: theme.background }]}>
+        <SafeAreaProvider key={`${fontScale}-${theme.background}`} style={[styles.writer, { backgroundColor: theme.background }]}>
           <SafeAreaView style={{ flex: 1 }}>
             <View style={styles.searchHead}>
               <TextInput
@@ -737,52 +738,84 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         </View>
       </Modal>
 
-      {/* 글쓰기: 태그 선선택 → 태그별 안내문 (당근 패턴) */}
-      <Modal visible={writing} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setWriting(false)}>
+      {/* 글쓰기의 선택 항목은 접고, 제목과 본문을 먼저 보여준다. */}
+      <Modal visible={writing} animationType={reducedMotion ? 'none' : 'slide'}
+        presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} allowSwipeDismissal
+        onRequestClose={() => setWriting(false)}>
         <SafeAreaProvider style={[styles.writer, { backgroundColor: theme.background }]}>
-          <SafeAreaView style={{ flex: 1 }}>
-            <KeyboardAvoidingView
-              style={{ flex: 1 }}
-              behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-              <View style={styles.writerHead}>
-                <Pressable onPress={() => setWriting(false)} accessibilityRole="button">
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {t.write.cancel}
-                  </ThemedText>
+          <SafeAreaView style={styles.writer}>
+            {writerPanel === 'city' ? (
+              <CityPicker onClose={() => setWriterPanel(null)} draft={{ city: draftCity, onSelect: setDraftCity }} />
+            ) : <KeyboardAvoidingView style={styles.writer} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+              <View style={[styles.writerHead, { borderBottomColor: theme.line }]}>
+                <Pressable onPress={() => setWriting(false)} accessibilityRole="button" accessibilityLabel={t.write.cancel}
+                  style={({ pressed }) => [styles.writerClose, { backgroundColor: theme.backgroundElement }, pressed && styles.chipPressed]}>
+                  <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={18} tintColor={theme.textSecondary} />
                 </Pressable>
-                <ThemedText type="smallBold">{t.write.title}</ThemedText>
-                <Pressable
-                  onPress={() => void submit()}
-                  disabled={submitting}
-                  accessibilityRole="button"
-                  accessibilityState={{ disabled: submitting, busy: submitting }}>
-                  <ThemedText type="smallBold" style={{ color: theme.accent, opacity: submitting ? 0.55 : 1 }}>
-                    {submitting ? t.write.submitting : t.write.submit}
-                  </ThemedText>
+                <View style={styles.writerHeading}>
+                  <ThemedText type="smallBold" accessibilityRole="header">{t.write.title}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">{t.write.remaining(quota.used, quota.max)}</ThemedText>
+                </View>
+                <Pressable onPress={() => void submit()} disabled={submitting || creatingDraft || !title.trim() || !body.trim()}
+                  accessibilityRole="button" accessibilityState={{ disabled: submitting || creatingDraft || !title.trim() || !body.trim(), busy: submitting }}
+                  style={({ pressed }) => [styles.writerSubmit, { backgroundColor: theme.accent, opacity: submitting || creatingDraft || !title.trim() || !body.trim() ? 0.45 : 1 }, pressed && styles.chipPressed]}>
+                  <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{submitting ? t.write.submitting : t.write.submit}</ThemedText>
                 </Pressable>
               </View>
-
-              <ScrollView
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={styles.writerScroll}>
-                <View style={styles.writerQuota}><DailyChip quota={quota} /></View>
-                <ThemedText type="smallBold">이 글을 나눌 도시 · {draftCity.name}</ThemedText>
-                <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                  {CITIES.filter((item) => item.state === 'open').map((item) => <Pressable key={item.id} accessibilityRole="button" accessibilityState={{ selected: draftCity.id === item.id }}
-                    onPress={() => { manualDraftCity.current = true; setDraftCity(item); }}
-                    style={[styles.secondaryButton, { backgroundColor: draftCity.id === item.id ? theme.backgroundElement : theme.card }]}>
-                    <ThemedText type="smallBold">{item.name}</ThemedText>
-                  </Pressable>)}
+              <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.writerScroll}>
+                <View style={styles.writerContext}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={`${t.write.postCity}, ${draftCity.name}, ${draftCity.province}`}
+                    onPress={() => { Keyboard.dismiss(); setWriterPanel('city'); }}
+                    style={({ pressed }) => [styles.contextButton, { backgroundColor: theme.backgroundElement }, pressed && styles.chipPressed]}>
+                    <SymbolView name={{ ios: 'mappin', android: 'location_on', web: 'location_on' }} size={16} tintColor={theme.textSecondary} />
+                    <ThemedText type="smallBold" style={styles.contextText}>{draftCity.name} · {draftCity.province}</ThemedText>
+                    <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={12} tintColor={theme.textSecondary} />
+                  </Pressable>
+                  <Pressable accessibilityRole="button" accessibilityLabel={`${t.write.category}, ${tag.label}`} accessibilityState={{ expanded: writerPanel === 'category' }}
+                    onPress={() => { Keyboard.dismiss(); setWriterPanel(writerPanel === 'category' ? null : 'category'); }}
+                    style={({ pressed }) => [styles.contextButton, { backgroundColor: theme.backgroundElement }, pressed && styles.chipPressed]}>
+                    <ThemedText type="smallBold" style={styles.contextText}>{tag.label}</ThemedText>
+                    <SymbolView name={{ ios: writerPanel === 'category' ? 'chevron.up' : 'chevron.down', android: writerPanel === 'category' ? 'expand_less' : 'expand_more', web: writerPanel === 'category' ? 'expand_less' : 'expand_more' }} size={12} tintColor={theme.textSecondary} />
+                  </Pressable>
                 </View>
-                {writing && <NearbyCityCard onFix={(fix) => { draftLocation.current = fix; }} onSelect={(id) => {
-                  const next = CITIES.find((item) => item.id === id);
-                  if (next) { manualDraftCity.current = true; setDraftCity(next); }
-                }} />}
-                <View style={[styles.aiCard, { backgroundColor: theme.card, borderColor: theme.line }]}>
-                  <View style={styles.aiCopy}>
-                    <ThemedText type="smallBold">{t.write.aiTitle}</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">{t.write.aiBody}</ThemedText>
+                {writerPanel === 'category' && <View>
+                  <ThemedText type="small" themeColor="textSecondary" style={styles.writerLabel}>{t.write.pickTag}</ThemedText>
+                  <View style={styles.tagRow}>
+                    {TAGS.map((tg) => {
+                      const selected = tg.id === tag.id;
+                      return (
+                        <Pressable
+                          key={tg.id}
+                          onPress={() => {
+                            play('selection');
+                            setTag(tg);
+                            setWriterPanel(null);
+                          }}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected }}
+                          style={({ pressed }) => [
+                            styles.tagChip,
+                            { backgroundColor: selected ? theme.accent : theme.backgroundElement },
+                            pressed && styles.chipPressed,
+                          ]}>
+                          <ThemedText
+                            type="smallBold"
+                            style={{ color: selected ? theme.accentInk : theme.textSecondary }}>
+                            {tg.label}
+                          </ThemedText>
+                        </Pressable>
+                      );
+                    })}
                   </View>
+                </View>}
+                <TextInput value={title} onChangeText={setTitle} accessibilityLabel={t.write.titlePlaceholder}
+                  placeholder={t.write.titlePlaceholder} placeholderTextColor={theme.textSecondary} maxLength={80}
+                  style={[styles.titleInput, { color: theme.text }]} />
+                <TextInput value={body} onChangeText={setBody} accessibilityLabel={t.write.bodyLabel}
+                  placeholder={t.write.bodyPlaceholder[tag.slug]} placeholderTextColor={theme.textSecondary} multiline
+                  style={[styles.bodyInput, { color: theme.text }]} />
+                {tag.kind === 'meetup' && <ThemedText type="small" themeColor="textSecondary" style={styles.meetupNote}>{t.write.roomNote}</ThemedText>}
+                <View style={[styles.aiCard, { borderColor: theme.line }]}>
                   {draftImage ? (
                     <>
                       <Image source={{ uri: draftImage.uri }} style={styles.draftImage} contentFit="cover" />
@@ -817,15 +850,17 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                         <Pressable
                           onPress={() => void pickDraftImage('camera')}
                           accessibilityRole="button"
-                          style={[styles.photoButton, { backgroundColor: theme.accent }]}>
-                          <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{t.write.takePhoto}</ThemedText>
+                          style={[styles.photoButton, { backgroundColor: theme.backgroundElement }]}>
+                          <SymbolView name={{ ios: 'camera', android: 'photo_camera', web: 'photo_camera' }} size={18} tintColor={theme.textSecondary} />
+                          <ThemedText type="smallBold" style={styles.contextText}>{t.write.takePhoto}</ThemedText>
                         </Pressable>
                       )}
                       <Pressable
                         onPress={() => void pickDraftImage('library')}
                         accessibilityRole="button"
                         style={[styles.photoButton, { backgroundColor: theme.backgroundElement }]}>
-                        <ThemedText type="smallBold">{t.write.choosePhoto}</ThemedText>
+                        <SymbolView name={{ ios: 'photo', android: 'photo_library', web: 'photo_library' }} size={18} tintColor={theme.textSecondary} />
+                        <ThemedText type="smallBold" style={styles.contextText}>{t.write.choosePhoto}</ThemedText>
                       </Pressable>
                     </View>
                   )}
@@ -835,95 +870,49 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                     </View>
                   )}
                 </View>
-
-              <View style={styles.tagRow}>
-                {TAGS.map((tg) => {
-                  const selected = tg.id === tag.id;
-                  return (
-                    <Pressable
-                      key={tg.id}
-                      onPress={() => {
-                        play('selection');
-                        setTag(tg);
-                      }}
-                      accessibilityRole="button"
-                      style={({ pressed }) => [
-                        styles.tagChip,
-                        { backgroundColor: selected ? theme.accent : theme.backgroundElement },
-                        pressed && styles.chipPressed,
-                      ]}>
-                      <ThemedText
-                        type="smallBold"
-                        style={{ fontSize: 13, color: selected ? theme.accentInk : theme.textSecondary }}>
-                        {tg.label}
-                      </ThemedText>
-                    </Pressable>
-                  );
-                })}
-              </View>
-
-              <View style={styles.writerHashtags}>
-                <ThemedText type="smallBold" themeColor="textSecondary" style={styles.popularLabel}>
-                  {t.write.popularHashtags}
-                </ThemedText>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  keyboardShouldPersistTaps="handled"
-                  contentContainerStyle={styles.hashtagBar}>
-                  {writerHashtags.map((hashtag) => (
-                    <Pressable
-                      key={hashtag}
-                      onPress={() => {
-                        play('selection');
-                        setHashtagInput((value) => addHashtag(value, hashtag));
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel={t.write.addHashtag(hashtag)}
-                      style={({ pressed }) => [
-                        styles.suggestionChip,
-                        { backgroundColor: theme.backgroundElement },
-                        pressed && styles.chipPressed,
-                      ]}>
-                      <ThemedText type="smallBold" style={{ fontSize: 12, color: theme.navy }}>
-                        {'#' + hashtag}
-                      </ThemedText>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-              </View>
-
-              <TextInput
-                value={title}
-                onChangeText={setTitle}
-                placeholder={t.write.titlePlaceholder}
-                placeholderTextColor={theme.textSecondary}
-                maxLength={80}
-                style={[styles.titleInput, { color: theme.text, borderBottomColor: theme.line }]}
-              />
-              <TextInput
-                value={hashtagInput}
-                onChangeText={setHashtagInput}
-                placeholder={t.write.hashtagPlaceholder}
-                placeholderTextColor={theme.textSecondary}
-                autoCapitalize="none"
-                style={[styles.hashtagInput, { color: theme.navy, borderBottomColor: theme.line }]}
-              />
-              <TextInput
-                value={body}
-                onChangeText={setBody}
-                placeholder={t.write.bodyPlaceholder[tag.slug]}
-                placeholderTextColor={theme.textSecondary}
-                multiline
-                style={[styles.bodyInput, { color: theme.text }]}
-              />
-              {tag.kind === 'meetup' && (
-                <ThemedText type="small" themeColor="textSecondary" style={styles.meetupNote}>
-                  {t.write.roomNote}
-                </ThemedText>
-              )}
+                <View style={[styles.writerExtras, { borderTopColor: theme.line }]}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t.write.hashtags} accessibilityState={{ expanded: writerPanel === 'hashtags' }}
+                    onPress={() => setWriterPanel(writerPanel === 'hashtags' ? null : 'hashtags')}
+                    style={({ pressed }) => [styles.hashtagToggle, pressed && styles.chipPressed]}>
+                    <SymbolView name={{ ios: 'number', android: 'tag', web: 'tag' }} size={18} tintColor={theme.textSecondary} />
+                    <ThemedText type="smallBold" themeColor="textSecondary" style={styles.contextText}>{hashtagInput.trim() || t.write.hashtags}</ThemedText>
+                    <SymbolView name={{ ios: writerPanel === 'hashtags' ? 'chevron.up' : 'plus', android: writerPanel === 'hashtags' ? 'expand_less' : 'add', web: writerPanel === 'hashtags' ? 'expand_less' : 'add' }} size={16} tintColor={theme.textSecondary} />
+                  </Pressable>
+                </View>
+                {writerPanel === 'hashtags' && <View>
+                  <TextInput value={hashtagInput} onChangeText={setHashtagInput} accessibilityLabel={t.write.hashtags}
+                    placeholder={t.write.hashtagPlaceholder} placeholderTextColor={theme.textSecondary} autoCapitalize="none"
+                    style={[styles.hashtagInput, { color: theme.navy, borderBottomColor: theme.line }]} />
+                  <View style={styles.writerHashtags}>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      keyboardShouldPersistTaps="handled"
+                      contentContainerStyle={styles.hashtagBar}>
+                      {writerHashtags.map((hashtag) => (
+                        <Pressable
+                          key={hashtag}
+                          onPress={() => {
+                            play('selection');
+                            setHashtagInput((value) => addHashtag(value, hashtag));
+                          }}
+                          accessibilityRole="button"
+                          accessibilityLabel={t.write.addHashtag(hashtag)}
+                          style={({ pressed }) => [
+                            styles.suggestionChip,
+                            { backgroundColor: theme.backgroundElement },
+                            pressed && styles.chipPressed,
+                          ]}>
+                          <ThemedText type="smallBold" style={{ fontSize: 12, color: theme.navy }}>
+                            {'#' + hashtag}
+                          </ThemedText>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  </View>
+                </View>}
               </ScrollView>
-            </KeyboardAvoidingView>
+            </KeyboardAvoidingView>}
           </SafeAreaView>
         </SafeAreaProvider>
       </Modal>
@@ -1029,7 +1018,6 @@ const styles = StyleSheet.create({
   cityBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(20,24,30,0.3)' },
   citySheet: { height: '88%', borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden' },
   citySheetIOS: { height: '100%' },
-  writerQuota: { marginHorizontal: Spacing.three, marginBottom: Spacing.three },
   writer: {
     flex: 1,
   },
@@ -1038,21 +1026,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.three,
-    paddingVertical: 12,
+    paddingVertical: Spacing.two,
+    gap: Spacing.two,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  writerClose: { width: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  writerHeading: { flex: 1, alignItems: 'center', gap: Spacing.half },
+  writerSubmit: { minHeight: 44, borderRadius: 22, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, alignItems: 'center', justifyContent: 'center' },
+  writerContext: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginHorizontal: Spacing.four, paddingVertical: Spacing.three },
+  contextButton: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 44, maxWidth: '100%', paddingHorizontal: 12, paddingVertical: Spacing.two, borderRadius: 12 },
+  contextText: { flexShrink: 1 },
+  writerLabel: { marginHorizontal: Spacing.four, marginBottom: Spacing.two },
+  writerExtras: { borderTopWidth: StyleSheet.hairlineWidth, marginHorizontal: Spacing.four },
+  hashtagToggle: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 52, paddingVertical: Spacing.two },
   writerScroll: {
     paddingBottom: Spacing.five,
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
   },
   aiCard: {
-    marginHorizontal: Spacing.three,
-    marginBottom: Spacing.three,
-    padding: Spacing.three,
+    marginHorizontal: Spacing.four,
+    paddingVertical: Spacing.three,
     gap: Spacing.three,
-    borderWidth: 1,
-    borderRadius: 12,
-  },
-  aiCopy: {
-    gap: Spacing.one,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   draftImage: {
     width: '100%',
@@ -1061,18 +1058,22 @@ const styles = StyleSheet.create({
   },
   photoActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.two,
   },
   photoButton: {
     flex: 1,
+    flexDirection: 'row',
+    gap: Spacing.two,
     minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
     paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.two,
   },
   secondaryButton: {
-    minHeight: 40,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -1094,48 +1095,52 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.two,
   },
   tagChip: {
+    minHeight: 44,
+    justifyContent: 'center',
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 7,
   },
   writerHashtags: {
     gap: Spacing.two,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.two,
   },
   suggestionChip: {
+    minHeight: 44,
+    justifyContent: 'center',
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   titleInput: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: 700,
-    borderBottomWidth: 1,
-    marginHorizontal: Spacing.three,
+    marginHorizontal: Spacing.four,
     paddingVertical: 12,
   },
   hashtagInput: {
     fontSize: 14,
     fontWeight: 600,
     borderBottomWidth: 1,
-    marginHorizontal: Spacing.three,
+    marginHorizontal: Spacing.four,
     paddingVertical: 10,
   },
   bodyInput: {
     minHeight: 220,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 17,
+    lineHeight: 26,
     textAlignVertical: 'top',
-    marginHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
+    marginHorizontal: Spacing.four,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.four,
   },
   meetupNote: {
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.three,
   },
 });

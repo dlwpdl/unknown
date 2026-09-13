@@ -9,8 +9,9 @@ import { t } from '@/i18n/ko';
 import { useCommunityCity } from '@/lib/community-city';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
+import type { City } from '@/lib/types';
 
-export function CityPicker({ onClose }: { onClose: () => void }) {
+export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { city: City; onSelect: (city: City) => void } }) {
   const theme = useTheme();
   const { city, selectCity, saving } = useCommunityCity();
   const { play } = useInteractionFeedback();
@@ -29,10 +30,13 @@ export function CityPicker({ onClose }: { onClose: () => void }) {
   // Recreate native text layout when Dynamic Type changes while the sheet is open.
   return <KeyboardAvoidingView key={fontScale} style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <View style={styles.head}>
-      <ThemedText accessibilityRole="header" style={styles.title}>{t.feed.cityPickerTitle}</ThemedText>
-      <Pressable accessibilityRole="button" accessibilityLabel={t.write.cancel} onPress={onClose} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+      {draft && <Pressable accessibilityRole="button" accessibilityLabel={t.write.backToDraft} onPress={onClose} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+        <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={21} tintColor={theme.text} />
+      </Pressable>}
+      <ThemedText accessibilityRole="header" style={styles.title}>{draft ? t.write.postCity : t.feed.cityPickerTitle}</ThemedText>
+      {!draft && <Pressable accessibilityRole="button" accessibilityLabel={t.write.cancel} onPress={onClose} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
         <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={21} tintColor={theme.text} />
-      </Pressable>
+      </Pressable>}
     </View>
     <View style={styles.controls}>
       <View accessibilityRole="tablist" accessibilityLabel={t.feed.cityCountry} style={[styles.countries, { backgroundColor: theme.backgroundElement }]}>
@@ -57,15 +61,21 @@ export function CityPicker({ onClose }: { onClose: () => void }) {
     <SectionList sections={sections} keyExtractor={item => item.id} stickySectionHeadersEnabled={false}
       keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.list}
       ListEmptyComponent={<ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite" style={styles.empty}>{t.feed.cityNoResults}</ThemedText>}
-      ListFooterComponent={<ThemedText type="small" themeColor="textSecondary" style={styles.note}>{t.feed.cityPickerNote}</ThemedText>}
+      ListFooterComponent={<ThemedText type="small" themeColor="textSecondary" style={styles.note}>{draft ? t.write.postCityNote : t.feed.cityPickerNote}</ThemedText>}
       renderSectionHeader={({ section }) => <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{section.title}</ThemedText>}
       renderItem={({ item }) => {
-        const selected = item.id === city.id;
+        const selected = item.id === (draft?.city ?? city).id;
         const open = item.state === 'open';
-        const disabled = saving || !open;
-        return <Pressable disabled={disabled} accessibilityRole="button" accessibilityState={{ selected, disabled, busy: saving }}
+        const busy = !draft && saving;
+        const disabled = busy || !open;
+        return <Pressable disabled={disabled} accessibilityRole="button" accessibilityState={{ selected, disabled, busy }}
           accessibilityLabel={[item.name, item.englishName, item.province, !open && t.feed.citySoon, selected && t.feed.citySelected].filter(Boolean).join(', ')}
-          onPress={async () => { if (disabled) return; play('selection'); if (await selectCity(item)) onClose(); }}
+          onPress={async () => {
+            if (disabled) return;
+            play('selection');
+            if (draft) { draft.onSelect(item); onClose(); }
+            else if (await selectCity(item)) onClose();
+          }}
           style={({ pressed }) => [styles.row, { borderColor: theme.line }, pressed && styles.pressed]}>
           <View style={styles.name}>
             <ThemedText style={[styles.rowTitle, { color: selected ? theme.accent : open ? theme.text : theme.textSecondary }]}>{item.name}</ThemedText>

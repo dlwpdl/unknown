@@ -1,0 +1,45 @@
+{
+  "recordedAt": "2026-09-13T04:27:08.177199+00:00",
+  "baseCommit": "7be46b84828364ab9eb56f741b67fe33f8ab16f2",
+  "device": "583E7BFD-5CB4-42EC-B15C-1D4D5986FA39",
+  "configuration": "Release iphonesimulator",
+  "build": "11",
+  "nativeBuild": "BUILD SUCCEEDED",
+  "bundleSha256": "6927df871bf8a8e4560f7c107d6ea318bb8ae9624a5e88edc315553ea9ffa3cc",
+  "installedBundleMatches": true,
+  "sourceHashes": {
+    "src/components/feed-screen.tsx": "72b8ec2544cc970349bb8a940bb381951a71c2596f1a24f9c4fb094a5ea2df0d",
+    "src/components/city-picker.tsx": "64e6c18766c6c7914aeae189bed9adbda947ab5b0fc8eb0becda2f835b32dcab",
+    "src/i18n/ko.ts": "a275ca2de065021c611a839cdf67c2a67a5387b6fd4d6e5acab8c703aa5d6208",
+    "scripts/feed-cards.test.mjs": "b9aeb59ee6188b93e3a9c85afd3a54622314d111ca2d8c9e034c592e8a18f72d"
+  },
+  "checks": {
+    "node": "113 passed, 0 failed",
+    "typecheck": "pass",
+    "lint": "pass",
+    "webExport": "pass before the final native text-layout remount; final remount checked by typecheck and iOS build",
+    "webInteraction": "393 CSS px, no horizontal overflow; input, city/category switches, hashtag suggestions and publish enabled state checked",
+    "nativeInteraction": "footer opens composer; title/body before optional controls; draft city change and close/reopen preserve draft; native cancel from city selection returns to feed and composer reopens; native photo picker opens/cancels",
+    "accessibility": "44pt minimum action targets; accessibility-large and dark cold start; live restoration to large/light reflows without clipping; visible Korean software keyboard leaves editor and publish action accessible"
+  },
+  "restored": {
+    "appearance": "light",
+    "contentSize": "large",
+    "softwareKeyboard": "hidden as before QA",
+    "draft": "empty; no post submitted",
+    "cityPreference": "unchanged",
+    "stream": "3100 preserved"
+  },
+  "limits": [
+    "No physical-device or Android UI run in this task.",
+    "Photo upload, paid AI drafting and post submission were not executed.",
+    "Orca browser device screenshots showed repeated compositor tiles; DOM geometry and native screenshots were used for layout validation."
+  ],
+  "screenshots": {
+    "before.png": "e0f6ff850e84ea83a1dbbc414b4e0236125f6b8369c484401d9e1cdd0b310284",
+    "after.png": "1274e90aad605bf7ad9620098f76e6528fc0e65162ac8c007dc2efa2162ba0d5",
+    "city-picker.png": "27303df61d782cb7170354be34b467e09f49a81c5de56a958119a44ef423ce2e",
+    "keyboard.png": "a6f73a8e10c79546e40274fb3b8d795844e63bedb5dcff7af31c44faea460c7d",
+    "dark-large-type.png": "518ba6ed22644bf770eccb329f1a9138d5815985dd94c36ba2571e1148f84372"
+  }
+}

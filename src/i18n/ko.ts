@@ -87,6 +87,12 @@ export const t = {
 
   write: {
     title: '오늘의 한 편',
+    postCity: '게시 지역',
+    backToDraft: '글쓰기로 돌아가기',
+    postCityNote: '이 글을 나눌 도시를 골라주세요. 프로필의 선호 지역은 그대로 유지돼요.',
+    category: '카테고리',
+    bodyLabel: '본문',
+    hashtags: '해시태그',
     remaining: (used: number, max: number) => `오늘 ${Math.max(0, max - used)}편 남음`,
     pickTag: '어떤 이야기인가요?',
     titlePlaceholder: '제목',
