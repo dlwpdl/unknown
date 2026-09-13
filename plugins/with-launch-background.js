@@ -1,8 +1,8 @@
-const { withMod } = require('expo/config-plugins');
+const { withMod, withAndroidStyles } = require('expo/config-plugins');
 
 // Register before expo-splash-screen. SDK 57 skips the storyboard color when
 // image is omitted, leaving the template's white/black system background.
-module.exports = config => withMod(config, {
+module.exports = config => withAndroidStyles(withMod(config, {
   platform: 'ios',
   mod: 'splashScreenStoryboard',
   action: config => {
@@ -17,4 +17,9 @@ module.exports = config => withMod(config, {
     }];
     return config;
   },
+}), config => {
+  // SDK 57 references splashscreen_logo even when no image is generated.
+  const splash = config.modResults.resources.style.find(style => style.$.name === 'Theme.App.SplashScreen');
+  splash.item.find(item => item.$.name === 'windowSplashScreenAnimatedIcon')._ = '@android:color/transparent';
+  return config;
 });

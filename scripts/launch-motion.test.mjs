@@ -33,11 +33,13 @@ test('launch keeps the same g visible until it joins the wordmark, then clears t
   assert.equal(linked.headerMaskOpacity, 0);
 });
 
-test('generated iOS launch screen uses the brand background without an image', () => {
+test('generated native launch screens use the brand background without an image', () => {
   const config = JSON.parse(execFileSync('npx', ['expo', 'config', '--type', 'introspect', '--json'], { encoding: 'utf8' }));
   const doc = config._internal.modResults.ios.splashScreenStoryboard.document;
   const view = doc.scenes[0].scene[0].objects[0].viewController[0].view[0];
   assert.equal(view.color[0].$.name, 'SplashScreenBackground');
   assert.equal(view.subviews[0].imageView?.length ?? 0, 0);
   assert.equal(view.constraints[0].constraint?.length ?? 0, 0);
+  const splash = config._internal.modResults.android.styles.resources.style.find(style => style.$.name === 'Theme.App.SplashScreen');
+  assert.equal(splash.item.find(item => item.$.name === 'windowSplashScreenAnimatedIcon')._, '@android:color/transparent');
 });
