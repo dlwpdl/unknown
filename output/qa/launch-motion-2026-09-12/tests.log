@@ -1,0 +1,810 @@
+
+> gling@1.0.0 test
+> node --experimental-strip-types --test scripts/*.test.mjs
+
+TAP version 13
+# Subtest: public app settings are preserved and private admin builds cannot run in CI
+ok 1 - public app settings are preserved and private admin builds cannot run in CI
+  ---
+  duration_ms: 3.3655
+  type: 'test'
+  ...
+# (node:33169) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/admin-user-data.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: activity filters validate real dates and preserve the database cursor precision
+ok 2 - activity filters validate real dates and preserve the database cursor precision
+  ---
+  duration_ms: 3.902166
+  type: 'test'
+  ...
+# Subtest: repeated page delivery cannot duplicate visible activity records
+ok 3 - repeated page delivery cannot duplicate visible activity records
+  ---
+  duration_ms: 0.48
+  type: 'test'
+  ...
+# (node:33170) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/admin.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 관리자 필터와 탭은 화살표로 순환하고 Space로 선택한다
+ok 4 - 관리자 필터와 탭은 화살표로 순환하고 Space로 선택한다
+  ---
+  duration_ms: 0.923625
+  type: 'test'
+  ...
+# Subtest: 관리자 로그인 우회는 개발 중 localhost에서만 허용한다
+ok 5 - 관리자 로그인 우회는 개발 중 localhost에서만 허용한다
+  ---
+  duration_ms: 0.091792
+  type: 'test'
+  ...
+# Subtest: 서버 app_metadata의 명시적인 admin 역할만 관리자다
+ok 6 - 서버 app_metadata의 명시적인 admin 역할만 관리자다
+  ---
+  duration_ms: 0.0655
+  type: 'test'
+  ...
+# Subtest: 열린 신고만 처리할 수 있다
+ok 7 - 열린 신고만 처리할 수 있다
+  ---
+  duration_ms: 0.109416
+  type: 'test'
+  ...
+# Subtest: 신고 상태를 운영자가 바로 이해할 수 있는 한국어로 표시한다
+ok 8 - 신고 상태를 운영자가 바로 이해할 수 있는 한국어로 표시한다
+  ---
+  duration_ms: 0.065834
+  type: 'test'
+  ...
+# Subtest: 신고 큐는 미처리를 먼저 보여주고 상태별로 필터링한다
+ok 9 - 신고 큐는 미처리를 먼저 보여주고 상태별로 필터링한다
+  ---
+  duration_ms: 0.182375
+  type: 'test'
+  ...
+# Subtest: 신고 내부 코드를 한국어 운영 용어로 표시한다
+ok 10 - 신고 내부 코드를 한국어 운영 용어로 표시한다
+  ---
+  duration_ms: 0.055583
+  type: 'test'
+  ...
+# Subtest: feed ads respect placement, consent, initialization, platform and test-unit boundaries
+ok 11 - feed ads respect placement, consent, initialization, platform and test-unit boundaries
+  ---
+  duration_ms: 79.441083
+  type: 'test'
+  ...
+# (node:33172) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/ai-draft.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: AI 초안 응답을 앱 형식으로 정규화한다
+ok 12 - AI 초안 응답을 앱 형식으로 정규화한다
+  ---
+  duration_ms: 3.079083
+  type: 'test'
+  ...
+# Subtest: 알 수 없는 카테고리나 빈 본문은 거부한다
+ok 13 - 알 수 없는 카테고리나 빈 본문은 거부한다
+  ---
+  duration_ms: 0.194875
+  type: 'test'
+  ...
+# (node:33173) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/analytics.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: traffic records only named app surfaces without identifiers, search text or admin pages
+ok 14 - traffic records only named app surfaces without identifiers, search text or admin pages
+  ---
+  duration_ms: 2.712625
+  type: 'test'
+  ...
+# (node:33174) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/kakao-auth.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: cancel, dismiss and browser failure release the shared login state for retry
+ok 15 - cancel, dismiss and browser failure release the shared login state for retry
+  ---
+  duration_ms: 224.459084
+  type: 'test'
+  ...
+# (node:33175) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/i18n/ko.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 9개 대분류를 정해진 순서로 제공한다
+ok 16 - 9개 대분류를 정해진 순서로 제공한다
+  ---
+  duration_ms: 1.032959
+  type: 'test'
+  ...
+# Subtest: 모임만 대화방 생성 대상이다
+ok 17 - 모임만 대화방 생성 대상이다
+  ---
+  duration_ms: 0.11925
+  type: 'test'
+  ...
+# Subtest: 모든 mock 글이 현재 대분류를 참조한다
+ok 18 - 모든 mock 글이 현재 대분류를 참조한다
+  ---
+  duration_ms: 0.076292
+  type: 'test'
+  ...
+# Subtest: 글쓰기 안내가 9개 대분류를 모두 지원한다
+ok 19 - 글쓰기 안내가 9개 대분류를 모두 지원한다
+  ---
+  duration_ms: 0.064375
+  type: 'test'
+  ...
+# Subtest: 실제 사용 빈도가 높은 해시태그를 먼저 제안한다
+ok 20 - 실제 사용 빈도가 높은 해시태그를 먼저 제안한다
+  ---
+  duration_ms: 0.356375
+  type: 'test'
+  ...
+# Subtest: 동네의 한영 표기와 흔한 오타를 대표 해시태그로 합친다
+ok 21 - 동네의 한영 표기와 흔한 오타를 대표 해시태그로 합친다
+  ---
+  duration_ms: 0.127375
+  type: 'test'
+  ...
+# Subtest: 자유 입력을 대표 표기로 중복 제거하고 최대 5개만 저장한다
+ok 22 - 자유 입력을 대표 표기로 중복 제거하고 최대 5개만 저장한다
+  ---
+  duration_ms: 0.209625
+  type: 'test'
+  ...
+# Subtest: 추천 해시태그를 중복 없이 최대 5개까지 입력한다
+ok 23 - 추천 해시태그를 중복 없이 최대 5개까지 입력한다
+  ---
+  duration_ms: 0.094333
+  type: 'test'
+  ...
+# Subtest: 동네와 같은 해시태그는 카드에서 한 번만 표시한다
+ok 24 - 동네와 같은 해시태그는 카드에서 한 번만 표시한다
+  ---
+  duration_ms: 0.30225
+  type: 'test'
+  ...
+# (node:33176) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/comment-threads.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 댓글과 답글은 별도 최신순 커서로 읽고 전체 댓글 수에 의존하지 않는다
+ok 25 - 댓글과 답글은 별도 최신순 커서로 읽고 전체 댓글 수에 의존하지 않는다
+  ---
+  duration_ms: 1.6435
+  type: 'test'
+  ...
+# Subtest: 작성 RPC는 직접 답하는 댓글을 보내고 서버 오류를 유지한다
+ok 26 - 작성 RPC는 직접 답하는 댓글을 보내고 서버 오류를 유지한다
+  ---
+  duration_ms: 0.460792
+  type: 'test'
+  ...
+# Subtest: 답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 및 글 전환을 격리한다
+ok 27 - 답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 및 글 전환을 격리한다
+  ---
+  duration_ms: 286.3255
+  type: 'test'
+  ...
+# Subtest: preferred city persists before switching, survives remounts, and isolates accounts and failures
+ok 28 - preferred city persists before switching, survives remounts, and isolates accounts and failures
+  ---
+  duration_ms: 137.456333
+  type: 'test'
+  ...
+# Subtest: auth saves only the signed-in profile and publishes the city only after a confirmed row update
+ok 29 - auth saves only the signed-in profile and publishes the city only after a confirmed row update
+  ---
+  duration_ms: 71.187667
+  type: 'test'
+  ...
+# (node:33183) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/community-data.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 조회수를 임의로 더하지 않고 서버의 유니크 집계를 반환한다
+ok 30 - 조회수를 임의로 더하지 않고 서버의 유니크 집계를 반환한다
+  ---
+  duration_ms: 2.800167
+  type: 'test'
+  ...
+# Subtest: 서버 콘텐츠 필터 오류만 사용자 안내 대상으로 구분한다
+ok 31 - 서버 콘텐츠 필터 오류만 사용자 안내 대상으로 구분한다
+  ---
+  duration_ms: 0.219042
+  type: 'test'
+  ...
+# Subtest: 신청자 모임 한도를 승인자의 한도로 오인하지 않고 종료와 새 대화 한도를 구분한다
+ok 32 - 신청자 모임 한도를 승인자의 한도로 오인하지 않고 종료와 새 대화 한도를 구분한다
+  ---
+  duration_ms: 7.475334
+  type: 'test'
+  ...
+# Subtest: 내 모임은 공개된 진행 모임의 운영·참여·대기만 포함하고 나가기는 서버 성공을 기다린다
+ok 33 - 내 모임은 공개된 진행 모임의 운영·참여·대기만 포함하고 나가기는 서버 성공을 기다린다
+  ---
+  duration_ms: 3.731459
+  type: 'test'
+  ...
+# Subtest: 게시글 이미지는 사용자 폴더와 MIME 확장자를 사용한다
+ok 34 - 게시글 이미지는 사용자 폴더와 MIME 확장자를 사용한다
+  ---
+  duration_ms: 0.108625
+  type: 'test'
+  ...
+# Subtest: Storage가 허용하지 않는 이미지 형식은 업로드 전에 거부한다
+ok 35 - Storage가 허용하지 않는 이미지 형식은 업로드 전에 거부한다
+  ---
+  duration_ms: 0.1375
+  type: 'test'
+  ...
+# Subtest: 탈퇴 검증과 파일 삭제를 서버에 맡기고 실패를 호출자에게 전달한다
+ok 36 - 탈퇴 검증과 파일 삭제를 서버에 맡기고 실패를 호출자에게 전달한다
+  ---
+  duration_ms: 0.256708
+  type: 'test'
+  ...
+# (node:33184) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/i18n/ko.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 남은 글 수를 플랜 한도와 표시한다
+ok 37 - 남은 글 수를 플랜 한도와 표시한다
+  ---
+  duration_ms: 0.58325
+  type: 'test'
+  ...
+# (node:33185) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/supabase/functions/delete-account/index.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 탈퇴는 본인 공급자 연결 해제를 확인한 뒤에만 파일과 계정을 삭제한다
+ok 38 - 탈퇴는 본인 공급자 연결 해제를 확인한 뒤에만 파일과 계정을 삭제한다
+  ---
+  duration_ms: 169.988875
+  type: 'test'
+  ...
+# Subtest: photo draft keeps author hints outside trusted writing instructions and disables storage
+ok 39 - photo draft keeps author hints outside trusted writing instructions and disables storage
+  ---
+  duration_ms: 128.876125
+  type: 'test'
+  ...
+# (node:33187) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/mock.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: location collection requires the visible disclosure and a separate consent action
+ok 40 - location collection requires the visible disclosure and a separate consent action
+  ---
+  duration_ms: 141.373375
+  type: 'test'
+  ...
+# Subtest: city picker searches Canadian cities and keeps upcoming cities and the US tab disabled
+ok 41 - city picker searches Canadian cities and keeps upcoming cities and the US tab disabled
+  ---
+  duration_ms: 46.991666
+  type: 'test'
+  ...
+# Subtest: native ads keep attribution and required assets inside an uninset native view
+ok 42 - native ads keep attribution and required assets inside an uninset native view
+  ---
+  duration_ms: 18.183083
+  type: 'test'
+  ...
+# (node:33196) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/feed-data.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 저널은 첫 사진과 모임 두 개를 중복 없이 보여주고 다음 페이지를 위로 옮기지 않는다
+ok 43 - 저널은 첫 사진과 모임 두 개를 중복 없이 보여주고 다음 페이지를 위로 옮기지 않는다
+  ---
+  duration_ms: 5.144208
+  type: 'test'
+  ...
+# Subtest: 공개 피드 행과 댓글을 앱 카드 형식으로 연결한다
+ok 44 - 공개 피드 행과 댓글을 앱 카드 형식으로 연결한다
+  ---
+  duration_ms: 0.350417
+  type: 'test'
+  ...
+# Subtest: 종료된 모임은 모임 소개에서 제외하되 게시글 기록은 남긴다
+ok 45 - 종료된 모임은 모임 소개에서 제외하되 게시글 기록은 남긴다
+  ---
+  duration_ms: 0.095792
+  type: 'test'
+  ...
+# (node:33198) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/interaction-feedback-preferences.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 피드백 설정은 안전한 기본값을 쓰고 저장된 불리언만 복원한다
+ok 46 - 피드백 설정은 안전한 기본값을 쓰고 저장된 불리언만 복원한다
+  ---
+  duration_ms: 1.396375
+  type: 'test'
+  ...
+# (node:33199) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/kakao-auth.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: iOS는 글링 도메인에서 시작하며 등록된 카카오 PKCE 요청만 전달한다
+ok 47 - iOS는 글링 도메인에서 시작하며 등록된 카카오 PKCE 요청만 전달한다
+  ---
+  duration_ms: 12.939958
+  type: 'test'
+  ...
+# Subtest: 웹 OAuth는 배포 하위 경로를 유지하고 네이티브 콜백은 바꾸지 않는다
+ok 48 - 웹 OAuth는 배포 하위 경로를 유지하고 네이티브 콜백은 바꾸지 않는다
+  ---
+  duration_ms: 0.125833
+  type: 'test'
+  ...
+# Subtest: 실제 개발 계정 로그인은 개발 빌드에서만 노출한다
+ok 49 - 실제 개발 계정 로그인은 개발 빌드에서만 노출한다
+  ---
+  duration_ms: 0.057542
+  type: 'test'
+  ...
+# Subtest: 등록한 카카오 콜백의 인증 코드만 반환한다
+ok 50 - 등록한 카카오 콜백의 인증 코드만 반환한다
+  ---
+  duration_ms: 0.151458
+  type: 'test'
+  ...
+# Subtest: 등록하지 않은 콜백 출처는 거부한다
+ok 51 - 등록하지 않은 콜백 출처는 거부한다
+  ---
+  duration_ms: 0.201292
+  type: 'test'
+  ...
+# Subtest: 카카오가 반환한 OAuth 오류를 일반 오류로 처리한다
+ok 52 - 카카오가 반환한 OAuth 오류를 일반 오류로 처리한다
+  ---
+  duration_ms: 0.066708
+  type: 'test'
+  ...
+# Subtest: 인증 코드가 없는 콜백은 거부한다
+ok 53 - 인증 코드가 없는 콜백은 거부한다
+  ---
+  duration_ms: 0.122209
+  type: 'test'
+  ...
+# (node:33200) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/launch-motion.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: launch keeps the same g visible until it joins the wordmark, then clears the screen
+ok 54 - launch keeps the same g visible until it joins the wordmark, then clears the screen
+  ---
+  duration_ms: 2.37125
+  type: 'test'
+  ...
+# Subtest: generated iOS launch screen uses the brand background without an image
+ok 55 - generated iOS launch screen uses the brand background without an image
+  ---
+  duration_ms: 1188.339917
+  type: 'test'
+  ...
+# (node:33201) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/location.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: only fresh, usable fixes recommend an open nearby community
+ok 56 - only fresh, usable fixes recommend an open nearby community
+  ---
+  duration_ms: 2.852
+  type: 'test'
+  ...
+# Subtest: store catalog failure preserves synchronized membership and clears stale purchase offers
+ok 57 - store catalog failure preserves synchronized membership and clears stale purchase offers
+  ---
+  duration_ms: 76.214541
+  type: 'test'
+  ...
+# (node:33212) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/membership.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: membership opens checkout immediately and preserves quota and purchase safeguards
+ok 58 - membership opens checkout immediately and preserves quota and purchase safeguards
+  ---
+  duration_ms: 102.45725
+  type: 'test'
+  ...
+# (node:33235) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/supabase/functions/membership/index.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: only authenticated provider webhooks record purchases, and persistence failures request a retry
+ok 59 - only authenticated provider webhooks record purchases, and persistence failures request a retry
+  ---
+  duration_ms: 134.844459
+  type: 'test'
+  ...
+# (node:33236) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/supabase/functions/_shared/membership.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: only verified, supported membership entitlements grant benefits
+ok 60 - only verified, supported membership entitlements grant benefits
+  ---
+  duration_ms: 7.536916
+  type: 'test'
+  ...
+# Subtest: expiration, refunds, unsupported stores and missing receipts do not grant membership
+ok 61 - expiration, refunds, unsupported stores and missing receipts do not grant membership
+  ---
+  duration_ms: 0.281833
+  type: 'test'
+  ...
+# Subtest: sandbox membership is allowed only for designated test accounts
+ok 62 - sandbox membership is allowed only for designated test accounts
+  ---
+  duration_ms: 0.092917
+  type: 'test'
+  ...
+# Subtest: cancellation retains paid time; grace and overlapping tiers are preserved
+ok 63 - cancellation retains paid time; grace and overlapping tiers are preserved
+  ---
+  duration_ms: 0.156
+  type: 'test'
+  ...
+# Subtest: invalid provider responses fail without overwriting valid paid state with free
+ok 64 - invalid provider responses fail without overwriting valid paid state with free
+  ---
+  duration_ms: 0.281458
+  type: 'test'
+  ...
+# Subtest: webhooks cover both sides of transfers and deduplicate authenticated UUID identities
+ok 65 - webhooks cover both sides of transfers and deduplicate authenticated UUID identities
+  ---
+  duration_ms: 0.305167
+  type: 'test'
+  ...
+# Subtest: offers display store prices and reject an incorrectly configured subscription period
+ok 66 - offers display store prices and reject an incorrectly configured subscription period
+  ---
+  duration_ms: 0.137458
+  type: 'test'
+  ...
+# Subtest: account deletion removes only the authenticated billing customer and preserves failures for retry
+ok 67 - account deletion removes only the authenticated billing customer and preserves failures for retry
+  ---
+  duration_ms: 15.224333
+  type: 'test'
+  ...
+# Subtest: every profile header can go back or leave a direct entry, with accessible motion and touch settings
+ok 68 - every profile header can go back or leave a direct entry, with accessible motion and touch settings
+  ---
+  duration_ms: 52.090041
+  type: 'test'
+  ...
+# Subtest: shared posts remain escapable during loading, failure and absence, and never show an old ID response
+ok 69 - shared posts remain escapable during loading, failure and absence, and never show an old ID response
+  ---
+  duration_ms: 37.742542
+  type: 'test'
+  ...
+# (node:33238) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/nickname.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 한글과 영문 닉네임은 각각 두 단어를 조합하고 DB 길이 제한을 지킨다
+ok 70 - 한글과 영문 닉네임은 각각 두 단어를 조합하고 DB 길이 제한을 지킨다
+  ---
+  duration_ms: 2.008625
+  type: 'test'
+  ...
+# (node:33239) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/notification-preferences.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: notification routing accepts existing content destinations and rejects external or injected routes
+ok 71 - notification routing accepts existing content destinations and rejects external or injected routes
+  ---
+  duration_ms: 1.102583
+  type: 'test'
+  ...
+# Subtest: notification settings save only the requested patch and propagate server failures
+ok 72 - notification settings save only the requested patch and propagate server failures
+  ---
+  duration_ms: 0.883083
+  type: 'test'
+  ...
+# (node:33240) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/personal-info.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: age uses complete UTC calendar years, including leap birthdays
+ok 73 - age uses complete UTC calendar years, including leap birthdays
+  ---
+  duration_ms: 1.939417
+  type: 'test'
+  ...
+# Subtest: optional personal info validates a complete pair without restricting international names
+ok 74 - optional personal info validates a complete pair without restricting international names
+  ---
+  duration_ms: 0.350958
+  type: 'test'
+  ...
+# (node:33241) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/supabase/functions/_shared/promotions.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: verified credit events use exact products and retain purchase identity for refunds
+ok 75 - verified credit events use exact products and retain purchase identity for refunds
+  ---
+  duration_ms: 2.491125
+  type: 'test'
+  ...
+# Subtest: test purchases and a different app cannot fund a production wallet
+ok 76 - test purchases and a different app cannot fund a production wallet
+  ---
+  duration_ms: 0.394334
+  type: 'test'
+  ...
+# Subtest: credit offers require a matching consumable and actual localized store price
+ok 77 - credit offers require a matching consumable and actual localized store price
+  ---
+  duration_ms: 0.708959
+  type: 'test'
+  ...
+# Subtest: release builds hide promotions even with the opt-in flag, and direct routes do no work
+ok 78 - release builds hide promotions even with the opt-in flag, and direct routes do no work
+  ---
+  duration_ms: 140.09625
+  type: 'test'
+  ...
+# (node:33242) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/notification-preferences.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: unread badges refresh after settings and foreground changes without leaking old account counts
+ok 79 - unread badges refresh after settings and foreground changes without leaking old account counts
+  ---
+  duration_ms: 55.333667
+  type: 'test'
+  ...
+# Subtest: an in-flight preference refresh cannot restore foreground push after opting out
+ok 80 - an in-flight preference refresh cannot restore foreground push after opting out
+  ---
+  duration_ms: 23.400875
+  type: 'test'
+  ...
+# Subtest: Android creates its channel before permission/token work and registers for the expected account
+ok 81 - Android creates its channel before permission/token work and registers for the expected account
+  ---
+  duration_ms: 10.143833
+  type: 'test'
+  ...
+# Subtest: denied permissions never request a token or register a device, and background refresh never prompts
+ok 82 - denied permissions never request a token or register a device, and background refresh never prompts
+  ---
+  duration_ms: 31.547917
+  type: 'test'
+  ...
+# Subtest: unregistration clears the expected account session with a null token and propagates server failure
+ok 83 - unregistration clears the expected account session with a null token and propagates server failure
+  ---
+  duration_ms: 5.797083
+  type: 'test'
+  ...
+# (node:33243) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/supabase/functions/_shared/push-notifications.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: rejects unauthenticated workers before queue access
+ok 84 - rejects unauthenticated workers before queue access
+  ---
+  duration_ms: 23.654833
+  type: 'test'
+  ...
+# Subtest: missing configuration and failed database writes cannot report success
+ok 85 - missing configuration and failed database writes cannot report success
+  ---
+  duration_ms: 1.995875
+  type: 'test'
+  ...
+# Subtest: sends only server claimed recipients and records a ticket, never actual delivery
+ok 86 - sends only server claimed recipients and records a ticket, never actual delivery
+  ---
+  duration_ms: 1.536333
+  type: 'test'
+  ...
+# Subtest: temporary network and HTTP errors retry, permanent HTTP errors stop
+ok 87 - temporary network and HTTP errors retry, permanent HTTP errors stop
+  ---
+  duration_ms: 3.444666
+  type: 'test'
+  ...
+# Subtest: invalid tickets and provider response shapes cannot become accepted
+ok 88 - invalid tickets and provider response shapes cannot become accepted
+  ---
+  duration_ms: 3.3675
+  type: 'test'
+  ...
+# Subtest: expired device tokens are disabled for ticket and receipt errors
+ok 89 - expired device tokens are disabled for ticket and receipt errors
+  ---
+  duration_ms: 0.385625
+  type: 'test'
+  ...
+# Subtest: receipts are polled without resending; only ok receipts mean provider accepted
+ok 90 - receipts are polled without resending; only ok receipts mean provider accepted
+  ---
+  duration_ms: 0.444708
+  type: 'test'
+  ...
+# Subtest: receipt fetch failure keeps its ticket instead of resending
+ok 91 - receipt fetch failure keeps its ticket instead of resending
+  ---
+  duration_ms: 0.150042
+  type: 'test'
+  ...
+# Subtest: external, admin and malformed routes fall back to notifications
+ok 92 - external, admin and malformed routes fall back to notifications
+  ---
+  duration_ms: 0.701084
+  type: 'test'
+  ...
+# Subtest: request conversation routes retain their requests view
+ok 93 - request conversation routes retain their requests view
+  ---
+  duration_ms: 0.617917
+  type: 'test'
+  ...
+# Subtest: 3/5/10 capacity uses separate server pools and picks the nearest valid unlock
+ok 94 - 3/5/10 capacity uses separate server pools and picks the nearest valid unlock
+  ---
+  duration_ms: 0.726208
+  type: 'test'
+  ...
+# Subtest: missing or inconsistent server values remain unknown; zero remaining is a real state
+ok 95 - missing or inconsistent server values remain unknown; zero remaining is a real state
+  ---
+  duration_ms: 0.195709
+  type: 'test'
+  ...
+# Subtest: downgrade preserves real usage above quota without inventing capacity or extra slots
+ok 96 - downgrade preserves real usage above quota without inventing capacity or extra slots
+  ---
+  duration_ms: 0.073125
+  type: 'test'
+  ...
+# Subtest: one continuous bar represents capacity, caps overuse, and preserves accessible known/unknown status
+ok 97 - one continuous bar represents capacity, caps overuse, and preserves accessible known/unknown status
+  ---
+  duration_ms: 1.919208
+  type: 'test'
+  ...
+# (node:33245) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/i18n/ko.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: only accepted active conversations compose; pending requests never read messages or subscribe to them
+ok 98 - only accepted active conversations compose; pending requests never read messages or subscribe to them
+  ---
+  duration_ms: 4.16775
+  type: 'test'
+  ...
+# Subtest: exit copy assigns risk to original requester and differentiates group owner and legacy rooms
+ok 99 - exit copy assigns risk to original requester and differentiates group owner and legacy rooms
+  ---
+  duration_ms: 0.393375
+  type: 'test'
+  ...
+# Subtest: group messages and reports identify actual sender; unknown nickname never becomes the group host
+ok 100 - group messages and reports identify actual sender; unknown nickname never becomes the group host
+  ---
+  duration_ms: 0.609583
+  type: 'test'
+  ...
+# Subtest: missing slot data is unknown, not zero capacity; pending cancellation copy does not claim a consumed slot
+ok 101 - missing slot data is unknown, not zero capacity; pending cancellation copy does not claim a consumed slot
+  ---
+  duration_ms: 0.168458
+  type: 'test'
+  ...
+# Subtest: direct requests and conversations show a safety notice only for an unverified counterpart
+ok 102 - direct requests and conversations show a safety notice only for an unverified counterpart
+  ---
+  duration_ms: 8.652625
+  type: 'test'
+  ...
+# (node:33246) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/supabase.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 관리자·심사 로그인은 서버 역할을 확인한 뒤에만 앱 세션을 바꾼다
+ok 103 - 관리자·심사 로그인은 서버 역할을 확인한 뒤에만 앱 세션을 바꾼다
+  ---
+  duration_ms: 103.43725
+  type: 'test'
+  ...
+# (node:33247) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/review-access.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: review access requires a trusted email review marker and ordinary member role
+ok 104 - review access requires a trusted email review marker and ordinary member role
+  ---
+  duration_ms: 2.302125
+  type: 'test'
+  ...
+# (node:33272) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/sharing.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 운영 주소가 있으면 HTTPS 글 링크를 만들고 없으면 앱 딥링크를 쓴다
+ok 105 - 운영 주소가 있으면 HTTPS 글 링크를 만들고 없으면 앱 딥링크를 쓴다
+  ---
+  duration_ms: 4.075791
+  type: 'test'
+  ...
+# Subtest: 공개 공유 함수 주소는 쿼리로 글 ID를 전달한다
+ok 106 - 공개 공유 함수 주소는 쿼리로 글 ID를 전달한다
+  ---
+  duration_ms: 0.203417
+  type: 'test'
+  ...
+# Subtest: tab transitions finish on interruption and respect system reduced motion and web motion
+ok 107 - tab transitions finish on interruption and respect system reduced motion and web motion
+  ---
+  duration_ms: 38.467083
+  type: 'test'
+  ...
+# (node:33274) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/trust.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: maps existing profile verification fields to L1, L2, and L3
+ok 108 - maps existing profile verification fields to L1, L2, and L3
+  ---
+  duration_ms: 1.262
+  type: 'test'
+  ...
+# (node:33296) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/unknown/mobile/src/lib/web-home.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/unknown/mobile/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: getWebHomeCitySummary falls back to Vancouver
+ok 109 - getWebHomeCitySummary falls back to Vancouver
+  ---
+  duration_ms: 0.594458
+  type: 'test'
+  ...
+# Subtest: launch cities stay in order without presenting mock counts as live activity
+ok 110 - launch cities stay in order without presenting mock counts as live activity
+  ---
+  duration_ms: 1.584875
+  type: 'test'
+  ...
+# Subtest: WEB_POLICY_ITEMS lists the home policy summaries
+ok 111 - WEB_POLICY_ITEMS lists the home policy summaries
+  ---
+  duration_ms: 0.07225
+  type: 'test'
+  ...
+# Subtest: legal pages expose the required public documents and safety disclosures
+ok 112 - legal pages expose the required public documents and safety disclosures
+  ---
+  duration_ms: 0.189041
+  type: 'test'
+  ...
+1..112
+# tests 112
+# suites 0
+# pass 112
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1634.368875

@@ -1,0 +1,126 @@
+{
+  "recordedAt": "2026-09-13T00:28:38.021180+00:00",
+  "device": "583E7BFD-5CB4-42EC-B15C-1D4D5986FA39",
+  "runtime": "iOS 26.5",
+  "baseCommit": "6dea69d93be8a2525fb321d1111304446dd04404",
+  "configuration": "Release iphonesimulator arm64",
+  "bundleIdentifier": "com.dlwpdl.gling",
+  "version": "1.0.0",
+  "build": "11",
+  "buildPath": "/tmp/gling-launch-simulator/Build/Products/Release-iphonesimulator/app.app",
+  "installedPath": "/Users/ash/Library/Developer/CoreSimulator/Devices/583E7BFD-5CB4-42EC-B15C-1D4D5986FA39/data/Containers/Bundle/Application/E8D2C4DB-9BC3-48CE-A233-10C19E330991/app.app",
+  "mainJsBundleSha256": "01a2a3153dc28f257e0a53fbf79acdb9f4e5d7a2cccc4d104da237fabed3981a",
+  "executableSha256": "ada3ef616ecba4a021a17ad315c7131fc467a30433427546eef719822d8461bb",
+  "installedHashesMatch": true,
+  "sourceHashes": {
+    "app.json": "46be515dd75550dd5cca382c6ce30ccb4cd4a26c2cad5f5fbc6749468cc30692",
+    "src/components/animated-icon.tsx": "56e574a03a73b15d7a9f871f4f2eb8c6179361740a0d9d61dada840e0eb3bc46",
+    "src/lib/launch-motion.ts": "762942a14017ab617f6b2cb68c7bf427d57158ce82032dfc539c7392805a136c",
+    "plugins/with-launch-background.js": "83bb910a9d9ef07eaa64db8396ef47572c7b97ba4af301e50032e9a106caaf73",
+    "scripts/launch-motion.test.mjs": "a73f2dccd52d6befa1f07c583940386779bf94dc61961c97874b16320204a713"
+  },
+  "checks": {
+    "node": "112/112 pass",
+    "typecheck": "pass",
+    "lint": "pass",
+    "webExport": "pass",
+    "simulatorRelease": "BUILD SUCCEEDED",
+    "light": "visually checked ring, same last g, wordmark, home-header landing",
+    "dark": "visually checked matching dark launch background and white wordmark",
+    "reducedMotion": "iOS Settings on; no moving logo in recording; restored off",
+    "deepLink": "cold profile/notifications reached without home-header flight"
+  },
+  "restored": {
+    "appearance": "light",
+    "reduceMotion": false,
+    "screen": "profile/notifications",
+    "accountAndAppPreferences": "unchanged"
+  },
+  "limits": [
+    "950 ms is animation timeline, not total cold-start time; simulator includes several seconds native startup",
+    "No physical-device or Android motion QA",
+    "No TestFlight upload or store submission",
+    "Background/touch/image-error paths reviewed, not fault-injected"
+  ],
+  "frames": {
+    "ring.png": {
+      "source": "light.mp4",
+      "seekSeconds": 3.7
+    },
+    "join.png": {
+      "source": "light.mp4",
+      "seekSeconds": 3.95
+    },
+    "wordmark.png": {
+      "source": "light.mp4",
+      "seekSeconds": 4.15
+    }
+  },
+  "artifacts": {
+    "before.png": {
+      "sha256": "48302d607f617eb9dc29a0cdcbb299adcca380af9f2c039f62086002500a0329",
+      "bytes": 273184
+    },
+    "deep-link-launch.json": {
+      "sha256": "2bd39b7a053b5b88303af7a58fcb99fb53b18b43b4adf6729b5a1a9a0de7e4a1",
+      "bytes": 262
+    },
+    "join.png": {
+      "sha256": "3a4225aad4f81e685e7783d3ab148196775b2ffdd3d8d46ebe98981d148e9410",
+      "bytes": 76661
+    },
+    "reduced-motion-restored-ax.json": {
+      "sha256": "4a12fb5084bb026a4ca8ffe59523e8c9cbdb2d086cad235cd9c5cf1629775585",
+      "bytes": 7773
+    },
+    "restored-notifications.png": {
+      "sha256": "13c0a4b9cd3a307b7f33ebc8561fde0e0992874328e2975765a64e8f569832a8",
+      "bytes": 273008
+    },
+    "reduced-motion-enabled-ax.json": {
+      "sha256": "3f2a6c035e73a186dc38f7ae96c368e74a524ec5c7bc640daec371ef510e0566",
+      "bytes": 8764
+    },
+    "reduced-launch.json": {
+      "sha256": "7f79ea0b2dc800e64be0bebc50d80f32c59a450d2e3fd7e4c0c46de4264bad4c",
+      "bytes": 271
+    },
+    "light.mp4": {
+      "sha256": "634bed1d298e040b4da46f66771dbc756ad702781912abbea90294729f87fd94",
+      "bytes": 1920551
+    },
+    "wordmark.png": {
+      "sha256": "8203311b482202a6fbc99001fd6fe32ab2381a9b701da4ad6a7bb1c4e621325e",
+      "bytes": 78107
+    },
+    "light-launch.json": {
+      "sha256": "bd8e8dad061ef8cfb700bebcc2508848d82e05841f7b8fa0040dcda84bfcd12c",
+      "bytes": 271
+    },
+    "ring.png": {
+      "sha256": "736ba2ad66b29f7aea3ec597f5bb66039cd4991a946a97e5e218e7fda6e251a4",
+      "bytes": 74560
+    },
+    "reduced.mp4": {
+      "sha256": "0fd88d02f3ccc09f21f58b7ec70ace459451646dc59fb733256e4ab7387c1861",
+      "bytes": 1461975
+    },
+    "deep-link.mp4": {
+      "sha256": "772558f780a4ad5b497edb7fa172d76dfb3d7d11828904457ce5dce17d815751",
+      "bytes": 1937505
+    },
+    "restored-notifications-ax.json": {
+      "sha256": "bd09a709ab64a0eebd8a1363be97c562e7104a5a72aa8fb8ac6ef12c947bc9a3",
+      "bytes": 15851
+    },
+    "dark-launch.json": {
+      "sha256": "b76d1461012074afc41950517e35cfdbae7635aeb8f5c7b3505fad835832b15e",
+      "bytes": 271
+    },
+    "dark.mp4": {
+      "sha256": "c9382981147b392200e695364d5cc49ebb58835e28b348c6a4bc585cf8cc6fcf",
+      "bytes": 2192432
+    }
+  },
+  "otherRecordings": "dark.mp4, reduced.mp4 and deep-link.mp4 retained locally; hashes above"
+}

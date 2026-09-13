@@ -136,13 +136,14 @@
           "microphonePermission": false
         }
       ],
+      "./plugins/with-launch-background",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#BE3B2A",
-          "image": "./assets/brand/gling-mark-light.png",
-          "imageWidth": 160,
-          "resizeMode": "contain"
+          "backgroundColor": "#FAF9F5",
+          "dark": {
+            "backgroundColor": "#15181C"
+          }
         }
       ],
       "expo-image",
