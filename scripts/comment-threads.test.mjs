@@ -4,8 +4,54 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
+import { buildCommentListRows } from '../src/lib/comment-list.ts';
 import { createThreadComment, loadCommentThreadContext, loadCommentThreadPage } from '../src/lib/comment-threads.ts';
 import { t } from '../src/i18n/ko.ts';
+
+test('댓글 목록은 루트·답글·동작을 개별 행으로 만들고 알림 대상을 중복하지 않는다', () => {
+  const root = { id: 'root', nickname: '수달', body: '루트', replyCount: 2 };
+  const otherRoot = { id: 'other-root', nickname: '토끼', body: '다른 루트' };
+  const reply = { id: 'reply', nickname: '참새', body: '답글', parentId: root.id };
+  const otherReply = { id: 'other-reply', nickname: '여우', body: '다른 답글', parentId: root.id };
+
+  const rows = buildCommentListRows({
+    comments: [root, otherRoot, reply, otherReply],
+    expanded: new Set([root.id]),
+    focusedCommentId: reply.id,
+    focusedComments: [root, otherReply, reply],
+    focusStatus: 'ready',
+    rootPageLoaded: true,
+  });
+
+  assert.deepEqual(rows.map(({ key }) => key), [
+    'focus-label',
+    'comment:root',
+    'focus-reply-label:reply',
+    'comment:reply',
+    'toggle:root',
+    'comment:other-reply',
+    'page:root',
+    'comment:other-root',
+    'page:roots',
+  ]);
+  assert.equal(rows.filter((row) => row.type === 'comment' && row.comment.id === 'root').length, 1);
+  assert.equal(rows.filter((row) => row.type === 'comment' && row.comment.id === 'reply').length, 1);
+});
+
+test('천 개 댓글도 하나의 큰 스레드가 아니라 독립적인 가상 목록 행으로 유지한다', () => {
+  const comments = Array.from({ length: 1_000 }, (_, index) => ({
+    id: `root-${index}`,
+    nickname: '이웃',
+    body: `댓글 ${index}`,
+    replyCount: 1,
+  }));
+  const rows = buildCommentListRows({ comments, expanded: new Set(), rootPageLoaded: true });
+
+  assert.equal(rows.filter((row) => row.type === 'comment').length, 1_000);
+  assert.equal(rows.filter((row) => row.type === 'toggle').length, 1_000);
+  assert.equal(rows.at(-1).key, 'page:roots');
+  assert.ok(rows.every((row) => !('children' in row)), 'no row owns an unbounded nested comment subtree');
+});
 
 test('댓글과 답글은 별도 최신순 커서로 읽고 전체 댓글 수에 의존하지 않는다', async () => {
   const rows = Array.from({ length: 31 }, (_, index) => ({
@@ -105,6 +151,7 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
     if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16 } };
     if (name === '@/i18n/ko') return { t };
+    if (name === '@/lib/comment-list') return { buildCommentListRows };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
     if (name === '@/lib/promotions') return { PROMOTIONS_PREVIEW_ENABLED: false };
     if (name === '@/lib/community-data') return {
@@ -145,14 +192,21 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
     for (const run of pendingEffects) run();
     return tree;
   };
-  const nodes = (value) => !value || typeof value !== 'object' ? []
-    : [...(value.type ? [value] : []), ...Object.values(value).flatMap(child => nodes(child))];
+  const nodes = (value) => {
+    if (!value || typeof value !== 'object') return [];
+    const virtualChildren = value.type === 'FlatList'
+      ? [value.props.ListHeaderComponent, ...value.props.data.map((item, rowIndex) => value.props.renderItem({ item, index: rowIndex }))]
+      : [];
+    return [...(value.type ? [value] : []), ...virtualChildren.flatMap(child => nodes(child)), ...Object.values(value).flatMap(child => nodes(child))];
+  };
   const byLabel = label => nodes(tree).find(node => node.props?.accessibilityLabel === label);
   const input = () => nodes(tree).find(node => node.type === 'TextInput');
   const button = text => nodes(tree).find(node => node.type === 'Pressable' && nodes(node.props.children).some(child => child.props?.children === text));
   const settle = async () => { await new Promise(resolve => setImmediate(resolve)); render(); };
 
   render(); await settle();
+  assert.ok(nodes(tree).find(node => node.type === 'FlatList'), 'comments use one virtualized list');
+  assert.equal(nodes(tree).find(node => node.type === 'ScrollView'), undefined, 'loaded comments are not retained in an unbounded scroll tree');
   input().props.onChangeText('읽기 실패 중 초안'); render();
   assert.equal(button(t.detail.send).props.disabled, true);
   button('다시 시도').props.onPress(); await settle();
@@ -212,13 +266,16 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
   assert.equal(bodyCount('오래된 루트'), 1, 'root outside first root page is present');
   assert.equal(bodyCount('루트 본문'), 1, 'normal first-page roots remain available');
   const scrolls = [];
-  const scroll = nodes(tree).find(node => node.type === 'ScrollView');
-  scroll.props.ref.current = { scrollTo: value => scrolls.push(value.y) };
+  const scroll = nodes(tree).find(node => node.type === 'FlatList');
+  assert.deepEqual(scroll.props.data.slice(0, 4).map(row => row.key), [
+    'focus-label', 'comment:old-root', 'focus-reply-label:old-reply', 'comment:old-reply',
+  ], 'the exact notification root and reply are the first virtualized rows');
+  scroll.props.ref.current = { scrollToIndex: value => scrolls.push(value.index) };
   const layout = () => nodes(tree).find(node => node.props?.onLayout).props.onLayout({ nativeEvent: { layout: { y: 100 } } });
   layout(); layout();
-  assert.deepEqual(scrolls, [100], 'only the initial target reveal moves the scroll');
+  assert.deepEqual(scrolls, [0], 'only the initial target reveal moves the scroll');
   button('답글 더 보기').props.onPress(); await settle(); layout();
-  assert.deepEqual(scrolls, [100], 'ordinary pagination preserves scroll');
+  assert.deepEqual(scrolls, [0], 'ordinary pagination preserves scroll');
   commentId = 'reply'; render(); await settle();
   assert.equal(bodyCount('루트 본문'), 1, 'a focused root already on the normal page is rendered once');
   assert.equal(bodyCount('답글 본문'), 1, 'focused reply and paginated reply do not duplicate');

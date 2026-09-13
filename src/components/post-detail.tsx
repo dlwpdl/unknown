@@ -2,11 +2,11 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { useRouter } from 'expo-router';
 import {
   Alert,
+  FlatList,
   KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
@@ -22,6 +22,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
+import { buildCommentListRows, type CommentListRow } from '@/lib/comment-list';
 import { createThreadComment, loadCommentThreadContext, loadCommentThreadPage, type CommentCursor } from '@/lib/comment-threads';
 import { getCommunityActionError, isContentRejected, recordPostView, startDirectConversation, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -90,12 +91,11 @@ function PostDetailContent({ post, commentId, onClose, onJoin, onCommentCountCha
   const pageRequests = useRef(new Set<string>());
   const loadedPages = useRef(new Set<string>());
   const inputRef = useRef<TextInput>(null);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<FlatList<CommentListRow>>(null);
   const scrolledContext = useRef<string | undefined>(undefined);
   const active = useRef(true);
   const focusedContext = context?.id === commentId ? context : null;
   const focusedRoot = focusedContext?.comments.find((comment) => !comment.parentId);
-  const focusedReply = focusedContext?.comments.find((comment) => comment.id === commentId && comment.parentId);
   useLayoutEffect(() => {
     active.current = true;
     return () => { active.current = false; };
@@ -373,49 +373,74 @@ function PostDetailContent({ post, commentId, onClose, onJoin, onCommentCountCha
 
   const composerPage = pages[replyTo ? replyTo.parentId ?? replyTo.id : 'root'];
   const sendDisabled = sending || !draft.trim() || !composerPage?.loaded || composerPage.loading;
-  const roots: PostComment[] = [];
-  const repliesByRoot = new Map<string, PostComment[]>();
-  for (const comment of comments) {
-    if (!comment.parentId) roots.push(comment);
-    else {
-      const replies = repliesByRoot.get(comment.parentId) ?? [];
-      replies.push(comment);
-      repliesByRoot.set(comment.parentId, replies);
-    }
-  }
+  const listRows = buildCommentListRows({
+    comments,
+    expanded,
+    focusedCommentId: commentId,
+    focusedComments: focusedContext?.comments,
+    focusStatus: commentId ? !focusedContext ? 'loading' : focusedContext.error ? 'error' : focusedRoot ? 'ready' : 'hidden' : undefined,
+    rootPageLoaded: !!pages.root?.loaded,
+  });
 
-  function renderThread(comment: PostComment, target?: PostComment) {
-    return (
-      <View key={comment.id}>
-        {renderComment(comment)}
-        {target && expanded.has(comment.id) && <View style={[styles.replies, styles.focusReply, { borderLeftColor: theme.accent, backgroundColor: theme.backgroundElement }]}>
-          <ThemedText type="smallBold" themeColor="accent" style={styles.commentActionText}>알림의 답글</ThemedText>
-          {renderComment(target)}
-        </View>}
-        {((comment.replyCount ?? 0) > 0 || expanded.has(comment.id)) && (
-          <Pressable
-            onPress={() => {
-              // The shared renderer creates this handler; refs are read only after a press.
-              // eslint-disable-next-line react-hooks/refs
-              toggleReplies(comment.id);
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={`${comment.nickname}의 댓글 답글 ${comment.replyCount ?? 0}개 ${expanded.has(comment.id) ? '접기' : '보기'}`}
-            accessibilityState={{ expanded: expanded.has(comment.id) }}
-            aria-expanded={expanded.has(comment.id)}
-            style={styles.replyToggle}>
-            <ThemedText type="smallBold" themeColor="accent" style={styles.commentActionText}>
-              {expanded.has(comment.id) ? '답글 접기' : `답글 ${comment.replyCount ?? 0}개 보기`}
-            </ThemedText>
-          </Pressable>
-        )}
-        {expanded.has(comment.id) && <View style={[styles.replies, { borderLeftColor: theme.line }]}>
-          {repliesByRoot.get(comment.id)?.filter((reply) => reply.id !== target?.id).map(renderComment)}
-          {renderPageAction(comment.id)}
-        </View>}
-      </View>
-    );
-  }
+  const renderRow = ({ item }: { item: CommentListRow }) => {
+    if (item.type === 'label') {
+      return <View style={item.label === 'focus-reply' ? [styles.replyRow, styles.focusReplyLabel, { borderLeftColor: theme.accent, backgroundColor: theme.backgroundElement }] : undefined}>
+        <ThemedText type="smallBold" themeColor="accent" style={item.label === 'focus-reply' ? styles.commentActionText : undefined}>
+          {item.label === 'focus-reply' ? '알림의 답글' : '알림의 댓글'}
+        </ThemedText>
+      </View>;
+    }
+    if (item.type === 'comment') {
+      const replyStyle = item.depth === 'reply'
+        ? [styles.replyRow, !item.sectionStart && styles.replyGap, { borderLeftColor: theme.line }]
+        : item.depth === 'focus-reply'
+          ? [styles.replyRow, styles.focusReplyComment, { borderLeftColor: theme.accent, backgroundColor: theme.backgroundElement }]
+          : item.focusTarget ? styles.focusRoot : item.sectionStart ? styles.threadStart : undefined;
+      return <View
+        style={replyStyle}
+        onLayout={item.focusTarget ? () => {
+          if (scrolledContext.current === commentId) return;
+          scrolledContext.current = commentId;
+          scrollRef.current?.scrollToIndex({ index: 0, animated: false });
+        } : undefined}>
+        {renderComment(item.comment)}
+      </View>;
+    }
+    if (item.type === 'toggle') {
+      const comment = item.comment;
+      return <Pressable
+        onPress={() => {
+          toggleReplies(comment.id);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`${comment.nickname}의 댓글 답글 ${comment.replyCount ?? 0}개 ${expanded.has(comment.id) ? '접기' : '보기'}`}
+        accessibilityState={{ expanded: expanded.has(comment.id) }}
+        aria-expanded={expanded.has(comment.id)}
+        style={styles.replyToggle}>
+        <ThemedText type="smallBold" themeColor="accent" style={styles.commentActionText}>
+          {expanded.has(comment.id) ? '답글 접기' : `답글 ${comment.replyCount ?? 0}개 보기`}
+        </ThemedText>
+      </Pressable>;
+    }
+    if (item.type === 'page') {
+      return <View style={item.parentId
+        ? [styles.replyRow, !item.sectionStart && styles.replyGap, { borderLeftColor: theme.line }]
+        : !item.sectionStart ? styles.rootPage : undefined}>
+        {renderPageAction(item.parentId)}
+      </View>;
+    }
+    if (item.type === 'focus-status') {
+      return <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite" style={styles.focusStatus}>
+        {item.status === 'loading' ? '댓글을 불러오는 중이에요.' : item.status === 'error' ? '댓글을 불러오지 못했어요.' : '이 댓글은 확인할 수 없어요.'}
+      </ThemedText>;
+    }
+    if (item.type === 'focus-retry') {
+      return <Pressable onPress={() => setContextRetry((current) => current + 1)} accessibilityRole="button" style={styles.commentAction}>
+        <ThemedText type="smallBold" themeColor="accent">다시 시도</ThemedText>
+      </Pressable>;
+    }
+    return <ThemedText type="small" themeColor="textSecondary">첫 댓글을 남겨 보세요.</ThemedText>;
+  };
 
   return (
     <ThemedView style={{ flex: 1 }}>
@@ -429,50 +454,38 @@ function PostDetailContent({ post, commentId, onClose, onJoin, onCommentCountCha
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive"
-          onScrollBeginDrag={() => { scrolledContext.current = commentId; }}>
-          <PostCard
-            post={{ ...post, views: viewCount }}
-            onJoin={onJoin}
-            onAuthor={() =>
-              setSheetUser({
-                id: post.author.id,
-                nickname: post.author.nickname,
-                neighborhood: post.author.neighborhood,
-                verified: post.author.verified,
-                trustLevel: post.author.trustLevel,
-                mine: post.author.id === me.id,
-              })
-            }
-          />
-          {PROMOTIONS_PREVIEW_ENABLED && isAuthed && post.author.id === me.id && <Pressable
-            accessibilityRole="button"
-            onPress={() => { onClose(); router.push({ pathname: '/profile/promotions', params: { postId: post.id } }); }}
-            style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.three, paddingVertical: Spacing.two }}>
-            <ThemedText type="smallBold" themeColor="accent">이 글 끌어올리기</ThemedText>
-          </Pressable>}
-          {commentId && <View style={styles.focusThread}
-            onLayout={({ nativeEvent }) => {
-              if (!focusedRoot || scrolledContext.current === commentId) return;
-              scrolledContext.current = commentId;
-              scrollRef.current?.scrollTo({ y: nativeEvent.layout.y, animated: false });
-            }}>
-            <ThemedText type="smallBold" themeColor="accent">알림의 댓글</ThemedText>
-            {focusedRoot ? renderThread(focusedRoot, focusedReply) : (
-              <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">
-                {!focusedContext ? '댓글을 불러오는 중이에요.' : focusedContext.error ? '댓글을 불러오지 못했어요.' : '이 댓글은 확인할 수 없어요.'}
-              </ThemedText>
-            )}
-            {focusedContext?.error && <Pressable onPress={() => setContextRetry((current) => current + 1)} accessibilityRole="button" style={styles.commentAction}>
-              <ThemedText type="smallBold" themeColor="accent">다시 시도</ThemedText>
+        <FlatList
+          ref={scrollRef}
+          data={listRows}
+          keyExtractor={(item) => item.key}
+          renderItem={renderRow}
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          onScrollBeginDrag={() => { scrolledContext.current = commentId; }}
+          ListHeaderComponent={<View style={styles.listHeader}>
+            <PostCard
+              post={{ ...post, views: viewCount }}
+              onJoin={onJoin}
+              onAuthor={() =>
+                setSheetUser({
+                  id: post.author.id,
+                  nickname: post.author.nickname,
+                  neighborhood: post.author.neighborhood,
+                  verified: post.author.verified,
+                  trustLevel: post.author.trustLevel,
+                  mine: post.author.id === me.id,
+                })
+              }
+            />
+            {PROMOTIONS_PREVIEW_ENABLED && isAuthed && post.author.id === me.id && <Pressable
+              accessibilityRole="button"
+              onPress={() => { onClose(); router.push({ pathname: '/profile/promotions', params: { postId: post.id } }); }}
+              style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.three, paddingVertical: Spacing.two }}>
+              <ThemedText type="smallBold" themeColor="accent">이 글 끌어올리기</ThemedText>
             </Pressable>}
           </View>}
-          <View style={styles.comments}>
-            {roots.filter((comment) => comment.id !== focusedRoot?.id).map((comment) => renderThread(comment))}
-            {pages.root?.loaded && comments.length === 0 && <ThemedText type="small" themeColor="textSecondary">첫 댓글을 남겨 보세요.</ThemedText>}
-            {renderPageAction()}
-          </View>
-        </ScrollView>
+        />
 
         <View
           style={[
@@ -607,16 +620,18 @@ const styles = StyleSheet.create({
   },
   scroll: {
     padding: Spacing.three,
-    gap: Spacing.three,
   },
-  comments: {
-    gap: Spacing.three,
-  },
+  listHeader: { gap: Spacing.three, marginBottom: Spacing.three },
   loadMore: { minHeight: 44, alignItems: 'center', paddingVertical: Spacing.three },
-  focusThread: { gap: Spacing.two },
-  focusReply: { padding: Spacing.two, borderRadius: 10 },
+  focusStatus: { marginTop: Spacing.two },
+  focusRoot: { marginTop: Spacing.two },
+  threadStart: { marginTop: Spacing.three },
+  rootPage: { marginTop: Spacing.three },
   replyToggle: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start', marginLeft: 54, paddingHorizontal: Spacing.one },
-  replies: { marginLeft: Spacing.three, paddingLeft: Spacing.two, borderLeftWidth: 1, gap: Spacing.two },
+  replyRow: { marginLeft: Spacing.three, paddingLeft: Spacing.two, borderLeftWidth: 1 },
+  replyGap: { paddingTop: Spacing.two },
+  focusReplyLabel: { paddingTop: Spacing.two, paddingRight: Spacing.two, borderTopRightRadius: 10 },
+  focusReplyComment: { paddingRight: Spacing.two, paddingBottom: Spacing.two, borderBottomRightRadius: 10 },
   comment: {
     flexDirection: 'row',
     gap: 10,
