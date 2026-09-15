@@ -76,8 +76,8 @@ export function getPostImageSource(
 export function groupJournalPosts(posts: readonly Post[]) {
   // 첫 페이지 안에서만 소개한다. 페이지 추가가 읽던 글을 위로 옮기지 않게 한다.
   const firstPage = posts.slice(0, 30);
-  // A photo leads the page only while it is still news (one of the newest five); otherwise the newest text post leads.
-  const featured = firstPage.slice(0, 5).find((post) => post.imageUris?.[0] && !post.room);
+  // Owner decision 2026-09-15: photos read like any other post, newest first. Only open meetups are pulled up.
+  const featured = undefined as Post | undefined;
   const meetups = firstPage.filter((post) => post.room && !post.room.closed).slice(0, 2);
   const highlighted = new Set([featured?.id, ...meetups.map((post) => post.id)]);
   return { featured, meetups, remaining: posts.filter((post) => !highlighted.has(post.id)) };

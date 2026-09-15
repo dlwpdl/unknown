@@ -9,7 +9,7 @@ import {
   mapPublicFeed,
 } from '../src/lib/feed-data.ts';
 
-test('저널은 첫 사진과 모임 두 개를 중복 없이 보여주고 다음 페이지를 위로 옮기지 않는다', () => {
+test('저널은 모임 두 개만 위로 올리고 사진 글은 최신순 그대로 두며 다음 페이지를 위로 옮기지 않는다', () => {
   const posts = Object.freeze([
     { id: 'question' },
     { id: 'meetup-photo', room: { id: 'room-1' }, imageUris: ['https://example.com/room.jpg'] },
@@ -19,10 +19,10 @@ test('저널은 첫 사진과 모임 두 개를 중복 없이 보여주고 다�
     { id: 'photo-2', imageUris: ['https://example.com/next.jpg'] },
   ]);
   const { featured, meetups, remaining } = groupJournalPosts(posts);
-  assert.equal(featured.id, 'photo'); // photo is within the newest five in this fixture
+  assert.equal(featured, undefined, 'photos are ordinary posts now');
   assert.deepEqual(meetups.map(p => p.id), ['meetup-photo', 'meetup-2']);
-  assert.deepEqual(remaining.map(p => p.id), ['question', 'meetup-3', 'photo-2']);
-  assert.equal(new Set([featured, ...meetups, ...remaining].map(p => p.id)).size, posts.length);
+  assert.deepEqual(remaining.map(p => p.id), ['question', 'photo', 'meetup-3', 'photo-2']);
+  assert.equal(new Set([...meetups, ...remaining].map(p => p.id)).size, posts.length);
   assert.equal(posts[0].id, 'question');
   assert.deepEqual(groupJournalPosts([]), { featured: undefined, meetups: [], remaining: [] });
   const textOnly = Array.from({ length: 30 }, (_, i) => ({ id: `text-${i}`, imageUris: [] }));

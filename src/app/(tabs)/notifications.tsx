@@ -4,6 +4,7 @@ import { SymbolView } from 'expo-symbols';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ProfileAvatarButton } from '@/components/profile-avatar-button';
 import { ThemedText } from '@/components/themed-text';
 import { LoginPanel } from '@/components/login-panel';
 import { TabContent } from '@/components/tab-content';
@@ -15,7 +16,7 @@ import { loadNotifications, markNotificationsRead, type AppNotification } from '
 import { supabase } from '@/lib/supabase';
 import { NOTIFICATION_CATEGORIES, notificationRoute } from '@/lib/notification-preferences';
 
-export default function NotificationsScreen() {
+export default function NotificationsScreen({ embedded = false }: { embedded?: boolean } = {}) {
   const theme = useTheme();
   const router = useRouter();
   const { isAuthed, isAuthLoading, me, signInApple, signInKakao, signInGoogle, signInDev, authError } = useAuth();
@@ -62,7 +63,8 @@ export default function NotificationsScreen() {
     <TabContent style={styles.screen}>
       <SafeAreaView style={styles.safeArea}>
         <View style={[styles.header, { borderBottomColor: theme.line }]}>
-          <ThemedText type="subtitle">{t.notifications.title}</ThemedText>
+          {embedded ? <View style={{ flex: 1 }} /> : <ThemedText type="subtitle" style={{ flex: 1 }}>{t.notifications.title}</ThemedText>}
+          {!embedded && <ProfileAvatarButton />}
           <Pressable accessibilityRole="button" accessibilityLabel="알림 설정" onPress={() => router.push('/profile/notifications')} style={styles.settings}>
             <SymbolView name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }} size={22} tintColor={theme.text} />
           </Pressable>

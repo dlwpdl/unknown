@@ -18,6 +18,7 @@ import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { CITIES, TAGS } from '@/lib/mock';
 import { useMembership } from '@/lib/membership-provider';
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useUnreadCount } from '@/hooks/use-unread-count';
 import { loadMyPosts, loadProfileSummary, loadRepliesToMe, loadSavedPosts, type MyPostRow, type ProfileSummary, type ReplyToMe } from '@/lib/community-data';
 import { relativeTime } from '@/lib/feed-data';
@@ -33,6 +34,7 @@ export default function ProfileScreen() {
   const [savedOpen, setSavedOpen] = useState(false);
   const { membership } = useMembership();
   const unread = useUnreadCount('other');
+  const { play } = useInteractionFeedback();
   const [savedDetail, setSavedDetail] = useState<Post | null>(null);
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
   const [savedLoading, setSavedLoading] = useState(false);
@@ -94,7 +96,7 @@ export default function ProfileScreen() {
 
   const cityName = CITIES.find(({ id }) => id === summary?.cityId)?.name ?? summary?.cityId ?? '';
   const membershipLabel = membership ? ({ free: '베이직', plus: '플러스', premium: '프리미엄' } as const)[membership.tier] : null;
-  const unreadLabel = unread > 0 ? `${unread} 새 소식` : null;
+  const unreadLabel = unread > 0 ? `${unread} 새 소식` : '새 소식 없음';
 
   const pickProfilePhoto = async () => {
     try {
@@ -154,12 +156,12 @@ export default function ProfileScreen() {
           {([
             ['멤버십', membershipLabel, () => router.push('/profile/membership')],
             [`인증 Lv${trustLevel}`, t.trust.short(trustLevel), () => router.push('/profile/settings')],
-            [t.notifications.title, unreadLabel, () => router.navigate('/notifications')],
-            [t.profile.saved, null, () => { setSavedOpen(true); void refreshSaved(); }],
+            [t.notifications.title, unreadLabel, () => router.push('/profile/inbox')],
+            [t.profile.saved, '다시 읽기', () => { setSavedOpen(true); void refreshSaved(); }],
           ] as const).map(([label, sub, onPress]) => (
-            <Pressable key={label} onPress={onPress} accessibilityRole="button" style={({ pressed }) => [styles.manageCell, { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.65 : 1 }]}>
-              <ThemedText type="smallBold">{label}</ThemedText>
-              {sub && <ThemedText type="small" themeColor="textSecondary">{sub}</ThemedText>}
+            <Pressable key={label} onPress={() => { play('selection'); onPress(); }} accessibilityRole="button" style={({ pressed }) => [styles.manageCell, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement }]}>
+              <ThemedText type="smallBold" numberOfLines={1}>{label}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.manageSub}>{sub}</ThemedText>
             </Pressable>
           ))}
         </View>
@@ -196,21 +198,21 @@ export default function ProfileScreen() {
           </Pressable>
           <View style={[styles.divider, { backgroundColor: theme.line }]} /></>}
           <Pressable
-            style={styles.menuRow}
+            style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: theme.backgroundSelected }]}
             accessibilityRole="button"
-            onPress={() => router.push('/profile/guidelines')}>
+            onPress={() => { play('selection'); router.push('/profile/guidelines'); }}>
             <ThemedText type="small">{t.profile.guidelines}</ThemedText>
           </Pressable>
           <View style={[styles.divider, { backgroundColor: theme.line }]} />
           <Pressable
-            style={styles.menuRow}
+            style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: theme.backgroundSelected }]}
             accessibilityRole="button"
-            onPress={() => router.push('/profile/settings')}>
+            onPress={() => { play('selection'); router.push('/profile/settings'); }}>
             <ThemedText type="small">{t.profile.settings}</ThemedText>
           </Pressable>
           <View style={[styles.divider, { backgroundColor: theme.line }]} />
           <Pressable
-            style={styles.menuRow}
+            style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: theme.backgroundSelected }]}
             accessibilityRole="button"
             onPress={() => Alert.alert(t.profile.signOutTitle, t.profile.signOutBody, [
               { text: t.profile.cancel, style: 'cancel' },
@@ -281,7 +283,8 @@ const styles = StyleSheet.create({
   nick: { fontSize: 24, lineHeight: 32, fontWeight: 700 },
   menu: { borderWidth: 1, borderRadius: 12, marginTop: Spacing.four },
   manage: { flexDirection: 'row', gap: Spacing.two, marginBottom: Spacing.two },
-  manageCell: { flex: 1, minHeight: 60, borderRadius: 12, alignItems: 'center', justifyContent: 'center', gap: 2, paddingHorizontal: Spacing.one },
+  manageCell: { flex: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center', gap: 2, paddingVertical: 12, paddingHorizontal: Spacing.one },
+  manageSub: { fontSize: 12, lineHeight: 16 },
   segments: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
   segment: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
   myPost: { paddingVertical: Spacing.three, gap: Spacing.one, borderBottomWidth: StyleSheet.hairlineWidth },

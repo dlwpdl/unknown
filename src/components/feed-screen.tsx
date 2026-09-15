@@ -28,6 +28,7 @@ import { FeedAd } from '@/components/feed-ad';
 import { adsSupported, feedAdPosition } from '@/lib/ads';
 import { MyMeetups } from '@/components/my-meetups';
 import { PostCard } from '@/components/post-card';
+import { ProfileAvatarButton } from '@/components/profile-avatar-button';
 import { UserSheet, type SheetUser } from '@/components/user-sheet';
 import { PostDetail } from '@/components/post-detail';
 import { TabContent } from '@/components/tab-content';
@@ -509,17 +510,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   style={({ pressed }) => [styles.iconButton, pressed && styles.chipPressed]}>
                   <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={23} tintColor={theme.text} />
                 </Pressable>
-                <Pressable
-                  onPress={() => { play('selection'); router.push('/profile'); }}
-                  accessibilityRole="button"
-                  accessibilityLabel={t.tabs.profile}
-                  style={({ pressed }) => [styles.iconButton, pressed && styles.chipPressed]}>
-                  {isAuthed && me.photoUri
-                    ? <Image source={{ uri: me.photoUri }} style={styles.headerAvatar} contentFit="cover" accessible={false} />
-                    : isAuthed
-                      ? <View style={[styles.headerAvatar, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{me.nickname[0]}</ThemedText></View>
-                      : <SymbolView name={{ ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} size={24} tintColor={theme.text} />}
-                </Pressable>
+                <ProfileAvatarButton />
               </View>
           }
           ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText> : null}
@@ -1032,7 +1023,6 @@ const styles = StyleSheet.create({
   chipBar: { flexDirection: 'row', gap: Spacing.one, paddingTop: Spacing.three },
   filterChip: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 999, paddingHorizontal: 14, paddingVertical: Spacing.two },
   chipPressed: { opacity: 0.65 },
-  headerAvatar: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   featured: { marginTop: Spacing.three },
   meetupSection: { marginTop: Spacing.four, gap: Spacing.three },
   meetupPreview: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, padding: Spacing.three, borderRadius: 20 },

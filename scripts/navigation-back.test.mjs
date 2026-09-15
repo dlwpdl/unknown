@@ -33,7 +33,7 @@ test('every profile header can go back or leave a direct entry, with accessible 
     }) },
     'expo-symbols': { SymbolView: 'SymbolView' },
     'react-native-reanimated': { useReducedMotion: () => reducedMotion },
-    '@/i18n/ko': { t: { tabs: { profile: '나' }, profile: { guidelines: '이용 수칙', settings: '설정' } } },
+    '@/i18n/ko': { t: { tabs: { profile: '나' }, profile: { guidelines: '이용 수칙', settings: '설정' }, notifications: { title: '알림' } } },
     '@/lib/promotions': { PROMOTIONS_PREVIEW_ENABLED: false },
   });
   for (const name of ['index', 'membership', 'settings', 'guidelines', 'promotions']) {

@@ -22,6 +22,16 @@ const plans = [
 const tierNames = { free: '베이직', plus: '플러스', premium: '프리미엄' };
 const periodNames = { month: '월', year: '년' };
 
+// 정가(원래 등록가). 스토어 가격이 이보다 낮을 때만 취소선으로 함께 보여준다. 값이 같으면 아무것도 표시하지 않는다.
+const REFERENCE_PRICES: Record<'plus' | 'premium', Record<'month' | 'year', number>> = { plus: { month: 9.99, year: 99.99 }, premium: { month: 14.99, year: 149.99 } };
+function referencePrice(offer: { tier: 'plus' | 'premium'; period: 'month' | 'year'; price: string }) {
+  const reference = REFERENCE_PRICES[offer.tier][offer.period];
+  const current = Number(offer.price.replace(/[^0-9.]/g, ''));
+  if (!Number.isFinite(current) || current >= reference) return null;
+  const symbol = offer.price.replace(/[0-9.,\s]/g, '') || '$';
+  return `${symbol}${reference.toFixed(2)}`;
+}
+
 export default function MembershipScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -128,7 +138,11 @@ export default function MembershipScreen() {
                   <ThemedText style={styles.planName}>{plan.name}</ThemedText>
                   <ThemedText type="smallBold" themeColor={selected ? 'accent' : 'textSecondary'}>{selected ? '✓ 선택됨' : '선택하기'}</ThemedText>
                 </View>
-                <ThemedText style={styles.price}>{offer ? `${offer.price} / ${periodNames[offer.period]}` : offersLoading ? '가격 확인 중' : '준비 중'}</ThemedText>
+                <View style={styles.priceRow}>
+                  {offer && referencePrice(offer) && <ThemedText type="small" themeColor="textSecondary" style={styles.reference}>{referencePrice(offer)}</ThemedText>}
+                  <ThemedText style={styles.price}>{offer ? `${offer.price} / ${periodNames[offer.period]}` : offersLoading ? '가격 확인 중' : '준비 중'}</ThemedText>
+                  {offer && referencePrice(offer) && <ThemedText type="smallBold" themeColor="accent">출시 기념가</ThemedText>}
+                </View>
                 <ThemedText type="small" themeColor="textSecondary">하루 글 {limits.posts}편 · 모임 {limits.meetups}개 · 1:1 대화 {limits.conversations}개</ThemedText>
               </Pressable>;
             })}
@@ -190,6 +204,8 @@ const styles = StyleSheet.create({
   planHeading: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.two },
   planName: { fontSize: 19, lineHeight: 27, fontWeight: 700 },
   price: { fontSize: 19, lineHeight: 27, fontWeight: 700, paddingVertical: Spacing.one },
+  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two, flexWrap: 'wrap' },
+  reference: { textDecorationLine: 'line-through' },
   periods: { flexDirection: 'row', flexWrap: 'wrap', borderRadius: 12, padding: Spacing.one, gap: Spacing.one },
   period: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 8, padding: Spacing.two },
   checkout: { gap: Spacing.two },
