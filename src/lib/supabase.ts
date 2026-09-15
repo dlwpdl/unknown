@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
-import { Platform } from 'react-native';
+import { DeviceEventEmitter, Platform } from 'react-native';
 
 import { isReviewUser } from '@/lib/review-access';
 import { isAdminRole } from '@/lib/admin';
@@ -11,7 +11,28 @@ if (!supabaseUrl || !supabasePublishableKey) {
   throw new Error('Supabase 환경 변수가 설정되지 않았습니다. .env.local을 확인하세요.');
 }
 
+export const AUTH_EXPIRED_EVENT = 'authExpired';
+
+// Detect a dead session at the transport layer instead of in every catch block:
+// GoTrue answers 401 for an expired/revoked JWT and our RPCs raise AUTH_REQUIRED (400).
+// The AuthProvider listens and drops the local session so the login sheet opens right away.
+export function isAuthFailure(status: number, body: string) {
+  return status === 401 || (status === 400 && body.includes('AUTH_REQUIRED'));
+}
+
+const authAwareFetch: typeof fetch = async (input, init) => {
+  const response = await fetch(input, init);
+  if (response.status === 401 || response.status === 400) {
+    const body = await response.clone().text().catch(() => '');
+    if (isAuthFailure(response.status, body) && !String(typeof input === 'string' ? input : (input as Request).url ?? input).includes('/auth/v1/')) {
+      DeviceEventEmitter.emit(AUTH_EXPIRED_EVENT);
+    }
+  }
+  return response;
+};
+
 export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
+  global: { fetch: authAwareFetch },
   auth: {
     storage: Platform.OS === 'web' ? {
       getItem: (key) => typeof window === 'undefined' ? null : window.localStorage.getItem(key),

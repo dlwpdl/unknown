@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { AdminReportQueue } from '@/components/admin/admin-report-queue';
 import { AdminUserDirectoryPanel } from '@/components/admin/admin-user-directory';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import type { AdminSection } from '@/lib/admin';
-import type { AdminDashboardData, AdminProfile } from '@/lib/admin-data';
+import { exportAdminSafetyEvidence, resolveAdminSafetyAlert, type AdminDashboardData, type AdminProfile, type AdminSafetyAlert } from '@/lib/admin-data';
+import { supabase } from '@/lib/supabase';
 
 export function AdminSectionView({
   section,
@@ -38,10 +39,12 @@ export function AdminSectionView({
     const items = [
       { label: '미처리 신고', value: data.counts.openReports, urgent: true },
       { label: 'AI 고위험', value: data.counts.safetyHigh, urgent: true },
+      { label: '감시어 경보', value: data.counts.alertsOpen, urgent: data.counts.alertsOpen > 0 },
       { label: 'AI 처리 대기', value: data.counts.safetyPending },
       { label: '전체 사용자', value: data.counts.profiles },
       { label: '전체 게시글', value: data.counts.posts },
       { label: '전체 메시지', value: data.counts.messages },
+      { label: '다계정 의심', value: data.sharedSessions.length, urgent: data.sharedSessions.length > 0 },
     ];
     return (
       <View style={styles.section}>
@@ -54,11 +57,45 @@ export function AdminSectionView({
             </View>
           ))}
         </View>
+        {data.sharedSessions.length > 0 && <>
+          <View style={styles.subheading}>
+            <ThemedText type="subtitle" accessibilityRole="header">다계정 의심</ThemedText>
+            <ThemedText type="small" style={styles.muted}>최근 30일 안에 같은 IP(또는 같은 IP·기기)로 접속한 계정이 둘 이상입니다. 가정·사무실·통신사 공유 IP일 수 있으니 댓글·글 활동을 함께 보고 판단하세요.</ThemedText>
+          </View>
+          <View style={styles.rows}>
+            {data.sharedSessions.map((group) => (
+              <View key={`${group.ip}:${group.user_agent ?? 'ip'}`} style={styles.row}>
+                <View style={styles.rowTop}>
+                  <ThemedText type="smallBold">{group.same_device ? '같은 IP · 같은 기기' : '같은 IP'} · {group.ip}</ThemedText>
+                  <StateText text={`${group.user_count}개 계정`} danger={group.same_device} />
+                </View>
+                {group.user_agent && <ThemedText type="small" style={styles.muted} numberOfLines={1}>{group.user_agent}</ThemedText>}
+                <View style={styles.rowTop}>
+                  {group.users.map((user) => (
+                    <Pressable key={user.id} onPress={() => onUser(user.id)} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
+                      <ThemedText type="small">{user.nickname}{user.account_type !== 'member' ? ` (${user.account_type})` : ''} · 글 {user.posts} · 댓글 {user.comments} · {formatDate(user.last_seen)}</ThemedText>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            ))}
+          </View>
+        </>}
         <View style={styles.subheading}>
           <ThemedText type="subtitle" accessibilityRole="header">최근 신고</ThemedText>
           <ThemedText type="small" style={styles.muted}>미처리 항목을 먼저 표시합니다.</ThemedText>
         </View>
         <AdminReportQueue reports={data.reports.slice(0, 5)} profiles={profiles} actions={data.moderationActions} resolving={resolving} onUser={onUser} onResolve={onResolve} />
+      </View>
+    );
+  }
+
+  if (section === 'alerts') {
+    return (
+      <View style={styles.section}>
+        <SectionHeading title="감시어 경보" description={`미처리 ${data.counts.alertsOpen}건 · 마약·무기·성착취·사기·자해·위협·신상공개·불법체류 관련 표현이 글·댓글·대화에 나타나면 기록됩니다. 표현 일치는 신호이며 판단은 사람이 합니다.`} />
+        <AdminAlertsPanel alerts={data.safetyAlerts} profiles={profiles} localPreview={localPreview} onUser={onUser} />
+        <LoadMore loading={loadingMore} noMore={noMore} onPress={onLoadMore} />
       </View>
     );
   }
@@ -178,3 +215,85 @@ const styles = StyleSheet.create({
   moreDisabled: { opacity: 0.55 },
   pressed: { backgroundColor: Colors.light.backgroundElement },
 });
+
+const ALERT_CATEGORY: Record<string, string> = {
+  drugs: '마약', weapons: '무기', sexual_exploitation: '성착취', fraud: '사기', self_harm: '자해·자살',
+  violence: '폭력·위협', doxxing: '신상 공개', illegal_status: '불법 체류·위조',
+};
+const ALERT_STATUS: Record<AdminSafetyAlert['status'], string> = { open: '미처리', reviewed: '검토 완료', dismissed: '해당 없음', escalated: '공권력 이관' };
+
+// ponytail: 로컬 상태로 행을 갱신한다. 전체 재조회는 상단 새로고침이 담당.
+function AdminAlertsPanel({ alerts, profiles, localPreview, onUser }: {
+  alerts: AdminSafetyAlert[]; profiles: Map<string, AdminProfile>; localPreview?: boolean; onUser: (userId: string) => void;
+}) {
+  const [overrides, setOverrides] = useState<Record<number, Partial<AdminSafetyAlert>>>({});
+  const [evidence, setEvidence] = useState<Record<number, string>>({});
+  const [busy, setBusy] = useState<number | null>(null);
+  const rows = alerts.map((alert) => ({ ...alert, ...overrides[alert.id] }));
+  const act = async (alert: AdminSafetyAlert, status: AdminSafetyAlert['status']) => {
+    if (localPreview || busy) return;
+    setBusy(alert.id);
+    try {
+      await resolveAdminSafetyAlert(supabase, alert.id, status);
+      setOverrides((current) => ({ ...current, [alert.id]: { status, reviewed_at: new Date().toISOString() } }));
+    } catch {
+      Alert.alert('경보 상태를 바꾸지 못했습니다.', '권한과 연결 상태를 확인해주세요.');
+    } finally {
+      setBusy(null);
+    }
+  };
+  const exportEvidence = async (alert: AdminSafetyAlert) => {
+    if (localPreview || busy) return;
+    setBusy(alert.id);
+    try {
+      const bundle = await exportAdminSafetyEvidence(supabase, alert.id);
+      setEvidence((current) => ({ ...current, [alert.id]: JSON.stringify(bundle, null, 2) }));
+    } catch {
+      Alert.alert('증거 묶음을 만들지 못했습니다.', '권한과 연결 상태를 확인해주세요.');
+    } finally {
+      setBusy(null);
+    }
+  };
+  const confirmEscalate = (alert: AdminSafetyAlert) => Alert.alert(
+    '공권력 이관으로 표시할까요?',
+    '표시 자체는 외부에 전송되지 않습니다. 증거 묶음을 내보내 공식 요청서와 함께 제출하세요. 운영 기록에 남습니다.',
+    [{ text: '취소', style: 'cancel' }, { text: '표시', style: 'destructive', onPress: () => void act(alert, 'escalated') }],
+  );
+  if (rows.length === 0) return <Empty />;
+  return (
+    <View style={styles.rows}>
+      {rows.map((alert) => {
+        const author = profiles.get(alert.author_id);
+        const critical = alert.severity === 'critical';
+        return (
+          <View key={alert.id} style={[styles.row, alert.status === 'open' && critical && styles.metricUrgent]}>
+            <View style={styles.rowTop}>
+              <ThemedText type="smallBold">{ALERT_CATEGORY[alert.category] ?? alert.category} · {alert.target_type} · {alert.matched_terms.join(', ')}</ThemedText>
+              <StateText text={`${alert.severity} · ${ALERT_STATUS[alert.status]}`} danger={alert.status === 'open' && alert.severity !== 'medium'} />
+            </View>
+            <ThemedText type="small" numberOfLines={4}>{alert.excerpt}</ThemedText>
+            <Pressable onPress={() => onUser(alert.author_id)} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
+              <ThemedText type="small" style={styles.muted}>{author?.nickname ?? alert.author_id} · {formatDate(alert.created_at)}{alert.note ? ` · ${alert.note}` : ''}</ThemedText>
+            </Pressable>
+            <View style={styles.rowTop}>
+              {alert.status === 'open' && <ActionText label="검토 완료" onPress={() => void act(alert, 'reviewed')} disabled={busy === alert.id} />}
+              {alert.status === 'open' && <ActionText label="해당 없음" onPress={() => void act(alert, 'dismissed')} disabled={busy === alert.id} />}
+              {alert.status !== 'escalated' && <ActionText label="공권력 이관" onPress={() => confirmEscalate(alert)} disabled={busy === alert.id} danger />}
+              <ActionText label={evidence[alert.id] ? '증거 묶음 새로 만들기' : '증거 묶음 내보내기'} onPress={() => void exportEvidence(alert)} disabled={busy === alert.id} />
+            </View>
+            {evidence[alert.id] && <TextInput value={evidence[alert.id]} editable={false} multiline selectTextOnFocus accessibilityLabel="증거 묶음 JSON"
+              style={{ fontFamily: 'Menlo', fontSize: 11, lineHeight: 16, maxHeight: 240, padding: Spacing.two, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 6, color: Colors.light.text }} />}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function ActionText({ label, onPress, disabled, danger }: { label: string; onPress: () => void; disabled?: boolean; danger?: boolean }) {
+  return (
+    <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityState={{ disabled }} style={{ minHeight: 44, justifyContent: 'center', paddingRight: Spacing.three, opacity: disabled ? 0.5 : 1 }}>
+      <ThemedText type="smallBold" style={danger ? styles.urgent : undefined}>{label}</ThemedText>
+    </Pressable>
+  );
+}

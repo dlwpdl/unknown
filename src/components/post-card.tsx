@@ -11,6 +11,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { recordPostShare, togglePostReaction } from '@/lib/community-data';
+import { getPostImageSource } from '@/lib/feed-data';
 import { uniqueHashtags } from '@/lib/hashtags';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { buildSharedPostUrl } from '@/lib/sharing';
@@ -43,7 +44,10 @@ export function PostCard({
   const [reportOpen, setReportOpen] = useState(false);
   const [failedPhoto, setFailedPhoto] = useState<{ postId: string; uri: string } | null>(null);
   const isMeetup = post.tag.kind === 'meetup';
-  const firstPhoto = post.imageUris?.[0];
+  const isListing = post.kind === 'listing';
+  const viewerScope = isAuthed ? me.id : 'guest';
+  const photoSource = getPostImageSource(post, viewerScope);
+  const firstPhoto = photoSource?.uri;
   const photo = failedPhoto?.postId === post.id && failedPhoto.uri === firstPhoto ? undefined : firstPhoto;
   const chips = uniqueHashtags([post.author.neighborhood, ...(post.hashtags ?? [])]);
 
@@ -124,9 +128,11 @@ export function PostCard({
           accessibilityLabel={`${t.feed.postImage} · ${post.title}`}
           style={({ pressed }) => pressed && styles.pressed}>
           <Image
-            source={{ uri: photo }}
+            source={photoSource}
             style={[styles.postImage, { backgroundColor: theme.backgroundElement }]}
             contentFit="cover"
+            cachePolicy="memory-disk"
+            recyclingKey={`${viewerScope}:${post.id}`}
             transition={0}
             onError={() => setFailedPhoto({ postId: post.id, uri: photo })}
           />
@@ -142,7 +148,7 @@ export function PostCard({
           <ThemedText
             type="smallBold"
             style={[styles.category, { color: isMeetup ? theme.accent : theme.textSecondary }]}>
-            {post.tag.label}
+            {post.tag.label}{isListing ? ` · ${t.detail.listingBadge}` : ''}
           </ThemedText>
           <ThemedText style={[styles.title, photo && styles.photoTitle]}>
             {post.title}
@@ -153,6 +159,14 @@ export function PostCard({
             numberOfLines={onPress ? 3 : undefined}>
             {post.body}
           </ThemedText>
+          {isListing && (post.price != null || (post.listingStatus && post.listingStatus !== 'open')) && (
+            <View style={styles.listingLine}>
+              {post.price != null && <ThemedText style={styles.price}>{t.detail.price(post.price)}</ThemedText>}
+              {post.listingStatus && post.listingStatus !== 'open' && (
+                <ThemedText type="small" themeColor="textSecondary">{t.detail.listingStatus[post.listingStatus]}</ThemedText>
+              )}
+            </View>
+          )}
         </Pressable>
 
         {chips.length > 0 && (
@@ -198,7 +212,7 @@ export function PostCard({
                 )}
               </View>
               <ThemedText type="small" themeColor="textSecondary" style={styles.meta}>
-                {post.createdAtLabel}
+                {post.createdAtLabel}{post.bumpedAt ? ` · ${t.detail.bumpedLabel}` : ''}
               </ThemedText>
             </View>
           </Pressable>
@@ -356,6 +370,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, lineHeight: 26, fontWeight: '700', letterSpacing: -0.4 },
   photoTitle: { fontSize: 20, lineHeight: 28, letterSpacing: -0.5 },
   body: { fontSize: 15, lineHeight: 22, fontWeight: '400', marginTop: Spacing.two },
+  listingLine: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two, marginTop: Spacing.two },
+  price: { fontSize: 17, lineHeight: 24, fontWeight: '700', letterSpacing: -0.3 },
   hashRow: { flexDirection: 'row', flexWrap: 'wrap', columnGap: Spacing.three },
   hash: { minHeight: 44, minWidth: 44, maxWidth: '100%', flexShrink: 1, justifyContent: 'center' },
   head: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginTop: Spacing.two },

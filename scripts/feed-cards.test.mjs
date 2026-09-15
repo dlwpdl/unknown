@@ -15,7 +15,7 @@ function load(file, imports) {
   vm.runInNewContext(source, { exports, require(name) {
     if (name in imports) return imports[name];
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if (name === 'react-native') return { View: 'View', Text: 'Text', TextInput: 'TextInput', SectionList: 'SectionList', KeyboardAvoidingView: 'KeyboardAvoidingView', useWindowDimensions: () => ({ fontScale: 1 }), Platform: { OS: 'ios' }, Image: 'Image', Pressable: 'Pressable', StyleSheet: { create: value => value, hairlineWidth: 1 } };
+    if (name === 'react-native') return { View: 'View', Text: 'Text', TextInput: 'TextInput', SectionList: 'SectionList', KeyboardAvoidingView: 'KeyboardAvoidingView', useWindowDimensions: () => ({ fontScale: 1 }), Platform: { OS: 'ios' }, LayoutAnimation: { configureNext() {}, Presets: { easeInEaseOut: {} } }, Image: 'Image', Pressable: 'Pressable', StyleSheet: { create: value => value, hairlineWidth: 1 } };
     if (name === 'expo-symbols') return { SymbolView: 'SymbolView' };
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };
     if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, four: 24 } };
@@ -29,6 +29,9 @@ test('choosing a post city changes only the draft and keeps upcoming cities unav
   let selected = CITIES[0], closed = 0;
   const { CityPicker } = load('city-picker', {
     react: { useState: () => ['', () => {}] },
+    'react-native-reanimated': { useReducedMotion: () => true },
+    '@/lib/auth': { useAuth: () => ({ isAuthed: true }) },
+    '@/lib/location-provider': { useCommunityLocation: () => ({ enabled: false, ready: true, busy: false, message: '', cityId: null, capture: () => assert.fail('post city must not collect location'), disable() {} }) },
     '@/lib/mock': { CITIES },
     '@/i18n/ko': { t: (await import('../src/i18n/ko.ts')).t },
     '@/lib/community-city': { useCommunityCity: () => ({ city: CITIES[0], saving: false, selectCity: () => assert.fail('post city must not save profile preferences') }) },
@@ -94,7 +97,10 @@ test('location collection requires the visible disclosure and a separate consent
 test('city picker searches Canadian cities and keeps upcoming cities and the US tab disabled', async () => {
   let query = '', selected = null, closed = 0;
   const { CityPicker } = load('city-picker', {
-    react: { useState: () => [query, next => { query = next; }] },
+    react: { useState: init => init === '' ? [query, next => { query = next; }] : [false, () => {}] },
+    'react-native-reanimated': { useReducedMotion: () => true },
+    '@/lib/auth': { useAuth: () => ({ isAuthed: true }) },
+    '@/lib/location-provider': { useCommunityLocation: () => ({ enabled: false, ready: true, busy: false, message: '', cityId: null, capture: async () => null, disable() {} }) },
     '@/lib/mock': { CITIES },
     '@/i18n/ko': { t: (await import('../src/i18n/ko.ts')).t },
     '@/lib/community-city': { useCommunityCity: () => ({ city: CITIES[0], saving: false, selectCity: async city => { selected = city.id; return true; } }) },
@@ -102,8 +108,8 @@ test('city picker searches Canadian cities and keeps upcoming cities and the US 
   });
   const render = () => CityPicker({ onClose: () => { closed++; } });
   const list = () => nodes(render()).find(node => node.type === 'SectionList').props;
-  assert.deepEqual(Array.from(list().sections, section => section.data.length), [2, 9]);
-  for (const [id, province] of Object.entries({ ottawa: 'ON', edmonton: 'AB', regina: 'SK', 'saint-john': 'NB', halifax: 'NS' })) {
+  assert.deepEqual(Array.from(list().sections, section => section.data.length), [3, 8]);
+  for (const [id, province] of Object.entries({ ottawa: 'ON', calgary: 'AB', regina: 'SK', 'saint-john': 'NB', halifax: 'NS' })) {
     const city = CITIES.find(city => city.id === id);
     assert.equal(city.province, province);
     assert.equal(city.state, 'soon');
@@ -147,4 +153,38 @@ test('native ads keep attribution and required assets inside an uninset native v
   assert.deepEqual(content.filter(node => node.type === 'NativeAsset').map(node => node.props.assetType).sort(), ['advertiser', 'body', 'callToAction', 'headline', 'icon']);
   assert.equal(content.filter(node => node.type === 'NativeMediaView').length, 1);
   assert.equal(content.filter(node => node.type === 'Pressable').length, 0, 'SDK assets handle ad clicks, not a whole-card click target');
+});
+
+test('city picker location row discloses before collecting and hides in the post-city sheet', async () => {
+  let open = false, captures = 0;
+  const location = { enabled: false, ready: true, busy: false, message: '', cityId: null, capture: async () => { captures++; location.cityId = 'toronto'; return { latitude: 43.6, longitude: -79.4, accuracy: 20, measuredAt: Date.now(), mocked: false, userId: 'me' }; }, disable() {} };
+  const auth = { isAuthed: true };
+  const { CityPicker } = load('city-picker', {
+    react: { useState: init => init === '' ? ['', () => {}] : [open, next => { open = next; }] },
+    'react-native-reanimated': { useReducedMotion: () => true },
+    '@/lib/auth': { useAuth: () => auth },
+    '@/lib/location-provider': { useCommunityLocation: () => location },
+    '@/lib/mock': { CITIES },
+    '@/i18n/ko': { t: (await import('../src/i18n/ko.ts')).t },
+    '@/lib/community-city': { useCommunityCity: () => ({ city: CITIES[0], saving: false, selectCity: async () => true }) },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+  });
+  const list = props => nodes(CityPicker(props)).find(node => node.type === 'SectionList').props;
+  assert.equal(list({ onClose() {}, draft: { city: CITIES[0], onSelect() {} } }).ListHeaderComponent, null, 'the post-city sheet must not offer GPS lookup');
+  auth.isAuthed = false;
+  assert.equal(list({ onClose() {} }).ListHeaderComponent, null, 'signed-out members see no GPS row');
+  auth.isAuthed = true;
+  const row = () => nodes(list({ onClose() {} }).ListHeaderComponent).find(node => node.props?.accessibilityLabel === '내 위치로 찾기');
+  assert.equal(text(row()), '내 위치로 찾기GPS로 가까운 도시를 한 번만 확인해요');
+  row().props.onPress();
+  assert.equal(open, true);
+  assert.equal(captures, 0, 'opening the disclosure must not request permission or collect coordinates');
+  assert.match(text(list({ onClose() {} }).ListHeaderComponent), /30일 보관/);
+  assert.equal(text(row()).startsWith('동의하고 찾기'), true);
+  await row().props.onPress();
+  assert.equal(captures, 1);
+  const toronto = list({ onClose() {} }).renderItem({ item: CITIES.find(city => city.id === 'toronto') });
+  assert.match(text(toronto), /가까움/);
+  location.enabled = true; open = false;
+  assert.equal(text(row()).startsWith('위치 다시 확인'), true);
 });

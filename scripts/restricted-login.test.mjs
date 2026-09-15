@@ -6,7 +6,7 @@ test('관리자·심사 로그인은 서버 역할을 확인한 뒤에만 앱 �
   const hooks = registerHooks({
     resolve(specifier, context, nextResolve) {
       if (specifier === 'react-native' || specifier === '@react-native-async-storage/async-storage') {
-        return { url: 'data:text/javascript,export const Platform={OS:"web"}; export default {};', shortCircuit: true };
+        return { url: 'data:text/javascript,export const Platform={OS:"web"}; export const DeviceEventEmitter={emit(){},addListener(){return {remove(){}}}}; export default {};', shortCircuit: true };
       }
       if (specifier.startsWith('@/lib/')) return nextResolve(new URL(`../src/${specifier.slice(2)}.ts`, import.meta.url).href, context);
       return nextResolve(specifier, context);

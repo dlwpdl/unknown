@@ -14,12 +14,11 @@ import { MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
-import { getCommunityActionError, loadConversations, loadPendingMeetupRequests, MEETUPS_CHANGED_EVENT, respondMeetupRequest, type ConversationPreview, type MeetupRequest } from '@/lib/community-data';
+import { getCommunityActionError, loadConversations, loadPendingMeetupRequests, MEETUPS_CHANGED_EVENT, respondMeetupRequest, type ConversationPage, type ConversationFilter, type MeetupRequest } from '@/lib/community-data';
 import { useMembership } from '@/lib/membership-provider';
 import { supabase } from '@/lib/supabase';
 
-type Filter = 'all' | 'group' | 'direct' | 'requests';
-type Inbox = { userId: string; conversations: ConversationPreview[]; requests: MeetupRequest[] };
+type Inbox = ConversationPage & { userId: string; filter: ConversationFilter; requests: MeetupRequest[] };
 
 export default function ChatScreen() {
   const theme = useTheme();
@@ -32,52 +31,113 @@ export default function ChatScreen() {
   const currentUser = useRef(userId);
   const version = useRef(0);
   const processing = useRef(false);
-  useLayoutEffect(() => { currentUser.current = userId; version.current += 1; }, [userId]);
   const [inbox, setInbox] = useState<Inbox | null>(null);
   const [selection, setSelection] = useState<{ userId: string; id: string } | null>(null);
-  const [filter, setFilter] = useState<Filter>(view === 'requests' ? 'requests' : 'all');
+  const [filter, setFilter] = useState<ConversationFilter>(view === 'requests' ? 'requests' : 'all');
+  const selectionId = useRef<string | null>(null);
+  const activeFilter = useRef(filter);
+  const inFlight = useRef<{ key: string; request: number; promise: Promise<void> } | null>(null);
+  const pageBusy = useRef(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  useLayoutEffect(() => { currentUser.current = userId; activeFilter.current = filter; version.current += 1; }, [userId, filter, conversationId]);
+  useLayoutEffect(() => { selectionId.current = selection?.userId === userId ? selection.id : null; }, [selection, userId]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<{ userId: string; text: string } | null>(null);
   const [requestBusy, setRequestBusy] = useState<string | null>(null);
   const [approveId, setApproveId] = useState<string | null>(null);
-  const conversations = inbox?.userId === userId ? inbox.conversations : [];
+  const conversations = inbox?.userId === userId && inbox.filter === filter ? inbox.conversations : [];
   const requests = inbox?.userId === userId ? inbox.requests : [];
-  const openConversation = selection?.userId === userId ? conversations.find((item) => item.id === selection.id) : undefined;
-  const pendingCount = conversations.filter((item) => item.status === 'pending').length + requests.length;
-  const displayed = conversations.filter((item) => filter === 'requests' ? item.status === 'pending'
-    : item.status !== 'pending' && (item.status === 'active' || item.status === 'ended') && (filter === 'all' || item.kind === filter));
+  const openConversation = selection?.userId === userId ? conversations.find((item) => item.id === selection.id)
+    ?? (inbox?.userId === userId && inbox.selectedConversation?.id === selection.id ? inbox.selectedConversation : undefined) : undefined;
+  const pendingCount = (inbox?.userId === userId ? inbox.pendingCount : 0) + requests.length;
+  const displayed = conversations;
 
   const refresh = useCallback(async () => {
     if (!userId || currentUser.current !== userId) return;
+    const key = `${userId}:${filter}:${conversationId ?? ''}`;
+    if (inFlight.current?.key === key) return inFlight.current.promise;
     const request = ++version.current;
     setLoading(true); setError(null);
-    try {
-      const [next, nextRequests] = await Promise.all([loadConversations(supabase, userId), loadPendingMeetupRequests(supabase, userId)]);
-      if (currentUser.current !== userId || version.current !== request) return;
-      setInbox({ userId, conversations: next, requests: nextRequests });
-      if (conversationId) {
-        const target = next.find((item) => item.id === conversationId);
-        if (target) { setSelection({ userId, id: target.id }); setFilter(target.status === 'pending' ? 'requests' : target.kind); }
+    const promise = (async () => {
+      try {
+        const [next, nextRequests] = await Promise.all([
+          loadConversations(supabase, userId, filter, null, conversationId ?? selectionId.current),
+          loadPendingMeetupRequests(supabase, userId),
+        ]);
+        if (currentUser.current !== userId || version.current !== request) return;
+        setInbox({ ...next, userId, filter, requests: nextRequests });
+        if (conversationId && next.selectedConversation) setSelection({ userId, id: next.selectedConversation.id });
+      } catch { if (currentUser.current === userId && version.current === request) setError({ userId, text: t.chat.loadError }); }
+      finally {
+        if (currentUser.current === userId && version.current === request) setLoading(false);
+        if (inFlight.current?.request === request) inFlight.current = null;
       }
-    } catch { if (currentUser.current === userId && version.current === request) setError({ userId, text: t.chat.loadError }); }
-    finally { if (currentUser.current === userId && version.current === request) setLoading(false); }
-  }, [conversationId, userId]);
+    })();
+    inFlight.current = { key, request, promise };
+    return promise;
+  }, [conversationId, filter, userId]);
   const changed = useCallback(async () => { await Promise.all([refresh(), refreshMembership()]); }, [refresh, refreshMembership]);
   useFocusEffect(useCallback(() => {
     if (view === 'requests' && !conversationId) { setFilter('requests'); setSelection(null); }
-    void changed(); return () => { version.current += 1; };
-  }, [changed, conversationId, view]));
+  }, [conversationId, view]));
+  useFocusEffect(useCallback(() => {
+    void changed(); return () => { version.current += 1; inFlight.current = null; };
+  }, [changed]));
   useEffect(() => {
     if (!userId) return;
+    let active = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let revision = 0;
+    const schedule = () => {
+      const next = ++revision;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        void (async () => {
+          await inFlight.current?.promise;
+          if (active && revision === next) await changed();
+        })();
+      }, 150);
+    };
     const channel = supabase.channel(`inbox:${userId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () => void changed())
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => void refresh())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'meetup_requests', filter: `host_id=eq.${userId}` }, () => void changed())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, schedule)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, ({ new: message }) => {
+        if (!active) return;
+        // The event already passed message RLS. Update visible previews without refetching history.
+        setInbox((current) => {
+          if (!current || current.userId !== userId) return current;
+          const update = (item: Inbox['conversations'][number]) => item.id === message.conversation_id
+            && typeof message.created_at === 'string' && message.created_at >= item.latestAt
+            ? { ...item, latestBody: message.body as string, latestAt: message.created_at } : item;
+          return { ...current, conversations: current.conversations.map(update).sort((a, b) =>
+            Number(b.status === 'active') - Number(a.status === 'active') || b.latestAt.localeCompare(a.latestAt) || b.id.localeCompare(a.id)),
+          selectedConversation: current.selectedConversation ? update(current.selectedConversation) : null };
+        });
+        // Reconcile only when a snapshot was already in flight, so it cannot overwrite this event.
+        if (inFlight.current) schedule();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'meetup_requests', filter: `host_id=eq.${userId}` }, schedule)
       .subscribe();
-    const listener = DeviceEventEmitter.addListener(MEETUPS_CHANGED_EVENT, () => void changed());
-    const appState = AppState.addEventListener('change', (next) => { if (next === 'active') void changed(); });
-    return () => { listener.remove(); appState.remove(); void supabase.removeChannel(channel); };
-  }, [changed, refresh, userId]);
+    const listener = DeviceEventEmitter.addListener(MEETUPS_CHANGED_EVENT, schedule);
+    const appState = AppState.addEventListener('change', (next) => { if (next === 'active') schedule(); });
+    return () => { active = false; clearTimeout(timer); listener.remove(); appState.remove(); void supabase.removeChannel(channel); };
+  }, [changed, userId]);
+
+  const loadMore = async () => {
+    if (!userId || pageBusy.current || loading || !inbox?.cursor || inbox.userId !== userId || inbox.filter !== filter) return;
+    const request = version.current;
+    pageBusy.current = true; setLoadingMore(true);
+    try {
+      const next = await loadConversations(supabase, userId, filter, inbox.cursor);
+      if (currentUser.current !== userId || activeFilter.current !== filter || version.current !== request) return;
+      setInbox((current) => {
+        if (!current || current.userId !== userId || current.filter !== filter) return current;
+        const ids = new Set(current.conversations.map(({ id }) => id));
+        return { ...current, cursor: next.cursor, pendingCount: next.pendingCount,
+          conversations: [...current.conversations, ...next.conversations.filter(({ id }) => !ids.has(id))] };
+      });
+    } catch { if (currentUser.current === userId && version.current === request) setError({ userId, text: t.chat.loadError }); }
+    finally { pageBusy.current = false; setLoadingMore(false); }
+  };
 
   const handleRequest = async (request: MeetupRequest, response: 'approved' | 'rejected') => {
     if (!userId || processing.current) return;
@@ -102,6 +162,8 @@ export default function ChatScreen() {
   if (!auth.isAuthed) return <LoginPanel reason={t.auth.reasonChat} onApple={auth.signInApple} onKakao={auth.signInKakao} onGoogle={auth.signInGoogle} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} />;
   return <TabContent style={styles.container}><SafeAreaView style={styles.safeArea} edges={['top']}>
     <FlatList data={displayed} keyExtractor={(item) => item.id} contentContainerStyle={styles.list}
+      onEndReached={() => void loadMore()} onEndReachedThreshold={0.4}
+      ListFooterComponent={loadingMore ? <ActivityIndicator color={theme.accent} accessibilityLabel={t.chat.loading} /> : null}
       refreshing={loading} onRefresh={() => void changed()}
       ListHeaderComponent={<View style={styles.header}>
         <View style={styles.headRow}><ThemedText type="subtitle" style={styles.heading}>{t.tabs.chat}</ThemedText><Pressable onPress={() => void changed()} accessibilityRole="button" disabled={loading} accessibilityState={{ disabled: loading }} style={styles.action}><ThemedText type="smallBold" themeColor="accent">{t.chat.refresh}</ThemedText></Pressable></View>

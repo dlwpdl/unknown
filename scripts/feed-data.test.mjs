@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { groupJournalPosts, mapPublicFeed } from '../src/lib/feed-data.ts';
+import {
+  appendUniquePosts,
+  attachSignedPostImages,
+  getPostImageSource,
+  groupJournalPosts,
+  mapPublicFeed,
+} from '../src/lib/feed-data.ts';
 
 test('저널은 첫 사진과 모임 두 개를 중복 없이 보여주고 다음 페이지를 위로 옮기지 않는다', () => {
   const posts = Object.freeze([
@@ -66,4 +72,55 @@ test('종료된 모임은 모임 소개에서 제외하되 게시글 기록은 �
   const journal = groupJournalPosts([closed, open]);
   assert.deepEqual(journal.meetups, [open]);
   assert.deepEqual(journal.remaining, [closed]);
+});
+
+test('피드 페이지는 겹친 커서 행을 한 번만 붙인다', () => {
+  const current = [{ id: 'a' }, { id: 'b' }];
+  const next = [{ id: 'b' }, { id: 'c' }, { id: 'c' }];
+  assert.deepEqual(appendUniquePosts(current, next).map(({ id }) => id), ['a', 'b', 'c']);
+});
+
+test('서명 URL은 경로별로 묶고 같은 사용자 안에서 재사용한다', async () => {
+  const calls = [];
+  const client = {
+    storage: { from(bucket) {
+      assert.equal(bucket, 'post-images');
+      return { async createSignedUrls(paths, expiresIn) {
+        calls.push(paths);
+        assert.equal(expiresIn, 3600);
+        return { data: paths.map((path) => ({ path, signedUrl: `signed:${path}:${calls.length}` })), error: null };
+      } };
+    } },
+  };
+  const posts = [
+    { id: 'a', imagePaths: ['one.jpg', 'one.jpg'] },
+    { id: 'b', imagePaths: ['two.jpg'] },
+  ];
+
+  const first = await attachSignedPostImages(client, posts, 'user-a');
+  const second = await attachSignedPostImages(client, posts, 'user-a');
+  const otherUser = await attachSignedPostImages(client, posts, 'user-b');
+
+  assert.deepEqual(calls, [['one.jpg', 'two.jpg'], ['one.jpg', 'two.jpg']]);
+  assert.deepEqual(first.map(({ imageUris }) => imageUris), [
+    ['signed:one.jpg:1', 'signed:one.jpg:1'], ['signed:two.jpg:1'],
+  ]);
+  assert.equal(getPostImageSource(first[0], 'user-b'), undefined);
+  assert.deepEqual(second.map(({ imageUris }) => imageUris), first.map(({ imageUris }) => imageUris));
+  assert.deepEqual(otherUser.map(({ imageUris }) => imageUris), [
+    ['signed:one.jpg:2', 'signed:one.jpg:2'], ['signed:two.jpg:2'],
+  ]);
+});
+
+test('이미지 캐시는 URL 갱신에는 안정적이고 사용자 변경에는 분리된다', () => {
+  const post = { id: 'post-1', imagePaths: ['owner/photo.jpg'], imageUris: ['signed:first'] };
+  assert.deepEqual(getPostImageSource(post, 'user-a'), {
+    uri: 'signed:first', cacheKey: 'post-image:user-a:owner/photo.jpg',
+  });
+  assert.equal(
+    getPostImageSource({ ...post, imageUris: ['signed:renewed'] }, 'user-a')?.cacheKey,
+    'post-image:user-a:owner/photo.jpg',
+  );
+  assert.equal(getPostImageSource(post, 'user-b')?.cacheKey, 'post-image:user-b:owner/photo.jpg');
+  assert.equal(getPostImageSource({ id: 'text' }, 'user-a'), undefined);
 });

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { attachSignedPostImages, loadPublicPost, mapPublicFeed, type FeedCursor, type PublicCommentRow, type PublicFeedRow } from './feed-data.ts';
-import type { DailyQuota, Post, PostComment, RoomPreview, Tag } from './types.ts';
+import type { DailyQuota, ListingStatus, Post, PostComment, PostKind, RoomPreview, Tag } from './types.ts';
 
 const IMAGE_EXTENSIONS: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -21,7 +21,7 @@ export function isContentRejected(error: unknown) {
 
 export function getCommunityActionError(error: unknown) {
   const message = typeof error === 'object' && error !== null && 'message' in error ? String(error.message) : '';
-  return (['REQUESTER_MEETUP_LIMIT_REACHED', 'MEETUP_LIMIT_REACHED', 'MEETUP_CLOSED', 'DAILY_CONVERSATION_LIMIT_REACHED', 'OTHER_CONVERSATION_LIMIT_REACHED', 'CONVERSATION_LIMIT_REACHED', 'REQUEST_COOLDOWN', 'PENDING_REQUEST_LIMIT', 'REQUEST_EXPIRED', 'CONVERSATION_NOT_ACTIVE', 'REQUEST_ALREADY_RESOLVED', 'RATE_LIMITED'] as const)
+  return (['REQUESTER_MEETUP_LIMIT_REACHED', 'MEETUP_LIMIT_REACHED', 'MEETUP_CLOSED', 'DAILY_CONVERSATION_LIMIT_REACHED', 'OTHER_CONVERSATION_LIMIT_REACHED', 'CONVERSATION_LIMIT_REACHED', 'REQUEST_COOLDOWN', 'PENDING_REQUEST_LIMIT', 'REQUEST_EXPIRED', 'CONVERSATION_NOT_ACTIVE', 'REQUEST_ALREADY_RESOLVED', 'RATE_LIMITED', 'LISTING_LIMIT_REACHED', 'DUPLICATE_LISTING', 'BUMP_COOLDOWN', 'LISTING_NOT_OPEN'] as const)
     .find((code) => message.includes(code)) ?? null;
 }
 
@@ -98,6 +98,8 @@ export async function createCommunityPost(
     body: string;
     hashtags: string[];
     image?: PostDraftImage;
+    kind?: PostKind;
+    price?: number | null;
   },
 ): Promise<Post> {
   let imagePath: string | null = null;
@@ -119,6 +121,8 @@ export async function createCommunityPost(
     p_hashtags: input.hashtags,
     p_image_paths: imagePath ? [imagePath] : [],
     p_room_preview: null,
+    p_kind: input.kind ?? 'story',
+    p_price: input.kind === 'listing' ? input.price ?? null : null,
   });
   if (created.error) {
     if (imagePath) await client.storage.from('post-images').remove([imagePath]);
@@ -128,6 +132,25 @@ export async function createCommunityPost(
   const post = await loadPublicPost(client, created.data as string);
   if (!post) throw new Error('CREATED_POST_NOT_FOUND');
   return post;
+}
+
+export async function loadListingQuota(client: SupabaseClient): Promise<DailyQuota> {
+  const result = await client.rpc('get_listing_quota');
+  if (result.error) throw result.error;
+  const row = (Array.isArray(result.data) ? result.data[0] : result.data) as { used_count: number; max_count: number } | undefined;
+  return { used: row?.used_count ?? 0, max: row?.max_count ?? 5 };
+}
+
+export async function bumpListing(client: SupabaseClient, postId: string) {
+  const result = await client.rpc('bump_post', { p_post_id: postId });
+  if (result.error) throw result.error;
+  return result.data as { bumpedAt: string; nextBumpAt: string; expiresAt: string };
+}
+
+export async function setListingStatus(client: SupabaseClient, postId: string, status: ListingStatus) {
+  const result = await client.rpc('set_listing_status', { p_post_id: postId, p_status: status });
+  if (result.error) throw result.error;
+  return result.data as { status: ListingStatus; expiresAt: string };
 }
 
 export async function loadDailyQuota(client: SupabaseClient): Promise<DailyQuota> {
@@ -240,8 +263,18 @@ export async function sendDirectMessage(client: SupabaseClient, conversationId: 
   return result.data as string;
 }
 
-export async function loadConversations(client: SupabaseClient, userId: string): Promise<ConversationPreview[]> {
-  void userId;
+export type ConversationFilter = 'all' | 'group' | 'direct' | 'requests';
+export type ConversationCursor = FeedCursor & { status: ConversationPreview['status'] };
+export type ConversationPage = {
+  conversations: ConversationPreview[];
+  pendingCount: number;
+  cursor: ConversationCursor | null;
+  selectedConversation: ConversationPreview | null;
+};
+
+export async function loadConversations(client: SupabaseClient, userId: string, filter: ConversationFilter = 'all',
+  cursor: ConversationCursor | null = null, conversationId: string | null = null): Promise<ConversationPage> {
+  void userId; // The RPC scopes both pages and deep links to the authenticated account.
   type Row = {
     id: string;
     other_user_id: string;
@@ -256,19 +289,14 @@ export async function loadConversations(client: SupabaseClient, userId: string):
     title: string;
     is_group_host: boolean;
   };
-  const rows: Row[] = [];
-  let cursor: Row | undefined;
-  // Existing cursor RPC: do not hide active rooms behind the first page of history.
-  do {
-    const result = await client.rpc('get_conversation_previews', {
-      p_limit: 50, p_before_created: cursor?.latest_at ?? null, p_before_id: cursor?.id ?? null,
-    });
-    if (result.error) throw result.error;
-    const page = (result.data ?? []) as Row[];
-    rows.push(...page);
-    cursor = page.length === 50 ? page.at(-1) : undefined;
-  } while (cursor);
-  return Array.from(new Map(rows.map((row) => [row.id, row])).values()).map((row) => ({
+  const result = await client.rpc('get_conversation_inbox', {
+    p_filter: filter, p_limit: 30, p_before_status: cursor?.status ?? null,
+    p_before_created: cursor?.createdAt ?? null, p_before_id: cursor?.id ?? null,
+    p_conversation_id: conversationId,
+  });
+  if (result.error) throw result.error;
+  const page = result.data as { items: Row[]; pending_count: number; cursor: ConversationCursor | null; selected: Row | null };
+  const map = (row: Row): ConversationPreview => ({
     id: row.id,
     kind: row.kind,
     status: row.status,
@@ -279,21 +307,41 @@ export async function loadConversations(client: SupabaseClient, userId: string):
     otherUser: { id: row.other_user_id, nickname: row.other_nickname, verificationLevel: row.other_verification_level },
     latestBody: row.latest_body,
     latestAt: row.latest_at,
-  }));
+  });
+  return { conversations: page.items.map(map), pendingCount: page.pending_count, cursor: page.cursor,
+    selectedConversation: page.selected ? map(page.selected) : null };
 }
 
-export async function loadConversationMessages(client: SupabaseClient, conversationId: string, before?: string) {
+export async function loadConversationMessages(client: SupabaseClient, conversationId: string, before?: FeedCursor) {
   let query = client
     .from('messages')
     .select('*,sender:profiles!messages_sender_id_fkey(nickname)')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
     .limit(50);
-  if (before) query = query.lt('created_at', before);
+  if (before) query = query.or(`created_at.lt.${before.createdAt},and(created_at.eq.${before.createdAt},id.lt.${before.id})`);
   const result = await query;
   if (result.error) throw result.error;
   return ((result.data ?? []) as (Omit<ChatMessageRecord, 'sender_nickname'> & { sender: { nickname: string } | null })[])
     .map(({ sender, ...message }) => ({ ...message, sender_nickname: sender?.nickname ?? null })).reverse();
+}
+
+export async function loadConversationMessagesByIds(client: SupabaseClient, conversationId: string, ids: string[]) {
+  if (ids.length === 0) return [];
+  const unique = [...new Set(ids)];
+  if (unique.length > 50) throw new Error('MESSAGE_BATCH_TOO_LARGE');
+  const result = await client.from('messages').select('*,sender:profiles!messages_sender_id_fkey(nickname)')
+    .eq('conversation_id', conversationId).in('id', unique);
+  if (result.error) throw result.error;
+  return ((result.data ?? []) as (Omit<ChatMessageRecord, 'sender_nickname'> & { sender: { nickname: string } | null })[])
+    .map(({ sender, ...message }) => ({ ...message, sender_nickname: sender?.nickname ?? null }));
+}
+
+export function mergeChatMessages(previous: ChatMessageRecord[], next: ChatMessageRecord[], blocked = new Set<string>()) {
+  return [...new Map([...previous, ...next].map((message) => [message.id, message])).values()]
+    .filter((message) => !blocked.has(message.sender_id))
+    .sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
 }
 
 export async function loadSavedPosts(client: SupabaseClient, cursor: FeedCursor | null = null) {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image } from 'expo-image';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { SymbolView } from 'expo-symbols';
 import { useReducedMotion } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
@@ -26,7 +27,6 @@ import { CityPicker } from '@/components/city-picker';
 import { FeedAd } from '@/components/feed-ad';
 import { adsSupported, feedAdPosition } from '@/lib/ads';
 import { MyMeetups } from '@/components/my-meetups';
-import { NearbyCityCard } from '@/components/nearby-city-card';
 import { PostCard } from '@/components/post-card';
 import { PostDetail } from '@/components/post-detail';
 import { TabContent } from '@/components/tab-content';
@@ -42,6 +42,7 @@ import { useCommunityLocation } from '@/lib/location-provider';
 import { parseAiDraftResponse } from '@/lib/ai-draft';
 import {
   createCommunityPost,
+  loadListingQuota,
   getCommunityActionError,
   isContentRejected,
   loadDailyQuota,
@@ -50,12 +51,13 @@ import {
   POST_QUOTA_CHANGED_EVENT,
   requestMeetupJoin,
 } from '@/lib/community-data';
-import { groupJournalPosts, loadPublicFeed, loadPublicPost } from '@/lib/feed-data';
+import { appendUniquePosts, groupJournalPosts, loadPublicFeed, loadPublicPost } from '@/lib/feed-data';
 import { addHashtag, canonicalizeHashtag, getSuggestedHashtags, parseHashtags } from '@/lib/hashtags';
+import { getPostImagePlan } from '@/lib/image-upload';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { CITIES, INITIAL_QUOTA, MOCK_POSTS, TAGS } from '@/lib/mock';
+import { INITIAL_QUOTA, MOCK_POSTS, TAGS } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
-import type { DailyQuota, Post, Tag } from '@/lib/types';
+import type { DailyQuota, Post, PostKind, Tag } from '@/lib/types';
 
 type DraftImage = { uri: string; base64: string; mimeType: string };
 
@@ -71,15 +73,18 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const bottomClear = insets.bottom + TabBarHeight; // 탭바 + 홈 인디케이터 실측 높이
   const [posts, setPosts] = useState<Post[]>(MOCK_POSTS);
   const [quota, setQuota] = useState(INITIAL_QUOTA);
-  const { city, setCity, selectCity } = useCommunityCity();
+  const { city, setCity } = useCommunityCity();
   const location = useCommunityLocation();
   const [draftCity, setDraftCity] = useState(city);
   const draftLocation = useRef<(LocationFix & { userId: string }) | null>(null);
   const writerRevision = useRef(0);
-  const [writerPanel, setWriterPanel] = useState<'city' | 'category' | 'hashtags' | null>(null);
+  const [writerPanel, setWriterPanel] = useState<'city' | 'category' | 'kind' | 'hashtags' | null>(null);
   const [cityPicker, setCityPicker] = useState(false);
   const [writing, setWriting] = useState(false);
   const [tag, setTag] = useState<Tag>(TAGS[0]);
+  const [postKind, setPostKind] = useState<PostKind>('story');
+  const [priceInput, setPriceInput] = useState('');
+  const [listingQuota, setListingQuota] = useState<DailyQuota | null>(null);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [hashtagInput, setHashtagInput] = useState('');
@@ -101,12 +106,31 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [joinPost, setJoinPost] = useState<Post | null>(null);
   const [joinMessage, setJoinMessage] = useState('');
   const [joining, setJoining] = useState(false);
+  const viewerScope = isAuthed ? me.id : 'guest';
+  const feedKey = `${viewerScope}:${city.id}:${tagFilter ?? 'all'}`;
+  const feedRevision = useRef(0);
+  const feedRequest = useRef<{ key: string; revision: number; promise: Promise<void> } | null>(null);
+  const loadingMoreRef = useRef(false);
+  const searchRevision = useRef(0);
+  const cancelFeedRequests = useCallback(() => { feedRevision.current++; }, []);
 
-  const refreshFeed = useCallback(async () => {
-    const next = await loadPublicFeed(supabase, city.id, tagFilter);
-    setPosts(next);
-    setHasMore(next.length === 30);
-  }, [city.id, tagFilter]);
+  const refreshFeed = useCallback(() => {
+    if (feedRequest.current?.key === feedKey && feedRequest.current.revision === feedRevision.current) {
+      return feedRequest.current.promise;
+    }
+    const revision = ++feedRevision.current;
+    const promise = loadPublicFeed(supabase, city.id, tagFilter, null, null, { viewerScope })
+      .then((next) => {
+        if (revision !== feedRevision.current) return;
+        setPosts(next);
+        setHasMore(next.length === 30);
+      })
+      .finally(() => {
+        if (feedRequest.current?.promise === promise) feedRequest.current = null;
+      });
+    feedRequest.current = { key: feedKey, revision, promise };
+    return promise;
+  }, [city.id, feedKey, tagFilter, viewerScope]);
 
   useEffect(() => {
     const listener = DeviceEventEmitter.addListener(MEETUPS_CHANGED_EVENT, () => void refreshFeed().catch(() => {}));
@@ -114,19 +138,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   }, [refreshFeed]);
 
   useEffect(() => {
-    let active = true;
-    void loadPublicFeed(supabase, city.id, tagFilter)
-      .then((next) => {
-        if (active) {
-          setPosts(next);
-          setHasMore(next.length === 30);
-        }
-      })
-      .catch(() => {
-        // 시드 번들은 네트워크 장애나 미적용 마이그레이션 때 빈 커뮤니티를 막는다.
+    void refreshFeed().catch(() => {
+      // 시드 번들은 네트워크 장애나 미적용 마이그레이션 때 빈 커뮤니티를 막는다.
     });
-    return () => { active = false; };
-  }, [city.id, isAuthed, me.id, tagFilter]);
+    return cancelFeedRequests;
+  }, [cancelFeedRequests, refreshFeed]);
 
   useEffect(() => {
     if (!isAuthed) return;
@@ -176,18 +192,24 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   }, [city.id, tagFilter]);
 
   useEffect(() => {
+    const revision = ++searchRevision.current;
     if (!searching || !q) return;
+    const controller = new AbortController();
     const timer = setTimeout(() => {
-      void loadPublicFeed(supabase, city.id, null, canonicalQuery)
-        .then(setSearchResults)
-        .catch(() => setSearchResults([]));
+      void loadPublicFeed(supabase, city.id, null, canonicalQuery, null, {
+        viewerScope,
+        signal: controller.signal,
+      })
+        .then((next) => { if (revision === searchRevision.current) setSearchResults(next); })
+        .catch(() => { if (!controller.signal.aborted && revision === searchRevision.current) setSearchResults([]); });
     }, 250);
-    return () => clearTimeout(timer);
-  }, [canonicalQuery, city.id, q, searching]);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [canonicalQuery, city.id, q, searching, viewerScope]);
 
 
   const openSearch = (initial?: string) => {
     setQuery(initial ?? '');
+    setSearchResults([]);
     setSearching(true);
   };
 
@@ -261,11 +283,12 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const openWriter = useCallback(() => {
     if (!isAuthed) return promptLogin(t.auth.reasonWrite);
     // ponytail: 캡 검사는 서버(create_post RPC)가 최종 강제 — 여긴 UX용 사전 안내만
-    if (quota.used >= quota.max) {
+    if (postKind === 'story' && quota.used >= quota.max) {
       showPostLimit();
       return;
     }
     if (writing) return;
+    void loadListingQuota(supabase).then(setListingQuota).catch(() => {});
     const revision = ++writerRevision.current;
     draftLocation.current = null;
     if (!title.trim() && !body.trim() && !hashtagInput.trim() && !draftImage) setDraftCity(city);
@@ -275,7 +298,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       if (revision !== writerRevision.current) return;
       draftLocation.current = fix;
     });
-  }, [isAuthed, promptLogin, quota.max, quota.used, showPostLimit, writing, city, location, title, body, hashtagInput, draftImage]);
+  }, [isAuthed, promptLogin, quota.max, quota.used, showPostLimit, writing, city, location, title, body, hashtagInput, draftImage, postKind]);
 
   useEffect(() => {
     if (!writing) { writerRevision.current++; draftLocation.current = null; }
@@ -298,8 +321,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       }
       const options: ImagePicker.ImagePickerOptions = {
         mediaTypes: ['images'],
-        base64: true,
-        quality: 0.7,
+        quality: 1,
         preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
       };
       const result = source === 'camera'
@@ -307,17 +329,27 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         : await ImagePicker.launchImageLibraryAsync(options);
       if (result.canceled) return;
       const asset = result.assets[0];
-      if (!asset?.uri || !asset.base64) throw new Error('IMAGE_NOT_AVAILABLE');
-      if (Math.ceil(asset.base64.length * 0.75) > 5 * 1024 * 1024) {
-        Alert.alert(t.write.photoErrorTitle, t.write.photoTooLarge);
-        return;
-      }
+      if (!asset?.uri) throw new Error('IMAGE_NOT_AVAILABLE');
       const mimeType = asset.mimeType ?? 'image/jpeg';
       if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
         Alert.alert(t.write.photoErrorTitle, t.write.photoUnsupported);
         return;
       }
-      setDraftImage({ uri: asset.uri, base64: asset.base64, mimeType });
+      const plan = getPostImagePlan(asset.width, asset.height, mimeType);
+      const context = ImageManipulator.manipulate(asset.uri);
+      if (plan.resize) context.resize(plan.resize);
+      const image = await context.renderAsync();
+      const optimized = await image.saveAsync({
+        base64: true,
+        compress: 0.8,
+        format: plan.format === 'png' ? SaveFormat.PNG : plan.format === 'webp' ? SaveFormat.WEBP : SaveFormat.JPEG,
+      });
+      if (!optimized.base64) throw new Error('IMAGE_NOT_AVAILABLE');
+      if (Math.ceil(optimized.base64.length * 0.75) > 5 * 1024 * 1024) {
+        Alert.alert(t.write.photoErrorTitle, t.write.photoTooLarge);
+        return;
+      }
+      setDraftImage({ uri: optimized.uri, base64: optimized.base64, mimeType: plan.mimeType });
       setAiDraftReady(false);
     } catch {
       Alert.alert(t.write.photoErrorTitle, t.write.photoErrorBody);
@@ -369,6 +401,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         body: body.trim(),
         hashtags,
         image: draftImage ? { base64: draftImage.base64, mimeType: draftImage.mimeType } : undefined,
+        kind: tag.kind === 'meetup' ? 'story' : postKind,
+        price: postKind === 'listing' && priceInput.trim() ? Number(priceInput.replace(/[^0-9.]/g, '')) : null,
       });
       void location.record(draftLocation.current, post.id);
       setCity(draftCity);
@@ -383,6 +417,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       setHashtagInput('');
       setDraftImage(null);
       setAiDraftReady(false);
+      setPostKind('story');
+      setPriceInput('');
       setWriting(false);
       play('success');
       Alert.alert(t.write.successTitle, t.write.successBody);
@@ -404,15 +440,26 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   };
 
   const loadMorePosts = async () => {
-    if (loadingMore || !hasMore || searching) return;
+    if (loadingMoreRef.current || !hasMore || searching) return;
     const last = posts.at(-1);
     if (!last?.createdAt) return;
+    const revision = feedRevision.current;
+    loadingMoreRef.current = true;
     setLoadingMore(true);
     try {
-      const next = await loadPublicFeed(supabase, city.id, tagFilter, null, { createdAt: last.createdAt, id: last.id });
-      setPosts((current) => [...current, ...next.filter((post) => !current.some(({ id }) => id === post.id))]);
+      const next = await loadPublicFeed(
+        supabase,
+        city.id,
+        tagFilter,
+        null,
+        { createdAt: last.createdAt, id: last.id, sortAt: last.sortAt },
+        { viewerScope },
+      );
+      if (revision !== feedRevision.current) return;
+      setPosts((current) => appendUniquePosts(current, next));
       setHasMore(next.length === 30);
     } finally {
+      loadingMoreRef.current = false;
       setLoadingMore(false);
     }
   };
@@ -470,7 +517,6 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText> : null}
           renderItem={({ item, index }) => item == null ? (
             <View style={styles.header}>
-              {isAuthed && !meetupsOnly && <NearbyCityCard onChooseCity={() => setCityPicker(true)} onSelect={(id) => { const next = CITIES.find((item) => item.id === id); if (next) void selectCity(next); }} />}
               <View style={styles.journalIntro}>
                 <ThemedText type="smallBold" themeColor="textSecondary" style={styles.journalDate}>{todayLabel()}</ThemedText>
                 <ThemedText accessibilityRole="header" style={styles.journalTitle}>{meetupsOnly ? t.feed.meetupTitle : t.feed.journalTitle}</ThemedText>
@@ -595,7 +641,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             <View style={styles.searchHead}>
               <TextInput
                 value={query}
-                onChangeText={setQuery}
+                onChangeText={(value) => { setQuery(value); setSearchResults([]); }}
                 placeholder={t.search.placeholder}
                 placeholderTextColor={theme.textSecondary}
                 autoFocus
@@ -621,6 +667,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                       onPress={() => {
                         play('selection');
                         setQuery(h);
+                        setSearchResults([]);
                       }}
                       accessibilityRole="button"
                       style={({ pressed }) => [
@@ -656,7 +703,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                       if (Platform.OS !== 'ios') openDetail(item);
                     }}
                     onJoin={() => void onJoin(item)}
-                    onHashtag={setQuery}
+                    onHashtag={(value) => { setQuery(value); setSearchResults([]); }}
                   />
                 )}
               />
@@ -754,7 +801,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 </Pressable>
                 <View style={styles.writerHeading}>
                   <ThemedText type="smallBold" accessibilityRole="header">{t.write.title}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">{t.write.remaining(quota.used, quota.max)}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">{postKind === 'listing' && tag.kind !== 'meetup' && listingQuota ? t.write.listingRemaining(listingQuota.used, listingQuota.max) : t.write.remaining(quota.used, quota.max)}</ThemedText>
                 </View>
                 <Pressable onPress={() => void submit()} disabled={submitting || creatingDraft || !title.trim() || !body.trim()}
                   accessibilityRole="button" accessibilityState={{ disabled: submitting || creatingDraft || !title.trim() || !body.trim(), busy: submitting }}
@@ -777,7 +824,27 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                     <ThemedText type="smallBold" style={styles.contextText}>{tag.label}</ThemedText>
                     <SymbolView name={{ ios: writerPanel === 'category' ? 'chevron.up' : 'chevron.down', android: writerPanel === 'category' ? 'expand_less' : 'expand_more', web: writerPanel === 'category' ? 'expand_less' : 'expand_more' }} size={12} tintColor={theme.textSecondary} />
                   </Pressable>
+                  {tag.kind !== 'meetup' && <Pressable accessibilityRole="button" accessibilityLabel={`${t.write.pickKind}, ${postKind === 'listing' ? t.write.kindListing : t.write.kindStory}`} accessibilityState={{ expanded: writerPanel === 'kind' }}
+                    onPress={() => { Keyboard.dismiss(); setWriterPanel(writerPanel === 'kind' ? null : 'kind'); }}
+                    style={({ pressed }) => [styles.contextButton, { backgroundColor: theme.backgroundElement }, pressed && styles.chipPressed]}>
+                    <ThemedText type="smallBold" style={styles.contextText}>{postKind === 'listing' ? t.write.kindListing : t.write.kindStory}</ThemedText>
+                    <SymbolView name={{ ios: writerPanel === 'kind' ? 'chevron.up' : 'chevron.down', android: writerPanel === 'kind' ? 'expand_less' : 'expand_more', web: writerPanel === 'kind' ? 'expand_less' : 'expand_more' }} size={12} tintColor={theme.textSecondary} />
+                  </Pressable>}
                 </View>
+                {writerPanel === 'kind' && <View>
+                  <ThemedText type="small" themeColor="textSecondary" style={styles.writerLabel}>{t.write.pickKind}</ThemedText>
+                  <View style={styles.tagRow} accessibilityRole="radiogroup">
+                    {([['story', t.write.kindStory, t.write.kindStoryHint], ['listing', t.write.kindListing, t.write.kindListingHint]] as const).map(([kind, label, hint]) => {
+                      const selected = postKind === kind;
+                      return <Pressable key={kind} onPress={() => { play('selection'); setPostKind(kind); setWriterPanel(null); }} accessibilityRole="radio"
+                        accessibilityLabel={`${label}, ${hint}`} accessibilityState={{ selected, checked: selected }}
+                        style={({ pressed }) => [styles.tagChip, { backgroundColor: selected ? theme.accent : theme.backgroundElement }, pressed && styles.chipPressed]}>
+                        <ThemedText type="smallBold" style={{ color: selected ? theme.accentInk : theme.textSecondary }}>{label}</ThemedText>
+                      </Pressable>;
+                    })}
+                  </View>
+                  <ThemedText type="small" themeColor="textSecondary" style={styles.writerLabel}>{postKind === 'listing' ? t.write.kindListingHint : t.write.kindStoryHint}</ThemedText>
+                </View>}
                 {writerPanel === 'category' && <View>
                   <ThemedText type="small" themeColor="textSecondary" style={styles.writerLabel}>{t.write.pickTag}</ThemedText>
                   <View style={styles.tagRow}>
@@ -812,9 +879,15 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   placeholder={t.write.titlePlaceholder} placeholderTextColor={theme.textSecondary} maxLength={80}
                   style={[styles.titleInput, { color: theme.text }]} />
                 <TextInput value={body} onChangeText={setBody} accessibilityLabel={t.write.bodyLabel}
-                  placeholder={t.write.bodyPlaceholder[tag.slug]} placeholderTextColor={theme.textSecondary} multiline
+                  placeholder={tag.kind !== 'meetup' && postKind === 'listing' ? t.write.listingBodyPlaceholder : t.write.bodyPlaceholder[tag.slug]} placeholderTextColor={theme.textSecondary} multiline
                   style={[styles.bodyInput, { color: theme.text }]} />
                 {tag.kind === 'meetup' && <ThemedText type="small" themeColor="textSecondary" style={styles.meetupNote}>{t.write.roomNote}</ThemedText>}
+                {tag.kind !== 'meetup' && postKind === 'listing' && <>
+                  <TextInput value={priceInput} onChangeText={setPriceInput} accessibilityLabel={t.write.pricePlaceholder}
+                    placeholder={t.write.pricePlaceholder} placeholderTextColor={theme.textSecondary} keyboardType="decimal-pad" maxLength={10}
+                    style={[styles.hashtagInput, { color: theme.text, borderBottomColor: theme.line }]} />
+                  <ThemedText type="small" themeColor="textSecondary" style={styles.meetupNote}>{t.write.listingNote}</ThemedText>
+                </>}
                 <View style={[styles.aiCard, { borderColor: theme.line }]}>
                   {draftImage ? (
                     <>

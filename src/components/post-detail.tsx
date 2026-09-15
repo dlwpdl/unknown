@@ -24,7 +24,7 @@ import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { buildCommentListRows, type CommentListRow } from '@/lib/comment-list';
 import { createThreadComment, loadCommentThreadContext, loadCommentThreadPage, type CommentCursor } from '@/lib/comment-threads';
-import { getCommunityActionError, isContentRejected, recordPostView, startDirectConversation, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
+import { bumpListing, getCommunityActionError, isContentRejected, recordPostView, setListingStatus, startDirectConversation, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 import { supabase } from '@/lib/supabase';
@@ -64,8 +64,10 @@ export function PostDetail(props: PostDetailProps) {
   return <PostDetailContent key={`${props.post.id}:${isAuthed ? me.id : 'guest'}`} {...props} />;
 }
 
-function PostDetailContent({ post, commentId, onClose, onJoin, onCommentCountChange, onViewCountChange }: PostDetailProps) {
+function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCommentCountChange, onViewCountChange }: PostDetailProps) {
   const theme = useTheme();
+  const [post, setPost] = useState(initialPost);
+  const onListingChanged = useCallback((next: Partial<Post>) => setPost((current) => ({ ...current, ...next })), []);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isAuthed, me, promptLogin, isVerified, trustLevel } = useAuth();
@@ -478,6 +480,7 @@ function PostDetailContent({ post, commentId, onClose, onJoin, onCommentCountCha
                 })
               }
             />
+            {isAuthed && post.author.id === me.id && post.kind === 'listing' && <ListingControls post={post} onChanged={onListingChanged} />}
             {PROMOTIONS_PREVIEW_ENABLED && isAuthed && post.author.id === me.id && <Pressable
               accessibilityRole="button"
               onPress={() => { onClose(); router.push({ pathname: '/profile/promotions', params: { postId: post.id } }); }}
@@ -622,6 +625,10 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
   },
   listHeader: { gap: Spacing.three, marginBottom: Spacing.three },
+  listingBar: { marginHorizontal: Spacing.three, paddingVertical: Spacing.two, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth },
+  listingState: { paddingTop: Spacing.one },
+  listingActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: Spacing.three },
+  listingAction: { minHeight: 44, justifyContent: 'center' },
   loadMore: { minHeight: 44, alignItems: 'center', paddingVertical: Spacing.three },
   focusStatus: { marginTop: Spacing.two },
   focusRoot: { marginTop: Spacing.two },
@@ -716,3 +723,57 @@ const styles = StyleSheet.create({
     marginTop: Spacing.two,
   },
 });
+
+
+// ponytail: 작성자 전용 리스팅 액션. 쿨다운·한도 판정은 서버가 하고 여기선 결과만 반영한다.
+// 저널 톤: 채운 버튼 대신 얇은 선 위의 텍스트 액션, 인주는 첫 번째 액션에만.
+function ListingControls({ post, onChanged }: { post: Post; onChanged: (next: Partial<Post>) => void }) {
+  const theme = useTheme();
+  const { play } = useInteractionFeedback();
+  const [busy, setBusy] = useState(false);
+  // Date.now() in render is impure for the React compiler; sample it once per mount.
+  const [now] = useState(() => Date.now());
+  const alive = (post.listingStatus ?? 'open') !== 'closed' && (!post.expiresAt || new Date(post.expiresAt).getTime() > now);
+  const daysLeft = post.expiresAt ? Math.round((new Date(post.expiresAt).getTime() - now) / 86_400_000) : null;
+  const run = async (action: () => Promise<Partial<Post>>, successLabel?: string) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      onChanged(await action());
+      play('success');
+      if (successLabel) Alert.alert(successLabel);
+    } catch (error) {
+      play('warning');
+      const code = getCommunityActionError(error);
+      const copy = code ? t.actionErrors[code as keyof typeof t.actionErrors] : null;
+      Alert.alert(copy?.title ?? t.write.submitErrorTitle, copy?.body ?? t.write.submitErrorBody);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const action = (label: string, onPress: () => void, primary = false) => (
+    <Pressable key={label} accessibilityRole="button" onPress={onPress} disabled={busy} accessibilityState={{ disabled: busy, busy }}
+      style={({ pressed }) => [styles.listingAction, (pressed || busy) && { opacity: 0.6 }]}>
+      <ThemedText type="smallBold" themeColor={primary ? 'accent' : 'textSecondary'}>{label}</ThemedText>
+    </Pressable>
+  );
+  return (
+    <View style={[styles.listingBar, { borderTopColor: theme.line, borderBottomColor: theme.line }]}>
+      <ThemedText type="small" themeColor="textSecondary" style={styles.listingState}>
+        {t.detail.listingStatus[post.listingStatus ?? 'open']}{alive && daysLeft != null ? ` · ${t.detail.expiresIn(daysLeft)}` : ''}
+      </ThemedText>
+      <View style={styles.listingActions}>
+      {alive && action(t.detail.bump, () => void run(async () => {
+        const result = await bumpListing(supabase, post.id);
+        return { bumpedAt: result.bumpedAt, expiresAt: result.expiresAt, sortAt: result.bumpedAt };
+      }, t.detail.bumped), true)}
+      {alive && post.listingStatus !== 'partial' && action(t.detail.markPartial, () => void run(async () => ({ listingStatus: (await setListingStatus(supabase, post.id, 'partial')).status })))}
+      {alive && action(t.detail.markClosed, () => void run(async () => ({ listingStatus: (await setListingStatus(supabase, post.id, 'closed')).status })))}
+      {!alive && action(t.detail.reopen, () => void run(async () => {
+        const result = await setListingStatus(supabase, post.id, 'open');
+        return { listingStatus: result.status, expiresAt: result.expiresAt, bumpedAt: null };
+      }), true)}
+      </View>
+    </View>
+  );
+}

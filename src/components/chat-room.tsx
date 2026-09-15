@@ -10,7 +10,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
-import { blockUser, endConversation, getCommunityActionError, isContentRejected, loadConversationMessages, respondDirectConversation, sendDirectMessage, type ChatMessageRecord, type ConversationPreview, type ReportTarget } from '@/lib/community-data';
+import { blockUser, endConversation, getCommunityActionError, isContentRejected, loadConversationMessages, loadConversationMessagesByIds, mergeChatMessages, respondDirectConversation, sendDirectMessage, type ChatMessageRecord, type ConversationPreview, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 
@@ -43,6 +43,8 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const mounted = useRef(true);
   const processing = useRef(false);
   const loadingRequest = useRef(0);
+  const snapshot = useRef<Promise<void> | null>(null);
+  const olderRequest = useRef(false);
   const blockedUsers = useRef(new Set<string>());
   useLayoutEffect(() => { identity.current = auth.isAuthed ? auth.me.id : null; }, [auth.isAuthed, auth.me.id]);
   useLayoutEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
@@ -71,19 +73,51 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       <ThemedText type="small" themeColor="textSecondary">{t.chat.unverifiedSafety}</ThemedText>
     </View> : null;
 
-  const refreshMessages = useCallback(async () => {
+  const refreshMessages = useCallback(() => {
     if (!access.read || !valid()) return;
+    if (snapshot.current) return snapshot.current;
     const request = ++loadingRequest.current;
     setLoading(true);
-    try {
-      const rows = await loadConversationMessages(supabase, conversation.id);
-      if (!valid() || loadingRequest.current !== request) return;
-      setMessages((previous) => [...previous.filter((item) => !rows.some(({ id }) => id === item.id)), ...rows].filter((item) => !blockedUsers.current.has(item.sender_id)).sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id)));
-      setHasOlder(rows.length === 50);
-    } catch { if (valid() && loadingRequest.current === request) setError(t.chat.loadMessagesError); }
-    finally { if (valid() && loadingRequest.current === request) setLoading(false); }
+    const promise = (async () => {
+      try {
+        const rows = await loadConversationMessages(supabase, conversation.id);
+        if (!valid() || loadingRequest.current !== request) return;
+        // Reconnect starts a contiguous window and revalidates message visibility through RLS.
+        setMessages(rows.filter((message) => !blockedUsers.current.has(message.sender_id)));
+        setHasOlder(rows.length === 50);
+      } catch { if (valid() && loadingRequest.current === request) setError(t.chat.loadMessagesError); }
+      finally { if (loadingRequest.current === request) { snapshot.current = null; if (valid()) setLoading(false); } }
+    })();
+    snapshot.current = promise;
+    return promise;
   }, [access.read, conversation.id, valid]);
   useEffect(() => {
+    let active = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let flushing = false;
+    const pending = new Set<string>();
+    const flush = async () => {
+      timer = undefined;
+      if (!active || !valid() || flushing || !pending.size) return;
+      const ids = [...pending].slice(0, 50);
+      ids.forEach((id) => pending.delete(id));
+      flushing = true;
+      try {
+        await snapshot.current;
+        if (!active || !valid()) return;
+        const request = loadingRequest.current;
+        const rows = await loadConversationMessagesByIds(supabase, conversation.id, ids);
+        if (active && valid()) {
+          if (request === loadingRequest.current) setMessages((previous) => mergeChatMessages(previous, rows, blockedUsers.current));
+          else ids.forEach((id) => pending.add(id));
+        }
+      } catch {
+        if (active && valid()) { setError(t.chat.loadMessagesError); void refreshMessages(); }
+      } finally {
+        flushing = false;
+        if (active && pending.size && !timer) timer = setTimeout(() => void flush(), 80);
+      }
+    };
     void Promise.resolve().then(refreshMessages);
     const channel = supabase.channel(`room:${currentUserId}:${conversation.id}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations', filter: `id=eq.${conversation.id}` }, ({ new: value }) => {
@@ -92,10 +126,14 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
         if (['pending', 'active', 'ended', 'rejected', 'cancelled'].includes(next)) setResolvedStatus(next);
         void onChanged();
       });
-    if (access.read) channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversation.id}` }, () => void refreshMessages());
+    if (access.read) channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversation.id}` }, ({ new: message }) => {
+      if (!active || typeof message.id !== 'string') return;
+      pending.add(message.id);
+      if (!timer && !flushing) timer = setTimeout(() => void flush(), 80);
+    });
     channel.subscribe();
     const appState = AppState.addEventListener('change', (next) => { if (next === 'active' && valid()) { void refreshMessages(); void onChanged(); } });
-    return () => { loadingRequest.current += 1; appState.remove(); void supabase.removeChannel(channel); };
+    return () => { active = false; clearTimeout(timer); pending.clear(); loadingRequest.current += 1; snapshot.current = null; appState.remove(); void supabase.removeChannel(channel); };
   }, [access.read, conversation.id, currentUserId, onChanged, refreshMessages, valid]);
 
   const respond = async (response: 'accepted' | 'rejected' | 'cancelled') => {
@@ -139,6 +177,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     processing.current = true; setSending(true); setError(null);
     try {
       const id = await sendDirectMessage(supabase, conversation.id, body);
+      await snapshot.current;
       if (!valid()) return;
       setMessages((previous) => previous.some((item) => item.id === id) ? previous : [...previous, { id, conversation_id: conversation.id, sender_id: currentUserId, sender_nickname: auth.me.nickname, body, created_at: new Date().toISOString() }]);
       setDraft(''); play('message');
@@ -146,14 +185,15 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     finally { processing.current = false; if (valid()) setSending(false); }
   };
   const loadOlder = async () => {
-    if (loadingOlder || !hasOlder || !messages[0] || !access.read || !valid()) return;
-    setLoadingOlder(true);
+    if (olderRequest.current || snapshot.current || !hasOlder || !messages[0] || !access.read || !valid()) return;
+    const request = loadingRequest.current;
+    olderRequest.current = true; setLoadingOlder(true);
     try {
-      const rows = await loadConversationMessages(supabase, conversation.id, messages[0].created_at);
-      if (!valid()) return;
-      setMessages((previous) => [...rows.filter((row) => !previous.some(({ id }) => id === row.id)), ...previous].filter((item) => !blockedUsers.current.has(item.sender_id))); setHasOlder(rows.length === 50);
-    } catch { if (valid()) setError(t.chat.loadMessagesError); }
-    finally { if (valid()) setLoadingOlder(false); }
+      const rows = await loadConversationMessages(supabase, conversation.id, { createdAt: messages[0].created_at, id: messages[0].id });
+      if (!valid() || request !== loadingRequest.current) return;
+      setMessages((previous) => mergeChatMessages(previous, rows, blockedUsers.current)); setHasOlder(rows.length === 50);
+    } catch { if (valid() && request === loadingRequest.current) setError(t.chat.loadMessagesError); }
+    finally { olderRequest.current = false; if (valid()) setLoadingOlder(false); }
   };
 
   if (!auth.isAuthed || auth.me.id !== currentUserId) return null;
@@ -177,7 +217,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     </KeyboardAvoidingView>
     {report && <ReportSheet visible {...report} onClose={() => {
       setReport(null); void onChanged();
-      if (access.read) void loadConversationMessages(supabase, conversation.id).then((rows) => { if (valid()) { setMessages(rows); setHasOlder(rows.length === 50); } }).catch(() => { if (valid()) setError(t.chat.loadMessagesError); });
+      void refreshMessages();
     }} />}
   </ThemedView>;
 }

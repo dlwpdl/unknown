@@ -1,9 +1,11 @@
+import { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } from '@react-native-google-signin/google-signin';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session } from '@supabase/supabase-js';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { AppState, DeviceEventEmitter, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { LoginPanel } from '@/components/login-panel';
@@ -18,7 +20,7 @@ import { canUseDevPasswordLogin, getKakaoAuthSessionUrl, getOAuthCallbackPath, g
 import { CONTACT_EMAIL } from '@/lib/legal-documents';
 import { CommunityLocationProvider } from '@/lib/location-provider';
 import { CITIES } from '@/lib/mock';
-import { signInAdminAccount, signInReviewAccount, supabase } from '@/lib/supabase';
+import { AUTH_EXPIRED_EVENT, signInAdminAccount, signInReviewAccount, supabase } from '@/lib/supabase';
 import { unregisterPushDevice } from '@/lib/push-notifications';
 import type { TrustLevel } from '@/lib/trust';
 
@@ -57,6 +59,14 @@ type AuthValue = {
 };
 
 WebBrowser.maybeCompleteAuthSession();
+const LAST_ACTIVE_KEY = 'gling.lastActiveAt';
+const SESSION_INACTIVITY_MS = 30 * 24 * 60 * 60 * 1000;
+// iOS signs in with the native Google SDK: Safari never has to reach supabase.co, which failed
+// with "네트워크 연결이 유실" on retry. The ID token is issued for the web client Supabase trusts.
+const GOOGLE_WEB_CLIENT_ID = '326642098269-tf80dl3hqk0sosr42gphrtc7bu7gucb8.apps.googleusercontent.com';
+const GOOGLE_IOS_CLIENT_ID = '326642098269-oa2a97trifhohih9d9tk8lotse14qnn4.apps.googleusercontent.com';
+const usesNativeGoogleSignIn = Platform.OS === 'ios';
+if (usesNativeGoogleSignIn) GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID, iosClientId: GOOGLE_IOS_CLIENT_ID });
 
 const AuthContext = createContext<AuthValue | null>(null);
 
@@ -107,11 +117,29 @@ export function AuthProvider({ children, publicPage = false }: { children: React
 
   useEffect(() => {
     let active = true;
-    void supabase.auth.getSession().then(({ data }) => {
+    // Mobile session policy (server-side inactivity timeout needs the Pro plan): stay signed in as
+    // long as the app is opened within 30 days; after that, drop the local session so the login
+    // sheet appears instead of a stale "logged in" state. Foreground/background toggles token refresh.
+    void AsyncStorage.getItem(LAST_ACTIVE_KEY).then(async (raw) => {
+      const lastActive = raw ? Number(raw) : null;
+      const expired = lastActive != null && Date.now() - lastActive > SESSION_INACTIVITY_MS;
+      if (expired) await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+      await AsyncStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
+      const { data } = await supabase.auth.getSession();
       if (!active) return;
       setSession(data.session);
       setSessionReady(true);
+      if (expired && lastActive != null) { setReason(t.auth.sessionExpired); setVisible(true); }
     });
+    const appState = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        supabase.auth.startAutoRefresh();
+        void AsyncStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
+      } else {
+        supabase.auth.stopAutoRefresh();
+      }
+    });
+    supabase.auth.startAutoRefresh();
     const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!active) return;
       const nextLogin = nextSession?.user.last_sign_in_at ?? null;
@@ -123,8 +151,22 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     });
     return () => {
       active = false;
+      appState.remove();
+      supabase.auth.stopAutoRefresh();
       data.subscription.unsubscribe();
     };
+  }, []);
+
+  // A request that came back unauthenticated means the stored session is dead: clear it locally
+  // and open the login sheet immediately instead of showing a generic failure.
+  useEffect(() => {
+    const listener = DeviceEventEmitter.addListener(AUTH_EXPIRED_EVENT, () => {
+      void supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+      setAuthError(null);
+      setReason(t.auth.sessionExpired);
+      setVisible(true);
+    });
+    return () => listener.remove();
   }, []);
 
   useEffect(() => {
@@ -166,7 +208,31 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     }
   }, []);
   const signInKakao = useCallback(() => signInOAuth('kakao'), [signInOAuth]);
-  const signInGoogle = useCallback(() => signInOAuth('google'), [signInOAuth]);
+  const signInGoogleNative = useCallback(async () => {
+    if (signInInFlight.current) return;
+    signInInFlight.current = true;
+    setAuthError(null);
+    setSigningIn(true);
+    try {
+      const response = await GoogleSignin.signIn();
+      if (!isSuccessResponse(response)) return;
+      if (!response.data.idToken) throw new Error('GOOGLE_ID_TOKEN_MISSING');
+      // GoogleSignIn 9 mints a nonce we cannot read the pre-image of; the Supabase Google
+      // provider must have "Skip nonce checks" enabled for this token to be accepted.
+      const { error } = await supabase.auth.signInWithIdToken({ provider: 'google', token: response.data.idToken });
+      if (error) throw error;
+      setVisible(false);
+    } catch (error) {
+      if (!(isErrorWithCode(error) && error.code === statusCodes.SIGN_IN_CANCELLED)) setAuthError(t.auth.loginError);
+    } finally {
+      signInInFlight.current = false;
+      setSigningIn(false);
+    }
+  }, []);
+  const signInGoogle = useCallback(
+    () => (usesNativeGoogleSignIn ? signInGoogleNative() : signInOAuth('google')),
+    [signInGoogleNative, signInOAuth],
+  );
   const signInApple = useCallback(async () => {
     if (signInInFlight.current) return;
     signInInFlight.current = true;

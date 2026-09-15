@@ -84,7 +84,16 @@ export interface Post {
   imagePaths?: string[];
   imageUris?: string[];
   room?: RoomPreview;
+  kind?: PostKind; // story(기본) | listing(렌트·중고·차량). 규칙은 카테고리가 아니라 종류를 따른다
+  listingStatus?: ListingStatus;
+  price?: number | null;
+  expiresAt?: string | null;
+  bumpedAt?: string | null;
+  sortAt?: string; // 피드 정렬 기준 = 끌어올림 시각 또는 작성 시각
 }
+
+export type PostKind = 'story' | 'listing';
+export type ListingStatus = 'open' | 'partial' | 'closed';
 
 export interface DailyQuota {
   used: number;

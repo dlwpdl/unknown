@@ -18,10 +18,11 @@ test('launch cities stay in order without presenting mock counts as live activit
   const openCities = cities.filter((city) => city.state === 'open');
   const vancouver = getWebHomeCitySummary('vancouver');
   const toronto = getWebHomeCitySummary('toronto');
+  const edmonton = getWebHomeCitySummary('edmonton');
 
-  assert.equal(openCities.length, 2);
-  assert.deepEqual(openCities.map((city) => city.id), ['vancouver', 'toronto']);
-  for (const city of [vancouver, toronto]) {
+  assert.equal(openCities.length, 3);
+  assert.deepEqual(openCities.map((city) => city.id), ['vancouver', 'toronto', 'edmonton']);
+  for (const city of [vancouver, toronto, edmonton]) {
     assert.equal(city.launchNote, '출시 준비 중');
     assert.equal(city.stateLabel, '출시 준비 중');
     assert.ok(!('postCount' in city));

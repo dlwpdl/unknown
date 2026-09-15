@@ -26,7 +26,7 @@ export default function ProfileScreen() {
   const theme = useTheme();
   const router = useRouter();
   const reducedMotion = useReducedMotion();
-  const { isAuthed, signInApple, signInKakao, signInGoogle, signInDev, isAuthLoading, authError, trustLevel, me, setProfilePhoto } = useAuth();
+  const { isAuthed, signInApple, signInKakao, signInGoogle, signInDev, isAuthLoading, authError, trustLevel, me, setProfilePhoto, signOut } = useAuth();
   const [savedOpen, setSavedOpen] = useState(false);
   const [savedDetail, setSavedDetail] = useState<Post | null>(null);
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
@@ -162,6 +162,16 @@ export default function ProfileScreen() {
             accessibilityRole="button"
             onPress={() => router.push('/profile/settings')}>
             <ThemedText type="small">{t.profile.settings}</ThemedText>
+          </Pressable>
+          <View style={[styles.divider, { backgroundColor: theme.line }]} />
+          <Pressable
+            style={styles.menuRow}
+            accessibilityRole="button"
+            onPress={() => Alert.alert(t.profile.signOutTitle, t.profile.signOutBody, [
+              { text: t.profile.cancel, style: 'cancel' },
+              { text: t.profile.signOut, style: 'destructive', onPress: () => void signOut() },
+            ])}>
+            <ThemedText type="small" themeColor="textSecondary">{t.profile.signOut}</ThemedText>
           </Pressable>
         </View>
       </SafeAreaView>

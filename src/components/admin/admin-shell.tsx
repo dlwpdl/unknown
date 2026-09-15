@@ -13,6 +13,7 @@ const sectionIcons = {
   analytics: { ios: 'chart.bar', web: 'bar_chart' },
   overview: { ios: 'square.grid.2x2', web: 'dashboard' },
   safety: { ios: 'shield', web: 'shield' },
+  alerts: { ios: 'exclamationmark.bubble', web: 'report' },
   reports: { ios: 'flag', web: 'flag' },
   users: { ios: 'person.2', web: 'group' },
   posts: { ios: 'doc.text', web: 'article' },
@@ -59,7 +60,8 @@ export function AdminShell({
             const active = item.id === activeSection;
             const badge = item.id === 'reports' && counts.openReports > 0
               ? counts.openReports
-              : item.id === 'safety' && counts.safetyHigh > 0 ? counts.safetyHigh : null;
+              : item.id === 'safety' && counts.safetyHigh > 0 ? counts.safetyHigh
+              : item.id === 'alerts' && counts.alertsOpen > 0 ? counts.alertsOpen : null;
             return (
               <Pressable
                 key={item.id}

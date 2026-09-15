@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import type { Post, PostComment, RoomPreview, TagSlug } from './types.ts';
+import type { ListingStatus, Post, PostComment, PostKind, RoomPreview, TagSlug } from './types.ts';
 
 export type PublicFeedRow = {
   id: string;
@@ -26,6 +26,12 @@ export type PublicFeedRow = {
   tag_slug: TagSlug;
   tag_label: string;
   tag_kind: 'post' | 'meetup';
+  kind?: PostKind;
+  listing_status?: ListingStatus | null;
+  price?: number | string | null;
+  expires_at?: string | null;
+  bumped_at?: string | null;
+  sort_at?: string;
 };
 
 export type PublicCommentRow = {
@@ -40,7 +46,32 @@ export type PublicCommentRow = {
   author_verification_level: number;
 };
 
-export type FeedCursor = { createdAt: string; id: string };
+export type FeedCursor = { createdAt: string; id: string; sortAt?: string };
+
+type SignedImage = { url: string; expiresAt: number };
+const signedImagesByClient = new WeakMap<object, Map<string, SignedImage>>();
+const viewersBySignedUrl = new Map<string, Set<string>>();
+
+export function appendUniquePosts<T extends { id: string }>(current: readonly T[], next: readonly T[]) {
+  const ids = new Set(current.map(({ id }) => id));
+  const added = next.filter(({ id }) => {
+    if (ids.has(id)) return false;
+    ids.add(id);
+    return true;
+  });
+  return [...current, ...added];
+}
+
+export function getPostImageSource(
+  post: Pick<Post, 'id' | 'imagePaths' | 'imageUris'>,
+  viewerScope: string,
+) {
+  const uri = post.imageUris?.[0];
+  if (!uri) return undefined;
+  const allowedViewers = viewersBySignedUrl.get(uri);
+  if (allowedViewers && !allowedViewers.has(viewerScope)) return undefined;
+  return { uri, cacheKey: `post-image:${viewerScope}:${post.imagePaths?.[0] ?? uri}` };
+}
 
 export function groupJournalPosts(posts: readonly Post[]) {
   // 첫 페이지 안에서만 소개한다. 페이지 추가가 읽던 글을 위로 옮기지 않게 한다.
@@ -57,18 +88,21 @@ export async function loadPublicFeed(
   tagId: number | null = null,
   query: string | null = null,
   cursor: FeedCursor | null = null,
+  options?: { viewerScope?: string; signal?: AbortSignal },
 ): Promise<Post[]> {
-  const feed = await client.rpc('get_public_feed_page', {
+  // v2 orders by sort_at (bumped listings float) and hides closed/expired listings.
+  const request = client.rpc('get_public_feed_page_v2', {
     p_city_id: cityId,
     p_tag_id: tagId,
     p_query: query,
-    p_before_created: cursor?.createdAt ?? null,
+    p_before_sort: cursor?.sortAt ?? cursor?.createdAt ?? null,
     p_before_id: cursor?.id ?? null,
     p_limit: 30,
   });
+  const feed = await (options?.signal ? request.abortSignal(options.signal) : request);
   if (feed.error) throw feed.error;
   const rows = (feed.data ?? []) as PublicFeedRow[];
-  return attachSignedPostImages(client, mapPublicFeed(rows, []));
+  return attachSignedPostImages(client, mapPublicFeed(rows, []), options?.viewerScope);
 }
 
 export async function loadPublicPost(client: SupabaseClient, postId: string): Promise<Post | null> {
@@ -135,17 +169,54 @@ export function mapPublicFeed(
     savedByMe: row.saved_by_me,
     imagePaths: row.image_paths,
     room: row.room_preview ?? undefined,
+    kind: row.kind ?? 'story',
+    listingStatus: row.listing_status ?? undefined,
+    price: row.price == null ? null : Number(row.price),
+    expiresAt: row.expires_at ?? null,
+    bumpedAt: row.bumped_at ?? null,
+    sortAt: row.sort_at ?? row.created_at,
   }));
 }
 
-export async function attachSignedPostImages(client: SupabaseClient, posts: Post[]) {
+export async function attachSignedPostImages(client: SupabaseClient, posts: Post[], viewerScope?: string) {
   const paths = [...new Set(posts.flatMap(({ imagePaths }) => imagePaths ?? []))];
   if (paths.length === 0) return posts;
-  const signed = await client.storage.from('post-images').createSignedUrls(paths, 3600);
-  if (signed.error || !signed.data) return posts;
-  const urls = new Map(
-    signed.data.flatMap(({ path, signedUrl }) => path && signedUrl ? [[path, signedUrl] as const] : []),
-  );
+  const scope = viewerScope ?? await client.auth.getSession()
+    .then(({ data }) => data.session?.user.id ?? 'guest')
+    .catch(() => undefined);
+  const now = Date.now();
+  const cache = scope
+    ? signedImagesByClient.get(client) ?? new Map<string, SignedImage>()
+    : null;
+  if (cache && !signedImagesByClient.has(client)) signedImagesByClient.set(client, cache);
+  const cacheKey = (path: string) => `${scope}:${path}`;
+  const urls = new Map(paths.flatMap((path) => {
+    const cached = cache?.get(cacheKey(path));
+    if (cached && cached.expiresAt > now) return [[path, cached.url] as const];
+    if (cached) {
+      cache?.delete(cacheKey(path));
+      const viewers = viewersBySignedUrl.get(cached.url);
+      if (scope) viewers?.delete(scope);
+      if (viewers?.size === 0) viewersBySignedUrl.delete(cached.url);
+    }
+    return [];
+  }));
+  const missing = paths.filter((path) => !urls.has(path));
+  if (missing.length > 0) {
+    const signed = await client.storage.from('post-images').createSignedUrls(missing, 3600);
+    if (!signed.error && signed.data) {
+      for (const { path, signedUrl } of signed.data) {
+        if (!path || !signedUrl) continue;
+        urls.set(path, signedUrl);
+        cache?.set(cacheKey(path), { url: signedUrl, expiresAt: now + 55 * 60_000 });
+        if (scope) {
+          const viewers = viewersBySignedUrl.get(signedUrl) ?? new Set<string>();
+          viewers.add(scope);
+          viewersBySignedUrl.set(signedUrl, viewers);
+        }
+      }
+    }
+  }
   return posts.map((post) => ({
     ...post,
     imageUris: post.imagePaths?.flatMap((path) => urls.get(path) ?? []),

@@ -2,7 +2,7 @@
   "expo": {
     "name": "글링",
     "slug": "gling",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/brand/gling-app-icon.png",
     "scheme": "gling",
@@ -11,7 +11,7 @@
       "icon": "./assets/brand/gling-app-icon.png",
       "bundleIdentifier": "com.dlwpdl.gling",
       "appleTeamId": "P3X3452TDZ",
-      "buildNumber": "13",
+      "buildNumber": "14",
       "usesAppleSignIn": true,
       "infoPlist": {
         "CFBundleName": "글링"
@@ -93,7 +93,7 @@
     },
     "android": {
       "package": "com.dlwpdl.gling",
-      "versionCode": 12,
+      "versionCode": 13,
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.ACCESS_BACKGROUND_LOCATION",
@@ -128,6 +128,12 @@
         }
       ],
       "expo-apple-authentication",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.326642098269-oa2a97trifhohih9d9tk8lotse14qnn4"
+        }
+      ],
       [
         "expo-image-picker",
         {

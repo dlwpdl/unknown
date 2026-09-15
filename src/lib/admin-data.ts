@@ -90,6 +90,7 @@ export type AdminSafetyReview = {
 };
 
 export type AdminCounts = {
+  alertsOpen: number;
   reports: number;
   openReports: number;
   profiles: number;
@@ -99,8 +100,31 @@ export type AdminCounts = {
   safetyHigh: number;
 };
 
+export type AdminSafetyAlert = {
+  id: number;
+  kind: 'keyword';
+  target_type: 'post' | 'comment' | 'message';
+  target_id: string;
+  author_id: string;
+  conversation_id: string | null;
+  category: string;
+  severity: 'medium' | 'high' | 'critical';
+  matched_terms: string[];
+  excerpt: string;
+  status: 'open' | 'reviewed' | 'dismissed' | 'escalated';
+  note: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+};
+
+export type AdminSharedSessionUser = { id: string; nickname: string; account_type: string; last_seen: string; comments: number; posts: number };
+export type AdminSharedSessionGroup = { ip: string; user_agent: string | null; same_device: boolean; user_count: number; first_seen: string; last_seen: string; users: AdminSharedSessionUser[] };
+
 export type AdminDashboardData = {
   counts: AdminCounts;
+  sharedSessions: AdminSharedSessionGroup[];
+  safetyAlerts: AdminSafetyAlert[];
   profiles: AdminProfile[];
   posts: AdminPost[];
   conversations: AdminConversation[];
@@ -121,6 +145,7 @@ export type AdminUserActivity = {
 
 export type AdminSectionPage =
   | { section: 'safety'; rows: AdminSafetyReview[] }
+  | { section: 'alerts'; rows: AdminSafetyAlert[] }
   | { section: 'reports'; rows: AdminReport[] }
   | { section: 'users'; rows: AdminProfile[] }
   | { section: 'posts'; rows: AdminPost[] }
@@ -154,7 +179,10 @@ export function getLocalAdminDashboard(): AdminDashboardData {
   );
 
   return {
-    counts: { reports: 0, openReports: 0, profiles: profiles.length, posts: posts.length, messages: 0, safetyPending: 0, safetyHigh: 0 },
+    sharedSessions: [],
+    safetyAlerts: [],
+    counts: {
+      alertsOpen: 0, reports: 0, openReports: 0, profiles: profiles.length, posts: posts.length, messages: 0, safetyPending: 0, safetyHigh: 0 },
     profiles,
     posts,
     conversations: [],
@@ -204,8 +232,15 @@ export async function logAdminAccess(
   if (error) throw new Error(error.message);
 }
 
+export async function loadAdminSharedSessions(client: SupabaseClient, days = 30): Promise<AdminSharedSessionGroup[]> {
+  const result = await client.rpc('get_admin_shared_sessions', { p_days: days });
+  if (result.error) throw result.error;
+  return ((result.data as { groups?: AdminSharedSessionGroup[] } | null)?.groups ?? []);
+}
+
 export async function loadAdminDashboard(client: SupabaseClient): Promise<AdminDashboardData> {
   await logAdminAccess(client, 'dashboard');
+  const sharedSessions = loadAdminSharedSessions(client).catch(() => [] as AdminSharedSessionGroup[]);
 
   const [reports, profiles, posts, conversations, messages, actions, safety, reportCount, openCount, profileCount, postCount, messageCount, safetyPending, safetyHigh] =
     await Promise.all([
@@ -224,9 +259,12 @@ export async function loadAdminDashboard(client: SupabaseClient): Promise<AdminD
       client.from('safety_review_queue').select('*', { count: 'exact', head: true }).in('status', ['pending', 'processing', 'failed']),
       client.from('safety_review_queue').select('*', { count: 'exact', head: true }).in('risk_level', ['high', 'critical']),
     ]);
+  const alerts = await client.from('safety_alerts').select('*').order('created_at', { ascending: false }).limit(ADMIN_PAGE_SIZE);
+  const alertsOpen = await client.from('safety_alerts').select('*', { count: 'exact', head: true }).eq('status', 'open');
 
   return {
     counts: {
+      alertsOpen: alertsOpen.count ?? 0,
       reports: reportCount.count ?? 0,
       openReports: openCount.count ?? 0,
       profiles: profileCount.count ?? 0,
@@ -235,6 +273,8 @@ export async function loadAdminDashboard(client: SupabaseClient): Promise<AdminD
       safetyPending: safetyPending.count ?? 0,
       safetyHigh: safetyHigh.count ?? 0,
     },
+    sharedSessions: await sharedSessions,
+    safetyAlerts: dataOrThrow<AdminSafetyAlert[]>(alerts),
     reports: dataOrThrow<AdminReport[]>(reports),
     profiles: dataOrThrow<AdminProfile[]>(profiles),
     posts: dataOrThrow<AdminPost[]>(posts),
@@ -253,6 +293,10 @@ export async function loadMoreAdminData(
   await logAdminAccess(client, section === 'conversations' ? 'messages' : section);
   const last = offset + ADMIN_PAGE_SIZE - 1;
 
+  if (section === 'alerts') {
+    const result = await client.from('safety_alerts').select('*').order('created_at', { ascending: false }).range(offset, last);
+    return { section, rows: dataOrThrow<AdminSafetyAlert[]>(result) };
+  }
   if (section === 'safety') {
     const result = await client.from('safety_review_queue').select('*').order('created_at', { ascending: false }).range(offset, last);
     return { section, rows: dataOrThrow<AdminSafetyReview[]>(result) };
@@ -301,4 +345,17 @@ export async function setAdminAccountStatus(
     p_note: note.trim() || null,
   });
   if (error) throw new Error(error.message);
+}
+
+export async function resolveAdminSafetyAlert(client: SupabaseClient, alertId: number, status: AdminSafetyAlert['status'], note?: string) {
+  const result = await client.rpc('resolve_admin_safety_alert', { p_alert_id: alertId, p_status: status, p_note: note ?? null });
+  if (result.error) throw result.error;
+}
+
+// Audited bundle (content, author identity as stored, session IPs, surrounding conversation) for a
+// law-enforcement request. Returned as JSON so the admin can copy it into the formal reply.
+export async function exportAdminSafetyEvidence(client: SupabaseClient, alertId: number): Promise<Record<string, unknown>> {
+  const result = await client.rpc('export_admin_safety_evidence', { p_alert_id: alertId });
+  if (result.error) throw result.error;
+  return result.data as Record<string, unknown>;
 }

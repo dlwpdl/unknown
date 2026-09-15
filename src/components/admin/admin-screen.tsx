@@ -23,9 +23,9 @@ import {
 import { supabase } from '@/lib/supabase';
 
 export function AdminScreen() {
-  const { safety } = useLocalSearchParams<{ safety?: string }>();
+  const { safety, alert } = useLocalSearchParams<{ safety?: string; alert?: string }>();
   const { isAuthed, isAdmin, isAuthLoading, authError, signInAdmin, signInGoogle, signOut } = useAuth();
-  const [section, setSection] = useState<AdminSection>(safety ? 'safety' : 'analytics');
+  const [section, setSection] = useState<AdminSection>(alert ? 'alerts' : safety ? 'safety' : 'analytics');
   const [analyticsRefresh, setAnalyticsRefresh] = useState(0);
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -112,6 +112,8 @@ export function AdminScreen() {
       ? data.reports.length
       : section === 'safety'
         ? data.safetyReviews.length
+      : section === 'alerts'
+        ? data.safetyAlerts.length
       : section === 'users'
         ? data.profiles.length
         : section === 'posts'
@@ -124,6 +126,7 @@ export function AdminScreen() {
       setData((current) => {
         if (!current) return current;
         if (page.section === 'safety') return { ...current, safetyReviews: [...current.safetyReviews, ...page.rows] };
+        if (page.section === 'alerts') return { ...current, safetyAlerts: [...current.safetyAlerts, ...page.rows] };
         if (page.section === 'reports') return { ...current, reports: [...current.reports, ...page.rows] };
         if (page.section === 'users') return { ...current, profiles: [...current.profiles, ...page.rows] };
         if (page.section === 'posts') return { ...current, posts: [...current.posts, ...page.rows] };
@@ -149,7 +152,7 @@ export function AdminScreen() {
   }
 
   return (
-    <AdminShell activeSection={section} counts={data?.counts ?? { reports: 0, openReports: 0, profiles: 0, posts: 0, messages: 0, safetyPending: 0, safetyHigh: 0 }} busy={needsOperations && loading} onSection={(next) => { if (!needsOperations && next !== 'analytics') { setLoading(true); setError(null); } setSection(next); }} onRefresh={() => void refresh()} onSignOut={localPreview ? () => { setLocalPreview(false); setData(null); } : () => void signOut()}>
+    <AdminShell activeSection={section} counts={data?.counts ?? { alertsOpen: 0, reports: 0, openReports: 0, profiles: 0, posts: 0, messages: 0, safetyPending: 0, safetyHigh: 0 }} busy={needsOperations && loading} onSection={(next) => { if (!needsOperations && next !== 'analytics') { setLoading(true); setError(null); } setSection(next); }} onRefresh={() => void refresh()} onSignOut={localPreview ? () => { setLocalPreview(false); setData(null); } : () => void signOut()}>
       {localPreview && <View accessibilityRole="alert" style={styles.preview}><ThemedText type="smallBold">로컬 미리보기 · 실제 운영 데이터와 권한은 변경되지 않습니다.</ThemedText></View>}
       {!!error && needsOperations && <View accessibilityRole="alert" style={styles.error}><ThemedText style={styles.errorText}>{error}</ThemedText></View>}
       {section === 'analytics' ? <AdminAnalyticsView localPreview={localPreview} onUser={setSelectedUserId} refreshSignal={analyticsRefresh} /> : data && <AdminSectionView

@@ -3,7 +3,7 @@
 import type { City, DailyQuota, Post, Tag } from '@/lib/types';
 
 // 큰 도시 = 상단 지역 선택. 소도시·동네는 프로필의 neighborhood로 구조화한다.
-// 밀도 전략: 밴쿠버·토론토만 열고 나머지는 대기열('soon'). 열리는 순서는 기수제로.
+// 밀도 전략: 밴쿠버·토론토·에드먼튼만 열고 나머지는 대기열('soon'). 열리는 순서는 기수제로.
 export const CITIES: City[] = [
   { id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver', province: 'BC', state: 'open' },
   { id: 'toronto', name: '토론토', englishName: 'Toronto', province: 'ON', state: 'open' },
@@ -12,7 +12,7 @@ export const CITIES: City[] = [
   { id: 'winnipeg', name: '위니펙', englishName: 'Winnipeg', province: 'MB', state: 'soon' },
   { id: 'saskatoon', name: '사스카툰', englishName: 'Saskatoon', province: 'SK', state: 'soon' },
   { id: 'ottawa', name: '오타와', englishName: 'Ottawa', province: 'ON', state: 'soon' },
-  { id: 'edmonton', name: '에드먼튼', englishName: 'Edmonton', aliases: ['에드먼턴'], province: 'AB', state: 'soon' },
+  { id: 'edmonton', name: '에드먼튼', englishName: 'Edmonton', aliases: ['에드먼턴'], province: 'AB', state: 'open' },
   { id: 'regina', name: '리자이나', englishName: 'Regina', province: 'SK', state: 'soon' },
   { id: 'saint-john', name: '세인트존', englishName: 'Saint John', aliases: ['세인트존스', 'St John'], province: 'NB', state: 'soon' },
   { id: 'halifax', name: '할리팩스', englishName: 'Halifax', aliases: ['핼리팩스'], province: 'NS', state: 'soon' },

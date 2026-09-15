@@ -195,6 +195,7 @@ select public.update_notification_preferences('{"interests":true,"nearby":true}'
 reset role;
 insert into public.posts(id,author_id,city_id,tag_id,title,body,hashtags,room_preview)
 values ('40888888-8888-8888-8888-888888888888','40333333-3333-3333-3333-333333333333','vancouver',1,'관심 모임','관심 모임입니다.',array['HIKING'],'{"capacity":4}');
+select private.process_discovery_posts();
 select results_eq($$select user_id,category from public.notifications where target_id='40888888-8888-8888-8888-888888888888'$$,
   $$values ('40222222-2222-2222-2222-222222222222'::uuid,'interests'::text)$$,
   'matching city and opt-in interests create one discovery alert, even when nearby also matches');
@@ -207,6 +208,7 @@ select public.update_notification_preferences('{"interests":false}');
 reset role;
 insert into public.posts(id,author_id,city_id,tag_id,title,body,room_preview)
 values ('40999999-9999-9999-9999-999999999999','40aaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','vancouver',1,'근처 모임','새 모임입니다.','{"capacity":4}');
+select private.process_discovery_posts();
 select results_eq($$select user_id,category from public.notifications where target_id='40999999-9999-9999-9999-999999999999'$$,
   $$values ('40222222-2222-2222-2222-222222222222'::uuid,'nearby'::text)$$,'nearby-only opt-in receives real new meetups in the saved city');
 update public.posts set status='removed' where id='40999999-9999-9999-9999-999999999999';
@@ -219,10 +221,12 @@ update public.posts set status='published' where id='40999999-9999-9999-9999-999
 update public.profiles set city_id='toronto' where id='40222222-2222-2222-2222-222222222222';
 insert into public.posts(id,author_id,city_id,tag_id,title,body,room_preview)
 values ('40bbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb','40111111-1111-1111-1111-111111111111','vancouver',1,'도시 변경 후 모임','이전 도시입니다.','{"capacity":4}');
+select private.process_discovery_posts();
 select is((select count(*)::integer from public.notifications where target_id='40bbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'),0,
   'discovery follows the current saved city instead of a copied preference');
 insert into public.posts(id,author_id,city_id,tag_id,title,body)
 values ('40cccccc-cccc-cccc-cccc-cccccccccccc','10000000-0000-0000-0000-000000000001','toronto',1,'예시 관심 글','시드 계정이 작성한 예시입니다.');
+select private.process_discovery_posts();
 select is((select count(*)::integer from public.notifications where target_id='40cccccc-cccc-cccc-cccc-cccccccccccc'),0,
   'even newly inserted seed posts never notify interested real accounts');
 
