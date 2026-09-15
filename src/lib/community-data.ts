@@ -529,3 +529,14 @@ export async function loadRepliesToMe(client: SupabaseClient, userId: string): P
   if (result.error) throw result.error;
   return (result.data ?? []) as unknown as ReplyToMe[];
 }
+
+// Own comments: RLS "users update own comments" allows body edits and soft deletes (deleted_at).
+export async function editComment(client: SupabaseClient, commentId: string, body: string) {
+  const result = await client.from('comments').update({ body: body.trim() }).eq('id', commentId);
+  if (result.error) throw result.error;
+}
+
+export async function deleteComment(client: SupabaseClient, commentId: string) {
+  const result = await client.from('comments').update({ deleted_at: new Date().toISOString() }).eq('id', commentId);
+  if (result.error) throw result.error;
+}

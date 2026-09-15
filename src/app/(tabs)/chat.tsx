@@ -1,5 +1,5 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, DeviceEventEmitter, FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,6 +21,8 @@ import { supabase } from '@/lib/supabase';
 type Inbox = ConversationPage & { userId: string; filter: ConversationFilter; requests: MeetupRequest[] };
 
 export default function ChatScreen() {
+  // Pushing a tab route from a stack screen can mount the tabs twice; keep channel names unique per mount.
+  const channelId = useId();
   const theme = useTheme();
   const router = useRouter();
   const reducedMotion = useReducedMotion();
@@ -103,7 +105,7 @@ export default function ChatScreen() {
         })();
       }, 150);
     };
-    const channel = supabase.channel(`inbox:${userId}`)
+    const channel = supabase.channel(`inbox:${userId}:${channelId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, schedule)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, ({ new: message }) => {
         if (!active) return;
@@ -125,7 +127,7 @@ export default function ChatScreen() {
     const listener = DeviceEventEmitter.addListener(MEETUPS_CHANGED_EVENT, schedule);
     const appState = AppState.addEventListener('change', (next) => { if (next === 'active') schedule(); });
     return () => { active = false; clearTimeout(timer); listener.remove(); appState.remove(); void supabase.removeChannel(channel); };
-  }, [changed, userId]);
+  }, [changed, userId, channelId]);
 
   const loadMore = async () => {
     if (!userId || pageBusy.current || loading || !inbox?.cursor || inbox.userId !== userId || inbox.filter !== filter) return;

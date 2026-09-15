@@ -24,7 +24,7 @@ import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { buildCommentListRows, type CommentListRow } from '@/lib/comment-list';
 import { createThreadComment, loadCommentThreadContext, loadCommentThreadPage, type CommentCursor } from '@/lib/comment-threads';
-import { bumpListing, getCommunityActionError, isContentRejected, recordPostView, setListingStatus, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
+import { bumpListing, deleteComment, editComment, getCommunityActionError, isContentRejected, recordPostView, setListingStatus, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 import { supabase } from '@/lib/supabase';
@@ -69,6 +69,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const [context, setContext] = useState<{ id: string; comments: PostComment[]; error: boolean } | null>(null);
   const [contextRetry, setContextRetry] = useState(0);
   const [draft, setDraft] = useState('');
+  const [editing, setEditing] = useState<PostComment | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
   const [sheetUser, setSheetUser] = useState<SheetUser | null>(null);
   const [sending, setSending] = useState(false);
@@ -179,9 +180,39 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     }
   };
 
+  const startEdit = (comment: PostComment) => { setReplyTo(null); setEditing(comment); setDraft(comment.body); };
+  const confirmDelete = (comment: PostComment) => Alert.alert(t.detail.deleteTitle, t.detail.deleteBody, [
+    { text: t.write.cancel, style: 'cancel' },
+    { text: t.detail.delete, style: 'destructive', onPress: () => void (async () => {
+      try {
+        await deleteComment(supabase, comment.id);
+        if (!active.current) return;
+        setComments((current) => current.filter((item) => item.id !== comment.id));
+        if (comment.parentId) updateComment(comment.parentId, (parent) => ({ ...parent, replyCount: Math.max(0, (parent.replyCount ?? 0) - 1) }));
+        const nextTotal = Math.max(0, commentTotal - 1);
+        setCommentTotal(nextTotal); onCommentCountChange?.(nextTotal); play('selection');
+      } catch { if (active.current) { play('warning'); Alert.alert(t.detail.deleteErrorTitle, t.detail.sendErrorBody); } }
+    })() },
+  ]);
+
   const send = async () => {
     if (!isAuthed) return promptLogin(t.auth.reasonComment);
     const body = draft.trim();
+    if (editing) {
+      if (!body || sendBusy.current) return;
+      sendBusy.current = true; setSending(true); setSendError(null);
+      try {
+        await editComment(supabase, editing.id, body);
+        if (!active.current) return;
+        updateComment(editing.id, (comment) => ({ ...comment, body }));
+        setEditing(null); setDraft(''); play('message');
+      } catch (error) {
+        if (!active.current) return;
+        play('warning');
+        Alert.alert(isContentRejected(error) ? t.safety.contentBlockedTitle : t.detail.editErrorTitle, isContentRejected(error) ? t.safety.contentBlockedBody : t.detail.sendErrorBody);
+      } finally { sendBusy.current = false; if (active.current) setSending(false); }
+      return;
+    }
     const parentId = replyTo ? replyTo.parentId ?? replyTo.id : null;
     const targetPage = pages[parentId ?? 'root'];
     if (!body || sendBusy.current || !targetPage?.loaded || targetPage.loading) return;
@@ -323,6 +354,16 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               accessibilityLabel={`${c.nickname}님에게 답글 쓰기`} accessibilityState={{ disabled: sending }} style={styles.commentAction}>
               <ThemedText type="small" themeColor="textSecondary" style={styles.commentActionText}>답글</ThemedText>
             </Pressable>
+            {mine && (
+              <>
+                <Pressable onPress={() => startEdit(c)} disabled={sending} accessibilityRole="button" accessibilityLabel={`내 ${c.parentId ? '답글' : '댓글'} 수정`} accessibilityState={{ disabled: sending }} style={styles.commentAction}>
+                  <ThemedText type="small" themeColor="textSecondary" style={styles.commentActionText}>{t.detail.edit}</ThemedText>
+                </Pressable>
+                <Pressable onPress={() => confirmDelete(c)} disabled={sending} accessibilityRole="button" accessibilityLabel={`내 ${c.parentId ? '답글' : '댓글'} 삭제`} accessibilityState={{ disabled: sending }} style={styles.commentAction}>
+                  <ThemedText type="small" themeColor="textSecondary" style={styles.commentActionText}>{t.detail.delete}</ThemedText>
+                </Pressable>
+              </>
+            )}
             {!mine && c.authorId && (
               <Pressable
                 onPress={() => setReportSelection({ targetType: 'comment', targetId: c.id, reportedUserId: c.authorId!, reportedNickname: c.nickname })}
@@ -337,7 +378,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   };
 
   const composerPage = pages[replyTo ? replyTo.parentId ?? replyTo.id : 'root'];
-  const sendDisabled = sending || !draft.trim() || !composerPage?.loaded || composerPage.loading;
+  const sendDisabled = sending || !draft.trim() || (!editing && (!composerPage?.loaded || composerPage.loading));
   const listRows = buildCommentListRows({
     comments,
     expanded,
@@ -462,7 +503,14 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               paddingBottom: Math.max(insets.bottom, Spacing.two) + Spacing.one,
             },
           ]}>
-          {replyTo && <View style={styles.replyContext}>
+          {editing && <View style={styles.replyContext}>
+            <ThemedText type="small" themeColor="accent" style={{ flex: 1 }}>{t.detail.editing}</ThemedText>
+            <Pressable onPress={() => { setEditing(null); setDraft(''); }} disabled={sending} accessibilityRole="button" accessibilityLabel="수정 취소"
+              accessibilityState={{ disabled: sending }} style={styles.commentAction}>
+              <ThemedText type="small" themeColor="textSecondary">취소</ThemedText>
+            </Pressable>
+          </View>}
+          {replyTo && !editing && <View style={styles.replyContext}>
             <ThemedText type="small" themeColor="accent" style={{ flex: 1 }}>{replyTo.nickname}님에게 답글</ThemedText>
             <Pressable onPress={() => setReplyTo(null)} disabled={sending} accessibilityRole="button" accessibilityLabel="답글 취소"
               accessibilityState={{ disabled: sending }} style={styles.commentAction}>

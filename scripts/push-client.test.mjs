@@ -14,7 +14,7 @@ test('unread badges refresh after settings and foreground changes without leakin
   const subscription = { remove() {} };
   const channel = { on() { return this; }, subscribe() { return this; } };
   const { useUnreadCount } = load('../src/hooks/use-unread-count.ts', {
-    react: { useState: () => [state, value => { state = value; }], useEffect: callback => { effect = callback; } },
+    react: { useId: () => 'test-id', useState: () => [state, value => { state = value; }], useEffect: callback => { effect = callback; } },
     'expo-router': { usePathname: () => '/notifications' },
     'react-native': {
       DeviceEventEmitter: { addListener: (_, callback) => { settingsChanged = callback; return subscription; } },
@@ -55,7 +55,7 @@ test('an in-flight preference refresh cannot restore foreground push after optin
   let registrations = 0;
   const subscription = () => ({ remove() {} });
   const { NotificationObserver } = load('../src/components/notification-observer.tsx', {
-    'react': { useEffect: effect => { cleanup = effect(); } },
+    'react': { useId: () => 'test-id', useEffect: effect => { cleanup = effect(); } },
     'react-native': {
       AppState: { addEventListener: subscription },
       DeviceEventEmitter: { addListener: (_, callback) => { settingsChanged = callback; return subscription(); } },

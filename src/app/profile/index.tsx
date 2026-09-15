@@ -154,7 +154,7 @@ export default function ProfileScreen() {
           {([
             ['멤버십', membershipLabel, () => router.push('/profile/membership')],
             [`인증 Lv${trustLevel}`, t.trust.short(trustLevel), () => router.push('/profile/settings')],
-            [t.notifications.title, unreadLabel, () => router.push('/notifications')],
+            [t.notifications.title, unreadLabel, () => router.navigate('/notifications')],
             [t.profile.saved, null, () => { setSavedOpen(true); void refreshSaved(); }],
           ] as const).map(([label, sub, onPress]) => (
             <Pressable key={label} onPress={onPress} accessibilityRole="button" style={({ pressed }) => [styles.manageCell, { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.65 : 1 }]}>

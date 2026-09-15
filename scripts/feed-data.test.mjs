@@ -19,7 +19,7 @@ test('저널은 첫 사진과 모임 두 개를 중복 없이 보여주고 다�
     { id: 'photo-2', imageUris: ['https://example.com/next.jpg'] },
   ]);
   const { featured, meetups, remaining } = groupJournalPosts(posts);
-  assert.equal(featured.id, 'photo');
+  assert.equal(featured.id, 'photo'); // photo is within the newest five in this fixture
   assert.deepEqual(meetups.map(p => p.id), ['meetup-photo', 'meetup-2']);
   assert.deepEqual(remaining.map(p => p.id), ['question', 'meetup-3', 'photo-2']);
   assert.equal(new Set([featured, ...meetups, ...remaining].map(p => p.id)).size, posts.length);

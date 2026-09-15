@@ -21,6 +21,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
     effects.push(() => { state.cleanup?.(); state.cleanup = fn(); });
   };
   const react = {
+    useId: () => 'test-id',
     useState(initial) {
       const slot = index++;
       if (!(slot in hooks)) hooks[slot] = typeof initial === 'function' ? initial() : initial;

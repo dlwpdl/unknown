@@ -44,7 +44,7 @@ export function NotificationObserver() {
       const data = response.notification.request.content.data ?? {};
       if (!active || data.userId !== userId || opened === response.notification.request.identifier) return;
       opened = response.notification.request.identifier;
-      router.push((notificationRoute(data.route) ?? '/notifications') as never);
+      router.navigate((notificationRoute(data.route) ?? '/notifications') as never);
       if (typeof data.notificationId === 'string' && /^[0-9a-f-]{36}$/i.test(data.notificationId)) {
         void markNotificationsRead(supabase, [data.notificationId]).catch(() => {});
       }
