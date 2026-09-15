@@ -1,5 +1,5 @@
 import { usePathname } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { AppState, DeviceEventEmitter } from 'react-native';
 
 import { useAuth } from '@/lib/auth';
@@ -11,6 +11,8 @@ export function useUnreadCount(scope: 'chat' | 'other' | 'all' = 'all') {
   const { isAuthed, me } = useAuth();
   const pathname = usePathname();
   const [result, setResult] = useState<{ userId: string; count: number } | null>(null);
+  // Several tabs mount this hook at once; Supabase refuses a second subscription on the same channel name.
+  const channelId = useId();
   useEffect(() => {
     if (!isAuthed) return;
     let active = true;
@@ -21,12 +23,12 @@ export function useUnreadCount(scope: 'chat' | 'other' | 'all' = 'all') {
         .then((count) => { if (active && version === request) setResult({ userId: me.id, count }); }).catch(() => {});
     };
     refresh();
-    const channel = supabase.channel(`navigation-notifications:${me.id}`)
+    const channel = supabase.channel(`navigation-notifications:${me.id}:${scope}:${channelId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${me.id}` }, refresh)
       .subscribe();
     const settings = DeviceEventEmitter.addListener(NOTIFICATION_PREFERENCES_CHANGED, refresh);
     const foreground = AppState.addEventListener('change', state => { if (state === 'active') refresh(); });
     return () => { active = false; settings.remove(); foreground.remove(); void supabase.removeChannel(channel); };
-  }, [isAuthed, me.id, pathname, scope]);
+  }, [isAuthed, me.id, pathname, scope, channelId]);
   return isAuthed && result?.userId === me.id ? result.count : 0;
 }
