@@ -1,5 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
+import { SymbolView } from 'expo-symbols';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
@@ -96,7 +97,7 @@ export default function ProfileScreen() {
 
   const cityName = CITIES.find(({ id }) => id === summary?.cityId)?.name ?? summary?.cityId ?? '';
   const membershipLabel = membership ? ({ free: '베이직', plus: '플러스', premium: '프리미엄' } as const)[membership.tier] : null;
-  const unreadLabel = unread > 0 ? `${unread} 새 소식` : '새 소식 없음';
+  const unreadLabel = unread > 0 ? `새 소식 ${unread}` : '새 소식 없음';
 
   const pickProfilePhoto = async () => {
     try {
@@ -151,17 +152,25 @@ export default function ProfileScreen() {
           </ThemedText>
         </View>
 
-        {/* 관리는 네 칸으로, 그 아래는 내 글이 곧 프로필 (스레드 방식) */}
-        <View style={styles.manage}>
+        {/* 관리는 네 칸으로, 그 아래는 내 글이 곧 프로필 (스레드 방식). iOS 연락처 카드의 액션 타일 패턴: 심볼 → 이름 → 상태 */}
+        <View style={styles.manage} accessibilityRole="menu">
           {([
-            ['멤버십', membershipLabel, () => router.push('/profile/membership')],
-            [`인증 Lv${trustLevel}`, t.trust.short(trustLevel), () => router.push('/profile/settings')],
-            [t.notifications.title, unreadLabel, () => router.push('/profile/inbox')],
-            [t.profile.saved, '다시 읽기', () => { setSavedOpen(true); void refreshSaved(); }],
-          ] as const).map(([label, sub, onPress]) => (
-            <Pressable key={label} onPress={() => { play('selection'); onPress(); }} accessibilityRole="button" style={({ pressed }) => [styles.manageCell, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement }]}>
+            ['멤버십', membershipLabel, { ios: 'star.circle', android: 'stars', web: 'stars' }, false, () => router.push('/profile/membership')],
+            [`인증 Lv${trustLevel}`, t.trust.short(trustLevel), { ios: 'checkmark.seal', android: 'verified', web: 'verified' }, false, () => router.push('/profile/settings')],
+            [t.notifications.title, unreadLabel, { ios: 'bell', android: 'notifications', web: 'notifications' }, unread > 0, () => router.push('/profile/inbox')],
+            [t.profile.saved, '모아보기', { ios: 'bookmark', android: 'bookmark', web: 'bookmark' }, false, () => { setSavedOpen(true); void refreshSaved(); }],
+          ] as const).map(([label, sub, symbol, attention, onPress]) => (
+            <Pressable key={label} onPress={() => { play('selection'); onPress(); }} accessibilityRole="button" accessibilityLabel={`${label}, ${sub ?? ''}`}
+              style={({ pressed }) => [styles.manageCell, {
+                backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
+                transform: [{ scale: pressed && !reducedMotion ? 0.97 : 1 }], // 눌린 순간 바로 반응, 놓으면 실행
+              }]}>
+              <View style={styles.manageIcon}>
+                <SymbolView name={symbol} size={22} weight="medium" tintColor={attention ? theme.accent : theme.navy} />
+                {attention && <View style={[styles.manageDot, { backgroundColor: theme.accent, borderColor: theme.backgroundElement }]} />}
+              </View>
               <ThemedText type="smallBold" numberOfLines={1}>{label}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.manageSub}>{sub}</ThemedText>
+              <ThemedText type="small" themeColor={attention ? undefined : 'textSecondary'} numberOfLines={1} style={[styles.manageSub, attention && { color: theme.accent }]}>{sub}</ThemedText>
             </Pressable>
           ))}
         </View>
@@ -283,8 +292,10 @@ const styles = StyleSheet.create({
   nick: { fontSize: 24, lineHeight: 32, fontWeight: 700 },
   menu: { borderWidth: 1, borderRadius: 12, marginTop: Spacing.four },
   manage: { flexDirection: 'row', gap: Spacing.two, marginBottom: Spacing.two },
-  manageCell: { flex: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center', gap: 2, paddingVertical: 12, paddingHorizontal: Spacing.one },
-  manageSub: { fontSize: 12, lineHeight: 16 },
+  manageCell: { flex: 1, borderRadius: 14, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', gap: 2, paddingVertical: 12, paddingHorizontal: Spacing.one },
+  manageIcon: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  manageDot: { position: 'absolute', top: 1, right: 1, width: 9, height: 9, borderRadius: 5, borderWidth: 2 },
+  manageSub: { fontSize: 12, lineHeight: 16, fontVariant: ['tabular-nums'] },
   segments: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
   segment: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
   myPost: { paddingVertical: Spacing.three, gap: Spacing.one, borderBottomWidth: StyleSheet.hairlineWidth },
