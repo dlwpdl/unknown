@@ -1,0 +1,312 @@
+{
+  "environment": "Supabase Postgres 17.6 / pg_cron 1.6.4 / arm64 Docker, local synthetic fixtures, sequential before and after on same isolated container",
+  "method": "One warm-up + three samples, median milliseconds; fixture setup rolled back, full publish triggers enabled during timing; query calls use guest auth context",
+  "before_0042": [
+    {
+      "path": "publish",
+      "recipients": 10,
+      "median_ms": 2.875,
+      "samples_ms": [
+        2.875,
+        3.633,
+        2.853
+      ]
+    },
+    {
+      "path": "publish",
+      "recipients": 100,
+      "median_ms": 20.057,
+      "samples_ms": [
+        21.815,
+        20.057,
+        19.55
+      ]
+    },
+    {
+      "path": "publish",
+      "recipients": 1000,
+      "median_ms": 235.047,
+      "samples_ms": [
+        235.047,
+        229.399,
+        246.406
+      ]
+    },
+    {
+      "path": "publish",
+      "recipients": 10000,
+      "median_ms": 2617.326,
+      "samples_ms": [
+        2422.124,
+        2617.326,
+        2820.641
+      ]
+    },
+    {
+      "path": "category",
+      "posts": 10000,
+      "median_ms": 3.863,
+      "samples_ms": [
+        3.66,
+        7.951,
+        3.863
+      ]
+    },
+    {
+      "path": "search_common",
+      "posts": 10000,
+      "median_ms": 1.352,
+      "samples_ms": [
+        1.352,
+        0.67,
+        3.383
+      ]
+    },
+    {
+      "path": "search_rare",
+      "posts": 10000,
+      "median_ms": 69.256,
+      "samples_ms": [
+        70.338,
+        68.741,
+        69.256
+      ]
+    },
+    {
+      "path": "search_none",
+      "posts": 10000,
+      "median_ms": 84.528,
+      "samples_ms": [
+        95.285,
+        82.133,
+        84.528
+      ]
+    },
+    {
+      "path": "trending",
+      "posts": 10000,
+      "median_ms": 23.037,
+      "samples_ms": [
+        39.988,
+        23.037,
+        19.711
+      ]
+    },
+    {
+      "path": "category",
+      "posts": 100000,
+      "median_ms": 3.571,
+      "samples_ms": [
+        4.02,
+        3.571,
+        2.324
+      ]
+    },
+    {
+      "path": "search_common",
+      "posts": 100000,
+      "median_ms": 0.785,
+      "samples_ms": [
+        0.785,
+        1.22,
+        0.749
+      ]
+    },
+    {
+      "path": "search_rare",
+      "posts": 100000,
+      "median_ms": 804.686,
+      "samples_ms": [
+        804.686,
+        782.664,
+        896.384
+      ]
+    },
+    {
+      "path": "search_none",
+      "posts": 100000,
+      "median_ms": 805.332,
+      "samples_ms": [
+        772.913,
+        900.52,
+        805.332
+      ]
+    },
+    {
+      "path": "trending",
+      "posts": 100000,
+      "median_ms": 204.643,
+      "samples_ms": [
+        204.643,
+        206.274,
+        201.619
+      ]
+    }
+  ],
+  "after_0042_0043": [
+    {
+      "path": "publish",
+      "recipients": 10,
+      "median_ms": 1.004,
+      "samples_ms": [
+        1.584,
+        1.004,
+        0.53
+      ]
+    },
+    {
+      "path": "worker",
+      "recipients": 10,
+      "examined": 40,
+      "ms": 21.281
+    },
+    {
+      "path": "publish",
+      "recipients": 100,
+      "median_ms": 0.495,
+      "samples_ms": [
+        0.759,
+        0.495,
+        0.415
+      ]
+    },
+    {
+      "path": "worker",
+      "recipients": 100,
+      "examined": 400,
+      "ms": 92.608
+    },
+    {
+      "path": "publish",
+      "recipients": 1000,
+      "median_ms": 0.998,
+      "samples_ms": [
+        1.632,
+        0.798,
+        0.998
+      ]
+    },
+    {
+      "path": "worker",
+      "recipients": 1000,
+      "examined": 500,
+      "ms": 135.1
+    },
+    {
+      "path": "publish",
+      "recipients": 10000,
+      "median_ms": 0.494,
+      "samples_ms": [
+        0.649,
+        0.494,
+        0.437
+      ]
+    },
+    {
+      "path": "worker",
+      "recipients": 10000,
+      "examined": 500,
+      "ms": 135.026
+    },
+    {
+      "path": "category",
+      "posts": 10000,
+      "median_ms": 0.556,
+      "samples_ms": [
+        2.512,
+        0.556,
+        0.553
+      ]
+    },
+    {
+      "path": "search_common",
+      "posts": 10000,
+      "median_ms": 6.053,
+      "samples_ms": [
+        5.841,
+        7.768,
+        6.053
+      ]
+    },
+    {
+      "path": "search_rare",
+      "posts": 10000,
+      "median_ms": 10.084,
+      "samples_ms": [
+        10.084,
+        9.875,
+        11.75
+      ]
+    },
+    {
+      "path": "search_none",
+      "posts": 10000,
+      "median_ms": 14.54,
+      "samples_ms": [
+        16.616,
+        13.562,
+        14.54
+      ]
+    },
+    {
+      "path": "trending",
+      "posts": 10000,
+      "median_ms": 14.634,
+      "samples_ms": [
+        21.188,
+        10.478,
+        14.634
+      ]
+    },
+    {
+      "path": "category",
+      "posts": 100000,
+      "median_ms": 0.611,
+      "samples_ms": [
+        0.625,
+        0.532,
+        0.611
+      ]
+    },
+    {
+      "path": "search_common",
+      "posts": 100000,
+      "median_ms": 7.436,
+      "samples_ms": [
+        6.682,
+        8.055,
+        7.436
+      ]
+    },
+    {
+      "path": "search_rare",
+      "posts": 100000,
+      "median_ms": 14.998,
+      "samples_ms": [
+        14.998,
+        12.7,
+        16.69
+      ]
+    },
+    {
+      "path": "search_none",
+      "posts": 100000,
+      "median_ms": 19.725,
+      "samples_ms": [
+        18.753,
+        19.725,
+        27.847
+      ]
+    },
+    {
+      "path": "trending",
+      "posts": 100000,
+      "median_ms": 42.86,
+      "samples_ms": [
+        35.124,
+        42.86,
+        43.931
+      ]
+    }
+  ]
+}
