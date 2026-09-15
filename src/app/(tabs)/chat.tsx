@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ChatRoom } from '@/components/chat-room';
 import { LoginPanel } from '@/components/login-panel';
-import { RelationshipSlotCard } from '@/components/relationship-slot-card';
+import { relationshipSlotData } from '@/components/relationship-slot-card';
 import { ThemedText } from '@/components/themed-text';
 import { TabContent } from '@/components/tab-content';
 import { TrustBadge } from '@/components/trust-badge';
@@ -27,7 +27,12 @@ export default function ChatScreen() {
   const { conversationId, view } = useLocalSearchParams<{ conversationId?: string; view?: string }>();
   const auth = useAuth();
   const userId = auth.isAuthed ? auth.me.id : null;
-  const { membership, loading: membershipLoading, refresh: refreshMembership } = useMembership();
+  const { membership, refresh: refreshMembership } = useMembership();
+  const directSlots = relationshipSlotData(membership, 'conversation');
+  const meetupSlots = relationshipSlotData(membership, 'meetup');
+  const slotNote = directSlots?.locked
+    ? `${t.chat.direct} 자리 ${directSlots.locked}개 대기 중${directSlots.unlockAt ? ` · ${t.chat.slotUnlock(directSlots.unlockAt)}` : ''}`
+    : directSlots && directSlots.available === 0 ? t.chat.slotsFull : null;
   const currentUser = useRef(userId);
   const version = useRef(0);
   const processing = useRef(false);
@@ -168,8 +173,12 @@ export default function ChatScreen() {
       ListHeaderComponent={<View style={styles.header}>
         <View style={styles.headRow}><ThemedText type="subtitle" style={styles.heading}>{t.tabs.chat}</ThemedText><Pressable onPress={() => void changed()} accessibilityRole="button" disabled={loading} accessibilityState={{ disabled: loading }} style={styles.action}><ThemedText type="smallBold" themeColor="accent">{t.chat.refresh}</ThemedText></Pressable></View>
         <View style={[styles.safety, { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}><ThemedText type="smallBold" themeColor="accent">{t.safety.meetTitle}</ThemedText><ThemedText type="small" themeColor="textSecondary">{t.safety.meetBody}</ThemedText></View>
-        <RelationshipSlotCard kind="conversation" membership={membership} loading={membershipLoading} onMembershipPress={() => router.push('/profile/membership')} />
-        <View style={styles.filters}>{([['all', t.chat.all], ['group', t.chat.groups], ['direct', t.chat.direct], ['requests', `${t.chat.requestTab} ${pendingCount}`]] as const).map(([key, label]) => <Pressable key={key} onPress={() => setFilter(key)} accessibilityRole="tab" accessibilityState={{ selected: filter === key }} style={[styles.filter, { backgroundColor: filter === key ? theme.accent : theme.backgroundElement }]}><ThemedText type="smallBold" style={{ color: filter === key ? theme.accentInk : theme.text }}>{label}</ThemedText></Pressable>)}</View>
+        {/* 자리(슬롯)는 상태라 칩 안의 숫자와 한 줄 안내로만 보여준다. 큰 카드는 대화 목록을 밀어냈다. */}
+        <View style={styles.filters}>{([['all', t.chat.all], ['group', `${t.chat.groups}${meetupSlots ? ` ${meetupSlots.active}/${meetupSlots.limit}` : ''}`], ['direct', `${t.chat.direct}${directSlots ? ` ${directSlots.active}/${directSlots.limit}` : ''}`], ['requests', `${t.chat.requestTab} ${pendingCount}`]] as const).map(([key, label]) => <Pressable key={key} onPress={() => setFilter(key)} accessibilityRole="tab" accessibilityState={{ selected: filter === key }} style={[styles.filter, { backgroundColor: filter === key ? theme.accent : theme.backgroundElement }]}><ThemedText type="smallBold" style={{ color: filter === key ? theme.accentInk : theme.text }}>{label}</ThemedText></Pressable>)}</View>
+        {slotNote && <Pressable onPress={() => router.push('/profile/membership')} accessibilityRole="button" style={[styles.slotNote, { borderBottomColor: theme.line }]}>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.flex}>{slotNote}</ThemedText>
+          <ThemedText type="smallBold" themeColor="accent">{t.chat.membership}</ThemedText>
+        </Pressable>}
         {filter === 'requests' && <>
           <ThemedText type="small" themeColor="textSecondary">{t.chat.pendingBody}</ThemedText>
           {requests.length > 0 && <ThemedText type="smallBold">{t.chat.requestsTitle}</ThemedText>}
@@ -198,6 +207,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, paddingHorizontal: Spacing.three },
   list: { gap: Spacing.two, paddingBottom: TabBarHeight + Spacing.three },
+  slotNote: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 44, borderBottomWidth: StyleSheet.hairlineWidth },
   header: { gap: Spacing.two, paddingBottom: Spacing.two },
   headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   heading: { fontSize: 22, lineHeight: 30, fontWeight: 700, paddingVertical: Spacing.two },

@@ -8,7 +8,8 @@ import { useUnreadCount } from '@/hooks/use-unread-count';
 // 일력 종이탭: 종이색 배경 + 상단 헤어라인 + 활성 탭은 인주(빨강) 틴트.
 // 아이콘은 SF Symbols(iOS) / Material(Android), 선택 상태는 인주색으로 구분한다.
 export default function AppTabs() {
-  const unreadCount = useUnreadCount();
+  const unreadCount = useUnreadCount('other');
+  const chatCount = useUnreadCount('chat');
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
 
@@ -46,6 +47,7 @@ export default function AppTabs() {
           sf={{ default: 'bubble.left.and.bubble.right', selected: 'bubble.left.and.bubble.right.fill' }}
           md="forum"
         />
+        {chatCount > 0 && <NativeTabs.Trigger.Badge>{chatCount > 99 ? '99+' : String(chatCount)}</NativeTabs.Trigger.Badge>}
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="notifications">

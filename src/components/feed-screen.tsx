@@ -28,6 +28,7 @@ import { FeedAd } from '@/components/feed-ad';
 import { adsSupported, feedAdPosition } from '@/lib/ads';
 import { MyMeetups } from '@/components/my-meetups';
 import { PostCard } from '@/components/post-card';
+import { UserSheet, type SheetUser } from '@/components/user-sheet';
 import { PostDetail } from '@/components/post-detail';
 import { TabContent } from '@/components/tab-content';
 import { ThemedText } from '@/components/themed-text';
@@ -92,6 +93,9 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [creatingDraft, setCreatingDraft] = useState(false);
   const [aiDraftReady, setAiDraftReady] = useState(false);
   const [detailPost, setDetailPost] = useState<Post | null>(null);
+  const [sheetUser, setSheetUser] = useState<SheetUser | null>(null);
+  // 카드의 작성자를 누르면 글을 열지 않고 바로 미니 프로필로 간다.
+  const openAuthor = (post: Post) => setSheetUser({ id: post.author.id, nickname: post.author.nickname, neighborhood: post.author.neighborhood, verified: post.author.verified, trustLevel: post.author.trustLevel, mine: post.author.id === me.id });
   const [pendingPost, setPendingPost] = useState<Post | null>(null); // 로그인 후 이어서 열 글
   const [tagFilter, setTagFilter] = useState<number | null>(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null); // 카테고리 칩
   const [searching, setSearching] = useState(false);
@@ -510,7 +514,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   accessibilityRole="button"
                   accessibilityLabel={t.tabs.profile}
                   style={({ pressed }) => [styles.iconButton, pressed && styles.chipPressed]}>
-                  <SymbolView name={{ ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} size={24} tintColor={theme.text} />
+                  {isAuthed && me.photoUri
+                    ? <Image source={{ uri: me.photoUri }} style={styles.headerAvatar} contentFit="cover" accessible={false} />
+                    : isAuthed
+                      ? <View style={[styles.headerAvatar, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{me.nickname[0]}</ThemedText></View>
+                      : <SymbolView name={{ ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} size={24} tintColor={theme.text} />}
                 </Pressable>
               </View>
           }
@@ -558,6 +566,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                     post={journal.featured}
                     onPress={() => openDetail(journal.featured!)}
                     onHashtag={openSearch}
+                    onAuthor={() => openAuthor(journal.featured!)}
                   />
                 </View>
               )}
@@ -623,6 +632,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               onPress={() => openDetail(item)}
               onJoin={() => void onJoin(item)}
               onHashtag={openSearch}
+              onAuthor={() => openAuthor(item)}
             />{!meetupsOnly && adsSupported && feedAdPosition(index - 1) && <FeedAd />}</View>
           )}
         />
@@ -704,6 +714,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                     }}
                     onJoin={() => void onJoin(item)}
                     onHashtag={(value) => { setQuery(value); setSearchResults([]); }}
+                    onAuthor={() => openAuthor(item)}
                   />
                 )}
               />
@@ -989,6 +1000,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           </SafeAreaView>
         </SafeAreaProvider>
       </Modal>
+    <UserSheet user={sheetUser} onClose={() => setSheetUser(null)} />
     </TabContent>
   );
 }
@@ -1020,6 +1032,7 @@ const styles = StyleSheet.create({
   chipBar: { flexDirection: 'row', gap: Spacing.one, paddingTop: Spacing.three },
   filterChip: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 999, paddingHorizontal: 14, paddingVertical: Spacing.two },
   chipPressed: { opacity: 0.65 },
+  headerAvatar: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   featured: { marginTop: Spacing.three },
   meetupSection: { marginTop: Spacing.four, gap: Spacing.three },
   meetupPreview: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, padding: Spacing.three, borderRadius: 20 },

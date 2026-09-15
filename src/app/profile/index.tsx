@@ -16,8 +16,11 @@ import { MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
-import { loadProfileSummary, loadSavedPosts, type ProfileSummary } from '@/lib/community-data';
-import { CITIES } from '@/lib/mock';
+import { CITIES, TAGS } from '@/lib/mock';
+import { useMembership } from '@/lib/membership-provider';
+import { useUnreadCount } from '@/hooks/use-unread-count';
+import { loadMyPosts, loadProfileSummary, loadRepliesToMe, loadSavedPosts, type MyPostRow, type ProfileSummary, type ReplyToMe } from '@/lib/community-data';
+import { relativeTime } from '@/lib/feed-data';
 import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
@@ -28,11 +31,18 @@ export default function ProfileScreen() {
   const reducedMotion = useReducedMotion();
   const { isAuthed, signInApple, signInKakao, signInGoogle, signInDev, isAuthLoading, authError, trustLevel, me, setProfilePhoto, signOut } = useAuth();
   const [savedOpen, setSavedOpen] = useState(false);
+  const { membership } = useMembership();
+  const unread = useUnreadCount('other');
   const [savedDetail, setSavedDetail] = useState<Post | null>(null);
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
   const [savedLoading, setSavedLoading] = useState(false);
   const [savedError, setSavedError] = useState(false);
   const [summary, setSummary] = useState<ProfileSummary | null>(null);
+  const [segment, setSegment] = useState<'story' | 'replies' | 'listing'>('story');
+  const [myPosts, setMyPosts] = useState<Record<'story' | 'listing', MyPostRow[]>>({ story: [], listing: [] });
+  const [replies, setReplies] = useState<ReplyToMe[]>([]);
+  const [loadedSegment, setLoadedSegment] = useState<'story' | 'replies' | 'listing' | null>(null);
+  const segmentLoading = loadedSegment !== segment;
   const updateViewCount = useCallback((postId: string, count: number) => {
     setSavedPosts((current) => current.map((item) => item.id === postId ? { ...item, views: count } : item));
   }, []);
@@ -45,6 +55,16 @@ export default function ProfileScreen() {
       .catch(() => active && setSummary(null));
     return () => { active = false; };
   }, [isAuthed, me.id, me.cityId]);
+
+  useEffect(() => {
+    if (!isAuthed) return;
+    let active = true;
+    const request = segment === 'replies'
+      ? loadRepliesToMe(supabase, me.id).then((rows) => { if (active) setReplies(rows); })
+      : loadMyPosts(supabase, me.id, segment).then((rows) => { if (active) setMyPosts((current) => ({ ...current, [segment]: rows })); });
+    void request.catch(() => {}).finally(() => { if (active) setLoadedSegment(segment); });
+    return () => { active = false; };
+  }, [isAuthed, me.id, segment]);
 
   const refreshSaved = useCallback(async () => {
     if (!isAuthed) return;
@@ -73,6 +93,8 @@ export default function ProfileScreen() {
     );
 
   const cityName = CITIES.find(({ id }) => id === summary?.cityId)?.name ?? summary?.cityId ?? '';
+  const membershipLabel = membership ? ({ free: '베이직', plus: '플러스', premium: '프리미엄' } as const)[membership.tier] : null;
+  const unreadLabel = unread > 0 ? `${unread} 새 소식` : null;
 
   const pickProfilePhoto = async () => {
     try {
@@ -127,29 +149,52 @@ export default function ProfileScreen() {
           </ThemedText>
         </View>
 
-        <View style={[styles.menu, { backgroundColor: theme.card, borderColor: theme.line }]}>
-          <Pressable style={styles.menuRow} accessibilityRole="button" onPress={() => router.push('/profile/membership')}>
-            <ThemedText type="smallBold" themeColor="accent">멤버십</ThemedText>
+        {/* 관리는 네 칸으로, 그 아래는 내 글이 곧 프로필 (스레드 방식) */}
+        <View style={styles.manage}>
+          {([
+            ['멤버십', membershipLabel, () => router.push('/profile/membership')],
+            [`인증 Lv${trustLevel}`, t.trust.short(trustLevel), () => router.push('/profile/settings')],
+            [t.notifications.title, unreadLabel, () => router.push('/notifications')],
+            [t.profile.saved, null, () => { setSavedOpen(true); void refreshSaved(); }],
+          ] as const).map(([label, sub, onPress]) => (
+            <Pressable key={label} onPress={onPress} accessibilityRole="button" style={({ pressed }) => [styles.manageCell, { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.65 : 1 }]}>
+              <ThemedText type="smallBold">{label}</ThemedText>
+              {sub && <ThemedText type="small" themeColor="textSecondary">{sub}</ThemedText>}
+            </Pressable>
+          ))}
+        </View>
+        <View style={[styles.segments, { borderBottomColor: theme.line }]}>
+          {([['story', '내 글'], ['replies', '답글'], ['listing', '구해요·팔아요']] as const).map(([key, label]) => (
+            <Pressable key={key} onPress={() => setSegment(key)} accessibilityRole="tab" accessibilityState={{ selected: segment === key }}
+              style={[styles.segment, segment === key && { borderBottomColor: theme.text }]}>
+              <ThemedText type={segment === key ? 'smallBold' : 'small'} themeColor={segment === key ? undefined : 'textSecondary'}>{label}</ThemedText>
+            </Pressable>
+          ))}
+        </View>
+        {segmentLoading && <ActivityIndicator color={theme.accent} style={{ marginVertical: Spacing.three }} accessibilityLabel="불러오는 중" />}
+        {!segmentLoading && segment !== 'replies' && myPosts[segment].map((row) => (
+          <Pressable key={row.id} onPress={() => router.push(`/post/${row.id}`)} accessibilityRole="button" style={[styles.myPost, { borderBottomColor: theme.line }]}>
+            <ThemedText type="small" themeColor="textSecondary">{TAGS.find(({ id }) => id === row.tag_id)?.label ?? ''}{row.kind === 'listing' ? ` · ${t.detail.listingBadge}` : ''}{row.kind === 'listing' && row.listing_status && row.listing_status !== 'open' ? ` · ${t.detail.listingStatus[row.listing_status]}` : ''}</ThemedText>
+            <ThemedText type="smallBold" style={styles.myTitle}>{row.title}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{row.body}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={{ fontVariant: ['tabular-nums'] }}>{row.kind === 'listing' && row.price != null ? `${t.detail.price(Number(row.price))} · ` : ''}공감 {row.like_count} · 댓글 {row.comment_count} · 저장 {row.save_count} · {relativeTime(row.created_at)}</ThemedText>
           </Pressable>
-          <View style={[styles.divider, { backgroundColor: theme.line }]} />
+        ))}
+        {!segmentLoading && segment !== 'replies' && myPosts[segment].length === 0 && <ThemedText type="small" themeColor="textSecondary" style={styles.emptyNote}>{segment === 'listing' ? '아직 올린 구해요·팔아요 글이 없어요.' : '아직 쓴 글이 없어요. 오늘의 한 편을 남겨보세요.'}</ThemedText>}
+        {!segmentLoading && segment === 'replies' && replies.map((reply) => (
+          <Pressable key={reply.id} onPress={() => router.push(`/post/${reply.post_id}`)} accessibilityRole="button" style={[styles.myPost, { borderBottomColor: theme.line }]}>
+            <ThemedText type="small" themeColor="textSecondary"><ThemedText type="small" themeColor="navy">{reply.author?.nickname ?? '이웃'}</ThemedText>님이 「{reply.post?.title ?? '내 글'}」에 · {relativeTime(reply.created_at)}</ThemedText>
+            <ThemedText type="small">{reply.body}</ThemedText>
+            <ThemedText type="smallBold" themeColor="accent">답글 달기</ThemedText>
+          </Pressable>
+        ))}
+        {!segmentLoading && segment === 'replies' && replies.length === 0 && <ThemedText type="small" themeColor="textSecondary" style={styles.emptyNote}>아직 내 글에 달린 답글이 없어요.</ThemedText>}
+
+        <View style={[styles.menu, { backgroundColor: theme.card, borderColor: theme.line }]}>
           {PROMOTIONS_PREVIEW_ENABLED && <><Pressable style={styles.menuRow} accessibilityRole="button" onPress={() => router.push('/profile/promotions')}>
             <ThemedText type="small">홍보 크레딧</ThemedText>
           </Pressable>
           <View style={[styles.divider, { backgroundColor: theme.line }]} /></>}
-          <Pressable style={styles.menuRow} accessibilityRole="button" onPress={() => router.push('/notifications')}>
-            <ThemedText type="small">{t.notifications.title}</ThemedText>
-          </Pressable>
-          <View style={[styles.divider, { backgroundColor: theme.line }]} />
-          <Pressable
-            style={styles.menuRow}
-            accessibilityRole="button"
-            onPress={() => {
-              setSavedOpen(true);
-              void refreshSaved();
-            }}>
-            <ThemedText type="small">{t.profile.saved}</ThemedText>
-          </Pressable>
-          <View style={[styles.divider, { backgroundColor: theme.line }]} />
           <Pressable
             style={styles.menuRow}
             accessibilityRole="button"
@@ -234,7 +279,14 @@ const styles = StyleSheet.create({
   avatarImage: { width: '100%', height: '100%' },
   nickRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   nick: { fontSize: 24, lineHeight: 32, fontWeight: 700 },
-  menu: { borderWidth: 1, borderRadius: 12 },
+  menu: { borderWidth: 1, borderRadius: 12, marginTop: Spacing.four },
+  manage: { flexDirection: 'row', gap: Spacing.two, marginBottom: Spacing.two },
+  manageCell: { flex: 1, minHeight: 60, borderRadius: 12, alignItems: 'center', justifyContent: 'center', gap: 2, paddingHorizontal: Spacing.one },
+  segments: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
+  segment: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  myPost: { paddingVertical: Spacing.three, gap: Spacing.one, borderBottomWidth: StyleSheet.hairlineWidth },
+  myTitle: { fontSize: 16, lineHeight: 22 },
+  emptyNote: { paddingVertical: Spacing.four, textAlign: 'center' },
   menuRow: { paddingHorizontal: Spacing.three, paddingVertical: 14 },
   divider: { height: 1, marginHorizontal: Spacing.three },
   sheetHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.three, paddingVertical: 14, borderBottomWidth: 1 },

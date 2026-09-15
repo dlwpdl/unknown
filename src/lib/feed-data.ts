@@ -223,7 +223,7 @@ export async function attachSignedPostImages(client: SupabaseClient, posts: Post
   }));
 }
 
-function relativeTime(value: string, now: number) {
+export function relativeTime(value: string, now: number = Date.now()) {
   const elapsedMinutes = Math.max(0, Math.floor((now - new Date(value).getTime()) / 60_000));
   if (elapsedMinutes < 1) return '방금';
   if (elapsedMinutes < 60) return `${elapsedMinutes}분 전`;

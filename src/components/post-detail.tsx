@@ -4,7 +4,6 @@ import {
   Alert,
   FlatList,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -18,27 +17,18 @@ import { ReportSheet } from '@/components/report-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TrustBadge } from '@/components/trust-badge';
+import { UserSheet, type SheetUser } from '@/components/user-sheet';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { buildCommentListRows, type CommentListRow } from '@/lib/comment-list';
 import { createThreadComment, loadCommentThreadContext, loadCommentThreadPage, type CommentCursor } from '@/lib/comment-threads';
-import { bumpListing, getCommunityActionError, isContentRejected, recordPostView, setListingStatus, startDirectConversation, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
+import { bumpListing, getCommunityActionError, isContentRejected, recordPostView, setListingStatus, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 import { supabase } from '@/lib/supabase';
 import type { Post, PostComment } from '@/lib/types';
-
-// 미니 프로필 대상 (글 작성자 or 댓글 작성자)
-type SheetUser = {
-  id?: string;
-  nickname: string;
-  neighborhood?: string;
-  verified?: boolean;
-  trustLevel?: 2 | 3;
-  mine?: boolean;
-};
 
 type ReportSelection = {
   targetType: ReportTarget;
@@ -86,8 +76,6 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const [reportSelection, setReportSelection] = useState<ReportSelection | null>(null);
   const [commentTotal, setCommentTotal] = useState(post.comments);
   const [viewCount, setViewCount] = useState(post.views);
-  const [requestingChat, setRequestingChat] = useState(false);
-  const requestBusy = useRef(false);
   const sendBusy = useRef(false);
   const likeBusy = useRef(false);
   const pageRequests = useRef(new Set<string>());
@@ -225,31 +213,6 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
       sendBusy.current = false;
       if (active.current) setSending(false);
     }
-  };
-
-  const requestChat = async (u: SheetUser) => {
-    if (!isAuthed) return promptLogin(t.auth.reasonChatLogin);
-    if (!u.id || requestBusy.current) return;
-    requestBusy.current = true;
-    setRequestingChat(true);
-    try {
-      const conversationId = await startDirectConversation(supabase, u.id);
-      if (!active.current) return;
-      setSheetUser(null);
-      play('message');
-      onClose();
-      router.push({ pathname: '/chat', params: { conversationId, view: 'requests' } });
-    } catch (error) {
-      if (!active.current) return;
-      play('warning');
-      const code = getCommunityActionError(error);
-      const message = code ? t.actionErrors[code] : null;
-      if (message) Alert.alert(message.title, message.body, [
-        { text: t.write.cancel, style: 'cancel' },
-        ...(message.membership ? [{ text: '멤버십 보기', onPress: () => { setSheetUser(null); onClose(); router.push('/profile/membership'); } }] : []),
-      ]);
-      else Alert.alert(t.chat.startErrorTitle, t.chat.startErrorBody);
-    } finally { requestBusy.current = false; if (active.current) setRequestingChat(false); }
   };
 
   const toggleReplies = (id: string) => {
@@ -534,66 +497,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
         </View>
       </KeyboardAvoidingView>
 
-      {/* 미니 프로필: 신뢰 레벨 배지 + 대화 요청 진입점 */}
-      <Modal visible={!!sheetUser} transparent animationType="fade" onRequestClose={() => setSheetUser(null)}>
-        <Pressable style={styles.sheetBackdrop} onPress={() => setSheetUser(null)} accessibilityRole="button">
-          <Pressable
-            style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.three) }]}
-            onPress={() => {}}>
-            {sheetUser && (
-              <>
-                <View style={[styles.sheetAvatar, { backgroundColor: theme.backgroundElement }]}>
-                  <ThemedText type="subtitle" style={{ color: theme.navy }}>
-                    {sheetUser.nickname[0]}
-                  </ThemedText>
-                </View>
-                <View style={styles.sheetNickRow}>
-                  <ThemedText type="smallBold" style={{ fontSize: 18 }}>
-                    {sheetUser.nickname}
-                  </ThemedText>
-                  <TrustBadge verified={sheetUser.verified} trustLevel={sheetUser.trustLevel} />
-                </View>
-                {sheetUser.neighborhood && (
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {sheetUser.neighborhood}
-                  </ThemedText>
-                )}
-                <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12.5 }}>
-                  {sheetUser.mine
-                    ? t.profileSheet.self
-                    : sheetUser.trustLevel === 3
-                      ? t.profileSheet.verifiedL3
-                      : sheetUser.verified || sheetUser.trustLevel === 2
-                        ? t.profileSheet.verifiedL2
-                        : t.profileSheet.verifiedL1}
-                </ThemedText>
-                {!sheetUser.mine && sheetUser.id && (
-                  <>
-                    <ThemedText type="small" themeColor="textSecondary">{t.chat.requesterRisk}</ThemedText>
-                    <Pressable
-                      onPress={() => void requestChat(sheetUser)}
-                      accessibilityRole="button"
-                      disabled={requestingChat}
-                      accessibilityState={{ disabled: requestingChat, busy: requestingChat }}
-                      style={[styles.sheetCta, { backgroundColor: theme.accent, opacity: requestingChat ? 0.55 : 1 }]}>
-                      <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{requestingChat ? t.chat.joinSending : t.profileSheet.chatRequest}</ThemedText>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => {
-                        setReportSelection({ targetType: 'user', targetId: sheetUser.id!, reportedUserId: sheetUser.id!, reportedNickname: sheetUser.nickname });
-                        setSheetUser(null);
-                      }}
-                      accessibilityRole="button"
-                      style={[styles.sheetCta, { backgroundColor: theme.backgroundElement }]}>
-                      <ThemedText type="smallBold" themeColor="textSecondary">{t.report.userAction}</ThemedText>
-                    </Pressable>
-                  </>
-                )}
-              </>
-            )}
-          </Pressable>
-        </Pressable>
-      </Modal>
+      <UserSheet user={sheetUser} onClose={() => setSheetUser(null)} onBeforeNavigate={onClose} />
       {reportSelection && (
         <ReportSheet
           visible
@@ -688,39 +592,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: Spacing.three,
     paddingVertical: 10,
-  },
-  sheetBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
-    alignItems: 'center',
-    gap: 6,
-  },
-  sheetAvatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  sheetNickRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  sheetCta: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    borderRadius: 999,
-    paddingVertical: 13,
-    marginTop: Spacing.two,
   },
 });
 

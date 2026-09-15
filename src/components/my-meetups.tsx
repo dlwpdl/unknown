@@ -1,9 +1,9 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, DeviceEventEmitter, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, DeviceEventEmitter, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { RelationshipSlotCard } from '@/components/relationship-slot-card';
+import { relationshipSlotData } from '@/components/relationship-slot-card';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
@@ -19,7 +19,8 @@ export function MyMeetups({ onOpen }: { onOpen: (postId: string) => Promise<void
   const router = useRouter();
   const { isAuthed, me, promptLogin } = useAuth();
   const { play } = useInteractionFeedback();
-  const { membership, loading: membershipLoading, refresh: refreshMembership } = useMembership();
+  const { membership, refresh: refreshMembership } = useMembership();
+  const slots = relationshipSlotData(membership, 'meetup');
   const userId = isAuthed ? me.id : null;
   const currentUser = useRef(userId);
   useLayoutEffect(() => { currentUser.current = userId; }, [userId]);
@@ -90,19 +91,18 @@ export function MyMeetups({ onOpen }: { onOpen: (postId: string) => Promise<void
   return <View style={styles.section}>
     <View style={styles.heading}>
       <ThemedText type="smallBold" accessibilityRole="header" style={styles.title}>{t.meetup.mine}</ThemedText>
-      {isAuthed && <Pressable onPress={() => void refresh()} accessibilityRole="button" disabled={loading || !!busy} accessibilityState={{ disabled: loading || !!busy }} style={styles.action}>
-        <ThemedText type="smallBold" themeColor="accent">{t.chat.refresh}</ThemedText>
-      </Pressable>}
+      {isAuthed && slots && <ThemedText type="small" themeColor="textSecondary" accessibilityLabel={`모임 자리 ${slots.active} / ${slots.limit}`} style={{ fontVariant: ['tabular-nums'] }}>
+        모임 자리 <ThemedText type="smallBold">{slots.active}/{slots.limit}</ThemedText>{slots.locked ? ` · 대기 ${slots.locked}` : ''}
+      </ThemedText>}
     </View>
     {!isAuthed ? <Pressable onPress={() => promptLogin(t.auth.reasonJoinLogin)} accessibilityRole="button" style={[styles.empty, { borderColor: theme.line }]}>
       <ThemedText type="small" themeColor="accent">로그인하고 내 모임 보기</ThemedText>
     </Pressable> : <>
-      <RelationshipSlotCard kind="meetup" membership={membership} loading={membershipLoading} />
-      <ThemedText type="small" themeColor="textSecondary">{t.meetup.pendingNote}</ThemedText>
       {loading && items.length === 0 && <ActivityIndicator color={theme.accent} accessibilityLabel="내 모임 불러오는 중" />}
       {error && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{t.meetup.loadError}</ThemedText>}
       {!loading && !error && items.length === 0 && <ThemedText type="small" themeColor="textSecondary">{t.meetup.empty}</ThemedText>}
-      {items.map((meetup) => <View key={meetup.id} style={[styles.meetup, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      {/* 내 모임은 가로 카드로 압축해 공개 모임 소개가 첫 화면에 들어오게 한다. */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rail}>{items.map((meetup) => <View key={meetup.id} style={[styles.meetup, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <Pressable onPress={() => void open(meetup)} accessibilityRole="button" disabled={!!busy} accessibilityState={{ disabled: !!busy, busy: busy === meetup.id }} style={({ pressed }) => [styles.copy, { opacity: pressed ? 0.7 : 1 }]}>
           <ThemedText type="smallBold" themeColor="accent">{t.meetup[meetup.role]}</ThemedText>
           <ThemedText type="smallBold">{meetup.title}</ThemedText>
@@ -117,7 +117,7 @@ export function MyMeetups({ onOpen }: { onOpen: (postId: string) => Promise<void
         <Pressable onPress={() => confirmChange(meetup)} accessibilityRole="button" disabled={!!busy} accessibilityState={{ disabled: !!busy, busy: busy === meetup.id }} style={styles.action}>
           <ThemedText type="small" themeColor="textSecondary">{meetup.role === 'host' ? t.meetup.end : meetup.role === 'pending' ? t.meetup.cancelRequest : t.meetup.leave}</ThemedText>
         </Pressable>
-      </View>)}
+      </View>)}</ScrollView>
     </>}
   </View>;
 }
@@ -126,7 +126,8 @@ const styles = StyleSheet.create({
   section: { gap: Spacing.two, marginBottom: Spacing.four },
   heading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
   title: { fontSize: 18, lineHeight: 26 },
-  meetup: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', borderWidth: 1, borderRadius: 12, padding: Spacing.two, gap: Spacing.two },
+  rail: { gap: Spacing.two, paddingRight: Spacing.three },
+  meetup: { width: 220, borderWidth: 1, borderRadius: 16, padding: Spacing.two, gap: Spacing.one },
   copy: { flexGrow: 1, flexBasis: 160, minHeight: 44, padding: Spacing.two, gap: Spacing.one },
   action: { minHeight: 44, minWidth: 44, padding: Spacing.two, alignItems: 'center', justifyContent: 'center' },
   empty: { minHeight: 44, borderWidth: 1, borderRadius: 12, padding: Spacing.three },

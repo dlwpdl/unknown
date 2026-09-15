@@ -450,8 +450,14 @@ export async function loadNotifications(client: SupabaseClient, userId: string) 
   return (result.data ?? []) as AppNotification[];
 }
 
-export async function loadUnreadNotificationCount(client: SupabaseClient, userId: string) {
-  const result = await client.from('user_notifications').select('*', { count: 'exact', head: true }).eq('user_id', userId).is('read_at', null);
+export const CHAT_NOTIFICATION_KINDS = ['message', 'meetup_request', 'meetup_approved', 'meetup_rejected'] as const;
+
+// Tab badges: the chat tab counts conversation kinds, the bell counts everything else.
+export async function loadUnreadNotificationCount(client: SupabaseClient, userId: string, scope: 'chat' | 'other' | 'all' = 'all') {
+  let query = client.from('user_notifications').select('*', { count: 'exact', head: true }).eq('user_id', userId).is('read_at', null);
+  if (scope === 'chat') query = query.in('kind', [...CHAT_NOTIFICATION_KINDS]);
+  if (scope === 'other') query = query.not('kind', 'in', `(${CHAT_NOTIFICATION_KINDS.join(',')})`);
+  const result = await query;
   if (result.error) throw result.error;
   return result.count ?? 0;
 }
@@ -500,4 +506,26 @@ export async function loadProfileSummary(client: SupabaseClient, userId: string)
 function decodeBase64(value: string) {
   const decoded = atob(value);
   return Uint8Array.from(decoded, (character) => character.charCodeAt(0)).buffer;
+}
+
+export type MyPostRow = { id: string; city_id: string; tag_id: number; title: string; body: string; hashtags: string[]; image_paths: string[]; created_at: string; sort_at: string | null; like_count: number; save_count: number; comment_count: number; view_count: number; share_count: number; kind: PostKind; listing_status: ListingStatus | null; price: number | string | null; expires_at: string | null; bumped_at: string | null };
+export type ReplyToMe = { id: string; post_id: string; body: string; created_at: string; author: { nickname: string; verification_level: number } | null; post: { title: string } | null };
+
+// "나" 탭: 내 글(이야기 / 구해요·팔아요)과 내 글에 달린 다른 사람의 답글.
+export async function loadMyPosts(client: SupabaseClient, userId: string, kind: PostKind): Promise<MyPostRow[]> {
+  const result = await client.from('posts')
+    .select('id,city_id,tag_id,title,body,hashtags,image_paths,created_at,sort_at,like_count,save_count,comment_count,view_count,share_count,kind,listing_status,price,expires_at,bumped_at')
+    .eq('author_id', userId).eq('kind', kind).eq('status', 'published').is('room_preview', null)
+    .order('created_at', { ascending: false }).limit(30);
+  if (result.error) throw result.error;
+  return (result.data ?? []) as MyPostRow[];
+}
+
+export async function loadRepliesToMe(client: SupabaseClient, userId: string): Promise<ReplyToMe[]> {
+  const result = await client.from('comments')
+    .select('id,post_id,body,created_at,author:profiles!comments_author_id_fkey(nickname,verification_level),post:posts!comments_post_id_fkey!inner(title,author_id)')
+    .eq('post.author_id', userId).neq('author_id', userId).is('deleted_at', null)
+    .order('created_at', { ascending: false }).limit(30);
+  if (result.error) throw result.error;
+  return (result.data ?? []) as unknown as ReplyToMe[];
 }

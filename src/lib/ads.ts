@@ -4,7 +4,8 @@ import { DeviceEventEmitter, Platform } from 'react-native';
 type AdSDK = typeof import('react-native-google-mobile-ads');
 export const testAds = __DEV__ || process.env.EXPO_PUBLIC_ADS_MODE !== 'live';
 export const adsSupported = Platform.OS !== 'web' && Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
-export const feedAdPosition = (index: number) => index >= 4 && (index - 4) % 10 === 0;
+// First ad after the 6th post, then one every 7 posts (owner decision 2026-09-15).
+export const feedAdPosition = (index: number) => index >= 5 && (index - 5) % 7 === 0;
 export const AD_PRIVACY_CHANGED = 'gling:ad-privacy-changed';
 let initialization: Promise<AdSDK | null> | null = null;
 

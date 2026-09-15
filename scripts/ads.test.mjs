@@ -30,7 +30,7 @@ test('feed ads respect placement, consent, initialization, platform and test-uni
     return exports;
   }
   const live = load();
-  assert.deepEqual(Array.from({ length: 25 }, (_, i) => i).filter(live.feedAdPosition), [4, 14, 24]);
+  assert.deepEqual(Array.from({ length: 25 }, (_, i) => i).filter(live.feedAdPosition), [5, 12, 19]);
   assert.equal(await live.prepareAds(), null);
   assert.equal(initialized, 0, 'live SDK must not initialize without consent clearance');
   allowed = true;

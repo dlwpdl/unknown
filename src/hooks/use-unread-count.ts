@@ -7,7 +7,7 @@ import { loadUnreadNotificationCount } from '@/lib/community-data';
 import { NOTIFICATION_PREFERENCES_CHANGED } from '@/lib/notification-preferences';
 import { supabase } from '@/lib/supabase';
 
-export function useUnreadCount() {
+export function useUnreadCount(scope: 'chat' | 'other' | 'all' = 'all') {
   const { isAuthed, me } = useAuth();
   const pathname = usePathname();
   const [result, setResult] = useState<{ userId: string; count: number } | null>(null);
@@ -17,7 +17,7 @@ export function useUnreadCount() {
     let version = 0;
     const refresh = () => {
       const request = ++version;
-      void loadUnreadNotificationCount(supabase, me.id)
+      void loadUnreadNotificationCount(supabase, me.id, scope)
         .then((count) => { if (active && version === request) setResult({ userId: me.id, count }); }).catch(() => {});
     };
     refresh();
@@ -27,6 +27,6 @@ export function useUnreadCount() {
     const settings = DeviceEventEmitter.addListener(NOTIFICATION_PREFERENCES_CHANGED, refresh);
     const foreground = AppState.addEventListener('change', state => { if (state === 'active') refresh(); });
     return () => { active = false; settings.remove(); foreground.remove(); void supabase.removeChannel(channel); };
-  }, [isAuthed, me.id, pathname]);
+  }, [isAuthed, me.id, pathname, scope]);
   return isAuthed && result?.userId === me.id ? result.count : 0;
 }

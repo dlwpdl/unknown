@@ -7,6 +7,7 @@ export const t = {
   trust: {
     accessibilityLabel: (level: 1 | 2 | 3) =>
       `Lv${level} 인증 · ${level === 1 ? '소셜 계정 확인' : level === 2 ? '전화번호 실명 인증 완료' : '신분증과 본인 촬영 대조 완료'}`,
+    short: (level: 1 | 2 | 3) => (level === 1 ? '소셜 계정 확인' : level === 2 ? '전화번호 인증' : '신분증 인증'),
   },
 
   tabs: {
@@ -253,6 +254,8 @@ export const t = {
     slotUnlock: (value: string) => `${new Date(value).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}에 자리 1개가 돌아와요`,
     slotsLoading: '대화 자리 확인 중',
     slotsNote: '모임과 1:1 대화는 각각 별도의 자리를 사용해요. 요청 대기는 포함하지 않아요.',
+    slotsFull: '1:1 자리를 모두 사용 중이에요. 대화가 끝나면 24시간 뒤 돌아와요.',
+    membership: '멤버십',
   },
 
   auth: {

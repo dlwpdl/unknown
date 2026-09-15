@@ -66,6 +66,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
       if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ bottom: 0 }) };
       if (name === '@/lib/auth') return { useAuth: () => auth };
       if (name === '@/lib/membership-provider') return { useMembership: () => ({ refresh: refreshMembership }) };
+      if (name === '@/components/relationship-slot-card') return { relationshipSlotData: () => null };
       if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
       if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16 } };
       if (name === '@/i18n/ko') return { t };

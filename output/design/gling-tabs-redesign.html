@@ -1,0 +1,262 @@
+<title>글링 나·채팅·모임 시안</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --paper: #FAF9F5; --ink: #21252C; --sub: #5B6270; --chip: #F1EFE8; --chip-2: #E8E5DC; --card: #FFFFFF; --line: #E5E3DB;
+    --seal: #BE3B2A; --seal-ink: #FFFFFF; --navy: #34506B; --shadow: rgba(33,37,44,.10);
+    --font: "Noto Sans KR", "Apple SD Gothic Neo", system-ui, -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --paper: #15181C; --ink: #EAE9E2; --sub: #9AA0A8; --chip: #23272E; --chip-2: #2B3037; --card: #1C2026; --line: #2B3037;
+    --seal: #E15A44; --seal-ink: #1A0E0B; --navy: #8FB0CC; --shadow: rgba(0,0,0,.45);
+  } }
+  :root[data-theme="dark"] {
+    --paper: #15181C; --ink: #EAE9E2; --sub: #9AA0A8; --chip: #23272E; --chip-2: #2B3037; --card: #1C2026; --line: #2B3037;
+    --seal: #E15A44; --seal-ink: #1A0E0B; --navy: #8FB0CC; --shadow: rgba(0,0,0,.45);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 400 15px/1.55 var(--font); padding: 0 16px; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding-block: 40px 64px; }
+  h1 { font-size: 30px; line-height: 1.2; letter-spacing: -0.6px; margin: 0 0 8px; text-wrap: balance; }
+  .lede { color: var(--sub); max-width: 62ch; margin: 0 0 32px; }
+  .lede b { color: var(--ink); font-weight: 600; }
+  .eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--sub); font-weight: 600; }
+  .screens { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 40px 28px; align-items: start; }
+  .screen h2 { font-size: 20px; letter-spacing: -0.4px; margin: 0 0 4px; }
+  .screen .why { color: var(--sub); font-size: 14px; margin: 0 0 16px; max-width: 46ch; }
+  .why b { color: var(--ink); font-weight: 600; }
+  .phone { width: 100%; max-width: 390px; background: var(--paper); border: 1px solid var(--line); border-radius: 40px; padding: 14px 0 0; box-shadow: 0 20px 50px -24px var(--shadow); overflow: hidden; }
+  .status { display: flex; justify-content: space-between; padding: 0 28px 6px; font-size: 13px; font-weight: 600; }
+  .body { padding: 8px 20px 0; min-height: 740px; display: flex; flex-direction: column; }
+  .tabbar { margin-top: auto; display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid var(--line); padding: 10px 0 22px; font-size: 11px; color: var(--sub); text-align: center; }
+  .tabbar span.on { color: var(--seal); font-weight: 600; }
+  .tabbar span::before { content: ""; display: block; width: 22px; height: 22px; margin: 0 auto 4px; border: 1.5px solid currentColor; border-radius: 7px; opacity: .8; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; min-height: 44px; }
+  .topbar h3 { margin: 0; font-size: 22px; letter-spacing: -0.5px; }
+  .topbar .right { font-size: 13px; color: var(--sub); }
+  .row { display: flex; align-items: center; gap: 12px; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--chip); color: var(--navy); font-weight: 700; display: grid; place-items: center; flex: none; }
+  .avatar.me { background: var(--seal); color: var(--seal-ink); }
+  .avatar.lg { width: 64px; height: 64px; font-size: 22px; }
+  .name { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+  .badge { width: 14px; height: 14px; border-radius: 50%; background: var(--navy); display: inline-block; position: relative; }
+  .badge::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--paper); }
+  .meta { color: var(--sub); font-size: 12px; }
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding: 12px 0 4px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { flex: none; min-height: 40px; padding: 0 14px; border-radius: 999px; background: var(--chip); color: var(--sub); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; border: 0; font-family: inherit; }
+  .chip.on { background: var(--seal); color: var(--seal-ink); }
+  .chip small { font-weight: 500; opacity: .85; font-size: 12px; }
+  .quiet { color: var(--sub); font-size: 12.5px; padding: 6px 0 10px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 12px; }
+  .quiet a { color: var(--seal); font-weight: 600; text-decoration: none; }
+  .list { display: flex; flex-direction: column; }
+  .item { display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); align-items: flex-start; }
+  .item .text { flex: 1; min-width: 0; }
+  .item .preview { color: var(--sub); font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  .item .time { color: var(--sub); font-size: 12px; flex: none; }
+  .pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--chip); color: var(--sub); }
+  .pill.seal { color: var(--seal); background: transparent; border: 1px solid var(--seal); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--seal); flex: none; margin-top: 6px; }
+  .post { padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .post .cat { font-size: 12px; color: var(--sub); margin-bottom: 4px; }
+  .post .title { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; line-height: 1.4; }
+  .post .body2 { color: var(--sub); font-size: 14px; margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .post .foot { display: flex; gap: 14px; color: var(--sub); font-size: 12px; margin-top: 8px; font-variant-numeric: tabular-nums; }
+  .seg { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); margin-top: 14px; }
+  .seg span { text-align: center; padding: 12px 0 10px; font-size: 14px; color: var(--sub); font-weight: 500; border-bottom: 2px solid transparent; }
+  .seg span.on { color: var(--ink); font-weight: 700; border-bottom-color: var(--ink); }
+  .stats { display: flex; gap: 14px; color: var(--sub); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .stats b { color: var(--ink); font-weight: 700; }
+  .manage { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 14px 0 4px; }
+  .manage div { background: var(--chip); border-radius: 12px; min-height: 60px; display: grid; place-items: center; font-size: 12.5px; font-weight: 600; color: var(--ink); text-align: center; line-height: 1.3; }
+  .manage div small { display: block; font-weight: 400; color: var(--sub); font-size: 11px; }
+  .reply { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .reply .to { font-size: 12px; color: var(--sub); }
+  .reply .to b { color: var(--navy); font-weight: 600; }
+  .reply .txt { font-size: 14px; margin-top: 2px; }
+  .reply .act { margin-top: 6px; font-size: 12.5px; color: var(--seal); font-weight: 600; }
+  .journal { font-size: 26px; line-height: 1.25; font-weight: 700; letter-spacing: -0.6px; margin: 14px 0 6px; }
+  .hcards { display: flex; gap: 10px; overflow-x: auto; padding: 8px 0 14px; scrollbar-width: none; }
+  .hcard { flex: none; width: 200px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; }
+  .hcard .t { font-weight: 700; font-size: 14px; letter-spacing: -0.2px; }
+  .hcard .m { color: var(--sub); font-size: 12px; margin-top: 4px; }
+  .hcard .s { margin-top: 10px; font-size: 12px; color: var(--seal); font-weight: 600; }
+  .join { margin-left: auto; align-self: center; flex: none; background: var(--seal); color: var(--seal-ink); font-size: 12.5px; font-weight: 600; padding: 8px 12px; border-radius: 10px; }
+  .notes { margin-top: 48px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+  .note { border-top: 1px solid var(--line); padding-top: 14px; font-size: 14px; color: var(--sub); }
+  .note h4 { margin: 0 0 6px; font-size: 14px; color: var(--ink); }
+  .note b { color: var(--ink); font-weight: 600; }
+  .diff { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; margin-top: 10px; }
+  .diff .k { color: var(--sub); }
+  .diff .v { color: var(--ink); }
+.tabbar { position: relative; }
+  .tabbar span { position: relative; }
+  .tabbar .num::after { content: attr(data-n); position: absolute; top: -6px; left: calc(50% + 6px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--seal); color: var(--seal-ink); font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; box-shadow: 0 0 0 2px var(--paper); }
+  .tabbar .dotb::after { content: ""; position: absolute; top: -2px; left: calc(50% + 8px); width: 8px; height: 8px; border-radius: 50%; background: var(--seal); box-shadow: 0 0 0 2px var(--paper); }
+  .adcard { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 10px 0; background: var(--card); }
+  .adcard .lab { font-size: 11px; color: var(--sub); font-weight: 600; letter-spacing: .04em; display: flex; justify-content: space-between; }
+  .adcard .t { font-weight: 700; font-size: 15px; margin-top: 4px; }
+  .adcard .b { color: var(--sub); font-size: 13px; margin-top: 2px; }
+  .adcard .cta { display: inline-block; margin-top: 8px; font-size: 12.5px; font-weight: 600; color: var(--seal); }
+  .feedmini { display: flex; flex-direction: column; }
+  .feedmini .p { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .feedmini .p b { display: block; font-size: 14px; letter-spacing: -0.2px; }
+  .feedmini .p span { color: var(--sub); font-size: 12px; }
+  @media (max-width: 400px) { .manage { grid-template-columns: repeat(2, 1fr); } }
+</style>
+<div class="wrap">
+  <div class="eyebrow">글링 · 2026-09-15 · 나 / 채팅 / 모임</div>
+  <h1>자리 카드를 치우고, 글과 대화가 먼저 보이게</h1>
+  <p class="lede">세 탭 모두 같은 원칙입니다. <b>남는 자리(슬롯)는 상태이지 콘텐츠가 아니다.</b> 상태는 필터 칩과 한 줄 문장으로 줄이고, 그 자리를 실제 글·대화·모임에 돌려줍니다. 인주(빨강)는 화면당 한 곳, 선택된 칩이나 지금 눌러야 할 행동에만 찍힙니다. 아래 예시 숫자와 이름은 시안용입니다.</p>
+
+  <div class="screens">
+    <!-- 나 -->
+    <section class="screen">
+      <h2>나 — 내 글이 곧 프로필</h2>
+      <p class="why">아이콘을 누르면 <b>내 글 목록</b>이 바로 열립니다(스레드 방식). 답글 탭은 내 글에 달린 답글만 모아 그 자리에서 다시 답할 수 있게 하고, 멤버십·인증·설정은 아래 조용한 네 칸으로 내립니다. 메인 피드에 내 글이 보이는 건 그대로 둡니다. 이웃에게 보이는 지면이니까요. <b>"나" 표시</b>가 이미 내 글임을 알려줍니다.</p>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>●●● ⌔ ▮</span></div>
+        <div class="body">
+          <div class="topbar"><h3>나</h3><span class="right">설정</span></div>
+          <div class="row" style="padding:10px 0 4px">
+            <div class="avatar me lg" style="background:var(--chip);color:var(--navy);border:2px solid var(--seal)">사진</div>
+            <div>
+              <div class="name" style="font-size:18px">포근한수달 <span class="badge" title="Lv2 인증"></span></div>
+              <div class="meta">밴쿠버 · 포트무디 · 2026년 9월부터</div>
+              <div class="stats" style="margin-top:6px"><span><b>12</b> 글</span><span><b>48</b> 공감</span><span><b>3</b> 모임</span></div>
+            </div>
+          </div>
+          <div class="manage">
+            <div>멤버십<small>단골</small></div>
+            <div>인증 뱃지<small>표시 중</small></div>
+            <div>알림<small>3 새 소식</small></div>
+            <div>저장한 글<small>7</small></div>
+          </div>
+          <div class="seg"><span class="on">내 글 12</span><span>답글 5</span><span>구해요·팔아요 2</span></div>
+          <div class="list">
+            <div class="post">
+              <div class="cat">라이프 · 밴쿠버</div>
+              <div class="title">ICBC는 기본만, 나머지는 BCAA로: 자동차 보험 1년에 800불 아낀 이야기</div>
+              <div class="body2">밴쿠버 와서 차 사고 제일 크게 한 방 먹은 게 자동차 보험이었어요. 저는 테슬라 모델 3 타는데…</div>
+              <div class="foot"><span>공감 14</span><span>댓글 6</span><span>저장 9</span><span>어제</span></div>
+            </div>
+            <div class="post">
+              <div class="cat">주거 · 구해요·팔아요 · <span style="color:var(--ink);font-weight:600">$80</span></div>
+              <div class="title">이케아 책상 팝니다</div>
+              <div class="body2">상태 좋아요. 버나비 직거래.</div>
+              <div class="foot"><span>거래 중 · 13일 뒤 마감</span><span style="color:var(--seal);font-weight:600">끌어올리기</span></div>
+            </div>
+            <div class="reply">
+              <div class="to"><b>비오는날세차</b>님이 내 글 「자동차 보험…」에</div>
+              <div class="txt">저도 BCAA로 옮겼는데 렌트카 커버 빼니까 300불 더 내려갔어요.</div>
+              <div class="act">답글 달기</div>
+            </div>
+          </div>
+          <div class="tabbar"><span>오늘</span><span>모임</span><span>글쓰기</span><span>채팅</span><span class="on">나</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 채팅 -->
+    <section class="screen">
+      <h2>채팅 — 자리는 칩 안의 숫자로</h2>
+      <p class="why">지금은 상단 카드가 "사용 중 · 대기 · 남은 자리 / 한도" 네 숫자를 매번 보여줍니다. 대화 목록이 그 아래로 밀립니다. 시안은 필터 칩에 <b>1:1 1/3</b>, <b>모임 0/3</b>처럼 붙이고, 잠금 안내는 한 줄로 줄입니다. 칩을 누르면 그 종류만 걸러 보이고, 한 줄 문장을 누르면 멤버십으로 갑니다. 구해요·팔아요에서 시작한 대화는 자리를 쓰지 않으니 종료 시점만 보여줍니다.</p>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>●●● ⌔ ▮</span></div>
+        <div class="body">
+          <div class="topbar"><h3>채팅</h3><span class="right">새로고침</span></div>
+          <div class="chips">
+            <button class="chip on">전체</button>
+            <button class="chip">1:1 <small>1/3</small></button>
+            <button class="chip">모임 <small>0/3</small></button>
+            <button class="chip">구해요·팔아요</button>
+            <button class="chip">요청 <small>2</small></button>
+          </div>
+          <div class="quiet"><span>1:1 자리 1개 대기 중 · 내일 오후 3:10에 돌아와요</span><a href="#">멤버십</a></div>
+          <div class="list">
+            <div class="item"><div class="dot"></div><div class="avatar">비</div><div class="text"><div class="name">비오는날세차 <span class="badge"></span></div><div class="preview">렌트카 커버는 빼셨어요? 저는 그거 빼니까…</div></div><div class="time">3분 전</div></div>
+            <div class="item"><div class="avatar" style="color:var(--seal)">모</div><div class="text"><div class="name">주말 등산 같이 가실 2030 <span class="pill">모임 4</span></div><div class="preview">랭리댁: 토요일 8시 그라우스 입구 어때요</div></div><div class="time">1시간 전</div></div>
+            <div class="item"><div class="avatar">코</div><div class="text"><div class="name">코스트코카트 <span class="pill seal">구해요·팔아요</span></div><div class="preview">책상 아직 있나요? 목요일 저녁 가능해요</div><div class="meta" style="margin-top:2px">자리 안 써요 · 2일 뒤 종료</div></div><div class="time">어제</div></div>
+            <div class="item"><div class="avatar">랭</div><div class="text"><div class="name">랭리댁</div><div class="preview">파머스마켓 복숭아 진짜 달았어요 ㅎㅎ</div></div><div class="time">9월 12일</div></div>
+            <div class="item" style="opacity:.6"><div class="avatar">새</div><div class="text"><div class="name">새벽마켓</div><div class="preview">종료된 대화 · 다시 열려면 새 요청이 필요해요</div></div><div class="time">9월 8일</div></div>
+          </div>
+          <div class="tabbar"><span>오늘</span><span>모임</span><span>글쓰기</span><span class="on">채팅</span><span>나</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 모임 -->
+    <section class="screen">
+      <h2>모임 — 소개가 보이는 카드는 그대로, 자리만 접기</h2>
+      <p class="why">모임 탭은 지금처럼 <b>글로 소개하는 카드</b>를 유지합니다. 채팅방 목록처럼 줄이면 모임이 가벼워 보이니까요. 바뀌는 건 두 가지입니다. 자리 카드는 <b>제목 오른쪽 한 줄</b>로 접고, 내 모임은 상단 가로 카드 두세 장으로 압축합니다. 참여가 승인되면 그 모임의 대화는 <b>채팅 탭의 "모임" 칩</b>에 모입니다. 모임 탭 = 찾고 읽는 곳, 채팅 탭 = 참여 후 이야기하는 곳.</p>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>●●● ⌔ ▮</span></div>
+        <div class="body">
+          <div class="topbar"><h3>모임</h3><span class="right">모임 자리 <b style="color:var(--ink)">1/3</b></span></div>
+          <div class="journal">같이할 때,<br>더 좋은 하루.</div>
+          <div class="meta">내 모임 2 · 대화는 채팅 탭에서</div>
+          <div class="hcards">
+            <div class="hcard"><div class="t">주말 등산 같이 가실 2030</div><div class="m">랭리 · 4/6명 · 토 8:00</div><div class="s">채팅에서 새 메시지 3</div></div>
+            <div class="hcard"><div class="t">일요일 아침 배드민턴</div><div class="m">본소 체육관 · 승인 대기</div><div class="s" style="color:var(--sub)">방장 확인 중</div></div>
+            <div class="hcard" style="display:grid;place-items:center;color:var(--sub);font-size:13px;border-style:dashed">+ 모임 만들기</div>
+          </div>
+          <div class="quiet" style="border-bottom:0"><span>공개 모임 · 밴쿠버</span><span>최신순</span></div>
+          <div class="list">
+            <div class="post">
+              <div class="cat" style="color:var(--seal);font-weight:600">모임 · 리치몬드 · 3/4명</div>
+              <div class="title">이번 주 토요일, 라멘 원정대 4인</div>
+              <div class="body2">리치몬드 3번가 라멘집 두 곳을 한 번에 돌아요. 첫 집은 돈코츠, 둘째는 츠케멘. 20대 환영, 각자 계산, 끝나고 커피 한 잔.</div>
+              <div class="row" style="margin-top:8px"><div class="avatar" style="width:28px;height:28px;font-size:12px">면</div><span class="meta">면라이더 · 방장 · 토 12:00</span><span class="join">참여 신청</span></div>
+            </div>
+            <div class="post">
+              <div class="cat" style="color:var(--seal);font-weight:600">모임 · 버라드역 · 5/8명</div>
+              <div class="title">목요일 저녁 5km 같이 뛰어요</div>
+              <div class="body2">버라드역에서 만나 씨월 따라 천천히 5km 달립니다. 기록보다 꾸준히 나오는 게 목표라 초보도 환영해요.</div>
+              <div class="row" style="margin-top:8px"><div class="avatar" style="width:28px;height:28px;font-size:12px">버</div><span class="meta">버라드러너 · 방장 · 목 19:00</span><span class="join" style="background:var(--chip);color:var(--sub)">신청 중</span></div>
+            </div>
+            <div class="post">
+              <div class="cat" style="color:var(--seal);font-weight:600">모임 · 다운타운 · 2/6명</div>
+              <div class="title">카페에서 각자 할 일 하기</div>
+              <div class="body2">말 안 해도 괜찬은 모임. 두 시간 각자 공부·일하고 마지막 15분만 근황 나눠요.</div>
+              <div class="row" style="margin-top:8px"><div class="avatar" style="width:28px;height:28px;font-size:12px">도</div><span class="meta">도서관단골 · 방장 · 일 14:00</span><span class="join" style="background:var(--chip);color:var(--ink)">참여 신청</span></div>
+            </div>
+          </div>
+          <div class="tabbar"><span>오늘</span><span class="on">모임</span><span>글쓰기</span><span>채팅</span><span>나</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 배지 + 광고 -->
+    <section class="screen">
+      <h2>오늘 — 탭 배지와 광고 자리</h2>
+      <p class="why"><b>배지</b>는 iOS·Android 네이티브 탭바 배지를 그대로 씁니다. 숫자가 의미 있으면 숫자(채팅 2, 알림 5), 개수보다 "새로 생겼다"만 알리면 되는 곳은 점만. 채팅 배지는 메시지·모임 신청·승인 알림을, 알림 배지는 그 외(댓글·공감·안전)를 셉니다. 둘이 겹쳐 세지 않습니다. <b>광고</b>는 여섯 번째 글 뒤 첫 자리, 그 뒤 7개마다 하나. 광고 카드는 글 카드와 같은 폭·같은 종이 위에 놓이되 "광고" 라벨과 광고주 이름을 항상 보여줍니다.</p>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>●●● ⌔ ▮</span></div>
+        <div class="body">
+          <div class="topbar"><h3 style="font-family:Georgia,serif;font-weight:700;letter-spacing:-0.5px">gling<span style="color:var(--seal)">.</span></h3><span class="row" style="gap:14px"><span class="right">밴쿠버 ▾</span><span class="avatar" style="width:28px;height:28px;font-size:12px;background:var(--chip);color:var(--navy);border:1.5px solid var(--seal)">사진</span></span></div>
+          <div class="feedmini">
+            <div class="p"><b>겨울 타이어 언제 갈아야 하나요</b><span>이동 · 에드먼튼겨울 · 2시간 전</span></div>
+            <div class="p"><b>노스욕 순두부 맛집 추천해주세요</b><span>맛집 · 노스욕센터 · 3시간 전</span></div>
+            <div class="p"><b>ICBC는 기본만, 나머지는 BCAA로</b><span>라이프 · 모델3출근러 · 어제</span></div>
+            <div class="p"><b>이케아 책상 팝니다 · $80</b><span>주거 · 구해요·팔아요 · 거래 중</span></div>
+            <div class="p"><b>주말 등산 같이 가실 2030 구해요</b><span>모임 · 랭리 · 2/6명</span></div>
+            <div class="p"><b>SIN 넘버 발급, 예약 없이 가도 되나요</b><span>정착 · 초보정착러 · 어제</span></div>
+            <div class="adcard"><div class="lab"><span>광고 · 리치몬드 K-마트</span><span>ⓘ</span></div><div class="t">이번 주 김치 2kg 12.99</div><div class="b">한국 라면·냉동식품 최대 30% · 9월 21일까지</div><span class="cta">매장 보기</span></div>
+            <div class="p"><b>핸드폰 요금제 어디 쓰세요</b><span>정착 · 컴패스잔액 · 2일 전</span></div>
+            <div class="p" style="border-bottom:0;color:var(--sub)"><span>… 글 7개마다 광고 카드 1장 (다음은 7번째 글 뒤)</span></div>
+          </div>
+          <div class="tabbar"><span class="on">오늘</span><span>모임</span><span>글쓰기</span><span class="num" data-n="2">채팅</span><span class="num" data-n="5">알림</span></div>
+        </div>
+      </div>
+      <div class="diff" style="margin-top:12px"><span class="k">숫자 배지</span><span class="v">채팅(안 읽은 대화·신청), 알림(안 읽은 알림). 99 넘으면 99+</span><span class="k">점 배지</span><span class="v">개수가 의미 없는 곳(예: 나 탭에 새 답글)에만. 한 화면에 점과 숫자를 섞지 않음</span><span class="k">색</span><span class="v">시스템 배지 빨강 대신 인주(#BE3B2A), 종이색 2px 테두리로 아이콘과 분리</span><span class="k">광고 간격</span><span class="v">현재 5번째 뒤·10개마다 → <b>6번째 뒤·7개마다</b> (25개 화면에 3장)</span></div>
+    </section>
+  </div>
+
+  <div class="notes">
+    <div class="note"><h4>왜 카드가 아니라 칩인가</h4>애플 디자인 원칙의 <b>진행적 노출</b>입니다. 자리 상태는 대화를 걸거나 모임을 신청할 때만 의미가 있으니, 그 순간 칩과 한 줄 문장으로 답하고 평소엔 물러납니다. 한도에 걸린 순간의 안내(기존 오류 문구)는 그대로 살아 있습니다.
+      <div class="diff"><span class="k">현재</span><span class="v">카드 4개 숫자 + 잠금 시각 목록, 매 진입 시 표시</span><span class="k">시안</span><span class="v">칩 안 1/3, 잠금은 한 줄 + 멤버십 링크</span></div></div>
+    <div class="note"><h4>프로필 탭이 "관리"를 흡수</h4>멤버십·인증 뱃지 표시·알림·저장은 네 칸으로 묶어 한 화면에 둡니다. <b>인증 뱃지 표시 여부</b>는 여기서 토글하고, 멤버십 등급은 본인에게만 보입니다(등급명 비노출 원칙 유지). 설정은 우상단 텍스트 액션으로 남겨 계정 삭제·로그아웃 같은 드문 일을 맡습니다.</div>
+    <div class="note"><h4>구현 범위 감</h4><b>채팅</b>: 슬롯 카드 컴포넌트를 칩 라벨과 한 줄 문장으로 교체, 필터에 구해요·팔아요 추가(대화 종류 thread는 2단계). <b>모임</b>: 소개 카드 유지, 내 모임을 가로 카드로, 헤더에 자리 한 줄. 참여 승인 시 모임 대화는 채팅 탭 "모임" 칩으로. <b>나</b>: 세그먼트 3개와 관리 네 칸, 답글 탭은 기존 댓글 알림 데이터로 시작. 새 서버 작업은 "인증 뱃지 표시" 프로필 컬럼 하나입니다.</div>
+  </div>
+</div>
