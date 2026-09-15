@@ -12,7 +12,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { MEMBERSHIP_LIMITS, type MembershipOffer } from '@/lib/membership';
+import { MEMBERSHIP_LIMITS, referencePrice, type MembershipOffer } from '@/lib/membership';
 import { useMembership } from '@/lib/membership-provider';
 
 const plans = [
@@ -21,16 +21,6 @@ const plans = [
 ] as const;
 const tierNames = { free: '베이직', plus: '플러스', premium: '프리미엄' };
 const periodNames = { month: '월', year: '년' };
-
-// 정가(원래 등록가). 스토어 가격이 이보다 낮을 때만 취소선으로 함께 보여준다. 값이 같으면 아무것도 표시하지 않는다.
-const REFERENCE_PRICES: Record<'plus' | 'premium', Record<'month' | 'year', number>> = { plus: { month: 9.99, year: 99.99 }, premium: { month: 14.99, year: 149.99 } };
-function referencePrice(offer: { tier: 'plus' | 'premium'; period: 'month' | 'year'; price: string }) {
-  const reference = REFERENCE_PRICES[offer.tier][offer.period];
-  const current = Number(offer.price.replace(/[^0-9.]/g, ''));
-  if (!Number.isFinite(current) || current >= reference) return null;
-  const symbol = offer.price.replace(/[0-9.,\s]/g, '') || '$';
-  return `${symbol}${reference.toFixed(2)}`;
-}
 
 export default function MembershipScreen() {
   const theme = useTheme();

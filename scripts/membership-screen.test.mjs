@@ -4,7 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-import { MEMBERSHIP_LIMITS } from '../src/lib/membership.ts';
+import { MEMBERSHIP_LIMITS, referencePrice } from '../src/lib/membership.ts';
 
 test('membership opens checkout immediately and preserves quota and purchase safeguards', () => {
   let states = [], cursor = 0, restored = 0, purchased = 0;
@@ -34,7 +34,7 @@ test('membership opens checkout immediately and preserves quota and purchase saf
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
     if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: true }) };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
-    if (name === '@/lib/membership') return { MEMBERSHIP_LIMITS };
+    if (name === '@/lib/membership') return { MEMBERSHIP_LIMITS, referencePrice };
     if (name === '@/lib/membership-provider') return { useMembership: () => value };
     throw new Error(`Unexpected import: ${name}`);
   } });
