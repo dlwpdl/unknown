@@ -24,7 +24,7 @@ import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { buildCommentListRows, type CommentListRow } from '@/lib/comment-list';
 import { createThreadComment, loadCommentThreadContext, loadCommentThreadPage, type CommentCursor } from '@/lib/comment-threads';
-import { bumpListing, deleteComment, editComment, getCommunityActionError, isContentRejected, recordPostView, setListingStatus, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
+import { bumpListing, deleteComment, deletePost, editComment, editPost, getCommunityActionError, isContentRejected, recordPostView, setListingStatus, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 import { supabase } from '@/lib/supabase';
@@ -44,6 +44,7 @@ type PostDetailProps = {
   onJoin?: () => void;
   onCommentCountChange?: (count: number) => void;
   onViewCountChange?: (postId: string, count: number) => void;
+  onPostRemoved?: (postId: string) => void;
 };
 
 type PageState = { cursor: CommentCursor | null; loading: boolean; error: boolean; loaded: boolean };
@@ -54,7 +55,7 @@ export function PostDetail(props: PostDetailProps) {
   return <PostDetailContent key={`${props.post.id}:${isAuthed ? me.id : 'guest'}`} {...props} />;
 }
 
-function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCommentCountChange, onViewCountChange }: PostDetailProps) {
+function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCommentCountChange, onViewCountChange, onPostRemoved }: PostDetailProps) {
   const theme = useTheme();
   const [post, setPost] = useState(initialPost);
   const onListingChanged = useCallback((next: Partial<Post>) => setPost((current) => ({ ...current, ...next })), []);
@@ -77,6 +78,8 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const [reportSelection, setReportSelection] = useState<ReportSelection | null>(null);
   const [commentTotal, setCommentTotal] = useState(post.comments);
   const [viewCount, setViewCount] = useState(post.views);
+  const [postDraft, setPostDraft] = useState<{ title: string; body: string } | null>(null);
+  const [savingPost, setSavingPost] = useState(false);
   const sendBusy = useRef(false);
   const likeBusy = useRef(false);
   const pageRequests = useRef(new Set<string>());
@@ -194,6 +197,43 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
       } catch { if (active.current) { play('warning'); Alert.alert(t.detail.deleteErrorTitle, t.detail.sendErrorBody); } }
     })() },
   ]);
+
+  // 본문만 고친다. 정렬 시각에 손이 닿지 않으므로 수정해도 피드에서 끌어올려지지 않는다.
+  const savePost = async () => {
+    if (!postDraft || savingPost) return;
+    const title = postDraft.title.trim();
+    const body = postDraft.body.trim();
+    if (!title || !body) { play('warning'); return Alert.alert('제목과 내용을 모두 적어주세요.'); }
+    setSavingPost(true);
+    try {
+      await editPost(supabase, post.id, { title, body });
+      if (!active.current) return;
+      setPost((current) => ({ ...current, title, body }));
+      setPostDraft(null); play('selection');
+    } catch (error) {
+      if (!active.current) return;
+      play('warning');
+      Alert.alert(isContentRejected(error) ? '커뮤니티 규칙에 맞지 않는 표현이 있어요.' : '글을 수정하지 못했어요.', t.detail.sendErrorBody);
+    } finally {
+      if (active.current) setSavingPost(false);
+    }
+  };
+
+  const confirmDeletePost = () => Alert.alert(
+    '이 글을 삭제할까요?',
+    '삭제한 글은 목록에서 사라지고 되돌릴 수 없어요. 달린 댓글도 함께 보이지 않게 됩니다.',
+    [
+      { text: t.write.cancel, style: 'cancel' },
+      { text: t.detail.delete, style: 'destructive', onPress: () => void (async () => {
+        try {
+          await deletePost(supabase, post.id);
+          play('selection');
+          onPostRemoved?.(post.id);
+          onClose();
+        } catch { play('warning'); Alert.alert('글을 삭제하지 못했어요.', t.detail.sendErrorBody); }
+      })() },
+    ],
+  );
 
   const send = async () => {
     if (!isAuthed) return promptLogin(t.auth.reasonComment);
@@ -484,6 +524,40 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                 })
               }
             />
+            {isAuthed && post.author.id === me.id && postDraft && (
+              <View style={[styles.postEdit, { borderColor: theme.line }]}>
+                <TextInput value={postDraft.title} onChangeText={(text) => setPostDraft((current) => current && { ...current, title: text })}
+                  placeholder="제목" placeholderTextColor={theme.textSecondary} maxLength={100} editable={!savingPost}
+                  accessibilityLabel="글 제목 수정"
+                  style={[styles.postEditInput, { color: theme.text, borderColor: theme.line }]} />
+                <TextInput value={postDraft.body} onChangeText={(text) => setPostDraft((current) => current && { ...current, body: text })}
+                  placeholder="내용" placeholderTextColor={theme.textSecondary} maxLength={5000} multiline editable={!savingPost}
+                  accessibilityLabel="글 내용 수정"
+                  style={[styles.postEditInput, styles.postEditBody, { color: theme.text, borderColor: theme.line }]} />
+                <View style={styles.postActions}>
+                  <Pressable onPress={() => setPostDraft(null)} disabled={savingPost} accessibilityRole="button"
+                    accessibilityState={{ disabled: savingPost }} style={styles.postAction}>
+                    <ThemedText type="smallBold" themeColor="textSecondary">{t.write.cancel}</ThemedText>
+                  </Pressable>
+                  <Pressable onPress={() => void savePost()} disabled={savingPost} accessibilityRole="button"
+                    accessibilityState={{ disabled: savingPost, busy: savingPost }} style={styles.postAction}>
+                    <ThemedText type="smallBold" themeColor="accent">{savingPost ? '저장 중' : '저장'}</ThemedText>
+                  </Pressable>
+                </View>
+              </View>
+            )}
+            {isAuthed && post.author.id === me.id && !postDraft && (
+              <View style={styles.postActions}>
+                <Pressable onPress={() => setPostDraft({ title: post.title, body: post.body })} accessibilityRole="button"
+                  accessibilityLabel="내 글 수정" style={styles.postAction}>
+                  <ThemedText type="smallBold">수정</ThemedText>
+                </Pressable>
+                <Pressable onPress={confirmDeletePost} accessibilityRole="button"
+                  accessibilityLabel="내 글 삭제" style={styles.postAction}>
+                  <ThemedText type="smallBold" themeColor="accent">{t.detail.delete}</ThemedText>
+                </Pressable>
+              </View>
+            )}
             {isAuthed && post.author.id === me.id && post.kind === 'listing' && <ListingControls post={post} onChanged={onListingChanged} />}
             {PROMOTIONS_PREVIEW_ENABLED && isAuthed && post.author.id === me.id && <Pressable
               accessibilityRole="button"
@@ -605,6 +679,11 @@ const styles = StyleSheet.create({
   commentActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two, marginTop: 2 },
   commentAction: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center' },
   commentActionText: { fontSize: 12, lineHeight: 16 },
+  postActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingHorizontal: Spacing.three },
+  postAction: { minHeight: 44, justifyContent: 'center' },
+  postEdit: { gap: Spacing.two, marginHorizontal: Spacing.three, padding: Spacing.three, borderWidth: 1, borderRadius: 10 },
+  postEditInput: { borderWidth: 1, borderRadius: 8, paddingHorizontal: Spacing.two, paddingVertical: Spacing.two, minHeight: 44 },
+  postEditBody: { minHeight: 120, textAlignVertical: 'top' },
   mineBadge: {
     borderRadius: 4,
     paddingHorizontal: 5,

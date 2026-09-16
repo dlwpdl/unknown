@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { AdminSection, ReportStatus } from '@/lib/admin';
 import { MOCK_POSTS } from '@/lib/mock';
-import type { AdminTrendingConfig, AdminTrendingState } from '@/lib/admin-trending';
+import type { AdminPostFields, AdminPostPatch, AdminTrendingConfig, AdminTrendingState } from '@/lib/admin-trending';
 
 export const ADMIN_PAGE_SIZE = 50;
 
@@ -27,6 +27,9 @@ export type AdminPost = {
   body: string;
   status: 'published' | 'removed';
   created_at: string;
+  view_count: number;
+  hashtags: string[] | null;
+  deleted_at: string | null;
 };
 
 export type AdminComment = {
@@ -175,6 +178,9 @@ export function getLocalAdminDashboard(): AdminDashboardData {
       title: post.title,
       body: post.body,
       status: 'published',
+      view_count: post.views ?? 0,
+      hashtags: post.hashtags ?? null,
+      deleted_at: null,
       created_at: new Date(Date.UTC(2026, 7, 26, 18 - index)).toISOString(),
     }),
   );
@@ -372,4 +378,10 @@ export async function saveAdminTrending(client: SupabaseClient, patch: Partial<A
   const result = await client.rpc('set_admin_trending_config', { p_patch: patch });
   if (result.error) throw result.error;
   return result.data as AdminTrendingState;
+}
+
+export async function setAdminPostFields(client: SupabaseClient, postId: string, patch: AdminPostPatch): Promise<AdminPostFields> {
+  const result = await client.rpc('set_admin_post_fields', { p_post_id: postId, p_patch: patch });
+  if (result.error) throw result.error;
+  return result.data as AdminPostFields;
 }

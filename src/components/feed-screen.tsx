@@ -726,6 +726,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             post={detailPost}
             onViewCountChange={updateViewCount}
             onClose={() => setDetailPost(null)}
+            onPostRemoved={(postId) => setPosts((current) => current.filter((post) => post.id !== postId))}
             onJoin={() => onJoin(detailPost)}
             onCommentCountChange={(count) => {
               setPosts((current) => current.map((post) => post.id === detailPost.id ? { ...post, comments: count } : post));

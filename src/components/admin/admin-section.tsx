@@ -7,7 +7,8 @@ import { AdminUserDirectoryPanel } from '@/components/admin/admin-user-directory
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import type { AdminSection } from '@/lib/admin';
-import { exportAdminSafetyEvidence, resolveAdminSafetyAlert, type AdminDashboardData, type AdminProfile, type AdminSafetyAlert } from '@/lib/admin-data';
+import { exportAdminSafetyEvidence, resolveAdminSafetyAlert, setAdminPostFields, type AdminDashboardData, type AdminPost, type AdminProfile, type AdminSafetyAlert } from '@/lib/admin-data';
+import type { AdminPostPatch } from '@/lib/admin-trending';
 import { supabase } from '@/lib/supabase';
 
 export function AdminSectionView({
@@ -146,11 +147,102 @@ export function AdminSectionView({
 
   if (section === 'posts') {
     const rows = data.posts.filter((post) => matches(needle, post.title, post.body, post.city_id, post.author_id));
-    return <View style={styles.section}><SectionHeading title="게시글" description="삭제 처리된 글을 포함한 최근 게시글입니다." />{search}<View style={styles.rows}>{rows.map((post) => <Pressable key={post.id} onPress={() => onUser(post.author_id)} accessibilityRole="button" style={styles.row}><View style={styles.rowTop}><ThemedText type="smallBold">{post.title}</ThemedText><StateText text={post.status === 'removed' ? '삭제됨' : '게시중'} danger={post.status === 'removed'} /></View><ThemedText type="small" numberOfLines={2}>{post.body}</ThemedText><ThemedText type="small" style={styles.muted}>{profiles.get(post.author_id)?.nickname ?? post.author_id} · {formatDate(post.created_at)}</ThemedText></Pressable>)}{rows.length === 0 && <Empty />}</View><LoadMore loading={loadingMore} noMore={noMore} onPress={onLoadMore} /></View>;
+    return (
+      <View style={styles.section}>
+        <SectionHeading title="게시글" description="삭제 처리된 글을 포함한 최근 게시글입니다. 조회수·노출 순서·해시태그는 여기서만 조정합니다." />
+        {search}
+        <View style={styles.rows}>
+          {rows.map((post) => (
+            <AdminPostRow key={post.id} post={post} author={profiles.get(post.author_id)?.nickname ?? post.author_id}
+              localPreview={localPreview} onUser={onUser} />
+          ))}
+          {rows.length === 0 && <Empty />}
+        </View>
+        <LoadMore loading={loadingMore} noMore={noMore} onPress={onLoadMore} />
+      </View>
+    );
   }
 
   const messages = data.messages.filter((message) => matches(needle, message.body, message.sender_id, message.conversation_id));
   return <View style={styles.section}><SectionHeading title="대화" description={`최근 대화방 ${data.conversations.length}개와 메시지 ${data.messages.length}개`} />{search}<View style={styles.rows}>{messages.map((message) => <Pressable key={message.id} onPress={() => onUser(message.sender_id)} accessibilityRole="button" style={styles.row}><ThemedText type="smallBold">{profiles.get(message.sender_id)?.nickname ?? message.sender_id}</ThemedText><ThemedText>{message.body}</ThemedText><ThemedText type="small" style={styles.muted}>대화 {shortId(message.conversation_id)} · {formatDate(message.created_at)}</ThemedText></Pressable>)}{messages.length === 0 && <Empty text="표시할 메시지가 없습니다." />}</View><LoadMore loading={loadingMore} noMore={noMore} onPress={onLoadMore} /></View>;
+}
+
+// 글 자체의 수정·삭제는 작성자가 앱에서 한다. 여기서는 노출에 영향을 주는 값만 손댄다.
+function AdminPostRow({ post, author, localPreview, onUser }: {
+  post: AdminPost; author: string; localPreview?: boolean; onUser: (userId: string) => void;
+}) {
+  const [fields, setFields] = useState<{ status: string; viewCount: number; hashtags: string[] }>(
+    { status: post.status, viewCount: post.view_count ?? 0, hashtags: post.hashtags ?? [] });
+  const [views, setViews] = useState(String(post.view_count ?? 0));
+  const [tags, setTags] = useState((post.hashtags ?? []).join(' '));
+  const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const apply = async (patch: AdminPostPatch, label: string) => {
+    if (localPreview || busy) return;
+    setBusy(true);
+    try {
+      const next = await setAdminPostFields(supabase, post.id, patch);
+      setFields({ status: next.status, viewCount: next.viewCount, hashtags: next.hashtags ?? [] });
+      setViews(String(next.viewCount));
+      setTags((next.hashtags ?? []).join(' '));
+    } catch {
+      Alert.alert(`${label}을(를) 바꾸지 못했습니다.`, '값의 범위와 권한을 확인해주세요.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveViews = () => {
+    const value = Number(views.trim());
+    if (!Number.isInteger(value) || value < 0) return Alert.alert('조회수를 확인해주세요.', '0 이상의 정수만 넣을 수 있습니다.');
+    if (value !== fields.viewCount) void apply({ view_count: value }, '조회수');
+  };
+  const saveTags = () => {
+    const next = tags.split(/[\s,]+/).map((tag: string) => tag.replace(/^#/, '')).filter(Boolean).slice(0, 20);
+    if (next.join(' ') !== fields.hashtags.join(' ')) void apply({ hashtags: next }, '해시태그');
+  };
+
+  return (
+    <View style={styles.row}>
+      <Pressable onPress={() => onUser(post.author_id)} accessibilityRole="button">
+        <View style={styles.rowTop}>
+          <ThemedText type="smallBold" numberOfLines={1} style={{ flex: 1 }}>{post.title}</ThemedText>
+          <StateText text={fields.status === 'removed' ? '삭제됨' : '게시중'} danger={fields.status === 'removed'} />
+        </View>
+        <ThemedText type="small" numberOfLines={2}>{post.body}</ThemedText>
+        <ThemedText type="small" style={styles.muted}>{author} · 조회 {fields.viewCount} · {formatDate(post.created_at)}</ThemedText>
+      </Pressable>
+      <View style={styles.rowTop}>
+        <ActionText label={open ? '조정 닫기' : '조정'} onPress={() => setOpen((current) => !current)} disabled={busy} />
+        {fields.status === 'published'
+          ? <ActionText label="내리기" onPress={() => void apply({ status: 'removed' }, '상태')} disabled={busy} danger />
+          : <ActionText label="되돌리기" onPress={() => void apply({ status: 'published' }, '상태')} disabled={busy} />}
+      </View>
+      {open && (
+        <View style={{ gap: Spacing.two }}>
+          <View style={styles.rowTop}>
+            <ThemedText type="small" style={styles.muted}>조회수</ThemedText>
+            <TextInput value={views} onChangeText={setViews} inputMode="numeric" editable={!busy}
+              accessibilityLabel="조회수" onBlur={saveViews} style={styles.adminInput} />
+          </View>
+          <View style={styles.rowTop}>
+            <ThemedText type="small" style={styles.muted}>해시태그</ThemedText>
+            <TextInput value={tags} onChangeText={setTags} editable={!busy} autoCapitalize="none"
+              accessibilityLabel="해시태그" onBlur={saveTags} placeholder="밴쿠버 공지"
+              placeholderTextColor={Colors.light.textSecondary} style={[styles.adminInput, { flexBasis: 220 }]} />
+          </View>
+          <View style={styles.rowTop}>
+            <ThemedText type="small" style={styles.muted}>노출 순서</ThemedText>
+            <View style={{ flexDirection: 'row' }}>
+              <ActionText label="맨 위로" onPress={() => void apply({ sort_at: new Date(Date.now() + 36e5).toISOString() }, '노출 순서')} disabled={busy} />
+              <ActionText label="원래대로" onPress={() => void apply({ sort_at: post.created_at }, '노출 순서')} disabled={busy} />
+            </View>
+          </View>
+        </View>
+      )}
+    </View>
+  );
 }
 
 function SectionHeading({ title, description }: { title: string; description: string }) {
@@ -224,6 +316,7 @@ const styles = StyleSheet.create({
   more: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
   moreDisabled: { opacity: 0.55 },
   pressed: { backgroundColor: Colors.light.backgroundElement },
+  adminInput: { flexBasis: 120, minHeight: 44, paddingHorizontal: Spacing.two, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 6, color: Colors.light.text, textAlign: 'right' },
 });
 
 const ALERT_CATEGORY: Record<string, string> = {

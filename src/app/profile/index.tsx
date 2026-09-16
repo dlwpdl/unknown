@@ -273,7 +273,11 @@ export default function ProfileScreen() {
             presentationStyle="pageSheet"
             allowSwipeDismissal
             onRequestClose={() => setSavedDetail(null)}>
-            {savedDetail && <PostDetail post={savedDetail} onClose={() => setSavedDetail(null)} onViewCountChange={updateViewCount} />}
+            {savedDetail && <PostDetail post={savedDetail} onClose={() => setSavedDetail(null)} onViewCountChange={updateViewCount}
+              onPostRemoved={(postId) => {
+                setSavedPosts((current) => current.filter((item) => item.id !== postId));
+                setMyPosts((current) => ({ ...current, story: current.story.filter((item) => item.id !== postId), listing: current.listing.filter((item) => item.id !== postId) }));
+              }} />}
           </Modal>
         </ThemedView>
       </Modal>

@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import { buildPostImagePath, deleteMyAccount, getCommunityActionError, isContentRejected, leaveMeetup, loadMyMeetups, recordPostView } from '../src/lib/community-data.ts';
 
-test('조회수를 임의로 더하지 않고 서버의 유니크 집계를 반환한다', async () => {
+test('같은 기기에서 다시 열면 조회수를 또 올리지 않고 서버 집계만 읽는다', async () => {
   const calls = [];
   const client = { rpc(name, input) {
     calls.push([name, input]);
@@ -14,14 +14,18 @@ test('조회수를 임의로 더하지 않고 서버의 유니크 집계를 반�
       return { single: async () => ({ data: { view_count: 17 }, error: null }) };
     } };
   } };
-  assert.equal(await recordPostView(client, 'post-1'), 17);
-  assert.equal(await recordPostView(client, 'post-1'), 17);
-  assert.deepEqual(calls.slice(0, 2), [
-    ['record_post_view', { post_id: 'post-1' }],
-    ['get_public_post', { p_post_id: 'post-1' }],
+  assert.equal(await recordPostView(client, 'post-dedupe'), 17);
+  assert.equal(await recordPostView(client, 'post-dedupe'), 17);
+  assert.deepEqual(calls, [
+    ['record_post_view', { post_id: 'post-dedupe' }],
+    ['get_public_post', { p_post_id: 'post-dedupe' }],
+    ['get_public_post', { p_post_id: 'post-dedupe' }],
   ]);
-  client.rpc = async () => ({ error: new Error('AUTH_REQUIRED') });
-  await assert.rejects(recordPostView(client, 'post-1'), /AUTH_REQUIRED/);
+});
+
+test('조회 기록 실패는 그대로 올라온다', async () => {
+  const client = { rpc: async () => ({ error: new Error('AUTH_REQUIRED') }) };
+  await assert.rejects(recordPostView(client, 'post-error'), /AUTH_REQUIRED/);
 });
 
 test('서버 콘텐츠 필터 오류만 사용자 안내 대상으로 구분한다', () => {

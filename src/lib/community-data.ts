@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { attachSignedPostImages, loadPublicPost, mapPublicFeed, type FeedCursor, type PublicCommentRow, type PublicFeedRow } from './feed-data.ts';
@@ -195,9 +196,39 @@ export async function toggleCommentReaction(
   return !isOn;
 }
 
+// 조회수는 한 사람이 한 번이다. 로그인 사용자는 서버가 post_views 로 걸러내지만
+// 비로그인 열람에는 방문자 식별자가 없으므로(만들지 않는다) 이 기기가 기억한다.
+// 글을 오갈 때 숫자가 계속 오르는 것을 막는 것이 목적이고, 지워도 손해는 조회수 1 이다.
+const VIEWED_POSTS_KEY = 'gling.viewedPosts';
+const VIEWED_POSTS_LIMIT = 500;
+let viewedPosts: string[] | null = null;
+
+async function loadViewedPosts() {
+  if (viewedPosts) return viewedPosts;
+  try {
+    const raw = await AsyncStorage.getItem(VIEWED_POSTS_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    viewedPosts = Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
+  } catch {
+    viewedPosts = [];
+  }
+  return viewedPosts;
+}
+
+async function rememberViewedPost(postId: string) {
+  const seen = await loadViewedPosts();
+  viewedPosts = [postId, ...seen.filter((id) => id !== postId)].slice(0, VIEWED_POSTS_LIMIT);
+  // 저장이 실패해도(사파리 프라이빗, 용량 초과) 이번 세션의 중복은 메모리로 막는다.
+  try { await AsyncStorage.setItem(VIEWED_POSTS_KEY, JSON.stringify(viewedPosts)); } catch { /* 무시 */ }
+}
+
 export async function recordPostView(client: SupabaseClient, postId: string) {
-  const result = await client.rpc('record_post_view', { post_id: postId });
-  if (result.error) throw result.error;
+  const seen = await loadViewedPosts();
+  if (!seen.includes(postId)) {
+    const result = await client.rpc('record_post_view', { post_id: postId });
+    if (result.error) throw result.error;
+    await rememberViewedPost(postId);
+  }
   const updated = await client.rpc('get_public_post', { p_post_id: postId }).select('view_count').single();
   if (updated.error) throw updated.error;
   return updated.data.view_count as number;
@@ -533,6 +564,21 @@ export async function loadRepliesToMe(client: SupabaseClient, userId: string): P
 // Own comments: RLS "users update own comments" allows body edits and soft deletes (deleted_at).
 export async function editComment(client: SupabaseClient, commentId: string, body: string) {
   const result = await client.from('comments').update({ body: body.trim() }).eq('id', commentId);
+  if (result.error) throw result.error;
+}
+
+// 본문만 고친다. 정렬 시각·조회수·해시태그는 컬럼 권한이 없어 클라이언트에서 닿지 않으므로
+// 수정해도 피드에서 끌어올려지지 않는다.
+export async function editPost(client: SupabaseClient, postId: string, patch: { title: string; body: string }) {
+  const result = await client.from('posts')
+    .update({ title: patch.title.trim(), body: patch.body.trim() })
+    .eq('id', postId);
+  if (result.error) throw result.error;
+}
+
+// 되돌리기는 어드민만 한다(트리거가 막는다). 글은 안전 검토 기록을 위해 남고 피드에서만 빠진다.
+export async function deletePost(client: SupabaseClient, postId: string) {
+  const result = await client.from('posts').update({ status: 'removed' }).eq('id', postId);
   if (result.error) throw result.error;
 }
 
