@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { AdminSection, ReportStatus } from '@/lib/admin';
 import { MOCK_POSTS } from '@/lib/mock';
+import type { AdminTrendingConfig, AdminTrendingState } from '@/lib/admin-trending';
 
 export const ADMIN_PAGE_SIZE = 50;
 
@@ -287,7 +288,7 @@ export async function loadAdminDashboard(client: SupabaseClient): Promise<AdminD
 
 export async function loadMoreAdminData(
   client: SupabaseClient,
-  section: Exclude<AdminSection, 'overview' | 'analytics'>,
+  section: Exclude<AdminSection, 'overview' | 'analytics' | 'trending'>,
   offset: number,
 ): Promise<AdminSectionPage> {
   await logAdminAccess(client, section === 'conversations' ? 'messages' : section);
@@ -358,4 +359,17 @@ export async function exportAdminSafetyEvidence(client: SupabaseClient, alertId:
   const result = await client.rpc('export_admin_safety_evidence', { p_alert_id: alertId });
   if (result.error) throw result.error;
   return result.data as Record<string, unknown>;
+}
+
+
+export async function loadAdminTrending(client: SupabaseClient): Promise<AdminTrendingState> {
+  const result = await client.rpc('get_admin_trending_config');
+  if (result.error) throw result.error;
+  return result.data as AdminTrendingState;
+}
+
+export async function saveAdminTrending(client: SupabaseClient, patch: Partial<AdminTrendingConfig>): Promise<AdminTrendingState> {
+  const result = await client.rpc('set_admin_trending_config', { p_patch: patch });
+  if (result.error) throw result.error;
+  return result.data as AdminTrendingState;
 }

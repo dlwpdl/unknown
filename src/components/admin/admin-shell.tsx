@@ -14,6 +14,7 @@ const sectionIcons = {
   overview: { ios: 'square.grid.2x2', web: 'dashboard' },
   safety: { ios: 'shield', web: 'shield' },
   alerts: { ios: 'exclamationmark.bubble', web: 'report' },
+  trending: { ios: 'flame', web: 'local_fire_department' },
   reports: { ios: 'flag', web: 'flag' },
   users: { ios: 'person.2', web: 'group' },
   posts: { ios: 'doc.text', web: 'article' },

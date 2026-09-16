@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { AdminReportQueue } from '@/components/admin/admin-report-queue';
+import { AdminTrendingPanel } from '@/components/admin/admin-trending-panel';
 import { AdminUserDirectoryPanel } from '@/components/admin/admin-user-directory';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
@@ -96,6 +97,15 @@ export function AdminSectionView({
         <SectionHeading title="감시어 경보" description={`미처리 ${data.counts.alertsOpen}건 · 마약·무기·성착취·사기·자해·위협·신상공개·불법체류 관련 표현이 글·댓글·대화에 나타나면 기록됩니다. 표현 일치는 신호이며 판단은 사람이 합니다.`} />
         <AdminAlertsPanel alerts={data.safetyAlerts} profiles={profiles} localPreview={localPreview} onUser={onUser} />
         <LoadMore loading={loadingMore} noMore={noMore} onPress={onLoadMore} />
+      </View>
+    );
+  }
+
+  if (section === 'trending') {
+    return (
+      <View style={styles.section}>
+        <SectionHeading title="뜨는 글 알림" description="도시마다 반응이 오는 글 하나를 골라 그 도시 사용자에게만 알립니다. 점수 값을 바꾸면 아래 미리보기가 함께 바뀝니다." />
+        <AdminTrendingPanel localPreview={localPreview} />
       </View>
     );
   }

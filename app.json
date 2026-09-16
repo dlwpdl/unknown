@@ -2,6 +2,12 @@
   "expo": {
     "name": "글링",
     "slug": "gling",
+    "owner": "caydenvove",
+    "extra": {
+      "eas": {
+        "projectId": "3889cb42-940a-469d-b975-b5c9a4c6bfc5"
+      }
+    },
     "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/brand/gling-app-icon.png",

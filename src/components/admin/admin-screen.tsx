@@ -107,7 +107,8 @@ export function AdminScreen() {
       setExhausted((current) => new Set(current).add(section));
       return;
     }
-    if (!data || section === 'overview' || section === 'analytics' || exhausted.has(section)) return;
+    // 뜨는 글 알림 패널은 자체 RPC로 불러오므로 더 보기 대상이 아니다.
+    if (!data || section === 'overview' || section === 'analytics' || section === 'trending' || exhausted.has(section)) return;
     const offset = section === 'reports'
       ? data.reports.length
       : section === 'safety'

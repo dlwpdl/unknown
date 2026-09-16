@@ -11,6 +11,7 @@ export const NOTIFICATION_CATEGORIES = [
   { key: 'meetups', label: '모임 가입 요청·승인' },
   { key: 'interests', label: '관심 태그의 새 글' },
   { key: 'nearby', label: '내 지역의 새로운 모임' },
+  { key: 'trending', label: '내 도시에서 지금 뜨는 글' },
 ] as const;
 export type NotificationCategory = typeof NOTIFICATION_CATEGORIES[number]['key'];
 export type NotificationPreferences = Record<NotificationCategory, boolean> & {
