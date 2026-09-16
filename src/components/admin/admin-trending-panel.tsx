@@ -11,18 +11,17 @@ import { supabase } from '@/lib/supabase';
 // 값을 바꾸면 곧바로 "지금 기준이면 이 글이 나갑니다"가 다시 계산된다.
 // 미리보기가 없으면 운영자는 감으로 숫자를 만지게 된다.
 const NUMBERS: { key: keyof AdminTrendingConfig; label: string; hint: string }[] = [
+  { key: 'window_hours', label: '집계 구간(시간)', hint: '이 구간 안에 생긴 조회·공감·댓글만 센다. 누적은 세지 않는다' },
+  { key: 'repeat_after_hours', label: '재등장 대기(시간)', hint: '한 번 알린 글이 다시 후보가 되기까지' },
   { key: 'view_weight', label: '로그인 조회 가중치', hint: '회원이 연 횟수' },
   { key: 'anon_view_weight', label: '비로그인 조회 가중치', hint: '둘러보기만 한 열람. 조작에 약하니 낮게 둔다' },
   { key: 'like_weight', label: '공감 가중치', hint: '' },
   { key: 'comment_weight', label: '댓글 가중치', hint: '' },
-  { key: 'half_life_hours', label: '반감기(시간)', hint: '이 시간이 지나면 점수가 절반' },
   { key: 'min_score', label: '최소 점수', hint: '이 아래면 아무것도 보내지 않는다' },
-  { key: 'max_age_hours', label: '후보 최대 나이(시간)', hint: '' },
   { key: 'max_per_city_per_day', label: '도시별 하루 최대 발송', hint: '' },
   { key: 'quiet_start_hour', label: '조용한 시간 시작', hint: '0~23시' },
   { key: 'quiet_end_hour', label: '조용한 시간 끝', hint: '같은 값이면 항상 발송' },
 ];
-
 export function AdminTrendingPanel({ localPreview }: { localPreview?: boolean }) {
   const [state, setState] = useState<AdminTrendingState | null>(null);
   const [draft, setDraft] = useState<Record<string, string>>({});
@@ -80,7 +79,7 @@ export function AdminTrendingPanel({ localPreview }: { localPreview?: boolean })
           <View style={{ flex: 1, gap: 2 }}>
             <ThemedText type="smallBold">{config.enabled ? '발송 켜짐' : '발송 꺼짐'}</ThemedText>
             <ThemedText type="small" style={styles.muted}>
-              15분마다 도시별로 가장 점수가 높은 글 하나를 고릅니다. 한 글은 한 번만 알립니다.
+              15분마다 도시별로 최근 {config.window_hours}시간 안에 반응이 가장 많은 글 하나를 고릅니다. 누적 조회수는 점수에 들어가지 않습니다.
               {quietNow ? ' 지금은 조용한 시간이라 보내지 않습니다.' : ''}
             </ThemedText>
           </View>
@@ -111,7 +110,7 @@ export function AdminTrendingPanel({ localPreview }: { localPreview?: boolean })
       <View style={{ gap: Spacing.two }}>
         <ThemedText type="smallBold">지금 기준이면 나갈 글</ThemedText>
         <ThemedText type="small" style={styles.muted}>
-          최소 점수 {config.min_score} 이상만 발송됩니다. 도시마다 한 편씩 나갑니다.
+          최근 {config.window_hours}시간 기준 점수입니다. {config.min_score} 이상만, 도시마다 한 편씩 나갑니다.
         </ThemedText>
         {preview.length === 0 && <Note text="후보 글이 없습니다." />}
         {preview.map((row) => (

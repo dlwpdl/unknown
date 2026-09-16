@@ -10,6 +10,7 @@ import type { AdminSection } from '@/lib/admin';
 import { exportAdminSafetyEvidence, resolveAdminSafetyAlert, setAdminPostFields, type AdminDashboardData, type AdminPost, type AdminProfile, type AdminSafetyAlert } from '@/lib/admin-data';
 import type { AdminPostFields, AdminPostPatch } from '@/lib/admin-trending';
 import { count } from '@/i18n/ko';
+import { CITIES } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
 
 export function AdminSectionView({
@@ -34,6 +35,9 @@ export function AdminSectionView({
   localPreview?: boolean;
 }) {
   const [query, setQuery] = useState('');
+  const [postStatus, setPostStatus] = useState('');
+  const [postCity, setPostCity] = useState('');
+  const [postSort, setPostSort] = useState('new');
   const compactUsers = useWindowDimensions().width < 560;
   const profiles = useMemo(() => new Map(data.profiles.map((profile) => [profile.id, profile])), [data.profiles]);
   const needle = query.trim().toLocaleLowerCase('ko-KR');
@@ -147,14 +151,31 @@ export function AdminSectionView({
   }
 
   if (section === 'posts') {
-    const rows = data.posts.filter((post) => matches(needle, post.title, post.body, post.city_id, post.author_id));
+    const rows = data.posts
+      .filter((post) => matches(needle, post.title, post.body, post.city_id, post.author_id))
+      .filter((post) => (!postStatus || post.status === postStatus) && (!postCity || post.city_id === postCity))
+      .sort((a, b) => postSort === 'views' ? (b.view_count ?? 0) - (a.view_count ?? 0)
+        : postSort === 'likes' ? (b.like_count ?? 0) - (a.like_count ?? 0)
+        : b.created_at.localeCompare(a.created_at));
     return (
       <View style={styles.section}>
-        <SectionHeading title="게시글" description="삭제 처리된 글을 포함한 최근 게시글입니다. 조회수·노출 순서·해시태그는 여기서만 조정합니다." />
-        {search}
-        <View style={styles.rows}>
-          {rows.map((post) => (
-            <AdminPostRow key={post.id} post={post} author={profiles.get(post.author_id)?.nickname ?? post.author_id}
+        <SectionHeading title="게시글" description="한 줄에 한 글입니다. 조정이 필요한 글만 펼치세요. 조회수·공감수·저장수·노출 순서·해시태그는 여기서만 바꿉니다." />
+        <View style={styles.filters}>
+          {search}
+          <Picker label="상태" value={postStatus} onChange={setPostStatus}
+            options={[['', '상태 전체'], ['published', '게시중'], ['removed', '삭제됨']]} />
+          <Picker label="도시" value={postCity} onChange={setPostCity}
+            options={[['', '도시 전체'], ...CITIES.map((city) => [city.id, city.name] as [string, string])]} />
+          <Picker label="정렬" value={postSort} onChange={setPostSort}
+            options={[['new', '최신순'], ['views', '조회순'], ['likes', '공감순']]} />
+          <ThemedText type="small" style={[styles.muted, styles.filterCount]}>
+            {count(rows.length)}건 / 불러온 {count(data.posts.length)}건
+          </ThemedText>
+        </View>
+        <View style={styles.list}>
+          {rows.map((post, index) => (
+            <AdminPostRow key={post.id} post={post} first={index === 0}
+              author={profiles.get(post.author_id)?.nickname ?? post.author_id}
               localPreview={localPreview} onUser={onUser} />
           ))}
           {rows.length === 0 && <Empty />}
@@ -169,15 +190,16 @@ export function AdminSectionView({
 }
 
 // 글 자체의 수정·삭제는 작성자가 앱에서 한다. 여기서는 노출에 영향을 주는 값만 손댄다.
-// 숫자는 입력칸을 벗어나는 순간이 아니라 "반영"을 눌렀을 때만 저장한다.
+// 닫힌 행은 한 줄이다. 조정 칸은 펼쳤을 때만 나와서 목록을 훑을 때 조용하다.
+// 숫자는 칸을 벗어날 때가 아니라 "반영"을 눌렀을 때만 저장한다.
 const POST_COUNTERS = [
   { key: 'view_count', label: '조회수' },
   { key: 'like_count', label: '공감수' },
   { key: 'save_count', label: '저장수' },
 ] as const;
 
-function AdminPostRow({ post, author, localPreview, onUser }: {
-  post: AdminPost; author: string; localPreview?: boolean; onUser: (userId: string) => void;
+function AdminPostRow({ post, author, first, localPreview, onUser }: {
+  post: AdminPost; author: string; first?: boolean; localPreview?: boolean; onUser: (userId: string) => void;
 }) {
   const saved = {
     status: post.status as string,
@@ -190,6 +212,7 @@ function AdminPostRow({ post, author, localPreview, onUser }: {
   const [draft, setDraft] = useState(saved);
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
+  const down = fields.status === 'removed';
 
   const store = (next: AdminPostFields) => {
     const applied = {
@@ -233,54 +256,80 @@ function AdminPostRow({ post, author, localPreview, onUser }: {
   };
 
   return (
-    <View style={styles.row}>
-      <Pressable onPress={() => onUser(post.author_id)} accessibilityRole="button">
-        <View style={styles.rowTop}>
-          <ThemedText type="smallBold" numberOfLines={1} style={{ flex: 1 }}>{post.title}</ThemedText>
-          <StateText text={fields.status === 'removed' ? '삭제됨' : '게시중'} danger={fields.status === 'removed'} />
+    <View style={[styles.postRow, first && styles.postRowFirst]}>
+      <Pressable onPress={() => setOpen((current) => !current)} accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={`${post.title}, ${author}, ${down ? '삭제됨' : '게시중'}, 조회 ${count(fields.view_count)}`}
+        style={({ pressed }) => [styles.postHead, pressed && styles.pressed, open && styles.pressed]}>
+        <View style={[styles.dot, down && styles.dotDown]} />
+        <View style={styles.postTitle}>
+          <ThemedText type="smallBold" numberOfLines={1} style={{ flexShrink: 1 }}>{post.title}</ThemedText>
+          <ThemedText numberOfLines={1} style={styles.postMeta}>{author} · {post.city_id} · {formatDate(post.created_at)}</ThemedText>
         </View>
-        <ThemedText type="small" numberOfLines={2}>{post.body}</ThemedText>
-        <ThemedText type="small" style={styles.muted}>
-          {author} · 조회 {count(fields.view_count)} · 공감 {count(fields.like_count)} · 저장 {count(fields.save_count)} · {formatDate(post.created_at)}
-        </ThemedText>
+        <View style={styles.postMetrics}>
+          <ThemedText style={styles.postMetric}>조회 {count(fields.view_count)}</ThemedText>
+          <ThemedText style={styles.postMetric}>공감 {count(fields.like_count)}</ThemedText>
+          <ThemedText style={styles.postMetric}>저장 {count(fields.save_count)}</ThemedText>
+        </View>
       </Pressable>
-      <View style={styles.rowTop}>
-        <ActionText label={open ? '조정 닫기' : '조정'} onPress={() => setOpen((current) => !current)} disabled={busy} />
-        {fields.status === 'published'
-          ? <ActionText label="내리기" onPress={() => void apply({ status: 'removed' }, '상태')} disabled={busy} danger />
-          : <ActionText label="되돌리기" onPress={() => void apply({ status: 'published' }, '상태')} disabled={busy} />}
-      </View>
       {open && (
-        <View style={{ gap: Spacing.two }}>
-          {POST_COUNTERS.map(({ key, label }) => (
-            <View key={key} style={styles.rowTop}>
-              <ThemedText type="small" style={styles.muted}>{label}</ThemedText>
-              <TextInput value={String(draft[key])} onChangeText={(text) => setDraft((current) => ({ ...current, [key]: text }))}
-                inputMode="numeric" editable={!busy} accessibilityLabel={label} style={styles.adminInput} />
+        <View style={styles.postBody}>
+          <Pressable onPress={() => onUser(post.author_id)} accessibilityRole="button" style={{ paddingVertical: Spacing.two }}>
+            <ThemedText type="small" numberOfLines={3}>{post.body}</ThemedText>
+            <ThemedText type="small" style={styles.muted}>글쓴이 보기</ThemedText>
+          </Pressable>
+          <View style={styles.fieldRow}>
+            {POST_COUNTERS.map(({ key, label }) => (
+              <View key={key} style={styles.field}>
+                <ThemedText type="small" style={styles.muted}>{label}</ThemedText>
+                <TextInput value={String(draft[key])} onChangeText={(text) => setDraft((current) => ({ ...current, [key]: text }))}
+                  inputMode="numeric" editable={!busy} accessibilityLabel={label} style={styles.adminInput} />
+              </View>
+            ))}
+            <View style={[styles.field, { flexGrow: 1 }]}>
+              <ThemedText type="small" style={styles.muted}>해시태그</ThemedText>
+              <TextInput value={draft.hashtags} onChangeText={(text) => setDraft((current) => ({ ...current, hashtags: text }))}
+                editable={!busy} autoCapitalize="none" accessibilityLabel="해시태그" placeholder="밴쿠버 공지"
+                placeholderTextColor={Colors.light.textSecondary} style={[styles.adminInput, styles.adminInputWide]} />
             </View>
-          ))}
-          <View style={styles.rowTop}>
-            <ThemedText type="small" style={styles.muted}>해시태그</ThemedText>
-            <TextInput value={draft.hashtags} onChangeText={(text) => setDraft((current) => ({ ...current, hashtags: text }))}
-              editable={!busy} autoCapitalize="none" accessibilityLabel="해시태그" placeholder="밴쿠버 공지"
-              placeholderTextColor={Colors.light.textSecondary} style={[styles.adminInput, { flexBasis: 220, textAlign: 'left' }]} />
           </View>
           <View style={styles.rowTop}>
-            <ThemedText type="small" style={styles.muted}>노출 순서</ThemedText>
             <View style={{ flexDirection: 'row' }}>
               <ActionText label="맨 위로" onPress={() => void apply({ sort_at: new Date(Date.now() + 36e5).toISOString() }, '노출 순서')} disabled={busy} />
-              <ActionText label="원래대로" onPress={() => void apply({ sort_at: post.created_at }, '노출 순서')} disabled={busy} />
+              <ActionText label="순서 원래대로" onPress={() => void apply({ sort_at: post.created_at }, '노출 순서')} disabled={busy} />
+              {down
+                ? <ActionText label="되돌리기" onPress={() => void apply({ status: 'published' }, '상태')} disabled={busy} />
+                : <ActionText label="내리기" onPress={() => void apply({ status: 'removed' }, '상태')} disabled={busy} danger />}
             </View>
-          </View>
-          <View style={styles.rowTop}>
-            <ThemedText type="small" style={styles.muted}>{dirty ? '저장하지 않은 값이 있어요' : '저장됨'}</ThemedText>
-            <View style={{ flexDirection: 'row' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <ThemedText type="small" style={styles.muted}>{dirty ? '저장하지 않은 값이 있어요' : '저장됨'}</ThemedText>
               {dirty && <ActionText label="되돌리기" onPress={() => setDraft(fields)} disabled={busy} />}
               <ActionText label={busy ? '반영 중' : '반영'} onPress={applyEdits} disabled={busy || !dirty} />
             </View>
           </View>
         </View>
       )}
+    </View>
+  );
+}
+
+
+// 필터는 칩으로 둔다. 어드민은 웹에서만 열리지만 화면 폭이 좁을 때도 한 줄씩 접히면 된다.
+function Picker({ label, value, onChange, options }: {
+  label: string; value: string; onChange: (next: string) => void; options: [string, string][];
+}) {
+  return (
+    <View style={styles.picker} accessibilityRole="radiogroup" accessibilityLabel={label}>
+      {options.map(([key, text]) => {
+        const on = value === key;
+        return (
+          <Pressable key={key || 'all'} onPress={() => onChange(key)} accessibilityRole="radio"
+            accessibilityState={{ selected: on }} accessibilityLabel={`${label} ${text}`}
+            style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && styles.pressed]}>
+            <ThemedText type={on ? 'smallBold' : 'small'} style={on ? undefined : styles.muted}>{text}</ThemedText>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -356,7 +405,26 @@ const styles = StyleSheet.create({
   more: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
   moreDisabled: { opacity: 0.55 },
   pressed: { backgroundColor: Colors.light.backgroundElement },
-  adminInput: { flexBasis: 120, minHeight: 44, paddingHorizontal: Spacing.two, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 6, color: Colors.light.text, textAlign: 'right' },
+  filters: { gap: Spacing.two },
+  filterCount: { fontVariant: ['tabular-nums'] },
+  picker: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
+  chip: { minHeight: 34, justifyContent: 'center', paddingHorizontal: Spacing.three, borderRadius: 999, borderWidth: 1, borderColor: Colors.light.line, backgroundColor: Colors.light.card },
+  chipOn: { borderColor: Colors.light.navy, backgroundColor: Colors.light.backgroundElement },
+  list: { borderWidth: 1, borderColor: Colors.light.line, borderRadius: 10, backgroundColor: Colors.light.card, overflow: 'hidden' },
+  postRow: { borderTopWidth: 1, borderTopColor: Colors.light.line },
+  postRowFirst: { borderTopWidth: 0 },
+  postHead: { minHeight: 46, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#3F7A5B' },
+  dotDown: { backgroundColor: Colors.light.accent },
+  postTitle: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two },
+  postMeta: { color: Colors.light.textSecondary, fontSize: 12 },
+  postMetrics: { flexDirection: 'row', gap: Spacing.three },
+  postMetric: { color: Colors.light.textSecondary, fontSize: 12, fontVariant: ['tabular-nums'], minWidth: 62, textAlign: 'right' },
+  postBody: { paddingHorizontal: Spacing.three, paddingBottom: Spacing.three, gap: Spacing.two, borderTopWidth: 1, borderTopColor: Colors.light.line },
+  fieldRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  field: { gap: 4 },
+  adminInputWide: { flexBasis: 220, minWidth: 160, textAlign: 'left' },
+  adminInput: { flexBasis: 104, minWidth: 88, minHeight: 44, paddingHorizontal: Spacing.two, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 6, color: Colors.light.text, textAlign: 'right' },
 });
 
 const ALERT_CATEGORY: Record<string, string> = {

@@ -2,6 +2,7 @@
 export type AdminTrendingConfig = {
   enabled: boolean;
   view_weight: number; anon_view_weight: number; like_weight: number; comment_weight: number;
+  window_hours: number; repeat_after_hours: number;
   half_life_hours: number; min_score: number; max_age_hours: number; max_per_city_per_day: number;
   quiet_start_hour: number; quiet_end_hour: number; timezone: string;
   updated_at: string; updated_by: string | null;
@@ -18,7 +19,7 @@ export type AdminTrendingState = {
 
 // 입력칸의 문자열을 저장할 값으로 바꾼다. 0 이하가 들어가면 DB 제약이 막지만
 // 그때는 원인을 알 수 없는 오류로 보이므로 여기서 먼저 걸러 어떤 칸인지 돌려준다.
-export const TRENDING_POSITIVE_KEYS = ['half_life_hours', 'max_age_hours'] as const;
+export const TRENDING_POSITIVE_KEYS = ['window_hours', 'max_age_hours', 'half_life_hours'] as const;
 
 export function trendingConfigPatch(
   draft: Record<string, string>,
