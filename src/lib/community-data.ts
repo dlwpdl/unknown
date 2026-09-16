@@ -265,11 +265,48 @@ export async function blockUser(client: SupabaseClient, userId: string, blockedU
   if (result.error) throw result.error;
 }
 
+// postId 를 넘기면 그 구해요·팔아요 글이 대화의 출처로 남고, 거래 후기를 쓸 자격이 생긴다.
+// 서버는 상대가 실제 그 글의 작성자일 때만 출처로 인정한다.
+
+// 거래 후기. 자격 검사는 전부 서버에 있고 여기서는 부르기만 한다.
+export type ListingReviewState = {
+  canWrite: boolean;
+  postId?: string; subjectId?: string; subjectNickname?: string; postTitle?: string;
+  mine?: { wouldDealAgain: boolean; body: string | null; updatedAt: string } | null;
+};
+export type ListingReputation = {
+  total: number; wouldDealAgain: number;
+  recent: { id: string; wouldDealAgain: boolean; body: string; createdAt: string; postTitle: string; authorNickname: string }[];
+};
+
+export async function loadListingReviewState(client: SupabaseClient, conversationId: string): Promise<ListingReviewState> {
+  const result = await client.rpc('get_listing_review_state', { p_conversation_id: conversationId });
+  if (result.error) throw result.error;
+  return result.data as ListingReviewState;
+}
+
+export async function writeListingReview(
+  client: SupabaseClient, conversationId: string, wouldDealAgain: boolean, body?: string,
+) {
+  const result = await client.rpc('write_listing_review', {
+    p_conversation_id: conversationId, p_would_deal_again: wouldDealAgain, p_body: body?.trim() || null,
+  });
+  if (result.error) throw result.error;
+  return result.data as string;
+}
+
+export async function loadListingReputation(client: SupabaseClient, userId: string): Promise<ListingReputation> {
+  const result = await client.rpc('get_listing_reputation', { p_user_id: userId, p_limit: 5 });
+  if (result.error) throw result.error;
+  return result.data as ListingReputation;
+}
+
 export async function startDirectConversation(
   client: SupabaseClient,
   otherUserId: string,
+  postId?: string,
 ) {
-  const conversation = await client.rpc('start_conversation', { other_user_id: otherUserId });
+  const conversation = await client.rpc('start_conversation', { other_user_id: otherUserId, p_post_id: postId ?? null });
   if (conversation.error) throw conversation.error;
   return conversation.data as string;
 }

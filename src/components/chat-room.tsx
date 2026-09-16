@@ -10,7 +10,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
-import { blockUser, endConversation, getCommunityActionError, isContentRejected, loadConversationMessages, loadConversationMessagesByIds, mergeChatMessages, respondDirectConversation, sendDirectMessage, type ChatMessageRecord, type ConversationPreview, type ReportTarget } from '@/lib/community-data';
+import { blockUser, endConversation, getCommunityActionError, loadListingReviewState, writeListingReview, type ListingReviewState, isContentRejected, loadConversationMessages, loadConversationMessagesByIds, mergeChatMessages, respondDirectConversation, sendDirectMessage, type ChatMessageRecord, type ConversationPreview, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 
@@ -64,6 +64,9 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const [confirmAccept, setConfirmAccept] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [hasOlder, setHasOlder] = useState(false);
+  const [review, setReview] = useState<ListingReviewState | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewBody, setReviewBody] = useState('');
   const group = conversation.kind === 'group';
   const requestedByMe = conversation.requesterId === currentUserId;
   const title = group ? conversation.title : conversation.otherUser.nickname;
@@ -91,6 +94,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     snapshot.current = promise;
     return promise;
   }, [access.read, conversation.id, valid]);
+
   useEffect(() => {
     let active = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -171,6 +175,46 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       setNotice(t.chat.blockDone); await onChanged();
     } catch { if (valid()) setError(t.chat.blockError); }
   };
+  // 후기 자격은 서버가 판단한다. 여기서는 열린 경우에만 버튼을 보여준다.
+  const applyReview = useCallback((next: ListingReviewState | null) => {
+    setReview(next);
+    if (next?.mine) setReviewBody(next.mine.body ?? '');
+  }, []);
+
+  const refreshReview = useCallback(async () => {
+    if (conversation.kind !== 'direct') return;
+    try {
+      const next = await loadListingReviewState(supabase, conversation.id);
+      if (valid()) applyReview(next);
+    } catch { if (valid()) applyReview(null); }
+  }, [applyReview, conversation.id, conversation.kind, valid]);
+
+  const submitReview = async (wouldDealAgain: boolean) => {
+    if (busy || !valid()) return;
+    setBusy(true); setError(null);
+    try {
+      await writeListingReview(supabase, conversation.id, wouldDealAgain, reviewBody);
+      if (!valid()) return;
+      play('selection'); setReviewOpen(false);
+      await refreshReview();
+    } catch {
+      if (valid()) { play('warning'); setError('후기를 남기지 못했어요. 잠시 후 다시 시도해 주세요.'); }
+    } finally { if (valid()) setBusy(false); }
+  };
+
+  // 메시지가 오갈 때마다 서버에 자격을 다시 묻는다. 양쪽이 말을 해야 열리기 때문이다.
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      if (conversation.kind !== 'direct') return;
+      try {
+        const next = await loadListingReviewState(supabase, conversation.id);
+        if (active && valid()) applyReview(next);
+      } catch { if (active && valid()) applyReview(null); }
+    })();
+    return () => { active = false; };
+  }, [applyReview, conversation.id, conversation.kind, messages.length, valid]);
+
   const send = async () => {
     const body = draft.trim();
     if (!body || sending || processing.current || !access.write || !valid()) return;
@@ -200,6 +244,26 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   return <ThemedView style={{ flex: 1 }}>
     <View style={[styles.head, { borderBottomColor: theme.line }]}><View style={styles.titleRow}><ThemedText type="smallBold" style={styles.title}>{title}</ThemedText>{!group && <TrustBadge verified={conversation.otherUser.verificationLevel >= 2} trustLevel={conversation.otherUser.verificationLevel === 3 ? 3 : conversation.otherUser.verificationLevel === 2 ? 2 : undefined} />}</View><RoomAction label={t.detail.close} onPress={onClose} /></View>
     <View style={styles.toolbar}>{access.write && <RoomAction label={group ? conversation.isGroupHost ? t.meetup.end : t.meetup.leave : t.chat.end} onPress={() => setConfirmEnd(true)} />}{!group && <><RoomAction label={t.report.short} onPress={() => setReport({ targetType: 'user', targetId: conversation.otherUser.id, reportedUserId: conversation.otherUser.id, reportedNickname: conversation.otherUser.nickname })} /><RoomAction label={t.chat.block} onPress={() => void block(conversation.otherUser.id)} /></>}</View>
+    {review?.canWrite && <View style={styles.toolbar}>
+      <RoomAction label={review.mine ? '거래 후기 고치기' : `${review.subjectNickname ?? ''}님 거래 후기 남기기`}
+        onPress={() => setReviewOpen((current) => !current)} disabled={busy} />
+      {review.mine && <ThemedText type="small" themeColor="textSecondary">
+        {review.mine.wouldDealAgain ? '다시 거래하겠다고 남겼어요' : '다시 거래하지 않겠다고 남겼어요'}
+      </ThemedText>}
+    </View>}
+    {review?.canWrite && reviewOpen && <View style={[styles.confirmation, { backgroundColor: theme.backgroundElement }]}>
+      <ThemedText type="smallBold" numberOfLines={1}>{review.postTitle}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">거래해 본 사람만 남길 수 있어요. 상대에게 공개됩니다.</ThemedText>
+      <TextInput value={reviewBody} onChangeText={setReviewBody} maxLength={300} multiline
+        placeholder="어땠는지 한 줄로 남겨주세요 (선택)" accessibilityLabel="거래 후기"
+        placeholderTextColor={theme.textSecondary}
+        style={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.line, minHeight: 64 }]} />
+      <View style={styles.messageActions}>
+        <RoomAction label={t.profile.cancel} onPress={() => setReviewOpen(false)} disabled={busy} />
+        <RoomAction label="다시 거래 안 함" onPress={() => void submitReview(false)} disabled={busy} />
+        <RoomAction label="다시 거래하겠다" onPress={() => void submitReview(true)} disabled={busy} primary />
+      </View>
+    </View>}
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {status === 'pending' ? <ScrollView contentContainerStyle={styles.request}>{verificationNotice}<ThemedText type="smallBold">{requestedByMe ? t.chat.requestSent : t.chat.receivedRequest}</ThemedText><ThemedText type="small" themeColor="textSecondary">{t.chat.pendingBody}</ThemedText><ThemedText type="small">{requestedByMe ? t.chat.requesterRisk : t.chat.acceptBody}</ThemedText>
         {requestedByMe ? <RoomAction label={t.chat.cancelRequest} onPress={() => void respond('cancelled')} disabled={busy} /> : <><RoomAction label={confirmAccept ? '확인하고 수락' : t.chat.accept} onPress={() => confirmAccept ? void respond('accepted') : setConfirmAccept(true)} disabled={busy} primary />{confirmAccept && <ThemedText type="small" themeColor="accent">내 대화 자리 1개를 사용해요. 양쪽에 빈자리가 있을 때 수락할 수 있어요.</ThemedText>}<RoomAction label={t.chat.reject} onPress={() => void respond('rejected')} disabled={busy} /></>}

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Alert, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,9 +8,9 @@ import { ThemedText } from '@/components/themed-text';
 import { TrustBadge } from '@/components/trust-badge';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { t } from '@/i18n/ko';
+import { count, t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
-import { getCommunityActionError, startDirectConversation } from '@/lib/community-data';
+import { getCommunityActionError, loadListingReputation, startDirectConversation, type ListingReputation } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 
@@ -22,6 +22,7 @@ export type SheetUser = {
   verified?: boolean;
   trustLevel?: 2 | 3;
   mine?: boolean;
+  listingId?: string; // 구해요·팔아요 글에서 열렸을 때. 대화의 출처로 남아 거래 후기 자격이 된다.
 };
 
 // Shared by the feed and the post detail so an author tap opens the same profile sheet everywhere.
@@ -37,7 +38,22 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
   const { play } = useInteractionFeedback();
   const [requesting, setRequesting] = useState(false);
   const [reporting, setReporting] = useState<SheetUser | null>(null);
+  const [reputation, setReputation] = useState<ListingReputation | null>(null);
   const busy = useRef(false);
+
+  // 평판은 거래를 마친 상대만 남길 수 있어서, 숫자가 있으면 그 자체로 신호다.
+  const userId = user?.id;
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      if (!userId) { if (active) setReputation(null); return; }
+      try {
+        const next = await loadListingReputation(supabase, userId);
+        if (active) setReputation(next.total > 0 ? next : null);
+      } catch { if (active) setReputation(null); }
+    })();
+    return () => { active = false; };
+  }, [userId]);
 
   const navigate = (route: Parameters<typeof router.push>[0]) => {
     onClose();
@@ -51,7 +67,7 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
     busy.current = true;
     setRequesting(true);
     try {
-      const conversationId = await startDirectConversation(supabase, u.id);
+      const conversationId = await startDirectConversation(supabase, u.id, u.listingId);
       play('message');
       navigate({ pathname: '/chat', params: { conversationId, view: 'requests' } });
     } catch (error) {
@@ -84,6 +100,11 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
                   <TrustBadge verified={user.verified} trustLevel={user.trustLevel} />
                 </View>
                 {user.neighborhood && <ThemedText type="small" themeColor="textSecondary">{user.neighborhood}</ThemedText>}
+                {reputation && (
+                  <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12.5 }}>
+                    거래 후기 {count(reputation.total)} · 다시 거래하겠다 {count(reputation.wouldDealAgain)}
+                  </ThemedText>
+                )}
                 <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12.5 }}>
                   {user.mine ? t.profileSheet.self
                     : user.trustLevel === 3 ? t.profileSheet.verifiedL3

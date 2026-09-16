@@ -521,6 +521,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                   verified: post.author.verified,
                   trustLevel: post.author.trustLevel,
                   mine: post.author.id === me.id,
+                  listingId: post.kind === 'listing' ? post.id : undefined,
                 })
               }
             />
