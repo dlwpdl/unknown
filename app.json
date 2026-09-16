@@ -19,6 +19,9 @@
       "appleTeamId": "P3X3452TDZ",
       "buildNumber": "21",
       "usesAppleSignIn": true,
+      "entitlements": {
+        "aps-environment": "production"
+      },
       "infoPlist": {
         "CFBundleName": "글링"
       },
