@@ -295,6 +295,23 @@ export async function writeListingReview(
   return result.data as string;
 }
 
+
+// 남의 거래 이력. 점수 하나로 줄이지 않고 사실만 돌려준다.
+// 신참은 낮은 점수가 아니라 기록이 비어 있는 상태로 보인다.
+export type TradeProfile = {
+  id: string; nickname: string; cityId: string; neighborhood: string | null;
+  verificationLevel: number; memberSince: string; memberMonths: number;
+  dealPartners: number; closedListings: number;
+  openListings: { id: string; title: string; price: number | null; createdAt: string }[];
+  reviews: ListingReputation;
+};
+
+export async function loadTradeProfile(client: SupabaseClient, userId: string): Promise<TradeProfile> {
+  const result = await client.rpc('get_trade_profile', { p_user_id: userId });
+  if (result.error) throw result.error;
+  return result.data as TradeProfile;
+}
+
 export async function loadListingReputation(client: SupabaseClient, userId: string): Promise<ListingReputation> {
   const result = await client.rpc('get_listing_reputation', { p_user_id: userId, p_limit: 5 });
   if (result.error) throw result.error;
