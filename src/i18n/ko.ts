@@ -1,6 +1,10 @@
 // 한국어 스트링 단일 소스 — 화면에 문자열 하드코딩 금지 (원페이저 '언어 전략').
 // 영어 확장 시: en.ts 추가 + 로케일 스위치만 붙이면 됨 (expo-localization).
 
+// 세 자리마다 쉼표. Hermes 의 Intl 지원이 플랫폼·버전마다 달라 직접 넣는다.
+export const count = (value: number) =>
+  `${Math.trunc(value) || 0}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
 export const t = {
   appName: '글링',
 
@@ -69,12 +73,12 @@ export const t = {
     adBadge: '광고',
     joinRoom: '참여하기',
     roomGate: '인증 멤버만',
-    members: (n: number, cap?: number) => (cap ? `${n}/${cap}명` : `${n}명`),
-    likes: (n: number) => `공감 ${n}`,
-    views: (n: number) => `조회 ${n}`,
-    comments: (n: number) => `댓글 ${n}`,
-    saves: (n: number) => `저장 ${n}`,
-    shares: (n: number) => `공유 ${n}`,
+    members: (n: number, cap?: number) => (cap ? `${count(n)}/${count(cap)}명` : `${count(n)}명`),
+    likes: (n: number) => `공감 ${count(n)}`,
+    views: (n: number) => `조회 ${count(n)}`,
+    comments: (n: number) => `댓글 ${count(n)}`,
+    saves: (n: number) => `저장 ${count(n)}`,
+    shares: (n: number) => `공유 ${count(n)}`,
     actionErrorTitle: '반영하지 못했어요',
     actionErrorBody: '연결을 확인하고 다시 시도해주세요.',
     linkCopied: '링크를 복사했어요',
@@ -341,7 +345,7 @@ export const t = {
   },
 
   detail: {
-    commentsTitle: (n: number) => `댓글 ${n}`,
+    commentsTitle: (n: number) => `댓글 ${count(n)}`,
     commentPlaceholder: '댓글 남기기…',
     send: '등록',
     close: '닫기',
@@ -421,7 +425,7 @@ export const t = {
     photoErrorTitle: '사진을 불러오지 못했어요',
     photoErrorBody: '잠시 후 다시 시도해주세요.',
     stats: (posts: number, likes: number, rooms: number) =>
-      `쓴 글 ${posts} · 받은 공감 ${likes} · 모임 ${rooms}`,
+      `쓴 글 ${count(posts)} · 받은 공감 ${count(likes)} · 모임 ${count(rooms)}`,
     settings: '설정',
     guidelines: '커뮤니티 가이드라인',
     guidelinesTitle: '글이 만남으로 이어지도록',

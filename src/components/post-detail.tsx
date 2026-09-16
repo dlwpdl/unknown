@@ -20,7 +20,7 @@ import { TrustBadge } from '@/components/trust-badge';
 import { UserSheet, type SheetUser } from '@/components/user-sheet';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { t } from '@/i18n/ko';
+import { count, t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { buildCommentListRows, type CommentListRow } from '@/lib/comment-list';
 import { createThreadComment, loadCommentThreadContext, loadCommentThreadPage, type CommentCursor } from '@/lib/comment-threads';
@@ -459,12 +459,12 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           toggleReplies(comment.id);
         }}
         accessibilityRole="button"
-        accessibilityLabel={`${comment.nickname}의 댓글 답글 ${comment.replyCount ?? 0}개 ${expanded.has(comment.id) ? '접기' : '보기'}`}
+        accessibilityLabel={`${comment.nickname}의 댓글 답글 ${count(comment.replyCount ?? 0)}개 ${expanded.has(comment.id) ? '접기' : '보기'}`}
         accessibilityState={{ expanded: expanded.has(comment.id) }}
         aria-expanded={expanded.has(comment.id)}
         style={styles.replyToggle}>
         <ThemedText type="smallBold" themeColor="accent" style={styles.commentActionText}>
-          {expanded.has(comment.id) ? '답글 접기' : `답글 ${comment.replyCount ?? 0}개 보기`}
+          {expanded.has(comment.id) ? '답글 접기' : `답글 ${count(comment.replyCount ?? 0)}개 보기`}
         </ThemedText>
       </Pressable>;
     }

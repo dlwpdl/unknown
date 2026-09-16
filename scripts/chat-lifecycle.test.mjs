@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 import { mergeChatMessages } from '../src/lib/community-data.ts';
-import { t } from '../src/i18n/ko.ts';
+import { count, t } from '../src/i18n/ko.ts';
 
 // Exercise the component's hooks, effects and event handlers, as in comment-threads.test.mjs.
 function mount(file, exportName, data, props = {}, params = {}) {
@@ -70,7 +70,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
       if (name === '@/components/relationship-slot-card') return { relationshipSlotData: () => null };
       if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
       if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16 } };
-      if (name === '@/i18n/ko') return { t };
+      if (name === '@/i18n/ko') return { t, count };
       if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
       if (name === '@/lib/community-data') return { mergeChatMessages, ...data };
       if (name === '@/lib/supabase') return { supabase };

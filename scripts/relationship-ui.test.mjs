@@ -4,7 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-import { t } from '../src/i18n/ko.ts';
+import { count, t } from '../src/i18n/ko.ts';
 
 const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/chat-room.tsx', import.meta.url), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
@@ -27,7 +27,7 @@ function loadRoom(userId = 'recipient', messagesLoaded = false) {
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'react-native') return native;
     if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ bottom: 0 }) };
-    if (name === '@/i18n/ko') return { t };
+    if (name === '@/i18n/ko') return { t, count };
     if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: true, me: { id: userId, nickname: '나' } }) };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };

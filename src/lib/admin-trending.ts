@@ -35,5 +35,5 @@ export function trendingConfigPatch(
 }
 
 // 노출을 좌우하는 값은 어드민만 조정한다. 작성자에게는 컬럼 권한 자체가 없다.
-export type AdminPostPatch = { view_count?: number; sort_at?: string; hashtags?: string[]; status?: 'published' | 'removed' };
-export type AdminPostFields = { id: string; status: string; viewCount: number; sortAt: string; hashtags: string[]; deletedAt: string | null };
+export type AdminPostPatch = { view_count?: number; like_count?: number; save_count?: number; sort_at?: string; hashtags?: string[]; status?: 'published' | 'removed' };
+export type AdminPostFields = { id: string; status: string; viewCount: number; likeCount: number; saveCount: number; sortAt: string; hashtags: string[]; deletedAt: string | null };

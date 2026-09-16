@@ -8,7 +8,8 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import type { AdminSection } from '@/lib/admin';
 import { exportAdminSafetyEvidence, resolveAdminSafetyAlert, setAdminPostFields, type AdminDashboardData, type AdminPost, type AdminProfile, type AdminSafetyAlert } from '@/lib/admin-data';
-import type { AdminPostPatch } from '@/lib/admin-trending';
+import type { AdminPostFields, AdminPostPatch } from '@/lib/admin-trending';
+import { count } from '@/i18n/ko';
 import { supabase } from '@/lib/supabase';
 
 export function AdminSectionView({
@@ -75,7 +76,7 @@ export function AdminSectionView({
                 <View style={styles.rowTop}>
                   {group.users.map((user) => (
                     <Pressable key={user.id} onPress={() => onUser(user.id)} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
-                      <ThemedText type="small">{user.nickname}{user.account_type !== 'member' ? ` (${user.account_type})` : ''} · 글 {user.posts} · 댓글 {user.comments} · {formatDate(user.last_seen)}</ThemedText>
+                      <ThemedText type="small">{user.nickname}{user.account_type !== 'member' ? ` (${user.account_type})` : ''} · 글 {count(user.posts)} · 댓글 {count(user.comments)} · {formatDate(user.last_seen)}</ThemedText>
                     </Pressable>
                   ))}
                 </View>
@@ -168,24 +169,45 @@ export function AdminSectionView({
 }
 
 // 글 자체의 수정·삭제는 작성자가 앱에서 한다. 여기서는 노출에 영향을 주는 값만 손댄다.
+// 숫자는 입력칸을 벗어나는 순간이 아니라 "반영"을 눌렀을 때만 저장한다.
+const POST_COUNTERS = [
+  { key: 'view_count', label: '조회수' },
+  { key: 'like_count', label: '공감수' },
+  { key: 'save_count', label: '저장수' },
+] as const;
+
 function AdminPostRow({ post, author, localPreview, onUser }: {
   post: AdminPost; author: string; localPreview?: boolean; onUser: (userId: string) => void;
 }) {
-  const [fields, setFields] = useState<{ status: string; viewCount: number; hashtags: string[] }>(
-    { status: post.status, viewCount: post.view_count ?? 0, hashtags: post.hashtags ?? [] });
-  const [views, setViews] = useState(String(post.view_count ?? 0));
-  const [tags, setTags] = useState((post.hashtags ?? []).join(' '));
+  const saved = {
+    status: post.status as string,
+    view_count: post.view_count ?? 0,
+    like_count: post.like_count ?? 0,
+    save_count: post.save_count ?? 0,
+    hashtags: (post.hashtags ?? []).join(' '),
+  };
+  const [fields, setFields] = useState(saved);
+  const [draft, setDraft] = useState(saved);
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
+
+  const store = (next: AdminPostFields) => {
+    const applied = {
+      status: next.status,
+      view_count: next.viewCount,
+      like_count: next.likeCount,
+      save_count: next.saveCount,
+      hashtags: (next.hashtags ?? []).join(' '),
+    };
+    setFields(applied);
+    setDraft(applied);
+  };
 
   const apply = async (patch: AdminPostPatch, label: string) => {
     if (localPreview || busy) return;
     setBusy(true);
     try {
-      const next = await setAdminPostFields(supabase, post.id, patch);
-      setFields({ status: next.status, viewCount: next.viewCount, hashtags: next.hashtags ?? [] });
-      setViews(String(next.viewCount));
-      setTags((next.hashtags ?? []).join(' '));
+      store(await setAdminPostFields(supabase, post.id, patch));
     } catch {
       Alert.alert(`${label}을(를) 바꾸지 못했습니다.`, '값의 범위와 권한을 확인해주세요.');
     } finally {
@@ -193,14 +215,21 @@ function AdminPostRow({ post, author, localPreview, onUser }: {
     }
   };
 
-  const saveViews = () => {
-    const value = Number(views.trim());
-    if (!Number.isInteger(value) || value < 0) return Alert.alert('조회수를 확인해주세요.', '0 이상의 정수만 넣을 수 있습니다.');
-    if (value !== fields.viewCount) void apply({ view_count: value }, '조회수');
-  };
-  const saveTags = () => {
-    const next = tags.split(/[\s,]+/).map((tag: string) => tag.replace(/^#/, '')).filter(Boolean).slice(0, 20);
-    if (next.join(' ') !== fields.hashtags.join(' ')) void apply({ hashtags: next }, '해시태그');
+  const dirty = POST_COUNTERS.some(({ key }) => String(draft[key]) !== String(fields[key]))
+    || draft.hashtags !== fields.hashtags;
+
+  const applyEdits = () => {
+    const patch: AdminPostPatch = {};
+    for (const { key, label } of POST_COUNTERS) {
+      const value = Number(String(draft[key]).trim());
+      if (!Number.isInteger(value) || value < 0) return Alert.alert(`${label}를 확인해주세요.`, '0 이상의 정수만 넣을 수 있습니다.');
+      if (value !== fields[key]) patch[key] = value;
+    }
+    if (draft.hashtags !== fields.hashtags) {
+      patch.hashtags = draft.hashtags.split(/[\s,]+/).map((tag: string) => tag.replace(/^#/, '')).filter(Boolean).slice(0, 20);
+    }
+    if (Object.keys(patch).length === 0) return;
+    void apply(patch, '값');
   };
 
   return (
@@ -211,7 +240,9 @@ function AdminPostRow({ post, author, localPreview, onUser }: {
           <StateText text={fields.status === 'removed' ? '삭제됨' : '게시중'} danger={fields.status === 'removed'} />
         </View>
         <ThemedText type="small" numberOfLines={2}>{post.body}</ThemedText>
-        <ThemedText type="small" style={styles.muted}>{author} · 조회 {fields.viewCount} · {formatDate(post.created_at)}</ThemedText>
+        <ThemedText type="small" style={styles.muted}>
+          {author} · 조회 {count(fields.view_count)} · 공감 {count(fields.like_count)} · 저장 {count(fields.save_count)} · {formatDate(post.created_at)}
+        </ThemedText>
       </Pressable>
       <View style={styles.rowTop}>
         <ActionText label={open ? '조정 닫기' : '조정'} onPress={() => setOpen((current) => !current)} disabled={busy} />
@@ -221,22 +252,31 @@ function AdminPostRow({ post, author, localPreview, onUser }: {
       </View>
       {open && (
         <View style={{ gap: Spacing.two }}>
-          <View style={styles.rowTop}>
-            <ThemedText type="small" style={styles.muted}>조회수</ThemedText>
-            <TextInput value={views} onChangeText={setViews} inputMode="numeric" editable={!busy}
-              accessibilityLabel="조회수" onBlur={saveViews} style={styles.adminInput} />
-          </View>
+          {POST_COUNTERS.map(({ key, label }) => (
+            <View key={key} style={styles.rowTop}>
+              <ThemedText type="small" style={styles.muted}>{label}</ThemedText>
+              <TextInput value={String(draft[key])} onChangeText={(text) => setDraft((current) => ({ ...current, [key]: text }))}
+                inputMode="numeric" editable={!busy} accessibilityLabel={label} style={styles.adminInput} />
+            </View>
+          ))}
           <View style={styles.rowTop}>
             <ThemedText type="small" style={styles.muted}>해시태그</ThemedText>
-            <TextInput value={tags} onChangeText={setTags} editable={!busy} autoCapitalize="none"
-              accessibilityLabel="해시태그" onBlur={saveTags} placeholder="밴쿠버 공지"
-              placeholderTextColor={Colors.light.textSecondary} style={[styles.adminInput, { flexBasis: 220 }]} />
+            <TextInput value={draft.hashtags} onChangeText={(text) => setDraft((current) => ({ ...current, hashtags: text }))}
+              editable={!busy} autoCapitalize="none" accessibilityLabel="해시태그" placeholder="밴쿠버 공지"
+              placeholderTextColor={Colors.light.textSecondary} style={[styles.adminInput, { flexBasis: 220, textAlign: 'left' }]} />
           </View>
           <View style={styles.rowTop}>
             <ThemedText type="small" style={styles.muted}>노출 순서</ThemedText>
             <View style={{ flexDirection: 'row' }}>
               <ActionText label="맨 위로" onPress={() => void apply({ sort_at: new Date(Date.now() + 36e5).toISOString() }, '노출 순서')} disabled={busy} />
               <ActionText label="원래대로" onPress={() => void apply({ sort_at: post.created_at }, '노출 순서')} disabled={busy} />
+            </View>
+          </View>
+          <View style={styles.rowTop}>
+            <ThemedText type="small" style={styles.muted}>{dirty ? '저장하지 않은 값이 있어요' : '저장됨'}</ThemedText>
+            <View style={{ flexDirection: 'row' }}>
+              {dirty && <ActionText label="되돌리기" onPress={() => setDraft(fields)} disabled={busy} />}
+              <ActionText label={busy ? '반영 중' : '반영'} onPress={applyEdits} disabled={busy || !dirty} />
             </View>
           </View>
         </View>

@@ -8,7 +8,7 @@ import { ReportSheet } from '@/components/report-sheet';
 import { TrustBadge } from '@/components/trust-badge';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { t } from '@/i18n/ko';
+import { count, t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { recordPostShare, togglePostReaction } from '@/lib/community-data';
 import { getPostImageSource } from '@/lib/feed-data';
@@ -284,7 +284,7 @@ export function PostCard({
             <ThemedText
               type={likedOn ? 'smallBold' : 'small'}
               style={[styles.footItem, { color: likedOn ? theme.accent : theme.textSecondary }]}>
-              {likeCount}
+              {count(likeCount)}
             </ThemedText>
           </Pressable>
           <Pressable
@@ -299,7 +299,7 @@ export function PostCard({
               tintColor={theme.textSecondary}
             />
             <ThemedText type="small" themeColor="textSecondary" style={styles.footItem}>
-              {post.comments}
+              {count(post.comments)}
             </ThemedText>
           </Pressable>
           <Pressable
@@ -317,7 +317,7 @@ export function PostCard({
             <ThemedText
               type={savedOn ? 'smallBold' : 'small'}
               style={[styles.footItem, { color: savedOn ? theme.accent : theme.textSecondary }]}>
-              {saveCount}
+              {count(saveCount)}
             </ThemedText>
           </Pressable>
           <Pressable
@@ -331,7 +331,7 @@ export function PostCard({
               tintColor={theme.textSecondary}
             />
             <ThemedText type="small" themeColor="textSecondary" style={styles.footItem}>
-              {shareCount}
+              {count(shareCount)}
             </ThemedText>
           </Pressable>
           <View style={styles.reaction} accessible accessibilityLabel={t.feed.views(post.views)}>
@@ -341,7 +341,7 @@ export function PostCard({
               tintColor={theme.textSecondary}
             />
             <ThemedText type="small" themeColor="textSecondary" style={styles.footItem}>
-              {post.views}
+              {count(post.views)}
             </ThemedText>
           </View>
         </View>

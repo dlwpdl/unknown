@@ -5,6 +5,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import { loadAdminTrending, saveAdminTrending } from '@/lib/admin-data';
 import { trendingConfigPatch, type AdminTrendingConfig, type AdminTrendingState } from '@/lib/admin-trending';
+import { count } from '@/i18n/ko';
 import { supabase } from '@/lib/supabase';
 
 // 값을 바꾸면 곧바로 "지금 기준이면 이 글이 나갑니다"가 다시 계산된다.
@@ -120,7 +121,7 @@ export function AdminTrendingPanel({ localPreview }: { localPreview?: boolean })
               <ThemedText type="smallBold" style={row.score >= config.min_score ? styles.urgent : styles.muted}>{row.score}</ThemedText>
             </View>
             <ThemedText type="small" style={styles.muted}>
-              {row.city_id} · 조회 {row.authed_views}+{row.anon_views} · 공감 {row.like_count} · 댓글 {row.comment_count}
+              {row.city_id} · 조회 {count(row.authed_views)}+{count(row.anon_views)} · 공감 {count(row.like_count)} · 댓글 {count(row.comment_count)}
             </ThemedText>
           </View>
         ))}
@@ -136,7 +137,7 @@ export function AdminTrendingPanel({ localPreview }: { localPreview?: boolean })
           <View key={row.postId} style={styles.card}>
             <ThemedText type="smallBold" numberOfLines={1}>{row.title}</ThemedText>
             <ThemedText type="small" style={styles.muted}>
-              {row.cityId} · 점수 {row.score} · {row.recipients}명 · {new Date(row.sentAt).toLocaleString('ko-KR')}
+              {row.cityId} · 점수 {row.score} · {count(row.recipients)}명 · {new Date(row.sentAt).toLocaleString('ko-KR')}
             </ThemedText>
           </View>
         ))}

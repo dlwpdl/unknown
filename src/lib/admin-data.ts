@@ -28,6 +28,8 @@ export type AdminPost = {
   status: 'published' | 'removed';
   created_at: string;
   view_count: number;
+  like_count: number;
+  save_count: number;
   hashtags: string[] | null;
   deleted_at: string | null;
 };
@@ -179,6 +181,8 @@ export function getLocalAdminDashboard(): AdminDashboardData {
       body: post.body,
       status: 'published',
       view_count: post.views ?? 0,
+      like_count: post.likes ?? 0,
+      save_count: post.saves ?? 0,
       hashtags: post.hashtags ?? null,
       deleted_at: null,
       created_at: new Date(Date.UTC(2026, 7, 26, 18 - index)).toISOString(),
