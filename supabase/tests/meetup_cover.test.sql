@@ -1,0 +1,22 @@
+begin;
+select no_plan();
+select has_function('public','create_chilling_event',array['text','text','text','jsonb','text','text[]'],'atomic cover creation exists');
+insert into auth.users(id,email) values ('68000000-0000-0000-0000-000000000001','cover68@example.test');
+insert into public.profiles(id,nickname,city_id,terms_accepted_at,privacy_accepted_at,ai_safety_consent_at,consent_version)
+values ('68000000-0000-0000-0000-000000000001','커버68','vancouver',now(),now(),now(),'test');
+select set_config('request.jwt.claims','{"sub":"68000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+set local role authenticated;
+select public.save_chilling_profile('{"intro":"안녕하세요","interests":["산책"],"promptOne":"바다","promptTwo":"주말"}');
+select throws_ok($$select public.create_chilling_event('vancouver','커버 모임','함께 산책해요','{"eventKind":"group","cadence":"매주 토요일","capacity":8}','질문',array['someone-else/photo.jpg'])$$,'P0001','INVALID_IMAGE_PATH','other users image rejected');
+select throws_ok($$select public.create_chilling_event('vancouver','커버 모임','함께 산책해요','{"eventKind":"group","cadence":"매주 토요일","capacity":8}','질문',array['68000000-0000-0000-0000-000000000001/a.jpg','68000000-0000-0000-0000-000000000001/b.jpg'])$$,'P0001','TOO_MANY_IMAGES','one cover only');
+select is((select count(*)::integer from public.posts where author_id=auth.uid()),0,'invalid covers leave no post');
+select set_config('test.cover_post',public.create_chilling_event('vancouver','커버 모임','함께 산책해요','{"eventKind":"group","cadence":"매주 토요일","capacity":8}','질문',array['68000000-0000-0000-0000-000000000001/cover.jpg'])::text,true);
+select is((select image_paths[1] from public.posts where id=current_setting('test.cover_post')::uuid),'68000000-0000-0000-0000-000000000001/cover.jpg','free host cover stored with post');
+select is((select room_preview->>'applicationQuestion' from public.posts where id=current_setting('test.cover_post')::uuid),'질문','event configuration stays atomic');
+reset role;
+select ok(exists(select 1 from public.safety_review_queue where target_type='post' and target_id=current_setting('test.cover_post')::uuid),'covered post stays in safety monitoring');
+set local role anon;
+select throws_ok($$select public.create_chilling_event('vancouver','커버 모임','함께 산책해요','{}','질문',array[]::text[])$$,'42501',null,'anonymous callers denied');
+reset role;
+select * from finish();
+rollback;

@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ChillingDateInput } from '@/components/chilling-date-input';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
+import { MeetupCoverPicker, type MeetupCover } from '@/components/meetup-cover-picker';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
@@ -21,7 +22,9 @@ export default function MeetupCreateScreen() {
 function MeetupCreateForm() {
   const theme = useTheme(), router = useRouter();
   const { city } = useCommunityCity();
-  const { isAuthed, promptLogin } = useAuth();
+  const { isAuthed, me, promptLogin } = useAuth();
+  const [cover, setCover] = useState<MeetupCover | null>(null);
+  const [pickingCover, setPickingCover] = useState(false);
   const [title, setTitle] = useState(''), [body, setBody] = useState('');
   const [question, setQuestion] = useState('어떤 분위기의 만남을 기대하세요?');
   const [event, setEvent] = useState<ChillingEventDraft>(() => {
@@ -34,7 +37,7 @@ function MeetupCreateForm() {
   const mounted = useRef(true);
   useLayoutEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const submit = async () => {
-    if (busy.current) return;
+    if (busy.current || pickingCover) return;
     if (!isAuthed) return promptLogin('만남을 열려면 로그인해 주세요.');
     if (event.kind === 'once' && event.timezone !== Intl.DateTimeFormat().resolvedOptions().timeZone) { setError('기기 시간대가 바뀌었어요. 화면을 닫고 다시 열어 일정을 확인해 주세요.'); return; }
     if (!title.trim() || !body.trim() || !question.trim()) { setError('제목, 소개와 신청 질문을 모두 적어주세요.'); return; }
@@ -47,7 +50,7 @@ function MeetupCreateForm() {
         Alert.alert('모임 프로필을 먼저 만들어 주세요', '작성한 만남은 그대로 두었어요. 프로필을 저장하고 돌아와 다시 열어주세요.', [{ text: '나중에', style: 'cancel' }, { text: '프로필 작성', onPress: () => { if (mounted.current) router.push('/meetup-profile'); } }]);
         return;
       }
-      const id = await createChillingEvent(supabase, { cityId: city.id, title: title.trim(), body: body.trim(), question: question.trim(), event: { ...event, capacity: Number(capacity) } });
+      const id = await createChillingEvent(supabase, { userId: me.id, image: cover ?? undefined, cityId: city.id, title: title.trim(), body: body.trim(), question: question.trim(), event: { ...event, capacity: Number(capacity) } });
       if (!mounted.current) return;
       DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
       router.replace({ pathname: '/post/[id]', params: { id } });
@@ -61,6 +64,7 @@ function MeetupCreateForm() {
       <View style={[styles.segments, { backgroundColor: theme.backgroundElement }]}>{(['once', 'group'] as const).map(kind => <Pressable key={kind} disabled={saving} accessibilityRole="tab" accessibilityState={{ selected: event.kind === kind, disabled: saving }} onPress={() => setEvent({ ...event, kind })} style={[styles.segment, event.kind === kind && { backgroundColor: theme.background }]}><ThemedText type="smallBold">{kind === 'once' ? '칠링 (일회성)' : '모임 (정기모임)'}</ThemedText></Pressable>)}</View>
       <ThemedText type="small" style={[styles.note, { backgroundColor: theme.backgroundElement }]}>무료로 열 수 있어요. 기본 승인·정원·질문도 포함돼요.</ThemedText>
       <MeetupPolicyNotice mode={event.kind === 'once' ? 'once' : 'host'} />
+      <MeetupCoverPicker value={cover} onChange={setCover} onPickingChange={setPickingCover} disabled={saving} />
       {field('어떤 만남인가요?', title, setTitle, '예: 퇴근하고 노을 보러 갈래요?', 60)}
       {field('만남 소개', body, setBody, '무엇을 함께 하고 싶은지 알려주세요.', 5000, true)}
       <ThemedText type="smallBold">카테고리</ThemedText><View style={styles.categories}>{(['casual', 'hobby', 'travel'] as const).map((category, i) => <Pressable key={category} disabled={saving} accessibilityRole="button" accessibilityState={{ selected: event.category === category, disabled: saving }} onPress={() => setEvent({ ...event, category })} style={[styles.category, { borderColor: event.category === category ? theme.accent : theme.line }]}><ThemedText type="small">{['가볍게', '취미', '여행'][i]}</ThemedText></Pressable>)}</View>
@@ -75,7 +79,7 @@ function MeetupCreateForm() {
       <ThemedText type="small" themeColor="textSecondary">기본 질문 1개 · 신청자의 프로필과 함께 확인해요.</ThemedText>
       <ThemedText type="small" style={[styles.note, { backgroundColor: theme.backgroundElement }]}>상세 집결 장소는 승인된 멤버에게 그룹 채팅으로 안내해 주세요. 개최 시 내 모임 프로필은 행사에서 볼 수 있어요.</ThemedText>
       {!!error && <ThemedText accessibilityRole="alert" themeColor="accent">{error}</ThemedText>}
-      <Pressable accessibilityRole="button" accessibilityState={{ disabled: saving, busy: saving }} disabled={saving} onPress={() => void submit()} style={({ pressed }) => [styles.submit, { backgroundColor: theme.accent, opacity: saving || pressed ? 0.65 : 1 }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{saving ? '만남을 여는 중…' : `${event.kind === 'once' ? '칠링' : '모임'} 열기`}</ThemedText></Pressable>
+      <Pressable accessibilityRole="button" accessibilityState={{ disabled: saving || pickingCover, busy: saving || pickingCover }} disabled={saving || pickingCover} onPress={() => void submit()} style={({ pressed }) => [styles.submit, { backgroundColor: theme.accent, opacity: saving || pickingCover || pressed ? 0.65 : 1 }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{saving ? '만남을 여는 중…' : pickingCover ? '사진을 준비하는 중…' : `${event.kind === 'once' ? '칠링' : '모임'} 열기`}</ThemedText></Pressable>
     </ScrollView></KeyboardAvoidingView>
   </SafeAreaView>;
 }

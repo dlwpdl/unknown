@@ -27,3 +27,16 @@ test('create uses one atomic RPC; invalid event cannot publish a partial legacy 
   await assert.rejects(data.createChillingEvent(client,{...draft,event:{...draft.event,capacity:51}}));
   assert.equal(calls.length,1);
 });
+
+test('cover uploads before atomic creation and removes upload on rejected creation', async () => {
+  const calls=[];
+  const client={storage:{from:()=>({upload:async(path,bytes)=>{calls.push(['upload',path,bytes.byteLength]);return {error:null};},remove:async paths=>{calls.push(['remove',paths]);return {error:null};}})},rpc:async(name,args)=>{calls.push(['rpc',args]);return {error:new Error('HOST_LIMIT')};}};
+  const draft={userId:'owner',cityId:'vancouver',title:'산책',body:'소개',question:'질문',event:{kind:'group',startsAt:'',endsAt:'',timezone:'',cadence:'매주',capacity:8,category:'hobby'},image:{base64:'aGk=',mimeType:'image/jpeg'}};
+  await assert.rejects(data.createChillingEvent(client,draft),/HOST_LIMIT/);
+  assert.equal(calls[0][0],'upload');assert.equal(calls[0][2],2);
+  assert.deepEqual(calls[1][1].p_image_paths,[calls[0][1]]);
+  assert.deepEqual(calls[2],['remove',[calls[0][1]]]);
+  calls.length=0;
+  await assert.rejects(data.createChillingEvent(client,{...draft,event:{...draft.event,capacity:51}}));
+  assert.equal(calls.length,0,'invalid event never uploads');
+});

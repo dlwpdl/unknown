@@ -90,6 +90,15 @@ export function buildPostImagePath(userId: string, mimeType: string, stamp = Dat
   return `${userId}/${stamp}.${extension}`;
 }
 
+export async function uploadPostImage(client: SupabaseClient, userId: string, image: PostDraftImage) {
+  const path = buildPostImagePath(userId, image.mimeType);
+  const bytes = decodeBase64(image.base64);
+  if (!bytes.byteLength || bytes.byteLength > 5 * 1024 * 1024) throw new Error('IMAGE_TOO_LARGE');
+  const result = await client.storage.from('post-images').upload(path, bytes, { contentType: image.mimeType, upsert: false });
+  if (result.error) throw result.error;
+  return path;
+}
+
 export async function createCommunityPost(
   client: SupabaseClient,
   input: {
@@ -104,16 +113,7 @@ export async function createCommunityPost(
     price?: number | null;
   },
 ): Promise<Post> {
-  let imagePath: string | null = null;
-  if (input.image) {
-    imagePath = buildPostImagePath(input.userId, input.image.mimeType);
-    const upload = await client.storage.from('post-images').upload(
-      imagePath,
-      decodeBase64(input.image.base64),
-      { contentType: input.image.mimeType, upsert: false },
-    );
-    if (upload.error) throw upload.error;
-  }
+  const imagePath = input.image ? await uploadPostImage(client, input.userId, input.image) : null;
 
   const created = await client.rpc('create_post', {
     p_city_id: input.cityId,

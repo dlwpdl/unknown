@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { normalizeChillingEvent, type ChillingEventDraft } from './chilling.ts';
 import { t } from '../i18n/ko.ts';
 import { meetupRestrictionError } from './meetup-policy.ts';
+import { uploadPostImage, type PostDraftImage } from './community-data.ts';
 
 export type ChillingProfile = { intro: string; interests: string[]; promptOne: string; promptTwo: string };
 export type ChillingApplication = { postId: string; requesterId: string; profile: ChillingProfile; answer: string; question: string; consentVersion: string; consentedAt: string };
@@ -45,14 +46,21 @@ export async function requestChillingJoin(client: SupabaseClient, postId: string
   return result.data as string;
 }
 export async function createChillingEvent(client: SupabaseClient, draft: {
-  cityId: string; title: string; body: string; event: ChillingEventDraft; question: string;
+  cityId: string; title: string; body: string; event: ChillingEventDraft; question: string; userId?: string; image?: PostDraftImage;
 }) {
   if (!draft.title.trim() || !draft.body.trim() || !draft.question.trim() || draft.question.trim().length > 300) throw new Error('INVALID_CHILLING_EVENT');
+  const event = normalizeChillingEvent(draft.event);
+  if (draft.image && !draft.userId) throw new Error('AUTH_REQUIRED');
+  const imagePath = draft.image ? await uploadPostImage(client, draft.userId!, draft.image) : null;
   const result = await client.rpc('create_chilling_event', {
     p_city_id: draft.cityId, p_title: draft.title.trim(), p_body: draft.body.trim(),
-    p_event: normalizeChillingEvent(draft.event), p_question: draft.question.trim(),
+    p_event: event, p_question: draft.question.trim(),
+    ...(imagePath ? { p_image_paths: [imagePath] } : {}),
   });
-  if (result.error) throw result.error;
+  if (result.error) {
+    if (imagePath) await client.storage.from('post-images').remove([imagePath]);
+    throw result.error;
+  }
   return result.data as string;
 }
 
@@ -61,6 +69,8 @@ export function getChillingError(error: unknown): string {
   if (restriction) return restriction;
   const message = error && typeof error === 'object' && 'message' in error ? String(error.message) : '';
   const messages: Record<string, string> = {
+    IMAGE_TOO_LARGE: '사진은 5MB 이하로 선택해 주세요.',
+    UNSUPPORTED_IMAGE_TYPE: 'JPG, PNG 또는 WebP 사진을 선택해 주세요.',
     CHILLING_PROFILE_REQUIRED: '먼저 모임 프로필을 작성해 주세요.',
     INVALID_CHILLING_PROFILE: '소개·관심사·두 가지 답변을 모두 작성해 주세요.',
     CHILLING_CONSENT_REQUIRED: '프로필과 신청 답변 공유에 동의해 주세요.',
