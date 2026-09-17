@@ -1,0 +1,17 @@
+begin;
+select plan(8);
+insert into auth.users(id,email) values ('00000000-0000-0000-0000-000000007029','terms-29@example.invalid');
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000007029',true);
+set local role authenticated;
+select throws_ok($$select public.accept_login_terms(null)$$, 'P0001', 'NOTICE_VERSION_MISMATCH', 'null never constitutes consent');
+select throws_ok($$select public.accept_login_terms('2026-09-02')$$, 'P0001', 'NOTICE_VERSION_MISMATCH', 'old version is not accepted for prelogin agreement');
+select lives_ok($$select public.accept_login_terms('2026-09-17')$$, 'new user can save consent before creating a profile');
+select throws_ok($$select * from private.login_terms_acceptances$$, '42501', null, 'clients cannot read consent ledger directly');
+reset role;
+select is((select count(*)::integer from private.login_terms_acceptances where user_id='00000000-0000-0000-0000-000000007029'),1,'one account receipt recorded');
+select ok((select accepted_at=now() and version='2026-09-17' from private.login_terms_acceptances where user_id='00000000-0000-0000-0000-000000007029'),'server timestamp and exact version recorded');
+select set_config('request.jwt.claim.sub','',true);
+select throws_ok($$select public.accept_login_terms('2026-09-17')$$, 'P0001', 'AUTH_REQUIRED', 'cannot record for unauthenticated user');
+select ok(not has_function_privilege('anon','public.accept_login_terms(text)','execute'),'anonymous role cannot execute');
+select * from finish();
+rollback;

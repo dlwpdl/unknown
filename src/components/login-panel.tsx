@@ -5,12 +5,14 @@ import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, useColorScheme, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
+import { LOGIN_TERMS_VERSION } from '@/lib/login-terms';
 
 export function LoginPanel({
   reason,
@@ -25,12 +27,12 @@ export function LoginPanel({
   onClose,
 }: {
   reason?: string;
-  onApple?: () => void;
-  onKakao?: () => void;
-  onGoogle?: () => void;
-  onDevLogin?: (email: string, password: string) => void;
-  onReviewLogin?: (email: string, password: string) => void;
-  onAdminLogin?: (email: string, password: string) => void;
+  onApple?: (termsVersion: string) => void;
+  onKakao?: (termsVersion: string) => void;
+  onGoogle?: (termsVersion: string) => void;
+  onDevLogin?: (email: string, password: string, termsVersion: string) => void;
+  onReviewLogin?: (email: string, password: string, termsVersion: string) => void;
+  onAdminLogin?: (email: string, password: string, termsVersion: string) => void;
   loading?: boolean;
   error?: string | null;
   onClose?: () => void;
@@ -40,11 +42,14 @@ export function LoginPanel({
   const [googleFontLoaded] = useFonts({ GoogleSansMedium: require('@/assets/fonts/GoogleSans-Medium.ttf') });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [accepted, setAccepted] = useState(false);
+  const disabled = loading || !accepted;
   const passwordLogin = onAdminLogin ?? onReviewLogin ?? (__DEV__ ? onDevLogin : undefined);
   const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/$/, '');
 
   return (
     <ThemedView style={styles.wrap}>
+      <SafeAreaView style={styles.wrap}>
       <KeyboardAvoidingView style={styles.wrap} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.center} keyboardShouldPersistTaps="handled">
         <Image
@@ -58,6 +63,30 @@ export function LoginPanel({
           {reason ?? t.auth.tagline}
         </ThemedText>
 
+        <View style={[styles.consentCard, { backgroundColor: theme.card, borderColor: theme.line }]}>
+          <ThemedText type="smallBold">서로 편안하게 만나는 글링</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            유해 콘텐츠와 괴롭힘·혐오·협박 등 악성 행위는 허용하지 않아요. 위반 콘텐츠는 삭제되고 계정 이용이 제한될 수 있어요. 불편한 콘텐츠와 사용자는 언제든 신고·차단할 수 있어요.
+          </ThemedText>
+          <View style={styles.legalLinks}>
+            <Pressable onPress={() => void Linking.openURL(`${publicSiteUrl}/terms`)} accessibilityRole="link" style={styles.legalLink}>
+              <ThemedText type="smallBold">이용약관 전문 보기</ThemedText>
+            </Pressable>
+            <Pressable onPress={() => void Linking.openURL(`${publicSiteUrl}/privacy`)} accessibilityRole="link" style={styles.legalLink}>
+              <ThemedText type="small">개인정보처리방침</ThemedText>
+            </Pressable>
+          </View>
+          <Pressable onPress={() => { if (!loading) setAccepted(value => !value); }} disabled={loading}
+            accessibilityRole="checkbox" aria-checked={accepted} accessibilityState={{ checked: accepted, disabled: loading }}
+            accessibilityLabel="이용약관과 커뮤니티 행동 기준에 동의합니다. 필수"
+            style={styles.consentRow}>
+            <View style={[styles.checkbox, { borderColor: accepted ? theme.accent : theme.line, backgroundColor: accepted ? theme.accent : theme.background }]}>
+              {accepted && <ThemedText style={{ color: theme.accentInk }}>✓</ThemedText>}
+            </View>
+            <ThemedText type="small" style={styles.consentText}>[필수] 이용약관과 커뮤니티 행동 기준에 동의합니다.</ThemedText>
+          </Pressable>
+          {!accepted && <ThemedText type="small" themeColor="textSecondary">동의하면 아래 로그인 버튼을 이용할 수 있어요.</ThemedText>}
+        </View>
         <View style={styles.actions}>
             {Platform.OS === 'ios' && onApple && (
               <AppleAuthentication.AppleAuthenticationButton
@@ -66,28 +95,28 @@ export function LoginPanel({
                   ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
                   : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
                 cornerRadius={24}
-                onPress={() => { if (!loading) onApple(); }}
-                accessibilityState={{ disabled: loading, busy: loading }}
-                style={[styles.appleButton, { opacity: loading ? 0.6 : 1 }]}
+                onPress={() => { if (!disabled) onApple(LOGIN_TERMS_VERSION); }}
+                accessibilityState={{ disabled, busy: loading }}
+                style={[styles.appleButton, { opacity: disabled ? 0.6 : 1 }]}
               />
             )}
             {onKakao && <Pressable
-              onPress={onKakao}
-              disabled={loading}
+              onPress={() => { if (!disabled) onKakao(LOGIN_TERMS_VERSION); }}
+              disabled={disabled}
               accessibilityRole="button"
-              accessibilityState={{ disabled: loading, busy: loading }}
-              style={[styles.btn, { backgroundColor: '#FEE500', opacity: loading ? 0.6 : 1 }]}>
+              accessibilityState={{ disabled, busy: loading }}
+              style={[styles.btn, { backgroundColor: '#FEE500', opacity: disabled ? 0.6 : 1 }]}>
               <ThemedText type="smallBold" style={{ color: '#191600', fontSize: 16 }}>
                 {t.auth.kakao}
               </ThemedText>
             </Pressable>}
             {onGoogle && <Pressable
-              onPress={onGoogle}
-              disabled={loading}
+              onPress={() => { if (!disabled) onGoogle(LOGIN_TERMS_VERSION); }}
+              disabled={disabled}
               accessibilityRole="button"
               accessibilityLabel={t.auth.google}
-              accessibilityState={{ disabled: loading, busy: loading }}
-              style={[styles.btn, styles.googleButton, { opacity: loading ? 0.6 : 1 }]}>
+              accessibilityState={{ disabled, busy: loading }}
+              style={[styles.btn, styles.googleButton, { opacity: disabled ? 0.6 : 1 }]}>
               <Image source={require('@/assets/brand/google-g.png')} style={styles.googleIcon} contentFit="contain" accessible={false} />
               <ThemedText type="small" style={[styles.googleText, googleFontLoaded && { fontFamily: 'GoogleSansMedium' }]}>{t.auth.google}</ThemedText>
             </Pressable>}
@@ -117,11 +146,11 @@ export function LoginPanel({
                   style={[styles.devInput, { color: theme.text, borderColor: theme.line }]}
                 />
                 <Pressable
-                  onPress={() => passwordLogin(email, password)}
-                  disabled={loading || !email.trim() || !password}
+                  onPress={() => { if (!disabled && email.trim() && password) passwordLogin(email, password, LOGIN_TERMS_VERSION); }}
+                  disabled={disabled || !email.trim() || !password}
                   accessibilityRole="button"
-                  accessibilityState={{ disabled: loading || !email.trim() || !password, busy: loading }}
-                  style={[styles.devButton, { borderColor: theme.line, opacity: !email.trim() || !password ? 0.5 : 1 }]}>
+                  accessibilityState={{ disabled: disabled || !email.trim() || !password, busy: loading }}
+                  style={[styles.devButton, { borderColor: theme.line, opacity: disabled || !email.trim() || !password ? 0.5 : 1 }]}>
                   <ThemedText type="smallBold">{onAdminLogin ? '관리자 로그인' : onReviewLogin ? t.auth.reviewLoginCta : t.auth.devLoginCta}</ThemedText>
                 </Pressable>
               </View>
@@ -147,16 +176,6 @@ export function LoginPanel({
           </Pressable>
         )}
 
-        <View style={styles.legalLinks}>
-          <Pressable onPress={() => void Linking.openURL(`${publicSiteUrl}/terms`)} accessibilityRole="link">
-            <ThemedText type="small" themeColor="textSecondary">이용약관</ThemedText>
-          </Pressable>
-          <ThemedText type="small" themeColor="textSecondary">·</ThemedText>
-          <Pressable onPress={() => void Linking.openURL(`${publicSiteUrl}/privacy`)} accessibilityRole="link">
-            <ThemedText type="small" themeColor="textSecondary">개인정보처리방침</ThemedText>
-          </Pressable>
-        </View>
-
         {onClose && (
           <Pressable onPress={onClose} accessibilityRole="button" style={styles.close}>
             <ThemedText type="smallBold" themeColor="textSecondary">
@@ -166,6 +185,7 @@ export function LoginPanel({
         )}
       </ScrollView>
       </KeyboardAvoidingView>
+      </SafeAreaView>
     </ThemedView>
   );
 }
@@ -213,7 +233,12 @@ const styles = StyleSheet.create({
     maxWidth: 280,
   },
   reviewLink: { minHeight: 44, justifyContent: 'center' },
-  legalLinks: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  legalLinks: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },
+  legalLink: { minHeight: 44, justifyContent: 'center' },
+  consentCard: { alignSelf: 'stretch', padding: Spacing.three, gap: Spacing.two, borderWidth: 1, borderRadius: 12, marginBottom: Spacing.three },
+  consentRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  consentText: { flex: 1 },
+  checkbox: { width: 24, height: 24, borderWidth: 1, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   close: {
     marginTop: Spacing.four,
     paddingVertical: Spacing.two,

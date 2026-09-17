@@ -4,6 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as kakao from '../src/lib/kakao-auth.ts';
+import { LOGIN_TERMS_VERSION, recordLoginTerms } from '../src/lib/login-terms.ts';
 
 // Exercise the actual provider with controlled browser completion, including a
 // second press before React has rendered the disabled state.
@@ -39,7 +40,8 @@ test('cancel, dismiss and browser failure release the shared login state for ret
     };
     if (name === 'expo-apple-authentication') return { AppleAuthenticationScope: {}, addRevokeListener: () => ({ remove() {} }),
       async signInAsync() { appleCalls++; throw { code: 'ERR_REQUEST_CANCELED' }; } };
-    if (name === '@/lib/supabase') return { supabase: { auth: {
+    if (name === '@/lib/login-terms') return { LOGIN_TERMS_VERSION, recordLoginTerms };
+    if (name === '@/lib/supabase') return { supabase: { rpc: async () => ({ error: null }), auth: {
       async getSession() { return { data: { session: null } }; },
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
       startAutoRefresh() {}, stopAutoRefresh() {}, async signOut() { return {}; },
@@ -67,9 +69,9 @@ test('cancel, dismiss and browser failure release the shared login state for ret
     const native = provider === 'Google';
     const nativeBefore = nativeGoogleCalls;
     const idTokensBefore = idTokenCalls;
-    const first = auth[`signIn${provider}`]();
-    const duplicate = auth[`signIn${provider}`]();
-    await auth.signInApple();
+    const first = auth[`signIn${provider}`](LOGIN_TERMS_VERSION);
+    const duplicate = auth[`signIn${provider}`](LOGIN_TERMS_VERSION);
+    await auth.signInApple(LOGIN_TERMS_VERSION);
     await Promise.resolve();
     assert.equal(browserCalls, before + (native ? 0 : 1));
     assert.equal(nativeGoogleCalls, nativeBefore + (native ? 1 : 0));
@@ -88,7 +90,7 @@ test('cancel, dismiss and browser failure release the shared login state for ret
     assert.equal(exchangeCalls, exchangesBefore + (outcome === 'success' && !native ? 1 : 0));
     assert.equal(idTokenCalls, idTokensBefore + (outcome === 'success' && native ? 1 : 0));
   }
-  await render().signInApple();
+  await render().signInApple(LOGIN_TERMS_VERSION);
   assert.equal(appleCalls, 1);
   assert.equal(render().isAuthLoading, false);
   assert.equal(render().authError, null);
