@@ -29,6 +29,7 @@ import { adsSupported, feedAdPosition } from '@/lib/ads';
 import { MyMeetups } from '@/components/my-meetups';
 import { PostCard } from '@/components/post-card';
 import { ProfileAvatarButton } from '@/components/profile-avatar-button';
+import { WeeklyRanking } from '@/components/weekly-ranking';
 import { UserSheet, type SheetUser } from '@/components/user-sheet';
 import { PostDetail } from '@/components/post-detail';
 import { TabContent } from '@/components/tab-content';
@@ -528,6 +529,12 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 }} />
                 {cityOpen && <ThemedText accessibilityRole="header" style={styles.sectionTitle}>{t.meetup.discover}</ThemedText>}
               </>}
+              {cityOpen && !meetupsOnly && tagFilter == null && (
+                <WeeklyRanking cityId={city.id} onOpen={async (postId) => {
+                  const post = await loadPublicPost(supabase, postId);
+                  if (post) openDetail(post);
+                }} />
+              )}
               {cityOpen && !meetupsOnly && (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
                   {[null, ...TAGS.map((tg) => tg.id)].map((id) => {

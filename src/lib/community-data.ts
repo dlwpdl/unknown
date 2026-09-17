@@ -640,3 +640,18 @@ export async function deleteComment(client: SupabaseClient, commentId: string) {
   const result = await client.from('comments').update({ deleted_at: new Date().toISOString() }).eq('id', commentId);
   if (result.error) throw result.error;
 }
+
+// 주간 인기 글 순위. 매주 월요일에 찍혀 고정되므로 "이번 주 1위"가 성립한다.
+export type WeeklyRankingEntry = {
+  rank: number; postId: string; title: string; nickname: string;
+  views: number; likes: number; comments: number;
+};
+export type WeeklyRanking = { weekStart: string; cityId: string; entries: WeeklyRankingEntry[] } | null;
+
+export async function loadWeeklyRanking(client: SupabaseClient, cityId: string): Promise<WeeklyRanking> {
+  const result = await client.rpc('get_weekly_ranking', { p_city_id: cityId });
+  if (result.error) throw result.error;
+  const data = result.data as { weekStart?: string; cityId?: string; entries?: WeeklyRankingEntry[] };
+  if (!data?.weekStart || !data.entries?.length) return null;
+  return { weekStart: data.weekStart, cityId: data.cityId ?? cityId, entries: data.entries };
+}
