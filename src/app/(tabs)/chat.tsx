@@ -16,6 +16,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { getCommunityActionError, loadConversations, loadPendingMeetupRequests, MEETUPS_CHANGED_EVENT, respondMeetupRequest, type ConversationPage, type ConversationFilter, type MeetupRequest } from '@/lib/community-data';
+import { meetupRestrictionError } from '@/lib/meetup-policy';
 import { useMembership } from '@/lib/membership-provider';
 import { supabase } from '@/lib/supabase';
 
@@ -162,7 +163,7 @@ export default function ChatScreen() {
       if (currentUser.current !== owner) return;
       const code = getCommunityActionError(failure);
       const message = code ? t.actionErrors[code] : null;
-      Alert.alert(message?.title ?? t.chat.requestError, message?.body);
+      Alert.alert(code === 'MEETUP_JOIN_RESTRICTED' ? '신청자의 새 모임 참여가 제한 중이에요' : message?.title ?? t.chat.requestError, meetupRestrictionError(failure) ?? message?.body);
       await refresh();
     } finally { processing.current = false; if (currentUser.current === owner) setRequestBusy(null); }
   };

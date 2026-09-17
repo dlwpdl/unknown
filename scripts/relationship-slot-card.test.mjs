@@ -72,3 +72,10 @@ test('one continuous bar represents capacity, caps overuse, and preserves access
   assert.deepEqual(widths(null), []);
   assert.equal(unknown.find(node => node.props?.accessibilityRole === 'image').props.accessibilityState.busy, true);
 });
+
+test('released group slots no longer advertise a 24-hour slot lock', () => {
+  const membership = { ...snapshot(), meetupSlotsLocked: 0, meetupSlotsAvailable: 2, meetupUnlocksAt: [] };
+  const nodes = flatten(RelationshipSlotCard({ kind: 'meetup', membership }));
+  assert.doesNotMatch(nodes.find(node => node.props?.accessibilityRole === 'image').props.accessibilityLabel, /24시간/);
+  assert.ok(!nodes.some(node => node.props?.children === '24h 잠금'));
+});

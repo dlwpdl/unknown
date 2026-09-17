@@ -28,6 +28,7 @@ test('membership opens checkout immediately and preserves quota and purchase saf
     if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView' };
     if (name === '@/components/login-panel') return { LoginPanel: 'LoginPanel' };
     if (name === '@/components/relationship-slot-card') return { RelationshipSlotCard: 'RelationshipSlotCard' };
+    if (name === '@/components/meetup-policy-notice') return { MeetupPolicyNotice: 'MeetupPolicyNotice' };
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };
     if (name === '@/components/themed-view') return { ThemedView: 'View' };
     if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, five: 32 }, MaxContentWidth: 800 };
@@ -47,14 +48,14 @@ test('membership opens checkout immediately and preserves quota and purchase saf
   assert.match(text(tree), /1편 남음/);
   assert.doesNotMatch(text(tree), /처음 요청한 사람/);
   assert.equal(button(tree, '구독 준비 중').props.disabled, true, 'checkout is visible immediately but requires a store offer');
-  assert.equal(button(tree, '자리 사용 · 24시간 잠금 안내').props.accessibilityState.expanded, false);
-  assert.equal(button(tree, '자리 사용 · 24시간 잠금 안내').props['aria-expanded'], false);
-  button(tree, '자리 사용 · 24시간 잠금 안내').props.onPress();
+  assert.equal(button(tree, '자리 사용 · 반복 이용 제한 안내').props.accessibilityState.expanded, false);
+  assert.equal(button(tree, '자리 사용 · 반복 이용 제한 안내').props['aria-expanded'], false);
+  button(tree, '자리 사용 · 반복 이용 제한 안내').props.onPress();
   tree = render();
-  assert.equal(button(tree, '자리 사용 · 24시간 잠금 안내').props.accessibilityState.expanded, true);
-  assert.equal(button(tree, '자리 사용 · 24시간 잠금 안내').props['aria-expanded'], true);
+  assert.equal(button(tree, '자리 사용 · 반복 이용 제한 안내').props.accessibilityState.expanded, true);
+  assert.equal(button(tree, '자리 사용 · 반복 이용 제한 안내').props['aria-expanded'], true);
   assert.match(text(tree), /처음 요청한 사람의 자리만 24시간/);
-  button(tree, '자리 사용 · 24시간 잠금 안내').props.onPress();
+  button(tree, '자리 사용 · 반복 이용 제한 안내').props.onPress();
   assert.doesNotMatch(text(render()), /처음 요청한 사람/);
   button(tree, '멤버십 비교베이직 · 플러스 · 프리미엄').props.onPress();
   tree = render();

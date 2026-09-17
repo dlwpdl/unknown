@@ -3,6 +3,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { ActivityIndicator, DeviceEventEmitter, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
+import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
 import { ChillingEventSchedule } from '@/components/chilling-event';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -68,6 +69,7 @@ function JoinForm({ postId }: { postId: string }) {
                   : <>
                     <ThemedText type="subtitle">{post!.title}</ThemedText>
                     <ChillingEventSchedule room={post!.room!} />
+                    <MeetupPolicyNotice mode="join" />
                     {modern && !profile ? <>
                       <ThemedText>함께할 사람들에게 나를 소개할 모임 프로필이 필요해요.</ThemedText>
                       <Pressable onPress={() => router.push('/meetup-profile')} accessibilityRole="button" style={styles.button}><ThemedText themeColor="accent">모임 프로필 작성하기</ThemedText></Pressable>

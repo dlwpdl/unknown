@@ -3,6 +3,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, DeviceEventEmitter, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
 import { relationshipSlotData } from '@/components/relationship-slot-card';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -97,6 +98,7 @@ export function MyMeetups({ onOpen }: { onOpen: (postId: string) => Promise<void
         모임 자리 <ThemedText type="smallBold">{slots.active}/{slots.limit}</ThemedText>{slots.locked ? ` · 대기 ${slots.locked}` : ''}
       </ThemedText>}
     </View>
+    {isAuthed && <><MeetupPolicyNotice mode="leave" /><MeetupPolicyNotice mode="close" /></>}
     {!isAuthed ? <Pressable onPress={() => promptLogin(t.auth.reasonJoinLogin)} accessibilityRole="button" style={[styles.empty, { borderColor: theme.line }]}>
       <ThemedText type="small" themeColor="accent">로그인하고 내 모임 보기</ThemedText>
     </Pressable> : <>

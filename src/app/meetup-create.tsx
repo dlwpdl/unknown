@@ -4,6 +4,7 @@ import { Alert, DeviceEventEmitter, KeyboardAvoidingView, Platform, Pressable, S
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ChillingDateInput } from '@/components/chilling-date-input';
+import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
@@ -59,6 +60,7 @@ function MeetupCreateForm() {
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
       <View style={[styles.segments, { backgroundColor: theme.backgroundElement }]}>{(['once', 'group'] as const).map(kind => <Pressable key={kind} disabled={saving} accessibilityRole="tab" accessibilityState={{ selected: event.kind === kind, disabled: saving }} onPress={() => setEvent({ ...event, kind })} style={[styles.segment, event.kind === kind && { backgroundColor: theme.background }]}><ThemedText type="smallBold">{kind === 'once' ? '칠링 (일회성)' : '모임 (정기모임)'}</ThemedText></Pressable>)}</View>
       <ThemedText type="small" style={[styles.note, { backgroundColor: theme.backgroundElement }]}>무료로 열 수 있어요. 기본 승인·정원·질문도 포함돼요.</ThemedText>
+      <MeetupPolicyNotice mode={event.kind === 'once' ? 'once' : 'host'} />
       {field('어떤 만남인가요?', title, setTitle, '예: 퇴근하고 노을 보러 갈래요?', 60)}
       {field('만남 소개', body, setBody, '무엇을 함께 하고 싶은지 알려주세요.', 5000, true)}
       <ThemedText type="smallBold">카테고리</ThemedText><View style={styles.categories}>{(['casual', 'hobby', 'travel'] as const).map((category, i) => <Pressable key={category} disabled={saving} accessibilityRole="button" accessibilityState={{ selected: event.category === category, disabled: saving }} onPress={() => setEvent({ ...event, category })} style={[styles.category, { borderColor: event.category === category ? theme.accent : theme.line }]}><ThemedText type="small">{['가볍게', '취미', '여행'][i]}</ThemedText></Pressable>)}</View>

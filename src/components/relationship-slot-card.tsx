@@ -28,8 +28,9 @@ export function RelationshipSlotCard({ kind, membership, loading = false, onMemb
   const data = relationshipSlotData(membership, kind);
   const title = kind === 'meetup' ? '모임 자리' : '1:1 대화 자리';
   const unknown = loading ? '자리를 확인하고 있어요' : '자리 정보를 다시 확인해 주세요';
+  const showLock = kind === 'conversation' || !!data?.locked;
   const summary = data
-    ? `${title}, 전체 ${data.limit}개 중 남은 자리 ${data.available}개, 사용 중 ${data.active}개, 24시간 잠금 ${data.locked}개.${data.unlockAt ? ` ${t.chat.slotUnlock(data.unlockAt)}` : ''}`
+    ? `${title}, 전체 ${data.limit}개 중 남은 자리 ${data.available}개, 사용 중 ${data.active}개${showLock ? `, 24시간 잠금 ${data.locked}개` : ''}.${data.unlockAt ? ` ${t.chat.slotUnlock(data.unlockAt)}` : ''}`
     : `${title}, ${unknown}`;
   const colors = { active: theme.accent, locked: theme.navy };
 
@@ -52,7 +53,7 @@ export function RelationshipSlotCard({ kind, membership, loading = false, onMemb
             </>}
           </View>
           {data ? <View style={styles.legend}>
-            {([['active', '사용 중', data.active], ['locked', '24h 잠금', data.locked]] as const).map(([state, label, count]) => <View key={state} style={styles.legendItem}>
+            {([['active', '사용 중', data.active], ['locked', '24h 잠금', data.locked]] as const).filter(([state]) => state !== 'locked' || showLock).map(([state, label, count]) => <View key={state} style={styles.legendItem}>
               <View style={[styles.dot, { backgroundColor: colors[state] }]} /><ThemedText type="small" themeColor="textSecondary">{label}</ThemedText><ThemedText type="smallBold" style={styles.tabular}>{count}</ThemedText>
             </View>)}
           </View> : <ThemedText type="small" themeColor="textSecondary">{unknown}</ThemedText>}

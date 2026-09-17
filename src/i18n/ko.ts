@@ -165,9 +165,9 @@ export const t = {
     leave: '나가기',
     cancelRequest: '신청 취소',
     endTitle: '모임을 종료할까요?',
-    endBody: '모든 멤버의 참여가 종료돼요. 내 모임 자리 1개는 24시간 동안 잠기고, 다른 멤버의 자리는 바로 돌아와요.',
+    endBody: '모든 멤버의 참여가 종료되고 자리는 바로 돌아와요. 승인된 참가자가 있는 행사 조기 해산은 최근 7일 2회째부터 새 개최가 24시간 제한돼요. 자연 종료와 빈 행사 취소는 제외돼요.',
     leaveTitle: '모임에서 나갈까요?',
-    leaveBody: '내 모임 자리 1개가 24시간 동안 잠겨요. 다른 멤버는 계속 대화할 수 있고, 다시 참여하려면 새로 승인을 받아야 해요.',
+    leaveBody: '자리는 바로 돌아와요. 최근 24시간에 승인된 서로 다른 모임에서 자진 퇴장 3회째부터 새 참여가 12시간 제한돼요. 자연 종료는 제외돼요. 다른 멤버는 계속 대화할 수 있어요.',
     cancelTitle: '참여 신청을 취소할까요?',
     cancelBody: '모임장에게 보낸 참여 신청을 취소해요. 대기 중에는 자리를 사용하지 않아 잠기는 자리도 없어요.',
     loadError: '내 모임을 불러오지 못했어요. 다시 확인해 주세요.',
@@ -177,7 +177,10 @@ export const t = {
   },
 
   actionErrors: {
-    MEETUP_LIMIT_REACHED: { title: '참여할 수 있는 모임 자리가 없어요', body: '참여 중이거나 24시간 대기 중인 자리를 확인해 주세요. 모임에서 나가도 그 자리는 바로 돌아오지 않아요.', membership: true },
+    MEETUP_LIMIT_REACHED: { title: '참여할 수 있는 모임 자리가 없어요', body: '참여 중인 모임 자리를 확인해 주세요. 종료·퇴장 시 자리는 바로 돌아오지만 반복 퇴장 시에는 새 참여가 잠시 제한돼요.', membership: true },
+    MEETUP_JOIN_RESTRICTED: { title: '새 모임 참여가 잠시 제한됐어요', body: '반복 퇴장 제한이 해제되면 다시 참여할 수 있어요. 기존 모임과 신고·차단·나가기는 계속 가능해요.', membership: false },
+    MEETUP_HOST_RESTRICTED: { title: '새 행사 개최가 잠시 제한됐어요', body: '반복 조기 해산 제한이 해제되면 다시 개최할 수 있어요. 기존 행사 운영은 계속 가능해요.', membership: false },
+    CHILLING_CREATE_LIMIT: { title: '칠링 개최 횟수를 모두 사용했어요', body: '최근 24시간 3회·7일 10회까지 열 수 있어요. 취소해도 횟수는 돌아오지 않아요.', membership: false },
     REQUESTER_MEETUP_LIMIT_REACHED: { title: '신청자의 모임 자리가 가득 찼어요', body: '신청자에게 빈 모임 자리가 생기면 다시 승인할 수 있어요.', membership: false },
     MEETUP_CLOSED: { title: '종료된 모임이에요', body: '모임 탭에서 참여할 수 있는 다른 모임을 찾아보세요.', membership: false },
     DAILY_CONVERSATION_LIMIT_REACHED: { title: '대화 자리를 확인해 주세요', body: '새 대화는 양쪽에 빈자리가 있어야 수락할 수 있어요. 멤버십에서 사용 중이거나 대기 중인 자리를 확인해 주세요.', membership: true },

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { normalizeChillingEvent, type ChillingEventDraft } from './chilling.ts';
 import { t } from '../i18n/ko.ts';
+import { meetupRestrictionError } from './meetup-policy.ts';
 
 export type ChillingProfile = { intro: string; interests: string[]; promptOne: string; promptTwo: string };
 export type ChillingApplication = { postId: string; requesterId: string; profile: ChillingProfile; answer: string; question: string; consentVersion: string; consentedAt: string };
@@ -56,6 +57,8 @@ export async function createChillingEvent(client: SupabaseClient, draft: {
 }
 
 export function getChillingError(error: unknown): string {
+  const restriction = meetupRestrictionError(error);
+  if (restriction) return restriction;
   const message = error && typeof error === 'object' && 'message' in error ? String(error.message) : '';
   const messages: Record<string, string> = {
     CHILLING_PROFILE_REQUIRED: '먼저 모임 프로필을 작성해 주세요.',

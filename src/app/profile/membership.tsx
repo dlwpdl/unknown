@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoginPanel } from '@/components/login-panel';
 import { RelationshipSlotCard } from '@/components/relationship-slot-card';
+import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -75,6 +76,8 @@ export default function MembershipScreen() {
           </View>
 
           <RelationshipSlotCard kind="meetup" membership={membership} loading={loading} />
+          <MeetupPolicyNotice mode="join" />
+          <MeetupPolicyNotice mode="once" />
           <RelationshipSlotCard kind="conversation" membership={membership} loading={loading} />
 
           {(error || notice) && <View style={styles.feedback}>
@@ -87,14 +90,15 @@ export default function MembershipScreen() {
             <Pressable accessibilityRole="button" aria-expanded={rulesExpanded} accessibilityState={{ expanded: rulesExpanded }}
               onPress={() => { setRulesExpanded(value => !value); play('selection'); }}
               style={({ pressed }) => [styles.disclosure, { opacity: pressed ? 0.65 : 1 }]}>
-              <ThemedText type="smallBold" style={styles.flexText}>자리 사용 · 24시간 잠금 안내</ThemedText>
+              <ThemedText type="smallBold" style={styles.flexText}>자리 사용 · 반복 이용 제한 안내</ThemedText>
               <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>
                 <SymbolView name={{ ios: rulesExpanded ? 'chevron.up' : 'chevron.down', android: rulesExpanded ? 'keyboard_arrow_up' : 'keyboard_arrow_down', web: rulesExpanded ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }} size={16} tintColor={theme.textSecondary} />
               </View>
             </Pressable>
             {rulesExpanded && <View style={styles.detailContent}>
               <ThemedText type="small" themeColor="textSecondary">모임은 방장 승인 후 자리를 사용해요. 1:1 대화는 상대가 수락하면 양쪽 자리를 사용해요.</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">모임을 나가면 내 자리 1개가 24시간 잠겨요.</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">모임 종료·퇴장 시 자리는 바로 돌아와요. 최근 24시간에 승인된 서로 다른 모임에서 자진 퇴장 3회째부터 새 참여가 12시간 제한돼요. 자연 종료·승인 전 취소·강퇴는 제외돼요.</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">칠링 개최는 최근 24시간 3회·7일 10회까지예요. 취소해도 개최 횟수는 유지돼요. 참가자가 있는 행사 조기 해산은 최근 7일 2회째부터 새 개최가 24시간 제한돼요. 무료·유료에 동일하게 적용돼요.</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">1:1 대화는 누가 종료하든 처음 요청한 사람의 자리만 24시간 잠겨요. 수락한 사람의 자리는 바로 돌아와요.</ThemedText>
             </View>}
           </View>
