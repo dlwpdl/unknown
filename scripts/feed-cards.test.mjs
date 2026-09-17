@@ -7,6 +7,35 @@ import { CITIES } from '../src/lib/mock.ts';
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 const text = tree => typeof tree === 'string' ? tree : tree && typeof tree === 'object' ? [tree.props?.children].flat(Infinity).map(text).join('') : '';
+
+test('weekly ranking groups its expanded heading inside the card, away from the journal title', () => {
+  for (const [total, expanded] of [[2, false], [5, true], [5, false], [0, false]]) {
+    let state = 0;
+    const entries = Array.from({ length: total }, (_, i) => ({ postId: `post-${i}`, authorId: 'author', rank: i + 1, title: '동네 소식', nickname: '이웃', views: 10 }));
+    const { WeeklyRanking } = load('weekly-ranking', {
+      react: { useCallback: fn => fn, useEffect() {}, useState: () => [[{ entries }, expanded, 0, {}][state++], () => {}] },
+      'expo-router': { useFocusEffect() {} },
+      'react-native': { View: 'View', Pressable: 'Pressable', Animated: { View: 'AnimatedView' }, StyleSheet: { create: x => x } },
+      'react-native-reanimated': { useReducedMotion: () => true },
+      '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
+      '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+      '@/lib/community-data': {}, '@/lib/supabase': {}, '@/i18n/ko': { count: String },
+    });
+    const tree = WeeklyRanking({ cityId: 'vancouver', onOpen() {} });
+    if (!total) { assert.equal(tree, null); continue; }
+    assert.equal(tree.props.style.marginTop, 24, 'ranking must leave breathing room below the journal title');
+    const card = nodes(tree).find(n => [n.props?.style].flat().some(s => s?.borderWidth === 1)
+      || typeof n.props?.style === 'function' && n.props.style({ pressed: false }).some(s => s?.borderWidth === 1));
+    assert.ok(card);
+    const headings = nodes(tree).filter(n => n.props?.accessibilityRole === 'header');
+    assert.equal(headings.length, total < 4 || expanded ? 1 : 0);
+    for (const heading of headings) {
+      assert.ok(nodes(card).includes(heading), 'heading belongs to the ranking card, not the journal intro');
+      assert.equal(heading.props.numberOfLines, undefined, 'heading can wrap with larger text');
+    }
+  }
+});
+
 function load(file, imports) {
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL(`../src/components/${file}.tsx`, import.meta.url), 'utf8'), {

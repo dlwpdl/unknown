@@ -16,9 +16,7 @@ import { supabase } from '@/lib/supabase';
 // 한 주 동안 가장 많이 읽히고 이야기된 글. 월요일에 서버에서 찍어 고정한 값이라
 // 스크롤할 때마다 순서가 바뀌지 않는다.
 //
-// 접혔을 때는 제목을 달지 않는다. 바로 위에 "우리 동네의 오늘을 펼치다"가 있어서
-// 제목이 둘 연달아 오면 내용은 안 나오고 약속만 두 번 하는 화면이 된다.
-// 대신 줄 자체가 "이번 주 N위"라고 스스로를 설명한다.
+// 펼친 제목은 카드 안에 묶고, 접힌 줄은 "이번 주 N위"로 스스로를 설명한다.
 //
 // 누르면 그 글로 가는 게 아니라 펼쳐진다. 움직이는 글자를 눌러 엉뚱한 글로
 // 들어가는 일이 없어야 하기 때문이다.
@@ -92,8 +90,10 @@ export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; 
   if (alwaysOpen) {
     return (
       <View style={styles.wrap}>
-        <ThemedText accessibilityRole="header" type="smallBold" style={styles.heading}>이번 주 많이 읽은 글</ThemedText>
         <View style={[styles.card, { borderColor: theme.line, backgroundColor: theme.card }]}>
+          <View style={styles.headRow}>
+            <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.heading}>이번 주 많이 읽은 글</ThemedText>
+          </View>
           {ranking.entries.map((entry, index) => (
             <Row key={entry.postId} entry={entry} last={index === total - 1}
               onPress={() => { play('selection'); onOpen(entry.postId); }} />
@@ -105,13 +105,6 @@ export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; 
 
   return (
     <View style={styles.wrap}>
-      {expanded && (
-        <View style={styles.headRow}>
-          <ThemedText accessibilityRole="header" type="smallBold" style={styles.heading}>이번 주 많이 읽은 글</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>접기</ThemedText>
-        </View>
-      )}
-
       <Pressable
         onPress={toggle}
         accessibilityRole="button"
@@ -119,6 +112,12 @@ export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; 
         accessibilityLabel={expanded ? '주간 순위 접기' : `이번 주 많이 읽은 글 ${count(total)}편, 눌러서 전체 보기`}
         style={({ pressed }) => [styles.card, { borderColor: theme.line, backgroundColor: theme.card },
           pressed && { backgroundColor: theme.backgroundElement, transform: [{ scale: reducedMotion ? 1 : 0.985 }] }]}>
+        {expanded && (
+          <View style={styles.headRow}>
+            <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.heading}>이번 주 많이 읽은 글</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>접기</ThemedText>
+          </View>
+        )}
         {expanded ? (
           ranking.entries.map((entry, index) => (
             <Row key={entry.postId} entry={entry} last={index === total - 1}
@@ -156,14 +155,14 @@ function Row({ entry, last, onPress }: { entry: WeeklyRankingEntry; last: boolea
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: Spacing.one, marginBottom: Spacing.three, paddingHorizontal: Spacing.three },
-  headRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Spacing.two },
-  heading: { fontSize: 14.5 },
+  wrap: { marginTop: Spacing.four, marginBottom: Spacing.three },
+  headRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingTop: Spacing.three, paddingBottom: Spacing.two },
+  heading: { flexShrink: 1 },
   hint: { fontSize: 12 },
-  card: { borderWidth: 1, borderRadius: 12, overflow: 'hidden' },
-  collapsed: { minHeight: 38, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: 7 },
+  card: { borderWidth: 1, borderRadius: 12, borderCurve: 'continuous', overflow: 'hidden' },
+  collapsed: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
   label: { fontSize: 12 },
-  row: { minHeight: 34, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: 6 },
+  row: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
   rank: { width: 18, textAlign: 'center', fontVariant: ['tabular-nums'] },
   title: { flex: 1, minWidth: 0 },
   views: { fontSize: 12, fontVariant: ['tabular-nums'] },
