@@ -19,6 +19,7 @@ Tasks: server tests → server limits/expiry → client notices/errors → regre
 ## Verification
 
 - 205 related pgTAP assertions passed (new limits, Chilling metadata/free flow, relationship slots).
+- Another 32 inbox/account lifecycle assertions passed, total 237.
 - 170 Node tests, TypeScript and lint passed. Web export succeeded.
 - `python3 scripts/check-meetup-race.py`: two simultaneous requests for the final creation allowance commit once; loser creates no post.
 - npm production audit: 16 moderate, no high/critical. Existing Expo build-tool advisories; no dependency changes or forced remediation. Recheck during next SDK maintenance, by 2026-10-01.
@@ -36,4 +37,14 @@ References checked: [Expo 57](https://docs.expo.dev/versions/v57.0.0/), [Postgre
 
 Independent review found stale pending applications after expiry and the actual inbox RPC was different from the legacy one. Forward migration 0067 cancels expired pending applications, hides natural expiry from current inbox pages, and retains read-only deep-link access for reporting. Approved memberships/messages are retained. Release timestamps include seconds.
 
-0065–0066 applied to production; expiry cron verified `succeeded`; existing client error monitor showed 0 recent error types after deployment. 0067 and build 28 delivery pending final verification.
+0065–0067 applied to production; expiry cron verified `succeeded`; existing client error monitor showed 0 recent error types after deployment. Independent follow-up review cleared the expiry fixes.
+
+## Delivery
+
+- Source commit `697673e`, build-number commit `8c31bc8`; pushed to `origin/mobile-app`.
+- GitHub Pages run `35277268031` succeeded; live `/terms` returned HTTP 200.
+- Local Xcode archive/export succeeded. Bundle `com.dlwpdl.gling`, version 1.0.1, build 28.
+- ASC build `ca12163d-3450-4af4-adf0-f3125c8782a3`: processing `VALID`.
+- Existing `Gling Internal` group `03fefab3-98b9-4f9c-a6a0-450fdd703efb`: explicit membership verified; `IN_BETA_TESTING`.
+- Artifacts/logs: `/Users/ash/Library/Application Support/gling/releases/1.0.1-28/`.
+- No App Review or external beta submission; no physical-device QA claimed. This build contains the meetup-policy/expiry work, not the separately discussed cover-photo/chat-member feature work.
