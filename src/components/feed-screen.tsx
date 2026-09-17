@@ -104,6 +104,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const searchSelection = useRef<Post | null>(null);
   const [query, setQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [rankingRefresh, setRankingRefresh] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [trendingTags, setTrendingTags] = useState<string[]>([]);
   const [searchResults, setSearchResults] = useState<Post[]>([]);
@@ -482,6 +483,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           refreshing={refreshing}
           onRefresh={() => {
             setRefreshing(true);
+            setRankingRefresh((current) => current + 1);
             void refreshFeed().catch(() => Alert.alert(t.feed.refreshErrorTitle, t.feed.refreshErrorBody)).finally(() => setRefreshing(false));
           }}
           keyExtractor={(p) => p?.id ?? 'journal-intro'}
@@ -530,7 +532,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 {cityOpen && <ThemedText accessibilityRole="header" style={styles.sectionTitle}>{t.meetup.discover}</ThemedText>}
               </>}
               {cityOpen && !meetupsOnly && tagFilter == null && (
-                <WeeklyRanking cityId={city.id} onOpen={async (postId) => {
+                <WeeklyRanking cityId={city.id} refreshKey={rankingRefresh} onOpen={async (postId) => {
                   const post = await loadPublicPost(supabase, postId);
                   if (post) openDetail(post);
                 }} />
