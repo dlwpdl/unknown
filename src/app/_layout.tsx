@@ -7,6 +7,7 @@ import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { AppActivity } from '@/components/app-activity';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { NotificationObserver } from '@/components/notification-observer';
+import { PushInvite } from '@/components/push-invite';
 import { AuthProvider } from '@/lib/auth';
 import { installErrorReporting } from '@/lib/error-reporting';
 import { InteractionFeedbackProvider } from '@/lib/interaction-feedback';
@@ -29,6 +30,7 @@ export default function TabLayout() {
         <InteractionFeedbackProvider>
           <AnimatedSplashOverlay />
           <Stack screenOptions={{ headerShown: false }} />
+          <PushInvite />
         </InteractionFeedbackProvider>
         </MembershipProvider>
       </AuthProvider>

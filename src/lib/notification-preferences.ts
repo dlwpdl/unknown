@@ -39,3 +39,16 @@ export function notificationRoute(value: unknown): string | null {
   if (new RegExp(`^/chat\\?requestId=${uuid}$`, 'i').test(value)) return '/chat?view=requests';
   return new RegExp(`^(?:/post/${uuid}(?:\\?commentId=${uuid})?|/chat(?:\\?(?:conversationId=${uuid}(?:&view=requests)?|view=requests))?|/profile/(?:guidelines|settings)|/notifications)$`, 'i').test(value) ? value : null;
 }
+
+// 푸시 권한 창은 iOS 에서 평생 한 번뿐이다. 거절당하면 앱에서 다시 물을 수 없으므로
+// 띄울지 말지를 한곳에서 판단한다. 하나라도 걸리면 묻지 않는다.
+export function shouldInvitePush(state: {
+  authed: boolean;
+  configured: boolean;      // EAS projectId 가 있어야 기기 등록이 가능하다
+  alreadyAsked: boolean;    // 이 기기에서 이미 물어봤다
+  permissionGranted: boolean;
+  pushEnabled: boolean;     // 서버 설정이 이미 켜져 있다
+}) {
+  return state.authed && state.configured && !state.alreadyAsked
+    && !state.permissionGranted && !state.pushEnabled;
+}
