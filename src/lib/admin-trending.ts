@@ -38,3 +38,10 @@ export function trendingConfigPatch(
 // 노출을 좌우하는 값은 어드민만 조정한다. 작성자에게는 컬럼 권한 자체가 없다.
 export type AdminPostPatch = { view_count?: number; like_count?: number; save_count?: number; sort_at?: string; hashtags?: string[]; status?: 'published' | 'removed' };
 export type AdminPostFields = { id: string; status: string; viewCount: number; likeCount: number; saveCount: number; sortAt: string; hashtags: string[]; deletedAt: string | null };
+
+// 앱에서 올라온 오류. 지문이 같으면 한 줄로 묶이고 횟수만 는다.
+export type AdminClientError = {
+  id: number; message: string; stack: string | null; screen: string | null;
+  platform: string; appVersion: string; osVersion: string | null;
+  occurrences: number; firstSeen: string; lastSeen: string; resolvedAt: string | null;
+};

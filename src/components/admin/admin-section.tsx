@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { AdminReportQueue } from '@/components/admin/admin-report-queue';
@@ -7,8 +7,8 @@ import { AdminUserDirectoryPanel } from '@/components/admin/admin-user-directory
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import type { AdminSection } from '@/lib/admin';
-import { exportAdminSafetyEvidence, resolveAdminSafetyAlert, setAdminPostFields, type AdminDashboardData, type AdminPost, type AdminProfile, type AdminSafetyAlert } from '@/lib/admin-data';
-import type { AdminPostFields, AdminPostPatch } from '@/lib/admin-trending';
+import { exportAdminSafetyEvidence, loadAdminClientErrors, resolveAdminClientError, resolveAdminSafetyAlert, setAdminPostFields, type AdminDashboardData, type AdminPost, type AdminProfile, type AdminSafetyAlert } from '@/lib/admin-data';
+import type { AdminClientError, AdminPostFields, AdminPostPatch } from '@/lib/admin-trending';
 import { count } from '@/i18n/ko';
 import { CITIES } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
@@ -112,6 +112,15 @@ export function AdminSectionView({
       <View style={styles.section}>
         <SectionHeading title="뜨는 글 알림" description="도시마다 반응이 오는 글 하나를 골라 그 도시 사용자에게만 알립니다. 점수 값을 바꾸면 아래 미리보기가 함께 바뀝니다." />
         <AdminTrendingPanel localPreview={localPreview} />
+      </View>
+    );
+  }
+
+  if (section === 'errors') {
+    return (
+      <View style={styles.section}>
+        <SectionHeading title="앱 오류" description="사용자 폰에서 난 자바스크립트 오류입니다. 같은 오류는 한 줄로 묶이고 앱 버전별로 따로 셉니다. 네이티브 충돌은 App Store Connect 와 Play Console 에서 봅니다." />
+        <AdminErrorsPanel localPreview={localPreview} />
       </View>
     );
   }
@@ -313,6 +322,87 @@ function AdminPostRow({ post, author, first, localPreview, onUser }: {
   );
 }
 
+
+// 앱에서 올라온 자바스크립트 오류. 네이티브 충돌은 App Store Connect 와 Play Console 에 따로 쌓인다.
+function AdminErrorsPanel({ localPreview }: { localPreview?: boolean }) {
+  const [rows, setRows] = useState<AdminClientError[] | null>(null);
+  const [showResolved, setShowResolved] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [expanded, setExpanded] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (localPreview) return;
+    let active = true;
+    void (async () => {
+      try {
+        const next = await loadAdminClientErrors(supabase, showResolved);
+        if (active) setRows(next);
+      } catch { if (active) setFailed(true); }
+    })();
+    return () => { active = false; };
+  }, [localPreview, showResolved, busy]);
+
+  const toggle = async (row: AdminClientError) => {
+    if (localPreview || busy) return;
+    setBusy(true);
+    try { await resolveAdminClientError(supabase, row.id, !row.resolvedAt); }
+    catch { Alert.alert('상태를 바꾸지 못했습니다.', '권한과 연결을 확인해주세요.'); }
+    finally { setBusy(false); }
+  };
+
+  if (localPreview) return <Empty text="로컬 미리보기에서는 오류를 불러오지 않습니다." />;
+  if (failed) return <Empty text="오류 목록을 불러오지 못했습니다." />;
+  if (!rows) return <Empty text="불러오는 중" />;
+
+  return (
+    <View style={{ gap: Spacing.two }}>
+      <View style={styles.picker}>
+        {([[false, '미해결'], [true, '해결 포함']] as [boolean, string][]).map(([value, label]) => (
+          <Pressable key={label} onPress={() => setShowResolved(value)} accessibilityRole="radio"
+            accessibilityState={{ selected: showResolved === value }}
+            style={({ pressed }) => [styles.chip, showResolved === value && styles.chipOn, pressed && styles.pressed]}>
+            <ThemedText type={showResolved === value ? 'smallBold' : 'small'}
+              style={showResolved === value ? undefined : styles.muted}>{label}</ThemedText>
+          </Pressable>
+        ))}
+      </View>
+      {rows.length === 0 && <Empty text="올라온 오류가 없습니다." />}
+      <View style={styles.list}>
+        {rows.map((row, index) => (
+          <View key={row.id} style={[styles.postRow, index === 0 && styles.postRowFirst]}>
+            <Pressable onPress={() => setExpanded((current) => current === row.id ? null : row.id)}
+              accessibilityRole="button" accessibilityState={{ expanded: expanded === row.id }}
+              style={({ pressed }) => [styles.postHead, pressed && styles.pressed]}>
+              <View style={[styles.dot, !row.resolvedAt && styles.dotDown]} />
+              <View style={styles.postTitle}>
+                <ThemedText type="smallBold" numberOfLines={1} style={{ flexShrink: 1 }}>{row.message}</ThemedText>
+                <ThemedText numberOfLines={1} style={styles.postMeta}>
+                  {row.platform} {row.appVersion}{row.screen ? ` · ${row.screen}` : ''} · {formatDate(row.lastSeen)}
+                </ThemedText>
+              </View>
+              <ThemedText style={styles.postMetric}>{count(row.occurrences)}회</ThemedText>
+            </Pressable>
+            {expanded === row.id && (
+              <View style={styles.postBody}>
+                {!!row.stack && <TextInput value={row.stack} editable={false} multiline selectTextOnFocus
+                  accessibilityLabel="스택"
+                  style={{ fontFamily: 'Menlo', fontSize: 11, lineHeight: 16, maxHeight: 200, padding: Spacing.two,
+                    borderWidth: 1, borderColor: Colors.light.line, borderRadius: 6, color: Colors.light.text }} />}
+                <ThemedText type="small" style={styles.muted}>
+                  {row.osVersion ?? '기기 정보 없음'} · 처음 {formatDate(row.firstSeen)}
+                </ThemedText>
+                <View style={styles.rowTop}>
+                  <ActionText label={row.resolvedAt ? '다시 열기' : '해결 표시'} onPress={() => void toggle(row)} disabled={busy} />
+                </View>
+              </View>
+            )}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
 
 // 필터는 칩으로 둔다. 어드민은 웹에서만 열리지만 화면 폭이 좁을 때도 한 줄씩 접히면 된다.
 function Picker({ label, value, onChange, options }: {

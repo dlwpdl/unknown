@@ -1,6 +1,6 @@
 export type ReportStatus = 'open' | 'actioned' | 'dismissed';
 export type ReportFilter = 'all' | ReportStatus;
-export type AdminSection = 'analytics' | 'overview' | 'safety' | 'alerts' | 'trending' | 'reports' | 'users' | 'posts' | 'conversations';
+export type AdminSection = 'analytics' | 'overview' | 'safety' | 'alerts' | 'trending' | 'errors' | 'reports' | 'users' | 'posts' | 'conversations';
 
 const REPORT_REASON_LABELS: Record<string, string> = {
   spam: '스팸',
@@ -24,6 +24,7 @@ export const ADMIN_SECTIONS: { id: AdminSection; label: string }[] = [
   { id: 'safety', label: 'AI 안전' },
   { id: 'alerts', label: '감시어 경보' },
   { id: 'trending', label: '뜨는 글 알림' },
+  { id: 'errors', label: '앱 오류' },
   { id: 'reports', label: '신고' },
   { id: 'users', label: '사용자' },
   { id: 'posts', label: '게시글' },

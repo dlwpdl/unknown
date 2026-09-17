@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { AdminSection, ReportStatus } from '@/lib/admin';
 import { MOCK_POSTS } from '@/lib/mock';
-import type { AdminPostFields, AdminPostPatch, AdminTrendingConfig, AdminTrendingState } from '@/lib/admin-trending';
+import type { AdminClientError, AdminPostFields, AdminPostPatch, AdminTrendingConfig, AdminTrendingState } from '@/lib/admin-trending';
 
 export const ADMIN_PAGE_SIZE = 50;
 
@@ -298,7 +298,7 @@ export async function loadAdminDashboard(client: SupabaseClient): Promise<AdminD
 
 export async function loadMoreAdminData(
   client: SupabaseClient,
-  section: Exclude<AdminSection, 'overview' | 'analytics' | 'trending'>,
+  section: Exclude<AdminSection, 'overview' | 'analytics' | 'trending' | 'errors'>,
   offset: number,
 ): Promise<AdminSectionPage> {
   await logAdminAccess(client, section === 'conversations' ? 'messages' : section);
@@ -388,4 +388,15 @@ export async function setAdminPostFields(client: SupabaseClient, postId: string,
   const result = await client.rpc('set_admin_post_fields', { p_post_id: postId, p_patch: patch });
   if (result.error) throw result.error;
   return result.data as AdminPostFields;
+}
+
+export async function loadAdminClientErrors(client: SupabaseClient, includeResolved = false): Promise<AdminClientError[]> {
+  const result = await client.rpc('get_admin_client_errors', { p_limit: 50, p_include_resolved: includeResolved });
+  if (result.error) throw result.error;
+  return result.data as AdminClientError[];
+}
+
+export async function resolveAdminClientError(client: SupabaseClient, id: number, resolved: boolean) {
+  const result = await client.rpc('resolve_admin_client_error', { p_id: id, p_resolved: resolved });
+  if (result.error) throw result.error;
 }

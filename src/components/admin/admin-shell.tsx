@@ -15,6 +15,7 @@ const sectionIcons = {
   safety: { ios: 'shield', web: 'shield' },
   alerts: { ios: 'exclamationmark.bubble', web: 'report' },
   trending: { ios: 'flame', web: 'local_fire_department' },
+  errors: { ios: 'ladybug', web: 'bug_report' },
   reports: { ios: 'flag', web: 'flag' },
   users: { ios: 'person.2', web: 'group' },
   posts: { ios: 'doc.text', web: 'article' },
