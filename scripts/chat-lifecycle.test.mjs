@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 import { mergeChatMessages } from '../src/lib/community-data.ts';
+import * as chatDetails from '../src/lib/chat-details.ts';
 import { hideContent, isContentHidden, subscribeVisibility } from '../src/lib/content-visibility.ts';
 import { count, t } from '../src/i18n/ko.ts';
 
@@ -78,6 +79,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
       if (name === '@/i18n/ko') return { t, count };
       if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
       if (name === '@/lib/community-data') return { mergeChatMessages, ...data };
+      if (name === '@/lib/chat-details') return { ...chatDetails, ...(data.loadChatMembers ? { loadChatMembers: data.loadChatMembers } : {}) };
       if (name === '@/lib/supabase') return { supabase };
       return new Proxy({}, { get: (_target, key) => key });
     },
@@ -111,6 +113,37 @@ const conversation = { id: 'room', kind: 'group', status: 'active', title: '모�
 const roomProps = { conversation, currentUserId: 'me', onClose() {}, onChanged: async () => {} };
 const room = data => mount('../src/components/chat-room.tsx', 'ChatRoom', data, roomProps);
 const olderButton = harness => harness.nodes().find(node => node.props?.label === t.chat.loadOlder);
+
+test('rendered messages retain report controls and show time only at the end of a sender-minute group', async (context) => {
+  const rows = [message(1), message(2), { ...message(3), sender_id: 'me' }];
+  const harness = room({ loadConversationMessages: async () => rows });
+  context.after(() => harness.cleanup());
+  await harness.settle();
+  const list = harness.nodes().find(node => node.type === 'FlatList');
+  const contains = (value, text) => value === text || !!value && typeof value === 'object' && Object.values(value).some(child => contains(child, text));
+  const first = list.props.renderItem({ item: rows[0], index: 0 });
+  const second = list.props.renderItem({ item: rows[1], index: 1 });
+  const mine = list.props.renderItem({ item: rows[2], index: 2 });
+  assert.equal(contains(first, chatDetails.chatMessageTime(rows[0].created_at)), false);
+  assert.equal(contains(second, chatDetails.chatMessageTime(rows[1].created_at)), true);
+  assert.equal(contains(second, t.report.short), true);
+  assert.equal(contains(mine, chatDetails.chatMessageTime(rows[2].created_at)), true);
+});
+
+test('member sheet refreshes on open and removes previously loaded identities on access failure', async (context) => {
+  let allowed = true;
+  const harness = mount('../src/components/chat-members.tsx', 'ChatMembers', {
+    loadChatMembers: async () => { if (!allowed) throw new Error('CONVERSATION_ACCESS_DENIED'); return [{ id: 'host', nickname: '호스트', is_host: true }]; },
+  }, { conversationId: 'room', groupPostId: 'post', currentUserId: 'me' });
+  context.after(() => harness.cleanup());
+  await harness.settle();
+  assert.equal(harness.nodes().find(node => node.type === 'FlatList').props.data.length, 1);
+  allowed = false;
+  harness.nodes().find(node => node.props.accessibilityLabel === '대화 멤버 목록').props.onPress();
+  await harness.settle();
+  assert.equal(harness.nodes().some(node => node.type === 'FlatList'), false);
+  assert.ok(harness.nodes().some(node => node.props?.accessibilityRole === 'alert'));
+});
 
 test('report and block remove rendered messages immediately and reject late snapshots', async (context) => {
   const rows = [

@@ -3,6 +3,7 @@ import { ActivityIndicator, AppState, FlatList, KeyboardAvoidingView, Platform, 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ReportSheet } from '@/components/report-sheet';
+import { ChatMembers } from '@/components/chat-members';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -12,6 +13,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
+import { chatDateLabel, chatMessageTime, showChatMessageTime } from '@/lib/chat-details';
 import { blockUser, endConversation, getCommunityActionError, loadListingReviewState, writeListingReview, type ListingReviewState, isContentRejected, loadConversationMessages, loadConversationMessagesByIds, mergeChatMessages, respondDirectConversation, sendDirectMessage, type ChatMessageRecord, type ConversationPreview, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
@@ -248,7 +250,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   if (!auth.isAuthed || auth.me.id !== currentUserId) return null;
   return <ThemedView style={{ flex: 1 }}>
     <View style={[styles.head, { borderBottomColor: theme.line }]}><View style={styles.titleRow}><ThemedText type="smallBold" style={styles.title}>{title}</ThemedText>{!group && <TrustBadge verified={conversation.otherUser.verificationLevel >= 2} trustLevel={conversation.otherUser.verificationLevel === 3 ? 3 : conversation.otherUser.verificationLevel === 2 ? 2 : undefined} />}</View><RoomAction label={t.detail.close} onPress={onClose} /></View>
-    <View style={styles.toolbar}>{access.write && <RoomAction label={group ? conversation.isGroupHost ? t.meetup.end : t.meetup.leave : t.chat.end} onPress={() => setConfirmEnd(true)} />}{!group && <><RoomAction label={t.report.short} onPress={() => setReport({ targetType: 'user', targetId: conversation.otherUser.id, reportedUserId: conversation.otherUser.id, reportedNickname: conversation.otherUser.nickname })} /><RoomAction label={t.chat.block} onPress={() => void block(conversation.otherUser.id)} /></>}</View>
+    <View style={styles.toolbar}>{group && access.read && conversation.groupPostId && <ChatMembers key={`${currentUserId}:${conversation.id}`} conversationId={conversation.id} groupPostId={conversation.groupPostId} currentUserId={currentUserId} />}{access.write && <RoomAction label={group ? conversation.isGroupHost ? t.meetup.end : t.meetup.leave : t.chat.end} onPress={() => setConfirmEnd(true)} />}{!group && <><RoomAction label={t.report.short} onPress={() => setReport({ targetType: 'user', targetId: conversation.otherUser.id, reportedUserId: conversation.otherUser.id, reportedNickname: conversation.otherUser.nickname })} /><RoomAction label={t.chat.block} onPress={() => void block(conversation.otherUser.id)} /></>}</View>
     {review?.canWrite && <View style={styles.toolbar}>
       <RoomAction label={review.mine ? '거래 후기 고치기' : `${review.subjectNickname ?? ''}님 거래 후기 남기기`}
         onPress={() => setReviewOpen((current) => !current)} disabled={busy} />
@@ -292,10 +294,16 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       </ScrollView> : access.read ? loading && messages.length === 0 ? <View style={styles.center}><ActivityIndicator color={theme.accent} accessibilityLabel={t.chat.loading} /></View> : <FlatList data={messages} keyExtractor={(message) => message.id} contentContainerStyle={styles.scroll}
         ListEmptyComponent={<ThemedText type="small" themeColor="textSecondary" style={styles.empty}>{access.write ? t.chat.newConversation : t.chat.endedBody}</ThemedText>}
         ListHeaderComponent={<>{hasOlder && messages.length > 0 && <RoomAction label={loadingOlder ? t.feed.loadingMore : t.chat.loadOlder} onPress={() => void loadOlder()} disabled={loadingOlder} />}{verificationNotice}</>}
-        renderItem={({ item: message }) => {
+        renderItem={({ item: message, index }) => {
           const author = conversationSender(message, conversation);
-          if (message.sender_id === currentUserId) return <View style={[styles.bubbleMine, { backgroundColor: theme.accent }]}><ThemedText type="small" style={{ color: theme.accentInk }}>{message.body}</ThemedText></View>;
-          return <View style={styles.row}><View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" themeColor="navy">{author.nickname[0]}</ThemedText></View><View style={styles.rowBody}><ThemedText type="smallBold">{author.nickname}</ThemedText><View style={[styles.bubble, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="small">{message.body}</ThemedText></View><View style={styles.messageActions}><RoomAction label={t.report.short} onPress={() => setReport({ targetType: 'message', targetId: message.id, reportedUserId: author.id, reportedNickname: author.nickname })} />{group && <RoomAction label={t.chat.block} onPress={() => void block(author.id)} />}</View></View></View>;
+          const date = chatDateLabel(message.created_at, messages[index - 1]?.created_at);
+          const mine = message.sender_id === currentUserId;
+          const time = showChatMessageTime(message, messages[index + 1]) ? <ThemedText type="small" themeColor="textSecondary" style={mine ? styles.timeMine : undefined}>{chatMessageTime(message.created_at)}</ThemedText> : null;
+          return <View style={styles.messageGroup}>
+            {date && <ThemedText type="small" themeColor="textSecondary" style={styles.date}>{date}</ThemedText>}
+            {mine ? <><View style={[styles.bubbleMine, { backgroundColor: theme.accent }]}><ThemedText type="small" style={{ color: theme.accentInk }}>{message.body}</ThemedText></View>{time}</>
+              : <View style={styles.row}><View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" themeColor="navy">{author.nickname[0]}</ThemedText></View><View style={styles.rowBody}><ThemedText type="smallBold">{author.nickname}</ThemedText><View style={[styles.bubble, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="small">{message.body}</ThemedText></View>{time}<View style={styles.messageActions}><RoomAction label={t.report.short} onPress={() => setReport({ targetType: 'message', targetId: message.id, reportedUserId: author.id, reportedNickname: author.nickname })} />{group && <RoomAction label={t.chat.block} onPress={() => void block(author.id)} />}</View></View></View>}
+          </View>;
         }} /> : <View style={styles.request}><ThemedText type="small" themeColor="textSecondary">처리되거나 취소된 요청이에요. 대화 목록에서 새로 확인해 주세요.</ThemedText></View>}
       {!!error && <ThemedText accessibilityRole="alert" type="small" themeColor="accent" style={styles.feedback}>{error}</ThemedText>}{notice && <ThemedText type="small" accessibilityLiveRegion="polite" style={styles.feedback}>{notice}</ThemedText>}
       {confirmEnd && access.write && <View style={[styles.confirmation, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold">{t.chat.endConfirm}</ThemedText><ThemedText type="small">{conversationExitNotice(conversation, currentUserId)}</ThemedText>{group && <MeetupPolicyNotice mode={conversation.isGroupHost ? 'close' : 'leave'} />}<View style={styles.messageActions}><RoomAction label={t.profile.cancel} onPress={() => setConfirmEnd(false)} disabled={busy} /><RoomAction label={group ? conversation.isGroupHost ? t.meetup.end : t.meetup.leave : t.chat.end} onPress={() => void end()} disabled={busy} primary /></View></View>}
@@ -318,6 +326,9 @@ const styles = StyleSheet.create({
   safetyNotice: { padding: Spacing.three, borderRadius: 12, gap: Spacing.one },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { padding: Spacing.three, gap: Spacing.three },
+  messageGroup: { gap: Spacing.one },
+  date: { textAlign: 'center', paddingVertical: Spacing.two },
+  timeMine: { alignSelf: 'flex-end' },
   empty: { textAlign: 'center', paddingVertical: Spacing.five },
   row: { flexDirection: 'row', gap: Spacing.two, alignItems: 'flex-start', paddingRight: Spacing.five },
   rowBody: { gap: Spacing.one, flexShrink: 1 },
