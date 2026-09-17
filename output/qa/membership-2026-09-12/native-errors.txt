@@ -1,0 +1,30 @@
+Timestamp               Ty Process[PID:TID]
+2026-09-12 13:17:13.149 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #5758 while registering asset type icon
+2026-09-12 13:17:13.149 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #5766 while registering asset type advertiser
+2026-09-12 13:17:13.149 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #5774 while registering asset type headline
+2026-09-12 13:17:13.149 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #5778 while registering asset type body
+2026-09-12 13:17:13.149 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #5780 while registering asset type media
+2026-09-12 13:17:13.149 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #5784 while registering asset type callToAction
+2026-09-12 13:17:13.856 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #5790 while registering asset type icon
+2026-09-12 13:17:13.856 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #5798 while registering asset type advertiser
+2026-09-12 13:17:13.856 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #5806 while registering asset type headline
+2026-09-12 13:17:13.856 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #5810 while registering asset type body
+2026-09-12 13:17:13.856 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #5812 while registering asset type media
+2026-09-12 13:17:13.856 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #5816 while registering asset type callToAction
+2026-09-12 13:17:13.935 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #5822 while registering asset type icon
+2026-09-12 13:17:13.935 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #5830 while registering asset type advertiser
+2026-09-12 13:17:13.935 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #5838 while registering asset type headline
+2026-09-12 13:17:13.935 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #5842 while registering asset type body
+2026-09-12 13:17:13.935 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #5844 while registering asset type media
+2026-09-12 13:17:13.935 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #5848 while registering asset type callToAction
+2026-09-12 13:23:46.460 E  storekitd[70855:30fe24] [com.apple.storekit:Default] [9839B1F3_SK2] Authenticate failed for sandbox: Error Domain=AMSErrorDomain Code=100 "Authentication Failed The authentication failed." UserInfo={NSMultipleUnderlyingErrorsKey=(
+    "Error Domain=AMSErrorDomain Code=2 \134"Password reuse not available for account The account state does not support password reuse.\134" UserInfo={NSDebugDescription=Password reuse not available for account The account state does not support password reuse., AMSDescription=Password reuse not available for account, AMSFailureReason=The account state does not support password reuse.}",
+    "Error Domain=AMSErrorDomain Code=0 \134"Authentication Failed Encountered an unrecognized authentication failure.\134" UserInfo={NSDebugDescription=Authentication Failed Encountered an unrecognized authentication failure., AMSDescription=Authentication Failed, AMSFailureReason=Encountered an unrecognized authentication failure.}"
+), AMSDescription=Authentication Failed, NSDebugDescription=Authentication Failed The authentication failed., AMS<…>
+2026-09-12 13:23:46.474 E  app[70885:300c76] [com.facebook.react.log:javascript] [RevenueCat] 🍎‼️ Purchase was cancelled.
+2026-09-12 13:25:29.003 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #8434 while registering asset type icon
+2026-09-12 13:25:29.003 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #8442 while registering asset type advertiser
+2026-09-12 13:25:29.003 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #8450 while registering asset type headline
+2026-09-12 13:25:29.003 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #8454 while registering asset type body
+2026-09-12 13:25:29.003 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #8456 while registering asset type media
+2026-09-12 13:25:29.003 E  app[70885:300c39] [com.facebook.react.log:native] Cannot find NativeAssetView with tag #8460 while registering asset type callToAction

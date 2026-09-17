@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ReportSheet } from '@/components/report-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { TrustBadge } from '@/components/trust-badge';
+import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { count, t } from '@/i18n/ko';
@@ -142,25 +143,26 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
 // 정착을 돕겠다는 앱이 정착을 막는다. 기록이 없으면 "새 이웃"이라고만 적는다.
 function TradeRecord({ trade, onOpenPost }: { trade: TradeProfile; onOpenPost: (postId: string) => void }) {
   const theme = useTheme();
-  const marks = [
-    trade.dealPartners > 0 ? `거래한 이웃 ${count(trade.dealPartners)}명` : null,
-    trade.closedListings > 0 ? `거래 완료 ${count(trade.closedListings)}건` : null,
-    trade.reviews.total > 0 ? `다시 거래하겠다 ${count(trade.reviews.wouldDealAgain)}/${count(trade.reviews.total)}` : null,
-    trade.memberMonths >= 1 ? `함께한 지 ${count(trade.memberMonths)}개월` : null,
-  ].filter(Boolean) as string[];
+  // 칩이 아니라 문장으로 적는다. 신뢰는 훑어서가 아니라 읽어서 판단된다.
+  const facts: { symbol: SymbolViewProps['name']; text: string }[] = [];
+  if (trade.dealPartners > 0) facts.push({ symbol: { ios: 'person.2', android: 'group', web: 'group' }, text: `이웃 ${count(trade.dealPartners)}명과 거래했어요` });
+  if (trade.closedListings > 0) facts.push({ symbol: { ios: 'shippingbox', android: 'inventory_2', web: 'inventory_2' }, text: `거래 완료 ${count(trade.closedListings)}건` });
+  if (trade.reviews.total > 0) facts.push({ symbol: { ios: 'arrow.uturn.left', android: 'replay', web: 'replay' }, text: `${count(trade.reviews.total)}명 중 ${count(trade.reviews.wouldDealAgain)}명이 다시 거래하겠다고 했어요` });
+  if (trade.memberMonths >= 1) facts.push({ symbol: { ios: 'calendar', android: 'calendar_month', web: 'calendar_month' }, text: `글링과 함께한 지 ${count(trade.memberMonths)}개월` });
 
   return (
     <View style={styles.record}>
-      {marks.length > 0 ? (
-        <View style={styles.marks}>
-          {marks.map((mark) => (
-            <View key={mark} style={[styles.mark, { backgroundColor: theme.backgroundElement }]}>
-              <ThemedText type="small" style={{ fontSize: 12 }}>{mark}</ThemedText>
+      {facts.length > 0 ? (
+        <View style={[styles.facts, { borderColor: theme.line }]}>
+          {facts.map((fact, index) => (
+            <View key={fact.text} style={[styles.fact, index > 0 && { borderTopWidth: 1, borderTopColor: theme.line }]}>
+              <SymbolView name={fact.symbol} size={14} tintColor={theme.navy} />
+              <ThemedText type="small" style={{ flex: 1 }}>{fact.text}</ThemedText>
             </View>
           ))}
         </View>
       ) : (
-        <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12.5 }}>
+        <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12.5, textAlign: 'center' }}>
           아직 거래 기록이 없는 새 이웃이에요.
         </ThemedText>
       )}
@@ -170,7 +172,9 @@ function TradeRecord({ trade, onOpenPost }: { trade: TradeProfile; onOpenPost: (
           <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12.5 }}>올려둔 구해요·팔아요</ThemedText>
           {trade.openListings.slice(0, 3).map((listing) => (
             <Pressable key={listing.id} onPress={() => onOpenPost(listing.id)} accessibilityRole="button"
-              style={({ pressed }) => [styles.listing, { borderColor: theme.line }, pressed && { backgroundColor: theme.backgroundElement }]}>
+              accessibilityLabel={`${listing.title}${listing.price != null ? `, ${t.detail.price(Number(listing.price))}` : ''}`}
+              style={({ pressed }) => [styles.listing, { borderColor: theme.line },
+                pressed && { backgroundColor: theme.backgroundElement, transform: [{ scale: 0.985 }] }]}>
               <ThemedText type="small" numberOfLines={1} style={{ flex: 1 }}>{listing.title}</ThemedText>
               {listing.price != null && <ThemedText type="smallBold" style={{ fontSize: 12 }}>{t.detail.price(Number(listing.price))}</ThemedText>}
             </Pressable>
@@ -201,8 +205,8 @@ const styles = StyleSheet.create({
   avatar: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   nickRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   record: { alignSelf: 'stretch', gap: Spacing.two, marginTop: Spacing.one },
-  marks: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one, justifyContent: 'center' },
-  mark: { paddingHorizontal: Spacing.two, paddingVertical: 5, borderRadius: 999 },
+  facts: { borderWidth: 1, borderRadius: 12, overflow: 'hidden' },
+  fact: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: 9 },
   listings: { gap: Spacing.one },
   listing: { minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.two, borderWidth: 1, borderRadius: 8 },
   review: { gap: 2, paddingHorizontal: Spacing.two },

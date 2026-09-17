@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -22,6 +24,7 @@ export function PushInvite() {
   const { play } = useInteractionFeedback();
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     let active = true;
@@ -70,24 +73,31 @@ export function PushInvite() {
 
   if (!visible) return null;
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={() => void close()}>
+    <Modal visible transparent animationType="slide" onRequestClose={() => void close()}>
       <View style={styles.backdrop}>
-        <View style={[styles.card, { backgroundColor: theme.card }]}>
-          <ThemedText type="smallBold" style={styles.title}>소식을 놓치지 않게 해드릴까요?</ThemedText>
-          <View style={styles.lines}>
-            <Line text="내 글에 달린 댓글과 답글" />
-            <Line text="모임 신청과 승인, 새 메시지" />
-            <Line text="내 도시에서 지금 반응이 오는 글" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={() => void close()} accessibilityRole="button" accessibilityLabel="닫기" />
+        <View style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.three) + Spacing.two }]}>
+          <View style={[styles.badge, { backgroundColor: theme.backgroundElement }]}>
+            <SymbolView name={{ ios: 'bell.badge', android: 'notifications_active', web: 'notifications_active' }} size={22} tintColor={theme.accent} />
           </View>
-          <ThemedText type="small" themeColor="textSecondary" style={styles.note}>
-            밤 10시부터 아침 8시까지는 보내지 않아요. 어떤 소식을 받을지는 프로필에서 바꿀 수 있어요.
-          </ThemedText>
+          <ThemedText type="smallBold" style={styles.title}>소식을 놓치지 않게 해드릴까요?</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.lead}>이 세 가지만 보냅니다.</ThemedText>
+          <View style={styles.lines}>
+            <Line symbol={{ ios: 'bubble.left', android: 'chat_bubble', web: 'chat_bubble' }}
+              text="내 글의 댓글과 답글" hint="누가 대답했는지 바로 알 수 있어요" />
+            <Line symbol={{ ios: 'person.2', android: 'group', web: 'group' }}
+              text="모임 신청과 승인, 새 메시지" hint="상대를 기다리게 두지 않아요" />
+            <Line symbol={{ ios: 'flame', android: 'local_fire_department', web: 'local_fire_department' }}
+              text="내 도시에서 지금 뜨는 글" hint="하루 최대 3번, 밤 10시~아침 8시에는 보내지 않아요" />
+          </View>
           <Pressable onPress={() => void allow()} disabled={busy} accessibilityRole="button"
             accessibilityState={{ disabled: busy, busy }}
-            style={[styles.primary, { backgroundColor: theme.accent, opacity: busy ? 0.6 : 1 }]}>
+            style={({ pressed }) => [styles.primary, { backgroundColor: theme.accent },
+              (pressed || busy) && { opacity: 0.82, transform: [{ scale: busy ? 1 : 0.985 }] }]}>
             <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{busy ? '설정 중' : '알림 받기'}</ThemedText>
           </Pressable>
-          <Pressable onPress={() => void close()} disabled={busy} accessibilityRole="button" style={styles.secondary}>
+          <Pressable onPress={() => void close()} disabled={busy} accessibilityRole="button"
+            style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.6 }]}>
             <ThemedText type="smallBold" themeColor="textSecondary">나중에</ThemedText>
           </Pressable>
         </View>
@@ -96,24 +106,31 @@ export function PushInvite() {
   );
 }
 
-function Line({ text }: { text: string }) {
+function Line({ symbol, text, hint }: { symbol: SymbolViewProps['name']; text: string; hint: string }) {
   const theme = useTheme();
   return (
     <View style={styles.line}>
-      <View style={[styles.bullet, { backgroundColor: theme.accent }]} />
-      <ThemedText type="small" style={{ flex: 1 }}>{text}</ThemedText>
+      <View style={[styles.lineIcon, { backgroundColor: theme.backgroundElement }]}>
+        <SymbolView name={symbol} size={13} tintColor={theme.navy} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <ThemedText type="small">{text}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.lineHint}>{hint}</ThemedText>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
-  card: { width: '100%', maxWidth: 340, borderRadius: 18, padding: Spacing.four, gap: Spacing.two },
-  title: { fontSize: 17 },
-  lines: { gap: Spacing.one, marginTop: Spacing.one },
-  line: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  bullet: { width: 5, height: 5, borderRadius: 3 },
-  note: { fontSize: 12.5, marginTop: Spacing.one },
-  primary: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 999, marginTop: Spacing.two },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.34)', justifyContent: 'flex-end' },
+  sheet: { borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingHorizontal: Spacing.four, paddingTop: Spacing.four, gap: Spacing.two },
+  badge: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
+  title: { fontSize: 17, textAlign: 'center' },
+  lead: { textAlign: 'center' },
+  lines: { gap: Spacing.two, marginVertical: Spacing.two },
+  line: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two },
+  lineIcon: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  lineHint: { fontSize: 12 },
+  primary: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 999 },
   secondary: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 });

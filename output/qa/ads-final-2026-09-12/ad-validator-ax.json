@@ -1,0 +1,112 @@
+[
+  {
+    "label": "광고",
+    "role": "text",
+    "frame": {
+      "x": 0.0364,
+      "y": 0.3888,
+      "width": 0.9273,
+      "height": 0.0188
+    }
+  },
+  {
+    "label": "Test mode: Loans from $500-$60,000",
+    "role": "text",
+    "frame": {
+      "x": 0.0364,
+      "y": 0.416,
+      "width": 0.9273,
+      "height": 0.0272
+    }
+  },
+  {
+    "label": "Apply Now",
+    "role": "link",
+    "frame": {
+      "x": 0.8053,
+      "y": 0.7639,
+      "width": 0.1583,
+      "height": 0.046
+    }
+  },
+  {
+    "label": "광고",
+    "role": "text",
+    "frame": {
+      "x": 0.0364,
+      "y": 4.4031,
+      "width": 0.9273,
+      "height": 0.0188
+    }
+  },
+  {
+    "label": "Test mode: Loans from $500-$60,000",
+    "role": "text",
+    "frame": {
+      "x": 0.0364,
+      "y": 4.4303,
+      "width": 0.9273,
+      "height": 0.0272
+    }
+  },
+  {
+    "label": "Apply Now",
+    "role": "link",
+    "frame": {
+      "x": 0.8053,
+      "y": 4.7772,
+      "width": 0.1583,
+      "height": 0.046
+    }
+  },
+  {
+    "label": "광고",
+    "role": "text",
+    "frame": {
+      "x": 0.0364,
+      "y": 8.3145,
+      "width": 0.9273,
+      "height": 0.0188
+    }
+  },
+  {
+    "label": "Test mode: Loans from $500-$60,000",
+    "role": "text",
+    "frame": {
+      "x": 0.0364,
+      "y": 8.3417,
+      "width": 0.9273,
+      "height": 0.0272
+    }
+  },
+  {
+    "label": "Apply Now",
+    "role": "link",
+    "frame": {
+      "x": 0.8053,
+      "y": 8.6886,
+      "width": 0.1583,
+      "height": 0.046
+    }
+  },
+  {
+    "label": "No implementation issues found",
+    "role": "text",
+    "frame": {
+      "x": 0.1841,
+      "y": 0.8923,
+      "width": 0.4591,
+      "height": 0.0209
+    }
+  },
+  {
+    "label": "Dismiss",
+    "role": "link",
+    "frame": {
+      "x": 0.5591,
+      "y": 0.9351,
+      "width": 0.1136,
+      "height": 0.0209
+    }
+  }
+]

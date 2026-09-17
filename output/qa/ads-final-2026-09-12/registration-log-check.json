@@ -1,0 +1,11 @@
+{
+  "pid": 74096,
+  "start_pdt": "2026-09-12 14:01:34",
+  "end_pdt": "2026-09-12 14:03:22",
+  "total_records": 12029,
+  "registration_error_count": 0,
+  "registration_errors": [],
+  "boundary_warning_log_mentions": [],
+  "onscreen_validator": "No implementation issues found",
+  "note": "Validator pass is independently proven by original screenshot and AX; log silence alone is not used as proof."
+}

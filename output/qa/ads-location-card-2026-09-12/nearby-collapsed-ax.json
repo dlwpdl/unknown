@@ -1,0 +1,57 @@
+[
+  {
+    "role": "text",
+    "label": "내 주변 소식",
+    "value": "",
+    "frame": {
+      "x": 0.1462,
+      "y": 0.3326,
+      "width": 0.6621,
+      "height": 0.023
+    }
+  },
+  {
+    "role": "button",
+    "label": "위치 이용 안내",
+    "value": "",
+    "frame": {
+      "x": 0.8265,
+      "y": 0.3333,
+      "width": 0.1,
+      "height": 0.046
+    }
+  },
+  {
+    "role": "text",
+    "label": "GPS로 가까운 도시와 주변 동네를 찾아요.",
+    "value": "",
+    "frame": {
+      "x": 0.1462,
+      "y": 0.3598,
+      "width": 0.6621,
+      "height": 0.0199
+    }
+  },
+  {
+    "role": "button",
+    "label": "위치 다시 확인",
+    "value": "",
+    "frame": {
+      "x": 0.0735,
+      "y": 0.3881,
+      "width": 0.2417,
+      "height": 0.046
+    }
+  },
+  {
+    "role": "button",
+    "label": "위치 공유 끄고 기록 삭제",
+    "value": "",
+    "frame": {
+      "x": 0.0735,
+      "y": 0.4425,
+      "width": 0.853,
+      "height": 0.046
+    }
+  }
+]

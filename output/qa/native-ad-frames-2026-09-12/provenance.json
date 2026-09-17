@@ -1,0 +1,35 @@
+{
+  "checked_at": "2026-09-12T13:57:45-07:00",
+  "device": "583E7BFD-5CB4-42EC-B15C-1D4D5986FA39",
+  "pid": 3919,
+  "bundle_id": "com.dlwpdl.gling",
+  "installed_app": "/Users/ash/Library/Developer/CoreSimulator/Devices/583E7BFD-5CB4-42EC-B15C-1D4D5986FA39/data/Containers/Bundle/Application/D8628E13-C6BD-4F9F-BCB0-45B6A60FE653/app.app",
+  "sha256": {
+    "main.jsbundle": "0875e7b41079fa3cc261d68ac993ab8a68656687ab8223765adebc4963b2510a",
+    "app": "30fedb8d12c43d3e63f7fd3b7240f475aa607c182f55e3cd073187ddc2a6c48e"
+  },
+  "first_sample_at": "2026-09-12T13:56:54-07:00",
+  "second_sample_at": "2026-09-12T13:57:16-07:00",
+  "samples_match": true,
+  "cta_only_overflow": [
+    {
+      "native_ad": "0x15c66ed00",
+      "height": 401.3330078125,
+      "cta_bottom": 401.6666564941406,
+      "bottom_overflow_pt": 0.333648681640625
+    },
+    {
+      "native_ad": "0x15afa3c00",
+      "height": 401.33349609375,
+      "cta_bottom": 401.6666564941406,
+      "bottom_overflow_pt": 0.333160400390625
+    },
+    {
+      "native_ad": "0x15afa2300",
+      "height": 401.333251953125,
+      "cta_bottom": 401.6666564941406,
+      "bottom_overflow_pt": 0.333404541015625
+    }
+  ],
+  "method": "LLDB main-thread UIKit read-only getters via KVC; NSInvocation invokes convertRect:toView: using native method signature (32-byte CGRect), then host Python computes containment. No app setters or SDK configuration changes."
+}

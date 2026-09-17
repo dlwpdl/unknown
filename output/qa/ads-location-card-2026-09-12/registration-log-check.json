@@ -1,0 +1,12 @@
+{
+  "pid": 3919,
+  "start_pdt": "2026-09-12 13:48:08",
+  "end_pdt": "2026-09-12 13:49:40",
+  "total_records": 15462,
+  "registration_error_count": 0,
+  "registration_errors": [],
+  "validator_log_mentions": [],
+  "onscreen_validator_issue": "Advertiser assets outside native ad view",
+  "onscreen_validator_issue_count": 1,
+  "note": "Validator failure was directly observed on screen; no log mention does not prove its absence."
+}

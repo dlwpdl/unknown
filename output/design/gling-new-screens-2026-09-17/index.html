@@ -1,0 +1,401 @@
+<title>글링 새 화면 네 개</title>
+<style>
+  :root {
+    --ink: #21252C; --paper: #FAF9F5; --chip: #F1EFE8; --selected: #E8E5DC;
+    --sub: #5B6270; --card: #FFFFFF; --line: #E5E3DB;
+    --accent: #BE3B2A; --accent-ink: #FFFFFF; --navy: #34506B;
+    --shell: #E9E6DE;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #EAE9E2; --paper: #15181C; --chip: #23272E; --selected: #2B3037;
+      --sub: #9AA0A8; --card: #1C2026; --line: #2B3037;
+      --accent: #E15A44; --accent-ink: #1A0E0B; --navy: #8FB0CC; --shell: #0D0F12;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #EAE9E2; --paper: #15181C; --chip: #23272E; --selected: #2B3037;
+    --sub: #9AA0A8; --card: #1C2026; --line: #2B3037;
+    --accent: #E15A44; --accent-ink: #1A0E0B; --navy: #8FB0CC; --shell: #0D0F12;
+  }
+
+  body {
+    background: var(--shell); color: var(--ink); margin: 0;
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1180px; margin: 0 auto; padding: 36px 16px 90px; }
+  .lede { max-width: 60ch; display: grid; gap: 10px; margin-bottom: 40px; }
+  .lede h1 { font-size: clamp(26px, 4vw, 34px); line-height: 1.12; letter-spacing: -.022em; margin: 0; text-wrap: balance; }
+  .lede p { margin: 0; color: var(--sub); }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 34px 26px; align-items: start; }
+  .item { display: grid; gap: 14px; }
+  .cap { display: grid; gap: 6px; }
+  .cap h2 { margin: 0; font-size: 16px; letter-spacing: -.01em; }
+  .cap p { margin: 0; color: var(--sub); font-size: 13px; }
+  .cap .ref { font-size: 12.5px; color: var(--sub); }
+  .cap .ref a { color: var(--navy); }
+
+  /* 폰 프레임 */
+  .phone {
+    width: 100%; max-width: 320px; border-radius: 34px; padding: 9px;
+    background: var(--ink); box-shadow: 0 14px 34px rgba(0,0,0,.18);
+  }
+  .screen { border-radius: 26px; overflow: hidden; background: var(--paper); }
+  .bar { height: 30px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font-size: 11px; color: var(--sub); }
+  .body { padding: 0 0 16px; }
+
+  /* 공통 */
+  .head { padding: 12px 16px 6px; }
+  .head .day { font-size: 11.5px; color: var(--sub); }
+  .head .title { font-size: 21px; line-height: 1.2; letter-spacing: -.02em; font-weight: 700; margin-top: 2px; }
+  .sect { padding: 14px 16px 8px; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .sect b { font-size: 14.5px; }
+  .sect span { font-size: 12px; color: var(--sub); }
+
+  /* 1. 주간 순위 — 세로 번호 목록 */
+  .rank { margin: 0 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); overflow: hidden; }
+  .rank { display: block; width: calc(100% - 32px); text-align: left; font: inherit; color: inherit; cursor: pointer; padding: 0; }
+  .rrow { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: center; padding: 7px 12px; border-top: 1px solid var(--line); }
+  .rone { min-width: 0; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rrow:first-child { border-top: 0; }
+  .rno { font-size: 13.5px; font-weight: 700; text-align: center; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .rrow.top .rno { color: var(--accent); }
+  .rttl { min-width: 0; }
+  .rttl b { display: block; font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rttl span { display: block; font-size: 11.5px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rnum { font-size: 11.5px; color: var(--sub); font-variant-numeric: tabular-nums; text-align: right; }
+
+  .chipbar { display: flex; gap: 6px; padding: 12px 16px 8px; }
+  .cn { font-size: 12px; padding: 5px 11px; border-radius: 999px; background: var(--chip); color: var(--sub); }
+  .cn.on { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+  .post { padding: 4px 16px 0; }
+  .ptag { font-size: 11px; color: var(--sub); }
+  .pttl { font-size: 15px; font-weight: 700; margin-top: 2px; letter-spacing: -.01em; }
+  .pbody { font-size: 12.5px; color: var(--sub); margin-top: 3px; }
+
+  /* 2. 알림 안내 — 하단 시트 */
+  .dim { background: rgba(0,0,0,.34); padding-top: 92px; }
+  .sheet { background: var(--card); border-radius: 22px 22px 0 0; padding: 22px 20px 18px; display: grid; gap: 12px; }
+  .sheet .icon { width: 44px; height: 44px; border-radius: 22px; background: var(--chip); display: grid; place-items: center; margin: 0 auto; font-size: 20px; }
+  .sheet h3 { margin: 0; text-align: center; font-size: 17px; letter-spacing: -.01em; }
+  .sheet .lead { margin: 0; text-align: center; font-size: 13px; color: var(--sub); }
+  .rows { display: grid; gap: 11px; margin: 4px 2px; }
+  .prow { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; }
+  .prow .g { width: 22px; height: 22px; border-radius: 11px; background: var(--chip); display: grid; place-items: center; font-size: 11px; }
+  .prow p { margin: 0; font-size: 13px; }
+  .prow p small { display: block; color: var(--sub); font-size: 11.5px; }
+  .cta { height: 46px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+  .ghost { height: 40px; display: grid; place-items: center; color: var(--sub); font-size: 13px; font-weight: 600; }
+
+  /* 3. 거래 이력 — 아이콘 사실 행 */
+  .mini { padding: 18px 18px 8px; text-align: center; }
+  .av { width: 58px; height: 58px; border-radius: 29px; background: var(--chip); margin: 0 auto 8px; display: grid; place-items: center; font-size: 19px; color: var(--navy); font-weight: 700; }
+  .mini .nm { font-size: 16px; font-weight: 700; }
+  .mini .loc { font-size: 12px; color: var(--sub); }
+  .facts { margin: 12px 18px 0; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+  .fact { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--line); font-size: 13px; }
+  .fact:first-child { border-top: 0; }
+  .fact i { font-style: normal; text-align: center; font-size: 13px; }
+  .fact b { font-weight: 600; }
+  .listing { display: flex; align-items: center; gap: 8px; margin: 8px 18px 0; padding: 9px 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); font-size: 13px; }
+  .listing span { margin-left: auto; font-weight: 700; font-size: 12.5px; }
+
+  /* 4. 거래 후기 */
+  .chat { padding: 12px 16px 0; display: grid; gap: 8px; }
+  .bub { max-width: 78%; padding: 8px 11px; border-radius: 14px; font-size: 13px; }
+  .them { background: var(--card); border: 1px solid var(--line); }
+  .me { background: var(--accent); color: var(--accent-ink); margin-left: auto; }
+  .prompt { margin: 14px 16px 0; border: 1px solid var(--line); border-radius: 14px; background: var(--card); padding: 14px; display: grid; gap: 10px; }
+  .prompt .ttl { font-size: 13.5px; font-weight: 700; }
+  .prompt .sub { font-size: 11.5px; color: var(--sub); }
+  .pick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .opt { border: 1px solid var(--line); border-radius: 10px; padding: 10px 8px; text-align: center; font-size: 13px; font-weight: 600; }
+  .opt.on { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); }
+  .field { border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; font-size: 12.5px; color: var(--sub); min-height: 44px; }
+  .send { height: 42px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 700; font-size: 13.5px; }
+
+
+  /* 인터랙션 -------------------------------------------------------
+     누르는 순간(포인터 다운)에 반응한다. 손을 뗄 때까지 기다리면 죽은 느낌이 난다.
+     펼침은 값이 아니라 움직임으로 보여준다 — iOS 의 임계 감쇠 스프링에 가까운 곡선. */
+  :root {
+    --press: transform .1s ease-out, background-color .1s ease-out;
+    --spring: cubic-bezier(.32, .72, 0, 1);
+  }
+  .rank, .cta, .ghost, .listing, .opt, .send, .cn, .sect span {
+    transition: var(--press);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .rank:active, .listing:active, .opt:active { transform: scale(.985); background: var(--chip); }
+  .cta:active, .send:active { transform: scale(.97); filter: brightness(.94); }
+  .ghost:active, .cn:active { transform: scale(.97); background: var(--chip); }
+  .rank:focus-visible, .cta:focus-visible, .listing:focus-visible, .opt:focus-visible {
+    outline: 2px solid var(--navy); outline-offset: 2px;
+  }
+  .listing, .opt, .cta, .send, .ghost { cursor: pointer; }
+
+  /* 펼칠 때 목록이 제자리에서 자라나게. 위에서 떨어지면 어디서 왔는지 알 수 없다. */
+  #rest > .rrow {
+    animation: grow .34s var(--spring) both;
+  }
+  @keyframes grow {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: none; }
+  }
+  #rollrow { transition: opacity .18s ease; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rank, .cta, .ghost, .listing, .opt, .send, .cn, #rollrow { transition: none; }
+    .rank:active, .listing:active, .opt:active, .cta:active,
+    .send:active, .ghost:active, .cn:active { transform: none; }
+    #rest > .rrow { animation: none; }
+  }
+
+  .compare { margin-top: 44px; padding-top: 24px; border-top: 1px solid var(--line); }
+  .compare h2 { margin: 0 0 14px; font-size: 17px; letter-spacing: -.01em; }
+  .cmp { display: grid; grid-template-columns: minmax(240px, 300px) 1fr; gap: 24px; align-items: start; }
+  @media (max-width: 620px) { .cmp { grid-template-columns: 1fr; } }
+  .cmpbox { display: grid; gap: 8px; }
+  .roll { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: center; padding: 7px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+  .roll .rno { font-weight: 700; text-align: center; font-size: 13.5px; }
+  .cmpcap { margin: 0; font-size: 12.5px; color: var(--sub); }
+  .cmpwhy { color: var(--sub); font-size: 13px; display: grid; gap: 10px; }
+  .cmpwhy p { margin: 0; }
+  .cmpwhy b { color: var(--ink); }
+  .cmpwhy a { color: var(--navy); }
+  .cmpwhy ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+
+  .note { margin-top: 30px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--sub); font-size: 13px; max-width: 70ch; }
+  .note b { color: var(--ink); }
+</style>
+
+<div class="page">
+  <div class="lede">
+    <h1>새로 만든 네 화면</h1>
+    <p>주간 순위, 알림 안내, 거래 이력, 거래 후기입니다. Mobbin에서 같은 문제를 푼 앱들을 보고 고친 점을 각 화면 아래에 적었습니다. <b>순위 카드는 실제로 돌아가고 눌러서 펼칠 수 있습니다.</b> 색과 글꼴은 글링 기존 토큰 그대로입니다.</p>
+  </div>
+
+  <div class="grid">
+
+    <!-- 1 -->
+    <div class="item">
+      <div class="phone"><div class="screen">
+        <div class="bar"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+        <div class="body">
+          <div class="head"><div class="day">9월 17일 목요일</div><div class="title">우리 동네의 오늘을 펼치다.</div></div>
+          <div class="sect"><b>이번 주 많이 읽은 글</b><span id="rkhint">눌러서 전체 보기</span></div>
+          <button class="rank" id="rank" type="button" aria-expanded="false" aria-label="이번 주 많이 읽은 글, 눌러서 전체 보기">
+            <div class="rrow top" id="rollrow">
+              <div class="rno" id="rollno">1</div>
+              <div class="rone" id="rolltxt">ICBC는 기본만, 나머지는 BCAA로</div>
+              <div class="rnum" id="rollnum">8,555</div>
+            </div>
+            <div id="rest" hidden></div>
+          </button>
+          <div class="chipbar"><span class="cn on">전체</span><span class="cn">라이프</span><span class="cn">맛집</span><span class="cn">여행</span></div>
+          <div class="post">
+            <div class="ptag">라이프</div>
+            <div class="pttl">이런 날엔 콜하버 한 바퀴</div>
+            <div class="pbody">물에 비친 빌딩이랑 빼곡히 정박한 배들. 콜하버 사진은 보다 보니…</div>
+          </div>
+        </div>
+      </div></div>
+      <div class="cap">
+        <h2>주간 순위</h2>
+        <p><b>눌러보세요.</b> 접혀 있을 때는 한 줄이 10위까지 3초마다 돌고, 누르면 열 줄이 한눈에 펼쳐집니다. 접힌 높이는 30px로 가장 낮고, 비교가 필요한 순간에만 자리를 씁니다.</p>
+        <p>한 가지 조건이 있습니다. 접힌 줄을 누르면 <b>그 글로 가는 게 아니라 펼쳐져야</b> 합니다. 움직이는 대상을 눌러 엉뚱한 글로 들어가는 일이 없어야 하고, 줄 전체가 "펼치기" 하나이면 그 문제가 사라집니다. 동작 줄이기를 켠 기기에서는 돌지 않고 1위만 보여준 뒤 같은 방식으로 펼칩니다.</p>
+        <div class="ref">참고: <a href="https://mobbin.com/screens/3842b688-8845-4a2f-89d0-9154a52e85e7">Binance 인기 검색</a>, <a href="https://mobbin.com/screens/fc7572bf-7e32-435d-904e-3d7ba951e268">Yami 검색 순위</a>, <a href="https://mobbin.com/screens/0f429817-c46d-4200-8268-ccb33760cdbe">Character AI</a> — 번호 + 제목 한 줄 + 오른쪽 숫자. 열 줄도 부담 없이 들어갑니다.</div>
+      </div>
+    </div>
+
+    <!-- 2 -->
+    <div class="item">
+      <div class="phone"><div class="screen">
+        <div class="bar"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+        <div class="body dim" style="padding-bottom:0">
+          <div class="sheet">
+            <div class="icon">🔔</div>
+            <h3>소식을 놓치지 않게 해드릴까요?</h3>
+            <p class="lead">이 세 가지만 보냅니다.</p>
+            <div class="rows">
+              <div class="prow"><div class="g">💬</div><p>내 글의 댓글과 답글<small>누가 대답했는지 바로 알 수 있어요</small></p></div>
+              <div class="prow"><div class="g">🤝</div><p>모임 신청과 승인, 새 메시지<small>기다리게 두지 않아요</small></p></div>
+              <div class="prow"><div class="g">🔥</div><p>내 도시에서 지금 뜨는 글<small>하루 최대 3번, 밤에는 보내지 않아요</small></p></div>
+            </div>
+            <div class="cta">알림 받기</div>
+            <div class="ghost">나중에</div>
+          </div>
+        </div>
+      </div></div>
+      <div class="cap">
+        <h2>알림 안내</h2>
+        <p>가운데 떠 있던 상자를 하단 시트로 내리고, 줄마다 아이콘과 한 줄 설명을 붙입니다. 무엇을 받는지보다 <b>얼마나 자주 오는지</b>가 수락을 가르기 때문에 빈도와 야간 미발송을 본문에 넣습니다.</p>
+        <div class="ref">참고: <a href="https://mobbin.com/screens/a94518a2-f6a1-4007-8b4a-9f1051be6e14">Agoda</a>, <a href="https://mobbin.com/screens/1221c8f3-b7f5-4f42-a0a2-67e716b74954">Meta AI</a>, <a href="https://mobbin.com/screens/b2d16b56-b207-4188-8b6d-8f336a29e7a9">Gymshark</a> — 아이콘 + 3줄 + 조용한 거절.</div>
+      </div>
+    </div>
+
+    <!-- 3 -->
+    <div class="item">
+      <div class="phone"><div class="screen">
+        <div class="bar"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+        <div class="body">
+          <div class="mini">
+            <div class="av">단</div>
+            <div class="nm">단단한바람 <span style="font-size:12px;color:var(--navy)">✓</span></div>
+            <div class="loc">밴쿠버 · 다운타운</div>
+          </div>
+          <div class="facts">
+            <div class="fact"><i>🤝</i><div><b>이웃 12명</b>과 거래했어요</div></div>
+            <div class="fact"><i>📦</i><div>거래 완료 <b>9건</b></div></div>
+            <div class="fact"><i>↩︎</i><div><b>11명 중 10명</b>이 다시 거래하겠다고 했어요</div></div>
+            <div class="fact"><i>🗓</i><div>글링과 함께한 지 <b>7개월</b></div></div>
+          </div>
+          <div class="sect"><b>올려둔 구해요·팔아요</b><span>3</span></div>
+          <div class="listing">아이폰 충전기 새것 <span>$15</span></div>
+          <div class="listing">이케아 책상 팝니다 <span>$60</span></div>
+          <div style="margin:14px 18px 0"><div class="cta">대화 걸기</div></div>
+        </div>
+      </div></div>
+      <div class="cap">
+        <h2>거래 이력</h2>
+        <p>알약 모양 칩 뭉치를 아이콘 한 줄씩으로 바꿉니다. 칩은 스치듯 읽히고 문장이 안 되는데, 신뢰는 문장으로 읽혀야 판단이 섭니다. 점수는 여전히 두지 않습니다.</p>
+        <div class="ref">참고: <a href="https://mobbin.com/screens/54bb8c83-e3f8-48ab-86ea-693332e1e7eb">Etsy 판매자 소개</a>의 아이콘 사실 행, <a href="https://mobbin.com/screens/a248174c-a130-491c-9a1d-f48d7aa384c5">Grailed</a>의 거래 횟수 노출.</div>
+      </div>
+    </div>
+
+    <!-- 4 -->
+    <div class="item">
+      <div class="phone"><div class="screen">
+        <div class="bar"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+        <div class="body">
+          <div class="sect" style="padding-top:10px"><b>단단한바람</b><span>거래 · 이케아 책상</span></div>
+          <div class="chat">
+            <div class="bub them">아직 있나요?</div>
+            <div class="bub me">네 있습니다. 오늘 저녁 가능하세요?</div>
+            <div class="bub them">7시에 갈게요</div>
+          </div>
+          <div class="prompt">
+            <div class="ttl">거래는 어떠셨어요?</div>
+            <div class="sub">이케아 책상 팝니다 · 거래한 사람만 남길 수 있어요</div>
+            <div class="pick">
+              <div class="opt on">다시 거래할래요</div>
+              <div class="opt">아쉬웠어요</div>
+            </div>
+            <div class="field">시간 잘 지키셨어요 (선택)</div>
+            <div class="send">후기 남기기</div>
+          </div>
+        </div>
+      </div></div>
+      <div class="cap">
+        <h2>거래 후기</h2>
+        <p>버튼 세 개가 한 줄에 있던 것을 <b>고르고 → 적고 → 보내는</b> 순서로 폅니다. 지금은 "다시 거래 안 함"이 저장 버튼 옆에 붙어 있어 잘못 누르기 쉽습니다. 어느 글의 거래인지도 위에 답니다.</p>
+        <div class="ref">참고: 선택을 먼저 받고 제출을 분리하는 방식은 거래 후 후기 화면의 공통 형태입니다.</div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <div class="compare">
+    <h2>회전만 두면 안 되는 이유, 그리고 펼치기가 그것을 푸는 법</h2>
+    <div class="cmp">
+      <div class="cmpbox">
+        <div class="roll"><span class="rno" style="color:var(--accent)">1</span><span class="rone">ICBC는 기본만, 나머지는 BCAA로</span><span class="rnum">8,555</span></div>
+        <p class="cmpcap">접힌 상태 30px. 위 시안에서 직접 눌러보세요.</p>
+      </div>
+      <div class="cmpwhy">
+        <p>찾아보니 <b>순위를 회전으로 보여주는 앱이 없었습니다.</b> 회전하는 한 줄은 전부 광고 배너였습니다. <a href="https://mobbin.com/screens/5a4ae0f4-024f-4dc6-ab19-0dcfb54678c1">Swiggy</a>, <a href="https://mobbin.com/screens/25bb449e-8faf-4fae-8c2b-3bee3d5bbc43">Shopee</a>, <a href="https://mobbin.com/screens/d3887c17-553c-4cc5-bdbd-c14cc9ec2025">Amazon</a> 모두 프로모션입니다. 회전만 두면 순위가 아니라 배너로 읽힙니다.</p>
+        <p>그런데 <b>누르면 펼쳐지게 하면</b> 문제 두 개가 사라집니다.</p>
+        <ul>
+          <li><b>비교</b>는 펼친 열 줄이 해결합니다. 회전은 "여기 더 있다"는 신호 역할만 합니다.</li>
+          <li><b>오탭</b>은 접힌 줄의 동작이 "펼치기" 하나뿐이라 생기지 않습니다. 움직이는 글자를 눌러도 결과가 같습니다.</li>
+          <li><b>동작 줄이기</b>에서는 돌지 않고 1위만 보인 뒤 같은 방식으로 펼칩니다. 잃는 기능이 없습니다.</li>
+        </ul>
+        <p>남는 비용은 하나입니다. 글을 읽는 중에 화면 위쪽에서 글자가 바뀝니다. 3초 간격에 0.18초 크로스페이드로 잡았고, 펼치면 회전이 멈춥니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="note">
+    <b>바꾸지 않은 것.</b> 색, 글꼴, 모서리, 여백은 글링이 이미 쓰는 값 그대로입니다.
+    별점도 그대로 두지 않았습니다. 평균이 4.8 근처에 몰려 사람을 가르지 못하고, 갓 도착한 사람에게 낮은 숫자를 붙이는 것이 이 앱이 하려는 일과 반대이기 때문입니다.
+  </p>
+</div>
+
+<script>
+  const TOP = [
+    ['ICBC는 기본만, 나머지는 BCAA로', '8,555'],
+    ['워홀 첫 달 정착 체크리스트 정리', '3,106'],
+    ['다운타운 조용한 카페 찾는 중', '1,592'],
+    ['목요일 저녁 5km 같이 뛰어요', '984'],
+    ['콜하버 한 바퀴, 오늘 풍경', '640'],
+    ['한인마트 옆 쌀국수집, 진짜였다', '512'],
+    ['에드먼튼 겨울 타이어 어디서 바꾸세요', '488'],
+    ['이케아 책상 팝니다', '431'],
+    ['라멘 원정대 4인 모집', '377'],
+    ['정치 얘기도 서로 다르게', '341'],
+  ];
+  const rank = document.getElementById('rank');
+  const row = document.getElementById('rollrow');
+  const no = document.getElementById('rollno');
+  const txt = document.getElementById('rolltxt');
+  const num = document.getElementById('rollnum');
+  const rest = document.getElementById('rest');
+  const hint = document.getElementById('rkhint');
+  const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let at = 0, timer;
+
+  function show(i) {
+    const [title, views] = TOP[i];
+    no.textContent = String(i + 1);
+    no.style.color = i < 3 ? 'var(--accent)' : 'var(--sub)';
+    txt.textContent = title;
+    num.textContent = views;
+  }
+  function roll() {
+    if (calm) return;
+    timer = setInterval(() => {
+      at = (at + 1) % TOP.length;
+      row.style.opacity = '0';
+      setTimeout(() => { show(at); row.style.opacity = '1'; }, 180);
+    }, 3000);
+  }
+  function expand(open) {
+    rank.setAttribute('aria-expanded', String(open));
+    hint.textContent = open ? '접기' : '눌러서 전체 보기';
+    if (open) {
+      clearInterval(timer);
+      row.hidden = true;
+      rest.hidden = false;
+      rest.innerHTML = TOP.map(([title, views], i) =>
+        `<div class="rrow${i < 3 ? ' top' : ''}"><div class="rno">${i + 1}</div>` +
+        `<div class="rone">${title}</div><div class="rnum">${views}</div></div>`).join('');
+      // 한 줄씩 아주 짧게 어긋나게 나타나 목록이 풀리는 느낌을 준다.
+      [...rest.children].forEach((child, i) => { child.style.animationDelay = `${Math.min(i, 9) * 22}ms`; });
+    } else {
+      rest.hidden = true;
+      rest.innerHTML = '';
+      row.hidden = false;
+      at = 0; show(0); roll();
+    }
+  }
+  rank.addEventListener('click', () => expand(rank.getAttribute('aria-expanded') !== 'true'));
+
+  // 후기 선택지: 고른 것이 바로 보이게
+  document.querySelectorAll('.pick .opt').forEach((opt) => {
+    opt.setAttribute('role', 'radio');
+    opt.setAttribute('tabindex', '0');
+    const choose = () => {
+      opt.parentElement.querySelectorAll('.opt').forEach((o) => {
+        o.classList.toggle('on', o === opt);
+        o.setAttribute('aria-checked', String(o === opt));
+      });
+    };
+    opt.addEventListener('click', choose);
+    opt.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); choose(); } });
+  });
+  show(0);
+  roll();
+</script>

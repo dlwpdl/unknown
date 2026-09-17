@@ -1,0 +1,285 @@
+{
+  "id": "dd0d8847-ce4e-46e8-98b6-0aed57e19a32",
+  "ok": true,
+  "result": [
+    {
+      "role": "application",
+      "type": "Application",
+      "label": "설정",
+      "value": "",
+      "enabled": true,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      "children": [
+        {
+          "role": "back button",
+          "type": "Button",
+          "label": "손쉬운 사용",
+          "value": "",
+          "enabled": true,
+          "frame": {
+            "x": 0.0455,
+            "y": 0.0649,
+            "width": 0.1,
+            "height": 0.046
+          },
+          "children": [],
+          "id": "BackButton"
+        },
+        {
+          "role": "heading",
+          "type": "Heading",
+          "label": "동작",
+          "value": "",
+          "enabled": true,
+          "frame": {
+            "x": 0.4659,
+            "y": 0.0771,
+            "width": 0.0674,
+            "height": 0.0216
+          },
+          "children": []
+        },
+        {
+          "role": "그룹",
+          "type": "Group",
+          "label": "",
+          "value": "",
+          "enabled": true,
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "children": [
+            {
+              "role": "switch",
+              "type": "CheckBox",
+              "label": "동작 줄이기",
+              "value": "0",
+              "enabled": true,
+              "frame": {
+                "x": 0.0909,
+                "y": 0.1531,
+                "width": 0.8182,
+                "height": 0.0293
+              },
+              "children": [],
+              "id": "REDUCE_MOTION"
+            },
+            {
+              "role": "",
+              "type": "GenericElement",
+              "label": "아이콘의 시차 효과를 포함한 사용자 인터페이스 동작을 감소시킵니다.",
+              "value": "",
+              "enabled": true,
+              "frame": {
+                "x": 0.0455,
+                "y": 0.1956,
+                "width": 0.9091,
+                "height": 0.0317
+              },
+              "children": []
+            },
+            {
+              "role": "switch",
+              "type": "CheckBox",
+              "label": "움직이는 이미지 자동 재생",
+              "value": "1",
+              "enabled": true,
+              "frame": {
+                "x": 0.0909,
+                "y": 0.2591,
+                "width": 0.8182,
+                "height": 0.0293
+              },
+              "children": [],
+              "id": "REDUCE_MOTION_AUTOPLAY_ANIMATED_IMAGES"
+            },
+            {
+              "role": "switch",
+              "type": "CheckBox",
+              "label": "비디오 미리보기 자동 재생",
+              "value": "1",
+              "enabled": true,
+              "frame": {
+                "x": 0.0909,
+                "y": 0.3149,
+                "width": 0.8182,
+                "height": 0.0293
+              },
+              "children": [],
+              "id": "REDUCE_MOTION_AUTOPLAY_VIDEO_PREVIEWS"
+            },
+            {
+              "role": "switch",
+              "type": "CheckBox",
+              "label": "메시지 효과 자동 재생",
+              "value": "1",
+              "enabled": true,
+              "frame": {
+                "x": 0.0909,
+                "y": 0.3706,
+                "width": 0.8182,
+                "height": 0.0293
+              },
+              "children": [],
+              "id": "ReduceMotionAutoplayMessagesEffects"
+            },
+            {
+              "role": "",
+              "type": "GenericElement",
+              "label": "메시지 내의 비디오, 움직이는 이미지 및 전체 화면 효과를 자동 재생할지 여부를 제어할 수 있습니다.",
+              "value": "",
+              "enabled": true,
+              "frame": {
+                "x": 0.0455,
+                "y": 0.4132,
+                "width": 0.9091,
+                "height": 0.0485
+              },
+              "children": []
+            },
+            {
+              "role": "switch",
+              "type": "CheckBox",
+              "label": "깜박이지 않는 커서 선호",
+              "value": "0",
+              "enabled": true,
+              "frame": {
+                "x": 0.0909,
+                "y": 0.4934,
+                "width": 0.8182,
+                "height": 0.0293
+              },
+              "children": [],
+              "id": "PREFER_NONBLINKING_CURSOR"
+            },
+            {
+              "role": "",
+              "type": "GenericElement",
+              "label": "텍스트에서 커서 표시가 깜박이지 않는 것을 선호합니다.",
+              "value": "",
+              "enabled": true,
+              "frame": {
+                "x": 0.0455,
+                "y": 0.5359,
+                "width": 0.9091,
+                "height": 0.0317
+              },
+              "children": []
+            },
+            {
+              "role": "switch",
+              "type": "CheckBox",
+              "label": "프레임률 제한",
+              "value": "0",
+              "enabled": true,
+              "frame": {
+                "x": 0.0909,
+                "y": 0.5994,
+                "width": 0.8182,
+                "height": 0.0293
+              },
+              "children": [],
+              "id": "REFRESH_RATE"
+            },
+            {
+              "role": "",
+              "type": "GenericElement",
+              "label": "최대 화면 프레임률을 초당 60 프레임으로 설정합니다.",
+              "value": "",
+              "enabled": true,
+              "frame": {
+                "x": 0.0455,
+                "y": 0.6419,
+                "width": 0.9091,
+                "height": 0.0317
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "role": "button",
+          "type": "Button",
+          "label": "글링(으)로 돌아가기",
+          "value": "",
+          "enabled": true,
+          "frame": {
+            "x": 0.0273,
+            "y": 0.0391,
+            "width": 0.0712,
+            "height": 0.0139
+          },
+          "children": [],
+          "id": "breadcrumb"
+        },
+        {
+          "role": "text",
+          "type": "StaticText",
+          "label": "오후 5:26",
+          "value": "",
+          "enabled": true,
+          "frame": {
+            "x": 0.1455,
+            "y": 0.015,
+            "width": 0.0894,
+            "height": 0.0227
+          },
+          "children": []
+        },
+        {
+          "role": "",
+          "type": "GenericElement",
+          "label": "Dynamic Island, 비어 있음",
+          "value": "",
+          "enabled": true,
+          "frame": {
+            "x": 0.3576,
+            "y": 0.0146,
+            "width": 0.2848,
+            "height": 0.0384
+          },
+          "children": []
+        },
+        {
+          "role": "",
+          "type": "GenericElement",
+          "label": "셀룰러",
+          "value": "신호 없음",
+          "enabled": true,
+          "frame": {
+            "x": 0.7098,
+            "y": 0.0265,
+            "width": 0.0492,
+            "height": 0.0143
+          },
+          "children": []
+        },
+        {
+          "role": "",
+          "type": "GenericElement",
+          "label": "배터리 전원 100%",
+          "value": "충전 중 아님",
+          "enabled": true,
+          "frame": {
+            "x": 0.8371,
+            "y": 0.0262,
+            "width": 0.0712,
+            "height": 0.015
+          },
+          "children": []
+        }
+      ]
+    }
+  ],
+  "_meta": {
+    "runtimeId": "2c9fc9aa-d3e0-4c7b-b0cb-0b20072120b9"
+  }
+}

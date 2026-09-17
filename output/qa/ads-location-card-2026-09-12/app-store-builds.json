@@ -1,0 +1,68 @@
+{
+  "checked_at": "2026-09-12T13:50:29-07:00",
+  "builds": [
+    {
+      "id": "83bef489-7bc7-4feb-a2f6-147ae965f20b",
+      "attributes": {
+        "version": "11",
+        "uploadedDate": "2026-09-11T14:45:37-07:00",
+        "expirationDate": "2026-12-10T13:45:37-08:00",
+        "processingState": "VALID",
+        "minOsVersion": "16.4",
+        "lsMinimumSystemVersion": "12.0",
+        "computedMinMacOsVersion": "12.0",
+        "computedMinVisionOsVersion": "1.0",
+        "iconAssetToken": {
+          "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/00/72/1e/00721e3c-cdd9-3508-c49f-0395ba0e0595/AppIcon60x60@2x.png/{w}x{h}bb.{f}",
+          "width": 120,
+          "height": 120
+        },
+        "buildAudienceType": "APP_STORE_ELIGIBLE",
+        "usesNonExemptEncryption": false,
+        "expired": false
+      }
+    },
+    {
+      "id": "9e9ae64c-ba0a-4364-b991-f5b51bf4d4e9",
+      "attributes": {
+        "version": "10",
+        "uploadedDate": "2026-09-11T14:07:13-07:00",
+        "expirationDate": "2026-12-10T13:07:13-08:00",
+        "processingState": "VALID",
+        "minOsVersion": "16.4",
+        "lsMinimumSystemVersion": "12.0",
+        "computedMinMacOsVersion": "12.0",
+        "computedMinVisionOsVersion": "1.0",
+        "iconAssetToken": {
+          "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/22/56/52/22565250-8aa9-2486-e009-df87e96d737c/AppIcon60x60@2x.png/{w}x{h}bb.{f}",
+          "width": 120,
+          "height": 120
+        },
+        "buildAudienceType": "APP_STORE_ELIGIBLE",
+        "usesNonExemptEncryption": false,
+        "expired": false
+      }
+    },
+    {
+      "id": "c8fe1c3c-83d6-4c1e-9f3d-9fde07e8c1e2",
+      "attributes": {
+        "version": "9",
+        "uploadedDate": "2026-09-10T21:18:20-07:00",
+        "expirationDate": "2026-12-09T20:18:20-08:00",
+        "processingState": "VALID",
+        "minOsVersion": "16.4",
+        "lsMinimumSystemVersion": "12.0",
+        "computedMinMacOsVersion": "12.0",
+        "computedMinVisionOsVersion": "1.0",
+        "iconAssetToken": {
+          "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/f5/ef/7e/f5ef7ef6-17f4-70e5-68c8-458d6b52330f/AppIcon60x60@2x.png/{w}x{h}bb.{f}",
+          "width": 120,
+          "height": 120
+        },
+        "buildAudienceType": "APP_STORE_ELIGIBLE",
+        "usesNonExemptEncryption": false,
+        "expired": false
+      }
+    }
+  ]
+}

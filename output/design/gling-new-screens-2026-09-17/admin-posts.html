@@ -1,0 +1,272 @@
+<title>글링 게시글 관리 시안</title>
+<style>
+  :root {
+    --ink: #21252C;
+    --paper: #FAF9F5;
+    --chip: #F1EFE8;
+    --selected: #E8E5DC;
+    --sub: #5B6270;
+    --card: #FFFFFF;
+    --line: #E5E3DB;
+    --accent: #BE3B2A;
+    --accent-ink: #FFFFFF;
+    --navy: #34506B;
+    --ok: #3F7A5B;
+    --shadow: 0 1px 2px rgba(33, 37, 44, .05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #EAE9E2; --paper: #15181C; --chip: #23272E; --selected: #2B3037;
+      --sub: #9AA0A8; --card: #1C2026; --line: #2B3037;
+      --accent: #E15A44; --accent-ink: #1A0E0B; --navy: #8FB0CC; --ok: #6FAE8C;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #EAE9E2; --paper: #15181C; --chip: #23272E; --selected: #2B3037;
+    --sub: #9AA0A8; --card: #1C2026; --line: #2B3037;
+    --accent: #E15A44; --accent-ink: #1A0E0B; --navy: #8FB0CC; --ok: #6FAE8C;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3);
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 32px 16px 96px; }
+
+  .lede { max-width: 62ch; display: grid; gap: 10px; margin-bottom: 36px; }
+  .lede h1 { font-size: clamp(26px, 4vw, 34px); line-height: 1.12; letter-spacing: -.021em; margin: 0; text-wrap: balance; }
+  .lede p { margin: 0; color: var(--sub); }
+
+  h2 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--sub); margin: 0 0 12px; font-weight: 700; }
+
+  /* 무엇이 바뀌는가 ------------------------------------------------ */
+  .changes { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 44px; }
+  .change { background: var(--card); padding: 16px 18px; display: grid; grid-template-columns: 116px 1fr; gap: 4px 18px; align-items: baseline; }
+  .change dt { color: var(--sub); font-size: 12.5px; }
+  .change dd { margin: 0; }
+  .change dd b { font-weight: 600; }
+  .change dd span { display: block; color: var(--sub); font-size: 13px; margin-top: 2px; }
+  @media (max-width: 560px) { .change { grid-template-columns: 1fr; } }
+
+  /* 필터 막대 ------------------------------------------------------ */
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px; border-bottom: 1px solid var(--line); align-items: center; }
+  .search { flex: 1 1 220px; min-width: 0; display: flex; align-items: center; gap: 8px;
+    background: var(--chip); border: 1px solid transparent; border-radius: 9px; padding: 0 10px; height: 38px; }
+  .search:focus-within { border-color: var(--navy); }
+  .search input { flex: 1; min-width: 0; border: 0; background: none; color: inherit; font: inherit; outline: none; }
+  .search svg { flex: none; color: var(--sub); }
+  select {
+    height: 38px; padding: 0 30px 0 11px; border-radius: 9px; border: 1px solid var(--line);
+    background: var(--card) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5L6 8l3.5-3.5' fill='none' stroke='%235B6270' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>") no-repeat right 10px center;
+    color: inherit; font: inherit; appearance: none; cursor: pointer;
+  }
+  select:focus-visible, .btn:focus-visible, .rowhead:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+  .count { margin-left: auto; color: var(--sub); font-size: 13px; font-variant-numeric: tabular-nums; }
+  @media (max-width: 560px) { .count { margin-left: 0; width: 100%; } }
+
+  /* 목록 ----------------------------------------------------------- */
+  .rowhead {
+    width: 100%; display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 12px; align-items: center;
+    padding: 11px 14px; background: none; border: 0; border-top: 1px solid var(--line);
+    color: inherit; font: inherit; text-align: left; cursor: pointer;
+  }
+  .rowhead:first-of-type { border-top: 0; }
+  .rowhead:hover { background: var(--chip); }
+  .rowhead:active { background: var(--selected); }
+  .row[open] .rowhead { background: var(--chip); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+  .row.down .dot { background: var(--accent); }
+  .title { min-width: 0; display: flex; align-items: baseline; gap: 8px; }
+  .title b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .title em { font-style: normal; color: var(--sub); font-size: 12.5px; white-space: nowrap; }
+  .metrics { display: flex; gap: 14px; color: var(--sub); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  .metrics span { min-width: 52px; text-align: right; }
+  @media (max-width: 720px) { .metrics span:nth-child(n+3) { display: none; } }
+  @media (max-width: 460px) { .metrics { display: none; } }
+
+  .body { padding: 0 14px 16px 36px; display: grid; gap: 14px; border-top: 1px solid var(--line); }
+  .excerpt { margin: 14px 0 0; color: var(--sub); max-width: 68ch; }
+  .fields { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; }
+  .field { display: grid; gap: 5px; }
+  .field label { font-size: 12px; color: var(--sub); }
+  .field input { height: 36px; width: 104px; padding: 0 9px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--card); color: inherit; font: inherit; text-align: right; font-variant-numeric: tabular-nums; }
+  .field.wide input { width: 240px; text-align: left; }
+  .field input:focus-visible { outline: 2px solid var(--navy); outline-offset: 1px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .btn { height: 36px; padding: 0 13px; border-radius: 8px; border: 1px solid var(--line); background: var(--card);
+    color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
+  .btn:hover { background: var(--chip); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn.primary[disabled] { opacity: .4; cursor: default; }
+  .btn.quiet { border-color: transparent; font-weight: 500; color: var(--sub); }
+  .btn.danger { color: var(--accent); }
+  .state { margin-left: auto; font-size: 12.5px; color: var(--sub); }
+  @media (max-width: 560px) { .state { margin-left: 0; width: 100%; } }
+  .row summary { list-style: none; }
+  .row summary::-webkit-details-marker { display: none; }
+  .empty { padding: 44px 14px; text-align: center; color: var(--sub); }
+
+  .refs { margin-top: 40px; color: var(--sub); font-size: 13px; }
+  .refs a { color: var(--navy); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <div class="lede">
+    <h1>게시글 관리, 한 줄에 하나</h1>
+    <p>글 하나가 카드 한 장을 차지하던 목록을 한 줄짜리 행으로 바꿉니다. 한 화면에 열 몇 개가 아니라 스무 개 넘게 들어오고, 조정이 필요한 글만 펼칩니다. 상단에 검색과 필터를 두어 도시·상태로 좁힐 수 있습니다.</p>
+  </div>
+
+  <h2>바뀌는 점</h2>
+  <dl class="changes">
+    <div class="change">
+      <dt>행 높이</dt>
+      <dd><b>3줄 카드에서 1줄 행으로</b><span>제목, 글쓴이, 도시, 숫자를 한 줄에 놓습니다. 본문은 펼쳤을 때만 보입니다.</span></dd>
+    </div>
+    <div class="change">
+      <dt>조정</dt>
+      <dd><b>펼친 행 안에서만</b><span>닫힌 상태에서는 조정 칸이 없어 목록이 조용합니다. Reddit 모드 로그와 같은 방식입니다.</span></dd>
+    </div>
+    <div class="change">
+      <dt>찾기</dt>
+      <dd><b>검색 + 상태 + 도시 + 정렬</b><span>결과 수를 함께 보여줍니다. 글이 쌓인 뒤에 필요한 최소 조합입니다.</span></dd>
+    </div>
+    <div class="change">
+      <dt>상태 표시</dt>
+      <dd><b>점 하나로</b><span>삭제된 글은 인주색 점. 배지를 줄여 제목이 먼저 읽힙니다.</span></dd>
+    </div>
+    <div class="change">
+      <dt>저장</dt>
+      <dd><b>반영 버튼</b><span>칸을 벗어날 때가 아니라 누를 때 저장합니다. 저장하지 않은 값이 있으면 그 자리에서 알려줍니다.</span></dd>
+    </div>
+  </dl>
+
+  <h2>시안</h2>
+  <div class="panel">
+    <div class="toolbar">
+      <div class="search">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <input id="q" type="search" placeholder="제목, 내용, 글쓴이 또는 ID" aria-label="게시글 검색">
+      </div>
+      <select id="f-status" aria-label="상태 필터">
+        <option value="">상태 전체</option>
+        <option value="published">게시중</option>
+        <option value="removed">삭제됨</option>
+      </select>
+      <select id="f-city" aria-label="도시 필터">
+        <option value="">도시 전체</option>
+        <option value="밴쿠버">밴쿠버</option>
+        <option value="토론토">토론토</option>
+        <option value="에드먼튼">에드먼튼</option>
+      </select>
+      <select id="f-sort" aria-label="정렬">
+        <option value="new">최신순</option>
+        <option value="views">조회순</option>
+        <option value="likes">공감순</option>
+      </select>
+      <span class="count" id="count"></span>
+    </div>
+    <div id="list"></div>
+  </div>
+
+  <p class="refs">
+    참고한 화면: <a href="https://mobbin.com/screens/1963ec93-88b4-47b5-a123-dd359d357148">Reddit 모드 로그</a>의 조밀한 행과 필터 줄,
+    <a href="https://mobbin.com/screens/9f5af254-f966-4810-adbb-c428854523e3">Deel</a>의 검색·필터·건수 배치,
+    <a href="https://mobbin.com/screens/47a98dae-62bd-4c74-8ad2-d3e2e86cd110">Featurebase</a>의 한 줄 목록.
+    색과 글꼴은 글링 앱의 기존 토큰을 그대로 씁니다.
+  </p>
+</div>
+
+<script>
+  const POSTS = [
+    { id: 'b114f267', title: 'ICBC는 기본만, 나머지는 BCAA로: 자동차 보험 1년에 800불 아낀 이야기', author: '포근한수달', city: '밴쿠버', status: 'published', views: 12480, likes: 312, saves: 88, tags: '밴쿠버 자동차보험 절약', when: '3일 전' },
+    { id: '7c04b15a', title: '다운타운에서 조용히 공부할 카페 찾는 중', author: '느긋한여우', city: '밴쿠버', status: 'published', views: 3106, likes: 41, saves: 12, tags: '카페 공부', when: '5일 전' },
+    { id: '2f7fe5c9', title: '목요일 저녁 5km 같이 뛰어요', author: '바라드러너', city: '밴쿠버', status: 'published', views: 1592, likes: 24, saves: 7, tags: '러닝 다운타운', when: '9일 전' },
+    { id: '43e0f0f1', title: '이번 주 토요일, 라멘 원정대 4인', author: '면라이더', city: '토론토', status: 'published', views: 984, likes: 17, saves: 4, tags: '맛집 리치몬드', when: '17일 전' },
+    { id: '86deeeed', title: '워홀 첫 달 정착 체크리스트 정리해봤어요', author: '단단한바람', city: '토론토', status: 'published', views: 8842, likes: 206, saves: 154, tags: '워홀 정착', when: '12일 전' },
+    { id: '9f025cd5', title: '에드먼튼 겨울 타이어 어디서 바꾸세요', author: '눈길운전', city: '에드먼튼', status: 'published', views: 640, likes: 9, saves: 3, tags: '에드먼튼 겨울', when: '2일 전' },
+    { id: '5189f400', title: '(신고 누적) 링크만 반복해서 올리는 글', author: '광고봇', city: '밴쿠버', status: 'removed', views: 55, likes: 0, saves: 0, tags: '', when: '6일 전' },
+    { id: '12c9dd26', title: '콜하버 한 바퀴, 오늘 풍경', author: '포근한수달', city: '밴쿠버', status: 'published', views: 2211, likes: 78, saves: 25, tags: '동네산책 풍경사진', when: '7일 전' },
+  ];
+  const num = (n) => n.toLocaleString('ko-KR');
+  const el = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; };
+  const list = document.getElementById('list');
+  const countEl = document.getElementById('count');
+  const controls = ['q', 'f-status', 'f-city', 'f-sort'].map((id) => document.getElementById(id));
+  const open = new Set();
+
+  function render() {
+    const [q, status, city, sort] = controls.map((c) => c.value.trim());
+    let rows = POSTS.filter((p) =>
+      (!status || p.status === status) &&
+      (!city || p.city === city) &&
+      (!q || [p.title, p.author, p.id, p.tags].join(' ').toLowerCase().includes(q.toLowerCase())));
+    if (sort === 'views') rows = [...rows].sort((a, b) => b.views - a.views);
+    if (sort === 'likes') rows = [...rows].sort((a, b) => b.likes - a.likes);
+
+    countEl.textContent = `${num(rows.length)}건 / 전체 ${num(POSTS.length)}건`;
+    list.textContent = '';
+    if (!rows.length) { list.append(el('<p class="empty">조건에 맞는 글이 없습니다.</p>')); return; }
+
+    for (const p of rows) {
+      const down = p.status === 'removed';
+      const row = el(`
+        <details class="row${down ? ' down' : ''}" ${open.has(p.id) ? 'open' : ''}>
+          <summary class="rowhead" role="button" tabindex="0">
+            <span class="dot" aria-hidden="true"></span>
+            <span class="title">
+              <b>${p.title}</b>
+              <em>${p.author} · ${p.city} · ${p.when}</em>
+            </span>
+            <span class="metrics">
+              <span>조회 ${num(p.views)}</span><span>공감 ${num(p.likes)}</span><span>저장 ${num(p.saves)}</span>
+            </span>
+          </summary>
+          <div class="body">
+            <p class="excerpt">${down ? '이 글은 내려간 상태입니다. 되돌리면 다시 피드에 나타납니다.' : '본문 미리보기가 여기에 들어갑니다. 조정이 필요한 글만 펼쳐 보므로 목록이 조용합니다.'}</p>
+            <div class="fields">
+              <span class="field"><label for="v-${p.id}">조회수</label><input id="v-${p.id}" inputmode="numeric" value="${p.views}"></span>
+              <span class="field"><label for="l-${p.id}">공감수</label><input id="l-${p.id}" inputmode="numeric" value="${p.likes}"></span>
+              <span class="field"><label for="s-${p.id}">저장수</label><input id="s-${p.id}" inputmode="numeric" value="${p.saves}"></span>
+              <span class="field wide"><label for="t-${p.id}">해시태그</label><input id="t-${p.id}" value="${p.tags}" placeholder="밴쿠버 공지"></span>
+            </div>
+            <div class="actions">
+              <button class="btn" type="button">맨 위로</button>
+              <button class="btn quiet" type="button">순서 원래대로</button>
+              <button class="btn ${down ? '' : 'danger'}" type="button">${down ? '되돌리기' : '내리기'}</button>
+              <span class="state">저장됨</span>
+              <button class="btn primary" type="button" disabled>반영</button>
+            </div>
+          </div>
+        </details>`);
+
+      row.addEventListener('toggle', () => { row.open ? open.add(p.id) : open.delete(p.id); });
+
+      const inputs = [...row.querySelectorAll('.fields input')];
+      const saved = inputs.map((i) => i.value);
+      const state = row.querySelector('.state');
+      const apply = row.querySelector('.btn.primary');
+      const sync = () => {
+        const dirty = inputs.some((i, n) => i.value !== saved[n]);
+        apply.disabled = !dirty;
+        state.textContent = dirty ? '저장하지 않은 값이 있어요' : '저장됨';
+      };
+      inputs.forEach((i) => i.addEventListener('input', sync));
+      apply.addEventListener('click', () => {
+        inputs.forEach((i, n) => { saved[n] = i.value; });
+        sync();
+        state.textContent = '반영했습니다';
+      });
+      list.append(row);
+    }
+  }
+
+  controls.forEach((c) => c.addEventListener('input', render));
+  render();
+</script>

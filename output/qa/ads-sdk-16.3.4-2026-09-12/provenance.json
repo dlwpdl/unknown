@@ -1,0 +1,58 @@
+{
+  "device": "583E7BFD-5CB4-42EC-B15C-1D4D5986FA39",
+  "started_at": "2026-09-12T13:37:10-07:00",
+  "pid": 54251,
+  "source_app": "/tmp/gling-ads-simulator/Build/Products/Release-iphonesimulator/app.app",
+  "installed_app": "/Users/ash/Library/Developer/CoreSimulator/Devices/583E7BFD-5CB4-42EC-B15C-1D4D5986FA39/data/Containers/Bundle/Application/7017EFA9-7511-474C-8D77-FD174A7F1AAE/app.app",
+  "version": "1.0.0",
+  "build": "11",
+  "sdk": "16.3.4",
+  "sha256": {
+    "main.jsbundle": "c576ca5bf800ebaf1e94a26544588ae20156765bd68432bd083d3aa727e2d786",
+    "app": "30fedb8d12c43d3e63f7fd3b7240f475aa607c182f55e3cd073187ddc2a6c48e"
+  },
+  "screenshots": [
+    {
+      "file": "feed-before-ad.png",
+      "captured_at": "2026-09-12T13:38:10-07:00",
+      "width": 1320,
+      "height": 2868,
+      "sha256": "3a722101cae32e0aef42faebed1cc491f5e6a04816b355323eb2f2bc28c9283f"
+    },
+    {
+      "file": "ios-media-adchoices.png",
+      "captured_at": "2026-09-12T13:40:47-07:00",
+      "width": 1320,
+      "height": 2868,
+      "sha256": "0d8d19eadc06d32fe3948b36c0d3e4af334dd2660147baecd3f42106e1432b7c"
+    },
+    {
+      "file": "ios-test-ad-full.png",
+      "captured_at": "2026-09-12T13:40:09-07:00",
+      "width": 1320,
+      "height": 2868,
+      "sha256": "3c831fa6da29faba33c0f299dd5ce62a1dcc4467f3b56a33ebe5bdb965e0ce6f"
+    },
+    {
+      "file": "ios-test-ad-visible.png",
+      "captured_at": "2026-09-12T13:39:53-07:00",
+      "width": 1320,
+      "height": 2868,
+      "sha256": "5780f99dc10c09f0edae4833dc096e2e9b2dcfeccdb692243ab19e59036f3e9e"
+    },
+    {
+      "file": "native-ad-validator.png",
+      "captured_at": "2026-09-12T13:40:23-07:00",
+      "width": 1320,
+      "height": 2868,
+      "sha256": "e8577d9baba4b75ae7db8df09c102233d9776ce89d5852d40162073f8cd1f9f4"
+    },
+    {
+      "file": "settings-nearby-city-card.png",
+      "captured_at": "2026-09-12T13:41:38-07:00",
+      "width": 1320,
+      "height": 2868,
+      "sha256": "ce7682f5be70869697ecd9046f5a5b587f7a848838cafb5f47471561db096b55"
+    }
+  ]
+}

@@ -67,6 +67,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const [review, setReview] = useState<ListingReviewState | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewBody, setReviewBody] = useState('');
+  const [reviewPick, setReviewPick] = useState<boolean | null>(null);
   const group = conversation.kind === 'group';
   const requestedByMe = conversation.requesterId === currentUserId;
   const title = group ? conversation.title : conversation.otherUser.nickname;
@@ -178,7 +179,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   // 후기 자격은 서버가 판단한다. 여기서는 열린 경우에만 버튼을 보여준다.
   const applyReview = useCallback((next: ListingReviewState | null) => {
     setReview(next);
-    if (next?.mine) setReviewBody(next.mine.body ?? '');
+    if (next?.mine) { setReviewBody(next.mine.body ?? ''); setReviewPick(next.mine.wouldDealAgain); }
   }, []);
 
   const refreshReview = useCallback(async () => {
@@ -252,16 +253,33 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       </ThemedText>}
     </View>}
     {review?.canWrite && reviewOpen && <View style={[styles.confirmation, { backgroundColor: theme.backgroundElement }]}>
-      <ThemedText type="smallBold" numberOfLines={1}>{review.postTitle}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">거래해 본 사람만 남길 수 있어요. 상대에게 공개됩니다.</ThemedText>
-      <TextInput value={reviewBody} onChangeText={setReviewBody} maxLength={300} multiline
+      <ThemedText type="smallBold">거래는 어떠셨어요?</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+        {review.postTitle} · 거래한 사람만 남길 수 있어요
+      </ThemedText>
+      <View style={styles.reviewPick}>
+        {([[true, '다시 거래할래요'], [false, '아쉬웠어요']] as [boolean, string][]).map(([value, label]) => {
+          const on = reviewPick === value;
+          return (
+            <Pressable key={label} onPress={() => setReviewPick(value)} accessibilityRole="radio"
+              accessibilityState={{ selected: on, disabled: busy }} disabled={busy}
+              style={({ pressed }) => [styles.reviewOption,
+                { borderColor: on ? theme.accent : theme.line, backgroundColor: on ? theme.card : 'transparent' },
+                pressed && { transform: [{ scale: 0.985 }] }]}>
+              <ThemedText type="smallBold" style={on ? { color: theme.accent } : undefined}>{label}</ThemedText>
+            </Pressable>
+          );
+        })}
+      </View>
+      <TextInput value={reviewBody} onChangeText={setReviewBody} maxLength={300} multiline editable={!busy}
         placeholder="어땠는지 한 줄로 남겨주세요 (선택)" accessibilityLabel="거래 후기"
         placeholderTextColor={theme.textSecondary}
         style={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.line, minHeight: 64 }]} />
       <View style={styles.messageActions}>
         <RoomAction label={t.profile.cancel} onPress={() => setReviewOpen(false)} disabled={busy} />
-        <RoomAction label="다시 거래 안 함" onPress={() => void submitReview(false)} disabled={busy} />
-        <RoomAction label="다시 거래하겠다" onPress={() => void submitReview(true)} disabled={busy} primary />
+        <RoomAction label={busy ? '남기는 중' : '후기 남기기'}
+          onPress={() => { if (reviewPick !== null) void submitReview(reviewPick); }}
+          disabled={busy || reviewPick === null} primary />
       </View>
     </View>}
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -304,6 +322,8 @@ const styles = StyleSheet.create({
   bubbleMine: { alignSelf: 'flex-end', borderRadius: 14, borderTopRightRadius: 4, paddingHorizontal: 12, paddingVertical: Spacing.two, marginLeft: Spacing.five },
   messageActions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   feedback: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
+  reviewPick: { flexDirection: 'row', gap: Spacing.two },
+  reviewOption: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 10 },
   confirmation: { padding: Spacing.three, gap: Spacing.two },
   composer: { flexDirection: 'row', gap: Spacing.two, paddingHorizontal: Spacing.two, paddingTop: Spacing.two, borderTopWidth: 1, alignItems: 'center' },
   input: { flex: 1, minHeight: 44, borderWidth: 1, borderRadius: 22, paddingHorizontal: Spacing.three, paddingVertical: 10, fontSize: 14 },
