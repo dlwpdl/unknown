@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { AdminAnalyticsView } from '@/components/admin/admin-analytics';
 import { AdminSectionView } from '@/components/admin/admin-section';
@@ -19,13 +19,14 @@ import {
   moderateAdminReport,
   setAdminAccountStatus,
   type AdminDashboardData,
+  type AdminModerationAction,
 } from '@/lib/admin-data';
 import { supabase } from '@/lib/supabase';
 
 export function AdminScreen() {
-  const { safety, alert } = useLocalSearchParams<{ safety?: string; alert?: string }>();
+  const { safety, alert, section: requestedSection } = useLocalSearchParams<{ safety?: string; alert?: string; section?: string }>();
   const { isAuthed, isAdmin, isAuthLoading, authError, signInAdmin, signInGoogle, signOut } = useAuth();
-  const [section, setSection] = useState<AdminSection>(alert ? 'alerts' : safety ? 'safety' : 'analytics');
+  const [section, setSection] = useState<AdminSection>(requestedSection === 'reports' ? 'reports' : alert ? 'alerts' : safety ? 'safety' : 'analytics');
   const [analyticsRefresh, setAnalyticsRefresh] = useState(0);
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,7 +81,7 @@ export function AdminScreen() {
     [data?.profiles],
   );
 
-  const resolveReport = async (reportId: string, action: 'dismissed' | 'warned' | 'blocked', note: string) => {
+  const resolveReport = async (reportId: string, action: AdminModerationAction['action'], note: string) => {
     if (localPreview) return;
     setResolving(true);
     setError(null);
@@ -94,9 +95,14 @@ export function AdminScreen() {
     }
   };
 
-  const confirmResolve = (reportId: string, action: 'dismissed' | 'warned' | 'blocked', note: string) => {
-    const labels = { dismissed: '신고를 기각할까요?', warned: '대상 계정에 경고를 보낼까요?', blocked: '대상 계정을 차단할까요?' };
-    Alert.alert(labels[action], action === 'blocked' ? '확인하면 즉시 새 활동이 제한되고 사용자에게 알림이 전송됩니다.' : '처리 결과는 운영 기록에 남습니다.', [
+  const confirmResolve = (reportId: string, action: AdminModerationAction['action'], note: string) => {
+    const labels = { dismissed: '신고를 기각할까요?', warned: '대상 계정에 경고를 보낼까요?', blocked: '대상 계정을 정지할까요?', hidden: '이 콘텐츠를 모두에게 숨길까요?' };
+    const message = action === 'hidden' ? '신고된 콘텐츠의 일반 사용자 노출을 중단합니다. 원본과 운영 기록은 보존 정책에 따라 보관합니다.' : action === 'blocked' ? '확인하면 즉시 새 활동이 제한되고 사용자에게 알림이 전송됩니다.' : '처리 결과는 운영 기록에 남습니다.';
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${labels[action]}\n${message}`)) void resolveReport(reportId, action, note);
+      return;
+    }
+    Alert.alert(labels[action], message, [
       { text: '취소', style: 'cancel' },
       { text: '확인', style: action === 'blocked' ? 'destructive' : 'default', onPress: () => void resolveReport(reportId, action, note) },
     ]);

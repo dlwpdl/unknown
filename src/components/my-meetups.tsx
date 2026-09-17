@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { relationshipSlotData } from '@/components/relationship-slot-card';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { leaveMeetup, loadMyMeetups, MEETUPS_CHANGED_EVENT, type MyMeetup } from '@/lib/community-data';
@@ -16,6 +17,7 @@ import { supabase } from '@/lib/supabase';
 
 export function MyMeetups({ onOpen }: { onOpen: (postId: string) => Promise<void> }) {
   const theme = useTheme();
+  const hidden = useContentVisibility();
   const router = useRouter();
   const { isAuthed, me, promptLogin } = useAuth();
   const { play } = useInteractionFeedback();
@@ -29,7 +31,7 @@ export function MyMeetups({ onOpen }: { onOpen: (postId: string) => Promise<void
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
-  const items = result?.userId === userId ? result.items : [];
+  const items = result?.userId === userId ? result.items.filter((item) => !hidden('post', item.id, item.authorId)) : [];
 
   const refresh = useCallback(async () => {
     if (!userId || currentUser.current !== userId) return;

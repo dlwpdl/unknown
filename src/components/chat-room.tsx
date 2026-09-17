@@ -8,6 +8,7 @@ import { ThemedView } from '@/components/themed-view';
 import { TrustBadge } from '@/components/trust-badge';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { blockUser, endConversation, getCommunityActionError, loadListingReviewState, writeListingReview, type ListingReviewState, isContentRejected, loadConversationMessages, loadConversationMessagesByIds, mergeChatMessages, respondDirectConversation, sendDirectMessage, type ChatMessageRecord, type ConversationPreview, type ReportTarget } from '@/lib/community-data';
@@ -36,6 +37,7 @@ function RoomAction({ label, onPress, disabled = false, primary = false }: { lab
 
 export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { conversation: ConversationPreview; currentUserId: string; onClose: () => void; onChanged: () => Promise<void> }) {
   const theme = useTheme();
+  const hidden = useContentVisibility();
   const auth = useAuth();
   const insets = useSafeAreaInsets();
   const { play } = useInteractionFeedback();
@@ -52,7 +54,8 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const [resolvedStatus, setResolvedStatus] = useState<ConversationPreview['status'] | null>(null);
   const status = conversation.status === 'ended' ? 'ended' : resolvedStatus ?? conversation.status;
   const access = conversationCapabilities(status);
-  const [messages, setMessages] = useState<ChatMessageRecord[]>([]);
+  const [allMessages, setMessages] = useState<ChatMessageRecord[]>([]);
+  const messages = allMessages.filter((message) => !hidden('message', message.id, message.sender_id));
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(access.read);
   const [sending, setSending] = useState(false);

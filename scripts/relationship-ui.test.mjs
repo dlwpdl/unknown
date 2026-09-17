@@ -30,6 +30,7 @@ function loadRoom(userId = 'recipient', messagesLoaded = false) {
     if (name === '@/i18n/ko') return { t, count };
     if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: true, me: { id: userId, nickname: '나' } }) };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
+    if (name === '@/hooks/use-content-visibility') return { useContentVisibility: () => () => false };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
     if (name === '@/lib/supabase') return { supabase: { channel: () => channel, removeChannel() {} } };
     if (name === '@/lib/community-data') return { loadConversationMessages: async () => { messageReads++; return []; } };

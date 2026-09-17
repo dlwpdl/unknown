@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { hideContent } from './content-visibility.ts';
 
 import { attachSignedPostImages, loadPublicPost, mapPublicFeed, type FeedCursor, type PublicCommentRow, type PublicFeedRow } from './feed-data.ts';
 import type { DailyQuota, ListingStatus, Post, PostComment, PostKind, RoomPreview, Tag } from './types.ts';
@@ -73,7 +74,7 @@ export type MeetupRequest = {
   post: { title: string } | null;
 };
 
-export type MyMeetup = { id: string; title: string; cityId: string; role: 'host' | 'approved' | 'pending'; conversationId: string | null };
+export type MyMeetup = { id: string; authorId: string; title: string; cityId: string; role: 'host' | 'approved' | 'pending'; conversationId: string | null };
 
 export type ProfileSummary = {
   cityId: string;
@@ -246,6 +247,7 @@ export async function reportContent(
   targetId: string,
   reason: ReportReason,
   details: string,
+  viewerId: string,
 ) {
   const result = await client.rpc('create_report', {
     target_type: targetType,
@@ -254,6 +256,7 @@ export async function reportContent(
     details: details.trim() || null,
   });
   if (result.error) throw result.error;
+  if (targetType !== 'user') hideContent(viewerId, targetType, targetId);
   return result.data as string;
 }
 
@@ -263,6 +266,7 @@ export async function blockUser(client: SupabaseClient, userId: string, blockedU
     { onConflict: 'blocker_id,blocked_id', ignoreDuplicates: true },
   );
   if (result.error) throw result.error;
+  hideContent(userId, 'user', blockedUserId);
 }
 
 // postId 를 넘기면 그 구해요·팔아요 글이 대화의 출처로 남고, 거래 후기를 쓸 자격이 생긴다.
@@ -471,7 +475,7 @@ export async function requestMeetupJoin(client: SupabaseClient, postId: string, 
 }
 
 export async function loadMyMeetups(client: SupabaseClient, userId: string): Promise<MyMeetup[]> {
-  const fields = 'id,title,city_id,status,room_preview';
+  const fields = 'id,author_id,title,city_id,status,room_preview';
   const [owned, requested, rooms] = await Promise.all([
     client.from('posts').select(fields).eq('author_id', userId).eq('status', 'published')
       .not('room_preview', 'is', null).or('room_preview->>closed.is.null,room_preview->>closed.eq.false')
@@ -485,14 +489,14 @@ export async function loadMyMeetups(client: SupabaseClient, userId: string): Pro
   if (requested.error) throw requested.error;
   if (rooms.error) throw rooms.error;
   const roomIds = new Map((rooms.data ?? []).map((room) => [room.group_post_id, room.id]));
-  type Row = { id: string; title: string; city_id: string; status: string; room_preview: RoomPreview | null };
+  type Row = { id: string; author_id: string; title: string; city_id: string; status: string; room_preview: RoomPreview | null };
   const entries = [
     ...((owned.data ?? []) as unknown as Row[]).map((post) => ({ post, role: 'host' as const })),
     ...((requested.data ?? []) as unknown as { post: Row | null; status: 'approved' | 'pending' }[])
       .map(({ post, status }) => ({ post, role: status })),
   ];
   return entries.flatMap(({ post, role }) => post?.status === 'published' && post.room_preview && !post.room_preview.closed
-    ? [{ id: post.id, title: post.title, cityId: post.city_id, role, conversationId: role === 'pending' ? null : roomIds.get(post.id) ?? null }] : []);
+    ? [{ id: post.id, authorId: post.author_id, title: post.title, cityId: post.city_id, role, conversationId: role === 'pending' ? null : roomIds.get(post.id) ?? null }] : []);
 }
 
 export async function leaveMeetup(client: SupabaseClient, postId: string) {
@@ -594,7 +598,7 @@ function decodeBase64(value: string) {
 }
 
 export type MyPostRow = { id: string; city_id: string; tag_id: number; title: string; body: string; hashtags: string[]; image_paths: string[]; created_at: string; sort_at: string | null; like_count: number; save_count: number; comment_count: number; view_count: number; share_count: number; kind: PostKind; listing_status: ListingStatus | null; price: number | string | null; expires_at: string | null; bumped_at: string | null };
-export type ReplyToMe = { id: string; post_id: string; body: string; created_at: string; author: { nickname: string; verification_level: number } | null; post: { title: string } | null };
+export type ReplyToMe = { id: string; author_id: string; post_id: string; body: string; created_at: string; author: { nickname: string; verification_level: number } | null; post: { title: string } | null };
 
 // "나" 탭: 내 글(이야기 / 구해요·팔아요)과 내 글에 달린 다른 사람의 답글.
 export async function loadMyPosts(client: SupabaseClient, userId: string, kind: PostKind): Promise<MyPostRow[]> {
@@ -608,7 +612,7 @@ export async function loadMyPosts(client: SupabaseClient, userId: string, kind: 
 
 export async function loadRepliesToMe(client: SupabaseClient, userId: string): Promise<ReplyToMe[]> {
   const result = await client.from('comments')
-    .select('id,post_id,body,created_at,author:profiles!comments_author_id_fkey(nickname,verification_level),post:posts!comments_post_id_fkey!inner(title,author_id)')
+    .select('id,author_id,post_id,body,created_at,author:profiles!comments_author_id_fkey(nickname,verification_level),post:posts!comments_post_id_fkey!inner(title,author_id)')
     .eq('post.author_id', userId).neq('author_id', userId).is('deleted_at', null)
     .order('created_at', { ascending: false }).limit(30);
   if (result.error) throw result.error;
@@ -643,7 +647,7 @@ export async function deleteComment(client: SupabaseClient, commentId: string) {
 
 // 주간 인기 글 순위. 매주 월요일에 찍혀 고정되므로 "이번 주 1위"가 성립한다.
 export type WeeklyRankingEntry = {
-  rank: number; postId: string; title: string; nickname: string;
+  rank: number; postId: string; title: string; nickname: string; authorId?: string;
   views: number; likes: number; comments: number;
 };
 export type WeeklyRanking = { weekStart: string; cityId: string; entries: WeeklyRankingEntry[] } | null;

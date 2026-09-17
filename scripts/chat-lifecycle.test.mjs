@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 import { mergeChatMessages } from '../src/lib/community-data.ts';
+import { hideContent, isContentHidden, subscribeVisibility } from '../src/lib/content-visibility.ts';
 import { count, t } from '../src/i18n/ko.ts';
 
 // Exercise the component's hooks, effects and event handlers, as in comment-threads.test.mjs.
@@ -69,6 +70,10 @@ function mount(file, exportName, data, props = {}, params = {}) {
       if (name === '@/lib/membership-provider') return { useMembership: () => ({ refresh: refreshMembership }) };
       if (name === '@/components/relationship-slot-card') return { relationshipSlotData: () => null };
       if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
+      if (name === '@/hooks/use-content-visibility') return { useContentVisibility: () => {
+        effect(() => subscribeVisibility(() => { dirty = true; }), []);
+        return (type, id, authorId) => isContentHidden(auth.me.id, type, id, authorId);
+      } };
       if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16 } };
       if (name === '@/i18n/ko') return { t, count };
       if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
@@ -106,6 +111,26 @@ const conversation = { id: 'room', kind: 'group', status: 'active', title: 'ëª¨ì
 const roomProps = { conversation, currentUserId: 'me', onClose() {}, onChanged: async () => {} };
 const room = data => mount('../src/components/chat-room.tsx', 'ChatRoom', data, roomProps);
 const olderButton = harness => harness.nodes().find(node => node.props?.label === t.chat.loadOlder);
+
+test('report and block remove rendered messages immediately and reject late snapshots', async (context) => {
+  const rows = [
+    { ...message(0), id: 'reported-live' },
+    { ...message(1), sender_id: 'blocked-live' },
+    message(2),
+  ];
+  const harness = room({ loadConversationMessages: async () => rows });
+  context.after(() => harness.cleanup());
+  await harness.settle();
+  assert.equal(harness.messages().length, 3);
+  hideContent('me', 'message', 'reported-live');
+  await harness.settle();
+  assert.equal(harness.messages().length, 2);
+  hideContent('me', 'user', 'blocked-live');
+  await harness.settle();
+  assert.equal(harness.messages().map(row => row.id).join(','), 'm002');
+  harness.foreground(); await harness.settle();
+  assert.equal(harness.messages().map(row => row.id).join(','), 'm002');
+});
 
 test('request route preference does not override later All, Group or Direct tab choices', async (context) => {
   const filters = [];

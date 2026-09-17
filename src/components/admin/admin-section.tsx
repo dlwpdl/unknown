@@ -30,7 +30,7 @@ export function AdminSectionView({
   loadingMore: boolean;
   noMore: boolean;
   onUser: (userId: string) => void;
-  onResolve: (reportId: string, action: 'dismissed' | 'warned' | 'blocked', note: string) => void;
+  onResolve: (reportId: string, action: 'dismissed' | 'warned' | 'blocked' | 'hidden', note: string) => void;
   onLoadMore: () => void;
   localPreview?: boolean;
 }) {

@@ -20,6 +20,7 @@ import { TrustBadge } from '@/components/trust-badge';
 import { UserSheet, type SheetUser } from '@/components/user-sheet';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { count, t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { buildCommentListRows, type CommentListRow } from '@/lib/comment-list';
@@ -57,6 +58,7 @@ export function PostDetail(props: PostDetailProps) {
 
 function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCommentCountChange, onViewCountChange, onPostRemoved }: PostDetailProps) {
   const theme = useTheme();
+  const hidden = useContentVisibility();
   const [post, setPost] = useState(initialPost);
   const onListingChanged = useCallback((next: Partial<Post>) => setPost((current) => ({ ...current, ...next })), []);
   const router = useRouter();
@@ -88,7 +90,13 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const scrollRef = useRef<FlatList<CommentListRow>>(null);
   const scrolledContext = useRef<string | undefined>(undefined);
   const active = useRef(true);
-  const focusedContext = context?.id === commentId ? context : null;
+  const visibleComments = (items: PostComment[]) => items.filter((item) =>
+    !hidden('comment', item.id, item.authorId)
+    && !items.some((ancestor) => (ancestor.id === item.parentId || ancestor.id === item.replyToId)
+      && hidden('comment', ancestor.id, ancestor.authorId)));
+  const focusedContext = context && context.id === commentId ? { ...context, comments: visibleComments(context.comments) } : null;
+  const postHidden = hidden('post', post.id, post.author.id);
+  useEffect(() => { if (postHidden) onClose(); }, [postHidden, onClose]);
   const focusedRoot = focusedContext?.comments.find((comment) => !comment.parentId);
   useLayoutEffect(() => {
     active.current = true;
@@ -420,7 +428,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const composerPage = pages[replyTo ? replyTo.parentId ?? replyTo.id : 'root'];
   const sendDisabled = sending || !draft.trim() || (!editing && (!composerPage?.loaded || composerPage.loading));
   const listRows = buildCommentListRows({
-    comments,
+    comments: visibleComments(comments),
     expanded,
     focusedCommentId: commentId,
     focusedComments: focusedContext?.comments,
@@ -488,6 +496,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     return <ThemedText type="small" themeColor="textSecondary">첫 댓글을 남겨 보세요.</ThemedText>;
   };
 
+  if (postHidden) return null;
   return (
     <ThemedView style={{ flex: 1 }}>
       <View style={[styles.head, { borderBottomColor: theme.line }]}>

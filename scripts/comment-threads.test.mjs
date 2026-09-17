@@ -159,6 +159,7 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
       toggleCommentReaction: async () => { if (failLike) throw new Error('OFFLINE'); },
       isContentRejected: () => false,
     };
+    if (name === '@/hooks/use-content-visibility') return { useContentVisibility: () => () => false };
     if (name === '@/lib/comment-threads') return {
       loadCommentThreadContext: async (_client, _postId, targetId) => {
         if (targetId === 'hidden') return [];

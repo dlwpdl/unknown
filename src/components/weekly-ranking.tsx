@@ -7,6 +7,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { count } from '@/i18n/ko';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadWeeklyRanking, type WeeklyRanking as Ranking, type WeeklyRankingEntry } from '@/lib/community-data';
@@ -28,9 +29,11 @@ const ROTATE_MIN = 4;
 
 export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; refreshKey?: number; onOpen: (postId: string) => void }) {
   const theme = useTheme();
+  const hidden = useContentVisibility();
   const reducedMotion = useReducedMotion();
   const { play } = useInteractionFeedback();
-  const [ranking, setRanking] = useState<Ranking>(null);
+  const [loadedRanking, setRanking] = useState<Ranking>(null);
+  const ranking = loadedRanking && { ...loadedRanking, entries: loadedRanking.entries.filter((entry) => !hidden('post', entry.postId, entry.authorId)) };
   const [open, setOpen] = useState(false);
   const [at, setAt] = useState(0);
   const [fade] = useState(() => new Animated.Value(1));

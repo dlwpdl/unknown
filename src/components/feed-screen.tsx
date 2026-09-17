@@ -37,6 +37,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
@@ -58,7 +59,7 @@ import { appendUniquePosts, groupJournalPosts, loadPublicFeed, loadPublicPost } 
 import { addHashtag, canonicalizeHashtag, getSuggestedHashtags, parseHashtags } from '@/lib/hashtags';
 import { getPostImagePlan } from '@/lib/image-upload';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { INITIAL_QUOTA, MOCK_POSTS, TAGS } from '@/lib/mock';
+import { INITIAL_QUOTA, TAGS } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
 import type { DailyQuota, Post, PostKind, Tag } from '@/lib/types';
 
@@ -66,6 +67,7 @@ type DraftImage = { uri: string; base64: string; mimeType: string };
 
 export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: boolean }) {
   const theme = useTheme();
+  const hidden = useContentVisibility();
   const reducedMotion = useReducedMotion();
   const { fontScale } = useWindowDimensions();
   const router = useRouter();
@@ -74,7 +76,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const { play } = useInteractionFeedback();
   const insets = useSafeAreaInsets();
   const bottomClear = insets.bottom + TabBarHeight; // 탭바 + 홈 인디케이터 실측 높이
-  const [posts, setPosts] = useState<Post[]>(MOCK_POSTS);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [quota, setQuota] = useState(INITIAL_QUOTA);
   const { city, setCity } = useCommunityCity();
   const location = useCommunityLocation();
@@ -146,7 +148,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
 
   useEffect(() => {
     void refreshFeed().catch(() => {
-      // 시드 번들은 네트워크 장애나 미적용 마이그레이션 때 빈 커뮤니티를 막는다.
+      // Visibility must come from the server; never fall back to unfiltered seed posts.
     });
     return cancelFeedRequests;
   }, [cancelFeedRequests, refreshFeed]);
@@ -165,7 +167,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   }, [isAuthed, me.id, me.cityId]);
 
   const cityOpen = city.state === 'open';
-  const cityPosts = useMemo(() => posts.filter((p) => p.cityId === city.id), [posts, city.id]);
+  const cityPosts = posts.filter((p) => p.cityId === city.id && !hidden('post', p.id, p.author.id));
   const feedData = useMemo(
     () =>
       cityOpen
@@ -694,7 +696,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               </View>
             ) : (
               <FlatList
-                data={searchResults.filter((post) => !meetupsOnly || !post.room?.closed)}
+                data={searchResults.filter((post) => !hidden('post', post.id, post.author.id) && (!meetupsOnly || !post.room?.closed))}
                 keyExtractor={(p) => p.id}
                 contentContainerStyle={styles.listContent}
                 ItemSeparatorComponent={() => <View style={{ height: Spacing.two + 2 }} />}

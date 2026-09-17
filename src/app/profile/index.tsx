@@ -15,6 +15,7 @@ import { ThemedView } from '@/components/themed-view';
 import { TrustBadge } from '@/components/trust-badge';
 import { MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { count, t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { CITIES, TAGS } from '@/lib/mock';
@@ -29,6 +30,7 @@ import type { Post } from '@/lib/types';
 
 export default function ProfileScreen() {
   const theme = useTheme();
+  const hidden = useContentVisibility();
   const router = useRouter();
   const reducedMotion = useReducedMotion();
   const { isAuthed, signInApple, signInKakao, signInGoogle, signInDev, isAuthLoading, authError, trustLevel, me, setProfilePhoto, signOut } = useAuth();
@@ -192,7 +194,7 @@ export default function ProfileScreen() {
           </Pressable>
         ))}
         {!segmentLoading && segment !== 'replies' && myPosts[segment].length === 0 && <ThemedText type="small" themeColor="textSecondary" style={styles.emptyNote}>{segment === 'listing' ? '아직 올린 구해요·팔아요 글이 없어요.' : '아직 쓴 글이 없어요. 오늘의 한 편을 남겨보세요.'}</ThemedText>}
-        {!segmentLoading && segment === 'replies' && replies.map((reply) => (
+        {!segmentLoading && segment === 'replies' && replies.filter((reply) => !hidden('comment', reply.id, reply.author_id)).map((reply) => (
           <Pressable key={reply.id} onPress={() => router.push(`/post/${reply.post_id}`)} accessibilityRole="button" style={[styles.myPost, { borderBottomColor: theme.line }]}>
             <ThemedText type="small" themeColor="textSecondary"><ThemedText type="small" themeColor="navy">{reply.author?.nickname ?? '이웃'}</ThemedText>님이 「{reply.post?.title ?? '내 글'}」에 · {relativeTime(reply.created_at)}</ThemedText>
             <ThemedText type="small">{reply.body}</ThemedText>
@@ -248,7 +250,7 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
           <FlatList
-            data={savedPosts}
+            data={savedPosts.filter((post) => !hidden('post', post.id, post.author.id))}
             keyExtractor={(p) => p.id}
             contentContainerStyle={styles.savedList}
             ItemSeparatorComponent={() => <View style={{ height: Spacing.two + 2 }} />}

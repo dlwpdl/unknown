@@ -70,13 +70,16 @@ export type AdminReport = {
   status: ReportStatus;
   created_at: string;
   resolved_at: string | null;
+  source?: 'report' | 'block';
+  blocked_at?: string | null;
+  evidence?: { title?: string; body?: string; nickname?: string; image_paths?: string[]; created_at?: string } | null;
 };
 
 export type AdminModerationAction = {
   id: string;
   report_id: string;
   actor_id: string;
-  action: 'dismissed' | 'warned' | 'blocked';
+  action: 'dismissed' | 'warned' | 'blocked' | 'hidden';
   note: string | null;
   created_at: string;
 };
@@ -333,7 +336,7 @@ export async function loadMoreAdminData(
 export async function moderateAdminReport(
   client: SupabaseClient,
   reportId: string,
-  action: 'dismissed' | 'warned' | 'blocked',
+  action: AdminModerationAction['action'],
   note: string,
 ) {
   const { error } = await client.rpc('moderate_report', {

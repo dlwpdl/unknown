@@ -33,7 +33,7 @@ export function AdminReportQueue({
   actions: AdminModerationAction[];
   resolving: boolean;
   onUser: (userId: string) => void;
-  onResolve: (reportId: string, action: 'dismissed' | 'warned' | 'blocked', note: string) => void;
+  onResolve: (reportId: string, action: AdminModerationAction['action'], note: string) => void;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(reports[0]?.id ?? null);
   const [filter, setFilter] = useState<ReportFilter>('all');
@@ -86,7 +86,7 @@ export function AdminReportQueue({
                     <ThemedText type="smallBold">{profiles.get(report.reported_user_id)?.nickname ?? '알 수 없는 사용자'}</ThemedText>
                     <StatusPill status={report.status} />
                   </View>
-                  <ThemedText type="small" style={styles.muted}>{reportReasonLabel(report.reason_code)} · {reportTargetLabel(report.target_type)} · {formatDate(report.created_at)}</ThemedText>
+                  <ThemedText type="small" style={styles.muted}>{report.source === 'block' ? '직접 차단' : reportReasonLabel(report.reason_code)} · {report.blocked_at ? '차단 동반 · ' : ''}{reportTargetLabel(report.target_type)} · {formatDate(report.created_at)}</ThemedText>
                   <ThemedText type="small" numberOfLines={2}>{report.details || '상세 설명 없음'}</ThemedText>
                 </Pressable>
               );
@@ -102,6 +102,17 @@ export function AdminReportQueue({
               <LabelValue label="신고 대상" value={profiles.get(selected.reported_user_id)?.nickname ?? selected.reported_user_id} />
               <LabelValue label="유형" value={`${reportTargetLabel(selected.target_type)} · ${reportReasonLabel(selected.reason_code)}`} />
               <LabelValue label="내용" value={selected.details || '상세 설명 없음'} />
+              <LabelValue label="신고자" value={profiles.get(selected.reporter_id)?.nickname ?? selected.reporter_id} />
+              <LabelValue label="노출 범위" value={selected.blocked_at
+                ? '신고자에게 작성자의 콘텐츠 숨김 · 다른 회원의 노출은 별도 운영 조치'
+                : selected.target_type === 'user' ? '사용자 검토 요청 · 자동 전체 숨김 없음'
+                : '신고자에게 해당 콘텐츠 숨김 · 다른 회원의 노출은 별도 운영 조치'} />
+              <LabelValue label="접수 당시 원본" value={selected.evidence
+                ? [selected.evidence.title, selected.evidence.body, selected.evidence.nickname].filter(Boolean).join('\n') || '텍스트 없음'
+                : '이전 신고에는 원본 스냅샷이 없습니다. 사용자 전체 활동에서 확인하세요.'} />
+              <LabelValue label="대상 ID" value={selected.target_id} />
+              {!!selected.evidence?.image_paths?.length && <LabelValue label="첨부 원본 경로" value={selected.evidence.image_paths.join('\n')} />}
+              <ThemedText type="small" style={styles.muted}>신고·차단은 위반 확정이 아닙니다. 전체 숨김은 공개만 중단하며 원본과 처리 기록은 보존 정책에 따라 보관합니다.</ThemedText>
               <Pressable onPress={() => onUser(selected.reported_user_id)} accessibilityRole="button" style={styles.outlineButton}>
                 <ThemedText type="smallBold">사용자 전체 활동 보기</ThemedText>
               </Pressable>
@@ -119,6 +130,12 @@ export function AdminReportQueue({
                     style={styles.noteInput}
                   />
                   <View style={styles.actions}>
+                    {selected.target_type !== 'user' && <Pressable
+                      onPress={() => onResolve(selected.id, 'hidden', note)}
+                      disabled={resolving} accessibilityRole="button" accessibilityState={{ disabled: resolving, busy: resolving }}
+                      style={[styles.dangerButton, resolving && styles.disabled]}>
+                      <ThemedText type="smallBold" style={styles.primaryText}>콘텐츠 전체 숨김</ThemedText>
+                    </Pressable>}
                     <Pressable
                       onPress={() => onResolve(selected.id, 'dismissed', note)}
                       disabled={resolving}
@@ -141,12 +158,12 @@ export function AdminReportQueue({
                       accessibilityRole="button"
                       accessibilityState={{ disabled: resolving, busy: resolving }}
                       style={[styles.dangerButton, resolving && styles.disabled]}>
-                      <ThemedText type="smallBold" style={styles.primaryText}>차단</ThemedText>
+                      <ThemedText type="smallBold" style={styles.primaryText}>계정 정지</ThemedText>
                     </Pressable>
                   </View>
                 </View>
               ) : (
-                <LabelValue label="처리 기록" value={action?.note || `${reportStatusLabel(selected.status)} 처리됨`} />
+                <LabelValue label="처리 기록" value={`${action ? ({ hidden: '콘텐츠 전체 숨김', blocked: '계정 정지', warned: '경고', dismissed: '기각' }[action.action]) : reportStatusLabel(selected.status)}${action?.note ? ` · ${action.note}` : ''}`} />
               )}
             </View>
           )}
@@ -200,7 +217,7 @@ const styles = StyleSheet.create({
   label: { color: Colors.light.textSecondary },
   resolveBox: { gap: Spacing.two, paddingTop: Spacing.two, borderTopWidth: 1, borderTopColor: Colors.light.line },
   noteInput: { minHeight: 92, padding: Spacing.three, textAlignVertical: 'top', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, color: Colors.light.text, backgroundColor: Colors.light.background },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: Spacing.two },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: Spacing.two },
   outlineButton: { minHeight: 40, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
   primaryButton: { minHeight: 40, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: Colors.light.accent },
   dangerButton: { minHeight: 40, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: '#9D241A' },

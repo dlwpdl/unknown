@@ -48,7 +48,7 @@ export function ReportSheet({
     if (!reason || submitting) return;
     setSubmitting(true);
     try {
-      await reportContent(supabase, targetType, targetId, reason, details);
+      await reportContent(supabase, targetType, targetId, reason, details, me.id);
       if (blockAfter) {
         try {
           await blockUser(supabase, me.id, reportedUserId);
@@ -61,7 +61,8 @@ export function ReportSheet({
       }
       close();
       play('warning');
-      Alert.alert(t.report.doneTitle, blockAfter ? t.report.doneBlocked : t.report.doneBody);
+      Alert.alert(t.report.doneTitle, blockAfter ? t.report.doneBlocked
+        : targetType === 'user' ? '운영팀에 신고를 전달했어요. 활동 내역을 검토하겠습니다.' : t.report.doneBody);
     } catch {
       play('warning');
       Alert.alert(t.report.errorTitle, t.report.errorBody);
