@@ -12,6 +12,7 @@ test('one-off time is formatted in the event timezone and persistent cadence sta
   assert.equal(chillingSchedule({ eventKind: 'group', cadence: '매주 토요일' }), '매주 토요일');
   assert.equal(chillingSchedule({}), '지속 모임');
   assert.equal(chillingSchedule({ eventKind: 'once', startsAt: 'invalid', timezone: 'bad' }), '일정 확인 필요');
+  assert.match(chillingSchedule({ eventKind: 'once', startsAt: '2026-09-26T17:00:00Z', endsAt: '2026-09-27T19:00:00Z', timezone: 'America/Vancouver' }), /9월 26일.*10:00.*9월 27일.*12:00/);
 });
 
 const once = { kind: 'once', startsAt: '2099-09-26T17:00:00Z', endsAt: '2099-09-26T19:00:00Z', timezone: 'America/Vancouver', cadence: '', capacity: 6 };

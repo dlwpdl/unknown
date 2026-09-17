@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PostCard } from '@/components/post-card';
+import { ChillingHostProfile } from '@/components/chilling-host-profile';
 import { ReportSheet } from '@/components/report-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -521,7 +522,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           ListHeaderComponent={<View style={styles.listHeader}>
             <PostCard
               post={{ ...post, views: viewCount }}
-              onJoin={onJoin}
+              onJoin={onJoin ?? (() => router.push({ pathname: '/meetup-join', params: { postId: post.id } }))}
               onAuthor={() =>
                 setSheetUser({
                   id: post.author.id,
@@ -534,6 +535,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                 })
               }
             />
+            {post.room && <ChillingHostProfile post={post} />}
             {isAuthed && post.author.id === me.id && postDraft && (
               <View style={[styles.postEdit, { borderColor: theme.line }]}>
                 <TextInput value={postDraft.title} onChangeText={(text) => setPostDraft((current) => current && { ...current, title: text })}

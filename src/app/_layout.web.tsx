@@ -5,6 +5,7 @@ import { useColorScheme } from 'react-native';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { AppActivity } from '@/components/app-activity';
 import { AuthProvider } from '@/lib/auth';
+import { CommunityCityProvider } from '@/lib/community-city';
 import { InteractionFeedbackProvider } from '@/lib/interaction-feedback';
 import { MembershipProvider } from '@/lib/membership-provider';
 
@@ -17,6 +18,7 @@ export default function WebLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AuthProvider publicPage={publicPage}>
+        <CommunityCityProvider>
         <AppActivity />
         <MembershipProvider>
         <InteractionFeedbackProvider>
@@ -24,6 +26,7 @@ export default function WebLayout() {
           <Stack screenOptions={{ headerShown: false }} />
         </InteractionFeedbackProvider>
         </MembershipProvider>
+        </CommunityCityProvider>
       </AuthProvider>
     </ThemeProvider>
   );

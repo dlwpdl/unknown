@@ -258,6 +258,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     if (!isAuthed) return promptLogin(t.auth.reasonJoinLogin);
     if (post.room?.closed) return showActionError('MEETUP_CLOSED');
     if (post.author.id === me.id) return Alert.alert(t.chat.ownMeetupTitle, t.chat.ownMeetupBody);
+    if (post.room?.eventKind) {
+      setDetailPost(null);
+      router.push({ pathname: '/meetup-join', params: { postId: post.id } });
+      return;
+    }
     setJoinMessage('');
     setJoinPost(post);
   };
@@ -394,6 +399,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   };
 
   const submit = async () => {
+    if (tag.kind === 'meetup') {
+      setWriting(false);
+      router.push('/meetup-create');
+      return;
+    }
     if (!title.trim() || !body.trim()) {
       Alert.alert(t.write.validationTitle, t.write.validationBody);
       return;
@@ -410,7 +420,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         body: body.trim(),
         hashtags,
         image: draftImage ? { base64: draftImage.base64, mimeType: draftImage.mimeType } : undefined,
-        kind: tag.kind === 'meetup' ? 'story' : postKind,
+        kind: postKind,
         price: postKind === 'listing' && priceInput.trim() ? Number(priceInput.replace(/[^0-9.]/g, '')) : null,
       });
       void location.record(draftLocation.current, post.id);
@@ -869,6 +879,12 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                           key={tg.id}
                           onPress={() => {
                             play('selection');
+                            if (tg.kind === 'meetup') {
+                              setWriting(false);
+                              setWriterPanel(null);
+                              router.push('/meetup-create');
+                              return;
+                            }
                             setTag(tg);
                             setWriterPanel(null);
                           }}

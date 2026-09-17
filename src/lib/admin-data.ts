@@ -84,9 +84,11 @@ export type AdminModerationAction = {
   created_at: string;
 };
 
+export type AdminSafetyTargetType = 'post' | 'comment' | 'message' | 'chilling_profile' | 'chilling_application';
+
 export type AdminSafetyReview = {
   id: number;
-  target_type: 'post' | 'comment' | 'message';
+  target_type: AdminSafetyTargetType;
   target_id: string;
   status: 'pending' | 'processing' | 'reviewed' | 'failed';
   risk_score: number | null;
@@ -112,7 +114,7 @@ export type AdminCounts = {
 export type AdminSafetyAlert = {
   id: number;
   kind: 'keyword';
-  target_type: 'post' | 'comment' | 'message';
+  target_type: AdminSafetyTargetType;
   target_id: string;
   author_id: string;
   conversation_id: string | null;
@@ -364,6 +366,12 @@ export async function setAdminAccountStatus(
 export async function resolveAdminSafetyAlert(client: SupabaseClient, alertId: number, status: AdminSafetyAlert['status'], note?: string) {
   const result = await client.rpc('resolve_admin_safety_alert', { p_alert_id: alertId, p_status: status, p_note: note ?? null });
   if (result.error) throw result.error;
+}
+
+export async function loadAdminChillingContent(client: SupabaseClient, targetType: 'chilling_profile' | 'chilling_application', targetId: string): Promise<{ authorId: string; text: string } | null> {
+  const result = await client.rpc('get_admin_chilling_content', { p_target_type: targetType, p_target_id: targetId });
+  if (result.error) throw result.error;
+  return result.data;
 }
 
 // Audited bundle (content, author identity as stored, session IPs, surrounding conversation) for a

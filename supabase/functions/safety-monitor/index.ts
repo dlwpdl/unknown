@@ -1,6 +1,10 @@
 // @ts-nocheck
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
+// Covers 5,000 body + 80 title + 5×30 tags + 300 question + 80 cadence,
+// including UTF-16 surrogate pairs and field separators.
+const MAX_SAFETY_CONTENT_LENGTH = 12_000;
+
 const RISK_REASONS = [
   'credible_threat',
   'self_harm',
@@ -86,15 +90,21 @@ Deno.serve(async (request) => {
 });
 
 async function loadContent(client, targetType: string, targetId: string) {
+  if (targetType === 'chilling_profile' || targetType === 'chilling_application') {
+    const result = await client.rpc('get_chilling_safety_content', { p_target_type: targetType, p_target_id: targetId });
+    if (result.error) throw result.error;
+    return result.data;
+  }
+  if (!['post', 'comment', 'message'].includes(targetType)) throw new Error('UNSUPPORTED_TARGET_TYPE');
   const table = targetType === 'post' ? 'posts' : targetType === 'comment' ? 'comments' : 'messages';
-  const columns = targetType === 'post' ? 'title,body,hashtags,author_id' : targetType === 'comment' ? 'body,author_id' : 'body,sender_id';
+  const columns = targetType === 'post' ? 'title,body,hashtags,author_id,room_preview' : targetType === 'comment' ? 'body,author_id' : 'body,sender_id';
   const result = await client.from(table).select(columns).eq('id', targetId).maybeSingle();
   if (result.error) throw result.error;
   if (!result.data) return null;
   return {
     authorId: targetType === 'message' ? result.data.sender_id : result.data.author_id,
     text: targetType === 'post'
-      ? `${result.data.title}\n${result.data.body}\n${(result.data.hashtags ?? []).join(' ')}`
+      ? [result.data.title, result.data.body, (result.data.hashtags ?? []).join(' '), result.data.room_preview?.applicationQuestion, result.data.room_preview?.cadence].filter((value) => value != null).join('\n')
       : result.data.body,
   };
 }
@@ -133,7 +143,7 @@ async function analyze(openAiKey: string, targetType: string, content: string) {
             'Prioritize credible violence, self-harm, sexual exploitation, stalking, doxxing, hate, harassment, scams, and repeated commercial promotion.',
             'Use critical only for credible imminent danger or severe exploitation. AI only prioritizes; a human makes the final decision.',
             `Content type: ${targetType}`,
-            `Content:\n<untrusted>${content.slice(0, 5000)}</untrusted>`,
+            `Content:\n<untrusted>${content.slice(0, MAX_SAFETY_CONTENT_LENGTH)}</untrusted>`,
           ].join('\n'),
         }],
       }],

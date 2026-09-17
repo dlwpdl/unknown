@@ -7,7 +7,7 @@ import { AdminUserDirectoryPanel } from '@/components/admin/admin-user-directory
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import type { AdminSection } from '@/lib/admin';
-import { exportAdminSafetyEvidence, loadAdminClientErrors, resolveAdminClientError, resolveAdminSafetyAlert, setAdminPostFields, type AdminDashboardData, type AdminPost, type AdminProfile, type AdminSafetyAlert } from '@/lib/admin-data';
+import { exportAdminSafetyEvidence, loadAdminChillingContent, loadAdminClientErrors, resolveAdminClientError, resolveAdminSafetyAlert, setAdminPostFields, type AdminDashboardData, type AdminPost, type AdminProfile, type AdminSafetyAlert, type AdminSafetyTargetType } from '@/lib/admin-data';
 import type { AdminClientError, AdminPostFields, AdminPostPatch } from '@/lib/admin-trending';
 import { count } from '@/i18n/ko';
 import { CITIES } from '@/lib/mock';
@@ -133,11 +133,12 @@ export function AdminSectionView({
           {data.safetyReviews.map((review) => (
             <View key={review.id} style={styles.row}>
               <View style={styles.rowTop}>
-                <ThemedText type="smallBold">{review.target_type} · {shortId(review.target_id)}</ThemedText>
+                <ThemedText type="smallBold">{SAFETY_TARGET_LABEL[review.target_type] ?? review.target_type} · {shortId(review.target_id)}</ThemedText>
                 <StateText text={review.risk_level ?? review.status} danger={review.risk_level === 'high' || review.risk_level === 'critical' || review.status === 'failed'} />
               </View>
               <ThemedText type="small">{review.risk_reasons.length ? review.risk_reasons.join(' · ') : review.last_error ?? '분석 결과 대기 중'}</ThemedText>
               <ThemedText type="small" style={styles.muted}>위험도 {review.risk_score ?? '-'} · 시도 {review.attempts}회 · {formatDate(review.created_at)}</ThemedText>
+              {(review.target_type === 'chilling_profile' || review.target_type === 'chilling_application') && <AdminChillingContent targetType={review.target_type} targetId={review.target_id} localPreview={localPreview} onUser={onUser} />}
             </View>
           ))}
           {data.safetyReviews.length === 0 && <Empty text="안전 검토 기록이 없습니다." />}
@@ -521,6 +522,39 @@ const ALERT_CATEGORY: Record<string, string> = {
   drugs: '마약', weapons: '무기', sexual_exploitation: '성착취', fraud: '사기', self_harm: '자해·자살',
   violence: '폭력·위협', doxxing: '신상 공개', illegal_status: '불법 체류·위조',
 };
+const SAFETY_TARGET_LABEL: Record<AdminSafetyTargetType, string> = { post: '게시글', comment: '댓글', message: '메시지', chilling_profile: '칠링 프로필', chilling_application: '칠링 참여 신청' };
+
+function AdminChillingContent({ targetType, targetId, localPreview, onUser }: {
+  targetType: 'chilling_profile' | 'chilling_application'; targetId: string; localPreview?: boolean; onUser: (id: string) => void;
+}) {
+  const [content, setContent] = useState<{ authorId: string; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const load = async () => {
+    if (localPreview || busy) return;
+    setBusy(true);
+    setError('');
+    setContent(null);
+    try {
+      const result = await loadAdminChillingContent(supabase, targetType, targetId);
+      setContent(result);
+      if (!result) setError('내용을 찾을 수 없습니다.');
+    } catch {
+      setError('내용을 불러오지 못했습니다. 권한과 연결 상태를 확인해주세요.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return <View>
+    <ActionText label={busy ? '불러오는 중' : '내용 보기'} onPress={() => void load()} disabled={localPreview || busy} />
+    {error ? <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText> : null}
+    {content && <>
+      <ThemedText type="small" selectable>{content.text}</ThemedText>
+      <ActionText label="작성자 이력 보기" onPress={() => onUser(content.authorId)} />
+    </>}
+  </View>;
+}
+
 const ALERT_STATUS: Record<AdminSafetyAlert['status'], string> = { open: '미처리', reviewed: '검토 완료', dismissed: '해당 없음', escalated: '공권력 이관' };
 
 // ponytail: 로컬 상태로 행을 갱신한다. 전체 재조회는 상단 새로고침이 담당.
@@ -569,10 +603,11 @@ function AdminAlertsPanel({ alerts, profiles, localPreview, onUser }: {
         return (
           <View key={alert.id} style={[styles.row, alert.status === 'open' && critical && styles.metricUrgent]}>
             <View style={styles.rowTop}>
-              <ThemedText type="smallBold">{ALERT_CATEGORY[alert.category] ?? alert.category} · {alert.target_type} · {alert.matched_terms.join(', ')}</ThemedText>
+              <ThemedText type="smallBold">{ALERT_CATEGORY[alert.category] ?? alert.category} · {SAFETY_TARGET_LABEL[alert.target_type] ?? alert.target_type} · {alert.matched_terms.join(', ')}</ThemedText>
               <StateText text={`${alert.severity} · ${ALERT_STATUS[alert.status]}`} danger={alert.status === 'open' && alert.severity !== 'medium'} />
             </View>
             <ThemedText type="small" numberOfLines={4}>{alert.excerpt}</ThemedText>
+            {(alert.target_type === 'chilling_profile' || alert.target_type === 'chilling_application') && <AdminChillingContent targetType={alert.target_type} targetId={alert.target_id} localPreview={localPreview} onUser={onUser} />}
             <Pressable onPress={() => onUser(alert.author_id)} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
               <ThemedText type="small" style={styles.muted}>{author?.nickname ?? alert.author_id} · {formatDate(alert.created_at)}{alert.note ? ` · ${alert.note}` : ''}</ThemedText>
             </Pressable>

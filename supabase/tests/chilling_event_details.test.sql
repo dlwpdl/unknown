@@ -13,6 +13,7 @@ insert into public.posts(id,author_id,city_id,tag_id,title,body,posted_on,room_p
 select set_config('request.jwt.claims','{"sub":"63000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 set local role authenticated;
 select is(public.get_membership()->>'tier','free','configuration tests use free membership');
+select public.save_chilling_profile('{"intro":"호스트 소개","interests":["산책"],"promptOne":"바다","promptTwo":"주말"}');
 select lives_ok($$select public.configure_chilling_event('63000000-0000-0000-0000-000000000011','once',now()+interval '1 day',now()+interval '2 days','America/Vancouver')$$,'free host can configure one-off event');
 select is((select room_preview->>'eventKind' from public.posts where id='63000000-0000-0000-0000-000000000011'),'once','one-off kind persisted');
 select is((select room_preview->>'id' from public.posts where id='63000000-0000-0000-0000-000000000011'),'room63','existing room identity preserved');
@@ -30,8 +31,9 @@ select throws_ok($$select public.configure_chilling_event('63000000-0000-0000-00
 reset role;
 select set_config('request.jwt.claims','{"sub":"63000000-0000-0000-0000-000000000002","role":"authenticated"}',true);
 set local role authenticated;
+select public.save_chilling_profile('{"intro":"참가자 소개","interests":["산책"],"promptOne":"바다","promptTwo":"주말"}');
 select throws_ok($$select public.configure_chilling_event('63000000-0000-0000-0000-000000000011','group',p_cadence=>'weekly')$$,'P0001','MEETUP_NOT_FOUND','another account cannot configure host event');
-select lives_ok($$select public.request_meetup_join('63000000-0000-0000-0000-000000000011','함께해요')$$,'group request succeeds');
+select lives_ok($$select public.request_chilling_join('63000000-0000-0000-0000-000000000011','함께해요','chilling-v1')$$,'consented group request succeeds');
 reset role;
 select set_config('test.request63',(select id::text from public.meetup_requests where post_id='63000000-0000-0000-0000-000000000011'),true);
 select set_config('request.jwt.claims','{"sub":"63000000-0000-0000-0000-000000000001","role":"authenticated"}',true);

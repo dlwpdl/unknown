@@ -15,6 +15,7 @@ export type ChillingEventDraft = {
   timezone: string;
   cadence: string;
   capacity: number;
+  category?: 'casual' | 'hobby' | 'travel';
 };
 
 export function chillingKind(room: ChillingSchedule): ChillingKind {
@@ -25,15 +26,18 @@ export function chillingSchedule(room: ChillingSchedule): string {
   if (chillingKind(room) === 'group') return room.cadence?.trim() || '지속 모임';
   if (!room.startsAt || !room.timezone) return '일정 확인 필요';
   try {
-    return new Intl.DateTimeFormat('ko-KR', {
+    const formatter = new Intl.DateTimeFormat('ko-KR', {
       timeZone: room.timezone, month: 'long', day: 'numeric', weekday: 'short',
       hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-    }).format(new Date(room.startsAt));
+    });
+    const start = formatter.format(new Date(room.startsAt));
+    return room.endsAt ? `${start} – ${formatter.format(new Date(room.endsAt))}` : start;
   } catch { return '일정 확인 필요'; }
 }
 
-export async function configureChillingEvent(client: SupabaseClient, postId: string, draft: ChillingEventDraft) {
-  if (!postId || !['once', 'group'].includes(draft.kind)) throw new Error('INVALID_EVENT');
+export function normalizeChillingEvent(draft: ChillingEventDraft) {
+  if (!['once', 'group'].includes(draft.kind)) throw new Error('INVALID_EVENT');
+  if (draft.category && !['casual', 'hobby', 'travel'].includes(draft.category)) throw new Error('INVALID_EVENT_CATEGORY');
   if (!Number.isInteger(draft.capacity) || draft.capacity < 2 || draft.capacity > 50) throw new Error('INVALID_CAPACITY');
   let startsAt: string | null = null;
   let endsAt: string | null = null;
@@ -50,12 +54,18 @@ export async function configureChillingEvent(client: SupabaseClient, postId: str
     catch { throw new Error('INVALID_TIMEZONE'); }
     startsAt = new Date(start).toISOString(); endsAt = new Date(end).toISOString();
   } else if (!cadence || cadence.length > 80) throw new Error('INVALID_CADENCE');
+  return { eventKind: draft.kind, startsAt, endsAt, timezone: draft.kind === 'once' ? timezone : null,
+    cadence: draft.kind === 'group' ? cadence : null, capacity: draft.capacity, category: draft.category ?? 'casual' };
+}
+
+export async function configureChillingEvent(client: SupabaseClient, postId: string, draft: ChillingEventDraft) {
+  if (!postId) throw new Error('INVALID_EVENT');
+  const event = normalizeChillingEvent(draft);
   // Server checks ownership, active account, capacity and expiry again. A client plan is not authority.
   const result = await client.rpc('configure_chilling_event', {
     p_post_id: postId, p_kind: draft.kind,
-    p_starts_at: startsAt, p_ends_at: endsAt,
-    p_timezone: draft.kind === 'once' ? timezone : null,
-    p_cadence: draft.kind === 'group' ? cadence : null,
+    p_starts_at: event.startsAt, p_ends_at: event.endsAt,
+    p_timezone: event.timezone, p_cadence: event.cadence,
     p_capacity: draft.capacity,
   });
   if (result.error) throw result.error;

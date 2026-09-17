@@ -44,6 +44,13 @@ export interface RoomPreview {
   capacity?: number;
   verifiedOnly: boolean;
   closed?: boolean;
+  eventKind?: 'once' | 'group';
+  category?: 'casual' | 'hobby' | 'travel';
+  startsAt?: string | null;
+  endsAt?: string | null;
+  timezone?: string | null;
+  cadence?: string | null;
+  applicationQuestion?: string | null;
 }
 
 export interface PostComment {

@@ -9,6 +9,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { NotificationObserver } from '@/components/notification-observer';
 import { PushInvite } from '@/components/push-invite';
 import { AuthProvider } from '@/lib/auth';
+import { CommunityCityProvider } from '@/lib/community-city';
 import { installErrorReporting } from '@/lib/error-reporting';
 import { InteractionFeedbackProvider } from '@/lib/interaction-feedback';
 import { MembershipProvider } from '@/lib/membership-provider';
@@ -24,6 +25,7 @@ export default function TabLayout() {
       <StatusBar style="auto" />
       <ErrorBoundary>
       <AuthProvider>
+        <CommunityCityProvider>
         <AppActivity />
         <NotificationObserver />
         <MembershipProvider>
@@ -33,6 +35,7 @@ export default function TabLayout() {
           <PushInvite />
         </InteractionFeedbackProvider>
         </MembershipProvider>
+        </CommunityCityProvider>
       </AuthProvider>
       </ErrorBoundary>
     </ThemeProvider>
