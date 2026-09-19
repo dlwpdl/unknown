@@ -43,7 +43,8 @@ export function LoginPanel({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [accepted, setAccepted] = useState(false);
-  const disabled = loading || !accepted;
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const disabled = loading || !accepted || !privacyAccepted;
   const passwordLogin = onAdminLogin ?? onReviewLogin ?? (__DEV__ ? onDevLogin : undefined);
   const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/$/, '');
 
@@ -68,24 +69,26 @@ export function LoginPanel({
           <ThemedText type="small" themeColor="textSecondary">
             유해 콘텐츠와 괴롭힘·혐오·협박 등 악성 행위는 허용하지 않아요. 위반 콘텐츠는 삭제되고 계정 이용이 제한될 수 있어요. 불편한 콘텐츠와 사용자는 언제든 신고·차단할 수 있어요.
           </ThemedText>
-          <View style={styles.legalLinks}>
-            <Pressable onPress={() => void Linking.openURL(`${publicSiteUrl}/terms`)} accessibilityRole="link" style={styles.legalLink}>
-              <ThemedText type="smallBold">이용약관 전문 보기</ThemedText>
+          {[
+            { id: 'terms', checked: accepted, change: setAccepted, label: '이용약관과 커뮤니티 행동 기준에 동의합니다.', title: '이용약관' },
+            { id: 'privacy', checked: privacyAccepted, change: setPrivacyAccepted, label: '개인정보 수집·이용에 동의합니다.', title: '개인정보처리방침' },
+          ].map(item => <View key={item.id}>
+            <Pressable onPress={() => { if (!loading) item.change(value => !value); }} disabled={loading}
+              accessibilityRole="checkbox" aria-checked={item.checked} accessibilityState={{ checked: item.checked, disabled: loading }}
+              accessibilityLabel={`${item.label} 필수`} style={styles.consentRow}>
+              <View style={[styles.checkbox, { borderColor: item.checked ? theme.accent : theme.line, backgroundColor: item.checked ? theme.accent : theme.background }]}>
+                {item.checked && <ThemedText style={{ color: theme.accentInk }}>✓</ThemedText>}
+              </View>
+              <ThemedText type="small" style={styles.consentText}>[필수] {item.label}</ThemedText>
             </Pressable>
-            <Pressable onPress={() => void Linking.openURL(`${publicSiteUrl}/privacy`)} accessibilityRole="link" style={styles.legalLink}>
-              <ThemedText type="small">개인정보처리방침</ThemedText>
+            <Pressable onPress={() => void Linking.openURL(`${publicSiteUrl}/${item.id}`)} accessibilityRole="link"
+              accessibilityLabel={`${item.title} 전문 보기`} style={styles.legalLink}>
+              <ThemedText type="smallBold" themeColor="accent">{item.title} 전문 보기 ↗</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{publicSiteUrl}/{item.id}</ThemedText>
             </Pressable>
-          </View>
-          <Pressable onPress={() => { if (!loading) setAccepted(value => !value); }} disabled={loading}
-            accessibilityRole="checkbox" aria-checked={accepted} accessibilityState={{ checked: accepted, disabled: loading }}
-            accessibilityLabel="이용약관과 커뮤니티 행동 기준에 동의합니다. 필수"
-            style={styles.consentRow}>
-            <View style={[styles.checkbox, { borderColor: accepted ? theme.accent : theme.line, backgroundColor: accepted ? theme.accent : theme.background }]}>
-              {accepted && <ThemedText style={{ color: theme.accentInk }}>✓</ThemedText>}
-            </View>
-            <ThemedText type="small" style={styles.consentText}>[필수] 이용약관과 커뮤니티 행동 기준에 동의합니다.</ThemedText>
-          </Pressable>
-          {!accepted && <ThemedText type="small" themeColor="textSecondary">동의하면 아래 로그인 버튼을 이용할 수 있어요.</ThemedText>}
+          </View>)}
+          <ThemedText type="small" themeColor="textSecondary">계정 식별정보·프로필·서비스 이용기록을 회원 관리와 서비스 제공·안전 운영에 사용합니다. 원칙적으로 탈퇴 시 삭제하며, 보관 예외는 개인정보처리방침에서 확인할 수 있어요. 필수 동의를 거절하면 가입할 수 없지만 공개 글은 둘러볼 수 있어요.</ThemedText>
+          {(!accepted || !privacyAccepted) && <ThemedText type="small" themeColor="textSecondary">필수 항목 두 개에 동의하면 아래 버튼으로 가입·로그인할 수 있어요. 이름·생년월일 등 선택 정보는 입력하지 않아도 가입할 수 있어요.</ThemedText>}
         </View>
         <View style={styles.actions}>
             {Platform.OS === 'ios' && onApple && (
@@ -233,7 +236,6 @@ const styles = StyleSheet.create({
     maxWidth: 280,
   },
   reviewLink: { minHeight: 44, justifyContent: 'center' },
-  legalLinks: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },
   legalLink: { minHeight: 44, justifyContent: 'center' },
   consentCard: { alignSelf: 'stretch', padding: Spacing.three, gap: Spacing.two, borderWidth: 1, borderRadius: 12, marginBottom: Spacing.three },
   consentRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },

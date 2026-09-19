@@ -6,7 +6,7 @@ import ts from 'typescript';
 import { t } from '../src/i18n/ko.ts';
 import { recordLoginTerms, LOGIN_TERMS_VERSION } from '../src/lib/login-terms.ts';
 
-function panel() {
+function panel(opened = []) {
   const states = []; let index = 0;
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/login-panel.tsx', import.meta.url), 'utf8'), {
@@ -16,27 +16,29 @@ function panel() {
     if (name === 'react') return { useState(initial) { const i = index++; if (!(i in states)) states[i] = initial; return [states[i], value => { states[i] = typeof value === 'function' ? value(states[i]) : value; }]; } };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'react-native') return { Platform: { OS: 'ios' }, StyleSheet: { create: v => v }, useColorScheme: () => 'light', ...Object.fromEntries(['View','Pressable','ScrollView','TextInput','KeyboardAvoidingView'].map(k => [k,k])) };
+    if (name === 'expo-linking') return { openURL: async url => { opened.push(url); } };
     if (name === 'expo-font') return { useFonts: () => [true] };
     if (name === 'expo-apple-authentication') return { AppleAuthenticationButton: 'AppleButton', AppleAuthenticationButtonType: { SIGN_IN: 0 }, AppleAuthenticationButtonStyle: { WHITE: 0, BLACK: 1 } };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
     if (name === '@/constants/theme') return { Spacing: {} };
     if (name === '@/i18n/ko') return { t };
-    if (name === '@/lib/login-terms') return { LOGIN_TERMS_VERSION: '2026-09-17' };
+    if (name === '@/lib/login-terms') return { LOGIN_TERMS_VERSION };
     return {};
   } });
   return props => { index = 0; return exports.LoginPanel(props); };
 }
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(v => Array.isArray(v) ? v.flatMap(nodes) : nodes(v))];
 
-test('all public providers and review login require an unchecked explicit terms checkbox', () => {
-  for (const provider of ['onApple', 'onGoogle', 'onKakao', 'onReviewLogin']) {
-    const render = panel(); const calls = [];
+test('all login paths require both unchecked agreements and expose working policy URLs', () => {
+  for (const provider of ['onApple', 'onGoogle', 'onKakao', 'onReviewLogin', 'onDevLogin', 'onAdminLogin']) {
+    const opened = []; const render = panel(opened); const calls = [];
     const props = { [provider]: (...args) => calls.push(args) };
     let tree = render(props);
     let checkbox = nodes(tree).find(n => n.props?.accessibilityRole === 'checkbox');
-    assert.ok(checkbox, 'pre-login consent checkbox must exist');
+    assert.equal(nodes(tree).filter(n => n.props?.accessibilityRole === 'checkbox').length, 2, 'terms and privacy must be separate');
+    for (const box of nodes(tree).filter(n => n.props?.accessibilityRole === 'checkbox')) assert.equal(box.props.accessibilityState.checked, false);
     assert.equal(checkbox.props.accessibilityState.checked, false);
-    if (provider === 'onReviewLogin') {
+    if (['onReviewLogin', 'onDevLogin', 'onAdminLogin'].includes(provider)) {
       const fields = nodes(tree).filter(n => n.type === 'TextInput');
       fields[0].props.onChangeText('review@example.com'); fields[1].props.onChangeText('password');
       tree = render(props);
@@ -46,9 +48,17 @@ test('all public providers and review login require an unchecked explicit terms 
     button().props.onPress(); assert.equal(calls.length, 0, 'handler guard also prevents bypass');
     checkbox.props.onPress(); tree = render(props);
     assert.equal(nodes(tree).find(n => n.props?.accessibilityRole === 'checkbox').props['aria-checked'], true);
+    assert.equal(button().props.accessibilityState.disabled, true, 'terms alone cannot start signup');
+    button().props.onPress(); assert.equal(calls.length, 0);
+    const privacy = () => nodes(tree).find(n => n.props?.accessibilityRole === 'checkbox' && n.props.accessibilityLabel.includes('개인정보'));
+    privacy().props.onPress(); tree = render(props);
     assert.equal(button().props.accessibilityState.disabled, false);
     button().props.onPress(); assert.equal(calls.length, 1);
-    assert.equal(calls[0].at(-1), '2026-09-17');
+    assert.equal(calls[0].at(-1), LOGIN_TERMS_VERSION);
+    privacy().props.onPress(); tree = render(props);
+    button().props.onPress(); assert.equal(calls.length, 1, 'unchecking privacy blocks signup again');
+    for (const link of nodes(tree).filter(n => n.props?.accessibilityRole === 'link' && n.props.accessibilityLabel?.includes('전문'))) link.props.onPress();
+    assert.deepEqual(opened, ['https://gling.ej-entertainment.com/terms', 'https://gling.ej-entertainment.com/privacy']);
   }
 });
 
@@ -59,7 +69,7 @@ test('receipt failure signs out locally; valid agreement records only its versio
       auth: { signOut: async options => { calls.push(['signOut', options]); return { error: null }; } } };
     if (fail) await assert.rejects(recordLoginTerms(client, LOGIN_TERMS_VERSION), /offline/);
     else await recordLoginTerms(client, LOGIN_TERMS_VERSION);
-    assert.deepEqual(calls[0], ['accept_login_terms', { p_version: '2026-09-17' }]);
+    assert.deepEqual(calls[0], ['accept_login_terms', { p_version: LOGIN_TERMS_VERSION }]);
     assert.equal(calls.length, fail ? 2 : 1);
     if (fail) assert.deepEqual(calls[1], ['signOut', { scope: 'local' }]);
   }

@@ -179,7 +179,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
   const beginSignIn = useCallback((termsVersion: string) => {
     if (signInInFlight.current) return false;
     if (termsVersion !== LOGIN_TERMS_VERSION) {
-      setAuthError('로그인 전에 이용약관과 커뮤니티 행동 기준에 동의해주세요.');
+      setAuthError('가입·로그인 전에 이용약관과 개인정보 수집·이용에 모두 동의해주세요.');
       return false;
     }
     signInInFlight.current = true;

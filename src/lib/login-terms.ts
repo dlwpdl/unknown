@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-export const LOGIN_TERMS_VERSION = '2026-09-17';
+export const LOGIN_TERMS_VERSION = '2026-09-19';
 
 export async function recordLoginTerms(client: SupabaseClient, version: string) {
   try {

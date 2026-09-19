@@ -1,5 +1,5 @@
 begin;
-select plan(8);
+select plan(12);
 insert into auth.users(id,email) values ('00000000-0000-0000-0000-000000007029','terms-29@example.invalid');
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000007029',true);
 set local role authenticated;
@@ -10,6 +10,14 @@ select throws_ok($$select * from private.login_terms_acceptances$$, '42501', nul
 reset role;
 select is((select count(*)::integer from private.login_terms_acceptances where user_id='00000000-0000-0000-0000-000000007029'),1,'one account receipt recorded');
 select ok((select accepted_at=now() and version='2026-09-17' from private.login_terms_acceptances where user_id='00000000-0000-0000-0000-000000007029'),'server timestamp and exact version recorded');
+set local role authenticated;
+select lives_ok($$select public.accept_login_terms('2026-09-19')$$, 'separate terms and privacy agreement accepted');
+reset role;
+select is((select version from private.login_terms_acceptances where user_id='00000000-0000-0000-0000-000000007029'),'2026-09-19','new agreement version is recorded without backfilling old receipts');
+set local role authenticated;
+select lives_ok($$select public.accept_login_terms('2026-09-17')$$, 'previous client still works');
+reset role;
+select is((select version from private.login_terms_acceptances where user_id='00000000-0000-0000-0000-000000007029'),'2026-09-19','previous client cannot overwrite newer privacy agreement');
 select set_config('request.jwt.claim.sub','',true);
 select throws_ok($$select public.accept_login_terms('2026-09-17')$$, 'P0001', 'AUTH_REQUIRED', 'cannot record for unauthenticated user');
 select ok(not has_function_privilege('anon','public.accept_login_terms(text)','execute'),'anonymous role cannot execute');
