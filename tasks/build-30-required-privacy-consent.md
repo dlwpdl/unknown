@@ -10,4 +10,6 @@ Design: reused existing controls and BrandKit product tokens. Mobbin search thro
 
 Production migration 0071 applied and verified in remote migration history. Backups: `~/Library/Application Support/gling/backups/pre-build30-2026-09-19/` (public/private schema and private data, mode 0600).
 
-Release: 1.0.1 (30), includes the unuploaded build 29's meetup cover photos and chat details. Native archive/upload in progress. Target: existing Gling Internal group; no new invitations or App Review submission. Keep build 28 available; the additive migration supports the previous client contract for rollback.
+Release: 1.0.1 (30), includes the unuploaded build 29's meetup cover photos and chat details. Archive and App Store export succeeded; verified the IPA bundle ID and version before upload. Apple build `33f5e568-6040-4563-92d3-52cb9ca095e8` is `VALID`, linked to existing `Gling Internal`, and re-read as `IN_BETA_TESTING`. No new invitations or App Review submission. Artifacts, upload log and final API receipt: `~/Library/Application Support/gling/releases/1.0.1-30/`. Keep build 28 available; the additive migration supports the previous client contract for rollback.
+
+Audit: 16 existing moderate findings, zero high/critical; no dependency changes. Additional focused checks confirm privacy-only acceptance is blocked and loading prevents duplicate authentication. Source commit `8be4200` pushed to `origin/mobile-app`.

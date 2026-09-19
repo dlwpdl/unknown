@@ -55,6 +55,13 @@ test('all login paths require both unchecked agreements and expose working polic
     assert.equal(button().props.accessibilityState.disabled, false);
     button().props.onPress(); assert.equal(calls.length, 1);
     assert.equal(calls[0].at(-1), LOGIN_TERMS_VERSION);
+    tree = render({ ...props, loading: true });
+    button().props.onPress(); assert.equal(calls.length, 1, 'loading blocks duplicate authentication');
+    for (const box of nodes(tree).filter(n => n.props?.accessibilityRole === 'checkbox')) assert.equal(box.props.disabled, true);
+    tree = render(props);
+    nodes(tree).find(n => n.props?.accessibilityRole === 'checkbox').props.onPress(); tree = render(props);
+    button().props.onPress(); assert.equal(calls.length, 1, 'privacy alone cannot start signup');
+    nodes(tree).find(n => n.props?.accessibilityRole === 'checkbox').props.onPress(); tree = render(props);
     privacy().props.onPress(); tree = render(props);
     button().props.onPress(); assert.equal(calls.length, 1, 'unchecking privacy blocks signup again');
     for (const link of nodes(tree).filter(n => n.props?.accessibilityRole === 'link' && n.props.accessibilityLabel?.includes('전문'))) link.props.onPress();

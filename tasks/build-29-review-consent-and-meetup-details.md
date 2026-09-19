@@ -27,7 +27,7 @@
 
 ## Release
 
-Version 1.0.1 (29). Local Xcode archive/upload in progress; TestFlight availability is not yet verified.
+Superseded on 2026-09-19 by version 1.0.1 (30), which includes these changes and separate required privacy consent. Build 29 was archived locally but never uploaded. Build 30 is VALID / IN_BETA_TESTING in Gling Internal; see [build 30 release record](build-30-required-privacy-consent.md).
 App Review is not submitted automatically.
 
 ## Existing review evidence
