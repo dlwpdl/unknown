@@ -19,3 +19,7 @@ Audit: 16 existing moderate findings, zero high/critical; no dependency changes.
 After the owner's explicit request, attached build 30 (`33f5e568-6040-4563-92d3-52cb9ca095e8`) to App Store version 1.0.1 and updated the review notes with both required checkboxes, policy URLs and accurate historical-video limitations. Preserved the review credentials, four subscription items, subscription group and manual-release setting. Marked the rejected app item resolved and resubmitted the existing submission `2f7fe5c9-e421-4276-b793-846621e5d4b8`. Submission and independent status re-read both returned `WAITING_FOR_REVIEW`; Apple's submitted timestamp is `2026-09-20T04:10:33.964Z` (September 19, 21:10 PDT). This is review submission, not approval or public release.
 
 Reviewer notes: [September 19 notes](../release/app-review/2026-09-19/review-notes.txt). API receipts are stored with build 30's private release artifacts.
+
+## Review withdrawal (2026-09-19)
+
+At the owner's explicit request to withdraw and reconsider video evidence, canceled submission `2f7fe5c9-e421-4276-b793-846621e5d4b8`. Apple confirms app version `DEVELOPER_REJECTED`; submission status at verification: `COMPLETE`. Build 30 remains uploaded; no TestFlight expiration was requested. Do not resubmit until the owner authorizes it after the video question is resolved.
