@@ -102,7 +102,7 @@
     },
     "android": {
       "package": "com.dlwpdl.gling",
-      "versionCode": 15,
+      "versionCode": 32,
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.ACCESS_BACKGROUND_LOCATION",
