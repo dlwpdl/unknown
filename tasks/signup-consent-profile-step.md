@@ -18,4 +18,10 @@ User-approved flow: social authentication → nickname / optional name and birth
 
 ## Release status
 
-Source change only. Build 30 remains the previously uploaded binary with the old pre-login consent UI. Its review was withdrawn at the user's request. This change has not been uploaded or submitted; native-device verification and an updated device recording are still outstanding before the next review submission.
+At the user's request, uploaded **1.0.1 (31)** on 2026-09-19. Apple build `875391cd-0737-4e40-ae75-c5ae7bdf3609` independently verified as `VALID` and `IN_BETA_TESTING`, explicitly assigned to existing `Gling Internal` (`03fefab3-98b9-4f9c-a6a0-450fdd703efb`). Korean What to Test notes are saved. No new testers were invited.
+
+Source: consent change `66245a5`, build-number commit `7365a13`. Re-ran 181 tests, TypeScript and lint before the release. Native archive/export succeeded; verified IPA bundle identity/version, code signature, production backend and new consent text in the bundled app. Existing native dependency compiler warnings remain. Audit: 16 moderate findings, no high/critical; no dependencies changed.
+
+Private release artifacts and API receipts: `~/Library/Application Support/gling/releases/1.0.1-31/` (archive/export/upload logs, IPA SHA-256, source revision, TestFlight build/group status and review status). No DB migration was required; build 30 remains available as the previous TestFlight binary.
+
+App Store version remains `DEVELOPER_REJECTED` with build 30 attached, as independently re-read after this upload. No App Review or external beta submission was made. Physical-device signup/photo-picker verification and an updated device recording remain outstanding before the next review submission.
