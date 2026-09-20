@@ -10,6 +10,8 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
+import { recommendedAgeMessage } from '@/lib/chilling';
+import { ageForMeetupRecommendation } from '@/lib/personal-info';
 import { useAuth } from '@/lib/auth';
 import { getChillingError, loadChillingProfile, requestChillingJoin, type ChillingProfile } from '@/lib/chilling-data';
 import { MEETUPS_CHANGED_EVENT, requestMeetupJoin } from '@/lib/community-data';
@@ -27,12 +29,16 @@ function JoinForm({ postId }: { postId: string }) {
   const { isAuthed, promptLogin, me } = useAuth();
   const [post, setPost] = useState<Post | null>(null), [profile, setProfile] = useState<ChillingProfile | null>(null);
   const [loading, setLoading] = useState(true), [error, setError] = useState(''), [retry, setRetry] = useState(0);
+  const [recommendationAge, setRecommendationAge] = useState<number | null>(null);
   const [answer, setAnswer] = useState(''), [consent, setConsent] = useState(false), [sending, setSending] = useState(false), [sent, setSent] = useState(false);
   const busy = useRef(false);
   useFocusEffect(useCallback(() => {
     let active = true;
-    setConsent(false); setLoading(true); setError(''); setPost(null); setProfile(null);
+    setConsent(false); setLoading(true); setError(''); setPost(null); setProfile(null); setRecommendationAge(null);
     if (!isAuthed) { setLoading(false); return; }
+    void supabase.rpc('get_my_personal_info').then(({ data, error: failure }) => {
+      if (active && !failure) setRecommendationAge(ageForMeetupRecommendation(data));
+    }, () => {});
     void loadPublicPost(supabase, postId).then(async value => {
       const ownProfile = value?.room?.eventKind ? await loadChillingProfile(supabase) : null;
       if (active) { setPost(value); setProfile(ownProfile); }
@@ -69,6 +75,10 @@ function JoinForm({ postId }: { postId: string }) {
                   : <>
                     <ThemedText type="subtitle">{post!.title}</ThemedText>
                     <ChillingEventSchedule room={post!.room!} />
+                    {post!.room!.recommendedAgeMin != null && <>
+                      <ThemedText type="small" themeColor="textSecondary">{recommendedAgeMessage(post!.room!, recommendationAge)}</ThemedText>
+                      {recommendationAge == null && <Pressable onPress={() => router.push('/profile/settings')} accessibilityRole="button" style={styles.button}><ThemedText type="small" themeColor="accent">계정 정보·이용 목적 확인하기</ThemedText></Pressable>}
+                    </>}
                     <MeetupPolicyNotice mode="join" />
                     {modern && !profile ? <>
                       <ThemedText>함께할 사람들에게 나를 소개할 모임 프로필이 필요해요.</ThemedText>

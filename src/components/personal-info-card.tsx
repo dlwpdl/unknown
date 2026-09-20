@@ -75,7 +75,7 @@ function PersonalInfoEditor({ userId, onRetry }: { userId: string; onRetry: () =
       {error && <Pressable onPress={onRetry} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold">다시 불러오기</ThemedText></Pressable>}
     </> : <>
       <PersonalInfoFields value={draft} disabled={busy} onChange={(value) => { setDraft(value); setError(null); setNotice(null); setConfirmDelete(false); }} />
-      {data.date_of_birth && <ThemedText type="small" themeColor="textSecondary">저장된 생년월일 {data.date_of_birth}{data.age != null ? ` · 만 ${data.age}세` : ''}</ThemedText>}
+      {data.date_of_birth && <ThemedText type="small" themeColor="textSecondary">저장된 생년월일 {data.date_of_birth}{data.age != null ? ` · 만 ${data.age}세` : ''} · 본인 입력 · 생년월일 미인증</ThemedText>}
       {error && <ThemedText accessibilityRole="alert" type="small" style={{ color: theme.accent }}>{error}</ThemedText>}
       {notice && <ThemedText accessibilityLiveRegion="polite" type="small">{notice}</ThemedText>}
       <Pressable disabled={busy} onPress={() => void save()} accessibilityRole="button" accessibilityState={{ disabled: busy, busy }} style={({ pressed }) => [styles.button, { backgroundColor: theme.accent, opacity: busy ? 0.55 : pressed ? 0.7 : 1 }]}>

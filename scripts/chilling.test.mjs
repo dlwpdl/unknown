@@ -40,3 +40,26 @@ test('invalid schedule and capacity never reach the server; server denial is pre
   assert.equal(calls, 0);
   await assert.rejects(configureChillingEvent(client, 'post-1', once), /NOT_OWNER/);
 });
+
+test('recommended ages validate whole inclusive bounds and never imply an admission gate', async () => {
+  const { normalizeChillingEvent, recommendedAgeLabel, recommendedAgeMessage } = await import('../src/lib/chilling.ts');
+  const room = { recommendedAgeMin: 20, recommendedAgeMax: 39 };
+  assert.equal(recommendedAgeLabel(room), '권장 만 20~39세');
+  assert.equal(recommendedAgeLabel({}), '연령대 무관');
+  assert.equal(normalizeChillingEvent({ ...once, ...room }).recommendedAgeMax, 39);
+  let sent;
+  const client = { rpc: async (_name, args) => { sent = args; return { error: null }; } };
+  await configureChillingEvent(client, 'post-1', { ...once, recommendedAgeMin: 0, recommendedAgeMax: 120 });
+  assert.equal(sent.p_recommended_age_min, 0);
+  assert.equal(sent.p_recommended_age_max, 120);
+  await configureChillingEvent(client, 'post-1', { ...once, recommendedAgeMin: null, recommendedAgeMax: null });
+  assert.equal(sent.p_recommended_age_min, null);
+  assert.equal(sent.p_recommended_age_max, null);
+  for (const patch of [{ recommendedAgeMin: 20 }, { recommendedAgeMin: 40, recommendedAgeMax: 39 }, { recommendedAgeMin: -1, recommendedAgeMax: 39 }, { recommendedAgeMin: 20, recommendedAgeMax: 121 }, { recommendedAgeMin: 20.5, recommendedAgeMax: 39 }]) {
+    assert.throws(() => normalizeChillingEvent({ ...once, ...patch }), /INVALID_RECOMMENDED_AGE/);
+  }
+  assert.match(recommendedAgeMessage(room, 20), /권장 연령대에 해당/);
+  assert.match(recommendedAgeMessage(room, 39), /권장 연령대에 해당/);
+  assert.match(recommendedAgeMessage(room, 40), /달라도 신청/);
+  assert.match(recommendedAgeMessage(room, null), /없어도 신청/);
+});

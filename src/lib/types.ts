@@ -50,6 +50,8 @@ export interface RoomPreview {
   endsAt?: string | null;
   timezone?: string | null;
   cadence?: string | null;
+  recommendedAgeMin?: number | null;
+  recommendedAgeMax?: number | null;
   applicationQuestion?: string | null;
 }
 

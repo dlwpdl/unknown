@@ -32,6 +32,7 @@ function MeetupCreateForm() {
     return { kind: 'once', startsAt: start.toISOString(), endsAt: new Date(start.getTime() + 3600000).toISOString(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, cadence: '', capacity: 6, category: 'casual' };
   });
   const [capacity, setCapacity] = useState('6');
+  const [ageMin, setAgeMin] = useState(''), [ageMax, setAgeMax] = useState('');
   const [saving, setSaving] = useState(false), [error, setError] = useState('');
   const busy = useRef(false);
   const mounted = useRef(true);
@@ -42,6 +43,7 @@ function MeetupCreateForm() {
     if (event.kind === 'once' && event.timezone !== Intl.DateTimeFormat().resolvedOptions().timeZone) { setError('기기 시간대가 바뀌었어요. 화면을 닫고 다시 열어 일정을 확인해 주세요.'); return; }
     if (!title.trim() || !body.trim() || !question.trim()) { setError('제목, 소개와 신청 질문을 모두 적어주세요.'); return; }
     if (!/^\d+$/.test(capacity) || Number(capacity) < 2 || Number(capacity) > 50) { setError('정원은 호스트를 포함해 2명부터 50명까지예요.'); return; }
+    if ((ageMin || ageMax) && (!/^\d+$/.test(ageMin) || !/^\d+$/.test(ageMax) || Number(ageMin) > Number(ageMax) || Number(ageMax) > 120)) { setError('권장 연령은 만 0~120세 안에서 최소·최대 나이를 함께 입력해주세요.'); return; }
     busy.current = true; setSaving(true); setError('');
     try {
       const profile = await loadChillingProfile(supabase);
@@ -50,7 +52,7 @@ function MeetupCreateForm() {
         Alert.alert('모임 프로필을 먼저 만들어 주세요', '작성한 만남은 그대로 두었어요. 프로필을 저장하고 돌아와 다시 열어주세요.', [{ text: '나중에', style: 'cancel' }, { text: '프로필 작성', onPress: () => { if (mounted.current) router.push('/meetup-profile'); } }]);
         return;
       }
-      const id = await createChillingEvent(supabase, { userId: me.id, image: cover ?? undefined, cityId: city.id, title: title.trim(), body: body.trim(), question: question.trim(), event: { ...event, capacity: Number(capacity) } });
+      const id = await createChillingEvent(supabase, { userId: me.id, image: cover ?? undefined, cityId: city.id, title: title.trim(), body: body.trim(), question: question.trim(), event: { ...event, capacity: Number(capacity), ...(ageMin ? { recommendedAgeMin: Number(ageMin), recommendedAgeMax: Number(ageMax) } : {}) } });
       if (!mounted.current) return;
       DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
       router.replace({ pathname: '/post/[id]', params: { id } });
@@ -75,6 +77,14 @@ function MeetupCreateForm() {
       </>}
       <View style={styles.field}><ThemedText type="smallBold">활동 지역</ThemedText><ThemedText>{city.name}</ThemedText><ThemedText type="small" themeColor="textSecondary">지역을 바꾸려면 모임 화면에서 지역을 선택해 주세요.</ThemedText></View>
       <View style={styles.field}><ThemedText type="smallBold">정원 (호스트 포함)</ThemedText><TextInput accessibilityLabel="정원, 2명부터 50명" keyboardType="number-pad" value={capacity} onChangeText={setCapacity} editable={!saving} maxLength={2} style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.card }]} /></View>
+      <View style={styles.field}>
+        <ThemedText type="smallBold">권장 연령대 · 선택</ThemedText>
+        <View style={styles.categories}>
+          <TextInput accessibilityLabel="권장 최소 나이, 만 나이" placeholder="최소, 예: 20" placeholderTextColor={theme.textSecondary} keyboardType="number-pad" value={ageMin} onChangeText={setAgeMin} editable={!saving} maxLength={3} style={[styles.input, { flex: 1, minWidth: 0, color: theme.text, borderColor: theme.line, backgroundColor: theme.card }]} />
+          <TextInput accessibilityLabel="권장 최대 나이, 만 나이" placeholder="최대, 예: 39" placeholderTextColor={theme.textSecondary} keyboardType="number-pad" value={ageMax} onChangeText={setAgeMax} editable={!saving} maxLength={3} style={[styles.input, { flex: 1, minWidth: 0, color: theme.text, borderColor: theme.line, backgroundColor: theme.card }]} />
+        </View>
+        <ThemedText type="small" themeColor="textSecondary">비워두면 연령대 무관이에요. 권장 연령대와 달라도 신청할 수 있어요.</ThemedText>
+      </View>
       {field('신청할 때 물어볼 질문', question, setQuestion, '어떤 분위기의 만남을 기대하세요?', 300)}
       <ThemedText type="small" themeColor="textSecondary">기본 질문 1개 · 신청자의 프로필과 함께 확인해요.</ThemedText>
       <ThemedText type="small" style={[styles.note, { backgroundColor: theme.backgroundElement }]}>상세 집결 장소는 승인된 멤버에게 그룹 채팅으로 안내해 주세요. 개최 시 내 모임 프로필은 행사에서 볼 수 있어요.</ThemedText>

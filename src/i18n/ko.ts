@@ -10,7 +10,7 @@ export const t = {
 
   trust: {
     accessibilityLabel: (level: 1 | 2 | 3) =>
-      `Lv${level} 인증 · ${level === 1 ? '소셜 계정 확인' : level === 2 ? '전화번호 실명 인증 완료' : '신분증과 본인 촬영 대조 완료'}`,
+      `Lv${level} 인증 · ${level === 1 ? '소셜 계정 확인' : level === 2 ? '전화번호 확인 완료' : '신분증과 본인 촬영 대조 완료'}`,
     short: (level: 1 | 2 | 3) => (level === 1 ? '소셜 계정 확인' : level === 2 ? '전화번호 인증' : '신분증 인증'),
   },
 
@@ -411,7 +411,7 @@ export const t = {
     cancelRequest: '요청 취소',
     requested: '대화 요청을 보냈어요. 상대가 수락하면 양쪽이 각각 자리 1개를 사용해요.',
     verifiedL1: '소셜 계정을 확인한 이웃이에요',
-    verifiedL2: '전화번호 실명 인증을 마친 이웃이에요',
+    verifiedL2: '전화번호 확인을 마친 이웃이에요. 생년월일 확인을 뜻하지는 않아요',
     verifiedL3: '신분증과 본인 촬영 대조를 마친 이웃이에요',
     self: '내 부캐예요',
   },

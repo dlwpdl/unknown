@@ -5,7 +5,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ReportSheet } from '@/components/report-sheet';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
-import { chillingKind, chillingSchedule, type ChillingKind, type ChillingSchedule } from '@/lib/chilling';
+import { chillingKind, chillingSchedule, recommendedAgeLabel, type ChillingKind, type ChillingSchedule } from '@/lib/chilling';
 import { getPostImageSource } from '@/lib/feed-data';
 import type { Post } from '@/lib/types';
 
@@ -21,6 +21,7 @@ export function ChillingEventSchedule({ room }: { room: ChillingSchedule }) {
   return <View style={{ gap: 4 }}>
     <ThemedText type="smallBold" themeColor="accent">{once ? '칠링 · 일회성' : '모임 · 정기모임'}</ThemedText>
     <ThemedText type="small">{chillingSchedule(room)}</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary">{recommendedAgeLabel(room)}{room.recommendedAgeMin != null ? ' · 권장 범위 밖이어도 신청 가능' : ''}</ThemedText>
     {once && room.timezone ? <ThemedText type="small" themeColor="textSecondary">{room.timezone} 기준</ThemedText> : null}
   </View>;
 }
@@ -44,6 +45,7 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
           <ThemedText style={styles.artTitle}>{post.title}</ThemedText>
         </View>}
       <View style={styles.meta}><ThemedText type="smallBold" themeColor="accent">{group ? '모임 · 정기모임' : '칠링 · 일회성'}</ThemedText><ThemedText type="small" themeColor="textSecondary">{chillingSchedule(post.room ?? {})}</ThemedText></View>
+      <ThemedText type="small" themeColor="textSecondary">{recommendedAgeLabel(post.room ?? {})}</ThemedText>
       <ThemedText accessibilityRole="header" style={styles.title}>{post.title}</ThemedText>
       <View style={styles.footer}><ThemedText type="small" themeColor="textSecondary">{city}</ThemedText><ThemedText type="small" themeColor="textSecondary">{post.room?.memberCount ?? 0}{post.room?.capacity ? ` / ${post.room.capacity}` : ''}명</ThemedText></View>
     </Pressable>

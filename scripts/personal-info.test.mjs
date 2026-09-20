@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ageOnDate, validatePersonalInfo } from '../src/lib/personal-info.ts';
+import { ageOnDate, ageForMeetupRecommendation, PERSONAL_INFO_VERSION, validatePersonalInfo } from '../src/lib/personal-info.ts';
+
+test('meetup age uses only information consented for the new purpose', () => {
+  const info = { date_of_birth: '2000-09-20', consent_version: PERSONAL_INFO_VERSION };
+  assert.equal(ageForMeetupRecommendation(info, '2026-09-19'), 25);
+  assert.equal(ageForMeetupRecommendation(info, '2026-09-20'), 26);
+  assert.equal(ageForMeetupRecommendation({ ...info, consent_version: '2026-09-12' }), null);
+  assert.equal(ageForMeetupRecommendation({ ...info, date_of_birth: null }), null);
+  assert.equal(ageForMeetupRecommendation(null), null);
+});
 
 test('age uses complete UTC calendar years, including leap birthdays', () => {
   assert.equal(ageOnDate('1992-03-08', '2026-03-07'), 33);

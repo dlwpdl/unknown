@@ -69,6 +69,7 @@ export function getChillingError(error: unknown): string {
   if (restriction) return restriction;
   const message = error && typeof error === 'object' && 'message' in error ? String(error.message) : '';
   const messages: Record<string, string> = {
+    INVALID_RECOMMENDED_AGE: '권장 연령은 만 0~120세 안에서 최소·최대 나이를 함께 입력해주세요.',
     IMAGE_TOO_LARGE: '사진은 5MB 이하로 선택해 주세요.',
     UNSUPPORTED_IMAGE_TYPE: 'JPG, PNG 또는 WebP 사진을 선택해 주세요.',
     CHILLING_PROFILE_REQUIRED: '먼저 모임 프로필을 작성해 주세요.',

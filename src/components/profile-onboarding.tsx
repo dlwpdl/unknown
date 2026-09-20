@@ -12,7 +12,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { CITIES } from '@/lib/mock';
 import { generateNickname } from '@/lib/nickname';
-import { PERSONAL_INFO_VERSION, validatePersonalInfo } from '@/lib/personal-info';
+import { PERSONAL_INFO_NOTICE, PERSONAL_INFO_VERSION, validatePersonalInfo } from '@/lib/personal-info';
 import { supabase } from '@/lib/supabase';
 
 export type CompletedProfile = {
@@ -81,7 +81,7 @@ export function ProfileOnboarding({
       details: `${t.onboarding.consentLabel} 모든 게시글·댓글·대화가 안전 분석 대상이며, 권한 있는 관리자가 안전 운영을 위해 확인할 수 있습니다.` },
     ...(!consentOnly ? [{ id: 'personal', label: '[선택] 이름·생년월일 수집·이용', checked: personalInfo.accepted,
       change: (checked: boolean) => setPersonalInfo((current) => ({ ...current, accepted: checked })),
-      details: '이름·생년월일은 계정 확인과 안전사건 대응에 사용하며, 본인과 권한 있는 관리자만 볼 수 있어요. 설정에서 삭제하거나 탈퇴할 때까지 보관해요. 직접 입력한 정보이며 실명인증 결과는 아니에요. 동의하지 않아도 이름·생년월일을 입력하지 않고 가입할 수 있어요.' }] : []),
+      details: PERSONAL_INFO_NOTICE }] : []),
   ];
 
   const pickPhoto = async () => {
