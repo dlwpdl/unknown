@@ -2,11 +2,10 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { NearbyCityCard } from '@/components/nearby-city-card';
 import { PersonalInfoFields, type PersonalInfoDraft } from '@/components/personal-info-fields';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -50,7 +49,10 @@ export function ProfileOnboarding({
   const [cityId, setCityId] = useState(existingProfile?.city_id ?? 'vancouver');
   const [photoUri, setPhotoUri] = useState<string | null>(existingProfile?.photoUri ?? socialPhoto);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
-  const [accepted, setAccepted] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [aiAccepted, setAiAccepted] = useState(false);
+  const [expandedConsent, setExpandedConsent] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [personalInfo, setPersonalInfo] = useState<PersonalInfoDraft>({ fullName: '', dateOfBirth: '', accepted: false });
@@ -59,6 +61,28 @@ export function ProfileOnboarding({
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   const consentOnly = existingProfile != null;
   const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/$/, '');
+  const requiredAccepted = termsAccepted && privacyAccepted && aiAccepted;
+  const allAccepted = requiredAccepted && (consentOnly || personalInfo.accepted);
+  const someAccepted = termsAccepted || privacyAccepted || aiAccepted || (!consentOnly && personalInfo.accepted);
+  const allChecked = allAccepted ? true : someAccepted ? 'mixed' : false;
+  const toggleAll = () => {
+    if (saving) return;
+    const checked = !allAccepted;
+    setTermsAccepted(checked);
+    setPrivacyAccepted(checked);
+    setAiAccepted(checked);
+    if (!consentOnly) setPersonalInfo((current) => ({ ...current, accepted: checked }));
+    setError(null);
+  };
+  const consentItems = [
+    { id: 'terms', label: '[필수] 이용약관', checked: termsAccepted, change: setTermsAccepted, url: `${publicSiteUrl}/terms` },
+    { id: 'privacy', label: '[필수] 개인정보 수집·이용', checked: privacyAccepted, change: setPrivacyAccepted, url: `${publicSiteUrl}/privacy` },
+    { id: 'ai', label: '[필수] 외부 AI(OpenAI) 안전 처리', checked: aiAccepted, change: setAiAccepted,
+      details: `${t.onboarding.consentLabel} 모든 게시글·댓글·대화가 안전 분석 대상이며, 권한 있는 관리자가 안전 운영을 위해 확인할 수 있습니다.` },
+    ...(!consentOnly ? [{ id: 'personal', label: '[선택] 이름·생년월일 수집·이용', checked: personalInfo.accepted,
+      change: (checked: boolean) => setPersonalInfo((current) => ({ ...current, accepted: checked })),
+      details: '이름·생년월일은 계정 확인과 안전사건 대응에 사용하며, 본인과 권한 있는 관리자만 볼 수 있어요. 설정에서 삭제하거나 탈퇴할 때까지 보관해요. 직접 입력한 정보이며 실명인증 결과는 아니에요. 동의하지 않아도 이름·생년월일을 입력하지 않고 가입할 수 있어요.' }] : []),
+  ];
 
   const pickPhoto = async () => {
     try {
@@ -91,7 +115,7 @@ export function ProfileOnboarding({
   const save = async () => {
     if (savingLock.current) return;
     const cleanNickname = nickname.trim();
-    if (!accepted) {
+    if (!requiredAccepted) {
       setError(t.onboarding.errorConsent);
       return;
     }
@@ -211,7 +235,6 @@ export function ProfileOnboarding({
 
             {!consentOnly && <View style={styles.field}>
               <ThemedText type="smallBold">{t.onboarding.city}</ThemedText>
-              <NearbyCityCard onSelect={setCityId} />
               <View style={styles.cityRow}>
                 {CITIES.filter(({ state }) => state === 'open').map((city) => {
                   const selected = city.id === cityId;
@@ -229,27 +252,47 @@ export function ProfileOnboarding({
               </View>
             </View>}
 
-            {!consentOnly && <PersonalInfoFields value={personalInfo} disabled={saving} onChange={(value) => { setPersonalInfo(value); setError(null); }} />}
+            {!consentOnly && <PersonalInfoFields showConsent={false} value={personalInfo} disabled={saving} onChange={(value) => { setPersonalInfo(value); setError(null); }} />}
 
-            <Pressable
-              onPress={() => { setAccepted((current) => !current); setError(null); }}
-              accessibilityRole="checkbox"
-              aria-checked={accepted}
-              accessibilityState={{ checked: accepted }}
-              style={[styles.consent, { backgroundColor: theme.card, borderColor: accepted ? theme.accent : theme.line }]}>
-              <View style={[styles.checkbox, { backgroundColor: accepted ? theme.accent : 'transparent', borderColor: accepted ? theme.accent : theme.line }]}>
-                {accepted && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✓</ThemedText>}
-              </View>
-              <ThemedText type="small" style={styles.consentText}>{t.onboarding.consentLabel}</ThemedText>
-            </Pressable>
-            <View style={styles.legalLinks}>
-              <Pressable onPress={() => void Linking.openURL(`${publicSiteUrl}/terms`)} accessibilityRole="link">
-                <ThemedText type="smallBold" style={{ color: theme.accent }}>이용약관</ThemedText>
+            <View style={[styles.consents, { backgroundColor: theme.card, borderColor: theme.line }]}>
+              <Pressable onPress={toggleAll} disabled={saving} accessibilityRole="checkbox"
+                accessibilityLabel={consentOnly ? '모두 동의' : '모두 동의, 선택 항목 포함'} aria-checked={allChecked}
+                accessibilityState={{ checked: allChecked, disabled: saving }}
+                {...(Platform.OS === 'web' ? { onKeyDown: (event: { key: string; preventDefault: () => void }) => { if (event.key === ' ') { event.preventDefault(); toggleAll(); } } } : {})}
+                style={[styles.consent, styles.allConsent, { borderBottomColor: theme.line }]}>
+                <View aria-hidden accessibilityElementsHidden style={[styles.checkbox, { backgroundColor: someAccepted ? theme.accent : 'transparent', borderColor: someAccepted ? theme.accent : theme.line }]}>
+                  {someAccepted && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{allAccepted ? '✓' : '−'}</ThemedText>}
+                </View>
+                <ThemedText type="smallBold" style={styles.consentText}>모두 동의{!consentOnly && <ThemedText type="small" themeColor="textSecondary"> (선택 포함)</ThemedText>}</ThemedText>
               </Pressable>
-              <Pressable onPress={() => void Linking.openURL(`${publicSiteUrl}/privacy`)} accessibilityRole="link">
-                <ThemedText type="smallBold" style={{ color: theme.accent }}>개인정보처리방침</ThemedText>
-              </Pressable>
+              {consentItems.map((item) => {
+                const toggle = () => { if (!saving) { item.change(!item.checked); setError(null); } };
+                const expanded = expandedConsent === item.id;
+                return <View key={item.id}>
+                  <View style={styles.consentRow}>
+                    <Pressable onPress={toggle} disabled={saving} accessibilityRole="checkbox" accessibilityLabel={item.label}
+                      aria-checked={item.checked} accessibilityState={{ checked: item.checked, disabled: saving }}
+                      {...(Platform.OS === 'web' ? { onKeyDown: (event: { key: string; preventDefault: () => void }) => { if (event.key === ' ') { event.preventDefault(); toggle(); } } } : {})}
+                      style={styles.consent}>
+                      <View aria-hidden accessibilityElementsHidden style={[styles.checkbox, { backgroundColor: item.checked ? theme.accent : 'transparent', borderColor: item.checked ? theme.accent : theme.line }]}>
+                        {item.checked && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✓</ThemedText>}
+                      </View>
+                      <ThemedText type="small" style={styles.consentText}>{item.label}</ThemedText>
+                    </Pressable>
+                    {'url' in item ? <Pressable accessibilityRole="link" accessibilityLabel={`${item.label} 자세히 보기`}
+                      onPress={() => { if (item.url) void Linking.openURL(item.url); }} style={styles.detailButton}>
+                      <ThemedText type="small" themeColor="textSecondary">보기 ↗</ThemedText>
+                    </Pressable> : <Pressable accessibilityRole="button" accessibilityLabel={`${item.label} 자세히 ${expanded ? '접기' : '보기'}`}
+                      accessibilityState={{ expanded }} aria-expanded={expanded}
+                      onPress={() => setExpandedConsent(expanded ? null : item.id)} style={styles.detailButton}>
+                      <ThemedText type="small" themeColor="textSecondary">{expanded ? '접기 ∧' : '보기 ∨'}</ThemedText>
+                    </Pressable>}
+                  </View>
+                  {'details' in item && expanded && <ThemedText type="small" themeColor="textSecondary" style={styles.consentDetails}>{item.details}</ThemedText>}
+                </View>;
+              })}
             </View>
+            <ThemedText type="small" themeColor="textSecondary">{consentOnly ? '필수 항목에 동의하면 계속 이용할 수 있어요.' : '필수 항목에 동의하면 가입할 수 있어요. 이름·생년월일 입력과 동의는 선택이에요.'}</ThemedText>
 
             {!!error && <ThemedText accessibilityRole="alert" type="small" style={{ color: theme.accent }}>{error}</ThemedText>}
           </ScrollView>
@@ -257,10 +300,10 @@ export function ProfileOnboarding({
           <View style={[styles.footer, { borderTopColor: theme.line, backgroundColor: theme.background }]}>
             <Pressable
               onPress={() => void save()}
-              disabled={saving}
+              disabled={saving || !requiredAccepted}
               accessibilityRole="button"
-              accessibilityState={{ disabled: saving, busy: saving }}
-              style={[styles.submit, { backgroundColor: theme.accent, opacity: saving ? 0.65 : 1 }]}>
+              accessibilityState={{ disabled: saving || !requiredAccepted, busy: saving }}
+              style={[styles.submit, { backgroundColor: theme.accent, opacity: saving || !requiredAccepted ? 0.5 : 1 }]}>
               {saving && <ActivityIndicator color={theme.accentInk} />}
               <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
                 {saving ? t.onboarding.saving : consentOnly ? t.onboarding.consentSubmit : t.onboarding.submit}
@@ -300,10 +343,14 @@ const styles = StyleSheet.create({
   pill: { minHeight: 40, justifyContent: 'center', paddingHorizontal: Spacing.three, borderRadius: 999 },
   cityRow: { flexDirection: 'row', gap: Spacing.two },
   cityButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.four, borderRadius: 8 },
-  consent: { minHeight: 64, flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two, padding: Spacing.three, borderWidth: 1, borderRadius: 10 },
+  consents: { borderWidth: 1, borderRadius: 12, paddingHorizontal: Spacing.three },
+  consentRow: { flexDirection: 'row', alignItems: 'center' },
+  consent: { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.two },
+  allConsent: { flex: 0, minHeight: 56, borderBottomWidth: 1, marginBottom: Spacing.one },
+  detailButton: { minWidth: 48, minHeight: 48, alignItems: 'flex-end', justifyContent: 'center' },
+  consentDetails: { paddingBottom: Spacing.three, lineHeight: 20 },
   checkbox: { width: 22, height: 22, borderRadius: 5, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   consentText: { flex: 1 },
-  legalLinks: { flexDirection: 'row', gap: Spacing.three },
   footer: { padding: Spacing.three, borderTopWidth: 1 },
   submit: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.two, borderRadius: 10 },
 });

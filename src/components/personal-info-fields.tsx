@@ -7,8 +7,8 @@ import { ageOnDate, validatePersonalInfo } from '@/lib/personal-info';
 
 export type PersonalInfoDraft = { fullName: string; dateOfBirth: string; accepted: boolean };
 
-export function PersonalInfoFields({ value, onChange, disabled = false }: {
-  value: PersonalInfoDraft; onChange: (value: PersonalInfoDraft) => void; disabled?: boolean;
+export function PersonalInfoFields({ value, onChange, disabled = false, showConsent = true }: {
+  value: PersonalInfoDraft; onChange: (value: PersonalInfoDraft) => void; disabled?: boolean; showConsent?: boolean;
 }) {
   const theme = useTheme();
   const [touched, setTouched] = useState(false);
@@ -34,6 +34,7 @@ export function PersonalInfoFields({ value, onChange, disabled = false }: {
       {age != null && <ThemedText type="small" themeColor="textSecondary">만 {age}세 · 생년월일을 기준으로 계산해요.</ThemedText>}
     </View>
     {touched && error && <ThemedText type="small" accessibilityRole="alert" style={{ color: theme.accent }}>{error}</ThemedText>}
+    {showConsent && <>
     <ThemedText type="small" themeColor="textSecondary">제공한 이름·생년월일은 계정 확인과 안전사건 대응에 사용하며, 본인과 권한 있는 관리자만 볼 수 있어요. 앱 설정에서 삭제하거나 탈퇴할 때까지 보관해요. 직접 입력한 정보이며 실명인증 결과는 아니에요.</ThemedText>
     <Pressable disabled={disabled} onPress={toggleConsent} accessibilityRole="checkbox" aria-checked={value.accepted} accessibilityState={{ checked: value.accepted, disabled }}
       {...(Platform.OS === 'web' ? { onKeyDown: (event: { key: string; preventDefault: () => void }) => { if (event.key === ' ') { event.preventDefault(); toggleConsent(); } } } : {})}
@@ -43,6 +44,7 @@ export function PersonalInfoFields({ value, onChange, disabled = false }: {
       </View>
       <ThemedText type="small" style={styles.consentText}>[선택] 이름·생년월일 수집·이용에 동의합니다.</ThemedText>
     </Pressable>
+    </>}
   </View>;
 }
 

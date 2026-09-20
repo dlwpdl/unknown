@@ -12,7 +12,6 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
-import { LOGIN_TERMS_VERSION } from '@/lib/login-terms';
 
 export function LoginPanel({
   reason,
@@ -27,12 +26,12 @@ export function LoginPanel({
   onClose,
 }: {
   reason?: string;
-  onApple?: (termsVersion: string) => void;
-  onKakao?: (termsVersion: string) => void;
-  onGoogle?: (termsVersion: string) => void;
-  onDevLogin?: (email: string, password: string, termsVersion: string) => void;
-  onReviewLogin?: (email: string, password: string, termsVersion: string) => void;
-  onAdminLogin?: (email: string, password: string, termsVersion: string) => void;
+  onApple?: () => void;
+  onKakao?: () => void;
+  onGoogle?: () => void;
+  onDevLogin?: (email: string, password: string) => void;
+  onReviewLogin?: (email: string, password: string) => void;
+  onAdminLogin?: (email: string, password: string) => void;
   loading?: boolean;
   error?: string | null;
   onClose?: () => void;
@@ -42,9 +41,7 @@ export function LoginPanel({
   const [googleFontLoaded] = useFonts({ GoogleSansMedium: require('@/assets/fonts/GoogleSans-Medium.ttf') });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [accepted, setAccepted] = useState(false);
-  const [privacyAccepted, setPrivacyAccepted] = useState(false);
-  const disabled = loading || !accepted || !privacyAccepted;
+  const disabled = loading;
   const passwordLogin = onAdminLogin ?? onReviewLogin ?? (__DEV__ ? onDevLogin : undefined);
   const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/$/, '');
 
@@ -64,32 +61,6 @@ export function LoginPanel({
           {reason ?? t.auth.tagline}
         </ThemedText>
 
-        <View style={[styles.consentCard, { backgroundColor: theme.card, borderColor: theme.line }]}>
-          <ThemedText type="smallBold">서로 편안하게 만나는 글링</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            유해 콘텐츠와 괴롭힘·혐오·협박 등 악성 행위는 허용하지 않아요. 위반 콘텐츠는 삭제되고 계정 이용이 제한될 수 있어요. 불편한 콘텐츠와 사용자는 언제든 신고·차단할 수 있어요.
-          </ThemedText>
-          {[
-            { id: 'terms', checked: accepted, change: setAccepted, label: '이용약관과 커뮤니티 행동 기준에 동의합니다.', title: '이용약관' },
-            { id: 'privacy', checked: privacyAccepted, change: setPrivacyAccepted, label: '개인정보 수집·이용에 동의합니다.', title: '개인정보처리방침' },
-          ].map(item => <View key={item.id}>
-            <Pressable onPress={() => { if (!loading) item.change(value => !value); }} disabled={loading}
-              accessibilityRole="checkbox" aria-checked={item.checked} accessibilityState={{ checked: item.checked, disabled: loading }}
-              accessibilityLabel={`${item.label} 필수`} style={styles.consentRow}>
-              <View style={[styles.checkbox, { borderColor: item.checked ? theme.accent : theme.line, backgroundColor: item.checked ? theme.accent : theme.background }]}>
-                {item.checked && <ThemedText style={{ color: theme.accentInk }}>✓</ThemedText>}
-              </View>
-              <ThemedText type="small" style={styles.consentText}>[필수] {item.label}</ThemedText>
-            </Pressable>
-            <Pressable onPress={() => void Linking.openURL(`${publicSiteUrl}/${item.id}`)} accessibilityRole="link"
-              accessibilityLabel={`${item.title} 전문 보기`} style={styles.legalLink}>
-              <ThemedText type="smallBold" themeColor="accent">{item.title} 전문 보기 ↗</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">{publicSiteUrl}/{item.id}</ThemedText>
-            </Pressable>
-          </View>)}
-          <ThemedText type="small" themeColor="textSecondary">계정 식별정보·프로필·서비스 이용기록을 회원 관리와 서비스 제공·안전 운영에 사용합니다. 원칙적으로 탈퇴 시 삭제하며, 보관 예외는 개인정보처리방침에서 확인할 수 있어요. 필수 동의를 거절하면 가입할 수 없지만 공개 글은 둘러볼 수 있어요.</ThemedText>
-          {(!accepted || !privacyAccepted) && <ThemedText type="small" themeColor="textSecondary">필수 항목 두 개에 동의하면 아래 버튼으로 가입·로그인할 수 있어요. 이름·생년월일 등 선택 정보는 입력하지 않아도 가입할 수 있어요.</ThemedText>}
-        </View>
         <View style={styles.actions}>
             {Platform.OS === 'ios' && onApple && (
               <AppleAuthentication.AppleAuthenticationButton
@@ -98,13 +69,13 @@ export function LoginPanel({
                   ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
                   : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
                 cornerRadius={24}
-                onPress={() => { if (!disabled) onApple(LOGIN_TERMS_VERSION); }}
+                onPress={() => { if (!disabled) onApple(); }}
                 accessibilityState={{ disabled, busy: loading }}
                 style={[styles.appleButton, { opacity: disabled ? 0.6 : 1 }]}
               />
             )}
             {onKakao && <Pressable
-              onPress={() => { if (!disabled) onKakao(LOGIN_TERMS_VERSION); }}
+              onPress={() => { if (!disabled) onKakao(); }}
               disabled={disabled}
               accessibilityRole="button"
               accessibilityState={{ disabled, busy: loading }}
@@ -114,7 +85,7 @@ export function LoginPanel({
               </ThemedText>
             </Pressable>}
             {onGoogle && <Pressable
-              onPress={() => { if (!disabled) onGoogle(LOGIN_TERMS_VERSION); }}
+              onPress={() => { if (!disabled) onGoogle(); }}
               disabled={disabled}
               accessibilityRole="button"
               accessibilityLabel={t.auth.google}
@@ -149,7 +120,7 @@ export function LoginPanel({
                   style={[styles.devInput, { color: theme.text, borderColor: theme.line }]}
                 />
                 <Pressable
-                  onPress={() => { if (!disabled && email.trim() && password) passwordLogin(email, password, LOGIN_TERMS_VERSION); }}
+                  onPress={() => { if (!disabled && email.trim() && password) passwordLogin(email, password); }}
                   disabled={disabled || !email.trim() || !password}
                   accessibilityRole="button"
                   accessibilityState={{ disabled: disabled || !email.trim() || !password, busy: loading }}
@@ -169,6 +140,13 @@ export function LoginPanel({
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>
           {onAdminLogin ? '사전에 등록된 관리자 계정만 접근할 수 있습니다.' : onReviewLogin ? t.auth.reviewLoginNote : t.auth.loginNote}
         </ThemedText>
+
+        <View style={styles.legalLinks}>
+          {['terms', 'privacy'].map((path) => <Pressable key={path} onPress={() => void Linking.openURL(`${publicSiteUrl}/${path}`)}
+            accessibilityRole="link" style={styles.legalLink}>
+            <ThemedText type="small" themeColor="textSecondary">{path === 'terms' ? '이용약관' : '개인정보처리방침'}</ThemedText>
+          </Pressable>)}
+        </View>
 
         {!onReviewLogin && !onAdminLogin && (
           <Pressable
@@ -237,10 +215,7 @@ const styles = StyleSheet.create({
   },
   reviewLink: { minHeight: 44, justifyContent: 'center' },
   legalLink: { minHeight: 44, justifyContent: 'center' },
-  consentCard: { alignSelf: 'stretch', padding: Spacing.three, gap: Spacing.two, borderWidth: 1, borderRadius: 12, marginBottom: Spacing.three },
-  consentRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  consentText: { flex: 1 },
-  checkbox: { width: 24, height: 24, borderWidth: 1, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+  legalLinks: { flexDirection: 'row', gap: Spacing.three },
   close: {
     marginTop: Spacing.four,
     paddingVertical: Spacing.two,

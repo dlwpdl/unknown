@@ -105,9 +105,13 @@ test('auth saves only the signed-in profile and publishes the city only after a 
   } });
   const render = () => { cursor = refCursor = 0; return exports.AuthProvider({ children: null }); };
   const node = render();
+  assert.equal(node.props.value.isAuthed, false, 'social authentication alone does not complete signup');
+  assert.equal(node.props.children.props.userId, null, 'location requests wait for signup consent');
   const onboarding = node.props.children.props.children.find(child => child?.props?.onComplete);
-  onboarding.props.onComplete({ id: 'member', nickname: '회원', city_id: 'vancouver', avatar_path: null });
+  onboarding.props.onComplete({ id: 'member', nickname: '회원', city_id: 'vancouver', avatar_path: null, ai_safety_consent_at: '2026-09-19T00:00:00Z' });
   const auth = () => render().props.value;
+  assert.equal(auth().isAuthed, true);
+  assert.equal(render().props.children.props.userId, 'member');
   await assert.rejects(auth().setProfileCity('unknown'), /INVALID_PROFILE_CITY/);
   assert.equal(writes, 0);
   response = { error: new Error('OFFLINE'), data: null };

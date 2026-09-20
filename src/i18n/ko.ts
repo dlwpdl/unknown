@@ -294,7 +294,7 @@ export const t = {
     reviewLoginNote: '앱 심사를 위해 미리 발급된 계정만 사용할 수 있어요. Only pre-issued review accounts can sign in.',
     reviewLoginError: '심사 계정 정보를 확인해주세요. Check your review credentials.',
     close: '둘러보기',
-    loginNote: '소셜 계정으로 간편하게 시작해요.',
+    loginNote: '소셜 계정 인증 후 처음 오신 분은 프로필 설정과 약관 동의를 진행해요.',
     loginError: '로그인에 실패했어요. 잠시 후 다시 시도해주세요.',
     signOutError: '로그아웃하지 못했어요. 잠시 후 다시 시도해주세요.',
     deletedTitle: '탈퇴한 계정이에요',
@@ -327,7 +327,7 @@ export const t = {
     errorNickname: '닉네임은 2~20자로 입력해주세요.',
     errorDuplicate: '이미 사용 중인 닉네임이에요. 다른 이름을 골라주세요.',
     errorGeneric: '프로필을 만들지 못했어요. 잠시 후 다시 시도해주세요.',
-    errorConsent: '약관과 AI 안전 처리 내용을 확인하고 동의해주세요.',
+    errorConsent: '이용약관, 개인정보 수집·이용, 외부 AI 안전 처리의 필수 항목에 동의해주세요.',
     photoError: '사진을 불러오지 못했어요. 다른 사진을 골라주세요.',
   },
 

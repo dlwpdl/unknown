@@ -18,7 +18,6 @@ import { t } from '@/i18n/ko';
 import { isAdminRole } from '@/lib/admin';
 import { canUseDevPasswordLogin, getKakaoAuthSessionUrl, getOAuthCallbackPath, getOAuthCode } from '@/lib/kakao-auth';
 import { CONTACT_EMAIL } from '@/lib/legal-documents';
-import { LOGIN_TERMS_VERSION, recordLoginTerms } from '@/lib/login-terms';
 import { CommunityLocationProvider } from '@/lib/location-provider';
 import { CITIES } from '@/lib/mock';
 import { AUTH_EXPIRED_EVENT, signInAdminAccount, signInReviewAccount, supabase } from '@/lib/supabase';
@@ -46,13 +45,13 @@ type AuthValue = {
   isAdmin: boolean;
   isAuthLoading: boolean;
   authError: string | null;
-  signInApple: (termsVersion: string) => Promise<void>;
+  signInApple: () => Promise<void>;
   prepareAppleAccountDeletion: () => Promise<string | null>;
-  signInKakao: (termsVersion: string) => Promise<void>;
-  signInGoogle: (termsVersion: string) => Promise<void>;
-  signInDev: (email: string, password: string, termsVersion: string) => Promise<void>;
-  signInReview: (email: string, password: string, termsVersion: string) => Promise<void>;
-  signInAdmin: (email: string, password: string, termsVersion: string) => Promise<void>;
+  signInKakao: () => Promise<void>;
+  signInGoogle: () => Promise<void>;
+  signInDev: (email: string, password: string) => Promise<void>;
+  signInReview: (email: string, password: string) => Promise<void>;
+  signInAdmin: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   setProfilePhoto: (uri: string | null, base64?: string) => Promise<void>;
   setProfileCity: (cityId: string) => Promise<void>;
@@ -176,23 +175,15 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     return () => subscription.remove();
   }, []);
 
-  const beginSignIn = useCallback((termsVersion: string) => {
+  const beginSignIn = useCallback(() => {
     if (signInInFlight.current) return false;
-    if (termsVersion !== LOGIN_TERMS_VERSION) {
-      setAuthError('가입·로그인 전에 이용약관과 개인정보 수집·이용에 모두 동의해주세요.');
-      return false;
-    }
     signInInFlight.current = true;
     setAuthError(null);
     setSigningIn(true);
     return true;
   }, []);
-  const finishSignIn = useCallback(async (termsVersion: string) => {
-    await recordLoginTerms(supabase, termsVersion);
-    setVisible(false);
-  }, []);
-  const signInOAuth = useCallback(async (provider: OAuthProvider, termsVersion: string) => {
-    if (!beginSignIn(termsVersion)) return;
+  const signInOAuth = useCallback(async (provider: OAuthProvider) => {
+    if (!beginSignIn()) return;
     try {
       const redirectTo = Linking.createURL(getOAuthCallbackPath(Platform.OS, process.env.EXPO_BASE_URL));
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -212,17 +203,17 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       const code = getOAuthCode(result.url, redirectTo);
       const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
       if (exchangeError) throw new Error('OAUTH_EXCHANGE_FAILED');
-      await finishSignIn(termsVersion);
+      setVisible(false);
     } catch {
       setAuthError(t.auth.loginError);
     } finally {
       signInInFlight.current = false;
       setSigningIn(false);
     }
-  }, [beginSignIn, finishSignIn]);
-  const signInKakao = useCallback((termsVersion: string) => signInOAuth('kakao', termsVersion), [signInOAuth]);
-  const signInGoogleNative = useCallback(async (termsVersion: string) => {
-    if (!beginSignIn(termsVersion)) return;
+  }, [beginSignIn]);
+  const signInKakao = useCallback(() => signInOAuth('kakao'), [signInOAuth]);
+  const signInGoogleNative = useCallback(async () => {
+    if (!beginSignIn()) return;
     try {
       const response = await GoogleSignin.signIn();
       if (!isSuccessResponse(response)) return;
@@ -231,20 +222,20 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       // provider must have "Skip nonce checks" enabled for this token to be accepted.
       const { error } = await supabase.auth.signInWithIdToken({ provider: 'google', token: response.data.idToken });
       if (error) throw error;
-      await finishSignIn(termsVersion);
+      setVisible(false);
     } catch (error) {
       if (!(isErrorWithCode(error) && error.code === statusCodes.SIGN_IN_CANCELLED)) setAuthError(t.auth.loginError);
     } finally {
       signInInFlight.current = false;
       setSigningIn(false);
     }
-  }, [beginSignIn, finishSignIn]);
+  }, [beginSignIn]);
   const signInGoogle = useCallback(
-    (termsVersion: string) => (usesNativeGoogleSignIn ? signInGoogleNative(termsVersion) : signInOAuth('google', termsVersion)),
+    () => (usesNativeGoogleSignIn ? signInGoogleNative() : signInOAuth('google')),
     [signInGoogleNative, signInOAuth],
   );
-  const signInApple = useCallback(async (termsVersion: string) => {
-    if (!beginSignIn(termsVersion)) return;
+  const signInApple = useCallback(async () => {
+    if (!beginSignIn()) return;
     try {
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
@@ -259,7 +250,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
         access_token: credential.authorizationCode,
       });
       if (error) throw error;
-      await finishSignIn(termsVersion);
+      setVisible(false);
       const fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
         .filter(Boolean)
         .join(' ');
@@ -272,7 +263,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       signInInFlight.current = false;
       setSigningIn(false);
     }
-  }, [beginSignIn, finishSignIn]);
+  }, [beginSignIn]);
   const prepareAppleAccountDeletion = useCallback(async () => {
     const usesApple = session?.user.identities?.some((identity) => identity.provider === 'apple')
       || session?.user.app_metadata?.provider === 'apple';
@@ -283,31 +274,31 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     if (!credential.authorizationCode) throw new Error('APPLE_AUTHORIZATION_CODE_MISSING');
     return credential.authorizationCode;
   }, [session]);
-  const signInDev = useCallback(async (email: string, password: string, termsVersion: string) => {
-    if (!canUseDevPasswordLogin(__DEV__) || !beginSignIn(termsVersion)) return;
+  const signInDev = useCallback(async (email: string, password: string) => {
+    if (!canUseDevPasswordLogin(__DEV__) || !beginSignIn()) return;
     try {
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) throw error;
-      await finishSignIn(termsVersion);
+      setVisible(false);
     } catch {
       setAuthError(t.auth.devLoginError);
     } finally {
       signInInFlight.current = false;
       setSigningIn(false);
     }
-  }, [beginSignIn, finishSignIn]);
-  const signInReview = useCallback(async (email: string, password: string, termsVersion: string) => {
-    if (!beginSignIn(termsVersion)) return;
+  }, [beginSignIn]);
+  const signInReview = useCallback(async (email: string, password: string) => {
+    if (!beginSignIn()) return;
     try {
       await signInReviewAccount(email, password);
-      await finishSignIn(termsVersion);
+      setVisible(false);
     } catch {
       setAuthError(t.auth.reviewLoginError);
     } finally {
       signInInFlight.current = false;
       setSigningIn(false);
     }
-  }, [beginSignIn, finishSignIn]);
+  }, [beginSignIn]);
   const signOut = useCallback(async () => {
     setAuthError(null);
     const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -328,12 +319,12 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     setProfile(null);
     setMissingProfileUserId(null);
   }, []);
-  const signInAdmin = useCallback(async (email: string, password: string, termsVersion: string) => {
-    if (!beginSignIn(termsVersion)) return;
-    try { await signInAdminAccount(email, password); await finishSignIn(termsVersion); }
+  const signInAdmin = useCallback(async (email: string, password: string) => {
+    if (!beginSignIn()) return;
+    try { await signInAdminAccount(email, password); setVisible(false); }
     catch { setAuthError('관리자 계정 정보와 접근 권한을 확인해주세요.'); }
     finally { signInInFlight.current = false; setSigningIn(false); }
-  }, [beginSignIn, finishSignIn]);
+  }, [beginSignIn]);
   const setProfilePhoto = useCallback(async (uri: string | null, base64?: string) => {
     if (!session) return;
     let avatarPath: string | null = null;
@@ -368,7 +359,6 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     setProfile((current) => current?.id === session.user.id ? { ...current, city_id: cityId } : current);
   }, [session]);
 
-  const level: Level = session && !signingIn ? 1 : 0;
   const metadata = session?.user.user_metadata;
   const isAdmin = isAdminRole(session?.user.app_metadata);
   const socialNickname = [metadata?.user_name, metadata?.nickname, metadata?.name, metadata?.full_name].find(
@@ -389,6 +379,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     ? activeProfile.account_status
     : null;
   const trustLevel: TrustLevel = activeProfile?.verification_level ?? 1;
+  const level: Level = session && !signingIn && activeProfile?.account_status === 'active' && activeProfile.ai_safety_consent_at ? 1 : 0;
 
   const value = useMemo<AuthValue>(
     () => ({
@@ -440,7 +431,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
 
   return (
     <AuthContext.Provider value={value}>
-      <CommunityLocationProvider userId={!publicPage && !lockedStatus ? session?.user.id ?? null : null} loginKey={loginKey}>
+      <CommunityLocationProvider userId={!publicPage && level === 1 ? session?.user.id ?? null : null} loginKey={loginKey}>
       {children}
       <Modal visible={!publicPage && visible} animationType="slide" onRequestClose={() => setVisible(false)}>
         <SafeAreaProvider>
