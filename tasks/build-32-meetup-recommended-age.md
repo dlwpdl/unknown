@@ -17,3 +17,13 @@ iOS archive and App Store export succeeded. Verified bundle ID `com.dlwpdl.gling
 Uploaded Apple build `b3199442-7fa6-4983-8005-212052f09c0d`; independent API readback confirms `VALID`, `IN_BETA_TESTING`, and existing `Gling Internal` (`03fefab3-98b9-4f9c-a6a0-450fdd703efb`). Korean What to Test notes supplied. App Store version remains `DEVELOPER_REJECTED` with build 30 attached, verified again after upload. No App Review or external beta submission, or new invitations.
 
 Rollback: keep the additive migration and recorded consents; distribute build 31 and revert the client feature if necessary. Do not restore the full production database or overwrite new receipts. Physical-device signup/photo selection and updated review video remain unverified.
+
+## App Review resubmission — 2026-09-20
+
+At the owner's explicit request, reviewed the supplied `ScreenRecording_09-20-2026 00-40-09_1.MP4` (27.165 seconds). It shows TestFlight 1.0.1 (32), initial profile setup, individual consent checkboxes, Terms/Privacy links, select-all, AI disclosure and completed signup with optional name/date-of-birth fields empty. This supplies current signup evidence; it does not establish physical-device cover-photo QA.
+
+Apple permits only one review attachment. Preserved both originals outside git and replaced the old attachment with `gling-build32-consent-and-historical-demo.mp4` (129.72 seconds, original 1290×2796 resolution, audio retained): new build 32 signup first, then the previous historical feature/reporting/blocking video. Independently verified attachment `06bbdc3d-0059-4369-8de9-af17e0a35c2b` delivery `COMPLETE`. Notes explicitly distinguish current and historical footage and explain that the existing review account does not repeat first-signup onboarding. Review credentials/contact remained unchanged.
+
+Attached build 32 and restored all six items in fresh submission `2c53890c-700a-4061-829a-c1037c15705d`: app version, four existing subscription versions and the existing subscription group version. Submitted at `2026-09-20T08:21:45.840Z` (September 20, 01:21 PDT). Independent status and version readback both confirm `WAITING_FOR_REVIEW`, with build 32 attached. This is submission, not approval or public release.
+
+Reviewer notes: [September 20 notes](../release/app-review/2026-09-20/review-notes.txt). Videos, hashes and API receipts: `~/Library/Application Support/gling/releases/1.0.1-32/review-2026-09-20/`.
