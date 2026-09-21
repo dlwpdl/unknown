@@ -3,6 +3,8 @@ import './legal.web.css';
 
 import { useLocalSearchParams } from 'expo-router';
 import Head from 'expo-router/head';
+import type { CSSProperties } from 'react';
+import { Colors } from '@/constants/theme';
 
 import { LEGAL_DOCUMENTS, type LegalDocument, type LegalDocumentSlug } from '@/lib/legal-documents';
 
@@ -32,7 +34,17 @@ export default function LegalDocumentPage() {
   }
 
   return (
-    <div className="site-page legal-page">
+    <div className="site-page legal-page" style={{
+      '--bg': Colors.dark.background,
+      '--panel': Colors.dark.card,
+      '--text': Colors.dark.text,
+      '--muted': Colors.dark.textSecondary,
+      '--line': Colors.dark.line,
+      '--line-strong': Colors.dark.backgroundSelected,
+      '--accent': Colors.dark.accent,
+      '--accent-soft': Colors.dark.backgroundElement,
+      '--navy': Colors.dark.navy,
+    } as CSSProperties}>
       <Head>
         <title>{`${page.title} | gling`}</title>
         <meta name="description" content={page.summary} />

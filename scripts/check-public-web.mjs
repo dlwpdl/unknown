@@ -5,6 +5,7 @@ import { join } from 'node:path';
 const directory = process.argv[2] ?? 'dist';
 assert.ok(existsSync(join(directory, 'index.html')), 'Public web export is missing');
 const childSafety = readFileSync(join(directory, 'child-safety.html'), 'utf8');
+assert.ok(childSafety.includes('--bg:') && childSafety.includes('--text:'), 'Legal page must define readable background/text colors');
 for (const text of ['아동 안전 표준', 'CSAE', 'CSAM', 'gling@ej-entertainment.com', 'Cybertip.ca']) {
   assert.ok(childSafety.includes(text), `Child safety policy is missing: ${text}`);
 }
