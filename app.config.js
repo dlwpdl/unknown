@@ -1,10 +1,11 @@
 module.exports = ({ config }) => {
   const localAdmin = process.env.GLING_LOCAL_ADMIN === '1';
   if (localAdmin && process.env.CI) throw new Error('The local admin must never be built in CI.');
+  const publicWeb = process.env.GLING_PUBLIC_WEB === '1';
   return {
     ...config,
-    ...(localAdmin ? { plugins: config.plugins.map((plugin) => plugin === 'expo-router'
-      ? ['expo-router', { root: './src/admin' }] : plugin) } : {}),
+    ...(localAdmin || publicWeb ? { plugins: config.plugins.map((plugin) => plugin === 'expo-router'
+      ? ['expo-router', { root: localAdmin ? './src/admin' : './src/web' }] : plugin) } : {}),
     experiments: {
       ...config.experiments,
       ...(localAdmin ? { typedRoutes: false, baseUrl: '' }

@@ -5,9 +5,11 @@ import { join } from 'node:path';
 const directory = process.argv[2] ?? 'dist';
 assert.ok(existsSync(join(directory, 'index.html')), 'Public web export is missing');
 for (const file of readdirSync(directory, { recursive: true })) {
-  assert.ok(!/(^|\/)admin(?:[./]|$)/.test(file), `Private admin route in public export: ${file}`);
+  assert.ok(!/(^|\/)(admin|chat|compose|profile|notifications|meetup-create|meetup-join|meetup-application|meetup-profile)(?:[./]|$)/.test(file), `App-only route in public export: ${file}`);
   if (!/\.(html|js)$/.test(file)) continue;
   const content = readFileSync(join(directory, file), 'utf8');
-  assert.ok(!content.includes('get_admin_analytics') && !content.includes('GLING / INSIGHTS'), `Private admin code in public export: ${file}`);
+  for (const marker of ['get_admin_analytics', 'GLING / INSIGHTS', 'send_message', 'send_direct_message', 'REVIEW_ACCESS_DENIED', 'create_meetup_with_post', 'get_my_conversations']) {
+    assert.ok(!content.includes(marker), `App-only code (${marker}) in public export: ${file}`);
+  }
 }
-console.log('Public web export contains no admin route or dashboard code.');
+console.log('Public web export contains no app-only routes, chat mutations or admin dashboard code.');

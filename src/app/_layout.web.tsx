@@ -1,33 +1,9 @@
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider, usePathname } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { Stack, usePathname } from 'expo-router';
+import PublicReader from '@/components/public-web/reader';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import { AppActivity } from '@/components/app-activity';
-import { AuthProvider } from '@/lib/auth';
-import { CommunityCityProvider } from '@/lib/community-city';
-import { InteractionFeedbackProvider } from '@/lib/interaction-feedback';
-import { MembershipProvider } from '@/lib/membership-provider';
-
-SplashScreen.preventAutoHideAsync();
-
+// Even a development web run using the native route root must stay read-only.
 export default function WebLayout() {
-  const colorScheme = useColorScheme();
-  const pathname = usePathname().replace(/\/$/, '');
-  const publicPage = pathname === '' || ['/terms', '/privacy', '/account-deletion'].some((path) => pathname.endsWith(path));
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AuthProvider publicPage={publicPage}>
-        <CommunityCityProvider>
-        <AppActivity />
-        <MembershipProvider>
-        <InteractionFeedbackProvider>
-          <AnimatedSplashOverlay />
-          <Stack screenOptions={{ headerShown: false }} />
-        </InteractionFeedbackProvider>
-        </MembershipProvider>
-        </CommunityCityProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  );
+  const path = usePathname().replace(/\/$/, '');
+  return ['/terms', '/privacy', '/account-deletion'].includes(path)
+    ? <Stack screenOptions={{ headerShown: false }} /> : <PublicReader />;
 }
