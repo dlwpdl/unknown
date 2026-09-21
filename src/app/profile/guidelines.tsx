@@ -1,4 +1,5 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView } from '@/components/analytics-controls';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -13,7 +14,7 @@ export default function GuidelinesScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView analyticsId="app_profile_guidelines.scrollview.1" contentContainerStyle={styles.content}>
           <ThemedText type="subtitle">{t.profile.guidelinesTitle}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             {t.profile.guidelinesIntro}

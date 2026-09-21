@@ -1,5 +1,6 @@
+import { Pressable } from '@/components/analytics-controls';
 import { Component, type ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
@@ -26,7 +27,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: 
         <ThemedText type="small" style={styles.body}>
           문제는 저희에게 전달됐어요. 다시 시도해 보시고, 계속 이러면 앱을 껐다 켜주세요.
         </ThemedText>
-        <Pressable
+        <Pressable analyticsId="components_error-boundary.pressable.1"
           onPress={() => this.setState({ failed: false })}
           accessibilityRole="button"
           style={({ pressed }) => [styles.retry, pressed && { opacity: 0.7 }]}>

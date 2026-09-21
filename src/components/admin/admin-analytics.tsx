@@ -9,7 +9,7 @@ import { ADMIN_PAGE_SIZE } from '@/lib/admin-data';
 import { CITIES } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
 
-const TABS = { overview: '요약', members: '회원', traffic: '트래픽', revenue: '결제·홍보', logs: '운영 로그' } as const;
+const TABS = { overview: '요약', members: '회원', traffic: '트래픽', behavior: '행동 분석', revenue: '결제·홍보', logs: '운영 로그' } as const;
 const TIERS = { all: '전체 등급', free: '무료', plus: '플러스', premium: '프리미엄' } as const;
 const INITIAL_FILTERS: AnalyticsFilters = { days: 30, city: null, tier: 'all', includeInternal: false, offset: 0 };
 
@@ -61,6 +61,7 @@ export function AdminAnalyticsView({ localPreview, onUser, refreshSignal = 0 }: 
         {tab === 'overview' && <Overview data={data} />}
         {tab === 'members' && <Members data={data} filters={filters} onUser={onUser} onPage={(offset) => setFilters((current) => ({ ...current, offset }))} />}
         {tab === 'traffic' && <Traffic data={data} onUser={onUser} />}
+        {tab === 'behavior' && <Behavior data={data} />}
         {tab === 'revenue' && <Revenue data={data} onUser={onUser} />}
         {tab === 'logs' && <Logs data={data} />}
       </>}
@@ -126,6 +127,21 @@ function Traffic({ data, onUser }: { data: AdminAnalytics | null; onUser: (id: s
     <SectionTitle title="최근 접속" note="선택 조건의 최근 기록 최대 50개 · 로그인 회원의 화면·플랫폼만 수집합니다." />
     <DataTable headers={['회원', '화면', '플랫폼 / 버전', '최초 방문', '최근 방문', '화면 조회']} rows={(data?.visits ?? []).map((visit) => ({ key: `${visit.userId}:${visit.platform}:${visit.firstAt}`, cells: [<UserLink key="user" id={visit.userId} nickname={visit.nickname} onUser={onUser} />, visit.screen, `${visit.platform} / ${visit.appVersion || '미확인'}`, date(visit.firstAt), date(visit.lastAt), `${number(visit.views)}회`] }))} />
     <Notice title="접속 정보의 범위" text="로그인한 회원의 방문만 표시합니다. 익명 방문·IP·검색어·대화 내용은 분석용으로 수집하지 않으며, 접속 원자료는 90일 보관합니다." />
+  </>;
+}
+
+function Behavior({ data }: { data: AdminAnalytics | null }) {
+  const rows = data?.behavior;
+  return <>
+    <Notice title="버튼 · 화면 · 읽기 깊이" text="고정된 UI 식별자만 기록합니다. 입력값·대화 내용은 수집하지 않습니다. 익명 방문은 메모리 세션 기준이며 도시·등급 필터를 적용하면 제외됩니다. 단계 발생 수는 순서 기반 전환율이 아닙니다. 기존 빌드의 미수집 활동은 복원되지 않습니다." />
+    <SectionTitle title="화면별 활동" note="체류는 앱 활성·웹 표시 상태에서 측정한 합계입니다. 앱 강제 종료·오프라인 상황에서는 일부 누락될 수 있습니다." />
+    <DataTable headers={['플랫폼 / 화면', '조회', '세션', '활성 체류 (분)', '버튼 클릭', '끝까지 스크롤']} rows={(rows?.screens ?? []).map((r) => ({ key: `${r.platform}:${r.screen}`, cells: [`${r.platform} / ${r.screen}`, number(r.views), number(r.sessions), (r.dwellMs / 60000).toFixed(1), number(r.presses), number(r.bottoms)] }))} />
+    <SectionTitle title="가입 · 모임 신청 완료" note="서버에서 성공한 작업을 클라이언트가 보고한 횟수입니다. 버튼 클릭과 구분하며, 결제·회원 원장 대용이 아닙니다." />
+    <DataTable headers={['단계', '플랫폼', '횟수', '세션']} rows={(rows?.steps ?? []).map((r) => ({ key: `${r.platform}:${r.screen}:${r.target}`, cells: [r.target, r.platform, number(r.count), number(r.sessions)] }))} />
+    <SectionTitle title="버튼 · 스크롤 상세" note="고정 식별자는 코드의 analyticsId와 대응합니다. 25/50/75/100은 읽기 깊이입니다. 상위 300개 집계." />
+    <DataTable headers={['화면 / 플랫폼', '종류', 'UI 식별자', '깊이', '횟수', '세션']} rows={(rows?.actions ?? []).filter((r) => r.kind !== 'success').map((r) => ({ key: `${r.platform}:${r.screen}:${r.kind}:${r.target}:${r.value}`, cells: [`${r.screen} / ${r.platform}`, r.kind, r.target, r.kind === 'scroll' ? `${r.value}%` : '—', number(r.count), number(r.sessions)] }))} />
+    <SectionTitle title="최근 행동 순서" note="최근 100개. 같은 세션의 순번으로 행동 순서를 확인합니다. 시각은 서버 수신 시각입니다." />
+    <DataTable headers={['수신 시각', '세션 / 순번', '화면', '행동', 'UI 식별자', '값']} rows={(rows?.recent ?? []).map((r) => ({ key: `${r.sessionId}:${r.seq}`, cells: [date(r.createdAt), `${r.sessionId} / ${r.seq}${r.anonymous ? ' (익명)' : ''}`, `${r.platform} / ${r.screen}`, r.kind, r.target, String(r.value)] }))} />
   </>;
 }
 

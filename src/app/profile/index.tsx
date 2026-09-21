@@ -1,9 +1,10 @@
+import { Pressable, FlatList } from '@/components/analytics-controls';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useReducedMotion } from 'react-native-reanimated';
 
@@ -122,7 +123,7 @@ export default function ProfileScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <View style={styles.hero}>
-          <Pressable
+          <Pressable analyticsId="app_profile_index.pressable.1"
             onPress={pickProfilePhoto}
             accessibilityRole="button"
             accessibilityLabel={t.profile.changePhoto}
@@ -162,7 +163,7 @@ export default function ProfileScreen() {
             [t.notifications.title, unreadLabel, { ios: 'bell', android: 'notifications', web: 'notifications' }, unread > 0, () => router.push('/profile/inbox')],
             [t.profile.saved, '모아보기', { ios: 'bookmark', android: 'bookmark', web: 'bookmark' }, false, () => { setSavedOpen(true); void refreshSaved(); }],
           ] as const).map(([label, sub, symbol, attention, onPress]) => (
-            <Pressable key={label} onPress={() => { play('selection'); onPress(); }} accessibilityRole="button" accessibilityLabel={`${label}, ${sub ?? ''}`}
+            <Pressable analyticsId="app_profile_index.pressable.2" key={label} onPress={() => { play('selection'); onPress(); }} accessibilityRole="button" accessibilityLabel={`${label}, ${sub ?? ''}`}
               style={({ pressed }) => [styles.manageCell, {
                 backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
                 transform: [{ scale: pressed && !reducedMotion ? 0.97 : 1 }], // 눌린 순간 바로 반응, 놓으면 실행
@@ -178,7 +179,7 @@ export default function ProfileScreen() {
         </View>
         <View style={[styles.segments, { borderBottomColor: theme.line }]}>
           {([['story', '내 글'], ['replies', '답글'], ['listing', '구해요·팔아요']] as const).map(([key, label]) => (
-            <Pressable key={key} onPress={() => setSegment(key)} accessibilityRole="tab" accessibilityState={{ selected: segment === key }}
+            <Pressable analyticsId="app_profile_index.pressable.3" key={key} onPress={() => setSegment(key)} accessibilityRole="tab" accessibilityState={{ selected: segment === key }}
               style={[styles.segment, segment === key && { borderBottomColor: theme.text }]}>
               <ThemedText type={segment === key ? 'smallBold' : 'small'} themeColor={segment === key ? undefined : 'textSecondary'}>{label}</ThemedText>
             </Pressable>
@@ -186,7 +187,7 @@ export default function ProfileScreen() {
         </View>
         {segmentLoading && <ActivityIndicator color={theme.accent} style={{ marginVertical: Spacing.three }} accessibilityLabel="불러오는 중" />}
         {!segmentLoading && segment !== 'replies' && myPosts[segment].map((row) => (
-          <Pressable key={row.id} onPress={() => router.push(`/post/${row.id}`)} accessibilityRole="button" style={[styles.myPost, { borderBottomColor: theme.line }]}>
+          <Pressable analyticsId="app_profile_index.pressable.4" key={row.id} onPress={() => router.push(`/post/${row.id}`)} accessibilityRole="button" style={[styles.myPost, { borderBottomColor: theme.line }]}>
             <ThemedText type="small" themeColor="textSecondary">{TAGS.find(({ id }) => id === row.tag_id)?.label ?? ''}{row.kind === 'listing' ? ` · ${t.detail.listingBadge}` : ''}{row.kind === 'listing' && row.listing_status && row.listing_status !== 'open' ? ` · ${t.detail.listingStatus[row.listing_status]}` : ''}</ThemedText>
             <ThemedText type="smallBold" style={styles.myTitle}>{row.title}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{row.body}</ThemedText>
@@ -195,7 +196,7 @@ export default function ProfileScreen() {
         ))}
         {!segmentLoading && segment !== 'replies' && myPosts[segment].length === 0 && <ThemedText type="small" themeColor="textSecondary" style={styles.emptyNote}>{segment === 'listing' ? '아직 올린 구해요·팔아요 글이 없어요.' : '아직 쓴 글이 없어요. 오늘의 한 편을 남겨보세요.'}</ThemedText>}
         {!segmentLoading && segment === 'replies' && replies.filter((reply) => !hidden('comment', reply.id, reply.author_id)).map((reply) => (
-          <Pressable key={reply.id} onPress={() => router.push(`/post/${reply.post_id}`)} accessibilityRole="button" style={[styles.myPost, { borderBottomColor: theme.line }]}>
+          <Pressable analyticsId="app_profile_index.pressable.5" key={reply.id} onPress={() => router.push(`/post/${reply.post_id}`)} accessibilityRole="button" style={[styles.myPost, { borderBottomColor: theme.line }]}>
             <ThemedText type="small" themeColor="textSecondary"><ThemedText type="small" themeColor="navy">{reply.author?.nickname ?? '이웃'}</ThemedText>님이 「{reply.post?.title ?? '내 글'}」에 · {relativeTime(reply.created_at)}</ThemedText>
             <ThemedText type="small">{reply.body}</ThemedText>
             <ThemedText type="smallBold" themeColor="accent">답글 달기</ThemedText>
@@ -204,25 +205,25 @@ export default function ProfileScreen() {
         {!segmentLoading && segment === 'replies' && replies.length === 0 && <ThemedText type="small" themeColor="textSecondary" style={styles.emptyNote}>아직 내 글에 달린 답글이 없어요.</ThemedText>}
 
         <View style={[styles.menu, { backgroundColor: theme.card, borderColor: theme.line }]}>
-          {PROMOTIONS_PREVIEW_ENABLED && <><Pressable style={styles.menuRow} accessibilityRole="button" onPress={() => router.push('/profile/promotions')}>
+          {PROMOTIONS_PREVIEW_ENABLED && <><Pressable analyticsId="app_profile_index.pressable.6" style={styles.menuRow} accessibilityRole="button" onPress={() => router.push('/profile/promotions')}>
             <ThemedText type="small">홍보 크레딧</ThemedText>
           </Pressable>
           <View style={[styles.divider, { backgroundColor: theme.line }]} /></>}
-          <Pressable
+          <Pressable analyticsId="app_profile_index.pressable.7"
             style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: theme.backgroundSelected }]}
             accessibilityRole="button"
             onPress={() => { play('selection'); router.push('/profile/guidelines'); }}>
             <ThemedText type="small">{t.profile.guidelines}</ThemedText>
           </Pressable>
           <View style={[styles.divider, { backgroundColor: theme.line }]} />
-          <Pressable
+          <Pressable analyticsId="app_profile_index.pressable.8"
             style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: theme.backgroundSelected }]}
             accessibilityRole="button"
             onPress={() => { play('selection'); router.push('/profile/settings'); }}>
             <ThemedText type="small">{t.profile.settings}</ThemedText>
           </Pressable>
           <View style={[styles.divider, { backgroundColor: theme.line }]} />
-          <Pressable
+          <Pressable analyticsId="app_profile_index.pressable.9"
             style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: theme.backgroundSelected }]}
             accessibilityRole="button"
             onPress={() => Alert.alert(t.profile.signOutTitle, t.profile.signOutBody, [
@@ -243,13 +244,13 @@ export default function ProfileScreen() {
         <ThemedView style={{ flex: 1 }}>
           <View style={[styles.sheetHead, { borderBottomColor: theme.line }]}>
             <ThemedText type="smallBold">{t.profile.saved}</ThemedText>
-            <Pressable onPress={() => setSavedOpen(false)} accessibilityRole="button" hitSlop={12}>
+            <Pressable analyticsId="app_profile_index.pressable.10" onPress={() => setSavedOpen(false)} accessibilityRole="button" hitSlop={12}>
               <ThemedText type="smallBold" style={{ color: theme.accent }}>
                 {t.detail.close}
               </ThemedText>
             </Pressable>
           </View>
-          <FlatList
+          <FlatList analyticsId="app_profile_index.flatlist.1"
             data={savedPosts.filter((post) => !hidden('post', post.id, post.author.id))}
             keyExtractor={(p) => p.id}
             contentContainerStyle={styles.savedList}
@@ -264,7 +265,7 @@ export default function ProfileScreen() {
               )
             }
             renderItem={({ item }) => (
-              <Pressable onPress={() => setSavedDetail(item)} accessibilityRole="button">
+              <Pressable analyticsId="app_profile_index.pressable.11" onPress={() => setSavedDetail(item)} accessibilityRole="button">
                 <PostCard post={item} />
               </Pressable>
             )}

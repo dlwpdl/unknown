@@ -1,5 +1,6 @@
+import { Pressable } from '@/components/analytics-controls';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { ChillingEventSchedule } from '@/components/chilling-event';
 import { ThemedText } from '@/components/themed-text';
@@ -26,7 +27,7 @@ export function ChillingHostProfile({ post }: { post: Post }) {
   return <View style={{ padding: Spacing.three, gap: Spacing.three }}>
     <ChillingEventSchedule room={post.room} />
     {!!post.room.eventKind && <>
-      <Pressable onPress={() => profile ? setProfile(null) : void load()} accessibilityRole="button" accessibilityState={{ expanded: !!profile, busy: loading }} style={{ minHeight: 44, justifyContent: 'center' }}>
+      <Pressable analyticsId="components_chilling-host-profile.pressable.1" onPress={() => profile ? setProfile(null) : void load()} accessibilityRole="button" accessibilityState={{ expanded: !!profile, busy: loading }} style={{ minHeight: 44, justifyContent: 'center' }}>
         <ThemedText type="smallBold" themeColor="accent">{post.author.nickname}님의 모임 프로필 {profile ? '접기' : '보기'}</ThemedText>
       </Pressable>
       {loading && <ActivityIndicator color={theme.accent} />}

@@ -1,5 +1,6 @@
+import { Pressable } from '@/components/analytics-controls';
 import { Stack, useRouter } from 'expo-router';
-import { Pressable } from 'react-native';
+import {  } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import { useReducedMotion } from 'react-native-reanimated';
 
@@ -22,7 +23,7 @@ export default function ProfileLayout() {
         headerBackButtonDisplayMode: 'minimal',
         animation: reducedMotion ? 'none' : 'default',
         headerLeft: () => (
-          <Pressable
+          <Pressable analyticsId="app_profile__layout.pressable.1"
             onPress={() => router.canGoBack() ? router.back() : router.replace(route.name === 'index' ? '/' : '/profile')}
             accessibilityRole="button"
             accessibilityLabel="뒤로가기"

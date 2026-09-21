@@ -1,8 +1,10 @@
+import { behavior, flushBehavior } from '@/lib/behavior-analytics';
+import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -162,6 +164,8 @@ export function ProfileOnboarding({
         setError(created.error.code === '23505' ? t.onboarding.errorDuplicate : t.onboarding.errorGeneric);
         return;
       }
+      behavior('success', consentOnly ? 'consent_complete' : 'signup_complete');
+      void flushBehavior();
       onComplete({
         id: userId,
         nickname: cleanNickname,
@@ -182,7 +186,7 @@ export function ProfileOnboarding({
     <Modal visible={visible} animationType="slide" onRequestClose={() => {}}>
       <SafeAreaProvider style={[styles.screen, { backgroundColor: theme.background }]}>
         <SafeAreaView style={styles.safeArea}>
-          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <ScrollView analyticsId="components_profile-onboarding.scrollview.1" contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <ThemedText type="smallBold" style={{ color: theme.accent }}>{t.onboarding.step}</ThemedText>
             <View style={styles.copy}>
               <ThemedText type="title" style={styles.title}>{consentOnly ? t.onboarding.consentTitle : t.onboarding.title}</ThemedText>
@@ -198,15 +202,15 @@ export function ProfileOnboarding({
                 )}
               </View>
               <View style={styles.photoActions}>
-                <Pressable onPress={() => void pickPhoto()} accessibilityRole="button" style={[styles.smallButton, { borderColor: theme.line }]}>
+                <Pressable analyticsId="components_profile-onboarding.pressable.1" onPress={() => void pickPhoto()} accessibilityRole="button" style={[styles.smallButton, { borderColor: theme.line }]}>
                   <ThemedText type="smallBold">{t.onboarding.choosePhoto}</ThemedText>
                 </Pressable>
                 {(socialNickname || socialPhoto) && (
-                  <Pressable onPress={useSocialProfile} accessibilityRole="button" style={[styles.smallButton, { borderColor: theme.line }]}>
+                  <Pressable analyticsId="components_profile-onboarding.pressable.2" onPress={useSocialProfile} accessibilityRole="button" style={[styles.smallButton, { borderColor: theme.line }]}>
                     <ThemedText type="smallBold">{t.onboarding.useSocial}</ThemedText>
                   </Pressable>
                 )}
-                <Pressable onPress={() => { setPhotoUri(null); setPhotoBase64(null); }} accessibilityRole="button">
+                <Pressable analyticsId="components_profile-onboarding.pressable.3" onPress={() => { setPhotoUri(null); setPhotoBase64(null); }} accessibilityRole="button">
                   <ThemedText type="small" themeColor="textSecondary">{t.onboarding.removePhoto}</ThemedText>
                 </Pressable>
               </View>
@@ -224,10 +228,10 @@ export function ProfileOnboarding({
                 style={[styles.nicknameInput, { color: theme.text, borderColor: theme.line, backgroundColor: theme.card }]}
               />
               <View style={styles.randomActions}>
-                <Pressable onPress={() => setNickname(generateNickname('ko'))} accessibilityRole="button" style={[styles.pill, { backgroundColor: theme.backgroundElement }]}>
+                <Pressable analyticsId="components_profile-onboarding.pressable.4" onPress={() => setNickname(generateNickname('ko'))} accessibilityRole="button" style={[styles.pill, { backgroundColor: theme.backgroundElement }]}>
                   <ThemedText type="smallBold">{t.onboarding.koreanRandom}</ThemedText>
                 </Pressable>
-                <Pressable onPress={() => setNickname(generateNickname('en'))} accessibilityRole="button" style={[styles.pill, { backgroundColor: theme.backgroundElement }]}>
+                <Pressable analyticsId="components_profile-onboarding.pressable.5" onPress={() => setNickname(generateNickname('en'))} accessibilityRole="button" style={[styles.pill, { backgroundColor: theme.backgroundElement }]}>
                   <ThemedText type="smallBold">{t.onboarding.englishRandom}</ThemedText>
                 </Pressable>
               </View>
@@ -239,7 +243,7 @@ export function ProfileOnboarding({
                 {CITIES.filter(({ state }) => state === 'open').map((city) => {
                   const selected = city.id === cityId;
                   return (
-                    <Pressable
+                    <Pressable analyticsId="components_profile-onboarding.pressable.6"
                       key={city.id}
                       onPress={() => setCityId(city.id)}
                       accessibilityRole="button"
@@ -255,7 +259,7 @@ export function ProfileOnboarding({
             {!consentOnly && <PersonalInfoFields showConsent={false} value={personalInfo} disabled={saving} onChange={(value) => { setPersonalInfo(value); setError(null); }} />}
 
             <View style={[styles.consents, { backgroundColor: theme.card, borderColor: theme.line }]}>
-              <Pressable onPress={toggleAll} disabled={saving} accessibilityRole="checkbox"
+              <Pressable analyticsId="components_profile-onboarding.pressable.7" onPress={toggleAll} disabled={saving} accessibilityRole="checkbox"
                 accessibilityLabel={consentOnly ? '모두 동의' : '모두 동의, 선택 항목 포함'} aria-checked={allChecked}
                 accessibilityState={{ checked: allChecked, disabled: saving }}
                 {...(Platform.OS === 'web' ? { onKeyDown: (event: { key: string; preventDefault: () => void }) => { if (event.key === ' ') { event.preventDefault(); toggleAll(); } } } : {})}
@@ -270,7 +274,7 @@ export function ProfileOnboarding({
                 const expanded = expandedConsent === item.id;
                 return <View key={item.id}>
                   <View style={styles.consentRow}>
-                    <Pressable onPress={toggle} disabled={saving} accessibilityRole="checkbox" accessibilityLabel={item.label}
+                    <Pressable analyticsId="components_profile-onboarding.pressable.8" onPress={toggle} disabled={saving} accessibilityRole="checkbox" accessibilityLabel={item.label}
                       aria-checked={item.checked} accessibilityState={{ checked: item.checked, disabled: saving }}
                       {...(Platform.OS === 'web' ? { onKeyDown: (event: { key: string; preventDefault: () => void }) => { if (event.key === ' ') { event.preventDefault(); toggle(); } } } : {})}
                       style={styles.consent}>
@@ -279,10 +283,10 @@ export function ProfileOnboarding({
                       </View>
                       <ThemedText type="small" style={styles.consentText}>{item.label}</ThemedText>
                     </Pressable>
-                    {'url' in item ? <Pressable accessibilityRole="link" accessibilityLabel={`${item.label} 자세히 보기`}
+                    {'url' in item ? <Pressable analyticsId="components_profile-onboarding.pressable.9" accessibilityRole="link" accessibilityLabel={`${item.label} 자세히 보기`}
                       onPress={() => { if (item.url) void Linking.openURL(item.url); }} style={styles.detailButton}>
                       <ThemedText type="small" themeColor="textSecondary">보기 ↗</ThemedText>
-                    </Pressable> : <Pressable accessibilityRole="button" accessibilityLabel={`${item.label} 자세히 ${expanded ? '접기' : '보기'}`}
+                    </Pressable> : <Pressable analyticsId="components_profile-onboarding.pressable.10" accessibilityRole="button" accessibilityLabel={`${item.label} 자세히 ${expanded ? '접기' : '보기'}`}
                       accessibilityState={{ expanded }} aria-expanded={expanded}
                       onPress={() => setExpandedConsent(expanded ? null : item.id)} style={styles.detailButton}>
                       <ThemedText type="small" themeColor="textSecondary">{expanded ? '접기 ∧' : '보기 ∨'}</ThemedText>
@@ -298,7 +302,7 @@ export function ProfileOnboarding({
           </ScrollView>
 
           <View style={[styles.footer, { borderTopColor: theme.line, backgroundColor: theme.background }]}>
-            <Pressable
+            <Pressable analyticsId="components_profile-onboarding.pressable.11"
               onPress={() => void save()}
               disabled={saving || !requiredAccepted}
               accessibilityRole="button"

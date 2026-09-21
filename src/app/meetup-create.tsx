@@ -1,6 +1,7 @@
+import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Alert, DeviceEventEmitter, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, DeviceEventEmitter, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ChillingDateInput } from '@/components/chilling-date-input';
@@ -61,15 +62,15 @@ function MeetupCreateForm() {
   };
   const field = (label: string, value: string, change: (s: string) => void, placeholder: string, maxLength: number, multiline = false) => <View style={styles.field}><ThemedText type="smallBold">{label}</ThemedText><TextInput accessibilityLabel={label} value={value} onChangeText={change} placeholder={placeholder} placeholderTextColor={theme.textSecondary} maxLength={maxLength} multiline={multiline} editable={!saving} autoCapitalize="none" style={[styles.input, multiline && styles.multiline, { color: theme.text, borderColor: theme.line, backgroundColor: theme.card }]} /></View>;
   return <SafeAreaView style={[styles.root, { backgroundColor: theme.background }]}>
-    <View style={styles.head}><Pressable accessibilityRole="button" accessibilityLabel="뒤로가기" onPress={() => router.back()} style={styles.back}><ThemedText themeColor="accent">‹ 뒤로</ThemedText></Pressable><ThemedText accessibilityRole="header" type="subtitle">만남 열기</ThemedText></View>
-    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-      <View style={[styles.segments, { backgroundColor: theme.backgroundElement }]}>{(['once', 'group'] as const).map(kind => <Pressable key={kind} disabled={saving} accessibilityRole="tab" accessibilityState={{ selected: event.kind === kind, disabled: saving }} onPress={() => setEvent({ ...event, kind })} style={[styles.segment, event.kind === kind && { backgroundColor: theme.background }]}><ThemedText type="smallBold">{kind === 'once' ? '칠링 (일회성)' : '모임 (정기모임)'}</ThemedText></Pressable>)}</View>
+    <View style={styles.head}><Pressable analyticsId="app_meetup-create.pressable.1" accessibilityRole="button" accessibilityLabel="뒤로가기" onPress={() => router.back()} style={styles.back}><ThemedText themeColor="accent">‹ 뒤로</ThemedText></Pressable><ThemedText accessibilityRole="header" type="subtitle">만남 열기</ThemedText></View>
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView analyticsId="app_meetup-create.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+      <View style={[styles.segments, { backgroundColor: theme.backgroundElement }]}>{(['once', 'group'] as const).map(kind => <Pressable analyticsId="app_meetup-create.pressable.2" key={kind} disabled={saving} accessibilityRole="tab" accessibilityState={{ selected: event.kind === kind, disabled: saving }} onPress={() => setEvent({ ...event, kind })} style={[styles.segment, event.kind === kind && { backgroundColor: theme.background }]}><ThemedText type="smallBold">{kind === 'once' ? '칠링 (일회성)' : '모임 (정기모임)'}</ThemedText></Pressable>)}</View>
       <ThemedText type="small" style={[styles.note, { backgroundColor: theme.backgroundElement }]}>무료로 열 수 있어요. 기본 승인·정원·질문도 포함돼요.</ThemedText>
       <MeetupPolicyNotice mode={event.kind === 'once' ? 'once' : 'host'} />
       <MeetupCoverPicker value={cover} onChange={setCover} onPickingChange={setPickingCover} disabled={saving} />
       {field('어떤 만남인가요?', title, setTitle, '예: 퇴근하고 노을 보러 갈래요?', 60)}
       {field('만남 소개', body, setBody, '무엇을 함께 하고 싶은지 알려주세요.', 5000, true)}
-      <ThemedText type="smallBold">카테고리</ThemedText><View style={styles.categories}>{(['casual', 'hobby', 'travel'] as const).map((category, i) => <Pressable key={category} disabled={saving} accessibilityRole="button" accessibilityState={{ selected: event.category === category, disabled: saving }} onPress={() => setEvent({ ...event, category })} style={[styles.category, { borderColor: event.category === category ? theme.accent : theme.line }]}><ThemedText type="small">{['가볍게', '취미', '여행'][i]}</ThemedText></Pressable>)}</View>
+      <ThemedText type="smallBold">카테고리</ThemedText><View style={styles.categories}>{(['casual', 'hobby', 'travel'] as const).map((category, i) => <Pressable analyticsId="app_meetup-create.pressable.3" key={category} disabled={saving} accessibilityRole="button" accessibilityState={{ selected: event.category === category, disabled: saving }} onPress={() => setEvent({ ...event, category })} style={[styles.category, { borderColor: event.category === category ? theme.accent : theme.line }]}><ThemedText type="small">{['가볍게', '취미', '여행'][i]}</ThemedText></Pressable>)}</View>
       {event.kind === 'group' ? field('활동 주기', event.cadence, cadence => setEvent({ ...event, cadence }), '예: 매주 토요일 오전', 80) : <>
         <ChillingDateInput label="시작" value={event.startsAt} onChange={startsAt => setEvent({ ...event, startsAt })} disabled={saving} />
         <ChillingDateInput label="종료" value={event.endsAt} onChange={endsAt => setEvent({ ...event, endsAt })} disabled={saving} />
@@ -89,7 +90,7 @@ function MeetupCreateForm() {
       <ThemedText type="small" themeColor="textSecondary">기본 질문 1개 · 신청자의 프로필과 함께 확인해요.</ThemedText>
       <ThemedText type="small" style={[styles.note, { backgroundColor: theme.backgroundElement }]}>상세 집결 장소는 승인된 멤버에게 그룹 채팅으로 안내해 주세요. 개최 시 내 모임 프로필은 행사에서 볼 수 있어요.</ThemedText>
       {!!error && <ThemedText accessibilityRole="alert" themeColor="accent">{error}</ThemedText>}
-      <Pressable accessibilityRole="button" accessibilityState={{ disabled: saving || pickingCover, busy: saving || pickingCover }} disabled={saving || pickingCover} onPress={() => void submit()} style={({ pressed }) => [styles.submit, { backgroundColor: theme.accent, opacity: saving || pickingCover || pressed ? 0.65 : 1 }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{saving ? '만남을 여는 중…' : pickingCover ? '사진을 준비하는 중…' : `${event.kind === 'once' ? '칠링' : '모임'} 열기`}</ThemedText></Pressable>
+      <Pressable analyticsId="app_meetup-create.pressable.4" accessibilityRole="button" accessibilityState={{ disabled: saving || pickingCover, busy: saving || pickingCover }} disabled={saving || pickingCover} onPress={() => void submit()} style={({ pressed }) => [styles.submit, { backgroundColor: theme.accent, opacity: saving || pickingCover || pressed ? 0.65 : 1 }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{saving ? '만남을 여는 중…' : pickingCover ? '사진을 준비하는 중…' : `${event.kind === 'once' ? '칠링' : '모임'} 열기`}</ThemedText></Pressable>
     </ScrollView></KeyboardAvoidingView>
   </SafeAreaView>;
 }

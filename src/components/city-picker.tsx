@@ -1,5 +1,6 @@
+import { Pressable, SectionList } from '@/components/analytics-controls';
 import { useState } from 'react';
-import { KeyboardAvoidingView, LayoutAnimation, Platform, Pressable, SectionList, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { KeyboardAvoidingView, LayoutAnimation, Platform, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SymbolView } from 'expo-symbols';
 
@@ -48,11 +49,11 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
   // Recreate native text layout when Dynamic Type changes while the sheet is open.
   return <KeyboardAvoidingView key={fontScale} style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <View style={styles.head}>
-      {draft && <Pressable accessibilityRole="button" accessibilityLabel={t.write.backToDraft} onPress={onClose} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+      {draft && <Pressable analyticsId="components_city-picker.pressable.1" accessibilityRole="button" accessibilityLabel={t.write.backToDraft} onPress={onClose} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
         <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={21} tintColor={theme.text} />
       </Pressable>}
       <ThemedText accessibilityRole="header" style={styles.title}>{draft ? t.write.postCity : t.feed.cityPickerTitle}</ThemedText>
-      {!draft && <Pressable accessibilityRole="button" accessibilityLabel={t.write.cancel} onPress={onClose} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+      {!draft && <Pressable analyticsId="components_city-picker.pressable.2" accessibilityRole="button" accessibilityLabel={t.write.cancel} onPress={onClose} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
         <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={21} tintColor={theme.text} />
       </Pressable>}
     </View>
@@ -61,7 +62,7 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
         <View accessible accessibilityRole="tab" accessibilityState={{ selected: true }} style={[styles.country, { backgroundColor: theme.card }]}>
           <ThemedText type="smallBold" themeColor="accent">{t.feed.cityCanada}</ThemedText>
         </View>
-        <Pressable disabled accessibilityRole="tab" accessibilityState={{ selected: false, disabled: true }} accessibilityLabel={`${t.feed.cityUnitedStates}, ${t.feed.citySoon}`} style={styles.country}>
+        <Pressable analyticsId="components_city-picker.pressable.3" disabled accessibilityRole="tab" accessibilityState={{ selected: false, disabled: true }} accessibilityLabel={`${t.feed.cityUnitedStates}, ${t.feed.citySoon}`} style={styles.country}>
           <ThemedText type="smallBold" themeColor="textSecondary">{t.feed.cityUnitedStates}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{t.feed.citySoon}</ThemedText>
         </Pressable>
@@ -71,15 +72,15 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
         <TextInput accessibilityLabel={t.feed.citySearch} placeholder={t.feed.citySearch} placeholderTextColor={theme.textSecondary}
           value={query} onChangeText={setQuery} autoCapitalize="none" autoCorrect={false} returnKeyType="search"
           style={[styles.input, { color: theme.text }]} />
-        {!!query && <Pressable accessibilityRole="button" accessibilityLabel={t.feed.citySearchClear} onPress={() => setQuery('')} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+        {!!query && <Pressable analyticsId="components_city-picker.pressable.4" accessibilityRole="button" accessibilityLabel={t.feed.citySearchClear} onPress={() => setQuery('')} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
           <SymbolView name={{ ios: 'xmark.circle.fill', android: 'cancel', web: 'cancel' }} size={19} tintColor={theme.textSecondary} />
         </Pressable>}
       </View>
     </View>
-    <SectionList sections={sections} keyExtractor={item => item.id} stickySectionHeadersEnabled={false}
+    <SectionList analyticsId="components_city-picker.sectionlist.1" sections={sections} keyExtractor={item => item.id} stickySectionHeadersEnabled={false}
       keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.list}
       ListHeaderComponent={draft || !isAuthed ? null : <View style={[styles.locationRow, { backgroundColor: theme.card, borderColor: theme.line }]}>
-        <Pressable accessibilityRole="button" disabled={locationBusy} accessibilityState={{ disabled: locationBusy, busy: location.busy, expanded: locationOpen }}
+        <Pressable analyticsId="components_city-picker.pressable.5" accessibilityRole="button" disabled={locationBusy} accessibilityState={{ disabled: locationBusy, busy: location.busy, expanded: locationOpen }}
           accessibilityLabel="내 위치로 찾기" onPress={onLocation}
           style={({ pressed }) => [styles.locationMain, pressed && { backgroundColor: theme.backgroundSelected }, locationBusy && styles.disabled]}>
           <SymbolView name={{ ios: 'location', android: 'near_me', web: 'near_me' }} size={22} tintColor={theme.accent} />
@@ -103,7 +104,7 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
         const open = item.state === 'open';
         const busy = !draft && saving;
         const disabled = busy || !open;
-        return <Pressable disabled={disabled} accessibilityRole="button" accessibilityState={{ selected, disabled, busy }}
+        return <Pressable analyticsId="components_city-picker.pressable.6" disabled={disabled} accessibilityRole="button" accessibilityState={{ selected, disabled, busy }}
           accessibilityLabel={[item.name, item.englishName, item.province, !open && t.feed.citySoon, selected && t.feed.citySelected].filter(Boolean).join(', ')}
           onPress={async () => {
             if (disabled) return;

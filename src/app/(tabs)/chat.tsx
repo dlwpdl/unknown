@@ -1,6 +1,7 @@
+import { Pressable, FlatList } from '@/components/analytics-controls';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, DeviceEventEmitter, FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, DeviceEventEmitter, Modal, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -170,16 +171,16 @@ export default function ChatScreen() {
 
   if (!auth.isAuthed) return <LoginPanel reason={t.auth.reasonChat} onApple={auth.signInApple} onKakao={auth.signInKakao} onGoogle={auth.signInGoogle} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} />;
   return <TabContent style={styles.container}><SafeAreaView style={styles.safeArea} edges={['top']}>
-    <FlatList data={displayed} keyExtractor={(item) => item.id} contentContainerStyle={styles.list}
+    <FlatList analyticsId="app_tabs_chat.flatlist.1" data={displayed} keyExtractor={(item) => item.id} contentContainerStyle={styles.list}
       onEndReached={() => void loadMore()} onEndReachedThreshold={0.4}
       ListFooterComponent={loadingMore ? <ActivityIndicator color={theme.accent} accessibilityLabel={t.chat.loading} /> : null}
       refreshing={loading} onRefresh={() => void changed()}
       ListHeaderComponent={<View style={styles.header}>
-        <View style={styles.headRow}><ThemedText type="subtitle" style={styles.heading}>{t.tabs.chat}</ThemedText><ProfileAvatarButton /><Pressable onPress={() => void changed()} accessibilityRole="button" disabled={loading} accessibilityState={{ disabled: loading }} style={styles.action}><ThemedText type="smallBold" themeColor="accent">{t.chat.refresh}</ThemedText></Pressable></View>
+        <View style={styles.headRow}><ThemedText type="subtitle" style={styles.heading}>{t.tabs.chat}</ThemedText><ProfileAvatarButton /><Pressable analyticsId="app_tabs_chat.pressable.1" onPress={() => void changed()} accessibilityRole="button" disabled={loading} accessibilityState={{ disabled: loading }} style={styles.action}><ThemedText type="smallBold" themeColor="accent">{t.chat.refresh}</ThemedText></Pressable></View>
         <View style={[styles.safety, { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}><ThemedText type="smallBold" themeColor="accent">{t.safety.meetTitle}</ThemedText><ThemedText type="small" themeColor="textSecondary">{t.safety.meetBody}</ThemedText></View>
         {/* 자리(슬롯)는 상태라 칩 안의 숫자와 한 줄 안내로만 보여준다. 큰 카드는 대화 목록을 밀어냈다. */}
-        <View style={styles.filters}>{([['all', t.chat.all], ['group', `${t.chat.groups}${meetupSlots ? ` ${meetupSlots.active}/${meetupSlots.limit}` : ''}`], ['direct', `${t.chat.direct}${directSlots ? ` ${directSlots.active}/${directSlots.limit}` : ''}`], ['requests', `${t.chat.requestTab} ${pendingCount}`]] as const).map(([key, label]) => <Pressable key={key} onPress={() => setFilter(key)} accessibilityRole="tab" accessibilityState={{ selected: filter === key }} style={[styles.filter, { backgroundColor: filter === key ? theme.accent : theme.backgroundElement }]}><ThemedText type="smallBold" style={{ color: filter === key ? theme.accentInk : theme.text }}>{label}</ThemedText></Pressable>)}</View>
-        {slotNote && <Pressable onPress={() => router.push('/profile/membership')} accessibilityRole="button" style={[styles.slotNote, { borderBottomColor: theme.line }]}>
+        <View style={styles.filters}>{([['all', t.chat.all], ['group', `${t.chat.groups}${meetupSlots ? ` ${meetupSlots.active}/${meetupSlots.limit}` : ''}`], ['direct', `${t.chat.direct}${directSlots ? ` ${directSlots.active}/${directSlots.limit}` : ''}`], ['requests', `${t.chat.requestTab} ${pendingCount}`]] as const).map(([key, label]) => <Pressable analyticsId="app_tabs_chat.pressable.2" key={key} onPress={() => setFilter(key)} accessibilityRole="tab" accessibilityState={{ selected: filter === key }} style={[styles.filter, { backgroundColor: filter === key ? theme.accent : theme.backgroundElement }]}><ThemedText type="smallBold" style={{ color: filter === key ? theme.accentInk : theme.text }}>{label}</ThemedText></Pressable>)}</View>
+        {slotNote && <Pressable analyticsId="app_tabs_chat.pressable.3" onPress={() => router.push('/profile/membership')} accessibilityRole="button" style={[styles.slotNote, { borderBottomColor: theme.line }]}>
           <ThemedText type="small" themeColor="textSecondary" style={styles.flex}>{slotNote}</ThemedText>
           <ThemedText type="smallBold" themeColor="accent">{t.chat.membership}</ThemedText>
         </Pressable>}
@@ -188,16 +189,16 @@ export default function ChatScreen() {
           {requests.length > 0 && <ThemedText type="smallBold">{t.chat.requestsTitle}</ThemedText>}
           {requests.map((request) => <View key={request.id} style={[styles.request, { backgroundColor: theme.card, borderColor: theme.line }]}>
             <ThemedText type="smallBold">{request.requester?.nickname ?? t.chat.member}</ThemedText><ThemedText type="small" themeColor="textSecondary">{request.post?.title}</ThemedText><ThemedText type="small">{request.message || t.chat.requestMessageEmpty}</ThemedText>
-            <Pressable onPress={() => router.push({ pathname: '/meetup-application', params: { requestId: request.id } })} accessibilityRole="button" style={styles.action}><ThemedText type="smallBold" themeColor="accent">공유받은 모임 프로필 보기</ThemedText></Pressable>
+            <Pressable analyticsId="app_tabs_chat.pressable.4" onPress={() => router.push({ pathname: '/meetup-application', params: { requestId: request.id } })} accessibilityRole="button" style={styles.action}><ThemedText type="smallBold" themeColor="accent">공유받은 모임 프로필 보기</ThemedText></Pressable>
             {approveId === request.id && <ThemedText type="small" themeColor="textSecondary">승인하면 신청자의 모임 자리 1개를 사용하고 모임 대화에 참여해요. 기존 멤버의 자리는 추가로 사용하지 않아요.</ThemedText>}
-            <View style={styles.requestActions}><Pressable onPress={() => void handleRequest(request, 'rejected')} disabled={requestBusy !== null} accessibilityRole="button" accessibilityState={{ disabled: requestBusy !== null }} style={[styles.requestButton, { borderColor: theme.line }]}><ThemedText type="smallBold">{t.chat.reject}</ThemedText></Pressable>
-              <Pressable onPress={() => approveId === request.id ? void handleRequest(request, 'approved') : setApproveId(request.id)} disabled={requestBusy !== null} accessibilityRole="button" accessibilityState={{ disabled: requestBusy !== null }} style={[styles.requestButton, { borderColor: theme.accent, backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{approveId === request.id ? '확인하고 승인' : t.chat.approve}</ThemedText></Pressable></View>
+            <View style={styles.requestActions}><Pressable analyticsId="app_tabs_chat.pressable.5" onPress={() => void handleRequest(request, 'rejected')} disabled={requestBusy !== null} accessibilityRole="button" accessibilityState={{ disabled: requestBusy !== null }} style={[styles.requestButton, { borderColor: theme.line }]}><ThemedText type="smallBold">{t.chat.reject}</ThemedText></Pressable>
+              <Pressable analyticsId="app_tabs_chat.pressable.6" onPress={() => approveId === request.id ? void handleRequest(request, 'approved') : setApproveId(request.id)} disabled={requestBusy !== null} accessibilityRole="button" accessibilityState={{ disabled: requestBusy !== null }} style={[styles.requestButton, { borderColor: theme.accent, backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{approveId === request.id ? '확인하고 승인' : t.chat.approve}</ThemedText></Pressable></View>
           </View>)}
         </>}
         {error?.userId === userId && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{error.text}</ThemedText>}
       </View>}
       ListEmptyComponent={loading ? <ActivityIndicator color={theme.accent} accessibilityLabel={t.chat.loading} /> : <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>{filter === 'requests' ? requests.length ? '' : '대기 중인 대화 요청이 없어요.' : t.chat.empty}</ThemedText>}
-      renderItem={({ item }) => <Pressable onPress={() => setSelection({ userId: auth.me.id, id: item.id })} accessibilityRole="button" style={({ pressed }) => [styles.room, { backgroundColor: theme.card, borderColor: theme.line, opacity: pressed ? 0.7 : 1 }]}>
+      renderItem={({ item }) => <Pressable analyticsId="app_tabs_chat.pressable.7" onPress={() => setSelection({ userId: auth.me.id, id: item.id })} accessibilityRole="button" style={({ pressed }) => [styles.room, { backgroundColor: theme.card, borderColor: theme.line, opacity: pressed ? 0.7 : 1 }]}>
         <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" themeColor="navy">{item.kind === 'group' ? '모임' : item.otherUser.nickname[0]}</ThemedText></View>
         <View style={styles.roomBody}><View style={styles.nickRow}><ThemedText type="smallBold" style={styles.flex}>{item.kind === 'group' ? item.title : item.otherUser.nickname}</ThemedText>{item.kind === 'direct' && <TrustBadge verified={item.otherUser.verificationLevel >= 2} trustLevel={item.otherUser.verificationLevel === 3 ? 3 : item.otherUser.verificationLevel === 2 ? 2 : undefined} />}</View>
           <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{item.status === 'pending' ? item.requesterId === userId ? t.chat.sentRequest : t.chat.receivedRequest : item.status === 'ended' ? t.chat.ended : item.latestBody ?? t.chat.newConversation}</ThemedText></View>

@@ -12,9 +12,10 @@ function panel(opened = []) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   vm.runInNewContext(source, { exports, __DEV__: true, process: { env: {} }, require(name) {
+    if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
     if (name === 'react') return { useState(initial) { const i = index++; if (!(i in states)) states[i] = initial; return [states[i], value => { states[i] = typeof value === 'function' ? value(states[i]) : value; }]; } };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if (name === 'react-native') return { Platform: { OS: 'ios' }, StyleSheet: { create: v => v }, useColorScheme: () => 'light', ...Object.fromEntries(['View','Pressable','ScrollView','TextInput','KeyboardAvoidingView'].map(k => [k,k])) };
+    if ((name === 'react-native' || name === '@/components/analytics-controls')) return { Platform: { OS: 'ios' }, StyleSheet: { create: v => v }, useColorScheme: () => 'light', ...Object.fromEntries(['View','Pressable','ScrollView','TextInput','KeyboardAvoidingView'].map(k => [k,k])) };
     if (name === 'expo-linking') return { openURL: async url => { opened.push(url); } };
     if (name === 'expo-font') return { useFonts: () => [true] };
     if (name === 'expo-apple-authentication') return { AppleAuthenticationButton: 'AppleButton', AppleAuthenticationButtonType: { SIGN_IN: 0 }, AppleAuthenticationButtonStyle: { WHITE: 0, BLACK: 1 } };
@@ -61,9 +62,10 @@ test('authentication never records signup consent on behalf of the user', async 
       compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
     }).outputText;
     vm.runInNewContext(source, { exports, __DEV__: true, process: { env: {} }, require(name) {
+    if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
       if (name === 'react') return { createContext: () => ({ Provider: 'Provider' }), useState: initial => [initial, () => {}], useRef: current => ({ current }), useCallback: fn => fn, useMemo: fn => fn(), useEffect() {} };
       if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-      if (name === 'react-native') return { Platform: { OS: 'ios' }, StyleSheet: { create: v => v } };
+      if ((name === 'react-native' || name === '@/components/analytics-controls')) return { Platform: { OS: 'ios' }, StyleSheet: { create: v => v } };
       if (name === '@react-native-google-signin/google-signin') return { GoogleSignin: { configure() {}, signIn: async () => { calls.push('google'); return { data: { idToken: 'test' } }; } }, isSuccessResponse: () => true, isErrorWithCode: () => false, statusCodes: {} };
       if (name === 'expo-apple-authentication') return { AppleAuthenticationScope: {}, signInAsync: async () => { calls.push('apple'); return { identityToken: 'test', authorizationCode: 'test' }; } };
       if (name === 'expo-web-browser') return { maybeCompleteAuthSession() {}, openAuthSessionAsync: async () => ({ type: 'success', url: 'test' }) };

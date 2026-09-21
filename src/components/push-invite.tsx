@@ -1,6 +1,7 @@
+import { Pressable } from '@/components/analytics-controls';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 
@@ -75,7 +76,7 @@ export function PushInvite() {
   return (
     <Modal visible transparent animationType="slide" onRequestClose={() => void close()}>
       <View style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={() => void close()} accessibilityRole="button" accessibilityLabel="닫기" />
+        <Pressable analyticsId="components_push-invite.pressable.1" style={StyleSheet.absoluteFill} onPress={() => void close()} accessibilityRole="button" accessibilityLabel="닫기" />
         <View style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.three) + Spacing.two }]}>
           <View style={[styles.badge, { backgroundColor: theme.backgroundElement }]}>
             <SymbolView name={{ ios: 'bell.badge', android: 'notifications_active', web: 'notifications_active' }} size={22} tintColor={theme.accent} />
@@ -90,13 +91,13 @@ export function PushInvite() {
             <Line symbol={{ ios: 'flame', android: 'local_fire_department', web: 'local_fire_department' }}
               text="내 도시에서 지금 뜨는 글" hint="하루 최대 3번, 밤 10시~아침 8시에는 보내지 않아요" />
           </View>
-          <Pressable onPress={() => void allow()} disabled={busy} accessibilityRole="button"
+          <Pressable analyticsId="components_push-invite.pressable.2" onPress={() => void allow()} disabled={busy} accessibilityRole="button"
             accessibilityState={{ disabled: busy, busy }}
             style={({ pressed }) => [styles.primary, { backgroundColor: theme.accent },
               (pressed || busy) && { opacity: 0.82, transform: [{ scale: busy ? 1 : 0.985 }] }]}>
             <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{busy ? '설정 중' : '알림 받기'}</ThemedText>
           </Pressable>
-          <Pressable onPress={() => void close()} disabled={busy} accessibilityRole="button"
+          <Pressable analyticsId="components_push-invite.pressable.3" onPress={() => void close()} disabled={busy} accessibilityRole="button"
             style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.6 }]}>
             <ThemedText type="smallBold" themeColor="textSecondary">나중에</ThemedText>
           </Pressable>

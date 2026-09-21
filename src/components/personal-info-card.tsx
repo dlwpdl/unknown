@@ -1,5 +1,6 @@
+import { Pressable } from '@/components/analytics-controls';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { PersonalInfoFields, type PersonalInfoDraft } from '@/components/personal-info-fields';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -72,21 +73,21 @@ function PersonalInfoEditor({ userId, onRetry }: { userId: string; onRetry: () =
     {!data ? <>
       <ThemedText type="smallBold">비공개 계정 정보</ThemedText>
       <ThemedText accessibilityRole={error ? 'alert' : 'progressbar'} type="small" themeColor="textSecondary">{error ?? '계정 정보를 불러오는 중이에요.'}</ThemedText>
-      {error && <Pressable onPress={onRetry} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold">다시 불러오기</ThemedText></Pressable>}
+      {error && <Pressable analyticsId="components_personal-info-card.pressable.1" onPress={onRetry} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold">다시 불러오기</ThemedText></Pressable>}
     </> : <>
       <PersonalInfoFields value={draft} disabled={busy} onChange={(value) => { setDraft(value); setError(null); setNotice(null); setConfirmDelete(false); }} />
       {data.date_of_birth && <ThemedText type="small" themeColor="textSecondary">저장된 생년월일 {data.date_of_birth}{data.age != null ? ` · 만 ${data.age}세` : ''} · 본인 입력 · 생년월일 미인증</ThemedText>}
       {error && <ThemedText accessibilityRole="alert" type="small" style={{ color: theme.accent }}>{error}</ThemedText>}
       {notice && <ThemedText accessibilityLiveRegion="polite" type="small">{notice}</ThemedText>}
-      <Pressable disabled={busy} onPress={() => void save()} accessibilityRole="button" accessibilityState={{ disabled: busy, busy }} style={({ pressed }) => [styles.button, { backgroundColor: theme.accent, opacity: busy ? 0.55 : pressed ? 0.7 : 1 }]}>
+      <Pressable analyticsId="components_personal-info-card.pressable.2" disabled={busy} onPress={() => void save()} accessibilityRole="button" accessibilityState={{ disabled: busy, busy }} style={({ pressed }) => [styles.button, { backgroundColor: theme.accent, opacity: busy ? 0.55 : pressed ? 0.7 : 1 }]}>
         <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{busy ? '저장 중…' : '계정 정보 저장'}</ThemedText>
       </Pressable>
-      {data.full_name && !confirmDelete && <Pressable disabled={busy} onPress={() => setConfirmDelete(true)} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold" style={{ color: theme.accent }}>저장된 이름·생년월일 삭제</ThemedText></Pressable>}
+      {data.full_name && !confirmDelete && <Pressable analyticsId="components_personal-info-card.pressable.3" disabled={busy} onPress={() => setConfirmDelete(true)} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold" style={{ color: theme.accent }}>저장된 이름·생년월일 삭제</ThemedText></Pressable>}
       {confirmDelete && <View style={styles.confirm}>
         <ThemedText type="small">저장된 이름과 생년월일을 삭제할까요? 공개 프로필은 유지돼요.</ThemedText>
         <View style={styles.actions}>
-          <Pressable disabled={busy} onPress={() => setConfirmDelete(false)} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold">취소</ThemedText></Pressable>
-          <Pressable disabled={busy} onPress={() => void save(true)} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold" style={{ color: theme.accent }}>삭제 확인</ThemedText></Pressable>
+          <Pressable analyticsId="components_personal-info-card.pressable.4" disabled={busy} onPress={() => setConfirmDelete(false)} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold">취소</ThemedText></Pressable>
+          <Pressable analyticsId="components_personal-info-card.pressable.5" disabled={busy} onPress={() => void save(true)} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold" style={{ color: theme.accent }}>삭제 확인</ThemedText></Pressable>
         </View>
       </View>}
     </>}

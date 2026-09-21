@@ -1,7 +1,8 @@
+import { Pressable, ScrollView } from '@/components/analytics-controls';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Redirect, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { PurchasesPackage } from 'react-native-purchases';
 
@@ -23,7 +24,7 @@ const date = (value: string) => new Date(value).toLocaleDateString('ko-KR');
 
 function ActionButton({ label, onPress, disabled = false, primary = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean }) {
   const theme = useTheme();
-  return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, primary && { backgroundColor: theme.accent }, { opacity: disabled ? 0.5 : pressed ? 0.75 : 1 }]}><ThemedText type="smallBold" style={primary ? { color: theme.accentInk } : undefined}>{label}</ThemedText></Pressable>;
+  return <Pressable analyticsId="app_profile_promotions.pressable.1" accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, primary && { backgroundColor: theme.accent }, { opacity: disabled ? 0.5 : pressed ? 0.75 : 1 }]}><ThemedText type="smallBold" style={primary ? { color: theme.accentInk } : undefined}>{label}</ThemedText></Pressable>;
 }
 
 export default function PromotionsRoute() {
@@ -159,7 +160,7 @@ function PromotionsScreen() {
   if (auth.isAuthLoading) return <ActivityIndicator style={styles.container} color={theme.accent} accessibilityLabel="로그인 확인 중" />;
   if (!auth.isAuthed) return <LoginPanel reason="홍보 크레딧과 내 글을 확인하려면 로그인해 주세요." onApple={auth.signInApple} onKakao={auth.signInKakao} onGoogle={auth.signInGoogle} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} />;
   const card = [styles.card, { backgroundColor: theme.card, borderColor: theme.line }];
-  return <ThemedView style={styles.container}><SafeAreaView edges={['bottom']} style={styles.safeArea}><ScrollView contentContainerStyle={styles.content}>
+  return <ThemedView style={styles.container}><SafeAreaView edges={['bottom']} style={styles.safeArea}><ScrollView analyticsId="app_profile_promotions.scrollview.1" contentContainerStyle={styles.content}>
     <View style={styles.intro}><ThemedText type="smallBold" themeColor="accent">내 글을 더 멀리</ThemedText><ThemedText type="subtitle" accessibilityRole="header">홍보 크레딧</ThemedText><ThemedText type="small" themeColor="textSecondary">미리 구매하고, 알리고 싶은 글에 사용해요.</ThemedText></View>
     <View style={card}><ThemedText type="small" themeColor="textSecondary">사용 가능한 크레딧</ThemedText><ThemedText style={styles.balance}>{wallet ? `${number(wallet.balance)} 크레딧` : loading ? '확인 중' : '확인 필요'}</ThemedText>{wallet && wallet.testBalance !== 0 && <ThemedText type="small" themeColor="textSecondary">테스트 크레딧 {number(wallet.testBalance)} · 실제 홍보에 사용할 수 없어요.</ThemedText>}</View>
     {notice && <ThemedText type="small" accessibilityLiveRegion="polite">{notice}</ThemedText>}
@@ -174,8 +175,8 @@ function PromotionsScreen() {
     <View style={styles.section}><ThemedText type="smallBold" accessibilityRole="header">내 글 끌어올리기</ThemedText>
       {wallet && !wallet.configured && <ThemedText type="small" themeColor="textSecondary">게시글 홍보를 준비하고 있어요. 시작할 수 있게 되면 보관한 크레딧을 사용할 수 있어요.</ThemedText>}
       {posts.length === 0 && !loading && <ThemedText type="small" themeColor="textSecondary">지금 홍보할 수 있는 내 글이 없어요. 글을 게시한 뒤 여기에서 선택해 주세요.</ThemedText>}
-      {posts.map((post) => <Pressable key={post.id} accessibilityRole="radio" accessibilityState={{ checked: selected === post.id, disabled: busy }} disabled={busy} onPress={() => { setSelection({ userId, postId, id: post.id }); setConfirmation(''); }} style={[card, selected === post.id && { borderColor: theme.accent }]}><ThemedText type="smallBold">{selected === post.id ? '✓ ' : ''}{post.title}</ThemedText></Pressable>)}
-      {!!selected && <View style={card}><ThemedText type="smallBold">추가 홍보 노출</ThemedText><View style={styles.row}>{[900, 1700].map((amount) => <Pressable key={amount} accessibilityRole="radio" accessibilityState={{ checked: amount === budget, disabled: busy }} disabled={busy} onPress={() => { setBudget(amount); setConfirmation(''); }} style={[styles.choice, { borderColor: amount === budget ? theme.accent : theme.line }]}><ThemedText type="smallBold">{number(amount)}회</ThemedText><ThemedText type="small" themeColor="textSecondary">{number(amount)} 크레딧</ThemedText></Pressable>)}</View>
+      {posts.map((post) => <Pressable analyticsId="app_profile_promotions.pressable.2" key={post.id} accessibilityRole="radio" accessibilityState={{ checked: selected === post.id, disabled: busy }} disabled={busy} onPress={() => { setSelection({ userId, postId, id: post.id }); setConfirmation(''); }} style={[card, selected === post.id && { borderColor: theme.accent }]}><ThemedText type="smallBold">{selected === post.id ? '✓ ' : ''}{post.title}</ThemedText></Pressable>)}
+      {!!selected && <View style={card}><ThemedText type="smallBold">추가 홍보 노출</ThemedText><View style={styles.row}>{[900, 1700].map((amount) => <Pressable analyticsId="app_profile_promotions.pressable.3" key={amount} accessibilityRole="radio" accessibilityState={{ checked: amount === budget, disabled: busy }} disabled={busy} onPress={() => { setBudget(amount); setConfirmation(''); }} style={[styles.choice, { borderColor: amount === budget ? theme.accent : theme.line }]}><ThemedText type="smallBold">{number(amount)}회</ThemedText><ThemedText type="small" themeColor="textSecondary">{number(amount)} 크레딧</ThemedText></Pressable>)}</View>
         <ThemedText type="small" themeColor="textSecondary">자연 노출은 차감하지 않아요. 구매한 추가 노출을 채우면 홍보가 종료돼요. 문의나 거래 성사를 보장하지는 않아요.</ThemedText>
         <ThemedText type="smallBold">{wallet?.slotStatus === 'ready' && wallet.slotAvailable !== null ? `새 대화 수락 가능 ${wallet.slotAvailable}개` : '대화 자리 확인 준비 중'}</ThemedText>
         {wallet?.slotStatus !== 'ready' && <ThemedText type="small" themeColor="textSecondary">현재 수락할 수 있는 대화 수를 확인할 수 없어요. 홍보 시작으로 대화 자리가 추가되지는 않아요.</ThemedText>}

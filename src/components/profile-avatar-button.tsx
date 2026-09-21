@@ -1,7 +1,8 @@
+import { Pressable } from '@/components/analytics-controls';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
@@ -16,7 +17,7 @@ export function ProfileAvatarButton() {
   const { isAuthed, me } = useAuth();
   const { play } = useInteractionFeedback();
   return (
-    <Pressable onPress={() => { play('selection'); router.push('/profile'); }} accessibilityRole="button" accessibilityLabel={t.tabs.profile}
+    <Pressable analyticsId="components_profile-avatar-button.pressable.1" onPress={() => { play('selection'); router.push('/profile'); }} accessibilityRole="button" accessibilityLabel={t.tabs.profile}
       style={({ pressed }) => [styles.button, pressed && { opacity: 0.65 }]}>
       {isAuthed && me.photoUri
         ? <Image source={{ uri: me.photoUri }} style={styles.avatar} contentFit="cover" accessible={false} />

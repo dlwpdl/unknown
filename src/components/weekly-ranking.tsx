@@ -1,6 +1,7 @@
+import { Pressable } from '@/components/analytics-controls';
 import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import { useReducedMotion } from 'react-native-reanimated';
 
@@ -105,7 +106,7 @@ export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; 
 
   return (
     <View style={styles.wrap}>
-      <Pressable
+      <Pressable analyticsId="components_weekly-ranking.pressable.1"
         onPress={toggle}
         accessibilityRole="button"
         accessibilityState={{ expanded }}
@@ -141,7 +142,7 @@ export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; 
 function Row({ entry, last, onPress }: { entry: WeeklyRankingEntry; last: boolean; onPress: () => void }) {
   const theme = useTheme();
   return (
-    <Pressable onPress={onPress} accessibilityRole="button"
+    <Pressable analyticsId="components_weekly-ranking.pressable.2" onPress={onPress} accessibilityRole="button"
       accessibilityLabel={`${entry.rank}위 ${entry.title}, ${entry.nickname}, 조회 ${count(entry.views)}`}
       style={({ pressed }) => [styles.row, !last && { borderBottomWidth: 1, borderBottomColor: theme.line },
         pressed && { backgroundColor: theme.backgroundSelected }]}>

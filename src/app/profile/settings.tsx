@@ -1,6 +1,7 @@
+import { Pressable, ScrollView, Switch } from '@/components/analytics-controls';
 import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -87,7 +88,7 @@ export default function SettingsScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView analyticsId="app_profile_settings.scrollview.1" contentContainerStyle={styles.content}>
           <ThemedText type="smallBold" themeColor="textSecondary">
             {t.profile.account}
           </ThemedText>
@@ -99,10 +100,10 @@ export default function SettingsScreen() {
           </View>
 
           <PersonalInfoCard userId={me.id} />
-          <Pressable accessibilityRole="button" style={styles.row} onPress={() => router.push('/profile/notifications')}>
+          <Pressable analyticsId="app_profile_settings.pressable.1" accessibilityRole="button" style={styles.row} onPress={() => router.push('/profile/notifications')}>
             <ThemedText>알림 설정</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText>
           </Pressable>
-          {adsSupported && !testAds && <Pressable accessibilityRole="button" style={styles.row} onPress={() => {
+          {adsSupported && !testAds && <Pressable analyticsId="app_profile_settings.pressable.2" accessibilityRole="button" style={styles.row} onPress={() => {
             void showAdPrivacyOptions().then((shown) => {
               if (!shown) Alert.alert('광고 개인정보 설정', '현재 지역에서 변경할 광고 동의 설정이 없습니다. 글링은 개인 맞춤 광고를 요청하지 않습니다.');
             }).catch(() => Alert.alert('광고 설정을 열지 못했어요', '잠시 후 다시 시도해 주세요.'));
@@ -115,7 +116,7 @@ export default function SettingsScreen() {
           <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
             <View style={styles.row}>
               <ThemedText type="small">{t.profile.soundEffects}</ThemedText>
-              <Switch
+              <Switch analyticsId="app_profile_settings.switch.1"
                 value={soundEnabled}
                 onValueChange={setSoundEnabled}
                 accessibilityLabel={t.profile.soundEffects}
@@ -126,7 +127,7 @@ export default function SettingsScreen() {
             <View style={[styles.divider, { backgroundColor: theme.line }]} />
             <View style={styles.row}>
               <ThemedText type="small">{t.profile.haptics}</ThemedText>
-              <Switch
+              <Switch analyticsId="app_profile_settings.switch.2"
                 value={hapticsEnabled}
                 onValueChange={(enabled) => {
                   play('selection');
@@ -142,21 +143,21 @@ export default function SettingsScreen() {
             {t.profile.feedbackNote}
           </ThemedText>
 
-          <Pressable onPress={openSupport} accessibilityRole="link" style={[styles.action, { borderColor: theme.line }]}>
+          <Pressable analyticsId="app_profile_settings.pressable.3" onPress={openSupport} accessibilityRole="link" style={[styles.action, { borderColor: theme.line }]}>
             <ThemedText type="smallBold">{t.profile.support}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{supportEmail ?? t.profile.supportNeedsSetup}</ThemedText>
           </Pressable>
 
-          <Pressable onPress={() => void Linking.openURL(`${publicSiteUrl}/terms`)} accessibilityRole="link" style={[styles.action, { borderColor: theme.line }]}>
+          <Pressable analyticsId="app_profile_settings.pressable.4" onPress={() => void Linking.openURL(`${publicSiteUrl}/terms`)} accessibilityRole="link" style={[styles.action, { borderColor: theme.line }]}>
             <ThemedText type="smallBold">이용약관</ThemedText>
           </Pressable>
 
-          <Pressable onPress={() => void Linking.openURL(`${publicSiteUrl}/privacy`)} accessibilityRole="link" style={[styles.action, { borderColor: theme.line }]}>
+          <Pressable analyticsId="app_profile_settings.pressable.5" onPress={() => void Linking.openURL(`${publicSiteUrl}/privacy`)} accessibilityRole="link" style={[styles.action, { borderColor: theme.line }]}>
             <ThemedText type="smallBold">개인정보처리방침</ThemedText>
           </Pressable>
 
           {me.photoUri && (
-            <Pressable
+            <Pressable analyticsId="app_profile_settings.pressable.6"
               onPress={removePhoto}
               accessibilityRole="button"
               style={[styles.action, { borderColor: theme.line }]}>
@@ -164,7 +165,7 @@ export default function SettingsScreen() {
             </Pressable>
           )}
 
-          <Pressable
+          <Pressable analyticsId="app_profile_settings.pressable.7"
             onPress={confirmSignOut}
             accessibilityRole="button"
             style={[styles.action, { borderColor: theme.line }]}>
@@ -173,7 +174,7 @@ export default function SettingsScreen() {
             </ThemedText>
           </Pressable>
 
-          <Pressable
+          <Pressable analyticsId="app_profile_settings.pressable.8"
             onPress={confirmDelete}
             disabled={deleting}
             accessibilityRole="button"

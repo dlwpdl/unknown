@@ -1,6 +1,7 @@
+import { Pressable } from '@/components/analytics-controls';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PostDetail } from '@/components/post-detail';
@@ -43,7 +44,7 @@ export default function SharedPostRoute() {
         ) : (
           <>
             <View style={styles.header}>
-              <Pressable
+              <Pressable analyticsId="app_post_[id].pressable.1"
                 onPress={goBack}
                 accessibilityRole="button"
                 accessibilityLabel="뒤로가기"

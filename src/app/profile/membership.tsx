@@ -1,7 +1,8 @@
+import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoginPanel } from '@/components/login-panel';
@@ -55,7 +56,7 @@ export default function MembershipScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView edges={['bottom']} style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView analyticsId="app_profile_membership.scrollview.1" contentContainerStyle={styles.content}>
           <View style={[styles.card, { borderColor: theme.line, backgroundColor: theme.card }]}>
             <View style={styles.row}>
               <View style={styles.planIdentity}>
@@ -83,11 +84,11 @@ export default function MembershipScreen() {
           {(error || notice) && <View style={styles.feedback}>
             {error && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{error}</ThemedText>}
             {notice && <ThemedText type="small" accessibilityLiveRegion="polite">{notice}</ThemedText>}
-            <Pressable onPress={() => void refresh()} accessibilityRole="button" disabled={busy || loading} accessibilityState={{ disabled: busy || loading }} style={styles.textButton}><ThemedText type="smallBold" themeColor="accent">다시 확인하기</ThemedText></Pressable>
+            <Pressable analyticsId="app_profile_membership.pressable.1" onPress={() => void refresh()} accessibilityRole="button" disabled={busy || loading} accessibilityState={{ disabled: busy || loading }} style={styles.textButton}><ThemedText type="smallBold" themeColor="accent">다시 확인하기</ThemedText></Pressable>
           </View>}
 
           <View style={[styles.details, { borderColor: theme.line }]}>
-            <Pressable accessibilityRole="button" aria-expanded={rulesExpanded} accessibilityState={{ expanded: rulesExpanded }}
+            <Pressable analyticsId="app_profile_membership.pressable.2" accessibilityRole="button" aria-expanded={rulesExpanded} accessibilityState={{ expanded: rulesExpanded }}
               onPress={() => { setRulesExpanded(value => !value); play('selection'); }}
               style={({ pressed }) => [styles.disclosure, { opacity: pressed ? 0.65 : 1 }]}>
               <ThemedText type="smallBold" style={styles.flexText}>자리 사용 · 반복 이용 제한 안내</ThemedText>
@@ -103,7 +104,7 @@ export default function MembershipScreen() {
             </View>}
           </View>
 
-          <Pressable accessibilityRole="button" aria-expanded={plansExpanded} accessibilityState={{ expanded: plansExpanded }}
+          <Pressable analyticsId="app_profile_membership.pressable.3" accessibilityRole="button" aria-expanded={plansExpanded} accessibilityState={{ expanded: plansExpanded }}
             onPress={() => { setPlansExpanded(value => !value); play('selection'); }}
             style={({ pressed }) => [styles.disclosure, { opacity: pressed ? 0.65 : 1 }]}>
             <View style={styles.planIdentity}>
@@ -125,7 +126,7 @@ export default function MembershipScreen() {
               const limits = MEMBERSHIP_LIMITS[plan.tier];
               const offer = offers.find((item) => item.tier === plan.tier && item.period === period) ?? offers.find((item) => item.tier === plan.tier);
               const selected = selection.tier === plan.tier;
-              return <Pressable key={plan.tier} accessibilityRole="radio" aria-checked={selected} accessibilityState={{ selected, checked: selected, disabled: busy }} disabled={busy}
+              return <Pressable analyticsId="app_profile_membership.pressable.4" key={plan.tier} accessibilityRole="radio" aria-checked={selected} accessibilityState={{ selected, checked: selected, disabled: busy }} disabled={busy}
                 onPress={() => { setSelection({ tier: plan.tier, period: offer?.period ?? period }); play('selection'); }}
                 style={({ pressed }) => [styles.plan, { backgroundColor: theme.card, borderColor: selected ? theme.accent : theme.line, opacity: pressed ? 0.78 : 1 }]}>
                 <View style={styles.planHeading}>
@@ -142,7 +143,7 @@ export default function MembershipScreen() {
             })}
 
             {periods.length > 1 && <View style={[styles.periods, { backgroundColor: theme.backgroundElement }]}>
-              {periods.map((value) => <Pressable key={value} accessibilityRole="radio" aria-checked={value === period} accessibilityState={{ selected: value === period, checked: value === period, disabled: busy }} disabled={busy}
+              {periods.map((value) => <Pressable analyticsId="app_profile_membership.pressable.5" key={value} accessibilityRole="radio" aria-checked={value === period} accessibilityState={{ selected: value === period, checked: value === period, disabled: busy }} disabled={busy}
                 onPress={() => { setSelection({ ...selection, period: value }); play('selection'); }}
                 style={({ pressed }) => [styles.period, { backgroundColor: value === period ? theme.card : 'transparent', opacity: pressed ? 0.7 : 1 }]}>
                 <ThemedText type="smallBold">{value === 'month' ? '월 구독' : '연 구독'}</ThemedText>
@@ -152,7 +153,7 @@ export default function MembershipScreen() {
             <View style={styles.checkout}>
               {selectedOffer && <ThemedText type="smallBold" style={styles.center}>{tierNames[selectedOffer.tier]} · {selectedOffer.price} / {periodNames[selectedOffer.period]}</ThemedText>}
               {purchaseUnavailableReason && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{purchaseUnavailableReason}</ThemedText>}
-              <Pressable accessibilityRole="button" disabled={purchaseDisabled} accessibilityState={{ disabled: purchaseDisabled, busy }}
+              <Pressable analyticsId="app_profile_membership.pressable.6" accessibilityRole="button" disabled={purchaseDisabled} accessibilityState={{ disabled: purchaseDisabled, busy }}
                 onPress={() => selectedOffer && void purchase(selectedOffer)}
                 style={({ pressed }) => [styles.purchase, { backgroundColor: theme.accent, opacity: purchaseDisabled ? 0.5 : pressed ? 0.8 : 1 }]}>
                 {busy ? <ActivityIndicator color={theme.accentInk} accessibilityLabel="구독 처리 중" /> : <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
@@ -160,15 +161,15 @@ export default function MembershipScreen() {
                 </ThemedText>}
               </Pressable>
               {selectedOffer && <ThemedText type="small" themeColor="textSecondary">{selectedOffer.period === 'month' ? '매월' : '매년'} {selectedOffer.price}이 청구되며 자동 갱신됩니다. 구독 변경과 해지는 결제한 스토어에서 관리할 수 있어요.</ThemedText>}
-              <Pressable onPress={leave} accessibilityRole="button" style={styles.textButton}><ThemedText type="smallBold">{membership?.tier === 'free' ? '무료로 계속하기' : '돌아가기'}</ThemedText></Pressable>
+              <Pressable analyticsId="app_profile_membership.pressable.7" onPress={leave} accessibilityRole="button" style={styles.textButton}><ThemedText type="smallBold">{membership?.tier === 'free' ? '무료로 계속하기' : '돌아가기'}</ThemedText></Pressable>
             </View>
           </View>}
 
           <View style={[styles.links, { borderTopColor: theme.line }]}>
-            <Pressable onPress={() => void restore()} accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={styles.textButton}><ThemedText type="small">구매 복원</ThemedText></Pressable>
-            <Pressable onPress={() => void manage()} accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={styles.textButton}><ThemedText type="small">구독 관리</ThemedText></Pressable>
-            <Pressable onPress={() => openLegal('terms')} accessibilityRole="link" style={styles.textButton}><ThemedText type="small" themeColor="textSecondary">이용약관</ThemedText></Pressable>
-            <Pressable onPress={() => openLegal('privacy')} accessibilityRole="link" style={styles.textButton}><ThemedText type="small" themeColor="textSecondary">개인정보처리방침</ThemedText></Pressable>
+            <Pressable analyticsId="app_profile_membership.pressable.8" onPress={() => void restore()} accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={styles.textButton}><ThemedText type="small">구매 복원</ThemedText></Pressable>
+            <Pressable analyticsId="app_profile_membership.pressable.9" onPress={() => void manage()} accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={styles.textButton}><ThemedText type="small">구독 관리</ThemedText></Pressable>
+            <Pressable analyticsId="app_profile_membership.pressable.10" onPress={() => openLegal('terms')} accessibilityRole="link" style={styles.textButton}><ThemedText type="small" themeColor="textSecondary">이용약관</ThemedText></Pressable>
+            <Pressable analyticsId="app_profile_membership.pressable.11" onPress={() => openLegal('privacy')} accessibilityRole="link" style={styles.textButton}><ThemedText type="small" themeColor="textSecondary">개인정보처리방침</ThemedText></Pressable>
           </View>
         </ScrollView>
       </SafeAreaView>

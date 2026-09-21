@@ -1,6 +1,7 @@
+import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useCallback, useRef, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { ActivityIndicator, DeviceEventEmitter, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { ActivityIndicator, DeviceEventEmitter, KeyboardAvoidingView, Platform, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
@@ -64,38 +65,38 @@ function JoinForm({ postId }: { postId: string }) {
   };
   return <ThemedView style={styles.fill}><SafeAreaView style={styles.fill}>
     <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-        <Pressable onPress={back} accessibilityRole="button" style={styles.button}><ThemedText themeColor="accent">‹ 돌아가기</ThemedText></Pressable>
+      <ScrollView analyticsId="app_meetup-join.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+        <Pressable analyticsId="app_meetup-join.pressable.1" onPress={back} accessibilityRole="button" style={styles.button}><ThemedText themeColor="accent">‹ 돌아가기</ThemedText></Pressable>
         <ThemedText type="title">{sent ? '신청을 보냈어요' : '참여 신청'}</ThemedText>
-        {!isAuthed ? <Pressable onPress={() => promptLogin('참여하려면 로그인해 주세요.')} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent">로그인하기</ThemedText></Pressable>
+        {!isAuthed ? <Pressable analyticsId="app_meetup-join.pressable.2" onPress={() => promptLogin('참여하려면 로그인해 주세요.')} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent">로그인하기</ThemedText></Pressable>
           : loading ? <ActivityIndicator color={theme.accent} accessibilityLabel="신청 정보 불러오는 중" />
             : unavailable ? <ThemedText>모집이 마감됐거나 볼 수 없는 모임이에요.</ThemedText>
               : own ? <ThemedText>내가 개최한 모임이에요. 대화 탭에서 신청자를 확인할 수 있어요.</ThemedText>
-                : sent ? <><ThemedText>호스트가 확인하면 알려드릴게요. 승인 후 모임 대화에서 자세한 집결 장소를 확인하세요.</ThemedText><Pressable onPress={back} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent">돌아가기</ThemedText></Pressable></>
+                : sent ? <><ThemedText>호스트가 확인하면 알려드릴게요. 승인 후 모임 대화에서 자세한 집결 장소를 확인하세요.</ThemedText><Pressable analyticsId="app_meetup-join.pressable.3" onPress={back} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent">돌아가기</ThemedText></Pressable></>
                   : <>
                     <ThemedText type="subtitle">{post!.title}</ThemedText>
                     <ChillingEventSchedule room={post!.room!} />
                     {post!.room!.recommendedAgeMin != null && <>
                       <ThemedText type="small" themeColor="textSecondary">{recommendedAgeMessage(post!.room!, recommendationAge)}</ThemedText>
-                      {recommendationAge == null && <Pressable onPress={() => router.push('/profile/settings')} accessibilityRole="button" style={styles.button}><ThemedText type="small" themeColor="accent">계정 정보·이용 목적 확인하기</ThemedText></Pressable>}
+                      {recommendationAge == null && <Pressable analyticsId="app_meetup-join.pressable.4" onPress={() => router.push('/profile/settings')} accessibilityRole="button" style={styles.button}><ThemedText type="small" themeColor="accent">계정 정보·이용 목적 확인하기</ThemedText></Pressable>}
                     </>}
                     <MeetupPolicyNotice mode="join" />
                     {modern && !profile ? <>
                       <ThemedText>함께할 사람들에게 나를 소개할 모임 프로필이 필요해요.</ThemedText>
-                      <Pressable onPress={() => router.push('/meetup-profile')} accessibilityRole="button" style={styles.button}><ThemedText themeColor="accent">모임 프로필 작성하기</ThemedText></Pressable>
+                      <Pressable analyticsId="app_meetup-join.pressable.5" onPress={() => router.push('/meetup-profile')} accessibilityRole="button" style={styles.button}><ThemedText themeColor="accent">모임 프로필 작성하기</ThemedText></Pressable>
                     </> : <>
                       {profile && <><ThemedText type="smallBold">{post!.author.nickname}님에게 이렇게 공유돼요</ThemedText><ChillingProfileCard profile={profile} />
-                        <Pressable onPress={() => router.push('/meetup-profile')} accessibilityRole="button" style={styles.button}><ThemedText themeColor="accent">프로필 수정</ThemedText></Pressable></>}
+                        <Pressable analyticsId="app_meetup-join.pressable.6" onPress={() => router.push('/meetup-profile')} accessibilityRole="button" style={styles.button}><ThemedText themeColor="accent">프로필 수정</ThemedText></Pressable></>}
                       <ThemedText type="smallBold">{post!.room!.applicationQuestion || '호스트에게 간단히 소개해 주세요'}</ThemedText>
                       <TextInput value={answer} onChangeText={setAnswer} accessibilityLabel="신청 답변" multiline maxLength={300} editable={!sending} placeholder="기대하는 만남을 알려주세요." placeholderTextColor={theme.textSecondary} style={[styles.input, { borderColor: theme.line, color: theme.text }]} />
-                      {modern && <Pressable onPress={() => setConsent(v => !v)} disabled={sending} accessibilityRole="checkbox" accessibilityState={{ checked: consent, disabled: sending }} style={styles.consent}>
+                      {modern && <Pressable analyticsId="app_meetup-join.pressable.7" onPress={() => setConsent(v => !v)} disabled={sending} accessibilityRole="checkbox" accessibilityState={{ checked: consent, disabled: sending }} style={styles.consent}>
                         <ThemedText themeColor="accent">{consent ? '☑' : '□'}</ThemedText><ThemedText type="small" style={styles.flex}>이 호스트에게 내 모임 프로필과 답변을 공유하는 데 동의해요. 다른 신청자에게는 공개되지 않아요. 신청 취소·거절·탈퇴·차단 후 호스트 열람은 종료돼요.</ThemedText>
                       </Pressable>}
                       <ThemedText type="small" themeColor="textSecondary">안전을 위한 자동 분석과 권한 있는 운영자 검토가 적용돼요. 신청 취소는 모임 탭의 내 모임에서 할 수 있어요.</ThemedText>
-                      <Pressable onPress={() => void submit()} accessibilityRole="button" disabled={sending || (modern && !consent)} accessibilityState={{ disabled: sending || (modern && !consent), busy: sending }} style={[styles.primary, { backgroundColor: theme.accent, opacity: sending || (modern && !consent) ? 0.5 : 1 }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{sending ? '보내는 중…' : '신청 보내기'}</ThemedText></Pressable>
+                      <Pressable analyticsId="app_meetup-join.pressable.8" onPress={() => void submit()} accessibilityRole="button" disabled={sending || (modern && !consent)} accessibilityState={{ disabled: sending || (modern && !consent), busy: sending }} style={[styles.primary, { backgroundColor: theme.accent, opacity: sending || (modern && !consent) ? 0.5 : 1 }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{sending ? '보내는 중…' : '신청 보내기'}</ThemedText></Pressable>
                     </>}
                   </>}
-        {!!error && <><ThemedText accessibilityRole="alert" themeColor="accent">{error}</ThemedText><Pressable onPress={() => setRetry(v => v + 1)} accessibilityRole="button" style={styles.button}><ThemedText>다시 불러오기</ThemedText></Pressable></>}
+        {!!error && <><ThemedText accessibilityRole="alert" themeColor="accent">{error}</ThemedText><Pressable analyticsId="app_meetup-join.pressable.9" onPress={() => setRetry(v => v + 1)} accessibilityRole="button" style={styles.button}><ThemedText>다시 불러오기</ThemedText></Pressable></>}
       </ScrollView>
     </KeyboardAvoidingView>
   </SafeAreaView></ThemedView>;

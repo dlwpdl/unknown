@@ -1,11 +1,11 @@
+import type { FlatList as NativeFlatList } from 'react-native';
+import { Pressable, FlatList } from '@/components/analytics-controls';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   Alert,
-  FlatList,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   StyleSheet,
   TextInput,
   View,
@@ -88,7 +88,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const pageRequests = useRef(new Set<string>());
   const loadedPages = useRef(new Set<string>());
   const inputRef = useRef<TextInput>(null);
-  const scrollRef = useRef<FlatList<CommentListRow>>(null);
+  const scrollRef = useRef<NativeFlatList<CommentListRow>>(null);
   const scrolledContext = useRef<string | undefined>(undefined);
   const active = useRef(true);
   const visibleComments = (items: PostComment[]) => items.filter((item) =>
@@ -319,7 +319,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     if (!page.error && !page.cursor) return null;
     return <View>
       {page.error && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{parentId ? '답글' : '댓글'}을 불러오지 못했어요.</ThemedText>}
-      <Pressable onPress={() => void loadPage(parentId, page.cursor)} accessibilityRole="button" style={styles.loadMore}>
+      <Pressable analyticsId="components_post-detail.pressable.1" onPress={() => void loadPage(parentId, page.cursor)} accessibilityRole="button" style={styles.loadMore}>
         <ThemedText type="smallBold" themeColor="accent">{page.error ? '다시 시도' : parentId ? '답글 더 보기' : t.detail.loadMoreComments}</ThemedText>
       </Pressable>
     </View>;
@@ -334,7 +334,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           styles.comment,
           mine && { backgroundColor: theme.backgroundElement, borderRadius: 10, padding: 10 },
         ]}>
-        <Pressable
+        <Pressable analyticsId="components_post-detail.pressable.2"
           onPress={() =>
             setSheetUser({
               id: c.authorId,
@@ -354,7 +354,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           </ThemedText>
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Pressable
+          <Pressable analyticsId="components_post-detail.pressable.3"
             onPress={() =>
               setSheetUser({
                 id: c.authorId,
@@ -384,7 +384,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
             {c.body}
           </ThemedText>
           <View style={styles.commentActions}>
-            <Pressable
+            <Pressable analyticsId="components_post-detail.pressable.4"
               onPress={() => void toggleCommentLike(c.id)}
               disabled={!!busyCommentId}
               style={styles.commentAction}
@@ -399,22 +399,22 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                 {t.feed.likes(c.likes ?? 0)}{c.likedByMe ? ' ♥' : ''}
               </ThemedText>
             </Pressable>
-            <Pressable onPress={() => chooseReply(c)} disabled={sending} accessibilityRole="button"
+            <Pressable analyticsId="components_post-detail.pressable.5" onPress={() => chooseReply(c)} disabled={sending} accessibilityRole="button"
               accessibilityLabel={`${c.nickname}님에게 답글 쓰기`} accessibilityState={{ disabled: sending }} style={styles.commentAction}>
               <ThemedText type="small" themeColor="textSecondary" style={styles.commentActionText}>답글</ThemedText>
             </Pressable>
             {mine && (
               <>
-                <Pressable onPress={() => startEdit(c)} disabled={sending} accessibilityRole="button" accessibilityLabel={`내 ${c.parentId ? '답글' : '댓글'} 수정`} accessibilityState={{ disabled: sending }} style={styles.commentAction}>
+                <Pressable analyticsId="components_post-detail.pressable.6" onPress={() => startEdit(c)} disabled={sending} accessibilityRole="button" accessibilityLabel={`내 ${c.parentId ? '답글' : '댓글'} 수정`} accessibilityState={{ disabled: sending }} style={styles.commentAction}>
                   <ThemedText type="small" themeColor="textSecondary" style={styles.commentActionText}>{t.detail.edit}</ThemedText>
                 </Pressable>
-                <Pressable onPress={() => confirmDelete(c)} disabled={sending} accessibilityRole="button" accessibilityLabel={`내 ${c.parentId ? '답글' : '댓글'} 삭제`} accessibilityState={{ disabled: sending }} style={styles.commentAction}>
+                <Pressable analyticsId="components_post-detail.pressable.7" onPress={() => confirmDelete(c)} disabled={sending} accessibilityRole="button" accessibilityLabel={`내 ${c.parentId ? '답글' : '댓글'} 삭제`} accessibilityState={{ disabled: sending }} style={styles.commentAction}>
                   <ThemedText type="small" themeColor="textSecondary" style={styles.commentActionText}>{t.detail.delete}</ThemedText>
                 </Pressable>
               </>
             )}
             {!mine && c.authorId && (
-              <Pressable
+              <Pressable analyticsId="components_post-detail.pressable.8"
                 onPress={() => setReportSelection({ targetType: 'comment', targetId: c.id, reportedUserId: c.authorId!, reportedNickname: c.nickname })}
                 accessibilityRole="button" accessibilityLabel={`${c.nickname}의 ${c.parentId ? '답글' : '댓글'} 신고`} style={styles.commentAction}>
                 <ThemedText type="small" themeColor="textSecondary" style={styles.commentActionText}>{t.report.short}</ThemedText>
@@ -463,7 +463,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     }
     if (item.type === 'toggle') {
       const comment = item.comment;
-      return <Pressable
+      return <Pressable analyticsId="components_post-detail.pressable.9"
         onPress={() => {
           toggleReplies(comment.id);
         }}
@@ -490,7 +490,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
       </ThemedText>;
     }
     if (item.type === 'focus-retry') {
-      return <Pressable onPress={() => setContextRetry((current) => current + 1)} accessibilityRole="button" style={styles.commentAction}>
+      return <Pressable analyticsId="components_post-detail.pressable.10" onPress={() => setContextRetry((current) => current + 1)} accessibilityRole="button" style={styles.commentAction}>
         <ThemedText type="smallBold" themeColor="accent">다시 시도</ThemedText>
       </Pressable>;
     }
@@ -502,7 +502,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     <ThemedView style={{ flex: 1 }}>
       <View style={[styles.head, { borderBottomColor: theme.line }]}>
         <ThemedText type="smallBold">{t.detail.commentsTitle(commentTotal)}</ThemedText>
-        <Pressable onPress={onClose} accessibilityRole="button" hitSlop={12} style={styles.closeBtn}>
+        <Pressable analyticsId="components_post-detail.pressable.11" onPress={onClose} accessibilityRole="button" hitSlop={12} style={styles.closeBtn}>
           <ThemedText type="smallBold" style={{ color: theme.accent }}>
             {t.detail.close}
           </ThemedText>
@@ -510,7 +510,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <FlatList
+        <FlatList analyticsId="components_post-detail.flatlist.1"
           ref={scrollRef}
           data={listRows}
           keyExtractor={(item) => item.key}
@@ -547,11 +547,11 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                   accessibilityLabel="글 내용 수정"
                   style={[styles.postEditInput, styles.postEditBody, { color: theme.text, borderColor: theme.line }]} />
                 <View style={styles.postActions}>
-                  <Pressable onPress={() => setPostDraft(null)} disabled={savingPost} accessibilityRole="button"
+                  <Pressable analyticsId="components_post-detail.pressable.12" onPress={() => setPostDraft(null)} disabled={savingPost} accessibilityRole="button"
                     accessibilityState={{ disabled: savingPost }} style={styles.postAction}>
                     <ThemedText type="smallBold" themeColor="textSecondary">{t.write.cancel}</ThemedText>
                   </Pressable>
-                  <Pressable onPress={() => void savePost()} disabled={savingPost} accessibilityRole="button"
+                  <Pressable analyticsId="components_post-detail.pressable.13" onPress={() => void savePost()} disabled={savingPost} accessibilityRole="button"
                     accessibilityState={{ disabled: savingPost, busy: savingPost }} style={styles.postAction}>
                     <ThemedText type="smallBold" themeColor="accent">{savingPost ? '저장 중' : '저장'}</ThemedText>
                   </Pressable>
@@ -560,18 +560,18 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
             )}
             {isAuthed && post.author.id === me.id && !postDraft && (
               <View style={styles.postActions}>
-                <Pressable onPress={() => setPostDraft({ title: post.title, body: post.body })} accessibilityRole="button"
+                <Pressable analyticsId="components_post-detail.pressable.14" onPress={() => setPostDraft({ title: post.title, body: post.body })} accessibilityRole="button"
                   accessibilityLabel="내 글 수정" style={styles.postAction}>
                   <ThemedText type="smallBold">수정</ThemedText>
                 </Pressable>
-                <Pressable onPress={confirmDeletePost} accessibilityRole="button"
+                <Pressable analyticsId="components_post-detail.pressable.15" onPress={confirmDeletePost} accessibilityRole="button"
                   accessibilityLabel="내 글 삭제" style={styles.postAction}>
                   <ThemedText type="smallBold" themeColor="accent">{t.detail.delete}</ThemedText>
                 </Pressable>
               </View>
             )}
             {isAuthed && post.author.id === me.id && post.kind === 'listing' && <ListingControls post={post} onChanged={onListingChanged} />}
-            {PROMOTIONS_PREVIEW_ENABLED && isAuthed && post.author.id === me.id && <Pressable
+            {PROMOTIONS_PREVIEW_ENABLED && isAuthed && post.author.id === me.id && <Pressable analyticsId="components_post-detail.pressable.16"
               accessibilityRole="button"
               onPress={() => { onClose(); router.push({ pathname: '/profile/promotions', params: { postId: post.id } }); }}
               style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.three, paddingVertical: Spacing.two }}>
@@ -591,14 +591,14 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           ]}>
           {editing && <View style={styles.replyContext}>
             <ThemedText type="small" themeColor="accent" style={{ flex: 1 }}>{t.detail.editing}</ThemedText>
-            <Pressable onPress={() => { setEditing(null); setDraft(''); }} disabled={sending} accessibilityRole="button" accessibilityLabel="수정 취소"
+            <Pressable analyticsId="components_post-detail.pressable.17" onPress={() => { setEditing(null); setDraft(''); }} disabled={sending} accessibilityRole="button" accessibilityLabel="수정 취소"
               accessibilityState={{ disabled: sending }} style={styles.commentAction}>
               <ThemedText type="small" themeColor="textSecondary">취소</ThemedText>
             </Pressable>
           </View>}
           {replyTo && !editing && <View style={styles.replyContext}>
             <ThemedText type="small" themeColor="accent" style={{ flex: 1 }}>{replyTo.nickname}님에게 답글</ThemedText>
-            <Pressable onPress={() => setReplyTo(null)} disabled={sending} accessibilityRole="button" accessibilityLabel="답글 취소"
+            <Pressable analyticsId="components_post-detail.pressable.18" onPress={() => setReplyTo(null)} disabled={sending} accessibilityRole="button" accessibilityLabel="답글 취소"
               accessibilityState={{ disabled: sending }} style={styles.commentAction}>
               <ThemedText type="small" themeColor="textSecondary">취소</ThemedText>
             </Pressable>
@@ -617,7 +617,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               placeholderTextColor={theme.textSecondary}
               style={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.line }]}
             />
-            <Pressable
+            <Pressable analyticsId="components_post-detail.pressable.19"
               onPress={() => void send()}
               disabled={sendDisabled}
               accessibilityRole="button"
@@ -762,7 +762,7 @@ function ListingControls({ post, onChanged }: { post: Post; onChanged: (next: Pa
     }
   };
   const action = (label: string, onPress: () => void, primary = false) => (
-    <Pressable key={label} accessibilityRole="button" onPress={onPress} disabled={busy} accessibilityState={{ disabled: busy, busy }}
+    <Pressable analyticsId="components_post-detail.pressable.20" key={label} accessibilityRole="button" onPress={onPress} disabled={busy} accessibilityState={{ disabled: busy, busy }}
       style={({ pressed }) => [styles.listingAction, (pressed || busy) && { opacity: 0.6 }]}>
       <ThemedText type="smallBold" themeColor={primary ? 'accent' : 'textSecondary'}>{label}</ThemedText>
     </Pressable>

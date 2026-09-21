@@ -1,3 +1,4 @@
+import { behavior } from './behavior-analytics.ts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { hideContent } from './content-visibility.ts';
@@ -471,6 +472,7 @@ export async function loadPostCommentsPage(
 export async function requestMeetupJoin(client: SupabaseClient, postId: string, message: string) {
   const result = await client.rpc('request_meetup_join', { p_post_id: postId, p_message: message.trim() });
   if (result.error) throw result.error;
+  behavior('success', 'meetup_request_complete');
   return result.data as string;
 }
 

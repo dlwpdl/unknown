@@ -1,4 +1,5 @@
 import './reader.css';
+import { useReaderAnalytics } from './analytics';
 
 import { Asset } from 'expo-asset';
 import { useLocalSearchParams, usePathname } from 'expo-router';
@@ -22,10 +23,10 @@ function AppInvitation({ target, label = '앱에서 대화하기' }: { target: s
   return <section className="reader-invitation" aria-label="앱에서 이어가기">
     <h2>둘러보기는 여기서,<br />함께하는 건 앱에서.</h2>
     <p>글 작성, 모임 참여와 모든 대화는 글링 앱에서 시작해요.</p>
-    <a className="reader-primary" href={target}>{label} ↗</a>
-    <details><summary>아직 앱이 없나요?</summary>
+    <a data-analytics="web_control_1" className="reader-primary" href={target}>{label} ↗</a>
+    <details><summary data-analytics="web_control_2">아직 앱이 없나요?</summary>
       <p>iOS · Android 출시 준비 중이에요. 앱을 이미 설치했다면 위 버튼으로 이어가세요. 설치 후 이 글의 링크를 다시 열면 같은 글에서 시작할 수 있어요.</p>
-      <a href="mailto:gling@ej-entertainment.com?subject=글링%20출시%20문의">출시 소식 문의하기</a>
+      <a data-analytics="web_control_3" href="mailto:gling@ej-entertainment.com?subject=글링%20출시%20문의">출시 소식 문의하기</a>
     </details>
   </section>;
 }
@@ -66,6 +67,7 @@ export default function PublicReader() {
   const post = detail ? current?.posts[0] : undefined;
   const loading = (browse || Boolean(postId)) && !current;
   const target = publicWebTarget(path, postId ?? undefined);
+  useReaderAnalytics(detail ? 'post' : browse ? 'feed' : 'app-invitation', key);
 
   useEffect(() => {
     let active = true;
@@ -106,10 +108,10 @@ export default function PublicReader() {
     <Head><title>{post ? `${post.title} | 글링` : '글링 | 우리 동네의 오늘'}</title>
       <meta name="description" content="우리 동네의 공개 이야기와 모임을 둘러보세요. 참여와 대화는 글링 앱에서 이어집니다." />
     </Head>
-    <a className="reader-skip" href="#reader-main">본문으로 바로가기</a>
+    <a data-analytics="web_control_4" className="reader-skip" href="#reader-main">본문으로 바로가기</a>
     <header className="reader-header">
-      <a href="/" aria-label="글링 홈"><img src={wordmark} alt="gling" width="96" /></a>
-      <nav aria-label="주요 메뉴"><a href="/">동네 이야기</a><a href="/?tag=meetup">모임</a><a href="#app">앱에서 시작 ↗</a></nav>
+      <a data-analytics="web_control_5" href="/" aria-label="글링 홈"><img src={wordmark} alt="gling" width="96" /></a>
+      <nav aria-label="주요 메뉴"><a data-analytics="web_control_6" href="/">동네 이야기</a><a data-analytics="web_control_7" href="/?tag=meetup">모임</a><a data-analytics="web_control_8" href="#app">앱에서 시작 ↗</a></nav>
     </header>
     <main id="reader-main" className="reader-main" tabIndex={-1}>
       <div className="reader-content">
@@ -118,13 +120,13 @@ export default function PublicReader() {
           <form className="reader-filters" action="/" method="get">
             <label>도시<select name="city" defaultValue={city.id}>{cities.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label>
             <label>주제<select name="tag" defaultValue={tag?.slug ?? ''}><option value="">전체 이야기</option>{TAGS.map((item) => <option value={item.slug} key={item.id}>{item.label}</option>)}</select></label>
-            <button type="submit">보기</button>
+            <button data-analytics="web_control_9" type="submit">보기</button>
           </form>
           <h2 className="reader-list-title">{city.name} · {tag?.label ?? '전체 이야기'}</h2>
           <div aria-busy={loading}>
             {current?.posts.map((item) => <article className="reader-card" key={item.id}>
               <div><p className="reader-kicker">{item.tag.label}{item.room?.closed ? ' · 모집 마감' : ''}</p>
-                <h3><a href={`/post?id=${encodeURIComponent(item.id)}`}>{item.title}</a></h3>
+                <h3><a data-analytics="web_control_10" href={`/post?id=${encodeURIComponent(item.id)}`}>{item.title}</a></h3>
                 <p className="reader-excerpt">{item.body}</p>
                 <p className="reader-meta">{item.author.nickname} · {item.createdAtLabel}</p>
                 {item.room && <p className="reader-meta">{chillingSchedule(item.room)} · {recommendedAgeLabel(item.room)}</p>}
@@ -132,24 +134,24 @@ export default function PublicReader() {
               {item.imageUris?.[0] && <img src={item.imageUris[0]} alt="" loading="lazy" className="reader-thumbnail" />}
             </article>)}
           </div>
-          {current?.more && <button className="reader-more" onClick={() => void more()} disabled={busy}>{busy ? '불러오는 중…' : '이야기 더 보기'}</button>}
+          {current?.more && <button data-analytics="web_control_11" className="reader-more" onClick={() => void more()} disabled={busy}>{busy ? '불러오는 중…' : '이야기 더 보기'}</button>}
         </> : detail ? <>
-          <a className="reader-back" href="/">← 동네 이야기로</a>
+          <a data-analytics="web_control_12" className="reader-back" href="/">← 동네 이야기로</a>
           {post && <article className="reader-post"><p className="reader-kicker">{CITIES.find((item) => item.id === post.cityId)?.name} · {post.tag.label}</p>
             <h1>{post.title}</h1><p className="reader-meta">{post.author.nickname} · {post.createdAtLabel}</p>
             {post.imageUris?.map((uri, index) => <img className="reader-photo" key={uri} src={uri} alt={`${post.title} 사진 ${index + 1}`} loading="lazy" />)}
             <p className="reader-body">{post.body}</p><MeetupInfo post={post} />
-            <div className="reader-actions"><a className="reader-primary" href={target}>{post.room ? post.room.closed ? '앱에서 모임 보기' : '앱에서 모임 보기 · 참여하기' : '앱에서 대화하기'} ↗</a><button onClick={() => void share()}>링크 공유</button></div>
+            <div className="reader-actions"><a data-analytics="web_control_13" className="reader-primary" href={target}>{post.room ? post.room.closed ? '앱에서 모임 보기' : '앱에서 모임 보기 · 참여하기' : '앱에서 대화하기'} ↗</a><button data-analytics="web_control_14" onClick={() => void share()}>링크 공유</button></div>
             <p role="status">{shareMessage}</p>
-            {!!post.commentList?.length && <section className="reader-comments"><h2>공개 댓글</h2>{post.commentList.map((comment) => <article key={comment.id}><strong>{comment.nickname}</strong><p>{comment.body}</p></article>)}<a href={target}>앱에서 댓글 남기기 ↗</a></section>}
+            {!!post.commentList?.length && <section className="reader-comments"><h2>공개 댓글</h2>{post.commentList.map((comment) => <article key={comment.id}><strong>{comment.nickname}</strong><p>{comment.body}</p></article>)}<a data-analytics="web_control_15" href={target}>앱에서 댓글 남기기 ↗</a></section>}
           </article>}
-        </> : <section className="reader-hero"><h1>앱에서 이어가세요.</h1><p>웹에서는 공개 이야기와 모임을 둘러볼 수 있어요. 작성·참여·대화와 내 정보 관리는 앱에서 이용해 주세요.</p><a href="/">공개 이야기 둘러보기 →</a></section>}
+        </> : <section className="reader-hero"><h1>앱에서 이어가세요.</h1><p>웹에서는 공개 이야기와 모임을 둘러볼 수 있어요. 작성·참여·대화와 내 정보 관리는 앱에서 이용해 주세요.</p><a data-analytics="web_control_16" href="/">공개 이야기 둘러보기 →</a></section>}
         {loading && <p role="status" className="reader-notice">이야기를 불러오고 있어요…</p>}
-        {current?.failed && <div role="alert" className="reader-notice"><p>이야기를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p><button onClick={() => setRetry((value) => value + 1)}>다시 시도</button></div>}
+        {current?.failed && <div role="alert" className="reader-notice"><p>이야기를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p><button data-analytics="web_control_17" onClick={() => setRetry((value) => value + 1)}>다시 시도</button></div>}
         {!loading && !current?.failed && (browse || detail) && !current?.posts.length && <div className="reader-notice">{detail ? <h1>글을 찾을 수 없어요</h1> : <h2>아직 공개된 이야기가 없어요</h2>}<p>{detail ? '삭제되었거나 공개되지 않은 글이에요.' : '다른 도시나 주제의 이야기도 둘러보세요.'}</p></div>}
       </div>
       <aside id="app"><AppInvitation target={target} label={post?.room ? post.room.closed ? '앱에서 모임 보기' : '앱에서 참여하기' : undefined} /></aside>
     </main>
-    <footer className="reader-footer"><span>gling · 우리 동네의 오늘</span><nav aria-label="정책"><a href="/terms">이용약관</a><a href="/privacy">개인정보처리방침</a><a href="/account-deletion">계정 삭제</a></nav></footer>
+    <footer className="reader-footer"><span>gling · 우리 동네의 오늘</span><nav aria-label="정책"><a data-analytics="web_control_18" href="/terms">이용약관</a><a data-analytics="web_control_19" href="/privacy">개인정보처리방침</a><a data-analytics="web_control_20" href="/account-deletion">계정 삭제</a></nav></footer>
   </div>;
 }

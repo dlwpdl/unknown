@@ -1,5 +1,6 @@
+import { Pressable } from '@/components/analytics-controls';
 import { useLayoutEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
@@ -41,11 +42,11 @@ export function MeetupCoverPicker({ value, onChange, onPickingChange, disabled }
   };
   return <View style={styles.root}>
     <ThemedText type="smallBold">커버 사진 <ThemedText type="small" themeColor="textSecondary">(선택)</ThemedText></ThemedText>
-    <Pressable accessibilityRole="button" accessibilityLabel={value ? '커버 사진 변경' : '커버 사진 선택'} accessibilityState={{ disabled: disabled || picking, busy: picking }} disabled={disabled || picking} onPress={pick} style={[styles.cover, { borderColor: theme.line, backgroundColor: theme.backgroundElement }]}>
+    <Pressable analyticsId="components_meetup-cover-picker.pressable.1" accessibilityRole="button" accessibilityLabel={value ? '커버 사진 변경' : '커버 사진 선택'} accessibilityState={{ disabled: disabled || picking, busy: picking }} disabled={disabled || picking} onPress={pick} style={[styles.cover, { borderColor: theme.line, backgroundColor: theme.backgroundElement }]}>
       {value ? <Image source={{ uri: value.uri }} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel="선택한 모임 커버" /> : <><ThemedText type="subtitle">＋</ThemedText><ThemedText type="small">만남의 분위기를 보여주세요</ThemedText></>}
     </Pressable>
     <View style={styles.actions}><ThemedText type="small" themeColor="textSecondary">{picking ? '사진을 준비하고 있어요…' : value ? '사진을 눌러 변경할 수 있어요' : '사진 1장 · 무료 · 최대 5MB'}</ThemedText>
-      {value && <Pressable accessibilityRole="button" accessibilityLabel="커버 사진 삭제" disabled={disabled || picking} accessibilityState={{ disabled: disabled || picking }} onPress={() => onChange(null)} style={styles.remove}><ThemedText type="small" themeColor="accent">삭제</ThemedText></Pressable>}
+      {value && <Pressable analyticsId="components_meetup-cover-picker.pressable.2" accessibilityRole="button" accessibilityLabel="커버 사진 삭제" disabled={disabled || picking} accessibilityState={{ disabled: disabled || picking }} onPress={() => onChange(null)} style={styles.remove}><ThemedText type="small" themeColor="accent">삭제</ThemedText></Pressable>}
     </View>
     {!!error && <ThemedText accessibilityRole="alert" type="small" themeColor="accent">{error}</ThemedText>}
   </View>;

@@ -1,3 +1,4 @@
+import { Pressable, ScrollView, FlatList } from '@/components/analytics-controls';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image } from 'expo-image';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
@@ -8,13 +9,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Alert,
   DeviceEventEmitter,
-  FlatList,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
-  Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   useWindowDimensions,
@@ -486,7 +484,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   return (
     <TabContent style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <FlatList
+        <FlatList analyticsId="components_feed-screen.flatlist.1"
           data={[null, ...journal.remaining]}
           stickyHeaderIndices={[0]}
           stickyHeaderHiddenOnScroll={!reducedMotion}
@@ -510,7 +508,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   tintColor={theme === Colors.dark ? theme.text : undefined}
                   accessibilityLabel={t.appName}
                 />
-                <Pressable
+                <Pressable analyticsId="components_feed-screen.pressable.1"
                   onPress={() => { play('selection'); setCityPicker(true); }}
                   accessibilityRole="button"
                   accessibilityLabel={`${city.name}, ${t.feed.cityPickerTitle}`}
@@ -518,7 +516,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   <ThemedText type="smallBold" numberOfLines={1} style={styles.city}>{city.name}</ThemedText>
                   <SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={14} tintColor={theme.text} />
                 </Pressable>
-                <Pressable
+                <Pressable analyticsId="components_feed-screen.pressable.2"
                   onPress={() => openSearch()}
                   accessibilityRole="button"
                   accessibilityLabel={t.search.placeholder}
@@ -550,12 +548,12 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 }} />
               )}
               {cityOpen && !meetupsOnly && (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
+                <ScrollView analyticsId="components_feed-screen.scrollview.1" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
                   {[null, ...TAGS.map((tg) => tg.id)].map((id) => {
                     const label = id == null ? t.feed.filterAll : TAGS.find((tg) => tg.id === id)!.label;
                     const active = tagFilter === id;
                     return (
-                      <Pressable
+                      <Pressable analyticsId="components_feed-screen.pressable.3"
                         key={id ?? 'all'}
                         onPress={() => { play('selection'); setTagFilter(id); }}
                         accessibilityRole="button"
@@ -591,13 +589,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   {journal.meetups.map((post) => (
                     <View key={post.id} style={[styles.meetupPreview, { backgroundColor: theme.backgroundElement }]}>
                       <SymbolView name={{ ios: 'person.2', android: 'group', web: 'group' }} size={28} tintColor={theme.accent} />
-                      <Pressable onPress={() => openDetail(post)} accessibilityRole="button" style={({ pressed }) => [styles.meetupCopy, pressed && styles.chipPressed]}>
+                      <Pressable analyticsId="components_feed-screen.pressable.4" onPress={() => openDetail(post)} accessibilityRole="button" style={({ pressed }) => [styles.meetupCopy, pressed && styles.chipPressed]}>
                         <ThemedText type="smallBold" numberOfLines={2}>{post.title}</ThemedText>
                         <ThemedText type="small" themeColor="textSecondary">
                           {[post.author.neighborhood, t.feed.members(post.room!.memberCount, post.room!.capacity)].filter(Boolean).join(' · ')}
                         </ThemedText>
                       </Pressable>
-                      <Pressable onPress={() => onJoin(post)} accessibilityRole="button" accessibilityLabel={`${post.title}, ${t.feed.joinRoom}`} style={styles.iconButton}>
+                      <Pressable analyticsId="components_feed-screen.pressable.5" onPress={() => onJoin(post)} accessibilityRole="button" accessibilityLabel={`${post.title}, ${t.feed.joinRoom}`} style={styles.iconButton}>
                         <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} size={22} tintColor={theme.text} />
                       </Pressable>
                     </View>
@@ -613,7 +611,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 <View style={styles.soon}>
                   <ThemedText accessibilityRole="header" style={styles.soonTitle}>{meetupsOnly ? t.feed.meetupEmptyTitle : t.feed.emptyTitle}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary" style={styles.soonBody}>{meetupsOnly ? t.feed.meetupEmptyBody : t.feed.emptyBody}</ThemedText>
-                  <Pressable onPress={openWriter} accessibilityRole="button" style={[styles.soonCta, { backgroundColor: theme.accent }]}>
+                  <Pressable analyticsId="components_feed-screen.pressable.6" onPress={openWriter} accessibilityRole="button" style={[styles.soonCta, { backgroundColor: theme.accent }]}>
                     <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{t.feed.write}</ThemedText>
                   </Pressable>
                 </View>
@@ -626,7 +624,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 <ThemedText type="small" themeColor="textSecondary" style={styles.soonBody}>
                   {t.feed.soonBody}
                 </ThemedText>
-                <Pressable
+                <Pressable analyticsId="components_feed-screen.pressable.7"
                   onPress={() => setCityPicker(true)}
                   accessibilityRole="button"
                   style={[styles.soonCta, { backgroundColor: theme.accent }]}>
@@ -670,7 +668,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 autoCapitalize="none"
                 style={[styles.searchInput, { color: theme.text }]}
               />
-              <Pressable onPress={() => setSearching(false)} accessibilityRole="button">
+              <Pressable analyticsId="components_feed-screen.pressable.8" onPress={() => setSearching(false)} accessibilityRole="button">
                 <ThemedText type="small" themeColor="textSecondary">
                   {t.search.close}
                 </ThemedText>
@@ -684,7 +682,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 </ThemedText>
                 <View style={styles.popularChips}>
                   {popularTags.map((h) => (
-                    <Pressable
+                    <Pressable analyticsId="components_feed-screen.pressable.9"
                       key={h}
                       onPress={() => {
                         play('selection');
@@ -705,7 +703,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 </View>
               </View>
             ) : (
-              <FlatList
+              <FlatList analyticsId="components_feed-screen.flatlist.2"
                 data={searchResults.filter((post) => !hidden('post', post.id, post.author.id) && (!meetupsOnly || !post.room?.closed))}
                 keyExtractor={(p) => p.id}
                 contentContainerStyle={styles.listContent}
@@ -759,7 +757,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
 
       <Modal visible={joinPost != null} transparent animationType="fade" onRequestClose={() => setJoinPost(null)}>
         <View style={styles.joinBackdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setJoinPost(null)} accessibilityRole="button" />
+          <Pressable analyticsId="components_feed-screen.pressable.10" style={StyleSheet.absoluteFill} onPress={() => setJoinPost(null)} accessibilityRole="button" />
           <ThemedView style={[styles.joinSheet, { backgroundColor: theme.card }]}>
             <ThemedText type="subtitle">{t.chat.joinFormTitle}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{t.chat.joinFormBody}</ThemedText>
@@ -773,10 +771,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               style={[styles.joinInput, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]}
             />
             <View style={styles.joinActions}>
-              <Pressable onPress={() => setJoinPost(null)} accessibilityRole="button" style={[styles.secondaryButton, { borderColor: theme.line }]}>
+              <Pressable analyticsId="components_feed-screen.pressable.11" onPress={() => setJoinPost(null)} accessibilityRole="button" style={[styles.secondaryButton, { borderColor: theme.line }]}>
                 <ThemedText type="smallBold">{t.write.cancel}</ThemedText>
               </Pressable>
-              <Pressable
+              <Pressable analyticsId="components_feed-screen.pressable.12"
                 onPress={() => void submitJoin()}
                 disabled={joining}
                 accessibilityRole="button"
@@ -799,7 +797,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         onRequestClose={() => setCityPicker(false)}>
         <View style={[styles.cityBackdrop, Platform.OS === 'ios' && { backgroundColor: theme.background }]}>
           {Platform.OS !== 'ios' && (
-            <Pressable style={StyleSheet.absoluteFill} onPress={() => setCityPicker(false)} accessibilityRole="button" accessibilityLabel={t.write.cancel} />
+            <Pressable analyticsId="components_feed-screen.pressable.13" style={StyleSheet.absoluteFill} onPress={() => setCityPicker(false)} accessibilityRole="button" accessibilityLabel={t.write.cancel} />
           )}
           <ThemedView style={[styles.citySheet, Platform.OS === 'ios' && styles.citySheetIOS]}>
             <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
@@ -819,7 +817,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               <CityPicker onClose={() => setWriterPanel(null)} draft={{ city: draftCity, onSelect: setDraftCity }} />
             ) : <KeyboardAvoidingView style={styles.writer} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
               <View style={[styles.writerHead, { borderBottomColor: theme.line }]}>
-                <Pressable onPress={() => setWriting(false)} accessibilityRole="button" accessibilityLabel={t.write.cancel}
+                <Pressable analyticsId="components_feed-screen.pressable.14" onPress={() => setWriting(false)} accessibilityRole="button" accessibilityLabel={t.write.cancel}
                   style={({ pressed }) => [styles.writerClose, { backgroundColor: theme.backgroundElement }, pressed && styles.chipPressed]}>
                   <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={18} tintColor={theme.textSecondary} />
                 </Pressable>
@@ -827,28 +825,28 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   <ThemedText type="smallBold" accessibilityRole="header">{t.write.title}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">{postKind === 'listing' && tag.kind !== 'meetup' && listingQuota ? t.write.listingRemaining(listingQuota.used, listingQuota.max) : t.write.remaining(quota.used, quota.max)}</ThemedText>
                 </View>
-                <Pressable onPress={() => void submit()} disabled={submitting || creatingDraft || !title.trim() || !body.trim()}
+                <Pressable analyticsId="components_feed-screen.pressable.15" onPress={() => void submit()} disabled={submitting || creatingDraft || !title.trim() || !body.trim()}
                   accessibilityRole="button" accessibilityState={{ disabled: submitting || creatingDraft || !title.trim() || !body.trim(), busy: submitting }}
                   style={({ pressed }) => [styles.writerSubmit, { backgroundColor: theme.accent, opacity: submitting || creatingDraft || !title.trim() || !body.trim() ? 0.45 : 1 }, pressed && styles.chipPressed]}>
                   <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{submitting ? t.write.submitting : t.write.submit}</ThemedText>
                 </Pressable>
               </View>
-              <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.writerScroll}>
+              <ScrollView analyticsId="components_feed-screen.scrollview.2" keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.writerScroll}>
                 <View style={styles.writerContext}>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`${t.write.postCity}, ${draftCity.name}, ${draftCity.province}`}
+                  <Pressable analyticsId="components_feed-screen.pressable.16" accessibilityRole="button" accessibilityLabel={`${t.write.postCity}, ${draftCity.name}, ${draftCity.province}`}
                     onPress={() => { Keyboard.dismiss(); setWriterPanel('city'); }}
                     style={({ pressed }) => [styles.contextButton, { backgroundColor: theme.backgroundElement }, pressed && styles.chipPressed]}>
                     <SymbolView name={{ ios: 'mappin', android: 'location_on', web: 'location_on' }} size={16} tintColor={theme.textSecondary} />
                     <ThemedText type="smallBold" style={styles.contextText}>{draftCity.name} · {draftCity.province}</ThemedText>
                     <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={12} tintColor={theme.textSecondary} />
                   </Pressable>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`${t.write.category}, ${tag.label}`} accessibilityState={{ expanded: writerPanel === 'category' }}
+                  <Pressable analyticsId="components_feed-screen.pressable.17" accessibilityRole="button" accessibilityLabel={`${t.write.category}, ${tag.label}`} accessibilityState={{ expanded: writerPanel === 'category' }}
                     onPress={() => { Keyboard.dismiss(); setWriterPanel(writerPanel === 'category' ? null : 'category'); }}
                     style={({ pressed }) => [styles.contextButton, { backgroundColor: theme.backgroundElement }, pressed && styles.chipPressed]}>
                     <ThemedText type="smallBold" style={styles.contextText}>{tag.label}</ThemedText>
                     <SymbolView name={{ ios: writerPanel === 'category' ? 'chevron.up' : 'chevron.down', android: writerPanel === 'category' ? 'expand_less' : 'expand_more', web: writerPanel === 'category' ? 'expand_less' : 'expand_more' }} size={12} tintColor={theme.textSecondary} />
                   </Pressable>
-                  {tag.kind !== 'meetup' && <Pressable accessibilityRole="button" accessibilityLabel={`${t.write.pickKind}, ${postKind === 'listing' ? t.write.kindListing : t.write.kindStory}`} accessibilityState={{ expanded: writerPanel === 'kind' }}
+                  {tag.kind !== 'meetup' && <Pressable analyticsId="components_feed-screen.pressable.18" accessibilityRole="button" accessibilityLabel={`${t.write.pickKind}, ${postKind === 'listing' ? t.write.kindListing : t.write.kindStory}`} accessibilityState={{ expanded: writerPanel === 'kind' }}
                     onPress={() => { Keyboard.dismiss(); setWriterPanel(writerPanel === 'kind' ? null : 'kind'); }}
                     style={({ pressed }) => [styles.contextButton, { backgroundColor: theme.backgroundElement }, pressed && styles.chipPressed]}>
                     <ThemedText type="smallBold" style={styles.contextText}>{postKind === 'listing' ? t.write.kindListing : t.write.kindStory}</ThemedText>
@@ -860,7 +858,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   <View style={styles.tagRow} accessibilityRole="radiogroup">
                     {([['story', t.write.kindStory, t.write.kindStoryHint], ['listing', t.write.kindListing, t.write.kindListingHint]] as const).map(([kind, label, hint]) => {
                       const selected = postKind === kind;
-                      return <Pressable key={kind} onPress={() => { play('selection'); setPostKind(kind); setWriterPanel(null); }} accessibilityRole="radio"
+                      return <Pressable analyticsId="components_feed-screen.pressable.19" key={kind} onPress={() => { play('selection'); setPostKind(kind); setWriterPanel(null); }} accessibilityRole="radio"
                         accessibilityLabel={`${label}, ${hint}`} accessibilityState={{ selected, checked: selected }}
                         style={({ pressed }) => [styles.tagChip, { backgroundColor: selected ? theme.accent : theme.backgroundElement }, pressed && styles.chipPressed]}>
                         <ThemedText type="smallBold" style={{ color: selected ? theme.accentInk : theme.textSecondary }}>{label}</ThemedText>
@@ -875,7 +873,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                     {TAGS.map((tg) => {
                       const selected = tg.id === tag.id;
                       return (
-                        <Pressable
+                        <Pressable analyticsId="components_feed-screen.pressable.20"
                           key={tg.id}
                           onPress={() => {
                             play('selection');
@@ -923,20 +921,20 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                     <>
                       <Image source={{ uri: draftImage.uri }} style={styles.draftImage} contentFit="cover" />
                       <View style={styles.photoActions}>
-                        <Pressable
+                        <Pressable analyticsId="components_feed-screen.pressable.21"
                           onPress={() => void pickDraftImage('library')}
                           accessibilityRole="button"
                           style={[styles.secondaryButton, { borderColor: theme.line }]}>
                           <ThemedText type="smallBold">{t.write.changePhoto}</ThemedText>
                         </Pressable>
-                        <Pressable
+                        <Pressable analyticsId="components_feed-screen.pressable.22"
                           onPress={() => { setDraftImage(null); setAiDraftReady(false); }}
                           accessibilityRole="button"
                           style={[styles.secondaryButton, { borderColor: theme.line }]}>
                           <ThemedText type="small" themeColor="textSecondary">{t.write.removePhoto}</ThemedText>
                         </Pressable>
                       </View>
-                      <Pressable
+                      <Pressable analyticsId="components_feed-screen.pressable.23"
                         onPress={() => void createAiDraft()}
                         disabled={creatingDraft}
                         accessibilityRole="button"
@@ -950,7 +948,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   ) : (
                     <View style={styles.photoActions}>
                       {Platform.OS !== 'web' && (
-                        <Pressable
+                        <Pressable analyticsId="components_feed-screen.pressable.24"
                           onPress={() => void pickDraftImage('camera')}
                           accessibilityRole="button"
                           style={[styles.photoButton, { backgroundColor: theme.backgroundElement }]}>
@@ -958,7 +956,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                           <ThemedText type="smallBold" style={styles.contextText}>{t.write.takePhoto}</ThemedText>
                         </Pressable>
                       )}
-                      <Pressable
+                      <Pressable analyticsId="components_feed-screen.pressable.25"
                         onPress={() => void pickDraftImage('library')}
                         accessibilityRole="button"
                         style={[styles.photoButton, { backgroundColor: theme.backgroundElement }]}>
@@ -974,7 +972,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   )}
                 </View>
                 <View style={[styles.writerExtras, { borderTopColor: theme.line }]}>
-                  <Pressable accessibilityRole="button" accessibilityLabel={t.write.hashtags} accessibilityState={{ expanded: writerPanel === 'hashtags' }}
+                  <Pressable analyticsId="components_feed-screen.pressable.26" accessibilityRole="button" accessibilityLabel={t.write.hashtags} accessibilityState={{ expanded: writerPanel === 'hashtags' }}
                     onPress={() => setWriterPanel(writerPanel === 'hashtags' ? null : 'hashtags')}
                     style={({ pressed }) => [styles.hashtagToggle, pressed && styles.chipPressed]}>
                     <SymbolView name={{ ios: 'number', android: 'tag', web: 'tag' }} size={18} tintColor={theme.textSecondary} />
@@ -987,13 +985,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                     placeholder={t.write.hashtagPlaceholder} placeholderTextColor={theme.textSecondary} autoCapitalize="none"
                     style={[styles.hashtagInput, { color: theme.navy, borderBottomColor: theme.line }]} />
                   <View style={styles.writerHashtags}>
-                    <ScrollView
+                    <ScrollView analyticsId="components_feed-screen.scrollview.3"
                       horizontal
                       showsHorizontalScrollIndicator={false}
                       keyboardShouldPersistTaps="handled"
                       contentContainerStyle={styles.hashtagBar}>
                       {writerHashtags.map((hashtag) => (
-                        <Pressable
+                        <Pressable analyticsId="components_feed-screen.pressable.27"
                           key={hashtag}
                           onPress={() => {
                             play('selection');

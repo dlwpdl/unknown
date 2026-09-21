@@ -1,5 +1,6 @@
+import { Pressable } from '@/components/analytics-controls';
 import { useState } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Modal, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -74,7 +75,7 @@ export function ReportSheet({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
       <View style={styles.backdrop}>
-        <Pressable
+        <Pressable analyticsId="components_report-sheet.pressable.1"
           style={styles.backdropDismiss}
           onPress={close}
           accessibilityRole="button"
@@ -89,7 +90,7 @@ export function ReportSheet({
               <ThemedText type="subtitle">{t.report.title(reportedNickname)}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">{t.report.body}</ThemedText>
             </View>
-            <Pressable onPress={close} accessibilityRole="button" hitSlop={12}>
+            <Pressable analyticsId="components_report-sheet.pressable.2" onPress={close} accessibilityRole="button" hitSlop={12}>
               <ThemedText type="smallBold" themeColor="textSecondary">{t.report.close}</ThemedText>
             </Pressable>
           </View>
@@ -98,7 +99,7 @@ export function ReportSheet({
             {REASONS.map((item) => {
               const selected = reason === item;
               return (
-                <Pressable
+                <Pressable analyticsId="components_report-sheet.pressable.3"
                   key={item}
                   onPress={() => setReason(item)}
                   accessibilityRole="radio"
@@ -125,7 +126,7 @@ export function ReportSheet({
           />
 
           {reportedUserId !== me.id && (
-            <Pressable
+            <Pressable analyticsId="components_report-sheet.pressable.4"
               onPress={() => setBlockAfter((value) => !value)}
               accessibilityRole="checkbox"
               accessibilityState={{ checked: blockAfter }}
@@ -140,7 +141,7 @@ export function ReportSheet({
             </Pressable>
           )}
 
-          <Pressable
+          <Pressable analyticsId="components_report-sheet.pressable.5"
             onPress={() => void submit()}
             disabled={!reason || submitting}
             accessibilityRole="button"

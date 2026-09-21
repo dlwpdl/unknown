@@ -1,10 +1,11 @@
+import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { Image } from 'expo-image';
 import { useFonts } from 'expo-font';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, useColorScheme, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, useColorScheme, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -49,7 +50,7 @@ export function LoginPanel({
     <ThemedView style={styles.wrap}>
       <SafeAreaView style={styles.wrap}>
       <KeyboardAvoidingView style={styles.wrap} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.center} keyboardShouldPersistTaps="handled">
+      <ScrollView analyticsId="components_login-panel.scrollview.1" contentContainerStyle={styles.center} keyboardShouldPersistTaps="handled">
         <Image
           source={require('@/assets/brand/gling-wordmark.png')}
           style={styles.brandLogo}
@@ -74,7 +75,7 @@ export function LoginPanel({
                 style={[styles.appleButton, { opacity: disabled ? 0.6 : 1 }]}
               />
             )}
-            {onKakao && <Pressable
+            {onKakao && <Pressable analyticsId="components_login-panel.pressable.1"
               onPress={() => { if (!disabled) onKakao(); }}
               disabled={disabled}
               accessibilityRole="button"
@@ -84,7 +85,7 @@ export function LoginPanel({
                 {t.auth.kakao}
               </ThemedText>
             </Pressable>}
-            {onGoogle && <Pressable
+            {onGoogle && <Pressable analyticsId="components_login-panel.pressable.2"
               onPress={() => { if (!disabled) onGoogle(); }}
               disabled={disabled}
               accessibilityRole="button"
@@ -119,7 +120,7 @@ export function LoginPanel({
                   accessibilityLabel={onAdminLogin ? '관리자 비밀번호' : onReviewLogin ? t.auth.reviewPassword : t.auth.devPassword}
                   style={[styles.devInput, { color: theme.text, borderColor: theme.line }]}
                 />
-                <Pressable
+                <Pressable analyticsId="components_login-panel.pressable.3"
                   onPress={() => { if (!disabled && email.trim() && password) passwordLogin(email, password); }}
                   disabled={disabled || !email.trim() || !password}
                   accessibilityRole="button"
@@ -142,14 +143,14 @@ export function LoginPanel({
         </ThemedText>
 
         <View style={styles.legalLinks}>
-          {['terms', 'privacy'].map((path) => <Pressable key={path} onPress={() => void Linking.openURL(`${publicSiteUrl}/${path}`)}
+          {['terms', 'privacy'].map((path) => <Pressable analyticsId="components_login-panel.pressable.4" key={path} onPress={() => void Linking.openURL(`${publicSiteUrl}/${path}`)}
             accessibilityRole="link" style={styles.legalLink}>
             <ThemedText type="small" themeColor="textSecondary">{path === 'terms' ? '이용약관' : '개인정보처리방침'}</ThemedText>
           </Pressable>)}
         </View>
 
         {!onReviewLogin && !onAdminLogin && (
-          <Pressable
+          <Pressable analyticsId="components_login-panel.pressable.5"
             onPress={() => { onClose?.(); router.push('/auth/review'); }}
             accessibilityRole="link"
             style={styles.reviewLink}>
@@ -158,7 +159,7 @@ export function LoginPanel({
         )}
 
         {onClose && (
-          <Pressable onPress={onClose} accessibilityRole="button" style={styles.close}>
+          <Pressable analyticsId="components_login-panel.pressable.6" onPress={onClose} accessibilityRole="button" style={styles.close}>
             <ThemedText type="smallBold" themeColor="textSecondary">
               {t.auth.close}
             </ThemedText>

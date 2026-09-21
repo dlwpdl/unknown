@@ -1,5 +1,6 @@
+import { Pressable } from '@/components/analytics-controls';
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
@@ -9,7 +10,7 @@ export default function AuthCallbackRoute() {
   return (
     <View style={styles.page}>
       <ThemedText type="subtitle">로그인을 완료하는 중입니다.</ThemedText>
-      <Pressable onPress={() => router.replace('/')} accessibilityRole="button"
+      <Pressable analyticsId="app_auth_callback.pressable.1" onPress={() => router.replace('/')} accessibilityRole="button"
         style={({ pressed }) => ({ minHeight: 44, minWidth: 44, justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
         <ThemedText type="smallBold">돌아가기</ThemedText>
       </Pressable>

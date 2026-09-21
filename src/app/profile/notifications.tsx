@@ -1,6 +1,7 @@
+import { Pressable, ScrollView, Switch } from '@/components/analytics-controls';
 import { Redirect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, DeviceEventEmitter, Linking, Pressable, ScrollView, StyleSheet, Switch, TextInput, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, DeviceEventEmitter, Linking, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -83,10 +84,10 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
     || JSON.stringify(parsedHashtags) !== JSON.stringify(preferences.interest_hashtags));
   if (!preferences) return <View style={styles.loading}>{error ? <>
     <ThemedText>알림 설정을 불러오지 못했어요.</ThemedText>
-    <Pressable accessibilityRole="button" style={styles.button} onPress={() => void load()}><ThemedText themeColor="accent">다시 시도</ThemedText></Pressable>
+    <Pressable analyticsId="app_profile_notifications.pressable.1" accessibilityRole="button" style={styles.button} onPress={() => void load()}><ThemedText themeColor="accent">다시 시도</ThemedText></Pressable>
   </> : <ActivityIndicator color={theme.accent} />}</View>;
   return <SafeAreaView key={fontScale} style={styles.container} edges={['bottom']}>
-    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+    <ScrollView analyticsId="app_profile_notifications.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
       <ThemedText type="small" themeColor="textSecondary">받고 싶은 소식만 골라주세요. 아래 설정은 앱의 알림 목록에도 적용돼요.</ThemedText>
       {saveError && <ThemedText accessibilityRole="alert" type="small" themeColor="accent">설정을 저장하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.</ThemedText>}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
@@ -94,7 +95,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{!pushSupported ? '휴대폰 앱에서 푸시 알림을 켤 수 있어요.'
           : !pushConfigured ? '휴대폰 알림 연결을 준비하고 있어요.'
           : preferences.push_enabled && !permission ? '기기 설정에서 글링 알림이 꺼져 있어요.' : '앱을 닫아도 선택한 소식을 받을 수 있어요.'}</ThemedText>
-        {pushSupported && <Pressable accessibilityRole="button" style={styles.button} onPress={() => void Linking.openSettings()}><ThemedText type="smallBold" themeColor="accent">기기 알림 설정</ThemedText></Pressable>}
+        {pushSupported && <Pressable analyticsId="app_profile_notifications.pressable.2" accessibilityRole="button" style={styles.button} onPress={() => void Linking.openSettings()}><ThemedText type="smallBold" themeColor="accent">기기 알림 설정</ThemedText></Pressable>}
       </View>
       <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">나의 활동</ThemedText>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
@@ -106,7 +107,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
         {NOTIFICATION_CATEGORIES.slice(6).map(item => <ToggleRow key={item.key} label={item.label} value={preferences[item.key]} onChange={value => void save({ [item.key]: value })} disabled={busy} />)}
       </View>
       <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">관심 태그</ThemedText>
-      <View style={styles.tags}>{TAGS.map(tag => <Pressable key={tag.id} accessibilityRole="checkbox" accessibilityState={{ checked: tagIds.includes(tag.id), disabled: busy }}
+      <View style={styles.tags}>{TAGS.map(tag => <Pressable analyticsId="app_profile_notifications.pressable.3" key={tag.id} accessibilityRole="checkbox" accessibilityState={{ checked: tagIds.includes(tag.id), disabled: busy }}
         aria-checked={tagIds.includes(tag.id)}
         disabled={busy} onPress={() => setTagIds(current => current.includes(tag.id) ? current.filter(id => id !== tag.id) : [...current, tag.id].sort((a, b) => a - b))}
         style={[styles.tag, { backgroundColor: tagIds.includes(tag.id) ? theme.accent : theme.backgroundElement }]}>
@@ -117,7 +118,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
         style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.card }]} />
       <ThemedText type="small" themeColor="textSecondary">카테고리나 해시태그를 골라주세요. 해시태그는 최대 20개까지, 공백으로 나눠 적을 수 있어요.</ThemedText>
       {invalidHashtags && <ThemedText accessibilityRole="alert" type="small" themeColor="accent">해시태그는 20개까지, 각각 50자 이내로 적어주세요.</ThemedText>}
-      <Pressable accessibilityRole="button" disabled={busy || !interestsChanged || invalidHashtags} accessibilityState={{ disabled: busy || !interestsChanged || invalidHashtags, busy }}
+      <Pressable analyticsId="app_profile_notifications.pressable.4" accessibilityRole="button" disabled={busy || !interestsChanged || invalidHashtags} accessibilityState={{ disabled: busy || !interestsChanged || invalidHashtags, busy }}
         aria-busy={busy}
         style={[styles.save, { backgroundColor: theme.accent, opacity: busy || !interestsChanged || invalidHashtags ? 0.45 : 1 }]}
         onPress={() => void save({ interest_tag_ids: tagIds, interest_hashtags: parsedHashtags })}>
@@ -132,7 +133,7 @@ function ToggleRow({ label, value, onChange, disabled }: { label: string; value:
   const theme = useTheme();
   return <View style={styles.row}>
     <ThemedText style={styles.label}>{label}</ThemedText>
-    <Switch accessibilityLabel={label} value={value} disabled={disabled} onValueChange={onChange}
+    <Switch analyticsId="app_profile_notifications.switch.1" accessibilityLabel={label} value={value} disabled={disabled} onValueChange={onChange}
       {...(!pushSupported ? { activeThumbColor: theme.accentInk } : {})}
       thumbColor={theme.accentInk}
       trackColor={{ false: theme.line, true: theme.accent }} ios_backgroundColor={theme.line} />

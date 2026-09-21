@@ -1,5 +1,6 @@
+import { Pressable, ScrollView, FlatList } from '@/components/analytics-controls';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, AppState, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ReportSheet } from '@/components/report-sheet';
@@ -35,7 +36,7 @@ export function conversationSender(message: Pick<ChatMessageRecord, 'sender_id' 
 type ReportSelection = { targetType: ReportTarget; targetId: string; reportedUserId: string; reportedNickname: string };
 function RoomAction({ label, onPress, disabled = false, primary = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean }) {
   const theme = useTheme();
-  return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.action, primary && { backgroundColor: theme.accent }, { opacity: disabled ? 0.55 : pressed ? 0.7 : 1 }]}><ThemedText type="smallBold" style={{ color: primary ? theme.accentInk : theme.accent }}>{label}</ThemedText></Pressable>;
+  return <Pressable analyticsId="components_chat-room.pressable.1" accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.action, primary && { backgroundColor: theme.accent }, { opacity: disabled ? 0.55 : pressed ? 0.7 : 1 }]}><ThemedText type="smallBold" style={{ color: primary ? theme.accentInk : theme.accent }}>{label}</ThemedText></Pressable>;
 }
 
 export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { conversation: ConversationPreview; currentUserId: string; onClose: () => void; onChanged: () => Promise<void> }) {
@@ -267,7 +268,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
         {([[true, '다시 거래할래요'], [false, '아쉬웠어요']] as [boolean, string][]).map(([value, label]) => {
           const on = reviewPick === value;
           return (
-            <Pressable key={label} onPress={() => setReviewPick(value)} accessibilityRole="radio"
+            <Pressable analyticsId="components_chat-room.pressable.2" key={label} onPress={() => setReviewPick(value)} accessibilityRole="radio"
               accessibilityState={{ selected: on, disabled: busy }} disabled={busy}
               style={({ pressed }) => [styles.reviewOption,
                 { borderColor: on ? theme.accent : theme.line, backgroundColor: on ? theme.card : 'transparent' },
@@ -289,9 +290,9 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       </View>
     </View>}
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      {status === 'pending' ? <ScrollView contentContainerStyle={styles.request}>{verificationNotice}<ThemedText type="smallBold">{requestedByMe ? t.chat.requestSent : t.chat.receivedRequest}</ThemedText><ThemedText type="small" themeColor="textSecondary">{t.chat.pendingBody}</ThemedText><ThemedText type="small">{requestedByMe ? t.chat.requesterRisk : t.chat.acceptBody}</ThemedText>
+      {status === 'pending' ? <ScrollView analyticsId="components_chat-room.scrollview.1" contentContainerStyle={styles.request}>{verificationNotice}<ThemedText type="smallBold">{requestedByMe ? t.chat.requestSent : t.chat.receivedRequest}</ThemedText><ThemedText type="small" themeColor="textSecondary">{t.chat.pendingBody}</ThemedText><ThemedText type="small">{requestedByMe ? t.chat.requesterRisk : t.chat.acceptBody}</ThemedText>
         {requestedByMe ? <RoomAction label={t.chat.cancelRequest} onPress={() => void respond('cancelled')} disabled={busy} /> : <><RoomAction label={confirmAccept ? '확인하고 수락' : t.chat.accept} onPress={() => confirmAccept ? void respond('accepted') : setConfirmAccept(true)} disabled={busy} primary />{confirmAccept && <ThemedText type="small" themeColor="accent">내 대화 자리 1개를 사용해요. 양쪽에 빈자리가 있을 때 수락할 수 있어요.</ThemedText>}<RoomAction label={t.chat.reject} onPress={() => void respond('rejected')} disabled={busy} /></>}
-      </ScrollView> : access.read ? loading && messages.length === 0 ? <View style={styles.center}><ActivityIndicator color={theme.accent} accessibilityLabel={t.chat.loading} /></View> : <FlatList data={messages} keyExtractor={(message) => message.id} contentContainerStyle={styles.scroll}
+      </ScrollView> : access.read ? loading && messages.length === 0 ? <View style={styles.center}><ActivityIndicator color={theme.accent} accessibilityLabel={t.chat.loading} /></View> : <FlatList analyticsId="components_chat-room.flatlist.1" data={messages} keyExtractor={(message) => message.id} contentContainerStyle={styles.scroll}
         ListEmptyComponent={<ThemedText type="small" themeColor="textSecondary" style={styles.empty}>{access.write ? t.chat.newConversation : t.chat.endedBody}</ThemedText>}
         ListHeaderComponent={<>{hasOlder && messages.length > 0 && <RoomAction label={loadingOlder ? t.feed.loadingMore : t.chat.loadOlder} onPress={() => void loadOlder()} disabled={loadingOlder} />}{verificationNotice}</>}
         renderItem={({ item: message, index }) => {

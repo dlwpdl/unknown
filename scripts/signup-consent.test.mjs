@@ -15,13 +15,14 @@ function onboarding(existingProfile = null) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   vm.runInNewContext(source, { exports, process: { env: {} }, require(name) {
+    if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
     if (name === 'react') return {
       useEffect() {}, useRef(initial) { return refs[refCursor++] ??= { current: initial }; },
       useState(initial) { const i = cursor++; if (!(i in state)) state[i] = initial;
         return [state[i], value => { state[i] = typeof value === 'function' ? value(state[i]) : value; }]; },
     };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if (name === 'react-native') return { Platform: { OS: 'web' }, StyleSheet: { create: x => x }, ...Object.fromEntries(['View','Pressable','TextInput','Modal','ScrollView'].map(x => [x,x])) };
+    if ((name === 'react-native' || name === '@/components/analytics-controls')) return { Platform: { OS: 'web' }, StyleSheet: { create: x => x }, ...Object.fromEntries(['View','Pressable','TextInput','Modal','ScrollView'].map(x => [x,x])) };
     if (name === 'expo-linking') return { openURL: async url => { opened.push(url); } };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
     if (name === '@/constants/theme') return { Spacing: {} };

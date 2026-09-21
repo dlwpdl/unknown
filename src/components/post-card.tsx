@@ -1,7 +1,8 @@
+import { Pressable } from '@/components/analytics-controls';
 import { useState } from 'react';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
-import { Alert, Platform, Pressable, Share, StyleSheet, View } from 'react-native';
+import { Alert, Platform, Share, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ReportSheet } from '@/components/report-sheet';
@@ -121,7 +122,7 @@ export function PostCard({
         { backgroundColor: photo ? theme.card : theme.background, borderColor: theme.line },
       ]}>
       {photo && (
-        <Pressable
+        <Pressable analyticsId="components_post-card.pressable.1"
           onPress={onPress}
           disabled={!onPress}
           accessibilityRole={onPress ? 'button' : 'image'}
@@ -140,7 +141,7 @@ export function PostCard({
       )}
 
       <View style={[styles.content, photo && styles.photoContent]}>
-        <Pressable
+        <Pressable analyticsId="components_post-card.pressable.2"
           onPress={onPress}
           disabled={!onPress}
           accessibilityRole={onPress ? 'button' : undefined}
@@ -172,7 +173,7 @@ export function PostCard({
         {chips.length > 0 && (
           <View style={styles.hashRow}>
             {chips.map((chip) => (
-              <Pressable
+              <Pressable analyticsId="components_post-card.pressable.3"
                 key={chip}
                 onPress={onHashtag ? () => {
                   play('selection');
@@ -191,7 +192,7 @@ export function PostCard({
         )}
 
         <View style={styles.head}>
-          <Pressable
+          <Pressable analyticsId="components_post-card.pressable.4"
             onPress={onAuthor}
             disabled={!onAuthor}
             accessibilityRole={onAuthor ? 'button' : undefined}
@@ -217,7 +218,7 @@ export function PostCard({
             </View>
           </Pressable>
           {!mine && (
-            <Pressable
+            <Pressable analyticsId="components_post-card.pressable.5"
               onPress={() => isAuthed ? setReportOpen(true) : promptLogin(t.auth.reasonReport)}
               accessibilityRole="button"
               accessibilityLabel={t.report.title(post.author.nickname)}
@@ -255,7 +256,7 @@ export function PostCard({
               </View>
             </View>
             {onJoin && !post.room.closed && (
-              <Pressable
+              <Pressable analyticsId="components_post-card.pressable.6"
                 onPress={onJoin}
                 style={({ pressed }) => [styles.join, { backgroundColor: theme.accent }, pressed && styles.pressed]}
                 accessibilityRole="button"
@@ -269,7 +270,7 @@ export function PostCard({
         )}
 
         <View style={[styles.foot, { borderTopColor: theme.line }]}>
-          <Pressable
+          <Pressable analyticsId="components_post-card.pressable.7"
             onPress={toggleLike}
             disabled={!!busyReaction}
             style={({ pressed }) => [styles.reaction, pressed && styles.pressed]}
@@ -287,7 +288,7 @@ export function PostCard({
               {count(likeCount)}
             </ThemedText>
           </Pressable>
-          <Pressable
+          <Pressable analyticsId="components_post-card.pressable.8"
             onPress={onPress}
             disabled={!onPress}
             style={({ pressed }) => [styles.reaction, pressed && styles.pressed]}
@@ -302,7 +303,7 @@ export function PostCard({
               {count(post.comments)}
             </ThemedText>
           </Pressable>
-          <Pressable
+          <Pressable analyticsId="components_post-card.pressable.9"
             onPress={toggleSave}
             disabled={!!busyReaction}
             style={({ pressed }) => [styles.reaction, pressed && styles.pressed]}
@@ -320,7 +321,7 @@ export function PostCard({
               {count(saveCount)}
             </ThemedText>
           </Pressable>
-          <Pressable
+          <Pressable analyticsId="components_post-card.pressable.10"
             onPress={() => void share()}
             style={({ pressed }) => [styles.reaction, pressed && styles.pressed]}
             accessibilityRole="button"

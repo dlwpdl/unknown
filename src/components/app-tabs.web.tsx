@@ -1,3 +1,4 @@
+import { Pressable } from '@/components/analytics-controls';
 import {
   Tabs,
   TabList,
@@ -9,7 +10,7 @@ import {
 import { SymbolView } from 'expo-symbols';
 import { usePathname } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
@@ -82,7 +83,7 @@ export function TabButton({ children, icon, badge = 0, isFocused, onPress, ...pr
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   return (
-    <Pressable
+    <Pressable analyticsId="components_app-tabs.web.pressable.1"
       {...props}
       onPress={(event) => {
         play('selection');

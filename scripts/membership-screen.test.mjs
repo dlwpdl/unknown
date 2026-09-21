@@ -16,6 +16,7 @@ test('membership opens checkout immediately and preserves quota and purchase saf
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   vm.runInNewContext(source, { exports, process: { env: {} }, require(name) {
+    if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'react') return { useCallback: fn => fn, useState(initial) {
       const index = cursor++;
@@ -24,7 +25,7 @@ test('membership opens checkout immediately and preserves quota and purchase saf
     } };
     if (name === 'expo-router') return { useFocusEffect() {}, useRouter: () => ({ canGoBack: () => false, replace() {} }) };
     if (name === 'expo-symbols') return { SymbolView: 'SymbolView' };
-    if (name === 'react-native') return { View: 'View', ScrollView: 'ScrollView', Pressable: 'Pressable', StyleSheet: { create: styles => styles } };
+    if ((name === 'react-native' || name === '@/components/analytics-controls')) return { View: 'View', ScrollView: 'ScrollView', Pressable: 'Pressable', StyleSheet: { create: styles => styles } };
     if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView' };
     if (name === '@/components/login-panel') return { LoginPanel: 'LoginPanel' };
     if (name === '@/components/relationship-slot-card') return { RelationshipSlotCard: 'RelationshipSlotCard' };

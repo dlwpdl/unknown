@@ -15,8 +15,9 @@ function screen(path, imports) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   vm.runInNewContext(source, { exports, require(name) {
+    if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
     if (name === 'react/jsx-runtime') return { Fragment: 'Fragment', jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if (name === 'react-native') return { ActivityIndicator: 'ActivityIndicator', View: 'View', Pressable: 'Pressable', StyleSheet: { create: value => value } };
+    if ((name === 'react-native' || name === '@/components/analytics-controls')) return { ActivityIndicator: 'ActivityIndicator', View: 'View', Pressable: 'Pressable', StyleSheet: { create: value => value } };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ background: '#fff', text: '#123', accent: '#b34' }) };
     if (name in imports) return imports[name];
     throw new Error(`Unexpected import: ${name}`);

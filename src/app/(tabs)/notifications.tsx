@@ -1,7 +1,8 @@
+import { Pressable, FlatList } from '@/components/analytics-controls';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProfileAvatarButton } from '@/components/profile-avatar-button';
@@ -65,14 +66,14 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
         <View style={[styles.header, { borderBottomColor: theme.line }]}>
           {embedded ? <View style={{ flex: 1 }} /> : <ThemedText type="subtitle" style={{ flex: 1 }}>{t.notifications.title}</ThemedText>}
           {!embedded && <ProfileAvatarButton />}
-          <Pressable accessibilityRole="button" accessibilityLabel="알림 설정" onPress={() => router.push('/profile/notifications')} style={styles.settings}>
+          <Pressable analyticsId="app_tabs_notifications.pressable.1" accessibilityRole="button" accessibilityLabel="알림 설정" onPress={() => router.push('/profile/notifications')} style={styles.settings}>
             <SymbolView name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }} size={22} tintColor={theme.text} />
           </Pressable>
         </View>
         {loading ? (
           <ActivityIndicator color={theme.accent} style={styles.center} accessibilityLabel={t.notifications.loading} />
         ) : (
-          <FlatList
+          <FlatList analyticsId="app_tabs_notifications.flatlist.1"
             data={rows}
             keyExtractor={({ id }) => id}
             contentContainerStyle={styles.list}
@@ -80,7 +81,7 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
             onRefresh={() => void load()}
             ListEmptyComponent={<ThemedText type="small" themeColor="textSecondary" style={styles.center}>{error ? t.notifications.loadError : t.notifications.empty}</ThemedText>}
             renderItem={({ item }) => (
-              <Pressable
+              <Pressable analyticsId="app_tabs_notifications.pressable.2"
                 onPress={() => router.push((notificationRoute(item.route) ?? '/notifications') as never)}
                 accessibilityRole="button"
                 style={({ pressed }) => [

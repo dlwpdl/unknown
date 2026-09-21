@@ -1,6 +1,7 @@
+import { Pressable } from '@/components/analytics-controls';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Alert, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Modal, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ReportSheet } from '@/components/report-sheet';
@@ -89,8 +90,8 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
   return (
     <>
       <Modal visible={!!user} transparent animationType="fade" onRequestClose={onClose}>
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityRole="button">
-          <Pressable style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.three) }]} onPress={() => {}}>
+        <Pressable analyticsId="components_user-sheet.pressable.1" style={styles.backdrop} onPress={onClose} accessibilityRole="button">
+          <Pressable analyticsId="components_user-sheet.pressable.2" style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.three) }]} onPress={() => {}}>
             {user && (
               <>
                 <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}>
@@ -109,19 +110,19 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
                     : t.profileSheet.verifiedL1}
                 </ThemedText>
                 {user.mine && (
-                  <Pressable onPress={() => navigate('/profile')} accessibilityRole="button" style={[styles.cta, { backgroundColor: theme.backgroundElement }]}>
+                  <Pressable analyticsId="components_user-sheet.pressable.3" onPress={() => navigate('/profile')} accessibilityRole="button" style={[styles.cta, { backgroundColor: theme.backgroundElement }]}>
                     <ThemedText type="smallBold">{t.tabs.profile}</ThemedText>
                   </Pressable>
                 )}
                 {!user.mine && user.id && (
                   <>
                     <ThemedText type="small" themeColor="textSecondary">{t.chat.requesterRisk}</ThemedText>
-                    <Pressable onPress={() => void requestChat(user)} accessibilityRole="button" disabled={requesting}
+                    <Pressable analyticsId="components_user-sheet.pressable.4" onPress={() => void requestChat(user)} accessibilityRole="button" disabled={requesting}
                       accessibilityState={{ disabled: requesting, busy: requesting }}
                       style={[styles.cta, { backgroundColor: theme.accent, opacity: requesting ? 0.55 : 1 }]}>
                       <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{requesting ? t.chat.joinSending : t.profileSheet.chatRequest}</ThemedText>
                     </Pressable>
-                    <Pressable onPress={() => { setReporting(user); onClose(); }} accessibilityRole="button"
+                    <Pressable analyticsId="components_user-sheet.pressable.5" onPress={() => { setReporting(user); onClose(); }} accessibilityRole="button"
                       style={[styles.cta, { backgroundColor: theme.backgroundElement }]}>
                       <ThemedText type="smallBold" themeColor="textSecondary">{t.report.userAction}</ThemedText>
                     </Pressable>
@@ -171,7 +172,7 @@ function TradeRecord({ trade, onOpenPost }: { trade: TradeProfile; onOpenPost: (
         <View style={styles.listings}>
           <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12.5 }}>올려둔 구해요·팔아요</ThemedText>
           {trade.openListings.slice(0, 3).map((listing) => (
-            <Pressable key={listing.id} onPress={() => onOpenPost(listing.id)} accessibilityRole="button"
+            <Pressable analyticsId="components_user-sheet.pressable.6" key={listing.id} onPress={() => onOpenPost(listing.id)} accessibilityRole="button"
               accessibilityLabel={`${listing.title}${listing.price != null ? `, ${t.detail.price(Number(listing.price))}` : ''}`}
               style={({ pressed }) => [styles.listing, { borderColor: theme.line },
                 pressed && { backgroundColor: theme.backgroundElement, transform: [{ scale: 0.985 }] }]}>

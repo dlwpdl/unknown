@@ -9,8 +9,9 @@ const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/rel
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
 }).outputText;
 vm.runInNewContext(source, { exports, require(name) {
+    if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
   if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-  if (name === 'react-native') return { View: 'View', Pressable: 'Pressable', StyleSheet: { create: value => value } };
+  if ((name === 'react-native' || name === '@/components/analytics-controls')) return { View: 'View', Pressable: 'Pressable', StyleSheet: { create: value => value } };
   if (name === 'expo-symbols') return { SymbolView: 'SymbolView' };
   if (name === '@/components/themed-text') return { ThemedText: 'Text' };
   if (name === '@/constants/theme') return { Spacing: { half: 2, one: 4, two: 8, three: 16 } };

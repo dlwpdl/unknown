@@ -1,6 +1,7 @@
+import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { ThemedText } from '@/components/themed-text';
@@ -50,10 +51,10 @@ function ProfileForm({ postId }: { postId?: string }) {
   };
   return <ThemedView style={styles.fill}><SafeAreaView style={styles.fill}>
     <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-        <Pressable onPress={back} accessibilityRole="button" style={styles.button}><ThemedText themeColor="accent">‹ 돌아가기</ThemedText></Pressable>
+      <ScrollView analyticsId="app_meetup-profile.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+        <Pressable analyticsId="app_meetup-profile.pressable.1" onPress={back} accessibilityRole="button" style={styles.button}><ThemedText themeColor="accent">‹ 돌아가기</ThemedText></Pressable>
         <ThemedText type="title">{postId ? '호스트 모임 프로필' : '내 모임 프로필'}</ThemedText>
-        {!isAuthed ? <Pressable onPress={() => promptLogin('모임 프로필을 확인하려면 로그인해 주세요.')} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent">로그인하기</ThemedText></Pressable>
+        {!isAuthed ? <Pressable analyticsId="app_meetup-profile.pressable.2" onPress={() => promptLogin('모임 프로필을 확인하려면 로그인해 주세요.')} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent">로그인하기</ThemedText></Pressable>
           : loading ? <ActivityIndicator color={theme.accent} accessibilityLabel="프로필 불러오는 중" />
             : postId ? loaded && !error && <ChillingProfileCard profile={profile} />
               : loaded && <>
@@ -66,12 +67,12 @@ function ProfileForm({ postId }: { postId?: string }) {
                 <View style={styles.field}><ThemedText type="smallBold">관심사 · 쉼표로 구분, 최대 8개</ThemedText>
                   <TextInput accessibilityLabel="관심사" value={interests} onChangeText={setInterests} editable={!saving} maxLength={248} placeholder="산책, 커피, 여행" placeholderTextColor={theme.textSecondary} style={[styles.input, { color: theme.text, borderColor: theme.line }]} /></View>
                 <ThemedText type="small" themeColor="textSecondary">개최하면 행사에서 호스트 프로필이 공개돼요. 신청할 때는 공유 내용을 먼저 확인하고 해당 호스트에게만 보내요. 안전을 위해 자동 분석과 권한 있는 운영자 검토가 적용돼요.</ThemedText>
-                <Pressable accessibilityRole="button" disabled={saving} accessibilityState={{ disabled: saving, busy: saving }} onPress={() => void save()} style={[styles.primary, { backgroundColor: theme.accent, opacity: saving ? 0.6 : 1 }]}>
+                <Pressable analyticsId="app_meetup-profile.pressable.3" accessibilityRole="button" disabled={saving} accessibilityState={{ disabled: saving, busy: saving }} onPress={() => void save()} style={[styles.primary, { backgroundColor: theme.accent, opacity: saving ? 0.6 : 1 }]}>
                   <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{saving ? '저장 중…' : '프로필 저장'}</ThemedText>
                 </Pressable>
               </>}
         {!!error && <><ThemedText accessibilityRole="alert" themeColor="accent">{error}</ThemedText>
-          {!loaded && <Pressable onPress={() => { setLoading(true); setError(''); setRetry(x => x + 1); }} accessibilityRole="button" style={styles.button}><ThemedText>다시 불러오기</ThemedText></Pressable>}</>}
+          {!loaded && <Pressable analyticsId="app_meetup-profile.pressable.4" onPress={() => { setLoading(true); setError(''); setRetry(x => x + 1); }} accessibilityRole="button" style={styles.button}><ThemedText>다시 불러오기</ThemedText></Pressable>}</>}
       </ScrollView>
     </KeyboardAvoidingView>
   </SafeAreaView></ThemedView>;

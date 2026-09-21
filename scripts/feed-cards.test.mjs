@@ -42,9 +42,10 @@ function load(file, imports) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   vm.runInNewContext(source, { exports, require(name) {
+    if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
     if (name in imports) return imports[name];
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if (name === 'react-native') return { View: 'View', Text: 'Text', TextInput: 'TextInput', SectionList: 'SectionList', KeyboardAvoidingView: 'KeyboardAvoidingView', useWindowDimensions: () => ({ fontScale: 1 }), Platform: { OS: 'ios' }, LayoutAnimation: { configureNext() {}, Presets: { easeInEaseOut: {} } }, Image: 'Image', Pressable: 'Pressable', StyleSheet: { create: value => value, hairlineWidth: 1 } };
+    if ((name === 'react-native' || name === '@/components/analytics-controls')) return { View: 'View', Text: 'Text', TextInput: 'TextInput', SectionList: 'SectionList', KeyboardAvoidingView: 'KeyboardAvoidingView', useWindowDimensions: () => ({ fontScale: 1 }), Platform: { OS: 'ios' }, LayoutAnimation: { configureNext() {}, Presets: { easeInEaseOut: {} } }, Image: 'Image', Pressable: 'Pressable', StyleSheet: { create: value => value, hairlineWidth: 1 } };
     if (name === 'expo-symbols') return { SymbolView: 'SymbolView' };
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };
     if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, four: 24 } };
