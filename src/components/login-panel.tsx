@@ -3,7 +3,6 @@ import { Image } from 'expo-image';
 import { useFonts } from 'expo-font';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, useColorScheme, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -149,15 +148,6 @@ export function LoginPanel({
           </Pressable>)}
         </View>
 
-        {!onReviewLogin && !onAdminLogin && (
-          <Pressable analyticsId="components_login-panel.pressable.5"
-            onPress={() => { onClose?.(); router.push('/auth/review'); }}
-            accessibilityRole="link"
-            style={styles.reviewLink}>
-            <ThemedText type="small" themeColor="textSecondary">{t.auth.reviewLoginTitle}</ThemedText>
-          </Pressable>
-        )}
-
         {onClose && (
           <Pressable analyticsId="components_login-panel.pressable.6" onPress={onClose} accessibilityRole="button" style={styles.close}>
             <ThemedText type="smallBold" themeColor="textSecondary">
@@ -214,7 +204,6 @@ const styles = StyleSheet.create({
     marginTop: Spacing.two,
     maxWidth: 280,
   },
-  reviewLink: { minHeight: 44, justifyContent: 'center' },
   legalLink: { minHeight: 44, justifyContent: 'center' },
   legalLinks: { flexDirection: 'row', gap: Spacing.three },
   close: {

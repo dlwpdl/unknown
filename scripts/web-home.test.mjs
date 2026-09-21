@@ -39,7 +39,8 @@ test('WEB_POLICY_ITEMS lists the home policy summaries', () => {
 });
 
 test('legal pages expose the required public documents and safety disclosures', () => {
-  assert.deepEqual(Object.keys(LEGAL_DOCUMENTS), ['terms', 'privacy', 'account-deletion']);
+  assert.deepEqual(Object.keys(LEGAL_DOCUMENTS), ['child-safety', 'terms', 'privacy', 'account-deletion']);
+  assert.match(JSON.stringify(LEGAL_DOCUMENTS['child-safety']), /CSAM.*Cybertip\.ca.*gling@ej-entertainment\.com/);
   assert.match(LEGAL_DOCUMENTS.privacy.summary, /게시글.*댓글.*대화/);
   assert.match(LEGAL_DOCUMENTS.privacy.summary, /자동 안전 분석/);
   assert.match(LEGAL_DOCUMENTS.privacy.summary, /관리자/);

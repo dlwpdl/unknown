@@ -10,6 +10,7 @@ const LEGAL_LINKS = [
   { slug: 'terms', label: '이용약관' },
   { slug: 'privacy', label: '개인정보처리방침' },
   { slug: 'account-deletion', label: '계정 삭제' },
+  { slug: 'child-safety', label: '아동 안전' },
 ] as const;
 
 export function generateStaticParams() {

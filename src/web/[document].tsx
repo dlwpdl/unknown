@@ -5,5 +5,5 @@ export { generateStaticParams } from '../app/[document].web';
 
 export default function PublicDocument() {
   const { document } = useLocalSearchParams<{ document: string }>();
-  return ['terms', 'privacy', 'account-deletion'].includes(document) ? <LegalDocumentPage /> : <PublicReader />;
+  return ['terms', 'privacy', 'account-deletion', 'child-safety'].includes(document) ? <LegalDocumentPage /> : <PublicReader />;
 }
