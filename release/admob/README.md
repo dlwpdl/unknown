@@ -9,7 +9,15 @@
 
 위 ID는 앱에 들어가는 공개 설정값이며 로그인 자격 증명이 아니다.
 
-## 등록 상태
+## 2026-09-21 출시 후 연결
+
+- iOS 공개 버전 1.0.1을 캐나다 App Store URL로 검색해 기존 AdMob 앱에 연결 저장했다. Store ID는 `6809273242`다. 숫자 ID 검색은 결과가 없었지만 `https://apps.apple.com/ca/app/id6809273242` 검색은 성공했다.
+- 저장 후 상태는 `Requires review / Limited ad serving / Verify app to lift limit`. 앱 검증과 Check for updates를 실행했지만 AdMob은 app-ads.txt 정보 불일치로 검증 실패를 표시했다. 활성화 완료 또는 검토 중 상태가 아니다.
+- Apple 공개 lookup의 sellerUrl은 `https://gling.ej-entertainment.com`. 해당 `/app-ads.txt`는 HTTP 200, text/plain이며 Google-adstxt User-Agent에서도 콘솔의 요구 레코드와 일치한다. 파일 자체 오류는 재현되지 않았다. AdMob app-ads.txt 목록에는 아직 글링이 나타나지 않는다. 콘솔은 Apple 도메인 정보 반영이 최대 7일 걸릴 수 있다고 안내한다. 원인을 반영 지연으로 확정한 것은 아니다.
+- 다음 단계: 크롤러 반영 후 기존 iOS 앱의 Verify app → Check for updates를 재실행하고 검증/준비 상태 검토 결과를 확인한다. Android는 아직 비공개 테스트이므로 공개 출시 후 연결한다.
+- SDK는 이미 구현되어 있으나 `EXPO_PUBLIC_ADS_MODE=live`가 아닌 빌드는 테스트 광고를 사용한다. 콘솔 연결만으로 기존 앱의 광고 모드가 바뀌지 않는다. 실제 송출은 앱 검증과 live 빌드 설정을 별도로 확인해야 한다. 이번 작업에서 빌드나 광고 코드는 변경하지 않았다.
+
+## 최초 등록 상태 (2026-09-09)
 
 - 두 플랫폼 모두 **Unpublished**로 등록했다. 공개 스토어 연결 전이므로 승인 상태는 `Requires review`, 표시 상태는 `Limited ad serving / Add store to lift limit`다.
 - 각 앱에 `Native advanced` 광고 단위를 하나씩 만들었다. 글 사이에 놓는 피드 광고용이다.
@@ -45,3 +53,9 @@ Google Play의 개발자 웹사이트와 App Store의 Marketing URL을 같은 �
 - 생성 후 각 플랫폼의 광고 단위 목록을 새로고침해 이름·ID·`Native advanced`와 `1 - 1 of 1`을 확인했다.
 - 전체 앱 목록에서도 글링 iOS·Android가 각각 1개 광고 단위를 가진 상태로 저장된 것을 확인했다.
 - 기존 Rottery 앱과 광고 단위는 수정하지 않았다. 결제·계정 설정·외부 이메일 발송도 하지 않았다.
+
+## 2026-09-21 재확인 및 빌드 34
+
+- 사용자가 요청한 Check for updates를 실행했고 Google의 AppAdsTxtService 응답 HTTP 200을 확인했다. 결과는 여전히 iOS Not verified / details mismatch다. 검증 성공으로 처리하지 않았다.
+- Android 앱은 스토어 연결이 없는 상태로 Requires review다. Google Play 배포 트랙은 비공개 Alpha다.
+- 빌드 33 iOS 번들에는 실광고 단위 ID가 없고 테스트 단위가 포함되어 있었다. 운영 환경 파일 `.env.production`에 `EXPO_PUBLIC_ADS_MODE=live`를 명시하고 양 플랫폼 빌드 34를 준비했다. 개발 모드 테스트 광고와 UMP 동의 검사는 유지한다. 콘솔 검증과 실제 광고 송출은 별도다.
