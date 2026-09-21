@@ -29,3 +29,8 @@ export function validatePersonalInfo(fullName: string, dateOfBirth: string, toda
   if (ageOnDate(dateOfBirth, today) === null) return '생년월일을 YYYY-MM-DD 형식의 실제 날짜로 확인해주세요. 미래 또는 120년 이전 날짜는 입력할 수 없어요.';
   return null;
 }
+
+export function formatDateOfBirth(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  return [digits.slice(0, 4), digits.slice(4, 6), digits.slice(6, 8)].filter(Boolean).join('-');
+}

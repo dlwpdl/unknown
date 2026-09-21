@@ -71,7 +71,6 @@ test('details never check consent, optional information needs its own consent, f
   assert.equal(fields.props.showConsent, false, 'no duplicated optional checkbox');
   fields.props.onChange({ fullName: '테스트', dateOfBirth: '1990-01-01', accepted: false });
   for (let i = 1; i <= 3; i++) ui.boxes()[i].props.onPress();
-  await ui.save(); assert.equal(ui.calls.length, 0);
   ui.boxes()[4].props.onPress(); ui.setFail(true);
   await ui.save(); assert.equal(ui.completed.length, 0);
   ui.setFail(false); await ui.save();
@@ -81,4 +80,32 @@ test('details never check consent, optional information needs its own consent, f
   assert.equal(existing.boxes().length, 4);
   existing.boxes()[0].props.onPress(); await existing.save();
   assert.equal(existing.calls[0][0], 'create_profile_with_consent');
+});
+
+
+test('declining optional consent discards even partial or invalid personal information at submission', async () => {
+  for (const draft of [
+    { fullName: '테스트', dateOfBirth: '1990-01-01' },
+    { fullName: '테스트', dateOfBirth: '1990-0' },
+    { fullName: '', dateOfBirth: '1990-01-01' },
+  ]) {
+    const ui = onboarding();
+    ui.boxes()[0].props.onPress();
+    nodes(ui.render()).find(n => n.type === 'PersonalInfoFields').props.onChange({ ...draft, accepted: true });
+    ui.boxes()[4].props.onPress();
+    await ui.save();
+    assert.equal(ui.completed.length, 1);
+    assert.equal(ui.calls[0][1].p_full_name, null);
+    assert.equal(ui.calls[0][1].p_date_of_birth, null);
+    assert.equal(ui.calls[0][1].p_personal_info_version, null);
+  }
+});
+
+test('consented invalid birth dates still block signup', async () => {
+  const ui = onboarding();
+  ui.boxes()[0].props.onPress();
+  nodes(ui.render()).find(n => n.type === 'PersonalInfoFields').props.onChange({ fullName: '테스트', dateOfBirth: '2025-02-29', accepted: true });
+  await ui.save();
+  assert.equal(ui.calls.length, 0);
+  assert.equal(ui.completed.length, 0);
 });

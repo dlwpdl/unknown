@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import * as personalInfo from '../src/lib/personal-info.ts';
 import { ageOnDate, ageForMeetupRecommendation, PERSONAL_INFO_VERSION, validatePersonalInfo } from '../src/lib/personal-info.ts';
 
 test('meetup age uses only information consented for the new purpose', () => {
@@ -30,4 +31,14 @@ test('optional personal info validates a complete pair without restricting inter
   for (const [name, dob] of [['김', ''], ['', '2000-01-01'], ['\n', '2000-01-01'], ['A\nB', '2000-01-01'], ['a'.repeat(201), '2000-01-01'], ['김', '1906-09-11'], ['김', '2026-02-29']]) {
     assert.ok(validatePersonalInfo(name, dob, today), JSON.stringify([name, dob]));
   }
+});
+
+
+test('birth date input formats typing, paste, deletion and limits to eight digits', () => {
+  for (const [input, expected] of [
+    ['', ''], ['1', '1'], ['1990', '1990'], ['19900', '1990-0'],
+    ['199001', '1990-01'], ['1990010', '1990-01-0'], ['19900102', '1990-01-02'],
+    ['1990-01-02', '1990-01-02'], ['1990/01/02', '1990-01-02'],
+    ['1990-01-', '1990-01'], ['1990-', '1990'], ['abc1990010299', '1990-01-02'],
+  ]) assert.equal(personalInfo.formatDateOfBirth(input), expected, input);
 });

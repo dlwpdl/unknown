@@ -4,7 +4,7 @@ import { Platform, StyleSheet, TextInput, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { ageOnDate, PERSONAL_INFO_NOTICE, validatePersonalInfo } from '@/lib/personal-info';
+import { ageOnDate, formatDateOfBirth, PERSONAL_INFO_NOTICE, validatePersonalInfo } from '@/lib/personal-info';
 
 export type PersonalInfoDraft = { fullName: string; dateOfBirth: string; accepted: boolean };
 
@@ -28,9 +28,9 @@ export function PersonalInfoFields({ value, onChange, disabled = false, showCons
     </View>
     <View style={styles.field}>
       <ThemedText type="smallBold">생년월일</ThemedText>
-      <TextInput value={value.dateOfBirth} onChangeText={(dateOfBirth) => onChange({ ...value, dateOfBirth })} onBlur={() => setTouched(true)}
+      <TextInput value={value.dateOfBirth} onChangeText={(dateOfBirth) => onChange({ ...value, dateOfBirth: formatDateOfBirth(dateOfBirth) })} onBlur={() => setTouched(true)}
         editable={!disabled} accessibilityLabel="비공개 생년월일, 연도 네 자리-월 두 자리-일 두 자리" placeholder="YYYY-MM-DD" placeholderTextColor={theme.textSecondary}
-        keyboardType="numbers-and-punctuation" autoComplete="off" autoCorrect={false} autoCapitalize="none" maxLength={10}
+        keyboardType="number-pad" autoComplete="off" autoCorrect={false} autoCapitalize="none" maxLength={10}
         style={[styles.input, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]} />
       {age != null && <ThemedText type="small" themeColor="textSecondary">만 {age}세 · 본인 입력 · 생년월일 미인증</ThemedText>}
     </View>

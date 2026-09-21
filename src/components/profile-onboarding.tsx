@@ -125,11 +125,10 @@ export function ProfileOnboarding({
       setError(t.onboarding.errorNickname);
       return;
     }
-    const fullName = personalInfo.fullName.trim();
-    const dateOfBirth = personalInfo.dateOfBirth.trim();
+    const fullName = !consentOnly && personalInfo.accepted ? personalInfo.fullName.trim() : '';
+    const dateOfBirth = !consentOnly && personalInfo.accepted ? personalInfo.dateOfBirth.trim() : '';
     const personalInfoError = consentOnly ? null : validatePersonalInfo(fullName, dateOfBirth);
     if (personalInfoError) { setError(personalInfoError); return; }
-    if (!consentOnly && fullName && !personalInfo.accepted) { setError('이름·생년월일 수집·이용에 별도로 동의해주세요. 입력하지 않아도 가입할 수 있어요.'); return; }
 
     savingLock.current = true;
     setSaving(true);
