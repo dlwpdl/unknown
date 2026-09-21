@@ -20,3 +20,7 @@ Verify unit tests for route/app-link validation and anonymous-only transport, ty
 - Existing shared-post preview retains its Open Graph metadata and now links to the read-only web detail plus app participation.
 
 Deployment: source `685715b`, GitHub Pages run `35577246613` succeeded. Live https://gling.ej-entertainment.com verified for the public feed, city/meetup query, existing `/post/:id` detail, invalid IDs and app-only routes with zero data RPC requests. `public-post` Edge Function deployed and its live HTTP 200 HTML verified for app CTA, web detail link and retained Open Graph metadata. Rollback by reverting this task's commit and redeploying Pages; no database rollback required. Private QA evidence in `~/Library/Application Support/gling/releases/web-read-only-2026-09-21/`.
+
+## Scroll correction
+
+Owner reported wheel/keyboard scrolling did not work. Live computed styles confirmed Expo's ScrollViewStyleReset left `body { overflow: hidden }` while the reader uses ordinary HTML instead of a native ScrollView. Prior viewport and overflow-width checks did not verify vertical user scrolling. Added the same scoped body scrolling override already used by legal pages, for `.reader`. `node scripts/check-web-scroll.mjs <orca-page-id>` fails on the original body style and passes after the fix with an actual 600px browser scroll. This preserves native and local-admin scroll behavior.
