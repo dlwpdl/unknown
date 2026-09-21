@@ -11,3 +11,16 @@
 - 순서/화면별 집계 제공. 단계별 발생 수는 순서 기반 전환율로 오인하지 않도록 명시한다.
 
 검증: npm test, npm run typecheck, npm run lint, npm run export:web, npm run check:public-web 및 SQL 권한/검증/집계 테스트. 네이티브는 새 빌드에 포함돼야 배포 사용자에게 적용된다.
+
+## 완료 및 검증
+
+- 커밋 `4c6e40a`, 운영 migration `0073` 적용. 백업 `2026-09-21-0151` 완료.
+- 앱 버튼/스크롤/스위치 234곳에 고정 ID 부여. 목록은 `scripts/analytics-controls.json`. 가로 칩 스크롤과 입력 내용은 제외.
+- Node 테스트 190개, DB pgTAP 21개, typecheck/lint 통과. 공개 웹/관리자/iOS/Android 번들 생성 통과.
+- GitHub Pages run `35580357443` 성공. 실제 공개 웹에서 view/press/scroll 25·50·75·100을 전송하고 HTTP 204 및 운영 DB 저장 확인. QA 세션 기록은 확인 후 삭제.
+- 관리자 ‘행동 분석’ 탭은 로컬 개발 미리보기에서 표시·레이아웃 확인. 운영 관리자 세션은 로그아웃 상태여서 로그인 UI를 우회하지 않았음. 권한/필터/집계/감사 기록은 DB 테스트로 검증.
+- 기존 로컬 DB는 0064 이후 스키마와 마이그레이션 장부가 달라 전체 push 대신 이번 0073 SQL만 로컬 적용. 운영 장부는 정상이며 0073만 추가됨.
+- 개인정보처리방침에 수집 범위 추가, 90일 정리 작업 및 탈퇴 상태 변경 시 기록 삭제 연결.
+- 분석은 best effort: 오프라인·강제 종료 누락 가능. 익명 웹 세션은 새 페이지 로드마다 바뀌므로 여러 문서를 잇는 사용자 여정은 연결하지 않음. native 세션도 계정 변경/프로세스 재시작 시 초기화. 클라이언트 이벤트는 결제/회원 원장을 대체하지 않음.
+- iOS/Android는 JS 번들 검증 완료 상태. 새 스토어 빌드 업로드·심사 제출은 하지 않았으며 설치된 build 32에는 아직 적용되지 않음. 다음 빌드 배포 때 App Store 개인정보/App Privacy 및 Play Data Safety의 Usage/Product Interaction 항목도 실제 수집 내용과 대조해야 함.
+- 검증 로그: `~/Library/Application Support/gling/releases/behavior-analytics-2026-09-21/`.
