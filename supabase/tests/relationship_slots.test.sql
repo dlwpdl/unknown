@@ -24,7 +24,7 @@ set local role authenticated;
 select is(public.respond_direct_conversation(:'request_id','accepted'),:'request_id'::uuid,'recipient accepts');
 select is(public.respond_direct_conversation(:'request_id','accepted'),:'request_id'::uuid,'accept retry does not consume twice');
 select is((public.get_membership()->>'conversationsUsed')::integer,1,'recipient uses one slot');
-select is((public.get_membership()->>'conversationSlotsAvailable')::integer,2,'recipient retains other two slots');
+select is((public.get_membership()->>'conversationSlotsAvailable')::integer,1,'recipient retains one other slot');
 select public.send_message(:'request_id','수락한 뒤에만 대화해요.') as message_id \gset
 reset role;
 select is((select count(*)::integer from public.safety_review_queue where target_type='message' and target_id=:'message_id'),1,'new direct messages enter safety monitoring');
@@ -37,7 +37,7 @@ select set_config('request.jwt.claims','{"sub":"81000000-0000-0000-0000-00000000
 set local role authenticated;
 select public.end_conversation(:'request_id');
 select public.end_conversation(:'request_id');
-select is((public.get_membership()->>'conversationSlotsAvailable')::integer,3,'recipient exit frees recipient slot immediately');
+select is((public.get_membership()->>'conversationSlotsAvailable')::integer,2,'recipient exit frees recipient slot immediately');
 select is((public.get_membership()->>'conversationSlotsLocked')::integer,0,'recipient bears no cooldown');
 select throws_ok(format('select public.send_message(%L,''종료 후 전송'')',:'request_id'),'P0001','CONVERSATION_NOT_ACTIVE','ended rooms cannot receive messages');
 select is((select count(*)::integer from public.messages where id=:'message_id'),1,'ending preserves existing history');
@@ -45,7 +45,7 @@ reset role;
 select set_config('request.jwt.claims','{"sub":"81000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 set local role authenticated;
 select is((public.get_membership()->>'conversationSlotsLocked')::integer,1,'only original requester locks one slot');
-select is((public.get_membership()->>'conversationSlotsAvailable')::integer,2,'unused slots remain available');
+select is((public.get_membership()->>'conversationSlotsAvailable')::integer,1,'unused slots remain available');
 select is((public.get_membership()->'conversationUnlocksAt'->>0)::timestamptz,now()+interval '24 hours','cooldown is exactly 24 hours');
 reset role;
 update private.action_rate_events set created_at=now()-interval '2 minutes' where action='conversation_request';
@@ -59,17 +59,17 @@ select public.respond_direct_conversation(:'second_id','accepted');
 reset role;
 select set_config('request.jwt.claims','{"sub":"81000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 set local role authenticated;
-select is((public.get_membership()->>'conversationSlotsAvailable')::integer,1,'new acceptance consumes another slot, leaving locked one intact');
+select is((public.get_membership()->>'conversationSlotsAvailable')::integer,0,'new acceptance consumes another slot, leaving locked one intact');
 select public.end_conversation(:'second_id');
 select is((public.get_membership()->>'conversationSlotsLocked')::integer,2,'requester exit also locks requester only');
 reset role;
 select set_config('request.jwt.claims','{"sub":"81000000-0000-0000-0000-000000000003","role":"authenticated"}',true);
 set local role authenticated;
-select is((public.get_membership()->>'conversationSlotsAvailable')::integer,3,'passive recipient is immediately free');
+select is((public.get_membership()->>'conversationSlotsAvailable')::integer,2,'passive recipient is immediately free');
 reset role;
--- Fill recipient's three slots; acceptance must fail atomically without consuming requester capacity.
+-- Fill recipient's two slots; acceptance must fail atomically without consuming requester capacity.
 insert into public.conversations(user_low_id,user_high_id)
-select '81000000-0000-0000-0000-000000000004',('81000000-0000-0000-0000-'||lpad(n::text,12,'0'))::uuid from generate_series(5,7)n;
+select '81000000-0000-0000-0000-000000000004',('81000000-0000-0000-0000-'||lpad(n::text,12,'0'))::uuid from generate_series(5,6)n;
 select set_config('request.jwt.claims','{"sub":"81000000-0000-0000-0000-000000000008","role":"authenticated"}',true);
 set local role authenticated;
 select public.start_conversation('81000000-0000-0000-0000-000000000004') as capped_id \gset
@@ -96,7 +96,7 @@ select set_config('request.jwt.claims','{"sub":"81000000-0000-0000-0000-00000000
 set local role authenticated;
 select public.respond_direct_conversation(:'blocked_id','accepted');
 insert into public.blocks(blocker_id,blocked_id) values('81000000-0000-0000-0000-000000000010','81000000-0000-0000-0000-000000000009');
-select is((public.get_membership()->>'conversationSlotsAvailable')::integer,3,'blocking frees accepting member immediately');
+select is((public.get_membership()->>'conversationSlotsAvailable')::integer,2,'blocking frees accepting member immediately');
 reset role;
 select is((select status from public.conversations where id=:'blocked_id'),'ended','blocking terminates active room');
 select is(private.relationship_locked_count('81000000-0000-0000-0000-000000000009','direct'),1,'blocked requester has one cooldown');
@@ -133,8 +133,8 @@ select is((select count(*)::integer from public.messages where id=:'before_join_
 select lives_ok(format('select public.create_report(''message'',%L,''other'',''모임 신고 검증'')',:'group_message'),'group participant can report actual message sender');
 select public.end_conversation(:'group_id');
 select is((public.get_membership()->>'meetupSlotsLocked')::integer,0,'first voluntary group leave does not lock a slot');
-select is((public.get_membership()->>'meetupSlotsAvailable')::integer,3,'group exit releases its slot immediately');
-select is((public.get_membership()->>'conversationSlotsAvailable')::integer,3,'group exit leaves direct pool unchanged');
+select is((public.get_membership()->>'meetupSlotsAvailable')::integer,2,'group exit releases its slot immediately');
+select is((public.get_membership()->>'conversationSlotsAvailable')::integer,2,'group exit leaves direct pool unchanged');
 select is((select count(*)::integer from public.messages where id=:'group_message'),0,'former member cannot keep reading group messages');
 reset role;
 select set_config('request.jwt.claims','{"sub":"81000000-0000-0000-0000-000000000003","role":"authenticated"}',true);
@@ -154,19 +154,19 @@ select is((public.get_membership()->>'meetupSlotsLocked')::integer,0,'duplicate 
 reset role;
 select set_config('request.jwt.claims','{"sub":"81000000-0000-0000-0000-000000000003","role":"authenticated"}',true);
 set local role authenticated;
-select is((public.get_membership()->>'meetupSlotsAvailable')::integer,3,'passive members freed when host closes group');
+select is((public.get_membership()->>'meetupSlotsAvailable')::integer,2,'passive members freed when host closes group');
 select is((public.get_membership()->>'meetupSlotsLocked')::integer,0,'host closure never penalizes passive members');
 reset role;
 -- Expiry frees capacity without a scheduled task; plans never erase existing locks.
 update private.relationship_cooldowns set unlocks_at=now()-interval '1 second' where user_id='81000000-0000-0000-0000-000000000001';
 select set_config('request.jwt.claims','{"sub":"81000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 set local role authenticated;
-select is((public.get_membership()->>'conversationSlotsAvailable')::integer,3,'cooldowns expire by server time without cron');
+select is((public.get_membership()->>'conversationSlotsAvailable')::integer,2,'cooldowns expire by server time without cron');
 reset role;
 select public.apply_membership_snapshot('81000000-0000-0000-0000-000000000009',jsonb_build_array(jsonb_build_object('tier','plus','expires_at',now()+interval '30 days','product_id','plus','store','app_store','will_renew',true)),now());
 select set_config('request.jwt.claims','{"sub":"81000000-0000-0000-0000-000000000009","role":"authenticated"}',true);
 set local role authenticated;
-select is((public.get_membership()->>'conversationSlotsAvailable')::integer,4,'upgrade adds capacity but retains cooldown');
+select is((public.get_membership()->>'conversationSlotsAvailable')::integer,3,'upgrade adds capacity but retains cooldown');
 select is((public.get_membership()->>'conversationSlotsLocked')::integer,1,'payment cannot erase existing cooldown');
 select throws_ok($$select * from private.relationship_cooldowns$$,'42501',null,'clients cannot read or manipulate private cooldown ledger');
 select throws_ok($$select public.get_admin_user_conversations('81000000-0000-0000-0000-000000000002')$$,'P0001','ADMIN_REQUIRED','nonadmins cannot enumerate another member history');

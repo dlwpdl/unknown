@@ -1,9 +1,9 @@
 export type MembershipTier = 'free' | 'plus' | 'premium';
 
 export const MEMBERSHIP_LIMITS = {
-  free: { posts: 1, meetups: 3, conversations: 3 },
-  plus: { posts: 2, meetups: 5, conversations: 5 },
-  premium: { posts: 5, meetups: 10, conversations: 10 },
+  free: { posts: 1, meetups: 2, conversations: 2 },
+  plus: { posts: 2, meetups: 4, conversations: 4 },
+  premium: { posts: 3, meetups: 7, conversations: 7 },
 } as const;
 
 export type MembershipSnapshot = {

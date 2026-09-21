@@ -97,7 +97,7 @@ export default function MembershipScreen() {
               </View>
             </Pressable>
             {rulesExpanded && <View style={styles.detailContent}>
-              <ThemedText type="small" themeColor="textSecondary">모임은 방장 승인 후 자리를 사용해요. 1:1 대화는 상대가 수락하면 양쪽 자리를 사용해요.</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">모임은 동시에 운영·참여하는 개수를 합산해요. 참여는 방장 승인 후, 1:1 대화는 상대가 수락하면 양쪽 자리를 사용해요.</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">모임 종료·퇴장 시 자리는 바로 돌아와요. 최근 24시간에 승인된 서로 다른 모임에서 자진 퇴장 3회째부터 새 참여가 12시간 제한돼요. 자연 종료·승인 전 취소·강퇴는 제외돼요.</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">칠링 개최는 최근 24시간 3회·7일 10회까지예요. 취소해도 개최 횟수는 유지돼요. 참가자가 있는 행사 조기 해산은 최근 7일 2회째부터 새 개최가 24시간 제한돼요. 무료·유료에 동일하게 적용돼요.</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">1:1 대화는 누가 종료하든 처음 요청한 사람의 자리만 24시간 잠겨요. 수락한 사람의 자리는 바로 돌아와요.</ThemedText>
@@ -119,7 +119,7 @@ export default function MembershipScreen() {
           {plansExpanded && <View style={styles.comparison}>
             <View style={styles.freePlan}>
               <ThemedText type="smallBold">베이직 · 무료</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">하루 글 {MEMBERSHIP_LIMITS.free.posts}편 · 모임 {MEMBERSHIP_LIMITS.free.meetups}개 · 1:1 대화 {MEMBERSHIP_LIMITS.free.conversations}개</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">하루 글 {MEMBERSHIP_LIMITS.free.posts}편 · 동시 모임 {MEMBERSHIP_LIMITS.free.meetups}개 · 활성 1:1 대화 {MEMBERSHIP_LIMITS.free.conversations}개</ThemedText>
             </View>
 
             {plans.map((plan) => {
@@ -138,7 +138,7 @@ export default function MembershipScreen() {
                   <ThemedText style={styles.price}>{offer ? `${offer.price} / ${periodNames[offer.period]}` : offersLoading ? '가격 확인 중' : '준비 중'}</ThemedText>
                   {offer && referencePrice(offer) && <ThemedText type="smallBold" themeColor="accent">출시 기념가</ThemedText>}
                 </View>
-                <ThemedText type="small" themeColor="textSecondary">하루 글 {limits.posts}편 · 모임 {limits.meetups}개 · 1:1 대화 {limits.conversations}개</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">하루 글 {limits.posts}편 · 동시 모임 {limits.meetups}개 · 활성 1:1 대화 {limits.conversations}개</ThemedText>
               </Pressable>;
             })}
 

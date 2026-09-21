@@ -49,6 +49,9 @@ test('membership opens checkout immediately and preserves quota and purchase saf
   assert.match(text(tree), /1편 남음/);
   assert.doesNotMatch(text(tree), /처음 요청한 사람/);
   assert.equal(button(tree, '구독 준비 중').props.disabled, true, 'checkout is visible immediately but requires a store offer');
+  for (const summary of ['하루 글 1편 · 동시 모임 2개 · 활성 1:1 대화 2개', '하루 글 2편 · 동시 모임 4개 · 활성 1:1 대화 4개', '하루 글 3편 · 동시 모임 7개 · 활성 1:1 대화 7개']) {
+    assert.ok(text(tree).includes(summary), summary);
+  }
   assert.equal(button(tree, '자리 사용 · 반복 이용 제한 안내').props.accessibilityState.expanded, false);
   assert.equal(button(tree, '자리 사용 · 반복 이용 제한 안내').props['aria-expanded'], false);
   button(tree, '자리 사용 · 반복 이용 제한 안내').props.onPress();

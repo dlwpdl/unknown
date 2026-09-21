@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { deleteRevenueCatCustomer, parseRevenueCatMembership, webhookUserIds } from '../supabase/functions/_shared/membership.ts';
-import { membershipOffer } from '../src/lib/membership.ts';
+import { MEMBERSHIP_LIMITS, membershipOffer } from '../src/lib/membership.ts';
 
 const now = Date.parse('2026-09-10T00:00:00Z');
 const future = '2026-10-10T00:00:00Z';
@@ -78,4 +78,12 @@ test('account deletion removes only the authenticated billing customer and prese
     });
   }
   await assert.rejects(deleteRevenueCatCustomer(user, 'server-key', async () => new Response(null, { status: 503 })), /BILLING_DELETE_FAILED/);
+});
+
+test('membership plans match the approved activity limits', () => {
+  assert.deepEqual(MEMBERSHIP_LIMITS, {
+    free: { posts: 1, meetups: 2, conversations: 2 },
+    plus: { posts: 2, meetups: 4, conversations: 4 },
+    premium: { posts: 3, meetups: 7, conversations: 7 },
+  });
 });
