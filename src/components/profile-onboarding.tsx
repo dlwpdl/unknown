@@ -57,7 +57,7 @@ export function ProfileOnboarding({
   const [expandedConsent, setExpandedConsent] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [personalInfo, setPersonalInfo] = useState<PersonalInfoDraft>({ fullName: '', dateOfBirth: '', accepted: false });
+  const [personalInfo, setPersonalInfo] = useState<PersonalInfoDraft>({ fullName: '', dateOfBirth: '', accepted: false, gender: '' });
   const active = useRef(true);
   const savingLock = useRef(false);
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
@@ -81,7 +81,7 @@ export function ProfileOnboarding({
     { id: 'privacy', label: '[필수] 개인정보 수집·이용', checked: privacyAccepted, change: setPrivacyAccepted, url: `${publicSiteUrl}/privacy` },
     { id: 'ai', label: '[필수] 외부 AI(OpenAI) 안전 처리', checked: aiAccepted, change: setAiAccepted,
       details: `${t.onboarding.consentLabel} 모든 게시글·댓글·대화가 안전 분석 대상이며, 권한 있는 관리자가 안전 운영을 위해 확인할 수 있습니다.` },
-    ...(!consentOnly ? [{ id: 'personal', label: '[선택] 이름·생년월일 수집·이용', checked: personalInfo.accepted,
+    ...(!consentOnly ? [{ id: 'personal', label: '[선택] 이름·생년월일·성별 수집·이용', checked: personalInfo.accepted,
       change: (checked: boolean) => setPersonalInfo((current) => ({ ...current, accepted: checked })),
       details: PERSONAL_INFO_NOTICE }] : []),
   ];
@@ -127,7 +127,8 @@ export function ProfileOnboarding({
     }
     const fullName = !consentOnly && personalInfo.accepted ? personalInfo.fullName.trim() : '';
     const dateOfBirth = !consentOnly && personalInfo.accepted ? personalInfo.dateOfBirth.trim() : '';
-    const personalInfoError = consentOnly ? null : validatePersonalInfo(fullName, dateOfBirth);
+    const gender = !consentOnly && personalInfo.accepted ? personalInfo.gender : '';
+    const personalInfoError = consentOnly ? null : validatePersonalInfo(fullName, dateOfBirth, gender);
     if (personalInfoError) { setError(personalInfoError); return; }
 
     savingLock.current = true;
@@ -156,6 +157,7 @@ export function ProfileOnboarding({
           p_date_of_birth: dateOfBirth || null,
           p_personal_info_version: fullName ? PERSONAL_INFO_VERSION : null,
           p_user_id: userId,
+          p_gender: gender || null,
         } : {}),
       });
       if (!active.current) return;

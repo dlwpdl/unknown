@@ -8,7 +8,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { PERSONAL_INFO_VERSION, validatePersonalInfo } from '@/lib/personal-info';
 import { supabase } from '@/lib/supabase';
 
-type PersonalInfo = { full_name: string | null; date_of_birth: string | null; age: number | null; consented_at: string | null; updated_at: string | null };
+type PersonalInfo = { full_name: string | null; date_of_birth: string | null; gender: string | null; age: number | null; consented_at: string | null; updated_at: string | null };
 
 export function PersonalInfoCard({ userId }: { userId: string }) {
   const [retry, setRetry] = useState(0);
@@ -20,7 +20,7 @@ function PersonalInfoEditor({ userId, onRetry }: { userId: string; onRetry: () =
   const active = useRef(true);
   const saving = useRef(false);
   const [data, setData] = useState<PersonalInfo | null>(null);
-  const [draft, setDraft] = useState<PersonalInfoDraft>({ fullName: '', dateOfBirth: '', accepted: false });
+  const [draft, setDraft] = useState<PersonalInfoDraft>({ fullName: '', dateOfBirth: '', accepted: false, gender: '' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -34,7 +34,7 @@ function PersonalInfoEditor({ userId, onRetry }: { userId: string; onRetry: () =
       if (failure || !result) { setError('계정 정보를 불러오지 못했습니다. 다시 불러온 뒤 수정해주세요.'); return; }
       const info = result as PersonalInfo;
       setData(info);
-      setDraft({ fullName: info.full_name ?? '', dateOfBirth: info.date_of_birth ?? '', accepted: false });
+      setDraft({ fullName: info.full_name ?? '', dateOfBirth: info.date_of_birth ?? '', accepted: false, gender: info.gender ?? '' });
     }, () => { if (current) setError('계정 정보를 불러오지 못했습니다. 다시 불러온 뒤 수정해주세요.'); });
     return () => { current = false; active.current = false; };
   }, [userId]);
@@ -43,28 +43,29 @@ function PersonalInfoEditor({ userId, onRetry }: { userId: string; onRetry: () =
     if (!data || saving.current) return;
     const fullName = remove ? '' : draft.fullName.trim();
     const dateOfBirth = remove ? '' : draft.dateOfBirth.trim();
-    const validation = validatePersonalInfo(fullName, dateOfBirth);
+    const gender = remove ? '' : draft.gender;
+    const validation = validatePersonalInfo(fullName, dateOfBirth, gender);
     if (validation) { setError(validation); return; }
     if (!remove && (!fullName || !dateOfBirth)) { setError('이름과 생년월일을 입력해주세요. 저장된 정보는 아래 삭제 버튼으로 지울 수 있어요.'); return; }
-    if (!remove && !draft.accepted) { setError('이름·생년월일 수집·이용에 별도로 동의해주세요.'); return; }
+    if (!remove && !draft.accepted) { setError('이름·생년월일·성별 수집·이용에 별도로 동의해주세요.'); return; }
     saving.current = true; setBusy(true); setError(null); setNotice(null);
     let savedSuccessfully = false;
     try {
-      const saved = await supabase.rpc('save_my_personal_info', { p_full_name: fullName || null, p_date_of_birth: dateOfBirth || null, p_version: PERSONAL_INFO_VERSION, p_user_id: userId });
+      const saved = await supabase.rpc('save_my_personal_info', { p_full_name: fullName || null, p_date_of_birth: dateOfBirth || null, p_version: PERSONAL_INFO_VERSION, p_user_id: userId, p_gender: gender || null });
       if (saved.error) throw saved.error;
       savedSuccessfully = true;
       if (!active.current) return;
       setConfirmDelete(false);
       // A failed refresh must not turn retained server data into an empty editable form.
       setData(null);
-      setDraft({ fullName: '', dateOfBirth: '', accepted: false });
+      setDraft({ fullName: '', dateOfBirth: '', accepted: false, gender: '' });
       const result = await supabase.rpc('get_my_personal_info');
       if (!active.current) return;
       if (result.error || !result.data) { setError('저장은 완료했지만 최신 정보를 불러오지 못했습니다. 다시 불러와 확인해주세요.'); return; }
       const info = result.data as PersonalInfo;
       setData(info);
-      setDraft({ fullName: info.full_name ?? '', dateOfBirth: info.date_of_birth ?? '', accepted: false });
-      setNotice(remove ? '이름과 생년월일을 삭제했어요.' : '비공개 계정 정보를 저장했어요.');
+      setDraft({ fullName: info.full_name ?? '', dateOfBirth: info.date_of_birth ?? '', accepted: false, gender: info.gender ?? '' });
+      setNotice(remove ? '이름과 생년월일, 성별을 삭제했어요.' : '비공개 계정 정보를 저장했어요.');
     } catch { if (active.current) setError(savedSuccessfully ? '저장은 완료했지만 최신 정보를 불러오지 못했습니다. 다시 불러와 확인해주세요.' : '계정 정보를 저장하지 못했습니다. 입력 내용과 연결 상태를 확인해주세요.'); }
     finally { saving.current = false; if (active.current) setBusy(false); }
   };
