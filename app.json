@@ -17,7 +17,7 @@
       "icon": "./assets/brand/gling-app-icon.png",
       "bundleIdentifier": "com.dlwpdl.gling",
       "appleTeamId": "P3X3452TDZ",
-      "buildNumber": "35",
+      "buildNumber": "36",
       "usesAppleSignIn": true,
       "entitlements": {
         "aps-environment": "production"
@@ -102,7 +102,7 @@
     },
     "android": {
       "package": "com.dlwpdl.gling",
-      "versionCode": 35,
+      "versionCode": 36,
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.ACCESS_BACKGROUND_LOCATION",
