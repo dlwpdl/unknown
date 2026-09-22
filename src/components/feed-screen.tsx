@@ -410,7 +410,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     setSubmitting(true);
     const hashtags = parseHashtags(hashtagInput);
     try {
-      const post = await createCommunityPost(supabase, {
+      const created = await createCommunityPost(supabase, {
         userId: me.id,
         cityId: draftCity.id,
         tag,
@@ -421,13 +421,17 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         kind: postKind,
         price: postKind === 'listing' && priceInput.trim() ? Number(priceInput.replace(/[^0-9.]/g, '')) : null,
       });
-      void location.record(draftLocation.current, post.id);
+      void location.record(draftLocation.current, created.id);
       setCity(draftCity);
-      setPosts((prev) => [post, ...prev.filter(({ id }) => id !== post.id)]);
-      if (post.room) DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
-      const nextQuota = await loadDailyQuota(supabase);
-      setQuota(nextQuota);
-      DeviceEventEmitter.emit(POST_QUOTA_CHANGED_EVENT, nextQuota);
+      const post = created.post;
+      if (post) setPosts((prev) => [post, ...prev.filter(({ id }) => id !== created.id)]);
+      else void refreshFeed().catch(() => {});
+      if (post?.room) DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
+      const nextQuota = await loadDailyQuota(supabase).catch(() => null);
+      if (nextQuota) {
+        setQuota(nextQuota);
+        DeviceEventEmitter.emit(POST_QUOTA_CHANGED_EVENT, nextQuota);
+      }
       setTagFilter(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null);
       setTitle('');
       setBody('');

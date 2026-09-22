@@ -113,7 +113,7 @@ export async function createCommunityPost(
     kind?: PostKind;
     price?: number | null;
   },
-): Promise<Post> {
+): Promise<{ id: string; post: Post | null }> {
   const imagePath = input.image ? await uploadPostImage(client, input.userId, input.image) : null;
 
   const created = await client.rpc('create_post', {
@@ -132,9 +132,12 @@ export async function createCommunityPost(
     throw created.error;
   }
 
-  const post = await loadPublicPost(client, created.data as string);
-  if (!post) throw new Error('CREATED_POST_NOT_FOUND');
-  return post;
+  const id = created.data as string;
+  try {
+    return { id, post: await loadPublicPost(client, id) };
+  } catch {
+    return { id, post: null };
+  }
 }
 
 export async function loadListingQuota(client: SupabaseClient): Promise<DailyQuota> {

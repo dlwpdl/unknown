@@ -1,7 +1,24 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildPostImagePath, deleteMyAccount, getCommunityActionError, isContentRejected, leaveMeetup, loadMyMeetups, recordPostView } from '../src/lib/community-data.ts';
+import { buildPostImagePath, createCommunityPost, deleteMyAccount, getCommunityActionError, isContentRejected, leaveMeetup, loadMyMeetups, recordPostView } from '../src/lib/community-data.ts';
+
+test('게시 후 상세 조회가 실패해도 생성된 글 ID를 반환한다', async () => {
+  const client = {
+    rpc: async (name) => {
+      if (name === 'create_post') return { data: 'post-1', error: null };
+      assert.equal(name, 'get_public_post');
+      return { data: null, error: new Error('temporary read failure') };
+    },
+  };
+
+  const created = await createCommunityPost(client, {
+    userId: 'user-1', cityId: 'vancouver', tag: { id: 1, slug: 'daily', label: '일상', kind: 'post' },
+    title: '제목', body: '본문', hashtags: [],
+  });
+
+  assert.deepEqual(created, { id: 'post-1', post: null });
+});
 
 test('같은 기기에서 다시 열면 조회수를 또 올리지 않고 서버 집계만 읽는다', async () => {
   const calls = [];
