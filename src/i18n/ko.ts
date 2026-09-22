@@ -114,6 +114,7 @@ export const t = {
     changePhoto: '사진 바꾸기',
     removePhoto: '사진 삭제',
     createDraft: 'AI로 초안 만들기',
+    polishDraft: 'AI로 다듬기',
     creatingDraft: '초안 만드는 중…',
     reviewDraft: 'AI가 만든 초안이에요. 내용이 맞는지 확인하고 고쳐주세요.',
     photoPermissionTitle: '카메라 권한이 필요해요',

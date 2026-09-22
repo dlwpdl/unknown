@@ -369,17 +369,18 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   };
 
   const createAiDraft = async () => {
-    if (!draftImage || creatingDraft) return;
+    const titleHint = title.trim();
+    const bodyHint = body.trim();
+    if ((!draftImage && !titleHint && !bodyHint) || creatingDraft) return;
     setCreatingDraft(true);
     try {
       const { data, error } = await supabase.functions.invoke('draft-post', {
         body: {
-          imageBase64: draftImage.base64,
-          mimeType: draftImage.mimeType,
           cityName: draftCity.name,
           selectedCategory: tag.slug,
-          titleHint: title.trim() || undefined,
-          bodyHint: body.trim() || undefined,
+          titleHint: titleHint || undefined,
+          bodyHint: bodyHint || undefined,
+          ...(draftImage ? { imageBase64: draftImage.base64, mimeType: draftImage.mimeType } : {}),
         },
       });
       if (error) throw error;
@@ -938,16 +939,6 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                           <ThemedText type="small" themeColor="textSecondary">{t.write.removePhoto}</ThemedText>
                         </Pressable>
                       </View>
-                      <Pressable analyticsId="components_feed-screen.pressable.23"
-                        onPress={() => void createAiDraft()}
-                        disabled={creatingDraft}
-                        accessibilityRole="button"
-                        accessibilityState={{ disabled: creatingDraft, busy: creatingDraft }}
-                        style={[styles.aiButton, { backgroundColor: theme.accent, opacity: creatingDraft ? 0.65 : 1 }]}>
-                        <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
-                          {creatingDraft ? t.write.creatingDraft : t.write.createDraft}
-                        </ThemedText>
-                      </Pressable>
                     </>
                   ) : (
                     <View style={styles.photoActions}>
@@ -969,6 +960,16 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                       </Pressable>
                     </View>
                   )}
+                  <Pressable analyticsId="components_feed-screen.pressable.23"
+                    onPress={() => void createAiDraft()}
+                    disabled={creatingDraft || (!draftImage && !title.trim() && !body.trim())}
+                    accessibilityRole="button"
+                    accessibilityState={{ disabled: creatingDraft || (!draftImage && !title.trim() && !body.trim()), busy: creatingDraft }}
+                    style={[styles.aiButton, { backgroundColor: theme.accent, opacity: creatingDraft || (!draftImage && !title.trim() && !body.trim()) ? 0.65 : 1 }]}>
+                    <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
+                      {creatingDraft ? t.write.creatingDraft : title.trim() || body.trim() ? t.write.polishDraft : t.write.createDraft}
+                    </ThemedText>
+                  </Pressable>
                   {aiDraftReady && (
                     <View accessibilityRole="alert" style={[styles.aiNotice, { backgroundColor: theme.backgroundElement }]}>
                       <ThemedText type="small" themeColor="textSecondary">{t.write.reviewDraft}</ThemedText>

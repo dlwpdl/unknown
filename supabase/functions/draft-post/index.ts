@@ -47,6 +47,25 @@ Deno.serve(async (request) => {
       throw quota.error;
     }
 
+    const hasWrittenDraft = Boolean(input.titleHint?.trim() || input.bodyHint?.trim());
+    const content = [{
+      type: 'input_text',
+      text: JSON.stringify({
+        cityName: input.cityName,
+        selectedCategory: input.selectedCategory,
+        titleHint: input.titleHint,
+        bodyHint: input.bodyHint,
+        mode: hasWrittenDraft ? 'edit_existing_draft' : 'create_from_photo',
+      }),
+    }];
+    if (input.imageBase64) {
+      content.push({
+        type: 'input_image',
+        image_url: `data:${input.mimeType};base64,${input.imageBase64}`,
+        detail: 'low',
+      });
+    }
+
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
@@ -59,17 +78,7 @@ Deno.serve(async (request) => {
         instructions: buildPrompt(),
         input: [{
           role: 'user',
-          content: [
-            {
-              type: 'input_text',
-              text: JSON.stringify({ cityName: input.cityName, selectedCategory: input.selectedCategory, titleHint: input.titleHint, bodyHint: input.bodyHint }),
-            },
-            {
-              type: 'input_image',
-              image_url: `data:${input.mimeType};base64,${input.imageBase64}`,
-              detail: 'low',
-            },
-          ],
+          content,
         }],
         text: {
           format: {
@@ -115,25 +124,25 @@ Deno.serve(async (request) => {
 function validateInput(input: unknown) {
   if (!input || typeof input !== 'object') return '요청 형식이 올바르지 않습니다.';
   const value = input as Record<string, unknown>;
-  if (!['image/jpeg', 'image/png', 'image/webp'].includes(String(value.mimeType))) {
-    return 'JPG, PNG, WebP 사진만 지원합니다.';
-  }
-  if (typeof value.imageBase64 !== 'string' || !/^[A-Za-z0-9+/]+={0,2}$/.test(value.imageBase64)) {
-    return '사진 데이터가 올바르지 않습니다.';
-  }
-  if (Math.ceil(value.imageBase64.length * 0.75) > MAX_IMAGE_BYTES) return '사진은 5MB 이하여야 합니다.';
   if (typeof value.cityName !== 'string' || value.cityName.length > 40) return '지역이 올바르지 않습니다.';
   if (typeof value.selectedCategory !== 'string' || !CATEGORIES.includes(value.selectedCategory)) {
     return '카테고리가 올바르지 않습니다.';
   }
   if (value.titleHint != null && (typeof value.titleHint !== 'string' || value.titleHint.length > 80)) return '제목 힌트가 너무 깁니다.';
   if (value.bodyHint != null && (typeof value.bodyHint !== 'string' || value.bodyHint.length > 1000)) return '본문 힌트가 너무 깁니다.';
+  const hasImage = value.imageBase64 != null || value.mimeType != null;
+  if (hasImage && !['image/jpeg', 'image/png', 'image/webp'].includes(String(value.mimeType))) return 'JPG, PNG, WebP 사진만 지원합니다.';
+  if (hasImage && (typeof value.imageBase64 !== 'string' || !/^[A-Za-z0-9+/]+={0,2}$/.test(value.imageBase64))) return '사진 데이터가 올바르지 않습니다.';
+  if (typeof value.imageBase64 === 'string' && Math.ceil(value.imageBase64.length * 0.75) > MAX_IMAGE_BYTES) return '사진은 5MB 이하여야 합니다.';
+  if (!hasImage && !String(value.titleHint ?? '').trim() && !String(value.bodyHint ?? '').trim()) return '사진이나 작성한 글이 필요합니다.';
   return null;
 }
 
 function buildPrompt() {
   return [
     '당신은 캐나다 한인 커뮤니티 글링에서 사용자가 이웃에게 건네는 개인 게시글을 함께 쓰는 도우미입니다.',
+    '입력 JSON의 mode가 edit_existing_draft이면 제목·본문 힌트는 사용자가 직접 쓴 원고입니다. 새 글을 만들지 말고 원고의 주제, 사실, 질문, 요청과 말투를 유지한 채 제목을 정리하고 문장만 자연스럽게 다듬으세요. 원고에 없는 경험·장소·사람·수치·일정·감정을 추가하거나 핵심 내용을 다른 주제로 바꾸지 마세요.',
+    'mode가 create_from_photo일 때만 사진을 바탕으로 새 초안을 만들 수 있습니다.',
     '목적은 사용자의 일상, 생각, 질문, 나눔이나 모집 의도를 담은 바로 수정해서 올릴 수 있는 글입니다. 사진 분석 보고서, 대체 텍스트, 여행 안내문을 작성하지 마세요.',
     '제목·본문 힌트에 담긴 작성 목적과 말투를 가장 먼저 반영하고, 선택 카테고리를 유지하세요. 사진은 이야깃거리의 보조 근거로만 사용하세요.',
     '힌트가 없으면 사진에서 연상되는 사용자의 가벼운 바람·현재 생각·관심사로 바로 시작해 2~3문장으로 쓰세요. 어울릴 때만 이웃에게 짧은 질문을 덧붙이고 거래·모집 의도를 임의로 정하지 마세요.',
