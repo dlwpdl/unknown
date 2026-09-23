@@ -1,7 +1,6 @@
 import { Pressable, ScrollView, FlatList } from '@/components/analytics-controls';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image } from 'expo-image';
-import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { SymbolView } from 'expo-symbols';
 import { useReducedMotion } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
@@ -55,13 +54,14 @@ import {
 } from '@/lib/community-data';
 import { appendUniquePosts, groupJournalPosts, loadPublicFeed, loadPublicPost } from '@/lib/feed-data';
 import { addHashtag, canonicalizeHashtag, getSuggestedHashtags, parseHashtags } from '@/lib/hashtags';
-import { getPostImagePlan } from '@/lib/image-upload';
+import { canAddPostImage, MAX_POST_IMAGES } from '@/lib/image-upload';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { INITIAL_QUOTA, TAGS } from '@/lib/mock';
+import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
 import { supabase } from '@/lib/supabase';
 import type { DailyQuota, Post, PostKind, Tag } from '@/lib/types';
 
-type DraftImage = { uri: string; base64: string; mimeType: string };
+
 
 export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: boolean }) {
   const theme = useTheme();
@@ -70,7 +70,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const { fontScale } = useWindowDimensions();
   const router = useRouter();
   const { compose } = useLocalSearchParams<{ compose?: string }>();
-  const { isAuthed, promptLogin, me } = useAuth();
+  const { isAuthed, promptLogin, me, isAdmin } = useAuth();
   const { play } = useInteractionFeedback();
   const insets = useSafeAreaInsets();
   const bottomClear = insets.bottom + TabBarHeight; // 탭바 + 홈 인디케이터 실측 높이
@@ -91,7 +91,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [hashtagInput, setHashtagInput] = useState('');
-  const [draftImage, setDraftImage] = useState<DraftImage | null>(null);
+  const [draftImages, setDraftImages] = useState<PreparedImage[]>([]);
   const [creatingDraft, setCreatingDraft] = useState(false);
   const [aiDraftReady, setAiDraftReady] = useState(false);
   const [detailPost, setDetailPost] = useState<Post | null>(null);
@@ -295,7 +295,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const openWriter = useCallback(() => {
     if (!isAuthed) return promptLogin(t.auth.reasonWrite);
     // ponytail: 캡 검사는 서버(create_post RPC)가 최종 강제 — 여긴 UX용 사전 안내만
-    if (postKind === 'story' && quota.used >= quota.max) {
+    if (!isAdmin && postKind === 'story' && quota.used >= quota.max) {
       showPostLimit();
       return;
     }
@@ -303,14 +303,14 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     void loadListingQuota(supabase).then(setListingQuota).catch(() => {});
     const revision = ++writerRevision.current;
     draftLocation.current = null;
-    if (!title.trim() && !body.trim() && !hashtagInput.trim() && !draftImage) setDraftCity(city);
+    if (!title.trim() && !body.trim() && !hashtagInput.trim() && draftImages.length === 0) setDraftCity(city);
     setWriterPanel(null);
     setWriting(true);
     void location.capture().then((fix) => {
       if (revision !== writerRevision.current) return;
       draftLocation.current = fix;
     });
-  }, [isAuthed, promptLogin, quota.max, quota.used, showPostLimit, writing, city, location, title, body, hashtagInput, draftImage, postKind]);
+  }, [isAuthed, isAdmin, promptLogin, quota.max, quota.used, showPostLimit, writing, city, location, title, body, hashtagInput, draftImages, postKind]);
 
   useEffect(() => {
     if (!writing) { writerRevision.current++; draftLocation.current = null; }
@@ -334,34 +334,31 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       const options: ImagePicker.ImagePickerOptions = {
         mediaTypes: ['images'],
         quality: 1,
+        allowsMultipleSelection: source === 'library',
+        selectionLimit: Math.max(1, MAX_POST_IMAGES - draftImages.length),
         preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
       };
       const result = source === 'camera'
         ? await ImagePicker.launchCameraAsync(options)
         : await ImagePicker.launchImageLibraryAsync(options);
       if (result.canceled) return;
-      const asset = result.assets[0];
-      if (!asset?.uri) throw new Error('IMAGE_NOT_AVAILABLE');
-      const mimeType = asset.mimeType ?? 'image/jpeg';
-      if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
-        Alert.alert(t.write.photoErrorTitle, t.write.photoUnsupported);
-        return;
+      const assets = (result.assets ?? []).slice(0, Math.max(1, MAX_POST_IMAGES - draftImages.length));
+      const prepared: PreparedImage[] = [];
+      for (const asset of assets) {
+        if (!asset?.uri) continue;
+        const mimeType = asset.mimeType ?? 'image/jpeg';
+        if (!isSupportedImage(mimeType)) {
+          Alert.alert(t.write.photoErrorTitle, t.write.photoUnsupported);
+          continue;
+        }
+        try {
+          prepared.push(await preparePostImage(asset, { withThumb: true }));
+        } catch (cause) {
+          Alert.alert(t.write.photoErrorTitle, cause instanceof Error && cause.message === 'IMAGE_TOO_LARGE' ? t.write.photoTooLarge : t.write.photoErrorBody);
+        }
       }
-      const plan = getPostImagePlan(asset.width, asset.height, mimeType);
-      const context = ImageManipulator.manipulate(asset.uri);
-      if (plan.resize) context.resize(plan.resize);
-      const image = await context.renderAsync();
-      const optimized = await image.saveAsync({
-        base64: true,
-        compress: 0.8,
-        format: plan.format === 'png' ? SaveFormat.PNG : plan.format === 'webp' ? SaveFormat.WEBP : SaveFormat.JPEG,
-      });
-      if (!optimized.base64) throw new Error('IMAGE_NOT_AVAILABLE');
-      if (Math.ceil(optimized.base64.length * 0.75) > 5 * 1024 * 1024) {
-        Alert.alert(t.write.photoErrorTitle, t.write.photoTooLarge);
-        return;
-      }
-      setDraftImage({ uri: optimized.uri, base64: optimized.base64, mimeType: plan.mimeType });
+      if (prepared.length === 0) return;
+      setDraftImages((current) => [...current, ...prepared].slice(0, MAX_POST_IMAGES));
       setAiDraftReady(false);
     } catch {
       Alert.alert(t.write.photoErrorTitle, t.write.photoErrorBody);
@@ -371,7 +368,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const createAiDraft = async () => {
     const titleHint = title.trim();
     const bodyHint = body.trim();
-    if ((!draftImage && !titleHint && !bodyHint) || creatingDraft) return;
+    if ((draftImages.length === 0 && !titleHint && !bodyHint) || creatingDraft) return;
     setCreatingDraft(true);
     try {
       const { data, error } = await supabase.functions.invoke('draft-post', {
@@ -380,7 +377,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           selectedCategory: tag.slug,
           titleHint: titleHint || undefined,
           bodyHint: bodyHint || undefined,
-          ...(draftImage ? { imageBase64: draftImage.base64, mimeType: draftImage.mimeType } : {}),
+          ...(draftImages[0] ? { imageBase64: draftImages[0].base64, mimeType: draftImages[0].mimeType } : {}),
         },
       });
       if (error) throw error;
@@ -418,7 +415,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         title: title.trim(),
         body: body.trim(),
         hashtags,
-        image: draftImage ? { base64: draftImage.base64, mimeType: draftImage.mimeType } : undefined,
+        images: draftImages.map(({ base64, mimeType, thumbBase64, width, height }) => ({ base64, mimeType, thumbBase64, width, height })),
         kind: postKind,
         price: postKind === 'listing' && priceInput.trim() ? Number(priceInput.replace(/[^0-9.]/g, '')) : null,
       });
@@ -437,7 +434,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       setTitle('');
       setBody('');
       setHashtagInput('');
-      setDraftImage(null);
+      setDraftImages([]);
       setAiDraftReady(false);
       setPostKind('story');
       setPriceInput('');
@@ -828,7 +825,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 </Pressable>
                 <View style={styles.writerHeading}>
                   <ThemedText type="smallBold" accessibilityRole="header">{t.write.title}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">{postKind === 'listing' && tag.kind !== 'meetup' && listingQuota ? t.write.listingRemaining(listingQuota.used, listingQuota.max) : t.write.remaining(quota.used, quota.max)}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">{isAdmin ? '관리자 계정 · 제한 없음' : postKind === 'listing' && tag.kind !== 'meetup' && listingQuota ? t.write.listingRemaining(listingQuota.used, listingQuota.max) : t.write.remaining(quota.used, quota.max)}</ThemedText>
                 </View>
                 <Pressable analyticsId="components_feed-screen.pressable.15" onPress={() => void submit()} disabled={submitting || creatingDraft || !title.trim() || !body.trim()}
                   accessibilityRole="button" accessibilityState={{ disabled: submitting || creatingDraft || !title.trim() || !body.trim(), busy: submitting }}
@@ -922,51 +919,53 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   <ThemedText type="small" themeColor="textSecondary" style={styles.meetupNote}>{t.write.listingNote}</ThemedText>
                 </>}
                 <View style={[styles.aiCard, { borderColor: theme.line }]}>
-                  {draftImage ? (
-                    <>
-                      <Image source={{ uri: draftImage.uri }} style={styles.draftImage} contentFit="cover" />
-                      <View style={styles.photoActions}>
-                        <Pressable analyticsId="components_feed-screen.pressable.21"
-                          onPress={() => void pickDraftImage('library')}
-                          accessibilityRole="button"
-                          style={[styles.secondaryButton, { borderColor: theme.line }]}>
-                          <ThemedText type="smallBold">{t.write.changePhoto}</ThemedText>
-                        </Pressable>
-                        <Pressable analyticsId="components_feed-screen.pressable.22"
-                          onPress={() => { setDraftImage(null); setAiDraftReady(false); }}
-                          accessibilityRole="button"
-                          style={[styles.secondaryButton, { borderColor: theme.line }]}>
-                          <ThemedText type="small" themeColor="textSecondary">{t.write.removePhoto}</ThemedText>
-                        </Pressable>
-                      </View>
-                    </>
-                  ) : (
-                    <View style={styles.photoActions}>
-                      {Platform.OS !== 'web' && (
-                        <Pressable analyticsId="components_feed-screen.pressable.24"
-                          onPress={() => void pickDraftImage('camera')}
-                          accessibilityRole="button"
-                          style={[styles.photoButton, { backgroundColor: theme.backgroundElement }]}>
-                          <SymbolView name={{ ios: 'camera', android: 'photo_camera', web: 'photo_camera' }} size={18} tintColor={theme.textSecondary} />
-                          <ThemedText type="smallBold" style={styles.contextText}>{t.write.takePhoto}</ThemedText>
-                        </Pressable>
-                      )}
-                      <Pressable analyticsId="components_feed-screen.pressable.25"
-                        onPress={() => void pickDraftImage('library')}
-                        accessibilityRole="button"
-                        style={[styles.photoButton, { backgroundColor: theme.backgroundElement }]}>
-                        <SymbolView name={{ ios: 'photo', android: 'photo_library', web: 'photo_library' }} size={18} tintColor={theme.textSecondary} />
-                        <ThemedText type="smallBold" style={styles.contextText}>{t.write.choosePhoto}</ThemedText>
-                      </Pressable>
+                  {draftImages.length > 0 && (
+                    <View style={styles.photoGrid}>
+                      {draftImages.map((image, index) => (
+                        <View key={`${image.uri}-${index}`} style={styles.photoTile}>
+                          <Image source={{ uri: image.uri }} style={styles.photoTileImage} contentFit="cover" />
+                          <Pressable analyticsId="components_feed-screen.pressable.21"
+                            onPress={() => { setDraftImages((current) => current.filter((_, position) => position !== index)); setAiDraftReady(false); }}
+                            accessibilityRole="button"
+                            accessibilityLabel={`${index + 1}번째 사진 삭제`}
+                            style={styles.photoRemove}>
+                            <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✕</ThemedText>
+                          </Pressable>
+                        </View>
+                      ))}
                     </View>
                   )}
+                  <View style={styles.photoActions}>
+                    {Platform.OS !== 'web' && (
+                      <Pressable analyticsId="components_feed-screen.pressable.24"
+                        onPress={() => void pickDraftImage('camera')}
+                        disabled={!canAddPostImage(draftImages.length)}
+                        accessibilityRole="button"
+                        accessibilityState={{ disabled: !canAddPostImage(draftImages.length) }}
+                        style={[styles.photoButton, { backgroundColor: theme.backgroundElement, opacity: canAddPostImage(draftImages.length) ? 1 : 0.5 }]}>
+                        <SymbolView name={{ ios: 'camera', android: 'photo_camera', web: 'photo_camera' }} size={18} tintColor={theme.textSecondary} />
+                        <ThemedText type="smallBold" style={styles.contextText}>{t.write.takePhoto}</ThemedText>
+                      </Pressable>
+                    )}
+                    <Pressable analyticsId="components_feed-screen.pressable.25"
+                      onPress={() => void pickDraftImage('library')}
+                      disabled={!canAddPostImage(draftImages.length)}
+                      accessibilityRole="button"
+                      accessibilityState={{ disabled: !canAddPostImage(draftImages.length) }}
+                      style={[styles.photoButton, { backgroundColor: theme.backgroundElement, opacity: canAddPostImage(draftImages.length) ? 1 : 0.5 }]}>
+                      <SymbolView name={{ ios: 'photo', android: 'photo_library', web: 'photo_library' }} size={18} tintColor={theme.textSecondary} />
+                      <ThemedText type="smallBold" style={styles.contextText}>{draftImages.length === 0 ? t.write.choosePhoto : t.write.addPhoto}</ThemedText>
+                    </Pressable>
+                  </View>
+                  <ThemedText type="small" themeColor="textSecondary">사진 {draftImages.length}/{MAX_POST_IMAGES} · 올릴 때 자동으로 줄여요</ThemedText>
                   <Pressable analyticsId="components_feed-screen.pressable.23"
                     onPress={() => void createAiDraft()}
-                    disabled={creatingDraft || (!draftImage && !title.trim() && !body.trim())}
+                    disabled={creatingDraft || (draftImages.length === 0 && !title.trim() && !body.trim())}
                     accessibilityRole="button"
-                    accessibilityState={{ disabled: creatingDraft || (!draftImage && !title.trim() && !body.trim()), busy: creatingDraft }}
-                    style={[styles.aiButton, { backgroundColor: theme.accent, opacity: creatingDraft || (!draftImage && !title.trim() && !body.trim()) ? 0.65 : 1 }]}>
-                    <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
+                    accessibilityState={{ disabled: creatingDraft || (draftImages.length === 0 && !title.trim() && !body.trim()), busy: creatingDraft }}
+                    style={[styles.aiButton, { backgroundColor: theme.backgroundElement, opacity: creatingDraft || (draftImages.length === 0 && !title.trim() && !body.trim()) ? 0.6 : 1 }]}>
+                    <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} size={16} tintColor={theme.accent} />
+                    <ThemedText type="smallBold" style={{ color: theme.accent }}>
                       {creatingDraft ? t.write.creatingDraft : title.trim() || body.trim() ? t.write.polishDraft : t.write.createDraft}
                     </ThemedText>
                   </Pressable>
@@ -1158,11 +1157,10 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  draftImage: {
-    width: '100%',
-    aspectRatio: 16 / 10,
-    borderRadius: 10,
-  },
+  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  photoTile: { width: '31%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden' },
+  photoTileImage: { width: '100%', height: '100%' },
+  photoRemove: { position: 'absolute', top: 4, right: 4, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.92)' },
   photoActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1188,8 +1186,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
   },
   aiButton: {
-    minHeight: 48,
+    // AI는 보조 동작이다. 올리기(헤더의 강조 버튼)와 같은 채움색을 쓰면 제출 버튼으로 오해받는다.
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: Spacing.two,
+    minHeight: 44,
     justifyContent: 'center',
     borderRadius: 8,
     paddingHorizontal: Spacing.three,

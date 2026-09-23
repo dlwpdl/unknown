@@ -113,6 +113,7 @@ export const t = {
     choosePhoto: '앨범에서 선택',
     changePhoto: '사진 바꾸기',
     removePhoto: '사진 삭제',
+    addPhoto: '사진 추가',
     createDraft: 'AI로 초안 만들기',
     polishDraft: 'AI로 다듬기',
     creatingDraft: '초안 만드는 중…',
@@ -415,6 +416,20 @@ export const t = {
     verifiedL2: '전화번호 확인을 마친 이웃이에요. 생년월일 확인을 뜻하지는 않아요',
     verifiedL3: '신분증과 본인 촬영 대조를 마친 이웃이에요',
     self: '내 부캐예요',
+  },
+
+  // 미니 프로필에서 여는 "이 사람이 쓴 글" 화면
+  authorPosts: {
+    back: '돌아가기',
+    open: '쓴 글 보기',
+    title: (nickname: string) => `${nickname}님이 쓴 글`,
+    fallbackTitle: '이웃이 쓴 글',
+    count: (posts: string) => `글 ${posts}개`,
+    loading: '쓴 글 불러오는 중',
+    emptyTitle: '아직 쓴 글이 없어요',
+    emptyBody: '이 이웃이 글을 쓰면 여기에 모여요.',
+    errorTitle: '글을 불러오지 못했어요',
+    errorBody: '잠시 후 다시 시도해 주세요.',
   },
 
   profile: {

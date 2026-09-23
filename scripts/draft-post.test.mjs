@@ -56,3 +56,29 @@ test('written draft can be polished without a photo', async () => {
   assert.deepEqual(JSON.parse(sent.input[0].content[0].text), { cityName: input.cityName, selectedCategory: input.selectedCategory, titleHint: input.titleHint, bodyHint: input.bodyHint, mode: 'edit_existing_draft' });
   assert.equal(sent.input[0].content.length, 1);
 });
+
+test('초안 본문은 쓰레드 말투로 고정되고, 작성자 원고 다듬기는 말투를 바꾸지 않는다', async () => {
+  let handler, sent;
+  const source = ts.transpileModule(fs.readFileSync(new URL('../supabase/functions/draft-post/index.ts', import.meta.url), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS },
+  }).outputText;
+  vm.runInNewContext(source, {
+    exports: {}, Request, Response, console,
+    Deno: { serve: fn => { handler = fn; }, env: { get: () => 'test-value' } },
+    require: () => ({ createClient: () => ({
+      auth: { getUser: async () => ({ data: { user: { id: 'member' } } }) },
+      from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { ai_safety_consent_at: '2026-09-11' } }) }) }) }),
+      rpc: async () => ({}),
+    }) }),
+    fetch: async (_url, options) => {
+      sent = JSON.parse(options.body);
+      return Response.json({ output: [{ content: [{ type: 'output_text', text: JSON.stringify({ categorySlug: 'life', title: '장 보러 가는 길', body: '장 보러 가는 길에\n자주 들르는 곳이 있어요.\n\n이 근처에 추천할 만한 곳 있나요?', hashtags: ['글링', '밴쿠버생활', '동네생활'] }) }] }] });
+    },
+  });
+  const input = { cityName: '밴쿠버', selectedCategory: 'life', bodyHint: '장 보러 가는 길' };
+  const response = await handler(new Request('https://example.test/draft-post', { method: 'POST', headers: { Authorization: 'Bearer test' }, body: JSON.stringify(input) }));
+  assert.equal(response.status, 200);
+  assert.ok(sent.instructions.includes('쓰레드에 올리는 글처럼'), '쓰레드 말투 지시가 프롬프트에 고정되어 있어야 한다');
+  assert.ok(sent.instructions.includes('작성자의 말투를 쓰레드 말투로 바꾸지 마세요'), '다듬기 모드에서는 말투를 보존해야 한다');
+  assert.equal('tone' in JSON.parse(sent.input[0].content[0].text), false, '말투는 사용자 선택이 아니라 서버 규칙이다');
+});
