@@ -12,6 +12,7 @@ export const NOTIFICATION_CATEGORIES = [
   { key: 'interests', label: '관심 태그의 새 글' },
   { key: 'nearby', label: '내 지역의 새로운 모임' },
   { key: 'trending', label: '내 도시에서 지금 뜨는 글' },
+  { key: 'weekly_ranking', label: '주간 인기 글 순위' },
 ] as const;
 export type NotificationCategory = typeof NOTIFICATION_CATEGORIES[number]['key'];
 export type NotificationPreferences = Record<NotificationCategory, boolean> & {
