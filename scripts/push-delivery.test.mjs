@@ -48,6 +48,19 @@ test('sends only server claimed recipients and records a ticket, never actual de
   assert.equal(h.calls.at(-1).args.p_result, 'ticket');
   assert.equal(h.calls.at(-1).args.p_ticket_id, ticketId);
 });
+
+test('관리자 알림 경로는 그대로 전달되고, 목록에 없는 경로만 /notifications 로 대체된다', async () => {
+  const seen = [];
+  const admin = { ...job, category: 'system', route: '/admin?section=users' };
+  const unknown = { ...job, id: '33333333-3333-4333-8333-333333333333', notification_id: '33333333-3333-4333-8333-333333333333', route: '/admin?section=unknown' };
+  const h = harness({ sends: [admin, unknown], fetcher: async (_url, options) => {
+    const messages = JSON.parse(options.body);
+    seen.push(...messages.map((message) => message.data.route));
+    return Response.json({ data: messages.map(() => ({ status: 'ok', id: ticketId })) });
+  } });
+  await h.run();
+  assert.deepEqual(seen, ['/admin?section=users', '/notifications']);
+});
 test('temporary network and HTTP errors retry, permanent HTTP errors stop', async () => {
   for (const [fetcher, expected] of [
     [async () => { throw new Error('private token must not leak'); }, 'retry'],

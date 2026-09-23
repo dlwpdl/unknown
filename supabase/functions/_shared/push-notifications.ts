@@ -9,7 +9,9 @@ type WorkerOptions = {
 type Result = 'ticket' | 'provider_accepted' | 'retry' | 'failed' | 'device_not_registered' | 'receipt_pending';
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const uuid = new RegExp(`^${UUID}$`, 'i');
-const routePattern = new RegExp(`^(?:/post/${UUID}(?:\\?commentId=${UUID})?|/chat\\?(?:conversationId=${UUID}(?:&view=requests)?|requestId=${UUID}|view=requests)|/profile/(?:guidelines|settings)|/notifications)$`, 'i');
+// 앱의 notificationRoute()와 같은 목적지 목록을 유지한다. 관리자 알림(/admin?section=…)이 빠지면
+// 서버가 보낸 화면 대신 /notifications 로 열리므로 두 곳을 함께 고쳐야 한다.
+const routePattern = new RegExp(`^(?:/post/${UUID}(?:\\?commentId=${UUID})?|/chat\\?(?:conversationId=${UUID}(?:&view=requests)?|requestId=${UUID}|view=requests)|/profile/(?:guidelines|settings)|/notifications|/admin(?:\\?(?:section=(?:alerts|analytics|errors|overview|posts|reports|safety|trending|users)|(?:safety|alert)=${UUID}))?)$`, 'i');
 const json = (value: unknown, status = 200) => Response.json(value, { status });
 const object = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 

@@ -138,8 +138,10 @@ test('city picker searches Canadian cities and keeps upcoming cities and the US 
   });
   const render = () => CityPicker({ onClose: () => { closed++; } });
   const list = () => nodes(render()).find(node => node.type === 'SectionList').props;
-  assert.deepEqual(Array.from(list().sections, section => section.data.length), [3, 8]);
-  for (const [id, province] of Object.entries({ ottawa: 'ON', calgary: 'AB', regina: 'SK', 'saint-john': 'NB', halifax: 'NS' })) {
+  // 몬트리올(0075)·캘거리(0092)가 열려 열린 도시 5개.
+  assert.deepEqual(Array.from(list().sections, section => section.data.length),
+    ['open', 'soon'].map(state => CITIES.filter(city => city.state === state).length));
+  for (const [id, province] of Object.entries({ ottawa: 'ON', winnipeg: 'MB', regina: 'SK', 'saint-john': 'NB', halifax: 'NS' })) {
     const city = CITIES.find(city => city.id === id);
     assert.equal(city.province, province);
     assert.equal(city.state, 'soon');
