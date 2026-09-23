@@ -37,6 +37,8 @@ export function notificationRoute(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
   if (new RegExp(`^/chat\\?requestId=${uuid}$`, 'i').test(value)) return '/chat?view=requests';
+  // 관리자 알림은 관리자 화면으로 바로 연다. 화면 자체가 권한을 다시 확인한다.
+  if (new RegExp(`^/admin(?:\\?(?:section=(?:alerts|analytics|errors|overview|posts|reports|safety|trending|users)|(?:safety|alert)=${uuid}))?$`, 'i').test(value)) return value;
   return new RegExp(`^(?:/post/${uuid}(?:\\?commentId=${uuid})?|/chat(?:\\?(?:conversationId=${uuid}(?:&view=requests)?|view=requests))?|/profile/(?:guidelines|settings)|/notifications)$`, 'i').test(value) ? value : null;
 }
 

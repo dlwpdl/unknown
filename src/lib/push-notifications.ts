@@ -11,6 +11,20 @@ export async function pushPermissionGranted() {
   const status = await Notifications.getPermissionsAsync();
   return status.granted || status.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
 }
+// iOS 는 시스템 권한 창을 한 번만 띄운다. '아직 안 물어봄'과 '거절됨'을 구분해야
+// 나중에 다시 물어봐도 되는지 판단할 수 있다.
+export async function pushPermissionUndetermined() {
+  const status = await Notifications.getPermissionsAsync();
+  return !pushStatusAnswered(status);
+}
+function pushStatusAnswered(status: Notifications.NotificationPermissionsStatus) {
+  if (status.granted) return true;
+  if (status.ios?.status === Notifications.IosAuthorizationStatus.DENIED) return true;
+  const ios = status.ios?.status;
+  return ios === Notifications.IosAuthorizationStatus.AUTHORIZED
+    || ios === Notifications.IosAuthorizationStatus.PROVISIONAL
+    || ios === Notifications.IosAuthorizationStatus.EPHEMERAL;
+}
 
 export async function registerPushDevice(client: SupabaseClient, userId: string, requestPermission = false) {
   if (!pushConfigured) throw new Error('PUSH_NOT_CONFIGURED');

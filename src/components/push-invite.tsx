@@ -11,13 +11,15 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadNotificationPreferences, saveNotificationPreferences, shouldInvitePush } from '@/lib/notification-preferences';
-import { pushConfigured, pushPermissionGranted, registerPushDevice } from '@/lib/push-notifications';
+import { pushConfigured, pushPermissionGranted, pushPermissionUndetermined, registerPushDevice } from '@/lib/push-notifications';
 import { supabase } from '@/lib/supabase';
 
 // iOS 는 권한 창을 평생 한 번만 띄워준다. 거절당하면 앱에서 다시 물을 수 없고
 // 사용자가 설정 앱까지 찾아가야 한다. 그래서 시스템 창을 바로 띄우지 않고
 // 무엇을 받게 되는지 먼저 말한 다음, 켜겠다고 한 사람에게만 진짜 창을 띄운다.
 const ASKED_KEY = 'gling.pushInviteAsked';
+// 한 번 거절했다고 영영 안 묻지 않는다. 시스템 창을 아직 안 쓴 사람에게만 7일 뒤 다시 물어본다.
+const REASK_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function PushInvite() {
   const { isAuthed, me } = useAuth();
@@ -32,13 +34,16 @@ export function PushInvite() {
     void (async () => {
       if (!isAuthed || !me.id || !pushConfigured) return;
       try {
-        const alreadyAsked = !!await AsyncStorage.getItem(ASKED_KEY);
-        if (alreadyAsked) return;
+        const askedAt = await AsyncStorage.getItem(ASKED_KEY);
+        const askedRecently = !!askedAt && Date.now() - Date.parse(askedAt) < REASK_AFTER_MS;
+        if (askedRecently) return;
         const permissionGranted = await pushPermissionGranted();
         if (permissionGranted) return;
+        // 이미 시스템 창에서 거절한 기기라면 다시 물어도 창이 뜨지 않는다.
+        if (!await pushPermissionUndetermined()) return;
         const preferences = await loadNotificationPreferences(supabase);
         if (!shouldInvitePush({
-          authed: isAuthed, configured: pushConfigured, alreadyAsked,
+          authed: isAuthed, configured: pushConfigured, alreadyAsked: false,
           permissionGranted, pushEnabled: preferences.push_enabled,
         })) return;
         if (active) setVisible(true);

@@ -8,7 +8,10 @@ test('notification routing accepts existing content destinations and rejects ext
     assert.equal(notificationRoute(route), route);
   }
   assert.equal(notificationRoute(`/chat?requestId=${id}`), '/chat?view=requests');
-  for (const route of ['https://example.com', '//example.com', 'javascript:alert(1)', '/admin', '/profile/settings?redirect=https://example.com', `/post/${id}/../admin`, `/chat?conversationId=${id}&redirect=//example.com`, {}, null]) {
+  for (const route of ['/admin', '/admin?section=reports', '/admin?section=errors', `/admin?safety=${id}`, `/admin?alert=${id}`]) {
+    assert.equal(notificationRoute(route), route);
+  }
+  for (const route of ['https://example.com', '//example.com', 'javascript:alert(1)', '/admin?section=../admin', '/admin?redirect=https://example.com', `/admin?safety=${id}&redirect=//example.com`, `/admin?safety=not-a-uuid`, '/profile/settings?redirect=https://example.com', `/post/${id}/../admin`, `/chat?conversationId=${id}&redirect=//example.com`, {}, null]) {
     assert.equal(notificationRoute(route), null);
   }
 });
