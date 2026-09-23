@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react';
+import { useState } from 'react';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
-import { ADMIN_SECTIONS, adminOptionKeys, type AdminSection } from '@/lib/admin';
+import { ADMIN_COUNTED_SECTIONS, ADMIN_NAV_GROUPS, ADMIN_SECTIONS, adminOptionKeys, type AdminSection } from '@/lib/admin';
+import { isCompactAdminWidth } from '@/lib/admin-layout';
 import type { AdminCounts } from '@/lib/admin-data';
 import './admin.css';
 
@@ -26,6 +28,8 @@ export function AdminShell({
   activeSection,
   counts,
   busy,
+  lastUpdated,
+  onSearch,
   onSection,
   onRefresh,
   onSignOut,
@@ -34,12 +38,57 @@ export function AdminShell({
   activeSection: AdminSection;
   counts: AdminCounts;
   busy: boolean;
+  lastUpdated?: string | null;
+  onSearch?: () => void;
   onSection: (section: AdminSection) => void;
   onRefresh: () => void;
   onSignOut: () => void;
   children: ReactNode;
 }) {
-  const compact = useWindowDimensions().width < 860;
+  const compact = isCompactAdminWidth(useWindowDimensions().width);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const activeItem = ADMIN_SECTIONS.find((entry) => entry.id === activeSection) ?? { id: activeSection, label: '운영 콘솔' };
+
+  const navItem = (item: { id: AdminSection; label: string }) => {
+    const active = item.id === activeSection;
+    const badge = item.id === 'reports' && counts.openReports > 0
+      ? counts.openReports
+      : item.id === 'safety' && counts.safetyHigh > 0 ? counts.safetyHigh
+      : item.id === 'alerts' && counts.alertsOpen > 0 ? counts.alertsOpen : null;
+    const idle = badge == null && ADMIN_COUNTED_SECTIONS.includes(item.id);
+    return (
+      <Pressable
+        key={item.id}
+        onPress={() => { onSection(item.id); setMenuOpen(false); }}
+        accessibilityRole="tab"
+        accessibilityLabel={badge != null ? `${item.label} ${badge}건` : item.label}
+        aria-selected={active}
+        tabIndex={active ? 0 : -1}
+        {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})}
+        style={({ pressed }) => [styles.navItem, active && styles.navItemActive, pressed && styles.pressed]}>
+        <View aria-hidden accessibilityElementsHidden><SymbolView name={sectionIcons[item.id]} size={19} tintColor={active ? Colors.light.accent : Colors.light.textSecondary} /></View>
+        <ThemedText type="smallBold" style={active ? styles.navTextActive : styles.navText}>
+          {item.label}
+        </ThemedText>
+        {badge != null && (
+          <View style={styles.badge}>
+            <ThemedText type="smallBold" style={styles.badgeText}>{badge}</ThemedText>
+          </View>
+        )}
+        {idle && <View style={styles.idleDot} aria-hidden accessibilityElementsHidden />}
+      </Pressable>
+    );
+  };
+
+  const navGroups = () => ADMIN_NAV_GROUPS.map((group) => (
+    <View key={group.label} style={styles.navGroup}>
+      <ThemedText type="small" style={styles.navLabel}>{group.label}</ThemedText>
+      {group.sections
+        .map((sectionId) => ADMIN_SECTIONS.find((entry) => entry.id === sectionId))
+        .filter((entry): entry is { id: AdminSection; label: string } => !!entry)
+        .map(navItem)}
+    </View>
+  ));
 
   return (
     <View nativeID="gling-admin-console" style={[styles.page, compact && styles.pageCompact]}>
@@ -56,46 +105,52 @@ export function AdminShell({
           </View>
         </View>
 
-        {!compact && <ThemedText type="small" style={styles.navLabel}>워크스페이스</ThemedText>}
-        <ScrollView horizontal={compact} showsHorizontalScrollIndicator={false} accessibilityRole="tablist" accessibilityLabel="관리자 메뉴" contentContainerStyle={styles.nav}>
-          {ADMIN_SECTIONS.map((item) => {
-            const active = item.id === activeSection;
-            const badge = item.id === 'reports' && counts.openReports > 0
-              ? counts.openReports
-              : item.id === 'safety' && counts.safetyHigh > 0 ? counts.safetyHigh
-              : item.id === 'alerts' && counts.alertsOpen > 0 ? counts.alertsOpen : null;
-            return (
-              <Pressable
-                key={item.id}
-                onPress={() => onSection(item.id)}
-                accessibilityRole="tab"
-                aria-selected={active}
-                tabIndex={active ? 0 : -1}
-                {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})}
-                style={({ pressed }) => [styles.navItem, active && styles.navItemActive, pressed && styles.pressed]}>
-                <View aria-hidden accessibilityElementsHidden><SymbolView name={sectionIcons[item.id]} size={19} tintColor={active ? Colors.light.accent : Colors.light.textSecondary} /></View>
-                <ThemedText type="smallBold" style={active ? styles.navTextActive : styles.navText}>
-                  {item.label}
-                </ThemedText>
-                {badge != null && (
-                  <View style={styles.badge}>
-                    <ThemedText type="smallBold" style={styles.badgeText}>{badge}</ThemedText>
-                  </View>
-                )}
+        {compact ? (
+          // 폰: 10개 탭이 3열로 어중간하게 접히며 첫 화면을 다 먹던 자리.
+          // 현재 섹션 한 줄만 두고, 누르면 그룹 목록이 펼쳐진다.
+          <>
+            <Pressable
+              onPress={() => setMenuOpen((value) => !value)}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: menuOpen }}
+              accessibilityLabel={`현재 섹션 ${activeItem.label}, 섹션 목록 ${menuOpen ? '닫기' : '열기'}`}
+              style={({ pressed }) => [styles.picker, menuOpen && styles.pickerOpen, pressed && styles.pressed]}>
+              <View aria-hidden accessibilityElementsHidden><SymbolView name={sectionIcons[activeSection]} size={18} tintColor={Colors.light.accent} /></View>
+              <ThemedText type="smallBold">{activeItem.label}</ThemedText>
+              <ThemedText type="small" style={styles.muted}>{menuOpen ? '닫기 ▴' : '섹션 ▾'}</ThemedText>
+            </Pressable>
+            {menuOpen && (
+              <View accessibilityRole="menu" accessibilityLabel="관리자 메뉴" style={styles.pickerMenu}>{navGroups()}</View>
+            )}
+            {menuOpen && !!onSearch && (
+              <Pressable onPress={() => { setMenuOpen(false); onSearch(); }} accessibilityRole="button" accessibilityLabel="화면·회원 검색 열기"
+                style={({ pressed }) => [styles.picker, pressed && styles.pressed]}>
+                <ThemedText type="smallBold">검색</ThemedText>
+                <ThemedText type="small" style={styles.muted}>화면·회원 찾기</ThemedText>
               </Pressable>
-            );
-          })}
-        </ScrollView>
+            )}
+          </>
+        ) : (
+          <>
+            <ThemedText type="small" style={styles.navLabel}>워크스페이스</ThemedText>
+            <ScrollView showsHorizontalScrollIndicator={false} accessibilityRole="tablist" accessibilityLabel="관리자 메뉴" contentContainerStyle={styles.nav}>
+              {navGroups()}
+            </ScrollView>
+          </>
+        )}
 
         {!compact && (
           <View style={styles.sidebarFooter}>
             <View style={styles.auditNotice}>
               <ThemedText type="smallBold">운영자 전용</ThemedText>
-              <ThemedText type="small" style={styles.muted}>모든 열람은 감사 로그에 기록됩니다.</ThemedText>
+              <ThemedText type="small" style={styles.muted}>열람 기록은 감사 로그로 남습니다.{lastUpdated ? ` · 갱신 ${lastUpdated}` : ''}</ThemedText>
             </View>
             <Pressable onPress={onRefresh} disabled={busy} accessibilityRole="button" accessibilityState={{ disabled: busy, busy }} style={({ pressed }) => [styles.utilityButton, busy && styles.disabled, pressed && styles.pressed]}>
               <ThemedText type="smallBold">{busy ? '새로고침 중' : '새로고침'}</ThemedText>
             </Pressable>
+            {!!onSearch && <Pressable onPress={onSearch} accessibilityRole="button" style={({ pressed }) => [styles.utilityButton, pressed && styles.pressed]}>
+              <ThemedText type="smallBold">검색 · ⌘K</ThemedText>
+            </Pressable>}
             <Pressable onPress={onSignOut} accessibilityRole="button" style={({ pressed }) => [styles.signOutButton, pressed && styles.pressed]}>
               <ThemedText type="small" style={styles.muted}>로그아웃</ThemedText>
             </Pressable>
@@ -129,6 +184,10 @@ const styles = StyleSheet.create({
   brandLogo: { width: 116, height: 39 },
   muted: { color: Colors.light.textSecondary },
   nav: { gap: Spacing.one },
+  navGroup: { gap: Spacing.one },
+  picker: { minHeight: 44, paddingHorizontal: Spacing.three, borderRadius: 8, borderWidth: 1, borderColor: Colors.light.line, backgroundColor: Colors.light.card, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  pickerOpen: { borderColor: Colors.light.accent },
+  pickerMenu: { gap: Spacing.two, paddingTop: Spacing.one },
   navLabel: { color: Colors.light.textSecondary, fontSize: 11, paddingHorizontal: Spacing.three, marginBottom: Spacing.two },
   navItem: { minHeight: 44, paddingHorizontal: Spacing.three, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   navItemActive: { backgroundColor: Colors.light.card },
@@ -136,6 +195,7 @@ const styles = StyleSheet.create({
   navTextActive: { color: Colors.light.accent },
   badge: { marginLeft: 'auto', minWidth: 22, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 11, backgroundColor: Colors.light.accent, alignItems: 'center' },
   badgeText: { color: Colors.light.accentInk, fontSize: 11 },
+  idleDot: { marginLeft: 'auto', width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.light.line },
   sidebarFooter: { marginTop: 'auto', gap: Spacing.two },
   auditNotice: { gap: Spacing.one, padding: Spacing.two },
   utilityButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },

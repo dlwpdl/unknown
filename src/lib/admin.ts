@@ -31,6 +31,16 @@ export const ADMIN_SECTIONS: { id: AdminSection; label: string }[] = [
   { id: 'conversations', label: '대화' },
 ];
 
+// 지켜보는 화면 / 처리하는 화면 / 규모를 보는 화면으로 나눈다. 미처리 배지는 '대응' 그룹에서 먼저 보인다.
+export const ADMIN_NAV_GROUPS: { label: string; sections: AdminSection[] }[] = [
+  { label: '모니터링', sections: ['analytics', 'overview', 'safety', 'alerts', 'trending'] },
+  { label: '대응', sections: ['reports', 'errors'] },
+  { label: '데이터', sections: ['users', 'posts', 'conversations'] },
+];
+
+// 0건이어도 표시해 "확인했다"는 신호를 주는 항목.
+export const ADMIN_COUNTED_SECTIONS: AdminSection[] = ['reports', 'safety', 'alerts'];
+
 export function canUseLocalAdminPreview(dev: boolean, hostname: string) {
   return dev && ['localhost', '127.0.0.1', '::1'].includes(hostname);
 }

@@ -1,13 +1,16 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Switch, useWindowDimensions, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import { adminOptionKeys } from '@/lib/admin';
+import { shortId } from '@/lib/admin-labels';
+import { isCompactAdminWidth } from '@/lib/admin-layout';
 import { loadAdminAnalytics, type AdminAnalytics, type AnalyticsFilters, type Breakdown } from '@/lib/admin-analytics';
 import { ADMIN_PAGE_SIZE } from '@/lib/admin-data';
 import { CITIES } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
+import { AdminFilterBar } from './admin-table-controls';
 
 const TABS = { overview: '요약', members: '회원', traffic: '트래픽', behavior: '행동 분석', revenue: '결제·홍보', logs: '운영 로그' } as const;
 const TIERS = { all: '전체 등급', free: '무료', plus: '플러스', premium: '프리미엄' } as const;
@@ -44,12 +47,14 @@ export function AdminAnalyticsView({ localPreview, onUser, refreshSignal = 0 }: 
         </View>
         <Action label="분석 새로고침" disabled={loading || localPreview} onPress={() => setRetry((value) => value + 1)} />
       </View>
-      <View style={styles.filters}>
-        <Choices label="조회 기간" values={[7, 30, 90].map((days) => ({ key: String(days), label: `${days}일` }))} selected={String(filters.days)} onSelect={(value) => filter({ days: Number(value) as AnalyticsFilters['days'] })} />
-        <Choices label="선호 지역" values={[{ key: '', label: '전체 도시' }, ...CITIES.map((city) => ({ key: city.id, label: city.name }))]} selected={filters.city ?? ''} onSelect={(city) => filter({ city: city || null })} />
-        <Choices label="현재 멤버십" values={Object.entries(TIERS).map(([key, label]) => ({ key, label }))} selected={filters.tier} onSelect={(tier) => filter({ tier: tier as AnalyticsFilters['tier'] })} />
-        <View style={styles.switchRow}><Switch value={filters.includeInternal} onValueChange={(includeInternal) => filter({ includeInternal })} accessibilityLabel="목·심사·관리자 계정 포함" trackColor={{ true: Colors.light.accent }} /><ThemedText type="small">목·심사·관리자 계정 포함</ThemedText></View>
-      </View>
+      <AdminFilterBar applied={(filters.days === 30 ? 0 : 1) + (filters.city ? 1 : 0) + (filters.tier === 'all' ? 0 : 1) + (filters.includeInternal ? 1 : 0)}>
+        <View style={styles.filters}>
+          <Choices label="조회 기간" values={[7, 30, 90].map((days) => ({ key: String(days), label: `${days}일` }))} selected={String(filters.days)} onSelect={(value) => filter({ days: Number(value) as AnalyticsFilters['days'] })} />
+          <Choices label="선호 지역" values={[{ key: '', label: '전체 도시' }, ...CITIES.map((city) => ({ key: city.id, label: city.name }))]} selected={filters.city ?? ''} onSelect={(city) => filter({ city: city || null })} />
+          <Choices label="현재 멤버십" values={Object.entries(TIERS).map(([key, label]) => ({ key, label }))} selected={filters.tier} onSelect={(tier) => filter({ tier: tier as AnalyticsFilters['tier'] })} />
+          <View style={styles.switchRow}><Switch value={filters.includeInternal} onValueChange={(includeInternal) => filter({ includeInternal })} accessibilityLabel="목·심사·관리자 계정 포함" trackColor={{ true: Colors.light.accent }} /><ThemedText type="small">목·심사·관리자 계정 포함</ThemedText></View>
+        </View>
+      </AdminFilterBar>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs} accessibilityRole="tablist" accessibilityLabel="분석 메뉴">
         {Object.entries(TABS).map(([key, label]) => <Pressable key={key} accessibilityRole="tab" aria-selected={key === tab} tabIndex={key === tab ? 0 : -1} {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})} onPress={() => setTab(key as keyof typeof TABS)} style={({ pressed }) => [styles.tab, key === tab && styles.selectedTab, pressed && styles.pressed]}><ThemedText type="smallBold" style={key === tab ? styles.accent : styles.muted}>{label}</ThemedText></Pressable>)}
       </ScrollView>
@@ -88,6 +93,7 @@ function Overview({ data }: { data: AdminAnalytics | null }) {
 
 function DailyActivity({ data }: { data: AdminAnalytics | null }) {
   const [showTable, setShowTable] = useState(false);
+  const compact = isCompactAdminWidth(useWindowDimensions().width);
   const rows = data?.daily ?? [];
   const collected = (day: string) => !!data && day >= data.collectionStartedAt.slice(0, 10);
   const peak = Math.max(0, ...rows.filter((row) => collected(row.day)).map((row) => row.activeUsers));
@@ -95,12 +101,23 @@ function DailyActivity({ data }: { data: AdminAnalytics | null }) {
     <View style={styles.headingRow}><SectionTitle title="일별 활동" note="로그인 회원의 화면 방문 기준 · 하루 안에서 회원 중복 제외" /><Action label={showTable ? '차트 보기' : '수치 표 보기'} onPress={() => setShowTable((value) => !value)} /></View>
     {!rows.length ? <Empty text={data ? '선택 기간에 수집한 활동 기록이 없습니다.' : '관리자 로그인 후 일별 추이가 표시됩니다.'} /> : showTable ? <DataTable headers={['날짜 (UTC)', '활동 회원', '화면 조회', '작성 글', '신규 가입']} rows={rows.map((row) => ({ key: row.day, cells: [row.day, collected(row.day) ? number(row.activeUsers) : '미수집', collected(row.day) ? number(row.screenViews) : '미수집', number(row.posts), number(row.newMembers)] }))} /> : <>
       <ThemedText type="small" style={styles.muted}>최대 {number(peak)}명 / 일 · 수집 시작 전 구간은 비워 둡니다.</ThemedText>
-      <ScrollView horizontal contentContainerStyle={styles.chart} accessibilityLabel="일별 활동 회원 막대 차트">
-        {rows.map((row, index) => <View key={row.day} accessible accessibilityLabel={`${row.day}, ${collected(row.day) ? `활동 회원 ${row.activeUsers}명, 화면 조회 ${row.screenViews}회` : '접속 미수집'}, 작성 글 ${row.posts}개, 신규 가입 ${row.newMembers}명`} style={styles.barColumn}>
-          <View style={styles.barTrack} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><View style={[styles.bar, { height: `${collected(row.day) ? row.activeUsers / Math.max(1, peak) * 100 : 0}%` }]} /></View>
-          <ThemedText type="small" style={styles.barLabel}>{index === 0 || index === rows.length - 1 || index % Math.ceil(rows.length / 7) === 0 ? row.day.slice(5) : ' '}</ThemedText>
-        </View>)}
-      </ScrollView>
+      <View style={styles.chartRow}>
+        <View style={styles.axis} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <ThemedText type="small" style={styles.axisLabel}>{number(peak)}</ThemedText>
+          <ThemedText type="small" style={styles.axisLabel}>{number(Math.round(peak / 2))}</ThemedText>
+          <ThemedText type="small" style={styles.axisLabel}>0</ThemedText>
+        </View>
+        <ScrollView horizontal contentContainerStyle={styles.chart} accessibilityLabel="일별 활동 회원 막대 차트">
+          {rows.map((row, index) => <View key={row.day} accessible accessibilityLabel={`${row.day}, ${collected(row.day) ? `활동 회원 ${row.activeUsers}명, 화면 조회 ${row.screenViews}회` : '접속 미수집'}, 작성 글 ${row.posts}개, 신규 가입 ${row.newMembers}명`} style={[styles.barColumn, compact && styles.barColumnCompact]}>
+            <View style={styles.barTrack} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+              <View style={styles.gridLine} />
+              <View style={[styles.gridLine, styles.gridLineMiddle]} />
+              <View style={[styles.bar, { height: `${collected(row.day) ? row.activeUsers / Math.max(1, peak) * 100 : 0}%` }]} />
+            </View>
+            <ThemedText type="small" style={styles.barLabel}>{index === 0 || index === rows.length - 1 || index % Math.ceil(rows.length / 7) === 0 ? row.day.slice(5) : ' '}</ThemedText>
+          </View>)}
+        </ScrollView>
+      </View>
     </>}
     <ThemedText type="small" style={styles.muted}>{data ? `접속 수집 시작 ${date(data.collectionStartedAt)} · 수집 이전 트래픽은 확인할 수 없습니다.` : '접속 수집 전 기간의 숫자는 표시하지 않습니다.'}</ThemedText>
   </View>;
@@ -179,7 +196,7 @@ function DataTable({ headers, rows }: { headers: string[]; rows: { key: string; 
 }
 
 function UserLink({ id, nickname, onUser }: { id: string; nickname: string; onUser: (id: string) => void }) {
-  return <Pressable accessibilityRole="button" accessibilityLabel={`${nickname} 회원 상세 보기`} onPress={() => onUser(id)} style={({ pressed }) => [styles.userLink, pressed && styles.pressed]}><ThemedText type="smallBold" style={styles.accent}>{nickname}</ThemedText><ThemedText type="small" style={styles.muted}>{id.slice(0, 8)}</ThemedText></Pressable>;
+  return <Pressable accessibilityRole="button" accessibilityLabel={`${nickname} 회원 상세 보기`} onPress={() => onUser(id)} style={({ pressed }) => [styles.userLink, pressed && styles.pressed]}><ThemedText type="smallBold" style={styles.accent}>{nickname}</ThemedText><ThemedText type="small" style={styles.muted}>{shortId(id)}</ThemedText></Pressable>;
 }
 
 function Choices({ label, values, selected, onSelect }: { label: string; values: { key: string; label: string }[]; selected: string; onSelect: (value: string) => void }) {
@@ -248,17 +265,23 @@ const styles = StyleSheet.create({
   empty: { paddingVertical: Spacing.four, color: Colors.light.textSecondary },
   panel: { gap: Spacing.three, padding: Spacing.three, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
   chart: { flexGrow: 1, minWidth: '100%', gap: Spacing.one, paddingTop: Spacing.two },
+  chartRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.one },
+  axis: { width: 30, height: 110, paddingTop: Spacing.two, justifyContent: 'space-between' },
+  axisLabel: { fontSize: 10, color: Colors.light.textSecondary, textAlign: 'right', fontVariant: ['tabular-nums'] },
   barColumn: { flexGrow: 1, minWidth: 30, gap: Spacing.two },
-  barTrack: { height: 150, justifyContent: 'flex-end', borderBottomWidth: 1, borderBottomColor: Colors.light.line },
+  barColumnCompact: { minWidth: 14 },
+  barTrack: { height: 110, justifyContent: 'flex-end', borderBottomWidth: 1, borderBottomColor: Colors.light.line, position: 'relative' },
+  gridLine: { position: 'absolute', left: 0, right: 0, top: 0, borderTopWidth: 1, borderTopColor: Colors.light.line, borderStyle: 'dashed' },
+  gridLineMiddle: { top: '50%' },
   bar: { backgroundColor: Colors.light.accent, borderTopLeftRadius: 2, borderTopRightRadius: 2, marginHorizontal: 5 },
   barLabel: { fontSize: 10, textAlign: 'center', color: Colors.light.textSecondary },
   tableScroll: { borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8 },
   table: { flex: 1, backgroundColor: Colors.light.card },
   tableHeader: { flexDirection: 'row', backgroundColor: Colors.light.backgroundElement },
-  tableRow: { minHeight: 56, flexDirection: 'row', borderTopWidth: 1, borderTopColor: Colors.light.line },
+  tableRow: { minHeight: 44, flexDirection: 'row', borderTopWidth: 1, borderTopColor: Colors.light.line },
   tableRowAlternate: { backgroundColor: Colors.light.background },
   tableValue: { fontVariant: ['tabular-nums'] },
-  cell: { flex: 1, minWidth: 142, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, justifyContent: 'center' },
+  cell: { flex: 1, minWidth: 142, paddingHorizontal: 12, paddingVertical: Spacing.one, justifyContent: 'center' },
   userLink: { minHeight: 44, justifyContent: 'center' },
   action: { alignSelf: 'flex-start', minHeight: 44, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
   disabled: { opacity: 0.45 },

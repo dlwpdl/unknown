@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 
+import { matches, selected } from './admin-section-filter';
+import { AdminFilterBar, AdminMultiFilter, AdminSelect, AdminSearch, AdminFilterReset, AdminTableSummary } from '@/components/admin/admin-table-controls';
 import { AdminReportQueue } from '@/components/admin/admin-report-queue';
 import { AdminTrendingPanel } from '@/components/admin/admin-trending-panel';
 import { AdminUserDirectoryPanel } from '@/components/admin/admin-user-directory';
+import { conversationLabel, decodeUserAgent, displayName, shortId } from '@/lib/admin-labels';
+import { isCompactAdminWidth } from '@/lib/admin-layout';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import type { AdminSection } from '@/lib/admin';
@@ -30,43 +34,70 @@ export function AdminSectionView({
   loadingMore: boolean;
   noMore: boolean;
   onUser: (userId: string) => void;
-  onResolve: (reportId: string, action: 'dismissed' | 'warned' | 'blocked' | 'hidden', note: string) => void;
+  onResolve: (reportId: string | string[], action: 'dismissed' | 'warned' | 'blocked' | 'hidden', note: string) => Promise<string[]>;
   onLoadMore: () => void;
   localPreview?: boolean;
 }) {
   const [query, setQuery] = useState('');
-  const [postStatus, setPostStatus] = useState('');
-  const [postCity, setPostCity] = useState('');
+  const [postStatus, setPostStatus] = useState<string[]>([]);
+  const [postCity, setPostCity] = useState<string[]>([]);
+  const [targets, setTargets] = useState<string[]>([]);
+  const [risks, setRisks] = useState<string[]>([]);
+  const [statuses, setStatuses] = useState<string[]>([]);
+  const [senders, setSenders] = useState<string[]>([]);
+  const [rooms, setRooms] = useState<string[]>([]);
   const [postSort, setPostSort] = useState('new');
-  const compactUsers = useWindowDimensions().width < 560;
+  const windowWidth = useWindowDimensions().width;
+  const compactUsers = windowWidth < 560;
+  const compact = isCompactAdminWidth(windowWidth);
   const profiles = useMemo(() => new Map(data.profiles.map((profile) => [profile.id, profile])), [data.profiles]);
   const needle = query.trim().toLocaleLowerCase('ko-KR');
 
   if (section === 'overview') {
-    const items = [
-      { label: '미처리 신고', value: data.counts.openReports, urgent: true },
-      { label: 'AI 고위험', value: data.counts.safetyHigh, urgent: true },
-      { label: '감시어 경보', value: data.counts.alertsOpen, urgent: data.counts.alertsOpen > 0 },
-      { label: 'AI 처리 대기', value: data.counts.safetyPending },
-      { label: '전체 사용자', value: data.counts.profiles },
-      { label: '전체 게시글', value: data.counts.posts },
-      { label: '전체 메시지', value: data.counts.messages },
-      { label: '다계정 의심', value: data.sharedSessions.length, urgent: data.sharedSessions.length > 0 },
+    const attention = [
+      { key: 'openReports' as const, label: '미처리 신고', value: data.counts.openReports, urgent: true },
+      { key: 'alertsOpen' as const, label: '감시어 경보', value: data.counts.alertsOpen, urgent: data.counts.alertsOpen > 0 },
+      { key: 'safetyHigh' as const, label: 'AI 고위험', value: data.counts.safetyHigh, urgent: true },
+      { key: 'safetyPending' as const, label: 'AI 처리 대기', value: data.counts.safetyPending },
     ];
+    const scale = [
+      { key: 'profiles' as const, label: '전체 사용자', value: data.counts.profiles },
+      { key: 'posts' as const, label: '전체 게시글', value: data.counts.posts },
+      { key: 'messages' as const, label: '전체 메시지', value: data.counts.messages },
+    ];
+    type Metric = { key: keyof NonNullable<AdminDashboardData['deltas']>; label: string; value: number; urgent?: boolean };
+    const deltaText = (key: Metric['key']) => {
+      const delta = data.deltas?.[key];
+      if (!delta) return null;
+      const diff = delta.now - delta.before;
+      if (diff === 0) return '24시간 전과 같음';
+      return `${diff > 0 ? '▲' : '▼'} ${Math.abs(diff)} · 24시간 전 ${delta.before}`;
+    };
+    const metrics = (items: Metric[]) => (
+      <View style={styles.metrics}>
+        {items.map((item) => (
+          <View key={item.label} accessibilityLabel={`${item.label} ${item.value}건`} style={[styles.metric, item.urgent && styles.metricUrgent]}>
+            <ThemedText type="smallBold" style={item.urgent ? styles.urgent : styles.muted}>{item.label}</ThemedText>
+            <ThemedText type="title" style={[styles.metricValue, item.urgent && styles.urgent]}>{item.value}</ThemedText>
+            {!!deltaText(item.key) && <ThemedText type="small" style={styles.muted}>{deltaText(item.key)}</ThemedText>}
+          </View>
+        ))}
+      </View>
+    );
     return (
       <View style={styles.section}>
         <SectionHeading title="운영 현황" description="신고 여부와 무관하게 전체 활동을 확인할 수 있습니다." />
-        <View style={styles.metrics}>
-          {items.map((item) => (
-            <View key={item.label} accessibilityLabel={`${item.label} ${item.value}건`} style={[styles.metric, item.urgent && styles.metricUrgent]}>
-              <ThemedText type="smallBold" style={item.urgent ? styles.urgent : styles.muted}>{item.label}</ThemedText>
-              <ThemedText type="title" style={[styles.metricValue, item.urgent && styles.urgent]}>{item.value}</ThemedText>
-            </View>
-          ))}
+        <View style={styles.heading}>
+          <ThemedText type="smallBold">지금 처리할 일</ThemedText>
         </View>
+        {metrics(attention)}
+        <View style={styles.heading}>
+          <ThemedText type="smallBold">서비스 규모</ThemedText>
+        </View>
+        {metrics(scale)}
         {data.sharedSessions.length > 0 && <>
           <View style={styles.subheading}>
-            <ThemedText type="subtitle" accessibilityRole="header">다계정 의심</ThemedText>
+            <ThemedText type="subtitle" accessibilityRole="header">다계정 의심 · {data.sharedSessions.length}건</ThemedText>
             <ThemedText type="small" style={styles.muted}>최근 30일 안에 같은 IP(또는 같은 IP·기기)로 접속한 계정이 둘 이상입니다. 가정·사무실·통신사 공유 IP일 수 있으니 댓글·글 활동을 함께 보고 판단하세요.</ThemedText>
           </View>
           <View style={styles.rows}>
@@ -76,7 +107,7 @@ export function AdminSectionView({
                   <ThemedText type="smallBold">{group.same_device ? '같은 IP · 같은 기기' : '같은 IP'} · {group.ip}</ThemedText>
                   <StateText text={`${group.user_count}개 계정`} danger={group.same_device} />
                 </View>
-                {group.user_agent && <ThemedText type="small" style={styles.muted} numberOfLines={1}>{group.user_agent}</ThemedText>}
+                {group.user_agent && <ThemedText type="small" style={styles.muted} numberOfLines={1}>{decodeUserAgent(group.user_agent)}</ThemedText>}
                 <View style={styles.rowTop}>
                   {group.users.map((user) => (
                     <Pressable key={user.id} onPress={() => onUser(user.id)} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
@@ -126,22 +157,48 @@ export function AdminSectionView({
   }
 
   if (section === 'safety') {
+    // 대상이 글일 때는 ID 대신 제목을 보여준다. 댓글·메시지는 본문을 따로 불러오지 않으므로 짧은 ID를 유지한다.
+    const allPosts = [...data.posts, ...(data.contextPosts ?? [])];
+    const targetLabel = (review: { target_type: AdminSafetyTargetType; target_id: string }) => {
+      const label = SAFETY_TARGET_LABEL[review.target_type] ?? review.target_type;
+      if (review.target_type === 'post') {
+        const post = allPosts.find((row) => row.id === review.target_id);
+        if (post) return `${label} · ${post.title}`;
+      }
+      return `${label} · ${shortId(review.target_id)}`;
+    };
+    const reviews = data.safetyReviews.filter((review) => matches(needle, review.target_id, review.last_error, ...review.risk_reasons)
+      && selected(targets, review.target_type) && selected(risks, review.risk_level ?? 'pending') && selected(statuses, review.status));
     return (
       <View style={styles.section}>
         <SectionHeading title="AI 안전 모니터링" description={`처리 대기 ${data.counts.safetyPending}건 · 고위험 ${data.counts.safetyHigh}건`} />
-        <View style={styles.rows}>
-          {data.safetyReviews.map((review) => (
-            <View key={review.id} style={styles.row}>
+        <div className="admin-toolbar"><AdminSearch value={query} onChange={setQuery} placeholder="대상 ID, 분석 이유, 오류 검색" />
+          <AdminFilterBar applied={targets.length + risks.length + statuses.length}>
+            <div className="admin-filter-row">
+              <AdminMultiFilter label="대상" options={recordOptions(SAFETY_TARGET_LABEL)} value={targets} onChange={setTargets} />
+              <AdminMultiFilter label="위험도" options={recordOptions({ low: '낮음', medium: '보통', high: '높음', critical: '심각', pending: '분석 대기' })} value={risks} onChange={setRisks} />
+              <AdminMultiFilter label="처리 상태" options={recordOptions({ pending: '대기', processing: '분석 중', reviewed: '검토 완료', failed: '실패' })} value={statuses} onChange={setStatuses} />
+              <AdminFilterReset onReset={() => { setQuery(''); setTargets([]); setRisks([]); setStatuses([]); }} />
+            </div>
+          </AdminFilterBar><AdminTableSummary shown={reviews.length} loaded={data.safetyReviews.length} />
+        </div>
+        <View style={styles.list}>
+          {reviews.map((review) => (
+            <details key={review.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+              <summary style={{ minHeight: 48, padding: '0 12px', alignContent: 'center', cursor: 'pointer', fontSize: 13 }}>
+                {targetLabel(review)} · {review.risk_level ?? review.status} · {formatDate(review.created_at)}
+              </summary><View style={styles.postBody}>
               <View style={styles.rowTop}>
-                <ThemedText type="smallBold">{SAFETY_TARGET_LABEL[review.target_type] ?? review.target_type} · {shortId(review.target_id)}</ThemedText>
+                <ThemedText type="smallBold">{targetLabel(review)}</ThemedText>
+                <ThemedText type="small" style={styles.muted}>{shortId(review.target_id)}</ThemedText>
                 <StateText text={review.risk_level ?? review.status} danger={review.risk_level === 'high' || review.risk_level === 'critical' || review.status === 'failed'} />
               </View>
               <ThemedText type="small">{review.risk_reasons.length ? review.risk_reasons.join(' · ') : review.last_error ?? '분석 결과 대기 중'}</ThemedText>
               <ThemedText type="small" style={styles.muted}>위험도 {review.risk_score ?? '-'} · 시도 {review.attempts}회 · {formatDate(review.created_at)}</ThemedText>
               {(review.target_type === 'chilling_profile' || review.target_type === 'chilling_application') && <AdminChillingContent targetType={review.target_type} targetId={review.target_id} localPreview={localPreview} onUser={onUser} />}
-            </View>
+            </View></details>
           ))}
-          {data.safetyReviews.length === 0 && <Empty text="안전 검토 기록이 없습니다." />}
+          {reviews.length === 0 && <Empty text="조건에 맞는 안전 검토 기록이 없습니다." />}
         </View>
         <LoadMore loading={loadingMore} noMore={noMore} onPress={onLoadMore} />
       </View>
@@ -162,41 +219,88 @@ export function AdminSectionView({
 
   if (section === 'posts') {
     const rows = data.posts
-      .filter((post) => matches(needle, post.title, post.body, post.city_id, post.author_id))
-      .filter((post) => (!postStatus || post.status === postStatus) && (!postCity || post.city_id === postCity))
+      .filter((post) => matches(needle, post.title, post.body, post.city_id, post.author_id, post.id, profiles.get(post.author_id)?.nickname))
+      .filter((post) => selected(postStatus, post.status) && selected(postCity, post.city_id))
       .sort((a, b) => postSort === 'views' ? (b.view_count ?? 0) - (a.view_count ?? 0)
         : postSort === 'likes' ? (b.like_count ?? 0) - (a.like_count ?? 0)
         : b.created_at.localeCompare(a.created_at));
     return (
       <View style={styles.section}>
         <SectionHeading title="게시글" description="한 줄에 한 글입니다. 조정이 필요한 글만 펼치세요. 조회수·공감수·저장수·노출 순서·해시태그는 여기서만 바꿉니다." />
-        <View style={styles.filters}>
-          {search}
-          <Picker label="상태" value={postStatus} onChange={setPostStatus}
-            options={[['', '상태 전체'], ['published', '게시중'], ['removed', '삭제됨']]} />
-          <Picker label="도시" value={postCity} onChange={setPostCity}
-            options={[['', '도시 전체'], ...CITIES.map((city) => [city.id, city.name] as [string, string])]} />
-          <Picker label="정렬" value={postSort} onChange={setPostSort}
-            options={[['new', '최신순'], ['views', '조회순'], ['likes', '공감순']]} />
-          <ThemedText type="small" style={[styles.muted, styles.filterCount]}>
-            {count(rows.length)}건 / 불러온 {count(data.posts.length)}건
-          </ThemedText>
-        </View>
-        <View style={styles.list}>
+        <div className="admin-toolbar">
+          <AdminSearch value={query} onChange={setQuery} placeholder="제목, 내용, 작성자 또는 ID 검색" />
+          <AdminFilterBar applied={postStatus.length + postCity.length}>
+            <div className="admin-filter-row">
+              <AdminMultiFilter label="상태" value={postStatus} onChange={setPostStatus} options={recordOptions({ published: '게시중', removed: '삭제됨' })} />
+              <AdminMultiFilter label="도시" value={postCity} onChange={setPostCity} options={CITIES.map((city) => ({ value: city.id, label: city.name }))} />
+              <AdminSelect label="정렬" value={postSort} onChange={setPostSort} options={recordOptions({ new: '최신순', views: '조회순', likes: '공감순' })} />
+              <AdminFilterReset onReset={() => { setQuery(''); setPostStatus([]); setPostCity([]); setPostSort('new'); }} />
+            </div>
+          </AdminFilterBar><AdminTableSummary shown={rows.length} loaded={data.posts.length} />
+        </div>
+        <div className={compact ? undefined : 'admin-table-wrap'}><View style={[styles.list, { minWidth: compact ? 0 : 680, borderWidth: 0 }]}>
+          {!compact && <View style={styles.postHead}>
+            <ThemedText type="smallBold" style={{ flex: 1 }}>게시글 · 작성자 · 지역</ThemedText>
+            <View style={styles.postMetrics}>{POST_COUNTERS.map(({ key, label }) => <ThemedText key={key} style={styles.postMetric}>{label}</ThemedText>)}</View>
+          </View>}
           {rows.map((post, index) => (
-            <AdminPostRow key={post.id} post={post} first={index === 0}
-              author={profiles.get(post.author_id)?.nickname ?? post.author_id}
+            <AdminPostRow key={post.id} post={post} first={index === 0} compact={compact}
+              author={displayName(profiles.get(post.author_id), post.author_id)}
               localPreview={localPreview} onUser={onUser} />
           ))}
           {rows.length === 0 && <Empty />}
-        </View>
+        </View></div>
         <LoadMore loading={loadingMore} noMore={noMore} onPress={onLoadMore} />
       </View>
     );
   }
 
-  const messages = data.messages.filter((message) => matches(needle, message.body, message.sender_id, message.conversation_id));
-  return <View style={styles.section}><SectionHeading title="대화" description={`최근 대화방 ${data.conversations.length}개와 메시지 ${data.messages.length}개`} />{search}<View style={styles.rows}>{messages.map((message) => <Pressable key={message.id} onPress={() => onUser(message.sender_id)} accessibilityRole="button" style={styles.row}><ThemedText type="smallBold">{profiles.get(message.sender_id)?.nickname ?? message.sender_id}</ThemedText><ThemedText>{message.body}</ThemedText><ThemedText type="small" style={styles.muted}>대화 {shortId(message.conversation_id)} · {formatDate(message.created_at)}</ThemedText></Pressable>)}{messages.length === 0 && <Empty text="표시할 메시지가 없습니다." />}</View><LoadMore loading={loadingMore} noMore={noMore} onPress={onLoadMore} /></View>;
+  const conversationsById = new Map(data.conversations.map((conversation) => [conversation.id, conversation]));
+  const roomLabel = (conversationId: string) => {
+    const conversation = conversationsById.get(conversationId);
+    return conversation
+      ? conversationLabel(conversation, profiles, [...data.posts, ...(data.contextPosts ?? [])])
+      : { primary: `대화 ${shortId(conversationId)}`, secondary: '대화 정보 없음' };
+  };
+  const roomOptions = [...new Set([...data.conversations.map((conversation) => conversation.id), ...data.messages.map((message) => message.conversation_id)])]
+    .map((id) => ({ value: id, label: roomLabel(id).primary }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'ko-KR'));
+  const messages = data.messages.filter((message) => matches(needle, message.body, message.sender_id, message.conversation_id, profiles.get(message.sender_id)?.nickname, roomLabel(message.conversation_id).primary)
+    && selected(senders, message.sender_id) && selected(rooms, message.conversation_id));
+  return <View style={styles.section}>
+    <SectionHeading title="대화" description="불러온 메시지를 검색합니다. 내용을 펼치면 전문과 작성자 이력을 확인할 수 있습니다." />
+    <div className="admin-toolbar"><AdminSearch value={query} onChange={setQuery} placeholder="내용, 작성자 이름 검색" />
+      <AdminFilterBar applied={senders.length + rooms.length}>
+        <div className="admin-filter-row">
+          <AdminMultiFilter label="작성자" options={Array.from(new Set(data.messages.map((message) => message.sender_id))).map((id) => ({ value: id, label: displayName(profiles.get(id), id) })).sort((a, b) => a.label.localeCompare(b.label, 'ko-KR'))} value={senders} onChange={setSenders} />
+          <AdminMultiFilter label="대화방" options={roomOptions} value={rooms} onChange={setRooms} />
+          <AdminFilterReset onReset={() => { setQuery(''); setSenders([]); setRooms([]); }} />
+        </div>
+      </AdminFilterBar><AdminTableSummary shown={messages.length} loaded={data.messages.length} />
+    </div>
+    {compact ? (
+      // 폰에서는 680px 표를 가로로 밀기보다 한 줄에 한 건씩 카드로 본다.
+      <div className="admin-card-list" aria-label="대화 목록">
+        {messages.map((message) => <button key={message.id} type="button" className="admin-card" onClick={() => onUser(message.sender_id)} aria-label={`${displayName(profiles.get(message.sender_id), message.sender_id)}의 메시지, 작성자 활동 보기`}>
+          <span className="admin-card-top">
+            <span className="admin-card-title">{displayName(profiles.get(message.sender_id), message.sender_id)}</span>
+            <span className="admin-card-meta">{formatDate(message.created_at)}</span>
+          </span>
+          <span className="admin-card-excerpt">{message.body || '(내용 없음)'}</span>
+          <span className="admin-card-meta"><span>{roomLabel(message.conversation_id).primary}</span><span>{roomLabel(message.conversation_id).secondary}</span></span>
+        </button>)}
+        {messages.length === 0 && <div className="admin-empty">조건에 맞는 메시지가 없습니다.</div>}
+      </div>
+    ) : (
+      <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>작성자</th><th>메시지</th><th>대화방</th><th>보낸 시각</th></tr></thead>
+        <tbody>{messages.map((message) => <tr key={message.id}>
+          <td><button className="admin-row-button" onClick={() => onUser(message.sender_id)} title={message.sender_id}>{displayName(profiles.get(message.sender_id), message.sender_id)}</button></td>
+          <td><details><summary style={{ cursor: 'pointer', maxWidth: 480, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{message.body || '(내용 없음)'}</summary><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{message.body}</p></details></td>
+          <td title={message.conversation_id}><span className="admin-cell-primary" style={{ fontWeight: 400 }}>{roomLabel(message.conversation_id).primary}</span><span className="admin-cell-secondary">{roomLabel(message.conversation_id).secondary}</span></td><td>{formatDate(message.created_at)}</td>
+        </tr>)}</tbody></table>{messages.length === 0 && <Empty text="조건에 맞는 메시지가 없습니다." />}</div>
+    )}
+    <LoadMore loading={loadingMore} noMore={noMore} onPress={onLoadMore} />
+  </View>;
 }
 
 // 글 자체의 수정·삭제는 작성자가 앱에서 한다. 여기서는 노출에 영향을 주는 값만 손댄다.
@@ -208,8 +312,8 @@ const POST_COUNTERS = [
   { key: 'save_count', label: '저장수' },
 ] as const;
 
-function AdminPostRow({ post, author, first, localPreview, onUser }: {
-  post: AdminPost; author: string; first?: boolean; localPreview?: boolean; onUser: (userId: string) => void;
+function AdminPostRow({ post, author, first, localPreview, compact, onUser }: {
+  post: AdminPost; author: string; first?: boolean; localPreview?: boolean; compact?: boolean; onUser: (userId: string) => void;
 }) {
   const saved = {
     status: post.status as string,
@@ -268,24 +372,25 @@ function AdminPostRow({ post, author, first, localPreview, onUser }: {
   return (
     <View style={[styles.postRow, first && styles.postRowFirst]}>
       <Pressable onPress={() => setOpen((current) => !current)} accessibilityRole="button"
-        accessibilityState={{ expanded: open }}
+        accessibilityState={{ expanded: open }} aria-expanded={open}
         accessibilityLabel={`${post.title}, ${author}, ${down ? '삭제됨' : '게시중'}, 조회 ${count(fields.view_count)}`}
         style={({ pressed }) => [styles.postHead, pressed && styles.pressed, open && styles.pressed]}>
         <View style={[styles.dot, down && styles.dotDown]} />
         <View style={styles.postTitle}>
           <ThemedText type="smallBold" numberOfLines={1} style={{ flexShrink: 1 }}>{post.title}</ThemedText>
-          <ThemedText numberOfLines={1} style={styles.postMeta}>{author} · {post.city_id} · {formatDate(post.created_at)}</ThemedText>
+          <ThemedText numberOfLines={1} style={styles.postMeta}>{author} · {CITIES.find((city) => city.id === post.city_id)?.name ?? post.city_id} · {formatDate(post.created_at)}</ThemedText>
+          {compact && <ThemedText numberOfLines={1} style={styles.postMeta}>조회 {count(fields.view_count)} · 공감 {count(fields.like_count)} · 저장 {count(fields.save_count)}</ThemedText>}
         </View>
-        <View style={styles.postMetrics}>
-          <ThemedText style={styles.postMetric}>조회 {count(fields.view_count)}</ThemedText>
-          <ThemedText style={styles.postMetric}>공감 {count(fields.like_count)}</ThemedText>
-          <ThemedText style={styles.postMetric}>저장 {count(fields.save_count)}</ThemedText>
-        </View>
+        {!compact && <View style={styles.postMetrics}>
+          <ThemedText style={styles.postMetric}>{count(fields.view_count)}</ThemedText>
+          <ThemedText style={styles.postMetric}>{count(fields.like_count)}</ThemedText>
+          <ThemedText style={styles.postMetric}>{count(fields.save_count)}</ThemedText>
+        </View>}
       </Pressable>
       {open && (
         <View style={styles.postBody}>
           <Pressable onPress={() => onUser(post.author_id)} accessibilityRole="button" style={{ paddingVertical: Spacing.two }}>
-            <ThemedText type="small" numberOfLines={3}>{post.body}</ThemedText>
+            <ThemedText type="small" selectable>{post.body}</ThemedText>
             <ThemedText type="small" style={styles.muted}>글쓴이 보기</ThemedText>
           </Pressable>
           <View style={styles.fieldRow}>
@@ -327,9 +432,13 @@ function AdminPostRow({ post, author, first, localPreview, onUser }: {
 // 앱에서 올라온 자바스크립트 오류. 네이티브 충돌은 App Store Connect 와 Play Console 에 따로 쌓인다.
 function AdminErrorsPanel({ localPreview }: { localPreview?: boolean }) {
   const [rows, setRows] = useState<AdminClientError[] | null>(null);
-  const [showResolved, setShowResolved] = useState(false);
+  const [query, setQuery] = useState('');
+  const [statuses, setStatuses] = useState<string[]>([]);
+  const [platforms, setPlatforms] = useState<string[]>([]);
+  const [versions, setVersions] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [retry, setRetry] = useState(0);
   const [expanded, setExpanded] = useState<number | null>(null);
 
   useEffect(() => {
@@ -337,12 +446,13 @@ function AdminErrorsPanel({ localPreview }: { localPreview?: boolean }) {
     let active = true;
     void (async () => {
       try {
-        const next = await loadAdminClientErrors(supabase, showResolved);
+        setFailed(false);
+        const next = await loadAdminClientErrors(supabase, true);
         if (active) setRows(next);
       } catch { if (active) setFailed(true); }
     })();
     return () => { active = false; };
-  }, [localPreview, showResolved, busy]);
+  }, [localPreview, busy, retry]);
 
   const toggle = async (row: AdminClientError) => {
     if (localPreview || busy) return;
@@ -353,24 +463,31 @@ function AdminErrorsPanel({ localPreview }: { localPreview?: boolean }) {
   };
 
   if (localPreview) return <Empty text="로컬 미리보기에서는 오류를 불러오지 않습니다." />;
-  if (failed) return <Empty text="오류 목록을 불러오지 못했습니다." />;
+  if (failed) return (
+    <View accessibilityRole="alert" style={[styles.empty, { gap: Spacing.two }]}>
+      <ThemedText type="smallBold">오류 목록을 불러오지 못했습니다</ThemedText>
+      <ThemedText type="small" style={styles.muted}>관리자 권한이 만료됐거나 연결이 끊긴 상태일 수 있습니다.</ThemedText>
+      <Pressable onPress={() => setRetry((value) => value + 1)} accessibilityRole="button" style={[styles.more, styles.retry]}><ThemedText type="smallBold">다시 시도</ThemedText></Pressable>
+    </View>
+  );
   if (!rows) return <Empty text="불러오는 중" />;
 
+  const filtered = rows.filter((row) => matches(query.trim().toLocaleLowerCase('ko-KR'), row.message, row.screen, row.stack)
+    && selected(statuses, row.resolvedAt ? 'resolved' : 'open') && selected(platforms, row.platform) && selected(versions, row.appVersion));
   return (
     <View style={{ gap: Spacing.two }}>
-      <View style={styles.picker}>
-        {([[false, '미해결'], [true, '해결 포함']] as [boolean, string][]).map(([value, label]) => (
-          <Pressable key={label} onPress={() => setShowResolved(value)} accessibilityRole="radio"
-            accessibilityState={{ selected: showResolved === value }}
-            style={({ pressed }) => [styles.chip, showResolved === value && styles.chipOn, pressed && styles.pressed]}>
-            <ThemedText type={showResolved === value ? 'smallBold' : 'small'}
-              style={showResolved === value ? undefined : styles.muted}>{label}</ThemedText>
-          </Pressable>
-        ))}
-      </View>
-      {rows.length === 0 && <Empty text="올라온 오류가 없습니다." />}
+      <div className="admin-toolbar"><AdminSearch value={query} onChange={setQuery} placeholder="오류 내용, 화면, 스택 검색" />
+        <div className="admin-filter-row">
+          <AdminMultiFilter label="상태" value={statuses} onChange={setStatuses} options={recordOptions({ open: '미해결', resolved: '해결됨' })} />
+          <AdminMultiFilter label="플랫폼" value={platforms} onChange={setPlatforms} options={uniqueOptions(rows.map((row) => row.platform))} />
+          <AdminMultiFilter label="앱 버전" value={versions} onChange={setVersions} options={uniqueOptions(rows.map((row) => row.appVersion))} />
+          <AdminFilterReset onReset={() => { setQuery(''); setStatuses([]); setPlatforms([]); setVersions([]); }} />
+        </div><AdminTableSummary shown={filtered.length} loaded={rows.length} />
+      </div>
+      {filtered.length === 0 && <Empty text="조건에 맞는 오류가 없습니다." />}
       <View style={styles.list}>
-        {rows.map((row, index) => (
+        <View style={styles.postHead}><ThemedText type="smallBold" style={{ flex: 1 }}>오류 · 플랫폼 · 최근 발생</ThemedText><ThemedText style={styles.postMetric}>발생 횟수</ThemedText></View>
+        {filtered.map((row, index) => (
           <View key={row.id} style={[styles.postRow, index === 0 && styles.postRowFirst]}>
             <Pressable onPress={() => setExpanded((current) => current === row.id ? null : row.id)}
               accessibilityRole="button" accessibilityState={{ expanded: expanded === row.id }}
@@ -379,13 +496,15 @@ function AdminErrorsPanel({ localPreview }: { localPreview?: boolean }) {
               <View style={styles.postTitle}>
                 <ThemedText type="smallBold" numberOfLines={1} style={{ flexShrink: 1 }}>{row.message}</ThemedText>
                 <ThemedText numberOfLines={1} style={styles.postMeta}>
-                  {row.platform} {row.appVersion}{row.screen ? ` · ${row.screen}` : ''} · {formatDate(row.lastSeen)}
+                  {row.resolvedAt ? '해결됨' : '미해결'} · {row.platform} {row.appVersion}{row.screen ? ` · ${row.screen}` : ''} · {formatDate(row.lastSeen)}
                 </ThemedText>
               </View>
               <ThemedText style={styles.postMetric}>{count(row.occurrences)}회</ThemedText>
             </Pressable>
             {expanded === row.id && (
               <View style={styles.postBody}>
+                <ThemedText type="small" selectable>{row.message}</ThemedText>
+                <ThemedText type="small">{row.resolvedAt ? '해결됨' : '미해결'}</ThemedText>
                 {!!row.stack && <TextInput value={row.stack} editable={false} multiline selectTextOnFocus
                   accessibilityLabel="스택"
                   style={{ fontFamily: 'Menlo', fontSize: 11, lineHeight: 16, maxHeight: 200, padding: Spacing.two,
@@ -401,26 +520,6 @@ function AdminErrorsPanel({ localPreview }: { localPreview?: boolean }) {
           </View>
         ))}
       </View>
-    </View>
-  );
-}
-
-// 필터는 칩으로 둔다. 어드민은 웹에서만 열리지만 화면 폭이 좁을 때도 한 줄씩 접히면 된다.
-function Picker({ label, value, onChange, options }: {
-  label: string; value: string; onChange: (next: string) => void; options: [string, string][];
-}) {
-  return (
-    <View style={styles.picker} accessibilityRole="radiogroup" accessibilityLabel={label}>
-      {options.map(([key, text]) => {
-        const on = value === key;
-        return (
-          <Pressable key={key || 'all'} onPress={() => onChange(key)} accessibilityRole="radio"
-            accessibilityState={{ selected: on }} accessibilityLabel={`${label} ${text}`}
-            style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && styles.pressed]}>
-            <ThemedText type={on ? 'smallBold' : 'small'} style={on ? undefined : styles.muted}>{text}</ThemedText>
-          </Pressable>
-        );
-      })}
     </View>
   );
 }
@@ -451,19 +550,22 @@ function StateText({ text, danger = false }: { text: string; danger?: boolean })
   return <ThemedText type="smallBold" style={[styles.state, danger && styles.danger]}>{text}</ThemedText>;
 }
 
-function Empty({ text = '검색 결과가 없습니다.' }: { text?: string }) {
-  return <View accessibilityRole="text" style={styles.empty}><ThemedText style={styles.muted}>{text}</ThemedText></View>;
+function Empty({ text = '검색 결과가 없습니다.', hint }: { text?: string; hint?: string }) {
+  return (
+    <View accessibilityRole="text" style={[styles.empty, { gap: Spacing.two, paddingHorizontal: Spacing.four }]}>
+      <ThemedText type="smallBold">{text}</ThemedText>
+      {!!hint && <ThemedText type="small" style={[styles.muted, { textAlign: 'center' }]}>{hint}</ThemedText>}
+    </View>
+  );
 }
 
 function LoadMore({ loading, noMore, onPress }: { loading: boolean; noMore: boolean; onPress: () => void }) {
   return <Pressable onPress={onPress} disabled={loading || noMore} accessibilityRole="button" accessibilityState={{ disabled: loading || noMore, busy: loading }} style={[styles.more, (loading || noMore) && styles.moreDisabled]}><ThemedText type="smallBold">{noMore ? '마지막 기록입니다' : loading ? '불러오는 중' : '이전 기록 더 보기'}</ThemedText></Pressable>;
 }
 
-function matches(query: string, ...values: (string | null | undefined)[]) {
-  return !query || values.some((value) => value?.toLocaleLowerCase('ko-KR').includes(query));
-}
+function recordOptions(values: Record<string, string>) { return Object.entries(values).map(([value, label]) => ({ value, label })); }
+function uniqueOptions(values: string[]) { return [...new Set(values)].sort().map((value) => ({ value, label: value })); }
 
-function shortId(value: string) { return value.slice(0, 8); }
 function formatDate(value: string) { return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value)); }
 
 const styles = StyleSheet.create({
@@ -494,20 +596,16 @@ const styles = StyleSheet.create({
   id: { color: Colors.light.textSecondary, fontFamily: 'monospace' },
   empty: { minHeight: 160, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 10, backgroundColor: Colors.light.card },
   more: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
+  retry: { alignSelf: 'center', paddingHorizontal: Spacing.four },
   moreDisabled: { opacity: 0.55 },
   pressed: { backgroundColor: Colors.light.backgroundElement },
-  filters: { gap: Spacing.two },
-  filterCount: { fontVariant: ['tabular-nums'] },
-  picker: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
-  chip: { minHeight: 34, justifyContent: 'center', paddingHorizontal: Spacing.three, borderRadius: 999, borderWidth: 1, borderColor: Colors.light.line, backgroundColor: Colors.light.card },
-  chipOn: { borderColor: Colors.light.navy, backgroundColor: Colors.light.backgroundElement },
   list: { borderWidth: 1, borderColor: Colors.light.line, borderRadius: 10, backgroundColor: Colors.light.card, overflow: 'hidden' },
   postRow: { borderTopWidth: 1, borderTopColor: Colors.light.line },
   postRowFirst: { borderTopWidth: 0 },
   postHead: { minHeight: 46, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#3F7A5B' },
   dotDown: { backgroundColor: Colors.light.accent },
-  postTitle: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two },
+  postTitle: { flex: 1, minWidth: 0, gap: 1 },
   postMeta: { color: Colors.light.textSecondary, fontSize: 12 },
   postMetrics: { flexDirection: 'row', gap: Spacing.three },
   postMetric: { color: Colors.light.textSecondary, fontSize: 12, fontVariant: ['tabular-nums'], minWidth: 62, textAlign: 'right' },
@@ -564,7 +662,14 @@ function AdminAlertsPanel({ alerts, profiles, localPreview, onUser }: {
   const [overrides, setOverrides] = useState<Record<number, Partial<AdminSafetyAlert>>>({});
   const [evidence, setEvidence] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState<number | null>(null);
-  const rows = alerts.map((alert) => ({ ...alert, ...overrides[alert.id] }));
+  const [query, setQuery] = useState('');
+  const [statuses, setStatuses] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [severities, setSeverities] = useState<string[]>([]);
+  const [targets, setTargets] = useState<string[]>([]);
+  const rows = alerts.map((alert) => ({ ...alert, ...overrides[alert.id] })).filter((alert) =>
+    matches(query.trim().toLocaleLowerCase('ko-KR'), alert.excerpt, alert.author_id, alert.target_id, alert.note, profiles.get(alert.author_id)?.nickname, ...alert.matched_terms)
+    && selected(statuses, alert.status) && selected(categories, alert.category) && selected(severities, alert.severity) && selected(targets, alert.target_type));
   const act = async (alert: AdminSafetyAlert, status: AdminSafetyAlert['status']) => {
     if (localPreview || busy) return;
     setBusy(alert.id);
@@ -594,22 +699,37 @@ function AdminAlertsPanel({ alerts, profiles, localPreview, onUser }: {
     '표시 자체는 외부에 전송되지 않습니다. 증거 묶음을 내보내 공식 요청서와 함께 제출하세요. 운영 기록에 남습니다.',
     [{ text: '취소', style: 'cancel' }, { text: '표시', style: 'destructive', onPress: () => void act(alert, 'escalated') }],
   );
-  if (rows.length === 0) return <Empty />;
   return (
-    <View style={styles.rows}>
+    <View style={styles.section}>
+      <div className="admin-toolbar"><AdminSearch value={query} onChange={setQuery} placeholder="감시어, 내용, 작성자 또는 ID 검색" />
+        <AdminFilterBar applied={statuses.length + categories.length + severities.length + targets.length}>
+          <div className="admin-filter-row">
+            <AdminMultiFilter label="상태" value={statuses} onChange={setStatuses} options={recordOptions(ALERT_STATUS)} />
+            <AdminMultiFilter label="분류" value={categories} onChange={setCategories} options={recordOptions(ALERT_CATEGORY)} />
+            <AdminMultiFilter label="심각도" value={severities} onChange={setSeverities} options={recordOptions({ medium: '보통', high: '높음', critical: '심각' })} />
+            <AdminMultiFilter label="대상" value={targets} onChange={setTargets} options={recordOptions(SAFETY_TARGET_LABEL)} />
+            <AdminFilterReset onReset={() => { setQuery(''); setStatuses([]); setCategories([]); setSeverities([]); setTargets([]); }} />
+          </div>
+        </AdminFilterBar><AdminTableSummary shown={rows.length} loaded={alerts.length} />
+      </div>
+      <View style={styles.list}>
+      {rows.length === 0 && <Empty text="조건에 맞는 경보가 없습니다." hint="감시어에 걸린 표현이 없으면 경보는 생기지 않습니다. 필터를 초기화하거나 이전 기록을 더 불러와 보세요." />}
       {rows.map((alert) => {
         const author = profiles.get(alert.author_id);
         const critical = alert.severity === 'critical';
         return (
-          <View key={alert.id} style={[styles.row, alert.status === 'open' && critical && styles.metricUrgent]}>
+          <details key={alert.id} style={{ borderTop: '1px solid #e5e7eb' }}>
+            <summary style={{ minHeight: 48, padding: '0 12px', alignContent: 'center', cursor: 'pointer', fontSize: 13, color: alert.status === 'open' && critical ? '#ad382e' : undefined }}>
+              {ALERT_CATEGORY[alert.category] ?? alert.category} · {alert.severity} · {ALERT_STATUS[alert.status]} · {displayName(author, alert.author_id)} · {formatDate(alert.created_at)}
+            </summary><View style={styles.postBody}>
             <View style={styles.rowTop}>
               <ThemedText type="smallBold">{ALERT_CATEGORY[alert.category] ?? alert.category} · {SAFETY_TARGET_LABEL[alert.target_type] ?? alert.target_type} · {alert.matched_terms.join(', ')}</ThemedText>
               <StateText text={`${alert.severity} · ${ALERT_STATUS[alert.status]}`} danger={alert.status === 'open' && alert.severity !== 'medium'} />
             </View>
-            <ThemedText type="small" numberOfLines={4}>{alert.excerpt}</ThemedText>
+            <ThemedText type="small" selectable>{alert.excerpt}</ThemedText>
             {(alert.target_type === 'chilling_profile' || alert.target_type === 'chilling_application') && <AdminChillingContent targetType={alert.target_type} targetId={alert.target_id} localPreview={localPreview} onUser={onUser} />}
             <Pressable onPress={() => onUser(alert.author_id)} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
-              <ThemedText type="small" style={styles.muted}>{author?.nickname ?? alert.author_id} · {formatDate(alert.created_at)}{alert.note ? ` · ${alert.note}` : ''}</ThemedText>
+              <ThemedText type="small" style={styles.muted}>{displayName(author, alert.author_id)} · {formatDate(alert.created_at)}{alert.note ? ` · ${alert.note}` : ''}</ThemedText>
             </Pressable>
             <View style={styles.rowTop}>
               {alert.status === 'open' && <ActionText label="검토 완료" onPress={() => void act(alert, 'reviewed')} disabled={busy === alert.id} />}
@@ -619,9 +739,10 @@ function AdminAlertsPanel({ alerts, profiles, localPreview, onUser }: {
             </View>
             {evidence[alert.id] && <TextInput value={evidence[alert.id]} editable={false} multiline selectTextOnFocus accessibilityLabel="증거 묶음 JSON"
               style={{ fontFamily: 'Menlo', fontSize: 11, lineHeight: 16, maxHeight: 240, padding: Spacing.two, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 6, color: Colors.light.text }} />}
-          </View>
+          </View></details>
         );
       })}
+      </View>
     </View>
   );
 }

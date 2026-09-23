@@ -5,6 +5,7 @@ import { ThemedText } from '@/components/themed-text';
 import { AdminUserReview } from '@/components/admin/admin-user-review';
 import { Colors, Spacing } from '@/constants/theme';
 import { reportReasonLabel, reportStatusLabel, reportTargetLabel } from '@/lib/admin';
+import { displayName, shortId } from '@/lib/admin-labels';
 import {
   getLocalAdminUserActivity,
   type AdminDashboardData,
@@ -17,12 +18,14 @@ export function AdminUserDetail({
   profiles,
   localData,
   onStatusChange,
+  onTrustLevelChange,
   onClose,
 }: {
   userId: string | null;
   profiles: Map<string, AdminProfile>;
   localData?: AdminDashboardData;
   onStatusChange?: (userId: string, status: 'active' | 'reactivation_pending') => Promise<void>;
+  onTrustLevelChange?: (userId: string, level: 1 | 2 | 3) => Promise<void>;
   onClose: () => void;
 }) {
   const activity = userId && localData ? getLocalAdminUserActivity(localData, userId) : null;
@@ -43,7 +46,7 @@ export function AdminUserDetail({
           </View>
 
           <ScrollView contentContainerStyle={[styles.body, compact && styles.bodyCompact]}>
-            {userId && !localData ? <AdminUserReview key={userId} userId={userId} profiles={profiles} onStatusChange={onStatusChange} /> : activity ? <ActivityContent activity={activity} profiles={profiles} /> : null}
+            {userId && !localData ? <AdminUserReview key={userId} userId={userId} profiles={profiles} onStatusChange={onStatusChange} onTrustLevelChange={onTrustLevelChange} /> : activity ? <ActivityContent activity={activity} profiles={profiles} /> : null}
           </ScrollView>
         </View>
       </View>
@@ -88,7 +91,7 @@ function ActivityContent({
         {activity.comments.map((comment) => <ActivityRow key={comment.id} title={`게시글 ${shortId(comment.post_id)}`} body={comment.body} meta={`${comment.deleted_at ? '삭제됨' : '게시중'} · ${formatDate(comment.created_at)}`} />)}
       </ActivityGroup>
       <ActivityGroup title="대화 내용" empty={activity.messages.length === 0}>
-        {activity.messages.map((message) => <ActivityRow key={message.id} title={profiles.get(message.sender_id)?.nickname ?? shortId(message.sender_id)} body={message.body} meta={`대화 ${shortId(message.conversation_id)} · ${formatDate(message.created_at)}`} />)}
+        {activity.messages.map((message) => <ActivityRow key={message.id} title={displayName(profiles.get(message.sender_id), message.sender_id)} body={message.body} meta={`대화 ${shortId(message.conversation_id)} · ${formatDate(message.created_at)}`} />)}
       </ActivityGroup>
       <ActivityGroup title="신고 이력" empty={activity.reports.length === 0}>
         {activity.reports.map((report) => <ActivityRow key={report.id} title={`${reportReasonLabel(report.reason_code)} · ${reportStatusLabel(report.status)}`} body={report.details || '상세 설명 없음'} meta={`${reportTargetLabel(report.target_type)} · ${formatDate(report.created_at)}`} />)}
@@ -105,7 +108,6 @@ function ActivityRow({ title, body, meta }: { title: string; body: string; meta:
   return <View style={styles.row}><ThemedText type="smallBold">{title}</ThemedText><ThemedText>{body}</ThemedText><ThemedText type="small" style={styles.muted}>{meta}</ThemedText></View>;
 }
 
-function shortId(value: string) { return value.slice(0, 8); }
 function accountStatusLabel(value: AdminProfile['account_status']) {
   return { active: '정상', suspended: '이용 제한', deleted: '탈퇴·재가입 잠금', reactivation_pending: '재가입 허용됨' }[value];
 }

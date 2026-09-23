@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { AdminSection, ReportStatus } from '@/lib/admin';
+import { referencedUserIds } from '@/lib/admin-labels';
 import { MOCK_POSTS } from '@/lib/mock';
 import type { AdminClientError, AdminPostFields, AdminPostPatch, AdminTrendingConfig, AdminTrendingState } from '@/lib/admin-trending';
 
@@ -111,6 +112,10 @@ export type AdminCounts = {
   safetyHigh: number;
 };
 
+/** 24시간 전 시점과 지금을 함께 담는다. 지표 옆 "▲ 2 · 24시간 전 5" 표기에 쓴다. */
+export type AdminCountDelta = { now: number; before: number };
+export type AdminCountDeltas = Partial<Record<'openReports' | 'alertsOpen' | 'safetyPending' | 'safetyHigh' | 'profiles' | 'posts' | 'messages', AdminCountDelta>>;
+
 export type AdminSafetyAlert = {
   id: number;
   kind: 'keyword';
@@ -134,10 +139,13 @@ export type AdminSharedSessionGroup = { ip: string; user_agent: string | null; s
 
 export type AdminDashboardData = {
   counts: AdminCounts;
+  deltas?: AdminCountDeltas;
   sharedSessions: AdminSharedSessionGroup[];
   safetyAlerts: AdminSafetyAlert[];
   profiles: AdminProfile[];
   posts: AdminPost[];
+  /** 최신 50건 밖이라 목록에는 없지만, 모임 대화 이름표에 필요한 글. */
+  contextPosts?: AdminPost[];
   conversations: AdminConversation[];
   messages: AdminMessage[];
   reports: AdminReport[];
@@ -154,13 +162,14 @@ export type AdminUserActivity = {
   reports: AdminReport[];
 };
 
-export type AdminSectionPage =
+export type AdminSectionPage = (
   | { section: 'safety'; rows: AdminSafetyReview[] }
   | { section: 'alerts'; rows: AdminSafetyAlert[] }
   | { section: 'reports'; rows: AdminReport[] }
   | { section: 'users'; rows: AdminProfile[] }
   | { section: 'posts'; rows: AdminPost[] }
-  | { section: 'conversations'; rows: AdminMessage[] };
+  | { section: 'conversations'; rows: AdminMessage[] }
+) & { profiles?: AdminProfile[] };
 
 export function getLocalAdminDashboard(): AdminDashboardData {
   const profiles = [...new Map(MOCK_POSTS.map(({ author }) => [author.id, author])).values()].map(
@@ -234,6 +243,22 @@ function dataOrThrow<T>(result: { data: T | null; error: { message: string } | n
   return result.data;
 }
 
+const PROFILE_LOOKUP_CHUNK = 40; // PostgREST GET URL 길이를 넘기지 않기 위한 묶음 크기.
+
+async function loadRowsByIds<T>(client: SupabaseClient, table: 'profiles' | 'posts', ids: string[]): Promise<T[]> {
+  const unique = [...new Set(ids.filter(Boolean))];
+  if (!unique.length) return [];
+  const rows: T[] = [];
+  for (let index = 0; index < unique.length; index += PROFILE_LOOKUP_CHUNK) {
+    const chunk = unique.slice(index, index + PROFILE_LOOKUP_CHUNK);
+    const result = await client.from(table).select('*').in('id', chunk);
+    rows.push(...dataOrThrow<T[]>(result));
+  }
+  return rows;
+}
+
+export const loadAdminProfilesByIds = (client: SupabaseClient, ids: string[]) => loadRowsByIds<AdminProfile>(client, 'profiles', ids);
+
 export async function logAdminAccess(
   client: SupabaseClient,
   scope: string,
@@ -278,6 +303,38 @@ export async function loadAdminDashboard(client: SupabaseClient): Promise<AdminD
   const alerts = await client.from('safety_alerts').select('*').order('created_at', { ascending: false }).limit(ADMIN_PAGE_SIZE);
   const alertsOpen = await client.from('safety_alerts').select('*', { count: 'exact', head: true }).eq('status', 'open');
 
+  const loadedProfiles = dataOrThrow<AdminProfile[]>(profiles);
+  const loadedReports = dataOrThrow<AdminReport[]>(reports);
+  const loadedPosts = dataOrThrow<AdminPost[]>(posts);
+  const loadedConversations = dataOrThrow<AdminConversation[]>(conversations);
+  const loadedMessages = dataOrThrow<AdminMessage[]>(messages);
+  const loadedAlerts = dataOrThrow<AdminSafetyAlert[]>(alerts);
+  const loadedActions = dataOrThrow<AdminModerationAction[]>(actions);
+
+  const knownProfiles = new Set(loadedProfiles.map((profile) => profile.id));
+  const namedProfiles = await loadAdminProfilesByIds(client, referencedUserIds({
+    reports: loadedReports,
+    posts: loadedPosts,
+    messages: loadedMessages,
+    conversations: loadedConversations,
+    alerts: loadedAlerts,
+    actions: loadedActions,
+  }).filter((id) => !knownProfiles.has(id)));
+
+  const knownPosts = new Set(loadedPosts.map((post) => post.id));
+  const contextPosts = await loadRowsByIds<AdminPost>(client, 'posts', loadedConversations
+    .map((conversation) => conversation.group_post_id)
+    .filter((id): id is string => !!id && !knownPosts.has(id)));
+
+  // 24시간 전 비교는 실패해도 콘솔 전체를 막지 않는다(지표 옆 표기만 생략된다).
+  let deltas: AdminCountDeltas | undefined;
+  try {
+    const result = await client.rpc('get_admin_count_deltas');
+    if (!result.error) deltas = result.data as AdminCountDeltas;
+  } catch {
+    deltas = undefined;
+  }
+
   return {
     counts: {
       alertsOpen: alertsOpen.count ?? 0,
@@ -289,14 +346,16 @@ export async function loadAdminDashboard(client: SupabaseClient): Promise<AdminD
       safetyPending: safetyPending.count ?? 0,
       safetyHigh: safetyHigh.count ?? 0,
     },
+    deltas,
     sharedSessions: await sharedSessions,
-    safetyAlerts: dataOrThrow<AdminSafetyAlert[]>(alerts),
-    reports: dataOrThrow<AdminReport[]>(reports),
-    profiles: dataOrThrow<AdminProfile[]>(profiles),
-    posts: dataOrThrow<AdminPost[]>(posts),
-    conversations: dataOrThrow<AdminConversation[]>(conversations),
-    messages: dataOrThrow<AdminMessage[]>(messages),
-    moderationActions: dataOrThrow<AdminModerationAction[]>(actions),
+    safetyAlerts: loadedAlerts,
+    reports: loadedReports,
+    profiles: [...loadedProfiles, ...namedProfiles],
+    posts: loadedPosts,
+    contextPosts,
+    conversations: loadedConversations,
+    messages: loadedMessages,
+    moderationActions: loadedActions,
     safetyReviews: dataOrThrow<AdminSafetyReview[]>(safety),
   };
 }
@@ -311,7 +370,8 @@ export async function loadMoreAdminData(
 
   if (section === 'alerts') {
     const result = await client.from('safety_alerts').select('*').order('created_at', { ascending: false }).range(offset, last);
-    return { section, rows: dataOrThrow<AdminSafetyAlert[]>(result) };
+    const rows = dataOrThrow<AdminSafetyAlert[]>(result);
+    return { section, rows, profiles: await loadAdminProfilesByIds(client, referencedUserIds({ alerts: rows })) };
   }
   if (section === 'safety') {
     const result = await client.from('safety_review_queue').select('*').order('created_at', { ascending: false }).range(offset, last);
@@ -320,7 +380,8 @@ export async function loadMoreAdminData(
 
   if (section === 'reports') {
     const result = await client.from('reports').select('*').order('created_at', { ascending: false }).range(offset, last);
-    return { section, rows: dataOrThrow<AdminReport[]>(result) };
+    const rows = dataOrThrow<AdminReport[]>(result);
+    return { section, rows, profiles: await loadAdminProfilesByIds(client, referencedUserIds({ reports: rows })) };
   }
   if (section === 'users') {
     const result = await client.from('profiles').select('*').order('created_at', { ascending: false }).range(offset, last);
@@ -328,11 +389,13 @@ export async function loadMoreAdminData(
   }
   if (section === 'posts') {
     const result = await client.from('posts').select('*').order('created_at', { ascending: false }).range(offset, last);
-    return { section, rows: dataOrThrow<AdminPost[]>(result) };
+    const rows = dataOrThrow<AdminPost[]>(result);
+    return { section, rows, profiles: await loadAdminProfilesByIds(client, referencedUserIds({ posts: rows })) };
   }
 
   const result = await client.from('messages').select('*').order('created_at', { ascending: false }).range(offset, last);
-  return { section, rows: dataOrThrow<AdminMessage[]>(result) };
+  const rows = dataOrThrow<AdminMessage[]>(result);
+  return { section, rows, profiles: await loadAdminProfilesByIds(client, referencedUserIds({ messages: rows })) };
 }
 
 export async function moderateAdminReport(
@@ -360,6 +423,12 @@ export async function setAdminAccountStatus(
     p_status: status,
     p_note: note.trim() || null,
   });
+  if (error) throw new Error(error.message);
+}
+
+// 신뢰 단계(1~3)는 배지·노출 판단에만 쓰인다. 실명인증 결과가 아니며 변경은 감사 로그에 남는다.
+export async function setAdminVerificationLevel(client: SupabaseClient, userId: string, level: 1 | 2 | 3) {
+  const { error } = await client.rpc('set_admin_verification_level', { p_user_id: userId, p_level: level });
   if (error) throw new Error(error.message);
 }
 
