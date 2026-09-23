@@ -3,12 +3,12 @@
 import type { City, DailyQuota, Post, Tag } from '@/lib/types';
 
 // 큰 도시 = 상단 지역 선택. 소도시·동네는 프로필의 neighborhood로 구조화한다.
-// 밀도 전략: 밴쿠버·토론토·에드먼튼만 열고 나머지는 대기열('soon'). 열리는 순서는 기수제로.
+// 밀도 전략: 밴쿠버·토론토·몬트리올·에드먼튼만 열고 나머지는 대기열('soon').
 export const CITIES: City[] = [
   { id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver', province: 'BC', state: 'open' },
   { id: 'toronto', name: '토론토', englishName: 'Toronto', province: 'ON', state: 'open' },
-  { id: 'montreal', name: '몬트리올', englishName: 'Montréal', province: 'QC', state: 'soon' },
-  { id: 'calgary', name: '캘거리', englishName: 'Calgary', province: 'AB', state: 'soon' },
+  { id: 'montreal', name: '몬트리올', englishName: 'Montréal', province: 'QC', state: 'open' },
+  { id: 'calgary', name: '캘거리', englishName: 'Calgary', province: 'AB', state: 'open' },
   { id: 'winnipeg', name: '위니펙', englishName: 'Winnipeg', province: 'MB', state: 'soon' },
   { id: 'saskatoon', name: '사스카툰', englishName: 'Saskatoon', province: 'SK', state: 'soon' },
   { id: 'ottawa', name: '오타와', englishName: 'Ottawa', province: 'ON', state: 'soon' },
