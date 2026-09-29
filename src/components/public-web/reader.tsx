@@ -25,8 +25,8 @@ function AppInvitation({ target, label = '앱에서 대화하기' }: { target: s
     <p>글 작성, 모임 참여와 모든 대화는 글링 앱에서 시작해요.</p>
     <a data-analytics="web_control_1" className="reader-primary" href={target}>{label} ↗</a>
     <details><summary data-analytics="web_control_2">아직 앱이 없나요?</summary>
-      <p>iOS · Android 출시 준비 중이에요. 앱을 이미 설치했다면 위 버튼으로 이어가세요. 설치 후 이 글의 링크를 다시 열면 같은 글에서 시작할 수 있어요.</p>
-      <a data-analytics="web_control_3" href="mailto:gling@ej-entertainment.com?subject=글링%20출시%20문의">출시 소식 문의하기</a>
+      <p>iPhone에서는 App Store에서 글링을 받을 수 있어요. Android는 출시 준비 중이에요. 설치 후 이 글의 링크를 다시 열면 같은 글에서 시작할 수 있어요.</p>
+      <a data-analytics="web_control_3" href="https://apps.apple.com/ca/app/id6809273242">iPhone용 글링 받기 ↗</a>
     </details>
   </section>;
 }
