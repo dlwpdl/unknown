@@ -3,6 +3,7 @@ import './legal.web.css';
 
 import { useLocalSearchParams } from 'expo-router';
 import Head from 'expo-router/head';
+import { Asset } from 'expo-asset';
 import type { CSSProperties } from 'react';
 import { Colors } from '@/constants/theme';
 
@@ -14,6 +15,7 @@ const LEGAL_LINKS = [
   { slug: 'account-deletion', label: '계정 삭제' },
   { slug: 'child-safety', label: '아동 안전' },
 ] as const;
+const wordmark = Asset.fromModule(require('@/assets/brand/gling-night-wordmark.png')).uri;
 
 export function generateStaticParams() {
   return LEGAL_LINKS.map(({ slug }) => ({ document: slug }));
@@ -53,7 +55,7 @@ export default function LegalDocumentPage() {
       <div className="legal-shell">
         <header className="legal-topbar">
           <a className="legal-brand" href="./" aria-label="gling 홈">
-            gling
+            <img src={wordmark} width="96" alt="gling" />
           </a>
           <nav aria-label="법적 문서">
             {LEGAL_LINKS.map((link) => (
@@ -104,7 +106,7 @@ export default function LegalDocumentPage() {
         </main>
 
         <footer className="legal-footer">
-          <span>gling</span>
+          <img src={wordmark} width="92" alt="gling" />
           <a href="mailto:gling@ej-entertainment.com">gling@ej-entertainment.com</a>
         </footer>
       </div>

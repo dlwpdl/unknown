@@ -17,21 +17,21 @@ import {
   type WebHomeCitySummary,
 } from '@/lib/web-home';
 
-const appIconSrc = Asset.fromModule(require('@/assets/brand/gling-app-icon.png')).uri;
-const wordmarkSrc = Asset.fromModule(require('@/assets/brand/gling-wordmark.png')).uri;
+const appIconSrc = Asset.fromModule(require('@/assets/brand/gling-night-app-icon.png')).uri;
+const wordmarkSrc = Asset.fromModule(require('@/assets/brand/gling-night-wordmark.png')).uri;
 // Reuse the real B-design store captures so the website and store show the same app.
 const vancouverScreenshotSrc = Asset.fromModule(require('../../../release/app-store/ios-6.9/01-vancouver.png')).uri;
 const torontoScreenshotSrc = Asset.fromModule(require('../../../release/app-store/ios-6.9/02-toronto.png')).uri;
 const citiesScreenshotSrc = Asset.fromModule(require('../../../release/app-store/ios-6.9/03-cities.png')).uri;
 const siteColors = {
-  '--bg': Colors.light.background,
-  '--surface': Colors.light.backgroundElement,
-  '--line': Colors.light.line,
-  '--text': Colors.light.text,
-  '--muted': Colors.light.textSecondary,
-  '--accent': Colors.light.accent,
-  '--accent-ink': Colors.light.accentInk,
-  '--navy': Colors.light.navy,
+  '--bg': Colors.dark.background,
+  '--surface': Colors.dark.backgroundElement,
+  '--line': Colors.dark.line,
+  '--text': Colors.dark.text,
+  '--muted': Colors.dark.textSecondary,
+  '--accent': Colors.dark.accent,
+  '--accent-ink': Colors.dark.accentInk,
+  '--navy': Colors.dark.navy,
 } as CSSProperties;
 
 function LaunchNotice({ city }: { city: WebHomeCitySummary }) {
