@@ -4,7 +4,7 @@ import { Asset } from 'expo-asset';
 import Head from 'expo-router/head';
 import { useState, type CSSProperties } from 'react';
 
-import { Colors } from '@/constants/theme';
+import { WebNightColors } from '@/constants/theme';
 import {
   WEB_CATEGORY_LABELS,
   WEB_FEATURES,
@@ -24,14 +24,14 @@ const vancouverScreenshotSrc = Asset.fromModule(require('../../../release/app-st
 const torontoScreenshotSrc = Asset.fromModule(require('../../../release/app-store/ios-6.9/02-toronto.png')).uri;
 const citiesScreenshotSrc = Asset.fromModule(require('../../../release/app-store/ios-6.9/03-cities.png')).uri;
 const siteColors = {
-  '--bg': Colors.dark.background,
-  '--surface': Colors.dark.backgroundElement,
-  '--line': Colors.dark.line,
-  '--text': Colors.dark.text,
-  '--muted': Colors.dark.textSecondary,
-  '--accent': Colors.dark.accent,
-  '--accent-ink': Colors.dark.accentInk,
-  '--navy': Colors.dark.navy,
+  '--bg': WebNightColors.background,
+  '--surface': WebNightColors.backgroundElement,
+  '--line': WebNightColors.line,
+  '--text': WebNightColors.text,
+  '--muted': WebNightColors.textSecondary,
+  '--accent': WebNightColors.accent,
+  '--accent-ink': WebNightColors.accentInk,
+  '--navy': WebNightColors.navy,
 } as CSSProperties;
 
 function LaunchNotice({ city }: { city: WebHomeCitySummary }) {
