@@ -6,7 +6,7 @@ import { useLocalSearchParams, usePathname } from 'expo-router';
 import Head from 'expo-router/head';
 import { useEffect, useState, useSyncExternalStore, type CSSProperties } from 'react';
 
-import { Colors } from '@/constants/theme';
+import { WebNightColors } from '@/constants/theme';
 import { chillingSchedule, recommendedAgeLabel } from '@/lib/chilling';
 import { appendUniquePosts, loadPublicFeed, loadPublicPost, type FeedCursor } from '@/lib/feed-data';
 import { CITIES, TAGS } from '@/lib/mock';
@@ -16,7 +16,7 @@ import type { Post } from '@/lib/types';
 
 const wordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark.png')).uri;
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
-const palette = Object.fromEntries(Object.entries(Colors.dark).map(([key, value]) => [`--${key}`, value])) as CSSProperties;
+const palette = Object.fromEntries(Object.entries(WebNightColors).map(([key, value]) => [`--${key}`, value])) as CSSProperties;
 const cities = CITIES.filter((city) => city.state === 'open');
 
 function AppInvitation({ target, label = '앱에서 대화하기' }: { target: string; label?: string }) {

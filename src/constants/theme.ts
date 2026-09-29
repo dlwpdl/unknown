@@ -34,6 +34,20 @@ export const Colors = {
   },
 } as const;
 
+// Shared palette for the public web reader, landing, and legal pages.
+export const WebNightColors = {
+  text: '#F6F3F0',
+  background: '#0B0B12',
+  backgroundElement: '#222231',
+  backgroundSelected: '#343443',
+  textSecondary: '#B7B4C3',
+  card: '#171722',
+  line: '#343443',
+  accent: '#CBB9FF',
+  accentInk: '#171123',
+  navy: '#B9C8FF',
+} as const;
+
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
 export const Fonts = Platform.select({

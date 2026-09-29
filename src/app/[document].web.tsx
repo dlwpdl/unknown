@@ -5,7 +5,7 @@ import { useLocalSearchParams } from 'expo-router';
 import Head from 'expo-router/head';
 import { Asset } from 'expo-asset';
 import type { CSSProperties } from 'react';
-import { Colors } from '@/constants/theme';
+import { WebNightColors } from '@/constants/theme';
 
 import { LEGAL_DOCUMENTS, type LegalDocument, type LegalDocumentSlug } from '@/lib/legal-documents';
 
@@ -37,15 +37,15 @@ export default function LegalDocumentPage() {
 
   return (
     <div className="site-page legal-page" style={{
-      '--bg': Colors.dark.background,
-      '--panel': Colors.dark.card,
-      '--text': Colors.dark.text,
-      '--muted': Colors.dark.textSecondary,
-      '--line': Colors.dark.line,
-      '--line-strong': Colors.dark.backgroundSelected,
-      '--accent': Colors.dark.accent,
-      '--accent-soft': Colors.dark.backgroundElement,
-      '--navy': Colors.dark.navy,
+      '--bg': WebNightColors.background,
+      '--panel': WebNightColors.card,
+      '--text': WebNightColors.text,
+      '--muted': WebNightColors.textSecondary,
+      '--line': WebNightColors.line,
+      '--line-strong': WebNightColors.backgroundSelected,
+      '--accent': WebNightColors.accent,
+      '--accent-soft': WebNightColors.backgroundElement,
+      '--navy': WebNightColors.navy,
     } as CSSProperties}>
       <Head>
         <title>{`${page.title} | gling`}</title>
