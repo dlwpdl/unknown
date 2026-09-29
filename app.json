@@ -117,7 +117,7 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/brand/gling-favicon.png"
+      "favicon": "./assets/brand/gling-night-app-icon.png"
     },
     "plugins": [
       "expo-router",

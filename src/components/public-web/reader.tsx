@@ -14,9 +14,9 @@ import { publicWebTarget } from '@/lib/public-web';
 import { publicWebClient } from '@/lib/public-web-client';
 import type { Post } from '@/lib/types';
 
-const wordmark = Asset.fromModule(require('../../../assets/brand/gling-wordmark.png')).uri;
+const wordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark.png')).uri;
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
-const palette = Object.fromEntries(Object.entries(Colors.light).map(([key, value]) => [`--${key}`, value])) as CSSProperties;
+const palette = Object.fromEntries(Object.entries(Colors.dark).map(([key, value]) => [`--${key}`, value])) as CSSProperties;
 const cities = CITIES.filter((city) => city.state === 'open');
 
 function AppInvitation({ target, label = '앱에서 대화하기' }: { target: string; label?: string }) {
@@ -116,7 +116,7 @@ export default function PublicReader() {
     <main id="reader-main" className="reader-main" tabIndex={-1}>
       <div className="reader-content">
         {browse ? <>
-          <header className="reader-hero"><p className="reader-kicker">우리 동네, 글링</p><h1>동네의 이야기를 읽고,<br />새로운 만남을 발견해요.</h1><p>이야기와 모임은 여기서 둘러보고, 참여와 대화는 앱에서 이어가세요.</p></header>
+          <header className="reader-hero"><p className="reader-kicker">우리 동네, 글링</p><h1>동네의 이야기를 읽고,<br />함께 갈 곳을 발견해요.</h1><p>공연과 페스티벌부터 작은 동네 모임까지. 이야기는 여기서 둘러보고, 참여와 대화는 앱에서 이어가세요.</p></header>
           <form className="reader-filters" action="/" method="get">
             <label>도시<select name="city" defaultValue={city.id}>{cities.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label>
             <label>주제<select name="tag" defaultValue={tag?.slug ?? ''}><option value="">전체 이야기</option>{TAGS.map((item) => <option value={item.slug} key={item.id}>{item.label}</option>)}</select></label>

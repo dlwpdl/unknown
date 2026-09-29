@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>글링 웹 나이트 브랜드 시안</title>
+<style>
+  :root{font:16px/1.6 system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;color:#F6F3F0;background:#0B0B12}
+  *{box-sizing:border-box}body{margin:0}a{color:inherit}header,main,footer{max-width:1180px;margin:auto;padding-inline:32px}
+  header{display:flex;justify-content:space-between;align-items:center;gap:24px;min-height:112px;border-bottom:1px solid #343443}
+  header img{display:block;width:120px;height:auto}nav{display:flex;gap:28px;flex-wrap:wrap}nav a{text-decoration:none;font-weight:600}
+  main{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:56px;padding-top:64px;padding-bottom:80px}
+  .kicker{color:#CBB9FF;font-weight:700;font-size:14px}h1{font-size:clamp(32px,4vw,52px);line-height:1.25;letter-spacing:-.04em;margin:12px 0 24px}
+  p{color:#B7B4C3}.intro{font-size:18px;max-width:660px}.filters{display:flex;gap:12px;border-block:1px solid #343443;padding:20px 0;margin-top:48px}
+  .filter{flex:1;background:#171722;border:1px solid #343443;border-radius:10px;padding:14px 18px}.filter small{display:block;color:#B7B4C3}
+  h2{font-size:21px;margin:32px 0 8px}.story{padding:24px 0;border-bottom:1px solid #343443}.story h3{font-size:22px;margin:6px 0}.story p{margin:8px 0}
+  aside{align-self:start;position:sticky;top:32px;background:#222231;padding:24px;border-top:3px solid #CBB9FF}aside h2{margin:0}
+  aside a{display:block;background:#CBB9FF;color:#171123;border-radius:9px;text-align:center;padding:13px;margin-top:20px;text-decoration:none;font-weight:700}
+  footer{border-top:1px solid #343443;padding-top:28px;padding-bottom:40px;color:#B7B4C3;font-size:14px}
+  @media(max-width:900px){main{grid-template-columns:1fr}aside{position:static}}
+  @media(max-width:560px){header,main,footer{padding-inline:20px}header{padding-block:20px;align-items:flex-start;flex-direction:column;gap:14px;min-height:0}main{padding-top:36px}.filters{flex-direction:column}}
+</style>
+<header><img src="../../assets/brand/gling-night-wordmark.png" alt="gling"><nav><a href="#stories">동네 이야기</a><a href="#meetups">모임</a><a href="#app">앱에서 시작 ↗</a></nav></header>
+<main>
+  <div><span class="kicker">우리 동네, 글링</span><h1>동네의 이야기를 읽고,<br>함께 갈 곳을 발견해요.</h1>
+    <p class="intro">공연과 페스티벌부터 작은 동네 모임까지. 이야기는 여기서 둘러보고, 참여와 대화는 앱에서 이어가세요.</p>
+    <div class="filters"><div class="filter"><small>도시</small>밴쿠버</div><div class="filter"><small>주제</small>전체 이야기</div></div>
+    <h2 id="stories">밴쿠버 · 전체 이야기</h2>
+    <article class="story"><span class="kicker">라이프</span><h3>이번 주말, 같이 가고 싶은 곳</h3><p>동네에서 궁금했던 행사와 공연 이야기를 나눠요.</p></article>
+    <article class="story" id="meetups"><span class="kicker">모임</span><h3>혼자 가기 아쉬운 날엔</h3><p>같은 도시에서 취향이 맞는 사람을 찾아보세요.</p></article>
+  </div>
+  <aside id="app"><h2>둘러보기는 여기서,<br>함께하는 건 앱에서.</h2><p>글 작성, 모임 참여와 대화는 글링 앱에서 시작해요.</p><a href="https://gling.ej-entertainment.com/">글링 웹사이트 보기 ↗</a></aside>
+</main>
+<footer>글링 웹 공개 화면 · 나이트 브랜드 시안</footer>
+</html>
