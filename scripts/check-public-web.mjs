@@ -8,6 +8,7 @@ for (const page of ['index', 'terms', 'privacy', 'account-deletion', 'child-safe
   const html = readFileSync(join(directory, `${page}.html`), 'utf8');
   assert.ok(html.includes('gling-night-wordmark.') && html.includes('--accent:#CBB9FF'), `${page} lost the night brand`);
 }
+assert.ok(readFileSync(join(directory, 'index.html'), 'utf8').includes('https://apps.apple.com/ca/app/id6809273242'), 'Public web is missing the live iOS download');
 const childSafety = readFileSync(join(directory, 'child-safety.html'), 'utf8');
 assert.ok(childSafety.includes('--bg:') && childSafety.includes('--text:'), 'Legal page must define readable background/text colors');
 for (const text of ['아동 안전 표준', 'CSAE', 'CSAM', 'gling@ej-entertainment.com', 'Cybertip.ca']) {
