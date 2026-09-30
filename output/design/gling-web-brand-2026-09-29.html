@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>글링 웹 브랜드 미리보기</title>
+  <link rel="stylesheet" href="../../src/components/public-web/reader.css" />
+  <style>:root{--font-display:system-ui,'Apple SD Gothic Neo',sans-serif;--text:#F6F3F0;--background:#0B0B12;--backgroundElement:#222231;--textSecondary:#B7B4C3;--card:#171722;--line:#343443;--accent:#CBB9FF;--accentInk:#171123}[hidden]{display:none!important}</style>
+</head>
+<body>
+  <div class="reader">
+    <header class="reader-header">
+      <a href="#top" aria-label="글링 홈"><img src="../../assets/brand/gling-night-wordmark.png" alt="gling" width="96" /></a>
+      <nav aria-label="주요 메뉴"><a href="?tag=festival#stories">페스티벌</a><a href="?tag=meetup#stories">모임</a><a href="?tag=#stories">오늘의 이야기</a><a class="reader-header-app" href="#app">앱에서 시작 ↗</a></nav>
+    </header>
+    <main class="reader-main" id="top">
+      <section class="reader-showcase" aria-labelledby="preview-title">
+        <div class="reader-showcase-copy">
+          <h1 id="preview-title">큰 페스티벌부터<br />동네 한잔까지.</h1>
+          <p>함께 갈 사람을 찾고, 오늘의 이야기를 나눠요. 공개 게시판은 로그인 없이 둘러볼 수 있어요.</p>
+          <div class="reader-showcase-actions"><a class="reader-primary" href="?tag=#stories">오늘의 이야기 보기 <span aria-hidden="true">↗</span></a><a class="reader-secondary" href="?tag=meetup#stories">모임 둘러보기 <span aria-hidden="true">↗</span></a></div>
+        </div>
+        <div class="reader-showcase-scene" aria-hidden="true"><img src="../../assets/images/festival-glass-orbs.webp" alt="" width="768" height="512" /></div>
+      </section>
+      <div class="reader-content">
+        <div class="reader-section-heading"><div><h2 id="stories">오늘의 이야기</h2><p>페스티벌 후기부터 동네의 작은 질문까지.</p></div><span id="preview-topic">밴쿠버 · 전체 이야기</span></div>
+        <form class="reader-filters" action="#stories"><label>도시<select name="city"><option value="vancouver">밴쿠버</option></select></label><label>주제<select name="tag" id="preview-select"><option value="">전체 이야기</option><option value="festival">페스티벌</option><option value="meetup">모임</option></select></label><button type="submit">보기</button></form>
+        <article class="reader-card" id="preview-card"><div><p class="reader-kicker">공개 게시판</p><h3>우리 동네의 이야기를 발견해요</h3><p class="reader-excerpt">이 영역에는 실제 사이트의 최신 공개 글과 모임이 표시됩니다.</p></div></article>
+        <div class="reader-notice" id="preview-empty" hidden><h2>아직 공개된 이야기가 없어요</h2><p>다가오는 페스티벌 일정은 글링 앱에서 확인하고, 다른 공개 이야기도 둘러보세요.</p><a class="reader-secondary" href="?tag=#stories">전체 이야기 보기</a></div>
+      </div>
+      <aside id="app"><section class="reader-invitation"><h2>마음에 드는 이야기를<br />찾았다면, 이제 앱에서.</h2><p>글을 쓰고, 모임에 참여하고, 대화를 이어가세요.</p><a class="reader-primary" href="https://apps.apple.com/ca/app/id6809273242">iPhone용 글링 받기 ↗</a></section></aside>
+    </main>
+  </div>
+  <script>
+    const tag = new URLSearchParams(location.search).get('tag');
+    const topic = tag === 'festival' ? '페스티벌' : tag === 'meetup' ? '모임' : '전체 이야기';
+    document.querySelector('#preview-topic').textContent = `밴쿠버 · ${topic}`;
+    document.querySelector('#preview-select').value = tag === 'festival' || tag === 'meetup' ? tag : '';
+    document.querySelector('#preview-card').hidden = tag === 'festival';
+    document.querySelector('#preview-empty').hidden = tag !== 'festival';
+  </script>
+</body>
+</html>

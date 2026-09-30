@@ -15,14 +15,16 @@ import { publicWebClient } from '@/lib/public-web-client';
 import type { Post } from '@/lib/types';
 
 const wordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark.png')).uri;
+const showcaseArt = Asset.fromModule(require('../../../assets/images/festival-glass-orbs.webp')).uri;
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const palette = Object.fromEntries(Object.entries(WebNightColors).map(([key, value]) => [`--${key}`, value])) as CSSProperties;
 const cities = CITIES.filter((city) => city.state === 'open');
+const webTags = [TAGS[0], { id: 16, slug: 'festival', label: '페스티벌', kind: 'post' } as const, ...TAGS.slice(1)];
 
 function AppInvitation({ target, label = '앱에서 대화하기' }: { target: string; label?: string }) {
   return <section className="reader-invitation" aria-label="앱에서 이어가기">
-    <h2>둘러보기는 여기서,<br />함께하는 건 앱에서.</h2>
-    <p>글 작성, 모임 참여와 모든 대화는 글링 앱에서 시작해요.</p>
+    <h2>마음에 드는 이야기를<br />찾았다면, 이제 앱에서.</h2>
+    <p>글을 쓰고, 모임에 참여하고, 대화를 이어가세요.</p>
     <a data-analytics="web_control_1" className="reader-primary" href={target}>{label} ↗</a>
     <details><summary data-analytics="web_control_2">아직 앱이 없나요?</summary>
       <p>iPhone에서는 App Store에서 글링을 받을 수 있어요. Android는 출시 준비 중이에요. 설치 후 이 글의 링크를 다시 열면 같은 글에서 시작할 수 있어요.</p>
@@ -57,7 +59,7 @@ export default function PublicReader() {
   const detail = path === '/post' || path.startsWith('/post/');
   const browse = path === '/' || path === '/meetups';
   const city = cities.find((item) => item.id === params.city) ?? cities[0];
-  const tag = TAGS.find((item) => item.slug === (path === '/meetups' ? 'meetup' : params.tag));
+  const tag = webTags.find((item) => item.slug === (path === '/meetups' ? 'meetup' : params.tag));
   const key = `${path}:${postId}:${city.id}:${tag?.id ?? ''}`;
   const [result, setResult] = useState<{ key: string; posts: Post[]; more: boolean; failed: boolean } | null>(null);
   const [retry, setRetry] = useState(0);
@@ -105,24 +107,34 @@ export default function PublicReader() {
   }
 
   return <div className="reader" style={palette} lang="ko">
-    <Head><title>{post ? `${post.title} | 글링` : '글링 | 우리 동네의 오늘'}</title>
-      <meta name="description" content="우리 동네의 공개 이야기와 모임을 둘러보세요. 참여와 대화는 글링 앱에서 이어집니다." />
+    <Head><title>{post ? `${post.title} | 글링` : '글링 | 페스티벌부터 동네 한잔까지'}</title>
+      <meta name="description" content="페스티벌 이야기, 작은 모임, 우리 동네의 공개 글을 둘러보세요. 참여와 대화는 글링 앱에서 이어집니다." />
     </Head>
     <a data-analytics="web_control_4" className="reader-skip" href="#reader-main">본문으로 바로가기</a>
     <header className="reader-header">
       <a data-analytics="web_control_5" href="/" aria-label="글링 홈"><img src={wordmark} alt="gling" width="96" /></a>
-      <nav aria-label="주요 메뉴"><a data-analytics="web_control_6" href="/">동네 이야기</a><a data-analytics="web_control_7" href="/?tag=meetup">모임</a><a data-analytics="web_control_8" href="#app">앱에서 시작 ↗</a></nav>
+      <nav aria-label="주요 메뉴"><a data-analytics="web_control_6" href="/?tag=festival#stories">페스티벌</a><a data-analytics="web_control_7" href="/?tag=meetup#stories">모임</a><a href="/#stories">오늘의 이야기</a><a data-analytics="web_control_8" className="reader-header-app" href="#app">앱에서 시작 ↗</a></nav>
     </header>
     <main id="reader-main" className="reader-main" tabIndex={-1}>
+      {browse && <section className="reader-showcase" aria-labelledby="reader-showcase-title">
+        <div className="reader-showcase-copy">
+          <h1 id="reader-showcase-title">큰 페스티벌부터<br />동네 한잔까지.</h1>
+          <p>함께 갈 사람을 찾고, 오늘의 이야기를 나눠요. 공개 게시판은 로그인 없이 둘러볼 수 있어요.</p>
+          <div className="reader-showcase-actions">
+            <a data-analytics="web_control_21" className="reader-primary" href="/#stories">오늘의 이야기 보기 <span aria-hidden="true">↗</span></a>
+            <a data-analytics="web_control_22" className="reader-secondary" href="/?tag=meetup#stories">모임 둘러보기 <span aria-hidden="true">↗</span></a>
+          </div>
+        </div>
+        <div className="reader-showcase-scene" aria-hidden="true"><img src={showcaseArt} alt="" width="768" height="512" fetchPriority="high" /></div>
+      </section>}
       <div className="reader-content">
         {browse ? <>
-          <header className="reader-hero"><p className="reader-kicker">우리 동네, 글링</p><h1>동네의 이야기를 읽고,<br />함께 갈 곳을 발견해요.</h1><p>공연과 페스티벌부터 작은 동네 모임까지. 이야기는 여기서 둘러보고, 참여와 대화는 앱에서 이어가세요.</p></header>
+          <div className="reader-section-heading"><div><h2 id="stories">오늘의 이야기</h2><p>페스티벌 후기부터 동네의 작은 질문까지.</p></div><span>{city.name} · {tag?.label ?? '전체 이야기'}</span></div>
           <form className="reader-filters" action="/" method="get">
             <label>도시<select name="city" defaultValue={city.id}>{cities.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label>
-            <label>주제<select name="tag" defaultValue={tag?.slug ?? ''}><option value="">전체 이야기</option>{TAGS.map((item) => <option value={item.slug} key={item.id}>{item.label}</option>)}</select></label>
+            <label>주제<select name="tag" defaultValue={tag?.slug ?? ''}><option value="">전체 이야기</option>{webTags.map((item) => <option value={item.slug} key={item.id}>{item.label}</option>)}</select></label>
             <button data-analytics="web_control_9" type="submit">보기</button>
           </form>
-          <h2 className="reader-list-title">{city.name} · {tag?.label ?? '전체 이야기'}</h2>
           <div aria-busy={loading}>
             {current?.posts.map((item) => <article className="reader-card" key={item.id}>
               <div><p className="reader-kicker">{item.tag.label}{item.room?.closed ? ' · 모집 마감' : ''}</p>
@@ -148,10 +160,10 @@ export default function PublicReader() {
         </> : <section className="reader-hero"><h1>앱에서 이어가세요.</h1><p>웹에서는 공개 이야기와 모임을 둘러볼 수 있어요. 작성·참여·대화와 내 정보 관리는 앱에서 이용해 주세요.</p><a data-analytics="web_control_16" href="/">공개 이야기 둘러보기 →</a></section>}
         {loading && <p role="status" className="reader-notice">이야기를 불러오고 있어요…</p>}
         {current?.failed && <div role="alert" className="reader-notice"><p>이야기를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p><button data-analytics="web_control_17" onClick={() => setRetry((value) => value + 1)}>다시 시도</button></div>}
-        {!loading && !current?.failed && (browse || detail) && !current?.posts.length && <div className="reader-notice">{detail ? <h1>글을 찾을 수 없어요</h1> : <h2>아직 공개된 이야기가 없어요</h2>}<p>{detail ? '삭제되었거나 공개되지 않은 글이에요.' : '다른 도시나 주제의 이야기도 둘러보세요.'}</p></div>}
+        {!loading && !current?.failed && (browse || detail) && !current?.posts.length && <div className="reader-notice">{detail ? <h1>글을 찾을 수 없어요</h1> : <h2>아직 공개된 이야기가 없어요</h2>}<p>{detail ? '삭제되었거나 공개되지 않은 글이에요.' : tag?.slug === 'festival' ? '다가오는 페스티벌 일정은 글링 앱에서 확인하고, 다른 공개 이야기도 둘러보세요.' : '다른 도시나 주제의 이야기도 둘러보세요.'}</p>{browse && tag?.slug === 'festival' && <a className="reader-secondary" href="/#stories">전체 이야기 보기</a>}</div>}
       </div>
       <aside id="app"><AppInvitation target={target} label={post?.room ? post.room.closed ? '앱에서 모임 보기' : '앱에서 참여하기' : undefined} /></aside>
     </main>
-    <footer className="reader-footer"><span>gling · 우리 동네의 오늘</span><nav aria-label="정책"><a data-analytics="web_control_18" href="/terms">이용약관</a><a data-analytics="web_control_19" href="/privacy">개인정보처리방침</a><a data-analytics="web_control_20" href="/account-deletion">계정 삭제</a></nav></footer>
+    <footer className="reader-footer"><span>gling · 같이 갈 사람, 같이 나눌 이야기</span><nav aria-label="정책"><a data-analytics="web_control_18" href="/terms">이용약관</a><a data-analytics="web_control_19" href="/privacy">개인정보처리방침</a><a data-analytics="web_control_20" href="/account-deletion">계정 삭제</a></nav></footer>
   </div>;
 }
