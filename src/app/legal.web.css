@@ -20,7 +20,7 @@
   padding: 14px 18px;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
-  background: rgba(11, 14, 18, 0.92);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
   backdrop-filter: blur(18px);
 }
 
@@ -57,7 +57,7 @@
   border: 1px solid var(--line);
   border-radius: 36px;
   background:
-    linear-gradient(135deg, rgba(203, 185, 255, 0.16), transparent 44%),
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 44%),
     var(--panel);
 }
 
@@ -89,8 +89,8 @@
   margin-top: 8px;
   padding: 13px 18px;
   border-radius: 999px;
-  color: #171123 !important;
-  background: var(--accent);
+  color: var(--accent-ink) !important;
+  background: var(--accent-fill);
   font-weight: 800;
 }
 
@@ -178,12 +178,12 @@
   place-content: center;
   gap: 20px;
   text-align: center;
-  background: #0B0B12;
-  color: #F6F3F0;
+  background: #0D0C10;
+  color: #ECE8E5;
 }
 
 .legal-missing a {
-  color: #CBB9FF;
+  color: #9283AC;
 }
 
 @media (max-width: 760px) {

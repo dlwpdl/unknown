@@ -34,17 +34,18 @@ export const Colors = {
   },
 } as const;
 
-// Shared palette for the public web reader, landing, and legal pages.
+// Minimal cinematic palette for the public web reader, landing, and legal pages.
 export const WebNightColors = {
-  text: '#F6F3F0',
-  background: '#0B0B12',
-  backgroundElement: '#222231',
-  backgroundSelected: '#343443',
-  textSecondary: '#B7B4C3',
-  card: '#171722',
-  line: '#343443',
-  accent: '#CBB9FF',
-  accentInk: '#171123',
+  text: '#ECE8E5',
+  background: '#0D0C10',
+  backgroundElement: '#26212C',
+  backgroundSelected: '#36303F',
+  textSecondary: '#B4ADB8',
+  card: '#19161E',
+  line: '#36303F',
+  accent: '#9283AC',
+  accentFill: '#746486',
+  accentInk: '#F1EDF5',
   navy: '#B9C8FF',
 } as const;
 

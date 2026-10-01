@@ -30,6 +30,7 @@ const siteColors = {
   '--text': WebNightColors.text,
   '--muted': WebNightColors.textSecondary,
   '--accent': WebNightColors.accent,
+  '--accent-fill': WebNightColors.accentFill,
   '--accent-ink': WebNightColors.accentInk,
   '--navy': WebNightColors.navy,
 } as CSSProperties;
