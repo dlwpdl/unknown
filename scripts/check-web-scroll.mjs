@@ -32,6 +32,7 @@ assert.ok(before.pageBottom >= before.footerBottom - 1, 'Page background stops b
 assert.equal(before.canvasBackground, before.pageBackground, 'Browser canvas must match the page background');
 const direction = before.y > 100 ? 'up' : 'down';
 browser('scroll', '--direction', direction, '--amount', '600');
+browser('wait', '--fn', `window.scrollY ${direction === 'down' ? '>' : '<'} ${before.y}`, '--timeout', '3000');
 const after = position();
 assert.ok(direction === 'down' ? after.y > before.y : after.y < before.y, 'Browser scroll did not move the page');
 console.log(JSON.stringify({ direction, before, after }));
