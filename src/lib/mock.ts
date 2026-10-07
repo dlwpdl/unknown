@@ -1,14 +1,14 @@
 // 목데이터 — Supabase 연결 전까지의 피드. 시딩 글 톤 가이드를 겸한다 (태그별 모범 사례).
 
-import type { City, DailyQuota, Post, Tag } from '@/lib/types';
+import type { City, Post, Tag } from '@/lib/types';
 
 // 큰 도시 = 상단 지역 선택. 소도시·동네는 프로필의 neighborhood로 구조화한다.
-// 밀도 전략: 밴쿠버·토론토·에드먼튼만 열고 나머지는 대기열('soon'). 열리는 순서는 기수제로.
+// 밀도 전략: 밴쿠버·토론토·몬트리올·에드먼튼만 열고 나머지는 대기열('soon').
 export const CITIES: City[] = [
   { id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver', province: 'BC', state: 'open' },
   { id: 'toronto', name: '토론토', englishName: 'Toronto', province: 'ON', state: 'open' },
-  { id: 'montreal', name: '몬트리올', englishName: 'Montréal', province: 'QC', state: 'soon' },
-  { id: 'calgary', name: '캘거리', englishName: 'Calgary', province: 'AB', state: 'soon' },
+  { id: 'montreal', name: '몬트리올', englishName: 'Montréal', province: 'QC', state: 'open' },
+  { id: 'calgary', name: '캘거리', englishName: 'Calgary', province: 'AB', state: 'open' },
   { id: 'winnipeg', name: '위니펙', englishName: 'Winnipeg', province: 'MB', state: 'soon' },
   { id: 'saskatoon', name: '사스카툰', englishName: 'Saskatoon', province: 'SK', state: 'soon' },
   { id: 'ottawa', name: '오타와', englishName: 'Ottawa', province: 'ON', state: 'soon' },
@@ -20,6 +20,7 @@ export const CITIES: City[] = [
 
 export const TAGS: Tag[] = [
   { id: 1, slug: 'life', label: '라이프', kind: 'post' },
+  { id: 16, slug: 'festival', label: '페스티벌', kind: 'post' },
   { id: 4, slug: 'food', label: '맛집', kind: 'post' },
   { id: 10, slug: 'travel', label: '여행', kind: 'post' },
   { id: 11, slug: 'shopping', label: '쇼핑', kind: 'post' },
@@ -30,7 +31,6 @@ export const TAGS: Tag[] = [
   { id: 5, slug: 'meetup', label: '모임', kind: 'meetup' },
 ];
 
-export const INITIAL_QUOTA: DailyQuota = { used: 0, max: 1 };
 
 export const MOCK_POSTS: Post[] = [
   // ── 밴쿠버 ──
@@ -57,7 +57,7 @@ export const MOCK_POSTS: Post[] = [
     id: 'p2',
     cityId: 'vancouver',
     author: { id: 'u2', nickname: '면라이더', neighborhood: '리치몬드', verified: false },
-    tag: TAGS[8],
+    tag: TAGS[9],
     title: '이번 주 토요일, 라멘 원정대 4인',
     body: '리치몬드 쪽에 새로 생긴 집 도장깨기 하실 분. 맵기 단계별로 시켜서 나눠 먹어요.',
     hashtags: ['2030', '맛집', '주말'],
@@ -76,7 +76,7 @@ export const MOCK_POSTS: Post[] = [
     id: 'p3',
     cityId: 'vancouver',
     author: { id: 'u3', nickname: '메이플시럽', neighborhood: '버나비', verified: true },
-    tag: TAGS[5],
+    tag: TAGS[6],
     title: '겨울 타이어 언제 갈아요?',
     body: '첫 겨울인데 다들 몇 월에 갈아 끼우시는지. 스탠리파크 쪽 출퇴근이라 눈 오면 무서울 것 같아서요.',
     hashtags: ['운전', '겨울', '첫정착'],
@@ -95,7 +95,7 @@ export const MOCK_POSTS: Post[] = [
     id: 'p4',
     cityId: 'vancouver',
     author: { id: 'u4', nickname: '요란한고요', neighborhood: '코퀴틀람', verified: false },
-    tag: TAGS[1],
+    tag: TAGS[2],
     title: '한인마트 옆 쌀국수집, 진짜였다',
     body: '간판만 보고 들어갔는데 국물이 장난 아님. 점심 특선이 12불이라 지갑도 안 아픔. 위치는 댓글에.',
     hashtags: ['3040', '쌀국수', '가성비'],
@@ -113,7 +113,7 @@ export const MOCK_POSTS: Post[] = [
     id: 'p5',
     cityId: 'vancouver',
     author: { id: 'u5', nickname: '비오는날세차', neighborhood: '써리', verified: true },
-    tag: TAGS[5],
+    tag: TAGS[6],
     title: '운전면허 교환, 서류 하나 빼먹지 마세요',
     body: '한국 면허 교환하러 ICBC 갔다가 아포스티유 때문에 두 번 걸음 했습니다. 필요한 서류 정리해둘게요.',
     hashtags: ['ICBC', '운전면허', '첫정착'],
@@ -128,7 +128,7 @@ export const MOCK_POSTS: Post[] = [
     id: 'p6',
     cityId: 'vancouver',
     author: { id: 'u6', nickname: '랭리댁', neighborhood: '랭리', verified: false },
-    tag: TAGS[8],
+    tag: TAGS[9],
     title: '주말 등산 같이 가실 2030 구해요',
     body: '초보라 빡센 코스는 못 가고, 그롯 마운틴 정도 천천히 걸으실 분. 끝나고 국밥은 필수.',
     hashtags: ['2030', '등산', '주말'],
@@ -144,7 +144,7 @@ export const MOCK_POSTS: Post[] = [
     id: 'p7',
     cityId: 'vancouver',
     author: { id: 'u7', nickname: '코퀴틀람터줏대감', neighborhood: '코퀴틀람', verified: true },
-    tag: TAGS[6], // 주거
+    tag: TAGS[7], // 주거
     title: '9월부터 룸메 구해요 (여성)',
     body: '2베드 콘도 마스터룸 셰어. 조용하고 깔끔한 분이면 좋겠어요. 자세한 건 대화로!',
     hashtags: ['2030', '여성', '9월입주'],
@@ -158,7 +158,7 @@ export const MOCK_POSTS: Post[] = [
     id: 'p8',
     cityId: 'vancouver',
     author: { id: 'u10', nickname: '이사왕', neighborhood: '다운타운', verified: true },
-    tag: TAGS[3], // 쇼핑
+    tag: TAGS[4], // 쇼핑
     title: '이사 정리 — 이케아 책상+의자 $80',
     body: '9월 초 이사라 정리해요. 사용감 있지만 튼튼합니다. 다운타운 직거래, 픽업만요.',
     hashtags: ['이사정리', '가구', '직거래'],
@@ -173,7 +173,7 @@ export const MOCK_POSTS: Post[] = [
     id: 'p9',
     cityId: 'vancouver',
     author: { id: 'u11', nickname: '갓랜디드', neighborhood: '메트로타운', verified: false },
-    tag: TAGS[4],
+    tag: TAGS[5],
     title: '한국에서 송금, 다들 뭐 쓰세요?',
     body: '와이즈 쓰다가 수수료가 아까워서요. 큰 금액은 은행이 낫나요? 경험 공유 부탁드려요.',
     hashtags: ['송금', '환율', '첫정착'],
@@ -191,7 +191,7 @@ export const MOCK_POSTS: Post[] = [
     id: 'p10',
     cityId: 'vancouver',
     author: { id: 'u15', nickname: '주말배드민턴', neighborhood: '버나비', verified: true },
-    tag: TAGS[8],
+    tag: TAGS[9],
     title: '일요일 아침 배드민턴, 4050 환영',
     body: '본소 체육관에서 매주 일요일 오전에 쳐요. 실력 무관, 라켓 여분 있습니다. 끝나고 커피 한잔.',
     hashtags: ['4050', '배드민턴', '일요일'],
@@ -226,7 +226,7 @@ export const MOCK_POSTS: Post[] = [
     id: 't2',
     cityId: 'toronto',
     author: { id: 'u9', nickname: '미시사가주민', neighborhood: '미시사가', verified: false },
-    tag: TAGS[8],
+    tag: TAGS[9],
     title: '금요일 저녁 보드게임 하실 분',
     body: '한인타운 근처 카페에서 가볍게. 룰 설명해드릴 테니 처음이셔도 환영이에요.',
     hashtags: ['2030', '보드게임', '불금'],
@@ -242,7 +242,7 @@ export const MOCK_POSTS: Post[] = [
     id: 't3',
     cityId: 'toronto',
     author: { id: 'u12', nickname: '영앤블루어', neighborhood: '영앤블루어', verified: true },
-    tag: TAGS[5],
+    tag: TAGS[6],
     title: 'TTC 월패스 vs 프레스토, 계산해봤어요',
     body: '주 5일 출퇴근 기준으로 한 달 비용 비교해봤습니다. 재택 이틀 이상이면 패스가 손해예요. 표로 정리해둠.',
     hashtags: ['TTC', '교통', '절약'],
@@ -260,7 +260,7 @@ export const MOCK_POSTS: Post[] = [
     id: 't4',
     cityId: 'toronto',
     author: { id: 'u13', nickname: '콘도헌터', neighborhood: '리버티빌리지', verified: true },
-    tag: TAGS[6], // 주거
+    tag: TAGS[7], // 주거
     title: '리버티빌리지 1+den, 12월 입주',
     body: '콘도 리스 넘깁니다. 12월 1일 입주 가능, 주차 포함. 조건은 대화로 자세히 알려드릴게요.',
     hashtags: ['1베드', '12월입주', '주차포함'],
@@ -274,7 +274,7 @@ export const MOCK_POSTS: Post[] = [
     id: 't5',
     cityId: 'toronto',
     author: { id: 'u14', nickname: '더퍼린볶음밥', neighborhood: '코리아타운', verified: false },
-    tag: TAGS[1],
+    tag: TAGS[2],
     title: '크리스티역 순두부, 줄 서는 이유가 있음',
     body: '점심에 웨이팅 30분 각오하고 갔는데 후회 없었어요. 매운 단계 조절되고 반찬 리필도 됩니다.',
     hashtags: ['순두부', '코리아타운', '점심'],

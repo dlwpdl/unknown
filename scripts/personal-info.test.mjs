@@ -25,12 +25,14 @@ test('age uses complete UTC calendar years, including leap birthdays', () => {
 
 test('optional personal info validates a complete pair without restricting international names', () => {
   const today = '2026-09-12';
-  assert.equal(validatePersonalInfo('', '', today), null);
-  assert.equal(validatePersonalInfo(' 王 ', '2000-02-29', today), null);
-  assert.equal(validatePersonalInfo('Jean-Luc O’Connor', '1906-09-12', today), null);
+  assert.equal(validatePersonalInfo('', '', '', today), null);
+  assert.equal(validatePersonalInfo(' 王 ', '2000-02-29', '', today), null);
+  assert.equal(validatePersonalInfo('Jean-Luc O’Connor', '1906-09-12', 'female', today), null);
   for (const [name, dob] of [['김', ''], ['', '2000-01-01'], ['\n', '2000-01-01'], ['A\nB', '2000-01-01'], ['a'.repeat(201), '2000-01-01'], ['김', '1906-09-11'], ['김', '2026-02-29']]) {
-    assert.ok(validatePersonalInfo(name, dob, today), JSON.stringify([name, dob]));
+    assert.ok(validatePersonalInfo(name, dob, '', today), JSON.stringify([name, dob]));
   }
+  assert.ok(validatePersonalInfo('', '', 'male', today), 'gender alone cannot be stored');
+  assert.ok(validatePersonalInfo('김', '', 'male', today), 'gender still needs the complete pair');
 });
 
 

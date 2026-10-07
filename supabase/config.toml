@@ -80,3 +80,11 @@ verify_jwt = false
 # Scheduled server worker authenticates x-push-secret before claiming any work.
 [functions.push-notifications]
 verify_jwt = false
+
+# Public event discovery is read-only with bounded input and a shared upstream request budget.
+[functions.ticketmaster-events]
+verify_jwt = false
+
+# Revenue verifies the caller's JWT, admin role, and audit context itself.
+[functions.ticketmaster-revenue]
+verify_jwt = false

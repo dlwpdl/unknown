@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { configureBehavior, behaviorScreen, behavior, flushBehavior, scrollThresholds } from '../src/lib/behavior-analytics.ts';
 
 test('bounded retry batches preserve identity and order, reset on identity change, omit all content', async () => {
@@ -33,7 +33,10 @@ test('scroll emits crossed thresholds once and ignores short/horizontal-invalid 
 });
 test('every instrumented control is in the server allowlist', () => {
   const registry = JSON.parse(readFileSync(new URL('./analytics-controls.json', import.meta.url), 'utf8'));
-  const sql = readFileSync(new URL('../supabase/migrations/0073_behavior_analytics.sql', import.meta.url), 'utf8');
+  // 허용목록은 이후 마이그레이션에서도 늘어난다. 모든 마이그레이션을 합쳐서 확인한다.
+  const migrations = new URL('../supabase/migrations/', import.meta.url);
+  const sql = readdirSync(migrations).filter((name) => name.endsWith('.sql'))
+    .map((name) => readFileSync(new URL(name, migrations), 'utf8')).join('\n');
   for (const [id, path] of Object.entries(registry)) {
     assert.ok(readFileSync(new URL(`../${path}`, import.meta.url), 'utf8').includes(`analyticsId="${id}"`), id);
     assert.ok(sql.includes(`('${id}')`) || sql.includes(`('${id}.on')`), id);

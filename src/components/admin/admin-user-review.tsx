@@ -6,21 +6,25 @@ import { adminOptionKeys } from '@/lib/admin';
 import type { AdminProfile } from '@/lib/admin-data';
 import {
   ACCOUNT_TYPES, ACTIVITY_KINDS, EMPTY_ACTIVITY_FILTERS, activityParams,
-  loadAdminUserOverview, loadAdminUserActivityPage, mergeActivityRows,
+  ADMIN_GENDERS, loadAdminUserOverview, loadAdminUserActivityPage, mergeActivityRows,
   type ActivityFilters, type ActivityKind, type AdminActivityPage, type AdminUserOverview,
 } from '@/lib/admin-user-data';
 import { supabase } from '@/lib/supabase';
+import { formatIpGeo, lookupIpGeo, type IpGeo } from '@/lib/ip-geo';
 import { nearbyCommunity } from '@/lib/location';
 import { CITIES } from '@/lib/mock';
 
-export function AdminUserReview({ userId, profiles, onStatusChange }: {
+export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevelChange }: {
   userId: string; profiles: Map<string, AdminProfile>;
   onStatusChange?: (userId: string, status: 'active' | 'reactivation_pending') => Promise<void>;
+  onTrustLevelChange?: (userId: string, level: 1 | 2 | 3) => Promise<void>;
 }) {
   const [overview, setOverview] = useState<AdminUserOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
   const [statusBusy, setStatusBusy] = useState(false);
+  const [trustBusy, setTrustBusy] = useState(false);
+  const [ipGeo, setIpGeo] = useState<{ ip: string; geo: IpGeo | null } | null>(null);
   const [filters, setFilters] = useState<ActivityFilters>(EMPTY_ACTIVITY_FILTERS);
   const [draft, setDraft] = useState<ActivityFilters>(EMPTY_ACTIVITY_FILTERS);
   const [filterError, setFilterError] = useState<string | null>(null);
@@ -31,6 +35,12 @@ export function AdminUserReview({ userId, profiles, onStatusChange }: {
       .catch(() => { if (active) setError('회원 상세를 불러오지 못했습니다. 관리자 권한과 연결을 확인해주세요.'); });
     return () => { active = false; };
   }, [userId, retry]);
+  const sessionIp = overview?.profile.session_ip ?? null;
+  useEffect(() => {
+    let active = true;
+    void lookupIpGeo(sessionIp).then((geo) => { if (active) setIpGeo(sessionIp ? { ip: sessionIp, geo } : null); });
+    return () => { active = false; };
+  }, [sessionIp]);
   const apply = () => {
     try { activityParams(userId, draft); setFilters({ ...draft }); setFilterError(null); }
     catch (error) { setFilterError(error instanceof Error ? error.message : '조회 조건을 확인해주세요.'); }
@@ -50,11 +60,20 @@ export function AdminUserReview({ userId, profiles, onStatusChange }: {
     catch { setError('계정 상태를 변경하지 못했습니다. 다시 확인해주세요.'); }
     finally { setStatusBusy(false); }
   };
+  const changeTrust = async (level: 1 | 2 | 3) => {
+    if (!onTrustLevelChange || trustBusy) return;
+    setTrustBusy(true);
+    try { await onTrustLevelChange(userId, level); setOverview(null); setError(null); setRetry((value) => value + 1); }
+    catch { setError('신뢰 단계를 바꾸지 못했습니다. 다시 확인해주세요.'); }
+    finally { setTrustBusy(false); }
+  };
   if (!overview) return <View style={styles.section}>
     <ThemedText accessibilityRole={error ? 'alert' : 'progressbar'}>{error ?? '회원 식별 정보를 불러오는 중입니다.'}</ThemedText>
     {error && <Button label="다시 시도" onPress={() => { setError(null); setRetry((value) => value + 1); }} />}
   </View>;
   const profile = overview.profile;
+  // undefined = lookup still running for this IP
+  const geo = sessionIp && ipGeo?.ip === sessionIp ? ipGeo.geo : undefined;
   const snapshot = overview.location_snapshot;
   const measuredAt = snapshot ? Date.parse(snapshot.measured_at) : NaN;
   // Evaluate the recorded fix at measurement time, not as a fresh/live location.
@@ -73,11 +92,30 @@ export function AdminUserReview({ userId, profiles, onStatusChange }: {
       <Field label="이메일 확인" value={profile.email_confirmed_at ? formatDate(profile.email_confirmed_at) : '확인 기록 없음'} />
       <Field label="입력한 이름 · 비공개" value={profile.full_name ?? '미제공'} />
       <Field label="생년월일 · 만 나이" value={profile.date_of_birth ? `${profile.date_of_birth}${profile.age != null ? ` · 만 ${profile.age}세` : ''}` : '미제공'} />
+      <Field label="성별 · 비공개" value={profile.gender ? ADMIN_GENDERS[profile.gender] ?? profile.gender : '미제공'} />
       {profile.personal_info_updated_at && <Field label="개인정보 갱신" value={formatDate(profile.personal_info_updated_at)} />}
       <Field label="로그인 프로필 이름" value={profile.login_name ?? '미제공'} />
       <ThemedText type="small" style={styles.muted}>이름·생년월일은 본인이 별도 동의 후 입력한 정보입니다. 소셜 로그인 프로필 이름과 분리되며, 두 정보 모두 실명인증 결과가 아닙니다.</ThemedText>
       <Field label="실명인증" value="미도입 · 신뢰 단계와 별개" />
-      <Field label="권한 · 신뢰" value={`${profile.auth_role} · 신뢰 ${profile.verification_level}`} />
+      <Field label="권한" value={profile.auth_role} />
+      {onTrustLevelChange ? (
+        <View style={styles.trustRow}>
+          <ThemedText type="small" style={styles.fieldLabel}>신뢰 단계</ThemedText>
+          {([1, 2, 3] as const).map((level) => (
+            <Pressable key={level} accessibilityRole="button" disabled={trustBusy || level === profile.verification_level}
+              accessibilityLabel={`신뢰 단계 ${level}로 변경`}
+              accessibilityState={{ disabled: trustBusy || level === profile.verification_level, selected: level === profile.verification_level }}
+              onPress={() => void changeTrust(level)}
+              style={({ pressed }) => [styles.chip, level === profile.verification_level && styles.selected, (trustBusy || level === profile.verification_level) && styles.disabled, pressed && styles.pressed]}>
+              <ThemedText type="smallBold">{level}</ThemedText>
+            </Pressable>
+          ))}
+          <ThemedText type="small" style={styles.muted}>현재 {profile.verification_level}{trustBusy ? ' · 변경 중' : ''}</ThemedText>
+        </View>
+      ) : (
+        <Field label="권한 · 신뢰" value={`${profile.auth_role} · 신뢰 ${profile.verification_level}`} />
+      )}
+      <ThemedText type="small" style={styles.muted}>신뢰 단계는 배지·노출 판단에만 쓰이며 실명인증 결과가 아닙니다. 변경은 감사 로그에 남습니다.</ThemedText>
       <Field label="가입" value={formatDate(profile.created_at)} />
       <Field label="최근 로그인" value={profile.last_sign_in_at ? formatDate(profile.last_sign_in_at) : '기록 없음'} />
       {!!profile.bio && <Field label="소개" value={profile.bio} />}
@@ -97,9 +135,10 @@ export function AdminUserReview({ userId, profiles, onStatusChange }: {
       </>}
       <ThemedText type="small" style={styles.muted}>선호 지역은 회원이 저장한 선택이며 지역별 회원 수 집계 기준입니다. GPS 도시는 동의한 사용자의 최근 측정 위치에 가까운 지원 커뮤니티입니다. 로그인·글·모임 작성 시점의 기록으로, 실시간 위치나 신원 인증이 아니며 30일 지난 기록은 조회되지 않습니다.</ThemedText>
       <Field label="최근 인증 세션 IP" value={profile.session_ip ?? '기록 없음'} />
+      {!!profile.session_ip && <Field label="IP 국가 · 도시" value={geo === undefined ? '조회 중…' : geo ? formatIpGeo(geo) : '추정 결과 없음 · VPN·공유망·사내망일 수 있음'} />}
       {profile.session_created_at && <Field label="해당 세션 생성" value={formatDate(profile.session_created_at)} />}
       {profile.session_updated_at && <Field label="해당 세션 갱신" value={formatDate(profile.session_updated_at)} />}
-      <ThemedText type="small" style={styles.muted}>인증 서버에 남아 있는 세션 기록입니다. 공유망·VPN·인증 경로에 따라 IP가 달라질 수 있으며 현재 위치를 증명하지 않습니다. 보관 중인 다른 세션은 아래 계정 활동에서 조회합니다.</ThemedText>
+      <ThemedText type="small" style={styles.muted}>인증 서버에 남아 있는 세션 기록입니다. 공유망·VPN·인증 경로에 따라 IP가 달라질 수 있으며 현재 위치를 증명하지 않습니다. 국가·도시·통신사는 공개 IP 위치 DB(ipwho.is) 조회 결과입니다. 통신사·휴대폰 IP는 도시가 통신사 등록지로 표시될 수 있고, 회선 제공자마다 결과가 다를 수 있습니다. 보관 중인 다른 세션은 아래 계정 활동에서 조회합니다.</ThemedText>
     </View>
     <View style={styles.card}>
       <GroupTitle title="연결된 로그인 계정" />
@@ -207,4 +246,5 @@ const styles = StyleSheet.create({
   eventHeading: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, alignItems: 'center' }, eventKind: { color: Colors.light.navy },
   pressed: { opacity: 0.65 }, disabled: { opacity: 0.55 },
   id: { fontFamily: 'monospace', fontSize: 11, color: Colors.light.textSecondary },
+  trustRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.two, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.light.line },
 });

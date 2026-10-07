@@ -1,7 +1,8 @@
+import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, DeviceEventEmitter, StyleSheet, View } from 'react-native';
+import { Alert, DeviceEventEmitter, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
@@ -11,13 +12,14 @@ import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
+import { chillingSchedule } from '@/lib/chilling';
 import { leaveMeetup, loadMyMeetups, MEETUPS_CHANGED_EVENT, type MyMeetup } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useMembership } from '@/lib/membership-provider';
 import { CITIES } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
 
-export function MyMeetups({ onOpen }: { onOpen: (postId: string) => Promise<void> }) {
+export function MyMeetups({ onOpen, showLoadingIndicator = true }: { onOpen: (postId: string) => Promise<void>; showLoadingIndicator?: boolean }) {
   const theme = useTheme();
   const hidden = useContentVisibility();
   const router = useRouter();
@@ -62,16 +64,17 @@ export function MyMeetups({ onOpen }: { onOpen: (postId: string) => Promise<void
     try {
       await leaveMeetup(supabase, meetup.id);
       if (currentUser.current !== userId) return;
-      setResult((current) => current?.userId === userId ? { ...current, items: current.items.filter(({ id }) => id !== meetup.id) } : current);
+      setResult(current => current?.userId === userId ? { ...current, items: current.items.flatMap(item => item.id !== meetup.id ? [item] : meetup.role === 'host' ? [] : [{ ...item, role: 'cancelled' as const, conversationId: null }]) } : current);
       play('selection');
       DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
       await refreshMembership();
     } catch {
-      if (currentUser.current === userId) Alert.alert(t.meetup.changeError);
+      if (currentUser.current === userId) { play('warning'); Alert.alert(t.meetup.changeError); }
     } finally { setBusy(null); }
   };
 
   const confirmChange = (meetup: MyMeetup) => {
+    play('selection');
     const host = meetup.role === 'host';
     const pending = meetup.role === 'pending';
     Alert.alert(
@@ -86,8 +89,12 @@ export function MyMeetups({ onOpen }: { onOpen: (postId: string) => Promise<void
 
   const open = async (meetup: MyMeetup) => {
     if (busy) return;
+    play('selection');
     setBusy(meetup.id);
-    try { await onOpen(meetup.id); }
+    try {
+      if (meetup.role === 'host' || meetup.role === 'approved') await onOpen(meetup.id);
+      else router.push({ pathname: '/meetup-join', params: { postId: meetup.id } });
+    }
     catch { Alert.alert(t.feed.refreshErrorTitle, t.feed.refreshErrorBody); }
     finally { setBusy(null); }
   };
@@ -96,14 +103,14 @@ export function MyMeetups({ onOpen }: { onOpen: (postId: string) => Promise<void
     <View style={styles.heading}>
       <ThemedText type="smallBold" accessibilityRole="header" style={styles.title}>{t.meetup.mine}</ThemedText>
       {isAuthed && slots && <ThemedText type="small" themeColor="textSecondary" accessibilityLabel={`모임 자리 ${slots.active} / ${slots.limit}`} style={{ fontVariant: ['tabular-nums'] }}>
-        모임 자리 <ThemedText type="smallBold">{slots.active}/{slots.limit}</ThemedText>{slots.locked ? ` · 대기 ${slots.locked}` : ''}
+        모임 자리 <ThemedText type="smallBold">{slots.active}/{slots.limit}</ThemedText>
       </ThemedText>}
     </View>
     {isAuthed && <><MeetupPolicyNotice mode="leave" /><MeetupPolicyNotice mode="close" /></>}
-    {!isAuthed ? <Pressable analyticsId="components_my-meetups.pressable.1" onPress={() => promptLogin(t.auth.reasonJoinLogin)} accessibilityRole="button" style={[styles.empty, { borderColor: theme.line }]}>
+    {!isAuthed ? <Pressable analyticsId="components_my-meetups.pressable.1" onPress={() => { play('selection'); promptLogin(t.auth.reasonJoinLogin); }} accessibilityRole="button" style={[styles.empty, { borderColor: theme.line }]}>
       <ThemedText type="small" themeColor="accent">로그인하고 내 모임 보기</ThemedText>
     </Pressable> : <>
-      {loading && items.length === 0 && <ActivityIndicator color={theme.accent} accessibilityLabel="내 모임 불러오는 중" />}
+      {loading && items.length === 0 && showLoadingIndicator && <GlingLoader color={theme.accent} accessibilityLabel="내 모임 불러오는 중" />}
       {error && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{t.meetup.loadError}</ThemedText>}
       {!loading && !error && items.length === 0 && <ThemedText type="small" themeColor="textSecondary">{t.meetup.empty}</ThemedText>}
       {/* 내 모임은 가로 카드로 압축해 공개 모임 소개가 첫 화면에 들어오게 한다. */}
@@ -111,17 +118,18 @@ export function MyMeetups({ onOpen }: { onOpen: (postId: string) => Promise<void
         <Pressable analyticsId="components_my-meetups.pressable.2" onPress={() => void open(meetup)} accessibilityRole="button" disabled={!!busy} accessibilityState={{ disabled: !!busy, busy: busy === meetup.id }} style={({ pressed }) => [styles.copy, { opacity: pressed ? 0.7 : 1 }]}>
           <ThemedText type="smallBold" themeColor="accent">{t.meetup[meetup.role]}</ThemedText>
           <ThemedText type="smallBold">{meetup.title}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">{CITIES.find(({ id }) => id === meetup.cityId)?.name ?? meetup.cityId}</ThemedText>
-          {busy === meetup.id && <ActivityIndicator color={theme.accent} accessibilityLabel="모임 처리 중" />}
+          <ThemedText type="small" themeColor="textSecondary">{chillingSchedule(meetup.room)}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{CITIES.find(({ id }) => id === meetup.cityId)?.name ?? meetup.cityId} · {meetup.room.memberCount ?? 0}{meetup.room.capacity ? `/${meetup.room.capacity}` : ''}명</ThemedText>
+          {busy === meetup.id && <GlingLoader color={theme.accent} accessibilityLabel="모임 처리 중" />}
         </Pressable>
-        {meetup.role !== 'pending' && meetup.conversationId && <Pressable analyticsId="components_my-meetups.pressable.3"
-          onPress={() => router.push({ pathname: '/chat', params: { conversationId: meetup.conversationId! } })}
+        {(meetup.role === 'host' || meetup.role === 'approved') && meetup.conversationId && <Pressable analyticsId="components_my-meetups.pressable.3"
+          onPress={() => { play('selection'); router.push({ pathname: '/chat', params: { conversationId: meetup.conversationId! } }); }}
           accessibilityRole="button" style={styles.action}>
           <ThemedText type="smallBold" themeColor="accent">{t.meetup.openChat}</ThemedText>
         </Pressable>}
-        <Pressable analyticsId="components_my-meetups.pressable.4" onPress={() => confirmChange(meetup)} accessibilityRole="button" disabled={!!busy} accessibilityState={{ disabled: !!busy, busy: busy === meetup.id }} style={styles.action}>
+        {meetup.role !== 'rejected' && meetup.role !== 'cancelled' && <Pressable analyticsId="components_my-meetups.pressable.4" onPress={() => confirmChange(meetup)} accessibilityRole="button" disabled={!!busy} accessibilityState={{ disabled: !!busy, busy: busy === meetup.id }} style={styles.action}>
           <ThemedText type="small" themeColor="textSecondary">{meetup.role === 'host' ? t.meetup.end : meetup.role === 'pending' ? t.meetup.cancelRequest : t.meetup.leave}</ThemedText>
-        </Pressable>
+        </Pressable>}
       </View>)}</ScrollView>
     </>}
   </View>;
@@ -131,7 +139,7 @@ const styles = StyleSheet.create({
   section: { gap: Spacing.two, marginBottom: Spacing.four },
   heading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
   title: { fontSize: 18, lineHeight: 26 },
-  rail: { gap: Spacing.two, paddingRight: Spacing.three },
+  rail: { gap: Spacing.two, paddingTop: Spacing.one, paddingBottom: Spacing.three, paddingRight: Spacing.three },
   meetup: { width: 220, borderWidth: 1, borderRadius: 16, padding: Spacing.two, gap: Spacing.one },
   copy: { flexGrow: 1, flexBasis: 160, minHeight: 44, padding: Spacing.two, gap: Spacing.one },
   action: { minHeight: 44, minWidth: 44, padding: Spacing.two, alignItems: 'center', justifyContent: 'center' },

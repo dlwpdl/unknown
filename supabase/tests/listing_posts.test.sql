@@ -28,7 +28,10 @@ select throws_ok($$select public.set_listing_status((select id from public.posts
 select is((select count(*)::int from public.get_public_feed_page_v2('vancouver') f where f.title='소파 팝니다'),0,'closed listing leaves the feed');
 select is((select count(*)::int from public.get_public_post((select id from public.posts where title='소파 팝니다'))),1,'closed listing stays readable');
 select lives_ok($$select public.create_post('vancouver',(select id from public.tags where slug='life'),'이야기 하나','본문','{}','{}',null,'story',null)$$,'story still publishes');
-select throws_ok($$select public.create_post('vancouver',(select id from public.tags where slug='life'),'이야기 둘','본문','{}','{}',null,'story',null)$$,'P0001','DAILY_POST_LIMIT_REACHED','story daily limit still applies');
+select lives_ok($$select public.create_post('vancouver',(select id from public.tags where slug='life'),'이야기 둘','본문','{}','{}',null,'story',null)$$,'a second story does not consume listing slots');
+select throws_ok($$select public.create_post('vancouver',(select id from public.tags where slug='life'),'이야기 둘','본문','{}','{}',null,'story',null)$$,'P0001','DUPLICATE_POST','reposting the same story is blocked');
+select lives_ok($$select public.create_post('vancouver',(select id from public.tags where slug='life'),'이야기 '||n,'본문 '||n,'{}','{}',null,'story',null) from generate_series(3,10) n$$,'stories remain unlimited across the day');
+select throws_ok($$select public.create_post('vancouver',(select id from public.tags where slug='life'),'이야기 11','본문 11','{}','{}',null,'story',null)$$,'P0001','RATE_LIMITED','rapid bursts pause after ten stories in ten minutes');
 reset role;
 select ok(not has_function_privilege('anon','public.bump_post(uuid)','execute'),'anonymous cannot bump');
 select * from finish();

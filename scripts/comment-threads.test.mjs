@@ -7,6 +7,7 @@ import ts from 'typescript';
 import { buildCommentListRows } from '../src/lib/comment-list.ts';
 import { createThreadComment, loadCommentThreadContext, loadCommentThreadPage } from '../src/lib/comment-threads.ts';
 import { count, t } from '../src/i18n/ko.ts';
+import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
 
 test('댓글 목록은 루트·답글·동작을 개별 행으로 만들고 알림 대상을 중복하지 않는다', () => {
   const root = { id: 'root', nickname: '수달', body: '루트', replyCount: 2 };
@@ -117,7 +118,7 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
   const root = { id: 'root-comment', authorId: 'neighbor', nickname: '수달', body: '루트 본문', replyCount: 60 };
   const reply = { id: 'reply', authorId: 'other', nickname: '참새', body: '답글 본문', parentId: root.id, replyToNickname: root.nickname, likes: 2 };
   let auth = { isAuthed: true, me: { id: 'account-a', nickname: '나' }, isVerified: true, trustLevel: 2 };
-  let post = { id: 'post-a', author: { id: 'author', nickname: '작성자' }, views: 1, comments: 61 };
+  let post = { id: 'post-a', body: '', author: { id: 'author', nickname: '작성자' }, views: 1, comments: 61 };
   let hooks = [], index = 0, pendingEffects = [], mountedKey, tree, failSend = true, failLike = true, failRead = true, releaseSend, commentId, platform = 'ios';
   const alerts = [], reads = [], writes = [], counts = [];
   const exports = {};
@@ -152,6 +153,7 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
     if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16 } };
     if (name === '@/i18n/ko') return { t, count };
     if (name === '@/lib/comment-list') return { buildCommentListRows };
+    if (name === '@/lib/post-photo-credits') return { splitPostPhotoCredits };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
     if (name === '@/lib/promotions') return { PROMOTIONS_PREVIEW_ENABLED: false };
     if (name === '@/lib/community-data') return {

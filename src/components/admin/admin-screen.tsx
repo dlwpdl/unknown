@@ -1,16 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { AdminAnalyticsView } from '@/components/admin/admin-analytics';
+import { AdminTicketmasterView } from '@/components/admin/admin-ticketmaster';
+import { AdminCommandPalette } from '@/components/admin/admin-command-palette';
 import { AdminSectionView } from '@/components/admin/admin-section';
 import { AdminShell } from '@/components/admin/admin-shell';
+import { AdminSignupAlerts } from '@/components/admin/admin-signup-alerts';
 import { AdminUserDetail } from '@/components/admin/admin-user-detail';
 import { LoginPanel } from '@/components/login-panel';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
-import { canUseLocalAdminPreview, type AdminSection } from '@/lib/admin';
+import { initialAdminSection, type AdminSection } from '@/lib/admin';
 import {
   ADMIN_PAGE_SIZE,
   getLocalAdminDashboard,
@@ -18,30 +21,32 @@ import {
   loadMoreAdminData,
   moderateAdminReport,
   setAdminAccountStatus,
+  setAdminVerificationLevel,
   type AdminDashboardData,
   type AdminModerationAction,
 } from '@/lib/admin-data';
+import { resolveReportBatch } from '@/lib/admin-report-batch';
 import { supabase } from '@/lib/supabase';
 
 export function AdminScreen() {
   const { safety, alert, section: requestedSection } = useLocalSearchParams<{ safety?: string; alert?: string; section?: string }>();
-  const { isAuthed, isAdmin, isAuthLoading, authError, signInAdmin, signInGoogle, signOut } = useAuth();
-  const [section, setSection] = useState<AdminSection>(requestedSection === 'reports' ? 'reports' : alert ? 'alerts' : safety ? 'safety' : 'analytics');
+  const { isAuthed, isAdmin, isAuthLoading, authError, signInAdmin, signInGoogle, signOut, me } = useAuth();
+  const [section, setSection] = useState<AdminSection>(initialAdminSection(requestedSection, alert, safety));
   const [analyticsRefresh, setAnalyticsRefresh] = useState(0);
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [resolving, setResolving] = useState(false);
+  const resolvingRef = useRef(false);
+  const [moderationResult, setModerationResult] = useState('');
   const [loadingMore, setLoadingMore] = useState(false);
   const [exhausted, setExhausted] = useState<Set<AdminSection>>(new Set());
-  const [localPreview, setLocalPreview] = useState(false);
-  const localPreviewAllowed = canUseLocalAdminPreview(
-    __DEV__,
-    typeof location === 'undefined' ? '' : location.hostname,
-  );
+  const [lastLoadedAt, setLastLoadedAt] = useState<string | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const localPreview = false;
   const hasAdminAccess = isAdmin || localPreview;
-  const needsOperations = section !== 'analytics';
+  const needsOperations = section !== 'analytics' && section !== 'ticketmaster';
 
   const refresh = useCallback(async () => {
     if (!hasAdminAccess) return;
@@ -51,6 +56,7 @@ export function AdminScreen() {
     try {
       setData(localPreview ? getLocalAdminDashboard() : await loadAdminDashboard(supabase));
       setExhausted(new Set());
+      setLastLoadedAt(new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit' }).format(new Date()));
     } catch {
       setError('관리자 데이터를 불러오지 못했습니다. 권한과 연결 상태를 확인해주세요.');
     } finally {
@@ -66,6 +72,7 @@ export function AdminScreen() {
       .then((next) => {
         if (!active) return;
         setData(next);
+        setLastLoadedAt(new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit' }).format(new Date()));
         setLoading(false);
       })
       .catch(() => {
@@ -81,31 +88,36 @@ export function AdminScreen() {
     [data?.profiles],
   );
 
-  const resolveReport = async (reportId: string, action: AdminModerationAction['action'], note: string) => {
-    if (localPreview) return;
+  const confirmResolve = async (reportId: string | string[], action: AdminModerationAction['action'], note: string): Promise<string[]> => {
+    if (localPreview || resolvingRef.current) return [];
+    const ids = [...new Set(Array.isArray(reportId) ? reportId : [reportId])];
+    if (!ids.length) return [];
+    const labels = { dismissed: '기각', warned: '경고', blocked: '계정 정지', hidden: '콘텐츠 전체 숨김' };
+    const message = action === 'hidden' ? '콘텐츠의 일반 사용자 노출을 중단합니다. 원본과 운영 기록은 보존합니다.' : action === 'blocked' ? '즉시 새 활동이 제한되고 신고별로 사용자에게 알림이 전송됩니다.' : action === 'warned' ? '신고별로 대상 계정에 경고 알림이 전송됩니다.' : '처리 결과는 운영 기록에 남습니다.';
+    resolvingRef.current = true;
     setResolving(true);
-    setError(null);
     try {
-      await moderateAdminReport(supabase, reportId, action, note);
+      const description = `${ids.length}건을 ${labels[action]} 처리할까요?\n${message}\n공통 메모: ${note.trim() || '(없음)'}`;
+      const confirmed = Platform.OS === 'web' ? window.confirm(description) : await new Promise<boolean>((resolve) => {
+        Alert.alert('신고 처리 확인', description, [
+          { text: '취소', style: 'cancel', onPress: () => resolve(false) },
+          { text: '확인', style: action === 'blocked' ? 'destructive' : 'default', onPress: () => resolve(true) },
+        ], { cancelable: true, onDismiss: () => resolve(false) });
+      });
+      if (!confirmed) return [];
+      setError(null);
+      setModerationResult('처리 중…');
+      const result = await resolveReportBatch(ids, (id) => moderateAdminReport(supabase, id, action, note));
+      // Keep acknowledged successes closed even if reloading the dashboard fails.
+      setData((current) => current && ({ ...current, reports: current.reports.map((report) => result.succeeded.includes(report.id)
+        ? { ...report, status: action === 'dismissed' ? 'dismissed' : 'actioned' } : report) }));
       await refresh();
-    } catch {
-      setError('신고를 처리하지 못했습니다. 잠시 후 다시 시도해주세요.');
+      setModerationResult(`${labels[action]}: 성공 ${result.succeeded.length}건 · 실패 ${result.failed.length}건${result.failed.length ? ` (신고 ID: ${result.failed.join(', ')}) — 실패한 항목의 현재 상태를 확인해주세요.` : ''}`);
+      return result.succeeded;
     } finally {
+      resolvingRef.current = false;
       setResolving(false);
     }
-  };
-
-  const confirmResolve = (reportId: string, action: AdminModerationAction['action'], note: string) => {
-    const labels = { dismissed: '신고를 기각할까요?', warned: '대상 계정에 경고를 보낼까요?', blocked: '대상 계정을 정지할까요?', hidden: '이 콘텐츠를 모두에게 숨길까요?' };
-    const message = action === 'hidden' ? '신고된 콘텐츠의 일반 사용자 노출을 중단합니다. 원본과 운영 기록은 보존 정책에 따라 보관합니다.' : action === 'blocked' ? '확인하면 즉시 새 활동이 제한되고 사용자에게 알림이 전송됩니다.' : '처리 결과는 운영 기록에 남습니다.';
-    if (Platform.OS === 'web') {
-      if (window.confirm(`${labels[action]}\n${message}`)) void resolveReport(reportId, action, note);
-      return;
-    }
-    Alert.alert(labels[action], message, [
-      { text: '취소', style: 'cancel' },
-      { text: '확인', style: action === 'blocked' ? 'destructive' : 'default', onPress: () => void resolveReport(reportId, action, note) },
-    ]);
   };
 
   const loadMore = async () => {
@@ -114,7 +126,7 @@ export function AdminScreen() {
       return;
     }
     // 뜨는 글 알림 패널은 자체 RPC로 불러오므로 더 보기 대상이 아니다.
-    if (!data || section === 'overview' || section === 'analytics' || section === 'trending' || section === 'errors' || exhausted.has(section)) return;
+    if (!data || section === 'overview' || section === 'analytics' || section === 'ticketmaster' || section === 'trending' || section === 'errors' || exhausted.has(section)) return;
     const offset = section === 'reports'
       ? data.reports.length
       : section === 'safety'
@@ -132,12 +144,14 @@ export function AdminScreen() {
       const page = await loadMoreAdminData(supabase, section, offset);
       setData((current) => {
         if (!current) return current;
-        if (page.section === 'safety') return { ...current, safetyReviews: [...current.safetyReviews, ...page.rows] };
-        if (page.section === 'alerts') return { ...current, safetyAlerts: [...current.safetyAlerts, ...page.rows] };
-        if (page.section === 'reports') return { ...current, reports: [...current.reports, ...page.rows] };
-        if (page.section === 'users') return { ...current, profiles: [...current.profiles, ...page.rows] };
-        if (page.section === 'posts') return { ...current, posts: [...current.posts, ...page.rows] };
-        return { ...current, messages: [...current.messages, ...page.rows] };
+        const known = new Set(current.profiles.map((profile) => profile.id));
+        const profiles = [...current.profiles, ...(page.profiles ?? []).filter((profile) => !known.has(profile.id))];
+        if (page.section === 'safety') return { ...current, profiles, safetyReviews: [...current.safetyReviews, ...page.rows] };
+        if (page.section === 'alerts') return { ...current, profiles, safetyAlerts: [...current.safetyAlerts, ...page.rows] };
+        if (page.section === 'reports') return { ...current, profiles, reports: [...current.reports, ...page.rows] };
+        if (page.section === 'users') return { ...current, profiles: [...profiles, ...page.rows.filter((profile) => !known.has(profile.id))] };
+        if (page.section === 'posts') return { ...current, profiles, posts: [...current.posts, ...page.rows] };
+        return { ...current, profiles, messages: [...current.messages, ...page.rows] };
       });
       if (page.rows.length < ADMIN_PAGE_SIZE) setExhausted((current) => new Set(current).add(section));
     } catch {
@@ -147,9 +161,20 @@ export function AdminScreen() {
     }
   };
 
+  // ⌘K / Ctrl+K: 화면 이동과 회원 찾기를 한 번에. 데스크톱 단축키, 폰은 섹션 선택기의 검색 버튼.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined' || !hasAdminAccess) return;
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setPaletteOpen((value) => !value); }
+      if (event.key === 'Escape') setPaletteOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [hasAdminAccess]);
+
   if (isAuthLoading) return <CenteredState title="관리자 세션을 확인하는 중입니다." />;
   if (!isAuthed && !localPreview) {
-    return <LoginPanel reason={localPreviewAllowed ? '로컬 관리자 미리보기입니다. 버튼을 누르면 바로 열립니다.' : '관리자 계정으로 로그인해주세요.'} onKakao={localPreviewAllowed ? () => setLocalPreview(true) : undefined} onGoogle={localPreviewAllowed ? undefined : signInGoogle} onAdminLogin={signInAdmin} loading={isAuthLoading} error={authError} />;
+    return <LoginPanel reason="관리자 계정으로 로그인해주세요." onGoogle={signInGoogle} onAdminLogin={signInAdmin} loading={isAuthLoading} error={authError} />;
   }
   if (!isAdmin && !localPreview) {
     return <CenteredState title="관리자 권한이 없습니다." body="현재 계정에는 admin 역할이 지정되지 않았습니다." action="다른 계정으로 로그인" onAction={() => void signOut()} />;
@@ -159,10 +184,13 @@ export function AdminScreen() {
   }
 
   return (
-    <AdminShell activeSection={section} counts={data?.counts ?? { alertsOpen: 0, reports: 0, openReports: 0, profiles: 0, posts: 0, messages: 0, safetyPending: 0, safetyHigh: 0 }} busy={needsOperations && loading} onSection={(next) => { if (!needsOperations && next !== 'analytics') { setLoading(true); setError(null); } setSection(next); }} onRefresh={() => void refresh()} onSignOut={localPreview ? () => { setLocalPreview(false); setData(null); } : () => void signOut()}>
+    <AdminShell activeSection={section} counts={data?.counts ?? { alertsOpen: 0, reports: 0, openReports: 0, profiles: 0, posts: 0, messages: 0, safetyPending: 0, safetyHigh: 0 }} busy={needsOperations && loading} lastUpdated={lastLoadedAt} onSearch={() => setPaletteOpen(true)} onSection={(next) => { if (!needsOperations && next !== 'analytics') { setLoading(true); setError(null); } setSection(next); }} onRefresh={() => void refresh()} onSignOut={() => void signOut()}>
+      {isAdmin && <AdminSignupAlerts key={me.id} userId={me.id} onUser={setSelectedUserId} />}
       {localPreview && <View accessibilityRole="alert" style={styles.preview}><ThemedText type="smallBold">로컬 미리보기 · 실제 운영 데이터와 권한은 변경되지 않습니다.</ThemedText></View>}
+      {!!moderationResult && needsOperations && <View accessibilityLiveRegion="polite" style={styles.preview}><ThemedText>{moderationResult}</ThemedText></View>}
       {!!error && needsOperations && <View accessibilityRole="alert" style={styles.error}><ThemedText style={styles.errorText}>{error}</ThemedText></View>}
-      {section === 'analytics' ? <AdminAnalyticsView localPreview={localPreview} onUser={setSelectedUserId} refreshSignal={analyticsRefresh} /> : data && <AdminSectionView
+      {section === 'analytics' ? <AdminAnalyticsView localPreview={localPreview} onUser={setSelectedUserId} refreshSignal={analyticsRefresh} /> : section === 'ticketmaster' ? <AdminTicketmasterView localPreview={localPreview} refreshSignal={analyticsRefresh} /> : data && <AdminSectionView
+        key={section}
         section={section}
         data={data}
         localPreview={localPreview}
@@ -181,8 +209,19 @@ export function AdminScreen() {
           await setAdminAccountStatus(supabase, userId, status);
           await refresh();
         }}
+        onTrustLevelChange={localPreview ? undefined : async (userId, level) => {
+          await setAdminVerificationLevel(supabase, userId, level);
+          await refresh();
+        }}
         onClose={() => setSelectedUserId(null)}
       />
+      {paletteOpen && <AdminCommandPalette
+        visible={paletteOpen}
+        localPreview={localPreview}
+        onClose={() => setPaletteOpen(false)}
+        onSection={(next) => { if (!needsOperations && next !== 'analytics') { setLoading(true); setError(null); } setSection(next); }}
+        onUser={(userId) => setSelectedUserId(userId)}
+      />}
     </AdminShell>
   );
 }

@@ -7,12 +7,12 @@ select ('72000000-0000-0000-0000-'||lpad(n::text,12,'0'))::uuid, '구독한도�
 select set_config('request.jwt.claims','{"sub":"72000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 set local role authenticated;
 select lives_ok($$select public.create_post('vancouver',1::smallint,'무료 첫 번째 글','오늘의 동네 이야기입니다.')$$,'free can write once');
-select throws_ok($$select public.create_post('vancouver',1::smallint,'무료 두 번째 글','오늘의 동네 이야기입니다.')$$,'P0001','DAILY_POST_LIMIT_REACHED','free cannot bypass post quota');
+select lives_ok($$select public.create_post('vancouver',1::smallint,'무료 두 번째 글','오늘의 동네 이야기입니다.')$$,'free can write a second story today');
 reset role;
 select public.apply_membership_snapshot('72000000-0000-0000-0000-000000000001',jsonb_build_array(jsonb_build_object('tier','plus','expires_at',now()+interval '30 days','product_id','plus','store','app_store','will_renew',true)),now());
 set local role authenticated;
 select lives_ok($$select public.create_post('vancouver',1::smallint,'구독 두 번째 글','오늘의 동네 이야기입니다.')$$,'verified plus immediately allows a second post');
-select throws_ok($$select public.create_post('vancouver',1::smallint,'구독 세 번째 글','오늘의 동네 이야기입니다.')$$,'P0001','DAILY_POST_LIMIT_REACHED','plus cannot exceed two posts');
+select lives_ok($$select public.create_post('vancouver',1::smallint,'구독 세 번째 글','오늘의 동네 이야기입니다.')$$,'paid members use the same unlimited story policy');
 reset role;
 -- Owned and approved memberships share the same group pool; pending requests do not.
 insert into public.posts(id,author_id,city_id,tag_id,title,body,posted_on,room_preview)
@@ -31,15 +31,14 @@ reset role;
 select set_config('request.jwt.claims','{"sub":"72000000-0000-0000-0000-000000000002","role":"authenticated"}',true);
 set local role authenticated;
 select public.leave_meetup('73000000-0000-0000-0000-000000000001');
-select is((public.get_membership()->>'meetupSlotsAvailable')::integer,0,'leaving full pool does not immediately permit hopping');
+-- Group exits never lock a slot (0065). The seat comes back at once and the anti-abuse rule is the
+-- 12-hour participation block, which the meetup_abuse_limits suite covers.
+select is((public.get_membership()->>'meetupSlotsAvailable')::integer,1,'leaving a meetup frees the seat at once');
+select is((public.get_membership()->>'meetupSlotsLocked')::integer,0,'group exits leave no 24-hour slot lock');
 reset role;
 select set_config('request.jwt.claims','{"sub":"72000000-0000-0000-0000-000000000003","role":"authenticated"}',true);
 set local role authenticated;
-select throws_ok(format('select public.respond_meetup_request(%L,''approved'')',:'join_id'),'P0001','REQUESTER_MEETUP_LIMIT_REACHED','locked slot also prevents approval');
-reset role;
-update private.relationship_cooldowns set unlocks_at=now()-interval '1 second' where user_id='72000000-0000-0000-0000-000000000002';
-set local role authenticated;
-select lives_ok(format('select public.respond_meetup_request(%L,''approved'')',:'join_id'),'approval succeeds after the cooldown expires');
+select lives_ok(format('select public.respond_meetup_request(%L,''approved'')',:'join_id'),'approval succeeds right after the applicant leaves a seat');
 reset role;
 select set_config('request.jwt.claims','{"sub":"72000000-0000-0000-0000-000000000002","role":"authenticated"}',true);
 set local role authenticated;
@@ -75,7 +74,7 @@ select set_config('request.jwt.claims','{"sub":"72000000-0000-0000-0000-00000000
 set local role authenticated;
 select is((public.get_membership()->>'meetupLimit')::integer,7,'premium has seven group slots');
 select is((public.get_membership()->>'conversationLimit')::integer,7,'premium separately has seven direct slots');
-select is((public.get_membership()->>'postLimit')::integer,3,'premium daily posts are three');
+select is((public.get_membership()->>'postLimit')::integer,3,'legacy post limit field remains for older clients');
 reset role;
 select * from finish();
 rollback;

@@ -1,7 +1,4 @@
-/**
- * 글링 디자인 토큰 — landing/index.html 팔레트와 동일 계열.
- * 템플릿 키(text/background/...)는 유지하고 브랜드 키를 추가했다.
- */
+/** 글링 앱의 나이트 팔레트. 관리자 웹은 밝은 팔레트를 유지한다. */
 
 import '@/global.css';
 
@@ -17,20 +14,22 @@ export const Colors = {
     card: '#FFFFFF',
     line: '#E5E3DB',
     accent: '#BE3B2A',            // 인주
+    accentDepth: '#8B2D25',
     accentInk: '#FFFFFF',
     navy: '#34506B',
   },
   dark: {
-    text: '#EAE9E2',
-    background: '#15181C',
-    backgroundElement: '#23272E',
-    backgroundSelected: '#2B3037',
-    textSecondary: '#9AA0A8',
-    card: '#1C2026',
-    line: '#2B3037',
-    accent: '#E15A44',
-    accentInk: '#1A0E0B',
-    navy: '#8FB0CC',
+    text: '#F6F3F0',
+    background: '#0B0B12',
+    backgroundElement: '#222231',
+    backgroundSelected: '#343443',
+    textSecondary: '#B7B4C3',
+    card: '#171722',
+    line: '#343443',
+    accent: '#CBB9FF',
+    accentDepth: '#8169B1',
+    accentInk: '#171123',
+    navy: '#B9C8FF',
   },
 } as const;
 
@@ -84,6 +83,12 @@ export const Spacing = {
   four: 24,
   five: 32,
   six: 64,
+} as const;
+
+// 같은 높이의 표면은 앱 어디서든 같은 그림자와 눌림 깊이를 쓴다.
+export const Depth = {
+  card: { shadowColor: '#000000', shadowOffset: { width: 0, height: 7 }, shadowOpacity: 0.22, shadowRadius: 14, elevation: 5 },
+  control: { shadowColor: '#000000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.18, shadowRadius: 7, elevation: 3 },
 } as const;
 
 // 네이티브 탭바 자체 높이 (세이프에어리어 제외). 실제 하단 점유 = TabBarHeight + insets.bottom

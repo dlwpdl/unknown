@@ -13,6 +13,7 @@ export interface City {
 
 export type TagSlug =
   | 'life'
+  | 'festival'
   | 'food'
   | 'travel'
   | 'shopping'
@@ -45,7 +46,7 @@ export interface RoomPreview {
   verifiedOnly: boolean;
   closed?: boolean;
   eventKind?: 'once' | 'group';
-  category?: 'casual' | 'hobby' | 'travel';
+  category?: 'casual' | 'hobby' | 'travel' | 'party' | 'festival' | 'sports';
   startsAt?: string | null;
   endsAt?: string | null;
   timezone?: string | null;
@@ -92,8 +93,9 @@ export interface Post {
   savedByMe?: boolean;
   imagePaths?: string[];
   imageUris?: string[];
+  imageThumbs?: string[]; // 목록용 작은 사진(서명 URL). 없으면 imageUris로 떨어진다
   room?: RoomPreview;
-  kind?: PostKind; // story(기본) | listing(렌트·중고·차량). 규칙은 카테고리가 아니라 종류를 따른다
+  kind?: PostKind; // story(기본) | listing(구인구직·렌트·중고·차량). 규칙은 카테고리가 아니라 종류를 따른다
   listingStatus?: ListingStatus;
   price?: number | null;
   expiresAt?: string | null;

@@ -1,9 +1,8 @@
 import type { PurchasesPackage } from 'react-native-purchases';
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { AppState, DeviceEventEmitter, Linking, Platform } from 'react-native';
+import { AppState, Linking, Platform } from 'react-native';
 
 import { useAuth } from '@/lib/auth';
-import { POST_QUOTA_CHANGED_EVENT } from '@/lib/community-data';
 import { membershipOffer, type MembershipOffer, type MembershipSnapshot } from '@/lib/membership';
 import { purchaseUnavailableReason, withPurchases } from '@/lib/purchases';
 import { supabase } from '@/lib/supabase';
@@ -51,7 +50,6 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
     if (currentUser.current === userId && generation.current === requestGeneration) {
       setState({ userId, value }); setSyncReadyUser(userId);
       setPending((previous) => previous?.userId === userId && value.tier !== 'free' && value.productId !== previous.previousProductId ? null : previous);
-      DeviceEventEmitter.emit(POST_QUOTA_CHANGED_EVENT);
     }
     return value;
   }, [userId]);

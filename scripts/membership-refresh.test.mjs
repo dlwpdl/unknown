@@ -23,7 +23,6 @@ test('store catalog failure preserves synchronized membership and clears stale p
     };
     if (name === 'react-native') return { Platform: { OS: 'ios' }, DeviceEventEmitter: { emit() {} } };
     if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: true, me: { id: 'member' } }) };
-    if (name === '@/lib/community-data') return { POST_QUOTA_CHANGED_EVENT: 'quota' };
     if (name === '@/lib/membership') return { membershipOffer: item => ({ id: item.identifier }) };
     if (name === '@/lib/purchases') return { purchaseUnavailableReason: () => null, withPurchases: async (_, fn) => fn({
       getOfferings: async () => {

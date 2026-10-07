@@ -10,3 +10,125 @@
 :is(#gling-admin-console, #gling-admin-detail) :is(input, [role='button'], [role='tab'], [role='radio']) {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Web-only operations tables, using the existing Gling palette. */
+#gling-admin-console {
+  --admin-ink: #21252C; --admin-muted: #5B6270; --admin-paper: #FAF9F5;
+  --admin-line: #E5E3DB; --admin-subtle: #F1EFE8; --admin-accent: #BE3B2A;
+}
+#gling-admin-console :is(button, select, summary, input):focus-visible { outline: 2px solid var(--admin-accent); outline-offset: 2px; }
+.admin-toolbar, .admin-filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.admin-toolbar { margin-bottom: 4px; }
+.admin-search { display: flex; flex: 1 1 260px; gap: 8px; margin: 0; min-width: 180px; }
+.admin-search input { width: 100%; min-width: 0; flex: 1; }
+.admin-search :is(input, button), .admin-reset, .admin-select, .admin-multifilter > summary {
+  box-sizing: border-box; min-height: 44px; border: 1px solid var(--admin-line); border-radius: 6px;
+  background: white; color: var(--admin-ink); font: inherit; font-size: 13px;
+}
+.admin-search input { padding: 10px 12px; }
+.admin-search button, .admin-reset { padding: 0 14px; cursor: pointer; }
+.admin-reset { color: var(--admin-muted); background: transparent; }
+.admin-reset:disabled, .admin-filter-menu button:disabled { opacity: .45; cursor: default; }
+.admin-select { display: inline-flex; align-items: center; padding: 0 8px 0 12px; gap: 8px; }
+.admin-select > span { color: var(--admin-muted); font-size: 12px; }
+.admin-select select { font: inherit; color: inherit; border: 0; background: transparent; min-height: 42px; max-width: 200px; cursor: pointer; }
+.admin-multifilter { position: relative; font-size: 13px; }
+.admin-multifilter > summary { display: flex; align-items: center; gap: 10px; padding: 0 12px; cursor: pointer; list-style: none; }
+.admin-multifilter > summary::-webkit-details-marker { display: none; }
+.admin-multifilter > summary::after { content: ''; width: 5px; height: 5px; border: solid currentColor; border-width: 0 1px 1px 0; transform: rotate(45deg); margin: -3px 0 0 4px; }
+.admin-multifilter > summary > span { color: var(--admin-muted); }
+.admin-multifilter > summary.admin-filter-active { border-color: #34506B; background: var(--admin-subtle); }
+.admin-filter-menu { position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; width: 224px; max-width: 85vw; padding: 8px; background: white; border: 1px solid var(--admin-line); border-radius: 8px; box-shadow: 0 6px 20px #21252c18; }
+.admin-filter-menu-heading { display: flex; align-items: center; justify-content: space-between; padding-left: 8px; }
+.admin-filter-menu button { min-height: 36px; border: 0; background: transparent; color: var(--admin-muted); cursor: pointer; padding: 0 10px; }
+.admin-filter-menu fieldset { border: 0; padding: 0; margin: 0; max-height: 280px; overflow: auto; }
+.admin-filter-menu label { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 8px; border-radius: 4px; cursor: pointer; overflow-wrap: anywhere; }
+.admin-filter-menu label:hover { background: var(--admin-paper); }
+.admin-filter-menu input { accent-color: var(--admin-accent); width: 16px; height: 16px; flex: 0 0 16px; }
+.admin-muted, .admin-table-summary { color: var(--admin-muted); font-size: 12px; line-height: 18px; }
+.admin-table-summary { padding: 4px 0; font-variant-numeric: tabular-nums; }
+.admin-table-wrap { max-width: 100%; overflow-x: auto; border: 1px solid var(--admin-line); border-radius: 8px; background: white; }
+.admin-table { border-collapse: collapse; width: 100%; font-size: 13px; line-height: 18px; color: var(--admin-ink); }
+.admin-table th { text-align: left; font-size: 12px; font-weight: 500; color: var(--admin-muted); background: var(--admin-paper); position: sticky; top: 0; z-index: 1; white-space: nowrap; }
+.admin-table :is(th, td) { padding: 8px 12px; border-bottom: 1px solid var(--admin-line); vertical-align: middle; }
+.admin-table tbody tr:last-child td { border-bottom: 0; }
+.admin-table tbody tr:hover { background: var(--admin-paper); }
+.admin-table td { padding-top: 4px; padding-bottom: 4px; height: 44px; box-sizing: border-box; overflow-wrap: anywhere; }
+.admin-table details summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+.admin-row-button { border: 0; background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer; min-height: 44px; padding: 0; }
+.admin-row-button:hover { text-decoration: underline; text-underline-offset: 3px; }
+.admin-empty { padding: 32px 16px; text-align: center; color: var(--admin-muted); font-size: 13px; }
+.admin-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.admin-user-table { min-width: 1040px; table-layout: fixed; }
+.admin-user-table td { height: 56px; padding-top: 4px; padding-bottom: 4px; }
+.admin-table-dense td { height: 36px; padding-top: 2px; padding-bottom: 2px; line-height: 16px; }
+.admin-table-dense .admin-cell-secondary { display: inline; margin-left: 6px; }
+.admin-user-table .admin-row-button { display: block; width: 100%; }
+.admin-cell-primary, .admin-cell-secondary { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.admin-cell-primary { font-weight: 600; }
+.admin-cell-secondary { font-size: 12px; color: var(--admin-muted); line-height: 17px; }
+.admin-badge { display: inline-block; max-width: 100%; white-space: nowrap; font-size: 11px; font-weight: 500; padding: 2px 6px; border-radius: 4px; background: var(--admin-subtle); }
+.admin-badge-danger { color: #9D241A; background: #F5E4E0; }
+@media (max-width: 600px) {
+  .admin-search { flex-basis: 100%; }
+  .admin-select { flex: 1 1 auto; }
+  .admin-filter-menu { position: fixed; left: 16px; right: 16px; top: auto; width: auto; max-width: none; margin-top: 6px; }
+}
+
+/* --- 폰: 필터는 접고, 표는 카드로, 신고 상세는 전체 화면 시트로 --- */
+.admin-filter-shell { display: grid; gap: 8px; width: 100%; }
+.admin-filter-toggle {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;
+  min-height: 44px; padding: 0 14px; font: inherit; font-size: 13px;
+  border: 1px solid var(--admin-line); border-radius: 8px; background: white; color: var(--admin-ink); cursor: pointer;
+}
+.admin-filter-toggle[aria-expanded='true'] { background: var(--admin-subtle); }
+.admin-filter-panel { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--admin-line); border-radius: 8px; background: var(--admin-paper); }
+.admin-filter-panel .admin-search { flex-basis: 100%; }
+.admin-filter-panel .admin-filter-row { gap: 8px; }
+.admin-filter-panel .admin-select { flex: 1 1 100%; justify-content: space-between; }
+
+.admin-card-list { display: grid; border: 1px solid var(--admin-line); border-radius: 8px; overflow: hidden; background: white; }
+.admin-card {
+  display: grid; gap: 4px; width: 100%; min-height: 64px; padding: 11px 12px; text-align: left; font: inherit;
+  border: 0; border-bottom: 1px solid var(--admin-line); background: white; color: var(--admin-ink); cursor: pointer;
+}
+.admin-card:last-child { border-bottom: 0; }
+.admin-card:active { background: var(--admin-paper); }
+.admin-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.admin-card-title { font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-card-meta { display: flex; flex-wrap: wrap; gap: 4px 8px; font-size: 12px; color: var(--admin-muted); }
+.admin-card-meta > * { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-card-excerpt { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-card-chevron { color: var(--admin-muted); }
+
+.admin-detail-sheet { position: fixed; inset: 0; z-index: 60; background: white; overflow: auto; }
+.admin-detail-sheet-head {
+  position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  background: #ffffffeb; backdrop-filter: blur(10px); border-bottom: 1px solid var(--admin-line);
+}
+.admin-detail-sheet-head h2 { margin: 0; font-size: 16px; }
+.admin-detail-sheet-body { padding-bottom: 104px; }
+.admin-detail-sheet-actions {
+  position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 8px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: #fffffff0;
+  backdrop-filter: blur(10px); border-top: 1px solid var(--admin-line);
+}
+.admin-detail-sheet-actions > * { flex: 1; }
+
+/* 신고 상태 탭: 폰에서 드롭다운 대신 한 번에 오가는 자주 쓰는 필터 */
+.admin-status-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 4px; }
+.admin-status-tabs button {
+  font: inherit; font-size: 13px; min-height: 36px; padding: 0 12px; border-radius: 999px;
+  border: 1px solid var(--admin-line); background: white; color: var(--admin-ink); cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.admin-status-tabs button[aria-pressed='true'] { border-color: var(--admin-accent); background: var(--admin-subtle); font-weight: 600; }
+
+.admin-bulk-reports { margin: 0; padding: 12px; border: 1px solid #E5E3DB; border-radius: 8px; display: grid; gap: 8px; min-width: 0; }
+.admin-bulk-reports button { min-height: 44px; padding: 8px 12px; border: 1px solid #E5E3DB; border-radius: 6px; background: #FAF9F5; color: #21252C; cursor: pointer; }
+.admin-bulk-reports button:disabled { opacity: .45; cursor: default; }
+.admin-bulk-reports textarea { display: block; box-sizing: border-box; width: 100%; margin-top: 6px; padding: 8px; font: inherit; border: 1px solid #E5E3DB; border-radius: 6px; }
+.admin-report-check { display: inline-flex; min-width: 44px; min-height: 44px; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+.admin-report-check input { width: 18px; height: 18px; accent-color: #BE3B2A; }
+.admin-bulk-reports :focus-visible, .admin-report-check input:focus-visible { outline: 2px solid #BE3B2A; outline-offset: 2px; }

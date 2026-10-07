@@ -6,11 +6,20 @@ import {
   canUseLocalAdminPreview,
   canResolveReport,
   filterAdminReports,
+  initialAdminSection,
   isAdminRole,
   reportReasonLabel,
   reportStatusLabel,
   reportTargetLabel,
 } from '../src/lib/admin.ts';
+
+test('관리자 알림의 목적지 섹션을 열고 알 수 없는 섹션은 무시한다', () => {
+  assert.equal(initialAdminSection('users'), 'users');
+  assert.equal(initialAdminSection('errors'), 'errors');
+  assert.equal(initialAdminSection(undefined, '1'), 'alerts');
+  assert.equal(initialAdminSection(undefined, undefined, '12'), 'safety');
+  assert.equal(initialAdminSection('unknown'), 'analytics');
+});
 
 test('관리자 필터와 탭은 화살표로 순환하고 Space로 선택한다', () => {
   const actions = [];

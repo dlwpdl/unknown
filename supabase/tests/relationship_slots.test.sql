@@ -178,8 +178,13 @@ select lives_ok($$select * from public.get_admin_user_conversations('81000000-00
 reset role;
 select is((select count(*)::integer from public.admin_access_logs where subject_user_id='81000000-0000-0000-0000-000000000002' and scope='conversations'),1,'admin group history read is audited');
 -- One multi-row statement cannot overfill the host's free group pool.
+select set_config('request.jwt.claims','{"sub":"81000000-0000-0000-0000-000000000002","role":"authenticated"}',true);
 select throws_ok($$insert into public.posts(author_id,city_id,tag_id,title,body,posted_on,room_preview)
-select '81000000-0000-0000-0000-000000000012','vancouver',5,'일괄 모임 '||n,'동시에 만들어도 세 자리 한도를 지켜요.',current_date-n,'{"capacity":8}'::jsonb from generate_series(1,4)n$$,'P0001','MEETUP_LIMIT_REACHED','batch insert cannot bypass group cap');
+select '81000000-0000-0000-0000-000000000002','vancouver',5,'일괄 모임 '||n,'동시에 만들어도 두 자리 한도를 지켜요.',current_date-n,'{"capacity":8}'::jsonb from generate_series(1,4)n$$,'P0001','MEETUP_LIMIT_REACHED','batch insert cannot bypass group cap');
+-- The owner exempted admin accounts, so the same batch is allowed for an admin.
+select set_config('request.jwt.claims','{"sub":"81000000-0000-0000-0000-000000000012","role":"authenticated","app_metadata":{"role":"admin"}}',true);
+select lives_ok($$insert into public.posts(author_id,city_id,tag_id,title,body,posted_on,room_preview)
+select '81000000-0000-0000-0000-000000000012','vancouver',5,'어드민 일괄 모임 '||n,'어드민은 자리 한도 없이 열 수 있어요.',current_date-n,'{"capacity":8}'::jsonb from generate_series(1,4)n$$,'admin batch insert skips the group cap');
 insert into public.conversations(user_low_id,user_high_id,requester_id,status,created_at) values
 ('81000000-0000-0000-0000-000000000007','81000000-0000-0000-0000-000000000008','81000000-0000-0000-0000-000000000007','pending',now()-interval '8 days') returning id as expired_id \gset
 select set_config('request.jwt.claims','{"sub":"81000000-0000-0000-0000-000000000008","role":"authenticated"}',true);

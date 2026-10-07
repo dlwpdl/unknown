@@ -1,10 +1,32 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { chillingKind, chillingSchedule, configureChillingEvent } from '../src/lib/chilling.ts';
+import { chillingCountdown, chillingKind, chillingSchedule, configureChillingEvent, normalizeChillingEvent } from '../src/lib/chilling.ts';
 
 test('legacy rooms stay persistent; explicit one-off events have their own category', () => {
   assert.equal(chillingKind({}), 'group');
   assert.equal(chillingKind({ eventKind: 'once' }), 'once');
+});
+
+test('admission availability separates event expiry, closure and a full host-inclusive capacity', async () => {
+  const { chillingAvailability } = await import('../src/lib/chilling.ts');
+  const now = Date.parse('2026-10-06T12:00:00Z');
+  const room = { eventKind: 'once', endsAt: '2026-10-07T12:00:00Z', memberCount: 5, capacity: 6 };
+  assert.equal(chillingAvailability(room, now), 'open');
+  assert.equal(chillingAvailability({ ...room, memberCount: 6 }, now), 'full');
+  assert.equal(chillingAvailability({ ...room, memberCount: 6, closed: true }, now), 'closed');
+  assert.equal(chillingAvailability({ ...room, endsAt: '2026-10-06T12:00:00Z', closed: true }, now), 'ended');
+  assert.equal(chillingAvailability({ ...room, eventKind: 'group', endsAt: '2026-10-01T12:00:00Z' }, now), 'open');
+  assert.equal(chillingAvailability({ memberCount: 1 }, now), 'open');
+});
+
+test('countdown marks today, tomorrow and later one-off starts only', () => {
+  const now = new Date('2026-09-22T09:00:00').getTime();
+  assert.equal(chillingCountdown({ eventKind: 'once', startsAt: '2026-09-22T23:00:00' }, now), '오늘');
+  assert.equal(chillingCountdown({ eventKind: 'once', startsAt: '2026-09-23T01:00:00' }, now), '내일');
+  assert.equal(chillingCountdown({ eventKind: 'once', startsAt: '2026-09-26T01:00:00' }, now), 'D-4');
+  assert.equal(chillingCountdown({ eventKind: 'once', startsAt: '2026-09-22T08:00:00' }, now), null);
+  assert.equal(chillingCountdown({ eventKind: 'group', cadence: '매주 토요일' }, now), null);
+  assert.equal(chillingCountdown({ eventKind: 'once' }, now), null);
 });
 
 test('one-off time is formatted in the event timezone and persistent cadence stays distinct', () => {
@@ -16,6 +38,10 @@ test('one-off time is formatted in the event timezone and persistent cadence sta
 });
 
 const once = { kind: 'once', startsAt: '2099-09-26T17:00:00Z', endsAt: '2099-09-26T19:00:00Z', timezone: 'America/Vancouver', cadence: '', capacity: 6 };
+test('party, festival, and sports meetups keep their discovery category', () => {
+  for (const category of ['party', 'festival', 'sports']) assert.equal(normalizeChillingEvent({ ...once, category }).category, category);
+  assert.throws(() => normalizeChillingEvent({ ...once, category: 'other' }), /INVALID_EVENT_CATEGORY/);
+});
 test('event configuration sends only public schedule fields and does not gate free hosting', async () => {
   let sent;
   await configureChillingEvent({ rpc: async (name, args) => { sent = { name, args }; return { error: null }; } }, 'post-1', once);

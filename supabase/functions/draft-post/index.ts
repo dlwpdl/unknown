@@ -55,7 +55,7 @@ Deno.serve(async (request) => {
         selectedCategory: input.selectedCategory,
         titleHint: input.titleHint,
         bodyHint: input.bodyHint,
-        mode: hasWrittenDraft ? 'edit_existing_draft' : 'create_from_photo',
+        mode: input.intent === 'event_meetup' ? 'create_event_meetup' : hasWrittenDraft ? 'edit_existing_draft' : 'create_from_photo',
       }),
     }];
     if (input.imageBase64) {
@@ -130,6 +130,7 @@ function validateInput(input: unknown) {
   }
   if (value.titleHint != null && (typeof value.titleHint !== 'string' || value.titleHint.length > 80)) return '제목 힌트가 너무 깁니다.';
   if (value.bodyHint != null && (typeof value.bodyHint !== 'string' || value.bodyHint.length > 1000)) return '본문 힌트가 너무 깁니다.';
+  if (value.intent != null && (value.intent !== 'event_meetup' || value.selectedCategory !== 'meetup' || !String(value.titleHint ?? '').trim() || !String(value.bodyHint ?? '').trim())) return '모임 초안 요청이 올바르지 않습니다.';
   const hasImage = value.imageBase64 != null || value.mimeType != null;
   if (hasImage && !['image/jpeg', 'image/png', 'image/webp'].includes(String(value.mimeType))) return 'JPG, PNG, WebP 사진만 지원합니다.';
   if (hasImage && (typeof value.imageBase64 !== 'string' || !/^[A-Za-z0-9+/]+={0,2}$/.test(value.imageBase64))) return '사진 데이터가 올바르지 않습니다.';
@@ -142,11 +143,14 @@ function buildPrompt() {
   return [
     '당신은 캐나다 한인 커뮤니티 글링에서 사용자가 이웃에게 건네는 개인 게시글을 함께 쓰는 도우미입니다.',
     '입력 JSON의 mode가 edit_existing_draft이면 제목·본문 힌트는 사용자가 직접 쓴 원고입니다. 새 글을 만들지 말고 원고의 주제, 사실, 질문, 요청과 말투를 유지한 채 제목을 정리하고 문장만 자연스럽게 다듬으세요. 원고에 없는 경험·장소·사람·수치·일정·감정을 추가하거나 핵심 내용을 다른 주제로 바꾸지 마세요.',
+    'mode가 create_event_meetup이면 제목·본문 힌트는 행사에서 자동으로 채운 기본 문장입니다. 행사 이름과 함께 갈 사람을 찾는 목적을 유지하면서 2~3문장의 새 모임 초안을 쓰세요. 동행 방식이나 만남 전 대화처럼 일반적인 제안은 가능하지만 사용자의 취향·경험, 확정되지 않은 집결 장소·시간·티켓 가격·인원은 지어내지 마세요. 행사 상세와 티켓 출처는 앱이 별도로 붙이므로 본문에 반복하지 마세요.',
     'mode가 create_from_photo일 때만 사진을 바탕으로 새 초안을 만들 수 있습니다.',
     '목적은 사용자의 일상, 생각, 질문, 나눔이나 모집 의도를 담은 바로 수정해서 올릴 수 있는 글입니다. 사진 분석 보고서, 대체 텍스트, 여행 안내문을 작성하지 마세요.',
     '제목·본문 힌트에 담긴 작성 목적과 말투를 가장 먼저 반영하고, 선택 카테고리를 유지하세요. 사진은 이야깃거리의 보조 근거로만 사용하세요.',
     '힌트가 없으면 사진에서 연상되는 사용자의 가벼운 바람·현재 생각·관심사로 바로 시작해 2~3문장으로 쓰세요. 어울릴 때만 이웃에게 짧은 질문을 덧붙이고 거래·모집 의도를 임의로 정하지 마세요.',
-    '기본 말투는 자연스러운 한국어 해요체입니다. 제목은 글쓴이의 관심이나 질문이 드러나게 짧게 쓰고 "항구 풍경", "마리나 전경"처럼 사진에 붙이는 명칭으로 끝내지 마세요. 본문은 1~2개 짧은 문단으로 쓰되 힌트에 구체적인 내용이 있으면 길이보다 그 내용을 우선하세요.',
+    '글은 글링이 쓰레드에 올리는 글처럼 씁니다. 한 줄에 한 생각씩 짧게 끊어 3~6줄로 쓰고, 첫 줄은 관찰이나 지금 드는 생각으로 시작하며, 마지막 줄은 이웃에게 가볍게 묻는 질문으로 끝냅니다. 담백한 자연스러운 한국어 해요체를 쓰고 감탄·홍보 문구·이모지는 넣지 않습니다.',
+    'edit_existing_draft에서는 이 구성이 아니라 작성자가 쓴 말투와 문단 구성을 그대로 두고, 줄바꿈과 문장 길이만 읽기 좋게 다듬습니다. 작성자의 말투를 쓰레드 말투로 바꾸지 마세요.',
+    '제목은 글쓴이의 관심이나 질문이 드러나게 짧게 쓰고 "항구 풍경", "마리나 전경"처럼 사진에 붙이는 명칭으로 끝내지 마세요. 힌트에 구체적인 내용이 있으면 줄 수보다 그 내용을 먼저 반영하세요.',
     '독자도 사진을 볼 수 있으므로 사진에 무엇이 있는지 설명할 필요가 없습니다. 힌트가 없으면 사물·색·구도·배경 설명을 생략하세요. 힌트의 작성 목적에 꼭 필요한 경우에만 사진 특징을 한 구절로 짧게 언급하세요.',
     '"사진 속에는", "이 사진은", "보입니다"로 시작하지 마세요. 풍경을 두 문장 설명하고 끝에 질문만 붙이는 구성도 피하세요. 과장된 감탄, 상투적인 홍보 문구, 설명용 소제목과 목록은 피하세요.',
     '사진으로 확인되는 특징과 사용자가 직접 제공한 사실만 사용하세요. 방문·촬영·구매·시식 경험, 동행자, 시간, 감정의 과거 이력, 장소 이름을 만들어내지 마세요. 도시 선택은 글의 지역이며 사진의 촬영지를 증명하지 않습니다.',

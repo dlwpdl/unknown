@@ -1,22 +1,23 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useColorScheme } from 'react-native';
-
-import { Colors } from '@/constants/theme';
+import { Platform } from 'react-native';
+import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useUnreadCount } from '@/hooks/use-unread-count';
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
-// 일력 종이탭: 종이색 배경 + 상단 헤어라인 + 활성 탭은 인주(빨강) 틴트.
-// 아이콘은 SF Symbols(iOS) / Material(Android), 선택 상태는 인주색으로 구분한다.
+// Native selected-state motion stays quiet; the commit actions get stronger feedback elsewhere.
 export default function AppTabs() {
+  const { play } = useInteractionFeedback();
   const unreadCount = useUnreadCount('other');
   const chatCount = useUnreadCount('chat');
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  const colors = useTheme();
 
   return (
     <NativeTabs
+      screenListeners={({ route }) => ({ tabPress: () => play(route.name === 'compose' ? 'reaction' : 'selection') })}
       disableTransparentOnScrollEdge
-      backgroundColor={colors.background}
+      backgroundColor={Platform.OS === 'ios' ? undefined : colors.background}
+      blurEffect={Platform.OS === 'ios' ? 'systemChromeMaterialDark' : undefined}
       shadowColor={colors.line}
       tintColor={colors.accent}
       indicatorColor={colors.backgroundElement}>

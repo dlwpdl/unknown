@@ -6,7 +6,7 @@ import ts from 'typescript';
 
 import { MEMBERSHIP_LIMITS, referencePrice } from '../src/lib/membership.ts';
 
-test('membership opens checkout immediately and preserves quota and purchase safeguards', () => {
+test('membership keeps Today stories free while preserving meetup and chat plans', () => {
   let states = [], cursor = 0, restored = 0, purchased = 0;
   const value = { membership: { tier: 'free', postsUsed: 0, postLimit: 1 }, offers: [], loading: false,
     offersLoading: false, busy: false, purchaseUnavailableReason: null,
@@ -20,19 +20,21 @@ test('membership opens checkout immediately and preserves quota and purchase saf
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'react') return { useCallback: fn => fn, useState(initial) {
       const index = cursor++;
-      if (!(index in states)) states[index] = initial;
+      if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial;
       return [states[index], next => { states[index] = typeof next === 'function' ? next(states[index]) : next; }];
     } };
     if (name === 'expo-router') return { useFocusEffect() {}, useRouter: () => ({ canGoBack: () => false, replace() {} }) };
     if (name === 'expo-symbols') return { SymbolView: 'SymbolView' };
-    if ((name === 'react-native' || name === '@/components/analytics-controls')) return { View: 'View', ScrollView: 'ScrollView', Pressable: 'Pressable', StyleSheet: { create: styles => styles } };
+    if (name === 'react-native-reanimated') return { useReducedMotion: () => false };
+    if ((name === 'react-native' || name === '@/components/analytics-controls')) return { View: 'View', ScrollView: 'ScrollView', Pressable: 'Pressable', Animated: { Value: class { setValue() {} interpolate() {} }, View: 'View', timing: () => ({ start() {} }) }, StyleSheet: { create: styles => styles } };
     if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView' };
     if (name === '@/components/login-panel') return { LoginPanel: 'LoginPanel' };
+    if (name === '@/components/gling-loader') return { GlingLoader: 'GlingLoader' };
     if (name === '@/components/relationship-slot-card') return { RelationshipSlotCard: 'RelationshipSlotCard' };
     if (name === '@/components/meetup-policy-notice') return { MeetupPolicyNotice: 'MeetupPolicyNotice' };
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };
     if (name === '@/components/themed-view') return { ThemedView: 'View' };
-    if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, five: 32 }, MaxContentWidth: 800 };
+    if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, five: 32 }, MaxContentWidth: 800, Depth: { card: {}, control: {} } };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
     if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: true }) };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
@@ -46,10 +48,10 @@ test('membership opens checkout immediately and preserves quota and purchase saf
   const button = (tree, label) => nodes(tree).find(node => node.type === 'Pressable' && text(node) === label);
   let tree = render();
   assert.equal(nodes(tree).filter(node => node.type === 'RelationshipSlotCard').length, 2);
-  assert.match(text(tree), /1편 남음/);
+  assert.match(text(tree), /오늘 이야기 글횟수 제한 없음/);
   assert.doesNotMatch(text(tree), /처음 요청한 사람/);
   assert.equal(button(tree, '구독 준비 중').props.disabled, true, 'checkout is visible immediately but requires a store offer');
-  for (const summary of ['하루 글 1편 · 동시 모임 2개 · 활성 1:1 대화 2개', '하루 글 2편 · 동시 모임 4개 · 활성 1:1 대화 4개', '하루 글 3편 · 동시 모임 7개 · 활성 1:1 대화 7개']) {
+  for (const summary of ['오늘 글 무제한 · 동시 모임 2개 · 활성 1:1 대화 2개', '오늘 글 무제한 · 동시 모임 4개 · 활성 1:1 대화 4개', '오늘 글 무제한 · 동시 모임 7개 · 활성 1:1 대화 7개']) {
     assert.ok(text(tree).includes(summary), summary);
   }
   assert.equal(button(tree, '자리 사용 · 반복 이용 제한 안내').props.accessibilityState.expanded, false);
@@ -69,14 +71,8 @@ test('membership opens checkout immediately and preserves quota and purchase saf
   assert.equal(button(tree, '구독 준비 중').props.disabled, true);
   button(tree, '구매 복원').props.onPress();
   assert.equal(restored, 1);
-  for (const [postsUsed, postLimit, expected] of [[1, 1, '0편 남음'], [5, 2, '0편 남음'], [2, 5, '3편 남음']]) {
-    value.membership = { tier: 'free', postsUsed, postLimit };
-    assert.ok(text(render()).includes(expected));
-  }
-  for (const membership of [null, {}, { postsUsed: -1, postLimit: 1 }, { postsUsed: 0, postLimit: 0 }]) {
-    value.membership = membership;
-    assert.ok(nodes(render()).some(node => node.props?.accessibilityLabel === '오늘 글 작성, 확인 필요'));
-  }
+  value.membership = { tier: 'free', postsUsed: 100, postLimit: 1 };
+  assert.match(text(render()), /오늘 이야기 글횟수 제한 없음/);
   value.membership = { tier: 'free', postsUsed: 0, postLimit: 1 };
   value.offers = [{ tier: 'premium', period: 'month', productId: 'premium_monthly', price: 'CA$19.99' }];
   value.purchaseUnavailableReason = '아직 준비 중';

@@ -56,7 +56,7 @@ Deno.serve(async (request) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   // Keep images intact when provider verification or revocation fails.
-  for (const bucket of ['avatars', 'post-images']) {
+  for (const bucket of ['avatars', 'post-images', 'chat-images']) {
     while (true) {
       const listed = await admin.storage.from(bucket).list(user.id, { limit: 100 });
       if (listed.error) return json({ error: 'STORAGE_LIST_FAILED' }, 500);

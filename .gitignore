@@ -21,6 +21,10 @@ expo-env.d.ts
 
 # App Store Connect CLI local credentials and review artifacts
 /.asc/
+/credentials.json
+/.release/
+__pycache__/
+*.pyc
 
 # Metro
 .metro-health-check*

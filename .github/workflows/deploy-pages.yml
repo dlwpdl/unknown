@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: ${{ github.event.repository.private == false }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -25,7 +26,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - run: npm ci
       - run: npm run export:web
         env:

@@ -6,8 +6,44 @@ import {
   attachSignedPostImages,
   getPostImageSource,
   groupJournalPosts,
+  loadAuthorPosts,
   mapPublicFeed,
 } from '../src/lib/feed-data.ts';
+
+test('프로필 화면은 작성자 글 RPC에 작성자와 커서를 넘기고 카드로 바꾼다', async () => {
+  const calls = [];
+  const client = {
+    rpc(name, params) {
+      calls.push({ name, params });
+      const request = Promise.resolve({
+        error: null,
+        data: [{
+          id: 'post-1', city_id: 'montreal', title: '제목', body: '본문', hashtags: [],
+          image_paths: [], room_preview: null, created_at: '2026-09-20T12:00:00Z',
+          like_count: 0, view_count: 12, comment_count: 0, save_count: 0, share_count: 0,
+          liked_by_me: false, saved_by_me: false, author_id: 'author-1', author_nickname: '두바퀴메이플',
+          author_neighborhood: null, author_verification_level: 1, tag_id: 1,
+          tag_slug: 'life', tag_label: '라이프', tag_kind: 'post',
+        }],
+      });
+      request.abortSignal = () => request;
+      return request;
+    },
+  };
+
+  const posts = await loadAuthorPosts(client, 'author-1', { createdAt: '2026-09-25T00:00:00Z', id: 'post-9' }, { viewerScope: 'viewer' });
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].name, 'get_public_author_posts');
+  assert.deepEqual(calls[0].params, {
+    p_author_id: 'author-1',
+    p_before_created: '2026-09-25T00:00:00Z',
+    p_before_id: 'post-9',
+    p_limit: 30,
+  });
+  assert.equal(posts[0].author.nickname, '두바퀴메이플');
+  assert.equal(posts[0].views, 12);
+});
 
 test('저널은 모임 두 개만 위로 올리고 사진 글은 최신순 그대로 두며 다음 페이지를 위로 옮기지 않는다', () => {
   const posts = Object.freeze([
@@ -101,9 +137,16 @@ test('서명 URL은 경로별로 묶고 같은 사용자 안에서 재사용한�
   const second = await attachSignedPostImages(client, posts, 'user-a');
   const otherUser = await attachSignedPostImages(client, posts, 'user-b');
 
-  assert.deepEqual(calls, [['one.jpg', 'two.jpg'], ['one.jpg', 'two.jpg']]);
+  // 썸네일과 원본을 한 번에 서명한다.
+  assert.deepEqual(calls, [
+    ['one.jpg', 'one.thumb.webp', 'two.jpg', 'two.thumb.webp'],
+    ['one.jpg', 'one.thumb.webp', 'two.jpg', 'two.thumb.webp'],
+  ]);
   assert.deepEqual(first.map(({ imageUris }) => imageUris), [
     ['signed:one.jpg:1', 'signed:one.jpg:1'], ['signed:two.jpg:1'],
+  ]);
+  assert.deepEqual(first.map(({ imageThumbs }) => imageThumbs), [
+    ['signed:one.thumb.webp:1', 'signed:one.thumb.webp:1'], ['signed:two.thumb.webp:1'],
   ]);
   assert.equal(getPostImageSource(first[0], 'user-b'), undefined);
   assert.deepEqual(second.map(({ imageUris }) => imageUris), first.map(({ imageUris }) => imageUris));
@@ -115,6 +158,14 @@ test('서명 URL은 경로별로 묶고 같은 사용자 안에서 재사용한�
 test('이미지 캐시는 URL 갱신에는 안정적이고 사용자 변경에는 분리된다', () => {
   const post = { id: 'post-1', imagePaths: ['owner/photo.jpg'], imageUris: ['signed:first'] };
   assert.deepEqual(getPostImageSource(post, 'user-a'), {
+    uri: 'signed:first', cacheKey: 'post-image:user-a:owner/photo.jpg',
+  });
+  // 썸네일이 있으면 목록은 썸네일, 상세는 원본을 쓴다.
+  const withThumb = { ...post, imageThumbs: ['signed:thumb'] };
+  assert.deepEqual(getPostImageSource(withThumb, 'user-a'), {
+    uri: 'signed:thumb', cacheKey: 'post-image:user-a:owner/photo.thumb.webp',
+  });
+  assert.deepEqual(getPostImageSource(withThumb, 'user-a', 'full'), {
     uri: 'signed:first', cacheKey: 'post-image:user-a:owner/photo.jpg',
   });
   assert.equal(

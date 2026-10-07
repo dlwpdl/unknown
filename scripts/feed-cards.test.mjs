@@ -7,25 +7,26 @@ import { CITIES } from '../src/lib/mock.ts';
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 const text = tree => typeof tree === 'string' ? tree : tree && typeof tree === 'object' ? [tree.props?.children].flat(Infinity).map(text).join('') : '';
+const cityRow = tree => nodes(tree).find(node => node.type === 'Pressable');
 
 test('weekly ranking groups its expanded heading inside the card, away from the journal title', () => {
   for (const [total, expanded] of [[2, false], [5, true], [5, false], [0, false]]) {
     let state = 0;
     const entries = Array.from({ length: total }, (_, i) => ({ postId: `post-${i}`, authorId: 'author', rank: i + 1, title: '동네 소식', nickname: '이웃', views: 10 }));
     const { WeeklyRanking } = load('weekly-ranking', {
-      react: { useCallback: fn => fn, useEffect() {}, useState: () => [[{ entries }, expanded, 0, {}][state++], () => {}] },
+      react: { useCallback: fn => fn, useEffect() {}, useState: () => [[{ entries }, expanded, 0, {}, { interpolate: () => '0deg' }][state++], () => {}] },
       'expo-router': { useFocusEffect() {} },
       'react-native': { View: 'View', Pressable: 'Pressable', Animated: { View: 'AnimatedView' }, StyleSheet: { create: x => x } },
       'react-native-reanimated': { useReducedMotion: () => true },
       '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
+      '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
       '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
       '@/lib/community-data': {}, '@/lib/supabase': {}, '@/i18n/ko': { count: String },
     });
     const tree = WeeklyRanking({ cityId: 'vancouver', onOpen() {} });
     if (!total) { assert.equal(tree, null); continue; }
     assert.equal(tree.props.style.marginTop, 24, 'ranking must leave breathing room below the journal title');
-    const card = nodes(tree).find(n => [n.props?.style].flat().some(s => s?.borderWidth === 1)
-      || typeof n.props?.style === 'function' && n.props.style({ pressed: false }).some(s => s?.borderWidth === 1));
+    const card = nodes(tree).find(n => [n.props?.style].flat().some(s => s?.overflow === 'hidden'));
     assert.ok(card);
     const headings = nodes(tree).filter(n => n.props?.accessibilityRole === 'header');
     assert.equal(headings.length, total < 4 || expanded ? 1 : 0);
@@ -48,7 +49,8 @@ function load(file, imports) {
     if ((name === 'react-native' || name === '@/components/analytics-controls')) return { View: 'View', Text: 'Text', TextInput: 'TextInput', SectionList: 'SectionList', KeyboardAvoidingView: 'KeyboardAvoidingView', useWindowDimensions: () => ({ fontScale: 1 }), Platform: { OS: 'ios' }, LayoutAnimation: { configureNext() {}, Presets: { easeInEaseOut: {} } }, Image: 'Image', Pressable: 'Pressable', StyleSheet: { create: value => value, hairlineWidth: 1 } };
     if (name === 'expo-symbols') return { SymbolView: 'SymbolView' };
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };
-    if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, four: 24 } };
+    if (name === '@/components/glass-surface') return { GlassSurface: 'GlassSurface' };
+    if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, four: 24 }, Depth: { card: {}, control: {} } };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
     throw new Error(`Unexpected import: ${name}`);
   } });
@@ -70,13 +72,13 @@ test('choosing a post city changes only the draft and keeps upcoming cities unav
   const render = () => CityPicker({ onClose: () => { closed++; }, draft: { city: selected, onSelect: city => { selected = city; } } });
   const list = () => nodes(render()).find(node => node.type === 'SectionList').props;
   const toronto = CITIES.find(city => city.id === 'toronto');
-  await list().renderItem({ item: toronto }).props.onPress();
+  await cityRow(list().renderItem({ item: toronto })).props.onPress();
   assert.equal(selected.id, 'toronto');
   assert.equal(closed, 1);
-  assert.equal(list().renderItem({ item: toronto }).props.accessibilityState.selected, true);
+  assert.equal(cityRow(list().renderItem({ item: toronto })).props.accessibilityState.selected, true);
   assert.match(text(list().ListFooterComponent), /이 글/);
   assert.doesNotMatch(text(list().ListFooterComponent), /프로필에 저장/);
-  await list().renderItem({ item: CITIES.find(city => city.state === 'soon') }).props.onPress();
+  await cityRow(list().renderItem({ item: CITIES.find(city => city.state === 'soon') })).props.onPress();
   assert.equal(selected.id, 'toronto');
   assert.equal(closed, 1);
 });
@@ -88,6 +90,7 @@ test('location collection requires the visible disclosure and a separate consent
     capture: async () => { captures++; return fix; }, disable() {} };
   const { NearbyCityCard } = load('nearby-city-card', {
     react: { useState: () => [open, next => { open = typeof next === 'function' ? next(open) : next; }], useRef: () => ({ current: true }), useEffect() {} },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/location-provider': { useCommunityLocation: () => location },
     '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버' }] },
   });
@@ -138,12 +141,14 @@ test('city picker searches Canadian cities and keeps upcoming cities and the US 
   });
   const render = () => CityPicker({ onClose: () => { closed++; } });
   const list = () => nodes(render()).find(node => node.type === 'SectionList').props;
-  assert.deepEqual(Array.from(list().sections, section => section.data.length), [3, 8]);
-  for (const [id, province] of Object.entries({ ottawa: 'ON', calgary: 'AB', regina: 'SK', 'saint-john': 'NB', halifax: 'NS' })) {
+  // 몬트리올(0075)·캘거리(0092)가 열려 열린 도시 5개.
+  assert.deepEqual(Array.from(list().sections, section => section.data.length),
+    ['open', 'soon'].map(state => CITIES.filter(city => city.state === state).length));
+  for (const [id, province] of Object.entries({ ottawa: 'ON', winnipeg: 'MB', regina: 'SK', 'saint-john': 'NB', halifax: 'NS' })) {
     const city = CITIES.find(city => city.id === id);
     assert.equal(city.province, province);
     assert.equal(city.state, 'soon');
-    const row = list().renderItem({ item: city });
+    const row = cityRow(list().renderItem({ item: city }));
     assert.equal(row.props.disabled, true);
     assert.equal(row.props.accessibilityState.disabled, true);
     await row.props.onPress();
@@ -160,8 +165,8 @@ test('city picker searches Canadian cities and keeps upcoming cities and the US 
   assert.equal(text(list().ListEmptyComponent), '일치하는 도시가 없어요.');
   nodes(render()).find(node => node.props?.accessibilityLabel === '도시 검색 지우기').props.onPress();
   assert.equal(query, '');
-  assert.equal(list().renderItem({ item: CITIES[0] }).props.accessibilityState.selected, true);
-  await list().renderItem({ item: CITIES[1] }).props.onPress();
+  assert.equal(cityRow(list().renderItem({ item: CITIES[0] })).props.accessibilityState.selected, true);
+  await cityRow(list().renderItem({ item: CITIES[1] })).props.onPress();
   assert.equal(selected, 'toronto');
   assert.equal(closed, 1);
 });

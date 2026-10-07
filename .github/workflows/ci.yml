@@ -1,0 +1,32 @@
+name: Verify app
+
+on:
+  push:
+    branches: [mobile-app, 'chore/free-mobile-deployment']
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run lint -- --no-cache
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run export:web
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://ci.example.supabase.co
+          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci
+          EXPO_PUBLIC_APP_URL: https://gling.ej-entertainment.com
+          EXPO_PUBLIC_SUPPORT_EMAIL: gling@ej-entertainment.com
+      - run: npm run check:public-web

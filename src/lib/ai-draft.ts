@@ -3,6 +3,7 @@ import type { TagSlug } from './types';
 
 const CATEGORY_SLUGS = new Set<TagSlug>([
   'life',
+  'festival',
   'food',
   'travel',
   'shopping',

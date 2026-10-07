@@ -10,6 +10,7 @@ import { WebNightColors } from '@/constants/theme';
 import { chillingSchedule, recommendedAgeLabel } from '@/lib/chilling';
 import { appendUniquePosts, loadPublicFeed, loadPublicPost, type FeedCursor } from '@/lib/feed-data';
 import { CITIES, TAGS } from '@/lib/mock';
+import { visibleMeetupBody } from '@/lib/meetup-ai';
 import { publicWebTarget } from '@/lib/public-web';
 import { publicWebClient } from '@/lib/public-web-client';
 import type { Post } from '@/lib/types';
@@ -19,7 +20,6 @@ const showcaseArt = Asset.fromModule(require('../../../assets/images/festival-gl
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const palette = Object.fromEntries(Object.entries(WebNightColors).map(([key, value]) => [`--${key}`, value])) as CSSProperties;
 const cities = CITIES.filter((city) => city.state === 'open');
-const webTags = [TAGS[0], { id: 16, slug: 'festival', label: '페스티벌', kind: 'post' } as const, ...TAGS.slice(1)];
 
 function AppInvitation({ target, label = '앱에서 대화하기' }: { target: string; label?: string }) {
   return <section className="reader-invitation" aria-label="앱에서 이어가기">
@@ -59,7 +59,7 @@ export default function PublicReader() {
   const detail = path === '/post' || path.startsWith('/post/');
   const browse = path === '/' || path === '/meetups';
   const city = cities.find((item) => item.id === params.city) ?? cities[0];
-  const tag = webTags.find((item) => item.slug === (path === '/meetups' ? 'meetup' : params.tag));
+  const tag = TAGS.find((item) => item.slug === (path === '/meetups' ? 'meetup' : params.tag));
   const key = `${path}:${postId}:${city.id}:${tag?.id ?? ''}`;
   const [result, setResult] = useState<{ key: string; posts: Post[]; more: boolean; failed: boolean } | null>(null);
   const [retry, setRetry] = useState(0);
@@ -132,18 +132,18 @@ export default function PublicReader() {
           <div className="reader-section-heading"><div><h2 id="stories">오늘의 이야기</h2><p>페스티벌 후기부터 동네의 작은 질문까지.</p></div><span>{city.name} · {tag?.label ?? '전체 이야기'}</span></div>
           <form className="reader-filters" action="/" method="get">
             <label>도시<select name="city" defaultValue={city.id}>{cities.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label>
-            <label>주제<select name="tag" defaultValue={tag?.slug ?? ''}><option value="">전체 이야기</option>{webTags.map((item) => <option value={item.slug} key={item.id}>{item.label}</option>)}</select></label>
+            <label>주제<select name="tag" defaultValue={tag?.slug ?? ''}><option value="">전체 이야기</option>{TAGS.map((item) => <option value={item.slug} key={item.id}>{item.label}</option>)}</select></label>
             <button data-analytics="web_control_9" type="submit">보기</button>
           </form>
           <div aria-busy={loading}>
             {current?.posts.map((item) => <article className="reader-card" key={item.id}>
               <div><p className="reader-kicker">{item.tag.label}{item.room?.closed ? ' · 모집 마감' : ''}</p>
                 <h3><a data-analytics="web_control_10" href={`/post?id=${encodeURIComponent(item.id)}`}>{item.title}</a></h3>
-                <p className="reader-excerpt">{item.body}</p>
+                <p className="reader-excerpt">{item.room ? visibleMeetupBody(item.body) : item.body}</p>
                 <p className="reader-meta">{item.author.nickname} · {item.createdAtLabel}</p>
                 {item.room && <p className="reader-meta">{chillingSchedule(item.room)} · {recommendedAgeLabel(item.room)}</p>}
               </div>
-              {item.imageUris?.[0] && <img src={item.imageUris[0]} alt="" loading="lazy" className="reader-thumbnail" />}
+              {(item.imageThumbs?.[0] ?? item.imageUris?.[0]) && <img src={item.imageThumbs?.[0] ?? item.imageUris?.[0]} alt="" loading="lazy" className="reader-thumbnail" />}
             </article>)}
           </div>
           {current?.more && <button data-analytics="web_control_11" className="reader-more" onClick={() => void more()} disabled={busy}>{busy ? '불러오는 중…' : '이야기 더 보기'}</button>}
@@ -152,7 +152,7 @@ export default function PublicReader() {
           {post && <article className="reader-post"><p className="reader-kicker">{CITIES.find((item) => item.id === post.cityId)?.name} · {post.tag.label}</p>
             <h1>{post.title}</h1><p className="reader-meta">{post.author.nickname} · {post.createdAtLabel}</p>
             {post.imageUris?.map((uri, index) => <img className="reader-photo" key={uri} src={uri} alt={`${post.title} 사진 ${index + 1}`} loading="lazy" />)}
-            <p className="reader-body">{post.body}</p><MeetupInfo post={post} />
+            <p className="reader-body">{post.room ? visibleMeetupBody(post.body) : post.body}</p><MeetupInfo post={post} />
             <div className="reader-actions"><a data-analytics="web_control_13" className="reader-primary" href={target}>{post.room ? post.room.closed ? '앱에서 모임 보기' : '앱에서 모임 보기 · 참여하기' : '앱에서 대화하기'} ↗</a><button data-analytics="web_control_14" onClick={() => void share()}>링크 공유</button></div>
             <p role="status">{shareMessage}</p>
             {!!post.commentList?.length && <section className="reader-comments"><h2>공개 댓글</h2>{post.commentList.map((comment) => <article key={comment.id}><strong>{comment.nickname}</strong><p>{comment.body}</p></article>)}<a data-analytics="web_control_15" href={target}>앱에서 댓글 남기기 ↗</a></section>}

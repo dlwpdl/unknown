@@ -1,5 +1,5 @@
 begin;
-select plan(30);
+select plan(36);
 select has_function('public','get_my_personal_info',array[]::text[],'members can read their private information');
 insert into auth.users(id,email,raw_app_meta_data,raw_user_meta_data) values
 ('99990000-1111-1111-1111-111111111111','personal-info@example.test','{}','{"birthdate":"1980-01-01","full_name":"Social Name"}'),
@@ -38,7 +38,12 @@ select set_config('request.jwt.claims','{"sub":"99990000-1111-1111-1111-11111111
 set local role authenticated;
 select public.save_my_personal_info(null,null,'2026-09-12',auth.uid());
 select is(public.get_my_personal_info()->'date_of_birth','null'::jsonb,'withdrawal removes stored information');
-select public.save_my_personal_info('다시 저장','2000-01-01','2026-09-12',auth.uid());
+select is(public.get_my_personal_info()->'gender','null'::jsonb,'withdrawal also removes stored gender');
+select public.save_my_personal_info('다시 저장','2000-01-01','2026-09-22',auth.uid(),'female');
+select is(public.get_my_personal_info()->>'gender','female','stated gender is stored and read back');
+select throws_ok($$select public.save_my_personal_info('다시 저장','2000-01-01','2026-09-22',auth.uid(),'unspecified')$$,'P0001','INVALID_PERSONAL_INFO','unsupported gender values are rejected');
+select public.save_my_personal_info('다시 저장','2000-01-01','2026-09-19',auth.uid());
+select is(public.get_my_personal_info()->'gender','null'::jsonb,'released four-argument clients keep their previous behaviour');
 reset role;
 update public.profiles set account_status='deleted' where id='99990000-1111-1111-1111-111111111111';
 select is((select count(*)::int from private.personal_info where user_id='99990000-1111-1111-1111-111111111111'),0,'account deletion purges identity before external account cleanup');
@@ -55,6 +60,14 @@ select is(public.get_my_personal_info()->>'date_of_birth','2001-02-03','correcti
 reset role;
 delete from auth.users where id='99990000-3333-3333-3333-333333333333';
 select is((select count(*)::int from private.personal_info),0,'hard account deletion cascades private information');
+insert into auth.users(id,email,raw_app_meta_data,raw_user_meta_data) values
+('99990000-4444-4444-4444-444444444444','personal-gender@example.test','{}','{}');
+select set_config('request.jwt.claims','{"sub":"99990000-4444-4444-4444-444444444444","role":"authenticated"}',true);
+set local role authenticated;
+select lives_ok($$select public.create_profile_with_personal_info('성별가입','vancouver',null,'2026-09-02','성별회원','2000-01-01','2026-09-22',auth.uid(),'male')$$,'onboarding stores gender under the new consent version');
+select is(public.get_my_personal_info()->>'gender','male','gender from signup reads back to the member');
+reset role;
+delete from auth.users where id='99990000-4444-4444-4444-444444444444';
 set local role anon;
 select throws_ok($$select public.get_my_personal_info()$$,'42501',null,'anonymous personal-info reads are forbidden');
 reset role;
