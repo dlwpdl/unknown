@@ -41,4 +41,6 @@ GitHub Secrets: `GLING_ASC_JSON`, `GLING_PLAY_JSON`, `GLING_SIGNING_JSON`, `GLIN
 
 GitHub Actions 자체가 제한되면 유료 플랜을 켜지 않고 로컬 경로를 사용합니다. 개발자 계정의 기존 연회비 외에 추가 인프라 과금을 설정하지 않습니다. OTA 업데이트는 포함하지 않습니다. 현재 앱에는 `expo-updates`가 없어 별도의 네이티브 출시가 필요한 기능입니다.
 
+기존 Orca 자동화·시간표·실행 소속을 확인했으며 별도의 Mac 예약 작업을 만들지 않습니다. 릴리스는 기존 스토어 제출 상태를 확인하고 하나의 GitHub 릴리스 큐에서 실행합니다. 이 경로는 GUI 없이 API로 제출합니다. Mac에서 브라우저를 통한 수동 제출이 필요하면 `/Users/ash/Desktop/Git/automation-coordination.md`의 기존 공용 `gui_bundle`을 사용하고 실제 제품·계정·페이지와 사용자 입력을 다시 확인합니다.
+
 근거: [GitHub Actions 과금](https://docs.github.com/en/billing/concepts/product-billing/github-actions), [표준 러너](https://docs.github.com/en/actions/reference/runners/github-hosted-runners), [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/), [Google Play API 권한](https://developers.google.com/android-publisher/getting_started).

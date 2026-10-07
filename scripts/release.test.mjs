@@ -7,6 +7,9 @@ import { parse } from 'yaml';
 test('deployment jobs allocate only free public standard runners and no billed storage', () => {
   const root = new URL('../.github/workflows/', import.meta.url);
   assert.ok(existsSync(new URL('mobile-release.yml', root)), 'mobile release workflow is installed');
+  const release = parse(readFileSync(new URL('mobile-release.yml', root), 'utf8'));
+  assert.equal(release.concurrency.group, 'mobile-release', 'release jobs reuse one shared queue');
+  assert.equal(release.concurrency['cancel-in-progress'], false, 'a submission in progress is preserved');
   for (const file of readdirSync(root).filter(name => name.endsWith('.yml'))) {
     const workflow = parse(readFileSync(new URL(file, root), 'utf8'));
     for (const [name, job] of Object.entries(workflow.jobs)) {

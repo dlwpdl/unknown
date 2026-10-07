@@ -15,8 +15,9 @@ test('bounded city/category/page validation keeps upstream requests controlled',
   for (const date of ['2026-02-30','yesterday','2020-01-01','2030-01-01']) assert.throws(() => parseEventQuery({ cityId:'vancouver', date }));
 });
 test('city-local day bounds survive daylight saving changes', () => {
-  assert.deepEqual(localDayUtcRange('2027-03-14','America/Vancouver'), ['2027-03-14T08:00:00Z','2027-03-15T07:00:00Z']);
-  assert.deepEqual(localDayUtcRange('2027-11-07','America/Vancouver'), ['2027-11-07T07:00:00Z','2027-11-08T08:00:00Z']);
+  // Historical transitions stay stable when newer timezone data changes future rules.
+  assert.deepEqual(localDayUtcRange('2025-03-09','America/Vancouver'), ['2025-03-09T08:00:00Z','2025-03-10T07:00:00Z']);
+  assert.deepEqual(localDayUtcRange('2025-11-02','America/Vancouver'), ['2025-11-02T07:00:00Z','2025-11-03T08:00:00Z']);
 });
 test('price and short description never invent free entry or copy terms as editorial text', () => {
   assert.equal(eventPriceLabel(normalizeEvent(raw)), '가격 정보 없음');
