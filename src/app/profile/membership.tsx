@@ -14,6 +14,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { MEMBERSHIP_LIMITS, referencePrice, type MembershipOffer } from '@/lib/membership';
@@ -32,7 +33,7 @@ export default function MembershipScreen() {
   const auth = useAuth();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
-  const { membership, loading, error, notice, offers, offersLoading, busy, purchaseUnavailableReason, refresh, purchase, restore, manage } = useMembership();
+  const { membership, loading, error, notice, offers, offersLoading, busy, purchaseUnavailableReason, pendingApproval, confirmPendingCancellation, refresh, purchase, restore, manage } = useMembership();
   useFocusEffect(useCallback(() => {
     if (auth.isAuthed) void refresh();
   }, [auth.isAuthed, refresh]));
@@ -64,6 +65,13 @@ export default function MembershipScreen() {
   const openLegal = (slug: 'terms' | 'privacy') => {
     play('selection');
     void Linking.openURL(`${publicSiteUrl}/${slug}`).catch(() => Alert.alert('페이지를 열지 못했어요', '잠시 후 다시 시도해 주세요.'));
+  };
+  const confirmStoreCancellation = () => {
+    play('selection');
+    Alert.alert('대기 구매가 취소·거절됐나요?', '결제한 스토어에서 이전 요청의 취소 또는 거절 완료 안내를 확인한 경우에만 계속해 주세요. 빈 구독 목록만으로는 확인할 수 없어요. 승인 대기가 남아 있으면 다시 구매할 때 중복 청구될 수 있어요.', [
+      { text: '아직 확인 못 했어요', style: 'cancel', onPress: () => play('selection') },
+      { text: '취소·거절 확인 완료', onPress: () => { play('selection'); void confirmPendingCancellation(); } },
+    ]);
   };
 
   if (auth.isAuthLoading) return <GlingLoader color={theme.accent} style={styles.loading} accessibilityLabel="로그인 확인 중" />;
@@ -101,10 +109,15 @@ export default function MembershipScreen() {
           <RelationshipSlotCard kind="conversation" membership={membership} loading={loading} />
           </>}
 
-          {(error || notice) && <View style={styles.feedback}>
+          {(error || notice || pendingApproval) && <View style={styles.feedback}>
             {error && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{error}</ThemedText>}
             {notice && <ThemedText type="small" accessibilityLiveRegion="polite">{notice}</ThemedText>}
             <Pressable analyticsId="app_profile_membership.pressable.1" onPress={() => { play('selection'); void refresh(); }} accessibilityRole="button" disabled={busy || loading} accessibilityState={{ disabled: busy || loading }} style={({ pressed }) => [styles.textButton, { opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold" themeColor="accent">다시 확인하기</ThemedText></Pressable>
+            {pendingApproval && <>
+              <ThemedText type="small" themeColor="textSecondary">스토어의 취소·거절 완료 안내를 확인해 주세요. 빈 구독 목록만으로는 확인할 수 없어요. 승인 대기가 계속되면 다시 구매하지 마세요.</ThemedText>
+              <Pressable analyticsId="membership.pending.manage" onPress={() => { play('selection'); void manage(); }} accessibilityRole="button" disabled={busy || loading} accessibilityState={{ disabled: busy || loading }} style={styles.textButton}><ThemedText type="smallBold" themeColor="accent">스토어 구독 관리 열기</ThemedText></Pressable>
+              <Pressable analyticsId="membership.pending.confirm_cancellation" onPress={confirmStoreCancellation} accessibilityRole="button" accessibilityHint="스토어의 취소 또는 거절을 확인한 경우에만 구매 대기를 해제해요." disabled={busy || loading} accessibilityState={{ disabled: busy || loading, busy }} style={styles.textButton}><ThemedText type="smallBold" themeColor="accent">스토어에서 대기 구매 취소·거절을 확인했어요</ThemedText></Pressable>
+            </>}
           </View>}
 
           <SectionHead title="이용 규칙" note="필요할 때만 펼쳐 보세요" />
@@ -145,6 +158,7 @@ export default function MembershipScreen() {
             <View style={styles.freePlan}>
               <ThemedText type="smallBold">베이직 · 무료</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">오늘 글 무제한 · 동시 모임 {MEMBERSHIP_LIMITS.free.meetups}개 · 활성 1:1 대화 {MEMBERSHIP_LIMITS.free.conversations}개</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{t.membership.listingBenefits.free}</ThemedText>
             </View>
 
             {plans.map((plan) => {
@@ -164,6 +178,7 @@ export default function MembershipScreen() {
                   {offer && referencePrice(offer) && <ThemedText type="smallBold" themeColor="accent">출시 기념가</ThemedText>}
                 </View>
                 <ThemedText type="small" themeColor="textSecondary">오늘 글 무제한 · 동시 모임 {limits.meetups}개 · 활성 1:1 대화 {limits.conversations}개</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">{t.membership.listingBenefits[plan.tier]}</ThemedText>
               </Pressable>;
             })}
 

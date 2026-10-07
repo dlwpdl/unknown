@@ -15,6 +15,7 @@ import './admin.css';
 const sectionIcons = {
   analytics: { ios: 'chart.bar', web: 'bar_chart' },
   ticketmaster: { ios: 'ticket', web: 'confirmation_number' },
+  merchants: { ios: 'building.2', web: 'store' },
   overview: { ios: 'square.grid.2x2', web: 'dashboard' },
   safety: { ios: 'shield', web: 'shield' },
   alerts: { ios: 'exclamationmark.bubble', web: 'report' },

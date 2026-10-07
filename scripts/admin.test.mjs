@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 
 import {
   adminOptionKeys,
+  adminTotpQrUri,
   canUseLocalAdminPreview,
   canResolveReport,
   filterAdminReports,
@@ -13,8 +15,34 @@ import {
   reportTargetLabel,
 } from '../src/lib/admin.ts';
 
+test('Supabase TOTP QR remains one readable SVG image without URL fragment truncation', () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg"><path fill="#000" d="M0 0h10v10H0z"/></svg>';
+  for (const qr of [svg, `data:image/svg+xml;utf-8,${svg}`]) {
+    const uri = adminTotpQrUri(qr);
+    assert.equal(new URL(uri).hash, '');
+    assert.equal(decodeURIComponent(uri.slice(uri.indexOf(',') + 1)), svg);
+  }
+});
+
+test('MFA auth listener preserves an open editor on token refresh and clears factor material on logout', () => {
+  const source = readFileSync(new URL('../src/components/admin/admin-mfa-gate.tsx', import.meta.url), 'utf8');
+  const body = source.match(/onAuthStateChange\(\(event\) => \{([\s\S]*?)\n    \}\)/)?.[1];
+  assert.ok(body, 'Locate the actual SDK listener so this checks the mounted gate behavior.');
+  const listen = new Function('event', 'setResult', 'setRevision', 'setEnrollment', 'setCode', 'setShowKey', body);
+  const verified = { id: 'admin', ready: true };
+  let result = verified, revision = 0, enrollment = 'pending-factor', code = '123456', showKey = true;
+  const event = (name) => listen(name, (v) => { result = v; }, (f) => { revision = f(revision); },
+    (v) => { enrollment = v; }, (v) => { code = v; }, (v) => { showKey = v; });
+  event('TOKEN_REFRESHED');
+  assert.equal(result, verified, 'A refresh must not unmount and erase an unsaved merchant/report editor.');
+  assert.equal(revision, 1, 'The refreshed session is still rechecked.');
+  event('SIGNED_OUT');
+  assert.equal(result, null); assert.equal(enrollment, null); assert.equal(code, ''); assert.equal(showKey, false);
+});
+
 test('관리자 알림의 목적지 섹션을 열고 알 수 없는 섹션은 무시한다', () => {
   assert.equal(initialAdminSection('users'), 'users');
+  assert.equal(initialAdminSection('merchants'), 'merchants');
   assert.equal(initialAdminSection('errors'), 'errors');
   assert.equal(initialAdminSection(undefined, '1'), 'alerts');
   assert.equal(initialAdminSection(undefined, undefined, '12'), 'safety');

@@ -1,6 +1,6 @@
 export type ReportStatus = 'open' | 'actioned' | 'dismissed';
 export type ReportFilter = 'all' | ReportStatus;
-export type AdminSection = 'analytics' | 'ticketmaster' | 'overview' | 'safety' | 'alerts' | 'trending' | 'errors' | 'reports' | 'users' | 'posts' | 'conversations';
+export type AdminSection = 'analytics' | 'ticketmaster' | 'merchants' | 'overview' | 'safety' | 'alerts' | 'trending' | 'errors' | 'reports' | 'users' | 'posts' | 'conversations';
 
 const REPORT_REASON_LABELS: Record<string, string> = {
   spam: '스팸',
@@ -21,6 +21,7 @@ const REPORT_TARGET_LABELS: Record<string, string> = {
 export const ADMIN_SECTIONS: { id: AdminSection; label: string }[] = [
   { id: 'analytics', label: '분석' },
   { id: 'ticketmaster', label: 'Ticketmaster 수익' },
+  { id: 'merchants', label: '업체 관리' },
   { id: 'overview', label: '현황' },
   { id: 'safety', label: 'AI 안전' },
   { id: 'alerts', label: '감시어 경보' },
@@ -36,10 +37,13 @@ export function initialAdminSection(requested?: string, alert?: string, safety?:
   return ADMIN_SECTIONS.find((entry) => entry.id === requested)?.id ?? (alert ? 'alerts' : safety ? 'safety' : 'analytics');
 }
 
+// The Supabase SDK wraps its SVG in a data URI; encode only the SVG, including color # characters.
+export const adminTotpQrUri = (qr: string) => `data:image/svg+xml;utf8,${encodeURIComponent(qr.replace(/^data:image\/svg\+xml;utf-8,/, ''))}`;
+
 // 지켜보는 화면 / 처리하는 화면 / 규모를 보는 화면으로 나눈다. 미처리 배지는 '대응' 그룹에서 먼저 보인다.
 export const ADMIN_NAV_GROUPS: { label: string; sections: AdminSection[] }[] = [
   { label: '모니터링', sections: ['analytics', 'overview', 'safety', 'alerts', 'trending'] },
-  { label: '수익', sections: ['ticketmaster'] },
+  { label: '수익', sections: ['merchants', 'ticketmaster'] },
   { label: '대응', sections: ['reports', 'errors'] },
   { label: '데이터', sections: ['users', 'posts', 'conversations'] },
 ];

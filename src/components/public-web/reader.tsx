@@ -13,6 +13,8 @@ import { CITIES, TAGS } from '@/lib/mock';
 import { visibleMeetupBody } from '@/lib/meetup-ai';
 import { publicWebTarget } from '@/lib/public-web';
 import { publicWebClient } from '@/lib/public-web-client';
+import { InteractionFeedbackProvider, useInteractionFeedback } from '@/lib/interaction-feedback';
+import { loadMerchantSource, trackPublicMerchantSourceClick, type MerchantSource } from '@/lib/merchant-source';
 import type { Post } from '@/lib/types';
 
 const wordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark.png')).uri;
@@ -20,6 +22,20 @@ const showcaseArt = Asset.fromModule(require('../../../assets/images/festival-gl
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const palette = Object.fromEntries(Object.entries(WebNightColors).map(([key, value]) => [`--${key}`, value])) as CSSProperties;
 const cities = CITIES.filter((city) => city.state === 'open');
+
+function MerchantSourceAction({ postId }: { postId: string }) {
+  const { play } = useInteractionFeedback();
+  const [result, setResult] = useState<{ id: string; source: MerchantSource } | null>(null);
+  useEffect(() => {
+    let active = true;
+    void loadMerchantSource(publicWebClient, postId).then((source) => { if (active) setResult(source ? { id: postId, source } : null); });
+    return () => { active = false; };
+  }, [postId]);
+  if (result?.id !== postId) return null;
+  return <div className="reader-actions"><a className="reader-secondary" href={result.source.original_url} target="_blank" rel="noopener noreferrer"
+    aria-label={`${result.source.merchant_name} 원문으로 가기, 외부 페이지 열기`}
+    onClick={() => { play('selection'); void trackPublicMerchantSourceClick(postId); }}>원문으로 가기</a></div>;
+}
 
 function AppInvitation({ target, label = '앱에서 대화하기' }: { target: string; label?: string }) {
   return <section className="reader-invitation" aria-label="앱에서 이어가기">
@@ -153,6 +169,7 @@ export default function PublicReader() {
             <h1>{post.title}</h1><p className="reader-meta">{post.author.nickname} · {post.createdAtLabel}</p>
             {post.imageUris?.map((uri, index) => <img className="reader-photo" key={uri} src={uri} alt={`${post.title} 사진 ${index + 1}`} loading="lazy" />)}
             <p className="reader-body">{post.room ? visibleMeetupBody(post.body) : post.body}</p><MeetupInfo post={post} />
+            <InteractionFeedbackProvider><MerchantSourceAction postId={post.id} /></InteractionFeedbackProvider>
             <div className="reader-actions"><a data-analytics="web_control_13" className="reader-primary" href={target}>{post.room ? post.room.closed ? '앱에서 모임 보기' : '앱에서 모임 보기 · 참여하기' : '앱에서 대화하기'} ↗</a><button data-analytics="web_control_14" onClick={() => void share()}>링크 공유</button></div>
             <p role="status">{shareMessage}</p>
             {!!post.commentList?.length && <section className="reader-comments"><h2>공개 댓글</h2>{post.commentList.map((comment) => <article key={comment.id}><strong>{comment.nickname}</strong><p>{comment.body}</p></article>)}<a data-analytics="web_control_15" href={target}>앱에서 댓글 남기기 ↗</a></section>}

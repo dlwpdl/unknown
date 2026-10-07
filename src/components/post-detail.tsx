@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TicketmasterSourceLink } from '@/components/ticketmaster-source-link';
+import { MerchantSourceLink } from '@/components/merchant-source-link';
 import { PostCard } from '@/components/post-card';
 import { PostPhotoGallery } from '@/components/post-photo-gallery';
 import { PostPhotoCredits } from '@/components/post-photo-credits';
@@ -587,7 +588,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               hideRoom={!!post.room}
               flat={!!post.room}
               post={{ ...post, body: photoCredits.body, views: viewCount }}
-              afterBody={post.room ? <TicketmasterSourceLink body={post.body} cityId={post.cityId} onNavigate={onClose} /> : undefined}
+              afterBody={<><MerchantSourceLink postId={post.id} />{post.room && <TicketmasterSourceLink body={post.body} cityId={post.cityId} onNavigate={onClose} />}</>}
               onJoin={onJoin ?? (() => isAuthed ? router.push({ pathname: '/meetup-join', params: { postId: post.id } }) : promptLogin('이 모임에 참여하려면 가입하거나 로그인해 주세요.'))}
               onAuthor={() =>
                 setSheetUser({
