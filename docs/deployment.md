@@ -24,14 +24,21 @@ git push origin v1.1.3
 
 GitHub 장애·사용 제한이 있어도 기존 Mac/Xcode, Android SDK/Java, `asc` CLI로 무료 로컬 빌드와 수동 제출이 가능합니다. 보호된 기존 `credentials.json`과 `~/Library/Application Support/gling/credentials/`를 사용하며 저장소에는 올리지 않습니다. 로컬 환경의 `.env.local`/`.env.production`도 유지합니다.
 
-수동 빌드는 별도 체크아웃에서 실행합니다. 빌드 명령은 `app.json`으로 생성된 `ios`/`android` 프로젝트를 다시 만들므로, 직접 수정한 네이티브 프로젝트와 섞지 않습니다.
+수동 빌드는 출시 태그의 별도 체크아웃에서 실행합니다. 빌드 명령은 `app.json`으로 생성된 `ios`/`android` 프로젝트를 다시 만들므로, 직접 수정한 네이티브 프로젝트와 섞지 않습니다. 아래 예시는 로컬에 `v1.1.3` 태그가 있는 경우입니다. 태그가 원격에만 있으면 먼저 `git fetch origin --tags`로 가져옵니다.
 
 ```sh
+git -C /Users/ash/Desktop/Git/unknown/mobile worktree add --detach /private/tmp/gling-manual-1.1.3 v1.1.3
+cd /private/tmp/gling-manual-1.1.3
+cp /Users/ash/Desktop/Git/unknown/mobile/credentials.json .
+cp /Users/ash/Desktop/Git/unknown/mobile/.env.local .
+chmod 600 credentials.json .env.local
+npm ci
+export SSL_CERT_FILE=/opt/homebrew/etc/openssl@3/cert.pem
 python3 scripts/release.py prepare --tag v1.1.3 --local
-# .release/state.json에 정해진 번호를 아래 55 대신 사용
-python3 scripts/release.py build --platform ios --build-number 55 --local
+GLING_RELEASE_BUILD=$(python3 -c 'import json; print(json.load(open(".release/state.json"))["build"])')
+python3 scripts/release.py build --platform ios --build-number "$GLING_RELEASE_BUILD" --local
 python3 scripts/release.py submit --platform ios --local
-python3 scripts/release.py build --platform android --build-number 55 --local
+python3 scripts/release.py build --platform android --build-number "$GLING_RELEASE_BUILD" --local
 python3 scripts/release.py submit --platform android --local
 ```
 
@@ -40,6 +47,8 @@ python3 scripts/release.py submit --platform android --local
 ## 관리
 
 GitHub Secrets: `GLING_ASC_JSON`, `GLING_PLAY_JSON`, `GLING_SIGNING_JSON`, `GLING_PUBLIC_ENV_JSON`. 기존 서명·스토어 자격 증명을 사용합니다. PR에는 서명과 스토어 비밀 정보를 전달하지 않습니다. 네이티브 빌드와 로컬 제출은 같은 스크립트를 사용합니다.
+
+Google Play의 기존 서비스 계정에는 글링 앱의 **앱을 테스트 트랙으로 출시** 권한을 추가했습니다. 저장된 권한과 내부 트랙 출시 검증 API를 확인했습니다. 프로덕션·관리자 권한은 추가하지 않았습니다.
 
 GitHub Actions 자체가 제한되면 유료 플랜을 켜지 않고 로컬 경로를 사용합니다. 개발자 계정의 기존 연회비 외에 추가 인프라 과금을 설정하지 않습니다. OTA 업데이트는 포함하지 않습니다. 현재 앱에는 `expo-updates`가 없어 별도의 네이티브 출시가 필요한 기능입니다.
 
