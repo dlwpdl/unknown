@@ -9,18 +9,14 @@ insert into public.profiles(id,nickname,city_id,terms_accepted_at,privacy_accept
 
 -- 기존 운영 글은 활동 기록을 지워 결정적으로 만든다
 delete from private.post_view_pulse;
-select set_config('request.jwt.claims','{"sub":"53000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
-set local role authenticated;
-select public.create_post('vancouver',(select id from public.tags where slug='life'),'1등 글','본문','{}','{}');
-reset role;
-select set_config('request.jwt.claims','{"sub":"53000000-0000-0000-0000-000000000002","role":"authenticated"}',true);
-set local role authenticated;
-select public.create_post('vancouver',(select id from public.tags where slug='life'),'2등 글','본문','{}','{}');
-reset role;
-select set_config('request.jwt.claims','{"sub":"53000000-0000-0000-0000-000000000003","role":"authenticated"}',true);
-set local role authenticated;
-select public.create_post('vancouver',(select id from public.tags where slug='life'),'시드 글','본문','{}','{}');
-reset role;
+-- Build ranking fixtures directly; post creation is covered by its own tests.
+insert into public.posts(author_id,city_id,tag_id,title,body)
+select author_id,'vancouver',(select id from public.tags where slug='life'),title,'본문'
+from (values
+ ('53000000-0000-0000-0000-000000000001'::uuid,'1등 글'),
+ ('53000000-0000-0000-0000-000000000002'::uuid,'2등 글'),
+ ('53000000-0000-0000-0000-000000000003'::uuid,'시드 글')
+) fixture(author_id,title);
 
 insert into private.post_view_pulse(post_id,bucket,views)
  select id, date_bin(interval '10 minutes', now(),'2000-01-01'::timestamptz),
@@ -34,10 +30,10 @@ begin
   assert made >= 1, 'a ranking is published';
   select p.title into rank1 from public.weekly_rankings r join public.posts p on p.id=r.post_id
     where r.city_id='vancouver' and r.rank=1;
-  assert rank1 = '1등 글', format('the most active post leads, got %s', rank1);
-  assert not exists (
+  assert rank1 = '시드 글', format('the most active post leads, got %s', rank1);
+  assert exists (
     select 1 from public.weekly_rankings r join public.posts p on p.id=r.post_id where p.title='시드 글'),
-    'seed accounts are kept out even with the highest numbers';
+    'owner-provided seed views participate in weekly rankings';
 end $$;
 
 -- 같은 주에 다시 돌려도 덮어쓰지 않는다 (순위가 고정이어야 의미가 있다)
@@ -66,8 +62,8 @@ begin
   r := public.get_weekly_ranking('vancouver');
   assert jsonb_array_length(r->'entries') >= 2, 'the feed can read the entries';
   assert (r->'entries'->0->>'rank')::int = 1, 'ordered by rank';
-  assert r->'entries'->0->>'title' = '1등 글', 'with the winner first';
-  assert (r->'entries'->0->>'views')::int = 500, 'and the numbers behind it';
+  assert r->'entries'->0->>'title' = '시드 글', 'with the winner first';
+  assert (r->'entries'->0->>'views')::int = 9000, 'and the numbers behind it';
   assert public.get_weekly_ranking('toronto') = '{}'::jsonb, 'a city with no ranking returns empty';
 end $$;
 
@@ -77,7 +73,7 @@ set local role authenticated;
 update public.posts set status='removed' where title='1등 글';
 reset role;
 do $$ begin
-  assert (public.get_weekly_ranking('vancouver')->'entries'->0->>'title') = '2등 글',
+  assert not exists (select 1 from jsonb_array_elements(public.get_weekly_ranking('vancouver')->'entries') e where e->>'title'='1등 글'),
     'a post taken down drops out of the published ranking';
 end $$;
 

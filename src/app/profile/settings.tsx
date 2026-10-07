@@ -1,7 +1,9 @@
+import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView, Switch } from '@/components/analytics-controls';
+import Constants from 'expo-constants';
 import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Linking, StyleSheet, View } from 'react-native';
+import { Alert, Linking, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -29,13 +31,13 @@ export default function SettingsScreen() {
   const supportEmail = process.env.EXPO_PUBLIC_SUPPORT_EMAIL ?? CONTACT_EMAIL;
   const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/$/, '');
 
-  if (isAuthLoading) return <ActivityIndicator color={theme.accent} style={{ flex: 1 }} />;
+  if (isAuthLoading) return <GlingLoader color={theme.accent} style={{ flex: 1 }} />;
   if (!isAuthed) return <Redirect href="/profile" />;
 
   const removePhoto = () =>
     Alert.alert(t.profile.removePhotoTitle, t.profile.removePhotoBody, [
       { text: t.profile.cancel, style: 'cancel' },
-      { text: t.profile.remove, style: 'destructive', onPress: () => void setProfilePhoto(null) },
+      { text: t.profile.remove, style: 'destructive', onPress: () => { play('warning'); void setProfilePhoto(null); } },
     ]);
 
   const confirmSignOut = () =>
@@ -45,6 +47,7 @@ export default function SettingsScreen() {
         text: t.profile.signOut,
         style: 'destructive',
         onPress: () => {
+          play('warning');
           signOut();
           if (router.canGoBack()) router.back();
           else router.replace('/');
@@ -62,9 +65,11 @@ export default function SettingsScreen() {
     try {
       const appleAuthorizationCode = await prepareAppleAccountDeletion();
       await deleteMyAccount(supabase, appleAuthorizationCode);
+      play('warning');
       await signOut();
       router.replace('/');
     } catch {
+      play('warning');
       Alert.alert(t.profile.deleteErrorTitle, t.profile.deleteErrorBody);
     } finally {
       setDeleting(false);
@@ -89,36 +94,27 @@ export default function SettingsScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView analyticsId="app_profile_settings.scrollview.1" contentContainerStyle={styles.content}>
-          <ThemedText type="smallBold" themeColor="textSecondary">
-            {t.profile.account}
-          </ThemedText>
+          <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{t.profile.account}</ThemedText>
+          <PersonalInfoCard userId={me.id} nickname={me.nickname} />
+
+          <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>알림</ThemedText>
           <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-            <View style={styles.row}>
-              <ThemedText type="small">{t.profile.nickname}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">{me.nickname}</ThemedText>
-            </View>
+            <Pressable analyticsId="app_profile_settings.pressable.1" accessibilityRole="button" style={({ pressed }) => [styles.navRow, pressed && { backgroundColor: theme.backgroundSelected }]} onPress={() => { play('selection'); router.push('/profile/notifications'); }}>
+              <View style={styles.navCopy}><ThemedText type="smallBold">알림 설정</ThemedText><ThemedText type="small" themeColor="textSecondary">댓글·메시지·모임 소식 선택</ThemedText></View>
+              <ThemedText themeColor="textSecondary">›</ThemedText>
+            </Pressable>
           </View>
 
-          <PersonalInfoCard userId={me.id} />
-          <Pressable analyticsId="app_profile_settings.pressable.1" accessibilityRole="button" style={styles.row} onPress={() => router.push('/profile/notifications')}>
-            <ThemedText>알림 설정</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText>
-          </Pressable>
-          {adsSupported && !testAds && <Pressable analyticsId="app_profile_settings.pressable.2" accessibilityRole="button" style={styles.row} onPress={() => {
-            void showAdPrivacyOptions().then((shown) => {
-              if (!shown) Alert.alert('광고 개인정보 설정', '현재 지역에서 변경할 광고 동의 설정이 없습니다. 글링은 개인 맞춤 광고를 요청하지 않습니다.');
-            }).catch(() => Alert.alert('광고 설정을 열지 못했어요', '잠시 후 다시 시도해 주세요.'));
-          }}><ThemedText>광고 개인정보 설정</ThemedText></Pressable>}
-
-          <ThemedText type="smallBold" themeColor="textSecondary">
-            {t.profile.feedback}
-          </ThemedText>
+          <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>위치 및 지역</ThemedText>
           <NearbyCityCard settings />
+
+          <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{t.profile.feedback}</ThemedText>
           <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
             <View style={styles.row}>
               <ThemedText type="small">{t.profile.soundEffects}</ThemedText>
               <Switch analyticsId="app_profile_settings.switch.1"
                 value={soundEnabled}
-                onValueChange={setSoundEnabled}
+                onValueChange={(enabled) => { play('selection'); setSoundEnabled(enabled); }}
                 accessibilityLabel={t.profile.soundEffects}
                 trackColor={{ false: theme.line, true: theme.accent }}
                 ios_backgroundColor={theme.line}
@@ -143,50 +139,45 @@ export default function SettingsScreen() {
             {t.profile.feedbackNote}
           </ThemedText>
 
-          <Pressable analyticsId="app_profile_settings.pressable.3" onPress={openSupport} accessibilityRole="link" style={[styles.action, { borderColor: theme.line }]}>
-            <ThemedText type="smallBold">{t.profile.support}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">{supportEmail ?? t.profile.supportNeedsSetup}</ThemedText>
-          </Pressable>
-
-          <Pressable analyticsId="app_profile_settings.pressable.4" onPress={() => void Linking.openURL(`${publicSiteUrl}/terms`)} accessibilityRole="link" style={[styles.action, { borderColor: theme.line }]}>
-            <ThemedText type="smallBold">이용약관</ThemedText>
-          </Pressable>
-
-          <Pressable analyticsId="app_profile_settings.pressable.5" onPress={() => void Linking.openURL(`${publicSiteUrl}/privacy`)} accessibilityRole="link" style={[styles.action, { borderColor: theme.line }]}>
-            <ThemedText type="smallBold">개인정보처리방침</ThemedText>
-          </Pressable>
-
-          {me.photoUri && (
-            <Pressable analyticsId="app_profile_settings.pressable.6"
-              onPress={removePhoto}
-              accessibilityRole="button"
-              style={[styles.action, { borderColor: theme.line }]}>
-              <ThemedText type="small">{t.profile.removePhoto}</ThemedText>
+          <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>도움말 및 정책</ThemedText>
+          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+            <Pressable analyticsId="app_profile_settings.pressable.3" onPress={() => { play('selection'); openSupport(); }} accessibilityRole="link" style={({ pressed }) => [styles.navRow, pressed && { backgroundColor: theme.backgroundSelected }]}>
+              <View style={styles.navCopy}><ThemedText type="smallBold">{t.profile.support}</ThemedText><ThemedText type="small" themeColor="textSecondary">{supportEmail ?? t.profile.supportNeedsSetup}</ThemedText></View><ThemedText themeColor="textSecondary">›</ThemedText>
             </Pressable>
-          )}
+            <View style={[styles.divider, { backgroundColor: theme.line }]} />
+            <Pressable analyticsId="app_profile_settings.pressable.4" onPress={() => { play('selection'); void Linking.openURL(`${publicSiteUrl}/terms`); }} accessibilityRole="link" style={({ pressed }) => [styles.navRow, pressed && { backgroundColor: theme.backgroundSelected }]}>
+              <ThemedText type="smallBold" style={styles.navCopy}>이용약관</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText>
+            </Pressable>
+            <View style={[styles.divider, { backgroundColor: theme.line }]} />
+            <Pressable analyticsId="app_profile_settings.pressable.5" onPress={() => { play('selection'); void Linking.openURL(`${publicSiteUrl}/privacy`); }} accessibilityRole="link" style={({ pressed }) => [styles.navRow, pressed && { backgroundColor: theme.backgroundSelected }]}>
+              <ThemedText type="smallBold" style={styles.navCopy}>개인정보처리방침</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText>
+            </Pressable>
+            {adsSupported && !testAds && <><View style={[styles.divider, { backgroundColor: theme.line }]} />
+              <Pressable analyticsId="app_profile_settings.pressable.2" accessibilityRole="button" style={({ pressed }) => [styles.navRow, pressed && { backgroundColor: theme.backgroundSelected }]} onPress={() => {
+                play('selection');
+                void showAdPrivacyOptions().then((shown) => {
+                  if (!shown) Alert.alert('광고 개인정보 설정', '현재 지역에서 변경할 광고 동의 설정이 없습니다. 글링은 개인 맞춤 광고를 요청하지 않습니다.');
+                }).catch(() => Alert.alert('광고 설정을 열지 못했어요', '잠시 후 다시 시도해 주세요.'));
+              }}><ThemedText type="smallBold" style={styles.navCopy}>광고 개인정보 설정</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText></Pressable>
+            </>}
+          </View>
 
-          <Pressable analyticsId="app_profile_settings.pressable.7"
-            onPress={confirmSignOut}
-            accessibilityRole="button"
-            style={[styles.action, { borderColor: theme.line }]}>
-            <ThemedText type="smallBold" style={{ color: theme.accent }}>
-              {t.profile.signOut}
-            </ThemedText>
-          </Pressable>
-
-          <Pressable analyticsId="app_profile_settings.pressable.8"
-            onPress={confirmDelete}
-            disabled={deleting}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: deleting, busy: deleting }}
-            style={[styles.action, { borderColor: theme.accent, opacity: deleting ? 0.55 : 1 }]}>
-            <ThemedText type="smallBold" style={{ color: theme.accent }}>
-              {deleting ? t.profile.deleting : t.profile.deleteAccount}
-            </ThemedText>
-          </Pressable>
+          <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>계정 관리</ThemedText>
+          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+            {me.photoUri && <><Pressable analyticsId="app_profile_settings.pressable.6" onPress={() => { play('selection'); removePhoto(); }} accessibilityRole="button" style={({ pressed }) => [styles.navRow, pressed && { backgroundColor: theme.backgroundSelected }]}>
+              <ThemedText type="smallBold" style={styles.navCopy}>{t.profile.removePhoto}</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText>
+            </Pressable><View style={[styles.divider, { backgroundColor: theme.line }]} /></>}
+            <Pressable analyticsId="app_profile_settings.pressable.7" onPress={() => { play('selection'); confirmSignOut(); }} accessibilityRole="button" style={({ pressed }) => [styles.navRow, pressed && { backgroundColor: theme.backgroundSelected }]}>
+              <ThemedText type="smallBold" style={styles.navCopy}>{t.profile.signOut}</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText>
+            </Pressable>
+            <View style={[styles.divider, { backgroundColor: theme.line }]} />
+            <Pressable analyticsId="app_profile_settings.pressable.8" onPress={() => { play('selection'); confirmDelete(); }} disabled={deleting} accessibilityRole="button" accessibilityState={{ disabled: deleting, busy: deleting }} style={({ pressed }) => [styles.navRow, { opacity: deleting ? 0.55 : 1 }, pressed && { backgroundColor: theme.backgroundSelected }]}>
+              <ThemedText type="smallBold" style={[styles.navCopy, { color: theme.accent }]}>{deleting ? t.profile.deleting : t.profile.deleteAccount}</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText>
+            </Pressable>
+          </View>
 
           <ThemedText type="small" themeColor="textSecondary" style={styles.version}>
-            {t.profile.version}
+            글링 {Constants.expoConfig?.version ?? '1.0.0'}
           </ThemedText>
         </ScrollView>
       </SafeAreaView>
@@ -197,10 +188,12 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center' },
   safeArea: { flex: 1, width: '100%', maxWidth: MaxContentWidth },
-  content: { padding: Spacing.three, paddingBottom: TabBarHeight + Spacing.four, gap: Spacing.three },
-  card: { borderWidth: 1, borderRadius: 12 },
+  content: { padding: Spacing.three, paddingBottom: TabBarHeight + Spacing.four, gap: Spacing.two },
+  sectionTitle: { marginTop: Spacing.three, marginLeft: Spacing.one },
+  card: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, overflow: 'hidden' },
   row: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three, padding: Spacing.three },
-  divider: { height: 1, marginHorizontal: Spacing.three },
-  action: { borderWidth: 1, borderRadius: 12, padding: Spacing.three },
+  navRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
+  navCopy: { flex: 1 },
+  divider: { height: StyleSheet.hairlineWidth, marginHorizontal: Spacing.three },
   version: { textAlign: 'center', marginTop: Spacing.three },
 });

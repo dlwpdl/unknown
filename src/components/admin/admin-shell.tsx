@@ -9,10 +9,12 @@ import { Colors, Spacing } from '@/constants/theme';
 import { ADMIN_COUNTED_SECTIONS, ADMIN_NAV_GROUPS, ADMIN_SECTIONS, adminOptionKeys, type AdminSection } from '@/lib/admin';
 import { isCompactAdminWidth } from '@/lib/admin-layout';
 import type { AdminCounts } from '@/lib/admin-data';
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import './admin.css';
 
 const sectionIcons = {
   analytics: { ios: 'chart.bar', web: 'bar_chart' },
+  ticketmaster: { ios: 'ticket', web: 'confirmation_number' },
   overview: { ios: 'square.grid.2x2', web: 'dashboard' },
   safety: { ios: 'shield', web: 'shield' },
   alerts: { ios: 'exclamationmark.bubble', web: 'report' },
@@ -46,6 +48,7 @@ export function AdminShell({
   children: ReactNode;
 }) {
   const compact = isCompactAdminWidth(useWindowDimensions().width);
+  const { play } = useInteractionFeedback();
   const [menuOpen, setMenuOpen] = useState(false);
   const activeItem = ADMIN_SECTIONS.find((entry) => entry.id === activeSection) ?? { id: activeSection, label: '운영 콘솔' };
 
@@ -59,7 +62,7 @@ export function AdminShell({
     return (
       <Pressable
         key={item.id}
-        onPress={() => { onSection(item.id); setMenuOpen(false); }}
+        onPress={() => { play('selection'); onSection(item.id); setMenuOpen(false); }}
         accessibilityRole="tab"
         accessibilityLabel={badge != null ? `${item.label} ${badge}건` : item.label}
         aria-selected={active}

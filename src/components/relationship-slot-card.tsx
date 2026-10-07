@@ -3,13 +3,16 @@ import { SymbolView } from 'expo-symbols';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
-import type { MembershipSnapshot } from '@/lib/membership';
+import { MEMBERSHIP_LIMITS, type MembershipSnapshot } from '@/lib/membership';
 
 type Kind = 'meetup' | 'conversation';
 const tierNames = { free: '베이직', plus: '플러스', premium: '프리미엄' };
+// 서버 한도가 바뀌면 여기서 같이 따라간다. 표에 없는 값은 숫자를 지어내지 않고 '확인 필요'로 둔다.
+const knownLimits = (kind: Kind): number[] => (['free', 'plus', 'premium'] as const)
+  .map((tier) => MEMBERSHIP_LIMITS[tier][kind === 'meetup' ? 'meetups' : 'conversations']);
 
 export function relationshipSlotData(membership: MembershipSnapshot | null, kind: Kind) {
   if (!membership) return null;
@@ -17,7 +20,7 @@ export function relationshipSlotData(membership: MembershipSnapshot | null, kind
     ? [membership.meetupsUsed, membership.meetupSlotsLocked, membership.meetupSlotsAvailable, membership.meetupLimit, membership.meetupUnlocksAt] as const
     : [membership.conversationsUsed, membership.conversationSlotsLocked, membership.conversationSlotsAvailable, membership.conversationLimit, membership.conversationUnlocksAt] as const;
   if (![active, locked, available, limit].every((value) => Number.isInteger(value) && value >= 0)
-    || ![3, 5, 10].includes(limit) || available !== Math.max(0, limit - active - locked)) return null;
+    || !knownLimits(kind).includes(limit) || available !== Math.max(0, limit - active - locked)) return null;
   const unlockAt = locked > 0 ? unlocks?.filter((value) => Number.isFinite(Date.parse(value))).sort((a, b) => Date.parse(a) - Date.parse(b))[0] : undefined;
   return { active, locked, available, limit, unlockAt, overLimit: active + locked > limit };
 }
@@ -35,7 +38,7 @@ export function RelationshipSlotCard({ kind, membership, loading = false, onMemb
     : `${title}, ${unknown}`;
   const colors = { active: theme.accent, locked: theme.navy };
 
-  return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={[styles.card, Depth.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
     <View style={styles.content}>
       <View style={styles.header}>
         <ThemedText type="smallBold">{title}</ThemedText>
@@ -70,7 +73,7 @@ export function RelationshipSlotCard({ kind, membership, loading = false, onMemb
 }
 
 const styles = StyleSheet.create({
-  card: { borderWidth: 1, borderRadius: 12, overflow: 'hidden' },
+  card: { borderWidth: 1, borderRadius: 12 },
   content: { padding: Spacing.three, gap: Spacing.two },
   header: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
   tier: { borderRadius: 6, paddingHorizontal: Spacing.two, paddingVertical: Spacing.half },
@@ -84,5 +87,5 @@ const styles = StyleSheet.create({
   tabular: { fontVariant: ['tabular-nums'] },
   unlock: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, marginTop: Spacing.two },
   flex: { flexShrink: 1 },
-  action: { minHeight: 44, paddingVertical: Spacing.two, paddingHorizontal: Spacing.three, borderTopWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
+  action: { minHeight: 44, paddingVertical: Spacing.two, paddingHorizontal: Spacing.three, borderTopWidth: 1, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
 });

@@ -57,6 +57,31 @@ test('written draft can be polished without a photo', async () => {
   assert.equal(sent.input[0].content.length, 1);
 });
 
+test('event meetup request creates an invitation from the seeded festival instead of polishing boilerplate', async () => {
+  let handler, sent;
+  const source = ts.transpileModule(fs.readFileSync(new URL('../supabase/functions/draft-post/index.ts', import.meta.url), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS },
+  }).outputText;
+  vm.runInNewContext(source, {
+    exports: {}, Request, Response, console,
+    Deno: { serve: fn => { handler = fn; }, env: { get: () => 'test-value' } },
+    require: () => ({ createClient: () => ({
+      auth: { getUser: async () => ({ data: { user: { id: 'member' } } }) },
+      from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { ai_safety_consent_at: '2026-09-11' } }) }) }) }),
+      rpc: async () => ({}),
+    }) }),
+    fetch: async (_url, options) => {
+      sent = JSON.parse(options.body);
+      return Response.json({ output: [{ content: [{ type: 'output_text', text: JSON.stringify({ categorySlug: 'meetup', title: '함께 가요', body: '페스티벌 함께 가실 분을 찾아요.', hashtags: [] }) }] }] });
+    },
+  });
+  const input = { cityName: '밴쿠버', selectedCategory: 'meetup', intent: 'event_meetup', titleHint: 'PLUM VALLEY 같이 가요', bodyHint: 'PLUM VALLEY, 함께 가실 분을 찾아요.' };
+  const response = await handler(new Request('https://example.test/draft-post', { method: 'POST', headers: { Authorization: 'Bearer test' }, body: JSON.stringify(input) }));
+  assert.equal(response.status, 200);
+  assert.equal(JSON.parse(sent.input[0].content[0].text).mode, 'create_event_meetup');
+  assert.ok(sent.instructions.includes('새 모임 초안'), '행사 모임 전용 지시가 있어야 한다');
+});
+
 test('초안 본문은 쓰레드 말투로 고정되고, 작성자 원고 다듬기는 말투를 바꾸지 않는다', async () => {
   let handler, sent;
   const source = ts.transpileModule(fs.readFileSync(new URL('../supabase/functions/draft-post/index.ts', import.meta.url), 'utf8'), {

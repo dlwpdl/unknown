@@ -5,6 +5,7 @@ import { SymbolView } from 'expo-symbols';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { GlassSurface } from '@/components/glass-surface';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
@@ -17,18 +18,21 @@ export function ProfileAvatarButton() {
   const { isAuthed, me } = useAuth();
   const { play } = useInteractionFeedback();
   return (
+    <GlassSurface tone="control" interactive style={styles.glass}>
     <Pressable analyticsId="components_profile-avatar-button.pressable.1" onPress={() => { play('selection'); router.push('/profile'); }} accessibilityRole="button" accessibilityLabel={t.tabs.profile}
-      style={({ pressed }) => [styles.button, pressed && { opacity: 0.65 }]}>
+      style={({ pressed }) => [styles.button, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
       {isAuthed && me.photoUri
         ? <Image source={{ uri: me.photoUri }} style={styles.avatar} contentFit="cover" accessible={false} />
         : isAuthed
           ? <View style={[styles.avatar, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{me.nickname[0]}</ThemedText></View>
           : <SymbolView name={{ ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} size={24} tintColor={theme.text} />}
     </Pressable>
+    </GlassSurface>
   );
 }
 
 const styles = StyleSheet.create({
-  button: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  glass: { borderRadius: 22 },
+  button: { minWidth: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   avatar: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
 });

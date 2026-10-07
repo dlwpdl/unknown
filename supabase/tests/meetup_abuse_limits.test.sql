@@ -4,6 +4,9 @@ insert into auth.users(id,email)
 select ('65000000-0000-0000-0000-'||lpad(n::text,12,'0'))::uuid,'limits65-'||n||'@example.test' from generate_series(1,8)n;
 insert into public.profiles(id,nickname,city_id,terms_accepted_at,privacy_accepted_at,ai_safety_consent_at,consent_version)
 select id,'제한검증'||right(id::text,2),'vancouver',now(),now(),now(),'test' from auth.users where id::text like '65000000-%';
+-- The requester needs room for three approved meetups; the free tier only holds two.
+select public.apply_membership_snapshot('65000000-0000-0000-0000-000000000008',
+  jsonb_build_array(jsonb_build_object('tier','premium','expires_at',now()+interval '30 days','product_id','premium','store','app_store','will_renew',true)),now());
 insert into public.posts(id,author_id,city_id,tag_id,title,body,posted_on,room_preview)
 select ('65000000-0000-0000-0001-'||lpad(n::text,12,'0'))::uuid,
  ('65000000-0000-0000-0000-'||lpad(n::text,12,'0'))::uuid,'vancouver',1,'테스트 모임','모임 내용',current_date,'{"capacity":8}' from generate_series(1,6)n;

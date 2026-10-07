@@ -18,14 +18,14 @@ function loadRoom(userId = 'recipient', messagesLoaded = false) {
   const subscriptions = [];
   let messageReads = 0;
   const channel = { on(_event, filter) { subscriptions.push(filter.table); return this; }, subscribe() { return this; } };
-  let stateIndex = 0;
-  const react = { useState: initial => [stateIndex++ === 3 && messagesLoaded ? false : typeof initial === 'function' ? initial() : initial, () => {}],
-    useRef: value => ({ current: value }), useCallback: fn => fn, useEffect: fn => effects.push(fn), useLayoutEffect: fn => fn() };
+  const react = { useState: initial => [initial === true && messagesLoaded ? false : typeof initial === 'function' ? initial() : initial, () => {}],
+    useRef: value => ({ current: value }), useCallback: fn => fn, useMemo: fn => fn(), useEffect: fn => effects.push(fn), useLayoutEffect: fn => fn() };
   const native = new Proxy({ StyleSheet: { create: value => value }, Platform: { OS: 'ios' }, AppState: { addEventListener: () => ({ remove() {} }) } }, { get: (target, key) => target[key] ?? key });
   vm.runInNewContext(source, { exports, require(name) {
     if (name === 'react') return react;
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'react-native') return native;
+    if (name === 'react-native-reanimated') return { useReducedMotion: () => false };
     if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ bottom: 0 }) };
     if (name === '@/i18n/ko') return { t, count };
     if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: true, me: { id: userId, nickname: '나' } }) };
@@ -33,7 +33,8 @@ function loadRoom(userId = 'recipient', messagesLoaded = false) {
     if (name === '@/hooks/use-content-visibility') return { useContentVisibility: () => () => false };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
     if (name === '@/lib/supabase') return { supabase: { channel: () => channel, removeChannel() {} } };
-    if (name === '@/lib/community-data') return { loadConversationMessages: async () => { messageReads++; return []; } };
+    if (name === '@/lib/community-data') return { loadConversationMessages: async () => { messageReads++; return []; }, loadChatReadPosition: async () => null,
+      markChatRead: async () => {}, loadMessageReactions: async () => new Map(), setMessageReaction: async () => 1 };
     if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, five: 32 } };
     return {};
   } });

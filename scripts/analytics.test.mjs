@@ -7,6 +7,8 @@ test('traffic records only named app surfaces without identifiers, search text o
   assert.equal(analyticsScreen('/profile/membership'), 'membership');
   assert.equal(analyticsScreen('/gling/chat'), 'chat');
   assert.equal(analyticsScreen('/'), 'feed');
+  assert.equal(analyticsScreen('/events'), 'events');
+  assert.equal(analyticsScreen('/events/G5vYZabc?ticket=private'), 'event-detail');
   for (const path of ['/admin', '/admin?secret=x', '/auth/callback', '/privacy', '/unknown/path']) {
     assert.equal(analyticsScreen(path), null);
   }

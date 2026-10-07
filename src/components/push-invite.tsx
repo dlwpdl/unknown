@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useReducedMotion } from 'react-native-reanimated';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 
 import { ThemedText } from '@/components/themed-text';
@@ -10,7 +11,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { loadNotificationPreferences, saveNotificationPreferences, shouldInvitePush } from '@/lib/notification-preferences';
+import { saveNotificationPreferences, shouldInvitePush } from '@/lib/notification-preferences';
 import { pushConfigured, pushPermissionGranted, pushPermissionUndetermined, registerPushDevice } from '@/lib/push-notifications';
 import { supabase } from '@/lib/supabase';
 
@@ -28,6 +29,7 @@ export function PushInvite() {
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const insets = useSafeAreaInsets();
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     let active = true;
@@ -41,10 +43,9 @@ export function PushInvite() {
         if (permissionGranted) return;
         // 이미 시스템 창에서 거절한 기기라면 다시 물어도 창이 뜨지 않는다.
         if (!await pushPermissionUndetermined()) return;
-        const preferences = await loadNotificationPreferences(supabase);
         if (!shouldInvitePush({
           authed: isAuthed, configured: pushConfigured, alreadyAsked: false,
-          permissionGranted, pushEnabled: preferences.push_enabled,
+          permissionGranted,
         })) return;
         if (active) setVisible(true);
       } catch {
@@ -54,32 +55,33 @@ export function PushInvite() {
     return () => { active = false; };
   }, [isAuthed, me.id]);
 
-  const close = async () => {
+  const close = async (feedback = true) => {
+    if (feedback) play('selection');
     setVisible(false);
     await AsyncStorage.setItem(ASKED_KEY, new Date().toISOString()).catch(() => {});
   };
 
   const allow = async () => {
     if (busy || !me.id) return;
+    play('selection');
     setBusy(true);
     try {
       // 여기서 처음으로 진짜 iOS 창이 뜬다.
       const granted = await registerPushDevice(supabase, me.id, true);
       if (granted) {
         await saveNotificationPreferences(supabase, { push_enabled: true });
-        play('selection');
       }
     } catch {
       // 실패해도 설정 화면에서 다시 켤 수 있다.
     } finally {
       setBusy(false);
-      await close();
+      await close(false);
     }
   };
 
   if (!visible) return null;
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={() => void close()}>
+    <Modal visible transparent animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => void close()}>
       <View style={styles.backdrop}>
         <Pressable analyticsId="components_push-invite.pressable.1" style={StyleSheet.absoluteFill} onPress={() => void close()} accessibilityRole="button" accessibilityLabel="닫기" />
         <View style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.three) + Spacing.two }]}>
@@ -87,14 +89,14 @@ export function PushInvite() {
             <SymbolView name={{ ios: 'bell.badge', android: 'notifications_active', web: 'notifications_active' }} size={22} tintColor={theme.accent} />
           </View>
           <ThemedText type="smallBold" style={styles.title}>소식을 놓치지 않게 해드릴까요?</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary" style={styles.lead}>이 세 가지만 보냅니다.</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.lead}>받고 싶은 소식을 알림 설정에서 고를 수 있어요.</ThemedText>
           <View style={styles.lines}>
             <Line symbol={{ ios: 'bubble.left', android: 'chat_bubble', web: 'chat_bubble' }}
-              text="내 글의 댓글과 답글" hint="누가 대답했는지 바로 알 수 있어요" />
+              text="내 글의 좋아요·댓글·답글" hint="누가 반응했는지 바로 알 수 있어요" />
             <Line symbol={{ ios: 'person.2', android: 'group', web: 'group' }}
               text="모임 신청과 승인, 새 메시지" hint="상대를 기다리게 두지 않아요" />
             <Line symbol={{ ios: 'flame', android: 'local_fire_department', web: 'local_fire_department' }}
-              text="내 도시에서 지금 뜨는 글" hint="하루 최대 3번, 밤 10시~아침 8시에는 보내지 않아요" />
+              text="내 지역의 새 글과 인기 소식" hint="관심사와 지역에 맞는 알림을 선택할 수 있어요" />
           </View>
           <Pressable analyticsId="components_push-invite.pressable.2" onPress={() => void allow()} disabled={busy} accessibilityRole="button"
             accessibilityState={{ disabled: busy, busy }}

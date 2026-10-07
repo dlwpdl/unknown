@@ -82,8 +82,8 @@ test('account deletion removes only the authenticated billing customer and prese
 
 test('membership plans match the approved activity limits', () => {
   assert.deepEqual(MEMBERSHIP_LIMITS, {
-    free: { posts: 1, meetups: 2, conversations: 2 },
-    plus: { posts: 2, meetups: 4, conversations: 4 },
-    premium: { posts: 3, meetups: 7, conversations: 7 },
+    free: { meetups: 2, conversations: 2 },
+    plus: { meetups: 4, conversations: 4 },
+    premium: { meetups: 7, conversations: 7 },
   });
 });

@@ -13,14 +13,17 @@ function panel(opened = []) {
   }).outputText;
   vm.runInNewContext(source, { exports, __DEV__: true, process: { env: {} }, require(name) {
     if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
-    if (name === 'react') return { useState(initial) { const i = index++; if (!(i in states)) states[i] = initial; return [states[i], value => { states[i] = typeof value === 'function' ? value(states[i]) : value; }]; } };
+    if (name === 'react') return { useCallback: fn => fn, useState(initial) { const i = index++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = typeof value === 'function' ? value(states[i]) : value; }]; } };
+    if (name === 'expo-router') return { useFocusEffect() {} };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if ((name === 'react-native' || name === '@/components/analytics-controls')) return { Platform: { OS: 'ios' }, StyleSheet: { create: v => v }, useColorScheme: () => 'light', ...Object.fromEntries(['View','Pressable','ScrollView','TextInput','KeyboardAvoidingView'].map(k => [k,k])) };
+    if (name === 'react-native-reanimated') return { useReducedMotion: () => false };
+    if ((name === 'react-native' || name === '@/components/analytics-controls')) return { Platform: { OS: 'ios' }, StyleSheet: { create: v => v }, Animated: { Value: class { interpolate() { return 1; } }, View: 'AnimatedView' }, ...Object.fromEntries(['View','Pressable','ScrollView','TextInput','KeyboardAvoidingView'].map(k => [k,k])) };
     if (name === 'expo-linking') return { openURL: async url => { opened.push(url); } };
     if (name === 'expo-font') return { useFonts: () => [true] };
     if (name === 'expo-apple-authentication') return { AppleAuthenticationButton: 'AppleButton', AppleAuthenticationButtonType: { SIGN_IN: 0 }, AppleAuthenticationButtonStyle: { WHITE: 0, BLACK: 1 } };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
-    if (name === '@/constants/theme') return { Spacing: {} };
+if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
+    if (name === '@/constants/theme') return { Colors: { dark: {} }, Spacing: {}, Depth: { card: {}, control: {} } };
     if (name === '@/i18n/ko') return { t };
     return {};
   } });
@@ -73,6 +76,7 @@ test('authentication never records signup consent on behalf of the user', async 
       if (name === '@/lib/kakao-auth') return { canUseDevPasswordLogin: () => true, getOAuthCallbackPath: () => '', getKakaoAuthSessionUrl: x => x, getOAuthCode: () => 'test' };
       if (name === '@/lib/supabase') return { supabase: client, signInReviewAccount: success, signInAdminAccount: success };
       if (name === '@/lib/admin') return { isAdminRole: () => false };
+      if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
       if (name === '@/i18n/ko') return { t };
       if (name === '@/constants/theme') return { Spacing: {} };
       return {};

@@ -3,15 +3,17 @@ import { useLocalSearchParams } from 'expo-router';
 import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { AdminAnalyticsView } from '@/components/admin/admin-analytics';
+import { AdminTicketmasterView } from '@/components/admin/admin-ticketmaster';
 import { AdminCommandPalette } from '@/components/admin/admin-command-palette';
 import { AdminSectionView } from '@/components/admin/admin-section';
 import { AdminShell } from '@/components/admin/admin-shell';
+import { AdminSignupAlerts } from '@/components/admin/admin-signup-alerts';
 import { AdminUserDetail } from '@/components/admin/admin-user-detail';
 import { LoginPanel } from '@/components/login-panel';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
-import { canUseLocalAdminPreview, type AdminSection } from '@/lib/admin';
+import { initialAdminSection, type AdminSection } from '@/lib/admin';
 import {
   ADMIN_PAGE_SIZE,
   getLocalAdminDashboard,
@@ -28,8 +30,8 @@ import { supabase } from '@/lib/supabase';
 
 export function AdminScreen() {
   const { safety, alert, section: requestedSection } = useLocalSearchParams<{ safety?: string; alert?: string; section?: string }>();
-  const { isAuthed, isAdmin, isAuthLoading, authError, signInAdmin, signInGoogle, signOut } = useAuth();
-  const [section, setSection] = useState<AdminSection>(requestedSection === 'reports' ? 'reports' : alert ? 'alerts' : safety ? 'safety' : 'analytics');
+  const { isAuthed, isAdmin, isAuthLoading, authError, signInAdmin, signInGoogle, signOut, me } = useAuth();
+  const [section, setSection] = useState<AdminSection>(initialAdminSection(requestedSection, alert, safety));
   const [analyticsRefresh, setAnalyticsRefresh] = useState(0);
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,13 +44,9 @@ export function AdminScreen() {
   const [exhausted, setExhausted] = useState<Set<AdminSection>>(new Set());
   const [lastLoadedAt, setLastLoadedAt] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [localPreview, setLocalPreview] = useState(false);
-  const localPreviewAllowed = canUseLocalAdminPreview(
-    __DEV__,
-    typeof location === 'undefined' ? '' : location.hostname,
-  );
+  const localPreview = false;
   const hasAdminAccess = isAdmin || localPreview;
-  const needsOperations = section !== 'analytics';
+  const needsOperations = section !== 'analytics' && section !== 'ticketmaster';
 
   const refresh = useCallback(async () => {
     if (!hasAdminAccess) return;
@@ -128,7 +126,7 @@ export function AdminScreen() {
       return;
     }
     // 뜨는 글 알림 패널은 자체 RPC로 불러오므로 더 보기 대상이 아니다.
-    if (!data || section === 'overview' || section === 'analytics' || section === 'trending' || section === 'errors' || exhausted.has(section)) return;
+    if (!data || section === 'overview' || section === 'analytics' || section === 'ticketmaster' || section === 'trending' || section === 'errors' || exhausted.has(section)) return;
     const offset = section === 'reports'
       ? data.reports.length
       : section === 'safety'
@@ -176,7 +174,7 @@ export function AdminScreen() {
 
   if (isAuthLoading) return <CenteredState title="관리자 세션을 확인하는 중입니다." />;
   if (!isAuthed && !localPreview) {
-    return <LoginPanel reason={localPreviewAllowed ? '로컬 관리자 미리보기입니다. 버튼을 누르면 바로 열립니다.' : '관리자 계정으로 로그인해주세요.'} onKakao={localPreviewAllowed ? () => setLocalPreview(true) : undefined} onGoogle={localPreviewAllowed ? undefined : signInGoogle} onAdminLogin={signInAdmin} loading={isAuthLoading} error={authError} />;
+    return <LoginPanel reason="관리자 계정으로 로그인해주세요." onGoogle={signInGoogle} onAdminLogin={signInAdmin} loading={isAuthLoading} error={authError} />;
   }
   if (!isAdmin && !localPreview) {
     return <CenteredState title="관리자 권한이 없습니다." body="현재 계정에는 admin 역할이 지정되지 않았습니다." action="다른 계정으로 로그인" onAction={() => void signOut()} />;
@@ -186,11 +184,12 @@ export function AdminScreen() {
   }
 
   return (
-    <AdminShell activeSection={section} counts={data?.counts ?? { alertsOpen: 0, reports: 0, openReports: 0, profiles: 0, posts: 0, messages: 0, safetyPending: 0, safetyHigh: 0 }} busy={needsOperations && loading} lastUpdated={lastLoadedAt} onSearch={() => setPaletteOpen(true)} onSection={(next) => { if (!needsOperations && next !== 'analytics') { setLoading(true); setError(null); } setSection(next); }} onRefresh={() => void refresh()} onSignOut={localPreview ? () => { setLocalPreview(false); setData(null); } : () => void signOut()}>
+    <AdminShell activeSection={section} counts={data?.counts ?? { alertsOpen: 0, reports: 0, openReports: 0, profiles: 0, posts: 0, messages: 0, safetyPending: 0, safetyHigh: 0 }} busy={needsOperations && loading} lastUpdated={lastLoadedAt} onSearch={() => setPaletteOpen(true)} onSection={(next) => { if (!needsOperations && next !== 'analytics') { setLoading(true); setError(null); } setSection(next); }} onRefresh={() => void refresh()} onSignOut={() => void signOut()}>
+      {isAdmin && <AdminSignupAlerts key={me.id} userId={me.id} onUser={setSelectedUserId} />}
       {localPreview && <View accessibilityRole="alert" style={styles.preview}><ThemedText type="smallBold">로컬 미리보기 · 실제 운영 데이터와 권한은 변경되지 않습니다.</ThemedText></View>}
       {!!moderationResult && needsOperations && <View accessibilityLiveRegion="polite" style={styles.preview}><ThemedText>{moderationResult}</ThemedText></View>}
       {!!error && needsOperations && <View accessibilityRole="alert" style={styles.error}><ThemedText style={styles.errorText}>{error}</ThemedText></View>}
-      {section === 'analytics' ? <AdminAnalyticsView localPreview={localPreview} onUser={setSelectedUserId} refreshSignal={analyticsRefresh} /> : data && <AdminSectionView
+      {section === 'analytics' ? <AdminAnalyticsView localPreview={localPreview} onUser={setSelectedUserId} refreshSignal={analyticsRefresh} /> : section === 'ticketmaster' ? <AdminTicketmasterView localPreview={localPreview} refreshSignal={analyticsRefresh} /> : data && <AdminSectionView
         key={section}
         section={section}
         data={data}
@@ -216,13 +215,13 @@ export function AdminScreen() {
         }}
         onClose={() => setSelectedUserId(null)}
       />
-      <AdminCommandPalette
+      {paletteOpen && <AdminCommandPalette
         visible={paletteOpen}
         localPreview={localPreview}
         onClose={() => setPaletteOpen(false)}
         onSection={(next) => { if (!needsOperations && next !== 'analytics') { setLoading(true); setError(null); } setSection(next); }}
         onUser={(userId) => setSelectedUserId(userId)}
-      />
+      />}
     </AdminShell>
   );
 }

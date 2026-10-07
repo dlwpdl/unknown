@@ -52,11 +52,11 @@ body:has(.site-page) { margin: 0; overflow-y: auto !important; }
 .site-page .site-lead { font-size: 1.125rem; line-height: 1.8; }
 .site-city-switch { display: inline-flex; gap: 0.25rem; padding: 0.25rem; background: var(--surface); border-radius: 2rem; }
 .site-city-switch button { min-height: 44px; padding: 0.5rem 1.25rem; border: 0; border-radius: 2rem; color: var(--muted); background: transparent; font-weight: 600; }
-.site-city-switch button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.site-city-switch button[aria-pressed="true"] { background: var(--accent-fill); color: var(--accent-ink); }
 .site-city-switch button:hover { box-shadow: inset 0 0 0 1px var(--accent); }
 .site-city-line { font-size: 0.9375rem; min-height: 3.25em; max-width: 32rem; }
 .site-button-row { display: flex; flex-wrap: wrap; align-items: center; gap: 1.5rem; }
-.site-page .site-primary-button { display: inline-flex; align-items: center; justify-content: center; gap: 1.5rem; min-height: 52px; padding: 0.875rem 1.5rem; border-radius: 2rem; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.site-page .site-primary-button { display: inline-flex; align-items: center; justify-content: center; gap: 1.5rem; min-height: 52px; padding: 0.875rem 1.5rem; border-radius: 2rem; background: var(--accent-fill); color: var(--accent-ink); font-weight: 600; }
 .site-page .site-primary-button:hover { text-decoration: none; filter: brightness(0.92); }
 .site-primary-button:active, .site-city-switch button:active { transform: scale(0.98); }
 .site-text-link { display: inline-flex; align-items: center; min-height: 44px; gap: 1rem; font-size: 0.9375rem; font-weight: 600; }

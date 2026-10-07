@@ -2,6 +2,7 @@ import { behavior } from './behavior-analytics.ts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { hideContent } from './content-visibility.ts';
+import { isThumbPath, MAX_IMAGE_BYTES, MAX_POST_IMAGES, thumbPathFor } from './image-upload.ts';
 
 import { attachSignedPostImages, loadPublicPost, mapPublicFeed, type FeedCursor, type PublicCommentRow, type PublicFeedRow } from './feed-data.ts';
 import type { DailyQuota, ListingStatus, Post, PostComment, PostKind, RoomPreview, Tag } from './types.ts';
@@ -12,7 +13,6 @@ const IMAGE_EXTENSIONS: Record<string, string> = {
   'image/webp': 'webp',
 };
 
-export const POST_QUOTA_CHANGED_EVENT = 'postQuotaChanged';
 export const MEETUPS_CHANGED_EVENT = 'meetupsChanged';
 
 export function isContentRejected(error: unknown) {
@@ -24,11 +24,11 @@ export function isContentRejected(error: unknown) {
 
 export function getCommunityActionError(error: unknown) {
   const message = typeof error === 'object' && error !== null && 'message' in error ? String(error.message) : '';
-  return (['MEETUP_JOIN_RESTRICTED', 'MEETUP_HOST_RESTRICTED', 'CHILLING_CREATE_LIMIT', 'REQUESTER_MEETUP_LIMIT_REACHED', 'MEETUP_LIMIT_REACHED', 'MEETUP_CLOSED', 'DAILY_CONVERSATION_LIMIT_REACHED', 'OTHER_CONVERSATION_LIMIT_REACHED', 'CONVERSATION_LIMIT_REACHED', 'REQUEST_COOLDOWN', 'PENDING_REQUEST_LIMIT', 'REQUEST_EXPIRED', 'CONVERSATION_NOT_ACTIVE', 'REQUEST_ALREADY_RESOLVED', 'RATE_LIMITED', 'LISTING_LIMIT_REACHED', 'DUPLICATE_LISTING', 'BUMP_COOLDOWN', 'LISTING_NOT_OPEN'] as const)
+  return (['MEETUP_JOIN_RESTRICTED', 'MEETUP_HOST_RESTRICTED', 'CHILLING_CREATE_LIMIT', 'REQUESTER_MEETUP_LIMIT_REACHED', 'MEETUP_LIMIT_REACHED', 'MEETUP_CLOSED', 'DAILY_CONVERSATION_LIMIT_REACHED', 'OTHER_CONVERSATION_LIMIT_REACHED', 'CONVERSATION_LIMIT_REACHED', 'REQUEST_COOLDOWN', 'PENDING_REQUEST_LIMIT', 'REQUEST_EXPIRED', 'CONVERSATION_NOT_ACTIVE', 'REQUEST_ALREADY_RESOLVED', 'RATE_LIMITED', 'LISTING_LIMIT_REACHED', 'DUPLICATE_LISTING', 'DUPLICATE_POST', 'BUMP_COOLDOWN', 'LISTING_NOT_OPEN'] as const)
     .find((code) => message.includes(code)) ?? null;
 }
 
-export type PostDraftImage = { base64: string; mimeType: string };
+export type PostDraftImage = { base64: string; mimeType: string; thumbBase64?: string; width?: number; height?: number };
 export type ReportTarget = 'user' | 'post' | 'comment' | 'message';
 export type ReportReason = 'spam' | 'harassment' | 'hate' | 'sexual' | 'privacy' | 'other';
 
@@ -38,6 +38,7 @@ export type ConversationPreview = {
   status: 'pending' | 'active' | 'ended' | 'rejected' | 'cancelled';
   requesterId: string | null;
   groupPostId: string | null;
+  meetupCategory: string | null;
   title: string;
   isGroupHost: boolean;
   otherUser: { id: string; nickname: string; verificationLevel: number };
@@ -52,6 +53,11 @@ export type ChatMessageRecord = {
   body: string;
   created_at: string;
   sender_nickname: string | null;
+  kind?: 'text' | 'image' | 'location';
+  image_path?: string | null;
+  imageUrl?: string;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type AppNotification = {
@@ -62,6 +68,8 @@ export type AppNotification = {
   route: string | null;
   read_at: string | null;
   created_at: string;
+  /** 알림을 일으킨 사람(댓글·답글·요청 등). 시스템 안내는 null. */
+  actor_id?: string | null;
 };
 
 export type MeetupRequest = {
@@ -72,10 +80,10 @@ export type MeetupRequest = {
   status: 'pending' | 'approved' | 'rejected' | 'cancelled';
   created_at: string;
   requester: { nickname: string; verification_level: number } | null;
-  post: { title: string } | null;
+  post: { title: string; room?: RoomPreview | null } | null;
 };
 
-export type MyMeetup = { id: string; authorId: string; title: string; cityId: string; role: 'host' | 'approved' | 'pending'; conversationId: string | null };
+export type MyMeetup = { id: string; authorId: string; title: string; cityId: string; room: RoomPreview; role: 'host' | MeetupRequest['status']; conversationId: string | null };
 
 export type ProfileSummary = {
   cityId: string;
@@ -85,19 +93,64 @@ export type ProfileSummary = {
   meetups: number;
 };
 
-export function buildPostImagePath(userId: string, mimeType: string, stamp = Date.now()) {
+export function buildPostImagePath(userId: string, mimeType: string, stamp: number | string = Date.now()) {
   const extension = IMAGE_EXTENSIONS[mimeType];
   if (!extension) throw new Error('UNSUPPORTED_IMAGE_TYPE');
   return `${userId}/${stamp}.${extension}`;
 }
 
+export async function removePostImages(client: SupabaseClient, paths: string[]) {
+  const targets = [...new Set(paths.flatMap((path) => (isThumbPath(path) ? [path] : [path, thumbPathFor(path)])))];
+  if (targets.length) await client.storage.from('post-images').remove(targets).catch(() => {});
+}
+
+export type PostUpload = { path: string; base64: string; thumbBase64?: string; mimeType: string; width?: number; height?: number };
+export type UploadedMedia = { path: string; thumbPath?: string; width?: number; height?: number; bytes: number };
+
+export async function uploadPostMedia(client: SupabaseClient, uploads: PostUpload[]): Promise<UploadedMedia[]> {
+  const uploaded: string[] = [];
+  try {
+    const results: UploadedMedia[] = [];
+    for (const item of uploads) {
+      const bytes = decodeBase64(item.base64);
+      if (!bytes.byteLength || bytes.byteLength > MAX_IMAGE_BYTES) throw new Error('IMAGE_TOO_LARGE');
+      const result = await client.storage.from('post-images').upload(item.path, bytes, { contentType: item.mimeType, upsert: false });
+      if (result.error) throw result.error;
+      uploaded.push(item.path);
+      let thumbPath: string | undefined;
+      if (item.thumbBase64) {
+        const thumbBytes = decodeBase64(item.thumbBase64);
+        thumbPath = thumbPathFor(item.path);
+        const thumb = await client.storage.from('post-images').upload(thumbPath, thumbBytes, { contentType: item.mimeType, upsert: false });
+        if (thumb.error) throw thumb.error;
+        uploaded.push(thumbPath);
+      }
+      results.push({ path: item.path, thumbPath, width: item.width, height: item.height, bytes: bytes.byteLength });
+    }
+    return results;
+  } catch (error) {
+    if (uploaded.length) await client.storage.from('post-images').remove(uploaded).catch(() => {});
+    throw error;
+  }
+}
+
+export async function uploadPostImages(client: SupabaseClient, userId: string, images: PostDraftImage[]) {
+  if (images.length === 0) return [];
+  if (images.length > MAX_POST_IMAGES) throw new Error('TOO_MANY_IMAGES');
+  const batchStamp = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return uploadPostMedia(client, images.map((image, index) => ({
+    path: buildPostImagePath(userId, image.mimeType, `${batchStamp}-${index}`),
+    base64: image.base64,
+    thumbBase64: image.thumbBase64,
+    mimeType: image.mimeType,
+    width: image.width,
+    height: image.height,
+  })));
+}
+
 export async function uploadPostImage(client: SupabaseClient, userId: string, image: PostDraftImage) {
-  const path = buildPostImagePath(userId, image.mimeType);
-  const bytes = decodeBase64(image.base64);
-  if (!bytes.byteLength || bytes.byteLength > 5 * 1024 * 1024) throw new Error('IMAGE_TOO_LARGE');
-  const result = await client.storage.from('post-images').upload(path, bytes, { contentType: image.mimeType, upsert: false });
-  if (result.error) throw result.error;
-  return path;
+  const [media] = await uploadPostImages(client, userId, [image]);
+  return media?.path;
 }
 
 export async function createCommunityPost(
@@ -109,12 +162,13 @@ export async function createCommunityPost(
     title: string;
     body: string;
     hashtags: string[];
-    image?: PostDraftImage;
+    images?: PostDraftImage[];
     kind?: PostKind;
     price?: number | null;
   },
 ): Promise<{ id: string; post: Post | null }> {
-  const imagePath = input.image ? await uploadPostImage(client, input.userId, input.image) : null;
+  const media = input.images?.length ? await uploadPostImages(client, input.userId, input.images) : [];
+  const imagePaths = media.map(({ path }) => path);
 
   const created = await client.rpc('create_post', {
     p_city_id: input.cityId,
@@ -122,13 +176,13 @@ export async function createCommunityPost(
     p_title: input.title,
     p_body: input.body,
     p_hashtags: input.hashtags,
-    p_image_paths: imagePath ? [imagePath] : [],
+    p_image_paths: imagePaths,
     p_room_preview: null,
     p_kind: input.kind ?? 'story',
     p_price: input.kind === 'listing' ? input.price ?? null : null,
   });
   if (created.error) {
-    if (imagePath) await client.storage.from('post-images').remove([imagePath]);
+    await removePostImages(client, imagePaths);
     throw created.error;
   }
 
@@ -157,14 +211,6 @@ export async function setListingStatus(client: SupabaseClient, postId: string, s
   const result = await client.rpc('set_listing_status', { p_post_id: postId, p_status: status });
   if (result.error) throw result.error;
   return result.data as { status: ListingStatus; expiresAt: string };
-}
-
-export async function loadDailyQuota(client: SupabaseClient): Promise<DailyQuota> {
-  const result = await client.rpc('get_post_quota');
-  if (result.error) throw result.error;
-  const row = (result.data as { used_count: number; max_count: number }[] | null)?.[0];
-  if (!row) throw new Error('POST_QUOTA_NOT_FOUND');
-  return { used: row.used_count, max: row.max_count };
 }
 
 export async function togglePostReaction(
@@ -356,6 +402,38 @@ export async function sendDirectMessage(client: SupabaseClient, conversationId: 
   return result.data as string;
 }
 
+export async function loadChatReadPosition(client: SupabaseClient, conversationId: string) {
+  const result = await client.rpc('get_chat_read_position', { p_conversation_id: conversationId });
+  if (result.error) throw result.error;
+  return result.data as string | null;
+}
+
+export async function markChatRead(client: SupabaseClient, conversationId: string, messageId: string) {
+  const result = await client.rpc('mark_chat_read', { p_conversation_id: conversationId, p_message_id: messageId });
+  if (result.error) throw result.error;
+}
+
+export async function sendChatAttachment(client: SupabaseClient, conversationId: string,
+  attachment: { kind: 'image'; imagePath: string } | { kind: 'location'; latitude: number; longitude: number }) {
+  const result = await client.rpc('send_chat_attachment', {
+    p_conversation_id: conversationId, p_kind: attachment.kind,
+    p_image_path: attachment.kind === 'image' ? attachment.imagePath : null,
+    p_latitude: attachment.kind === 'location' ? attachment.latitude : null,
+    p_longitude: attachment.kind === 'location' ? attachment.longitude : null,
+  });
+  if (result.error) throw result.error;
+  return result.data as string;
+}
+
+export async function uploadChatImage(client: SupabaseClient, userId: string, conversationId: string, base64: string) {
+  const bytes = decodeBase64(base64);
+  if (!bytes.byteLength || bytes.byteLength > MAX_IMAGE_BYTES) throw new Error('IMAGE_TOO_LARGE');
+  const path = `${userId}/${conversationId}_${Date.now()}-${Math.random().toString(36).slice(2)}.webp`;
+  const result = await client.storage.from('chat-images').upload(path, bytes, { contentType: 'image/webp', upsert: false });
+  if (result.error) throw result.error;
+  return path;
+}
+
 export type ConversationFilter = 'all' | 'group' | 'direct' | 'requests';
 export type ConversationCursor = FeedCursor & { status: ConversationPreview['status'] };
 export type ConversationPage = {
@@ -389,12 +467,25 @@ export async function loadConversations(client: SupabaseClient, userId: string, 
   });
   if (result.error) throw result.error;
   const page = result.data as { items: Row[]; pending_count: number; cursor: ConversationCursor | null; selected: Row | null };
+  const groupIds = [...new Set([...page.items, page.selected].flatMap((row) => row?.group_post_id ? [row.group_post_id] : []))];
+  const categories = new Map<string, string>();
+  if (groupIds.length) {
+    // Category is saved on the meetup post; a metadata read must not hide the inbox.
+    try {
+      const { data } = await client.from('posts').select('id,room_preview').in('id', groupIds);
+      for (const post of data ?? []) {
+        const category = post.room_preview?.category;
+        if (typeof category === 'string') categories.set(post.id, category);
+      }
+    } catch { /* Titles still identify rooms when post metadata is unavailable. */ }
+  }
   const map = (row: Row): ConversationPreview => ({
     id: row.id,
     kind: row.kind,
     status: row.status,
     requesterId: row.requester_id,
     groupPostId: row.group_post_id,
+    meetupCategory: row.group_post_id ? categories.get(row.group_post_id) ?? null : null,
     title: row.title,
     isGroupHost: row.is_group_host,
     otherUser: { id: row.other_user_id, nickname: row.other_nickname, verificationLevel: row.other_verification_level },
@@ -416,8 +507,9 @@ export async function loadConversationMessages(client: SupabaseClient, conversat
   if (before) query = query.or(`created_at.lt.${before.createdAt},and(created_at.eq.${before.createdAt},id.lt.${before.id})`);
   const result = await query;
   if (result.error) throw result.error;
-  return ((result.data ?? []) as (Omit<ChatMessageRecord, 'sender_nickname'> & { sender: { nickname: string } | null })[])
+  const rows = ((result.data ?? []) as (Omit<ChatMessageRecord, 'sender_nickname'> & { sender: { nickname: string } | null })[])
     .map(({ sender, ...message }) => ({ ...message, sender_nickname: sender?.nickname ?? null })).reverse();
+  return attachSignedChatImages(client, rows);
 }
 
 export async function loadConversationMessagesByIds(client: SupabaseClient, conversationId: string, ids: string[]) {
@@ -427,8 +519,34 @@ export async function loadConversationMessagesByIds(client: SupabaseClient, conv
   const result = await client.from('messages').select('*,sender:profiles!messages_sender_id_fkey(nickname)')
     .eq('conversation_id', conversationId).in('id', unique);
   if (result.error) throw result.error;
-  return ((result.data ?? []) as (Omit<ChatMessageRecord, 'sender_nickname'> & { sender: { nickname: string } | null })[])
+  const rows = ((result.data ?? []) as (Omit<ChatMessageRecord, 'sender_nickname'> & { sender: { nickname: string } | null })[])
     .map(({ sender, ...message }) => ({ ...message, sender_nickname: sender?.nickname ?? null }));
+  return attachSignedChatImages(client, rows);
+}
+
+async function attachSignedChatImages(client: SupabaseClient, rows: ChatMessageRecord[]) {
+  const paths = [...new Set(rows.flatMap((row) => row.kind === 'image' && row.image_path ? [row.image_path] : []))];
+  if (!paths.length) return rows;
+  // An image outage should not hide the conversation or its report controls.
+  const signed = await client.storage.from('chat-images').createSignedUrls(paths, 3600).catch(() => null);
+  const urls = new Map((signed?.data ?? []).map((item) => [item.path, item.signedUrl]));
+  return rows.map((row) => ({ ...row, imageUrl: urls.get(row.image_path ?? '') ?? undefined }));
+}
+
+export type MessageReaction = { message_id: string; hearts: number; mine: boolean };
+
+export async function loadMessageReactions(client: SupabaseClient, messageIds: string[]) {
+  const ids = [...new Set(messageIds)].slice(0, 200);
+  if (ids.length === 0) return new Map<string, MessageReaction>();
+  const result = await client.rpc('get_message_reactions', { p_message_ids: ids });
+  if (result.error) throw result.error;
+  return new Map(((result.data ?? []) as MessageReaction[]).map((row) => [row.message_id, row]));
+}
+
+export async function setMessageReaction(client: SupabaseClient, messageId: string, reacted: boolean) {
+  const result = await client.rpc('set_message_reaction', { p_message_id: messageId, p_reacted: reacted });
+  if (result.error) throw result.error;
+  return typeof result.data === 'number' ? result.data : 0;
 }
 
 export function mergeChatMessages(previous: ChatMessageRecord[], next: ChatMessageRecord[], blocked = new Set<string>()) {
@@ -486,7 +604,7 @@ export async function loadMyMeetups(client: SupabaseClient, userId: string): Pro
       .not('room_preview', 'is', null).or('room_preview->>closed.is.null,room_preview->>closed.eq.false')
       .order('created_at', { ascending: false }),
     client.from('meetup_requests').select(`status,post:posts!meetup_requests_post_id_fkey(${fields})`)
-      .eq('requester_id', userId).in('status', ['approved', 'pending'])
+      .eq('requester_id', userId).in('status', ['approved', 'pending', 'rejected', 'cancelled'])
       .order('status').order('created_at', { ascending: false }),
     client.from('conversations').select('id,group_post_id').eq('kind', 'group').eq('status', 'active'),
   ]);
@@ -497,11 +615,12 @@ export async function loadMyMeetups(client: SupabaseClient, userId: string): Pro
   type Row = { id: string; author_id: string; title: string; city_id: string; status: string; room_preview: RoomPreview | null };
   const entries = [
     ...((owned.data ?? []) as unknown as Row[]).map((post) => ({ post, role: 'host' as const })),
-    ...((requested.data ?? []) as unknown as { post: Row | null; status: 'approved' | 'pending' }[])
+    ...((requested.data ?? []) as unknown as { post: Row | null; status: MeetupRequest['status'] }[])
       .map(({ post, status }) => ({ post, role: status })),
   ];
-  return entries.flatMap(({ post, role }) => post?.status === 'published' && post.room_preview && !post.room_preview.closed
-    ? [{ id: post.id, authorId: post.author_id, title: post.title, cityId: post.city_id, role, conversationId: role === 'pending' ? null : roomIds.get(post.id) ?? null }] : []);
+  entries.sort((a, b) => Number(a.role === 'rejected' || a.role === 'cancelled') - Number(b.role === 'rejected' || b.role === 'cancelled'));
+  return entries.flatMap(({ post, role }) => post?.status === 'published' && post.room_preview && (!post.room_preview.closed || role === 'rejected' || role === 'cancelled')
+    ? [{ id: post.id, authorId: post.author_id, title: post.title, cityId: post.city_id, room: post.room_preview, role, conversationId: role === 'host' || role === 'approved' ? roomIds.get(post.id) ?? null : null }] : []);
 }
 
 export async function leaveMeetup(client: SupabaseClient, postId: string) {
@@ -512,7 +631,7 @@ export async function leaveMeetup(client: SupabaseClient, postId: string) {
 export async function loadPendingMeetupRequests(client: SupabaseClient, hostId: string) {
   const result = await client
     .from('meetup_requests')
-    .select('id,post_id,requester_id,message,status,created_at,requester:profiles!meetup_requests_requester_id_fkey(nickname,verification_level),post:posts!meetup_requests_post_id_fkey(title)')
+    .select('id,post_id,requester_id,message,status,created_at,requester:profiles!meetup_requests_requester_id_fkey(nickname,verification_level),post:posts!meetup_requests_post_id_fkey(title,room:room_preview)')
     .eq('host_id', hostId)
     .eq('status', 'pending')
     .order('created_at', { ascending: false });
@@ -536,12 +655,33 @@ export async function respondMeetupRequest(
 export async function loadNotifications(client: SupabaseClient, userId: string) {
   const result = await client
     .from('user_notifications')
-    .select('id,kind,category,body,route,read_at,created_at')
+    .select('id,kind,category,body,route,read_at,created_at,actor_id')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(50);
   if (result.error) throw result.error;
   return (result.data ?? []) as AppNotification[];
+}
+
+/**
+ * 알림을 남긴 사람의 프로필. 목록에 아바타를 함께 보여주기 위한 것으로,
+ * 사진이 없거나 저장소 조회가 실패해도 알림 자체는 그대로 보여준다.
+ */
+export async function loadNotificationActors(client: SupabaseClient, actorIds: (string | null | undefined)[]) {
+  const ids = [...new Set(actorIds.filter(Boolean))];
+  if (!ids.length) return new Map<string, { nickname: string; avatarUrl?: string }>();
+  const profiles = await client.from('profiles').select('id,nickname,avatar_path').in('id', ids);
+  if (profiles.error) return new Map<string, { nickname: string; avatarUrl?: string }>();
+  const rows = (profiles.data ?? []) as { id: string; nickname: string; avatar_path: string | null }[];
+  const paths = rows.flatMap((row) => row.avatar_path ? [row.avatar_path] : []);
+  const urls = new Map<string, string>();
+  if (paths.length) {
+    try {
+      const signed = await client.storage.from('avatars').createSignedUrls(paths, 3600);
+      for (const item of signed.data ?? []) if (item.path && item.signedUrl) urls.set(item.path, item.signedUrl);
+    } catch { /* 사진이 없어도 알림 표시에는 문제가 없다. */ }
+  }
+  return new Map(rows.map((row) => [row.id, { nickname: row.nickname, avatarUrl: row.avatar_path ? urls.get(row.avatar_path) : undefined }]));
 }
 
 export const CHAT_NOTIFICATION_KINDS = ['message', 'meetup_request', 'meetup_approved', 'meetup_rejected'] as const;
@@ -630,13 +770,22 @@ export async function editComment(client: SupabaseClient, commentId: string, bod
   if (result.error) throw result.error;
 }
 
-// 본문만 고친다. 정렬 시각·조회수·해시태그는 컬럼 권한이 없어 클라이언트에서 닿지 않으므로
+// 제목·본문·선택한 사진만 고친다. 정렬 시각·조회수·해시태그는 컬럼 권한이 없어 클라이언트에서 닿지 않으므로
 // 수정해도 피드에서 끌어올려지지 않는다.
-export async function editPost(client: SupabaseClient, postId: string, patch: { title: string; body: string }) {
-  const result = await client.from('posts')
-    .update({ title: patch.title.trim(), body: patch.body.trim() })
-    .eq('id', postId);
-  if (result.error) throw result.error;
+export async function editPost(client: SupabaseClient, postId: string, patch: { title: string; body: string },
+  replacement?: { userId: string; images: PostDraftImage[] }) {
+  const media = replacement ? await uploadPostImages(client, replacement.userId, replacement.images) : null;
+  const imagePaths = media?.map(({ path }) => path);
+  try {
+    const result = await client.from('posts')
+      .update({ title: patch.title.trim(), body: patch.body.trim(), ...(imagePaths ? { image_paths: imagePaths } : {}) })
+      .eq('id', postId);
+    if (result.error) throw result.error;
+  } catch (error) {
+    if (imagePaths?.length) await removePostImages(client, imagePaths);
+    throw error;
+  }
+  // 원래 파일은 보존한다. 실패·취소가 기존 사진이나 다른 참조를 지우지 않는다.
 }
 
 // 되돌리기는 어드민만 한다(트리거가 막는다). 글은 안전 검토 기록을 위해 남고 피드에서만 빠진다.

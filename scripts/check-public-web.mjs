@@ -6,7 +6,7 @@ const directory = process.argv[2] ?? 'dist';
 assert.ok(existsSync(join(directory, 'index.html')), 'Public web export is missing');
 for (const page of ['index', 'terms', 'privacy', 'account-deletion', 'child-safety']) {
   const html = readFileSync(join(directory, `${page}.html`), 'utf8');
-  assert.ok(html.includes('gling-night-wordmark.') && html.includes('--accent:#CBB9FF'), `${page} lost the night brand`);
+  assert.ok(html.includes('gling-night-wordmark.') && html.includes('--accent:#9283AC') && html.includes('#746486'), `${page} lost the cinematic night brand`);
 }
 assert.ok(readFileSync(join(directory, 'index.html'), 'utf8').includes('https://apps.apple.com/ca/app/id6809273242'), 'Public web is missing the live iOS download');
 const childSafety = readFileSync(join(directory, 'child-safety.html'), 'utf8');

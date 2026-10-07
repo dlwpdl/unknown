@@ -56,10 +56,20 @@ test('관리자 알림 경로는 그대로 전달되고, 목록에 없는 경로
   const h = harness({ sends: [admin, unknown], fetcher: async (_url, options) => {
     const messages = JSON.parse(options.body);
     seen.push(...messages.map((message) => message.data.route));
+    assert.deepEqual(messages.map((message) => message.title), ['글링 관리자', '글링']);
     return Response.json({ data: messages.map(() => ({ status: 'ok', id: ticketId })) });
   } });
-  await h.run();
+  assert.equal((await (await h.run()).json()).tickets, 2);
   assert.deepEqual(seen, ['/admin?section=users', '/notifications']);
+});
+test('safety alerts with numeric IDs retain the admin destination and title', async () => {
+  const h = harness({ sends: [{ ...job, category: 'system', route: '/admin?alert=1' }], fetcher: async (_url, options) => {
+    const [message] = JSON.parse(options.body);
+    assert.equal(message.title, '글링 관리자');
+    assert.equal(message.data.route, '/admin?alert=1');
+    return Response.json({ data: [{ status: 'ok', id: ticketId }] });
+  } });
+  assert.equal((await (await h.run()).json()).tickets, 1);
 });
 test('temporary network and HTTP errors retry, permanent HTTP errors stop', async () => {
   for (const [fetcher, expected] of [

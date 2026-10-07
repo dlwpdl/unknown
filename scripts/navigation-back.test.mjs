@@ -34,10 +34,11 @@ test('every profile header can go back or leave a direct entry, with accessible 
     }) },
     'expo-symbols': { SymbolView: 'SymbolView' },
     'react-native-reanimated': { useReducedMotion: () => reducedMotion },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => actions.push(kind) }) },
     '@/i18n/ko': { t: { tabs: { profile: '나' }, profile: { guidelines: '이용 수칙', settings: '설정' }, notifications: { title: '알림' } } },
     '@/lib/promotions': { PROMOTIONS_PREVIEW_ENABLED: false },
   });
-  for (const name of ['index', 'membership', 'settings', 'guidelines', 'promotions']) {
+  for (const name of ['index', 'membership', 'trust', 'inbox', 'saved', 'settings', 'guidelines', 'promotions']) {
     const options = ProfileLayout().props.screenOptions({ route: { name } });
     const button = options.headerLeft();
     assert.equal(button.props.accessibilityLabel, '뒤로가기');
@@ -52,6 +53,7 @@ test('every profile header can go back or leave a direct entry, with accessible 
     hasHistory = true;
     button.props.onPress();
     assert.equal(actions.at(-1), 'back');
+    assert.equal(actions.at(-2), 'selection');
   }
   reducedMotion = true;
   assert.equal(ProfileLayout().props.screenOptions({ route: { name: 'membership' } }).animation, 'none');
@@ -77,10 +79,13 @@ test('shared posts remain escapable during loading, failure and absence, and nev
       },
     },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
+    'expo-symbols': { SymbolView: 'SymbolView' },
     '@/components/post-detail': { PostDetail: 'PostDetail' },
+    '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
     '@/components/themed-text': { ThemedText: 'Text' },
     '@/components/themed-view': { ThemedView: 'View' },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: accountId } }) },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => actions.push(kind) }) },
     '@/lib/supabase': { supabase: {} },
     '@/lib/feed-data': { loadPublicPost(_, postId) {
       return new Promise((resolve, reject) => requests.set(postId, { resolve, reject }));
@@ -101,7 +106,7 @@ test('shared posts remain escapable during loading, failure and absence, and nev
   let tree = render();
   back(tree).props.onPress();
   assert.equal(actions.at(-1), '/');
-  assert.ok(nodes(tree).some(node => node.type === 'ActivityIndicator'));
+  assert.ok(nodes(tree).some(node => node.type === 'GlingLoader'));
   commit();
   requests.get('first').resolve({ id: 'first' });
   await flush();
@@ -148,7 +153,7 @@ test('shared posts remain escapable during loading, failure and absence, and nev
   render(); commit();
   requests.get('stale-error').reject(new Error('old request failed'));
   await flush();
-  assert.ok(nodes(render()).some(node => node.type === 'ActivityIndicator'));
+  assert.ok(nodes(render()).some(node => node.type === 'GlingLoader'));
   requests.get('error').reject(new Error('offline'));
   await flush();
   tree = render();
@@ -168,6 +173,6 @@ test('shared posts remain escapable during loading, failure and absence, and nev
   tree = render(); commit();
   back(tree);
   assert.equal(requests.has(''), false, 'missing route IDs do not issue invalid requests');
-  assert.equal(nodes(tree).some(node => node.type === 'ActivityIndicator'), false);
+  assert.equal(nodes(tree).some(node => node.type === 'GlingLoader'), false);
   cleanup?.();
 });

@@ -1,7 +1,9 @@
+import { GlingLoader } from '@/components/gling-loader';
 import { Pressable } from '@/components/analytics-controls';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PostDetail } from '@/components/post-detail';
@@ -9,6 +11,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadPublicPost } from '@/lib/feed-data';
 import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
@@ -21,11 +24,12 @@ export default function SharedPostRoute() {
   const owner = isAuthed ? me.id : 'guest';
   const requestKey = `${postId}:${owner}`;
   const router = useRouter();
+  const { play } = useInteractionFeedback();
   const theme = useTheme();
   const [result, setResult] = useState<{ id: string; post: Post | null; failed: boolean } | null>(null);
   const current = result?.id === requestKey ? result : null;
   const loading = Boolean(postId) && !current;
-  const goBack = () => router.canGoBack() ? router.back() : router.replace('/');
+  const goBack = () => { play('selection'); if (router.canGoBack()) router.back(); else router.replace('/'); };
 
   useEffect(() => {
     if (!postId) return;
@@ -48,13 +52,13 @@ export default function SharedPostRoute() {
                 onPress={goBack}
                 accessibilityRole="button"
                 accessibilityLabel="뒤로가기"
-                style={({ pressed }) => [styles.backButton, { opacity: pressed ? 0.6 : 1 }]}>
-                <ThemedText type="smallBold" style={{ color: theme.accent }}>돌아가기</ThemedText>
+                style={({ pressed }) => [styles.backButton, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
+                <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} />
               </Pressable>
             </View>
             <View style={styles.center}>
               {loading ? (
-                <ActivityIndicator color={theme.accent} accessibilityLabel="공유 글 불러오는 중" />
+                <GlingLoader color={theme.accent} accessibilityLabel="공유 글 불러오는 중" />
               ) : (
                 <View style={styles.message}>
                   <ThemedText type="subtitle" style={styles.title}>
@@ -76,7 +80,7 @@ export default function SharedPostRoute() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingHorizontal: 16 },
-  backButton: { alignSelf: 'flex-start', minWidth: 44, minHeight: 44, justifyContent: 'center' },
+  backButton: { alignSelf: 'flex-start', minWidth: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   message: { alignItems: 'center', gap: 8, padding: 24 },
   title: { fontSize: 22, lineHeight: 30 },

@@ -1,0 +1,14 @@
+begin;
+select plan(7);
+select ok(not has_table_privilege('authenticated', 'public.ticketmaster_event_cache', 'SELECT'), 'event cache is private');
+select ok(not has_table_privilege('anon', 'public.ticketmaster_request_budget', 'UPDATE'), 'anonymous cannot mutate quota');
+select ok(not has_function_privilege('authenticated', 'public.reserve_ticketmaster_request()', 'EXECUTE'), 'clients cannot reserve upstream calls');
+update public.ticketmaster_request_budget set day = (now() at time zone 'UTC')::date, calls = 0, last_called_at = '-infinity';
+select ok(public.reserve_ticketmaster_request(), 'first upstream call reserves budget');
+select is(public.reserve_ticketmaster_request(), false, 'burst is throttled across instances');
+update public.ticketmaster_request_budget set calls = 4500, last_called_at = '-infinity';
+select is(public.reserve_ticketmaster_request(), false, 'daily headroom is preserved');
+update public.ticketmaster_request_budget set day = (now() at time zone 'UTC')::date - 1;
+select ok(public.reserve_ticketmaster_request(), 'UTC day rollover resets budget');
+select * from finish();
+rollback;

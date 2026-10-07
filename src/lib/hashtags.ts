@@ -2,6 +2,7 @@ import type { Post, Tag, TagSlug } from '@/lib/types';
 
 export const DEFAULT_HASHTAGS: Record<TagSlug, readonly string[]> = {
   life: ['일상', '질문', '정보'],
+  festival: ['페스티벌', '공연', '동행'],
   food: ['맛집', '카페', '가성비'],
   travel: ['여행', '나들이', '동행'],
   shopping: ['핫딜', '중고', '쇼핑'],

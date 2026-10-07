@@ -26,6 +26,20 @@ test('inbox loads one bounded page and preserves server count and off-page deep 
   assert.equal(page.cursor.id, 'cursor-room');
 });
 
+test('group previews use the saved meetup category and keep showing when metadata is unavailable', async () => {
+  const group = { ...row, id: 'group-1', kind: 'group', group_post_id: 'post-1', title: '주말 모임' };
+  const client = { rpc: async () => ({ error: null, data: { items: [group], selected: group, pending_count: 0, cursor: null } }),
+    from(table) { assert.equal(table, 'posts'); return { select() { return this; }, async in(key, ids) {
+      assert.equal(key, 'id'); assert.deepEqual(ids, ['post-1']);
+      return { data: [{ id: 'post-1', room_preview: { category: 'sports' } }], error: null };
+    } }; } };
+  const page = await loadConversations(client, 'person-1');
+  assert.equal(page.conversations[0].meetupCategory, 'sports');
+  assert.equal(page.selectedConversation.meetupCategory, 'sports');
+  const offline = await loadConversations({ ...client, from() { throw new Error('offline'); } }, 'person-1');
+  assert.equal(offline.conversations[0].meetupCategory, null);
+});
+
 test('inbox cursor carries status and equal-time ID; errors do not become an empty inbox', async () => {
   const cursor = { status: 'ended', createdAt: '2026-01-01T00:00:00Z', id: 'cursor-room' };
   const client = { async rpc(name, args) {

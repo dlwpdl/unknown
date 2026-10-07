@@ -17,13 +17,20 @@ export type ChillingEventDraft = {
   timezone: string;
   cadence: string;
   capacity: number;
-  category?: 'casual' | 'hobby' | 'travel';
+  category?: 'casual' | 'hobby' | 'travel' | 'party' | 'festival' | 'sports';
   recommendedAgeMin?: number | null;
   recommendedAgeMax?: number | null;
 };
 
 export function chillingKind(room: ChillingSchedule): ChillingKind {
   return room.eventKind === 'once' ? 'once' : 'group';
+}
+
+export function chillingAvailability(room: ChillingSchedule & { closed?: boolean; memberCount?: number; capacity?: number }, now = Date.now()): 'open' | 'full' | 'closed' | 'ended' {
+  if (chillingKind(room) === 'once' && room.endsAt && Date.parse(room.endsAt) <= now) return 'ended';
+  if (room.closed) return 'closed';
+  if (room.capacity != null && (room.memberCount ?? 0) >= room.capacity) return 'full';
+  return 'open';
 }
 
 export function chillingSchedule(room: ChillingSchedule): string {
@@ -44,6 +51,16 @@ export function recommendedAgeLabel(room: ChillingSchedule): string {
     ? `권장 만 ${room.recommendedAgeMin}~${room.recommendedAgeMax}세` : '연령대 무관';
 }
 
+// 다가오는 일회성 모임에만 붙는 임박 표시. 기기 기준 하루 경계로 센다.
+export function chillingCountdown(room: ChillingSchedule, now = Date.now()): string | null {
+  if (chillingKind(room) !== 'once' || !room.startsAt) return null;
+  const start = Date.parse(room.startsAt);
+  if (!Number.isFinite(start) || start <= now) return null;
+  const midnight = (value: number) => { const date = new Date(value); date.setHours(0, 0, 0, 0); return date.getTime(); };
+  const days = Math.round((midnight(start) - midnight(now)) / 86400000);
+  return days === 0 ? '오늘' : days === 1 ? '내일' : `D-${days}`;
+}
+
 export function recommendedAgeMessage(room: ChillingSchedule, age: number | null): string {
   if (age == null) return '생년월일 정보가 없어도 신청할 수 있어요. 권장 연령대를 참고해주세요.';
   const matches = room.recommendedAgeMin == null || room.recommendedAgeMax == null
@@ -53,7 +70,7 @@ export function recommendedAgeMessage(room: ChillingSchedule, age: number | null
 
 export function normalizeChillingEvent(draft: ChillingEventDraft) {
   if (!['once', 'group'].includes(draft.kind)) throw new Error('INVALID_EVENT');
-  if (draft.category && !['casual', 'hobby', 'travel'].includes(draft.category)) throw new Error('INVALID_EVENT_CATEGORY');
+  if (draft.category && !['casual', 'hobby', 'travel', 'party', 'festival', 'sports'].includes(draft.category)) throw new Error('INVALID_EVENT_CATEGORY');
   if (!Number.isInteger(draft.capacity) || draft.capacity < 2 || draft.capacity > 50) throw new Error('INVALID_CAPACITY');
   const { recommendedAgeMin: min, recommendedAgeMax: max } = draft;
   if ((min != null || max != null) && (!Number.isInteger(min) || !Number.isInteger(max) || min! < 0 || max! > 120 || min! > max!)) throw new Error('INVALID_RECOMMENDED_AGE');

@@ -14,6 +14,7 @@ import { MOCK_POSTS, TAGS } from '../src/lib/mock.ts';
 
 const expected = [
   ['life', '라이프'],
+  ['festival', '페스티벌'],
   ['food', '맛집'],
   ['travel', '여행'],
   ['shopping', '쇼핑'],
@@ -24,7 +25,7 @@ const expected = [
   ['meetup', '모임'],
 ];
 
-test('9개 대분류를 정해진 순서로 제공한다', () => {
+test('페스티벌을 라이프와 맛집 사이에 두고 10개 대분류를 제공한다', () => {
   assert.deepEqual(TAGS.map(({ slug, label }) => [slug, label]), expected);
 });
 
@@ -38,7 +39,7 @@ test('모든 mock 글이 현재 대분류를 참조한다', () => {
   assert.equal(MOCK_POSTS.every(({ tag }) => categoryIds.has(tag.id)), true);
 });
 
-test('글쓰기 안내가 9개 대분류를 모두 지원한다', () => {
+test('글쓰기 안내가 10개 대분류를 모두 지원한다', () => {
   assert.deepEqual(Object.keys(t.write.bodyPlaceholder), expected.map(([slug]) => slug));
 });
 

@@ -32,14 +32,13 @@ export function AdminCommandPalette({
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<TextInput>(null);
 
-  useEffect(() => { if (visible) { setQuery(''); setMembers([]); setCursor(0); } }, [visible]);
   useEffect(() => {
     if (!visible || localPreview) return;
     const needle = query.trim();
-    if (needle.length < 2) { setMembers([]); return; }
+    if (needle.length < 2) return;
     let active = true;
-    setSearching(true);
     const timer = setTimeout(() => {
+      setSearching(true);
       void searchAdminUsers(supabase, needle, 0, EMPTY_DIRECTORY_FILTERS)
         .then((result) => { if (active) setMembers(result.rows.slice(0, 6)); })
         .catch(() => { if (active) setMembers([]); })
@@ -57,7 +56,7 @@ export function AdminCommandPalette({
       label: section.label,
       hint: ADMIN_NAV_GROUPS.find((group) => group.sections.includes(section.id))?.label ?? '이동',
     }));
-  const memberItems: Item[] = members.map((member) => ({
+  const memberItems: Item[] = (needle.length >= 2 ? members : []).map((member) => ({
     kind: 'member' as const,
     id: member.id,
     label: displayName(member, member.id),
@@ -95,7 +94,7 @@ export function AdminCommandPalette({
           style={styles.input}
         />
         <View style={styles.list}>
-          {items.length === 0 && <ThemedText type="small" style={styles.muted}>{searching ? '검색 중…' : query.trim().length === 1 ? '두 글자부터 회원을 찾습니다.' : '결과가 없습니다.'}</ThemedText>}
+          {items.length === 0 && <ThemedText type="small" style={styles.muted}>{searching && needle.length >= 2 ? '검색 중…' : query.trim().length === 1 ? '두 글자부터 회원을 찾습니다.' : '결과가 없습니다.'}</ThemedText>}
           {items.map((item, index) => (
             <Pressable
               key={`${item.kind}:${item.id}`}

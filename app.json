@@ -8,16 +8,16 @@
         "projectId": "3889cb42-940a-469d-b975-b5c9a4c6bfc5"
       }
     },
-    "version": "1.0.2",
+    "version": "1.1.2",
     "orientation": "portrait",
-    "icon": "./assets/brand/gling-app-icon.png",
+    "icon": "./assets/brand/gling-night-app-icon.png",
     "scheme": "gling",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "ios": {
-      "icon": "./assets/brand/gling-app-icon.png",
+      "icon": "./assets/brand/gling-night-app-icon.png",
       "bundleIdentifier": "com.dlwpdl.gling",
       "appleTeamId": "P3X3452TDZ",
-      "buildNumber": "36",
+      "buildNumber": "54",
       "usesAppleSignIn": true,
       "entitlements": {
         "aps-environment": "production"
@@ -96,16 +96,16 @@
     },
     "android": {
       "package": "com.dlwpdl.gling",
-      "versionCode": 36,
+      "versionCode": 54,
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.FOREGROUND_SERVICE_LOCATION"
       ],
       "adaptiveIcon": {
-        "backgroundColor": "#BE3B2A",
-        "foregroundImage": "./assets/brand/gling-mark-light.png",
-        "monochromeImage": "./assets/brand/gling-mark-light.png"
+        "backgroundColor": "#0B0B12",
+        "foregroundImage": "./assets/brand/gling-night-wordmark-adaptive.png",
+        "monochromeImage": "./assets/brand/gling-night-wordmark-adaptive.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -118,7 +118,7 @@
       [
         "expo-notifications",
         {
-          "color": "#BE3B2A",
+          "color": "#CBB9FF",
           "defaultChannel": "gling-activity"
         }
       ],
@@ -145,14 +145,12 @@
           "microphonePermission": false
         }
       ],
-      "./plugins/with-launch-background",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FAF9F5",
-          "dark": {
-            "backgroundColor": "#15181C"
-          }
+          "backgroundColor": "#0B0B12",
+          "image": "./assets/brand/transparent-pixel.png",
+          "imageWidth": 1
         }
       ],
       "expo-image",

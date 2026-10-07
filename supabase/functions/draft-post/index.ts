@@ -55,7 +55,7 @@ Deno.serve(async (request) => {
         selectedCategory: input.selectedCategory,
         titleHint: input.titleHint,
         bodyHint: input.bodyHint,
-        mode: hasWrittenDraft ? 'edit_existing_draft' : 'create_from_photo',
+        mode: input.intent === 'event_meetup' ? 'create_event_meetup' : hasWrittenDraft ? 'edit_existing_draft' : 'create_from_photo',
       }),
     }];
     if (input.imageBase64) {
@@ -130,6 +130,7 @@ function validateInput(input: unknown) {
   }
   if (value.titleHint != null && (typeof value.titleHint !== 'string' || value.titleHint.length > 80)) return '제목 힌트가 너무 깁니다.';
   if (value.bodyHint != null && (typeof value.bodyHint !== 'string' || value.bodyHint.length > 1000)) return '본문 힌트가 너무 깁니다.';
+  if (value.intent != null && (value.intent !== 'event_meetup' || value.selectedCategory !== 'meetup' || !String(value.titleHint ?? '').trim() || !String(value.bodyHint ?? '').trim())) return '모임 초안 요청이 올바르지 않습니다.';
   const hasImage = value.imageBase64 != null || value.mimeType != null;
   if (hasImage && !['image/jpeg', 'image/png', 'image/webp'].includes(String(value.mimeType))) return 'JPG, PNG, WebP 사진만 지원합니다.';
   if (hasImage && (typeof value.imageBase64 !== 'string' || !/^[A-Za-z0-9+/]+={0,2}$/.test(value.imageBase64))) return '사진 데이터가 올바르지 않습니다.';
@@ -142,6 +143,7 @@ function buildPrompt() {
   return [
     '당신은 캐나다 한인 커뮤니티 글링에서 사용자가 이웃에게 건네는 개인 게시글을 함께 쓰는 도우미입니다.',
     '입력 JSON의 mode가 edit_existing_draft이면 제목·본문 힌트는 사용자가 직접 쓴 원고입니다. 새 글을 만들지 말고 원고의 주제, 사실, 질문, 요청과 말투를 유지한 채 제목을 정리하고 문장만 자연스럽게 다듬으세요. 원고에 없는 경험·장소·사람·수치·일정·감정을 추가하거나 핵심 내용을 다른 주제로 바꾸지 마세요.',
+    'mode가 create_event_meetup이면 제목·본문 힌트는 행사에서 자동으로 채운 기본 문장입니다. 행사 이름과 함께 갈 사람을 찾는 목적을 유지하면서 2~3문장의 새 모임 초안을 쓰세요. 동행 방식이나 만남 전 대화처럼 일반적인 제안은 가능하지만 사용자의 취향·경험, 확정되지 않은 집결 장소·시간·티켓 가격·인원은 지어내지 마세요. 행사 상세와 티켓 출처는 앱이 별도로 붙이므로 본문에 반복하지 마세요.',
     'mode가 create_from_photo일 때만 사진을 바탕으로 새 초안을 만들 수 있습니다.',
     '목적은 사용자의 일상, 생각, 질문, 나눔이나 모집 의도를 담은 바로 수정해서 올릴 수 있는 글입니다. 사진 분석 보고서, 대체 텍스트, 여행 안내문을 작성하지 마세요.',
     '제목·본문 힌트에 담긴 작성 목적과 말투를 가장 먼저 반영하고, 선택 카테고리를 유지하세요. 사진은 이야깃거리의 보조 근거로만 사용하세요.',
