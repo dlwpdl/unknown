@@ -36,6 +36,7 @@ export default function ProfileLayout() {
       <Stack.Screen name="index" options={{ title: t.tabs.profile }} />
       <Stack.Screen name="guidelines" options={{ title: t.profile.guidelines }} />
       <Stack.Screen name="membership" options={{ title: '멤버십', presentation: 'modal', animation: reducedMotion ? 'none' : 'slide_from_bottom' }} />
+      <Stack.Screen name="merchant" options={{ title: '소상공인' }} />
       <Stack.Screen name="trust" options={{ title: '인증 단계' }} />
       <Stack.Screen name="saved" options={{ title: t.profile.saved }} />
       <Stack.Screen name="promotions" options={{ title: PROMOTIONS_PREVIEW_ENABLED ? '홍보 크레딧' : '', headerShown: PROMOTIONS_PREVIEW_ENABLED }} />

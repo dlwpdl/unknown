@@ -13,7 +13,7 @@ export function publicWebFetch(baseUrl: string, key: string, transport: typeof f
     const request = new Request(input, init);
     const url = new URL(request.url);
     const allowed = url.origin === new URL(baseUrl).origin && request.method === 'POST' && (
-      /^\/rest\/v1\/rpc\/(get_public_feed_page_v2|get_public_post|get_public_comments_page)$/.test(url.pathname)
+      /^\/rest\/v1\/rpc\/(get_public_feed_page_v2|get_public_post|get_public_comments_page|get_merchant_post_source)$/.test(url.pathname)
       || url.pathname === '/storage/v1/object/sign/post-images'
     );
     if (!allowed) throw new Error('PUBLIC_WEB_READ_ONLY');

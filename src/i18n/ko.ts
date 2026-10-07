@@ -136,7 +136,7 @@ export const t = {
     kindStoryHint: '후기, 질문, 정보 공유',
     kindListingHint: '구인구직, 렌트·룸메, 중고거래, 차량',
     pricePlaceholder: '금액 (선택, CAD)',
-    listingNote: '구해요·팔아요 글은 살아있는 글 수에 따라 제한돼요. 14일 뒤 자동 마감되고, 하루에 한 번 끌어올릴 수 있어요.',
+    listingNote: '구해요·팔아요 글은 살아있는 글 수에 따라 제한돼요. 14일 뒤 자동 마감되고, 베이직은 24시간·플러스는 18시간·프리미엄은 12시간 간격으로 끌어올릴 수 있어요.',
     listingRemaining: (used: number, max: number) => `살아있는 글 ${used} / ${max}`,
     listingBodyPlaceholder: '무엇을 구하거나 제안하나요? 구인·구직 조건이나 물건 상태, 지역을 적어주세요',
     bodyPlaceholder: {
@@ -178,6 +178,14 @@ export const t = {
     pendingNote: '승인 전에는 모임 자리를 사용하지 않아요.',
   },
 
+  membership: {
+    listingBenefits: {
+      free: '살아있는 구해요·팔아요 글 5개 · 끌어올리기 24시간 간격',
+      plus: '살아있는 구해요·팔아요 글 10개 · 끌어올리기 18시간 간격',
+      premium: '살아있는 구해요·팔아요 글 20개 · 끌어올리기 12시간 간격',
+    },
+  },
+
   actionErrors: {
     MEETUP_LIMIT_REACHED: { title: '참여할 수 있는 모임 자리가 없어요', body: '참여 중인 모임 자리를 확인해 주세요. 종료·퇴장 시 자리는 바로 돌아오지만 반복 퇴장 시에는 새 참여가 잠시 제한돼요.', membership: true },
     MEETUP_JOIN_RESTRICTED: { title: '새 모임 참여가 잠시 제한됐어요', body: '반복 퇴장 제한이 해제되면 다시 참여할 수 있어요. 기존 모임과 신고·차단·나가기는 계속 가능해요.', membership: false },
@@ -197,7 +205,7 @@ export const t = {
     LISTING_LIMIT_REACHED: { title: '살아있는 구해요·팔아요 글이 가득 찼어요', body: '거래가 끝난 글을 마감하면 자리가 돌아와요. 멤버십에 따라 5·10·20개까지 동시에 올릴 수 있어요.', membership: true },
     DUPLICATE_LISTING: { title: '같은 글이 이미 있어요', body: '같은 제목의 글을 30일 안에 다시 올릴 수 없어요. 기존 글을 끌어올리거나 다시 열어 주세요.', membership: false },
     DUPLICATE_POST: { title: '같은 이야기가 이미 올라갔어요', body: '같은 내용을 반복해서 올리지 말고 기존 글을 확인해 주세요.', membership: false },
-    BUMP_COOLDOWN: { title: '조금 뒤에 끌어올릴 수 있어요', body: '끌어올림은 하루에 한 번이에요. 멤버십에 따라 18시간·12시간마다 가능해요.', membership: true },
+    BUMP_COOLDOWN: { title: '조금 뒤에 끌어올릴 수 있어요', body: '베이직은 24시간·플러스는 18시간·프리미엄은 12시간 간격으로 끌어올릴 수 있어요.', membership: true },
     LISTING_NOT_OPEN: { title: '마감된 글이에요', body: '다시 열면 살아있는 글 자리를 하나 사용해요.', membership: false },
   },
 

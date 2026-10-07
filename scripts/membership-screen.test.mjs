@@ -4,12 +4,14 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
+import { t } from '../src/i18n/ko.ts';
 import { MEMBERSHIP_LIMITS, referencePrice } from '../src/lib/membership.ts';
 
 test('membership keeps Today stories free while preserving meetup and chat plans', () => {
-  let states = [], cursor = 0, restored = 0, purchased = 0;
+  let states = [], cursor = 0, restored = 0, purchased = 0, confirmed = 0, feedback = 0, confirmation;
   const value = { membership: { tier: 'free', postsUsed: 0, postLimit: 1 }, offers: [], loading: false,
     offersLoading: false, busy: false, purchaseUnavailableReason: null,
+    pendingApproval: false, confirmPendingCancellation() { confirmed++; },
     refresh() {}, restore() { restored++; }, manage() {}, purchase() { purchased++; } };
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/app/profile/membership.tsx', import.meta.url), 'utf8'), {
@@ -26,7 +28,7 @@ test('membership keeps Today stories free while preserving meetup and chat plans
     if (name === 'expo-router') return { useFocusEffect() {}, useRouter: () => ({ canGoBack: () => false, replace() {} }) };
     if (name === 'expo-symbols') return { SymbolView: 'SymbolView' };
     if (name === 'react-native-reanimated') return { useReducedMotion: () => false };
-    if ((name === 'react-native' || name === '@/components/analytics-controls')) return { View: 'View', ScrollView: 'ScrollView', Pressable: 'Pressable', Animated: { Value: class { setValue() {} interpolate() {} }, View: 'View', timing: () => ({ start() {} }) }, StyleSheet: { create: styles => styles } };
+    if ((name === 'react-native' || name === '@/components/analytics-controls')) return { View: 'View', ScrollView: 'ScrollView', Pressable: 'Pressable', Alert: { alert: (...args) => { confirmation = args; } }, Animated: { Value: class { setValue() {} interpolate() {} }, View: 'View', timing: () => ({ start() {} }) }, StyleSheet: { create: styles => styles } };
     if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView' };
     if (name === '@/components/login-panel') return { LoginPanel: 'LoginPanel' };
     if (name === '@/components/gling-loader') return { GlingLoader: 'GlingLoader' };
@@ -36,8 +38,9 @@ test('membership keeps Today stories free while preserving meetup and chat plans
     if (name === '@/components/themed-view') return { ThemedView: 'View' };
     if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, five: 32 }, MaxContentWidth: 800, Depth: { card: {}, control: {} } };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
+    if (name === '@/i18n/ko') return { t };
     if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: true }) };
-    if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
+    if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() { feedback++; } }) };
     if (name === '@/lib/membership') return { MEMBERSHIP_LIMITS, referencePrice };
     if (name === '@/lib/membership-provider') return { useMembership: () => value };
     throw new Error(`Unexpected import: ${name}`);
@@ -53,6 +56,15 @@ test('membership keeps Today stories free while preserving meetup and chat plans
   assert.equal(button(tree, '구독 준비 중').props.disabled, true, 'checkout is visible immediately but requires a store offer');
   for (const summary of ['오늘 글 무제한 · 동시 모임 2개 · 활성 1:1 대화 2개', '오늘 글 무제한 · 동시 모임 4개 · 활성 1:1 대화 4개', '오늘 글 무제한 · 동시 모임 7개 · 활성 1:1 대화 7개']) {
     assert.ok(text(tree).includes(summary), summary);
+  }
+  for (const [name, capacity, hours] of [['베이직 · 무료', 5, 24], ['플러스', 10, 18], ['프리미엄', 20, 12]]) {
+    const card = nodes(tree).find(node => text(node).startsWith(name) && (node.type === 'View' || node.props?.accessibilityRole === 'radio'));
+    assert.ok(text(card).includes(`살아있는 구해요·팔아요 글 ${capacity}개 · 끌어올리기 ${hours}시간 간격`), `${name} must show its live listing capacity and bump interval`);
+  }
+  assert.match(t.write.listingNote, /14일 뒤 자동 마감/);
+  for (const copy of [t.write.listingNote, t.actionErrors.BUMP_COOLDOWN.body]) {
+    assert.match(copy, /베이직은 24시간·플러스는 18시간·프리미엄은 12시간/);
+    assert.doesNotMatch(copy, /하루에 한 번/);
   }
   assert.equal(button(tree, '자리 사용 · 반복 이용 제한 안내').props.accessibilityState.expanded, false);
   assert.equal(button(tree, '자리 사용 · 반복 이용 제한 안내').props['aria-expanded'], false);
@@ -81,4 +93,26 @@ test('membership keeps Today stories free while preserving meetup and chat plans
   assert.equal(button(render(), '프리미엄 구독하기').props.disabled, false);
   button(render(), '프리미엄 구독하기').props.onPress();
   assert.equal(purchased, 1);
+  const cancellationLabel = '스토어에서 대기 구매 취소·거절을 확인했어요';
+  assert.equal(button(render(), cancellationLabel), undefined);
+  value.pendingApproval = true; value.purchaseUnavailableReason = '승인 대기 중';
+  let cancellation = button(render(), cancellationLabel);
+  assert.ok(cancellation, 'approval-pending purchases need an explicit recovery action');
+  assert.equal(cancellation.props.accessibilityRole, 'button');
+  assert.ok(cancellation.props.style.minHeight >= 44);
+  const feedbackBefore = feedback;
+  cancellation.props.onPress();
+  assert.ok(feedback > feedbackBefore);
+  assert.equal(confirmed, 0, 'opening confirmation must not clear pending');
+  assert.match(confirmation[1], /취소.*거절/);
+  confirmation[2].find(action => action.style === 'cancel').onPress();
+  assert.equal(confirmed, 0, 'uncertain cancellation must remain pending');
+  cancellation.props.onPress();
+  confirmation[2].find(action => action.style !== 'cancel').onPress();
+  assert.equal(confirmed, 1);
+  assert.equal(purchased, 1, 'recovery must not invoke purchase');
+  value.busy = true;
+  assert.equal(button(render(), cancellationLabel).props.disabled, true);
+  value.busy = false; value.loading = true;
+  assert.equal(button(render(), cancellationLabel).props.disabled, true);
 });

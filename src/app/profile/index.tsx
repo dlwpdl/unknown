@@ -201,6 +201,12 @@ export default function ProfileScreen() {
             </Pressable>
           ))}
         </View>
+        <Pressable analyticsId="app_profile_index.merchant" accessibilityRole="button" accessibilityLabel="소상공인, 게시물·원가·재고 관리"
+          onPress={() => { play('selection'); router.push('/profile/merchant'); }}
+          style={({ pressed }) => [styles.merchantEntry, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement, borderColor: theme.line }]}>
+          <View style={{ flex: 1 }}><ThemedText type="smallBold">소상공인</ThemedText><ThemedText type="small" themeColor="textSecondary">게시물 · 원가 계산 · 재고 관리</ThemedText></View>
+          <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={18} tintColor={theme.textSecondary} />
+        </Pressable>
         <View accessibilityRole="tablist" onLayout={event => setSegmentWidth(event.nativeEvent.layout.width)} style={[styles.segments, { borderBottomColor: theme.line }]}>
           {segmentWidth > 0 && <Animated.View pointerEvents="none" style={[styles.segmentIndicator, Depth.control, { width: segmentWidth / 3, backgroundColor: theme.backgroundElement, borderBottomColor: theme.accent, transform: [{ translateX: segmentPosition.interpolate({ inputRange: [0, 2], outputRange: [0, segmentWidth * 2 / 3] }) }] }]} />}
           {([['story', '내 글'], ['replies', '답글'], ['listing', '구해요·팔아요']] as const).map(([key, label]) => (
@@ -281,6 +287,7 @@ const styles = StyleSheet.create({
   manageIcon: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   manageDot: { position: 'absolute', top: 1, right: 1, width: 9, height: 9, borderRadius: 5, borderWidth: 2 },
   manageSub: { fontSize: 12, lineHeight: 16, fontVariant: ['tabular-nums'] },
+  merchantEntry: { minHeight: 64, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, marginVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 12 },
   segments: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
   segmentIndicator: { position: 'absolute', top: 0, bottom: 0, left: 0, borderRadius: 10, borderBottomWidth: 2 },
   segment: { flex: 1, minHeight: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },

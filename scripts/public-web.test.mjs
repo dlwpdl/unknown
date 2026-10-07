@@ -20,8 +20,10 @@ test('public transport rejects writes and always uses anonymous credentials', as
     method: 'POST', headers: { Authorization: 'Bearer stored-user-token' }, body: '{}',
   });
   assert.equal(new Headers(requests[0].init.headers).get('Authorization'), 'Bearer public-key');
+  await request('https://example.supabase.co/rest/v1/rpc/get_merchant_post_source', { method: 'POST', body: '{}' });
+  await assert.rejects(() => request('https://example.supabase.co/rest/v1/rpc/record_merchant_source_click', { method: 'POST' }));
   await assert.rejects(() => request('https://example.supabase.co/rest/v1/rpc/send_message', { method: 'POST' }));
   await assert.rejects(() => request('https://example.supabase.co/auth/v1/token', { method: 'POST' }));
   await assert.rejects(() => request('https://other.example/rest/v1/rpc/get_public_post', { method: 'POST' }));
-  assert.equal(requests.length, 1);
+  assert.equal(requests.length, 2);
 });

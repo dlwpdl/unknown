@@ -6,6 +6,9 @@ insert into auth.users(id,email)
 select ('81000000-0000-0000-0000-'||lpad(n::text,12,'0'))::uuid,'relationship-'||n||'@example.com' from generate_series(1,12)n;
 insert into public.profiles(id,nickname,city_id)
 select ('81000000-0000-0000-0000-'||lpad(n::text,12,'0'))::uuid,'관계검증'||n,'vancouver' from generate_series(1,12)n;
+update auth.users set raw_app_meta_data='{"role":"admin"}'::jsonb where id='81000000-0000-0000-0000-000000000012';
+insert into auth.sessions(id,user_id,aal) values
+('81060000-0000-0000-0000-000000000012','81000000-0000-0000-0000-000000000012','aal2');
 select set_config('request.jwt.claims','{"sub":"81000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 set local role authenticated;
 select public.start_conversation('81000000-0000-0000-0000-000000000002') as request_id \gset
@@ -171,7 +174,7 @@ select is((public.get_membership()->>'conversationSlotsLocked')::integer,1,'paym
 select throws_ok($$select * from private.relationship_cooldowns$$,'42501',null,'clients cannot read or manipulate private cooldown ledger');
 select throws_ok($$select public.get_admin_user_conversations('81000000-0000-0000-0000-000000000002')$$,'P0001','ADMIN_REQUIRED','nonadmins cannot enumerate another member history');
 reset role;
-select set_config('request.jwt.claims','{"sub":"81000000-0000-0000-0000-000000000012","role":"authenticated","app_metadata":{"role":"admin"}}',true);
+select set_config('request.jwt.claims','{"sub":"81000000-0000-0000-0000-000000000012","role":"authenticated","aal":"aal2","session_id":"81060000-0000-0000-0000-000000000012","app_metadata":{"role":"admin"}}',true);
 set local role authenticated;
 select is((select count(*)::integer from public.messages where id=:'group_message'),1,'authorized admin retains unreported and closed group visibility');
 select lives_ok($$select * from public.get_admin_user_conversations('81000000-0000-0000-0000-000000000002')$$,'admin can inspect former group member history');
@@ -182,7 +185,7 @@ select set_config('request.jwt.claims','{"sub":"81000000-0000-0000-0000-00000000
 select throws_ok($$insert into public.posts(author_id,city_id,tag_id,title,body,posted_on,room_preview)
 select '81000000-0000-0000-0000-000000000002','vancouver',5,'일괄 모임 '||n,'동시에 만들어도 두 자리 한도를 지켜요.',current_date-n,'{"capacity":8}'::jsonb from generate_series(1,4)n$$,'P0001','MEETUP_LIMIT_REACHED','batch insert cannot bypass group cap');
 -- The owner exempted admin accounts, so the same batch is allowed for an admin.
-select set_config('request.jwt.claims','{"sub":"81000000-0000-0000-0000-000000000012","role":"authenticated","app_metadata":{"role":"admin"}}',true);
+select set_config('request.jwt.claims','{"sub":"81000000-0000-0000-0000-000000000012","role":"authenticated","aal":"aal2","session_id":"81060000-0000-0000-0000-000000000012","app_metadata":{"role":"admin"}}',true);
 select lives_ok($$insert into public.posts(author_id,city_id,tag_id,title,body,posted_on,room_preview)
 select '81000000-0000-0000-0000-000000000012','vancouver',5,'어드민 일괄 모임 '||n,'어드민은 자리 한도 없이 열 수 있어요.',current_date-n,'{"capacity":8}'::jsonb from generate_series(1,4)n$$,'admin batch insert skips the group cap');
 insert into public.conversations(user_low_id,user_high_id,requester_id,status,created_at) values
