@@ -1,0 +1,13 @@
+allprojects { p ->
+    p.afterEvaluate {
+        if (p.plugins.hasPlugin('com.android.application')) {
+            p.android.signingConfigs.create('glingUpload') {
+                storeFile new File(System.getenv('GLING_UPLOAD_KEYSTORE'))
+                storePassword System.getenv('GLING_UPLOAD_STORE_PASSWORD')
+                keyAlias System.getenv('GLING_UPLOAD_KEY_ALIAS')
+                keyPassword System.getenv('GLING_UPLOAD_KEY_PASSWORD')
+            }
+            p.android.buildTypes.release.signingConfig = p.android.signingConfigs.glingUpload
+        }
+    }
+}
