@@ -30,7 +30,7 @@
 
 공개 약관은 PR4 병합과 GitHub Pages 배포 후 실제 /terms를 확인했다. Google 기존 두 상품 설명을 저장·재조회했다. Apple 기존 네 상품의 metadata version2는 새 설명 8개를 저장하고 심사 대기 중이다. 가격·SKU·basePlan·기간 변경과 실제 구매는 없다. 개인 Premium과 업체 Pro는 별도이며 업체 결제 상품은 아직 만들지 않았다.
 
-현재 공개 앱은 1.1.2다. 1.1.3은 새 소스의 빌드·제출 예정이며, 빌드/업로드/심사/실제 출시를 구분한다. 네이티브 Share sheet·음수 키패드·실제 승인 대기 취소는 기기 검증을 마친 것으로 표시하지 않는다.
+공개 App Store 재조회는 1.1.2다. 새 1.1.3(55)은 App Store 심사 대기, 내부 TestFlight 테스트 가능, 외부 TestFlight 베타 심사 대기다. Android는 기존 Google Play 내부 테스트 트랙에 배포·재조회했다. 네이티브 Share sheet·음수 키패드·실제 승인 대기 취소는 기기 검증을 마친 것으로 표시하지 않는다.
 
 검사 영수증: output/qa/merchant-workspace-2026-10-07/resume-production-0119-attempt.json, resume-production-0120-attempt.json, resume-production-0121-attempt.json, resume-draft-revision-db-final.log, resume-rpc-fields-final.log, resume-public-terms-live.json, store-copy-completion-20261007.json.
 
@@ -41,3 +41,13 @@
 실제 작성 소스의 RNW16layouts/16behavior checks, 컨트롤44px, 가로 넘침·브라우저 오류·외부 요청0건을 확인했다. 불확실한 동일 요청은10→8 한번만 적용되고 업체 이동·JS재시작에서 UUID/payload를 복구한다. 진행 중 요청 완료 후 다시 연 화면은 최신 수량을 재조회한다. 다른 경로의 A→B 원고 변경은 입력A를 보존하고 승인/게시/복사/URL 기록을 막으며, 직접 최신본B를 다시 열도록 안내한다. 독립 리뷰의 열린 Critical/Important는0건이다.
 
 로컬 재실행: node output/qa/merchant-workspace-2026-10-07/check-rendered-workspace.cjs. 이 Mac에 설치된 기존 Playwright와 .admin-dist의 RNW 런타임을 사용하며 실제 Supabase/결제/OS공유를 호출하지 않는다. 증거: rendered-workspace-evidence.json, rendered-persistence-revision-final.log.
+
+## 1.1.3(55) 실제 빌드·제출 — 2026-10-07
+
+소스 PR5를 병합한 4b3e415b6fbf60d36b5cb0ea634e90848dfd4a81에 v1.1.3을 태그했다. 기존 무료 [mobile release run37699355480](https://github.com/dlwpdl/gling/actions/runs/37699355480)의 검증·사전 확인·iOS·Android가 모두 성공했다. 새 CI/자동화·유료 서비스 없이 기존 제출을 재사용했고 주 작업 폴더의 다른 변경은 보존했다.
+
+Apple build971e247f-b033-4ce3-bd9b-959186aa2111은 VALID이며 1.1.3 버전에 연결됐다. App Store submission1724c73f-5bc1-4877-8e94-4bf0347bbf81은 WAITING_FOR_REVIEW, releaseType은 기존 AFTER_APPROVAL이다. 기존 내부/외부 TestFlight 그룹2개 연결을 재조회했다. 구독 문구의 별도 metadata submission1cf23c1c-791d-459c-904f-efe1561712f9도 WAITING_FOR_REVIEW다. 공개 App Store1.1.2와 심사 접수1.1.3을 구분한다.
+
+Google Play internal 트랙은 name1.1.3 (55), versionCodes55, statuscompleted로 재조회했다. 실제 저장된 bundle SHA256이 CI의 서명 검증 파일과 일치한다. production 트랙으로 승격하지 않았다. 조회용 임시 edit은 폐기했다.
+
+최종 상태·서명 파일 해시·제출 ID·검증과 실기기 미확인 항목은 output/qa/merchant-workspace-2026-10-07/resume-completion.json 및 resume-native-ios-receipt.json, resume-native-android-receipt.json, resume-native-apple-final.json, resume-native-google-final.json에 저장했다. App Store·외부 TestFlight·구독 문구의 심사 승인/공개 전파와 실제 고객·결제 성과는 별도 후속 확인이다.
