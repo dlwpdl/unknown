@@ -34,6 +34,13 @@ spec.loader.exec_module(r)
 assert r.next_build_number(55, [54, 58], 54) == 59
 assert r.next_build_number(55, [], 54) == 55
 assert r.release_version('v1.1.3', '1.1.3', '1.1.3') == '1.1.3'
+def version(state): return [{'attributes': {'versionString': '1.1.2', 'appStoreState': state}}]
+r.check_store_state(version('READY_FOR_SALE'), '1.1.3')
+r.check_store_state(version('PREPARE_FOR_SUBMISSION'), '1.1.2')
+for records, target in [(version('READY_FOR_SALE'), '1.1.2'), (version('WAITING_FOR_REVIEW'), '1.1.3')]:
+    try: r.check_store_state(records, target)
+    except ValueError: pass
+    else: raise AssertionError('existing submission was not protected')
 for tag, app, package in [('v1.1.3', '1.1.2', '1.1.2'), ('v1.1.3', '1.1.3', '1.1.2'), ('v1.1.3;bad', '1.1.3', '1.1.3')]:
     try: r.release_version(tag, app, package)
     except ValueError: pass

@@ -32,6 +32,16 @@ def next_build_number(apple_next, android_codes, configured):
     return max(int(apple_next) - 1, int(configured), *(int(x) for x in android_codes)) + 1
 
 
+def check_store_state(versions, version):
+    for item in versions:
+        attributes = item["attributes"]
+        state = attributes["appStoreState"]
+        if state in {"WAITING_FOR_REVIEW", "IN_REVIEW", "PENDING_DEVELOPER_RELEASE", "PENDING_APPLE_RELEASE"}:
+            raise ValueError("An existing App Store submission is unfinished; check its status before a new release.")
+        if attributes["versionString"] == version and state not in {"PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED", "REJECTED", "METADATA_REJECTED"}:
+            raise ValueError("This version is already submitted or released; use a new version tag.")
+
+
 def run(args, capture=False, env=None):
     result = subprocess.run(args, env=env, text=True, capture_output=capture)
     if result.returncode:
@@ -115,11 +125,20 @@ def play(token, path="", data=None, method="GET"):
     return request(f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{PACKAGE}{path}", token, data, method)
 
 
+def apple_versions(env):
+    token = run(["asc", "auth", "token", "--confirm"], True, env).strip()
+    mask(token)
+    versions = request(f"https://api.appstoreconnect.apple.com/v1/apps/{APP}/appStoreVersions?filter[platform]=IOS&limit=200", token)["data"]
+    return token, versions
+
+
 def prepare(env, google, directory, tag):
     app = json.loads(Path("app.json").read_text())
     version = release_version(tag, app["expo"]["version"], json.loads(Path("package.json").read_text())["version"])
     if not Path(f"release-notes/{version}.ko.txt").read_text().strip():
         raise ValueError("Release notes must be committed before a release build.")
+    if env.get("RELEASE_REF_TYPE") == "tag":
+        check_store_state(apple_versions(env)[1], version)
     apple = json.loads(run(["asc", "builds", "next-build-number", "--app", APP, "--output", "json"], True, env))
     token = google_token(google, directory)
     edit = play(token, "/edits", {}, "POST")["id"]
@@ -184,7 +203,7 @@ def build(platform, env, directory, local, number):
         profile = plistlib.loads(run(["security", "cms", "-D", "-i", profile_path], True).encode())
         if profile["TeamIdentifier"] != [TEAM] or profile["Entitlements"].get("get-task-allow") or profile["Entitlements"].get("application-identifier") != f"{TEAM}.{PACKAGE}":
             raise ValueError("An App Store distribution profile for the existing team is required.")
-        installed = Path.home() / "Library/MobileDevice/Provisioning Profiles" / f'{profile["UUID"]}.mobileprovision'
+        installed = Path.home() / "Library/Developer/Xcode/UserData/Provisioning Profiles" / f'{profile["UUID"]}.mobileprovision'
         installed.parent.mkdir(parents=True, exist_ok=True)
         installed.write_bytes(Path(profile_path).read_bytes())
         keychain, key_password = str(directory / "release.keychain-db"), secrets.token_hex(24)
@@ -241,6 +260,7 @@ def submit(platform, env, google, directory):
             release = {"name": f'{version} ({bundle["versionCode"]})', "versionCodes": [str(bundle["versionCode"])], "status": "completed", "releaseNotes": [{"language": "ko-KR", "text": notes}]}
             play(token, f"/edits/{edit}/tracks/internal", {"track": "internal", "releases": [release]}, "PUT")
             play(token, f"/edits/{edit}:validate", {}, "POST")
+            summary(f'Android submission started: edit {edit}, build {bundle["versionCode"]}. Check store state before retrying an interrupted submission.')
             receipt = play(token, f"/edits/{edit}:commit", {}, "POST")
             summary(f'Android internal release committed: {receipt["id"]}, build {bundle["versionCode"]}')
         except Exception:
@@ -250,13 +270,10 @@ def submit(platform, env, google, directory):
                 pass  # An edit already committed is no longer deletable; keep the original failure.
             raise
     else:
-        token = run(["asc", "auth", "token", "--confirm"], True, env).strip()
-        mask(token)
+        token, versions = apple_versions(env)
         api = "https://api.appstoreconnect.apple.com/v1"
-        versions = request(f"{api}/apps/{APP}/appStoreVersions?filter[platform]=IOS&limit=200", token)["data"]
+        check_store_state(versions, version)
         current = next((v for v in versions if v["attributes"]["versionString"] == version), None)
-        if current and current["attributes"]["appStoreState"] not in {"PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED", "REJECTED", "METADATA_REJECTED"}:
-            raise ValueError("This version is already submitted or released; use a new version tag.")
         previous = max((v for v in versions if v["attributes"]["versionString"] != version), key=lambda v: tuple(map(int, v["attributes"]["versionString"].split("."))))
         if not current:
             current = json.loads(run(["asc", "versions", "create", "--app", APP, "--version", version, "--copy-metadata-from", previous["attributes"]["versionString"], "--exclude-fields", "whatsNew", "--copyright", previous["attributes"]["copyright"], "--release-type", "AFTER_APPROVAL", "--output", "json"], True, env))
@@ -272,6 +289,7 @@ def submit(platform, env, google, directory):
             request(f'{api}/appStoreReviewDetails/{existing["id"]}', token, {"data": {"type": "appStoreReviewDetails", "id": existing["id"], "attributes": attributes}}, "PATCH")
         else:
             request(f"{api}/appStoreReviewDetails", token, {"data": {"type": "appStoreReviewDetails", "attributes": attributes, "relationships": {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": version_id}}}}}, "POST")
+        summary(f"iOS submission started: version {version}. Check App Store state before retrying an interrupted submission.")
         receipt = run(["asc", "publish", "appstore", "--app", APP, "--ipa", str(OUT / "app.ipa"), "--version", version, "--wait", "--timeout", "30m", "--submit", "--confirm", "--output", "json"], True, env)
         result = json.loads(receipt)
         summary(json.dumps({k: result.get(k) for k in ["buildId", "versionId", "submissionId", "submitted"]}))
