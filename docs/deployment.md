@@ -24,6 +24,8 @@ git push origin v1.1.3
 
 GitHub 장애·사용 제한이 있어도 기존 Mac/Xcode, Android SDK/Java, `asc` CLI로 무료 로컬 빌드와 수동 제출이 가능합니다. 보호된 기존 `credentials.json`과 `~/Library/Application Support/gling/credentials/`를 사용하며 저장소에는 올리지 않습니다. 로컬 환경의 `.env.local`/`.env.production`도 유지합니다.
 
+수동 빌드는 별도 체크아웃에서 실행합니다. 빌드 명령은 `app.json`으로 생성된 `ios`/`android` 프로젝트를 다시 만들므로, 직접 수정한 네이티브 프로젝트와 섞지 않습니다.
+
 ```sh
 python3 scripts/release.py prepare --tag v1.1.3 --local
 # .release/state.json에 정해진 번호를 아래 55 대신 사용

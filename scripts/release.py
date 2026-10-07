@@ -184,7 +184,7 @@ def build(platform, env, directory, local, number):
         profile = plistlib.loads(run(["security", "cms", "-D", "-i", profile_path], True).encode())
         if profile["TeamIdentifier"] != [TEAM] or profile["Entitlements"].get("get-task-allow") or profile["Entitlements"].get("application-identifier") != f"{TEAM}.{PACKAGE}":
             raise ValueError("An App Store distribution profile for the existing team is required.")
-        installed = Path.home() / "Library/MobileDevice/Provisioning Profiles" / f'{profile["UUID"]}.mobileprovision'
+        installed = Path.home() / "Library/Developer/Xcode/UserData/Provisioning Profiles" / f'{profile["UUID"]}.mobileprovision'
         installed.parent.mkdir(parents=True, exist_ok=True)
         installed.write_bytes(Path(profile_path).read_bytes())
         keychain, key_password = str(directory / "release.keychain-db"), secrets.token_hex(24)
