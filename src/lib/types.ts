@@ -21,7 +21,10 @@ export type TagSlug =
   | 'transport'
   | 'housing'
   | 'education'
-  | 'meetup';
+  | 'business'
+  | 'meetup'
+  | 'jobs'
+  | 'used';
 
 export interface Tag {
   id: number;

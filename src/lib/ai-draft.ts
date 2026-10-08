@@ -11,7 +11,10 @@ const CATEGORY_SLUGS = new Set<TagSlug>([
   'transport',
   'housing',
   'education',
+  'business',
   'meetup',
+  'jobs',
+  'used',
 ]);
 
 export type AiDraft = {

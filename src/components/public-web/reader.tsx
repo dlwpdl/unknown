@@ -33,8 +33,8 @@ function MerchantSourceAction({ postId }: { postId: string }) {
   }, [postId]);
   if (result?.id !== postId) return null;
   return <div className="reader-actions"><a className="reader-secondary" href={result.source.original_url} target="_blank" rel="noopener noreferrer"
-    aria-label={`${result.source.merchant_name} 원문으로 가기, 외부 페이지 열기`}
-    onClick={() => { play('selection'); void trackPublicMerchantSourceClick(postId); }}>원문으로 가기</a></div>;
+    aria-label={`${result.source.merchant_name} 계정으로 가기, 외부 페이지 열기`}
+    onClick={() => { play('selection'); void trackPublicMerchantSourceClick(postId); }}>업체 계정으로 가기 ↗</a></div>;
 }
 
 function AppInvitation({ target, label = '앱에서 대화하기' }: { target: string; label?: string }) {

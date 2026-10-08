@@ -16,7 +16,7 @@ test('reports keep adjusted display totals separate from measured readers and cl
   const text = merchantReportText(report);
   assert.match(text, /표시 조회수.*135.*조정/);
   assert.match(text, /최초 열람.*3/);
-  assert.match(text, /원문 이동 클릭.*4/);
+  assert.match(text, /업체 링크 클릭.*4/);
   assert.match(text, /로그인.*1/);
   assert.match(text, /익명.*2/);
   assert.match(text, /주문.*확인/);
@@ -34,7 +34,7 @@ test('customer HTML escapes merchant and report text and stays standalone', () =
 });
 test('unset quote stays unset, zero actual counts stay zero', () => {
   const text = merchantReportText({ ...report, proposal_amount: null, metrics: { ...report.metrics, source_clicks: 0 } });
-  assert.match(text, /원문 이동 클릭: 0/);
+  assert.match(text, /업체 링크 클릭: 0/);
   assert.doesNotMatch(text, /CAD 0\.00|월 운영:.*0\.00/);
 });
 test('only public HTTPS originals without credentials or local targets are accepted', () => {

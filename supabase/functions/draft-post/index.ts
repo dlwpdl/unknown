@@ -5,7 +5,7 @@ const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-const CATEGORIES = ['life', 'food', 'travel', 'shopping', 'settlement', 'transport', 'housing', 'education', 'meetup'];
+const CATEGORIES = ['life', 'festival', 'food', 'travel', 'shopping', 'settlement', 'transport', 'housing', 'education', 'business', 'meetup', 'jobs', 'used'];
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 Deno.serve(async (request) => {

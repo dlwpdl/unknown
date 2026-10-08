@@ -22,10 +22,13 @@ const expected = [
   ['transport', '이동'],
   ['housing', '주거'],
   ['education', '교육'],
+  ['business', '비즈니스'],
   ['meetup', '모임'],
+  ['jobs', '구인구직'],
+  ['used', '중고거래'],
 ];
 
-test('페스티벌을 라이프와 맛집 사이에 두고 10개 대분류를 제공한다', () => {
+test('구인구직·중고거래는 13개 카테고리의 마지막 두 칸에 둔다', () => {
   assert.deepEqual(TAGS.map(({ slug, label }) => [slug, label]), expected);
 });
 
@@ -39,7 +42,7 @@ test('모든 mock 글이 현재 대분류를 참조한다', () => {
   assert.equal(MOCK_POSTS.every(({ tag }) => categoryIds.has(tag.id)), true);
 });
 
-test('글쓰기 안내가 10개 대분류를 모두 지원한다', () => {
+test('글쓰기 안내가 13개 카테고리를 모두 지원한다', () => {
   assert.deepEqual(Object.keys(t.write.bodyPlaceholder), expected.map(([slug]) => slug));
 });
 

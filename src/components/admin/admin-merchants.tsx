@@ -22,7 +22,7 @@ type ReportInput = Parameters<typeof saveMerchantReport>[1];
 const emptyMerchant = (): MerchantInput => ({ id: merchantEventId(), name: '', city_id: 'vancouver', contact: '', status: 'lead', consent: 'pending', consent_note: '', trial_ends_at: null });
 const errorMessage = (error: unknown) => {
   const code = error instanceof Error ? error.message : '';
-  return ({ MERCHANT_CONSENT_REQUIRED: '게시 허락을 받은 범위와 기록을 먼저 입력해 주세요.', INVALID_ORIGINAL_URL: '원문에는 공개된 HTTPS 페이지의 주소를 넣어주세요.', POST_ALREADY_LINKED: '이미 다른 업체에 연결된 글입니다.', MERCHANT_CITY_LOCKED: '글이 연결된 업체는 도시를 바꿀 수 없습니다.', INVALID_MERCHANT_PERIOD: '해당 도시의 오늘까지, 최근 90일 안의 기간을 선택해 주세요.', REPORT_PERIOD_LOCKED: '저장된 보고서의 기간은 고정됩니다. 새 보고서를 만들어 주세요.', CONTENT_REJECTED: '게시 기준에 맞지 않는 내용입니다. 원고를 확인해 주세요.', ADMIN_REQUIRED: '관리자 권한을 확인한 뒤 다시 로그인해 주세요.' } as Record<string, string>)[code]
+  return ({ MERCHANT_CONSENT_REQUIRED: '게시 허락을 받은 범위와 기록을 먼저 입력해 주세요.', INVALID_ORIGINAL_URL: '업체 계정 주소에는 공개된 HTTPS 페이지의 주소를 넣어주세요.', POST_ALREADY_LINKED: '이미 다른 업체에 연결된 글입니다.', MERCHANT_CITY_LOCKED: '글이 연결된 업체는 도시를 바꿀 수 없습니다.', INVALID_MERCHANT_PERIOD: '해당 도시의 오늘까지, 최근 90일 안의 기간을 선택해 주세요.', REPORT_PERIOD_LOCKED: '저장된 보고서의 기간은 고정됩니다. 새 보고서를 만들어 주세요.', CONTENT_REJECTED: '게시 기준에 맞지 않는 내용입니다. 원고를 확인해 주세요.', ADMIN_REQUIRED: '관리자 권한을 확인한 뒤 다시 로그인해 주세요.' } as Record<string, string>)[code]
     ?? (code.includes('merchants_name_city_idx') ? '같은 도시에 등록된 업체 이름입니다. 기존 업체를 선택해 주세요.' : '저장하거나 불러오지 못했습니다. 입력은 유지했으니 연결 상태를 확인하고 다시 시도해 주세요.');
 };
 function periodFor(zone = 'America/Vancouver') {
@@ -127,7 +127,7 @@ export function AdminMerchantsView({ refreshSignal }: { refreshSignal: number })
     <div className="merchant-layout"><aside aria-label="업체 목록">
       <form className="merchant-search" onSubmit={(e) => { e.preventDefault(); play('selection'); setPage(0); setQuery(input.trim()); setRevision((v) => v + 1); }}>
         <input aria-label="업체 이름 또는 연락처 검색" placeholder="업체 이름 · 연락처 검색" maxLength={120} value={input} onChange={(e) => setInput(e.target.value)} /><button disabled={busy}>검색</button></form>
-      {!currentList ? <p className="merchant-empty" role="status">{error ? '목록을 불러오지 못했습니다.' : '업체를 불러오는 중…'}</p> : !currentList.rows.length ? <div className="merchant-empty"><h2>{query ? '검색 결과가 없습니다' : '첫 업체를 등록해 주세요'}</h2><p>{query ? '다른 이름이나 연락처로 검색해 주세요.' : '업체가 게시를 허락하면 원문 주소와 함께 글을 연결할 수 있습니다.'}</p></div> : <ul className="merchant-list">{currentList.rows.map((m) => <li key={m.id}><button disabled={busy} aria-pressed={selected === m.id} onClick={() => selectMerchant(m)}><strong>{m.name}</strong><span>{m.city_name} · {STATUS[m.status]}</span><small>{CONSENT[m.consent]} · 글 {m.post_count}편 · 보고서 {m.report_count}개</small></button></li>)}</ul>}
+      {!currentList ? <p className="merchant-empty" role="status">{error ? '목록을 불러오지 못했습니다.' : '업체를 불러오는 중…'}</p> : !currentList.rows.length ? <div className="merchant-empty"><h2>{query ? '검색 결과가 없습니다' : '첫 업체를 등록해 주세요'}</h2><p>{query ? '다른 이름이나 연락처로 검색해 주세요.' : '업체가 게시를 허락하면 업체 계정·웹사이트 주소와 함께 글을 연결할 수 있습니다.'}</p></div> : <ul className="merchant-list">{currentList.rows.map((m) => <li key={m.id}><button disabled={busy} aria-pressed={selected === m.id} onClick={() => selectMerchant(m)}><strong>{m.name}</strong><span>{m.city_name} · {STATUS[m.status]}</span><small>{CONSENT[m.consent]} · 글 {m.post_count}편 · 보고서 {m.report_count}개</small></button></li>)}</ul>}
       <nav className="merchant-pager" aria-label="업체 목록 페이지"><button disabled={!page || busy} onClick={() => { play('selection'); setPage((p) => p - 1); }}>이전</button><span>{page + 1}페이지</span><button disabled={!currentList?.more || busy} onClick={() => { play('selection'); setPage((p) => p + 1); }}>다음</button></nav>
     </aside><div className="merchant-workspace">
       {!editor && <div className="merchant-empty"><h2>업체를 선택해 주세요</h2><p>등록된 업체의 글과 성과를 확인하거나 새 업체를 등록할 수 있습니다.</p></div>}
@@ -159,24 +159,24 @@ export function AdminMerchantsView({ refreshSignal }: { refreshSignal: number })
             <div><dt>연결된 글</dt><dd>{detail.metrics.linked_posts}편</dd><small>기간 내 새 글 {detail.metrics.new_posts}편</small></div>
             <div><dt>누적 표시 조회수</dt><dd>{detail.metrics.displayed_views.toLocaleString('ko-KR')}회</dd><small>현재 값 · 익명 조회·운영 조정 포함</small></div>
             <div><dt>기간 내 최초 열람</dt><dd>{detail.metrics.first_reads.toLocaleString('ko-KR')}회</dd><small>로그인 회원 {detail.metrics.unique_readers}명 · 재방문 제외</small></div>
-            <div><dt>기간 내 원문 클릭</dt><dd>{detail.metrics.source_clicks.toLocaleString('ko-KR')}회</dd><small>외부 이동 버튼을 누른 기록</small></div>
-            <div><dt>원문을 누른 로그인 회원</dt><dd>{detail.metrics.member_clickers}명</dd><small>관리자·작성자·시드 계정 제외</small></div>
-            <div><dt>원문을 누른 익명 세션</dt><dd>{detail.metrics.anonymous_sessions}개</dd><small>실제 인원 수와 다를 수 있음</small></div>
+            <div><dt>기간 내 업체 링크 클릭</dt><dd>{detail.metrics.source_clicks.toLocaleString('ko-KR')}회</dd><small>외부 이동 버튼을 누른 기록</small></div>
+            <div><dt>업체 링크를 누른 로그인 회원</dt><dd>{detail.metrics.member_clickers}명</dd><small>관리자·작성자·시드 계정 제외</small></div>
+            <div><dt>업체 링크를 누른 익명 세션</dt><dd>{detail.metrics.anonymous_sessions}개</dd><small>실제 인원 수와 다를 수 있음</small></div>
           </dl>
           <section className="merchant-section"><h2>소개한 글 <span>{detail.merchant.post_count}편</span></h2>
-            {!detail.posts.length ? <p className="merchant-hint">이 기간에 연결된 글이 없습니다.</p> : <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>게시글</th><th>누적 표시 조회</th><th>기간 내 원문 클릭</th></tr></thead><tbody>{detail.posts.map((p) => <tr key={p.post_id}><td><a href={buildSharedPostUrl(p.post_id)} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>{p.title}</a>{p.status !== 'published' && <small> · 비공개</small>}</td><td>{p.displayed_views}</td><td>{p.source_clicks}</td></tr>)}</tbody></table></div>}
+            {!detail.posts.length ? <p className="merchant-hint">이 기간에 연결된 글이 없습니다.</p> : <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>게시글</th><th>누적 표시 조회</th><th>기간 내 업체 링크 클릭</th></tr></thead><tbody>{detail.posts.map((p) => <tr key={p.post_id}><td><a href={buildSharedPostUrl(p.post_id)} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>{p.title}</a>{p.status !== 'published' && <small> · 비공개</small>}</td><td>{p.displayed_views}</td><td>{p.source_clicks}</td></tr>)}</tbody></table></div>}
             {detail.merchant.consent !== 'granted' ? <p className="merchant-hint">게시 허락을 저장하면 글을 연결하거나 대신 작성할 수 있습니다.</p> : <form onSubmit={(e) => { e.preventDefault(); void run(async () => {
               if (postMode === 'link') await linkMerchantPost(supabase, selected, postId, source);
               else await createMerchantPost(supabase, selected, { title, body, tag_slug: tag, original_url: source, kind, request_id: postRequest });
               setPostId(''); setSource(''); setTitle(''); setBody(''); setPostRequest(merchantEventId());
-            }, postMode === 'link' ? '글과 원문 주소를 연결했습니다.' : '글링에 업체 안내를 게시하고 연결했습니다.'); }}>
+            }, postMode === 'link' ? '글과 업체 계정·웹사이트 주소를 연결했습니다.' : '글링에 업체 안내를 게시하고 연결했습니다.'); }}>
               <fieldset disabled={busy || !editable}><div className="merchant-actions"><button type="button" aria-pressed={postMode === 'link'} onClick={() => { play('selection'); setPostMode('link'); }}>기존 글 연결</button><button type="button" aria-pressed={postMode === 'create'} onClick={() => { play('selection'); setPostMode('create'); }}>새 안내글 작성</button></div>
               {postMode === 'link' ? <label>글 선택<select required value={postId} onChange={(e) => { play('selection'); setPostId(e.target.value); setSource(detail.posts.find((p) => p.post_id === e.target.value)?.original_url ?? ''); }}><option value="">같은 도시의 최근 글을 선택하세요</option>{detail.available_posts.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label> : <>
                 <div className="merchant-fields"><label>게시 분류<select value={kind} onChange={(e) => { play('selection'); setKind(e.target.value as 'story' | 'listing'); }}><option value="story">이야기 · 업체 안내</option><option value="listing">구인구직 · 거래</option></select></label><label>주제<select value={tag} onChange={(e) => { play('selection'); setTag(e.target.value); }}>{TAGS.filter((t) => t.kind === 'post').map((t) => <option key={t.slug} value={t.slug}>{t.label}</option>)}</select></label></div>
                 <label>제목<input required value={title} maxLength={100} onChange={(e) => setTitle(e.target.value)} /></label><label>업체가 허락한 원고<textarea required value={body} maxLength={4700} rows={6} onChange={(e) => setBody(e.target.value)} /></label><p className="merchant-hint">등록하면 글링에 바로 게시됩니다. 업체가 허락한 대행 안내라는 문구가 함께 들어갑니다.</p>
               </>}
-              <label>원문 주소<input required type="url" placeholder="https://" value={source} maxLength={2048} onChange={(e) => setSource(e.target.value)} /></label>
-              <p className="merchant-hint">무료·유료 운영 중인 업체의 글에 ‘원문으로 가기’ 버튼이 표시됩니다.</p>
+              <label>업체 계정·웹사이트 주소<input required type="url" placeholder="https://" value={source} maxLength={2048} onChange={(e) => setSource(e.target.value)} /></label>
+              <p className="merchant-hint">무료·유료 운영 중인 업체의 글에 ‘업체 계정으로 가기’ 버튼이 표시됩니다.</p>
               <button className={!draft ? 'merchant-primary' : undefined}>{postMode === 'link' ? '글 연결' : '글링에 게시'}</button></fieldset>
             </form>}
           </section>

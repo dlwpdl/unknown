@@ -22,6 +22,13 @@ test('AI 초안 응답을 앱 형식으로 정규화한다', () => {
   );
 });
 
+test('업체 소개·구인구직·중고거래 초안 카테고리를 지원한다', () => {
+  for (const categorySlug of ['business', 'jobs', 'used']) {
+    const draft = { categorySlug, title: '지역 안내', body: '밴쿠버의 소식을 나눕니다.', hashtags: [] };
+    assert.deepEqual(parseAiDraftResponse({ draft }), draft);
+  }
+});
+
 test('알 수 없는 카테고리나 빈 본문은 거부한다', () => {
   assert.throws(() => parseAiDraftResponse({ draft: { categorySlug: 'sale', title: '제목', body: '본문', hashtags: [] } }));
   assert.throws(() => parseAiDraftResponse({ draft: { categorySlug: 'life', title: '제목', body: ' ', hashtags: [] } }));

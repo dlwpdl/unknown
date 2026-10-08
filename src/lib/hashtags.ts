@@ -10,7 +10,10 @@ export const DEFAULT_HASHTAGS: Record<TagSlug, readonly string[]> = {
   transport: ['차량', '교통', '운전'],
   housing: ['부동산', '렌트', '룸메'],
   education: ['학교', '학원', '어학'],
+  business: ['업체소개', '창업', '사업정보'],
   meetup: ['모임', '취미', '운동'],
+  jobs: ['구인', '구직', '채용'],
+  used: ['중고거래', '판매', '나눔'],
 };
 
 const DEFAULT_TRENDING = ['일상', '맛집', '여행', '핫딜', '워홀', '교통', '렌트', '어학', '모임'];

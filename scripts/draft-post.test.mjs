@@ -57,6 +57,33 @@ test('written draft can be polished without a photo', async () => {
   assert.equal(sent.input[0].content.length, 1);
 });
 
+test('new categories can request drafts and remain valid AI output choices', async () => {
+  let handler, sent;
+  const source = ts.transpileModule(fs.readFileSync(new URL('../supabase/functions/draft-post/index.ts', import.meta.url), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS },
+  }).outputText;
+  vm.runInNewContext(source, {
+    exports: {}, Request, Response, console,
+    Deno: { serve: fn => { handler = fn; }, env: { get: () => 'test-value' } },
+    require: () => ({ createClient: () => ({
+      auth: { getUser: async () => ({ data: { user: { id: 'member' } } }) },
+      from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { ai_safety_consent_at: '2026-09-11' } }) }) }) }),
+      rpc: async () => ({}),
+    }) }),
+    fetch: async (_url, options) => {
+      sent = JSON.parse(options.body);
+      const input = JSON.parse(sent.input[0].content[0].text);
+      return Response.json({ output: [{ content: [{ type: 'output_text', text: JSON.stringify({ categorySlug: input.selectedCategory, title: '지역 안내', body: '밴쿠버 소식을 나눕니다.', hashtags: [] }) }] }] });
+    },
+  });
+  for (const selectedCategory of ['business', 'jobs', 'used']) {
+    const response = await handler(new Request('https://example.test/draft-post', { method: 'POST', headers: { Authorization: 'Bearer test' }, body: JSON.stringify({ cityName: '밴쿠버', selectedCategory, bodyHint: '밴쿠버 소식' }) }));
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).draft.categorySlug, selectedCategory);
+    assert.ok(sent.text.format.schema.properties.categorySlug.enum.includes(selectedCategory));
+  }
+});
+
 test('event meetup request creates an invitation from the seeded festival instead of polishing boilerplate', async () => {
   let handler, sent;
   const source = ts.transpileModule(fs.readFileSync(new URL('../supabase/functions/draft-post/index.ts', import.meta.url), 'utf8'), {

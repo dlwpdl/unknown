@@ -1,6 +1,9 @@
 begin;
 set local search_path=public,extensions;
 select no_plan();
+delete from vault.secrets where name in ('gling_merchant_ga4_measurement_id','gling_merchant_ga4_api_secret');
+select vault.create_secret('G-MERCHANTQA','gling_merchant_ga4_measurement_id');
+select vault.create_secret('local-test-secret','gling_merchant_ga4_api_secret');
 insert into public.cities values('merchant-test','업체검사','BC','America/Vancouver',true);
 insert into auth.users(id,email,raw_app_meta_data) values
 ('11700000-0000-0000-0000-000000000001','merchant-admin@example.com','{"role":"admin"}'),
@@ -13,6 +16,8 @@ insert into public.profiles(id,nickname,city_id,terms_accepted_at,privacy_accept
 ('11700000-0000-0000-0000-000000000003','업체시드검사','merchant-test',now(),now(),now(),'synthetic-seed');
 insert into public.posts(id,author_id,city_id,tag_id,title,body,status,view_count) values
 ('11710000-0000-0000-0000-000000000001','11700000-0000-0000-0000-000000000001','merchant-test',(select id from public.tags where slug='life'),'허락받은 업체 안내','검사 원고입니다.','published',135);
+insert into public.posts(id,author_id,city_id,tag_id,title,body,status) values
+('11710000-0000-0000-0000-000000000002','11700000-0000-0000-0000-000000000001','merchant-test',(select id from public.tags where slug='food'),'일반 맛집 후기','업체에 연결하지 않은 일반 후기입니다.','published');
 select set_config('request.jwt.claims','{"sub":"11700000-0000-0000-0000-000000000002","role":"authenticated"}',true);
 set local role authenticated;
 select throws_ok($$select public.get_admin_merchants()$$,'P0001','ADMIN_REQUIRED','members cannot read merchant contacts');
@@ -26,6 +31,11 @@ select is(public.save_admin_merchant('11720000-0000-0000-0000-000000000001','동
 select is((public.get_admin_merchants('동네')->'merchants'->0->>'contact'),'담당자 연락 기록','private contact readback');
 select throws_ok($$select public.link_admin_merchant_post('11720000-0000-0000-0000-000000000001','11710000-0000-0000-0000-000000000001','javascript:alert(1)')$$,'P0001','INVALID_ORIGINAL_URL','unsafe links refused by server');
 select is(public.link_admin_merchant_post('11720000-0000-0000-0000-000000000001','11710000-0000-0000-0000-000000000001','https://example.com/original'),'11710000-0000-0000-0000-000000000001'::uuid,'post linked');
+reset role;
+update public.posts set tag_id=(select id from public.tags where slug='food') where id='11710000-0000-0000-0000-000000000001';
+set local role authenticated;
+select is(public.get_merchant_post_source('11710000-0000-0000-0000-000000000001')->>'original_url','https://example.com/original','merchant promotion keeps its button in food category');
+select is(public.get_merchant_post_source('11710000-0000-0000-0000-000000000002'),null::jsonb,'ordinary food review has no merchant button');
 select throws_ok($$select public.save_admin_merchant('11720000-0000-0000-0000-000000000001','동네 카페','toronto','','trial','granted','허락')$$,'P0001','MERCHANT_CITY_LOCKED','linked posts keep merchant city consistent');
 select throws_ok($$select public.get_admin_merchant('11720000-0000-0000-0000-000000000001',current_date-100,current_date)$$,'P0001','INVALID_MERCHANT_PERIOD','retained date range enforced');
 select lives_ok($$select public.create_admin_merchant_post('11720000-0000-0000-0000-000000000001','카페 대행 안내','업체가 허락한 메뉴 안내입니다.','life','https://example.com/menu','story','11750000-0000-0000-0000-000000000001')$$,'approved delegate post uses normal publishing');
@@ -54,9 +64,25 @@ select set_config('request.jwt.claims','{"role":"anon"}',true);
 set local role anon;
 select lives_ok($$select public.record_merchant_source_click('11710000-0000-0000-0000-000000000001','web','qa-merchant-anonymous-session','11730000-0000-0000-0000-000000000004')$$,'anonymous click accepted');
 select throws_ok($$select * from private.merchant_source_clicks$$,'42501',null,'click identities private');
+select throws_ok($$select * from vault.decrypted_secrets$$,'42501',null,'GA4 credentials private');
 select throws_ok($$select public.record_merchant_source_click('11710000-0000-0000-0000-000000000001','web','email@example.com','11730000-0000-0000-0000-000000000005')$$,'P0001','INVALID_MERCHANT_CLICK','arbitrary identifiers rejected');
 reset role;
 select is((select count(*) from private.merchant_source_clicks where merchant_id='11720000-0000-0000-0000-000000000001'),2::bigint,'real two clicks only');
+create temporary table merchant_ga4_requests as select convert_from(body,'UTF8')::jsonb as payload from net.http_request_queue
+  where url='https://www.google-analytics.com/mp/collect?measurement_id=G-MERCHANTQA&api_secret=local-test-secret';
+select is((select count(*) from merchant_ga4_requests),2::bigint,'GA4 receives only new eligible clicks, excluding duplicate, admin and seed');
+select is((select count(*) from merchant_ga4_requests where payload->'events'->0->>'name'='merchant_account_click'),2::bigint,'fixed GA4 click event');
+select is((select count(*) from merchant_ga4_requests where payload->'events'->0->'params' @> '{"merchant_id":"11720000-0000-0000-0000-000000000001","merchant_name":"동네 카페","post_id":"11710000-0000-0000-0000-000000000001","city_id":"merchant-test"}'),2::bigint,'merchant context comes from stored relationship');
+select ok(exists(select 1 from merchant_ga4_requests where payload->'events'->0->'params'->>'source_platform'='ios') and exists(select 1 from merchant_ga4_requests where payload->'events'->0->'params'->>'source_platform'='web'),'native and public clicks share measurement');
+select is((select count(*) from merchant_ga4_requests where payload->>'client_id' ~ '^[a-f0-9]{64}$' and payload->'consent' @> '{"ad_user_data":"DENIED","ad_personalization":"DENIED"}'),2::bigint,'temporary sessions hashed and Google ad use denied');
+select ok(not exists(select 1 from merchant_ga4_requests where payload::text ~ '11700000|qa-merchant|example.com|담당자|user_id|email|address|original_url'),'GA4 excludes member identity, contacts, source URL and raw session');
+delete from vault.secrets where name='gling_merchant_ga4_api_secret';
+select set_config('request.jwt.claims','{"role":"anon"}',true);
+set local role anon;
+select lives_ok($$select public.record_merchant_source_click('11710000-0000-0000-0000-000000000001','android','qa-merchant-without-ga4-session','11730000-0000-0000-0000-000000000006')$$,'first-party clicks survive unavailable GA4 configuration');
+reset role;
+select is((select count(*) from private.merchant_source_clicks where event_id='11730000-0000-0000-0000-000000000006'),1::bigint,'missing GA4 never loses local click');
+delete from private.merchant_source_clicks where event_id='11730000-0000-0000-0000-000000000006';
 select set_config('request.jwt.claims','{"sub":"11700000-0000-0000-0000-000000000001","role":"authenticated","aal":"aal2","session_id":"11760000-0000-0000-0000-000000000001","app_metadata":{"role":"admin"}}',true);
 set local role authenticated;
 select is((public.get_admin_merchant('11720000-0000-0000-0000-000000000001',(now() at time zone 'America/Vancouver')::date,(now() at time zone 'America/Vancouver')::date)->'metrics'->>'displayed_views')::int,135,'adjusted display counter included with its own identity');

@@ -18,12 +18,12 @@ export function MerchantSourceLink({ postId }: { postId: string }) {
   if (result?.id !== postId) return null;
   return <View style={styles.section}>
     <ThemedText type="small" themeColor="textSecondary">{result.source.merchant_name} · 업체가 허락한 안내</ThemedText>
-    <Pressable accessibilityRole="link" accessibilityLabel="원문으로 가기, 외부 페이지 열기" style={({ pressed }) => [styles.button, { borderColor: theme.line, opacity: pressed ? 0.6 : 1 }]}
+    <Pressable accessibilityRole="link" accessibilityLabel={`${result.source.merchant_name} 계정으로 가기, 외부 페이지 열기`} style={({ pressed }) => [styles.button, { borderColor: theme.line, opacity: pressed ? 0.6 : 1 }]}
       onPress={() => {
         play('selection'); setError('');
         void trackMerchantSourceClick(supabase, postId, Platform.OS);
-        void Linking.openURL(result.source.original_url).catch(() => { setError('원문을 열지 못했어요. 잠시 후 다시 눌러주세요.'); play('warning'); });
-      }}><ThemedText type="smallBold" themeColor="accent">원문으로 가기</ThemedText></Pressable>
+        void Linking.openURL(result.source.original_url).catch(() => { setError('업체 페이지를 열지 못했어요. 잠시 후 다시 눌러주세요.'); play('warning'); });
+      }}><ThemedText type="smallBold" themeColor="accent">업체 계정으로 가기 ↗</ThemedText></Pressable>
     {!!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
   </View>;
 }
