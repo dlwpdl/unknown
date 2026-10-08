@@ -38,8 +38,8 @@ Deno.serve(async (request) => {
 
     let merchant;
     if (input.intent === 'merchant_promotion') {
-      const owned = await supabase.rpc('get_my_merchants');
-      const row = !owned.error && Array.isArray(owned.data) && owned.data.find((value) => value.id === input.merchantId);
+      const owned = await supabase.rpc('get_merchant_workspace', { p_merchant_id: input.merchantId });
+      const row = !owned.error && owned.data?.merchant;
       if (!row) return jsonError('MERCHANT_ACCESS_REQUIRED', '이 업체를 관리할 권한이 필요합니다.', 403);
       merchant = { name: row.name, cityName: row.city_name };
     }
