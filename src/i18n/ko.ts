@@ -86,6 +86,13 @@ export const t = {
     loadingMore: '이전 글 불러오는 중…',
   },
 
+  map: {
+    open: 'Google 지도에서 보기',
+    openLabel: 'Google 지도에서 보기, 외부 지도 열기',
+    errorTitle: '지도를 열지 못했어요',
+    errorBody: '연결을 확인하고 다시 눌러주세요.',
+  },
+
   write: {
     title: '글쓰기',
     postCity: '게시 지역',
@@ -93,6 +100,9 @@ export const t = {
     postCityNote: '이 글을 나눌 도시를 골라주세요. 프로필의 선호 지역은 그대로 유지돼요.',
     category: '카테고리',
     bodyLabel: '본문',
+    mapPlaceholder: 'Google 지도 공유 링크 (선택)',
+    mapInvalid: 'Google 지도에서 장소의 공유 링크를 복사해 붙여넣어 주세요.',
+    bodyTooLong: '지도 링크를 포함한 본문은 4,000자까지 올릴 수 있어요. 내용을 조금 줄여주세요.',
     hashtags: '해시태그',
     meetupLimitNote: '모임 자리는 멤버십 한도에 따라 사용해요',
     listingLimitNote: '살아있는 구해요·팔아요 글 수에 한도가 있어요',

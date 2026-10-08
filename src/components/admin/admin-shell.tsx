@@ -99,7 +99,7 @@ export function AdminShell({
       <View style={[styles.sidebar, compact && styles.sidebarCompact]}>
         <View style={styles.brandRow}>
           <Image
-            source={require('@/assets/brand/gling-lockup.png')}
+            source={require('@/assets/brand/gling-night-wordmark-light.png')}
             style={styles.brandLogo}
             contentFit="contain"
             accessibilityLabel="gling"

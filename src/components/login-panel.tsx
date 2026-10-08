@@ -82,7 +82,7 @@ export function LoginPanel({
       <KeyboardAvoidingView style={styles.wrap} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView analyticsId="components_login-panel.scrollview.1" contentContainerStyle={styles.center} keyboardShouldPersistTaps="handled">
         <Image
-          source={dark ? require('@/assets/brand/gling-night-wordmark.png') : require('@/assets/brand/gling-wordmark.png')}
+          source={dark ? require('@/assets/brand/gling-night-wordmark.png') : require('@/assets/brand/gling-night-wordmark-light.png')}
           style={styles.brandLogo}
           contentFit="contain"
           accessibilityLabel={t.appName}

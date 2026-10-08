@@ -41,7 +41,7 @@ import { PostDetail } from '@/components/post-detail';
 import { TabContent } from '@/components/tab-content';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
+import { Colors, Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { t } from '@/i18n/ko';
@@ -65,6 +65,7 @@ import { canAddPostImage, MAX_POST_IMAGES } from '@/lib/image-upload';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { TAGS } from '@/lib/mock';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
+import { withPostMap } from '@/lib/post-maps';
 import { supabase } from '@/lib/supabase';
 import type { DailyQuota, Post, PostKind, Tag } from '@/lib/types';
 
@@ -99,6 +100,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [listingQuota, setListingQuota] = useState<DailyQuota | null>(null);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [mapInput, setMapInput] = useState('');
   const [hashtagInput, setHashtagInput] = useState('');
   const [draftImages, setDraftImages] = useState<PreparedImage[]>([]);
   const [creatingDraft, setCreatingDraft] = useState(false);
@@ -460,6 +462,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       return;
     }
     if (submitting) return;
+    let postBody: string;
+    try { postBody = withPostMap(body, mapInput); }
+    catch (error) {
+      play('warning');
+      Alert.alert(t.write.validationTitle, error instanceof Error && error.message === 'INVALID_MAP_LINK' ? t.write.mapInvalid : t.write.bodyTooLong);
+      return;
+    }
     setSubmitting(true);
     const hashtags = parseHashtags(hashtagInput);
     try {
@@ -468,7 +477,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         cityId: draftCity.id,
         tag,
         title: title.trim(),
-        body: body.trim(),
+        body: postBody,
         hashtags,
         images: draftImages.map(({ base64, mimeType, thumbBase64, width, height }) => ({ base64, mimeType, thumbBase64, width, height })),
         kind: postKind,
@@ -483,6 +492,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       setTagFilter(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null);
       setTitle('');
       setBody('');
+      setMapInput('');
       setHashtagInput('');
       setDraftImages([]);
       setAiDraftReady(false);
@@ -534,7 +544,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     <TabContent style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={[styles.headRow, { backgroundColor: theme.background }]}>
-          <Image source={require('@/assets/brand/gling-night-wordmark.png')} style={styles.wordmark} contentFit="contain" accessibilityLabel={t.appName} />
+          <Image source={theme === Colors.light ? require('@/assets/brand/gling-night-wordmark-light.png') : require('@/assets/brand/gling-night-wordmark.png')} style={styles.wordmark} contentFit="contain" accessibilityLabel={t.appName} />
           <GlassSurface tone="control" interactive style={styles.cityGlass}><Pressable analyticsId="components_feed-screen.pressable.1"
             onPress={() => { play('reaction'); setCityPicker(true); }} accessibilityRole="button"
             accessibilityLabel={`${city.name}, ${t.feed.cityPickerTitle}`}
@@ -973,6 +983,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 <TextInput value={body} onChangeText={setBody} accessibilityLabel={t.write.bodyLabel}
                   placeholder={tag.kind !== 'meetup' && postKind === 'listing' ? t.write.listingBodyPlaceholder : t.write.bodyPlaceholder[tag.slug]} placeholderTextColor={theme.textSecondary} multiline
                   style={[styles.bodyInput, { color: theme.text, borderBottomColor: theme.line }]} />
+                {tag.kind !== 'meetup' && <TextInput value={mapInput} onChangeText={setMapInput}
+                  onFocus={() => play('selection')} accessibilityLabel={t.write.mapPlaceholder}
+                  placeholder={t.write.mapPlaceholder} placeholderTextColor={theme.textSecondary}
+                  keyboardType="url" autoCapitalize="none" autoCorrect={false} maxLength={2048}
+                  style={[styles.hashtagInput, { color: theme.text, borderBottomColor: theme.line, minHeight: 44 }]} />}
                 <Pressable analyticsId="components_feed-screen.pressable.23"
                   onPress={() => { play('selection'); void createAiDraft(); }}
                   disabled={creatingDraft || (draftImages.length === 0 && !title.trim() && !body.trim())}

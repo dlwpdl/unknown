@@ -11,6 +11,8 @@ import { chillingSchedule, recommendedAgeLabel } from '@/lib/chilling';
 import { appendUniquePosts, loadPublicFeed, loadPublicPost, type FeedCursor } from '@/lib/feed-data';
 import { CITIES, TAGS } from '@/lib/mock';
 import { visibleMeetupBody } from '@/lib/meetup-ai';
+import { googleMapsUrl, postMapBody } from '@/lib/post-maps';
+import { t } from '@/i18n/ko';
 import { publicWebTarget } from '@/lib/public-web';
 import { publicWebClient } from '@/lib/public-web-client';
 import { InteractionFeedbackProvider, useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -35,6 +37,15 @@ function MerchantSourceAction({ postId }: { postId: string }) {
   return <div className="reader-actions"><a className="reader-secondary" href={result.source.original_url} target="_blank" rel="noopener noreferrer"
     aria-label={`${result.source.merchant_name} 계정으로 가기, 외부 페이지 열기`}
     onClick={() => { play('selection'); void trackPublicMerchantSourceClick(postId); }}>업체 계정으로 가기 ↗</a></div>;
+}
+
+function MapAction({ url }: { url: string }) {
+  const { play } = useInteractionFeedback();
+  const target = googleMapsUrl(url);
+  if (!target) return null;
+  return <div className="reader-actions"><a data-analytics="components_post-map-link.pressable.1" className="reader-secondary"
+    href={target} target="_blank" rel="noopener noreferrer" aria-label={t.map.openLabel}
+    onClick={() => play('selection')}>{t.map.open} ↗</a></div>;
 }
 
 function AppInvitation({ target, label = '앱에서 대화하기' }: { target: string; label?: string }) {
@@ -83,6 +94,7 @@ export default function PublicReader() {
   const [shareMessage, setShareMessage] = useState('');
   const current = result?.key === key ? result : null;
   const post = detail ? current?.posts[0] : undefined;
+  const mappedPost = post ? postMapBody(post.body) : null;
   const loading = (browse || Boolean(postId)) && !current;
   const target = publicWebTarget(path, postId ?? undefined);
   useReaderAnalytics(detail ? 'post' : browse ? 'feed' : 'app-invitation', key);
@@ -152,28 +164,30 @@ export default function PublicReader() {
             <button data-analytics="web_control_9" type="submit">보기</button>
           </form>
           <div aria-busy={loading}>
-            {current?.posts.map((item) => <article className="reader-card" key={item.id}>
+            {current && <InteractionFeedbackProvider>{current.posts.map((item) => { const mapped = postMapBody(item.body); return <article className="reader-card" key={item.id}>
               <div><p className="reader-kicker">{item.tag.label}{item.room?.closed ? ' · 모집 마감' : ''}</p>
                 <h3><a data-analytics="web_control_10" href={`/post?id=${encodeURIComponent(item.id)}`}>{item.title}</a></h3>
-                <p className="reader-excerpt">{item.room ? visibleMeetupBody(item.body) : item.body}</p>
+                <p className="reader-excerpt">{item.room ? visibleMeetupBody(mapped.body) : mapped.body}</p>
+                {mapped.url && <MapAction url={mapped.url} />}
                 <p className="reader-meta">{item.author.nickname} · {item.createdAtLabel}</p>
                 {item.room && <p className="reader-meta">{chillingSchedule(item.room)} · {recommendedAgeLabel(item.room)}</p>}
               </div>
               {(item.imageThumbs?.[0] ?? item.imageUris?.[0]) && <img src={item.imageThumbs?.[0] ?? item.imageUris?.[0]} alt="" loading="lazy" className="reader-thumbnail" />}
-            </article>)}
+            </article>; })}</InteractionFeedbackProvider>}
           </div>
           {current?.more && <button data-analytics="web_control_11" className="reader-more" onClick={() => void more()} disabled={busy}>{busy ? '불러오는 중…' : '이야기 더 보기'}</button>}
         </> : detail ? <>
           <a data-analytics="web_control_12" className="reader-back" href="/">← 동네 이야기로</a>
-          {post && <article className="reader-post"><p className="reader-kicker">{CITIES.find((item) => item.id === post.cityId)?.name} · {post.tag.label}</p>
+          {post && <InteractionFeedbackProvider><article className="reader-post"><p className="reader-kicker">{CITIES.find((item) => item.id === post.cityId)?.name} · {post.tag.label}</p>
             <h1>{post.title}</h1><p className="reader-meta">{post.author.nickname} · {post.createdAtLabel}</p>
             {post.imageUris?.map((uri, index) => <img className="reader-photo" key={uri} src={uri} alt={`${post.title} 사진 ${index + 1}`} loading="lazy" />)}
-            <p className="reader-body">{post.room ? visibleMeetupBody(post.body) : post.body}</p><MeetupInfo post={post} />
-            <InteractionFeedbackProvider><MerchantSourceAction postId={post.id} /></InteractionFeedbackProvider>
+            <p className="reader-body">{post.room ? visibleMeetupBody(mappedPost!.body) : mappedPost!.body}</p><MeetupInfo post={post} />
+            {mappedPost?.url && <MapAction url={mappedPost.url} />}
+            <MerchantSourceAction postId={post.id} />
             <div className="reader-actions"><a data-analytics="web_control_13" className="reader-primary" href={target}>{post.room ? post.room.closed ? '앱에서 모임 보기' : '앱에서 모임 보기 · 참여하기' : '앱에서 대화하기'} ↗</a><button data-analytics="web_control_14" onClick={() => void share()}>링크 공유</button></div>
             <p role="status">{shareMessage}</p>
             {!!post.commentList?.length && <section className="reader-comments"><h2>공개 댓글</h2>{post.commentList.map((comment) => <article key={comment.id}><strong>{comment.nickname}</strong><p>{comment.body}</p></article>)}<a data-analytics="web_control_15" href={target}>앱에서 댓글 남기기 ↗</a></section>}
-          </article>}
+          </article></InteractionFeedbackProvider>}
         </> : <section className="reader-hero"><h1>앱에서 이어가세요.</h1><p>웹에서는 공개 이야기와 모임을 둘러볼 수 있어요. 작성·참여·대화와 내 정보 관리는 앱에서 이용해 주세요.</p><a data-analytics="web_control_16" href="/">공개 이야기 둘러보기 →</a></section>}
         {loading && <p role="status" className="reader-notice">이야기를 불러오고 있어요…</p>}
         {current?.failed && <div role="alert" className="reader-notice"><p>이야기를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p><button data-analytics="web_control_17" onClick={() => setRetry((value) => value + 1)}>다시 시도</button></div>}

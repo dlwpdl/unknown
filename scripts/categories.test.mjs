@@ -16,19 +16,19 @@ const expected = [
   ['life', '라이프'],
   ['festival', '페스티벌'],
   ['food', '맛집'],
+  ['business', '비즈니스'],
   ['travel', '여행'],
   ['shopping', '쇼핑'],
   ['settlement', '정착'],
   ['transport', '이동'],
   ['housing', '주거'],
   ['education', '교육'],
-  ['business', '비즈니스'],
   ['meetup', '모임'],
   ['jobs', '구인구직'],
   ['used', '중고거래'],
 ];
 
-test('구인구직·중고거래는 13개 카테고리의 마지막 두 칸에 둔다', () => {
+test('맛집 바로 뒤에 비즈니스를 두고 13개 카테고리를 제공한다', () => {
   assert.deepEqual(TAGS.map(({ slug, label }) => [slug, label]), expected);
 });
 
@@ -43,7 +43,13 @@ test('모든 mock 글이 현재 대분류를 참조한다', () => {
 });
 
 test('글쓰기 안내가 13개 카테고리를 모두 지원한다', () => {
-  assert.deepEqual(Object.keys(t.write.bodyPlaceholder), expected.map(([slug]) => slug));
+  assert.deepEqual(Object.keys(t.write.bodyPlaceholder).sort(), expected.map(([slug]) => slug).sort());
+});
+
+test('비즈니스 글이 없어도 업체 소개와 사업 정보 해시태그를 제안한다', () => {
+  const category = TAGS.find(({ slug }) => slug === 'business');
+  assert.ok(category);
+  assert.deepEqual(getSuggestedHashtags([], category, 3), ['업체소개', '창업', '사업정보']);
 });
 
 test('실제 사용 빈도가 높은 해시태그를 먼저 제안한다', () => {

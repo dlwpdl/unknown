@@ -1,6 +1,6 @@
 # gling night · current brand
 
-글링의 단일 로고는 [`gling-night-wordmark.png`](gling-night-wordmark.png)이다. 앱 아이콘과 Instagram `@gling.app` 프로필 사진은 동일한 [`gling-night-app-icon.png`](gling-night-app-icon.png)를 쓴다. 글자나 점의 비율·색을 다시 그리지 않는다. 활성 색상값은 [`src/constants/theme.ts`](../../src/constants/theme.ts)를 확인한다. 관리 화면의 밝은 테마는 별도다.
+글링의 로고는 [`gling-night-wordmark.png`](gling-night-wordmark.png)이다. 밝은 화면에는 같은 모양의 [`gling-night-wordmark-light.png`](gling-night-wordmark-light.png)를 쓴다. 사용자2026-10-08 지시로 밝은 변형의 글자는 `#21252C`, 점은 기존 `#F4CA78`이며 배경은 투명하다. [`벡터 원본`](gling-night-wordmark.svg)에서 글자 fill만 바꾸고 720×300으로 렌더한 것이므로 글자·점의 모양과 비율은 그대로다. 앱 아이콘과 Instagram `@gling.app` 프로필 사진은 동일한 [`gling-night-app-icon.png`](gling-night-app-icon.png)를 쓴다. 활성 색상값은 [`src/constants/theme.ts`](../../src/constants/theme.ts)를 확인한다. 관리 화면의 밝은 테마는 별도다.
 
 | Role | Color | Use |
 | --- | --- | --- |

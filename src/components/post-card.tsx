@@ -6,6 +6,7 @@ import { Alert, Animated, Easing, Platform, Share, StyleSheet, View } from 'reac
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
+import { PostMapLink } from '@/components/post-map-link';
 import { ReportSheet } from '@/components/report-sheet';
 import { TrustBadge } from '@/components/trust-badge';
 import { Spacing } from '@/constants/theme';
@@ -16,6 +17,7 @@ import { recordPostShare, togglePostReaction } from '@/lib/community-data';
 import { getPostImageSource } from '@/lib/feed-data';
 import { visibleMeetupBody } from '@/lib/meetup-ai';
 import { uniqueHashtags } from '@/lib/hashtags';
+import { postMapBody } from '@/lib/post-maps';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { buildSharedPostUrl } from '@/lib/sharing';
 import { supabase } from '@/lib/supabase';
@@ -68,6 +70,7 @@ export function PostCard({
   const photo = hidePhoto || (failedPhoto?.postId === post.id && failedPhoto.uri === firstPhoto) ? undefined : firstPhoto;
   const photoCount = post.imagePaths?.length ?? 0;
   const chips = uniqueHashtags([post.author.neighborhood, ...(post.hashtags ?? [])]);
+  const mapped = postMapBody(post.body);
 
   const toggleLike = async () => {
     if (!isAuthed) return promptLogin(t.auth.reasonLike);
@@ -144,89 +147,7 @@ export function PostCard({
         photo ? styles.photoCard : styles.textCard,
         { backgroundColor: theme.card },
       ]}>
-      {photo && (
-        <Pressable analyticsId="components_post-card.pressable.1"
-          onPress={openPost}
-          disabled={!onPress}
-          accessibilityRole={onPress ? 'button' : 'image'}
-          accessibilityLabel={`${t.feed.postImage} · ${post.title}`}
-          style={({ pressed }) => pressed && styles.pressed}>
-          <Image
-            key={photoKey}
-            source={photoSource}
-            style={[styles.postImage, flat && styles.flatPostImage, { aspectRatio: photoAspectRatio, backgroundColor: theme.backgroundElement }]}
-            contentFit="contain"
-            cachePolicy="memory-disk"
-            recyclingKey={`${viewerScope}:${post.id}`}
-            transition={0}
-            onLoad={({ source: { width, height } }) => {
-              if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
-                setLoadedPhoto({ key: photoKey, aspectRatio: width / height });
-              }
-            }}
-            onError={() => setFailedPhoto({ postId: post.id, uri: photo })}
-          />
-          {photoCount > 1 && (
-            <View style={styles.photoCount}>
-              <ThemedText type="smallBold" style={styles.photoCountText}>{`1/${photoCount}`}</ThemedText>
-            </View>
-          )}
-        </Pressable>
-      )}
-
       <View style={[styles.content, photo && !flat && styles.photoContent]}>
-        <Pressable analyticsId="components_post-card.pressable.2"
-          onPress={openPost}
-          disabled={!onPress}
-          accessibilityRole={onPress ? 'button' : undefined}
-          style={({ pressed }) => pressed && styles.pressed}>
-          <ThemedText
-            type="smallBold"
-            style={[styles.category, { color: isMeetup ? theme.accent : theme.textSecondary }]}>
-            {post.tag.label}{isListing ? ` · ${t.detail.listingBadge}` : ''}
-          </ThemedText>
-          <ThemedText style={[styles.title, photo && styles.photoTitle, flat && styles.detailTitle]}>
-            {post.title}
-          </ThemedText>
-          <ThemedText
-            themeColor="textSecondary"
-            style={styles.body}
-            numberOfLines={onPress ? 3 : undefined}>
-            {post.room ? visibleMeetupBody(post.body) : post.body}
-          </ThemedText>
-          {isListing && (post.price != null || (post.listingStatus && post.listingStatus !== 'open')) && (
-            <View style={styles.listingLine}>
-              {post.price != null && <ThemedText style={styles.price}>{t.detail.price(post.price)}</ThemedText>}
-              {post.listingStatus && post.listingStatus !== 'open' && (
-                <ThemedText type="small" themeColor="textSecondary">{t.detail.listingStatus[post.listingStatus]}</ThemedText>
-              )}
-            </View>
-          )}
-        </Pressable>
-
-        {afterBody}
-
-        {chips.length > 0 && (
-          <View style={styles.hashRow}>
-            {chips.map((chip) => (
-              <Pressable analyticsId="components_post-card.pressable.3"
-                key={chip}
-                onPress={onHashtag ? () => {
-                  play('selection');
-                  onHashtag(chip);
-                } : undefined}
-                disabled={!onHashtag}
-                accessibilityRole={onHashtag ? 'button' : undefined}
-                accessibilityLabel={t.feed.hashtagFilter(chip)}
-                style={({ pressed }) => [styles.hash, pressed && styles.pressed]}>
-                <ThemedText type="small" style={{ color: theme.navy }}>
-                  {'#' + chip}
-                </ThemedText>
-              </Pressable>
-            ))}
-          </View>
-        )}
-
         <View style={styles.head}>
           <Pressable analyticsId="components_post-card.pressable.4"
             onPress={() => { play('reaction'); onAuthor?.(); }}
@@ -267,6 +188,85 @@ export function PostCard({
             </Pressable>
           )}
         </View>
+
+        <Pressable analyticsId="components_post-card.pressable.2"
+          onPress={openPost}
+          disabled={!onPress}
+          accessibilityRole={onPress ? 'button' : undefined}
+          accessibilityLabel={onPress ? `${post.tag.label} · ${post.title}` : undefined}
+          style={({ pressed }) => pressed && styles.pressed}>
+          <ThemedText
+            type="smallBold"
+            style={[styles.category, { color: isMeetup ? theme.accent : theme.textSecondary }]}>
+            {post.tag.label}{isListing ? ` · ${t.detail.listingBadge}` : ''}
+          </ThemedText>
+          <ThemedText style={[styles.title, flat && !onPress && styles.detailTitle]}>
+            {post.title}
+          </ThemedText>
+          {photo && (
+            <View style={styles.photoMedia}>
+              <Image
+                key={photoKey}
+                source={photoSource}
+                accessibilityLabel={`${t.feed.postImage} · ${post.title}`}
+                style={[styles.postImage, flat && styles.flatPostImage, { aspectRatio: photoAspectRatio, backgroundColor: theme.backgroundElement }]}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+                recyclingKey={`${viewerScope}:${post.id}`}
+                transition={0}
+                onLoad={({ source: { width, height } }) => {
+                  if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+                    setLoadedPhoto({ key: photoKey, aspectRatio: width / height });
+                  }
+                }}
+                onError={() => setFailedPhoto({ postId: post.id, uri: photo })}
+              />
+              {photoCount > 1 && (
+                <View style={styles.photoCount}>
+                  <ThemedText type="smallBold" style={styles.photoCountText}>{`1/${photoCount}`}</ThemedText>
+                </View>
+              )}
+            </View>
+          )}
+          <ThemedText
+            themeColor="textSecondary"
+            style={styles.body}
+            numberOfLines={onPress ? 3 : undefined}>
+            {post.room ? visibleMeetupBody(mapped.body) : mapped.body}
+          </ThemedText>
+          {isListing && (post.price != null || (post.listingStatus && post.listingStatus !== 'open')) && (
+            <View style={styles.listingLine}>
+              {post.price != null && <ThemedText style={styles.price}>{t.detail.price(post.price)}</ThemedText>}
+              {post.listingStatus && post.listingStatus !== 'open' && (
+                <ThemedText type="small" themeColor="textSecondary">{t.detail.listingStatus[post.listingStatus]}</ThemedText>
+              )}
+            </View>
+          )}
+        </Pressable>
+
+        {mapped.url && <PostMapLink url={mapped.url} />}
+        {afterBody}
+
+        {chips.length > 0 && (
+          <View style={styles.hashRow}>
+            {chips.map((chip) => (
+              <Pressable analyticsId="components_post-card.pressable.3"
+                key={chip}
+                onPress={onHashtag ? () => {
+                  play('selection');
+                  onHashtag(chip);
+                } : undefined}
+                disabled={!onHashtag}
+                accessibilityRole={onHashtag ? 'button' : undefined}
+                accessibilityLabel={t.feed.hashtagFilter(chip)}
+                style={({ pressed }) => [styles.hash, pressed && styles.pressed]}>
+                <ThemedText type="small" style={{ color: theme.navy }}>
+                  {'#' + chip}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </View>
+        )}
 
         {post.room && !hideRoom && (
           <View style={[styles.module, { backgroundColor: theme.backgroundElement }]}>
@@ -416,16 +416,16 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.65 },
   postImage: { width: '100%' },
   flatPostImage: { borderRadius: 16 },
-  category: { fontSize: 12, lineHeight: 18, marginBottom: Spacing.two },
-  title: { fontSize: 18, lineHeight: 26, fontWeight: '700', letterSpacing: -0.4 },
-  photoTitle: { fontSize: 20, lineHeight: 28, letterSpacing: -0.5 },
+  photoMedia: { marginTop: Spacing.three, borderRadius: 16, overflow: 'hidden' },
+  category: { fontSize: 12, lineHeight: 18, marginBottom: Spacing.one },
+  title: { fontSize: 20, lineHeight: 28, fontWeight: '700', letterSpacing: -0.5 },
   detailTitle: { fontSize: 28, lineHeight: 36, letterSpacing: -0.6 },
   body: { fontSize: 15, lineHeight: 22, fontWeight: '400', marginTop: Spacing.two },
   listingLine: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two, marginTop: Spacing.two },
   price: { fontSize: 17, lineHeight: 24, fontWeight: '700', letterSpacing: -0.3 },
   hashRow: { flexDirection: 'row', flexWrap: 'wrap', columnGap: Spacing.three },
   hash: { minHeight: 44, minWidth: 44, maxWidth: '100%', flexShrink: 1, justifyContent: 'center' },
-  head: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginTop: Spacing.two },
+  head: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.two },
   author: { flex: 1, minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, borderRadius: 12 },
   authorCopy: { flex: 1 },
   nickRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: Spacing.one },

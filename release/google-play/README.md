@@ -1,5 +1,9 @@
 # Google Play 자료
 
+이 문서는 1.0.0 (6) 제출 이력이다. 다음 스토어 이미지 제작에는 [현재 브랜드 기준](../../assets/brand/BRAND.md)과 `gling-night-app-icon.png`를 사용한다.
+
+2026-10-08 로고 점검: 다음 제출용 `icon-512-1.1.0.png`와 `feature-graphic-1.1.0.svg/png`의 옛 G 아이콘을 현재 `gling-night-app-icon.png`로 교체했다. 홍보 이미지의 문구·배치와 기존 워드마크는 유지했다. 로컬 제출 자료이며 이번 점검에서 스토어 업로드는 하지 않았다. 아래 1.0.0 제출 이력과 당시 캡처는 보관 기록이다.
+
 - `icon-512.png`: 기존 `assets/brand/gling-app-icon.png`를 macOS `sips -z 512 512`로 내보낸 512×512 PNG.
 - `feature-graphic.png`: 기존 글링 로고·아이콘을 참조해 생성한 홍보 이미지. 1024×500 PNG로 `sips` 내보내기 후 한국어 문구와 로고를 확인했다.
 - `phone/`: 2026-09-09에 Gling 전용 Android 16(API 36), Pixel 9 에뮬레이터에서 촬영한 실제 Release 1.0.0 (6) 화면. 1080×1920, 420dpi이며 `adb exec-out screencap -p`로 촬영했다. 사진 합성·화면 보정은 하지 않았다.

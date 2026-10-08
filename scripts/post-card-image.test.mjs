@@ -6,6 +6,7 @@ import ts from 'typescript';
 import { getPostImageSource } from '../src/lib/feed-data.ts';
 import { uniqueHashtags } from '../src/lib/hashtags.ts';
 import { count, t } from '../src/i18n/ko.ts';
+import { googleMapsUrl, postMapBody } from '../src/lib/post-maps.ts';
 
 // Native image events and React state are supplied here; sizing/rendering runs the real components.
 function cardRenderer(component = 'PostCard') {
@@ -13,6 +14,9 @@ function cardRenderer(component = 'PostCard') {
   let cursor = 0;
   let viewer = 'viewer-a';
   const feedback = [];
+  const openedMaps = [];
+  const alerts = [];
+  let mapFailure = false;
   const react = {
     useCallback: (callback) => callback,
     useRef: (value) => ({ current: value }),
@@ -27,10 +31,13 @@ function cardRenderer(component = 'PostCard') {
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'expo-image': { Image: 'Image' },
     'expo-symbols': { SymbolView: 'SymbolView' },
-    'react-native': { View: 'View', StyleSheet: { create: (value) => value, hairlineWidth: 1 }, Animated: { Value: class {}, View: 'Animated.View' } },
+    'react-native': { View: 'View', StyleSheet: { create: (value) => value, hairlineWidth: 1 }, Animated: { Value: class {}, View: 'Animated.View' },
+      Linking: { openURL: (url) => { openedMaps.push(url); return mapFailure ? Promise.reject(new Error('offline')) : Promise.resolve(); } },
+      Alert: { alert: (...args) => alerts.push(args) } },
     'react-native-reanimated': { useReducedMotion: () => true },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/components/themed-text': { ThemedText: 'ThemedText' },
+    '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
     '@/components/report-sheet': { ReportSheet: 'ReportSheet' },
     '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16 } },
@@ -41,12 +48,13 @@ function cardRenderer(component = 'PostCard') {
     '@/lib/feed-data': { getPostImageSource },
     '@/lib/meetup-ai': {},
     '@/lib/hashtags': { uniqueHashtags },
+    '@/lib/post-maps': { googleMapsUrl, postMapBody },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: (kind) => feedback.push(kind) }) },
     '@/lib/sharing': {},
     '@/lib/supabase': {},
   };
   const exports = {};
-  const file = component === 'PostCard' ? 'post-card' : 'post-photo-gallery';
+  const file = component === 'PostCard' ? 'post-card' : component === 'PostMapLink' ? 'post-map-link' : 'post-photo-gallery';
   const source = ts.transpileModule(fs.readFileSync(new URL(`../src/components/${file}.tsx`, import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
@@ -54,13 +62,39 @@ function cardRenderer(component = 'PostCard') {
     assert.ok(name in modules, `Unexpected import: ${name}`);
     return modules[name];
   } });
-  return { render(props) { cursor = 0; return exports[component](props); }, feedback, setViewer: (id) => { viewer = id; } };
+  return { render(props) { cursor = 0; return exports[component](props); }, feedback, openedMaps, alerts,
+    failMap: () => { mapFailure = true; }, setViewer: (id) => { viewer = id; } };
 }
 
 const nodes = (tree) => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap((value) => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
 const image = (tree) => nodes(tree).find((node) => node.type === 'Image');
 const style = (node) => Array.isArray(node.props.style) ? Object.assign({}, ...node.props.style.filter(Boolean)) : node.props.style;
 const loaded = (width, height) => ({ cacheType: 'memory', source: { url: 'signed:photo', width, height, mediaType: 'image/webp', isAnimated: false } });
+
+test('지도 버튼은 안전한 Google 링크만 열고 실패를 알린다', async () => {
+  const map = cardRenderer('PostMapLink');
+  assert.equal(map.render({ url: 'https://evil.test/maps' }), null);
+  const tree = map.render({ url: 'https://maps.app.goo.gl/Example' });
+  assert.equal(tree.props.accessibilityRole, 'link');
+  tree.props.onPress();
+  assert.deepEqual(map.openedMaps, ['https://maps.app.goo.gl/Example']);
+  assert.deepEqual(map.feedback, ['selection']);
+  map.failMap();
+  tree.props.onPress();
+  await new Promise(setImmediate);
+  assert.deepEqual(map.feedback, ['selection', 'selection', 'warning']);
+  assert.deepEqual(map.alerts, [[t.map.errorTitle, t.map.errorBody]]);
+});
+
+test('지도 링크를 읽기 본문과 분리하고 글 열기 버튼 밖에 표시한다', () => {
+  const card = cardRenderer();
+  const tree = card.render({ post: { id: 'mapped', title: '장소 소개', body: '소개 본문\n\nGoogle 지도: https://maps.app.goo.gl/Example',
+    author: { id: 'author', nickname: '작성자' }, tag: { kind: 'post', label: '비즈니스' }, likes: 0, saves: 0, comments: 0, views: 0 }, onPress() {} });
+  const postButton = nodes(tree).find((node) => node.props?.analyticsId === 'components_post-card.pressable.2');
+  assert.ok(nodes(postButton).some((node) => node.props?.children === '소개 본문'));
+  assert.ok(!nodes(postButton).some((node) => node.type === 'PostMapLink'));
+  assert.equal(nodes(tree).find((node) => node.type === 'PostMapLink').props.url, 'https://maps.app.goo.gl/Example');
+});
 
 test('피드 사진 전체를 원본 비율로 표시하고 글·사진·뷰어 변경에 이전 크기를 쓰지 않는다', () => {
   const card = cardRenderer();
@@ -90,8 +124,8 @@ test('피드 사진 전체를 원본 비율로 표시하고 글·사진·뷰어 
   photo = image(card.render(props));
   assert.notEqual(style(photo).aspectRatio, 0.8);
   assert.equal(photo.props.source.cacheKey, 'post-image:viewer-b:owner/one.webp');
-  const photoButton = nodes(card.render(props)).find((node) => node.props?.analyticsId === 'components_post-card.pressable.1');
-  photoButton.props.onPress();
+  const postButton = nodes(card.render(props)).find((node) => node.props?.analyticsId === 'components_post-card.pressable.2');
+  postButton.props.onPress();
   assert.equal(opened, 1);
   assert.deepEqual(card.feedback, ['selection']);
   photo.props.onError({ error: 'unavailable' });
