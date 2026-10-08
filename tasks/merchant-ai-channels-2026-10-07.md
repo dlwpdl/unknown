@@ -15,7 +15,9 @@
 
 `supabase/functions/draft-post/index.ts`: 소상공인 intent와 서버 문맥. `src/components/merchant-workspace.tsx`: 기존 편집기·폼·피드백·실행 잠금·원고 승인/게시 RPC를 재사용한다. 새 의존성·DB 변경·예약 자동화는 필요 없다.
 
-현재 night/iris 테마, 시스템 글꼴, 44px 조작 영역, React Native Switch와 기존 `useInteractionFeedback().play(...)`를 사용한다. 단계마다 주 행동 하나, 사실 입력 → 편집 → 게시 채널 확인. 기존 스타일 예: `changeDraft({ title })`, `void run(async () => ..., '초안을 저장했어요.')`.
+현재 night/iris 테마, 시스템 글꼴, 44px 조작 영역, React Native Switch와 기존 `useInteractionFeedback().play(...)`를 사용한다. 단계마다 주 행동 하나, 사실 입력 → 편집 → 게시 채널 확인. 확인 단계에서는 원고 목록을 접는다. 게시한 글을 다시 열어도 카페 원고를 준비할 수 있다.
+
+서버 업체 확인은 `get_merchant_workspace(p_merchant_id)`의 기존 소유자·활성 계정·관리자 AAL2/감사 검사를 재사용한다. 50개 제한이 있는 업체 목록으로 권한을 판정하지 않는다. 응답에서 가게 이름·도시만 AI에 전달한다.
 
 근거: Apple Design 스킬, [Buffer AI 입력·삽입](https://mobbin.com/screens/ff1e037e-1a9f-4bd3-8264-45189fe6ec0e), 승인된 `output/design/gling-merchant-ai-channels-2026-10-07.html`, 공식 Expo SDK57 문서.
 
@@ -31,7 +33,8 @@
 node --experimental-strip-types --test scripts/merchant-ai-draft.test.mjs scripts/draft-post.test.mjs scripts/merchant-workspace.test.mjs
 npm run typecheck
 npm test
-npx eslint src/components/merchant-workspace.tsx supabase/functions/draft-post/index.ts
+npx eslint src/components/merchant-workspace.tsx
+npx eslint supabase/functions/draft-post/index.ts --rule 'import/no-unresolved: off'
 npx expo export --platform web --output-dir output/qa/merchant-ai-implementation-2026-10-07/web-build
 ```
 
@@ -40,3 +43,12 @@ npx expo export --platform web --output-dir output/qa/merchant-ai-implementation
 항상: 입력 검증·권한·동의·비용 한도·승인 원고·계정/업체 분리·접근성·서버 안전 모니터링을 보존한다. AI 출력은 원고 데이터이며 자동으로 저장/게시하지 않는다.
 
 이번 구현은 코드와 로컬 모의 검증이다. 유료 AI 실제 호출·실제 업체 글 게시·네이버 개발자 앱 등록·운영 배포·새 스토어 제출은 별도로 구분한다. 네이버 자동 연결에 필요한 개발자 앱 등록 여부는 사용자에게 확인 중이다. 키를 클라이언트나 문서에 저장하지 않는다.
+
+## 검증 결과 · 2026-10-07
+
+- 전체 테스트 310/310, 관련 테스트 15/15, 타입 검사, 변경 파일 lint, 웹 export 통과. Edge의 Deno `npm:` 경로는 기존 Node ESLint resolver가 해석하지 못해 해당 파일 실행에만 resolver 규칙을 껐다. 앱 파일은 기본 규칙 그대로 통과했다.
+- 실제 React Native Web 컴포넌트에 모의 계정·서버·AI를 연결해 24개 동작/배치 검증을 통과했다. 빈 내용, AI/저장 오류, 재작성·게시 확인 취소, 입력 보존, 승인 중 원고 변경, 게시 실패 후 재시도, 늦게 도착한 AI 응답의 계정 분리, 기존 카페 복사·URL 기록을 확인했다.
+- 320/390/768/1280px의 3단계 화면 12개, 200% 글자 크기, 키보드 토글, 피드백 1회, 44px 조작 영역을 확인했다. 게시 확인 단계의 목록을 접고 웹 스위치 색상을 현재 테마와 맞췄다.
+- 별도 코드 리뷰의 두 P2(업체 목록 50개 제한, 게시 원고 재열기 후 카페 복사 접근)를 수정했고 남은 Critical/Important 지적은 없다.
+
+로컬 증거는 `output/qa/merchant-ai-implementation-2026-10-07/`의 HTML·스크린샷·JSON·로그에 있다. HTML의 계정·서버·AI는 모의 데이터이며 실제 게시/결제하지 않는다. 웹 export는 실제 서버에 연결하지 않는 임시 공개 환경값으로 빌드했다. 실제 기기, 모델 생성 품질, 운영 연동 검증과는 구분한다.
