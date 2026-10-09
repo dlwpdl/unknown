@@ -1,5 +1,5 @@
 body:has(.reader) { margin: 0; overflow-y: auto !important; }
-.reader { min-height: 100vh; flex-shrink: 0; background: var(--background); color: var(--text); font-family: var(--font-display), sans-serif; font-size: 16px; line-height: 1.65; overflow-wrap: anywhere; color-scheme: dark; }
+.reader { min-height: 100vh; flex-shrink: 0; background: var(--background); color: var(--text); font-family: var(--font-display), sans-serif; font-size: 16px; line-height: 1.65; word-break: keep-all; overflow-wrap: anywhere; color-scheme: dark; }
 .reader * { box-sizing: border-box; }
 .reader ::selection { background: var(--accentFill); color: var(--accentInk); }
 .reader a { color: inherit; text-underline-offset: 4px; }
@@ -71,6 +71,8 @@ body:has(.reader) { margin: 0; overflow-y: auto !important; }
 .reader-back { display: inline-flex; align-items: center; min-height: 44px; margin-bottom: 20px; color: var(--accent) !important; }
 .reader-post { max-width: 760px; }
 .reader-body, .reader-comments p { white-space: pre-wrap; }
+.reader-body { overflow-wrap: anywhere; }
+.reader-body a { color: #CBB9FF; text-decoration: underline; }
 .reader-photo { display: block; width: 100%; height: auto; max-height: 640px; object-fit: contain; margin: 24px 0; border-radius: 14px; }
 .reader-meetup { margin: 28px 0; padding: 20px; border-radius: 15px; background: var(--backgroundElement); }
 .reader-meetup small { color: var(--textSecondary); }

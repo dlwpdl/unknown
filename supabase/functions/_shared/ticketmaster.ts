@@ -50,6 +50,10 @@ export function eventPriceLabel(event: TicketmasterEvent): string {
   const amount = new Intl.NumberFormat('en-CA', { style: 'currency', currency: event.price.currency, maximumFractionDigits: 0 }).format(event.price.min);
   return `약 ${event.price.currency === 'CAD' ? `CA${amount}` : amount}부터`;
 }
+export function eventTime(event: TicketmasterEvent) {
+  if (!event.startsAt || event.timeUnconfirmed || !event.timezone) return `${event.localDate ?? '날짜 미정'} · 시간 확정 전`;
+  return new Date(event.startsAt).toLocaleString('ko-KR', { timeZone: event.timezone, month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' });
+}
 export function eventMatchesPriceFilter(event: TicketmasterEvent, filter: EventPriceFilter): boolean {
   if (filter === 'all') return true;
   if (filter === 'unknown') return !event.price;

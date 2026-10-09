@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { meetupAllowed, type EventQuery, type TicketmasterEvent } from '../../supabase/functions/_shared/ticketmaster';
-export { EVENT_CITIES, EVENT_CATEGORIES, eventMatchesPriceFilter, eventPriceLabel, featuredLocalEvents, isFestivalEvent, spotlightLocalEvents, meetupAllowed } from '../../supabase/functions/_shared/ticketmaster';
+export { EVENT_CITIES, EVENT_CATEGORIES, eventMatchesPriceFilter, eventPriceLabel, eventTime, featuredLocalEvents, isFestivalEvent, spotlightLocalEvents, meetupAllowed } from '../../supabase/functions/_shared/ticketmaster';
 export type { EventCity, EventCategory, EventPriceFilter, TicketmasterEvent } from '../../supabase/functions/_shared/ticketmaster';
 export type EventList = { events: TicketmasterEvent[]; page: number; hasMore: boolean; fetchedAt: string };
 export type EventDays = { month: string; days: string[]; complete: boolean; fetchedAt: string };
@@ -25,10 +25,6 @@ async function request<T>(query: Partial<EventQuery>): Promise<T> {
 export const loadTicketmasterEvents = (query: Omit<EventQuery, 'eventId'>) => request<EventList>(query);
 export const loadTicketmasterEventDays = (cityId: EventQuery['cityId'], category: EventQuery['category'], month: string) => request<EventDays>({ cityId, category, month });
 export const loadTicketmasterEvent = (cityId: string, eventId: string) => request<{ event: TicketmasterEvent; fetchedAt: string }>({ cityId: cityId as EventQuery['cityId'], eventId });
-export function eventTime(event: TicketmasterEvent) {
-  if (!event.startsAt || event.timeUnconfirmed || !event.timezone) return `${event.localDate ?? '날짜 미정'} · 시간 확정 전`;
-  return new Date(event.startsAt).toLocaleString('ko-KR', { timeZone: event.timezone, month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' });
-}
 export function eventNotice(event: TicketmasterEvent) {
   const status: Record<string, string> = { canceled: '취소된 행사예요.', cancelled: '취소된 행사예요.', postponed: '행사 일정이 연기됐어요.', rescheduled: '일정이 변경됐어요. 판매처에서 확인해 주세요.', offsale: '현재 판매가 중단됐어요.' };
   if (status[event.status]) return status[event.status];

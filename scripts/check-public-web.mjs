@@ -9,6 +9,12 @@ for (const page of ['index', 'terms', 'privacy', 'account-deletion', 'child-safe
   assert.ok(html.includes('gling-night-wordmark.') && html.includes('--accent:#9283AC') && html.includes('#746486'), `${page} lost the cinematic night brand`);
 }
 assert.ok(readFileSync(join(directory, 'index.html'), 'utf8').includes('https://apps.apple.com/ca/app/id6809273242'), 'Public web is missing the live iOS download');
+for (const file of ['robots.txt', 'sitemap.xml', 'llms.txt']) assert.ok(existsSync(join(directory, file)), `Public discovery file is missing: ${file}`);
+const robots = readFileSync(join(directory, 'robots.txt'), 'utf8');
+assert.ok(robots.includes('Sitemap: https://gling.ej-entertainment.com/sitemap.xml') && robots.includes('format=sitemap&city='), 'Static and live public-post sitemaps are missing');
+assert.ok(robots.includes('Disallow: /merchant/') && robots.includes('Disallow: /admin'), 'Private surfaces must remain outside public discovery');
+assert.ok(readFileSync(join(directory, 'index.html'), 'utf8').includes('application/ld+json'), 'Public home structured data is missing');
+assert.ok(!/name="robots"[^>]*content="noindex/.test(readFileSync(join(directory, 'post.html'), 'utf8')), 'Shared post HTML must allow rendering before deciding visibility');
 const childSafety = readFileSync(join(directory, 'child-safety.html'), 'utf8');
 assert.ok(childSafety.includes('--bg:') && childSafety.includes('--text:'), 'Legal page must define readable background/text colors');
 for (const text of ['아동 안전 표준', 'CSAE', 'CSAM', 'gling@ej-entertainment.com', 'Cybertip.ca']) {
