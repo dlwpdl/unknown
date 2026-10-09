@@ -54,8 +54,10 @@ test('the public card shares the native local-time formatter and future event se
     start: { dateTime: '2099-01-02T04:00:00Z', localDate: '2099-01-01', localTime: '20:00:00' },
     timezone: 'America/Vancouver', status: { code: 'onsale' },
   } }, 'vancouver');
-  assert.match(ticketmaster.eventTime(event), /1월 1일/);
-  assert.match(ticketmaster.eventTime(event), /08:00/);
+  // Historical timezone rules remain stable across Node and OS timezone-data versions.
+  const historical = { ...event, startsAt: '2025-01-02T04:00:00Z', localDate: '2025-01-01' };
+  assert.match(ticketmaster.eventTime(historical), /1월 1일/);
+  assert.match(ticketmaster.eventTime(historical), /08:00/);
   assert.equal(ticketmaster.eventTime({ ...event, timeUnconfirmed: true }), '2099-01-01 · 시간 확정 전');
   const client = { functions: { invoke: async () => ({ data: { events: [
     { ...event, id: 'past', startsAt: '2000-01-01T00:00:00Z' },
