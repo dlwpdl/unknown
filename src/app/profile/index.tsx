@@ -1,3 +1,4 @@
+import { MerchantAccountEntry } from '@/components/merchant-account-connections';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable } from '@/components/analytics-controls';
 import * as ImagePicker from 'expo-image-picker';
@@ -201,12 +202,7 @@ export default function ProfileScreen() {
             </Pressable>
           ))}
         </View>
-        <Pressable analyticsId="app_profile_index.merchant" accessibilityRole="button" accessibilityLabel="소상공인, 게시물·원가·재고 관리"
-          onPress={() => { play('selection'); router.push('/profile/merchant'); }}
-          style={({ pressed }) => [styles.merchantEntry, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement, borderColor: theme.line }]}>
-          <View style={{ flex: 1 }}><ThemedText type="smallBold">소상공인</ThemedText><ThemedText type="small" themeColor="textSecondary">게시물 · 원가 계산 · 재고 관리</ThemedText></View>
-          <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={18} tintColor={theme.textSecondary} />
-        </Pressable>
+        <MerchantAccountEntry />
         <View accessibilityRole="tablist" onLayout={event => setSegmentWidth(event.nativeEvent.layout.width)} style={[styles.segments, { borderBottomColor: theme.line }]}>
           {segmentWidth > 0 && <Animated.View pointerEvents="none" style={[styles.segmentIndicator, Depth.control, { width: segmentWidth / 3, backgroundColor: theme.backgroundElement, borderBottomColor: theme.accent, transform: [{ translateX: segmentPosition.interpolate({ inputRange: [0, 2], outputRange: [0, segmentWidth * 2 / 3] }) }] }]} />}
           {([['story', '내 글'], ['replies', '답글'], ['listing', '구해요·팔아요']] as const).map(([key, label]) => (

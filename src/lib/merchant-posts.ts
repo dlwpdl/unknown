@@ -11,9 +11,9 @@ export async function removeMerchantPost(client: SupabaseClient, merchantId: str
 }
 
 export async function saveMerchantDraftImages(client: SupabaseClient, merchantId: string, userId: string,
-  draft: Pick<MerchantDraft, 'id' | 'channel' | 'title' | 'body' | 'original_url' | 'tag_slug' | 'kind'>, images: (PostDraftImage | { path: string })[]) {
+  draft: Pick<MerchantDraft, 'id' | 'channel' | 'title' | 'body' | 'original_url' | 'tag_slug' | 'kind' | 'image_paths'>, images: (PostDraftImage | { path: string })[]) {
   if (images.length > MAX_POST_IMAGES) throw new Error('TOO_MANY_IMAGES');
-  if (images.some(image => 'path' in image && (!image.path.startsWith(`${userId}/`) || !/^[A-Za-z0-9_-]+\/[A-Za-z0-9_-]+\.(webp|jpe?g|png)$/.test(image.path)))) throw new Error('INVALID_IMAGE_PATH');
+  if (images.some(image => 'path' in image && ((!image.path.startsWith(`${userId}/`) && !draft.image_paths?.includes(image.path)) || !/^[A-Za-z0-9_-]+\/[A-Za-z0-9_-]+\.(webp|jpe?g|png)$/.test(image.path)))) throw new Error('INVALID_IMAGE_PATH');
   const media = await uploadPostImages(client, userId, images.filter(image => !('path' in image)) as PostDraftImage[]);
   let added = 0;
   const paths = images.map(image => 'path' in image ? image.path : media[added++].path);

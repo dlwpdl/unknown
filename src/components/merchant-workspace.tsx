@@ -5,6 +5,7 @@ import { Alert, Platform, Share, StyleSheet, TextInput, View } from 'react-nativ
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
+import { MerchantAccountInvitations, MerchantAccountManagement } from '@/components/merchant-account-connections';
 import { MerchantAccessGate } from '@/components/merchant-access-gate';
 import { MerchantNaverCafe } from '@/components/merchant-naver-cafe';
 import { MerchantWebPosts } from '@/components/merchant-web-posts';
@@ -46,14 +47,14 @@ const errorText = (error: unknown) => ({
   INVALID_COST_INPUT: '금액은 0 이상, 수량은 0 초과, 수수료율은 100 미만으로 입력해 주세요.',
   CONTENT_REJECTED: '게시 기준에 맞지 않는 내용이에요. 초안을 확인해 주세요.', RATE_LIMITED: '요청이 많아요. 잠시 후 다시 시도해 주세요.',
   IMAGE_TOO_LARGE: '사진 용량이 커요. 다른 사진으로 다시 시도해 주세요.', INVALID_IMAGE_PATH: '현재 계정의 원고 사진을 다시 확인해 주세요.',
-  MERCHANT_PHOTOS_UNAVAILABLE: '사진을 모두 불러오지 못했어요. 원고를 다시 열어주세요.', INVALID_IMAGE_COUNT: '사진은 최대 6장까지 추가할 수 있어요.',
+  MERCHANT_PHOTOS_UNAVAILABLE: '사진을 모두 불러오지 못했어요. 원고를 다시 열어주세요.', INVALID_IMAGE_COUNT: '사진은 최대 10장까지 추가할 수 있어요.',
   IMAGE_UNSUPPORTED: 'JPEG, PNG, WebP 사진을 선택해 주세요.',
 } as Record<string, string>)[error instanceof Error ? error.message : '']
   ?? '처리하지 못했어요. 입력은 그대로 두었으니 연결 상태를 확인한 뒤 다시 시도해 주세요.';
 const amount = (value: string) => value.trim() ? Number(value.replace(',', '.')) : NaN;
 const money = (value: number) => `CAD ${Number(value).toFixed(2)}`;
 type DraftInput = Pick<MerchantDraft, 'id' | 'channel' | 'title' | 'body' | 'tag_slug' | 'kind' | 'image_paths'> & { original_url: string };
-type MerchantTab = 'drafts' | 'posts' | 'profile' | 'reviews' | 'channels' | 'cost' | 'stock' | 'membership';
+type MerchantTab = 'drafts' | 'posts' | 'profile' | 'reviews' | 'channels' | 'cost' | 'stock' | 'membership' | 'accounts';
 const emptyDraft = (): DraftInput => ({ id: merchantEventId(), channel: 'gling', title: '', body: '', original_url: '', tag_slug: 'life', kind: 'story', image_paths: [] });
 const sameDraftContent = (a: DraftInput | MerchantDraft, b: DraftInput | MerchantDraft) => a.id === b.id && a.channel === b.channel
   && a.title === b.title && a.body === b.body && (a.original_url ?? '') === (b.original_url ?? '') && a.tag_slug === b.tag_slug && a.kind === b.kind
@@ -113,7 +114,10 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 type WorkspaceProps = { merchantId?: string; refreshSignal?: number; initialMerchantId?: string; initialTab?: MerchantTab };
 export function MerchantWorkspace(props: WorkspaceProps) {
-  return <MerchantAccessGate><MerchantWorkspaceContent {...props} /></MerchantAccessGate>;
+  const [connectionRevision, setConnectionRevision] = useState(0);
+  const refreshSignal = (props.refreshSignal ?? 0) + connectionRevision;
+  return <>{!props.merchantId && <MerchantAccountInvitations refreshSignal={refreshSignal} onChanged={() => setConnectionRevision(v => v + 1)} />}
+    <MerchantAccessGate refreshSignal={refreshSignal}><MerchantWorkspaceContent {...props} refreshSignal={refreshSignal} /></MerchantAccessGate></>;
 }
 function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMerchantId, initialTab }: WorkspaceProps) {
   const { me, isAuthed } = useAuth();
@@ -128,9 +132,9 @@ function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMercha
     let active = true;
     if (!isAuthed || merchantId) return;
     void loadMyMerchants(supabase).then((next) => { if (active) setResponse({ user: me.id, rows: next }); })
-      .catch((e) => { if (active) setError(errorText(e)); });
+      .catch((e) => { if (active) { setResponse(null); setError(errorText(e)); } });
     return () => { active = false; };
-  }, [isAuthed, me.id, merchantId, revision]);
+  }, [isAuthed, me.id, merchantId, revision, refreshSignal]);
   if (!isAuthed) return <ThemedText>로그인한 뒤 비지니스 도구를 이용해 주세요.</ThemedText>;
   if (merchantId) return <MerchantTools key={`${me.id}:${merchantId}`} id={merchantId} initialTab={initialTab} refreshSignal={refreshSignal} onDirty={() => {}} />;
   async function choose(id: string | null) {
@@ -162,16 +166,17 @@ function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMercha
       <ThemedText type="small" themeColor="textSecondary">기본 도구는 무료예요. 등록일부터 14일 동안 일괄 승인·입출고도 체험할 수 있어요. 공개 게시 전에는 업체 소유를 확인해요.</ThemedText>
       <Action primary label={busy ? '등록 중…' : '업체 등록하기'} disabled={busy || !registration.name.trim()} onPress={() => { void register(); }} />
     </Section>}
-    {!registering && selected && rows?.some(row => row.id === selected) && <MerchantTools key={`${me.id}:${selected}`} id={selected} initialTab={initialTab} refreshSignal={refreshSignal} onDirty={setDirty} />}
+    {!registering && selected && rows?.some(row => row.id === selected) && <MerchantTools key={`${me.id}:${selected}`} id={selected} initialTab={initialTab} refreshSignal={refreshSignal + revision} onDirty={setDirty} onConnectionsChanged={() => setRevision(v => v + 1)} />}
   </View>;
 }
 
-function MerchantTools({ id, refreshSignal, onDirty, initialTab = 'posts' }: { id: string; refreshSignal: number; onDirty: (dirty: boolean) => void; initialTab?: MerchantTab }) {
+function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, initialTab = 'posts' }: { id: string; refreshSignal: number; onDirty: (dirty: boolean) => void; onConnectionsChanged?: () => void; initialTab?: MerchantTab }) {
   const theme = useTheme();
   const { me } = useAuth(); const { play } = useInteractionFeedback();
   const [revision, setRevision] = useState(0), [tab, setTab] = useState<MerchantTab>(initialTab);
   const [response, setResponse] = useState<{ user: string; revision: number; refreshSignal: number; data: Workspace } | null>(null);
-  const data = response?.user === me.id && response.revision === revision && response.refreshSignal === refreshSignal ? response.data : null;
+  const data = response?.user === me.id && response.revision === revision ? response.data : null;
+  const checking = response?.refreshSignal !== refreshSignal;
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState('');
   const busyRef = useRef(false), mounted = useRef(true);
   const [editor, setEditor] = useState(emptyDraft), [dirty, setDirty] = useState(false), [selection, setSelection] = useState<string[]>([]);
@@ -214,7 +219,7 @@ function MerchantTools({ id, refreshSignal, onDirty, initialTab = 'posts' }: { i
       editorReload.current = null;
       setResponse({ user: me.id, revision, refreshSignal, data: next });
     })
-      .catch((e) => { if (active) setError(errorText(e)); });
+      .catch((e) => { if (active) { setResponse(null); setEditor(emptyDraft()); setOpenedDraft(null); setDraftPhotos([]); setSelection([]); setChanges({}); setStockNote(''); setItem({ id: merchantEventId(), name: '', unit: '개', unit_cost: '0', low_stock: '0' }); setDirty(false); setProfileDirty(false); setError(errorText(e)); } });
     return () => { active = false; };
   }, [id, me.id, revision, refreshSignal]);
   async function run(action: () => Promise<unknown>, success: string, reload = true) {
@@ -224,7 +229,7 @@ function MerchantTools({ id, refreshSignal, onDirty, initialTab = 'posts' }: { i
       if (!mounted.current || session.data.session?.user.id !== me.id) throw new Error('ACCOUNT_CHANGED');
       await action();
       if (mounted.current) { setNotice(success); play('selection'); if (reload) setRevision((v) => v + 1); }
-    } catch (e) { if (mounted.current) { setError(errorText(e)); play('warning'); if (e instanceof Error && e.message === 'MERCHANT_DRAFT_CHANGED') setRevision((v) => v + 1); } }
+    } catch (e) { if (mounted.current) { setError(errorText(e)); play('warning'); if (e instanceof Error && e.message === 'MERCHANT_DRAFT_CHANGED') setRevision((v) => v + 1); if (e instanceof Error && ['MERCHANT_ACCESS_REQUIRED','MERCHANT_ACCOUNT_REQUIRED','ACCOUNT_LOCKED','ACCOUNT_CHANGED','ADMIN_REQUIRED'].includes(e.message)) { setResponse(null); setEditor(emptyDraft()); setOpenedDraft(null); setDraftPhotos([]); setSelection([]); setChanges({}); setStockNote(''); setDirty(false); setProfileDirty(false); setRevision(v => v + 1); onConnectionsChanged?.(); } } }
     finally { busyRef.current = false; if (mounted.current) setBusy(false); }
   }
   function changeDraft(next: Partial<DraftInput>) { setEditor({ ...editor, ...next }); setDirty(true); }
@@ -236,7 +241,7 @@ function MerchantTools({ id, refreshSignal, onDirty, initialTab = 'posts' }: { i
       const paths = draft?.image_paths ?? [];
       const nextPhotos: EditablePostImage[] = [];
       if (paths.length) {
-        const result = await supabase.storage.from('post-images').createSignedUrls(paths, 3600);
+        const result = await supabase.storage.from('post-images').createSignedUrls(paths, 60);
         for (const path of paths) {
           const uri = result.data?.find(row => row.path === path)?.signedUrl;
           if (result.error || !uri) throw new Error('MERCHANT_PHOTOS_UNAVAILABLE');
@@ -274,6 +279,9 @@ function MerchantTools({ id, refreshSignal, onDirty, initialTab = 'posts' }: { i
     play('selection'); setSelection((ids) => ids.includes(draftId) ? ids.filter((x) => x !== draftId) : ids.length < 50 ? [...ids, draftId] : ids);
   }
   if (!data) return <View style={styles.workspace}>{error ? <><ThemedText accessibilityRole="alert">{error}</ThemedText><Action label="다시 불러오기" onPress={() => { setError(''); setRevision((v) => v + 1); }} /></> : <GlingLoader accessibilityLabel="업체 도구를 불러오는 중" />}</View>;
+  const fullAccess = data.can_manage_business ?? data.merchant.owner_id === me.id;
+  const contentTab = ['posts','profile','drafts'].includes(tab);
+  const activeTab = fullAccess || contentTab ? tab : 'posts';
   const saved = data.drafts.find((d) => d.id === editor.id);
   const draftChanged = !!openedDraft && (!saved || openedDraft.updated_at !== saved.updated_at || !sameDraftContent(openedDraft, saved));
   const draftReady = !!saved && !dirty && !draftChanged && sameDraftContent(editor, saved);
@@ -322,17 +330,17 @@ function MerchantTools({ id, refreshSignal, onDirty, initialTab = 'posts' }: { i
       }, '입출고를 기록했어요.');
     } finally { stockOperations.delete(stockKey); release(); }
   }
-  return <View style={styles.workspace}>
+  return <>{checking && <GlingLoader accessibilityLabel="현재 업체 권한을 다시 확인하는 중" />}<View style={[styles.workspace, checking && { display: 'none' }]}>
     <View><ThemedText type="title">{data.merchant.name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{data.merchant.city_name} · {data.merchant.owner_verified_at ? '업체 소유 확인됨' : '업체 소유 확인 대기'}</ThemedText></View>
     <ScrollView analyticsId="merchant.tabs" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.actions} accessibilityRole="tablist">
-      {([['posts', '글·사진'], ['profile', '프로필'], ['reviews', '이용 후기'], ['drafts', '홍보글'], ['channels', '카페 연결'], ['cost', '원가 계산'], ['stock', '재고'], ['membership', '성과·멤버십']] as const).map(([key, label]) => <Action role="tab" key={key} label={label} selected={tab === key} disabled={busy} onPress={() => setTab(key)} />)}
+      {([['posts', '글·사진'], ['profile', '프로필'], ['reviews', '이용 후기'], ['drafts', '홍보글'], ['channels', '카페 연결'], ['cost', '원가 계산'], ['stock', '재고'], ['membership', '성과·멤버십'], ['accounts', '계정 관리']] as const).filter(([key]) => fullAccess || ['posts','profile','drafts'].includes(key)).map(([key, label]) => <Action role="tab" key={key} label={label} selected={activeTab === key} disabled={busy} onPress={() => setTab(key)} />)}
     </ScrollView>
     {error && <><ThemedText accessibilityRole="alert">{error}</ThemedText><Action label="자료 새로 확인" disabled={busy} onPress={() => { setError(''); setRevision((v) => v + 1); }} /></>}{notice && <ThemedText accessibilityLiveRegion="polite">{notice}</ThemedText>}
-    {tab === 'posts' && <MerchantWebPosts merchantId={id} posts={data.posts} onChanged={() => setRevision(v => v + 1)} />}
-    <View style={{ display: tab === 'profile' ? 'flex' : 'none' }}><MerchantProfileEditor merchantId={id} onDirty={setProfileDirty} /></View>
-    {tab === 'reviews' && <MerchantReviewInbox merchantId={id} />}
-    {tab === 'channels' && <MerchantNaverCafe merchantId={id} drafts={data.drafts} onChanged={() => setRevision(v => v + 1)} />}
-    {tab === 'drafts' && <>
+    {activeTab === 'posts' && <MerchantWebPosts merchantId={id} posts={data.posts} onChanged={() => setRevision(v => v + 1)} />}
+    <View style={{ display: activeTab === 'profile' ? 'flex' : 'none' }}><MerchantProfileEditor merchantId={id} onDirty={setProfileDirty} /></View>
+    {activeTab === 'reviews' && <MerchantReviewInbox merchantId={id} />}
+    {activeTab === 'channels' && <MerchantNaverCafe merchantId={id} drafts={data.drafts} onChanged={() => setRevision(v => v + 1)} />}
+    {activeTab === 'drafts' && <>
       <Section title="게시물 관리">
         <View style={styles.actions}><Action label="새 초안" disabled={busy} onPress={() => { void openDraft(); }} /><Action label={showArchived ? '작성 중인 원고 보기' : '보관한 원고 보기'} disabled={busy} onPress={() => { setShowArchived(!showArchived); setSelection([]); }} /></View>
         {data.drafts.filter((d) => !!d.archived_at === showArchived).map((d) => <View key={d.id} style={styles.draftRow}>
@@ -397,14 +405,14 @@ function MerchantTools({ id, refreshSignal, onDirty, initialTab = 'posts' }: { i
         </>}
       </Section>
     </>}
-    {tab === 'cost' && <Section title="개당 원가 계산">
+    {activeTab === 'cost' && <Section title="개당 원가 계산">
       <ThemedText type="small" themeColor="textSecondary">한 번 만드는 묶음 기준으로 입력해요. 금액은 CAD예요.</ThemedText>
       {([['batchCost', '묶음 전체 재료비'], ['yield', '판매 가능한 수량'], ['packaging', '개당 포장비'], ['other', '개당 기타비'], ['price', '개당 판매가'], ['feePercent', '결제·판매 수수료율 (%)']] as const).map(([key, label]) => <Field key={key} label={label} value={cost[key]} numeric onChange={(value) => setCost({ ...cost, [key]: value })} />)}
       {calculated ? <View style={styles.result}><ThemedText type="subtitle">개당 변동 원가 {money(calculated.unitCost)}</ThemedText><ThemedText>개당 공헌이익 {money(calculated.contribution)}</ThemedText><ThemedText type="small">원가율 {calculated.costPercent?.toFixed(1) ?? '—'}% · 공헌이익률 {calculated.marginPercent?.toFixed(1) ?? '—'}%</ThemedText></View> : <ThemedText accessibilityRole="alert">{errorText(new Error('INVALID_COST_INPUT'))}</ThemedText>}
       <ThemedText type="small" themeColor="textSecondary">공헌이익은 입력한 변동 비용을 뺀 금액이에요. 임대료·인건비·세금 등을 반영하기 전이므로 순이익과 달라요.</ThemedText>
       <Action label="계산 내역 복사·공유" disabled={!calculated || busy} onPress={() => { if (calculated) void run(() => shareText(`${data.merchant.name} 원가 계산\n전체 재료비 ${money(amount(cost.batchCost))} / 수량 ${cost.yield}\n개당 포장비 ${money(amount(cost.packaging))} · 기타비 ${money(amount(cost.other))}\n판매가 ${money(amount(cost.price))} · 수수료 ${cost.feePercent}%\n개당 변동 원가 ${money(calculated.unitCost)}\n개당 공헌이익 ${money(calculated.contribution)} (고정비·세금 반영 전)`), '계산 내역을 준비했어요.', false); }} />
     </Section>}
-    {tab === 'stock' && <>
+    {activeTab === 'stock' && <>
       <Section title="품목 관리">
         <Field label="품목 이름" value={item.name} disabled={stockLocked} onChange={(name) => setItem({ ...item, name })} /><Field label="단위" value={item.unit} maxLength={20} disabled={stockLocked} onChange={(unit) => setItem({ ...item, unit })} />
         <Field label="개당 원가 (CAD)" value={item.unit_cost} numeric disabled={stockLocked} onChange={(unit_cost) => setItem({ ...item, unit_cost })} /><Field label="재고 부족 기준" value={item.low_stock} numeric disabled={stockLocked} onChange={(low_stock) => setItem({ ...item, low_stock })} />
@@ -427,7 +435,8 @@ function MerchantTools({ id, refreshSignal, onDirty, initialTab = 'posts' }: { i
         {data.movements.slice(0, 20).map((m) => <ThemedText key={m.id} type="small" themeColor="textSecondary">{m.item_name} {Number(m.delta) > 0 ? '+' : ''}{m.delta} · {m.note} · {new Date(m.created_at).toLocaleDateString('ko-KR')}</ThemedText>)}
       </Section>
     </>}
-    {tab === 'membership' && <>
+    {activeTab === 'accounts' && <MerchantAccountManagement merchantName={data.merchant.name} merchantId={id} refreshSignal={refreshSignal + revision} onChanged={() => { setRevision(v => v + 1); onConnectionsChanged?.(); }} />}
+    {activeTab === 'membership' && data.metrics && <>
       <Section title="업체 이용 상태"><ThemedText type="subtitle">{({ basic: '기본 이용', trial: '업체 체험', pro: '업체 유료 운영' })[data.merchant.plan]}</ThemedText>
         <ThemedText>{data.merchant.plan === 'trial' ? `${data.merchant.trial_ends_at}까지 체험` : data.merchant.plan === 'pro' ? `${data.merchant.workspace_until}까지 운영` : '개별 초안·승인, 원가 계산, 품목별 입출고를 계속 이용할 수 있어요.'}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">체험·유료 운영 기간에는 여러 건을 한 번에 승인하거나 입출고할 수 있어요. 기간이 끝나도 저장한 자료는 남아요. 업체 요금과 결제 상품은 아직 준비 중이며 자동 결제되지 않아요. 개인 플러스·프리미엄과 별도로 관리해요.</ThemedText>
@@ -439,7 +448,7 @@ function MerchantTools({ id, refreshSignal, onDirty, initialTab = 'posts' }: { i
         {data.reports.map((report) => <Action key={report.id} label={`${report.period_end} 보고서 공유`} disabled={busy} onPress={() => { void run(() => shareText(merchantReportText(report)), '저장된 보고서를 준비했어요.', false); }} />)}
       </Section>
     </>}
-  </View>;
+  </View></>;
 }
 
 const styles = StyleSheet.create({

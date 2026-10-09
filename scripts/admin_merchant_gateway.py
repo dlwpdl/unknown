@@ -17,7 +17,8 @@ RPCS = {'get_admin_merchants', 'get_admin_merchant', 'save_admin_merchant', 'lin
         'create_admin_merchant_post', 'save_admin_merchant_report', 'get_admin_merchant_report',
         'get_merchant_workspace', 'save_merchant_workspace_item', 'adjust_merchant_inventory',
         'save_merchant_workspace_draft', 'approve_merchant_workspace_drafts', 'archive_merchant_workspace_drafts',
-        'publish_merchant_workspace_draft', 'record_merchant_external_post', 'set_admin_merchant_workspace_owner'}
+        'publish_merchant_workspace_draft', 'record_merchant_external_post', 'set_admin_merchant_workspace_owner',
+        'get_merchant_account_connections', 'connect_admin_merchant_account', 'search_admin_users'}
 
 def configuration():
     values = {}

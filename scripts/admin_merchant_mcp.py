@@ -23,6 +23,7 @@ mcp = FastMCP('gling-merchants', log_level='WARNING', instructions=(
     'Review actual owner-authorized saved drafts before approving; approval never posts automatically. '
     'Record café URLs only after an actual post; it is owner-reported, not API-verified or measured reach. '
     'Inventory request IDs must be retained across uncertain retries; never invent stock movements or owner verification.'
+    ' Business account connections require the reviewed business, exact account identity and current revision. Direct connection is allowed; read the saved connections after an uncertain result before retrying.'
 ))
 
 def arguments(**values):
@@ -92,8 +93,27 @@ def get_workspace(merchant_id: UUID) -> dict:
 
 @mcp.tool(annotations=WRITE)
 def set_workspace_owner(merchant_id: UUID, owner_id: UUID, verified: bool, workspace_until: str | None = None) -> dict:
-    """Link an active member and record actual owner verification; do not assert verification without evidence. YYYY-MM-DD end date plus paid status enables business tools; no payment is taken. Existing owners cannot be silently transferred."""
+    """Update verification/paid end date for the already-connected owner. Initial connections use connect_business_account after reviewing the actual business and account."""
     return {'merchant_id': rpc('set_admin_merchant_workspace_owner', arguments(merchant_id=merchant_id, owner_id=owner_id, verified=verified, workspace_until=workspace_until))}
+
+@mcp.tool(annotations=READ)
+def get_business_accounts(merchant_id: UUID) -> dict:
+    """Read this business's owner, operators, pending invitations and current connection revision."""
+    return rpc('get_merchant_account_connections', arguments(merchant_id=merchant_id))
+
+@mcp.tool(annotations=READ)
+def find_business_account(query: Annotated[str, Field(min_length=1, max_length=120)]) -> dict:
+    """Find the exact account to connect; review nickname, email and UUID rather than guessing an ID."""
+    result = rpc('search_admin_users', {'p_query': query, 'p_offset': 0, 'p_account_type': 'all'})
+    return {'rows': [{key: row.get(key) for key in ('id','nickname','email','city_id','account_status')} for row in result['rows']], 'total': result['total']}
+
+@mcp.tool(annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False))
+def connect_business_account(merchant_id: UUID, user_id: UUID, role: Literal['owner','operator'],
+                             method: Literal['direct','invite'], verified: bool, note: Annotated[str, Field(min_length=6, max_length=3000)],
+                             expected_updated_at: str, expected_nickname: str, expected_email: str | None = None) -> dict:
+    """Connect the reviewed business and account immediately, or create a recipient-bound invitation. Requires actual owner/operator verification, current revision and exact account identity. Never transfer an existing owner or invent verification."""
+    return {'result_id': rpc('connect_admin_merchant_account', arguments(merchant_id=merchant_id,user_id=user_id,role=role,method=method,
+        verified=verified,note=note,expected_updated_at=expected_updated_at,expected_nickname=expected_nickname,expected_email=expected_email))}
 
 @mcp.tool(annotations=WRITE)
 def save_inventory_item(merchant_id: UUID, id: UUID, name: Annotated[str, Field(min_length=1, max_length=120)],

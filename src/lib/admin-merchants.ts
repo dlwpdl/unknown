@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { safeMerchantSourceUrl } from './merchant-source.ts';
 import { merchantReportText } from './merchant-workspace.ts';
+import type { MerchantAccountRole } from './merchant-connections.ts';
 export { merchantReportText } from './merchant-workspace.ts';
 
 export type Merchant = {
@@ -74,3 +75,16 @@ export async function setAdminMerchantAccess(client: SupabaseClient, userId: str
   return data;
 }
 export const setAdminMerchantOwner = (client: SupabaseClient, id: string, ownerId: string, verified: boolean, until: string | null) => rpc<string>(client, 'set_admin_merchant_workspace_owner', { p_merchant_id: id, p_owner_id: ownerId, p_verified: verified, p_workspace_until: until });
+
+export async function connectAdminMerchantAccount(client: SupabaseClient,
+  merchant: { id: string; updated_at: string }, account: { id: string; nickname: string; email: string | null },
+  input: { role: MerchantAccountRole; method: 'direct' | 'invite'; verified: boolean; note: string }): Promise<string> {
+  if (input.verified !== true || input.note.trim().length < 6) throw new Error('MERCHANT_CONNECTION_CONFIRMATION_REQUIRED');
+  const data = await rpc<string>(client, 'connect_admin_merchant_account', {
+    p_merchant_id: merchant.id, p_user_id: account.id, p_role: input.role, p_method: input.method,
+    p_verified: input.verified, p_note: input.note.trim(), p_expected_updated_at: merchant.updated_at,
+    p_expected_nickname: account.nickname, p_expected_email: account.email,
+  });
+  if (typeof data !== 'string' || !data || input.method === 'direct' && data !== merchant.id) throw new Error('MERCHANT_CONNECTION_SAVE_FAILED');
+  return data;
+}

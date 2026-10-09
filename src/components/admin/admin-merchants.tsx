@@ -1,5 +1,6 @@
 import './admin-merchants.css';
 import { AdminAiConnection } from './admin-ai-connection';
+import { AdminMerchantConnections } from './admin-merchant-connections';
 import { Asset } from 'expo-asset';
 import { useEffect, useRef, useState } from 'react';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -49,10 +50,12 @@ export function AdminMerchantsView({ refreshSignal }: { refreshSignal: number })
   const [draft, setDraft] = useState<ReportInput | null>(null), [report, setReport] = useState<MerchantReport | null>(null);
   const [dirty, setDirty] = useState(false), [logo, setLogo] = useState('');
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [connectionDirty, setConnectionDirty] = useState(false);
   const listKey = `${query}:${page}:${revision}:${refreshSignal}`;
   const detailKey = `${selected}:${period.start}:${period.end}:${revision}:${refreshSignal}`;
   const currentList = list?.key === listKey ? list : null;
   const detail = response?.key === detailKey ? response.data : null;
+  const connectionMerchant = response?.data.merchant.id === selected ? response.data.merchant : null;
   const editable = editor && selected && detail?.merchant.id === selected;
 
   useEffect(() => {
@@ -80,13 +83,17 @@ export function AdminMerchantsView({ refreshSignal }: { refreshSignal: number })
 
   async function run(action: () => Promise<void>, success: string) {
     if (busyRef.current) return;
+    if (connectionDirty && !window.confirm('입력 중인 계정 연결 내용을 버리고 다른 변경을 저장할까요?')) return;
+    setConnectionDirty(false);
     busyRef.current = true; setBusy(true); setError(''); setNotice(''); play('selection');
     try { await action(); setNotice(success); play('selection'); setRevision((v) => v + 1); }
     catch (e) { setError(errorMessage(e)); play('warning'); }
     finally { busyRef.current = false; setBusy(false); }
   }
   function selectMerchant(merchant: Merchant) {
-    play('selection'); setSelected(merchant.id); setEditor({ ...merchant }); setPeriod(periodFor(merchant.timezone));
+    play('selection');
+    if (connectionDirty && !window.confirm('저장하지 않은 계정 연결 내용이 있습니다. 다른 업체를 열까요?')) return;
+    setConnectionDirty(false); setSelected(merchant.id); setEditor({ ...merchant }); setPeriod(periodFor(merchant.timezone));
     setToolsOpen(false);
     setDraft(null); setReport(null); setDirty(false); setPostId(''); setSource(''); setTitle(''); setBody(''); setPostRequest(merchantEventId()); setError(''); setNotice('');
   }
@@ -119,7 +126,7 @@ export function AdminMerchantsView({ refreshSignal }: { refreshSignal: number })
 
   return <section className="merchant-admin" aria-label="업체 관리" aria-busy={busy}>
     <header className="merchant-heading"><div><h1>업체 관리</h1><p>게시 허락부터 소개한 글, 성과 보고서와 다음 운영 제안까지.</p></div>
-      <button disabled={busy} className={!editor ? 'merchant-primary' : undefined} onClick={() => { play('selection'); setSelected(null); setEditor(emptyMerchant()); setDraft(null); setReport(null); setNotice(''); setError(''); }}>업체 등록</button></header>
+      <button disabled={busy} className={!editor ? 'merchant-primary' : undefined} onClick={() => { play('selection'); if (connectionDirty && !window.confirm('저장하지 않은 계정 연결 내용이 있습니다. 새 업체를 등록할까요?')) return; setConnectionDirty(false); setSelected(null); setEditor(emptyMerchant()); setDraft(null); setReport(null); setNotice(''); setError(''); }}>업체 등록</button></header>
     <AdminAiConnection />
     {error && <div role="alert" className="merchant-message merchant-error">{error}<button disabled={busy} onClick={() => { play('selection'); setError(''); setRevision((v) => v + 1); }}>다시 불러오기</button></div>}
     {notice && <p role="status" className="merchant-message">{notice}</p>}
@@ -145,12 +152,13 @@ export function AdminMerchantsView({ refreshSignal }: { refreshSignal: number })
         <div className="merchant-actions"><button className={!selected ? 'merchant-primary' : undefined}>{busy ? '저장 중…' : '업체 정보 저장'}</button>{!selected && <button type="button" onClick={() => { play('selection'); setEditor(null); }}>취소</button>}</div></fieldset>
       </form>}
       {selected && <>
+        {connectionMerchant && <AdminMerchantConnections key={connectionMerchant.id + ":" + connectionMerchant.updated_at} merchant={connectionMerchant} busy={busy} onDirty={setConnectionDirty} onChanged={() => { setConnectionDirty(false); setRevision(v => v + 1); }} />}
         <form className="merchant-period" onSubmit={(e) => e.preventDefault()}><h2>기간별 성과</h2><div className="merchant-fields">
           <label>시작일<input type="date" disabled={busy} value={period.start} max={period.end} onChange={(e) => { if (e.target.value) { play('selection'); setPeriod({ ...period, start: e.target.value }); } }} /></label>
           <label>종료일<input type="date" disabled={busy} value={period.end} min={period.start} max={periodFor(detail?.merchant.timezone).end} onChange={(e) => { if (e.target.value) { play('selection'); setPeriod({ ...period, end: e.target.value }); } }} /></label>
         </div><p>업체 도시 시간 기준 · 최근 90일 · 조회 기록은 업체 연결 이후부터 집계</p></form>
         {!detail ? <p className="merchant-empty" role="status">{error ? '성과를 불러오지 못했습니다.' : '성과를 불러오는 중…'}</p> : <>
-          <MerchantOwnerForm key={`${detail.merchant.id}:${detail.merchant.updated_at}`} merchant={detail.merchant} busy={busy} save={(owner, verified, until) => { void run(() => setAdminMerchantOwner(supabase, selected, owner, verified, until).then(() => {}), '업체 소유 확인과 이용 기간을 저장했습니다.'); }} />
+          {detail.merchant.owner_id && <MerchantOwnerForm key={`${detail.merchant.id}:${detail.merchant.updated_at}`} merchant={detail.merchant} busy={busy} save={(owner, verified, until) => { void run(() => setAdminMerchantOwner(supabase, selected, owner, verified, until).then(() => {}), '업체 소유 확인과 이용 기간을 저장했습니다.'); }} />}
           <section className="merchant-section"><h2>소상공인 도구</h2><p className="merchant-hint">회원 프로필과 같은 초안·원가·재고 도구입니다. 관리자 작업에도 2단계 인증을 적용합니다.</p><button type="button" disabled={busy} aria-expanded={toolsOpen} onClick={() => { play('selection'); setToolsOpen(!toolsOpen); }}>{toolsOpen ? '소상공인 도구 닫기' : '소상공인 도구 열기'}</button>
             {toolsOpen && <MerchantWorkspace merchantId={selected} refreshSignal={revision + refreshSignal} />}
           </section>

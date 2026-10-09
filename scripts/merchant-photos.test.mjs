@@ -2,6 +2,13 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { saveMerchantDraftImages } from '../src/lib/merchant-posts.ts';
 
+test('an operator retains the saved draft photos uploaded by its owner', async () => {
+  const t = clientFor();
+  const saved = { ...draft, image_paths: ['owner/saved.webp'] };
+  assert.deepEqual(await saveMerchantDraftImages(t.client, 'merchant', 'operator', saved, [{ path: 'owner/saved.webp' }]), saved.image_paths);
+  await assert.rejects(saveMerchantDraftImages(t.client, 'merchant', 'operator', saved, [{ path: 'owner/other.webp' }]), /INVALID_IMAGE_PATH/);
+});
+
 const draft = { id: 'draft', channel: 'gling', title: '사진 안내', body: '확인한 안내', original_url: null, tag_slug: 'life', kind: 'story' };
 function clientFor(outcome = { data: 'draft', error: null }) {
   const uploaded = [], removed = [], calls = [];

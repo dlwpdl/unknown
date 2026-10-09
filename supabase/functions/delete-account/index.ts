@@ -55,21 +55,28 @@ Deno.serve(async (request) => {
   const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  // Keep images intact when provider verification or revocation fails.
-  for (const bucket of ['avatars', 'post-images', 'chat-images']) {
-    while (true) {
-      const listed = await admin.storage.from(bucket).list(user.id, { limit: 100 });
-      if (listed.error) return json({ error: 'STORAGE_LIST_FAILED' }, 500);
-      if (!listed.data.length) break;
-      const removed = await admin.storage.from(bucket).remove(
-        listed.data.map(({ name }) => `${user.id}/${name}`),
-      );
-      if (removed.error) return json({ error: 'STORAGE_DELETE_FAILED' }, 500);
-    }
-  }
-
   const purge = await userClient.rpc('delete_my_account', { p_confirmation: '탈퇴합니다' });
   if (purge.error) return json({ error: 'ACCOUNT_PURGE_FAILED' }, 500);
+
+  // Freeze the account and finish owned-company erasure before classifying shared assets.
+  for (const bucket of ['avatars', 'post-images', 'chat-images', 'merchant-review-receipts', 'merchant-profile-images']) {
+    let retained = 0;
+    while (true) {
+      const listed = await admin.storage.from(bucket).list(user.id, { limit: 100, offset: retained, sortBy: { column: 'name', order: 'asc' } });
+      if (listed.error) return json({ error: 'STORAGE_LIST_FAILED' }, 500);
+      if (!listed.data.length) break;
+      const paths = listed.data.map(({ name }) => user.id + '/' + name);
+      const cleanup = await admin.rpc('account_image_cleanup_paths', { p_user_id: user.id, p_bucket: bucket, p_paths: paths });
+      if (cleanup.error || !Array.isArray(cleanup.data) || cleanup.data.some(path => typeof path !== 'string' || !paths.includes(path))) {
+        return json({ error: 'STORAGE_REFERENCE_CHECK_FAILED' }, 500);
+      }
+      retained += paths.length - cleanup.data.length;
+      if (cleanup.data.length) {
+        const removed = await admin.storage.from(bucket).remove(cleanup.data);
+        if (removed.error) return json({ error: 'STORAGE_DELETE_FAILED' }, 500);
+      }
+    }
+  }
 
   const deleted = await admin.auth.admin.deleteUser(user.id, false);
   if (deleted.error) return json({ error: 'AUTH_DELETE_FAILED' }, 500);

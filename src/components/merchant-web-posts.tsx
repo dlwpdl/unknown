@@ -39,7 +39,7 @@ export function MerchantWebPosts({ merchantId, posts, onChanged }: { merchantId:
       const saved = await loadPublicPost(supabase, postId);
       if (!saved) throw new Error('MERCHANT_POST_UNAVAILABLE');
       if (currentOwner.current === requestOwner) setSelected({ owner: requestOwner, post: saved,
-        verifiedOwner: workspace.merchant.owner_id === me.id && !!workspace.merchant.owner_verified_at });
+        verifiedOwner: workspace.can_edit_content ?? (workspace.merchant.owner_id === me.id && !!workspace.merchant.owner_verified_at) });
     } catch (e) {
       if (currentOwner.current === requestOwner) {
         play('warning'); setError(e instanceof Error && e.message === 'MERCHANT_POST_UNAVAILABLE'

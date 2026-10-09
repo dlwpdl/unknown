@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { Buffer } from 'node:buffer';
 import { registerHooks } from 'node:module';
 import test from 'node:test';
 
@@ -24,6 +25,8 @@ test('탈퇴는 본인 공급자 연결 해제를 확인한 뒤에만 파일과 
   let providerResult = 'ok';
   let storageFails = false;
   let billingStatus = 200;
+  let keepCompanyFiles = false, referenceFails = false;
+  const removedPaths = [], listOffsets = [];
   const calls = [];
   const listed = new Set();
   const user = () => ({
@@ -54,19 +57,27 @@ test('탈퇴는 본인 공급자 연결 해제를 확인한 뒤에만 파일과 
       assert.equal(request.headers.get('authorization'), 'Bearer test-revenuecat');
       return new Response(null, { status: billingStatus });
     }
+    if (path === '/rest/v1/rpc/account_image_cleanup_paths') {
+      const input = await request.json();
+      assert.equal(input.p_user_id, user().id);
+      if (referenceFails) return Response.json({ message: 'lookup failed' }, { status: 500 });
+      return Response.json(keepCompanyFiles ? input.p_paths.filter(path => !path.endsWith('/company.webp')) : input.p_paths);
+    }
     if (path.startsWith('/storage/v1/object/list/')) {
       if (storageFails) return Response.json({ message: 'storage failed' }, { status: 500 });
-      const files = listed.has(path) ? [] : [{ name: 'photo.jpg', id: 'photo' }];
+      const input = await request.json();
+      listOffsets.push(input.offset);
+      const files = keepCompanyFiles ? (input.offset === 0 ? [{ name: 'company.webp', id: 'company' }, { name: 'photo.jpg', id: 'personal' }] : []) : listed.has(path) ? [] : [{ name: 'photo.jpg', id: 'photo' }];
       listed.add(path);
       return Response.json(files);
     }
-    if (path.startsWith('/storage/v1/object/')) return Response.json([]);
+    if (path.startsWith('/storage/v1/object/')) { removedPaths.push(...(await request.json()).prefixes); return Response.json([]); }
     if (path === '/rest/v1/rpc/delete_my_account') return new Response(null, { status: 204 });
     if (path === `/auth/v1/admin/users/${user().id}`) return Response.json({ user: user() });
     throw new Error(`Unexpected request: ${request.method} ${path}`);
   });
   async function run() {
-    calls.length = 0;
+    calls.length = 0; removedPaths.length = listOffsets.length = 0;
     listed.clear();
     return handler(new Request('https://gling-test.supabase.co/functions/v1/delete-account', {
       method: 'POST', headers: { Authorization: 'Bearer test-session', 'Content-Type': 'application/json' },
@@ -85,10 +96,24 @@ test('탈퇴는 본인 공급자 연결 해제를 확인한 뒤에만 파일과 
     assert.equal((await run()).status, 200);
     assert.equal(calls[1], 'POST /v1/user/unlink');
     assert.equal(calls[2], `DELETE /v1/subscribers/${user().id}`);
-    assert.equal(calls[3], 'POST /storage/v1/object/list/avatars');
-    assert.equal(calls.at(-2), 'POST /rest/v1/rpc/delete_my_account');
+    assert.equal(calls[3], 'POST /rest/v1/rpc/delete_my_account');
+    assert.equal(calls[4], 'POST /storage/v1/object/list/avatars');
+    assert.ok(calls.includes('POST /storage/v1/object/list/merchant-review-receipts'), 'account deletion removes private review receipts too');
+    assert.ok(calls.includes('POST /storage/v1/object/list/merchant-profile-images'), 'account deletion removes company logos and banners too');
+    assert.ok(calls.indexOf('POST /rest/v1/rpc/delete_my_account') < calls.indexOf('POST /rest/v1/rpc/account_image_cleanup_paths'), 'freeze account before classifying shared images');
     assert.equal(calls.at(-1), `DELETE /auth/v1/admin/users/${user().id}`);
   }
+  keepCompanyFiles = true;
+  assert.equal((await run()).status, 200, 'company photos survive account deletion');
+  assert.ok(removedPaths.length > 0);
+  assert.ok(removedPaths.every(path => path.endsWith('/photo.jpg')));
+  assert.deepEqual(listOffsets, [0,1,0,1,0,1,0,1,0,1], 'retained objects cannot trap cleanup on the first page');
+  keepCompanyFiles = false; referenceFails = true;
+  assert.equal((await run()).status, 500, 'unknown company references fail closed before deleting files');
+  assert.equal(removedPaths.length, 0);
+  assert.ok(calls.includes('POST /rest/v1/rpc/delete_my_account'));
+  assert.ok(!calls.some(call => call.includes('/auth/v1/admin/users/')));
+  referenceFails = false;
   billingStatus = 503;
   assert.equal((await run()).status, 502);
   assert.equal(calls.some((call) => call.includes('/storage/') || call.includes('/rpc/') || call.includes('/admin/users/')), false);
@@ -97,7 +122,8 @@ test('탈퇴는 본인 공급자 연결 해제를 확인한 뒤에만 파일과 
   billingStatus = 200;
   storageFails = true;
   assert.equal((await run()).status, 500);
-  assert.equal(calls.some((call) => call.includes('/rpc/') || call.includes('/admin/users/')), false);
+  assert.equal(calls.some((call) => call.includes('/admin/users/')), false);
+  assert.ok(calls.includes('POST /rest/v1/rpc/delete_my_account'));
   storageFails = false;
   provider = 'apple';
   providerResult = 'other';
@@ -107,5 +133,6 @@ test('탈퇴는 본인 공급자 연결 해제를 확인한 뒤에만 파일과 
   assert.equal((await run()).status, 200);
   assert.equal(calls[2], 'POST /auth/revoke');
   assert.equal(calls[3], `DELETE /v1/subscribers/${user().id}`);
-  assert.equal(calls[4], 'POST /storage/v1/object/list/avatars');
+  assert.equal(calls[4], 'POST /rest/v1/rpc/delete_my_account');
+  assert.equal(calls[5], 'POST /storage/v1/object/list/avatars');
 });

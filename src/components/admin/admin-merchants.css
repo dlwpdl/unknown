@@ -54,3 +54,18 @@
 .merchant-admin table :is(th,td) { font-variant-numeric:tabular-nums; }
 @media(max-width:1050px) { .merchant-layout { grid-template-columns:1fr; gap:24px; } .merchant-list { max-height:260px; overflow:auto; } }
 @media(max-width:520px) { .merchant-fields { grid-template-columns:1fr; gap:0; } .merchant-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } .merchant-admin h1 { font-size:23px; } .merchant-error { flex-wrap:wrap; } }
+
+.merchant-connection-list { display:grid; gap:8px; margin:12px 0 20px; }
+.merchant-connection-row { display:flex; align-items:center; gap:12px; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--admin-line); }
+.merchant-connection-row span,.merchant-account-result { display:grid; gap:4px; min-width:0; }
+.merchant-connection-row small,.merchant-account-result span { color:var(--admin-muted); overflow-wrap:anywhere; font-size:12px; }
+.merchant-connections fieldset { display:grid; gap:12px; }
+.merchant-connections form + form { margin-top:20px; }
+.merchant-account-result { text-align:left; width:100%; padding:12px; }
+.merchant-account-result[aria-pressed=true] { border-color:var(--admin-accent); background:var(--admin-subtle); }
+.merchant-connection-review { display:grid; gap:5px; padding:14px; border-radius:12px; background:var(--admin-subtle); overflow-wrap:anywhere; }
+.merchant-connection-review span { color:var(--admin-muted); font-size:13px; }
+
+.merchant-admin .merchant-account-result[aria-pressed=true] { border-color:var(--admin-accent); background:var(--admin-subtle); }
+.merchant-admin .merchant-owner-check { display:flex; align-items:center; min-height:44px; gap:10px; }
+.merchant-admin .merchant-owner-check input[type=checkbox] { width:20px; height:20px; min-width:20px; min-height:20px; flex:0 0 20px; margin:0; accent-color:var(--admin-accent); }

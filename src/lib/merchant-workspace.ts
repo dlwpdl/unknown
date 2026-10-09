@@ -6,6 +6,7 @@ export type BusinessMerchant = {
   id: string; name: string; city_id: string; city_name: string; contact: string;
   status: 'lead' | 'trial' | 'paid' | 'paused'; owner_id: string | null;
   owner_verified_at: string | null; trial_ends_at: string | null;
+  role?: 'owner' | 'operator' | 'admin'; updated_at?: string;
   workspace_until: string | null; today: string; plan: 'basic' | 'trial' | 'pro';
 };
 export type MerchantItem = {
@@ -20,7 +21,8 @@ export type MerchantDraft = {
 export type MerchantWorkspace = {
   merchant: BusinessMerchant; items: MerchantItem[]; drafts: MerchantDraft[];
   movements: { id: string; item_id: string; item_name: string; delta: number; note: string; created_at: string }[];
-  metrics: MerchantMetrics; posts: MerchantPost[]; reports: MerchantReport[];
+  can_manage_business?: boolean; can_edit_content?: boolean;
+  metrics: MerchantMetrics | null; posts: MerchantPost[]; reports: MerchantReport[];
 };
 export const MERCHANT_CHANNELS = { gling: '글링', casmo: '캐스모', hellovancouver: '헬로밴쿠버' } as const;
 
