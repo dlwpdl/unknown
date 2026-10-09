@@ -37,6 +37,7 @@ function component(file, name, { auth, rpc, postLoader, workspaceLoader, callbac
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'react-native': { View: 'View', Modal: 'Modal', Platform: { OS: 'web' }, StyleSheet: { create: x => x, hairlineWidth: 1 }, AppState: { addEventListener: () => ({ remove() {} }) } },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
+    'expo-router': { useRouter: () => ({ push: path => calls.push(['navigate', path]) }) },
     'expo-router/head': { default: 'Head' }, 'expo-image': { Image: 'Image' },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/gling-loader': { GlingLoader: 'Loader' },
@@ -132,7 +133,7 @@ test('logged-out web shows the ordinary login action and does not query merchant
   const screen = component('../src/merchant-web/index.tsx', 'default', { auth, rpc: async () => { rightsRead++; return true; } });
   const tree = screen.render(); await screen.effect();
   assert.equal(rightsRead, 0);
-  nodes(tree).find(n => n.props?.accessibilityLabel === '글링 계정으로 로그인').props.onPress();
+  nodes(tree).find(n => n.props?.accessibilityLabel === '비즈니스 로그인').props.onPress();
   assert.equal(logins, 1);
   assert.ok(screen.calls.some(call => call[0] === 'feedback'));
 });
@@ -158,4 +159,12 @@ test('OAuth completion waits for current merchant rights and uses only the serve
   const no = component('../src/merchant-web/index.tsx', 'default', { auth, rpc: async () => false, callback });
   no.render(); await no.effect();
   assert.ok(!nodes(no.render()).some(n => n.type === 'MerchantNaverCallback'));
+});
+
+test('AI connection management stays reachable when business editing access has been withdrawn', async () => {
+  const screen = component('../src/merchant-web/index.tsx', 'default', { auth: authed(), rpc: async () => false });
+  screen.render(); await screen.effect();
+  nodes(screen.render()).find(n => n.props?.accessibilityLabel === 'AI 연결').props.onPress();
+  assert.ok(screen.calls.some(call => call[0] === 'navigate' && call[1] === '/ai'));
+  assert.ok(screen.calls.some(call => call[0] === 'feedback'));
 });

@@ -1,7 +1,8 @@
 begin;
 set local search_path=public,extensions;
 select no_plan();
-select has_function('public','save_merchant_mcp_connection',array['uuid','uuid[]','boolean','boolean'],'web saves explicit owner scope');
+select has_function('public','save_merchant_mcp_connection',array['uuid','uuid','uuid[]','boolean','boolean'],'web saves explicit owner scope');
+select ok(to_regprocedure('public.save_merchant_mcp_connection(uuid,uuid[],boolean,boolean)') is null,'legacy grant save cannot bypass the reviewed-account check');
 select has_function('public','dispatch_merchant_mcp',array['uuid','uuid','uuid','uuid','text','jsonb'],'server has one bounded business dispatch');
 select has_function('public','review_merchant_mcp_change',array['uuid','boolean'],'business owner reviews exact public changes');
 
@@ -25,8 +26,9 @@ insert into auth.sessions(id,user_id,oauth_client_id,scopes,created_at,updated_a
 select set_config('test.mcp_session_id','14070000-0000-4000-8000-000000000001',true);
 select set_config('request.jwt.claims','{"sub":"14000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 set local role authenticated;
-select throws_ok($$select public.save_merchant_mcp_connection('14030000-0000-4000-8000-000000000001',array['14010000-0000-4000-8000-000000000002'::uuid],true,false)$$,'P0001','MERCHANT_ACCESS_REQUIRED','cannot connect somebody else business');
-select set_config('test.mcp_connection_id',public.save_merchant_mcp_connection('14030000-0000-4000-8000-000000000001',array['14010000-0000-4000-8000-000000000001'::uuid],true,false)->>'id',true);
+select throws_ok($$select public.save_merchant_mcp_connection(p_expected_actor_id=>'14000000-0000-4000-8000-000000000002',p_client_id=>'14030000-0000-4000-8000-000000000001',p_merchant_ids=>array['14010000-0000-4000-8000-000000000001'::uuid],p_allow_drafts=>true,p_allow_publish=>false)$$,'P0001','ACCOUNT_CHANGED','connection creation is bound to the account that reviewed the grant');
+select throws_ok($$select public.save_merchant_mcp_connection('14000000-0000-4000-8000-000000000001','14030000-0000-4000-8000-000000000001',array['14010000-0000-4000-8000-000000000002'::uuid],true,false)$$,'P0001','MERCHANT_ACCESS_REQUIRED','cannot connect somebody else business');
+select set_config('test.mcp_connection_id',public.save_merchant_mcp_connection('14000000-0000-4000-8000-000000000001','14030000-0000-4000-8000-000000000001',array['14010000-0000-4000-8000-000000000001'::uuid],true,false)->>'id',true);
 select throws_ok($$select public.dispatch_merchant_mcp('14000000-0000-4000-8000-000000000001','14030000-0000-4000-8000-000000000001',current_setting('test.mcp_connection_id')::uuid,current_setting('test.mcp_session_id')::uuid,'list_my_businesses','{}')$$,'42501',null,'ordinary browser cannot invoke service dispatch');
 reset role;
 select ok(not exists(select 1 from pg_roles where rolname='gling_mcp'),'AI token role has no database identity');
@@ -75,7 +77,7 @@ reset role;
 select is((select services from private.merchants where id='14010000-0000-4000-8000-000000000001'),'웹에서 검토할 제안','the approved profile change is saved');
 select set_config('test.mcp_old_connection_id',current_setting('test.mcp_connection_id'),true);
 set local role authenticated;
-select set_config('test.mcp_connection_id',public.save_merchant_mcp_connection('14030000-0000-4000-8000-000000000001',array['14010000-0000-4000-8000-000000000001'::uuid],true,true)->>'id',true);
+select set_config('test.mcp_connection_id',public.save_merchant_mcp_connection('14000000-0000-4000-8000-000000000001','14030000-0000-4000-8000-000000000001',array['14010000-0000-4000-8000-000000000001'::uuid],true,true)->>'id',true);
 reset role;
 insert into auth.sessions(id,user_id,oauth_client_id,scopes,created_at,updated_at) values ('14070000-0000-4000-8000-000000000002','14000000-0000-4000-8000-000000000001','14030000-0000-4000-8000-000000000001','offline_access',now(),now());
 select ok(public.gling_access_token_hook('{"user_id":"14000000-0000-4000-8000-000000000001","authentication_method":"token_refresh","client_id":"14030000-0000-4000-8000-000000000001","claims":{"iss":"https://example.supabase.co/auth/v1","scope":"offline_access","session_id":"14070000-0000-4000-8000-000000000001"}}')->'error' is not null,'an old native refresh session cannot inherit a replacement connection');

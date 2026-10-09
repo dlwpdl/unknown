@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
@@ -15,6 +16,7 @@ import { getMyMerchantAccess } from '@/lib/merchant-workspace';
 import { supabase } from '@/lib/supabase';
 
 export default function MerchantWebIndex() {
+  const router = useRouter();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const { me, isAuthed, isAuthLoading, authError, promptLogin, signOut } = useAuth();
   const [access, setAccess] = useState<{ user: string; enabled: boolean; failed: boolean } | null>(null);
@@ -54,6 +56,8 @@ export default function MerchantWebIndex() {
         <View style={styles.brand}><Image source={require('@/assets/brand/gling-night-wordmark.png')} style={styles.wordmark} contentFit="contain" accessibilityLabel="글링" /><ThemedText type="smallBold">업체 관리</ThemedText></View>
         {isAuthed && <View style={styles.account}>
           <ThemedText type="small" numberOfLines={1} style={styles.nickname}>{me.nickname}</ThemedText>
+          <Pressable analyticsId="merchant-web.ai" accessibilityRole="button" accessibilityLabel="AI 연결" onPress={() => { play('selection'); router.push('/ai'); }}
+            style={({ pressed }) => [styles.action, { borderColor: theme.line, opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold">AI 연결</ThemedText></Pressable>
           <Pressable analyticsId="merchant-web.signout" accessibilityRole="button" accessibilityLabel="로그아웃" accessibilityState={{ disabled: signingOut }} disabled={signingOut} onPress={() => { void exit(); }}
             style={({ pressed }) => [styles.action, { borderColor: theme.line, opacity: signingOut || pressed ? 0.65 : 1 }]}>
             <ThemedText type="smallBold">{signingOut ? '로그아웃 중…' : '로그아웃'}</ThemedText>
@@ -67,9 +71,9 @@ export default function MerchantWebIndex() {
         : !isAuthed ? <View style={[styles.state, { backgroundColor: theme.card, borderColor: theme.line }]}>
           <ThemedText type="title" accessibilityRole="header">가게 소식을 편하게 관리해요.</ThemedText>
           <ThemedText themeColor="textSecondary">평소 쓰던 글링 계정으로 로그인하면 웹에서도 내 업체의 글과 사진을 관리할 수 있어요.</ThemedText>
-          <Pressable analyticsId="merchant-web.login" accessibilityRole="button" accessibilityLabel="글링 계정으로 로그인" onPress={() => { play('selection'); promptLogin('내 업체의 글과 사진을 관리해요.'); }}
+          <Pressable analyticsId="merchant-web.login" accessibilityRole="button" accessibilityLabel="비즈니스 로그인" onPress={() => { play('selection'); promptLogin('내 업체의 글과 사진을 관리해요.'); }}
             style={({ pressed }) => [styles.primary, { backgroundColor: theme.accent, opacity: pressed ? 0.8 : 1 }]}>
-            <ThemedText type="smallBold" style={{ color: theme.accentInk }}>글링 계정으로 로그인</ThemedText>
+            <ThemedText type="smallBold" style={{ color: theme.accentInk }}>비즈니스 로그인</ThemedText>
           </Pressable>
         </View>
           : !current?.enabled ? <View style={[styles.state, { backgroundColor: theme.card, borderColor: theme.line }]}>

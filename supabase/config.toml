@@ -37,11 +37,16 @@ file_size_limit = "50MiB"
 
 [auth]
 enabled = true
-site_url = "gling://auth/callback"
-additional_redirect_urls = ["gling://auth/callback", "http://localhost:*/auth/callback", "http://localhost:*/gling/auth/callback", "https://dlwpdl.github.io/gling/auth/callback", "https://gling.ej-entertainment.com/auth/callback", "exp://192.168.1.71:8090/--/auth/callback"]
+site_url = "https://gling.ej-entertainment.com"
+additional_redirect_urls = ["gling://auth/callback", "http://localhost:*/auth/callback", "http://localhost:*/gling/auth/callback", "https://dlwpdl.github.io/gling/auth/callback", "https://gling.ej-entertainment.com/auth/callback", "exp://192.168.1.71:8090/--/auth/callback", "https://gling.ej-entertainment.com/merchant/auth/callback"]
 jwt_expiry = 3600
 enable_signup = true
 enable_anonymous_sign_ins = false
+
+[auth.oauth_server]
+enabled = true
+allow_dynamic_registration = true
+authorization_url_path = "/merchant/ai"
 
 [auth.email]
 enable_signup = true
@@ -87,4 +92,7 @@ verify_jwt = false
 
 # Revenue verifies the caller's JWT, admin role, and audit context itself.
 [functions.ticketmaster-revenue]
+verify_jwt = false
+
+[functions.merchant-mcp]
 verify_jwt = false
