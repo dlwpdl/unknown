@@ -14,7 +14,7 @@ test('iOS and Android public login omit review access while the explicit review 
     }).outputText;
     vm.runInNewContext(code, { exports, __DEV__: dev, process: { env: {} }, require(name) {
       if (name === 'react/jsx-runtime') return { jsx, jsxs };
-      if (name === 'react') return { useCallback: fn => fn, useState: value => [typeof value === 'function' ? value() : value, () => {}] };
+      if (name === 'react') return { useCallback: fn => fn, useRef: value => ({ current: value }), useState: value => [typeof value === 'function' ? value() : value, () => {}] };
       if (name === 'expo-router') return { useFocusEffect() {} };
       if (name === 'react-native-reanimated') return { useReducedMotion: () => false };
       if (name === 'expo-font') return { useFonts: () => [true] };

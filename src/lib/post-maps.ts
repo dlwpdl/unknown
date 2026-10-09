@@ -1,3 +1,5 @@
+import { splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links.ts';
+
 export function googleMapsUrl(input: string): string | null {
   try {
     const url = new URL(input.trim());
@@ -15,14 +17,15 @@ export function googleMapsUrl(input: string): string | null {
 
 // shortcut: 한 글에 지도 하나를 본문에 보관, 여러 장소를 검색·관리하게 되면 별도 필드로 확장.
 export function postMapBody(body: string): { body: string; url: string | null } {
+  const attached = splitPostAttachments(body);
   let url: string | null = null;
-  const lines = body.split(/\r?\n/).filter((line) => {
+  const lines = attached.body.split(/\r?\n/).filter((line) => {
     const candidate = googleMapsUrl(line.trim().replace(/^Google 지도:\s*/, ''));
     if (!candidate) return true;
     url = candidate;
     return false;
   });
-  return { body: url ? lines.join('\n').trim() : body, url };
+  return { body: url ? withPostAttachments(lines.join('\n').trim(), attached.urls) : body, url };
 }
 
 export function withPostMap(body: string, input: string): string {

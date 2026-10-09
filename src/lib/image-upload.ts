@@ -1,7 +1,7 @@
 // 게시물 미디어의 단일 모듈. 사진·영상의 크기, 형식, 경로 규칙을 여기서만 정한다.
 // 영상이나 외부 스토리지(R2 등)를 도입할 때도 이 파일만 고치면 된다.
 
-export const MAX_POST_IMAGES = 6;
+export const MAX_POST_IMAGES = 10;
 export const MAX_UPLOAD_DIMENSION = 1280;
 export const FEED_THUMB_DIMENSION = 480;
 export const TARGET_IMAGE_BYTES = 700 * 1024;

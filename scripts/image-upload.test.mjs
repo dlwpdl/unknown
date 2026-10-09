@@ -35,7 +35,7 @@ test('작은 사진은 확대하지 않고, 예산을 넘으면 더 작은 시�
   });
 });
 
-test('썸네일 경로와 용량 계산, 게시물당 6장 상한을 한 곳에서 관리한다', () => {
+test('썸네일 경로와 용량 계산, 게시물당 10장 상한을 한 곳에서 관리한다', () => {
   assert.equal(thumbPathFor('user/171234.webp'), `user/171234.thumb.webp`);
   assert.equal(thumbPathFor('user/171234'), 'user/171234.thumb.webp');
   assert.equal(isThumbPath('user/1.thumb.webp'), true);
@@ -48,8 +48,10 @@ test('썸네일 경로와 용량 계산, 게시물당 6장 상한을 한 곳에�
   assert.equal(estimatedBase64Bytes('a'.repeat(4000)), 3000);
   assert.equal(FEED_THUMB_DIMENSION < MAX_UPLOAD_DIMENSION, true);
   assert.equal(MAX_IMAGE_BYTES, 2 * 1024 * 1024);
-  assert.equal(MAX_POST_IMAGES, 6);
+  assert.equal(MAX_POST_IMAGES, 10);
   assert.equal(canAddPostImage(4), true);
   assert.equal(canAddPostImage(5), true);
-  assert.equal(canAddPostImage(6), false);
+  assert.equal(canAddPostImage(9), true);
+  assert.equal(canAddPostImage(10), false);
+  assert.equal(canAddPostImage(11), false);
 });

@@ -7,10 +7,9 @@ import { CITIES, TAGS } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
 import { buildSharedPostUrl } from '@/lib/sharing';
 import { merchantEventId } from '@/lib/merchant-source';
-import { setAdminMerchantOwner } from '@/lib/merchant-workspace';
 import { MerchantWorkspace } from '@/components/merchant-workspace';
 import {
-  createMerchantPost, linkMerchantPost, loadMerchant, loadMerchants, merchantReportHtml,
+  setAdminMerchantOwner, createMerchantPost, linkMerchantPost, loadMerchant, loadMerchants, merchantReportHtml,
   merchantReportText, saveMerchant, saveMerchantReport,
   type Merchant, type MerchantDetail, type MerchantReport,
 } from '@/lib/admin-merchants';

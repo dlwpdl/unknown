@@ -4,8 +4,9 @@ export function buildSharedPostUrl(
   shareUrl = process.env.EXPO_PUBLIC_SHARE_URL,
 ) {
   const encodedId = encodeURIComponent(postId);
-  if (shareUrl) return `${shareUrl.replace(/\/+$/, '')}?id=${encodedId}`;
-  return appUrl
-    ? `${appUrl.replace(/\/+$/, '')}/post/${encodedId}`
-    : `gling://post/${encodedId}`;
+  // Supabase serves Edge HTML as text/plain; send readers to the existing public web page.
+  if (shareUrl && !/^https:\/\/[^/]+\.supabase\.co\/functions\/v1\/public-post(?:[/?#]|$)/i.test(shareUrl)) {
+    return `${shareUrl.replace(/\/+$/, '')}?id=${encodedId}`;
+  }
+  return `${(appUrl || 'https://gling.ej-entertainment.com').replace(/\/+$/, '')}/post?id=${encodedId}`;
 }

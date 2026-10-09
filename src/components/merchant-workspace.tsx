@@ -1,27 +1,38 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Alert, Platform, Share, StyleSheet, TextInput, View } from 'react-native';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
+import { MerchantAccessGate } from '@/components/merchant-access-gate';
+import { MerchantNaverCafe } from '@/components/merchant-naver-cafe';
+import { MerchantWebPosts } from '@/components/merchant-web-posts';
+import { PostPhotoEditor, type EditablePostImage } from '@/components/post-photo-editor';
+import { PostBodyEditor } from '@/components/post-body-editor';
+import { MerchantReviewInbox } from '@/components/merchant-review-inbox';
+import { MerchantProfileEditor } from '@/components/merchant-profile-editor';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
-import { merchantReportText } from '@/lib/admin-merchants';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { MAX_POST_IMAGES } from '@/lib/image-upload';
+import { saveMerchantDraftImages } from '@/lib/merchant-posts';
 import { CITIES, TAGS } from '@/lib/mock';
 import { merchantEventId } from '@/lib/merchant-source';
 import {
   MERCHANT_CHANNELS, adjustMerchantInventory, approveMerchantDrafts, archiveMerchantDrafts,
-  calculateMerchantCost, loadMerchantWorkspace, loadMyMerchants, merchantDraftCopy,
-  publishMerchantDraft, recordMerchantExternalPost, registerMyMerchant, saveMerchantDraft, saveMerchantItem,
+  calculateMerchantCost, loadMerchantWorkspace, loadMyMerchants, merchantDraftCopy, merchantReportText,
+  publishMerchantDraft, recordMerchantExternalPost, registerMyMerchant, saveMerchantItem,
   type BusinessMerchant, type MerchantChannel, type MerchantDraft, type MerchantWorkspace as Workspace,
 } from '@/lib/merchant-workspace';
+import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
 import { supabase } from '@/lib/supabase';
 
 const errorText = (error: unknown) => ({
   MERCHANT_ACCESS_REQUIRED: '이 업체를 관리할 권한이 없어요.', ADMIN_REQUIRED: '관리자 2단계 인증을 다시 확인해 주세요.',
+  MERCHANT_ACCOUNT_REQUIRED: '현재 계정의 업체 관리 권한을 다시 확인해 주세요.',
   MERCHANT_OWNER_VERIFICATION_REQUIRED: '업체 소유 확인이 완료되면 글링에 게시할 수 있어요.',
   MERCHANT_OPERATIONS_PAUSED: '운영이 중단된 업체는 새 안내글을 게시할 수 없어요.',
   MERCHANT_PLAN_REQUIRED: '여러 건을 한 번에 승인하거나 입출고하려면 업체 체험·유료 운영 기간이 필요해요. 한 건씩은 계속 이용할 수 있어요.',
@@ -34,14 +45,19 @@ const errorText = (error: unknown) => ({
   INVALID_ORIGINAL_URL: '원문 주소는 공개된 HTTPS 링크여야 해요.', ACCOUNT_CHANGED: '계정이 바뀌었어요. 현재 계정으로 다시 열어주세요.',
   INVALID_COST_INPUT: '금액은 0 이상, 수량은 0 초과, 수수료율은 100 미만으로 입력해 주세요.',
   CONTENT_REJECTED: '게시 기준에 맞지 않는 내용이에요. 초안을 확인해 주세요.', RATE_LIMITED: '요청이 많아요. 잠시 후 다시 시도해 주세요.',
+  IMAGE_TOO_LARGE: '사진 용량이 커요. 다른 사진으로 다시 시도해 주세요.', INVALID_IMAGE_PATH: '현재 계정의 원고 사진을 다시 확인해 주세요.',
+  MERCHANT_PHOTOS_UNAVAILABLE: '사진을 모두 불러오지 못했어요. 원고를 다시 열어주세요.', INVALID_IMAGE_COUNT: '사진은 최대 6장까지 추가할 수 있어요.',
+  IMAGE_UNSUPPORTED: 'JPEG, PNG, WebP 사진을 선택해 주세요.',
 } as Record<string, string>)[error instanceof Error ? error.message : '']
   ?? '처리하지 못했어요. 입력은 그대로 두었으니 연결 상태를 확인한 뒤 다시 시도해 주세요.';
 const amount = (value: string) => value.trim() ? Number(value.replace(',', '.')) : NaN;
 const money = (value: number) => `CAD ${Number(value).toFixed(2)}`;
-type DraftInput = Pick<MerchantDraft, 'id' | 'channel' | 'title' | 'body' | 'tag_slug' | 'kind'> & { original_url: string };
-const emptyDraft = (): DraftInput => ({ id: merchantEventId(), channel: 'gling', title: '', body: '', original_url: '', tag_slug: 'life', kind: 'story' });
+type DraftInput = Pick<MerchantDraft, 'id' | 'channel' | 'title' | 'body' | 'tag_slug' | 'kind' | 'image_paths'> & { original_url: string };
+type MerchantTab = 'drafts' | 'posts' | 'profile' | 'reviews' | 'channels' | 'cost' | 'stock' | 'membership';
+const emptyDraft = (): DraftInput => ({ id: merchantEventId(), channel: 'gling', title: '', body: '', original_url: '', tag_slug: 'life', kind: 'story', image_paths: [] });
 const sameDraftContent = (a: DraftInput | MerchantDraft, b: DraftInput | MerchantDraft) => a.id === b.id && a.channel === b.channel
-  && a.title === b.title && a.body === b.body && (a.original_url ?? '') === (b.original_url ?? '') && a.tag_slug === b.tag_slug && a.kind === b.kind;
+  && a.title === b.title && a.body === b.body && (a.original_url ?? '') === (b.original_url ?? '') && a.tag_slug === b.tag_slug && a.kind === b.kind
+  && JSON.stringify(a.image_paths ?? []) === JSON.stringify(b.image_paths ?? []);
 type StockRequest = { id: string; changes: { item_id: string; delta: number; note: string }[] };
 // A remounted tool waits for the previous operation before reading its persisted request.
 const stockOperations = new Map<string, Promise<void>>();
@@ -95,10 +111,14 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   return <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="subtitle">{title}</ThemedText>{children}</View>;
 }
 
-export function MerchantWorkspace({ merchantId, refreshSignal = 0 }: { merchantId?: string; refreshSignal?: number }) {
+type WorkspaceProps = { merchantId?: string; refreshSignal?: number; initialMerchantId?: string; initialTab?: MerchantTab };
+export function MerchantWorkspace(props: WorkspaceProps) {
+  return <MerchantAccessGate><MerchantWorkspaceContent {...props} /></MerchantAccessGate>;
+}
+function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMerchantId, initialTab }: WorkspaceProps) {
   const { me, isAuthed } = useAuth();
   const [response, setResponse] = useState<{ user: string; rows: BusinessMerchant[] } | null>(null);
-  const [selected, setSelected] = useState<string | null>(merchantId ?? null);
+  const [selected, setSelected] = useState<string | null>(merchantId ?? initialMerchantId ?? null);
   const [registering, setRegistering] = useState(false), [error, setError] = useState(''), [busy, setBusy] = useState(false);
   const [revision, setRevision] = useState(0), [dirty, setDirty] = useState(false);
   const [registration, setRegistration] = useState(() => ({ id: merchantEventId(), name: '', contact: '', city_id: 'vancouver' }));
@@ -111,8 +131,8 @@ export function MerchantWorkspace({ merchantId, refreshSignal = 0 }: { merchantI
       .catch((e) => { if (active) setError(errorText(e)); });
     return () => { active = false; };
   }, [isAuthed, me.id, merchantId, revision]);
-  if (!isAuthed) return <ThemedText>로그인한 뒤 소상공인 도구를 이용해 주세요.</ThemedText>;
-  if (merchantId) return <MerchantTools key={`${me.id}:${merchantId}`} id={merchantId} refreshSignal={refreshSignal} onDirty={() => {}} />;
+  if (!isAuthed) return <ThemedText>로그인한 뒤 비지니스 도구를 이용해 주세요.</ThemedText>;
+  if (merchantId) return <MerchantTools key={`${me.id}:${merchantId}`} id={merchantId} initialTab={initialTab} refreshSignal={refreshSignal} onDirty={() => {}} />;
   async function choose(id: string | null) {
     if (dirty && !await confirmAction('저장하지 않은 초안', '다른 업체를 열면 저장하지 않은 수정 내용이 사라져요.')) return;
     setDirty(false); setSelected(id); setRegistering(id === null); setError('');
@@ -142,19 +162,22 @@ export function MerchantWorkspace({ merchantId, refreshSignal = 0 }: { merchantI
       <ThemedText type="small" themeColor="textSecondary">기본 도구는 무료예요. 등록일부터 14일 동안 일괄 승인·입출고도 체험할 수 있어요. 공개 게시 전에는 업체 소유를 확인해요.</ThemedText>
       <Action primary label={busy ? '등록 중…' : '업체 등록하기'} disabled={busy || !registration.name.trim()} onPress={() => { void register(); }} />
     </Section>}
-    {!registering && selected && rows && <MerchantTools key={`${me.id}:${selected}`} id={selected} refreshSignal={refreshSignal} onDirty={setDirty} />}
+    {!registering && selected && rows?.some(row => row.id === selected) && <MerchantTools key={`${me.id}:${selected}`} id={selected} initialTab={initialTab} refreshSignal={refreshSignal} onDirty={setDirty} />}
   </View>;
 }
 
-function MerchantTools({ id, refreshSignal, onDirty }: { id: string; refreshSignal: number; onDirty: (dirty: boolean) => void }) {
+function MerchantTools({ id, refreshSignal, onDirty, initialTab = 'posts' }: { id: string; refreshSignal: number; onDirty: (dirty: boolean) => void; initialTab?: MerchantTab }) {
+  const theme = useTheme();
   const { me } = useAuth(); const { play } = useInteractionFeedback();
-  const [revision, setRevision] = useState(0), [tab, setTab] = useState<'drafts' | 'cost' | 'stock' | 'membership'>('drafts');
+  const [revision, setRevision] = useState(0), [tab, setTab] = useState<MerchantTab>(initialTab);
   const [response, setResponse] = useState<{ user: string; revision: number; refreshSignal: number; data: Workspace } | null>(null);
   const data = response?.user === me.id && response.revision === revision && response.refreshSignal === refreshSignal ? response.data : null;
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState('');
   const busyRef = useRef(false), mounted = useRef(true);
   const [editor, setEditor] = useState(emptyDraft), [dirty, setDirty] = useState(false), [selection, setSelection] = useState<string[]>([]);
+  const [profileDirty, setProfileDirty] = useState(false);
   const [openedDraft, setOpenedDraft] = useState<MerchantDraft | null>(null);
+  const [draftPhotos, setDraftPhotos] = useState<EditablePostImage[]>([]);
   const editorReload = useRef<DraftInput | null>(null);
   const [showArchived, setShowArchived] = useState(false), [externalUrl, setExternalUrl] = useState('');
   const [item, setItem] = useState<{ id: string; name: string; unit: string; unit_cost: string; low_stock: string }>(() => ({ id: merchantEventId(), name: '', unit: '개', unit_cost: '0', low_stock: '0' }));
@@ -165,7 +188,7 @@ function MerchantTools({ id, refreshSignal, onDirty }: { id: string; refreshSign
   const [stockRestoreError, setStockRestoreError] = useState(false), [stockRecoveryRevision, setStockRecoveryRevision] = useState(0);
   const [cost, setCost] = useState({ batchCost: '0', yield: '1', packaging: '0', other: '0', price: '0', feePercent: '0' });
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  useEffect(() => { onDirty(dirty); }, [dirty, onDirty]);
+  useEffect(() => { onDirty(dirty || profileDirty); }, [dirty, profileDirty, onDirty]);
   useEffect(() => {
     let active = true;
     void (async () => {
@@ -206,9 +229,45 @@ function MerchantTools({ id, refreshSignal, onDirty }: { id: string; refreshSign
   }
   function changeDraft(next: Partial<DraftInput>) { setEditor({ ...editor, ...next }); setDirty(true); }
   async function openDraft(draft?: MerchantDraft) {
-    if (dirty && !await confirmAction('저장하지 않은 초안', '다른 원고를 열면 저장하지 않은 수정 내용이 사라져요.')) return;
-    setEditor(draft ? { ...draft, original_url: draft.original_url ?? '' } : emptyDraft()); setOpenedDraft(draft ?? null); editorReload.current = null;
-    setDirty(false); setExternalUrl(draft?.external_url ?? ''); setError('');
+    if (busyRef.current) return;
+    busyRef.current = true; setBusy(true);
+    try {
+      if (dirty && !await confirmAction('저장하지 않은 초안', '다른 원고를 열면 저장하지 않은 수정 내용이 사라져요.')) return;
+      const paths = draft?.image_paths ?? [];
+      const nextPhotos: EditablePostImage[] = [];
+      if (paths.length) {
+        const result = await supabase.storage.from('post-images').createSignedUrls(paths, 3600);
+        for (const path of paths) {
+          const uri = result.data?.find(row => row.path === path)?.signedUrl;
+          if (result.error || !uri) throw new Error('MERCHANT_PHOTOS_UNAVAILABLE');
+          nextPhotos.push({ path, uri });
+        }
+      }
+      if (!mounted.current) return;
+      setEditor(draft ? { ...draft, original_url: draft.original_url ?? '', image_paths: paths } : emptyDraft());
+      setDraftPhotos(nextPhotos); setOpenedDraft(draft ?? null); editorReload.current = null;
+      setDirty(false); setExternalUrl(draft?.external_url ?? ''); setError('');
+    } catch (error) { if (mounted.current) { play('warning'); setError(errorText(error)); } }
+    finally { busyRef.current = false; if (mounted.current) setBusy(false); }
+  }
+  function changeDraftPhotos(photos: EditablePostImage[]) {
+    setDraftPhotos(photos); changeDraft({ image_paths: photos.flatMap(photo => 'path' in photo ? [photo.path] : []) });
+  }
+  async function pickDraftPhotos() {
+    if (busyRef.current || draftPhotos.length >= MAX_POST_IMAGES) return;
+    await run(async () => {
+      const remaining = MAX_POST_IMAGES - draftPhotos.length;
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1, allowsMultipleSelection: true,
+        orderedSelection: true, selectionLimit: remaining,
+        preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible });
+      if (result.canceled) return;
+      const assets = result.assets ?? [];
+      if (!assets.length || assets.length > remaining) throw new Error('INVALID_IMAGE_COUNT');
+      if (assets.some(asset => !asset.uri || !isSupportedImage(asset.mimeType ?? 'image/jpeg'))) throw new Error('IMAGE_UNSUPPORTED');
+      const photos: PreparedImage[] = [];
+      for (const asset of assets) photos.push(await preparePostImage(asset, { withThumb: true }));
+      if (mounted.current) changeDraftPhotos([...draftPhotos, ...photos]);
+    }, '사진을 준비했어요. 순서를 확인하고 초안을 저장해 주세요.', false);
   }
   function toggleDraft(draftId: string) {
     if (busy) return;
@@ -266,9 +325,13 @@ function MerchantTools({ id, refreshSignal, onDirty }: { id: string; refreshSign
   return <View style={styles.workspace}>
     <View><ThemedText type="title">{data.merchant.name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{data.merchant.city_name} · {data.merchant.owner_verified_at ? '업체 소유 확인됨' : '업체 소유 확인 대기'}</ThemedText></View>
     <ScrollView analyticsId="merchant.tabs" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.actions} accessibilityRole="tablist">
-      {([['drafts', '홍보글'], ['cost', '원가 계산'], ['stock', '재고'], ['membership', '성과·멤버십']] as const).map(([key, label]) => <Action role="tab" key={key} label={label} selected={tab === key} disabled={busy} onPress={() => setTab(key)} />)}
+      {([['posts', '글·사진'], ['profile', '프로필'], ['reviews', '이용 후기'], ['drafts', '홍보글'], ['channels', '카페 연결'], ['cost', '원가 계산'], ['stock', '재고'], ['membership', '성과·멤버십']] as const).map(([key, label]) => <Action role="tab" key={key} label={label} selected={tab === key} disabled={busy} onPress={() => setTab(key)} />)}
     </ScrollView>
     {error && <><ThemedText accessibilityRole="alert">{error}</ThemedText><Action label="자료 새로 확인" disabled={busy} onPress={() => { setError(''); setRevision((v) => v + 1); }} /></>}{notice && <ThemedText accessibilityLiveRegion="polite">{notice}</ThemedText>}
+    {tab === 'posts' && <MerchantWebPosts merchantId={id} posts={data.posts} onChanged={() => setRevision(v => v + 1)} />}
+    <View style={{ display: tab === 'profile' ? 'flex' : 'none' }}><MerchantProfileEditor merchantId={id} onDirty={setProfileDirty} /></View>
+    {tab === 'reviews' && <MerchantReviewInbox merchantId={id} />}
+    {tab === 'channels' && <MerchantNaverCafe merchantId={id} drafts={data.drafts} onChanged={() => setRevision(v => v + 1)} />}
     {tab === 'drafts' && <>
       <Section title="게시물 관리">
         <View style={styles.actions}><Action label="새 초안" disabled={busy} onPress={() => { void openDraft(); }} /><Action label={showArchived ? '작성 중인 원고 보기' : '보관한 원고 보기'} disabled={busy} onPress={() => { setShowArchived(!showArchived); setSelection([]); }} /></View>
@@ -292,13 +355,26 @@ function MerchantTools({ id, refreshSignal, onDirty }: { id: string; refreshSign
         {draftChanged && <ThemedText accessibilityRole="alert">{errorText(new Error('MERCHANT_DRAFT_CHANGED'))}</ThemedText>}
         <ThemedText type="small">게시할 채널</ThemedText><View style={styles.actions}>{Object.entries(MERCHANT_CHANNELS).map(([key, label]) => <Action key={key} label={label} selected={editor.channel === key} disabled={busy || published} onPress={() => changeDraft({ channel: key as MerchantChannel })} />)}</View>
         <Field label="제목" value={editor.title} maxLength={100} disabled={busy || published} onChange={(title) => changeDraft({ title })} />
-        <Field label="게시글 본문" value={editor.body} maxLength={4700} multiline disabled={busy || published} onChange={(body) => changeDraft({ body })} />
+        <View style={styles.field}><ThemedText type="small" themeColor="textSecondary">게시글 본문</ThemedText>
+          <PostBodyEditor accessibilityLabel="게시글 본문" value={editor.body} maxLength={4700} multiline editable={!busy && !published} onChangeText={(body) => changeDraft({ body })}
+            style={[styles.input, styles.multiline, { color: theme.text, borderColor: theme.line, backgroundColor: theme.backgroundElement }]} />
+        </View>
+        <ThemedText type="smallBold">사진 {draftPhotos.length}/{MAX_POST_IMAGES}</ThemedText>
+        <PostPhotoEditor images={draftPhotos} disabled={busy || published} onChange={changeDraftPhotos} />
+        <Action label="사진 추가" disabled={busy || published || draftPhotos.length >= MAX_POST_IMAGES} onPress={() => { void pickDraftPhotos(); }} />
+        <ThemedText type="small" themeColor="textSecondary">첫 사진을 표지로 사용해요. 사진을 추가·제거하거나 순서를 바꾸면 초안을 저장하고 다시 승인해 주세요.</ThemedText>
         <Field label="원문 주소 · 선택" value={editor.original_url} maxLength={2048} disabled={busy || published} onChange={(original_url) => changeDraft({ original_url })} />
         <View style={styles.actions}>{TAGS.filter((t) => t.kind === 'post').map((t) => <Action key={t.slug} label={t.label} selected={editor.tag_slug === t.slug} disabled={busy || published} onPress={() => changeDraft({ tag_slug: t.slug })} />)}</View>
         <View style={styles.actions}><Action label="업체 안내" selected={editor.kind === 'story'} disabled={busy || published} onPress={() => changeDraft({ kind: 'story' })} /><Action label="구인구직·거래" selected={editor.kind === 'listing'} disabled={busy || published} onPress={() => changeDraft({ kind: 'listing' })} /></View>
         {published ? <Action label="새 초안으로 복제" disabled={busy} onPress={() => { setEditor({ ...editor, id: merchantEventId() }); setOpenedDraft(null); setDirty(true); setExternalUrl(''); }} /> : <Action primary label={busy ? '처리 중…' : '초안 저장'} disabled={busy || draftChanged || !editor.title.trim() || !editor.body.trim() || !!saved?.archived_at} onPress={() => {
           const draft = { ...editor, title: editor.title.trim(), body: editor.body.trim(), original_url: editor.original_url.trim() };
-          void run(async () => { await saveMerchantDraft(supabase, id, { ...draft, original_url: draft.original_url || null }); editorReload.current = draft; setEditor(draft); setDirty(false); }, '초안을 저장했어요. 게시하려면 최신 저장본을 승인해 주세요.');
+          void run(async () => {
+            const paths = await saveMerchantDraftImages(supabase, id, me.id, { ...draft, original_url: draft.original_url || null }, draftPhotos);
+            if (!mounted.current) return;
+            const savedDraft = { ...draft, image_paths: paths };
+            setDraftPhotos(draftPhotos.map((photo, index) => ({ path: paths[index], uri: photo.uri })));
+            editorReload.current = savedDraft; setEditor(savedDraft); setDirty(false);
+          }, '초안을 저장했어요. 게시하려면 최신 저장본을 승인해 주세요.');
         }} />}
         {saved && !published && !saved.archived_at && <Action label={saved.approved_at ? '승인 취소' : '이 저장본 승인'} disabled={busy || !draftReady} onPress={() => {
           const expected = { [saved.id]: saved.updated_at };

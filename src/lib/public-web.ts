@@ -3,7 +3,16 @@ import { parseEventQuery, spotlightLocalEvents, type TicketmasterEvent } from '.
 
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
+export function publicMerchantId(path: string, queryId?: unknown): string | null {
+  const id = path === '/company' ? queryId : path.match(/^\/company\/([^/]+)\/?$/)?.[1];
+  return typeof id === 'string' && UUID.test(id) ? id.toLowerCase() : null;
+}
+
 export function publicWebTarget(path: string, postId?: string) {
+  if (path === '/company' || path.startsWith('/company/')) {
+    const merchantId = publicMerchantId(path, postId);
+    return merchantId ? `gling://company/${merchantId}` : 'gling://';
+  }
   const id = postId ?? path.match(/^\/post\/([^/]+)\/?$/)?.[1];
   if (id && UUID.test(id)) return `gling://post/${id}`;
   if (['/chat', '/compose', '/meetup-create', '/meetups'].includes(path)) return `gling:/${path}`;
@@ -16,8 +25,9 @@ export function publicWebFetch(baseUrl: string, key: string, transport: typeof f
     const request = new Request(input, init);
     const url = new URL(request.url);
     const allowed = url.origin === new URL(baseUrl).origin && request.method === 'POST' && (
-      /^\/rest\/v1\/rpc\/(get_public_feed_page_v2|get_public_post|get_public_comments_page|get_merchant_post_source)$/.test(url.pathname)
+      /^\/rest\/v1\/rpc\/(get_public_feed_page_v2|get_public_post|get_public_comments_page|get_merchant_post_source|get_merchant_profile|get_merchant_reviews|get_merchant_profile_posts)$/.test(url.pathname)
       || url.pathname === '/storage/v1/object/sign/post-images'
+      || url.pathname === '/storage/v1/object/sign/merchant-profile-images'
       || url.pathname === '/functions/v1/ticketmaster-events'
     );
     if (!allowed) throw new Error('PUBLIC_WEB_READ_ONLY');

@@ -118,7 +118,7 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
   const root = { id: 'root-comment', authorId: 'neighbor', nickname: '수달', body: '루트 본문', replyCount: 60 };
   const reply = { id: 'reply', authorId: 'other', nickname: '참새', body: '답글 본문', parentId: root.id, replyToNickname: root.nickname, likes: 2 };
   let auth = { isAuthed: true, me: { id: 'account-a', nickname: '나' }, isVerified: true, trustLevel: 2 };
-  let post = { id: 'post-a', body: '', author: { id: 'author', nickname: '작성자' }, views: 1, comments: 61 };
+  let post = { id: 'post-a', body: '', tag: { id: 1, slug: 'life', label: '일상', kind: 'post' }, author: { id: 'author', nickname: '작성자' }, views: 1, comments: 61 };
   let hooks = [], index = 0, pendingEffects = [], mountedKey, tree, failSend = true, failLike = true, failRead = true, releaseSend, commentId, platform = 'ios';
   const alerts = [], reads = [], writes = [], counts = [];
   const exports = {};

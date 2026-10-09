@@ -16,8 +16,14 @@ function loadGallery() {
     // 첫 상태는 화면 폭이다. 측정된 폭(390)을 바로 넣어 스크롤이 그려진 트리를 확인한다.
     if (name === 'react') return { useCallback: (fn) => fn, useState: (initial) => [stateCall++ === 0 ? 390 : typeof initial === 'function' ? initial() : initial, () => {}] };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if (name === 'react-native') return { StyleSheet: { create: (value) => value, hairlineWidth: 1 }, View: 'View' };
-    if (name === '@/components/analytics-controls') return { ScrollView: (props) => { scrolls.push(props); return { type: 'ScrollView', props }; } };
+
+    if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ top: 44, bottom: 34 }) };
+    if (name === 'react-native-reanimated') return { useReducedMotion: () => true };
+    if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: true, me: { id: 'author' } }) };
+    if (name === '@/lib/feed-data') return { getPostImageSource: (post, viewer, variant, index) => ({ uri: post.imageUris[index] }) };
+    if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
+    if (name === 'react-native') return { StyleSheet: { create: (value) => value, hairlineWidth: 1 }, View: 'View', Modal: 'Modal', useWindowDimensions: () => ({ width: 390, height: 844 }) };
+    if (name === '@/components/analytics-controls') return { Pressable: 'Pressable', ScrollView: (props) => { scrolls.push(props); return { type: 'ScrollView', props }; } };
     if (name === '@/components/themed-text') return { ThemedText: (props) => ({ type: 'ThemedText', props }) };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ backgroundElement: '#eee', card: '#fff', line: '#ddd' }) };
     throw new Error(`Unexpected import: ${name}`);
@@ -27,9 +33,9 @@ function loadGallery() {
 
 const nodes = (tree) => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap((value) => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
 
-test('사진이 한 장이면 갤러리를 만들지 않는다', () => {
+test('사진이 한 장이어도 상세 갤러리에서 원본을 보여준다', () => {
   const { Gallery } = loadGallery();
-  assert.equal(Gallery({ post: { id: 'post-1', imageUris: ['signed:one'] } }), null);
+  assert.ok(nodes(Gallery({ post: { id: 'post-1', imageUris: ['signed:one'] } })).some(n => n.props?.source?.uri === 'signed:one'));
 });
 
 test('여러 장이면 가로 갤러리와 장수 표시를 만든다', () => {
@@ -54,8 +60,14 @@ test('화면 폭을 알기 전에는 이미지를 그리지 않는다', () => {
     if (name === 'expo-image') return { Image: (props) => ({ type: 'Image', props }) };
     if (name === 'react') return { useCallback: (fn) => fn, useState: (initial) => [typeof initial === 'function' ? initial() : initial, () => {}] };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if (name === 'react-native') return { StyleSheet: { create: (value) => value, hairlineWidth: 1 }, View: 'View' };
-    if (name === '@/components/analytics-controls') return { ScrollView: (props) => ({ type: 'ScrollView', props }) };
+
+    if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ top: 44, bottom: 34 }) };
+    if (name === 'react-native-reanimated') return { useReducedMotion: () => true };
+    if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: true, me: { id: 'author' } }) };
+    if (name === '@/lib/feed-data') return { getPostImageSource: (post, viewer, variant, index) => ({ uri: post.imageUris[index] }) };
+    if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
+    if (name === 'react-native') return { StyleSheet: { create: (value) => value, hairlineWidth: 1 }, View: 'View', Modal: 'Modal', useWindowDimensions: () => ({ width: 390, height: 844 }) };
+    if (name === '@/components/analytics-controls') return { Pressable: 'Pressable', ScrollView: (props) => ({ type: 'ScrollView', props }) };
     if (name === '@/components/themed-text') return { ThemedText: (props) => ({ type: 'ThemedText', props }) };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ backgroundElement: '#eee', card: '#fff', line: '#ddd' }) };
     throw new Error(`Unexpected import: ${name}`);

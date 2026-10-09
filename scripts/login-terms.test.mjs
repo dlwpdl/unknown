@@ -13,13 +13,14 @@ function panel(opened = []) {
   }).outputText;
   vm.runInNewContext(source, { exports, __DEV__: true, process: { env: {} }, require(name) {
     if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
-    if (name === 'react') return { useCallback: fn => fn, useState(initial) { const i = index++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = typeof value === 'function' ? value(states[i]) : value; }]; } };
+    if (name === 'react') return { useCallback: fn => fn, useRef: current => ({ current }), useState(initial) { const i = index++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = typeof value === 'function' ? value(states[i]) : value; }]; } };
     if (name === 'expo-router') return { useFocusEffect() {} };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'react-native-reanimated') return { useReducedMotion: () => false };
     if ((name === 'react-native' || name === '@/components/analytics-controls')) return { Platform: { OS: 'ios' }, StyleSheet: { create: v => v }, Animated: { Value: class { interpolate() { return 1; } }, View: 'AnimatedView' }, ...Object.fromEntries(['View','Pressable','ScrollView','TextInput','KeyboardAvoidingView'].map(k => [k,k])) };
     if (name === 'expo-linking') return { openURL: async url => { opened.push(url); } };
     if (name === 'expo-font') return { useFonts: () => [true] };
+    if (name === '@/components/raised-action-button') return { RaisedActionButton: 'RaisedActionButton' };
     if (name === 'expo-apple-authentication') return { AppleAuthenticationButton: 'AppleButton', AppleAuthenticationButtonType: { SIGN_IN: 0 }, AppleAuthenticationButtonStyle: { WHITE: 0, BLACK: 1 } };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
 if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
@@ -43,8 +44,8 @@ test('all login paths authenticate before signup consent, retain policy links an
       fields[0].props.onChangeText('review@example.com'); fields[1].props.onChangeText('password');
       tree = render(props);
     }
-    const button = () => nodes(tree).find(n => n.type === (provider === 'onApple' ? 'AppleButton' : 'Pressable') && n.props?.accessibilityState?.busy !== undefined);
-    assert.equal(button().props.accessibilityState.disabled, false);
+    const button = () => nodes(tree).find(n => (n.type === 'RaisedActionButton' && n.props?.busy !== undefined) || (n.type === (provider === 'onApple' ? 'AppleButton' : 'Pressable') && n.props?.accessibilityState?.busy !== undefined));
+    assert.equal(button().props.accessibilityState?.disabled ?? button().props.disabled, false);
     button().props.onPress(); assert.equal(calls.length, 1);
     assert.deepEqual(calls[0], password ? ['review@example.com', 'password'] : []);
     tree = render({ ...props, loading: true });

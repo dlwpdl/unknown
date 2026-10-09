@@ -2,13 +2,13 @@ import type { FlatList as NativeFlatList } from 'react-native';
 import { Pressable, FlatList } from '@/components/analytics-controls';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from 'expo-symbols';
 import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Modal,
   StyleSheet,
   TextInput,
   View,
@@ -17,8 +17,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TicketmasterSourceLink } from '@/components/ticketmaster-source-link';
 import { MerchantSourceLink } from '@/components/merchant-source-link';
+import { MerchantReviews } from '@/components/merchant-reviews';
 import { PostCard } from '@/components/post-card';
+import { PostBodyEditor } from '@/components/post-body-editor';
 import { PostPhotoGallery } from '@/components/post-photo-gallery';
+import { PostPhotoEditor, type EditablePostImage } from '@/components/post-photo-editor';
 import { PostPhotoCredits } from '@/components/post-photo-credits';
 import { ChillingHostProfile } from '@/components/chilling-host-profile';
 import { ReportSheet } from '@/components/report-sheet';
@@ -60,6 +63,8 @@ type PostDetailProps = {
   onCommentCountChange?: (count: number) => void;
   onViewCountChange?: (postId: string, count: number) => void;
   onPostRemoved?: (postId: string) => void;
+  onPostChanged?: (post: Post) => void;
+  management?: { edit: (postId: string, patch: { title: string; body: string }, replacement?: Parameters<typeof editPost>[3]) => Promise<void>; remove: (postId: string) => Promise<void> };
 };
 
 type PageState = { cursor: CommentCursor | null; loading: boolean; error: boolean; loaded: boolean };
@@ -70,7 +75,7 @@ export function PostDetail(props: PostDetailProps) {
   return <PostDetailContent key={`${props.post.id}:${isAuthed ? me.id : 'guest'}`} {...props} />;
 }
 
-function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCommentCountChange, onViewCountChange, onPostRemoved }: PostDetailProps) {
+function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCommentCountChange, onViewCountChange, onPostRemoved, onPostChanged, management }: PostDetailProps) {
   const theme = useTheme();
   const hidden = useContentVisibility();
   const [post, setPost] = useState(initialPost);
@@ -80,6 +85,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isAuthed, me, promptLogin, isVerified, trustLevel } = useAuth();
+  const canManagePost = isAuthed && (post.author.id === me.id || !!management);
   const { play } = useInteractionFeedback();
   const [comments, setComments] = useState<PostComment[]>([]);
   const [pages, setPages] = useState<Record<string, PageState>>({});
@@ -97,7 +103,9 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const [commentTotal, setCommentTotal] = useState(post.comments);
   const [viewCount, setViewCount] = useState(post.views);
   const [postDraft, setPostDraft] = useState<{ title: string; body: string } | null>(null);
-  const [postImages, setPostImages] = useState<PreparedImage[] | null>(null);
+  const [postImages, setPostImages] = useState<EditablePostImage[] | null>(null);
+  const [postMenuOpen, setPostMenuOpen] = useState(false);
+  const [deletePostOpen, setDeletePostOpen] = useState(false);
   const [pickingPostImages, setPickingPostImages] = useState(false);
   const [savingPost, setSavingPost] = useState(false);
   const postEditBusy = useRef(false);
@@ -225,26 +233,37 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     })() },
   ]);
 
-  const pickPostImages = async () => {
+  const startEditPost = () => {
+    if ((post.imagePaths?.length ?? 0) !== (post.imageUris?.length ?? 0)) {
+      play('warning'); Alert.alert('사진을 다시 불러와 주세요.', '사진을 모두 불러오지 못했어요. 글을 다시 연 뒤 수정해 주세요.'); return;
+    }
+    setPostMenuOpen(false);
+    setPostImages((post.imagePaths ?? []).map((path, index) => ({ path, uri: post.imageUris![index] })));
+    setPostDraft({ title: post.title, body: post.room ? visibleMeetupBody(post.body) : post.body });
+    scrollRef.current?.scrollToOffset({ offset: 0, animated: false });
+  };
+  const pickPostImages = async (replace = false) => {
     if (!postDraft || postEditBusy.current) return;
+    const remaining = replace ? MAX_POST_IMAGES : MAX_POST_IMAGES - (postImages?.length ?? 0);
+    if (remaining <= 0) return;
     postEditBusy.current = true;
     setPickingPostImages(true); play('selection');
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'], quality: 1, allowsMultipleSelection: true,
-        orderedSelection: true, selectionLimit: MAX_POST_IMAGES,
+        orderedSelection: true, selectionLimit: remaining,
         preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
       });
       if (result.canceled) return;
       const assets = result.assets ?? [];
-      if (!assets.length || assets.length > MAX_POST_IMAGES) throw new Error('INVALID_IMAGE_COUNT');
+      if (!assets.length || assets.length > remaining) throw new Error('INVALID_IMAGE_COUNT');
       if (assets.some((asset) => !asset.uri || !isSupportedImage(asset.mimeType ?? 'image/jpeg'))) {
         if (active.current) { play('warning'); Alert.alert(t.write.photoErrorTitle, t.write.photoUnsupported); }
         return;
       }
       const prepared: PreparedImage[] = [];
       for (const asset of assets) prepared.push(await preparePostImage(asset, { withThumb: true }));
-      if (active.current) setPostImages(prepared);
+      if (active.current) setPostImages(current => replace ? prepared : [...(current ?? []), ...prepared]);
     } catch (error) {
       if (active.current) {
         play('warning');
@@ -265,14 +284,16 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     postEditBusy.current = true;
     setSavingPost(true);
     try {
-      await editPost(supabase, post.id, { title, body }, postImages ? { userId: me.id, images: postImages } : undefined);
+      const replacement = postImages ? { userId: me.id, images: postImages } : undefined;
+      if (management) await management.edit(post.id, { title, body }, replacement);
+      else await editPost(supabase, post.id, { title, body }, replacement);
       if (!active.current) return;
       setPost((current) => ({ ...current, title, body }));
       setPostDraft(null); setPostImages(null); play('selection');
       try {
         const saved = await loadPublicPost(supabase, post.id);
         if (!saved) throw new Error('POST_READBACK_UNAVAILABLE');
-        if (active.current) setPost(saved);
+        if (active.current) { setPost(saved); onPostChanged?.(saved); }
       } catch {
         if (active.current) {
           play('warning');
@@ -289,21 +310,18 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     }
   };
 
-  const confirmDeletePost = () => Alert.alert(
-    '이 글을 삭제할까요?',
-    '삭제한 글은 목록에서 사라지고 되돌릴 수 없어요. 달린 댓글도 함께 보이지 않게 됩니다.',
-    [
-      { text: t.write.cancel, style: 'cancel' },
-      { text: t.detail.delete, style: 'destructive', onPress: () => void (async () => {
+  const confirmDeletePost = async () => {
+        if (postEditBusy.current) return;
+        postEditBusy.current = true; setSavingPost(true);
         try {
-          await deletePost(supabase, post.id);
+          if (management) await management.remove(post.id);
+          else await deletePost(supabase, post.id);
           play('warning');
           onPostRemoved?.(post.id);
           onClose();
         } catch { play('warning'); Alert.alert('글을 삭제하지 못했어요.', t.detail.sendErrorBody); }
-      })() },
-    ],
-  );
+        finally { postEditBusy.current = false; if (active.current) { setSavingPost(false); setDeletePostOpen(false); } }
+  };
 
   const send = async () => {
     if (!isAuthed) return promptLogin(t.auth.reasonComment);
@@ -562,18 +580,52 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   if (postHidden) return null;
   return (
     <ThemedView style={{ flex: 1 }}>
+      <Modal visible={postMenuOpen || deletePostOpen} transparent animationType="fade" onRequestClose={() => { if (!savingPost) { play('selection'); setPostMenuOpen(false); setDeletePostOpen(false); } }}>
+        <View style={styles.menuOverlay}>
+          <Pressable analyticsId="post.manage.dismiss" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}
+            onPress={() => { if (!savingPost) { play('selection'); setPostMenuOpen(false); setDeletePostOpen(false); } }} />
+          <View accessibilityViewIsModal style={[styles.menuSheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, 16) }]}>
+            <ThemedText type="smallBold" accessibilityRole="header" style={styles.menuTitle}>{deletePostOpen ? '이 글을 삭제할까요?' : management ? '업체 글 관리' : '내 글 관리'}</ThemedText>
+            {deletePostOpen ? <>
+              <ThemedText themeColor="textSecondary" style={styles.menuTitle}>삭제한 글은 되돌릴 수 없어요. 달린 댓글도 함께 보이지 않게 됩니다.</ThemedText>
+              <Pressable analyticsId="components_post-detail.pressable.15" accessibilityRole="button" accessibilityLabel={management ? '업체 글 삭제 확인' : '내 글 삭제 확인'} disabled={savingPost}
+                onPress={() => { play('warning'); void confirmDeletePost(); }} style={styles.menuRow}>
+                <ThemedText style={{ color: '#FF8585' }}>{savingPost ? '삭제 중…' : '글 삭제'}</ThemedText>
+              </Pressable>
+            </> : <>
+              <Pressable analyticsId="components_post-detail.pressable.14" accessibilityRole="button" accessibilityLabel={management ? '업체 글 수정' : '내 글 수정'} onPress={() => { play('selection'); startEditPost(); }} style={styles.menuRow}>
+                <SymbolView name={{ ios: 'pencil', android: 'edit', web: 'edit' }} size={20} tintColor={theme.text} />
+                <ThemedText>글·사진 수정</ThemedText>
+              </Pressable>
+              <Pressable analyticsId="post.manage.delete" accessibilityRole="button" accessibilityLabel={management ? '업체 글 삭제' : '내 글 삭제'} onPress={() => { play('warning'); setPostMenuOpen(false); setDeletePostOpen(true); }} style={styles.menuRow}>
+                <SymbolView name={{ ios: 'trash', android: 'delete', web: 'delete' }} size={20} tintColor="#FF8585" />
+                <ThemedText style={{ color: '#FF8585' }}>글 삭제</ThemedText>
+              </Pressable>
+            </>}
+            <Pressable analyticsId="post.manage.cancel" accessibilityRole="button" disabled={savingPost} onPress={() => { play('selection'); setPostMenuOpen(false); setDeletePostOpen(false); }} style={[styles.menuRow, { justifyContent: 'center', borderTopColor: theme.line, borderTopWidth: StyleSheet.hairlineWidth }]}>
+              <ThemedText themeColor="textSecondary">취소</ThemedText>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
       <View style={[styles.head, { backgroundColor: theme.background }]}>
-        <View style={styles.closeBtn} />
-        <ThemedText accessibilityRole="header" style={styles.headTitle}>{post.room && !commentId ? '모임 상세' : t.detail.commentsTitle(commentTotal)}</ThemedText>
         <Pressable analyticsId="components_post-detail.pressable.11" onPress={() => { play('selection'); onClose(); }} accessibilityRole="button" accessibilityLabel={t.detail.close} style={({ pressed }) => [styles.closeBtn, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
           <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={22} tintColor={theme.text} />
+        </Pressable>
+        <ThemedText accessibilityRole="header" style={styles.headTitle}>{postDraft ? '글 수정' : post.room && !commentId ? '모임 상세' : commentId ? t.detail.commentsTitle(commentTotal) : '글 상세'}</ThemedText>
+        <Pressable analyticsId="post.manage.open" accessibilityRole="button" accessibilityLabel="글 관리 메뉴" disabled={!canManagePost || savingPost || pickingPostImages || !!postDraft}
+          style={({ pressed }) => [styles.closeBtn, { opacity: canManagePost ? 1 : 0, backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}
+          accessibilityElementsHidden={!canManagePost}
+          importantForAccessibility={!canManagePost ? 'no-hide-descendants' : 'auto'}
+          onPress={() => { if (canManagePost) { play('selection'); setPostMenuOpen(true); } }}>
+          <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={22} tintColor={theme.text} />
         </Pressable>
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <FlatList analyticsId="components_post-detail.flatlist.1"
           ref={scrollRef}
-          data={listRows}
+          data={postDraft ? [] : listRows}
           keyExtractor={(item) => item.key}
           renderItem={renderRow}
           contentContainerStyle={styles.scroll}
@@ -581,14 +633,48 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           keyboardDismissMode="interactive"
           onScrollBeginDrag={() => { scrolledContext.current = commentId; }}
           ListHeaderComponent={<View style={styles.listHeader}>
-            <PostPhotoGallery post={post} />
-            <PostPhotoCredits credits={photoCredits.credits} />
-            <PostCard
+            {canManagePost && postDraft && (
+              <View style={[styles.postEdit, { borderColor: theme.line }]}>
+                <TextInput value={postDraft.title} onChangeText={(text) => setPostDraft((current) => current && { ...current, title: text })}
+                  placeholder="제목" placeholderTextColor={theme.textSecondary} maxLength={100} editable={!savingPost}
+                  accessibilityLabel="글 제목 수정"
+                  style={[styles.postEditInput, { color: theme.text, borderColor: theme.line }]} />
+                <PostBodyEditor value={postDraft.body} onChangeText={(text) => setPostDraft((current) => current && { ...current, body: text })}
+                  placeholder="내용" placeholderTextColor={theme.textSecondary} maxLength={4000 - linkedEventDetails.length} multiline editable={!savingPost}
+                  accessibilityLabel="글 내용 수정"
+                  style={[styles.postEditInput, styles.postEditBody, { color: theme.text, borderColor: theme.line }]} />
+                <ThemedText type="smallBold">사진 {postImages?.length ?? 0}/{MAX_POST_IMAGES}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">첫 사진이 표지예요. 앞·뒤 버튼으로 순서를 바꿀 수 있어요.</ThemedText>
+                <PostPhotoEditor images={postImages ?? []} disabled={savingPost || pickingPostImages} onChange={setPostImages} />
+                <View style={styles.postActions}>
+                  <Pressable analyticsId="components_post-detail.replace-photos" onPress={() => void pickPostImages()} disabled={savingPost || pickingPostImages || (postImages?.length ?? 0) >= MAX_POST_IMAGES} accessibilityRole="button"
+                    accessibilityLabel={`사진 추가, 최대 ${MAX_POST_IMAGES}장`} style={[styles.postAction, { borderColor: theme.line, borderWidth: 1 }]}>
+                    <ThemedText type="smallBold" themeColor="accent">{pickingPostImages ? '사진 준비 중…' : '+ 사진 추가'}</ThemedText>
+                  </Pressable>
+                  <Pressable analyticsId="post.edit.replace-all" onPress={() => void pickPostImages(true)} disabled={savingPost || pickingPostImages} accessibilityRole="button" accessibilityLabel="사진 전체 교체" style={styles.postAction}>
+                    <ThemedText type="small" themeColor="textSecondary">전체 교체</ThemedText>
+                  </Pressable>
+                </View>
+                <View style={styles.postActions}>
+                  <Pressable analyticsId="components_post-detail.pressable.12" onPress={() => { play('selection'); setPostDraft(null); setPostImages(null); }} disabled={savingPost || pickingPostImages} accessibilityRole="button"
+                    accessibilityState={{ disabled: savingPost || pickingPostImages }} style={({ pressed }) => [styles.postAction, Depth.control, { backgroundColor: theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
+                    <ThemedText type="smallBold" themeColor="textSecondary">{t.write.cancel}</ThemedText>
+                  </Pressable>
+                  <Pressable analyticsId="components_post-detail.pressable.13" onPress={() => { play('selection'); void savePost(); }} disabled={savingPost || pickingPostImages} accessibilityRole="button"
+                    accessibilityState={{ disabled: savingPost || pickingPostImages, busy: savingPost }} style={({ pressed }) => [styles.postAction, { backgroundColor: theme.accent, opacity: pressed ? 0.65 : 1 }]}>
+                    <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{savingPost ? '저장 중' : '저장'}</ThemedText>
+                  </Pressable>
+                </View>
+              </View>
+            )}
+            {!postDraft && <PostPhotoGallery post={post} />}
+            {!postDraft && <PostPhotoCredits credits={photoCredits.credits} />}
+            {!postDraft && <PostCard
               hidePhoto
               hideRoom={!!post.room}
               flat={!!post.room}
               post={{ ...post, body: photoCredits.body, views: viewCount }}
-              afterBody={<><MerchantSourceLink postId={post.id} />{post.room && <TicketmasterSourceLink body={post.body} cityId={post.cityId} onNavigate={onClose} />}</>}
+              afterBody={<><MerchantSourceLink postId={post.id} /><MerchantReviews postId={post.id} reviewKind={post.tag.slug === 'jobs' ? 'employment' : 'usage'} onOpenProfile={(id) => { onClose(); router.push({ pathname: '/company/[id]', params: { id, review: post.tag.slug === 'jobs' ? 'employment' : 'usage' } }); }} />{post.room && <TicketmasterSourceLink body={post.body} cityId={post.cityId} onNavigate={onClose} />}</>}
               onJoin={onJoin ?? (() => isAuthed ? router.push({ pathname: '/meetup-join', params: { postId: post.id } }) : promptLogin('이 모임에 참여하려면 가입하거나 로그인해 주세요.'))}
               onAuthor={() =>
                 setSheetUser({
@@ -601,59 +687,8 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                   listingId: post.kind === 'listing' ? post.id : undefined,
                 })
               }
-            />
-            {post.room && <ChillingHostProfile post={post} onJoin={onJoin} onBeforeNavigate={onJoin ? onClose : undefined} />}
-            {isAuthed && post.author.id === me.id && postDraft && (
-              <View style={[styles.postEdit, { borderColor: theme.line }]}>
-                <TextInput value={postDraft.title} onChangeText={(text) => setPostDraft((current) => current && { ...current, title: text })}
-                  placeholder="제목" placeholderTextColor={theme.textSecondary} maxLength={100} editable={!savingPost}
-                  accessibilityLabel="글 제목 수정"
-                  style={[styles.postEditInput, { color: theme.text, borderColor: theme.line }]} />
-                <TextInput value={postDraft.body} onChangeText={(text) => setPostDraft((current) => current && { ...current, body: text })}
-                  placeholder="내용" placeholderTextColor={theme.textSecondary} maxLength={5000 - linkedEventDetails.length} multiline editable={!savingPost}
-                  accessibilityLabel="글 내용 수정"
-                  style={[styles.postEditInput, styles.postEditBody, { color: theme.text, borderColor: theme.line }]} />
-                <View style={styles.postActions}>
-                  <Pressable analyticsId="components_post-detail.replace-photos" onPress={() => void pickPostImages()} disabled={savingPost || pickingPostImages} accessibilityRole="button"
-                    accessibilityLabel={`사진 교체, 최대 ${MAX_POST_IMAGES}장`} accessibilityState={{ disabled: savingPost || pickingPostImages, busy: pickingPostImages }}
-                    style={({ pressed }) => [styles.postAction, Depth.control, { backgroundColor: theme.backgroundElement, opacity: savingPost || pickingPostImages ? 0.55 : 1, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
-                    <ThemedText type="smallBold" themeColor="textSecondary">{pickingPostImages ? '사진 준비 중' : '사진 교체'}</ThemedText>
-                  </Pressable>
-                  {postImages && <Pressable analyticsId="components_post-detail.cancel-photo-selection" onPress={() => { play('selection'); setPostImages(null); }} disabled={savingPost || pickingPostImages} accessibilityRole="button"
-                    accessibilityState={{ disabled: savingPost || pickingPostImages }} style={({ pressed }) => [styles.postAction, Depth.control, { backgroundColor: theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
-                    <ThemedText type="smallBold" themeColor="textSecondary">선택 취소</ThemedText>
-                  </Pressable>}
-                </View>
-                {postImages && <View>
-                  <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">선택한 사진 {postImages.length}/{MAX_POST_IMAGES}</ThemedText>
-                  {postImages.length === 1
-                    ? <Image source={{ uri: postImages[0].uri }} style={{ width: '100%', aspectRatio: postImages[0].width / postImages[0].height }} contentFit="contain" accessibilityLabel="교체할 사진 1" />
-                    : <PostPhotoGallery post={{ ...post, imageUris: postImages.map(({ uri }) => uri) }} />}
-                </View>}
-                <View style={styles.postActions}>
-                  <Pressable analyticsId="components_post-detail.pressable.12" onPress={() => { play('selection'); setPostDraft(null); setPostImages(null); }} disabled={savingPost || pickingPostImages} accessibilityRole="button"
-                    accessibilityState={{ disabled: savingPost || pickingPostImages }} style={({ pressed }) => [styles.postAction, Depth.control, { backgroundColor: theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
-                    <ThemedText type="smallBold" themeColor="textSecondary">{t.write.cancel}</ThemedText>
-                  </Pressable>
-                  <Pressable analyticsId="components_post-detail.pressable.13" onPress={() => { play('selection'); void savePost(); }} disabled={savingPost || pickingPostImages} accessibilityRole="button"
-                    accessibilityState={{ disabled: savingPost || pickingPostImages, busy: savingPost }} style={({ pressed }) => [styles.postAction, Depth.control, { backgroundColor: theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
-                    <ThemedText type="smallBold" themeColor="accent">{savingPost ? '저장 중' : '저장'}</ThemedText>
-                  </Pressable>
-                </View>
-              </View>
-            )}
-            {isAuthed && post.author.id === me.id && !postDraft && (
-              <View style={styles.postActions}>
-                <Pressable analyticsId="components_post-detail.pressable.14" onPress={() => { play('selection'); setPostImages(null); setPostDraft({ title: post.title, body: post.room ? visibleMeetupBody(post.body) : post.body }); }} disabled={savingPost} accessibilityRole="button" accessibilityState={{ disabled: savingPost }}
-                  accessibilityLabel="내 글 수정" style={({ pressed }) => [styles.postAction, Depth.control, { backgroundColor: theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
-                  <ThemedText type="smallBold">수정</ThemedText>
-                </Pressable>
-                <Pressable analyticsId="components_post-detail.pressable.15" onPress={() => { play('selection'); confirmDeletePost(); }} disabled={savingPost} accessibilityRole="button" accessibilityState={{ disabled: savingPost }}
-                  accessibilityLabel="내 글 삭제" style={({ pressed }) => [styles.postAction, Depth.control, { backgroundColor: theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
-                  <ThemedText type="smallBold" themeColor="accent">{t.detail.delete}</ThemedText>
-                </Pressable>
-              </View>
-            )}
+            />}
+            {!postDraft && post.room && <ChillingHostProfile post={post} onJoin={onJoin} onBeforeNavigate={onJoin ? onClose : undefined} />}
             {isAuthed && post.author.id === me.id && post.kind === 'listing' && <ListingControls post={post} onChanged={onListingChanged} />}
             {PROMOTIONS_PREVIEW_ENABLED && isAuthed && post.author.id === me.id && <Pressable analyticsId="components_post-detail.pressable.16"
               accessibilityRole="button"
@@ -664,7 +699,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           </View>}
         />
 
-        <View
+        {!postDraft && <View
           style={[
             styles.composer,
             {
@@ -712,7 +747,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               </ThemedText>
             </Pressable>
           </View>
-        </View>
+        </View>}
       </KeyboardAvoidingView>
 
       <UserSheet user={sheetUser} onClose={() => setSheetUser(null)} onBeforeNavigate={onClose} />
@@ -728,6 +763,10 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
 }
 
 const styles = StyleSheet.create({
+  menuOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#0009' },
+  menuSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12 },
+  menuTitle: { paddingHorizontal: 24, paddingVertical: 12 },
+  menuRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 24, paddingVertical: 12 },
   pressed: { opacity: 0.65 },
   head: {
     flexDirection: 'row',

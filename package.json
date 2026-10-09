@@ -69,7 +69,9 @@
     "test:quota": "node --experimental-strip-types --test scripts/membership-screen.test.mjs scripts/membership.test.mjs",
     "test:web-home": "node --experimental-strip-types --test scripts/web-home.test.mjs",
     "typecheck": "tsc --noEmit",
-    "export:web": "GLING_PUBLIC_WEB=1 expo export --platform web && node scripts/finish-public-web.mjs"
+    "export:web": "GLING_LOCAL_ADMIN=0 GLING_MERCHANT_WEB=0 GLING_PUBLIC_WEB=1 expo export --platform web && node scripts/finish-public-web.mjs && npm run export:merchant-web",
+    "export:merchant-web": "GLING_PUBLIC_WEB=0 GLING_LOCAL_ADMIN=0 GLING_MERCHANT_WEB=1 GLING_WEB_BASE_URL=/merchant expo export --platform web --output-dir .merchant-dist && node scripts/finish-merchant-web.mjs",
+    "check:merchant-web": "node scripts/check-merchant-web.mjs"
   },
   "overrides": {
     "metro": "0.84.5",

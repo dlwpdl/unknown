@@ -4,7 +4,7 @@ import { useFonts } from 'expo-font';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Animated, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,8 +12,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { GlassSurface } from '@/components/glass-surface';
+import { RaisedActionButton } from '@/components/raised-action-button';
 import { Colors, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { ThemeOverrideProvider, useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
@@ -49,6 +50,8 @@ export function LoginPanel({
   const [googleFontLoaded] = useFonts({ GoogleSansMedium: require('@/assets/fonts/GoogleSans-Medium.ttf') });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const adminPasswordInput = useRef<TextInput>(null);
+  const [adminFocusedField, setAdminFocusedField] = useState<'email' | 'password' | null>(null);
   const [welcomeIndex, setWelcomeIndex] = useState(0);
   const [welcomeOpacity] = useState(() => new Animated.Value(1));
   const disabled = loading;
@@ -74,6 +77,60 @@ export function LoginPanel({
       welcomeOpacity.setValue(1);
     };
   }, [loading, reducedMotion, showWelcome, welcomeOpacity]));
+
+  if (onAdminLogin) {
+    const submitDisabled = disabled || !email.trim() || !password;
+    const submitAdmin = () => { if (!submitDisabled) { play('selection'); onAdminLogin(email, password); } };
+    return <ThemeOverrideProvider scheme="dark">
+      <View style={[styles.wrap, styles.adminBackground]}><SafeAreaView style={styles.wrap}>
+        <KeyboardAvoidingView style={styles.wrap} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView analyticsId="components_login-panel.scrollview.1" contentContainerStyle={styles.adminCenter} keyboardShouldPersistTaps="handled">
+            <Image source={require('@/assets/brand/gling-night-wordmark.png')} style={styles.adminLogo} contentFit="contain" accessibilityLabel={t.appName} />
+            <View style={styles.adminHeader}>
+              <ThemedText type="subtitle" accessibilityRole="header">관리자 로그인</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{reason ?? '관리자 계정으로 로그인해 주세요.'}</ThemedText>
+            </View>
+            <View style={styles.adminForm} aria-busy={loading}>
+              <View style={styles.adminField}>
+                <ThemedText type="smallBold">이메일</ThemedText>
+                <TextInput value={email} onChangeText={setEmail} editable={!disabled} autoCapitalize="none" autoCorrect={false} spellCheck={false}
+                  autoComplete="email" textContentType="username" keyboardType="email-address" returnKeyType="next" onSubmitEditing={() => adminPasswordInput.current?.focus()}
+                  accessibilityLabel="관리자 이메일" placeholder="관리자 이메일" placeholderTextColor={Colors.dark.textSecondary}
+                  onFocus={() => { play('selection'); setAdminFocusedField('email'); }} onBlur={() => setAdminFocusedField(null)}
+                  style={[styles.adminInput, { borderColor: adminFocusedField === 'email' ? Colors.dark.accent : Colors.dark.line }]} />
+              </View>
+              <View style={styles.adminField}>
+                <ThemedText type="smallBold">비밀번호</ThemedText>
+                <TextInput ref={adminPasswordInput} value={password} onChangeText={setPassword} editable={!disabled} secureTextEntry
+                  autoCapitalize="none" autoCorrect={false} spellCheck={false} autoComplete="current-password" textContentType="password"
+                  returnKeyType="go" onSubmitEditing={submitAdmin} accessibilityLabel="관리자 비밀번호" placeholder="관리자 비밀번호" placeholderTextColor={Colors.dark.textSecondary}
+                  onFocus={() => { play('selection'); setAdminFocusedField('password'); }} onBlur={() => setAdminFocusedField(null)}
+                  style={[styles.adminInput, { borderColor: adminFocusedField === 'password' ? Colors.dark.accent : Colors.dark.line }]} />
+              </View>
+              {!!error && <View style={styles.adminError} accessibilityRole="alert" accessibilityLiveRegion="polite"><ThemedText type="small">{error}</ThemedText></View>}
+              <RaisedActionButton analyticsId="components_login-panel.pressable.3" label={loading ? '로그인 중…' : '관리자 로그인'} onPress={submitAdmin} disabled={submitDisabled} busy={loading} />
+              {onGoogle && <Pressable analyticsId="components_login-panel.pressable.2" accessibilityRole="button" accessibilityLabel={t.auth.google}
+                disabled={disabled} accessibilityState={{ disabled, busy: loading }} onPress={() => { if (!disabled) { play('selection'); onGoogle(); } }}
+                style={({ pressed }) => [styles.adminGoogle, { opacity: disabled ? 0.6 : pressed ? 0.8 : 1 }]}>
+                <Image source={require('@/assets/brand/google-g.png')} style={styles.googleIcon} contentFit="contain" accessible={false} />
+                <ThemedText type="small" style={[styles.googleText, googleFontLoaded && { fontFamily: 'GoogleSansMedium' }]}>{t.auth.google}</ThemedText>
+              </Pressable>}
+            </View>
+            <View style={styles.adminFooter}>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.adminNote}>사전에 등록된 관리자 계정만 접근할 수 있습니다.</ThemedText>
+              <View style={[styles.legalLinks, styles.adminLegalLinks]}>{['terms', 'privacy'].map((path) => <Pressable analyticsId="components_login-panel.pressable.4" key={path}
+                accessibilityRole="link" onPress={() => { play('selection'); void Linking.openURL(`${publicSiteUrl}/${path}`); }} style={styles.legalLink}>
+                <ThemedText type="small" themeColor="textSecondary">{path === 'terms' ? '이용약관' : '개인정보처리방침'}</ThemedText>
+              </Pressable>)}</View>
+              {onClose && <Pressable analyticsId="components_login-panel.pressable.6" accessibilityRole="button" style={styles.adminClose} onPress={() => { play('selection'); onClose(); }}>
+                <ThemedText type="smallBold" themeColor="textSecondary">{t.auth.close}</ThemedText>
+              </Pressable>}
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView></View>
+    </ThemeOverrideProvider>;
+  }
 
   return (
     <ThemedView style={styles.wrap}>
@@ -210,6 +267,15 @@ export function LoginPanel({
 }
 
 const styles = StyleSheet.create({
+  adminBackground: { backgroundColor: Colors.dark.background },
+  adminCenter: { flexGrow: 1, width: '100%', maxWidth: 440, alignSelf: 'center', justifyContent: 'center', paddingHorizontal: Spacing.four, paddingVertical: Spacing.five, gap: Spacing.five },
+  adminLogo: { width: 180, height: 64, alignSelf: 'flex-start' },
+  adminHeader: { gap: Spacing.two }, adminForm: { gap: Spacing.three }, adminField: { gap: Spacing.two },
+  adminInput: { minHeight: 52, minWidth: 0, borderWidth: 1, borderRadius: 12, paddingHorizontal: Spacing.three, paddingVertical: 12, color: Colors.dark.text, backgroundColor: Colors.dark.backgroundElement, fontSize: 16, lineHeight: 24 },
+  adminError: { padding: Spacing.three, borderWidth: 1, borderColor: Colors.dark.accent, borderRadius: 12, backgroundColor: Colors.dark.card },
+  adminGoogle: { minHeight: 52, borderWidth: 1, borderColor: Colors.dark.line, borderRadius: 999, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
+  adminFooter: { gap: Spacing.two }, adminNote: { textAlign: 'center' },
+  adminLegalLinks: { justifyContent: 'center', flexWrap: 'wrap' }, adminClose: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   wrap: {
     flex: 1,
   },

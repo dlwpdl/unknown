@@ -67,13 +67,14 @@ export function getPostImageSource(
   post: Pick<Post, 'id' | 'imagePaths' | 'imageUris' | 'imageThumbs'>,
   viewerScope: string,
   variant: 'feed' | 'full' = 'feed',
+  position = 0,
 ) {
-  const path = post.imagePaths?.[0];
-  const uri = variant === 'feed' ? post.imageThumbs?.[0] ?? post.imageUris?.[0] : post.imageUris?.[0];
+  const path = post.imagePaths?.[position];
+  const uri = variant === 'feed' ? post.imageThumbs?.[position] ?? post.imageUris?.[position] : post.imageUris?.[position];
   if (!uri) return undefined;
   const allowedViewers = viewersBySignedUrl.get(uri);
   if (allowedViewers && !allowedViewers.has(viewerScope)) return undefined;
-  const keyPath = variant === 'feed' && post.imageThumbs?.[0] ? thumbPathFor(path ?? '') : path;
+  const keyPath = variant === 'feed' && post.imageThumbs?.[position] ? thumbPathFor(path ?? '') : path;
   return { uri, cacheKey: `post-image:${viewerScope}:${keyPath ?? uri}` };
 }
 

@@ -1,11 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { safePostLink } from '../../supabase/functions/_shared/post-links.ts';
 
 export function safeMerchantSourceUrl(value: string): string | null {
   try {
-    const url = new URL(value.trim());
-    if (value.length > 2048 || url.protocol !== 'https:' || url.username || url.password || url.port
-      || !/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z][a-z0-9-]{1,62}$/i.test(url.hostname)
-      || /\.(local|internal|localhost)$/i.test(url.hostname)) return null;
+    const target = safePostLink(value);
+    if (!target) return null;
+    const url = new URL(target);
     url.hash = '';
     return url.href;
   } catch { return null; }
@@ -22,8 +22,9 @@ export type MerchantSource = { merchant_name: string; original_url: string };
 export async function loadMerchantSource(client: SupabaseClient, postId: string): Promise<MerchantSource | null> {
   try {
     const { data, error } = await client.rpc('get_merchant_post_source', { p_post_id: postId });
-    if (error || !data || !safeMerchantSourceUrl(data.original_url)) return null;
-    return data as MerchantSource;
+    const url = typeof data?.original_url === 'string' ? safeMerchantSourceUrl(data.original_url) : null;
+    if (error || !url || typeof data.merchant_name !== 'string') return null;
+    return { merchant_name: data.merchant_name, original_url: url };
   } catch { return null; }
 }
 

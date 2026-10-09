@@ -1,6 +1,6 @@
 // Server queries persist these choices. This account-scoped overlay also filters
 // already-rendered content and responses that were in flight when the user acted.
-export type HiddenTarget = 'post' | 'comment' | 'message' | 'user';
+export type HiddenTarget = 'post' | 'comment' | 'message' | 'user' | 'merchant_review';
 const hidden = new Map<string, Set<string>>();
 const listeners = new Set<() => void>();
 let revision = 0;

@@ -1,9 +1,11 @@
 import './reader.css';
 import { PublicFestivals } from './festivals';
 import { useReaderAnalytics } from './analytics';
+import { PublicMerchantProfile, PublicMerchantProfileLink } from './merchant-profile';
 
 import { Asset } from 'expo-asset';
-import { splitPostLinks } from '../../../supabase/functions/_shared/post-links';
+import { instagramPostLink, splitPostAttachments, splitPostLinks } from '../../../supabase/functions/_shared/post-links';
+import { PostAttachmentLink } from '@/components/post-attachment-link';
 import { useLocalSearchParams, usePathname } from 'expo-router';
 import Head from 'expo-router/head';
 import { useEffect, useState, useSyncExternalStore, type CSSProperties } from 'react';
@@ -15,7 +17,7 @@ import { CITIES, TAGS } from '@/lib/mock';
 import { visibleMeetupBody } from '@/lib/meetup-ai';
 import { googleMapsUrl, postMapBody } from '@/lib/post-maps';
 import { t } from '@/i18n/ko';
-import { publicWebTarget } from '@/lib/public-web';
+import { publicMerchantId, publicWebTarget } from '@/lib/public-web';
 import { publicWebClient } from '@/lib/public-web-client';
 import { jsonLd, postSeo, PUBLIC_SITE } from '@/lib/public-seo';
 import { InteractionFeedbackProvider, useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -53,9 +55,13 @@ function MapAction({ url }: { url: string }) {
 
 function BodyLinks({ body }: { body: string }) {
   const { play } = useInteractionFeedback();
-  return <p className="reader-body">{splitPostLinks(body).map((part, index) => part.url
-    ? <a key={index} href={part.url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" onClick={() => play('selection')}>{part.text}</a>
-    : part.text)}</p>;
+  const attached = splitPostAttachments(body);
+  return <><p className="reader-body">{splitPostLinks(attached.body).map((part, index) => part.url
+    ? <a key={index} href={part.url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" onClick={event => {
+        play('selection');
+        if (!instagramPostLink(part.url!) && !window.confirm(`${part.url}\n\n악성 여부를 아직 확인하지 못한 외부 링크예요. 이동할까요?`)) event.preventDefault();
+      }}>{part.text}</a>
+    : part.text)}</p>{attached.urls.map((url, index) => <PostAttachmentLink key={`${url}-${index}`} url={url} />)}</>;
 }
 
 function AppInvitation({ target, label = '앱에서 대화하기' }: { target: string; label?: string }) {
@@ -96,10 +102,12 @@ export default function PublicReader() {
   const rawId = path === '/post' ? readyParams.id : path.match(/^\/post\/([^/]+)$/)?.[1];
   const postId = typeof rawId === 'string' && UUID.test(rawId) ? rawId : null;
   const detail = path === '/post' || path.startsWith('/post/');
+  const company = path === '/company' || path.startsWith('/company/');
+  const merchantId = publicMerchantId(path, readyParams.id);
   const browse = path === '/' || path === '/meetups';
   const city = cities.find((item) => item.id === readyParams.city) ?? cities[0];
   const tag = TAGS.find((item) => item.slug === (path === '/meetups' ? 'meetup' : readyParams.tag));
-  const key = `${path}:${postId}:${city.id}:${tag?.id ?? ''}`;
+  const key = `${path}:${postId}:${merchantId}:${city.id}:${tag?.id ?? ''}`;
   const [result, setResult] = useState<{ key: string; posts: Post[]; more: boolean; failed: boolean } | null>(null);
   const [retry, setRetry] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -111,14 +119,14 @@ export default function PublicReader() {
   const filters = new URLSearchParams();
   if (cities.some((item) => item.id === readyParams.city)) filters.set('city', city.id);
   if (tag) filters.set('tag', tag.slug);
-  const canonical = metadata?.canonical ?? (browse ? `${PUBLIC_SITE}/${filters.size ? `?${filters}` : ''}` : postId ? `${PUBLIC_SITE}/post?id=${postId}` : null);
-  const pageTitle = metadata?.title ?? (browse ? `${filters.size ? `${city.name} · ${tag?.label ?? '동네 이야기'} | ` : ''}글링 | 캐나다 한인 커뮤니티` : detail ? '글링 공개 글' : '글링 | 앱에서 이어가기');
+  const canonical = metadata?.canonical ?? (browse ? `${PUBLIC_SITE}/${filters.size ? `?${filters}` : ''}` : postId ? `${PUBLIC_SITE}/post?id=${postId}` : merchantId ? `${PUBLIC_SITE}/company?id=${merchantId}` : null);
+  const pageTitle = metadata?.title ?? (browse ? `${filters.size ? `${city.name} · ${tag?.label ?? '동네 이야기'} | ` : ''}글링 | 캐나다 한인 커뮤니티` : detail ? '글링 공개 글' : company ? '글링 업체 프로필' : '글링 | 앱에서 이어가기');
   const description = metadata?.description ?? `${browse && filters.size ? `${city.name}의 ` : '캐나다 한인 커뮤니티 글링에서 '}동네 이야기, 맛집, 비즈니스와 모임을 둘러보세요. 공개 글은 로그인 없이 읽고, 참여와 대화는 앱에서 이어갈 수 있어요.`;
   // Static /post.html has no query parameters yet; let Google render before marking a missing post.
-  const noindex = (!browse && !detail) || (detail && hydrated && (!postId || (current && !post)));
+  const noindex = (!browse && !detail && !company) || (detail && hydrated && (!postId || (current && !post))) || (company && hydrated && !merchantId);
   const schema = metadata?.schema ?? (browse ? { '@context': 'https://schema.org', '@type': filters.size ? 'CollectionPage' : 'WebSite', name: '글링', url: canonical, description, inLanguage: 'ko' } : null);
   const loading = (browse || Boolean(postId)) && !current;
-  const target = publicWebTarget(path, postId ?? undefined);
+  const target = publicWebTarget(path, (company ? merchantId : postId) ?? undefined);
   useReaderAnalytics(detail ? 'post' : browse ? 'feed' : 'app-invitation', key, hydrated);
 
   useEffect(() => {
@@ -199,10 +207,11 @@ export default function PublicReader() {
           </form>
           {hydrated && <InteractionFeedbackProvider><PublicFestivals cityId={city.id} cityName={city.name} /></InteractionFeedbackProvider>}
           <div aria-busy={loading}>
-            {current && <InteractionFeedbackProvider>{current.posts.map((item) => { const mapped = postMapBody(item.body); return <article className="reader-card" key={item.id}>
+            {current && <InteractionFeedbackProvider>{current.posts.map((item) => { const mapped = postMapBody(item.body); const attached = splitPostAttachments(mapped.body); return <article className="reader-card" key={item.id}>
               <div><p className="reader-kicker">{item.tag.label}{item.room?.closed ? ' · 모집 마감' : ''}</p>
                 <h3><a data-analytics="web_control_10" href={`/post?id=${encodeURIComponent(item.id)}`}>{item.title}</a></h3>
-                <p className="reader-excerpt">{item.room ? visibleMeetupBody(mapped.body) : mapped.body}</p>
+                <p className="reader-excerpt">{item.room ? visibleMeetupBody(attached.body) : attached.body}</p>
+                {attached.urls.map((url, index) => <PostAttachmentLink key={`${url}-${index}`} url={url} />)}
                 {mapped.url && <MapAction url={mapped.url} />}
                 <p className="reader-meta">{item.author.nickname} · {item.createdAtLabel}</p>
                 {item.room && <p className="reader-meta">{chillingSchedule(item.room)} · {recommendedAgeLabel(item.room)}</p>}
@@ -211,10 +220,14 @@ export default function PublicReader() {
             </article>; })}</InteractionFeedbackProvider>}
           </div>
           {current?.more && <button data-analytics="web_control_11" className="reader-more" onClick={() => void more()} disabled={busy}>{busy ? '불러오는 중…' : '이야기 더 보기'}</button>}
-        </> : detail ? <>
+        </> : company ? <InteractionFeedbackProvider>{merchantId
+          ? <PublicMerchantProfile key={merchantId} merchantId={merchantId} />
+          : hydrated ? <div className="reader-notice"><h1>업체 프로필을 찾을 수 없어요</h1><p>올바른 업체 프로필 링크를 열어 주세요.</p></div>
+            : <p role="status" className="reader-notice">업체 프로필을 불러오고 있어요…</p>}</InteractionFeedbackProvider> : detail ? <>
           <a data-analytics="web_control_12" className="reader-back" href="/">← 동네 이야기로</a>
           {post && <InteractionFeedbackProvider><article className="reader-post"><p className="reader-kicker">{CITIES.find((item) => item.id === post.cityId)?.name} · {post.tag.label}</p>
             <h1>{post.title}</h1><p className="reader-meta">{post.author.nickname} · <time dateTime={metadata?.published}>{post.createdAtLabel}</time></p>
+            <PublicMerchantProfileLink postId={post.id} />
             {post.imageUris?.map((uri, index) => <img className="reader-photo" key={uri} src={uri} alt={`${post.title} 사진 ${index + 1}`} loading="lazy" />)}
             <BodyLinks body={post.room ? visibleMeetupBody(mappedPost!.body) : mappedPost!.body} /><MeetupInfo post={post} />
             {mappedPost?.url && <MapAction url={mappedPost.url} />}

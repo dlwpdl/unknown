@@ -3,7 +3,22 @@ import test from 'node:test';
 
 import { buildPostImagePath, createCommunityPost, deleteMyAccount, editPost, getCommunityActionError, isContentRejected, leaveMeetup, loadChatReadPosition, loadMyMeetups, markChatRead, recordPostView, sendChatAttachment, uploadChatImage, uploadPostImages } from '../src/lib/community-data.ts';
 
-test('사진 교체는 여섯 장 순서를 저장하고 실패 시 새 파일만 정리한다', async () => {
+test('verified merchant editing uses the scoped RPC and can retain original Gling photos', async () => {
+  const calls = [], uploaded = [], removed = [];
+  let result = { data: 'intro-post', error: null };
+  const client = { rpc: async (name, args) => { calls.push([name, args]); return result; },
+    storage: { from: () => ({ upload: async path => { uploaded.push(path); return { error: null }; }, remove: async paths => { removed.push(...paths); return { error: null }; } }) } };
+  await editPost(client, 'intro-post', { title: ' 새 안내 ', body: ' 실제 정보 ' }, { userId: 'owner', images: [{ path: 'gling-author/original.webp' }, { base64: 'AQ==', mimeType: 'image/webp' }] }, 'my-merchant');
+  assert.deepEqual(calls[0], ['edit_merchant_post', { p_merchant_id: 'my-merchant', p_post_id: 'intro-post', p_title: '새 안내', p_body: '실제 정보', p_image_paths: ['gling-author/original.webp', uploaded[0]] }]);
+  await editPost(client, 'intro-post', { title: '텍스트만', body: '사진 유지' }, undefined, 'my-merchant');
+  assert.ok(!Object.hasOwn(calls[1][1], 'p_image_paths'));
+  result = { data: null, error: { code: 'P0001', message: 'MERCHANT_ACCOUNT_REQUIRED' } };
+  await assert.rejects(editPost(client, 'intro-post', { title: '안내', body: '검사' }, { userId: 'owner', images: [{ path: 'gling-author/original.webp' }, { base64: 'AQ==', mimeType: 'image/webp' }] }, 'my-merchant'), { message: 'MERCHANT_ACCOUNT_REQUIRED' });
+  assert.ok(removed.includes(uploaded.at(-1)));
+  assert.ok(!removed.includes('gling-author/original.webp'));
+});
+
+test('사진 교체는 열 장 순서를 저장하고 실패 시 새 파일만 정리한다', async () => {
   const uploaded = [], removed = [], patches = [];
   let failure = null;
   const client = {
@@ -12,17 +27,48 @@ test('사진 교체는 여섯 장 순서를 저장하고 실패 시 새 파일�
       remove: async (paths) => { removed.push(...paths); return { error: null }; },
     }) },
     from: () => ({ update(patch) { patches.push(patch); return {
-      eq: async (key, id) => { assert.equal(key, 'id'); assert.equal(id, 'existing-post'); return { error: failure }; },
+      eq: (key, id) => { assert.equal(key, 'id'); assert.equal(id, 'existing-post'); return { select: () => ({ single: async () => ({ data: failure ? null : { id }, error: failure }) }) }; },
     }; } }),
   };
-  const replacement = { userId: 'author', images: Array.from({ length: 6 }, () => ({ base64: 'AQ==', mimeType: 'image/webp' })) };
+  const replacement = { userId: 'author', images: Array.from({ length: 10 }, () => ({ base64: 'AQ==', mimeType: 'image/webp' })) };
   await editPost(client, 'existing-post', { title: ' 제목 ', body: ' 본문 ' }, replacement);
-  assert.deepEqual(patches[0], { title: '제목', body: '본문', image_paths: uploaded.slice(0, 6) });
+  assert.deepEqual(patches[0], { title: '제목', body: '본문', image_paths: uploaded.slice(0, 10) });
   assert.equal(removed.length, 0);
   failure = new Error('CONTENT_NOT_ALLOWED');
+  failure.code = 'P0001';
   await assert.rejects(editPost(client, 'existing-post', { title: '제목', body: '본문' }, replacement), /CONTENT_NOT_ALLOWED/);
-  assert.deepEqual(removed.filter((path) => !path.includes('.thumb.')), uploaded.slice(6));
+  assert.deepEqual(removed.filter((path) => !path.includes('.thumb.')), uploaded.slice(10));
   await assert.rejects(editPost(client, 'existing-post', { title: '제목', body: '본문' }, { ...replacement, images: [...replacement.images, replacement.images[0]] }), /TOO_MANY_IMAGES/);
+});
+
+test('사진 수정은 기존 사진을 유지·개별 삭제하고 추가한 사진만 업로드한다', async () => {
+  const uploaded = [], removed = [], patches = [];
+  const client = { storage: { from: () => ({
+    upload: async path => { uploaded.push(path); return { error: null }; },
+    remove: async paths => { removed.push(...paths); return { error: null }; },
+  }) }, from: () => ({ update: patch => { patches.push(patch); return { eq: () => ({ select: () => ({ single: async () => ({ data: { id: 'post' }, error: null }) }) }) }; } }) };
+  await editPost(client, 'post', { title: '사진', body: '수정' }, { userId: 'author', images: [
+    { path: 'author/keep.webp' }, { base64: 'AQ==', mimeType: 'image/webp' },
+  ] });
+  assert.equal(uploaded.length, 1);
+  assert.deepEqual(patches[0].image_paths, ['author/keep.webp', uploaded[0]]);
+  await editPost(client, 'post', { title: '사진', body: '순서 변경' }, { userId: 'author', images: [
+    { path: 'author/second.webp' }, { path: 'author/first.webp' },
+  ] });
+  assert.deepEqual(patches[1].image_paths, ['author/second.webp', 'author/first.webp']);
+  assert.equal(uploaded.length, 1, '순서 변경은 기존 사진을 다시 업로드하지 않는다');
+  await editPost(client, 'post', { title: '사진', body: '모두 제거' }, { userId: 'author', images: [] });
+  assert.deepEqual(patches[2].image_paths, []);
+  assert.deepEqual(removed, [], '기존 원본은 수정 취소와 다른 참조를 위해 삭제하지 않는다');
+  await assert.rejects(editPost(client, 'post', { title: '사진', body: '수정' }, { userId: 'author', images: [{ path: 'other/private.webp' }] }), /INVALID_IMAGE_PATH/);
+});
+
+test('사진 수정의 네트워크 결과가 불확실하면 참조될 수 있는 새 사진을 지우지 않는다', async () => {
+  const removed = [];
+  const client = { storage: { from: () => ({ upload: async () => ({ error: null }), remove: async paths => { removed.push(...paths); } }) },
+    from: () => ({ update: () => ({ eq: () => ({ select: () => ({ single: async () => { throw new TypeError('Failed to fetch'); } }) }) }) }) };
+  await assert.rejects(editPost(client, 'post', { title: '사진', body: '수정' }, { userId: 'author', images: [{ base64: 'AQ==', mimeType: 'image/webp' }] }), /Failed to fetch/);
+  assert.deepEqual(removed, []);
 });
 
 test('chat attachment uploads are compressed-only and send a typed private message', async () => {
@@ -141,7 +187,7 @@ test('게시글 이미지는 사용자 폴더와 MIME 확장자를 사용한다'
   );
 });
 
-test('사진 다섯 장은 같은 밀리초에 경로를 만들어도 모두 업로드된다', async () => {
+test('사진 열 장과 썸네일은 같은 밀리초에 만들어도 각각 업로드되고 11장은 거부된다', async () => {
   const originalNow = Date.now;
   const uploaded = new Set();
   const client = { storage: { from: () => ({
@@ -154,10 +200,13 @@ test('사진 다섯 장은 같은 밀리초에 경로를 만들어도 모두 업
   }) } };
   Date.now = () => 1234;
   try {
-    const media = await uploadPostImages(client, 'user-1', Array.from({ length: 5 }, () => ({ base64: 'AQ==', thumbBase64: 'AQ==', mimeType: 'image/webp' })));
-    assert.equal(media.length, 5);
-    assert.equal(new Set(media.map(({ path }) => path)).size, 5);
-    assert.equal(uploaded.size, 10);
+    const images = Array.from({ length: 10 }, () => ({ base64: 'AQ==', thumbBase64: 'AQ==', mimeType: 'image/webp' }));
+    const media = await uploadPostImages(client, 'user-1', images);
+    assert.equal(media.length, 10);
+    assert.equal(new Set(media.map(({ path }) => path)).size, 10);
+    assert.equal(uploaded.size, 20);
+    await assert.rejects(uploadPostImages(client, 'user-1', [...images, images[0]]), /TOO_MANY_IMAGES/);
+    assert.equal(uploaded.size, 20, '11장은 Storage에 쓰기 전에 거부한다');
   } finally {
     Date.now = originalNow;
   }

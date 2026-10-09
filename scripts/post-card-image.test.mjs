@@ -31,12 +31,14 @@ function cardRenderer(component = 'PostCard') {
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'expo-image': { Image: 'Image' },
     'expo-symbols': { SymbolView: 'SymbolView' },
-    'react-native': { View: 'View', StyleSheet: { create: (value) => value, hairlineWidth: 1 }, Animated: { Value: class {}, View: 'Animated.View' },
+    'react-native': { View: 'View', Modal: 'Modal', Platform: { OS: 'ios' }, useWindowDimensions: () => ({ width: 390, height: 844 }), StyleSheet: { create: (value) => value, hairlineWidth: 1 }, Animated: { Value: class {}, View: 'Animated.View' },
       Linking: { openURL: (url) => { openedMaps.push(url); return mapFailure ? Promise.reject(new Error('offline')) : Promise.resolve(); } },
       Alert: { alert: (...args) => alerts.push(args) } },
     'react-native-reanimated': { useReducedMotion: () => true },
+    'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 44, bottom: 34 }) },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/components/themed-text': { ThemedText: 'ThemedText' },
+    '@/components/post-body': { PostBody: 'PostBody' },
     '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
     '@/components/report-sheet': { ReportSheet: 'ReportSheet' },
     '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
@@ -54,7 +56,7 @@ function cardRenderer(component = 'PostCard') {
     '@/lib/supabase': {},
   };
   const exports = {};
-  const file = component === 'PostCard' ? 'post-card' : component === 'PostMapLink' ? 'post-map-link' : 'post-photo-gallery';
+  const file = component === 'PostCard' ? 'post-card' : component === 'PostMapLink' ? 'post-map-link' : component === 'PostPhotoEditor' ? 'post-photo-editor' : 'post-photo-gallery';
   const source = ts.transpileModule(fs.readFileSync(new URL(`../src/components/${file}.tsx`, import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
@@ -91,7 +93,7 @@ test('지도 링크를 읽기 본문과 분리하고 글 열기 버튼 밖에 �
   const tree = card.render({ post: { id: 'mapped', title: '장소 소개', body: '소개 본문\n\nGoogle 지도: https://maps.app.goo.gl/Example',
     author: { id: 'author', nickname: '작성자' }, tag: { kind: 'post', label: '비즈니스' }, likes: 0, saves: 0, comments: 0, views: 0 }, onPress() {} });
   const postButton = nodes(tree).find((node) => node.props?.analyticsId === 'components_post-card.pressable.2');
-  assert.ok(nodes(postButton).some((node) => node.props?.children === '소개 본문'));
+  assert.ok(nodes(postButton).some((node) => node.props?.body === '소개 본문'));
   assert.ok(!nodes(postButton).some((node) => node.type === 'PostMapLink'));
   assert.equal(nodes(tree).find((node) => node.type === 'PostMapLink').props.url, 'https://maps.app.goo.gl/Example');
 });
@@ -166,5 +168,46 @@ test('상세 갤러리는 현재 사진을 자르지 않고 사진별 비율과 
   image(tree).props.onLoad(loaded(1080, 1350));
   props = { post: { ...props.post, imageUris: ['signed:replacement', 'signed:new2'] } };
   assert.equal(style(image(gallery.render(props))).aspectRatio, 4 / 3, '같은 글의 source 변경도 이전 크기를 쓰지 않는다');
-  assert.equal(gallery.render({ post: { ...props.post, imageUris: ['single'] } }), null);
+  assert.ok(image(gallery.render({ post: { ...props.post, imageUris: ['single'] } })), '한 장 사진도 상세에서 보인다');
+});
+
+test('상세 사진을 누르면 원본 전체 화면을 열고 확대·닫기·페이지 이동이 동작한다', () => {
+  const gallery = cardRenderer('PostPhotoGallery');
+  const props = { post: { id: 'photos', title: '내 사진', imageUris: ['original:portrait', 'original:landscape'] } };
+  gallery.render(props).props.onLayout({ nativeEvent: { layout: { width: 300 } } });
+  let tree = gallery.render(props);
+  const open = nodes(tree).find(n => n.props?.accessibilityLabel === '내 사진 사진 1 크게 보기');
+  assert.ok(open, '모든 상세 사진에 탭 행동이 있다');
+  open.props.onPress();
+  tree = gallery.render(props);
+  const modal = nodes(tree).find(n => n.type === 'Modal');
+  assert.equal(modal.props.visible, true);
+  assert.ok(nodes(modal).some(n => n.type === 'Image' && n.props.source.uri === 'original:portrait' && n.props.contentFit === 'contain'));
+  nodes(modal).find(n => n.props?.accessibilityLabel === '사진 확대').props.onPress();
+  tree = gallery.render(props);
+  assert.ok(nodes(tree).some(n => n.props?.accessibilityLabel === '사진 축소'));
+  nodes(tree).find(n => n.props?.accessibilityLabel === '다음 사진').props.onPress();
+  tree = gallery.render(props);
+  assert.ok(nodes(tree).some(n => n.type === 'Image' && n.props.source.uri === 'original:landscape'));
+  nodes(tree).find(n => n.type === 'Modal').props.onRequestClose();
+  assert.ok(!nodes(gallery.render(props)).some(n => n.type === 'Modal'));
+  assert.ok(gallery.feedback.length >= 4);
+});
+
+
+test('사진 순서 변경은 표지를 바꾸고 개별 제거·양끝 비활성을 유지한다', () => {
+  const editor = cardRenderer('PostPhotoEditor');
+  let props = { images: [{ path: 'author/first.webp', uri: 'first' }, { path: 'author/second.webp', uri: 'second' }, { uri: 'new', base64: 'AQ==', mimeType: 'image/webp' }], disabled: false,
+    onChange: images => { props = { ...props, images }; } };
+  let tree = editor.render(props);
+  assert.equal(nodes(tree).find(n => n.props?.accessibilityLabel === '사진 1 앞으로 이동').props.disabled, true);
+  nodes(tree).find(n => n.props?.accessibilityLabel === '사진 2 앞으로 이동').props.onPress();
+  assert.deepEqual(Array.from(props.images, p => p.uri), ['second', 'first', 'new']);
+  tree = editor.render(props);
+  assert.ok(nodes(tree).some(n => n.props?.children?.join?.('') === '1 · 표지 사진'));
+  nodes(tree).find(n => n.props?.accessibilityLabel === '사진 2 제거').props.onPress();
+  assert.deepEqual(Array.from(props.images, p => p.uri), ['second', 'new']);
+  tree = editor.render({ ...props, disabled: true });
+  assert.ok(nodes(tree).filter(n => n.type === 'Pressable').every(n => n.props.disabled));
+  assert.deepEqual(editor.feedback, ['selection', 'selection']);
 });

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { calculateMerchantCost, merchantPlan, merchantDraftCopy, saveMerchantDraft, saveMerchantItem, approveMerchantDrafts, publishMerchantDraft, recordMerchantExternalPost } from '../src/lib/merchant-workspace.ts';
+import { getAdminMerchantAccess, setAdminMerchantAccess } from '../src/lib/admin-merchants.ts';
+import { calculateMerchantCost, merchantPlan, merchantDraftCopy, saveMerchantDraft, saveMerchantItem, approveMerchantDrafts, publishMerchantDraft, recordMerchantExternalPost, getMyMerchantAccess } from '../src/lib/merchant-workspace.ts';
 
 test('batch ingredients, packaging and fees produce contribution rather than claimed net profit', () => {
   const result = calculateMerchantCost({ batchCost: 40, yield: 10, packaging: 1, other: .5, price: 12, feePercent: 3 });
@@ -49,4 +50,20 @@ test('editing server rows sends only the RPC writable fields', async () => {
   await publishMerchantDraft(client, 'merchant', 'draft', draft.updated_at);
   await recordMerchantExternalPost(client, 'merchant', 'draft', 'https://cafe.naver.com/example/1', draft.updated_at);
   assert.deepEqual(calls.map(call => call.args.p_expected_updated_at), [{ draft: draft.updated_at }, draft.updated_at, draft.updated_at]);
+});
+
+
+test('merchant capability reads actual server booleans and never treats malformed data as YES', async () => {
+  for (const data of [false, true]) {
+    assert.equal(await getMyMerchantAccess({ rpc: async () => ({ data, error: null }) }), data);
+  }
+  for (const data of [null, 'true', {}, 1]) await assert.rejects(getMyMerchantAccess({ rpc: async () => ({ data, error: null }) }), /MERCHANT_ACCESS_READ_FAILED/);
+  await assert.rejects(getMyMerchantAccess({ rpc: async () => ({ data: true, error: { message: 'AUTH_REQUIRED' } }) }), /AUTH_REQUIRED/);
+});
+test('admin YES NO writes explicit capability and verifies same server value', async () => {
+  const calls=[]; const client={rpc: async (name,args)=>{ calls.push([name,args]); return { data:false,error:null }; }};
+  assert.equal(await getAdminMerchantAccess(client,'member'),false);
+  assert.equal(await setAdminMerchantAccess(client,'member',false),false);
+  assert.deepEqual(calls,[['get_admin_merchant_access',{p_user_id:'member'}],['set_admin_merchant_access',{p_user_id:'member',p_enabled:false}]]);
+  await assert.rejects(setAdminMerchantAccess({rpc:async()=>({data:false,error:null})},'member',true),/MERCHANT_ACCESS_SAVE_FAILED/);
 });

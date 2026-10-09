@@ -29,7 +29,7 @@ export function getCommunityActionError(error: unknown) {
 }
 
 export type PostDraftImage = { base64: string; mimeType: string; thumbBase64?: string; width?: number; height?: number };
-export type ReportTarget = 'user' | 'post' | 'comment' | 'message';
+export type ReportTarget = 'user' | 'post' | 'comment' | 'message' | 'merchant_review';
 export type ReportReason = 'spam' | 'harassment' | 'hate' | 'sexual' | 'privacy' | 'other';
 
 export type ConversationPreview = {
@@ -773,18 +773,25 @@ export async function editComment(client: SupabaseClient, commentId: string, bod
 // 제목·본문·선택한 사진만 고친다. 정렬 시각·조회수·해시태그는 컬럼 권한이 없어 클라이언트에서 닿지 않으므로
 // 수정해도 피드에서 끌어올려지지 않는다.
 export async function editPost(client: SupabaseClient, postId: string, patch: { title: string; body: string },
-  replacement?: { userId: string; images: PostDraftImage[] }) {
-  const media = replacement ? await uploadPostImages(client, replacement.userId, replacement.images) : null;
-  const imagePaths = media?.map(({ path }) => path);
-  try {
-    const result = await client.from('posts')
-      .update({ title: patch.title.trim(), body: patch.body.trim(), ...(imagePaths ? { image_paths: imagePaths } : {}) })
-      .eq('id', postId);
-    if (result.error) throw result.error;
-  } catch (error) {
-    if (imagePaths?.length) await removePostImages(client, imagePaths);
-    throw error;
+  replacement?: { userId: string; images: (PostDraftImage | { path: string })[] }, merchantId?: string) {
+  if (replacement && replacement.images.length > MAX_POST_IMAGES) throw new Error('TOO_MANY_IMAGES');
+  if (replacement?.images.some(image => 'path' in image && ((!merchantId && !image.path.startsWith(`${replacement.userId}/`))
+    || !/^[a-zA-Z0-9_/-]+\.(webp|jpe?g|png)$/.test(image.path)))) throw new Error('INVALID_IMAGE_PATH');
+  const media = replacement ? await uploadPostImages(client, replacement.userId, replacement.images.filter(image => !('path' in image)) as PostDraftImage[]) : null;
+  let uploadedIndex = 0;
+  const imagePaths = replacement?.images.map(image => 'path' in image ? image.path : media![uploadedIndex++].path);
+  const result = merchantId ? await client.rpc('edit_merchant_post', {
+    p_merchant_id: merchantId, p_post_id: postId, p_title: patch.title.trim(), p_body: patch.body.trim(),
+    ...(imagePaths ? { p_image_paths: imagePaths } : {}),
+  }) : await client.from('posts')
+    .update({ title: patch.title.trim(), body: patch.body.trim(), ...(imagePaths ? { image_paths: imagePaths } : {}) })
+    .eq('id', postId).select('id').single();
+  if (result.error) {
+    // Only a definite server rejection permits deleting the newly uploaded files.
+    if (media?.length && result.error.code && !result.error.code.startsWith('PGRST')) await removePostImages(client, media.map(item => item.path));
+    throw result.error;
   }
+  if (!result.data || (merchantId ? result.data : result.data.id) !== postId) throw new Error('POST_UPDATE_NOT_VERIFIED');
   // 원래 파일은 보존한다. 실패·취소가 기존 사진이나 다른 참조를 지우지 않는다.
 }
 

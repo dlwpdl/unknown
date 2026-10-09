@@ -27,7 +27,8 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      - run: npm run export:web
+      - name: Export public reader and merchant workspace
+        run: npm run export:web
         env:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
@@ -35,6 +36,7 @@ jobs:
           EXPO_PUBLIC_APP_URL: https://gling.ej-entertainment.com
           EXPO_PUBLIC_SUPPORT_EMAIL: gling@ej-entertainment.com
       - run: npm run check:public-web
+      - run: npm run check:merchant-web
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

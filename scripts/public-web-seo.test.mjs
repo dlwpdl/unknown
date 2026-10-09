@@ -12,9 +12,12 @@ test('기존 export는 공개 도시별 라이브 sitemap/AI 탐색과 보호 �
   try {
     mkdirSync(join(directory, 'auth'));
     writeFileSync(join(directory, '+not-found.html'), 'existing-fallback');
+    writeFileSync(join(directory, 'post.html'), 'public-reader-route');
+    writeFileSync(join(directory, 'company.html'), 'exported-company-route');
     writeFileSync(join(directory, 'auth', 'keep.html'), 'preserved');
     finishPublicWeb(directory);
     assert.equal(readFileSync(join(directory, '404.html'), 'utf8'), 'existing-fallback');
+    assert.equal(readFileSync(join(directory, 'company.html'), 'utf8'), 'exported-company-route');
     assert.equal(readFileSync(join(directory, 'auth', 'keep.html'), 'utf8'), 'preserved');
     const robots = readFileSync(join(directory, 'robots.txt'), 'utf8');
     const llms = readFileSync(join(directory, 'llms.txt'), 'utf8');

@@ -1,4 +1,4 @@
-/** 글링 앱의 나이트 팔레트. 관리자 웹은 밝은 팔레트를 유지한다. */
+/** 글링 앱 테마와 별도의 관리자 전용 밝은 테마. */
 
 import '@/global.css';
 
@@ -30,6 +30,25 @@ export const Colors = {
     accentDepth: '#8169B1',
     accentInk: '#171123',
     navy: '#B9C8FF',
+  },
+  admin: {
+    text: '#252631',
+    background: '#F6F7FA',
+    backgroundElement: '#F0F1F5',
+    backgroundSelected: '#EDE9F7',
+    textSecondary: '#656A7A',
+    card: '#FFFFFF',
+    line: '#E2E4EC',
+    accent: '#6550A6',
+    accentDepth: '#4F3D87',
+    accentInk: '#FFFFFF',
+    navy: '#3C5D8E',
+    danger: '#B33246',
+    dangerBackground: '#FBEFF1',
+    success: '#257454',
+    successBackground: '#EBF5EF',
+    warning: '#896016',
+    warningBackground: '#FCF5E6',
   },
 } as const;
 

@@ -25,6 +25,10 @@ async function request<T>(query: Partial<EventQuery>): Promise<T> {
 export const loadTicketmasterEvents = (query: Omit<EventQuery, 'eventId'>) => request<EventList>(query);
 export const loadTicketmasterEventDays = (cityId: EventQuery['cityId'], category: EventQuery['category'], month: string) => request<EventDays>({ cityId, category, month });
 export const loadTicketmasterEvent = (cityId: string, eventId: string) => request<{ event: TicketmasterEvent; fetchedAt: string }>({ cityId: cityId as EventQuery['cityId'], eventId });
+export async function recordTicketmasterEventClick(cityId: string, eventId: string) {
+  const { error } = await supabase.rpc('record_ticketmaster_event_click', { p_city_id: cityId, p_event_id: eventId });
+  if (error) throw error;
+}
 export function eventNotice(event: TicketmasterEvent) {
   const status: Record<string, string> = { canceled: '취소된 행사예요.', cancelled: '취소된 행사예요.', postponed: '행사 일정이 연기됐어요.', rescheduled: '일정이 변경됐어요. 판매처에서 확인해 주세요.', offsale: '현재 판매가 중단됐어요.' };
   if (status[event.status]) return status[event.status];

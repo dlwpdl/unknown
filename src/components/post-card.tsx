@@ -6,6 +6,7 @@ import { Alert, Animated, Easing, Platform, Share, StyleSheet, View } from 'reac
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
+import { PostBody } from '@/components/post-body';
 import { PostMapLink } from '@/components/post-map-link';
 import { ReportSheet } from '@/components/report-sheet';
 import { TrustBadge } from '@/components/trust-badge';
@@ -228,12 +229,12 @@ export function PostCard({
               )}
             </View>
           )}
-          <ThemedText
+          <PostBody
             themeColor="textSecondary"
             style={styles.body}
-            numberOfLines={onPress ? 3 : undefined}>
-            {post.room ? visibleMeetupBody(mapped.body) : mapped.body}
-          </ThemedText>
+            numberOfLines={onPress ? 3 : undefined}
+            linksEnabled={!onPress}
+            body={post.room ? visibleMeetupBody(mapped.body) : mapped.body} />
           {isListing && (post.price != null || (post.listingStatus && post.listingStatus !== 'open')) && (
             <View style={styles.listingLine}>
               {post.price != null && <ThemedText style={styles.price}>{t.detail.price(post.price)}</ThemedText>}
