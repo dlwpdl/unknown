@@ -46,10 +46,14 @@ def get_merchant(merchant_id: UUID, start: str, end: str) -> dict:
 
 @mcp.tool(annotations=WRITE)
 def save_merchant(id: UUID, name: str, city_id: str, contact: str, status: Literal['lead','trial','paid','paused'],
-                  consent: Literal['pending','granted','revoked'], consent_note: str, trial_ends_at: str | None = None) -> dict:
-    """Register/update a business using a stable UUID. Consent evidence is private; registration itself does not prove permission or payment."""
+                  consent: Literal['pending','granted','revoked'], consent_note: str, trial_ends_at: str | None = None,
+                  industry: Annotated[str | None, Field(max_length=80)] = None,
+                  services: Annotated[str | None, Field(max_length=1500)] = None,
+                  address: Annotated[str | None, Field(max_length=300)] = None) -> dict:
+    """Register/update a business using a stable UUID. Omitted detail fields keep existing values; empty strings clear them. Consent evidence is private; registration itself does not prove permission or payment."""
     return {'merchant_id': rpc('save_admin_merchant', arguments(id=id, name=name, city_id=city_id, contact=contact,
-        status=status, consent=consent, consent_note=consent_note, trial_ends_at=trial_ends_at))}
+        status=status, consent=consent, consent_note=consent_note, trial_ends_at=trial_ends_at,
+        industry=industry, services=services, address=address))}
 
 @mcp.tool(annotations=WRITE)
 def link_merchant_post(merchant_id: UUID, post_id: UUID, original_url: str) -> dict:

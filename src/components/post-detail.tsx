@@ -689,7 +689,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               }
             />}
             {!postDraft && post.room && <ChillingHostProfile post={post} onJoin={onJoin} onBeforeNavigate={onJoin ? onClose : undefined} />}
-            {isAuthed && post.author.id === me.id && post.kind === 'listing' && <ListingControls post={post} onChanged={onListingChanged} />}
+            {canManagePost && (post.kind === 'listing' || (post.tag.kind === 'post' && !post.room)) && <ListingControls post={post} onChanged={onListingChanged} />}
             {PROMOTIONS_PREVIEW_ENABLED && isAuthed && post.author.id === me.id && <Pressable analyticsId="components_post-detail.pressable.16"
               accessibilityRole="button"
               onPress={() => { play('selection'); onClose(); router.push({ pathname: '/profile/promotions', params: { postId: post.id } }); }}
@@ -867,6 +867,7 @@ function ListingControls({ post, onChanged }: { post: Post; onChanged: (next: Pa
   const [busy, setBusy] = useState(false);
   // Date.now() in render is impure for the React compiler; sample it once per mount.
   const [now] = useState(() => Date.now());
+  const listing = post.kind === 'listing';
   const alive = (post.listingStatus ?? 'open') !== 'closed' && (!post.expiresAt || new Date(post.expiresAt).getTime() > now);
   const daysLeft = post.expiresAt ? Math.round((new Date(post.expiresAt).getTime() - now) / 86_400_000) : null;
   const run = async (action: () => Promise<Partial<Post>>, successLabel?: string) => {
@@ -893,17 +894,17 @@ function ListingControls({ post, onChanged }: { post: Post; onChanged: (next: Pa
   );
   return (
     <View style={[styles.listingBar, { borderTopColor: theme.line, borderBottomColor: theme.line }]}>
-      <ThemedText type="small" themeColor="textSecondary" style={styles.listingState}>
+      {listing && <ThemedText type="small" themeColor="textSecondary" style={styles.listingState}>
         {t.detail.listingStatus[post.listingStatus ?? 'open']}{alive && daysLeft != null ? ` · ${t.detail.expiresIn(daysLeft)}` : ''}
-      </ThemedText>
+      </ThemedText>}
       <View style={styles.listingActions}>
       {alive && action(t.detail.bump, () => void run(async () => {
         const result = await bumpListing(supabase, post.id);
         return { bumpedAt: result.bumpedAt, expiresAt: result.expiresAt, sortAt: result.bumpedAt };
       }, t.detail.bumped), true)}
-      {alive && post.listingStatus !== 'partial' && action(t.detail.markPartial, () => void run(async () => ({ listingStatus: (await setListingStatus(supabase, post.id, 'partial')).status })))}
-      {alive && action(t.detail.markClosed, () => void run(async () => ({ listingStatus: (await setListingStatus(supabase, post.id, 'closed')).status })))}
-      {!alive && action(t.detail.reopen, () => void run(async () => {
+      {listing && alive && post.listingStatus !== 'partial' && action(t.detail.markPartial, () => void run(async () => ({ listingStatus: (await setListingStatus(supabase, post.id, 'partial')).status })))}
+      {listing && alive && action(t.detail.markClosed, () => void run(async () => ({ listingStatus: (await setListingStatus(supabase, post.id, 'closed')).status })))}
+      {listing && !alive && action(t.detail.reopen, () => void run(async () => {
         const result = await setListingStatus(supabase, post.id, 'open');
         return { listingStatus: result.status, expiresAt: result.expiresAt, bumpedAt: null };
       }), true)}

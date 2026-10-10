@@ -74,7 +74,7 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
     try {
       const conversationId = await startDirectConversation(supabase, u.id, u.listingId);
       play('message');
-      navigate({ pathname: '/chat', params: { conversationId, view: 'requests' } });
+      navigate({ pathname: '/chat', params: { conversationId, view: 'direct' } });
     } catch (error) {
       play('warning');
       const code = getCommunityActionError(error);
@@ -125,7 +125,6 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
                       style={({ pressed }) => [styles.cta, Depth.control, { backgroundColor: theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
                       <ThemedText type="smallBold">{t.authorPosts.open}</ThemedText>
                     </Pressable>
-                    <ThemedText type="small" themeColor="textSecondary">{t.chat.requesterRisk}</ThemedText>
                     <RaisedActionButton analyticsId="components_user-sheet.pressable.4" onPress={() => void requestChat(user)} disabled={requesting} busy={requesting} label={requesting ? t.chat.joinSending : t.profileSheet.chatRequest} />
                     <Pressable analyticsId="components_user-sheet.pressable.5" onPress={() => { play('selection'); setReporting(user); onClose(); }} accessibilityRole="button"
                       style={({ pressed }) => [styles.cta, Depth.control, { backgroundColor: theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}>

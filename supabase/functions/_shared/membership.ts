@@ -1,11 +1,17 @@
 type RecordValue = Record<string, unknown>;
 export type VerifiedEntitlement = {
-  tier: 'plus' | 'premium';
+  tier: 'plus' | 'pro' | 'premium';
+  kind?: 'general' | 'business';
+  plan_version?: 2;
   expires_at: string;
   product_id: string;
   store: string;
   will_renew: boolean;
 };
+
+export function membershipProductIds(kind: 'general' | 'business', tier: 'plus' | 'pro' | 'premium') {
+  return [`com.dlwpdl.gling.${kind}.${tier}.monthly.v2`, `gling_${kind}_${tier}_v2:monthly`];
+}
 
 function record(value: unknown): value is RecordValue {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -23,8 +29,12 @@ export function parseRevenueCatMembership(input: unknown, { now = Date.now(), al
     throw new Error('INVALID_REVENUECAT_RESPONSE');
   }
   const entitlements: VerifiedEntitlement[] = [];
-  for (const tier of ['plus', 'premium'] as const) {
-    const entitlement = input.subscriber.entitlements[`gling_${tier}`];
+  const plans = [
+    ...(['plus', 'premium'] as const).map(tier => ({ tier, kind: 'general' as const, version: 1, key: `gling_${tier}` })),
+    ...(['general', 'business'] as const).flatMap(kind => (['plus', 'pro', 'premium'] as const).map(tier => ({ tier, kind, version: 2, key: `gling_${kind}_${tier}` }))),
+  ];
+  for (const { tier, kind, version, key } of plans) {
+    const entitlement = input.subscriber.entitlements[key];
     if (entitlement === undefined) continue;
     if (!record(entitlement) || typeof entitlement.product_identifier !== 'string') throw new Error('INVALID_REVENUECAT_RESPONSE');
     // Only time-limited subscriptions are sold; lifetime/promotional grants are not membership.
@@ -34,10 +44,17 @@ export function parseRevenueCatMembership(input: unknown, { now = Date.now(), al
     if (!record(purchase) || purchase.refunded_at != null) continue;
     if (purchase.is_sandbox !== false && !(allowSandbox && purchase.is_sandbox === true)) continue;
     if (purchase.store !== 'app_store' && purchase.store !== 'play_store' && !(allowSandbox && purchase.store === 'test_store')) continue;
+    const identifiers = version === 2 ? membershipProductIds(kind, tier) : [
+      `com.dlwpdl.gling.${tier}.monthly`, `com.dlwpdl.gling.${tier}.yearly`, `gling_${tier}:monthly`, `gling_${tier}:yearly`,
+    ];
+    if (!identifiers.includes(entitlement.product_identifier)) continue;
+    if (purchase.store === 'app_store' && !entitlement.product_identifier.startsWith('com.dlwpdl.gling.')) continue;
+    if (purchase.store === 'play_store' && !entitlement.product_identifier.startsWith('gling_')) continue;
     if (purchase.grace_period_expires_date != null) expiresAt = Math.max(expiresAt, timestamp(purchase.grace_period_expires_date));
     if (expiresAt <= now) continue;
     entitlements.push({
       tier,
+      ...(version === 2 ? { kind, plan_version: 2 as const } : {}),
       expires_at: new Date(expiresAt).toISOString().replace('.000Z', 'Z'),
       product_id: entitlement.product_identifier,
       store: purchase.store,

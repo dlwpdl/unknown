@@ -28,8 +28,8 @@ grant select,update on thread_state to authenticated;
 select set_config('request.jwt.claims','{"sub":"40222222-2222-2222-2222-222222222222","role":"authenticated"}',true);
 set local role authenticated;
 select is(public.get_notification_preferences(),
-  '{"post_likes":true,"comment_likes":true,"replies":true,"direct_requests":true,"messages":true,"meetups":true,"interests":false,"nearby":false,"push_enabled":false,"interest_tag_ids":[],"interest_hashtags":[]}'::jsonb,
-  'missing preferences enable activity only and require opt-in for discovery and push');
+  '{"post_likes":true,"comment_likes":true,"replies":true,"direct_requests":true,"messages":true,"meetups":true,"interests":false,"nearby":false,"push_enabled":false,"message_preview":false,"trending":true,"city_food":true,"city_places":true,"merchant_reviews":true,"merchant_updates":true,"merchant_operations":true,"account_security":true,"interest_tag_ids":[],"interest_hashtags":[]}'::jsonb,
+  'missing preferences retain every current category default while interests, nearby, push and message previews require opt-in');
 select throws_ok($$select public.update_notification_preferences('{"user_id":"40111111-1111-1111-1111-111111111111"}')$$,
   'P0001','INVALID_PREFERENCES','cannot patch another account or an unknown preference');
 select throws_ok($$select public.update_notification_preferences('{"replies":"false"}')$$,

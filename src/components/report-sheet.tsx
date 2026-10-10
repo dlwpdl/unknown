@@ -20,14 +20,14 @@ export function ReportSheet({
   targetType,
   targetId,
   reportedUserId,
-  reportedNickname,
+  reportedNickname = '업체 답변',
   onClose,
 }: {
   visible: boolean;
   targetType: ReportTarget;
   targetId: string;
-  reportedUserId: string;
-  reportedNickname: string;
+  reportedUserId?: string;
+  reportedNickname?: string;
   onClose: () => void;
 }) {
   const theme = useTheme();
@@ -59,7 +59,7 @@ export function ReportSheet({
     setSubmitting(true);
     try {
       await reportContent(supabase, targetType, targetId, reason, details, me.id);
-      if (blockAfter) {
+      if (blockAfter && reportedUserId) {
         try {
           await blockUser(supabase, me.id, reportedUserId);
         } catch {
@@ -137,7 +137,7 @@ export function ReportSheet({
             style={[styles.details, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]}
           />
 
-          {reportedUserId !== me.id && (
+          {!!reportedUserId && reportedUserId !== me.id && (
             <Pressable analyticsId="components_report-sheet.pressable.4"
                   onPress={() => { play('selection'); setBlockAfter((value) => !value); }}
               accessibilityRole="checkbox"

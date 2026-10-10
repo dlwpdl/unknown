@@ -3,7 +3,7 @@ import { useAudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import { SymbolView } from 'expo-symbols';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import {
@@ -34,6 +34,18 @@ const CONFETTI = Array.from({ length: 24 }, (_, index) => {
 });
 
 export function InteractionFeedbackProvider({ children }: { children: ReactNode }) {
+  if (Platform.OS === 'web' && typeof window === 'undefined') {
+    // Match the interactive root's child slots so hydration keeps useId links intact.
+    return (
+      <InteractionFeedbackContext.Provider value={{ ...DEFAULT_INTERACTION_PREFERENCES, play: () => {}, setSoundEnabled: () => {}, setHapticsEnabled: () => {} }}>
+        <View style={styles.root}>{children}{null}{null}</View>
+      </InteractionFeedbackContext.Provider>
+    );
+  }
+  return <InteractiveFeedbackProvider>{children}</InteractiveFeedbackProvider>;
+}
+
+function InteractiveFeedbackProvider({ children }: { children: ReactNode }) {
   const [preferences, setPreferences] = useState(DEFAULT_INTERACTION_PREFERENCES);
   const [commit, setCommit] = useState<'success' | 'meetup' | null>(null);
   const [celebrating, setCelebrating] = useState<'meetup' | 'post' | 'verification2' | 'verification3' | null>(null);

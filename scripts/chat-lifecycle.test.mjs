@@ -283,6 +283,27 @@ test('request route preference does not override later All, Group or Direct tab 
   }
 });
 
+test('direct profile route selects the free direct inbox without taking over later tab choices', async (context) => {
+  const filters = [];
+  const harness = mount('../src/app/(tabs)/chat.tsx', 'default', {
+    async loadConversations(_client, _user, filter) {
+      filters.push(filter);
+      return { conversations: [], selectedConversation: null, pendingCount: 0, cursor: null };
+    },
+    loadPendingMeetupRequests: async () => [],
+  }, {}, { view: 'direct' });
+  context.after(() => harness.cleanup());
+  await harness.settle();
+  assert.equal(filters.at(-1), 'direct');
+  const tabs = () => harness.nodes().filter(node => node.props?.accessibilityRole === 'tab');
+  assert.equal(tabs()[2].props.accessibilityState.selected, true);
+  assert.ok(JSON.stringify(tabs()[2]).includes('1:1 대화'));
+  assert.doesNotMatch(JSON.stringify(tabs()[2]), /무료/);
+  tabs()[0].props.onPress();
+  await harness.settle();
+  assert.equal(filters.at(-1), 'all');
+});
+
 test('foreground after 60 missed messages resets the window and can page through the entire gap', async (context) => {
   let database = [message(0)];
   const harness = room({ async loadConversationMessages(_client, _room, before) {

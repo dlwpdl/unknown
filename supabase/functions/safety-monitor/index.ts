@@ -90,8 +90,8 @@ Deno.serve(async (request) => {
 });
 
 async function loadContent(client, targetType: string, targetId: string) {
-  if (targetType === 'merchant_review') {
-    const result = await client.rpc('get_merchant_review_safety_content', { p_target_id: targetId });
+  if (targetType === 'merchant_review' || targetType === 'merchant_review_reply') {
+    const result = await client.rpc(targetType === 'merchant_review' ? 'get_merchant_review_safety_content' : 'get_merchant_review_reply_safety_content', { p_target_id: targetId });
     if (result.error) throw result.error;
     return result.data;
   }

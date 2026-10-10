@@ -1,3 +1,4 @@
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
@@ -26,6 +27,7 @@ export function AdminCommandPalette({
   onSection: (section: AdminSection) => void;
   onUser: (userId: string) => void;
 }) {
+  const { play } = useInteractionFeedback();
   const [query, setQuery] = useState('');
   const [members, setMembers] = useState<AdminDirectoryProfile[]>([]);
   const [searching, setSearching] = useState(false);
@@ -74,7 +76,7 @@ export function AdminCommandPalette({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable accessibilityRole="button" accessibilityLabel="검색 닫기" style={[StyleSheet.absoluteFill, styles.backdrop]} onPress={onClose} />
+      <Pressable accessibilityRole="button" accessibilityLabel="검색 닫기" style={[StyleSheet.absoluteFill, styles.backdrop]} onPress={() => { play('selection'); onClose(); }} />
       <View style={styles.sheet} accessibilityViewIsModal accessibilityLabel="화면·회원 검색">
         <TextInput
           ref={inputRef}
@@ -88,7 +90,7 @@ export function AdminCommandPalette({
             if (key === 'ArrowUp') { event.preventDefault?.(); setCursor((value) => Math.max(0, value - 1)); }
           }}
           placeholder="화면 이름 또는 회원(닉네임·이메일) 검색"
-          placeholderTextColor={Colors.light.textSecondary}
+          placeholderTextColor={Colors.admin.textSecondary}
           accessibilityLabel="화면 또는 회원 검색"
           returnKeyType="go"
           style={styles.input}
@@ -99,7 +101,7 @@ export function AdminCommandPalette({
             <Pressable
               key={`${item.kind}:${item.id}`}
               accessibilityRole="menuitem"
-              onPress={() => run(item)}
+              onPress={() => { play('selection'); return run(item); }}
               onHoverIn={() => setCursor(index)}
               style={({ pressed }) => [styles.row, index === active && styles.rowActive, pressed && styles.pressed]}>
               <ThemedText type="smallBold">{item.label}</ThemedText>
@@ -109,7 +111,7 @@ export function AdminCommandPalette({
         </View>
         <View style={styles.footer}>
           <ThemedText type="small" style={styles.muted}>↑↓ 이동 · Enter 열기 · Esc 닫기{localPreview ? ' · 미리보기에서는 회원 검색을 쓰지 않습니다' : ''}</ThemedText>
-          <Pressable accessibilityRole="button" onPress={onClose} style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
+          <Pressable accessibilityRole="button" onPress={() => { play('selection'); onClose(); }} style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
             <ThemedText type="smallBold">닫기</ThemedText>
           </Pressable>
         </View>
@@ -119,14 +121,14 @@ export function AdminCommandPalette({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { backgroundColor: '#1A1C1FCC' },
-  sheet: { width: 560, maxWidth: '92%', maxHeight: '80%', alignSelf: 'center', marginTop: '12%', padding: Spacing.three, gap: Spacing.two, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 12, backgroundColor: Colors.light.card },
-  input: { minHeight: 48, paddingHorizontal: Spacing.three, color: Colors.light.text, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.background },
+  backdrop: { backgroundColor: '#25263166' },
+  sheet: { width: 560, maxWidth: '92%', maxHeight: '80%', alignSelf: 'center', marginTop: '12%', padding: Spacing.three, gap: Spacing.two, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 12, backgroundColor: Colors.admin.card },
+  input: { minHeight: 48, paddingHorizontal: Spacing.three, color: Colors.admin.text, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.background },
   list: { gap: Spacing.one },
   row: { minHeight: 48, justifyContent: 'center', gap: 2, paddingHorizontal: Spacing.three, borderRadius: 8 },
-  rowActive: { backgroundColor: Colors.light.backgroundElement },
+  rowActive: { backgroundColor: Colors.admin.backgroundElement },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
-  close: { minHeight: 44, paddingHorizontal: Spacing.three, justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8 },
-  muted: { color: Colors.light.textSecondary },
+  close: { minHeight: 44, paddingHorizontal: Spacing.three, justifyContent: 'center', borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8 },
+  muted: { color: Colors.admin.textSecondary },
   pressed: { opacity: 0.7 },
 });

@@ -89,6 +89,12 @@
 .reader-company-review-meta > span { color: var(--accent); }
 .reader-company-review-detail { padding: 0 14px 18px; }
 .reader-company-review-detail > p { margin: 0; font-size: 15px; }
+.reader-company-reply { border-left: 2px solid var(--accent); margin-top: 18px; padding-left: 14px; font-size: 14px; }
+.reader-company-reply p { white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0 0; }
+.reader-company-app-action { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 12px; margin-bottom: 16px; border: 1px solid var(--line); border-radius: 9px; color: var(--accent); text-decoration: none; }
+.reader-company-hours { white-space: pre-wrap; }
+.reader-company-intro dd a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.reader-company-directions { margin-left: 12px; }
 .reader-company-empty { padding: 20px 0; color: var(--textSecondary); }
 .reader-company-posts > .reader-company-empty { padding: 32px 0; text-align: center; }
 .reader-company-empty h3 { color: var(--text); font-size: 18px; }

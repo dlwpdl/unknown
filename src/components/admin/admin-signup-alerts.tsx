@@ -95,9 +95,9 @@ export function AdminSignupAlerts({ userId, onUser }: { userId: string; onUser: 
 }
 
 const styles = StyleSheet.create({
-  banner: { marginBottom: Spacing.three, padding: Spacing.three, gap: Spacing.two, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
+  banner: { marginBottom: Spacing.three, padding: Spacing.three, gap: Spacing.two, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.card },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  button: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.three, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8 },
+  button: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.three, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8 },
   pressed: { opacity: 0.6 },
-  error: { color: Colors.light.accent },
+  error: { color: Colors.admin.danger },
 });

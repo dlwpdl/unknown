@@ -1,3 +1,4 @@
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
@@ -12,6 +13,7 @@ import { AdminSignupAlerts } from '@/components/admin/admin-signup-alerts';
 import { AdminUserDetail } from '@/components/admin/admin-user-detail';
 import { LoginPanel } from '@/components/login-panel';
 import { ThemedText } from '@/components/themed-text';
+import { ThemeOverrideProvider } from '@/hooks/use-theme';
 import { Colors, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { initialAdminSection, type AdminSection } from '@/lib/admin';
@@ -173,7 +175,7 @@ export function AdminScreen() {
     return () => window.removeEventListener('keydown', onKey);
   }, [hasAdminAccess]);
 
-  if (isAuthLoading) return <CenteredState title="관리자 세션을 확인하는 중입니다." />;
+  if (isAuthLoading && isAuthed) return <CenteredState title="관리자 세션을 확인하는 중입니다." />;
   if (!isAuthed && !localPreview) {
     return <LoginPanel reason="관리자 계정으로 로그인해주세요." onGoogle={signInGoogle} onAdminLogin={signInAdmin} loading={isAuthLoading} error={authError} />;
   }
@@ -185,12 +187,12 @@ export function AdminScreen() {
   }
 
   return (
-    <AdminShell activeSection={section} counts={data?.counts ?? { alertsOpen: 0, reports: 0, openReports: 0, profiles: 0, posts: 0, messages: 0, safetyPending: 0, safetyHigh: 0 }} busy={needsOperations && loading} lastUpdated={lastLoadedAt} onSearch={() => setPaletteOpen(true)} onSection={(next) => { if (!needsOperations && next !== 'analytics') { setLoading(true); setError(null); } setSection(next); }} onRefresh={() => void refresh()} onSignOut={() => void signOut()}>
+    <AdminShell activeSection={section} counts={data?.counts ?? { alertsOpen: 0, reports: 0, openReports: 0, profiles: 0, posts: 0, messages: 0, safetyPending: 0, safetyHigh: 0 }} busy={needsOperations && loading} lastUpdated={needsOperations ? lastLoadedAt : null} onSearch={() => setPaletteOpen(true)} onSection={(next) => { if (!needsOperations && next !== 'analytics') { setLoading(true); setError(null); } setSection(next); }} onRefresh={() => void refresh()} onSignOut={() => void signOut()}>
       {isAdmin && <AdminSignupAlerts key={me.id} userId={me.id} onUser={setSelectedUserId} />}
       {localPreview && <View accessibilityRole="alert" style={styles.preview}><ThemedText type="smallBold">로컬 미리보기 · 실제 운영 데이터와 권한은 변경되지 않습니다.</ThemedText></View>}
       {!!moderationResult && needsOperations && <View accessibilityLiveRegion="polite" style={styles.preview}><ThemedText>{moderationResult}</ThemedText></View>}
       {!!error && needsOperations && <View accessibilityRole="alert" style={styles.error}><ThemedText style={styles.errorText}>{error}</ThemedText></View>}
-      {section === 'analytics' ? <AdminAnalyticsView localPreview={localPreview} onUser={setSelectedUserId} refreshSignal={analyticsRefresh} /> : section === 'ticketmaster' ? <AdminTicketmasterView localPreview={localPreview} refreshSignal={analyticsRefresh} /> : section === 'merchants' ? <AdminMerchantsView refreshSignal={analyticsRefresh} /> : data && <AdminSectionView
+      {section === 'analytics' ? <AdminAnalyticsView localPreview={localPreview} onUser={setSelectedUserId} refreshSignal={analyticsRefresh} /> : section === 'ticketmaster' ? <AdminTicketmasterView localPreview={localPreview} refreshSignal={analyticsRefresh} /> : section === 'merchants' ? <AdminMerchantsView refreshSignal={analyticsRefresh} onUser={setSelectedUserId} localPreview={localPreview} /> : data && <AdminSectionView
         key={section}
         section={section}
         data={data}
@@ -238,24 +240,25 @@ function CenteredState({
   action?: string;
   onAction?: () => void;
 }) {
+  const { play } = useInteractionFeedback();
   return (
-    <View style={styles.center}>
+    <ThemeOverrideProvider scheme="admin"><View style={styles.center}>
       <View style={styles.stateCard}>
         <ThemedText type="subtitle">{title}</ThemedText>
         {!!body && <ThemedText style={styles.muted}>{body}</ThemedText>}
-        {!!action && !!onAction && <Pressable onPress={onAction} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold" style={styles.buttonText}>{action}</ThemedText></Pressable>}
+        {!!action && !!onAction && <Pressable onPress={() => { play('selection'); onAction(); }} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold" style={styles.buttonText}>{action}</ThemedText></Pressable>}
       </View>
-    </View>
+    </View></ThemeOverrideProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, minHeight: '100%', alignItems: 'center', justifyContent: 'center', padding: Spacing.four, backgroundColor: Colors.light.background },
-  stateCard: { width: 440, maxWidth: '100%', padding: Spacing.five, alignItems: 'center', gap: Spacing.three, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 10, backgroundColor: Colors.light.card },
-  muted: { textAlign: 'center', color: Colors.light.textSecondary },
-  button: { minHeight: 44, paddingHorizontal: Spacing.four, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: Colors.light.accent },
-  buttonText: { color: Colors.light.accentInk },
-  error: { marginBottom: Spacing.three, padding: Spacing.three, borderWidth: 1, borderColor: '#E8B8AE', borderRadius: 8, backgroundColor: '#F9ECE9' },
-  errorText: { color: Colors.light.accent },
-  preview: { marginBottom: Spacing.three, padding: Spacing.three, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.backgroundElement },
+  center: { flex: 1, minHeight: '100%', alignItems: 'center', justifyContent: 'center', padding: Spacing.four, backgroundColor: Colors.admin.background },
+  stateCard: { width: 440, maxWidth: '100%', padding: Spacing.five, alignItems: 'center', gap: Spacing.three, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 10, backgroundColor: Colors.admin.card },
+  muted: { textAlign: 'center', color: Colors.admin.textSecondary },
+  button: { minHeight: 44, paddingHorizontal: Spacing.four, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: Colors.admin.accent },
+  buttonText: { color: Colors.admin.accentInk },
+  error: { marginBottom: Spacing.three, padding: Spacing.three, borderWidth: 1, borderColor: '#EED3D9', borderRadius: 8, backgroundColor: Colors.admin.dangerBackground },
+  errorText: { color: Colors.admin.danger },
+  preview: { marginBottom: Spacing.three, padding: Spacing.three, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.backgroundElement },
 });

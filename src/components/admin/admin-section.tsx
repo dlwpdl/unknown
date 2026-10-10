@@ -1,9 +1,12 @@
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { matches, selected } from './admin-section-filter';
 import { AdminFilterBar, AdminMultiFilter, AdminSelect, AdminSearch, AdminFilterReset, AdminTableSummary } from '@/components/admin/admin-table-controls';
 import { AdminReportQueue } from '@/components/admin/admin-report-queue';
+import { AdminMerchantReviewContent } from '@/components/admin/admin-merchant-review-content';
+import { AdminMerchantReviewReplyContent } from '@/components/admin/admin-merchant-review-reply-content';
 import { AdminTrendingPanel } from '@/components/admin/admin-trending-panel';
 import { AdminUserDirectoryPanel } from '@/components/admin/admin-user-directory';
 import { conversationLabel, decodeUserAgent, displayName, shortId } from '@/lib/admin-labels';
@@ -38,6 +41,7 @@ export function AdminSectionView({
   onLoadMore: () => void;
   localPreview?: boolean;
 }) {
+  const { play } = useInteractionFeedback();
   const [query, setQuery] = useState('');
   const [postStatus, setPostStatus] = useState<string[]>([]);
   const [postCity, setPostCity] = useState<string[]>([]);
@@ -76,9 +80,9 @@ export function AdminSectionView({
     const metrics = (items: Metric[]) => (
       <View style={styles.metrics}>
         {items.map((item) => (
-          <View key={item.label} accessibilityLabel={`${item.label} ${item.value}건`} style={[styles.metric, item.urgent && styles.metricUrgent]}>
-            <ThemedText type="smallBold" style={item.urgent ? styles.urgent : styles.muted}>{item.label}</ThemedText>
-            <ThemedText type="title" style={[styles.metricValue, item.urgent && styles.urgent]}>{item.value}</ThemedText>
+          <View key={item.label} accessibilityLabel={`${item.label} ${item.value}건`} style={[styles.metric, item.urgent && item.value > 0 && styles.metricUrgent]}>
+            <ThemedText type="small" style={styles.muted}>{item.label}</ThemedText>
+            <ThemedText type="title" style={[styles.metricValue, item.urgent && item.value > 0 && styles.urgent]}>{count(item.value)}</ThemedText>
             {!!deltaText(item.key) && <ThemedText type="small" style={styles.muted}>{deltaText(item.key)}</ThemedText>}
           </View>
         ))}
@@ -110,7 +114,7 @@ export function AdminSectionView({
                 {group.user_agent && <ThemedText type="small" style={styles.muted} numberOfLines={1}>{decodeUserAgent(group.user_agent)}</ThemedText>}
                 <View style={styles.rowTop}>
                   {group.users.map((user) => (
-                    <Pressable key={user.id} onPress={() => onUser(user.id)} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
+                    <Pressable key={user.id} onPress={() => { play('selection'); return onUser(user.id); }} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
                       <ThemedText type="small">{user.nickname}{user.account_type !== 'member' ? ` (${user.account_type})` : ''} · 글 {count(user.posts)} · 댓글 {count(user.comments)} · {formatDate(user.last_seen)}</ThemedText>
                     </Pressable>
                   ))}
@@ -131,8 +135,10 @@ export function AdminSectionView({
   if (section === 'alerts') {
     return (
       <View style={styles.section}>
-        <SectionHeading title="감시어 경보" description={`미처리 ${data.counts.alertsOpen}건 · 마약·무기·성착취·사기·자해·위협·신상공개·불법체류 관련 표현이 글·댓글·대화에 나타나면 기록됩니다. 표현 일치는 신호이며 판단은 사람이 합니다.`} />
+        <SectionHeading title="감시어 경보" description="표현 일치는 신호입니다. 원문과 맥락을 검토해주세요." />
+        <div className="admin-summary-strip"><span>미처리<strong className={data.counts.alertsOpen ? 'admin-summary-danger' : undefined}>{count(data.counts.alertsOpen)}건</strong></span><span>불러온 경보<strong>{count(data.safetyAlerts.length)}건</strong></span></div>
         <AdminAlertsPanel alerts={data.safetyAlerts} profiles={profiles} localPreview={localPreview} onUser={onUser} />
+        <details className="admin-context-details" onToggle={() => play('selection')}><summary>감시 범위와 판단 기준</summary><p>마약·무기·성착취·사기·자해·위협·신상공개·불법체류 관련 표현을 글·댓글·대화·칠링·업체 후기에서 감시합니다. 표현 일치는 신호이며 위반 확정이 아닙니다. 최종 판단은 운영자가 합니다.</p></details>
         <LoadMore loading={loadingMore} noMore={noMore} onPress={onLoadMore} />
       </View>
     );
@@ -171,45 +177,59 @@ export function AdminSectionView({
       && selected(targets, review.target_type) && selected(risks, review.risk_level ?? 'pending') && selected(statuses, review.status));
     return (
       <View style={styles.section}>
-        <SectionHeading title="AI 안전 모니터링" description={`처리 대기 ${data.counts.safetyPending}건 · 고위험 ${data.counts.safetyHigh}건`} />
+        <SectionHeading title="AI 안전 모니터링" description="전체 활동의 분석 결과를 확인하고 위험 신호를 검토합니다." />
+        <div className="admin-summary-strip"><span>처리 대기<strong>{count(data.counts.safetyPending)}건</strong></span><span>고위험<strong className={data.counts.safetyHigh ? 'admin-summary-danger' : undefined}>{count(data.counts.safetyHigh)}건</strong></span><span>불러온 분석<strong>{count(data.safetyReviews.length)}건</strong></span></div>
         <div className="admin-toolbar"><AdminSearch value={query} onChange={setQuery} placeholder="대상 ID, 분석 이유, 오류 검색" />
           <AdminFilterBar applied={targets.length + risks.length + statuses.length}>
             <div className="admin-filter-row">
               <AdminMultiFilter label="대상" options={recordOptions(SAFETY_TARGET_LABEL)} value={targets} onChange={setTargets} />
-              <AdminMultiFilter label="위험도" options={recordOptions({ low: '낮음', medium: '보통', high: '높음', critical: '심각', pending: '분석 대기' })} value={risks} onChange={setRisks} />
-              <AdminMultiFilter label="처리 상태" options={recordOptions({ pending: '대기', processing: '분석 중', reviewed: '검토 완료', failed: '실패' })} value={statuses} onChange={setStatuses} />
+              <AdminMultiFilter label="위험도" options={recordOptions(SAFETY_RISK_LABEL)} value={risks} onChange={setRisks} />
+              <AdminMultiFilter label="처리 상태" options={recordOptions(SAFETY_STATUS_LABEL)} value={statuses} onChange={setStatuses} />
               <AdminFilterReset onReset={() => { setQuery(''); setTargets([]); setRisks([]); setStatuses([]); }} />
             </div>
           </AdminFilterBar><AdminTableSummary shown={reviews.length} loaded={data.safetyReviews.length} />
         </div>
-        <View style={styles.list}>
+        <div className="admin-status-tabs" role="group" aria-label="안전 검토 빠른 필터">
+          <button type="button" aria-pressed={!risks.length && !statuses.length} onClick={() => { play('selection'); setRisks([]); setStatuses([]); }}>전체</button>
+          <button type="button" aria-pressed={risks.length === 2 && risks.includes('high') && risks.includes('critical') && !statuses.length} onClick={() => { play('selection'); setRisks(['high', 'critical']); setStatuses([]); }}>고위험</button>
+          <button type="button" aria-pressed={statuses.length === 2 && statuses.includes('pending') && statuses.includes('processing') && !risks.length} onClick={() => { play('selection'); setRisks([]); setStatuses(['pending', 'processing']); }}>분석 대기·진행</button>
+          <button type="button" aria-pressed={statuses.length === 1 && statuses[0] === 'failed' && !risks.length} onClick={() => { play('selection'); setRisks([]); setStatuses(['failed']); }}>분석 실패</button>
+        </div>
+        <div className="admin-review-list" aria-label="AI 안전 분석 목록">
+          <div className="admin-review-columns" aria-hidden="true"><span>분석 대상</span><span>위험도</span><span>분석 상태</span><span>생성 시각</span><span /></div>
           {reviews.map((review) => (
-            <details key={review.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-              <summary style={{ minHeight: 48, padding: '0 12px', alignContent: 'center', cursor: 'pointer', fontSize: 13 }}>
-                {targetLabel(review)} · {review.risk_level ?? review.status} · {formatDate(review.created_at)}
-              </summary><View style={styles.postBody}>
+            <details key={review.id} className="admin-review-row" onToggle={() => play('selection')}>
+              <summary className="admin-review-summary">
+                <span className="admin-review-title"><strong>{targetLabel(review)}</strong><span className="admin-muted">{review.risk_reasons.join(' · ') || review.last_error || '분석 결과를 기다리고 있습니다.'}</span></span>
+                <span className={`admin-badge${review.risk_level === 'critical' || review.risk_level === 'high' ? ' admin-badge-danger' : review.risk_level === 'medium' ? ' admin-badge-warning' : review.risk_level === 'low' ? ' admin-badge-success' : ''}`}>{SAFETY_RISK_LABEL[review.risk_level ?? 'pending']}</span>
+                <span className={`admin-badge${review.status === 'failed' ? ' admin-badge-danger' : review.status === 'reviewed' ? ' admin-badge-success' : ' admin-badge-accent'}`}>{SAFETY_STATUS_LABEL[review.status]}</span>
+                <time className="admin-review-time" dateTime={review.created_at}>{formatDate(review.created_at)}</time><span className="admin-review-chevron" aria-hidden="true" />
+              </summary><div className="admin-review-detail"><View style={{ gap: Spacing.three }}>
               <View style={styles.rowTop}>
                 <ThemedText type="smallBold">{targetLabel(review)}</ThemedText>
                 <ThemedText type="small" style={styles.muted}>{shortId(review.target_id)}</ThemedText>
-                <StateText text={review.risk_level ?? review.status} danger={review.risk_level === 'high' || review.risk_level === 'critical' || review.status === 'failed'} />
+                <StateText text={SAFETY_RISK_LABEL[review.risk_level ?? 'pending']} danger={review.risk_level === 'high' || review.risk_level === 'critical' || review.status === 'failed'} />
               </View>
               <ThemedText type="small">{review.risk_reasons.length ? review.risk_reasons.join(' · ') : review.last_error ?? '분석 결과 대기 중'}</ThemedText>
-              <ThemedText type="small" style={styles.muted}>위험도 {review.risk_score ?? '-'} · 시도 {review.attempts}회 · {formatDate(review.created_at)}</ThemedText>
+              <ThemedText type="small" style={styles.muted}>분석 점수 {review.risk_score ?? '미분석'} · 시도 {review.attempts}회 · 대상 ID {review.target_id}</ThemedText>
               {(review.target_type === 'chilling_profile' || review.target_type === 'chilling_application') && <AdminChillingContent targetType={review.target_type} targetId={review.target_id} localPreview={localPreview} onUser={onUser} />}
-            </View></details>
+              {review.target_type === 'merchant_review' && <AdminMerchantReviewContent targetId={review.target_id} localPreview={localPreview} onUser={onUser} />}
+              {review.target_type === 'merchant_review_reply' && <AdminMerchantReviewReplyContent targetId={review.target_id} localPreview={localPreview} onUser={onUser} />}
+            </View></div></details>
           ))}
           {reviews.length === 0 && <Empty text="조건에 맞는 안전 검토 기록이 없습니다." />}
-        </View>
+        </div>
+        <ThemedText type="small" style={styles.muted}>AI 결과는 검토 우선순위를 돕는 신호입니다. 최종 조치는 원문과 맥락을 확인한 운영자가 판단합니다.</ThemedText>
         <LoadMore loading={loadingMore} noMore={noMore} onPress={onLoadMore} />
       </View>
     );
   }
 
   if (section === 'reports') {
-    return <View style={styles.section}><SectionHeading title="신고 관리" description={`전체 ${data.counts.reports}건 · 미처리 ${data.counts.openReports}건`} /><AdminReportQueue reports={data.reports} profiles={profiles} actions={data.moderationActions} resolving={resolving} onUser={onUser} onResolve={onResolve} /><LoadMore loading={loadingMore} noMore={noMore} onPress={onLoadMore} /></View>;
+    return <View style={styles.section}><SectionHeading title="신고 관리" description={`전체 ${data.counts.reports}건 · 미처리 ${data.counts.openReports}건`} /><AdminReportQueue reports={data.reports} profiles={profiles} actions={data.moderationActions} resolving={resolving} onUser={onUser} onResolve={onResolve} localPreview={localPreview} /><LoadMore loading={loadingMore} noMore={noMore} onPress={onLoadMore} /></View>;
   }
 
-  const search = <TextInput value={query} onChangeText={setQuery} placeholder="닉네임, 제목, 내용 또는 ID 검색" placeholderTextColor={Colors.light.textSecondary} accessibilityRole="search" accessibilityLabel="관리 데이터 검색" returnKeyType="search" style={styles.search} />;
+  const search = <TextInput value={query} onChangeText={setQuery} placeholder="닉네임, 제목, 내용 또는 ID 검색" placeholderTextColor={Colors.admin.textSecondary} accessibilityRole="search" accessibilityLabel="관리 데이터 검색" returnKeyType="search" style={styles.search} />;
 
   if (section === 'users') {
     if (!localPreview) return <AdminUserDirectoryPanel onUser={onUser} refreshData={data} />;
@@ -281,7 +301,7 @@ export function AdminSectionView({
     {compact ? (
       // 폰에서는 680px 표를 가로로 밀기보다 한 줄에 한 건씩 카드로 본다.
       <div className="admin-card-list" aria-label="대화 목록">
-        {messages.map((message) => <button key={message.id} type="button" className="admin-card" onClick={() => onUser(message.sender_id)} aria-label={`${displayName(profiles.get(message.sender_id), message.sender_id)}의 메시지, 작성자 활동 보기`}>
+        {messages.map((message) => <button key={message.id} type="button" className="admin-card" onClick={() => { play('selection'); return onUser(message.sender_id); }} aria-label={`${displayName(profiles.get(message.sender_id), message.sender_id)}의 메시지, 작성자 활동 보기`}>
           <span className="admin-card-top">
             <span className="admin-card-title">{displayName(profiles.get(message.sender_id), message.sender_id)}</span>
             <span className="admin-card-meta">{formatDate(message.created_at)}</span>
@@ -294,7 +314,7 @@ export function AdminSectionView({
     ) : (
       <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>작성자</th><th>메시지</th><th>대화방</th><th>보낸 시각</th></tr></thead>
         <tbody>{messages.map((message) => <tr key={message.id}>
-          <td><button className="admin-row-button" onClick={() => onUser(message.sender_id)} title={message.sender_id}>{displayName(profiles.get(message.sender_id), message.sender_id)}</button></td>
+          <td><button className="admin-row-button" onClick={() => { play('selection'); return onUser(message.sender_id); }} title={message.sender_id}>{displayName(profiles.get(message.sender_id), message.sender_id)}</button></td>
           <td><details><summary style={{ cursor: 'pointer', maxWidth: 480, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{message.body || '(내용 없음)'}</summary><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{message.body}</p></details></td>
           <td title={message.conversation_id}><span className="admin-cell-primary" style={{ fontWeight: 400 }}>{roomLabel(message.conversation_id).primary}</span><span className="admin-cell-secondary">{roomLabel(message.conversation_id).secondary}</span></td><td>{formatDate(message.created_at)}</td>
         </tr>)}</tbody></table>{messages.length === 0 && <Empty text="조건에 맞는 메시지가 없습니다." />}</div>
@@ -315,6 +335,7 @@ const POST_COUNTERS = [
 function AdminPostRow({ post, author, first, localPreview, compact, onUser }: {
   post: AdminPost; author: string; first?: boolean; localPreview?: boolean; compact?: boolean; onUser: (userId: string) => void;
 }) {
+  const { play } = useInteractionFeedback();
   const saved = {
     status: post.status as string,
     view_count: post.view_count ?? 0,
@@ -371,7 +392,7 @@ function AdminPostRow({ post, author, first, localPreview, compact, onUser }: {
 
   return (
     <View style={[styles.postRow, first && styles.postRowFirst]}>
-      <Pressable onPress={() => setOpen((current) => !current)} accessibilityRole="button"
+      <Pressable onPress={() => { play('selection'); return setOpen((current) => !current); }} accessibilityRole="button"
         accessibilityState={{ expanded: open }} aria-expanded={open}
         accessibilityLabel={`${post.title}, ${author}, ${down ? '삭제됨' : '게시중'}, 조회 ${count(fields.view_count)}`}
         style={({ pressed }) => [styles.postHead, pressed && styles.pressed, open && styles.pressed]}>
@@ -389,7 +410,7 @@ function AdminPostRow({ post, author, first, localPreview, compact, onUser }: {
       </Pressable>
       {open && (
         <View style={styles.postBody}>
-          <Pressable onPress={() => onUser(post.author_id)} accessibilityRole="button" style={{ paddingVertical: Spacing.two }}>
+          <Pressable onPress={() => { play('selection'); return onUser(post.author_id); }} accessibilityRole="button" style={{ paddingVertical: Spacing.two }}>
             <ThemedText type="small" selectable>{post.body}</ThemedText>
             <ThemedText type="small" style={styles.muted}>글쓴이 보기</ThemedText>
           </Pressable>
@@ -405,7 +426,7 @@ function AdminPostRow({ post, author, first, localPreview, compact, onUser }: {
               <ThemedText type="small" style={styles.muted}>해시태그</ThemedText>
               <TextInput value={draft.hashtags} onChangeText={(text) => setDraft((current) => ({ ...current, hashtags: text }))}
                 editable={!busy} autoCapitalize="none" accessibilityLabel="해시태그" placeholder="밴쿠버 공지"
-                placeholderTextColor={Colors.light.textSecondary} style={[styles.adminInput, styles.adminInputWide]} />
+                placeholderTextColor={Colors.admin.textSecondary} style={[styles.adminInput, styles.adminInputWide]} />
             </View>
           </View>
           <View style={styles.rowTop}>
@@ -431,6 +452,7 @@ function AdminPostRow({ post, author, first, localPreview, compact, onUser }: {
 
 // 앱에서 올라온 자바스크립트 오류. 네이티브 충돌은 App Store Connect 와 Play Console 에 따로 쌓인다.
 function AdminErrorsPanel({ localPreview }: { localPreview?: boolean }) {
+  const { play } = useInteractionFeedback();
   const [rows, setRows] = useState<AdminClientError[] | null>(null);
   const [query, setQuery] = useState('');
   const [statuses, setStatuses] = useState<string[]>([]);
@@ -467,7 +489,7 @@ function AdminErrorsPanel({ localPreview }: { localPreview?: boolean }) {
     <View accessibilityRole="alert" style={[styles.empty, { gap: Spacing.two }]}>
       <ThemedText type="smallBold">오류 목록을 불러오지 못했습니다</ThemedText>
       <ThemedText type="small" style={styles.muted}>관리자 권한이 만료됐거나 연결이 끊긴 상태일 수 있습니다.</ThemedText>
-      <Pressable onPress={() => setRetry((value) => value + 1)} accessibilityRole="button" style={[styles.more, styles.retry]}><ThemedText type="smallBold">다시 시도</ThemedText></Pressable>
+      <Pressable onPress={() => { play('selection'); return setRetry((value) => value + 1); }} accessibilityRole="button" style={[styles.more, styles.retry]}><ThemedText type="smallBold">다시 시도</ThemedText></Pressable>
     </View>
   );
   if (!rows) return <Empty text="불러오는 중" />;
@@ -477,19 +499,20 @@ function AdminErrorsPanel({ localPreview }: { localPreview?: boolean }) {
   return (
     <View style={{ gap: Spacing.two }}>
       <div className="admin-toolbar"><AdminSearch value={query} onChange={setQuery} placeholder="오류 내용, 화면, 스택 검색" />
+        <AdminFilterBar applied={statuses.length + platforms.length + versions.length}>
         <div className="admin-filter-row">
           <AdminMultiFilter label="상태" value={statuses} onChange={setStatuses} options={recordOptions({ open: '미해결', resolved: '해결됨' })} />
           <AdminMultiFilter label="플랫폼" value={platforms} onChange={setPlatforms} options={uniqueOptions(rows.map((row) => row.platform))} />
           <AdminMultiFilter label="앱 버전" value={versions} onChange={setVersions} options={uniqueOptions(rows.map((row) => row.appVersion))} />
           <AdminFilterReset onReset={() => { setQuery(''); setStatuses([]); setPlatforms([]); setVersions([]); }} />
-        </div><AdminTableSummary shown={filtered.length} loaded={rows.length} />
+        </div></AdminFilterBar><AdminTableSummary shown={filtered.length} loaded={rows.length} />
       </div>
       {filtered.length === 0 && <Empty text="조건에 맞는 오류가 없습니다." />}
       <View style={styles.list}>
         <View style={styles.postHead}><ThemedText type="smallBold" style={{ flex: 1 }}>오류 · 플랫폼 · 최근 발생</ThemedText><ThemedText style={styles.postMetric}>발생 횟수</ThemedText></View>
         {filtered.map((row, index) => (
           <View key={row.id} style={[styles.postRow, index === 0 && styles.postRowFirst]}>
-            <Pressable onPress={() => setExpanded((current) => current === row.id ? null : row.id)}
+            <Pressable onPress={() => { play('selection'); return setExpanded((current) => current === row.id ? null : row.id); }}
               accessibilityRole="button" accessibilityState={{ expanded: expanded === row.id }}
               style={({ pressed }) => [styles.postHead, pressed && styles.pressed]}>
               <View style={[styles.dot, !row.resolvedAt && styles.dotDown]} />
@@ -508,7 +531,7 @@ function AdminErrorsPanel({ localPreview }: { localPreview?: boolean }) {
                 {!!row.stack && <TextInput value={row.stack} editable={false} multiline selectTextOnFocus
                   accessibilityLabel="스택"
                   style={{ fontFamily: 'Menlo', fontSize: 11, lineHeight: 16, maxHeight: 200, padding: Spacing.two,
-                    borderWidth: 1, borderColor: Colors.light.line, borderRadius: 6, color: Colors.light.text }} />}
+                    borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 6, color: Colors.admin.text }} />}
                 <ThemedText type="small" style={styles.muted}>
                   {row.osVersion ?? '기기 정보 없음'} · 처음 {formatDate(row.firstSeen)}
                 </ThemedText>
@@ -525,13 +548,14 @@ function AdminErrorsPanel({ localPreview }: { localPreview?: boolean }) {
 }
 
 function SectionHeading({ title, description }: { title: string; description: string }) {
-  return <View style={styles.heading}><ThemedText type="title" accessibilityRole="header" style={styles.title}>{title}</ThemedText><ThemedText style={styles.muted}>{description}</ThemedText></View>;
+  return <View style={styles.heading}><ThemedText type="title" accessibilityRole="header" style={styles.title}>{title}</ThemedText><ThemedText type="small" style={styles.muted}>{description}</ThemedText></View>;
 }
 
 function UserRow({ profile, compact, last, onPress }: { profile: AdminProfile; compact: boolean; last: boolean; onPress: () => void }) {
+  const { play } = useInteractionFeedback();
   const location = `${profile.city_id ?? '지역 삭제됨'}${profile.neighborhood ? ` · ${profile.neighborhood}` : ''}`;
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${profile.nickname}, ${location}, 신뢰 ${profile.verification_level}, ${profile.id}`} style={({ pressed }) => [styles.userRow, last && styles.userRowLast, pressed && styles.pressed]}>
+    <Pressable onPress={() => { play('selection'); onPress(); }} accessibilityRole="button" accessibilityLabel={`${profile.nickname}, ${location}, 신뢰 ${profile.verification_level}, ${profile.id}`} style={({ pressed }) => [styles.userRow, last && styles.userRowLast, pressed && styles.pressed]}>
       <View style={styles.userAvatar} accessibilityElementsHidden>
         <ThemedText type="smallBold" style={styles.userAvatarText}>{profile.nickname.trim().slice(0, 1)}</ThemedText>
       </View>
@@ -560,7 +584,8 @@ function Empty({ text = '검색 결과가 없습니다.', hint }: { text?: strin
 }
 
 function LoadMore({ loading, noMore, onPress }: { loading: boolean; noMore: boolean; onPress: () => void }) {
-  return <Pressable onPress={onPress} disabled={loading || noMore} accessibilityRole="button" accessibilityState={{ disabled: loading || noMore, busy: loading }} style={[styles.more, (loading || noMore) && styles.moreDisabled]}><ThemedText type="smallBold">{noMore ? '마지막 기록입니다' : loading ? '불러오는 중' : '이전 기록 더 보기'}</ThemedText></Pressable>;
+  const { play } = useInteractionFeedback();
+  return <Pressable onPress={() => { play('selection'); onPress(); }} disabled={loading || noMore} accessibilityRole="button" accessibilityState={{ disabled: loading || noMore, busy: loading }} style={[styles.more, (loading || noMore) && styles.moreDisabled]}><ThemedText type="smallBold">{noMore ? '마지막 기록입니다' : loading ? '불러오는 중' : '이전 기록 더 보기'}</ThemedText></Pressable>;
 }
 
 function recordOptions(values: Record<string, string>) { return Object.entries(values).map(([value, label]) => ({ value, label })); }
@@ -569,58 +594,60 @@ function uniqueOptions(values: string[]) { return [...new Set(values)].sort().ma
 function formatDate(value: string) { return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value)); }
 
 const styles = StyleSheet.create({
-  section: { gap: Spacing.four },
-  heading: { gap: Spacing.one },
+  section: { gap: 20 },
+  heading: { gap: Spacing.two, marginBottom: Spacing.one },
   subheading: { gap: Spacing.one },
-  title: { fontSize: 30, lineHeight: 38, letterSpacing: -0.6 },
-  muted: { color: Colors.light.textSecondary },
+  title: { fontSize: 28, lineHeight: 36, letterSpacing: -0.6 },
+  muted: { color: Colors.admin.textSecondary },
   metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.three },
-  metric: { flexBasis: 150, minWidth: 0, flexGrow: 1, padding: Spacing.three, gap: Spacing.two, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 10, backgroundColor: Colors.light.card },
-  metricUrgent: { borderColor: '#E8B8AE', backgroundColor: '#FDF6F4' },
+  metric: { flexBasis: 150, minWidth: 0, flexGrow: 1, padding: Spacing.three, gap: Spacing.two, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 10, backgroundColor: Colors.admin.card },
+  metricUrgent: { borderColor: '#EED3D9', backgroundColor: Colors.admin.dangerBackground },
   metricValue: { fontSize: 30, lineHeight: 36, fontVariant: ['tabular-nums'] },
-  urgent: { color: Colors.light.accent },
-  search: { minHeight: 44, paddingHorizontal: Spacing.three, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, color: Colors.light.text, backgroundColor: Colors.light.card },
+  urgent: { color: Colors.admin.danger },
+  search: { minHeight: 44, paddingHorizontal: Spacing.three, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, color: Colors.admin.text, backgroundColor: Colors.admin.card },
   rows: { gap: Spacing.two },
-  userRows: { overflow: 'hidden', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
-  userRow: { minHeight: 56, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, flexDirection: 'row', alignItems: 'center', gap: Spacing.three, borderBottomWidth: 1, borderBottomColor: Colors.light.line },
+  userRows: { overflow: 'hidden', borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.card },
+  userRow: { minHeight: 56, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, flexDirection: 'row', alignItems: 'center', gap: Spacing.three, borderBottomWidth: 1, borderBottomColor: Colors.admin.line },
   userRowLast: { borderBottomWidth: 0 },
-  userAvatar: { width: 32, height: 32, flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: Colors.light.backgroundSelected },
-  userAvatarText: { color: Colors.light.accent },
+  userAvatar: { width: 32, height: 32, flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: Colors.admin.backgroundSelected },
+  userAvatarText: { color: Colors.admin.accent },
   userIdentity: { minWidth: 0, flex: 1 },
-  userLocation: { flexBasis: 180, flexShrink: 1, color: Colors.light.textSecondary },
-  chevron: { color: Colors.light.textSecondary, fontSize: 20, lineHeight: 20 },
-  row: { padding: Spacing.three, gap: Spacing.one, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 6, backgroundColor: Colors.light.card },
-  rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.two },
-  state: { fontSize: 11, color: Colors.light.navy },
-  danger: { color: Colors.light.accent },
-  id: { color: Colors.light.textSecondary, fontFamily: 'monospace' },
-  empty: { minHeight: 160, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 10, backgroundColor: Colors.light.card },
-  more: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
+  userLocation: { flexBasis: 180, flexShrink: 1, color: Colors.admin.textSecondary },
+  chevron: { color: Colors.admin.textSecondary, fontSize: 20, lineHeight: 20 },
+  row: { padding: Spacing.three, gap: Spacing.one, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 6, backgroundColor: Colors.admin.card },
+  rowTop: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.two },
+  state: { fontSize: 11, color: Colors.admin.navy, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5, backgroundColor: Colors.admin.backgroundElement },
+  danger: { color: Colors.admin.danger, backgroundColor: Colors.admin.dangerBackground },
+  id: { color: Colors.admin.textSecondary, fontFamily: 'monospace' },
+  empty: { minHeight: 160, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 10, backgroundColor: Colors.admin.card },
+  more: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.card },
   retry: { alignSelf: 'center', paddingHorizontal: Spacing.four },
   moreDisabled: { opacity: 0.55 },
-  pressed: { backgroundColor: Colors.light.backgroundElement },
-  list: { borderWidth: 1, borderColor: Colors.light.line, borderRadius: 10, backgroundColor: Colors.light.card, overflow: 'hidden' },
-  postRow: { borderTopWidth: 1, borderTopColor: Colors.light.line },
+  pressed: { backgroundColor: Colors.admin.backgroundElement },
+  list: { borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 10, backgroundColor: Colors.admin.card, overflow: 'hidden' },
+  postRow: { borderTopWidth: 1, borderTopColor: Colors.admin.line },
   postRowFirst: { borderTopWidth: 0 },
-  postHead: { minHeight: 46, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#3F7A5B' },
-  dotDown: { backgroundColor: Colors.light.accent },
+  postHead: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: Colors.admin.success },
+  dotDown: { backgroundColor: Colors.admin.danger },
   postTitle: { flex: 1, minWidth: 0, gap: 1 },
-  postMeta: { color: Colors.light.textSecondary, fontSize: 12 },
+  postMeta: { color: Colors.admin.textSecondary, fontSize: 12 },
   postMetrics: { flexDirection: 'row', gap: Spacing.three },
-  postMetric: { color: Colors.light.textSecondary, fontSize: 12, fontVariant: ['tabular-nums'], minWidth: 62, textAlign: 'right' },
-  postBody: { paddingHorizontal: Spacing.three, paddingBottom: Spacing.three, gap: Spacing.two, borderTopWidth: 1, borderTopColor: Colors.light.line },
+  postMetric: { color: Colors.admin.textSecondary, fontSize: 12, fontVariant: ['tabular-nums'], minWidth: 62, textAlign: 'right' },
+  postBody: { paddingHorizontal: Spacing.three, paddingBottom: Spacing.three, gap: Spacing.two, borderTopWidth: 1, borderTopColor: Colors.admin.line },
   fieldRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   field: { gap: 4 },
   adminInputWide: { flexBasis: 220, minWidth: 160, textAlign: 'left' },
-  adminInput: { flexBasis: 104, minWidth: 88, minHeight: 44, paddingHorizontal: Spacing.two, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 6, color: Colors.light.text, textAlign: 'right' },
+  adminInput: { flexBasis: 104, minWidth: 88, minHeight: 44, paddingHorizontal: Spacing.two, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 6, color: Colors.admin.text, textAlign: 'right' },
 });
 
 const ALERT_CATEGORY: Record<string, string> = {
   drugs: '마약', weapons: '무기', sexual_exploitation: '성착취', fraud: '사기', self_harm: '자해·자살',
   violence: '폭력·위협', doxxing: '신상 공개', illegal_status: '불법 체류·위조',
 };
-const SAFETY_TARGET_LABEL: Record<AdminSafetyTargetType, string> = { post: '게시글', comment: '댓글', message: '메시지', chilling_profile: '칠링 프로필', chilling_application: '칠링 참여 신청' };
+const SAFETY_TARGET_LABEL: Record<AdminSafetyTargetType, string> = { post: '게시글', comment: '댓글', message: '메시지', chilling_profile: '칠링 프로필', chilling_application: '칠링 참여 신청', merchant_review: '업체 후기', merchant_review_reply: '업체 답변' };
+const SAFETY_RISK_LABEL = { low: '낮음', medium: '보통', high: '높음', critical: '심각', pending: '미분석' };
+const SAFETY_STATUS_LABEL = { pending: '분석 대기', processing: '분석 중', reviewed: '분석 완료', failed: '분석 실패' };
 
 function AdminChillingContent({ targetType, targetId, localPreview, onUser }: {
   targetType: 'chilling_profile' | 'chilling_application'; targetId: string; localPreview?: boolean; onUser: (id: string) => void;
@@ -659,6 +686,7 @@ const ALERT_STATUS: Record<AdminSafetyAlert['status'], string> = { open: '미처
 function AdminAlertsPanel({ alerts, profiles, localPreview, onUser }: {
   alerts: AdminSafetyAlert[]; profiles: Map<string, AdminProfile>; localPreview?: boolean; onUser: (userId: string) => void;
 }) {
+  const { play } = useInteractionFeedback();
   const [overrides, setOverrides] = useState<Record<number, Partial<AdminSafetyAlert>>>({});
   const [evidence, setEvidence] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState<number | null>(null);
@@ -712,44 +740,53 @@ function AdminAlertsPanel({ alerts, profiles, localPreview, onUser }: {
           </div>
         </AdminFilterBar><AdminTableSummary shown={rows.length} loaded={alerts.length} />
       </div>
-      <View style={styles.list}>
+      <div className="admin-status-tabs" role="group" aria-label="경보 상태 빠른 필터">
+        {[{ value: '', label: '전체' }, ...recordOptions(ALERT_STATUS)].map((option) => <button type="button" key={option.value} aria-pressed={option.value ? statuses.length === 1 && statuses[0] === option.value : !statuses.length} onClick={() => { play('selection'); setStatuses(option.value ? [option.value] : []); }}>{option.label}</button>)}
+      </div>
+      <div className="admin-review-list" aria-label="감시어 경보 목록">
+      <div className="admin-review-columns" aria-hidden="true"><span>감지 내용·작성자</span><span>심각도</span><span>처리 상태</span><span>발생 시각</span><span /></div>
       {rows.length === 0 && <Empty text="조건에 맞는 경보가 없습니다." hint="감시어에 걸린 표현이 없으면 경보는 생기지 않습니다. 필터를 초기화하거나 이전 기록을 더 불러와 보세요." />}
       {rows.map((alert) => {
         const author = profiles.get(alert.author_id);
-        const critical = alert.severity === 'critical';
         return (
-          <details key={alert.id} style={{ borderTop: '1px solid #e5e7eb' }}>
-            <summary style={{ minHeight: 48, padding: '0 12px', alignContent: 'center', cursor: 'pointer', fontSize: 13, color: alert.status === 'open' && critical ? '#ad382e' : undefined }}>
-              {ALERT_CATEGORY[alert.category] ?? alert.category} · {alert.severity} · {ALERT_STATUS[alert.status]} · {displayName(author, alert.author_id)} · {formatDate(alert.created_at)}
-            </summary><View style={styles.postBody}>
+          <details key={alert.id} className="admin-review-row" onToggle={() => play('selection')}>
+            <summary className="admin-review-summary">
+              <span className="admin-review-title"><strong>{ALERT_CATEGORY[alert.category] ?? alert.category} 관련 표현 감지</strong><span className="admin-muted">{displayName(author, alert.author_id)} · {SAFETY_TARGET_LABEL[alert.target_type]} · {alert.matched_terms.join(', ')}</span></span>
+              <span className={`admin-badge${alert.severity === 'medium' ? ' admin-badge-warning' : ' admin-badge-danger'}`}>{SAFETY_RISK_LABEL[alert.severity]}</span>
+              <span className={`admin-badge${alert.status === 'open' ? ' admin-badge-warning' : alert.status === 'reviewed' ? ' admin-badge-success' : alert.status === 'escalated' ? ' admin-badge-danger' : ''}`}>{ALERT_STATUS[alert.status]}</span>
+              <time className="admin-review-time" dateTime={alert.created_at}>{formatDate(alert.created_at)}</time><span className="admin-review-chevron" aria-hidden="true" />
+            </summary><div className="admin-review-detail"><View style={{ gap: Spacing.three }}>
             <View style={styles.rowTop}>
               <ThemedText type="smallBold">{ALERT_CATEGORY[alert.category] ?? alert.category} · {SAFETY_TARGET_LABEL[alert.target_type] ?? alert.target_type} · {alert.matched_terms.join(', ')}</ThemedText>
-              <StateText text={`${alert.severity} · ${ALERT_STATUS[alert.status]}`} danger={alert.status === 'open' && alert.severity !== 'medium'} />
+              <StateText text={`${SAFETY_RISK_LABEL[alert.severity]} · ${ALERT_STATUS[alert.status]}`} danger={alert.status === 'open' && alert.severity !== 'medium'} />
             </View>
             <ThemedText type="small" selectable>{alert.excerpt}</ThemedText>
             {(alert.target_type === 'chilling_profile' || alert.target_type === 'chilling_application') && <AdminChillingContent targetType={alert.target_type} targetId={alert.target_id} localPreview={localPreview} onUser={onUser} />}
-            <Pressable onPress={() => onUser(alert.author_id)} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
+            {alert.target_type === 'merchant_review' && <AdminMerchantReviewContent targetId={alert.target_id} localPreview={localPreview} onUser={onUser} />}
+            {alert.target_type === 'merchant_review_reply' && <AdminMerchantReviewReplyContent targetId={alert.target_id} localPreview={localPreview} onUser={onUser} />}
+            <Pressable onPress={() => { play('selection'); return onUser(alert.author_id); }} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
               <ThemedText type="small" style={styles.muted}>{displayName(author, alert.author_id)} · {formatDate(alert.created_at)}{alert.note ? ` · ${alert.note}` : ''}</ThemedText>
             </Pressable>
-            <View style={styles.rowTop}>
-              {alert.status === 'open' && <ActionText label="검토 완료" onPress={() => void act(alert, 'reviewed')} disabled={busy === alert.id} />}
-              {alert.status === 'open' && <ActionText label="해당 없음" onPress={() => void act(alert, 'dismissed')} disabled={busy === alert.id} />}
-              {alert.status !== 'escalated' && <ActionText label="공권력 이관" onPress={() => confirmEscalate(alert)} disabled={busy === alert.id} danger />}
-              <ActionText label={evidence[alert.id] ? '증거 묶음 새로 만들기' : '증거 묶음 내보내기'} onPress={() => void exportEvidence(alert)} disabled={busy === alert.id} />
-            </View>
+            <div className="admin-review-actions">
+              {alert.status === 'open' && <ActionText label="검토 완료" onPress={() => void act(alert, 'reviewed')} disabled={busy !== null} />}
+              {alert.status === 'open' && <ActionText label="해당 없음" onPress={() => void act(alert, 'dismissed')} disabled={busy !== null} />}
+              <ActionText label={evidence[alert.id] ? '증거 묶음 새로 만들기' : '증거 묶음 내보내기'} onPress={() => void exportEvidence(alert)} disabled={busy !== null} />
+              {alert.status !== 'escalated' && <ActionText label="공권력 이관" onPress={() => confirmEscalate(alert)} disabled={busy !== null} danger />}
+            </div>
             {evidence[alert.id] && <TextInput value={evidence[alert.id]} editable={false} multiline selectTextOnFocus accessibilityLabel="증거 묶음 JSON"
-              style={{ fontFamily: 'Menlo', fontSize: 11, lineHeight: 16, maxHeight: 240, padding: Spacing.two, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 6, color: Colors.light.text }} />}
-          </View></details>
+              style={{ fontFamily: 'Menlo', fontSize: 11, lineHeight: 16, maxHeight: 240, padding: Spacing.two, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 6, color: Colors.admin.text }} />}
+          </View></div></details>
         );
       })}
-      </View>
+      </div>
     </View>
   );
 }
 
 function ActionText({ label, onPress, disabled, danger }: { label: string; onPress: () => void; disabled?: boolean; danger?: boolean }) {
+  const { play } = useInteractionFeedback();
   return (
-    <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityState={{ disabled }} style={{ minHeight: 44, justifyContent: 'center', paddingRight: Spacing.three, opacity: disabled ? 0.5 : 1 }}>
+    <Pressable onPress={() => { play('selection'); onPress(); }} disabled={disabled} accessibilityRole="button" accessibilityState={{ disabled }} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.card, opacity: disabled ? 0.5 : 1 }}>
       <ThemedText type="smallBold" style={danger ? styles.urgent : undefined}>{label}</ThemedText>
     </Pressable>
   );

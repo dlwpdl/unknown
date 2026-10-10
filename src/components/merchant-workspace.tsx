@@ -18,6 +18,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import type { BusinessMembershipSnapshot } from '@/lib/membership';
 import { MAX_POST_IMAGES } from '@/lib/image-upload';
 import { saveMerchantDraftImages } from '@/lib/merchant-posts';
 import { CITIES, TAGS } from '@/lib/mock';
@@ -175,12 +176,15 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, initi
   const { me } = useAuth(); const { play } = useInteractionFeedback();
   const [revision, setRevision] = useState(0), [tab, setTab] = useState<MerchantTab>(initialTab);
   const [response, setResponse] = useState<{ user: string; revision: number; refreshSignal: number; data: Workspace } | null>(null);
+  const [membershipState, setMembership] = useState<{ user: string; value: BusinessMembershipSnapshot } | null>(null);
+  const businessMembership = membershipState?.user === me.id && membershipState.value.merchantId === id ? membershipState.value : null;
   const data = response?.user === me.id && response.revision === revision ? response.data : null;
   const checking = response?.refreshSignal !== refreshSignal;
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState('');
   const busyRef = useRef(false), mounted = useRef(true);
   const [editor, setEditor] = useState(emptyDraft), [dirty, setDirty] = useState(false), [selection, setSelection] = useState<string[]>([]);
   const [profileDirty, setProfileDirty] = useState(false);
+  const [replyDirty, setReplyDirty] = useState(false);
   const [openedDraft, setOpenedDraft] = useState<MerchantDraft | null>(null);
   const [draftPhotos, setDraftPhotos] = useState<EditablePostImage[]>([]);
   const editorReload = useRef<DraftInput | null>(null);
@@ -193,7 +197,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, initi
   const [stockRestoreError, setStockRestoreError] = useState(false), [stockRecoveryRevision, setStockRecoveryRevision] = useState(0);
   const [cost, setCost] = useState({ batchCost: '0', yield: '1', packaging: '0', other: '0', price: '0', feePercent: '0' });
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  useEffect(() => { onDirty(dirty || profileDirty); }, [dirty, profileDirty, onDirty]);
+  useEffect(() => { onDirty(dirty || profileDirty || replyDirty); }, [dirty, profileDirty, replyDirty, onDirty]);
   useEffect(() => {
     let active = true;
     void (async () => {
@@ -222,6 +226,14 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, initi
       .catch((e) => { if (active) { setResponse(null); setEditor(emptyDraft()); setOpenedDraft(null); setDraftPhotos([]); setSelection([]); setChanges({}); setStockNote(''); setItem({ id: merchantEventId(), name: '', unit: '개', unit_cost: '0', low_stock: '0' }); setDirty(false); setProfileDirty(false); setError(errorText(e)); } });
     return () => { active = false; };
   }, [id, me.id, revision, refreshSignal]);
+  useEffect(() => {
+    if (tab !== 'membership') return;
+    let active = true;
+    void Promise.resolve(supabase.rpc('get_business_membership', { p_merchant_id: id })).then(({ data, error }) => {
+      if (active && !error && data?.merchantId === id) setMembership({ user: me.id, value: data as BusinessMembershipSnapshot });
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [id, me.id, tab, revision, refreshSignal]);
   async function run(action: () => Promise<unknown>, success: string, reload = true) {
     if (busyRef.current) return; busyRef.current = true; setBusy(true); setError(''); setNotice('');
     try {
@@ -338,7 +350,9 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, initi
     {error && <><ThemedText accessibilityRole="alert">{error}</ThemedText><Action label="자료 새로 확인" disabled={busy} onPress={() => { setError(''); setRevision((v) => v + 1); }} /></>}{notice && <ThemedText accessibilityLiveRegion="polite">{notice}</ThemedText>}
     {activeTab === 'posts' && <MerchantWebPosts merchantId={id} posts={data.posts} onChanged={() => setRevision(v => v + 1)} />}
     <View style={{ display: activeTab === 'profile' ? 'flex' : 'none' }}><MerchantProfileEditor merchantId={id} onDirty={setProfileDirty} /></View>
-    {activeTab === 'reviews' && <MerchantReviewInbox merchantId={id} />}
+    {fullAccess && (activeTab === 'reviews' || replyDirty) && <View style={{ display: activeTab === 'reviews' ? 'flex' : 'none' }} accessibilityElementsHidden={activeTab !== 'reviews'} importantForAccessibility={activeTab !== 'reviews' ? 'no-hide-descendants' : 'auto'}>
+      <MerchantReviewInbox merchantId={id} onDirty={setReplyDirty} />
+    </View>}
     {activeTab === 'channels' && <MerchantNaverCafe merchantId={id} drafts={data.drafts} onChanged={() => setRevision(v => v + 1)} />}
     {activeTab === 'drafts' && <>
       <Section title="게시물 관리">
@@ -437,9 +451,16 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, initi
     </>}
     {activeTab === 'accounts' && <MerchantAccountManagement merchantName={data.merchant.name} merchantId={id} refreshSignal={refreshSignal + revision} onChanged={() => { setRevision(v => v + 1); onConnectionsChanged?.(); }} />}
     {activeTab === 'membership' && data.metrics && <>
+      <Section title="비즈니스 멤버십">
+        {businessMembership ? <><ThemedText type="subtitle">{({ free:'베이직',plus:'플러스',pro:'프로',premium:'프리미엄' })[businessMembership.tier]}</ThemedText>
+          <ThemedText>이번 달 신규 {businessMembership.postsUsed}/{businessMembership.postLimit ?? '기존 약정 유지'}편 · 끌어올리기 {businessMembership.bumpsUsed}/{businessMembership.bumpLimit}회</ThemedText>
+          {businessMembership.tier === 'premium' && <ThemedText type="small">전체 30편·24회에 운영대행 신규 4편·끌어올리기 8회·보고서 1회가 포함돼요.</ThemedText>}
+          <ThemedText type="small" themeColor="textSecondary">{new Date(businessMembership.resetsAt).toLocaleDateString('ko-KR')}에 사용량이 초기화돼요. 직원과 AI도 같은 업체 한도를 공유해요.</ThemedText></> : <ThemedText type="small">멤버십 사용량을 확인하지 못했어요. 업체 연결 상태를 확인하고 다시 열어 주세요.</ThemedText>}
+        <ThemedText type="small" themeColor="textSecondary">같은 홍보글은 새 글로 다시 올리지 않고 기존 글을 수정하거나 끌어올려 주세요. 앱의 멤버십 → 비즈니스에서 스토어 상품이 준비되면 가입할 수 있어요.</ThemedText>
+      </Section>
       <Section title="업체 이용 상태"><ThemedText type="subtitle">{({ basic: '기본 이용', trial: '업체 체험', pro: '업체 유료 운영' })[data.merchant.plan]}</ThemedText>
         <ThemedText>{data.merchant.plan === 'trial' ? `${data.merchant.trial_ends_at}까지 체험` : data.merchant.plan === 'pro' ? `${data.merchant.workspace_until}까지 운영` : '개별 초안·승인, 원가 계산, 품목별 입출고를 계속 이용할 수 있어요.'}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">체험·유료 운영 기간에는 여러 건을 한 번에 승인하거나 입출고할 수 있어요. 기간이 끝나도 저장한 자료는 남아요. 업체 요금과 결제 상품은 아직 준비 중이며 자동 결제되지 않아요. 개인 플러스·프리미엄과 별도로 관리해요.</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">체험·기존 운영 기간 또는 비즈니스 유료 멤버십에서는 여러 건을 한 번에 승인하거나 입출고할 수 있어요. 기간이 끝나도 저장한 자료는 남아요. 개인 멤버십과 업체 구독은 별도로 관리해요.</ThemedText>
       </Section>
       <Section title="최근 14일 성과"><ThemedText>연결 게시글 {data.metrics.linked_posts}편 · 새 글 {data.metrics.new_posts}편</ThemedText>
         <ThemedText>로그인 회원 최초 열람 {data.metrics.first_reads}회 · {data.metrics.unique_readers}명</ThemedText><ThemedText>원문 클릭 {data.metrics.source_clicks}회</ThemedText>

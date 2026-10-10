@@ -1,7 +1,7 @@
 import { Pressable } from '@/components/analytics-controls';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
+import { Alert, DeviceEventEmitter, Modal, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
@@ -11,7 +11,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { saveNotificationPreferences, shouldInvitePush } from '@/lib/notification-preferences';
+import { NOTIFICATION_PREFERENCES_CHANGED, saveNotificationPreferences, shouldInvitePush } from '@/lib/notification-preferences';
 import { pushConfigured, pushPermissionGranted, pushPermissionUndetermined, registerPushDevice } from '@/lib/push-notifications';
 import { supabase } from '@/lib/supabase';
 
@@ -69,13 +69,16 @@ export function PushInvite() {
       // 여기서 처음으로 진짜 iOS 창이 뜬다.
       const granted = await registerPushDevice(supabase, me.id, true);
       if (granted) {
-        await saveNotificationPreferences(supabase, { push_enabled: true });
+        const preferences = await saveNotificationPreferences(supabase, { push_enabled: true });
+        DeviceEventEmitter.emit(NOTIFICATION_PREFERENCES_CHANGED, { userId: me.id, preferences });
       }
+      await close(false);
     } catch {
-      // 실패해도 설정 화면에서 다시 켤 수 있다.
+      play('warning');
+      Alert.alert('알림을 켜지 못했어요', '연결 상태를 확인하고 다시 시도해 주세요.',
+        [{ text: '확인', onPress: () => play('selection') }]);
     } finally {
       setBusy(false);
-      await close(false);
     }
   };
 

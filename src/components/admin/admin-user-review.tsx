@@ -13,6 +13,8 @@ import { supabase } from '@/lib/supabase';
 import { formatIpGeo, lookupIpGeo, type IpGeo } from '@/lib/ip-geo';
 import { nearbyCommunity } from '@/lib/location';
 import { CITIES } from '@/lib/mock';
+import { getAdminMerchantAccess, setAdminMerchantAccess } from '@/lib/admin-merchants';
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevelChange }: {
   userId: string; profiles: Map<string, AdminProfile>;
@@ -24,6 +26,8 @@ export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevel
   const [retry, setRetry] = useState(0);
   const [statusBusy, setStatusBusy] = useState(false);
   const [trustBusy, setTrustBusy] = useState(false);
+  const { play } = useInteractionFeedback();
+  const [merchantAccess, setMerchantAccess] = useState<boolean | null>(null), [merchantBusy, setMerchantBusy] = useState(false);
   const [ipGeo, setIpGeo] = useState<{ ip: string; geo: IpGeo | null } | null>(null);
   const [filters, setFilters] = useState<ActivityFilters>(EMPTY_ACTIVITY_FILTERS);
   const [draft, setDraft] = useState<ActivityFilters>(EMPTY_ACTIVITY_FILTERS);
@@ -33,8 +37,20 @@ export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevel
     void loadAdminUserOverview(supabase, userId)
       .then((value) => { if (active) setOverview(value); })
       .catch(() => { if (active) setError('회원 상세를 불러오지 못했습니다. 관리자 권한과 연결을 확인해주세요.'); });
+    void getAdminMerchantAccess(supabase, userId).then(value => { if (active) setMerchantAccess(value); }).catch(() => { if (active) setError('업체 권한을 확인하지 못했습니다.'); });
     return () => { active = false; };
   }, [userId, retry]);
+  const changeMerchantAccess = async (enabled: boolean) => {
+    if (merchantBusy || merchantAccess === null || merchantAccess === enabled) return;
+    play('selection'); setMerchantBusy(true); setError(null);
+    try {
+      await setAdminMerchantAccess(supabase, userId, enabled);
+      const saved = await getAdminMerchantAccess(supabase, userId);
+      if (saved !== enabled) throw new Error('MERCHANT_ACCESS_SAVE_FAILED');
+      setMerchantAccess(saved);
+    } catch { play('warning'); setMerchantAccess(null); setError('변경 결과를 확인하지 못했습니다. 다시 확인한 뒤 변경해 주세요.'); }
+    finally { setMerchantBusy(false); }
+  };
   const sessionIp = overview?.profile.session_ip ?? null;
   useEffect(() => {
     let active = true;
@@ -46,6 +62,7 @@ export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevel
     catch (error) { setFilterError(error instanceof Error ? error.message : '조회 조건을 확인해주세요.'); }
   };
   const chooseKind = (kind: ActivityKind) => {
+    play('selection');
     const next = { ...filters, kind, conversationId: null };
     setFilters(next); setDraft(next); setFilterError(null);
   };
@@ -62,6 +79,7 @@ export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevel
   };
   const changeTrust = async (level: 1 | 2 | 3) => {
     if (!onTrustLevelChange || trustBusy) return;
+    play('selection');
     setTrustBusy(true);
     try { await onTrustLevelChange(userId, level); setOverview(null); setError(null); setRetry((value) => value + 1); }
     catch { setError('신뢰 단계를 바꾸지 못했습니다. 다시 확인해주세요.'); }
@@ -98,6 +116,14 @@ export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevel
       <ThemedText type="small" style={styles.muted}>이름·생년월일은 본인이 별도 동의 후 입력한 정보입니다. 소셜 로그인 프로필 이름과 분리되며, 두 정보 모두 실명인증 결과가 아닙니다.</ThemedText>
       <Field label="실명인증" value="미도입 · 신뢰 단계와 별개" />
       <Field label="권한" value={profile.auth_role} />
+      <View style={styles.trustRow}>
+        <ThemedText type="small" style={styles.fieldLabel}>업체 계정</ThemedText>
+        {([true, false] as const).map(enabled => <Pressable key={String(enabled)} accessibilityRole="button" accessibilityLabel={`업체 계정 ${enabled ? 'YES' : 'NO'}`} accessibilityState={{ selected: merchantAccess === enabled, disabled: merchantBusy || merchantAccess === null || merchantAccess === enabled }} disabled={merchantBusy || merchantAccess === null || merchantAccess === enabled}
+          onPress={() => { void changeMerchantAccess(enabled); }} style={({ pressed }) => [styles.chip, { minHeight: 44 }, merchantAccess === enabled && styles.selected, pressed && styles.pressed]}><ThemedText type="smallBold">{enabled ? 'YES' : 'NO'}</ThemedText></Pressable>)}
+        <ThemedText type="small" style={styles.muted}>{merchantBusy ? '저장 중' : merchantAccess === null ? '확인 필요' : merchantAccess ? '업체 관리 가능' : '일반 계정'}</ThemedText>
+      </View>
+      <ThemedText type="small" style={styles.muted}>YES는 본인 업체의 관리 권한입니다. 업체 소유 확인과 관리자 권한은 별도이며, NO로 바꿔도 기존 글·사진은 보존합니다.</ThemedText>
+      {merchantAccess === null && <Button label="업체 권한 다시 확인" onPress={() => setRetry(v => v + 1)} />}
       {onTrustLevelChange ? (
         <View style={styles.trustRow}>
           <ThemedText type="small" style={styles.fieldLabel}>신뢰 단계</ThemedText>
@@ -219,32 +245,33 @@ function GroupTitle({ title }: { title: string }) {
   return <ThemedText accessibilityRole="header" {...(Platform.OS === 'web' ? { 'aria-level': 2 } : {})} style={styles.groupTitle}>{title}</ThemedText>;
 }
 function Button({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) {
-  return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, disabled && styles.disabled, pressed && styles.pressed]}><ThemedText type="smallBold">{label}</ThemedText></Pressable>;
+  const { play } = useInteractionFeedback();
+  return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.button, disabled && styles.disabled, pressed && styles.pressed]}><ThemedText type="smallBold">{label}</ThemedText></Pressable>;
 }
 function formatDate(value: string) { return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'medium' }).format(new Date(value)); }
 function statusLabel(value: string) {
   return ({ active: '정상', suspended: '이용 제한', deleted: '삭제됨', reactivation_pending: '재가입 허용', published: '게시중', removed: '숨김', pending: '대기', approved: '승인', rejected: '거절', cancelled: '취소', ended: '종료', open: '미처리', actioned: '조치함', dismissed: '기각', warned: '경고', blocked: '차단' } as Record<string, string>)[value] ?? value;
 }
 const styles = StyleSheet.create({
-  section: { gap: Spacing.three }, card: { padding: Spacing.three, gap: Spacing.two, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 10, backgroundColor: Colors.light.card },
+  section: { gap: Spacing.three }, card: { padding: Spacing.three, gap: Spacing.two, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 10, backgroundColor: Colors.admin.card },
   profileHeading: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingVertical: Spacing.two },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.light.backgroundElement, justifyContent: 'center', alignItems: 'center' },
+  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.admin.backgroundElement, justifyContent: 'center', alignItems: 'center' },
   identity: { flex: 1, minWidth: 0, gap: Spacing.one }, name: { fontSize: 26, lineHeight: 34, letterSpacing: -0.5 },
   groupTitle: { fontSize: 17, lineHeight: 24, fontWeight: 600, marginBottom: Spacing.one },
-  field: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one, paddingVertical: Spacing.two, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.light.line },
-  fieldLabel: { flexBasis: 156, flexGrow: 1, color: Colors.light.textSecondary }, fieldValue: { flexBasis: 220, flexGrow: 3, minWidth: 0 },
-  muted: { color: Colors.light.textSecondary }, error: { color: Colors.light.accent }, accent: { color: Colors.light.accent },
+  field: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one, paddingVertical: Spacing.two, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.admin.line },
+  fieldLabel: { flexBasis: 156, flexGrow: 1, color: Colors.admin.textSecondary }, fieldValue: { flexBasis: 220, flexGrow: 3, minWidth: 0 },
+  muted: { color: Colors.admin.textSecondary }, error: { color: Colors.admin.danger }, accent: { color: Colors.admin.accent },
   metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  metric: { minHeight: 44, flexBasis: 120, flexGrow: 1, padding: Spacing.two, gap: Spacing.two, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
+  metric: { minHeight: 44, flexBasis: 120, flexGrow: 1, padding: Spacing.two, gap: Spacing.two, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.card },
   metricValue: { fontVariant: ['tabular-nums'], fontSize: 17 },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  chip: { minHeight: 44, paddingHorizontal: Spacing.two, justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8 },
-  selected: { borderColor: Colors.light.accent, backgroundColor: Colors.light.background },
-  input: { minHeight: 44, flexGrow: 1, minWidth: 150, paddingHorizontal: Spacing.two, color: Colors.light.text, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 6, backgroundColor: Colors.light.card },
-  button: { minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.three, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.background },
-  event: { borderLeftWidth: 3, borderLeftColor: Colors.light.navy },
-  eventHeading: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, alignItems: 'center' }, eventKind: { color: Colors.light.navy },
+  chip: { minHeight: 44, paddingHorizontal: Spacing.two, justifyContent: 'center', borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8 },
+  selected: { borderColor: Colors.admin.accent, backgroundColor: Colors.admin.backgroundSelected },
+  input: { minHeight: 44, flexGrow: 1, minWidth: 150, paddingHorizontal: Spacing.two, color: Colors.admin.text, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 6, backgroundColor: Colors.admin.card },
+  button: { minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.three, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.background },
+  event: { borderLeftWidth: 3, borderLeftColor: Colors.admin.navy },
+  eventHeading: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, alignItems: 'center' }, eventKind: { color: Colors.admin.navy },
   pressed: { opacity: 0.65 }, disabled: { opacity: 0.55 },
-  id: { fontFamily: 'monospace', fontSize: 11, color: Colors.light.textSecondary },
-  trustRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.two, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.light.line },
+  id: { fontFamily: 'monospace', fontSize: 11, color: Colors.admin.textSecondary },
+  trustRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.two, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.admin.line },
 });

@@ -42,10 +42,11 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
   const group = chillingKind(post.room ?? {}) === 'group';
   const countdown = chillingCountdown(post.room ?? {});
   const room = post.room;
+  const schedule = chillingSchedule(post.room ?? {});
   const categoryLabel = room?.category && { casual: '가볍게', party: '파티', festival: '페스티벌', sports: '스포츠', hobby: '취미', travel: '여행' }[room.category];
   const seatsLeft = room?.capacity ? Math.max(0, room.capacity - room.memberCount) : null;
   return <View style={styles.card}>
-    <Pressable analyticsId="components_chilling-event.pressable.2" onPress={() => { play('selection'); onOpen(); }} accessibilityRole="button" accessibilityLabel={`${post.title}, ${chillingSchedule(post.room ?? {})}`} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
+    <Pressable analyticsId="components_chilling-event.pressable.2" onPress={() => { play('selection'); onOpen(); }} accessibilityRole="button" accessibilityLabel={`${post.title}, ${schedule}`} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
       {source && source.uri !== failed ? <Image source={source} style={styles.photo} contentFit="cover" recyclingKey={post.id} onError={() => setFailed(source.uri)} /> :
         <View style={[styles.poster, { backgroundColor: theme.card }]}>
           <View style={[styles.sun, { backgroundColor: theme.accent }]} />
@@ -56,7 +57,7 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
       <View style={styles.meta}>
         {countdown && <View style={[styles.countdown, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{countdown}</ThemedText></View>}
         <ThemedText type="smallBold" themeColor="accent">{categoryLabel ? `${categoryLabel} · ` : ''}{group ? '모임 · 정기모임' : '칠링 · 일회성'}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">{chillingSchedule(post.room ?? {})}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{schedule}</ThemedText>
       </View>
       <ThemedText type="small" themeColor="textSecondary">{recommendedAgeLabel(post.room ?? {})}</ThemedText>
       <ThemedText accessibilityRole="header" style={styles.title}>{post.title}</ThemedText>

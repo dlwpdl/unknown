@@ -32,6 +32,7 @@ import { LocalEventsCarousel } from '@/components/local-events-carousel';
 import { adsSupported, feedAdPosition } from '@/lib/ads';
 import { MyMeetups } from '@/components/my-meetups';
 import { PostCard } from '@/components/post-card';
+import { PostBodyEditor } from '@/components/post-body-editor';
 import { ProfileAvatarButton } from '@/components/profile-avatar-button';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { StateCard } from '@/components/state-card';
@@ -68,6 +69,7 @@ import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/po
 import { withPostMap } from '@/lib/post-maps';
 import { supabase } from '@/lib/supabase';
 import type { DailyQuota, Post, PostKind, Tag } from '@/lib/types';
+import { splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links';
 
 
 
@@ -100,6 +102,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [listingQuota, setListingQuota] = useState<DailyQuota | null>(null);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const hasDraftText = !!title.trim() || !!splitPostAttachments(body).body.trim();
   const [mapInput, setMapInput] = useState('');
   const [hashtagInput, setHashtagInput] = useState('');
   const [draftImages, setDraftImages] = useState<PreparedImage[]>([]);
@@ -424,7 +427,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
 
   const createAiDraft = async () => {
     const titleHint = title.trim();
-    const bodyHint = body.trim();
+    const attached = splitPostAttachments(body);
+    const bodyHint = attached.body.trim();
     if ((draftImages.length === 0 && !titleHint && !bodyHint) || creatingDraft) return;
     setCreatingDraft(true);
     try {
@@ -441,7 +445,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       const draft = parseAiDraftResponse(data);
       setTag(TAGS.find(({ slug }) => slug === draft.categorySlug) ?? tag);
       setTitle(draft.title);
-      setBody(draft.body);
+      setBody(withPostAttachments(draft.body, attached.urls));
       setHashtagInput(draft.hashtags.map((hashtag) => `#${hashtag}`).join(' '));
       setAiDraftReady(true);
     } catch {
@@ -807,6 +811,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             onViewCountChange={updateViewCount}
             onClose={() => setDetailVisible(false)}
             onPostRemoved={(postId) => setPosts((current) => current.filter((post) => post.id !== postId))}
+            onPostChanged={(saved) => {
+              setPosts(current => current.map(post => post.id === saved.id ? saved : post));
+              setSearchResults(current => current.map(post => post.id === saved.id ? saved : post));
+              setDetailPost(saved);
+            }}
             onJoin={() => onJoin(detailPost)}
             onCommentCountChange={(count) => {
               setPosts((current) => current.map((post) => post.id === detailPost.id ? { ...post, comments: count } : post));
@@ -980,7 +989,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 <TextInput value={title} onChangeText={setTitle} accessibilityLabel={t.write.titlePlaceholder}
                   placeholder={t.write.titlePlaceholder} placeholderTextColor={theme.textSecondary} maxLength={80}
                   style={[styles.titleInput, { color: theme.text, borderBottomColor: theme.line }]} />
-                <TextInput value={body} onChangeText={setBody} accessibilityLabel={t.write.bodyLabel}
+                <PostBodyEditor value={body} onChangeText={setBody} editable={!submitting && !creatingDraft} accessibilityLabel={t.write.bodyLabel}
                   placeholder={tag.kind !== 'meetup' && postKind === 'listing' ? t.write.listingBodyPlaceholder : t.write.bodyPlaceholder[tag.slug]} placeholderTextColor={theme.textSecondary} multiline
                   style={[styles.bodyInput, { color: theme.text, borderBottomColor: theme.line }]} />
                 {tag.kind !== 'meetup' && <TextInput value={mapInput} onChangeText={setMapInput}
@@ -990,13 +999,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   style={[styles.hashtagInput, { color: theme.text, borderBottomColor: theme.line, minHeight: 44 }]} />}
                 <Pressable analyticsId="components_feed-screen.pressable.23"
                   onPress={() => { play('selection'); void createAiDraft(); }}
-                  disabled={creatingDraft || (draftImages.length === 0 && !title.trim() && !body.trim())}
+                  disabled={creatingDraft || (draftImages.length === 0 && !hasDraftText)}
                   accessibilityRole="button"
-                  accessibilityState={{ disabled: creatingDraft || (draftImages.length === 0 && !title.trim() && !body.trim()), busy: creatingDraft }}
-                  style={[styles.aiButton, { backgroundColor: theme.backgroundElement, opacity: creatingDraft || (draftImages.length === 0 && !title.trim() && !body.trim()) ? 0.6 : 1 }]}>
+                  accessibilityState={{ disabled: creatingDraft || (draftImages.length === 0 && !hasDraftText), busy: creatingDraft }}
+                  style={[styles.aiButton, { backgroundColor: theme.backgroundElement, opacity: creatingDraft || (draftImages.length === 0 && !hasDraftText) ? 0.6 : 1 }]}>
                   <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} size={16} tintColor={theme.accent} />
                   <ThemedText type="smallBold" style={{ color: theme.accent }}>
-                    {creatingDraft ? t.write.creatingDraft : title.trim() || body.trim() ? t.write.polishDraft : t.write.createDraft}
+                    {creatingDraft ? t.write.creatingDraft : hasDraftText ? t.write.polishDraft : t.write.createDraft}
                   </ThemedText>
                 </Pressable>
                 {aiDraftReady && <ThemedText accessibilityRole="alert" type="small" themeColor="textSecondary" style={styles.aiNotice}>{t.write.reviewDraft}</ThemedText>}

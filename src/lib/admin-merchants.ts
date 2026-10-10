@@ -3,6 +3,7 @@ import { safeMerchantSourceUrl } from './merchant-source.ts';
 import { merchantReportText } from './merchant-workspace.ts';
 import type { MerchantAccountRole } from './merchant-connections.ts';
 export { merchantReportText } from './merchant-workspace.ts';
+export { merchantMapsUrl } from './merchant-source.ts';
 
 export type Merchant = {
   id: string; name: string; city_id: string; city_name: string; timezone: string;
@@ -37,11 +38,6 @@ export function merchantAddressCity(address: string): string | null {
   // 소재지는 주소에 명시된 도시·주만 사용하고 게시 지역에서 추정하지 않는다.
   const match = address.match(/(?:^|,)\s*([^,\d]+),\s*(AB|BC|MB|NB|NL|NS|NT|NU|ON|PE|QC|SK|YT)\b/i);
   return match ? `${match[1].trim()}, ${match[2].toUpperCase()}` : null;
-}
-export function merchantMapsUrl(address: string): string | null {
-  if (!address.trim()) return null;
-  const query = address.trim();
-  return `https://www.google.com/maps/search/?${new URLSearchParams({ api: '1', query })}`;
 }
 export async function linkMerchantPost(client: SupabaseClient, id: string, postId: string, source: string) {
   const url = safeMerchantSourceUrl(source);

@@ -19,7 +19,7 @@ import { eventVideo } from '@/lib/event-videos';
 import { useCommunityCity } from '@/lib/community-city';
 import { useAuth } from '@/lib/auth';
 import { CITIES } from '@/lib/mock';
-import { eventNotice, eventPriceLabel, eventTime, loadTicketmasterEvent, meetupAllowed, type TicketmasterEvent } from '@/lib/ticketmaster';
+import { eventNotice, eventPriceLabel, eventTime, loadTicketmasterEvent, meetupAllowed, recordTicketmasterEventClick, type TicketmasterEvent } from '@/lib/ticketmaster';
 
 export default function EventDetailScreen() {
   const { id, cityId } = useLocalSearchParams<{ id: string; cityId: string }>();
@@ -53,6 +53,9 @@ export default function EventDetailScreen() {
       .catch(cause => show(null, cause.message));
     return () => { active = false; };
   }, [cityId, id, requestKey, reducedMotion]);
+  useEffect(() => {
+    if (isAuthed && isFocused && event?.id) void recordTicketmasterEventClick(cityId, event.id).catch(() => {});
+  }, [cityId, event?.id, isAuthed, isFocused]);
   const create = () => {
     play('selection');
     const city = CITIES.find(item => item.id === cityId && item.state === 'open');

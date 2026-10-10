@@ -24,6 +24,8 @@ insert into auth.sessions(id,user_id,aal) values
 insert into private.merchants(id,name,city_id,contact,status,consent,consent_note,owner_id,owner_verified_at) values
 ('15210000-0000-4000-8000-000000000001','편의 검사 업체','vancouver','비공개 개인 연락 메모','paid','granted','비공개 허가 메모','15200000-0000-4000-8000-000000000001',now()),
 ('15210000-0000-4000-8000-000000000002','편의 담당 미연결 업체','vancouver','절대 공개할 수 없는 연락처','paid','granted','비공개 허가 메모',null,null);
+-- Nine distinct publications exercise notification caps, so this existing paid fixture needs current grandfathered workspace access.
+update private.merchants set workspace_until=current_date+1 where id='15210000-0000-4000-8000-000000000001';
 insert into private.merchant_operators(merchant_id,user_id) values
 ('15210000-0000-4000-8000-000000000001','15200000-0000-4000-8000-000000000004');
 insert into public.posts(id,city_id,author_id,tag_id,title,body,status) values
@@ -115,7 +117,7 @@ from generate_series(1,6);
 alter table public.notifications enable trigger notifications_preferences;
 select is((select count(*) from public.notifications where user_id='15200000-0000-4000-8000-000000000002' and category='city_food'),6::bigint,'fixture has six prior city inbox notices');
 insert into public.posts(id,city_id,author_id,tag_id,title,body,status,created_at)
-select ('15260000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,'vancouver','15200000-0000-4000-8000-000000000003',1,'budget publication','test','published',clock_timestamp()
+select ('15260000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,'vancouver','15200000-0000-4000-8000-000000000003',1,'budget publication','test '||n,'published',clock_timestamp()
 from generate_series(1,7) n;
 insert into private.merchant_posts(post_id,merchant_id)
 select id,'15210000-0000-4000-8000-000000000001' from public.posts where id::text like '15260000-%';

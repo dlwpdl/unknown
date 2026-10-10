@@ -13,6 +13,11 @@ select case when n%4=0 then '42100000-0000-0000-0000-000000000003' else '4210000
 'vancouver',case when n%2=0 then 1 else 4 end,'needle-title-'||n,'needle-body-'||n,
 array['needle-hashtag','red','blue',case when n%2=0 then '#burnaby' else '버나비' end],now()-n*interval '1 minute' from generate_series(1,12) n;
 insert into public.blocks(blocker_id,blocked_id) values('42100000-0000-0000-0000-000000000001','42100000-0000-0000-0000-000000000003');
+-- Escape fixtures must match individual hashtags, including a tag followed by another tag.
+insert into public.posts(id,author_id,city_id,tag_id,title,body,hashtags,created_at) values
+('42120000-0000-0000-0000-000000000001','42100000-0000-0000-0000-000000000002','vancouver',1,'Escape fixture one','Search escape fixture one',array['promo%','second'],now()),
+('42120000-0000-0000-0000-000000000002','42100000-0000-0000-0000-000000000002','vancouver',1,'Escape fixture two','Search escape fixture two',array['literal_under',E'line\nbreak'],now()),
+('42120000-0000-0000-0000-000000000003','42100000-0000-0000-0000-000000000002','vancouver',1,'Escape fixture three','Search escape fixture three',array['join','split'],now());
 -- Reference uses the original OR predicate, ordering and visibility contract.
 create function pg_temp.expected_feed(query text,category smallint,page_size integer) returns uuid[]
 language sql stable security definer as $$
@@ -42,6 +47,23 @@ select is(
 ('blocked-needle',null::smallint,30),(E'red\nblue',null::smallint,30),('no-match-ever',null::smallint,30),
 ('%',null::smallint,5),('_',null::smallint,5),(' 버나비 ',null::smallint,5)
 ) probes(query,category,page_size);
+-- V2 must retain PostgreSQL per-element ILIKE escape semantics; a joined index prefilter is only a superset.
+select is(
+  actual.matched,
+  expected,
+  actual.api||' hashtag search preserves '||case_name
+) from (values
+('42120000-0000-0000-0000-000000000001'::uuid,E'\\',true,'terminal escape before a later hashtag'),
+('42120000-0000-0000-0000-000000000001'::uuid,E'\\%',true,'escaped percent'),
+('42120000-0000-0000-0000-000000000002'::uuid,E'\\_',true,'escaped underscore'),
+('42120000-0000-0000-0000-000000000002'::uuid,E'line\nbreak',true,'newline inside one hashtag'),
+('42120000-0000-0000-0000-000000000003'::uuid,E'join\nsplit',false,'no phrase match across hashtag elements')
+) probes(post_id,query,expected,case_name)
+cross join lateral (
+  select 'V1' api,exists(select 1 from public.get_public_feed_page('vancouver',null,query,null,null,50) where id=post_id) matched
+  union all
+  select 'V2',exists(select 1 from public.get_public_feed_page_v2('vancouver',null,query,null,null,50) where id=post_id)
+) actual;
 reset role;
 -- Compare trending to the pre-optimization definition, including block filtering
 -- and canonical aliases that must still count each author only once.

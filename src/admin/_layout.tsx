@@ -6,7 +6,7 @@ import { InteractionFeedbackProvider } from '@/lib/interaction-feedback';
 
 export default function AdminLayout() {
   return (
-    <ThemeOverrideProvider scheme="light">
+    <ThemeOverrideProvider scheme="dark">
       <InteractionFeedbackProvider>
       <AuthProvider>
         <Stack screenOptions={{ headerShown: false }} />

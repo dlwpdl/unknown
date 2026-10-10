@@ -14,7 +14,7 @@ export function checkMerchantWeb(directory, base = '/merchant') {
     assert.ok(!/(^|\/)(admin|chat|compose|notifications)(?:[./]|$)/.test(file), `Private route in merchant export: ${file}`);
     if (!/\.(html|js)$/.test(file)) continue;
     const content = readFileSync(join(directory, file), 'utf8');
-    for (const marker of ['get_admin_analytics', 'get_admin_merchants', 'save_admin_merchant', 'get_admin_merchant_access', 'set_admin_merchant_access', 'set_admin_merchant_workspace_owner', 'connect_admin_merchant_account', 'get_admin_merchant_review_content', 'get_admin_merchant_receipt_reviews', 'set_admin_merchant_review_receipt', 'MFA_ADMIN_CONNECTION_REQUIRED', 'GLING / INSIGHTS']) {
+    for (const marker of ['get_admin_merchant_review_reply_content', 'get_admin_analytics', 'get_admin_merchants', 'save_admin_merchant', 'get_admin_merchant_access', 'set_admin_merchant_access', 'set_admin_merchant_workspace_owner', 'connect_admin_merchant_account', 'get_admin_merchant_review_content', 'get_admin_merchant_receipt_reviews', 'set_admin_merchant_review_receipt', 'MFA_ADMIN_CONNECTION_REQUIRED', 'GLING / INSIGHTS']) {
       assert.ok(!content.includes(marker), `Private admin code ${marker} in merchant export: ${file}`);
     }
     if (!file.endsWith('.html')) continue;

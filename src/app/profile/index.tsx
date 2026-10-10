@@ -95,7 +95,7 @@ export default function ProfileScreen() {
     );
 
   const cityName = CITIES.find(({ id }) => id === summary?.cityId)?.name ?? summary?.cityId ?? '';
-  const membershipLabel = membership ? ({ free: '베이직', plus: '플러스', premium: '프리미엄' } as const)[membership.tier] : null;
+  const membershipLabel = membership ? ({ free: '베이직', plus: '플러스', pro: '프로', premium: '프리미엄' } as const)[membership.tier] : null;
   const unreadLabel = unread > 0 ? `새 소식 ${unread}` : '새 소식 없음';
 
   const pickProfilePhoto = async () => {

@@ -29,15 +29,18 @@ insert into private.merchants(id,name,city_id,contact,status,consent,consent_not
 ('13410000-0000-4000-8000-000000000007','채널 삭제글 업체','vancouver','','trial','granted','검사 허가','','','','13400000-0000-4000-8000-000000000001',now()),
 ('13410000-0000-4000-8000-000000000008','채널 비공개 업체','vancouver','','trial','granted','검사 허가','','','','13400000-0000-4000-8000-000000000001',now());
 insert into public.posts(id,city_id,author_id,tag_id,title,body,status,created_at) values
-('13420000-0000-4000-8000-000000000001','vancouver','13400000-0000-4000-8000-000000000001',1,'채널 소개 하나','실제 업체 소개가 아닌 검사 본문','published',now()-interval '1 day'),
-('13420000-0000-4000-8000-000000000002','vancouver','13400000-0000-4000-8000-000000000001',1,'채널 소개 둘','실제 업체 소개가 아닌 검사 본문','published',now()),
-('13420000-0000-4000-8000-000000000003','vancouver','13400000-0000-4000-8000-000000000002',1,'채널 다른 업체 소개','실제 업체 소개가 아닌 검사 본문','published',now()),
-('13420000-0000-4000-8000-000000000004','vancouver','13400000-0000-4000-8000-000000000001',1,'채널 중단 소개','실제 업체 소개가 아닌 검사 본문','published',now()),
-('13420000-0000-4000-8000-000000000005','vancouver','13400000-0000-4000-8000-000000000001',1,'채널 철회 소개','실제 업체 소개가 아닌 검사 본문','published',now()),
-('13420000-0000-4000-8000-000000000006','vancouver','13400000-0000-4000-8000-000000000001',1,'채널 대기 소개','실제 업체 소개가 아닌 검사 본문','published',now()),
-('13420000-0000-4000-8000-000000000007','vancouver','13400000-0000-4000-8000-000000000001',1,'채널 미동의 소개','실제 업체 소개가 아닌 검사 본문','published',now()),
-('13420000-0000-4000-8000-000000000008','vancouver','13400000-0000-4000-8000-000000000001',1,'채널 삭제된 소개','실제 업체 소개가 아닌 검사 본문','removed',now()),
-('13420000-0000-4000-8000-000000000009','vancouver','13400000-0000-4000-8000-000000000004',1,'채널 비활성 작성 소개','실제 업체 소개가 아닌 검사 본문','published',now()+interval '1 day');
+('13420000-0000-4000-8000-000000000001','vancouver','13400000-0000-4000-8000-000000000001',1,'채널 소개 하나','실제 업체 소개가 아닌 검사 본문 1','published',now()-interval '1 day'),
+('13420000-0000-4000-8000-000000000002','vancouver','13400000-0000-4000-8000-000000000001',1,'채널 소개 둘','실제 업체 소개가 아닌 검사 본문 2','published',now()),
+('13420000-0000-4000-8000-000000000003','vancouver','13400000-0000-4000-8000-000000000002',1,'채널 다른 업체 소개','실제 업체 소개가 아닌 검사 본문 3','published',now()),
+('13420000-0000-4000-8000-000000000004','vancouver','13400000-0000-4000-8000-000000000001',1,'채널 중단 소개','실제 업체 소개가 아닌 검사 본문 4','published',now()),
+('13420000-0000-4000-8000-000000000005','vancouver','13400000-0000-4000-8000-000000000001',1,'채널 철회 소개','실제 업체 소개가 아닌 검사 본문 5','published',now()),
+('13420000-0000-4000-8000-000000000006','vancouver','13400000-0000-4000-8000-000000000001',1,'채널 대기 소개','실제 업체 소개가 아닌 검사 본문 6','published',now()),
+('13420000-0000-4000-8000-000000000007','vancouver','13400000-0000-4000-8000-000000000001',1,'채널 미동의 소개','실제 업체 소개가 아닌 검사 본문 7','published',now()),
+('13420000-0000-4000-8000-000000000008','vancouver','13400000-0000-4000-8000-000000000001',1,'채널 삭제된 소개','실제 업체 소개가 아닌 검사 본문 8','removed',now()),
+('13420000-0000-4000-8000-000000000009','vancouver','13400000-0000-4000-8000-000000000004',1,'채널 비활성 작성 소개','실제 업체 소개가 아닌 검사 본문 9','published',now()+interval '1 day');
+-- Create historical introductions while operations are allowed, then stop/revoke.
+update private.merchants set status='trial',consent='granted' where id in
+('13410000-0000-4000-8000-000000000003','13410000-0000-4000-8000-000000000004');
 insert into private.merchant_posts(post_id,merchant_id,original_url) values
 ('13420000-0000-4000-8000-000000000001','13410000-0000-4000-8000-000000000001','https://example.invalid'),
 ('13420000-0000-4000-8000-000000000002','13410000-0000-4000-8000-000000000001',null),
@@ -48,6 +51,8 @@ insert into private.merchant_posts(post_id,merchant_id,original_url) values
 ('13420000-0000-4000-8000-000000000007','13410000-0000-4000-8000-000000000006',null),
 ('13420000-0000-4000-8000-000000000008','13410000-0000-4000-8000-000000000007',null),
 ('13420000-0000-4000-8000-000000000009','13410000-0000-4000-8000-000000000001',null);
+update private.merchants set status='paused' where id='13410000-0000-4000-8000-000000000003';
+update private.merchants set consent='revoked' where id='13410000-0000-4000-8000-000000000004';
 
 select has_column('private','merchants','avatar_path','channel avatar is attached to the canonical merchant');
 select has_column('private','merchants','banner_path','channel banner is attached to the canonical merchant');
@@ -70,8 +75,9 @@ reset role;
 select set_config('request.jwt.claims','{"role":"anon"}',true);
 set local role anon;
 select is((select array_agg(k order by k) from jsonb_object_keys(public.get_merchant_profile('13410000-0000-4000-8000-000000000001')) k),
-  array['address','avatar_path','banner_path','city_id','city_name','id','industry','name','review_post_id','services','source_urls']::text[],
+  array['address','avatar_path','banner_path','business_hours','can_message','city_id','city_name','id','industry','name','notifications_enabled','public_phone','review_post_id','saved','services','source_urls']::text[],
   'public profile exposes only the approved fields');
+select is(public.get_merchant_profile('13410000-0000-4000-8000-000000000001')->>'notifications_enabled','false','anonymous business updates require explicit subscription and default off');
 select is(public.get_merchant_profile('13410000-0000-4000-8000-000000000001')->>'services','등록된 서비스 소개','profile reuses registered service details');
 select is(public.get_merchant_profile('13410000-0000-4000-8000-000000000001')->>'review_post_id','13420000-0000-4000-8000-000000000002','latest visible native introduction supplies reviews; inactive author is ignored');
 select is(public.get_merchant_profile('13410000-0000-4000-8000-000000000003'),null::jsonb,'paused merchant stays private');

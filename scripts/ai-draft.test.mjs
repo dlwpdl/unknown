@@ -22,6 +22,11 @@ test('AI 초안 응답을 앱 형식으로 정규화한다', () => {
   );
 });
 
+test('비즈니스 초안은 정상 카테고리로 받아들인다', () => {
+  const draft = { categorySlug: 'business', title: '업체 소개', body: '밴쿠버에서 운영하는 가게를 소개합니다.', hashtags: ['업체소개'] };
+  assert.deepEqual(parseAiDraftResponse({ draft }), draft);
+});
+
 test('업체 소개·구인구직·중고거래 초안 카테고리를 지원한다', () => {
   for (const categorySlug of ['business', 'jobs', 'used']) {
     const draft = { categorySlug, title: '지역 안내', body: '밴쿠버의 소식을 나눕니다.', hashtags: [] };

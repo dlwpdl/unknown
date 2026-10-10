@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import * as adminMerchants from '../src/lib/admin-merchants.ts';
 
 const merchants = ['first', 'second'].map((id, i) => ({ id, name: `업체 ${i + 1}`, city_id: 'vancouver', city_name: '밴쿠버', timezone: 'America/Vancouver', industry: '카페', services: '', address: '', contact: `contact${i + 1}@example.test`, status: 'trial', consent: 'pending', consent_note: '', trial_ends_at: null, post_count: i + 1, report_count: 0, updated_at: '2026-10-09T00:00:00Z' }));
 
@@ -28,7 +29,7 @@ function app() {
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) };
     if (name === '@/lib/mock') return { CITIES: [{ id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver', timezone: 'America/Vancouver' }], TAGS: [] };
     if (name === '@/lib/merchant-source') return { merchantEventId: () => 'new-merchant' };
-    if (name === '@/lib/admin-merchants') return {};
+    if (name === '@/lib/admin-merchants') return adminMerchants;
     if (name === './admin-ai-connection') return { AdminAiConnection: 'AdminAiConnection' };
     if (name === './admin-merchant-connections') return { AdminMerchantConnections: 'AdminMerchantConnections' };
     return {};

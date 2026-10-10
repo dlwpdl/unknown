@@ -3,6 +3,7 @@ import { estimatedBase64Bytes, MAX_IMAGE_BYTES } from './image-upload.ts';
 import { merchantEventId } from './merchant-source.ts';
 
 export type MerchantReviewKind = 'usage' | 'employment';
+export type MerchantReviewReply = { body: string; created_at: string; updated_at: string };
 
 export type MerchantReview = {
   id: string;
@@ -14,6 +15,7 @@ export type MerchantReview = {
   updated_at: string;
   receipt_status: 'none' | 'pending' | 'verified' | 'rejected';
   review_kind?: MerchantReviewKind;
+  reply?: MerchantReviewReply | null;
 };
 
 export type MerchantReviewPage = {
@@ -21,12 +23,26 @@ export type MerchantReviewPage = {
   merchant_name: string;
   rating_average: number | null;
   review_count: number;
-  my_review: (MerchantReview & { status: 'published' | 'removed'; receipt_path: string | null }) | null;
+  my_review: (MerchantReview & { status: 'published' | 'removed'; receipt_path: string | null; receipt_review_note?: string | null }) | null;
   can_review: boolean;
   reviews: MerchantReview[];
   has_more: boolean;
   review_kind?: MerchantReviewKind;
 };
+
+export async function replyToMerchantReview(client: SupabaseClient, merchantId: string, reviewId: string, body: string, expectedUpdatedAt: string | null): Promise<MerchantReviewReply> {
+  const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i, text = body.trim();
+  if (!uuid.test(merchantId) || !uuid.test(reviewId) || !text || text.length > 300
+    || expectedUpdatedAt !== null && (typeof expectedUpdatedAt !== 'string' || !Number.isFinite(Date.parse(expectedUpdatedAt)))) throw new Error('INVALID_MERCHANT_REPLY');
+  const result = await client.rpc('reply_to_merchant_review', {
+    p_merchant_id: merchantId, p_review_id: reviewId, p_body: text, p_expected_updated_at: expectedUpdatedAt,
+  });
+  if (result.error) throw new Error(result.error.message);
+  const reply = result.data;
+  if (reply?.body !== text || typeof reply?.created_at !== 'string' || typeof reply?.updated_at !== 'string'
+    || !Number.isFinite(Date.parse(reply.created_at)) || !Number.isFinite(Date.parse(reply.updated_at))) throw new Error('MERCHANT_REPLY_SAVE_NOT_VERIFIED');
+  return { body: reply.body, created_at: reply.created_at, updated_at: reply.updated_at };
+}
 
 export async function loadMerchantReviews(client: SupabaseClient, postId: string, offset = 0, reviewKind: MerchantReviewKind = 'usage'): Promise<MerchantReviewPage | null> {
   if (reviewKind !== 'usage' && reviewKind !== 'employment') throw new Error('INVALID_REVIEW_KIND');

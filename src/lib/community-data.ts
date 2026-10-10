@@ -24,12 +24,12 @@ export function isContentRejected(error: unknown) {
 
 export function getCommunityActionError(error: unknown) {
   const message = typeof error === 'object' && error !== null && 'message' in error ? String(error.message) : '';
-  return (['MEETUP_JOIN_RESTRICTED', 'MEETUP_HOST_RESTRICTED', 'CHILLING_CREATE_LIMIT', 'REQUESTER_MEETUP_LIMIT_REACHED', 'MEETUP_LIMIT_REACHED', 'MEETUP_CLOSED', 'DAILY_CONVERSATION_LIMIT_REACHED', 'OTHER_CONVERSATION_LIMIT_REACHED', 'CONVERSATION_LIMIT_REACHED', 'REQUEST_COOLDOWN', 'PENDING_REQUEST_LIMIT', 'REQUEST_EXPIRED', 'CONVERSATION_NOT_ACTIVE', 'REQUEST_ALREADY_RESOLVED', 'RATE_LIMITED', 'LISTING_LIMIT_REACHED', 'DUPLICATE_LISTING', 'DUPLICATE_POST', 'BUMP_COOLDOWN', 'LISTING_NOT_OPEN'] as const)
+  return (['MEETUP_JOIN_RESTRICTED', 'MEETUP_HOST_RESTRICTED', 'CHILLING_CREATE_LIMIT', 'REQUESTER_MEETUP_LIMIT_REACHED', 'MEETUP_LIMIT_REACHED', 'MEETUP_CLOSED', 'DAILY_CONVERSATION_LIMIT_REACHED', 'OTHER_CONVERSATION_LIMIT_REACHED', 'CONVERSATION_LIMIT_REACHED', 'REQUEST_COOLDOWN', 'PENDING_REQUEST_LIMIT', 'REQUEST_EXPIRED', 'CONVERSATION_NOT_ACTIVE', 'REQUEST_ALREADY_RESOLVED', 'RATE_LIMITED', 'LISTING_LIMIT_REACHED', 'DUPLICATE_LISTING', 'DUPLICATE_POST', 'BUSINESS_BUMP_COOLDOWN', 'BUSINESS_MONTHLY_LIMIT_REACHED', 'DUPLICATE_PROMOTION', 'BUMP_COOLDOWN', 'LISTING_NOT_OPEN'] as const)
     .find((code) => message.includes(code)) ?? null;
 }
 
 export type PostDraftImage = { base64: string; mimeType: string; thumbBase64?: string; width?: number; height?: number };
-export type ReportTarget = 'user' | 'post' | 'comment' | 'message' | 'merchant_review';
+export type ReportTarget = 'user' | 'post' | 'comment' | 'message' | 'merchant_review' | 'merchant_review_reply';
 export type ReportReason = 'spam' | 'harassment' | 'hate' | 'sexual' | 'privacy' | 'other';
 
 export type ConversationPreview = {

@@ -3,8 +3,8 @@ set local search_path=public,extensions;
 select no_plan();
 insert into public.cities values('workspace-test','업체도구검사','BC','America/Vancouver',true);
 insert into auth.users(id,email,raw_app_meta_data) values
-('11900000-0000-0000-0000-000000000001','workspace-owner@example.com','{}'),
-('11900000-0000-0000-0000-000000000002','workspace-other@example.com','{}'),
+('11900000-0000-0000-0000-000000000001','workspace-owner@example.com','{"merchant_enabled":true}'),
+('11900000-0000-0000-0000-000000000002','workspace-other@example.com','{"merchant_enabled":true}'),
 ('11900000-0000-0000-0000-000000000003','workspace-admin@example.com','{"role":"admin"}');
 insert into public.profiles(id,nickname,city_id,terms_accepted_at,privacy_accepted_at,ai_safety_consent_at,consent_version) values
 ('11900000-0000-0000-0000-000000000001','도구소유검사','workspace-test',now(),now(),now(),'test'),

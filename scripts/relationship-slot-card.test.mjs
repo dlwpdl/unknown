@@ -6,7 +6,7 @@ import ts from 'typescript';
 
 const { MEMBERSHIP_LIMITS } = await import('../src/lib/membership.ts');
 // 실제 등급 한도를 그대로 쓴다. 표와 다른 값이 오면 카드는 '확인 필요'가 맞다.
-const limits = [MEMBERSHIP_LIMITS.free.meetups, MEMBERSHIP_LIMITS.plus.meetups, MEMBERSHIP_LIMITS.premium.meetups];
+const limits = [MEMBERSHIP_LIMITS.free.meetups, MEMBERSHIP_LIMITS.plus.meetups, MEMBERSHIP_LIMITS.pro.meetups, MEMBERSHIP_LIMITS.premium.meetups];
 
 const exports = {};
 const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/relationship-slot-card.tsx', import.meta.url), 'utf8'), {
@@ -27,10 +27,10 @@ vm.runInNewContext(source, { exports, require(name) {
 const { relationshipSlotData, RelationshipSlotCard } = exports;
 const snapshot = (limit = MEMBERSHIP_LIMITS.free.meetups) => ({ tier: 'free', meetupLimit: limit, meetupsUsed: 1, meetupSlotsLocked: 1, meetupSlotsAvailable: limit - 2,
   meetupUnlocksAt: ['2026-09-12T12:00:00Z', '2026-09-11T12:00:00Z'],
-  conversationLimit: limit, conversationsUsed: 0, conversationSlotsLocked: 0, conversationSlotsAvailable: limit, conversationUnlocksAt: [] });
+  conversationLimit: null, conversationsUsed: 0, conversationSlotsLocked: 0, conversationSlotsAvailable: null, conversationUnlocksAt: [] });
 const flatten = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(flatten) : flatten(value))];
 
-test('membership capacity uses separate server pools and picks the nearest valid unlock', () => {
+test('only meetup capacity is metered; direct chat has no numeric slot card', () => {
   for (const limit of limits) {
     const group = relationshipSlotData(snapshot(limit), 'meetup');
     const direct = relationshipSlotData(snapshot(limit), 'conversation');
@@ -38,8 +38,7 @@ test('membership capacity uses separate server pools and picks the nearest valid
     assert.equal(group.locked, 1);
     assert.equal(group.available, limit - 2);
     assert.equal(group.unlockAt, '2026-09-11T12:00:00Z');
-    assert.equal(direct.available, limit);
-    assert.equal(direct.locked, 0);
+    assert.equal(direct, null);
   }
 });
 
@@ -48,8 +47,8 @@ test('missing or inconsistent server values remain unknown; zero remaining is a 
     assert.equal(relationshipSlotData(membership, 'meetup'), null);
   }
   // 등급 한도표에 없는 값은 숫자를 지어내지 않는다.
-  assert.equal(relationshipSlotData({ ...snapshot(), meetupLimit: 3 }, 'meetup'), null);
-  const full = relationshipSlotData({ ...snapshot(), meetupsUsed: 2, meetupSlotsAvailable: 0 }, 'meetup');
+  assert.equal(relationshipSlotData({ ...snapshot(), meetupLimit: 6 }, 'meetup'), null);
+  const full = relationshipSlotData({ ...snapshot(), meetupsUsed: MEMBERSHIP_LIMITS.free.meetups - 1, meetupSlotsAvailable: 0 }, 'meetup');
   assert.equal(full.available, 0);
 });
 
@@ -64,7 +63,7 @@ test('downgrade preserves real usage above quota without inventing capacity or e
 test('one continuous bar represents capacity, caps overuse, and preserves accessible known/unknown status', () => {
   const known = flatten(RelationshipSlotCard({ kind: 'meetup', membership: snapshot(MEMBERSHIP_LIMITS.plus.meetups) }));
   const status = known.find(node => node.props?.accessibilityRole === 'image');
-  assert.match(status.props.accessibilityLabel, /전체 4개 중 남은 자리 2개, 사용 중 1개, 24시간 잠금 1개/);
+  assert.match(status.props.accessibilityLabel, /전체 5개 중 남은 자리 3개, 사용 중 1개, 24시간 잠금 1개/);
   const widths = membership => flatten(RelationshipSlotCard({ kind: 'meetup', membership }))
     .filter(node => typeof node.props?.style?.width === 'string').map(node => parseFloat(node.props.style.width));
   for (const limit of limits) {
