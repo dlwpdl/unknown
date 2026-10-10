@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Linking, Platform, StyleSheet, View } from 'react-native';
+import { Linking, Platform, StyleSheet, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { Pressable } from '@/components/analytics-controls';
@@ -9,6 +9,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadMyMerchantProfile, saveMyMerchantProfile, uploadMerchantProfileImage, type MyMerchantProfile } from '@/lib/merchant-profile-editor';
+import { saveMerchantContact } from '@/lib/merchant-conveniences';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
 import { supabase } from '@/lib/supabase';
 
@@ -33,11 +34,16 @@ export function MerchantProfileEditor({ merchantId, onDirty }: { merchantId: str
 function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDirty: (dirty: boolean) => void }) {
   const theme = useTheme(), router = useRouter(), { me } = useAuth(), { play } = useInteractionFeedback();
   const [profile, setProfile] = useState<MyMerchantProfile | null>(null), [photos, setPhotos] = useState<Photos | null>(null);
+  const [contact, setContact] = useState<{ phone: string; hours: string } | null>(null);
+  const contactDraft = useRef<{ phone: string; hours: string } | null>(null);
   const [loading, setLoading] = useState(true), [revision, setRevision] = useState(0);
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState('');
   const mounted = useRef(true), working = useRef(false), draft = useRef<Photos | null>(null), uploads = useRef(new Set<string>());
   const change = (next: Photos | null) => { draft.current = next; setPhotos(next); setNotice(''); };
-  const dirty = !!profile && !!photos && (!!photos.avatar.image || !!photos.banner.image || photos.avatar.path !== profile.avatar_path || photos.banner.path !== profile.banner_path);
+  const photoDirty = !!profile && !!photos && (!!photos.avatar.image || !!photos.banner.image || photos.avatar.path !== profile.avatar_path || photos.banner.path !== profile.banner_path);
+  const contactDirty = !!profile && !!contact && (contact.phone !== (profile.public_phone ?? '') || contact.hours !== (profile.business_hours ?? ''));
+  const dirty = photoDirty || contactDirty;
+  const changeContact = (next: { phone: string; hours: string }) => { contactDraft.current = next; setContact(next); setNotice(''); };
 
   useEffect(() => {
     mounted.current = true;
@@ -55,6 +61,7 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
       if (!active) return;
       setProfile(next);
       if (!draft.current) { draft.current = savedPhotos(next); setPhotos(draft.current); }
+      if (!contactDraft.current) { contactDraft.current = { phone: next.public_phone ?? '', hours: next.business_hours ?? '' }; setContact(contactDraft.current); }
       setError('');
     }).catch(() => { if (active) setError('프로필을 불러오지 못했어요. 업체 권한과 연결 상태를 확인해 주세요.'); })
       .finally(() => { if (active) setLoading(false); });
@@ -77,7 +84,7 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
   };
 
   const save = async () => {
-    if (working.current || !profile?.can_edit || !draft.current || !dirty) return;
+    if (working.current || !profile?.can_edit || !draft.current || !photoDirty) return;
     working.current = true; setBusy(true); setError(''); setNotice('');
     try {
       const session = await supabase.auth.getSession();
@@ -105,10 +112,31 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
       play('warning');
     } finally { working.current = false; if (mounted.current) setBusy(false); }
   };
+  const saveContact = async () => {
+    if (working.current || !profile?.can_edit || !contactDraft.current || !contactDirty) return;
+    working.current = true; setBusy(true); setError(''); setNotice('');
+    try {
+      const session = await supabase.auth.getSession();
+      if (!mounted.current || session.data.session?.user.id !== me.id) throw new Error('ACCOUNT_CHANGED');
+      const saved = await saveMerchantContact(supabase, merchantId, contactDraft.current.phone, contactDraft.current.hours, profile.updated_at);
+      if (!mounted.current) return;
+      setProfile(saved); changeContact({ phone: saved.public_phone ?? '', hours: saved.business_hours ?? '' });
+      setNotice('공개 전화번호와 영업시간을 저장했어요.'); play('success');
+    } catch (failure) {
+      if (mounted.current) {
+        const message = failure instanceof Error ? failure.message : '';
+        setError(message.includes('MERCHANT_PROFILE_CHANGED') ? '다른 곳에서 프로필이 바뀌었어요. 입력한 연락 정보는 남아 있어요. 수정 취소 후 최근 저장본을 다시 확인해 주세요.'
+          : message.includes('ACCOUNT_CHANGED') ? '계정이 바뀌었어요. 현재 계정으로 다시 열어주세요.'
+          : message.includes('INVALID') ? '전화번호는 국가번호와 숫자, 공백·괄호·하이픈으로 적어주세요. 영업시간은 500자 이내로 입력해 주세요.'
+          : '연락 정보 저장을 확인하지 못했어요. 입력한 내용은 남아 있으니 다시 시도해 주세요.');
+        play('warning');
+      }
+    } finally { working.current = false; if (mounted.current) setBusy(false); }
+  };
   const reload = () => { setLoading(true); setError(''); setRevision((value) => value + 1); };
   const cancel = () => {
     if (uploads.current.size) void supabase.storage.from('merchant-profile-images').remove([...uploads.current]).catch(() => {});
-    change(null); reload();
+    contactDraft.current = null; setContact(null); change(null); reload();
   };
   return <View style={[styles.section, { borderColor: theme.line, backgroundColor: theme.card }]}>
     <View style={styles.row}><ThemedText type="subtitle">업체 프로필</ThemedText>
@@ -131,9 +159,23 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
             </View>
           </View>)}
           <View style={styles.actions}>
-            <ProfileAction label={busy ? '처리 중…' : '프로필 사진 저장'} onPress={() => { void save(); }} disabled={busy || !dirty} primary />
-            {dirty && <ProfileAction label="선택 취소" onPress={cancel} disabled={busy} />}
+            <ProfileAction label={busy ? '처리 중…' : '프로필 사진 저장'} onPress={() => { void save(); }} disabled={busy || !photoDirty} primary={photoDirty} />
+            {dirty && <ProfileAction label="수정 취소" onPress={cancel} disabled={busy} />}
           </View>
+          {contact && <View style={styles.contact}>
+            <ThemedText type="smallBold">공개 연락 정보</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">방문자가 볼 전화번호와 실제 영업시간을 적어주세요. 내부 담당자 연락처와 별도로 공개돼요.</ThemedText>
+            <ThemedText type="smallBold">전화번호 <ThemedText type="small" themeColor="textSecondary">(선택)</ThemedText></ThemedText>
+            <TextInput accessibilityLabel="업체 공개 전화번호" value={contact.phone} editable={!busy} maxLength={40} keyboardType="phone-pad" autoCapitalize="none"
+              placeholder="+1 604 555 0101" placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')} onChangeText={phone => changeContact({ ...contact, phone })}
+              style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
+            <ThemedText type="smallBold">영업시간 <ThemedText type="small" themeColor="textSecondary">(선택)</ThemedText></ThemedText>
+            <TextInput accessibilityLabel="업체 영업시간" value={contact.hours} editable={!busy} maxLength={500} multiline
+              placeholder={'월–금 09:00–18:00\n토·일 휴무'} placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')} onChangeText={hours => changeContact({ ...contact, hours })}
+              style={[styles.input, styles.hours, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
+            <ThemedText type="small" themeColor="textSecondary">비워 두면 공개하지 않아요.</ThemedText>
+            <ProfileAction label={busy ? '연락 정보 처리 중…' : '연락 정보 저장'} onPress={() => { void saveContact(); }} disabled={busy || !contactDirty} primary={!photoDirty && contactDirty} />
+          </View>}
         </>}
         {profile.imageLoadFailed && !dirty && <View style={styles.row}><ThemedText type="small" themeColor="textSecondary">사진 일부를 불러오지 못했어요. 저장된 사진은 유지돼요.</ThemedText><ProfileAction label="사진 다시 확인" onPress={() => { change(null); reload(); }} disabled={busy} /></View>}
       </>}
@@ -148,4 +190,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   button: { minHeight: 44, minWidth: 44, paddingHorizontal: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderRadius: 10 },
+  contact: { gap: 8, paddingTop: 12 }, input: { minHeight: 48, borderWidth: 1, borderRadius: 8, padding: 12 },
+  hours: { minHeight: 100, textAlignVertical: 'top' },
 });
