@@ -31,7 +31,7 @@ select is(private.send_meetup_reminders((select start-interval '24 hours' from r
 select is(private.send_meetup_reminders((select start-interval '24 hours'+interval '20 seconds' from reminder_clock)),0,'retry cannot duplicate reminder');
 select is((select count(*)::int from public.notifications where kind='meetup_reminder' and user_id in ('a1020000-0000-0000-0000-000000000003','a1020000-0000-0000-0000-000000000004')),0,'pending and unrelated users excluded');
 select ok((select bool_and(category='meetups' and route='/post/a1020000-0000-0000-0000-000000000010') from public.notifications where kind='meetup_reminder'),'existing category and detail route');
-select is((select count(*)::int from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id where n.kind='meetup_reminder'),0,'in-app only');
+select is((select count(*)::int from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id where n.kind='meetup_reminder'),1,'24-hour reminder reaches registered host push');
 insert into public.notification_preferences(user_id,meetups) values ('a1020000-0000-0000-0000-000000000002',false);
 select is(private.send_meetup_reminders((select start-interval '6 hours' from reminder_clock)),1,'9am local respects opt-out and still reminds host');
 update public.notification_preferences set meetups=true where user_id='a1020000-0000-0000-0000-000000000002';

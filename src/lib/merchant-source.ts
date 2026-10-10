@@ -1,6 +1,19 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { safePostLink } from '../../supabase/functions/_shared/post-links.ts';
 
+export function merchantMapsUrl(address: string): string | null {
+  if (!address.trim()) return null;
+  const query = address.trim();
+  return `https://www.google.com/maps/search/?${new URLSearchParams({ api: '1', query })}`;
+}
+export function merchantPhoneUrl(value: string): string | null {
+  if (typeof value !== 'string' || /[\x00-\x1f\x7f]/.test(value)) return null;
+  const phone = value.trim();
+  if (phone.length > 40 || !/^\+?[0-9(). -]+$/.test(phone)) return null;
+  const number = phone.replace(/[(). -]/g, '');
+  return /^\+?[0-9]{7,15}$/.test(number) ? `tel:${number}` : null;
+}
+
 export function safeMerchantSourceUrl(value: string): string | null {
   try {
     const target = safePostLink(value);

@@ -1,3 +1,5 @@
+import { EVENT_CITIES } from './ticketmaster.ts';
+
 type PushJob = {
   id: string; lease_id: string; token: string; user_id: string; notification_id: string;
   category: string; body: string; route: string | null; ticket_id: string | null;
@@ -11,7 +13,7 @@ const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const uuid = new RegExp(`^${UUID}$`, 'i');
 // 앱의 notificationRoute()와 같은 목적지 목록을 유지한다. 관리자 알림(/admin?section=…)이 빠지면
 // 서버가 보낸 화면 대신 /notifications 로 열리므로 두 곳을 함께 고쳐야 한다.
-const routePattern = new RegExp(`^(?:/post/${UUID}(?:\\?commentId=${UUID})?|/chat\\?(?:conversationId=${UUID}(?:&view=requests)?|requestId=${UUID}|view=requests)|/profile/(?:guidelines|settings)|/notifications|/admin(?:\\?(?:section=(?:alerts|analytics|errors|overview|posts|reports|safety|trending|users)|(?:safety|alert)=(?:${UUID}|[1-9][0-9]*)))?)$`, 'i');
+const routePattern = new RegExp(`^(?:/post/${UUID}(?:\\?commentId=${UUID})?|/company/${UUID}\\?review=(?:usage|employment)|/chat\\?(?:conversationId=${UUID}(?:&view=requests)?|requestId=${UUID}|view=requests)|/profile/(?:guidelines|settings|merchant\\?merchant=${UUID})|/notifications|/admin(?:\\?(?:section=(?:alerts|analytics|errors|overview|posts|reports|safety|trending|users)|(?:safety|alert)=(?:${UUID}|[1-9][0-9]*)))?)$`, 'i');
 const json = (value: unknown, status = 200) => Response.json(value, { status });
 const object = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 
@@ -24,6 +26,10 @@ function resultFor(value: unknown, receipt: boolean): { result: Result; ticketId
   if (value.status === 'error' && object(value.details) && typeof value.details.error === 'string') {
     const code = value.details.error;
     if (code === 'DeviceNotRegistered') return { result: 'device_not_registered', error: code };
+    if (receipt && code === 'DeveloperError' && object(value.details.apns)
+      && value.details.apns.statusCode === 400 && value.details.apns.reason === 'BadDeviceToken') {
+      return { result: 'device_not_registered', error: 'BadDeviceToken' };
+    }
     if (code === 'MessageRateExceeded' || code === 'UnknownError') return { result: 'retry', error: code };
     // Persist only allowlisted codes. Provider messages can contain push tokens.
     return { result: 'failed', error: ['MessageTooBig', 'MismatchSenderId', 'InvalidCredentials'].includes(code) ? code : 'EXPO_REJECTED' };
@@ -49,7 +55,8 @@ export async function handlePushNotifications(request: Request, options: WorkerO
         method: 'POST', signal: AbortSignal.timeout(15_000),
         headers: { 'Content-Type': 'application/json', ...(options.expoAccessToken ? { Authorization: `Bearer ${options.expoAccessToken}` } : {}) },
         body: JSON.stringify(phase === 'receipt' ? { ids: jobs.map((job) => job.ticket_id) } : jobs.map((job) => {
-          const route = job.route && routePattern.test(job.route) ? job.route : '/notifications';
+          const event = job.route?.match(/^\/events\/([A-Za-z0-9_-]{1,100})\?cityId=([a-z]+)$/);
+          const route = job.route && (routePattern.test(job.route) || (event && Object.hasOwn(EVENT_CITIES, event[2]))) ? job.route : '/notifications';
           return {
             to: job.token, title: route.startsWith('/admin') ? '글링 관리자' : '글링', body: job.body,
             sound: 'default', channelId: 'gling-activity', ttl: 300,

@@ -16,6 +16,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { isAdminRole } from '@/lib/admin';
+import { registerSecurityDevice } from '@/lib/account-security-device';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { canUseDevPasswordLogin, getKakaoAuthSessionUrl, getOAuthCallbackPath, getOAuthCode } from '@/lib/kakao-auth';
 import { CONTACT_EMAIL } from '@/lib/legal-documents';
@@ -395,6 +396,17 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     : null;
   const trustLevel: TrustLevel = activeProfile?.verification_level ?? 1;
   const level: Level = session && !signingIn && activeProfile?.account_status === 'active' && activeProfile.ai_safety_consent_at ? 1 : 0;
+
+  const securityLogin = level === 1 && session ? `${session.user.id}:${session.user.last_sign_in_at ?? ''}` : null;
+  const registeredSecurityLogin = useRef<string | null>(null);
+  useEffect(() => {
+    if (!securityLogin || !activeProfile?.id || registeredSecurityLogin.current === securityLogin) return;
+    registeredSecurityLogin.current = securityLogin;
+    // Registration must not prevent login; the existing worker handles unregistered sessions.
+    void registerSecurityDevice(supabase, activeProfile.id, AsyncStorage).catch(() => {
+      if (registeredSecurityLogin.current === securityLogin) registeredSecurityLogin.current = null;
+    });
+  }, [activeProfile?.id, securityLogin]);
 
   useEffect(() => {
     if (!activeProfile?.id || level === 0) return;

@@ -2,7 +2,7 @@ import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView, Switch } from '@/components/analytics-controls';
 import { Redirect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, AppState, DeviceEventEmitter, Linking, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, AppState, DeviceEventEmitter, Linking, Platform, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -94,7 +94,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
   </> : <GlingLoader color={theme.accent} />}</View>;
   return <SafeAreaView key={fontScale} style={styles.container} edges={['bottom']}>
     <ScrollView analyticsId="app_profile_notifications.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-      <ThemedText type="small" themeColor="textSecondary">받고 싶은 소식만 골라주세요. 아래 설정은 앱의 알림 목록에도 적용돼요.</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">받고 싶은 소식만 골라주세요. 소식 종류 설정은 앱의 알림 목록에도 적용돼요.</ThemedText>
       {saveError && <ThemedText accessibilityRole="alert" type="small" themeColor="accent">설정을 저장하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.</ThemedText>}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <ToggleRow label="휴대폰 푸시 알림" value={preferences.push_enabled} onChange={value => void save({ push_enabled: value })} disabled={busy || (!pushConfigured && !preferences.push_enabled)} />
@@ -105,12 +105,24 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
       </View>
       <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">나의 활동</ThemedText>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-        {NOTIFICATION_CATEGORIES.slice(0, 6).map(item => <ToggleRow key={item.key} label={item.label} value={preferences[item.key]} onChange={value => void save({ [item.key]: value })} disabled={busy} />)}
+        {NOTIFICATION_CATEGORIES.slice(0, 7).map(item => <ToggleRow key={item.key} label={item.label} value={preferences[item.key]} onChange={value => void save({ [item.key]: value })} disabled={busy} />)}
       </View>
-      <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">관심사와 우리 동네</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">{cityName}에 올라오는 새 글과 모임을 알려드려요. 이사 후 선호 지역을 바꾸면 알림 지역도 함께 바뀝니다.</ThemedText>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-        {NOTIFICATION_CATEGORIES.slice(6).map(item => <ToggleRow key={item.key} label={item.label} value={preferences[item.key]} onChange={value => void save({ [item.key]: value })} disabled={busy} />)}
+        <ToggleRow label="메시지 미리보기" value={preferences.message_preview ?? false} onChange={value => void save({ message_preview: value })} disabled={busy} />
+        <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{preferences.message_preview
+          ? '잠금 화면에 보낸 사람과 짧은 메시지가 표시돼요. 사진은 사진 안내만 보여요.'
+          : '보낸 사람과 내용 없이 “메시지가 도착했습니다”만 표시돼요.'}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.note}>변경 후 발송되는 푸시부터 적용돼요.</ThemedText>
+      </View>
+      <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">관심사와 내 도시</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{cityName}의 맛집·레스토랑, 가볼 만한 곳·행사와 새 글·모임 소식을 골라 받을 수 있어요. 이사 후 선호 지역을 바꾸면 알림 지역도 함께 바뀝니다.</ThemedText>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+        {NOTIFICATION_CATEGORIES.slice(7, 13).map(item => <ToggleRow key={item.key} label={item.label} value={preferences[item.key]} onChange={value => void save({ [item.key]: value })} disabled={busy} />)}
+      </View>
+      <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">비즈니스와 계정</ThemedText>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+        {NOTIFICATION_CATEGORIES.slice(13).map(item => <ToggleRow key={item.key} label={item.label} value={preferences[item.key]} onChange={value => void save({ [item.key]: value })} disabled={busy} />)}
+        <ThemedText type="small" themeColor="textSecondary" style={styles.note}>새 소식은 저장한 비즈니스에서 “새 소식 받기”를 켠 경우에만 받아요.</ThemedText>
       </View>
       <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">관심 태그</ThemedText>
       <View style={styles.tags}>{TAGS.map(tag => <Pressable analyticsId="app_profile_notifications.pressable.3" key={tag.id} accessibilityRole="checkbox" accessibilityState={{ checked: tagIds.includes(tag.id), disabled: busy }}
@@ -140,7 +152,7 @@ function ToggleRow({ label, value, onChange, disabled }: { label: string; value:
   const { play } = useInteractionFeedback();
   return <View style={styles.row}>
     <ThemedText style={styles.label}>{label}</ThemedText>
-    <Switch analyticsId="app_profile_notifications.switch.1" accessibilityLabel={label} value={value} disabled={disabled} onValueChange={next => { play('selection'); onChange(next); }}
+    <Switch analyticsId="app_profile_notifications.switch.1" accessibilityLabel={label} hitSlop={{ top: 8, bottom: 8 }} style={styles.switch} value={value} disabled={disabled} onValueChange={next => { play('selection'); onChange(next); }}
       {...(!pushSupported ? { activeThumbColor: theme.accentInk } : {})}
       thumbColor={theme.accentInk}
       trackColor={{ false: theme.line, true: theme.accent }} ios_backgroundColor={theme.line} />
@@ -153,6 +165,7 @@ const styles = StyleSheet.create({
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.three },
   card: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 14, paddingHorizontal: Spacing.three },
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 56, paddingVertical: Spacing.two },
+  switch: { minHeight: Platform.OS === 'web' ? 44 : undefined, minWidth: 44 },
   label: { flex: 1 }, note: { paddingBottom: Spacing.two }, button: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, tag: { minHeight: 44, borderRadius: 22, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, justifyContent: 'center' },
   input: { minHeight: 48, borderWidth: 1, borderRadius: 10, padding: Spacing.three, fontSize: 16 },
