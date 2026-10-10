@@ -5,7 +5,10 @@ select plan(5);
 select has_table('public', 'safety_review_queue', 'safety review queue exists');
 select results_eq(
   $$select count(*)::integer from public.safety_review_queue$$,
-  $$select (select count(*) from public.posts)::integer + (select count(*) from public.comments)::integer + (select count(*) from public.messages)::integer$$,
+  $$select (select count(*) from public.posts)::integer + (select count(*) from public.comments)::integer + (select count(*) from public.messages)::integer
+    + (select count(*) from private.chilling_profiles)::integer
+    + (select count(*) from private.chilling_applications)::integer
+    + (select count(*) from private.merchant_reviews)::integer$$,
   'all existing user content is queued'
 );
 select ok(

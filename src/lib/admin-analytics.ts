@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-export type AnalyticsFilters = { days: 7 | 30 | 90; city: string | null; tier: 'all' | 'free' | 'plus' | 'premium'; includeInternal: boolean; offset: number };
+export type AnalyticsFilters = { days: 7 | 30 | 90; city: string | null; tier: 'all' | 'free' | 'plus' | 'pro' | 'premium'; includeInternal: boolean; offset: number };
 export type Breakdown = { key: string; count: number };
 export type AdminAnalytics = {
   behavior?: {

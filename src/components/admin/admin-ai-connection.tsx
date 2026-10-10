@@ -39,5 +39,5 @@ export function AdminAiConnection() {
     } catch { setMessage('AI 연결을 열지 못했습니다. 2차 인증과 이 Mac의 관리자 서버 연결을 확인해 주세요.'); play('warning'); }
     finally { setBusy(false); }
   }
-  return <div className="merchant-ai"><button type="button" disabled={busy} aria-pressed={connected} onClick={() => void toggle()}>{busy ? '연결 확인 중…' : connected ? 'AI 연결 해제' : 'AI 연결'}</button><small role="status">{message || '업체 관리 API · 인증한 관리자 세션으로 AI가 작업합니다.'}</small></div>;
+  return <div className="merchant-ai"><button type="button" disabled={busy} aria-pressed={connected} onClick={() => void toggle()}>{busy ? '연결 확인 중…' : connected ? 'AI 연결 해제' : 'AI 연결'}</button><small role="status">{message || '벤더 관리 API · 인증한 관리자 세션으로 AI가 작업합니다.'}</small></div>;
 }

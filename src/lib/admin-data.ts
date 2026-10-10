@@ -64,7 +64,7 @@ export type AdminReport = {
   id: string;
   reporter_id: string;
   reported_user_id: string;
-  target_type: 'user' | 'post' | 'comment' | 'message';
+  target_type: 'user' | 'post' | 'comment' | 'message' | 'merchant_review' | 'merchant_review_reply';
   target_id: string;
   reason_code: string;
   details: string | null;
@@ -73,7 +73,8 @@ export type AdminReport = {
   resolved_at: string | null;
   source?: 'report' | 'block';
   blocked_at?: string | null;
-  evidence?: { title?: string; body?: string; nickname?: string; image_paths?: string[]; created_at?: string } | null;
+  evidence?: { title?: string; body?: string | null; nickname?: string; image_paths?: string[]; created_at?: string;
+    merchant_id?: string; merchant_name?: string; score?: number; status?: string; updated_at?: string; author_id?: string } | null;
 };
 
 export type AdminModerationAction = {
@@ -85,7 +86,7 @@ export type AdminModerationAction = {
   created_at: string;
 };
 
-export type AdminSafetyTargetType = 'post' | 'comment' | 'message' | 'chilling_profile' | 'chilling_application';
+export type AdminSafetyTargetType = 'post' | 'comment' | 'message' | 'chilling_profile' | 'chilling_application' | 'merchant_review' | 'merchant_review_reply';
 
 export type AdminSafetyReview = {
   id: number;
@@ -441,6 +442,41 @@ export async function loadAdminChillingContent(client: SupabaseClient, targetTyp
   const result = await client.rpc('get_admin_chilling_content', { p_target_type: targetType, p_target_id: targetId });
   if (result.error) throw result.error;
   return result.data;
+}
+
+export type AdminMerchantReviewContent = {
+  authorId: string; reviewKind: 'usage' | 'employment'; text: string; merchantId: string; merchantName: string; score: number; body: string | null;
+  status: 'published' | 'removed'; createdAt: string; updatedAt: string;
+  receiptPath: string | null; receiptStatus: 'none' | 'pending' | 'verified' | 'rejected'; receiptReviewedAt: string | null; receiptReviewNote: string | null;
+};
+export async function loadAdminMerchantReviewContent(client: SupabaseClient, targetId: string): Promise<AdminMerchantReviewContent | null> {
+  const result = await client.rpc('get_admin_merchant_review_content', { p_target_id: targetId });
+  if (result.error) throw result.error;
+  return result.data;
+}
+export type AdminMerchantReviewReplyContent = {
+  authorId: string; nickname: string; text: string; merchantId: string; merchantName: string; reviewId: string;
+  body: string; status: 'published' | 'removed'; createdAt: string; updatedAt: string;
+};
+export async function loadAdminMerchantReviewReplyContent(client: SupabaseClient, targetId: string): Promise<AdminMerchantReviewReplyContent | null> {
+  const result = await client.rpc('get_admin_merchant_review_reply_content', { p_target_id: targetId });
+  if (result.error) throw result.error;
+  return result.data;
+}
+export async function loadAdminMerchantReceiptUrl(client: SupabaseClient, path: string): Promise<string> {
+  const result = await client.storage.from('merchant-review-receipts').createSignedUrl(path, 300);
+  if (result.error) throw result.error;
+  if (!result.data?.signedUrl) throw new Error('MERCHANT_RECEIPT_UNAVAILABLE');
+  return result.data.signedUrl;
+}
+export async function setAdminMerchantReviewReceipt(client: SupabaseClient, targetId: string, review: Pick<AdminMerchantReviewContent, 'receiptPath' | 'updatedAt'>, verified: boolean, note: string): Promise<AdminMerchantReviewContent> {
+  const noteLength = Array.from(note.trim()).length;
+  if (!review.receiptPath || noteLength < 5 || noteLength > 1000) throw new Error('MERCHANT_REVIEW_RECEIPT_CONFIRMATION_REQUIRED');
+  const result = await client.rpc('set_admin_merchant_review_receipt', { p_target_id: targetId, p_receipt_path: review.receiptPath, p_updated_at: review.updatedAt, p_verified: verified, p_note: note.trim() });
+  return dataOrThrow<AdminMerchantReviewContent>(result);
+}
+export async function loadAdminMerchantReceiptReviews(client: SupabaseClient, offset = 0): Promise<{ reviews: (AdminMerchantReviewContent & { id: string; nickname: string })[]; has_more: boolean }> {
+  return dataOrThrow(await client.rpc('get_admin_merchant_receipt_reviews', { p_offset: offset }));
 }
 
 // Audited bundle (content, author identity as stored, session IPs, surrounding conversation) for a

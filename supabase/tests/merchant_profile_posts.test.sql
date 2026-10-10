@@ -14,14 +14,17 @@ update public.profiles set account_status='suspended' where id='13900000-0000-40
 insert into private.merchants(id,name,city_id,contact,status,consent,consent_note,owner_id,owner_verified_at) values
 ('13910000-0000-4000-8000-000000000001','분류 검사 업체','vancouver','private contact sentinel','trial','granted','private consent sentinel','13900000-0000-4000-8000-000000000001',now()),
 ('13910000-0000-4000-8000-000000000002','분류 다른 업체','vancouver','','paid','granted','검사 허가','13900000-0000-4000-8000-000000000005',now()),
-('13910000-0000-4000-8000-000000000003','분류 중단 업체','vancouver','','paused','granted','검사 허가','13900000-0000-4000-8000-000000000001',now()),
-('13910000-0000-4000-8000-000000000004','분류 철회 업체','vancouver','','trial','revoked','검사 철회','13900000-0000-4000-8000-000000000001',now()),
+('13910000-0000-4000-8000-000000000003','분류 중단 업체','vancouver','','trial','granted','검사 허가','13900000-0000-4000-8000-000000000001',now()),
+('13910000-0000-4000-8000-000000000004','분류 철회 업체','vancouver','','trial','granted','검사 철회','13900000-0000-4000-8000-000000000001',now()),
 ('13910000-0000-4000-8000-000000000005','분류 대기 업체','vancouver','','lead','granted','검사 허가','13900000-0000-4000-8000-000000000001',now()),
 ('13910000-0000-4000-8000-000000000006','분류 미동의 업체','vancouver','','trial','pending','','13900000-0000-4000-8000-000000000001',now()),
 ('13910000-0000-4000-8000-000000000007','분류 미연결 업체','vancouver','','trial','granted','검사 허가','13900000-0000-4000-8000-000000000001',now()),
 ('13910000-0000-4000-8000-000000000008','분류 삭제글 업체','vancouver','','trial','granted','검사 허가','13900000-0000-4000-8000-000000000001',now()),
 ('13910000-0000-4000-8000-000000000009','분류 비활성 업체','vancouver','','trial','granted','검사 허가','13900000-0000-4000-8000-000000000001',now()),
 ('13910000-0000-4000-8000-000000000010','분류 종료채용 업체','vancouver','','trial','granted','검사 허가','13900000-0000-4000-8000-000000000001',now());
+
+-- Read/pagination fixtures need the existing grandfathered trial to be current; new-tier quota boundaries are checked in membership_business_usage.
+update private.merchants set trial_ends_at=current_date+1 where id='13910000-0000-4000-8000-000000000001';
 
 insert into public.posts(id,city_id,author_id,tag_id,title,body,status,created_at,kind,listing_status,expires_at)
 select ('13920000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,'vancouver',
@@ -60,6 +63,9 @@ select ('13920000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,
   ('13910000-0000-4000-8000-'||lpad(merchant_no::text,12,'0'))::uuid,null
 from(values(1,1),(2,1),(3,1),(4,1),(5,1),(6,1),(7,1),(8,1),(9,1),(10,1),(11,1),(12,1),(13,1),(16,1),(17,1),
  (15,2),(20,3),(21,4),(22,5),(23,6),(24,8),(25,9),(26,10))v(n,merchant_no);
+-- Create links while operational, then exercise the same paused/revoked read boundaries.
+update private.merchants set status='paused' where id='13910000-0000-4000-8000-000000000003';
+update private.merchants set consent='revoked' where id='13910000-0000-4000-8000-000000000004';
 update private.merchant_posts set original_url=case right(post_id::text,3)
   when '001' then 'https://cafe.example.com/' when '002' then 'https://www.instagram.com/test_cafe/'
   when '003' then 'https://cafe.example.com/' else 'https://hidden.example.com/' end
@@ -230,7 +236,7 @@ reset role;
 -- flag prevents a client from requesting a forbidden next page.
 insert into public.posts(id,city_id,author_id,tag_id,title,body,status,created_at)
 select ('13920000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,'vancouver','13900000-0000-4000-8000-000000000001',1,
- '분류 끝페이지 검사 '||n,'public limit fixture','published',now()-interval '30 days'+(n||' seconds')::interval from generate_series(100,10096)n;
+ '분류 끝페이지 검사 '||n,'public limit fixture '||n,'published',now()-interval '30 days'+(n||' seconds')::interval from generate_series(100,10096)n;
 insert into private.merchant_posts(post_id,merchant_id,original_url)
 select ('13920000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,'13910000-0000-4000-8000-000000000001',null from generate_series(100,10096)n;
 set local role anon;

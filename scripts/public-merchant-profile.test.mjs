@@ -3,7 +3,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
-import { publicMerchantId } from '../src/lib/public-web.ts';
+import { publicMerchantId, publicWebTarget } from '../src/lib/public-web.ts';
+import { merchantPhoneUrl, merchantMapsUrl } from '../src/lib/merchant-conveniences.ts';
 
 const merchantId = '11111111-1111-4111-8111-111111111111';
 const postId = '22222222-2222-4222-8222-222222222222';
@@ -32,7 +33,8 @@ function app(file = '../src/components/public-web/merchant-profile.tsx', { rpc =
     'expo-asset': { Asset: { fromModule: () => ({ uri: 'local-logo' }) } },
     '@/lib/interaction-feedback': { InteractionFeedbackProvider: 'FeedbackProvider', useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/lib/public-web-client': { publicWebClient: { rpc: async (name, args) => { calls.push([name, JSON.parse(JSON.stringify(args))]); return rpc(name, args); } } },
-    '@/lib/merchant-profile': { loadMerchantProfile: loadProfile, loadMerchantProfilePosts: (...args) => { postCalls.push(args.slice(1)); return loadPosts(...args); } }, '@/lib/public-web': { publicMerchantId, publicWebTarget: () => 'gling://' },
+    '@/lib/merchant-profile': { loadMerchantProfile: loadProfile, loadMerchantProfilePosts: (...args) => { postCalls.push(args.slice(1)); return loadPosts(...args); } }, '@/lib/public-web': { publicMerchantId, publicWebTarget },
+    '@/lib/merchant-source': { merchantPhoneUrl, merchantMapsUrl },
     '@/constants/theme': { WebNightColors: {} }, '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }], TAGS: [] },
     '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.example' }, '@/i18n/ko': { t: {} },
     './analytics': { useReaderAnalytics() {} }, './merchant-profile': { PublicMerchantProfile: 'CompanyProfile', PublicMerchantProfileLink: 'CompanyLink' },
@@ -48,6 +50,39 @@ const text = root => nodes(root).flatMap(node => [node.props?.children].flat().f
 const button = (root, label) => nodes(root).find(node => node.type === 'button' && (node.props['aria-label'] === label || text(node).replace(/[ \t]+/g, ' ').includes(label)));
 const tabs = root => nodes(root).filter(node => node.props.role === 'tab');
 const component = (root, name) => nodes(root).find(node => typeof node.type === 'function' && node.type.name === name);
+
+test('public usage reply copies only safe fields and expands alongside the original customer text', async () => {
+  const reply = { body: '감사합니다. 다음 방문에도 정성껏 준비할게요.', created_at: '2026-10-09T18:00:00Z', updated_at: '2026-10-09T18:00:00Z', actorId: 'PRIVATE_OWNER', note: 'PRIVATE_NOTE' };
+  const view = app(undefined, { rpc: async () => ({ data: { ...page, reviews: [{ ...review, reply, receipt_review_note: 'PRIVATE_REASON' }] } }) });
+  const read = await view.exports.loadPublicMerchantReviews({ rpc: async () => ({ data: { ...page, reviews: [{ ...review, reply }] } }) }, postId);
+  assert.equal(read.reviews[0].reply?.body, reply.body);
+  assert.ok(!JSON.stringify(read).includes('PRIVATE_'));
+  view.render('PublicReviews', { merchantId, postId }); await settle();
+  let root = view.render('PublicReviews', { merchantId, postId });
+  button(root, `${review.nickname}의 8.5점 인증 이용 리뷰 전체 보기`).props.onClick();
+  root = view.render('PublicReviews', { merchantId, postId });
+  assert.ok(text(root).includes(review.body) && text(root).includes(reply.body));
+  assert.ok(!JSON.stringify(root).includes('PRIVATE_'));
+  const employment = await view.exports.loadPublicMerchantReviews({ rpc: async () => ({ data: { ...page, review_kind: 'employment', reviews: [{ ...review, review_kind: 'employment', reply }] } }) }, postId, 0, 'employment');
+  assert.ok(!employment.reviews[0].reply);
+});
+
+test('public contact controls use actual registered phone/hours/address and a company app destination', async () => {
+  const registered = { ...profile, public_phone: '+1 (604) 555-0101', business_hours: '월–금 09:00–18:00\n토·일 휴무' };
+  const view = app(undefined, { loadProfile: async () => registered });
+  view.render('ProfilePage', { merchantId }); await settle();
+  let root = view.render('ProfilePage', { merchantId });
+  const appLink = nodes(root).find(node => node.type === 'a' && node.props.href === `gling://company/${merchantId}`);
+  assert.ok(appLink); appLink.props.onClick(); assert.ok(view.feedback.includes('selection'));
+  button(root, '소개').props.onClick(); root = view.render('ProfilePage', { merchantId });
+  assert.ok(text(root).includes(registered.business_hours));
+  assert.ok(nodes(root).some(node => node.type === 'a' && node.props.href === 'tel:+16045550101'));
+  assert.ok(nodes(root).some(node => node.type === 'a' && node.props.href === merchantMapsUrl(profile.address)));
+  const unsafe = app(undefined, { loadProfile: async () => ({ ...profile, public_phone: 'javascript:alert(1)', business_hours: '' }) });
+  unsafe.render('ProfilePage', { merchantId }); await settle();
+  button(unsafe.render('ProfilePage', { merchantId }), '소개').props.onClick();
+  assert.ok(!nodes(unsafe.render('ProfilePage', { merchantId })).some(node => node.props.href?.startsWith('javascript:')));
+});
 
 test('public review reads copy only verified public fields, preserve real aggregates and advance past filtered rows', async () => {
   const view = app(), calls = [];

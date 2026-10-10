@@ -23,3 +23,15 @@ test('merchant safety content preserves missing/deleted results and propagates s
   assert.equal(await worker.loadContent({ rpc: async () => ({ data: null, error: null }) }, 'merchant_review', 'gone'), null);
   await assert.rejects(worker.loadContent({ rpc: async () => ({ data: null, error: new Error('SERVICE_ROLE_REQUIRED') }) }, 'merchant_review', 'private'), /SERVICE_ROLE_REQUIRED/);
 });
+
+test('company replies use their own protected content RPC and are attributed to the replying actor', async () => {
+  const reply = { authorId: 'actual-merchant-operator', text: '업체 답변\n답변 원문', body: '답변 원문', reviewId: 'customer-review' };
+  const content = await worker.loadContent({ rpc: async (name, args) => {
+    assert.equal(name, 'get_merchant_review_reply_safety_content');
+    assert.deepEqual(JSON.parse(JSON.stringify(args)), { p_target_id: 'customer-review' });
+    return { data: reply };
+  } }, 'merchant_review_reply', 'customer-review');
+  assert.equal(content.authorId, 'actual-merchant-operator');
+  assert.equal(content.text, reply.text);
+  await assert.rejects(worker.loadContent({ rpc: async () => ({ error: new Error('SERVICE_ROLE_REQUIRED') }) }, 'merchant_review_reply', 'private'), /SERVICE_ROLE_REQUIRED/);
+});

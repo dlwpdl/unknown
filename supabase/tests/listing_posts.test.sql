@@ -15,11 +15,11 @@ select throws_ok($$select public.create_post('vancouver',(select id from public.
 select throws_ok($$select public.create_post('vancouver',(select id from public.tags where slug='life'),'이야기','본문','{}','{}',null,'story',5)$$,'P0001','INVALID_POST_KIND','stories cannot carry a price');
 select throws_ok($$select public.bump_post((select id from public.posts where title='소파 팝니다'))$$,'P0001','BUMP_COOLDOWN','fresh listing is inside the bump cooldown');
 reset role;
-update public.posts set created_at=now()-interval '25 hours', sort_at=now()-interval '25 hours' where title='소파 팝니다';
+update public.posts set created_at=now()-interval '49 hours', sort_at=now()-interval '49 hours' where title='소파 팝니다';
 set local role authenticated;
 select lives_ok($$select public.bump_post((select id from public.posts where title='소파 팝니다'))$$,'bump works after the cooldown');
 select is((select bump_count from public.posts where title='소파 팝니다'),1,'bump increments');
-select ok((select created_at < now()-interval '24 hours' and sort_at > now()-interval '1 minute' from public.posts where title='소파 팝니다'),'bump moves sort_at but not created_at');
+select ok((select created_at < now()-interval '48 hours' and sort_at > now()-interval '1 minute' from public.posts where title='소파 팝니다'),'bump moves sort_at but not created_at');
 select lives_ok($$select public.create_post('vancouver',(select id from public.tags where slug='life'),'물건 '||n,'본문','{}','{}',null,'listing',null) from generate_series(2,5) n$$,'free tier fills five alive listings');
 select throws_ok($$select public.create_post('vancouver',(select id from public.tags where slug='life'),'물건 6','본문','{}','{}',null,'listing',null)$$,'P0001','LISTING_LIMIT_REACHED','sixth alive listing is refused');
 select lives_ok($$select public.set_listing_status((select id from public.posts where title='소파 팝니다'),'closed')$$,'author closes a listing');

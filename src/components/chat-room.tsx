@@ -1,5 +1,5 @@
 import { GlingLoader } from '@/components/gling-loader';
-import { Pressable, ScrollView, FlatList } from '@/components/analytics-controls';
+import { Pressable, FlatList } from '@/components/analytics-controls';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -22,7 +22,7 @@ import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { chatDateLabel, chatMessageTime, firstUnreadMessageIndex, showChatMessageTime } from '@/lib/chat-details';
-import { blockUser, endConversation, getCommunityActionError, loadListingReviewState, writeListingReview, type ListingReviewState, isContentRejected, loadChatReadPosition, loadConversationMessages, loadConversationMessagesByIds, loadMessageReactions, markChatRead, mergeChatMessages, respondDirectConversation, sendChatAttachment, sendDirectMessage, setMessageReaction, uploadChatImage, type ChatMessageRecord, type ConversationPreview, type MessageReaction, type ReportTarget } from '@/lib/community-data';
+import { blockUser, endConversation, loadListingReviewState, writeListingReview, type ListingReviewState, isContentRejected, loadChatReadPosition, loadConversationMessages, loadConversationMessagesByIds, loadMessageReactions, markChatRead, mergeChatMessages, sendChatAttachment, sendDirectMessage, setMessageReaction, uploadChatImage, type ChatMessageRecord, type ConversationPreview, type MessageReaction, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 
@@ -92,7 +92,6 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const [notice, setNotice] = useState<string | null>(null);
   const [report, setReport] = useState<ReportSelection | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
-  const [confirmAccept, setConfirmAccept] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [hasOlder, setHasOlder] = useState(false);
   const [review, setReview] = useState<ListingReviewState | null>(null);
@@ -195,7 +194,6 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     if (previous && previous.id === messageId && at - previous.at < 320) { lastTap.current = null; void toggleHeart(messageId); }
   };
   const group = conversation.kind === 'group';
-  const requestedByMe = conversation.requesterId === currentUserId;
   const title = group ? conversation.title : conversation.otherUser.nickname;
   const verificationNotice = !group && ![2, 3].includes(conversation.otherUser.verificationLevel)
     ? <View accessible style={[styles.safetyNotice, { backgroundColor: theme.backgroundElement }]}>
@@ -267,26 +265,6 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     return () => { active = false; clearTimeout(timer); pending.clear(); loadingRequest.current += 1; snapshot.current = null; appState.remove(); void supabase.removeChannel(channel); };
   }, [access.read, animateNewMessage, conversation.id, currentUserId, onChanged, refreshMessages, valid]);
 
-  const respond = async (response: 'accepted' | 'rejected' | 'cancelled') => {
-    if (processing.current || status !== 'pending' || !valid()) return;
-    processing.current = true; setBusy(true); setError(null);
-    try {
-      await respondDirectConversation(supabase, conversation.id, response);
-      if (!valid()) return;
-      play(response === 'accepted' ? 'message' : 'warning');
-      setResolvedStatus(response === 'accepted' ? 'active' : response);
-      setConfirmAccept(false);
-      await onChanged();
-      if (valid() && response !== 'accepted') onClose();
-    } catch (failure) {
-      if (!valid()) return;
-      play('warning');
-      const code = getCommunityActionError(failure);
-      const message = code ? t.actionErrors[code] : null;
-      setError(message ? `${message.title} ${message.body}` : t.chat.startErrorBody);
-      await onChanged();
-    } finally { processing.current = false; if (valid()) setBusy(false); }
-  };
   const end = async () => {
     if (processing.current || !valid()) return;
     processing.current = true; setBusy(true); setError(null);
@@ -477,9 +455,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       </View>
     </View>}
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      {status === 'pending' ? <ScrollView analyticsId="components_chat-room.scrollview.1" contentContainerStyle={styles.request}>{verificationNotice}<ThemedText type="smallBold">{requestedByMe ? t.chat.requestSent : t.chat.receivedRequest}</ThemedText><ThemedText type="small" themeColor="textSecondary">{t.chat.pendingBody}</ThemedText><ThemedText type="small">{requestedByMe ? t.chat.requesterRisk : t.chat.acceptBody}</ThemedText>
-        {requestedByMe ? <RoomAction label={t.chat.cancelRequest} onPress={() => void respond('cancelled')} disabled={busy} /> : <><RoomAction label={confirmAccept ? '확인하고 수락' : t.chat.accept} onPress={() => confirmAccept ? void respond('accepted') : setConfirmAccept(true)} disabled={busy} primary />{confirmAccept && <ThemedText type="small" themeColor="accent">내 대화 자리 1개를 사용해요. 양쪽에 빈자리가 있을 때 수락할 수 있어요.</ThemedText>}<RoomAction label={t.chat.reject} onPress={() => void respond('rejected')} disabled={busy} /></>}
-      </ScrollView> : access.read ? loading && messages.length === 0 ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} /></View> : <View style={styles.messageList}><FlatList ref={messageList} analyticsId="components_chat-room.flatlist.1" data={messages} keyExtractor={(message) => message.id} contentContainerStyle={styles.scroll}
+      {access.read ? loading && messages.length === 0 ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} /></View> : <View style={styles.messageList}><FlatList ref={messageList} analyticsId="components_chat-room.flatlist.1" data={messages} keyExtractor={(message) => message.id} contentContainerStyle={styles.scroll}
         onViewableItemsChanged={trackVisibleMessages} viewabilityConfig={viewability}
         onScroll={onMessageScroll} scrollEventThrottle={32} maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
         onLayout={() => { if (initialScroll.current && followingLatest.current) requestAnimationFrame(() => messageList.current?.scrollToEnd({ animated: false })); }}

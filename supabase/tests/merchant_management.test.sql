@@ -74,7 +74,7 @@ select is((select count(*) from merchant_ga4_requests),2::bigint,'GA4 receives o
 select is((select count(*) from merchant_ga4_requests where payload->'events'->0->>'name'='merchant_account_click'),2::bigint,'fixed GA4 click event');
 select is((select count(*) from merchant_ga4_requests where payload->'events'->0->'params' @> '{"merchant_id":"11720000-0000-0000-0000-000000000001","merchant_name":"동네 카페","post_id":"11710000-0000-0000-0000-000000000001","city_id":"merchant-test"}'),2::bigint,'merchant context comes from stored relationship');
 select ok(exists(select 1 from merchant_ga4_requests where payload->'events'->0->'params'->>'source_platform'='ios') and exists(select 1 from merchant_ga4_requests where payload->'events'->0->'params'->>'source_platform'='web'),'native and public clicks share measurement');
-select is((select count(*) from merchant_ga4_requests where payload->>'client_id' ~ '^[a-f0-9]{64}$' and payload->'consent' @> '{"ad_user_data":"DENIED","ad_personalization":"DENIED"}'),2::bigint,'temporary sessions hashed and Google ad use denied');
+select is((select count(*) from merchant_ga4_requests where payload->>'client_id' ~ '^[0-9]{1,10}\.[0-9]{1,10}$' and payload->'consent' @> '{"ad_user_data":"DENIED","ad_personalization":"DENIED"}'),2::bigint,'temporary sessions anonymized with GA4 numeric client IDs and Google ad use denied');
 select ok(not exists(select 1 from merchant_ga4_requests where payload::text ~ '11700000|qa-merchant|example.com|담당자|user_id|email|address|original_url'),'GA4 excludes member identity, contacts, source URL and raw session');
 delete from vault.secrets where name='gling_merchant_ga4_api_secret';
 select set_config('request.jwt.claims','{"role":"anon"}',true);

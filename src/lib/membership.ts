@@ -1,10 +1,30 @@
-export type MembershipTier = 'free' | 'plus' | 'premium';
+import { membershipProductIds } from '../../supabase/functions/_shared/membership.ts';
+
+export type MembershipTier = 'free' | 'plus' | 'pro' | 'premium';
+export type MembershipKind = 'general' | 'business';
 
 export const MEMBERSHIP_LIMITS = {
-  free: { meetups: 2, conversations: 2 },
-  plus: { meetups: 4, conversations: 4 },
-  premium: { meetups: 7, conversations: 7 },
+  free: { meetups: 3, conversations: null },
+  plus: { meetups: 5, conversations: null },
+  pro: { meetups: 10, conversations: null },
+  premium: { meetups: 20, conversations: null },
 } as const;
+
+export const GENERAL_BUMP_HOURS = { free: 48, plus: 36, pro: 30, premium: 24 } as const;
+export const BUSINESS_LIMITS = {
+  free: { posts: 4, bumps: 0, bumpCooldownHours: 72, managedPosts: 0, managedBumps: 0, reports: 0 },
+  plus: { posts: 12, bumps: 8, bumpCooldownHours: 72, managedPosts: 0, managedBumps: 0, reports: 0 },
+  pro: { posts: 30, bumps: 16, bumpCooldownHours: 60, managedPosts: 0, managedBumps: 0, reports: 0 },
+  premium: { posts: 30, bumps: 24, bumpCooldownHours: 48, managedPosts: 4, managedBumps: 8, reports: 1 },
+} as const;
+
+export type BusinessMembershipSnapshot = {
+  merchantId: string; tier: MembershipTier; expiresAt: string | null; productId: string | null;
+  store: string | null; willRenew: boolean | null; canPurchase: boolean;
+  postLimit: number | null; bumpLimit: number; bumpCooldownHours?: number; postsUsed: number; bumpsUsed: number;
+  managedPostLimit: number; managedBumpLimit: number; managedPostsUsed: number; managedBumpsUsed: number;
+  reportLimit: number; reportsUsed: number; resetsAt: string; nextBumpAt: string | null;
+};
 
 export type MembershipSnapshot = {
   tier: MembershipTier;
@@ -12,9 +32,14 @@ export type MembershipSnapshot = {
   store: string | null;
   willRenew: boolean | null;
   productId: string | null;
+  planVersion?: number;
+  bumpCooldownHours?: number;
+  nextBumpAt?: string | null;
+  billingPolicyVersion?: number;
+  businessSubscription?: Pick<MembershipSnapshot, 'tier' | 'expiresAt' | 'productId' | 'store' | 'willRenew'> & { merchantId: string | null };
   postLimit: number;
   meetupLimit: number;
-  conversationLimit: number;
+  conversationLimit: number | null;
   postsUsed: number;
   meetupsUsed: number;
   conversationsUsed: number;
@@ -23,21 +48,30 @@ export type MembershipSnapshot = {
   meetupSlotsAvailable: number;
   meetupUnlocksAt: string[];
   conversationSlotsLocked: number;
-  conversationSlotsAvailable: number;
+  conversationSlotsAvailable: number | null;
   conversationUnlocksAt: string[];
 };
 
 export type MembershipOffer = {
   id: string;
-  tier: 'plus' | 'premium';
+  tier: 'plus' | 'pro' | 'premium';
+  kind?: MembershipKind;
+  planVersion?: 2;
   period: 'month' | 'year';
   price: string;
   productId: string;
 };
 
 export function membershipOffer(item: { identifier: string; product: { identifier: string; priceString: string; subscriptionPeriod: string | null } }): MembershipOffer | null {
+  const current = /^(general|business)_(plus|pro|premium)_monthly$/.exec(item.identifier);
+  if (current) {
+    const kind = current[1] as MembershipKind, tier = current[2] as MembershipOffer['tier'];
+    if (!membershipProductIds(kind, tier).includes(item.product.identifier) || !item.product.priceString || item.product.subscriptionPeriod !== 'P1M') return null;
+    return { id: item.identifier, kind, planVersion: 2, tier, period: 'month', price: item.product.priceString, productId: item.product.identifier };
+  }
   const match = /^(plus|premium)_(monthly|yearly)$/.exec(item.identifier);
   if (!match || !item.product.priceString || item.product.subscriptionPeriod !== (match[2] === 'monthly' ? 'P1M' : 'P1Y')) return null;
+  if (/\.v2$|_v2:/.test(item.product.identifier)) return null;
   return { id: item.identifier, tier: match[1] as 'plus' | 'premium', period: match[2] === 'monthly' ? 'month' : 'year', price: item.product.priceString, productId: item.product.identifier };
 }
 

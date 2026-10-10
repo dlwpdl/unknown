@@ -12,31 +12,36 @@ def sql(statement, check=True):
     )
 
 
-users = [str(uuid.uuid4()) for _ in range(5)]
-rooms = [str(uuid.uuid4()) for _ in range(4)]
+users = [str(uuid.uuid4()) for _ in range(2)]
 ids = ",".join("'" + user + "'" for user in users)
-claims = json.dumps({"sub": users[0], "role": "authenticated"})
 try:
     for index, user in enumerate(users):
         sql(f"insert into auth.users(id,email) values('{user}','{user}@race.invalid'); "
             f"insert into public.profiles(id,nickname,city_id) values('{user}','경쟁검증{user[:8]}','vancouver');")
-    for index, peer in enumerate(users[1:]):
-        low, high = sorted([users[0], peer])
-        sql(f"insert into public.conversations(id,user_low_id,user_high_id,status,requester_id) "
-            f"values('{rooms[index]}','{low}','{high}','{'active' if index < 2 else 'pending'}','{peer}');")
-
-    def accept(room):
+    def start_pair(pair):
+        sender, recipient = pair
+        claims = json.dumps({"sub": sender, "role": "authenticated"})
         return sql(f"begin; set local statement_timeout='10s'; select set_config('request.jwt.claims','{claims}',true); "
-                   f"set local role authenticated; select public.respond_direct_conversation('{room}','accepted'); "
+                   f"set local role authenticated; select public.start_conversation('{recipient}'); "
                    "select pg_sleep(0.3); commit;", check=False)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-        results = list(pool.map(accept, rooms[2:]))
-    assert sum(result.returncode == 0 for result in results) == 1, [result.stderr for result in results]
-    assert any("CONVERSATION_LIMIT_REACHED" in result.stderr for result in results)
+        results = list(pool.map(start_pair, [(users[0], users[1]), (users[1], users[0])]))
+    assert all(result.returncode == 0 for result in results), [result.stderr for result in results]
+    returned = []
+    for result in results:
+        values = []
+        for line in result.stdout.splitlines():
+            try:
+                values.append(str(uuid.UUID(line)))
+            except ValueError:
+                pass
+        assert len(values) == 1, result.stdout
+        returned.append(values[0])
+    assert returned[0] == returned[1], returned
     active = sql(f"select count(*) from public.conversations where '{users[0]}' in(user_low_id,user_high_id) and status='active';").stdout.strip()
-    assert active == "3", active
-    print("PASS: concurrent last-slot acceptance commits once; losing request stays pending.")
+    assert active == "1", active
+    print("PASS: simultaneous direct starts from both sides reuse one immediately active room.")
 finally:
     sql(f"begin; delete from public.notifications where user_id in ({ids}) or actor_id in ({ids}); "
         f"delete from public.conversations where user_low_id in ({ids}) or user_high_id in ({ids}); "

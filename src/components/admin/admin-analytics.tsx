@@ -1,3 +1,4 @@
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Switch, useWindowDimensions, View } from 'react-native';
 
@@ -13,12 +14,13 @@ import { supabase } from '@/lib/supabase';
 import { AdminFilterBar } from './admin-table-controls';
 
 const TABS = { overview: '요약', members: '회원', traffic: '트래픽', behavior: '행동 분석', revenue: '결제·홍보', logs: '운영 로그' } as const;
-const TIERS = { all: '전체 등급', free: '무료', plus: '플러스', premium: '프리미엄' } as const;
+const TIERS = { all: '전체 등급', free: '무료', plus: '플러스', pro:'프로', premium: '프리미엄' } as const;
 const INITIAL_FILTERS: AnalyticsFilters = { days: 30, city: null, tier: 'all', includeInternal: false, offset: 0 };
 
 export function AdminAnalyticsView({ localPreview, onUser, refreshSignal = 0 }: {
   localPreview: boolean; onUser: (id: string) => void; refreshSignal?: number;
 }) {
+  const { play } = useInteractionFeedback();
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [tab, setTab] = useState<keyof typeof TABS>('overview');
   const [retry, setRetry] = useState(0);
@@ -52,11 +54,11 @@ export function AdminAnalyticsView({ localPreview, onUser, refreshSignal = 0 }: 
           <Choices label="조회 기간" values={[7, 30, 90].map((days) => ({ key: String(days), label: `${days}일` }))} selected={String(filters.days)} onSelect={(value) => filter({ days: Number(value) as AnalyticsFilters['days'] })} />
           <Choices label="선호 지역" values={[{ key: '', label: '전체 도시' }, ...CITIES.map((city) => ({ key: city.id, label: city.name }))]} selected={filters.city ?? ''} onSelect={(city) => filter({ city: city || null })} />
           <Choices label="현재 멤버십" values={Object.entries(TIERS).map(([key, label]) => ({ key, label }))} selected={filters.tier} onSelect={(tier) => filter({ tier: tier as AnalyticsFilters['tier'] })} />
-          <View style={styles.switchRow}><Switch value={filters.includeInternal} onValueChange={(includeInternal) => filter({ includeInternal })} accessibilityLabel="목·심사·관리자 계정 포함" trackColor={{ true: Colors.light.accent }} /><ThemedText type="small">목·심사·관리자 계정 포함</ThemedText></View>
+          <View style={styles.switchRow}><Switch value={filters.includeInternal} onValueChange={(includeInternal) => { play('selection'); return filter({ includeInternal }); }} accessibilityLabel="목·심사·관리자 계정 포함" trackColor={{ true: Colors.admin.accent }} /><ThemedText type="small">목·심사·관리자 계정 포함</ThemedText></View>
         </View>
       </AdminFilterBar>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs} accessibilityRole="tablist" accessibilityLabel="분석 메뉴">
-        {Object.entries(TABS).map(([key, label]) => <Pressable key={key} accessibilityRole="tab" aria-selected={key === tab} tabIndex={key === tab ? 0 : -1} {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})} onPress={() => setTab(key as keyof typeof TABS)} style={({ pressed }) => [styles.tab, key === tab && styles.selectedTab, pressed && styles.pressed]}><ThemedText type="smallBold" style={key === tab ? styles.accent : styles.muted}>{label}</ThemedText></Pressable>)}
+        {Object.entries(TABS).map(([key, label]) => <Pressable key={key} accessibilityRole="tab" aria-selected={key === tab} tabIndex={key === tab ? 0 : -1} {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})} onPress={() => { play('selection'); return setTab(key as keyof typeof TABS); }} style={({ pressed }) => [styles.tab, key === tab && styles.selectedTab, pressed && styles.pressed]}><ThemedText type="smallBold" style={key === tab ? styles.accent : styles.muted}>{label}</ThemedText></Pressable>)}
       </ScrollView>
       {localPreview && <Notice title="운영 데이터 미연결" text="로컬 미리보기입니다. 실제 회원·접속·매출 수치는 관리자 로그인 후 표시됩니다." />}
       {loading && <View accessibilityRole="progressbar" accessibilityLabel="분석 데이터 불러오는 중" style={styles.notice}><ThemedText style={styles.muted}>선택한 조건으로 분석하고 있어요.</ThemedText></View>}
@@ -196,11 +198,13 @@ function DataTable({ headers, rows }: { headers: string[]; rows: { key: string; 
 }
 
 function UserLink({ id, nickname, onUser }: { id: string; nickname: string; onUser: (id: string) => void }) {
-  return <Pressable accessibilityRole="button" accessibilityLabel={`${nickname} 회원 상세 보기`} onPress={() => onUser(id)} style={({ pressed }) => [styles.userLink, pressed && styles.pressed]}><ThemedText type="smallBold" style={styles.accent}>{nickname}</ThemedText><ThemedText type="small" style={styles.muted}>{shortId(id)}</ThemedText></Pressable>;
+  const { play } = useInteractionFeedback();
+  return <Pressable accessibilityRole="button" accessibilityLabel={`${nickname} 회원 상세 보기`} onPress={() => { play('selection'); return onUser(id); }} style={({ pressed }) => [styles.userLink, pressed && styles.pressed]}><ThemedText type="smallBold" style={styles.accent}>{nickname}</ThemedText><ThemedText type="small" style={styles.muted}>{shortId(id)}</ThemedText></Pressable>;
 }
 
 function Choices({ label, values, selected, onSelect }: { label: string; values: { key: string; label: string }[]; selected: string; onSelect: (value: string) => void }) {
-  return <View style={styles.choiceGroup}><ThemedText type="small" style={styles.muted}>{label}</ThemedText><View style={styles.choices} accessibilityRole="radiogroup" accessibilityLabel={label}>{values.map((item) => <Pressable key={item.key} accessibilityRole="radio" aria-checked={selected === item.key} tabIndex={selected === item.key ? 0 : -1} {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})} onPress={() => onSelect(item.key)} style={({ pressed }) => [styles.choice, selected === item.key && styles.choiceSelected, pressed && styles.pressed]}><ThemedText type="smallBold" style={selected === item.key ? styles.accent : styles.muted}>{item.label}</ThemedText></Pressable>)}</View></View>;
+  const { play } = useInteractionFeedback();
+  return <View style={styles.choiceGroup}><ThemedText type="small" style={styles.muted}>{label}</ThemedText><View style={styles.choices} accessibilityRole="radiogroup" accessibilityLabel={label}>{values.map((item) => <Pressable key={item.key} accessibilityRole="radio" aria-checked={selected === item.key} tabIndex={selected === item.key ? 0 : -1} {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})} onPress={() => { play('selection'); return onSelect(item.key); }} style={({ pressed }) => [styles.choice, selected === item.key && styles.choiceSelected, pressed && styles.pressed]}><ThemedText type="smallBold" style={selected === item.key ? styles.accent : styles.muted}>{item.label}</ThemedText></Pressable>)}</View></View>;
 }
 
 function Metric({ label, value, detail }: { label: string; value?: number; detail: string }) {
@@ -222,11 +226,14 @@ function Notice({ title, text }: { title: string; text: string }) {
 
 function Empty({ text = '표시할 기록이 없습니다.' }: { text?: string }) { return <ThemedText type="small" style={styles.empty}>{text}</ThemedText>; }
 function Action({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) {
-  return <Pressable accessibilityRole="button" aria-disabled={disabled} disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.action, disabled && styles.disabled, pressed && styles.pressed]}><ThemedText type="smallBold">{label}</ThemedText></Pressable>;
+  const { play } = useInteractionFeedback();
+  return <Pressable accessibilityRole="button" aria-disabled={disabled} disabled={disabled} onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.action, disabled && styles.disabled, pressed && styles.pressed]}><ThemedText type="smallBold">{label}</ThemedText></Pressable>;
 }
 
-function number(value: number) { return new Intl.NumberFormat('ko-KR').format(value); }
-function date(value: string | null) { return value ? new Intl.DateTimeFormat('ko-KR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'UTC' }).format(new Date(value)) : '기록 없음'; }
+const numberFormatter = new Intl.NumberFormat('ko-KR');
+const dateFormatter = new Intl.DateTimeFormat('ko-KR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'UTC' });
+function number(value: number) { return numberFormatter.format(value); }
+function date(value: string | null) { return value ? dateFormatter.format(new Date(value)) : '기록 없음'; }
 function tierLabel(key: string) { return TIERS[key as keyof typeof TIERS] ?? key; }
 function cityLabel(key: string | null) { return CITIES.find((city) => city.id === key)?.name ?? (key && key !== 'unknown' ? key : '미확인'); }
 function ageLabel(key: string) { return key === 'unknown' ? '미확인' : key; }
@@ -236,54 +243,54 @@ function paymentLabel(key: string) { return ({ INITIAL_PURCHASE: '첫 결제', R
 function money(amount: number, currency: string) { return new Intl.NumberFormat('ko-KR', { style: 'currency', currency, currencyDisplay: 'code' }).format(amount); }
 
 const styles = StyleSheet.create({
-  section: { gap: Spacing.four },
+  section: { gap: 20 },
   heading: { gap: Spacing.one, flexShrink: 1 },
   headingRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.three },
-  title: { fontSize: 30, lineHeight: 38, fontWeight: 600, letterSpacing: -0.6 },
+  title: { fontSize: 28, lineHeight: 36, fontWeight: 600, letterSpacing: -0.6 },
   sectionTitle: { fontSize: 17, lineHeight: 24, fontWeight: 600 },
-  accent: { color: Colors.light.accent },
-  muted: { color: Colors.light.textSecondary },
-  filters: { padding: Spacing.three, gap: Spacing.three, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 10, backgroundColor: Colors.light.card },
+  accent: { color: Colors.admin.accent },
+  muted: { color: Colors.admin.textSecondary },
+  filters: { padding: Spacing.three, gap: Spacing.three, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 10, backgroundColor: Colors.admin.card },
   choiceGroup: { gap: Spacing.two, maxWidth: '100%' },
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
-  choice: { minHeight: 44, paddingHorizontal: Spacing.three, justifyContent: 'center', borderRadius: 8, borderWidth: 1, borderColor: 'transparent', backgroundColor: Colors.light.backgroundElement },
-  choiceSelected: { backgroundColor: Colors.light.card, borderColor: Colors.light.accent },
+  choice: { minHeight: 44, paddingHorizontal: Spacing.three, justifyContent: 'center', borderRadius: 8, borderWidth: 1, borderColor: 'transparent', backgroundColor: Colors.admin.backgroundElement },
+  choiceSelected: { backgroundColor: Colors.admin.card, borderColor: Colors.admin.accent },
   switchRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, flexWrap: 'wrap' },
-  tabs: { gap: Spacing.three, borderBottomWidth: 1, borderBottomColor: Colors.light.line },
+  tabs: { gap: Spacing.three, borderBottomWidth: 1, borderBottomColor: Colors.admin.line },
   tab: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.two, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  selectedTab: { borderBottomColor: Colors.light.accent },
+  selectedTab: { borderBottomColor: Colors.admin.accent },
   metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.three },
-  metric: { flexBasis: 150, flexGrow: 1, minWidth: 0, gap: Spacing.two, padding: Spacing.three, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 10, backgroundColor: Colors.light.card },
+  metric: { flexBasis: 150, flexGrow: 1, minWidth: 0, gap: Spacing.two, padding: 20, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 12, backgroundColor: Colors.admin.card },
   metricValue: { fontSize: 30, lineHeight: 36, fontWeight: 600, letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
   breakdowns: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.three },
-  distribution: { flexBasis: 240, flexGrow: 1, minWidth: 0, gap: Spacing.three, padding: Spacing.three, backgroundColor: Colors.light.card, borderRadius: 8, borderWidth: 1, borderColor: Colors.light.line },
+  distribution: { flexBasis: 240, flexGrow: 1, minWidth: 0, gap: Spacing.three, padding: 20, backgroundColor: Colors.admin.card, borderRadius: 12, borderWidth: 1, borderColor: Colors.admin.line },
   distributionRow: { gap: Spacing.two },
   rowBetween: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: Spacing.two },
-  track: { height: 5, borderRadius: 3, backgroundColor: Colors.light.backgroundElement },
-  fill: { height: 5, borderRadius: 3, backgroundColor: Colors.light.navy },
-  notice: { width: '100%', flexShrink: 1, gap: Spacing.two, padding: Spacing.three, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.backgroundElement },
-  empty: { paddingVertical: Spacing.four, color: Colors.light.textSecondary },
-  panel: { gap: Spacing.three, padding: Spacing.three, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
+  track: { height: 5, borderRadius: 3, backgroundColor: Colors.admin.backgroundElement },
+  fill: { height: 5, borderRadius: 3, backgroundColor: Colors.admin.navy },
+  notice: { width: '100%', flexShrink: 1, gap: Spacing.two, padding: Spacing.three, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.backgroundElement },
+  empty: { paddingVertical: Spacing.four, color: Colors.admin.textSecondary },
+  panel: { gap: Spacing.three, padding: Spacing.three, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.card },
   chart: { flexGrow: 1, minWidth: '100%', gap: Spacing.one, paddingTop: Spacing.two },
   chartRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.one },
   axis: { width: 30, height: 110, paddingTop: Spacing.two, justifyContent: 'space-between' },
-  axisLabel: { fontSize: 10, color: Colors.light.textSecondary, textAlign: 'right', fontVariant: ['tabular-nums'] },
+  axisLabel: { fontSize: 10, color: Colors.admin.textSecondary, textAlign: 'right', fontVariant: ['tabular-nums'] },
   barColumn: { flexGrow: 1, minWidth: 30, gap: Spacing.two },
   barColumnCompact: { minWidth: 14 },
-  barTrack: { height: 110, justifyContent: 'flex-end', borderBottomWidth: 1, borderBottomColor: Colors.light.line, position: 'relative' },
-  gridLine: { position: 'absolute', left: 0, right: 0, top: 0, borderTopWidth: 1, borderTopColor: Colors.light.line, borderStyle: 'dashed' },
+  barTrack: { height: 110, justifyContent: 'flex-end', borderBottomWidth: 1, borderBottomColor: Colors.admin.line, position: 'relative' },
+  gridLine: { position: 'absolute', left: 0, right: 0, top: 0, borderTopWidth: 1, borderTopColor: Colors.admin.line, borderStyle: 'dashed' },
   gridLineMiddle: { top: '50%' },
-  bar: { backgroundColor: Colors.light.accent, borderTopLeftRadius: 2, borderTopRightRadius: 2, marginHorizontal: 5 },
-  barLabel: { fontSize: 10, textAlign: 'center', color: Colors.light.textSecondary },
-  tableScroll: { borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8 },
-  table: { flex: 1, backgroundColor: Colors.light.card },
-  tableHeader: { flexDirection: 'row', backgroundColor: Colors.light.backgroundElement },
-  tableRow: { minHeight: 44, flexDirection: 'row', borderTopWidth: 1, borderTopColor: Colors.light.line },
-  tableRowAlternate: { backgroundColor: Colors.light.background },
+  bar: { backgroundColor: Colors.admin.accent, borderTopLeftRadius: 2, borderTopRightRadius: 2, marginHorizontal: 5 },
+  barLabel: { fontSize: 10, textAlign: 'center', color: Colors.admin.textSecondary },
+  tableScroll: { borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8 },
+  table: { flex: 1, backgroundColor: Colors.admin.card },
+  tableHeader: { flexDirection: 'row', backgroundColor: Colors.admin.backgroundElement },
+  tableRow: { minHeight: 44, flexDirection: 'row', borderTopWidth: 1, borderTopColor: Colors.admin.line },
+  tableRowAlternate: { backgroundColor: Colors.admin.background },
   tableValue: { fontVariant: ['tabular-nums'] },
   cell: { flex: 1, minWidth: 142, paddingHorizontal: 12, paddingVertical: Spacing.one, justifyContent: 'center' },
   userLink: { minHeight: 44, justifyContent: 'center' },
-  action: { alignSelf: 'flex-start', minHeight: 44, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
+  action: { alignSelf: 'flex-start', minHeight: 44, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.card },
   disabled: { opacity: 0.45 },
   pressed: { opacity: 0.7 },
 });

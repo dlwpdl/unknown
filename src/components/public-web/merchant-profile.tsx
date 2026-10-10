@@ -5,17 +5,18 @@ import Head from 'expo-router/head';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { merchantMapsUrl, merchantPhoneUrl } from '@/lib/merchant-source';
 import { loadMerchantProfile, loadMerchantProfilePosts, type MerchantProfile, type MerchantProfilePostKind, type MerchantProfilePostPage } from '@/lib/merchant-profile';
-import type { MerchantReviewPage } from '@/lib/merchant-reviews';
+import type { MerchantReviewPage, MerchantReviewReply } from '@/lib/merchant-reviews';
 import { PUBLIC_SITE } from '@/lib/public-seo';
-import { publicMerchantId } from '@/lib/public-web';
+import { publicMerchantId, publicWebTarget } from '@/lib/public-web';
 import { publicWebClient } from '@/lib/public-web-client';
 
 type ReviewKind = 'usage' | 'employment';
 type ProfileTab = 'posts' | 'jobs' | 'reviews' | 'about';
 type ReviewCounts = { key: string; usage: number | null; employment: number | null };
 type PostCounts = { merchantId: string; postCount: number | null; jobCount: number | null };
-type PublicReview = { id: string; nickname: string; score: number; body: string | null; created_at: string; receipt_status: 'verified'; review_kind: ReviewKind };
+type PublicReview = { id: string; nickname: string; score: number; body: string | null; created_at: string; receipt_status: 'verified'; review_kind: ReviewKind; reply?: MerchantReviewReply | null };
 type PublicReviewPage = {
   merchantId: string; merchantName: string; reviewKind: ReviewKind; ratingAverage: number | null; reviewCount: number;
   reviews: PublicReview[]; nextOffset: number; hasMore: boolean;
@@ -31,9 +32,12 @@ export async function loadPublicMerchantReviews(client: SupabaseClient, postId: 
   if (!merchantId || (page.review_kind !== kind && !(kind === 'usage' && page.review_kind === undefined))) throw new Error('MERCHANT_REVIEWS_READ_FAILED');
   const rows = (Array.isArray(page.reviews) ? page.reviews : []) as (MerchantReviewPage['reviews'][number] & { review_kind?: ReviewKind })[];
   const reviews = rows.filter((row) => row.receipt_status === 'verified' && (row.review_kind === kind || (kind === 'usage' && row.review_kind === undefined)) && Number.isFinite(row.score)
-    && row.score >= 1 && row.score <= 10 && Number.isInteger(row.score * 2)).map((row): PublicReview => ({
-      id: row.id, nickname: row.nickname, score: row.score, body: row.body, created_at: row.created_at, receipt_status: 'verified', review_kind: kind,
-    }));
+    && row.score >= 1 && row.score <= 10 && Number.isInteger(row.score * 2)).map((row): PublicReview => {
+      const reply = kind === 'usage' && row.reply && typeof row.reply.body === 'string' && row.reply.body.trim() && row.reply.body.length <= 300
+        && Number.isFinite(Date.parse(row.reply.created_at)) && Number.isFinite(Date.parse(row.reply.updated_at))
+        ? { body: row.reply.body, created_at: row.reply.created_at, updated_at: row.reply.updated_at } : null;
+      return { id: row.id, nickname: row.nickname, score: row.score, body: row.body, created_at: row.created_at, receipt_status: 'verified', review_kind: kind, reply };
+    });
   return { merchantId, merchantName: page.merchant_name, reviewKind: kind, ratingAverage: page.rating_average, reviewCount: page.review_count,
     reviews, nextOffset: offset + rows.length, hasMore: page.has_more === true && rows.length > 0 };
 }
@@ -173,7 +177,9 @@ function PublicReviews({ merchantId, postId, kind = 'usage' }: { merchantId: str
           <span className="reader-company-review-meta"><time dateTime={review.created_at}>{Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('ko-KR')}</time>
             <span>{open ? '접기 ↑' : '전체 보기 ↓'}</span></span>
         </button>
-        {open && <div id={`review-${kind}-${review.id}`} className="reader-company-review-detail"><p>{review.body || `점수만 남긴 ${label} 리뷰예요.`}</p></div>}
+        {open && <div id={`review-${kind}-${review.id}`} className="reader-company-review-detail"><p>{review.body || `점수만 남긴 ${label} 리뷰예요.`}</p>
+          {review.reply && <aside className="reader-company-reply"><strong>업체 답변</strong><p>{review.reply.body}</p></aside>}
+        </div>}
       </article>;
     })}
     {!loading && !current?.failed && page && !page.reviewCount && <p className="reader-company-empty">아직 공개된 인증 {label} 리뷰가 없어요.</p>}
@@ -276,6 +282,7 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
   const current = result?.key === merchantId ? result : null;
   const profile = current?.profile;
   const busy = !current || current.attempt !== retry;
+  const phone = merchantPhoneUrl(profile?.public_phone ?? ''), directions = merchantMapsUrl(profile?.address ?? '');
   const unavailable = current && !current.failed && !profile;
   const counts = postCounts?.merchantId === merchantId ? postCounts : null;
   const reviews = reviewCounts?.key === `${merchantId}:${profile?.review_post_id}` ? reviewCounts : null;
@@ -310,6 +317,7 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
       {!!profile.links?.length && <nav className="reader-company-sources" aria-label="업체 외부 페이지">{profile.links.map(link =>
         <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" aria-label={`${profile.name} ${link.label}, 새 창 열기`}
           onClick={() => play('selection')}>{link.label} <span aria-hidden="true">↗</span></a>)}</nav>}
+      <a className="reader-company-app-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>앱에서 문의·저장 <span aria-hidden="true">↗</span></a>
       {(profile.imageLoadFailed || broken.banner || broken.avatar) && <div className="reader-company-image-notice" role="status">
         <p>일부 프로필 사진을 불러오지 못했어요.</p><button disabled={busy} onClick={() => { play('selection'); setRetry((value) => value + 1); }}>사진 다시 불러오기</button></div>}
       <div className="reader-company-tabs" role="tablist" aria-label="업체 프로필 내용">{tabs.map((item, index) => <button type="button" role="tab" key={item.id} data-tab={item.id}
@@ -331,7 +339,11 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
             <div id="company-reviews"><PublicReviews key={`${merchantId}:${profile.review_post_id}:${reviewKind}`} merchantId={merchantId} postId={profile.review_post_id} kind={reviewKind} /></div>
           </> : <p className="reader-company-empty">아직 연결된 공개 리뷰가 없어요.</p>
             : <div id="company-intro" className="reader-company-intro"><h2>소개</h2><p>{profile.services || '등록된 소개가 없어요.'}</p>
-              <dl><dt>업종</dt><dd>{profile.industry || '등록된 업종이 없어요.'}</dd><dt>지역</dt><dd>{profile.city_name}</dd>{profile.address && <><dt>주소</dt><dd>{profile.address}</dd></>}</dl></div>)}
+              <dl><dt>업종</dt><dd>{profile.industry || '등록된 업종이 없어요.'}</dd><dt>지역</dt><dd>{profile.city_name}</dd>
+                {phone && <><dt>전화</dt><dd><a href={phone} onClick={() => play('selection')}>{profile.public_phone}</a></dd></>}
+                {!!profile.business_hours && <><dt>영업시간</dt><dd className="reader-company-hours">{profile.business_hours}</dd></>}
+                {profile.address && <><dt>주소</dt><dd>{profile.address}{directions && <a className="reader-company-directions" href={directions} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>길찾기 ↗</a>}</dd></>}
+              </dl></div>)}
       </section>)}
     </>}
   </article>;

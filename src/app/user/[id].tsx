@@ -105,6 +105,10 @@ export default function AuthorPostsRoute() {
           onViewCountChange={updateViewCount}
           onClose={() => setDetail(null)}
           onPostRemoved={(postId) => setState((prev) => prev ? { ...prev, posts: prev.posts.filter((post) => post.id !== postId) } : prev)}
+          onPostChanged={(saved) => {
+            setState(prev => prev ? { ...prev, posts: prev.posts.map(post => post.id === saved.id ? saved : post) } : prev);
+            setDetail(saved);
+          }}
           onCommentCountChange={(comments) => setState((prev) => prev
             ? { ...prev, posts: prev.posts.map((post) => post.id === detail.id ? { ...post, comments } : post) }
             : prev)}

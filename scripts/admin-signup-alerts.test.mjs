@@ -21,7 +21,7 @@ test('real admin dashboard mounts signup alerts for its own admin identity only'
       if (name === 'react-native') return { Platform: { OS: 'web' }, StyleSheet: { create: x => x } };
       if (name === '@/lib/auth') return { useAuth: () => ({ isAdmin, isAuthed: true, isAuthLoading: false, me: { id: 'admin-id' } }) };
       if (name === '@/lib/admin') return { initialAdminSection: () => 'analytics' };
-      if (name === '@/constants/theme') return { Colors: { light: {} }, Spacing: {} };
+      if (name === '@/constants/theme') return { Colors: { admin: {}, dark: {} }, Spacing: {} };
       if (name === '@/components/admin/admin-signup-alerts') return { AdminSignupAlerts: 'SignupAlerts' };
       return {};
     } });
@@ -50,7 +50,7 @@ function signupPanel() {
     if (name === 'react/jsx-runtime') return jsx;
     if (name === 'react-native') return { Platform: { OS: 'web' }, View: 'View', Pressable: 'Pressable', StyleSheet: { create: x => x }, AppState: { addEventListener: (_name, fn) => { foreground = fn; return { remove() { foreground = null; } }; } } };
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };
-    if (name === '@/constants/theme') return { Colors: { light: {} }, Spacing: {} };
+    if (name === '@/constants/theme') return { Colors: { admin: {}, dark: {} }, Spacing: {} };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) };
     if (name === '@/lib/community-data') return { markNotificationsRead: async (_client, ids) => { calls.push(['read', ...ids]); if (readError) throw readError; rows = rows.filter(row => !ids.includes(row.id)); } };
     if (name === '@/lib/supabase') return { supabase: { from: table => { calls.push(['from', table]); return query; }, channel: () => channel, removeChannel: async () => { removed++; } } };

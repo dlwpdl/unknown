@@ -2,16 +2,18 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { AdminTrendingPanel } from './admin-trending-panel';
+import { AdminMerchantReviewContent } from '@/components/admin/admin-merchant-review-content';
+import { AdminMerchantReviewReplyContent } from '@/components/admin/admin-merchant-review-reply-content';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import { reportReasonLabel, reportStatusLabel, reportTargetLabel, type AdminSection } from '@/lib/admin';
 import { displayName, shortId } from '@/lib/admin-labels';
-import { loadAdminClientErrors, resolveAdminClientError, type AdminDashboardData } from '@/lib/admin-data';
+import { loadAdminClientErrors, resolveAdminClientError, type AdminDashboardData, type AdminReport } from '@/lib/admin-data';
 import type { AdminClientError } from '@/lib/admin-trending';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 
-type Row = { id: string; title: string; body: string; meta: string; userId?: string };
+type Row = { id: string; title: string; body: string; meta: string; userId?: string; reviewId?: string; replyId?: string; reviewEvidence?: AdminReport['evidence'] };
 
 export function AdminSectionView({ section, data, onUser, onLoadMore, loadingMore, noMore, localPreview = false }: {
   section: AdminSection;
@@ -41,17 +43,22 @@ export function AdminSectionView({ section, data, onUser, onLoadMore, loadingMor
     ];
   } else if (section === 'alerts') {
     title = '감시어 경보';
-    rows = data.safetyAlerts.map((alert) => ({ id: String(alert.id), title: `${alert.category} · ${alert.severity}`, body: alert.excerpt,
-      meta: `${alert.status} · ${date(alert.created_at)} · ${displayName(profiles.get(alert.author_id), alert.author_id)}`, userId: alert.author_id }));
+    rows = data.safetyAlerts.map((alert) => ({ id: String(alert.id), title: `${reportTargetLabel(alert.target_type)} · ${alert.category} · ${alert.severity}`, body: alert.excerpt,
+      meta: `${alert.status} · ${date(alert.created_at)} · ${displayName(profiles.get(alert.author_id), alert.author_id)}`, userId: alert.author_id,
+      ...(alert.target_type === 'merchant_review' ? { reviewId: alert.target_id } : {}),
+      ...(alert.target_type === 'merchant_review_reply' ? { replyId: alert.target_id } : {}) }));
   } else if (section === 'safety') {
     title = 'AI 안전 모니터링';
-    rows = data.safetyReviews.map((review) => ({ id: String(review.id), title: `${review.target_type} · ${review.risk_level ?? '분석 대기'}`,
-      body: review.risk_reasons.join(' · ') || review.last_error || '분석 결과 대기 중', meta: `${review.status} · ${date(review.created_at)} · ${shortId(review.target_id)}` }));
+    rows = data.safetyReviews.map((review) => ({ id: String(review.id), title: `${reportTargetLabel(review.target_type)} · ${review.risk_level ?? '분석 대기'}`,
+      body: review.risk_reasons.join(' · ') || review.last_error || '분석 결과 대기 중', meta: `${review.status} · ${date(review.created_at)} · ${shortId(review.target_id)}`,
+      ...(review.target_type === 'merchant_review' ? { reviewId: review.target_id } : {}),
+      ...(review.target_type === 'merchant_review_reply' ? { replyId: review.target_id } : {}) }));
   } else if (section === 'reports') {
     title = '신고 관리';
     rows = data.reports.map((report) => ({ id: report.id, title: `${reportReasonLabel(report.reason_code)} · ${reportStatusLabel(report.status)}`,
       body: report.details || report.evidence?.body || '상세 설명 없음', meta: `${reportTargetLabel(report.target_type)} · ${date(report.created_at)}`,
-      userId: report.reported_user_id }));
+      userId: report.reported_user_id, ...(report.target_type === 'merchant_review' ? { reviewId: report.target_id, reviewEvidence: report.evidence } : {}),
+      ...(report.target_type === 'merchant_review_reply' ? { replyId: report.target_id } : {}) }));
   } else if (section === 'users') {
     title = '사용자';
     rows = data.profiles.map((profile) => ({ id: profile.id, title: profile.nickname, body: profile.bio || '소개 없음',
@@ -74,6 +81,12 @@ export function AdminSectionView({ section, data, onUser, onLoadMore, loadingMor
       <ThemedText type="smallBold">{row.title}</ThemedText>
       <ThemedText type="small" selectable>{row.body}</ThemedText>
       <ThemedText type="small" style={styles.muted}>{row.meta}</ThemedText>
+      {row.reviewEvidence && <>
+        <ThemedText type="smallBold">접수 당시 업체 후기 · {row.reviewEvidence.merchant_name ?? row.reviewEvidence.merchant_id ?? '업체 정보 없음'}{row.reviewEvidence.score == null ? '' : ` · ${row.reviewEvidence.score}/10`}</ThemedText>
+        <ThemedText type="small" selectable>{row.reviewEvidence.body || '후기글 없음 · 점수만 남긴 후기'}</ThemedText>
+      </>}
+      {row.reviewId && <AdminMerchantReviewContent targetId={row.reviewId} localPreview={localPreview} onUser={onUser} />}
+      {row.replyId && <AdminMerchantReviewReplyContent targetId={row.replyId} localPreview={localPreview} onUser={onUser} />}
       {!!row.userId && <Pressable accessibilityRole="button" accessibilityLabel={`${row.title} 사용자 상세 보기`}
         onPress={() => { play('selection'); onUser(row.userId!); }} style={styles.action}>
         <ThemedText type="smallBold" style={styles.accent}>사용자 상세 보기</ThemedText>
@@ -115,7 +128,7 @@ function Errors({ localPreview }: { localPreview: boolean }) {
     <ThemedText type="title" accessibilityRole="header">앱 오류</ThemedText>
     <ThemedText type="small" style={styles.muted}>사용자 폰에서 보고된 자바스크립트 오류입니다. 버전별 발생 횟수를 확인하세요.</ThemedText>
     {localPreview ? <ThemedText>로컬 미리보기에는 운영 오류가 표시되지 않습니다.</ThemedText> : null}
-    {!localPreview && !rows && !failed && <ActivityIndicator color={Colors.light.accent} accessibilityLabel="오류 불러오는 중" />}
+    {!localPreview && !rows && !failed && <ActivityIndicator color={Colors.admin.accent} accessibilityLabel="오류 불러오는 중" />}
     {failed && <Pressable accessibilityRole="button" onPress={() => { play('selection'); setFailed(false); setRetry((value) => value + 1); }} style={styles.action}>
       <ThemedText style={styles.accent}>오류를 불러오거나 처리하지 못했습니다. 다시 시도</ThemedText>
     </Pressable>}
@@ -143,10 +156,10 @@ function date(value: string) { return new Intl.DateTimeFormat('ko-KR', { dateSty
 
 const styles = StyleSheet.create({
   section: { gap: Spacing.three, paddingBottom: Spacing.six },
-  card: { gap: Spacing.one, padding: Spacing.three, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
-  muted: { color: Colors.light.textSecondary },
-  accent: { color: Colors.light.accent },
+  card: { gap: Spacing.one, padding: Spacing.three, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.card },
+  muted: { color: Colors.admin.textSecondary },
+  accent: { color: Colors.admin.accent },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   action: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center', paddingHorizontal: Spacing.three,
-    borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
+    borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.card },
 });

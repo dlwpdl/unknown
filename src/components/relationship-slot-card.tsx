@@ -9,18 +9,21 @@ import { t } from '@/i18n/ko';
 import { MEMBERSHIP_LIMITS, type MembershipSnapshot } from '@/lib/membership';
 
 type Kind = 'meetup' | 'conversation';
-const tierNames = { free: '베이직', plus: '플러스', premium: '프리미엄' };
+const tierNames = { free: '베이직', plus: '플러스', pro: '프로', premium: '프리미엄' };
 // 서버 한도가 바뀌면 여기서 같이 따라간다. 표에 없는 값은 숫자를 지어내지 않고 '확인 필요'로 둔다.
-const knownLimits = (kind: Kind): number[] => (['free', 'plus', 'premium'] as const)
-  .map((tier) => MEMBERSHIP_LIMITS[tier][kind === 'meetup' ? 'meetups' : 'conversations']);
+const knownLimits = (kind: Kind): number[] => (['free', 'plus', 'pro', 'premium'] as const)
+  .map((tier) => MEMBERSHIP_LIMITS[tier][kind === 'meetup' ? 'meetups' : 'conversations'])
+  .filter((limit) => limit !== null);
 
 export function relationshipSlotData(membership: MembershipSnapshot | null, kind: Kind) {
   if (!membership) return null;
   const [active, locked, available, limit, unlocks] = kind === 'meetup'
     ? [membership.meetupsUsed, membership.meetupSlotsLocked, membership.meetupSlotsAvailable, membership.meetupLimit, membership.meetupUnlocksAt] as const
     : [membership.conversationsUsed, membership.conversationSlotsLocked, membership.conversationSlotsAvailable, membership.conversationLimit, membership.conversationUnlocksAt] as const;
-  if (![active, locked, available, limit].every((value) => Number.isInteger(value) && value >= 0)
-    || !knownLimits(kind).includes(limit) || available !== Math.max(0, limit - active - locked)) return null;
+  if (typeof available !== 'number' || typeof limit !== 'number'
+    || ![active, locked, available, limit].every((value) => Number.isInteger(value) && value >= 0)
+    || !(knownLimits(kind).includes(limit) || (kind === 'meetup' && membership.billingPolicyVersion !== 2 && [2, 4, 7].includes(limit)))
+    || available !== Math.max(0, limit - active - locked)) return null;
   const unlockAt = locked > 0 ? unlocks?.filter((value) => Number.isFinite(Date.parse(value))).sort((a, b) => Date.parse(a) - Date.parse(b))[0] : undefined;
   return { active, locked, available, limit, unlockAt, overLimit: active + locked > limit };
 }

@@ -41,7 +41,7 @@ function loadRoom(userId = 'recipient', messagesLoaded = false) {
   return { exports, effects, subscriptions, reads: () => messageReads };
 }
 
-test('only accepted active conversations compose; pending requests never read messages or subscribe to them', async () => {
+test('active rooms compose immediately; dormant legacy requests never expose messages', async () => {
   for (const status of ['pending', 'active', 'ended', 'rejected', 'cancelled']) {
     const room = loadRoom();
     const access = room.exports.conversationCapabilities(status);
@@ -58,7 +58,7 @@ test('only accepted active conversations compose; pending requests never read me
   }
 });
 
-test('exit copy assigns risk to original requester and differentiates group owner and legacy rooms', () => {
+test('direct exit has no slot wait for either party and group exit retains its own rules', () => {
   const { conversationExitNotice } = loadRoom().exports;
   assert.equal(conversationExitNotice(direct, 'sender'), t.chat.endRequester);
   assert.equal(conversationExitNotice(direct, 'recipient'), t.chat.endRecipient);
@@ -83,12 +83,12 @@ test('missing slot data is unknown, not zero capacity; pending cancellation copy
   assert.match(t.actionErrors.REQUEST_COOLDOWN.body, /대화 자리가 잠기는 것은 아니에요/);
 });
 
-test('direct requests and conversations show a safety notice only for an unverified counterpart', () => {
+test('readable direct conversations show a safety notice only for an unverified counterpart', () => {
   const contains = (value, text) => value === text || !!value && typeof value === 'object' && Object.values(value).some(child => contains(child, text));
   for (const kind of ['direct', 'group']) for (const status of ['pending', 'active', 'ended', 'rejected', 'cancelled']) for (const verificationLevel of [1, 2, 3]) {
     const room = loadRoom('recipient', true);
     const conversation = { ...direct, kind, status, otherUser: { ...direct.otherUser, verificationLevel } };
     const tree = room.exports.ChatRoom({ conversation, currentUserId: 'recipient', onClose() {}, onChanged: async () => {} });
-    assert.equal(contains(tree, '상대방은 아직 실명 인증을 완료하지 않았어요.'), kind === 'direct' && ['pending', 'active', 'ended'].includes(status) && verificationLevel === 1);
+    assert.equal(contains(tree, '상대방은 아직 실명 인증을 완료하지 않았어요.'), kind === 'direct' && ['active', 'ended'].includes(status) && verificationLevel === 1);
   }
 });

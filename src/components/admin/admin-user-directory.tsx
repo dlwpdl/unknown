@@ -1,3 +1,4 @@
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
@@ -27,6 +28,7 @@ function appliedFilters(filters: AdminDirectoryFilters) {
 }
 
 export function AdminUserDirectoryPanel({ onUser, refreshData }: { onUser: (id: string) => void; refreshData: AdminDashboardData }) {
+  const { play } = useInteractionFeedback();
   const [input, setInput] = useState('');
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState<AdminDirectoryFilters>(EMPTY_DIRECTORY_FILTERS);
@@ -78,8 +80,7 @@ export function AdminUserDirectoryPanel({ onUser, refreshData }: { onUser: (id: 
       <AdminSelect label="정렬" value={filters.sort} onChange={(sort) => setFilters({ ...filters, sort })} options={[
         { value: 'newest', label: '최근 가입순' }, { value: 'oldest', label: '가입 오래된순' }, { value: 'last_seen', label: '최근 로그인순' }, { value: 'nickname', label: '닉네임순' },
       ]} />
-      <button type="button" className="admin-reset" aria-pressed={dense} onClick={() => setDense((value) => !value)}>{dense ? '편하게 보기' : '촘촘하게 보기'}</button>
-    </div>
+      <button type="button" className="admin-reset" aria-pressed={dense} onClick={() => { play('selection'); return setDense((value) => !value); }}>{dense ? '편하게 보기' : '촘촘하게 보기'}</button>
     <AdminFilterBar applied={appliedFilters(filters)}>
       <div className="admin-filter-row">
         <AdminMultiFilter label="계정 구분" options={ACCOUNT_OPTIONS} value={filters.account_types} onChange={(account_types) => setFilters({ ...filters, account_types })} />
@@ -92,16 +93,17 @@ export function AdminUserDirectoryPanel({ onUser, refreshData }: { onUser: (id: 
         <AdminFilterReset onReset={reset} disabled={!input && !query && JSON.stringify(filters) === JSON.stringify(EMPTY_DIRECTORY_FILTERS)} />
       </div>
     </AdminFilterBar>
-    {error && <View accessibilityRole="alert" style={styles.heading}><ThemedText style={styles.error}>{error}</ThemedText><Pressable onPress={() => setRetry((value) => value + 1)} accessibilityRole="button" style={styles.button}><ThemedText>다시 시도</ThemedText></Pressable></View>}
+    </div>
+    {error && <View accessibilityRole="alert" style={styles.heading}><ThemedText style={styles.error}>{error}</ThemedText><Pressable onPress={() => { play('selection'); return setRetry((value) => value + 1); }} accessibilityRole="button" style={styles.button}><ThemedText>다시 시도</ThemedText></Pressable></View>}
     {busy && !result && <ThemedText accessibilityRole="progressbar">회원 정보를 불러오는 중입니다.</ThemedText>}
     {result && <>
       <AdminTableSummary shown={result.rows.length} total={result.total} unit="명" />
       {compact ? (
         <div className="admin-card-list" aria-label="회원 목록">
-          {result.rows.map((profile) => <button key={profile.id} type="button" className="admin-card" onClick={() => onUser(profile.id)} aria-label={`${profile.nickname}, 상세 활동 보기`}>
+          {result.rows.map((profile) => <button key={profile.id} type="button" className="admin-card" onClick={() => { play('selection'); return onUser(profile.id); }} aria-label={`${profile.nickname}, 상세 활동 보기`}>
             <span className="admin-card-top">
               <span className="admin-card-title">{profile.nickname}</span>
-              <span className={`admin-badge${profile.account_status === 'active' ? '' : ' admin-badge-danger'}`}>{STATUSES[profile.account_status]}</span>
+              <span className={`admin-badge${profile.account_status === 'active' ? ' admin-badge-success' : ' admin-badge-danger'}`}>{STATUSES[profile.account_status]}</span>
             </span>
             <span className="admin-card-meta"><span>{profile.email ?? '—'}</span><span>{profile.providers.join(' · ') || '연결 없음'}</span><span>{shortId(profile.id)}</span></span>
             <span className="admin-card-meta">
@@ -121,15 +123,15 @@ export function AdminUserDirectoryPanel({ onUser, refreshData }: { onUser: (id: 
           <tbody>{result.rows.map((profile) => {
             const geo = ipGeo[profile.session_ip ?? ''] ?? null;
             return <tr key={profile.id}>
-            <td><button type="button" className="admin-row-button" onClick={() => onUser(profile.id)} aria-label={`${profile.nickname}, 상세 활동 보기`} title={profile.id}>
-              <span className="admin-cell-primary">{profile.nickname}</span><span className="admin-cell-secondary">{shortId(profile.id)}</span>
+            <td><button type="button" className="admin-row-button" onClick={() => { play('selection'); return onUser(profile.id); }} aria-label={`${profile.nickname}, 상세 활동 보기`} title={profile.id}>
+              <span className="admin-user-avatar" aria-hidden="true">{profile.nickname.trim().slice(0, 1)}</span><span className="admin-user-identity"><span className="admin-cell-primary">{profile.nickname}</span><span className="admin-cell-secondary">{shortId(profile.id)}</span></span>
             </button></td>
             <td title={[profile.email ?? '이메일 미제공', profile.full_name, profile.login_name].filter(Boolean).join(' · ')}><span className="admin-cell-primary" style={{ fontWeight: 400 }}>{profile.email ?? '—'}</span><span className="admin-cell-secondary">{profile.providers.join(' · ') || '연결 없음'}</span></td>
             <td>{CITIES.find((city) => city.id === profile.city_id)?.name ?? profile.city_id ?? '—'}</td>
             <td title={profile.date_of_birth ?? '생년월일 미입력'}><span className="admin-cell-primary" style={{ fontWeight: 400 }}>{profile.date_of_birth ?? '—'}</span><span className="admin-cell-secondary">{profile.age != null ? `만 ${profile.age}세` : ''}</span></td>
             <td>{profile.gender ? ADMIN_GENDERS[profile.gender] ?? profile.gender : '—'}</td>
             <td><span className="admin-badge">{ACCOUNT_OPTIONS.find((option) => option.value === profile.account_type)?.label ?? ACCOUNT_TYPES[profile.account_type]}</span></td>
-            <td><span className={`admin-badge${profile.account_status === 'active' ? '' : ' admin-badge-danger'}`}>{STATUSES[profile.account_status]}</span></td>
+            <td><span className={`admin-badge${profile.account_status === 'active' ? ' admin-badge-success' : ' admin-badge-danger'}`}>{STATUSES[profile.account_status]}</span></td>
             <td title={profile.created_at}>{date(profile.created_at)}</td><td><span className="admin-cell-primary" title={profile.last_sign_in_at ?? ''}>{date(profile.last_sign_in_at)}</span><span className="admin-cell-secondary" title={`최근 인증 세션 IP: ${profile.session_ip ?? '기록 없음'}`}>{profile.session_ip ?? '—'}</span>{geo && <span className="admin-cell-secondary" title={`${formatIpGeo(geo)} · ipwho.is 조회`}>{formatIpGeoShort(geo)}</span>}</td>
           </tr>;
           })}</tbody>
@@ -137,7 +139,7 @@ export function AdminUserDirectoryPanel({ onUser, refreshData }: { onUser: (id: 
         {result.total === 0 && <div className="admin-empty">조건에 맞는 회원이 없습니다. 검색어나 필터를 줄여보세요.</div>}
       </div>
       )}
-      {result.rows.length < result.total && <button type="button" className="admin-reset" disabled={busy} onClick={() => void more()}>{busy ? '불러오는 중' : '회원 더 보기'}</button>}
+      {result.rows.length < result.total && <button type="button" className="admin-reset" disabled={busy} onClick={() => { play('selection'); return void more(); }}>{busy ? '불러오는 중' : '회원 더 보기'}</button>}
       <div className="admin-muted">직접 만든 계정은 예시 계정이며, 실제 가입자에는 관리자·심사 계정이 포함되지 않습니다.</div>
       <div className="admin-muted">조회 관리자 · {result.viewer.email ?? result.viewer.id}</div>
     </>}
@@ -145,7 +147,7 @@ export function AdminUserDirectoryPanel({ onUser, refreshData }: { onUser: (id: 
 }
 
 const styles = StyleSheet.create({
-  section: { gap: Spacing.two }, muted: { color: Colors.light.textSecondary }, error: { color: Colors.light.accent },
+  section: { gap: 20 }, muted: { color: Colors.admin.textSecondary }, error: { color: Colors.admin.danger },
   heading: { gap: Spacing.two, marginBottom: Spacing.two }, title: { fontSize: 28, lineHeight: 36, letterSpacing: -0.6 },
   button: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.three },
 });

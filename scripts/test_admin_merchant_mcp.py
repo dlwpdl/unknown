@@ -11,9 +11,30 @@ tools = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(tools)
 
 
-class MerchantConnectionToolsTests(unittest.IsolatedAsyncioTestCase):
+class MerchantProfileToolsTests(unittest.IsolatedAsyncioTestCase):
     values = dict(id=UUID('12620000-0000-0000-0000-000000000001'), name='카페', city_id='vancouver',
                   contact='', status='lead', consent='pending', consent_note='')
+
+    def test_legacy_tool_call_keeps_details_unset(self):
+        with patch.object(tools, 'rpc', return_value=str(self.values['id'])) as rpc:
+            tools.save_merchant(**self.values)
+            self.assertEqual(rpc.call_args.args[0], 'save_admin_merchant')
+            for key in ('industry', 'services', 'address'):
+                self.assertIsNone(rpc.call_args.args[1]['p_' + key])
+
+    def test_new_details_and_explicit_clear_reach_same_rpc(self):
+        with patch.object(tools, 'rpc', return_value=str(self.values['id'])) as rpc:
+            tools.save_merchant(**self.values, industry='카페', services='커피', address='')
+            self.assertEqual(rpc.call_args.args[1]['p_industry'], '카페')
+            self.assertEqual(rpc.call_args.args[1]['p_services'], '커피')
+            self.assertEqual(rpc.call_args.args[1]['p_address'], '')
+
+    async def test_registered_tool_rejects_oversized_details_before_rpc(self):
+        for field, limit in [('industry', 80), ('services', 1500), ('address', 300)]:
+            values = {**self.values, 'id': str(self.values['id']), field: '가' * (limit + 1)}
+            with patch.object(tools, 'rpc') as rpc, self.assertRaisesRegex(Exception, str(limit)):
+                await tools.mcp.call_tool('save_merchant', values)
+            rpc.assert_not_called()
 
     def test_account_search_returns_only_reviewable_identity_fields(self):
         with patch.object(tools, 'rpc', return_value={'rows': [{'id': 'user-a', 'nickname': '지윤', 'email': 'test@example.invalid', 'account_status': 'active', 'private_details': 'hidden'}], 'total': 1}) as rpc:

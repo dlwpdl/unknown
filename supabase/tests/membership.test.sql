@@ -9,8 +9,8 @@ insert into public.profiles (id, nickname, city_id) values ('71111111-1111-1111-
 select set_config('request.jwt.claims', '{"sub":"71111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
 set local role authenticated;
 select is(public.get_membership()->>'tier', 'free', 'new members stay free');
-select is((public.get_membership()->>'meetupLimit')::integer, 2, 'free concurrent meetup limit');
-select is((public.get_membership()->>'conversationLimit')::integer, 2, 'free active direct limit');
+select is((public.get_membership()->>'meetupLimit')::integer, 3, 'free concurrent meetup limit');
+select is(public.get_membership()->'conversationLimit','null'::jsonb,'free direct conversations are unlimited');
 select is((select max_count::integer from public.get_post_quota()), 1, 'free members get one daily post');
 select throws_ok($$select public.apply_membership_snapshot('71111111-1111-1111-1111-111111111111', '[]', now())$$, '42501', null, 'clients cannot grant themselves paid membership');
 reset role;
@@ -18,8 +18,8 @@ reset role;
 select public.apply_membership_snapshot('71111111-1111-1111-1111-111111111111', jsonb_build_array(jsonb_build_object('tier','plus','expires_at',now()+interval '30 days','product_id','plus_monthly','store','app_store','will_renew',true)), now()-interval '10 seconds');
 set local role authenticated;
 select is((select max_count::integer from public.get_post_quota()), 2, 'verified plus changes the existing post quota');
-select is((public.get_membership()->>'meetupLimit')::integer, 4, 'plus concurrent meetup limit');
-select is((public.get_membership()->>'conversationLimit')::integer, 4, 'plus active direct limit');
+select is((public.get_membership()->>'meetupLimit')::integer, 5, 'plus concurrent meetup limit');
+select is(public.get_membership()->'conversationLimit','null'::jsonb,'plus direct conversations are unlimited');
 reset role;
 
 select public.apply_membership_snapshot('71111111-1111-1111-1111-111111111111', '[]', now()-interval '20 seconds');
@@ -30,8 +30,8 @@ reset role;
 select public.apply_membership_snapshot('71111111-1111-1111-1111-111111111111', jsonb_build_array(jsonb_build_object('tier','premium','expires_at',now()+interval '30 days','product_id','premium_monthly','store','app_store','will_renew',false)), now()-interval '5 seconds');
 set local role authenticated;
 select is((select max_count::integer from public.get_post_quota()), 3, 'cancelled renewal retains premium for the paid period');
-select is((public.get_membership()->>'meetupLimit')::integer, 7, 'premium concurrent meetup limit');
-select is((public.get_membership()->>'conversationLimit')::integer, 7, 'premium active direct limit');
+select is((public.get_membership()->>'meetupLimit')::integer, 20, 'premium concurrent meetup limit');
+select is(public.get_membership()->'conversationLimit','null'::jsonb,'premium direct conversations are unlimited');
 reset role;
 
 select public.apply_membership_snapshot('71111111-1111-1111-1111-111111111111', jsonb_build_array(jsonb_build_object('tier','premium','expires_at',now()-interval '1 second','product_id','premium_monthly','store','app_store','will_renew',false)), now()-interval '3 seconds');

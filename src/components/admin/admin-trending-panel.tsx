@@ -1,3 +1,4 @@
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
@@ -6,6 +7,7 @@ import { Colors, Spacing } from '@/constants/theme';
 import { loadAdminTrending, saveAdminTrending } from '@/lib/admin-data';
 import { trendingConfigPatch, type AdminTrendingConfig, type AdminTrendingState } from '@/lib/admin-trending';
 import { count } from '@/i18n/ko';
+import { CITIES } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
 
 // 값을 바꾸면 곧바로 "지금 기준이면 이 글이 나갑니다"가 다시 계산된다.
@@ -23,6 +25,8 @@ const NUMBERS: { key: keyof AdminTrendingConfig; label: string; hint: string }[]
   { key: 'quiet_end_hour', label: '조용한 시간 끝', hint: '같은 값이면 항상 발송' },
 ];
 export function AdminTrendingPanel({ localPreview }: { localPreview?: boolean }) {
+  const { play } = useInteractionFeedback();
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [state, setState] = useState<AdminTrendingState | null>(null);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -67,7 +71,7 @@ export function AdminTrendingPanel({ localPreview }: { localPreview?: boolean })
 
   if (localPreview) return <Note text="로컬 미리보기에서는 발송 설정을 불러오지 않습니다." />;
   if (failed) return <Note text="설정을 불러오지 못했습니다. 관리자 권한과 연결을 확인해주세요." />;
-  if (!state) return <ActivityIndicator color={Colors.light.accent} style={{ paddingVertical: Spacing.five }} accessibilityLabel="설정 불러오는 중" />;
+  if (!state) return <ActivityIndicator color={Colors.admin.accent} style={{ paddingVertical: Spacing.five }} accessibilityLabel="설정 불러오는 중" />;
 
   const { config, quietNow, preview, recent } = state;
   const wouldSend = preview.filter((row) => row.score >= config.min_score);
@@ -88,6 +92,10 @@ export function AdminTrendingPanel({ localPreview }: { localPreview?: boolean })
       </View>
 
       <View style={{ gap: Spacing.two }}>
+        <Pressable accessibilityRole="button" accessibilityState={{ expanded: settingsOpen }} aria-expanded={settingsOpen} onPress={() => { play('selection'); setSettingsOpen(value => !value); }} style={({ pressed }) => [styles.settingsToggle, pressed && { opacity: .72 }]}>
+          <ThemedText type="smallBold">발송 기준 설정</ThemedText><ThemedText type="small" style={styles.muted}>{settingsOpen ? '접기' : '가중치·시간·발송 한도 펼치기'}</ThemedText>
+        </Pressable>
+        {settingsOpen && <View style={styles.fields}>
         {NUMBERS.map(({ key, label, hint }) => (
           <View key={key} style={styles.field}>
             <View style={{ flex: 1, minWidth: 0 }}>
@@ -105,6 +113,7 @@ export function AdminTrendingPanel({ localPreview }: { localPreview?: boolean })
           </View>
         ))}
         <Action label="값 저장" onPress={saveNumbers} disabled={busy} />
+        </View>}
       </View>
 
       <View style={{ gap: Spacing.two }}>
@@ -117,10 +126,10 @@ export function AdminTrendingPanel({ localPreview }: { localPreview?: boolean })
           <View key={row.post_id} style={[styles.card, row.score >= config.min_score && styles.cardActive]}>
             <View style={styles.rowTop}>
               <ThemedText type="smallBold" numberOfLines={1} style={{ flex: 1 }}>{row.title}</ThemedText>
-              <ThemedText type="smallBold" style={row.score >= config.min_score ? styles.urgent : styles.muted}>{row.score}</ThemedText>
+              <ThemedText type="smallBold" style={row.score >= config.min_score ? styles.urgent : styles.muted}>{row.score}점</ThemedText>
             </View>
             <ThemedText type="small" style={styles.muted}>
-              {row.city_id} · 조회 {count(row.authed_views)}+{count(row.anon_views)} · 공감 {count(row.like_count)} · 댓글 {count(row.comment_count)}
+              {CITIES.find(city => city.id === row.city_id)?.name ?? row.city_id} · 조회 {count(row.authed_views)}+{count(row.anon_views)} · 공감 {count(row.like_count)} · 댓글 {count(row.comment_count)}
             </ThemedText>
           </View>
         ))}
@@ -146,8 +155,9 @@ export function AdminTrendingPanel({ localPreview }: { localPreview?: boolean })
 }
 
 function Action({ label, onPress, disabled, danger }: { label: string; onPress: () => void; disabled?: boolean; danger?: boolean }) {
+  const { play } = useInteractionFeedback();
   return (
-    <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityState={{ disabled }}
+    <Pressable onPress={() => { play('selection'); onPress(); }} disabled={disabled} accessibilityRole="button" accessibilityState={{ disabled }}
       style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.three, opacity: disabled ? 0.5 : 1 }}>
       <ThemedText type="smallBold" style={danger ? styles.urgent : undefined}>{label}</ThemedText>
     </Pressable>
@@ -163,11 +173,13 @@ function Note({ text }: { text: string }) {
 }
 
 const styles = StyleSheet.create({
-  card: { padding: Spacing.three, gap: Spacing.one, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 6, backgroundColor: Colors.light.card },
-  cardActive: { borderColor: '#E8B8AE', backgroundColor: '#FDF6F4' },
+  card: { padding: 20, gap: Spacing.two, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 12, backgroundColor: Colors.admin.card },
+  cardActive: { borderColor: Colors.admin.accent, backgroundColor: Colors.admin.backgroundSelected },
   rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.two },
-  field: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, padding: Spacing.three, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 6, backgroundColor: Colors.light.card },
-  input: { flexBasis: 110, minHeight: 44, paddingHorizontal: Spacing.two, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 6, color: Colors.light.text, textAlign: 'right', fontVariant: ['tabular-nums'] },
-  muted: { color: Colors.light.textSecondary },
-  urgent: { color: Colors.light.accent },
+  settingsToggle: { minHeight: 52, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two, padding: Spacing.three, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.card },
+  fields: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  field: { flexBasis: 360, flexGrow: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: Spacing.three, padding: Spacing.three, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.card },
+  input: { flexBasis: 110, minHeight: 44, paddingHorizontal: Spacing.two, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 6, color: Colors.admin.text, textAlign: 'right', fontVariant: ['tabular-nums'] },
+  muted: { color: Colors.admin.textSecondary },
+  urgent: { color: Colors.admin.accent },
 });

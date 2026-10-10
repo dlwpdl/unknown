@@ -146,7 +146,7 @@ export const t = {
     kindStoryHint: '후기, 질문, 정보 공유',
     kindListingHint: '구인구직, 렌트·룸메, 중고거래, 차량',
     pricePlaceholder: '금액 (선택, CAD)',
-    listingNote: '구해요·팔아요 글은 살아있는 글 수에 따라 제한돼요. 14일 뒤 자동 마감되고, 베이직은 24시간·플러스는 18시간·프리미엄은 12시간 간격으로 끌어올릴 수 있어요.',
+    listingNote: '구해요·팔아요 글은 살아있는 글 수에 따라 제한돼요. 14일 뒤 자동 마감되고, 베이직은 48시간·플러스는 36시간·프로는 30시간·프리미엄은 24시간 간격으로 끌어올릴 수 있어요. 계정과 같은 글에 함께 적용돼요. 기존 구독 혜택은 유지돼요.',
     listingRemaining: (used: number, max: number) => `살아있는 글 ${used} / ${max}`,
     listingBodyPlaceholder: '무엇을 구하거나 제안하나요? 구인·구직 조건이나 물건 상태, 지역을 적어주세요',
     bodyPlaceholder: {
@@ -193,9 +193,10 @@ export const t = {
 
   membership: {
     listingBenefits: {
-      free: '살아있는 구해요·팔아요 글 5개 · 끌어올리기 24시간 간격',
-      plus: '살아있는 구해요·팔아요 글 10개 · 끌어올리기 18시간 간격',
-      premium: '살아있는 구해요·팔아요 글 20개 · 끌어올리기 12시간 간격',
+      free: '살아있는 구해요·팔아요 글 5개 · 끌어올리기 48시간 간격',
+      plus: '살아있는 구해요·팔아요 글 10개 · 끌어올리기 36시간 간격',
+      pro: '살아있는 구해요·팔아요 글 20개 · 끌어올리기 30시간 간격',
+      premium: '살아있는 구해요·팔아요 글 20개 · 끌어올리기 24시간 간격',
     },
   },
 
@@ -218,7 +219,10 @@ export const t = {
     LISTING_LIMIT_REACHED: { title: '살아있는 구해요·팔아요 글이 가득 찼어요', body: '거래가 끝난 글을 마감하면 자리가 돌아와요. 멤버십에 따라 5·10·20개까지 동시에 올릴 수 있어요.', membership: true },
     DUPLICATE_LISTING: { title: '같은 글이 이미 있어요', body: '같은 제목의 글을 30일 안에 다시 올릴 수 없어요. 기존 글을 끌어올리거나 다시 열어 주세요.', membership: false },
     DUPLICATE_POST: { title: '같은 이야기가 이미 올라갔어요', body: '같은 내용을 반복해서 올리지 말고 기존 글을 확인해 주세요.', membership: false },
-    BUMP_COOLDOWN: { title: '조금 뒤에 끌어올릴 수 있어요', body: '베이직은 24시간·플러스는 18시간·프리미엄은 12시간 간격으로 끌어올릴 수 있어요.', membership: true },
+    BUMP_COOLDOWN: { title: '조금 뒤에 끌어올릴 수 있어요', body: '베이직은 48시간·플러스는 36시간·프로는 30시간·프리미엄은 24시간 간격으로 끌어올릴 수 있어요. 계정과 같은 글에 함께 적용돼요. 기존 구독 혜택은 유지돼요.', membership: true },
+    BUSINESS_BUMP_COOLDOWN: { title: '비즈니스 끌어올리기를 기다려 주세요', body: '같은 글은 플러스 72시간·프로 60시간·프리미엄 48시간 간격이에요. 비즈니스 전체는 24시간 간격이에요. 계정이나 AI 도구를 바꿔도 같아요.', membership: false },
+    BUSINESS_MONTHLY_LIMIT_REACHED: { title: '이번 달 업체 사용량을 모두 썼어요', body: '신규 글과 끌어올리기 사용량을 확인해 주세요. 운영대행분은 전체 한도에 포함돼요.', membership: true },
+    DUPLICATE_PROMOTION: { title: '같은 홍보글이 이미 있어요', body: '기존 글을 수정하거나 끌어올려 주세요. 제목·사진 순서만 바꿔 새 글로 다시 올릴 수 없어요.', membership: false },
     LISTING_NOT_OPEN: { title: '마감된 글이에요', body: '다시 열면 살아있는 글 자리를 하나 사용해요.', membership: false },
   },
 
@@ -259,7 +263,7 @@ export const t = {
     all: '전체',
     groups: '모임',
     direct: '1:1 대화',
-    requestTab: '요청',
+    requestTab: '모임 신청',
     receivedRequest: '받은 대화 요청',
     sentRequest: '보낸 대화 요청',
     pendingBody: '수락 전에는 메시지를 주고받을 수 없어요. 대기·거절·취소는 자리를 사용하지 않아요. 요청은 7일 뒤 만료돼요.',
@@ -274,9 +278,9 @@ export const t = {
     keepConversation: '대화 계속하기',
     ended: '종료된 대화',
     endedBody: '대화가 종료되어 새 메시지를 보낼 수 없어요.',
-    endRequester: '내 대화 자리 1개가 24시간 동안 잠겨요. 상대의 자리는 바로 돌아와요.',
-    endRecipient: '내 자리는 바로 돌아와요. 처음 요청한 상대의 대화 자리 1개는 24시간 동안 잠겨요.',
-    endLegacy: '이전 방식으로 시작한 대화예요. 종료하면 양쪽 자리가 쿨타임 없이 돌아와요.',
+    endRequester: '대화를 종료해도 기록은 남아요. 자리 잠금 없이 상대의 프로필에서 다시 대화를 시작할 수 있어요.',
+    endRecipient: '대화를 종료해도 기록은 남아요. 자리 잠금 없이 상대의 프로필에서 다시 대화를 시작할 수 있어요.',
+    endLegacy: '대화를 종료해도 기록은 남아요. 자리 잠금 없이 상대의 프로필에서 다시 대화를 시작할 수 있어요.',
     endError: '대화를 종료하지 못했어요. 연결 상태를 확인해 주세요.',
     block: '차단',
     blockDone: '차단했어요. 기존 대화 기록은 보관돼요.',
@@ -428,7 +432,7 @@ export const t = {
 
   // 댓글·글 작성자 탭 → 미니 프로필 (대화 요청 진입점)
   profileSheet: {
-    chatRequest: '대화 요청 보내기',
+    chatRequest: '대화하기',
     pending: '요청 중 — 탭하면 취소할 수 있어요',
     pendingCancelTitle: '대화 요청을 취소할까요?',
     pendingCancelBody: '수락 전에는 자리를 사용하지 않아 잠기는 자리도 없어요.',

@@ -44,6 +44,7 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
   const [editing, setEditing] = useState(false), [score, setScore] = useState<number | null>(null);
   const [body, setBody] = useState(''), [writeError, setWriteError] = useState(''), [notice, setNotice] = useState('');
   const [saving, setSaving] = useState(false), [report, setReport] = useState<MerchantReview | null>(null);
+  const [replyReport, setReplyReport] = useState<MerchantReview | null>(null);
   const [receipt, setReceipt] = useState<{ path: string; uri?: string; image?: PreparedImage } | null>(null), [pickingReceipt, setPickingReceipt] = useState(false);
   const mounted = useRef(true), pendingRead = useRef(true), pendingSave = useRef(false);
   const pendingReceipt = useRef(false), uploads = useRef(new Set<string>());
@@ -228,7 +229,8 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
         onPress={() => { play('selection'); void save(); }}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{saving ? '저장 중…' : '후기 저장'}</ThemedText></Pressable>
     </View>}
     {page && page.review_count === 0 && !editing && <ThemedText type="small" themeColor="textSecondary">아직 공개된 인증 후기가 없어요.</ThemedText>}
-    {rows.map((row) => <MerchantReviewCard key={row.id} review={row} own={isAuthed && row.author_id === me.id}
+    {rows.map((row) => <MerchantReviewCard key={row.id} review={hidden('merchant_review_reply', row.id) ? { ...row, reply: null } : row} own={isAuthed && row.author_id === me.id}
+      onReportReply={() => { if (!isAuthed) promptLogin('업체 답변을 신고하려면 로그인해 주세요.'); else setReplyReport(row); }}
       onReport={isAuthed && row.author_id === me.id ? undefined : () => { if (!isAuthed) promptLogin('후기를 신고하려면 로그인해 주세요.'); else setReport(row); }} />)}
     {!!readError && <View style={styles.error}>
       <ThemedText type="small" accessibilityRole="alert">{readError}</ThemedText>
@@ -242,6 +244,7 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
       }}><ThemedText type="smallBold" themeColor="accent">후기 더 보기</ThemedText></Pressable>}
     {report && <ReportSheet visible targetType="merchant_review" targetId={report.id} reportedUserId={report.author_id} reportedNickname={report.nickname}
       onClose={() => { setReport(null); refresh(); }} />}
+    {replyReport && <ReportSheet visible targetType="merchant_review_reply" targetId={replyReport.id} onClose={() => { setReplyReport(null); refresh(); }} />}
   </View>;
 }
 
@@ -252,7 +255,7 @@ export function merchantReceiptLabel(status: MerchantReview['receipt_status'], r
     : status === 'rejected' ? '업체에만 전달 · 영수증 재확인 필요' : '업체에만 전달';
 }
 
-export function MerchantReviewCard({ review, own = false, onReport }: { review: MerchantReview; own?: boolean; onReport?: () => void }) {
+export function MerchantReviewCard({ review, own = false, onReport, onReportReply }: { review: MerchantReview & { receipt_review_note?: string | null }; own?: boolean; onReport?: () => void; onReportReply?: () => void }) {
   const theme = useTheme(), { play } = useInteractionFeedback();
   const [expanded, setExpanded] = useState(false);
   return <View style={[styles.review, { borderTopColor: theme.line }]}>
@@ -267,8 +270,15 @@ export function MerchantReviewCard({ review, own = false, onReport }: { review: 
       </View>
       <ThemedText type="small" themeColor={review.receipt_status === 'verified' ? 'accent' : 'textSecondary'}>{merchantReceiptLabel(review.receipt_status, review.review_kind)}</ThemedText>
       <ThemedText numberOfLines={expanded ? undefined : 2}>{review.body || '점수만 남긴 후기예요.'}</ThemedText>
+      {review.review_kind !== 'employment' && review.reply && <ThemedText type="small" themeColor="accent">업체 답변 1개</ThemedText>}
       <ThemedText type="small" themeColor="textSecondary">{expanded ? '접기' : '후기 전체 보기'}</ThemedText>
     </Pressable>
+    {own && review.receipt_status === 'rejected' && !!review.receipt_review_note && <ThemedText type="small" themeColor="textSecondary">재확인 사유: {review.receipt_review_note}</ThemedText>}
+    {expanded && review.review_kind !== 'employment' && review.reply && <View style={[styles.reply, { borderLeftColor: theme.accent }]}>
+      <ThemedText type="smallBold">업체 답변</ThemedText><ThemedText type="small">{review.reply.body}</ThemedText>
+      {onReportReply && <Pressable analyticsId="merchant.reply.report" accessibilityRole="button" accessibilityLabel="업체 답변 신고" style={[styles.textButton, styles.report]}
+        onPress={() => { play('selection'); onReportReply(); }}><ThemedText type="small" themeColor="textSecondary">답변 신고</ThemedText></Pressable>}
+    </View>}
     {onReport && <Pressable analyticsId="merchant.review.report" accessibilityRole="button" accessibilityLabel={`${review.nickname}님의 업체 후기 신고`}
       style={[styles.textButton, styles.report]} onPress={() => { play('selection'); onReport(); }}><ThemedText type="small" themeColor="textSecondary">신고</ThemedText></Pressable>}
   </View>;
@@ -289,6 +299,7 @@ const styles = StyleSheet.create({
   save: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },
   review: { paddingTop: 12, borderTopWidth: 1, gap: 8 },
   reviewCopy: { gap: 2, flex: 1 },
+  reply: { borderLeftWidth: 2, paddingLeft: 12, gap: 8 },
   reviewLink: { gap: 8, alignItems: 'stretch', minHeight: 44 },
   receiptImage: { width: '100%', height: 180 },
   receiptActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },

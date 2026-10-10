@@ -35,13 +35,20 @@ export function buildInventory(events, { cities = CITIES, policy, now = new Date
     if (!row) continue;
     row.candidates++;
     const draft = event.current_draft ?? {};
+    const kind = event.content_kind ?? draft.content_kind ?? 'event';
+    const place = kind === 'place';
     const datesKnown = validDay(draft.start_date) && validDay(draft.end_date) && draft.start_date <= draft.end_date;
-    if (datesKnown && row.local_day && draft.end_date < row.local_day) { row.expired++; continue; }
-    if (datesKnown && draft.start_date > researchThrough) { row.outside_window++; continue; }
+    if (!place && datesKnown && row.local_day && draft.end_date < row.local_day) { row.expired++; continue; }
+    if (!place && datesKnown && draft.start_date > researchThrough) { row.outside_window++; continue; }
     const reasons = [];
     if (conflicts.has(event.key)) reasons.push('conflicting-duplicate');
     if (!row.local_day) reasons.push('missing-city-timezone');
-    if (!datesKnown) reasons.push('unverified-event-dates');
+    if (!['event', 'place'].includes(kind) || (draft.content_kind && draft.content_kind !== kind)) reasons.push('content-kind-mismatch');
+    if (place) {
+      if (!['name', 'place_type', 'place_address'].every(key => typeof draft[key] === 'string' && draft[key].trim())
+        || !validDay(draft.place_verified_on) || draft.place_verified_on > row.local_day || draft.place_operating_status !== 'open'
+        || 'start_date' in draft || 'end_date' in draft) reasons.push('unverified-place-details');
+    } else if (!datesKnown) reasons.push('unverified-event-dates');
     if (event.fact_check_status !== 'passed-within-stated-scope') reasons.push('facts-not-passed');
     if (draft.city !== event.city || event.native_draft_eligible !== true || draft.eligibility?.local_caption_verified !== true
       || draft.eligibility?.local_media_ready !== true || draft.eligibility?.gling_registration_eligible !== true || draft.eligibility?.gling_registration_hold) reasons.push('copy-or-media-not-prepared');

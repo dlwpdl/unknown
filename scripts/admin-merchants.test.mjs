@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { merchantReportText, merchantReportHtml } from '../src/lib/admin-merchants.ts';
+import { merchantReportText, merchantReportHtml, merchantMapsUrl, merchantAddressCity, saveMerchant } from '../src/lib/admin-merchants.ts';
 import { safeMerchantSourceUrl, trackMerchantSourceClick, trackPublicMerchantSourceClick } from '../src/lib/merchant-source.ts';
 
 const report = {
@@ -11,6 +11,40 @@ const report = {
   metrics: { linked_posts: 2, new_posts: 1, displayed_views: 135, first_reads: 3, unique_readers: 2, source_clicks: 4, member_clickers: 1, anonymous_sessions: 2 },
   posts: [{ post_id: 'post-1', title: '커피 <안내>', original_url: 'https://example.com/post', displayed_views: 135, source_clicks: 4 }],
 };
+
+test('merchant details reach the existing save RPC without changing omitted legacy fields', async () => {
+  const calls = [];
+  const client = { rpc: async (name, value) => { calls.push({ name, value }); return { data: 'merchant-1', error: null }; } };
+  const merchant = { id: 'merchant-1', name: '동네 카페', city_id: 'vancouver', contact: '', status: 'trial', consent: 'pending', consent_note: '', trial_ends_at: null };
+  await saveMerchant(client, { ...merchant, industry: '카페', services: '커피 · 브런치', address: '123 Main St, Unit 2' });
+  assert.equal(calls[0].name, 'save_admin_merchant');
+  assert.equal(calls[0].value.p_industry, '카페');
+  assert.equal(calls[0].value.p_services, '커피 · 브런치');
+  assert.equal(calls[0].value.p_address, '123 Main St, Unit 2');
+  await saveMerchant(client, merchant);
+  assert.equal(Object.hasOwn(calls[1].value, 'p_address'), false);
+});
+
+test('merchant Maps links encode a real address and never guess an unset location', () => {
+  assert.equal(merchantMapsUrl('  '), null);
+  const url = new URL(merchantMapsUrl('  123 Main St #2 & A+B  '));
+  assert.equal(url.origin, 'https://www.google.com');
+  assert.equal(url.pathname, '/maps/search/');
+  assert.equal(url.searchParams.get('api'), '1');
+  assert.equal(url.searchParams.get('query'), '123 Main St #2 & A+B');
+  assert.equal(url.hash, '');
+});
+
+test('소재지는 주소에 명시된 도시로 표시하고 게시 지역으로 덮어쓰지 않는다', () => {
+  const address = '77 Finch Ave W, Suite 202, North York, ON M2N 2H5';
+  assert.equal(merchantAddressCity(address), 'North York, ON');
+  assert.equal(new URL(merchantMapsUrl(address)).searchParams.get('query'), address);
+  assert.equal(merchantAddressCity('123 Main St, Unit 2'), null);
+  assert.equal(merchantAddressCity(''), null);
+  assert.equal(merchantAddressCity('889 Queen St E, Toronto, ON M4M 1J4'), 'Toronto, ON');
+  const fullProvince = '123 Example St, Burnaby, British Columbia V5C 0A1';
+  assert.equal(new URL(merchantMapsUrl(fullProvince)).searchParams.get('query'), fullProvince);
+});
 
 test('reports keep adjusted display totals separate from measured readers and clicks', () => {
   const text = merchantReportText(report);
