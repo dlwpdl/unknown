@@ -5,6 +5,7 @@ export type EventCity = keyof typeof EVENT_CITIES;
 export type EventCategory = keyof typeof EVENT_CATEGORIES;
 export type EventPriceFilter = 'all' | 'free' | 'under50' | 'under100' | 'unknown';
 export type EventQuery = { cityId: EventCity; category: EventCategory; page: number; date?: string; month?: string; eventId?: string; festival?: true };
+export type FestivalSlot = { slot: number; eventId: string; endsAt: string | null };
 export type TicketmasterEvent = {
   id: string; name: string; ticketUrl: string | null; image: string | null; videoYoutubeId: string | null;
   startsAt: string | null; localDate: string | null; localTime: string | null; timezone: string | null;
@@ -43,6 +44,13 @@ export function localDayUtcRange(date: string, timezone: string): [string, strin
   };
   const next = new Date(Date.parse(`${date}T00:00:00Z`) + 86400000).toISOString().slice(0, 10);
   return [midnight(date), midnight(next)];
+}
+export function festivalLocalDay(cityId: EventCity, now = Date.now()): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: EVENT_TIMEZONES[cityId], year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+}
+export function festivalCacheExpiry(cityId: EventCity, now = Date.now()): string {
+  const end = Date.parse(localDayUtcRange(festivalLocalDay(cityId, now), EVENT_TIMEZONES[cityId])[1]);
+  return new Date(end).toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
 export function eventPriceLabel(event: TicketmasterEvent): string {
   if (!event.price) return '가격 정보 없음';
@@ -118,8 +126,26 @@ export function meetupAllowed(event: TicketmasterEvent, now = Date.now()) {
 export function featuredLocalEvents(events: TicketmasterEvent[], now = Date.now()) {
   return events.filter(event => event.startsAt && Date.parse(event.startsAt) > now && !['canceled', 'cancelled', 'postponed'].includes(event.status)).slice(0, 5);
 }
-export function spotlightLocalEvents(events: TicketmasterEvent[], now = Date.now()) {
-  return featuredLocalEvents([...events].sort((a, b) => Number(isFestivalEvent(b)) - Number(isFestivalEvent(a))), now).slice(0, 3);
+export function spotlightLocalEvents(events: TicketmasterEvent[], now = Date.now(), pins: FestivalSlot[] = []): TicketmasterEvent[] {
+  const upcoming = events.filter(event => isFestivalEvent(event) && event.startsAt && Date.parse(event.startsAt) > now
+    && !event.timeUnconfirmed && !['canceled', 'cancelled', 'postponed'].includes(event.status))
+    .sort((a, b) => Date.parse(a.startsAt!) - Date.parse(b.startsAt!) || a.id.localeCompare(b.id));
+  // shortcut: group identical names, venues and years; add an explicit series mapping if ticket labels differ.
+  const identity = (event: TicketmasterEvent) => JSON.stringify([event.name.trim().toLowerCase(), event.venue.trim().toLowerCase(), event.localDate?.slice(0, 4) ?? event.startsAt!.slice(0, 4)]);
+  const unique = new Map<string, TicketmasterEvent>();
+  for (const event of upcoming) if (!unique.has(identity(event))) unique.set(identity(event), event);
+  const slots: (TicketmasterEvent | undefined)[] = Array(7);
+  const assigned = new Set<string>();
+  for (const pin of [...pins].sort((a, b) => a.slot - b.slot)) {
+    const event = upcoming.find(event => event.id === pin.eventId);
+    if (!Number.isInteger(pin.slot) || pin.slot < 1 || pin.slot > 7 || slots[pin.slot - 1] || !event
+      || (pin.endsAt !== null && !(Date.parse(pin.endsAt) > now)) || assigned.has(identity(event))) continue;
+    slots[pin.slot - 1] = event;
+    assigned.add(identity(event));
+  }
+  const automatic = [...unique.values()].filter(event => !assigned.has(identity(event)));
+  for (let index = 0; index < slots.length; index++) if (!slots[index]) slots[index] = automatic.shift();
+  return slots.filter((event): event is TicketmasterEvent => !!event);
 }
 export const isFestivalEvent = (event: TicketmasterEvent) => /festival|fest\b|페스티벌|축제/i.test(event.name);
 // A body reference only offers navigation; the destination must fetch and verify the event again.

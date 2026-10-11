@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import * as ticketmaster from '../supabase/functions/_shared/ticketmaster.ts';
 import { parseEventQuery, normalizeEvent, meetupAllowed, safeTicketUrl, featuredLocalEvents, spotlightLocalEvents, localDayUtcRange, eventPriceLabel, eventMatchesPriceFilter } from '../supabase/functions/_shared/ticketmaster.ts';
 const raw = { id: 'G5vYZabc', name: 'Live show', url: 'https://www.ticketmaster.ca/event/G5vYZabc?irgwc=1', dates: { start: { dateTime: '2027-01-02T04:00:00Z', localDate: '2027-01-01', localTime: '20:00:00' }, timezone: 'America/Vancouver', status: { code: 'onsale' } }, _embedded: { venues: [{ name: 'Arena', city: { name: 'Vancouver' }, country: { countryCode: 'CA' } }] } };
 test('bounded city/category/page validation keeps upstream requests controlled', () => {
@@ -66,6 +67,37 @@ test('today preview keeps upcoming events of every kind in date order', () => {
   const make = (id, name, dateTime, status = 'onsale') => normalizeEvent({ ...raw, id, name, dates: { ...raw.dates, start: { ...raw.dates.start, dateTime }, status: { code: status } } });
   const events = [make('concert', 'Concert', '2027-01-02T04:00:00Z'), make('past', 'Past Festival', '2025-01-02T04:00:00Z'), make('fest', 'City Festival', '2027-01-03T04:00:00Z'), make('sport', 'Football', '2027-01-04T04:00:00Z'), make('canceled', 'Canceled fair', '2027-01-05T04:00:00Z', 'canceled'), make('comedy', 'Comedy', '2027-01-05T04:00:00Z'), make('theatre', 'Theatre', '2027-01-05T05:00:00Z'), make('fair2', 'Jazz Festival', '2027-01-06T04:00:00Z')];
   assert.deepEqual(featuredLocalEvents(events, Date.parse('2026-09-24')).map(event => event.id), ['concert', 'fest', 'sport', 'comedy', 'theatre']);
-  assert.deepEqual(spotlightLocalEvents(events, Date.parse('2026-09-24')).map(event => event.id), ['fest', 'fair2', 'concert']);
+  assert.deepEqual(spotlightLocalEvents(events, Date.parse('2026-09-24')).map(event => event.id), ['fest', 'fair2']);
   assert.equal(events[0].id, 'concert');
+});
+
+const festival = (id, date, overrides = {}) => ({ ...normalizeEvent(raw), id, name: `${id} Festival`, startsAt: `${date}T20:00:00Z`, localDate: date, ...overrides });
+const festivalNow = Date.parse('2026-10-11T12:00:00Z');
+test('festival spotlight returns seven unique festivals in nearest-date order without mutating its input', () => {
+  const events = Array.from({ length: 10 }, (_, index) => festival(`f${index}`, `2026-10-${String(12 + index).padStart(2, '0')}`)).reverse();
+  events.push(festival('repeat-pass', '2026-10-13', { name: 'f0 Festival' }), festival('past', '2026-10-10'), festival('cancelled', '2026-10-12', { status: 'cancelled' }), festival('uncertain', '2026-10-12', { timeUnconfirmed: true }));
+  const before = structuredClone(events);
+  assert.deepEqual(spotlightLocalEvents(events, festivalNow).map(event => event.id), ['f0', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6']);
+  assert.deepEqual(events, before);
+  assert.deepEqual(spotlightLocalEvents([festival('only', '2026-10-12')], festivalNow).map(event => event.id), ['only']);
+});
+test('any festival position can be pinned, cleared or automatically released without duplicates', () => {
+  const events = Array.from({ length: 8 }, (_, index) => festival(`f${index}`, `2026-10-${String(12 + index).padStart(2, '0')}`));
+  const pins = [{ slot: 2, eventId: 'f7', endsAt: '2026-10-20T00:00:00Z' }];
+  assert.deepEqual(spotlightLocalEvents(events, festivalNow, pins).map(event => event.id), ['f0', 'f7', 'f1', 'f2', 'f3', 'f4', 'f5']);
+  assert.deepEqual(spotlightLocalEvents(events, festivalNow, [{ ...pins[0], endsAt: '2026-10-10T00:00:00Z' }]).map(event => event.id), ['f0', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6']);
+  assert.deepEqual(spotlightLocalEvents(events, festivalNow, [{ slot: 7, eventId: 'missing', endsAt: null }]).map(event => event.id), ['f0', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6']);
+  assert.deepEqual(spotlightLocalEvents([events[0]], festivalNow, [{ slot: 7, eventId: 'f0', endsAt: null }]).map(event => event.id), ['f0']);
+});
+test('festival day expiry uses the city timezone and preserves short and long daylight-saving days', () => {
+  assert.equal(typeof ticketmaster.festivalLocalDay, 'function');
+  assert.equal(typeof ticketmaster.festivalCacheExpiry, 'function');
+  const now = Date.parse('2026-10-12T02:00:00Z');
+  assert.equal(ticketmaster.festivalLocalDay('vancouver', now), '2026-10-11');
+  assert.equal(ticketmaster.festivalLocalDay('montreal', now), '2026-10-11');
+  assert.equal(ticketmaster.festivalCacheExpiry('vancouver', now), '2026-10-12T07:00:00Z');
+  assert.equal(ticketmaster.festivalCacheExpiry('montreal', now), '2026-10-12T04:00:00Z');
+  assert.equal(ticketmaster.festivalCacheExpiry('vancouver', Date.parse('2025-03-09T09:00:00Z')), '2025-03-10T07:00:00Z');
+  assert.equal(ticketmaster.festivalCacheExpiry('vancouver', Date.parse('2025-11-02T08:30:00Z')), '2025-11-03T08:00:00Z');
+  assert.equal(ticketmaster.festivalCacheExpiry('vancouver', Date.parse('2025-11-02T07:01:00Z')), '2025-11-03T08:00:00Z');
 });

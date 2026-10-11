@@ -1,7 +1,7 @@
 import './festivals.css';
 
 import { useEffect, useState } from 'react';
-import { eventPriceLabel, eventTime, safeTicketUrl, type TicketmasterEvent } from '../../../supabase/functions/_shared/ticketmaster';
+import { EVENT_CITIES, eventPriceLabel, eventTime, festivalLocalDay, safeTicketUrl, type EventCity, type TicketmasterEvent } from '../../../supabase/functions/_shared/ticketmaster';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadPublicFestivals } from '@/lib/public-web';
 import { publicWebClient } from '@/lib/public-web-client';
@@ -9,7 +9,7 @@ import { publicWebClient } from '@/lib/public-web-client';
 export function PublicFestivals({ cityId, cityName }: { cityId: string; cityName: string }) {
   const { play } = useInteractionFeedback();
   const [attempt, setAttempt] = useState(0);
-  const [result, setResult] = useState<{ key: string; events: TicketmasterEvent[]; failed: boolean } | null>(null);
+  const [result, setResult] = useState<{ key: string; events: TicketmasterEvent[]; failed: boolean; nextRefreshAt?: string } | null>(null);
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [hovering, setHovering] = useState(false);
@@ -24,13 +24,35 @@ export function PublicFestivals({ cityId, cityName }: { cityId: string; cityName
 
   useEffect(() => {
     let active = true;
-    void loadPublicFestivals(publicWebClient, cityId).then((items) => {
-      if (active) { setResult({ key, events: items, failed: false }); setIndex(0); }
+    void loadPublicFestivals(publicWebClient, cityId).then((data) => {
+      if (active) { setResult({ key, events: data.events, nextRefreshAt: data.nextRefreshAt, failed: false }); setIndex(0); }
     }).catch(() => {
       if (active) setResult({ key, events: [], failed: true });
     });
     return () => { active = false; };
   }, [cityId, key]);
+
+  useEffect(() => {
+    if (!Object.hasOwn(EVENT_CITIES, cityId)) return;
+    let day = festivalLocalDay(cityId as EventCity);
+    const foreground = () => { if (document.visibilityState === 'visible') setAttempt(value => value + 1); };
+    window.addEventListener('focus', foreground);
+    document.addEventListener('visibilitychange', foreground);
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      const nextDay = festivalLocalDay(cityId as EventCity);
+      if (nextDay !== day || (current?.nextRefreshAt && Date.parse(current.nextRefreshAt) <= Date.now())
+        || current?.events.some(event => event.startsAt && Date.parse(event.startsAt) <= Date.now())) {
+        day = nextDay;
+        setAttempt(value => value + 1);
+      }
+    }, 60000);
+    return () => {
+      window.removeEventListener('focus', foreground);
+      document.removeEventListener('visibilitychange', foreground);
+      window.clearInterval(timer);
+    };
+  }, [cityId, current]);
 
   useEffect(() => {
     const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
