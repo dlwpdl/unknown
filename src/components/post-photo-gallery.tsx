@@ -49,7 +49,7 @@ export function PostPhotoGallery({ post }: { post: Post }) {
             onPress={() => { play('selection'); setZoomed(false); setViewer({ key: galleryKey, index: position }); }}>
           <Image
             key={`${post.id}-${position}:${uri}`}
-            source={sources[position]}
+            source={Math.abs(position - index) <= 1 ? sources[position] : null}
             style={{ width, aspectRatio, backgroundColor: theme.backgroundElement }}
             contentFit="contain"
             onLoad={({ source: { width: photoWidth, height: photoHeight } }) => {

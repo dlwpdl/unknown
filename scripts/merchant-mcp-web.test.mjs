@@ -64,3 +64,13 @@ test('public change review signs current, proposed and deletion photos without h
   await assert.rejects(loadMerchantMcpChangePhotos(missing,edit),/MCP_PHOTO_PREVIEW_FAILED/);
   assert.deepEqual(await loadMerchantMcpChangePhotos(missing,{kind:'profile',before_value:{},changes:{name:'커피 가게'}}),[]);
 });
+
+test('change review loads all twenty ordered photos and rejects twenty-one',async()=>{
+  const paths=Array.from({length:20},(_,i)=>`owner/${i}.webp`);
+  const client={storage:{from:()=>({createSignedUrls:async values=>({data:values.map(path=>({path,signedUrl:`https://photos.example/${path}`})),error:null})})}};
+  const edit={kind:'edit_post',before_value:{image_paths:paths},changes:{image_paths:[...paths].reverse()}};
+  const groups=await loadMerchantMcpChangePhotos(client,edit);
+  assert.deepEqual(groups[0].uris,paths.map(path=>`https://photos.example/${path}`));
+  assert.deepEqual(groups[1].uris,[...groups[0].uris].reverse());
+  await assert.rejects(loadMerchantMcpChangePhotos(client,{...edit,changes:{image_paths:[...paths,'owner/20.webp']}}),/MCP_PHOTO_PREVIEW_FAILED/);
+});
