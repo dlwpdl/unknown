@@ -38,9 +38,9 @@ export function publicWebFetch(baseUrl: string, key: string, transport: typeof f
   };
 }
 
-export async function loadPublicFestivals(client: SupabaseClient, cityId: string): Promise<TicketmasterEvent[]> {
+export async function loadPublicFestivals(client: SupabaseClient, cityId: string): Promise<{ events: TicketmasterEvent[]; nextRefreshAt?: string }> {
   const body = parseEventQuery({ cityId, category: 'all', page: 0, festival: true });
   const { data, error } = await client.functions.invoke('ticketmaster-events', { body });
   if (error || data?.error || !Array.isArray(data?.events)) throw new Error('PUBLIC_FESTIVALS_UNAVAILABLE');
-  return spotlightLocalEvents(data.events);
+  return { events: spotlightLocalEvents(data.events, Date.now(), data.festivalSlots ?? []), nextRefreshAt: data.nextRefreshAt };
 }

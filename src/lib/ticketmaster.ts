@@ -1,8 +1,8 @@
 import { supabase } from '@/lib/supabase';
-import { meetupAllowed, type EventQuery, type TicketmasterEvent } from '../../supabase/functions/_shared/ticketmaster';
-export { EVENT_CITIES, EVENT_CATEGORIES, eventMatchesPriceFilter, eventPriceLabel, eventTime, featuredLocalEvents, isFestivalEvent, spotlightLocalEvents, meetupAllowed } from '../../supabase/functions/_shared/ticketmaster';
+import { meetupAllowed, type EventQuery, type FestivalSlot, type TicketmasterEvent } from '../../supabase/functions/_shared/ticketmaster';
+export { EVENT_CITIES, EVENT_CATEGORIES, eventMatchesPriceFilter, eventPriceLabel, eventTime, festivalLocalDay, featuredLocalEvents, isFestivalEvent, spotlightLocalEvents, meetupAllowed } from '../../supabase/functions/_shared/ticketmaster';
 export type { EventCity, EventCategory, EventPriceFilter, TicketmasterEvent } from '../../supabase/functions/_shared/ticketmaster';
-export type EventList = { events: TicketmasterEvent[]; page: number; hasMore: boolean; fetchedAt: string };
+export type EventList = { events: TicketmasterEvent[]; page: number; hasMore: boolean; fetchedAt: string; festivalSlots?: FestivalSlot[]; nextRefreshAt?: string };
 export type EventDays = { month: string; days: string[]; complete: boolean; fetchedAt: string };
 export const EVENT_CATEGORY_LABELS = { all: '전체', music: '음악', sports: '스포츠', arts: '공연·예술' } as const;
 const ERRORS: Record<string, string> = {
