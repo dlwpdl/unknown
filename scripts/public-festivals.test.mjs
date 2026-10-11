@@ -38,7 +38,7 @@ test('public festivals request the selected city and distinguish missing data fr
   const calls = [];
   let response = { data: { events: [] }, error: null };
   const client = { functions: { invoke: async (name, options) => { calls.push({ name, options }); return response; } } };
-  assert.deepEqual(await publicWeb.loadPublicFestivals(client, 'montreal'), []);
+  assert.deepEqual((await publicWeb.loadPublicFestivals(client, 'montreal')).events, []);
   assert.deepEqual(calls, [{ name: 'ticketmaster-events', options: { body: { cityId: 'montreal', category: 'all', page: 0, festival: true } } }]);
   await assert.rejects(() => publicWeb.loadPublicFestivals(client, 'unknown-city'), /INVALID_INPUT/);
   assert.equal(calls.length, 1);
@@ -63,5 +63,12 @@ test('the public card shares the native local-time formatter and future event se
     { ...event, id: 'past', startsAt: '2000-01-01T00:00:00Z' },
     { ...event, id: 'canceled', status: 'canceled' }, event,
   ] }, error: null }) } };
-  assert.deepEqual((await publicWeb.loadPublicFestivals(client, 'vancouver')).map(item => item.id), ['test-fest']);
+  assert.deepEqual((await publicWeb.loadPublicFestivals(client, 'vancouver')).events.map(item => item.id), ['test-fest']);
+});
+
+test('public festivals preserve the server-assigned position instead of re-sorting it away', async () => {
+  const make = (id, day) => ticketmaster.normalizeEvent({ id, name: `${id} Festival`, dates: { start: { dateTime: `2099-01-${day}T20:00:00Z`, localDate: `2099-01-${day}` }, timezone: 'America/Vancouver', status: { code: 'onsale' } } });
+  const response = { events: [make('first', '01'), make('assigned', '08'), make('second', '02')], festivalSlots: [{ slot: 2, eventId: 'assigned', endsAt: '2099-01-07T00:00:00Z' }] };
+  const client = { functions: { invoke: async () => ({ data: response, error: null }) } };
+  assert.deepEqual((await publicWeb.loadPublicFestivals(client, 'vancouver')).events.map(event => event.id), ['first', 'assigned', 'second']);
 });
