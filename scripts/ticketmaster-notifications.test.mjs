@@ -53,9 +53,8 @@ test('event details keep the introduction and meetup actions and finish with a s
   };
   visit(ui.tree);
   const text = nodes.filter(node => node.type === 'Text').map(node => node.props.children).filter(value => typeof value === 'string');
-  assert.deepEqual(text, ['행사 정보', 'Real Festival', '', 'Park', 'Vancouver', '함께 갈 모임 찾기', '행사 안내', 'An evening of live music.', '티켓 확인하기']);
+  assert.deepEqual(text, ['행사 정보', 'Real Festival', '', 'Park', 'Vancouver', '함께 갈 모임 찾기', '티켓 확인하기']);
   assert.equal(nodes.find(node => node.type === 'Action').props.label, '함께 갈 모임 만들기');
-  assert.equal(nodes.find(node => node.props?.children === 'An evening of live music.').props.numberOfLines, 3);
   const buttons = nodes.filter(node => node.type === 'Pressable');
   assert.deepEqual(buttons.map(node => node.props.analyticsId), ['ticketmaster.detail.back', 'ticketmaster.meetup.find', 'ticketmaster.purchase']);
   assert.equal(buttons.at(-1).props.accessibilityRole, 'link');

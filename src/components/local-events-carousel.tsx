@@ -40,6 +40,10 @@ export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityRea
   }, []);
 
   useEffect(() => {
+    if (current) carousel.current?.scrollTo({ x: 0, animated: false });
+  }, [current]);
+
+  useEffect(() => {
     if (!isFocused || reducedMotion || screenReader || !current || current.events.length < 2) return;
     const timer = setInterval(() => {
       if (AppState.currentState !== 'active' || Date.now() < userPauseUntil.current) return;
@@ -104,13 +108,13 @@ export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityRea
               activeIndexRef.current = index;
               setActiveIndex(index);
             }}>
-              {current.events.map((event, index) => <FeaturedEventCard key={`${event.id}:${isFocused && activeIndex === index}`} event={event} cityId={cityId} index={index} width={cardWidth} active={isFocused && activeIndex === index} reducedMotion={!!reducedMotion} onOpen={() => { userPauseUntil.current = Date.now() + 60000; play('selection'); }} />)}
+              {current.events.map((event, index) => <View key={event.id} collapsable={false} style={[styles.ticket, { width: cardWidth }]}><FeaturedEventCard key={`${event.id}:${isFocused && activeIndex === index}`} event={event} cityId={cityId} index={index} active={isFocused && activeIndex === index} reducedMotion={!!reducedMotion} onOpen={() => { userPauseUntil.current = Date.now() + 60000; play('selection'); }} /></View>)}
             </ScrollView>}
     <ThemedText type="small" themeColor="textSecondary" style={styles.source}>행사 정보: Ticketmaster · 일정과 판매 상태는 변경될 수 있어요</ThemedText>
   </View>;
 }
 
-function FeaturedEventCard({ event, cityId, index, width, active, reducedMotion, onOpen }: { event: TicketmasterEvent; cityId: string; index: number; width: number; active: boolean; reducedMotion: boolean; onOpen: () => void }) {
+function FeaturedEventCard({ event, cityId, index, active, reducedMotion, onOpen }: { event: TicketmasterEvent; cityId: string; index: number; active: boolean; reducedMotion: boolean; onOpen: () => void }) {
   const theme = useTheme();
   const promo = eventVideo(event);
   const [videoPlaying, setVideoPlaying] = useState(false);
@@ -126,8 +130,7 @@ function FeaturedEventCard({ event, cityId, index, width, active, reducedMotion,
     return () => { motion.stop(); imageScale.setValue(1); };
   }, [active, event.image, imageScale, reducedMotion, videoPlaying]));
 
-  return <View style={[styles.ticket, { width }]}>
-  <Link href={{ pathname: '/events/[id]', params: { id: event.id, cityId } }} asChild><Link.AppleZoom>
+  return <Link href={{ pathname: '/events/[id]', params: { id: event.id, cityId } }} asChild><Link.AppleZoom>
   <Pressable analyticsId="today.events.open" accessibilityRole="button" accessibilityLabel={`${event.name}, ${eventTime(event)}, ${event.venue}`} onPress={onOpen} style={StyleSheet.flatten([styles.card, { backgroundColor: theme.card }])}>
     {event.image ? <Animated.View style={[styles.image, { transform: [{ scale: imageScale }, { translateX: imageScale.interpolate({ inputRange: [1, 1.22], outputRange: [0, -12] }) }, { translateY: imageScale.interpolate({ inputRange: [1, 1.22], outputRange: [0, 8] }) }] }]}><Image source={{ uri: event.image }} style={styles.imageFill} contentFit="cover" accessibilityLabel={event.name} /></Animated.View> : <View style={[styles.image, styles.fallback, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'calendar', android: 'event', web: 'event' }} size={38} tintColor={theme.textSecondary} /></View>}
     {promo && active && !reducedMotion && !videoFailed && <FestivalVideo youtubeId={promo.youtubeId} ambient visible={videoPlaying} onPlaying={() => setVideoPlaying(true)} onError={() => { setVideoPlaying(false); setVideoFailed(true); }} />}
@@ -139,7 +142,7 @@ function FeaturedEventCard({ event, cityId, index, width, active, reducedMotion,
       <ThemedText style={styles.eventMeta} numberOfLines={1}>{event.timeUnconfirmed ? eventTime(event) : eventTime(event).split(' · ')[0]} · {event.venue || event.city}</ThemedText>
       <ThemedText style={styles.price} numberOfLines={1}>{eventPriceLabel(event)}</ThemedText>
     </View>
-  </Pressable></Link.AppleZoom></Link></View>;
+  </Pressable></Link.AppleZoom></Link>;
 }
 
 const styles = StyleSheet.create({
