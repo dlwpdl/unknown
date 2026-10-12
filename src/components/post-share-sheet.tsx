@@ -49,7 +49,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
         const result = await Share.share({ title: post.title, message: sharedPostMessage(post), url });
         if (result.action !== Share.sharedAction) return;
       }
-      if (active.current) { onShared(); play('success'); }
+      if (active.current) { onShared(); play('message'); }
     } catch (error) {
       if (active.current && !(error instanceof Error && error.name === 'AbortError')) { setNotice('공유하지 못했어요. 다시 눌러주세요.'); play('warning'); }
     } finally { pending.current = false; if (active.current) setBusy(false); }
@@ -60,7 +60,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
     try {
       const id = await sendDirectMessage(supabase, conversation.id, sharedPostMessage(post));
       if (!id) throw new Error('MESSAGE_SAVE_NOT_VERIFIED');
-      if (active.current) { setSent(values => [...values, conversation.id]); setNotice(`${conversation.title} 대화로 보냈어요.`); onShared(); play('success'); }
+      if (active.current) { setSent(values => [...values, conversation.id]); setNotice(`${conversation.title} 대화로 보냈어요.`); onShared(); play('message'); }
     } catch {
       if (active.current) {
         setUncertain(values => [...values, conversation.id]);
@@ -92,8 +92,8 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
             <ThemedText type="small" themeColor="textSecondary">글링에서 로그인 후 {invite ? '모임을 확인하고 참여를 신청해요.' : '전체 내용을 확인해요.'}</ThemedText>
           </View>
         </View>
-        <Pressable analyticsId="post.share.external" accessibilityRole="button" accessibilityLabel="외부로 공유" disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => void external()}
-          style={[styles.button, { backgroundColor: theme.accent, borderColor: theme.accent }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>외부로 공유</ThemedText></Pressable>
+        <Pressable analyticsId="post.share.external" accessibilityRole="button" accessibilityLabel={invite ? '초대 링크 공유' : '링크 공유'} disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => void external()}
+          style={[styles.button, { backgroundColor: theme.accent, borderColor: theme.accent }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{invite ? '초대 링크 공유' : '링크 공유'}</ThemedText></Pressable>
         {Platform.OS === 'web' && <Pressable analyticsId="post.share.copy" accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => void external(true)} style={control}><ThemedText type="smallBold">링크 복사</ThemedText></Pressable>}
         {invite && <ThemedText type="small" themeColor="textSecondary">초대받은 사람도 참여 신청과 모임장 승인이 필요해요. 상세 집결 정보는 승인된 모임 대화에서만 확인해요.</ThemedText>}
         <ThemedText type="subtitle">글링 대화로 보내기</ThemedText>

@@ -274,6 +274,16 @@ function sheet(context, data = {}) {
   context.after(() => harness.unmount()); return { harness, shared, closed };
 }
 
+test('sharing a link confirms delivery without claiming that a post or meetup was created', async context => {
+  for (const [action, data] of [['post.share.external', {}], ['post.share.copy', { os: 'web' }], ['post.share.conversation', {}]]) {
+    const { harness, shared } = sheet(context, data); await harness.settle();
+    control(harness, action).props.onPress(); await harness.settle();
+    assert.equal(shared.length, 1);
+    assert.ok(harness.calls.some(([name, kind]) => name === 'feedback' && kind === 'message'));
+    assert.ok(!harness.calls.some(([name, kind]) => name === 'feedback' && ['success', 'meetup', 'postPublished', 'meetupCreated'].includes(kind)));
+  }
+});
+
 test('internal sharing blocks double taps, sends only title and owned link, and counts a verified send once', async context => {
   const response = deferred(), { harness, shared } = sheet(context, { send: () => response.promise }); await harness.settle();
   const send = control(harness, 'post.share.conversation'); send.props.onPress(); send.props.onPress();
