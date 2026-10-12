@@ -356,14 +356,14 @@ export function PostCard({
             onPress={() => void share()}
             style={({ pressed }) => [styles.reaction, pressed && styles.pressed]}
             accessibilityRole="button"
-            accessibilityLabel={t.feed.shares(shareCount)}>
+            accessibilityLabel={`${post.room ? '모임 초대 링크 공유' : '게시물 링크 공유'} · ${t.feed.shares(shareCount)}`}>
             <SymbolView
               name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }}
               size={20}
               tintColor={theme.textSecondary}
             />
             <ThemedText type="small" themeColor="textSecondary" style={styles.footItem}>
-              {count(shareCount)}
+              {post.room ? '초대' : '공유'}{shareCount > 0 ? ` · ${count(shareCount)}` : ''}
             </ThemedText>
           </Pressable>
           <View style={styles.reaction} accessible accessibilityLabel={t.feed.views(post.views)}>
