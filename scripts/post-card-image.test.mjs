@@ -146,7 +146,7 @@ test('피드 사진 전체를 원본 비율로 표시하고 글·사진·뷰어 
   assert.equal(image(card.render({ ...props, hidePhoto: true })), undefined);
 });
 
-test('상세 갤러리는 현재 사진을 자르지 않고 사진별 비율과 좌우 페이지를 유지한다', () => {
+test('상세 갤러리는 사진을 자르지 않고 고정 비율과 좌우 페이지를 유지한다', () => {
   const gallery = cardRenderer('PostPhotoGallery');
   let props = { post: { id: 'post-1', title: 'VIFF', imageUris: ['signed:cover', 'signed:landscape'] } };
   let tree = gallery.render(props);
@@ -157,18 +157,18 @@ test('상세 갤러리는 현재 사진을 자르지 않고 사진별 비율과 
   photos[1].props.onLoad(loaded(1920, 1080));
   tree = gallery.render(props);
   photos = nodes(tree).filter((node) => node.type === 'Image');
-  assert.equal(style(photos[0]).aspectRatio, 0.8, '옆 장의 로드가 현재 세로 표지의 크기를 덮어쓰지 않는다');
+  assert.equal(style(photos[0]).aspectRatio, 4 / 3, '세로 표지를 불러와도 표시 영역의 높이를 유지한다');
   assert.equal(style(photos[0]).width, 300);
   const scroll = nodes(tree).find((node) => node.type === 'ScrollView');
   assert.equal(scroll.props.horizontal, true);
   assert.equal(scroll.props.pagingEnabled, true);
   scroll.props.onScroll({ nativeEvent: { contentOffset: { x: 300 } } });
   tree = gallery.render(props);
-  assert.equal(style(image(tree)).aspectRatio, 16 / 9, '좌우로 넘기면 현재 가로 사진의 원본 높이를 쓴다');
+  assert.equal(style(image(tree)).aspectRatio, 4 / 3, '가로 사진으로 넘겨도 표시 영역의 높이를 유지한다');
   assert.ok(nodes(tree).some((node) => JSON.stringify(node.props?.children) === '[2,"/",2]'));
   for (const [width, height] of [[0, 10], [10, 0], [NaN, 10], [10, Infinity]]) {
     nodes(tree).filter((node) => node.type === 'Image')[1].props.onLoad(loaded(width, height));
-    assert.equal(style(image(gallery.render(props))).aspectRatio, 16 / 9);
+    assert.equal(style(image(gallery.render(props))).aspectRatio, 4 / 3);
   }
   props = { post: { ...props.post, id: 'post-2', imageUris: ['signed:new', 'signed:new2'] } };
   tree = gallery.render(props);
