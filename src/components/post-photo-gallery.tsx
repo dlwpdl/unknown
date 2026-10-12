@@ -50,7 +50,6 @@ export function PostPhotoGallery({ post }: { post: Post }) {
   const close = () => { play('selection'); setViewer(null); resetZoom(); };
   const index = page?.key === galleryKey ? page.index : 0;
   const thumbnailIndex = thumbnailPage?.key === galleryKey ? thumbnailPage.index : 0;
-  const aspectRatio = aspectRatios[`${post.id}:${photos[index]}`] ?? 4 / 3;
   const onLayout = (event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width);
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (!width) return;
@@ -117,7 +116,7 @@ export function PostPhotoGallery({ post }: { post: Post }) {
           <Image
             key={`${post.id}-${position}:${uri}`}
             source={Math.abs(position - index) <= 1 ? sources[position] : null}
-            style={{ width, aspectRatio, maxHeight: Math.min(520, screen.height * 0.55), backgroundColor: theme.backgroundElement }}
+            style={{ width, aspectRatio: 4 / 3, maxHeight: Math.min(520, screen.height * 0.55), backgroundColor: theme.backgroundElement }}
             contentFit="contain"
             onLoad={({ source: { width: photoWidth, height: photoHeight } }) => {
               if (Number.isFinite(photoWidth) && Number.isFinite(photoHeight) && photoWidth > 0 && photoHeight > 0) {
@@ -138,6 +137,7 @@ export function PostPhotoGallery({ post }: { post: Post }) {
     </View>}
     </View>
     {photos.length > 1 && <ScrollView ref={thumbnails} key={`thumbnails:${galleryKey}`} analyticsId="post.photo.thumbnails" horizontal
+      style={{ height: 72, flexGrow: 0, flexShrink: 0 }}
       onScroll={event => setThumbnailPage({ key: galleryKey, index: Math.max(0, Math.floor(event.nativeEvent.contentOffset.x / 72)) })} scrollEventThrottle={100}
       showsHorizontalScrollIndicator={false} contentContainerStyle={styles.thumbnails}>
       {pictures.map((picture, position) => {
