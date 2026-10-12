@@ -208,6 +208,13 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
   const settle = async () => { await new Promise(resolve => setImmediate(resolve)); render(); };
 
   render(); await settle();
+  const share = byLabel('게시물 링크 공유');
+  assert.ok(share, 'sharing is visible in the fixed detail header before scrolling');
+  share.props.onPress(); render();
+  const sheet = nodes(tree).find(node => node.type === 'PostShareSheet');
+  assert.equal(sheet.props.post.id, post.id);
+  sheet.props.onClose(); render();
+  assert.equal(nodes(tree).find(node => node.type === 'PostShareSheet'), undefined);
   assert.ok(nodes(tree).find(node => node.type === 'FlatList'), 'comments use one virtualized list');
   assert.equal(nodes(tree).find(node => node.type === 'ScrollView'), undefined, 'loaded comments are not retained in an unbounded scroll tree');
   input().props.onChangeText('읽기 실패 중 초안'); render();

@@ -4,18 +4,48 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      operation:
+        description: Build checks or published-store update enforcement
+        type: choice
+        options: [build, sync-policy]
+        default: build
+  schedule:
+    - cron: '*/15 * * * *'
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
-  group: mobile-release
+  group: ${{ (github.event_name == 'schedule' || inputs.operation == 'sync-policy') && 'mobile-release-policy' || 'mobile-release' }}
   cancel-in-progress: false
 
 jobs:
   verify:
-    if: ${{ github.event.repository.private == false }}
+    if: ${{ github.event.repository.private == false && github.event_name != 'schedule' && inputs.operation != 'sync-policy' }}
     uses: ./.github/workflows/ci.yml
+
+  sync-policy:
+    if: ${{ github.event.repository.private == false && (github.event_name == 'schedule' || inputs.operation == 'sync-policy') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      GITHUB_REPOSITORY_VISIBILITY: ${{ github.event.repository.private == false && 'public' || 'private' }}
+      GH_TOKEN: ${{ github.token }}
+      GLING_ASC_JSON: ${{ secrets.GLING_ASC_JSON }}
+      GLING_PLAY_JSON: ${{ secrets.GLING_PLAY_JSON }}
+      GLING_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.GLING_SUPABASE_SERVICE_ROLE_KEY }}
+      GLING_PUBLIC_ENV_JSON: ${{ secrets.GLING_PUBLIC_ENV_JSON }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check trusted release source
+        run: git merge-base --is-ancestor HEAD origin/mobile-app
+      - run: bash scripts/install-asc.sh
+      - name: Require the latest publicly installable platform builds
+        run: python3 scripts/release.py sync-policy
 
   prepare:
     if: ${{ github.event.repository.private == false }}

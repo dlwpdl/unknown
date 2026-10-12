@@ -5,6 +5,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { Alert, DeviceEventEmitter, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { PostShareSheet } from '@/components/post-share-sheet';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
 import { relationshipSlotData } from '@/components/relationship-slot-card';
 import { Spacing } from '@/constants/theme';
@@ -13,13 +14,20 @@ import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { chillingSchedule } from '@/lib/chilling';
-import { leaveMeetup, loadMyMeetups, MEETUPS_CHANGED_EVENT, type MyMeetup } from '@/lib/community-data';
+import { leaveMeetup, loadMyMeetups, MEETUPS_CHANGED_EVENT, recordPostShare, type MyMeetup } from '@/lib/community-data';
+import { loadPublicPost } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useMembership } from '@/lib/membership-provider';
 import { CITIES } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
+import type { Post } from '@/lib/types';
 
-export function MyMeetups({ onOpen, showLoadingIndicator = true }: { onOpen: (postId: string) => Promise<void>; showLoadingIndicator?: boolean }) {
+type MyMeetupsProps = { onOpen: (postId: string) => Promise<void>; showLoadingIndicator?: boolean };
+export function MyMeetups(props: MyMeetupsProps) {
+  const { isAuthed, me } = useAuth();
+  return <MyMeetupsContent key={isAuthed ? me.id : 'guest'} {...props} />;
+}
+function MyMeetupsContent({ onOpen, showLoadingIndicator = true }: MyMeetupsProps) {
   const theme = useTheme();
   const hidden = useContentVisibility();
   const router = useRouter();
@@ -35,6 +43,10 @@ export function MyMeetups({ onOpen, showLoadingIndicator = true }: { onOpen: (po
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [sharedPost, setSharedPost] = useState<Post | null>(null);
+  const shareBusy = useRef(false), active = useRef(true);
+  useLayoutEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
+  const shareTarget = sharedPost && !hidden('post', sharedPost.id, sharedPost.author.id) ? sharedPost : null;
   const items = result?.userId === userId ? result.items.filter((item) => !hidden('post', item.id, item.authorId)) : [];
 
   const refresh = useCallback(async () => {
@@ -98,6 +110,18 @@ export function MyMeetups({ onOpen, showLoadingIndicator = true }: { onOpen: (po
     catch { Alert.alert(t.feed.refreshErrorTitle, t.feed.refreshErrorBody); }
     finally { setBusy(null); }
   };
+  const invite = async (meetup: MyMeetup) => {
+    if (busy || shareBusy.current || !userId) return;
+    shareBusy.current = true; setBusy(meetup.id); play('selection');
+    try {
+      const post = await loadPublicPost(supabase, meetup.id);
+      if (!active.current) return;
+      if (!post?.room || post.id !== meetup.id) throw new Error('MEETUP_UNAVAILABLE');
+      setSharedPost(post);
+    } catch {
+      if (active.current) { play('warning'); Alert.alert('초대 링크를 열지 못했어요', '모임을 다시 확인한 뒤 눌러주세요.'); }
+    } finally { shareBusy.current = false; if (active.current) setBusy(null); }
+  };
 
   return <View style={styles.section}>
     <View style={styles.heading}>
@@ -122,6 +146,11 @@ export function MyMeetups({ onOpen, showLoadingIndicator = true }: { onOpen: (po
           <ThemedText type="small" themeColor="textSecondary">{CITIES.find(({ id }) => id === meetup.cityId)?.name ?? meetup.cityId} · {meetup.room.memberCount ?? 0}{meetup.room.capacity ? `/${meetup.room.capacity}` : ''}명</ThemedText>
           {busy === meetup.id && <GlingLoader color={theme.accent} accessibilityLabel="모임 처리 중" />}
         </Pressable>
+        {(meetup.role === 'host' || meetup.role === 'approved') && <Pressable analyticsId="meetup.share.open" accessibilityRole="button" accessibilityLabel={`${meetup.title} 초대 링크 공유`}
+          disabled={!!busy} accessibilityState={{ disabled: !!busy, busy: busy === meetup.id }} onPress={() => void invite(meetup)}
+          style={({ pressed }) => [styles.action, { borderColor: theme.line, borderWidth: 1, borderRadius: 12, backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement }]}>
+          <ThemedText type="smallBold" themeColor="accent">{meetup.role === 'host' ? '초대 링크' : '같이 가요'}</ThemedText>
+        </Pressable>}
         {(meetup.role === 'host' || meetup.role === 'approved') && meetup.conversationId && <Pressable analyticsId="components_my-meetups.pressable.3"
           onPress={() => { play('selection'); router.push({ pathname: '/chat', params: { conversationId: meetup.conversationId! } }); }}
           accessibilityRole="button" style={styles.action}>
@@ -131,6 +160,8 @@ export function MyMeetups({ onOpen, showLoadingIndicator = true }: { onOpen: (po
           <ThemedText type="small" themeColor="textSecondary">{meetup.role === 'host' ? t.meetup.end : meetup.role === 'pending' ? t.meetup.cancelRequest : t.meetup.leave}</ThemedText>
         </Pressable>}
       </View>)}</ScrollView>
+      {shareTarget && <PostShareSheet post={shareTarget} visible onClose={() => setSharedPost(null)}
+        onShared={() => { void recordPostShare(supabase, shareTarget.id).catch(() => {}); }} />}
     </>}
   </View>;
 }
