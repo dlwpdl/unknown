@@ -11,6 +11,16 @@ vm.runInNewContext(ts.transpileModule(fs.readFileSync(new URL('../supabase/funct
 }).outputText, { exports, Deno: { serve() {} }, require: () => ({}) });
 const { loadContent } = exports;
 
+test('message safety review loads retained versions through a service-only RPC', async () => {
+  const result = await loadContent({ rpc: async (name, args) => {
+    assert.equal(name, 'get_message_safety_content');
+    assert.equal(args.p_message_id, 'deleted-message');
+    return { data: { authorId: 'author', text: '삭제된 메시지입니다.\noriginal\nedited' } };
+  } }, 'message', 'deleted-message');
+  assert.ok(result.text.includes('original'));
+  await assert.rejects(loadContent({ rpc: async () => ({ error: new Error('SERVICE_ROLE_REQUIRED') }) }, 'message', 'id'), /SERVICE_ROLE_REQUIRED/);
+});
+
 test('analysis preserves question and cadence after a maximum-length Unicode post', async () => {
   const worker = {};
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(new URL('../supabase/functions/safety-monitor/index.ts', import.meta.url), 'utf8') + '\nexports.analyze = analyze;', {
@@ -28,14 +38,13 @@ test('analysis preserves question and cadence after a maximum-length Unicode pos
   assert.ok(prompt.includes(question), 'complete application question reaches the model');
   assert.ok(prompt.includes(cadence), 'complete cadence reaches the model');
   assert.equal(analyzedPayload.store, false);
-  await worker.analyze('offline-test', 'post', 'x'.repeat(30000));
-  assert.ok(analyzedPayload.input[0].content[0].text.length < 14000, 'oversized input remains bounded');
+  await assert.rejects(worker.analyze('offline-test', 'post', 'x'.repeat(30000)), /SAFETY_CONTENT_TOO_LONG/);
 });
 
-test('Chilling content uses the service RPC and propagates missing content and errors', async () => {
-  for (const targetType of ['chilling_profile', 'chilling_application']) {
+test('existing Chilling and trust targets keep their guarded service RPCs', async () => {
+  for (const targetType of ['chilling_profile', 'chilling_application', 'meetup_review', 'manner_review', 'meetup_attendance']) {
     const client = { rpc: async (name, args) => {
-      assert.equal(name, 'get_chilling_safety_content');
+      assert.equal(name, targetType.startsWith('chilling_') ? 'get_chilling_safety_content' : 'get_trust_safety_content');
       assert.deepEqual(JSON.parse(JSON.stringify(args)), { p_target_type: targetType, p_target_id: 'content-id' });
       return { data: { authorId: 'author-id', text: '소개와 지원 답변' }, error: null };
     } };

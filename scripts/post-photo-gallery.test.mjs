@@ -219,6 +219,25 @@ test('twenty photo pages load only the current photo and its neighbours at the s
   }
 });
 
+test('사진을 불러오거나 가로·세로·정사각 사진을 넘겨도 갤러리 영역은 고정된다', () => {
+  for (const width of [320, 390, 768]) {
+    const gallery = loadGallery(null, width);
+    const props = { post: { id: 'mixed-ratios', title: '사진', imageUris: ['landscape', 'portrait', 'square'] } };
+    for (const [index, dimensions] of [[0, [1600, 900]], [1, [600, 1200]], [2, [1000, 1000]]]) {
+      let tree = gallery.Gallery(props);
+      const photo = nodes(hero(tree)).filter(node => node.props?.onLoad)[index];
+      photo.props.onLoad({ source: { width: dimensions[0], height: dimensions[1] } });
+      hero(tree).props.onScroll({ nativeEvent: { contentOffset: { x: index * width } } });
+      tree = gallery.Gallery(props);
+      for (const image of nodes(hero(tree)).filter(node => node.props?.onLoad)) {
+        assert.equal(image.props.style.width, width);
+        assert.equal(image.props.style.aspectRatio, 4 / 3, '사진의 원본 비율이 갤러리 높이를 바꾸지 않는다');
+        assert.equal(image.props.contentFit, 'contain', '사진 전체를 비율을 유지하며 보여준다');
+      }
+    }
+  }
+});
+
 test('사진이 한 장이어도 상세 갤러리에서 원본을 보여준다', () => {
   const { Gallery } = loadGallery();
   assert.ok(nodes(Gallery({ post: { id: 'post-1', imageUris: ['signed:one'] } })).some(n => n.props?.source?.uri === 'signed:one'));
@@ -248,6 +267,8 @@ test('20장 썸네일은 작은 이미지를 사용하고 마지막 선택과 �
   let tree = gallery.Gallery({ post });
   const strip = nodes(tree).find(node => node.props?.analyticsId === 'post.photo.thumbnails');
   assert.equal(strip?.props.horizontal, true);
+  assert.equal(strip.props.style?.height, 72, '앱의 세로 목록 안에서도 작은 사진 줄의 높이를 확보한다');
+  assert.equal(strip.props.style?.flexShrink, 0, '큰 사진 때문에 작은 사진 줄이 접히지 않는다');
   assert.equal(thumbnails(tree).length, 20);
   assert.deepEqual(nodes(strip).filter(node => node.props?.source?.uri).map(node => node.props.source.uri), post.imageThumbs);
   thumbnails(tree)[19].props.onPress();

@@ -2,10 +2,9 @@ import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, FlatList } from '@/components/analytics-controls';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
 import { SymbolView } from 'expo-symbols';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Alert, AppState, KeyboardAvoidingView, LayoutAnimation, Linking, Modal, Platform, StyleSheet, TextInput, UIManager, View, type FlatList as NativeFlatList, type NativeScrollEvent, type NativeSyntheticEvent, type ViewToken } from 'react-native';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
+import { AppState, KeyboardAvoidingView, LayoutAnimation, Linking, Modal, Platform, StyleSheet, TextInput, UIManager, View, type FlatList as NativeFlatList, type NativeScrollEvent, type NativeSyntheticEvent, type ViewToken } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -13,6 +12,8 @@ import { ReportSheet } from '@/components/report-sheet';
 import { SharedLinkCard } from '@/components/shared-link-card';
 import { sharedLinkInMessage } from '@/lib/sharing';
 import { ChatMembers } from '@/components/chat-members';
+import { ChatLocationPicker } from '@/components/chat-location-picker';
+import type { ChatLocation } from '@/lib/chat-location';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
 import { ThemedText } from '@/components/themed-text';
@@ -23,8 +24,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
-import { chatDateLabel, chatMessageTime, firstUnreadMessageIndex, showChatMessageTime } from '@/lib/chat-details';
-import { blockUser, endConversation, loadListingReviewState, writeListingReview, type ListingReviewState, isContentRejected, loadChatReadPosition, loadConversationMessages, loadConversationMessagesByIds, loadMessageReactions, markChatRead, mergeChatMessages, sendChatAttachment, sendDirectMessage, setMessageReaction, uploadChatImage, type ChatMessageRecord, type ConversationPreview, type MessageReaction, type ReportTarget } from '@/lib/community-data';
+import { chatDateLabel, chatMessageTime, firstUnreadMessageIndex, messageMenuPosition, showChatMessageTime, type ChatRect } from '@/lib/chat-details';
+import { blockUser, endConversation, editChatMessage, deleteChatMessage, loadListingReviewState, writeListingReview, type ListingReviewState, isContentRejected, loadChatReadPosition, loadConversationMessages, loadConversationMessagesByIds, loadMessageReactions, markChatRead, mergeChatMessages, sendChatAttachment, sendDirectMessage, setMessageReaction, uploadChatImage, type ChatMessageRecord, type ConversationPreview, type MessageReaction, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 
@@ -43,6 +44,22 @@ export function conversationSender(message: Pick<ChatMessageRecord, 'sender_id' 
 }
 
 type ReportSelection = { targetType: ReportTarget; targetId: string; reportedUserId: string; reportedNickname: string };
+function BubblePressable({ message, onMenu, ...props }: ComponentProps<typeof Pressable> & { message: ChatMessageRecord; onMenu: (message: ChatMessageRecord, bubble: View) => void }) {
+  const bubble = useRef<View>(null);
+  const open = () => {
+    if (!props.disabled && bubble.current) onMenu(message, bubble.current);
+  };
+  return <Pressable {...props} ref={bubble} delayLongPress={400} onLongPress={open}
+    accessibilityHint="길게 눌러 메시지 메뉴 열기" accessibilityActions={[{ name: 'longpress', label: '메시지 메뉴' }]}
+    onAccessibilityAction={event => { if (event.nativeEvent.actionName === 'longpress') open(); }}
+    {...(Platform.OS === 'web' ? {
+      onContextMenu: (event: { preventDefault: () => void }) => { event.preventDefault(); open(); },
+      onKeyDown: (event: { key: string; shiftKey: boolean; preventDefault: () => void }) => { if (event.key === 'ContextMenu' || event.key === 'F10' && event.shiftKey) { event.preventDefault(); open(); } },
+    } : {})} />;
+}
+function messagePreview(message: Pick<ChatMessageRecord, 'body' | 'kind' | 'deleted_at'>) {
+  return message.deleted_at ? '삭제된 메시지입니다.' : message.kind === 'image' ? '사진' : message.kind === 'location' ? '공유한 위치' : message.body;
+}
 function RoomAction({ label, onPress, disabled = false, primary = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean }) {
   const theme = useTheme();
   const { play } = useInteractionFeedback();
@@ -70,11 +87,23 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const status = conversation.status === 'ended' ? 'ended' : resolvedStatus ?? conversation.status;
   const access = conversationCapabilities(status);
   const [allMessages, setMessages] = useState<ChatMessageRecord[]>([]);
+  const latestMessages = useRef(allMessages);
+  useLayoutEffect(() => { latestMessages.current = allMessages; }, [allMessages]);
   const messages = useMemo(() => allMessages.filter((message) => !hidden('message', message.id, message.sender_id)), [allMessages, hidden]);
   const [draft, setDraft] = useState('');
+  const [replyTo, setReplyTo] = useState<ChatMessageRecord | null>(null);
+  const [messageMenu, setMessageMenu] = useState<ChatMessageRecord | null>(null);
+  const [menuFrame, setMenuFrame] = useState<{ anchor: ChatRect; bounds: ChatRect } | null>(null);
+  const [menuSize, setMenuSize] = useState({ width: 0, height: 0 });
+  const menuRequest = useRef(0), listRegion = useRef<View>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<ChatMessageRecord | null>(null);
+  const [messageEditDraft, setMessageEditDraft] = useState('');
+  const replyTarget = replyTo && !replyTo.deleted_at && !hidden('message', replyTo.id, replyTo.sender_id) ? replyTo : null;
   const [selectedPhoto, setSelectedPhoto] = useState<PreparedImage | null>(null);
   const [pickingPhoto, setPickingPhoto] = useState(false);
   const [attachmentsOpen, setAttachmentsOpen] = useState(false);
+  const [locationOpen, setLocationOpen] = useState(false);
   const [photoOpen, setPhotoOpen] = useState<string | null>(null);
   const messageList = useRef<NativeFlatList<ChatMessageRecord> | null>(null);
   const initialScroll = useRef(false);
@@ -136,6 +165,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     void markChatRead(supabase, conversation.id, newest.id).catch(() => {});
   }, [conversation.id, valid]);
   const onMessageScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    closeMessageMenu();
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
     const nearLatest = contentSize.height - layoutMeasurement.height - contentOffset.y < 88;
     followingLatest.current = nearLatest;
@@ -195,6 +225,35 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     lastTap.current = { id: messageId, at };
     if (previous && previous.id === messageId && at - previous.at < 320) { lastTap.current = null; void toggleHeart(messageId); }
   };
+  const closeMessageMenu = useCallback(() => { menuRequest.current += 1; setMessageMenu(null); setMenuFrame(null); }, []);
+  const openMessageMenu = (message: ChatMessageRecord, bubble: View) => {
+    if (!access.write || sending || !valid() || message.deleted_at) return;
+    const request = ++menuRequest.current;
+    lastTap.current = null; play('selection');
+    bubble.measureInWindow((x, y, width, height) => {
+      if (!valid() || request !== menuRequest.current || width <= 0 || height <= 0) return;
+      const anchor = { x, y, width, height };
+      listRegion.current?.measureInWindow((x, y, width, height) => {
+        if (!valid() || request !== menuRequest.current || hidden('message', message.id, message.sender_id) || width < 44 || height < 44) return;
+        setMenuFrame({ anchor, bounds: { x, y, width, height } }); setMenuSize({ width: 0, height: 0 });
+        setDeleteConfirm(false); setMessageMenu(message);
+      });
+    });
+  };
+  const changeMessage = async (message: ChatMessageRecord, remove: boolean) => {
+    if (processing.current || !access.write || !valid()) return;
+    processing.current = true; setSending(true); setError(null);
+    try {
+      const saved = remove ? await deleteChatMessage(supabase, message.id, message.edited_at ?? null)
+        : await editChatMessage(supabase, message.id, messageEditDraft, message.edited_at ?? null);
+      if (!valid()) return;
+      setMessages(previous => mergeChatMessages(previous, [{ ...message, ...saved }], blockedUsers.current));
+      if (remove) setReplyTo(current => current?.id === message.id ? null : current);
+      setMessageMenu(null); setEditingMessage(null); play(remove ? 'warning' : 'success');
+    } catch {
+      if (valid()) { play('warning'); setError('메시지를 변경하지 못했어요. 다른 기기에서 변경됐을 수 있으니 원문을 다시 확인해 주세요.'); }
+    } finally { processing.current = false; if (valid()) setSending(false); }
+  };
   const group = conversation.kind === 'group';
   const title = group ? conversation.title : conversation.otherUser.nickname;
   const verificationNotice = !group && ![2, 3].includes(conversation.otherUser.verificationLevel)
@@ -239,7 +298,18 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
         const request = loadingRequest.current;
         const rows = await loadConversationMessagesByIds(supabase, conversation.id, ids);
         if (active && valid()) {
-          if (request === loadingRequest.current) { if (rows.length) animateNewMessage(); setMessages((previous) => mergeChatMessages(previous, rows, blockedUsers.current)); }
+          if (request === loadingRequest.current) {
+            const returned = new Set(rows.map(row => row.id));
+            const removed = new Set(ids.filter(id => !returned.has(id)));
+            if (rows.some(row => !latestMessages.current.some(previous => previous.id === row.id))) animateNewMessage();
+            setMessages(previous => mergeChatMessages(previous.filter(row => !removed.has(row.id)).map(row =>
+              row.reply_to_id && removed.has(row.reply_to_id) ? { ...row, reply: null } : row), rows, blockedUsers.current));
+            setReplyTo(parent => {
+              if (!parent || removed.has(parent.id)) return null;
+              const updated = rows.find(row => row.id === parent.id);
+              return updated?.deleted_at ? null : updated ?? parent;
+            });
+          }
           else ids.forEach((id) => pending.add(id));
         }
       } catch {
@@ -257,9 +327,10 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
         if (['pending', 'active', 'ended', 'rejected', 'cancelled'].includes(next)) setResolvedStatus(next);
         void onChanged();
       });
-    if (access.read) channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversation.id}` }, ({ new: message }) => {
-      if (!active || typeof message.id !== 'string') return;
-      pending.add(message.id);
+    if (access.read) channel.on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversation.id}` }, ({ new: message, old: previous }) => {
+      const id = message && 'id' in message ? message.id : previous && 'id' in previous ? previous.id : null;
+      if (!active || typeof id !== 'string') return;
+      pending.add(id);
       if (!timer && !flushing) timer = setTimeout(() => void flush(), 80);
     });
     channel.subscribe();
@@ -330,12 +401,14 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     if (!body || sending || processing.current || !access.write || !valid()) return;
     setAttachmentMenu(false);
     processing.current = true; setSending(true); setError(null);
+    const parent = replyTarget;
     try {
-      const id = await sendDirectMessage(supabase, conversation.id, body);
+      const id = await sendDirectMessage(supabase, conversation.id, body, parent?.id);
       await snapshot.current;
       if (!valid()) return;
       animateNewMessage();
-      setMessages((previous) => previous.some((item) => item.id === id) ? previous : [...previous, { id, conversation_id: conversation.id, sender_id: currentUserId, sender_nickname: auth.me.nickname, body, created_at: new Date().toISOString() }]);
+      setMessages((previous) => previous.some((item) => item.id === id) ? previous : [...previous, { id, conversation_id: conversation.id, sender_id: currentUserId, sender_nickname: auth.me.nickname, body, reply_to_id: parent?.id, reply: parent, created_at: new Date().toISOString() }]);
+      setReplyTo(current => current?.id === parent?.id ? null : current);
       setDraft((current) => current.trim() === body ? '' : current); scrollToLatest(); play('message');
     } catch (failure) { if (valid()) { play('warning'); setError(isContentRejected(failure) ? t.safety.contentBlockedBody : t.chat.sendError); await onChanged(); } }
     finally { processing.current = false; if (valid()) setSending(false); }
@@ -359,49 +432,43 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     processing.current = true; setSending(true); setError(null);
     let path: string | null = null;
     let sentId: string | null = null;
+    const parent = replyTarget;
     try {
       path = await uploadChatImage(supabase, currentUserId, conversation.id, selectedPhoto.base64);
       if (!valid()) return;
-      sentId = await sendChatAttachment(supabase, conversation.id, { kind: 'image', imagePath: path });
+      sentId = await sendChatAttachment(supabase, conversation.id, { kind: 'image', imagePath: path }, parent?.id);
       const rows = await loadConversationMessagesByIds(supabase, conversation.id, [sentId]).catch(() => []);
       if (!valid()) return;
       animateNewMessage();
       setMessages((previous) => mergeChatMessages(previous, rows.length ? rows.map((row) => ({ ...row, imageUrl: row.imageUrl ?? selectedPhoto.uri })) : [{ id: sentId!, conversation_id: conversation.id,
-        sender_id: currentUserId, sender_nickname: auth.me.nickname, body: '📷 사진', kind: 'image', image_path: path, imageUrl: selectedPhoto.uri,
+        sender_id: currentUserId, sender_nickname: auth.me.nickname, body: '📷 사진', kind: 'image', image_path: path, imageUrl: selectedPhoto.uri, reply_to_id: parent?.id, reply: parent,
         created_at: new Date().toISOString() }], blockedUsers.current));
       setSelectedPhoto(null); scrollToLatest(); play('message');
+      setReplyTo(current => current?.id === parent?.id ? null : current);
     } catch { if (valid()) { play('warning'); setError('사진을 보내지 못했어요. 잠시 후 다시 시도해 주세요.'); } }
     finally {
       if (path && !sentId) void supabase.storage.from('chat-images').remove([path]).catch(() => {});
       processing.current = false; if (valid()) setSending(false);
     }
   };
-  const sendCurrentLocation = async () => {
+  const sendLocation = async (point: ChatLocation) => {
     if (sending || processing.current || !access.write || !valid()) return;
     processing.current = true; setSending(true); setError(null);
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    const parent = replyTarget;
     try {
-      const permission = await Location.requestForegroundPermissionsAsync();
-      if (!permission.granted) throw new Error('LOCATION_PERMISSION');
-      const position = await Promise.race([
-        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }),
-        new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('LOCATION_TIMEOUT')), 15000); }),
-      ]);
-      if (!valid()) return;
-      const { latitude, longitude } = position.coords;
-      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) throw new Error('LOCATION_UNAVAILABLE');
-      const id = await sendChatAttachment(supabase, conversation.id, { kind: 'location', latitude, longitude });
+      const { latitude, longitude, label } = point;
+      const id = await sendChatAttachment(supabase, conversation.id, { kind: 'location', latitude, longitude, label }, parent?.id);
       const rows = await loadConversationMessagesByIds(supabase, conversation.id, [id]).catch(() => []);
       if (!valid()) return;
       animateNewMessage();
       setMessages((previous) => mergeChatMessages(previous, rows.length ? rows : [{ id, conversation_id: conversation.id,
-        sender_id: currentUserId, sender_nickname: auth.me.nickname, body: '📍 위치', kind: 'location', latitude, longitude,
+        sender_id: currentUserId, sender_nickname: auth.me.nickname, body: `📍 ${label}`, kind: 'location', latitude, longitude, location_label: label, reply_to_id: parent?.id, reply: parent,
         created_at: new Date().toISOString() }], blockedUsers.current));
       scrollToLatest(); play('message');
+      setLocationOpen(false); setReplyTo(current => current?.id === parent?.id ? null : current);
     } catch (failure) {
-      if (valid()) { play('warning'); setError(failure instanceof Error && failure.message === 'LOCATION_PERMISSION'
-        ? '위치 권한을 허용해야 현재 위치를 보낼 수 있어요.' : '위치를 보내지 못했어요. 연결과 위치 설정을 확인해 주세요.'); }
-    } finally { clearTimeout(timer); processing.current = false; if (valid()) setSending(false); }
+      if (valid()) { play('warning'); setError('위치를 보내지 못했어요. 선택한 위치를 확인하고 다시 시도해 주세요.'); throw failure; }
+    } finally { processing.current = false; if (valid()) setSending(false); }
   };
   const openAttachments = () => { play('selection'); setAttachmentMenu(!attachmentsOpen); };
   const loadOlder = async () => {
@@ -457,9 +524,9 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       </View>
     </View>}
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      {access.read ? loading && messages.length === 0 ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} /></View> : <View style={styles.messageList}><FlatList ref={messageList} analyticsId="components_chat-room.flatlist.1" data={messages} keyExtractor={(message) => message.id} contentContainerStyle={styles.scroll}
+      {access.read ? loading && messages.length === 0 ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} /></View> : <View ref={listRegion} style={styles.messageList} onLayout={closeMessageMenu}><FlatList ref={messageList} analyticsId="components_chat-room.flatlist.1" data={messages} keyExtractor={(message) => message.id} contentContainerStyle={styles.scroll}
         onViewableItemsChanged={trackVisibleMessages} viewabilityConfig={viewability}
-        onScroll={onMessageScroll} scrollEventThrottle={32} maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+        onScrollBeginDrag={closeMessageMenu} onScroll={onMessageScroll} scrollEventThrottle={32} maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
         onLayout={() => { if (initialScroll.current && followingLatest.current) requestAnimationFrame(() => messageList.current?.scrollToEnd({ animated: false })); }}
         onContentSizeChange={() => { if (initialScroll.current && followingLatest.current && !loadingOlder) requestAnimationFrame(() => messageList.current?.scrollToEnd({ animated: false })); }}
         onScrollToIndexFailed={({ index, averageItemLength }) => {
@@ -478,13 +545,19 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           const reaction = reactions.get(message.id);
           const attachment = message.kind === 'image' || message.kind === 'location';
           const sharedUrl = attachment ? null : sharedLinkInMessage(message.body);
-          const content = message.kind === 'image'
+          const messageContent = message.kind === 'image'
             ? message.imageUrl ? <Image source={{ uri: message.imageUrl }} style={styles.chatPhoto} contentFit="cover" accessibilityLabel="대화에서 보낸 사진" />
               : <ThemedText type="small" themeColor="textSecondary">사진을 불러오지 못했어요</ThemedText>
             : message.kind === 'location' && message.latitude != null && message.longitude != null
-              ? <View style={styles.locationCard}><ThemedText type="subtitle">📍</ThemedText><ThemedText type="smallBold">공유한 위치</ThemedText><ThemedText type="small" themeColor="accent">지도에서 열기 ↗</ThemedText></View>
+              ? <View style={styles.locationCard}><ThemedText type="subtitle">📍</ThemedText><ThemedText type="smallBold">{message.location_label ?? '공유한 위치'}</ThemedText><ThemedText type="small" themeColor="accent">지도에서 열기 ↗</ThemedText></View>
               : <ThemedText type="small" style={mine ? { color: theme.accentInk } : undefined}>{message.body}</ThemedText>;
+          const quote = message.reply_to_id ? message.reply && !hidden('message', message.reply.id, message.reply.sender_id)
+            ? messagePreview(message.reply) : '원본 메시지를 볼 수 없어요.' : null;
+          const content = <>{quote && <ThemedText type="small" numberOfLines={2} style={[styles.quoteText, { color: mine && !attachment ? theme.accentInk : theme.textSecondary, borderLeftColor: mine && !attachment ? theme.accentInk : theme.line }]}>{quote}</ThemedText>}{messageContent}
+            {message.edited_at && !message.deleted_at && <ThemedText type="small" style={{ color: mine && !attachment ? theme.accentInk : theme.textSecondary }}>수정됨</ThemedText>}</>;
+          const menuProps = { disabled: !!message.deleted_at, accessibilityState: { disabled: !!message.deleted_at } };
           const onBubblePress = (at: number) => {
+            if (message.deleted_at) return;
             if (message.kind === 'image' && message.imageUrl) { play('selection'); setPhotoOpen(message.imageUrl); return; }
             if (message.kind === 'location' && message.latitude != null && message.longitude != null) {
               play('selection');
@@ -495,7 +568,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
             handleBubbleTap(message.id, at);
           };
           // 하트 모양은 그대로 두고, 내가 누른 경우에만 눌린 느낌(배경·그림자)을 준다.
-          const heart = reaction && reaction.hearts > 0
+          const heart = !message.deleted_at && reaction && reaction.hearts > 0
             ? <View style={[styles.heartBadge, mine && styles.timeMine, reaction.mine && styles.heartBadgeMine]}>
                 <ThemedText type="small" themeColor={reaction.mine ? undefined : 'textSecondary'} style={reaction.mine ? styles.heartBadgeTextMine : undefined}>❤️ {reaction.hearts}</ThemedText>
               </View>
@@ -503,13 +576,17 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           return <View style={styles.messageGroup}>
             {message.id === unreadStart && <View style={[styles.unreadDivider, { borderColor: theme.accent }]}><ThemedText type="smallBold" themeColor="accent">여기부터 안 읽은 메시지</ThemedText></View>}
             {date && <ThemedText type="small" themeColor="textSecondary" style={styles.date}>{date}</ThemedText>}
-            {mine ? <><Pressable analyticsId="components_chat-room.pressable.heart" onPress={(event: { nativeEvent?: { timestamp?: number } }) => onBubblePress(event?.nativeEvent?.timestamp ?? 0)} accessibilityRole={message.kind === 'location' ? 'link' : 'button'} accessibilityLabel={attachment ? message.kind === 'image' ? '사진 크게 보기' : '공유한 위치 지도에서 열기' : '메시지에 하트 (두 번 탭)'} style={[styles.bubbleMine, { backgroundColor: attachment ? theme.card : theme.accent }]}>{content}</Pressable>{heart}{time}</>
-              : <View style={styles.row}><View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" themeColor="navy">{author.nickname[0]}</ThemedText></View><View style={styles.rowBody}><ThemedText type="smallBold">{author.nickname}</ThemedText><Pressable analyticsId="components_chat-room.pressable.heart" onPress={(event: { nativeEvent?: { timestamp?: number } }) => onBubblePress(event?.nativeEvent?.timestamp ?? 0)} accessibilityRole={message.kind === 'location' ? 'link' : 'button'} accessibilityLabel={attachment ? message.kind === 'image' ? '사진 크게 보기' : '공유한 위치 지도에서 열기' : '메시지에 하트 (두 번 탭)'} style={[styles.bubble, { backgroundColor: theme.card, borderColor: theme.line }]}>{content}</Pressable>{heart}{time}<View style={styles.messageActions}><RoomAction label={t.report.short} onPress={() => setReport({ targetType: 'message', targetId: message.id, reportedUserId: author.id, reportedNickname: author.nickname })} />{group && <RoomAction label={t.chat.block} onPress={() => void block(author.id)} />}</View></View></View>}
+            {mine ? <><BubblePressable analyticsId="components_chat-room.pressable.heart" {...menuProps} message={message} onMenu={openMessageMenu} onPress={(event: { nativeEvent?: { timestamp?: number } }) => onBubblePress(event?.nativeEvent?.timestamp ?? 0)} accessibilityRole={message.kind === 'location' ? 'link' : 'button'} accessibilityLabel={message.deleted_at ? '삭제된 메시지입니다.' : attachment ? message.kind === 'image' ? '사진 크게 보기' : '공유한 위치 지도에서 열기' : '메시지에 하트 (두 번 탭)'} style={[styles.bubbleMine, { backgroundColor: attachment ? theme.card : theme.accent }]}>{content}</BubblePressable>{heart}{time}</>
+              : <View style={styles.row}><View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" themeColor="navy">{author.nickname[0]}</ThemedText></View><View style={styles.rowBody}><ThemedText type="smallBold">{author.nickname}</ThemedText><BubblePressable analyticsId="components_chat-room.pressable.heart" {...menuProps} message={message} onMenu={openMessageMenu} onPress={(event: { nativeEvent?: { timestamp?: number } }) => onBubblePress(event?.nativeEvent?.timestamp ?? 0)} accessibilityRole={message.kind === 'location' ? 'link' : 'button'} accessibilityLabel={message.deleted_at ? '삭제된 메시지입니다.' : attachment ? message.kind === 'image' ? '사진 크게 보기' : '공유한 위치 지도에서 열기' : '메시지에 하트 (두 번 탭)'} style={[styles.bubble, { backgroundColor: theme.card, borderColor: theme.line }]}>{content}</BubblePressable>{heart}{time}<View style={styles.messageActions}><RoomAction label={t.report.short} onPress={() => setReport({ targetType: 'message', targetId: message.id, reportedUserId: author.id, reportedNickname: author.nickname })} />{group && <RoomAction label={t.chat.block} onPress={() => void block(author.id)} />}</View></View></View>}
             {sharedUrl && <SharedLinkCard key={`${message.id}:${currentUserId}`} url={sharedUrl} />}
           </View>;
         }} />{awayFromLatest && <Pressable analyticsId="components_chat-room.jump-latest" accessibilityRole="button" accessibilityLabel="최근 메시지로 내려가기" onPress={() => { play('selection'); followingLatest.current = true; setAwayFromLatest(false); messageList.current?.scrollToEnd({ animated: true }); }} style={[styles.jumpLatest, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="smallBold" themeColor="accent">↓ 최근 메시지</ThemedText></Pressable>}</View> : <View style={styles.request}><ThemedText type="small" themeColor="textSecondary">처리되거나 취소된 요청이에요. 대화 목록에서 새로 확인해 주세요.</ThemedText></View>}
       {!!error && <ThemedText accessibilityRole="alert" type="small" themeColor="accent" style={styles.feedback}>{error}</ThemedText>}{notice && <ThemedText type="small" accessibilityLiveRegion="polite" style={styles.feedback}>{notice}</ThemedText>}
       {confirmEnd && access.write && <View style={[styles.confirmation, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold">{t.chat.endConfirm}</ThemedText><ThemedText type="small">{conversationExitNotice(conversation, currentUserId)}</ThemedText>{group && <MeetupPolicyNotice mode={conversation.isGroupHost ? 'close' : 'leave'} />}<View style={styles.messageActions}><RoomAction label={t.profile.cancel} onPress={() => setConfirmEnd(false)} disabled={busy} /><RoomAction label={group ? conversation.isGroupHost ? t.meetup.end : t.meetup.leave : t.chat.end} onPress={() => void end()} disabled={busy} primary /></View></View>}
+      {access.write && replyTarget && <View style={[styles.photoPreview, { backgroundColor: theme.card, borderTopColor: theme.line }]}>
+        <View style={styles.previewActions}><ThemedText type="smallBold">답장</ThemedText><ThemedText type="small" numberOfLines={2}>{messagePreview(replyTarget)}</ThemedText></View>
+        <RoomAction label="답장 취소" onPress={() => setReplyTo(null)} disabled={sending} />
+      </View>}
       {access.write && selectedPhoto && <View style={[styles.photoPreview, { backgroundColor: theme.card, borderTopColor: theme.line }]}><Image source={{ uri: selectedPhoto.uri }} style={styles.previewImage} contentFit="cover" accessibilityLabel="보낼 사진 미리보기" /><View style={styles.previewActions}><ThemedText type="smallBold">선택한 사진</ThemedText><ThemedText type="small" themeColor="textSecondary">{Math.ceil(selectedPhoto.bytes / 1024)}KB · 이 대화에만 공유</ThemedText></View><RoomAction label="취소" onPress={() => { play('selection'); setSelectedPhoto(null); }} disabled={sending} /><RoomAction label={sending ? '보내는 중' : '사진 보내기'} onPress={() => void sendPhoto()} disabled={sending} primary /></View>}
       {access.write ? <>
         <View style={[styles.composer, { borderTopColor: theme.line, backgroundColor: theme.card, paddingBottom: attachmentsOpen ? Spacing.one : Math.max(insets.bottom, Spacing.two) + Spacing.one }]}>
@@ -519,10 +596,50 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
         </View>
         {attachmentsOpen && <View accessibilityLabel="첨부 방법" style={[styles.attachmentMenu, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.two) + Spacing.one }]}>
           <Pressable analyticsId="components_chat-room.attachment-photo" accessibilityRole="button" accessibilityLabel="사진 보내기" disabled={sending || pickingPhoto} accessibilityState={{ disabled: sending || pickingPhoto }} onPress={() => { play('selection'); setAttachmentMenu(false); void pickPhoto(); }} style={({ pressed }) => [styles.attachmentOption, Depth.control, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}><View style={[styles.attachmentIcon, { backgroundColor: theme.backgroundSelected, shadowColor: '#000' }]}><SymbolView name={{ ios: 'photo', android: 'image', web: 'image' }} size={22} tintColor={theme.accent} /></View><ThemedText type="smallBold">사진 보내기</ThemedText></Pressable>
-          <Pressable analyticsId="components_chat-room.attachment-location" accessibilityRole="button" accessibilityLabel="현재 위치 공유" disabled={sending} accessibilityState={{ disabled: sending }} onPress={() => { play('selection'); setAttachmentMenu(false); Alert.alert('현재 위치 공유', '현재 위치를 이 대화 참여자에게 한 번 보낼까요?', [{ text: '취소', style: 'cancel' }, { text: '보내기', onPress: () => { play('selection'); void sendCurrentLocation(); } }]); }} style={({ pressed }) => [styles.attachmentOption, Depth.control, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}><View style={[styles.attachmentIcon, { backgroundColor: theme.backgroundSelected, shadowColor: '#000' }]}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={22} tintColor={theme.accent} /></View><ThemedText type="smallBold">현재 위치 공유</ThemedText></Pressable>
+          <Pressable analyticsId="components_chat-room.attachment-location" accessibilityRole="button" accessibilityLabel="위치 공유하기" disabled={sending} accessibilityState={{ disabled: sending }} onPress={() => { play('selection'); setAttachmentMenu(false); setLocationOpen(true); }} style={({ pressed }) => [styles.attachmentOption, Depth.control, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}><View style={[styles.attachmentIcon, { backgroundColor: theme.backgroundSelected, shadowColor: '#000' }]}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={22} tintColor={theme.accent} /></View><ThemedText type="smallBold">위치 공유하기</ThemedText></Pressable>
         </View>}
       </> : status === 'ended' && <ThemedText type="small" themeColor="textSecondary" style={[styles.feedback, { paddingBottom: Math.max(insets.bottom, Spacing.three) }]}>{t.chat.endedBody}</ThemedText>}
     </KeyboardAvoidingView>
+    {locationOpen && auth.isAuthed && auth.me.id === currentUserId && access.write && <ChatLocationPicker sending={sending} onSend={sendLocation} onClose={() => setLocationOpen(false)} />}
+    {messageMenu && menuFrame && !deleteConfirm && !hidden('message', messageMenu.id, messageMenu.sender_id) && auth.isAuthed && auth.me.id === currentUserId && access.write && <Modal visible transparent statusBarTranslucent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => { play('selection'); closeMessageMenu(); }}>
+      <View style={{ flex: 1 }} accessibilityViewIsModal>
+        <Pressable analyticsId="chat.message.menu-dismiss" accessibilityRole="button" accessibilityLabel="메시지 메뉴 닫기" style={StyleSheet.absoluteFill}
+          onPress={() => { play('selection'); closeMessageMenu(); }} />
+        <View accessibilityLabel="메시지 메뉴" onLayout={({ nativeEvent: { layout } }) => setMenuSize(current => current.width === layout.width && current.height === layout.height ? current : { width: layout.width, height: layout.height })}
+          style={[styles.bubbleMenu, { backgroundColor: theme.card, borderColor: theme.line, maxWidth: menuFrame.bounds.width - 16, opacity: menuSize.height ? 1 : 0 }, menuSize.width
+            ? { width: menuSize.width, ...messageMenuPosition(menuFrame.anchor, menuSize, menuFrame.bounds, messageMenu.sender_id === currentUserId) }
+            : { left: menuFrame.bounds.x + 8, top: menuFrame.bounds.y + 8 }]}>
+          <Pressable analyticsId="chat.message.reply" accessibilityRole="button" accessibilityLabel="답장" disabled={sending} onPress={() => { play('selection'); setReplyTo(messageMenu); closeMessageMenu(); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold">답장</ThemedText></Pressable>
+          {messageMenu.sender_id === currentUserId && <>
+            {(!messageMenu.kind || messageMenu.kind === 'text') && <Pressable analyticsId="chat.message.edit" accessibilityRole="button" accessibilityLabel="메시지 수정" disabled={sending} onPress={() => { play('selection'); setEditingMessage(messageMenu); setMessageEditDraft(messageMenu.body); closeMessageMenu(); setError(null); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold">수정</ThemedText></Pressable>}
+            <Pressable analyticsId="chat.message.delete" accessibilityRole="button" accessibilityLabel="메시지 삭제" disabled={sending} onPress={() => { play('selection'); setDeleteConfirm(true); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold" style={{ color: '#FF8585' }}>삭제</ThemedText></Pressable>
+          </>}
+        </View>
+      </View>
+    </Modal>}
+    {messageMenu && deleteConfirm && !hidden('message', messageMenu.id, messageMenu.sender_id) && auth.isAuthed && auth.me.id === currentUserId && access.write && <Modal visible transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => { play('selection'); closeMessageMenu(); }}>
+      <View style={styles.messageSheetBackdrop} accessibilityViewIsModal>
+        <View style={[styles.messageSheet, { backgroundColor: theme.card }]}>
+          <ThemedText type="small" numberOfLines={3}>{messagePreview(messageMenu)}</ThemedText>
+            <ThemedText>이 메시지를 삭제할까요? 대화에는 ‘삭제된 메시지입니다’가 남아요.</ThemedText>
+            <RoomAction label="취소" onPress={() => setDeleteConfirm(false)} disabled={sending} />
+            <RoomAction label="삭제하기" onPress={() => void changeMessage(messageMenu, true)} disabled={sending} primary />
+          {!!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
+        </View>
+      </View>
+    </Modal>}
+    {editingMessage && !hidden('message', editingMessage.id, editingMessage.sender_id) && auth.isAuthed && auth.me.id === currentUserId && access.write && <Modal visible transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => { play('selection'); setEditingMessage(null); }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.messageSheetBackdrop} accessibilityViewIsModal>
+        <View style={[styles.messageSheet, { backgroundColor: theme.card }]}>
+          <ThemedText type="smallBold">메시지 수정</ThemedText>
+          <TextInput value={messageEditDraft} onChangeText={setMessageEditDraft} accessibilityLabel="수정할 메시지" maxLength={2000} multiline autoFocus editable={!sending}
+            style={[styles.input, { minHeight: 100, color: theme.text, borderColor: theme.line }]} />
+          <RoomAction label="취소" onPress={() => setEditingMessage(null)} disabled={sending} />
+          <RoomAction label={sending ? '저장 중' : '수정 저장'} onPress={() => void changeMessage(editingMessage, false)} disabled={sending || !messageEditDraft.trim()} primary />
+          {!!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>}
     {report && <ReportSheet visible {...report} onClose={() => {
       setReport(null); void onChanged();
       void refreshMessages();
@@ -532,6 +649,11 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
 }
 
 const styles = StyleSheet.create({
+  bubbleMenu: { position: 'absolute', flexDirection: 'row', flexWrap: 'wrap', borderWidth: 1, borderRadius: 16, padding: 4, shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 10 },
+  bubbleMenuAction: { minWidth: 64, minHeight: 44, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
+  quoteText: { borderLeftWidth: 2, paddingLeft: 8, marginBottom: 8 },
+  messageSheetBackdrop: { flex: 1, justifyContent: 'center', padding: Spacing.three, backgroundColor: 'rgba(0,0,0,0.55)' },
+  messageSheet: { width: '100%', maxWidth: 520, alignSelf: 'center', padding: Spacing.three, borderRadius: 16, gap: Spacing.two },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, borderBottomWidth: 1, gap: Spacing.two },
   titleRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   title: { fontSize: 17, lineHeight: 22, flexShrink: 1 },

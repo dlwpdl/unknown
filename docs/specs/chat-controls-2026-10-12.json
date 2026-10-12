@@ -1,0 +1,59 @@
+{
+  "objective": "Direct and group chats support selecting a Google Maps place or current location, plus long-press reply, edit and delete.",
+  "authorization": {
+    "implementation": true,
+    "deployment": false,
+    "new_paid_maps_requests": false
+  },
+  "flow": {
+    "location": [
+      "Open location picker",
+      "Search or tap a map point, or explicitly request current location",
+      "Preview selection",
+      "Send once to the active conversation"
+    ],
+    "message": [
+      "Long press or accessible menu action",
+      "Reply to visible messages",
+      "Edit own text without losing the existing draft",
+      "Confirm deletion of own messages",
+      "Show edited and deleted states to both participants"
+    ]
+  },
+  "contracts": {
+    "provider": "Existing react-native-webview with Google Maps JavaScript and Places (New); API key not configured",
+    "send": "Reuse existing guarded send functions atomically for new reply/location metadata",
+    "author_mutation": "Server checks active account, conversation access, ownership, current message revision and active conversation",
+    "evidence": "Keep earlier content in a private history with the existing audited AAL2 admin boundary",
+    "privacy": "Reply joins obey message RLS; no live GPS permission until current-location selection",
+    "safety": "Retained originals remain in the existing server-only safety RPC and review hash; no worker/model/service added."
+  },
+  "commands": [
+    "node --experimental-strip-types --test scripts/chat-lifecycle.test.mjs scripts/community-data.test.mjs scripts/chat-controls.test.mjs",
+    "npm run typecheck",
+    "npx --no-install eslint src/components/chat-room.tsx src/components/chat-location-picker.tsx src/lib/chat-location.ts src/lib/community-data.ts",
+    "docker exec -i supabase_db_gling psql -U postgres -d postgres -v ON_ERROR_STOP=1"
+  ],
+  "structure": [
+    "src/components/chat-room.tsx",
+    "src/components/chat-location-picker.tsx",
+    "src/lib/chat-location.ts",
+    "src/lib/community-data.ts",
+    "supabase/migrations",
+    "supabase/tests",
+    "scripts",
+    "output/design",
+    "src/components/chat-map.tsx",
+    "src/components/chat-map.web.tsx",
+    "supabase/functions/safety-monitor/index.ts",
+    ".env.example"
+  ],
+  "style": "Reuse RoomAction, ThemedText, theme tokens and useInteractionFeedback; no new dependency or generic state abstraction.",
+  "testing": "Real SQL transaction with rollback; component event tests, message bridge validation, map API mocks and 320/390/768/1440px interactive checks.",
+  "boundaries": [
+    "No production migration or build upload",
+    "No new dependency, service or Google billing setup",
+    "Preserve moderation, reports, blocking, read history and double-tap reactions",
+    "Provider configuration remains separate from mock verification"
+  ]
+}

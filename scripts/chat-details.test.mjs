@@ -1,6 +1,23 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { chatMessageTime, chatDateLabel, chatListTime, showChatMessageTime, loadChatMembers, firstUnreadMessageIndex, meetupChatIcon } from '../src/lib/chat-details.ts';
+import * as details from '../src/lib/chat-details.ts';
+
+test('message action menus follow the bubble and remain inside the visible conversation', () => {
+  assert.equal(typeof details.messageMenuPosition, 'function');
+  const bounds = { x: 0, y: 110, width: 390, height: 530 }, menu = { width: 216, height: 48 };
+  assert.deepEqual(details.messageMenuPosition({ x: 210, y: 300, width: 164, height: 40 }, menu, bounds, true), { left: 158, top: 244 });
+  assert.deepEqual(details.messageMenuPosition({ x: 48, y: 300, width: 160, height: 40 }, menu, bounds, false), { left: 48, top: 244 });
+  assert.deepEqual(details.messageMenuPosition({ x: 42, y: 114, width: 150, height: 28 }, menu, bounds, false), { left: 42, top: 150 }, 'first visible message opens below rather than covering the header');
+  for (const width of [320, 390, 768, 1440]) for (const mine of [false, true]) for (const height of [250, 530]) {
+    const area = { x: 160, y: 110, width, height }, large = { width: 292, height: 60 };
+    for (const y of [112, 230, 110 + height - 10]) {
+      const result = details.messageMenuPosition({ x: 160 + width - 60, y, width: 52, height: 42 }, large, area, mine);
+      assert.ok(result.left >= area.x + 8 && result.left + large.width <= area.x + area.width - 8);
+      assert.ok(result.top >= area.y + 8 && result.top + large.height <= area.y + area.height - 8);
+    }
+  }
+});
 
 test('meetup chat art follows the topic, with specific titles ahead of broad categories', () => {
   assert.equal(meetupChatIcon('festival', '여름 페스티벌'), 'disco-ball');
