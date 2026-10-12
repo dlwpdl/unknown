@@ -6,8 +6,6 @@ import ts from 'typescript';
 import * as ticketmaster from '../supabase/functions/_shared/ticketmaster.ts';
 
 const now = Date.parse('2026-10-11T12:00:00Z');
-test.before(() => test.mock.timers.enable({ apis: ['Date'], now }));
-test.after(() => test.mock.timers.reset());
 const raw = (id, day = 12) => ({ id, name: `${id} Festival`, dates: { start: { dateTime: `2026-10-${day}T20:00:00Z`, localDate: `2026-10-${day}`, localTime: '13:00:00' }, timezone: 'America/Vancouver', status: { code: 'onsale' } }, _embedded: { venues: [{ name: 'Park', city: { name: 'Vancouver' }, country: { countryCode: 'CA' } }] } });
 class Clock extends Date { constructor(...args) { super(...(args.length ? args : [now])); } static now() { return now; } }
 
@@ -36,7 +34,8 @@ function endpoint({ cached = null, slots = [], slotsAfterRead, readyCache, claim
   }).outputText;
   let handle;
   vm.runInNewContext(source, {
-    exports: {}, require: name => name.includes('supabase-js') ? { createClient: () => db } : ticketmaster,
+    exports: {}, require: name => name.includes('supabase-js') ? { createClient: () => db }
+      : { ...ticketmaster, festivalCacheExpiry: (cityId, at = now) => ticketmaster.festivalCacheExpiry(cityId, at) },
     Deno: { env: { get: name => ({ TICKETMASTER_API_KEY: 'test-key', SUPABASE_URL: 'https://example.invalid', SUPABASE_SERVICE_ROLE_KEY: 'test-service' })[name] }, serve: value => { handle = value; } },
     URL, Response, Date: Clock, AbortSignal, setTimeout, console: { error() {} },
     fetch: async url => {
