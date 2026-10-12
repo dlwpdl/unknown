@@ -1,4 +1,7 @@
 -- One existing queue item advances one bounded segment per normal worker claim.
+alter table public.safety_review_queue add column risk_signal_at timestamptz;
+update public.safety_review_queue set risk_signal_at=coalesce(reviewed_at,created_at)
+  where target_type='message' and risk_level in ('high','critical');
 create table private.message_safety_progress (
   queue_id bigint primary key references public.safety_review_queue(id) on delete cascade,
   history_id bigint not null default 0,
@@ -111,6 +114,7 @@ begin
     from jsonb_array_elements_text(q.risk_reasons||p_risk_reasons) as r(reason);
   update public.safety_review_queue set status=case when finished then 'reviewed' else 'pending' end,
     risk_score=greatest(coalesce(q.risk_score,0),p_risk_score),risk_level=level,risk_reasons=reasons,
+    risk_signal_at=case when next_rank>=3 then clock_timestamp() else q.risk_signal_at end,
     attempts=0,last_error=null,next_attempt_at=null,reviewed_at=case when finished then now() else null end,
     updated_at=clock_timestamp() where id=q.id;
   return jsonb_build_object('accepted',true,'finished',finished,'riskLevel',level,'alert',next_rank>=3 and next_rank>previous_rank);
@@ -143,7 +147,10 @@ begin
   definition:=pg_get_functiondef('private.admin_conversation_signals(uuid)'::regprocedure);
   anchor:='and q.status=''reviewed''';
   if strpos(definition,anchor)=0 then raise exception 'admin signal status anchor missing'; end if;
-  execute replace(definition,anchor,'and (q.status=''reviewed'' or q.risk_level in (''high'',''critical''))');
+  definition:=replace(definition,anchor,'and (q.status=''reviewed'' or q.risk_level in (''high'',''critical''))');
+  anchor:='coalesce(q.reviewed_at,q.created_at)';
+  if strpos(definition,anchor)=0 then raise exception 'admin signal timestamp anchor missing'; end if;
+  execute replace(definition,anchor,'coalesce(q.risk_signal_at,q.reviewed_at,q.created_at)');
 end $$;
 
 create index message_history_image_path_idx on private.message_history((original->>'image_path')) where original->>'image_path' is not null;
@@ -163,4 +170,27 @@ revoke all on function private.can_read_retained_chat_image(text,text) from publ
 grant execute on function private.can_read_retained_chat_image(text,text) to authenticated;
 create policy "admins read retained chat photos" on storage.objects for select to authenticated
   using (private.can_read_retained_chat_image(bucket_id,name));
+
+create function private.can_remove_unsent_chat_image(p_path text) returns boolean
+language plpgsql security definer set search_path='' as $$
+declare u uuid:=auth.uid();
+begin
+  if u is null or not exists(select 1 from storage.objects o where o.bucket_id='chat-images' and o.name=p_path and o.owner_id=u::text) then return false; end if;
+  -- Serialize cleanup with the existing attachment send path before checking hidden/private bindings.
+  perform private.lock_relationships();
+  return not exists(select 1 from public.messages m where m.image_path=p_path)
+    and not exists(select 1 from private.message_history h where h.original->>'image_path'=p_path);
+end;
+$$;
+revoke all on function private.can_remove_unsent_chat_image(text) from public,anon,service_role;
+grant execute on function private.can_remove_unsent_chat_image(text) to authenticated;
+drop policy "owners remove unsent chat photos" on storage.objects;
+create policy "owners remove unsent chat photos" on storage.objects for delete to authenticated
+  using (bucket_id='chat-images' and owner_id=(select auth.uid())::text and private.can_remove_unsent_chat_image(name));
+do $$ declare definition text; anchor text:='if u is null then raise exception ''AUTH_REQUIRED''; end if;';
+begin
+  definition:=pg_get_functiondef('public.send_chat_attachment(uuid,text,text,numeric,numeric)'::regprocedure);
+  if strpos(definition,anchor)=0 then raise exception 'attachment send lock anchor missing'; end if;
+  execute replace(definition,anchor,anchor||' perform private.lock_relationships();');
+end $$;
 notify pgrst,'reload schema';
