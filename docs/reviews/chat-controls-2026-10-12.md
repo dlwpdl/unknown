@@ -11,3 +11,5 @@ The local migration restricts mutation to active accounts and conversations, the
 Google Maps is not configured: add a Gling-specific `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` with Maps JavaScript and Places (New) enabled and the correct HTTP referrer restrictions before live map verification. No Google billing, paid request or new service was started. Device gestures, haptics and native WebView referrers still need an actual device check. Deployment of the migration, safety-monitor update and app must be coordinated later; none was deployed under the owner's hold. The existing v1.1.9 submission is preserved.
 
 [Interactive preview](../../output/design/gling-chat-controls-2026-10-12.html) · [Check record](../../output/qa/chat-controls-2026-10-12/verification.json)
+
+The initial Orca preview could not execute because its global `close` function collided with Orca’s protected `window.close`. The script now uses a local scope. The regression check freezes `window.close` and confirms three initial bubbles and the long-press menu; the corrected file also passed inside Orca’s Gling folder. This fix changes only the preview and its checks.

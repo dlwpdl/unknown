@@ -23,7 +23,7 @@
   },
   "design": {
     "preview": "output/design/gling-chat-controls-2026-10-12.html",
-    "orcaPage": "8c018527-1212-4542-9a1f-b057e2bf7cd0",
+    "orcaPage": "02e0fa7d-7d54-4565-b387-478e19bbedcc",
     "folder": "folder:e88d505b-f6bb-47d6-ba41-904ef2a72a8b",
     "mobbin": [
       "https://mobbin.com/screens/11ae6c12-5e25-4090-bbcc-b476f73aa3de",
@@ -36,7 +36,18 @@
       "Unavailable quoted content is removed after live RLS revalidation",
       "Location error retains the selected point"
     ],
-    "humanCopy": "Patina Korean plain tone and meaning check applied"
+    "humanCopy": "Patina Korean plain tone and meaning check applied",
+    "previewSHA256": "75a88ce769e8521fb375bb318ee5a8a51ada77235c69611c9290b1e1d1b6a4c0",
+    "nativePreviewFix": {
+      "cause": "Global close function conflicts with Orca protected window.close",
+      "initialBubbles": 3,
+      "ownMessageMenus": [
+        "reply",
+        "edit",
+        "delete"
+      ],
+      "receipt": "output/qa/chat-controls-2026-10-12/orca-preview-fix.json"
+    }
   },
   "checks": {
     "targeted": {

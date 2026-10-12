@@ -1,6 +1,11 @@
 {
   "results": [
     {
+      "lockedWindowClose": true,
+      "initialBubbles": 3,
+      "ownLongPressMenu": true
+    },
+    {
       "kind": "direct",
       "reply": true,
       "composerPreserved": true
