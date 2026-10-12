@@ -38,8 +38,7 @@ test('analysis preserves question and cadence after a maximum-length Unicode pos
   assert.ok(prompt.includes(question), 'complete application question reaches the model');
   assert.ok(prompt.includes(cadence), 'complete cadence reaches the model');
   assert.equal(analyzedPayload.store, false);
-  await worker.analyze('offline-test', 'post', 'x'.repeat(30000));
-  assert.ok(analyzedPayload.input[0].content[0].text.length < 14000, 'oversized input remains bounded');
+  await assert.rejects(worker.analyze('offline-test', 'post', 'x'.repeat(30000)), /SAFETY_CONTENT_TOO_LONG/);
 });
 
 test('existing Chilling and trust targets keep their guarded service RPCs', async () => {
