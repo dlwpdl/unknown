@@ -184,7 +184,7 @@ def build(platform, env, directory, local, number):
     certificate, password, profile_path, android = signing(directory, local)
     if platform == "android":
         env.update(GLING_UPLOAD_KEYSTORE=android["keystorePath"], GLING_UPLOAD_STORE_PASSWORD=android["keystorePassword"], GLING_UPLOAD_KEY_ALIAS=android["keyAlias"], GLING_UPLOAD_KEY_PASSWORD=android["keyPassword"])
-        run(["android/gradlew", "-p", "android", "--no-daemon", "--init-script", str(Path("scripts/android-signing.init.gradle").resolve()), "bundleRelease", "assembleRelease"], env=env)
+        run(["android/gradlew", "-p", "android", "--no-daemon", "--init-script", str(Path("scripts/android-signing.init.gradle").resolve()), "--init-script", str(Path("scripts/android-r8-check.init.gradle").resolve()), "bundleRelease", "assembleRelease"], env=env)
         artifact = OUT / "app.aab"
         artifact.write_bytes(Path("android/app/build/outputs/bundle/release/app-release.aab").read_bytes())
         run(["jarsigner", "-verify", str(artifact)])
