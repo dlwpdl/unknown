@@ -27,7 +27,7 @@ export const TAGS: Tag[] = [
   { id: 11, slug: 'shopping', label: '쇼핑', kind: 'post' },
   { id: 12, slug: 'settlement', label: '정착', kind: 'post' },
   { id: 13, slug: 'transport', label: '이동', kind: 'post' },
-  { id: 14, slug: 'housing', label: '주거', kind: 'post' },
+  { id: 14, slug: 'housing', label: '부동산', kind: 'post' },
   { id: 15, slug: 'education', label: '교육', kind: 'post' },
   { id: 5, slug: 'meetup', label: '모임', kind: 'meetup' },
   { id: 18, slug: 'jobs', label: '구인구직', kind: 'post' },

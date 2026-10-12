@@ -124,3 +124,14 @@ test('unsaved account ownership edits also protect a merchant switch', () => {
   assert.equal(view.prompts.length, 1, 'Account form edits must not disappear silently.');
   assert.ok(nodes(view.render()).some(n => n.type === 'input' && n.props.value === '업체 1'));
 });
+
+
+test('unknown promotions default to a source record and choosing a business gives immediate feedback', () => {
+  const view=app();button(view.render(),'업체 등록').props.onClick();
+  let root=view.render();let select=nodes(root).find(n=>n.type==='select'&&n.props['aria-label']==='등록 종류');
+  assert.ok(select);assert.equal(select.props.value,'source');
+  assert.ok(text(root).includes('공개 회사 프로필과 업체 리뷰를 만들지 않습니다'));
+  const feedback=view.feedback.length;select.props.onChange({target:{value:'business'}});
+  root=view.render();select=nodes(root).find(n=>n.type==='select'&&n.props['aria-label']==='등록 종류');
+  assert.equal(select.props.value,'business');assert.ok(view.feedback.length>feedback);
+});

@@ -31,7 +31,7 @@ export function merchantEventId() {
     const r = Math.floor(Math.random() * 16); return (c === 'x' ? r : (r & 3) | 8).toString(16);
   });
 }
-export type MerchantSource = { merchant_name: string; original_url: string };
+export type MerchantSource = { merchant_name: string; original_url: string; record_kind?: 'business' | 'source' };
 export const merchantSourceActionLabel = (url: string) => /^https:\/\/(?:[a-z0-9-]+\.)*craigslist\.org(?:\/|$)/i.test(url)
   ? '업체에 직접 문의' : '업체 계정으로 가기';
 export async function loadMerchantSource(client: SupabaseClient, postId: string): Promise<MerchantSource | null> {
@@ -39,7 +39,8 @@ export async function loadMerchantSource(client: SupabaseClient, postId: string)
     const { data, error } = await client.rpc('get_merchant_post_source', { p_post_id: postId });
     const url = typeof data?.original_url === 'string' ? safeMerchantSourceUrl(data.original_url) : null;
     if (error || !url || typeof data.merchant_name !== 'string') return null;
-    return { merchant_name: data.merchant_name, original_url: url };
+    if (data.record_kind != null && !['business', 'source'].includes(data.record_kind)) return null;
+    return { merchant_name: data.merchant_name, original_url: url, record_kind: data.record_kind === 'source' ? 'source' : 'business' };
   } catch { return null; }
 }
 

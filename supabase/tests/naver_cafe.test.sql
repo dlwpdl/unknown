@@ -10,8 +10,8 @@ insert into public.profiles(id,nickname,city_id,terms_accepted_at,privacy_accept
 ('13000000-0000-4000-8000-000000000001','카페소유검사','vancouver',now(),now(),now(),'test'),
 ('13000000-0000-4000-8000-000000000002','카페다른검사','vancouver',now(),now(),now(),'test'),
 ('13000000-0000-4000-8000-000000000003','카페관리검사','vancouver',now(),now(),now(),'test');
-insert into private.merchants(id,name,city_id,owner_id,owner_verified_at,status,consent,consent_note) values
-('13010000-0000-4000-8000-000000000001','실제 업체 아닌 카페 검사','vancouver','13000000-0000-4000-8000-000000000001',now(),'trial','granted','모의 검사 동의');
+insert into private.merchants(id,name,city_id,owner_id,owner_verified_at,status,consent,consent_note,record_kind) values
+('13010000-0000-4000-8000-000000000001','실제 업체 아닌 카페 검사','vancouver','13000000-0000-4000-8000-000000000001',now(),'trial','granted','모의 검사 동의','business');
 select set_config('request.jwt.claims','{"sub":"13000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 set local role authenticated;
 select is(public.get_merchant_naver_cafe('13010000-0000-4000-8000-000000000001')->'connection','null'::jsonb,'no fabricated connected account');

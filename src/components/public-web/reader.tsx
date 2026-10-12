@@ -40,7 +40,7 @@ function MerchantSourceAction({ postId }: { postId: string }) {
   }, [postId]);
   if (result?.id !== postId) return null;
   const label = merchantSourceActionLabel(result.source.original_url);
-  return <div className="reader-actions"><a className="reader-secondary" href={result.source.original_url} target="_blank" rel="noopener noreferrer"
+  return <div className="reader-actions">{result.source.record_kind === 'source' && <span className="reader-kicker">매물·홍보 대리등록 안내</span>}<a className="reader-secondary" href={result.source.original_url} target="_blank" rel="noopener noreferrer"
     aria-label={`${result.source.merchant_name} ${label}, 외부 페이지 열기`}
     onClick={() => { play('selection'); void trackPublicMerchantSourceClick(postId); }}>{label} ↗</a></div>;
 }
@@ -227,6 +227,7 @@ export default function PublicReader() {
             : <p role="status" className="reader-notice">업체 프로필을 불러오고 있어요…</p>}</InteractionFeedbackProvider> : detail ? <>
           <a data-analytics="web_control_12" className="reader-back" href="/">← 동네 이야기로</a>
           {post && <InteractionFeedbackProvider><article className="reader-post"><p className="reader-kicker">{CITIES.find((item) => item.id === post.cityId)?.name} · {post.tag.label}</p>
+            {!!post.hashtags?.length && <p className="reader-kicker" aria-label="게시글 해시태그">{post.hashtags.map(tag => `#${tag}`).join(' · ')}</p>}
             <h1>{post.title}</h1><p className="reader-meta">{post.author.nickname} · <time dateTime={metadata?.published}>{post.createdAtLabel}</time></p>
             <PublicMerchantProfileLink postId={post.id} />
             {post.imageUris?.map((uri, index) => <img className="reader-photo" key={uri} src={uri} alt={`${post.title} 사진 ${index + 1}`} loading="lazy" />)}

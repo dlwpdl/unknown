@@ -6,9 +6,9 @@ select ('15900000-0000-0000-0000-'||lpad(n::text,12,'0'))::uuid,'usage159-'||n||
  case when n=4 then '{"role":"admin"}'::jsonb else '{"merchant_enabled":true}'::jsonb end from generate_series(1,4)n;
 insert into public.profiles(id,nickname,city_id,terms_accepted_at,privacy_accepted_at,ai_safety_consent_at,consent_version)
 select ('15900000-0000-0000-0000-'||lpad(n::text,12,'0'))::uuid,'사용량검사'||n,'vancouver',now(),now(),now(),'test' from generate_series(1,4)n;
-insert into private.merchants(id,name,city_id,owner_id,owner_verified_at,status,consent,consent_note) values
- ('15910000-0000-0000-0000-000000000001','사용량검사 프리미엄','vancouver','15900000-0000-0000-0000-000000000001',now(),'lead','granted','검사동의'),
- ('15910000-0000-0000-0000-000000000002','사용량검사 기본','vancouver','15900000-0000-0000-0000-000000000002',now(),'lead','granted','검사동의');
+insert into private.merchants(id,name,city_id,owner_id,owner_verified_at,status,consent,consent_note,record_kind) values
+ ('15910000-0000-0000-0000-000000000001','사용량검사 프리미엄','vancouver','15900000-0000-0000-0000-000000000001',now(),'lead','granted','검사동의','business'),
+ ('15910000-0000-0000-0000-000000000002','사용량검사 기본','vancouver','15900000-0000-0000-0000-000000000002',now(),'lead','granted','검사동의','business');
 insert into public.posts(id,author_id,city_id,tag_id,title,body,posted_on,created_at)
 select ('15920000-0000-0000-0000-'||lpad(n::text,12,'0'))::uuid,'15900000-0000-0000-0000-000000000002','vancouver',1,'새 소식 '||n,'서로 다른 실제 메뉴 안내 '||n,current_date,now()-interval '4 days' from generate_series(1,5)n;
 select set_config('request.jwt.claims','{"sub":"15900000-0000-0000-0000-000000000002","role":"authenticated"}',true);
@@ -139,8 +139,8 @@ begin
   insert into auth.users(id,email,raw_app_meta_data) values(uid,'publish159-'||n||'@example.com','{"merchant_enabled":true}');
   insert into public.profiles(id,nickname,city_id,terms_accepted_at,privacy_accepted_at,ai_safety_consent_at,consent_version)
     values(uid,'게시경계검사'||n,'vancouver',now(),now(),now(),'test');
-  insert into private.merchants(id,name,city_id,owner_id,owner_verified_at,status,consent,consent_note)
-    values(mid,'게시 경계 검사 '||tier,'vancouver',uid,now(),'lead','granted','검사동의');
+  insert into private.merchants(id,name,city_id,owner_id,owner_verified_at,status,consent,consent_note,record_kind)
+    values(mid,'게시 경계 검사 '||tier,'vancouver',uid,now(),'lead','granted','검사동의','business');
   perform public.apply_membership_snapshot(uid,jsonb_build_array(jsonb_build_object('kind','business','plan_version',2,
     'tier',tier,'expires_at',now()+interval '30 days','product_id','com.dlwpdl.gling.business.'||tier||'.monthly.v2',
     'store','app_store','will_renew',true)),now());

@@ -18,7 +18,7 @@ export function MerchantSourceLink({ postId }: { postId: string }) {
   if (result?.id !== postId) return null;
   const label = merchantSourceActionLabel(result.source.original_url);
   return <View style={styles.section}>
-    <ThemedText type="small" themeColor="textSecondary">{result.source.merchant_name} · 업체가 허락한 안내</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary">{result.source.merchant_name} · {result.source.record_kind === 'source' ? '대리등록 안내' : '업체가 허락한 안내'}</ThemedText>
     <Pressable accessibilityRole="link" accessibilityLabel={`${result.source.merchant_name} ${label}, 외부 페이지 열기`} style={({ pressed }) => [styles.button, { borderColor: theme.line, opacity: pressed ? 0.6 : 1 }]}
       onPress={() => {
         play('selection'); setError('');
