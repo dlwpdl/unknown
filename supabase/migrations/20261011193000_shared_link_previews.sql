@@ -8,8 +8,7 @@ language sql stable security definer set search_path='' as $$
     'schedule',case when p.room_preview is not null then jsonb_build_object(
       'eventKind',p.room_preview->'eventKind','startsAt',p.room_preview->'startsAt','endsAt',p.room_preview->'endsAt',
       'timezone',p.room_preview->'timezone','cadence',p.room_preview->'cadence') end,
-    'imagePath',case when split_part(p.image_paths[1],'/',1)=p.author_id::text
-      and public.is_public_post_image(p.image_paths[1]) then p.image_paths[1] end,
+    'imagePath',case when public.is_public_post_image(p.image_paths[1]) then p.image_paths[1] end,
     'closed',p.room_preview is not null and not private.meetup_is_open(p.status,p.room_preview))
   from public.posts p join public.profiles a on a.id=p.author_id
   join public.tags t on t.id=p.tag_id join public.cities c on c.id=p.city_id
