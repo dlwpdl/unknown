@@ -63,3 +63,13 @@ test('page repeats cannot duplicate messages and prepend preserves chronological
   const older = { id: 'a', created_at: '2026-10-12T12:00:00.123456Z' }, newer = { id: 'b', created_at: '2026-10-12T12:00:00.123457Z' };
   assert.deepEqual(api.mergeConversationMessages([newer], [older, newer]), [older, newer]);
 });
+
+test('whole seconds, mixed fractional precision and UTC offsets remain chronological', () => {
+  const at = (id, created_at) => ({ id, created_at });
+  const whole = at('whole', '2026-10-12T12:00:00+00:00');
+  const tenth = at('tenth', '2026-10-12T12:00:00.1+00:00');
+  const microsecond = at('microsecond', '2026-10-12T12:00:00.100001+00:00');
+  const equivalent = at('z', '2026-10-12T05:00:00.100001-07:00');
+  assert.deepEqual(api.mergeConversationMessages([equivalent, microsecond, tenth, whole], []), [whole, tenth, microsecond, equivalent]);
+  assert.equal(api.mergeConversationMessages([microsecond, whole], [tenth])[2].created_at, microsecond.created_at);
+});
