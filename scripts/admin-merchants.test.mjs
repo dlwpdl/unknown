@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { merchantReportText, merchantReportHtml, merchantMapsUrl, merchantAddressCity, saveMerchant } from '../src/lib/admin-merchants.ts';
-import { safeMerchantSourceUrl, trackMerchantSourceClick, trackPublicMerchantSourceClick } from '../src/lib/merchant-source.ts';
+import { loadMerchantSource, merchantSourceActionLabel, safeMerchantSourceUrl, trackMerchantSourceClick, trackPublicMerchantSourceClick } from '../src/lib/merchant-source.ts';
+
+test('Craigslist inquiry buttons match the approved copy while social profile buttons retain their label', () => {
+  assert.equal(merchantSourceActionLabel('https://www.craigslist.org/view/d/warehouse/example'), '업체에 직접 문의');
+  assert.equal(merchantSourceActionLabel('https://vancouver.craigslist.org/van/off/example.html'), '업체에 직접 문의');
+  for (const url of ['https://www.instagram.com/business/', 'https://www.threads.com/@business', 'https://craigslist.org.example.com/']) {
+    assert.equal(merchantSourceActionLabel(url), '업체 계정으로 가기');
+  }
+});
 
 const report = {
   id: 'report-1', merchant_id: 'merchant-1', merchant_name: '<동네 카페>', city_name: '밴쿠버',
@@ -94,4 +102,19 @@ test('public clicks use isolated anonymous keepalive transport without auth or c
   assert.equal(new Headers(request.init.headers).has('Authorization'), false);
   assert.deepEqual(Object.keys(JSON.parse(request.init.body)).sort(), ['p_event_id', 'p_platform', 'p_post_id', 'p_session']);
   assert.equal(await trackPublicMerchantSourceClick('post-1', async () => { throw new Error('offline'); }), false);
+});
+
+
+test('explicit source registration uses the classified save RPC atomically', async () => {
+  const calls=[];const client={rpc:async(name,args)=>{calls.push({name,args});return{data:'source-id',error:null};}};
+  await saveMerchant(client,{id:'source-id',name:'창고 임대',city_id:'vancouver',contact:'https://www.craigslist.org/',status:'trial',consent:'granted',consent_note:'게시 허락',trial_ends_at:null,record_kind:'source'});
+  assert.equal(calls[0].name,'save_admin_merchant_record');
+  assert.equal(calls[0].args.p_record_kind,'source');
+});
+
+
+test('source metadata stays distinct from business profiles and invalid record types fail closed',async()=>{
+  const source={merchant_name:'창고 임대',original_url:'https://www.craigslist.org/view/d/warehouse/example',record_kind:'source'};
+  assert.equal((await loadMerchantSource({rpc:async()=>({data:source,error:null})},'post')).record_kind,'source');
+  assert.equal(await loadMerchantSource({rpc:async()=>({data:{...source,record_kind:'unknown'},error:null})},'post'),null);
 });

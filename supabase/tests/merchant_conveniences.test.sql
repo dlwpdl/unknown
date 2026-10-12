@@ -20,9 +20,9 @@ insert into public.profiles(id,nickname,city_id,terms_accepted_at,privacy_accept
 insert into auth.sessions(id,user_id,aal) values
 ('14590000-0000-4000-8000-000000000002','14500000-0000-4000-8000-000000000002','aal1'),
 ('14590000-0000-4000-8000-000000000005','14500000-0000-4000-8000-000000000005','aal2');
-insert into private.merchants(id,name,city_id,contact,status,consent,consent_note,owner_id,owner_verified_at) values
-('14510000-0000-4000-8000-000000000001','편의 검사 업체','vancouver','비공개 개인 연락 메모','paid','granted','비공개 허가 메모','14500000-0000-4000-8000-000000000001',now()),
-('14510000-0000-4000-8000-000000000002','편의 담당 미연결 업체','vancouver','절대 공개할 수 없는 연락처','paid','granted','비공개 허가 메모',null,null);
+insert into private.merchants(id,name,city_id,contact,status,consent,consent_note,owner_id,owner_verified_at,record_kind) values
+('14510000-0000-4000-8000-000000000001','편의 검사 업체','vancouver','비공개 개인 연락 메모','paid','granted','비공개 허가 메모','14500000-0000-4000-8000-000000000001',now(),'business'),
+('14510000-0000-4000-8000-000000000002','편의 담당 미연결 업체','vancouver','절대 공개할 수 없는 연락처','paid','granted','비공개 허가 메모',null,null,'business');
 insert into private.merchant_operators(merchant_id,user_id) values
 ('14510000-0000-4000-8000-000000000001','14500000-0000-4000-8000-000000000004');
 insert into public.posts(id,city_id,author_id,tag_id,title,body,status) values
@@ -158,8 +158,8 @@ reset role;
 insert into private.merchant_operators(merchant_id,user_id) values('14510000-0000-4000-8000-000000000001','14500000-0000-4000-8000-000000000004');
 
 -- Twenty-one real visible profiles exercise page size, account isolation and hidden-row filtering.
-insert into private.merchants(id,name,city_id,status,consent,consent_note)
-select md5('merchant-conveniences-page-'||s)::uuid,'페이지 검사 '||s,'vancouver','paid','granted','테스트 허가' from generate_series(1,21)s;
+insert into private.merchants(id,name,city_id,status,consent,consent_note,record_kind)
+select md5('merchant-conveniences-page-'||s)::uuid,'페이지 검사 '||s,'vancouver','paid','granted','테스트 허가','business' from generate_series(1,21)s;
 insert into public.posts(id,city_id,author_id,tag_id,title,body)
 select md5('merchant-conveniences-post-'||s)::uuid,'vancouver','14500000-0000-4000-8000-000000000003',1,'페이지 안내 '||s,'검사 본문' from generate_series(1,21)s;
 insert into private.merchant_posts(merchant_id,post_id)

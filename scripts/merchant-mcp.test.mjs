@@ -6,6 +6,19 @@ const merchant='14010000-0000-4000-8000-000000000001', draft='14020000-0000-4000
 const resource='https://example.supabase.co/functions/v1/merchant-mcp';
 const claims={sub:'mcp:14040000-0000-4000-8000-000000000001',gling_actor_id:'14000000-0000-4000-8000-000000000001',session_id:'14070000-0000-4000-8000-000000000001',scope:'offline_access',client_id:'14030000-0000-4000-8000-000000000001',gling_connection_id:'14040000-0000-4000-8000-000000000001',iss:'https://example.supabase.co/auth/v1',aud:resource,role:'gling_mcp',exp:2000,iat:900};
 
+test('business draft and change tools accept twenty unique photos and reject twenty-one',()=>{
+  const paths=Array.from({length:20},(_,i)=>`owner/${i}.webp`);
+  const input={merchant_id:merchant,draft_id:draft,title:'안내',body:'본문',image_paths:paths};
+  assert.deepEqual(validateMerchantMcpCall('save_business_draft',input).image_paths,paths);
+  const change={merchant_id:merchant,request_id:draft,post_id:draft,kind:'edit_post',expected_revision:'revision',changes:{image_paths:paths}};
+  assert.deepEqual(validateMerchantMcpCall('propose_business_change',change).changes.image_paths,paths);
+  for(const name of ['save_business_draft','propose_business_change']) {
+    const args=name==='save_business_draft'?{...input,image_paths:[...paths,'owner/20.webp']}:{...change,changes:{image_paths:[...paths,'owner/20.webp']}};
+    assert.throws(()=>validateMerchantMcpCall(name,args),/INVALID_MCP_INPUT/);
+  }
+  assert.throws(()=>validateMerchantMcpCall('save_business_draft',{...input,image_paths:[...paths.slice(0,19),paths[0]]}),/INVALID_MCP_INPUT/);
+});
+
 test('customer tools expose only Gling owner content and cannot approve, administer or operate the app',()=>{
   const tools=merchantMcpTools({allow_drafts:true,allow_publish:true});
   assert.deepEqual(tools.map(t=>t.name),['list_my_businesses','get_business_profile','list_business_posts','get_business_post','list_business_drafts','save_business_draft','preview_business_draft','publish_business_draft','propose_business_change','get_business_change']);

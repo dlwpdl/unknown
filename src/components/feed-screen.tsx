@@ -209,11 +209,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const q = query.replace(/#/g, '').trim().toLowerCase();
   const canonicalQuery = canonicalizeHashtag(q).toLocaleLowerCase();
   const selectedFilterTag = tagFilter == null ? null : TAGS.find((item) => item.id === tagFilter);
-  const fallbackTags = useMemo(
-    () => getSuggestedHashtags(cityPosts, selectedFilterTag, 10),
-    [cityPosts, selectedFilterTag],
+  const popularTags = useMemo(
+    () => getSuggestedHashtags(cityPosts, selectedFilterTag, 10, trendingTags),
+    [cityPosts, selectedFilterTag, trendingTags],
   );
-  const popularTags = trendingTags.length ? trendingTags : fallbackTags;
   const writerHashtags = useMemo(() => getSuggestedHashtags(cityPosts, tag, 8), [cityPosts, tag]);
   const selectedHashtags = parseHashtags(hashtagInput);
 

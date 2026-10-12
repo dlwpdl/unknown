@@ -28,16 +28,16 @@ test('draft photos preserve retained objects, append only new uploads and save t
   assert.deepEqual(await saveMerchantDraftImages(t.client, 'merchant', 'owner', draft, []), []);
   assert.deepEqual(t.calls.at(-1).args.p_image_paths, []);
 });
-test('draft photo validation rejects other accounts and more than ten before uploading', async () => {
+test('draft photo validation rejects other accounts and more than twenty before uploading', async () => {
   const t = clientFor();
   for (const path of ['other/photo.webp', 'owner/../photo.webp', 'owner/nested/photo.webp']) await assert.rejects(saveMerchantDraftImages(t.client, 'merchant', 'owner', draft, [{ path }]), /INVALID_IMAGE_PATH/);
-  await assert.rejects(saveMerchantDraftImages(t.client, 'merchant', 'owner', draft, Array(11).fill({ base64: 'AQ==', mimeType: 'image/webp' })), /TOO_MANY_IMAGES/);
+  await assert.rejects(saveMerchantDraftImages(t.client, 'merchant', 'owner', draft, Array(21).fill({ base64: 'AQ==', mimeType: 'image/webp' })), /TOO_MANY_IMAGES/);
   assert.deepEqual(t.uploaded, []);
   assert.deepEqual(t.calls, []);
 });
-test('merchant drafts save ten photos in order with existing ownership validation', async () => {
+test('merchant drafts save twenty photos in order with existing ownership validation', async () => {
   const t = clientFor();
-  const images = Array.from({ length: 10 }, (_, i) => ({ path: `owner/${i}.webp` }));
+  const images = Array.from({ length: 20 }, (_, i) => ({ path: `owner/${i}.webp` }));
   const paths = await saveMerchantDraftImages(t.client, 'merchant', 'owner', draft, images);
   assert.deepEqual(paths, images.map(image => image.path));
   assert.deepEqual(t.calls[0].args.p_image_paths, paths);

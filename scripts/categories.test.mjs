@@ -21,7 +21,7 @@ const expected = [
   ['shopping', '쇼핑'],
   ['settlement', '정착'],
   ['transport', '이동'],
-  ['housing', '주거'],
+  ['housing', '부동산'],
   ['education', '교육'],
   ['meetup', '모임'],
   ['jobs', '구인구직'],

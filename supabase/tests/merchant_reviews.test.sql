@@ -20,11 +20,11 @@ insert into public.profiles(id,nickname,city_id,terms_accepted_at,privacy_accept
 update public.profiles set account_status='suspended' where id='13100000-0000-4000-8000-000000000005';
 insert into auth.sessions(id,user_id,aal) values
 ('13190000-0000-4000-8000-000000000004','13100000-0000-4000-8000-000000000004','aal2');
-insert into private.merchants(id,name,city_id,status,consent,consent_note) values
-('13110000-0000-4000-8000-000000000001','후기 검증 업체 하나','vancouver','trial','granted','테스트 허가'),
-('13110000-0000-4000-8000-000000000002','후기 검증 업체 둘','vancouver','paid','granted','테스트 허가'),
-('13110000-0000-4000-8000-000000000003','중단 업체 검사','vancouver','trial','granted','테스트 허가'),
-('13110000-0000-4000-8000-000000000004','철회 업체 검사','vancouver','trial','granted','테스트 철회');
+insert into private.merchants(id,name,city_id,status,consent,consent_note,record_kind) values
+('13110000-0000-4000-8000-000000000001','후기 검증 업체 하나','vancouver','trial','granted','테스트 허가','business'),
+('13110000-0000-4000-8000-000000000002','후기 검증 업체 둘','vancouver','paid','granted','테스트 허가','business'),
+('13110000-0000-4000-8000-000000000003','중단 업체 검사','vancouver','trial','granted','테스트 허가','business'),
+('13110000-0000-4000-8000-000000000004','철회 업체 검사','vancouver','trial','granted','테스트 철회','business');
 update private.merchants set owner_id='13100000-0000-4000-8000-000000000001',owner_verified_at=now() where id='13110000-0000-4000-8000-000000000001';
 insert into storage.objects(bucket_id,name,owner,owner_id,metadata) values
 ('merchant-review-receipts','13100000-0000-4000-8000-000000000002/13140000-0000-4000-8000-000000000001.webp','13100000-0000-4000-8000-000000000002','13100000-0000-4000-8000-000000000002','{"mimetype":"image/webp","size":2000}'),

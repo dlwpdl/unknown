@@ -5,7 +5,7 @@ type Schema = { type: string | string[]; properties?: Record<string, Schema>; re
 const uuid = { type: 'string', pattern: '^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$' };
 const text = (maxLength: number): Schema => ({ type: 'string', minLength: 1, maxLength });
 const revision = { type: 'string', format: 'date-time' };
-const images: Schema = { type: 'array', maxItems: 10, uniqueItems: true, items: { type: 'string', maxLength: 240,
+const images: Schema = { type: 'array', maxItems: 20, uniqueItems: true, items: { type: 'string', maxLength: 240,
   pattern: '^[A-Za-z0-9_-]+/[A-Za-z0-9_-]+\\.(webp|jpeg|jpg|png)$' } };
 const nullableImage: Schema = { type: ['string', 'null'], maxLength: 240, pattern: '^[A-Za-z0-9_-]+/[A-Za-z0-9_-]+\\.webp$' };
 const page = { merchant_id: uuid, offset: { type: 'integer', minimum: 0, maximum: 10000 } };

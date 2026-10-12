@@ -15,9 +15,9 @@ insert into public.profiles(id,nickname,city_id,terms_accepted_at,privacy_accept
 ('13700000-0000-4000-8000-000000000005','근무비활성검사','vancouver',now(),now(),now(),'test');
 update public.profiles set account_status='suspended' where id='13700000-0000-4000-8000-000000000005';
 insert into auth.sessions(id,user_id,aal) values('13790000-0000-4000-8000-000000000004','13700000-0000-4000-8000-000000000004','aal2');
-insert into private.merchants(id,name,city_id,status,consent,consent_note,owner_id,owner_verified_at) values
-('13710000-0000-4000-8000-000000000001','근무 검사 업체','vancouver','trial','granted','검사 승인','13700000-0000-4000-8000-000000000001',now()),
-('13710000-0000-4000-8000-000000000002','근무 다른 업체','vancouver','paid','granted','검사 승인','13700000-0000-4000-8000-000000000003',now());
+insert into private.merchants(id,name,city_id,status,consent,consent_note,owner_id,owner_verified_at,record_kind) values
+('13710000-0000-4000-8000-000000000001','근무 검사 업체','vancouver','trial','granted','검사 승인','13700000-0000-4000-8000-000000000001',now(),'business'),
+('13710000-0000-4000-8000-000000000002','근무 다른 업체','vancouver','paid','granted','검사 승인','13700000-0000-4000-8000-000000000003',now(),'business');
 insert into public.posts(id,city_id,author_id,tag_id,title,body,status) values
 ('13720000-0000-4000-8000-000000000001','vancouver','13700000-0000-4000-8000-000000000001',1,'근무 업체 소개','실제 업체 소개가 아닌 검사 본문 1','published'),
 ('13720000-0000-4000-8000-000000000002','vancouver','13700000-0000-4000-8000-000000000001',1,'근무 동일 업체 소개','실제 업체 소개가 아닌 검사 본문 2','published'),
