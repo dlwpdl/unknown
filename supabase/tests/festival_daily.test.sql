@@ -60,6 +60,10 @@ select lives_ok($$select public.set_admin_festival_slot('vancouver',2,'fixture-f
 select throws_ok($$select public.set_admin_festival_slot('vancouver',8,'fixture-fest',null)$$,'P0001','INVALID_FESTIVAL_SLOT','position range is enforced');
 select throws_ok($$select public.set_admin_festival_slot('vancouver',3,'other-city',null)$$,'P0001','FESTIVAL_UNAVAILABLE','a festival from another city cannot be assigned');
 select throws_ok($$select public.set_admin_festival_slot('vancouver',3,'fixture-fest',now()-interval '1 minute')$$,'P0001','INVALID_FESTIVAL_SLOT','past exposure expiry is rejected');
+reset role;
+update public.ticketmaster_event_cache set updated_at=now()-interval '26 hours' where cache_key='tm-event:vancouver:fixture-fest';
+select ok(private.cached_ticketmaster_event('vancouver','fixture-fest') is null,'previous assignment metadata can expire before the festival starts');
+set local role authenticated;
 select lives_ok($$select public.set_admin_festival_slot('vancouver',3,'fixture-day-two',null)$$,'a different ticket for the same festival can move its assigned position');
 reset role;
 create extension if not exists pgrowlocks with schema extensions;
@@ -67,6 +71,10 @@ select ok(exists(select 1 from extensions.pgrowlocks('public.cities') l join pub
   where c.id='vancouver' and 'For Update'=any(l.modes)),'admin assignments hold an exclusive city row lock until transaction end');
 select is((select count(*)::integer from private.festival_slot_overrides where city_id='vancouver'),1,'day-ticket aliases cannot occupy two assigned positions');
 select is((select slot from private.festival_slot_overrides where city_id='vancouver' and event_id='fixture-day-two'),3,'the requested day-ticket position is actually the saved assignment');
+select throws_ok($$insert into private.festival_slot_overrides(city_id,slot,event_id,festival_key,ends_at)
+  select city_id,7,'duplicate-identity',festival_key,ends_at from private.festival_slot_overrides where city_id='vancouver'$$,
+  '23505',null,'the database also enforces one position per festival identity');
+update public.ticketmaster_event_cache set updated_at=now() where cache_key='tm-event:vancouver:fixture-fest';
 set local role authenticated;
 select lives_ok($$select public.set_admin_festival_slot('vancouver',5,'fixture-fest',null)$$,'an existing assignment moves without duplicate positions');
 reset role;

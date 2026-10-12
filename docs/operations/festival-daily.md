@@ -23,7 +23,7 @@ await client.rpc('set_admin_festival_slot', {
 await client.rpc('get_admin_festival_slots', { p_city_id: 'vancouver' });
 ```
 
-`p_ends_at`으로 노출 종료 시간을 지정할 수 있다. 생략하면 행사 시작까지 유지한다. 행사 시작 이후로는 늘릴 수 없다. 같은 페스티벌을 다른 칸에 지정하면 기존 칸에서 이동한다. 동일 도시의 관리자 변경은 기존 도시 행을 잠가 동시에 중복 저장되지 않는다. `p_event_id: null`로 해제하면 자동 선택으로 돌아간다. 변경은 다음 목록 조회부터 적용된다.
+`p_ends_at`으로 노출 종료 시간을 지정할 수 있다. 생략하면 행사 시작까지 유지한다. 행사 시작 이후로는 늘릴 수 없다. 같은 페스티벌을 다른 칸에 지정하면 기존 칸에서 이동한다. 동일 도시의 관리자 변경은 기존 도시 행을 잠가 동시에 중복 저장되지 않는다. 이름·공연장·연도의 식별 해시도 저장해 이전 API 캐시가 만료된 뒤에도 다른 날짜 티켓을 같은 페스티벌로 이동한다. 원문 데이터는 추가 저장하지 않는다. `p_event_id: null`로 해제하면 자동 선택으로 돌아간다. 변경은 다음 목록 조회부터 적용된다.
 
 앱은 화면 포커스·포그라운드, 웹은 포커스·다시 표시될 때 목록을 재조회한다. 열린 화면도 현지 날짜 변경, 행사 시작, 지정 만료를 분 단위로 확인한다. 새 데이터 수집과 기존 캐시 조회는 별개다.
 
@@ -37,7 +37,7 @@ npm run check:public-web
 npm run check:merchant-web
 ```
 
-서버 변경은 `20261011233000_festival_daily.sql` 한 건과 `ticketmaster-events` 함수만 적용한다. 미관련 migration을 일괄 push하지 않는다. SQL 검사는 `supabase/tests/festival_daily.test.sql`을 로컬 트랜잭션에서 실행하고 롤백한다. 행 잠금 검사용 기본 PostgreSQL `pgrowlocks` 확장도 테스트 트랜잭션에서만 만들며 운영에는 설치하지 않는다.
+서버 변경은 `20261011233000_festival_daily.sql`과 식별값 보완 `20261012002000_festival_slot_identity.sql`과 `ticketmaster-events` 함수만 적용한다. 미관련 migration을 일괄 push하지 않는다. SQL 검사는 `supabase/tests/festival_daily.test.sql`을 로컬 트랜잭션에서 실행하고 롤백한다. 행 잠금 검사용 기본 PostgreSQL `pgrowlocks` 확장도 테스트 트랜잭션에서만 만들며 운영에는 설치하지 않는다.
 
 2026-10-11 운영 배포·캐시·작업 소속·API 재조회 증거와 복구 SQL은 작업 기록의 `output/qa/festival-daily-2026-10-11/`에 보관한다. 복구는 백업한 Edge Function을 먼저 복원하고 `rollback.sql`로 기존 수집 함수·뷰·정리 작업을 복원한다. 수동 지정 데이터와 migration 이력은 삭제하지 않는다.
 
