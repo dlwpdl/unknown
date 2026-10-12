@@ -267,6 +267,8 @@ test('20장 썸네일은 작은 이미지를 사용하고 마지막 선택과 �
   let tree = gallery.Gallery({ post });
   const strip = nodes(tree).find(node => node.props?.analyticsId === 'post.photo.thumbnails');
   assert.equal(strip?.props.horizontal, true);
+  assert.equal(strip.props.style?.height, 72, '앱의 세로 목록 안에서도 작은 사진 줄의 높이를 확보한다');
+  assert.equal(strip.props.style?.flexShrink, 0, '큰 사진 때문에 작은 사진 줄이 접히지 않는다');
   assert.equal(thumbnails(tree).length, 20);
   assert.deepEqual(nodes(strip).filter(node => node.props?.source?.uri).map(node => node.props.source.uri), post.imageThumbs);
   thumbnails(tree)[19].props.onPress();
