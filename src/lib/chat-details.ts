@@ -1,6 +1,16 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 type TimedMessage = { sender_id: string; created_at: string };
+export type ChatRect = { x: number; y: number; width: number; height: number };
+export function messageMenuPosition(anchor: ChatRect, menu: Pick<ChatRect, 'width' | 'height'>, bounds: ChatRect, mine: boolean) {
+  const minLeft = bounds.x + 8, maxLeft = Math.max(minLeft, bounds.x + bounds.width - menu.width - 8);
+  const minTop = bounds.y + 8, maxTop = Math.max(minTop, bounds.y + bounds.height - menu.height - 8);
+  const above = anchor.y - menu.height - 8;
+  return {
+    left: Math.max(minLeft, Math.min(maxLeft, mine ? anchor.x + anchor.width - menu.width : anchor.x)),
+    top: Math.max(minTop, Math.min(maxTop, above >= minTop ? above : anchor.y + anchor.height + 8)),
+  };
+}
 export type MeetupChatIcon = 'sunset' | 'sports-shoe' | 'popcorn' | 'beer' | 'disco-ball' | 'microphone' | 'ticket';
 
 // Specific meetup plans win over the broad category; older rooms may have no category.

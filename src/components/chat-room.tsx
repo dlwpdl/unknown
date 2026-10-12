@@ -3,7 +3,7 @@ import { Pressable, FlatList } from '@/components/analytics-controls';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from 'expo-symbols';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
 import { AppState, KeyboardAvoidingView, LayoutAnimation, Linking, Modal, Platform, StyleSheet, TextInput, UIManager, View, type FlatList as NativeFlatList, type NativeScrollEvent, type NativeSyntheticEvent, type ViewToken } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,7 +24,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
-import { chatDateLabel, chatMessageTime, firstUnreadMessageIndex, showChatMessageTime } from '@/lib/chat-details';
+import { chatDateLabel, chatMessageTime, firstUnreadMessageIndex, messageMenuPosition, showChatMessageTime, type ChatRect } from '@/lib/chat-details';
 import { blockUser, endConversation, editChatMessage, deleteChatMessage, loadListingReviewState, writeListingReview, type ListingReviewState, isContentRejected, loadChatReadPosition, loadConversationMessages, loadConversationMessagesByIds, loadMessageReactions, markChatRead, mergeChatMessages, sendChatAttachment, sendDirectMessage, setMessageReaction, uploadChatImage, type ChatMessageRecord, type ConversationPreview, type MessageReaction, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
@@ -44,6 +44,19 @@ export function conversationSender(message: Pick<ChatMessageRecord, 'sender_id' 
 }
 
 type ReportSelection = { targetType: ReportTarget; targetId: string; reportedUserId: string; reportedNickname: string };
+function BubblePressable({ message, onMenu, ...props }: ComponentProps<typeof Pressable> & { message: ChatMessageRecord; onMenu: (message: ChatMessageRecord, bubble: View) => void }) {
+  const bubble = useRef<View>(null);
+  const open = () => {
+    if (!props.disabled && bubble.current) onMenu(message, bubble.current);
+  };
+  return <Pressable {...props} ref={bubble} delayLongPress={400} onLongPress={open}
+    accessibilityHint="길게 눌러 메시지 메뉴 열기" accessibilityActions={[{ name: 'longpress', label: '메시지 메뉴' }]}
+    onAccessibilityAction={event => { if (event.nativeEvent.actionName === 'longpress') open(); }}
+    {...(Platform.OS === 'web' ? {
+      onContextMenu: (event: { preventDefault: () => void }) => { event.preventDefault(); open(); },
+      onKeyDown: (event: { key: string; shiftKey: boolean; preventDefault: () => void }) => { if (event.key === 'ContextMenu' || event.key === 'F10' && event.shiftKey) { event.preventDefault(); open(); } },
+    } : {})} />;
+}
 function messagePreview(message: Pick<ChatMessageRecord, 'body' | 'kind' | 'deleted_at'>) {
   return message.deleted_at ? '삭제된 메시지입니다.' : message.kind === 'image' ? '사진' : message.kind === 'location' ? '공유한 위치' : message.body;
 }
@@ -80,6 +93,9 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const [draft, setDraft] = useState('');
   const [replyTo, setReplyTo] = useState<ChatMessageRecord | null>(null);
   const [messageMenu, setMessageMenu] = useState<ChatMessageRecord | null>(null);
+  const [menuFrame, setMenuFrame] = useState<{ anchor: ChatRect; bounds: ChatRect } | null>(null);
+  const [menuSize, setMenuSize] = useState({ width: 0, height: 0 });
+  const menuRequest = useRef(0), listRegion = useRef<View>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [editingMessage, setEditingMessage] = useState<ChatMessageRecord | null>(null);
   const [messageEditDraft, setMessageEditDraft] = useState('');
@@ -149,6 +165,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     void markChatRead(supabase, conversation.id, newest.id).catch(() => {});
   }, [conversation.id, valid]);
   const onMessageScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    closeMessageMenu();
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
     const nearLatest = contentSize.height - layoutMeasurement.height - contentOffset.y < 88;
     followingLatest.current = nearLatest;
@@ -208,9 +225,20 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     lastTap.current = { id: messageId, at };
     if (previous && previous.id === messageId && at - previous.at < 320) { lastTap.current = null; void toggleHeart(messageId); }
   };
-  const openMessageMenu = (message: ChatMessageRecord) => {
+  const closeMessageMenu = useCallback(() => { menuRequest.current += 1; setMessageMenu(null); setMenuFrame(null); }, []);
+  const openMessageMenu = (message: ChatMessageRecord, bubble: View) => {
     if (!access.write || sending || !valid() || message.deleted_at) return;
-    lastTap.current = null; play('selection'); setDeleteConfirm(false); setMessageMenu(message);
+    const request = ++menuRequest.current;
+    lastTap.current = null; play('selection');
+    bubble.measureInWindow((x, y, width, height) => {
+      if (!valid() || request !== menuRequest.current || width <= 0 || height <= 0) return;
+      const anchor = { x, y, width, height };
+      listRegion.current?.measureInWindow((x, y, width, height) => {
+        if (!valid() || request !== menuRequest.current || hidden('message', message.id, message.sender_id) || width < 44 || height < 44) return;
+        setMenuFrame({ anchor, bounds: { x, y, width, height } }); setMenuSize({ width: 0, height: 0 });
+        setDeleteConfirm(false); setMessageMenu(message);
+      });
+    });
   };
   const changeMessage = async (message: ChatMessageRecord, remove: boolean) => {
     if (processing.current || !access.write || !valid()) return;
@@ -496,9 +524,9 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       </View>
     </View>}
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      {access.read ? loading && messages.length === 0 ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} /></View> : <View style={styles.messageList}><FlatList ref={messageList} analyticsId="components_chat-room.flatlist.1" data={messages} keyExtractor={(message) => message.id} contentContainerStyle={styles.scroll}
+      {access.read ? loading && messages.length === 0 ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} /></View> : <View ref={listRegion} style={styles.messageList} onLayout={closeMessageMenu}><FlatList ref={messageList} analyticsId="components_chat-room.flatlist.1" data={messages} keyExtractor={(message) => message.id} contentContainerStyle={styles.scroll}
         onViewableItemsChanged={trackVisibleMessages} viewabilityConfig={viewability}
-        onScroll={onMessageScroll} scrollEventThrottle={32} maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+        onScrollBeginDrag={closeMessageMenu} onScroll={onMessageScroll} scrollEventThrottle={32} maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
         onLayout={() => { if (initialScroll.current && followingLatest.current) requestAnimationFrame(() => messageList.current?.scrollToEnd({ animated: false })); }}
         onContentSizeChange={() => { if (initialScroll.current && followingLatest.current && !loadingOlder) requestAnimationFrame(() => messageList.current?.scrollToEnd({ animated: false })); }}
         onScrollToIndexFailed={({ index, averageItemLength }) => {
@@ -527,8 +555,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
             ? messagePreview(message.reply) : '원본 메시지를 볼 수 없어요.' : null;
           const content = <>{quote && <ThemedText type="small" numberOfLines={2} style={[styles.quoteText, { color: mine && !attachment ? theme.accentInk : theme.textSecondary, borderLeftColor: mine && !attachment ? theme.accentInk : theme.line }]}>{quote}</ThemedText>}{messageContent}
             {message.edited_at && !message.deleted_at && <ThemedText type="small" style={{ color: mine && !attachment ? theme.accentInk : theme.textSecondary }}>수정됨</ThemedText>}</>;
-          const menuProps = { disabled: !!message.deleted_at, accessibilityState: { disabled: !!message.deleted_at }, onLongPress: () => openMessageMenu(message), delayLongPress: 400,
-            accessibilityActions: [{ name: 'longpress', label: '메시지 메뉴' }], onAccessibilityAction: () => openMessageMenu(message) };
+          const menuProps = { disabled: !!message.deleted_at, accessibilityState: { disabled: !!message.deleted_at } };
           const onBubblePress = (at: number) => {
             if (message.deleted_at) return;
             if (message.kind === 'image' && message.imageUrl) { play('selection'); setPhotoOpen(message.imageUrl); return; }
@@ -549,8 +576,8 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           return <View style={styles.messageGroup}>
             {message.id === unreadStart && <View style={[styles.unreadDivider, { borderColor: theme.accent }]}><ThemedText type="smallBold" themeColor="accent">여기부터 안 읽은 메시지</ThemedText></View>}
             {date && <ThemedText type="small" themeColor="textSecondary" style={styles.date}>{date}</ThemedText>}
-            {mine ? <><Pressable analyticsId="components_chat-room.pressable.heart" {...menuProps} onPress={(event: { nativeEvent?: { timestamp?: number } }) => onBubblePress(event?.nativeEvent?.timestamp ?? 0)} accessibilityRole={message.kind === 'location' ? 'link' : 'button'} accessibilityLabel={message.deleted_at ? '삭제된 메시지입니다.' : attachment ? message.kind === 'image' ? '사진 크게 보기' : '공유한 위치 지도에서 열기' : '메시지에 하트 (두 번 탭)'} style={[styles.bubbleMine, { backgroundColor: attachment ? theme.card : theme.accent }]}>{content}</Pressable>{heart}{time}</>
-              : <View style={styles.row}><View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" themeColor="navy">{author.nickname[0]}</ThemedText></View><View style={styles.rowBody}><ThemedText type="smallBold">{author.nickname}</ThemedText><Pressable analyticsId="components_chat-room.pressable.heart" {...menuProps} onPress={(event: { nativeEvent?: { timestamp?: number } }) => onBubblePress(event?.nativeEvent?.timestamp ?? 0)} accessibilityRole={message.kind === 'location' ? 'link' : 'button'} accessibilityLabel={message.deleted_at ? '삭제된 메시지입니다.' : attachment ? message.kind === 'image' ? '사진 크게 보기' : '공유한 위치 지도에서 열기' : '메시지에 하트 (두 번 탭)'} style={[styles.bubble, { backgroundColor: theme.card, borderColor: theme.line }]}>{content}</Pressable>{heart}{time}<View style={styles.messageActions}><RoomAction label={t.report.short} onPress={() => setReport({ targetType: 'message', targetId: message.id, reportedUserId: author.id, reportedNickname: author.nickname })} />{group && <RoomAction label={t.chat.block} onPress={() => void block(author.id)} />}</View></View></View>}
+            {mine ? <><BubblePressable analyticsId="components_chat-room.pressable.heart" {...menuProps} message={message} onMenu={openMessageMenu} onPress={(event: { nativeEvent?: { timestamp?: number } }) => onBubblePress(event?.nativeEvent?.timestamp ?? 0)} accessibilityRole={message.kind === 'location' ? 'link' : 'button'} accessibilityLabel={message.deleted_at ? '삭제된 메시지입니다.' : attachment ? message.kind === 'image' ? '사진 크게 보기' : '공유한 위치 지도에서 열기' : '메시지에 하트 (두 번 탭)'} style={[styles.bubbleMine, { backgroundColor: attachment ? theme.card : theme.accent }]}>{content}</BubblePressable>{heart}{time}</>
+              : <View style={styles.row}><View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" themeColor="navy">{author.nickname[0]}</ThemedText></View><View style={styles.rowBody}><ThemedText type="smallBold">{author.nickname}</ThemedText><BubblePressable analyticsId="components_chat-room.pressable.heart" {...menuProps} message={message} onMenu={openMessageMenu} onPress={(event: { nativeEvent?: { timestamp?: number } }) => onBubblePress(event?.nativeEvent?.timestamp ?? 0)} accessibilityRole={message.kind === 'location' ? 'link' : 'button'} accessibilityLabel={message.deleted_at ? '삭제된 메시지입니다.' : attachment ? message.kind === 'image' ? '사진 크게 보기' : '공유한 위치 지도에서 열기' : '메시지에 하트 (두 번 탭)'} style={[styles.bubble, { backgroundColor: theme.card, borderColor: theme.line }]}>{content}</BubblePressable>{heart}{time}<View style={styles.messageActions}><RoomAction label={t.report.short} onPress={() => setReport({ targetType: 'message', targetId: message.id, reportedUserId: author.id, reportedNickname: author.nickname })} />{group && <RoomAction label={t.chat.block} onPress={() => void block(author.id)} />}</View></View></View>}
             {sharedUrl && <SharedLinkCard key={`${message.id}:${currentUserId}`} url={sharedUrl} />}
           </View>;
         }} />{awayFromLatest && <Pressable analyticsId="components_chat-room.jump-latest" accessibilityRole="button" accessibilityLabel="최근 메시지로 내려가기" onPress={() => { play('selection'); followingLatest.current = true; setAwayFromLatest(false); messageList.current?.scrollToEnd({ animated: true }); }} style={[styles.jumpLatest, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="smallBold" themeColor="accent">↓ 최근 메시지</ThemedText></Pressable>}</View> : <View style={styles.request}><ThemedText type="small" themeColor="textSecondary">처리되거나 취소된 요청이에요. 대화 목록에서 새로 확인해 주세요.</ThemedText></View>}
@@ -574,22 +601,29 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       </> : status === 'ended' && <ThemedText type="small" themeColor="textSecondary" style={[styles.feedback, { paddingBottom: Math.max(insets.bottom, Spacing.three) }]}>{t.chat.endedBody}</ThemedText>}
     </KeyboardAvoidingView>
     {locationOpen && auth.isAuthed && auth.me.id === currentUserId && access.write && <ChatLocationPicker sending={sending} onSend={sendLocation} onClose={() => setLocationOpen(false)} />}
-    {messageMenu && !hidden('message', messageMenu.id, messageMenu.sender_id) && auth.isAuthed && auth.me.id === currentUserId && access.write && <Modal visible transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => { play('selection'); setMessageMenu(null); }}>
+    {messageMenu && menuFrame && !deleteConfirm && !hidden('message', messageMenu.id, messageMenu.sender_id) && auth.isAuthed && auth.me.id === currentUserId && access.write && <Modal visible transparent statusBarTranslucent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => { play('selection'); closeMessageMenu(); }}>
+      <View style={{ flex: 1 }} accessibilityViewIsModal>
+        <Pressable analyticsId="chat.message.menu-dismiss" accessibilityRole="button" accessibilityLabel="메시지 메뉴 닫기" style={StyleSheet.absoluteFill}
+          onPress={() => { play('selection'); closeMessageMenu(); }} />
+        <View accessibilityLabel="메시지 메뉴" onLayout={({ nativeEvent: { layout } }) => setMenuSize(current => current.width === layout.width && current.height === layout.height ? current : { width: layout.width, height: layout.height })}
+          style={[styles.bubbleMenu, { backgroundColor: theme.card, borderColor: theme.line, maxWidth: menuFrame.bounds.width - 16, opacity: menuSize.height ? 1 : 0 }, menuSize.width
+            ? { width: menuSize.width, ...messageMenuPosition(menuFrame.anchor, menuSize, menuFrame.bounds, messageMenu.sender_id === currentUserId) }
+            : { left: menuFrame.bounds.x + 8, top: menuFrame.bounds.y + 8 }]}>
+          <Pressable analyticsId="chat.message.reply" accessibilityRole="button" accessibilityLabel="답장" disabled={sending} onPress={() => { play('selection'); setReplyTo(messageMenu); closeMessageMenu(); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold">답장</ThemedText></Pressable>
+          {messageMenu.sender_id === currentUserId && <>
+            {(!messageMenu.kind || messageMenu.kind === 'text') && <Pressable analyticsId="chat.message.edit" accessibilityRole="button" accessibilityLabel="메시지 수정" disabled={sending} onPress={() => { play('selection'); setEditingMessage(messageMenu); setMessageEditDraft(messageMenu.body); closeMessageMenu(); setError(null); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold">수정</ThemedText></Pressable>}
+            <Pressable analyticsId="chat.message.delete" accessibilityRole="button" accessibilityLabel="메시지 삭제" disabled={sending} onPress={() => { play('selection'); setDeleteConfirm(true); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold" style={{ color: '#FF8585' }}>삭제</ThemedText></Pressable>
+          </>}
+        </View>
+      </View>
+    </Modal>}
+    {messageMenu && deleteConfirm && !hidden('message', messageMenu.id, messageMenu.sender_id) && auth.isAuthed && auth.me.id === currentUserId && access.write && <Modal visible transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => { play('selection'); closeMessageMenu(); }}>
       <View style={styles.messageSheetBackdrop} accessibilityViewIsModal>
         <View style={[styles.messageSheet, { backgroundColor: theme.card }]}>
           <ThemedText type="small" numberOfLines={3}>{messagePreview(messageMenu)}</ThemedText>
-          {deleteConfirm ? <>
             <ThemedText>이 메시지를 삭제할까요? 대화에는 ‘삭제된 메시지입니다’가 남아요.</ThemedText>
             <RoomAction label="취소" onPress={() => setDeleteConfirm(false)} disabled={sending} />
             <RoomAction label="삭제하기" onPress={() => void changeMessage(messageMenu, true)} disabled={sending} primary />
-          </> : <>
-            <RoomAction label="답장" onPress={() => { setReplyTo(messageMenu); setMessageMenu(null); }} />
-            {messageMenu.sender_id === currentUserId && <>
-              {(!messageMenu.kind || messageMenu.kind === 'text') && <RoomAction label="메시지 수정" onPress={() => { setEditingMessage(messageMenu); setMessageEditDraft(messageMenu.body); setMessageMenu(null); setError(null); }} />}
-              <RoomAction label="메시지 삭제" onPress={() => setDeleteConfirm(true)} />
-            </>}
-            <RoomAction label="닫기" onPress={() => setMessageMenu(null)} />
-          </>}
           {!!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
         </View>
       </View>
@@ -615,6 +649,8 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
 }
 
 const styles = StyleSheet.create({
+  bubbleMenu: { position: 'absolute', flexDirection: 'row', flexWrap: 'wrap', borderWidth: 1, borderRadius: 16, padding: 4, shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 10 },
+  bubbleMenuAction: { minWidth: 64, minHeight: 44, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
   quoteText: { borderLeftWidth: 2, paddingLeft: 8, marginBottom: 8 },
   messageSheetBackdrop: { flex: 1, justifyContent: 'center', padding: Spacing.three, backgroundColor: 'rgba(0,0,0,0.55)' },
   messageSheet: { width: '100%', maxWidth: 520, alignSelf: 'center', padding: Spacing.three, borderRadius: 16, gap: Spacing.two },
