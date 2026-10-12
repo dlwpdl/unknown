@@ -167,9 +167,11 @@ export function AdminShell({
             {compact && <Pressable onPress={() => { play('selection'); onSignOut(); }} accessibilityRole="button" accessibilityLabel="로그아웃" style={({ pressed }) => [styles.topbarButton, pressed && styles.pressed]}><View aria-hidden accessibilityElementsHidden><SymbolView name={{ ios: 'rectangle.portrait.and.arrow.right', web: 'logout' }} size={18} tintColor={Colors.admin.textSecondary} /></View></Pressable>}
           </View>
         </View>
-        <ScrollView nativeID="admin-main-scroll" style={styles.content} contentContainerStyle={[styles.contentInner, compact && styles.contentCompact]}>
+        {activeSection === 'conversations' ? <View nativeID="admin-conversations-content" style={[styles.conversationsContent, compact && styles.contentCompact]}>
           {children}
-        </ScrollView>
+        </View> : <ScrollView nativeID="admin-main-scroll" style={styles.content} contentContainerStyle={[styles.contentInner, compact && styles.contentCompact]}>
+          {children}
+        </ScrollView>}
       </View>
     </View>
     </ThemeOverrideProvider>
@@ -208,6 +210,7 @@ const styles = StyleSheet.create({
   pressed: { backgroundColor: Colors.admin.backgroundElement, opacity: 0.8 },
   signOutButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
   content: { flex: 1, minWidth: 0 },
+  conversationsContent: { flex: 1, minHeight: 0, minWidth: 0, padding: Spacing.four },
   main: { flex: 1, minWidth: 0, minHeight: 0 },
   topbar: { minHeight: 68, flexShrink: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three, paddingHorizontal: Spacing.four, borderBottomWidth: 1, borderBottomColor: Colors.admin.line, backgroundColor: Colors.admin.card },
   topbarCompact: { minHeight: 56, paddingHorizontal: Spacing.three, gap: Spacing.two },
