@@ -33,6 +33,8 @@ export type PublicFeedRow = {
   expires_at?: string | null;
   bumped_at?: string | null;
   sort_at?: string;
+  popularity_score?: number;
+  ranking_as_of?: string;
 };
 
 export type PublicCommentRow = {
@@ -47,7 +49,8 @@ export type PublicCommentRow = {
   author_verification_level: number;
 };
 
-export type FeedCursor = { createdAt: string; id: string; sortAt?: string };
+export type FeedSort = 'latest' | 'popular';
+export type FeedCursor = { createdAt: string; id: string; sortAt?: string; popularityScore?: number; rankingAsOf?: string };
 
 type SignedImage = { url: string; expiresAt: number };
 const signedImagesByClient = new WeakMap<object, Map<string, SignedImage>>();
@@ -94,10 +97,18 @@ export async function loadPublicFeed(
   tagId: number | null = null,
   query: string | null = null,
   cursor: FeedCursor | null = null,
-  options?: { viewerScope?: string; signal?: AbortSignal },
+  options?: { viewerScope?: string; signal?: AbortSignal; sort?: FeedSort },
 ): Promise<Post[]> {
   // v2 orders by sort_at (bumped listings float) and hides closed/expired listings.
-  const request = client.rpc('get_public_feed_page_v2', {
+  const request = options?.sort === 'popular' ? client.rpc('get_public_popular_feed_page', {
+    p_city_id: cityId,
+    p_tag_id: tagId,
+    p_before_score: cursor?.popularityScore ?? null,
+    p_before_created: cursor?.createdAt ?? null,
+    p_before_id: cursor?.id ?? null,
+    p_as_of: cursor?.rankingAsOf ?? null,
+    p_limit: 30,
+  }) : client.rpc('get_public_feed_page_v2', {
     p_city_id: cityId,
     p_tag_id: tagId,
     p_query: query,
@@ -200,6 +211,8 @@ export function mapPublicFeed(
     expiresAt: row.expires_at ?? null,
     bumpedAt: row.bumped_at ?? null,
     sortAt: row.sort_at ?? row.created_at,
+    popularityScore: row.popularity_score,
+    rankingAsOf: row.ranking_as_of,
   }));
 }
 
