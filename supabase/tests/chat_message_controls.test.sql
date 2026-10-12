@@ -76,5 +76,13 @@ select set_config('request.jwt.claims','{"sub":"a1220000-0000-0000-0000-00000000
 set local role authenticated;
 select throws_ok($$select public.edit_chat_message('a1222000-0000-0000-0000-000000000002','intrusion',null)$$,'P0001','MESSAGE_NOT_FOUND','outsiders cannot mutate a conversation');
 reset role;
+-- Model the already deployed, service-owned context endpoint without reading real conversations.
+create or replace function public.get_message_safety_context(p_target_id uuid) returns jsonb
+language sql security definer set search_path='' as $$select jsonb_build_object('text','consented preceding context')$$;
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+set local role service_role;
+select ok(public.get_message_safety_content('a1222000-0000-0000-0000-000000000001')->>'text' like '%consented preceding context%' and public.get_message_safety_content('a1222000-0000-0000-0000-000000000001')->>'text' like '%original%','retained originals and the existing surrounding context both reach the worker');
+select is(public.get_message_safety_content('a1222000-0000-0000-0000-000000000099'),null::jsonb,'missing content stays missing when a context endpoint exists');
+reset role;
 select * from finish();
 rollback;
