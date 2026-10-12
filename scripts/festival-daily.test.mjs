@@ -6,6 +6,8 @@ import ts from 'typescript';
 import * as ticketmaster from '../supabase/functions/_shared/ticketmaster.ts';
 
 const now = Date.parse('2026-10-11T12:00:00Z');
+test.before(() => test.mock.timers.enable({ apis: ['Date'], now }));
+test.after(() => test.mock.timers.reset());
 const raw = (id, day = 12) => ({ id, name: `${id} Festival`, dates: { start: { dateTime: `2026-10-${day}T20:00:00Z`, localDate: `2026-10-${day}`, localTime: '13:00:00' }, timezone: 'America/Vancouver', status: { code: 'onsale' } }, _embedded: { venues: [{ name: 'Park', city: { name: 'Vancouver' }, country: { countryCode: 'CA' } }] } });
 class Clock extends Date { constructor(...args) { super(...(args.length ? args : [now])); } static now() { return now; } }
 
