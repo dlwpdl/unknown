@@ -29,7 +29,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TrustBadge } from '@/components/trust-badge';
 import { UserSheet, type SheetUser } from '@/components/user-sheet';
-import { Depth, Spacing } from '@/constants/theme';
+import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { count, t } from '@/i18n/ko';
@@ -234,7 +234,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   ]);
 
   const startEditPost = () => {
-    if ((post.imagePaths?.length ?? 0) !== (post.imageUris?.length ?? 0)) {
+    if ((post.imagePaths?.length ?? 0) !== (post.imageUris?.filter(Boolean).length ?? 0)) {
       play('warning'); Alert.alert('사진을 다시 불러와 주세요.', '사진을 모두 불러오지 못했어요. 글을 다시 연 뒤 수정해 주세요.'); return;
     }
     setPostMenuOpen(false);
@@ -579,7 +579,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
 
   if (postHidden) return null;
   return (
-    <ThemedView style={{ flex: 1 }}>
+    <ThemedView style={{ flex: 1, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' }}>
       <Modal visible={postMenuOpen || deletePostOpen} transparent animationType="fade" onRequestClose={() => { if (!savingPost) { play('selection'); setPostMenuOpen(false); setDeletePostOpen(false); } }}>
         <View style={styles.menuOverlay}>
           <Pressable analyticsId="post.manage.dismiss" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}
