@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 function detail({ authed = true, focused = true, loaded = true, offline = false } = {}) {
-  const effects = [], clicks = [], event = { id: 'real-fest', name: 'Real Festival' };
+  const effects = [], clicks = [], event = { id: 'real-fest', name: 'Real Festival', description: 'An evening of live music.', venue: 'Park', city: 'Vancouver' };
   let state = 0;
   const component = ts.transpileModule(fs.readFileSync(new URL('../src/app/events/[id].tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
@@ -19,6 +19,8 @@ function detail({ authed = true, focused = true, loaded = true, offline = false 
     'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'Symbol' },
     'react-native-safe-area-context': { SafeAreaView: 'SafeArea' },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
+    '@/components/themed-text': { ThemedText: 'Text' },
+    '@/components/raised-action-button': { RaisedActionButton: 'Action' },
     '@/constants/theme': { Depth: {} }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/event-videos': { eventVideo: () => null }, '@/lib/community-city': { useCommunityCity: () => ({}) },
@@ -38,6 +40,25 @@ test('a real authenticated foreground event detail records its exact event once'
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(ui.clicks.length, 1);
   assert.deepEqual(Array.from(ui.clicks[0]), ['vancouver', 'real-fest']);
+});
+
+test('event details keep the introduction and meetup actions and finish with a short ticket link', () => {
+  const ui = detail();
+  const nodes = [];
+  const visit = tree => {
+    if (!tree || typeof tree !== 'object') return;
+    if (Array.isArray(tree)) { tree.forEach(visit); return; }
+    nodes.push(tree);
+    visit(tree.props?.children);
+  };
+  visit(ui.tree);
+  const text = nodes.filter(node => node.type === 'Text').map(node => node.props.children).filter(value => typeof value === 'string');
+  assert.deepEqual(text, ['행사 정보', 'Real Festival', '', 'Park', 'Vancouver', '함께 갈 모임 찾기', '행사 안내', 'An evening of live music.', '티켓 확인하기']);
+  assert.equal(nodes.find(node => node.type === 'Action').props.label, '함께 갈 모임 만들기');
+  assert.equal(nodes.find(node => node.props?.children === 'An evening of live music.').props.numberOfLines, 3);
+  const buttons = nodes.filter(node => node.type === 'Pressable');
+  assert.deepEqual(buttons.map(node => node.props.analyticsId), ['ticketmaster.detail.back', 'ticketmaster.meetup.find', 'ticketmaster.purchase']);
+  assert.equal(buttons.at(-1).props.accessibilityRole, 'link');
 });
 
 test('guest, background and unsuccessful detail loads do not count as member clicks', async () => {
