@@ -10,7 +10,7 @@ const merchants = ['first', 'second'].map((id, i) => ({ id, name: `업체 ${i + 
 function app() {
   const state = [], refs = [], feedback = [], prompts = [];
   let stateIndex = 0, refIndex = 0, allowReplace = false;
-  state[5] = { key: ':0:0:0', rows: merchants, more: false, owners: { owned: '벤더 회원' } };
+  state[5] = { key: ':0:0:0:0', rows: merchants, more: false, owners: { owned: '벤더 회원' } };
   const exports = {};
   const source = ts.transpileModule(readFileSync(new URL('../src/components/admin/admin-merchants.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },

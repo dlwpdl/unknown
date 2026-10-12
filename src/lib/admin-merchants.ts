@@ -35,6 +35,7 @@ async function rpc<T>(client: SupabaseClient, name: string, args: Record<string,
 export const loadMerchants = (client: SupabaseClient, search = '', offset = 0) => rpc<{ merchants: Merchant[]; more: boolean }>(client, 'get_admin_merchants', { p_search: search.trim(), p_offset: offset });
 export const loadMerchant = (client: SupabaseClient, id: string, start: string, end: string) => rpc<MerchantDetail>(client, 'get_admin_merchant', { p_merchant_id: id, p_start: start, p_end: end });
 export const saveMerchant = (client: SupabaseClient, value: { id: string | null; name: string; city_id: string; contact: string; status: Merchant['status']; consent: Merchant['consent']; consent_note: string; trial_ends_at: string | null; industry?: string; services?: string; address?: string; record_kind?: Merchant['record_kind'] }) => rpc<string>(client, value.record_kind ? 'save_admin_merchant_record' : 'save_admin_merchant', Object.fromEntries(Object.entries(value).map(([key, v]) => [`p_${key}`, v])));
+export const deleteMerchants = (client: SupabaseClient, merchants: Pick<Merchant, 'id' | 'updated_at'>[]) => rpc<number>(client, 'delete_admin_merchants', { p_merchants: merchants.map(({ id, updated_at }) => ({ id, updated_at })) });
 export function merchantAddressCity(address: string): string | null {
   // 소재지는 주소에 명시된 도시·주만 사용하고 게시 지역에서 추정하지 않는다.
   const match = address.match(/(?:^|,)\s*([^,\d]+),\s*(AB|BC|MB|NB|NL|NS|NT|NU|ON|PE|QC|SK|YT)\b/i);
