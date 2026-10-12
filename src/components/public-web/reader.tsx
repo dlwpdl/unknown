@@ -21,7 +21,7 @@ import { publicMerchantId, publicWebTarget } from '@/lib/public-web';
 import { publicWebClient } from '@/lib/public-web-client';
 import { jsonLd, postSeo, PUBLIC_SITE } from '@/lib/public-seo';
 import { InteractionFeedbackProvider, useInteractionFeedback } from '@/lib/interaction-feedback';
-import { loadMerchantSource, trackPublicMerchantSourceClick, type MerchantSource } from '@/lib/merchant-source';
+import { loadMerchantSource, merchantSourceActionLabel, trackPublicMerchantSourceClick, type MerchantSource } from '@/lib/merchant-source';
 import type { Post } from '@/lib/types';
 
 const wordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark.png')).uri;
@@ -39,9 +39,10 @@ function MerchantSourceAction({ postId }: { postId: string }) {
     return () => { active = false; };
   }, [postId]);
   if (result?.id !== postId) return null;
+  const label = merchantSourceActionLabel(result.source.original_url);
   return <div className="reader-actions"><a className="reader-secondary" href={result.source.original_url} target="_blank" rel="noopener noreferrer"
-    aria-label={`${result.source.merchant_name} 계정으로 가기, 외부 페이지 열기`}
-    onClick={() => { play('selection'); void trackPublicMerchantSourceClick(postId); }}>업체 계정으로 가기 ↗</a></div>;
+    aria-label={`${result.source.merchant_name} ${label}, 외부 페이지 열기`}
+    onClick={() => { play('selection'); void trackPublicMerchantSourceClick(postId); }}>{label} ↗</a></div>;
 }
 
 function MapAction({ url }: { url: string }) {

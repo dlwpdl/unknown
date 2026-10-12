@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { merchantReportText, merchantReportHtml, merchantMapsUrl, merchantAddressCity, saveMerchant } from '../src/lib/admin-merchants.ts';
-import { safeMerchantSourceUrl, trackMerchantSourceClick, trackPublicMerchantSourceClick } from '../src/lib/merchant-source.ts';
+import { merchantSourceActionLabel, safeMerchantSourceUrl, trackMerchantSourceClick, trackPublicMerchantSourceClick } from '../src/lib/merchant-source.ts';
+
+test('Craigslist inquiry buttons match the approved copy while social profile buttons retain their label', () => {
+  assert.equal(merchantSourceActionLabel('https://www.craigslist.org/view/d/warehouse/example'), '업체에 직접 문의');
+  assert.equal(merchantSourceActionLabel('https://vancouver.craigslist.org/van/off/example.html'), '업체에 직접 문의');
+  for (const url of ['https://www.instagram.com/business/', 'https://www.threads.com/@business', 'https://craigslist.org.example.com/']) {
+    assert.equal(merchantSourceActionLabel(url), '업체 계정으로 가기');
+  }
+});
 
 const report = {
   id: 'report-1', merchant_id: 'merchant-1', merchant_name: '<동네 카페>', city_name: '밴쿠버',
