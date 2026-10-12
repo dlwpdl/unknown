@@ -137,6 +137,7 @@ export function PostPhotoGallery({ post }: { post: Post }) {
     </View>}
     </View>
     {photos.length > 1 && <ScrollView ref={thumbnails} key={`thumbnails:${galleryKey}`} analyticsId="post.photo.thumbnails" horizontal
+      style={{ height: 72, flexGrow: 0, flexShrink: 0 }}
       onScroll={event => setThumbnailPage({ key: galleryKey, index: Math.max(0, Math.floor(event.nativeEvent.contentOffset.x / 72)) })} scrollEventThrottle={100}
       showsHorizontalScrollIndicator={false} contentContainerStyle={styles.thumbnails}>
       {pictures.map((picture, position) => {
