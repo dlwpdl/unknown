@@ -51,6 +51,13 @@ const button = (root, label) => nodes(root).find(node => node.type === 'button' 
 const tabs = root => nodes(root).filter(node => node.props.role === 'tab');
 const component = (root, name) => nodes(root).find(node => typeof node.type === 'function' && node.type.name === name);
 
+test('썸네일 서명이 실패한 회사 게시글도 같은 위치의 원본 표지를 보여준다', async () => {
+  const view = app(undefined, { loadPosts: async () => ({ ...postPage, posts: [{ ...companyPost, imageThumbs: [''] }] }) });
+  view.render('PublicProfilePosts', { merchantId, kind: 'posts' }); await settle();
+  const root = view.render('PublicProfilePosts', { merchantId, kind: 'posts' });
+  assert.ok(nodes(root).some(node => node.type === 'img' && node.props.src === 'signed-original'));
+});
+
 test('public usage reply copies only safe fields and expands alongside the original customer text', async () => {
   const reply = { body: '감사합니다. 다음 방문에도 정성껏 준비할게요.', created_at: '2026-10-09T18:00:00Z', updated_at: '2026-10-09T18:00:00Z', actorId: 'PRIVATE_OWNER', note: 'PRIVATE_NOTE' };
   const view = app(undefined, { rpc: async () => ({ data: { ...page, reviews: [{ ...review, reply, receipt_review_note: 'PRIVATE_REASON' }] } }) });

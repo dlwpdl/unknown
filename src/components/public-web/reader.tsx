@@ -175,7 +175,7 @@ export default function PublicReader() {
       <meta property="og:site_name" content="글링" /><meta property="og:title" content={pageTitle} />
       <meta property="og:description" content={description} />
       {canonical && <meta property="og:url" content={canonical} />}
-      <meta name="twitter:card" content={post?.imageUris?.length ? 'summary_large_image' : 'summary'} />
+      <meta name="twitter:card" content={post?.imageUris?.some(Boolean) ? 'summary_large_image' : 'summary'} />
       <meta name="twitter:title" content={pageTitle} /><meta name="twitter:description" content={description} />
       {post?.imageUris?.[0] && <><meta property="og:image" content={post.imageUris[0]} /><meta property="og:image:alt" content={`${post.title} 사진 1`} /><meta name="twitter:image" content={post.imageUris[0]} /></>}
       {metadata?.published && <meta property="article:published_time" content={metadata.published} />}
@@ -217,7 +217,7 @@ export default function PublicReader() {
                 <p className="reader-meta">{item.author.nickname} · {item.createdAtLabel}</p>
                 {item.room && <p className="reader-meta">{chillingSchedule(item.room)} · {recommendedAgeLabel(item.room)}</p>}
               </div>
-              {(item.imageThumbs?.[0] ?? item.imageUris?.[0]) && <img src={item.imageThumbs?.[0] ?? item.imageUris?.[0]} alt="" loading="lazy" className="reader-thumbnail" />}
+              {(item.imageThumbs?.[0] || item.imageUris?.[0]) && <img src={item.imageThumbs?.[0] || item.imageUris?.[0]} alt="" loading="lazy" className="reader-thumbnail" />}
             </article>; })}</InteractionFeedbackProvider>}
           </div>
           {current?.more && <button data-analytics="web_control_11" className="reader-more" onClick={() => void more()} disabled={busy}>{busy ? '불러오는 중…' : '이야기 더 보기'}</button>}
@@ -230,7 +230,7 @@ export default function PublicReader() {
             {!!post.hashtags?.length && <p className="reader-kicker" aria-label="게시글 해시태그">{post.hashtags.map(tag => `#${tag}`).join(' · ')}</p>}
             <h1>{post.title}</h1><p className="reader-meta">{post.author.nickname} · <time dateTime={metadata?.published}>{post.createdAtLabel}</time></p>
             <PublicMerchantProfileLink postId={post.id} />
-            {post.imageUris?.map((uri, index) => <img className="reader-photo" key={uri} src={uri} alt={`${post.title} 사진 ${index + 1}`} loading="lazy" />)}
+            {post.imageUris?.map((uri, index) => uri && <img className="reader-photo" key={uri} src={uri} alt={`${post.title} 사진 ${index + 1}`} loading="lazy" />)}
             <BodyLinks body={post.room ? visibleMeetupBody(mappedPost!.body) : mappedPost!.body} /><MeetupInfo post={post} />
             {mappedPost?.url && <MapAction url={mappedPost.url} />}
             <MerchantSourceAction postId={post.id} />

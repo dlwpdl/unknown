@@ -29,3 +29,8 @@ test('JSON-LD를 탈출하는 글도 사용자 원문을 바꾸지 않고 안전
   assert.ok(!('datePublished' in seo.schema.mainEntity));
   assert.ok(!('image' in seo.schema.mainEntity));
 });
+
+test('사진 서명 실패 자리의 빈 URL은 공개 검색 메타데이터에 넣지 않는다', () => {
+  assert.deepEqual(postSeo({ ...post, imageUris: ['', post.imageUris[0], ''] }).schema.mainEntity.image, post.imageUris);
+  assert.ok(!('image' in postSeo({ ...post, imageUris: ['', ''] }).schema.mainEntity));
+});

@@ -70,7 +70,7 @@ export function getPostImageSource(
   position = 0,
 ) {
   const path = post.imagePaths?.[position];
-  const uri = variant === 'feed' ? post.imageThumbs?.[position] ?? post.imageUris?.[position] : post.imageUris?.[position];
+  const uri = variant === 'feed' ? post.imageThumbs?.[position] || post.imageUris?.[position] : post.imageUris?.[position];
   if (!uri) return undefined;
   const allowedViewers = viewersBySignedUrl.get(uri);
   if (allowedViewers && !allowedViewers.has(viewerScope)) return undefined;
@@ -245,8 +245,8 @@ export async function attachSignedPostImages(client: SupabaseClient, posts: Post
   }
   return posts.map((post) => ({
     ...post,
-    imageUris: post.imagePaths?.flatMap((path) => urls.get(path) ?? []),
-    imageThumbs: post.imagePaths?.flatMap((path) => urls.get(thumbPathFor(path)) ?? []),
+    imageUris: post.imagePaths?.map((path) => urls.get(path) ?? ''),
+    imageThumbs: post.imagePaths?.map((path) => urls.get(thumbPathFor(path)) ?? ''),
   }));
 }
 

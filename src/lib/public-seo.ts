@@ -17,6 +17,7 @@ export function postSeo(post: {
   const body = post.room ? visibleMeetupBody(mapped.body) : mapped.body;
   const description = Array.from([city, post.tag.label, body.replace(/\s+/g, ' ').trim()].filter(Boolean).join(' · ')).slice(0, 160).join('');
   const published = post.createdAt && Number.isFinite(Date.parse(post.createdAt)) ? new Date(post.createdAt).toISOString() : undefined;
+  const images = post.imageUris?.filter(Boolean) ?? [];
   return {
     canonical, source: `${PUBLIC_SOURCE}?format=markdown&id=${encodeURIComponent(post.id)}`,
     title: `${post.title} | 글링`, description, body, published, mapUrl: mapped.url,
@@ -27,7 +28,7 @@ export function postSeo(post: {
         headline: post.title, text: body, articleSection: post.tag.label, inLanguage: 'ko',
         author: { '@type': 'Person', name: post.author.nickname },
         ...(published ? { datePublished: published } : {}),
-        ...(post.imageUris?.length ? { image: post.imageUris } : {}),
+        ...(images.length ? { image: images } : {}),
       },
       breadcrumb: { '@type': 'BreadcrumbList', itemListElement: [
         { '@type': 'ListItem', position: 1, name: '글링', item: `${PUBLIC_SITE}/` },
