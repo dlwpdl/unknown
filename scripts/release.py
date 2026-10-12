@@ -20,6 +20,7 @@ APP = "6809273242"
 PACKAGE = "com.dlwpdl.gling"
 TEAM = "P3X3452TDZ"
 OUT = Path(".release")
+SUPABASE = "https://wjvahbdwmctzpkndqaxa.supabase.co"
 
 
 def release_version(tag, app, package):
@@ -49,10 +50,12 @@ def run(args, capture=False, env=None):
     return result.stdout if capture else None
 
 
-def request(url, token=None, data=None, method="GET", content_type="application/json"):
+def request(url, token=None, data=None, method="GET", content_type="application/json", api_key=None):
     headers = {"Content-Type": content_type}
     if token:
         headers["Authorization"] = f"Bearer {token}"
+    if api_key:
+        headers["apikey"] = api_key
     if data is not None and not isinstance(data, bytes):
         data = json.dumps(data).encode()
     try:
@@ -130,6 +133,71 @@ def apple_versions(env):
     mask(token)
     versions = request(f"https://api.appstoreconnect.apple.com/v1/apps/{APP}/appStoreVersions?filter[platform]=IOS&limit=200", token)["data"]
     return token, versions
+
+
+def published_ios_build(public, version):
+    attributes = version["data"]["attributes"]
+    if public.get("trackId") != int(APP) or public.get("version") != attributes["versionString"] or attributes["appStoreState"] != "READY_FOR_SALE":
+        return None
+    linked = version["data"]["relationships"]["build"].get("data")
+    for build in version.get("included", []):
+        number = build["attributes"].get("version", "")
+        if linked and build["type"] == "builds" and build["id"] == linked["id"] and build["attributes"].get("processingState") == "VALID" and isinstance(number, str) and re.fullmatch(r"\d+", number) and 0 < int(number) <= 2147483647:
+            return int(number)
+    return None
+
+
+def published_android_build(tracks):
+    codes = [int(code) for track in tracks if track["track"] == "production"
+             for release in track.get("releases", []) if release["status"] == "completed"
+             for code in release.get("versionCodes", []) if isinstance(code, str) and re.fullmatch(r"\d+", code) and 0 < int(code) <= 2147483647]
+    return max(codes, default=None)
+
+
+def enforce_policy(platform, build, key):
+    if platform not in {"ios", "android"} or type(build) is not int or not 0 < build <= 2147483647:
+        raise ValueError("Invalid published platform build.")
+    url = f"{SUPABASE}/rest/v1/app_release_policy?platform=eq.{platform}"
+    current = request(url, key, api_key=key)
+    if len(current) != 1 or type(current[0]["minimum_build"]) is not int:
+        raise ValueError("Release policy is missing or invalid.")
+    if current[0]["minimum_build"] < build:
+        # The condition prevents a concurrent newer release from being downgraded.
+        request(f"{url}&minimum_build=lt.{build}", key, {"minimum_build": build}, "PATCH", api_key=key)
+        current = request(url, key, api_key=key)
+        if len(current) != 1 or current[0]["minimum_build"] < build:
+            raise RuntimeError("Release policy readback did not confirm the published build.")
+    return current[0]
+
+
+def sync_policy(env, google, directory, local):
+    runs = request(f"https://api.github.com/repos/{env.get('GITHUB_REPOSITORY', 'dlwpdl/unknown')}/actions/workflows/mobile-release.yml/runs?per_page=100", env.get("GH_TOKEN"))["workflow_runs"]
+    if any(str(run["id"]) != env.get("GITHUB_RUN_ID", "") and run["event"] != "schedule"
+           and run["status"] in {"queued", "in_progress", "waiting", "pending", "requested"} for run in runs):
+        summary(json.dumps({"status": "native_release_in_progress", "policy_check": "deferred"}))
+        return {"status": "native_release_in_progress"}
+    key = env.get("GLING_SUPABASE_SERVICE_ROLE_KEY")
+    if not key and local:
+        token = run(["security", "find-generic-password", "-s", "Supabase CLI", "-w"], True).strip()
+        keys = request("https://api.supabase.com/v1/projects/wjvahbdwmctzpkndqaxa/api-keys", token)
+        key = next(item["api_key"] for item in keys if item["name"] == "service_role")
+    if not key:
+        raise ValueError("GLING_SUPABASE_SERVICE_ROLE_KEY is missing; no policy was changed.")
+    mask(key)
+    token, versions = apple_versions(env)
+    public = request(f"https://itunes.apple.com/lookup?id={APP}&country=ca")["results"]
+    current = next((version for version in versions if public and version["attributes"]["versionString"] == public[0]["version"]), None)
+    ios = published_ios_build(public[0], request(f'https://api.appstoreconnect.apple.com/v1/appStoreVersions/{current["id"]}?include=build', token)) if current else None
+    token = google_token(google, directory)
+    edit = play(token, "/edits", {}, "POST")["id"]
+    try:
+        android = published_android_build(play(token, f"/edits/{edit}/tracks").get("tracks", []))
+    finally:
+        play(token, f"/edits/{edit}", method="DELETE")
+    policies = {platform: enforce_policy(platform, number, key) if number is not None else {"status": "no_publicly_installable_build"}
+                for platform, number in [("ios", ios), ("android", android)]}
+    summary(json.dumps({"published_builds": {"ios": ios, "android": android}, "policies": policies}))
+    return policies
 
 
 def prepare(env, google, directory, tag):
@@ -298,7 +366,7 @@ def submit(platform, env, google, directory):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=["prepare", "build", "submit"])
+    parser.add_argument("command", choices=["prepare", "build", "submit", "sync-policy"])
     parser.add_argument("--platform", choices=["ios", "android"])
     parser.add_argument("--tag")
     parser.add_argument("--build-number", type=int)
@@ -319,6 +387,8 @@ def main():
             prepare(env, google, directory, args.tag)
         elif args.command == "build":
             build(args.platform, env, directory, args.local, args.build_number)
+        elif args.command == "sync-policy":
+            sync_policy(env, google, directory, args.local)
         else:
             submit(args.platform, env, google, directory)
 

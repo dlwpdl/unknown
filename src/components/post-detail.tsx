@@ -19,6 +19,7 @@ import { TicketmasterSourceLink } from '@/components/ticketmaster-source-link';
 import { MerchantSourceLink } from '@/components/merchant-source-link';
 import { MerchantReviews } from '@/components/merchant-reviews';
 import { PostCard } from '@/components/post-card';
+import { PostShareSheet } from '@/components/post-share-sheet';
 import { PostBodyEditor } from '@/components/post-body-editor';
 import { PostPhotoGallery } from '@/components/post-photo-gallery';
 import { PostPhotoEditor, type EditablePostImage } from '@/components/post-photo-editor';
@@ -37,7 +38,7 @@ import { count, t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { buildCommentListRows, type CommentListRow } from '@/lib/comment-list';
 import { createThreadComment, loadCommentThreadContext, loadCommentThreadPage, type CommentCursor } from '@/lib/comment-threads';
-import { bumpListing, deleteComment, deletePost, editComment, editPost, getCommunityActionError, isContentRejected, recordPostView, setListingStatus, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
+import { bumpListing, deleteComment, deletePost, editComment, editPost, getCommunityActionError, isContentRejected, recordPostShare, recordPostView, setListingStatus, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadPublicPost } from '@/lib/feed-data';
 import { MAX_POST_IMAGES } from '@/lib/image-upload';
@@ -111,6 +112,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const [postDraft, setPostDraft] = useState<{ title: string; body: string } | null>(null);
   const [postImages, setPostImages] = useState<EditablePostImage[] | null>(null);
   const [postMenuOpen, setPostMenuOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [deletePostOpen, setDeletePostOpen] = useState(false);
   const [pickingPostImages, setPickingPostImages] = useState(false);
   const [savingPost, setSavingPost] = useState(false);
@@ -619,6 +621,11 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={22} tintColor={theme.text} />
         </Pressable>
         <ThemedText accessibilityRole="header" style={styles.headTitle}>{postDraft ? '글 수정' : post.room && !commentId ? '모임 상세' : commentId ? t.detail.commentsTitle(commentTotal) : '글 상세'}</ThemedText>
+        {!postDraft && <Pressable analyticsId="post.detail.share" accessibilityRole="button" accessibilityLabel={post.room ? '모임 초대 링크 공유' : '게시물 링크 공유'}
+          onPress={() => { play('selection'); setShareOpen(true); }} style={({ pressed }) => [styles.shareBtn, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
+          <SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={20} tintColor={theme.accent} />
+          <ThemedText type="smallBold" themeColor="accent">{post.room ? '초대' : '공유'}</ThemedText>
+        </Pressable>}
         <Pressable analyticsId="post.manage.open" accessibilityRole="button" accessibilityLabel="글 관리 메뉴" disabled={!canManagePost || savingPost || pickingPostImages || !!postDraft}
           style={({ pressed }) => [styles.closeBtn, { opacity: canManagePost ? 1 : 0, backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}
           accessibilityElementsHidden={!canManagePost}
@@ -627,6 +634,8 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={22} tintColor={theme.text} />
         </Pressable>
       </View>
+      {shareOpen && <PostShareSheet post={post} visible onClose={() => setShareOpen(false)}
+        onShared={() => { void recordPostShare(supabase, post.id).catch(() => {}); }} />}
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <FlatList analyticsId="components_post-detail.flatlist.1"
@@ -781,6 +790,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
   },
   headTitle: { flex: 1, textAlign: 'center', fontSize: 17, lineHeight: 22, fontWeight: '600' },
+  shareBtn: { minHeight: 44, minWidth: 44, paddingHorizontal: Spacing.two, borderRadius: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.one },
   closeBtn: {
     width: 44,
     minHeight: 44,
