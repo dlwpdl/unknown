@@ -105,12 +105,16 @@ function mount(file, exportName, data, props = {}, params = {}) {
       assert.ok(count < 30, 'component effects settle without a render loop');
       dirty = false; index = 0; effects = [];
       tree = exports[exportName](props);
+      for (const node of nodes(tree)) if (node.type === 'View' && node.props?.ref) {
+        node.props.ref.current = { measureInWindow: data.measureRegion ?? (callback => callback(0, 110, 390, 530)) };
+      }
       for (const run of effects) run();
     }
   };
   const nodes = value => !value || typeof value !== 'object' ? []
     : [...(value.type ? [value] : []), ...Object.values(value).flatMap(nodes)];
   const harness = {
+    auth,
     async settle() { for (let i = 0; i < 5; i++) { render(); await new Promise(resolve => setImmediate(resolve)); } render(); },
     nodes: () => nodes(tree),
     messages: () => nodes(tree).find(node => node.type === 'FlatList')?.props.data ?? [],
@@ -164,13 +168,47 @@ test('long press replies in direct and group rooms and keeps the unsent draft', 
     const row = list.props.renderItem({ item: rows[0], index: 0 });
     const walk = value => !value || typeof value !== 'object' ? [] : [value, ...Object.values(value).flatMap(walk)];
     const bubble = walk(row).find(node => node.props?.analyticsId === 'components_chat-room.pressable.heart');
-    assert.equal(typeof bubble.props.onLongPress, 'function'); bubble.props.onLongPress(); await harness.settle();
-    assert.ok(!harness.nodes().some(node => node.props?.label === '메시지 수정'), '다른 사람의 메시지는 수정 메뉴를 숨긴다');
-    harness.nodes().find(node => node.props?.label === '답장').props.onPress(); await harness.settle();
+    assert.equal(typeof bubble.props.onMenu, 'function'); bubble.props.onMenu(rows[0], { measureInWindow: callback => callback(48, 300, 200, 44) }); await harness.settle();
+    assert.ok(!harness.nodes().some(node => node.props?.accessibilityLabel === '메시지 수정'), '다른 사람의 메시지는 수정 메뉴를 숨긴다');
+    harness.nodes().find(node => node.props?.accessibilityLabel === '답장').props.onPress(); await harness.settle();
     assert.equal(input().props.value, 'saved draft');
     input().props.onSubmitEditing(); await harness.settle();
     assert.deepEqual(sent, [['room', 'saved draft', 'parent']]);
   }
+});
+
+test('late menu measurements cannot reopen a dismissed menu or cross an account boundary', async context => {
+  for (const phase of ['bubble', 'region']) for (const change of ['layout', 'scroll', 'auto-scroll', 'logout']) {
+    let finish;
+    const row = { ...message(1), sender_id: 'me' };
+    const harness = room({ loadConversationMessages: async () => [row], measureRegion: callback => { if (phase === 'region') finish = callback; else callback(0, 110, 390, 530); } });
+    context.after(() => harness.cleanup()); await harness.settle();
+    const list = harness.nodes().find(node => node.type === 'FlatList');
+    const tree = list.props.renderItem({ item: row, index: 0 });
+    const walk = value => !value || typeof value !== 'object' ? [] : [value, ...Object.values(value).flatMap(walk)];
+    walk(tree).find(node => node.props?.onMenu).props.onMenu(row, { measureInWindow: callback => { if (phase === 'bubble') finish = callback; else callback(180, 320, 180, 44); } });
+    if (change === 'layout') harness.nodes().find(node => node.type === 'View' && node.props?.onLayout).props.onLayout();
+    if (change === 'scroll') list.props.onScrollBeginDrag();
+    if (change === 'auto-scroll') list.props.onScroll({ nativeEvent: { contentOffset: { y: 96 }, contentSize: { height: 1000 }, layoutMeasurement: { height: 530 } } });
+    if (change === 'logout') harness.auth.isAuthed = false;
+    finish(0, 110, 390, 530); await harness.settle();
+    assert.ok(!harness.nodes().some(node => node.props?.analyticsId === 'chat.message.reply'));
+  }
+});
+
+test('automatic scrolling dismisses a menu instead of leaving it at an old bubble position', async context => {
+  const row = { ...message(1), sender_id: 'me' };
+  const harness = room({ loadConversationMessages: async () => [row] });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const list = harness.nodes().find(node => node.type === 'FlatList');
+  const tree = list.props.renderItem({ item: row, index: 0 });
+  const walk = value => !value || typeof value !== 'object' ? [] : [value, ...Object.values(value).flatMap(walk)];
+  walk(tree).find(node => node.props?.onMenu).props.onMenu(row, { measureInWindow: callback => callback(180, 320, 180, 44) });
+  await harness.settle();
+  assert.ok(harness.nodes().some(node => node.props?.analyticsId === 'chat.message.reply'));
+  list.props.onScroll({ nativeEvent: { contentOffset: { y: 96 }, contentSize: { height: 1000 }, layoutMeasurement: { height: 530 } } });
+  await harness.settle();
+  assert.ok(!harness.nodes().some(node => node.props?.analyticsId === 'chat.message.reply'));
 });
 
 test('own message edit/delete preserve the composer and a refused edit preserves its draft', async context => {
@@ -183,11 +221,11 @@ test('own message edit/delete preserve the composer and a refused edit preserves
     }, deleteChatMessage: async (_client, id, revision) => { calls.push(['delete', id, revision]); return { ...original, body: '삭제된 메시지입니다.', edited_at: 'revision', deleted_at: 'now' }; } });
   context.after(() => harness.cleanup()); await harness.settle();
   const composer = () => harness.nodes().find(node => node.type === 'TextInput' && node.props.placeholder === t.chat.messagePlaceholder);
-  const action = label => harness.nodes().find(node => node.props?.label === label);
+  const action = label => harness.nodes().find(node => node.props?.label === label || node.props?.accessibilityLabel === label);
   const open = async () => {
     const row = harness.nodes().find(node => node.type === 'FlatList').props.renderItem({ item: harness.messages()[0], index: 0 });
     const walk = value => !value || typeof value !== 'object' ? [] : [value, ...Object.values(value).flatMap(walk)];
-    walk(row).find(node => node.props?.onLongPress).props.onLongPress(); await harness.settle();
+    const bubble = walk(row).find(node => node.props?.onMenu); bubble.props.onMenu(harness.messages()[0], { measureInWindow: callback => callback(180, 320, 180, 44) }); await harness.settle();
   };
   composer().props.onChangeText('unsent'); await harness.settle(); await open();
   assert.ok(action('메시지 삭제')); action('메시지 수정').props.onPress(); await harness.settle();
@@ -216,7 +254,7 @@ test('location picker requests permission only on current-location selection and
     getCurrentPositionAsync: async () => { positions++; return { coords: { latitude: 49.2, longitude: -123.1 } }; },
   } }, { sending: false, onClose() {}, onSend: async point => { sent.push(point); throw new Error('offline'); } });
   context.after(() => harness.cleanup()); await harness.settle();
-  const action = label => harness.nodes().find(node => node.props?.label === label);
+  const action = label => harness.nodes().find(node => node.props?.label === label || node.props?.accessibilityLabel === label);
   assert.equal(permissions, 0); assert.equal(action('이 위치 공유하기').props.disabled, true);
   action('현재 위치 선택').props.onPress(); await harness.settle();
   assert.equal(permissions, 1); assert.equal(positions, 1); assert.equal(sent.length, 0);
@@ -232,7 +270,7 @@ test('place search does not use GPS or send until a valid map point is chosen', 
   } }, { sending: false, onClose() {}, onSend: async point => { sent.push(point); } });
   context.after(() => harness.cleanup()); await harness.settle();
   const map = () => harness.nodes().find(node => node.type === 'ChatMap');
-  const action = label => harness.nodes().find(node => node.props?.label === label);
+  const action = label => harness.nodes().find(node => node.props?.label === label || node.props?.accessibilityLabel === label);
   map().props.onEvent('{"type":"ready"}'); await harness.settle();
   harness.nodes().find(node => node.type === 'TextInput').props.onChangeText('library'); await harness.settle();
   action('검색').props.onPress(); await harness.settle(); assert.equal(map().props.command.query, 'library');
