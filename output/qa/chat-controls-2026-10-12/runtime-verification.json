@@ -1,0 +1,180 @@
+{
+  "results": [
+    {
+      "kind": "direct",
+      "reply": true,
+      "composerPreserved": true
+    },
+    {
+      "kind": "group",
+      "reply": true,
+      "composerPreserved": true
+    },
+    {
+      "edit": true,
+      "failedEditDraftPreserved": true,
+      "deleteTombstone": true
+    },
+    {
+      "mapWidth": 320,
+      "overflow": false
+    },
+    {
+      "mapWidth": 390,
+      "overflow": false
+    },
+    {
+      "mapWidth": 768,
+      "overflow": false
+    },
+    {
+      "mapWidth": 1440,
+      "overflow": false
+    },
+    {
+      "placeSearchAndSend": true,
+      "explicitCurrentLocation": true,
+      "realGoogleCalls": false
+    }
+  ],
+  "errors": [],
+  "mockCalls": [
+    {
+      "path": "/rest/v1/profiles",
+      "method": "GET"
+    },
+    {
+      "path": "/rest/v1/rpc/get_location_preference",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/rpc/get_chat_read_position",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/rpc/get_listing_review_state",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/rpc/get_membership",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/messages",
+      "method": "GET"
+    },
+    {
+      "path": "/rest/v1/rpc/register_security_device",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/rpc/get_message_reactions",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/rpc/get_listing_review_state",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/rpc/mark_chat_read",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/rpc/send_message_v2",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/rpc/get_message_reactions",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/rpc/get_listing_review_state",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/rpc/mark_chat_read",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/rpc/get_chat_read_position",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/messages",
+      "method": "GET"
+    },
+    {
+      "path": "/rest/v1/messages",
+      "method": "GET"
+    },
+    {
+      "path": "/rest/v1/rpc/get_message_reactions",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/rpc/mark_chat_read",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/rpc/send_message_v2",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/rpc/get_message_reactions",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/rpc/edit_chat_message",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/rpc/edit_chat_message",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/rpc/get_message_reactions",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/rpc/delete_chat_message",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/rpc/get_message_reactions",
+      "method": "POST"
+    },
+    {
+      "mapScript": "mocked"
+    },
+    {
+      "path": "/rest/v1/rpc/send_message_v2",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/messages",
+      "method": "GET"
+    },
+    {
+      "path": "/rest/v1/rpc/get_message_reactions",
+      "method": "POST"
+    },
+    {
+      "mapScript": "mocked"
+    },
+    {
+      "path": "/rest/v1/rpc/send_message_v2",
+      "method": "POST"
+    },
+    {
+      "path": "/rest/v1/messages",
+      "method": "GET"
+    },
+    {
+      "path": "/rest/v1/rpc/get_message_reactions",
+      "method": "POST"
+    }
+  ],
+  "realMessagesSent": false,
+  "realGoogleCalls": false,
+  "nativeTouch": false
+}

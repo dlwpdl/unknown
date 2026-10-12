@@ -90,6 +90,11 @@ Deno.serve(async (request) => {
 });
 
 async function loadContent(client, targetType: string, targetId: string) {
+  if (targetType === 'message') {
+    const result = await client.rpc('get_message_safety_content', { p_message_id: targetId });
+    if (result.error) throw result.error;
+    return result.data;
+  }
   if (targetType === 'merchant_review' || targetType === 'merchant_review_reply') {
     const result = await client.rpc(targetType === 'merchant_review' ? 'get_merchant_review_safety_content' : 'get_merchant_review_reply_safety_content', { p_target_id: targetId });
     if (result.error) throw result.error;
@@ -100,14 +105,14 @@ async function loadContent(client, targetType: string, targetId: string) {
     if (result.error) throw result.error;
     return result.data;
   }
-  if (!['post', 'comment', 'message'].includes(targetType)) throw new Error('UNSUPPORTED_TARGET_TYPE');
-  const table = targetType === 'post' ? 'posts' : targetType === 'comment' ? 'comments' : 'messages';
-  const columns = targetType === 'post' ? 'title,body,hashtags,author_id,room_preview' : targetType === 'comment' ? 'body,author_id' : 'body,sender_id';
+  if (!['post', 'comment'].includes(targetType)) throw new Error('UNSUPPORTED_TARGET_TYPE');
+  const table = targetType === 'post' ? 'posts' : 'comments';
+  const columns = targetType === 'post' ? 'title,body,hashtags,author_id,room_preview' : 'body,author_id';
   const result = await client.from(table).select(columns).eq('id', targetId).maybeSingle();
   if (result.error) throw result.error;
   if (!result.data) return null;
   return {
-    authorId: targetType === 'message' ? result.data.sender_id : result.data.author_id,
+    authorId: result.data.author_id,
     text: targetType === 'post'
       ? [result.data.title, result.data.body, (result.data.hashtags ?? []).join(' '), result.data.room_preview?.applicationQuestion, result.data.room_preview?.cadence].filter((value) => value != null).join('\n')
       : result.data.body,

@@ -6,6 +6,7 @@ import ts from 'typescript';
 
 import { mergeChatMessages } from '../src/lib/community-data.ts';
 import * as chatDetails from '../src/lib/chat-details.ts';
+import * as chatLocation from '../src/lib/chat-location.ts';
 import { sharedLinkInMessage } from '../src/lib/sharing.ts';
 import { hideContent, isContentHidden, subscribeVisibility, visibilityRevision } from '../src/lib/content-visibility.ts';
 import { count, t } from '../src/i18n/ko.ts';
@@ -60,6 +61,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
   }).outputText;
   vm.runInNewContext(source, {
     exports,
+    process: { env: { EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: data.mapsKey ?? '' } },
     requestAnimationFrame(fn) { fn(); return 1; },
     setTimeout(fn) { const id = ++timerId; timers.set(id, fn); return id; },
     clearTimeout(id) { timers.delete(id); },
@@ -92,6 +94,8 @@ function mount(file, exportName, data, props = {}, params = {}) {
       if (name === '@/lib/sharing') return { sharedLinkInMessage };
       if (name === '@/components/shared-link-card') return { SharedLinkCard: 'SharedLinkCard' };
       if (name === '@/lib/chat-details') return { ...chatDetails, ...(data.loadChatMembers ? { loadChatMembers: data.loadChatMembers } : {}) };
+      if (name === '@/lib/chat-location') return chatLocation;
+      if (name === 'expo-location') return { Accuracy: { High: 4 }, ...data.location };
       if (name === '@/lib/supabase') return { supabase };
       return new Proxy({}, { get: (_target, key) => key });
     },
@@ -127,19 +131,116 @@ const roomProps = { conversation, currentUserId: 'me', onClose() {}, onChanged: 
 const room = data => mount('../src/components/chat-room.tsx', 'ChatRoom', data, roomProps);
 const olderButton = harness => harness.nodes().find(node => node.props?.label === t.chat.loadOlder);
 
-test('attachment plus expands two inline actions beneath the composer and closes again', async (context) => {
+test('attachment plus opens a place picker without asking for location permission', async (context) => {
   const harness = room({ loadConversationMessages: async () => [] });
   context.after(() => harness.cleanup());
   await harness.settle();
   const plus = () => harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.add-attachment');
   assert.equal(plus().props.accessibilityState.expanded, false);
-  assert.equal(harness.nodes().some(node => node.props?.accessibilityLabel === '현재 위치 공유'), false);
+  assert.equal(harness.nodes().some(node => node.props?.accessibilityLabel === '위치 공유하기'), false);
   plus().props.onPress(); await harness.settle();
   assert.equal(plus().props.accessibilityState.expanded, true);
   assert.ok(harness.nodes().some(node => node.props?.accessibilityLabel === '사진 보내기'));
-  assert.ok(harness.nodes().some(node => node.props?.accessibilityLabel === '현재 위치 공유'));
+  const location = harness.nodes().find(node => node.props?.accessibilityLabel === '위치 공유하기');
+  assert.ok(location);
+  location.props.onPress(); await harness.settle();
+  assert.ok(harness.nodes().some(node => node.type === 'ChatLocationPicker'), '장소 선택 창을 먼저 열고 전송하지 않는다');
+  plus().props.onPress(); await harness.settle();
   plus().props.onPress(); await harness.settle();
   assert.equal(plus().props.accessibilityState.expanded, false);
+});
+
+test('long press replies in direct and group rooms and keeps the unsent draft', async context => {
+  const rows = [{ ...message(1), id: 'parent', body: 'meet here' }];
+  for (const kind of ['direct', 'group']) {
+    const sent = [];
+    const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { loadConversationMessages: async () => rows,
+      sendDirectMessage: async (_client, id, body, parent) => { sent.push([id, body, parent]); return 'reply-id'; } },
+    { ...roomProps, conversation: { ...conversation, kind } });
+    context.after(() => harness.cleanup()); await harness.settle();
+    const input = () => harness.nodes().find(node => node.type === 'TextInput' && node.props.placeholder === t.chat.messagePlaceholder);
+    input().props.onChangeText('saved draft'); await harness.settle();
+    const list = harness.nodes().find(node => node.type === 'FlatList');
+    const row = list.props.renderItem({ item: rows[0], index: 0 });
+    const walk = value => !value || typeof value !== 'object' ? [] : [value, ...Object.values(value).flatMap(walk)];
+    const bubble = walk(row).find(node => node.props?.analyticsId === 'components_chat-room.pressable.heart');
+    assert.equal(typeof bubble.props.onLongPress, 'function'); bubble.props.onLongPress(); await harness.settle();
+    assert.ok(!harness.nodes().some(node => node.props?.label === '메시지 수정'), '다른 사람의 메시지는 수정 메뉴를 숨긴다');
+    harness.nodes().find(node => node.props?.label === '답장').props.onPress(); await harness.settle();
+    assert.equal(input().props.value, 'saved draft');
+    input().props.onSubmitEditing(); await harness.settle();
+    assert.deepEqual(sent, [['room', 'saved draft', 'parent']]);
+  }
+});
+
+test('own message edit/delete preserve the composer and a refused edit preserves its draft', async context => {
+  const original = { ...message(1), sender_id: 'me', body: 'before' };
+  const calls = []; let refuse = true;
+  const harness = room({ loadConversationMessages: async () => [original],
+    editChatMessage: async (_client, id, body, revision) => {
+      calls.push(['edit', id, body, revision]); if (refuse) throw new Error('MESSAGE_CHANGED');
+      return { ...original, body, edited_at: 'revision' };
+    }, deleteChatMessage: async (_client, id, revision) => { calls.push(['delete', id, revision]); return { ...original, body: '삭제된 메시지입니다.', edited_at: 'revision', deleted_at: 'now' }; } });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const composer = () => harness.nodes().find(node => node.type === 'TextInput' && node.props.placeholder === t.chat.messagePlaceholder);
+  const action = label => harness.nodes().find(node => node.props?.label === label);
+  const open = async () => {
+    const row = harness.nodes().find(node => node.type === 'FlatList').props.renderItem({ item: harness.messages()[0], index: 0 });
+    const walk = value => !value || typeof value !== 'object' ? [] : [value, ...Object.values(value).flatMap(walk)];
+    walk(row).find(node => node.props?.onLongPress).props.onLongPress(); await harness.settle();
+  };
+  composer().props.onChangeText('unsent'); await harness.settle(); await open();
+  assert.ok(action('메시지 삭제')); action('메시지 수정').props.onPress(); await harness.settle();
+  const edit = () => harness.nodes().find(node => node.type === 'TextInput' && node.props.accessibilityLabel === '수정할 메시지');
+  edit().props.onChangeText('after'); await harness.settle(); action('수정 저장').props.onPress(); await harness.settle();
+  assert.equal(edit().props.value, 'after'); assert.equal(composer().props.value, 'unsent');
+  refuse = false; action('수정 저장').props.onPress(); await harness.settle();
+  assert.equal(harness.messages()[0].body, 'after'); assert.equal(composer().props.value, 'unsent');
+  await open(); action('메시지 삭제').props.onPress(); await harness.settle(); action('삭제하기').props.onPress(); await harness.settle();
+  assert.ok(harness.messages()[0].deleted_at); assert.deepEqual(calls.at(-1), ['delete', original.id, 'revision']);
+});
+
+test('live changes revalidate visibility and remove inaccessible cached messages and quotes', async context => {
+  const parent = message(1), reply = { ...message(2), sender_id: 'me', reply_to_id: parent.id, reply: parent };
+  const harness = room({ loadConversationMessages: async () => [parent, reply], loadConversationMessagesByIds: async () => [] });
+  context.after(() => harness.cleanup()); await harness.settle();
+  harness.message(parent); await harness.timers();
+  assert.deepEqual(harness.messages().map(row => row.id), [reply.id]);
+  assert.equal(harness.messages()[0].reply, null);
+});
+
+test('location picker requests permission only on current-location selection and preserves a failed send', async context => {
+  let permissions = 0, positions = 0; const sent = [];
+  const harness = mount('../src/components/chat-location-picker.tsx', 'ChatLocationPicker', { location: {
+    requestForegroundPermissionsAsync: async () => { permissions++; return { granted: true }; },
+    getCurrentPositionAsync: async () => { positions++; return { coords: { latitude: 49.2, longitude: -123.1 } }; },
+  } }, { sending: false, onClose() {}, onSend: async point => { sent.push(point); throw new Error('offline'); } });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const action = label => harness.nodes().find(node => node.props?.label === label);
+  assert.equal(permissions, 0); assert.equal(action('이 위치 공유하기').props.disabled, true);
+  action('현재 위치 선택').props.onPress(); await harness.settle();
+  assert.equal(permissions, 1); assert.equal(positions, 1); assert.equal(sent.length, 0);
+  action('이 위치 공유하기').props.onPress(); await harness.settle();
+  assert.equal(sent[0].latitude, 49.2); assert.equal(action('이 위치 공유하기').props.disabled, false);
+  assert.ok(harness.nodes().some(node => node.props?.accessibilityRole === 'alert'));
+});
+
+test('place search does not use GPS or send until a valid map point is chosen', async context => {
+  let permissions = 0; const sent = [];
+  const harness = mount('../src/components/chat-location-picker.tsx', 'ChatLocationPicker', { mapsKey: 'offline-key', location: {
+    requestForegroundPermissionsAsync: async () => { permissions++; return { granted: false }; },
+  } }, { sending: false, onClose() {}, onSend: async point => { sent.push(point); } });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const map = () => harness.nodes().find(node => node.type === 'ChatMap');
+  const action = label => harness.nodes().find(node => node.props?.label === label);
+  map().props.onEvent('{"type":"ready"}'); await harness.settle();
+  harness.nodes().find(node => node.type === 'TextInput').props.onChangeText('library'); await harness.settle();
+  action('검색').props.onPress(); await harness.settle(); assert.equal(map().props.command.query, 'library');
+  assert.equal(sent.length, 0); assert.equal(permissions, 0);
+  map().props.onEvent('{"type":"selection","latitude":999,"longitude":0,"label":"bad"}'); await harness.settle();
+  assert.equal(action('이 위치 공유하기').props.disabled, true);
+  map().props.onEvent('{"type":"selection","latitude":49.28,"longitude":-123.12,"label":"Library"}'); await harness.settle();
+  action('이 위치 공유하기').props.onPress(); await harness.settle(); assert.equal(sent[0].label, 'Library');
 });
 
 test('only newly arriving chat messages animate, not the opened history', async (context) => {

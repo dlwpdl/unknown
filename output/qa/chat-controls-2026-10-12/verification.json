@@ -1,0 +1,78 @@
+{
+  "date": "2026-10-12T17:47:42.113271+00:00",
+  "branch": "dlwpdl/gling-admin-listing-gallery-20261012",
+  "implementation": "local worktree only",
+  "deployment": false,
+  "productionChatMigrationApplied": false,
+  "newDependencies": false,
+  "newPaidRequests": false,
+  "imageGeneration": "not applicable",
+  "maps": {
+    "configured": false,
+    "requiredEnv": "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY",
+    "apis": [
+      "Maps JavaScript",
+      "Places (New)"
+    ],
+    "liveVerification": false,
+    "sources": [
+      "https://docs.expo.dev/versions/v57.0.0/sdk/webview/",
+      "https://developers.google.com/maps/documentation/javascript/usage-and-billing",
+      "https://developers.google.com/maps/documentation/javascript/place-search"
+    ]
+  },
+  "design": {
+    "preview": "output/design/gling-chat-controls-2026-10-12.html",
+    "orcaPage": "8c018527-1212-4542-9a1f-b057e2bf7cd0",
+    "folder": "folder:e88d505b-f6bb-47d6-ba41-904ef2a72a8b",
+    "mobbin": [
+      "https://mobbin.com/screens/11ae6c12-5e25-4090-bbcc-b476f73aa3de",
+      "https://mobbin.com/screens/6ce3ec0e-55f6-461a-9bb7-403a69b22c62",
+      "https://mobbin.com/screens/8275b523-7ade-4241-91b1-ae3be78b227e"
+    ],
+    "sameScreenFixes": [
+      "Quote and edited labels keep contrast on my purple bubble",
+      "Deleted bubbles cannot receive double-tap hearts",
+      "Unavailable quoted content is removed after live RLS revalidation",
+      "Location error retains the selected point"
+    ],
+    "humanCopy": "Patina Korean plain tone and meaning check applied"
+  },
+  "checks": {
+    "targeted": {
+      "pass": 57,
+      "fail": 0
+    },
+    "postgres": {
+      "pass": 26,
+      "fail": 0,
+      "fixtures": "transaction rollback"
+    },
+    "typecheck": "passed",
+    "lint": "passed",
+    "fullSuite": {
+      "tests": 734,
+      "pass": 732,
+      "skipped": 1,
+      "fail": 1,
+      "knownBaselineFailure": "festival-daily.test.mjs: fixed city-day expiry expectation; reproduced on untouched prior checkout"
+    },
+    "nativeHardware": false
+  },
+  "sourceSHA256": {
+    "src/components/chat-room.tsx": "a5c4a2b1756c8e96402e3cfd4f95eeec738188f2d013702cda0c0af3c9301edf",
+    "src/components/chat-location-picker.tsx": "241f7e03b40cdd2de7a7119431a4d7e7abd73b194dff14886a7a9b0ac604d81b",
+    "src/components/chat-map.tsx": "d783df998327ac56e200b90485759498838f0727c7ccca75bf4d7acd0c07c3a0",
+    "src/components/chat-map.web.tsx": "8ccf13453add9c3ad1913d9a7d05122defa788cdb11cf2ab63ee3d3e6488a5c6",
+    "src/lib/chat-location.ts": "d618f1e6124a1cb019b108cb699fe08ca967d1c2a83b78af7d218a26b1c92611",
+    "src/lib/community-data.ts": "1ed0333bf7ed2c2c8cfa8b7053d983a08916d5c96f93311e14bd4c71d7356687",
+    "supabase/functions/safety-monitor/index.ts": "4d5e0189e50fbe2d28b3b4b43b046f9de7fe864f2703957f41856931d7e95e7a",
+    "supabase/migrations/20261012113000_chat_message_controls.sql": "7b11f983d8a80313dff274d9334955dd8f047da3ca4fd118df44d43be4d374ae",
+    "supabase/tests/chat_message_controls.test.sql": "12cdfa77f2c745e5f76fe84676eeeb71c60eb2ea07b7857e513bd65cf6d63d85",
+    "scripts/chat-controls.test.mjs": "e48f974544eb3fbd59be24b30f98a559ce6df601695732d46a18c269a31f2035",
+    "scripts/chat-location.test.mjs": "61d19580789bebf697a9447f6da6a5cd5e240f8b83f41d53b572ae69ac631852",
+    "scripts/chat-lifecycle.test.mjs": "fbf0c9efbb59b0d7a8cabd0bebe48248b2947c6ceb0f3e4d623408eb590242fa",
+    "scripts/chilling-safety.test.mjs": "5e841b953d78ff507bd43b7bfc686af952204fe0f2b195c1f0e0f16178624fa8",
+    ".env.example": "44184f566ab94aadff3bb9bfbb175fda0d250a35d59f8522885ff5feacb357f1"
+  }
+}
