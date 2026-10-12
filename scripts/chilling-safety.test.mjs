@@ -11,6 +11,16 @@ vm.runInNewContext(ts.transpileModule(fs.readFileSync(new URL('../supabase/funct
 }).outputText, { exports, Deno: { serve() {} }, require: () => ({}) });
 const { loadContent } = exports;
 
+test('message safety review loads retained versions through a service-only RPC', async () => {
+  const result = await loadContent({ rpc: async (name, args) => {
+    assert.equal(name, 'get_message_safety_content');
+    assert.equal(args.p_message_id, 'deleted-message');
+    return { data: { authorId: 'author', text: '삭제된 메시지입니다.\noriginal\nedited' } };
+  } }, 'message', 'deleted-message');
+  assert.ok(result.text.includes('original'));
+  await assert.rejects(loadContent({ rpc: async () => ({ error: new Error('SERVICE_ROLE_REQUIRED') }) }, 'message', 'id'), /SERVICE_ROLE_REQUIRED/);
+});
+
 test('analysis preserves question and cadence after a maximum-length Unicode post', async () => {
   const worker = {};
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(new URL('../supabase/functions/safety-monitor/index.ts', import.meta.url), 'utf8') + '\nexports.analyze = analyze;', {

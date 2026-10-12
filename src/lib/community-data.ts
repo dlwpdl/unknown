@@ -58,6 +58,11 @@ export type ChatMessageRecord = {
   imageUrl?: string;
   latitude?: number | null;
   longitude?: number | null;
+  location_label?: string | null;
+  edited_at?: string | null;
+  deleted_at?: string | null;
+  reply_to_id?: string | null;
+  reply?: Pick<ChatMessageRecord, 'id' | 'body' | 'kind' | 'sender_id' | 'deleted_at'> | null;
 };
 
 export type AppNotification = {
@@ -402,13 +407,27 @@ export async function endConversation(client: SupabaseClient, conversationId: st
   if (result.error) throw result.error;
 }
 
-export async function sendDirectMessage(client: SupabaseClient, conversationId: string, body: string) {
-  const result = await client.rpc('send_message', {
+export async function sendDirectMessage(client: SupabaseClient, conversationId: string, body: string, replyToId?: string | null) {
+  const result = replyToId ? await client.rpc('send_message_v2', {
+    p_conversation_id: conversationId, p_body: body.trim(), p_reply_to_id: replyToId,
+  }) : await client.rpc('send_message', {
     conversation_id: conversationId,
     message_body: body.trim(),
   });
   if (result.error) throw result.error;
   return result.data as string;
+}
+
+export async function editChatMessage(client: SupabaseClient, messageId: string, body: string, editedAt: string | null = null) {
+  const result = await client.rpc('edit_chat_message', { p_message_id: messageId, p_body: body.trim(), p_expected_edited_at: editedAt });
+  if (result.error) throw result.error;
+  return result.data as ChatMessageRecord;
+}
+
+export async function deleteChatMessage(client: SupabaseClient, messageId: string, editedAt: string | null = null) {
+  const result = await client.rpc('delete_chat_message', { p_message_id: messageId, p_expected_edited_at: editedAt });
+  if (result.error) throw result.error;
+  return result.data as ChatMessageRecord;
 }
 
 export async function loadChatReadPosition(client: SupabaseClient, conversationId: string) {
@@ -423,12 +442,14 @@ export async function markChatRead(client: SupabaseClient, conversationId: strin
 }
 
 export async function sendChatAttachment(client: SupabaseClient, conversationId: string,
-  attachment: { kind: 'image'; imagePath: string } | { kind: 'location'; latitude: number; longitude: number }) {
-  const result = await client.rpc('send_chat_attachment', {
+  attachment: { kind: 'image'; imagePath: string } | { kind: 'location'; latitude: number; longitude: number; label?: string }, replyToId?: string | null) {
+  const extra = replyToId || (attachment.kind === 'location' && attachment.label);
+  const result = await client.rpc(extra ? 'send_message_v2' : 'send_chat_attachment', {
     p_conversation_id: conversationId, p_kind: attachment.kind,
     p_image_path: attachment.kind === 'image' ? attachment.imagePath : null,
     p_latitude: attachment.kind === 'location' ? attachment.latitude : null,
     p_longitude: attachment.kind === 'location' ? attachment.longitude : null,
+    ...(extra ? { p_reply_to_id: replyToId ?? null, ...(attachment.kind === 'location' && attachment.label ? { p_location_label: attachment.label.trim() } : {}) } : {}),
   });
   if (result.error) throw result.error;
   return result.data as string;
@@ -518,7 +539,7 @@ export async function loadConversationMessages(client: SupabaseClient, conversat
   if (result.error) throw result.error;
   const rows = ((result.data ?? []) as (Omit<ChatMessageRecord, 'sender_nickname'> & { sender: { nickname: string } | null })[])
     .map(({ sender, ...message }) => ({ ...message, sender_nickname: sender?.nickname ?? null })).reverse();
-  return attachSignedChatImages(client, rows);
+  return attachChatMessageDetails(client, rows, conversationId);
 }
 
 export async function loadConversationMessagesByIds(client: SupabaseClient, conversationId: string, ids: string[]) {
@@ -530,10 +551,18 @@ export async function loadConversationMessagesByIds(client: SupabaseClient, conv
   if (result.error) throw result.error;
   const rows = ((result.data ?? []) as (Omit<ChatMessageRecord, 'sender_nickname'> & { sender: { nickname: string } | null })[])
     .map(({ sender, ...message }) => ({ ...message, sender_nickname: sender?.nickname ?? null }));
-  return attachSignedChatImages(client, rows);
+  return attachChatMessageDetails(client, rows, conversationId);
 }
 
-async function attachSignedChatImages(client: SupabaseClient, rows: ChatMessageRecord[]) {
+async function attachChatMessageDetails(client: SupabaseClient, rows: ChatMessageRecord[], conversationId: string) {
+  const parents = [...new Set(rows.flatMap(row => row.reply_to_id ? [row.reply_to_id] : []))];
+  if (parents.length) {
+    const result = await client.from('messages').select('id,body,kind,sender_id,deleted_at')
+      .eq('conversation_id', conversationId).in('id', parents);
+    if (result.error) throw result.error;
+    const replies = new Map((result.data ?? []).map((row: NonNullable<ChatMessageRecord['reply']>) => [row.id, row]));
+    rows = rows.map(row => ({ ...row, reply: replies.get(row.reply_to_id ?? '') ?? null }));
+  }
   const paths = [...new Set(rows.flatMap((row) => row.kind === 'image' && row.image_path ? [row.image_path] : []))];
   if (!paths.length) return rows;
   // An image outage should not hide the conversation or its report controls.
@@ -559,8 +588,14 @@ export async function setMessageReaction(client: SupabaseClient, messageId: stri
 }
 
 export function mergeChatMessages(previous: ChatMessageRecord[], next: ChatMessageRecord[], blocked = new Set<string>()) {
-  return [...new Map([...previous, ...next].map((message) => [message.id, message])).values()]
+  const merged = new Map([...previous, ...next].map((message) => [message.id, message]));
+  return [...merged.values()]
     .filter((message) => !blocked.has(message.sender_id))
+    .map(message => {
+      if (!message.reply_to_id) return message;
+      const parent = merged.get(message.reply_to_id) ?? message.reply;
+      return { ...message, reply: parent && !blocked.has(parent.sender_id) ? parent : null };
+    })
     .sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
 }
 

@@ -1,0 +1,37 @@
+{
+  "results": [
+    {
+      "kind": "direct",
+      "reply": true,
+      "composerPreserved": true
+    },
+    {
+      "kind": "group",
+      "reply": true,
+      "composerPreserved": true
+    },
+    {
+      "width": 320,
+      "overflow": false,
+      "controls": ">=44px"
+    },
+    {
+      "width": 390,
+      "overflow": false,
+      "controls": ">=44px"
+    },
+    {
+      "width": 768,
+      "overflow": false,
+      "controls": ">=44px"
+    },
+    {
+      "width": 1440,
+      "overflow": false,
+      "controls": ">=44px"
+    }
+  ],
+  "errors": [],
+  "map": "offline illustration",
+  "realMessagesSent": false
+}
