@@ -13,7 +13,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { eventVideo } from '@/lib/event-videos';
-import { EVENT_CITIES, eventPriceLabel, eventTime, loadTicketmasterEvents, spotlightLocalEvents, type EventCity, type TicketmasterEvent } from '@/lib/ticketmaster';
+import { EVENT_CITIES, eventPriceLabel, eventTime, festivalLocalDay, loadTicketmasterEvents, spotlightLocalEvents, type EventCity, type TicketmasterEvent } from '@/lib/ticketmaster';
 
 export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityReady }: { cityId: string; refreshKey: number; cityLoading: boolean; onCityReady: (cityId: string) => void }) {
   const theme = useTheme();
@@ -29,7 +29,7 @@ export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityRea
   const carousel = useRef<NativeScrollView>(null);
   const activeIndexRef = useRef(0);
   const userPauseUntil = useRef(0);
-  const [result, setResult] = useState<{ key: string; events: TicketmasterEvent[]; error: string } | null>(null);
+  const [result, setResult] = useState<{ key: string; events: TicketmasterEvent[]; error: string; nextRefreshAt?: string } | null>(null);
   const key = `${cityId}:${refreshKey}:${attempt}`;
   const current = result?.key === key ? result : null;
 
@@ -51,15 +51,38 @@ export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityRea
     return () => clearInterval(timer);
   }, [cardWidth, current, isFocused, reducedMotion, screenReader]);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (!Object.hasOwn(EVENT_CITIES, cityId)) { onCityReady(cityId); return; }
     let active = true;
     loadTicketmasterEvents({ cityId: cityId as EventCity, category: 'all', page: 0, festival: true })
-      .then(data => spotlightLocalEvents(data.events).sort((a, b) => Number(!!eventVideo(b)) - Number(!!eventVideo(a))))
-      .then(events => { if (active) { activeIndexRef.current = 0; setActiveIndex(0); setResult({ key, events, error: '' }); onCityReady(cityId); } })
+      .then(data => {
+        if (active) {
+          activeIndexRef.current = 0; setActiveIndex(0);
+          setResult({ key, events: spotlightLocalEvents(data.events, Date.now(), data.festivalSlots ?? []), error: '', nextRefreshAt: data.nextRefreshAt });
+          onCityReady(cityId);
+        }
+      })
       .catch(cause => { if (active) { setResult({ key, events: [], error: cause.message }); onCityReady(cityId); } });
     return () => { active = false; };
-  }, [cityId, key, onCityReady]);
+  }, [cityId, key, onCityReady]));
+
+  useEffect(() => {
+    if (!isFocused || !Object.hasOwn(EVENT_CITIES, cityId)) return;
+    let day = festivalLocalDay(cityId as EventCity);
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') setAttempt(value => value + 1);
+    });
+    const timer = setInterval(() => {
+      if (AppState.currentState !== 'active') return;
+      const nextDay = festivalLocalDay(cityId as EventCity);
+      if (nextDay !== day || (current?.nextRefreshAt && Date.parse(current.nextRefreshAt) <= Date.now())
+        || current?.events.some(event => event.startsAt && Date.parse(event.startsAt) <= Date.now())) {
+        day = nextDay;
+        setAttempt(value => value + 1);
+      }
+    }, 60000);
+    return () => { subscription.remove(); clearInterval(timer); };
+  }, [cityId, current, isFocused]);
 
   if (!Object.hasOwn(EVENT_CITIES, cityId)) return null;
   const browse = () => { play('selection'); router.push('/events'); };
@@ -94,7 +117,7 @@ function FeaturedEventCard({ event, cityId, index, width, active, reducedMotion,
   const [videoFailed, setVideoFailed] = useState(false);
   const [imageScale] = useState(() => new Animated.Value(1));
   useFocusEffect(useCallback(() => {
-    if (reducedMotion || !event.image || (active && videoPlaying)) return;
+    if (!active || reducedMotion || !event.image || videoPlaying) return;
     const motion = Animated.loop(Animated.sequence([
       Animated.timing(imageScale, { toValue: 1.22, duration: 6200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
       Animated.timing(imageScale, { toValue: 1, duration: 6200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
