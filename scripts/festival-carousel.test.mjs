@@ -5,10 +5,10 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import * as ticketmaster from '../supabase/functions/_shared/ticketmaster.ts';
 
-function carousel({ web = false, focused = true, activeCard = true, reducedMotion = false, now = '2026-10-12T06:59:00Z', nextRefreshAt } = {}) {
+function carousel({ web = false, focused = true, activeCard = true, reducedMotion = false, screenReader = false, eventCount = 8, now = '2026-10-12T06:59:00Z', nextRefreshAt } = {}) {
   let hook = 0, dirty = false, time = Date.parse(now), focus = focused, tree;
-  const hooks = [], pending = [], timers = new Map(), listeners = new Map(), requests = [], motion = [];
-  const events = Array.from({ length: 8 }, (_, index) => ({ id: `f${index}`, name: `f${index} Festival`, startsAt: `2099-01-${String(index + 1).padStart(2, '0')}T20:00:00Z`, localDate: `2099-01-${String(index + 1).padStart(2, '0')}`, status: 'onsale', timeUnconfirmed: false, city: 'Vancouver', country: 'CA', venue: 'Park', image: 'https://example.invalid/image.jpg', ticketUrl: null }));
+  const hooks = [], pending = [], timers = new Map(), listeners = new Map(), requests = [], motion = [], scrolls = [];
+  const events = Array.from({ length: eventCount }, (_, index) => ({ id: `f${index}`, name: `f${index} Festival`, startsAt: `2099-01-${String(index + 1).padStart(2, '0')}T20:00:00Z`, localDate: `2099-01-${String(index + 1).padStart(2, '0')}`, status: 'onsale', timeUnconfirmed: false, city: 'Vancouver', country: 'CA', venue: 'Park', image: 'https://example.invalid/image.jpg', ticketUrl: null }));
   const same = (a, b) => a && b && a.length === b.length && a.every((item, index) => Object.is(item, b[index]));
   const state = initial => {
     const index = hook++;
@@ -33,9 +33,9 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
   const load = async query => { requests.push(query); return { events, nextRefreshAt, festivalSlots: [{ slot: 2, eventId: 'f7', endsAt: '2099-01-07T00:00:00Z' }] }; };
   const imports = {
     react: { useEffect: effect, useState: state, useCallback: memo, useRef: value => { const index = hook++; return hooks[index] ??= { current: value }; } },
-    'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
+    'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }) },
     'expo-router': { Link: Object.assign(() => {}, { AppleZoom: 'Zoom' }), useIsFocused: () => focus, useRouter: () => ({}), useFocusEffect: callback => effect(() => focus ? callback() : undefined, [callback, focus]) },
-    'react-native': { AccessibilityInfo: { isScreenReaderEnabled: async () => false, addEventListener: () => ({ remove() {} }) }, AppState: appState, View: 'View', StyleSheet: { create: value => value, flatten: value => value, absoluteFill: {} }, useWindowDimensions: () => ({ width: 390 }), Easing: { inOut: value => value, sin: () => {} }, Animated: { View: 'AnimatedView', Value: class { interpolate() { return this; } setValue() {} }, timing() {}, sequence() {}, loop: () => ({ start: () => motion.push('start'), stop: () => motion.push('stop') }) } },
+    'react-native': { AccessibilityInfo: { isScreenReaderEnabled: async () => screenReader, addEventListener: () => ({ remove() {} }) }, AppState: appState, View: 'View', StyleSheet: { create: value => value, flatten: value => value, absoluteFill: {} }, useWindowDimensions: () => ({ width: 390 }), Easing: { inOut: value => value, sin: () => {} }, Animated: { View: 'AnimatedView', Value: class { interpolate() { return this; } setValue() {} }, timing() {}, sequence() {}, loop: () => ({ start: () => motion.push('start'), stop: () => motion.push('stop') }) } },
     'react-native-reanimated': { useReducedMotion: () => reducedMotion }, 'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'Symbol' },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
@@ -52,8 +52,10 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
     let count = 0;
     do {
       hook = 0; dirty = false;
-      tree = card ? exports.card({ event: events[0], cityId: 'vancouver', index: 0, width: 340, active: activeCard, reducedMotion, onOpen() {} })
+      tree = card ? exports.card({ event: events[0], cityId: 'vancouver', index: 0, active: activeCard, reducedMotion, onOpen() {} })
         : web ? exports.PublicFestivals({ cityId: 'vancouver', cityName: 'Vancouver' }) : exports.LocalEventsCarousel({ cityId: 'vancouver', refreshKey: 0, cityLoading: false, onCityReady: ready });
+      const scroll = elements(tree).find(node => node.props?.analyticsId === 'today.events.carousel');
+      if (scroll) scroll.props.ref.current = { scrollTo: position => scrolls.push(position) };
       for (const callback of pending.splice(0)) callback();
       await new Promise(resolve => setImmediate(resolve));
     } while (dirty && ++count < 12);
@@ -61,7 +63,13 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
     return tree;
   };
   const ready = () => {};
-  return { requests, motion, render, tree: () => tree, async focus(value) { focus = value; await render(); }, async emit(name, value) { if (name === 'appState') appState.currentState = value; if (name === 'visibilitychange') document.visibilityState = value; for (const callback of [...(listeners.get(name) ?? [])]) callback(value); await render(); }, async tick(delay, advance = 0) { time += advance; for (const timer of [...timers.values()]) if (timer.delay === delay) timer.callback(); await render(); } };
+  return { requests, motion, scrolls, render, tree: () => tree, async focus(value) { focus = value; await render(); }, async emit(name, value) { if (name === 'appState') appState.currentState = value; if (name === 'visibilitychange') document.visibilityState = value; for (const callback of [...(listeners.get(name) ?? [])]) callback(value); await render(); }, async tick(delay, advance = 0) { time += advance; for (const timer of [...timers.values()]) if (timer.delay === delay) timer.callback(); await render(); } };
+}
+
+function elements(tree) {
+  if (!tree || typeof tree !== 'object') return [];
+  if (Array.isArray(tree)) return tree.flatMap(elements);
+  return [tree, ...elements(tree.props?.children)];
 }
 
 function cards(tree) {
@@ -82,6 +90,42 @@ test('native carousel re-reads the saved city feed when the local day changes', 
   const ui = carousel(); await ui.render(); assert.equal(ui.requests.length, 1);
   await ui.tick(60000, 120000); assert.equal(ui.requests.length, 2);
   await ui.tick(60000); assert.equal(ui.requests.length, 2);
+});
+test('automatic rotation moves the scroll view without replacing its native page containers', async () => {
+  const ui = carousel(); await ui.render();
+  const keys = () => elements(ui.tree()).find(node => node.props?.analyticsId === 'today.events.carousel').props.children.map(node => node.key);
+  const original = keys();
+  const pages = elements(ui.tree()).find(node => node.props?.analyticsId === 'today.events.carousel').props.children;
+  assert.ok(pages.every(node => node.type === 'View' && node.props.collapsable === false));
+  await ui.tick(6000);
+  assert.equal(ui.scrolls.at(-1).x, 358);
+  assert.deepEqual(keys(), original);
+  for (let index = 0; index < 6; index++) await ui.tick(6000);
+  assert.equal(ui.scrolls.at(-1).x, 0);
+  assert.equal(ui.requests.length, 1);
+});
+test('foreground refresh resets both the active card and its visible scroll position', async () => {
+  const ui = carousel(); await ui.render(); await ui.tick(6000);
+  await ui.emit('appState', 'background'); await ui.emit('appState', 'active');
+  assert.equal(ui.scrolls.at(-1).x, 0);
+  assert.equal(ui.scrolls.at(-1).animated, false);
+  assert.ok(elements(ui.tree()).find(node => node.props?.event)?.props.active);
+  await ui.tick(6000); assert.equal(ui.scrolls.at(-1).x, 358);
+});
+test('two Vancouver cards alternate every six seconds without another data request', async () => {
+  const ui = carousel({ eventCount: 2 }); await ui.render();
+  for (const expected of [358, 0, 358, 0]) {
+    await ui.tick(6000); assert.equal(ui.scrolls.at(-1).x, expected);
+  }
+  assert.equal(ui.requests.length, 1);
+});
+test('a single event, reduced motion, a screen reader or a background app does not auto-scroll', async () => {
+  for (const options of [{ eventCount: 1 }, { reducedMotion: true }, { screenReader: true }]) {
+    const ui = carousel(options); await ui.render(); const count = ui.scrolls.length; await ui.tick(6000);
+    assert.equal(ui.scrolls.length, count);
+  }
+  const ui = carousel(); await ui.render(); const count = ui.scrolls.length; await ui.emit('appState', 'background'); await ui.tick(6000);
+  assert.equal(ui.scrolls.length, count);
 });
 test('public carousel refreshes on foreground and city-day rollover without fetching on rotation', async () => {
   const ui = carousel({ web: true }); await ui.render(); assert.equal(ui.requests.length, 1);

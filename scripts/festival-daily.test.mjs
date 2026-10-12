@@ -34,7 +34,7 @@ function endpoint({ cached = null, slots = [], slotsAfterRead, readyCache, claim
   }).outputText;
   let handle;
   vm.runInNewContext(source, {
-    exports: {}, require: name => name.includes('supabase-js') ? { createClient: () => db } : ticketmaster,
+    exports: {}, require: name => name.includes('supabase-js') ? { createClient: () => db } : { ...ticketmaster, festivalCacheExpiry: city => ticketmaster.festivalCacheExpiry(city, now) },
     Deno: { env: { get: name => ({ TICKETMASTER_API_KEY: 'test-key', SUPABASE_URL: 'https://example.invalid', SUPABASE_SERVICE_ROLE_KEY: 'test-service' })[name] }, serve: value => { handle = value; } },
     URL, Response, Date: Clock, AbortSignal, setTimeout, console: { error() {} },
     fetch: async url => {
