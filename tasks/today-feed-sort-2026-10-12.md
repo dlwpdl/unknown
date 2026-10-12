@@ -9,7 +9,7 @@ The owner reviewed the clickable 2026-10-12 prototype and approved implementing 
 - `scripts/` and `supabase/tests/`: meaningful client/UI and SQL checks. Evidence and rendered screens go under this task's `output/qa` and `output/design` folders.
 
 ## Server behavior
-Use the existing post reaction counters: likes + 2 × comments + 3 × saves, matching the approved prototype's example. Filter to published, visible, active-author posts created within seven days; honor city, tag, block, closed/expired listing and authenticated-reader rules. Read stored counters in one query rather than launching a recalculation job. Use the existing city/time indexes and verify the query plan.
+Use the existing post reaction counters: likes + 2 × comments + 3 × saves, matching the approved prototype's example. Filter to published, visible, active-author posts created within seven days; honor city, tag, block, report, closed/expired listing and viewer visibility rules. Guest discovery retains the existing title/safe-first-image preview while bodies, private attachments and room details stay redacted. Read stored counters in one query rather than launching a recalculation job. Use the existing city/time indexes and verify the query plan.
 
 Popular pages use a score/creation-time/ID cursor and a fixed eligibility timestamp. New posts do not enter an already-started seven-day window. Reaction changes can alter a live ranking; the client removes overlaps and refresh starts a new ranking window. Do not claim an immutable score snapshot. Scores are not exposed as a product metric.
 
@@ -28,3 +28,10 @@ Popular pages use a score/creation-time/ID cursor and a fixed eligibility timest
 4. Review the connected code, integrate the scoped change, apply the additive migration and verify readback. Preserve any release already in progress and distinguish source/backend delivery from availability in installed native builds.
 
 Boundary: no moderation, account, notification, automated publishing or ranking scheduler change. No live fixture mutations, secrets in artifacts or broad writes over the dirty shared checkout. The existing current administrator/safety policy and login-only post content remain intact.
+
+## Verified implementation
+- Latest remains the default. Popular uses the server's seven-day score order. Category changes retain the order; the sort row stays below the fixed brand header while scrolling. Loading, empty and error states occupy the results area below that row.
+- Publishing in popular mode reloads the first server page; latest retains its immediate new-post preview. An earlier account's publish completion cannot refresh the current feed. Refresh cancels a previous page's loading indicator, and overlapping live-score pages advance using the last raw server row.
+- Local checks: `npm test` 740 tests / 739 passed / 1 existing skip / 0 failed; TypeScript and lint passed; SQL fixture 25/25 passed and rolled back. The native component browser export passed at 320/390/768/1440px, 44px targets, sort/category/error/keyboard/rapid transitions, sticky positioning and hit testing, reduced motion, and enlarged sort text at 200%/320px.
+- Browser QA temporarily uses the native layout and Today entry, then restores both public web entries with SHA256 readback. All external HTTP and WebSockets use isolated fixtures. Native physical-device haptics, VoiceOver/TalkBack and installed-app availability were not tested.
+- Connected-code review resolved the publish, refresh and account-rotation races and found no remaining Critical/Important issues. No new native release is part of this source/backend integration; the previously submitted 1.1.9 is preserved.
