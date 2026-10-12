@@ -8,7 +8,13 @@ results=[];errors=[]
 with gui_bundle('gling-chat-preview-check','chat-prototype-offline',time.time()+55):
  with sync_playwright() as p:
   browser=p.chromium.launch(headless=True);page=browser.new_page(viewport={'width':390,'height':844},reduced_motion='reduce');page.on('pageerror',lambda e:errors.append(str(e)));page.set_default_timeout(3000)
+  page.add_init_script("Object.defineProperty(window,'close',{value:()=>{throw new Error('Unexpected window close')},configurable:false,writable:false})")
   page.goto((OUT.parents[1]/'design/gling-chat-controls-2026-10-12.html').as_uri())
+  assert page.locator('#messages .bubble').count()==3, 'Orca reserves window.close; the preview must still initialize its sample messages'
+  bubble=page.get_by_role('button',name='내 메시지 메뉴').first;box=bubble.bounding_box()
+  page.mouse.move(box['x']+box['width']/2,box['y']+box['height']/2);page.mouse.down();page.wait_for_timeout(450);page.mouse.up()
+  assert page.locator('#menu').is_visible();assert page.locator('#edit-action').is_visible();assert page.locator('#delete-action').is_visible()
+  page.locator('[data-close="menu"]').click();results.append({'lockedWindowClose':True,'initialBubbles':3,'ownLongPressMenu':True})
   for group in [False,True]:
    if group:page.locator('#channel').click()
    page.locator('#draft').fill('입력 유지')

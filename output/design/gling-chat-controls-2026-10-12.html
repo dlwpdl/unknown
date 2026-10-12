@@ -10,6 +10,8 @@
 <dialog id="location"><h2>위치 공유하기</h2><form id="search" class="search-row"><input id="query" placeholder="장소 이름 또는 주소" aria-label="장소 이름 또는 주소" maxlength="240"><button>검색</button></form><button id="result" class="result" hidden></button><div class="map" id="map" role="button" tabindex="0" aria-label="지도에서 위치 선택"><svg viewBox="0 0 400 280" aria-hidden="true"><rect width="400" height="280" fill="#DBDCCC"/><path d="M0 170Q150 140 240 205T420 240V280H0" fill="#A3C2CA"/><path d="M100 -20L185 280M250 -20L320 280M-20 60L420 140M-20 140L420 205" stroke="#FFFDF6" stroke-width="14"/><path d="M90 5L130 45L76 56L55 16M250 185L270 217L228 209Z" fill="#ABBC97"/></svg><span class="map-label">밴쿠버 · 예시 지도</span><span class="pin" id="pin" hidden></span></div><button id="current">현재 위치 선택</button><div class="selected" id="selected">공유할 위치를 선택해 주세요.</div><div class="actions"><button class="primary" id="location-send" disabled>이 위치 공유하기</button><button data-close="location">닫기</button></div></dialog>
 </main>
 <script>
+// Orca protects window.close; keep this preview's controls in their own scope.
+(() => {
 const $=id=>document.getElementById(id);let group=false,target=null,parent=null,point=null,timer;
 const rows=[{id:1,mine:false,body:'토요일에는 도서관 앞에서 만날까요?'},{id:2,mine:true,body:'좋아요! 정확한 위치 보내주세요.'},{id:3,mine:false,body:'시간은 오후 2시 어때요?'}];
 const feedback=()=>navigator.vibrate?.(8);const say=text=>{$('toast').textContent=text;};
@@ -37,4 +39,5 @@ $('location-open').onclick=()=>{point=null;$('selected').textContent='공유할 
 $('search').onsubmit=e=>{e.preventDefault();if(!$('query').value.trim())return;point=null;$('location-send').disabled=true;$('result').hidden=false;$('result').textContent='Vancouver Public Library · 350 W Georgia St';$('result').onclick=()=>{choose('Vancouver Public Library',49.2797,-123.1156);$('result').hidden=true}};
 $('map').onclick=e=>{const rect=$('map').getBoundingClientRect();$('pin').style.left=(e.clientX-rect.left)/rect.width*100+'%';$('pin').style.top=(e.clientY-rect.top)/rect.height*100+'%';choose('선택한 위치',49.2827,-123.1207)};$('map').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose('선택한 위치',49.2827,-123.1207)}};
 $('current').onclick=()=>choose('현재 위치 (예시)',49.2827,-123.1207);$('location-send').onclick=()=>{if(!point)return;rows.push({id:Date.now(),mine:true,body:'📍 '+point.label,location:true,parent:parent?.id});parent=null;close('location');render();say('선택한 위치를 공유했어요. (예시)')};render();
+})();
 </script></html>
