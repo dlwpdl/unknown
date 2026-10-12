@@ -27,9 +27,16 @@ $$;
 revoke all on function private.message_safety_content(uuid) from public,anon,authenticated,service_role;
 create function public.get_message_safety_content(p_message_id uuid) returns jsonb
 language plpgsql security definer set search_path='' as $$
+declare content jsonb; context jsonb;
 begin
   if auth.role() is distinct from 'service_role' then raise exception 'SERVICE_ROLE_REQUIRED'; end if;
-  return private.message_safety_content(p_message_id);
+  content:=private.message_safety_content(p_message_id);
+  -- Preserve the existing consent-filtered context endpoint when it is installed.
+  if content is not null and to_regprocedure('public.get_message_safety_context(uuid)') is not null then
+    execute 'select public.get_message_safety_context($1)' into context using p_message_id;
+    content:=jsonb_set(content,'{text}',to_jsonb(concat_ws(E'\n',content->>'text',context->>'text')));
+  end if;
+  return content;
 end;
 $$;
 revoke all on function public.get_message_safety_content(uuid) from public,anon,authenticated;

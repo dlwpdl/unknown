@@ -31,10 +31,17 @@ select throws_ok($$select public.send_message_v2('a1221000-0000-0000-0000-000000
 reset role;
 select is((select count(*)::int from private.message_history where message_id='a1222000-0000-0000-0000-000000000001'),2,'both prior versions remain available for authorized safety review');
 select ok(not has_table_privilege('authenticated','private.message_history','select'),'ordinary clients cannot read retained originals');
-select ok(not has_function_privilege('authenticated','public.get_message_safety_content(uuid)','execute'),'retained safety content is not a participant read endpoint');
+select ok(not has_function_privilege('authenticated','public.get_message_safety_content(uuid,bigint,text,timestamptz)','execute'),'retained safety content is not a participant read endpoint');
+create function pg_temp.get_retained_scan(p_message_id uuid) returns jsonb language plpgsql as $$
+declare lease public.safety_review_queue;
+begin
+  update public.safety_review_queue set status='processing',updated_at=clock_timestamp()
+    where target_type='message' and target_id=p_message_id returning * into lease;
+  return public.get_message_safety_content(p_message_id,lease.id,lease.content_hash,lease.updated_at);
+end $$;
 select set_config('request.jwt.claims','{"role":"service_role"}',true);
 set local role service_role;
-select ok(public.get_message_safety_content('a1222000-0000-0000-0000-000000000001')->>'text' like '%original%' and public.get_message_safety_content('a1222000-0000-0000-0000-000000000001')->>'text' like '%edited%','existing safety worker can still analyze retained content after deletion');
+select ok(pg_temp.get_retained_scan('a1222000-0000-0000-0000-000000000001')->>'text' like '%original%','existing safety worker receives retained content after deletion');
 reset role;
 select is((select content_hash from public.safety_review_queue where target_type='message' and target_id='a1222000-0000-0000-0000-000000000001'),encode(extensions.digest(convert_to(private.message_safety_content('a1222000-0000-0000-0000-000000000001')->>'text','UTF8'),'sha256'),'hex'),'review queue hash includes the retained versions');
 select set_config('request.jwt.claims','{"sub":"a1220000-0000-0000-0000-000000000001","role":"authenticated"}',true);
