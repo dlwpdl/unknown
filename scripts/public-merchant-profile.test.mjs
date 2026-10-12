@@ -37,13 +37,13 @@ function app(file = '../src/components/public-web/merchant-profile.tsx', { rpc =
     '@/lib/merchant-source': { merchantPhoneUrl, merchantMapsUrl },
     '@/constants/theme': { WebNightColors: {} }, '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }], TAGS: [] },
     '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.example' }, '@/i18n/ko': { t: {} },
-    './analytics': { useReaderAnalytics() {} }, './merchant-profile': { PublicMerchantProfile: 'CompanyProfile', PublicMerchantProfileLink: 'CompanyLink' },
+    '@/app/post/[id]': { __esModule: true, default: 'SharedPostRoute' }, './analytics': { useReaderAnalytics() {} }, './merchant-profile': { PublicMerchantProfile: 'CompanyProfile', PublicMerchantProfileLink: 'CompanyLink' },
   };
   const exports = {}, source = ts.transpileModule(readFileSync(new URL(file, import.meta.url), 'utf8') + (file.endsWith('/merchant-profile.tsx') ? '\nexports.ProfilePage=ProfilePage;exports.PublicReviews=PublicReviews;exports.ProfileRatings=typeof ProfileRatings===\"function\"?ProfileRatings:null;exports.RatingVisual=typeof RatingVisual===\"function\"?RatingVisual:null;exports.PublicProfilePosts=typeof PublicProfilePosts===\"function\"?PublicProfilePosts:null;' : ''), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
   }).outputText;
   vm.runInNewContext(source, { exports, require: name => imports[name] ?? {}, Date, Intl, URLSearchParams, window: { location: { pathname: path } } });
-  return { exports, feedback, calls, postCalls, render(name, props = {}) { index = 0; return exports[name](props); }, unmount() { cleanup.forEach(fn => fn()); cleanup.clear(); } };
+  return { exports, feedback, calls, postCalls, render(name, props = {}) { index = 0; let tree = exports[name](props); if (typeof tree?.type === 'function') tree = tree.type(tree.props); return tree; }, unmount() { cleanup.forEach(fn => fn()); cleanup.clear(); } };
 }
 const nodes = root => Array.isArray(root) ? root.flatMap(nodes) : !root || typeof root !== 'object' || !root.props ? [] : [root, ...nodes(root.props.children)];
 const text = root => nodes(root).flatMap(node => [node.props?.children].flat().filter(value => typeof value === 'string' || typeof value === 'number')).join(' ');
@@ -451,4 +451,12 @@ test('late company/tab reads cannot restore old rows and inaccessible is distinc
   const emptyRoot = empty.render('PublicProfilePosts', emptyProps);
   assert.ok(text(emptyRoot).includes('채용이 없어요'));
   button(emptyRoot, '게시글 보기').props.onClick(); assert.ok(returned && empty.feedback.includes('selection'));
+});
+
+
+test('public legacy detail aliases dispatch to the protected post route instead of the anonymous full reader', () => {
+  for (const path of ['/post', `/post/${postId}`, `/share/${postId}`]) {
+    const view = app('../src/components/public-web/reader.tsx', { path, query: { id: postId } });
+    const tree = view.render('default'); assert.equal(tree.type, 'SharedPostRoute'); assert.equal(view.calls.length, 0);
+  }
 });

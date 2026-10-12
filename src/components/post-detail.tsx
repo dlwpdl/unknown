@@ -27,6 +27,7 @@ import { ChillingHostProfile } from '@/components/chilling-host-profile';
 import { ReportSheet } from '@/components/report-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { StateCard } from '@/components/state-card';
 import { TrustBadge } from '@/components/trust-badge';
 import { UserSheet, type SheetUser } from '@/components/user-sheet';
 import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -70,7 +71,12 @@ type PostDetailProps = {
 type PageState = { cursor: CommentCursor | null; loading: boolean; error: boolean; loaded: boolean };
 
 export function PostDetail(props: PostDetailProps) {
-  const { isAuthed, me } = useAuth();
+  const { isAuthed, me, promptLogin } = useAuth(), { play } = useInteractionFeedback();
+  if (!isAuthed) return <ThemedView style={{ flex: 1, padding: 16, gap: 16 }}>
+    <Pressable analyticsId="post.login-gate.close" accessibilityRole="button" accessibilityLabel="글 닫기" onPress={() => { play('selection'); props.onClose(); }} style={{ minHeight: 44, justifyContent: 'center' }}><ThemedText>돌아가기</ThemedText></Pressable>
+    <StateCard kind="blocked" title={props.post.title} body="전체 내용과 댓글은 로그인 후 확인할 수 있어요." actionLabel="Google·소셜 로그인"
+      onAction={() => promptLogin('로그인하고 이 글을 확인해요.')} />
+  </ThemedView>;
   // Drafts, likes and pending requests belong to one post and one account.
   return <PostDetailContent key={`${props.post.id}:${isAuthed ? me.id : 'guest'}`} {...props} />;
 }
@@ -690,7 +696,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
             />}
             {!postDraft && post.room && <ChillingHostProfile post={post} onJoin={onJoin} onBeforeNavigate={onJoin ? onClose : undefined} />}
             {canManagePost && (post.kind === 'listing' || (post.tag.kind === 'post' && !post.room)) && <ListingControls post={post} onChanged={onListingChanged} />}
-            {PROMOTIONS_PREVIEW_ENABLED && isAuthed && post.author.id === me.id && <Pressable analyticsId="components_post-detail.pressable.16"
+            {PROMOTIONS_PREVIEW_ENABLED && Platform.OS !== 'web' && isAuthed && post.author.id === me.id && <Pressable analyticsId="components_post-detail.pressable.16"
               accessibilityRole="button"
               onPress={() => { play('selection'); onClose(); router.push({ pathname: '/profile/promotions', params: { postId: post.id } }); }}
               style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, opacity: pressed ? 0.65 : 1 })}>

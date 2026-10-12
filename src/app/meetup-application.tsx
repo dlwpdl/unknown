@@ -95,7 +95,7 @@ function Application({ requestId }: { requestId: string }) {
   };
   return <ThemedView style={styles.fill}><SafeAreaView style={styles.fill}>
     <View style={[styles.header, { backgroundColor: theme.background }]}>
-      <Pressable analyticsId="app_meetup-application.pressable.1" onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace('/(tabs)/chat'); }} accessibilityRole="button" accessibilityLabel="뒤로가기" style={({ pressed }) => [styles.back, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} /></Pressable>
+      <Pressable analyticsId="app_meetup-application.pressable.1" onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace(Platform.OS === 'web' ? '/chat' : '/(tabs)/chat'); }} accessibilityRole="button" accessibilityLabel="뒤로가기" style={({ pressed }) => [styles.back, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} /></Pressable>
       <ThemedText accessibilityRole="header" numberOfLines={1} style={styles.headerTitle}>{own ? '내 참여 신청' : '참여 신청 검토'}</ThemedText>
       <View style={styles.back} />
     </View>

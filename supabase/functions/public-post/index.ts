@@ -1,6 +1,5 @@
 // @ts-nocheck
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { postLinksHtml } from '../_shared/post-links.ts';
 import { postSeo, jsonLd, PUBLIC_SITE, PUBLIC_SOURCE } from '../../../src/lib/public-seo.ts';
 
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
@@ -47,21 +46,19 @@ Deno.serve(async (request) => {
       }
       return new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${entries.join('')}</urlset>`, { headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=60', 'X-Content-Type-Options': 'nosniff' } });
     }
-    const result = await supabase.rpc('get_public_post', { p_post_id: id });
-    const post = result.data?.[0];
+    const result = await supabase.rpc('get_shared_link_preview', { p_post_id: id });
+    const preview = result.data;
     if (result.error) return unavailable(503);
-    if (!post) return unavailable(404);
-    const metadata = postSeo({ id, title: post.title, body: post.body, author: { nickname: post.author_nickname }, tag: { label: post.tag_label ?? '공개 글' }, createdAt: post.created_at, room: post.room_preview });
-    if (format === 'markdown') return new Response(`# ${post.title.replace(/[\r\n]/g, ' ')}\n\n원문: ${metadata.canonical}\n작성자: ${post.author_nickname.replace(/[\r\n]/g, ' ')}\n${metadata.published ? `발행일: ${metadata.published}\n` : ''}도시: ${post.city_id ?? ''}\n주제: ${post.tag_label ?? ''}\n\n${metadata.body}\n${metadata.mapUrl ? `\n지도: ${metadata.mapUrl}\n` : ''}`, { headers: { 'Content-Type': 'text/markdown; charset=utf-8', 'Cache-Control': 'no-store', 'Link': `<${metadata.canonical}>; rel="canonical"`, 'X-Robots-Tag': 'noindex, follow', 'X-Content-Type-Options': 'nosniff' } });
-
+    if (!preview) return unavailable(404);
+    const metadata = postSeo({ id, title: preview.title, body: '', author: { nickname: '' }, tag: { label: preview.label ?? '글링' } }, preview.city ?? '');
+    if (format === 'markdown') return new Response(`# ${preview.title.replace(/[\r\n]/g, ' ')}\n\n원문: ${metadata.canonical}\n도시: ${preview.city ?? ''}\n주제: ${preview.label ?? ''}\n\n전체 내용은 글링에서 로그인 후 확인해주세요.\n`, { headers: { 'Content-Type': 'text/markdown; charset=utf-8', 'Cache-Control': 'no-store', 'Link': `<${metadata.canonical}>; rel="canonical"`, 'X-Robots-Tag': 'noindex, follow', 'X-Content-Type-Options': 'nosniff' } });
     let imageUrl = '';
-    const imagePath = post.image_paths?.[0];
-    if (imagePath) {
-      const signed = await supabase.storage.from('post-images').createSignedUrl(imagePath, 3600);
+    if (preview.imagePath) {
+      const signed = await supabase.storage.from('post-images').createSignedUrl(preview.imagePath, 3600);
       imageUrl = signed.data?.signedUrl ?? '';
     }
+    return page(preview.title, 200, id, imageUrl, metadata);
 
-    return page(post.title, post.body, post.author_nickname, 200, id, imageUrl, metadata);
   } catch { return unavailable(503); }
 });
 
@@ -69,32 +66,14 @@ function unavailable(status: number) {
   return new Response(status === 503 ? '잠시 후 다시 시도해 주세요.' : '공개 글을 찾을 수 없어요.', { status, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow', 'X-Content-Type-Options': 'nosniff', ...(status === 405 ? { Allow: 'GET' } : {}) } });
 }
 
-function page(title: string, body: string, author: string, status: number, id = '', imageUrl = '', metadata?: ReturnType<typeof postSeo>) {
-  const safeTitle = escapeHtml(title);
-  const safeBody = postLinksHtml(body);
-  const safeAuthor = escapeHtml(author);
-  const deepLink = id ? `gling://post/${encodeURIComponent(id)}` : 'gling://';
-  const imageMeta = imageUrl ? `<meta property="og:image" content="${escapeHtml(imageUrl)}">` : '';
-  const image = imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="게시글 사진">` : '';
-  return new Response(`<!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${safeTitle} · gling</title><meta name="description" content="${escapeHtml(body.slice(0, 160))}">
-${metadata ? `<link rel="canonical" href="${metadata.canonical}"><link rel="alternate" type="text/markdown" href="${metadata.source}"><meta property="og:url" content="${metadata.canonical}"><script type="application/ld+json">${jsonLd(metadata.schema)}</script>` : ''}
-<meta property="og:type" content="article"><meta property="og:site_name" content="gling"><meta property="og:title" content="${safeTitle}"><meta property="og:description" content="${escapeHtml(body.slice(0, 160))}">${imageMeta}
-<style>body{margin:0;background:#f7f5ef;color:#17233f;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}main{max-width:680px;margin:0 auto;padding:32px 20px 72px}.logo{font-weight:800;color:#ef5b45;font-size:24px}article{margin-top:28px;background:#fff;border:1px solid #e3dfd5;border-radius:18px;padding:24px}h1{font-size:26px;line-height:1.3;margin:10px 0 14px}p{font-size:16px;line-height:1.7;white-space:pre-wrap}.author{color:#687085;font-size:14px}img{width:100%;max-height:520px;object-fit:cover;border-radius:12px;margin:14px 0}a{display:block;margin-top:24px;text-align:center;background:#ef5b45;color:#fff;text-decoration:none;padding:15px;border-radius:999px;font-weight:700}
-/* Inline destinations remain visible and use the same night accent as the app. */
-p{overflow-wrap:anywhere}.post-content{font-size:16px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}.post-content a.post-body-link{display:inline;margin:0;padding:0;border-radius:0;background:none;color:#CBB9FF;text-decoration:underline;font-weight:inherit}.post-link-attachments{display:block;margin-top:12px}.post-link-row{display:block}.post-content a.post-instagram-link{display:inline-flex;align-items:center;gap:7px;min-height:44px;max-width:100%;font-size:14px;text-align:left;text-decoration:none}.post-instagram-link svg{width:18px;height:18px;flex-shrink:0}.post-instagram-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}summary:active{opacity:.65}.post-link-confirm{display:inline}.post-link-confirm summary{display:inline-flex;align-items:center;min-height:44px;color:#CBB9FF;text-decoration:underline;cursor:pointer;overflow-wrap:anywhere}.post-link-confirm[open]{display:block}.post-link-disclosure{display:block;white-space:normal;padding:12px 0}.post-link-disclosure>span,.post-link-disclosure small{display:block}.post-link-disclosure small{font-size:12px;color:#B7B4C3}.post-link-disclosure a.post-body-link{display:inline-flex;min-height:44px;align-items:center}.post-link-row summary{font-size:14px}body{background:#0B0B12;color:#F6F3F0}article{background:#171722;border-color:#343443}.logo{color:#CBB9FF}.author{color:#B7B4C3}a{background:#CBB9FF;color:#171123}img{object-fit:contain;max-height:none;height:auto}
-</style></head><body><main><div class="logo">gling</div><article><div class="author">${safeAuthor}</div><h1>${safeTitle}</h1>${image}<div class="post-content">${safeBody}</div><a href="${deepLink}">앱에서 대화·참여하기</a><a href="https://gling.ej-entertainment.com/post?id=${encodeURIComponent(id)}">웹에서 이야기와 모임 둘러보기</a></article></main></body></html>`, {
-    status,
-    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
-      ...(metadata ? { Link: `<${metadata.canonical}>; rel="canonical"` } : {}),
-      'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',
-      'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; img-src https:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" },
-  });
+function page(title: string, status: number, id: string, imageUrl: string, metadata: ReturnType<typeof postSeo>) {
+  const safeTitle = escapeHtml(title), destination = `${PUBLIC_SITE}/post?id=${id}`;
+  return new Response(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${safeTitle} · 글링</title><meta name="description" content="${escapeHtml(metadata.description)}"><link rel="canonical" href="${destination}">
+<meta property="og:type" content="website"><meta property="og:site_name" content="글링"><meta property="og:title" content="${safeTitle}"><meta property="og:description" content="${escapeHtml(metadata.description)}"><meta property="og:url" content="${destination}">
+${imageUrl ? `<meta property="og:image" content="${escapeHtml(imageUrl)}">` : ''}<script type="application/ld+json">${jsonLd(metadata.schema)}</script>
+<style>body{margin:0;background:#0B0B12;color:#F6F3F0;font:16px/1.5 system-ui,sans-serif}main{max-width:600px;margin:40px auto;padding:20px}article{border:1px solid #343443;border-radius:16px;background:#171722;padding:20px}img{width:100%;border-radius:12px}a{display:flex;min-height:44px;align-items:center;justify-content:center;border-radius:12px;background:#CBB9FF;color:#171123;text-decoration:none;padding:12px}p{color:#B7B4C3}</style></head><body><main><article><h1>${safeTitle}</h1>${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="대표 이미지">` : ''}<p>${escapeHtml(metadata.description)}</p><a href="${destination}">로그인하고 전체 내용 보기</a></article></main></body></html>`, { status, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; img-src https:; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'" } });
 }
-
 function escapeHtml(value: string) {
-  return String(value).replace(/[&<>"']/g, (character) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  })[character]!);
+  return String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]!));
 }

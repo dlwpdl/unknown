@@ -16,7 +16,7 @@ const robots = readFileSync(join(directory, 'robots.txt'), 'utf8');
 assert.ok(robots.includes('Sitemap: https://gling.ej-entertainment.com/sitemap.xml') && robots.includes('format=sitemap&city='), 'Static and live public-post sitemaps are missing');
 assert.ok(robots.includes('Disallow: /merchant/') && robots.includes('Disallow: /admin'), 'Private surfaces must remain outside public discovery');
 assert.ok(readFileSync(join(directory, 'index.html'), 'utf8').includes('application/ld+json'), 'Public home structured data is missing');
-assert.ok(!/name="robots"[^>]*content="noindex/.test(readFileSync(join(directory, 'post.html'), 'utf8')), 'Shared post HTML must allow rendering before deciding visibility');
+assert.ok(/name="robots"[^>]*content="noindex/.test(readFileSync(join(directory, 'post.html'), 'utf8')), 'Login-protected detail route must not index private content');
 assert.ok(existsSync(join(directory, 'company.html')), 'Public company reader route is missing');
 const childSafety = readFileSync(join(directory, 'child-safety.html'), 'utf8');
 assert.ok(childSafety.includes('--bg:') && childSafety.includes('--text:'), 'Legal page must define readable background/text colors');
@@ -26,11 +26,13 @@ for (const text of ['아동 안전 표준', 'CSAE', 'CSAM', 'gling@ej-entertainm
 if (existsSync(join(directory, 'merchant'))) checkMerchantWeb(join(directory, 'merchant'));
 for (const file of readdirSync(directory, { recursive: true })) {
   if (file === 'merchant' || file.startsWith('merchant/')) continue;
-  assert.ok(!/(^|\/)(admin|chat|compose|profile|notifications|meetup-create|meetup-join|meetup-application|meetup-profile)(?:[./]|$)/.test(file), `App-only route in public export: ${file}`);
+  assert.ok(!/(^|\/)(admin|compose|notifications|meetup-create|user)(?:[./]|$)/.test(file), `Unrequested private route in public export: ${file}`);
+  if (/^profile\//.test(file)) assert.equal(file, 'profile/membership.html', `Unrequested profile route in public export: ${file}`);
   if (!/\.(html|js)$/.test(file)) continue;
   const content = readFileSync(join(directory, file), 'utf8');
-  for (const marker of ['get_admin_merchant_review_reply_content','start_merchant_conversation','set_saved_merchant','get_saved_merchants','save_merchant_contact','reply_to_merchant_review', 'get_admin_analytics', 'get_admin_merchants', 'save_admin_merchant', 'get_admin_merchant_review_content', 'get_admin_merchant_receipt_reviews', 'set_admin_merchant_review_receipt', 'get_my_merchant_reviews', 'write_merchant_review', 'merchant-review-receipts', 'get_my_merchant_profile', 'save_my_merchant_profile', 'MFA_ADMIN_CONNECTION_REQUIRED', 'GLING / INSIGHTS', 'send_message', 'send_direct_message', 'REVIEW_ACCESS_DENIED', 'create_meetup_with_post', 'get_my_conversations']) {
+  for (const marker of ['get_admin_trust_content','review_admin_trust_target','get_trust_safety_content','get_message_safety_context','get_admin_merchant_review_reply_content', 'get_admin_analytics', 'get_admin_merchants', 'save_admin_merchant', 'get_admin_merchant_review_content', 'get_admin_merchant_receipt_reviews', 'set_admin_merchant_review_receipt', 'get_my_merchant_profile', 'save_my_merchant_profile', 'MFA_ADMIN_CONNECTION_REQUIRED', 'GLING / INSIGHTS', 'create_meetup_with_post']) {
     assert.ok(!content.includes(marker), `App-only code (${marker}) in public export: ${file}`);
   }
 }
-console.log('Public web export contains no app-only routes, chat mutations or admin dashboard code.');
+for (const page of ['post.html', 'chat.html', 'meetup-join.html', 'meetup-profile.html', 'meetup-application.html', 'auth/callback.html', 'profile/membership.html']) assert.ok(existsSync(join(directory, page)), `Shared participant route missing: ${page}`);
+console.log('Public discovery, login and participant routes are present; admin-only code remains excluded.');

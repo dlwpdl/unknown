@@ -6,6 +6,7 @@ import ts from 'typescript';
 
 import { mergeChatMessages } from '../src/lib/community-data.ts';
 import * as chatDetails from '../src/lib/chat-details.ts';
+import { sharedLinkInMessage } from '../src/lib/sharing.ts';
 import { hideContent, isContentHidden, subscribeVisibility, visibilityRevision } from '../src/lib/content-visibility.ts';
 import { count, t } from '../src/i18n/ko.ts';
 
@@ -88,6 +89,8 @@ function mount(file, exportName, data, props = {}, params = {}) {
       // 하트 리액션 기본값: 테스트가 필요하면 data 로 덮어쓴다.
       if (name === '@/lib/community-data') return { mergeChatMessages, loadMessageReactions: async () => new Map(), setMessageReaction: async () => 1,
         loadChatReadPosition: async () => null, markChatRead: async () => {}, ...data };
+      if (name === '@/lib/sharing') return { sharedLinkInMessage };
+      if (name === '@/components/shared-link-card') return { SharedLinkCard: 'SharedLinkCard' };
       if (name === '@/lib/chat-details') return { ...chatDetails, ...(data.loadChatMembers ? { loadChatMembers: data.loadChatMembers } : {}) };
       if (name === '@/lib/supabase') return { supabase };
       return new Proxy({}, { get: (_target, key) => key });
@@ -345,4 +348,34 @@ test('a live message arriving during a foreground snapshot survives snapshot com
   harness.message(message(1)); await harness.timers();
   releaseSnapshot([message(0)]); await harness.settle(); await harness.timers();
   assert.equal(harness.messages().map(row => row.id).join(','), 'm000,m001');
+});
+
+
+test('chat bubbles attach protected cards only to owned plain-text links and keep ordinary/attachment messages unchanged', async context => {
+  const shared = 'https://gling.ej-entertainment.com/post?id=9f100000-0000-4000-8000-000000000001';
+  const rows = [
+    { ...message(1), body: `같이 가요!\n${shared}` },
+    { ...message(2), body: '평범한 안부 메시지' },
+    { ...message(3), body: shared.replace('gling.ej-entertainment.com', 'gling.ej-entertainment.com.evil.test') },
+    { ...message(4), body: shared, kind: 'image', imageUrl: 'signed-photo' },
+    { ...message(5), body: shared, kind: 'location', latitude: 49, longitude: -123 },
+  ];
+  const harness = room({ loadConversationMessages: async () => rows }); context.after(() => harness.cleanup()); await harness.settle();
+  const list = harness.nodes().find(node => node.type === 'FlatList'); assert.ok(list);
+  for (let index = 0; index < rows.length; index++) {
+    const item = list.props.renderItem({ item: rows[index], index });
+    const all = value => !value || typeof value !== 'object' ? [] : [value, ...Object.values(value).flatMap(v => Array.isArray(v) ? v.flatMap(all) : all(v))];
+    const cards = all(item).filter(node => node.type === 'SharedLinkCard'); assert.equal(cards.length, index === 0 ? 1 : 0);
+    if (cards.length) { assert.equal(cards[0].props.url, shared); assert.equal(cards[0].key, `${rows[index].id}:me`); }
+    if (index === 1) assert.ok(JSON.stringify(item).includes(rows[index].body), 'ordinary chat stays visible');
+  }
+});
+
+test('pending and rejected chat scopes never read messages or render shared cards', async context => {
+  for (const status of ['pending', 'rejected']) {
+    let reads = 0;
+    const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { loadConversationMessages: async () => { reads++; return []; } }, { ...roomProps, conversation: { ...conversation, status } });
+    context.after(() => harness.cleanup()); await harness.settle();
+    assert.equal(reads, 0); assert.ok(!harness.nodes().some(node => node.type === 'FlatList' || node.type === 'SharedLinkCard'));
+  }
 });

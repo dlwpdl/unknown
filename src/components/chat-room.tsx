@@ -10,6 +10,8 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ReportSheet } from '@/components/report-sheet';
+import { SharedLinkCard } from '@/components/shared-link-card';
+import { sharedLinkInMessage } from '@/lib/sharing';
 import { ChatMembers } from '@/components/chat-members';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
@@ -475,6 +477,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           const time = showChatMessageTime(message, messages[index + 1]) ? <ThemedText type="small" themeColor="textSecondary" style={mine ? styles.timeMine : undefined}>{chatMessageTime(message.created_at)}</ThemedText> : null;
           const reaction = reactions.get(message.id);
           const attachment = message.kind === 'image' || message.kind === 'location';
+          const sharedUrl = attachment ? null : sharedLinkInMessage(message.body);
           const content = message.kind === 'image'
             ? message.imageUrl ? <Image source={{ uri: message.imageUrl }} style={styles.chatPhoto} contentFit="cover" accessibilityLabel="대화에서 보낸 사진" />
               : <ThemedText type="small" themeColor="textSecondary">사진을 불러오지 못했어요</ThemedText>
@@ -502,6 +505,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
             {date && <ThemedText type="small" themeColor="textSecondary" style={styles.date}>{date}</ThemedText>}
             {mine ? <><Pressable analyticsId="components_chat-room.pressable.heart" onPress={(event: { nativeEvent?: { timestamp?: number } }) => onBubblePress(event?.nativeEvent?.timestamp ?? 0)} accessibilityRole={message.kind === 'location' ? 'link' : 'button'} accessibilityLabel={attachment ? message.kind === 'image' ? '사진 크게 보기' : '공유한 위치 지도에서 열기' : '메시지에 하트 (두 번 탭)'} style={[styles.bubbleMine, { backgroundColor: attachment ? theme.card : theme.accent }]}>{content}</Pressable>{heart}{time}</>
               : <View style={styles.row}><View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" themeColor="navy">{author.nickname[0]}</ThemedText></View><View style={styles.rowBody}><ThemedText type="smallBold">{author.nickname}</ThemedText><Pressable analyticsId="components_chat-room.pressable.heart" onPress={(event: { nativeEvent?: { timestamp?: number } }) => onBubblePress(event?.nativeEvent?.timestamp ?? 0)} accessibilityRole={message.kind === 'location' ? 'link' : 'button'} accessibilityLabel={attachment ? message.kind === 'image' ? '사진 크게 보기' : '공유한 위치 지도에서 열기' : '메시지에 하트 (두 번 탭)'} style={[styles.bubble, { backgroundColor: theme.card, borderColor: theme.line }]}>{content}</Pressable>{heart}{time}<View style={styles.messageActions}><RoomAction label={t.report.short} onPress={() => setReport({ targetType: 'message', targetId: message.id, reportedUserId: author.id, reportedNickname: author.nickname })} />{group && <RoomAction label={t.chat.block} onPress={() => void block(author.id)} />}</View></View></View>}
+            {sharedUrl && <SharedLinkCard key={`${message.id}:${currentUserId}`} url={sharedUrl} />}
           </View>;
         }} />{awayFromLatest && <Pressable analyticsId="components_chat-room.jump-latest" accessibilityRole="button" accessibilityLabel="최근 메시지로 내려가기" onPress={() => { play('selection'); followingLatest.current = true; setAwayFromLatest(false); messageList.current?.scrollToEnd({ animated: true }); }} style={[styles.jumpLatest, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="smallBold" themeColor="accent">↓ 최근 메시지</ThemedText></Pressable>}</View> : <View style={styles.request}><ThemedText type="small" themeColor="textSecondary">처리되거나 취소된 요청이에요. 대화 목록에서 새로 확인해 주세요.</ThemedText></View>}
       {!!error && <ThemedText accessibilityRole="alert" type="small" themeColor="accent" style={styles.feedback}>{error}</ThemedText>}{notice && <ThemedText type="small" accessibilityLiveRegion="polite" style={styles.feedback}>{notice}</ThemedText>}
