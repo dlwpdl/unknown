@@ -28,6 +28,7 @@ export type ConversationPage = {
 export type ConversationMessage = {
   id: string; conversation_id: string; sender_id: string; body: string; created_at: string;
   image_path?: string | null; reply_to_id?: string | null;
+  kind?: 'text' | 'image' | 'location'; latitude?: number | null; longitude?: number | null;
 };
 export type ConversationSignal = {
   id: string; source: 'keyword' | 'ai'; message_id: string; message_at: string | null;
@@ -71,7 +72,12 @@ export async function saveAdminConversationReview(client: SupabaseClient, conver
 }
 
 export function mergeConversationMessages(current: ConversationMessage[], next: ConversationMessage[]): ConversationMessage[] {
-  // Keep the database's microsecond timestamp strings; Date would lose cursor precision.
+  // Preserve raw cursor timestamps and use microseconds to break Date's millisecond ties.
   return [...new Map([...current, ...next].map(message => [message.id, message])).values()]
-    .sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
+    .sort((a, b) => {
+      const millis = Date.parse(a.created_at) - Date.parse(b.created_at);
+      const micros = Number((a.created_at.match(/\.(\d+)/)?.[1] ?? '').padEnd(6, '0'))
+        - Number((b.created_at.match(/\.(\d+)/)?.[1] ?? '').padEnd(6, '0'));
+      return millis || micros || a.id.localeCompare(b.id);
+    });
 }
