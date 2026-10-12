@@ -1,7 +1,7 @@
 import { Pressable } from '@/components/analytics-controls';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Alert, Modal, StyleSheet, View } from 'react-native';
+import { Alert, Modal, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ReportSheet } from '@/components/report-sheet';
@@ -112,19 +112,19 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
                     : user.verified || user.trustLevel === 2 ? t.profileSheet.verifiedL2
                     : t.profileSheet.verifiedL1}
                 </ThemedText>
-                {user.mine && (
+                {user.mine && Platform.OS !== 'web' && (
                   <Pressable analyticsId="components_user-sheet.pressable.3" onPress={() => navigate('/profile')} accessibilityRole="button" style={({ pressed }) => [styles.cta, Depth.control, { backgroundColor: theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
                     <ThemedText type="smallBold">{t.tabs.profile}</ThemedText>
                   </Pressable>
                 )}
                 {!user.mine && user.id && (
                   <>
-                    <Pressable analyticsId="components_user-sheet.pressable.7"
+                    {Platform.OS !== 'web' && <Pressable analyticsId="components_user-sheet.pressable.7"
                       onPress={() => navigate({ pathname: '/user/[id]', params: { id: user.id!, nickname: user.nickname } })}
                       accessibilityRole="button"
                       style={({ pressed }) => [styles.cta, Depth.control, { backgroundColor: theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
                       <ThemedText type="smallBold">{t.authorPosts.open}</ThemedText>
-                    </Pressable>
+                    </Pressable>}
                     <RaisedActionButton analyticsId="components_user-sheet.pressable.4" onPress={() => void requestChat(user)} disabled={requesting} busy={requesting} label={requesting ? t.chat.joinSending : t.profileSheet.chatRequest} />
                     <Pressable analyticsId="components_user-sheet.pressable.5" onPress={() => { play('selection'); setReporting(user); onClose(); }} accessibilityRole="button"
                       style={({ pressed }) => [styles.cta, Depth.control, { backgroundColor: theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}>

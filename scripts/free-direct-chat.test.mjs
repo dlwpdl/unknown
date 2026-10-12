@@ -15,7 +15,7 @@ function profile({ authenticated = true, failure } = {}) {
   vm.runInNewContext(source, { exports, require(name) {
     if (name === 'react') return { useEffect() {}, useRef: value => ({ current: value }), useState: value => [value, () => {}] };
     if (name === 'react/jsx-runtime') return elements;
-    if (name === 'react-native') return { Modal: 'Modal', View: 'View', StyleSheet: { create: value => value }, Alert: { alert: (...args) => alerts.push(args) } };
+    if (name === 'react-native') return { Modal: 'Modal', View: 'View', Platform: { OS: 'ios' }, StyleSheet: { create: value => value }, Alert: { alert: (...args) => alerts.push(args) } };
     if (name === '@/components/analytics-controls') return { Pressable: 'Pressable' };
     if (name === 'expo-router') return { useRouter: () => ({ push: route => routes.push(route) }) };
     if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ bottom: 0 }) };

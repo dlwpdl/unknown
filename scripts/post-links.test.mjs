@@ -20,7 +20,7 @@ test('본문 링크는 실제 HTTPS 목적지만 활성화한다', () => {
   }
 });
 
-test('실제 공유 페이지는 공개 글만 읽고 안전한 본문 링크와 보호 헤더를 반환한다', async () => {
+test('the public share page reads metadata only and retains protection headers', async () => {
   let handler;
   const source = ts.transpileModule(fs.readFileSync(new URL('../supabase/functions/public-post/index.ts', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS },
@@ -31,8 +31,8 @@ test('실제 공유 페이지는 공개 글만 읽고 안전한 본문 링크와
       if (name === '../_shared/post-links.ts') return { postLinksHtml };
       if (name.endsWith('public-seo.ts')) return publicSeo;
       return { createClient: () => ({ rpc: async (name, args) => {
-        assert.equal(name, 'get_public_post'); assert.equal(args.p_post_id, id);
-        return { data: [{ title: '<제목>', body: '웹사이트: https://shop.ca/\n<script>bad()</script> https://instagram.com.evil.ca/', author_nickname: '가게', image_paths: [] }] };
+        assert.equal(name, 'get_shared_link_preview'); assert.equal(args.p_post_id, id);
+        return { data: { id, title: '<제목>', body: '웹사이트: https://shop.ca/\n<script>bad()</script> https://instagram.com.evil.ca/', city: '밴쿠버', label: '비즈니스', imagePath: null } };
       } }) };
     } });
   const result = await handler(new Request(`https://project.supabase.co/functions/v1/public-post?id=${id}`));
@@ -40,7 +40,9 @@ test('실제 공유 페이지는 공개 글만 읽고 안전한 본문 링크와
   assert.equal(result.headers.get('referrer-policy'), 'no-referrer');
   assert.equal(result.headers.get('x-content-type-options'), 'nosniff');
   const html = await result.text();
-  assert.ok(html.includes('href="https://shop.ca/"'));
+  assert.ok(html.includes('&lt;제목&gt;'));
+  assert.ok(!html.includes('https://shop.ca/'));
+  assert.ok(html.includes('로그인하고 전체 내용 보기'));
   assert.ok(!html.includes('href="https://instagram.com.evil.ca/"'));
   assert.ok(!html.includes('<script>'));
   assert.ok(!html.includes('</style>\n/*'), '스타일 밖으로 CSS가 새지 않는다');

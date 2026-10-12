@@ -66,7 +66,7 @@ function JoinForm({ postId }: { postId: string }) {
   // retry deliberately re-runs the focused screen's load after an explicit retry.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthed, me.id, postId, retry]));
-  const back = () => router.canGoBack() ? router.back() : router.replace('/(tabs)/meetups');
+  const back = () => router.canGoBack() ? router.back() : router.replace(Platform.OS === 'web' ? '/?tag=meetup' : '/(tabs)/meetups');
   const unavailable = !post?.room || hidden('post', post.id, post.author.id);
   const availability = errorCode === 'MEETUP_FULL' ? 'full' : errorCode === 'MEETUP_EXPIRED' ? 'ended'
     : errorCode === 'MEETUP_CLOSED' ? 'closed' : chillingAvailability(post?.room ?? {}, now);
@@ -129,7 +129,7 @@ function JoinForm({ postId }: { postId: string }) {
               : own ? <ThemedText>내가 개최한 모임이에요. 대화 탭에서 신청자를 확인할 수 있어요.</ThemedText>
                 : inactive ? <><ThemedText type="subtitle">{post!.title}</ThemedText>
                     <StateCard kind="blocked" title={availability === 'ended' ? '종료된 모임이에요' : '모집이 마감됐어요'} body={`${status ? `내 신청 · ${{ pending: '승인 대기', approved: '이전에 승인됨', rejected: '거절됨', cancelled: '취소됨' }[status]}. ` : ''}새 참여 신청과 승인을 할 수 없어요.${status === 'approved' ? '승인 기록이 있어도 종료된 모임 대화에는 입장할 수 없어요.' : ''}`} />
-                    <Pressable analyticsId="app_meetup-join.pressable.3" accessibilityRole="button" onPress={() => { play('selection'); router.replace('/(tabs)/meetups'); }} style={styles.button}><ThemedText themeColor="accent">다른 모임 찾기</ThemedText></Pressable>
+                    <Pressable analyticsId="app_meetup-join.pressable.3" accessibilityRole="button" onPress={() => { play('selection'); router.replace(Platform.OS === 'web' ? '/?tag=meetup' : '/(tabs)/meetups'); }} style={styles.button}><ThemedText themeColor="accent">다른 모임 찾기</ThemedText></Pressable>
                   </>
                 : result ? <>
                     <ThemedText type="subtitle">{post!.title}</ThemedText>
@@ -153,7 +153,7 @@ function JoinForm({ postId }: { postId: string }) {
                     <View style={[styles.summary, { borderColor: theme.line }]}><ChillingEventSchedule room={post!.room!} /></View>
                     {post!.room!.recommendedAgeMin != null && <>
                       <ThemedText type="small" themeColor="textSecondary">{recommendedAgeMessage(post!.room!, recommendationAge)}</ThemedText>
-                      {recommendationAge == null && <Pressable analyticsId="app_meetup-join.pressable.4" onPress={() => { play('selection'); router.push('/profile/settings'); }} accessibilityRole="button" style={styles.button}><ThemedText type="small" themeColor="accent">계정 정보·이용 목적 확인하기</ThemedText></Pressable>}
+                      {recommendationAge == null && Platform.OS !== 'web' && <Pressable analyticsId="app_meetup-join.pressable.4" onPress={() => { play('selection'); router.push('/profile/settings'); }} accessibilityRole="button" style={styles.button}><ThemedText type="small" themeColor="accent">계정 정보·이용 목적 확인하기</ThemedText></Pressable>}
                     </>}
                     <MeetupPolicyNotice mode="join" />
                     {modern && !profile ? <>

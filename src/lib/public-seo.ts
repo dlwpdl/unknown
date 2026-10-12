@@ -1,6 +1,3 @@
-import { postMapBody } from './post-maps.ts';
-import { visibleMeetupBody } from './meetup-ai.ts';
-
 export const PUBLIC_SITE = 'https://gling.ej-entertainment.com';
 export const PUBLIC_SOURCE = 'https://wjvahbdwmctzpkndqaxa.supabase.co/functions/v1/public-post';
 
@@ -13,20 +10,17 @@ export function postSeo(post: {
   createdAt?: string; imageUris?: string[]; room?: unknown;
 }, city = '') {
   const canonical = `${PUBLIC_SITE}/post?id=${encodeURIComponent(post.id)}`;
-  const mapped = postMapBody(post.body);
-  const body = post.room ? visibleMeetupBody(mapped.body) : mapped.body;
-  const description = Array.from([city, post.tag.label, body.replace(/\s+/g, ' ').trim()].filter(Boolean).join(' · ')).slice(0, 160).join('');
+  const description = [city, post.tag.label, '로그인 후 전체 내용을 확인해요.'].filter(Boolean).join(' · ');
   const published = post.createdAt && Number.isFinite(Date.parse(post.createdAt)) ? new Date(post.createdAt).toISOString() : undefined;
   const images = post.imageUris?.filter(Boolean) ?? [];
   return {
     canonical, source: `${PUBLIC_SOURCE}?format=markdown&id=${encodeURIComponent(post.id)}`,
-    title: `${post.title} | 글링`, description, body, published, mapUrl: mapped.url,
+    title: `${post.title} | 글링`, description, published,
     schema: {
       '@context': 'https://schema.org', '@type': 'WebPage', url: canonical, inLanguage: 'ko',
       mainEntity: {
-        '@type': 'SocialMediaPosting', url: canonical, mainEntityOfPage: canonical,
-        headline: post.title, text: body, articleSection: post.tag.label, inLanguage: 'ko',
-        author: { '@type': 'Person', name: post.author.nickname },
+        '@type': 'WebPage', url: canonical, mainEntityOfPage: canonical,
+        headline: post.title, articleSection: post.tag.label, inLanguage: 'ko',
         ...(published ? { datePublished: published } : {}),
         ...(images.length ? { image: images } : {}),
       },
