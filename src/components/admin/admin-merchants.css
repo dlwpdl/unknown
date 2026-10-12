@@ -21,20 +21,22 @@
 .merchant-search input { width:0; flex:1; min-width:0; }
 .merchant-search button { flex-shrink:0; white-space:nowrap; }
 .merchant-directory-scroll { background:var(--admin-card); overflow:auto; border:1px solid var(--admin-line); border-radius:12px; }
-.merchant-directory-table { width:100%; min-width:1090px; table-layout:fixed; border-collapse:collapse; text-align:left; font-size:13px; }
+.merchant-directory-table { width:100%; min-width:1280px; table-layout:fixed; border-collapse:collapse; text-align:left; font-size:13px; }
 .merchant-table-caption { text-align:left; padding:10px 12px; color:var(--admin-muted); background:var(--admin-paper); border-bottom:1px solid var(--admin-line); }
 .merchant-directory-table thead th { background:var(--admin-subtle); color:var(--admin-muted); font-weight:500; padding:8px 12px; }
 .merchant-directory-table :is(th,td) { border-bottom:1px solid var(--admin-line); padding:4px 12px; }
 .merchant-directory-table tbody tr:last-child :is(th,td) { border-bottom:0; }
-.merchant-directory-table th:first-child { width:22%; }
-.merchant-directory-table th:nth-child(2) { width:14%; }
-.merchant-directory-table th:nth-child(3) { width:15%; }
-.merchant-directory-table th:nth-child(4) { width:20%; }
-.merchant-directory-table th:nth-child(5) { width:12%; }
-.merchant-directory-table th:nth-child(6) { width:9%; }
-.merchant-directory-table th:nth-child(n+7) { width:4%; text-align:right; }
+.merchant-directory-table thead th:first-child { width:52px; }
+.merchant-directory-table thead th:nth-child(2) { width:20%; }
+.merchant-directory-table thead th:nth-child(3) { width:12%; }
+.merchant-directory-table thead th:nth-child(4) { width:12%; }
+.merchant-directory-table thead th:nth-child(5) { width:18%; }
+.merchant-directory-table thead th:nth-child(6) { width:10%; }
+.merchant-directory-table thead th:nth-child(7) { width:8%; }
+.merchant-directory-table thead th:nth-child(8),.merchant-directory-table thead th:nth-child(9) { width:44px; text-align:right; }
+.merchant-directory-table thead th:last-child { width:140px; }
 .merchant-directory-table tbody tr { cursor:pointer; }
-.merchant-directory-table tbody tr:is(:hover,[data-selected="true"]) { background:var(--admin-subtle); }
+.merchant-directory-table tbody tr:is(:hover,[data-selected="true"],[data-checked="true"]) { background:var(--admin-subtle); }
 .merchant-directory-table tbody button { display:flex; flex-direction:column; justify-content:center; align-items:flex-start; width:100%; padding:2px 0; gap:0; border:0; border-radius:4px; text-align:left; background:transparent; }
 .merchant-directory-table tbody button[aria-pressed="true"] { background:transparent; }
 .merchant-directory-table strong { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; line-height:20px; }
@@ -49,6 +51,14 @@
 .merchant-count { text-align:right; font-weight:600; }
 .merchant-pager,.merchant-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:16px 0 0; }
 .merchant-pager { justify-content:space-between; }
+.merchant-batch-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; margin-bottom:16px; }
+.merchant-batch-actions > span { color:var(--admin-muted); }
+.merchant-admin label.merchant-select { display:flex; flex-direction:row; align-items:center; justify-content:center; gap:8px; min-width:44px; min-height:44px; margin:0; cursor:pointer; }
+.merchant-admin .merchant-select input[type=checkbox] { width:20px; height:20px; min-width:20px; min-height:20px; flex:0 0 20px; padding:0; margin:0; accent-color:var(--admin-accent); }
+.merchant-directory-table .merchant-select-cell { padding:4px; }
+.merchant-row-actions { display:flex; gap:8px; }
+.merchant-directory-table .merchant-row-actions button { display:inline-flex; align-items:center; justify-content:center; width:auto; min-width:44px; padding:0 10px; border:1px solid var(--admin-line); border-radius:8px; background:var(--admin-paper); }
+.merchant-admin button.merchant-danger { color:var(--admin-danger); border-color:var(--admin-danger); }
 .merchant-dialog { color:var(--admin-ink); font:inherit; background:var(--admin-paper); width:min(860px,calc(100% - 48px)); max-width:none; height:calc(100% - 32px); max-height:none; margin:16px 16px 16px auto; padding:0; border:1px solid var(--admin-line); border-radius:12px; box-shadow:0 20px 80px #25263133; }
 .merchant-dialog::backdrop { background:#0B0B1266; }
 .merchant-workspace { min-width:0; padding:0 24px 24px; }
@@ -112,7 +122,9 @@
   .merchant-directory-table tbody tr { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 16px; padding:16px; border-bottom:1px solid var(--admin-line); }
   .merchant-directory-table tbody tr:last-child { border-bottom:0; }
   .merchant-directory-table tbody :is(th,td) { padding:0; height:auto; min-width:0; border:0; background:transparent; text-align:left; }
-  .merchant-directory-table tbody th:first-child { grid-column:1 / -1; width:auto; }
+  .merchant-directory-table tbody th { grid-column:1 / -1; grid-row:1; width:auto; padding-right:52px; }
+  .merchant-directory-table tbody .merchant-select-cell { grid-column:2; grid-row:1; justify-self:end; z-index:1; }
+  .merchant-directory-table tbody .merchant-select-cell::before { display:none; }
   .merchant-directory-table tbody td::before { display:block; content:attr(data-label); margin-bottom:4px; color:var(--admin-muted); font-size:11px; }
 }
 
