@@ -70,7 +70,11 @@ Deno.serve(async (request) => {
     } catch (error) {
       failed += 1;
       const message = error instanceof Error ? error.message : 'SAFETY_REVIEW_FAILED';
-      await completeReview(supabase, item, content, null, message.slice(0, 300));
+      try {
+        await completeReview(supabase, item, content, null, message.slice(0, 300));
+      } catch (recordError) {
+        console.error('safety failure recording failed', item.id, recordError instanceof Error ? recordError.message : 'unknown');
+      }
       console.error('safety review failed', item.id, message.slice(0, 120));
     }
   }

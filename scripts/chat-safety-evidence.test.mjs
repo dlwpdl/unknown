@@ -66,3 +66,33 @@ test('oversized input fails before a provider call instead of discarding its tai
   await assert.rejects(worker.analyze('offline', 'message', 'x'.repeat(14039) + 'retained-danger-marker'), /SAFETY_CONTENT_TOO_LONG/);
   assert.equal(calls, 0);
 });
+
+test('a failed message completion and failure RPC cannot stop the following post', async () => {
+  let modelCalls = 0, postReads = 0, messageCompletions = 0;
+  const client = { rpc: async name => {
+    if (name === 'claim_safety_reviews_v2') return { data: [
+      { id: 1, target_type: 'message', target_id: 'message', content_hash: 'hash', claimed_at: 'lease' },
+      { id: 2, target_type: 'post', target_id: 'post' },
+    ] };
+    if (name === 'get_message_safety_content') return { data: { authorId: 'author', text: 'message', scan: { historyId: 1, offset: 0 } } };
+    if (name === 'complete_message_safety_review') { messageCompletions += 1; return { error: new Error('COMPLETION_UNAVAILABLE') }; }
+    if (name === 'complete_safety_review') return { error: null };
+    assert.fail(name);
+  }, from: table => ({ select: () => ({ eq: () => ({ maybeSingle: async () => {
+    if (table === 'profiles') return { data: { ai_safety_consent_at: 'yes' } };
+    assert.equal(table, 'posts'); postReads += 1;
+    return { data: { author_id: 'author', title: 'post', body: 'body', hashtags: [] } };
+  } }) }) }) };
+  const worker = runtime(client, async () => {
+    modelCalls += 1;
+    return { ok: true, json: async () => ({ output: [{ content: [{ type: 'output_text', text: '{"riskScore":0,"riskLevel":"low","reasons":["none"]}' }] }] }) };
+  });
+  const response = await worker.handle(new Request('https://offline.test', { method: 'POST', headers: { 'x-safety-secret': 'offline' }, body: '{"limit":2}' }));
+  assert.equal(response.status, 200);
+  assert.equal(modelCalls, 2);
+  assert.equal(postReads, 1);
+  assert.equal(messageCompletions, 2);
+  const result = await response.json();
+  assert.equal(result.failed, 1);
+  assert.equal(result.reviewed, 1);
+});
