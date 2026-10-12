@@ -37,7 +37,6 @@ function cardRenderer(component = 'PostCard') {
       Linking: { openURL: (url) => { openedMaps.push(url); return mapFailure ? Promise.reject(new Error('offline')) : Promise.resolve(); } },
       Alert: { alert: (...args) => alerts.push(args) } },
     'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' }, useReducedMotion: () => true,
-      useAnimatedRef: () => ({}), getRelativeCoords: (_ref, x, y) => ({ x, y }),
       useSharedValue: (initial) => ({ value: initial, get() { return this.value; }, set(value) { this.value = value; } }), useAnimatedStyle: (fn) => fn(), runOnJS: (fn) => fn },
     'react-native-gesture-handler': { GestureHandlerRootView: 'GestureRoot', GestureDetector: 'GestureDetector', Gesture: {
       Pan: () => ({ minDistance() { return this; }, averageTouches() { return this; }, onChange() { return this; } }),

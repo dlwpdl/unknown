@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
 import { type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollView as NativeScrollView, Modal, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { getRelativeCoords, runOnJS, useAnimatedRef, useAnimatedStyle, useReducedMotion, useSharedValue } from 'react-native-reanimated';
+import Animated, { runOnJS, useAnimatedStyle, useReducedMotion, useSharedValue } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
@@ -21,7 +21,6 @@ const directions = [
 ];
 
 export function PostPhotoGallery({ post }: { post: Post }) {
-  'use no memo'; // shortcut: remove when React Compiler recognizes Gesture Handler's post-render ref callbacks.
   const theme = useTheme();
   const { isAuthed, me } = useAuth();
   const { play } = useInteractionFeedback();
@@ -45,7 +44,7 @@ export function PostPhotoGallery({ post }: { post: Post }) {
   const alignedLayout = useRef('');
   const x = useSharedValue(0), y = useSharedValue(0), scale = useSharedValue(1), pinchStart = useSharedValue(1);
   const pinchAnchor = useSharedValue<{ x: number; y: number } | null>(null);
-  const viewportRef = useAnimatedRef<View>();
+  const viewportRef = useRef<View>(null), viewportOrigin = useSharedValue({ x: 0, y: 0 });
   const fullIndex = viewer?.key === galleryKey ? viewer.index : null;
   const resetZoom = () => { setZoomed(false); scale.set(1); x.set(0); y.set(0); };
   const close = () => { play('selection'); setViewer(null); resetZoom(); };
@@ -84,13 +83,13 @@ export function PostPhotoGallery({ post }: { post: Post }) {
     Gesture.Pan().minDistance(0).averageTouches(true).onChange(({ changeX, changeY, numberOfPointers }) => { if (numberOfPointers === 1) move(changeX, changeY); }),
     Gesture.Pinch().onStart(({ focalX, focalY }) => {
       pinchStart.set(scale.get());
-      const focal = Platform.OS === 'web' ? getRelativeCoords(viewportRef, focalX, focalY) : { x: focalX, y: focalY };
-      pinchAnchor.set(focal ? { x: (focal.x - viewport.width / 2 - x.get()) / scale.get(), y: (focal.y - viewport.height / 2 - y.get()) / scale.get() } : null);
+      const origin = Platform.OS === 'web' ? viewportOrigin.get() : { x: 0, y: 0 };
+      pinchAnchor.set({ x: (focalX - origin.x - viewport.width / 2 - x.get()) / scale.get(), y: (focalY - origin.y - viewport.height / 2 - y.get()) / scale.get() });
     }).onUpdate(({ scale: amount, focalX, focalY }) => {
       const next = Math.max(1, Math.min(4, pinchStart.get() * amount)), anchor = pinchAnchor.get();
-      const focal = Platform.OS === 'web' ? getRelativeCoords(viewportRef, focalX, focalY) : { x: focalX, y: focalY };
-      if (!focal || !anchor) return;
-      const dx = focal.x - viewport.width / 2 - anchor.x * next - x.get(), dy = focal.y - viewport.height / 2 - anchor.y * next - y.get();
+      const origin = Platform.OS === 'web' ? viewportOrigin.get() : { x: 0, y: 0 };
+      if (!anchor) return;
+      const dx = focalX - origin.x - viewport.width / 2 - anchor.x * next - x.get(), dy = focalY - origin.y - viewport.height / 2 - anchor.y * next - y.get();
       scale.set(next);
       move(dx, dy);
     }).onFinalize(() => { runOnJS(setZoomed)(scale.get() > 1); }),
@@ -163,7 +162,10 @@ export function PostPhotoGallery({ post }: { post: Post }) {
           </Pressable>
         </View>
         <GestureHandlerRootView style={{ flex: 1 }}><GestureDetector gesture={gestures}><View ref={viewportRef} testID="post-photo-viewport" style={styles.fullContent} collapsable={false}
-          onLayout={({ nativeEvent: { layout: { width, height } } }) => setViewport(previous => previous.width === width && previous.height === height ? previous : { width, height })}
+          onLayout={({ nativeEvent: { layout: { width, height } } }) => {
+            setViewport(previous => previous.width === width && previous.height === height ? previous : { width, height });
+            if (Platform.OS === 'web') viewportRef.current?.measureInWindow((x, y) => viewportOrigin.set({ x, y }));
+          }}
           accessible accessibilityRole="image" accessibilityLabel={`${post.title} 사진 ${fullIndex + 1} 원본`}
           accessibilityHint={zoomed ? '사진을 끌어서 원하는 부분을 볼 수 있어요.' : '확대 버튼으로 사진을 자세히 볼 수 있어요.'}
           accessibilityActions={zoomed ? directions : []} onAccessibilityAction={({ nativeEvent: { actionName } }) => moveDirection(actionName)}>

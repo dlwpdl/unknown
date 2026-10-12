@@ -36,7 +36,6 @@ function loadGallery(page = null, width = 390, platform = 'ios') {
       __esModule: true, default: { View: 'AnimatedView' }, useReducedMotion: () => true, runOnJS: (fn) => fn,
       useSharedValue: (initial) => refs[refCall++] ??= { value: initial, get() { return this.value; }, set(value) { this.value = value; } },
       useAnimatedStyle: (fn) => Object.defineProperty({}, 'transform', { enumerable: true, get: () => fn().transform }),
-      useAnimatedRef: () => ({}), getRelativeCoords: (_ref, x, y) => ({ x, y: y - 48 }),
     };
     if (name === 'react-native-gesture-handler') {
       const gesture = (type) => ({ type, handlers: {}, minDistance() { return this; }, averageTouches() { return this; },
@@ -61,7 +60,7 @@ function loadGallery(page = null, width = 390, platform = 'ios') {
     pending = [];
     const tree = exports.PostPhotoGallery(props);
     for (const node of nodes(tree)) if (node.props?.ref && !node.props.ref.current) {
-      node.props.ref.current = { scrollTo: (options) => scrolls.push({ id: node.props.analyticsId, ...options }) };
+      node.props.ref.current = { scrollTo: (options) => scrolls.push({ id: node.props.analyticsId, ...options }), measureInWindow: callback => callback(0, 48, 390, 500) };
     }
     pending.forEach(callback => callback());
     return tree;
