@@ -11,17 +11,17 @@ insert into auth.users(id,email,raw_app_meta_data) values
 insert into public.profiles(id,nickname,city_id,terms_accepted_at,privacy_accepted_at,ai_safety_consent_at,consent_version)
 select id,'업체분류검사'||right(id::text,1),'vancouver',now(),now(),now(),'test' from auth.users where id::text like '13900000-%';
 update public.profiles set account_status='suspended' where id='13900000-0000-4000-8000-000000000004';
-insert into private.merchants(id,name,city_id,contact,status,consent,consent_note,owner_id,owner_verified_at) values
-('13910000-0000-4000-8000-000000000001','분류 검사 업체','vancouver','private contact sentinel','trial','granted','private consent sentinel','13900000-0000-4000-8000-000000000001',now()),
-('13910000-0000-4000-8000-000000000002','분류 다른 업체','vancouver','','paid','granted','검사 허가','13900000-0000-4000-8000-000000000005',now()),
-('13910000-0000-4000-8000-000000000003','분류 중단 업체','vancouver','','trial','granted','검사 허가','13900000-0000-4000-8000-000000000001',now()),
-('13910000-0000-4000-8000-000000000004','분류 철회 업체','vancouver','','trial','granted','검사 철회','13900000-0000-4000-8000-000000000001',now()),
-('13910000-0000-4000-8000-000000000005','분류 대기 업체','vancouver','','lead','granted','검사 허가','13900000-0000-4000-8000-000000000001',now()),
-('13910000-0000-4000-8000-000000000006','분류 미동의 업체','vancouver','','trial','pending','','13900000-0000-4000-8000-000000000001',now()),
-('13910000-0000-4000-8000-000000000007','분류 미연결 업체','vancouver','','trial','granted','검사 허가','13900000-0000-4000-8000-000000000001',now()),
-('13910000-0000-4000-8000-000000000008','분류 삭제글 업체','vancouver','','trial','granted','검사 허가','13900000-0000-4000-8000-000000000001',now()),
-('13910000-0000-4000-8000-000000000009','분류 비활성 업체','vancouver','','trial','granted','검사 허가','13900000-0000-4000-8000-000000000001',now()),
-('13910000-0000-4000-8000-000000000010','분류 종료채용 업체','vancouver','','trial','granted','검사 허가','13900000-0000-4000-8000-000000000001',now());
+insert into private.merchants(id,name,city_id,contact,status,consent,consent_note,owner_id,owner_verified_at,record_kind) values
+('13910000-0000-4000-8000-000000000001','분류 검사 업체','vancouver','private contact sentinel','trial','granted','private consent sentinel','13900000-0000-4000-8000-000000000001',now(),'business'),
+('13910000-0000-4000-8000-000000000002','분류 다른 업체','vancouver','','paid','granted','검사 허가','13900000-0000-4000-8000-000000000005',now(),'business'),
+('13910000-0000-4000-8000-000000000003','분류 중단 업체','vancouver','','trial','granted','검사 허가','13900000-0000-4000-8000-000000000001',now(),'business'),
+('13910000-0000-4000-8000-000000000004','분류 철회 업체','vancouver','','trial','granted','검사 철회','13900000-0000-4000-8000-000000000001',now(),'business'),
+('13910000-0000-4000-8000-000000000005','분류 대기 업체','vancouver','','lead','granted','검사 허가','13900000-0000-4000-8000-000000000001',now(),'business'),
+('13910000-0000-4000-8000-000000000006','분류 미동의 업체','vancouver','','trial','pending','','13900000-0000-4000-8000-000000000001',now(),'business'),
+('13910000-0000-4000-8000-000000000007','분류 미연결 업체','vancouver','','trial','granted','검사 허가','13900000-0000-4000-8000-000000000001',now(),'business'),
+('13910000-0000-4000-8000-000000000008','분류 삭제글 업체','vancouver','','trial','granted','검사 허가','13900000-0000-4000-8000-000000000001',now(),'business'),
+('13910000-0000-4000-8000-000000000009','분류 비활성 업체','vancouver','','trial','granted','검사 허가','13900000-0000-4000-8000-000000000001',now(),'business'),
+('13910000-0000-4000-8000-000000000010','분류 종료채용 업체','vancouver','','trial','granted','검사 허가','13900000-0000-4000-8000-000000000001',now(),'business');
 
 -- Read/pagination fixtures need the existing grandfathered trial to be current; new-tier quota boundaries are checked in membership_business_usage.
 update private.merchants set trial_ends_at=current_date+1 where id='13910000-0000-4000-8000-000000000001';

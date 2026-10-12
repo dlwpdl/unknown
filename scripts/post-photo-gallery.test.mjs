@@ -4,7 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-function loadGallery() {
+function loadGallery(page = null) {
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/post-photo-gallery.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
@@ -14,7 +14,7 @@ function loadGallery() {
   vm.runInNewContext(source, { exports, require(name) {
     if (name === 'expo-image') return { Image: (props) => ({ type: 'Image', props }) };
     // 첫 상태는 화면 폭이다. 측정된 폭(390)을 바로 넣어 스크롤이 그려진 트리를 확인한다.
-    if (name === 'react') return { useCallback: (fn) => fn, useState: (initial) => [stateCall++ === 0 ? 390 : typeof initial === 'function' ? initial() : initial, () => {}] };
+    if (name === 'react') return { useCallback: (fn) => fn, useState: (initial) => [stateCall++ === 0 ? 390 : stateCall === 2 ? page : typeof initial === 'function' ? initial() : initial, () => {}] };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
 
     if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ top: 44, bottom: 34 }) };
@@ -32,6 +32,18 @@ function loadGallery() {
 }
 
 const nodes = (tree) => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap((value) => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
+
+test('twenty photo pages load only the current photo and its neighbours at the start, middle and end', () => {
+  const post = { id: 'twenty', title: '창고', imageUris: Array.from({ length: 20 }, (_, i) => `signed:${i}`) };
+  for (const index of [0, 10, 19]) {
+    const { Gallery } = loadGallery({ key: JSON.stringify([post.id, post.imageUris]), index });
+    const tree = Gallery({ post });
+    const loaded = nodes(tree).filter(node => node.props?.source?.uri).map(node => node.props.source.uri);
+    assert.deepEqual(loaded, post.imageUris.slice(Math.max(0, index - 1), Math.min(20, index + 2)));
+    const scroll = nodes(tree).find(node => node.props?.analyticsId === 'components_post-photo-gallery.scrollview.1');
+    assert.equal(scroll.props.children.length, 20, 'every page keeps its place for swiping');
+  }
+});
 
 test('사진이 한 장이어도 상세 갤러리에서 원본을 보여준다', () => {
   const { Gallery } = loadGallery();

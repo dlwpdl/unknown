@@ -20,10 +20,10 @@ select is((public.get_membership()->>'meetupLimit')::int,10,'Pro allows ten meet
 select is((public.get_membership()->>'bumpCooldownHours')::int,30,'Pro bump is thirty hours');
 reset role;
 select throws_ok($$select public.apply_membership_snapshot('14900000-0000-0000-0000-000000000001',jsonb_build_array(jsonb_build_object('kind','general','plan_version',2,'tier','premium','expires_at',now()+interval '30 days','product_id','com.dlwpdl.gling.business.premium.monthly.v2','store','app_store','will_renew',true)),now())$$,'P0001','INVALID_MEMBERSHIP','misattached cross-family product is rejected at database boundary');
-insert into private.merchants(id,name,city_id,owner_id,owner_verified_at,status,consent,consent_note) values
- ('14910000-0000-0000-0000-000000000001','등급검사 업체 하나','vancouver','14900000-0000-0000-0000-000000000001',now(),'lead','granted','검사동의'),
- ('14910000-0000-0000-0000-000000000002','등급검사 업체 둘','vancouver','14900000-0000-0000-0000-000000000002',now(),'lead','granted','검사동의'),
- ('14910000-0000-0000-0000-000000000003','등급검사 업체 셋','vancouver','14900000-0000-0000-0000-000000000001',now(),'lead','granted','검사동의');
+insert into private.merchants(id,name,city_id,owner_id,owner_verified_at,status,consent,consent_note,record_kind) values
+ ('14910000-0000-0000-0000-000000000001','등급검사 업체 하나','vancouver','14900000-0000-0000-0000-000000000001',now(),'lead','granted','검사동의','business'),
+ ('14910000-0000-0000-0000-000000000002','등급검사 업체 둘','vancouver','14900000-0000-0000-0000-000000000002',now(),'lead','granted','검사동의','business'),
+ ('14910000-0000-0000-0000-000000000003','등급검사 업체 셋','vancouver','14900000-0000-0000-0000-000000000001',now(),'lead','granted','검사동의','business');
 set local role authenticated;
 select lives_ok($$select public.bind_business_membership('14910000-0000-0000-0000-000000000001')$$,'verified owner binds own canonical business');
 select is((public.get_business_membership('14910000-0000-0000-0000-000000000001')->>'postLimit')::int,30,'Premium has thirty new posts');

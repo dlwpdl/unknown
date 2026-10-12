@@ -7,21 +7,21 @@ set local role authenticated;
 do $$
 declare paths text[]; post_id uuid;
 begin
-  select array_agg('13400000-0000-0000-0000-000000000001/'||n||'.webp' order by n) into paths from generate_series(1,10) n;
+  select array_agg('13400000-0000-0000-0000-000000000001/'||n||'.webp' order by n) into paths from generate_series(1,20) n;
   foreach post_id in array array[
-    public.create_post('vancouver',(select id from public.tags where slug='life'),'열 사진 일반 글','수량 검증',p_image_paths=>paths),
-    public.create_post('vancouver',(select id from public.tags where slug='life'),'열 사진 중고 글','수량 검증',p_image_paths=>paths,p_kind=>'listing')
+    public.create_post('vancouver',(select id from public.tags where slug='life'),'스무 사진 일반 글','수량 검증',p_image_paths=>paths),
+    public.create_post('vancouver',(select id from public.tags where slug='life'),'스무 사진 중고 글','수량 검증',p_image_paths=>paths,p_kind=>'listing')
   ] loop
-    assert (select image_paths=paths from public.posts where id=post_id), 'ten photos must retain order';
+    assert (select image_paths=paths from public.posts where id=post_id), 'twenty photos must retain order';
     update public.posts set image_paths=paths where id=post_id;
     begin
-      update public.posts set image_paths=paths||array['13400000-0000-0000-0000-000000000001/11.webp'] where id=post_id;
-      raise exception 'eleven photos passed the table constraint';
+      update public.posts set image_paths=paths||array['13400000-0000-0000-0000-000000000001/21.webp'] where id=post_id;
+      raise exception 'twenty-one photos passed the table constraint';
     exception when check_violation then null; end;
   end loop;
   begin
-    perform public.create_post('vancouver',(select id from public.tags where slug='life'),'초과 수량','검사',p_image_paths=>paths||array['13400000-0000-0000-0000-000000000001/11.webp']);
-    raise exception 'eleven photos passed create_post';
+    perform public.create_post('vancouver',(select id from public.tags where slug='life'),'초과 수량','검사',p_image_paths=>paths||array['13400000-0000-0000-0000-000000000001/21.webp']);
+    raise exception 'twenty-one photos passed create_post';
   exception when sqlstate 'P0001' then assert sqlerrm='TOO_MANY_IMAGES', sqlerrm; end;
   begin
     perform public.create_post('vancouver',(select id from public.tags where slug='life'),'다른 작성자 사진','검사',p_image_paths=>array['other/private.webp']);
@@ -33,11 +33,11 @@ reset role;
 do $$
 declare paths text[];
 begin
-  select array_agg('13400000-0000-0000-0000-000000000001/'||n||'.webp' order by n) into paths from generate_series(1,10) n;
+  select array_agg('13400000-0000-0000-0000-000000000001/'||n||'.webp' order by n) into paths from generate_series(1,20) n;
   perform private.assert_merchant_image_paths(paths,paths);
   begin
-    perform private.assert_merchant_image_paths(paths||paths[1],paths);
-    raise exception 'eleven merchant photos passed';
+    perform private.assert_merchant_image_paths(paths||array['13400000-0000-0000-0000-000000000001/21.webp'],paths||array['13400000-0000-0000-0000-000000000001/21.webp']);
+    raise exception 'twenty-one merchant photos passed';
   exception when sqlstate 'P0001' then assert sqlerrm='INVALID_IMAGE_PATH', sqlerrm; end;
   begin
     perform private.assert_merchant_image_paths(array[paths[1],paths[1]],paths);
@@ -47,5 +47,5 @@ begin
   assert not has_function_privilege('authenticated','private.assert_merchant_image_paths(text[],text[])','execute');
 end;
 $$;
-select 'PASS: ten-photo create/edit/listing/merchant order; eleven-photo/foreign/duplicate rejection; privileges intact' as result;
+select 'PASS: twenty-photo create/edit/listing/merchant order; twenty-one-photo/foreign/duplicate rejection; privileges intact' as result;
 rollback;

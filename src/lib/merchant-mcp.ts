@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { attachMerchantProfileImages } from './merchant-profile.ts';
+import { MAX_POST_IMAGES } from './image-upload.ts';
 
 export type MerchantMcpAuthorization = { authorization_id: string; client_id: string; client_name: string; redirect_uri: string; scope: string; expires_at: string };
 export type MerchantMcpConnection = { id: string; client_id: string; client_name: string; merchant_ids: string[]; allow_drafts: boolean; allow_publish: boolean; is_connected: boolean;
@@ -114,7 +115,7 @@ export async function loadMerchantMcpChangePhotos(client: SupabaseClient, change
   }
   const paths = (value: unknown): string[] => {
     if (value == null) return [];
-    if (!Array.isArray(value) || value.length > 10 || value.some(path => typeof path !== 'string' || !path)) throw new Error('MCP_PHOTO_PREVIEW_FAILED');
+    if (!Array.isArray(value) || value.length > MAX_POST_IMAGES || value.some(path => typeof path !== 'string' || !path)) throw new Error('MCP_PHOTO_PREVIEW_FAILED');
     return value;
   };
   const groups = [{ label: change.kind === 'delete_post' ? '삭제할 글의 사진' : '현재 사진', paths: paths(change.before_value.image_paths) }];

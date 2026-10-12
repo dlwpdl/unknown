@@ -13,7 +13,7 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 SERVICE = 'com.gling.merchant-admin'
 ACCOUNT = 'wjvahbdwmctzpkndqaxa'
-RPCS = {'get_admin_merchants', 'get_admin_merchant', 'save_admin_merchant', 'link_admin_merchant_post',
+RPCS = {'get_admin_merchants', 'get_admin_merchant', 'save_admin_merchant', 'save_admin_merchant_record', 'link_admin_merchant_post',
         'create_admin_merchant_post', 'save_admin_merchant_report', 'get_admin_merchant_report',
         'get_merchant_workspace', 'save_merchant_workspace_item', 'adjust_merchant_inventory',
         'save_merchant_workspace_draft', 'approve_merchant_workspace_drafts', 'archive_merchant_workspace_drafts',

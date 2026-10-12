@@ -110,23 +110,32 @@ export type UploadedMedia = { path: string; thumbPath?: string; width?: number; 
 export async function uploadPostMedia(client: SupabaseClient, uploads: PostUpload[]): Promise<UploadedMedia[]> {
   const uploaded: string[] = [];
   try {
-    const results: UploadedMedia[] = [];
-    for (const item of uploads) {
-      const bytes = decodeBase64(item.base64);
-      if (!bytes.byteLength || bytes.byteLength > MAX_IMAGE_BYTES) throw new Error('IMAGE_TOO_LARGE');
-      const result = await client.storage.from('post-images').upload(item.path, bytes, { contentType: item.mimeType, upsert: false });
-      if (result.error) throw result.error;
-      uploaded.push(item.path);
-      let thumbPath: string | undefined;
-      if (item.thumbBase64) {
-        const thumbBytes = decodeBase64(item.thumbBase64);
-        thumbPath = thumbPathFor(item.path);
-        const thumb = await client.storage.from('post-images').upload(thumbPath, thumbBytes, { contentType: item.mimeType, upsert: false });
-        if (thumb.error) throw thumb.error;
-        uploaded.push(thumbPath);
+    const results: UploadedMedia[] = new Array(uploads.length);
+    let next = 0, failed = false;
+    const workers = await Promise.allSettled(Array.from({ length: Math.min(3, uploads.length) }, async () => {
+      while (next < uploads.length && !failed) {
+        const index = next++, item = uploads[index];
+        try {
+          const bytes = decodeBase64(item.base64);
+          if (!bytes.byteLength || bytes.byteLength > MAX_IMAGE_BYTES) throw new Error('IMAGE_TOO_LARGE');
+          const result = await client.storage.from('post-images').upload(item.path, bytes, { contentType: item.mimeType, upsert: false });
+          if (result.error) throw result.error;
+          uploaded.push(item.path);
+          let thumbPath: string | undefined;
+          if (item.thumbBase64) {
+            const thumbBytes = decodeBase64(item.thumbBase64);
+            thumbPath = thumbPathFor(item.path);
+            const thumb = await client.storage.from('post-images').upload(thumbPath, thumbBytes, { contentType: item.mimeType, upsert: false });
+            if (thumb.error) throw thumb.error;
+            uploaded.push(thumbPath);
+          }
+          results[index] = { path: item.path, thumbPath, width: item.width, height: item.height, bytes: bytes.byteLength };
+        } catch (error) { failed = true; throw error; }
       }
-      results.push({ path: item.path, thumbPath, width: item.width, height: item.height, bytes: bytes.byteLength });
-    }
+    }));
+    // Drain active uploads before cleanup so a late success cannot leave an orphan.
+    const rejected = workers.find(worker => worker.status === 'rejected');
+    if (rejected?.status === 'rejected') throw rejected.reason;
     return results;
   } catch (error) {
     if (uploaded.length) await client.storage.from('post-images').remove(uploaded).catch(() => {});
