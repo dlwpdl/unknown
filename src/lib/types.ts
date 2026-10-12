@@ -104,6 +104,8 @@ export interface Post {
   expiresAt?: string | null;
   bumpedAt?: string | null;
   sortAt?: string; // 피드 정렬 기준 = 끌어올림 시각 또는 작성 시각
+  popularityScore?: number;
+  rankingAsOf?: string;
 }
 
 export type PostKind = 'story' | 'listing';

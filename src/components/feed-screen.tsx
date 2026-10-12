@@ -27,6 +27,7 @@ import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-
 import { todayLabel } from '@/components/daily-chip';
 import { CityPicker } from '@/components/city-picker';
 import { FeedAd } from '@/components/feed-ad';
+import { FeedSortControl } from '@/components/feed-sort-control';
 import { GlassSurface } from '@/components/glass-surface';
 import { LocalEventsCarousel } from '@/components/local-events-carousel';
 import { adsSupported, feedAdPosition } from '@/lib/ads';
@@ -60,7 +61,7 @@ import {
   MEETUPS_CHANGED_EVENT,
   requestMeetupJoin,
 } from '@/lib/community-data';
-import { appendUniquePosts, groupJournalPosts, loadPublicFeed, loadPublicPost } from '@/lib/feed-data';
+import { appendUniquePosts, loadPublicFeed, loadPublicPost, type FeedSort } from '@/lib/feed-data';
 import { addHashtag, canonicalizeHashtag, getSuggestedHashtags, parseHashtags } from '@/lib/hashtags';
 import { canAddPostImage, MAX_POST_IMAGES } from '@/lib/image-upload';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -115,10 +116,14 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const openAuthor = (post: Post) => setSheetUser({ id: post.author.id, nickname: post.author.nickname, neighborhood: post.author.neighborhood, verified: post.author.verified, trustLevel: post.author.trustLevel, mine: post.author.id === me.id });
   const [pendingPost, setPendingPost] = useState<Post | null>(null); // 로그인 후 이어서 열 글
   const [tagFilter, setTagFilter] = useState<number | null>(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null); // 카테고리 칩
+  const [feedSort, setFeedSort] = useState<FeedSort>('latest');
+  const activeSort = meetupsOnly ? 'latest' : feedSort;
   const [categoryLoading, setCategoryLoading] = useState(false);
   const [feedOpacity] = useState(() => new Animated.Value(1));
   const [chipLift] = useState(() => new Animated.Value(1));
   const feedListRef = useRef<NativeFlatList<Post | null>>(null);
+  const feedIntroHeight = useRef(0);
+  const scrollToResults = useRef(false);
   useScrollToTop(feedListRef);
   const filterTransition = useRef<number | null | undefined>(undefined);
   const [searching, setSearching] = useState(false);
@@ -135,31 +140,40 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [joinMessage, setJoinMessage] = useState('');
   const [joining, setJoining] = useState(false);
   const viewerScope = isAuthed ? me.id : 'guest';
-  const feedKey = `${viewerScope}:${city.id}:${tagFilter ?? 'all'}`;
+  const feedKey = `${viewerScope}:${city.id}:${tagFilter ?? 'all'}:${activeSort}`;
   const [loadedFeedKey, setLoadedFeedKey] = useState<string | null>(null);
   const [loadedFeedCityId, setLoadedFeedCityId] = useState<string | null>(null);
   const [loadedEventsCityId, setLoadedEventsCityId] = useState<string | null>(null);
   const [feedError, setFeedError] = useState(false);
   const feedRevision = useRef(0);
+  const feedCursorPost = useRef<Post | undefined>(undefined);
   const feedRequest = useRef<{ key: string; revision: number; promise: Promise<void> } | null>(null);
-  const loadingMoreRef = useRef(false);
+  const loadingMoreRef = useRef<number | null>(null);
   const searchRevision = useRef(0);
-  const cancelFeedRequests = useCallback(() => { feedRevision.current++; }, []);
+  const cancelFeedRequests = useCallback(() => { feedRevision.current++; setLoadingMore(false); }, []);
 
   const refreshFeed = useCallback(() => {
     if (feedRequest.current?.key === feedKey && feedRequest.current.revision === feedRevision.current) {
       return feedRequest.current.promise;
     }
     const revision = ++feedRevision.current;
-    const promise = loadPublicFeed(supabase, city.id, tagFilter, null, null, { viewerScope })
+    loadingMoreRef.current = null;
+    setLoadingMore(false);
+    const promise = loadPublicFeed(supabase, city.id, tagFilter, null, null, { viewerScope, sort: activeSort })
       .then((next) => {
         if (revision !== feedRevision.current) return;
+        feedCursorPost.current = next.at(-1);
         setPosts(next);
         setHasMore(next.length === 30);
         setFeedError(false);
       })
       .catch((error) => {
-        if (revision === feedRevision.current) setFeedError(true);
+        if (revision === feedRevision.current) {
+          feedCursorPost.current = undefined;
+          setPosts([]);
+          setHasMore(false);
+          setFeedError(true);
+        }
         throw error;
       })
       .finally(() => {
@@ -174,7 +188,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       });
     feedRequest.current = { key: feedKey, revision, promise };
     return promise;
-  }, [city.id, feedKey, feedOpacity, reducedMotion, tagFilter, viewerScope]);
+  }, [activeSort, city.id, feedKey, feedOpacity, reducedMotion, tagFilter, viewerScope]);
 
   useEffect(() => {
     const listener = DeviceEventEmitter.addListener(MEETUPS_CHANGED_EVENT, () => void refreshFeed().catch(() => {}));
@@ -182,6 +196,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   }, [refreshFeed]);
 
   useEffect(() => {
+    feedCursorPost.current = undefined;
     void refreshFeed().catch(() => {
       // Visibility must come from the server; never fall back to unfiltered seed posts.
     });
@@ -198,9 +213,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     [cityOpen, cityPosts, meetupsOnly, tagFilter],
   );
 
-  const journal = useMemo(() => meetupsOnly
-    ? { featured: undefined, meetups: [], remaining: feedData }
-    : groupJournalPosts(feedData), [feedData, meetupsOnly]);
+  const showFeedSort = cityOpen && !meetupsOnly;
   const feedLoading = categoryLoading || loadedFeedKey !== feedKey;
   const cityLoading = cityOpen && !meetupsOnly && (loadedFeedCityId !== city.id || loadedEventsCityId !== city.id);
 
@@ -276,6 +289,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const changeTagFilter = (next: number | null) => {
     play('reaction');
     if (next === tagFilter) return;
+    cancelFeedRequests();
+    scrollToResults.current = true;
     if (!reducedMotion) {
       chipLift.stopAnimation();
       chipLift.setValue(0.88);
@@ -286,6 +301,16 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     feedOpacity.setValue(0);
     setCategoryLoading(true);
     setTagFilter(next);
+  };
+  const changeFeedSort = (next: FeedSort) => {
+    if (next === feedSort) return;
+    cancelFeedRequests();
+    scrollToResults.current = true;
+    feedOpacity.stopAnimation();
+    feedOpacity.setValue(0);
+    filterTransition.current = tagFilter;
+    setCategoryLoading(true);
+    setFeedSort(next);
   };
 
   const updateViewCount = useCallback((postId: string, count: number) => {
@@ -473,6 +498,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       return;
     }
     setSubmitting(true);
+    const revision = feedRevision.current;
     const hashtags = parseHashtags(hashtagInput);
     try {
       const created = await createCommunityPost(supabase, {
@@ -486,13 +512,15 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         kind: postKind,
         price: postKind === 'listing' && priceInput.trim() ? Number(priceInput.replace(/[^0-9.]/g, '')) : null,
       });
-      void location.record(draftLocation.current, created.id);
-      setCity(draftCity);
       const post = created.post;
-      if (post) setPosts((prev) => [post, ...prev.filter(({ id }) => id !== created.id)]);
-      else void refreshFeed().catch(() => {});
+      if (revision === feedRevision.current) {
+        void location.record(draftLocation.current, created.id);
+        setCity(draftCity);
+        if (post && activeSort === 'latest') setPosts((prev) => [post, ...prev.filter(({ id }) => id !== created.id)]);
+        else if (draftCity.id === city.id && (meetupsOnly || tagFilter == null)) void refreshFeed().catch(() => {});
+        setTagFilter(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null);
+      }
       if (post?.room) DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
-      setTagFilter(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null);
       setTitle('');
       setBody('');
       setMapInput('');
@@ -519,11 +547,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   };
 
   const loadMorePosts = async () => {
-    if (loadingMoreRef.current || !hasMore || searching) return;
-    const last = posts.at(-1);
+    if (feedRequest.current || feedLoading || loadingMoreRef.current === feedRevision.current || !hasMore || searching) return;
+    const last = feedCursorPost.current;
     if (!last?.createdAt) return;
     const revision = feedRevision.current;
-    loadingMoreRef.current = true;
+    loadingMoreRef.current = revision;
     setLoadingMore(true);
     try {
       const next = await loadPublicFeed(
@@ -531,17 +559,55 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         city.id,
         tagFilter,
         null,
-        { createdAt: last.createdAt, id: last.id, sortAt: last.sortAt },
-        { viewerScope },
+        { createdAt: last.createdAt, id: last.id, sortAt: last.sortAt, popularityScore: last.popularityScore, rankingAsOf: last.rankingAsOf },
+        { viewerScope, sort: activeSort },
       );
       if (revision !== feedRevision.current) return;
+      feedCursorPost.current = next.at(-1);
       setPosts((current) => appendUniquePosts(current, next));
       setHasMore(next.length === 30);
+    } catch {
+      if (revision === feedRevision.current) Alert.alert('글을 더 불러오지 못했어요', '잠시 후 다시 시도해 주세요.');
     } finally {
-      loadingMoreRef.current = false;
-      setLoadingMore(false);
+      if (loadingMoreRef.current === revision) {
+        loadingMoreRef.current = null;
+        if (revision === feedRevision.current) setLoadingMore(false);
+      }
     }
   };
+
+  const feedState = cityOpen && feedLoading ? <View style={styles.categoryLoading}>{cityLoading ? <View style={[styles.feedPlaceholder, { backgroundColor: theme.backgroundElement }]} accessible={false} /> : <GlingLoader color={theme.accent} accessibilityLabel="글 불러오는 중" />}</View> : (
+    cityOpen ? (
+      feedError && feedData.length === 0 ? (
+        <StateCard kind="error" title="글을 불러오지 못했어요" body="연결을 확인하고 다시 시도해 주세요." actionLabel="다시 시도" onAction={() => { play('selection'); void refreshFeed().catch(() => {}); }} />
+      ) : feedData.length === 0 ? (
+        <View style={styles.soon}>
+          <ThemedText accessibilityRole="header" style={styles.soonTitle}>{meetupsOnly ? t.feed.meetupEmptyTitle : activeSort === 'popular' ? '최근 7일 글이 아직 없어요' : t.feed.emptyTitle}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.soonBody}>{meetupsOnly ? t.feed.meetupEmptyBody : activeSort === 'popular' ? '최신순에서 다른 이야기도 둘러보세요.' : t.feed.emptyBody}</ThemedText>
+          <Pressable analyticsId="components_feed-screen.pressable.6" onPress={openWriter} accessibilityRole="button" style={({ pressed }) => [styles.soonCta, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
+            <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{t.feed.write}</ThemedText>
+          </Pressable>
+        </View>
+      ) : null
+    ) : (
+      <View style={styles.soon}>
+        <ThemedText type="subtitle" style={styles.soonTitle}>
+          {t.feed.soonTitle(city.name)}
+        </ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.soonBody}>
+          {t.feed.soonBody}
+        </ThemedText>
+        <Pressable analyticsId="components_feed-screen.pressable.7"
+          onPress={() => { play('selection'); setCityPicker(true); }}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.soonCta, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
+          <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
+            {t.feed.soonCta}
+          </ThemedText>
+        </Pressable>
+      </View>
+    )
+  );
 
   return (
     <TabContent style={styles.container}>
@@ -563,7 +629,14 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           <ProfileAvatarButton />
         </View>
         <FlatList analyticsId="components_feed-screen.flatlist.1" ref={feedListRef}
-          data={[null, ...(feedLoading ? [] : journal.remaining)]}
+          data={[null, ...(showFeedSort ? [null] : []), ...(feedLoading ? [] : feedData)]}
+          stickyHeaderIndices={showFeedSort ? [1] : undefined}
+          onContentSizeChange={() => {
+            if (!feedLoading && scrollToResults.current) {
+              scrollToResults.current = false;
+              feedListRef.current?.scrollToOffset({ offset: feedIntroHeight.current, animated: !reducedMotion });
+            }
+          }}
           onEndReached={() => void loadMorePosts()}
           onEndReachedThreshold={0.4}
           refreshing={refreshing}
@@ -572,12 +645,14 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             setRankingRefresh((current) => current + 1);
             void refreshFeed().catch(() => Alert.alert(t.feed.refreshErrorTitle, t.feed.refreshErrorBody)).finally(() => setRefreshing(false));
           }}
-          keyExtractor={(p) => p?.id ?? 'journal-intro'}
+          keyExtractor={(p, index) => p?.id ?? (index === 0 ? 'journal-intro' : 'feed-sort')}
           contentContainerStyle={[styles.listContent, { paddingBottom: bottomClear + Spacing.three }]}
           ItemSeparatorComponent={({ leadingItem }) => leadingItem == null ? null : <View style={{ height: Spacing.four }} />}
-          ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText> : null}
-          renderItem={({ item, index }) => item == null ? (
-            <View style={styles.header}>
+          ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText> : feedState}
+          renderItem={({ item, index }) => item == null && index === 1 && showFeedSort ? (
+            <FeedSortControl sort={activeSort} title={selectedFilterTag ? `${selectedFilterTag.label} 글` : '오늘 글'} onChange={changeFeedSort} />
+          ) : item == null ? (
+            <View style={styles.header} onLayout={event => { feedIntroHeight.current = event.nativeEvent.layout.height; }}>
               <View style={styles.journalIntro}>
                 <View style={styles.journalStatusRow}>
                   <ThemedText type="smallBold" themeColor="textSecondary" style={styles.journalDate}>{todayLabel()}</ThemedText>
@@ -614,77 +689,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   })}
                 </ScrollView></GlassSurface>
               )}
-              {cityOpen && feedLoading ? <View style={styles.categoryLoading}>{cityLoading ? <View style={[styles.feedPlaceholder, { backgroundColor: theme.backgroundElement }]} accessible={false} /> : <GlingLoader color={theme.accent} accessibilityLabel="글 불러오는 중" />}</View> : <>{weeklyRanking}<Animated.View style={{ opacity: feedOpacity }}>
-              {journal.featured && (
-                <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.duration(360)} style={styles.featured}>
-                  <PostCard
-                    key={journal.featured.id}
-                    flat
-                    post={journal.featured}
-                    onPress={() => { play('selection'); openDetail(journal.featured!); }}
-                    onHashtag={openSearch}
-                    onAuthor={() => openAuthor(journal.featured!)}
-                  />
-                </Reanimated.View>
-              )}
-              {journal.meetups.length > 0 && (
-                <View style={styles.meetupSection}>
-                  <View style={styles.sectionHeading}>
-                    <ThemedText accessibilityRole="header" style={styles.sectionTitle}>{t.feed.meetupHeading}</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">{t.feed.meetupSubheading}</ThemedText>
-                  </View>
-                  {journal.meetups.map((post, index) => (
-                    <Reanimated.View key={post.id} entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index + 1, 5) * 65).duration(360)} style={[styles.meetupPreview, { backgroundColor: theme.backgroundElement }]}>
-                      <SymbolView name={{ ios: 'person.2', android: 'group', web: 'group' }} size={28} tintColor={theme.accent} />
-                      <Pressable analyticsId="components_feed-screen.pressable.4" onPress={() => { play('selection'); openDetail(post); }} accessibilityRole="button" style={({ pressed }) => [styles.meetupCopy, pressed && styles.chipPressed]}>
-                        <ThemedText type="smallBold" numberOfLines={2}>{post.title}</ThemedText>
-                        <ThemedText type="small" themeColor="textSecondary">
-                          {[post.author.neighborhood, t.feed.members(post.room!.memberCount, post.room!.capacity)].filter(Boolean).join(' · ')}
-                        </ThemedText>
-                      </Pressable>
-                      <Pressable analyticsId="components_feed-screen.pressable.5" onPress={() => onJoin(post)} accessibilityRole="button" accessibilityLabel={`${post.title}, ${t.feed.joinRoom}`} style={styles.iconButton}>
-                        <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} size={22} tintColor={theme.text} />
-                      </Pressable>
-                    </Reanimated.View>
-                  ))}
-                </View>
-              )}
-              {journal.remaining.length > 0 && (journal.featured || journal.meetups.length > 0) && (
-                <ThemedText accessibilityRole="header" style={[styles.sectionTitle, styles.latestHeading]}>{t.feed.latestHeading}</ThemedText>
-              )}
-              {
-            cityOpen ? (
-              feedError && feedData.length === 0 ? (
-                <StateCard kind="error" title="글을 불러오지 못했어요" body="연결을 확인하고 다시 시도해 주세요." actionLabel="다시 시도" onAction={() => { play('selection'); void refreshFeed().catch(() => {}); }} />
-              ) : feedData.length === 0 ? (
-                <View style={styles.soon}>
-                  <ThemedText accessibilityRole="header" style={styles.soonTitle}>{meetupsOnly ? t.feed.meetupEmptyTitle : t.feed.emptyTitle}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary" style={styles.soonBody}>{meetupsOnly ? t.feed.meetupEmptyBody : t.feed.emptyBody}</ThemedText>
-                  <Pressable analyticsId="components_feed-screen.pressable.6" onPress={openWriter} accessibilityRole="button" style={({ pressed }) => [styles.soonCta, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
-                    <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{t.feed.write}</ThemedText>
-                  </Pressable>
-                </View>
-              ) : null
-            ) : (
-              <View style={styles.soon}>
-                <ThemedText type="subtitle" style={styles.soonTitle}>
-                  {t.feed.soonTitle(city.name)}
-                </ThemedText>
-                <ThemedText type="small" themeColor="textSecondary" style={styles.soonBody}>
-                  {t.feed.soonBody}
-                </ThemedText>
-                <Pressable analyticsId="components_feed-screen.pressable.7"
-                  onPress={() => { play('selection'); setCityPicker(true); }}
-                  accessibilityRole="button"
-                  style={({ pressed }) => [styles.soonCta, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
-                  <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
-                    {t.feed.soonCta}
-                  </ThemedText>
-                </Pressable>
-              </View>
-            )
-              }
-              </Animated.View></>}
+              {!feedLoading && weeklyRanking}
             </View>
           ) : (
             <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 5) * 65).duration(360)}><Animated.View style={{ opacity: feedOpacity }}><PostCard
@@ -694,7 +699,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               onJoin={() => void onJoin(item)}
               onHashtag={openSearch}
               onAuthor={() => openAuthor(item)}
-            />{!meetupsOnly && adsSupported && feedAdPosition(index - 1) && <FeedAd />}</Animated.View></Reanimated.View>
+            />{!meetupsOnly && adsSupported && feedAdPosition(index - (showFeedSort ? 2 : 1)) && <FeedAd />}</Animated.View></Reanimated.View>
           )}
         />
 
