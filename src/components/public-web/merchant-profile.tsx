@@ -242,7 +242,7 @@ function PublicProfilePosts({ merchantId, kind, onRead, onPosts }: {
         else { play('selection'); setBusy(true); setRetry((value) => value + 1); }
       }}>다시 시도</button></div>}
     {page?.posts.map((post) => {
-      const thumbnail = post.imageThumbs?.[0] ?? post.imageUris?.[0];
+      const thumbnail = post.imageThumbs?.[0] || post.imageUris?.[0];
       return <article className="reader-company-post" key={post.id}><a href={`/post?id=${post.id}`} onClick={() => play('selection')}>
         <span className="reader-company-post-text"><span className="reader-company-post-meta">{post.tag.label} · {post.createdAtLabel}</span>
           <strong>{post.title}</strong><span className="reader-company-post-preview">{post.body}</span></span>

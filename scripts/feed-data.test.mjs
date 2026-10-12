@@ -175,3 +175,16 @@ test('이미지 캐시는 URL 갱신에는 안정적이고 사용자 변경에�
   assert.equal(getPostImageSource(post, 'user-b')?.cacheKey, 'post-image:user-b:owner/photo.jpg');
   assert.equal(getPostImageSource({ id: 'text' }, 'user-a'), undefined);
 });
+
+test('일부 원본·썸네일 서명이 실패해도 경로와 사진 위치를 유지하고 같은 원본으로 폴백한다', async () => {
+  const client = { storage: { from: () => ({ createSignedUrls: async (paths) => ({
+    data: paths.filter(path => path !== 'owner/two.thumb.webp' && path !== 'owner/three.webp').map(path => ({ path, signedUrl: `signed:${path}` })), error: null,
+  }) }) } };
+  const [post] = await attachSignedPostImages(client, [{ id: 'partial', imagePaths: ['owner/one.webp', 'owner/two.webp', 'owner/three.webp', 'owner/four.webp'] }], 'viewer');
+  assert.deepEqual(post.imageUris, ['signed:owner/one.webp', 'signed:owner/two.webp', '', 'signed:owner/four.webp']);
+  assert.deepEqual(post.imageThumbs, ['signed:owner/one.thumb.webp', '', 'signed:owner/three.thumb.webp', 'signed:owner/four.thumb.webp']);
+  assert.deepEqual(getPostImageSource(post, 'viewer', 'feed', 1), { uri: 'signed:owner/two.webp', cacheKey: 'post-image:viewer:owner/two.webp' });
+  assert.equal(getPostImageSource(post, 'viewer', 'full', 2), undefined);
+  assert.deepEqual(getPostImageSource(post, 'viewer', 'full', 3), { uri: 'signed:owner/four.webp', cacheKey: 'post-image:viewer:owner/four.webp' });
+  assert.equal(getPostImageSource(post, 'other-viewer', 'feed', 1), undefined);
+});

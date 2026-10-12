@@ -19,10 +19,12 @@ function cardRenderer(component = 'PostCard') {
   let mapFailure = false;
   const react = {
     useCallback: (callback) => callback,
+    useMemo: (callback) => callback(),
+    useEffect: () => {},
     useRef: (value) => ({ current: value }),
     useState(initial) {
       const index = cursor++;
-      if (!(index in values)) values[index] = initial;
+      if (!(index in values)) values[index] = typeof initial === 'function' ? initial() : initial;
       return [values[index], (next) => { values[index] = typeof next === 'function' ? next(values[index]) : next; }];
     },
   };
@@ -34,7 +36,13 @@ function cardRenderer(component = 'PostCard') {
     'react-native': { View: 'View', Modal: 'Modal', Platform: { OS: 'ios' }, useWindowDimensions: () => ({ width: 390, height: 844 }), StyleSheet: { create: (value) => value, hairlineWidth: 1 }, Animated: { Value: class {}, View: 'Animated.View' },
       Linking: { openURL: (url) => { openedMaps.push(url); return mapFailure ? Promise.reject(new Error('offline')) : Promise.resolve(); } },
       Alert: { alert: (...args) => alerts.push(args) } },
-    'react-native-reanimated': { useReducedMotion: () => true },
+    'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' }, useReducedMotion: () => true,
+      useSharedValue: (initial) => ({ value: initial, get() { return this.value; }, set(value) { this.value = value; } }), useAnimatedStyle: (fn) => fn(), runOnJS: (fn) => fn },
+    'react-native-gesture-handler': { GestureHandlerRootView: 'GestureRoot', GestureDetector: 'GestureDetector', Gesture: {
+      Pan: () => ({ minDistance() { return this; }, averageTouches() { return this; }, onChange() { return this; } }),
+      Pinch: () => ({ onStart() { return this; }, onUpdate() { return this; }, onFinalize() { return this; } }),
+      Simultaneous: (...gestures) => gestures,
+    } },
     'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 44, bottom: 34 }) },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/components/themed-text': { ThemedText: 'ThemedText' },
