@@ -1,9 +1,12 @@
 import { Stack, usePathname } from 'expo-router';
 import PublicReader from '@/components/public-web/reader';
+import { PublicWebProviders } from '@/components/public-web/providers';
+import SharedAuthCallback from '@/web/auth/callback';
 
-// Even a development web run using the native route root must stay read-only.
 export default function WebLayout() {
   const path = usePathname().replace(/\/$/, '');
-  return ['/terms', '/privacy', '/account-deletion'].includes(path)
-    ? <Stack screenOptions={{ headerShown: false }} /> : <PublicReader />;
+  const screen = path === '/auth/callback' ? <SharedAuthCallback />
+    : ['/terms', '/privacy', '/account-deletion', '/child-safety', '/chat', '/meetup-join', '/meetup-profile', '/meetup-application', '/profile/membership'].includes(path)
+      ? <Stack screenOptions={{ headerShown: false }} /> : <PublicReader />;
+  return <PublicWebProviders>{screen}</PublicWebProviders>;
 }

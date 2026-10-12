@@ -48,6 +48,7 @@ function cardRenderer(component = 'PostCard') {
     '@/components/themed-text': { ThemedText: 'ThemedText' },
     '@/components/post-body': { PostBody: 'PostBody' },
     '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
+    '@/components/post-share-sheet': { PostShareSheet: 'PostShareSheet' },
     '@/components/report-sheet': { ReportSheet: 'ReportSheet' },
     '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16 } },

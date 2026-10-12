@@ -2,7 +2,7 @@ import { Pressable } from '@/components/analytics-controls';
 import { useState, type ReactNode } from 'react';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
-import { Alert, Animated, Easing, Platform, Share, StyleSheet, View } from 'react-native';
+import { Alert, Animated, Easing, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
@@ -20,7 +20,7 @@ import { visibleMeetupBody } from '@/lib/meetup-ai';
 import { uniqueHashtags } from '@/lib/hashtags';
 import { postMapBody } from '@/lib/post-maps';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { buildSharedPostUrl } from '@/lib/sharing';
+import { PostShareSheet } from '@/components/post-share-sheet';
 import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
 
@@ -59,6 +59,7 @@ export function PostCard({
   const [shareCount, setShareCount] = useState(post.shares ?? 0);
   const [busyReaction, setBusyReaction] = useState<'like' | 'save' | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [failedPhoto, setFailedPhoto] = useState<{ postId: string; uri: string } | null>(null);
   const [loadedPhoto, setLoadedPhoto] = useState<{ key: string; aspectRatio: number } | null>(null);
   const isMeetup = post.tag.kind === 'meetup';
@@ -118,27 +119,10 @@ export function PostCard({
     }
   };
 
-  const share = async () => {
+  const share = () => {
     play('selection');
     if (!isAuthed) return promptLogin(t.auth.reasonShare);
-    const url = buildSharedPostUrl(post.id);
-    try {
-      if (Platform.OS === 'web') {
-        if (navigator.share) await navigator.share({ title: post.title, text: post.room ? visibleMeetupBody(post.body) : post.body, url });
-        else {
-          await navigator.clipboard.writeText(url);
-          Alert.alert(t.feed.linkCopied);
-        }
-        setShareCount(await recordPostShare(supabase, post.id));
-        return;
-      }
-      const result = await Share.share({ title: post.title, message: `${post.title}\n${url}`, url });
-      if (result.action === Share.sharedAction) {
-        setShareCount(await recordPostShare(supabase, post.id));
-      }
-    } catch {
-      // 공유 시트를 닫거나 지원하지 않는 대상이면 횟수를 올리지 않는다.
-    }
+    setShareOpen(true);
   };
 
   return (
@@ -394,6 +378,8 @@ export function PostCard({
           </View>
         </View>
       </View>
+      {shareOpen && <PostShareSheet key={`${post.id}:${me.id}`} post={post} visible={shareOpen} onClose={() => setShareOpen(false)}
+        onShared={() => { void recordPostShare(supabase, post.id).then(setShareCount).catch(() => {}); }} />}
       <ReportSheet
         visible={reportOpen}
         targetType="post"

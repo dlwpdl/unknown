@@ -1,4 +1,5 @@
 import './reader.css';
+import SharedPostRoute from '@/app/post/[id]';
 import { PublicFestivals } from './festivals';
 import { useReaderAnalytics } from './analytics';
 import { PublicMerchantProfile, PublicMerchantProfileLink } from './merchant-profile';
@@ -93,6 +94,12 @@ function subscribeLocation(onChange: () => void) {
 }
 
 export default function PublicReader() {
+  const routerPath = usePathname();
+  const path = useSyncExternalStore(subscribeLocation, () => window.location.pathname, () => routerPath);
+  return /^\/(?:post|share)(?:\/|$)/.test(path) ? <SharedPostRoute /> : <ReaderContent />;
+}
+
+function ReaderContent() {
   const params = useLocalSearchParams<{ id?: string; city?: string; tag?: string }>();
   const routerPath = usePathname();
   // Static hosts serve 404.html for old /post/:id links; retain the actual URL.
@@ -122,7 +129,7 @@ export default function PublicReader() {
   if (tag) filters.set('tag', tag.slug);
   const canonical = metadata?.canonical ?? (browse ? `${PUBLIC_SITE}/${filters.size ? `?${filters}` : ''}` : postId ? `${PUBLIC_SITE}/post?id=${postId}` : merchantId ? `${PUBLIC_SITE}/company?id=${merchantId}` : null);
   const pageTitle = metadata?.title ?? (browse ? `${filters.size ? `${city.name} · ${tag?.label ?? '동네 이야기'} | ` : ''}글링 | 캐나다 한인 커뮤니티` : detail ? '글링 공개 글' : company ? '글링 업체 프로필' : '글링 | 앱에서 이어가기');
-  const description = metadata?.description ?? `${browse && filters.size ? `${city.name}의 ` : '캐나다 한인 커뮤니티 글링에서 '}동네 이야기, 맛집, 비즈니스와 모임을 둘러보세요. 공개 글은 로그인 없이 읽고, 참여와 대화는 앱에서 이어갈 수 있어요.`;
+  const description = metadata?.description ?? `${browse && filters.size ? `${city.name}의 ` : '캐나다 한인 커뮤니티 글링에서 '}동네 이야기, 맛집, 비즈니스와 모임을 둘러보세요. 공유 미리보기를 둘러보고, 소셜 로그인 후 전체 내용과 모임을 확인해요.`;
   // Static /post.html has no query parameters yet; let Google render before marking a missing post.
   const noindex = (!browse && !detail && !company) || (detail && hydrated && (!postId || (current && !post))) || (company && hydrated && !merchantId);
   const schema = metadata?.schema ?? (browse ? { '@context': 'https://schema.org', '@type': filters.size ? 'CollectionPage' : 'WebSite', name: '글링', url: canonical, description, inLanguage: 'ko' } : null);

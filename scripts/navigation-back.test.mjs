@@ -17,7 +17,8 @@ function screen(path, imports) {
   vm.runInNewContext(source, { exports, require(name) {
     if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
     if (name === 'react/jsx-runtime') return { Fragment: 'Fragment', jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if ((name === 'react-native' || name === '@/components/analytics-controls')) return { ActivityIndicator: 'ActivityIndicator', View: 'View', Pressable: 'Pressable', StyleSheet: { create: value => value } };
+    if ((name === 'react-native' || name === '@/components/analytics-controls')) return { ActivityIndicator: 'ActivityIndicator', View: 'View', Pressable: 'Pressable', Platform: { OS: 'ios' }, StyleSheet: { create: value => value } };
+    if (name === 'expo-router/head') return { default: 'Head' };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ background: '#fff', text: '#123', accent: '#b34' }) };
     if (name in imports) return imports[name];
     throw new Error(`Unexpected import: ${name}`);
@@ -61,8 +62,8 @@ test('every profile header can go back or leave a direct entry, with accessible 
 });
 
 test('shared posts remain escapable during loading, failure and absence, and never show an old ID response', async () => {
-  let id = 'first', commentId, hasHistory = false, cursor = 0, effect, cleanup, effectId, accountId = 'first-account';
-  const states = [], requests = new Map(), actions = [];
+  let id = 'first', commentId, hasHistory = false, cursor = 0, accountId = 'first-account';
+  const states = [], effectHooks = [], effects = [], requests = new Map(), actions = [];
   const SharedPostRoute = screen('../src/app/post/[id].tsx', {
     'expo-router': { useLocalSearchParams: () => ({ id, commentId }), useRouter: () => ({
       canGoBack: () => hasHistory, back: () => actions.push('back'), replace: path => actions.push(path),
@@ -73,18 +74,23 @@ test('shared posts remain escapable during loading, failure and absence, and nev
         if (!(index in states)) states[index] = initial;
         return [states[index], next => { states[index] = next; }];
       },
+      useRef(initial) { const index = cursor++; return states[index] ??= { current: initial }; },
       useEffect(run, dependencies) {
-        const nextId = dependencies.join(':');
-        if (nextId !== effectId) effect = () => { cleanup?.(); cleanup = run(); effectId = nextId; };
+        const index = cursor++, previous = effectHooks[index];
+        if (previous && dependencies.length === previous.dependencies.length && dependencies.every((value, i) => Object.is(value, previous.dependencies[i]))) return;
+        effects.push(() => { previous?.cleanup?.(); effectHooks[index] = { dependencies, cleanup: run() }; });
       },
     },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     'expo-symbols': { SymbolView: 'SymbolView' },
     '@/components/post-detail': { PostDetail: 'PostDetail' },
+    '@/components/shared-link-card': { SharedPreviewContent: 'SharedPreviewContent' },
+    '@/lib/shared-link-preview': { loadSharedLinkPreview: () => { throw new Error('Authenticated navigation must not load a guest preview'); } },
+    '@/lib/sharing': { SHARED_POST_RETURN_KEY: 'return', buildSharedPostUrl: postId => `/post?id=${postId}` },
     '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
     '@/components/themed-text': { ThemedText: 'Text' },
     '@/components/themed-view': { ThemedView: 'View' },
-    '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: accountId } }) },
+    '@/lib/auth': { useAuth: () => ({ isAuthed: true, isAuthLoading: false, me: { id: accountId } }) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => actions.push(kind) }) },
     '@/lib/supabase': { supabase: {} },
     '@/lib/feed-data': { loadPublicPost(_, postId) {
@@ -92,7 +98,7 @@ test('shared posts remain escapable during loading, failure and absence, and nev
     } },
   });
   const render = () => { cursor = 0; return SharedPostRoute(); };
-  const commit = () => { const next = effect; effect = undefined; next?.(); };
+  const commit = () => { effects.splice(0).forEach(run => run()); };
   const detail = tree => nodes(tree).find(node => node.type === 'PostDetail');
   const back = tree => {
     const safe = nodes(tree).find(node => node.type === 'SafeAreaView');
@@ -174,5 +180,5 @@ test('shared posts remain escapable during loading, failure and absence, and nev
   back(tree);
   assert.equal(requests.has(''), false, 'missing route IDs do not issue invalid requests');
   assert.equal(nodes(tree).some(node => node.type === 'GlingLoader'), false);
-  cleanup?.();
+  effectHooks.forEach(hook => hook?.cleanup?.());
 });

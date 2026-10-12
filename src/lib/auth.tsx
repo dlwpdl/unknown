@@ -92,17 +92,20 @@ export function AuthProvider({ children, publicPage = false }: { children: React
   const [profilePhotoUri, setProfilePhotoUri] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileRecord | null>(null);
   const [missingProfileUserId, setMissingProfileUserId] = useState<string | null>(null);
+  const [profileCheckedUserId, setProfileCheckedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     if (!session) return;
     const refreshProfile = () => {
-      void supabase.from('profiles')
+      void Promise.resolve(supabase.from('profiles')
         .select('id,nickname,city_id,avatar_path,verification_level,account_status,account_status_note,ai_safety_consent_at')
         .eq('id', session.user.id)
-        .maybeSingle()
+        .maybeSingle())
         .then(async ({ data, error }) => {
-          if (!active || error) return;
+          if (!active) return;
+          setProfileCheckedUserId(session.user.id);
+          if (error) { setAuthError(t.auth.loginError); return; }
           setProfile(data);
           setMissingProfileUserId(
             data == null
@@ -115,6 +118,8 @@ export function AuthProvider({ children, publicPage = false }: { children: React
             const signed = await supabase.storage.from('avatars').createSignedUrl(data.avatar_path, 3600);
             if (active && signed.data?.signedUrl) setProfilePhotoUri(signed.data.signedUrl);
           }
+        }).catch(() => {
+          if (active) { setProfileCheckedUserId(session.user.id); setAuthError(t.auth.loginError); }
         });
     };
     refreshProfile();
@@ -151,7 +156,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       if (!active) return;
       const nextLogin = nextSession?.user.last_sign_in_at ?? null;
       if (event === 'SIGNED_IN' && nextLogin && nextLogin !== observedLogin.current) setLoginKey(nextLogin);
-      if (!nextSession) setLoginKey(null);
+      if (!nextSession) { setLoginKey(null); setProfileCheckedUserId(null); }
       observedLogin.current = nextLogin;
       setSession(nextSession);
       setSessionReady(true);
@@ -325,6 +330,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     setProfilePhotoUri(null);
     setProfile(null);
     setMissingProfileUserId(null);
+    setProfileCheckedUserId(null);
   }, []);
   const signInAdmin = useCallback(async (email: string, password: string) => {
     if (!beginSignIn()) return;
@@ -430,7 +436,9 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       isVerified: trustLevel >= 2,
       trustLevel,
       isAdmin,
-      isAuthLoading: !sessionReady || signingIn,
+      isAuthLoading: !sessionReady || signingIn || (session != null && (
+        (!activeProfile && profileCheckedUserId !== session.user.id) || missingProfileUserId === session.user.id
+      )),
       authError,
       signInApple,
       prepareAppleAccountDeletion,
@@ -447,12 +455,14 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     [
       level,
       trustLevel,
-      session?.user,
+      session,
       activeProfile,
       socialNickname,
       socialPhoto,
       profilePhotoUri,
       sessionReady,
+      profileCheckedUserId,
+      missingProfileUserId,
       signingIn,
       authError,
       isAdmin,

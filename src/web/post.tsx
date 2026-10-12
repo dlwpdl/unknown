@@ -1,1 +1,1 @@
-export { default } from '@/components/public-web/reader';
+export { default } from '@/app/post/[id]';

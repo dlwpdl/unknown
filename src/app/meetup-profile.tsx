@@ -62,7 +62,7 @@ function ProfileForm({ postId, returnPostId }: { postId?: string; returnPostId?:
     return () => { active = false; };
   }, [isAuthed, postId, retry, reducedMotion]);
   const back = () => router.canGoBack() ? router.back() : returnPostId
-    ? router.replace({ pathname: '/meetup-join', params: { postId: returnPostId } }) : router.replace('/(tabs)/meetups');
+    ? router.replace({ pathname: '/meetup-join', params: { postId: returnPostId } }) : router.replace(Platform.OS === 'web' ? '/?tag=meetup' : '/(tabs)/meetups');
   const cityName = CITIES.find(city => city.id === me.cityId)?.name;
   // 선택 사항인 사진은 빼고 저장에 필요한 네 항목만 센다.
   const complete = [profile.intro.trim(), profile.promptOne.trim(), profile.promptTwo.trim(), tags.length].filter(Boolean).length;

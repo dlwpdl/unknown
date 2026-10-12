@@ -2,7 +2,7 @@ import { Pressable } from '@/components/analytics-controls';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { GlassSurface } from '@/components/glass-surface';
@@ -17,6 +17,7 @@ export function ProfileAvatarButton() {
   const router = useRouter();
   const { isAuthed, me } = useAuth();
   const { play } = useInteractionFeedback();
+  if (Platform.OS === 'web') return null;
   return (
     <GlassSurface tone="control" interactive style={styles.glass}>
     <Pressable analyticsId="components_profile-avatar-button.pressable.1" onPress={() => { play('selection'); router.push('/profile'); }} accessibilityRole="button" accessibilityLabel={t.tabs.profile}

@@ -95,7 +95,7 @@ export default function MembershipScreen() {
   const otherBusiness = kind === 'business' && !!membership?.businessSubscription?.merchantId && membership.businessSubscription.merchantId !== merchantId;
   const purchaseDisabled = busy || loading || offersLoading || !selectedOffer || !membership || membership.billingPolicyVersion !== 2 || !!purchaseUnavailableReason || currentProduct || (kind === 'business' && (!business?.canPurchase || otherBusiness));
   const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/$/, '');
-  const leave = () => router.canGoBack() ? router.back() : router.replace('/profile');
+  const leave = () => router.canGoBack() ? router.back() : router.replace(Platform.OS === 'web' ? '/?tag=meetup' : '/profile');
   const openLegal = (slug: 'terms' | 'privacy') => {
     play('selection');
     void Linking.openURL(`${publicSiteUrl}/${slug}`).catch(() => Alert.alert('페이지를 열지 못했어요', '잠시 후 다시 시도해 주세요.'));
