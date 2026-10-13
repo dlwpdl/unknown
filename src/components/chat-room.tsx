@@ -635,17 +635,27 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
         <View style={styles.previewActions}><ThemedText type="smallBold">답장</ThemedText><ThemedText type="small" numberOfLines={2}>{messagePreview(replyTarget)}</ThemedText></View>
         <RoomAction label="답장 취소" onPress={() => setReplyTo(null)} disabled={sending} />
       </View>}
-      {access.write && selectedPhotos.length > 0 && <View style={[styles.photoPreview, { backgroundColor: theme.card, borderTopColor: theme.line }]}>
-        <ScrollView horizontal style={{ width: '100%' }} contentContainerStyle={{ gap: Spacing.two }}>
-          {selectedPhotos.map((photo, index) => <Pressable key={`${photo.uri}-${index}`} analyticsId="chat.photo.remove" accessibilityRole="button" accessibilityLabel={`사진 ${index + 1} 제외`} disabled={sending}
-            onPress={() => { play('selection'); setSelectedPhotos(current => current.filter(item => item !== photo)); }}>
-            <Image source={{ uri: photo.uri }} style={styles.previewImage} contentFit="cover" accessibilityLabel={`보낼 사진 ${index + 1}`} />
-            <ThemedText type="small" themeColor="textSecondary">{index + 1} · 제외</ThemedText>
-          </Pressable>)}
+      {access.write && selectedPhotos.length > 0 && <ScrollView keyboardShouldPersistTaps="handled" style={{ flexGrow: 0, flexShrink: 1, backgroundColor: theme.card }} contentContainerStyle={[styles.photoPreview, { borderTopColor: theme.line }]}>
+        <View style={styles.photoHeading}><View style={{ flex: 1 }}><ThemedText type="smallBold" style={{ fontSize: 16 }}>사진 {selectedPhotos.length}장</ThemedText><ThemedText type="small" themeColor="textSecondary">이 대화에만 공유</ThemedText></View>
+          <Pressable analyticsId="chat.photo.cancel" accessibilityRole="button" accessibilityLabel="선택한 사진 모두 취소" accessibilityState={{ disabled: sending }} disabled={sending} onPress={() => { play('selection'); setSelectedPhotos([]); }} style={({ pressed }) => [styles.iconAction, { opacity: sending ? 0.45 : pressed ? 0.7 : 1 }]}>
+            <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={18} tintColor={theme.textSecondary} />
+          </Pressable>
+        </View>
+        <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+          {selectedPhotos.map((photo, index) => <View key={`${photo.uri}-${index}`} style={styles.photoThumb}>
+            <Pressable analyticsId="chat.photo.preview" accessibilityRole="button" accessibilityLabel={`보낼 사진 ${index + 1} 크게 보기`} accessibilityState={{ disabled: sending }} disabled={sending} onPress={() => { play('selection'); setPhotoOpen(photo.uri); }} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+              <Image source={{ uri: photo.uri }} style={styles.previewImage} contentFit="cover" />
+            </Pressable>
+            <Pressable analyticsId="chat.photo.remove" accessibilityRole="button" accessibilityLabel={`사진 ${index + 1} 제외`} accessibilityState={{ disabled: sending }} disabled={sending} onPress={() => { play('selection'); setSelectedPhotos(current => current.filter(item => item !== photo)); }} style={({ pressed }) => [styles.photoRemove, { opacity: sending ? 0.45 : pressed ? 0.7 : 1 }]}>
+              <View style={[styles.removeCircle, { backgroundColor: theme.card, borderColor: theme.line }]}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={12} tintColor={theme.text} /></View>
+            </Pressable>
+          </View>)}
         </ScrollView>
-        <View style={styles.previewActions}><ThemedText type="smallBold">선택한 사진 {selectedPhotos.length}장</ThemedText><ThemedText type="small" themeColor="textSecondary">이 대화에만 공유</ThemedText></View>
-        <RoomAction label="취소" onPress={() => { play('selection'); setSelectedPhotos([]); }} disabled={sending} /><RoomAction label={sending ? '보내는 중' : `${selectedPhotos.length}장 보내기`} onPress={() => void sendPhoto()} disabled={sending} primary />
-      </View>}
+        <Pressable analyticsId="chat.photo.send" accessibilityRole="button" accessibilityLabel={sending ? '사진 보내는 중' : `${selectedPhotos.length}장 보내기`} accessibilityState={{ disabled: sending }} disabled={sending}
+          onPress={() => { play('selection'); void sendPhoto(); }} style={({ pressed }) => [styles.photoSend, { backgroundColor: theme.accent, opacity: sending ? 0.5 : pressed ? 0.85 : 1 }]}>
+          <SymbolView name={{ ios: 'paperplane.fill', android: 'send', web: 'send' }} size={18} tintColor={theme.accentInk} /><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{sending ? '보내는 중' : `${selectedPhotos.length}장 보내기`}</ThemedText>
+        </Pressable>
+      </ScrollView>}
       {access.write ? <>
         {contextLoaded && !loading && !replyTarget && !allMessages.some(message => message.sender_id === currentUserId) && <View style={[styles.suggestions, { backgroundColor: theme.card }]}>
           <ThemedText type="small" themeColor="textSecondary">{suggestionContext?.title ? `${suggestionContext.title} · ` : ''}누르면 바로 전송돼요</ThemedText>
@@ -659,13 +669,19 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           })}</View>
         </View>}
         <View style={[styles.composer, { borderTopColor: theme.line, backgroundColor: theme.card, paddingBottom: attachmentsOpen ? Spacing.one : Math.max(insets.bottom, Spacing.two) + Spacing.one }]}>
-          <Pressable analyticsId="components_chat-room.add-attachment" accessibilityRole="button" accessibilityLabel={attachmentsOpen ? '첨부 메뉴 닫기' : '첨부 메뉴 열기'} accessibilityState={{ expanded: attachmentsOpen, disabled: sending || pickingPhoto }} disabled={sending || pickingPhoto} onPress={openAttachments} style={({ pressed }) => [styles.addAttachment, Depth.control, { backgroundColor: attachmentsOpen ? theme.backgroundSelected : theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}><SymbolView name={{ ios: attachmentsOpen ? 'xmark' : 'plus', android: attachmentsOpen ? 'close' : 'add', web: attachmentsOpen ? 'close' : 'add' }} size={21} tintColor={theme.accent} /></Pressable>
+          <Pressable analyticsId="components_chat-room.add-attachment" accessibilityRole="button" accessibilityLabel={attachmentsOpen ? '첨부 메뉴 닫기' : '첨부 메뉴 열기'} accessibilityState={{ expanded: attachmentsOpen, disabled: sending || pickingPhoto }} disabled={sending || pickingPhoto} onPress={openAttachments} style={({ pressed }) => [styles.addAttachment, { backgroundColor: attachmentsOpen ? theme.backgroundSelected : theme.backgroundElement, opacity: pressed ? 0.7 : 1 }]}><SymbolView name={{ ios: attachmentsOpen ? 'xmark' : 'plus', android: attachmentsOpen ? 'close' : 'add', web: attachmentsOpen ? 'close' : 'add' }} size={21} tintColor={theme.accent} /></Pressable>
           <TextInput value={draft} onChangeText={setDraft} maxLength={2000} placeholder={t.chat.messagePlaceholder} accessibilityLabel={t.chat.messagePlaceholder} placeholderTextColor={theme.textSecondary} returnKeyType="send" submitBehavior="submit" onSubmitEditing={() => void send()} style={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.line }]} />
-          <RoomAction label={sending ? t.chat.sending : t.chat.send} onPress={() => void send()} disabled={sending || busy || !draft.trim()} primary />
+          <RoomAction label={sending ? t.chat.sending : t.chat.send} onPress={() => void send()} disabled={sending || busy || !draft.trim()} primary={selectedPhotos.length === 0} />
         </View>
-        {attachmentsOpen && <View accessibilityLabel="첨부 방법" style={[styles.attachmentMenu, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.two) + Spacing.one }]}>
-          <Pressable analyticsId="components_chat-room.attachment-photo" accessibilityRole="button" accessibilityLabel="사진 보내기" disabled={sending || pickingPhoto} accessibilityState={{ disabled: sending || pickingPhoto }} onPress={() => { play('selection'); setAttachmentMenu(false); void pickPhoto(); }} style={({ pressed }) => [styles.attachmentOption, Depth.control, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}><View style={[styles.attachmentIcon, { backgroundColor: theme.backgroundSelected, shadowColor: '#000' }]}><SymbolView name={{ ios: 'photo', android: 'image', web: 'image' }} size={22} tintColor={theme.accent} /></View><ThemedText type="smallBold">사진 보내기</ThemedText></Pressable>
-          <Pressable analyticsId="components_chat-room.attachment-location" accessibilityRole="button" accessibilityLabel="위치 공유하기" disabled={sending} accessibilityState={{ disabled: sending }} onPress={() => { play('selection'); setAttachmentMenu(false); setLocationOpen(true); }} style={({ pressed }) => [styles.attachmentOption, Depth.control, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}><View style={[styles.attachmentIcon, { backgroundColor: theme.backgroundSelected, shadowColor: '#000' }]}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={22} tintColor={theme.accent} /></View><ThemedText type="smallBold">위치 공유하기</ThemedText></Pressable>
+        {attachmentsOpen && <View accessibilityLabel="첨부 방법" style={[styles.attachmentMenu, { backgroundColor: theme.card, borderColor: theme.line, marginBottom: Math.max(insets.bottom, Spacing.two) + Spacing.one }]}>
+          <Pressable analyticsId="components_chat-room.attachment-photo" accessibilityRole="button" accessibilityLabel="사진 보내기" disabled={sending || pickingPhoto} accessibilityState={{ disabled: sending || pickingPhoto }} onPress={() => { play('selection'); setAttachmentMenu(false); void pickPhoto(); }} style={({ pressed }) => [styles.attachmentOption, { backgroundColor: pressed ? theme.backgroundElement : 'transparent' }]}>
+            <View style={[styles.attachmentIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'photo.on.rectangle', android: 'photo_library', web: 'photo_library' }} size={22} tintColor={theme.accent} /></View>
+            <View style={{ flex: 1 }}><ThemedText type="smallBold" style={{ fontSize: 16 }}>사진 보내기</ThemedText><ThemedText type="small" themeColor="textSecondary">최대 20장</ThemedText></View><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
+          </Pressable>
+          <Pressable analyticsId="components_chat-room.attachment-location" accessibilityRole="button" accessibilityLabel="위치 공유하기" disabled={sending} accessibilityState={{ disabled: sending }} onPress={() => { play('selection'); setAttachmentMenu(false); setLocationOpen(true); }} style={({ pressed }) => [styles.attachmentOption, { backgroundColor: pressed ? theme.backgroundElement : 'transparent' }]}>
+            <View style={[styles.attachmentIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={22} tintColor={theme.accent} /></View>
+            <View style={{ flex: 1 }}><ThemedText type="smallBold" style={{ fontSize: 16 }}>위치 공유하기</ThemedText><ThemedText type="small" themeColor="textSecondary">지도에서 위치 선택</ThemedText></View><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
+          </Pressable>
         </View>}
       </> : status === 'ended' && <ThemedText type="small" themeColor="textSecondary" style={[styles.feedback, { paddingBottom: Math.max(insets.bottom, Spacing.three) }]}>{t.chat.endedBody}</ThemedText>}
     </KeyboardAvoidingView>
@@ -757,13 +773,18 @@ const styles = StyleSheet.create({
   bubbleMine: { alignSelf: 'flex-end', borderRadius: 14, borderTopRightRadius: 4, paddingHorizontal: 12, paddingVertical: Spacing.two, marginLeft: Spacing.five },
   chatPhoto: { width: 210, height: 180, borderRadius: 10 },
   locationCard: { minWidth: 176, minHeight: 110, gap: Spacing.one, justifyContent: 'center' },
-  photoPreview: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, paddingHorizontal: Spacing.two, paddingVertical: Spacing.two, borderTopWidth: 1, flexWrap: 'wrap' },
-  previewImage: { width: 52, height: 52, borderRadius: 8 },
+  photoPreview: { gap: 12, padding: Spacing.three, borderTopWidth: 1 },
+  photoHeading: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  photoThumb: { width: 80, height: 80 }, previewImage: { width: 80, height: 80, borderRadius: 12 },
   previewActions: { flex: 1, minWidth: 90 },
+  iconAction: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  photoRemove: { position: 'absolute', top: 0, right: 0, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  removeCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  photoSend: { minHeight: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.two, padding: 12 },
   addAttachment: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  attachmentMenu: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.four, paddingHorizontal: Spacing.two, paddingTop: Spacing.two },
-  attachmentOption: { minWidth: 112, minHeight: 86, gap: Spacing.one, alignItems: 'center', justifyContent: 'center', borderRadius: 18 },
-  attachmentIcon: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', shadowOpacity: 0.18, shadowRadius: 11, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
+  attachmentMenu: { gap: 4, padding: 8, marginHorizontal: 12, marginTop: 8, borderWidth: 1, borderRadius: 20 },
+  attachmentOption: { minHeight: 64, padding: 8, gap: 12, flexDirection: 'row', alignItems: 'center', borderRadius: 14 },
+  attachmentIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   photoBackdrop: { flex: 1, backgroundColor: '#0B0B12', justifyContent: 'center' },
   photoClose: { position: 'absolute', top: 50, right: 16, zIndex: 2, minHeight: 44, paddingHorizontal: 12, justifyContent: 'center' },
   fullPhoto: { width: '100%', height: '100%' },

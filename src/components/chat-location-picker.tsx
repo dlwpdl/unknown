@@ -1,5 +1,6 @@
 import * as Location from 'expo-location';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ComponentProps } from 'react';
+import { SymbolView } from 'expo-symbols';
 import { AppState, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,10 +13,11 @@ import { isFreshLocation } from '@/lib/location';
 import { googlePinUrl, type PostPin } from '@/lib/post-maps';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
-function LocationAction({ label, onPress, disabled = false, primary = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean }) {
+function LocationAction({ label, onPress, disabled = false, primary = false, icon }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean; icon?: ComponentProps<typeof SymbolView>['name'] }) {
   const theme = useTheme(), { play } = useInteractionFeedback();
   return <Pressable analyticsId={'chat-location.' + (primary ? 'send' : label)} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled}
-    onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.button, { backgroundColor: primary ? theme.accent : theme.backgroundElement, opacity: disabled ? 0.45 : pressed ? 0.7 : 1 }]}>
+    onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.button, { backgroundColor: primary ? theme.accent : 'transparent', opacity: disabled ? 0.45 : pressed ? 0.7 : 1 }]}>
+    {icon && <SymbolView name={icon} size={18} tintColor={primary ? theme.accentInk : theme.accent} />}
     <ThemedText type="smallBold" style={{ color: primary ? theme.accentInk : theme.text }}>{label}</ThemedText></Pressable>;
 }
 
@@ -72,18 +74,26 @@ export function ChatLocationPicker({ sending, onSend, onClose }: { sending: bool
   return <Modal visible transparent statusBarTranslucent animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => { play('selection'); close(); }}>
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.backdrop}>
       <Pressable analyticsId="chat-location.dismiss" accessibilityRole="button" accessibilityLabel="위치 공유 닫기" disabled={sending} onPress={() => { play('selection'); close(); }} style={StyleSheet.absoluteFill} />
-      <View style={[styles.sheet, { maxHeight: Math.min(height * 0.82, 640), backgroundColor: theme.background, paddingBottom: Math.max(insets.bottom, 12) }]} accessibilityViewIsModal>
-        <View style={styles.row}><ThemedText type="subtitle" style={{ flex: 1 }}>위치 공유하기</ThemedText><LocationAction label="닫기" onPress={close} disabled={sending} /></View>
+      <View style={[styles.sheet, { maxHeight: Math.min(height * 0.82, 640), backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, 12) }]} accessibilityViewIsModal>
+        <View style={styles.row}><ThemedText type="smallBold" style={{ flex: 1, fontSize: 18 }}>위치 공유하기</ThemedText>
+          <Pressable analyticsId="chat-location.close" accessibilityRole="button" accessibilityLabel="위치 공유 닫기" accessibilityState={{ disabled: sending }} disabled={sending} onPress={() => { play('selection'); close(); }} style={({ pressed }) => [styles.close, { backgroundColor: theme.backgroundElement, opacity: sending ? 0.45 : pressed ? 0.7 : 1 }]}>
+            <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={18} tintColor={theme.textSecondary} />
+          </Pressable>
+        </View>
         <ScrollView keyboardShouldPersistTaps="handled" style={{ flexShrink: 1 }} contentContainerStyle={styles.content}>
-          <View style={styles.row}><TextInput value={query} onChangeText={setQuery} placeholder="장소 이름 또는 주소" accessibilityLabel="장소 이름 또는 주소" maxLength={240} editable={ready && !sending} returnKeyType="search" onSubmitEditing={() => { play('selection'); void locate(true); }}
-            placeholderTextColor={theme.textSecondary} style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]} /><LocationAction label="검색" onPress={() => void locate(true)} disabled={!ready || !query.trim() || busy || sending} /></View>
+          <View style={[styles.search, { backgroundColor: theme.backgroundElement }]}><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden><SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={18} tintColor={theme.textSecondary} /></View>
+            <TextInput value={query} onChangeText={setQuery} placeholder="장소 이름 또는 주소" accessibilityLabel="장소 이름 또는 주소" maxLength={240} editable={ready && !sending} returnKeyType="search" onSubmitEditing={() => { play('selection'); void locate(true); }}
+              placeholderTextColor={theme.textSecondary} style={[styles.input, { color: theme.text }]} /><LocationAction label="검색" onPress={() => void locate(true)} disabled={!ready || !query.trim() || busy || sending} />
+          </View>
           <View pointerEvents={sending ? 'none' : 'auto'} style={[styles.map, { height: Math.min(240, height * 0.32), backgroundColor: theme.backgroundElement }]}>
             <PostPinMap pin={selection} onSelect={select} onReadyChange={setReady} bottomInset={68} />
-            <View style={styles.current}><LocationAction label={busy ? '위치 찾는 중' : '현재 위치 선택'} onPress={() => void locate(false)} disabled={busy || sending} /></View>
+            <View style={[styles.current, { backgroundColor: theme.card, borderColor: theme.line }]}><LocationAction label={busy ? '위치 찾는 중' : '현재 위치 선택'} icon={{ ios: 'location.fill', android: 'my_location', web: 'my_location' }} onPress={() => void locate(false)} disabled={busy || sending} /></View>
           </View>
           {!!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
-          <ThemedText type="smallBold" numberOfLines={3}>{selection?.label ?? '지도에서 공유할 위치를 골라주세요.'}</ThemedText>
-          <LocationAction label={sending ? '보내는 중' : '이 위치 공유하기'} onPress={() => {
+          <View style={styles.place}><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden style={[styles.placeIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={22} tintColor={theme.accent} /></View>
+            <View style={{ flex: 1 }}><ThemedText type="smallBold" numberOfLines={3}>{selection?.label ?? '공유할 위치를 골라주세요.'}</ThemedText><ThemedText type="small" themeColor="textSecondary">이 대화에 공유</ThemedText></View>
+          </View>
+          <LocationAction label={sending ? '보내는 중' : '이 위치 공유하기'} icon={{ ios: 'paperplane.fill', android: 'send', web: 'send' }} onPress={() => {
             if (!selection) return;
             const operation = revision.current;
             void onSend(selection).catch(() => { if (revision.current === operation) { play('warning'); setError('위치를 보내지 못했어요. 선택한 위치는 유지했으니 다시 시도해 주세요.'); } });
@@ -96,9 +106,11 @@ export function ChatLocationPicker({ sending, onSend, onClose }: { sending: bool
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' },
-  sheet: { width: '100%', maxWidth: 600, alignSelf: 'center', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 16, gap: 12 },
+  sheet: { width: '100%', maxWidth: 600, alignSelf: 'center', flexShrink: 1, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 16, gap: 12 },
   content: { gap: 12 }, row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  input: { flex: 1, minWidth: 0, minHeight: 48, borderRadius: 12, paddingHorizontal: 12, fontSize: 16 },
-  button: { minHeight: 48, minWidth: 48, justifyContent: 'center', alignItems: 'center', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12 },
-  map: { minHeight: 140, overflow: 'hidden', borderRadius: 16 }, current: { position: 'absolute', bottom: 12, left: 12 },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 12, borderRadius: 14 }, input: { flex: 1, minWidth: 0, minHeight: 48, fontSize: 16 },
+  close: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  button: { minHeight: 48, minWidth: 48, flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12 },
+  place: { flexDirection: 'row', alignItems: 'center', gap: 12 }, placeIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  map: { minHeight: 140, overflow: 'hidden', borderRadius: 16 }, current: { position: 'absolute', bottom: 12, left: 12, borderWidth: 1, borderRadius: 24 },
 });

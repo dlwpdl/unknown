@@ -239,14 +239,33 @@ test('multiple chat photos keep selection order and retry only the unsent remain
   harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.add-attachment').props.onPress(); await harness.settle();
   harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.attachment-photo').props.onPress(); await harness.settle();
   assert.equal(pickerOptions.allowsMultipleSelection, true); assert.equal(pickerOptions.orderedSelection, true); assert.equal(pickerOptions.selectionLimit, 20);
-  const send = () => harness.nodes().find(node => node.props?.label?.endsWith('장 보내기'));
-  assert.equal(send().props.label, '2장 보내기'); send().props.onPress(); await harness.settle(); await harness.timers();
+  const send = () => harness.nodes().find(node => (node.props?.label ?? node.props?.accessibilityLabel)?.endsWith('장 보내기'));
+  assert.equal(send().props.label ?? send().props.accessibilityLabel, '2장 보내기'); send().props.onPress(); await harness.settle(); await harness.timers();
   assert.deepEqual(uploads, ['one', 'two']); assert.equal(harness.messages().filter(row => row.kind === 'image').length, 1);
-  assert.equal(send().props.label, '1장 보내기'); assert.deepEqual(removed, failureStage === 'send' ? ['two-path'] : []);
+  assert.equal(send().props.label ?? send().props.accessibilityLabel, '1장 보내기'); assert.deepEqual(removed, failureStage === 'send' ? ['two-path'] : []);
   send().props.onPress(); await harness.settle(); await harness.timers();
   assert.deepEqual(uploads, ['one', 'two', 'two']); assert.deepEqual(sends, failureStage === 'send' ? ['one-path', 'two-path', 'two-path'] : ['one-path', 'two-path']);
   assert.equal(harness.messages().filter(row => row.kind === 'image').length, 2); assert.equal(send(), undefined);
   }
+});
+
+test('selected photo preview can enlarge and remove one image without sending or discarding the draft', async context => {
+  const harness = room({ loadConversationMessages: async () => [],
+    imagePicker: { launchImageLibraryAsync: async () => ({ canceled: false, assets: ['one', 'two'].map(uri => ({ uri, mimeType: 'image/jpeg' })) }) },
+    preparePostImage: async asset => ({ uri: asset.uri, base64: asset.uri, bytes: 100, width: 100, height: 100, mimeType: 'image/webp' }),
+  });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const input = () => harness.nodes().find(node => node.type === 'TextInput' && node.props.placeholder === t.chat.messagePlaceholder);
+  input().props.onChangeText('보내지 않은 원고');
+  harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.add-attachment').props.onPress(); await harness.settle();
+  harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.attachment-photo').props.onPress(); await harness.settle();
+  const preview = harness.nodes().filter(node => node.props?.analyticsId === 'chat.photo.preview');
+  assert.equal(preview.length, 2); preview[0].props.onPress(); await harness.settle();
+  assert.equal(harness.nodes().find(node => node.props?.accessibilityLabel === '대화 사진 크게 보기').props.source.uri, 'one');
+  harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.photo-close').props.onPress(); await harness.settle();
+  harness.nodes().filter(node => node.props?.analyticsId === 'chat.photo.remove')[0].props.onPress(); await harness.settle();
+  assert.equal(harness.nodes().filter(node => node.props?.analyticsId === 'chat.photo.preview').length, 1);
+  assert.equal(input().props.value, '보내지 않은 원고'); assert.equal(harness.messages().length, 0);
 });
 
 test('long press replies in direct and group rooms and keeps the unsent draft', async context => {
