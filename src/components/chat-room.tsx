@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
-import { AppState, KeyboardAvoidingView, LayoutAnimation, Linking, Modal, Platform, StyleSheet, TextInput, UIManager, View, type FlatList as NativeFlatList, type NativeScrollEvent, type NativeSyntheticEvent, type ViewToken } from 'react-native';
+import { AppState, KeyboardAvoidingView, LayoutAnimation, Linking, Modal, Platform, ScrollView, StyleSheet, TextInput, UIManager, View, type FlatList as NativeFlatList, type NativeScrollEvent, type NativeSyntheticEvent, type ViewToken } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,6 +16,7 @@ import { ChatLocationPicker } from '@/components/chat-location-picker';
 import type { ChatLocation } from '@/lib/chat-location';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
+import { MAX_POST_IMAGES } from '@/lib/image-upload';
 import { ThemedText } from '@/components/themed-text';
 import { MannerReviewButton } from '@/components/manner-review';
 import { ThemedView } from '@/components/themed-view';
@@ -107,7 +108,8 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const [editingMessage, setEditingMessage] = useState<ChatMessageRecord | null>(null);
   const [messageEditDraft, setMessageEditDraft] = useState('');
   const replyTarget = replyTo && !replyTo.deleted_at && !hidden('message', replyTo.id, replyTo.sender_id) ? replyTo : null;
-  const [selectedPhoto, setSelectedPhoto] = useState<PreparedImage | null>(null);
+  const [selectedPhotos, setSelectedPhotos] = useState<PreparedImage[]>([]);
+  const lastPhotoSentAt = useRef(0);
   const [pickingPhoto, setPickingPhoto] = useState(false);
   const [attachmentsOpen, setAttachmentsOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
@@ -449,36 +451,50 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     setPickingPhoto(true); setError(null);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1,
+        allowsMultipleSelection: true, orderedSelection: true, selectionLimit: MAX_POST_IMAGES,
         preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible });
       if (result.canceled || !valid()) return;
-      const asset = result.assets[0];
-      if (!asset?.uri || !isSupportedImage(asset.mimeType ?? 'image/jpeg')) throw new Error('UNSUPPORTED_IMAGE');
-      const prepared = await preparePostImage(asset);
-      if (valid()) { setSelectedPhoto(prepared); play('selection'); }
+      const prepared: PreparedImage[] = [];
+      for (const asset of result.assets.slice(0, MAX_POST_IMAGES)) {
+        if (!valid()) return;
+        if (!asset?.uri || !isSupportedImage(asset.mimeType ?? 'image/jpeg')) throw new Error('UNSUPPORTED_IMAGE');
+        prepared.push(await preparePostImage(asset));
+      }
+      if (valid()) { setSelectedPhotos(prepared); play('selection'); }
     } catch { if (valid()) { play('warning'); setError('사진을 준비하지 못했어요. JPG, PNG 또는 WebP 사진을 다시 선택해 주세요.'); } }
     finally { if (valid()) setPickingPhoto(false); }
   };
   const sendPhoto = async () => {
-    if (!selectedPhoto || sending || processing.current || !access.write || !valid()) return;
+    if (!selectedPhotos.length || sending || processing.current || !access.write || !valid()) return;
     processing.current = true; setSending(true); setError(null);
-    let path: string | null = null;
-    let sentId: string | null = null;
     const parent = replyTarget;
     try {
-      path = await uploadChatImage(supabase, currentUserId, conversation.id, selectedPhoto.base64);
-      if (!valid()) return;
-      sentId = await sendChatAttachment(supabase, conversation.id, { kind: 'image', imagePath: path }, parent?.id);
-      const rows = await loadConversationMessagesByIds(supabase, conversation.id, [sentId]).catch(() => []);
-      if (!valid()) return;
-      animateNewMessage();
-      setMessages((previous) => mergeChatMessages(previous, rows.length ? rows.map((row) => ({ ...row, imageUrl: row.imageUrl ?? selectedPhoto.uri })) : [{ id: sentId!, conversation_id: conversation.id,
-        sender_id: currentUserId, sender_nickname: auth.me.nickname, body: '📷 사진', kind: 'image', image_path: path, imageUrl: selectedPhoto.uri, reply_to_id: parent?.id, reply: parent,
-        created_at: new Date().toISOString() }], blockedUsers.current));
-      setSelectedPhoto(null); scrollToLatest(); play('message');
+      for (const selectedPhoto of selectedPhotos) {
+        if (!valid()) return;
+        let path: string | null = null, sentId: string | null = null;
+        try {
+          path = await uploadChatImage(supabase, currentUserId, conversation.id, selectedPhoto.base64);
+          if (!valid()) return;
+          // The server retains a one-second message cooldown for every photo.
+          const wait = Math.max(0, 1000 - (Date.now() - lastPhotoSentAt.current));
+          if (wait) await new Promise(resolve => setTimeout(resolve, wait));
+          if (!valid()) return;
+          sentId = await sendChatAttachment(supabase, conversation.id, { kind: 'image', imagePath: path }, parent?.id);
+          lastPhotoSentAt.current = Date.now();
+          const rows = await loadConversationMessagesByIds(supabase, conversation.id, [sentId]).catch(() => []);
+          if (!valid()) return;
+          animateNewMessage();
+          setMessages((previous) => mergeChatMessages(previous, rows.length ? rows.map((row) => ({ ...row, imageUrl: row.imageUrl ?? selectedPhoto.uri })) : [{ id: sentId!, conversation_id: conversation.id,
+            sender_id: currentUserId, sender_nickname: auth.me.nickname, body: '📷 사진', kind: 'image', image_path: path, imageUrl: selectedPhoto.uri, reply_to_id: parent?.id, reply: parent,
+            created_at: new Date().toISOString() }], blockedUsers.current));
+          setSelectedPhotos(current => current.filter(photo => photo !== selectedPhoto)); scrollToLatest(); play('message');
+        } finally {
+          if (path && !sentId) void supabase.storage.from('chat-images').remove([path]).catch(() => {});
+        }
+      }
       setReplyTo(current => current?.id === parent?.id ? null : current);
-    } catch { if (valid()) { play('warning'); setError('사진을 보내지 못했어요. 잠시 후 다시 시도해 주세요.'); } }
+    } catch { if (valid()) { play('warning'); setError('남은 사진을 보내지 못했어요. 보낸 사진은 제외했으니 다시 시도해 주세요.'); } }
     finally {
-      if (path && !sentId) void supabase.storage.from('chat-images').remove([path]).catch(() => {});
       processing.current = false; if (valid()) setSending(false);
     }
   };
@@ -619,7 +635,17 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
         <View style={styles.previewActions}><ThemedText type="smallBold">답장</ThemedText><ThemedText type="small" numberOfLines={2}>{messagePreview(replyTarget)}</ThemedText></View>
         <RoomAction label="답장 취소" onPress={() => setReplyTo(null)} disabled={sending} />
       </View>}
-      {access.write && selectedPhoto && <View style={[styles.photoPreview, { backgroundColor: theme.card, borderTopColor: theme.line }]}><Image source={{ uri: selectedPhoto.uri }} style={styles.previewImage} contentFit="cover" accessibilityLabel="보낼 사진 미리보기" /><View style={styles.previewActions}><ThemedText type="smallBold">선택한 사진</ThemedText><ThemedText type="small" themeColor="textSecondary">{Math.ceil(selectedPhoto.bytes / 1024)}KB · 이 대화에만 공유</ThemedText></View><RoomAction label="취소" onPress={() => { play('selection'); setSelectedPhoto(null); }} disabled={sending} /><RoomAction label={sending ? '보내는 중' : '사진 보내기'} onPress={() => void sendPhoto()} disabled={sending} primary /></View>}
+      {access.write && selectedPhotos.length > 0 && <View style={[styles.photoPreview, { backgroundColor: theme.card, borderTopColor: theme.line }]}>
+        <ScrollView horizontal style={{ width: '100%' }} contentContainerStyle={{ gap: Spacing.two }}>
+          {selectedPhotos.map((photo, index) => <Pressable key={`${photo.uri}-${index}`} analyticsId="chat.photo.remove" accessibilityRole="button" accessibilityLabel={`사진 ${index + 1} 제외`} disabled={sending}
+            onPress={() => { play('selection'); setSelectedPhotos(current => current.filter(item => item !== photo)); }}>
+            <Image source={{ uri: photo.uri }} style={styles.previewImage} contentFit="cover" accessibilityLabel={`보낼 사진 ${index + 1}`} />
+            <ThemedText type="small" themeColor="textSecondary">{index + 1} · 제외</ThemedText>
+          </Pressable>)}
+        </ScrollView>
+        <View style={styles.previewActions}><ThemedText type="smallBold">선택한 사진 {selectedPhotos.length}장</ThemedText><ThemedText type="small" themeColor="textSecondary">이 대화에만 공유</ThemedText></View>
+        <RoomAction label="취소" onPress={() => { play('selection'); setSelectedPhotos([]); }} disabled={sending} /><RoomAction label={sending ? '보내는 중' : `${selectedPhotos.length}장 보내기`} onPress={() => void sendPhoto()} disabled={sending} primary />
+      </View>}
       {access.write ? <>
         {contextLoaded && !loading && !replyTarget && !allMessages.some(message => message.sender_id === currentUserId) && <View style={[styles.suggestions, { backgroundColor: theme.card }]}>
           <ThemedText type="small" themeColor="textSecondary">{suggestionContext?.title ? `${suggestionContext.title} · ` : ''}누르면 바로 전송돼요</ThemedText>
