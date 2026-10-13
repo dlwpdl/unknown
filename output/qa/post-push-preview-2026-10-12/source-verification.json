@@ -1,0 +1,78 @@
+{
+  "verifiedAt": "2026-10-13T00:27:35.901613+00:00",
+  "base": "c97903c4b40c1744952c83811f880df86a2067fe",
+  "ownerApproval": "알람시안봤는데 좋더라 진행해",
+  "sourceSha256": {
+    "supabase/functions/_shared/push-notifications.ts": "9c07c8edc1541f0ffb16961f565e6a829a64f4cf5114c6f781f01a0631e2f56e",
+    "scripts/push-delivery.test.mjs": "14272c55887459728e869bdafdc391f3d3f592045b6b12e98f6b85092b2e0548",
+    "supabase/migrations/20261013001000_post_notification_previews.sql": "cc7531d5b42ab6aa3381df393487c5a0e2396c70d9b1ea258dbd22d2c0248bd7",
+    "supabase/tests/post_notification_previews.test.sql": "ae4cb02c898fee11d6070785fbb33bb8ec4d3d53308518185d03b1c4b1125d37",
+    "docs/specs/post-notification-preview-2026-10-12.md": "8910cafdd0fcccbb87035bf7150bd4b4e04d3b847e1174a2825469d1fb57d67b",
+    "output/design/gling-post-notification-preview-2026-10-12.html": "0af0ac87553898f0ddf80121bd8ede525f3ecf1faa3117fb5d02fb12230f1e11"
+  },
+  "checks": {
+    "worker": {
+      "pass": 22,
+      "fail": 0,
+      "baselineFail": 2
+    },
+    "nodeSuite": {
+      "pass": 774,
+      "fail": 0,
+      "skip": 1
+    },
+    "database": {
+      "pass": 25,
+      "fail": 0,
+      "baselineFail": 6,
+      "transactionRolledBack": true,
+      "usesCapturedLiveDefinitions": true,
+      "localPrerequisites": "actual message_preview/account_security/first_attempt_at columns plus unchanged 0153 account-security migration; no mocked guards"
+    },
+    "lint": "pass",
+    "typecheck": "pass",
+    "preview": {
+      "checks": [
+        {
+          "width": 320,
+          "fiveChoicesAndOpen": true,
+          "overflow": false
+        },
+        {
+          "width": 390,
+          "fiveChoicesAndOpen": true,
+          "overflow": false
+        },
+        {
+          "width": 768,
+          "fiveChoicesAndOpen": true,
+          "overflow": false
+        },
+        {
+          "width": 1440,
+          "fiveChoicesAndOpen": true,
+          "overflow": false
+        }
+      ],
+      "pageErrors": [],
+      "realNotificationsSent": false,
+      "physicalDeviceUsed": false
+    },
+    "rollback": "pass; restored all 3 live function definition MD5 hashes and service-only claim ACL in a rolled-back local transaction"
+  },
+  "productionBaselineReceipt": "/Users/ash/Desktop/Git/Orca/workspace/mobile/gling-admin-listing-gallery-20261012/output/qa/post-push-preview-2026-10-12/production-baseline/baseline-receipt.json",
+  "realNotificationsSent": false,
+  "queueClaimedInProduction": false,
+  "physicalDeviceUsed": false,
+  "nativeActions": false,
+  "productionDeployed": false,
+  "notes": "Local checks are complete; production metadata/Edge hash readback belongs to the existing single operator.",
+  "independentReview": {
+    "ready": true,
+    "critical": 0,
+    "important": 0,
+    "reviewer": "sharing_review",
+    "databaseLogPass": 25,
+    "workerExecutedPass": 22
+  }
+}

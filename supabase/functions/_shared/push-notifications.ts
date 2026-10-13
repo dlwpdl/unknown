@@ -3,6 +3,7 @@ import { EVENT_CITIES } from './ticketmaster.ts';
 type PushJob = {
   id: string; lease_id: string; token: string; user_id: string; notification_id: string;
   category: string; body: string; route: string | null; ticket_id: string | null;
+  post_title?: string | null; post_preview?: string | null;
 };
 type WorkerOptions = {
   secret?: string; expoAccessToken?: string; fetcher?: typeof fetch;
@@ -13,7 +14,7 @@ const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const uuid = new RegExp(`^${UUID}$`, 'i');
 // 앱의 notificationRoute()와 같은 목적지 목록을 유지한다. 관리자 알림(/admin?section=…)이 빠지면
 // 서버가 보낸 화면 대신 /notifications 로 열리므로 두 곳을 함께 고쳐야 한다.
-const routePattern = new RegExp(`^(?:/post/${UUID}(?:\\?commentId=${UUID})?|/company/${UUID}\\?review=(?:usage|employment)|/chat\\?(?:conversationId=${UUID}(?:&view=requests)?|requestId=${UUID}|view=requests)|/profile/(?:guidelines|settings|merchant\\?merchant=${UUID})|/notifications|/admin(?:\\?(?:section=(?:alerts|analytics|errors|overview|posts|reports|safety|trending|users)|(?:safety|alert)=(?:${UUID}|[1-9][0-9]*)))?)$`, 'i');
+const routePattern = new RegExp(`^(?:/post/${UUID}(?:\\?commentId=${UUID})?|/company/${UUID}\\?review=(?:usage|employment)|/chat\\?(?:conversationId=${UUID}(?:&view=requests)?|requestId=${UUID}|view=requests)|/profile/(?:guidelines|settings|meetup-reviews|merchant\\?merchant=${UUID})|/notifications|/admin(?:\\?(?:section=(?:alerts|analytics|errors|overview|posts|reports|safety|trending|users)|(?:safety|alert)=(?:${UUID}|[1-9][0-9]*)))?)$`, 'i');
 const json = (value: unknown, status = 200) => Response.json(value, { status });
 const object = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 
@@ -57,8 +58,12 @@ export async function handlePushNotifications(request: Request, options: WorkerO
         body: JSON.stringify(phase === 'receipt' ? { ids: jobs.map((job) => job.ticket_id) } : jobs.map((job) => {
           const event = job.route?.match(/^\/events\/([A-Za-z0-9_-]{1,100})\?cityId=([a-z]+)$/);
           const route = job.route && (routePattern.test(job.route) || (event && Object.hasOwn(EVENT_CITIES, event[2]))) ? job.route : '/notifications';
+          const postPreview = new RegExp(`^/post/${UUID}$`, 'i').test(route)
+            && ['trending', 'weekly_ranking', 'city_food', 'city_places', 'interests', 'nearby'].includes(job.category)
+            && typeof job.post_title === 'string' && job.post_title.trim().length > 0 && typeof job.post_preview === 'string';
           return {
-            to: job.token, title: route.startsWith('/admin') ? '글링 관리자' : '글링', body: job.body,
+            to: job.token, title: postPreview ? job.post_title : route.startsWith('/admin') ? '글링 관리자' : '글링',
+            body: postPreview ? job.post_preview : job.body,
             sound: 'default', channelId: 'gling-activity', ttl: 300,
             // Expo has no send idempotency key. Stable IDs collapse ambiguous retry copies on devices.
             collapseId: job.notification_id, tag: job.notification_id,
