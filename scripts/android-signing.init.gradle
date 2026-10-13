@@ -7,7 +7,15 @@ allprojects { p ->
                 keyAlias System.getenv('GLING_UPLOAD_KEY_ALIAS')
                 keyPassword System.getenv('GLING_UPLOAD_KEY_PASSWORD')
             }
-            p.android.buildTypes.release.signingConfig = p.android.signingConfigs.glingUpload
+            def releaseBuild = p.android.buildTypes.release
+            releaseBuild.signingConfig = p.android.signingConfigs.glingUpload
+            releaseBuild.minifyEnabled = true
+            releaseBuild.shrinkResources = true
+            // Expo's default rules disable optimization; retain the other keep rules.
+            def defaultRules = p.android.getDefaultProguardFile('proguard-android.txt')
+            releaseBuild.setProguardFiles(releaseBuild.proguardFiles.collect { rules ->
+                rules == defaultRules ? p.android.getDefaultProguardFile('proguard-android-optimize.txt') : rules
+            })
         }
     }
 }
