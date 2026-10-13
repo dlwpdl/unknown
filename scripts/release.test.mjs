@@ -150,3 +150,48 @@ test('release policy checks reuse the workflow without building or submitting an
   assert.equal(workflow.jobs.ios.env.GLING_SUPABASE_SERVICE_ROLE_KEY, undefined);
   assert.equal(workflow.jobs.android.env.GLING_SUPABASE_SERVICE_ROLE_KEY, undefined);
 });
+
+test('Android sends the verified bundle to existing closed-testing review before committing', () => {
+  const result = spawnSync('python3', ['-c', `
+import importlib.util, json, os, tempfile
+from pathlib import Path
+spec = importlib.util.spec_from_file_location('release', 'scripts/release.py')
+r = importlib.util.module_from_spec(spec); spec.loader.exec_module(r)
+with tempfile.TemporaryDirectory() as directory:
+    os.chdir(directory)
+    Path('app.json').write_text(json.dumps({'expo': {'version': '1.2.0'}}))
+    Path('release-notes').mkdir()
+    Path('release-notes/1.2.0.ko.txt').write_text('투표와 모임 후기를 추가했어요.')
+    r.OUT.mkdir(); (r.OUT / 'app.aab').write_bytes(b'verified-bundle')
+    r.google_token = lambda *args: 'test-publisher'
+    r.summary = lambda *args: None
+    actions = []
+    def request(url, token=None, data=None, method='GET', content_type=None, **kwargs):
+        assert url.startswith('https://androidpublisher.googleapis.com/upload/')
+        assert token == 'test-publisher' and method == 'POST' and data == b'verified-bundle'
+        actions.append('upload'); return {'versionCode': 64}
+    def play(token, path='', data=None, method='GET'):
+        assert token == 'test-publisher'
+        if path == '/edits':
+            assert method == 'POST'; actions.append('edit'); return {'id': 'owned-edit'}
+        if method == 'PUT':
+            assert path == '/edits/owned-edit/tracks/alpha', 'Internal testing does not send an update for closed-testing review'
+            assert data['track'] == 'alpha'
+            release = data['releases'][0]
+            assert release['versionCodes'] == ['64'] and release['status'] == 'completed'
+            assert release['releaseNotes'][0]['language'] == 'ko-KR'
+            actions.append('closed-review'); return data
+        if path.endswith(':validate'):
+            assert actions[-1] == 'closed-review'; actions.append('validate'); return {}
+        if path.endswith(':commit'):
+            assert path == '/edits/owned-edit:commit' and method == 'POST'
+            assert actions[-1] == 'validate'; actions.append('commit'); return {'id': 'owned-edit'}
+        if method == 'DELETE': return {}
+        raise AssertionError(path)
+    r.request = request; r.play = play
+    r.submit('android', {}, {}, Path(directory))
+    assert actions == ['edit', 'upload', 'closed-review', 'validate', 'commit']
+    assert r.published_android_build([{'track': 'alpha', 'releases': [{'status': 'completed', 'versionCodes': ['64']}]}]) is None
+`], { cwd: new URL('../', import.meta.url), encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+});
