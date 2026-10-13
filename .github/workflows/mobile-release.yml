@@ -112,6 +112,12 @@ jobs:
         env:
           RELEASE_BUILD: ${{ needs.prepare.outputs.build }}
         run: python3 scripts/release.py build --platform ios --build-number "$RELEASE_BUILD"
+      - name: Immediately require the verified iOS build
+        if: ${{ github.ref_type == 'tag' }}
+        env:
+          RELEASE_BUILD: ${{ needs.prepare.outputs.build }}
+          GLING_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.GLING_SUPABASE_SERVICE_ROLE_KEY }}
+        run: python3 scripts/release.py require-update --platform ios --build-number "$RELEASE_BUILD"
       - name: Submit to App Store review and TestFlight
         if: ${{ github.ref_type == 'tag' }}
         run: python3 scripts/release.py submit --platform ios
@@ -142,6 +148,12 @@ jobs:
         env:
           RELEASE_BUILD: ${{ needs.prepare.outputs.build }}
         run: python3 scripts/release.py build --platform android --build-number "$RELEASE_BUILD"
+      - name: Immediately require the verified Android build
+        if: ${{ github.ref_type == 'tag' }}
+        env:
+          RELEASE_BUILD: ${{ needs.prepare.outputs.build }}
+          GLING_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.GLING_SUPABASE_SERVICE_ROLE_KEY }}
+        run: python3 scripts/release.py require-update --platform android --build-number "$RELEASE_BUILD"
       - name: Submit to Google Play closed-testing review
         if: ${{ github.ref_type == 'tag' }}
         run: python3 scripts/release.py submit --platform android
