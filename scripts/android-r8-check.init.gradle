@@ -1,0 +1,17 @@
+// Run with the release init script and Gradle's help task; no app is compiled.
+gradle.projectsEvaluated {
+    def app = gradle.rootProject.findProject(':app')
+    if (app == null) return // Included plugin builds have no app module.
+    assert app.plugins.hasPlugin('com.android.application') : 'Android app project is required'
+    def releaseBuild = app.android.buildTypes.release
+    assert releaseBuild.minifyEnabled : 'Release R8 must be enabled'
+    assert releaseBuild.shrinkResources : 'Release resource shrinking must be enabled'
+    assert app.tasks.findByName('minifyReleaseWithR8') != null : 'R8 task must be registered'
+    def rules = releaseBuild.proguardFiles
+    assert rules.contains(app.android.getDefaultProguardFile('proguard-android-optimize.txt')) : 'Full optimization rules are required'
+    assert !rules.contains(app.android.getDefaultProguardFile('proguard-android.txt')) : 'Non-optimizing defaults must be replaced'
+    assert rules.contains(app.file('proguard-rules.pro')) : 'Project keep rules must be preserved'
+    assert releaseBuild.signingConfig.name == 'glingUpload' : 'Upload signing must be preserved'
+    assert !app.android.buildTypes.debug.minifyEnabled : 'Debug settings must be preserved'
+    println 'R8_RELEASE_CONFIG_OK'
+}
