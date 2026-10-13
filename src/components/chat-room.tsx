@@ -675,12 +675,12 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
         </View>
         {attachmentsOpen && <View accessibilityLabel="첨부 방법" style={[styles.attachmentMenu, { backgroundColor: theme.card, borderColor: theme.line, marginBottom: Math.max(insets.bottom, Spacing.two) + Spacing.one }]}>
           <Pressable analyticsId="components_chat-room.attachment-photo" accessibilityRole="button" accessibilityLabel="사진 보내기" disabled={sending || pickingPhoto} accessibilityState={{ disabled: sending || pickingPhoto }} onPress={() => { play('selection'); setAttachmentMenu(false); void pickPhoto(); }} style={({ pressed }) => [styles.attachmentOption, { backgroundColor: pressed ? theme.backgroundElement : 'transparent' }]}>
-            <View style={[styles.attachmentIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'photo.on.rectangle', android: 'photo_library', web: 'photo_library' }} size={22} tintColor={theme.accent} /></View>
-            <View style={{ flex: 1 }}><ThemedText type="smallBold" style={{ fontSize: 16 }}>사진 보내기</ThemedText><ThemedText type="small" themeColor="textSecondary">최대 20장</ThemedText></View><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
+            <View style={[styles.attachmentIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'photo.on.rectangle', android: 'photo_library', web: 'photo_library' }} size={20} tintColor={theme.accent} /></View>
+            <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}><ThemedText type="smallBold" style={{ fontSize: 15 }}>사진 보내기</ThemedText><ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12 }}>최대 20장</ThemedText></View><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
           </Pressable>
           <Pressable analyticsId="components_chat-room.attachment-location" accessibilityRole="button" accessibilityLabel="위치 공유하기" disabled={sending} accessibilityState={{ disabled: sending }} onPress={() => { play('selection'); setAttachmentMenu(false); setLocationOpen(true); }} style={({ pressed }) => [styles.attachmentOption, { backgroundColor: pressed ? theme.backgroundElement : 'transparent' }]}>
-            <View style={[styles.attachmentIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={22} tintColor={theme.accent} /></View>
-            <View style={{ flex: 1 }}><ThemedText type="smallBold" style={{ fontSize: 16 }}>위치 공유하기</ThemedText><ThemedText type="small" themeColor="textSecondary">지도에서 위치 선택</ThemedText></View><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
+            <View style={[styles.attachmentIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={20} tintColor={theme.accent} /></View>
+            <ThemedText type="smallBold" style={{ flex: 1, fontSize: 15 }}>위치 공유하기</ThemedText><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
           </Pressable>
         </View>}
       </> : status === 'ended' && <ThemedText type="small" themeColor="textSecondary" style={[styles.feedback, { paddingBottom: Math.max(insets.bottom, Spacing.three) }]}>{t.chat.endedBody}</ThemedText>}
@@ -783,8 +783,8 @@ const styles = StyleSheet.create({
   photoSend: { minHeight: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.two, padding: 12 },
   addAttachment: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   attachmentMenu: { gap: 4, padding: 8, marginHorizontal: 12, marginTop: 8, borderWidth: 1, borderRadius: 20 },
-  attachmentOption: { minHeight: 64, padding: 8, gap: 12, flexDirection: 'row', alignItems: 'center', borderRadius: 14 },
-  attachmentIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  attachmentOption: { minHeight: 48, paddingHorizontal: 8, paddingVertical: 6, gap: 10, flexDirection: 'row', alignItems: 'center', borderRadius: 12 },
+  attachmentIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   photoBackdrop: { flex: 1, backgroundColor: '#0B0B12', justifyContent: 'center' },
   photoClose: { position: 'absolute', top: 50, right: 16, zIndex: 2, minHeight: 44, paddingHorizontal: 12, justifyContent: 'center' },
   fullPhoto: { width: '100%', height: '100%' },
