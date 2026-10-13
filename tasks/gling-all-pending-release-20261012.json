@@ -40,10 +40,10 @@
   "new_paid_services": false,
   "new_automation_jobs": false,
   "new_dependency": false,
-  "latest_owner_instruction": "2026-10-12: 싹다 반영해",
+  "latest_owner_instruction": "2026-10-13: Android and iPhone builds and review submissions must both run automatically",
   "verification": {
     "node_tests": {
-      "passed": 880,
+      "passed": 885,
       "skipped": 2,
       "failed": 0
     },
@@ -57,15 +57,27 @@
     "anonymous_vote_identity_access": "denied",
     "web_suggestions": "app-only suggestion RPCs excluded using existing platform-specific module pattern",
     "current_apple_submission": "1.1.10 WAITING_FOR_REVIEW; preserve until replacement binary verified",
-    "share_gateway": "prebuilt source only; no authorized existing edge hosting account/project connected; live static sharing remains working",
+    "share_gateway": {
+      "status": "verified_live",
+      "origin": "https://gling-share-preview.vercel.app",
+      "deployment_id": "dpl_FC12c1aYQjCAENdi4fDK8WDoEiHc",
+      "source_set_sha256": "3d8b0fffe8b1f671d3b262f4607510f3b7cb7df668e223da7800a40c34f07960",
+      "primary_auth_origin": "https://gling.ej-entertainment.com"
+    },
     "raw_private_qa": "retained locally; excluded from public repository",
     "ios_javascript_export": "pass",
     "code_review": "no must-fix findings"
   },
   "native_release": {
     "version": "1.2.0",
-    "build": 63,
-    "binary_validation": "pending",
-    "submission": "pending"
+    "local_validation_build": 63,
+    "final_build": "allocated_by_existing_tag_workflow",
+    "old_ios_submission": "1.1.10_DEVELOPER_REJECTED_after_verified_replacement",
+    "ios_destination": "App_Store_review_and_existing_TestFlight_groups",
+    "android_destination": "existing_alpha_closed_testing_review",
+    "public_android": "production_API_precondition_rejects_current_edit",
+    "rebuild_required": true,
+    "tag": "v1.2.0",
+    "submission": "pending_final_tag"
   }
 }

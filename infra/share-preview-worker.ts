@@ -78,18 +78,30 @@ export async function handleSharePreview(request: Request, env: SharePreviewEnv,
   const route = new URL(request.url).pathname.match(/^\/share\/([^/]+)\/?$/);
   if (!route || !UUID.test(route[1])) return unavailable(404, head);
   const id = route[1].toLowerCase();
+  let stage = 'APP_ORIGIN';
+  let signal: AbortSignal | undefined;
   try {
     const app = origin(env.APP_URL);
+    stage = 'SHARE_ORIGIN';
     const share = origin(env.SHARE_ORIGIN ?? env.APP_URL);
+    stage = 'SUPABASE_ORIGIN';
     const supabase = origin(env.SUPABASE_URL);
+    stage = 'PUBLISHABLE_KEY';
     const auth = publicHeaders(env.SUPABASE_PUBLISHABLE_KEY);
-    const result = await fetcher(`${supabase}/rest/v1/rpc/get_shared_link_preview`, { method: 'POST', headers: auth, body: JSON.stringify({ p_post_id: id }), redirect: 'error', signal: AbortSignal.timeout(5000) });
-    if (!result.ok) return unavailable(503, head);
+    stage = 'PREVIEW_TIMEOUT';
+    signal = AbortSignal.timeout(5000);
+    stage = 'PREVIEW_FETCH';
+    const result = await fetcher(`${supabase}/rest/v1/rpc/get_shared_link_preview`, { method: 'POST', headers: auth, body: JSON.stringify({ p_post_id: id }), redirect: 'error', signal });
+    if (!result.ok) { console.warn(JSON.stringify({ event: 'share_preview_unavailable', stage: 'UPSTREAM_STATUS', status: result.status })); return unavailable(503, head); }
+    stage = 'PREVIEW_JSON';
     const preview = await result.json() as Record<string, unknown> | null;
     if (preview === null) return unavailable(404, head);
     if (!preview || typeof preview !== 'object' || Array.isArray(preview) || preview.id !== id
       || typeof preview.title !== 'string' || !preview.title.trim() || typeof preview.closed !== 'boolean'
-      || typeof preview.kind !== 'string' || !Object.hasOwn(kinds, preview.kind)) return unavailable(503, head);
+      || typeof preview.kind !== 'string' || !Object.hasOwn(kinds, preview.kind)) {
+      console.warn(JSON.stringify({ event: 'share_preview_unavailable', stage: 'PREVIEW_SCHEMA' })); return unavailable(503, head);
+    }
+    stage = 'PREVIEW_HTML';
     const kind = preview.kind as Kind;
     const title = text(preview.title, 300);
     const city = text(preview.city);
@@ -120,7 +132,12 @@ ${city ? `<p class="meta">${escapeHtml(city)}</p>` : ''}${schedule ? `<p class="
 <p class="login">Google 또는 소셜 계정으로 로그인하면 자세한 내용을 확인할 수 있어요.</p><a id="share-primary-cta" class="cta" href="${escapeHtml(destination)}">${cta}</a></div></article>
 <p class="privacy">이야기와 대화는 로그인한 글링 멤버에게만 보여요.</p></main><script src="${app}/share-redirect.js" defer></script></body></html>`;
     return new Response(head ? null : html, { headers: headers(app, supabase) });
-  } catch { return unavailable(503, head); }
+  } catch (error) {
+    const name = error && typeof error === 'object' && 'name' in error ? error.name : undefined;
+    const error_kind = signal?.aborted || name === 'TimeoutError' || name === 'AbortError' ? 'TIMEOUT' : name === 'TypeError' ? 'NETWORK' : 'OTHER';
+    console.warn(JSON.stringify({ event: 'share_preview_unavailable', stage, ...(stage === 'PREVIEW_FETCH' ? { error_kind } : {}) }));
+    return unavailable(503, head);
+  }
 }
 
 export default {

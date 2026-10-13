@@ -2,13 +2,13 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { buildSharedPostUrl, sharedLinkTarget, sharedLinkInMessage, sharedPostMessage, sharedPostReturnPath } from '../src/lib/sharing.ts';
 
-test('공개 웹의 실제 정적 글 경로로 ID를 전달한다', () => {
+test('별도 웹 주소는 유지하고 글링 공유는 미리보기 경로로 연결한다', () => {
   assert.equal(buildSharedPostUrl('post 1', 'https://gling.example/'), 'https://gling.example/post?id=post%201');
-  assert.equal(buildSharedPostUrl('post 1'), 'https://gling.ej-entertainment.com/post?id=post%201');
+  assert.equal(buildSharedPostUrl('post 1'), 'https://gling-share-preview.vercel.app/share/post%201');
 });
 
 test('HTML을 텍스트로 반환하는 Supabase 공유 함수 대신 공개 글 화면을 쓴다', () => {
-  assert.equal(buildSharedPostUrl('post 1', undefined, 'https://project.supabase.co/functions/v1/public-post'), 'https://gling.ej-entertainment.com/post?id=post%201');
+  assert.equal(buildSharedPostUrl('post 1', undefined, 'https://project.supabase.co/functions/v1/public-post'), 'https://gling-share-preview.vercel.app/share/post%201');
 });
 
 test('별도로 설정한 공개 공유 주소는 유지한다', () => {
@@ -16,6 +16,13 @@ test('별도로 설정한 공개 공유 주소는 유지한다', () => {
 });
 
 const id = '12345678-1234-1234-1234-123456789abc';
+test('the verified preview gateway uses its UUID route and keeps login on the original site', () => {
+  assert.equal(buildSharedPostUrl(id, 'https://gling.ej-entertainment.com/'), `https://gling-share-preview.vercel.app/share/${id}`);
+  assert.equal(buildSharedPostUrl(id, undefined, 'https://gling-share-preview.vercel.app/share/'), `https://gling-share-preview.vercel.app/share/${id}`);
+  assert.deepEqual(sharedLinkTarget(`https://gling-share-preview.vercel.app/share/${id}?invite=1`), { id, invite: true });
+  for (const url of [`https://gling-share-preview.vercel.app.evil.test/share/${id}`, `https://user@gling-share-preview.vercel.app/share/${id}`, `https://gling-share-preview.vercel.app/post?id=${id}`, `https://gling-share-preview.vercel.app/auth/callback?id=${id}`]) assert.equal(sharedLinkTarget(url), null);
+  assert.equal(sharedPostReturnPath(`https://gling-share-preview.vercel.app/post?id=${id}`), '/');
+});
 test('only owned Gling links become internal preview cards', () => {
   assert.deepEqual(sharedLinkTarget(`https://gling.ej-entertainment.com/share/${id}`), { id, invite: false });
   assert.deepEqual(sharedLinkTarget(`https://gling.ej-entertainment.com/post?id=${id}&invite=1`), { id, invite: true });
@@ -27,7 +34,7 @@ test('outbound sharing never copies the post body or private meetup location', (
   const post = { id, title: '페스티벌 같이 가요', body: '비공개 상세 집결 장소', room: {} };
   const text = sharedPostMessage(post);
   assert.ok(text.includes('페스티벌 같이 가요'));
-  assert.ok(text.includes(`/post?id=${id}`));
+  assert.ok(text.includes(`/share/${id}`));
   assert.ok(!text.includes(post.body));
 });
 test('login resumes only a validated local post, never an external redirect', () => {

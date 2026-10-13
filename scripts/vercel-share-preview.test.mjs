@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, wri
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { createServer, request as httpRequest } from 'node:http';
 import { buildVercelOutput } from '../infra/build-vercel-output.mjs';
 
 const temporary = mkdtempSync(join(tmpdir(), 'gling-vercel-'));
@@ -40,15 +41,16 @@ test('prebuilt output preserves static assets and routes while authentication st
   assert.deepEqual(route('/_gling-share-preview'), { dest: '/404.html', status: 404 });
   assert.deepEqual(route(`/share/${id}?__gling_share_id=other`), { dest: '/404.html', status: 404 });
   const settings = JSON.parse(readFileSync(join(output, 'functions/_gling-share-preview.func/.vc-config.json')));
-  assert.equal(settings.runtime, 'edge');
-  assert.deepEqual(settings.envVarsInUse, ['APP_URL', 'SHARE_ORIGIN', 'SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY']);
-  assert.ok(existsSync(join(output, 'functions/_gling-share-preview.func', settings.entrypoint)));
+  assert.equal(settings.runtime, 'nodejs22.x');
+  assert.equal(settings.launcherType, 'Nodejs');
+  assert.equal(settings.handler, 'node-share-preview.js');
+  assert.ok(existsSync(join(output, 'functions/_gling-share-preview.func', settings.handler)));
+  assert.equal(JSON.parse(readFileSync(join(output, 'functions/_gling-share-preview.func/package.json'))).type, 'module');
 });
 
-test('compiled Edge adapter retains the original or captured UUID and same-origin public boundary', async context => {
+test('compiled shared Web adapter retains the original or captured UUID and fixed-origin public boundary', async context => {
   const folder = join(output, 'functions/_gling-share-preview.func');
-  const settings = JSON.parse(readFileSync(join(folder, '.vc-config.json')));
-  const { default: handler } = await import(pathToFileURL(join(folder, settings.entrypoint)));
+  const { default: handler } = await import(pathToFileURL(join(folder, 'vercel-share-preview.js')));
   const env = { APP_URL: 'https://gling.ej-entertainment.com', SUPABASE_URL: 'https://project.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_fixture' };
   const before = Object.fromEntries([...Object.keys(env), 'SHARE_ORIGIN'].map(key => [key, process.env[key]]));
   delete process.env.SHARE_ORIGIN;
@@ -79,5 +81,55 @@ test('compiled Edge adapter retains the original or captured UUID and same-origi
   assert.doesNotMatch(crossHtml, /forged\.example/);
   assert.equal((await handler(new Request(`${env.APP_URL}/_gling-share-preview?__gling_share_id=${id}&__gling_share_id=wrong`))).status, 404);
   assert.equal((await handler(new Request(`${env.APP_URL}/share/${id}`, { method: 'POST' }))).status, 405);
+  assert.equal(calls, 3);
+});
+
+test('native Node HTTP adapter preserves HTML, HEAD,405 and request privacy', async context => {
+  const folder = join(output, 'functions/_gling-share-preview.func');
+  const settings = JSON.parse(readFileSync(join(folder, '.vc-config.json')));
+  assert.equal(settings.handler, 'node-share-preview.js', 'native Node handler must be declared');
+  const { default: handler } = await import(pathToFileURL(join(folder, settings.handler)));
+  const env = { APP_URL: 'https://gling.ej-entertainment.com', SHARE_ORIGIN: 'https://gling-share-preview.vercel.app', SUPABASE_URL: 'https://project.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_fixture' };
+  const before = Object.fromEntries(Object.keys(env).map(key => [key, process.env[key]]));
+  Object.assign(process.env, env);
+  context.after(() => { for (const [key, value] of Object.entries(before)) if (value === undefined) delete process.env[key]; else process.env[key] = value; });
+  let calls = 0;
+  context.mock.method(globalThis, 'fetch', async (url, init) => {
+    calls++; assert.equal(url, `${env.SUPABASE_URL}/rest/v1/rpc/get_shared_link_preview`);
+    assert.equal(init.redirect, 'error'); assert.ok(init.signal instanceof AbortSignal);
+    assert.deepEqual(Object.keys(init.headers).sort(), ['Content-Type', 'apikey']);
+    assert.equal(init.headers.apikey, env.SUPABASE_PUBLISHABLE_KEY);
+    return Response.json({ id, title: 'Shared title', kind: 'meetup', city: 'Vancouver', closed: false, body: 'PRIVATE-BODY' });
+  });
+  const server = createServer(handler);
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  context.after(() => new Promise(resolve => server.close(resolve)));
+  const send = (path, method = 'GET') => new Promise((resolve, reject) => {
+    const request = httpRequest({ host: '127.0.0.1', port: server.address().port, path, method, headers: { Host: 'evil.example', Authorization: 'Bearer PRIVATE-SESSION', Cookie: 'PRIVATE-COOKIE=1' } }, response => {
+      let body = ''; response.setEncoding('utf8'); response.on('data', chunk => { body += chunk; });
+      response.on('end', () => resolve({ status: response.statusCode, headers: response.headers, body }));
+    });
+    request.on('error', reject); request.end();
+  });
+  const get = await send(`/share/${id}`);
+  assert.equal(get.status, 200); assert.equal(get.headers['content-type'], 'text/html; charset=utf-8');
+  assert.equal(get.headers['cache-control'], 'no-store'); assert.equal(get.headers['x-frame-options'], 'DENY');
+  assert.ok(get.body.includes(`${env.SHARE_ORIGIN}/share/${id}`));
+  assert.ok(get.body.includes(`${env.APP_URL}/post?id=${id}&amp;shared=1&amp;invite=1`));
+  assert.doesNotMatch(get.body, /PRIVATE-|evil\.example|127\.0\.0\.1/);
+  const head = await send(`/share/${id}`, 'HEAD'); assert.equal(head.status, 200); assert.equal(head.body, '');
+  for (const method of ['POST', 'DELETE', 'TRACE']) {
+    const rejected = await send(`/share/${id}`, method); assert.equal(rejected.status, 405); assert.equal(rejected.headers.allow, 'GET, HEAD');
+  }
+  // Node parses CONNECT as a tunnel and rejects TRACK before the ordinary HTTP handler.
+  for (const method of ['CONNECT', 'TRACK']) {
+    const response = { statusCode: 0, headers: {}, setHeader(name, value) { this.headers[name] = value; }, end(body) { this.body = body.toString(); } };
+    await handler({ url: `/share/${id}`, method }, response);
+    assert.equal(response.statusCode, 405); assert.equal(response.headers.allow, 'GET, HEAD');
+    assert.equal(response.body, '지원하지 않는 요청이에요.');
+  }
+  assert.equal((await send(`https://evil.example/share/${id}`)).status, 404);
+  assert.equal((await send(`//evil.example/share/${id}`)).status, 404);
+  const rewritten = await send(route(`/share/${id}`).dest); assert.equal(rewritten.status, 200);
   assert.equal(calls, 3);
 });
