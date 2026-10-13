@@ -230,6 +230,44 @@ test('upstream network, status and JSON failures return 503 without backend deta
   }
 });
 
+test('503 diagnostic logs contain only fixed stages and a numeric upstream status', async context => {
+  const logs = [];
+  context.mock.method(console, 'warn', line => logs.push(JSON.parse(line)));
+  const secret = 'PRIVATE-KEY-TOKEN-CONTENT';
+  const failures = [
+    ['APP_ORIGIN', { ...env, APP_URL: `https://user:${secret}@gling.example` }, noFetch],
+    ['SHARE_ORIGIN', { ...env, SHARE_ORIGIN: `https://share.example/?${secret}` }, noFetch],
+    ['SUPABASE_ORIGIN', { ...env, SUPABASE_URL: `https://user:${secret}@project.supabase.co` }, noFetch],
+    ['PUBLISHABLE_KEY', { ...env, SUPABASE_PUBLISHABLE_KEY: secret }, noFetch],
+    ['PREVIEW_FETCH', env, async () => { throw new Error(secret); }],
+    ['UPSTREAM_STATUS', env, async () => new Response(secret, { status: 401 })],
+    ['PREVIEW_JSON', env, async () => new Response(secret)],
+    ['PREVIEW_SCHEMA', env, async () => json({ ...preview, id: secret, body: secret })],
+  ];
+  for (const [stage, configured, fetcher] of failures) {
+    assert.equal((await handleSharePreview(request(), configured, fetcher)).status, 503);
+    assert.deepEqual(logs.at(-1), { event: 'share_preview_unavailable', stage, ...(stage === 'UPSTREAM_STATUS' ? { status: 401 } : {}), ...(stage === 'PREVIEW_FETCH' ? { error_kind: 'OTHER' } : {}) });
+  }
+  context.mock.method(AbortSignal, 'timeout', () => { throw new Error(secret); });
+  assert.equal((await handleSharePreview(request(), env, noFetch)).status, 503);
+  assert.deepEqual(logs.at(-1), { event: 'share_preview_unavailable', stage: 'PREVIEW_TIMEOUT' });
+  assert.equal(logs.length, failures.length + 1);
+  assert.doesNotMatch(JSON.stringify(logs), /PRIVATE-|https:|123e4567|APP_URL|SUPABASE_PUBLISHABLE_KEY/);
+});
+
+test('fetch diagnostics classify transport and timeout failures without exposing exception data', async context => {
+  const logs = [], secret = 'PRIVATE-ERROR-URL-TOKEN';
+  context.mock.method(console, 'warn', line => logs.push(JSON.parse(line)));
+  for (const [error, kind] of [[new TypeError(secret), 'NETWORK'], [new DOMException(secret, 'TimeoutError'), 'TIMEOUT'], [new DOMException(secret, 'AbortError'), 'TIMEOUT'], [{ name: secret, message: secret, cause: { code: secret } }, 'OTHER']]) {
+    assert.equal((await handleSharePreview(request(), env, async () => { throw error; })).status, 503);
+    assert.deepEqual(logs.at(-1), { event: 'share_preview_unavailable', stage: 'PREVIEW_FETCH', error_kind: kind });
+  }
+  context.mock.method(AbortSignal, 'timeout', () => AbortSignal.abort(secret));
+  assert.equal((await handleSharePreview(request(), env, async () => { throw new Error(secret); })).status, 503);
+  assert.equal(logs.at(-1).error_kind, 'TIMEOUT');
+  assert.doesNotMatch(JSON.stringify(logs), /PRIVATE-|https:|123e4567|message|cause/);
+});
+
 test('HEAD has metadata headers but no body, methods are bounded and malformed dates remain safe', async () => {
   const head = await handleSharePreview(request('', 'HEAD'), env, async () => json(preview));
   assert.equal(head.status, 200);
