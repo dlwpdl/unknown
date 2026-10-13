@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { hideContent } from './content-visibility.ts';
 import { isThumbPath, MAX_IMAGE_BYTES, MAX_POST_IMAGES, thumbPathFor } from './image-upload.ts';
+import { normalizePoll, type PollDraft } from './post-polls.ts';
 
 import { attachSignedPostImages, loadPublicPost, mapPublicFeed, type FeedCursor, type PublicCommentRow, type PublicFeedRow } from './feed-data.ts';
 import type { DailyQuota, ListingStatus, Post, PostComment, PostKind, RoomPreview, Tag } from './types.ts';
@@ -29,7 +30,7 @@ export function getCommunityActionError(error: unknown) {
 }
 
 export type PostDraftImage = { base64: string; mimeType: string; thumbBase64?: string; width?: number; height?: number };
-export type ReportTarget = 'user' | 'post' | 'comment' | 'message' | 'merchant_review' | 'merchant_review_reply';
+export type ReportTarget = 'user' | 'post' | 'comment' | 'message' | 'merchant_review' | 'merchant_review_reply' | 'meetup_review';
 export type ReportReason = 'spam' | 'harassment' | 'hate' | 'sexual' | 'privacy' | 'other';
 
 export type ConversationPreview = {
@@ -179,12 +180,15 @@ export async function createCommunityPost(
     images?: PostDraftImage[];
     kind?: PostKind;
     price?: number | null;
+    poll?: PollDraft;
   },
 ): Promise<{ id: string; post: Post | null }> {
+  const poll = input.poll ? normalizePoll(input.poll) : null;
+  if (poll && ((input.kind ?? 'story') !== 'story' || input.tag.kind === 'meetup')) throw new Error('INVALID_POLL_POST_KIND');
   const media = input.images?.length ? await uploadPostImages(client, input.userId, input.images) : [];
   const imagePaths = media.map(({ path }) => path);
 
-  const created = await client.rpc('create_post', {
+  const created = await client.rpc(poll ? 'create_post_with_poll' : 'create_post', {
     p_city_id: input.cityId,
     p_tag_id: input.tag.id,
     p_title: input.title,
@@ -194,9 +198,11 @@ export async function createCommunityPost(
     p_room_preview: null,
     p_kind: input.kind ?? 'story',
     p_price: input.kind === 'listing' ? input.price ?? null : null,
+    ...(poll ? { p_poll_question: poll.question, p_poll_options: poll.options } : {}),
   });
   if (created.error) {
-    await removePostImages(client, imagePaths);
+    // A transport failure can arrive after the post was saved.
+    if (/^[0-9A-Z]{5}$/.test(created.error.code ?? '')) await removePostImages(client, imagePaths);
     throw created.error;
   }
 

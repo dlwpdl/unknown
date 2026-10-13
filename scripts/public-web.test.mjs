@@ -23,6 +23,9 @@ test('public transport rejects writes and always uses anonymous credentials', as
   await request('https://example.supabase.co/rest/v1/rpc/get_merchant_post_source', { method: 'POST', body: '{}' });
   await assert.rejects(() => request('https://example.supabase.co/rest/v1/rpc/record_merchant_source_click', { method: 'POST' }));
   await assert.rejects(() => request('https://example.supabase.co/rest/v1/rpc/send_message', { method: 'POST' }));
+  for (const rpc of ['send_suggested_message', 'write_manner_review', 'get_my_manner_feedback', 'get_admin_trust_content', 'get_trust_safety_content', 'get_message_safety_context']) {
+    await assert.rejects(request(`https://example.supabase.co/rest/v1/rpc/${rpc}`, { method: 'POST', body: '{}' }), /PUBLIC_WEB_READ_ONLY/);
+  }
   await assert.rejects(() => request('https://example.supabase.co/auth/v1/token', { method: 'POST' }));
   await assert.rejects(() => request('https://other.example/rest/v1/rpc/get_public_post', { method: 'POST' }));
   assert.equal(requests.length, 2);

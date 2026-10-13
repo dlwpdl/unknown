@@ -282,3 +282,16 @@ test('message pushes use only the claim body and never forward raw message or at
     assert.doesNotMatch(JSON.stringify(messages), /untrusted sender|raw private text|private\/photo/);
   }
 });
+
+test('meetup review push keeps the actual review destination and rejects injected variants', async () => {
+  const route = '/profile/meetup-reviews';
+  const routes = [route, `${route}?redirect=//example.test`, `${route}/../admin`, `${route}#outside`];
+  const h = harness({ sends: routes.map(value => ({ ...job, category: 'meetups', route: value })),
+    fetcher: async (_, options) => {
+      const messages = JSON.parse(options.body);
+      assert.deepEqual(messages.map(message => message.data.route), [route, '/notifications', '/notifications', '/notifications']);
+      assert.ok(messages.every(message => message.body === job.body && message.collapseId === notificationId));
+      return Response.json({ data: messages.map(() => ({ status: 'ok', id: ticketId })) });
+    } });
+  assert.equal((await (await h.run()).json()).tickets, routes.length);
+});

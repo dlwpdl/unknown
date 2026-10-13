@@ -181,6 +181,9 @@ export default function ProfileScreen() {
         </View>
 
         {/* 관리는 네 칸으로, 그 아래는 내 글이 곧 프로필 (스레드 방식). iOS 연락처 카드의 액션 타일 패턴: 심볼 → 이름 → 상태 */}
+        <Pressable analyticsId="profile.meetup-reviews" accessibilityRole="button" accessibilityLabel="모임 후기와 내 매너 평가 관리" onPress={() => { play('selection'); router.push('/profile/meetup-reviews'); }} style={[styles.inviteButton, { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}>
+          <ThemedText type="smallBold">모임 후기 · 내 매너 평가 관리</ThemedText>
+        </Pressable>
         <View style={styles.manage} accessibilityRole="menu">
           {([
             ['멤버십', membershipLabel, { ios: 'star.circle', android: 'stars', web: 'stars' }, false, () => router.push('/profile/membership')],

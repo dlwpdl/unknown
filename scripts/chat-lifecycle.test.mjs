@@ -4,16 +4,18 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-import { mergeChatMessages } from '../src/lib/community-data.ts';
+import { isContentRejected, mergeChatMessages } from '../src/lib/community-data.ts';
 import * as chatDetails from '../src/lib/chat-details.ts';
 import * as chatLocation from '../src/lib/chat-location.ts';
+import { chatSuggestions } from '../src/lib/chat-suggestions.ts';
+import { merchantEventId } from '../src/lib/merchant-source.ts';
 import { sharedLinkInMessage } from '../src/lib/sharing.ts';
 import { hideContent, isContentHidden, subscribeVisibility, visibilityRevision } from '../src/lib/content-visibility.ts';
 import { count, t } from '../src/i18n/ko.ts';
 
 // Exercise the component's hooks, effects and event handlers, as in comment-threads.test.mjs.
 function mount(file, exportName, data, props = {}, params = {}) {
-  const hooks = [], appListeners = new Set(), channels = new Set(), timers = new Map(), animations = [];
+  const hooks = [], setters = [], appListeners = new Set(), channels = new Set(), timers = new Map(), animations = [];
   let index = 0, effects = [], dirty = true, tree, timerId = 0;
   const auth = { isAuthed: true, me: { id: 'me', nickname: '나' } };
   const refreshMembership = async () => {};
@@ -29,7 +31,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
     useState(initial) {
       const slot = index++;
       if (!(slot in hooks)) hooks[slot] = typeof initial === 'function' ? initial() : initial;
-      return [hooks[slot], value => {
+      return [hooks[slot], setters[slot] ??= value => {
         const next = typeof value === 'function' ? value(hooks[slot]) : value;
         if (!Object.is(next, hooks[slot])) { hooks[slot] = next; dirty = true; }
       }];
@@ -89,12 +91,14 @@ function mount(file, exportName, data, props = {}, params = {}) {
       if (name === '@/i18n/ko') return { t, count };
       if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
       // 하트 리액션 기본값: 테스트가 필요하면 data 로 덮어쓴다.
-      if (name === '@/lib/community-data') return { mergeChatMessages, loadMessageReactions: async () => new Map(), setMessageReaction: async () => 1,
+      if (name === '@/lib/community-data') return { isContentRejected, mergeChatMessages, loadMessageReactions: async () => new Map(), setMessageReaction: async () => 1,
         loadChatReadPosition: async () => null, markChatRead: async () => {}, ...data };
       if (name === '@/lib/sharing') return { sharedLinkInMessage };
       if (name === '@/components/shared-link-card') return { SharedLinkCard: 'SharedLinkCard' };
       if (name === '@/lib/chat-details') return { ...chatDetails, ...(data.loadChatMembers ? { loadChatMembers: data.loadChatMembers } : {}) };
       if (name === '@/lib/chat-location') return chatLocation;
+      if (name === '@/lib/chat-suggestions') return { chatSuggestions, loadChatSuggestionContext: async () => null, ...data.suggestions };
+      if (name === '@/lib/merchant-source') return { merchantEventId };
       if (name === 'expo-location') return { Accuracy: { High: 4 }, ...data.location };
       if (name === '@/lib/supabase') return { supabase };
       return new Proxy({}, { get: (_target, key) => key });
@@ -134,6 +138,52 @@ const conversation = { id: 'room', kind: 'group', status: 'active', title: '모�
 const roomProps = { conversation, currentUserId: 'me', onClose() {}, onChanged: async () => {} };
 const room = data => mount('../src/components/chat-room.tsx', 'ChatRoom', data, roomProps);
 const olderButton = harness => harness.nodes().find(node => node.props?.label === t.chat.loadOlder);
+const suggestionButtons = harness => harness.nodes().filter(node => node.props?.analyticsId === 'components_chat-room.suggestion');
+
+test('suggested sends retry with the same identity and preserve the typed draft', async context => {
+  const calls = [];
+  const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', {
+    loadConversationMessages: async () => [],
+    suggestions: {
+      loadChatSuggestionContext: async () => ({ category: 'used', title: 'Bike', authorId: 'neighbor' }),
+      sendSuggestedMessage: async (_client, roomId, body, id) => {
+        calls.push([roomId, body, id]);
+        if (calls.length === 1) throw new Error('offline');
+        return 'suggested-id';
+      },
+    },
+  }, { ...roomProps, conversation: { ...conversation, kind: 'direct' } });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const review = harness.nodes().find(node => node.type === 'MannerReviewButton');
+  assert.equal(review?.props.subjectId, 'host'); assert.equal(review?.props.context.conversationId, 'room');
+  const input = () => harness.nodes().find(node => node.type === 'TextInput' && node.props.placeholder === t.chat.messagePlaceholder);
+  input().props.onChangeText('my unsent draft'); await harness.settle();
+  assert.equal(suggestionButtons(harness).length, 3);
+  assert.equal(suggestionButtons(harness)[0].props.style({ pressed: false })[0].minHeight, 44);
+  suggestionButtons(harness)[0].props.onPress(); await harness.settle();
+  assert.equal(suggestionButtons(harness)[1].props.disabled, true);
+  assert.equal(input().props.value, 'my unsent draft');
+  suggestionButtons(harness)[0].props.onPress(); await harness.settle();
+  assert.equal(calls.length, 2); assert.deepEqual(calls[1], calls[0]);
+  assert.equal(harness.messages().find(row => row.id === 'suggested-id')?.body, calls[0][1]);
+  assert.equal(input().props.value, 'my unsent draft');
+  assert.equal(suggestionButtons(harness).length, 0);
+});
+
+test('suggested send results cannot reenter the room after logout', async context => {
+  let finish;
+  const harness = room({ loadConversationMessages: async () => [], suggestions: {
+    sendSuggestedMessage: () => new Promise(resolve => { finish = resolve; }),
+  } });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const button = suggestionButtons(harness)[0]; assert.ok(button);
+  button.props.onPress(); await harness.settle();
+  harness.auth.isAuthed = false; await harness.settle();
+  finish('late-suggestion'); await harness.settle();
+  assert.equal(harness.nodes().length, 0);
+  harness.auth.isAuthed = true; harness.foreground(); await harness.settle();
+  assert.equal(harness.messages().some(row => row.id === 'late-suggestion'), false);
+});
 
 test('attachment plus opens a place picker without asking for location permission', async (context) => {
   const harness = room({ loadConversationMessages: async () => [] });
@@ -162,6 +212,7 @@ test('long press replies in direct and group rooms and keeps the unsent draft', 
       sendDirectMessage: async (_client, id, body, parent) => { sent.push([id, body, parent]); return 'reply-id'; } },
     { ...roomProps, conversation: { ...conversation, kind } });
     context.after(() => harness.cleanup()); await harness.settle();
+    assert.ok(suggestionButtons(harness).length > 0);
     const input = () => harness.nodes().find(node => node.type === 'TextInput' && node.props.placeholder === t.chat.messagePlaceholder);
     input().props.onChangeText('saved draft'); await harness.settle();
     const list = harness.nodes().find(node => node.type === 'FlatList');
@@ -171,6 +222,7 @@ test('long press replies in direct and group rooms and keeps the unsent draft', 
     assert.equal(typeof bubble.props.onMenu, 'function'); bubble.props.onMenu(rows[0], { measureInWindow: callback => callback(48, 300, 200, 44) }); await harness.settle();
     assert.ok(!harness.nodes().some(node => node.props?.accessibilityLabel === '메시지 수정'), '다른 사람의 메시지는 수정 메뉴를 숨긴다');
     harness.nodes().find(node => node.props?.accessibilityLabel === '답장').props.onPress(); await harness.settle();
+    assert.equal(suggestionButtons(harness).length, 0, 'suggestions do not discard an intended reply');
     assert.equal(input().props.value, 'saved draft');
     input().props.onSubmitEditing(); await harness.settle();
     assert.deepEqual(sent, [['room', 'saved draft', 'parent']]);

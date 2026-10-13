@@ -61,7 +61,7 @@ export function notificationRoute(value: unknown): string | null {
   if (new RegExp(`^/profile/merchant\\?merchant=${uuid}$`, 'i').test(value)) return value;
   // 관리자 알림 경로는 외부 대시보드 URL로 바꾸기 전에 검증한다.
   if (new RegExp(`^/admin(?:\\?(?:section=(?:alerts|analytics|errors|overview|posts|reports|safety|trending|users)|(?:safety|alert)=(?:${uuid}|[1-9][0-9]*)))?$`, 'i').test(value)) return value;
-  return new RegExp(`^(?:/post/${uuid}(?:\\?commentId=${uuid})?|/chat(?:\\?(?:conversationId=${uuid}(?:&view=requests)?|view=requests))?|/profile/(?:guidelines|settings)|/notifications)$`, 'i').test(value) ? value : null;
+  return new RegExp(`^(?:/post/${uuid}(?:\\?commentId=${uuid})?|/chat(?:\\?(?:conversationId=${uuid}(?:&view=requests)?|view=requests))?|/profile/(?:guidelines|settings|meetup-reviews)|/notifications)$`, 'i').test(value) ? value : null;
 }
 
 export function adminDashboardUrl(value: unknown, isAdmin: boolean): string | null {

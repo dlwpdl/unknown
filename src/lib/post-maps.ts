@@ -15,23 +15,65 @@ export function googleMapsUrl(input: string): string | null {
   }
 }
 
-// shortcut: 한 글에 지도 하나를 본문에 보관, 여러 장소를 검색·관리하게 되면 별도 필드로 확장.
-export function postMapBody(body: string): { body: string; url: string | null } {
-  const attached = splitPostAttachments(body);
-  let url: string | null = null;
-  const lines = attached.body.split(/\r?\n/).filter((line) => {
-    const candidate = googleMapsUrl(line.trim().replace(/^Google 지도:\s*/, ''));
-    if (!candidate) return true;
-    url = candidate;
-    return false;
-  });
-  return { body: url ? withPostAttachments(lines.join('\n').trim(), attached.urls) : body, url };
+export function postLocationUrl(input: string, city = ''): string | null {
+  const value = input.trim();
+  if (!value || /[\u0000-\u001f\u007f]/.test(value)) return null;
+  const shared = googleMapsUrl(value);
+  if (shared) return shared;
+  if (/^[a-z][a-z\d+.-]*:|^(?:www\.|[^\s/]+\.[^\s/]+\/)/i.test(value)) return null;
+  const query = [value, city.trim()].filter(Boolean).join(', ');
+  return googleMapsUrl(`https://www.google.com/maps/search/?${new URLSearchParams({ api: '1', query })}`);
 }
 
-export function withPostMap(body: string, input: string): string {
+export type PostPin = { latitude: number; longitude: number; placeId?: string };
+
+export function googlePinUrl(pin: PostPin): string {
+  if (!Number.isFinite(pin.latitude) || Math.abs(pin.latitude) > 90 || !Number.isFinite(pin.longitude) || Math.abs(pin.longitude) > 180
+    || (pin.placeId != null && !/^[A-Za-z0-9_-]{1,255}$/.test(pin.placeId))) throw new Error('INVALID_MAP_PIN');
+  const query = new URLSearchParams({ api: '1', query: `${pin.latitude},${pin.longitude}` });
+  if (pin.placeId) query.set('query_place_id', pin.placeId);
+  return `https://www.google.com/maps/search/?${query}`;
+}
+
+export function googleMapsPin(input: string): PostPin | null {
+  const safe = googleMapsUrl(input);
+  if (!safe) return null;
+  const url = new URL(safe), query = url.searchParams.get('query') ?? url.searchParams.get('q') ?? '';
+  if (!/^-?\d+(?:\.\d+)?,\s*-?\d+(?:\.\d+)?$/.test(query)) return null;
+  const [latitude, longitude] = query.split(',').map(Number);
+  const placeId = url.searchParams.get('query_place_id');
+  const pin = { latitude, longitude, ...(placeId ? { placeId } : {}) };
+  try { googlePinUrl(pin); return pin; } catch { return null; }
+}
+
+// shortcut: 한 글에 지도 하나를 본문에 보관, 여러 장소를 검색·관리하게 되면 별도 필드로 확장.
+export function postMapBody(body: string): { body: string; url: string | null; label?: string } {
+  const attached = splitPostAttachments(body);
+  let url: string | null = null;
+  let label = '', previousMap = false;
+  const lines: string[] = [];
+  for (const line of attached.body.split(/\r?\n/)) {
+    if (previousMap && /^위치: .{1,100}$/.test(line)) { label = line.slice(4); previousMap = false; continue; }
+    previousMap = false;
+    const candidate = googleMapsUrl(line.trim().replace(/^Google 지도:\s*/, ''));
+    if (!candidate) { lines.push(line); continue; }
+    url = candidate;
+    previousMap = true;
+    if (lines.at(-1) === '') lines.pop();
+  }
+  return { body: url ? withPostAttachments(lines.join('\n').trim(), attached.urls) : body, url, ...(label ? { label } : {}) };
+}
+
+export function withPostMap(body: string, input: string, label?: string): string {
   const url = input.trim() ? googleMapsUrl(input) : null;
   if (input.trim() && !url) throw new Error('INVALID_MAP_LINK');
-  const text = url ? `${postMapBody(body).body.trim()}\n\nGoogle 지도: ${url}` : body.trim();
+  const mapped = postMapBody(body);
+  const name = label ?? (url === mapped.url ? mapped.label : '') ?? '';
+  if (name.length > 100 || /[\u0000-\u001f\u007f]/.test(name)) throw new Error('INVALID_MAP_LABEL');
+  const clean = mapped.body.trim();
+  const footer = clean.lastIndexOf('\n\n사진 출처·이용 조건\n');
+  const position = footer < 0 ? clean.length : footer;
+  const text = url ? `${clean.slice(0, position)}\n\nGoogle 지도: ${url}${name ? `\n위치: ${name}` : ''}${clean.slice(position)}` : body.trim();
   if ([...text].length > 4000) throw new Error('POST_BODY_TOO_LONG');
   return text;
 }

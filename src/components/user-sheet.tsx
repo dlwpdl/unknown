@@ -1,5 +1,5 @@
 import { Pressable } from '@/components/analytics-controls';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Alert, Modal, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,14 +8,17 @@ import { ReportSheet } from '@/components/report-sheet';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
 import { TrustBadge } from '@/components/trust-badge';
+import { MannerSummary } from '@/components/manner-summary';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { count, t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { getCommunityActionError, loadTradeProfile, startDirectConversation, type TradeProfile } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
+import { loadMannerSummary, type MannerSummary as Summary } from '@/lib/user-profile';
 
 // 미니 프로필 대상 (글 작성자 or 댓글 작성자)
 export type SheetUser = {
@@ -26,6 +29,7 @@ export type SheetUser = {
   trustLevel?: 2 | 3;
   mine?: boolean;
   listingId?: string; // 구해요·팔아요 글에서 열렸을 때. 대화의 출처로 남아 거래 후기 자격이 된다.
+  contextPostId?: string;
 };
 
 // Shared by the feed and the post detail so an author tap opens the same profile sheet everywhere.
@@ -37,26 +41,39 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { isAuthed, promptLogin } = useAuth();
+  const { isAuthed, me, promptLogin } = useAuth();
+  const hidden = useContentVisibility();
   const { play } = useInteractionFeedback();
   const [requesting, setRequesting] = useState(false);
   const [reporting, setReporting] = useState<SheetUser | null>(null);
-  const [trade, setTrade] = useState<TradeProfile | null>(null);
+  const [trade, setTrade] = useState<{ key: string; value: TradeProfile } | null>(null);
+  const [manner, setManner] = useState<{ key: string; value: Summary } | null>(null);
   const busy = useRef(false);
 
-  // 거래 이력은 상대가 실제로 사람을 만나 본 기록이라, 숫자 자체가 신호다.
+  // 대화 기반 거래 이력과 현장 참석 확인은 서로 다른 신호다.
   const userId = user?.id;
+  const requestKey = `${isAuthed ? me.id : 'guest'}:${userId ?? ''}:${user?.contextPostId ?? user?.listingId ?? ''}`;
+  const currentRequest = useRef<{ key: string } | null>({ key: requestKey });
+  useLayoutEffect(() => {
+    currentRequest.current = { key: requestKey };
+    return () => { currentRequest.current = null; };
+  }, [requestKey]);
   useEffect(() => {
     let active = true;
     void (async () => {
       if (!userId) { if (active) setTrade(null); return; }
       try {
         const next = await loadTradeProfile(supabase, userId);
-        if (active) setTrade(next);
+        if (active) setTrade(next ? { key: requestKey, value: next } : null);
       } catch { if (active) setTrade(null); }
     })();
     return () => { active = false; };
-  }, [userId]);
+  }, [userId, requestKey, hidden]);
+  useEffect(() => {
+    let active = true;
+    if (userId) void loadMannerSummary(supabase, userId).then(value => { if (active) setManner({ key: requestKey, value }); }).catch(() => { if (active) setManner(null); });
+    return () => { active = false; };
+  }, [userId, requestKey, hidden]);
 
   const navigate = (route: Parameters<typeof router.push>[0]) => {
     play('selection');
@@ -69,13 +86,16 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
     play('selection');
     if (!isAuthed) return promptLogin(t.auth.reasonChatLogin);
     if (!u.id || busy.current) return;
+    const request = currentRequest.current;
     busy.current = true;
     setRequesting(true);
     try {
-      const conversationId = await startDirectConversation(supabase, u.id, u.listingId);
+      const conversationId = await startDirectConversation(supabase, u.id, u.contextPostId ?? u.listingId);
+      if (currentRequest.current !== request) return;
       play('message');
       navigate({ pathname: '/chat', params: { conversationId, view: 'direct' } });
     } catch (error) {
+      if (currentRequest.current !== request) return;
       play('warning');
       const code = getCommunityActionError(error);
       const message = code ? t.actionErrors[code as keyof typeof t.actionErrors] : null;
@@ -86,7 +106,7 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
       else Alert.alert(t.chat.startErrorTitle, t.chat.startErrorBody);
     } finally {
       busy.current = false;
-      setRequesting(false);
+      if (currentRequest.current !== null) setRequesting(false);
     }
   };
 
@@ -105,7 +125,8 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
                   <TrustBadge verified={user.verified} trustLevel={user.trustLevel} />
                 </View>
                 {user.neighborhood && <ThemedText type="small" themeColor="textSecondary">{user.neighborhood}</ThemedText>}
-                {trade && !user.mine && <TradeRecord trade={trade} onOpenPost={(postId) => navigate(`/post/${postId}`)} />}
+                {manner?.key === requestKey && !hidden('user', user.id ?? '') && <MannerSummary summary={manner.value} />}
+                {trade?.key === requestKey && !user.mine && !hidden('user', user.id ?? '') && <TradeRecord trade={trade.value} onOpenPost={(postId) => navigate(`/post/${postId}`)} />}
                 <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12.5 }}>
                   {user.mine ? t.profileSheet.self
                     : user.trustLevel === 3 ? t.profileSheet.verifiedL3
@@ -123,7 +144,7 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
                       onPress={() => navigate({ pathname: '/user/[id]', params: { id: user.id!, nickname: user.nickname } })}
                       accessibilityRole="button"
                       style={({ pressed }) => [styles.cta, Depth.control, { backgroundColor: theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
-                      <ThemedText type="smallBold">{t.authorPosts.open}</ThemedText>
+                      <ThemedText type="smallBold">프로필 · 오늘·구해요·팔아요 이력</ThemedText>
                     </Pressable>}
                     <RaisedActionButton analyticsId="components_user-sheet.pressable.4" onPress={() => void requestChat(user)} disabled={requesting} busy={requesting} label={requesting ? t.chat.joinSending : t.profileSheet.chatRequest} />
                     <Pressable analyticsId="components_user-sheet.pressable.5" onPress={() => { play('selection'); setReporting(user); onClose(); }} accessibilityRole="button"

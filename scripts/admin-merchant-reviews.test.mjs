@@ -42,6 +42,7 @@ function view(file, name, { rpc = async () => ({ data: null }), storage = {}, us
     '@/i18n/ko': { count },
     './admin-table-controls': controls, '@/components/admin/admin-table-controls': controls, '@/components/admin/admin-merchant-review-content': { AdminMerchantReviewContent: 'ReviewContent' },
     '@/components/admin/admin-merchant-review-reply-content': { AdminMerchantReviewReplyContent: 'ReplyContent' },
+    '@/components/admin/admin-trust-review-content': { ...module('../src/components/admin/admin-trust-review-content.tsx'), AdminTrustReviewContent: 'TrustContent' },
     './admin-trending-panel': { AdminTrendingPanel: 'Trending' },
     './admin-section-filter': sectionFilters,
     './admin-report-filter': { filterReportRows },
@@ -53,6 +54,172 @@ function view(file, name, { rpc = async () => ({ data: null }), storage = {}, us
   return { render(props) { index = 0; return exports[name](props); }, unmount() { cleanups.splice(0).forEach(fn => fn()); }, calls };
 }
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
+
+test('a meetup session keeps check-in, attendance confirmation and personal feedback within their distinct windows', () => {
+  const component = view('../src/components/meetup-reviews.tsx', 'Session', {
+    extra: '\nexports.Session = Session;', imports: { '@/components/manner-review': { MannerReviewButton: 'MannerReviewButton' } },
+  });
+  const start = Date.parse('2026-10-10T18:00:00Z'), end = start + 3600000;
+  const session = { id: 'session', startsAt: new Date(start).toISOString(), endsAt: new Date(end).toISOString(), checkedIn: false, verified: false, claimStatus: 'none', canReview: false,
+    members: [{ id: 'peer', nickname: '이웃', checkedIn: true, verified: true, confirmedByMe: false }] };
+  const render = (now, changes = {}) => component.render({ session: { ...session, ...changes }, meId: 'me', onChanged() {}, now });
+  const has = (tree, label) => nodes(tree).some(node => node.type === 'Text' && [node.props.children].flat(Infinity).join('') === label);
+  assert.equal(has(render(start - 1), '현장 체크인'), false);
+  assert.equal(has(render(start), '현장 체크인'), true);
+  assert.equal(has(render(end), '현장 체크인'), false);
+  assert.equal(has(render(end), '이웃 참석 확인'), false, 'no own check-in, no peer confirmation');
+  assert.equal(has(render(end, { checkedIn: true }), '이웃 참석 확인'), true);
+  assert.equal(nodes(render(end, { verified: true })).some(node => node.type === 'MannerReviewButton'), true);
+  assert.equal(nodes(render(end + 7 * 86400000, { verified: true })).some(node => node.type === 'MannerReviewButton'), false);
+  assert.equal(has(render(end, { verified: true }), '후기 제출'), false, 'one-off/private attendance does not acquire a public group review');
+});
+
+test('public group feedback requires a negative reason, prevents double taps and preserves an ambiguous submission', async () => {
+  const id = 'bf000000-0000-0000-0000-000000000001', writes = []; let fail = true;
+  const component = view('../src/components/meetup-reviews.tsx', 'Session', {
+    extra: '\nexports.Session = Session;', imports: { '@/lib/meetup-reviews': module('../src/lib/meetup-reviews.ts') },
+    rpc: async (name, args) => { writes.push([name, args]); return fail ? { error: { message: 'lost response' } } : { data: id }; },
+  });
+  const props = { session: { id, startsAt: '2026-10-10T18:00:00Z', endsAt: '2026-10-10T19:00:00Z', checkedIn: true, verified: true, claimStatus: 'none', canReview: true, reviewStatus: null, members: [] }, meId: 'me', onChanged() {}, now: Date.parse('2026-10-10T20:00:00Z') };
+  const submit = tree => nodes(tree).find(node => node.type === 'Pressable' && nodes(node).some(child => child.props?.children === '후기 제출'));
+  let tree = component.render(props);
+  nodes(tree).find(node => node.props?.accessibilityLabel === '4.5점').props.onPress(); tree = component.render(props);
+  assert.equal(submit(tree).props.disabled, true);
+  nodes(tree).find(node => node.props?.accessibilityLabel === '공개 모임 후기').props.onChangeText('알려주신 준비물과 실제 진행 방식이 달랐습니다.'); tree = component.render(props);
+  submit(tree).props.onPress(); submit(tree).props.onPress(); await new Promise(resolve => setImmediate(resolve)); tree = component.render(props);
+  assert.equal(writes.length, 1); assert.equal(writes[0][1].p_score, 4.5);
+  assert.equal(nodes(tree).find(node => node.props?.accessibilityLabel === '공개 모임 후기').props.value, '알려주신 준비물과 실제 진행 방식이 달랐습니다.');
+  fail = false; submit(tree).props.onPress(); await new Promise(resolve => setImmediate(resolve)); tree = component.render(props);
+  assert.deepEqual(JSON.parse(JSON.stringify(writes[0])), JSON.parse(JSON.stringify(writes[1])));
+  assert.equal(submit(tree), undefined, 'confirmed submission removes the completed form');
+});
+
+test('private meetup and manner evidence has a distinct guarded admin entry on every queue', () => {
+  for (const type of ['meetup_review', 'manner_review', 'meetup_attendance']) {
+    const component = view('../src/components/admin/admin-section.native.tsx', 'AdminSectionView');
+    const data = { profiles: [], safetyReviews: [{ target_type: type, target_id: 'target', risk_reasons: [], status: 'pending', created_at: '2026-10-11T08:00:00Z' }] };
+    const tree = component.render({ section: 'safety', data, onUser() {} });
+    assert.ok(nodes(tree).some(node => node.type === 'TrustContent' && node.props.targetType === type && node.props.targetId === 'target'));
+  }
+});
+
+test('human review uses the fetched version, preserves a failed note and verifies the saved result', async () => {
+  const targetId = 'ba000000-0000-0000-0000-000000000001', version = '2026-10-11T08:00:00.123456+00:00';
+  let saved = false, fail = true;
+  const rpcCalls = [];
+  const component = view('../src/components/admin/admin-trust-review-content.tsx', 'Content', {
+    extra: '\nexports.Content = Content;', imports: { '@/lib/admin-trust-reviews': module('../src/lib/admin-trust-reviews.ts') },
+    rpc: async (name, args) => {
+      rpcCalls.push([name, args]);
+      if (name === 'review_admin_trust_target') { if (fail) return { error: { message: 'offline' } }; saved = true; return {}; }
+      return { data: { authorId: 'author', text: '비공개 직접 경험', status: saved ? 'published' : 'needs_review', updatedAt: version } };
+    },
+  });
+  const props = { targetType: 'manner_review', targetId, onUser() {} };
+  let tree = component.render(props);
+  await nodes(tree).find(n => n.type === 'Pressable').props.onPress();
+  // The event handler deliberately returns immediately; settle its protected read.
+  await new Promise(resolve => setImmediate(resolve));
+  tree = component.render(props);
+  nodes(tree).find(n => n.type === 'TextInput').props.onChangeText('서로의 진술과 증거를 확인했습니다.');
+  tree = component.render(props);
+  let accept = nodes(tree).find(n => n.type === 'Pressable' && nodes(n).some(child => child.props?.children === '검토 후 반영'));
+  accept.props.onPress(); await new Promise(resolve => setImmediate(resolve));
+  tree = component.render(props);
+  assert.equal(nodes(tree).find(n => n.type === 'TextInput').props.value, '서로의 진술과 증거를 확인했습니다.');
+  assert.equal(rpcCalls.find(([name]) => name === 'review_admin_trust_target')[1].p_expected_updated_at, version);
+  fail = false;
+  accept = nodes(tree).find(n => n.type === 'Pressable' && nodes(n).some(child => child.props?.children === '검토 후 반영'));
+  accept.props.onPress(); await new Promise(resolve => setImmediate(resolve));
+  tree = component.render(props);
+  assert.equal(nodes(tree).find(n => n.type === 'TextInput').props.value, '');
+  assert.equal(rpcCalls.at(-1)[0], 'get_admin_trust_content');
+});
+
+test('trust evidence reads stop after the panel closes and preview mode never reads private content', async () => {
+  const targetId = 'ba000000-0000-0000-0000-000000000001', props = { targetType: 'manner_review', targetId, onUser() {} };
+  const rpcCalls = []; let release;
+  const component = view('../src/components/admin/admin-trust-review-content.tsx', 'Content', {
+    extra: '\nexports.Content = Content;', imports: { '@/lib/admin-trust-reviews': module('../src/lib/admin-trust-reviews.ts') },
+    rpc: async name => { rpcCalls.push(name); return new Promise(resolve => { release = resolve; }); },
+  });
+  nodes(component.render({ ...props, localPreview: true })).find(n => n.type === 'Pressable').props.onPress();
+  assert.equal(rpcCalls.length, 0);
+  nodes(component.render(props)).find(n => n.type === 'Pressable').props.onPress();
+  component.unmount(); release({ data: { text: '이전 계정의 비공개 원문', authorId: 'author', status: 'published' } });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.ok(!nodes(component.render(props)).some(n => n.props?.children === '이전 계정의 비공개 원문'));
+});
+
+test('a moderation response after panel unmount does not read back with the next account session', async () => {
+  const targetId = 'ba000000-0000-0000-0000-000000000001', props = { targetType: 'manner_review', targetId, onUser() {} };
+  const rpcCalls = []; let release;
+  const component = view('../src/components/admin/admin-trust-review-content.tsx', 'Content', {
+    extra: '\nexports.Content = Content;', imports: { '@/lib/admin-trust-reviews': module('../src/lib/admin-trust-reviews.ts') },
+    rpc: async name => {
+      rpcCalls.push(name);
+      if (name === 'review_admin_trust_target') return new Promise(resolve => { release = resolve; });
+      return { data: { authorId: 'author', text: '검토할 원문', status: 'needs_review', updatedAt: '2026-10-11T08:00:00Z' } };
+    },
+  });
+  nodes(component.render(props)).find(n => n.type === 'Pressable').props.onPress(); await new Promise(resolve => setImmediate(resolve));
+  nodes(component.render(props)).find(n => n.type === 'TextInput').props.onChangeText('근거를 확인했습니다.');
+  nodes(component.render(props)).find(n => n.type === 'Pressable' && nodes(n).some(child => child.props?.children === '검토 후 반영')).props.onPress();
+  component.unmount(); release({}); await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(rpcCalls, ['get_admin_trust_content', 'review_admin_trust_target']);
+});
+
+test('member summary shows ten-point reviews and suppresses legacy ratios and small samples', () => {
+  const component = view('../src/components/manner-summary.tsx', 'MannerSummary', {
+    imports: { '@/lib/user-profile': module('../src/lib/user-profile.ts'), '@/components/merchant-rating-bar': { MerchantRatingBar: 'MerchantRatingBar' } },
+  });
+  const tree = component.render({ summary: {
+    meeting: { participants: 8, score: 80, rating: { participants: 5, score: 8.7 } },
+    chat: { participants: 4, score: 100, rating: { participants: 4, score: 9.5 } },
+  } });
+  assert.ok(nodes(tree).some(n => n.props?.children === '글링 리뷰'));
+  assert.ok(nodes(tree).some(n => n.props?.children === '8.7 / 10 · 5명'));
+  const bars = nodes(tree).filter(n => n.type === 'MerchantRatingBar');
+  assert.deepEqual(bars.map(n => n.props.score), [8.7, null]);
+  assert.ok(!nodes(tree).some(n => typeof n.props?.children === 'string' && n.props.children.includes('/100')));
+});
+
+test('personal feedback requires a specific negative reason and preserves it across an uncertain send', async () => {
+  const subjectId = 'bc000000-0000-0000-0000-000000000001', sessionId = 'bc000000-0000-0000-0000-000000000002';
+  const writes = []; let fail = true;
+  const component = view('../src/components/manner-review.tsx', 'MannerReview', {
+    extra: '\nexports.MannerReview = MannerReview;', imports: { '@/lib/meetup-reviews': module('../src/lib/meetup-reviews.ts') },
+    rpc: async (name, args) => {
+      if (name === 'get_manner_review_state') return { data: { eligible: true, submitted: false } };
+      writes.push(args);
+      return fail ? { error: { message: 'response_lost' } } : { data: sessionId };
+    },
+  });
+  const props = { subjectId, nickname: '상대', context: { sessionId } };
+  let tree = component.render(props);
+  nodes(tree).find(n => n.type === 'Pressable').props.onPress(); await new Promise(resolve => setImmediate(resolve));
+  tree = component.render(props);
+  const submitLabel = '사용자 리뷰 제출';
+  assert.equal(nodes(tree).find(n => n.props?.accessibilityLabel === submitLabel).props.disabled, true, 'no rating is preselected');
+  nodes(tree).find(n => n.props?.accessibilityLabel === '4.5점').props.onPress();
+  tree = component.render(props);
+  nodes(tree).find(n => n.props?.accessibilityLabel === '동의와 경계를 존중했어요 · 아쉬웠어요').props.onPress();
+  tree = component.render(props);
+  assert.equal(nodes(tree).find(n => n.props?.accessibilityLabel === submitLabel).props.disabled, true);
+  nodes(tree).find(n => n.type === 'TextInput').props.onChangeText('합의한 경계를 반복해서 무시했습니다.');
+  tree = component.render(props);
+  const submit = nodes(tree).find(n => n.props?.accessibilityLabel === submitLabel);
+  submit.props.onPress(); submit.props.onPress(); await new Promise(resolve => setImmediate(resolve));
+  tree = component.render(props);
+  assert.equal(writes.length, 1, 'repeat tapping does not create concurrent submissions');
+  assert.equal(writes[0].p_score, 4.5);
+  assert.equal(nodes(tree).find(n => n.type === 'TextInput').props.value, '합의한 경계를 반복해서 무시했습니다.');
+  fail = false;
+  nodes(tree).find(n => n.props?.accessibilityLabel === submitLabel).props.onPress(); await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(JSON.parse(JSON.stringify(writes[0])), JSON.parse(JSON.stringify(writes[1])), 'lost response retries the unchanged, unique evaluation');
+  tree = component.render(props);
+  assert.equal(nodes(tree).filter(n => n.type === 'TextInput').length, 0, 'successful submission closes private input');
+});
 const report = { id: 'report-review', reporter_id: 'reporter', reported_user_id: 'review-author', target_type: 'merchant_review', target_id: 'review-uuid', reason_code: 'harassment', details: '검토 요청', status: 'open', created_at: '2026-10-08T20:00:00Z', resolved_at: null,
   evidence: { merchant_id: 'merchant-uuid', merchant_name: '동네 가게', score: 8.5, body: '접수 당시 후기', status: 'published', created_at: '2026-10-07T20:00:00Z', updated_at: '2026-10-08T18:00:00Z', author_id: 'review-author' } };
 const pendingReview = { authorId: 'review-author', reviewKind: 'usage', text: '동네 가게\n8.5/10\n후기 전체', merchantId: 'merchant-uuid', merchantName: '동네 가게', score: 8.5, body: '후기 전체', status: 'published', createdAt: '2026-10-07T20:00:00Z', updatedAt: '2026-10-08T18:00:00Z', receiptPath: 'review-author/receipt.webp', receiptStatus: 'pending', receiptReviewedAt: null, receiptReviewNote: null };

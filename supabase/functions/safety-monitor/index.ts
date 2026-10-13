@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-// Covers 5,000 body + 80 title + 5×30 tags + 300 question + 80 cadence,
-// including UTF-16 surrogate pairs and field separators.
+// Covers 5,000 body + 80 title + 5×30 tags and either meetup metadata
+// or a 120-character poll question + 6×80-character options, including UTF-16 pairs.
 const MAX_SAFETY_CONTENT_LENGTH = 12_000;
 
 const RISK_REASONS = [
@@ -118,14 +118,14 @@ async function loadContent(client, targetType: string, targetId: string, claim =
   }
   if (!['post', 'comment'].includes(targetType)) throw new Error('UNSUPPORTED_TARGET_TYPE');
   const table = targetType === 'post' ? 'posts' : 'comments';
-  const columns = targetType === 'post' ? 'title,body,hashtags,author_id,room_preview' : 'body,author_id';
+  const columns = targetType === 'post' ? 'title,body,hashtags,author_id,room_preview,post_polls(question,options)' : 'body,author_id';
   const result = await client.from(table).select(columns).eq('id', targetId).maybeSingle();
   if (result.error) throw result.error;
   if (!result.data) return null;
   return {
     authorId: result.data.author_id,
     text: targetType === 'post'
-      ? [result.data.title, result.data.body, (result.data.hashtags ?? []).join(' '), result.data.room_preview?.applicationQuestion, result.data.room_preview?.cadence].filter((value) => value != null).join('\n')
+      ? [result.data.title, result.data.body, (result.data.hashtags ?? []).join(' '), result.data.room_preview?.applicationQuestion, result.data.room_preview?.cadence, result.data.post_polls?.question, ...(result.data.post_polls?.options ?? [])].filter((value) => value != null).join('\n')
       : result.data.body,
   };
 }

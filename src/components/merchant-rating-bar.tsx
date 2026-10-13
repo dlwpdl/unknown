@@ -6,7 +6,7 @@ import type { MerchantReviewKind } from '@/lib/merchant-reviews';
 
 const IRIS = ['#EEE7FF', '#E3D6FF', '#D8C4FF', '#CDB0FF', '#BD97FF', '#AD7BFF', '#9F61FF', '#9148FF', '#8538FF', '#7B2CFF'];
 
-export function MerchantRatingBar({ score, reviewKind = 'usage' }: { score: number | null; reviewKind?: MerchantReviewKind }) {
+export function MerchantRatingBar({ score, reviewKind = 'usage', label }: { score: number | null; reviewKind?: MerchantReviewKind; label?: string }) {
   const theme = useTheme(), reducedMotion = useReducedMotion();
   const [progress] = useState(() => Array.from({ length: 10 }, () => new Animated.Value(1)));
   const rounded = score != null && Number.isFinite(score) && score >= 1 && score <= 10 ? Math.round(score * 10) / 10 : null;
@@ -23,7 +23,7 @@ export function MerchantRatingBar({ score, reviewKind = 'usage' }: { score: numb
   const shape = (color: string) => employment
     ? <View testID="merchant-rating-segment" style={[styles.segment, { backgroundColor: color }]} />
     : <Text style={[styles.sparkle, { color }]} accessible={false}>✦</Text>;
-  return <View style={[styles.bar, employment && styles.employmentBar]} accessible accessibilityLabel={`${employment ? '근무' : '상품·서비스'} ${rounded == null ? '점수 없음' : `평균 ${rounded.toFixed(1)}점, 10점 만점`}`}>
+  return <View style={[styles.bar, employment && styles.employmentBar]} accessible accessibilityLabel={`${label ?? (employment ? '근무' : '상품·서비스')} ${rounded == null ? '점수 없음' : `평균 ${rounded.toFixed(1)}점, 10점 만점`}`}>
     {progress.map((value, index) => <View key={index} style={[styles.unit, employment && styles.employmentUnit]} accessible={false}>
       {shape(theme.line)}
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: value.interpolate({ inputRange: [0, 1], outputRange: [0.25, 1] }),

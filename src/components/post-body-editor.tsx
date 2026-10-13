@@ -1,29 +1,39 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { useReducedMotion } from 'react-native-reanimated';
-import { Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { PostAttachmentLink } from '@/components/post-attachment-link';
+import { PostMapLink } from '@/components/post-map-link';
+import { PostLocationPicker } from '@/components/post-location-picker';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { googleMapsPin, googlePinUrl, postMapBody, withPostMap } from '@/lib/post-maps';
+import { t } from '@/i18n/ko';
 import { instagramPostLink, postLinkChecks, safePostLink, splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links';
 
-export function PostBodyEditor({ value = '', onChangeText, editable = true, maxLength = 4000, onFocus, ...props }: TextInputProps) {
+export function PostBodyEditor({ value = '', onChangeText, editable = true, maxLength = 4000, onFocus, cityName = '', allowLocation = true, ...props }: TextInputProps & { cityName?: string; allowLocation?: boolean }) {
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
-  const [stage, setStage] = useState<'choices' | 'sns' | 'instagram' | 'url' | null>(null);
+  const [stage, setStage] = useState<'choices' | 'sns' | 'instagram' | 'url' | 'location' | null>(null);
   const [input, setInput] = useState('');
   const inputRef = useRef<TextInput>(null);
-  const attached = splitPostAttachments(value);
+  const mapped = postMapBody(value);
+  const initialPin = useMemo(() => googleMapsPin(mapped.url ?? ''), [mapped.url]);
+  const attached = splitPostAttachments(mapped.body);
+  const bodyLimit = mapped.url ? Math.min(maxLength, 4000) : maxLength;
   const candidate = stage === 'instagram' ? instagramPostLink(input)?.url : stage === 'url' ? safePostLink(input) : null;
   const duplicate = !!candidate && attached.urls.some(url => (instagramPostLink(url)?.url ?? url) === candidate);
-  const next = candidate ? withPostAttachments(value, [...attached.urls, candidate]) : null;
+  let next: string | null = null;
+  let tooLong = false;
+  try { if (candidate) next = withPostAttachments(value, [...attached.urls, candidate]); }
+  catch { tooLong = true; }
   const error = input.trim() && !candidate ? stage === 'instagram' ? 'Instagram 프로필 주소를 확인해 주세요.' : 'HTTPS 주소를 확인해 주세요.'
-    : duplicate ? '이미 첨부한 링크예요.' : next && next.length > maxLength ? '본문과 첨부 링크가 너무 길어요.' : '';
+    : duplicate ? '이미 첨부한 링크예요.' : tooLong || (next && [...next].length > maxLength) ? '본문과 첨부 정보가 너무 길어요.' : '';
   const checks = postLinkChecks(attached.body);
   const blocked = checks.filter(item => item.verdict === 'blocked').length;
   const close = () => { play('selection'); setStage(null); setInput(''); };
@@ -35,18 +45,33 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
   }, [stage]);
   return <>
     <TextInput {...props} value={attached.body} editable={editable}
-      maxLength={Math.max(0, maxLength - (value.length - attached.body.length))}
+      maxLength={Math.max(0, bodyLimit - (value.length - attached.body.length))}
       onFocus={event => { play('selection'); onFocus?.(event); }}
       onChangeText={text => {
         const pasted = splitPostAttachments(text);
-        onChangeText?.(withPostAttachments(pasted.body, [...attached.urls, ...pasted.urls]));
+        const changed = withPostAttachments(pasted.body, [...attached.urls, ...pasted.urls]);
+        onChangeText?.(mapped.url ? withPostMap(changed, mapped.url, mapped.label) : changed);
       }} />
     <View style={styles.attachments}>
+      <View style={styles.actions}>
       <Pressable analyticsId="post.attachment.add" accessibilityRole="button" accessibilityLabel="링크 첨부" disabled={!editable}
         onPress={() => { Keyboard.dismiss(); choose('choices'); }} style={[styles.attachButton, { borderColor: theme.line, opacity: editable ? 1 : 0.5 }]}>
         <SymbolView name={{ ios: 'paperclip', android: 'attach_file', web: 'attach_file' }} size={18} tintColor={theme.text} />
         <ThemedText type="smallBold">첨부</ThemedText>
       </Pressable>
+      {allowLocation && <Pressable analyticsId="post.location.add" accessibilityRole="button" accessibilityLabel={mapped.url ? t.write.placeChange : t.write.placeAdd} disabled={!editable}
+        onPress={() => { Keyboard.dismiss(); choose('location'); }} style={[styles.attachButton, { borderColor: theme.line, opacity: editable ? 1 : 0.5 }]}>
+        <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={18} tintColor={theme.accent} />
+        <ThemedText type="smallBold">{mapped.url ? t.write.placeChange : t.write.placeAdd}</ThemedText>
+      </Pressable>}
+      </View>
+      {mapped.url && <View style={styles.row}>
+        <PostMapLink url={mapped.url} label={mapped.label} />
+        {allowLocation && <Pressable analyticsId="post.location.remove" accessibilityRole="button" accessibilityLabel={t.write.placeRemove} disabled={!editable}
+          onPress={() => { play('selection'); onChangeText?.(mapped.body); }} style={styles.iconButton}>
+          <ThemedText themeColor="textSecondary">×</ThemedText>
+        </Pressable>}
+      </View>}
       {attached.urls.map((url, index) => <View key={`${url}-${index}`} style={styles.row}>
         <PostAttachmentLink url={url} />
         <Pressable analyticsId="post.attachment.remove" accessibilityRole="button" accessibilityLabel={`${instagramPostLink(url)?.handle ?? url} 첨부 삭제`} disabled={!editable}
@@ -57,7 +82,15 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
       {blocked > 0 && <ThemedText type="small" accessibilityRole="alert">활성화할 수 없는 본문 링크 {blocked}개가 있어요. 주소를 확인해 주세요.</ThemedText>}
       {checks.length > blocked && <ThemedText type="small" themeColor="textSecondary">본문 외부 링크의 악성 여부는 아직 확인하지 못했어요.</ThemedText>}
     </View>
-    <Modal visible={stage !== null && editable} transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={close}>
+    {stage === 'location' && editable && <PostLocationPicker visible initialPin={initialPin} initialLabel={mapped.label} cityName={cityName} onClose={close}
+      onConfirm={(pin, label) => {
+        try {
+          const changed = withPostMap(value, googlePinUrl(pin), label);
+          if ([...changed].length > maxLength) throw new Error('POST_BODY_TOO_LONG');
+          play('success'); onChangeText?.(changed); setStage(null); setInput('');
+        } catch { play('warning'); Alert.alert(t.write.validationTitle, t.write.bodyTooLong); }
+      }} />}
+    <Modal visible={stage !== null && editable && stage !== 'location'} transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={close}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.overlay}>
         <Pressable analyticsId="post.attachment.backdrop" accessibilityRole="button" accessibilityLabel="첨부 취소" onPress={close} style={StyleSheet.absoluteFill} />
         <View accessibilityViewIsModal style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(16, insets.bottom) }]}>
@@ -85,7 +118,7 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
               <Pressable analyticsId="post.attachment.confirm" accessibilityRole="button" disabled={!next || !!error}
                 onPress={() => { if (!next || error) return; play('selection'); onChangeText?.(next); setStage(null); setInput(''); }}
                 style={[styles.confirm, { backgroundColor: theme.accent, opacity: !next || error ? 0.5 : 1 }]}>
-                <ThemedText type="smallBold" style={{ color: theme.accentInk }}>첨부하기</ThemedText>
+                <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{'첨부하기'}</ThemedText>
               </Pressable>
             </>}
           </ScrollView>
@@ -97,6 +130,7 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
 
 const styles = StyleSheet.create({
   attachments: { gap: 8, marginVertical: 12 },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   attachButton: { alignSelf: 'flex-start', minHeight: 44, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 12 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, maxWidth: '100%' },
   iconButton: { minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'center' },

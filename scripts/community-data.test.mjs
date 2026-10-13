@@ -3,6 +3,42 @@ import test from 'node:test';
 
 import { buildPostImagePath, createCommunityPost, deleteMyAccount, editPost, getCommunityActionError, isContentRejected, leaveMeetup, loadChatReadPosition, loadMyMeetups, markChatRead, recordPostView, sendChatAttachment, uploadChatImage, uploadPostImages, uploadPostMedia } from '../src/lib/community-data.ts';
 
+test('a poll is created atomically with its post and preserves the saved post id', async () => {
+  const calls = [];
+  const client = { rpc: async (name, args) => {
+    calls.push([name, args]);
+    return name === 'get_public_post' ? { data: null, error: new Error('read unavailable') } : { data: 'poll-post', error: null };
+  } };
+  const result = await createCommunityPost(client, {
+    userId: 'author', cityId: 'vancouver', tag: { id: 1, slug: 'daily', label: '일상', kind: 'post' },
+    title: '선택', body: '본문', hashtags: [], poll: { question: '어느 쪽인가요?', options: ['첫 번째', '두 번째'] },
+  });
+  assert.equal(calls[0][0], 'create_post_with_poll');
+  assert.equal(calls[0][1].p_poll_question, '어느 쪽인가요?');
+  assert.deepEqual(calls[0][1].p_poll_options, ['첫 번째', '두 번째']);
+  assert.deepEqual(result, { id: 'poll-post', post: null });
+});
+
+test('invalid poll choices are rejected before uploading photos or creating a post', async () => {
+  const client = { rpc() { assert.fail('invalid poll must not reach the server'); }, storage: { from() { assert.fail('invalid poll must not upload photos'); } } };
+  await assert.rejects(createCommunityPost(client, {
+    userId: 'author', cityId: 'vancouver', tag: { id: 1, slug: 'daily', label: '일상', kind: 'post' },
+    title: '선택', body: '본문', hashtags: [], images: [{ base64: 'AQ==', mimeType: 'image/webp' }],
+    poll: { question: '어느 쪽인가요?', options: ['같은 답', '같은 답'] },
+  }), /POLL|INVALID/);
+});
+
+test('an uncertain post response retains photos that the server may already reference', async () => {
+  const removed = [];
+  const client = { storage: { from: () => ({ upload: async () => ({ error: null }), remove: async paths => { removed.push(...paths); return { error: null }; } }) },
+    rpc: async () => ({ data: null, error: { message: 'Failed to fetch', code: '' } }) };
+  await assert.rejects(createCommunityPost(client, {
+    userId: 'author', cityId: 'vancouver', tag: { id: 1, slug: 'daily', label: '일상', kind: 'post' },
+    title: '사진', body: '본문', hashtags: [], images: [{ base64: 'AQ==', mimeType: 'image/webp' }],
+  }), { message: 'Failed to fetch' });
+  assert.deepEqual(removed, []);
+});
+
 test('twenty originals and thumbnails upload with at most three requests and retain selection order', async () => {
   let active = 0, peak = 0;
   const uploaded = [];

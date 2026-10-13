@@ -18,6 +18,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TicketmasterSourceLink } from '@/components/ticketmaster-source-link';
 import { MerchantSourceLink } from '@/components/merchant-source-link';
 import { MerchantReviews } from '@/components/merchant-reviews';
+import { MeetupReviews } from '@/components/meetup-reviews';
+import { PostPoll } from '@/components/post-poll';
 import { PostCard } from '@/components/post-card';
 import { PostShareSheet } from '@/components/post-share-sheet';
 import { PostBodyEditor } from '@/components/post-body-editor';
@@ -42,6 +44,7 @@ import { bumpListing, deleteComment, deletePost, editComment, editPost, getCommu
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadPublicPost } from '@/lib/feed-data';
 import { MAX_POST_IMAGES } from '@/lib/image-upload';
+import { CITIES } from '@/lib/mock';
 import { splitPostPhotoCredits } from '@/lib/post-photo-credits';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
 import { splitEventMeetupBody, visibleMeetupBody } from '@/lib/meetup-ai';
@@ -654,7 +657,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                   placeholder="제목" placeholderTextColor={theme.textSecondary} maxLength={100} editable={!savingPost}
                   accessibilityLabel="글 제목 수정"
                   style={[styles.postEditInput, { color: theme.text, borderColor: theme.line }]} />
-                <PostBodyEditor value={postDraft.body} onChangeText={(text) => setPostDraft((current) => current && { ...current, body: text })}
+                <PostBodyEditor value={postDraft.body} cityName={CITIES.find(city => city.id === post.cityId)?.englishName} allowLocation={!post.room} onChangeText={(text) => setPostDraft((current) => current && { ...current, body: text })}
                   placeholder="내용" placeholderTextColor={theme.textSecondary} maxLength={4000 - linkedEventDetails.length} multiline editable={!savingPost}
                   accessibilityLabel="글 내용 수정"
                   style={[styles.postEditInput, styles.postEditBody, { color: theme.text, borderColor: theme.line }]} />
@@ -700,10 +703,13 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                   trustLevel: post.author.trustLevel,
                   mine: post.author.id === me.id,
                   listingId: post.kind === 'listing' ? post.id : undefined,
+                  contextPostId: post.kind === 'listing' || post.room ? post.id : undefined,
                 })
               }
             />}
+            {!postDraft && post.kind === 'story' && !post.room && <PostPoll postId={post.id} />}
             {!postDraft && post.room && <ChillingHostProfile post={post} onJoin={onJoin} onBeforeNavigate={onJoin ? onClose : undefined} />}
+            {!postDraft && post.room && <MeetupReviews postId={post.id} kind={post.room.eventKind ?? 'group'} />}
             {canManagePost && (post.kind === 'listing' || (post.tag.kind === 'post' && !post.room)) && <ListingControls post={post} onChanged={onListingChanged} />}
             {PROMOTIONS_PREVIEW_ENABLED && Platform.OS !== 'web' && isAuthed && post.author.id === me.id && <Pressable analyticsId="components_post-detail.pressable.16"
               accessibilityRole="button"
