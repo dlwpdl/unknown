@@ -195,3 +195,37 @@ with tempfile.TemporaryDirectory() as directory:
 `], { cwd: new URL('../', import.meta.url), encoding: 'utf8' });
   assert.equal(result.status, 0, result.stdout + result.stderr);
 });
+
+test('tag releases immediately require each verified platform build before review submission', () => {
+  const workflow = parse(readFileSync(new URL('../.github/workflows/mobile-release.yml', import.meta.url), 'utf8'));
+  for (const platform of ['ios', 'android']) {
+    const steps = workflow.jobs[platform].steps;
+    const build = steps.findIndex(step => step.name?.startsWith('Build and verify signed'));
+    const enforce = steps.findIndex(step => step.run?.includes('release.py require-update'));
+    const submit = steps.findIndex(step => step.run?.includes('release.py submit'));
+    assert.ok(build < enforce && enforce < submit, `${platform}: verification → mandatory update → submission`);
+    assert.match(steps[enforce].if, /ref_type == 'tag'/);
+    assert.ok(steps[enforce].env.GLING_SUPABASE_SERVICE_ROLE_KEY);
+    assert.equal(steps[build].env.GLING_SUPABASE_SERVICE_ROLE_KEY, undefined);
+    assert.match(steps[enforce].run, new RegExp(`--platform ${platform}`));
+    assert.match(steps[enforce].run, /--build-number "\$RELEASE_BUILD"/);
+  }
+});
+
+test('mandatory update command reuses the atomic policy writer without store credentials', () => {
+  const result = spawnSync('python3', ['-c', `
+import importlib.util, os, sys
+spec = importlib.util.spec_from_file_location('release', 'scripts/release.py')
+r = importlib.util.module_from_spec(spec); spec.loader.exec_module(r)
+os.environ['GLING_SUPABASE_SERVICE_ROLE_KEY'] = 'test-policy-key'
+os.environ['GITHUB_REPOSITORY_VISIBILITY'] = 'public'
+r.setup = lambda *args: (_ for _ in ()).throw(AssertionError('store credentials do not belong in this policy-only command'))
+calls = []
+r.enforce_policy = lambda *args: calls.append(args) or {'minimum_build': args[1]}
+for platform in ['ios', 'android']:
+    sys.argv = ['release.py', 'require-update', '--platform', platform, '--build-number', '65']
+    r.main()
+assert calls == [('ios', 65, 'test-policy-key'), ('android', 65, 'test-policy-key')]
+`], { cwd: new URL('../', import.meta.url), encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+});

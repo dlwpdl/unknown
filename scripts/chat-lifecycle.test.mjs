@@ -12,6 +12,8 @@ import { merchantEventId } from '../src/lib/merchant-source.ts';
 import { sharedLinkInMessage } from '../src/lib/sharing.ts';
 import { hideContent, isContentHidden, subscribeVisibility, visibilityRevision } from '../src/lib/content-visibility.ts';
 import { count, t } from '../src/i18n/ko.ts';
+import { isFreshLocation } from '../src/lib/location.ts';
+import { googlePinUrl } from '../src/lib/post-maps.ts';
 
 // Exercise the component's hooks, effects and event handlers, as in comment-threads.test.mjs.
 function mount(file, exportName, data, props = {}, params = {}) {
@@ -50,6 +52,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
     useEffect: effect, useLayoutEffect: effect,
   };
   const supabase = {
+    storage: { from: () => ({ remove: async paths => { data.removed?.push(...paths); return { error: null }; } }) },
     channel() {
       const channel = { handlers: [], on(_kind, filter, callback) { this.handlers.push({ filter, callback }); return this; }, subscribe() { return this; } };
       channels.add(channel);
@@ -63,17 +66,18 @@ function mount(file, exportName, data, props = {}, params = {}) {
   }).outputText;
   vm.runInNewContext(source, {
     exports,
+    Date: class extends Date { static now() { return data.clock?.now ?? Date.now(); } },
     process: { env: { EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: data.mapsKey ?? '' } },
     requestAnimationFrame(fn) { fn(); return 1; },
-    setTimeout(fn) { const id = ++timerId; timers.set(id, fn); return id; },
+    setTimeout(fn, delay = 0) { const id = ++timerId; timers.set(id, { fn, delay }); return id; },
     clearTimeout(id) { timers.delete(id); },
     require(name) {
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (name === 'react') return react;
       if (name === 'react-native') return new Proxy({
-        StyleSheet: { create: value => value }, Platform: { OS: 'ios' },
+        StyleSheet: { create: value => value }, Platform: { OS: data.platform ?? 'ios' }, useWindowDimensions: () => ({ width: 390, height: 844 }),
         LayoutAnimation: { configureNext: config => animations.push(config), Presets: { easeInEaseOut: {} }, Types: { easeOut: 'easeOut' }, Properties: { opacity: 'opacity' } },
-        AppState: { addEventListener(_name, callback) { appListeners.add(callback); return { remove: () => appListeners.delete(callback) }; } },
+        AppState: { currentState: 'active', addEventListener(_name, callback) { appListeners.add(callback); return { remove: () => appListeners.delete(callback) }; } },
         DeviceEventEmitter: { addListener: () => ({ remove() {} }) },
       }, { get: (target, key) => target[key] ?? key });
       if (name === 'expo-router') return { useFocusEffect: fn => effect(fn, [fn]), useLocalSearchParams: () => params, useRouter: () => ({ setParams() {} }) };
@@ -97,9 +101,14 @@ function mount(file, exportName, data, props = {}, params = {}) {
       if (name === '@/components/shared-link-card') return { SharedLinkCard: 'SharedLinkCard' };
       if (name === '@/lib/chat-details') return { ...chatDetails, ...(data.loadChatMembers ? { loadChatMembers: data.loadChatMembers } : {}) };
       if (name === '@/lib/chat-location') return chatLocation;
+      if (name === '@/lib/location') return { isFreshLocation };
+      if (name === '@/lib/post-maps') return { googlePinUrl };
+      if (name === '@/lib/image-upload') return { MAX_POST_IMAGES: 20 };
+      if (name === '@/lib/post-image-picker') return { isSupportedImage: mime => ['image/jpeg', 'image/png', 'image/webp'].includes(mime), preparePostImage: data.preparePostImage };
+      if (name === 'expo-image-picker') return { UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' }, ...data.imagePicker };
       if (name === '@/lib/chat-suggestions') return { chatSuggestions, loadChatSuggestionContext: async () => null, ...data.suggestions };
       if (name === '@/lib/merchant-source') return { merchantEventId };
-      if (name === 'expo-location') return { Accuracy: { High: 4 }, ...data.location };
+      if (name === 'expo-location') return { Accuracy: { High: 4, Balanced: 3 }, ...data.location };
       if (name === '@/lib/supabase') return { supabase };
       return new Proxy({}, { get: (_target, key) => key });
     },
@@ -125,7 +134,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
     animations,
     foreground() { for (const callback of appListeners) callback('active'); },
     message(message) { for (const channel of channels) for (const { filter, callback } of channel.handlers) if (filter.table === 'messages') callback({ new: message }); },
-    async timers() { const pending = [...timers.values()]; timers.clear(); pending.forEach(fn => fn()); await harness.settle(); },
+    async timers() { const pending = [...timers.values()]; timers.clear(); for (const { fn, delay } of pending) { if (data.clock) data.clock.now += delay; fn(); } await harness.settle(); },
     cleanup() { for (const hook of hooks) hook?.cleanup?.(); timers.clear(); },
   };
   render();
@@ -202,6 +211,61 @@ test('attachment plus opens a place picker without asking for location permissio
   plus().props.onPress(); await harness.settle();
   plus().props.onPress(); await harness.settle();
   assert.equal(plus().props.accessibilityState.expanded, false);
+});
+
+test('multiple chat photos keep selection order and retry only the unsent remainder', async context => {
+  for (const failureStage of ['upload', 'send']) {
+  const uploads = [], sends = [], removed = [], clock = { now: Date.now() }; let failed = false, pickerOptions, lastSent = 0;
+  const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', {
+    removed, clock, loadConversationMessages: async () => [], loadConversationMessagesByIds: async () => [],
+    imagePicker: { launchImageLibraryAsync: async options => {
+      pickerOptions = options;
+      return { canceled: false, assets: ['one', 'two'].map(uri => ({ uri, mimeType: 'image/jpeg' })) };
+    } },
+    preparePostImage: async asset => ({ uri: asset.uri, base64: asset.uri, bytes: 100, width: 100, height: 100, mimeType: 'image/webp' }),
+    uploadChatImage: async (_client, _user, _room, base64) => {
+      uploads.push(base64);
+      if (failureStage === 'upload' && base64 === 'two' && !failed) { failed = true; throw new Error('offline'); }
+      return `${base64}-path`;
+    },
+    sendChatAttachment: async (_client, _room, attachment) => {
+      if (clock.now - lastSent < 1000) throw new Error('RATE_LIMITED');
+      sends.push(attachment.imagePath);
+      if (failureStage === 'send' && attachment.imagePath === 'two-path' && !failed) { failed = true; throw new Error('offline'); }
+      lastSent = clock.now; return attachment.imagePath;
+    },
+  }, { ...roomProps, conversation: { ...conversation, kind: 'direct' } });
+  context.after(() => harness.cleanup()); await harness.settle();
+  harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.add-attachment').props.onPress(); await harness.settle();
+  harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.attachment-photo').props.onPress(); await harness.settle();
+  assert.equal(pickerOptions.allowsMultipleSelection, true); assert.equal(pickerOptions.orderedSelection, true); assert.equal(pickerOptions.selectionLimit, 20);
+  const send = () => harness.nodes().find(node => (node.props?.label ?? node.props?.accessibilityLabel)?.endsWith('장 보내기'));
+  assert.equal(send().props.label ?? send().props.accessibilityLabel, '2장 보내기'); send().props.onPress(); await harness.settle(); await harness.timers();
+  assert.deepEqual(uploads, ['one', 'two']); assert.equal(harness.messages().filter(row => row.kind === 'image').length, 1);
+  assert.equal(send().props.label ?? send().props.accessibilityLabel, '1장 보내기'); assert.deepEqual(removed, failureStage === 'send' ? ['two-path'] : []);
+  send().props.onPress(); await harness.settle(); await harness.timers();
+  assert.deepEqual(uploads, ['one', 'two', 'two']); assert.deepEqual(sends, failureStage === 'send' ? ['one-path', 'two-path', 'two-path'] : ['one-path', 'two-path']);
+  assert.equal(harness.messages().filter(row => row.kind === 'image').length, 2); assert.equal(send(), undefined);
+  }
+});
+
+test('selected photo preview can enlarge and remove one image without sending or discarding the draft', async context => {
+  const harness = room({ loadConversationMessages: async () => [],
+    imagePicker: { launchImageLibraryAsync: async () => ({ canceled: false, assets: ['one', 'two'].map(uri => ({ uri, mimeType: 'image/jpeg' })) }) },
+    preparePostImage: async asset => ({ uri: asset.uri, base64: asset.uri, bytes: 100, width: 100, height: 100, mimeType: 'image/webp' }),
+  });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const input = () => harness.nodes().find(node => node.type === 'TextInput' && node.props.placeholder === t.chat.messagePlaceholder);
+  input().props.onChangeText('보내지 않은 원고');
+  harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.add-attachment').props.onPress(); await harness.settle();
+  harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.attachment-photo').props.onPress(); await harness.settle();
+  const preview = harness.nodes().filter(node => node.props?.analyticsId === 'chat.photo.preview');
+  assert.equal(preview.length, 2); preview[0].props.onPress(); await harness.settle();
+  assert.equal(harness.nodes().find(node => node.props?.accessibilityLabel === '대화 사진 크게 보기').props.source.uri, 'one');
+  harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.photo-close').props.onPress(); await harness.settle();
+  harness.nodes().filter(node => node.props?.analyticsId === 'chat.photo.remove')[0].props.onPress(); await harness.settle();
+  assert.equal(harness.nodes().filter(node => node.props?.analyticsId === 'chat.photo.preview').length, 1);
+  assert.equal(input().props.value, '보내지 않은 원고'); assert.equal(harness.messages().length, 0);
 });
 
 test('long press replies in direct and group rooms and keeps the unsent draft', async context => {
@@ -303,7 +367,7 @@ test('location picker requests permission only on current-location selection and
   let permissions = 0, positions = 0; const sent = [];
   const harness = mount('../src/components/chat-location-picker.tsx', 'ChatLocationPicker', { location: {
     requestForegroundPermissionsAsync: async () => { permissions++; return { granted: true }; },
-    getCurrentPositionAsync: async () => { positions++; return { coords: { latitude: 49.2, longitude: -123.1 } }; },
+    getCurrentPositionAsync: async () => { positions++; return { timestamp: Date.now(), coords: { latitude: 49.2, longitude: -123.1, accuracy: 15 } }; },
   } }, { sending: false, onClose() {}, onSend: async point => { sent.push(point); throw new Error('offline'); } });
   context.after(() => harness.cleanup()); await harness.settle();
   const action = label => harness.nodes().find(node => node.props?.label === label || node.props?.accessibilityLabel === label);
@@ -315,22 +379,55 @@ test('location picker requests permission only on current-location selection and
   assert.ok(harness.nodes().some(node => node.props?.accessibilityRole === 'alert'));
 });
 
-test('place search does not use GPS or send until a valid map point is chosen', async context => {
+test('key-free MapLibre search does not use GPS or send until confirmation', async context => {
   let permissions = 0; const sent = [];
-  const harness = mount('../src/components/chat-location-picker.tsx', 'ChatLocationPicker', { mapsKey: 'offline-key', location: {
+  const harness = mount('../src/components/chat-location-picker.tsx', 'ChatLocationPicker', { location: {
     requestForegroundPermissionsAsync: async () => { permissions++; return { granted: false }; },
+    geocodeAsync: async query => { assert.equal(query, 'library'); return [{ latitude: 49.28, longitude: -123.12 }]; },
   } }, { sending: false, onClose() {}, onSend: async point => { sent.push(point); } });
   context.after(() => harness.cleanup()); await harness.settle();
-  const map = () => harness.nodes().find(node => node.type === 'ChatMap');
+  const map = () => harness.nodes().find(node => node.type === 'PostPinMap');
   const action = label => harness.nodes().find(node => node.props?.label === label || node.props?.accessibilityLabel === label);
-  map().props.onEvent('{"type":"ready"}'); await harness.settle();
+  assert.ok(map(), 'the map renders without a Google API key');
+  const modal = harness.nodes().find(node => node.type === 'Modal');
+  assert.equal(modal.props.transparent, true, 'sharing is a bounded sheet, not a fullscreen modal');
+  assert.ok(harness.nodes().some(node => node.type === 'ScrollView'), 'small screens and enlarged text can scroll controls');
+  map().props.onReadyChange(true); await harness.settle();
   harness.nodes().find(node => node.type === 'TextInput').props.onChangeText('library'); await harness.settle();
-  action('검색').props.onPress(); await harness.settle(); assert.equal(map().props.command.query, 'library');
+  action('검색').props.onPress(); await harness.settle(); assert.equal(map().props.pin.latitude, 49.28);
   assert.equal(sent.length, 0); assert.equal(permissions, 0);
-  map().props.onEvent('{"type":"selection","latitude":999,"longitude":0,"label":"bad"}'); await harness.settle();
-  assert.equal(action('이 위치 공유하기').props.disabled, true);
-  map().props.onEvent('{"type":"selection","latitude":49.28,"longitude":-123.12,"label":"Library"}'); await harness.settle();
+  map().props.onSelect({ latitude: 999, longitude: 0 }, 'bad'); await harness.settle();
+  assert.equal(map().props.pin.latitude, 49.28, 'invalid bridge coordinates do not replace the selected point');
+  map().props.onSelect({ latitude: 49.28, longitude: -123.12 }, 'Library'); await harness.settle();
   action('이 위치 공유하기').props.onPress(); await harness.settle(); assert.equal(sent[0].label, 'Library');
+});
+
+test('a late GPS fix cannot overwrite a manually selected chat location', async context => {
+  let finish; const sent = [];
+  const harness = mount('../src/components/chat-location-picker.tsx', 'ChatLocationPicker', { location: {
+    requestForegroundPermissionsAsync: async () => ({ granted: true }),
+    getCurrentPositionAsync: () => new Promise(resolve => { finish = resolve; }),
+  } }, { sending: false, onClose() {}, onSend: async point => sent.push(point) });
+  context.after(() => harness.cleanup()); await harness.settle();
+  harness.nodes().find(node => node.props?.label === '현재 위치 선택').props.onPress(); await harness.settle();
+  harness.nodes().find(node => node.type === 'PostPinMap').props.onSelect({ latitude: 50, longitude: -120 }, '직접 고른 곳'); await harness.settle();
+  finish({ timestamp: Date.now(), coords: { latitude: 49, longitude: -123, accuracy: 10 } }); await harness.settle();
+  harness.nodes().find(node => node.props?.label === '이 위치 공유하기').props.onPress(); await harness.settle();
+  assert.equal(sent[0].latitude, 50); assert.equal(sent[0].label, '직접 고른 곳');
+});
+
+test('web location search explains the native geocoder limit and preserves manual selection', async context => {
+  const harness = mount('../src/components/chat-location-picker.tsx', 'ChatLocationPicker', { platform: 'web', location: {
+    geocodeAsync: async () => { throw new Error('web geocoder must not be called'); },
+  } }, { sending: false, onClose() {}, onSend: async () => {} });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const map = () => harness.nodes().find(node => node.type === 'PostPinMap');
+  map().props.onReadyChange(true); map().props.onSelect({ latitude: 49, longitude: -123 }, '직접 고른 곳'); await harness.settle();
+  harness.nodes().find(node => node.type === 'TextInput').props.onChangeText('주소'); await harness.settle();
+  harness.nodes().find(node => node.props?.label === '검색').props.onPress(); await harness.settle();
+  const alert = harness.nodes().find(node => node.props?.accessibilityRole === 'alert');
+  assert.match(alert.props.children, /주소 검색은 앱에서 지원/);
+  assert.equal(map().props.pin.label, '직접 고른 곳');
 });
 
 test('only newly arriving chat messages animate, not the opened history', async (context) => {

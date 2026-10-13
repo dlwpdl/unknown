@@ -8,7 +8,7 @@
         "projectId": "3889cb42-940a-469d-b975-b5c9a4c6bfc5"
       }
     },
-    "version": "1.2.0",
+    "version": "1.2.1",
     "orientation": "portrait",
     "icon": "./assets/brand/gling-night-app-icon.png",
     "scheme": "gling",
@@ -17,7 +17,7 @@
       "icon": "./assets/brand/gling-night-app-icon.png",
       "bundleIdentifier": "com.dlwpdl.gling",
       "appleTeamId": "P3X3452TDZ",
-      "buildNumber": "63",
+      "buildNumber": "64",
       "usesAppleSignIn": true,
       "entitlements": {
         "aps-environment": "production"
@@ -128,7 +128,7 @@
     },
     "android": {
       "package": "com.dlwpdl.gling",
-      "versionCode": 63,
+      "versionCode": 64,
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.ACCESS_BACKGROUND_LOCATION",
