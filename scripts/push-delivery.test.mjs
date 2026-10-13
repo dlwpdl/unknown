@@ -17,6 +17,55 @@ function harness({ sends = [job], receipts = [], fetcher = async () => Response.
   }), { secret: 'test-secret', rpc, fetcher, expoAccessToken: 'expo-access' });
   return { calls, run };
 }
+test('post recommendations show the current title and excerpt in the actual Expo payload', async () => {
+  for (const category of ['trending', 'weekly_ranking', 'city_food', 'city_places', 'interests', 'nearby']) {
+    const claim = { ...job, category, route: `/post/${notificationId}`, body: 'older inbox text',
+      post_title: '캐나다 와서 친구 사귀기, 다들 어떻게 했어요?', post_preview: '처음엔 일하고 집에 오면 하루가 끝나더라고요.' };
+    const h = harness({ sends: [claim], fetcher: async (_, options) => {
+      const [message] = JSON.parse(options.body);
+      assert.equal(message.title, claim.post_title);
+      assert.equal(message.body, claim.post_preview);
+      assert.equal(message.data.route, claim.route);
+      assert.equal(message.ttl, 300);
+      assert.equal(message.collapseId, notificationId);
+      assert.deepEqual(Object.keys(message.data).sort(), ['category', 'notificationId', 'route', 'userId']);
+      return Response.json({ data: [{ status: 'ok', id: ticketId }] });
+    } });
+    const response = await h.run();
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { tickets: 1, providerAccepted: 0, retrying: 0, failed: 0 });
+  }
+});
+test('post previews require a recommendation and valid post destination; old claims remain compatible', async () => {
+  const claims = [
+    { ...job, post_title: 'private title', post_preview: 'private body' },
+    { ...job, category: 'trending', route: 'https://outside.test', post_title: 'hidden title', post_preview: 'hidden body' },
+    { ...job, category: 'weekly_ranking', route: `/post/${notificationId}` },
+    { ...job, category: 'trending', route: `/post/${notificationId}`, post_title: 42, post_preview: 'body' },
+    { ...job, category: 'trending', route: `/post/${notificationId}`, post_title: 'title', post_preview: null },
+  ];
+  for (const claim of claims) {
+    const h = harness({ sends: [claim], fetcher: async (_, options) => {
+      const [message] = JSON.parse(options.body);
+      assert.equal(message.title, '글링');
+      assert.equal(message.body, job.body);
+      return Response.json({ data: [{ status: 'ok', id: ticketId }] });
+    } });
+    const response = await h.run();
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { tickets: 1, providerAccepted: 0, retrying: 0, failed: 0 });
+  }
+});
+test('post preview rollout preserves the live meetup-review destination', async () => {
+  const route = '/profile/meetup-reviews';
+  const h = harness({ sends: [{ ...job, category: 'meetups', route }], fetcher: async (_, options) => {
+    assert.equal(JSON.parse(options.body)[0].data.route, route);
+    return Response.json({ data: [{ status: 'ok', id: ticketId }] });
+  } });
+  const response = await h.run();
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { tickets: 1, providerAccepted: 0, retrying: 0, failed: 0 });
+});
 test('rejects unauthenticated workers before queue access', async () => {
   const h = harness();
   assert.equal((await h.run('wrong')).status, 401);
