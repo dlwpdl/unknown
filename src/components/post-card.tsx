@@ -229,7 +229,7 @@ export function PostCard({
           )}
         </Pressable>
 
-        {mapped.url && <PostMapLink url={mapped.url} />}
+        {mapped.url && <PostMapLink url={mapped.url} label={mapped.label} />}
         {afterBody}
 
         {chips.length > 0 && (

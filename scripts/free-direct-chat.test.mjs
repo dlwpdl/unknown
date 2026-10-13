@@ -13,13 +13,14 @@ function profile({ authenticated = true, failure } = {}) {
   const exports = {}, routes = [], starts = [], feedback = [], alerts = [], login = [];
   const elements = { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
   vm.runInNewContext(source, { exports, require(name) {
-    if (name === 'react') return { useEffect() {}, useRef: value => ({ current: value }), useState: value => [value, () => {}] };
+    if (name === 'react') return { useEffect() {}, useLayoutEffect: fn => fn(), useRef: value => ({ current: value }), useState: value => [value, () => {}] };
     if (name === 'react/jsx-runtime') return elements;
     if (name === 'react-native') return { Modal: 'Modal', View: 'View', Platform: { OS: 'ios' }, StyleSheet: { create: value => value }, Alert: { alert: (...args) => alerts.push(args) } };
     if (name === '@/components/analytics-controls') return { Pressable: 'Pressable' };
     if (name === 'expo-router') return { useRouter: () => ({ push: route => routes.push(route) }) };
     if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ bottom: 0 }) };
-    if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: authenticated, promptLogin: reason => login.push(reason) }) };
+    if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: authenticated, me: { id: 'viewer' }, promptLogin: reason => login.push(reason) }) };
+    if (name === '@/hooks/use-content-visibility') return { useContentVisibility: () => () => false };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: value => feedback.push(value) }) };
     if (name === '@/lib/supabase') return { supabase: {} };
     if (name === '@/lib/community-data') return {

@@ -5,8 +5,8 @@
 #   - 원고에서 먼저 지정한 도시별 기존 프로필을 재사용한다 (새 프로필을 만들지 않는다)
 #   - 시드 계정만 쓴다. 운영자·테스터 같은 실제 계정에는 대신 쓰지 않는다
 #   - 프로필 도시와 글 도시를 섞지 않는다
-#   - 등록 시각을 지금으로부터 25~275분 전 사이로 흩뜨린다
-#   - 조회수를 5~120 사이 값으로 주고 주간 랭킹용 조회 기록도 함께 넣는다
+#   - 예약은 실제 시간이 된 원고 한 건만, 실제 현재 시각으로 등록한다
+#   - 새 글 조회수는 0에서 시작한다
 #   - 같은 도시에 같은 제목이 이미 있으면 그 줄은 건너뛴다 (재실행 안전)
 #
 # 사용법:
@@ -14,6 +14,8 @@
 #   scripts/seed-city-posts.sh 2026-09-22 # 날짜 지정
 #   DRY_RUN=1 scripts/seed-city-posts.sh  # SQL만 출력
 #   STAGE=1 scripts/seed-city-posts.sh    # 원고를 launchd가 읽을 수 있는 위치로 복사
+#   SCHEDULED=1 STAGE=1 scripts/seed-city-posts.sh # 도시별 일반5건+사연1건의 실제 게시 시각 준비
+#   DUE=1 scripts/seed-city-posts.sh      # 기존 예약 큐에서 시간이 된 한 건만 등록
 #
 # launchd는 macOS 권한 때문에 ~/Desktop을 읽지 못한다. 그래서 예약 실행은
 # ~/Library/Application Support/gling/city-posts/ 아래에 복사된 스크립트와 원고를 쓴다.
@@ -24,22 +26,38 @@ export PATH="/Users/ash/.nvm/versions/node/v22.23.1/bin:/opt/homebrew/bin:/usr/b
 REPO="$HOME/Desktop/Git/unknown/mobile"
 PROJECT_REF="wjvahbdwmctzpkndqaxa"
 DAY="${1:-$(TZ=America/Vancouver date +%F)}"
-LOG_DIR="$HOME/Library/Application Support/gling/city-posts"
+LOG_DIR="${CITY_POSTS_DIR:-$HOME/Library/Application Support/gling/city-posts}"
 PAYLOAD_DIR="$LOG_DIR/payload"
 REPO_FILE="$REPO/content/$DAY/posts.json"
 STAGED_FILE="$PAYLOAD_DIR/$DAY.json"
+SCHEDULE="$(dirname "$0")/city-post-schedule.py"
+RECEIPT="$LOG_DIR/receipts/$DAY.json"
 
 mkdir -p "$PAYLOAD_DIR"
 
 # 원고를 예약 실행이 읽을 수 있는 위치로 복사한다. 원고를 쓴 직후 한 번 돌린다.
 if [ "${STAGE:-0}" = "1" ]; then
-  if [ ! -f "$REPO_FILE" ]; then echo "SKIP $REPO_FILE 없음"; exit 1; fi
-  cp "$REPO_FILE" "$STAGED_FILE" || exit 1
+  SOURCE="${POSTS_FILE:-$REPO_FILE}"
+  if [ ! -f "$SOURCE" ]; then echo "SKIP $SOURCE 없음"; exit 1; fi
+  if [ "${SCHEDULED:-0}" = "1" ]; then
+    python3 "$SCHEDULE" stage "$SOURCE" "$STAGED_FILE" "$DAY" || exit 1
+  else
+    if [ -f "$STAGED_FILE" ] && jq -e '.queue_version == 1' "$STAGED_FILE" >/dev/null 2>&1; then
+      echo "FAIL EXISTING_QUEUE_KEEP_ORIGINAL_ATTEMPTS" >&2
+      exit 1
+    fi
+    cp "$SOURCE" "$STAGED_FILE" || exit 1
+  fi
   echo "STAGED $STAGED_FILE"
   exit 0
 fi
 
 FILE="${POSTS_FILE:-}"
+if [ "${DUE:-0}" = "1" ]; then
+  FILE="${POSTS_FILE:-$STAGED_FILE}"
+  # 예약 회차에는 일괄 등록이나 합성 조회수 갱신을 섞지 않는다.
+  GROW=0
+fi
 # launchd는 ~/Desktop 파일을 stat은 하되 열지는 못한다. 권한 비트(-r)로는 구분되지 않으므로
 # 실제로 한 바이트를 열어보고, 열리지 않으면 예약 실행용 사본을 쓴다.
 if [ -z "$FILE" ] && [ -f "$REPO_FILE" ] && head -c 1 "$REPO_FILE" >/dev/null 2>&1; then
@@ -55,10 +73,18 @@ if [ ! -f "$FILE" ]; then
   exit 0
 fi
 
-PAYLOAD="$(jq -c '.posts' "$FILE")"
-COUNT="$(jq '.posts | length' "$FILE" 2>/dev/null || echo 0)"
+if [ "${DUE:-0}" = "1" ]; then
+  PAYLOAD="$(python3 "$SCHEDULE" due "$FILE" "$DAY" "$RECEIPT")" || exit 1
+else
+  PAYLOAD="$(jq -c '.posts' "$FILE")" || exit 1
+fi
+COUNT="$(printf '%s' "$PAYLOAD" | jq 'length')" || exit 1
 if [ -z "$PAYLOAD" ] || [ "${COUNT:-0}" = "0" ]; then
-  echo "FAIL $FILE 를 읽지 못했거나 원고가 비었다."
+  echo "SKIP 지금 게시할 새 원고가 없다."
+  exit 0
+fi
+if [[ "$PAYLOAD" == *'$GLING$'* ]]; then
+  echo "FAIL INVALID_SQL_DELIMITER" >&2
   exit 1
 fi
 if [ "$COUNT" -lt 1 ]; then
@@ -93,11 +119,23 @@ select slot.city_id, slot.author_nickname,
         where pr.city_id = slot.city_id
           and pr.nickname = slot.author_nickname
           and pr.account_status = 'active'
-          and u.email like '%@seed.gling.invalid') as author_id
+          and u.email like '%@seed.gling.invalid'
+          and coalesce(u.raw_app_meta_data->>'role','')<>'admin'
+          and u.raw_app_meta_data->'review_access' is distinct from 'true'::jsonb
+          and not exists(select 1 from private.personal_info info where info.user_id=pr.id)) as author_id
 from (select distinct city_id, author_nickname from gling_today) slot;
 do $$ begin
   if exists (select 1 from gling_today_author where author_id is null) then
     raise exception 'SEED_AUTHOR_NOT_FOUND';
+  end if;
+  if exists (select 1 from gling_today_author a join auth.users u on u.id=a.author_id join public.profiles p on p.id=a.author_id
+    where u.raw_app_meta_data->'gling_persona'->>'version' is distinct from '4'
+      or u.raw_app_meta_data->'gling_persona'->>'profile_id' is distinct from a.author_id::text
+      or u.raw_app_meta_data->'gling_persona'->>'city_id' is distinct from a.city_id
+      or u.raw_app_meta_data->'gling_persona'->>'kind' is distinct from 'gling_operated_character'
+      or not (coalesce(u.raw_app_meta_data->'gling_persona','{}'::jsonb) ?& array['living','background','values','personality','interests','writing_purpose','voice','continuity'])
+      or coalesce(p.bio,'') not like '글링 운영 캐릭터%') then
+    raise exception 'SEED_PERSONA_NOT_FOUND';
   end if;
 end $$;
 insert into public.posts (author_id, city_id, tag_id, title, body, status, view_count, created_at)
@@ -105,26 +143,16 @@ select a.author_id, seed.city_id, tag.id, seed.title,
        seed.body,
        'published',
        0,
-       (case when window_slot.local_time <= city_now.local_now
-             then window_slot.local_time
-             else window_slot.local_time - interval '1 day' end) at time zone city.timezone
+       now()
 from gling_today seed
 join gling_today_author a on a.city_id = seed.city_id and a.author_nickname = seed.author_nickname
 join public.tags tag on tag.slug = seed.tag_slug
 join public.cities city on city.id = seed.city_id
-cross join lateral (select now() at time zone city.timezone as local_now) city_now
-cross join lateral (
-  select date_trunc('day', city_now.local_now)
-         + make_interval(hours => case (abs(hashtext(a.author_id::text || '-w')::bigint) % 4)
-                                     when 0 then 7 when 1 then 12 when 2 then 18 else 22 end)
-         + make_interval(mins => ((abs(hashtext(seed.title || '-m')::bigint) % 110) + seed.ord * 7)::int % 120)
-         as local_time
-) window_slot
 where not exists (
   select 1 from public.posts existing
   where existing.city_id = seed.city_id and existing.title = seed.title and existing.status = 'published');
 
--- 작성자 성향에 맞춘 시간대는 어제가 될 수도 있다. posted_on을 그 현지 날짜로 맞춘다.
+-- 실제 등록 시각의 도시 현지 날짜를 쓴다.
 update public.posts post
 set posted_on = (post.created_at at time zone city.timezone)::date
 from public.cities city, gling_today seed, gling_today_author author
@@ -202,6 +230,12 @@ where p.status = 'published'
 commit;
 PULSE
 
+if [ "${DUE:-0}" = "1" ]; then
+  # COMMIT 뒤 실제 저장된 글을 읽어야 성공 영수증을 남길 수 있다.
+  WANTED="$(printf '%s' "$PAYLOAD" | jq -c '[.[] | {city_id,title,author_nickname}]')" || exit 1
+  printf '\nselect p.id, p.city_id, p.title, p.created_at, author.nickname as author_nickname from public.posts p join jsonb_to_recordset($GLING$%s$GLING$::jsonb) as wanted(city_id text, title text, author_nickname text) on wanted.city_id=p.city_id and wanted.title=p.title join public.profiles author on author.id=p.author_id and author.city_id=wanted.city_id and author.nickname=wanted.author_nickname join auth.users seed_user on seed_user.id=author.id and seed_user.email like \x27%%@seed.gling.invalid\x27 where p.status=\x27published\x27;\n' "$WANTED" >> "$SQL_FILE"
+fi
+
 if [ "${DRY_RUN:-0}" = "1" ]; then cat "$SQL_FILE"; exit 0; fi
 
 # 연결은 Supabase Management API로 한다. 키체인의 CLI 토큰을 그대로 쓴다.
@@ -211,12 +245,22 @@ if [ -z "$TOKEN" ]; then
   exit 1
 fi
 
-RESULT="$(python3 -c 'import json,sys; print(json.dumps({"query": open(sys.argv[1], encoding="utf-8").read()}, ensure_ascii=True))' "$SQL_FILE" | curl -s -X POST \
-  "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" --data-binary @-)"
+if [ "${DUE:-0}" = "1" ]; then
+  python3 "$SCHEDULE" attempt "$RECEIPT" "$PAYLOAD" || exit 1
+fi
 
-if printf '%s' "$RESULT" | grep -q '"message"'; then
+RESULT="$(python3 -c 'import json,sys; print(json.dumps({"query": open(sys.argv[1], encoding="utf-8").read()}, ensure_ascii=True))' "$SQL_FILE" | curl --fail-with-body -sS --connect-timeout 10 --max-time 25 -X POST \
+  "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" --data-binary @-)" || {
+    echo "FAIL HTTP 전송·저장 결과 미확인. 예약 attempted 영수증은 보존하며 다시 보내지 않는다."
+    exit 1
+  }
+
+if ! printf '%s' "$RESULT" | jq -e 'type == "array"' >/dev/null 2>&1; then
   echo "FAIL $RESULT"
   exit 1
+fi
+if [ "${DUE:-0}" = "1" ]; then
+  printf '%s' "$RESULT" | python3 "$SCHEDULE" confirm "$RECEIPT" "$PAYLOAD" || exit 1
 fi
 echo "OK ${COUNT}건 처리 $RESULT"

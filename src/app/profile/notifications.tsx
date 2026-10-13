@@ -111,7 +111,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
         <ToggleRow label="메시지 미리보기" value={preferences.message_preview ?? false} onChange={value => void save({ message_preview: value })} disabled={busy} />
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{preferences.message_preview
           ? '잠금 화면에 보낸 사람과 짧은 메시지가 표시돼요. 사진은 사진 안내만 보여요.'
-          : '보낸 사람과 내용 없이 “메시지가 도착했습니다”만 표시돼요.'}</ThemedText>
+          : '보낸 사람과 내용 없이 “메시지가 도착했어요.”만 표시돼요.'}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>변경 후 발송되는 푸시부터 적용돼요.</ThemedText>
       </View>
       <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">관심사와 내 도시</ThemedText>

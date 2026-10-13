@@ -25,6 +25,12 @@ test('event recommendations open the verified city event and reject injected des
   }
 });
 
+test('meetup review reminders open the existing review screen without accepting extra parameters', () => {
+  assert.equal(notificationRoute('/profile/meetup-reviews'), '/profile/meetup-reviews');
+  for (const route of ['/profile/meetup-reviews?redirect=//example.test', '/profile/meetup-reviews/../admin',
+    '/profile/meetup-reviews#outside', '/profile/meetup-reviews/']) assert.equal(notificationRoute(route), null);
+});
+
 test('admin-only alerts are distinct from ordinary Gling notifications', () => {
   for (const kind of ['safety_alert', 'admin_security', 'admin_multiacct', 'admin_error_spike']) assert.equal(isAdminNotificationKind(kind), true);
   for (const kind of ['moderation_warning', 'message', 'weekly_ranking']) assert.equal(isAdminNotificationKind(kind), false);

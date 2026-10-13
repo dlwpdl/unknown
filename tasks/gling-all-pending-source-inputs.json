@@ -1,0 +1,70 @@
+[
+  {
+    "path": "src/i18n/ko.ts",
+    "source_sha256": "8f986f2fd7c156c5984ac49fb1d474e49e285edf2edd92a64f751cb0619d6dac"
+  },
+  {
+    "path": "src/lib/legal-documents.ts",
+    "source_sha256": "ff8b84857aeb703db492748aca94cec6b84c3dc0909a85d139a629e650358a92"
+  },
+  {
+    "path": "src/lib/interaction-feedback.tsx",
+    "source_sha256": "b8ee0bb6f882b29ce0eace18e3412d077b107ec0ca787b2730686edc2f7c5f3a"
+  },
+  {
+    "path": "src/lib/notification-preferences.ts",
+    "source_sha256": "299fc8b90e19b98ea03b62bf2f0eb037178a5933af2f3ab2b70aaae56807bc22"
+  },
+  {
+    "path": "src/app/profile/notifications.tsx",
+    "source_sha256": "14c42eac2b7200765d3c4ca70d8fdf1940259415d641f8400f98dd568e4e7582"
+  },
+  {
+    "path": "src/components/chilling-event.tsx",
+    "source_sha256": "888377e8e28c2e0132872bf3c8486f9ff0bc3ed4eb30d3f1c722552b752948e4"
+  },
+  {
+    "path": "src/lib/chat-suggestions.ts",
+    "source_sha256": "8319d256299696248bdbb862348789e5b1b9770020fb5256cf3510111ae35b92"
+  },
+  {
+    "path": "scripts/chat-suggestions.test.mjs",
+    "source_sha256": "55bb24e2da018edc42b0b4201bfd344f4d09fa1abbede96f04da680977e7f248"
+  },
+  {
+    "path": "scripts/city-post-schedule.py",
+    "source_sha256": "d388bbfcf0bc1aec6489a2d001f99510169399d8cdddb157ed260c5856c4e59d"
+  },
+  {
+    "path": "scripts/city-post-schedule.test.py",
+    "source_sha256": "6488e494ecf562191f11b93911d7c81fae6ec1ca684b0acf1bacf26956c70e1f"
+  },
+  {
+    "path": "infra/README.md",
+    "source_sha256": "f1c2aa92f5e57e26a2aa09921d6384efbea86aa9dc9ce41cca8309d588df7372"
+  },
+  {
+    "path": "infra/share-preview-worker.ts",
+    "source_sha256": "73876dfed0ebac64610077efea8f2f871886e180543fd185f35b4f0659e0a356"
+  },
+  {
+    "path": "public/share-redirect.js",
+    "source_sha256": "b684c780a00f115fe2ff21e497b5a78b98307c6902f00fea1e0182e5b570c055"
+  },
+  {
+    "path": "public/share-covers/festival.png",
+    "source_sha256": "429b96d0fadbe5863b580d5912c0bbe65c0a3a06ac03f21a36c575f2821e007c"
+  },
+  {
+    "path": "public/share-covers/meetup.png",
+    "source_sha256": "62c8ed334fcf6f50957a0e27d76df9224fd709286095e99817a766a2efef5a69"
+  },
+  {
+    "path": "public/share-covers/post.png",
+    "source_sha256": "ccd2054a8f271c57d109a18ccea1f25a87b4b5c2671f93c920c00756da8457f6"
+  },
+  {
+    "path": "scripts/share-preview-worker.test.mjs",
+    "source_sha256": "11ed3aca6d90f7614ecdb1fcf9bd096d0eb7fce4202e4fd4e71e6cd683e82819"
+  }
+]

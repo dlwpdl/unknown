@@ -6,7 +6,7 @@ import ts from 'typescript';
 import { getPostImageSource } from '../src/lib/feed-data.ts';
 import { uniqueHashtags } from '../src/lib/hashtags.ts';
 import { count, t } from '../src/i18n/ko.ts';
-import { googleMapsUrl, postMapBody } from '../src/lib/post-maps.ts';
+import { googleMapsPin, googleMapsUrl, postMapBody } from '../src/lib/post-maps.ts';
 
 // Native image events and React state are supplied here; sizing/rendering runs the real components.
 function cardRenderer(component = 'PostCard') {
@@ -48,6 +48,7 @@ function cardRenderer(component = 'PostCard') {
     '@/components/themed-text': { ThemedText: 'ThemedText' },
     '@/components/post-body': { PostBody: 'PostBody' },
     '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
+    '@/components/post-pin-map': { PostPinMap: 'PostPinMap' },
     '@/components/post-share-sheet': { PostShareSheet: 'PostShareSheet' },
     '@/components/report-sheet': { ReportSheet: 'ReportSheet' },
     '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
@@ -59,7 +60,7 @@ function cardRenderer(component = 'PostCard') {
     '@/lib/feed-data': { getPostImageSource },
     '@/lib/meetup-ai': {},
     '@/lib/hashtags': { uniqueHashtags },
-    '@/lib/post-maps': { googleMapsUrl, postMapBody },
+    '@/lib/post-maps': { googleMapsPin, googleMapsUrl, postMapBody },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: (kind) => feedback.push(kind) }) },
     '@/lib/sharing': {},
     '@/lib/supabase': {},
@@ -95,6 +96,18 @@ test('지도 버튼은 안전한 Google 링크만 열고 실패를 알린다', a
   await new Promise(setImmediate);
   assert.deepEqual(map.feedback, ['selection', 'selection', 'warning']);
   assert.deepEqual(map.alerts, [[t.map.errorTitle, t.map.errorBody]]);
+});
+
+test('지도 카드는 같은 좌표를 미리보고 표시 이름과 공유 주소를 유지한다', () => {
+  const renderer = cardRenderer('PostMapLink');
+  const url = 'https://www.google.com/maps/search/?api=1&query=49.2712,-123.134';
+  const tree = renderer.render({ url, label: '만나는 카페' });
+  const preview = nodes(tree).find(node => node.type === 'PostPinMap');
+  assert.deepEqual(preview.props.pin, { latitude: 49.2712, longitude: -123.134 });
+  assert.equal(preview.props.preview, true);
+  assert.ok(tree.props.accessibilityLabel.includes('만나는 카페'));
+  tree.props.onPress();
+  assert.equal(renderer.openedMaps[0], new URL(url).href);
 });
 
 test('지도 링크를 읽기 본문과 분리하고 글 열기 버튼 밖에 표시한다', () => {

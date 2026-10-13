@@ -18,6 +18,9 @@ const REPORT_TARGET_LABELS: Record<string, string> = {
   message: '메시지',
   merchant_review: '업체 후기',
   merchant_review_reply: '업체 답변',
+  meetup_review: '모임 후기',
+  manner_review: '비공개 매너 평가',
+  meetup_attendance: '참석 이의제기',
 };
 
 export const ADMIN_SECTIONS: { id: AdminSection; label: string }[] = [

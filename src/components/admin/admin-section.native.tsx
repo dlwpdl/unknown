@@ -1,3 +1,5 @@
+import { AdminTrustReviewContent, isTrustTarget } from '@/components/admin/admin-trust-review-content';
+import type { TrustTarget } from '@/lib/meetup-reviews';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
@@ -13,7 +15,7 @@ import type { AdminClientError } from '@/lib/admin-trending';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 
-type Row = { id: string; title: string; body: string; meta: string; userId?: string; reviewId?: string; replyId?: string; reviewEvidence?: AdminReport['evidence'] };
+type Row = { id: string; title: string; body: string; meta: string; userId?: string; reviewId?: string; replyId?: string; reviewEvidence?: AdminReport['evidence']; trustTarget?: TrustTarget; trustId?: string };
 
 export function AdminSectionView({ section, data, onUser, onLoadMore, loadingMore, noMore, localPreview = false }: {
   section: AdminSection;
@@ -46,19 +48,19 @@ export function AdminSectionView({ section, data, onUser, onLoadMore, loadingMor
     rows = data.safetyAlerts.map((alert) => ({ id: String(alert.id), title: `${reportTargetLabel(alert.target_type)} · ${alert.category} · ${alert.severity}`, body: alert.excerpt,
       meta: `${alert.status} · ${date(alert.created_at)} · ${displayName(profiles.get(alert.author_id), alert.author_id)}`, userId: alert.author_id,
       ...(alert.target_type === 'merchant_review' ? { reviewId: alert.target_id } : {}),
-      ...(alert.target_type === 'merchant_review_reply' ? { replyId: alert.target_id } : {}) }));
+      ...(alert.target_type === 'merchant_review_reply' ? { replyId: alert.target_id } : {}), ...(isTrustTarget(alert.target_type) ? { trustTarget: alert.target_type, trustId: alert.target_id } : {}) }));
   } else if (section === 'safety') {
     title = 'AI 안전 모니터링';
     rows = data.safetyReviews.map((review) => ({ id: String(review.id), title: `${reportTargetLabel(review.target_type)} · ${review.risk_level ?? '분석 대기'}`,
       body: review.risk_reasons.join(' · ') || review.last_error || '분석 결과 대기 중', meta: `${review.status} · ${date(review.created_at)} · ${shortId(review.target_id)}`,
       ...(review.target_type === 'merchant_review' ? { reviewId: review.target_id } : {}),
-      ...(review.target_type === 'merchant_review_reply' ? { replyId: review.target_id } : {}) }));
+      ...(review.target_type === 'merchant_review_reply' ? { replyId: review.target_id } : {}), ...(isTrustTarget(review.target_type) ? { trustTarget: review.target_type, trustId: review.target_id } : {}) }));
   } else if (section === 'reports') {
     title = '신고 관리';
     rows = data.reports.map((report) => ({ id: report.id, title: `${reportReasonLabel(report.reason_code)} · ${reportStatusLabel(report.status)}`,
       body: report.details || report.evidence?.body || '상세 설명 없음', meta: `${reportTargetLabel(report.target_type)} · ${date(report.created_at)}`,
       userId: report.reported_user_id, ...(report.target_type === 'merchant_review' ? { reviewId: report.target_id, reviewEvidence: report.evidence } : {}),
-      ...(report.target_type === 'merchant_review_reply' ? { replyId: report.target_id } : {}) }));
+      ...(report.target_type === 'merchant_review_reply' ? { replyId: report.target_id } : {}), ...(isTrustTarget(report.target_type) ? { trustTarget: report.target_type, trustId: report.target_id } : {}) }));
   } else if (section === 'users') {
     title = '사용자';
     rows = data.profiles.map((profile) => ({ id: profile.id, title: profile.nickname, body: profile.bio || '소개 없음',
@@ -87,6 +89,7 @@ export function AdminSectionView({ section, data, onUser, onLoadMore, loadingMor
       </>}
       {row.reviewId && <AdminMerchantReviewContent targetId={row.reviewId} localPreview={localPreview} onUser={onUser} />}
       {row.replyId && <AdminMerchantReviewReplyContent targetId={row.replyId} localPreview={localPreview} onUser={onUser} />}
+      {row.trustId && row.trustTarget && <AdminTrustReviewContent targetType={row.trustTarget} targetId={row.trustId} localPreview={localPreview} onUser={onUser} />}
       {!!row.userId && <Pressable accessibilityRole="button" accessibilityLabel={`${row.title} 사용자 상세 보기`}
         onPress={() => { play('selection'); onUser(row.userId!); }} style={styles.action}>
         <ThemedText type="smallBold" style={styles.accent}>사용자 상세 보기</ThemedText>

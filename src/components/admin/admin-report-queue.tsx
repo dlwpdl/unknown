@@ -1,3 +1,4 @@
+import { AdminTrustReviewContent, isTrustTarget } from '@/components/admin/admin-trust-review-content';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
@@ -131,6 +132,7 @@ export function AdminReportQueue({
       <LabelValue label="접수 당시 원본" value={report.evidence
         ? [report.evidence.title, report.evidence.body, report.evidence.nickname].filter(Boolean).join('\n') || '텍스트 없음'
         : '이전 신고에는 원본 스냅샷이 없습니다. 사용자 전체 활동에서 확인하세요.'} />
+      {isTrustTarget(report.target_type) && <AdminTrustReviewContent targetType={report.target_type} targetId={report.target_id} localPreview={localPreview} onUser={onUser} />}
       {report.target_type === 'merchant_review' && <>
         <LabelValue label="접수 당시 업체 후기" value={`${report.evidence?.merchant_name ?? report.evidence?.merchant_id ?? '업체 정보 없음'}${report.evidence?.score == null ? '' : ` · ${report.evidence.score}/10`}${report.evidence?.status ? ` · ${report.evidence.status === 'removed' ? '숨김' : '게시 중'}` : ''}`} />
         <AdminMerchantReviewContent targetId={report.target_id} localPreview={localPreview} onUser={onUser} />

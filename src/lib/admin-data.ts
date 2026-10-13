@@ -64,7 +64,7 @@ export type AdminReport = {
   id: string;
   reporter_id: string;
   reported_user_id: string;
-  target_type: 'user' | 'post' | 'comment' | 'message' | 'merchant_review' | 'merchant_review_reply';
+  target_type: 'user' | 'post' | 'comment' | 'message' | 'merchant_review' | 'merchant_review_reply' | 'meetup_review' | 'manner_review' | 'meetup_attendance';
   target_id: string;
   reason_code: string;
   details: string | null;
@@ -86,7 +86,7 @@ export type AdminModerationAction = {
   created_at: string;
 };
 
-export type AdminSafetyTargetType = 'post' | 'comment' | 'message' | 'chilling_profile' | 'chilling_application' | 'merchant_review' | 'merchant_review_reply';
+export type AdminSafetyTargetType = 'post' | 'comment' | 'message' | 'chilling_profile' | 'chilling_application' | 'merchant_review' | 'merchant_review_reply' | 'meetup_review' | 'manner_review' | 'meetup_attendance';
 
 export type AdminSafetyReview = {
   id: number;

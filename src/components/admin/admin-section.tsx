@@ -1,3 +1,4 @@
+import { AdminTrustReviewContent, isTrustTarget } from '@/components/admin/admin-trust-review-content';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
@@ -215,6 +216,7 @@ export function AdminSectionView({
               {(review.target_type === 'chilling_profile' || review.target_type === 'chilling_application') && <AdminChillingContent targetType={review.target_type} targetId={review.target_id} localPreview={localPreview} onUser={onUser} />}
               {review.target_type === 'merchant_review' && <AdminMerchantReviewContent targetId={review.target_id} localPreview={localPreview} onUser={onUser} />}
               {review.target_type === 'merchant_review_reply' && <AdminMerchantReviewReplyContent targetId={review.target_id} localPreview={localPreview} onUser={onUser} />}
+              {isTrustTarget(review.target_type) && <AdminTrustReviewContent targetType={review.target_type} targetId={review.target_id} localPreview={localPreview} onUser={onUser} />}
             </View></div></details>
           ))}
           {reviews.length === 0 && <Empty text="조건에 맞는 안전 검토 기록이 없습니다." />}
@@ -645,7 +647,7 @@ const ALERT_CATEGORY: Record<string, string> = {
   drugs: '마약', weapons: '무기', sexual_exploitation: '성착취', fraud: '사기', self_harm: '자해·자살',
   violence: '폭력·위협', doxxing: '신상 공개', illegal_status: '불법 체류·위조',
 };
-const SAFETY_TARGET_LABEL: Record<AdminSafetyTargetType, string> = { post: '게시글', comment: '댓글', message: '메시지', chilling_profile: '칠링 프로필', chilling_application: '칠링 참여 신청', merchant_review: '업체 후기', merchant_review_reply: '업체 답변' };
+const SAFETY_TARGET_LABEL: Record<AdminSafetyTargetType, string> = { post: '게시글', comment: '댓글', message: '메시지', chilling_profile: '칠링 프로필', chilling_application: '칠링 참여 신청', merchant_review: '업체 후기', merchant_review_reply: '업체 답변', meetup_review: '모임 후기', manner_review: '비공개 매너 평가', meetup_attendance: '참석 이의제기' };
 const SAFETY_RISK_LABEL = { low: '낮음', medium: '보통', high: '높음', critical: '심각', pending: '미분석' };
 const SAFETY_STATUS_LABEL = { pending: '분석 대기', processing: '분석 중', reviewed: '분석 완료', failed: '분석 실패' };
 
@@ -764,6 +766,7 @@ function AdminAlertsPanel({ alerts, profiles, localPreview, onUser }: {
             {(alert.target_type === 'chilling_profile' || alert.target_type === 'chilling_application') && <AdminChillingContent targetType={alert.target_type} targetId={alert.target_id} localPreview={localPreview} onUser={onUser} />}
             {alert.target_type === 'merchant_review' && <AdminMerchantReviewContent targetId={alert.target_id} localPreview={localPreview} onUser={onUser} />}
             {alert.target_type === 'merchant_review_reply' && <AdminMerchantReviewReplyContent targetId={alert.target_id} localPreview={localPreview} onUser={onUser} />}
+            {isTrustTarget(alert.target_type) && <AdminTrustReviewContent targetType={alert.target_type} targetId={alert.target_id} localPreview={localPreview} onUser={onUser} />}
             <Pressable onPress={() => { play('selection'); return onUser(alert.author_id); }} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
               <ThemedText type="small" style={styles.muted}>{displayName(author, alert.author_id)} · {formatDate(alert.created_at)}{alert.note ? ` · ${alert.note}` : ''}</ThemedText>
             </Pressable>
