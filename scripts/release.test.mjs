@@ -218,6 +218,7 @@ import importlib.util, os, sys
 spec = importlib.util.spec_from_file_location('release', 'scripts/release.py')
 r = importlib.util.module_from_spec(spec); spec.loader.exec_module(r)
 os.environ['GLING_SUPABASE_SERVICE_ROLE_KEY'] = 'test-policy-key'
+os.environ['GITHUB_REPOSITORY_VISIBILITY'] = 'public'
 r.setup = lambda *args: (_ for _ in ()).throw(AssertionError('store credentials do not belong in this policy-only command'))
 calls = []
 r.enforce_policy = lambda *args: calls.append(args) or {'minimum_build': args[1]}
