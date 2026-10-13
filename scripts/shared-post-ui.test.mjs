@@ -15,6 +15,7 @@ import { postMapBody } from '../src/lib/post-maps.ts';
 const id = '9f100000-0000-4000-8000-000000000001';
 const otherId = '9f100000-0000-4000-8000-000000000002';
 const link = `https://gling.ej-entertainment.com/post?id=${id}`;
+const gatewayLink = `https://gling-share-preview.vercel.app/share/${id}`;
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
@@ -203,7 +204,7 @@ test('popup callbacks leave code exchange and invitation navigation to their ope
 });
 
 test('stored external or malformed OAuth return links are rejected after login', async context => {
-  for (const target of [`https://evil.test/post?id=${id}`, `//evil.test/post?id=${id}`, `/post?id=${id}&id=${otherId}`]) {
+  for (const target of [`https://evil.test/post?id=${id}`, `//evil.test/post?id=${id}`, `/post?id=${id}&id=${otherId}`, gatewayLink, `https://gling-share-preview.vercel.app/post?id=${id}`]) {
     const harness = mount('../src/web/auth/callback.tsx', 'default', { auth: { isAuthed: true }, returnPath: target }); context.after(() => harness.unmount()); await harness.settle();
     assert.deepEqual(harness.calls.filter(call => call[0] === 'navigate'), [['navigate', '/']]); assert.equal(harness.browser.sessionStorage.getItem(sharing.SHARED_POST_RETURN_KEY), null);
   }
@@ -296,7 +297,7 @@ test('internal sharing blocks double taps, sends only title and owned link, and 
   const send = control(harness, 'post.share.conversation'); send.props.onPress(); send.props.onPress();
   assert.equal(harness.calls.filter(call => call[0] === 'send').length, 1);
   const outbound = harness.calls.find(call => call[0] === 'send'); assert.equal(outbound[1], 'chat-a');
-  assert.ok(outbound[2].includes('페스티벌 같이 가요')); assert.ok(outbound[2].includes(link)); assert.ok(!outbound[2].includes('private-'));
+  assert.ok(outbound[2].includes('페스티벌 같이 가요')); assert.equal(outbound[2].split('\n').at(-1), gatewayLink); assert.ok(!outbound[2].includes('private-'));
   response.resolve('saved-message'); await harness.settle();
   assert.equal(shared.length, 1); assert.equal(control(harness, 'post.share.conversation').props.disabled, true);
   control(harness, 'post.share.conversation').props.onPress(); await harness.settle();
@@ -336,7 +337,7 @@ test('native external sharing passes a safe preview message and counts only a co
   const { harness, shared } = sheet(context); await harness.settle();
   control(harness, 'post.share.external').props.onPress(); await harness.settle();
   const payload = harness.calls.find(call => call[0] === 'share')[1];
-  assert.equal(payload.url, link); assert.equal(payload.title, '페스티벌 같이 가요'); assert.ok(!JSON.stringify(payload).includes('private-')); assert.equal(shared.length, 1);
+  assert.equal(payload.url, gatewayLink); assert.equal(payload.message.split('\n').at(-1), gatewayLink); assert.equal(payload.title, '페스티벌 같이 가요'); assert.ok(!JSON.stringify(payload).includes('private-')); assert.equal(shared.length, 1);
 });
 
 test('cancelled browser sharing keeps the sheet usable without counting a share', async context => {
@@ -387,7 +388,7 @@ test('web OS sharing and link copy use only owned title/link metadata, never pri
     const { harness, shared } = sheet(context, { os: 'web' }); await harness.settle();
     control(harness, action).props.onPress(); await harness.settle();
     const call = harness.calls.find(call => call[0] === (action.endsWith('copy') ? 'copy' : 'share')); assert.ok(call);
-    const outbound = JSON.stringify(call[1]); assert.ok(outbound.includes(link)); assert.ok(!outbound.includes('private-'));
+    const outbound = JSON.stringify(call[1]); assert.equal(typeof call[1] === 'string' ? call[1] : call[1].url, gatewayLink); assert.ok(!outbound.includes('private-'));
     assert.equal(shared.length, 1);
   }
 });
@@ -399,14 +400,16 @@ test('host invites and closed meetups share a link while preserving join applica
   assert.ok(text(harness.render()).includes('모집 마감'));
   assert.ok(text(harness.render()).includes('참여 신청과 모임장 승인이 필요해요'));
   control(harness, 'post.share.conversation').props.onPress(); await harness.settle();
-  const outbound = harness.calls.find(call => call[0] === 'send'); assert.ok(outbound[2].includes(link)); assert.ok(!outbound[2].includes('private-'));
+  const outbound = harness.calls.find(call => call[0] === 'send'); assert.equal(outbound[2].split('\n').at(-1), gatewayLink); assert.ok(!outbound[2].includes('private-'));
   assert.equal(harness.calls.filter(call => call[0] === 'send').length, 1);
   assert.ok(!harness.nodes().some(node => /바로 참여|즉시 참여|자동 가입/.test(node.props?.accessibilityLabel ?? '')));
 });
 
 
 test('web chat preview opens the hosted flat post route and keeps the invitation flag', async context => {
-  const harness = mount('../src/components/shared-link-card.tsx', 'SharedLinkCard', { os: 'web' }, { url: link }); context.after(() => harness.unmount()); await harness.settle();
-  control(harness, 'chat.shared-link.open').props.onPress();
-  assert.equal(harness.calls.find(call => call[0] === 'navigate')[1], `/post?id=${id}&invite=1`);
+  for (const url of [link, gatewayLink]) {
+    const harness = mount('../src/components/shared-link-card.tsx', 'SharedLinkCard', { os: 'web' }, { url }); context.after(() => harness.unmount()); await harness.settle();
+    control(harness, 'chat.shared-link.open').props.onPress();
+    assert.equal(harness.calls.find(call => call[0] === 'navigate')[1], `/post?id=${id}&invite=1`);
+  }
 });
