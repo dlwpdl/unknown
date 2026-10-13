@@ -46,13 +46,13 @@ function MerchantSourceAction({ postId }: { postId: string }) {
     onClick={() => { play('selection'); void trackPublicMerchantSourceClick(postId); }}>{label} ↗</a></div>;
 }
 
-function MapAction({ url }: { url: string }) {
+function MapAction({ url, label }: { url: string; label?: string }) {
   const { play } = useInteractionFeedback();
   const target = googleMapsUrl(url);
   if (!target) return null;
   return <div className="reader-actions"><a data-analytics="components_post-map-link.pressable.1" className="reader-secondary"
-    href={target} target="_blank" rel="noopener noreferrer" aria-label={t.map.openLabel}
-    onClick={() => play('selection')}>{t.map.open} ↗</a></div>;
+    href={target} target="_blank" rel="noopener noreferrer" aria-label={`${label ? `${label} · ` : ''}${t.map.openLabel}`}
+    onClick={() => play('selection')}>{label ? `${label} · ` : ''}{t.map.open} ↗</a></div>;
 }
 
 function BodyLinks({ body }: { body: string }) {
@@ -220,7 +220,7 @@ function ReaderContent() {
                 <h3><a data-analytics="web_control_10" href={`/post?id=${encodeURIComponent(item.id)}`}>{item.title}</a></h3>
                 <p className="reader-excerpt">{item.room ? visibleMeetupBody(attached.body) : attached.body}</p>
                 {attached.urls.map((url, index) => <PostAttachmentLink key={`${url}-${index}`} url={url} />)}
-                {mapped.url && <MapAction url={mapped.url} />}
+                {mapped.url && <MapAction url={mapped.url} label={mapped.label} />}
                 <p className="reader-meta">{item.author.nickname} · {item.createdAtLabel}</p>
                 {item.room && <p className="reader-meta">{chillingSchedule(item.room)} · {recommendedAgeLabel(item.room)}</p>}
               </div>
@@ -239,7 +239,7 @@ function ReaderContent() {
             <PublicMerchantProfileLink postId={post.id} />
             {post.imageUris?.map((uri, index) => uri && <img className="reader-photo" key={uri} src={uri} alt={`${post.title} 사진 ${index + 1}`} loading="lazy" />)}
             <BodyLinks body={post.room ? visibleMeetupBody(mappedPost!.body) : mappedPost!.body} /><MeetupInfo post={post} />
-            {mappedPost?.url && <MapAction url={mappedPost.url} />}
+            {mappedPost?.url && <MapAction url={mappedPost.url} label={mappedPost.label} />}
             <MerchantSourceAction postId={post.id} />
             <div className="reader-actions"><a data-analytics="web_control_13" className="reader-primary" href={target}>{post.room ? post.room.closed ? '앱에서 모임 보기' : '앱에서 모임 보기 · 참여하기' : '앱에서 대화하기'} ↗</a><button data-analytics="web_control_14" onClick={() => void share()}>링크 공유</button></div>
             <p role="status">{shareMessage}</p>

@@ -87,7 +87,7 @@ export const t = {
   },
 
   map: {
-    open: 'Google 지도에서 보기',
+    open: 'Google 지도 열기',
     openLabel: 'Google 지도에서 보기, 외부 지도 열기',
     errorTitle: '지도를 열지 못했어요',
     errorBody: '연결을 확인하고 다시 눌러주세요.',
@@ -100,6 +100,12 @@ export const t = {
     postCityNote: '이 글을 나눌 도시를 골라주세요. 프로필의 선호 지역은 그대로 유지돼요.',
     category: '카테고리',
     bodyLabel: '본문',
+    placeAdd: '위치 공유',
+    placeChange: '위치 변경',
+    placeRemove: '위치 삭제',
+    placePlaceholder: '장소명·주소 또는 Google Maps 링크',
+    placeNote: '이 장소가 글과 함께 공유돼요. 추가하기 전에 지도에서 위치를 확인해 주세요.',
+    placeInvalid: '장소명이나 주소를 적거나, Google Maps에서 복사한 공유 링크를 넣어주세요.',
     mapPlaceholder: 'Google 지도 공유 링크 (선택)',
     mapInvalid: 'Google 지도에서 장소의 공유 링크를 복사해 붙여넣어 주세요.',
     bodyTooLong: '지도 링크를 포함한 본문은 4,000자까지 올릴 수 있어요. 내용을 조금 줄여주세요.',

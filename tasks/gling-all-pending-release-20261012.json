@@ -1,0 +1,71 @@
+{
+  "authorized_by": "2026-10-12 owner: add polls, location, meetup reviews, profile and manner ratings; then all listed pending features and redeploy",
+  "base": "551acd749e7ce8552990958510b05a2d8078cd2e",
+  "source_checkout": "/Users/ash/Desktop/Git/unknown/mobile",
+  "scope": [
+    "post polls",
+    "MapLibre location attachments",
+    "meetup attendance/reviews and user ratings",
+    "public profile activity and manner summary",
+    "chat suggested messages",
+    "admin trust review controls",
+    "share preview routing/covers",
+    "conversational notifications and title-first migration source",
+    "associated privacy wording and feedback"
+  ],
+  "preserve": [
+    "latest chat reply/edit/delete/place-picker",
+    "admin conversation investigation and retained evidence",
+    "latest push title/body previews",
+    "published-store update policy",
+    "Android R8 and 4GiB release heap",
+    "all existing automation/account/budget/holds"
+  ],
+  "steps": [
+    "run latest-source baseline",
+    "integrate existing approved feature slices with preserved callers",
+    "validate Node, TypeScript, ESLint, SQL RLS and frontend flows",
+    "read current production contracts and apply only missing additive DB changes",
+    "commit/push/merge exact reviewed source, verify Pages",
+    "allocate new app version/build and submit via existing free mobile release flow",
+    "read back native store and deployment status"
+  ],
+  "done_requires": [
+    "source manifest and exact release SHA",
+    "passing relevant checks",
+    "production backend readback",
+    "actual web deployment",
+    "store submission receipts; public availability reported separately"
+  ],
+  "new_paid_services": false,
+  "new_automation_jobs": false,
+  "new_dependency": false,
+  "latest_owner_instruction": "2026-10-12: 싹다 반영해",
+  "verification": {
+    "node_tests": {
+      "passed": 880,
+      "skipped": 2,
+      "failed": 0
+    },
+    "sql_checks": 433,
+    "typecheck": "pass",
+    "lint": "pass",
+    "web_exports_and_boundaries": "pass",
+    "production_migrations": "three applied migrations re-read with exact source hashes; no replay",
+    "cron_jobs_preserved": 14,
+    "safety_monitor": "version20 downloaded source byte-identical to local; no redeployment needed",
+    "anonymous_vote_identity_access": "denied",
+    "web_suggestions": "app-only suggestion RPCs excluded using existing platform-specific module pattern",
+    "current_apple_submission": "1.1.10 WAITING_FOR_REVIEW; preserve until replacement binary verified",
+    "share_gateway": "prebuilt source only; no authorized existing edge hosting account/project connected; live static sharing remains working",
+    "raw_private_qa": "retained locally; excluded from public repository",
+    "ios_javascript_export": "pass",
+    "code_review": "no must-fix findings"
+  },
+  "native_release": {
+    "version": "1.2.0",
+    "build": 63,
+    "binary_validation": "pending",
+    "submission": "pending"
+  }
+}

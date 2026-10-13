@@ -17,6 +17,7 @@ import type { ChatLocation } from '@/lib/chat-location';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
 import { ThemedText } from '@/components/themed-text';
+import { MannerReviewButton } from '@/components/manner-review';
 import { ThemedView } from '@/components/themed-view';
 import { TrustBadge } from '@/components/trust-badge';
 import { Depth, Spacing } from '@/constants/theme';
@@ -24,6 +25,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
+import { chatSuggestions, loadChatSuggestionContext, sendSuggestedMessage, type ChatSuggestionContext } from '@/lib/chat-suggestions';
+import { merchantEventId } from '@/lib/merchant-source';
 import { chatDateLabel, chatMessageTime, firstUnreadMessageIndex, messageMenuPosition, showChatMessageTime, type ChatRect } from '@/lib/chat-details';
 import { blockUser, endConversation, editChatMessage, deleteChatMessage, loadListingReviewState, writeListingReview, type ListingReviewState, isContentRejected, loadChatReadPosition, loadConversationMessages, loadConversationMessagesByIds, loadMessageReactions, markChatRead, mergeChatMessages, sendChatAttachment, sendDirectMessage, setMessageReaction, uploadChatImage, type ChatMessageRecord, type ConversationPreview, type MessageReaction, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -91,6 +94,10 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   useLayoutEffect(() => { latestMessages.current = allMessages; }, [allMessages]);
   const messages = useMemo(() => allMessages.filter((message) => !hidden('message', message.id, message.sender_id)), [allMessages, hidden]);
   const [draft, setDraft] = useState('');
+  const [suggestionContext, setSuggestionContext] = useState<ChatSuggestionContext | null>(null);
+  const [contextLoaded, setContextLoaded] = useState(false);
+  const [uncertainSuggestion, setUncertainSuggestion] = useState<string | null>(null);
+  const suggestedSend = useRef<{ body: string; id: string } | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMessageRecord | null>(null);
   const [messageMenu, setMessageMenu] = useState<ChatMessageRecord | null>(null);
   const [menuFrame, setMenuFrame] = useState<{ anchor: ChatRect; bounds: ChatRect } | null>(null);
@@ -130,6 +137,17 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const [reviewBody, setReviewBody] = useState('');
   const [reviewPick, setReviewPick] = useState<boolean | null>(null);
   const [reactions, setReactions] = useState<Map<string, MessageReaction>>(new Map());
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const context = await loadChatSuggestionContext(supabase, conversation.id);
+        if (active && valid()) setSuggestionContext(context);
+      } catch { if (active && valid()) setSuggestionContext(null); }
+      finally { if (active && valid()) setContextLoaded(true); }
+    })();
+    return () => { active = false; };
+  }, [conversation.id, valid]);
   const lastTap = useRef<{ id: string; at: number } | null>(null);
   useEffect(() => {
     let active = true;
@@ -279,7 +297,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     })();
     snapshot.current = promise;
     return promise;
-  }, [access.read, conversation.id, valid]);
+  }, [access.read, conversation.id, valid, setError]);
 
   useEffect(() => {
     let active = true;
@@ -396,21 +414,34 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     return () => { active = false; };
   }, [applyReview, conversation.id, conversation.kind, messages.length, valid]);
 
-  const send = async () => {
-    const body = draft.trim();
+  const send = async (suggestion?: string) => {
+    const body = (suggestion ?? draft).trim();
     if (!body || sending || processing.current || !access.write || !valid()) return;
+    if (suggestion && (replyTarget || uncertainSuggestion && uncertainSuggestion !== body)) return;
     setAttachmentMenu(false);
     processing.current = true; setSending(true); setError(null);
     const parent = replyTarget;
     try {
-      const id = await sendDirectMessage(supabase, conversation.id, body, parent?.id);
+      if (suggestion && !suggestedSend.current) suggestedSend.current = { body, id: merchantEventId() };
+      const id = suggestion
+        ? await sendSuggestedMessage(supabase, conversation.id, body, suggestedSend.current!.id)
+        : await sendDirectMessage(supabase, conversation.id, body, parent?.id);
       await snapshot.current;
       if (!valid()) return;
       animateNewMessage();
       setMessages((previous) => previous.some((item) => item.id === id) ? previous : [...previous, { id, conversation_id: conversation.id, sender_id: currentUserId, sender_nickname: auth.me.nickname, body, reply_to_id: parent?.id, reply: parent, created_at: new Date().toISOString() }]);
-      setReplyTo(current => current?.id === parent?.id ? null : current);
-      setDraft((current) => current.trim() === body ? '' : current); scrollToLatest(); play('message');
-    } catch (failure) { if (valid()) { play('warning'); setError(isContentRejected(failure) ? t.safety.contentBlockedBody : t.chat.sendError); await onChanged(); } }
+      if (!suggestion) {
+        setReplyTo(current => current?.id === parent?.id ? null : current);
+        setDraft((current) => current.trim() === body ? '' : current);
+      }
+      setUncertainSuggestion(null); scrollToLatest(); play('message');
+    } catch (failure) { if (valid()) {
+      play('warning');
+      if (suggestion) setUncertainSuggestion(body);
+      setError(isContentRejected(failure) ? t.safety.contentBlockedBody : suggestion
+        ? '전송 결과를 확인하지 못했어요. 같은 문장을 다시 누르면 중복 없이 확인해요.' : t.chat.sendError);
+      await onChanged();
+    } }
     finally { processing.current = false; if (valid()) setSending(false); }
   };
   const pickPhoto = async () => {
@@ -487,6 +518,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   return <ThemedView style={{ flex: 1 }}>
     <View style={[styles.head, { borderBottomColor: theme.line }]}><View style={styles.titleRow}><ThemedText type="smallBold" style={styles.title}>{title}</ThemedText>{!group && <TrustBadge verified={conversation.otherUser.verificationLevel >= 2} trustLevel={conversation.otherUser.verificationLevel === 3 ? 3 : conversation.otherUser.verificationLevel === 2 ? 2 : undefined} />}</View><RoomAction label={t.detail.close} onPress={onClose} /></View>
     <View style={[styles.toolbar, group && styles.groupToolbar]}>{group && access.read && conversation.groupPostId && <ChatMembers key={`${currentUserId}:${conversation.id}`} conversationId={conversation.id} groupPostId={conversation.groupPostId} currentUserId={currentUserId} />}{access.write && <RoomAction label={group ? conversation.isGroupHost ? t.meetup.end : t.meetup.leave : t.chat.end} onPress={() => setConfirmEnd(true)} />}{!group && <><RoomAction label={t.report.short} onPress={() => setReport({ targetType: 'user', targetId: conversation.otherUser.id, reportedUserId: conversation.otherUser.id, reportedNickname: conversation.otherUser.nickname })} /><RoomAction label={t.chat.block} onPress={() => void block(conversation.otherUser.id)} /></>}</View>
+    {!group && <View style={styles.toolbar}><MannerReviewButton subjectId={conversation.otherUser.id} nickname={conversation.otherUser.nickname} context={{ conversationId: conversation.id }} /></View>}
     {review?.canWrite && <View style={styles.toolbar}>
       <RoomAction label={review.mine ? '거래 후기 고치기' : `${review.subjectNickname ?? ''}님 거래 후기 남기기`}
         onPress={() => setReviewOpen((current) => !current)} disabled={busy} />
@@ -589,6 +621,17 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       </View>}
       {access.write && selectedPhoto && <View style={[styles.photoPreview, { backgroundColor: theme.card, borderTopColor: theme.line }]}><Image source={{ uri: selectedPhoto.uri }} style={styles.previewImage} contentFit="cover" accessibilityLabel="보낼 사진 미리보기" /><View style={styles.previewActions}><ThemedText type="smallBold">선택한 사진</ThemedText><ThemedText type="small" themeColor="textSecondary">{Math.ceil(selectedPhoto.bytes / 1024)}KB · 이 대화에만 공유</ThemedText></View><RoomAction label="취소" onPress={() => { play('selection'); setSelectedPhoto(null); }} disabled={sending} /><RoomAction label={sending ? '보내는 중' : '사진 보내기'} onPress={() => void sendPhoto()} disabled={sending} primary /></View>}
       {access.write ? <>
+        {contextLoaded && !loading && !replyTarget && !allMessages.some(message => message.sender_id === currentUserId) && <View style={[styles.suggestions, { backgroundColor: theme.card }]}>
+          <ThemedText type="small" themeColor="textSecondary">{suggestionContext?.title ? `${suggestionContext.title} · ` : ''}누르면 바로 전송돼요</ThemedText>
+          <View style={styles.suggestionRow}>{chatSuggestions(suggestionContext, suggestionContext?.authorId === currentUserId).map(body => {
+            const disabled = sending || busy || !!uncertainSuggestion && uncertainSuggestion !== body;
+            return <Pressable key={body} analyticsId="components_chat-room.suggestion" accessibilityRole="button" accessibilityLabel={`${body} 보내기`}
+              disabled={disabled} accessibilityState={{ disabled }} onPress={() => { play('selection'); void send(body); }}
+              style={({ pressed }) => [styles.suggestion, { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement, opacity: disabled ? 0.5 : 1 }]}>
+              <ThemedText type="small" themeColor="accent">{body}</ThemedText>
+            </Pressable>;
+          })}</View>
+        </View>}
         <View style={[styles.composer, { borderTopColor: theme.line, backgroundColor: theme.card, paddingBottom: attachmentsOpen ? Spacing.one : Math.max(insets.bottom, Spacing.two) + Spacing.one }]}>
           <Pressable analyticsId="components_chat-room.add-attachment" accessibilityRole="button" accessibilityLabel={attachmentsOpen ? '첨부 메뉴 닫기' : '첨부 메뉴 열기'} accessibilityState={{ expanded: attachmentsOpen, disabled: sending || pickingPhoto }} disabled={sending || pickingPhoto} onPress={openAttachments} style={({ pressed }) => [styles.addAttachment, Depth.control, { backgroundColor: attachmentsOpen ? theme.backgroundSelected : theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}><SymbolView name={{ ios: attachmentsOpen ? 'xmark' : 'plus', android: attachmentsOpen ? 'close' : 'add', web: attachmentsOpen ? 'close' : 'add' }} size={21} tintColor={theme.accent} /></Pressable>
           <TextInput value={draft} onChangeText={setDraft} maxLength={2000} placeholder={t.chat.messagePlaceholder} accessibilityLabel={t.chat.messagePlaceholder} placeholderTextColor={theme.textSecondary} returnKeyType="send" submitBehavior="submit" onSubmitEditing={() => void send()} style={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.line }]} />
@@ -659,6 +702,9 @@ const styles = StyleSheet.create({
   title: { fontSize: 17, lineHeight: 22, flexShrink: 1 },
   toolbar: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', paddingHorizontal: Spacing.two },
   groupToolbar: { justifyContent: 'space-between', alignItems: 'center' },
+  suggestions: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: Spacing.one },
+  suggestionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
+  suggestion: { minHeight: 44, maxWidth: '100%', borderWidth: 1, borderRadius: 18, paddingHorizontal: 12, paddingVertical: Spacing.two, justifyContent: 'center' },
   action: { minWidth: 44, minHeight: 44, borderRadius: 12, paddingHorizontal: Spacing.two, paddingVertical: Spacing.two, justifyContent: 'center', alignItems: 'center' },
   request: { padding: Spacing.three, gap: Spacing.three },
   safetyNotice: { padding: Spacing.three, borderRadius: 12, gap: Spacing.one },

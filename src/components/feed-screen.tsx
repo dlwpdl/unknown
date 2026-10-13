@@ -34,6 +34,7 @@ import { adsSupported, feedAdPosition } from '@/lib/ads';
 import { MyMeetups } from '@/components/my-meetups';
 import { PostCard } from '@/components/post-card';
 import { PostBodyEditor } from '@/components/post-body-editor';
+import { PollDraftFields } from '@/components/poll-draft-fields';
 import { ProfileAvatarButton } from '@/components/profile-avatar-button';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { StateCard } from '@/components/state-card';
@@ -65,9 +66,10 @@ import { appendUniquePosts, loadPublicFeed, loadPublicPost, type FeedSort } from
 import { addHashtag, canonicalizeHashtag, getSuggestedHashtags, parseHashtags } from '@/lib/hashtags';
 import { canAddPostImage, MAX_POST_IMAGES } from '@/lib/image-upload';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { normalizePoll, type PollDraft } from '@/lib/post-polls';
 import { TAGS } from '@/lib/mock';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
-import { withPostMap } from '@/lib/post-maps';
+import { postMapBody, withPostMap } from '@/lib/post-maps';
 import { supabase } from '@/lib/supabase';
 import type { DailyQuota, Post, PostKind, Tag } from '@/lib/types';
 import { splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links';
@@ -103,8 +105,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [listingQuota, setListingQuota] = useState<DailyQuota | null>(null);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [pollDraft, setPollDraft] = useState<PollDraft | null>(null);
   const hasDraftText = !!title.trim() || !!splitPostAttachments(body).body.trim();
-  const [mapInput, setMapInput] = useState('');
   const [hashtagInput, setHashtagInput] = useState('');
   const [draftImages, setDraftImages] = useState<PreparedImage[]>([]);
   const [creatingDraft, setCreatingDraft] = useState(false);
@@ -379,7 +381,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     void loadListingQuota(supabase).then(setListingQuota).catch(() => {});
     const revision = ++writerRevision.current;
     draftLocation.current = null;
-    if (!title.trim() && !body.trim() && !hashtagInput.trim() && draftImages.length === 0) setDraftCity(city);
+    if (!title.trim() && !body.trim() && !hashtagInput.trim() && draftImages.length === 0 && !pollDraft) setDraftCity(city);
     setWriterPanel(null);
     setWriterOptionsOpen(false);
     setWriting(true);
@@ -387,7 +389,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       if (revision !== writerRevision.current) return;
       draftLocation.current = fix;
     });
-  }, [isAuthed, promptLogin, writing, city, location, title, body, hashtagInput, draftImages, play]);
+  }, [isAuthed, promptLogin, writing, city, location, title, body, hashtagInput, draftImages, pollDraft, play]);
 
   useEffect(() => {
     if (!writing) { writerRevision.current++; draftLocation.current = null; }
@@ -451,7 +453,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
 
   const createAiDraft = async () => {
     const titleHint = title.trim();
-    const attached = splitPostAttachments(body);
+    const mapped = postMapBody(body);
+    const attached = splitPostAttachments(mapped.body);
     const bodyHint = attached.body.trim();
     if ((draftImages.length === 0 && !titleHint && !bodyHint) || creatingDraft) return;
     setCreatingDraft(true);
@@ -469,7 +472,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       const draft = parseAiDraftResponse(data);
       setTag(TAGS.find(({ slug }) => slug === draft.categorySlug) ?? tag);
       setTitle(draft.title);
-      setBody(withPostAttachments(draft.body, attached.urls));
+      setBody(withPostMap(withPostAttachments(draft.body, attached.urls), mapped.url ?? '', mapped.label));
       setHashtagInput(draft.hashtags.map((hashtag) => `#${hashtag}`).join(' '));
       setAiDraftReady(true);
     } catch {
@@ -490,8 +493,15 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       return;
     }
     if (submitting) return;
+    let poll: PollDraft | undefined;
+    try { poll = postKind === 'story' && pollDraft ? normalizePoll(pollDraft) : undefined; }
+    catch {
+      play('warning');
+      Alert.alert('투표를 확인해 주세요', '질문과 보기를 모두 적어 주세요. 같은 보기는 넣을 수 없어요.');
+      return;
+    }
     let postBody: string;
-    try { postBody = withPostMap(body, mapInput); }
+    try { postBody = withPostMap(body, ''); }
     catch (error) {
       play('warning');
       Alert.alert(t.write.validationTitle, error instanceof Error && error.message === 'INVALID_MAP_LINK' ? t.write.mapInvalid : t.write.bodyTooLong);
@@ -510,6 +520,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         hashtags,
         images: draftImages.map(({ base64, mimeType, thumbBase64, width, height }) => ({ base64, mimeType, thumbBase64, width, height })),
         kind: postKind,
+        poll,
         price: postKind === 'listing' && priceInput.trim() ? Number(priceInput.replace(/[^0-9.]/g, '')) : null,
       });
       const post = created.post;
@@ -523,7 +534,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       if (post?.room) DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
       setTitle('');
       setBody('');
-      setMapInput('');
+      setPollDraft(null);
       setHashtagInput('');
       setDraftImages([]);
       setAiDraftReady(false);
@@ -993,14 +1004,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 <TextInput value={title} onChangeText={setTitle} accessibilityLabel={t.write.titlePlaceholder}
                   placeholder={t.write.titlePlaceholder} placeholderTextColor={theme.textSecondary} maxLength={80}
                   style={[styles.titleInput, { color: theme.text, borderBottomColor: theme.line }]} />
-                <PostBodyEditor value={body} onChangeText={setBody} editable={!submitting && !creatingDraft} accessibilityLabel={t.write.bodyLabel}
+                <PostBodyEditor value={body} onChangeText={setBody} cityName={draftCity.englishName} allowLocation={tag.kind !== 'meetup'} editable={!submitting && !creatingDraft} accessibilityLabel={t.write.bodyLabel}
                   placeholder={tag.kind !== 'meetup' && postKind === 'listing' ? t.write.listingBodyPlaceholder : t.write.bodyPlaceholder[tag.slug]} placeholderTextColor={theme.textSecondary} multiline
                   style={[styles.bodyInput, { color: theme.text, borderBottomColor: theme.line }]} />
-                {tag.kind !== 'meetup' && <TextInput value={mapInput} onChangeText={setMapInput}
-                  onFocus={() => play('selection')} accessibilityLabel={t.write.mapPlaceholder}
-                  placeholder={t.write.mapPlaceholder} placeholderTextColor={theme.textSecondary}
-                  keyboardType="url" autoCapitalize="none" autoCorrect={false} maxLength={2048}
-                  style={[styles.hashtagInput, { color: theme.text, borderBottomColor: theme.line, minHeight: 44 }]} />}
+                {tag.kind !== 'meetup' && postKind === 'story' && <PollDraftFields poll={pollDraft} onChange={setPollDraft} disabled={submitting || creatingDraft} />}
                 <Pressable analyticsId="components_feed-screen.pressable.23"
                   onPress={() => { play('selection'); void createAiDraft(); }}
                   disabled={creatingDraft || (draftImages.length === 0 && !hasDraftText)}

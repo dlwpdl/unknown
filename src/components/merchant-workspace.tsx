@@ -378,7 +378,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, initi
         <ThemedText type="small">게시할 채널</ThemedText><View style={styles.actions}>{Object.entries(MERCHANT_CHANNELS).map(([key, label]) => <Action key={key} label={label} selected={editor.channel === key} disabled={busy || published} onPress={() => changeDraft({ channel: key as MerchantChannel })} />)}</View>
         <Field label="제목" value={editor.title} maxLength={100} disabled={busy || published} onChange={(title) => changeDraft({ title })} />
         <View style={styles.field}><ThemedText type="small" themeColor="textSecondary">게시글 본문</ThemedText>
-          <PostBodyEditor accessibilityLabel="게시글 본문" value={editor.body} maxLength={4700} multiline editable={!busy && !published} onChangeText={(body) => changeDraft({ body })}
+          <PostBodyEditor accessibilityLabel="게시글 본문" value={editor.body} cityName={CITIES.find(city => city.id === data.merchant.city_id)?.englishName} allowLocation={editor.channel === 'gling'} maxLength={4700} multiline editable={!busy && !published} onChangeText={(body) => changeDraft({ body })}
             style={[styles.input, styles.multiline, { color: theme.text, borderColor: theme.line, backgroundColor: theme.backgroundElement }]} />
         </View>
         <ThemedText type="smallBold">사진 {draftPhotos.length}/{MAX_POST_IMAGES}</ThemedText>
