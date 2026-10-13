@@ -4,6 +4,37 @@ import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { parse } from 'yaml';
 
+test('Android release gives R8 four GiB of heap while retaining signing and configuration checks', () => {
+  const result = spawnSync('python3', ['-c', `
+import importlib.util, json, os, re, tempfile
+from pathlib import Path
+spec = importlib.util.spec_from_file_location('release', 'scripts/release.py')
+r = importlib.util.module_from_spec(spec); spec.loader.exec_module(r)
+class GradleCaptured(Exception): pass
+with tempfile.TemporaryDirectory() as directory:
+    os.chdir(directory)
+    Path('app.json').write_text(json.dumps({'expo': {'version': '1.1.10', 'ios': {}, 'android': {}}}))
+    r.signing = lambda *args: ('unused', 'unused', 'unused', {'keystorePath': 'existing-upload-key', 'keystorePassword': 'test', 'keyAlias': 'test', 'keyPassword': 'test'})
+    def run(args, capture=False, env=None):
+        if args[0] != 'android/gradlew':
+            assert args == ['npx', 'expo', 'prebuild', '--platform', 'android', '--clean', '--no-install']
+            return
+        jvm = next((arg.split('=', 1)[1] for arg in args if arg.startswith('-Dorg.gradle.jvmargs=')), '')
+        assert re.search(r'(^|\\s)-Xmx(4096m|4[gG])($|\\s)', jvm), 'R8 needs an explicit four GiB heap instead of the generated two GiB default'
+        assert '--no-daemon' in args and args[-2:] == ['bundleRelease', 'assembleRelease']
+        assert [Path(args[i + 1]).name for i, arg in enumerate(args) if arg == '--init-script'] == ['android-signing.init.gradle', 'android-r8-check.init.gradle']
+        assert env['GLING_UPLOAD_KEYSTORE'] == 'existing-upload-key'
+        app = json.loads(Path('app.json').read_text())['expo']
+        assert app['version'] == '1.1.10' and app['android']['versionCode'] == 62
+        raise GradleCaptured()
+    r.run = run
+    try: r.build('android', {}, Path(directory), True, 62)
+    except GradleCaptured: pass
+    else: raise AssertionError('Android release did not reach the Gradle build')
+`], { cwd: new URL('../', import.meta.url), encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+});
+
 test('deployment jobs allocate only free public standard runners and no billed storage', () => {
   const root = new URL('../.github/workflows/', import.meta.url);
   assert.ok(existsSync(new URL('mobile-release.yml', root)), 'mobile release workflow is installed');
