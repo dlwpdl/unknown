@@ -1,9 +1,13 @@
 {
-  "created_at": "2026-10-13T06:53:56.076678+00:00",
+  "created_at": "2026-10-13T08:25:45.662617+00:00",
   "base": "551acd749e7ce8552990958510b05a2d8078cd2e",
   "version": "1.2.0",
-  "build": 63,
+  "build": "allocated_by_tag_workflow",
   "source_files": [
+    {
+      "path": ".github/workflows/mobile-release.yml",
+      "sha256": "59eac95d59abdc550ce53d06c3f33dbbe18790c10cb43c11e26c948ce9f82ee0"
+    },
     {
       "path": ".gitignore",
       "sha256": "4662086a59cd5505f7c848fa4fb6a12e878e11e48f1398aa27e615396a3dd197"
@@ -42,15 +46,19 @@
     },
     {
       "path": "infra/README.md",
-      "sha256": "ebf70ea29375b5b14a49e0fe3aba307648cab9462a235bac12c5a10db5f5f863"
+      "sha256": "12df37a4047c802e7d1d662bc50af3346f0c7fde73ae544695e28567b8e52c96"
     },
     {
       "path": "infra/build-vercel-output.mjs",
-      "sha256": "4ce16c9e910aad6427c9770bd6466727ba6c7798042a23a80a8730f524d93297"
+      "sha256": "59688ba19d29dae7614b11208df643a869e4aee170f6460009b5d5473b7746ed"
+    },
+    {
+      "path": "infra/node-share-preview.ts",
+      "sha256": "4805ab938f5822d7628d97048f53197e293eae1d56cfe3c0e9777e8b43e347f8"
     },
     {
       "path": "infra/share-preview-worker.ts",
-      "sha256": "849b16b52002e631527b1bf96820bbcbec5a9ff4047072bf5b1fb0fba9fe3cf9"
+      "sha256": "10c43e1823859f737dc37bc32550e00dc85f04540917263725b0bb73f6cc62c3"
     },
     {
       "path": "infra/vercel-share-preview.ts",
@@ -177,6 +185,14 @@
       "sha256": "d7c6f10f63bffe26b4db060fd5725a440829d118a68d680311f0b49ecc91f813"
     },
     {
+      "path": "scripts/release.py",
+      "sha256": "525bba4b79cedad3329f9cf608d9b002915eb1d9450eff044f84b06f11b6c278"
+    },
+    {
+      "path": "scripts/release.test.mjs",
+      "sha256": "b06968275a4305505d5bd28aef9928ebbf57ad88d38b6f5e26be33a4220a42e7"
+    },
+    {
       "path": "scripts/seed-city-posts.sh",
       "sha256": "54d5c4ff0255ee81d9be8527a8ae306f2f448d11d52e5881b56a5de8ffe503d1"
     },
@@ -186,11 +202,15 @@
     },
     {
       "path": "scripts/share-preview-worker.test.mjs",
-      "sha256": "387fee6ad5d8b6de7ad20a1fb0288cb12ea819849655b05235f692730fa8bbb9"
+      "sha256": "ddead6a4a4cf6a7cb6f018861e927f92356d7637d8146898b66b70039421d948"
     },
     {
       "path": "scripts/shared-post-ui.test.mjs",
-      "sha256": "04a590069e97d6a6847477cb3e847ad5c6ebaa14bcf5a0c811006d5992b6781b"
+      "sha256": "ce40c2c2b83d418be64aefdd4511cee700a47ec0a8170a50b4d0340b3a1f42ad"
+    },
+    {
+      "path": "scripts/sharing.test.mjs",
+      "sha256": "022635c5d57cc896d20f0520399f636e24017232a218b7ae1a89f65f08af3e01"
     },
     {
       "path": "scripts/user-profile-ui.test.mjs",
@@ -198,7 +218,7 @@
     },
     {
       "path": "scripts/vercel-share-preview.test.mjs",
-      "sha256": "f6e1dd27e0012d5c167dea494619dc381136b964a3bf146674bfc9b58f60d332"
+      "sha256": "55809ece9fe956bd7ed33d9f68918ee886c19fffb2550232d2c1f2bbac880853"
     },
     {
       "path": "scripts/web-trust-boundary.test.mjs",
@@ -377,6 +397,10 @@
       "sha256": "f57183e334a9b5608ce49da271c32863fd77f8107914179c29887605935697e1"
     },
     {
+      "path": "src/lib/sharing.ts",
+      "sha256": "177e16e4ea14f746edfe125f69c20d7b14e847c68b499f11a3aaab4826fec2d6"
+    },
+    {
       "path": "src/lib/user-profile.ts",
       "sha256": "f3960536b61650a17e351d5aa588c6c301f6652ff568a84f94587053fca062d9"
     },
@@ -455,11 +479,15 @@
     {
       "path": "supabase/tests/trust_account_deletion.test.sql",
       "sha256": "5139996f766849e28999b513a3070c448996716eb96f86fcf25d1c1809b0d270"
+    },
+    {
+      "path": "tasks/free-deployment-2026-10-07.md",
+      "sha256": "e4e3fb2c871ec62d35c0ad1fc19a30811a6bcb7c78fea8182d1d842c6da6ddc0"
     }
   ],
   "checks": {
     "node": {
-      "pass": 880,
+      "pass": 885,
       "skip": 2,
       "fail": 0
     },
@@ -469,7 +497,9 @@
     "public_web_boundary": "pass",
     "merchant_web_boundary": "pass",
     "ios_javascript": "pass",
-    "review": "no must-fix findings"
+    "review": "no must-fix findings",
+    "gateway_focused_http_and_ui": 65,
+    "gateway_review": "no must-fix findings"
   },
   "production_readback": {
     "migrations": [
@@ -483,5 +513,46 @@
     "safety_monitor_version": 20,
     "safety_source_sha256": "19ce4c13806daefbe8e6f5e2a86f0bd86aa5c70fcd5337544e79a57f76894f33"
   },
-  "share_gateway": "source-only; current working static share links preserved; no new hosting"
+  "share_gateway": {
+    "at": "2026-10-13T07:59:55.690118+00:00",
+    "deployment_id": "dpl_FC12c1aYQjCAENdi4fDK8WDoEiHc",
+    "gateway_origin": "https://gling-share-preview.vercel.app",
+    "route_statuses": {
+      "post": 200,
+      "head": 200,
+      "missing": 404,
+      "invalid": 404,
+      "unsupported": 405,
+      "internal": 404,
+      "query_collision": 404,
+      "auth": 404
+    },
+    "title_matches_public_rpc": true,
+    "canonical_matches_gateway": true,
+    "cta_fixed_primary_app": true,
+    "redirect_script_fixed_primary_app": true,
+    "head_empty": true,
+    "cover_http": 200,
+    "cover_type": "image/webp",
+    "cover_bytes": 61392,
+    "cover_sha256": "8c03633461ac1a9821aeee83c6a569e9e04d74b5cf7493c3de9fd7f8cda05fee",
+    "cover_from_supabase": true,
+    "privacy_headers": {
+      "Cache-Control": "no-store",
+      "X-Frame-Options": "DENY",
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "no-referrer",
+      "Content-Security-Policy": "default-src 'none'; script-src https://gling.ej-entertainment.com; style-src 'unsafe-inline'; img-src https://gling.ej-entertainment.com https://wjvahbdwmctzpkndqaxa.supabase.co; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+    },
+    "not_checked": [
+      "external_platform_rendered_card",
+      "live_social_login_round_trip",
+      "physical_ios_android_devices"
+    ]
+  },
+  "local_validation_build": 63,
+  "share_gateway_source_set_sha256": "3d8b0fffe8b1f671d3b262f4607510f3b7cb7df668e223da7800a40c34f07960",
+  "share_gateway_function_set_sha256": "9a9c3708e47fd1bb34db858aec77546d896968dc71c10536d34721f25befe021",
+  "android_automatic_review": "existing_alpha_validate_then_commit; testing-only permission; no public update until production",
+  "final_native_rebuild_required": true
 }

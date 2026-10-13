@@ -10,8 +10,9 @@ export function buildVercelOutput(dist, output) {
   const functionDirectory = join(output, 'functions/_gling-share-preview.func');
   mkdirSync(functionDirectory, { recursive: true });
   cpSync(dist, join(output, 'static'), { recursive: true });
-  execFileSync(process.execPath, [join(root, 'node_modules/typescript/bin/tsc'), '--ignoreConfig', '--strict', '--target', 'es2022', '--module', 'esnext', '--moduleResolution', 'bundler', '--lib', 'es2022,dom', '--skipLibCheck', '--rewriteRelativeImportExtensions', '--noEmitOnError', '--outDir', functionDirectory, 'infra/vercel-share-preview.ts'], { cwd: root, stdio: 'inherit' });
-  writeFileSync(join(functionDirectory, '.vc-config.json'), JSON.stringify({ runtime: 'edge', entrypoint: 'vercel-share-preview.js', envVarsInUse: ['APP_URL', 'SHARE_ORIGIN', 'SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY'] }, null, 2) + '\n');
+  execFileSync(process.execPath, [join(root, 'node_modules/typescript/bin/tsc'), '--ignoreConfig', '--strict', '--target', 'es2022', '--module', 'esnext', '--moduleResolution', 'bundler', '--lib', 'es2022,dom', '--types', 'node', '--skipLibCheck', '--rewriteRelativeImportExtensions', '--noEmitOnError', '--outDir', functionDirectory, 'infra/node-share-preview.ts'], { cwd: root, stdio: 'inherit' });
+  writeFileSync(join(functionDirectory, '.vc-config.json'), JSON.stringify({ runtime: 'nodejs22.x', handler: 'node-share-preview.js', launcherType: 'Nodejs' }, null, 2) + '\n');
+  writeFileSync(join(functionDirectory, 'package.json'), JSON.stringify({ type: 'module' }) + '\n');
   writeFileSync(join(output, 'config.json'), JSON.stringify({ version: 3, routes: [
     { src: '^/_gling-share-preview(?:/.*)?$', dest: '/404.html', status: 404 },
     { src: '^/(?:auth|merchant/auth)(?:/.*)?$', dest: '/404.html', status: 404 },
