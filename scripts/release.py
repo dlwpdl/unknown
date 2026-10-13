@@ -326,11 +326,11 @@ def submit(platform, env, google, directory):
         try:
             bundle = request(f"https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/{PACKAGE}/edits/{edit}/bundles?uploadType=media", token, (OUT / "app.aab").read_bytes(), "POST", "application/octet-stream")
             release = {"name": f'{version} ({bundle["versionCode"]})', "versionCodes": [str(bundle["versionCode"])], "status": "completed", "releaseNotes": [{"language": "ko-KR", "text": notes}]}
-            play(token, f"/edits/{edit}/tracks/internal", {"track": "internal", "releases": [release]}, "PUT")
+            play(token, f"/edits/{edit}/tracks/alpha", {"track": "alpha", "releases": [release]}, "PUT")
             play(token, f"/edits/{edit}:validate", {}, "POST")
             summary(f'Android submission started: edit {edit}, build {bundle["versionCode"]}. Check store state before retrying an interrupted submission.')
             receipt = play(token, f"/edits/{edit}:commit", {}, "POST")
-            summary(f'Android internal release committed: {receipt["id"]}, build {bundle["versionCode"]}')
+            summary(f'Android closed-testing review release committed: {receipt["id"]}, build {bundle["versionCode"]}')
         except Exception:
             try:
                 play(token, f"/edits/{edit}", method="DELETE")

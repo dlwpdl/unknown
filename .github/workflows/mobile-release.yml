@@ -142,6 +142,6 @@ jobs:
         env:
           RELEASE_BUILD: ${{ needs.prepare.outputs.build }}
         run: python3 scripts/release.py build --platform android --build-number "$RELEASE_BUILD"
-      - name: Submit to Google Play internal testing
+      - name: Submit to Google Play closed-testing review
         if: ${{ github.ref_type == 'tag' }}
         run: python3 scripts/release.py submit --platform android
