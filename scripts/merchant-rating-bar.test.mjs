@@ -4,7 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-function rating({ score, reviewKind = 'usage', reduced = false }) {
+function rating({ score, reviewKind = 'usage', reduced = false, label }) {
   const animations = [], values = [], cleanups = [];
   class Value {
     constructor(value) { this.value = value; values.push(this); }
@@ -23,9 +23,15 @@ function rating({ score, reviewKind = 'usage', reduced = false }) {
   const exports = {}, url = new URL('../src/components/merchant-rating-bar.tsx', import.meta.url);
   const source = ts.transpileModule(readFileSync(url, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(source, { exports, require: name => imports[name] ?? {} });
-  return { tree: exports.MerchantRatingBar({ score, reviewKind }), animations, values, cleanups };
+  return { tree: exports.MerchantRatingBar({ score, reviewKind, label }), animations, values, cleanups };
 }
 const nodes = root => !root || typeof root !== 'object' ? [] : [root, ...Object.values(root).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
+
+test('member review bars announce the supplied meeting or chat context', () => {
+  assert.equal(rating({ score: 8.7, label: '참석 확인된 만남' }).tree.props.accessibilityLabel, '참석 확인된 만남 평균 8.7점, 10점 만점');
+  assert.equal(rating({ score: null, label: '대화' }).tree.props.accessibilityLabel, '대화 점수 없음');
+  assert.match(rating({ score: 8 }).tree.props.accessibilityLabel, /^상품·서비스 /);
+});
 
 test('an all-review mean is rounded once to one decimal and maps to ten exact fractional units', () => {
   const { tree } = rating({ score: (10 + 9.5 + 7) / 3 });

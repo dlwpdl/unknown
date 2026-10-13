@@ -55,7 +55,7 @@ test('message preview starts off, explains its lock-screen effect and saves only
   let tree = screen.render();
   let row = preview(tree);
   assert.equal(row.props.value, false);
-  assert.ok(nodes(tree).some(node => typeof node.props?.children === 'string' && node.props.children.includes('메시지가 도착했습니다')));
+  assert.ok(nodes(tree).some(node => typeof node.props?.children === 'string' && node.props.children.includes('메시지가 도착했어요.')));
   const control = nodes(row.type(row.props)).find(node => node.type === 'Switch');
   assert.equal(control.props.accessibilityLabel, '메시지 미리보기');
   assert.ok(control.props.style?.minHeight >= 44 && control.props.style?.minWidth >= 44, 'Preview switch needs a 44px touch target');

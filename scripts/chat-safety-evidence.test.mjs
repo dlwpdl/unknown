@@ -7,7 +7,7 @@ import ts from 'typescript';
 function runtime(client, fetch) {
   let handle;
   const exports = {};
-  vm.runInNewContext(ts.transpileModule(fs.readFileSync(new URL('../supabase/functions/safety-monitor/index.ts', import.meta.url), 'utf8') + '\nexports.analyze = analyze;', {
+  vm.runInNewContext(ts.transpileModule(fs.readFileSync(new URL('../supabase/functions/safety-monitor/index.ts', import.meta.url), 'utf8') + '\nexports.analyze = analyze; exports.loadContent = loadContent;', {
     compilerOptions: { module: ts.ModuleKind.CommonJS },
   }).outputText, { exports, Request, Response, console, fetch, Deno: { serve(fn) { handle = fn; }, env: { get: () => 'offline' } }, require: () => ({ createClient: () => client }) });
   return { handle, ...exports };
@@ -95,4 +95,31 @@ test('a failed message completion and failure RPC cannot stop the following post
   const result = await response.json();
   assert.equal(result.failed, 1);
   assert.equal(result.reviewed, 1);
+});
+
+
+test('poll question and every option reach post safety analysis', async () => {
+  const worker = runtime({}, () => {});
+  const content = await worker.loadContent({ from: table => ({ select: columns => ({ eq: () => ({ maybeSingle: async () => {
+    assert.equal(table, 'posts');
+    assert.match(columns, /post_polls\(question,options\)/);
+    return { data: { author_id: 'author', title: 'post', body: 'body', hashtags: [],
+      post_polls: { question: 'poll-danger-marker', options: ['first', 'option-danger-marker'] } } };
+  } }) }) }) }, 'post', 'post');
+  assert.match(content.text, /poll-danger-marker/);
+  assert.match(content.text, /option-danger-marker/);
+});
+
+
+test('maximum Unicode poll content fits the existing bounded model input', async () => {
+  let calls = 0;
+  const worker = runtime({}, async () => {
+    calls += 1;
+    return { ok: true, json: async () => ({ output: [{ content: [{ type: 'output_text', text: '{"riskScore":0,"riskLevel":"low","reasons":["none"]}' }] }] }) };
+  });
+  const record = { author_id: 'author', title: '😀'.repeat(80), body: '😀'.repeat(5000),
+    hashtags: Array(5).fill('😀'.repeat(30)), post_polls: { question: '😀'.repeat(120), options: Array(6).fill('😀'.repeat(80)) } };
+  const content = await worker.loadContent({ from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: record }) }) }) }) }, 'post', 'post');
+  await worker.analyze('offline', 'post', content.text);
+  assert.equal(calls, 1);
 });

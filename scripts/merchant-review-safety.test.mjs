@@ -35,3 +35,15 @@ test('company replies use their own protected content RPC and are attributed to 
   assert.equal(content.text, reply.text);
   await assert.rejects(worker.loadContent({ rpc: async () => ({ error: new Error('SERVICE_ROLE_REQUIRED') }) }, 'merchant_review_reply', 'private'), /SERVICE_ROLE_REQUIRED/);
 });
+
+test('private attendance and behavior text only use the protected safety RPC', async () => {
+  for (const targetType of ['meetup_review', 'manner_review', 'meetup_attendance']) {
+    const result = await worker.loadContent({ rpc: async (name, args) => {
+      assert.equal(name, 'get_trust_safety_content');
+      assert.deepEqual(JSON.parse(JSON.stringify(args)), { p_target_type: targetType, p_target_id: 'target' });
+      return { data: { authorId: 'author', text: '최소 안전 검토 원문' } };
+    } }, targetType, 'target');
+    assert.equal(result.authorId, 'author');
+  }
+  await assert.rejects(worker.loadContent({ rpc: async () => ({ error: new Error('SERVICE_REQUIRED') }) }, 'manner_review', 'other'), /SERVICE_REQUIRED/);
+});

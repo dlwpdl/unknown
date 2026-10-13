@@ -31,7 +31,8 @@ function mount(file, name, data = {}, props = {}) {
   let state = [], index = 0, effects = [], tree, childKey, childType, disposed = false;
   const calls = [], auth = { isAuthed: true, isAuthLoading: false, me: { id: 'viewer' }, ...data.auth };
   auth.promptLogin = reason => calls.push(['login', reason]);
-  const client = { auth: { exchangeCodeForSession: code => { calls.push(['exchange', code]); return data.exchange?.(code) ?? Promise.resolve({ error: null }); } } };
+  const client = { auth: { exchangeCodeForSession: code => { calls.push(['exchange', code]); return data.exchange?.(code) ?? Promise.resolve({ error: null }); } },
+    rpc: async (...args) => { calls.push(['rpc', ...args]); return { data: null }; } };
   const stored = new Map(); if (data.returnPath != null) stored.set(sharing.SHARED_POST_RETURN_KEY, data.returnPath);
   const location = new URL(data.href ?? 'https://gling.ej-entertainment.com/auth/callback?code=test-oauth-code');
   const browser = { location, opener: data.opener ?? null, sessionStorage: {
@@ -63,6 +64,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/components/themed-view': { ThemedView: 'View' }, '@/components/gling-loader': { GlingLoader: 'Loader' }, '@/components/state-card': { StateCard: 'StateCard' },
     '@/components/post-body': { PostBody: 'PostBody' }, '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
     '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
+    '@/components/manner-summary': { MannerSummary: 'MannerSummary' },
     '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' },
     '@/constants/theme': { Depth: {}, Spacing: { one: 4, two: 8, three: 16 } }, '@/i18n/ko': { count, t },
     '@/lib/hashtags': { uniqueHashtags }, '@/lib/post-maps': { postMapBody }, '@/lib/meetup-ai': { visibleMeetupBody: body => body },
@@ -73,6 +75,7 @@ function mount(file, name, data = {}, props = {}) {
       sendDirectMessage: (...args) => { calls.push(['send', ...args.slice(1)]); return data.send?.(...args) ?? Promise.resolve('saved-message'); } },
     '@/lib/feed-data': { appendUniquePosts, getPostImageSource, loadPublicPost: (...args) => { calls.push(['full-post', args[1], auth.me.id]); return data.fullPost?.(...args) ?? Promise.resolve(post()); } },
     '@/lib/chilling': { chillingSchedule }, '@/lib/sharing': sharing, '@/lib/kakao-auth': { getOAuthCode },
+    '@/lib/user-profile': { loadMannerSummary: async () => ({ meeting: { participants: 0, score: null }, chat: { participants: 0, score: null } }) },
     '@/lib/content-visibility': { subscribeVisibility, visibilityRevision },
     '@/lib/shared-link-preview': { loadSharedLinkPreview: (...args) => { calls.push(['preview', args[1], auth.me.id]); return data.preview?.(...args) ?? Promise.resolve(preview()); } },
     '@/lib/supabase': { supabase: client },
@@ -214,15 +217,17 @@ test('failed OAuth exchange preserves the invitation and shows a retry explanati
 });
 
 test('the exported PostDetail guest wrapper renders only a login gate and never loads comments or the supplied body', async context => {
-  const requests = [], components = ['TicketmasterSourceLink','MerchantSourceLink','MerchantReviews','MeetupReviews','PostCard','PostBodyEditor','PostPhotoGallery','PostPhotoEditor','PostPhotoCredits','ChillingHostProfile','ReportSheet','TrustBadge','UserSheet'];
+  const requests = [], components = ['TicketmasterSourceLink','MerchantSourceLink','MerchantReviews','MeetupReviews','PostPoll','PostCard','PostBodyEditor','PostPhotoGallery','PostPhotoEditor','PostPhotoCredits','ChillingHostProfile','ReportSheet','TrustBadge','UserSheet'];
   const imports = Object.fromEntries(components.map(name => [`@/components/${name.replace(/[A-Z]/g, (letter, index) => `${index ? '-' : ''}${letter.toLowerCase()}`)}`, { [name]: name }]));
   Object.assign(imports, {
     'expo-image-picker': {}, '@/constants/theme': { Depth: {}, Spacing: {} }, '@/i18n/ko': { t: {}, count: () => '' },
     '@/lib/comment-list': {}, '@/lib/comment-threads': { loadCommentThreadPage: () => requests.push('comments'), loadCommentThreadContext: () => requests.push('comment-context') },
-    '@/lib/image-upload': {}, '@/lib/post-photo-credits': {}, '@/lib/post-image-picker': {}, '@/lib/meetup-ai': {}, '@/lib/promotions': {}, '../../supabase/functions/_shared/ticketmaster': {},
+    '@/lib/image-upload': {}, '@/lib/post-photo-credits': {}, '@/lib/post-image-picker': {}, '@/lib/meetup-ai': {}, '@/lib/mock': { CITIES: [] }, '@/lib/promotions': {}, '../../supabase/functions/_shared/ticketmaster': {},
   });
   const harness = mount('../src/components/post-detail.tsx', 'PostDetail', { auth: { isAuthed: false }, imports }, { post: post(), onClose() {} }); context.after(() => harness.unmount()); await harness.settle();
   assert.deepEqual(requests, []); assert.equal(harness.calls.filter(call => call[0] === 'full-post').length, 0);
+  assert.equal(harness.calls.filter(call => call[0] === 'rpc').length, 0, 'guest gate never requests private review or poll data');
+  assert.ok(!harness.nodes().some(node => ['MerchantReviews', 'MeetupReviews', 'PostPoll'].includes(node.type)), 'guest gate does not mount review or voting controls');
   assert.ok(!JSON.stringify(harness.render()).includes('private-body-and-venue-sentinel'));
   const gate = harness.nodes().find(node => node.type === 'StateCard'); assert.ok(gate); gate.props.onAction(); assert.equal(harness.calls.filter(call => call[0] === 'login').length, 1);
 });
@@ -251,6 +256,7 @@ test('guest PostCard share control requests login before any share sheet or outb
 
 test('web profile sheets retain direct chat and reporting while removing unsupported full-profile routes', async context => {
   const harness = mount('../src/components/user-sheet.tsx', 'UserSheet', { os: 'web' }, { user: { id: 'neighbor', nickname: '이웃' }, onClose() {} }); context.after(() => harness.unmount()); await harness.settle();
+  assert.ok(harness.nodes().some(node => node.type === 'MannerSummary'), 'public member summary remains available inline');
   assert.ok(!harness.nodes().some(node => ['components_user-sheet.pressable.3','components_user-sheet.pressable.7'].includes(node.props?.analyticsId)));
   control(harness, 'components_user-sheet.pressable.4').props.onPress(); await harness.settle();
   assert.equal(harness.calls.find(call => call[0] === 'navigate')[1].pathname, '/chat');
@@ -265,6 +271,7 @@ test('native profile sheets preserve full-profile destinations', async context =
     control(harness, mine ? 'components_user-sheet.pressable.3' : 'components_user-sheet.pressable.7').props.onPress();
     const route = harness.calls.find(call => call[0] === 'navigate')[1];
     assert.equal(mine ? route : route.pathname, mine ? '/profile' : '/user/[id]');
+    if (!mine) assert.equal(route.params.id, 'viewer');
   }
 });
 

@@ -1,0 +1,487 @@
+{
+  "created_at": "2026-10-13T06:53:56.076678+00:00",
+  "base": "551acd749e7ce8552990958510b05a2d8078cd2e",
+  "version": "1.2.0",
+  "build": 63,
+  "source_files": [
+    {
+      "path": ".gitignore",
+      "sha256": "4662086a59cd5505f7c848fa4fb6a12e878e11e48f1398aa27e615396a3dd197"
+    },
+    {
+      "path": "app.json",
+      "sha256": "e5336ffeab9f46152d6a14a2145d700eb14c2125632f68229eba931fcbc246c0"
+    },
+    {
+      "path": "assets/maps/LICENSE.txt",
+      "sha256": "ee5fc05a0677eaf69601d2c7db0d9ecd6cc27c3abc1d0733bc9ed34707cf8ef2"
+    },
+    {
+      "path": "assets/maps/maplibre.bundle.d.ts",
+      "sha256": "88e466bf729fdc74938ad1ec1b439bab002f67f6d456b674e409a5e2c2a1dd9a"
+    },
+    {
+      "path": "assets/maps/maplibre.bundle.js",
+      "sha256": "bca1b6e96212cbbd63273f8a2952838dc06051ca1aaf680196081f6c7635405d"
+    },
+    {
+      "path": "assets/maps/source.json",
+      "sha256": "51dbf5267babcc83594a5154603d0eec7d97f136ab2c1afcadc31583fee31ecf"
+    },
+    {
+      "path": "docs/specs/maplibre-pin-picker.md",
+      "sha256": "f636184bd1b532c86a78465edd32eefa50da2d54d1edf0f70878b5435d18c75c"
+    },
+    {
+      "path": "docs/specs/meetup-trust-and-chat-suggestions-2026-10-11.md",
+      "sha256": "6ca0e1122dfca96fbfd5662ae1d3ed28d195ba47bf6533805e60e2dab638bb6c"
+    },
+    {
+      "path": "docs/specs/post-opinion-polls.md",
+      "sha256": "660249dc25c4fe9e713893f75ca2cf90512112222ec072364c48d494dc6c3081"
+    },
+    {
+      "path": "infra/README.md",
+      "sha256": "ebf70ea29375b5b14a49e0fe3aba307648cab9462a235bac12c5a10db5f5f863"
+    },
+    {
+      "path": "infra/build-vercel-output.mjs",
+      "sha256": "4ce16c9e910aad6427c9770bd6466727ba6c7798042a23a80a8730f524d93297"
+    },
+    {
+      "path": "infra/share-preview-worker.ts",
+      "sha256": "849b16b52002e631527b1bf96820bbcbec5a9ff4047072bf5b1fb0fba9fe3cf9"
+    },
+    {
+      "path": "infra/vercel-share-preview.ts",
+      "sha256": "ab2655f9e5d36adff64fc0e370262042dd17a0a30475587d32e7323e8ab7d248"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "aa2a2a730d4948e637ade3f529ce940258a16b9571903cb8f2861111ae65073a"
+    },
+    {
+      "path": "package.json",
+      "sha256": "a83d717a02512cd0a518abb3e899b69528f8d6fadef560eaffb3f0621489a72f"
+    },
+    {
+      "path": "public/share-covers/festival.png",
+      "sha256": "429b96d0fadbe5863b580d5912c0bbe65c0a3a06ac03f21a36c575f2821e007c"
+    },
+    {
+      "path": "public/share-covers/meetup.png",
+      "sha256": "62c8ed334fcf6f50957a0e27d76df9224fd709286095e99817a766a2efef5a69"
+    },
+    {
+      "path": "public/share-covers/post.png",
+      "sha256": "ccd2054a8f271c57d109a18ccea1f25a87b4b5c2671f93c920c00756da8457f6"
+    },
+    {
+      "path": "public/share-redirect.js",
+      "sha256": "d58571456675378e2f3cbff730579d2144025453d63ea8db2fb42faa7f52c7b2"
+    },
+    {
+      "path": "release-notes/1.2.0.ko.txt",
+      "sha256": "be122e5f3ad0f7728aea02894e9d26cc30c50e9ac1004bf2db562671fc89c3fd"
+    },
+    {
+      "path": "scripts/admin-merchant-reviews.test.mjs",
+      "sha256": "267b13855e36b5baacdbdf8285e9e19dc0a070ba1ba2efefc1a239ef770181b2"
+    },
+    {
+      "path": "scripts/chat-lifecycle.test.mjs",
+      "sha256": "f6d8d0d4f40d3c4512bc793c6ff5fc1b894d4e81520b18d568a5e9b84e17b553"
+    },
+    {
+      "path": "scripts/chat-safety-evidence.test.mjs",
+      "sha256": "ac42b8b4836336ed9d31903b0f05ce88c69dac12eeb45e1c073518cf7d93ea69"
+    },
+    {
+      "path": "scripts/chat-suggestions.test.mjs",
+      "sha256": "46b22f8b4993d5327ebfff5fb4f5ae9e0245e6e010684a7caf65542253e461f4"
+    },
+    {
+      "path": "scripts/check-merchant-web.mjs",
+      "sha256": "2e58ed1670bcb992ea586be499a6703ab70805a84883c7870c868599d7ebc20c"
+    },
+    {
+      "path": "scripts/check-public-web.mjs",
+      "sha256": "6283474d499b1f40f5c72efa4a13e19a5b2e354827ff96b9224a5ea9f3c8564b"
+    },
+    {
+      "path": "scripts/city-post-schedule.py",
+      "sha256": "d388bbfcf0bc1aec6489a2d001f99510169399d8cdddb157ed260c5856c4e59d"
+    },
+    {
+      "path": "scripts/city-post-schedule.test.py",
+      "sha256": "6488e494ecf562191f11b93911d7c81fae6ec1ca684b0acf1bacf26956c70e1f"
+    },
+    {
+      "path": "scripts/community-data.test.mjs",
+      "sha256": "ff314cddff373ca68f44fbf893b3b7b19a232ba9f6fdc07454ec2bcf2b923b6a"
+    },
+    {
+      "path": "scripts/free-direct-chat.test.mjs",
+      "sha256": "3e4269db6a885aac13eba3fac2198c25892e0fb8dadc61d8e9cc4715d37030f5"
+    },
+    {
+      "path": "scripts/maplibre-map.test.mjs",
+      "sha256": "dfa08e2df0bdadcade3cbde52cebe74e7410ba8ec1fac6dc23d548c53b41cb05"
+    },
+    {
+      "path": "scripts/meetup-reviews.test.mjs",
+      "sha256": "d3ef979e49e970fce06e74333f383fbbac3328ea3b7e1de0dde2e88ef90bce61"
+    },
+    {
+      "path": "scripts/merchant-rating-bar.test.mjs",
+      "sha256": "511b63034368da637c44de5bd158964bc83ea76a9e8af21350b4fd7f5f46eff3"
+    },
+    {
+      "path": "scripts/merchant-review-safety.test.mjs",
+      "sha256": "3c8abf9dfebef27cc8e60c37fdc599afd4d4e7e61e90ec76a3fab05355a28d8c"
+    },
+    {
+      "path": "scripts/message-preview-settings.test.mjs",
+      "sha256": "aca61af7a60c59862d2dc926a2c5782050f65d765432e12e4c8e1db9ab9338c8"
+    },
+    {
+      "path": "scripts/notification-preferences.test.mjs",
+      "sha256": "5dcdcb6d89e65414c1a1dde8e6ba215c2ee3dc47b422407373e0d89da7b283ac"
+    },
+    {
+      "path": "scripts/post-card-image.test.mjs",
+      "sha256": "874ab75ed8894cadd1f521ca9fc523bc214ab677d85986dfbcf81fdd2d426c52"
+    },
+    {
+      "path": "scripts/post-maps.test.mjs",
+      "sha256": "f880b0450c26c3944b219c89d2e786869665c36f6513c2bef2fd1dd7d8520783"
+    },
+    {
+      "path": "scripts/post-polls.test.mjs",
+      "sha256": "ddd033832627978ae37e3534969742a8eecfbe4cce5d6a495223ad0cb4563056"
+    },
+    {
+      "path": "scripts/profile-personas.py",
+      "sha256": "d81bb64d34eba5062f1df7a30e27f50195c1832ccab5b017d3d7e95f1f85c6fb"
+    },
+    {
+      "path": "scripts/profile-personas.test.py",
+      "sha256": "8d33d3ad3c551779bf57fbdd73edc897afb38aedbf0309806d2d4457e94e4777"
+    },
+    {
+      "path": "scripts/public-web.test.mjs",
+      "sha256": "601d9a86420a8adcc8b23836911a656ded05fa197a914c16b005061bac352a6b"
+    },
+    {
+      "path": "scripts/push-delivery.test.mjs",
+      "sha256": "d7c6f10f63bffe26b4db060fd5725a440829d118a68d680311f0b49ecc91f813"
+    },
+    {
+      "path": "scripts/seed-city-posts.sh",
+      "sha256": "54d5c4ff0255ee81d9be8527a8ae306f2f448d11d52e5881b56a5de8ffe503d1"
+    },
+    {
+      "path": "scripts/seed-city-posts.test.mjs",
+      "sha256": "343d3cc47f8d0f80c9422546cfacb5622fadabeba713a476c6d8c4157eb1d4c7"
+    },
+    {
+      "path": "scripts/share-preview-worker.test.mjs",
+      "sha256": "387fee6ad5d8b6de7ad20a1fb0288cb12ea819849655b05235f692730fa8bbb9"
+    },
+    {
+      "path": "scripts/shared-post-ui.test.mjs",
+      "sha256": "04a590069e97d6a6847477cb3e847ad5c6ebaa14bcf5a0c811006d5992b6781b"
+    },
+    {
+      "path": "scripts/user-profile-ui.test.mjs",
+      "sha256": "7aba0e17ace918508c7f4dcac686da8540bb40dc373e54d5d0df7f1648fdae07"
+    },
+    {
+      "path": "scripts/vercel-share-preview.test.mjs",
+      "sha256": "f6e1dd27e0012d5c167dea494619dc381136b964a3bf146674bfc9b58f60d332"
+    },
+    {
+      "path": "scripts/web-trust-boundary.test.mjs",
+      "sha256": "9eb73e3ce02141af4e56cab065d844c70b6dc0d7719f093c67098104850bbb8f"
+    },
+    {
+      "path": "src/app/profile/index.tsx",
+      "sha256": "68b926787f742936110b3001a1757f2595f69202ccd3f05d819a38074b8bb0cc"
+    },
+    {
+      "path": "src/app/profile/meetup-reviews.tsx",
+      "sha256": "6465c4494c1cc85c8402c5eedb37264d5f515f6ef4f50ed04288d6310f813daf"
+    },
+    {
+      "path": "src/app/profile/notifications.tsx",
+      "sha256": "14c42eac2b7200765d3c4ca70d8fdf1940259415d641f8400f98dd568e4e7582"
+    },
+    {
+      "path": "src/app/user/[id].tsx",
+      "sha256": "c8109989299706aa02578c4268c9bedbcc031770e1b2f0ade0a380bcae4e0ed1"
+    },
+    {
+      "path": "src/components/admin/admin-report-queue.tsx",
+      "sha256": "3c612a04b609d099d81e672802ecaef12a51e03188fbfad4fcb0fec646358bf7"
+    },
+    {
+      "path": "src/components/admin/admin-section.native.tsx",
+      "sha256": "e8c7ba3f15fe28d6ea510f8f1b10bc1ab41fee9aa86d7b474e3a1ef79ebbc295"
+    },
+    {
+      "path": "src/components/admin/admin-section.tsx",
+      "sha256": "d336cfc3da4a0732838d5f137327cc1aa1deea2fea1dc712e35095982553539d"
+    },
+    {
+      "path": "src/components/admin/admin-trust-review-content.tsx",
+      "sha256": "6a584709aab546945b027d623a5290687e0be555f28a8d484be2f143d35a434f"
+    },
+    {
+      "path": "src/components/chat-room.tsx",
+      "sha256": "9badef8b2a2d3ac0b436f0a46e1ed22445d2204957b181278c7568cd6ac85331"
+    },
+    {
+      "path": "src/components/chilling-event.tsx",
+      "sha256": "888377e8e28c2e0132872bf3c8486f9ff0bc3ed4eb30d3f1c722552b752948e4"
+    },
+    {
+      "path": "src/components/feed-screen.tsx",
+      "sha256": "a40056f01aa33df7b0b2361e91f5ed53e105da578b0e56efcdb9c3f359684d68"
+    },
+    {
+      "path": "src/components/manner-review.tsx",
+      "sha256": "f3b36e410ff7839ba5918b97cb46815078b534e05eb771c8c7948951203c0d5d"
+    },
+    {
+      "path": "src/components/manner-review.web.tsx",
+      "sha256": "918e58fde27eeacb1a632a67b9c24955810593335e08abf126a52a944568476c"
+    },
+    {
+      "path": "src/components/manner-summary.tsx",
+      "sha256": "bc0db6e40a450cdb988be91272eb7070d3e4e83a3453d3a142ee1b76d3f2dfb9"
+    },
+    {
+      "path": "src/components/meetup-reviews.tsx",
+      "sha256": "b709f686f37c2c4385c0298437799e6cedba44fce08cc3ec3a36a81fa8d13ddf"
+    },
+    {
+      "path": "src/components/meetup-reviews.web.tsx",
+      "sha256": "a27e064deac1c43680a2620111a5a733e7ecc8b91bd6d1883e7cdfddabd1bca1"
+    },
+    {
+      "path": "src/components/merchant-rating-bar.tsx",
+      "sha256": "e040aeae3715920c415433ef36a2001b8946f2184c80baed3558e5c7437499c1"
+    },
+    {
+      "path": "src/components/merchant-workspace.tsx",
+      "sha256": "94709fe85ba42b9f47cb145336cf383955c9e097c2660ef20da209b70d1665cd"
+    },
+    {
+      "path": "src/components/poll-draft-fields.tsx",
+      "sha256": "5c566fce5bfbc2c63100659835a8407e0b6e398ee80c02bffecc77b7cbccc8aa"
+    },
+    {
+      "path": "src/components/post-body-editor.tsx",
+      "sha256": "20bbc7a2f2f307e5754b7e5826c18a700bc763842ef0cf0076ef3c1ff1699d2e"
+    },
+    {
+      "path": "src/components/post-card.tsx",
+      "sha256": "1d80d825a223af9c1f63b28c470e08868988f8207b6f9f55ee5d3682198f0b71"
+    },
+    {
+      "path": "src/components/post-detail.tsx",
+      "sha256": "f05e79417f1d488bec971125ed7e8c10c87be9fa48ba7095bb902e87d85bdf55"
+    },
+    {
+      "path": "src/components/post-location-picker.tsx",
+      "sha256": "11ef476165c148c372fba995c2e47ac196459bbf42c0b0e8abeda951e2f73cf4"
+    },
+    {
+      "path": "src/components/post-map-link.tsx",
+      "sha256": "797178a79a0385455458b90c25c0e8706b0884f84fcec6662f7134e45d0ab2c0"
+    },
+    {
+      "path": "src/components/post-pin-map.tsx",
+      "sha256": "e201fe4970650ddde9b129ce60094dbd551b555af989284a4c26e5d343c7140c"
+    },
+    {
+      "path": "src/components/post-poll.tsx",
+      "sha256": "e9e72eaec5fc2ab7c8798869e61c2c454fa4ca82e43483e4d98af68dd554c1bb"
+    },
+    {
+      "path": "src/components/public-web/reader.tsx",
+      "sha256": "1ec709795174c8fb4a6894e9a49f0edc1a214586980734a46e84af8fa83cc955"
+    },
+    {
+      "path": "src/components/user-sheet.tsx",
+      "sha256": "cde0118ed1c07e2a4a9f1c05708d20cc8c474f7387291ce4c068e099942a35af"
+    },
+    {
+      "path": "src/i18n/ko.ts",
+      "sha256": "8f986f2fd7c156c5984ac49fb1d474e49e285edf2edd92a64f751cb0619d6dac"
+    },
+    {
+      "path": "src/lib/admin-data.ts",
+      "sha256": "40e63cfbaeeda7b967d3afbe4acc6b41f71432265600a3121dbb5b452dc97100"
+    },
+    {
+      "path": "src/lib/admin-trust-reviews.ts",
+      "sha256": "1d081ccd3d00f926d0cff82d0720a88a836da5008bc226a4be844948c94b9c52"
+    },
+    {
+      "path": "src/lib/admin.ts",
+      "sha256": "3024a28c19c94b13502776703c2b27c4eb12a93ac47115b0db0fbf33e13c344a"
+    },
+    {
+      "path": "src/lib/chat-suggestions.ts",
+      "sha256": "8319d256299696248bdbb862348789e5b1b9770020fb5256cf3510111ae35b92"
+    },
+    {
+      "path": "src/lib/chat-suggestions.web.ts",
+      "sha256": "f975672c546c07d016aa31accffcbb9ad559a52672c573bfc8f555f5d5967009"
+    },
+    {
+      "path": "src/lib/community-data.ts",
+      "sha256": "5b6c1e1af1b7dd4f5854df612f6e1c730a86032a5b67c9224c796af32023db2d"
+    },
+    {
+      "path": "src/lib/content-visibility.ts",
+      "sha256": "d74c8da284692cabf2b2e285255c4b8fa3364fa0c426a0ec6cac0eda6fbed75f"
+    },
+    {
+      "path": "src/lib/interaction-feedback.tsx",
+      "sha256": "b8ee0bb6f882b29ce0eace18e3412d077b107ec0ca787b2730686edc2f7c5f3a"
+    },
+    {
+      "path": "src/lib/legal-documents.ts",
+      "sha256": "ff8b84857aeb703db492748aca94cec6b84c3dc0909a85d139a629e650358a92"
+    },
+    {
+      "path": "src/lib/meetup-reviews.ts",
+      "sha256": "54ac2f8433f45850aec644743e640c7ce0584d32ab6b59ab9ee4e17f0f3b469e"
+    },
+    {
+      "path": "src/lib/notification-preferences.ts",
+      "sha256": "299fc8b90e19b98ea03b62bf2f0eb037178a5933af2f3ab2b70aaae56807bc22"
+    },
+    {
+      "path": "src/lib/post-map-html.ts",
+      "sha256": "d2f6d427509b122946160a436be7b7d30f843042a932fc3d4d5d832e22a13612"
+    },
+    {
+      "path": "src/lib/post-maps.ts",
+      "sha256": "db7db4ebe397eeac7a832f861c4fbe48f9b48cca47ada59617857a2f6a0c7ea3"
+    },
+    {
+      "path": "src/lib/post-polls.ts",
+      "sha256": "f57183e334a9b5608ce49da271c32863fd77f8107914179c29887605935697e1"
+    },
+    {
+      "path": "src/lib/user-profile.ts",
+      "sha256": "f3960536b61650a17e351d5aa588c6c301f6652ff568a84f94587053fca062d9"
+    },
+    {
+      "path": "supabase/functions/safety-monitor/index.ts",
+      "sha256": "19ce4c13806daefbe8e6f5e2a86f0bd86aa5c70fcd5337544e79a57f76894f33"
+    },
+    {
+      "path": "supabase/migrations/20261011081500_chat_suggestions.sql",
+      "sha256": "46f8aae289e49816149b927dbc15db259ee072616862545d4eeab62ee86cb283"
+    },
+    {
+      "path": "supabase/migrations/20261011082000_meetup_attendance.sql",
+      "sha256": "9d75c045542c96274a98606476a21c398688e2debddb9a8997ce8ee06f84da0a"
+    },
+    {
+      "path": "supabase/migrations/20261011083000_meetup_reviews.sql",
+      "sha256": "a51b2f28a6a3b2eb3ed142cbea6e3de1307b0c269efe2882843aec9ea3986c21"
+    },
+    {
+      "path": "supabase/migrations/20261011084000_public_user_activity.sql",
+      "sha256": "fe3f6babc3bb831766205f8bc11e6d12cd3f51d99ec7cdadaabbc1a731bd447d"
+    },
+    {
+      "path": "supabase/migrations/20261011084500_meetup_review_requests.sql",
+      "sha256": "3e5b3994f3c2ff1f085722b844caa367cdf5382f2d8afc604ec2b88205a161e3"
+    },
+    {
+      "path": "supabase/migrations/20261011085000_message_safety_context.sql",
+      "sha256": "6f94aed4456b2b8a3a4cd49da49cd8c3141e156331a9edcb3c35d5ad1e952771"
+    },
+    {
+      "path": "supabase/migrations/20261011190000_user_review_ratings.sql",
+      "sha256": "bf7a67cc8b3fddc799cf3a49062ef13af41418b2f38ff7fe251d09735edec7e2"
+    },
+    {
+      "path": "supabase/migrations/20261012133000_conversational_notifications.sql",
+      "sha256": "74fcb6fe234a19791e735a4771b3e04d9e30b7404ff6d6421a6403fc4d721314"
+    },
+    {
+      "path": "supabase/migrations/20261012151500_popular_notification_titles.sql",
+      "sha256": "bd3a5d22d6f792e920b685f21fb0d7408113c7855389e9ad3a94cb3611b7b319"
+    },
+    {
+      "path": "supabase/migrations/20261012180715_post_opinion_polls.sql",
+      "sha256": "2796194955117dd38dceec771309646ab400915daaaf810e8b3aecd3688b0752"
+    },
+    {
+      "path": "supabase/migrations/20261013020000_trust_account_deletion.sql",
+      "sha256": "118dedb356d57df564751da2d22e7a9c141efb546b7d95d98aa6a89c4153dbec"
+    },
+    {
+      "path": "supabase/tests/chat_suggestions.test.sql",
+      "sha256": "a705e0f68dfd6797b68a1ef9c5482a1b5f67b7cc65b385e0a220ff73d6e43900"
+    },
+    {
+      "path": "supabase/tests/meetup_attendance.test.sql",
+      "sha256": "4333791829bde9904b776894db37096e8f128618928cf72714539534c9f43390"
+    },
+    {
+      "path": "supabase/tests/meetup_reviews.test.sql",
+      "sha256": "70903109b99ccb1be2da702dbb88a30dce6f58c020fbc519b589a8eefbb9daaa"
+    },
+    {
+      "path": "supabase/tests/message_safety_context.test.sql",
+      "sha256": "185aebaa91af0388957787e338c89c78f47d35cc20ae9844df64b983c1f2159e"
+    },
+    {
+      "path": "supabase/tests/post_polls.test.sql",
+      "sha256": "bf82b5ed90943c8253e2a86b842abc227c7499e8521e535dd6e36d5121229d2e"
+    },
+    {
+      "path": "supabase/tests/public_user_activity.test.sql",
+      "sha256": "9647aa482f3f77476b5d2424bd1c245603ba929c530d0777aa87386b8fc79a77"
+    },
+    {
+      "path": "supabase/tests/trust_account_deletion.test.sql",
+      "sha256": "5139996f766849e28999b513a3070c448996716eb96f86fcf25d1c1809b0d270"
+    }
+  ],
+  "checks": {
+    "node": {
+      "pass": 880,
+      "skip": 2,
+      "fail": 0
+    },
+    "sql": 433,
+    "typecheck": "pass",
+    "lint": "pass",
+    "public_web_boundary": "pass",
+    "merchant_web_boundary": "pass",
+    "ios_javascript": "pass",
+    "review": "no must-fix findings"
+  },
+  "production_readback": {
+    "migrations": [
+      "20261011190000",
+      "20261012180715",
+      "20261013020000"
+    ],
+    "exact_sources_match": true,
+    "jobs_preserved": 14,
+    "voters_private": true,
+    "safety_monitor_version": 20,
+    "safety_source_sha256": "19ce4c13806daefbe8e6f5e2a86f0bd86aa5c70fcd5337544e79a57f76894f33"
+  },
+  "share_gateway": "source-only; current working static share links preserved; no new hosting"
+}

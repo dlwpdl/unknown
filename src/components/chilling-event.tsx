@@ -5,6 +5,9 @@ import { StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ReportSheet } from '@/components/report-sheet';
 import { TrustBadge } from '@/components/trust-badge';
+import { PostShareSheet } from '@/components/post-share-sheet';
+import { recordPostShare } from '@/lib/community-data';
+import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { chillingCountdown, chillingKind, chillingSchedule, recommendedAgeLabel, type ChillingKind, type ChillingSchedule } from '@/lib/chilling';
@@ -37,6 +40,7 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
   const { me, isAuthed, promptLogin } = useAuth();
   const { play } = useInteractionFeedback();
   const [report, setReport] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [failed, setFailed] = useState<string>();
   const source = getPostImageSource(post, isAuthed ? me.id : 'guest');
   const group = chillingKind(post.room ?? {}) === 'group';
@@ -73,9 +77,12 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
     </Pressable>
     <View style={styles.footer}>
       <Pressable analyticsId="components_chilling-event.pressable.3" onPress={() => { play('selection'); onAuthor(); }} accessibilityRole="button" accessibilityLabel={`${post.author.nickname} 프로필`} style={styles.author}><TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} /><ThemedText type="small" themeColor="textSecondary">{post.author.nickname}님이 열었어요 ›</ThemedText></Pressable>
+      <Pressable analyticsId="meetup.share.open" accessibilityRole="button" accessibilityLabel={post.author.id === me.id ? '내 모임에 초대하기' : '모임 공유하기'} style={styles.action}
+        onPress={() => { play('selection'); if (isAuthed) setSharing(true); else promptLogin('모임을 공유하려면 로그인해주세요.'); }}><ThemedText type="smallBold" themeColor="accent">{post.author.id === me.id ? '초대' : '공유'}</ThemedText></Pressable>
       {post.author.id !== me.id && <Pressable analyticsId="components_chilling-event.pressable.4" accessibilityRole="button" accessibilityLabel="신고 및 차단" style={styles.action} onPress={() => { play('selection'); if (isAuthed) setReport(true); else promptLogin('신고하려면 로그인해 주세요.'); }}><ThemedText style={{ color: theme.textSecondary }}>···</ThemedText></Pressable>}
     </View>
     <ReportSheet visible={report} targetType="post" targetId={post.id} reportedUserId={post.author.id} reportedNickname={post.author.nickname} onClose={() => setReport(false)} />
+    {sharing && <PostShareSheet post={post} visible={sharing} onClose={() => setSharing(false)} onShared={() => { void recordPostShare(supabase, post.id).catch(() => {}); }} />}
   </View>;
 });
 

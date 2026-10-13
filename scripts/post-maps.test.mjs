@@ -1,8 +1,78 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { execFileSync } from 'node:child_process';
 import { googleMapsUrl, postMapBody, withPostMap } from '../src/lib/post-maps.ts';
+import * as maps from '../src/lib/post-maps.ts';
+import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
 
 const place = 'https://www.google.com/maps/search/?api=1&query=Vancouver';
+
+test('선택한 핀은 좌표와 place ID로 Google Maps에 연결하고 표시 이름으로 다시 검색하지 않는다', () => {
+  assert.equal(typeof maps.googlePinUrl, 'function', '좌표 핀 공유가 아직 없다');
+  const pin = { latitude: 49.2712, longitude: -123.134, placeId: 'ChIJ_example' };
+  const url = maps.googlePinUrl(pin);
+  assert.equal(new URL(url).searchParams.get('query'), '49.2712,-123.134');
+  assert.equal(new URL(url).searchParams.get('query_place_id'), 'ChIJ_example');
+  assert.deepEqual(maps.googleMapsPin(url), pin);
+  assert.equal(maps.googleMapsPin(place), null);
+  for (const latitude of [-91, 91, NaN, Infinity]) assert.throws(() => maps.googlePinUrl({ latitude, longitude: 0 }), /INVALID_MAP_PIN/);
+  assert.throws(() => maps.googlePinUrl({ latitude: 0, longitude: 181 }), /INVALID_MAP_PIN/);
+  assert.equal(maps.googleMapsPin('https://evil.test/maps?query=0,0'), null);
+  assert.equal(maps.googleMapsPin('https://google.com/maps/search/?api=1&query=91,0'), null);
+});
+
+test('위치 이름을 바꿔도 핀은 같고 본문 편집·사진 출처·기존 첨부를 보존한다', () => {
+  assert.equal(typeof maps.googlePinUrl, 'function', '좌표 핀 공유가 아직 없다');
+  const url = maps.googlePinUrl({ latitude: 49.2712, longitude: -123.134 });
+  const body = '장보기 메모\n\n첨부 링크\nhttps://www.instagram.com/gling.app/\n\n사진 출처·이용 조건\n사진: https://commons.wikimedia.org/wiki/File:Example.jpg · CC BY';
+  const stored = withPostMap(body, url, '그랜빌마켓');
+  assert.equal(postMapBody(stored).label, '그랜빌마켓');
+  assert.equal(postMapBody(stored).body, body);
+  assert.equal(postMapBody(withPostMap(stored, url, 'Granville Market')).url, url);
+  assert.equal(postMapBody(withPostMap(stored, url, 'Granville Market')).label, 'Granville Market');
+  assert.equal(postMapBody(withPostMap(stored, url)).label, '그랜빌마켓');
+  const photo = splitPostPhotoCredits(stored);
+  assert.ok(photo.credits.includes('CC BY'));
+  assert.equal(postMapBody(photo.body).label, '그랜빌마켓');
+  assert.throws(() => withPostMap('본문', url, '위치\n가짜 정보'), /INVALID_MAP_LABEL/);
+  assert.throws(() => withPostMap('가'.repeat(3970), url, '선택 위치'), /POST_BODY_TOO_LONG/);
+});
+
+test('장소명이나 주소는 게시 도시와 함께 Google Maps 검색으로 연결한다', () => {
+  assert.equal(typeof maps.postLocationUrl, 'function', '장소 입력 연결이 아직 없다');
+  for (const input of ['그랜빌아일랜드 퍼블릭마켓', '1100 Chestnut Street', 'Museum of Vancouver & garden']) {
+    const url = maps.postLocationUrl(` ${input} `, 'Vancouver');
+    assert.equal(googleMapsUrl(url), url);
+    assert.equal(new URL(url).searchParams.get('query'), `${input}, Vancouver`);
+    assert.equal(new URL(url).searchParams.get('api'), '1');
+  }
+  assert.equal(maps.postLocationUrl('  ', 'Vancouver'), null);
+});
+
+test('위치 입력의 공유 링크는 보존하고 위험하거나 잘못된 URL을 장소로 바꾸지 않는다', () => {
+  assert.equal(typeof maps.postLocationUrl, 'function', '장소 입력 연결이 아직 없다');
+  assert.equal(maps.postLocationUrl('https://maps.app.goo.gl/AbCd123', 'Vancouver'), 'https://maps.app.goo.gl/AbCd123');
+  for (const input of ['https://evil.test/maps', 'http://google.com/maps', 'javascript:alert(1)', 'www.google.com/maps', 'google.com/maps', '밴쿠버\n토론토', '가'.repeat(2048)]) {
+    assert.equal(maps.postLocationUrl(input, 'Vancouver'), null, input.slice(0, 50));
+  }
+});
+
+test('위치 교체와 삭제가 본문과 SNS 첨부를 보존한다', () => {
+  const body = '시장 메모\n\n첨부 링크\nhttps://www.instagram.com/gling.app/';
+  const stored = withPostMap(body, place);
+  const replaced = withPostMap(stored, 'https://maps.app.goo.gl/NewPlace');
+  assert.equal(postMapBody(replaced).body, body);
+  assert.equal(postMapBody(replaced).url, 'https://maps.app.goo.gl/NewPlace');
+  assert.equal(postMapBody(stored).body, body);
+});
+
+test('위치 첨부가 사진 출처 뒤로 들어가 지도 버튼이나 사진 이용 조건을 숨기지 않는다', () => {
+  const credit = '사진: https://commons.wikimedia.org/wiki/File:Example.jpg · CC BY';
+  const stored = withPostMap(`전시 메모\n\n사진 출처·이용 조건\n${credit}`, place);
+  const photographed = splitPostPhotoCredits(stored);
+  assert.equal(photographed.credits, credit);
+  assert.deepEqual(postMapBody(photographed.body), { body: '전시 메모', url: place });
+});
 
 test('Google 지도의 장소·검색·공유 링크를 정규화한다', () => {
   for (const value of [place, 'https://google.ca/maps/place/Vancouver', 'https://www.google.co.kr/maps/place/Vancouver', 'https://maps.google.com/?q=Vancouver', 'https://maps.app.goo.gl/AbCd123', 'https://goo.gl/maps/AbCd123']) {
@@ -40,4 +110,18 @@ test('지도와 본문을 합쳐 DB의 4000자 한도를 지키고 이모지를 
   assert.throws(() => withPostMap('가'.repeat(4000), place), /POST_BODY_TOO_LONG/);
   const body = '😀'.repeat(3900);
   assert.equal(postMapBody(withPostMap(body, place)).body, body);
+});
+
+test('도시 자동화의 공식 장소명이 기존 지도 버튼용 본문과 정확한 검색어로 연결된다', () => {
+  const script = new URL('./city-post-schedule.py', import.meta.url).pathname;
+  const body = execFileSync('python3', ['-c', `import importlib.util
+s=importlib.util.spec_from_file_location('schedule',${JSON.stringify(script)});m=importlib.util.module_from_spec(s);s.loader.exec_module(m)
+posts=[dict(ord=n*5+i+1,city_id=c,author_nickname='seed',tag_slug='life',title=c+str(i),body='공식 안내') for n,c in enumerate(m.CITIES) for i in range(5)]
+posts[0].update(body='Vancouver의 Kitsilano 산책 코스',place_name='Kitsilano')
+print(m.prepare(dict(posts=posts),'2026-10-12')['posts'][0]['body'])`], { encoding: 'utf8' }).trim();
+  const parsed = postMapBody(body);
+  assert.equal(parsed.body, 'Vancouver의 Kitsilano 산책 코스');
+  assert.equal(googleMapsUrl(parsed.url), parsed.url);
+  assert.equal(new URL(parsed.url).searchParams.get('query'), 'Kitsilano, Vancouver, Canada');
+  assert.equal(new URL(parsed.url).searchParams.get('api'), '1');
 });
