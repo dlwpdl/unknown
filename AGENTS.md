@@ -6,6 +6,8 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
 
 Keep Gling account, store, and test browser tabs in the existing `Git → gling` folder workspace. Do not create them under Rottery, TMS, or the separate `mobile` Git workspace. Verify the visible browser tab when the user asks to open a page; CLI tab selection alone may leave the terminal visible.
 
+`orca tab create` resolves its default workspace from the CLI working directory. For Gling, invoke browser creation from `/Users/ash/Desktop/Git/unknown` and verify the resulting tab belongs to `folder:e88d505b-f6bb-47d6-ba41-904ef2a72a8b`. Run git/build commands in the isolated source checkout. If the workspace mapping changes, discover it again before opening a tab.
+
 Show browser work in Orca. Close completed task tabs automatically after verifying the result; when pausing or finishing, leave only tabs needed to resolve outstanding blockers. Preserve unsaved work and tabs still in use by the user or another active task. Remove completed duplicate tabs, including misplaced Gling tabs in other workspaces.
 
 # Non-negotiable safety operations
