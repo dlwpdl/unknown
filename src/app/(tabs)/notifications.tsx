@@ -1,7 +1,7 @@
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, FlatList } from '@/components/analytics-controls';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { Image } from 'expo-image';
 import { Alert, LayoutAnimation, Linking, Platform, StyleSheet, UIManager, View } from 'react-native';
@@ -21,6 +21,7 @@ import { useAuth } from '@/lib/auth';
 import { loadNotificationActors, loadNotifications, markNotificationsRead, type AppNotification } from '@/lib/community-data';
 import { relativeTime } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { recordProductEvent } from '@/lib/product-analytics';
 import { supabase } from '@/lib/supabase';
 import { NOTIFICATION_CATEGORIES, adminDashboardUrl, isAdminNotificationKind, notificationRoute } from '@/lib/notification-preferences';
 
@@ -33,6 +34,9 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
   const theme = useTheme();
   const router = useRouter();
   const { isAuthed, isAdmin, isAuthLoading, me, signInApple, signInKakao, signInGoogle, signInDev, authError } = useAuth();
+  const userId = isAuthed ? me.id : null;
+  const identity = useRef(userId);
+  useLayoutEffect(() => { identity.current = userId; return () => { identity.current = null; }; }, [userId]);
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
   const [result, setResult] = useState<{ userId: string; cityId?: string; rows: AppNotification[] } | null>(null);
@@ -135,6 +139,9 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
                 <Pressable analyticsId="app_tabs_notifications.pressable.2"
                 onPress={() => {
                   play('selection');
+                  if (userId && identity.current === userId && rows.some(row => row.id === item.id)) {
+                    void recordProductEvent(supabase, { kind: 'notification_inbox_open', targetId: item.id, platform: Platform.OS }).catch(() => {});
+                  }
                   const dashboard = adminDashboardUrl(item.route, isAdmin && admin);
                   if (dashboard) {
                     void Linking.openURL(dashboard).catch(() => Alert.alert('관리자 대시보드를 열지 못했어요', 'Tailscale 연결과 Mac의 관리자 서버를 확인해 주세요.'));

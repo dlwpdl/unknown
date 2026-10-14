@@ -7,6 +7,7 @@ import { getPostImageSource } from '../src/lib/feed-data.ts';
 import { uniqueHashtags } from '../src/lib/hashtags.ts';
 import { count, t } from '../src/i18n/ko.ts';
 import { googleMapsPin, googleMapsUrl, postMapBody } from '../src/lib/post-maps.ts';
+import * as product from '../src/lib/product-analytics.ts';
 
 // Native image events and React state are supplied here; sizing/rendering runs the real components.
 function cardRenderer(component = 'PostCard') {
@@ -21,6 +22,7 @@ function cardRenderer(component = 'PostCard') {
     useCallback: (callback) => callback,
     useMemo: (callback) => callback(),
     useEffect: () => {},
+    useLayoutEffect: () => {},
     useRef: (value) => ({ current: value }),
     useState(initial) {
       const index = cursor++;
@@ -63,7 +65,8 @@ function cardRenderer(component = 'PostCard') {
     '@/lib/post-maps': { googleMapsPin, googleMapsUrl, postMapBody },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: (kind) => feedback.push(kind) }) },
     '@/lib/sharing': {},
-    '@/lib/supabase': {},
+    '@/lib/product-analytics': product,
+    '@/lib/supabase': { supabase: { rpc: async () => ({ error: null }) } },
   };
   const exports = {};
   const file = component === 'PostCard' ? 'post-card' : component === 'PostMapLink' ? 'post-map-link' : component === 'PostPhotoEditor' ? 'post-photo-editor' : 'post-photo-gallery';

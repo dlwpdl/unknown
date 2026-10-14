@@ -11,9 +11,10 @@ import { loadAdminAnalytics, type AdminAnalytics, type AnalyticsFilters, type Br
 import { ADMIN_PAGE_SIZE } from '@/lib/admin-data';
 import { CITIES } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
+import { AdminPerformanceView } from './admin-performance';
 import { AdminFilterBar } from './admin-table-controls';
 
-const TABS = { overview: '요약', members: '회원', traffic: '트래픽', behavior: '행동 분석', revenue: '결제·홍보', logs: '운영 로그' } as const;
+const TABS = { performance: '전체 성과', overview: '요약', members: '회원', traffic: '트래픽', behavior: '행동 분석', revenue: '결제·홍보', logs: '운영 로그' } as const;
 const TIERS = { all: '전체 등급', free: '무료', plus: '플러스', pro:'프로', premium: '프리미엄' } as const;
 const INITIAL_FILTERS: AnalyticsFilters = { days: 30, city: null, tier: 'all', includeInternal: false, offset: 0 };
 
@@ -22,22 +23,23 @@ export function AdminAnalyticsView({ localPreview, onUser, refreshSignal = 0 }: 
 }) {
   const { play } = useInteractionFeedback();
   const [filters, setFilters] = useState(INITIAL_FILTERS);
-  const [tab, setTab] = useState<keyof typeof TABS>('overview');
+  const [tab, setTab] = useState<keyof typeof TABS>('performance');
+  const performanceActive = tab === 'performance';
   const [retry, setRetry] = useState(0);
   const [result, setResult] = useState<{ key: string; data: AdminAnalytics | null; error: boolean } | null>(null);
   const requestKey = JSON.stringify([filters, retry, refreshSignal, localPreview]);
   const data = !localPreview && result?.key === requestKey ? result.data : null;
-  const error = !localPreview && result?.key === requestKey && result.error;
-  const loading = !localPreview && result?.key !== requestKey;
+  const error = !performanceActive && !localPreview && result?.key === requestKey && result.error;
+  const loading = !performanceActive && !localPreview && result?.key !== requestKey;
 
   useEffect(() => {
     let active = true;
-    if (localPreview) return;
+    if (localPreview || performanceActive) return;
     void loadAdminAnalytics(supabase, filters)
       .then((next) => { if (active) setResult({ key: requestKey, data: next, error: false }); })
       .catch(() => { if (active) setResult({ key: requestKey, data: null, error: true }); });
     return () => { active = false; };
-  }, [filters, localPreview, requestKey]);
+  }, [filters, localPreview, performanceActive, requestKey]);
 
   const filter = (next: Partial<AnalyticsFilters>) => setFilters((current) => ({ ...current, ...next, offset: 0 }));
   return (
@@ -54,12 +56,13 @@ export function AdminAnalyticsView({ localPreview, onUser, refreshSignal = 0 }: 
           <Choices label="조회 기간" values={[7, 30, 90].map((days) => ({ key: String(days), label: `${days}일` }))} selected={String(filters.days)} onSelect={(value) => filter({ days: Number(value) as AnalyticsFilters['days'] })} />
           <Choices label="선호 지역" values={[{ key: '', label: '전체 도시' }, ...CITIES.map((city) => ({ key: city.id, label: city.name }))]} selected={filters.city ?? ''} onSelect={(city) => filter({ city: city || null })} />
           <Choices label="현재 멤버십" values={Object.entries(TIERS).map(([key, label]) => ({ key, label }))} selected={filters.tier} onSelect={(tier) => filter({ tier: tier as AnalyticsFilters['tier'] })} />
-          <View style={styles.switchRow}><Switch value={filters.includeInternal} onValueChange={(includeInternal) => { play('selection'); return filter({ includeInternal }); }} accessibilityLabel="목·심사·관리자 계정 포함" trackColor={{ true: Colors.admin.accent }} /><ThemedText type="small">목·심사·관리자 계정 포함</ThemedText></View>
+          <View style={styles.switchRow}><Switch value={filters.includeInternal} onValueChange={(includeInternal) => { play('selection'); return filter({ includeInternal }); }} accessibilityLabel="운영 캐릭터·심사·테스트·관리자 계정 포함" trackColor={{ true: Colors.admin.accent }} /><ThemedText type="small">운영 캐릭터·심사·테스트·관리자 계정 포함</ThemedText></View>
         </View>
       </AdminFilterBar>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs} accessibilityRole="tablist" accessibilityLabel="분석 메뉴">
         {Object.entries(TABS).map(([key, label]) => <Pressable key={key} accessibilityRole="tab" aria-selected={key === tab} tabIndex={key === tab ? 0 : -1} {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})} onPress={() => { play('selection'); return setTab(key as keyof typeof TABS); }} style={({ pressed }) => [styles.tab, key === tab && styles.selectedTab, pressed && styles.pressed]}><ThemedText type="smallBold" style={key === tab ? styles.accent : styles.muted}>{label}</ThemedText></Pressable>)}
       </ScrollView>
+      {performanceActive ? <AdminPerformanceView filters={filters} localPreview={localPreview} refreshSignal={refreshSignal + retry} /> : <>
       {localPreview && <Notice title="운영 데이터 미연결" text="로컬 미리보기입니다. 실제 회원·접속·매출 수치는 관리자 로그인 후 표시됩니다." />}
       {loading && <View accessibilityRole="progressbar" accessibilityLabel="분석 데이터 불러오는 중" style={styles.notice}><ThemedText style={styles.muted}>선택한 조건으로 분석하고 있어요.</ThemedText></View>}
       {error && <View accessibilityRole="alert" style={styles.notice}><ThemedText style={styles.accent}>분석 데이터를 불러오지 못했습니다. 관리자 권한과 연결 상태를 확인해주세요.</ThemedText><Action label="다시 시도" onPress={() => setRetry((value) => value + 1)} /></View>}
@@ -71,6 +74,7 @@ export function AdminAnalyticsView({ localPreview, onUser, refreshSignal = 0 }: 
         {tab === 'behavior' && <Behavior data={data} />}
         {tab === 'revenue' && <Revenue data={data} onUser={onUser} />}
         {tab === 'logs' && <Logs data={data} />}
+      </>}
       </>}
     </View>
   );
