@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import * as product from '../src/lib/product-analytics.ts';
 
 const root = new URL('../', import.meta.url);
 const citySource = readFileSync(new URL('src/lib/mock.ts', root), 'utf8').split('export const TAGS')[0];
@@ -33,13 +34,16 @@ function screen(file, params = { cityId: 'toronto' }, dev = true) {
   let cursor = 0;
   const jsx = (type, props) => ({ type, props });
   const exports = module(file, {
-    react: { useState(v) { const i = cursor++; if (!(i in states)) states[i] = v; return [states[i], next => { states[i] = typeof next === 'function' ? next(states[i]) : next; }]; } },
+    react: { useRef: current => ({ current }), useEffect() {}, useLayoutEffect() {}, useCallback: fn => fn,
+      useState(v) { const i = cursor++; if (!(i in states)) states[i] = v; return [states[i], next => { states[i] = typeof next === 'function' ? next(states[i]) : next; }]; } },
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    'expo-router': { useRouter: () => ({ push: p => routes.push(p), canGoBack: () => true, back: () => routes.push('back') }), useLocalSearchParams: () => params },
+    'expo-router': { useIsFocused: () => true, useRouter: () => ({ push: p => routes.push(p), canGoBack: () => true, back: () => routes.push('back') }), useLocalSearchParams: () => params },
     'react-native': { StyleSheet: { create: v => v }, View: 'View', TextInput: 'TextInput' },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     '@/lib/mock': { CITIES: cities },
     '@/lib/community-city': { useCommunityCity: () => ({ city: cities[0] }) },
+    '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'anonymous' } }) },
+    '@/lib/product-analytics': product,
     '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16, four: 24 }, MaxContentWidth: 920 },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: v => feedback.push(v) }) },
