@@ -201,9 +201,9 @@ function Revenue({ data }: { data: AdminPerformance['revenue'] }) {
   return <Section title="수익" note="확인된 일반 멤버십 운영 결제의 통화별 총 결제 발생액입니다. 업체 요금제는 합산하지 않습니다. 환불·스토어 수수료 차감 전이며 정산액은 미연결입니다.">
     <View style={styles.metrics}>
       <Metric label="현재 유료 회원" value={count(data.paidMembers)} note="현재 일반 유료 멤버십 회원 · 스냅샷" />
-      <Metric label="신규 가입 유료 전환" value={rate(data.paidConversion, '가입 대상 없음')} note="기간 내 가입 회원 중 같은 기간 실제 INITIAL_PURCHASE가 있는 회원" />
+      <Metric label="신규 가입 유료 전환" value={rate(data.paidConversion, '가입 대상 없음')} note="기간 내 가입 회원 중 같은 기간 첫 결제가 확인된 회원" />
       <Metric label="갱신 결제" value={count(data.renewals)} note="실제 갱신 결제 이벤트" />
-      <Metric label="갱신 해지" value={count(data.cancellations)} note="CANCELLATION · 갱신 취소 이벤트이며 환불 건수가 아닙니다." />
+      <Metric label="갱신 해지" value={count(data.cancellations)} note="자동 갱신을 해지한 기록이며 환불 건수가 아닙니다." />
       <Metric label="환불" value={count(data.refunds, '미연결')} note="확정 환불 원자료 연결 대기" />
       <Metric label="스토어 정산" value={count(data.settlement, '미연결')} note="스토어의 확정 정산 원자료 연결 대기" />
     </View>

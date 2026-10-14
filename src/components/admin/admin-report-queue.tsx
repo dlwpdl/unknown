@@ -141,12 +141,12 @@ export function AdminReportQueue({
         <LabelValue label="접수 당시 업체" value={report.evidence?.merchant_name ?? report.evidence?.merchant_id ?? '업체 정보 없음'} />
         <AdminMerchantReviewReplyContent targetId={report.target_id} localPreview={localPreview} onUser={onUser} />
       </>}
-      {!!report.evidence?.image_paths?.length && <LabelValue label="첨부 원본 경로" value={report.evidence.image_paths.join('\n')} />}
-      <details>
-        <summary style={{ cursor: 'pointer', fontSize: 12, color: Colors.admin.textSecondary }}>원본 ID 보기</summary>
+      <details onToggle={() => play('selection')}>
+        <summary style={{ cursor: 'pointer', fontSize: 12, color: Colors.admin.textSecondary }}>문제 추적 정보</summary>
         <LabelValue label="대상 ID" value={report.target_id} />
         <LabelValue label="신고자 ID" value={report.reporter_id} />
         <LabelValue label="신고 ID" value={report.id} />
+        {!!report.evidence?.image_paths?.length && <LabelValue label="첨부 원본 경로" value={report.evidence.image_paths.join('\n')} />}
       </details>
       <ThemedText type="small" style={styles.muted}>신고·차단은 위반 확정이 아닙니다. 전체 숨김은 공개만 중단하며 원본과 처리 기록은 보존 정책에 따라 보관합니다.</ThemedText>
       <Pressable onPress={() => { play('selection'); return onUser(report.reported_user_id); }} accessibilityRole="button" style={styles.outlineButton}>
@@ -158,7 +158,7 @@ export function AdminReportQueue({
   return (
     <View style={styles.queue}>
       <div className="admin-toolbar">
-        <AdminSearch value={query} onChange={(value) => { setQuery(value); setCheckedIds([]); }} placeholder="사용자, 신고 내용, 사유, ID 검색" />
+        <AdminSearch value={query} onChange={(value) => { setQuery(value); setCheckedIds([]); }} placeholder="사용자, 신고 내용, 사유 검색" />
         {/* 미처리 건을 오갈 때 드롭다운을 두 번 조작하지 않도록 자주 쓰는 상태는 탭으로 둔다. */}
         <div className="admin-status-tabs" role="group" aria-label="신고 상태 빠른 필터">
           {[{ value: '', label: `전체 ${reports.length}` },
@@ -215,7 +215,7 @@ export function AdminReportQueue({
               return (
                 <div key={report.id} style={{ display: 'flex', alignItems: 'center' }}>
                 <label className="admin-report-check" style={{ flexShrink: 0 }}>
-                  <input type="checkbox" aria-label={`신고 ${report.id} 선택`} disabled={resolving || !canResolveReport(report.status)}
+                  <input type="checkbox" aria-label={`${displayName(profiles.get(report.reported_user_id), report.reported_user_id)} · ${reportReasonLabel(report.reason_code)} 신고 선택`} disabled={resolving || !canResolveReport(report.status)}
                     checked={checked.some((item) => item.id === report.id)}
                     onChange={(event) => { play('selection'); setCheckedIds((ids) => event.target.checked ? [...ids, report.id] : ids.filter((id) => id !== report.id)); }} />
                 </label>
