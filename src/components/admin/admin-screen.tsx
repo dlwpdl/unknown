@@ -6,7 +6,7 @@ import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { AdminAnalyticsView } from '@/components/admin/admin-analytics';
 import { AdminTicketmasterView } from '@/components/admin/admin-ticketmaster';
 import { AdminMerchantsView } from '@/components/admin/admin-merchants';
-import { AdminConversationsView } from '@/components/admin/admin-conversations';
+import { AdminMeetupsView } from '@/components/admin/admin-meetups';
 import { AdminCommandPalette } from '@/components/admin/admin-command-palette';
 import { AdminSectionView } from '@/components/admin/admin-section';
 import { AdminShell } from '@/components/admin/admin-shell';
@@ -50,7 +50,7 @@ export function AdminScreen() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const localPreview = false;
   const hasAdminAccess = isAdmin || localPreview;
-  const needsOperations = section !== 'analytics' && section !== 'ticketmaster' && section !== 'merchants' && section !== 'conversations';
+  const needsOperations = section !== 'analytics' && section !== 'ticketmaster' && section !== 'merchants' && section !== 'meetups';
 
   const refresh = useCallback(async () => {
     if (!hasAdminAccess) return;
@@ -130,7 +130,7 @@ export function AdminScreen() {
       return;
     }
     // 뜨는 글 알림 패널은 자체 RPC로 불러오므로 더 보기 대상이 아니다.
-    if (!data || section === 'overview' || section === 'analytics' || section === 'ticketmaster' || section === 'merchants' || section === 'conversations' || section === 'trending' || section === 'errors' || exhausted.has(section)) return;
+    if (!data || section === 'overview' || section === 'analytics' || section === 'ticketmaster' || section === 'merchants' || section === 'meetups' || section === 'trending' || section === 'errors' || exhausted.has(section)) return;
     const offset = section === 'reports'
       ? data.reports.length
       : section === 'safety'
@@ -141,7 +141,7 @@ export function AdminScreen() {
         ? data.profiles.length
         : section === 'posts'
           ? data.posts.length
-          : data.messages.length;
+          : data.conversations.length;
     setLoadingMore(true);
     setError(null);
     try {
@@ -155,7 +155,10 @@ export function AdminScreen() {
         if (page.section === 'reports') return { ...current, profiles, reports: [...current.reports, ...page.rows] };
         if (page.section === 'users') return { ...current, profiles: [...profiles, ...page.rows.filter((profile) => !known.has(profile.id))] };
         if (page.section === 'posts') return { ...current, profiles, posts: [...current.posts, ...page.rows] };
-        return { ...current, profiles, messages: [...current.messages, ...page.rows] };
+        const knownRooms = new Set(current.conversations.map(row => row.id));
+        const knownPosts = new Set((current.contextPosts ?? []).map(row => row.id));
+        return { ...current, profiles, conversations: [...current.conversations, ...page.rows.filter(row => !knownRooms.has(row.id))],
+          contextPosts: [...(current.contextPosts ?? []), ...page.contextPosts.filter(row => !knownPosts.has(row.id))] };
       });
       if (page.rows.length < ADMIN_PAGE_SIZE) setExhausted((current) => new Set(current).add(section));
     } catch {
@@ -193,7 +196,7 @@ export function AdminScreen() {
       {localPreview && <View accessibilityRole="alert" style={styles.preview}><ThemedText type="smallBold">로컬 미리보기 · 실제 운영 데이터와 권한은 변경되지 않습니다.</ThemedText></View>}
       {!!moderationResult && needsOperations && <View accessibilityLiveRegion="polite" style={styles.preview}><ThemedText>{moderationResult}</ThemedText></View>}
       {!!error && needsOperations && <View accessibilityRole="alert" style={styles.error}><ThemedText style={styles.errorText}>{error}</ThemedText></View>}
-      {section === 'analytics' ? <AdminAnalyticsView localPreview={localPreview} onUser={setSelectedUserId} refreshSignal={analyticsRefresh} /> : section === 'ticketmaster' ? <AdminTicketmasterView localPreview={localPreview} refreshSignal={analyticsRefresh} /> : section === 'merchants' ? <AdminMerchantsView refreshSignal={analyticsRefresh} onUser={setSelectedUserId} localPreview={localPreview} /> : section === 'conversations' ? <AdminConversationsView key={me.id} onUser={setSelectedUserId} refreshSignal={analyticsRefresh} /> : data && <AdminSectionView
+      {section === 'analytics' ? <AdminAnalyticsView localPreview={localPreview} onUser={setSelectedUserId} refreshSignal={analyticsRefresh} /> : section === 'ticketmaster' ? <AdminTicketmasterView localPreview={localPreview} refreshSignal={analyticsRefresh} /> : section === 'merchants' ? <AdminMerchantsView refreshSignal={analyticsRefresh} onUser={setSelectedUserId} localPreview={localPreview} /> : section === 'meetups' ? <AdminMeetupsView refreshSignal={analyticsRefresh} onUser={setSelectedUserId} localPreview={localPreview} /> : data && <AdminSectionView
         key={section}
         section={section}
         data={data}
@@ -204,6 +207,7 @@ export function AdminScreen() {
         onUser={setSelectedUserId}
         onResolve={confirmResolve}
         onLoadMore={() => void loadMore()}
+        onSection={setSection}
       />}
       <AdminUserDetail
         userId={selectedUserId}
