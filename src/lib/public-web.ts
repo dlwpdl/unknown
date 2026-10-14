@@ -41,6 +41,14 @@ export function publicWebFetch(baseUrl: string, key: string, transport: typeof f
 export async function loadPublicFestivals(client: SupabaseClient, cityId: string): Promise<{ events: TicketmasterEvent[]; nextRefreshAt?: string }> {
   const body = parseEventQuery({ cityId, category: 'all', page: 0, festival: true });
   const { data, error } = await client.functions.invoke('ticketmaster-events', { body });
-  if (error || data?.error || !Array.isArray(data?.events)) throw new Error('PUBLIC_FESTIVALS_UNAVAILABLE');
-  return { events: spotlightLocalEvents(data.events, Date.now(), data.festivalSlots ?? []), nextRefreshAt: data.nextRefreshAt };
+  const dailyEvents = !error && !data?.error && Array.isArray(data?.events) ? data.events : [];
+  let events = spotlightLocalEvents(dailyEvents, Date.now(), data?.festivalSlots ?? []);
+  if (events.length < 7) {
+    const full = await client.functions.invoke('ticketmaster-events', { body: { cityId, category: 'all', page: 0 } });
+    if (full.error || full.data?.error || !Array.isArray(full.data?.events)) throw new Error('PUBLIC_FESTIVALS_UNAVAILABLE');
+    const candidates = new Map((Date.parse(data?.fetchedAt) > Date.parse(full.data.fetchedAt)
+      ? [...full.data.events, ...dailyEvents] : [...dailyEvents, ...full.data.events]).map(event => [event.id, event]));
+    events = spotlightLocalEvents([...candidates.values()], Date.now(), data?.festivalSlots ?? []);
+  }
+  return { events, nextRefreshAt: data?.nextRefreshAt };
 }

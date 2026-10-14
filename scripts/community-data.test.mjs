@@ -159,6 +159,18 @@ test('chat attachment uploads are compressed-only and send a typed private messa
   assert.deepEqual(calls.at(-1), ['mark_chat_read', { p_conversation_id: 'room', p_message_id: 'message-id' }]);
 });
 
+test('a photo bundle uses one atomic RPC with its stable retry ID and ordered paths', async () => {
+  const calls = [];
+  const client = { rpc: async (name, args) => { calls.push([name, args]); return { data: 'album-message', error: null }; } };
+  const attachment = { kind: 'image', imagePaths: ['user/room_one.webp', 'user/room_two.webp'], clientId: 'retry-id' };
+  assert.equal(await sendChatAttachment(client, 'room', attachment, 'parent'), 'album-message');
+  assert.deepEqual(calls, [['send_chat_album', { p_conversation_id: 'room', p_image_paths: attachment.imagePaths, p_client_id: 'retry-id', p_reply_to_id: 'parent' }]]);
+  for (const imagePaths of [[], Array(21).fill('path'), ['same', 'same']]) {
+    await assert.rejects(sendChatAttachment(client, 'room', { ...attachment, imagePaths }), /INVALID_CHAT_IMAGES/);
+  }
+  assert.equal(calls.length, 1);
+});
+
 test('게시 후 상세 조회가 실패해도 생성된 글 ID를 반환한다', async () => {
   const client = {
     rpc: async (name) => {

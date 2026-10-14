@@ -65,6 +65,25 @@ test('live message lookup fetches only unique requested IDs and skips empty batc
   assert.equal(result[0].sender_nickname, '이웃');
 });
 
+test('private signing covers every album image in order and preserves unavailable slots and legacy photos', async () => {
+  const signed = [];
+  const rows = [
+    { id: 'album', kind: 'image', image_path: 'one', image_paths: ['one', 'two', 'three'], sender: null },
+    { id: 'old', kind: 'image', image_path: 'legacy', sender: null },
+    { id: 'deleted', kind: 'text', deleted_at: 'now', image_path: null, image_paths: [], sender: null },
+  ];
+  const client = { from: () => ({ select() { return this; }, eq() { return this; }, in: async () => ({ data: rows }) }),
+    storage: { from: () => ({ createSignedUrls: async paths => {
+      signed.push(...paths); return { data: paths.filter(path => path !== 'two').map(path => ({ path, signedUrl: `signed:${path}` })) };
+    } }) } };
+  const messages = await loadConversationMessagesByIds(client, 'room-1', rows.map(row => row.id));
+  assert.deepEqual(signed, ['one', 'two', 'three', 'legacy']);
+  assert.deepEqual(messages[0].imageUrls, ['signed:one', undefined, 'signed:three']);
+  assert.equal(messages[1].imageUrl, 'signed:legacy');
+  assert.deepEqual(messages[1].imageUrls, ['signed:legacy']);
+  assert.deepEqual(messages[2].imageUrls, []);
+});
+
 test('message merge keeps older history, replaces overlaps and excludes blocked senders', () => {
   const old = { id: 'a', created_at: '2026-09-12T10:00:00Z', sender_id: 'one', body: 'old' };
   const next = { id: 'b', created_at: old.created_at, sender_id: 'two', body: 'next' };

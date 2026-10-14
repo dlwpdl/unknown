@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
-import { AppState, KeyboardAvoidingView, LayoutAnimation, Linking, Modal, Platform, ScrollView, StyleSheet, TextInput, UIManager, View, type FlatList as NativeFlatList, type NativeScrollEvent, type NativeSyntheticEvent, type ViewToken } from 'react-native';
+import { AppState, KeyboardAvoidingView, LayoutAnimation, Linking, Modal, Platform, ScrollView, StyleSheet, TextInput, UIManager, View, type FlatList as NativeFlatList, type NativeScrollEvent, type NativeSyntheticEvent, type ViewToken, useWindowDimensions } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -28,7 +28,7 @@ import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { chatSuggestions, loadChatSuggestionContext, sendSuggestedMessage, type ChatSuggestionContext } from '@/lib/chat-suggestions';
 import { merchantEventId } from '@/lib/merchant-source';
-import { chatDateLabel, chatMessageTime, firstUnreadMessageIndex, messageMenuPosition, showChatMessageTime, type ChatRect } from '@/lib/chat-details';
+import { chatDateLabel, chatImagePaths, chatMessageTime, firstUnreadMessageIndex, messageMenuPosition, showChatMessageTime, type ChatRect } from '@/lib/chat-details';
 import { blockUser, endConversation, editChatMessage, deleteChatMessage, loadListingReviewState, writeListingReview, type ListingReviewState, isContentRejected, loadChatReadPosition, loadConversationMessages, loadConversationMessagesByIds, loadMessageReactions, markChatRead, mergeChatMessages, sendChatAttachment, sendDirectMessage, setMessageReaction, uploadChatImage, type ChatMessageRecord, type ConversationPreview, type MessageReaction, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
@@ -75,6 +75,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const hidden = useContentVisibility();
   const auth = useAuth();
   const insets = useSafeAreaInsets();
+  const screen = useWindowDimensions();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
   const identity = useRef(auth.isAuthed ? auth.me.id : null);
@@ -109,11 +110,26 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const [messageEditDraft, setMessageEditDraft] = useState('');
   const replyTarget = replyTo && !replyTo.deleted_at && !hidden('message', replyTo.id, replyTo.sender_id) ? replyTo : null;
   const [selectedPhotos, setSelectedPhotos] = useState<PreparedImage[]>([]);
-  const lastPhotoSentAt = useRef(0);
+  const [photoProgress, setPhotoProgress] = useState<{ stage: 'select' | 'prepare' | 'upload' | 'send'; completed: number; total: number } | null>(null);
+  const photoProgressLabel = photoProgress?.stage === 'select' ? '사진 불러오는 중' : photoProgress?.stage === 'send' ? '전송 확인 중' : photoProgress
+    ? `사진 ${photoProgress.stage === 'prepare' ? '준비' : '올리는'} 중 ${photoProgress.completed}/${photoProgress.total}` : '';
+  const photoSend = useRef<{ id: string; photos: PreparedImage[]; paths: string[]; parent: ChatMessageRecord | null; submitted: boolean } | null>(null);
+  const [replyLocked, setReplyLocked] = useState(false);
   const [pickingPhoto, setPickingPhoto] = useState(false);
   const [attachmentsOpen, setAttachmentsOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
-  const [photoOpen, setPhotoOpen] = useState<string | null>(null);
+  const [photoViewer, setPhotoOpen] = useState<{ photos: (string | undefined)[]; index: number; initialIndex: number; messageId?: string } | null>(null);
+  const photoOpen = photoViewer && (!photoViewer.messageId || messages.some(message => message.id === photoViewer.messageId && !message.deleted_at)) ? photoViewer : null;
+  const photoPages = useRef<ScrollView>(null);
+  const openPhotos = (photos: (string | undefined)[], index: number, messageId?: string) => { play('selection'); setPhotoOpen({ photos, index, initialIndex: index, messageId }); };
+  const changePhoto = (index: number) => {
+    if (!photoOpen || index < 0 || index >= photoOpen.photos.length) return;
+    play('selection'); setPhotoOpen({ ...photoOpen, index }); photoPages.current?.scrollTo({ x: index * screen.width, animated: !reducedMotion });
+  };
+  const discardPhotoSend = () => {
+    const pending = photoSend.current; photoSend.current = null; setReplyLocked(false);
+    if (pending?.paths.length) void supabase.storage.from('chat-images').remove(pending.paths).catch(() => {});
+  };
   const messageList = useRef<NativeFlatList<ChatMessageRecord> | null>(null);
   const initialScroll = useRef(false);
   const scrollRetries = useRef(0);
@@ -418,7 +434,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
 
   const send = async (suggestion?: string) => {
     const body = (suggestion ?? draft).trim();
-    if (!body || sending || processing.current || !access.write || !valid()) return;
+    if (!body || sending || processing.current || photoSend.current?.submitted || !access.write || !valid()) return;
     if (suggestion && (replyTarget || uncertainSuggestion && uncertainSuggestion !== body)) return;
     setAttachmentMenu(false);
     processing.current = true; setSending(true); setError(null);
@@ -447,59 +463,59 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     finally { processing.current = false; if (valid()) setSending(false); }
   };
   const pickPhoto = async () => {
-    if (sending || pickingPhoto || !access.write || !valid()) return;
-    setPickingPhoto(true); setError(null);
+    if (sending || pickingPhoto || processing.current || !access.write || !valid()) return;
+    processing.current = true; setPickingPhoto(true); setError(null); setPhotoProgress({ stage: 'select', completed: 0, total: 0 });
     try {
       const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1,
         allowsMultipleSelection: true, orderedSelection: true, selectionLimit: MAX_POST_IMAGES,
         preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible });
       if (result.canceled || !valid()) return;
       const prepared: PreparedImage[] = [];
+      setPhotoProgress({ stage: 'prepare', completed: 0, total: Math.min(result.assets.length, MAX_POST_IMAGES) });
       for (const asset of result.assets.slice(0, MAX_POST_IMAGES)) {
         if (!valid()) return;
         if (!asset?.uri || !isSupportedImage(asset.mimeType ?? 'image/jpeg')) throw new Error('UNSUPPORTED_IMAGE');
         prepared.push(await preparePostImage(asset));
+        if (valid()) setPhotoProgress({ stage: 'prepare', completed: prepared.length, total: Math.min(result.assets.length, MAX_POST_IMAGES) });
       }
-      if (valid()) { setSelectedPhotos(prepared); play('selection'); }
+      if (valid()) { discardPhotoSend(); setSelectedPhotos(prepared); play('selection'); }
     } catch { if (valid()) { play('warning'); setError('사진을 준비하지 못했어요. JPG, PNG 또는 WebP 사진을 다시 선택해 주세요.'); } }
-    finally { if (valid()) setPickingPhoto(false); }
+    finally { processing.current = false; if (valid()) { setPickingPhoto(false); setPhotoProgress(null); } }
   };
   const sendPhoto = async () => {
     if (!selectedPhotos.length || sending || processing.current || !access.write || !valid()) return;
     processing.current = true; setSending(true); setError(null);
-    const parent = replyTarget;
+    const pending = photoSend.current ??= { id: merchantEventId(), photos: selectedPhotos, paths: [], parent: replyTarget, submitted: false };
+    if (!pending.submitted) pending.parent = replyTarget;
     try {
-      for (const selectedPhoto of selectedPhotos) {
+      setPhotoProgress({ stage: 'upload', completed: pending.paths.length, total: pending.photos.length });
+      for (let i = pending.paths.length; i < pending.photos.length; i++) {
         if (!valid()) return;
-        let path: string | null = null, sentId: string | null = null;
-        try {
-          path = await uploadChatImage(supabase, currentUserId, conversation.id, selectedPhoto.base64);
-          if (!valid()) return;
-          // The server retains a one-second message cooldown for every photo.
-          const wait = Math.max(0, 1000 - (Date.now() - lastPhotoSentAt.current));
-          if (wait) await new Promise(resolve => setTimeout(resolve, wait));
-          if (!valid()) return;
-          sentId = await sendChatAttachment(supabase, conversation.id, { kind: 'image', imagePath: path }, parent?.id);
-          lastPhotoSentAt.current = Date.now();
-          const rows = await loadConversationMessagesByIds(supabase, conversation.id, [sentId]).catch(() => []);
-          if (!valid()) return;
-          animateNewMessage();
-          setMessages((previous) => mergeChatMessages(previous, rows.length ? rows.map((row) => ({ ...row, imageUrl: row.imageUrl ?? selectedPhoto.uri })) : [{ id: sentId!, conversation_id: conversation.id,
-            sender_id: currentUserId, sender_nickname: auth.me.nickname, body: '📷 사진', kind: 'image', image_path: path, imageUrl: selectedPhoto.uri, reply_to_id: parent?.id, reply: parent,
-            created_at: new Date().toISOString() }], blockedUsers.current));
-          setSelectedPhotos(current => current.filter(photo => photo !== selectedPhoto)); scrollToLatest(); play('message');
-        } finally {
-          if (path && !sentId) void supabase.storage.from('chat-images').remove([path]).catch(() => {});
-        }
+        pending.paths.push(await uploadChatImage(supabase, currentUserId, conversation.id, pending.photos[i].base64));
+        if (valid()) setPhotoProgress({ stage: 'upload', completed: pending.paths.length, total: pending.photos.length });
       }
-      setReplyTo(current => current?.id === parent?.id ? null : current);
-    } catch { if (valid()) { play('warning'); setError('남은 사진을 보내지 못했어요. 보낸 사진은 제외했으니 다시 시도해 주세요.'); } }
-    finally {
-      processing.current = false; if (valid()) setSending(false);
-    }
+      if (!valid()) return;
+      setPhotoProgress({ stage: 'send', completed: pending.paths.length, total: pending.photos.length });
+      pending.submitted = true;
+      setReplyLocked(true);
+      const id = await sendChatAttachment(supabase, conversation.id, { kind: 'image', imagePaths: pending.paths, clientId: pending.id }, pending.parent?.id);
+      const rows = await loadConversationMessagesByIds(supabase, conversation.id, [id]).catch(() => []);
+      if (!valid()) return;
+      animateNewMessage();
+      const localUrls = pending.photos.map(photo => photo.uri);
+      setMessages(previous => mergeChatMessages(previous, rows.length ? rows.map(row => row.kind === 'image'
+        ? { ...row, imageUrl: row.imageUrl ?? localUrls[0], imageUrls: localUrls.map((url, index) => row.imageUrls?.[index] ?? url) } : row)
+        : [{ id, conversation_id: conversation.id, sender_id: currentUserId, sender_nickname: auth.me.nickname,
+          body: `📷 사진 ${pending.photos.length}장`, kind: 'image', image_path: pending.paths[0], image_paths: pending.paths,
+          imageUrl: localUrls[0], imageUrls: localUrls, reply_to_id: pending.parent?.id, reply: pending.parent, created_at: new Date().toISOString() }], blockedUsers.current));
+      photoSend.current = null; setReplyLocked(false); setSelectedPhotos([]);
+      setReplyTo(current => current?.id === pending.parent?.id ? null : current);
+      scrollToLatest(); play('message');
+    } catch { if (valid()) { play('warning'); setError('사진 묶음의 전송 결과를 확인하지 못했어요. 다시 누르면 같은 묶음으로 확인해요.'); } }
+    finally { processing.current = false; if (valid()) { setSending(false); setPhotoProgress(null); } }
   };
   const sendLocation = async (point: ChatLocation) => {
-    if (sending || processing.current || !access.write || !valid()) return;
+    if (sending || processing.current || photoSend.current?.submitted || !access.write || !valid()) return;
     processing.current = true; setSending(true); setError(null);
     const parent = replyTarget;
     try {
@@ -593,8 +609,17 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           const reaction = reactions.get(message.id);
           const attachment = message.kind === 'image' || message.kind === 'location';
           const sharedUrl = attachment ? null : sharedLinkInMessage(message.body);
+          const photos = message.imageUrls ?? (message.imageUrl ? [message.imageUrl] : chatImagePaths(message).map(() => undefined));
+          const gridWidth = Math.min(234, screen.width - 120);
           const messageContent = message.kind === 'image'
-            ? message.imageUrl ? <Image source={{ uri: message.imageUrl }} style={styles.chatPhoto} contentFit="cover" accessibilityLabel="대화에서 보낸 사진" />
+            ? photos.length > 1 ? <View style={{ width: gridWidth, gap: 6 }}>
+              <View style={styles.photoGrid}>{photos.slice(0, 9).map((uri, position) => <BubblePressable key={position} analyticsId="chat.album.photo"
+                message={message} onMenu={openMessageMenu} accessibilityRole="button" accessibilityLabel={`묶음 사진 ${position + 1}/${photos.length} 크게 보기`}
+                onPress={() => openPhotos(photos, position, message.id)} style={[styles.albumTile, { width: (gridWidth - (photos.length > 4 ? 4 : 2)) / (photos.length > 4 ? 3 : 2), backgroundColor: theme.backgroundElement }]}>
+                {uri ? <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} /> : <ThemedText type="small" themeColor="textSecondary">사진을 불러오지 못했어요</ThemedText>}
+                {position === 8 && photos.length > 9 && <View pointerEvents="none" style={styles.morePhotos}><ThemedText type="subtitle" style={{ color: '#fff' }}>+{photos.length - 9}</ThemedText></View>}
+              </BubblePressable>)}</View><ThemedText type="small" themeColor="textSecondary">사진 {photos.length}장</ThemedText>
+              </View> : photos[0] ? <Image source={{ uri: photos[0] }} style={styles.chatPhoto} contentFit="cover" accessibilityLabel="대화에서 보낸 사진" />
               : <ThemedText type="small" themeColor="textSecondary">사진을 불러오지 못했어요</ThemedText>
             : message.kind === 'location' && message.latitude != null && message.longitude != null
               ? <View style={styles.locationCard}><ThemedText type="subtitle">📍</ThemedText><ThemedText type="smallBold">{message.location_label ?? '공유한 위치'}</ThemedText><ThemedText type="small" themeColor="accent">지도에서 열기 ↗</ThemedText></View>
@@ -603,10 +628,10 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
             ? messagePreview(message.reply) : '원본 메시지를 볼 수 없어요.' : null;
           const content = <>{quote && <ThemedText type="small" numberOfLines={2} style={[styles.quoteText, { color: mine && !attachment ? theme.accentInk : theme.textSecondary, borderLeftColor: mine && !attachment ? theme.accentInk : theme.line }]}>{quote}</ThemedText>}{messageContent}
             {message.edited_at && !message.deleted_at && <ThemedText type="small" style={{ color: mine && !attachment ? theme.accentInk : theme.textSecondary }}>수정됨</ThemedText>}</>;
-          const menuProps = { disabled: !!message.deleted_at, accessibilityState: { disabled: !!message.deleted_at } };
+          const menuProps = { accessible: !(message.kind === 'image' && photos.length > 1), disabled: !!message.deleted_at, accessibilityState: { disabled: !!message.deleted_at } };
           const onBubblePress = (at: number) => {
             if (message.deleted_at) return;
-            if (message.kind === 'image' && message.imageUrl) { play('selection'); setPhotoOpen(message.imageUrl); return; }
+            if (message.kind === 'image' && photos.length) { openPhotos(photos, 0, message.id); return; }
             if (message.kind === 'location' && message.latitude != null && message.longitude != null) {
               play('selection');
               const query = encodeURIComponent(`${message.latitude},${message.longitude}`);
@@ -631,27 +656,34 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
         }} />{awayFromLatest && <Pressable analyticsId="components_chat-room.jump-latest" accessibilityRole="button" accessibilityLabel="최근 메시지로 내려가기" onPress={() => { play('selection'); followingLatest.current = true; setAwayFromLatest(false); messageList.current?.scrollToEnd({ animated: true }); }} style={[styles.jumpLatest, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="smallBold" themeColor="accent">↓ 최근 메시지</ThemedText></Pressable>}</View> : <View style={styles.request}><ThemedText type="small" themeColor="textSecondary">처리되거나 취소된 요청이에요. 대화 목록에서 새로 확인해 주세요.</ThemedText></View>}
       {!!error && <ThemedText accessibilityRole="alert" type="small" themeColor="accent" style={styles.feedback}>{error}</ThemedText>}{notice && <ThemedText type="small" accessibilityLiveRegion="polite" style={styles.feedback}>{notice}</ThemedText>}
       {confirmEnd && access.write && <View style={[styles.confirmation, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold">{t.chat.endConfirm}</ThemedText><ThemedText type="small">{conversationExitNotice(conversation, currentUserId)}</ThemedText>{group && <MeetupPolicyNotice mode={conversation.isGroupHost ? 'close' : 'leave'} />}<View style={styles.messageActions}><RoomAction label={t.profile.cancel} onPress={() => setConfirmEnd(false)} disabled={busy} /><RoomAction label={group ? conversation.isGroupHost ? t.meetup.end : t.meetup.leave : t.chat.end} onPress={() => void end()} disabled={busy} primary /></View></View>}
+      {photoProgress && <View testID="chat-photo-progress" accessibilityRole="progressbar" accessibilityLabel={photoProgressLabel} accessibilityLiveRegion="polite"
+        accessibilityState={{ busy: true }} accessibilityValue={photoProgress.stage === 'send' || photoProgress.stage === 'select' ? undefined : { min: 0, max: photoProgress.total, now: photoProgress.completed }}
+        style={[styles.photoProgress, { backgroundColor: theme.card, borderTopColor: theme.line }]}>
+        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><GlingLoader size={14} accessibilityLabel={photoProgressLabel} /></View>
+        <ThemedText type="smallBold" style={{ flexShrink: 1 }}>{photoProgressLabel}</ThemedText>
+      </View>}
       {access.write && replyTarget && <View style={[styles.photoPreview, { backgroundColor: theme.card, borderTopColor: theme.line }]}>
         <View style={styles.previewActions}><ThemedText type="smallBold">답장</ThemedText><ThemedText type="small" numberOfLines={2}>{messagePreview(replyTarget)}</ThemedText></View>
-        <RoomAction label="답장 취소" onPress={() => setReplyTo(null)} disabled={sending} />
+        {replyLocked && <ThemedText type="small" themeColor="textSecondary">묶음 전송을 확인한 후 변경할 수 있어요.</ThemedText>}
+        <RoomAction label="답장 취소" onPress={() => { if (!photoSend.current?.submitted) setReplyTo(null); }} disabled={sending || pickingPhoto || replyLocked} />
       </View>}
       {access.write && selectedPhotos.length > 0 && <ScrollView keyboardShouldPersistTaps="handled" style={{ flexGrow: 0, flexShrink: 1, backgroundColor: theme.card }} contentContainerStyle={[styles.photoPreview, { borderTopColor: theme.line }]}>
-        <View style={styles.photoHeading}><View style={{ flex: 1 }}><ThemedText type="smallBold" style={{ fontSize: 16 }}>사진 {selectedPhotos.length}장</ThemedText><ThemedText type="small" themeColor="textSecondary">이 대화에만 공유</ThemedText></View>
-          <Pressable analyticsId="chat.photo.cancel" accessibilityRole="button" accessibilityLabel="선택한 사진 모두 취소" accessibilityState={{ disabled: sending }} disabled={sending} onPress={() => { play('selection'); setSelectedPhotos([]); }} style={({ pressed }) => [styles.iconAction, { opacity: sending ? 0.45 : pressed ? 0.7 : 1 }]}>
+        <View style={styles.photoHeading}><View style={{ flex: 1 }}><ThemedText type="smallBold" style={{ fontSize: 16 }}>사진 {selectedPhotos.length}장</ThemedText><ThemedText type="small" themeColor="textSecondary">{selectedPhotos.length > 1 ? '한 말풍선에 묶어 보내요' : '이 대화에만 공유'}</ThemedText></View>
+          <Pressable analyticsId="chat.photo.cancel" accessibilityRole="button" accessibilityLabel="선택한 사진 모두 취소" accessibilityState={{ disabled: sending || pickingPhoto }} disabled={sending || pickingPhoto} onPress={() => { play('selection'); discardPhotoSend(); setSelectedPhotos([]); }} style={({ pressed }) => [styles.iconAction, { opacity: sending ? 0.45 : pressed ? 0.7 : 1 }]}>
             <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={18} tintColor={theme.textSecondary} />
           </Pressable>
         </View>
         <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
           {selectedPhotos.map((photo, index) => <View key={`${photo.uri}-${index}`} style={styles.photoThumb}>
-            <Pressable analyticsId="chat.photo.preview" accessibilityRole="button" accessibilityLabel={`보낼 사진 ${index + 1} 크게 보기`} accessibilityState={{ disabled: sending }} disabled={sending} onPress={() => { play('selection'); setPhotoOpen(photo.uri); }} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+            <Pressable analyticsId="chat.photo.preview" accessibilityRole="button" accessibilityLabel={`보낼 사진 ${index + 1} 크게 보기`} accessibilityState={{ disabled: sending || pickingPhoto }} disabled={sending || pickingPhoto} onPress={() => { openPhotos(selectedPhotos.map(item => item.uri), index); }} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
               <Image source={{ uri: photo.uri }} style={styles.previewImage} contentFit="cover" />
             </Pressable>
-            <Pressable analyticsId="chat.photo.remove" accessibilityRole="button" accessibilityLabel={`사진 ${index + 1} 제외`} accessibilityState={{ disabled: sending }} disabled={sending} onPress={() => { play('selection'); setSelectedPhotos(current => current.filter(item => item !== photo)); }} style={({ pressed }) => [styles.photoRemove, { opacity: sending ? 0.45 : pressed ? 0.7 : 1 }]}>
+            <Pressable analyticsId="chat.photo.remove" accessibilityRole="button" accessibilityLabel={`사진 ${index + 1} 제외`} accessibilityState={{ disabled: sending || pickingPhoto }} disabled={sending || pickingPhoto} onPress={() => { play('selection'); discardPhotoSend(); setSelectedPhotos(current => current.filter(item => item !== photo)); }} style={({ pressed }) => [styles.photoRemove, { opacity: sending ? 0.45 : pressed ? 0.7 : 1 }]}>
               <View style={[styles.removeCircle, { backgroundColor: theme.card, borderColor: theme.line }]}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={12} tintColor={theme.text} /></View>
             </Pressable>
           </View>)}
         </ScrollView>
-        <Pressable analyticsId="chat.photo.send" accessibilityRole="button" accessibilityLabel={sending ? '사진 보내는 중' : `${selectedPhotos.length}장 보내기`} accessibilityState={{ disabled: sending }} disabled={sending}
+        <Pressable analyticsId="chat.photo.send" accessibilityRole="button" accessibilityLabel={sending ? '사진 보내는 중' : `${selectedPhotos.length}장 보내기`} accessibilityState={{ disabled: sending || pickingPhoto }} disabled={sending || pickingPhoto}
           onPress={() => { play('selection'); void sendPhoto(); }} style={({ pressed }) => [styles.photoSend, { backgroundColor: theme.accent, opacity: sending ? 0.5 : pressed ? 0.85 : 1 }]}>
           <SymbolView name={{ ios: 'paperplane.fill', android: 'send', web: 'send' }} size={18} tintColor={theme.accentInk} /><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{sending ? '보내는 중' : `${selectedPhotos.length}장 보내기`}</ThemedText>
         </Pressable>
@@ -660,7 +692,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
         {contextLoaded && !loading && !replyTarget && !allMessages.some(message => message.sender_id === currentUserId) && <View style={[styles.suggestions, { backgroundColor: theme.card }]}>
           <ThemedText type="small" themeColor="textSecondary">{suggestionContext?.title ? `${suggestionContext.title} · ` : ''}누르면 바로 전송돼요</ThemedText>
           <View style={styles.suggestionRow}>{chatSuggestions(suggestionContext, suggestionContext?.authorId === currentUserId).map(body => {
-            const disabled = sending || busy || !!uncertainSuggestion && uncertainSuggestion !== body;
+            const disabled = sending || pickingPhoto || replyLocked || busy || !!uncertainSuggestion && uncertainSuggestion !== body;
             return <Pressable key={body} analyticsId="components_chat-room.suggestion" accessibilityRole="button" accessibilityLabel={`${body} 보내기`}
               disabled={disabled} accessibilityState={{ disabled }} onPress={() => { play('selection'); void send(body); }}
               style={({ pressed }) => [styles.suggestion, { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement, opacity: disabled ? 0.5 : 1 }]}>
@@ -669,16 +701,16 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           })}</View>
         </View>}
         <View style={[styles.composer, { borderTopColor: theme.line, backgroundColor: theme.card, paddingBottom: attachmentsOpen ? Spacing.one : Math.max(insets.bottom, Spacing.two) + Spacing.one }]}>
-          <Pressable analyticsId="components_chat-room.add-attachment" accessibilityRole="button" accessibilityLabel={attachmentsOpen ? '첨부 메뉴 닫기' : '첨부 메뉴 열기'} accessibilityState={{ expanded: attachmentsOpen, disabled: sending || pickingPhoto }} disabled={sending || pickingPhoto} onPress={openAttachments} style={({ pressed }) => [styles.addAttachment, { backgroundColor: attachmentsOpen ? theme.backgroundSelected : theme.backgroundElement, opacity: pressed ? 0.7 : 1 }]}><SymbolView name={{ ios: attachmentsOpen ? 'xmark' : 'plus', android: attachmentsOpen ? 'close' : 'add', web: attachmentsOpen ? 'close' : 'add' }} size={21} tintColor={theme.accent} /></Pressable>
+          <Pressable analyticsId="components_chat-room.add-attachment" accessibilityRole="button" accessibilityLabel={attachmentsOpen ? '첨부 메뉴 닫기' : '첨부 메뉴 열기'} accessibilityState={{ expanded: attachmentsOpen, disabled: sending || pickingPhoto || replyLocked }} disabled={sending || pickingPhoto || replyLocked} onPress={openAttachments} style={({ pressed }) => [styles.addAttachment, { backgroundColor: attachmentsOpen ? theme.backgroundSelected : theme.backgroundElement, opacity: pressed ? 0.7 : 1 }]}><SymbolView name={{ ios: attachmentsOpen ? 'xmark' : 'plus', android: attachmentsOpen ? 'close' : 'add', web: attachmentsOpen ? 'close' : 'add' }} size={21} tintColor={theme.accent} /></Pressable>
           <TextInput value={draft} onChangeText={setDraft} maxLength={2000} placeholder={t.chat.messagePlaceholder} accessibilityLabel={t.chat.messagePlaceholder} placeholderTextColor={theme.textSecondary} returnKeyType="send" submitBehavior="submit" onSubmitEditing={() => void send()} style={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.line }]} />
-          <RoomAction label={sending ? t.chat.sending : t.chat.send} onPress={() => void send()} disabled={sending || busy || !draft.trim()} primary={selectedPhotos.length === 0} />
+          <RoomAction label={sending ? t.chat.sending : t.chat.send} onPress={() => void send()} disabled={sending || pickingPhoto || replyLocked || busy || !draft.trim()} primary={selectedPhotos.length === 0} />
         </View>
         {attachmentsOpen && <View accessibilityLabel="첨부 방법" style={[styles.attachmentMenu, { backgroundColor: theme.card, borderColor: theme.line, marginBottom: Math.max(insets.bottom, Spacing.two) + Spacing.one }]}>
-          <Pressable analyticsId="components_chat-room.attachment-photo" accessibilityRole="button" accessibilityLabel="사진 보내기" disabled={sending || pickingPhoto} accessibilityState={{ disabled: sending || pickingPhoto }} onPress={() => { play('selection'); setAttachmentMenu(false); void pickPhoto(); }} style={({ pressed }) => [styles.attachmentOption, { backgroundColor: pressed ? theme.backgroundElement : 'transparent' }]}>
+          <Pressable analyticsId="components_chat-room.attachment-photo" accessibilityRole="button" accessibilityLabel="사진 보내기" disabled={sending || pickingPhoto || replyLocked} accessibilityState={{ disabled: sending || pickingPhoto || replyLocked }} onPress={() => { play('selection'); setAttachmentMenu(false); void pickPhoto(); }} style={({ pressed }) => [styles.attachmentOption, { backgroundColor: pressed ? theme.backgroundElement : 'transparent' }]}>
             <View style={[styles.attachmentIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'photo.on.rectangle', android: 'photo_library', web: 'photo_library' }} size={20} tintColor={theme.accent} /></View>
             <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}><ThemedText type="smallBold" style={{ fontSize: 15 }}>사진 보내기</ThemedText><ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12 }}>최대 20장</ThemedText></View><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
           </Pressable>
-          <Pressable analyticsId="components_chat-room.attachment-location" accessibilityRole="button" accessibilityLabel="위치 공유하기" disabled={sending} accessibilityState={{ disabled: sending }} onPress={() => { play('selection'); setAttachmentMenu(false); setLocationOpen(true); }} style={({ pressed }) => [styles.attachmentOption, { backgroundColor: pressed ? theme.backgroundElement : 'transparent' }]}>
+          <Pressable analyticsId="components_chat-room.attachment-location" accessibilityRole="button" accessibilityLabel="위치 공유하기" disabled={sending || pickingPhoto || replyLocked} accessibilityState={{ disabled: sending || pickingPhoto || replyLocked }} onPress={() => { play('selection'); setAttachmentMenu(false); setLocationOpen(true); }} style={({ pressed }) => [styles.attachmentOption, { backgroundColor: pressed ? theme.backgroundElement : 'transparent' }]}>
             <View style={[styles.attachmentIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={20} tintColor={theme.accent} /></View>
             <ThemedText type="smallBold" style={{ flex: 1, fontSize: 15 }}>위치 공유하기</ThemedText><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
           </Pressable>
@@ -694,7 +726,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           style={[styles.bubbleMenu, { backgroundColor: theme.card, borderColor: theme.line, maxWidth: menuFrame.bounds.width - 16, opacity: menuSize.height ? 1 : 0 }, menuSize.width
             ? { width: menuSize.width, ...messageMenuPosition(menuFrame.anchor, menuSize, menuFrame.bounds, messageMenu.sender_id === currentUserId) }
             : { left: menuFrame.bounds.x + 8, top: menuFrame.bounds.y + 8 }]}>
-          <Pressable analyticsId="chat.message.reply" accessibilityRole="button" accessibilityLabel="답장" disabled={sending} onPress={() => { play('selection'); setReplyTo(messageMenu); closeMessageMenu(); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold">답장</ThemedText></Pressable>
+          <Pressable analyticsId="chat.message.reply" accessibilityRole="button" accessibilityLabel="답장" disabled={sending || pickingPhoto || replyLocked} accessibilityState={{ disabled: sending || pickingPhoto || replyLocked }} onPress={() => { if (photoSend.current?.submitted) return; play('selection'); setReplyTo(messageMenu); closeMessageMenu(); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold">답장</ThemedText></Pressable>
           {messageMenu.sender_id === currentUserId && <>
             {(!messageMenu.kind || messageMenu.kind === 'text') && <Pressable analyticsId="chat.message.edit" accessibilityRole="button" accessibilityLabel="메시지 수정" disabled={sending} onPress={() => { play('selection'); setEditingMessage(messageMenu); setMessageEditDraft(messageMenu.body); closeMessageMenu(); setError(null); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold">수정</ThemedText></Pressable>}
             <Pressable analyticsId="chat.message.delete" accessibilityRole="button" accessibilityLabel="메시지 삭제" disabled={sending} onPress={() => { play('selection'); setDeleteConfirm(true); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold" style={{ color: '#FF8585' }}>삭제</ThemedText></Pressable>
@@ -729,7 +761,27 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       setReport(null); void onChanged();
       void refreshMessages();
     }} />}
-    <Modal visible={!!photoOpen} transparent animationType="fade" onRequestClose={() => setPhotoOpen(null)}><View style={styles.photoBackdrop}><Pressable analyticsId="components_chat-room.photo-close" accessibilityRole="button" accessibilityLabel="사진 닫기" onPress={() => { play('selection'); setPhotoOpen(null); }} style={styles.photoClose}><ThemedText type="subtitle">닫기 ✕</ThemedText></Pressable>{photoOpen && <Image source={{ uri: photoOpen }} style={styles.fullPhoto} contentFit="contain" accessibilityLabel="대화 사진 크게 보기" />}</View></Modal>
+    {photoOpen && <Modal visible transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => setPhotoOpen(null)}>
+      <View accessibilityViewIsModal style={[styles.photoBackdrop, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <View style={styles.photoToolbar}><ThemedText type="smallBold" style={{ color: '#fff' }}>{`${photoOpen.index + 1}/${photoOpen.photos.length}`}</ThemedText>
+          <Pressable analyticsId="components_chat-room.photo-close" accessibilityRole="button" accessibilityLabel="사진 닫기" onPress={() => { play('selection'); setPhotoOpen(null); }} style={styles.photoClose}><ThemedText style={{ color: '#fff' }}>닫기 ✕</ThemedText></Pressable>
+        </View>
+        <ScrollView ref={photoPages} key={`${photoOpen.messageId ?? 'draft'}:${screen.width}`} testID="chat-photo-pages" horizontal pagingEnabled showsHorizontalScrollIndicator={false}
+          contentOffset={{ x: photoOpen.initialIndex * screen.width, y: 0 }} style={{ flex: 1 }}
+          onLayout={() => photoPages.current?.scrollTo({ x: photoOpen.index * screen.width, animated: false })}
+          onMomentumScrollEnd={event => { const index = Math.max(0, Math.min(photoOpen.photos.length - 1, Math.round(event.nativeEvent.contentOffset.x / screen.width))); if (index !== photoOpen.index) { play('selection'); setPhotoOpen({ ...photoOpen, index }); } }}>
+          {photoOpen.photos.map((uri, index) => <View key={index} style={{ width: screen.width, height: '100%', justifyContent: 'center', alignItems: 'center' }}>
+            {uri ? <Image source={Math.abs(index - photoOpen.index) <= 1 ? { uri } : null} style={styles.fullPhoto} contentFit="contain" accessibilityLabel={index === photoOpen.index ? '대화 사진 크게 보기' : `묶음 사진 ${index + 1}`} />
+              : <ThemedText style={{ color: '#fff' }}>사진을 불러오지 못했어요</ThemedText>}
+          </View>)}
+        </ScrollView>
+        {photoOpen.photos.length > 1 && <View style={styles.photoToolbar}>{([-1, 1] as const).map(direction => <Pressable key={direction} analyticsId={direction < 0 ? 'chat.photo.previous' : 'chat.photo.next'}
+          accessibilityRole="button" accessibilityLabel={direction < 0 ? '이전 사진' : '다음 사진'} disabled={photoOpen.index + direction < 0 || photoOpen.index + direction >= photoOpen.photos.length}
+          accessibilityState={{ disabled: photoOpen.index + direction < 0 || photoOpen.index + direction >= photoOpen.photos.length }} onPress={() => changePhoto(photoOpen.index + direction)} style={styles.photoClose}>
+          <ThemedText style={{ color: '#fff', opacity: photoOpen.index + direction < 0 || photoOpen.index + direction >= photoOpen.photos.length ? 0.4 : 1 }}>{direction < 0 ? '← 이전' : '다음 →'}</ThemedText>
+        </Pressable>)}</View>}
+      </View>
+    </Modal>}
   </ThemedView>;
 }
 
@@ -774,6 +826,7 @@ const styles = StyleSheet.create({
   chatPhoto: { width: 210, height: 180, borderRadius: 10 },
   locationCard: { minWidth: 176, minHeight: 110, gap: Spacing.one, justifyContent: 'center' },
   photoPreview: { gap: 12, padding: Spacing.three, borderTopWidth: 1 },
+  photoProgress: { minHeight: 44, flexShrink: 0, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth },
   photoHeading: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   photoThumb: { width: 80, height: 80 }, previewImage: { width: 80, height: 80, borderRadius: 12 },
   previewActions: { flex: 1, minWidth: 90 },
@@ -786,7 +839,11 @@ const styles = StyleSheet.create({
   attachmentOption: { minHeight: 48, paddingHorizontal: 8, paddingVertical: 6, gap: 10, flexDirection: 'row', alignItems: 'center', borderRadius: 12 },
   attachmentIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   photoBackdrop: { flex: 1, backgroundColor: '#0B0B12', justifyContent: 'center' },
-  photoClose: { position: 'absolute', top: 50, right: 16, zIndex: 2, minHeight: 44, paddingHorizontal: 12, justifyContent: 'center' },
+  photoToolbar: { minHeight: 48, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  photoClose: { minWidth: 64, minHeight: 44, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center' },
+  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 2, borderRadius: 10, overflow: 'hidden' },
+  albumTile: { aspectRatio: 1, minHeight: 44, justifyContent: 'center' },
+  morePhotos: { ...StyleSheet.absoluteFill, backgroundColor: '#0009', alignItems: 'center', justifyContent: 'center' },
   fullPhoto: { width: '100%', height: '100%' },
   messageActions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   feedback: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },

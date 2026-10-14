@@ -20,7 +20,7 @@ function loadRoom(userId = 'recipient', messagesLoaded = false) {
   const channel = { on(_event, filter) { subscriptions.push(filter.table); return this; }, subscribe() { return this; } };
   const react = { useState: initial => [initial === true && messagesLoaded ? false : typeof initial === 'function' ? initial() : initial, () => {}],
     useRef: value => ({ current: value }), useCallback: fn => fn, useMemo: fn => fn(), useEffect: fn => effects.push(fn), useLayoutEffect: fn => fn() };
-  const native = new Proxy({ StyleSheet: { create: value => value }, Platform: { OS: 'ios' }, AppState: { addEventListener: () => ({ remove() {} }) } }, { get: (target, key) => target[key] ?? key });
+  const native = new Proxy({ StyleSheet: { create: value => value }, Platform: { OS: 'ios' }, useWindowDimensions: () => ({ width: 390, height: 844 }), AppState: { addEventListener: () => ({ remove() {} }) } }, { get: (target, key) => target[key] ?? key });
   vm.runInNewContext(source, { exports, require(name) {
     if (name === 'react') return react;
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };

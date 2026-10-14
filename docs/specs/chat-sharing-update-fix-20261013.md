@@ -11,3 +11,5 @@
 Apple Design과 실제 Mobbin 화면을 확인했다: [Urban Company 첨부 목록](https://mobbin.com/screens/e8cd488e-3da3-4b7e-b238-40d3863d60e4), [WhatsApp 사진 확인](https://mobbin.com/screens/14a81cbb-3c19-40c0-ae6f-32a0347a0a4d), [Telegram 위치 시트](https://mobbin.com/screens/7ad09462-882d-4b7e-b238-40d3863d60e4). 시안은 output/design/chat-sharing-update-fix-20261013/index.html이며 Git → gling 소속 Orca Browser 탭에서 표시했다. 시안 지도 이미지는 기존 MapLibre HTML을 실제 렌더해 캡처했다. 시안의 검색·GPS·전송은 예시 동작이며 메시지를 게시하거나 권한을 요청하지 않는다. 앱의 실제 GPS/햅틱/키보드는 실기기 검증과 구분한다. 디자인 검사기의 지도 full-bleed와 휴대폰 프레임 clipping 경고는 의도된 시안 표현이다.
 
 후속 크기 조정: 사용자는 전체 시안에 만족한다고 확인한 뒤 첨부 메뉴의 “사진 보내기 / 위치 공유하기” 버튼이 크다고 정정했다. 두 항목을64px에서48px, 아이콘 배경을40px에서32px로 줄이고 설명을 한 줄로 정리했다. 터치 영역은48px이며 기존 동작·피드백을 유지한다. 1.2.1 릴리스는 공통 검사 단계에서 중단했고 이 조정을 포함한1.2.2로 빌드·제출한다.
+
+Later owner request: photo sending is now one ordered album message, superseding the earlier individual-photo send plan. See [chat-photo-album-20261013.md](chat-photo-album-20261013.md) for retry and progress behavior.
