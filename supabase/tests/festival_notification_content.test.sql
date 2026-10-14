@@ -37,8 +37,8 @@ select ok((select body like '행사예요.%Fixture Park%같이 갈 사람!?' fro
 select ok((select body like '농구 경기예요.%같이 갈 사람!?' from public.notifications where user_id='f7130000-0000-4000-8000-000000000005'),'official sports classifications describe the actual event type');
 select is((select count(*)::int from public.notifications where user_id='f7130000-0000-4000-8000-000000000008'),0,'content formatting preserves the selected-city boundary');
 select is((select count(*)::int from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id where n.user_id::text like 'f7130000-%'),5,'copy changes retain one existing queue entry per eligible device');
-select ok(private.festival_notification_body('{"description":null,"segment":"Music","genre":"Rock","startsAt":"2026-11-01T09:30:00Z","venue":"Fixture Park"}','vancouver') like '%11월 1일 01:30%','fallback time is local across daylight-saving changes');
-select ok(char_length(private.festival_notification_body(jsonb_build_object('description',repeat('😀',400)),'vancouver'))<=200,'long Unicode introductions remain within the notification budget');
+select ok(private.festival_notification_body('{"description":null,"segment":"Music","genre":"Rock","startsAt":"2026-11-01T04:30:00Z","venue":"Fixture Park"}','vancouver') like '%10월 31일%','the concise fallback date is local across daylight-saving changes');
+select ok(char_length(private.festival_notification_body(jsonb_build_object('description',repeat('😀',400)),'vancouver'))<=90,'long Unicode introductions remain within the concise notification budget');
 select is(private.festival_notification_body('{"description":"야외 무대에서 밴드 공연과 공개 잼 세션이 열려요. No refunds or exchanges permitted.","segment":"Music","genre":"Rock"}','vancouver'),
  '야외 무대에서 밴드 공연과 공개 잼 세션이 열려요. 같이 갈 사람!?','useful event details survive a separate boilerplate sentence');
 
