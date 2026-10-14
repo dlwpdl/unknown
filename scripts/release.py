@@ -366,7 +366,7 @@ def submit(platform, env, google, directory):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=["prepare", "build", "submit", "sync-policy", "require-update"])
+    parser.add_argument("command", choices=["prepare", "build", "submit", "sync-policy"])
     parser.add_argument("--platform", choices=["ios", "android"])
     parser.add_argument("--tag")
     parser.add_argument("--build-number", type=int)
@@ -374,19 +374,12 @@ def main():
     args = parser.parse_args()
     if args.command == "prepare" and not args.tag:
         parser.error("prepare requires --tag vX.Y.Z")
-    if args.command in {"build", "submit", "require-update"} and not args.platform:
-        parser.error("build, submit and require-update require --platform ios|android")
-    if args.command in {"build", "require-update"} and (args.build_number is None or args.build_number < 1):
-        parser.error("build and require-update require a positive --build-number")
+    if args.command in {"build", "submit"} and not args.platform:
+        parser.error("build and submit require --platform ios|android")
+    if args.command == "build" and (args.build_number is None or args.build_number < 1):
+        parser.error("build requires a positive --build-number")
     if "GITHUB_ACTIONS" in os.environ and os.environ.get("GITHUB_REPOSITORY_VISIBILITY") != "public":
         raise ValueError("Hosted execution is permitted only for the free public repository.")
-    if args.command == "require-update":
-        key = os.environ.get("GLING_SUPABASE_SERVICE_ROLE_KEY")
-        if not key:
-            raise ValueError("GLING_SUPABASE_SERVICE_ROLE_KEY is missing; no policy was changed.")
-        mask(key)
-        summary(json.dumps(enforce_policy(args.platform, args.build_number, key)))
-        return
     with tempfile.TemporaryDirectory(prefix="gling-release-") as temporary:
         directory = Path(temporary)
         env, google = setup(directory, args.local)
