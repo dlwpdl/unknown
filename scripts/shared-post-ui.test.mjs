@@ -282,6 +282,37 @@ function sheet(context, data = {}) {
   context.after(() => harness.unmount()); return { harness, shared, closed };
 }
 
+test('share sheet stays over the post and keeps external sharing, status and approval outside the recipient scroll', async context => {
+  const { harness } = sheet(context); await harness.settle();
+  assert.equal(harness.nodes().find(node => node.type === 'Modal').props.transparent, true);
+  const scroll = control(harness, 'post.share.sheet');
+  assert.ok(!nodes(scroll).some(node => node.props?.analyticsId === 'post.share.external'), 'external sharing remains available when recipients scroll');
+  assert.ok(!text(scroll).includes('참여 신청과 모임장 승인이 필요해요'), 'approval notice stays visible');
+  control(harness, 'post.share.conversation').props.onPress(); await harness.settle();
+  assert.ok(!text(control(harness, 'post.share.sheet')).includes('chat-a 대화로 보냈어요.'), 'send result stays outside recipient scroll');
+  assert.ok(text(harness.render()).includes('chat-a 대화로 보냈어요.'));
+});
+
+test('share recipients announce the full conversation title and send status without exposing message snippets', async context => {
+  const title = '이번 주말 토론토에서 작은 전시를 같이 보고 천천히 걸어요', group = { ...conversation('group-chat', title), kind: 'group', latestBody: 'private-message-snippet' };
+  const { harness } = sheet(context, { inbox: async () => page([group]) }); await harness.settle();
+  const send = control(harness, 'post.share.conversation');
+  assert.ok(send.props.accessibilityLabel.includes(title)); assert.ok(send.props.accessibilityLabel.includes('대화로 보내기'));
+  assert.ok(text(send).includes('모임 대화')); assert.ok(!JSON.stringify(send).includes('private-message-snippet'));
+  send.props.onPress(); await harness.settle();
+  assert.ok(control(harness, 'post.share.conversation').props.accessibilityLabel.includes('전송 완료'));
+});
+
+test('share sheet loading, empty and failed inboxes keep native external sharing and distinguish their states', async context => {
+  for (const [kind, inbox] of [['pending', () => new Promise(() => {})], ['empty', async () => page([])], ['error', async () => { throw new Error('offline'); }]]) {
+    const { harness } = sheet(context, { inbox }); await harness.settle();
+    assert.ok(harness.nodes().some(node => node.type === 'StateCard' && node.props.kind === kind), kind);
+    assert.equal(control(harness, 'post.share.external').props.disabled, false);
+    assert.ok(!harness.nodes().some(node => node.props?.analyticsId === 'post.share.copy'), 'copy remains web-only');
+    if (kind === 'error') { assert.equal(control(harness, 'post.share.retry').props.disabled, false); }
+  }
+});
+
 test('sharing a link confirms delivery without claiming that a post or meetup was created', async context => {
   for (const [action, data] of [['post.share.external', {}], ['post.share.copy', { os: 'web' }], ['post.share.conversation', {}]]) {
     const { harness, shared } = sheet(context, data); await harness.settle();
@@ -293,8 +324,10 @@ test('sharing a link confirms delivery without claiming that a post or meetup wa
 });
 
 test('internal sharing blocks double taps, sends only title and owned link, and counts a verified send once', async context => {
-  const response = deferred(), { harness, shared } = sheet(context, { send: () => response.promise }); await harness.settle();
+  const response = deferred(), { harness, shared, closed } = sheet(context, { send: () => response.promise }); await harness.settle();
   const send = control(harness, 'post.share.conversation'); send.props.onPress(); send.props.onPress();
+  harness.nodes().find(node => node.type === 'Modal').props.onRequestClose();
+  assert.equal(closed.length, 0, 'back/escape cannot dismiss an in-flight send before busy state renders');
   assert.equal(harness.calls.filter(call => call[0] === 'send').length, 1);
   const outbound = harness.calls.find(call => call[0] === 'send'); assert.equal(outbound[1], 'chat-a');
   assert.ok(outbound[2].includes('페스티벌 같이 가요')); assert.equal(outbound[2].split('\n').at(-1), gatewayLink); assert.ok(!outbound[2].includes('private-'));
@@ -367,9 +400,13 @@ test('conversation pagination uses the existing cursor, deduplicates rows and pr
   const more = control(harness, 'post.share.more'); more.props.onPress(); more.props.onPress();
   const loads = harness.calls.filter(call => call[0] === 'inbox'); assert.equal(loads.length, 2); assert.equal(loads[1][1], 'viewer'); assert.equal(loads[1][2], 'all');
   assert.deepEqual(loads[1][3], cursor);
+  await harness.settle();
+  assert.equal(control(harness, 'post.share.close').props.disabled, true, 'pending pagination shows its existing close guard');
+  assert.equal(control(harness, 'post.share.external').props.disabled, true, 'pending pagination shows its existing external-share guard');
   next.resolve(page([conversation('chat-a'), conversation('chat-b')])); await harness.settle();
   const recipients = harness.nodes().filter(node => node.props?.analyticsId === 'post.share.conversation');
   assert.equal(recipients.length, 2); assert.ok(!harness.nodes().some(node => node.props?.analyticsId === 'post.share.more'));
+  assert.equal(control(harness, 'post.share.external').props.disabled, false);
 });
 
 test('switching accounts immediately removes old recipients while the new inbox loads', async context => {

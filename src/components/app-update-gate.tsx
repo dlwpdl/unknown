@@ -14,7 +14,8 @@ import { requiresAppUpdate } from '@/lib/app-update';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 
-const build = Constants.executionEnvironment === ExecutionEnvironment.StoreClient ? null : Application.nativeBuildVersion;
+// Debug binaries reload current source without changing their installed build number.
+const build = __DEV__ || Constants.executionEnvironment === ExecutionEnvironment.StoreClient ? null : Application.nativeBuildVersion;
 const storeUrl = Platform.OS === 'ios'
   ? 'https://apps.apple.com/app/id6809273242'
   : 'https://play.google.com/store/apps/details?id=com.dlwpdl.gling';
@@ -48,6 +49,7 @@ export function AppUpdateGate({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (Platform.OS === 'web' || !build) return;
     const initial = setTimeout(() => { void check(); }, 0);
     let previous = AppState.currentState;
     const subscription = AppState.addEventListener('change', (next) => {

@@ -9,7 +9,7 @@ const now = Date.parse('2026-10-11T12:00:00Z');
 const raw = (id, day = 12) => ({ id, name: `${id} Festival`, dates: { start: { dateTime: `2026-10-${day}T20:00:00Z`, localDate: `2026-10-${day}`, localTime: '13:00:00' }, timezone: 'America/Vancouver', status: { code: 'onsale' } }, _embedded: { venues: [{ name: 'Park', city: { name: 'Vancouver' }, country: { countryCode: 'CA' } }] } });
 class Clock extends Date { constructor(...args) { super(...(args.length ? args : [now])); } static now() { return now; } }
 
-function endpoint({ cached = null, slots = [], slotsAfterRead, readyCache, claim = true, upstreamStatus = 200, budget = true } = {}) {
+function endpoint({ cached = null, slots = [], slotsAfterRead, readyCache, claim = true, upstreamStatus = 200, budget = true, upstreamEvents } = {}) {
   const calls = [], writes = [], requests = [];
   let cacheReads = 0;
   const rows = new Map(cached ? [['tm-festival:vancouver', cached]] : []);
@@ -41,7 +41,7 @@ function endpoint({ cached = null, slots = [], slotsAfterRead, readyCache, claim
     fetch: async url => {
       const target = new URL(url); requests.push(target);
       const eventId = target.pathname.match(/\/events\/([^/]+)\.json$/)?.[1];
-      return new Response(JSON.stringify(eventId ? raw(eventId, 25) : { page: { totalPages: 1, totalElements: 10 }, _embedded: { events: Array.from({ length: 10 }, (_, index) => raw(`f${index}`, index + 12)) } }), { status: upstreamStatus });
+      return new Response(JSON.stringify(eventId ? raw(eventId, 25) : { page: { totalPages: 1, totalElements: 10 }, _embedded: { events: upstreamEvents ?? Array.from({ length: 10 }, (_, index) => raw(`f${index}`, index + 12)) } }), { status: upstreamStatus });
     },
   });
   return {
@@ -50,6 +50,19 @@ function endpoint({ cached = null, slots = [], slotsAfterRead, readyCache, claim
   };
 }
 const query = { cityId: 'vancouver', festival: true };
+
+const cityFixture = JSON.parse(fs.readFileSync(new URL('./fixtures/festival-upcoming-cities.json', import.meta.url), 'utf8'));
+for (const city of cityFixture.cities) test(`${city.cityId}: daily main query includes whole-view events without a name keyword`, async () => {
+  const upstreamEvents = city.events.map(event => ({ id: event.id, name: event.name,
+    dates: { start: { dateTime: event.startsAt, localDate: event.localDate, localTime: event.localTime, timeTBA: event.timeUnconfirmed }, timezone: event.timezone, status: { code: event.status } },
+    _embedded: { venues: [{ name: event.venue, city: { name: event.city }, country: { countryCode: event.country } }] } }));
+  const api = endpoint({ upstreamEvents });
+  const response = await api.invoke({ cityId: city.cityId, festival: true });
+  assert.equal(response.status, 200);
+  assert.deepEqual((await response.json()).events.map(event => event.id), city.expectedIds);
+  assert.equal(api.requests.length, 1);
+  assert.equal(api.requests[0].searchParams.has('keyword'), false);
+});
 
 test('a daily cache serves seven server-selected positions with no new Ticketmaster request', async () => {
   const events = Array.from({ length: 10 }, (_, index) => ticketmaster.normalizeEvent(raw(`f${index}`, index + 12)));

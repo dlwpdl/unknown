@@ -1,5 +1,7 @@
 # Daily festival carousel
 
+2026-10-13 correction supersedes the automatic selection and release steps below: use the same whole-view candidates, not a festival-name keyword; preserve distinct event dates and merge only identical name/venue/start aliases. Show seven real upcoming events through gallery navigation, preserve the selected event on same-city refresh, and retry transient refresh errors after fifteen minutes. Existing manual festival assignments and their validation stay unchanged. The user authorized source fixes and checks only: no commit, push, tag, build/export, production deployment or submission until the later batch instruction. See `tasks/festival-chat-pending-20261013.json` and the updated operations guide. The earlier coverage diagnosis below is historical and superseded by captured all-view data from all five cities.
+
 Approved 2026-10-11: all seven positions default to the soonest upcoming festivals; one shared collection per city/local day, including the 25-hour daylight-saving rollover. Any position can be assigned a festival by the owner, then returns to automatic selection when cleared or expired. Existing card rotation, recommendation cadence and short-lived event details stay in place.
 
 ## Acceptance

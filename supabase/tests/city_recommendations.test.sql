@@ -62,7 +62,7 @@ select is((select count(*)::int from public.notifications where user_id='1380000
 -- Successful foreground detail opens, never display counters or anonymous traffic.
 insert into public.ticketmaster_event_cache(cache_key,payload,expires_at)
 values('tm-festival:vancouver',jsonb_build_object('events',jsonb_build_array(jsonb_build_object(
- 'id','real-fest','name','Real Festival','country','CA','city','Vancouver','status','onsale',
+ 'id','real-fest','name','Real Festival','description','지역 밴드들이 함께하는 야외 음악 축제예요.','country','CA','city','Vancouver','status','onsale',
  'startsAt',(now()+interval '30 days')::text,'timeUnconfirmed',false))),now()+interval '15 minutes');
 select set_config('request.jwt.claims','{"sub":"13800000-0000-0000-0000-000000000002","role":"authenticated"}',true);
 set local role authenticated;
@@ -95,15 +95,15 @@ insert into private.ticketmaster_event_clicks(target_id,user_id,day,created_at)
 select md5('ticketmaster:vancouver:real-fest')::uuid,id,(first_slot at time zone 'UTC')::date,first_slot-interval '1 hour'
 from public.profiles cross join rec_clock where id in ('13800000-0000-0000-0000-000000000003','13800000-0000-0000-0000-000000000004');
 select private.send_city_recommendations((select first_slot-interval '30 minutes' from rec_clock));
-select ok((select body like '요새 글링인들이 많이 찾는 페스티벌%' from public.notifications where user_id='13800000-0000-0000-0000-000000000002' limit 1),'three distinct real members qualify a popular festival');
+select ok((select title='Real Festival' and body='지역 밴드들이 함께하는 야외 음악 축제예요. 같이 갈 사람!?' from public.notifications where user_id='13800000-0000-0000-0000-000000000002' limit 1),'three distinct real members qualify a festival with its specific title and introduction');
 select is((select route from public.notifications where user_id='13800000-0000-0000-0000-000000000002' limit 1),'/events/real-fest?cityId=vancouver','festival opens its exact city event');
 select is((select count(*)::int from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id where n.user_id='13800000-0000-0000-0000-000000000002'),1,'festival uses the existing push delivery queue');
 update public.ticketmaster_event_cache set payload=jsonb_set(payload,'{events,0,status}','"canceled"');
 select is(private.notification_target_visible('13800000-0000-0000-0000-000000000002','ticketmaster_event',md5('ticketmaster:vancouver:real-fest')::uuid),false,'a canceled festival cannot leak through queued delivery');
 update public.ticketmaster_event_cache set payload=jsonb_set(payload,'{events,0,status}','"onsale"');
-update public.ticketmaster_event_cache set updated_at=now()-interval '24 hours';
+update public.ticketmaster_event_cache set updated_at=now()-interval '24 hours',expires_at=now()-interval '1 second';
 select is(private.notification_target_visible('13800000-0000-0000-0000-000000000002','ticketmaster_event',md5('ticketmaster:vancouver:real-fest')::uuid),false,'stale event data is not recommended or delivered');
-update public.ticketmaster_event_cache set updated_at=now();
+update public.ticketmaster_event_cache set updated_at=now(),expires_at=now()+interval '15 minutes';
 
 -- Fresh event discovery is distinct from upstream creation and real popularity.
 insert into public.ticketmaster_event_cache(cache_key,payload,expires_at)
@@ -111,7 +111,7 @@ values('tm-event:vancouver:new-event',jsonb_build_object('event',jsonb_build_obj
  'id','new-event','name','Newly discovered concert','country','CA','city','Vancouver','status','onsale',
  'startsAt',(now()+interval '31 days')::text,'timeUnconfirmed',false)),now()+interval '15 minutes');
 select private.send_city_recommendations((select first_slot+interval '1 hour' from rec_clock));
-select ok((select body like '새로 발견한 행사%' from public.notifications where user_id='13800000-0000-0000-0000-000000000002' and route like '%new-event%'),'a newly observed event is announced without claiming upstream publication time');
+select ok((select title='Newly discovered concert' and body like '행사예요. %같이 갈 사람!?' from public.notifications where user_id='13800000-0000-0000-0000-000000000002' and route like '%new-event%'),'a newly observed event gets a factual description without claiming upstream publication time');
 select private.send_city_recommendations((select first_slot+interval '1 hour 5 minutes' from rec_clock));
 select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002' and route like '%new-event%'),1,'the event is not repeated');
 

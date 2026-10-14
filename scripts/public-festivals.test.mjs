@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import fs from 'node:fs';
 import * as publicWeb from '../src/lib/public-web.ts';
 import * as ticketmaster from '../supabase/functions/_shared/ticketmaster.ts';
 
@@ -39,12 +40,68 @@ test('public festivals request the selected city and distinguish missing data fr
   let response = { data: { events: [] }, error: null };
   const client = { functions: { invoke: async (name, options) => { calls.push({ name, options }); return response; } } };
   assert.deepEqual((await publicWeb.loadPublicFestivals(client, 'montreal')).events, []);
-  assert.deepEqual(calls, [{ name: 'ticketmaster-events', options: { body: { cityId: 'montreal', category: 'all', page: 0, festival: true } } }]);
+  assert.deepEqual(calls, [
+    { name: 'ticketmaster-events', options: { body: { cityId: 'montreal', category: 'all', page: 0, festival: true } } },
+    { name: 'ticketmaster-events', options: { body: { cityId: 'montreal', category: 'all', page: 0 } } },
+  ]);
   await assert.rejects(() => publicWeb.loadPublicFestivals(client, 'unknown-city'), /INVALID_INPUT/);
-  assert.equal(calls.length, 1);
+  assert.equal(calls.length, 2);
   for (const failure of [{ data: null, error: new Error('network') }, { data: { error: 'RATE_LIMITED' }, error: null }, { data: {}, error: null }]) {
     response = failure;
     await assert.rejects(() => publicWeb.loadPublicFestivals(client, 'vancouver'));
+  }
+});
+
+test('an underfilled legacy daily cache is completed from the real whole-view source in all five cities', async t => {
+  const fixture = JSON.parse(fs.readFileSync(new URL('./fixtures/festival-upcoming-cities.json', import.meta.url), 'utf8'));
+  t.mock.method(Date, 'now', () => Date.parse(fixture.now));
+  for (const city of fixture.cities) {
+    const calls = [];
+    const client = { functions: { invoke: async (_, { body }) => {
+      calls.push(body);
+      return { data: { events: body.festival ? city.events.slice(-2) : city.events, nextRefreshAt: '2026-10-14T04:00:00Z' }, error: null };
+    } } };
+    const data = await publicWeb.loadPublicFestivals(client, city.cityId);
+    assert.deepEqual(data.events.map(event => event.id), city.expectedIds);
+    assert.deepEqual(calls, [{ cityId: city.cityId, category: 'all', page: 0, festival: true }, { cityId: city.cityId, category: 'all', page: 0 }]);
+    assert.equal(data.nextRefreshAt, '2026-10-14T04:00:00Z');
+  }
+});
+
+test('a busy daily refresh can still show the selected city from the whole-view source', async t => {
+  const fixture = JSON.parse(fs.readFileSync(new URL('./fixtures/festival-upcoming-cities.json', import.meta.url), 'utf8'));
+  t.mock.method(Date, 'now', () => Date.parse(fixture.now));
+  const city = fixture.cities[0];
+  for (const daily of [{ data: { error: 'RATE_LIMITED' }, error: new Error('HTTP 429') }, { data: null, error: new Error('network') }, { data: {}, error: null }]) {
+    const calls = [];
+    const client = { functions: { invoke: async (_, { body }) => {
+      calls.push(body);
+      return body.festival ? daily : { data: { events: city.events }, error: null };
+    } } };
+    assert.deepEqual((await publicWeb.loadPublicFestivals(client, city.cityId)).events.map(event => event.id), city.expectedIds);
+    assert.deepEqual(calls, [{ cityId: city.cityId, category: 'all', page: 0, festival: true }, { cityId: city.cityId, category: 'all', page: 0 }]);
+  }
+});
+
+test('a complete daily gallery needs no extra query and a failed fill remains retryable', async () => {
+  const events = Array.from({ length: 7 }, (_, index) => ({ id: `e${index}`, name: `Show ${index}`, venue: 'Park', startsAt: '2099-01-01T20:00:00Z', timeUnconfirmed: false, status: 'onsale' }));
+  let calls = 0;
+  const client = { functions: { invoke: async (_, { body }) => { calls++; return body.festival ? { data: { events }, error: null } : { data: null, error: new Error('network') }; } } };
+  assert.equal((await publicWeb.loadPublicFestivals(client, 'vancouver')).events.length, 7);
+  assert.equal(calls, 1);
+  events.pop();
+  await assert.rejects(() => publicWeb.loadPublicFestivals(client, 'vancouver'), /PUBLIC_FESTIVALS_UNAVAILABLE/);
+});
+
+test('filling a daily gallery keeps the newest cached record for duplicate event IDs', async () => {
+  const event = { id: 'rescheduled', name: 'Live Show', venue: 'Park', startsAt: '2099-01-01T19:00:00Z', timeUnconfirmed: false, status: 'onsale' };
+  for (const newer of ['daily', 'full']) {
+    const latest = { ...event, startsAt: '2099-01-01T20:00:00Z', status: 'rescheduled' };
+    const client = { functions: { invoke: async (_, { body }) => {
+      const fresh = (body.festival ? 'daily' : 'full') === newer;
+      return { data: { events: [fresh ? latest : event], fetchedAt: fresh ? '2026-10-13T12:05:00Z' : '2026-10-13T12:00:00Z' }, error: null };
+    } } };
+    assert.deepEqual((await publicWeb.loadPublicFestivals(client, 'vancouver')).events, [latest]);
   }
 });
 

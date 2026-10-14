@@ -213,39 +213,139 @@ test('attachment plus opens a place picker without asking for location permissio
   assert.equal(plus().props.accessibilityState.expanded, false);
 });
 
-test('multiple chat photos keep selection order and retry only the unsent remainder', async context => {
+test('a photo bundle retries interrupted uploads and an uncertain send as one ordered message', async context => {
   for (const failureStage of ['upload', 'send']) {
-  const uploads = [], sends = [], removed = [], clock = { now: Date.now() }; let failed = false, pickerOptions, lastSent = 0;
-  const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', {
-    removed, clock, loadConversationMessages: async () => [], loadConversationMessagesByIds: async () => [],
-    imagePicker: { launchImageLibraryAsync: async options => {
-      pickerOptions = options;
-      return { canceled: false, assets: ['one', 'two'].map(uri => ({ uri, mimeType: 'image/jpeg' })) };
-    } },
-    preparePostImage: async asset => ({ uri: asset.uri, base64: asset.uri, bytes: 100, width: 100, height: 100, mimeType: 'image/webp' }),
-    uploadChatImage: async (_client, _user, _room, base64) => {
-      uploads.push(base64);
-      if (failureStage === 'upload' && base64 === 'two' && !failed) { failed = true; throw new Error('offline'); }
-      return `${base64}-path`;
-    },
-    sendChatAttachment: async (_client, _room, attachment) => {
-      if (clock.now - lastSent < 1000) throw new Error('RATE_LIMITED');
-      sends.push(attachment.imagePath);
-      if (failureStage === 'send' && attachment.imagePath === 'two-path' && !failed) { failed = true; throw new Error('offline'); }
-      lastSent = clock.now; return attachment.imagePath;
-    },
-  }, { ...roomProps, conversation: { ...conversation, kind: 'direct' } });
+    const uploads = [], sends = [], removed = []; let failed = false, pickerOptions;
+    const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', {
+      removed, loadConversationMessages: async () => [], loadConversationMessagesByIds: async () => [],
+      imagePicker: { launchImageLibraryAsync: async options => {
+        pickerOptions = options;
+        return { canceled: false, assets: ['one', 'two'].map(uri => ({ uri, mimeType: 'image/jpeg' })) };
+      } },
+      preparePostImage: async asset => ({ uri: asset.uri, base64: asset.uri, bytes: 100, width: 100, height: 100, mimeType: 'image/webp' }),
+      uploadChatImage: async (_client, _user, _room, base64) => {
+        uploads.push(base64);
+        if (failureStage === 'upload' && base64 === 'two' && !failed) { failed = true; throw new Error('offline'); }
+        return `${base64}-path`;
+      },
+      sendChatAttachment: async (_client, room, attachment, parent) => {
+        sends.push({ room, paths: Array.from(attachment.imagePaths ?? []), id: attachment.clientId, parent });
+        if (failureStage === 'send' && !failed) { failed = true; throw new Error('lost success response'); }
+        return 'album-id';
+      },
+    }, { ...roomProps, conversation: { ...conversation, kind: 'direct' } });
+    context.after(() => harness.cleanup()); await harness.settle();
+    harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.add-attachment').props.onPress(); await harness.settle();
+    harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.attachment-photo').props.onPress(); await harness.settle();
+    assert.equal(pickerOptions.allowsMultipleSelection, true); assert.equal(pickerOptions.orderedSelection, true); assert.equal(pickerOptions.selectionLimit, 20);
+    const send = () => harness.nodes().find(node => node.props?.analyticsId === 'chat.photo.send');
+    send().props.onPress(); await harness.settle();
+    assert.deepEqual(uploads, ['one', 'two']); assert.equal(harness.messages().length, 0);
+    assert.equal(harness.nodes().filter(node => node.props?.analyticsId === 'chat.photo.preview').length, 2);
+    assert.deepEqual(removed, [], 'an uncertain send must never delete potentially committed images');
+    send().props.onPress(); await harness.settle();
+    assert.deepEqual(uploads, failureStage === 'send' ? ['one', 'two'] : ['one', 'two', 'two']);
+    assert.deepEqual(sends.at(-1).paths, ['one-path', 'two-path']);
+    assert.match(sends.at(-1).id, /^[0-9a-f-]{36}$/i);
+    if (failureStage === 'send') assert.deepEqual(sends[0], sends[1]);
+    assert.equal(harness.messages().length, 1);
+    assert.deepEqual(Array.from(harness.messages()[0].image_paths), ['one-path', 'two-path']);
+    assert.equal(send(), undefined);
+  }
+});
+
+test('photo preparation, upload and server confirmation expose real progress and unlock after failure', async context => {
+  const preparation = [], uploads = [], confirmations = [];
+  const harness = room({ loadConversationMessages: async () => [], loadConversationMessagesByIds: async () => [],
+    imagePicker: { launchImageLibraryAsync: async () => ({ canceled: false, assets: ['one', 'two'].map(uri => ({ uri, mimeType: 'image/png' })) }) },
+    preparePostImage: asset => new Promise(resolve => preparation.push(() => resolve({ uri: asset.uri, base64: asset.uri, mimeType: 'image/webp' }))),
+    uploadChatImage: () => new Promise(resolve => uploads.push(resolve)),
+    sendChatAttachment: () => new Promise((resolve, reject) => confirmations.push({ resolve, reject })),
+  });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const status = () => harness.nodes().find(node => node.props?.testID === 'chat-photo-progress');
+  const send = () => harness.nodes().find(node => node.props?.analyticsId === 'chat.photo.send');
+  harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.add-attachment').props.onPress(); await harness.settle();
+  harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.attachment-photo').props.onPress(); await harness.settle();
+  assert.equal(status()?.props.accessibilityLabel, '사진 준비 중 0/2');
+  preparation[0](); await harness.settle(); assert.equal(status()?.props.accessibilityLabel, '사진 준비 중 1/2');
+  preparation[1](); await harness.settle(); assert.equal(status(), undefined);
+  send().props.onPress(); await harness.settle();
+  assert.equal(status()?.props.accessibilityLabel, '사진 올리는 중 0/2'); assert.equal(send().props.disabled, true);
+  uploads[0]('one-path'); await harness.settle(); assert.equal(status()?.props.accessibilityLabel, '사진 올리는 중 1/2');
+  uploads[1]('two-path'); await harness.settle(); assert.equal(status()?.props.accessibilityLabel, '전송 확인 중');
+  assert.equal(status().props.accessibilityRole, 'progressbar');
+  confirmations[0].reject(new Error('connection lost')); await harness.settle();
+  assert.equal(status(), undefined); assert.equal(send().props.disabled, false);
+  send().props.onPress(); await harness.settle();
+  assert.equal(status()?.props.accessibilityLabel, '전송 확인 중'); assert.equal(uploads.length, 2, 'retry reuses completed uploads');
+  confirmations[1].resolve('album-id'); await harness.settle();
+  assert.equal(status(), undefined); assert.equal(send(), undefined); assert.equal(harness.messages().length, 1);
+});
+
+test('the photo-library handoff has an immediate indeterminate loader and cancellation clears it', async context => {
+  let finishPicker;
+  const harness = room({ loadConversationMessages: async () => [],
+    imagePicker: { launchImageLibraryAsync: () => new Promise(resolve => { finishPicker = resolve; }) },
+  });
   context.after(() => harness.cleanup()); await harness.settle();
   harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.add-attachment').props.onPress(); await harness.settle();
   harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.attachment-photo').props.onPress(); await harness.settle();
-  assert.equal(pickerOptions.allowsMultipleSelection, true); assert.equal(pickerOptions.orderedSelection, true); assert.equal(pickerOptions.selectionLimit, 20);
-  const send = () => harness.nodes().find(node => (node.props?.label ?? node.props?.accessibilityLabel)?.endsWith('장 보내기'));
-  assert.equal(send().props.label ?? send().props.accessibilityLabel, '2장 보내기'); send().props.onPress(); await harness.settle(); await harness.timers();
-  assert.deepEqual(uploads, ['one', 'two']); assert.equal(harness.messages().filter(row => row.kind === 'image').length, 1);
-  assert.equal(send().props.label ?? send().props.accessibilityLabel, '1장 보내기'); assert.deepEqual(removed, failureStage === 'send' ? ['two-path'] : []);
-  send().props.onPress(); await harness.settle(); await harness.timers();
-  assert.deepEqual(uploads, ['one', 'two', 'two']); assert.deepEqual(sends, failureStage === 'send' ? ['one-path', 'two-path', 'two-path'] : ['one-path', 'two-path']);
-  assert.equal(harness.messages().filter(row => row.kind === 'image').length, 2); assert.equal(send(), undefined);
+  const progress = harness.nodes().find(node => node.props?.testID === 'chat-photo-progress');
+  assert.equal(progress?.props.accessibilityLabel, '사진 불러오는 중');
+  assert.equal(progress.props.accessibilityValue, undefined);
+  finishPicker({ canceled: true, assets: null }); await harness.settle();
+  assert.equal(harness.nodes().find(node => node.props?.testID === 'chat-photo-progress'), undefined);
+  assert.equal(harness.messages().length, 0);
+});
+
+test('a replacement photo selection cannot race the previous draft send or clear the new draft', async context => {
+  let selection = 0, finishPreparation; const uploaded = [];
+  const prepared = uri => ({ uri, base64: uri, mimeType: 'image/webp' });
+  const harness = room({ loadConversationMessages: async () => [],
+    imagePicker: { launchImageLibraryAsync: async () => ({ canceled: false, assets: [{ uri: ++selection === 1 ? 'old' : 'new', mimeType: 'image/png' }] }) },
+    preparePostImage: async asset => asset.uri === 'old' ? prepared('old') : new Promise(resolve => { finishPreparation = () => resolve(prepared('new')); }),
+    uploadChatImage: async (_client, _user, _room, image) => { uploaded.push(image); return `${image}-path`; },
+    sendChatAttachment: async () => 'sent', loadConversationMessagesByIds: async () => [],
+  });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const pick = async () => {
+    harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.add-attachment').props.onPress(); await harness.settle();
+    harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.attachment-photo').props.onPress(); await harness.settle();
+  };
+  await pick(); const staleSend = harness.nodes().find(node => node.props?.analyticsId === 'chat.photo.send');
+  await pick();
+  assert.equal(harness.nodes().find(node => node.props?.analyticsId === 'chat.photo.send').props.disabled, true);
+  staleSend.props.onPress(); await harness.settle(); assert.deepEqual(uploaded, [], 'the synchronous processing guard also protects a previously queued press');
+  finishPreparation(); await harness.settle();
+  assert.equal(harness.nodes().find(node => node.props?.analyticsId === 'chat.photo.preview').props.children.props.source.uri, 'new');
+  assert.equal(harness.messages().length, 0);
+});
+
+test('photo retries honor a canceled reply before sending and lock its binding after an uncertain RPC', async context => {
+  for (const stage of ['upload', 'send']) {
+    const parent = { ...message(1), id: 'parent' }; const sent = []; let failed = false;
+    const harness = room({ loadConversationMessages: async () => [parent], loadConversationMessagesByIds: async () => [],
+      imagePicker: { launchImageLibraryAsync: async () => ({ canceled: false, assets: [{ uri: 'photo', mimeType: 'image/png' }] }) },
+      preparePostImage: async asset => ({ uri: asset.uri, base64: asset.uri, mimeType: 'image/webp' }),
+      uploadChatImage: async () => { if (stage === 'upload' && !failed) { failed = true; throw new Error('upload failed'); } return 'path'; },
+      sendChatAttachment: async (_client, _room, attachment, reply) => { sent.push({ id: attachment.clientId, reply }); if (stage === 'send' && !failed) { failed = true; throw new Error('lost response'); } return 'album'; },
+    });
+    context.after(() => harness.cleanup()); await harness.settle();
+    const row = harness.nodes().find(node => node.type === 'FlatList').props.renderItem({ item: parent, index: 0 });
+    const walk = value => !value || typeof value !== 'object' ? [] : [value, ...Object.values(value).flatMap(walk)];
+    walk(row).find(node => node.props?.analyticsId === 'components_chat-room.pressable.heart').props.onMenu(parent, { measureInWindow: callback => callback(48, 300, 200, 44) }); await harness.settle();
+    harness.nodes().find(node => node.props?.accessibilityLabel === '답장').props.onPress(); await harness.settle();
+    harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.add-attachment').props.onPress(); await harness.settle();
+    harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.attachment-photo').props.onPress(); await harness.settle();
+    const send = () => harness.nodes().find(node => node.props?.analyticsId === 'chat.photo.send');
+    send().props.onPress(); await harness.settle();
+    const cancelReply = harness.nodes().find(node => node.props?.label === '답장 취소');
+    assert.equal(cancelReply.props.disabled, stage === 'send');
+    cancelReply.props.onPress(); await harness.settle();
+    send().props.onPress(); await harness.settle();
+    assert.equal(sent.at(-1).reply, stage === 'send' ? 'parent' : undefined);
+    if (stage === 'send') assert.deepEqual(sent[0], sent[1]);
   }
 });
 
@@ -266,6 +366,28 @@ test('selected photo preview can enlarge and remove one image without sending or
   harness.nodes().filter(node => node.props?.analyticsId === 'chat.photo.remove')[0].props.onPress(); await harness.settle();
   assert.equal(harness.nodes().filter(node => node.props?.analyticsId === 'chat.photo.preview').length, 1);
   assert.equal(input().props.value, '보내지 않은 원고'); assert.equal(harness.messages().length, 0);
+});
+
+test('one album bubble opens the selected tile, pages in order and closes when the message is withdrawn', async context => {
+  const row = { ...message(1), kind: 'image', image_path: 'p0', image_paths: Array.from({ length: 20 }, (_, i) => `p${i}`),
+    imageUrls: Array.from({ length: 20 }, (_, i) => `photo:${i}`) };
+  let removed = false;
+  const harness = room({ loadConversationMessages: async () => [removed ? { ...row, kind: 'text', deleted_at: 'now', image_paths: [], imageUrls: [] } : row] });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const all = value => !value || typeof value !== 'object' ? [] : [value, ...Object.values(value).flatMap(v => Array.isArray(v) ? v.flatMap(all) : all(v))];
+  const tree = harness.nodes().find(node => node.type === 'FlatList').props.renderItem({ item: row, index: 0 });
+  const tiles = all(tree).filter(node => node.props?.analyticsId === 'chat.album.photo');
+  assert.equal(tiles.length, 9);
+  tiles[7].props.onPress(); await harness.settle();
+  const viewer = () => harness.nodes().find(node => node.props?.testID === 'chat-photo-pages');
+  assert.equal(viewer().props.contentOffset.x, 7 * 390);
+  harness.nodes().find(node => node.props?.analyticsId === 'chat.photo.next').props.onPress(); await harness.settle();
+  assert.ok(harness.nodes().some(node => node.props?.children === '9/20'));
+  assert.equal(viewer().props.contentOffset.x, 7 * 390, 'the native initial offset stays stable while scrollTo moves between pages');
+  viewer().props.onMomentumScrollEnd({ nativeEvent: { contentOffset: { x: 10 * 390 } } }); await harness.settle();
+  assert.ok(harness.nodes().some(node => node.props?.children === '11/20'));
+  removed = true; harness.foreground(); await harness.settle();
+  assert.equal(viewer(), undefined, 'deleted or hidden messages cannot leave a private album viewer open');
 });
 
 test('long press replies in direct and group rooms and keeps the unsent draft', async context => {

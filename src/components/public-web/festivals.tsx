@@ -1,6 +1,6 @@
 import './festivals.css';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { EVENT_CITIES, eventPriceLabel, eventTime, festivalLocalDay, safeTicketUrl, type EventCity, type TicketmasterEvent } from '../../../supabase/functions/_shared/ticketmaster';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadPublicFestivals } from '@/lib/public-web';
@@ -15,6 +15,7 @@ export function PublicFestivals({ cityId, cityName }: { cityId: string; cityName
   const [hovering, setHovering] = useState(false);
   const [focused, setFocused] = useState(false);
   const [failedImage, setFailedImage] = useState('');
+  const selection = useRef({ cityId: '', eventId: '' });
   const key = `${cityId}:${attempt}`;
   const current = result?.key === key ? result : null;
   const events = current?.events ?? [];
@@ -23,11 +24,18 @@ export function PublicFestivals({ cityId, cityName }: { cityId: string; cityName
   const ticketUrl = event && safeTicketUrl(event.ticketUrl);
 
   useEffect(() => {
+    if (event) selection.current = { cityId, eventId: event.id };
+  }, [cityId, event]);
+
+  useEffect(() => {
     let active = true;
     void loadPublicFestivals(publicWebClient, cityId).then((data) => {
-      if (active) { setResult({ key, events: data.events, nextRefreshAt: data.nextRefreshAt, failed: false }); setIndex(0); }
+      if (active) {
+        const index = selection.current.cityId === cityId ? Math.max(0, data.events.findIndex(event => event.id === selection.current.eventId)) : 0;
+        setResult({ key, events: data.events, nextRefreshAt: data.nextRefreshAt, failed: false }); setIndex(index);
+      }
     }).catch(() => {
-      if (active) setResult({ key, events: [], failed: true });
+      if (active) setResult({ key, events: [], failed: true, nextRefreshAt: new Date(Date.now() + 15 * 60000).toISOString() });
     });
     return () => { active = false; };
   }, [cityId, key]);
@@ -103,14 +111,14 @@ export function PublicFestivals({ cityId, cityName }: { cityId: string; cityName
                     onClick={() => play('selection')}>앱에서 함께 갈 사람 찾기</a>
                 </div>
               </div>
-            </article>
-            {events.length > 1 && <div className="reader-festival-controls">
-              <span aria-live={rotating ? 'off' : 'polite'} aria-atomic="true">{index % events.length + 1} / {events.length}</span>
-              <div><button type="button" aria-label="이전 페스티벌" onClick={() => move(-1)}>←</button>
-                <button type="button" onClick={() => { play('selection'); setPlaying((value) => !value); }}
+              {events.length > 1 && <div className="reader-festival-controls">
+                <span aria-live={rotating ? 'off' : 'polite'} aria-atomic="true">{index % events.length + 1} / {events.length}</span>
+                <button className="reader-festival-arrow reader-festival-previous" type="button" aria-label="이전 페스티벌" onClick={() => move(-1)}><span aria-hidden="true">‹</span></button>
+                <button className="reader-festival-toggle" type="button" onClick={() => { play('selection'); setPlaying((value) => !value); }}
                   aria-label={playing ? '페스티벌 자동 넘김 일시정지' : '페스티벌 자동 넘김 시작'}>{playing ? '일시정지' : '자동 넘김'}</button>
-                <button type="button" aria-label="다음 페스티벌" onClick={() => move(1)}>→</button></div>
-            </div>}
+                <button className="reader-festival-arrow reader-festival-next" type="button" aria-label="다음 페스티벌" onClick={() => move(1)}><span aria-hidden="true">›</span></button>
+              </div>}
+            </article>
             <p className="reader-festival-source">행사 정보: Ticketmaster · 일정과 판매 상태는 달라질 수 있어요.</p>
           </>}
   </section>;
