@@ -14,6 +14,7 @@ import { hideContent, isContentHidden, subscribeVisibility, visibilityRevision }
 import { count, t } from '../src/i18n/ko.ts';
 import { isFreshLocation } from '../src/lib/location.ts';
 import { googlePinUrl } from '../src/lib/post-maps.ts';
+import * as product from '../src/lib/product-analytics.ts';
 
 // Exercise the component's hooks, effects and event handlers, as in comment-threads.test.mjs.
 function mount(file, exportName, data, props = {}, params = {}) {
@@ -52,6 +53,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
     useEffect: effect, useLayoutEffect: effect,
   };
   const supabase = {
+    rpc: async (name, args) => { data.productEvents?.push([name, JSON.parse(JSON.stringify(args))]); return { error: data.telemetryError ?? null }; },
     storage: { from: () => ({ remove: async paths => { data.removed?.push(...paths); return { error: null }; } }) },
     channel() {
       const channel = { handlers: [], on(_kind, filter, callback) { this.handlers.push({ filter, callback }); return this; }, subscribe() { return this; } };
@@ -110,6 +112,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
       if (name === '@/lib/merchant-source') return { merchantEventId };
       if (name === 'expo-location') return { Accuracy: { High: 4, Balanced: 3 }, ...data.location };
       if (name === '@/lib/supabase') return { supabase };
+      if (name === '@/lib/product-analytics') return product;
       return new Proxy({}, { get: (_target, key) => key });
     },
   });
@@ -128,6 +131,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
     : [...(value.type ? [value] : []), ...Object.values(value).flatMap(nodes)];
   const harness = {
     auth,
+    rerender() { dirty = true; render(); },
     async settle() { for (let i = 0; i < 5; i++) { render(); await new Promise(resolve => setImmediate(resolve)); } render(); },
     nodes: () => nodes(tree),
     messages: () => nodes(tree).find(node => node.type === 'FlatList')?.props.data ?? [],
@@ -215,9 +219,9 @@ test('attachment plus opens a place picker without asking for location permissio
 
 test('a photo bundle retries interrupted uploads and an uncertain send as one ordered message', async context => {
   for (const failureStage of ['upload', 'send']) {
-    const uploads = [], sends = [], removed = []; let failed = false, pickerOptions;
+    const uploads = [], sends = [], removed = [], productEvents = []; let failed = false, pickerOptions;
     const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', {
-      removed, loadConversationMessages: async () => [], loadConversationMessagesByIds: async () => [],
+      removed, productEvents, telemetryError: new Error('analytics offline'), loadConversationMessages: async () => [], loadConversationMessagesByIds: async () => [],
       imagePicker: { launchImageLibraryAsync: async options => {
         pickerOptions = options;
         return { canceled: false, assets: ['one', 'two'].map(uri => ({ uri, mimeType: 'image/jpeg' })) };
@@ -240,6 +244,9 @@ test('a photo bundle retries interrupted uploads and an uncertain send as one or
     assert.equal(pickerOptions.allowsMultipleSelection, true); assert.equal(pickerOptions.orderedSelection, true); assert.equal(pickerOptions.selectionLimit, 20);
     const send = () => harness.nodes().find(node => node.props?.analyticsId === 'chat.photo.send');
     send().props.onPress(); await harness.settle();
+    assert.deepEqual(productEvents, failureStage === 'upload' ? [['record_product_event', {
+      p_kind: 'photo_upload_error', p_target_id: null, p_city_id: null, p_platform: 'ios',
+    }]] : [], 'only a failed upload counts; an uncertain send has no upload error');
     assert.deepEqual(uploads, ['one', 'two']); assert.equal(harness.messages().length, 0);
     assert.equal(harness.nodes().filter(node => node.props?.analyticsId === 'chat.photo.preview').length, 2);
     assert.deepEqual(removed, [], 'an uncertain send must never delete potentially committed images');
@@ -251,6 +258,25 @@ test('a photo bundle retries interrupted uploads and an uncertain send as one or
     assert.equal(harness.messages().length, 1);
     assert.deepEqual(Array.from(harness.messages()[0].image_paths), ['one-path', 'two-path']);
     assert.equal(send(), undefined);
+  }
+});
+
+test('a late upload failure after logout, account switch or unmount cannot report for another account', async context => {
+  for (const change of ['logout', 'account', 'unmount']) {
+    const productEvents = []; let reject;
+    const harness = room({ productEvents, loadConversationMessages: async () => [],
+      imagePicker: { launchImageLibraryAsync: async () => ({ canceled: false, assets: [{ uri: 'private-path', mimeType: 'image/jpeg' }] }) },
+      preparePostImage: async asset => ({ uri: asset.uri, base64: 'private-image', mimeType: 'image/webp' }),
+      uploadChatImage: () => new Promise((_resolve, no) => { reject = no; }),
+    }); context.after(() => harness.cleanup()); await harness.settle();
+    harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.add-attachment').props.onPress(); await harness.settle();
+    harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.attachment-photo').props.onPress(); await harness.settle();
+    harness.nodes().find(node => node.props?.analyticsId === 'chat.photo.send').props.onPress(); await harness.settle();
+    if (change === 'logout') harness.auth.isAuthed = false;
+    else if (change === 'account') harness.auth.me = { ...harness.auth.me, id: 'another-member' };
+    else harness.cleanup();
+    if (change !== 'unmount') { harness.rerender(); await harness.settle(); }
+    reject(new Error('private image/path')); await harness.settle(); assert.deepEqual(productEvents, [], change);
   }
 });
 

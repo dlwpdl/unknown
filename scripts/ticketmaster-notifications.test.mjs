@@ -4,6 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { eventPriceLabel, eventTime } from '../supabase/functions/_shared/ticketmaster.ts';
+import * as product from '../src/lib/product-analytics.ts';
 
 function detail({ authed = true, focused = true, loaded = true, offline = false, description = 'An evening of live music.', price = { min: 34.36, max: 95.94, currency: 'CAD' } } = {}) {
   const effects = [], clicks = [], event = { id: 'real-fest', name: 'Real Festival', description, price, venue: 'Park', city: 'Vancouver', startsAt: '2026-10-19T01:00:00Z', timezone: 'America/Vancouver', timeUnconfirmed: false };
@@ -12,7 +13,7 @@ function detail({ authed = true, focused = true, loaded = true, offline = false,
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   const imports = {
-    react: { useEffect: callback => effects.push(callback), useState: value => [state++ === 0 && loaded ? { key: 'vancouver:real-fest:0', event, error: '' } : value, () => {}] },
+    react: { useRef: current => ({ current }), useLayoutEffect: fn => fn(), useEffect: callback => effects.push(callback), useState: value => [state++ === 0 && loaded ? { key: 'vancouver:real-fest:0', event, error: '' } : value, () => {}] },
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'expo-router': { Link: { AppleZoomTarget: 'Target' }, useIsFocused: () => focused, useLocalSearchParams: () => ({ id: event.id, cityId: 'vancouver' }), useRouter: () => ({}) },
     'react-native': { StyleSheet: { create: value => value }, Platform: { OS: 'web' }, View: 'View' },
@@ -25,7 +26,9 @@ function detail({ authed = true, focused = true, loaded = true, offline = false,
     '@/constants/theme': { Depth: {} }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/event-videos': { eventVideo: () => null }, '@/lib/community-city': { useCommunityCity: () => ({}) },
-    '@/lib/auth': { useAuth: () => ({ isAuthed: authed }) }, '@/lib/mock': { CITIES: [] },
+    '@/lib/auth': { useAuth: () => ({ isAuthed: authed, me: { id: 'member' } }) }, '@/lib/mock': { CITIES: [] },
+    '@/lib/product-analytics': product,
+    '@/lib/supabase': { supabase: { rpc: async () => ({ data: false, error: null }) } },
     '@/lib/ticketmaster': { loadTicketmasterEvent: async () => ({ event }), eventNotice: () => '', eventPriceLabel, eventTime, meetupAllowed: () => true,
       recordTicketmasterEventClick: async (...args) => { clicks.push(args); if (offline) throw new Error('offline'); } },
   };

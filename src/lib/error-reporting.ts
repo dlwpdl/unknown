@@ -1,20 +1,19 @@
 import Constants from 'expo-constants';
+import * as Application from 'expo-application';
 import { Platform } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
+import { recordProductEvent } from '@/lib/product-analytics';
 
 // 사용자 폰에서 난 오류를 서버로 보낸다. 네이티브 충돌은 Apple·Google 이 이미 모아주므로
 // 여기서 채우는 것은 그쪽에 잡히지 않는 자바스크립트 오류다.
 //
 // 보고 자체가 사용자를 방해해서는 안 된다. 실패하면 조용히 넘어간다.
 
-const buildLabel = () => {
-  const version = Constants.expoConfig?.version ?? 'unknown';
-  const build = Platform.select({
-    ios: Constants.expoConfig?.ios?.buildNumber,
-    android: Constants.expoConfig?.android?.versionCode?.toString(),
-  });
-  return build ? `${version}(${build})` : version;
+export const buildLabel = () => {
+  const version = Platform.OS === 'web' ? Constants.expoConfig?.version ?? 'unknown' : Application.nativeApplicationVersion ?? 'unknown';
+  const build = Platform.OS === 'web' ? null : Application.nativeBuildVersion;
+  return build && version !== 'unknown' ? `${version}(${build})` : version;
 };
 
 // 같은 오류가 반복해서 터질 때(렌더 루프) 네트워크를 때리지 않도록 이 실행 동안 한 번만 보낸다.
@@ -40,6 +39,7 @@ export function reportError(error: unknown, screen?: string) {
     const key = `${message}|${stack?.split('\n')[1] ?? ''}`;
     if (reported.has(key) || reported.size >= REPORT_CAP) return;
     reported.add(key);
+    void recordProductEvent(supabase, { kind: 'client_error', platform: Platform.OS }).catch(() => {});
 
     void supabase.rpc('report_client_error', {
       p_message: message,

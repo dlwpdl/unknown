@@ -4,6 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as preferences from '../src/lib/notification-preferences.ts';
+import * as product from '../src/lib/product-analytics.ts';
 
 const flush = () => new Promise(resolve => setImmediate(resolve));
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
@@ -13,6 +14,7 @@ function invite({ denied = false, failure = null } = {}) {
   let cursor = 0, started = false, fail = failure, handler, observerCleanup;
   const subscription = () => ({ remove() {} });
   const native = {
+    Platform: { OS: 'ios' },
     StyleSheet: { create: value => value }, View: 'View', Modal: 'Modal',
     Alert: { alert: (...args) => alerts.push(args) },
     AppState: { addEventListener: subscription },
@@ -45,6 +47,7 @@ function invite({ denied = false, failure = null } = {}) {
       '@/lib/auth': { useAuth: () => ({ isAuthed: true, isAdmin: false, me: { id: 'member' } }) },
       '@/lib/notification-preferences': preferences, '@/lib/push-notifications': push, '@/lib/supabase': { supabase },
       '@/lib/community-data': {}, 'expo-router': { useRootNavigationState: () => ({ key: 'root' }), useRouter: () => ({}) },
+      '@/lib/product-analytics': product,
       'expo-notifications': { setNotificationHandler: value => { handler = value; }, getLastNotificationResponse: () => null,
         addNotificationResponseReceivedListener: subscription, addPushTokenListener: subscription },
     };
