@@ -196,36 +196,66 @@ with tempfile.TemporaryDirectory() as directory:
   assert.equal(result.status, 0, result.stdout + result.stderr);
 });
 
-test('tag releases immediately require each verified platform build before review submission', () => {
+test('building and submitting a release cannot raise the mandatory update policy', () => {
   const workflow = parse(readFileSync(new URL('../.github/workflows/mobile-release.yml', import.meta.url), 'utf8'));
   for (const platform of ['ios', 'android']) {
     const steps = workflow.jobs[platform].steps;
     const build = steps.findIndex(step => step.name?.startsWith('Build and verify signed'));
-    const enforce = steps.findIndex(step => step.run?.includes('release.py require-update'));
     const submit = steps.findIndex(step => step.run?.includes('release.py submit'));
-    assert.ok(build < enforce && enforce < submit, `${platform}: verification → mandatory update → submission`);
-    assert.match(steps[enforce].if, /ref_type == 'tag'/);
-    assert.ok(steps[enforce].env.GLING_SUPABASE_SERVICE_ROLE_KEY);
-    assert.equal(steps[build].env.GLING_SUPABASE_SERVICE_ROLE_KEY, undefined);
-    assert.match(steps[enforce].run, new RegExp(`--platform ${platform}`));
-    assert.match(steps[enforce].run, /--build-number "\$RELEASE_BUILD"/);
+    assert.ok(build >= 0 && build < submit, `${platform}: verify before submitting`);
+    for (const step of steps) {
+      assert.equal(step.env?.GLING_SUPABASE_SERVICE_ROLE_KEY, undefined, `${platform}: build/review does not prove public availability`);
+      assert.doesNotMatch(step.run ?? '', /release\.py (require-update|sync-policy)/);
+    }
   }
 });
 
-test('mandatory update command reuses the atomic policy writer without store credentials', () => {
+test('an arbitrary unverified build cannot be enforced through the release command', () => {
+  const result = spawnSync('python3', ['scripts/release.py', 'require-update', '--platform', 'ios', '--build-number', '65'], {
+    cwd: new URL('../', import.meta.url), encoding: 'utf8', env: { PATH: process.env.PATH },
+  });
+  assert.equal(result.status, 2, result.stdout + result.stderr);
+  assert.match(result.stderr, /invalid choice/);
+});
+
+test('a reviewed iOS build is enforced only once the same version is publicly available', () => {
   const result = spawnSync('python3', ['-c', `
-import importlib.util, os, sys
+import importlib.util
 spec = importlib.util.spec_from_file_location('release', 'scripts/release.py')
 r = importlib.util.module_from_spec(spec); spec.loader.exec_module(r)
-os.environ['GLING_SUPABASE_SERVICE_ROLE_KEY'] = 'test-policy-key'
-os.environ['GITHUB_REPOSITORY_VISIBILITY'] = 'public'
-r.setup = lambda *args: (_ for _ in ()).throw(AssertionError('store credentials do not belong in this policy-only command'))
-calls = []
-r.enforce_policy = lambda *args: calls.append(args) or {'minimum_build': args[1]}
-for platform in ['ios', 'android']:
-    sys.argv = ['release.py', 'require-update', '--platform', platform, '--build-number', '65']
-    r.main()
-assert calls == [('ios', 65, 'test-policy-key'), ('android', 65, 'test-policy-key')]
+public = {'trackId': int(r.APP), 'version': '1.2.0'}
+def version(number, state, build):
+    return {'data': {'id': number, 'attributes': {'versionString': number, 'appStoreState': state}, 'relationships': {'build': {'data': {'id': str(build)}}}}, 'included': [{'type': 'builds', 'id': str(build), 'attributes': {'version': str(build), 'processingState': 'VALID'}}]}
+versions = {'1.2.0': version('1.2.0', 'READY_FOR_SALE', 64), '1.2.3': version('1.2.3', 'WAITING_FOR_REVIEW', 65)}
+policy = {'ios': 64, 'android': 64}; writes = []
+r.apple_versions = lambda env: ('test-apple', [v['data'] for v in versions.values()])
+r.google_token = lambda *args: 'test-google'
+def play(token, path='', data=None, method='GET'):
+    if path == '/edits': return {'id': 'read-edit'}
+    if method == 'DELETE': return {}
+    assert path == '/edits/read-edit/tracks'
+    return {'tracks': [{'track': 'alpha', 'releases': [{'status': 'completed', 'versionCodes': ['65']}]}, {'track': 'production', 'releases': []}]}
+r.play = play
+def request(url, token=None, data=None, method='GET', **kwargs):
+    if url.startswith('https://api.github.com/'): return {'workflow_runs': []}
+    if url.startswith('https://itunes.apple.com/'): return {'results': [dict(public)]}
+    if url.startswith('https://api.appstoreconnect.apple.com/'): return versions[url.split('/appStoreVersions/')[1].split('?')[0]]
+    assert url.startswith(r.SUPABASE + '/rest/v1/app_release_policy?')
+    assert token == kwargs['api_key'] == 'test-policy-key'
+    platform = 'ios' if 'platform=eq.ios' in url else 'android'
+    if method == 'PATCH':
+        writes.append((platform, data['minimum_build'])); policy[platform] = data['minimum_build']; return {}
+    return [{'platform': platform, 'minimum_build': policy[platform]}]
+r.request = request
+env = {'GLING_SUPABASE_SERVICE_ROLE_KEY': 'test-policy-key'}
+r.sync_policy(env, {}, None, False)
+assert policy == {'ios': 64, 'android': 64} and writes == []
+versions['1.2.3']['data']['attributes']['appStoreState'] = 'READY_FOR_SALE'
+r.sync_policy(env, {}, None, False)
+assert policy == {'ios': 64, 'android': 64} and writes == [], 'approval alone is not public availability'
+public['version'] = '1.2.3'
+r.sync_policy(env, {}, None, False)
+assert policy == {'ios': 65, 'android': 64} and writes == [('ios', 65)]
 `], { cwd: new URL('../', import.meta.url), encoding: 'utf8' });
   assert.equal(result.status, 0, result.stdout + result.stderr);
 });
