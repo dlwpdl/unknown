@@ -25,6 +25,7 @@ const sectionIcons = {
   reports: { ios: 'flag', web: 'flag' },
   users: { ios: 'person.2', web: 'group' },
   posts: { ios: 'doc.text', web: 'article' },
+  meetups: { ios: 'calendar', web: 'event' },
   conversations: { ios: 'bubble.left.and.bubble.right', web: 'forum' },
 } as const;
 
@@ -167,11 +168,9 @@ export function AdminShell({
             {compact && <Pressable onPress={() => { play('selection'); onSignOut(); }} accessibilityRole="button" accessibilityLabel="로그아웃" style={({ pressed }) => [styles.topbarButton, pressed && styles.pressed]}><View aria-hidden accessibilityElementsHidden><SymbolView name={{ ios: 'rectangle.portrait.and.arrow.right', web: 'logout' }} size={18} tintColor={Colors.admin.textSecondary} /></View></Pressable>}
           </View>
         </View>
-        {activeSection === 'conversations' ? <View nativeID="admin-conversations-content" style={[styles.conversationsContent, compact && styles.contentCompact]}>
+        <ScrollView nativeID="admin-main-scroll" style={styles.content} contentContainerStyle={[styles.contentInner, compact && styles.contentCompact]}>
           {children}
-        </View> : <ScrollView nativeID="admin-main-scroll" style={styles.content} contentContainerStyle={[styles.contentInner, compact && styles.contentCompact]}>
-          {children}
-        </ScrollView>}
+        </ScrollView>
       </View>
     </View>
     </ThemeOverrideProvider>
@@ -197,7 +196,7 @@ const styles = StyleSheet.create({
   pickerOpen: { borderColor: Colors.admin.accent },
   pickerMenu: { flexBasis: '100%', maxHeight: 300, marginTop: Spacing.two },
   navLabel: { color: Colors.admin.textSecondary, fontSize: 11, paddingHorizontal: 12, marginBottom: Spacing.one },
-  navItem: { minHeight: 44, paddingHorizontal: 12, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  navItem: { minHeight: 44, paddingHorizontal: 12, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 10 },
   navItemActive: { backgroundColor: Colors.admin.backgroundSelected },
   navText: { color: Colors.admin.textSecondary },
   navTextActive: { color: Colors.admin.accent },
@@ -210,13 +209,12 @@ const styles = StyleSheet.create({
   pressed: { backgroundColor: Colors.admin.backgroundElement, opacity: 0.8 },
   signOutButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
   content: { flex: 1, minWidth: 0 },
-  conversationsContent: { flex: 1, minHeight: 0, minWidth: 0, padding: Spacing.four },
   main: { flex: 1, minWidth: 0, minHeight: 0 },
   topbar: { minHeight: 68, flexShrink: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three, paddingHorizontal: Spacing.four, borderBottomWidth: 1, borderBottomColor: Colors.admin.line, backgroundColor: Colors.admin.card },
   topbarCompact: { minHeight: 56, paddingHorizontal: Spacing.three, gap: Spacing.two },
   breadcrumb: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minWidth: 0, flexShrink: 1 },
   topbarActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  topbarButton: { minWidth: 44, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.two, borderRadius: 8 },
+  topbarButton: { minWidth: 44, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.two, borderRadius: 10 },
   searchButton: { paddingHorizontal: 12, borderWidth: 1, borderColor: Colors.admin.line, minWidth: 208, justifyContent: 'flex-start' },
   keycap: { marginLeft: 'auto', paddingHorizontal: 5, borderRadius: 4, backgroundColor: Colors.admin.backgroundElement, fontSize: 11 },
   contentInner: { width: '100%', maxWidth: 1440, alignSelf: 'center', padding: Spacing.five, paddingBottom: Spacing.six },

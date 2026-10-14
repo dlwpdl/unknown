@@ -194,7 +194,7 @@ test('captions retain city, platform, delivery, revenue and report scope', async
   try {
     await view.render(); await view.answer(0);
     const text = view.container.textContent;
-    for (const meaning of [/현재 저장한 선호 지역/, /일반 멤버십/, /대상 도시/, /플랫폼.*방문.*행동.*행사.*장소.*알림/, /운영 캐릭터/, /가입.*글.*모임.*결제.*신고.*발송/, /APNs.*FCM.*접수/, /단말.*표시/, /최대 7일/, /2026.*10.*08/, /알림.*입구.*기기/, /30분.*고유 회원/, /인과|증가 효과/, /현재.*설정.*스냅샷/, /통화별.*총.*결제/, /정산/, /갱신 해지/, /INITIAL_PURCHASE/, /현재.*미처리/, /기간.*해결/, /실패.*회원/, /회원 신고/]) assert.match(text, meaning);
+    for (const meaning of [/현재 저장한 선호 지역/, /일반 멤버십/, /대상 도시/, /플랫폼.*방문.*행동.*행사.*장소.*알림/, /운영 캐릭터/, /가입.*글.*모임.*결제.*신고.*발송/, /APNs.*FCM.*접수/, /단말.*표시/, /최대 7일/, /2026.*10.*08/, /알림.*입구.*기기/, /30분.*고유 회원/, /인과|증가 효과/, /현재.*설정.*스냅샷/, /통화별.*총.*결제/, /정산/, /갱신 해지/, /같은 기간 첫 결제/, /현재.*미처리/, /기간.*해결/, /실패.*회원/, /회원 신고/]) assert.match(text, meaning);
   } finally { await view.unmount(); }
 });
 
@@ -335,7 +335,7 @@ test('default performance loads independently, and all original tabs still use t
     assert.equal(view.calls[4].name, 'get_admin_behavior');
     await view.answer(4, { screens: [], steps: [], actions: [], recent: [] });
     assert.match(view.container.textContent, /회원 목록/);
-    for (const [tab, content] of [['요약', '전체 회원'], ['트래픽', '최근 접속'], ['행동 분석', '최근 행동 순서'], ['결제·홍보', '구독 구매 회원'], ['운영 로그', '관리자 접근 기록']]) {
+    for (const [tab, content] of [['요약', '전체 회원'], ['트래픽', '최근 접속'], ['행동 분석', '완료한 작업'], ['결제·홍보', '구독 구매 회원'], ['운영 로그', '관리자 접근 기록']]) {
       await view.press('tab', tab);
       assert.ok(view.container.textContent.includes(content), `${tab} must still render its existing content`);
       assert.equal(view.feedback.at(-1), 'selection');
