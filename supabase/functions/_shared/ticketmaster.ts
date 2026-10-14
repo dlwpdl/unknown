@@ -11,6 +11,7 @@ export type TicketmasterEvent = {
   startsAt: string | null; localDate: string | null; localTime: string | null; timezone: string | null;
   status: string; timeUnconfirmed: boolean; venue: string; city: string; country: string;
   price: { min: number; max: number; currency: string } | null; description: string | null;
+  segment?: string | null; genre?: string | null;
 };
 export function parseEventQuery(value: unknown): EventQuery {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('INVALID_INPUT');
@@ -94,6 +95,7 @@ function youtubeVideoId(value: unknown): string | null {
 }
 type RawEvent = {
   id?: string; name?: string; url?: string; info?: string; images?: { url?: string; ratio?: string; width?: number }[];
+  classifications?: { primary?: boolean; segment?: { name?: string }; genre?: { name?: string } }[];
   externalLinks?: { youtube?: { url?: string }[] };
   dates?: { start?: { dateTime?: string; localDate?: string; localTime?: string; dateTBD?: boolean; dateTBA?: boolean; timeTBA?: boolean; noSpecificTime?: boolean }; timezone?: string; status?: { code?: string } };
   _embedded?: { venues?: { name?: string; city?: { name?: string }; country?: { countryCode?: string }; timezone?: string }[]; attractions?: { externalLinks?: { youtube?: { url?: string }[] } }[] };
@@ -105,6 +107,9 @@ export function normalizeEvent(value: unknown): TicketmasterEvent {
   const start = raw.dates?.start;
   const venue = raw._embedded?.venues?.[0];
   const range = raw.priceRanges?.[0];
+  const classifications = Array.isArray(raw.classifications) ? raw.classifications : [];
+  const classification = classifications.find(item => item?.primary === true) ?? classifications[0];
+  const categoryName = (value: unknown) => typeof value === 'string' && !/^(undefined|other)$/i.test(value.trim()) ? value.trim().slice(0, 100) || null : null;
   const image = raw.images?.filter(item => typeof item.url === 'string' && item.url.startsWith('https://')).sort((a, b) => (b.width ?? 0) - (a.width ?? 0))[0]?.url ?? null;
   const startsAt = start?.dateTime && Number.isFinite(Date.parse(start.dateTime)) ? start.dateTime : null;
   let timezone = raw.dates?.timezone ?? venue?.timezone ?? null;
@@ -118,6 +123,7 @@ export function normalizeEvent(value: unknown): TicketmasterEvent {
     venue: venue?.name?.slice(0, 200) ?? '', city: venue?.city?.name?.slice(0, 100) ?? '', country: venue?.country?.countryCode ?? '',
     price: range && typeof range.min === 'number' && typeof range.max === 'number' && Number.isFinite(range.min) && Number.isFinite(range.max) && range.min >= 0 && range.max >= range.min && /^[A-Z]{3}$/.test(range.currency ?? '') ? { min: range.min, max: range.max, currency: range.currency! } : null,
     description: typeof raw.info === 'string' ? raw.info.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 280) || null : null,
+    segment: categoryName(classification?.segment?.name), genre: categoryName(classification?.genre?.name),
   };
 }
 export function meetupAllowed(event: TicketmasterEvent, now = Date.now()) {
@@ -127,11 +133,11 @@ export function featuredLocalEvents(events: TicketmasterEvent[], now = Date.now(
   return events.filter(event => event.startsAt && Date.parse(event.startsAt) > now && !['canceled', 'cancelled', 'postponed'].includes(event.status)).slice(0, 5);
 }
 export function spotlightLocalEvents(events: TicketmasterEvent[], now = Date.now(), pins: FestivalSlot[] = []): TicketmasterEvent[] {
-  const upcoming = events.filter(event => isFestivalEvent(event) && event.startsAt && Date.parse(event.startsAt) > now
+  const upcoming = events.filter(event => event.startsAt && Date.parse(event.startsAt) > now
     && !event.timeUnconfirmed && !['canceled', 'cancelled', 'postponed'].includes(event.status))
     .sort((a, b) => Date.parse(a.startsAt!) - Date.parse(b.startsAt!) || a.id.localeCompare(b.id));
-  // shortcut: group identical names, venues and years; add an explicit series mapping if ticket labels differ.
-  const identity = (event: TicketmasterEvent) => JSON.stringify([event.name.trim().toLowerCase(), event.venue.trim().toLowerCase(), event.localDate?.slice(0, 4) ?? event.startsAt!.slice(0, 4)]);
+  // shortcut: merge matching name, venue and start; differing ticket labels need an explicit alias mapping.
+  const identity = (event: TicketmasterEvent) => JSON.stringify([event.name.trim().toLowerCase(), event.venue.trim().toLowerCase(), Date.parse(event.startsAt!)]);
   const unique = new Map<string, TicketmasterEvent>();
   for (const event of upcoming) if (!unique.has(identity(event))) unique.set(identity(event), event);
   const slots: (TicketmasterEvent | undefined)[] = Array(7);

@@ -11,10 +11,14 @@
 .reader-festival-copy .reader-festival-price { color: #D8D0E5; font-size: 14px; }
 .reader-festival-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
 .reader-festival-actions a { min-width: 44px; min-height: 44px; font-size: 14px; }
-.reader-festival-controls { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
-.reader-festival-controls > span { color: var(--textSecondary); font-size: 14px; font-variant-numeric: tabular-nums; }
-.reader-festival-controls > div { display: flex; flex-wrap: wrap; gap: 8px; }
-.reader-festival-controls button { min-width: 44px; }
+.reader-festival-controls { position: absolute; inset: 0; pointer-events: none; color: #F6F3F0; }
+.reader-festival-controls > span { position: absolute; top: 18px; left: 18px; padding: 5px 10px; border-radius: 999px; background: rgba(11,11,18,.76); font-size: 12px; font-variant-numeric: tabular-nums; }
+.reader-festival-controls button { position: absolute; pointer-events: auto; min-width: 44px; min-height: 44px; color: inherit; }
+.reader-festival-arrow { top: 100px; display: grid; place-items: center; padding: 0; border: 0; background: transparent; }
+.reader-festival-arrow > span { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid rgba(255,255,255,.24); border-radius: 50%; background: rgba(33,33,40,.76); font-size: 24px; }
+.reader-festival-previous { left: 6px; }
+.reader-festival-next { right: 6px; }
+.reader-festival-toggle { top: 12px; right: 12px; border: 1px solid rgba(255,255,255,.24); border-radius: 999px; padding: 0 12px; background: rgba(33,33,40,.76); font-size: 12px; }
 .reader-festival-source { color: var(--textSecondary); font-size: 12px; }
 .reader-festival-state { padding: 24px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); color: var(--textSecondary); }
 @media (max-width: 560px) {

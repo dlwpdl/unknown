@@ -35,15 +35,15 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
   const { isAuthed, isAdmin, isAuthLoading, me, signInApple, signInKakao, signInGoogle, signInDev, authError } = useAuth();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
-  const [result, setResult] = useState<{ userId: string; rows: AppNotification[] } | null>(null);
+  const [result, setResult] = useState<{ userId: string; cityId?: string; rows: AppNotification[] } | null>(null);
   const [actors, setActors] = useState<Map<string, { nickname: string; avatarUrl?: string }>>(new Map());
-  const rows = result?.userId === me.id ? result.rows : [];
+  const rows = result?.userId === me.id && result.cityId === me.cityId ? result.rows : [];
   const [filter, setFilter] = useState<InboxFilter>('all');
   const visibleRows = filter === 'all' ? rows : rows.filter((item) => isAdminNotificationKind(item.kind) === (filter === 'admin'));
   const newRows = visibleRows.filter((item) => item.read_at == null);
   const displayRows = [...newRows, ...visibleRows.filter((item) => item.read_at != null)];
   const version = useRef(0);
-  const knownRows = useRef<{ userId: string; ids: Set<string> } | null>(null);
+  const knownRows = useRef<{ userId: string; cityId?: string; ids: Set<string> } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const initialLoading = loading && rows.length === 0;
@@ -56,15 +56,15 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
       const next = await loadNotifications(supabase, me.id);
       if (request !== version.current) return;
       const known = knownRows.current;
-      if (background && known?.userId === me.id && next.some((item) => !known.ids.has(item.id)) && !reducedMotion && Platform.OS !== 'web') {
+      if (background && known?.userId === me.id && known.cityId === me.cityId && next.some((item) => !known.ids.has(item.id)) && !reducedMotion && Platform.OS !== 'web') {
         if (Platform.OS === 'android') UIManager.setLayoutAnimationEnabledExperimental?.(true);
         LayoutAnimation.configureNext({ duration: 220,
           create: { type: LayoutAnimation.Types.easeOut, property: LayoutAnimation.Properties.opacity },
           update: { type: LayoutAnimation.Types.easeOut },
         });
       }
-      knownRows.current = { userId: me.id, ids: new Set(next.map((item) => item.id)) };
-      setResult({ userId: me.id, rows: next });
+      knownRows.current = { userId: me.id, cityId: me.cityId, ids: new Set(next.map((item) => item.id)) };
+      setResult({ userId: me.id, cityId: me.cityId, rows: next });
       // 댓글·답글을 남긴 사람의 사진을 목록에 함께 보여준다(사진이 없으면 첫 글자).
       void loadNotificationActors(supabase, next.map((item) => item.actor_id ?? ''))
         .then((people) => { if (request === version.current) setActors(people); })
@@ -79,7 +79,7 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
     } finally {
       if (request === version.current) setLoading(false);
     }
-  }, [me.id, reducedMotion]);
+  }, [me.id, me.cityId, reducedMotion]);
 
   useFocusEffect(useCallback(() => {
     if (!isAuthed) return;
@@ -144,7 +144,7 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
                   router.push((route?.startsWith('/admin') ? '/notifications' : route ?? '/notifications') as never);
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`${admin ? '관리자 알림' : '내 소식'}, ${item.body}`}
+                accessibilityLabel={`${admin ? '관리자 알림' : '내 소식'}, ${item.title ? `${item.title}, ` : ''}${item.body}`}
                 style={({ pressed }) => [
                   styles.row,
                   item.read_at == null && Depth.card,
@@ -165,6 +165,7 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
                       </ThemedText>
                       <ThemedText type="small" themeColor="textSecondary">{relativeTime(item.created_at)}</ThemedText>
                     </View>
+                    {item.title && <ThemedText type="smallBold">{item.title}</ThemedText>}
                     <ThemedText>{item.body}</ThemedText>
                   </View>
                 </View>

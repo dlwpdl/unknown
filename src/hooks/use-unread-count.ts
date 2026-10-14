@@ -10,7 +10,8 @@ import { supabase } from '@/lib/supabase';
 export function useUnreadCount(scope: 'chat' | 'other' | 'all' = 'all') {
   const { isAuthed, me } = useAuth();
   const pathname = usePathname();
-  const [result, setResult] = useState<{ userId: string; count: number } | null>(null);
+  const cityId = scope === 'chat' ? null : me.cityId;
+  const [result, setResult] = useState<{ userId: string; cityId?: string | null; count: number } | null>(null);
   // Several tabs mount this hook at once; Supabase refuses a second subscription on the same channel name.
   const channelId = useId();
   useEffect(() => {
@@ -20,7 +21,7 @@ export function useUnreadCount(scope: 'chat' | 'other' | 'all' = 'all') {
     const refresh = () => {
       const request = ++version;
       void loadUnreadNotificationCount(supabase, me.id, scope)
-        .then((count) => { if (active && version === request) setResult({ userId: me.id, count }); }).catch(() => {});
+        .then((count) => { if (active && version === request) setResult({ userId: me.id, cityId, count }); }).catch(() => {});
     };
     refresh();
     const channel = supabase.channel(`navigation-notifications:${me.id}:${scope}:${channelId}`)
@@ -29,6 +30,6 @@ export function useUnreadCount(scope: 'chat' | 'other' | 'all' = 'all') {
     const settings = DeviceEventEmitter.addListener(NOTIFICATION_PREFERENCES_CHANGED, refresh);
     const foreground = AppState.addEventListener('change', state => { if (state === 'active') refresh(); });
     return () => { active = false; settings.remove(); foreground.remove(); void supabase.removeChannel(channel); };
-  }, [isAuthed, me.id, pathname, scope, channelId]);
-  return isAuthed && result?.userId === me.id ? result.count : 0;
+  }, [isAuthed, me.id, cityId, pathname, scope, channelId]);
+  return isAuthed && result?.userId === me.id && result.cityId === cityId ? result.count : 0;
 }

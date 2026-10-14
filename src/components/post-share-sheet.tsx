@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Share, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
+import { SymbolView } from 'expo-symbols';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
+import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
@@ -22,6 +24,7 @@ export function PostShareSheet(props: ShareSheetProps) {
 }
 function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps) {
   const theme = useTheme(), { me, isAuthed } = useAuth(), { play } = useInteractionFeedback(), router = useRouter();
+  const insets = useSafeAreaInsets();
   const [inbox, setInbox] = useState<ConversationPage | null>(null), [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false), [loading, setLoading] = useState(true), [retry, setRetry] = useState(0);
   const [sent, setSent] = useState<string[]>([]), [uncertain, setUncertain] = useState<string[]>([]);
@@ -38,6 +41,8 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
   const url = buildSharedPostUrl(post.id), image = getPostImageSource(post, me.id);
   const invite = Boolean(post.room), label = invite ? me.id === post.author.id ? '내 모임에 초대하기' : '모임 같이 가요' : post.tag.slug === 'festival' ? '페스티벌 같이 가요' : '게시물 공유';
   const control = [styles.button, { backgroundColor: theme.backgroundElement, borderColor: theme.line }];
+  const requesting = busy || Boolean(loading && inbox);
+  const dismiss = () => { if (!pending.current) { play('selection'); onClose(); } };
   async function external(copy = false) {
     if (pending.current) return;
     pending.current = true; setBusy(true); setNotice(''); play('selection');
@@ -77,40 +82,73 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
     } catch { if (active.current) { setNotice('다음 대화를 불러오지 못했어요. 다시 눌러주세요.'); play('warning'); } }
     finally { pending.current = false; if (active.current) setLoading(false); }
   }
-  return <Modal visible={visible && isAuthed} animationType="slide" onRequestClose={() => { if (!busy) onClose(); }}>
-    <SafeAreaView style={[styles.page, { backgroundColor: theme.background }]}>
-      <View style={styles.header}><ThemedText type="subtitle">{label}</ThemedText>
-        <Pressable analyticsId="post.share.close" accessibilityRole="button" accessibilityLabel="공유 닫기" disabled={busy} accessibilityState={{ disabled: busy }}
-          onPress={() => { play('selection'); onClose(); }} style={control}><ThemedText>닫기</ThemedText></Pressable>
-      </View>
-      <ScrollView analyticsId="post.share.sheet" contentContainerStyle={styles.content}>
-        <View style={[styles.preview, { borderColor: theme.line, backgroundColor: theme.card }]}>
-          {image && <Image source={image} style={styles.cover} contentFit="cover" accessible={false} />}
-          <View style={styles.previewText}><ThemedText type="smallBold" themeColor="accent">{invite ? '모임 초대' : post.tag.label}</ThemedText>
-            <ThemedText type="subtitle">{post.title}</ThemedText>
-            {post.room && <ThemedText type="small" themeColor="textSecondary">{chillingSchedule(post.room)}{post.room.closed ? ' · 모집 마감' : ''}</ThemedText>}
-            <ThemedText type="small" themeColor="textSecondary">글링에서 로그인 후 {invite ? '모임을 확인하고 참여를 신청해요.' : '전체 내용을 확인해요.'}</ThemedText>
-          </View>
+  return <Modal visible={visible && isAuthed} transparent animationType="slide" presentationStyle="overFullScreen" onRequestClose={dismiss}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.page}>
+      <View accessibilityViewIsModal onAccessibilityEscape={dismiss} style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.line, paddingBottom: Math.max(insets.bottom, 16) }]}>
+        <View accessible={false} style={[styles.handle, { backgroundColor: theme.line }]} />
+        <View style={styles.header}><ThemedText type="smallBold" style={styles.heading}>{label}</ThemedText>
+          <Pressable analyticsId="post.share.close" accessibilityRole="button" accessibilityLabel="공유 닫기" disabled={requesting} accessibilityState={{ disabled: requesting }}
+            onPress={dismiss} style={[styles.close, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={20} tintColor={theme.text} accessible={false} /></Pressable>
         </View>
-        <Pressable analyticsId="post.share.external" accessibilityRole="button" accessibilityLabel={invite ? '초대 링크 공유' : '링크 공유'} disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => void external()}
-          style={[styles.button, { backgroundColor: theme.accent, borderColor: theme.accent }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{invite ? '초대 링크 공유' : '링크 공유'}</ThemedText></Pressable>
-        {Platform.OS === 'web' && <Pressable analyticsId="post.share.copy" accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => void external(true)} style={control}><ThemedText type="smallBold">링크 복사</ThemedText></Pressable>}
-        {invite && <ThemedText type="small" themeColor="textSecondary">초대받은 사람도 참여 신청과 모임장 승인이 필요해요. 상세 집결 정보는 승인된 모임 대화에서만 확인해요.</ThemedText>}
-        <ThemedText type="subtitle">글링 대화로 보내기</ThemedText>
-        {loading && <ThemedText type="small">대화를 불러오는 중…</ThemedText>}
-        {inbox && !inbox.conversations.some(c => c.status === 'active') && <ThemedText type="small" themeColor="textSecondary">진행 중인 대화가 없어요. 외부 공유나 링크 복사를 이용해주세요.</ThemedText>}
-        {inbox?.conversations.filter(c => c.status === 'active').map(conversation => <Pressable key={conversation.id} analyticsId="post.share.conversation" accessibilityRole="button"
-          disabled={busy || sent.includes(conversation.id) || uncertain.includes(conversation.id)} accessibilityState={{ disabled: busy || sent.includes(conversation.id) || uncertain.includes(conversation.id) }}
-          onPress={() => void send(conversation)} style={control}><ThemedText type="smallBold">{conversation.title} {sent.includes(conversation.id) ? '· 전송 완료' : uncertain.includes(conversation.id) ? '· 대화에서 확인 필요' : '· 보내기'}</ThemedText></Pressable>)}
-        {uncertain.map(id => <Pressable key={id} analyticsId="post.share.verify-chat" accessibilityRole="button" accessibilityLabel="전송 결과를 대화에서 확인"
-          onPress={() => { play('selection'); onClose(); router.push({ pathname: '/chat', params: { conversationId: id } }); }} style={control}><ThemedText type="smallBold">대화를 열어 전송 결과 확인</ThemedText></Pressable>)}
-        {inbox?.cursor && <Pressable analyticsId="post.share.more" accessibilityRole="button" disabled={loading || busy} accessibilityState={{ disabled: loading || busy }} onPress={() => void more()} style={control}><ThemedText>다른 대화 더 보기</ThemedText></Pressable>}
-        {!inbox && !loading && <Pressable analyticsId="post.share.retry" accessibilityRole="button" onPress={() => { play('selection'); setLoading(true); setRetry(value => value + 1); }} style={control}><ThemedText>대화 목록 다시 확인</ThemedText></Pressable>}
-        {!!notice && <ThemedText type="small" accessibilityLiveRegion="polite">{notice}</ThemedText>}
-      </ScrollView>
+        <ScrollView analyticsId="post.share.sheet" style={styles.scroll} contentContainerStyle={styles.content}>
+          <View style={[styles.preview, { borderColor: theme.line }]}>
+            {image ? <Image source={image} style={styles.cover} contentFit="cover" accessible={false} /> : <View style={[styles.cover, styles.placeholder, { backgroundColor: theme.backgroundElement }]}>
+              <SymbolView name={invite ? { ios: 'person.2', android: 'groups', web: 'groups' } : { ios: 'doc.text', android: 'description', web: 'description' }} size={24} tintColor={theme.textSecondary} accessible={false} />
+            </View>}
+            <View style={styles.previewText}><ThemedText type="small" themeColor="accent">{invite ? '모임 초대' : post.tag.label}</ThemedText>
+              <ThemedText type="smallBold" style={styles.previewTitle} numberOfLines={2}>{post.title}</ThemedText>
+              {post.room && <ThemedText type="small" themeColor="textSecondary">{chillingSchedule(post.room)}{post.room.closed ? ' · 모집 마감' : ''}</ThemedText>}
+            </View>
+          </View>
+          <View style={styles.conversationHeader}><ThemedText type="smallBold" style={styles.sectionTitle}>글링 대화로 보내기</ThemedText>
+            {inbox?.cursor && <Pressable analyticsId="post.share.more" accessibilityRole="button" disabled={loading || busy} accessibilityState={{ disabled: loading || busy }} onPress={() => void more()} style={styles.more}><ThemedText type="small" themeColor="textSecondary" style={styles.moreLabel}>다른 대화 더 보기</ThemedText></Pressable>}
+          </View>
+          <ThemedText type="small" themeColor="textSecondary">대화를 누르면 바로 보내요.</ThemedText>
+          {loading && <StateCard kind="pending" title="대화를 불러오는 중…" body="잠시만 기다려주세요." />}
+          {!loading && inbox && !inbox.conversations.some(c => c.status === 'active') && <StateCard kind="empty" title="진행 중인 대화가 없어요" body={Platform.OS === 'web' ? '다른 앱으로 공유하거나 링크를 복사해보세요.' : '아래 버튼으로 다른 앱에 공유해보세요.'} />}
+          {!inbox && !loading && <><StateCard kind="error" title="대화를 불러오지 못했어요" body="공유 링크는 다른 앱으로 보낼 수 있어요." />
+            <Pressable analyticsId="post.share.retry" accessibilityRole="button" disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => { play('selection'); setLoading(true); setRetry(value => value + 1); }} style={control}><ThemedText type="smallBold">대화 목록 다시 확인</ThemedText></Pressable>
+          </>}
+          {inbox?.conversations.filter(c => c.status === 'active').map(conversation => {
+            const done = sent.includes(conversation.id), unconfirmed = uncertain.includes(conversation.id), disabled = requesting || done || unconfirmed;
+            return <Pressable key={conversation.id} analyticsId="post.share.conversation" accessibilityRole="button"
+              accessibilityLabel={`${conversation.title} ${done ? '전송 완료' : unconfirmed ? '전송 확인 필요' : '대화로 보내기'}`} disabled={disabled} accessibilityState={{ disabled }}
+              onPress={() => void send(conversation)} style={({ pressed }) => [styles.conversation, { backgroundColor: pressed ? theme.backgroundElement : 'transparent', opacity: requesting ? 0.6 : 1 }]}>
+              <View accessible={false} style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}>{conversation.kind === 'group'
+                ? <SymbolView name={{ ios: 'person.2', android: 'groups', web: 'groups' }} size={20} tintColor={theme.textSecondary} accessible={false} />
+                : <ThemedText type="smallBold" themeColor="navy">{Array.from(conversation.title.trim())[0] || '?'}</ThemedText>}</View>
+              <View style={styles.conversationText}><ThemedText type="smallBold" style={styles.conversationTitle} numberOfLines={2}>{conversation.title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{conversation.kind === 'group' ? '모임 대화' : '1:1 대화'}</ThemedText></View>
+              <View style={[styles.sendMarker, { backgroundColor: done || unconfirmed ? 'transparent' : theme.backgroundElement }]}><ThemedText type="small" themeColor={done ? 'accent' : 'textSecondary'}>{done ? '✓ 보냈어요' : unconfirmed ? '확인 필요' : '보내기'}</ThemedText></View>
+            </Pressable>;
+          })}
+          {uncertain.map(id => <Pressable key={id} analyticsId="post.share.verify-chat" accessibilityRole="button" accessibilityLabel="전송 결과를 대화에서 확인" disabled={requesting} accessibilityState={{ disabled: requesting }}
+            onPress={() => { if (pending.current) return; play('selection'); onClose(); router.push({ pathname: '/chat', params: { conversationId: id } }); }} style={control}><ThemedText type="smallBold">대화를 열어 전송 결과 확인</ThemedText></Pressable>)}
+        </ScrollView>
+        <View style={[styles.footer, { borderColor: theme.line }]}>
+          {!!notice && <ThemedText type="small" accessibilityLiveRegion="polite" themeColor="textSecondary">{notice}</ThemedText>}
+          <ThemedText type="small" themeColor="textSecondary">{invite ? '초대받은 사람도 로그인 후 참여 신청과 모임장 승인이 필요해요. 상세 집결 정보는 승인된 모임 대화에서만 확인해요.' : '글링에서 로그인 후 전체 내용을 확인해요.'}</ThemedText>
+          <Pressable analyticsId="post.share.external" accessibilityRole="button" accessibilityLabel={invite ? '초대 링크 공유' : '다른 앱으로 공유'} disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => void external()}
+            style={[styles.button, styles.external, { backgroundColor: theme.accent, borderColor: theme.accent }]}><SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={20} tintColor={theme.accentInk} accessible={false} /><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{invite ? '초대 링크 공유' : '다른 앱으로 공유'}</ThemedText></Pressable>
+          {Platform.OS === 'web' && <Pressable analyticsId="post.share.copy" accessibilityRole="button" disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => void external(true)} style={control}><ThemedText type="smallBold">링크 복사</ThemedText></Pressable>}
+        </View>
+      </View>
     </SafeAreaView>
   </Modal>;
 }
-const styles = StyleSheet.create({ page: { flex: 1 }, header: { padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-  content: { padding: 16, gap: 16, maxWidth: 620, width: '100%', alignSelf: 'center' }, button: { minHeight: 44, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, justifyContent: 'center' },
-  preview: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' }, previewText: { padding: 16, gap: 8 }, cover: { width: '100%', aspectRatio: 16 / 9 } });
+const styles = StyleSheet.create({
+  page: { flex: 1, justifyContent: 'flex-end', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.64)' },
+  sheet: { width: '100%', maxWidth: 620, maxHeight: '90%', borderTopWidth: 1, borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden' },
+  handle: { width: 36, height: 4, borderRadius: 4, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
+  header: { paddingHorizontal: 20, minHeight: 60, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+  heading: { flex: 1, fontSize: 20, lineHeight: 28 }, close: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  scroll: { flexGrow: 0, flexShrink: 1 }, content: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12, gap: 8 },
+  button: { minHeight: 44, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, alignItems: 'center', justifyContent: 'center' },
+  preview: { borderRadius: 16, borderWidth: 1, padding: 12, gap: 12, flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  previewText: { flex: 1, gap: 4 }, previewTitle: { fontSize: 15, lineHeight: 21 }, cover: { width: 64, height: 72, borderRadius: 8 }, placeholder: { alignItems: 'center', justifyContent: 'center' },
+  conversationHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }, sectionTitle: { flex: 1, fontSize: 14 },
+  more: { minHeight: 44, minWidth: 44, justifyContent: 'center' }, moreLabel: { fontSize: 12, textDecorationLine: 'underline' },
+  conversation: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 12, paddingVertical: 8 },
+  avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  conversationText: { flex: 1, gap: 2 }, conversationTitle: { fontSize: 14, lineHeight: 20 }, sendMarker: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20 },
+  footer: { flexShrink: 0, marginHorizontal: 20, paddingTop: 12, borderTopWidth: 1, gap: 12 }, external: { minHeight: 48, flexDirection: 'row', gap: 8 },
+});

@@ -238,6 +238,35 @@ test('event pushes retain the exact supported city destination', async () => {
     assert.equal((await (await h.run()).json()).tickets, 1);
   }
 });
+
+test('event pushes use the festival name as title and its explanatory body in the actual provider payload', async () => {
+  const event = { ...job, category: 'trending', route: '/events/real-fest?cityId=vancouver',
+    event_title: '우리 동네 재즈 페스티벌', body: '두 그룹의 공연과 공개 잼 세션이 열려요. 같이 갈 사람!?' };
+  const h = harness({ sends: [event], fetcher: async (_, options) => {
+    const [message] = JSON.parse(options.body);
+    assert.equal(message.title, event.event_title);
+    assert.equal(message.body, event.body);
+    assert.equal(message.data.route, event.route);
+    assert.equal(message.collapseId, notificationId);
+    assert.deepEqual(Object.keys(message.data).sort(), ['category', 'notificationId', 'route', 'userId']);
+    return Response.json({ data: [{ status: 'ok', id: ticketId }] });
+  } });
+  assert.equal((await (await h.run()).json()).tickets, 1);
+});
+
+test('event titles require a recommendation and valid exact destination; old claims remain compatible', async () => {
+  for (const claim of [job, { ...job, event_title: 'private title' },
+    { ...job, category: 'trending', route: '/events/id?cityId=unknown', event_title: 'hidden title' },
+    { ...job, route: '/events/id?cityId=vancouver', event_title: 'not a recommendation' },
+    { ...job, category: 'trending', route: '/events/id?cityId=vancouver', event_title: 42 },
+    { ...job, category: 'trending', route: '/events/id?cityId=vancouver', event_title: '  ' }]) {
+    const h = harness({ sends: [claim], fetcher: async (_, options) => {
+      const [message] = JSON.parse(options.body); assert.equal(message.title, '글링'); assert.equal(message.body, job.body);
+      return Response.json({ data: [{ status: 'ok', id: ticketId }] });
+    } });
+    assert.equal((await (await h.run()).json()).tickets, 1);
+  }
+});
 test('injected or unsupported event push routes fall back safely', async () => {
   for (const route of ['/events/id', '/events/id?cityId=unknown', '/events/../admin?cityId=toronto',
     '/events/id?cityId=toronto&redirect=//example.com', '/events/%2fadmin?cityId=toronto',

@@ -1,7 +1,7 @@
 // @ts-nocheck -- Deno Edge runtime (the app TypeScript project does not resolve npm: imports).
 // eslint-disable-next-line import/no-unresolved -- Deno resolves npm: imports when deploying the function.
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { EVENT_CITIES, EVENT_CATEGORIES, EVENT_TIMEZONES, festivalCacheExpiry, isFestivalEvent, localDayUtcRange, parseEventQuery, normalizeEvent, spotlightLocalEvents } from '../_shared/ticketmaster.ts';
+import { EVENT_CITIES, EVENT_CATEGORIES, EVENT_TIMEZONES, festivalCacheExpiry, localDayUtcRange, parseEventQuery, normalizeEvent, spotlightLocalEvents } from '../_shared/ticketmaster.ts';
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
 const reply = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 Deno.serve(async request => {
@@ -81,7 +81,6 @@ Deno.serve(async request => {
         url.searchParams.set('endDateTime', end);
       } else url.searchParams.set('startDateTime', new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'));
       if (EVENT_CATEGORIES[query.category]) url.searchParams.set('segmentId', EVENT_CATEGORIES[query.category]);
-      if (query.festival) url.searchParams.set('keyword', 'festival');
     }
     const raw = await upstream(url);
     let payload;
@@ -91,7 +90,7 @@ Deno.serve(async request => {
       payload = { event };
     } else {
       if (!raw.page || !Number.isInteger(raw.page.totalPages) || (raw._embedded?.events && !Array.isArray(raw._embedded.events))) throw new Error('INVALID_UPSTREAM');
-      const events = (raw._embedded?.events ?? []).map(normalizeEvent).filter(event => inCity(event) && (!query.date || event.localDate === query.date) && (!query.festival || isFestivalEvent(event)));
+      const events = (raw._embedded?.events ?? []).map(normalizeEvent).filter(event => inCity(event) && (!query.date || event.localDate === query.date));
       if (query.festival) for (const slot of assigned.data ?? []) {
         if (events.some(event => event.id === slot.event_id)) continue;
         const target = new URL(`https://app.ticketmaster.com/discovery/v2/events/${encodeURIComponent(slot.event_id)}.json`);

@@ -4,6 +4,7 @@ type PushJob = {
   id: string; lease_id: string; token: string; user_id: string; notification_id: string;
   category: string; body: string; route: string | null; ticket_id: string | null;
   post_title?: string | null; post_preview?: string | null;
+  event_title?: string | null;
 };
 type WorkerOptions = {
   secret?: string; expoAccessToken?: string; fetcher?: typeof fetch;
@@ -61,8 +62,10 @@ export async function handlePushNotifications(request: Request, options: WorkerO
           const postPreview = new RegExp(`^/post/${UUID}$`, 'i').test(route)
             && ['trending', 'weekly_ranking', 'city_food', 'city_places', 'interests', 'nearby'].includes(job.category)
             && typeof job.post_title === 'string' && job.post_title.trim().length > 0 && typeof job.post_preview === 'string';
+          const eventPreview = event && route === job.route && ['trending', 'city_places'].includes(job.category)
+            && typeof job.event_title === 'string' && job.event_title.trim().length > 0;
           return {
-            to: job.token, title: postPreview ? job.post_title : route.startsWith('/admin') ? '글링 관리자' : '글링',
+            to: job.token, title: eventPreview ? job.event_title : postPreview ? job.post_title : route.startsWith('/admin') ? '글링 관리자' : '글링',
             body: postPreview ? job.post_preview : job.body,
             sound: 'default', channelId: 'gling-activity', ttl: 300,
             // Expo has no send idempotency key. Stable IDs collapse ambiguous retry copies on devices.
