@@ -9,6 +9,9 @@ test('traffic records only named app surfaces without identifiers, search text o
   assert.equal(analyticsScreen('/'), 'feed');
   assert.equal(analyticsScreen('/events'), 'events');
   assert.equal(analyticsScreen('/events/G5vYZabc?ticket=private'), 'event-detail');
+  assert.equal(analyticsScreen('/places'), 'places');
+  assert.equal(analyticsScreen('/places/osm:node:652955238?address=private'), 'place-detail');
+  assert.equal(analyticsScreen('/gling/places/osm:node:652955238'), 'place-detail');
   for (const path of ['/admin', '/admin?secret=x', '/auth/callback', '/privacy', '/unknown/path']) {
     assert.equal(analyticsScreen(path), null);
   }

@@ -22,6 +22,7 @@ function cityCache(file) {
       useState(initial) { const i = cursor++; if (!(i in state)) state[i] = initial; return [state[i], next => { state[i] = typeof next === 'function' ? next(state[i]) : next; }]; },
       useRef(initial) { return refs[refCursor++] ??= { current: initial }; },
       useCallback: fn => fn, useId: () => 'city-counter', useEffect(fn, deps) { pendingEffect = { fn, deps }; },
+      useLayoutEffect: fn => fn(),
     };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'expo-router') return { useRouter: () => ({}), usePathname: () => '/feed', useFocusEffect: fn => { focus = fn; } };

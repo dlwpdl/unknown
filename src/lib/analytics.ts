@@ -3,8 +3,9 @@ export function analyticsScreen(pathname: string): string | null {
   const path = pathname.split(/[?#]/)[0].replace(/^\/gling(?=\/|$)/, '').replace(/\/$/, '');
   if (/^\/post\/[^/]+$/.test(path)) return 'post';
   if (/^\/events\/[^/]+$/.test(path)) return 'event-detail';
+  if (/^\/places\/[^/]+$/.test(path)) return 'place-detail';
   const screens: Record<string, string> = {
-    '': 'feed', '/events': 'events', '/meetups': 'meetups', '/compose': 'write', '/chat': 'chat',
+    '': 'feed', '/events': 'events', '/places': 'places', '/meetups': 'meetups', '/compose': 'write', '/chat': 'chat',
     '/post': 'post', '/meetup-create': 'meetup-create', '/meetup-join': 'meetup-join',
     '/meetup-profile': 'meetup-profile', '/meetup-application': 'meetup-application',
     '/profile/inbox': 'inbox', '/profile/notifications': 'notification-settings',
