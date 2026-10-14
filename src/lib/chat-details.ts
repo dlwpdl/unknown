@@ -2,6 +2,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 type TimedMessage = { sender_id: string; created_at: string };
 export type ChatRect = { x: number; y: number; width: number; height: number };
+export function chatImagePaths(message: { image_paths?: string[] | null; image_path?: string | null; deleted_at?: string | null }) {
+  if (message.deleted_at) return [];
+  return message.image_paths?.length ? message.image_paths : message.image_path ? [message.image_path] : [];
+}
 export function messageMenuPosition(anchor: ChatRect, menu: Pick<ChatRect, 'width' | 'height'>, bounds: ChatRect, mine: boolean) {
   const minLeft = bounds.x + 8, maxLeft = Math.max(minLeft, bounds.x + bounds.width - menu.width - 8);
   const minTop = bounds.y + 8, maxTop = Math.max(minTop, bounds.y + bounds.height - menu.height - 8);

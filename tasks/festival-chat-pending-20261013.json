@@ -1,0 +1,205 @@
+{
+  "date": "2026-10-13",
+  "instruction": "Latest owner approved the photo mockup and implementation, then explicitly said ㅇㅋ 이대로 배포해. Commit the reviewed current app source and use the existing single free pipeline for web, both signed native builds and store review submissions. Preserve older hold/submission history, unrelated automations and private QA. The existing installed simulator was reviewed before any new build.",
+  "acceptance": [
+    "Main gallery selects nearest seven valid upcoming events from the whole-view source in all five cities; distinct dates survive deduplication.",
+    "Preserve existing manual overrides, server guards and daily collection; no extra automation or dependency.",
+    "Small previous/next controls ON the main festival card retain swipe, seven-card wrap, same-city selection, lifecycle refresh, manual pause, accessibility and reduced motion; no lower upcoming label or thumbnail strip.",
+    "Actual chat retains compact attachment actions and MapLibre location sheet; ordered photos are sent as one idempotent bundle with an accessible grid and swipeable viewer.",
+    "Photo-library handoff, compression, upload and server confirmation have visible loading feedback; actual completed counts are shown when known, and failures preserve retryable photos.",
+    "Event notifications use the actual event name as title and a meaningful source description or verified genre/venue/local date plus 같이 갈 사람!? as body; show the same title/body in the app inbox.",
+    "City popular-places entry below the festival card opens an actual native route with the saved city; layout preview and unavailable ranking data are explicit until the real source is implemented."
+  ],
+  "steps": [
+    "Regression examples using captured five-city data and lifecycle harness; observe failures.",
+    "Small shared/API/cache/admin fixes, native/public gallery controls and lifecycle changes.",
+    "Transactional local SQL checks, Node suite, typecheck, lint and Gling-owned HTML preview.",
+    "Read-only review; leave source changes uncommitted and all releases held."
+  ],
+  "not_authorized": [
+    "duplicate workflow/build/submission",
+    "new paid infrastructure or automation job",
+    "real-recipient QA sends or sensitive fixture data",
+    "private QA/credentials in public repository",
+    "unrelated product/account/automation changes"
+  ],
+  "references": [
+    "https://mobbin.com/screens/571174da-8457-4b79-8576-5525951e2387",
+    "https://mobbin.com/screens/a515e117-c16e-4f6d-a34a-df952b01c603",
+    "https://docs.expo.dev/versions/v57.0.0/",
+    "https://mobbin.com/screens/2c807c0a-d708-4011-9437-140913bd920b",
+    "https://mobbin.com/screens/3a78b2df-aebe-475c-89b6-df853ef212aa",
+    "https://docs.expo.dev/versions/v57.0.0/sdk/notifications/"
+  ],
+  "image_generation": "not applicable",
+  "scope_notes": [
+    "Reuse existing admin assignment semantics; no admin RPC/schema rewrite for gallery selection.",
+    "Backend album/event notification migrations and two existing Edge Functions were applied during the earlier verified release authorization, before the latest hold; preserve those receipts. Do not reapply or deploy again.",
+    "Selected-city notification migration from the other existing thread is preserved.",
+    "City places has only an approved HTML/spec and no actual places/ranking API. Native preview must not claim actual ranks, visits, reviews or completion."
+  ],
+  "latest_steering": [
+    "Do not deploy; first show the actual app in simulator.",
+    "Refresh the app using the latest uncommitted source.",
+    "Send selected photos in one bubble like KakaoTalk.",
+    "Show loading feedback while multi-photo selection and sending take time.",
+    "Replace generic festival notification titles and introductions with event-specific explanatory content.",
+    "Small previous/next controls belong ON main festival card; remove lower upcoming label and seven thumbnails.",
+    "Use the old lower space for 이 도시에서 요즘 많이 가는 곳.",
+    "Existing actual simulator reload FIRST, before any new build; all release and deployment actions held.",
+    "Owner dislikes current arrows; requests more natural design alternatives before application.",
+    "After arrow mockups, quickly connect city popular-places entry and show it in the existing simulator.",
+    "Owner explicitly rejects the empty places preview; real place records must be displayed in the existing simulator, without build/deployment or invented popularity.",
+    "Owner approved photo design: ㅇㅋ 확인햇어 이대로 진행시켜",
+    "Owner explicitly resumed deployment: ㅇㅋ 이대로 배포해"
+  ],
+  "local_preview_authorized": "Existing iPhone 17 Pro Max, a simulator-only Debug app and isolated Metro on 8083; not a release/store build.",
+  "prior_owner_hold": {
+    "instruction": "Apply festival and chat fixes; accumulate without committing, building, deploying or submitting.",
+    "not_authorized": [
+      "git commit/push/tag",
+      "store/release build/export",
+      "production database/function/web deployment",
+      "store upload/submission",
+      "release job restart"
+    ]
+  },
+  "release_resume": {
+    "evidence": "~/Library/Application Support/gling/operations/chat-sharing-release-20261013/resumed-release-20261014/authorization-and-version-constraint.json",
+    "album_and_event_content_migrations": "committed and read back after guarded production rollback rehearsal",
+    "existing_edge_functions": "ticketmaster-events and push-notifications deployed with unchanged verify_jwt=false",
+    "native_build": "not started; public-version clarification pending",
+    "next_build_candidate": 65,
+    "candidate_basis": "Apple and all uploaded Play bundles max64; prior65 job stopped before signing verification, cutoff or submission"
+  },
+  "current_owner_hold": {
+    "messages": [
+      "msg_29bed74b2a31",
+      "msg_7a7257013da9"
+    ],
+    "native_preview": "Existing installed app actually terminated/launched with localhost:8083; settled home screenshot verified. No binary built or installed.",
+    "carousel": "Seven-card controls work and related28 tests pass; current edge circles are explicitly rejected/unaccepted. Three clickable alternative HTML designs prepared; optional owner selection pending, no chosen design applied.",
+    "places": "Agreed four new preview files reviewed and integrated into feed. Actual installed native app home -> Toronto route -> Top25 -> selected food -> back verified. Actual ranking API, places, reviews and meetup data remain unconnected; development preview only.",
+    "prior_backend": "Preserved; committed during earlier authorization, no mutations since owner hold.",
+    "supersededForReviewedAppSourceBy": "release_authorization_20261014"
+  },
+  "verification": {
+    "node": {
+      "tests": 937,
+      "pass": 936,
+      "fail": 0,
+      "skip": 1
+    },
+    "types": 0,
+    "changedLint": 0,
+    "focusedPlacesCarouselTests": 28,
+    "native": "existing installed SDK57 app and Metro8083; no new binary",
+    "arrowMockup": "/Users/ash/Desktop/Git/unknown/output/design/gling-festival-arrow-options-20261013/index.html"
+  },
+  "real_places_fix": {
+    "instruction": "Complete real place list/detail/map display before reporting this correction done.",
+    "source_strategy": "Verify free/keyless OSM-compatible catalog; public Overpass official guidance excludes general-app runtime backend use, so manual bounded real catalog extraction with dated ODbL source/IDs is the smallest no-deploy path unless another verified existing contract works.",
+    "data_truth": "Real collected records only; no fabricated visits/ranks/photos/reviews, no success-shaped empty preview.",
+    "ownership": "This terminal owns extraction/raw/query/catalog JSON/home/feed/sole native GUI; existing peer owns helper/list/detail/tests/spec",
+    "holds": [
+      "commit",
+      "native/release build/install",
+      "tag",
+      "production deploy",
+      "store submit"
+    ],
+    "startedAt": "2026-10-14T02:54:38.119174+00:00",
+    "current_status": "real811 catalog connected; photo UI design review first",
+    "catalog_sha256": "ec9ad2c323e4a3f4da39981ba5d0f7e06b3e5a9fc2603eccba050c692f37687b",
+    "source_checks": {
+      "tests": 939,
+      "pass": 938,
+      "fail": 0,
+      "skipped": 1
+    },
+    "native_remaining": [
+      "real place detail/map render",
+      "Android native"
+    ],
+    "named_map_correction": {
+      "source": "name + actual registered address + CITIES English city/province/Canada",
+      "checks": {
+        "red_before_fix": 2,
+        "relevant_tests_passed": 20,
+        "failed": 0,
+        "typecheck_exit": 0,
+        "scoped_lint_exit": 0
+      },
+      "nativeGoogleResultMatching": "not checked; photo design first",
+      "receipt": "/Users/ash/Library/Application Support/gling/operations/city-places-simulator-preview-20261013/name-map-link-fix.json"
+    }
+  },
+  "photo_design_request": {
+    "instruction": "Show approximately3 real photo place cards directly on home and left photos beside names/addresses in full list. Use design skill and show a mockup first.",
+    "artifact": "/Users/ash/Desktop/Git/unknown/output/design/gling-city-places-photos-20261013/index.html",
+    "status": "approved; implemented in source and existing installed iPhone Debug app via Metro8083",
+    "date": "2026-10-14T03:33:48.252319+00:00",
+    "native_project_preview": {
+      "artifact": "/Users/ash/Desktop/Git/unknown/output/design/gling-city-places-photos-20261013/index.html",
+      "nativeBrowserReceipt": "/Users/ash/Desktop/Git/unknown/output/design/gling-city-places-photos-20261013/orca-native-project-preview.json",
+      "nativeScreenshot": "/Users/ash/Library/Application Support/gling/operations/festival-chat-source-verification-20261013/native-photo-design-browser-current.png",
+      "project": "folder:e88d505b-f6bb-47d6-ba41-904ef2a72a8b",
+      "browserPageId": "698dec63-e962-4242-b54d-217897d0eef0",
+      "actualVisible": true,
+      "photosLoaded": true,
+      "homeCards": 3,
+      "prototypeRows": 8,
+      "photoUiAppliedInApp": true,
+      "releaseHold": false
+    },
+    "approvedAt": "2026-10-14T07:44:18.365198+00:00"
+  },
+  "photo_implementation": {
+    "cities": 11,
+    "licensedSamePlacePhotos": 36,
+    "actualCatalogRecords": 811,
+    "popularityRanking": "not collected; displayed explicitly",
+    "unknownPhoto": "neutral icon; no unrelated photo",
+    "nativeVerified": [
+      "Toronto home3 actual photos",
+      "list10 with left photos",
+      "same-place detail photo",
+      "attribution modal",
+      "Google external map opened"
+    ],
+    "verification": {
+      "nodeTotal": 947,
+      "pass": 945,
+      "fail": 0,
+      "skip": 2,
+      "typesExit": 0,
+      "fullLintExit": 0,
+      "webExportExit": 0,
+      "publicAndMerchantBoundaryExit": 0
+    },
+    "receiptDirectory": "/Users/ash/Library/Application Support/gling/operations/city-places-photo-apply-20261013",
+    "imageGeneration": "not applicable; licensed photographs remain unmodified"
+  },
+  "release_authorization_20261014": {
+    "at": "2026-10-14T07:44:18.365198+00:00",
+    "ownerMessage": "ㅇㅋ 이대로 배포해",
+    "supersedesCurrentOwnerHold": true,
+    "scope": "current reviewed source commit/push, existing web deploy, both signed native builds and existing store review submission",
+    "version": "1.2.3",
+    "buildNumber": "existing pipeline allocates unused number above both stores; current maximum64",
+    "ios": "App Store review, AFTER_APPROVAL",
+    "android": "existing alpha closed-testing review; production access unavailable",
+    "immediateMinimumBuild": "raise each platform only after verified signed build succeeds",
+    "noNewJobOrPaidService": true,
+    "state": "native final checks completed except share A; release preparation, no new native build yet"
+  },
+  "instruction_before_deploy_approval": "Latest owner: first show the existing installed actual iPhone simulator app on Metro8083. No new native/release build, commit, push, tag, deploy or submission. Main festival card has small previous/next controls; remove lower upcoming label and seven-thumbnail strip. That lower area becomes 이 도시에서 요즘 많이 가는 곳; actual ranking API is absent and must not be fabricated.",
+  "not_authorized_before_deploy_approval": [
+    "git commit/push/tag",
+    "any new native or release build/install/export",
+    "production database/function/web deployment",
+    "store upload/submission or release-job restart",
+    "manual fixture push or real-recipient QA sends",
+    "duplicate Metro/build/submission/workflow/service or GUI ownership"
+  ]
+}

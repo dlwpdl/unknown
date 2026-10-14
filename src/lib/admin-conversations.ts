@@ -27,7 +27,7 @@ export type ConversationPage = {
 };
 export type ConversationMessage = {
   id: string; conversation_id: string; sender_id: string; body: string; created_at: string;
-  image_path?: string | null; reply_to_id?: string | null;
+  image_path?: string | null; image_paths?: string[]; reply_to_id?: string | null;
   kind?: 'text' | 'image' | 'location'; latitude?: number | null; longitude?: number | null;
 };
 export type ConversationSignal = {

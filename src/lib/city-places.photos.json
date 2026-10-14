@@ -1,0 +1,388 @@
+{
+  "collectedAt": "2026-10-14T07:29:14.221717+00:00",
+  "source": "Verified same-place Wikimedia Commons photographs; dated captures, not popularity ranking",
+  "cities": {
+    "toronto": [
+      {
+        "placeId": "osm:node:277039070",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/25/Don_Valley_Brick_Works_%2854010434534%29.jpg/960px-Don_Valley_Brick_Works_%2854010434534%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Don_Valley_Brick_Works_(54010434534).jpg",
+        "artist": "V. L.",
+        "license": "CC0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+        "imageSha256": "41cbc515b9a41ae9a86d798850b79ef2685efa1ab8f61115a1d564ffaffaf81d"
+      },
+      {
+        "placeId": "osm:node:368385388",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e2/EdgeWalk_on_the_CN_Tower.jpg/960px-EdgeWalk_on_the_CN_Tower.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:EdgeWalk_on_the_CN_Tower.jpg",
+        "artist": "Sergiu Dumitriu",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "a4db0b2866192f3d1683317fca3a58dd4cccf326f3db46cc4a15f0254e8fd023"
+      },
+      {
+        "placeId": "osm:node:256351459",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5e/Colborne_Lodge_Toronto_2009.jpg/960px-Colborne_Lodge_Toronto_2009.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Colborne_Lodge_Toronto_2009.jpg",
+        "artist": "Robert Taylor from Stirling, Canada",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "84abbde8b57a93722c13940c136a778416d9ddcd7a134d8c374e7bb270325d47"
+      },
+      {
+        "placeId": "osm:node:281927817",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/Riverdale_Farm%2C_Toronto%2C_June_16_2025_%2812%29.jpg/960px-Riverdale_Farm%2C_Toronto%2C_June_16_2025_%2812%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Riverdale_Farm,_Toronto,_June_16_2025_(12).jpg",
+        "artist": "Dillan Payne",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "16178871b7f4be9f86f53a744b2472c01e41a2a98b742b111a762dcc31c82e20"
+      },
+      {
+        "placeId": "osm:node:214312074",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/72/Royal_Ontario_Museum_in_Fall_2021.jpg/960px-Royal_Ontario_Museum_in_Fall_2021.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Royal_Ontario_Museum_in_Fall_2021.jpg",
+        "artist": "Maksim Sokolov (Maxergon)",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "3e270ddc51588b0fe78cf1a08ac3b2b633956d41b762b0585c199882c1cee362"
+      }
+    ],
+    "vancouver": [
+      {
+        "placeId": "osm:node:648735254",
+        "cityId": "vancouver",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b1/The_Olympic_Cauldron_in_Vancouver.jpg/960px-The_Olympic_Cauldron_in_Vancouver.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:The_Olympic_Cauldron_in_Vancouver.jpg",
+        "artist": "Duncan Rawlinson",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "27459770bbe67ff22cc01eed1d906397d75ae54093c8c2570027de6454200810"
+      },
+      {
+        "placeId": "osm:node:703754423",
+        "cityId": "vancouver",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b8/Gastown_Steam_Clock.jpg/960px-Gastown_Steam_Clock.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Gastown_Steam_Clock.jpg",
+        "artist": "Abhinaba Basu from Redmond, United States",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "e20cf3d6614613b2c0d79b900c6bed926f58bc2040d3e5b20b7aff493b26517e"
+      },
+      {
+        "placeId": "osm:node:2410285536",
+        "cityId": "vancouver",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/80/Hollow_Tree_%2854215906693%29.jpg/960px-Hollow_Tree_%2854215906693%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Hollow_Tree_(54215906693).jpg",
+        "artist": "Enoch Leung",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "imageSha256": "855738ca6ad86244a11f5262acbdcb83f5ba2b3177eabfc780ba6d289f7bf35d"
+      }
+    ],
+    "montreal": [
+      {
+        "placeId": "osm:node:213716077",
+        "cityId": "montreal",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ee/Museum_of_Fine_Arts%2C_main_entrance%2C_Montreal.jpg/960px-Museum_of_Fine_Arts%2C_main_entrance%2C_Montreal.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Museum_of_Fine_Arts,_main_entrance,_Montreal.jpg",
+        "artist": "Thomas Ledl",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "133bde09076e99c70ff37b38ff9e3475c43a3288ca269cd9a869da80758c246e"
+      },
+      {
+        "placeId": "osm:node:465633306",
+        "cityId": "montreal",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c2/Monument_%C3%A0_Paul_de_Chomedey%2C_sieur_de_Maisonneuve_2.jpg/960px-Monument_%C3%A0_Paul_de_Chomedey%2C_sieur_de_Maisonneuve_2.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Monument_%C3%A0_Paul_de_Chomedey,_sieur_de_Maisonneuve_2.jpg",
+        "artist": "Wilfredor",
+        "license": "CC0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+        "imageSha256": "1bfc2d2240961824e680d8d4888dda2263a053cf2bad90e81a8a5dfd94254a20"
+      },
+      {
+        "placeId": "osm:node:333465990",
+        "cityId": "montreal",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/62/Dauerausstellung_im_Mus%C3%A9e_des_ondes_Emile_Berliner.jpg/960px-Dauerausstellung_im_Mus%C3%A9e_des_ondes_Emile_Berliner.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Dauerausstellung_im_Mus%C3%A9e_des_ondes_Emile_Berliner.jpg",
+        "artist": "Dr. Nipper",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "d26c34d60089aa9e011959842eda0cde5065fd6b4b3f7f9fbe5a5826f9a3ed8f"
+      },
+      {
+        "placeId": "osm:node:343490371",
+        "cityId": "montreal",
+        "uri": "https://upload.wikimedia.org/wikipedia/commons/3/30/Schwartzs_Montreal_Hebrew_Deli_2010.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Schwartzs_Montreal_Hebrew_Deli_2010.jpg",
+        "artist": "Julian-Courtney Michael Lukács from Fredericton, Canada",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "imageSha256": "ec835a8ddaa573ad9df327a7fe346567f9469d851de13af7e08369d4d03ddbb5"
+      }
+    ],
+    "calgary": [
+      {
+        "placeId": "osm:node:577280929",
+        "cityId": "calgary",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5a/DevonianGardens-Calgary-waterfall.JPG/960px-DevonianGardens-Calgary-waterfall.JPG",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:DevonianGardens-Calgary-waterfall.JPG",
+        "artist": "Qyd",
+        "license": "CC BY 2.5",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.5",
+        "imageSha256": "b99986f43aa6f9e74e89e73d3b2bde2e1f3ae3d022f94b7667370fb19dcb945f"
+      },
+      {
+        "placeId": "osm:node:91101395",
+        "cityId": "calgary",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/82/Mainstreet-Heritage_park.jpg/960px-Mainstreet-Heritage_park.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Mainstreet-Heritage_park.jpg",
+        "artist": "Qyd",
+        "license": "CC BY 2.5",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.5",
+        "imageSha256": "238d6410877a246221d092c5aa85f200bdfe0a571aec894015085822d66c47d0"
+      },
+      {
+        "placeId": "osm:node:4365625291",
+        "cityId": "calgary",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/68/Calgary_from_Scotsman%27s_Hill_%283704313245%29.jpg/960px-Calgary_from_Scotsman%27s_Hill_%283704313245%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Calgary_from_Scotsman%27s_Hill_(3704313245).jpg",
+        "artist": "jockrutherford from Owen Sound, ON",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "imageSha256": "0793398b02062711847addc0c7575b4c59fe37138736861df2a178f5c688e5ff"
+      }
+    ],
+    "edmonton": [
+      {
+        "placeId": "osm:node:4263896991",
+        "cityId": "edmonton",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/78/Neon_sign_museums_Edmonton_%2814%29.jpg/960px-Neon_sign_museums_Edmonton_%2814%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Neon_sign_museums_Edmonton_(14).jpg",
+        "artist": "Ferfive",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "3e6109bfc983c7cb0c6a7599be655083874da61849882c77f32e747eb9cac3c3"
+      },
+      {
+        "placeId": "osm:node:4546582742",
+        "cityId": "edmonton",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cb/Edmonton_Holodomor_Memorial_2020.jpg/960px-Edmonton_Holodomor_Memorial_2020.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Edmonton_Holodomor_Memorial_2020.jpg",
+        "artist": "Kaiser matias",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "b73b614f89b793d3cd92a48b63b5e32542edf51f3059d6422a1198d72c756436"
+      },
+      {
+        "placeId": "osm:node:4546582741",
+        "cityId": "edmonton",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e0/Edmonton_Cenotaph%2C_Edmonton%2C_Alberta%2C_2026-09-27_01.jpg/960px-Edmonton_Cenotaph%2C_Edmonton%2C_Alberta%2C_2026-09-27_01.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Edmonton_Cenotaph,_Edmonton,_Alberta,_2026-09-27_01.jpg",
+        "artist": "Chris Woodrich",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "7c2ea2990602eb87836d7714cba91185dc5165e28509c2a8272a4a7deb058d88"
+      }
+    ],
+    "winnipeg": [
+      {
+        "placeId": "osm:node:343302468",
+        "cityId": "winnipeg",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/68/Winnipeg_Union_Station.jpg/960px-Winnipeg_Union_Station.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Winnipeg_Union_Station.jpg",
+        "artist": "Milorad Dimic MD, Nis, Serbia",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "37808d3cde2007aeab723a61e37893c4419db98a6cbd7995f39558374a326d84"
+      },
+      {
+        "placeId": "osm:node:343302576",
+        "cityId": "winnipeg",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Louis_Riel_Monument_December_2023.jpg/960px-Louis_Riel_Monument_December_2023.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Louis_Riel_Monument_December_2023.jpg",
+        "artist": "Reid Campbell",
+        "license": "CC0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+        "imageSha256": "0658a06eef7916f64aa26c0c1bac130a193766d3790dea4c50e9fc88fd5f7e41"
+      },
+      {
+        "placeId": "osm:node:273549349",
+        "cityId": "winnipeg",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/61/Upper_Fort_Garry_North_Gate.JPG/960px-Upper_Fort_Garry_North_Gate.JPG",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Upper_Fort_Garry_North_Gate.JPG",
+        "artist": "J Hazard",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "50f42d7d627f37cd8481ab207c4aab8ff361eea0281cb6c51963ca09fa1a5f6d"
+      }
+    ],
+    "saskatoon": [
+      {
+        "placeId": "osm:node:9697113058",
+        "cityId": "saskatoon",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c0/Museum_of_Antiquities_%28Saskatoon%29_View_1.jpeg/960px-Museum_of_Antiquities_%28Saskatoon%29_View_1.jpeg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Museum_of_Antiquities_(Saskatoon)_View_1.jpeg",
+        "artist": "Jll294",
+        "license": "Public domain",
+        "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "imageSha256": "f40f5168bc6add3b519ad7660fb36dd30911bc3e46361a740d379305b50e6414"
+      },
+      {
+        "placeId": "osm:node:12763046253",
+        "cityId": "saskatoon",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b6/Spirit_of_Alliance_Monument_Saskatoon_SK_CA.jpg/960px-Spirit_of_Alliance_Monument_Saskatoon_SK_CA.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Spirit_of_Alliance_Monument_Saskatoon_SK_CA.jpg",
+        "artist": "Laserham",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "dd4c79aedd45831d0bb419891d24999d0060c95e3446b543da1eb148f7593cdb"
+      },
+      {
+        "placeId": "osm:node:4198123589",
+        "cityId": "saskatoon",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4a/Holy_Family_Cathedral%2C_Saskatoon.jpg/960px-Holy_Family_Cathedral%2C_Saskatoon.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Holy_Family_Cathedral,_Saskatoon.jpg",
+        "artist": "Awmcphee",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "imageSha256": "d93c1c3a5c84d4c8af32f1920c53def616c8e110ba39cea39a48dec81ae946fb"
+      }
+    ],
+    "ottawa": [
+      {
+        "placeId": "osm:node:1020933664",
+        "cityId": "ottawa",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0f/Bank_of_Canada_Museum_Mus%C3%A9e_de_la_Banque_du_Canada_%2852306156820%29.jpg/960px-Bank_of_Canada_Museum_Mus%C3%A9e_de_la_Banque_du_Canada_%2852306156820%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Bank_of_Canada_Museum_Mus%C3%A9e_de_la_Banque_du_Canada_(52306156820).jpg",
+        "artist": "Bank of Canada - Banque du Canada from Canada",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "f3b6670acbcffd5c387140df4a593127df9d323042dfdbc447f9103a853eb587"
+      },
+      {
+        "placeId": "osm:node:955338405",
+        "cityId": "ottawa",
+        "uri": "https://upload.wikimedia.org/wikipedia/commons/2/2f/Market_Byward.JPG",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Market_Byward.JPG",
+        "artist": "(WT-en) Jpatokal at English Wikivoyage",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "bf2f349231d41293e72b246a563a75e3f9867d43bdf2d6c0bf8e260ffb75273c"
+      },
+      {
+        "placeId": "osm:node:292324492",
+        "cityId": "ottawa",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/32/Parliament_Hill%2C_Ottawa.jpg/960px-Parliament_Hill%2C_Ottawa.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Parliament_Hill,_Ottawa.jpg",
+        "artist": "David Samuel, User:Hellodavey1902",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "69418c0abc0a3fdfec32397363a0b2f0af923562772b219e154850cf3097c163"
+      }
+    ],
+    "regina": [
+      {
+        "placeId": "osm:node:847186673",
+        "cityId": "regina",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2e/The_statue_of_Queen_Elizabeth_II_in_Regina%2C_Saskatchewan.jpg/960px-The_statue_of_Queen_Elizabeth_II_in_Regina%2C_Saskatchewan.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:The_statue_of_Queen_Elizabeth_II_in_Regina,_Saskatchewan.jpg",
+        "artist": "daryl_mitchell",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "imageSha256": "c9b65003a3d91d005cbf6f68e0aede95c76280f7b53e1b4b6a32f8cd4aeba993"
+      },
+      {
+        "placeId": "osm:node:7176377989",
+        "cityId": "regina",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9b/Mahatma_Gandhi_-_Regina_%2843344255364%29.jpg/960px-Mahatma_Gandhi_-_Regina_%2843344255364%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Mahatma_Gandhi_-_Regina_(43344255364).jpg",
+        "artist": "Haydn Blackey from Cardiff, Wales",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "imageSha256": "0a048b5931c279d239debd46f7a772eff8a83db866445f33e08645e6144043f6"
+      },
+      {
+        "placeId": "osm:node:2445317517",
+        "cityId": "regina",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/26/Victoria_Park_Cenotaph%2C_Regina%2C_Saskatchewan%2C_Canada.jpg/960px-Victoria_Park_Cenotaph%2C_Regina%2C_Saskatchewan%2C_Canada.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Victoria_Park_Cenotaph,_Regina,_Saskatchewan,_Canada.jpg",
+        "artist": "Tintaggon",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "0a562ca4b2cf29fad5821241feafecd71af0097bbb812e46b1d94cdd6f4cba4e"
+      }
+    ],
+    "saint-john": [
+      {
+        "placeId": "osm:node:1201111529",
+        "cityId": "saint-john",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1d/Saint_John_-_Reversing_Falls_%283746816417%29.jpg/960px-Saint_John_-_Reversing_Falls_%283746816417%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Saint_John_-_Reversing_Falls_(3746816417).jpg",
+        "artist": "Leonora (Ellie) Enking from East Preston, United Kingdom",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "imageSha256": "6c35d59d4c72d91f7ebe3f3ec37077e1e3ccba2df27b7907e2e1b61d9212f2b7"
+      },
+      {
+        "placeId": "osm:node:1867466143",
+        "cityId": "saint-john",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/37/Rockwood_park_loyalist_house_069.jpg/960px-Rockwood_park_loyalist_house_069.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Rockwood_park_loyalist_house_069.jpg",
+        "artist": "Cusack5239",
+        "license": "CC0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+        "imageSha256": "64c925be5b54d005fce699c8f14acfda503418402f2188899e13b7a9e3674fff"
+      },
+      {
+        "placeId": "osm:node:1867466385",
+        "cityId": "saint-john",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/da/Samuel_Leonard_Tilley_Saint_John.JPG/960px-Samuel_Leonard_Tilley_Saint_John.JPG",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Samuel_Leonard_Tilley_Saint_John.JPG",
+        "artist": "Skeezix1000",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "7c78a47151f6dec1b1f2487ad02ec3ee737a1f0f98302d2935426ff8ec0dbcec"
+      }
+    ],
+    "halifax": [
+      {
+        "placeId": "osm:node:26286235",
+        "cityId": "halifax",
+        "uri": "https://upload.wikimedia.org/wikipedia/commons/f/fe/Citadel_hill.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Citadel_hill.jpg",
+        "artist": "Moneywagon",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "015c797bcccd1d18e905830102ff73dcafbe73f42308825b35ad91cda5c9da68"
+      },
+      {
+        "placeId": "osm:node:962125376",
+        "cityId": "halifax",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2c/Halifax_Town_Clock.jpg/960px-Halifax_Town_Clock.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Halifax_Town_Clock.jpg",
+        "artist": "Aconcagua (talk)",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "da5c364c1cfddf4a335de1290c7f300cd9ca7fb485faa5ade5b88c202cc3612c"
+      },
+      {
+        "placeId": "osm:node:850025611",
+        "cityId": "halifax",
+        "uri": "https://upload.wikimedia.org/wikipedia/commons/a/a4/Georges_Island_Halifax_Harbour.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Georges_Island_Halifax_Harbour.jpg",
+        "artist": "Jvienneau (www.avinova.ca)",
+        "license": "CC BY 2.5",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.5",
+        "imageSha256": "adc3ee207c08d9bbacc2cb248835f5c564144f4c0feb48b10abcd404444d52af"
+      }
+    ]
+  }
+}

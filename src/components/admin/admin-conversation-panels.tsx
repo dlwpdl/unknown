@@ -9,6 +9,7 @@ import {
   type ConversationCase, type ConversationDetail, type ConversationMessage, type ConversationReviewStatus,
 } from '@/lib/admin-conversations';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { chatImagePaths } from '@/lib/chat-details';
 import { CITIES } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
 import { ConversationButton, ConversationPicker, ConversationState } from './admin-conversation-controls';
@@ -67,7 +68,7 @@ export function ConversationThread({ detail, loading, error, loadingMessages, na
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const roomId = detail?.conversation.id;
-  const pathsKey = JSON.stringify([...new Set(detail?.messages.flatMap((message) => message.image_path ? [message.image_path] : []) ?? [])]);
+  const pathsKey = JSON.stringify([...new Set(detail?.messages.flatMap(chatImagePaths) ?? [])]);
   useEffect(() => { scrollEnd.current = true; }, [roomId]);
   useEffect(() => {
     let active = true;
@@ -132,8 +133,7 @@ export function ConversationThread({ detail, loading, error, loadingMessages, na
         const sender = participant.get(message.sender_id);
         const second = room.participants[0]?.id !== message.sender_id;
         const flagged = signalIds.has(message.id);
-        const path = message.image_path;
-        const imageUrl = path ? imageUrls[path] : undefined;
+        const paths = chatImagePaths(message);
         return <View>
           {(index === 0 || detail.messages[index - 1]?.created_at.slice(0, 10) !== message.created_at.slice(0, 10)) && <Text style={[styles.caption, styles.centered, { marginVertical: 14 }]}>{new Date(message.created_at).toLocaleDateString('ko-KR')}</Text>}
           <View nativeID={`conversation-message-${message.id}`} testID={`conversation-message-${message.id}`} tabIndex={-1}
@@ -143,11 +143,11 @@ export function ConversationThread({ detail, loading, error, loadingMessages, na
               {!!message.reply_to_id && <Text style={styles.caption}>답장 대상 · {message.reply_to_id}</Text>}
               <View style={[styles.bubble, second && styles.bubbleSecond, flagged && styles.flaggedBubble, focusId === message.id && styles.focusedBubble]}>
                 <Text selectable style={styles.messageText}>{message.body}</Text>
-                {(message.kind === 'image' || !!path) && <View style={styles.attachment}>
-                  {imageUrl && !failedImages[message.id] ? <Image source={{ uri: imageUrl }} style={styles.image} contentFit="contain" accessibilityLabel="대화에 첨부한 원본 사진"
-                    onError={() => setFailedImages((current) => ({ ...current, [message.id]: true }))} /> : <Text style={styles.caption}>사진을 표시할 수 없어요.</Text>}
-                  <Text selectable style={styles.caption}>사진 첨부 · {path ?? '원본 경로 없음'}</Text>
-                </View>}
+                {(message.kind === 'image' || paths.length > 0) && (paths.length ? paths : [null]).map((path, position) => <View key={path ?? 'missing'} style={styles.attachment}>
+                  {path && imageUrls[path] && !failedImages[path] ? <Image source={{ uri: imageUrls[path] }} style={styles.image} contentFit="contain" accessibilityLabel={`대화에 첨부한 원본 사진 ${position + 1}/${paths.length}`}
+                    onError={() => setFailedImages((current) => ({ ...current, [path]: true }))} /> : <Text style={styles.caption}>사진을 표시할 수 없어요.</Text>}
+                  <Text selectable style={styles.caption}>사진 {position + 1} · {path ?? '원본 경로 없음'}</Text>
+                </View>)}
                 {message.kind === 'location' && <View style={styles.attachment}><Text style={styles.body}>공유한 위치</Text>
                   <Text selectable style={styles.caption}>{message.latitude != null && message.longitude != null ? `위도 ${message.latitude} · 경도 ${message.longitude}` : '좌표 정보 없음'}</Text></View>}
               </View>

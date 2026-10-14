@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { hideContent } from './content-visibility.ts';
 import { isThumbPath, MAX_IMAGE_BYTES, MAX_POST_IMAGES, thumbPathFor } from './image-upload.ts';
 import { normalizePoll, type PollDraft } from './post-polls.ts';
+import { chatImagePaths } from './chat-details.ts';
 
 import { attachSignedPostImages, loadPublicPost, mapPublicFeed, type FeedCursor, type PublicCommentRow, type PublicFeedRow } from './feed-data.ts';
 import type { DailyQuota, ListingStatus, Post, PostComment, PostKind, RoomPreview, Tag } from './types.ts';
@@ -56,7 +57,9 @@ export type ChatMessageRecord = {
   sender_nickname: string | null;
   kind?: 'text' | 'image' | 'location';
   image_path?: string | null;
+  image_paths?: string[];
   imageUrl?: string;
+  imageUrls?: (string | undefined)[];
   latitude?: number | null;
   longitude?: number | null;
   location_label?: string | null;
@@ -71,6 +74,7 @@ export type AppNotification = {
   kind: string;
   category: string;
   body: string;
+  title?: string | null;
   route: string | null;
   read_at: string | null;
   created_at: string;
@@ -448,7 +452,14 @@ export async function markChatRead(client: SupabaseClient, conversationId: strin
 }
 
 export async function sendChatAttachment(client: SupabaseClient, conversationId: string,
-  attachment: { kind: 'image'; imagePath: string } | { kind: 'location'; latitude: number; longitude: number; label?: string }, replyToId?: string | null) {
+  attachment: { kind: 'image'; imagePath: string } | { kind: 'image'; imagePaths: string[]; clientId: string } | { kind: 'location'; latitude: number; longitude: number; label?: string }, replyToId?: string | null) {
+  if (attachment.kind === 'image' && 'imagePaths' in attachment) {
+    if (!attachment.imagePaths.length || attachment.imagePaths.length > MAX_POST_IMAGES || new Set(attachment.imagePaths).size !== attachment.imagePaths.length) throw new Error('INVALID_CHAT_IMAGES');
+    const result = await client.rpc('send_chat_album', { p_conversation_id: conversationId,
+      p_image_paths: attachment.imagePaths, p_client_id: attachment.clientId, p_reply_to_id: replyToId ?? null });
+    if (result.error) throw result.error;
+    return result.data as string;
+  }
   const extra = replyToId || (attachment.kind === 'location' && attachment.label);
   const result = await client.rpc(extra ? 'send_message_v2' : 'send_chat_attachment', {
     p_conversation_id: conversationId, p_kind: attachment.kind,
@@ -569,12 +580,13 @@ async function attachChatMessageDetails(client: SupabaseClient, rows: ChatMessag
     const replies = new Map((result.data ?? []).map((row: NonNullable<ChatMessageRecord['reply']>) => [row.id, row]));
     rows = rows.map(row => ({ ...row, reply: replies.get(row.reply_to_id ?? '') ?? null }));
   }
-  const paths = [...new Set(rows.flatMap((row) => row.kind === 'image' && row.image_path ? [row.image_path] : []))];
+  const paths = [...new Set(rows.flatMap((row) => row.kind === 'image' ? chatImagePaths(row) : []))];
   if (!paths.length) return rows;
   // An image outage should not hide the conversation or its report controls.
   const signed = await client.storage.from('chat-images').createSignedUrls(paths, 3600).catch(() => null);
   const urls = new Map((signed?.data ?? []).map((item) => [item.path, item.signedUrl]));
-  return rows.map((row) => ({ ...row, imageUrl: urls.get(row.image_path ?? '') ?? undefined }));
+  return rows.map((row) => ({ ...row, imageUrl: urls.get(row.image_path ?? '') ?? undefined,
+    imageUrls: row.kind === 'image' ? chatImagePaths(row).map(path => urls.get(path) ?? undefined) : [] }));
 }
 
 export type MessageReaction = { message_id: string; hearts: number; mine: boolean };
@@ -705,7 +717,7 @@ export async function respondMeetupRequest(
 export async function loadNotifications(client: SupabaseClient, userId: string) {
   const result = await client
     .from('user_notifications')
-    .select('id,kind,category,body,route,read_at,created_at,actor_id')
+    .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(50);

@@ -30,6 +30,7 @@ import { FeedAd } from '@/components/feed-ad';
 import { FeedSortControl } from '@/components/feed-sort-control';
 import { GlassSurface } from '@/components/glass-surface';
 import { LocalEventsCarousel } from '@/components/local-events-carousel';
+import { CityPopularPlaces } from '@/components/city-popular-places';
 import { adsSupported, feedAdPosition } from '@/lib/ads';
 import { MyMeetups } from '@/components/my-meetups';
 import { PostCard } from '@/components/post-card';
@@ -672,6 +673,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 <ThemedText accessibilityRole="header" style={styles.journalTitle}>{meetupsOnly ? t.feed.meetupTitle : t.feed.journalTitle}</ThemedText>
               </View>
               {cityOpen && !meetupsOnly && <LocalEventsCarousel cityId={city.id} refreshKey={rankingRefresh} cityLoading={cityLoading} onCityReady={setLoadedEventsCityId} />}
+              {cityOpen && !meetupsOnly && <CityPopularPlaces cityId={city.id} />}
               {meetupsOnly && <>
                 <MyMeetups onOpen={async (postId) => {
                   const post = await loadPublicPost(supabase, postId);
