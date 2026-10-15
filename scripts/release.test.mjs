@@ -218,9 +218,9 @@ test('an arbitrary unverified build cannot be enforced through the release comma
   assert.match(result.stderr, /invalid choice/);
 });
 
-test('a reviewed iOS build is enforced only once the same version is publicly available', () => {
+test('a reviewed iOS build is enforced after fresh public availability despite a cached old lookup', () => {
   const result = spawnSync('python3', ['-c', `
-import importlib.util
+import importlib.util, urllib.parse
 spec = importlib.util.spec_from_file_location('release', 'scripts/release.py')
 r = importlib.util.module_from_spec(spec); spec.loader.exec_module(r)
 public = {'trackId': int(r.APP), 'version': '1.2.0'}
@@ -238,7 +238,9 @@ def play(token, path='', data=None, method='GET'):
 r.play = play
 def request(url, token=None, data=None, method='GET', **kwargs):
     if url.startswith('https://api.github.com/'): return {'workflow_runs': []}
-    if url.startswith('https://itunes.apple.com/'): return {'results': [dict(public)]}
+    if url.startswith('https://itunes.apple.com/'):
+        extra = set(urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)) - {'id', 'country'}
+        return {'results': [dict(public) if extra else {'trackId': int(r.APP), 'version': '1.2.0'}]}
     if url.startswith('https://api.appstoreconnect.apple.com/'): return versions[url.split('/appStoreVersions/')[1].split('?')[0]]
     assert url.startswith(r.SUPABASE + '/rest/v1/app_release_policy?')
     assert token == kwargs['api_key'] == 'test-policy-key'

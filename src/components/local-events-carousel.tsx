@@ -132,10 +132,10 @@ export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityRea
             </ScrollView>
               {current.events.length > 1 && <View pointerEvents="box-none" style={[styles.navigation, { width: cardWidth }]}>
                 <Pressable analyticsId="today.events.previous" accessibilityRole="button" accessibilityLabel="이전 페스티벌" accessibilityHint={`현재 ${activeIndex + 1}/${current.events.length}`} onPress={() => move(-1)} style={({ pressed }) => [styles.arrow, { left: 6, opacity: pressed ? 0.65 : 1 }]}>
-                  <GlassSurface tone="control" interactive style={styles.arrowSurface}><SymbolView name={{ ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }} size={15} tintColor="#F6F3F0" /></GlassSurface>
+                  <GlassSurface colorScheme="dark" tone="control" interactive style={styles.arrowSurface}><SymbolView name={{ ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }} size={15} tintColor="#F6F3F0" /></GlassSurface>
                 </Pressable>
                 <Pressable analyticsId="today.events.next" accessibilityRole="button" accessibilityLabel="다음 페스티벌" accessibilityHint={`현재 ${activeIndex + 1}/${current.events.length}`} onPress={() => move(1)} style={({ pressed }) => [styles.arrow, { right: 6, opacity: pressed ? 0.65 : 1 }]}>
-                  <GlassSurface tone="control" interactive style={styles.arrowSurface}><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={15} tintColor="#F6F3F0" /></GlassSurface>
+                  <GlassSurface colorScheme="dark" tone="control" interactive style={styles.arrowSurface}><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={15} tintColor="#F6F3F0" /></GlassSurface>
                 </Pressable>
               </View>}
             </View>}
@@ -165,7 +165,7 @@ function FeaturedEventCard({ event, cityId, index, active, reducedMotion, onOpen
     {promo && active && !reducedMotion && !videoFailed && <FestivalVideo youtubeId={promo.youtubeId} ambient visible={videoPlaying} onPlaying={() => setVideoPlaying(true)} onError={() => { setVideoPlaying(false); setVideoFailed(true); }} />}
     <Image source={require('@/assets/brand/event-card-scrim.png')} style={styles.scrim} contentFit="fill" accessible={false} />
     <Animated.View style={[styles.badge, event.image && !reducedMotion && { opacity: imageScale.interpolate({ inputRange: [1, 1.22], outputRange: [0.76, 1] }), transform: [{ scale: imageScale.interpolate({ inputRange: [1, 1.22], outputRange: [0.97, 1.03] }) }] }]}><ThemedText style={styles.badgeText}>SPOTLIGHT {String(index + 1).padStart(2, '0')}</ThemedText></Animated.View>
-    {promo && !videoFailed && <GlassSurface style={styles.videoBadge}><SymbolView name={{ ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' }} size={12} tintColor="#F6F3F0" /><ThemedText style={styles.videoBadgeText}>{promo.label} · YouTube</ThemedText></GlassSurface>}
+    {promo && !videoFailed && <GlassSurface colorScheme="dark" style={styles.videoBadge}><SymbolView name={{ ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' }} size={12} tintColor="#F6F3F0" /><ThemedText style={styles.videoBadgeText}>{promo.label} · YouTube</ThemedText></GlassSurface>}
     <View style={styles.cardBody}>
       <ThemedText style={styles.eventTitle} numberOfLines={2}>{event.name}</ThemedText>
       <ThemedText style={styles.eventMeta} numberOfLines={1}>{event.timeUnconfirmed ? eventTime(event) : eventTime(event).split(' · ')[0]} · {event.venue || event.city}</ThemedText>

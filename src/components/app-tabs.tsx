@@ -1,5 +1,6 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { Platform } from 'react-native';
+import { Colors } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useUnreadCount } from '@/hooks/use-unread-count';
@@ -17,9 +18,11 @@ export default function AppTabs() {
       screenListeners={({ route }) => ({ tabPress: () => play(route.name === 'compose' ? 'reaction' : 'selection') })}
       disableTransparentOnScrollEdge
       backgroundColor={Platform.OS === 'ios' ? undefined : colors.background}
-      blurEffect={Platform.OS === 'ios' ? 'systemChromeMaterialDark' : undefined}
+      blurEffect={Platform.OS === 'ios' ? colors === Colors.dark ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight' : undefined}
       shadowColor={colors.line}
       tintColor={colors.accent}
+      iconColor={{ default: colors.textSecondary, selected: colors.accent }}
+      labelStyle={{ default: { color: colors.textSecondary }, selected: { color: colors.accent } }}
       indicatorColor={colors.backgroundElement}>
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>{t.tabs.today}</NativeTabs.Trigger.Label>

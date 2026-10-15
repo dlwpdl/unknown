@@ -1,6 +1,9 @@
-import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
+import { useEffect } from 'react';
+import { Appearance } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { AppUpdateGate } from '@/components/app-update-gate';
@@ -13,7 +16,7 @@ import { CommunityCityProvider } from '@/lib/community-city';
 import { installErrorReporting } from '@/lib/error-reporting';
 import { InteractionFeedbackProvider } from '@/lib/interaction-feedback';
 import { MembershipProvider } from '@/lib/membership-provider';
-import { ThemeOverrideProvider } from '@/hooks/use-theme';
+import { ThemePreferenceProvider, useTheme, useThemePreference } from '@/hooks/use-theme';
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 SplashScreen.setOptions({ fade: false });
@@ -21,11 +24,21 @@ SplashScreen.setOptions({ fade: false });
 installErrorReporting();
 
 export default function TabLayout() {
+  return <ThemePreferenceProvider><AppLayout /></ThemePreferenceProvider>;
+}
+
+function AppLayout() {
   const reducedMotion = useReducedMotion();
+  const { scheme } = useThemePreference();
+  const theme = useTheme();
+  const navigationTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
+  useEffect(() => {
+    Appearance.setColorScheme(scheme);
+    void SystemUI.setBackgroundColorAsync(theme.background).catch(() => {});
+  }, [scheme, theme.background]);
   return (
-    <ThemeProvider value={DarkTheme}>
-      <ThemeOverrideProvider scheme="dark">
-      <StatusBar style="light" />
+    <ThemeProvider value={{ ...navigationTheme, colors: { ...navigationTheme.colors, primary: theme.accent, background: theme.background, card: theme.card, text: theme.text, border: theme.line, notification: theme.accent } }}>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <ErrorBoundary>
       {/* 피드백은 AuthProvider가 띄우는 로그인 패널에서도 필요하므로 가장 바깥에 둔다. */}
       <InteractionFeedbackProvider>
@@ -45,7 +58,6 @@ export default function TabLayout() {
       </AppUpdateGate>
       </InteractionFeedbackProvider>
       </ErrorBoundary>
-      </ThemeOverrideProvider>
     </ThemeProvider>
   );
 }
