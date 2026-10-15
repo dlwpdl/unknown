@@ -136,5 +136,53 @@ select is((select count(*)::integer from public.claim_push_notifications('send',
  where notification_id='13990000-0000-0000-0000-000000000001'),0,'a changed selected city cancels the retained old-city ranking');
 select ok((select bool_and(status='cancelled') from private.push_delivery_queue
  where notification_id='13990000-0000-0000-0000-000000000001'),'old-city pending devices are cancelled before any provider call');
+-- A delayed retry reserves its new claim time before another recommendation can claim.
+delete from public.notifications where user_id='13900000-0000-0000-0000-000000000003';
+update public.profiles set city_id='vancouver' where id='13900000-0000-0000-0000-000000000003';
+update private.push_devices set disabled_at=now() where user_id='13900000-0000-0000-0000-000000000003';
+update private.push_devices set disabled_at=null,timezone='UTC',timezone_updated_at=now()
+where token='ExpoPushToken[cadence_second_device_12345]';
+insert into public.notifications(id,user_id,kind,target_type,target_id,body,route)
+select ('13991000-0000-0000-0000-'||lpad(i::text,12,'0'))::uuid,'13900000-0000-0000-0000-000000000003',
+ 'weekly_ranking','post',('13910000-0000-0000-0000-'||lpad(i::text,12,'0'))::uuid,'Retry accounting fixture',
+ '/post/13910000-0000-0000-0000-'||lpad(i::text,12,'0') from generate_series(1,10) i;
+update private.push_delivery_queue set id=notification_id,next_attempt_at=now()+interval '1 day'
+where notification_id::text like '13991000-%';
+update private.push_delivery_queue set next_attempt_at=now(),first_attempt_at=now()-interval '90 minutes',attempts=1
+where notification_id='13991000-0000-0000-0000-000000000001';
+update private.push_delivery_queue set next_attempt_at=now() where notification_id='13991000-0000-0000-0000-000000000002';
+create temp table retry_claims as select * from public.claim_push_notifications('send',100);
+select is((select count(distinct notification_id)::integer from retry_claims where notification_id::text like '13991000-%'),1,
+ 'a delayed retry and fresh recommendation cannot share the same provider batch');
+select is((select last_attempt_at from private.push_delivery_queue where notification_id='13991000-0000-0000-0000-000000000001'),now(),
+ 'a reclaimed recommendation records its actual retry time');
+
+-- Yesterday's retry counts in today's distinct-ID allowance without charging fan-out twice.
+update private.push_devices set timezone=(select name from pg_timezone_names where extract(hour from now() at time zone name)=18 order by name limit 1)
+where token='ExpoPushToken[cadence_second_device_12345]';
+create temp table retry_day as select timezone zone,((now() at time zone timezone)::date+time '09:00') at time zone timezone morning,
+ (((now() at time zone timezone)::date-1)+time '19:30') at time zone timezone previous_evening
+from private.push_devices where token='ExpoPushToken[cadence_second_device_12345]';
+update public.notifications set created_at=(select previous_evening from retry_day)
+where id='13991000-0000-0000-0000-000000000001';
+update private.push_delivery_queue set lease_id=null,lease_until=null,first_attempt_at=(select previous_evening from retry_day),
+ last_attempt_at=(select previous_evening from retry_day),created_at=(select previous_evening from retry_day),next_attempt_at=now(),attempts=1
+where notification_id='13991000-0000-0000-0000-000000000001';
+update private.push_delivery_queue set status='provider_accepted',first_attempt_at=(select morning from retry_day),
+ last_attempt_at=(select morning from retry_day),attempts=1
+where notification_id between '13991000-0000-0000-0000-000000000003' and '13991000-0000-0000-0000-000000000009';
+select is((select count(*)::integer from public.claim_push_notifications('send',100)
+ where notification_id='13991000-0000-0000-0000-000000000001'),1,'a prior-day retry can consume the eighth current-day allowance');
+select is((select count(distinct notification_id)::integer from private.push_delivery_queue
+ where notification_id::text like '13991000-%' and (last_attempt_at at time zone (select zone from retry_day))::date=
+ (now() at time zone (select zone from retry_day))::date),8,'the current local day counts seven prior IDs plus the retried ID');
+-- Isolate the day budget after the retry spacing assertion above.
+update private.push_delivery_queue set last_attempt_at=(select morning from retry_day)
+where notification_id='13991000-0000-0000-0000-000000000001';
+update private.push_delivery_queue set next_attempt_at=now() where notification_id='13991000-0000-0000-0000-000000000010';
+select is((select count(*)::integer from public.claim_push_notifications('send',100)
+ where notification_id='13991000-0000-0000-0000-000000000010'),0,'a ninth distinct ID waits even after the retry spacing has elapsed');
+select ok((select status='pending' and attempts=0 and next_attempt_at>now() from private.push_delivery_queue
+ where notification_id='13991000-0000-0000-0000-000000000010'),'the ninth recommendation stays pending without a charged attempt');
 select * from finish();
 rollback;
