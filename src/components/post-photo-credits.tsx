@@ -21,7 +21,7 @@ export function PostPhotoCredits({ credits }: { credits: string }) {
 
   return <>
     <View style={styles.toolbar}>
-      <Pressable analyticsId="post.photo-credits.open" accessibilityRole="button" accessibilityLabel="사진 출처와 이용 조건 보기"
+      <Pressable lens analyticsId="post.photo-credits.open" accessibilityRole="button" accessibilityLabel="사진 출처와 이용 조건 보기"
         onPress={() => { play('selection'); setVisible(true); }} style={({ pressed }) => [styles.button, { opacity: pressed ? 0.65 : 1 }]}>
         <ThemedText type="small" themeColor="textSecondary">사진 출처</ThemedText>
       </Pressable>
@@ -32,7 +32,7 @@ export function PostPhotoCredits({ credits }: { credits: string }) {
         <View accessibilityViewIsModal style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.three) }]}>
           <View style={styles.header}>
             <ThemedText accessibilityRole="header" type="smallBold">사진 출처·이용 조건</ThemedText>
-            <Pressable analyticsId="post.photo-credits.close" accessibilityRole="button" accessibilityLabel="사진 출처 닫기" onPress={close} style={styles.button}>
+            <Pressable lens analyticsId="post.photo-credits.close" accessibilityRole="button" accessibilityLabel="사진 출처 닫기" onPress={close} style={styles.button}>
               <ThemedText type="smallBold" themeColor="accent">닫기</ThemedText>
             </Pressable>
           </View>

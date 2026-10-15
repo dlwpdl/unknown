@@ -60,22 +60,22 @@ export function PostLocationPicker({ visible, initialPin, initialLabel = '', cit
   return <Modal visible={visible} animationType={reduced ? 'none' : 'slide'} onRequestClose={close}>
     <SafeAreaProvider style={[styles.backdrop, { backgroundColor: theme.background }]}>
     <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: theme.background, paddingBottom: Math.max(insets.bottom, 12) }]}>
-      <View style={styles.header}><Pressable analyticsId="post.location.cancel" accessibilityRole="button" accessibilityLabel="위치 선택 취소" onPress={close} style={styles.control}><ThemedText>‹</ThemedText></Pressable><ThemedText type="smallBold">위치 공유</ThemedText><View style={styles.control} /></View>
+      <View style={styles.header}><Pressable lens analyticsId="post.location.cancel" accessibilityRole="button" accessibilityLabel="위치 선택 취소" onPress={close} style={styles.control}><ThemedText>‹</ThemedText></Pressable><ThemedText type="smallBold">위치 공유</ThemedText><View style={styles.control} /></View>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.canvas}>
         {visible && <PostPinMap pin={pin} label={label} cityName={cityName} onSelect={select} onReadyChange={setReady} bottomInset={cardHeight + 24} />}
         <View style={[styles.search, { backgroundColor: theme.card, borderColor: theme.line }]}>
           <TextInput value={query} onChangeText={value => { revision.current++; setBusy(false); setQuery(value); }} accessibilityLabel="장소·주소 검색" placeholder="장소나 주소 찾기" placeholderTextColor={theme.textSecondary}
             onFocus={() => play('selection')} onSubmitEditing={() => void locate(true)} returnKeyType="search" maxLength={150} style={[styles.input, { color: theme.text }]} />
-          <Pressable analyticsId="post.location.search" accessibilityRole="button" accessibilityLabel="주소 찾기" disabled={!ready || busy || !query.trim()} onPress={() => void locate(true)} style={styles.control}><ThemedText themeColor="accent">검색</ThemedText></Pressable>
+          <Pressable lens analyticsId="post.location.search" accessibilityRole="button" accessibilityLabel="주소 찾기" disabled={!ready || busy || !query.trim()} onPress={() => void locate(true)} style={styles.control}><ThemedText themeColor="accent">검색</ThemedText></Pressable>
         </View>
-        <Pressable analyticsId="post.location.current" accessibilityRole="button" accessibilityLabel="내 위치 선택" disabled={!ready || busy} onPress={() => void locate(false)} style={[styles.current, { bottom: cardHeight + 36, backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="smallBold">{busy ? '찾는 중…' : '내 위치'}</ThemedText></Pressable>
+        <Pressable lens analyticsId="post.location.current" accessibilityRole="button" accessibilityLabel="내 위치 선택" disabled={!ready || busy} onPress={() => void locate(false)} style={[styles.current, { bottom: cardHeight + 36, backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="smallBold">{busy ? '찾는 중…' : '내 위치'}</ThemedText></Pressable>
         <View onLayout={event => setCardHeight(Math.min(900, Math.ceil(event.nativeEvent.layout.height)))} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
           {pin ? <TextInput value={label} onChangeText={value => { revision.current++; setBusy(false); setLabel(value.replace(/[\u0000-\u001f\u007f]/g, ' ')); }} maxLength={100} accessibilityLabel="첨부할 위치 이름" placeholder="선택한 위치" placeholderTextColor={theme.textSecondary}
             onFocus={() => play('selection')} style={[styles.name, { color: theme.text, borderColor: theme.line }]} /> : <ThemedText type="smallBold">지도에서 위치를 선택해 주세요.</ThemedText>}
           {!pin && <ThemedText type="small" themeColor="textSecondary">가게를 누르거나, 원하는 지점으로 핀을 옮겨보세요.</ThemedText>}
           {pin && <ThemedText type="small" themeColor="textSecondary">글을 게시하면 이 위치도 함께 공개돼요.</ThemedText>}
           {!!message && <ThemedText type="small" accessibilityRole="alert">{message}</ThemedText>}
-          <Pressable analyticsId="post.location.confirm" accessibilityRole="button" disabled={!ready || !pin || busy} onPress={() => { if (!ready || !pin || busy) return; revision.current++; play('selection'); onConfirm(pin, label.trim() || '선택한 위치'); }}
+          <Pressable lens analyticsId="post.location.confirm" accessibilityRole="button" disabled={!ready || !pin || busy} onPress={() => { if (!ready || !pin || busy) return; revision.current++; play('selection'); onConfirm(pin, label.trim() || '선택한 위치'); }}
             style={[styles.confirm, { backgroundColor: theme.accent, opacity: !ready || !pin || busy ? 0.5 : 1 }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>이 위치 첨부</ThemedText></Pressable>
         </View>
       </KeyboardAvoidingView>
