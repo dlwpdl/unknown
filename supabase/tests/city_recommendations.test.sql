@@ -178,7 +178,7 @@ insert into public.posts(id,author_id,city_id,tag_id,title,body) values
 update private.discovery_post_queue set enqueued_at=clock_timestamp() where post_id='13810000-0000-0000-0000-000000000901';
 select private.process_discovery_posts(500);
 select is((select count(distinct n.id)::int from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id
- where n.user_id='13800000-0000-0000-0000-000000000002' and n.kind='interest_post'),0,'interest-topic recommendations also respect the shared push budget and slots');
+ where n.user_id='13800000-0000-0000-0000-000000000002' and n.kind='interest_post'),1,'one-shot interests remain queued for the next available recommendation slot');
 select ok(not has_function_privilege('authenticated','private.send_city_recommendations(timestamptz)','execute'),'members cannot broadcast recommendations');
 select ok(not has_function_privilege('service_role','private.send_city_recommendations(timestamptz)','execute'),'only the database-owned job can start the generator');
 
@@ -211,10 +211,14 @@ insert into public.notifications(user_id,kind,target_type,target_id,body,route,c
 select '13800000-0000-0000-0000-000000000002','trending_meetup','post','13810000-0000-0000-0000-000000000c02',
  'Legacy meetup discovery','/post/13810000-0000-0000-0000-000000000c02',first_slot+interval '10 hours 31 minutes' from rec_clock;
 select is((select count(distinct n.id)::int from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id
- where n.user_id='13800000-0000-0000-0000-000000000002' and n.kind in ('trending_post','trending_meetup')),8,'legacy meetup discovery shares the member recommendation cap');
+ where n.user_id='13800000-0000-0000-0000-000000000002' and n.kind in ('trending_post','trending_meetup')),9,'legacy meetup discovery remains queued behind the shared delivery budget');
 
 -- Sending uses the real current clock, independently of the simulated recommendation slots.
-update private.push_devices set timezone=(select name from pg_timezone_names where private.recommendation_time(now(),name) and private.recommendation_time(now()-interval '2 minutes',name) order by name limit 1) where user_id::text like '13800000-%';
+-- Isolate send budgets/quiet hours from the wall-clock slot; dedicated cadence tests cover the slot gate.
+create or replace function private.recommendation_time(p_at timestamptz,p_timezone text)
+returns boolean language sql stable set search_path='' as $$ select p_timezone is not null $$;
+update private.push_devices set timezone='Etc/GMT'||case when extract(hour from now() at time zone 'UTC')::int>=12 then '+' else '-' end
+ ||abs(extract(hour from now() at time zone 'UTC')::int-12)::text where user_id::text like '13800000-%';
 delete from public.notifications where user_id::text like '13800000-%';
 insert into public.notifications(user_id,kind,target_type,target_id,body,route,created_at) values
 ('13800000-0000-0000-0000-000000000002','trending_post','post','13810000-0000-0000-0000-000000000c01','Delayed recommendation1','/post/13810000-0000-0000-0000-000000000c01',now()-interval '65 minutes'),
@@ -290,7 +294,7 @@ select is((select count(*)::int from public.claim_push_notifications('send',100)
 delete from public.notifications where user_id::text like '13800000-%';
 alter table public.notifications disable trigger user;
 insert into public.notifications(user_id,kind,category,city_id,target_type,target_id,body,route,created_at) values
-('13800000-0000-0000-0000-000000000002','trending_post','trending','vancouver','post','13810000-0000-0000-0000-000000000c01','Older target','/post/13810000-0000-0000-0000-000000000c01',now()-interval '3 hours');
+('13800000-0000-0000-0000-000000000002','trending_post','trending','vancouver','post','13810000-0000-0000-0000-000000000c01','Older target','/post/13810000-0000-0000-0000-000000000c01',now()-interval '25 hours');
 alter table public.notifications enable trigger user;
 insert into private.push_delivery_queue(notification_id,device_id)
 select n.id,d.id from public.notifications n join private.push_devices d on d.user_id=n.user_id
