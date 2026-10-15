@@ -1,5 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import * as partnerships from '../src/lib/admin-partnerships.ts';
+
+test('creator identity comparison preserves metrics across UTF8 links and respects case-sensitive channel paths', () => {
+  const profiles = partnerships.creatorProfiles({ profile_url: 'https://example.com/あ', platforms: [{ platform: '웹사이트', url: 'https://example.com/%e3%81%82', followers: '12.3K', checked_on: null }] });
+  assert.equal(profiles.length, 1); assert.equal(profiles[0].followers, '12.3K');
+  assert.equal(partnerships.creatorProfiles({ profile_url: 'https://youtube.com/ChannelId', platforms: [{ platform: 'YouTube', url: 'https://youtube.com/channelid', followers: '', checked_on: null }] }).length, 2);
+});
 import { amountToCents, loadPartnerships, savePartnership, issueBenefitCoupon, actBenefitCoupon, partnershipError } from '../src/lib/admin-partnerships.ts';
 
 const id = '70000000-0000-4000-8000-000000000001';
@@ -63,4 +70,18 @@ test('errors explain operator actions without leaking raw server text or promisi
   const text = partnershipError(new Error('private.sql_detail access token=secret'));
   assert.doesNotMatch(text, /private|token|secret/);
   assert.match(text, /확인|다시/);
+});
+
+test('creator profiles keep the representative link first and retain observed audience labels', () => {
+  const creator = { profile_url: 'https://www.instagram.com/local/', platforms: [
+    { platform: 'YouTube', url: 'https://youtube.com/@local', followers: '', checked_on: null },
+    { platform: 'Instagram', url: 'https://www.instagram.com/local/', followers: '1.4만', checked_on: '2026-10-15' },
+  ] };
+  const result = partnerships.creatorProfiles(creator);
+  assert.equal(result[0].platform, 'Instagram');
+  assert.equal(result[0].followers, '1.4만');
+  assert.equal(result[0].checked_on, '2026-10-15');
+  assert.equal(result[1].url, 'https://youtube.com/@local');
+  assert.equal(partnerships.creatorProfiles({ profile_url: 'https://www.instagram.com/legacy/' })[0].followers, '');
+  assert.equal(partnerships.creatorProfiles({ profile_url: 'javascript:alert(1)' }).length, 0);
 });

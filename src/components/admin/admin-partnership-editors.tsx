@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 
 import { loadMerchants } from '@/lib/admin-merchants';
 import {
-  amountToCents, actBenefitCoupon, issueBenefitCoupon, loadPartnerships, savePartnership, partnershipError,
+  creatorPlatformName, creatorProfiles, amountToCents, actBenefitCoupon, issueBenefitCoupon, loadPartnerships, savePartnership, partnershipError,
   BENEFIT_STATUSES, CAMPAIGN_STATUSES, CREATOR_STATUSES, PARTICIPATION_STAGES, PAYMENT_STATUSES,
-  type Benefit, type BenefitCoupon, type PartnershipKind,
+  type Benefit, type BenefitCoupon, type Creator, type CreatorProfile, type PartnershipKind,
 } from '@/lib/admin-partnerships';
 import { searchAdminUsers } from '@/lib/admin-user-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -16,7 +16,7 @@ export type PartnershipEditorState = { kind: PartnershipKind; record: { id: stri
 type Callbacks = { onSaved: (id: string) => void | Promise<void>; onCancel: () => void; onDirty: (dirty: boolean) => void; onBusy: (busy: boolean) => void };
 type PickKind = 'merchant' | 'member' | 'creator' | 'campaign';
 const fields: Record<PartnershipKind, string[]> = {
-  creator: ['id', 'member_id', 'display_name', 'city_id', 'profile_url', 'category', 'contact', 'reference_url', 'reference_views', 'metrics_note', 'status', 'notes'],
+  creator: ['id', 'member_id', 'display_name', 'city_id', 'profile_url', 'category', 'contact', 'reference_url', 'reference_views', 'metrics_note', 'status', 'notes', 'platforms', 'contact_name', 'content_summary', 'activity_regions'],
   campaign: ['id', 'merchant_id', 'title', 'status', 'terms', 'terms_confirmed', 'team_limit', 'minimum_views', 'support_amount_cents', 'currency', 'deadline_note', 'ends_on', 'notes'],
   benefit: ['id', 'merchant_id', 'campaign_id', 'title', 'audience', 'status', 'discount_percent', 'terms', 'terms_confirmed', 'expires_on', 'issue_limit'],
   participation: ['id', 'campaign_id', 'creator_id', 'stage', 'scheduled_at', 'visited_at', 'content_url', 'actual_views', 'payment_status', 'payment_note', 'notes'],
@@ -83,22 +83,48 @@ const optionalInteger = (value: unknown) => value == null || value === '' ? null
 
 export function PartnershipEditor({ state, ...callbacks }: { state: PartnershipEditorState } & Callbacks) {
   const { play } = useInteractionFeedback();
+  const initialProfiles = state.kind === 'creator' ? creatorProfiles(state.record as Partial<Creator>) : [];
   const [data, setData] = useState<Record<string, unknown>>(() => ({
-    ...(state.kind === 'creator' ? { display_name: '', city_id: 'vancouver', profile_url: '', category: '', contact: '', reference_url: '', reference_views: null, metrics_note: '', member_id: null, status: 'active', notes: '' }
+    ...(state.kind === 'creator' ? { display_name: '', city_id: 'vancouver', profile_url: '', category: '', contact: '', contact_name: '', content_summary: '', activity_regions: '', platforms: [], reference_url: '', reference_views: null, metrics_note: '', member_id: null, status: 'active', notes: '' }
       : state.kind === 'campaign' ? { merchant_id: null, title: '', status: 'draft', terms: '', terms_confirmed: false, team_limit: null, minimum_views: null, support_amount_cents: null, currency: null, deadline_note: '', ends_on: null, notes: '' }
         : state.kind === 'benefit' ? { merchant_id: null, campaign_id: null, title: '', audience: 'creators', status: 'draft', discount_percent: null, terms: '', terms_confirmed: false, expires_on: null, issue_limit: null }
           : { campaign_id: null, creator_id: null, stage: 'applied', scheduled_at: null, visited_at: null, content_url: '', actual_views: null, payment_status: 'not_applicable', payment_note: '', notes: '' }),
     ...state.record,
+    // A separately stored representative must not displace any of the twenty linked accounts.
+    ...(state.kind === 'creator' ? { platforms: initialProfiles.length > 20 ? initialProfiles.slice(1) : initialProfiles, profile_url: initialProfiles.length > 20 ? state.record.profile_url : initialProfiles[0]?.url ?? state.record.profile_url ?? '' } : {}),
   }));
   const [amount, setAmount] = useState(state.record.support_amount_cents == null ? '' : (Number(state.record.support_amount_cents) / 100).toFixed(2));
   const action = useSave(callbacks);
   const value = (field: string) => data[field] == null ? '' : String(data[field]);
-  const change = (field: string, next: unknown) => { setData((current) => ({ ...current, [field]: next })); callbacks.onDirty(true); };
+  const profiles = (Array.isArray(data.platforms) ? data.platforms : []) as CreatorProfile[];
+  const change = (field: string, next: unknown) => {
+    setData((current) => {
+      if (state.kind !== 'creator' || field !== 'profile_url') return { ...current, [field]: next };
+      const rows = (current.platforms ?? []) as CreatorProfile[];
+      return { ...current, profile_url: next, platforms: rows.length ? rows.map(row => row.url === current.profile_url ? { ...row, url: String(next), platform: !row.platform || row.platform === creatorPlatformName(row.url) ? creatorPlatformName(String(next)) : row.platform } : row)
+        : next ? [{ platform: creatorPlatformName(String(next)), url: String(next), followers: '', checked_on: null }] : [] };
+    });
+    callbacks.onDirty(true);
+  };
+  function changeProfile(index: number, field: keyof CreatorProfile, next: string | null) {
+    setData(current => {
+      const rows = [...current.platforms as CreatorProfile[]], old = rows[index];
+      rows[index] = { ...old, [field]: next };
+      if (field === 'url' && (!old.platform || old.platform === creatorPlatformName(old.url))) rows[index].platform = creatorPlatformName(next ?? '');
+      return { ...current, platforms: rows, profile_url: field === 'url' && (!current.profile_url || current.profile_url === old.url) ? next : current.profile_url };
+    });
+    callbacks.onDirty(true);
+  }
   function pick(field: string, nameField: string, next: string | null, name: string) {
     setData((current) => ({ ...current, [field]: next, [nameField]: name })); callbacks.onDirty(true);
   }
   async function submit() {
     const record = Object.fromEntries(fields[state.kind].map((field) => [field, data[field] ?? null])) as { id: string } & Record<string, unknown>;
+    if (state.kind === 'creator') record.platforms = profiles.map(row => {
+      const url = safeMerchantSourceUrl(row.url.trim());
+      if (!url) throw new Error('INVALID_PARTNERSHIP');
+      return { platform: row.platform.trim() || creatorPlatformName(url), url, followers: row.followers.trim(), checked_on: row.checked_on || null };
+    });
     for (const field of ['reference_views', 'team_limit', 'minimum_views', 'discount_percent', 'issue_limit', 'actual_views']) {
       if (field in record) { record[field] = optionalInteger(record[field]); if (record[field] !== null && (!Number.isInteger(record[field]) || Number(record[field]) < 0)) throw new Error('INVALID_PARTNERSHIP'); }
     }
@@ -122,8 +148,17 @@ export function PartnershipEditor({ state, ...callbacks }: { state: PartnershipE
     {action.error && <p role="alert" className="partnership-form-error">{action.error}</p>}
     <fieldset disabled={action.busy || action.acknowledged} className="partnership-form">
       {state.kind === 'creator' ? <>
-        <div className="partnership-form-grid"><label>크리에이터 이름<input required maxLength={120} value={value('display_name')} onChange={(event) => change('display_name', event.target.value)} /></label><label>활동 지역<select value={value('city_id')} onChange={(event) => { play('selection'); change('city_id', event.target.value); }}>{CITIES.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></label><label>SNS 프로필 주소<input type="url" required maxLength={2048} placeholder="https://www.instagram.com/..." value={value('profile_url')} onChange={(event) => change('profile_url', event.target.value)} /></label><label>콘텐츠 분야<input maxLength={80} placeholder="맛집 · 라이프 · 여행" value={value('category')} onChange={(event) => change('category', event.target.value)} /></label></div>
-        <label>연락 경로<input maxLength={1000} placeholder="본인이 제공한 연락 방법" value={value('contact')} onChange={(event) => change('contact', event.target.value)} /></label>
+        <div className="partnership-form-grid"><label>크리에이터 이름<input required maxLength={120} value={value('display_name')} onChange={(event) => change('display_name', event.target.value)} /></label><label>활동 지역<select value={value('city_id')} onChange={(event) => { play('selection'); change('city_id', event.target.value); }}>{CITIES.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></label><label>대표 SNS 프로필 주소<input onFocus={() => play('selection')} type="url" required maxLength={2048} placeholder="https://www.instagram.com/..." value={value('profile_url')} onChange={(event) => change('profile_url', event.target.value)} /></label><label>콘텐츠 분야<input maxLength={80} placeholder="맛집 · 라이프 · 여행" value={value('category')} onChange={(event) => change('category', event.target.value)} /></label></div>
+        <div className="partnership-form-grid"><label>상세 활동 지역<input maxLength={500} placeholder="밴쿠버·버나비·리치먼드 등" value={value('activity_regions')} onFocus={() => play('selection')} onChange={event => change('activity_regions', event.target.value)} /></label><label>담당자 이름<input maxLength={120} placeholder="본인 또는 담당자에게 확인한 이름" value={value('contact_name')} onFocus={() => play('selection')} onChange={event => change('contact_name', event.target.value)} /></label></div>
+        <label>소개·콘텐츠 특징<textarea maxLength={2000} placeholder="주로 올리는 콘텐츠, 형식·언어·독자층과 확인한 특징" value={value('content_summary')} onFocus={() => play('selection')} onChange={event => change('content_summary', event.target.value)} /></label>
+        <label>연락처·연락 경로<textarea maxLength={1000} placeholder="공개 비즈니스 이메일·본인이 제공한 연락처·선호 연락 방법" value={value('contact')} onFocus={() => play('selection')} onChange={(event) => change('contact', event.target.value)} /></label>
+        <fieldset className="creator-profile-editor"><legend>운영 플랫폼</legend><p className="partnership-muted">확인한 계정만 연결합니다. 팔로워·구독자는 ‘1.4만’, ‘12.3K’처럼 프로필에 표시된 수치와 확인일을 함께 기록해 주세요.</p>
+          {profiles.map((profile, index) => <fieldset className="creator-profile-fields" key={index}><legend>{index + 1}번 플랫폼</legend>
+            <div className="partnership-form-grid"><label>플랫폼 이름<input maxLength={40} value={profile.platform} onFocus={() => play('selection')} onChange={event => changeProfile(index, 'platform', event.target.value)} /></label><label>프로필 링크<input type="url" required maxLength={2048} value={profile.url} onFocus={() => play('selection')} onChange={event => changeProfile(index, 'url', event.target.value)} /></label><label>팔로워·구독자 표시 수치<input maxLength={80} placeholder="미확인 값은 비워 두세요" value={profile.followers} onFocus={() => play('selection')} onChange={event => changeProfile(index, 'followers', event.target.value)} /></label><label>수치 확인일<input type="date" value={profile.checked_on ?? ''} onFocus={() => play('selection')} onChange={event => changeProfile(index, 'checked_on', event.target.value || null)} /></label></div>
+            <div className="creator-profile-options"><label className="partnership-check"><input type="radio" name="representative-profile" checked={Boolean(profile.url) && profile.url === value('profile_url')} disabled={!safeMerchantSourceUrl(profile.url)} onChange={() => { play('selection'); setData(current => ({ ...current, profile_url: profile.url })); callbacks.onDirty(true); }} />목록의 대표 플랫폼</label><button type="button" disabled={Boolean(profile.url) && profile.url === value('profile_url')} onClick={() => { play('selection'); change('platforms', profiles.filter((_, i) => i !== index)); }}>플랫폼 삭제</button></div>
+          </fieldset>)}
+          <button type="button" disabled={profiles.length >= 20} onClick={() => { play('selection'); change('platforms', [...profiles, { platform: '', url: '', followers: '', checked_on: null }]); }}>플랫폼 추가</button>
+        </fieldset>
         <EntityPicker type="member" value={value('member_id')} selectedLabel={value('member_name')} label="글링 회원 연결" optional disabled={action.busy} onPick={(next, name) => pick('member_id', 'member_name', next, name)} />
         <fieldset className="partnership-form"><legend>참고 성과</legend><div className="partnership-form-grid"><label>확인한 콘텐츠 주소<input type="url" maxLength={2048} value={value('reference_url')} onChange={(event) => change('reference_url', event.target.value)} /></label><label>해당 콘텐츠 조회수<input type="number" min="0" max="2147483647" step="1" value={value('reference_views')} onChange={(event) => change('reference_views', event.target.value)} /></label></div><label>확인 시점·출처 메모<textarea maxLength={1000} placeholder="어떤 콘텐츠의 수치를 언제 확인했는지 기록해 주세요." value={value('metrics_note')} onChange={(event) => change('metrics_note', event.target.value)} /></label><p className="partnership-muted">직접 입력하는 참고 수치입니다. SNS 계정 소유나 앞으로의 조회수를 보증하지 않습니다.</p></fieldset>
         <label>관리 상태<select value={value('status')} onChange={(event) => { play('selection'); change('status', event.target.value); }}>{Object.entries(CREATOR_STATUSES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
@@ -142,7 +177,7 @@ export function PartnershipEditor({ state, ...callbacks }: { state: PartnershipE
         <div className="partnership-form-grid"><label>진행 단계<select value={value('stage')} onChange={(event) => { play('selection'); change('stage', event.target.value); }}>{Object.entries(PARTICIPATION_STAGES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label><label>방문 예정 · 현재 기기 시간<input type="datetime-local" value={localTime(data.scheduled_at)} onChange={(event) => change('scheduled_at', event.target.value)} /></label><label>실제 방문 확인 · 현재 기기 시간<input type="datetime-local" value={localTime(data.visited_at)} onChange={(event) => change('visited_at', event.target.value)} /></label><label>제출 콘텐츠 주소<input type="url" maxLength={2048} value={value('content_url')} onChange={(event) => change('content_url', event.target.value)} /></label><label>콘텐츠 조회수 · 직접 확인값<input type="number" min="0" max="2147483647" step="1" value={value('actual_views')} onChange={(event) => change('actual_views', event.target.value)} /></label><label>지원금 처리 기록<select value={value('payment_status')} onChange={(event) => { play('selection'); change('payment_status', event.target.value); }}>{Object.entries(PAYMENT_STATUSES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label></div>
         <label>지원금 지급 확인 메모<textarea maxLength={1000} value={value('payment_note')} placeholder="실제 지급한 날짜·금액·확인 근거" onChange={(event) => change('payment_note', event.target.value)} /></label><p className="partnership-muted">지급 사실을 기록합니다. 이 화면에서 송금하지 않습니다.</p>
       </>}
-      {state.kind !== 'benefit' && <label>운영 메모<textarea maxLength={3000} value={value('notes')} onChange={(event) => change('notes', event.target.value)} /></label>}
+      {state.kind !== 'benefit' && <label>{state.kind === 'creator' ? '협업·다음 제안 메모' : '운영 메모'}<textarea onFocus={() => play('selection')} placeholder={state.kind === 'creator' ? '이전 연락 내용·협업 조건·관심사·다음 제안에 참고할 내용' : undefined} maxLength={3000} value={value('notes')} onChange={(event) => change('notes', event.target.value)} /></label>}
     </fieldset>
     {action.acknowledged && <p className="partnership-muted">저장 요청을 다시 보내지 않고, 저장된 내용만 조회합니다.</p>}
     <div className="partnership-form-actions"><button type="button" disabled={action.busy} onClick={callbacks.onCancel}>돌아가기</button><button type="submit" className="partnership-primary" disabled={action.busy}>{action.busy ? action.acknowledged ? '내용 확인 중…' : '저장 중…' : action.acknowledged ? '저장 내용 다시 확인' : '저장'}</button></div>
