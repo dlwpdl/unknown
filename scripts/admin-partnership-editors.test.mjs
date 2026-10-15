@@ -8,7 +8,7 @@ import { safeMerchantSourceUrl } from '../src/lib/merchant-source.ts';
 
 const id = '70000000-0000-4000-8000-000000000001', other = '70000000-0000-4000-8000-000000000002';
 const revision = '2026-10-15T18:00:00.123456Z';
-function editor(component, props, rpc) {
+function editor(component, props, rpc, readback = async () => {}) {
   const state = [], effects = [], calls = [], saved = [], busy = [];
   let cursor = 0;
   const hooks = {
@@ -25,8 +25,8 @@ function editor(component, props, rpc) {
     '@/lib/supabase': { supabase: { rpc: async (name, args) => { calls.push({ name, args }); return rpc(name, args); } } },
   };
   const source = ts.transpileModule(readFileSync(new URL('../src/components/admin/admin-partnership-editors.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
-  vm.runInNewContext(source, { exports: exported, require: name => imports[name] ?? {}, Date, Intl, window: { confirm: () => true } });
-  const callbacks = { onSaved: value => saved.push(value), onCancel() {}, onDirty() {}, onBusy: value => busy.push(value) };
+  vm.runInNewContext(source, { exports: exported, require: name => imports[name] ?? {}, Date, Intl, Error, window: { confirm: () => true } });
+  const callbacks = { onSaved: async value => { saved.push(value); await readback(value); }, onCancel() {}, onDirty() {}, onBusy: value => busy.push(value) };
   return { calls, saved, busy, render() { cursor = 0; return exported[component]({ ...props, ...callbacks }); } };
 }
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
@@ -61,6 +61,36 @@ test('keyboard or repeated submission cannot duplicate an in-flight save', async
   const tree = app.render(); submit(tree); submit(tree);
   assert.equal(app.calls.length, 1); finish({ data: id, error: null }); await new Promise(setImmediate);
   assert.deepEqual(app.saved, [id]); assert.deepEqual(app.busy, [true, false]);
+});
+
+test('an acknowledged save retains the draft after failed readback and retries only the read', async () => {
+  let available = false;
+  const app = editor('PartnershipEditor', { state: { kind: 'creator', revision: null, record: { id, display_name: '작성한 이름', profile_url: 'https://example.com/new' } } }, async () => ({ data: id, error: null }), async () => { if (!available) throw new Error('offline'); });
+  submit(app.render()); await new Promise(setImmediate);
+  let tree = app.render();
+  assert.equal(field(tree, '크리에이터 이름').props.value, '작성한 이름');
+  assert.match(text(tree), /서버.*저장|저장.*완료/);
+  assert.match(text(tree), /저장 내용 다시 확인/);
+  assert.equal(nodes(tree).find(node => node.type === 'fieldset').props.disabled, true);
+  assert.equal(app.calls.length, 1);
+  available = true; submit(tree); await new Promise(setImmediate); tree = app.render();
+  assert.equal(app.calls.length, 1, 'Readback retries must never replay the acknowledged mutation.');
+  assert.deepEqual(app.saved, [id, id]);
+  assert.equal(nodes(tree).filter(node => node.props?.role === 'alert').length, 0);
+});
+
+test('a coupon action acknowledged before a read failure cannot be submitted twice', async () => {
+  let available = false;
+  const app = editor('CouponActionForm', { coupon: { id, updated_at: revision, recipient_name: '수령인', benefit_title: '방문 혜택' }, action: 'redeem' }, async () => ({ data: id, error: null }), async () => { if (!available) throw new Error('offline'); });
+  let tree = app.render(); field(tree, '확인 내용').props.onChange({ target: { value: '방문과 혜택 적용을 확인함' } });
+  tree = app.render(); nodes(tree).find(node => node.type === 'input' && node.props.type === 'checkbox').props.onChange({ target: { checked: true } });
+  submit(app.render()); await new Promise(setImmediate); tree = app.render();
+  assert.equal(field(tree, '확인 내용').props.value, '방문과 혜택 적용을 확인함');
+  assert.equal(field(tree, '확인 내용').props.disabled, true);
+  assert.match(text(tree), /저장 내용 다시 확인/);
+  available = true; submit(tree); await new Promise(setImmediate);
+  assert.equal(app.calls.length, 1); assert.equal(app.calls[0].name, 'act_admin_benefit_coupon');
+  assert.deepEqual(app.saved, [id, id]);
 });
 
 test('changing the coupon recipient invalidates the previous confirmation before issuance', async () => {
