@@ -367,10 +367,15 @@ function AdminPostRow({ post, author, first, localPreview, compact, onUser }: {
       </Pressable>
       {open && (
         <View style={styles.postBody}>
-          <Pressable onPress={() => { play('selection'); return onUser(post.author_id); }} accessibilityRole="button" style={{ paddingVertical: Spacing.two }}>
-            <ThemedText type="small" selectable>{post.body}</ThemedText>
-            <ThemedText type="small" style={styles.muted}>글쓴이 보기</ThemedText>
-          </Pressable>
+          <ThemedText type="small" selectable>{post.body}</ThemedText>
+          <View style={styles.rowTop}>
+            <ActionText label="글쓴이 보기" onPress={() => onUser(post.author_id)} />
+            {down
+              ? <ActionText label="되돌리기" onPress={() => void apply({ status: 'published' }, '상태')} disabled={busy} />
+              : <ActionText label="내리기" onPress={() => void apply({ status: 'removed' }, '상태')} disabled={busy} danger />}
+          </View>
+          <details className="admin-context-details admin-post-management">
+          <summary onClick={() => play('selection')}>노출·수치 관리{dirty && <span className="admin-badge admin-badge-warning">저장하지 않은 변경</span>}</summary>
           <View style={styles.fieldRow}>
             {POST_COUNTERS.map(({ key, label }) => (
               <View key={key} style={styles.field}>
@@ -390,9 +395,6 @@ function AdminPostRow({ post, author, first, localPreview, compact, onUser }: {
             <View style={{ flexDirection: 'row' }}>
               <ActionText label="맨 위로" onPress={() => void apply({ sort_at: new Date(Date.now() + 36e5).toISOString() }, '노출 순서')} disabled={busy} />
               <ActionText label="순서 원래대로" onPress={() => void apply({ sort_at: post.created_at }, '노출 순서')} disabled={busy} />
-              {down
-                ? <ActionText label="되돌리기" onPress={() => void apply({ status: 'published' }, '상태')} disabled={busy} />
-                : <ActionText label="내리기" onPress={() => void apply({ status: 'removed' }, '상태')} disabled={busy} danger />}
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <ThemedText type="small" style={styles.muted}>{dirty ? '저장하지 않은 값이 있어요' : '저장됨'}</ThemedText>
@@ -400,6 +402,7 @@ function AdminPostRow({ post, author, first, localPreview, compact, onUser }: {
               <ActionText label={busy ? '반영 중' : '반영'} onPress={applyEdits} disabled={busy || !dirty} />
             </View>
           </View>
+          </details>
         </View>
       )}
     </View>

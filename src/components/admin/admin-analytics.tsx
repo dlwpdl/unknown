@@ -66,7 +66,7 @@ export function AdminAnalyticsView({ localPreview, onUser, refreshSignal = 0 }: 
       {loading && <View accessibilityRole="progressbar" accessibilityLabel="분석 데이터 불러오는 중" style={styles.notice}><ThemedText style={styles.muted}>선택한 조건으로 분석하고 있어요.</ThemedText></View>}
       {error && <View accessibilityRole="alert" style={styles.notice}><ThemedText style={styles.accent}>분석 데이터를 불러오지 못했습니다. 관리자 권한과 연결 상태를 확인해주세요.</ThemedText><Action label="다시 시도" onPress={() => setRetry((value) => value + 1)} /></View>}
       {!loading && !error && <>
-        {data && <ThemedText type="small" style={styles.muted}>{date(data.periodStart)} 이후 · 갱신 {date(data.generatedAt)} · UTC 기준</ThemedText>}
+        {data && <Context title="집계 기간·갱신 시각"><ThemedText type="small" style={styles.muted}>{date(data.periodStart)} 이후 · 갱신 {date(data.generatedAt)} · UTC 기준</ThemedText></Context>}
         {tab === 'overview' && <Overview data={data} />}
         {tab === 'members' && <Members data={data} filters={filters} onUser={onUser} onPage={(offset) => setFilters((current) => ({ ...current, offset }))} />}
         {tab === 'traffic' && <Traffic data={data} onUser={onUser} />}
@@ -148,7 +148,7 @@ function Traffic({ data, onUser }: { data: AdminAnalytics | null; onUser: (id: s
     <DailyActivity data={data} />
     <SectionTitle title="최근 접속" note="선택 조건의 최근 기록 최대 50개 · 로그인 회원의 화면·플랫폼만 수집합니다." />
     <DataTable headers={['회원', '화면', '플랫폼 / 버전', '최초 방문', '최근 방문', '화면 조회']} rows={(data?.visits ?? []).map((visit) => ({ key: `${visit.userId}:${visit.platform}:${visit.firstAt}`, cells: [<UserLink key="user" id={visit.userId} nickname={visit.nickname} onUser={onUser} />, visit.screen, `${visit.platform} / ${visit.appVersion || '미확인'}`, date(visit.firstAt), date(visit.lastAt), `${number(visit.views)}회`] }))} />
-    <Notice title="접속 정보의 범위" text="로그인한 회원의 방문만 표시합니다. 익명 방문·IP·검색어·대화 내용은 분석용으로 수집하지 않으며, 접속 원자료는 90일 보관합니다." />
+    <Context title="접속 정보의 범위"><Notice title="접속 정보의 범위" text="로그인한 회원의 방문만 표시합니다. 익명 방문·IP·검색어·대화 내용은 분석용으로 수집하지 않으며, 접속 원자료는 90일 보관합니다." /></Context>
   </>;
 }
 
@@ -157,7 +157,7 @@ function Behavior({ data }: { data: AdminAnalytics | null }) {
   const rows = data?.behavior;
   const stepNames: Record<string, string> = { signup_complete: '회원가입 완료', consent_complete: '필수 동의 완료', meetup_request_complete: '모임 신청 완료', 'post.poll.vote': '투표 참여', 'ticketmaster.meetup.created': '행사 모임 등록' };
   return <>
-    <Notice title="버튼 · 화면 · 읽기 깊이" text="고정된 UI 식별자만 기록합니다. 입력값·대화 내용은 수집하지 않습니다. 익명 방문은 메모리 세션 기준이며 도시·등급 필터를 적용하면 제외됩니다. 단계 발생 수는 순서 기반 전환율이 아닙니다. 기존 빌드의 미수집 활동은 복원되지 않습니다." />
+    <Context title="행동 수집·해석 기준"><Notice title="버튼 · 화면 · 읽기 깊이" text="고정된 UI 식별자만 기록합니다. 입력값·대화 내용은 수집하지 않습니다. 익명 방문은 메모리 세션 기준이며 도시·등급 필터를 적용하면 제외됩니다. 단계 발생 수는 순서 기반 전환율이 아닙니다. 기존 빌드의 미수집 활동은 복원되지 않습니다." /></Context>
     <SectionTitle title="화면별 활동" note="체류는 앱 활성·웹 표시 상태에서 측정한 합계입니다. 앱 강제 종료·오프라인 상황에서는 일부 누락될 수 있습니다." />
     <DataTable headers={['플랫폼 / 화면', '조회', '세션', '활성 체류 (분)', '버튼 클릭', '끝까지 스크롤']} rows={(rows?.screens ?? []).map((r) => ({ key: `${r.platform}:${r.screen}`, cells: [`${r.platform} / ${r.screen}`, number(r.views), number(r.sessions), (r.dwellMs / 60000).toFixed(1), number(r.presses), number(r.bottoms)] }))} />
     <SectionTitle title="완료한 작업" note="서버에서 성공한 작업을 클라이언트가 보고한 횟수입니다. 버튼 클릭과 구분하며, 결제·회원 원장 대용이 아닙니다." />
@@ -237,6 +237,13 @@ function SectionTitle({ title, note }: { title: string; note?: string }) {
   return <View style={styles.heading}><ThemedText accessibilityRole="header" {...(Platform.OS === 'web' ? { 'aria-level': 2 } : {})} style={styles.sectionTitle}>{title}</ThemedText>{note && <ThemedText type="small" style={styles.muted}>{note}</ThemedText>}</View>;
 }
 
+function Context({ title, children }: { title: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return <View style={styles.section}><Action label={title} expanded={open} onPress={() => setOpen(value => !value)} />
+    <View aria-hidden={!open} style={[styles.heading, !open && { display: 'none' }]}>{children}</View>
+  </View>;
+}
+
 function Notice({ title, text }: { title: string; text: string }) {
   return <View style={styles.notice}><ThemedText type="smallBold">{title}</ThemedText><ThemedText type="small" style={styles.muted}>{text}</ThemedText></View>;
 }
@@ -244,7 +251,7 @@ function Notice({ title, text }: { title: string; text: string }) {
 function Empty({ text = '표시할 기록이 없습니다.' }: { text?: string }) { return <ThemedText type="small" style={styles.empty}>{text}</ThemedText>; }
 function Action({ label, onPress, disabled = false, expanded }: { label: string; onPress: () => void; disabled?: boolean; expanded?: boolean }) {
   const { play } = useInteractionFeedback();
-  return <Pressable accessibilityRole="button" aria-disabled={disabled} accessibilityState={{ disabled, expanded }} disabled={disabled} onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.action, disabled && styles.disabled, pressed && styles.pressed]}><ThemedText type="smallBold">{label}</ThemedText></Pressable>;
+  return <Pressable accessibilityRole="button" aria-disabled={disabled} aria-expanded={expanded} accessibilityState={{ disabled, expanded }} disabled={disabled} onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.action, disabled && styles.disabled, pressed && styles.pressed]}><ThemedText type="smallBold">{label}</ThemedText></Pressable>;
 }
 
 const numberFormatter = new Intl.NumberFormat('ko-KR');

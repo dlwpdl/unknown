@@ -26,6 +26,7 @@ export function AdminTicketmasterView({ localPreview, refreshSignal = 0 }: { loc
   const [month, setMonth] = useState(months[0]);
   const [retry, setRetry] = useState(0);
   const [linkError, setLinkError] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [result, setResult] = useState<{ key: string; data: RevenueSnapshot | null; error: boolean } | null>(null);
   const key = `${month}:${retry}:${refreshSignal}`;
   const current = !localPreview && result?.key === key ? result : null;
@@ -85,10 +86,16 @@ export function AdminTicketmasterView({ localPreview, refreshSignal = 0 }: { loc
       : current?.error ? <StateCard kind="error" title="수익을 불러오지 못했어요" body="현재 금액을 확인할 수 없습니다. 잠시 후 다시 시도하거나 Impact에서 확인해 주세요." actionLabel="다시 시도" onAction={() => setRetry((value) => value + 1)} />
       : !connected ? <StateCard kind="empty" title={localPreview ? '수익 화면 미리보기' : 'Impact 연결 준비 중'} body={localPreview ? '운영자 로그인과 Impact 연결 후 실제 수익이 표시됩니다.' : '정산 데이터를 아직 연결하지 않았습니다. 연결 전 금액은 표시하지 않습니다.'} />
       : !data.totals.length ? <StateCard kind="empty" title="이 달에는 발생한 수수료가 없어요" body="Ticketmaster 구매 수수료가 Impact에 등록되면 여기에 표시됩니다." /> : null}
-    {connected && data.generatedAt && <ThemedText type="small" style={styles.muted}>마지막 갱신 {new Date(data.generatedAt).toLocaleString('ko-KR', { timeZone: 'UTC' })} UTC · 최대 5분 간격 갱신</ThemedText>}
     <View style={styles.note}>
-      <ThemedText type="smallBold">정산·출금은 Impact에서</ThemedText>
-      <ThemedText type="small" style={styles.muted}>선택한 달의 구매로 발생한 수수료를 보여줍니다. 정산 완료는 은행 입금과 다르며, 출금 가능 잔고와 지급 설정은 Impact에서 확인하세요. 통화는 합산하지 않습니다.</ThemedText>
+      <ThemedText type="small" style={styles.muted}>정산 완료는 은행 입금과 다릅니다. 통화는 합산하지 않습니다.</ThemedText>
+      <Pressable accessibilityRole="button" accessibilityState={{ expanded: detailsOpen }} aria-expanded={detailsOpen}
+        onPress={() => { play('selection'); setDetailsOpen(value => !value); }} style={({ pressed }) => [styles.button, { alignSelf: 'flex-start' }, pressed && styles.pressed]}>
+        <ThemedText type="smallBold">정산·출금과 갱신 기준 {detailsOpen ? '접기' : '펼치기'}</ThemedText>
+      </Pressable>
+      <View aria-hidden={!detailsOpen} style={[styles.titleGroup, !detailsOpen && { display: 'none' }]}>
+        <ThemedText type="small" style={styles.muted}>선택한 달의 구매로 발생한 수수료를 보여줍니다. 출금 가능 잔고와 지급 설정은 Impact에서 확인하세요.</ThemedText>
+        {connected && data.generatedAt && <ThemedText type="small" style={styles.muted}>마지막 갱신 {new Date(data.generatedAt).toLocaleString('ko-KR', { timeZone: 'UTC' })} UTC · 최대 5분 간격 갱신</ThemedText>}
+      </View>
     </View>
     {linkError && <ThemedText accessibilityRole="alert" style={styles.accent}>Impact를 열지 못했어요. 브라우저에서 app.impact.com에 접속해 주세요.</ThemedText>}
   </View>;
