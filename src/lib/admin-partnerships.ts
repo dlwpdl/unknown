@@ -111,6 +111,7 @@ export function partnershipError(error: unknown): string {
     INVALID_PARTNERSHIP: '이름·연결 대상·날짜·금액과 필수 조건을 확인해 주세요.',
     PARTNERSHIP_NOT_FOUND: '해당 자료를 찾지 못했습니다. 목록을 다시 확인해 주세요.',
     PARTNERSHIP_CHANGED: '다른 변경이 저장됐습니다. 입력을 확인하고 최신 자료를 다시 불러와 주세요.',
+    PARTNERSHIP_READBACK_REQUIRED: '서버 저장은 완료됐습니다. 입력을 유지했으니 ‘저장 내용 다시 확인’을 눌러 주세요.',
     PARTNERSHIP_TERMS_REQUIRED: '업체 동의와 혜택 조건·기한·지원 통화를 먼저 확정해 주세요.',
     PARTNERSHIP_TERMS_LOCKED: '선정이나 쿠폰 발급 이력이 있어 조건을 바꿀 수 없습니다. 별도 캠페인이나 혜택을 등록해 주세요.',
     PARTNERSHIP_CAPACITY: '선정 정원 또는 쿠폰 발급 한도에 도달했습니다.',

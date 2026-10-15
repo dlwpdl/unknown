@@ -95,7 +95,10 @@ def blocked_recheck(database, lock, mutation, operation, expected):
             _, err = process.communicate(timeout=10)
             assert process.returncode == 0, err
             result = future.result(timeout=10)
-            assert result.returncode and expected in result.stderr, result.stdout + result.stderr
+            if expected is None:
+                assert result.returncode == 0, result.stdout + result.stderr
+            else:
+                assert result.returncode and expected in result.stderr, result.stdout + result.stderr
     finally:
         if process.poll() is None:
             process.kill()
@@ -163,8 +166,30 @@ commit;
         save = f"select public.save_admin_partnership('creator','{{\"id\":\"{CREATOR}\",\"notes\":\"Race edit\"}}','{revision}')"
         race(database, [save, save], 'PARTNERSHIP_CHANGED')
         probes.append('concurrent stale editor revision')
+        # The auth cascade must finish while an inactive recipient's revoke waits.
+        recipient = 'a1500000-0000-0000-0000-000000000004'
+        erasure_benefit = 'a1550000-0000-0000-0000-000000000002'
+        erasure_coupon = 'a1570000-0000-0000-0000-000000000004'
+        sql(database, f"""begin;
+insert into auth.users(id,email) values('{recipient}','race-erasure@example.test');
+insert into public.profiles(id,nickname,city_id) values('{recipient}','Race Erasure','partnership-test');
+""" + AUTH + f"""
+select public.save_admin_partnership('benefit',jsonb_build_object('id','{erasure_benefit}','merchant_id','{MERCHANT}','title','Erasure race','audience','members','status','active','terms','Once','terms_confirmed',true,'expires_on',current_date+10));
+select public.issue_admin_benefit_coupon('{erasure_coupon}','{erasure_benefit}',null,'{recipient}');
+commit;
+""")
+        sql(database, f"update public.profiles set account_status='deleted' where id='{recipient}';")
+        erasure_revision = sql(database, f"select updated_at from private.partnership_coupons where id='{erasure_coupon}';").stdout.strip()
+        blocked_recheck(database, f"select 1 from auth.users where id='{recipient}' for update",
+                        f"delete from auth.users where id='{recipient}'",
+                        f"select public.act_admin_benefit_coupon('{erasure_coupon}','{erasure_revision}','revoke','Inactive recipient erased')", None)
+        assert sql(database, f"select count(*) from auth.users where id='{recipient}';").stdout.strip() == '0'
+        assert sql(database, f"select count(*) from public.profiles where id='{recipient}';").stdout.strip() == '0'
+        assert sql(database, f"select status from private.partnership_coupons where id='{erasure_coupon}';").stdout.strip() == 'revoked'
+        assert sql(database, f"select count(*) from private.partnership_events where resource_id='{erasure_coupon}' and action='coupon_revoked';").stdout.strip() == '1'
+        probes.append('hard auth-user deletion versus inactive-recipient coupon revocation')
         # Block on the first actor lock, then revoke each authorization source.
-        actor_lock = f"select 1 from public.profiles where id='{ADMIN}' for update"
+        actor_lock = f"select 1 from auth.users where id='{ADMIN}' for update"
         read = "select public.get_admin_partnerships('creators')"
         for name, mutation, restore in (
             ('role revocation during lock wait', f"update auth.users set raw_app_meta_data='{{}}' where id='{ADMIN}'", f"update auth.users set raw_app_meta_data='{{\"role\":\"admin\"}}' where id='{ADMIN}'"),

@@ -1,10 +1,33 @@
 -- Private operating records; payments are notes, and coupon codes confer no public access.
+create function private.partnership_profile_key(p_url text) returns text
+language plpgsql immutable set search_path='' as $$
+declare host text; path text; escaped text;
+begin
+  if not private.valid_merchant_original(p_url) then return null; end if;
+  host:=regexp_replace(lower(substring(p_url from '^https://([^/?]+)')),'^www[.]','');
+  path:=regexp_replace(split_part(p_url,'?',1),'^https://[^/]+','');
+  if path ~ '(^|/)[.]{1,2}(/|$)' or position('//' in path)>0 or position(chr(92) in path)>0
+    or path ~ '%(?![0-9A-Fa-f]{2})|%[0-7][0-9A-Fa-f]' then return null; end if;
+  -- Only valid non-ASCII UTF8 runs are decoded, so escapes cannot hide URL syntax.
+  for escaped in select (regexp_matches(path,'(?:%[0-9A-Fa-f]{2})+','g'))[1] loop
+    path:=replace(path,escaped,convert_from(decode(replace(escaped,'%',''),'hex'),'UTF8'));
+  end loop;
+  path:=rtrim(path,'/');
+  if host='threads.net' then host:='threads.com'; end if;
+  if (host='instagram.com' and path ~ '^/[^/]+$')
+    or (host in ('threads.com','tiktok.com','youtube.com') and path ~ '^/@[^/]+$') then path:=lower(path); end if;
+  return 'https://'||host||path;
+exception when character_not_in_repertoire or invalid_parameter_value then return null;
+end $$;
+alter function private.partnership_profile_key(text) owner to postgres;
+revoke all on function private.partnership_profile_key(text) from public,anon,authenticated,service_role;
+
 create table private.partnership_creators (
   id uuid primary key,
   member_id uuid references public.profiles(id) on delete set null unique,
   display_name text not null check(length(btrim(display_name)) between 1 and 120),
   city_id text not null references public.cities(id),
-  profile_url text not null check(private.valid_merchant_original(profile_url)),
+  profile_url text not null check(private.partnership_profile_key(profile_url) is not null),
   category text not null default '' check(length(category)<=80),
   contact text not null default '' check(length(contact)<=1000),
   reference_url text not null default '' check(reference_url='' or private.valid_merchant_original(reference_url)),
@@ -15,7 +38,7 @@ create table private.partnership_creators (
   created_at timestamptz not null default clock_timestamp(), updated_at timestamptz not null default clock_timestamp(),
   check(reference_views is null or reference_url<>'')
 );
-create unique index partnership_creator_profile on private.partnership_creators(regexp_replace(lower(rtrim(split_part(profile_url,'?',1),'/')),'^https://www[.]','https://'));
+create unique index partnership_creator_profile on private.partnership_creators(private.partnership_profile_key(profile_url));
 create index partnership_creators_page on private.partnership_creators(updated_at desc,id);
 create index partnership_creators_city on private.partnership_creators(city_id);
 create table private.partnership_campaigns (
@@ -121,9 +144,9 @@ create function private.lock_partnership_actor(p_members uuid[] default '{}') re
 language plpgsql security definer set search_path='' as $$
 begin
   perform private.assert_partnership_admin();
-  -- SHARE matches merchant mutations; sorted actor/recipient locks also protect account changes.
-  perform 1 from public.profiles where id=auth.uid() or id=any(p_members) order by id for share;
+  -- Match auth erasure's users -> profiles cascade order, sorting actor/recipient rows.
   perform 1 from auth.users where id=auth.uid() or id=any(p_members) order by id for share;
+  perform 1 from public.profiles where id=auth.uid() or id=any(p_members) order by id for share;
   perform 1 from auth.sessions where user_id=auth.uid() and id::text=auth.jwt()->>'session_id' for share;
   perform private.assert_partnership_admin();
 end $$;
