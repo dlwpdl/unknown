@@ -1,10 +1,12 @@
 import { useRef, type ComponentProps, type Ref } from 'react';
 import { Switch as NativeSwitch, SectionList as NativeSectionList, type SectionListProps, type DefaultSectionT, Pressable as NativePressable, ScrollView as NativeScrollView, FlatList as NativeFlatList, type FlatListProps, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewProps } from 'react-native';
 import { behavior, behaviorView, scrollThresholds } from '@/lib/behavior-analytics';
+import { LensPressable } from '@/components/lens-pressable';
 
 type Tracking = { analyticsId: string };
-export function Pressable({ analyticsId, onPress, style, ...props }: ComponentProps<typeof NativePressable> & Tracking) {
-  return <NativePressable {...props}
+export function Pressable({ analyticsId, onPress, style, lens = false, ...props }: ComponentProps<typeof NativePressable> & Tracking & { lens?: boolean }) {
+  const Control = lens ? LensPressable : NativePressable;
+  return <Control {...props}
     style={typeof style === 'function' ? style : ({ pressed }) => [style, pressed && { opacity: 0.65 }]}
     onPress={onPress ? (event) => { behavior('press', analyticsId); onPress(event); } : undefined} />;
 }
