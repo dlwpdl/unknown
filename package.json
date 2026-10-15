@@ -49,6 +49,7 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "postinstall": "node scripts/fix-uri-decoder.mjs",
     "admin": "GLING_LOCAL_ADMIN=1 expo export --platform web --output-dir .admin-dist && python3 scripts/serve-admin.py",
     "check:public-web": "node scripts/check-public-web.mjs",
     "storage:usage": "python3 scripts/storage-usage.py",
@@ -74,6 +75,9 @@
     "check:merchant-web": "node scripts/check-merchant-web.mjs"
   },
   "overrides": {
+    "query-string": {
+      "decode-uri-component": "0.5.0"
+    },
     "shell-quote": "1.11.0",
     "metro": "0.84.5",
     "metro-config": "0.84.5",
