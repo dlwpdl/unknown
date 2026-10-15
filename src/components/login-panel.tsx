@@ -108,7 +108,7 @@ export function LoginPanel({
                   style={[styles.adminInput, { borderColor: adminFocusedField === 'password' ? Colors.dark.accent : Colors.dark.line }]} />
               </View>
               {!!error && <View style={styles.adminError} accessibilityRole="alert" accessibilityLiveRegion="polite"><ThemedText type="small">{error}</ThemedText></View>}
-              <RaisedActionButton analyticsId="components_login-panel.pressable.3" label={loading ? '로그인 중…' : '관리자 로그인'} onPress={submitAdmin} disabled={submitDisabled} busy={loading} />
+              <RaisedActionButton lens={false} analyticsId="components_login-panel.pressable.3" label={loading ? '로그인 중…' : '관리자 로그인'} onPress={submitAdmin} disabled={submitDisabled} busy={loading} />
               {onGoogle && <Pressable analyticsId="components_login-panel.pressable.2" accessibilityRole="button" accessibilityLabel={t.auth.google}
                 disabled={disabled} accessibilityState={{ disabled, busy: loading }} onPress={() => { if (!disabled) { play('selection'); onGoogle(); } }}
                 style={({ pressed }) => [styles.adminGoogle, { opacity: disabled ? 0.6 : pressed ? 0.8 : 1 }]}>

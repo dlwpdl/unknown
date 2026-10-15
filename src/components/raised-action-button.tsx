@@ -12,18 +12,19 @@ type Props = {
   disabled?: boolean;
   busy?: boolean;
   compact?: boolean;
+  lens?: boolean;
 };
 
-export function RaisedActionButton({ analyticsId, label, onPress, disabled = false, busy = false, compact = false }: Props) {
+export function RaisedActionButton({ analyticsId, label, onPress, disabled = false, busy = false, compact = false, lens = true }: Props) {
   const theme = useTheme();
   const reducedMotion = useReducedMotion();
   const depth = useSharedValue(0);
-  const faceMotion = useAnimatedStyle(() => ({ transform: [{ translateY: depth.value * 4 }, { scale: 1 - depth.value * 0.012 }] }));
+  const faceMotion = useAnimatedStyle(() => ({ transform: lens ? [{ scale: reducedMotion ? 1 : 1 - depth.value * 0.025 }] : [{ translateY: depth.value * 4 }, { scale: 1 - depth.value * 0.012 }] }));
   const press = (down: number) => { depth.value = reducedMotion ? down : withSpring(down, { stiffness: 420, damping: 32, mass: 0.7 }); };
 
-  return <View style={[styles.base, compact ? styles.compact : styles.wide, { backgroundColor: theme.accentDepth, opacity: disabled ? 0.62 : 1 }]}>
-    <Reanimated.View style={[styles.face, compact ? styles.compact : styles.wide, { backgroundColor: theme.accent, shadowColor: '#000' }, faceMotion]}>
-      <Pressable analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled, busy }} disabled={disabled}
+  return <View style={[styles.base, compact ? styles.compact : styles.wide, { backgroundColor: lens ? 'transparent' : theme.accentDepth, opacity: disabled ? 0.62 : 1 }]}>
+    <Reanimated.View style={[styles.face, lens && { shadowOpacity: 0, elevation: 0 }, compact ? styles.compact : styles.wide, { backgroundColor: theme.accent, shadowColor: '#000' }, faceMotion]}>
+      <Pressable lens={lens} analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled, busy }} disabled={disabled}
         onPressIn={() => press(1)} onPressOut={() => press(0)} onPress={onPress}
         style={[styles.touch, compact ? styles.compactTouch : styles.wideTouch]}>
         <ThemedText type="smallBold" style={[styles.label, !compact && styles.wideLabel, { color: theme.accentInk }]}>{label}</ThemedText>
