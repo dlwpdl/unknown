@@ -87,7 +87,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
       <View accessibilityViewIsModal onAccessibilityEscape={dismiss} style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.line, paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View accessible={false} style={[styles.handle, { backgroundColor: theme.line }]} />
         <View style={styles.header}><ThemedText type="smallBold" style={styles.heading}>{label}</ThemedText>
-          <Pressable analyticsId="post.share.close" accessibilityRole="button" accessibilityLabel="공유 닫기" disabled={requesting} accessibilityState={{ disabled: requesting }}
+          <Pressable lens analyticsId="post.share.close" accessibilityRole="button" accessibilityLabel="공유 닫기" disabled={requesting} accessibilityState={{ disabled: requesting }}
             onPress={dismiss} style={[styles.close, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={20} tintColor={theme.text} accessible={false} /></Pressable>
         </View>
         <ScrollView analyticsId="post.share.sheet" style={styles.scroll} contentContainerStyle={styles.content}>
@@ -101,13 +101,13 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
             </View>
           </View>
           <View style={styles.conversationHeader}><ThemedText type="smallBold" style={styles.sectionTitle}>글링 대화로 보내기</ThemedText>
-            {inbox?.cursor && <Pressable analyticsId="post.share.more" accessibilityRole="button" disabled={loading || busy} accessibilityState={{ disabled: loading || busy }} onPress={() => void more()} style={styles.more}><ThemedText type="small" themeColor="textSecondary" style={styles.moreLabel}>다른 대화 더 보기</ThemedText></Pressable>}
+            {inbox?.cursor && <Pressable lens analyticsId="post.share.more" accessibilityRole="button" disabled={loading || busy} accessibilityState={{ disabled: loading || busy }} onPress={() => void more()} style={styles.more}><ThemedText type="small" themeColor="textSecondary" style={styles.moreLabel}>다른 대화 더 보기</ThemedText></Pressable>}
           </View>
           <ThemedText type="small" themeColor="textSecondary">대화를 누르면 바로 보내요.</ThemedText>
           {loading && <StateCard kind="pending" title="대화를 불러오는 중…" body="잠시만 기다려주세요." />}
           {!loading && inbox && !inbox.conversations.some(c => c.status === 'active') && <StateCard kind="empty" title="진행 중인 대화가 없어요" body={Platform.OS === 'web' ? '다른 앱으로 공유하거나 링크를 복사해보세요.' : '아래 버튼으로 다른 앱에 공유해보세요.'} />}
           {!inbox && !loading && <><StateCard kind="error" title="대화를 불러오지 못했어요" body="공유 링크는 다른 앱으로 보낼 수 있어요." />
-            <Pressable analyticsId="post.share.retry" accessibilityRole="button" disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => { play('selection'); setLoading(true); setRetry(value => value + 1); }} style={control}><ThemedText type="smallBold">대화 목록 다시 확인</ThemedText></Pressable>
+            <Pressable lens analyticsId="post.share.retry" accessibilityRole="button" disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => { play('selection'); setLoading(true); setRetry(value => value + 1); }} style={control}><ThemedText type="smallBold">대화 목록 다시 확인</ThemedText></Pressable>
           </>}
           {inbox?.conversations.filter(c => c.status === 'active').map(conversation => {
             const done = sent.includes(conversation.id), unconfirmed = uncertain.includes(conversation.id), disabled = requesting || done || unconfirmed;
@@ -121,15 +121,15 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
               <View style={[styles.sendMarker, { backgroundColor: done || unconfirmed ? 'transparent' : theme.backgroundElement }]}><ThemedText type="small" themeColor={done ? 'accent' : 'textSecondary'}>{done ? '✓ 보냈어요' : unconfirmed ? '확인 필요' : '보내기'}</ThemedText></View>
             </Pressable>;
           })}
-          {uncertain.map(id => <Pressable key={id} analyticsId="post.share.verify-chat" accessibilityRole="button" accessibilityLabel="전송 결과를 대화에서 확인" disabled={requesting} accessibilityState={{ disabled: requesting }}
+          {uncertain.map(id => <Pressable lens key={id} analyticsId="post.share.verify-chat" accessibilityRole="button" accessibilityLabel="전송 결과를 대화에서 확인" disabled={requesting} accessibilityState={{ disabled: requesting }}
             onPress={() => { if (pending.current) return; play('selection'); onClose(); router.push({ pathname: '/chat', params: { conversationId: id } }); }} style={control}><ThemedText type="smallBold">대화를 열어 전송 결과 확인</ThemedText></Pressable>)}
         </ScrollView>
         <View style={[styles.footer, { borderColor: theme.line }]}>
           {!!notice && <ThemedText type="small" accessibilityLiveRegion="polite" themeColor="textSecondary">{notice}</ThemedText>}
           <ThemedText type="small" themeColor="textSecondary">{invite ? '초대받은 사람도 로그인 후 참여 신청과 모임장 승인이 필요해요. 상세 집결 정보는 승인된 모임 대화에서만 확인해요.' : '글링에서 로그인 후 전체 내용을 확인해요.'}</ThemedText>
-          <Pressable analyticsId="post.share.external" accessibilityRole="button" accessibilityLabel={invite ? '초대 링크 공유' : '다른 앱으로 공유'} disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => void external()}
+          <Pressable lens analyticsId="post.share.external" accessibilityRole="button" accessibilityLabel={invite ? '초대 링크 공유' : '다른 앱으로 공유'} disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => void external()}
             style={[styles.button, styles.external, { backgroundColor: theme.accent, borderColor: theme.accent }]}><SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={20} tintColor={theme.accentInk} accessible={false} /><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{invite ? '초대 링크 공유' : '다른 앱으로 공유'}</ThemedText></Pressable>
-          {Platform.OS === 'web' && <Pressable analyticsId="post.share.copy" accessibilityRole="button" disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => void external(true)} style={control}><ThemedText type="smallBold">링크 복사</ThemedText></Pressable>}
+          {Platform.OS === 'web' && <Pressable lens analyticsId="post.share.copy" accessibilityRole="button" disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => void external(true)} style={control}><ThemedText type="smallBold">링크 복사</ThemedText></Pressable>}
         </View>
       </View>
     </SafeAreaView>

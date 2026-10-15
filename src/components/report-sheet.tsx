@@ -110,7 +110,7 @@ export function ReportSheet({
             {REASONS.map((item) => {
               const selected = reason === item;
               return (
-                <Pressable analyticsId="components_report-sheet.pressable.3"
+                <Pressable lens analyticsId="components_report-sheet.pressable.3"
                   key={item}
                   onPress={() => { play('selection'); setReason(item); }}
                   accessibilityRole="radio"
@@ -153,7 +153,7 @@ export function ReportSheet({
             </Pressable>
           )}
 
-          <Pressable analyticsId="components_report-sheet.pressable.5"
+          <Pressable lens analyticsId="components_report-sheet.pressable.5"
             onPress={() => { play('selection'); void submit(); }}
             disabled={!reason || submitting}
             accessibilityRole="button"

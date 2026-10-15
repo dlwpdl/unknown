@@ -72,7 +72,7 @@ export function PostPinMap({ pin, cityName = '', preview = false, bottomInset = 
           else if (message.type === 'credit') { play('selection'); void Linking.openURL(message.url).catch(() => play('warning')); }
         }} />}
     {failed && <View style={[styles.error, { backgroundColor: theme.card }]}><ThemedText type="small">지도를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.</ThemedText>
-      <Pressable analyticsId="post.location.map.retry" accessibilityRole="button" onPress={() => { play('selection'); setFailed(false); setRetry(value => value + 1); }} style={styles.retry}><ThemedText themeColor="accent">다시 시도</ThemedText></Pressable></View>}
+      <Pressable lens analyticsId="post.location.map.retry" accessibilityRole="button" onPress={() => { play('selection'); setFailed(false); setRetry(value => value + 1); }} style={styles.retry}><ThemedText themeColor="accent">다시 시도</ThemedText></Pressable></View>}
   </View>;
 }
 
