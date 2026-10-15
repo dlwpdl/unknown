@@ -20,7 +20,7 @@ export function ProfileAvatarButton() {
   if (Platform.OS === 'web') return null;
   return (
     <GlassSurface tone="control" interactive style={styles.glass}>
-    <Pressable analyticsId="components_profile-avatar-button.pressable.1" onPress={() => { play('selection'); router.push('/profile'); }} accessibilityRole="button" accessibilityLabel={t.tabs.profile}
+    <Pressable lens analyticsId="components_profile-avatar-button.pressable.1" onPress={() => { play('selection'); router.push('/profile'); }} accessibilityRole="button" accessibilityLabel={t.tabs.profile}
       style={({ pressed }) => [styles.button, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
       {isAuthed && me.photoUri
         ? <Image source={{ uri: me.photoUri }} style={styles.avatar} contentFit="cover" accessible={false} />

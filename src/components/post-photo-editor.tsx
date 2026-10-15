@@ -21,13 +21,13 @@ export function PostPhotoEditor({ images, disabled, onChange }: { images: Editab
     <View style={styles.info}>
       <ThemedText type="smallBold">{index + 1}{index === 0 ? ' · 표지 사진' : ' · 사진'}</ThemedText>
       <View style={styles.actions}>
-        {([-1, 1] as const).map(direction => <Pressable key={direction} analyticsId="post.edit.photo-move" accessibilityRole="button"
+        {([-1, 1] as const).map(direction => <Pressable lens key={direction} analyticsId="post.edit.photo-move" accessibilityRole="button"
           accessibilityLabel={`사진 ${index + 1} ${direction < 0 ? '앞으로' : '뒤로'} 이동`} disabled={disabled || index + direction < 0 || index + direction >= images.length}
           accessibilityState={{ disabled: disabled || index + direction < 0 || index + direction >= images.length }}
           onPress={() => move(index, direction)} style={styles.button}>
           <ThemedText type="smallBold" themeColor="textSecondary" style={{ opacity: disabled || index + direction < 0 || index + direction >= images.length ? 0.35 : 1 }}>{direction < 0 ? '↑ 앞' : '↓ 뒤'}</ThemedText>
         </Pressable>)}
-        <Pressable analyticsId="post.edit.photo-remove" accessibilityRole="button" accessibilityLabel={`사진 ${index + 1} 제거`} disabled={disabled}
+        <Pressable lens analyticsId="post.edit.photo-remove" accessibilityRole="button" accessibilityLabel={`사진 ${index + 1} 제거`} disabled={disabled}
           accessibilityState={{ disabled }} onPress={() => { play('selection'); onChange(images.filter((_, position) => position !== index)); }} style={styles.button}>
           <ThemedText type="smallBold" themeColor="danger">제거</ThemedText>
         </Pressable>

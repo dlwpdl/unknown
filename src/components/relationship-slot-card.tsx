@@ -69,7 +69,7 @@ export function RelationshipSlotCard({ kind, membership, loading = false, onMemb
       </View>
       {data?.overLimit && <ThemedText type="small" themeColor="textSecondary">현재 한도보다 많은 자리를 사용하고 있어요. 기존 관계는 유지돼요.</ThemedText>}
     </View>
-    {onMembershipPress && <Pressable analyticsId="components_relationship-slot-card.pressable.1" accessibilityRole="button" onPress={onMembershipPress} style={({ pressed }) => [styles.action, { borderTopColor: theme.line, backgroundColor: theme.background, opacity: pressed ? 0.65 : 1 }]}>
+    {onMembershipPress && <Pressable lens analyticsId="components_relationship-slot-card.pressable.1" accessibilityRole="button" onPress={onMembershipPress} style={({ pressed }) => [styles.action, { borderTopColor: theme.line, backgroundColor: theme.background, opacity: pressed ? 0.65 : 1 }]}>
       <ThemedText type="smallBold" themeColor="accent" style={styles.flex}>멤버십과 모임 자리 보기</ThemedText><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.accent} /></View>
     </Pressable>}
   </View>;
