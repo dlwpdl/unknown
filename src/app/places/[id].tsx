@@ -32,7 +32,7 @@ export default function PlaceDetailScreen() {
   };
   return <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
     <View style={[styles.header, { borderBottomColor: theme.line }]}>
-      <Pressable analyticsId="places.detail.back" accessibilityRole="button" accessibilityLabel="이전 화면으로 돌아가기"
+      <Pressable lens analyticsId="places.detail.back" accessibilityRole="button" accessibilityLabel="이전 화면으로 돌아가기"
         onPress={() => { play('selection'); router.back(); }} style={styles.back}>
         <SymbolView name={{ ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }} size={19} tintColor={theme.text} />
         <ThemedText type="smallBold">돌아가기</ThemedText>
