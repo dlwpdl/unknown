@@ -4,6 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as merchantApi from '../src/lib/admin-merchants.ts';
+import * as merchantSource from '../src/lib/merchant-source.ts';
 const { merchantAddressCity } = merchantApi;
 
 const merchants = ['first', 'second'].map((id, i) => ({ id, name: `업체 ${i + 1}`, city_id: 'vancouver', city_name: '밴쿠버', timezone: 'America/Vancouver', industry: '카페', services: '', address: '', contact: `contact${i + 1}@example.test`, status: 'trial', consent: 'pending', consent_note: '', trial_ends_at: null, post_count: i + 1, report_count: 0, updated_at: '2026-10-11T00:00:00Z' }));
@@ -29,7 +30,7 @@ function app({ failure = null } = {}) {
     if (name === 'expo-asset') return { Asset: { fromModule: uri => ({ uri }) } };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) };
     if (name === '@/lib/mock') return { CITIES: [{ id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver', timezone: 'America/Vancouver' }], TAGS: [] };
-    if (name === '@/lib/merchant-source') return { merchantEventId: () => 'new-merchant' };
+    if (name === '@/lib/merchant-source') return { ...merchantSource, merchantEventId: () => 'new-merchant' };
     if (name === '@/lib/admin-merchants') return { ...merchantApi, merchantMapsUrl: () => null };
     if (name === '@/lib/supabase') return { supabase: { rpc: async (name, args) => { calls.push({ name, args }); if (name === 'get_admin_merchants') return { data: { merchants: merchants.map(m => ({ ...m, updated_at: '2026-10-12T00:00:00Z' })), more: false }, error: null }; return failure ? { data: null, error: { message: failure } } : { data: args.p_merchants.length, error: null }; } } };
     if (name === './admin-ai-connection') return { AdminAiConnection: 'AdminAiConnection' };
@@ -55,6 +56,33 @@ function text(node) {
 }
 const button = (root, label) => nodes(root).find(n => n.type === 'button' && (text(n).trim() === label || n.props['aria-label'] === label));
 
+test('merchant contact links preserve text, recognize named platforms and reject unsafe targets', () => {
+  assert.equal(typeof merchantSource.merchantContactLinks, 'function');
+  const contact = '담당자 hello@example.test · Instagram @sample.cafe · 스레드 @sample.cafe · TikTok @sample_cafe · YouTube @sample-cafe · https://cafe.example.com/menu?x=1';
+  const parts = merchantSource.merchantContactLinks(contact);
+  assert.equal(parts.map(part => part.text).join(''), contact);
+  assert.deepEqual(parts.filter(part => part.href).map(part => part.href), ['https://www.instagram.com/sample.cafe/', 'https://www.threads.com/@sample.cafe', 'https://www.tiktok.com/@sample_cafe', 'https://www.youtube.com/@sample-cafe', 'https://cafe.example.com/menu?x=1']);
+  for (const contact of ['hello@example.test', '@ambiguous', 'javascript:alert(1)', 'https://localhost/a', 'https://127.0.0.1/a', 'https://user:pass@example.com/a', 'https://example.com/\n<script>']) {
+    assert.equal(merchantSource.merchantContactLinks(contact).filter(part => part.href).length, 0, contact);
+  }
+});
+
+test('merchant accounts open directly from the list and detail without opening the row editor', () => {
+  const view = app();
+  view.refreshMerchant({ ...merchants[0], contact: 'Instagram @sample.cafe · https://cafe.example.com/' });
+  const table = nodes(view.render()).find(n => n.type === 'table');
+  const links = nodes(table).filter(n => n.type === 'a');
+  assert.equal(links.length, 2);
+  for (const link of links) { assert.equal(link.props.target, '_blank'); assert.equal(link.props.rel, 'noopener noreferrer'); link.props.onClick(); }
+  const row = nodes(table).find(n => n.type === 'tr' && n.props.onClick);
+  row.props.onClick({ target: { closest: selectors => selectors.split(',').includes('a') ? {} : null } });
+  assert.equal(nodes(view.render()).find(n => n.type === 'h2' && n.props.id === 'merchant-detail-title')?.props.children, '등록 종류와 정보');
+  button(view.render(), '업체 1 활동과 정보 보기').props.onClick();
+  const heading = nodes(view.render()).find(n => n.type === 'header' && n.props.className === 'merchant-detail-heading');
+  assert.equal(nodes(heading).filter(n => n.type === 'a').length, 2);
+  assert.ok(view.feedback.includes('selection'));
+});
+
 test('the overview exposes every merchant contact and count before a detail is opened', () => {
   const view = app(), root = view.render();
   const table = nodes(root).find(n => n.type === 'table');
@@ -73,7 +101,7 @@ test('벤더 목록은 주소 기반 소재지와 연결 계정을 구분하고 
   const address = '77 Finch Ave W, Suite 202, North York, ON M2N 2H5';
   view.refreshMerchant({ ...merchants[0], address, owner_id: 'owned' });
   const table = nodes(view.render()).find(n => n.type === 'table');
-  assert.ok(text(view.render()).includes('벤더 관리'));
+  assert.ok(text(view.render()).includes('업체 관리'));
   assert.ok(text(table).includes('North York, ON'));
   assert.ok(text(table).includes('벤더 회원'));
   assert.ok(text(table).includes('미연결'));
