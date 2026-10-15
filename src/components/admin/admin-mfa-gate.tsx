@@ -69,7 +69,7 @@ export function AdminMfaGate({ children }: { children: ReactNode }) {
     {!!error && <View accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.error}><ThemedText type="small">{error}</ThemedText></View>}
     {current && !factorId && <>
       <ThemedText type="small" themeColor="textSecondary">Google Authenticator, Microsoft Authenticator, 1Password 등을 사용할 수 있습니다.</ThemedText>
-      <RaisedActionButton analyticsId="admin_mfa.enroll" disabled={busy} busy={busy} label={busy ? '연결 중…' : '인증 앱 연결'} onPress={() => void act(async () => {
+      <RaisedActionButton lens={false} analyticsId="admin_mfa.enroll" disabled={busy} busy={busy} label={busy ? '연결 중…' : '인증 앱 연결'} onPress={() => void act(async () => {
         const factors = await supabase.auth.mfa.listFactors(); if (factors.error) throw factors.error;
         for (const factor of factors.data.all.filter((f) => f.status === 'unverified' && f.friendly_name?.startsWith('gling-admin-'))) {
           const removed = await supabase.auth.mfa.unenroll({ factorId: factor.id }); if (removed.error) throw removed.error;
@@ -90,7 +90,7 @@ export function AdminMfaGate({ children }: { children: ReactNode }) {
       <TextInput value={code} maxLength={6} keyboardType="number-pad" inputMode="numeric" autoComplete="one-time-code" textContentType="oneTimeCode" editable={!busy} autoCorrect={false} spellCheck={false} returnKeyType="go"
         accessibilityLabel="2차 인증 6자리 코드" placeholder="000000" placeholderTextColor={Colors.dark.textSecondary} style={[styles.input, styles.code, focused && styles.focused]}
         onFocus={() => { play('selection'); setFocused(true); }} onBlur={() => setFocused(false)} onSubmitEditing={verifyCode} onChangeText={(value) => setCode(value.replace(/\D/g, ''))} /></View>
-      <RaisedActionButton analyticsId="admin_mfa.verify" disabled={busy || code.length !== 6} busy={busy} label={busy ? '인증 중…' : '인증하고 들어가기'} onPress={verifyCode} />
+      <RaisedActionButton lens={false} analyticsId="admin_mfa.verify" disabled={busy || code.length !== 6} busy={busy} label={busy ? '인증 중…' : '인증하고 들어가기'} onPress={verifyCode} />
       {enrollment && <Pressable disabled={busy} accessibilityRole="button" style={styles.secondary} onPress={() => void act(async () => {
         const removed = await supabase.auth.mfa.unenroll({ factorId: enrollment.id }); if (removed.error) throw removed.error;
         setEnrollment(null); setCode(''); setRevision((v) => v + 1);
