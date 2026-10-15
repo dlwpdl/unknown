@@ -124,7 +124,7 @@ export default function SettingsScreen() {
                 accessibilityLabel={t.profile.darkMode}
                 accessibilityHint={t.profile.darkModeHint}
                 accessibilityState={{ disabled: themeSaving, busy: themeSaving }}
-                style={styles.themeSwitch}
+                hitSlop={7}
                 trackColor={{ false: '#837B91', true: theme.accent }}
                 thumbColor={scheme === 'dark' ? theme.accentInk : '#FFFFFF'}
                 ios_backgroundColor="#837B91"
@@ -238,7 +238,6 @@ const styles = StyleSheet.create({
   previewPage: { width: 21, height: 48, borderWidth: 1, borderRadius: 5, padding: 3, justifyContent: 'center', gap: 3 },
   previewLine: { height: 3, borderRadius: 2 },
   appearanceRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 52 },
-  themeSwitch: { minWidth: 56, minHeight: 44 },
   row: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three, padding: Spacing.three },
   navRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
   navCopy: { flex: 1 },
