@@ -6,15 +6,15 @@ import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    text: '#21252C',              // ink
-    background: '#FAF9F5',        // paper
-    backgroundElement: '#F1EFE8', // chip
-    backgroundSelected: '#E8E5DC',
-    textSecondary: '#5B6270',     // sub
+    text: '#211D2B',
+    background: '#F7F7FB',
+    backgroundElement: '#F0EDF7',
+    backgroundSelected: '#EDE6FA',
+    textSecondary: '#625C70',
     card: '#FFFFFF',
-    line: '#E5E3DB',
-    accent: '#BE3B2A',            // 인주
-    accentDepth: '#8B2D25',
+    line: '#DFDAE9',
+    accent: '#6E4AA2',
+    accentDepth: '#57377F',
     accentInk: '#FFFFFF',
     navy: '#34506B',
   },

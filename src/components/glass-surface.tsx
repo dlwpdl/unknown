@@ -1,6 +1,8 @@
 import { GlassView, isGlassEffectAPIAvailable, isLiquidGlassAvailable } from 'expo-glass-effect';
 import type { PropsWithChildren } from 'react';
 import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 const available = (() => {
   if (Platform.OS !== 'ios') return false;
@@ -8,9 +10,13 @@ const available = (() => {
   catch { return false; }
 })();
 
-export function GlassSurface({ children, style, interactive = false, tone = 'overlay' }: PropsWithChildren<{ style?: StyleProp<ViewStyle>; interactive?: boolean; tone?: 'overlay' | 'control' }>) {
-  if (available) return <GlassView glassEffectStyle={tone === 'control' ? 'clear' : 'regular'} colorScheme="dark" tintColor={tone === 'control' ? undefined : '#0B0B12'} isInteractive={interactive} style={[styles.surface, tone === 'control' && styles.controlEdge, style]}>{children}</GlassView>;
-  return <View style={[styles.surface, tone === 'control' ? styles.controlFallback : styles.fallback, style]}>{children}</View>;
+export function GlassSurface({ children, style, interactive = false, tone = 'overlay', colorScheme }: PropsWithChildren<{ style?: StyleProp<ViewStyle>; interactive?: boolean; tone?: 'overlay' | 'control'; colorScheme?: 'light' | 'dark' }>) {
+  const theme = useTheme();
+  const scheme = colorScheme ?? (theme === Colors.dark ? 'dark' : 'light');
+  const colors = colorScheme ? Colors[colorScheme] : theme;
+  const lightBorder = scheme === 'light' && { borderColor: colors.line };
+  if (available) return <GlassView glassEffectStyle={tone === 'control' ? 'clear' : 'regular'} colorScheme={scheme} tintColor={tone === 'control' ? undefined : colors.background} isInteractive={interactive} style={[styles.surface, tone === 'control' && styles.controlEdge, lightBorder, style]}>{children}</GlassView>;
+  return <View style={[styles.surface, tone === 'control' ? styles.controlFallback : styles.fallback, lightBorder, scheme === 'light' && { backgroundColor: tone === 'control' ? `${colors.backgroundElement}C2` : `${colors.background}D6` }, style]}>{children}</View>;
 }
 
 const styles = StyleSheet.create({

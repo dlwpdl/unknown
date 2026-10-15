@@ -2,6 +2,7 @@ import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView, Switch } from '@/components/analytics-controls';
 import Constants from 'expo-constants';
 import { Redirect, useRouter } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import { Alert, Linking, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,8 +11,8 @@ import { ThemedText } from '@/components/themed-text';
 import { NearbyCityCard } from '@/components/nearby-city-card';
 import { PersonalInfoCard } from '@/components/personal-info-card';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { Colors, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
+import { useTheme, useThemePreference } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { useAuth } from '@/lib/auth';
 import { deleteMyAccount } from '@/lib/community-data';
@@ -23,6 +24,7 @@ import { adsSupported, showAdPrivacyOptions, testAds } from '@/lib/ads';
 
 export default function SettingsScreen() {
   const theme = useTheme();
+  const { scheme, isSaving: themeSaving, setScheme } = useThemePreference();
   const router = useRouter();
   const { isAuthed, isAuthLoading, me, prepareAppleAccountDeletion, setProfilePhoto, signOut } = useAuth();
   const { hapticsEnabled, play, setHapticsEnabled, setSoundEnabled, soundEnabled } = useInteractionFeedback();
@@ -96,6 +98,45 @@ export default function SettingsScreen() {
         <ScrollView analyticsId="app_profile_settings.scrollview.1" contentContainerStyle={styles.content}>
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{t.profile.account}</ThemedText>
           <PersonalInfoCard userId={me.id} nickname={me.nickname} />
+
+          <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{t.profile.appearance}</ThemedText>
+          <View style={[styles.card, styles.appearanceCard, { backgroundColor: theme.card, borderColor: theme.accent }]}>
+            <View style={[styles.appearancePreview, { backgroundColor: theme.backgroundElement }]}>
+              <View style={styles.previewPair} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                {[Colors.light, Colors.dark].map((palette, index) => <View key={index} style={[styles.previewPage, { backgroundColor: palette.background, borderColor: palette.line }]}>
+                  {[0, 1, 2].map((line) => <View key={line} style={[styles.previewLine, { backgroundColor: palette.accent }]} />)}
+                </View>)}
+              </View>
+              <View style={styles.navCopy}>
+                <ThemedText type="smallBold">{scheme === 'dark' ? t.profile.darkMode : t.profile.lightMode}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">{t.profile.appearancePreview}</ThemedText>
+              </View>
+              <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={20} tintColor={theme.accent} />
+            </View>
+            <View style={styles.appearanceRow}>
+              <View style={styles.navCopy}>
+                <ThemedText type="smallBold">{t.profile.darkMode}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">{t.profile.darkModeNote}</ThemedText>
+              </View>
+              <Switch analyticsId="app_profile_settings.switch.theme"
+                value={scheme === 'dark'}
+                disabled={themeSaving}
+                accessibilityLabel={t.profile.darkMode}
+                accessibilityHint={t.profile.darkModeHint}
+                accessibilityState={{ disabled: themeSaving, busy: themeSaving }}
+                style={styles.themeSwitch}
+                trackColor={{ false: '#837B91', true: theme.accent }}
+                thumbColor={scheme === 'dark' ? theme.accentInk : '#FFFFFF'}
+                ios_backgroundColor="#837B91"
+                onValueChange={(enabled) => {
+                  play('selection');
+                  void setScheme(enabled ? 'dark' : 'light').then((saved) => {
+                    if (!saved) Alert.alert(t.profile.appearanceSaveErrorTitle, t.profile.appearanceSaveErrorBody);
+                  });
+                }}
+              />
+            </View>
+          </View>
 
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>알림</ThemedText>
           <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
@@ -191,6 +232,13 @@ const styles = StyleSheet.create({
   content: { padding: Spacing.three, paddingBottom: TabBarHeight + Spacing.four, gap: Spacing.two },
   sectionTitle: { marginTop: Spacing.three, marginLeft: Spacing.one },
   card: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, overflow: 'hidden' },
+  appearanceCard: { padding: 14, borderRadius: 16, gap: Spacing.two },
+  appearancePreview: { flexDirection: 'row', alignItems: 'center', gap: 11, padding: 10, borderRadius: 12 },
+  previewPair: { flexDirection: 'row', gap: 3 },
+  previewPage: { width: 21, height: 48, borderWidth: 1, borderRadius: 5, padding: 3, justifyContent: 'center', gap: 3 },
+  previewLine: { height: 3, borderRadius: 2 },
+  appearanceRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 52 },
+  themeSwitch: { minWidth: 56, minHeight: 44 },
   row: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three, padding: Spacing.three },
   navRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
   navCopy: { flex: 1 },

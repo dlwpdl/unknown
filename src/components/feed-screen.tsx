@@ -1040,7 +1040,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                             accessibilityRole="button"
                             accessibilityLabel={`${index + 1}번째 사진 삭제`}
                             style={styles.photoRemove}>
-                            <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✕</ThemedText>
+                            <ThemedText type="smallBold" style={{ color: Colors.light.text }}>✕</ThemedText>
                           </Pressable>
                         </View>
                       ))}
