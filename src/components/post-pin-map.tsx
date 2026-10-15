@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Platform, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import WebView from 'react-native-webview';
@@ -8,18 +8,28 @@ import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { mapHtml, mapMessage, mapPinScript, mapPreviews, rememberMapPreview } from '@/lib/post-map-html';
 import { googlePinUrl, type PostPin } from '@/lib/post-maps';
+import { useAuth } from '@/lib/auth';
+import { recordProductEvent } from '@/lib/product-analytics';
+import { supabase } from '@/lib/supabase';
 
 export function PostPinMap({ pin, cityName = '', preview = false, bottomInset = 0, onSelect, onReadyChange }: {
   pin: PostPin | null; label?: string; cityName?: string; preview?: boolean; bottomInset?: number;
   onSelect?: (pin: PostPin, label?: string) => void; onReadyChange?: (ready: boolean) => void;
 }) {
   const theme = useTheme(), { play } = useInteractionFeedback(), native = useRef<WebView>(null), web = useRef<HTMLIFrameElement>(null);
+  const { isAuthed, me } = useAuth(), userId = isAuthed ? me.id : null;
+  const identity = useRef(userId);
+  useLayoutEffect(() => { identity.current = userId; return () => { identity.current = null; }; }, [userId]);
   const mapStyle = [styles.map, preview && styles.preview];
   const [initialPin] = useState(pin);
   const [failed, setFailed] = useState(false), [retry, setRetry] = useState(0), [image, setImage] = useState<string>();
   const key = pin ? googlePinUrl(pin) : '', cached = preview ? mapPreviews.get(key) ?? image : undefined;
   const seed = preview ? pin : initialPin;
   const html = useMemo(() => mapHtml({ pin: seed, cityName, preview, accent: theme.accent }), [seed, cityName, preview, theme.accent]);
+  const fail = useCallback(() => {
+    setFailed(true); onReadyChange?.(false);
+    if (userId && identity.current === userId) void recordProductEvent(supabase, { kind: 'map_error', platform: Platform.OS }).catch(() => {});
+  }, [onReadyChange, userId]);
   useEffect(() => { onReadyChange?.(false); }, [html, retry, onReadyChange]);
   useEffect(() => {
     if (preview) return;
@@ -33,7 +43,7 @@ export function PostPinMap({ pin, cityName = '', preview = false, bottomInset = 
       const message = mapMessage(event.data); if (!message) return;
       if (message.type === 'pick' && !preview) onSelect?.(message.pin, message.label);
       else if (message.type === 'ready') { setFailed(false); onReadyChange?.(true); }
-      else if (message.type === 'error') { setFailed(true); onReadyChange?.(false); }
+      else if (message.type === 'error') fail();
       else if (message.type === 'snapshot' && preview) { rememberMapPreview(key, message.uri); setImage(message.uri); }
       else if (message.type === 'feedback') play('selection');
       else if (message.type === 'credit') { play('selection'); void Linking.openURL(message.url).catch(() => play('warning')); }
@@ -41,8 +51,7 @@ export function PostPinMap({ pin, cityName = '', preview = false, bottomInset = 
     window.addEventListener('message', receive);
     web.current?.contentWindow?.postMessage({ type: 'move', pin, bottomInset }, '*');
     return () => window.removeEventListener('message', receive);
-  }, [onSelect, onReadyChange, preview, key, play, pin, bottomInset]);
-  const fail = () => { setFailed(true); onReadyChange?.(false); };
+  }, [onSelect, onReadyChange, preview, key, play, pin, bottomInset, fail]);
   if (cached) return <Image source={{ uri: cached }} accessibilityLabel="선택한 위치의 지도. OpenStreetMap·OpenMapTiles" contentFit="cover" style={mapStyle} />;
   if (preview && failed) return <View style={[mapStyle, styles.previewError, { backgroundColor: theme.card }]}><ThemedText type="small" themeColor="accent">지도</ThemedText></View>;
   return <View style={mapStyle}>

@@ -25,10 +25,10 @@ export function isGone(profile: ProfileName | undefined) {
 
 export function displayName(profile: ProfileName | undefined, id: string | null | undefined) {
   if (!id) return UNKNOWN_NAME;
-  if (!profile) return `이름 미확인 · ${shortId(id)}`;
-  if (isGone(profile)) return `탈퇴한 회원 · ${shortId(id)}`;
+  if (!profile) return '이름 미확인';
+  if (isGone(profile)) return '탈퇴한 회원';
   const nickname = profile.nickname?.trim();
-  return nickname || `이름 없음 · ${shortId(id)}`;
+  return nickname || '이름 없음';
 }
 
 export function displaySubtitle(profile: ProfileName | undefined, id: string | null | undefined) {
@@ -48,11 +48,11 @@ export function conversationLabel(
   const high = highId ? displayName(profiles.get(highId), highId) : null;
   const post = conversation.group_post_id ? posts.find((row) => row.id === conversation.group_post_id) : undefined;
 
-  if (post) return { primary: `모임 · ${post.title}`, secondary: `모임 대화 · ${shortId(conversation.id)}` };
-  if (conversation.group_post_id) return { primary: '모임 대화', secondary: shortId(conversation.id) };
-  if (low && high) return { primary: `${low} ↔ ${high}`, secondary: `1:1 · ${shortId(conversation.id)}` };
-  if (low || high) return { primary: (low ?? high) as string, secondary: `1:1 · ${shortId(conversation.id)}` };
-  return { primary: `대화 ${shortId(conversation.id)}`, secondary: '참여자 기록 없음' };
+  if (post) return { primary: `모임 · ${post.title}`, secondary: '모임 대화' };
+  if (conversation.group_post_id) return { primary: '모임 대화', secondary: '모임 정보 확인 필요' };
+  if (low && high) return { primary: `${low} ↔ ${high}`, secondary: '1:1 대화' };
+  if (low || high) return { primary: (low ?? high) as string, secondary: '1:1 대화' };
+  return { primary: '참여자 미확인 대화', secondary: '참여자 기록 없음' };
 }
 
 // 앱 UA는 HTTP 헤더 규칙 때문에 한글 앱 이름을 퍼센트 인코딩해 보낸다(예: %EA%B8%80%EB%A7%81심사).

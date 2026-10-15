@@ -5,15 +5,15 @@ import { Platform, Pressable, ScrollView, StyleSheet, Switch, useWindowDimension
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import { adminOptionKeys } from '@/lib/admin';
-import { shortId } from '@/lib/admin-labels';
 import { isCompactAdminWidth } from '@/lib/admin-layout';
 import { loadAdminAnalytics, type AdminAnalytics, type AnalyticsFilters, type Breakdown } from '@/lib/admin-analytics';
 import { ADMIN_PAGE_SIZE } from '@/lib/admin-data';
 import { CITIES } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
+import { AdminPerformanceView } from './admin-performance';
 import { AdminFilterBar } from './admin-table-controls';
 
-const TABS = { overview: '요약', members: '회원', traffic: '트래픽', behavior: '행동 분석', revenue: '결제·홍보', logs: '운영 로그' } as const;
+const TABS = { performance: '전체 성과', overview: '요약', members: '회원', traffic: '트래픽', behavior: '행동 분석', revenue: '결제·홍보', logs: '운영 로그' } as const;
 const TIERS = { all: '전체 등급', free: '무료', plus: '플러스', pro:'프로', premium: '프리미엄' } as const;
 const INITIAL_FILTERS: AnalyticsFilters = { days: 30, city: null, tier: 'all', includeInternal: false, offset: 0 };
 
@@ -22,22 +22,23 @@ export function AdminAnalyticsView({ localPreview, onUser, refreshSignal = 0 }: 
 }) {
   const { play } = useInteractionFeedback();
   const [filters, setFilters] = useState(INITIAL_FILTERS);
-  const [tab, setTab] = useState<keyof typeof TABS>('overview');
+  const [tab, setTab] = useState<keyof typeof TABS>('performance');
+  const performanceActive = tab === 'performance';
   const [retry, setRetry] = useState(0);
   const [result, setResult] = useState<{ key: string; data: AdminAnalytics | null; error: boolean } | null>(null);
   const requestKey = JSON.stringify([filters, retry, refreshSignal, localPreview]);
   const data = !localPreview && result?.key === requestKey ? result.data : null;
-  const error = !localPreview && result?.key === requestKey && result.error;
-  const loading = !localPreview && result?.key !== requestKey;
+  const error = !performanceActive && !localPreview && result?.key === requestKey && result.error;
+  const loading = !performanceActive && !localPreview && result?.key !== requestKey;
 
   useEffect(() => {
     let active = true;
-    if (localPreview) return;
+    if (localPreview || performanceActive) return;
     void loadAdminAnalytics(supabase, filters)
       .then((next) => { if (active) setResult({ key: requestKey, data: next, error: false }); })
       .catch(() => { if (active) setResult({ key: requestKey, data: null, error: true }); });
     return () => { active = false; };
-  }, [filters, localPreview, requestKey]);
+  }, [filters, localPreview, performanceActive, requestKey]);
 
   const filter = (next: Partial<AnalyticsFilters>) => setFilters((current) => ({ ...current, ...next, offset: 0 }));
   return (
@@ -54,23 +55,25 @@ export function AdminAnalyticsView({ localPreview, onUser, refreshSignal = 0 }: 
           <Choices label="조회 기간" values={[7, 30, 90].map((days) => ({ key: String(days), label: `${days}일` }))} selected={String(filters.days)} onSelect={(value) => filter({ days: Number(value) as AnalyticsFilters['days'] })} />
           <Choices label="선호 지역" values={[{ key: '', label: '전체 도시' }, ...CITIES.map((city) => ({ key: city.id, label: city.name }))]} selected={filters.city ?? ''} onSelect={(city) => filter({ city: city || null })} />
           <Choices label="현재 멤버십" values={Object.entries(TIERS).map(([key, label]) => ({ key, label }))} selected={filters.tier} onSelect={(tier) => filter({ tier: tier as AnalyticsFilters['tier'] })} />
-          <View style={styles.switchRow}><Switch value={filters.includeInternal} onValueChange={(includeInternal) => { play('selection'); return filter({ includeInternal }); }} accessibilityLabel="목·심사·관리자 계정 포함" trackColor={{ true: Colors.admin.accent }} /><ThemedText type="small">목·심사·관리자 계정 포함</ThemedText></View>
+          <View style={styles.switchRow}><Switch value={filters.includeInternal} onValueChange={(includeInternal) => { play('selection'); return filter({ includeInternal }); }} accessibilityLabel="운영 캐릭터·심사·테스트·관리자 계정 포함" trackColor={{ true: Colors.admin.accent }} /><ThemedText type="small">운영 캐릭터·심사·테스트·관리자 계정 포함</ThemedText></View>
         </View>
       </AdminFilterBar>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs} accessibilityRole="tablist" accessibilityLabel="분석 메뉴">
         {Object.entries(TABS).map(([key, label]) => <Pressable key={key} accessibilityRole="tab" aria-selected={key === tab} tabIndex={key === tab ? 0 : -1} {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})} onPress={() => { play('selection'); return setTab(key as keyof typeof TABS); }} style={({ pressed }) => [styles.tab, key === tab && styles.selectedTab, pressed && styles.pressed]}><ThemedText type="smallBold" style={key === tab ? styles.accent : styles.muted}>{label}</ThemedText></Pressable>)}
       </ScrollView>
+      {performanceActive ? <AdminPerformanceView filters={filters} localPreview={localPreview} refreshSignal={refreshSignal + retry} /> : <>
       {localPreview && <Notice title="운영 데이터 미연결" text="로컬 미리보기입니다. 실제 회원·접속·매출 수치는 관리자 로그인 후 표시됩니다." />}
       {loading && <View accessibilityRole="progressbar" accessibilityLabel="분석 데이터 불러오는 중" style={styles.notice}><ThemedText style={styles.muted}>선택한 조건으로 분석하고 있어요.</ThemedText></View>}
       {error && <View accessibilityRole="alert" style={styles.notice}><ThemedText style={styles.accent}>분석 데이터를 불러오지 못했습니다. 관리자 권한과 연결 상태를 확인해주세요.</ThemedText><Action label="다시 시도" onPress={() => setRetry((value) => value + 1)} /></View>}
       {!loading && !error && <>
-        {data && <ThemedText type="small" style={styles.muted}>{date(data.periodStart)} 이후 · 갱신 {date(data.generatedAt)} · UTC 기준</ThemedText>}
+        {data && <Context title="집계 기간·갱신 시각"><ThemedText type="small" style={styles.muted}>{date(data.periodStart)} 이후 · 갱신 {date(data.generatedAt)} · UTC 기준</ThemedText></Context>}
         {tab === 'overview' && <Overview data={data} />}
         {tab === 'members' && <Members data={data} filters={filters} onUser={onUser} onPage={(offset) => setFilters((current) => ({ ...current, offset }))} />}
         {tab === 'traffic' && <Traffic data={data} onUser={onUser} />}
         {tab === 'behavior' && <Behavior data={data} />}
         {tab === 'revenue' && <Revenue data={data} onUser={onUser} />}
         {tab === 'logs' && <Logs data={data} />}
+      </>}
       </>}
     </View>
   );
@@ -145,22 +148,28 @@ function Traffic({ data, onUser }: { data: AdminAnalytics | null; onUser: (id: s
     <DailyActivity data={data} />
     <SectionTitle title="최근 접속" note="선택 조건의 최근 기록 최대 50개 · 로그인 회원의 화면·플랫폼만 수집합니다." />
     <DataTable headers={['회원', '화면', '플랫폼 / 버전', '최초 방문', '최근 방문', '화면 조회']} rows={(data?.visits ?? []).map((visit) => ({ key: `${visit.userId}:${visit.platform}:${visit.firstAt}`, cells: [<UserLink key="user" id={visit.userId} nickname={visit.nickname} onUser={onUser} />, visit.screen, `${visit.platform} / ${visit.appVersion || '미확인'}`, date(visit.firstAt), date(visit.lastAt), `${number(visit.views)}회`] }))} />
-    <Notice title="접속 정보의 범위" text="로그인한 회원의 방문만 표시합니다. 익명 방문·IP·검색어·대화 내용은 분석용으로 수집하지 않으며, 접속 원자료는 90일 보관합니다." />
+    <Context title="접속 정보의 범위"><Notice title="접속 정보의 범위" text="로그인한 회원의 방문만 표시합니다. 익명 방문·IP·검색어·대화 내용은 분석용으로 수집하지 않으며, 접속 원자료는 90일 보관합니다." /></Context>
   </>;
 }
 
 function Behavior({ data }: { data: AdminAnalytics | null }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const rows = data?.behavior;
+  const stepNames: Record<string, string> = { signup_complete: '회원가입 완료', consent_complete: '필수 동의 완료', meetup_request_complete: '모임 신청 완료', 'post.poll.vote': '투표 참여', 'ticketmaster.meetup.created': '행사 모임 등록' };
   return <>
-    <Notice title="버튼 · 화면 · 읽기 깊이" text="고정된 UI 식별자만 기록합니다. 입력값·대화 내용은 수집하지 않습니다. 익명 방문은 메모리 세션 기준이며 도시·등급 필터를 적용하면 제외됩니다. 단계 발생 수는 순서 기반 전환율이 아닙니다. 기존 빌드의 미수집 활동은 복원되지 않습니다." />
+    <Context title="행동 수집·해석 기준"><Notice title="버튼 · 화면 · 읽기 깊이" text="고정된 UI 식별자만 기록합니다. 입력값·대화 내용은 수집하지 않습니다. 익명 방문은 메모리 세션 기준이며 도시·등급 필터를 적용하면 제외됩니다. 단계 발생 수는 순서 기반 전환율이 아닙니다. 기존 빌드의 미수집 활동은 복원되지 않습니다." /></Context>
     <SectionTitle title="화면별 활동" note="체류는 앱 활성·웹 표시 상태에서 측정한 합계입니다. 앱 강제 종료·오프라인 상황에서는 일부 누락될 수 있습니다." />
     <DataTable headers={['플랫폼 / 화면', '조회', '세션', '활성 체류 (분)', '버튼 클릭', '끝까지 스크롤']} rows={(rows?.screens ?? []).map((r) => ({ key: `${r.platform}:${r.screen}`, cells: [`${r.platform} / ${r.screen}`, number(r.views), number(r.sessions), (r.dwellMs / 60000).toFixed(1), number(r.presses), number(r.bottoms)] }))} />
-    <SectionTitle title="가입 · 모임 신청 완료" note="서버에서 성공한 작업을 클라이언트가 보고한 횟수입니다. 버튼 클릭과 구분하며, 결제·회원 원장 대용이 아닙니다." />
-    <DataTable headers={['단계', '플랫폼', '횟수', '세션']} rows={(rows?.steps ?? []).map((r) => ({ key: `${r.platform}:${r.screen}:${r.target}`, cells: [r.target, r.platform, number(r.count), number(r.sessions)] }))} />
+    <SectionTitle title="완료한 작업" note="서버에서 성공한 작업을 클라이언트가 보고한 횟수입니다. 버튼 클릭과 구분하며, 결제·회원 원장 대용이 아닙니다." />
+    <DataTable headers={['작업', '플랫폼', '횟수', '세션']} rows={(rows?.steps ?? []).map((r) => ({ key: `${r.platform}:${r.screen}:${r.target}`, cells: [stepNames[r.target] ?? '기타 완료 기록', r.platform, number(r.count), number(r.sessions)] }))} />
+    <Action label={detailsOpen ? '세부 분석 기록 닫기' : '세부 분석 기록'} expanded={detailsOpen} onPress={() => setDetailsOpen(value => !value)} />
+    {detailsOpen && <><SectionTitle title="완료한 작업 원본 기록" />
+    <DataTable headers={['단계 식별자', '플랫폼', '횟수', '세션']} rows={(rows?.steps ?? []).map((r) => ({ key: `${r.platform}:${r.screen}:${r.target}`, cells: [r.target, r.platform, number(r.count), number(r.sessions)] }))} />
     <SectionTitle title="버튼 · 스크롤 상세" note="고정 식별자는 코드의 analyticsId와 대응합니다. 25/50/75/100은 읽기 깊이입니다. 상위 300개 집계." />
     <DataTable headers={['화면 / 플랫폼', '종류', 'UI 식별자', '깊이', '횟수', '세션']} rows={(rows?.actions ?? []).filter((r) => r.kind !== 'success').map((r) => ({ key: `${r.platform}:${r.screen}:${r.kind}:${r.target}:${r.value}`, cells: [`${r.screen} / ${r.platform}`, r.kind, r.target, r.kind === 'scroll' ? `${r.value}%` : '—', number(r.count), number(r.sessions)] }))} />
     <SectionTitle title="최근 행동 순서" note="최근 100개. 같은 세션의 순번으로 행동 순서를 확인합니다. 시각은 서버 수신 시각입니다." />
     <DataTable headers={['수신 시각', '세션 / 순번', '화면', '행동', 'UI 식별자', '값']} rows={(rows?.recent ?? []).map((r) => ({ key: `${r.sessionId}:${r.seq}`, cells: [date(r.createdAt), `${r.sessionId} / ${r.seq}${r.anonymous ? ' (익명)' : ''}`, `${r.platform} / ${r.screen}`, r.kind, r.target, String(r.value)] }))} />
+    </>}
   </>;
 }
 
@@ -178,12 +187,19 @@ function Revenue({ data, onUser }: { data: AdminAnalytics | null; onUser: (id: s
 }
 
 function Logs({ data }: { data: AdminAnalytics | null }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
   return <>
     <SectionTitle title="관리자 접근 기록" note="선택 기간의 전체 운영 감사 기록입니다. 도시·회원 멤버십 필터는 적용하지 않습니다." />
     <View style={styles.metrics}>{data?.auditSummary.length ? data.auditSummary.map((row) => <Metric key={row.key} label={scopeLabel(row.key)} value={row.count} detail="선택 기간 열람·작업 기록" />) : <Empty />}</View>
-    <DataTable headers={['시각 (UTC)', '운영자 ID', '작업']} rows={(data?.audit ?? []).map((entry) => ({ key: String(entry.id), cells: [date(entry.createdAt), entry.actorId, scopeLabel(entry.scope)] }))} />
+    <DataTable headers={['시각 (UTC)', '작업']} rows={(data?.audit ?? []).map((entry) => ({ key: String(entry.id), cells: [date(entry.createdAt), scopeLabel(entry.scope)] }))} />
     <SectionTitle title="안전 분석 오류" note={`전체 운영 · 최근 실패 ${data ? `${data.errors.length}건` : '미확인'} (최대 50개) · 콘텐츠 원문과 내부 오류 상세는 표시하지 않습니다.`} />
-    <DataTable headers={['기록 ID', '상태', '시도 횟수', '생성 시각 (UTC)']} rows={(data?.errors ?? []).map((entry) => ({ key: String(entry.id), cells: [String(entry.id), entry.status === 'failed' ? '실패' : entry.status, `${entry.attempts}회`, date(entry.createdAt)] }))} />
+    <DataTable headers={['상태', '생성 시각 (UTC)']} rows={(data?.errors ?? []).map((entry) => ({ key: String(entry.id), cells: [entry.status === 'failed' ? '실패' : entry.status, date(entry.createdAt)] }))} />
+    <Action label={detailsOpen ? '문제 추적 정보 닫기' : '문제 추적 정보'} expanded={detailsOpen} onPress={() => setDetailsOpen(value => !value)} />
+    {detailsOpen && <><SectionTitle title="관리자 접근 원본 기록" />
+      <DataTable headers={['시각 (UTC)', '운영자 ID', '작업']} rows={(data?.audit ?? []).map((entry) => ({ key: String(entry.id), cells: [date(entry.createdAt), entry.actorId, scopeLabel(entry.scope)] }))} />
+      <SectionTitle title="안전 분석 오류 원본 기록" />
+      <DataTable headers={['기록 ID', '상태', '시도 횟수', '생성 시각 (UTC)']} rows={(data?.errors ?? []).map((entry) => ({ key: String(entry.id), cells: [String(entry.id), entry.status === 'failed' ? '실패' : entry.status, `${entry.attempts}회`, date(entry.createdAt)] }))} />
+    </>}
   </>;
 }
 
@@ -199,7 +215,8 @@ function DataTable({ headers, rows }: { headers: string[]; rows: { key: string; 
 
 function UserLink({ id, nickname, onUser }: { id: string; nickname: string; onUser: (id: string) => void }) {
   const { play } = useInteractionFeedback();
-  return <Pressable accessibilityRole="button" accessibilityLabel={`${nickname} 회원 상세 보기`} onPress={() => { play('selection'); return onUser(id); }} style={({ pressed }) => [styles.userLink, pressed && styles.pressed]}><ThemedText type="smallBold" style={styles.accent}>{nickname}</ThemedText><ThemedText type="small" style={styles.muted}>{shortId(id)}</ThemedText></Pressable>;
+  const name = nickname.trim() || '회원';
+  return <Pressable accessibilityRole="button" accessibilityLabel={`${name} 회원 상세 보기`} onPress={() => { play('selection'); return onUser(id); }} style={({ pressed }) => [styles.userLink, pressed && styles.pressed]}><ThemedText type="smallBold" style={styles.accent}>{name}</ThemedText></Pressable>;
 }
 
 function Choices({ label, values, selected, onSelect }: { label: string; values: { key: string; label: string }[]; selected: string; onSelect: (value: string) => void }) {
@@ -220,14 +237,21 @@ function SectionTitle({ title, note }: { title: string; note?: string }) {
   return <View style={styles.heading}><ThemedText accessibilityRole="header" {...(Platform.OS === 'web' ? { 'aria-level': 2 } : {})} style={styles.sectionTitle}>{title}</ThemedText>{note && <ThemedText type="small" style={styles.muted}>{note}</ThemedText>}</View>;
 }
 
+function Context({ title, children }: { title: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return <View style={styles.section}><Action label={title} expanded={open} onPress={() => setOpen(value => !value)} />
+    <View aria-hidden={!open} style={[styles.heading, !open && { display: 'none' }]}>{children}</View>
+  </View>;
+}
+
 function Notice({ title, text }: { title: string; text: string }) {
   return <View style={styles.notice}><ThemedText type="smallBold">{title}</ThemedText><ThemedText type="small" style={styles.muted}>{text}</ThemedText></View>;
 }
 
 function Empty({ text = '표시할 기록이 없습니다.' }: { text?: string }) { return <ThemedText type="small" style={styles.empty}>{text}</ThemedText>; }
-function Action({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) {
+function Action({ label, onPress, disabled = false, expanded }: { label: string; onPress: () => void; disabled?: boolean; expanded?: boolean }) {
   const { play } = useInteractionFeedback();
-  return <Pressable accessibilityRole="button" aria-disabled={disabled} disabled={disabled} onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.action, disabled && styles.disabled, pressed && styles.pressed]}><ThemedText type="smallBold">{label}</ThemedText></Pressable>;
+  return <Pressable accessibilityRole="button" aria-disabled={disabled} aria-expanded={expanded} accessibilityState={{ disabled, expanded }} disabled={disabled} onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.action, disabled && styles.disabled, pressed && styles.pressed]}><ThemedText type="smallBold">{label}</ThemedText></Pressable>;
 }
 
 const numberFormatter = new Intl.NumberFormat('ko-KR');

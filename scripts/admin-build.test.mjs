@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import test from 'node:test';
 import configure from '../app.config.js';
+
+test('private admin HTTP responses protect static pages and preserve session guards', () => {
+  execFileSync('python3', ['scripts/test_admin_server.py'], { cwd: new URL('../', import.meta.url) });
+});
 
 test('public app settings are preserved and private admin builds cannot run in CI', (t) => {
   const env = { ...process.env };
