@@ -11,7 +11,7 @@ const merchants = ['first', 'second'].map((id, i) => ({ id, name: `업체 ${i + 
 function app() {
   const state = [], refs = [], feedback = [], prompts = [];
   let stateIndex = 0, refIndex = 0, allowReplace = false;
-  state[5] = { key: ':0:0:0:0', rows: merchants, more: false, owners: { owned: '벤더 회원' } };
+  state[5] = { key: `:0:0:0:0:${JSON.stringify(adminMerchants.MERCHANT_DEFAULT_FILTERS)}`, rows: merchants, more: false, owners: { owned: '벤더 회원' } };
   const exports = {};
   const source = ts.transpileModule(readFileSync(new URL('../src/components/admin/admin-merchants.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
@@ -32,6 +32,7 @@ function app() {
     if (name === '@/lib/merchant-source') return { ...merchantSource, merchantEventId: () => 'new-merchant' };
     if (name === '@/lib/admin-merchants') return adminMerchants;
     if (name === './admin-ai-connection') return { AdminAiConnection: 'AdminAiConnection' };
+    if (name === './admin-table-controls') return { AdminSelect: 'AdminSelect', AdminFilterBar: 'AdminFilterBar', AdminFilterReset: 'AdminFilterReset' };
     if (name === './admin-merchant-connections') return { AdminMerchantConnections: 'AdminMerchantConnections' };
     return {};
   } });
@@ -61,6 +62,9 @@ test('period and directory refresh keep the reviewed connection form mounted wit
   const view = app(); merchantButton(view, '업체 1').props.onClick(); view.detail();
   const original = connectionForm(view); original.props.onDirty(true);
   nodes(nodes(view.render()).find(n => n.type === 'form' && n.props.className === 'merchant-period')).find(n => n.type === 'input' && n.props.type === 'date').props.onChange({ target: { value: '2026-10-01' } });
+  assert.equal(connectionForm(view)?.key, original.key);
+  assert.equal(connectionForm(view)?.props.merchant, original.props.merchant);
+  nodes(view.render()).find(n => n.type === 'AdminSelect' && n.props.label === '정렬').props.onChange('name_desc');
   assert.equal(connectionForm(view)?.key, original.key);
   assert.equal(connectionForm(view)?.props.merchant, original.props.merchant);
   nodes(view.render()).find(n => n.type === 'form' && n.props.className === 'merchant-search').props.onSubmit({ preventDefault() {} });

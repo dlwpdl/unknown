@@ -12,7 +12,7 @@ const merchants = ['first', 'second'].map((id, i) => ({ id, name: `업체 ${i + 
 function app({ failure = null } = {}) {
   const state = [], refs = [], effects = [], feedback = [], prompts = [], calls = [];
   let stateIndex = 0, refIndex = 0, effectIndex = 0, allowReplace = false;
-  state[5] = { key: ':0:0:0:0', rows: merchants, more: false, owners: { owned: '벤더 회원' } };
+  state[5] = { key: `:0:0:0:0:${JSON.stringify(merchantApi.MERCHANT_DEFAULT_FILTERS)}`, rows: merchants, more: false, owners: { owned: '벤더 회원' } };
   const exports = {};
   const source = ts.transpileModule(readFileSync(new URL('../src/components/admin/admin-merchants.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
@@ -34,6 +34,7 @@ function app({ failure = null } = {}) {
     if (name === '@/lib/admin-merchants') return { ...merchantApi, merchantMapsUrl: () => null };
     if (name === '@/lib/supabase') return { supabase: { rpc: async (name, args) => { calls.push({ name, args }); if (name === 'get_admin_merchants') return { data: { merchants: merchants.map(m => ({ ...m, updated_at: '2026-10-12T00:00:00Z' })), more: false }, error: null }; return failure ? { data: null, error: { message: failure } } : { data: args.p_merchants.length, error: null }; } } };
     if (name === './admin-ai-connection') return { AdminAiConnection: 'AdminAiConnection' };
+    if (name === './admin-table-controls') return { AdminSelect: 'AdminSelect', AdminFilterBar: 'AdminFilterBar', AdminFilterReset: 'AdminFilterReset' };
     if (name === './admin-merchant-connections') return { AdminMerchantConnections: 'AdminMerchantConnections' };
     return {};
   } });
@@ -65,6 +66,11 @@ test('merchant contact links preserve text, recognize named platforms and reject
   for (const contact of ['hello@example.test', '@ambiguous', 'javascript:alert(1)', 'https://localhost/a', 'https://127.0.0.1/a', 'https://user:pass@example.com/a', 'https://example.com/\n<script>']) {
     assert.equal(merchantSource.merchantContactLinks(contact).filter(part => part.href).length, 0, contact);
   }
+  assert.equal(merchantSource.merchantPrimaryContactLink('https://example.com/menu · Instagram @cafe')?.text, '@cafe');
+  assert.equal(merchantSource.merchantPrimaryContactLink('https://example.com/menu · https://threads.com/@cafe')?.href, 'https://example.com/menu');
+  assert.equal(merchantSource.merchantPrimaryContactLink('https://instagram.com/p/123')?.text, 'Instagram');
+  assert.equal(merchantSource.merchantPrimaryContactLink('email@example.test'), null);
+  assert.equal(merchantSource.merchantPrimaryContactLink('https://instagram.com.evil.test/ · Instagram @cafe')?.href, 'https://www.instagram.com/cafe/');
 });
 
 test('merchant accounts open directly from the list and detail without opening the row editor', () => {
@@ -72,7 +78,8 @@ test('merchant accounts open directly from the list and detail without opening t
   view.refreshMerchant({ ...merchants[0], contact: 'Instagram @sample.cafe · https://cafe.example.com/' });
   const table = nodes(view.render()).find(n => n.type === 'table');
   const links = nodes(table).filter(n => n.type === 'a');
-  assert.equal(links.length, 2);
+  assert.equal(links.length, 1);
+  assert.equal(links[0].props.href, 'https://www.instagram.com/sample.cafe/');
   for (const link of links) { assert.equal(link.props.target, '_blank'); assert.equal(link.props.rel, 'noopener noreferrer'); link.props.onClick(); }
   const row = nodes(table).find(n => n.type === 'tr' && n.props.onClick);
   row.props.onClick({ target: { closest: selectors => selectors.split(',').includes('a') ? {} : null } });
@@ -83,17 +90,60 @@ test('merchant accounts open directly from the list and detail without opening t
   assert.ok(view.feedback.includes('selection'));
 });
 
-test('the overview exposes every merchant contact and count before a detail is opened', () => {
+test('the overview keeps full contacts in detail while exposing merchant names and counts', () => {
   const view = app(), root = view.render();
   const table = nodes(root).find(n => n.type === 'table');
   assert.ok(table, 'Use a full-width table rather than the old card sidebar.');
   for (const merchant of merchants) {
     assert.ok(text(table).includes(merchant.name));
-    assert.ok(text(table).includes(merchant.contact));
+    assert.ok(!text(table).includes(merchant.contact));
     assert.ok(button(table, `${merchant.name} 활동과 정보 보기`));
   }
-  assert.ok(text(table).includes('연락처'));
+  assert.ok(text(table).includes('SNS'));
   assert.equal(nodes(root).filter(n => n.type === 'dialog').length, 1);
+});
+
+test('the directory prefers one Instagram link even when other links appear first', () => {
+  const view = app();
+  view.refreshMerchant({ ...merchants[0], contact: '담당자 긴 연락처 · https://example.com/menu · Threads @sample.cafe · Instagram @sample.cafe · https://instagram.com/other/' });
+  const table = nodes(view.render()).find(n => n.type === 'table');
+  const links = nodes(table).filter(n => n.type === 'a');
+  assert.equal(links.length, 1);
+  assert.equal(links[0].props.href, 'https://www.instagram.com/sample.cafe/');
+  assert.ok(!text(table).includes('긴 연락처'));
+  button(view.render(), '업체 1 활동과 정보 보기').props.onClick();
+  const heading = nodes(view.render()).find(n => n.type === 'header' && n.props.className === 'merchant-detail-heading');
+  assert.equal(nodes(heading).filter(n => n.type === 'a').length, 4);
+  assert.ok(text(heading).includes('긴 연락처'));
+});
+
+test('registration date uses the merchant timezone and never substitutes the update date', () => {
+  const view = app();
+  view.refreshMerchant({ ...merchants[0], created_at: '2026-10-15T00:30:00Z' });
+  const table = nodes(view.render()).find(n => n.type === 'table');
+  assert.ok(text(table).includes('등록일'));
+  const dates = nodes(table).filter(n => n.type === 'time');
+  assert.equal(dates.length, 1);
+  assert.equal(dates[0].props.dateTime, '2026-10-15T00:30:00Z');
+  assert.match(text(dates[0]), /2026[-. ]+10[-. ]+14/);
+});
+
+test('sorting and filters invalidate old rows and bulk selection, then reload the first page on the server', async () => {
+  const view = app();
+  checkbox(view.render(), '업체 1 선택').props.onChange({ target: { checked: true } });
+  nodes(view.render()).find(n => n.type === 'AdminSelect' && n.props.label === '정렬').props.onChange('name_desc');
+  assert.ok(!nodes(view.render()).some(n => n.type === 'table'), 'Previous sort rows must not stay selectable.');
+  assert.equal(button(view.render(), '선택 삭제').props.disabled, true);
+  view.reloadList(); await settle();
+  assert.equal(view.calls.at(-1).args.p_offset, 0);
+  assert.equal(view.calls.at(-1).args.p_filters.sort, 'name_desc');
+  nodes(view.render()).find(n => n.type === 'AdminSelect' && n.props.label === '운영 상태').props.onChange('paid');
+  view.render(); view.reloadList(); await settle();
+  assert.equal(view.calls.at(-1).args.p_filters.status, 'paid');
+  assert.equal(nodes(view.render()).find(n => n.type === 'AdminFilterBar').props.applied, 1);
+  nodes(view.render()).find(n => n.type === 'AdminFilterReset').props.onReset();
+  view.render(); view.reloadList(); await settle();
+  assert.deepEqual({ ...view.calls.at(-1).args.p_filters }, { ...merchantApi.MERCHANT_DEFAULT_FILTERS, sort: 'name_desc' });
 });
 
 test('벤더 목록은 주소 기반 소재지와 연결 계정을 구분하고 전체 주소는 상세에 둔다', () => {
