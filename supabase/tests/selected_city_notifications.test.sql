@@ -1,5 +1,8 @@
 begin;
 select no_plan();
+-- This suite checks city boundaries; cadence and DST are exercised separately.
+create or replace function private.recommendation_time(p_at timestamptz,p_timezone text)
+returns boolean language sql stable set search_path='' as $$ select p_timezone is not null $$;
 
 update private.trending_config set enabled=true,quiet_start_hour=0,quiet_end_hour=0 where id;
 insert into auth.users(id,email,raw_app_meta_data)
@@ -13,6 +16,8 @@ select id,true,true,true,true,true,true,true from public.profiles where id::text
 on conflict(user_id) do update set push_enabled=true,trending=true,weekly_ranking=true,interests=true,nearby=true,city_food=true,city_places=true;
 insert into private.push_devices(user_id,session_id,token)
 select id,id,'ExpoPushToken[selected_city_fixture_'||right(id::text,2)||']' from public.profiles where id::text like 'd7130000-%';
+update private.push_devices set timezone='UTC',timezone_updated_at=now()
+where user_id::text like 'd7130000-%';
 insert into public.posts(id,author_id,city_id,tag_id,title,body)
 select 'd7131000-0000-4000-8000-000000000001','d7130000-0000-4000-8000-000000000001','vancouver',id,'Selected city festival','Public fixture'
 from public.tags where slug='festival';
@@ -51,6 +56,10 @@ set local role authenticated;
 select is((select count(*)::int from public.user_notifications where kind='weekly_ranking'),1,'matching city appears in the personal inbox');
 reset role;
 update public.profiles set city_id='toronto' where id::text like 'd7130000-%' and id<>'d7130000-0000-4000-8000-000000000001';
+select ok(not private.notification_city_matches(jsonb_populate_record(null::public.notifications,jsonb_build_object(
+  'user_id','d7130000-0000-4000-8000-000000000002','kind','saved_merchant_post','city_id','vancouver',
+  'target_type','post','target_id','d7131000-0000-4000-8000-000000000001'))),
+  'saved business recommendations also stop when the selected city changes');
 set local role authenticated;
 select is((select count(*)::int from public.user_notifications where kind='weekly_ranking'),0,'changing city removes former-city discovery from the inbox');
 select is((select count(*)::int from public.notifications where kind='weekly_ranking'),0,'raw member reads enforce the same city boundary');
@@ -60,6 +69,8 @@ select is((select count(*)::int from city_notices c join public.notifications n 
  'all already queued former-city discoveries become ineligible');
 select is((select count(*)::int from city_notices where private.create_notification(user_id,kind,null,target_type,target_id,'Wrong city fixture','/notifications') is not null),0,
  'wrong-city alerts are rejected before inbox insertion and queueing');
+update private.push_delivery_queue q set next_attempt_at=now() from public.notifications n
+where n.id=q.notification_id and n.user_id::text like 'd7130000-%';
 select is((select count(*)::int from public.claim_push_notifications('send',100) where user_id::text like 'd7130000-%'),0,
  'the protected send claim emits no old-city title, body or device token');
 select is((select count(*)::int from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id

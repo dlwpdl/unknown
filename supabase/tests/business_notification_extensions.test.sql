@@ -2,6 +2,9 @@ begin;
 set local search_path=public,extensions;
 set local storage.allow_delete_query='true';
 select no_plan();
+-- Cadence is checked separately; this suite isolates business permissions and shared budgets.
+create or replace function private.recommendation_time(p_at timestamptz,p_timezone text)
+returns boolean language sql stable set search_path='' as $$ select p_timezone is not null $$;
 update private.trending_config set enabled=true,quiet_start_hour=0,quiet_end_hour=0 where id;
 
 insert into auth.users(id,email,raw_app_meta_data) values
@@ -56,11 +59,16 @@ select is((select count(*) from public.notifications where kind='saved_merchant_
 select ok(private.saved_merchant_post_visible('15200000-0000-4000-8000-000000000002','15220000-0000-4000-8000-000000000003'),'saved post initially eligible');
 select set_config('request.jwt.claims','{"sub":"15200000-0000-4000-8000-000000000002","role":"authenticated"}',true);
 select public.update_notification_preferences('{"push_enabled":true}');
-insert into private.push_devices(user_id,session_id,token) values('15200000-0000-4000-8000-000000000002','15290000-0000-4000-8000-000000000002','ExpoPushToken[business_extension_fixture]');
+insert into private.push_devices(user_id,session_id,token,timezone,timezone_updated_at) values('15200000-0000-4000-8000-000000000002','15290000-0000-4000-8000-000000000002','ExpoPushToken[business_extension_fixture]','UTC',now());
 -- Queue the existing real notice through its unchanged enqueue trigger by replacing this test row.
 delete from public.notifications where kind='saved_merchant_post' and target_id='15220000-0000-4000-8000-000000000003';
 select private.notify_saved_merchant_post('15220000-0000-4000-8000-000000000003',true);
 select is((select count(*) from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id where n.kind='saved_merchant_post'),1::bigint,'saved company notice uses real push queue');
+select is((select city_id from public.notifications where kind='saved_merchant_post'),'vancouver','saved business notice stores its authoritative city');
+update public.profiles set city_id='toronto' where id='15200000-0000-4000-8000-000000000002';
+select ok(not exists(select 1 from private.push_devices d join public.notifications n on n.user_id=d.user_id
+ where n.kind='saved_merchant_post' and private.push_notification_eligible(d.id,n.id)),'saved business pending push stops after changing city');
+update public.profiles set city_id='vancouver' where id='15200000-0000-4000-8000-000000000002';
 create temporary table business_claim as select * from public.claim_push_notifications() where category='merchant_updates';
 select is((select count(*) from business_claim),1::bigint,'current saved opt-in can claim phone delivery');
 
@@ -112,40 +120,40 @@ update private.saved_merchants set notifications_enabled=true;
 delete from public.notifications where user_id='15200000-0000-4000-8000-000000000002';
 alter table public.notifications disable trigger notifications_preferences;
 insert into public.notifications(user_id,kind,category,target_type,target_id,body,created_at)
-select '15200000-0000-4000-8000-000000000002','city_food','city_food','post','15220000-0000-4000-8000-000000000003','shared city budget',(now() at time zone 'America/Vancouver')::date::timestamp at time zone 'America/Vancouver'
-from generate_series(1,6);
+select '15200000-0000-4000-8000-000000000002','city_food','city_food','post','15220000-0000-4000-8000-000000000003','shared city budget',(now() at time zone 'UTC')::date::timestamp at time zone 'UTC'
+from generate_series(1,8);
 alter table public.notifications enable trigger notifications_preferences;
-select is((select count(*) from public.notifications where user_id='15200000-0000-4000-8000-000000000002' and category='city_food'),6::bigint,'fixture has six prior city inbox notices');
+select is((select count(*) from public.notifications where user_id='15200000-0000-4000-8000-000000000002' and category='city_food'),8::bigint,'fixture has eight prior city inbox notices');
 insert into public.posts(id,city_id,author_id,tag_id,title,body,status,created_at)
 select ('15260000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,'vancouver','15200000-0000-4000-8000-000000000003',1,'budget publication','test '||n,'published',clock_timestamp()
 from generate_series(1,7) n;
 insert into private.merchant_posts(post_id,merchant_id)
 select id,'15210000-0000-4000-8000-000000000001' from public.posts where id::text like '15260000-%';
-select is((select count(*) from public.notifications where user_id='15200000-0000-4000-8000-000000000002' and kind='saved_merchant_post'),0::bigint,'six city notices prevent all seven saved company inbox alerts');
+select is((select count(*) from public.notifications where user_id='15200000-0000-4000-8000-000000000002' and kind='saved_merchant_post'),7::bigint,'saved company inbox notices survive a full push budget for later delivery');
 delete from public.notifications where user_id='15200000-0000-4000-8000-000000000002';
-update private.trending_config set quiet_start_hour=extract(hour from now() at time zone 'America/Vancouver')::integer,
- quiet_end_hour=(extract(hour from now() at time zone 'America/Vancouver')::integer+1)%24 where id;
+update private.trending_config set quiet_start_hour=extract(hour from now() at time zone 'UTC')::integer,
+ quiet_end_hour=(extract(hour from now() at time zone 'UTC')::integer+1)%24 where id;
 select private.notify_saved_merchant_post('15260000-0000-4000-8000-000000000001',true);
-select is((select count(*) from public.notifications where user_id='15200000-0000-4000-8000-000000000002' and kind='saved_merchant_post'),0::bigint,'configured quiet hours suppress saved company inbox insertion');
+select is((select count(*) from public.notifications where user_id='15200000-0000-4000-8000-000000000002' and kind='saved_merchant_post'),1::bigint,'quiet hours retain the saved company inbox notice');
 update private.trending_config set quiet_start_hour=0,quiet_end_hour=0 where id;
 select private.notify_saved_merchant_post('15260000-0000-4000-8000-000000000001',true);
 select private.notify_saved_merchant_post('15260000-0000-4000-8000-000000000002',true);
-select is((select count(*) from public.notifications where user_id='15200000-0000-4000-8000-000000000002' and kind='saved_merchant_post'),1::bigint,'thirty-minute spacing prevents second inbox notice');
+select is((select count(*) from public.notifications where user_id='15200000-0000-4000-8000-000000000002' and kind='saved_merchant_post'),2::bigint,'both one-shot business notices remain available for scheduled delivery');
 
 -- A current opt-in does not override city sends that consumed the shared delivery budget after enqueue.
 alter table public.notifications disable trigger notifications_preferences;
 insert into public.notifications(id,user_id,kind,category,target_type,target_id,body,created_at)
 select ('15270000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,'15200000-0000-4000-8000-000000000002','city_food','city_food','post',
- '15220000-0000-4000-8000-000000000003','earlier city delivery',(now() at time zone 'America/Vancouver')::date::timestamp at time zone 'America/Vancouver'
-from generate_series(1,6) n;
+ '15220000-0000-4000-8000-000000000003','earlier city delivery',(now() at time zone 'UTC')::date::timestamp at time zone 'UTC'
+from generate_series(1,8) n;
 alter table public.notifications enable trigger notifications_preferences;
 insert into private.push_delivery_queue(notification_id,device_id,status,first_attempt_at,finished_at)
-select n.id,d.id,'provider_accepted',(now() at time zone 'America/Vancouver')::date::timestamp at time zone 'America/Vancouver',now()
+select n.id,d.id,'provider_accepted',(now() at time zone 'UTC')::date::timestamp at time zone 'UTC',now()
 from public.notifications n join private.push_devices d on d.user_id=n.user_id where n.id::text like '15270000-%'
 on conflict(notification_id,device_id) do update set status='provider_accepted',first_attempt_at=excluded.first_attempt_at,finished_at=excluded.finished_at;
-select is((select count(*) from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id where n.id::text like '15270000-%' and q.first_attempt_at is not null),6::bigint,'fixture has six prior city delivery claims');
-select is((select count(*) from public.claim_push_notifications() where category='merchant_updates'),0::bigint,'latest worker claim respects six city deliveries consumed after saved alert queued');
-select ok((select bool_and(q.status='cancelled') from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id
- where n.kind='saved_merchant_post' and n.user_id='15200000-0000-4000-8000-000000000002'),'shared cap cancels saved queue row without provider send');
+select is((select count(*) from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id where n.id::text like '15270000-%' and q.first_attempt_at is not null),8::bigint,'fixture has eight prior city delivery claims');
+select is((select count(*) from public.claim_push_notifications() where category='merchant_updates'),0::bigint,'latest worker claim respects eight city deliveries consumed after saved alert queued');
+select ok((select bool_and(q.status='pending') from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id
+ where n.kind='saved_merchant_post' and n.user_id='15200000-0000-4000-8000-000000000002'),'shared cap defers saved queue rows without provider send');
 select finish();
 rollback;
