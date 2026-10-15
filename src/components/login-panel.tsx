@@ -170,7 +170,7 @@ export function LoginPanel({
                 style={[styles.appleButton, { opacity: disabled ? 0.6 : 1 }]}
               />
             </View></GlassSurface>)}
-            {onKakao && <GlassSurface colorScheme="dark" tone="control" interactive style={styles.socialGlass}><Pressable analyticsId="components_login-panel.pressable.1"
+            {onKakao && <GlassSurface colorScheme="dark" tone="control" interactive style={styles.socialGlass}><Pressable lens analyticsId="components_login-panel.pressable.1"
               onPress={() => { if (!disabled) { play('selection'); onKakao(); } }}
               disabled={disabled}
               accessibilityRole="button"
@@ -180,7 +180,7 @@ export function LoginPanel({
                 {t.auth.kakao}
               </ThemedText>
             </Pressable></GlassSurface>}
-            {onGoogle && <GlassSurface tone="control" interactive style={styles.socialGlass}><Pressable analyticsId="components_login-panel.pressable.2"
+            {onGoogle && <GlassSurface tone="control" interactive style={styles.socialGlass}><Pressable lens analyticsId="components_login-panel.pressable.2"
               onPress={() => { if (!disabled) { play('selection'); onGoogle(); } }}
               disabled={disabled}
               accessibilityRole="button"
@@ -222,7 +222,7 @@ export function LoginPanel({
                   accessibilityLabel={onAdminLogin ? '관리자 비밀번호' : onReviewLogin ? t.auth.reviewPassword : t.auth.devPassword}
                   style={[styles.devInput, { color: theme.text, borderColor: theme.line }]}
                 />
-                <Pressable analyticsId="components_login-panel.pressable.3"
+                <Pressable lens analyticsId="components_login-panel.pressable.3"
                   onPress={() => { if (!disabled && email.trim() && password) { play('selection'); passwordLogin(email, password); } }}
                   disabled={disabled || !email.trim() || !password}
                   accessibilityRole="button"
@@ -253,7 +253,7 @@ export function LoginPanel({
         </View>
 
         {onClose && (
-          <Pressable analyticsId="components_login-panel.pressable.6" onPress={() => { play('selection'); onClose(); }} accessibilityRole="button" style={styles.close}>
+          <Pressable lens analyticsId="components_login-panel.pressable.6" onPress={() => { play('selection'); onClose(); }} accessibilityRole="button" style={styles.close}>
             <ThemedText type="smallBold" themeColor="textSecondary">
               {t.auth.close}
             </ThemedText>

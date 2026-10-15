@@ -29,7 +29,7 @@ function errorText(error: unknown) {
 }
 function Action({ label, onPress, disabled = false, primary = false, danger = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean; danger?: boolean }) {
   const theme = useTheme(), { play } = useInteractionFeedback();
-  return <Pressable analyticsId="merchant.ai.action" accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} aria-disabled={disabled} disabled={disabled}
+  return <Pressable lens analyticsId="merchant.ai.action" accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} aria-disabled={disabled} disabled={disabled}
     onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.button, { borderColor: theme.line, backgroundColor: primary ? theme.accent : 'transparent', opacity: disabled ? 0.45 : pressed ? 0.7 : 1 }]}>
     <ThemedText type="smallBold" style={{ color: primary ? theme.accentInk : danger ? '#FFA5AF' : theme.text }}>{label}</ThemedText>
   </Pressable>;
@@ -40,7 +40,7 @@ function Choice({ title, detail, checked, onPress, disabled = false }: { title: 
   const keyboard = Platform.OS === 'web' ? { onKeyDown: (event: KeyboardEvent) => {
     if (event.key === ' ') { event.preventDefault(); if (!disabled && !event.repeat) { play('selection'); onPress(); } }
   } } : {};
-  return <Pressable {...keyboard} analyticsId="merchant.ai.permission" accessibilityRole="checkbox" accessibilityLabel={`${title}. ${detail}`} accessibilityState={{ checked, disabled }} aria-checked={checked} aria-disabled={disabled} disabled={disabled}
+  return <Pressable lens {...keyboard} analyticsId="merchant.ai.permission" accessibilityRole="checkbox" accessibilityLabel={`${title}. ${detail}`} accessibilityState={{ checked, disabled }} aria-checked={checked} aria-disabled={disabled} disabled={disabled}
     onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.choice, { borderColor: checked ? theme.accent : theme.line, opacity: disabled || pressed ? 0.65 : 1 }]}>
     <View style={[styles.check, { borderColor: checked ? theme.accent : theme.line, backgroundColor: checked ? theme.accent : 'transparent' }]}>
       {checked && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✓</ThemedText>}
