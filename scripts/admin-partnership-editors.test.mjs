@@ -34,6 +34,45 @@ const text = tree => tree == null || typeof tree === 'boolean' ? '' : typeof tre
 const field = (tree, label) => nodes(nodes(tree).find(node => node.type === 'label' && text(node).startsWith(label))).find(node => ['input', 'select', 'textarea'].includes(node.type));
 const submit = tree => nodes(tree).find(node => node.type === 'form').props.onSubmit({ preventDefault() {} });
 
+test('creator details retain observed audience labels and select a secondary platform without dropping contact or revision', async () => {
+  const profiles = [
+    { platform: 'Instagram', url: 'https://instagram.com/creator/', followers: '1.4만', checked_on: '2026-10-15' },
+    { platform: 'YouTube', url: 'https://youtube.com/@creator' },
+  ];
+  const app = editor('PartnershipEditor', { state: { kind: 'creator', revision, record: { id, display_name: '크리에이터', profile_url: 'https://www.instagram.com/Creator', platforms: profiles, contact_name: '담당자', contact: 'creator@example.test', content_summary: '맛집 영상', activity_regions: '밴쿠버 · 버나비', notes: '다음 제안 때 일정 확인' } } }, async () => ({ data: id, error: null }));
+  let tree = app.render();
+  assert.equal(nodes(tree).filter(node => node.type === 'input' && node.props.type === 'radio' && node.props.checked).length, 1);
+  nodes(tree).filter(node => node.type === 'input' && node.props.type === 'radio')[1].props.onChange();
+  submit(app.render()); await new Promise(setImmediate);
+  assert.equal(app.calls.length, 1);
+  const { p_record: record, p_expected_updated_at: expected } = app.calls[0].args;
+  assert.equal(expected, revision); assert.equal(record.profile_url, profiles[1].url);
+  assert.equal(record.platforms[0].followers, '1.4만'); assert.equal(record.platforms[0].checked_on, '2026-10-15');
+  assert.equal(record.platforms[1].followers, ''); assert.equal(record.platforms[1].checked_on, null);
+  for (const key of ['contact_name', 'contact', 'content_summary', 'activity_regions', 'notes']) assert.equal(record[key], { contact_name: '담당자', contact: 'creator@example.test', content_summary: '맛집 영상', activity_regions: '밴쿠버 · 버나비', notes: '다음 제안 때 일정 확인' }[key]);
+});
+
+test('a newly typed platform URL updates its inferred label while preserving custom labels', () => {
+  const app = editor('PartnershipEditor', { state: { kind: 'creator', revision: null, record: { id } } }, async () => ({ data: id, error: null }));
+  nodes(app.render()).find(node => node.type === 'button' && text(node) === '플랫폼 추가').props.onClick();
+  field(app.render(), '프로필 링크').props.onChange({ target: { value: 'h' } });
+  field(app.render(), '프로필 링크').props.onChange({ target: { value: 'https://youtube.com/@creator' } });
+  assert.equal(field(app.render(), '플랫폼 이름').props.value, 'YouTube');
+  field(app.render(), '플랫폼 이름').props.onChange({ target: { value: '메인 영상 채널' } });
+  field(app.render(), '프로필 링크').props.onChange({ target: { value: 'https://youtube.com/@newcreator' } });
+  assert.equal(field(app.render(), '플랫폼 이름').props.value, '메인 영상 채널');
+});
+
+test('editing a legacy representative preserves all twenty separately linked platforms', async () => {
+  const profiles = Array.from({ length: 20 }, (_, i) => ({ platform: '웹사이트', url: `https://example.com/account-${i}`, followers: '', checked_on: null }));
+  const app = editor('PartnershipEditor', { state: { kind: 'creator', revision, record: { id, display_name: '크리에이터', profile_url: 'https://example.com/primary', platforms: profiles } } }, async () => ({ data: id, error: null }));
+  field(app.render(), '담당자 이름').props.onChange({ target: { value: '확인한 담당자' } });
+  submit(app.render()); await new Promise(setImmediate);
+  assert.equal(app.calls[0].args.p_record.platforms.length, 20);
+  assert.deepEqual(JSON.parse(JSON.stringify(app.calls[0].args.p_record.platforms)), profiles);
+  assert.equal(app.calls[0].args.p_record.profile_url, 'https://example.com/primary');
+});
+
 test('campaign editor saves cents and only mutable fields while preserving the exact server revision', async () => {
   const app = editor('PartnershipEditor', { state: { kind: 'campaign', revision, record: { id, merchant_id: other, merchant_name: '예시 카페', title: '협업', status: 'draft', support_amount_cents: 15000, selected_count: 12, updated_at: revision } } }, async () => ({ data: id, error: null }));
   let tree = app.render();

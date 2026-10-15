@@ -1,12 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { safeMerchantSourceUrl } from './merchant-source.ts';
 
 export type PartnershipView = 'creators' | 'campaigns' | 'benefits';
 export type PartnershipKind = 'creator' | 'campaign' | 'benefit' | 'participation';
 type RecordBase = { id: string; created_at: string; updated_at: string };
+export type CreatorProfile = { platform: string; url: string; followers: string; checked_on: string | null };
 export type Creator = RecordBase & {
   member_id: string | null; member_name: string | null; display_name: string; city_id: string; city_name: string;
   profile_url: string; category: string; contact: string; reference_url: string; reference_views: number | null;
   metrics_note: string; status: 'active' | 'paused'; notes: string; participation_count: number;
+  platforms?: CreatorProfile[]; contact_name?: string; content_summary?: string; activity_regions?: string;
 };
 export type Campaign = RecordBase & {
   merchant_id: string; merchant_name: string; city_name: string; title: string; status: 'draft' | 'open' | 'paused' | 'closed';
@@ -38,6 +41,30 @@ export type PartnershipPage = {
   kind: PartnershipView; rows: PartnershipRecord[]; record: PartnershipRecord | null; more: boolean;
   participations: Participation[]; coupons: BenefitCoupon[]; events: PartnershipEvent[]; children_more: boolean;
 };
+
+export function creatorPlatformName(value: string): string {
+  try {
+    const host = new URL(value).hostname.replace(/^(?:www|m)\./, '');
+    return ({ 'instagram.com': 'Instagram', 'youtube.com': 'YouTube', 'youtu.be': 'YouTube', 'tiktok.com': 'TikTok', 'threads.com': 'Threads', 'threads.net': 'Threads', 'facebook.com': 'Facebook', 'x.com': 'X', 'twitter.com': 'X', 'blog.naver.com': '네이버 블로그' } as Record<string, string>)[host] ?? '웹사이트';
+  } catch { return 'SNS'; }
+}
+
+export function creatorProfiles(creator: { profile_url?: string; platforms?: CreatorProfile[] }): CreatorProfile[] {
+  const key = (value: string) => {
+    const url = new URL(value), host = url.hostname.replace(/^www\./, '').replace(/^threads\.net$/, 'threads.com');
+    let path = url.pathname.replace(/\/+$/, '');
+    try { path = decodeURIComponent(path); } catch { /* Keep malformed URLs distinct; saving still validates them. */ }
+    if ((host === 'instagram.com' && /^\/[^/]+$/.test(path))
+      || (['threads.com', 'tiktok.com', 'youtube.com'].includes(host) && /^\/@[^/]+$/.test(path))) path = path.toLowerCase();
+    return host + path;
+  };
+  const profiles = Array.isArray(creator.platforms) ? creator.platforms.filter(row => row && typeof row.url === 'string' && safeMerchantSourceUrl(row.url))
+    .map(row => ({ ...row, followers: row.followers ?? '', checked_on: row.checked_on ?? null })) : [];
+  const primary = typeof creator.profile_url === 'string' ? safeMerchantSourceUrl(creator.profile_url) : null;
+  if (!primary) return profiles;
+  const match = profiles.find(row => key(row.url) === key(primary));
+  return [match ?? { platform: creatorPlatformName(primary), url: primary, followers: '', checked_on: null }, ...profiles.filter(row => key(row.url) !== key(primary))];
+}
 
 export const CREATOR_STATUSES = { active: '활동 중', paused: '중지' } as const;
 export const CAMPAIGN_STATUSES = { draft: '제안·준비', open: '모집 중', paused: '일시 중지', closed: '모집 종료' } as const;

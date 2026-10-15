@@ -15,6 +15,8 @@ ROOT = Path(__file__).resolve().parents[1]
 CONTAINER = 'supabase_db_gling'
 MIGRATION = ROOT / 'supabase/migrations/20261015190000_admin_partnerships.sql'
 TEST = ROOT / 'supabase/tests/admin_partnerships.test.sql'
+DETAIL_MIGRATION = ROOT / 'supabase/migrations/20261015230000_creator_profile_details.sql'
+DETAIL_TEST = ROOT / 'supabase/tests/creator_profile_details.test.sql'
 ADMIN = 'a1500000-0000-0000-0000-000000000001'
 SESSION = 'a1560000-0000-0000-0000-000000000001'
 MERCHANT = 'a1520000-0000-0000-0000-000000000001'
@@ -108,13 +110,16 @@ def blocked_recheck(database, lock, mutation, operation, expected):
 def main():
     fixture = TEST.read_text()
     assert fixture.startswith('begin;') and fixture.rstrip().endswith('rollback;')
-    migration = MIGRATION.read_text()
+    migration = MIGRATION.read_text() + '\n' + DETAIL_MIGRATION.read_text()
     before = sql('postgres', "select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='private' and c.relname like 'partnership_%';").stdout
-    result = sql('postgres', 'begin;\n' + prerequisites('postgres') + migration + '\n' + fixture.removeprefix('begin;'))
-    output = result.stdout + result.stderr
-    assert not re.search(r'^\s*not ok \d+', output, re.MULTILINE), output
-    assert re.search(r'^1\.\.\d+$', output, re.MULTILINE), output
-    passed = len(re.findall(r'^\s*ok \d+', output, re.MULTILINE))
+    passed = 0
+    for test in (fixture, DETAIL_TEST.read_text()):
+        assert test.startswith('begin;') and test.rstrip().endswith('rollback;')
+        result = sql('postgres', 'begin;\n' + prerequisites('postgres') + migration + '\n' + test.removeprefix('begin;'))
+        output = result.stdout + result.stderr
+        assert not re.search(r'^\s*not ok \d+', output, re.MULTILINE), output
+        assert re.search(r'^1\.\.\d+$', output, re.MULTILINE), output
+        passed += len(re.findall(r'^\s*ok \d+', output, re.MULTILINE))
     after = sql('postgres', "select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='private' and c.relname like 'partnership_%';").stdout
     assert before == after, 'rollback changed shared schema'
     assert sql('postgres', f"select exists(select 1 from auth.users where id='{ADMIN}');").stdout.strip() == 'f', 'rollback left fixture data'

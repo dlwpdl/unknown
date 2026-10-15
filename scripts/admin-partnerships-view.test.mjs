@@ -68,6 +68,33 @@ test('protected read failure offers retry without fake empty data or leaked serv
   assert.ok(nodes(tree).some(node => node.type === 'button' && /다시/.test(text(node))));
 });
 
+test('creator selection supports a page toggle, partial selection, clearing and isolation from a new search', async () => {
+  const second = { ...rows.creators, id: '70000000-0000-4000-8000-000000000002', display_name: '두 번째 크리에이터', updated_at: '2026-10-15T18:00:00Z' };
+  const screen = view('creators', async () => ({ ...page('creators'), rows: [...page('creators').rows, second], more: true }));
+  const checkbox = (tree, label) => nodes(tree).find(node => node.type === 'input' && node.props['aria-label'] === label);
+  screen.render(); await new Promise(setImmediate);
+  let tree = screen.render();
+  checkbox(tree, '현재 페이지 전체 선택').props.onChange({ target: { checked: true } });
+  tree = screen.render(); assert.match(text(tree), /2\s*개 선택/);
+  checkbox(tree, '밴쿠버 식탁 선택').props.onChange({ target: { checked: false } });
+  tree = screen.render(); assert.match(text(tree), /1\s*개 선택/);
+  const headerInput = { indeterminate: false };
+  checkbox(tree, '현재 페이지 전체 선택').props.ref(headerInput); assert.equal(headerInput.indeterminate, true);
+  nodes(tree).find(node => node.type === 'button' && text(node) === '선택 해제').props.onClick();
+  tree = screen.render(); assert.match(text(tree), /0\s*개 선택/);
+  checkbox(tree, '밴쿠버 식탁 선택').props.onChange({ target: { checked: true } });
+  tree = screen.render(); nodes(tree).find(node => node.type === 'button' && text(node) === '다음').props.onClick();
+  screen.render(); await new Promise(setImmediate); tree = screen.render(); assert.match(text(tree), /0\s*개 선택/);
+  nodes(tree).find(node => node.type === 'button' && text(node) === '이전').props.onClick();
+  screen.render(); await new Promise(setImmediate); tree = screen.render(); assert.match(text(tree), /0\s*개 선택/);
+  checkbox(tree, '밴쿠버 식탁 선택').props.onChange({ target: { checked: true } });
+  tree = screen.render(); nodes(tree).find(node => node.type === 'AdminSearch').props.onChange('토론토');
+  tree = screen.render(); nodes(tree).find(node => node.type === 'AdminSearch').props.onSubmit();
+  screen.render(); await new Promise(setImmediate); tree = screen.render();
+  assert.match(text(tree), /0\s*개 선택/);
+  assert.equal(checkbox(tree, '밴쿠버 식탁 선택').props.checked, false);
+});
+
 test('a successful mutation keeps its editor until a matching saved record is read back', async () => {
   let available = false;
   const screen = view('campaigns', async (_kind, _query, _offset, selected) => page('campaigns', selected && available ? { ...rows.campaigns, updated_at: '2026-10-15T18:01:00Z' } : null));
