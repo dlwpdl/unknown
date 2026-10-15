@@ -25,6 +25,7 @@ function app(component = 'MerchantAccountEntry') {
   }).outputText;
   vm.runInNewContext(source, { exports, window: { confirm: () => true }, Date, require(name) {
     if (name === 'react') return React;
+    if (name === 'expo-symbols') return { SymbolView: 'SymbolView' };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'expo-router') return { useRouter: () => ({ push: path => routes.push(path) }), useFocusEffect: fn => recordEffect(fn, fn.deps) };
     if (name === 'react-native') return { Platform: { OS: 'web' }, View: 'View', StyleSheet: { create: value => value }, AppState: { addEventListener(name, fn) { foreground = fn; return { remove() {} }; } } };
