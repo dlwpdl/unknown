@@ -77,7 +77,7 @@ export default function AuthorPostsRoute() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <View style={styles.header}>
-          <Pressable analyticsId="app_user_[id].pressable.1"
+          <Pressable lens analyticsId="app_user_[id].pressable.1"
             onPress={goBack}
             accessibilityRole="button"
             accessibilityLabel={t.authorPosts.back}
@@ -96,7 +96,7 @@ export default function AuthorPostsRoute() {
           </View>
         </View>
         <View style={[styles.segments, { borderBottomColor: theme.line }]} accessibilityRole="tablist">
-          {(['story', 'listing'] as const).map(value => <Pressable analyticsId={`user.activity.${value}`} key={value} accessibilityRole="tab" accessibilityState={{ selected: kind === value }}
+          {(['story', 'listing'] as const).map(value => <Pressable lens analyticsId={`user.activity.${value}`} key={value} accessibilityRole="tab" accessibilityState={{ selected: kind === value }}
             onPress={() => { play('selection'); setKind(value); setDetail(null); }} style={[styles.segment, kind === value && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]}>
             <ThemedText type="smallBold">{value === 'story' ? '오늘' : '구해요·팔아요'}</ThemedText>
           </Pressable>)}
@@ -129,8 +129,8 @@ export default function AuthorPostsRoute() {
               </View>
             )}
             ListFooterComponent={<View style={styles.profile}>
-              {failed === requestKey && <Pressable analyticsId="user.activity.retry" accessibilityRole="button" onPress={() => { play('selection'); setRetry(n => n + 1); }} style={styles.segment}><ThemedText type="small">다시 불러오기</ThemedText></Pressable>}
-              {hasMore && <Pressable analyticsId="user.activity.more" accessibilityRole="button" accessibilityState={{ disabled: more }} disabled={more} onPress={() => void loadMore()} style={styles.segment}><ThemedText type="smallBold">{more ? '불러오는 중…' : '이전 글 더 보기'}</ThemedText></Pressable>}
+              {failed === requestKey && <Pressable lens analyticsId="user.activity.retry" accessibilityRole="button" onPress={() => { play('selection'); setRetry(n => n + 1); }} style={styles.segment}><ThemedText type="small">다시 불러오기</ThemedText></Pressable>}
+              {hasMore && <Pressable lens analyticsId="user.activity.more" accessibilityRole="button" accessibilityState={{ disabled: more }} disabled={more} onPress={() => void loadMore()} style={styles.segment}><ThemedText type="smallBold">{more ? '불러오는 중…' : '이전 글 더 보기'}</ThemedText></Pressable>}
             </View>}
           />
         )}

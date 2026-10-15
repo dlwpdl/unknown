@@ -36,7 +36,7 @@ function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
   }
   return <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
     <View style={[styles.header, { borderBottomColor: theme.line }]}>
-      <Pressable analyticsId="places.back" accessibilityRole="button" accessibilityLabel="이전 화면으로 돌아가기"
+      <Pressable lens analyticsId="places.back" accessibilityRole="button" accessibilityLabel="이전 화면으로 돌아가기"
         onPress={() => { play('selection'); router.back(); }} style={styles.back}>
         <SymbolView name={{ ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }} size={19} tintColor={theme.text} />
         <ThemedText type="smallBold">장소 둘러보기</ThemedText>
@@ -54,13 +54,13 @@ function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
             onSubmitEditing={() => play('selection')} style={[styles.search, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]} />
           <View style={styles.heading}>
             <ThemedText type="smallBold">{`${city.name} · ${Math.min(limit, places.length)}곳`}</ThemedText>
-            <Pressable analyticsId="places.view-more" accessibilityRole="button" accessibilityLabel={limit === 10 ? '25곳까지 보기' : '10곳 먼저 보기'}
+            <Pressable lens analyticsId="places.view-more" accessibilityRole="button" accessibilityLabel={limit === 10 ? '25곳까지 보기' : '10곳 먼저 보기'}
               onPress={() => { play('selection'); setLimit(limit === 10 ? 25 : 10); }} style={styles.control}>
               <ThemedText type="smallBold" themeColor="accent">{limit === 10 ? '25곳까지 보기' : '10곳 먼저 보기'}</ThemedText>
             </Pressable>
           </View>
           <View style={styles.categories}>
-            {categories.map(item => <Pressable key={item.id} analyticsId={`places.category.${item.id}`} accessibilityRole="button"
+            {categories.map(item => <Pressable lens key={item.id} analyticsId={`places.category.${item.id}`} accessibilityRole="button"
               accessibilityLabel={`${item.label} 장소`} accessibilityState={{ selected: category === item.id }}
               onPress={() => { play('selection'); setCategory(item.id); setLimit(item.id === 'all' ? 10 : 25); }}
               style={[styles.category, { borderColor: category === item.id ? theme.accent : theme.line, backgroundColor: category === item.id ? theme.accent : 'transparent' }]}>

@@ -116,7 +116,7 @@ export default function MembershipScreen() {
       <SafeAreaView edges={['bottom']} style={styles.safeArea}>
         <ScrollView analyticsId="app_profile_membership.scrollview.1" contentContainerStyle={styles.content}>
           <View accessibilityRole="tablist" style={styles.row}>
-            {([['general', '일반'], ['business', '비즈니스']] as const).map(([value, label]) => <Pressable analyticsId={`membership.family.${value}`} key={value} accessibilityRole="tab" accessibilityState={{ selected: kind === value, disabled: busy }} disabled={busy}
+            {([['general', '일반'], ['business', '비즈니스']] as const).map(([value, label]) => <Pressable lens analyticsId={`membership.family.${value}`} key={value} accessibilityRole="tab" accessibilityState={{ selected: kind === value, disabled: busy }} disabled={busy}
               onPress={() => { play('selection'); animateLayout(); setKind(value); }} style={({ pressed }) => [styles.period, { backgroundColor: kind === value ? theme.backgroundElement : 'transparent', opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold">{label}</ThemedText></Pressable>)}
           </View>
           {kind === 'business' && <View style={styles.detailContent}>
@@ -126,7 +126,7 @@ export default function MembershipScreen() {
             {businessError && <ThemedText type="small" accessibilityRole="alert">{businessError}</ThemedText>}
             {business && !business.canPurchase && <ThemedText type="small">확인된 업체 소유자만 구독을 연결할 수 있어요.</ThemedText>}
             {otherBusiness && <ThemedText type="small">결제 연결은 다른 업체에 묶여 있어요. 해당 업체를 선택해 주세요.</ThemedText>}
-            {business?.canPurchase && membership?.businessSubscription?.tier !== 'free' && membership?.businessSubscription && !membership.businessSubscription.merchantId && <Pressable analyticsId="membership.business.bind" accessibilityRole="button" disabled={busy || loading} style={styles.textButton}
+            {business?.canPurchase && membership?.businessSubscription?.tier !== 'free' && membership?.businessSubscription && !membership.businessSubscription.merchantId && <Pressable lens analyticsId="membership.business.bind" accessibilityRole="button" disabled={busy || loading} style={styles.textButton}
               onPress={() => { play('selection'); void supabase.rpc('bind_business_membership', { p_merchant_id: merchantId }).then(({ error }) => { if (error) setBusinessError('현재 계정의 업체 소유 확인을 다시 확인해 주세요.'); else void refresh(); }); }}><ThemedText type="smallBold" themeColor="accent">기존 구독을 이 업체에 연결</ThemedText></Pressable>}
           </View>}
           <View style={[styles.card, Depth.card, { borderColor: theme.line, backgroundColor: theme.card }]}>
@@ -147,11 +147,11 @@ export default function MembershipScreen() {
           {(error || notice || pendingApproval) && <View style={styles.feedback}>
             {error && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{error}</ThemedText>}
             {notice && <ThemedText type="small" accessibilityLiveRegion="polite">{notice}</ThemedText>}
-            <Pressable analyticsId="app_profile_membership.pressable.1" onPress={() => { play('selection'); void refresh(); }} accessibilityRole="button" disabled={busy || loading} accessibilityState={{ disabled: busy || loading }} style={({ pressed }) => [styles.textButton, { opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold" themeColor="accent">다시 확인하기</ThemedText></Pressable>
+            <Pressable lens analyticsId="app_profile_membership.pressable.1" onPress={() => { play('selection'); void refresh(); }} accessibilityRole="button" disabled={busy || loading} accessibilityState={{ disabled: busy || loading }} style={({ pressed }) => [styles.textButton, { opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold" themeColor="accent">다시 확인하기</ThemedText></Pressable>
             {pendingApproval && <>
               <ThemedText type="small" themeColor="textSecondary">스토어의 취소·거절 완료 안내를 확인해 주세요. 빈 구독 목록만으로는 확인할 수 없어요. 승인 대기가 계속되면 다시 구매하지 마세요.</ThemedText>
-              <Pressable analyticsId="membership.pending.manage" onPress={() => { play('selection'); void manage(); }} accessibilityRole="button" disabled={busy || loading} accessibilityState={{ disabled: busy || loading }} style={styles.textButton}><ThemedText type="smallBold" themeColor="accent">스토어 구독 관리 열기</ThemedText></Pressable>
-              <Pressable analyticsId="membership.pending.confirm_cancellation" onPress={confirmStoreCancellation} accessibilityRole="button" accessibilityHint="스토어의 취소 또는 거절을 확인한 경우에만 구매 대기를 해제해요." disabled={busy || loading} accessibilityState={{ disabled: busy || loading, busy }} style={styles.textButton}><ThemedText type="smallBold" themeColor="accent">스토어에서 대기 구매 취소·거절을 확인했어요</ThemedText></Pressable>
+              <Pressable lens analyticsId="membership.pending.manage" onPress={() => { play('selection'); void manage(); }} accessibilityRole="button" disabled={busy || loading} accessibilityState={{ disabled: busy || loading }} style={styles.textButton}><ThemedText type="smallBold" themeColor="accent">스토어 구독 관리 열기</ThemedText></Pressable>
+              <Pressable lens analyticsId="membership.pending.confirm_cancellation" onPress={confirmStoreCancellation} accessibilityRole="button" accessibilityHint="스토어의 취소 또는 거절을 확인한 경우에만 구매 대기를 해제해요." disabled={busy || loading} accessibilityState={{ disabled: busy || loading, busy }} style={styles.textButton}><ThemedText type="smallBold" themeColor="accent">스토어에서 대기 구매 취소·거절을 확인했어요</ThemedText></Pressable>
             </>}
           </View>}
 
@@ -244,7 +244,7 @@ export default function MembershipScreen() {
 
             {periods.length > 1 && <View onLayout={event => setPeriodWidth(event.nativeEvent.layout.width)} style={[styles.periods, { backgroundColor: theme.backgroundElement }]}>
               {periodWidth > 0 && <Animated.View pointerEvents="none" style={[styles.periodIndicator, { width: (periodWidth - 12) / 2, backgroundColor: theme.card, transform: [{ translateX: periodPosition.interpolate({ inputRange: [0, 1], outputRange: [0, (periodWidth - 12) / 2 + 4] }) }] }]} />}
-              {periods.map((value) => <Pressable analyticsId="app_profile_membership.pressable.5" key={value} accessibilityRole="radio" aria-checked={value === period} accessibilityState={{ selected: value === period, checked: value === period, disabled: busy }} disabled={busy}
+              {periods.map((value) => <Pressable lens analyticsId="app_profile_membership.pressable.5" key={value} accessibilityRole="radio" aria-checked={value === period} accessibilityState={{ selected: value === period, checked: value === period, disabled: busy }} disabled={busy}
                 onPress={() => selectPlan({ ...selection, period: value })}
                 style={({ pressed }) => [styles.period, { backgroundColor: periodWidth === 0 && value === period ? theme.card : 'transparent', opacity: pressed ? 0.7 : 1 }]}>
                 <ThemedText type="smallBold">{value === 'month' ? '월 구독' : '연 구독'}</ThemedText>
@@ -254,7 +254,7 @@ export default function MembershipScreen() {
             <View style={styles.checkout}>
               {selectedOffer && <ThemedText type="smallBold" style={styles.center}>{tierNames[selectedOffer.tier]} · {selectedOffer.price} / {periodNames[selectedOffer.period]}</ThemedText>}
               {purchaseUnavailableReason && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{purchaseUnavailableReason}</ThemedText>}
-              <Pressable analyticsId="app_profile_membership.pressable.6" accessibilityRole="button" disabled={purchaseDisabled} accessibilityState={{ disabled: purchaseDisabled, busy }}
+              <Pressable lens analyticsId="app_profile_membership.pressable.6" accessibilityRole="button" disabled={purchaseDisabled} accessibilityState={{ disabled: purchaseDisabled, busy }}
                 onPress={() => { play('selection'); if (selectedOffer) void purchase(selectedOffer, kind === 'business' && merchantId ? merchantId : undefined); }}
                 style={({ pressed }) => [styles.purchase, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: purchaseDisabled ? 0.5 : 1, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
                 {busy ? <GlingLoader color={theme.accentInk} accessibilityLabel="구독 처리 중" /> : <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
@@ -262,15 +262,15 @@ export default function MembershipScreen() {
                 </ThemedText>}
               </Pressable>
               {selectedOffer && <ThemedText type="small" themeColor="textSecondary">{selectedOffer.period === 'month' ? '매월' : '매년'} {selectedOffer.price}이 청구되며 자동 갱신됩니다. 구독 변경과 해지는 결제한 스토어에서 관리할 수 있어요.</ThemedText>}
-              <Pressable analyticsId="app_profile_membership.pressable.7" onPress={() => { play('selection'); leave(); }} accessibilityRole="button" style={({ pressed }) => [styles.textButton, { opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold">{membership?.tier === 'free' ? '무료로 계속하기' : '돌아가기'}</ThemedText></Pressable>
+              <Pressable lens analyticsId="app_profile_membership.pressable.7" onPress={() => { play('selection'); leave(); }} accessibilityRole="button" style={({ pressed }) => [styles.textButton, { opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold">{membership?.tier === 'free' ? '무료로 계속하기' : '돌아가기'}</ThemedText></Pressable>
             </View>
           </View>}
 
           <View style={[styles.links, { borderTopColor: theme.line }]}>
-            <Pressable analyticsId="app_profile_membership.pressable.8" onPress={() => { play('selection'); void restore(); }} accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={styles.textButton}><ThemedText type="small">구매 복원</ThemedText></Pressable>
-            <Pressable analyticsId="app_profile_membership.pressable.9" onPress={() => { play('selection'); void manage(kind); }} accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={styles.textButton}><ThemedText type="small">구독 관리</ThemedText></Pressable>
-            <Pressable analyticsId="app_profile_membership.pressable.10" onPress={() => openLegal('terms')} accessibilityRole="link" style={styles.textButton}><ThemedText type="small" themeColor="textSecondary">이용약관</ThemedText></Pressable>
-            <Pressable analyticsId="app_profile_membership.pressable.11" onPress={() => openLegal('privacy')} accessibilityRole="link" style={styles.textButton}><ThemedText type="small" themeColor="textSecondary">개인정보처리방침</ThemedText></Pressable>
+            <Pressable lens analyticsId="app_profile_membership.pressable.8" onPress={() => { play('selection'); void restore(); }} accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={styles.textButton}><ThemedText type="small">구매 복원</ThemedText></Pressable>
+            <Pressable lens analyticsId="app_profile_membership.pressable.9" onPress={() => { play('selection'); void manage(kind); }} accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={styles.textButton}><ThemedText type="small">구독 관리</ThemedText></Pressable>
+            <Pressable lens analyticsId="app_profile_membership.pressable.10" onPress={() => openLegal('terms')} accessibilityRole="link" style={styles.textButton}><ThemedText type="small" themeColor="textSecondary">이용약관</ThemedText></Pressable>
+            <Pressable lens analyticsId="app_profile_membership.pressable.11" onPress={() => openLegal('privacy')} accessibilityRole="link" style={styles.textButton}><ThemedText type="small" themeColor="textSecondary">개인정보처리방침</ThemedText></Pressable>
           </View>
         </ScrollView>
       </SafeAreaView>
