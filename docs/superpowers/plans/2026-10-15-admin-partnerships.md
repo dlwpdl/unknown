@@ -39,7 +39,16 @@ Files: new `src/lib/admin-partnerships.ts`, `scripts/admin-partnerships.test.mjs
 
 - [x] Review worker SQL and run tests: `python3 scripts/check-admin-partnerships.py`, focused Node, `npm test`, `npx tsc --noEmit`, changed-file `npx eslint`.
 - [x] Build private admin with `GLING_LOCAL_ADMIN=1 GLING_PUBLIC_WEB=0 GLING_MERCHANT_WEB=0 npx expo export --platform web --output-dir output/qa/admin-partnerships-20261015/admin-export --max-workers 2`; validate actual screens and create clickable HTML preview, normal protected access and public bundle separation.
-- [ ] Re-evaluate current `npm audit --json` and immutable export scope against existing dated security review. Preserve source and private export rollback/hash evidence before normal existing publication.
-- [ ] Apply only reviewed new migration via existing authorized project path, read back protected functions, publish only the existing private admin artifact if normal verification is available, and verify served hashes/headers and actual normal-MFA UI. Never native/store/public deployment.
-- [ ] Add pilot merchant internal drafts only through normal authorized admin RPC/UI, retain unresolved terms/inactive status, read back exact record. No real coupon issuance, fake creators or payout.
-- [ ] Record completed/remaining checks and risks; release the orchestrated worker after settlement.
+- [x] Re-evaluate current `npm audit --json` and immutable export scope against existing dated security review. Preserve source and private export rollback/hash evidence before normal existing publication.
+- [x] Apply only reviewed new migration via existing authorized project path, read back protected functions, publish only the existing private admin artifact if normal verification is available, and verify served hashes/headers and actual normal-MFA UI. Never native/store/public deployment.
+- [x] Add pilot merchant internal drafts only through normal authorized admin RPC/UI, retain unresolved terms/inactive status, read back exact record. No real coupon issuance, fake creators or payout.
+- [x] Record completed/remaining checks and risks; release the orchestrated worker after settlement.
+
+## Completion — 2026-10-15
+
+- Released source: `649ef4a46286ff644df6a480d99e1ed312c20e25`. This later plan update changes documentation only.
+- Verification: 1,049 Node tests passed, zero failed; one conditional export check was covered by actual merchant export verification. Type checking, lint, all three web exports and public/private bundle separation passed. The database checker passed 181 rollback assertions and 10 isolated committed concurrency probes; the shared database was not reset.
+- Reviewed migration `20261015190000` was applied once and its protected metadata read back. The existing private admin artifact was published with rollback files and served hash/header evidence. Normal AAL2 admin UI saved and read back two pilot drafts. Account roles, native/store releases and public deployments were outside this change.
+- Vendor list/detail account links were activated in the live UI; a separate native browser window opened while the original admin page remained. Desktop and 390px layouts were inspected. Design references and actual component previews were retained in private local artifacts.
+- No real coupons, public recruitment, payments or recurring jobs were created. Unconfirmed pilot terms remain drafts. Existing build-tool audit findings remain under the dated private-static-admin review, which expires on 2026-10-16 and requires reassessment before any scope change.
+- Worker reports and failed-dispatch/recovery history were preserved; workers were settled and released. Protected operations receipts retain source boundaries, backups, review results and delivery evidence separately from tracked documentation.
