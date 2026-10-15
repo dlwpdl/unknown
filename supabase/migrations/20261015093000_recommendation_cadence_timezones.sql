@@ -1,6 +1,10 @@
 -- Existing apps keep their registration contract; unknown device zones do not receive recommendations.
 alter table private.push_devices add column timezone text, add column timezone_updated_at timestamptz;
 
+-- Retries reserve their actual send time and participate in the current local day.
+alter table private.push_delivery_queue add column last_attempt_at timestamptz;
+update private.push_delivery_queue set last_attempt_at=first_attempt_at where first_attempt_at is not null;
+
 create function public.register_push_device(p_token text,p_user_id uuid,p_timezone text)
 returns void language plpgsql security definer set search_path='' as $$
 begin
@@ -107,14 +111,14 @@ begin
           else extract(hour from local_time)>=cfg.quiet_start_hour or extract(hour from local_time)<cfg.quiet_end_hour end) then
           due_at:=now()+interval '15 minutes';
         end if;
-        select greatest(due_at,coalesce(max(q.first_attempt_at)+interval '75 minutes',due_at)) into due_at
+        select greatest(due_at,coalesce(max(coalesce(q.last_attempt_at,q.first_attempt_at))+interval '75 minutes',due_at)) into due_at
         from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id
         where n.user_id=recommendation.user_id and q.notification_id<>item.notification_id
           and (n.category in ('trending','city_food','city_places','merchant_updates','weekly_ranking','interests','nearby') or n.kind='trending_meetup');
         if (select count(distinct q.notification_id) from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id
           where n.user_id=recommendation.user_id and q.notification_id<>item.notification_id
             and (n.category in ('trending','city_food','city_places','merchant_updates','weekly_ranking','interests','nearby') or n.kind='trending_meetup')
-            and (q.first_attempt_at at time zone budget_zone)::date=(now() at time zone budget_zone)::date)>=8 then
+            and (coalesce(q.last_attempt_at,q.first_attempt_at) at time zone budget_zone)::date=(now() at time zone budget_zone)::date)>=8 then
           due_at:=greatest(due_at,((now() at time zone budget_zone)::date+1+time '09:00') at time zone budget_zone);
         end if;
         due_at:=private.next_recommendation_slot(due_at,recommendation.timezone);
@@ -125,6 +129,9 @@ begin
       end if;
     end if;
     lease := gen_random_uuid();$claim$,'s');
+  if position('attempts = q.attempts +' in definition)=0 then raise exception 'RECOMMENDATION_ATTEMPT_CHANGED'; end if;
+  definition:=replace(definition,'attempts = q.attempts +',
+    'last_attempt_at=case p_phase when ''send'' then now() else q.last_attempt_at end, attempts = q.attempts +');
   if position('>=6' in definition)>0 or position('due_at:=private.next_recommendation_slot' in definition)=0 then raise exception 'RECOMMENDATION_CLAIM_PATCH_INCOMPLETE'; end if;
   execute definition;
 
