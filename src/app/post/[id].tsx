@@ -76,7 +76,7 @@ export default function SharedPostRoute() {
         ) : (
           <>
             <View style={styles.header}>
-              <Pressable analyticsId="app_post_[id].pressable.1"
+              <Pressable lens analyticsId="app_post_[id].pressable.1"
                 onPress={goBack}
                 accessibilityRole="button"
                 accessibilityLabel="뒤로가기"
@@ -88,7 +88,7 @@ export default function SharedPostRoute() {
               {!isAuthed && preview?.key === requestKey && preview.value ? <View style={styles.gate}>
                 <SharedPreviewContent preview={preview.value} />
                 <ThemedText type="small" themeColor="textSecondary">로그인 후 전체 내용을 확인해요. 모임 초대는 기존 참여 신청과 모임장 승인을 거쳐요.</ThemedText>
-                <Pressable analyticsId="shared.post.login" accessibilityRole="button" accessibilityLabel="로그인하고 공유 내용 보기"
+                <Pressable lens analyticsId="shared.post.login" accessibilityRole="button" accessibilityLabel="로그인하고 공유 내용 보기"
                   onPress={() => { play('selection'); promptLogin('공유받은 내용을 확인해요.'); }} style={[styles.login, { backgroundColor: theme.accent }]}>
                   <ThemedText type="smallBold" style={{ color: theme.accentInk }}>로그인하고 내용 보기</ThemedText>
                 </Pressable>

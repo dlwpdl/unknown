@@ -15,7 +15,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 function LocationAction({ label, onPress, disabled = false, primary = false, icon }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean; icon?: ComponentProps<typeof SymbolView>['name'] }) {
   const theme = useTheme(), { play } = useInteractionFeedback();
-  return <Pressable analyticsId={'chat-location.' + (primary ? 'send' : label)} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled}
+  return <Pressable lens analyticsId={'chat-location.' + (primary ? 'send' : label)} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled}
     onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.button, { backgroundColor: primary ? theme.accent : 'transparent', opacity: disabled ? 0.45 : pressed ? 0.7 : 1 }]}>
     {icon && <SymbolView name={icon} size={18} tintColor={primary ? theme.accentInk : theme.accent} />}
     <ThemedText type="smallBold" style={{ color: primary ? theme.accentInk : theme.text }}>{label}</ThemedText></Pressable>;
@@ -76,7 +76,7 @@ export function ChatLocationPicker({ sending, onSend, onClose }: { sending: bool
       <Pressable analyticsId="chat-location.dismiss" accessibilityRole="button" accessibilityLabel="위치 공유 닫기" disabled={sending} onPress={() => { play('selection'); close(); }} style={StyleSheet.absoluteFill} />
       <View style={[styles.sheet, { maxHeight: Math.min(height * 0.82, 640), backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, 12) }]} accessibilityViewIsModal>
         <View style={styles.row}><ThemedText type="smallBold" style={{ flex: 1, fontSize: 18 }}>위치 공유하기</ThemedText>
-          <Pressable analyticsId="chat-location.close" accessibilityRole="button" accessibilityLabel="위치 공유 닫기" accessibilityState={{ disabled: sending }} disabled={sending} onPress={() => { play('selection'); close(); }} style={({ pressed }) => [styles.close, { backgroundColor: theme.backgroundElement, opacity: sending ? 0.45 : pressed ? 0.7 : 1 }]}>
+          <Pressable lens analyticsId="chat-location.close" accessibilityRole="button" accessibilityLabel="위치 공유 닫기" accessibilityState={{ disabled: sending }} disabled={sending} onPress={() => { play('selection'); close(); }} style={({ pressed }) => [styles.close, { backgroundColor: theme.backgroundElement, opacity: sending ? 0.45 : pressed ? 0.7 : 1 }]}>
             <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={18} tintColor={theme.textSecondary} />
           </Pressable>
         </View>

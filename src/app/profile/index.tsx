@@ -142,7 +142,7 @@ export default function ProfileScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <View style={styles.hero}>
-          <Pressable analyticsId="app_profile_index.pressable.1"
+          <Pressable lens analyticsId="app_profile_index.pressable.1"
             onPress={() => { play('selection'); void pickProfilePhoto(); }}
             accessibilityRole="button"
             accessibilityLabel={t.profile.changePhoto}
@@ -172,7 +172,7 @@ export default function ProfileScreen() {
           <ThemedText type="small" themeColor="textSecondary" style={{ fontVariant: ['tabular-nums'] }}>
             {t.profile.stats(summary?.posts ?? 0, summary?.likes ?? 0, summary?.meetups ?? 0)}
           </ThemedText>
-          <Pressable analyticsId="app_profile_index.invite" accessibilityRole="button" accessibilityLabel="친구 초대하기" accessibilityHint="글링 초대 링크를 다른 앱으로 공유합니다"
+          <Pressable lens analyticsId="app_profile_index.invite" accessibilityRole="button" accessibilityLabel="친구 초대하기" accessibilityHint="글링 초대 링크를 다른 앱으로 공유합니다"
             onPress={() => { void shareAppInvite(); }}
             style={({ pressed }) => [styles.inviteButton, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement, borderColor: theme.line, transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
             <SymbolView name={{ ios: 'square.and.arrow.up', android: 'share', web: 'share' }} size={17} tintColor={theme.accent} />
@@ -181,7 +181,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* 관리는 네 칸으로, 그 아래는 내 글이 곧 프로필 (스레드 방식). iOS 연락처 카드의 액션 타일 패턴: 심볼 → 이름 → 상태 */}
-        <Pressable analyticsId="profile.meetup-reviews" accessibilityRole="button" accessibilityLabel="모임 후기와 내 매너 평가 관리" onPress={() => { play('selection'); router.push('/profile/meetup-reviews'); }} style={[styles.inviteButton, { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}>
+        <Pressable lens analyticsId="profile.meetup-reviews" accessibilityRole="button" accessibilityLabel="모임 후기와 내 매너 평가 관리" onPress={() => { play('selection'); router.push('/profile/meetup-reviews'); }} style={[styles.inviteButton, { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}>
           <ThemedText type="smallBold">모임 후기 · 내 매너 평가 관리</ThemedText>
         </Pressable>
         <View style={styles.manage} accessibilityRole="menu">
@@ -191,7 +191,7 @@ export default function ProfileScreen() {
             [t.notifications.title, unreadLabel, { ios: 'bell', android: 'notifications', web: 'notifications' }, unread > 0, () => router.push('/profile/inbox')],
             [t.profile.saved, '모아보기', { ios: 'bookmark', android: 'bookmark', web: 'bookmark' }, false, () => router.push('/profile/saved')],
           ] as const).map(([label, sub, symbol, attention, onPress]) => (
-            <Pressable analyticsId="app_profile_index.pressable.2" key={label} onPress={() => { play('selection'); onPress(); }} accessibilityRole="button" accessibilityLabel={`${label}, ${sub ?? ''}`}
+            <Pressable lens analyticsId="app_profile_index.pressable.2" key={label} onPress={() => { play('selection'); onPress(); }} accessibilityRole="button" accessibilityLabel={`${label}, ${sub ?? ''}`}
               style={({ pressed }) => [styles.manageCell, {
                 backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
                 transform: [{ scale: pressed && !reducedMotion ? 0.97 : 1 }], // 눌린 순간 바로 반응, 놓으면 실행
@@ -209,7 +209,7 @@ export default function ProfileScreen() {
         <View accessibilityRole="tablist" onLayout={event => setSegmentWidth(event.nativeEvent.layout.width)} style={[styles.segments, { borderBottomColor: theme.line }]}>
           {segmentWidth > 0 && <Animated.View pointerEvents="none" style={[styles.segmentIndicator, Depth.control, { width: segmentWidth / 3, backgroundColor: theme.backgroundElement, borderBottomColor: theme.accent, transform: [{ translateX: segmentPosition.interpolate({ inputRange: [0, 2], outputRange: [0, segmentWidth * 2 / 3] }) }] }]} />}
           {([['story', '내 글'], ['replies', '답글'], ['listing', '구해요·팔아요']] as const).map(([key, label]) => (
-            <Pressable analyticsId="app_profile_index.pressable.3" key={key} onPress={() => { play('selection'); if (key !== segment) setSegment(key); }} accessibilityRole="tab" accessibilityState={{ selected: segment === key }}
+            <Pressable lens analyticsId="app_profile_index.pressable.3" key={key} onPress={() => { play('selection'); if (key !== segment) setSegment(key); }} accessibilityRole="tab" accessibilityState={{ selected: segment === key }}
               style={({ pressed }) => [styles.segment, { opacity: pressed ? 0.65 : 1, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
               <ThemedText type={segment === key ? 'smallBold' : 'small'} themeColor={segment === key ? undefined : 'textSecondary'}>{label}</ThemedText>
             </Pressable>
