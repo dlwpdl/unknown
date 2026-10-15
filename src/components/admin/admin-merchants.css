@@ -41,7 +41,10 @@
 .merchant-directory-table tbody button[aria-pressed="true"] { background:transparent; }
 .merchant-directory-table strong { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; line-height:20px; }
 .merchant-directory-table small { color:var(--admin-muted); font-size:11px; font-weight:400; line-height:16px; }
-.merchant-contact span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.merchant-contact > span { display:block; white-space:normal; overflow-wrap:anywhere; }
+.merchant-contact-link { display:inline-flex; align-items:center; gap:4px; min-height:44px; max-width:100%; color:var(--admin-accent); text-decoration:underline; text-underline-offset:3px; overflow-wrap:anywhere; }
+.merchant-contact-link:hover { text-decoration-thickness:2px; }
+.merchant-contact-link:focus-visible { outline:2px solid var(--admin-accent); outline-offset:3px; border-radius:4px; }
 .merchant-location span,.merchant-account span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .merchant-location small,.merchant-account small { display:block; }
 .merchant-account { color:var(--admin-muted); }

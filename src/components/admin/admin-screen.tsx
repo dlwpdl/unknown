@@ -6,6 +6,7 @@ import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { AdminAnalyticsView } from '@/components/admin/admin-analytics';
 import { AdminTicketmasterView } from '@/components/admin/admin-ticketmaster';
 import { AdminMerchantsView } from '@/components/admin/admin-merchants';
+import { AdminPartnershipsView } from '@/components/admin/admin-partnerships';
 import { AdminMeetupsView } from '@/components/admin/admin-meetups';
 import { AdminCommandPalette } from '@/components/admin/admin-command-palette';
 import { AdminSectionView } from '@/components/admin/admin-section';
@@ -48,9 +49,18 @@ export function AdminScreen() {
   const [exhausted, setExhausted] = useState<Set<AdminSection>>(new Set());
   const [lastLoadedAt, setLastLoadedAt] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [partnershipGuard, setPartnershipGuard] = useState({ dirty: false, busy: false });
   const localPreview = false;
   const hasAdminAccess = isAdmin || localPreview;
-  const needsOperations = section !== 'analytics' && section !== 'ticketmaster' && section !== 'merchants' && section !== 'meetups';
+  const needsOperations = !['analytics', 'ticketmaster', 'merchants', 'creators', 'campaigns', 'benefits', 'meetups'].includes(section);
+
+  function chooseSection(next: AdminSection) {
+    if (next === section || partnershipGuard.busy) return;
+    if (partnershipGuard.dirty && Platform.OS === 'web' && !window.confirm('저장하지 않은 입력을 버리고 이동할까요?')) return;
+    if (!needsOperations && !['analytics', 'ticketmaster', 'merchants', 'creators', 'campaigns', 'benefits', 'meetups'].includes(next)) { setLoading(true); setError(null); }
+    setPartnershipGuard({ dirty: false, busy: false });
+    setSection(next);
+  }
 
   const refresh = useCallback(async () => {
     if (!hasAdminAccess) return;
@@ -130,7 +140,7 @@ export function AdminScreen() {
       return;
     }
     // 뜨는 글 알림 패널은 자체 RPC로 불러오므로 더 보기 대상이 아니다.
-    if (!data || section === 'overview' || section === 'analytics' || section === 'ticketmaster' || section === 'merchants' || section === 'meetups' || section === 'trending' || section === 'errors' || exhausted.has(section)) return;
+    if (!data || section === 'overview' || section === 'analytics' || section === 'ticketmaster' || section === 'merchants' || section === 'creators' || section === 'campaigns' || section === 'benefits' || section === 'meetups' || section === 'trending' || section === 'errors' || exhausted.has(section)) return;
     const offset = section === 'reports'
       ? data.reports.length
       : section === 'safety'
@@ -191,12 +201,12 @@ export function AdminScreen() {
   }
 
   return (
-    <AdminShell activeSection={section} counts={data?.counts ?? { alertsOpen: 0, reports: 0, openReports: 0, profiles: 0, posts: 0, messages: 0, safetyPending: 0, safetyHigh: 0 }} busy={needsOperations && loading} lastUpdated={needsOperations ? lastLoadedAt : null} onSearch={() => setPaletteOpen(true)} onSection={(next) => { if (!needsOperations && next !== 'analytics') { setLoading(true); setError(null); } setSection(next); }} onRefresh={() => void refresh()} onSignOut={() => void signOut()}>
+    <AdminShell activeSection={section} counts={data?.counts ?? { alertsOpen: 0, reports: 0, openReports: 0, profiles: 0, posts: 0, messages: 0, safetyPending: 0, safetyHigh: 0 }} busy={needsOperations && loading} lastUpdated={needsOperations ? lastLoadedAt : null} onSearch={() => setPaletteOpen(true)} onSection={chooseSection} onRefresh={() => void refresh()} onSignOut={() => void signOut()}>
       {isAdmin && <AdminSignupAlerts key={me.id} userId={me.id} onUser={setSelectedUserId} />}
       {localPreview && <View accessibilityRole="alert" style={styles.preview}><ThemedText type="smallBold">로컬 미리보기 · 실제 운영 데이터와 권한은 변경되지 않습니다.</ThemedText></View>}
       {!!moderationResult && needsOperations && <View accessibilityLiveRegion="polite" style={styles.preview}><ThemedText>{moderationResult}</ThemedText></View>}
       {!!error && needsOperations && <View accessibilityRole="alert" style={styles.error}><ThemedText style={styles.errorText}>{error}</ThemedText></View>}
-      {section === 'analytics' ? <AdminAnalyticsView localPreview={localPreview} onUser={setSelectedUserId} refreshSignal={analyticsRefresh} /> : section === 'ticketmaster' ? <AdminTicketmasterView localPreview={localPreview} refreshSignal={analyticsRefresh} /> : section === 'merchants' ? <AdminMerchantsView refreshSignal={analyticsRefresh} onUser={setSelectedUserId} localPreview={localPreview} /> : section === 'meetups' ? <AdminMeetupsView refreshSignal={analyticsRefresh} onUser={setSelectedUserId} localPreview={localPreview} /> : data && <AdminSectionView
+      {section === 'creators' || section === 'campaigns' || section === 'benefits' ? <AdminPartnershipsView key={section} kind={section} refreshSignal={analyticsRefresh} onUser={setSelectedUserId} onStateChange={setPartnershipGuard} /> : section === 'analytics' ? <AdminAnalyticsView localPreview={localPreview} onUser={setSelectedUserId} refreshSignal={analyticsRefresh} /> : section === 'ticketmaster' ? <AdminTicketmasterView localPreview={localPreview} refreshSignal={analyticsRefresh} /> : section === 'merchants' ? <AdminMerchantsView refreshSignal={analyticsRefresh} onUser={setSelectedUserId} localPreview={localPreview} /> : section === 'meetups' ? <AdminMeetupsView refreshSignal={analyticsRefresh} onUser={setSelectedUserId} localPreview={localPreview} /> : data && <AdminSectionView
         key={section}
         section={section}
         data={data}
@@ -207,7 +217,7 @@ export function AdminScreen() {
         onUser={setSelectedUserId}
         onResolve={confirmResolve}
         onLoadMore={() => void loadMore()}
-        onSection={setSection}
+        onSection={chooseSection}
       />}
       <AdminUserDetail
         userId={selectedUserId}
@@ -227,7 +237,7 @@ export function AdminScreen() {
         visible={paletteOpen}
         localPreview={localPreview}
         onClose={() => setPaletteOpen(false)}
-        onSection={(next) => { if (!needsOperations && next !== 'analytics') { setLoading(true); setError(null); } setSection(next); }}
+        onSection={chooseSection}
         onUser={(userId) => setSelectedUserId(userId)}
       />}
     </AdminShell>
