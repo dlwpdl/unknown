@@ -37,7 +37,12 @@ export async function registerPushDevice(client: SupabaseClient, userId: string,
     if (!permission.granted && permission.ios?.status !== Notifications.IosAuthorizationStatus.PROVISIONAL) return false;
   }
   const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-  const { error } = await client.rpc('register_push_device', { p_token: token, p_user_id: userId });
+  let timezone: string | null = null;
+  try { timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? null; }
+  catch { /* Messages still work when the device cannot report its timezone. */ }
+  const { error } = await client.rpc('register_push_device', {
+    p_token: token, p_user_id: userId, p_timezone: timezone,
+  });
   if (error) throw error;
   return true;
 }

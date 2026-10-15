@@ -8,7 +8,7 @@ delete from public.ticketmaster_event_cache;
 delete from private.trending_topic_sent;
 update private.trending_config set enabled=true,quiet_start_hour=22,quiet_end_hour=8 where id;
 create temporary table rec_clock as select
-  ((now() at time zone 'America/Vancouver')::date + 1 + time '11:00') at time zone 'America/Vancouver' as first_slot;
+  ((now() at time zone 'America/Vancouver')::date + 1 + time '09:00') at time zone 'America/Vancouver' as first_slot;
 
 insert into auth.users(id,email,raw_app_meta_data) values
 ('13800000-0000-0000-0000-000000000001','rec-author@example.test','{}'),
@@ -34,6 +34,7 @@ from public.profiles where id::text like '13800000-%';
 insert into private.push_devices(user_id,session_id,token)
 select id,id,'ExpoPushToken[recommendation_fixture_'||right(id::text,2)||']'
 from public.profiles where id::text like '13800000-%';
+update private.push_devices d set timezone=c.timezone,timezone_updated_at=now() from public.profiles r join public.cities c on c.id=r.city_id where d.user_id=r.id and r.id::text like '13800000-%';
 insert into public.posts(id,author_id,city_id,tag_id,title,body,created_at)
 select ('13810000-0000-0000-0000-'||lpad(i::text,12,'0'))::uuid,
  '13800000-0000-0000-0000-000000000001','vancouver',4,'추천 카페 '||i,'Verified cafe introduction',first_slot-make_interval(hours=>25+i)
@@ -52,9 +53,9 @@ select is((select count(*)::int from public.notifications where user_id='1380000
 select is((select count(*)::int from public.notifications where user_id in ('13800000-0000-0000-0000-000000000005','13800000-0000-0000-0000-000000000006','13800000-0000-0000-0000-000000000007','13800000-0000-0000-0000-000000000008','13800000-0000-0000-0000-000000000009')),0,'opt-outs, expired sessions and example accounts stay excluded');
 select private.send_city_recommendations((select first_slot+interval '15 minutes' from rec_clock));
 select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002'),1,'same slot is claimed once');
-select private.send_city_recommendations((select first_slot+interval '5 hours' from rec_clock));
+select private.send_city_recommendations((select first_slot+interval '90 minutes' from rec_clock));
 select private.send_city_recommendations((select first_slot+interval '9 hours' from rec_clock));
-select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002'),3,'11/16/20 each offer a different recommendation');
+select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002'),3,'three separate local slots offer different recommendations');
 select is((select count(distinct target_id)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002'),3,'same post is not repeated');
 select private.send_city_recommendations((select first_slot+interval '9 hours 45 minutes' from rec_clock));
 select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002'),3,'missed slots are not replayed late');
@@ -94,7 +95,7 @@ select is((select count(*)::int from public.notifications where user_id='1380000
 insert into private.ticketmaster_event_clicks(target_id,user_id,day,created_at)
 select md5('ticketmaster:vancouver:real-fest')::uuid,id,(first_slot at time zone 'UTC')::date,first_slot-interval '1 hour'
 from public.profiles cross join rec_clock where id in ('13800000-0000-0000-0000-000000000003','13800000-0000-0000-0000-000000000004');
-select private.send_city_recommendations((select first_slot-interval '30 minutes' from rec_clock));
+select private.send_city_recommendations((select first_slot from rec_clock));
 select ok((select title='Real Festival' and body='지역 밴드들이 함께하는 야외 음악 축제예요. 같이 갈 사람!?' from public.notifications where user_id='13800000-0000-0000-0000-000000000002' limit 1),'three distinct real members qualify a festival with its specific title and introduction');
 select is((select route from public.notifications where user_id='13800000-0000-0000-0000-000000000002' limit 1),'/events/real-fest?cityId=vancouver','festival opens its exact city event');
 select is((select count(*)::int from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id where n.user_id='13800000-0000-0000-0000-000000000002'),1,'festival uses the existing push delivery queue');
@@ -110,9 +111,9 @@ insert into public.ticketmaster_event_cache(cache_key,payload,expires_at)
 values('tm-event:vancouver:new-event',jsonb_build_object('event',jsonb_build_object(
  'id','new-event','name','Newly discovered concert','country','CA','city','Vancouver','status','onsale',
  'startsAt',(now()+interval '31 days')::text,'timeUnconfirmed',false)),now()+interval '15 minutes');
-select private.send_city_recommendations((select first_slot+interval '1 hour' from rec_clock));
+select private.send_city_recommendations((select first_slot+interval '90 minutes' from rec_clock));
 select ok((select title='Newly discovered concert' and body like '행사예요. %같이 갈 사람!?' from public.notifications where user_id='13800000-0000-0000-0000-000000000002' and route like '%new-event%'),'a newly observed event gets a factual description without claiming upstream publication time');
-select private.send_city_recommendations((select first_slot+interval '1 hour 5 minutes' from rec_clock));
+select private.send_city_recommendations((select first_slot+interval '95 minutes' from rec_clock));
 select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002' and route like '%new-event%'),1,'the event is not repeated');
 
 insert into public.posts(id,author_id,city_id,tag_id,title,body,view_count,created_at)
@@ -123,34 +124,35 @@ select is((select count(*)::int from public.notifications where target_id='13810
 insert into public.post_views(post_id,user_id,created_at)
 select '13810000-0000-0000-0000-000000000100',r.id,first_slot+interval '110 minutes'
 from public.profiles r cross join rec_clock where r.id in ('13800000-0000-0000-0000-000000000002','13800000-0000-0000-0000-000000000003','13800000-0000-0000-0000-000000000004');
-select private.send_city_recommendations((select first_slot+interval '2 hours' from rec_clock));
-select ok((select body like '지금 반응이 빠르게 오르는 글%' from public.notifications
+select private.send_city_recommendations((select first_slot+interval '3 hours' from rec_clock));
+select ok((select body='Adjusted counter' from public.notifications
  where user_id='13800000-0000-0000-0000-000000000002' and target_id='13810000-0000-0000-0000-000000000100'),'real recent acceleration produces a rising-post notification');
 insert into public.posts(id,author_id,city_id,tag_id,title,body,created_at)
 select '13810000-0000-0000-0000-000000000101','13800000-0000-0000-0000-000000000001','vancouver',4,
- 'New cafe','Real new cafe introduction',first_slot+interval '125 minutes' from rec_clock;
+ 'New cafe','Real new cafe introduction',first_slot+interval '210 minutes' from rec_clock;
 select private.send_city_recommendations((select first_slot+interval '2 hours 10 minutes' from rec_clock));
 select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002'),3,'recommendations do not arrive in a short burst');
 insert into public.blocks(blocker_id,blocked_id) values('13800000-0000-0000-0000-000000000002','13800000-0000-0000-0000-000000000001');
-select private.send_city_recommendations((select first_slot+interval '2 hours 40 minutes' from rec_clock));
+select private.send_city_recommendations((select first_slot+interval '4 hours 30 minutes' from rec_clock));
 select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002'),3,'blocked place authors are excluded');
 delete from public.blocks where blocker_id='13800000-0000-0000-0000-000000000002';
-select private.send_city_recommendations((select first_slot+interval '2 hours 45 minutes' from rec_clock));
-select ok((select body like '새로 올라온 맛집·레스토랑%' from public.notifications
+select private.send_city_recommendations((select first_slot+interval '4 hours 35 minutes' from rec_clock));
+select ok((select body='새 맛집 이야기가 올라왔어요. New cafe' from public.notifications
  where user_id='13800000-0000-0000-0000-000000000002' and target_id='13810000-0000-0000-0000-000000000101'),'a fresh place post produces its own recommendation');
 insert into public.posts(id,author_id,city_id,tag_id,title,body,created_at)
 select ('13810000-0000-0000-0000-'||lpad((200+i)::text,12,'0'))::uuid,'13800000-0000-0000-0000-000000000001','vancouver',4,
  'Fresh cafe '||i,'Another actual new place',first_slot+make_interval(hours=>4+i) from rec_clock cross join generate_series(1,3) i;
 select private.send_city_recommendations((select first_slot+interval '4 hours' from rec_clock));
 select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002'),4,'event alerts reserve capacity for the remaining regular slots');
-select private.send_city_recommendations((select first_slot+interval '5 hours' from rec_clock));
+select private.send_city_recommendations((select first_slot+interval '6 hours' from rec_clock));
+select private.send_city_recommendations((select first_slot+interval '7 hours 30 minutes' from rec_clock));
 select private.send_city_recommendations((select first_slot+interval '9 hours' from rec_clock));
-select private.send_city_recommendations((select first_slot+interval '10 hours' from rec_clock));
-select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002'),6,'general recommendations stop at six per local day');
+select private.send_city_recommendations((select first_slot+interval '10 hours 30 minutes' from rec_clock));
+select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002'),8,'general recommendations stop at eight per local day');
 select is((select count(distinct n.id)::int from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id
- where n.user_id='13800000-0000-0000-0000-000000000002' and n.category in ('trending','city_food','city_places')),6,'all six recommendations enter the existing queue');
+ where n.user_id='13800000-0000-0000-0000-000000000002' and n.category in ('trending','city_food','city_places')),8,'all eight recommendations enter the existing queue');
 select private.send_city_recommendations((select first_slot+interval '12 hours' from rec_clock));
-select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002'),6,'local quiet hours stop discovery notifications');
+select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002'),8,'local quiet hours stop discovery notifications');
 update private.trending_config set enabled=false where id;
 select is(private.send_city_recommendations((select first_slot+interval '24 hours' from rec_clock)),0,'operator disable stops recommendations');
 update private.trending_config set enabled=true where id;
@@ -176,7 +178,7 @@ insert into public.posts(id,author_id,city_id,tag_id,title,body) values
 update private.discovery_post_queue set enqueued_at=clock_timestamp() where post_id='13810000-0000-0000-0000-000000000901';
 select private.process_discovery_posts(500);
 select is((select count(distinct n.id)::int from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id
- where n.user_id='13800000-0000-0000-0000-000000000002' and n.kind='interest_post'),1,'explicit interest-topic new posts remain immediate and separate');
+ where n.user_id='13800000-0000-0000-0000-000000000002' and n.kind='interest_post'),0,'interest-topic recommendations also respect the shared push budget and slots');
 select ok(not has_function_privilege('authenticated','private.send_city_recommendations(timestamptz)','execute'),'members cannot broadcast recommendations');
 select ok(not has_function_privilege('service_role','private.send_city_recommendations(timestamptz)','execute'),'only the database-owned job can start the generator');
 
@@ -201,23 +203,24 @@ delete from public.notifications where user_id::text like '13800000-%';
 delete from public.blocks where blocker_id='13800000-0000-0000-0000-000000000002';
 insert into public.posts(id,author_id,city_id,tag_id,title,body)
 select ('13810000-0000-0000-0000-'||lpad((1000+i)::text,12,'0'))::uuid,'13800000-0000-0000-0000-000000000001','vancouver',1,
- 'Queue target '||i,'Another readable recommendation' from generate_series(0,5) i;
+ 'Queue target '||i,'Another readable recommendation' from generate_series(0,7) i;
 insert into public.notifications(user_id,kind,target_type,target_id,body,route,created_at)
 select '13800000-0000-0000-0000-000000000002','trending_post','post',('13810000-0000-0000-0000-'||lpad((1000+i)::text,12,'0'))::uuid,
- 'Already queued recommendation','/post/13810000-0000-0000-0000-'||lpad((1000+i)::text,12,'0'),first_slot+make_interval(hours=>i) from rec_clock cross join generate_series(0,5) i;
+ 'Already queued recommendation','/post/13810000-0000-0000-0000-'||lpad((1000+i)::text,12,'0'),first_slot+make_interval(mins=>90*i) from rec_clock cross join generate_series(0,7) i;
 insert into public.notifications(user_id,kind,target_type,target_id,body,route,created_at)
 select '13800000-0000-0000-0000-000000000002','trending_meetup','post','13810000-0000-0000-0000-000000000c02',
- 'Legacy meetup discovery','/post/13810000-0000-0000-0000-000000000c02',first_slot+interval '5 hours 1 minute' from rec_clock;
+ 'Legacy meetup discovery','/post/13810000-0000-0000-0000-000000000c02',first_slot+interval '10 hours 31 minutes' from rec_clock;
 select is((select count(distinct n.id)::int from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id
- where n.user_id='13800000-0000-0000-0000-000000000002' and n.kind in ('trending_post','trending_meetup')),6,'legacy meetup discovery shares the member recommendation cap');
+ where n.user_id='13800000-0000-0000-0000-000000000002' and n.kind in ('trending_post','trending_meetup')),8,'legacy meetup discovery shares the member recommendation cap');
 
 -- Sending uses the real current clock, independently of the simulated recommendation slots.
+update private.push_devices set timezone=(select name from pg_timezone_names where private.recommendation_time(now(),name) and private.recommendation_time(now()-interval '2 minutes',name) order by name limit 1) where user_id::text like '13800000-%';
 delete from public.notifications where user_id::text like '13800000-%';
 insert into public.notifications(user_id,kind,target_type,target_id,body,route,created_at) values
 ('13800000-0000-0000-0000-000000000002','trending_post','post','13810000-0000-0000-0000-000000000c01','Delayed recommendation1','/post/13810000-0000-0000-0000-000000000c01',now()-interval '65 minutes'),
 ('13800000-0000-0000-0000-000000000002','trending_post','post','13810000-0000-0000-0000-000000000c02','Delayed recommendation2','/post/13810000-0000-0000-0000-000000000c02',now()-interval '31 minutes');
-update private.trending_config set quiet_start_hour=extract(hour from now() at time zone 'America/Vancouver')::int,
- quiet_end_hour=mod(extract(hour from now() at time zone 'America/Vancouver')::int+1,24) where id;
+update private.trending_config set quiet_start_hour=extract(hour from now() at time zone private.recommendation_timezone('13800000-0000-0000-0000-000000000002'))::int,
+ quiet_end_hour=mod(extract(hour from now() at time zone private.recommendation_timezone('13800000-0000-0000-0000-000000000002'))::int+1,24) where id;
 select is((select count(*)::int from public.claim_push_notifications('send',100)
  where user_id='13800000-0000-0000-0000-000000000002' and category='trending'),0,'pending recommendations do not dispatch during local quiet hours');
 delete from public.notifications where user_id::text like '13800000-%';
@@ -226,8 +229,8 @@ insert into public.notifications(user_id,kind,target_type,target_id,body,route)
 values('13800000-0000-0000-0000-000000000002','trending_post','post','13810000-0000-0000-0000-000000000c01','Fresh quiet-hour recommendation','/post/13810000-0000-0000-0000-000000000c01');
 select is((select count(*)::int from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id
  where n.body='Fresh quiet-hour recommendation'),1,'the quiet-hour send check starts with a genuinely pending recommendation');
-update private.trending_config set quiet_start_hour=extract(hour from now() at time zone 'America/Vancouver')::int,
- quiet_end_hour=mod(extract(hour from now() at time zone 'America/Vancouver')::int+1,24) where id;
+update private.trending_config set quiet_start_hour=extract(hour from now() at time zone private.recommendation_timezone('13800000-0000-0000-0000-000000000002'))::int,
+ quiet_end_hour=mod(extract(hour from now() at time zone private.recommendation_timezone('13800000-0000-0000-0000-000000000002'))::int+1,24) where id;
 select is((select count(*)::int from public.claim_push_notifications('send',100)
  where user_id='13800000-0000-0000-0000-000000000002' and category='trending'),0,'fresh recommendations also respect actual send-time quiet hours');
 insert into public.notifications(user_id,kind,actor_id,target_type,target_id,body,route)
@@ -237,11 +240,18 @@ select is((select count(*)::int from public.claim_push_notifications('send',100)
 
 delete from public.notifications where user_id::text like '13800000-%';
 update private.trending_config set quiet_start_hour=0,quiet_end_hour=0 where id;
-insert into private.push_devices(user_id,session_id,token)
-values('13800000-0000-0000-0000-000000000002','13800000-0000-0000-0000-000000000002','ExpoPushToken[recommendation_fixture_second_device]');
-insert into public.notifications(user_id,kind,target_type,target_id,body,route,created_at) values
-('13800000-0000-0000-0000-000000000002','trending_post','post','13810000-0000-0000-0000-000000000c01','First batch target','/post/13810000-0000-0000-0000-000000000c01',now()-interval '35 minutes'),
-('13800000-0000-0000-0000-000000000002','trending_post','post','13810000-0000-0000-0000-000000000c02','Second batch target','/post/13810000-0000-0000-0000-000000000c02',now()-interval '1 minute');
+insert into private.push_devices(user_id,session_id,token,timezone,timezone_updated_at)
+select '13800000-0000-0000-0000-000000000002','13800000-0000-0000-0000-000000000002','ExpoPushToken[recommendation_fixture_second_device]',
+ private.recommendation_timezone('13800000-0000-0000-0000-000000000002'),now();
+-- Model pre-existing queued work independently of the new creation-time policy.
+alter table public.notifications disable trigger user;
+insert into public.notifications(user_id,kind,category,city_id,target_type,target_id,body,route,created_at) values
+('13800000-0000-0000-0000-000000000002','trending_post','trending','vancouver','post','13810000-0000-0000-0000-000000000c01','First batch target','/post/13810000-0000-0000-0000-000000000c01',now()),
+('13800000-0000-0000-0000-000000000002','trending_post','trending','vancouver','post','13810000-0000-0000-0000-000000000c02','Second batch target','/post/13810000-0000-0000-0000-000000000c02',now());
+alter table public.notifications enable trigger user;
+insert into private.push_delivery_queue(notification_id,device_id)
+select n.id,d.id from public.notifications n join private.push_devices d on d.user_id=n.user_id
+where n.user_id='13800000-0000-0000-0000-000000000002';
 -- Model a backlog with fresh content: creation guards cannot substitute for send guards.
 update public.notifications set created_at=now()-interval '1 minute' where user_id='13800000-0000-0000-0000-000000000002';
 create temporary table first_claim as select * from public.claim_push_notifications('send',100);
@@ -261,24 +271,31 @@ select is((select count(*)::int from public.claim_push_notifications('receipt',1
 
 delete from public.notifications where user_id::text like '13800000-%';
 update private.trending_config set enabled=true where id;
--- Put the test city at local noon so six earlier claims fit in this day at any UTC test time.
-update public.cities set timezone='Etc/GMT'||case when extract(hour from now() at time zone 'UTC')::int>=12 then '+' else '-' end
- ||abs(extract(hour from now() at time zone 'UTC')::int-12)::text where id='vancouver';
-insert into public.notifications(user_id,kind,target_type,target_id,body,route,created_at)
-select '13800000-0000-0000-0000-000000000002','trending_post','post',('13810000-0000-0000-0000-'||lpad((1000+i)::text,12,'0'))::uuid,
- 'Earlier accepted target','/post/13810000-0000-0000-0000-'||lpad((1000+i)::text,12,'0'),now()-make_interval(hours=>i+1) from generate_series(0,5) i;
-update private.push_delivery_queue set status='provider_accepted',first_attempt_at=now()-interval '1 hour'
-where notification_id in (select id from public.notifications where user_id='13800000-0000-0000-0000-000000000002');
-insert into public.notifications(user_id,kind,target_type,target_id,body,route,created_at)
-values('13800000-0000-0000-0000-000000000002','trending_meetup','post','13810000-0000-0000-0000-000000000c01','Seventh send target','/post/13810000-0000-0000-0000-000000000c01',now());
+-- Existing attempts must spend the same user budget across all devices.
+alter table public.notifications disable trigger user;
+insert into public.notifications(user_id,kind,category,city_id,target_type,target_id,body,route,created_at)
+select '13800000-0000-0000-0000-000000000002','trending_post','trending','vancouver','post',('13810000-0000-0000-0000-'||lpad((1000+i)::text,12,'0'))::uuid,
+ 'Earlier accepted target','/post/13810000-0000-0000-0000-'||lpad((1000+i)::text,12,'0'),now()-make_interval(hours=>i+1) from generate_series(0,7) i;
+insert into private.push_delivery_queue(notification_id,device_id,status,first_attempt_at)
+select n.id,d.id,'provider_accepted',now()-interval '2 hours' from public.notifications n join private.push_devices d on d.user_id=n.user_id
+where n.user_id='13800000-0000-0000-0000-000000000002';
+insert into public.notifications(user_id,kind,category,city_id,target_type,target_id,body,route,created_at)
+values('13800000-0000-0000-0000-000000000002','trending_meetup','meetups','vancouver','post','13810000-0000-0000-0000-000000000c01','Ninth send target','/post/13810000-0000-0000-0000-000000000c01',now());
+alter table public.notifications enable trigger user;
 insert into private.push_delivery_queue(notification_id,device_id)
 select n.id,d.id from public.notifications n join private.push_devices d on d.user_id=n.user_id
-where n.body='Seventh send target' on conflict do nothing;
+where n.body='Ninth send target' on conflict do nothing;
 select is((select count(*)::int from public.claim_push_notifications('send',100)
- where user_id='13800000-0000-0000-0000-000000000002'),0,'actual local-day send budget counts six distinct recommendations across devices');
+ where user_id='13800000-0000-0000-0000-000000000002'),0,'actual local-day send budget counts eight distinct recommendations across devices');
 delete from public.notifications where user_id::text like '13800000-%';
+alter table public.notifications disable trigger user;
+insert into public.notifications(user_id,kind,category,city_id,target_type,target_id,body,route,created_at) values
+('13800000-0000-0000-0000-000000000002','trending_post','trending','vancouver','post','13810000-0000-0000-0000-000000000c01','Older target','/post/13810000-0000-0000-0000-000000000c01',now()-interval '3 hours');
+alter table public.notifications enable trigger user;
+insert into private.push_delivery_queue(notification_id,device_id)
+select n.id,d.id from public.notifications n join private.push_devices d on d.user_id=n.user_id
+where n.user_id='13800000-0000-0000-0000-000000000002' limit 1;
 insert into public.notifications(user_id,kind,target_type,target_id,body,route,created_at) values
-('13800000-0000-0000-0000-000000000002','trending_post','post','13810000-0000-0000-0000-000000000c01','Older target','/post/13810000-0000-0000-0000-000000000c01',now()-interval '3 hours'),
 ('13800000-0000-0000-0000-000000000002','trending_meetup','post','13810000-0000-0000-0000-000000000c01','Duplicate legacy target','/post/13810000-0000-0000-0000-000000000c01',now());
 select is((select count(distinct q.notification_id)::int from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id
  where n.user_id='13800000-0000-0000-0000-000000000002'),1,'legacy and current recommendations do not repeat the same target');

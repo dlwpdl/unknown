@@ -46,13 +46,13 @@ $$;
 create temporary table preview_claim as select * from public.claim_push_notifications('send',100) with no data;
 
 select pg_temp.preview_message() as message_id \gset
-select is((select body from public.notifications where target_id=:'message_id'),'메시지가 도착했습니다','the notification list stores no raw message or sender preview');
+select is((select body from public.notifications where target_id=:'message_id'),'메시지가 도착했어요.','the notification list stores no raw message or sender preview');
 select ok(exists(select 1 from public.safety_review_queue where target_type='message' and target_id=:'message_id'),'all-message safety monitoring still receives the original message');
 update public.notifications set body='이전 발신자: 오래된 비공개 본문' where target_id=:'message_id';
 insert into preview_claim select * from public.claim_push_notifications() where user_id='71440000-0000-0000-0000-000000000002';
 select is((select count(*)::int from preview_claim),1,'an eligible OFF message is still sent');
-select is((select body from preview_claim),'메시지가 도착했습니다','OFF sends only the generic message text');
-update public.notifications set body='메시지가 도착했습니다' where target_id=:'message_id';
+select is((select body from preview_claim),'메시지가 도착했어요.','OFF sends only the generic message text');
+update public.notifications set body='메시지가 도착했어요.' where target_id=:'message_id';
 select is((select route from preview_claim),'/chat?conversationId=71440000-0000-0000-0002-000000000001','generic pushes retain the actual accessible conversation');
 select is((select count(*)::int from public.claim_push_notifications()),0,'the existing lease still prevents a duplicate send');
 
@@ -67,7 +67,7 @@ truncate preview_claim;
 insert into preview_claim select * from public.claim_push_notifications() where user_id='71440000-0000-0000-0000-000000000002';
 select is((select body from preview_claim),'채팅친구: 지금 바뀐 실제 본문','ON reads the current actual message at claim time');
 select is((select route from preview_claim),'/chat?conversationId=71440000-0000-0000-0002-000000000001','the conversation route comes from the message, not a queued route');
-select is((select body from public.notifications where target_id=:'message_id'),'메시지가 도착했습니다','a successful preview never persists raw text in notifications');
+select is((select body from public.notifications where target_id=:'message_id'),'메시지가 도착했어요.','a successful preview never persists raw text in notifications');
 
 select public.complete_push_notification(id,lease_id,'retry',null,'EXPO_UNAVAILABLE') from preview_claim;
 update private.push_delivery_queue set next_attempt_at=now() where notification_id in (select notification_id from preview_claim);
@@ -76,7 +76,7 @@ select public.update_notification_preferences('{"message_preview":false}');
 reset role;
 truncate preview_claim;
 insert into preview_claim select * from public.claim_push_notifications() where user_id='71440000-0000-0000-0000-000000000002';
-select is((select body from preview_claim),'메시지가 도착했습니다','withdrawing preview before a retry suppresses the actual body');
+select is((select body from preview_claim),'메시지가 도착했어요.','withdrawing preview before a retry suppresses the actual body');
 select public.complete_push_notification(id,lease_id,'failed') from preview_claim;
 
 set local role authenticated;
@@ -85,20 +85,20 @@ reset role;
 select pg_temp.preview_message('이 사진의 원문은 보내면 안 돼요','image') as photo_id \gset
 truncate preview_claim;
 insert into preview_claim select * from public.claim_push_notifications() where user_id='71440000-0000-0000-0000-000000000002';
-select is((select body from preview_claim),'채팅친구: 사진을 보냈습니다','photos use a generic image label');
+select is((select body from preview_claim),'채팅친구: 사진을 보냈어요.','photos use a generic image label');
 select ok(not exists(select 1 from preview_claim where body like '%원문%' or to_jsonb(preview_claim)::text like '%.webp%'),'photo bodies and storage paths never enter a claim');
 select public.complete_push_notification(id,lease_id,'ticket','71440000-0000-4000-8000-000000000001') from preview_claim;
 update private.push_delivery_queue set next_attempt_at=now() where notification_id in (select notification_id from preview_claim);
 truncate preview_claim;
 insert into preview_claim select * from public.claim_push_notifications('receipt') where user_id='71440000-0000-0000-0000-000000000002';
 select is((select token from preview_claim),null::text,'receipts keep the existing no-token contract');
-select is((select body from preview_claim),'메시지가 도착했습니다','receipt claims never reconstruct private previews');
+select is((select body from preview_claim),'메시지가 도착했어요.','receipt claims never reconstruct private previews');
 select public.complete_push_notification(id,lease_id,'provider_accepted') from preview_claim;
 
 select pg_temp.preview_message('위치 원문은 보내지 않아요','location');
 truncate preview_claim;
 insert into preview_claim select * from public.claim_push_notifications() where user_id='71440000-0000-0000-0000-000000000002';
-select is((select body from preview_claim),'채팅친구: 위치를 보냈습니다','location attachments disclose neither coordinates nor raw body');
+select is((select body from preview_claim),'채팅친구: 위치를 보냈어요.','location attachments disclose neither coordinates nor raw body');
 select public.complete_push_notification(id,lease_id,'failed') from preview_claim;
 
 select pg_temp.preview_message(E'첫 줄\n\t둘째 줄 '||repeat('가',110));
