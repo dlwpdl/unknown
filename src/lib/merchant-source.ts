@@ -50,6 +50,15 @@ export function merchantContactLinks(value: string): { text: string; href?: stri
   return parts;
 }
 
+export function merchantPrimaryContactLink(value: string): { text: string; href: string } | null {
+  const links = merchantContactLinks(value).filter((part): part is { text: string; href: string } => !!part.href);
+  const instagram = links.find((part) => /^(?:www\.|m\.)?instagram\.com$/i.test(new URL(part.href).hostname));
+  const link = instagram ?? links[0];
+  if (!link) return null;
+  const url = new URL(link.href), handle = url.pathname.split('/').filter(Boolean)[0];
+  return { href: link.href, text: instagram ? handle && !['p', 'reel', 'reels', 'stories', 'explore'].includes(handle) ? `@${handle}` : 'Instagram' : url.hostname.replace(/^www\./, '') };
+}
+
 // Correlation only; memory-only and never an authentication credential.
 const session = `merchant-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 export function merchantEventId() {

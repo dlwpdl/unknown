@@ -1,7 +1,16 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { merchantReportText, merchantReportHtml, merchantMapsUrl, merchantAddressCity, saveMerchant } from '../src/lib/admin-merchants.ts';
+import { merchantReportText, merchantReportHtml, merchantMapsUrl, merchantAddressCity, saveMerchant, loadMerchants } from '../src/lib/admin-merchants.ts';
 import { loadMerchantSource, merchantSourceActionLabel, safeMerchantSourceUrl, trackMerchantSourceClick, trackPublicMerchantSourceClick } from '../src/lib/merchant-source.ts';
+
+test('directory filters and sorting are sent to the server before pagination; legacy callers retain their signature', async () => {
+  const calls = [], client = { rpc: async (name, args) => { calls.push({ name, args }); return { data: { merchants: [], more: false, total: 0 }, error: null }; } };
+  const filters = { sort: 'name_desc', status: 'paid', consent: 'granted', city_id: 'vancouver', record_kind: 'business', account: 'connected' };
+  await loadMerchants(client, ' cafe ', 50, filters);
+  assert.deepEqual(calls[0], { name: 'get_admin_merchants', args: { p_search: 'cafe', p_offset: 50, p_filters: filters } });
+  await loadMerchants(client, '', 0);
+  assert.deepEqual(calls[1], { name: 'get_admin_merchants', args: { p_search: '', p_offset: 0 } });
+});
 
 test('Craigslist inquiry buttons match the approved copy while social profile buttons retain their label', () => {
   assert.equal(merchantSourceActionLabel('https://www.craigslist.org/view/d/warehouse/example'), '업체에 직접 문의');

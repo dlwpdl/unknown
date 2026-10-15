@@ -8,14 +8,15 @@ import { CITIES, TAGS } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
 import { AdminMerchantPost } from './admin-merchant-posts';
 import { AdminMerchantReceiptQueue } from './admin-merchant-receipt-queue';
-import { merchantContactLinks, merchantEventId } from '@/lib/merchant-source';
+import { AdminFilterBar, AdminFilterReset, AdminSelect } from './admin-table-controls';
+import { merchantContactLinks, merchantEventId, merchantPrimaryContactLink } from '@/lib/merchant-source';
 import { setAdminMerchantOwner } from '@/lib/admin-merchants';
 import { loadAdminProfilesByIds } from '@/lib/admin-data';
 import { MerchantWorkspace } from '@/components/merchant-workspace';
 import {
   createMerchantPost, deleteMerchants, linkMerchantPost, loadMerchant, loadMerchants, merchantReportHtml,
-  merchantReportText, merchantMapsUrl, merchantAddressCity, saveMerchant, saveMerchantReport,
-  type Merchant, type MerchantDetail, type MerchantReport,
+  merchantReportText, merchantMapsUrl, merchantAddressCity, merchantRegisteredDate, MERCHANT_DEFAULT_FILTERS, saveMerchant, saveMerchantReport,
+  type Merchant, type MerchantDetail, type MerchantReport, type MerchantDirectoryFilters,
 } from '@/lib/admin-merchants';
 
 const STATUS = { lead: '연락 예정', trial: '무료 운영', paid: '유료 운영', paused: '중단' };
@@ -45,7 +46,7 @@ export function AdminMerchantsView({ refreshSignal, onUser, localPreview = false
   const { play } = useInteractionFeedback();
   const [input, setInput] = useState(''), [query, setQuery] = useState(''), [page, setPage] = useState(0);
   const [revision, setRevision] = useState(0), [selected, setSelected] = useState<string | null>(null);
-  const [list, setList] = useState<{ key: string; rows: Merchant[]; more: boolean; owners: Record<string, string> } | null>(null);
+  const [list, setList] = useState<{ key: string; rows: Merchant[]; more: boolean; total?: number; owners: Record<string, string> } | null>(null);
   const [editor, setEditor] = useState<MerchantInput | null>(null);
   const [period, setPeriod] = useState(periodFor);
   const [response, setResponse] = useState<{ key: string; data: MerchantDetail } | null>(null);
@@ -66,7 +67,9 @@ export function AdminMerchantsView({ refreshSignal, onUser, localPreview = false
   const dialog = useRef<HTMLDialogElement>(null), originalEditor = useRef<MerchantInput | null>(null);
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
   const [listRevision, setListRevision] = useState(0);
-  const listKey = `${query}:${page}:${revision}:${refreshSignal}:${listRevision}`;
+  const [filters, setFilters] = useState<MerchantDirectoryFilters>(MERCHANT_DEFAULT_FILTERS);
+  const appliedFilters = Object.entries(filters).filter(([key, value]) => key !== 'sort' && value !== '').length;
+  const listKey = `${query}:${page}:${revision}:${refreshSignal}:${listRevision}:${JSON.stringify(filters)}`;
   const detailKey = `${selected}:${period.start}:${period.end}:${revision}:${refreshSignal}`;
   const currentList = list?.key === listKey ? list : null;
   const checkedRows = currentList?.rows.filter((merchant) => checkedIds.includes(merchant.id)) ?? [];
@@ -83,18 +86,18 @@ export function AdminMerchantsView({ refreshSignal, onUser, localPreview = false
 
   useEffect(() => {
     let active = true;
-    void loadMerchants(supabase, query, page * 50)
-      .then(async ({ merchants, more }) => {
+    void loadMerchants(supabase, query, page * 50, filters)
+      .then(async ({ merchants, more, total }) => {
         let owners: Record<string, string> = {};
         try {
           const profiles = await loadAdminProfilesByIds(supabase, merchants.map((m) => m.owner_id ?? ''));
           owners = Object.fromEntries(profiles.map((profile) => [profile.id, profile.nickname]));
         } catch { /* Connection state stays visible when a profile name cannot be read. */ }
-        if (active) { setList({ key: listKey, rows: merchants, more, owners }); setCheckedIds([]); }
+        if (active) { setList({ key: listKey, rows: merchants, more, total, owners }); setCheckedIds([]); }
       })
       .catch((e) => { if (active) setError(errorMessage(e)); });
     return () => { active = false; };
-  }, [listKey, page, query]);
+  }, [listKey, page, query, filters]);
   useEffect(() => {
     if (!selected) return;
     let active = true;
@@ -137,6 +140,7 @@ export function AdminMerchantsView({ refreshSignal, onUser, localPreview = false
   function hasUnsavedChanges() { return !!(ownerDirty || dirty || postId || source || title || body || (editor && JSON.stringify(editor) !== JSON.stringify(originalEditor.current))); }
   function canReplaceEditor() { return !hasUnsavedChanges() || window.confirm('저장하지 않은 내용이 있습니다. 다른 업체를 열면 수정 내용이 사라집니다. 계속할까요?'); }
   function closePanel() { play('selection'); setPanelOpen(false); }
+  function changeFilters(next: MerchantDirectoryFilters) { setCheckedIds([]); setPage(0); setError(''); setFilters(next); }
   function removeMerchants(merchants: Merchant[]) {
     if (!merchants.length || busyRef.current) return;
     play('warning');
@@ -188,25 +192,37 @@ export function AdminMerchantsView({ refreshSignal, onUser, localPreview = false
     {error && !panelOpen && <div role="alert" className="merchant-message merchant-error">{error}<button disabled={busy} onClick={() => { play('selection'); setError(''); setListRevision((v) => v + 1); if (!hasUnsavedChanges()) setRevision((v) => v + 1); }}>다시 불러오기</button></div>}
     {notice && !panelOpen && <p role="status" className="merchant-message">{notice}</p>}
     <section className="merchant-directory" aria-label="업체 목록">
-      <form className="merchant-search" onSubmit={(e) => { e.preventDefault(); play('selection'); setCheckedIds([]); setPage(0); setQuery(input.trim()); setRevision((v) => v + 1); }}>
+      <div className="merchant-directory-toolbar"><form className="merchant-search" onSubmit={(e) => { e.preventDefault(); play('selection'); setCheckedIds([]); setPage(0); setQuery(input.trim()); setRevision((v) => v + 1); }}>
         <input aria-label="업체 이름 또는 연락처 검색" placeholder="업체 이름 · 연락처 검색" maxLength={120} onFocus={() => play('selection')} value={input} onChange={(e) => setInput(e.target.value)} /><button disabled={busy}>검색</button></form>
+        <AdminSelect label="정렬" value={filters.sort} options={[{ value: 'name_asc', label: '이름 오름차순' }, { value: 'name_desc', label: '이름 내림차순' }, { value: 'created_desc', label: '최근 등록순' }, { value: 'created_asc', label: '오래된 등록순' }]} onChange={sort => changeFilters({ ...filters, sort: sort as MerchantDirectoryFilters['sort'] })} />
+        <AdminFilterBar applied={appliedFilters}>
+          <AdminSelect label="게시 지역" value={filters.city_id} options={[{ value: '', label: '전체 지역' }, ...CITIES.map(c => ({ value: c.id, label: c.name }))]} onChange={city_id => changeFilters({ ...filters, city_id })} />
+          <AdminSelect label="운영 상태" value={filters.status} options={[{ value: '', label: '전체 상태' }, ...Object.entries(STATUS).map(([value, label]) => ({ value, label }))]} onChange={status => changeFilters({ ...filters, status: status as MerchantDirectoryFilters['status'] })} />
+          <AdminSelect label="게시 허락" value={filters.consent} options={[{ value: '', label: '전체' }, ...Object.entries(CONSENT).map(([value, label]) => ({ value, label }))]} onChange={consent => changeFilters({ ...filters, consent: consent as MerchantDirectoryFilters['consent'] })} />
+          <AdminSelect label="등록 종류" value={filters.record_kind} options={[{ value: '', label: '전체 종류' }, { value: 'business', label: '확인된 업체' }, { value: 'source', label: '매물·홍보 대리등록' }]} onChange={record_kind => changeFilters({ ...filters, record_kind: record_kind as MerchantDirectoryFilters['record_kind'] })} />
+          <AdminSelect label="글링 계정" value={filters.account} options={[{ value: '', label: '전체' }, { value: 'connected', label: '연결됨' }, { value: 'unconnected', label: '미연결' }]} onChange={account => changeFilters({ ...filters, account: account as MerchantDirectoryFilters['account'] })} />
+          <AdminFilterReset disabled={!appliedFilters && !query && !input} onReset={() => { changeFilters({ ...MERCHANT_DEFAULT_FILTERS, sort: filters.sort }); setInput(''); setQuery(''); }} />
+        </AdminFilterBar>
+      </div>
       <div className="merchant-batch-actions" aria-label="선택한 업체 관리">
         <label className="merchant-select"><input type="checkbox" aria-label="현재 페이지 전체 선택" checked={allChecked} disabled={busy || !currentList?.rows.length} ref={(input) => { if (input) input.indeterminate = checkedRows.length > 0 && !allChecked; }} onChange={(event) => { play('selection'); setCheckedIds(event.target.checked ? currentList!.rows.map((merchant) => merchant.id) : []); }} />현재 페이지 전체 선택</label>
         <span role="status" aria-live="polite">{checkedRows.length}개 선택</span>
         <button type="button" disabled={busy || !checkedRows.length} onClick={() => { play('selection'); setCheckedIds([]); }}>선택 해제</button>
         <button type="button" className="merchant-danger" disabled={busy || !checkedRows.length} onClick={() => removeMerchants(checkedRows)}>선택 삭제</button>
       </div>
-      {!currentList ? <p className="merchant-empty" role="status">{error ? '목록을 불러오지 못했습니다.' : '업체를 불러오는 중…'}</p> : !currentList.rows.length ? <div className="merchant-empty"><h2>{query ? '검색 결과가 없습니다' : '첫 업체를 등록해 주세요'}</h2><p>{query ? '다른 이름이나 연락처로 검색해 주세요.' : '업체가 게시를 허락하면 업체 계정·웹사이트 주소와 함께 글을 연결할 수 있습니다.'}</p></div> : <div className="merchant-directory-scroll" tabIndex={0} aria-label="업체 현황 표 · 가로로 스크롤할 수 있습니다"><table className="merchant-directory-table">
-        <caption className="merchant-table-caption">현재 목록 {currentList.rows.length}개{currentList.more ? ' · 다음 페이지에 더 있습니다' : ''}</caption>
-        <thead><tr><th scope="col">선택</th><th scope="col">업체 · 업종</th><th scope="col">소재지</th><th scope="col">글링 계정</th><th scope="col">담당자 · 연락처</th><th scope="col">운영 상태</th><th scope="col">게시 허락</th><th scope="col">글</th><th scope="col">보고서</th><th scope="col">관리</th></tr></thead>
-        <tbody>{currentList.rows.map((m) => <tr key={m.id} data-selected={selected === m.id} data-checked={checkedIds.includes(m.id)} onClick={(e) => { if (!busy && !(e.target as HTMLElement).closest('a,button,input,label')) selectMerchant(m); }}>
+      {!currentList ? <p className="merchant-empty" role="status">{error ? '목록을 불러오지 못했습니다.' : '업체를 불러오는 중…'}</p> : !currentList.rows.length ? <div className="merchant-empty"><h2>{query || appliedFilters ? '조건에 맞는 업체가 없습니다' : '첫 업체를 등록해 주세요'}</h2><p>{query || appliedFilters ? '검색어나 필터를 바꿔 주세요.' : '업체가 게시를 허락하면 업체 계정·웹사이트 주소와 함께 글을 연결할 수 있습니다.'}</p></div> : <div className="merchant-directory-scroll" tabIndex={0} aria-label="업체 현황 표 · 가로로 스크롤할 수 있습니다"><table className="merchant-directory-table">
+        <caption className="merchant-table-caption">{currentList.total !== undefined ? `조건에 맞는 업체 ${currentList.total}개 · ` : ''}현재 목록 {currentList.rows.length}개{currentList.more ? ' · 다음 페이지에 더 있습니다' : ''}</caption>
+        <thead><tr><th scope="col">선택</th><th scope="col">업체 · 업종</th><th scope="col">대표 SNS · 링크</th><th scope="col">등록일</th><th scope="col">소재지</th><th scope="col">글링 계정</th><th scope="col">운영 상태</th><th scope="col">게시 허락</th><th scope="col">글</th><th scope="col">보고서</th><th scope="col">관리</th></tr></thead>
+        <tbody>{currentList.rows.map((m) => { const primaryLink = merchantPrimaryContactLink(m.contact); return <tr key={m.id} data-selected={selected === m.id} data-checked={checkedIds.includes(m.id)} onClick={(e) => { if (!busy && !(e.target as HTMLElement).closest('a,button,input,label')) selectMerchant(m); }}>
           <td className="merchant-select-cell"><label className="merchant-select"><input type="checkbox" aria-label={`${m.name} 선택`} disabled={busy} checked={checkedIds.includes(m.id)} onChange={(event) => { play('selection'); setCheckedIds((ids) => event.target.checked ? [...ids, m.id] : ids.filter((id) => id !== m.id)); }} /></label></td>
           <th scope="row"><button disabled={busy} aria-label={`${m.name} 활동과 정보 보기`} aria-pressed={selected === m.id} onClick={() => selectMerchant(m)}><strong>{m.name}</strong><small>{m.record_kind === 'source' ? '대리등록 · 회사 프로필 없음' : m.industry || '확인된 업체'}</small></button></th>
+          <td data-label="대표 SNS·링크" className="merchant-contact">{primaryLink ? <a className="merchant-contact-link" href={primaryLink.href} target="_blank" rel="noopener noreferrer" title={primaryLink.href} aria-label={`${m.name} ${primaryLink.text} 열기 (새 탭)`} onClick={() => play('selection')}><span>{primaryLink.text}</span><span aria-hidden="true">↗</span></a> : m.contact ? <button type="button" onClick={() => selectMerchant(m, 'profile')} disabled={busy}>연락처 보기</button> : <span>미등록</span>}</td>
+          <td data-label="등록일" className="merchant-registered">{m.created_at ? <time dateTime={m.created_at} title="업체 도시 시간 기준 등록일">{merchantRegisteredDate(m)}</time> : '확인 중'}</td>
           <td data-label="소재지" className="merchant-location"><span>{merchantAddressCity(m.address ?? '') ?? '주소 미확인'}</span><small>게시 지역: {m.city_name}</small></td>
           <td data-label="글링 계정" className="merchant-account" data-connected={!!m.owner_id}><span>{m.owner_id ? currentList.owners[m.owner_id] || '연결됨' : '미연결'}</span>{m.owner_id && <small>{currentList.owners[m.owner_id] ? '연결됨' : '이름 확인 필요'}</small>}</td>
-          <td data-label="담당자·연락처" className="merchant-contact"><span title={m.contact || undefined}>{contactLinks(m.contact || '미등록', () => play('selection'))}</span></td><td data-label="운영 상태"><span className="merchant-status" data-status={m.status}>{STATUS[m.status]}</span></td><td data-label="게시 허락">{CONSENT[m.consent]}</td><td data-label="연결된 글" className="merchant-count">{m.post_count}</td><td data-label="보고서" className="merchant-count">{m.report_count}</td>
+          <td data-label="운영 상태"><span className="merchant-status" data-status={m.status}>{STATUS[m.status]}</span></td><td data-label="게시 허락">{CONSENT[m.consent]}</td><td data-label="연결된 글" className="merchant-count">{m.post_count}</td><td data-label="보고서" className="merchant-count">{m.report_count}</td>
           <td data-label="관리"><div className="merchant-row-actions"><button type="button" aria-label={`${m.name} 수정`} disabled={busy} onClick={() => selectMerchant(m, 'profile')}>수정</button><button type="button" aria-label={`${m.name} 삭제`} className="merchant-danger" disabled={busy} onClick={() => removeMerchants([m])}>삭제</button></div></td>
-        </tr>)}</tbody></table></div>}
+        </tr>; })}</tbody></table></div>}
       <nav className="merchant-pager" aria-label="업체 목록 페이지"><button disabled={!page || busy} onClick={() => { play('selection'); setCheckedIds([]); setPage((p) => p - 1); }}>이전</button><span>{page + 1}페이지</span><button disabled={!currentList?.more || busy} onClick={() => { play('selection'); setCheckedIds([]); setPage((p) => p + 1); }}>다음</button></nav>
     </section>
     <details className="merchant-manual-link" onToggle={event => { play('selection'); setReceiptsOpen(event.currentTarget.open); }}>
