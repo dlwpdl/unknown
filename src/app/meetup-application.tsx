@@ -95,7 +95,7 @@ function Application({ requestId }: { requestId: string }) {
   };
   return <ThemedView style={styles.fill}><SafeAreaView style={styles.fill}>
     <View style={[styles.header, { backgroundColor: theme.background }]}>
-      <Pressable analyticsId="app_meetup-application.pressable.1" onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace(Platform.OS === 'web' ? '/chat' : '/(tabs)/chat'); }} accessibilityRole="button" accessibilityLabel="뒤로가기" style={({ pressed }) => [styles.back, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} /></Pressable>
+      <Pressable lens analyticsId="app_meetup-application.pressable.1" onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace(Platform.OS === 'web' ? '/chat' : '/(tabs)/chat'); }} accessibilityRole="button" accessibilityLabel="뒤로가기" style={({ pressed }) => [styles.back, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} /></Pressable>
       <ThemedText accessibilityRole="header" numberOfLines={1} style={styles.headerTitle}>{own ? '내 참여 신청' : '참여 신청 검토'}</ThemedText>
       <View style={styles.back} />
     </View>
@@ -120,11 +120,11 @@ function Application({ requestId }: { requestId: string }) {
         <ThemedText type="small" themeColor="textSecondary">승인하면 이 모임의 멤버가 되고 모임 대화에 참여해요. 정원이 찼거나 참여 가능한 모임 수를 넘으면 승인할 수 없어요.</ThemedText>
       </>}
     </> : <StateCard kind={error ? 'error' : requestStatus?.status === 'approved' ? 'success' : 'blocked'} title={error ? '신청 정보를 불러오지 못했어요' : requestStatus ? { pending: '신청은 승인 대기 중이에요', approved: '이미 승인된 신청이에요', rejected: '거절된 신청이에요', cancelled: '취소된 신청이에요' }[requestStatus.status] : '신청 프로필을 볼 수 없어요'} body={error || '공유된 신청 프로필은 현재 열람할 수 없어요.'} />}
-    {(!!error || !!actionError) && <Pressable analyticsId="app_meetup-application.pressable.2" onPress={() => { play('selection'); setRetry(x => x + 1); }} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent">현재 상태 다시 확인</ThemedText></Pressable>}
+    {(!!error || !!actionError) && <Pressable lens analyticsId="app_meetup-application.pressable.2" onPress={() => { play('selection'); setRetry(x => x + 1); }} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent">현재 상태 다시 확인</ThemedText></Pressable>}
   </ScrollView>}
   {!loading && canRespond && <View style={[styles.footer, { backgroundColor: theme.background, borderColor: theme.line }]}>
     <RaisedActionButton analyticsId="app_meetup-application.pressable.3" disabled={responding || approvalBlocked} busy={responding} onPress={() => { play('selection'); void respond('approved'); }} label={responding ? '처리 중…' : approvalBlocked ? '현재 승인할 수 없어요' : `${identity?.nickname ?? '신청자'}님 참여 승인`} />
-    <Pressable analyticsId="app_meetup-application.pressable.4" accessibilityRole="button" accessibilityLabel="참여 신청 거절" disabled={responding} accessibilityState={{ disabled: responding }} onPress={confirmReject} style={styles.reject}><ThemedText type="smallBold" themeColor="textSecondary">신청 거절</ThemedText></Pressable>
+    <Pressable lens analyticsId="app_meetup-application.pressable.4" accessibilityRole="button" accessibilityLabel="참여 신청 거절" disabled={responding} accessibilityState={{ disabled: responding }} onPress={confirmReject} style={styles.reject}><ThemedText type="smallBold" themeColor="textSecondary">신청 거절</ThemedText></Pressable>
   </View>}
   </SafeAreaView></ThemedView>;
 }
