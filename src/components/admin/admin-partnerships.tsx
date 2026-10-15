@@ -44,17 +44,19 @@ export function AdminPartnershipsView({ kind, refreshSignal, onUser, onStateChan
   const id = selection?.kind === kind ? selection.id : null;
   const key = `${kind}:${query}:${offset}:${id}:${childOffset}:${revision}:${refreshSignal}`;
   const error = failure?.key === key ? failure.message : '';
+  const responseKey = response?.key;
   const page = response?.key === key ? response.page : null;
   const record = page?.record;
   const opened = Boolean(id || editor || couponTask);
 
   useEffect(() => {
+    if (responseKey === key) return;
     let active = true;
     void loadPartnerships(supabase, kind, query, offset, id, childOffset)
       .then((data) => { if (active) setResponse({ key, page: data }); })
       .catch((reason) => { if (active) setFailure({ key, message: partnershipError(reason) }); });
     return () => { active = false; };
-  }, [key, kind, query, offset, id, childOffset]);
+  }, [key, kind, query, offset, id, childOffset, responseKey]);
   useEffect(() => {
     if (opened && !dialog.current?.open) dialog.current?.showModal();
     if (!opened && dialog.current?.open) { dialog.current.close(); lastTrigger.current?.focus(); }
@@ -68,7 +70,7 @@ export function AdminPartnershipsView({ kind, refreshSignal, onUser, onStateChan
   }, [dirty, busy]);
 
   function discard() {
-    return !busy && (!dirty || window.confirm('저장하지 않은 입력을 버릴까요?'));
+    return !busy && (!dirty || window.confirm('입력 화면을 닫을까요? 저장하지 않은 입력은 사라집니다.'));
   }
   function close() {
     if (!discard()) return;
@@ -83,10 +85,20 @@ export function AdminPartnershipsView({ kind, refreshSignal, onUser, onStateChan
     if (!discard()) return;
     play('selection'); setEditor(state); setCouponTask(null); setDirty(false); setNotice('');
   }
-  function saved(savedId?: string) {
-    setDirty(false); setEditor(null); setCouponTask(null); setNotice('저장한 내용을 확인했습니다.');
-    if (savedId && editor?.kind !== 'participation') setSelection({ kind, id: savedId });
-    setRevision((value) => value + 1);
+  async function saved(savedId: string) {
+    const targetId = editor && editor.kind !== 'participation' ? savedId : id;
+    try {
+      const data = await loadPartnerships(supabase, kind, query, offset, targetId, 0);
+      const matched = couponTask ? data.coupons.some((row) => row.id === savedId)
+        : editor?.kind === 'participation' ? data.participations.some((row) => row.id === savedId) : data.record?.id === savedId;
+      if (!matched) throw new Error('PARTNERSHIP_READBACK_REQUIRED');
+      setResponse({ key: `${kind}:${query}:${offset}:${targetId}:0:${revision}:${refreshSignal}`, page: data });
+      if (editor && editor.kind !== 'participation') setSelection({ kind, id: savedId });
+      setChildOffset(0); setDirty(false); setEditor(null); setCouponTask(null); setNotice('저장한 내용을 확인했습니다.');
+    } catch {
+      setNotice('서버 저장은 완료됐습니다. 저장 내용 확인이 필요합니다.');
+      throw new Error('PARTNERSHIP_READBACK_REQUIRED');
+    }
   }
   function cancelEditor() {
     if (!discard()) return;
@@ -110,7 +122,7 @@ export function AdminPartnershipsView({ kind, refreshSignal, onUser, onStateChan
   return <section className="partnership-admin" aria-label={`${titles[kind]} 관리`}>
     <header className="partnership-heading"><div><h1>{titles[kind]}</h1><p className="partnership-muted">{explanations[kind]}</p></div>
       <button type="button" className="partnership-primary" onClick={newRecord}>{kind === 'creators' ? '크리에이터' : kind === 'campaigns' ? '캠페인' : '혜택'} 등록</button></header>
-    {notice && <p role="status" className="partnership-notice">{notice}</p>}
+    {notice && !opened && <p role="status" className="partnership-notice">{notice}</p>}
     <div className="partnership-toolbar"><AdminSearch value={input} onChange={setInput} placeholder={kind === 'creators' ? '이름·지역·SNS 검색' : '이름·업체 검색'} onSubmit={() => { setQuery(input.trim()); setOffset(0); }} />
       <span className="partnership-muted">{page ? `${page.rows.length}건 표시` : '불러오는 중'}</span></div>
     {error ? <div role="alert" className="partnership-state"><p>{error}</p><button type="button" onClick={() => { play('selection'); setRevision((value) => value + 1); }}>다시 불러오기</button></div>
@@ -127,9 +139,10 @@ export function AdminPartnershipsView({ kind, refreshSignal, onUser, onStateChan
     <dialog ref={dialog} className="partnership-dialog" aria-labelledby="partnership-dialog-title" onCancel={(event) => { event.preventDefault(); close(); }}>
       <header className="partnership-dialog-heading"><h2 id="partnership-dialog-title">{heading}</h2><button type="button" aria-label="상세 닫기" disabled={busy} onClick={close}>닫기</button></header>
       <div className="partnership-dialog-body">
+        {notice && !editor && !couponTask && <p role="status" className="partnership-notice">{notice}</p>}
         {editor ? <PartnershipEditor key={`${editor.kind}:${editor.record.id}:${editor.revision}`} state={editor} onSaved={saved} onCancel={cancelEditor} onDirty={setDirty} onBusy={setBusy} />
-          : couponTask ? 'benefit' in couponTask ? <CouponIssueForm key={couponTask.requestId} requestId={couponTask.requestId} benefit={couponTask.benefit} onSaved={() => saved()} onCancel={cancelEditor} onDirty={setDirty} onBusy={setBusy} />
-            : <CouponActionForm key={`${couponTask.coupon.id}:${couponTask.action}`} coupon={couponTask.coupon} action={couponTask.action} onSaved={() => saved()} onCancel={cancelEditor} onDirty={setDirty} onBusy={setBusy} />
+          : couponTask ? 'benefit' in couponTask ? <CouponIssueForm key={couponTask.requestId} requestId={couponTask.requestId} benefit={couponTask.benefit} onSaved={saved} onCancel={cancelEditor} onDirty={setDirty} onBusy={setBusy} />
+            : <CouponActionForm key={`${couponTask.coupon.id}:${couponTask.action}`} coupon={couponTask.coupon} action={couponTask.action} onSaved={saved} onCancel={cancelEditor} onDirty={setDirty} onBusy={setBusy} />
           : error ? <div role="alert"><p>{error}</p><button type="button" onClick={() => { play('selection'); setRevision((value) => value + 1); }}>다시 불러오기</button></div>
           : !record ? <p role="status">상세 내용을 불러오는 중입니다.</p>
           : <>

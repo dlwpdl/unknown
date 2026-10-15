@@ -70,6 +70,60 @@ select is(jsonb_array_length(public.get_admin_partnerships('creators','제휴회
 select throws_ok($$select pg_temp.save('creator','a1510000-0000-0000-0000-000000000003','{"display_name":"duplicate","city_id":"partnership-test","profile_url":"https://EXAMPLE.com/alpha/?utm_source=x"}')$$,'P0001','PARTNERSHIP_DUPLICATE','canonical profiles cannot duplicate');
 select throws_ok($$select pg_temp.save('creator','a1510000-0000-0000-0000-000000000003','{"display_name":"www duplicate","city_id":"partnership-test","profile_url":"https://www.example.com/alpha"}')$$,'P0001','PARTNERSHIP_DUPLICATE','canonical profile treats www alias as the same recipient');
 select throws_ok($$select pg_temp.save('creator','a1510000-0000-0000-0000-000000000003','{"display_name":"duplicate member","city_id":"partnership-test","profile_url":"https://example.com/third","member_id":"a1500000-0000-0000-0000-000000000002"}')$$,'P0001','PARTNERSHIP_DUPLICATE','member link is unique');
+-- Alias spellings must not manufacture a second coupon recipient.
+select throws_ok(format('select pg_temp.save(''creator'',%L::uuid,%L::jsonb)',gen_random_uuid(),
+  jsonb_build_object('display_name','Rejected profile alias','city_id','partnership-test','profile_url',url)::text),
+  'P0001','INVALID_PARTNERSHIP',label)
+from (values
+  ('https://www.instagram.com/%61lpha/','encoded unreserved ASCII profile is refused'),
+  ('https://example.com/creator%2fother','encoded slash is refused'),
+  ('https://example.com/%2E/creator','encoded dot is refused'),
+  ('https://example.com/creator%3Fother','encoded query marker is refused'),
+  ('https://example.com/creator%23other','encoded hash is refused'),
+  ('https://example.com/creator%5Cother','encoded backslash is refused'),
+  ('https://example.com/creator'||chr(92)||'other','literal backslash alias is refused'),
+  ('https://example.com/creator%25other','encoded percent cannot hide a second encoding'),
+  ('https://example.com/creator%00','encoded ASCII control is refused'),
+  ('https://example.com/creator%7f','encoded ASCII DEL is refused'),
+  ('https://example.com/./creator','literal current-directory segment is refused'),
+  ('https://example.com/a/../creator','literal parent-directory segment is refused'),
+  ('https://example.com/creator/.','terminal dot segment is refused'),
+  ('https://example.com/creator/..','terminal parent segment is refused'),
+  ('https://example.com//creator','duplicate path slash is refused'),
+  ('https://example.com/creator//','duplicate trailing path slash is refused'),
+  ('https://example.com/creator%','incomplete percent escape is refused'),
+  ('https://example.com/creator%8G','malformed percent escape is refused'),
+  ('https://example.com/%E9','truncated UTF8 sequence is refused'),
+  ('https://example.com/%C0%AF','overlong UTF8 cannot conceal an ASCII slash'),
+  ('https://example.com/%ED%A0%80','UTF8 surrogate is refused'),
+  ('https://example.com/%F4%90%80%80','UTF8 above the Unicode maximum is refused')
+) aliases(url,label);
+select lives_ok(format('select pg_temp.save(''creator'',%L::uuid,%L::jsonb)',gen_random_uuid(),
+  jsonb_build_object('display_name','Canonical profile test','city_id','partnership-test','profile_url',url)::text),label)
+from (values
+  ('https://www.youtube.com/channel/UCProfileCASE','first case-sensitive YouTube channel is saved'),
+  ('https://www.youtube.com/channel/UCProfileCase','distinct case-sensitive YouTube channel is saved'),
+  ('https://Example.com/CreatorCase','generic host case is normalized without changing path case'),
+  ('https://example.com/creatorcase','distinct generic path case is saved'),
+  ('https://www.instagram.com/KeyHandle/','Instagram handle is saved'),
+  ('https://www.threads.net/@KeyHandle','Threads legacy host handle is saved'),
+  ('https://www.tiktok.com/@KeyHandle','TikTok handle is saved'),
+  ('https://www.youtube.com/@KeyHandle','YouTube handle is saved'),
+  ('https://example.com/%E3%81%82','normal encoded non-ASCII UTF8 profile is saved'),
+  ('https://www.youtube.com/@%ED%95%9C%EA%B8%80','Korean UTF8 YouTube handle is saved')
+) profiles(url,label);
+select throws_ok(format('select pg_temp.save(''creator'',%L::uuid,%L::jsonb)',gen_random_uuid(),
+  jsonb_build_object('display_name','Duplicate profile test','city_id','partnership-test','profile_url',url)::text),
+  'P0001','PARTNERSHIP_DUPLICATE',label)
+from (values
+  ('https://EXAMPLE.com/CreatorCase/?utm_source=x','host/query/trailing slash aliases still duplicate'),
+  ('https://instagram.com/keyhandle?utm_source=x','Instagram handle case still duplicates'),
+  ('https://threads.com/@keyhandle/','Threads host and handle aliases duplicate'),
+  ('https://tiktok.com/@keyhandle/','TikTok handle case still duplicates'),
+  ('https://youtube.com/@keyhandle/','YouTube handle case still duplicates'),
+  ('https://example.com/%e3%81%82','UTF8 percent-hex case aliases duplicate'),
+  ('https://example.com/あ','literal and encoded UTF8 paths identify the same profile')
+) aliases(url,label);
 select throws_ok($$select public.save_admin_partnership('creator','{"id":"a1510000-0000-0000-0000-000000000001","notes":"overwrite"}')$$,'P0001','PARTNERSHIP_CHANGED','create-only retry cannot overwrite an existing record');
 select throws_ok($$select public.save_admin_partnership('creator','{"id":"a1510000-0000-0000-0000-000000000001","notes":"overwrite"}','2000-01-01')$$,'P0001','PARTNERSHIP_CHANGED','stale save rejected');
 select lives_ok($$select pg_temp.save('campaign','a1530000-0000-0000-0000-000000000001','{"merchant_id":"a1520000-0000-0000-0000-000000000001","title":"Campaign Alpha","support_amount_cents":15000,"team_limit":1}')$$,'draft retains unresolved terms, currency and date');
@@ -129,6 +183,8 @@ select ok(not exists(select 1 from pg_class c join pg_namespace n on n.oid=c.rel
 select ok(not has_function_privilege('anon','public.get_admin_partnerships(text,text,integer,uuid,integer)','execute'),'anonymous RPC execution denied');
 select ok(not has_function_privilege('service_role','public.save_admin_partnership(text,jsonb,timestamptz)','execute'),'service key cannot directly mutate this boundary');
 select ok(not has_function_privilege('authenticated','private.partnership_record(text,uuid)','execute'),'unaudited helper cannot be invoked directly');
+select ok(not exists(select 1 from (values ('anon'),('authenticated'),('service_role')) r(role)
+  where has_function_privilege(r.role,'private.partnership_profile_key(text)','execute')),'profile key helper denies public, client and service execution');
 set local role authenticated;
 select throws_ok($$select pg_temp.save('creator','a1510000-0000-0000-0000-000000000002',jsonb_build_object('display_name',repeat('x',121)))$$,'P0001','INVALID_PARTNERSHIP','creator name length bounded');
 select throws_ok($$select pg_temp.save('creator','a1510000-0000-0000-0000-000000000002','{"reference_url":"https://localhost/private"}')$$,'P0001','INVALID_PARTNERSHIP','private hostname references refused');

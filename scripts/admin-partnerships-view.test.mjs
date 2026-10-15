@@ -67,3 +67,20 @@ test('protected read failure offers retry without fake empty data or leaked serv
   assert.doesNotMatch(text(tree), /private contact|등록된.*없/);
   assert.ok(nodes(tree).some(node => node.type === 'button' && /다시/.test(text(node))));
 });
+
+test('a successful mutation keeps its editor until a matching saved record is read back', async () => {
+  let available = false;
+  const screen = view('campaigns', async (_kind, _query, _offset, selected) => page('campaigns', selected && available ? { ...rows.campaigns, updated_at: '2026-10-15T18:01:00Z' } : null));
+  screen.render(); await new Promise(setImmediate);
+  let tree = screen.render(); nodes(tree).find(node => node.type === 'button' && text(node).replace(/\s+/g, ' ').trim() === '캠페인 등록').props.onClick({ currentTarget: { focus() {} } });
+  tree = screen.render(); let form = nodes(tree).find(node => node.type === 'PartnershipEditor');
+  form.props.onDirty(true); await assert.rejects(Promise.resolve().then(() => form.props.onSaved(id)), /PARTNERSHIP_READBACK_REQUIRED/);
+  tree = screen.render(); assert.ok(nodes(tree).find(node => node.type === 'PartnershipEditor'));
+  assert.doesNotMatch(text(tree), /저장한 내용을 확인했습니다/);
+  assert.equal(screen.guard.at(-1).dirty, true);
+  available = true; form = nodes(tree).find(node => node.type === 'PartnershipEditor'); await form.props.onSaved(id);
+  tree = screen.render(); assert.equal(nodes(tree).some(node => node.type === 'PartnershipEditor'), false);
+  assert.match(text(tree), /저장한 내용을 확인했습니다/);
+  assert.match(text(nodes(tree).find(node => node.type === 'dialog')), /저장한 내용을 확인했습니다/, 'The live notice must remain inside the active modal.');
+  assert.equal(screen.requests.at(-1)[3], id);
+});
