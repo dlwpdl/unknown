@@ -19,6 +19,7 @@ function ReceiptQueue({ refreshSignal, onUser, localPreview = false }: Props) {
   const [page, setPage] = useState<Awaited<ReturnType<typeof loadAdminMerchantReceiptReviews>> | null>(null);
   const [error, setError] = useState(''), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false), [revision, setRevision] = useState(0);
   const request = useRef(0), reading = useRef(false);
+  const [scopeOpen, setScopeOpen] = useState(false);
   useEffect(() => {
     if (localPreview) return;
     const tracker = request, token = ++tracker.current; reading.current = true;
@@ -42,7 +43,14 @@ function ReceiptQueue({ refreshSignal, onUser, localPreview = false }: Props) {
   const actionStyle = [styles.action, { borderColor: theme.line, backgroundColor: theme.card }, busy && { opacity: 0.5 }];
   return <View style={styles.queue}>
     <ThemedText type="subtitle" accessibilityRole="header">후기 증빙 검토</ThemedText>
-    <ThemedText type="small" themeColor="textSecondary">신고가 없어도 제출한 영수증과 근무 증빙을 검토합니다. 미인증 근무 후기는 작성자와 관리자만 볼 수 있고, 미인증 상품·서비스 후기는 작성자·승인된 업체 계정·관리자만 볼 수 있습니다.</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary">신고가 없어도 제출한 영수증과 근무 증빙을 검토합니다.</ThemedText>
+    <Pressable accessibilityRole="button" accessibilityLabel="미인증 후기 공개 범위" accessibilityState={{ expanded: scopeOpen }} aria-expanded={scopeOpen}
+      onPress={() => { play('selection'); setScopeOpen(value => !value); }} style={[styles.action, { borderColor: theme.line, backgroundColor: theme.card }]}>
+      <ThemedText type="smallBold">미인증 후기 공개 범위 {scopeOpen ? '접기' : '펼치기'}</ThemedText>
+    </Pressable>
+    <View aria-hidden={!scopeOpen} style={!scopeOpen && { display: 'none' }}>
+      <ThemedText type="small" themeColor="textSecondary">미인증 근무 후기는 작성자와 관리자만 볼 수 있고, 미인증 상품·서비스 후기는 작성자·승인된 업체 계정·관리자만 볼 수 있습니다.</ThemedText>
+    </View>
     <Pressable accessibilityRole="button" accessibilityLabel="검토 대기 후기 새로고침" disabled={busy || localPreview} accessibilityState={{ disabled: busy || localPreview }}
       onPress={() => { play('selection'); setRevision(value => value + 1); }} style={actionStyle}><ThemedText type="smallBold">{busy ? '불러오는 중…' : '대기 목록 새로고침'}</ThemedText></Pressable>
     {error ? <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText> : null}
@@ -53,7 +61,7 @@ function ReceiptQueue({ refreshSignal, onUser, localPreview = false }: Props) {
       <ThemedText type="smallBold">{row.merchantName} · {row.score}/10</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{row.reviewKind === 'employment' ? '근무 후기' : '상품·서비스 후기'}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{row.nickname} · {new Intl.DateTimeFormat('ko-KR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(row.updatedAt))}</ThemedText>
-      <ThemedText type="small" selectable>{row.body || '점수만 남긴 후기'}</ThemedText>
+      <ThemedText type="small" selectable numberOfLines={2}>{row.body || '점수만 남긴 후기'}</ThemedText>
       <AdminMerchantReviewContent targetId={row.id} onUser={onUser} localPreview={localPreview || busy}
         onChanged={() => { setNotice('검토 결과를 확인했습니다. 대기 목록을 갱신합니다.'); setRevision(value => value + 1); }} />
     </View>)}

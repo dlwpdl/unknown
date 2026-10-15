@@ -39,8 +39,8 @@ export function AdminUserDetail({
         <View nativeID="gling-admin-detail" style={styles.sheet} accessibilityViewIsModal accessibilityLabel="사용자 전체 활동">
           <View style={[styles.header, compact && styles.headerCompact]}>
             <View style={{ flex: 1, minWidth: 0 }}>
-              <ThemedText accessibilityRole="header" style={styles.title}>회원 상세 · 활동</ThemedText>
-              <ThemedText type="small" style={styles.muted}>프로필과 활동 내역</ThemedText>
+              <ThemedText accessibilityRole="header" style={styles.title}>회원 활동</ThemedText>
+              <ThemedText type="small" style={styles.muted}>계정 상태와 저장된 활동</ThemedText>
             </View>
             <Pressable onPress={() => { play('selection'); onClose(); }} accessibilityRole="button" accessibilityLabel="사용자 상세 닫기" style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
               <ThemedText type="smallBold">닫기</ThemedText>
