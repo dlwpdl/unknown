@@ -42,7 +42,7 @@ export function MeetupCoverPicker({ value, onChange, onPickingChange, disabled }
       {value ? <Image source={{ uri: value.uri }} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel="선택한 모임 사진" /> : <><SymbolView name={{ ios: 'photo', android: 'photo_library', web: 'photo_library' }} size={20} tintColor={theme.textSecondary} /><ThemedText type="smallBold">모임 사진 추가</ThemedText><ThemedText type="small" themeColor="textSecondary" style={styles.choose}>선택 ›</ThemedText></>}
     </Pressable>
     <View style={styles.actions}><ThemedText type="small" themeColor="textSecondary">{picking ? '사진을 준비하고 있어요…' : value ? '사진을 눌러 변경할 수 있어요' : '사진 1장 · 무료 · 최대 5MB'}</ThemedText>
-      {value && <Pressable analyticsId="components_meetup-cover-picker.pressable.2" accessibilityRole="button" accessibilityLabel="커버 사진 삭제" disabled={disabled || picking} accessibilityState={{ disabled: disabled || picking }} onPress={() => { play('selection'); onChange(null); }} style={({ pressed }) => [styles.remove, { opacity: pressed ? 0.65 : 1 }]}><ThemedText type="small" themeColor="accent">삭제</ThemedText></Pressable>}
+      {value && <Pressable lens analyticsId="components_meetup-cover-picker.pressable.2" accessibilityRole="button" accessibilityLabel="커버 사진 삭제" disabled={disabled || picking} accessibilityState={{ disabled: disabled || picking }} onPress={() => { play('selection'); onChange(null); }} style={({ pressed }) => [styles.remove, { opacity: pressed ? 0.65 : 1 }]}><ThemedText type="small" themeColor="accent">삭제</ThemedText></Pressable>}
     </View>
     {!!error && <ThemedText accessibilityRole="alert" type="small" themeColor="accent">{error}</ThemedText>}
   </View>;

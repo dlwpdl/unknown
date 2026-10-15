@@ -63,7 +63,7 @@ function ScopedInbox({ merchantId, onDirty }: { merchantId: string; onDirty?: (d
   return <View style={[styles.section, { borderColor: theme.line, backgroundColor: theme.card }]}>
     <View style={styles.header}>
       <ThemedText type="subtitle">받은 후기</ThemedText>
-      <Pressable analyticsId="merchant.reviews.refresh" accessibilityRole="button" disabled={loading || dirty || replyBusy} accessibilityState={{ disabled: loading || dirty || replyBusy }}
+      <Pressable lens analyticsId="merchant.reviews.refresh" accessibilityRole="button" disabled={loading || dirty || replyBusy} accessibilityState={{ disabled: loading || dirty || replyBusy }}
         style={styles.button} onPress={() => { play('selection'); refresh(); }}><ThemedText type="smallBold" themeColor="accent">새로 확인</ThemedText></Pressable>
     </View>
     <ThemedText type="small" themeColor="textSecondary">이용 리뷰는 미인증 의견도 확인할 수 있어요. 근무 리뷰는 근무 증빙 인증 후에만 보이며, 증빙 원본은 업체에 공개되지 않아요. 공개 평균은 종류별 인증 후기만 따로 계산해요.</ThemedText>
@@ -77,12 +77,12 @@ function ScopedInbox({ merchantId, onDirty }: { merchantId: string; onDirty?: (d
         <ThemedText type="small" themeColor="textSecondary">{draft.body.length}/300 · 후기 공개 범위에 따라 답변도 표시돼요.</ThemedText>
         {!!replyError && <ThemedText type="small" accessibilityRole="alert">{replyError}</ThemedText>}
         <View style={styles.actions}>
-          <Pressable analyticsId="merchant.reply.save" accessibilityRole="button" disabled={replyBusy || !draft.body.trim()} accessibilityState={{ disabled: replyBusy || !draft.body.trim(), busy: replyBusy }}
+          <Pressable lens analyticsId="merchant.reply.save" accessibilityRole="button" disabled={replyBusy || !draft.body.trim()} accessibilityState={{ disabled: replyBusy || !draft.body.trim(), busy: replyBusy }}
             style={styles.button} onPress={() => { play('selection'); void saveReply(); }}><ThemedText type="smallBold" themeColor="accent">{replyBusy ? '저장 중…' : '답변 저장'}</ThemedText></Pressable>
-          <Pressable analyticsId="merchant.reply.cancel" accessibilityRole="button" disabled={replyBusy} accessibilityState={{ disabled: replyBusy }} style={styles.button}
+          <Pressable lens analyticsId="merchant.reply.cancel" accessibilityRole="button" disabled={replyBusy} accessibilityState={{ disabled: replyBusy }} style={styles.button}
             onPress={() => { play('selection'); setDraft(null); setReplyError(''); refresh(); }}><ThemedText type="small" themeColor="textSecondary">취소</ThemedText></Pressable>
         </View>
-      </View> : <Pressable analyticsId={`merchant.reply.edit.${row.id}`} accessibilityRole="button" disabled={!!draft || replyBusy} accessibilityState={{ disabled: !!draft || replyBusy }}
+      </View> : <Pressable lens analyticsId={`merchant.reply.edit.${row.id}`} accessibilityRole="button" disabled={!!draft || replyBusy} accessibilityState={{ disabled: !!draft || replyBusy }}
         style={styles.button} onPress={() => { play('selection'); setReplyError(''); setDraft({ id: row.id, body: row.reply?.body ?? '', original: row.reply?.body ?? '', updatedAt: row.reply?.updated_at ?? null }); }}>
         <ThemedText type="smallBold" themeColor="accent">{row.reply ? '답변 수정' : '답변하기'}</ThemedText>
       </Pressable>)}
@@ -90,7 +90,7 @@ function ScopedInbox({ merchantId, onDirty }: { merchantId: string; onDirty?: (d
     {loading && <ThemedText type="small" accessibilityLiveRegion="polite">후기를 불러오는 중…</ThemedText>}
     {!loading && !rows.length && !error && <ThemedText type="small" themeColor="textSecondary">아직 받은 후기가 없어요.</ThemedText>}
     {!!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
-    {hasMore && !error && <Pressable analyticsId="merchant.reviews.more" accessibilityRole="button" disabled={loading || dirty || replyBusy} accessibilityState={{ disabled: loading || dirty || replyBusy }}
+    {hasMore && !error && <Pressable lens analyticsId="merchant.reviews.more" accessibilityRole="button" disabled={loading || dirty || replyBusy} accessibilityState={{ disabled: loading || dirty || replyBusy }}
       style={styles.button} onPress={() => { play('selection'); if (pending.current || dirty || replying.current) return; pending.current = true; setLoading(true); setOffset((value) => value + 20); }}>
       <ThemedText type="smallBold" themeColor="accent">후기 더 보기</ThemedText>
     </Pressable>}
