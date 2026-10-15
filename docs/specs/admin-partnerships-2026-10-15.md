@@ -8,7 +8,7 @@
 - 회원 가입 전 크리에이터도 실제 SNS 프로필과 연락 경로로 선등록할 수 있다. 회원 연결은 기존 회원 검색으로 선택하고 선택한 닉네임을 확인한다. SNS 연결은 운영자가 기록한 프로필이며 OAuth 소유 확인을 가장하지 않는다.
 - 캠페인에서 지원 팀 → 선정 → 방문 확인 → 콘텐츠 제출 → 완료를 관리한다. 조회수는 출처 링크와 직접 확인 기록이며 신규 콘텐츠 성과를 보장하지 않는다. 한 참여 행이 한 팀이며 선정 이후 단계가 정원을 점유한다.
 - 쿠폰은 혜택 정의와 개별 발급 내역을 구분한다. 대상·조건·유효기간이 확정된 활성 혜택에만 발급하며 서버에서 발급 한도·중복·만료·취소·현재 업체 동의를 검사한다. 사용/취소는 명시적 확인 후 한 번만 처리한다.
-- 발급/선정 후 금전·대상·혜택 조건은 잠근다. 수정 시 오래된 revision을 거부한다. 불확실한 저장은 새 ID로 자동 재전송하지 않는다. 상태·입력 보존과 다시 조회 경로를 제공한다.
+- 발급/선정 후 금전·대상·혜택 조건은 잠근다. 수정 시 오래된 revision을 거부한다. 불확실한 저장은 새 ID로 자동 재전송하지 않는다. 상태·입력 보존과 다시 조회 경로를 제공한다. 서버가 저장 ID를 반환한 뒤에는 일치하는 저장 내용을 읽을 때까지 입력을 유지하고 잠근다. 조회만 실패하면 동일 ID로 조회만 재시도하며 이미 접수된 저장·발급·사용 처리를 다시 실행하지 않는다.
 - 지원금은 지급 여부와 확인 메모를 기록한다. 송금 기능은 없다. 실적 없는 값은 미확인으로 표시하고 0과 구분한다.
 - 기존 업체 삭제는 새 기록을 지우지 않는다. 삭제/동의 철회/중지된 업체의 새 선정·발급·사용을 차단한다. 기존 감사/안전 모니터링 범위는 유지한다.
 
@@ -26,6 +26,8 @@
 | `partnership_events` | identity `id`, `actor_id uuid?`, `resource_id uuid`, `action text`, `details jsonb`, `created_at timestamptz`; retain history and actor FK set null on account removal |
 
 Creator name 1–120 chars, title 1–160; profile URL required, other URLs optional. Reuse `private.valid_merchant_original()` and client `safeMerchantSourceUrl()` for HTTPS public links. Text bounds: category 80, contact 1000, notes/terms 3000, metrics/payment note 1000, deadline note 300. Views 0–2147483647, amount cents 0–99999999, team/issue limit 1–10000 or null, discount 1–100 or null. A reference view count requires its reference URL. City and linked active member must exist. Unique non-null member link and canonical social profile, and unique campaign/creator participation. Optional blank UUID/date/number values are represented as null.
+
+The private immutable profile key rejects encoded ASCII path syntax, dot segments, duplicate slashes and invalid UTF8; accepted literal/encoded non-ASCII UTF8 spellings share a key. Host/query/www/trailing-slash aliases normalize, Threads .net/.com share a host, and only known case-insensitive handles fold case. YouTube channel IDs and generic paths retain case. Actor/recipient locks follow sorted auth.users, sorted profiles, then the current session to agree with hard account erasure; authorization is rechecked after waits.
 
 Opening a campaign requires a current undeleted `record_kind=business` merchant with granted consent and non-paused status, confirmed nonempty terms, a future/current end date in the merchant timezone, and currency if an amount is proposed. Drafts may retain unresolved amount/currency/date. Selected/visited/submitted/completed count towards team_limit under a campaign row lock. Only applied→selected/declined/cancelled, selected→visited/cancelled, visited→submitted/cancelled, submitted→completed/cancelled; same-stage edits allowed. visited requires actual past `visited_at`; submitted/completed require `content_url`. Paid requires submitted/completed and a nonempty payment note, and cannot be silently undone/cancelled. No 5,000-view payout condition is inferred. Cancelling a selected team revokes its unused campaign coupons. A paused creator cannot be newly selected or receive/use coupons.
 

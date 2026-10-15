@@ -13,7 +13,7 @@ import { safeMerchantSourceUrl } from '@/lib/merchant-source';
 import { supabase } from '@/lib/supabase';
 
 export type PartnershipEditorState = { kind: PartnershipKind; record: { id: string } & Record<string, unknown>; revision: string | null };
-type Callbacks = { onSaved: (id?: string) => void; onCancel: () => void; onDirty: (dirty: boolean) => void; onBusy: (busy: boolean) => void };
+type Callbacks = { onSaved: (id: string) => void | Promise<void>; onCancel: () => void; onDirty: (dirty: boolean) => void; onBusy: (busy: boolean) => void };
 type PickKind = 'merchant' | 'member' | 'creator' | 'campaign';
 const fields: Record<PartnershipKind, string[]> = {
   creator: ['id', 'member_id', 'display_name', 'city_id', 'profile_url', 'category', 'contact', 'reference_url', 'reference_views', 'metrics_note', 'status', 'notes'],
@@ -24,17 +24,20 @@ const fields: Record<PartnershipKind, string[]> = {
 
 function useSave(callbacks: Callbacks) {
   const { play } = useInteractionFeedback();
-  const [error, setError] = useState(''), [busy, setBusy] = useState(false);
-  const pending = useRef(false), alive = useRef(true);
+  const [error, setError] = useState(''), [busy, setBusy] = useState(false), [acknowledged, setAcknowledged] = useState(false);
+  const pending = useRef(false), alive = useRef(true), savedId = useRef<string | null>(null);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   async function save(action: () => Promise<string>) {
     if (pending.current) return;
     pending.current = true; setBusy(true); setError(''); callbacks.onBusy(true); play('selection');
-    try { const id = await action(); if (alive.current) { callbacks.onDirty(false); callbacks.onSaved(id); play('selection'); } }
-    catch (reason) { if (alive.current) { setError(partnershipError(reason)); play('warning'); } }
+    try {
+      const id = savedId.current ?? await action(); savedId.current = id;
+      if (alive.current) { setAcknowledged(true); await callbacks.onSaved(id); if (alive.current) { callbacks.onDirty(false); play('selection'); } }
+    }
+    catch (reason) { if (alive.current) { setError(partnershipError(savedId.current ? new Error('PARTNERSHIP_READBACK_REQUIRED') : reason)); play('warning'); } }
     finally { pending.current = false; if (alive.current) setBusy(false); callbacks.onBusy(false); }
   }
-  return { error, busy, save };
+  return { error, busy, acknowledged, save };
 }
 
 function EntityPicker({ type, value, label, selectedLabel, onPick, disabled, optional = false, locked = false }: {
@@ -117,7 +120,7 @@ export function PartnershipEditor({ state, ...callbacks }: { state: PartnershipE
   const terms = <><label>제공 조건·확인할 내용<textarea value={value('terms')} maxLength={3000} required={Boolean(data.terms_confirmed)} onChange={(event) => change('terms', event.target.value)} /></label><label className="partnership-check"><input type="checkbox" checked={Boolean(data.terms_confirmed)} onChange={(event) => { play('selection'); change('terms_confirmed', event.target.checked); }} />업체와 대상·제공 조건·기한을 확인했습니다.</label></>;
   return <form className="partnership-form" onSubmit={(event) => { event.preventDefault(); void action.save(submit); }}>
     {action.error && <p role="alert" className="partnership-form-error">{action.error}</p>}
-    <fieldset disabled={action.busy} className="partnership-form">
+    <fieldset disabled={action.busy || action.acknowledged} className="partnership-form">
       {state.kind === 'creator' ? <>
         <div className="partnership-form-grid"><label>크리에이터 이름<input required maxLength={120} value={value('display_name')} onChange={(event) => change('display_name', event.target.value)} /></label><label>활동 지역<select value={value('city_id')} onChange={(event) => { play('selection'); change('city_id', event.target.value); }}>{CITIES.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></label><label>SNS 프로필 주소<input type="url" required maxLength={2048} placeholder="https://www.instagram.com/..." value={value('profile_url')} onChange={(event) => change('profile_url', event.target.value)} /></label><label>콘텐츠 분야<input maxLength={80} placeholder="맛집 · 라이프 · 여행" value={value('category')} onChange={(event) => change('category', event.target.value)} /></label></div>
         <label>연락 경로<input maxLength={1000} placeholder="본인이 제공한 연락 방법" value={value('contact')} onChange={(event) => change('contact', event.target.value)} /></label>
@@ -141,7 +144,8 @@ export function PartnershipEditor({ state, ...callbacks }: { state: PartnershipE
       </>}
       {state.kind !== 'benefit' && <label>운영 메모<textarea maxLength={3000} value={value('notes')} onChange={(event) => change('notes', event.target.value)} /></label>}
     </fieldset>
-    <div className="partnership-form-actions"><button type="button" disabled={action.busy} onClick={callbacks.onCancel}>돌아가기</button><button type="submit" className="partnership-primary" disabled={action.busy}>{action.busy ? '저장 중…' : '저장'}</button></div>
+    {action.acknowledged && <p className="partnership-muted">저장 요청을 다시 보내지 않고, 저장된 내용만 조회합니다.</p>}
+    <div className="partnership-form-actions"><button type="button" disabled={action.busy} onClick={callbacks.onCancel}>돌아가기</button><button type="submit" className="partnership-primary" disabled={action.busy}>{action.busy ? action.acknowledged ? '내용 확인 중…' : '저장 중…' : action.acknowledged ? '저장 내용 다시 확인' : '저장'}</button></div>
   </form>;
 }
 
@@ -156,10 +160,11 @@ export function CouponIssueForm({ requestId, benefit, ...callbacks }: { requestI
   }); }}>
     <div><h3>{benefit.title}</h3><p>{benefit.merchant_name} · {benefit.expires_on}까지</p><p className="partnership-copy">{benefit.terms}</p></div>
     {action.error && <p role="alert" className="partnership-form-error">{action.error}</p>}
-    <EntityPicker type={benefit.audience === 'creators' ? 'creator' : 'member'} value={recipient.id ?? ''} selectedLabel={recipient.name} label="쿠폰을 받을 대상" disabled={action.busy} onPick={(id, name) => { setRecipient({ id, name }); setConfirmed(false); callbacks.onDirty(true); }} />
+    <EntityPicker type={benefit.audience === 'creators' ? 'creator' : 'member'} value={recipient.id ?? ''} selectedLabel={recipient.name} label="쿠폰을 받을 대상" disabled={action.busy || action.acknowledged} onPick={(id, name) => { setRecipient({ id, name }); setConfirmed(false); callbacks.onDirty(true); }} />
     {benefit.campaign_id && <p className="partnership-muted">연결 캠페인에서 선정된 팀의 크리에이터에게만 발급할 수 있습니다.</p>}
-    <label className="partnership-check"><input type="checkbox" checked={confirmed} disabled={action.busy} onChange={(event) => { play('selection'); setConfirmed(event.target.checked); callbacks.onDirty(true); }} />수령 대상과 제공 조건을 확인했습니다.</label>
-    <div className="partnership-form-actions"><button type="button" disabled={action.busy} onClick={callbacks.onCancel}>돌아가기</button><button type="submit" className="partnership-primary" disabled={action.busy || !confirmed || !recipient.id}>{action.busy ? '발급 중…' : '쿠폰 발급'}</button></div>
+    <label className="partnership-check"><input type="checkbox" checked={confirmed} disabled={action.busy || action.acknowledged} onChange={(event) => { play('selection'); setConfirmed(event.target.checked); callbacks.onDirty(true); }} />수령 대상과 제공 조건을 확인했습니다.</label>
+    {action.acknowledged && <p className="partnership-muted">쿠폰을 다시 발급하지 않고, 발급 내역만 조회합니다.</p>}
+    <div className="partnership-form-actions"><button type="button" disabled={action.busy} onClick={callbacks.onCancel}>돌아가기</button><button type="submit" className="partnership-primary" disabled={action.busy || !confirmed || !recipient.id}>{action.busy ? action.acknowledged ? '내용 확인 중…' : '발급 중…' : action.acknowledged ? '저장 내용 다시 확인' : '쿠폰 발급'}</button></div>
   </form>;
 }
 
@@ -173,8 +178,9 @@ export function CouponActionForm({ coupon, action: couponAction, ...callbacks }:
   }); }}>
     <div><h3>{coupon.recipient_name}</h3><p>{coupon.benefit_title} · {coupon.merchant_name}</p><p className="partnership-code">{coupon.code}</p></div>
     {action.error && <p role="alert" className="partnership-form-error">{action.error}</p>}
-    <label>확인 내용<textarea required maxLength={1000} value={note} disabled={action.busy} placeholder={couponAction === 'redeem' ? '매장 방문과 혜택 적용을 확인한 내용을 남겨 주세요.' : '쿠폰을 취소하는 이유를 남겨 주세요.'} onChange={(event) => { setNote(event.target.value); callbacks.onDirty(true); }} /></label>
-    <label className="partnership-check"><input type="checkbox" checked={confirmed} disabled={action.busy} onChange={(event) => { play('selection'); setConfirmed(event.target.checked); callbacks.onDirty(true); }} />{couponAction === 'redeem' ? '실제 사용을 확인했으며 다시 사용할 수 없도록 처리합니다.' : '이 쿠폰을 더 이상 사용할 수 없도록 취소합니다.'}</label>
-    <div className="partnership-form-actions"><button type="button" disabled={action.busy} onClick={callbacks.onCancel}>돌아가기</button><button type="submit" className="partnership-primary" disabled={action.busy || !confirmed || !note.trim()}>{action.busy ? '처리 중…' : couponAction === 'redeem' ? '사용 완료로 기록' : '쿠폰 취소'}</button></div>
+    <label>확인 내용<textarea required maxLength={1000} value={note} disabled={action.busy || action.acknowledged} placeholder={couponAction === 'redeem' ? '매장 방문과 혜택 적용을 확인한 내용을 남겨 주세요.' : '쿠폰을 취소하는 이유를 남겨 주세요.'} onChange={(event) => { setNote(event.target.value); callbacks.onDirty(true); }} /></label>
+    <label className="partnership-check"><input type="checkbox" checked={confirmed} disabled={action.busy || action.acknowledged} onChange={(event) => { play('selection'); setConfirmed(event.target.checked); callbacks.onDirty(true); }} />{couponAction === 'redeem' ? '실제 사용을 확인했으며 다시 사용할 수 없도록 처리합니다.' : '이 쿠폰을 더 이상 사용할 수 없도록 취소합니다.'}</label>
+    {action.acknowledged && <p className="partnership-muted">쿠폰 상태를 다시 변경하지 않고, 처리 내역만 조회합니다.</p>}
+    <div className="partnership-form-actions"><button type="button" disabled={action.busy} onClick={callbacks.onCancel}>돌아가기</button><button type="submit" className="partnership-primary" disabled={action.busy || !confirmed || !note.trim()}>{action.busy ? action.acknowledged ? '내용 확인 중…' : '처리 중…' : action.acknowledged ? '저장 내용 다시 확인' : couponAction === 'redeem' ? '사용 완료로 기록' : '쿠폰 취소'}</button></div>
   </form>;
 }
