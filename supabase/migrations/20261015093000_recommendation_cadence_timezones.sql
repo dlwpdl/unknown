@@ -32,46 +32,101 @@ $$;
 revoke all on function private.recommendation_timezone(uuid),private.recommendation_time(timestamptz,text)
   from public,anon,authenticated,service_role;
 
+create function private.next_recommendation_slot(p_after timestamptz,p_timezone text)
+returns timestamptz language sql stable set search_path='' as $$
+  select min(due_at) from (
+    select p_after due_at where private.recommendation_time(p_after,p_timezone)
+    union all
+    select (((p_after at time zone p_timezone)::date+d+time '09:00')+s*interval '90 minutes') at time zone p_timezone
+    from generate_series(0,1) d cross join generate_series(0,7) s
+    where (((p_after at time zone p_timezone)::date+d+time '09:00')+s*interval '90 minutes') at time zone p_timezone>=p_after
+  ) slots;
+$$;
+revoke all on function private.next_recommendation_slot(timestamptz,text) from public,anon,authenticated,service_role;
+
+-- Saved business recommendations follow the selected city at creation and again before delivery.
+do $$
+declare signature text; definition text; anchor text:='''city_food'',''city_places'')';
+begin
+  foreach signature in array array['private.notification_city_matches(public.notifications)','private.filter_notification()'] loop
+    definition:=pg_get_functiondef(signature::regprocedure);
+    if array_length(string_to_array(definition,anchor),1)<>2 then raise exception 'SAVED_MERCHANT_CITY_GUARD_CHANGED'; end if;
+    execute replace(definition,anchor,'''city_food'',''city_places'',''saved_merchant_post'')');
+  end loop;
+end;
+$$;
+update public.notifications n set city_id=p.city_id from public.posts p
+where n.kind='saved_merchant_post' and n.target_type='post' and n.target_id=p.id and n.city_id is distinct from p.city_id;
+
 -- Keep the current account, content, opt-out, session and duplicate checks in place.
 do $$
-declare definition text; signature text;
+declare definition text;
   old_categories text:='''trending'',''city_food'',''city_places'',''merchant_updates''';
-  all_categories text:='''trending'',''city_food'',''city_places'',''merchant_updates'',''weekly_ranking'',''interests'',''nearby''';
 begin
-  foreach signature in array array['private.filter_notification()','private.enqueue_push_notification()','public.claim_push_notifications(text,integer)'] loop
-    definition:=pg_get_functiondef(signature::regprocedure);
-    if position('>=6' in definition)=0 or position('interval ''30 minutes''' in definition)=0 then
-      raise exception 'RECOMMENDATION_BUDGET_CHANGED: %',signature;
+  definition:=pg_get_functiondef('private.filter_notification()'::regprocedure);
+  if position('>=6' in definition)=0 or position('select c.timezone into zone' in definition)=0 then raise exception 'RECOMMENDATION_FILTER_CHANGED'; end if;
+  -- One-shot topics, rankings and business updates keep an inbox record while their pushes wait.
+  definition:=replace(definition,'if new.category in ('||old_categories||') or new.kind=''trending_meetup'' then',
+    'if new.kind in (''trending_post'',''city_food'',''city_places'') then');
+  definition:=replace(definition,'>=6','>=8');
+  definition:=replace(definition,'budget_at-interval ''30 minutes''','budget_at-interval ''75 minutes''');
+  definition:=replace(definition,
+    'select c.timezone into zone from public.profiles r join public.cities c on c.id=r.city_id where r.id=new.user_id;',
+    'zone:=private.recommendation_timezone(new.user_id); if zone is null then return new; end if;');
+  definition:=replace(definition,'if not coalesce(cfg.enabled,false)',
+    'if not private.recommendation_time(budget_at,zone) or not coalesce(cfg.enabled,false)');
+  execute definition;
+
+  definition:=pg_get_functiondef('private.notify_saved_merchant_post(uuid,boolean)'::regprocedure);
+  if position('local_time:=p_now at time zone recipient.timezone;' in definition)=0 then raise exception 'SAVED_MERCHANT_PRODUCER_CHANGED'; end if;
+  definition:=regexp_replace(definition,'    local_time:=p_now at time zone recipient.timezone;.*?      or exists\(select 1 from public.notifications n where n.user_id=recipient.user_id and n.target_type=''post''',
+    '    if exists(select 1 from public.notifications n where n.user_id=recipient.user_id and n.target_type=''post''','s');
+  if position('>=6' in definition)>0 then raise exception 'SAVED_MERCHANT_BUDGET_PATCH_INCOMPLETE'; end if;
+  execute definition;
+
+  definition:=pg_get_functiondef('public.claim_push_notifications(text,integer)'::regprocedure);
+  if position('select n.*,c.timezone into recommendation' in definition)=0 or position('>=6' in definition)=0 then raise exception 'RECOMMENDATION_CLAIM_CHANGED'; end if;
+  definition:=replace(definition,'local_time timestamp;','local_time timestamp; due_at timestamptz; budget_zone text;');
+  definition:=regexp_replace(definition,'    if p_phase=''send'' then\n      select n\.\*,c.timezone into recommendation.*?    lease := gen_random_uuid\(\);',
+    $claim$    if p_phase='send' then
+      select n.*,(select d.timezone from private.push_devices d where d.id=item.device_id) timezone into recommendation
+        from public.notifications n where n.id=item.notification_id;
+      if recommendation.category in ('trending','city_food','city_places','merchant_updates','weekly_ranking','interests','nearby') or recommendation.kind='trending_meetup' then
+        perform pg_advisory_xact_lock(hashtextextended('recommendation:'||recommendation.user_id::text,0));
+        select t.* into cfg from private.trending_config t where t.id;
+        if not coalesce(cfg.enabled,false) or recommendation.timezone is null or recommendation.created_at<now()-interval '24 hours' then
+          update private.push_delivery_queue q set status='cancelled',finished_at=now(),lease_id=null,lease_until=null,
+            last_error='RECOMMENDATION_SUPPRESSED' where q.id=item.id;
+          continue;
+        end if;
+        budget_zone:=coalesce(private.recommendation_timezone(recommendation.user_id),recommendation.timezone);
+        local_time:=now() at time zone recommendation.timezone;
+        due_at:=now();
+        if (case when cfg.quiet_start_hour=cfg.quiet_end_hour then false
+          when cfg.quiet_start_hour<cfg.quiet_end_hour then extract(hour from local_time)>=cfg.quiet_start_hour and extract(hour from local_time)<cfg.quiet_end_hour
+          else extract(hour from local_time)>=cfg.quiet_start_hour or extract(hour from local_time)<cfg.quiet_end_hour end) then
+          due_at:=now()+interval '15 minutes';
+        end if;
+        select greatest(due_at,coalesce(max(q.first_attempt_at)+interval '75 minutes',due_at)) into due_at
+        from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id
+        where n.user_id=recommendation.user_id and q.notification_id<>item.notification_id
+          and (n.category in ('trending','city_food','city_places','merchant_updates','weekly_ranking','interests','nearby') or n.kind='trending_meetup');
+        if (select count(distinct q.notification_id) from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id
+          where n.user_id=recommendation.user_id and q.notification_id<>item.notification_id
+            and (n.category in ('trending','city_food','city_places','merchant_updates','weekly_ranking','interests','nearby') or n.kind='trending_meetup')
+            and (q.first_attempt_at at time zone budget_zone)::date=(now() at time zone budget_zone)::date)>=8 then
+          due_at:=greatest(due_at,((now() at time zone budget_zone)::date+1+time '09:00') at time zone budget_zone);
+        end if;
+        due_at:=private.next_recommendation_slot(due_at,recommendation.timezone);
+        if due_at>now() then
+          update private.push_delivery_queue q set next_attempt_at=due_at,lease_id=null,lease_until=null where q.id=item.id;
+          continue;
+        end if;
+      end if;
     end if;
-    definition:=replace(definition,'>=6','>=8');
-    -- A 15-minute slot allows the existing five-minute worker to recover a short delay.
-    definition:=replace(definition,'budget_at-interval ''30 minutes''','budget_at-interval ''75 minutes''');
-    definition:=replace(definition,'new.created_at-interval ''30 minutes''','new.created_at-interval ''75 minutes''');
-    definition:=replace(definition,'q.first_attempt_at>now()-interval ''30 minutes''','q.first_attempt_at>now()-interval ''75 minutes''');
-    if signature='private.filter_notification()' then
-      if position('select c.timezone into zone from public.profiles' in definition)=0 then raise exception 'RECOMMENDATION_FILTER_CHANGED'; end if;
-      definition:=replace(definition,
-        'select c.timezone into zone from public.profiles r join public.cities c on c.id=r.city_id where r.id=new.user_id;',
-        'zone:=private.recommendation_timezone(new.user_id);');
-      definition:=replace(definition,'if not coalesce(cfg.enabled,false)',
-        'if not private.recommendation_time(budget_at,zone) or not coalesce(cfg.enabled,false)');
-    elsif signature='private.enqueue_push_notification()' then
-      definition:=replace(definition,old_categories,all_categories);
-      definition:=replace(definition,
-        'select c.timezone into zone from public.profiles r join public.cities c on c.id=r.city_id where r.id=new.user_id;',
-        'zone:=private.recommendation_timezone(new.user_id); if not private.recommendation_time(new.created_at,zone) then return new; end if;');
-      definition:=replace(definition,'and private.push_notification_eligible(d.id,new.id)',
-        'and private.push_notification_eligible(d.id,new.id) and (new.category not in ('||all_categories||') and new.kind<>''trending_meetup'' or private.recommendation_time(new.created_at,d.timezone))');
-    else
-      if position('select n.*,c.timezone into recommendation' in definition)=0 then raise exception 'RECOMMENDATION_CLAIM_CHANGED'; end if;
-      definition:=replace(definition,old_categories,all_categories);
-      definition:=replace(definition,'select n.*,c.timezone into recommendation',
-        'select n.*,(select d.timezone from private.push_devices d where d.id=item.device_id) timezone into recommendation');
-      definition:=replace(definition,'if not coalesce(cfg.enabled,false)',
-        'if not private.recommendation_time(now(),recommendation.timezone) or not coalesce(cfg.enabled,false)');
-    end if;
-    execute definition;
-  end loop;
+    lease := gen_random_uuid();$claim$,'s');
+  if position('>=6' in definition)>0 or position('due_at:=private.next_recommendation_slot' in definition)=0 then raise exception 'RECOMMENDATION_CLAIM_PATCH_INCOMPLETE'; end if;
+  execute definition;
 
   definition:=pg_get_functiondef('private.send_city_recommendations(timestamptz)'::regprocedure);
   if position('slot:=extract(hour from local_time) in (11,16,20)' in definition)=0
@@ -87,6 +142,27 @@ begin
     'and (n.created_at at time zone private.recommendation_timezone(r.id))::date=(p_now at time zone private.recommendation_timezone(r.id))::date)<8','s');
   if position('Reserve one recommendation' in definition)>0 or position('in (11,16,20)' in definition)>0 then raise exception 'CITY_RECOMMENDATION_PATCH_INCOMPLETE'; end if;
   execute definition;
+end;
+$$;
+
+create or replace function private.enqueue_push_notification()
+returns trigger language plpgsql security definer set search_path='' as $$
+declare recommendation boolean:=new.category in ('trending','city_food','city_places','merchant_updates','weekly_ranking','interests','nearby') or new.kind='trending_meetup';
+begin
+  if new.kind='meetup_morning' then return new; end if;
+  if recommendation then
+    perform pg_advisory_xact_lock(hashtextextended('recommendation:'||new.user_id::text,0));
+    if exists(select 1 from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id
+      where n.user_id=new.user_id and n.id<>new.id and n.target_type=new.target_type and n.target_id=new.target_id
+        and n.category in ('trending','city_food','city_places','merchant_updates','weekly_ranking','meetups','interests','nearby')
+        and n.created_at>new.created_at-interval '7 days') then return new; end if;
+  end if;
+  insert into private.push_delivery_queue(notification_id,device_id,next_attempt_at)
+    select new.id,d.id,case when recommendation then private.next_recommendation_slot(new.created_at,d.timezone) else now() end
+    from private.push_devices d where d.user_id=new.user_id and private.push_notification_eligible(d.id,new.id)
+      and (not recommendation or d.timezone is not null)
+    on conflict do nothing;
+  return new;
 end;
 $$;
 

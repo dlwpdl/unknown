@@ -13,6 +13,9 @@ select ok(private.recommendation_time('2026-11-01 17:00Z','America/Vancouver'),'
 select ok(not private.recommendation_time('2026-11-01 16:00Z','America/Vancouver'),'fall DST does not send at the old UTC offset');
 select ok(private.recommendation_time('2027-03-14 16:00Z','America/Vancouver'),'spring DST uses 09:00 device time');
 select ok(private.recommendation_time('2026-10-16 03:15Z','Asia/Kathmandu'),'quarter-hour timezone offsets use the same local schedule');
+select is(private.next_recommendation_slot('2026-10-16 05:00Z','America/Vancouver'),'2026-10-16 16:00Z'::timestamptz,'an overnight one-shot waits for the next device morning');
+select is(private.next_recommendation_slot('2026-10-16 16:20Z','America/Vancouver'),'2026-10-16 17:30Z'::timestamptz,'a missed slot waits for the next scheduled slot');
+select is(private.next_recommendation_slot('2026-10-16 16:05Z','America/Vancouver'),'2026-10-16 16:05Z'::timestamptz,'a recommendation inside its slot can send immediately');
 select ok(not has_function_privilege('anon','public.register_push_device(text,uuid,text)','execute'),'anonymous timezone registration is forbidden');
 select ok(not has_function_privilege('authenticated','private.recommendation_timezone(uuid)','execute'),'other members cannot inspect device zones');
 
@@ -71,5 +74,67 @@ values('13900000-0000-0000-0000-000000000002','comment','13900000-0000-0000-0000
   'post','13910000-0000-0000-0000-000000000001','A real activity reply','/post/13910000-0000-0000-0000-000000000001');
 select is((select count(*)::integer from public.claim_push_notifications('send',100)
   where user_id='13900000-0000-0000-0000-000000000002' and category='replies'),1,'an unknown zone does not block replies');
+
+-- A global topic marker must still retain work for every device-timezone cohort.
+update private.trending_config set quiet_start_hour=0,quiet_end_hour=0 where id;
+update private.push_devices set timezone='Asia/Tokyo',timezone_updated_at=now() where user_id='13900000-0000-0000-0000-000000000002';
+insert into private.push_devices(user_id,session_id,token,timezone,timezone_updated_at) values
+('13900000-0000-0000-0000-000000000003','13900000-0000-0000-0000-000000000003','ExpoPushToken[cadence_second_device_12345]','UTC',now()-interval '1 hour'),
+('13900000-0000-0000-0000-000000000003','13900000-0000-0000-0000-000000000003','ExpoPushToken[cadence_unknown_device_12345]',null,null);
+insert into public.posts(id,author_id,city_id,tag_id,title,body,hashtags)
+select ('13920000-0000-0000-0000-'||lpad(n::text,12,'0'))::uuid,
+ ('13900000-0000-0000-0000-'||lpad(n::text,12,'0'))::uuid,'vancouver',1,'Timezone topic fixture','A real local topic',array['#timezonecohorts']
+from generate_series(1,3) n;
+select public.send_trending_topic_notifications();
+select is((select count(*)::integer from public.notifications where kind='trending_hashtag'
+ and user_id in ('13900000-0000-0000-0000-000000000002','13900000-0000-0000-0000-000000000003')),2,
+ 'the real topic producer retains both device-zone recipients');
+select is((select count(distinct n.user_id)::integer from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id
+ where n.kind='trending_hashtag' and n.user_id in ('13900000-0000-0000-0000-000000000002','13900000-0000-0000-0000-000000000003')),2,
+ 'both cohorts have durable delivery work before the city-wide marker is consumed');
+select public.send_trending_topic_notifications();
+select is((select count(*)::integer from public.notifications where kind='trending_hashtag'
+ and user_id in ('13900000-0000-0000-0000-000000000002','13900000-0000-0000-0000-000000000003')),2,'repeating the topic producer does not duplicate either cohort');
+
+delete from public.notifications where user_id='13900000-0000-0000-0000-000000000003';
+insert into public.notifications(id,user_id,kind,target_type,target_id,body,route,created_at)
+select '13990000-0000-0000-0000-000000000001','13900000-0000-0000-0000-000000000003','weekly_ranking','post',
+ '13910000-0000-0000-0000-000000000012','One-shot ranking','/post/13910000-0000-0000-0000-000000000012',first_slot from cadence_clock;
+select is((select q.next_attempt_at from private.push_delivery_queue q join private.push_devices d on d.id=q.device_id
+ where q.notification_id='13990000-0000-0000-0000-000000000001' and d.timezone='Asia/Seoul'),
+ (select first_slot+interval '8 hours' from cadence_clock),'an overnight ranking waits until Seoul morning');
+select is((select q.next_attempt_at from private.push_delivery_queue q join private.push_devices d on d.id=q.device_id
+ where q.notification_id='13990000-0000-0000-0000-000000000001' and d.timezone='UTC'),
+ (select first_slot+interval '30 minutes' from cadence_clock),'another active device waits for its own local slot');
+select is((select count(*)::integer from private.push_delivery_queue where notification_id='13990000-0000-0000-0000-000000000001'),2,
+ 'an unknown-zone device is skipped without losing work for the two known devices');
+
+-- Revalidate a delayed one-shot against the real current clock, then advance only the slot gate.
+update public.notifications set created_at=now()-interval '3 hours' where id='13990000-0000-0000-0000-000000000001';
+update private.push_devices set timezone=(select name from pg_timezone_names where not private.recommendation_time(now(),name)
+ and extract(hour from now() at time zone name) between 9 and 19 order by name limit 1)
+where user_id='13900000-0000-0000-0000-000000000003' and timezone is not null;
+update private.push_delivery_queue set next_attempt_at=now() where notification_id='13990000-0000-0000-0000-000000000001';
+select is((select count(*)::integer from public.claim_push_notifications('send',100)
+ where notification_id='13990000-0000-0000-0000-000000000001'),0,'an early claim emits no ranking outside the device slot');
+select ok((select bool_and(status='pending' and next_attempt_at>now() and first_attempt_at is null and attempts=0)
+ from private.push_delivery_queue where notification_id='13990000-0000-0000-0000-000000000001'),
+ 'a three-hour-old ranking is deferred without spending a send attempt');
+create or replace function private.next_recommendation_slot(p_after timestamptz,p_timezone text)
+returns timestamptz language sql stable set search_path='' as $$ select p_after $$;
+update private.push_delivery_queue set next_attempt_at=now() where notification_id='13990000-0000-0000-0000-000000000001';
+create temporary table delayed_claims as select * from public.claim_push_notifications('send',100);
+select is((select count(*)::integer from delayed_claims where notification_id='13990000-0000-0000-0000-000000000001'),2,
+ 'both devices can claim the retained ranking once their slot arrives');
+select is((select count(distinct notification_id)::integer from private.push_delivery_queue
+ where notification_id='13990000-0000-0000-0000-000000000001' and first_attempt_at is not null),1,
+ 'multi-device fan-out spends one shared user recommendation');
+update public.profiles set city_id='toronto' where id='13900000-0000-0000-0000-000000000003';
+update private.push_delivery_queue set lease_until=now()-interval '1 second',next_attempt_at=now()
+where notification_id='13990000-0000-0000-0000-000000000001';
+select is((select count(*)::integer from public.claim_push_notifications('send',100)
+ where notification_id='13990000-0000-0000-0000-000000000001'),0,'a changed selected city cancels the retained old-city ranking');
+select ok((select bool_and(status='cancelled') from private.push_delivery_queue
+ where notification_id='13990000-0000-0000-0000-000000000001'),'old-city pending devices are cancelled before any provider call');
 select * from finish();
 rollback;
