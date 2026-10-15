@@ -21,7 +21,7 @@ import { ThemedText } from '@/components/themed-text';
 import { MannerReviewButton } from '@/components/manner-review';
 import { ThemedView } from '@/components/themed-view';
 import { TrustBadge } from '@/components/trust-badge';
-import { Depth, Spacing } from '@/constants/theme';
+import { Colors, Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { t } from '@/i18n/ko';
@@ -642,8 +642,8 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           };
           // 하트 모양은 그대로 두고, 내가 누른 경우에만 눌린 느낌(배경·그림자)을 준다.
           const heart = !message.deleted_at && reaction && reaction.hearts > 0
-            ? <View style={[styles.heartBadge, mine && styles.timeMine, reaction.mine && styles.heartBadgeMine]}>
-                <ThemedText type="small" themeColor={reaction.mine ? undefined : 'textSecondary'} style={reaction.mine ? styles.heartBadgeTextMine : undefined}>❤️ {reaction.hearts}</ThemedText>
+            ? <View style={[styles.heartBadge, mine && styles.timeMine, reaction.mine && [styles.heartBadgeMine, { backgroundColor: theme.backgroundSelected, borderColor: theme.line }]]}>
+                <ThemedText type="small" themeColor={reaction.mine ? undefined : 'textSecondary'} style={reaction.mine ? [styles.heartBadgeTextMine, { color: theme.text }] : undefined}>❤️ {reaction.hearts}</ThemedText>
               </View>
             : null;
           return <View style={styles.messageGroup}>
@@ -729,7 +729,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           <Pressable analyticsId="chat.message.reply" accessibilityRole="button" accessibilityLabel="답장" disabled={sending || pickingPhoto || replyLocked} accessibilityState={{ disabled: sending || pickingPhoto || replyLocked }} onPress={() => { if (photoSend.current?.submitted) return; play('selection'); setReplyTo(messageMenu); closeMessageMenu(); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold">답장</ThemedText></Pressable>
           {messageMenu.sender_id === currentUserId && <>
             {(!messageMenu.kind || messageMenu.kind === 'text') && <Pressable analyticsId="chat.message.edit" accessibilityRole="button" accessibilityLabel="메시지 수정" disabled={sending} onPress={() => { play('selection'); setEditingMessage(messageMenu); setMessageEditDraft(messageMenu.body); closeMessageMenu(); setError(null); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold">수정</ThemedText></Pressable>}
-            <Pressable analyticsId="chat.message.delete" accessibilityRole="button" accessibilityLabel="메시지 삭제" disabled={sending} onPress={() => { play('selection'); setDeleteConfirm(true); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold" style={{ color: '#FF8585' }}>삭제</ThemedText></Pressable>
+            <Pressable analyticsId="chat.message.delete" accessibilityRole="button" accessibilityLabel="메시지 삭제" disabled={sending} onPress={() => { play('selection'); setDeleteConfirm(true); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold" style={{ color: theme === Colors.dark ? '#FF8585' : Colors.admin.danger }}>삭제</ThemedText></Pressable>
           </>}
         </View>
       </View>
@@ -813,10 +813,9 @@ const styles = StyleSheet.create({
   heartBadge: { alignSelf: 'flex-start', paddingHorizontal: Spacing.two, paddingVertical: 1, borderRadius: 10, borderWidth: 1, borderColor: 'transparent' },
   // 내가 누른 하트만 진하게: 옅은 배경 + 테두리 + 그림자.
   heartBadgeMine: {
-    backgroundColor: 'rgba(0,0,0,0.06)', borderColor: 'rgba(0,0,0,0.14)',
     shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 2,
   },
-  heartBadgeTextMine: { color: '#1c1c1e', textShadowColor: 'rgba(0,0,0,0.30)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+  heartBadgeTextMine: { textShadowColor: 'rgba(0,0,0,0.30)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
   empty: { textAlign: 'center', paddingVertical: Spacing.five },
   row: { flexDirection: 'row', gap: Spacing.two, alignItems: 'flex-start', paddingRight: Spacing.five },
   rowBody: { gap: Spacing.one, flexShrink: 1 },
