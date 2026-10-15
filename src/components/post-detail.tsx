@@ -757,7 +757,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               placeholderTextColor={theme.textSecondary}
               style={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.line }]}
             />
-            <Pressable analyticsId="components_post-detail.pressable.19"
+            <Pressable lens analyticsId="components_post-detail.pressable.19"
               onPress={() => { play('selection'); void send(); }}
               disabled={sendDisabled}
               accessibilityRole="button"
@@ -909,7 +909,7 @@ function ListingControls({ post, onChanged }: { post: Post; onChanged: (next: Pa
     }
   };
   const action = (label: string, onPress: () => void, primary = false) => (
-    <Pressable analyticsId="components_post-detail.pressable.20" key={label} accessibilityRole="button" onPress={() => { play('selection'); onPress(); }} disabled={busy} accessibilityState={{ disabled: busy, busy }}
+    <Pressable lens analyticsId="components_post-detail.pressable.20" key={label} accessibilityRole="button" onPress={() => { play('selection'); onPress(); }} disabled={busy} accessibilityState={{ disabled: busy, busy }}
       style={({ pressed }) => [styles.listingAction, (pressed || busy) && { opacity: 0.6 }]}>
       <ThemedText type="smallBold" themeColor={primary ? 'accent' : 'textSecondary'}>{label}</ThemedText>
     </Pressable>
