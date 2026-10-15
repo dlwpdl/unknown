@@ -35,6 +35,7 @@ export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevel
   const [filters, setFilters] = useState<ActivityFilters>(EMPTY_ACTIVITY_FILTERS);
   const [draft, setDraft] = useState<ActivityFilters>(EMPTY_ACTIVITY_FILTERS);
   const [filterError, setFilterError] = useState<string | null>(null);
+  const [showManagement, setShowManagement] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showConnection, setShowConnection] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -111,20 +112,15 @@ export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevel
         <ThemedText type="small" style={styles.muted}>{ACCOUNT_TYPES[profile.account_type]} · {statusLabel(profile.account_status)}</ThemedText></View>
     </View>
     <View style={styles.card}>
-      <GroupTitle title="계정 정보" />
-      <Field label="로그인 이메일" value={profile.email ?? '미제공'} />
-      <Field label="이메일 확인" value={profile.email_confirmed_at ? '확인 완료' : '확인 기록 없음'} />
-      <Field label="선호 지역" value={[CITIES.find((city) => city.id === profile.city_id)?.name ?? profile.city_id, profile.neighborhood].filter(Boolean).join(' · ') || '미제공'} />
-      <Button label={showProfile ? '추가 프로필 닫기' : '추가 프로필 보기'} onPress={() => setShowProfile(value => !value)} />
-      {showProfile && <>
-      <Field label="입력한 이름 · 비공개" value={profile.full_name ?? '미제공'} />
-      <Field label="생년월일 · 만 나이" value={profile.date_of_birth ? `${profile.date_of_birth}${profile.age != null ? ` · 만 ${profile.age}세` : ''}` : '미제공'} />
-      <Field label="성별 · 비공개" value={profile.gender ? ADMIN_GENDERS[profile.gender] ?? profile.gender : '미제공'} />
-      {profile.personal_info_updated_at && <Field label="개인정보 갱신" value={formatDate(profile.personal_info_updated_at)} />}
-      <Field label="로그인 프로필 이름" value={profile.login_name ?? '미제공'} />
-      <ThemedText type="small" style={styles.muted}>이름·생년월일은 본인이 별도 동의 후 입력한 정보입니다. 소셜 로그인 프로필 이름과 분리되며, 두 정보 모두 실명인증 결과가 아닙니다.</ThemedText>
-      <Field label="실명인증" value="미도입 · 신뢰 단계와 별개" />
-      </>}
+      <ThemedText type="small">{[CITIES.find((city) => city.id === profile.city_id)?.name ?? profile.city_id, profile.neighborhood].filter(Boolean).join(' · ') || '지역 미제공'}</ThemedText>
+      <ThemedText type="small">{profile.auth_role === 'admin' ? '관리자' : profile.auth_role === 'member' ? '일반 회원' : profile.auth_role} · 신뢰 {profile.verification_level} · {merchantAccess === null ? '업체 권한 확인 필요' : merchantAccess ? '업체 관리 가능' : '일반 계정'}</ThemedText>
+      <ThemedText type="small" style={styles.muted}>가입 {formatDate(profile.created_at)}</ThemedText>
+      {!!profile.account_status_note && <Field label="최근 상태 메모" value={profile.account_status_note} />}
+      {onStatusChange && profile.account_status === 'suspended' && <Button disabled={statusBusy} label="이용 제한 해제" onPress={() => void changeStatus('active')} />}
+      {onStatusChange && profile.account_status === 'deleted' && <Button disabled={statusBusy} label="재가입 허용" onPress={() => void changeStatus('reactivation_pending')} />}
+      {error && <ThemedText accessibilityRole="alert" style={styles.error}>{error}</ThemedText>}
+      <Button expanded={showManagement} label={showManagement ? '계정 관리 닫기' : '계정 관리 · 권한과 신뢰 변경'} onPress={() => setShowManagement(value => !value)} />
+      <View style={{ display: showManagement ? 'flex' : 'none' }}>
       <Field label="권한" value={profile.auth_role === 'admin' ? '관리자' : profile.auth_role === 'member' ? '일반 회원' : profile.auth_role} />
       <View style={styles.trustRow}>
         <ThemedText type="small" style={styles.fieldLabel}>업체 계정</ThemedText>
@@ -152,16 +148,24 @@ export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevel
         <Field label="권한 · 신뢰" value={`${profile.auth_role} · 신뢰 ${profile.verification_level}`} />
       )}
       <ThemedText type="small" style={styles.muted}>신뢰 단계는 배지·노출 판단에만 쓰이며 실명인증 결과가 아닙니다. 변경은 감사 로그에 남습니다.</ThemedText>
-      <Field label="가입" value={formatDate(profile.created_at)} />
+      </View>
+      <Button expanded={showProfile} label={showProfile ? '추가 프로필 닫기' : '추가 프로필 보기'} onPress={() => setShowProfile(value => !value)} />
+      <View style={{ display: showProfile ? 'flex' : 'none' }}>
+      <Field label="로그인 이메일" value={profile.email ?? '미제공'} />
+      <Field label="이메일 확인" value={profile.email_confirmed_at ? '확인 완료' : '확인 기록 없음'} />
+      <Field label="입력한 이름 · 비공개" value={profile.full_name ?? '미제공'} />
+      <Field label="생년월일 · 만 나이" value={profile.date_of_birth ? `${profile.date_of_birth}${profile.age != null ? ` · 만 ${profile.age}세` : ''}` : '미제공'} />
+      <Field label="성별 · 비공개" value={profile.gender ? ADMIN_GENDERS[profile.gender] ?? profile.gender : '미제공'} />
+      {profile.personal_info_updated_at && <Field label="개인정보 갱신" value={formatDate(profile.personal_info_updated_at)} />}
+      <Field label="로그인 프로필 이름" value={profile.login_name ?? '미제공'} />
+      <ThemedText type="small" style={styles.muted}>이름·생년월일은 본인이 별도 동의 후 입력한 정보입니다. 소셜 로그인 프로필 이름과 분리되며, 두 정보 모두 실명인증 결과가 아닙니다.</ThemedText>
+      <Field label="실명인증" value="미도입 · 신뢰 단계와 별개" />
+      </View>
       <Field label="최근 로그인" value={profile.last_sign_in_at ? formatDate(profile.last_sign_in_at) : '기록 없음'} />
       {!!profile.bio && <Field label="소개" value={profile.bio} />}
-      {!!profile.account_status_note && <Field label="최근 상태 메모" value={profile.account_status_note} />}
-      {onStatusChange && profile.account_status === 'suspended' && <Button disabled={statusBusy} label="이용 제한 해제" onPress={() => void changeStatus('active')} />}
-      {onStatusChange && profile.account_status === 'deleted' && <Button disabled={statusBusy} label="재가입 허용" onPress={() => void changeStatus('reactivation_pending')} />}
-      {error && <ThemedText accessibilityRole="alert" style={styles.error}>{error}</ThemedText>}
     </View>
-    <Button label={showConnection ? '로그인·접속 정보 닫기' : '로그인·접속 정보 보기'} onPress={() => setShowConnection(value => !value)} />
-    {showConnection && <><View style={styles.card}>
+    <Button expanded={showConnection} label={showConnection ? '로그인·접속 정보 닫기' : '로그인·접속 정보 보기'} onPress={() => setShowConnection(value => !value)} />
+    <View style={{ display: showConnection ? 'flex' : 'none' }}><View style={styles.card}>
       <GroupTitle title="위치 · 접속" />
       <Field label="선호 지역 · 회원 선택" value={[CITIES.find((city) => city.id === profile.city_id)?.name ?? profile.city_id, profile.neighborhood].filter(Boolean).join(' · ') || '미제공'} />
       <Field label="GPS 기준 가까운 도시" value={snapshot ? gpsCity?.name ?? '연결 가능한 도시 없음 · 지원 범위 또는 정확도 확인 필요' : '보관 중인 기록 없음'} />
@@ -182,27 +186,24 @@ export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevel
       <Field label="회원 ID" value={profile.id} />
       {overview.identities.map((identity) => <Field key={`${identity.provider}:${identity.provider_id}`} label={`${identity.provider} 계정 ID`} value={identity.provider_id} />)}
       {overview.identities.length === 0 && <ThemedText type="small" style={styles.muted}>연결된 계정 기록이 없습니다.</ThemedText>}
-    </View></>}
+    </View></View>
     <GroupTitle title="저장된 활동" />
-    <ThemedText type="small" style={styles.muted}>아래 건수는 현재 남아 있는 기록입니다. 삭제된 원문과 기록하지 않은 과거 변경은 포함되지 않습니다. 접속은 30분 구간 집계이며 최대 90일 보관됩니다.</ThemedText>
-    <View style={styles.metrics}>{overview.counts.filter(item => MAIN_ACTIVITY_KINDS.includes(item.kind)).map((item) => <Pressable key={item.kind} accessibilityRole="button" accessibilityLabel={`${ACTIVITY_KINDS[item.kind]} ${item.count}건 보기`} onPress={() => chooseKind(item.kind)} style={({ pressed }) => [styles.metric, filters.kind === item.kind && styles.selected, pressed && styles.pressed]}>
-      <ThemedText type="small" style={styles.muted}>{ACTIVITY_KINDS[item.kind]}</ThemedText><ThemedText type="smallBold" style={styles.metricValue}>{item.count}</ThemedText>
-    </Pressable>)}</View>
+    <ThemedText type="small" style={styles.muted}>종류별 건수는 해당 회원의 전체 보관 기록이며 대화 맥락의 건수가 아닙니다. 삭제된 원문과 기록하지 않은 과거 변경은 포함되지 않습니다. 접속은 30분 구간 집계이며 최대 90일 보관됩니다.</ThemedText>
     <View style={styles.card}>
       <GroupTitle title={filters.conversationId ? '대화 맥락' : '시간순 활동'} />
       {filters.conversationId && <><ThemedText type="small">상대방 메시지를 포함한 대화</ThemedText><Button label="회원 전체 활동으로 돌아가기" onPress={() => conversation(null)} /></>}
-      {!filters.conversationId && <View accessibilityRole="radiogroup" accessibilityLabel="활동 종류" style={styles.filters}>{Object.entries(ACTIVITY_KINDS).filter(([kind]) => showFilters || MAIN_ACTIVITY_KINDS.includes(kind as ActivityKind)).map(([kind, label]) => <Pressable key={kind} accessibilityRole="radio" aria-checked={filters.kind === kind} tabIndex={filters.kind === kind ? 0 : -1} {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})} onPress={() => chooseKind(kind as ActivityKind)} style={({ pressed }) => [styles.chip, filters.kind === kind && styles.selected, pressed && styles.pressed]}><ThemedText type="small" style={filters.kind === kind && styles.accent}>{label}</ThemedText></Pressable>)}</View>}
-      <Button label={showFilters ? '상세 조회 조건 닫기' : `상세 조회 조건 · ${ACTIVITY_KINDS[filters.kind]}`} onPress={() => setShowFilters(value => !value)} />
-      {showFilters && <>
+      {!filters.conversationId && <View accessibilityRole="radiogroup" accessibilityLabel="활동 종류" style={styles.filters}>{Object.entries(ACTIVITY_KINDS).filter(([kind]) => showFilters || MAIN_ACTIVITY_KINDS.includes(kind as ActivityKind) || kind === filters.kind).map(([kind, label]) => <Pressable key={kind} accessibilityRole="radio" aria-checked={filters.kind === kind} tabIndex={filters.kind === kind ? 0 : -1} {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})} onPress={() => chooseKind(kind as ActivityKind)} style={({ pressed }) => [styles.chip, filters.kind === kind && styles.selected, pressed && styles.pressed]}><ThemedText type="small" style={filters.kind === kind && styles.accent}>{label}{kind !== 'all' ? ` ${overview.counts.find(item => item.kind === kind)?.count ?? 0}` : ''}</ThemedText></Pressable>)}</View>}
+      <Button expanded={showFilters} label={showFilters ? '상세 조회 조건 닫기' : `상세 조회 조건 · ${ACTIVITY_KINDS[filters.kind]}`} onPress={() => setShowFilters(value => !value)} />
+      <View style={{ display: showFilters ? 'flex' : 'none' }}>
       <View style={styles.filters}>
-        <TextInput accessibilityLabel="활동 시작일" placeholder="시작일 YYYY-MM-DD" value={draft.from} onChangeText={(from) => setDraft({ ...draft, from })} style={styles.input} maxLength={10} />
-        <TextInput accessibilityLabel="활동 종료일" placeholder="종료일 YYYY-MM-DD" value={draft.until} onChangeText={(until) => setDraft({ ...draft, until })} style={styles.input} maxLength={10} />
+        <TextInput onFocus={() => play('selection')} accessibilityLabel="활동 시작일" placeholder="시작일 YYYY-MM-DD" value={draft.from} onChangeText={(from) => setDraft({ ...draft, from })} style={styles.input} maxLength={10} />
+        <TextInput onFocus={() => play('selection')} accessibilityLabel="활동 종료일" placeholder="종료일 YYYY-MM-DD" value={draft.until} onChangeText={(until) => setDraft({ ...draft, until })} style={styles.input} maxLength={10} />
       </View>
-      <TextInput accessibilityLabel="활동 내용 검색" placeholder="내용, 상태 검색" value={draft.query} onChangeText={(query) => setDraft({ ...draft, query })} onSubmitEditing={apply} maxLength={200} style={styles.input} />
+      <TextInput onFocus={() => play('selection')} accessibilityLabel="활동 내용 검색" placeholder="내용, 상태 검색" value={draft.query} onChangeText={(query) => setDraft({ ...draft, query })} onSubmitEditing={apply} maxLength={200} style={styles.input} />
       <ThemedText type="small" style={styles.muted}>날짜 기준: {Intl.DateTimeFormat().resolvedOptions().timeZone} · 종료일 포함</ThemedText>
       <Button label="조회 조건 적용" onPress={apply} />
       {filterError && <ThemedText accessibilityRole="alert" style={styles.error}>{filterError}</ThemedText>}
-      </>}
+      </View>
     </View>
     <ActivityTimeline key={JSON.stringify(filters)} userId={userId} filters={filters} profiles={profiles} nickname={profile.nickname} onConversation={conversation} />
   </View>;
@@ -262,9 +263,9 @@ function Field({ label, value }: { label: string; value: string }) {
 function GroupTitle({ title }: { title: string }) {
   return <ThemedText accessibilityRole="header" {...(Platform.OS === 'web' ? { 'aria-level': 2 } : {})} style={styles.groupTitle}>{title}</ThemedText>;
 }
-function Button({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) {
+function Button({ label, onPress, disabled = false, expanded }: { label: string; onPress: () => void; disabled?: boolean; expanded?: boolean }) {
   const { play } = useInteractionFeedback();
-  return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.button, disabled && styles.disabled, pressed && styles.pressed]}><ThemedText type="smallBold">{label}</ThemedText></Pressable>;
+  return <Pressable accessibilityRole="button" accessibilityState={{ disabled, expanded }} disabled={disabled} onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.button, disabled && styles.disabled, pressed && styles.pressed]}><ThemedText type="smallBold">{label}</ThemedText></Pressable>;
 }
 function formatDate(value: string) { return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'medium' }).format(new Date(value)); }
 function statusLabel(value: string) {

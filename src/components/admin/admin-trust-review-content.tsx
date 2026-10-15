@@ -46,10 +46,14 @@ function Content({ targetType, targetId, localPreview = false, onUser }: { targe
     <Pressable accessibilityRole="button" disabled={busy || localPreview} accessibilityState={{ disabled: busy || localPreview }} onPress={() => void load()} style={button}><ThemedText type="smallBold">{busy ? '처리 중…' : attendance ? '비공개 참석 이의제기 읽기' : '후기·비공개 행동 평가 읽기'}</ThemedText></Pressable>
     {!!notice && <ThemedText type="small" accessibilityLiveRegion="polite">{notice}</ThemedText>}
     {content && <>
+      <ThemedText type="smallBold">{attendance ? '참석 이의제기 원문' : targetType === 'manner_review' ? '비공개 행동 평가 원문' : '모임 후기 원문'}</ThemedText>
       <ThemedText type="small" selectable>{content.text}</ThemedText>
-      <ThemedText type="small">현재 상태 · {content.status}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">{attendance ? '진술만으로 인증하지 마세요. 회차·참가 이력과 독립 증거를 대조하고 확인한 근거를 기록해주세요.' : 'AI는 판단 근거가 아닙니다. 실제 관계·행동·반복 계정·보복 가능성과 당사자 맥락을 검토해주세요. 합의한 관계 목적 자체는 위반이 아닙니다.'} 원문 조회와 판단은 모두 감사 기록에 남습니다.</ThemedText>
+      <ThemedText type="smallBold">현재 검토 상태 · {attendance
+        ? ({ pending: '참석 증빙 검토 대기', verified: '참석 증빙 확인됨', rejected: '참석 증빙 확인 거절', none: '이의제기 없음' } as Record<string, string>)[content.status] ?? '알 수 없는 참석 검토 상태'
+        : ({ needs_review: '운영자 검토 필요 · 반영 보류', pending: '검토 대기', published: targetType === 'manner_review' ? '행동 평가 반영 중' : '후기 게시 중', removed: targetType === 'manner_review' ? '행동 평가 반영 제외' : '후기 숨김', rejected: '검토 거절' } as Record<string, string>)[content.status] ?? '알 수 없는 후기 검토 상태'}</ThemedText>
+      <ThemedText type="smallBold">판단 근거</ThemedText>
       <TextInput accessibilityLabel="후기·참석 판단 근거" value={note} editable={!busy} onChangeText={setNote} onFocus={() => play('selection')} multiline maxLength={1000} placeholder="검토한 증거와 판단 근거 · 5자 이상" placeholderTextColor={theme.textSecondary} style={{ minHeight: 80, padding: 12, borderWidth: 1, borderRadius: 8, borderColor: theme.line, color: theme.text, textAlignVertical: 'top' }} />
+      <ThemedText type="small" themeColor="textSecondary">{attendance ? '진술만으로 인증하지 마세요. 회차·참가 이력과 독립 증거를 대조하고 확인한 근거를 기록해주세요.' : 'AI는 판단 근거가 아닙니다. 실제 관계·행동·반복 계정·보복 가능성과 당사자 맥락을 검토해주세요. 합의한 관계 목적 자체는 위반이 아닙니다.'} 원문 조회와 판단은 모두 감사 기록에 남습니다.</ThemedText>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{(['published', 'removed'] as const).map(decision => <Pressable key={decision} accessibilityRole="button" disabled={disabled} accessibilityState={{ disabled }} onPress={() => void review(decision)} style={[button, disabled && { opacity: 0.5 }]}><ThemedText type="smallBold">{decision === 'published' ? attendance ? '참석 증빙 확인' : '검토 후 반영' : attendance ? '확인 거절' : '반영 제외'}</ThemedText></Pressable>)}</View>
       <Pressable accessibilityRole="button" onPress={() => { play('selection'); onUser(content.authorId); }} style={button}><ThemedText type="small">작성자 실제 활동·세션 이력 확인</ThemedText></Pressable>
     </>}
