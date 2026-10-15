@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { Alert, AppState, Platform, StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
@@ -60,10 +61,13 @@ export function MerchantAccountEntry() {
   }
   const invitationOnly = !data?.merchants.length && !!data?.invitations.length;
   return <Pressable analyticsId="app_profile_index.merchant" accessibilityRole="button" accessibilityLabel={invitationOnly ? '업체 계정 초대 확인' : '비즈니스 프로필 전환'} disabled={busy}
-    accessibilityState={{ disabled: busy }} onPress={() => { void open(); }} style={({ pressed }) => [styles.entry, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement, borderColor: theme.line }]}>
+    accessibilityState={{ disabled: busy }} onPress={() => { void open(); }} style={({ pressed }) => [styles.entry, { backgroundColor: pressed ? theme.backgroundSelected : theme.card, borderColor: theme.line }]}>
+    <View style={[styles.entryIcon, { backgroundColor: theme.backgroundElement }]}>
+      <SymbolView name={{ ios: 'storefront', android: 'storefront', web: 'storefront' }} size={22} tintColor={theme.navy} />
+    </View>
     <View style={{ flex: 1, gap: 4 }}><ThemedText type="smallBold">{invitationOnly ? '업체 계정 초대' : '비즈니스'}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{busy ? '현재 연결 확인 중…' : invitationOnly ? '초대한 업체와 권한을 확인해 주세요.' : (data?.merchants.length ?? 0) + '개 업체 · 프로필 전환'}</ThemedText></View>
-    <ThemedText themeColor="textSecondary">›</ThemedText>
+    <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
   </Pressable>;
 }
 
@@ -148,7 +152,8 @@ export function MerchantAccountManagement({ merchantId, merchantName, refreshSig
   </View>;
 }
 const styles = StyleSheet.create({
-  entry: { minHeight: 64, borderWidth: 1, borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  entry: { minHeight: 72, borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  entryIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   list: { gap: 12, marginBottom: 16 }, card: { borderWidth: 1, borderRadius: 16, padding: 16, gap: 12 },
   actions: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' }, action: { minHeight: 44, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, justifyContent: 'center', alignItems: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12 },
