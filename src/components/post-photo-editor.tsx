@@ -29,7 +29,7 @@ export function PostPhotoEditor({ images, disabled, onChange }: { images: Editab
         </Pressable>)}
         <Pressable analyticsId="post.edit.photo-remove" accessibilityRole="button" accessibilityLabel={`사진 ${index + 1} 제거`} disabled={disabled}
           accessibilityState={{ disabled }} onPress={() => { play('selection'); onChange(images.filter((_, position) => position !== index)); }} style={styles.button}>
-          <ThemedText type="smallBold" style={{ color: '#FF8585' }}>제거</ThemedText>
+          <ThemedText type="smallBold" themeColor="danger">제거</ThemedText>
         </Pressable>
       </View>
     </View>

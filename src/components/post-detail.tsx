@@ -601,7 +601,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               <ThemedText themeColor="textSecondary" style={styles.menuTitle}>삭제한 글은 되돌릴 수 없어요. 달린 댓글도 함께 보이지 않게 됩니다.</ThemedText>
               <Pressable analyticsId="components_post-detail.pressable.15" accessibilityRole="button" accessibilityLabel={management ? '업체 글 삭제 확인' : '내 글 삭제 확인'} disabled={savingPost}
                 onPress={() => { play('warning'); void confirmDeletePost(); }} style={styles.menuRow}>
-                <ThemedText style={{ color: '#FF8585' }}>{savingPost ? '삭제 중…' : '글 삭제'}</ThemedText>
+                <ThemedText themeColor="danger">{savingPost ? '삭제 중…' : '글 삭제'}</ThemedText>
               </Pressable>
             </> : <>
               <Pressable analyticsId="components_post-detail.pressable.14" accessibilityRole="button" accessibilityLabel={management ? '업체 글 수정' : '내 글 수정'} onPress={() => { play('selection'); startEditPost(); }} style={styles.menuRow}>
@@ -609,8 +609,8 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                 <ThemedText>글·사진 수정</ThemedText>
               </Pressable>
               <Pressable analyticsId="post.manage.delete" accessibilityRole="button" accessibilityLabel={management ? '업체 글 삭제' : '내 글 삭제'} onPress={() => { play('warning'); setPostMenuOpen(false); setDeletePostOpen(true); }} style={styles.menuRow}>
-                <SymbolView name={{ ios: 'trash', android: 'delete', web: 'delete' }} size={20} tintColor="#FF8585" />
-                <ThemedText style={{ color: '#FF8585' }}>글 삭제</ThemedText>
+                <SymbolView name={{ ios: 'trash', android: 'delete', web: 'delete' }} size={20} tintColor={theme.danger} />
+                <ThemedText themeColor="danger">글 삭제</ThemedText>
               </Pressable>
             </>}
             <Pressable analyticsId="post.manage.cancel" accessibilityRole="button" disabled={savingPost} onPress={() => { play('selection'); setPostMenuOpen(false); setDeletePostOpen(false); }} style={[styles.menuRow, { justifyContent: 'center', borderTopColor: theme.line, borderTopWidth: StyleSheet.hairlineWidth }]}>
