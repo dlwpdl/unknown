@@ -16,7 +16,7 @@ export function FeedSortControl({ sort, title, onChange }: { sort: FeedSort; tit
         {(['latest', 'popular'] as const).map(option => {
           const selected = sort === option;
           const label = option === 'latest' ? '최신순' : '인기순';
-          return <Pressable key={option} analyticsId="components_feed-sort-control.order"
+          return <Pressable lens key={option} analyticsId="components_feed-sort-control.order"
             accessibilityRole="button" accessibilityLabel={`${label}으로 정렬`} accessibilityState={{ selected }} aria-pressed={selected}
             onPress={() => { play('selection'); onChange(option); }}
             style={({ pressed }) => [styles.option, { backgroundColor: selected ? theme.backgroundSelected : 'transparent', borderColor: selected ? theme.accent : 'transparent', opacity: pressed ? 0.65 : 1 }]}>

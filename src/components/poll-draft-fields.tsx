@@ -9,7 +9,7 @@ export function PollDraftFields({ poll, onChange, disabled = false }: { poll: Po
   const theme = useTheme(), { play } = useInteractionFeedback();
   const field = [styles.field, { color: theme.text, borderColor: theme.line, backgroundColor: theme.backgroundElement }];
   return <View style={styles.wrap}>
-    <Pressable analyticsId="compose.poll.toggle" accessibilityRole="checkbox" accessibilityLabel="투표 추가" accessibilityState={{ checked: !!poll, disabled }} disabled={disabled}
+    <Pressable lens analyticsId="compose.poll.toggle" accessibilityRole="checkbox" accessibilityLabel="투표 추가" accessibilityState={{ checked: !!poll, disabled }} disabled={disabled}
       onPress={() => { play('selection'); onChange(poll ? null : { ...STORY_POLL, options: [...STORY_POLL.options] }); }} style={styles.toggle}>
       <ThemedText>{poll ? '▣' : '□'}  투표 추가</ThemedText>
     </Pressable>

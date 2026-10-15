@@ -139,24 +139,24 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true }: MyMeetupsProp
       {!loading && !error && items.length === 0 && <ThemedText type="small" themeColor="textSecondary">{t.meetup.empty}</ThemedText>}
       {/* 내 모임은 가로 카드로 압축해 공개 모임 소개가 첫 화면에 들어오게 한다. */}
       <ScrollView analyticsId="components_my-meetups.scrollview.1" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rail}>{items.map((meetup) => <View key={meetup.id} style={[styles.meetup, { backgroundColor: theme.card, borderColor: theme.line }]}>
-        <Pressable analyticsId="components_my-meetups.pressable.2" onPress={() => void open(meetup)} accessibilityRole="button" disabled={!!busy} accessibilityState={{ disabled: !!busy, busy: busy === meetup.id }} style={({ pressed }) => [styles.copy, { opacity: pressed ? 0.7 : 1 }]}>
+        <Pressable lens analyticsId="components_my-meetups.pressable.2" onPress={() => void open(meetup)} accessibilityRole="button" disabled={!!busy} accessibilityState={{ disabled: !!busy, busy: busy === meetup.id }} style={({ pressed }) => [styles.copy, { opacity: pressed ? 0.7 : 1 }]}>
           <ThemedText type="smallBold" themeColor="accent">{t.meetup[meetup.role]}</ThemedText>
           <ThemedText type="smallBold">{meetup.title}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{chillingSchedule(meetup.room)}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{CITIES.find(({ id }) => id === meetup.cityId)?.name ?? meetup.cityId} · {meetup.room.memberCount ?? 0}{meetup.room.capacity ? `/${meetup.room.capacity}` : ''}명</ThemedText>
           {busy === meetup.id && <GlingLoader color={theme.accent} accessibilityLabel="모임 처리 중" />}
         </Pressable>
-        {(meetup.role === 'host' || meetup.role === 'approved') && <Pressable analyticsId="meetup.share.open" accessibilityRole="button" accessibilityLabel={`${meetup.title} 초대 링크 공유`}
+        {(meetup.role === 'host' || meetup.role === 'approved') && <Pressable lens analyticsId="meetup.share.open" accessibilityRole="button" accessibilityLabel={`${meetup.title} 초대 링크 공유`}
           disabled={!!busy} accessibilityState={{ disabled: !!busy, busy: busy === meetup.id }} onPress={() => void invite(meetup)}
           style={({ pressed }) => [styles.action, { borderColor: theme.line, borderWidth: 1, borderRadius: 12, backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement }]}>
           <ThemedText type="smallBold" themeColor="accent">{meetup.role === 'host' ? '초대 링크' : '같이 가요'}</ThemedText>
         </Pressable>}
-        {(meetup.role === 'host' || meetup.role === 'approved') && meetup.conversationId && <Pressable analyticsId="components_my-meetups.pressable.3"
+        {(meetup.role === 'host' || meetup.role === 'approved') && meetup.conversationId && <Pressable lens analyticsId="components_my-meetups.pressable.3"
           onPress={() => { play('selection'); router.push({ pathname: '/chat', params: { conversationId: meetup.conversationId! } }); }}
           accessibilityRole="button" style={styles.action}>
           <ThemedText type="smallBold" themeColor="accent">{t.meetup.openChat}</ThemedText>
         </Pressable>}
-        {meetup.role !== 'rejected' && meetup.role !== 'cancelled' && <Pressable analyticsId="components_my-meetups.pressable.4" onPress={() => confirmChange(meetup)} accessibilityRole="button" disabled={!!busy} accessibilityState={{ disabled: !!busy, busy: busy === meetup.id }} style={styles.action}>
+        {meetup.role !== 'rejected' && meetup.role !== 'cancelled' && <Pressable lens analyticsId="components_my-meetups.pressable.4" onPress={() => confirmChange(meetup)} accessibilityRole="button" disabled={!!busy} accessibilityState={{ disabled: !!busy, busy: busy === meetup.id }} style={styles.action}>
           <ThemedText type="small" themeColor="textSecondary">{meetup.role === 'host' ? t.meetup.end : meetup.role === 'pending' ? t.meetup.cancelRequest : t.meetup.leave}</ThemedText>
         </Pressable>}
       </View>)}</ScrollView>

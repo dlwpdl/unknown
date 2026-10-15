@@ -1068,7 +1068,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                       <SymbolView name={{ ios: 'photo', android: 'photo_library', web: 'photo_library' }} size={18} tintColor={theme.textSecondary} />
                       <ThemedText type="smallBold" style={styles.contextText}>{draftImages.length === 0 ? '사진 추가' : t.write.addPhoto}</ThemedText>
                     </Pressable>
-                    <Pressable analyticsId="components_feed-screen.pressable.26" accessibilityRole="button" accessibilityLabel={t.write.hashtags} accessibilityState={{ expanded: writerPanel === 'hashtags' }}
+                    <Pressable lens analyticsId="components_feed-screen.pressable.26" accessibilityRole="button" accessibilityLabel={t.write.hashtags} accessibilityState={{ expanded: writerPanel === 'hashtags' }}
                       onPress={() => { play('reaction'); changeWriterPanel(writerPanel === 'hashtags' ? null : 'hashtags'); }}
                       style={({ pressed }) => [styles.hashtagToggle, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement, transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
                     <SymbolView name={{ ios: 'number', android: 'tag', web: 'tag' }} size={18} tintColor={theme.textSecondary} />
@@ -1082,7 +1082,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                     placeholder={t.write.hashtagPlaceholder} placeholderTextColor={theme.textSecondary} autoCapitalize="none"
                     style={[styles.hashtagInput, { color: theme.navy, borderBottomColor: theme.line }]} />
                   {selectedHashtags.length > 0 && <View style={styles.selectedHashtags}>
-                    {selectedHashtags.map((hashtag) => <Pressable analyticsId="components_feed-screen.pressable.27" key={hashtag} accessibilityRole="button" accessibilityLabel={`#${hashtag} 삭제`}
+                    {selectedHashtags.map((hashtag) => <Pressable lens analyticsId="components_feed-screen.pressable.27" key={hashtag} accessibilityRole="button" accessibilityLabel={`#${hashtag} 삭제`}
                       onPress={() => { play('reaction'); animateLayout(); setHashtagInput(current => parseHashtags(current).filter(value => value !== hashtag).join(' ')); }}
                       style={({ pressed }) => [styles.selectedHashtag, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
                       <ThemedText type="smallBold" style={{ color: theme.accentInk }}>#{hashtag} ×</ThemedText>
@@ -1095,7 +1095,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                       keyboardShouldPersistTaps="handled"
                       contentContainerStyle={styles.hashtagBar}>
                       {writerHashtags.filter(hashtag => !selectedHashtags.includes(hashtag)).map((hashtag) => (
-                        <Pressable analyticsId="components_feed-screen.pressable.27"
+                        <Pressable lens analyticsId="components_feed-screen.pressable.27"
                           key={hashtag}
                           onPress={() => {
                             play('reaction');
