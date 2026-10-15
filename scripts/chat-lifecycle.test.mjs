@@ -91,7 +91,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
         effect(() => subscribeVisibility(() => { dirty = true; }), []);
         return react.useCallback((type, id, authorId) => isContentHidden(auth.me.id, type, id, authorId), [auth.me.id, visibilityRevision()]);
       } };
-      if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, four: 24 }, Depth: { card: {}, control: {} } };
+      if (name === '@/constants/theme') return { Colors: { dark: {}, admin: { danger: '#B33246' } }, Spacing: { one: 4, two: 8, three: 16, four: 24 }, Depth: { card: {}, control: {} } };
       if (name === '@/i18n/ko') return { t, count };
       if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
       // 하트 리액션 기본값: 테스트가 필요하면 data 로 덮어쓴다.

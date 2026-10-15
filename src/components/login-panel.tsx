@@ -170,7 +170,7 @@ export function LoginPanel({
                 style={[styles.appleButton, { opacity: disabled ? 0.6 : 1 }]}
               />
             </View></GlassSurface>)}
-            {onKakao && <GlassSurface tone="control" interactive style={styles.socialGlass}><Pressable analyticsId="components_login-panel.pressable.1"
+            {onKakao && <GlassSurface colorScheme="dark" tone="control" interactive style={styles.socialGlass}><Pressable analyticsId="components_login-panel.pressable.1"
               onPress={() => { if (!disabled) { play('selection'); onKakao(); } }}
               disabled={disabled}
               accessibilityRole="button"

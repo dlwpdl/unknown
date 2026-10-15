@@ -185,7 +185,7 @@ def sync_policy(env, google, directory, local):
         raise ValueError("GLING_SUPABASE_SERVICE_ROLE_KEY is missing; no policy was changed.")
     mask(key)
     token, versions = apple_versions(env)
-    public = request(f"https://itunes.apple.com/lookup?id={APP}&country=ca")["results"]
+    public = request(f"https://itunes.apple.com/lookup?id={APP}&country=ca&nocache={int(time.time())}")["results"]
     current = next((version for version in versions if public and version["attributes"]["versionString"] == public[0]["version"]), None)
     ios = published_ios_build(public[0], request(f'https://api.appstoreconnect.apple.com/v1/appStoreVersions/{current["id"]}?include=build', token)) if current else None
     token = google_token(google, directory)
