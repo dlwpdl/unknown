@@ -64,7 +64,7 @@ function CafeCallback({ callback: provided, onConnected, userId }: { callback?: 
     });
   }, [callback, onConnected, userId, play]);
   if (!callback) return null;
-  return <ThemedText accessibilityLiveRegion="polite" accessibilityRole={error ? 'alert' : undefined} type="small" style={error ? { color: '#FF8585' } : undefined}>
+  return <ThemedText accessibilityLiveRegion="polite" accessibilityRole={error ? 'alert' : undefined} type="small" themeColor={error ? 'danger' : undefined}>
     {error || (done ? '네이버 연결을 완료했어요. 카페 가입·게시판 쓰기 권한은 발행할 때 확인해요.' : '네이버 연결을 확인하고 있어요…')}
   </ThemedText>;
 }
@@ -179,7 +179,7 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
         setNotice(result.providerRevoked ? '네이버 연결을 해제했어요.' : '글링 연결은 해제했어요. 네이버의 연결된 서비스에서도 권한 해제를 확인해 주세요.');
       }); }} />}
     </View>
-    {error ? <ThemedText accessibilityRole="alert" type="small" style={{ color: '#FF8585' }}>{error}</ThemedText> : null}
+    {error ? <ThemedText accessibilityRole="alert" type="small" themeColor="danger">{error}</ThemedText> : null}
     {notice ? <ThemedText accessibilityLiveRegion="polite" type="small">{notice}</ThemedText> : null}
     {preparation && <CafeAction label="이전 발행 준비 취소" disabled={busy} onPress={() => { void run(async () => {
       if (!await confirm('이전 발행 준비를 취소할까요?', '아직 외부 게시를 시작하지 않은 요청만 취소할 수 있어요. 발행이 시작됐다면 결과 확인을 계속해요.')) return;
@@ -212,7 +212,7 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
         <ThemedText type="small" themeColor="textSecondary">사진 {imagePaths.length}장 · 아래 순서로 첨부해요.</ThemedText>
         {urls.map((uri, index) => <View key={uri}><ThemedText type="small">{index + 1}{index === 0 ? ' · 첫 사진' : ''}</ThemedText>
           <Image source={{ uri }} contentFit="contain" style={styles.photo} accessibilityLabel={`네이버에 첨부할 사진 ${index + 1}`} onError={() => setPhotoFailure(photoKey)} /></View>)}
-        {photoFailed && <ThemedText type="small" style={{ color: '#FF8585' }}>사진을 확인하지 못해 발행을 멈췄어요. 원고 사진을 다시 확인해 주세요.</ThemedText>}
+        {photoFailed && <ThemedText type="small" themeColor="danger">사진을 확인하지 못해 발행을 멈췄어요. 원고 사진을 다시 확인해 주세요.</ThemedText>}
         {!!imagePaths.length && <ThemedText type="small" themeColor="textSecondary">네이버에서 저장 사진 형식이 지원되는지는 실제 연결 계정으로 확인이 필요해요. 사진이 거절되면 게시 완료로 표시하지 않아요.</ThemedText>}
         <CafeAction label={unresolved ? '게시 결과 확인' : '원고 확인 후 카페에 발행'} disabled={busy || !unresolved && (photoFailed || urls.length !== imagePaths.length)} onPress={() => { void run(async () => {
           if (unresolved) { await refreshStatus(); setNotice(errors.NAVER_PUBLISH_UNCERTAIN); return; }

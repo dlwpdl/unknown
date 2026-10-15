@@ -21,7 +21,7 @@ import { ThemedText } from '@/components/themed-text';
 import { MannerReviewButton } from '@/components/manner-review';
 import { ThemedView } from '@/components/themed-view';
 import { TrustBadge } from '@/components/trust-badge';
-import { Colors, Depth, Spacing } from '@/constants/theme';
+import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { t } from '@/i18n/ko';
@@ -729,7 +729,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           <Pressable analyticsId="chat.message.reply" accessibilityRole="button" accessibilityLabel="답장" disabled={sending || pickingPhoto || replyLocked} accessibilityState={{ disabled: sending || pickingPhoto || replyLocked }} onPress={() => { if (photoSend.current?.submitted) return; play('selection'); setReplyTo(messageMenu); closeMessageMenu(); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold">답장</ThemedText></Pressable>
           {messageMenu.sender_id === currentUserId && <>
             {(!messageMenu.kind || messageMenu.kind === 'text') && <Pressable analyticsId="chat.message.edit" accessibilityRole="button" accessibilityLabel="메시지 수정" disabled={sending} onPress={() => { play('selection'); setEditingMessage(messageMenu); setMessageEditDraft(messageMenu.body); closeMessageMenu(); setError(null); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold">수정</ThemedText></Pressable>}
-            <Pressable analyticsId="chat.message.delete" accessibilityRole="button" accessibilityLabel="메시지 삭제" disabled={sending} onPress={() => { play('selection'); setDeleteConfirm(true); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold" style={{ color: theme === Colors.dark ? '#FF8585' : Colors.admin.danger }}>삭제</ThemedText></Pressable>
+            <Pressable analyticsId="chat.message.delete" accessibilityRole="button" accessibilityLabel="메시지 삭제" disabled={sending} onPress={() => { play('selection'); setDeleteConfirm(true); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold" themeColor="danger">삭제</ThemedText></Pressable>
           </>}
         </View>
       </View>

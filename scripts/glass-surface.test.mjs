@@ -20,6 +20,19 @@ function load(file, imports) {
 const { Colors } = load('constants/theme.ts', { '@/global.css': {}, 'react-native': { Platform: { select: values => values.default } } });
 const flatten = styles => Object.assign({}, ...styles.flat(Infinity).filter(Boolean));
 
+test('destructive text meets AA contrast on light, dark and admin surfaces', () => {
+  const luminance = color => [1, 3, 5].map(offset => parseInt(color.slice(offset, offset + 2), 16) / 255)
+    .map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
+    .reduce((total, value, index) => total + value * [0.2126, 0.7152, 0.0722][index], 0);
+  for (const [scheme, palette] of Object.entries(Colors)) {
+    assert.ok(palette.danger, `${scheme} requires a destructive text color`);
+    for (const background of ['card', 'background', 'backgroundSelected']) {
+      const values = [luminance(palette.danger), luminance(palette[background])].sort((a, b) => b - a);
+      assert.ok((values[0] + 0.05) / (values[1] + 0.05) >= 4.5, `${scheme} destructive text must remain readable on ${background}`);
+    }
+  }
+});
+
 function glass(scheme, platform = 'ios', api = true, liquid = true) {
   return load('components/glass-surface.tsx', {
     '@/hooks/use-theme': { useTheme: () => Colors[scheme] },

@@ -17,6 +17,7 @@ export const Colors = {
     accentDepth: '#57377F',
     accentInk: '#FFFFFF',
     navy: '#34506B',
+    danger: '#B33246',
   },
   dark: {
     text: '#F6F3F0',
@@ -30,6 +31,7 @@ export const Colors = {
     accentDepth: '#8169B1',
     accentInk: '#171123',
     navy: '#B9C8FF',
+    danger: '#FF8585',
   },
   admin: {
     text: '#252631',
