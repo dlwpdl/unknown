@@ -85,7 +85,7 @@ function app(entry = 'performance', initial = {}) {
   const calls = [], feedback = [], modules = new Map();
   const nativeProps = input => {
     const output = { children: input.children, role: input.role ?? input.accessibilityRole, 'aria-label': input.accessibilityLabel };
-    for (const key of ['aria-selected', 'aria-checked', 'aria-disabled', 'aria-level', 'tabIndex']) if (key in input) output[key] = input[key];
+    for (const key of ['aria-selected', 'aria-checked', 'aria-disabled', 'aria-expanded', 'aria-hidden', 'aria-level', 'tabIndex']) if (key in input) output[key] = input[key];
     return output;
   };
   const native = {
@@ -151,6 +151,30 @@ test('real rendering separates loading, valid zero, null collectors and all eigh
     assert.match(metric(view.container, '환불'), /미연결/);
     assert.match(area(view.container, '행사·장소').textContent, /수집 대기/);
     assert.match(area(view.container, '수익').textContent, /기록이 없습니다/);
+  } finally { await view.unmount(); }
+});
+
+test('eight domain disclosures keep real figures and mounted state, with only growth and activity initially open', async () => {
+  const view = app();
+  try {
+    await view.render(); await view.answer(0);
+    for (const title of ['성장·유입', '활동', '재방문·코호트', '커뮤니티', '행사·장소', '알림', '수익', '품질']) {
+      const control = find(view.container, 'button', title);
+      assert.ok(control, `${title} needs an accessible disclosure`);
+      assert.equal(control.getAttribute('aria-expanded'), String(['성장·유입', '활동'].includes(title)));
+    }
+    assert.match(find(view.container, 'button', '성장·유입').textContent, /신규 가입.*2/);
+    assert.match(find(view.container, 'button', '행사·장소').textContent, /수집 대기/);
+    const retention = area(view.container, 'D1·D7·D30 재방문');
+    await view.press('button', '재방문·코호트');
+    assert.equal(view.feedback.at(-1), 'selection');
+    assert.equal(find(view.container, 'button', '재방문·코호트').getAttribute('aria-expanded'), 'true');
+    await view.press('button', '재방문·코호트');
+    assert.equal(area(view.container, 'D1·D7·D30 재방문'), retention);
+    await view.press('button', '수치 표 보기');
+    const daily = area(view.container, '일별 활동 수치');
+    await view.press('button', '활동'); await view.press('button', '활동');
+    assert.equal(area(view.container, '일별 활동 수치'), daily, 'closing a domain must keep the selected chart/table and DOM mounted');
   } finally { await view.unmount(); }
 });
 

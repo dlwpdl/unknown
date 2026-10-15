@@ -67,9 +67,9 @@ export function AdminConversationsView({ data, loadingMore, noMore, onLoadMore, 
   </section>;
 }
 
-export function AdminConversationDetail({ conversationId, title, subtitle, profiles = [], localMessages, refreshSignal = 0, onUser, onClose }: {
+export function AdminConversationDetail({ conversationId, title, subtitle, profiles = [], localMessages, refreshSignal = 0, onUser, onClose, embedded = false }: {
   conversationId: string; title: string; subtitle?: string; profiles?: AdminProfile[]; localMessages?: AdminMessage[]; refreshSignal?: number;
-  onUser: (id: string) => void; onClose?: () => void;
+  onUser: (id: string) => void; onClose?: () => void; embedded?: boolean;
 }) {
   const { play } = useInteractionFeedback();
   const [retry, setRetry] = useState(0);
@@ -113,7 +113,7 @@ export function AdminConversationDetail({ conversationId, title, subtitle, profi
 
   return <section className="admin-meetup-detail" aria-label="상세 대화">
     {onClose && <button type="button" className="admin-reset admin-back-button" onClick={() => { play('selection'); onClose(); }}>← 대화방 목록</button>}
-    <div className="admin-detail-heading"><h2 ref={heading} tabIndex={-1}>{title}</h2><p className="admin-muted">{subtitle ?? '선택한 대화방의 메시지와 참여자 이력을 확인합니다.'}</p></div>
+    {!embedded && <div className="admin-detail-heading"><h2 ref={heading} tabIndex={-1}>{title}</h2><p className="admin-muted">{subtitle ?? '선택한 대화방의 메시지와 참여자 이력을 확인합니다.'}</p></div>}
     <div className="admin-detail-content">
       <div className="admin-detail-record-head"><div><h3>대화 내용</h3><p className="admin-muted">오래된 메시지부터 시간순으로 표시합니다.</p></div>
         <button type="button" className="admin-reset" aria-label="대화 새로고침" onClick={() => { play('selection'); setRetry(value => value + 1); }}>새로고침</button>

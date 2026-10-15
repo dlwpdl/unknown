@@ -42,6 +42,7 @@ export function AdminReportQueue({
 }) {
   const { play } = useInteractionFeedback();
   const [selectedId, setSelectedId] = useState<string | null>(reports[0]?.id ?? null);
+  const [detailOpen, setDetailOpen] = useState(true);
   const [query, setQuery] = useState('');
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
   const [bulkNote, setBulkNote] = useState('');
@@ -93,8 +94,8 @@ export function AdminReportQueue({
       <Pressable
         onPress={() => { play('selection'); return onResolve(report.id, 'warned', note); }}
         disabled={resolving} accessibilityRole="button" accessibilityState={{ disabled: resolving, busy: resolving }}
-        style={[styles.primaryButton, resolving && styles.disabled]}>
-        <ThemedText type="smallBold" style={styles.primaryText}>{resolving ? '처리 중' : '경고'}</ThemedText>
+        style={[styles.outlineButton, resolving && styles.disabled]}>
+        <ThemedText type="smallBold">{resolving ? '처리 중' : '경고'}</ThemedText>
       </Pressable>
       <Pressable
         onPress={() => { play('selection'); return onResolve(report.id, 'blocked', note); }}
@@ -113,18 +114,20 @@ export function AdminReportQueue({
       placeholderTextColor={Colors.admin.textSecondary}
       multiline
       maxLength={1000}
+      onFocus={() => play('selection')}
       accessibilityLabel="신고 처리 메모"
       style={styles.noteInput}
     />
   );
 
+  const caseSummary = (report: AdminReport) => (<>
+      <ThemedText type="smallBold">{displayName(profiles.get(report.reported_user_id), report.reported_user_id)} · {reportTargetLabel(report.target_type)}</ThemedText>
+      <ThemedText type="small" style={styles.muted}>{reportReasonLabel(report.reason_code)} · {formatDate(report.created_at)}</ThemedText>
+  </>);
+
   const detailFields = (report: AdminReport) => (
     <>
-      <LabelValue label="접수 일시" value={formatDate(report.created_at)} />
-      <LabelValue label="신고 대상" value={displayName(profiles.get(report.reported_user_id), report.reported_user_id)} />
-      <LabelValue label="유형" value={`${reportTargetLabel(report.target_type)} · ${reportReasonLabel(report.reason_code)}`} />
       <LabelValue label="내용" value={report.details || '상세 설명 없음'} />
-      <LabelValue label="신고자" value={displayName(profiles.get(report.reporter_id), report.reporter_id)} />
       <LabelValue label="노출 범위" value={report.blocked_at
         ? '신고자에게 작성자의 콘텐츠 숨김 · 다른 회원의 노출은 별도 운영 조치'
         : report.target_type === 'user' ? '사용자 검토 요청 · 자동 전체 숨김 없음'
@@ -132,17 +135,21 @@ export function AdminReportQueue({
       <LabelValue label="접수 당시 원본" value={report.evidence
         ? [report.evidence.title, report.evidence.body, report.evidence.nickname].filter(Boolean).join('\n') || '텍스트 없음'
         : '이전 신고에는 원본 스냅샷이 없습니다. 사용자 전체 활동에서 확인하세요.'} />
+      {isTrustTarget(report.target_type) && <ThemedText type="smallBold">현재 원문 · 별도 권한 확인 후 조회</ThemedText>}
       {isTrustTarget(report.target_type) && <AdminTrustReviewContent targetType={report.target_type} targetId={report.target_id} localPreview={localPreview} onUser={onUser} />}
       {report.target_type === 'merchant_review' && <>
         <LabelValue label="접수 당시 업체 후기" value={`${report.evidence?.merchant_name ?? report.evidence?.merchant_id ?? '업체 정보 없음'}${report.evidence?.score == null ? '' : ` · ${report.evidence.score}/10`}${report.evidence?.status ? ` · ${report.evidence.status === 'removed' ? '숨김' : '게시 중'}` : ''}`} />
+        <ThemedText type="smallBold">현재 업체 후기 · 원문 조회</ThemedText>
         <AdminMerchantReviewContent targetId={report.target_id} localPreview={localPreview} onUser={onUser} />
       </>}
       {report.target_type === 'merchant_review_reply' && <>
         <LabelValue label="접수 당시 업체" value={report.evidence?.merchant_name ?? report.evidence?.merchant_id ?? '업체 정보 없음'} />
+        <ThemedText type="smallBold">현재 업체 답글 · 원문 조회</ThemedText>
         <AdminMerchantReviewReplyContent targetId={report.target_id} localPreview={localPreview} onUser={onUser} />
       </>}
       <details onToggle={() => play('selection')}>
-        <summary style={{ cursor: 'pointer', fontSize: 12, color: Colors.admin.textSecondary }}>문제 추적 정보</summary>
+        <summary style={{ cursor: 'pointer', fontSize: 12, color: Colors.admin.textSecondary, minHeight: 44, alignContent: 'center' }}>문제 추적 정보</summary>
+        <LabelValue label="신고자" value={displayName(profiles.get(report.reporter_id), report.reporter_id)} />
         <LabelValue label="대상 ID" value={report.target_id} />
         <LabelValue label="신고자 ID" value={report.reporter_id} />
         <LabelValue label="신고 ID" value={report.id} />
@@ -156,7 +163,8 @@ export function AdminReportQueue({
   );
 
   return (
-    <View style={styles.queue}>
+    // Keep the compact detail above pagination rendered beside this queue.
+    <View style={[styles.queue, compact && detailOpen && selected && { zIndex: 1 }]}>
       <div className="admin-toolbar">
         <AdminSearch value={query} onChange={(value) => { setQuery(value); setCheckedIds([]); }} placeholder="사용자, 신고 내용, 사유 검색" />
         {/* 미처리 건을 오갈 때 드롭다운을 두 번 조작하지 않도록 자주 쓰는 상태는 탭으로 둔다. */}
@@ -187,7 +195,7 @@ export function AdminReportQueue({
             disabled={!selectable.length || resolving}
             onChange={(event) => { play('selection'); setCheckedIds(event.target.checked ? selectable.map((report) => report.id) : []); }} />
             보이는 미처리 신고 전체 선택</label>
-          <span aria-live="polite">{checked.length}건 선택</span>
+          <span aria-live="polite">일괄 처리 · {checked.length}건 선택</span>
           {checked.length > 0 && <button type="button" onClick={() => { play('selection'); return setCheckedIds([]); }}>선택 해제</button>}
         </div>
         {checked.length > 0 && <>
@@ -220,10 +228,11 @@ export function AdminReportQueue({
                     onChange={(event) => { play('selection'); setCheckedIds((ids) => event.target.checked ? [...ids, report.id] : ids.filter((id) => id !== report.id)); }} />
                 </label>
                 <button
+                  id={`admin-report-row-${report.id}`}
                   type="button"
                   aria-pressed={active}
                   aria-controls="admin-report-detail"
-                  onClick={() => { play('selection');  setSelectedId(report.id); }}
+                  onClick={() => { play('selection');  setSelectedId(report.id); setDetailOpen(true); }}
                   style={{ display: 'block', flex: 1, minWidth: 0, width: '100%', minHeight: 64, padding: '8px 12px', textAlign: 'left', cursor: 'pointer',
                     border: 'none', borderBottom: `1px solid ${Colors.admin.line}`, borderLeft: `3px solid ${active ? Colors.admin.navy : 'transparent'}`,
                   background: active ? Colors.admin.backgroundSelected : Colors.admin.card, color: Colors.admin.text, font: 'inherit' }}>
@@ -241,18 +250,19 @@ export function AdminReportQueue({
 
           {selected && (
             compact ? (
-              <div className="admin-detail-sheet" role="dialog" aria-label="신고 상세">
+              <div id="admin-report-detail" className="admin-detail-sheet" hidden={!detailOpen} style={detailOpen ? undefined : { display: 'none' }} role={detailOpen ? 'dialog' : undefined} aria-label="신고 상세">
                 <div className="admin-detail-sheet-head">
-                  <button type="button" className="admin-reset" onClick={() => { play('selection'); return setSelectedId(null); }}>‹ 목록으로</button>
+                  <button type="button" className="admin-reset" onClick={() => { play('selection'); setDetailOpen(false); document.getElementById(`admin-report-row-${selected.id}`)?.focus(); }}>‹ 목록으로</button>
                   <h2>신고 상세</h2>
                   <StatusPill status={selected.status} />
                 </div>
                 <div className="admin-detail-sheet-body">
                   <View style={styles.sheetInner}>
-                    {detailFields(selected)}
+                    {caseSummary(selected)}
                     {canResolveReport(selected.status)
-                      ? <View style={styles.resolveBox}><ThemedText type="smallBold">처리 메모</ThemedText>{noteInput}</View>
+                      ? <View style={styles.resolveBox}><ThemedText type="smallBold">판단 근거와 처리</ThemedText>{noteInput}</View>
                       : <LabelValue label="처리 기록" value={processedRecord(selected, action)} />}
+                    {detailFields(selected)}
                   </View>
                 </div>
                 {canResolveReport(selected.status) && <div className="admin-detail-sheet-actions">{resolveButtons(selected, true)}</div>}
@@ -263,16 +273,17 @@ export function AdminReportQueue({
                   <ThemedText type="subtitle" accessibilityRole="header" style={{ fontSize: 17, lineHeight: 24 }}>신고 상세</ThemedText>
                   <StatusPill status={selected.status} />
                 </View>
-                {detailFields(selected)}
+                {caseSummary(selected)}
                 {canResolveReport(selected.status) ? (
                   <View style={styles.resolveBox}>
-                    <ThemedText type="smallBold">처리 메모</ThemedText>
+                    <ThemedText type="smallBold">판단 근거와 처리</ThemedText>
                     {noteInput}
                     <View style={styles.actions}>{resolveButtons(selected)}</View>
                   </View>
                 ) : (
                   <LabelValue label="처리 기록" value={processedRecord(selected, action)} />
                 )}
+                {detailFields(selected)}
               </View>
             )
           )}

@@ -104,6 +104,25 @@ test('closing and reopening the same merchant keeps its unsaved profile; replaci
   assert.ok(view.feedback.includes('selection'));
 });
 
+test('linked post management belongs to the profile tab and retains unsaved input across tabs', () => {
+  const view = app();
+  view.refreshMerchant({ ...merchants[0], consent: 'granted' });
+  button(view.render(), '업체 1 활동과 정보 보기').props.onClick(); view.detail();
+  const linked = root => nodes(root).find(n => n.type === 'section' && text(n).startsWith('연결된 글'));
+  const profile = root => nodes(root).find(n => n.type === 'div' && n.props.hidden === true && nodes(n).includes(linked(root)));
+  assert.ok(profile(view.render()), 'linked posts must be mounted inside the hidden profile, not crowd the activity tab');
+  button(view.render(), '업체 정보').props.onClick();
+  const source = root => nodes(linked(root)).find(n => n.type === 'input' && n.props.type === 'url');
+  source(view.render()).props.onChange({ target: { value: 'https://example.test/unsaved' } });
+  button(view.render(), '활동 · 성과').props.onClick();
+  assert.equal(source(view.render()).props.value, 'https://example.test/unsaved');
+  button(view.render(), '업체 정보').props.onClick();
+  assert.equal(source(view.render()).props.value, 'https://example.test/unsaved');
+  button(view.render(), '업체 2 활동과 정보 보기').props.onClick();
+  assert.equal(view.prompts.length, 1);
+  assert.equal(source(view.render()).props.value, 'https://example.test/unsaved');
+});
+
 test('reopening a clean merchant uses the latest saved name and contact from the refreshed directory', () => {
   const view = app();
   button(view.render(), '업체 1 활동과 정보 보기').props.onClick();

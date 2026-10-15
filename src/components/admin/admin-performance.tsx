@@ -62,8 +62,11 @@ export function AdminPerformanceView({ filters, localPreview, refreshSignal = 0 
         </Pressable>)}
       </View>
     </View>
-    <Notice title="필터 적용 범위" text="회원의 현재 저장한 선호 지역과 일반 멤버십으로 집계합니다. 행사·장소 행은 대상 도시를 따릅니다. 플랫폼은 방문·행동·행사·장소·알림 행동과 클라이언트 실패 기록에 적용됩니다. 가입·글·모임·결제·신고·발송 사실에는 플랫폼 정보가 없습니다." />
-    <Note>{filters.includeInternal ? '내부 계정 포함' : '관리자·운영 캐릭터·심사·테스트 계정 기본 제외'} · UTC 기준 · 플랫폼별 고유 회원 수는 서로 겹칠 수 있습니다.</Note>
+    <Context title="필터·집계 범위">
+      <Notice title="필터 적용 범위" text="회원의 현재 저장한 선호 지역과 일반 멤버십으로 집계합니다. 행사·장소 행은 대상 도시를 따릅니다. 플랫폼은 방문·행동·행사·장소·알림 행동과 클라이언트 실패 기록에 적용됩니다. 가입·글·모임·결제·신고·발송 사실에는 플랫폼 정보가 없습니다." />
+      <Note>{filters.includeInternal ? '내부 계정 포함' : '관리자·운영 캐릭터·심사·테스트 계정 기본 제외'} · UTC 기준 · 플랫폼별 고유 회원 수는 서로 겹칠 수 있습니다.</Note>
+      {data && <Note>{date(data.periodStart)} 이후 · 갱신 {date(data.generatedAt)} · 방문 수집 시작 {date(data.collectionStartedAt)} · 새 행동 기록 지원 {date(data.trackingAvailableAt)} (UTC)</Note>}
+    </Context>
     {localPreview ? <Notice title="운영 데이터 미연결" text="로컬 미리보기입니다. 실제 성과는 관리자 로그인과 MFA 인증 후 서버 기록으로 표시됩니다." />
       : loading ? <View accessibilityRole="progressbar" accessibilityLabel="성과 데이터 불러오는 중" style={styles.notice}><ThemedText type="smallBold">성과 불러오는 중</ThemedText><Note>선택한 조건의 서버 집계를 기다리고 있습니다.</Note></View>
         : current?.error ? <View accessibilityRole="alert" style={styles.notice}>
@@ -71,7 +74,6 @@ export function AdminPerformanceView({ filters, localPreview, refreshSignal = 0 
           <Note>{current.denied ? '관리자 권한과 MFA 인증이 필요합니다. 로그인 상태를 확인한 뒤 다시 시도해주세요.' : '연결 상태를 확인한 뒤 다시 시도해주세요. 요청 실패를 0건으로 표시하지 않습니다.'}</Note>
           <Action label="다시 시도" onPress={() => setRetry((value) => value + 1)} />
         </View> : data && <>
-          <Note>{date(data.periodStart)} 이후 · 갱신 {date(data.generatedAt)} · 방문 수집 시작 {date(data.collectionStartedAt)} · 새 행동 기록 지원 {date(data.trackingAvailableAt)} (UTC)</Note>
           <Growth data={data.growth} />
           <Activity data={data.activity} collectionStartedAt={data.collectionStartedAt} />
           <Retention rows={data.retention} cohorts={data.cohorts} />
@@ -85,7 +87,7 @@ export function AdminPerformanceView({ filters, localPreview, refreshSignal = 0 
 }
 
 function Growth({ data }: { data: AdminPerformance['growth'] }) {
-  return <Section title="성장·유입" note="기간 내 가입 회원과 실제 활동 기록을 확인합니다. 유입은 인식한 링크 채널과 세션별 가입 완료 기록이며 설치 기여는 미수집입니다.">
+  return <Section title="성장·유입" initiallyExpanded summary={`신규 가입 ${count(data.newMembers)}명${data.sourceStartedAt ? "" : " · 유입 수집 대기"}`} note="기간 내 가입 회원과 실제 활동 기록을 확인합니다. 유입은 인식한 링크 채널과 세션별 가입 완료 기록이며 설치 기여는 미수집입니다.">
     <View style={styles.metrics}>
       <Metric label="신규 가입" value={count(data.newMembers)} note="선택 기간에 가입한 회원" />
       <Metric label="가입 후 활동 회원" value={count(data.activatedMembers)} note="가입 뒤 글·댓글·모임 신청·메시지를 실제로 남긴 회원" />
@@ -101,7 +103,7 @@ function Growth({ data }: { data: AdminPerformance['growth'] }) {
 }
 
 function Activity({ data, collectionStartedAt }: { data: AdminPerformance['activity']; collectionStartedAt: string }) {
-  return <Section title="활동" note="로그인 회원의 화면 방문 기준입니다. DAU는 오늘(UTC), WAU·MAU는 오늘을 포함한 7·30일의 고유 회원입니다. 선택 기간은 아래 추이에 적용됩니다.">
+  return <Section title="활동" initiallyExpanded summary={`DAU ${count(data.dau)}명`} note="로그인 회원의 화면 방문 기준입니다. DAU는 오늘(UTC), WAU·MAU는 오늘을 포함한 7·30일의 고유 회원입니다. 선택 기간은 아래 추이에 적용됩니다.">
     <View style={styles.metrics}>
       <Metric label="DAU" value={count(data.dau)} note="오늘 (UTC) · 고유 회원" />
       <Metric label="WAU" value={count(data.wau)} note="오늘 포함 7일 · 고유 회원" />
@@ -138,7 +140,8 @@ function DailyActivity({ rows }: { rows: AdminPerformance['activity']['daily'] }
 }
 
 function Retention({ rows, cohorts }: { rows: RetentionRow[]; cohorts: AdminPerformance['cohorts'] }) {
-  return <Section title="재방문·코호트" note="가입일 기준 D1·D7·D30의 해당 UTC 날짜에 다시 방문한 회원입니다. 방문 수집 이후 관측이 완료된 대상 날짜만 분모에 넣습니다. 관측 중인 회원과 분모가 없는 셀을 0%로 바꾸지 않습니다.">
+  const d1 = rows.find(row => row.days === 1);
+  return <Section title="재방문·코호트" summary={`D1 ${d1 ? retentionRate(d1) : '미수집'}`} note="가입일 기준 D1·D7·D30의 해당 UTC 날짜에 다시 방문한 회원입니다. 방문 수집 이후 관측이 완료된 대상 날짜만 분모에 넣습니다. 관측 중인 회원과 분모가 없는 셀을 0%로 바꾸지 않습니다.">
     <DataTable title="D1·D7·D30 재방문" headers={['재방문일', '관측 완료 회원', '재방문 회원', '관측 중 회원', '완료분 재방문율']} rows={rows.map((row) => ({ key: String(row.days), cells: [`D${row.days}`, count(row.eligible), count(row.returned), count(row.pending), retentionRate(row)] }))} />
     <DataTable title="가입일별 재방문" headers={['가입일 (UTC)', '가입 회원', 'D1', 'D7', 'D30']} rows={cohorts.map((cohort) => ({ key: cohort.day, cells: [cohort.day, count(cohort.joined), ...[1, 7, 30].map((days) => {
       const row = cohort.retention.find((item) => item.days === days);
@@ -148,7 +151,7 @@ function Retention({ rows, cohorts }: { rows: RetentionRow[]; cohorts: AdminPerf
 }
 
 function Community({ data }: { data: AdminPerformance['community'] }) {
-  return <Section title="커뮤니티" note="기간에 생성된 글·댓글·신청과 실제 메시지를 확인합니다. 모임 승인 수는 기간에 생성된 신청의 현재 승인 상태입니다. 상호 대화는 양쪽 참여자가 실제로 메시지를 보낸 대화입니다.">
+  return <Section title="커뮤니티" summary={`작성 글 ${count(data.posts)}개 · 모임 신청 ${count(data.meetupRequests)}건`} note="기간에 생성된 글·댓글·신청과 실제 메시지를 확인합니다. 모임 승인 수는 기간에 생성된 신청의 현재 승인 상태입니다. 상호 대화는 양쪽 참여자가 실제로 메시지를 보낸 대화입니다.">
     <View style={styles.metrics}>
       <Metric label="작성 글" value={count(data.posts)} note="선택 기간 생성" />
       <Metric label="댓글" value={count(data.comments)} note="선택 기간 생성" />
@@ -166,7 +169,7 @@ function Community({ data }: { data: AdminPerformance['community'] }) {
 }
 
 function Discovery({ data }: { data: AdminPerformance['discovery'] }) {
-  return <Section title="행사·장소" note="대상 도시별 실제 열람·길찾기·웹사이트 클릭 기록입니다. 같은 행동·대상·회원·UTC 날짜·플랫폼마다 한 번 집계합니다. 길찾기 클릭으로 실제 방문을 추정하지 않습니다.">
+  return <Section title="행사·장소" summary={data.startedAt ? `집계 대상 ${count(data.rows.length)}개 · 저장·공유 미연결` : "수집 대기 · 저장·공유 미연결"} note="대상 도시별 실제 열람·길찾기·웹사이트 클릭 기록입니다. 같은 행동·대상·회원·UTC 날짜·플랫폼마다 한 번 집계합니다. 길찾기 클릭으로 실제 방문을 추정하지 않습니다.">
     {data.startedAt ? <Note>행사·장소 수집 시작 {date(data.startedAt)} (UTC)</Note> : <Notice title="행사·장소 수집 대기" text="새 행동 기록을 아직 받지 못했습니다. 기존 클릭과 새 대상별 기록을 합산하지 않습니다." />}
     <View style={styles.metrics}>
       <Metric label="기존 행사 클릭" value={count(data.legacyEventViews, '범위 확인 불가')} note="기존 원장에는 도시·플랫폼 정보가 없어 해당 필터의 집계는 확인할 수 없습니다." />
@@ -179,7 +182,7 @@ function Discovery({ data }: { data: AdminPerformance['discovery'] }) {
 
 function Notifications({ data, platform }: { data: AdminPerformance['notifications']; platform: PerformancePlatform }) {
   const missingRate = platform !== 'all' ? '플랫폼별 산출 불가' : data.clickStartedAt ? '접수 코호트 없음' : '미수집';
-  return <Section title="알림" note="APNs·FCM 접수는 제공자의 요청 수락입니다. 실제 단말 표시 여부는 미수집입니다. 발송 큐는 최대 7일 보존하며 기기 삭제로 기록이 사라질 수 있습니다.">
+  return <Section title="알림" summary={`생성 ${count(data.generated)}건 · 실패 ${count(data.failed)}건${data.clickStartedAt ? "" : " · 탭 미수집"}`} note="APNs·FCM 접수는 제공자의 요청 수락입니다. 실제 단말 표시 여부는 미수집입니다. 발송 큐는 최대 7일 보존하며 기기 삭제로 기록이 사라질 수 있습니다.">
     <Note>발송 확인 범위 {date(data.deliverySince)} 이후 (UTC) · 선택 기간 중 보존된 큐만 집계합니다.</Note>
     <View style={styles.metrics}>
       <Metric label="생성 알림" value={count(data.generated)} note="선택 기간의 수신 회원별 알림" />
@@ -198,7 +201,7 @@ function Notifications({ data, platform }: { data: AdminPerformance['notificatio
 }
 
 function Revenue({ data }: { data: AdminPerformance['revenue'] }) {
-  return <Section title="수익" note="확인된 일반 멤버십 운영 결제의 통화별 총 결제 발생액입니다. 업체 요금제는 합산하지 않습니다. 환불·스토어 수수료 차감 전이며 정산액은 미연결입니다.">
+  return <Section title="수익" summary={`현재 유료 회원 ${count(data.paidMembers)}명 · 정산 ${count(data.settlement, "미연결")}`} note="확인된 일반 멤버십 운영 결제의 통화별 총 결제 발생액입니다. 업체 요금제는 합산하지 않습니다. 환불·스토어 수수료 차감 전이며 정산액은 미연결입니다.">
     <View style={styles.metrics}>
       <Metric label="현재 유료 회원" value={count(data.paidMembers)} note="현재 일반 유료 멤버십 회원 · 스냅샷" />
       <Metric label="신규 가입 유료 전환" value={rate(data.paidConversion, '가입 대상 없음')} note="기간 내 가입 회원 중 같은 기간 첫 결제가 확인된 회원" />
@@ -214,7 +217,7 @@ function Revenue({ data }: { data: AdminPerformance['revenue'] }) {
 
 function Quality({ data, filters }: { data: AdminPerformance['quality']; filters: AnalyticsFilters }) {
   const showLegacy = filters.includeInternal && filters.city === null && filters.tier === 'all';
-  return <Section title="품질" note="실패는 영향을 받은 로그인 회원 수입니다. 전체 실패율을 산출할 분모는 미수집입니다. 회원 신고 기록만 포함합니다.">
+  return <Section title="품질" summary={`미처리 신고 ${count(data.openReports)}건${data.errorStartedAt ? "" : " · 실패 수집 대기"}`} note="실패는 영향을 받은 로그인 회원 수입니다. 전체 실패율을 산출할 분모는 미수집입니다. 회원 신고 기록만 포함합니다.">
     <View style={styles.metrics}>
       <Metric label="미처리 신고" value={count(data.openReports)} note="현재 미처리 신고 잔량 · 스냅샷" />
       <Metric label="처리된 신고" value={count(data.resolvedReports)} note="선택 기간에 해결한 신고" />
@@ -230,8 +233,27 @@ function Quality({ data, filters }: { data: AdminPerformance['quality']; filters
   </Section>;
 }
 
-function Section({ title, note, children }: { title: string; note: string; children: ReactNode }) {
-  return <View accessibilityLabel={title} style={styles.panel}><View style={styles.heading}><ThemedText accessibilityRole="header" {...(Platform.OS === 'web' ? { 'aria-level': 2 } : {})} style={styles.sectionTitle}>{title}</ThemedText><Note>{note}</Note></View>{children}</View>;
+function Section({ title, summary, note, children, initiallyExpanded = false }: { title: string; summary: string; note: string; children: ReactNode; initiallyExpanded?: boolean }) {
+  const { play } = useInteractionFeedback();
+  const [open, setOpen] = useState(initiallyExpanded);
+  return <View accessibilityLabel={title} style={styles.panel}>
+    <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ expanded: open }} aria-expanded={open}
+      onPress={() => { play('selection'); setOpen(value => !value); }} style={({ pressed }) => [styles.headingRow, { minHeight: 44 }, pressed && styles.pressed]}>
+      <ThemedText accessibilityRole="header" {...(Platform.OS === 'web' ? { 'aria-level': 2 } : {})} style={styles.sectionTitle}>{title}</ThemedText>
+      <Note>{summary} · {open ? '접기' : '펼치기'}</Note>
+    </Pressable>
+    <View aria-hidden={!open} style={[styles.section, !open && { display: 'none' }]}>
+      {children}
+      <Context title={`${title} 집계 기준`}><Note>{note}</Note></Context>
+    </View>
+  </View>;
+}
+function Context({ title, children }: { title: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return <View style={styles.section}>
+    <Action label={title} expanded={open} onPress={() => setOpen(value => !value)} />
+    <View aria-hidden={!open} style={[styles.section, !open && { display: 'none' }]}>{children}</View>
+  </View>;
 }
 function Metric({ label, value, note }: { label: string; value: string; note: string }) {
   return <View role="group" accessibilityLabel={label} style={styles.metric}><ThemedText type="smallBold">{label}</ThemedText><ThemedText selectable style={styles.metricValue}>{value}</ThemedText><Note>{note}</Note></View>;
@@ -251,9 +273,9 @@ function DataTable({ title, headers, rows }: { title: string; headers: string[];
 function Note({ children }: { children: ReactNode }) { return <ThemedText type="small" style={styles.muted}>{children}</ThemedText>; }
 function Notice({ title, text }: { title: string; text: string }) { return <View style={styles.notice}><ThemedText type="smallBold">{title}</ThemedText><Note>{text}</Note></View>; }
 function Empty() { return <Note>선택 조건에 표시할 기록이 없습니다.</Note>; }
-function Action({ label, onPress }: { label: string; onPress: () => void }) {
+function Action({ label, onPress, expanded }: { label: string; onPress: () => void; expanded?: boolean }) {
   const { play } = useInteractionFeedback();
-  return <Pressable accessibilityRole="button" onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.action, pressed && styles.pressed]}><ThemedText type="smallBold">{label}</ThemedText></Pressable>;
+  return <Pressable accessibilityRole="button" accessibilityState={{ expanded }} aria-expanded={expanded} onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.action, pressed && styles.pressed]}><ThemedText type="smallBold">{label}</ThemedText></Pressable>;
 }
 const formatter = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 20 });
 function count(value: number | null, missing = '미수집') { return value === null ? missing : formatter.format(value); }

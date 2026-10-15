@@ -15,6 +15,27 @@
 .admin-detail-facts .admin-inline-button { align-self:flex-start; padding:0; font-weight:600; }
 .admin-detail-copy { max-width:76ch; }
 .admin-detail-copy h3:not(:first-child) { margin-top:24px; }
+.admin-meetup-compact { gap:16px; }
+.admin-meetup-compact .admin-detail-heading { gap:6px; }
+.admin-meetup-compact > .admin-detail-content { padding:20px 24px; }
+.admin-meetup-compact .admin-detail-facts { display:flex; flex-wrap:wrap; gap:16px 48px; padding-bottom:16px; margin-bottom:20px; }
+.admin-meetup-compact .admin-detail-facts > div { display:block; }
+.admin-meetup-compact .admin-detail-facts dd { min-height:28px; }
+.admin-meetup-compact .admin-detail-facts dt { margin-bottom:2px; }
+.admin-meetup-compact .admin-detail-facts .admin-inline-button { margin:-8px 0; }
+.admin-meetup-compact .admin-detail-tabs { border:0; border-bottom:1px solid var(--admin-line); border-radius:0; background:transparent; padding:0; width:100%; gap:20px; }
+.admin-meetup-compact .admin-detail-tabs button { border-radius:0; border-bottom:2px solid transparent; background:transparent; padding-left:0; padding-right:0; }
+.admin-meetup-compact .admin-detail-tabs button[aria-pressed='true'] { border-bottom-color:var(--admin-accent); background:transparent; }
+.admin-intro-collapsed { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden; }
+.admin-intro-toggle.admin-inline-button { padding-left:0; }
+.admin-detail-extra { margin-top:20px; padding-top:6px; border-top:1px solid var(--admin-line); }
+.admin-detail-metadata { margin:4px 0 12px; display:grid; gap:12px; }
+.admin-detail-metadata > div { display:grid; grid-template-columns:100px minmax(0,1fr); gap:16px; }
+.admin-detail-metadata dt { color:var(--admin-muted); }
+.admin-detail-metadata dd { margin:0; color:var(--admin-ink); overflow-wrap:anywhere; }
+.admin-post-management { border-top:1px solid var(--admin-line); padding-top:4px; }
+.admin-post-management > summary { gap:12px; }
+.admin-post-management[open] > summary { margin-bottom:12px; }
 .admin-detail-record-head { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:20px; }
 .admin-detail-record-meta { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
 .admin-detail-record-meta time { margin-left:auto; font-variant-numeric:tabular-nums; }
@@ -46,6 +67,7 @@
   .admin-meetup-table .admin-muted { margin:4px 0; }
   .admin-detail-heading h2 { font-size:22px; }
   .admin-detail-content { padding:16px; }
+  .admin-meetup-compact > .admin-detail-content { padding:16px; }
   .admin-detail-facts { grid-template-columns:1fr; gap:16px; padding-bottom:16px; margin-bottom:20px; }
   .admin-detail-facts > div { display:grid; grid-template-columns:90px minmax(0,1fr); gap:12px; align-items:center; }
   .admin-detail-facts dt { margin:0; }

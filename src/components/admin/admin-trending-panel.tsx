@@ -95,7 +95,7 @@ export function AdminTrendingPanel({ localPreview }: { localPreview?: boolean })
         <Pressable accessibilityRole="button" accessibilityState={{ expanded: settingsOpen }} aria-expanded={settingsOpen} onPress={() => { play('selection'); setSettingsOpen(value => !value); }} style={({ pressed }) => [styles.settingsToggle, pressed && { opacity: .72 }]}>
           <ThemedText type="smallBold">발송 기준 설정</ThemedText><ThemedText type="small" style={styles.muted}>{settingsOpen ? '접기' : '가중치·시간·발송 한도 펼치기'}</ThemedText>
         </Pressable>
-        {settingsOpen && <View style={styles.fields}>
+        <View aria-hidden={!settingsOpen} style={[styles.fields, !settingsOpen && { display: 'none' }]}>
         {NUMBERS.map(({ key, label, hint }) => (
           <View key={key} style={styles.field}>
             <View style={{ flex: 1, minWidth: 0 }}>
@@ -108,12 +108,13 @@ export function AdminTrendingPanel({ localPreview }: { localPreview?: boolean })
               inputMode="decimal"
               accessibilityLabel={label}
               editable={!busy}
+              onFocus={() => play('selection')}
               style={styles.input}
             />
           </View>
         ))}
         <Action label="값 저장" onPress={saveNumbers} disabled={busy} />
-        </View>}
+        </View>
       </View>
 
       <View style={{ gap: Spacing.two }}>
