@@ -1,6 +1,7 @@
+import { LensPressable as Pressable } from '@/components/lens-pressable';
 import { SymbolView } from 'expo-symbols';
 import { Stack, useRouter } from 'expo-router';
-import { Pressable } from 'react-native';
+
 
 import NotificationsScreen from '@/app/(tabs)/notifications';
 import { useTheme } from '@/hooks/use-theme';

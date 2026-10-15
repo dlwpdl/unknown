@@ -32,6 +32,7 @@ function view(file, name, { rpc = async () => ({ data: null }), storage = {}, us
   const imports = {
     react: hooks, 'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }) },
     'react-native': { View: 'View', Pressable: 'Pressable', Modal: 'Modal', TextInput: 'TextInput', ActivityIndicator: 'Loader', StyleSheet: { create: x => x }, useWindowDimensions: () => ({ width: 1200 }) },
+    '@/components/lens-pressable': { LensPressable: 'Pressable' },
     'expo-image': { Image: 'Image' },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/constants/theme': { Colors: { admin: {}, dark: {} }, Spacing: {} },

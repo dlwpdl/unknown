@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
+import ts from 'typescript';
 import { lensControlStyle } from '../src/lib/lens-control.ts';
 
 const paint = new Set(['borderRadius', 'borderColor', 'borderTopColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderStartColor', 'borderEndColor', 'boxShadow', 'shadowOpacity', 'elevation']);
@@ -27,4 +30,31 @@ test('lens has a reflective rim, preserves the semantic edge color and changes s
   assert.notDeepEqual(normal.boxShadow, down.boxShadow);
   assert.equal(normal.transform, undefined);
   assert.equal(down.transform, undefined);
+});
+
+test('lens forwards native refs, accessibility, disabled state, callbacks and function children without an extra layout container', () => {
+  const exports = {}, flatten = value => Array.isArray(value) ? Object.assign({}, ...value.map(flatten)) : value || {};
+  vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/components/lens-pressable.tsx', import.meta.url), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+  }).outputText, { exports, require(name) {
+    if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }) };
+    if (name === 'react-native') return { Pressable: 'NativePressable', StyleSheet: { flatten } };
+    if (name === '@/lib/lens-control') return { lensControlStyle };
+    throw new Error(name);
+  } });
+  const ref = {}, onPress = () => {}, onLongPress = () => {}, children = () => 'label';
+  const element = exports.LensPressable({ ref, onPress, onLongPress, children, disabled: true, hitSlop: 8,
+    accessibilityLabel: '기존 버튼', accessibilityState: { disabled: true, busy: true },
+    style: ({ pressed }) => [{ minHeight: 44, paddingHorizontal: 12 }, { opacity: pressed ? .5 : 1 }],
+  });
+  assert.equal(element.type, 'NativePressable');
+  for (const [key, value] of Object.entries({ ref, onPress, onLongPress, children, disabled: true, hitSlop: 8 })) assert.equal(element.props[key], value);
+  assert.equal(element.props.accessibilityLabel, '기존 버튼');
+  assert.equal(element.props.accessibilityState.busy, true);
+  for (const pressed of [false, true]) {
+    const result = flatten(element.props.style({ pressed }));
+    assert.equal(result.minHeight, 44);
+    assert.equal(result.paddingHorizontal, 12);
+    assert.equal(result.opacity, pressed ? .5 : 1);
+  }
 });
