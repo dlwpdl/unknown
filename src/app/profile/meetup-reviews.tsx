@@ -1,7 +1,8 @@
+import { LensPressable as Pressable } from '@/components/lens-pressable';
 import { loadMannerSummary, type MannerSummary as Summary } from '@/lib/user-profile';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MannerSummary } from '@/components/manner-summary';
 import { MeetupReviews } from '@/components/meetup-reviews';

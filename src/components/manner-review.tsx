@@ -1,5 +1,6 @@
+import { LensPressable as Pressable } from '@/components/lens-pressable';
 import { useRef, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';

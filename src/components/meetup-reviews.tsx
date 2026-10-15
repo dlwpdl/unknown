@@ -1,5 +1,6 @@
+import { LensPressable as Pressable } from '@/components/lens-pressable';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, StyleSheet, TextInput, View } from 'react-native';
 import { ChillingDateInput } from '@/components/chilling-date-input';
 import { MannerReviewButton } from '@/components/manner-review';
 import { ReportSheet } from '@/components/report-sheet';
