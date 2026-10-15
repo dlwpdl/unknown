@@ -4,6 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as labels from '../src/lib/admin.ts';
+import * as adminMerchants from '../src/lib/admin-merchants.ts';
 import { filterReportRows } from '../src/components/admin/admin-report-filter.ts';
 import * as sectionFilters from '../src/components/admin/admin-section-filter.ts';
 import { count } from '../src/i18n/ko.ts';
@@ -27,7 +28,7 @@ function view(file, name, { rpc = async () => ({ data: null }), storage = {}, us
     useMemo(fn) { return fn(); },
   };
   const adminData = module('../src/lib/admin-data.ts');
-  const controls = Object.fromEntries(['AdminFilterBar', 'AdminFilterReset', 'AdminMultiFilter', 'AdminSearch', 'AdminTableSummary'].map(name => [name, name]));
+  const controls = Object.fromEntries(['AdminFilterBar', 'AdminFilterReset', 'AdminMultiFilter', 'AdminSearch', 'AdminSelect', 'AdminTableSummary'].map(name => [name, name]));
   const imports = {
     react: hooks, 'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }) },
     'react-native': { View: 'View', Pressable: 'Pressable', Modal: 'Modal', TextInput: 'TextInput', ActivityIndicator: 'Loader', StyleSheet: { create: x => x }, useWindowDimensions: () => ({ width: 1200 }) },
@@ -511,7 +512,7 @@ test('merchant admin entrypoints keep receipt queries disabled during local prev
   const web = view('../src/components/admin/admin-merchants.tsx', 'AdminMerchantsView', { imports: {
     'expo-asset': { Asset: { fromModule: () => ({ uri: 'preview-logo' }) } },
     '@/lib/mock': { CITIES: [], TAGS: [] },
-    '@/lib/admin-merchants': { loadMerchants: async () => ({ merchants: [], more: false }) },
+    '@/lib/admin-merchants': { ...adminMerchants, loadMerchants: async () => ({ merchants: [], more: false }) },
   } });
   const root = web.render(props);
   const disclosure = nodes(root).find(node => node.type === 'details' && nodes(node).some(child => child.props?.children === '후기 증빙 검토'));
