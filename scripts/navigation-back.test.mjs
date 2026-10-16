@@ -9,6 +9,53 @@ const text = tree => typeof tree === 'string' ? tree : tree && typeof tree === '
 const style = value => Object.assign({}, ...[value].flat(Infinity));
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
+function backHandler(path, analyticsId, context) {
+  const source = ts.createSourceFile(path, fs.readFileSync(new URL(path, import.meta.url), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let handler;
+  function visit(node) {
+    if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const attributes = node.attributes.properties.filter(ts.isJsxAttribute);
+      if (attributes.some(attribute => attribute.name.text === 'analyticsId' && attribute.initializer?.text === analyticsId)) {
+        handler = attributes.find(attribute => attribute.name.text === 'onPress')?.initializer?.expression;
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(source);
+  assert.ok(handler, `${path} must expose its back action`);
+  return vm.runInNewContext(`(${handler.getText(source)})`, context);
+}
+
+for (const [path, analyticsId, fallback] of [
+  ['meetup-create.tsx', 'app_meetup-create.pressable.1', '/(tabs)/meetups'],
+  ['events/index.tsx', 'ticketmaster.back', '/'],
+  ['events/[id].tsx', 'ticketmaster.detail.back', '/events'],
+  ['places/index.tsx', 'places.back', '/'],
+  ['places/[id].tsx', 'places.detail.back', { pathname: '/places', params: { cityId: 'toronto' } }],
+]) {
+  test(`${path} back action leaves a direct entry and preserves normal history and feedback`, () => {
+    for (const OS of ['ios', 'android', 'web']) {
+      let hasHistory = false;
+      const actions = [], city = { id: 'toronto' };
+      const onPress = backHandler(`../src/app/${path}`, analyticsId, {
+        Platform: { OS }, city, selected: city,
+        play: kind => actions.push(kind),
+        router: {
+          canGoBack: () => hasHistory,
+          back: () => actions.push(hasHistory ? 'back' : 'UNHANDLED_GO_BACK'),
+          replace: href => actions.push(JSON.parse(JSON.stringify(href))),
+        },
+      });
+      onPress();
+      assert.deepEqual(actions, ['selection', path === 'meetup-create.tsx' && OS === 'web' ? '/?tag=meetup' : fallback]);
+      actions.length = 0;
+      hasHistory = true;
+      onPress();
+      assert.deepEqual(actions, ['selection', 'back']);
+    }
+  });
+}
+
 function screen(path, imports) {
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL(path, import.meta.url), 'utf8'), {

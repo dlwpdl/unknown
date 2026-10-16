@@ -96,7 +96,7 @@ function EventListScreen() {
   };
   return <SafeAreaView style={[styles.root, { backgroundColor: theme.background }]}>
     <View style={[styles.header, { backgroundColor: theme.background }]}>
-      <Pressable analyticsId="ticketmaster.back" accessibilityRole="button" accessibilityLabel="뒤로가기" onPress={() => { play('selection'); router.back(); }} style={({ pressed }) => [styles.back, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} /></Pressable>
+      <Pressable analyticsId="ticketmaster.back" accessibilityRole="button" accessibilityLabel="뒤로가기" onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace('/'); }} style={({ pressed }) => [styles.back, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} /></Pressable>
       <View style={styles.headerCopy}>
         <ThemedText style={styles.headerTitle} accessibilityRole="header" numberOfLines={2}>함께 가고 싶은 페스티벌</ThemedText>
         <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{city.name} · Ticketmaster{date ? ` · ${Number(date.slice(5, 7))}월 ${Number(date.slice(8))}일` : ''}</ThemedText>
