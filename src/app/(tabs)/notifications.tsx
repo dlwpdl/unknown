@@ -17,7 +17,6 @@ import { LoginPanel } from '@/components/login-panel';
 import { TabContent } from '@/components/tab-content';
 import { Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { t, tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { loadNotificationActors, loadNotifications, markNotificationsRead, type AppNotification } from '@/lib/community-data';
 import { relativeTime } from '@/lib/feed-data';
@@ -27,12 +26,13 @@ import { supabase } from '@/lib/supabase';
 import { NOTIFICATION_CATEGORIES, adminDashboardUrl, isAdminNotificationKind, notificationRoute } from '@/lib/notification-preferences';
 
 type InboxFilter = 'all' | 'personal' | 'admin';
-const INBOX_FILTERS: { key: InboxFilter; label: string }[] = [
-  { key: 'all', get label() { return tr("전체"); } }, { key: 'personal', get label() { return tr("내 소식"); } }, { key: 'admin', get label() { return tr("관리자"); } },
-];
+
 
 export default function NotificationsScreen({ embedded = false }: { embedded?: boolean } = {}) {
-  useLanguage();
+  const { tr, t, locale: appLocale } = useLanguage();
+  const INBOX_FILTERS: { key: InboxFilter; label: string }[] = [
+    { key: 'all', get label() { return tr("전체"); } }, { key: 'personal', get label() { return tr("내 소식"); } }, { key: 'admin', get label() { return tr("관리자"); } },
+  ];
   const theme = useTheme();
   const router = useRouter();
   const { isAuthed, isAdmin, isAuthLoading, me, signInApple, signInKakao, signInGoogle, signInDev, authError } = useAuth();
@@ -132,7 +132,7 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
             ListEmptyComponent={error
               ? <StateCard kind="error" title={t.notifications.loadError} body={t.notifications.loadErrorBody} actionLabel={t.notifications.retry} onAction={() => void load()} />
               : <StateCard title={filter === 'admin' ? tr("관리자 알림이 없어요") : filter === 'personal' ? tr("내 소식이 없어요") : t.notifications.empty}
-                  body={filter === 'all' ? t.notifications.emptyBody : '새 알림이 오면 여기에서 볼 수 있어요.'} />}
+                  body={tr(filter === 'all' ? t.notifications.emptyBody : '새 알림이 오면 여기에서 볼 수 있어요.')} />}
             renderItem={({ item, index }) => {
               const admin = isAdminNotificationKind(item.kind);
               const actor = item.actor_id && !admin ? actors.get(item.actor_id) : undefined;
@@ -172,7 +172,7 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
                       <ThemedText type="smallBold" style={{ color: admin ? theme.accent : theme.textSecondary }}>
                         {admin ? tr("관리자 알림") : NOTIFICATION_CATEGORIES.find(category => category.key === item.category)?.label ?? tr("글링 안내")}
                       </ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary">{relativeTime(item.created_at)}</ThemedText>
+                      <ThemedText type="small" themeColor="textSecondary">{relativeTime(item.created_at, undefined, appLocale)}</ThemedText>
                     </View>
                     {item.title && <ThemedText type="smallBold">{item.title}</ThemedText>}
                     <ThemedText>{item.body}</ThemedText>

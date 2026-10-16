@@ -2,11 +2,10 @@ import { useLanguage } from '@/hooks/use-language';
 import { SymbolView } from 'expo-symbols';
 
 import { useTheme } from '@/hooks/use-theme';
-import { t } from '@/i18n';
 import { trustLevelOf } from '@/lib/trust';
 
 export function TrustBadge({ verified, trustLevel }: { verified?: boolean; trustLevel?: 2 | 3 }) {
-  useLanguage();
+  const { t } = useLanguage();
   const theme = useTheme();
   const level = trustLevelOf({ verified, trustLevel });
 

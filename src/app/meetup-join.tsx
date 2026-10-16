@@ -18,7 +18,6 @@ import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { chillingAvailability, recommendedAgeMessage } from '@/lib/chilling';
 import { ageForMeetupRecommendation } from '@/lib/personal-info';
-import { t, tr, getLocale } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { getChillingError, getChillingErrorCode, loadChillingProfile, loadMeetupParticipation, requestChillingJoin, type ChillingProfile, type MeetupParticipation } from '@/lib/chilling-data';
 import { leaveMeetup, MEETUPS_CHANGED_EVENT, requestMeetupJoin } from '@/lib/community-data';
@@ -34,7 +33,7 @@ export default function MeetupJoinRoute() {
   return <JoinForm key={`${postId}:${isAuthed ? me.id : 'guest'}`} postId={postId} />;
 }
 function JoinForm({ postId }: { postId: string }) {
-  useLanguage();
+  const { tr, t, locale: appLocale } = useLanguage();
   const theme = useTheme(), router = useRouter(), hidden = useContentVisibility();
   const { isAuthed, promptLogin, me } = useAuth();
   const { play } = useInteractionFeedback();
@@ -115,7 +114,7 @@ function JoinForm({ postId }: { postId: string }) {
       else await requestMeetupJoin(supabase, post.id, answer);
       submitted = true; setSent(true); play('meetup'); DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
       setParticipation(await loadMeetupParticipation(supabase, post.id, me.id));
-    } catch (e) { play('warning'); setError(submitted ? tr("신청은 접수됐어요. 현재 상태를 다시 불러와 주세요.") : getChillingError(e)); setErrorCode(submitted ? null : getChillingErrorCode(e)); }
+    } catch (e) { play('warning'); setError(submitted ? "신청은 접수됐어요. 현재 상태를 다시 불러와 주세요." : getChillingError(e)); setErrorCode(submitted ? null : getChillingErrorCode(e)); }
     finally { busy.current = false; setSending(false); }
   };
   return <ThemedView style={styles.fill}><SafeAreaView style={styles.fill}>
@@ -127,7 +126,7 @@ function JoinForm({ postId }: { postId: string }) {
       <ScrollView analyticsId="app_meetup-join.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
         {!isAuthed ? <Pressable analyticsId="app_meetup-join.pressable.2" onPress={() => { play('selection'); promptLogin('참여하려면 로그인해 주세요.'); }} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent">{tr("로그인하기")}</ThemedText></Pressable>
           : loading ? <GlingLoader color={theme.accent} accessibilityLabel={tr("신청 정보 불러오는 중")} />
-            : error && !post ? <StateCard kind="error" title={tr("신청 정보를 불러오지 못했어요")} body={error} actionLabel={tr("다시 불러오기")} onAction={() => setRetry(v => v + 1)} />
+            : error && !post ? <StateCard kind="error" title={tr("신청 정보를 불러오지 못했어요")} body={tr(error)} actionLabel={tr("다시 불러오기")} onAction={() => setRetry(v => v + 1)} />
             : unavailable ? <StateCard kind="blocked" title={tr("이 모임을 볼 수 없어요")} body={tr("삭제됐거나 현재 열람할 수 없는 모임이에요.")} />
               : own ? <ThemedText>{tr("내가 개최한 모임이에요. 대화 탭에서 신청자를 확인할 수 있어요.")}</ThemedText>
                 : inactive ? <><ThemedText type="subtitle">{post!.title}</ThemedText>
@@ -137,7 +136,7 @@ function JoinForm({ postId }: { postId: string }) {
                 : result ? <>
                     <ThemedText type="subtitle">{post!.title}</ThemedText>
                     <StateCard kind={status === 'approved' ? 'success' : 'pending'} title={status === 'approved' ? tr("참여가 승인됐어요") : status === 'pending' ? tr("승인 대기 중이에요") : tr("신청을 접수했어요")}
-                      body={status === 'approved' ? '대화 탭에서 모임 대화와 집결 안내를 확인해 주세요.' : status === 'pending' ? availability === 'full' ? '내 신청은 대기 중이에요. 현재 정원이 차서 모임장이 승인할 수 없어요. 신청만으로 자리가 예약되지는 않아요.' : '아직 참여가 확정되지 않았어요. 모임장이 검토한 뒤 승인하면 모임 대화에 참여할 수 있어요.' : '현재 신청 상태를 다시 불러와 주세요.'} />
+                      body={tr(status === 'approved' ? '대화 탭에서 모임 대화와 집결 안내를 확인해 주세요.' : status === 'pending' ? availability === 'full' ? '내 신청은 대기 중이에요. 현재 정원이 차서 모임장이 승인할 수 없어요. 신청만으로 자리가 예약되지는 않아요.' : '아직 참여가 확정되지 않았어요. 모임장이 검토한 뒤 승인하면 모임 대화에 참여할 수 있어요.' : '현재 신청 상태를 다시 불러와 주세요.')} />
                     {modern && participation && <Pressable analyticsId="app_meetup-join.pressable.11" accessibilityRole="button" onPress={() => { play('selection'); router.push({ pathname: '/meetup-application', params: { requestId: participation.id } }); }} style={styles.button}><ThemedText themeColor="accent">{tr("내가 보낸 프로필과 답변 보기")}</ThemedText></Pressable>}
                     {status === 'pending' && <Pressable analyticsId="app_meetup-join.pressable.12" accessibilityRole="button" disabled={sending} accessibilityState={{ disabled: sending, busy: sending }} onPress={confirmCancel} style={styles.button}><ThemedText themeColor="textSecondary">{sending ? tr("취소 중…") : tr("신청 취소")}</ThemedText></Pressable>}
                     <Pressable analyticsId="app_meetup-join.pressable.9" accessibilityRole="button" disabled={sending} onPress={() => { play('selection'); setRetry(v => v + 1); }} style={styles.button}><ThemedText themeColor="accent">{tr("현재 신청 상태 새로고침")}</ThemedText></Pressable>
@@ -146,7 +145,7 @@ function JoinForm({ postId }: { postId: string }) {
                   : <>
                     <ThemedText type="subtitle">{post!.title}</ThemedText>
                     {availability === 'full' && <StateCard kind="blocked" title={tr("정원이 모두 찼어요")} body={tr("현재 남은 자리가 없어 신청을 보낼 수 없어요. 작성한 답변은 유지돼요. 자리 현황을 다시 확인해 주세요.")} />}
-                    {(status === 'rejected' || status === 'cancelled') && <StateCard kind={status === 'rejected' ? 'blocked' : 'empty'} title={status === 'rejected' ? tr("이전 신청이 거절됐어요") : tr("이전 신청은 취소된 상태예요")} body={coolingDown ? `이전 신청 처리 후 24시간 동안 재신청할 수 없어요. ${new Date(reapplyAt).toLocaleString(getLocale())} 이후 다시 신청해 주세요.` : '현재 참여가 확정되지 않았어요. 답변과 공유 동의를 확인하고 다시 신청할 수 있어요.'} actionLabel={coolingDown ? '현재 상태 확인' : undefined} onAction={coolingDown ? () => setRetry(v => v + 1) : undefined} />}
+                    {(status === 'rejected' || status === 'cancelled') && <StateCard kind={status === 'rejected' ? 'blocked' : 'empty'} title={status === 'rejected' ? tr("이전 신청이 거절됐어요") : tr("이전 신청은 취소된 상태예요")} body={coolingDown ? tr('이전 신청 처리 후 24시간 동안 재신청할 수 없어요. {0} 이후 다시 신청해 주세요.', new Date(reapplyAt).toLocaleString(appLocale)) : tr('현재 참여가 확정되지 않았어요. 답변과 공유 동의를 확인하고 다시 신청할 수 있어요.')} actionLabel={coolingDown ? tr('현재 상태 확인') : undefined} onAction={coolingDown ? () => setRetry(v => v + 1) : undefined} />}
                     <View style={[styles.questionCard, { backgroundColor: theme.card }]}>
                       <ThemedText type="smallBold" themeColor="accent">{post!.author.nickname}{tr("님이 궁금해요")}</ThemedText>
                       <ThemedText style={styles.question}>{post!.room!.applicationQuestion || tr("함께하고 싶은 이유를 알려주세요")}</ThemedText>
@@ -155,7 +154,7 @@ function JoinForm({ postId }: { postId: string }) {
                     </View>
                     <View style={[styles.summary, { borderColor: theme.line }]}><ChillingEventSchedule room={post!.room!} /></View>
                     {post!.room!.recommendedAgeMin != null && <>
-                      <ThemedText type="small" themeColor="textSecondary">{recommendedAgeMessage(post!.room!, recommendationAge)}</ThemedText>
+                      <ThemedText type="small" themeColor="textSecondary">{recommendedAgeMessage(post!.room!, recommendationAge, appLocale)}</ThemedText>
                       {recommendationAge == null && Platform.OS !== 'web' && <Pressable analyticsId="app_meetup-join.pressable.4" onPress={() => { play('selection'); router.push('/profile/settings'); }} accessibilityRole="button" style={styles.button}><ThemedText type="small" themeColor="accent">{tr("계정 정보·이용 목적 확인하기")}</ThemedText></Pressable>}
                     </>}
                     <MeetupPolicyNotice mode="join" />
@@ -175,7 +174,7 @@ function JoinForm({ postId }: { postId: string }) {
                       <ThemedText type="small" themeColor="textSecondary">{tr("안전을 위한 자동 분석과 권한 있는 운영자 검토가 적용돼요. 신청 취소는 이 신청 화면에서 할 수 있어요.")}</ThemedText>
                     </>}
                   </>}
-        {!!error && !!post && <><ThemedText accessibilityRole="alert" themeColor="accent">{error}</ThemedText>
+        {!!error && !!post && <><ThemedText accessibilityRole="alert" themeColor="accent">{tr(error)}</ThemedText>
           {membershipError && <Pressable analyticsId="app_meetup-join.pressable.10" accessibilityRole="button" onPress={() => { play('selection'); router.push('/profile/membership'); }} style={styles.button}><ThemedText type="smallBold" themeColor="accent">{tr("멤버십과 모임 자리 보기 ›")}</ThemedText></Pressable>}
           <Pressable analyticsId="app_meetup-join.pressable.9" onPress={() => { play('selection'); setRetry(v => v + 1); }} accessibilityRole="button" style={styles.button}><ThemedText>{tr("다시 불러오기")}</ThemedText></Pressable></>}
       </ScrollView>

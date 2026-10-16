@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { SymbolView } from 'expo-symbols';
@@ -9,7 +8,7 @@ import { useTheme } from '@/hooks/use-theme';
 import type { CityPlace } from '@/lib/city-places';
 
 export function CityPlacePhoto({ place, style }: { place: CityPlace; style?: StyleProp<ViewStyle> }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme(), [failedUri, setFailedUri] = useState<string | null>(null);
   const uri = place.photo?.uri;
   return <View style={[styles.frame, { backgroundColor: theme.backgroundElement }, style]}>

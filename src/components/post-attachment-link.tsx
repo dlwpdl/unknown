@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { Image } from 'expo-image';
 import { openBrowserAsync } from 'expo-web-browser';
 import { Alert, Platform, StyleSheet, View } from 'react-native';
@@ -10,7 +9,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { INSTAGRAM_LINK_SVG, instagramPostLink, safePostLink } from '../../supabase/functions/_shared/post-links';
 
 export function PostAttachmentLink({ url: input, enabled = true }: { url: string; enabled?: boolean }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const safe = safePostLink(input);

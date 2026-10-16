@@ -15,7 +15,6 @@ import { PersonalInfoFields, type PersonalInfoDraft } from '@/components/persona
 import { WelcomeMoment } from '@/components/welcome-moment';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { t, tr } from '@/i18n';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 import { generateNickname } from '@/lib/nickname';
@@ -50,7 +49,7 @@ export function ProfileOnboarding({
   existingProfile?: ExistingProfile | null;
   onComplete: (profile: CompletedProfile) => void;
 }) {
-  useLanguage();
+  const { tr, t } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
@@ -90,7 +89,7 @@ export function ProfileOnboarding({
     { id: 'terms', label: '[필수] 이용약관', checked: termsAccepted, change: setTermsAccepted, url: `${publicSiteUrl}/terms` },
     { id: 'privacy', label: '[필수] 개인정보 수집·이용', checked: privacyAccepted, change: setPrivacyAccepted, url: `${publicSiteUrl}/privacy` },
     { id: 'ai', label: '[필수] 외부 AI(OpenAI) 안전 처리', checked: aiAccepted, change: setAiAccepted,
-      details: `${t.onboarding.consentLabel} 모든 게시글·댓글·대화가 안전 분석 대상이며, 권한 있는 관리자가 안전 운영을 위해 확인할 수 있습니다.` },
+      details: `${t.onboarding.consentLabel} ${tr("모든 게시글·댓글·대화가 안전 분석 대상이며, 권한 있는 관리자가 안전 운영을 위해 확인할 수 있습니다.")}` },
     ...(!consentOnly ? [{ id: 'personal', label: '[선택] 이름·생년월일·성별 수집·이용', checked: personalInfo.accepted,
       change: (checked: boolean) => setPersonalInfo((current) => ({ ...current, accepted: checked })),
       details: PERSONAL_INFO_NOTICE }] : []),
@@ -291,14 +290,14 @@ export function ProfileOnboarding({
                 const expanded = expandedConsent === item.id;
                 return <View key={item.id}>
                   <View style={styles.consentRow}>
-                    <Pressable analyticsId="components_profile-onboarding.pressable.8" onPress={toggle} disabled={saving} accessibilityRole="checkbox" accessibilityLabel={item.label}
+                    <Pressable analyticsId="components_profile-onboarding.pressable.8" onPress={toggle} disabled={saving} accessibilityRole="checkbox" accessibilityLabel={tr(item.label)}
                       aria-checked={item.checked} accessibilityState={{ checked: item.checked, disabled: saving }}
                       {...(Platform.OS === 'web' ? { onKeyDown: (event: { key: string; preventDefault: () => void }) => { if (event.key === ' ') { event.preventDefault(); toggle(); } } } : {})}
                       style={styles.consent}>
                       <View aria-hidden accessibilityElementsHidden style={[styles.checkbox, { backgroundColor: item.checked ? theme.accent : 'transparent', borderColor: item.checked ? theme.accent : theme.line }]}>
                         {item.checked && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✓</ThemedText>}
                       </View>
-                      <ThemedText type="small" style={styles.consentText}>{item.label}</ThemedText>
+                      <ThemedText type="small" style={styles.consentText}>{tr(item.label)}</ThemedText>
                     </Pressable>
                     {'url' in item ? <Pressable analyticsId="components_profile-onboarding.pressable.9" accessibilityRole="link" accessibilityLabel={tr("{0} 자세히 보기", (item.label))}
                       onPress={() => { play('selection'); if (item.url) void Linking.openURL(item.url); }} style={styles.detailButton}>
@@ -309,13 +308,13 @@ export function ProfileOnboarding({
                       <ThemedText type="small" themeColor="textSecondary">{expanded ? tr("접기 ∧") : tr("보기 ∨")}</ThemedText>
                     </Pressable>}
                   </View>
-                  {'details' in item && expanded && <ThemedText type="small" themeColor="textSecondary" style={styles.consentDetails}>{item.details}</ThemedText>}
+                  {'details' in item && expanded && <ThemedText type="small" themeColor="textSecondary" style={styles.consentDetails}>{tr(item.details ?? '')}</ThemedText>}
                 </View>;
               })}
             </View>
             <ThemedText type="small" themeColor="textSecondary">{consentOnly ? tr("필수 항목에 동의하면 계속 이용할 수 있어요.") : tr("필수 항목에 동의하면 가입할 수 있어요. 이름·생년월일 입력과 동의는 선택이에요.")}</ThemedText>
 
-            {!!error && <ThemedText accessibilityRole="alert" type="small" style={{ color: theme.accent }}>{error}</ThemedText>}
+            {!!error && <ThemedText accessibilityRole="alert" type="small" style={{ color: theme.accent }}>{tr(error)}</ThemedText>}
           </ScrollView>
 
           <View style={[styles.footer, { borderTopColor: theme.line, backgroundColor: theme.background }]}>

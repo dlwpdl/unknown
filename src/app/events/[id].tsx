@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { GlingLoader } from '@/components/gling-loader';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
@@ -26,7 +25,7 @@ import { CITIES } from '@/lib/mock';
 import { eventNotice, eventPriceLabel, eventTime, loadTicketmasterEvent, meetupAllowed, recordTicketmasterEventClick, type TicketmasterEvent } from '@/lib/ticketmaster';
 
 export default function EventDetailScreen() {
-  useLanguage();
+  const { tr, locale: appLocale } = useLanguage();
   const { id, cityId } = useLocalSearchParams<{ id: string; cityId: string }>();
   const theme = useTheme(), router = useRouter();
   const { setCity } = useCommunityCity();
@@ -101,8 +100,8 @@ export default function EventDetailScreen() {
         {promo && <ThemedText type="small" themeColor="textSecondary">{promo.label} · YouTube{videoOpen ? tr(" · 음소거 자동 재생") : ''}</ThemedText>}
         {!!videoError && <ThemedText accessibilityRole="alert" themeColor="accent">{videoError}</ThemedText>}
         <ThemedText type="subtitle" accessibilityRole="header">{event.name}</ThemedText>
-        <View style={[styles.facts, { backgroundColor: theme.card }]}><ThemedText type="smallBold" themeColor="accent">{eventTime(event)}</ThemedText><ThemedText>{event.venue || tr("장소 확인 필요")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{event.city}</ThemedText><ThemedText type="smallBold" themeColor={event.price ? 'accent' : 'textSecondary'}>{eventPriceLabel(event)}</ThemedText></View>
-        {!!eventNotice(event) && <ThemedText accessibilityRole="alert" themeColor="accent">{eventNotice(event)}</ThemedText>}
+        <View style={[styles.facts, { backgroundColor: theme.card }]}><ThemedText type="smallBold" themeColor="accent">{eventTime(event, appLocale)}</ThemedText><ThemedText>{event.venue || tr("장소 확인 필요")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{event.city}</ThemedText><ThemedText type="smallBold" themeColor={event.price ? 'accent' : 'textSecondary'}>{eventPriceLabel(event, appLocale)}</ThemedText></View>
+        {!!eventNotice(event, appLocale) && <ThemedText accessibilityRole="alert" themeColor="accent">{eventNotice(event, appLocale)}</ThemedText>}
         <View style={styles.description}><ThemedText type="smallBold" accessibilityRole="header">{tr("행사 소개")}</ThemedText><ThemedText type="small" themeColor="textSecondary" numberOfLines={3}>{event.description || tr("자세한 소개는 티켓에서 확인해 주세요.")}</ThemedText></View>
         <Pressable analyticsId="ticketmaster.meetup.find" accessibilityRole="button" accessibilityState={{ disabled: !meetupAllowed(event) }} disabled={!meetupAllowed(event)} onPress={findMeetups} style={({ pressed }) => [styles.button, Depth.control, { borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card, opacity: !meetupAllowed(event) ? 0.4 : 1, }]}><ThemedText type="smallBold">{tr("함께 갈 모임 찾기")}</ThemedText></Pressable>
         <RaisedActionButton analyticsId="ticketmaster.meetup.create" label={tr("함께 갈 모임 만들기")} disabled={!meetupAllowed(event)} onPress={create} />

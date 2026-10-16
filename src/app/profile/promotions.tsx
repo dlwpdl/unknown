@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr, getLocale } from '@/i18n';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -22,9 +21,9 @@ import { supabase } from '@/lib/supabase';
 
 type Offer = NonNullable<ReturnType<typeof promotionOffer>>;
 type WalletState = { userId: string; wallet: PromotionWallet; posts: { id: string; title: string }[] };
-const statuses = { get active() { return tr("홍보 중"); }, get paused() { return tr("중단됨"); }, get completed() { return tr("노출 완료"); }, get refunded() { return tr("환불됨"); } };
-const number = (value: number) => value.toLocaleString(getLocale());
-const date = (value: string) => new Date(value).toLocaleDateString(getLocale());
+
+
+
 
 function ActionButton({ label, onPress, disabled = false, primary = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean }) {
 
@@ -38,7 +37,10 @@ export default function PromotionsRoute() {
 }
 
 function PromotionsScreen() {
-  useLanguage();
+  const { tr, locale: appLocale } = useLanguage();
+  const date = (value: string) => new Date(value).toLocaleDateString(appLocale);
+  const number = (value: number) => value.toLocaleString(appLocale);
+  const statuses = { get active() { return tr("홍보 중"); }, get paused() { return tr("중단됨"); }, get completed() { return tr("노출 완료"); }, get refunded() { return tr("환불됨"); } };
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const auth = useAuth();

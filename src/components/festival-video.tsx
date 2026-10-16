@@ -1,11 +1,10 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
 export function FestivalVideo({ youtubeId, ambient = false, muted = false, visible = true, onPlaying, onError }: { youtubeId: string; ambient?: boolean; muted?: boolean; visible?: boolean; onPlaying?: () => void; onError?: () => void }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const source = useMemo(() => ({
     html: `<html><head><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#111}iframe{position:absolute;left:50%;top:50%;width:${ambient ? '177.78vh' : '100vw'};height:100vh;transform:translate(-50%,-50%);border:0}</style></head><body><iframe id="player" src="https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&mute=${ambient || muted ? 1 : 0}&playsinline=1&loop=${ambient ? 1 : 0}&playlist=${youtubeId}&controls=${ambient ? 0 : 1}&enablejsapi=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture"></iframe><script src="https://www.youtube.com/iframe_api"></script><script>function onYouTubeIframeAPIReady(){new YT.Player('player',{events:{onReady:function(e){${ambient || muted ? 'e.target.mute();' : ''}e.target.playVideo()},onStateChange:function(e){if(e.data===1)window.ReactNativeWebView.postMessage('playing')},onError:function(){window.ReactNativeWebView.postMessage('error')}}})}</script></body></html>`,
     baseUrl: 'https://www.youtube-nocookie.com',

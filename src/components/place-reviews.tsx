@@ -11,7 +11,6 @@ import { Spacing } from '@/constants/theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
-import { tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { isContentRejected } from '@/lib/community-data';
 import { appendUniquePosts } from '@/lib/feed-data';
@@ -22,7 +21,7 @@ import { supabase } from '@/lib/supabase';
 type Props = { cityId: string; placeId: string; viewport?: { y: number; height: number } };
 
 export function PlaceReviews(props: Props) {
-  useLanguage();
+  const { tr } = useLanguage();
   const { isAuthed, isAuthLoading, me, promptLogin } = useAuth();
   if (isAuthLoading) return <StateCard kind="pending" title={tr('로그인 확인 중')} body={tr('잠시만 기다려 주세요.')} />;
   if (!isAuthed) return <StateCard kind="blocked" title={tr('장소 후기는 로그인 후 볼 수 있어요')}
@@ -32,7 +31,7 @@ export function PlaceReviews(props: Props) {
 }
 
 function ScopedPlaceReviews({ cityId, placeId, userId, viewport }: Props & { userId: string }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme(), router = useRouter(), hidden = useContentVisibility();
   const { play } = useInteractionFeedback();
   const [page, setPage] = useState<PlaceReviewPage | null>(null);

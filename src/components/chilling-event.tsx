@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { Pressable } from '@/components/analytics-controls';
 import { memo, useState } from 'react';
 import { Image } from 'expo-image';
@@ -18,7 +17,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import type { Post } from '@/lib/types';
 
 export function ChillingKindTabs({ value, onChange }: { value: ChillingKind; onChange: (kind: ChillingKind) => void }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   return <View accessibilityRole="tablist" accessibilityLabel={tr("만남 유형")} style={[styles.tabs, { backgroundColor: theme.backgroundElement }]}>
@@ -27,12 +26,12 @@ export function ChillingKindTabs({ value, onChange }: { value: ChillingKind; onC
 }
 
 export function ChillingEventSchedule({ room }: { room: ChillingSchedule }) {
-  useLanguage();
+  const { tr, locale: appLocale } = useLanguage();
   const once = chillingKind(room) === 'once';
   return <View style={{ gap: 4 }}>
     <ThemedText type="smallBold" themeColor="accent">{once ? tr("칠링 · 일회성") : tr("모임 · 정기모임")}</ThemedText>
-    <ThemedText type="small">{chillingSchedule(room)}</ThemedText>
-    <ThemedText type="small" themeColor="textSecondary">{recommendedAgeLabel(room)}{room.recommendedAgeMin != null ? tr(" · 권장 범위 밖이어도 신청 가능") : ''}</ThemedText>
+    <ThemedText type="small">{chillingSchedule(room, appLocale)}</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary">{recommendedAgeLabel(room, appLocale)}{room.recommendedAgeMin != null ? tr(" · 권장 범위 밖이어도 신청 가능") : ''}</ThemedText>
     {once && room.timezone ? <ThemedText type="small" themeColor="textSecondary">{room.timezone}{" " + tr("기준")}</ThemedText> : null}
   </View>;
 }
@@ -40,7 +39,7 @@ export function ChillingEventSchedule({ room }: { room: ChillingSchedule }) {
 export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, onAuthor }: {
   post: Post; city: string; onOpen: () => void; onAuthor: () => void;
 }) {
-  useLanguage();
+  const { tr, locale: appLocale } = useLanguage();
   const theme = useTheme();
   const { me, isAuthed, promptLogin } = useAuth();
   const { play } = useInteractionFeedback();
@@ -49,10 +48,10 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
   const [failed, setFailed] = useState<string>();
   const source = getPostImageSource(post, isAuthed ? me.id : 'guest');
   const group = chillingKind(post.room ?? {}) === 'group';
-  const countdown = chillingCountdown(post.room ?? {});
+  const countdown = chillingCountdown(post.room ?? {}, undefined, appLocale);
   const room = post.room;
-  const schedule = chillingSchedule(post.room ?? {});
-  const categoryLabel = room?.category && { casual: '가볍게', party: '파티', festival: '페스티벌', sports: '스포츠', hobby: '취미', travel: '여행' }[room.category];
+  const schedule = chillingSchedule(post.room ?? {}, appLocale);
+  const categoryLabel = room?.category ? tr({ casual: '가볍게', party: '파티', festival: '페스티벌', sports: '스포츠', hobby: '취미', travel: '여행' }[room.category]) : null;
   const seatsLeft = room?.capacity ? Math.max(0, room.capacity - room.memberCount) : null;
   return <View style={styles.card}>
     <Pressable analyticsId="components_chilling-event.pressable.2" onPress={() => { play('selection'); onOpen(); }} accessibilityRole="button" accessibilityLabel={`${post.title}, ${schedule}`} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
@@ -68,7 +67,7 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
         <ThemedText type="smallBold" themeColor="accent">{categoryLabel ? `${categoryLabel} · ` : ''}{group ? tr("모임 · 정기모임") : tr("칠링 · 일회성")}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">{schedule}</ThemedText>
       </View>
-      <ThemedText type="small" themeColor="textSecondary">{recommendedAgeLabel(post.room ?? {})}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{recommendedAgeLabel(post.room ?? {}, appLocale)}</ThemedText>
       <ThemedText accessibilityRole="header" style={styles.title}>{post.title}</ThemedText>
       <View style={styles.footer}>
         <ThemedText type="small" themeColor="textSecondary">{city}</ThemedText>

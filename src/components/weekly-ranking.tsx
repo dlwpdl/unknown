@@ -11,7 +11,7 @@ import { GlingLoader } from '@/components/gling-loader';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
-import { count, tr } from '@/i18n';
+import { count } from '@/i18n';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadWeeklyRanking, type WeeklyRanking as Ranking, type WeeklyRankingEntry } from '@/lib/community-data';
 import { supabase } from '@/lib/supabase';
@@ -29,7 +29,7 @@ const FADE_MS = 180;
 const ROTATE_MIN = 4;
 
 export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; refreshKey?: number; onOpen: (postId: string) => Promise<void> }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme();
   const hidden = useContentVisibility();
   const reducedMotion = useReducedMotion();
@@ -166,7 +166,7 @@ export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; 
 }
 
 function Row({ entry, last, onPress }: { entry: WeeklyRankingEntry; last: boolean; onPress: () => Promise<void> }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme();
   const reducedMotion = useReducedMotion();
   const [busy, setBusy] = useState(false);

@@ -16,7 +16,6 @@ import { PersonalInfoCard } from '@/components/personal-info-card';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme, useThemePreference } from '@/hooks/use-theme';
-import { t, tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { deleteMyAccount } from '@/lib/community-data';
 import { CONTACT_EMAIL } from '@/lib/legal-documents';
@@ -26,7 +25,7 @@ import { supabase } from '@/lib/supabase';
 import { adsSupported, showAdPrivacyOptions, testAds } from '@/lib/ads';
 
 export default function SettingsScreen() {
-  useLanguage();
+  const { tr, t } = useLanguage();
   const theme = useTheme();
   const { scheme, isSaving: themeSaving, setScheme } = useThemePreference();
   const router = useRouter();

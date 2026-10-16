@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr, getLocale } from '@/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
@@ -13,7 +12,7 @@ import { loadPostPoll, votePostPoll, type PostPoll as Poll } from '@/lib/post-po
 import { supabase } from '@/lib/supabase';
 
 export function PostPoll({ postId }: { postId: string }) {
-  useLanguage();
+  const { tr, locale: appLocale } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback(), { isAuthed, me, promptLogin } = useAuth();
   const key = `${postId}:${me.id}`;
   const [loaded, setLoaded] = useState<{ key: string; poll: Poll | null; error: boolean } | null>(null);
@@ -54,7 +53,7 @@ export function PostPoll({ postId }: { postId: string }) {
   };
   return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
     <ThemedText type="smallBold">{poll.question}</ThemedText>
-    <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr("투표 참여") + " "}{total.toLocaleString(getLocale())}{tr("명 · 한 개만 고를 수 있어요")}</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr("투표 참여") + " "}{total.toLocaleString(appLocale)}{tr("명 · 한 개만 고를 수 있어요")}</ThemedText>
     <View style={styles.options} accessibilityRole="radiogroup">
       {poll.options.map((label, index) => {
         const percentage = total ? Math.round(poll.counts[index] / total * 100) : 0;

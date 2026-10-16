@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { Pressable } from '@/components/analytics-controls';
 import { StyleSheet, View } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
@@ -18,7 +17,7 @@ export function NearbyCityCard({ onSelect, onChooseCity, onFix, settings = false
   onFix?: (fix: (LocationFix & { userId: string }) | null) => void;
   settings?: boolean;
 }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const location = useCommunityLocation();
@@ -44,9 +43,9 @@ export function NearbyCityCard({ onSelect, onChooseCity, onFix, settings = false
       <ThemedText type="small" themeColor="textSecondary">{tr("동의하면 로그인과 글·모임 작성 때만 위치를 한 번 확인해요. 다른 회원에게는 선택한 도시만 공개돼요.")}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{tr("좌표·정확도·측정 시각은 안전 운영을 위해 30일 보관하며 권한 있는 관리자만 조회해요. 설정에서 공유를 끄고 기록을 삭제할 수 있어요.")}</ThemedText>
     </View>}
-    {!!location.message && <ThemedText type="small" accessibilityLiveRegion="polite">{location.message}</ThemedText>}
+    {!!location.message && <ThemedText type="small" accessibilityLiveRegion="polite">{tr(location.message)}</ThemedText>}
     {recommended && onSelect && <Pressable analyticsId="components_nearby-city-card.pressable.2" accessibilityRole="button" onPress={() => { play('selection'); onSelect(recommended.id); }} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
-      <ThemedText type="smallBold" style={{ color: theme.accent }}>{recommended.name}{" " + tr("소식 보기")}</ThemedText>
+      <ThemedText type="smallBold" style={{ color: theme.accent }}>{tr(recommended.name)}{" " + tr("소식 보기")}</ThemedText>
     </Pressable>}
     <View style={styles.actions}>
       <Pressable analyticsId="components_nearby-city-card.pressable.3" accessibilityRole="button" disabled={disabled} accessibilityState={{ disabled, busy: location.busy }}

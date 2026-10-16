@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { Linking, Platform, StyleSheet, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -36,7 +35,7 @@ export function MerchantProfileEditor({ merchantId, onDirty }: { merchantId: str
 }
 
 function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDirty: (dirty: boolean) => void }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme(), router = useRouter(), { me } = useAuth(), { play } = useInteractionFeedback();
   const [profile, setProfile] = useState<MyMerchantProfile | null>(null), [photos, setPhotos] = useState<Photos | null>(null);
   const [contact, setContact] = useState<{ phone: string; hours: string } | null>(null);
@@ -68,7 +67,7 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
       if (!draft.current) { draft.current = savedPhotos(next); setPhotos(draft.current); }
       if (!contactDraft.current) { contactDraft.current = { phone: next.public_phone ?? '', hours: next.business_hours ?? '' }; setContact(contactDraft.current); }
       setError('');
-    }).catch(() => { if (active) setError(tr("프로필을 불러오지 못했어요. 업체 권한과 연결 상태를 확인해 주세요.")); })
+    }).catch(() => { if (active) setError("프로필을 불러오지 못했어요. 업체 권한과 연결 상태를 확인해 주세요."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [merchantId, revision]);
@@ -84,7 +83,7 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
       if (!asset?.uri || !isSupportedImage(asset.mimeType ?? 'image/jpeg')) throw new Error('IMAGE_UNSUPPORTED');
       const image = await preparePostImage(asset);
       if (mounted.current && draft.current) { change({ ...draft.current, [kind]: { path: null, uri: image.uri, image } }); play('selection'); }
-    } catch { if (mounted.current) { setError(tr("사진을 준비하지 못했어요. JPEG, PNG, WebP 사진으로 다시 선택해 주세요.")); play('warning'); } }
+    } catch { if (mounted.current) { setError("사진을 준비하지 못했어요. JPEG, PNG, WebP 사진으로 다시 선택해 주세요."); play('warning'); } }
     finally { working.current = false; if (mounted.current) setBusy(false); }
   };
 
@@ -105,15 +104,15 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
       }
       const saved = await saveMyMerchantProfile(supabase, merchantId, { avatarPath: next.avatar.path, bannerPath: next.banner.path, updatedAt: profile.updated_at });
       if (!mounted.current) return;
-      setProfile(saved); change(savedPhotos(saved)); setNotice(tr("프로필 사진을 저장했어요. 공개 가능한 업체 프로필에 표시돼요.")); play('success');
+      setProfile(saved); change(savedPhotos(saved)); setNotice("프로필 사진을 저장했어요. 공개 가능한 업체 프로필에 표시돼요."); play('success');
       const old = [profile.avatar_path, profile.banner_path, ...uploads.current].filter((path): path is string => !!path);
       if (old.length) void supabase.storage.from('merchant-profile-images').remove([...new Set(old)]).catch(() => {});
     } catch (failure) {
       if (!mounted.current) return;
       const message = failure instanceof Error ? failure.message : '';
-      setError(message.includes('MERCHANT_PROFILE_CHANGED') ? tr("다른 곳에서 프로필이 바뀌었어요. 선택한 사진은 남아 있어요. 최근 저장본을 확인하려면 취소 후 다시 열어주세요.")
-        : message.includes('ACCOUNT_CHANGED') ? tr("계정이 바뀌었어요. 현재 계정으로 다시 열어주세요.")
-        : tr("저장을 확인하지 못했어요. 사진은 남아 있으니 같은 내용으로 다시 시도해 주세요."));
+      setError(message.includes('MERCHANT_PROFILE_CHANGED') ? "다른 곳에서 프로필이 바뀌었어요. 선택한 사진은 남아 있어요. 최근 저장본을 확인하려면 취소 후 다시 열어주세요."
+        : message.includes('ACCOUNT_CHANGED') ? "계정이 바뀌었어요. 현재 계정으로 다시 열어주세요."
+        : "저장을 확인하지 못했어요. 사진은 남아 있으니 같은 내용으로 다시 시도해 주세요.");
       play('warning');
     } finally { working.current = false; if (mounted.current) setBusy(false); }
   };
@@ -126,14 +125,14 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
       const saved = await saveMerchantContact(supabase, merchantId, contactDraft.current.phone, contactDraft.current.hours, profile.updated_at);
       if (!mounted.current) return;
       setProfile(saved); changeContact({ phone: saved.public_phone ?? '', hours: saved.business_hours ?? '' });
-      setNotice(tr("공개 전화번호와 영업시간을 저장했어요.")); play('success');
+      setNotice("공개 전화번호와 영업시간을 저장했어요."); play('success');
     } catch (failure) {
       if (mounted.current) {
         const message = failure instanceof Error ? failure.message : '';
-        setError(message.includes('MERCHANT_PROFILE_CHANGED') ? tr("다른 곳에서 프로필이 바뀌었어요. 입력한 연락 정보는 남아 있어요. 수정 취소 후 최근 저장본을 다시 확인해 주세요.")
-          : message.includes('ACCOUNT_CHANGED') ? tr("계정이 바뀌었어요. 현재 계정으로 다시 열어주세요.")
-          : message.includes('INVALID') ? tr("전화번호는 국가번호와 숫자, 공백·괄호·하이픈으로 적어주세요. 영업시간은 500자 이내로 입력해 주세요.")
-          : tr("연락 정보 저장을 확인하지 못했어요. 입력한 내용은 남아 있으니 다시 시도해 주세요."));
+        setError(message.includes('MERCHANT_PROFILE_CHANGED') ? "다른 곳에서 프로필이 바뀌었어요. 입력한 연락 정보는 남아 있어요. 수정 취소 후 최근 저장본을 다시 확인해 주세요."
+          : message.includes('ACCOUNT_CHANGED') ? "계정이 바뀌었어요. 현재 계정으로 다시 열어주세요."
+          : message.includes('INVALID') ? "전화번호는 국가번호와 숫자, 공백·괄호·하이픈으로 적어주세요. 영업시간은 500자 이내로 입력해 주세요."
+          : "연락 정보 저장을 확인하지 못했어요. 입력한 내용은 남아 있으니 다시 시도해 주세요.");
         play('warning');
       }
     } finally { working.current = false; if (mounted.current) setBusy(false); }
@@ -146,7 +145,7 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
   return <View style={[styles.section, { borderColor: theme.line, backgroundColor: theme.card }]}>
     <View style={styles.row}><ThemedText type="subtitle">{tr("업체 프로필")}</ThemedText>
       {profile && <ProfileAction label={tr("공개 프로필 보기")} onPress={() => {
-        if (Platform.OS === 'web') void Linking.openURL(`https://gling.ej-entertainment.com/company?id=${encodeURIComponent(merchantId)}`).catch(() => setError(tr("프로필을 열지 못했어요. 잠시 후 다시 시도해 주세요.")));
+        if (Platform.OS === 'web') void Linking.openURL(`https://gling.ej-entertainment.com/company?id=${encodeURIComponent(merchantId)}`).catch(() => setError("프로필을 열지 못했어요. 잠시 후 다시 시도해 주세요."));
         else router.push({ pathname: '/company/[id]', params: { id: merchantId } });
       }} disabled={busy} />}
     </View>
@@ -184,9 +183,9 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
         </>}
         {profile.imageLoadFailed && !dirty && <View style={styles.row}><ThemedText type="small" themeColor="textSecondary">{tr("사진 일부를 불러오지 못했어요. 저장된 사진은 유지돼요.")}</ThemedText><ProfileAction label={tr("사진 다시 확인")} onPress={() => { change(null); reload(); }} disabled={busy} /></View>}
       </>}
-    {!!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
+    {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
     {!loading && !profile && <ProfileAction label={tr("다시 불러오기")} onPress={reload} disabled={busy} />}
-    {!!notice && <ThemedText type="small" themeColor="accent" accessibilityLiveRegion="polite">{notice}</ThemedText>}
+    {!!notice && <ThemedText type="small" themeColor="accent" accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
   </View>;
 }
 

@@ -1,6 +1,5 @@
 import { FlatPressable as Pressable } from '@/components/flat-pressable';
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { SymbolView } from 'expo-symbols';
 import { Stack, useRouter } from 'expo-router';
 
@@ -10,7 +9,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 export default function ProfileInbox() {
-  useLanguage();
+  const { tr } = useLanguage();
   const router = useRouter();
   const theme = useTheme();
   const { play } = useInteractionFeedback();

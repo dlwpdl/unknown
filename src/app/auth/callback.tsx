@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { Pressable } from '@/components/analytics-controls';
 import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
@@ -9,7 +8,7 @@ import { Colors, Spacing } from '@/constants/theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 export default function AuthCallbackRoute() {
-  useLanguage();
+  const { tr } = useLanguage();
   const router = useRouter();
   const { play } = useInteractionFeedback();
   return (

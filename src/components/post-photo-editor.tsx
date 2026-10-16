@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
@@ -11,7 +10,7 @@ import type { PreparedImage } from '@/lib/post-image-picker';
 export type EditablePostImage = PreparedImage | { path: string; uri: string };
 
 export function PostPhotoEditor({ images, disabled, onChange }: { images: EditablePostImage[]; disabled: boolean; onChange: (images: EditablePostImage[]) => void }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const move = (index: number, direction: number) => {
     const next = [...images], target = index + direction;

@@ -1,12 +1,11 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Image, StyleSheet } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
 export function LaunchMoment({ ready, onComplete }: { ready: boolean; onComplete: () => void }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const reducedMotion = useReducedMotion();
   const [entered, setEntered] = useState(false);
   const started = useRef(false);

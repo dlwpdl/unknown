@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable } from '@/components/analytics-controls';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -23,7 +22,7 @@ import { SHARED_POST_RETURN_KEY, buildSharedPostUrl } from '@/lib/sharing';
 import type { Post } from '@/lib/types';
 
 export default function SharedPostRoute() {
-  useLanguage();
+  const { tr } = useLanguage();
   const { id, commentId } = useLocalSearchParams<{ id: string; commentId?: string }>();
   const postId = typeof id === 'string' ? id : Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.pathname.match(/^\/(?:post|share)\/([0-9a-f-]+)\/?$/i)?.[1] ?? '' : '';
   const targetCommentId = typeof commentId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(commentId) ? commentId.toLowerCase() : undefined;

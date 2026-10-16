@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
@@ -7,7 +6,7 @@ import { mannerLabel, type MannerSummary as Summary } from '@/lib/user-profile';
 import { MerchantRatingBar } from '@/components/merchant-rating-bar';
 
 export function MannerSummary({ summary }: { summary: Summary }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme();
   return <View style={{ gap: 8, padding: 16, borderRadius: 16, backgroundColor: theme.backgroundElement }}>
     <ThemedText type="smallBold">{tr("글링 리뷰")}</ThemedText>

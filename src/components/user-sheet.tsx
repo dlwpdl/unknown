@@ -14,7 +14,7 @@ import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
-import { count, t, tr } from '@/i18n';
+import { count } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { getCommunityActionError, loadTradeProfile, startDirectConversation, type TradeProfile } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -39,7 +39,7 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
   onClose: () => void;
   onBeforeNavigate?: () => void; // parent dismisses its own modal before we push a route
 }) {
-  useLanguage();
+  const { tr, t } = useLanguage();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -170,7 +170,7 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
 // 거래 이력. 점수 한 줄로 줄이지 않는다 — 갓 도착한 사람이 낮은 점수로 깔리면
 // 정착을 돕겠다는 앱이 정착을 막는다. 기록이 없으면 "새 이웃"이라고만 적는다.
 function TradeRecord({ trade, onOpenPost }: { trade: TradeProfile; onOpenPost: (postId: string) => void }) {
-  useLanguage();
+  const { tr, t } = useLanguage();
   const theme = useTheme();
   // 칩이 아니라 문장으로 적는다. 신뢰는 훑어서가 아니라 읽어서 판단된다.
   const facts: { symbol: SymbolViewProps['name']; text: string }[] = [];
