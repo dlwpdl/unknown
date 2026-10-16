@@ -33,7 +33,7 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true }: MyMeetupsProp
   const theme = useTheme();
   const hidden = useContentVisibility();
   const router = useRouter();
-  const { isAuthed, me, promptLogin } = useAuth();
+  const { isAuthed, isAdmin, me, promptLogin } = useAuth();
   const { play } = useInteractionFeedback();
   const { membership, refresh: refreshMembership } = useMembership();
   const slots = relationshipSlotData(membership, 'meetup');
@@ -128,8 +128,8 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true }: MyMeetupsProp
   return <View style={styles.section}>
     <View style={styles.heading}>
       <ThemedText type="smallBold" accessibilityRole="header" style={styles.title}>{t.meetup.mine}</ThemedText>
-      {isAuthed && slots && <ThemedText type="small" themeColor="textSecondary" accessibilityLabel={tr("모임 자리 {0} / {1}", (slots.active), (slots.limit))} style={{ fontVariant: ['tabular-nums'] }}>
-        {tr("모임 자리") + " "}<ThemedText type="smallBold">{slots.active}/{slots.limit}</ThemedText>
+      {isAuthed && slots && <ThemedText type="small" themeColor="textSecondary" accessibilityLabel={isAdmin ? tr('관리자 계정 · 제한 없음') : tr("모임 자리 {0} / {1}", (slots.active), (slots.limit))} style={{ fontVariant: ['tabular-nums'] }}>
+        {isAdmin ? tr('관리자 계정 · 제한 없음') : <>{tr("모임 자리") + " "}<ThemedText type="smallBold">{slots.active}/{slots.limit}</ThemedText></>}
       </ThemedText>}
     </View>
     {isAuthed && <><MeetupPolicyNotice mode="leave" /><MeetupPolicyNotice mode="close" /></>}

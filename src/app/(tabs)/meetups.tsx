@@ -48,7 +48,7 @@ function MeetupDiscovery({ eventId }: { eventId: string }) {
   const { height: screenHeight, width: screenWidth, fontScale } = useWindowDimensions();
   const compactHeader = fontScale > 1.2 || screenWidth < 420;
   const { city } = useCommunityCity();
-  const { me, isAuthed, promptLogin } = useAuth();
+  const { me, isAuthed, isAdmin, promptLogin } = useAuth();
   const { membership } = useMembership();
   const { play } = useInteractionFeedback();
   const slots = relationshipSlotData(membership, 'meetup');
@@ -203,10 +203,10 @@ function MeetupDiscovery({ eventId }: { eventId: string }) {
             <ThemedText type="smallBold" themeColor={activeFilters ? 'accent' : 'text'}>{activeFilters ? tr("필터 · {0}", (activeFilters)) : tr("필터")}</ThemedText>
           </Pressable></GlassSurface>
         </View>
-        {slots && <Pressable analyticsId="app_tabs_meetups.pressable.12" accessibilityRole="button" accessibilityLabel={tr("모임 자리 {0} / {1}, 남은 자리 {2}", (slots.active), (slots.limit), (slots.available))}
+        {slots && <Pressable analyticsId="app_tabs_meetups.pressable.12" accessibilityRole="button" accessibilityLabel={isAdmin ? tr('관리자 계정 · 제한 없음') : tr("모임 자리 {0} / {1}, 남은 자리 {2}", (slots.active), (slots.limit), (slots.available))}
           onPress={() => { play('selection'); router.push('/profile/membership'); }} style={({ pressed }) => [styles.slots, { opacity: pressed ? 0.7 : 1 }]}>
-          <ThemedText type="small" themeColor="textSecondary">{tr("동시 모임 자리") + " "}<ThemedText type="smallBold">{slots.active}/{slots.limit}</ThemedText>{tr(" 사용 중 · 남은 자리 {0}개", slots.available)}</ThemedText>
-          <ThemedText type="smallBold" themeColor="accent">{slots.available === 0 ? tr("자리 늘리기 ›") : tr("멤버십 ›")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{isAdmin ? tr('관리자 계정 · 제한 없음') : <>{tr("동시 모임 자리") + " "}<ThemedText type="smallBold">{slots.active}/{slots.limit}</ThemedText>{tr(" 사용 중 · 남은 자리 {0}개", slots.available)}</>}</ThemedText>
+          <ThemedText type="smallBold" themeColor="accent">{!isAdmin && slots.available === 0 ? tr("자리 늘리기 ›") : tr("멤버십 ›")}</ThemedText>
         </Pressable>}
         {!!query && <Pressable analyticsId="app_tabs_meetups.pressable.9" accessibilityRole="button" accessibilityLabel={query === eventId ? tr("행사 모임 검색 해제") : tr("검색어 {0} 해제", (query))}
           onPress={() => { play('selection'); setSearch(''); setQuery(''); if (eventId) router.setParams({ ticketmasterEventId: '' }); }} style={({ pressed }) => [styles.clear, { opacity: pressed ? 0.65 : 1 }]}><ThemedText type="small" themeColor="accent">{query === eventId ? tr("이 행사 모임 검색 중 · 지우기") : tr("“{0}” 검색 중 · 지우기", (query))}</ThemedText></Pressable>}
