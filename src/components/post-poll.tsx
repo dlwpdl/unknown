@@ -58,7 +58,7 @@ export function PostPoll({ postId }: { postId: string }) {
       {poll.options.map((label, index) => {
         const percentage = total ? Math.round(poll.counts[index] / total * 100) : 0;
         return <Pressable key={index} analyticsId={`post.poll.option.${index}`} accessibilityRole="radio"
-          accessibilityLabel={tr("{0}{1}", (label), (results ? `, ${percentage}퍼센트, ${poll.counts[index]}표` : ''))}
+          accessibilityLabel={tr("{0}{1}", (label), (results ? tr(", {0}퍼센트, {1}표", percentage, poll.counts[index]) : ''))}
           accessibilityState={{ checked: selected === index, disabled: pending || voted }} disabled={pending || voted}
           onPress={() => { play('selection'); setSelected(index); }}
           style={[styles.option, { borderColor: selected === index ? theme.accent : theme.line, backgroundColor: theme.backgroundElement }]}>

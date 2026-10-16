@@ -17,7 +17,7 @@ export function PostAttachmentLink({ url: input, enabled = true }: { url: string
   const profile = instagramPostLink(safe);
   const url = profile?.url ?? safe;
   const label = profile ? `@${profile.handle}` : url;
-  const accessibilityLabel = `${label} · ${new URL(url).hostname} 외부 페이지 열기`;
+  const accessibilityLabel = tr("{0} · {1} 외부 페이지 열기", label, new URL(url).hostname);
   const content = <>
     {profile && <Image source={{ uri: `data:image/svg+xml,${encodeURIComponent(INSTAGRAM_LINK_SVG.replaceAll('currentColor', theme.accent))}` }} style={styles.icon} accessibilityLabel="Instagram" />}
     <ThemedText themeColor="accent" numberOfLines={profile ? 1 : 2} style={styles.label}>{label}</ThemedText>
@@ -31,7 +31,7 @@ export function PostAttachmentLink({ url: input, enabled = true }: { url: string
           style={{ display: 'flex', alignItems: 'center', gap: 7, minHeight: 44, minWidth: 44, maxWidth: '100%', color: theme.accent, textDecoration: 'none' }}
           onClick={event => {
             event.stopPropagation(); play('selection');
-            if (!profile && !window.confirm(`${url}\n\n악성 여부를 아직 확인하지 못한 외부 링크예요. 이동할까요?`)) event.preventDefault();
+            if (!profile && !window.confirm(tr("{0}\n\n악성 여부를 아직 확인하지 못한 외부 링크예요. 이동할까요?", url))) event.preventDefault();
           }}>{content}</a>
       : <Pressable analyticsId="post.attachment.open" accessibilityRole="link" accessibilityLabel={accessibilityLabel} style={styles.link}
           onPress={event => {

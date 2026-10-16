@@ -130,7 +130,7 @@ function JoinForm({ postId }: { postId: string }) {
             : unavailable ? <StateCard kind="blocked" title={tr("이 모임을 볼 수 없어요")} body={tr("삭제됐거나 현재 열람할 수 없는 모임이에요.")} />
               : own ? <ThemedText>{tr("내가 개최한 모임이에요. 대화 탭에서 신청자를 확인할 수 있어요.")}</ThemedText>
                 : inactive ? <><ThemedText type="subtitle">{post!.title}</ThemedText>
-                    <StateCard kind="blocked" title={availability === 'ended' ? tr("종료된 모임이에요") : tr("모집이 마감됐어요")} body={`${status ? `내 신청 · ${{ pending: '승인 대기', approved: '이전에 승인됨', rejected: '거절됨', cancelled: '취소됨' }[status]}. ` : ''}새 참여 신청과 승인을 할 수 없어요.${status === 'approved' ? '승인 기록이 있어도 종료된 모임 대화에는 입장할 수 없어요.' : ''}`} />
+                    <StateCard kind="blocked" title={availability === 'ended' ? tr("종료된 모임이에요") : tr("모집이 마감됐어요")} body={`${status ? tr('내 신청 · {0}. ', tr({ pending: '승인 대기', approved: '이전에 승인됨', rejected: '거절됨', cancelled: '취소됨' }[status])) : ''}${tr('새 참여 신청과 승인을 할 수 없어요.')}${status === 'approved' ? tr('승인 기록이 있어도 종료된 모임 대화에는 입장할 수 없어요.') : ''}`} />
                     <Pressable analyticsId="app_meetup-join.pressable.3" accessibilityRole="button" onPress={() => { play('selection'); router.replace(Platform.OS === 'web' ? '/?tag=meetup' : '/(tabs)/meetups'); }} style={styles.button}><ThemedText themeColor="accent">{tr("다른 모임 찾기")}</ThemedText></Pressable>
                   </>
                 : result ? <>

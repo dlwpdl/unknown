@@ -122,11 +122,11 @@ function Application({ requestId }: { requestId: string }) {
       {canRespond && <>
         <ThemedText type="small" themeColor="textSecondary">{tr("승인하면 이 모임의 멤버가 되고 모임 대화에 참여해요. 정원이 찼거나 참여 가능한 모임 수를 넘으면 승인할 수 없어요.")}</ThemedText>
       </>}
-    </> : <StateCard kind={error ? 'error' : requestStatus?.status === 'approved' ? 'success' : 'blocked'} title={error ? tr("신청 정보를 불러오지 못했어요") : requestStatus ? { pending: tr("신청은 승인 대기 중이에요"), approved: tr("이미 승인된 신청이에요"), rejected: tr("거절된 신청이에요"), cancelled: tr("취소된 신청이에요") }[requestStatus.status] : tr("신청 프로필을 볼 수 없어요")} body={error || '공유된 신청 프로필은 현재 열람할 수 없어요.'} />}
+    </> : <StateCard kind={error ? 'error' : requestStatus?.status === 'approved' ? 'success' : 'blocked'} title={error ? tr("신청 정보를 불러오지 못했어요") : requestStatus ? { pending: tr("신청은 승인 대기 중이에요"), approved: tr("이미 승인된 신청이에요"), rejected: tr("거절된 신청이에요"), cancelled: tr("취소된 신청이에요") }[requestStatus.status] : tr("신청 프로필을 볼 수 없어요")} body={tr(error || '공유된 신청 프로필은 현재 열람할 수 없어요.')} />}
     {(!!error || !!actionError) && <Pressable analyticsId="app_meetup-application.pressable.2" onPress={() => { play('selection'); setRetry(x => x + 1); }} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent">{tr("현재 상태 다시 확인")}</ThemedText></Pressable>}
   </ScrollView>}
   {!loading && canRespond && <View style={[styles.footer, { backgroundColor: theme.background, borderColor: theme.line }]}>
-    <RaisedActionButton analyticsId="app_meetup-application.pressable.3" disabled={responding || approvalBlocked} busy={responding} onPress={() => { play('selection'); void respond('approved'); }} label={responding ? tr("처리 중…") : approvalBlocked ? tr("현재 승인할 수 없어요") : tr("{0}님 참여 승인", (identity?.nickname ?? '신청자'))} />
+    <RaisedActionButton analyticsId="app_meetup-application.pressable.3" disabled={responding || approvalBlocked} busy={responding} onPress={() => { play('selection'); void respond('approved'); }} label={responding ? tr("처리 중…") : approvalBlocked ? tr("현재 승인할 수 없어요") : tr("{0}님 참여 승인", (identity?.nickname ?? tr('신청자')))} />
     <Pressable analyticsId="app_meetup-application.pressable.4" accessibilityRole="button" accessibilityLabel={tr("참여 신청 거절")} disabled={responding} accessibilityState={{ disabled: responding }} onPress={confirmReject} style={styles.reject}><ThemedText type="smallBold" themeColor="textSecondary">{tr("신청 거절")}</ThemedText></Pressable>
   </View>}
   </SafeAreaView></ThemedView>;

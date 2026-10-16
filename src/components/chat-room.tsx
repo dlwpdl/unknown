@@ -76,7 +76,7 @@ function RoomAction({ label, onPress, disabled = false, primary = false }: { lab
 }
 
 export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { conversation: ConversationPreview; currentUserId: string; onClose: () => void; onChanged: () => Promise<void> }) {
-  const { tr, t } = useLanguage();
+  const { tr, t, locale: appLocale } = useLanguage();
   const theme = useTheme();
   const hidden = useContentVisibility();
   const auth = useAuth();
@@ -611,9 +611,9 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
         ListHeaderComponent={<>{hasOlder && messages.length > 0 && <RoomAction label={loadingOlder ? t.feed.loadingMore : t.chat.loadOlder} onPress={() => void loadOlder()} disabled={loadingOlder} />}{verificationNotice}</>}
         renderItem={({ item: message, index }) => {
           const author = conversationSender(message, conversation, t);
-          const date = chatDateLabel(message.created_at, messages[index - 1]?.created_at);
+          const date = chatDateLabel(message.created_at, messages[index - 1]?.created_at, undefined, appLocale);
           const mine = message.sender_id === currentUserId;
-          const time = showChatMessageTime(message, messages[index + 1]) ? <ThemedText type="small" themeColor="textSecondary" style={mine ? styles.timeMine : undefined}>{chatMessageTime(message.created_at)}</ThemedText> : null;
+          const time = showChatMessageTime(message, messages[index + 1]) ? <ThemedText type="small" themeColor="textSecondary" style={mine ? styles.timeMine : undefined}>{chatMessageTime(message.created_at, appLocale)}</ThemedText> : null;
           const reaction = reactions.get(message.id);
           const attachment = message.kind === 'image' || message.kind === 'location';
           const sharedUrl = attachment ? null : sharedLinkInMessage(message.body);

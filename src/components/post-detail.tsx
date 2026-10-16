@@ -487,7 +487,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               accessibilityRole="button"
               aria-pressed={Platform.OS === 'web' ? !!c.likedByMe : undefined}
               aria-busy={busyCommentId === c.id}
-              accessibilityLabel={tr("{0}의 {1} 공감 {2}개", (c.nickname), (c.parentId ? '답글' : '댓글'), (c.likes ?? 0))}
+              accessibilityLabel={tr("{0}의 {1} 공감 {2}개", (c.nickname), (c.parentId ? tr('답글') : tr('댓글')), (c.likes ?? 0))}
               accessibilityState={{ selected: !!c.likedByMe, disabled: !!busyCommentId, busy: busyCommentId === c.id }}>
               <ThemedText
                 type={c.likedByMe ? 'smallBold' : 'small'}
@@ -501,10 +501,10 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
             </Pressable>
             {mine && (
               <>
-                <Pressable analyticsId="components_post-detail.pressable.6" onPress={() => { play('selection'); startEdit(c); }} disabled={sending} accessibilityRole="button" accessibilityLabel={tr("내 {0} 수정", (c.parentId ? '답글' : '댓글'))} accessibilityState={{ disabled: sending }} style={({ pressed }) => [styles.commentAction, pressed && styles.pressed]}>
+                <Pressable analyticsId="components_post-detail.pressable.6" onPress={() => { play('selection'); startEdit(c); }} disabled={sending} accessibilityRole="button" accessibilityLabel={tr("내 {0} 수정", (c.parentId ? tr('답글') : tr('댓글')))} accessibilityState={{ disabled: sending }} style={({ pressed }) => [styles.commentAction, pressed && styles.pressed]}>
                   <ThemedText type="small" themeColor="textSecondary" style={styles.commentActionText}>{t.detail.edit}</ThemedText>
                 </Pressable>
-                <Pressable analyticsId="components_post-detail.pressable.7" onPress={() => { play('selection'); confirmDelete(c); }} disabled={sending} accessibilityRole="button" accessibilityLabel={tr("내 {0} 삭제", (c.parentId ? '답글' : '댓글'))} accessibilityState={{ disabled: sending }} style={({ pressed }) => [styles.commentAction, pressed && styles.pressed]}>
+                <Pressable analyticsId="components_post-detail.pressable.7" onPress={() => { play('selection'); confirmDelete(c); }} disabled={sending} accessibilityRole="button" accessibilityLabel={tr("내 {0} 삭제", (c.parentId ? tr('답글') : tr('댓글')))} accessibilityState={{ disabled: sending }} style={({ pressed }) => [styles.commentAction, pressed && styles.pressed]}>
                   <ThemedText type="small" themeColor="textSecondary" style={styles.commentActionText}>{t.detail.delete}</ThemedText>
                 </Pressable>
               </>
@@ -512,7 +512,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
             {!mine && c.authorId && (
               <Pressable analyticsId="components_post-detail.pressable.8"
                 onPress={() => { play('selection'); setReportSelection({ targetType: 'comment', targetId: c.id, reportedUserId: c.authorId!, reportedNickname: c.nickname }); }}
-                accessibilityRole="button" accessibilityLabel={tr("{0}의 {1} 신고", (c.nickname), (c.parentId ? '답글' : '댓글'))} style={({ pressed }) => [styles.commentAction, pressed && styles.pressed]}>
+                accessibilityRole="button" accessibilityLabel={tr("{0}의 {1} 신고", (c.nickname), (c.parentId ? tr('답글') : tr('댓글')))} style={({ pressed }) => [styles.commentAction, pressed && styles.pressed]}>
                 <ThemedText type="small" themeColor="textSecondary" style={styles.commentActionText}>{t.report.short}</ThemedText>
               </Pressable>
             )}
@@ -565,7 +565,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           toggleReplies(comment.id);
         }}
         accessibilityRole="button"
-        accessibilityLabel={tr("{0}의 댓글 답글 {1}개 {2}", (comment.nickname), (count(comment.replyCount ?? 0)), (expanded.has(comment.id) ? '접기' : '보기'))}
+        accessibilityLabel={tr("{0}의 댓글 답글 {1}개 {2}", (comment.nickname), (count(comment.replyCount ?? 0)), (expanded.has(comment.id) ? tr('접기') : tr('보기')))}
         accessibilityState={{ expanded: expanded.has(comment.id) }}
         aria-expanded={expanded.has(comment.id)}
         style={({ pressed }) => [styles.replyToggle, pressed && styles.pressed]}>

@@ -97,11 +97,11 @@ export function PushInvite() {
           <ThemedText type="small" themeColor="textSecondary" style={styles.lead}>{tr("받고 싶은 소식을 알림 설정에서 고를 수 있어요.")}</ThemedText>
           <View style={styles.lines}>
             <Line symbol={{ ios: 'bubble.left', android: 'chat_bubble', web: 'chat_bubble' }}
-              text="내 글의 좋아요·댓글·답글" hint="누가 반응했는지 바로 알 수 있어요" />
+              text={tr("내 글의 좋아요·댓글·답글")} hint={tr("누가 반응했는지 바로 알 수 있어요")} />
             <Line symbol={{ ios: 'person.2', android: 'group', web: 'group' }}
-              text="모임 신청과 승인, 새 메시지" hint="상대를 기다리게 두지 않아요" />
+              text={tr("모임 신청과 승인, 새 메시지")} hint={tr("상대를 기다리게 두지 않아요")} />
             <Line symbol={{ ios: 'flame', android: 'local_fire_department', web: 'local_fire_department' }}
-              text="내 지역의 새 글과 인기 소식" hint="관심사와 지역에 맞는 알림을 선택할 수 있어요" />
+              text={tr("내 지역의 새 글과 인기 소식")} hint={tr("관심사와 지역에 맞는 알림을 선택할 수 있어요")} />
           </View>
           <Pressable analyticsId="components_push-invite.pressable.2" onPress={() => void allow()} disabled={busy} accessibilityRole="button"
             accessibilityState={{ disabled: busy, busy }}

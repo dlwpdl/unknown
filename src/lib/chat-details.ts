@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { getLocale } from '../i18n/index.ts';
 
 type TimedMessage = { sender_id: string; created_at: string };
 export type ChatRect = { x: number; y: number; width: number; height: number };
@@ -31,9 +32,10 @@ export function firstUnreadMessageIndex(messages: TimedMessage[], readAt: string
   const time = readAt ? Date.parse(readAt) : 0;
   return messages.findIndex((message) => message.sender_id !== userId && Date.parse(message.created_at) > time);
 }
-export function chatMessageTime(value: string) {
+export function chatMessageTime(value: string, locale = getLocale()) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
+  if (!locale.startsWith('ko')) return new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit', hour12: true }).format(date);
   return `${date.getHours() < 12 ? '오전' : '오후'} ${date.getHours() % 12 || 12}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
@@ -42,20 +44,22 @@ export function showChatMessageTime(message: TimedMessage, next?: TimedMessage) 
     Math.floor(Date.parse(message.created_at) / 60000) !== Math.floor(Date.parse(next.created_at) / 60000);
 }
 
-export function chatDateLabel(value: string, previous?: string, now = new Date()) {
+export function chatDateLabel(value: string, previous?: string, now = new Date(), locale = getLocale()) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime()) || previous && date.toDateString() === new Date(previous).toDateString()) return null;
-  if (date.toDateString() === now.toDateString()) return '오늘';
+  const korean = locale.startsWith('ko');
+  if (date.toDateString() === now.toDateString()) return korean ? '오늘' : 'Today';
   const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-  if (date.toDateString() === yesterday.toDateString()) return '어제';
+  if (date.toDateString() === yesterday.toDateString()) return korean ? '어제' : 'Yesterday';
+  if (!korean) return new Intl.DateTimeFormat(locale, { year: date.getFullYear() === now.getFullYear() ? undefined : 'numeric', month: 'short', day: 'numeric' }).format(date);
   return `${date.getFullYear() === now.getFullYear() ? '' : `${date.getFullYear()}년 `}${date.getMonth() + 1}월 ${date.getDate()}일`;
 }
 
 // 쪽지함 목록은 오늘이면 시각, 지난 날짜면 날짜를 보여 준다.
-export function chatListTime(value: string, now = new Date()) {
+export function chatListTime(value: string, now = new Date(), locale = getLocale()) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toDateString() === now.toDateString() ? chatMessageTime(value) : chatDateLabel(value, undefined, now) ?? '';
+  return date.toDateString() === now.toDateString() ? chatMessageTime(value, locale) : chatDateLabel(value, undefined, now, locale) ?? '';
 }
 
 export type ChatMember = { id: string; nickname: string; avatar_path: string | null; is_host: boolean; avatarUrl?: string };

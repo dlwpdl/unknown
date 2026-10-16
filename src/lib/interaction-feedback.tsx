@@ -169,7 +169,7 @@ function InteractiveFeedbackProvider({ children }: { children: ReactNode }) {
         </Animated.View>}
         <Modal visible={celebrating !== null} transparent animationType="none" statusBarTranslucent onRequestClose={() => setCelebrating(null)}>
           <Animated.View style={[styles.celebrationScreen, { opacity: celebrationOpacity }]}>
-            <Pressable accessibilityRole="button" accessibilityLabel={tr("{0}. 축하 화면 닫기", (celebrating?.startsWith('verification') ? `인증 레벨 ${celebrating.slice(-1)} 달성` : celebrating === 'meetup' ? '모임을 열었어요' : '글을 올렸어요'))} onPress={() => setCelebrating(null)} style={styles.celebrationCenter}>
+            <Pressable accessibilityRole="button" accessibilityLabel={tr("{0}. 축하 화면 닫기", (celebrating?.startsWith('verification') ? tr("인증 레벨 {0} 달성", celebrating.slice(-1)) : celebrating === 'meetup' ? tr('모임을 열었어요') : tr('글을 올렸어요')))} onPress={() => setCelebrating(null)} style={styles.celebrationCenter}>
               <View style={styles.celebrationStage}>
                 {!reducedMotion && CONFETTI.map((piece, index) => <Animated.View key={index} pointerEvents="none" style={[styles.celebrationParticle, {
                   backgroundColor: piece.color,

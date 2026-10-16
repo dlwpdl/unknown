@@ -45,8 +45,8 @@ function MannerReview({ subjectId, nickname, context }: { subjectId: string; nic
   }
   const button = [styles.button, { borderColor: theme.line, backgroundColor: theme.backgroundElement }];
   return <View style={styles.container}>
-    {!open && <Pressable accessibilityRole="button" accessibilityLabel={tr("{0} {1} 리뷰", (nickname), (context.sessionId ? '만남' : '대화'))} disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => void start()} style={button}>
-      <ThemedText type="smallBold">{busy ? tr("확인 중…") : tr("{0} {1} 리뷰 남기기", (nickname), (context.sessionId ? '만남' : '대화'))}</ThemedText>
+    {!open && <Pressable accessibilityRole="button" accessibilityLabel={tr("{0} {1} 리뷰", (nickname), (context.sessionId ? tr('만남') : tr('대화')))} disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => void start()} style={button}>
+      <ThemedText type="smallBold">{busy ? tr("확인 중…") : tr("{0} {1} 리뷰 남기기", (nickname), (context.sessionId ? tr('만남') : tr('대화')))}</ThemedText>
     </Pressable>}
     {open && <>
       <ThemedText type="smallBold">{tr("글링 리뷰 ·") + " "}{score === null ? tr("평점을 선택해주세요") : `${score.toFixed(1)} / 10`}</ThemedText>
@@ -59,8 +59,8 @@ function MannerReview({ subjectId, nickname, context }: { subjectId: string; nic
       <ThemedText type="smallBold">{tr("직접 경험한 행동을 함께 알려주세요")}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{tr("원문은 운영팀과 AI 안전 분석으로 검토하고 다른 사용자에게 공개하지 않아요. 관계의 목적 자체를 평가하거나 확인되지 않은 주장·개인정보를 적지 마세요.")}</ThemedText>
       {MANNER_QUESTIONS.filter(({ key }) => !context.conversationId || key !== 'punctual').map(({ key, label }) => <View key={key} style={styles.container}>
-        <ThemedText type="small">{label}</ThemedText>
-        <View accessibilityRole="radiogroup" accessibilityLabel={label} style={styles.row}>{([true, false, null] as const).map(value => <Pressable key={String(value)} accessibilityRole="radio" accessibilityLabel={tr("{0} · {1}", (label), (value === null ? '확인 못함' : value ? '그랬어요' : '아쉬웠어요'))}
+        <ThemedText type="small">{tr(label)}</ThemedText>
+        <View accessibilityRole="radiogroup" accessibilityLabel={tr(label)} style={styles.row}>{([true, false, null] as const).map(value => <Pressable key={String(value)} accessibilityRole="radio" accessibilityLabel={tr("{0} · {1}", (tr(label)), (value === null ? tr('확인 못함') : value ? tr('그랬어요') : tr('아쉬웠어요')))}
           disabled={busy} aria-checked={signals[key] === value} accessibilityState={{ checked: signals[key] === value, disabled: busy }} onPress={() => { play('selection'); setSignals(current => ({ ...current, [key]: value })); }}
           style={[button, signals[key] === value && { borderColor: theme.accent }]}><ThemedText type="small">{value === null ? tr("확인 못함") : value ? tr("그랬어요") : tr("아쉬웠어요")}</ThemedText></Pressable>)}</View>
       </View>)}

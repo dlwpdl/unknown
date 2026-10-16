@@ -302,7 +302,7 @@ export function ProfileOnboarding({
                     {'url' in item ? <Pressable analyticsId="components_profile-onboarding.pressable.9" accessibilityRole="link" accessibilityLabel={tr("{0} 자세히 보기", (item.label))}
                       onPress={() => { play('selection'); if (item.url) void Linking.openURL(item.url); }} style={styles.detailButton}>
                       <ThemedText type="small" themeColor="textSecondary">{tr("보기 ↗")}</ThemedText>
-                    </Pressable> : <Pressable analyticsId="components_profile-onboarding.pressable.10" accessibilityRole="button" accessibilityLabel={tr("{0} 자세히 {1}", (item.label), (expanded ? '접기' : '보기'))}
+                    </Pressable> : <Pressable analyticsId="components_profile-onboarding.pressable.10" accessibilityRole="button" accessibilityLabel={tr("{0} 자세히 {1}", (item.label), (expanded ? tr('접기') : tr('보기')))}
                       accessibilityState={{ expanded }} aria-expanded={expanded}
                       onPress={() => { play('selection'); setExpandedConsent(expanded ? null : item.id); }} style={styles.detailButton}>
                       <ThemedText type="small" themeColor="textSecondary">{expanded ? tr("접기 ∧") : tr("보기 ∨")}</ThemedText>

@@ -146,7 +146,7 @@ export function PostPhotoGallery({ post }: { post: Post }) {
       {pictures.map((picture, position) => {
         const visible = position >= thumbnailIndex - 1 && position <= thumbnailIndex + Math.ceil(width / 72) + 1;
         return <Pressable key={`${post.id}-${position}:${picture.source.uri}`} analyticsId="post.photo.select"
-        accessibilityRole="button" accessibilityLabel={tr("{0} 사진 {1} 선택{2}", (post.title), (position + 1), (position === index ? ', 선택됨' : ''))} accessibilityState={{ selected: position === index }}
+        accessibilityRole="button" accessibilityLabel={tr("{0} 사진 {1} 선택{2}", (post.title), (position + 1), (position === index ? tr(', 선택됨') : ''))} accessibilityState={{ selected: position === index }}
         onPress={() => selectPhoto(position)} style={[styles.thumbnail, { backgroundColor: theme.backgroundElement, borderColor: position === index ? theme.accent : 'transparent' }]}>
         <Image source={picture.thumbnail.uri !== picture.source.uri || visible ? picture.thumbnail : null} style={styles.thumbnailImage} contentFit="cover" accessible={false}
           cachePolicy="memory-disk" recyclingKey={`${galleryKey}:thumb:${position}`} transition={0} />
