@@ -8,7 +8,7 @@ The directory follows the vendor page's compact 64px rows and checkbox selection
 
 `contact_name`, `content_summary` and `activity_regions` extend the existing creator row. Existing `category`, `contact`, `metrics_note`, `notes`, participation history and campaign conditions keep their meanings. Recording a prospect does not create an application, contact, agreement or payment.
 
-The migration `20261015230000_creator_profile_details.sql` follows `20261015190000_admin_partnerships.sql`. It extends the existing admin RPCs using exact function anchors and fails if those anchors have changed. Apply the schema before serving the updated editor: an old server rejects the new field whitelist. Old registration payloads and partial updates remain compatible after the migration and preserve new details. Admin MFA, actor checks, audit, row locking and exact `updated_at` conflict checks remain required.
+The migration `20261016043500_creator_profile_details.sql` follows `20261015190000_admin_partnerships.sql`. It extends the existing admin RPCs using exact function anchors and fails if those anchors have changed. Apply the schema before serving the updated editor: an old server rejects the new field whitelist. Old registration payloads and partial updates remain compatible after the migration and preserve new details. Admin MFA, actor checks, audit, row locking and exact `updated_at` conflict checks remain required.
 
 Checks: `npm test`, `npx tsc --noEmit`, `npm run lint`, and `python3 scripts/check-admin-partnerships.py`. The database runner uses the existing local Supabase container, rolls its shared-database fixtures back, and deletes its separate concurrency database. No production fixtures or privileged bypass path are required.
 
