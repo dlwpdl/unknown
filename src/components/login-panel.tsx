@@ -170,7 +170,7 @@ export function LoginPanel({
                 style={[styles.appleButton, { opacity: disabled ? 0.6 : 1 }]}
               />
             </View></GlassSurface>)}
-            {onKakao && <GlassSurface colorScheme="dark" tone="control" interactive style={styles.socialGlass}><Pressable lens analyticsId="components_login-panel.pressable.1"
+            {onKakao && <GlassSurface colorScheme="dark" tone="control" interactive style={styles.socialGlass}><Pressable analyticsId="components_login-panel.pressable.1"
               onPress={() => { if (!disabled) { play('selection'); onKakao(); } }}
               disabled={disabled}
               accessibilityRole="button"
@@ -180,7 +180,7 @@ export function LoginPanel({
                 {t.auth.kakao}
               </ThemedText>
             </Pressable></GlassSurface>}
-            {onGoogle && <GlassSurface tone="control" interactive style={styles.socialGlass}><Pressable lens analyticsId="components_login-panel.pressable.2"
+            {onGoogle && <GlassSurface tone="control" interactive style={styles.socialGlass}><Pressable analyticsId="components_login-panel.pressable.2"
               onPress={() => { if (!disabled) { play('selection'); onGoogle(); } }}
               disabled={disabled}
               accessibilityRole="button"

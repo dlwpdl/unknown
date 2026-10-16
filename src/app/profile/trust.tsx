@@ -1,7 +1,6 @@
-import { LensPressable as Pressable } from '@/components/lens-pressable';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { LayoutAnimation, Platform, ScrollView, StyleSheet, UIManager, View } from 'react-native';
+import { LayoutAnimation, Platform, Pressable, ScrollView, StyleSheet, UIManager, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useReducedMotion } from 'react-native-reanimated';
 
