@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { Pressable, FlatList } from '@/components/analytics-controls';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -14,6 +16,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 
 export function ChatMembers({ conversationId, groupPostId, currentUserId }: { conversationId: string; groupPostId: string; currentUserId: string }) {
+  useLanguage();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
@@ -44,24 +47,24 @@ export function ChatMembers({ conversationId, groupPostId, currentUserId }: { co
   }, [conversationId, currentUserId, groupPostId, refresh]);
   const visible = members?.filter((member) => !hidden('user', member.id, member.id));
   return <>
-    <Pressable analyticsId="components_chat-members.pressable.1" accessibilityRole="button" accessibilityLabel="대화 멤버 목록" onPress={() => { play('selection'); setOpen(true); void refresh(); }} style={[styles.button, styles.roster]}>
+    <Pressable analyticsId="components_chat-members.pressable.1" accessibilityRole="button" accessibilityLabel={tr("대화 멤버 목록")} onPress={() => { play('selection'); setOpen(true); void refresh(); }} style={[styles.button, styles.roster]}>
       <View style={styles.portraits}>
         {visible?.slice(0, 4).map((member, index) => member.avatarUrl
-          ? <Image key={member.id} source={{ uri: member.avatarUrl, cacheKey: `avatar:${currentUserId}:${member.avatar_path}` }} style={[styles.portrait, { marginLeft: index ? -7 : 0, borderColor: theme.card }]} contentFit="cover" accessibilityLabel={`${member.nickname} 프로필`} accessibilityIgnoresInvertColors />
-          : <View key={member.id} accessibilityLabel={`${member.nickname} 프로필`} style={[styles.portrait, { marginLeft: index ? -7 : 0, borderColor: theme.card, backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold">{member.nickname[0]}</ThemedText></View>)}
+          ? <Image key={member.id} source={{ uri: member.avatarUrl, cacheKey: `avatar:${currentUserId}:${member.avatar_path}` }} style={[styles.portrait, { marginLeft: index ? -7 : 0, borderColor: theme.card }]} contentFit="cover" accessibilityLabel={tr("{0} 프로필", (member.nickname))} accessibilityIgnoresInvertColors />
+          : <View key={member.id} accessibilityLabel={tr("{0} 프로필", (member.nickname))} style={[styles.portrait, { marginLeft: index ? -7 : 0, borderColor: theme.card, backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold">{member.nickname[0]}</ThemedText></View>)}
       </View>
-      <ThemedText type="smallBold" themeColor="textSecondary">{visible ? `멤버 ${visible.length}명` : '멤버 보기'} ›</ThemedText>
+      <ThemedText type="smallBold" themeColor="textSecondary">{visible ? tr("멤버 {0}명", (visible.length)) : tr("멤버 보기")} ›</ThemedText>
     </Pressable>
     <Modal visible={open} transparent animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setOpen(false)}>
       <View style={styles.backdrop}>
-        <Pressable analyticsId="components_chat-members.pressable.2" accessibilityRole="button" accessibilityLabel="멤버 목록 닫기" style={StyleSheet.absoluteFill} onPress={() => { play('selection'); setOpen(false); }} />
+        <Pressable analyticsId="components_chat-members.pressable.2" accessibilityRole="button" accessibilityLabel={tr("멤버 목록 닫기")} style={StyleSheet.absoluteFill} onPress={() => { play('selection'); setOpen(false); }} />
         <View accessibilityViewIsModal style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.three) }]}>
-          <View style={styles.header}><ThemedText type="subtitle">{visible ? `멤버 ${visible.length}명` : '대화 멤버'}</ThemedText><Pressable analyticsId="components_chat-members.pressable.3" accessibilityRole="button" onPress={() => { play('selection'); setOpen(false); }} style={styles.button}><ThemedText type="smallBold">닫기</ThemedText></Pressable></View>
-          {failed ? <View style={styles.error}><ThemedText type="small" accessibilityRole="alert">멤버를 불러오지 못했어요.</ThemedText><Pressable analyticsId="components_chat-members.pressable.4" accessibilityRole="button" style={styles.button} onPress={() => { play('selection'); void refresh(); }}><ThemedText type="smallBold" themeColor="accent">다시 시도</ThemedText></Pressable></View>
-            : <FlatList analyticsId="components_chat-members.flatlist.1" data={visible ?? []} keyExtractor={(member) => member.id} ListEmptyComponent={<ThemedText type="small" themeColor="textSecondary">{members ? '표시할 멤버가 없어요.' : '멤버를 불러오는 중이에요.'}</ThemedText>} renderItem={({ item }) => <View style={styles.member}>
+          <View style={styles.header}><ThemedText type="subtitle">{visible ? tr("멤버 {0}명", (visible.length)) : tr("대화 멤버")}</ThemedText><Pressable analyticsId="components_chat-members.pressable.3" accessibilityRole="button" onPress={() => { play('selection'); setOpen(false); }} style={styles.button}><ThemedText type="smallBold">{tr("닫기")}</ThemedText></Pressable></View>
+          {failed ? <View style={styles.error}><ThemedText type="small" accessibilityRole="alert">{tr("멤버를 불러오지 못했어요.")}</ThemedText><Pressable analyticsId="components_chat-members.pressable.4" accessibilityRole="button" style={styles.button} onPress={() => { play('selection'); void refresh(); }}><ThemedText type="smallBold" themeColor="accent">{tr("다시 시도")}</ThemedText></Pressable></View>
+            : <FlatList analyticsId="components_chat-members.flatlist.1" data={visible ?? []} keyExtractor={(member) => member.id} ListEmptyComponent={<ThemedText type="small" themeColor="textSecondary">{members ? tr("표시할 멤버가 없어요.") : tr("멤버를 불러오는 중이에요.")}</ThemedText>} renderItem={({ item }) => <View style={styles.member}>
               {item.avatarUrl ? <Image source={{ uri: item.avatarUrl, cacheKey: `avatar:${currentUserId}:${item.avatar_path}` }} recyclingKey={item.id} style={styles.avatar} contentFit="cover" accessibilityIgnoresInvertColors /> : <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold">{item.nickname[0]}</ThemedText></View>}
-              <ThemedText type="smallBold" style={styles.name}>{item.nickname}{item.id === currentUserId ? ' (나)' : ''}</ThemedText>
-              {item.is_host && <ThemedText type="small" themeColor="accent">호스트</ThemedText>}
+              <ThemedText type="smallBold" style={styles.name}>{item.nickname}{item.id === currentUserId ? tr(" (나)") : ''}</ThemedText>
+              {item.is_host && <ThemedText type="small" themeColor="accent">{tr("호스트")}</ThemedText>}
             </View>} />}
         </View>
       </View>

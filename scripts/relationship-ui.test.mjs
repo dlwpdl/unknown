@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -21,7 +22,7 @@ function loadRoom(userId = 'recipient', messagesLoaded = false) {
   const react = { useState: initial => [initial === true && messagesLoaded ? false : typeof initial === 'function' ? initial() : initial, () => {}],
     useRef: value => ({ current: value }), useCallback: fn => fn, useMemo: fn => fn(), useEffect: fn => effects.push(fn), useLayoutEffect: fn => fn() };
   const native = new Proxy({ StyleSheet: { create: value => value }, Platform: { OS: 'ios' }, useWindowDimensions: () => ({ width: 390, height: 844 }), AppState: { addEventListener: () => ({ remove() {} }) } }, { get: (target, key) => target[key] ?? key });
-  vm.runInNewContext(source, { exports, require(name) {
+  vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
     if (name === 'react') return react;
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'react-native') return native;
@@ -37,7 +38,7 @@ function loadRoom(userId = 'recipient', messagesLoaded = false) {
       markChatRead: async () => {}, loadMessageReactions: async () => new Map(), setMessageReaction: async () => 1 };
     if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, five: 32 } };
     return {};
-  } });
+  }) });
   return { exports, effects, subscriptions, reads: () => messageReads };
 }
 

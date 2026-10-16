@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
@@ -59,14 +60,14 @@ test('release builds hide promotions even with the opt-in flag, and direct route
     vm.runInNewContext(library, context);
     assert.equal(context.exports.PROMOTIONS_PREVIEW_ENABLED, expected);
   }
-  const context = { exports: {}, require: (id) => {
+  const context = { exports: {}, require: withLanguageImports((id) => {
     if (id === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }) };
     if (id === 'expo-router') return { Redirect: 'Redirect', useLocalSearchParams() { throw new Error('Hidden route mounted'); } };
     if (id === '@/lib/promotions') return { PROMOTIONS_PREVIEW_ENABLED: false };
     if (id === 'react-native') return { StyleSheet: { create: (styles) => styles } };
     if (id === '@/constants/theme') return { Spacing: {} };
     return {};
-  } };
+  }) };
   vm.runInNewContext(compile('../src/app/profile/promotions.tsx'), context);
   const result = context.exports.default();
   assert.equal(result.type, 'Redirect');

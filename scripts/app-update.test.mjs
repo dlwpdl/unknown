@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
@@ -38,7 +39,7 @@ function updateGate({ dev = false, os = 'ios', environment = 'bare', build = '61
   };
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/app-update-gate.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   const exports = {};
-  vm.runInNewContext(source, { exports, require: name => imports[name] ?? {}, __DEV__: dev, AbortController,
+  vm.runInNewContext(source, { exports, require: withLanguageImports(name => imports[name] ?? {}), __DEV__: dev, AbortController,
     setTimeout: (callback, delay) => { const id = Symbol(); timers.set(id, { callback, delay }); return id; }, clearTimeout: id => timers.delete(id) });
   const modal = () => tree.props.children.find(node => node?.type === 'Modal');
   const render = async () => {

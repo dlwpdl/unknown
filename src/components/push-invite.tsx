@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { Pressable } from '@/components/analytics-controls';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
@@ -23,6 +25,7 @@ const ASKED_KEY = 'gling.pushInviteAsked';
 const REASK_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function PushInvite() {
+  useLanguage();
   const { isAuthed, me } = useAuth();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
@@ -75,8 +78,8 @@ export function PushInvite() {
       await close(false);
     } catch {
       play('warning');
-      Alert.alert('알림을 켜지 못했어요', '연결 상태를 확인하고 다시 시도해 주세요.',
-        [{ text: '확인', onPress: () => play('selection') }]);
+      Alert.alert(tr("알림을 켜지 못했어요"), tr("연결 상태를 확인하고 다시 시도해 주세요."),
+        [{ text: tr("확인"), onPress: () => play('selection') }]);
     } finally {
       setBusy(false);
     }
@@ -86,13 +89,13 @@ export function PushInvite() {
   return (
     <Modal visible transparent animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => void close()}>
       <View style={styles.backdrop}>
-        <Pressable analyticsId="components_push-invite.pressable.1" style={StyleSheet.absoluteFill} onPress={() => void close()} accessibilityRole="button" accessibilityLabel="닫기" />
+        <Pressable analyticsId="components_push-invite.pressable.1" style={StyleSheet.absoluteFill} onPress={() => void close()} accessibilityRole="button" accessibilityLabel={tr("닫기")} />
         <View style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.three) + Spacing.two }]}>
           <View style={[styles.badge, { backgroundColor: theme.backgroundElement }]}>
             <SymbolView name={{ ios: 'bell.badge', android: 'notifications_active', web: 'notifications_active' }} size={22} tintColor={theme.accent} />
           </View>
-          <ThemedText type="smallBold" style={styles.title}>소식을 놓치지 않게 해드릴까요?</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary" style={styles.lead}>받고 싶은 소식을 알림 설정에서 고를 수 있어요.</ThemedText>
+          <ThemedText type="smallBold" style={styles.title}>{tr("소식을 놓치지 않게 해드릴까요?")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.lead}>{tr("받고 싶은 소식을 알림 설정에서 고를 수 있어요.")}</ThemedText>
           <View style={styles.lines}>
             <Line symbol={{ ios: 'bubble.left', android: 'chat_bubble', web: 'chat_bubble' }}
               text="내 글의 좋아요·댓글·답글" hint="누가 반응했는지 바로 알 수 있어요" />
@@ -105,11 +108,11 @@ export function PushInvite() {
             accessibilityState={{ disabled: busy, busy }}
             style={({ pressed }) => [styles.primary, { backgroundColor: theme.accent },
               (pressed || busy) && { opacity: 0.82, transform: [{ scale: busy ? 1 : 0.985 }] }]}>
-            <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{busy ? '설정 중' : '알림 받기'}</ThemedText>
+            <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{busy ? tr("설정 중") : tr("알림 받기")}</ThemedText>
           </Pressable>
           <Pressable analyticsId="components_push-invite.pressable.3" onPress={() => void close()} disabled={busy} accessibilityRole="button"
             style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.6 }]}>
-            <ThemedText type="smallBold" themeColor="textSecondary">나중에</ThemedText>
+            <ThemedText type="smallBold" themeColor="textSecondary">{tr("나중에")}</ThemedText>
           </Pressable>
         </View>
       </View>
@@ -118,6 +121,7 @@ export function PushInvite() {
 }
 
 function Line({ symbol, text, hint }: { symbol: SymbolViewProps['name']; text: string; hint: string }) {
+
   const theme = useTheme();
   return (
     <View style={styles.line}>

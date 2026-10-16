@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -71,7 +72,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
     requestAnimationFrame(fn) { fn(); return 1; },
     setTimeout(fn, delay = 0) { const id = ++timerId; timers.set(id, { fn, delay }); return id; },
     clearTimeout(id) { timers.delete(id); },
-    require(name) {
+    require: withLanguageImports((name) => {
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (name === 'react') return react;
       if (name === 'react-native') return new Proxy({
@@ -111,7 +112,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
       if (name === 'expo-location') return { Accuracy: { High: 4, Balanced: 3 }, ...data.location };
       if (name === '@/lib/supabase') return { supabase };
       return new Proxy({}, { get: (_target, key) => key });
-    },
+    }),
   });
   const render = () => {
     for (let count = 0; dirty; count++) {

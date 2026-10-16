@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable } from '@/components/analytics-controls';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -21,6 +23,7 @@ import { SHARED_POST_RETURN_KEY, buildSharedPostUrl } from '@/lib/sharing';
 import type { Post } from '@/lib/types';
 
 export default function SharedPostRoute() {
+  useLanguage();
   const { id, commentId } = useLocalSearchParams<{ id: string; commentId?: string }>();
   const postId = typeof id === 'string' ? id : Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.pathname.match(/^\/(?:post|share)\/([0-9a-f-]+)\/?$/i)?.[1] ?? '' : '';
   const targetCommentId = typeof commentId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(commentId) ? commentId.toLowerCase() : undefined;
@@ -63,10 +66,10 @@ export default function SharedPostRoute() {
 
   return (
     <ThemedView style={styles.container}>
-      {Platform.OS === 'web' && <Head><title>{`${preview?.key === requestKey ? preview.value?.title ?? '글링 공유' : current?.post?.title ?? '글링 공유'} | 글링`}</title>
+      {Platform.OS === 'web' && <Head><title>{tr("{0} | 글링", (preview?.key === requestKey ? preview.value?.title ?? '글링 공유' : current?.post?.title ?? '글링 공유'))}</title>
         <meta name="robots" content="noindex, follow" />
-        <meta property="og:site_name" content="글링" /><meta property="og:title" content={preview?.key === requestKey ? preview.value?.title ?? '글링 공유' : current?.post?.title ?? '글링 공유'} />
-        <meta property="og:description" content="Google·소셜 로그인 후 전체 내용과 모임을 확인해요." />
+        <meta property="og:site_name" content={tr("글링")} /><meta property="og:title" content={preview?.key === requestKey ? preview.value?.title ?? '글링 공유' : current?.post?.title ?? '글링 공유'} />
+        <meta property="og:description" content={tr("Google·소셜 로그인 후 전체 내용과 모임을 확인해요.")} />
         {postId && <meta property="og:url" content={buildSharedPostUrl(postId)} />}
         {preview?.key === requestKey && preview.value?.imageUrl && <meta property="og:image" content={preview.value.imageUrl} />}
       </Head>}
@@ -79,7 +82,7 @@ export default function SharedPostRoute() {
               <Pressable analyticsId="app_post_[id].pressable.1"
                 onPress={goBack}
                 accessibilityRole="button"
-                accessibilityLabel="뒤로가기"
+                accessibilityLabel={tr("뒤로가기")}
                 style={({ pressed }) => [styles.backButton, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
                 <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} />
               </Pressable>
@@ -87,20 +90,20 @@ export default function SharedPostRoute() {
             <View style={styles.center}>
               {!isAuthed && preview?.key === requestKey && preview.value ? <View style={styles.gate}>
                 <SharedPreviewContent preview={preview.value} />
-                <ThemedText type="small" themeColor="textSecondary">로그인 후 전체 내용을 확인해요. 모임 초대는 기존 참여 신청과 모임장 승인을 거쳐요.</ThemedText>
-                <Pressable analyticsId="shared.post.login" accessibilityRole="button" accessibilityLabel="로그인하고 공유 내용 보기"
+                <ThemedText type="small" themeColor="textSecondary">{tr("로그인 후 전체 내용을 확인해요. 모임 초대는 기존 참여 신청과 모임장 승인을 거쳐요.")}</ThemedText>
+                <Pressable analyticsId="shared.post.login" accessibilityRole="button" accessibilityLabel={tr("로그인하고 공유 내용 보기")}
                   onPress={() => { play('selection'); promptLogin('공유받은 내용을 확인해요.'); }} style={[styles.login, { backgroundColor: theme.accent }]}>
-                  <ThemedText type="smallBold" style={{ color: theme.accentInk }}>로그인하고 내용 보기</ThemedText>
+                  <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr("로그인하고 내용 보기")}</ThemedText>
                 </Pressable>
               </View> : loading || isAuthLoading || (!isAuthed && postId && preview?.key !== requestKey) ? (
-                <GlingLoader color={theme.accent} accessibilityLabel="공유 글 불러오는 중" />
+                <GlingLoader color={theme.accent} accessibilityLabel={tr("공유 글 불러오는 중")} />
               ) : (
                 <View style={styles.message}>
                   <ThemedText type="subtitle" style={styles.title}>
-                    {current?.failed || preview?.failed ? '글을 불러오지 못했어요' : '글을 찾을 수 없어요'}
+                    {current?.failed || preview?.failed ? tr("글을 불러오지 못했어요") : tr("글을 찾을 수 없어요")}
                   </ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
-                    {current?.failed || preview?.failed ? '잠시 후 다시 시도해 주세요.' : '삭제되었거나 공개되지 않은 글이에요.'}
+                    {current?.failed || preview?.failed ? tr("잠시 후 다시 시도해 주세요.") : tr("삭제되었거나 공개되지 않은 글이에요.")}
                   </ThemedText>
                 </View>
               )}

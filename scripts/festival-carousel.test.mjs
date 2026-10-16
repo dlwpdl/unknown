@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -47,7 +48,7 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
   const file = web ? '../src/components/public-web/festivals.tsx' : '../src/components/local-events-carousel.tsx';
   const source = ts.transpileModule(fs.readFileSync(new URL(file, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   const exports = {};
-  vm.runInNewContext(source + (web ? '' : '\nexports.card = FeaturedEventCard;'), { exports, require: name => imports[name] ?? {}, Date: Clock, document, window, setInterval: interval, clearInterval: id => timers.delete(id) });
+  vm.runInNewContext(source + (web ? '' : '\nexports.card = FeaturedEventCard;'), { exports, require: withLanguageImports(name => imports[name] ?? {}), Date: Clock, document, window, setInterval: interval, clearInterval: id => timers.delete(id) });
   const render = async (card = false) => {
     let count = 0;
     do {

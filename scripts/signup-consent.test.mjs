@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -14,7 +15,7 @@ function onboarding(existingProfile = null) {
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/profile-onboarding.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, process: { env: {} }, require(name) {
+  vm.runInNewContext(source, { exports, process: { env: {} }, require: withLanguageImports((name) => {
     if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
     if (name === 'react') return {
       useEffect() {}, useRef(initial) { return refs[refCursor++] ??= { current: initial }; },
@@ -35,7 +36,7 @@ if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () =
     if (name === '@/components/personal-info-fields') return { PersonalInfoFields: 'PersonalInfoFields' };
     if (name === '@/lib/supabase') return { supabase: { rpc: async (...args) => { calls.push(args); return { error: fail ? new Error('offline') : null }; } } };
     return {};
-  } });
+  }) });
   const render = () => { cursor = refCursor = 0; return exports.ProfileOnboarding({ visible: true, userId: 'member', socialPhoto: null, existingProfile, onComplete: x => completed.push(x) }); };
   const boxes = () => nodes(render()).filter(n => n.props?.accessibilityRole === 'checkbox');
   const save = async () => { nodes(render()).find(n => n.props?.accessibilityState?.busy !== undefined).props.onPress(); for (let i = 0; i < 10; i++) await Promise.resolve(); };

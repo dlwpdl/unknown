@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -11,7 +12,7 @@ test('store catalog failure preserves synchronized membership and clears stale p
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/lib/membership-provider.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, Map, require(name) {
+  vm.runInNewContext(source, { exports, Map, require: withLanguageImports((name) => {
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }) };
     if (name === 'react') return {
       createContext: () => ({ Provider: 'Provider' }), useCallback: fn => fn, useEffect() {}, useLayoutEffect: fn => fn(),
@@ -36,7 +37,7 @@ test('store catalog failure preserves synchronized membership and clears stale p
       functions: { invoke: async () => { synced++; return { data: { membership: current } }; } },
     } };
     throw new Error(`Unexpected import: ${name}`);
-  } });
+  }) });
   const render = () => { cursor = 0; return exports.MembershipProvider({}).props.value; };
   await render().refresh();
   assert.equal(render().offers.length, 1);
@@ -68,7 +69,7 @@ test('pending approval recovery requires confirmation, unchanged account and suc
     const source = ts.transpileModule(fs.readFileSync(new URL('../src/lib/membership-provider.tsx', import.meta.url), 'utf8'), {
       compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
     }).outputText;
-    vm.runInNewContext(source, { exports, Map, require(name) {
+    vm.runInNewContext(source, { exports, Map, require: withLanguageImports((name) => {
       if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }) };
       if (name === 'react') return {
         createContext: () => ({ Provider: 'Provider' }), useCallback: fn => fn, useEffect() {}, useLayoutEffect: fn => fn(),
@@ -96,7 +97,7 @@ test('pending approval recovery requires confirmation, unchanged account and suc
         functions: { invoke: async () => { synced++; await onSync(); return { data: { membership: snapshot }, error: syncFails ? new Error('PROVIDER_UNAVAILABLE') : null }; } },
       } };
       throw new Error(`Unexpected import: ${name}`);
-    } });
+    }) });
     const render = () => { cursor = 0; return exports.MembershipProvider({}).props.value; };
     await render().refresh();
     await render().purchase(offer);

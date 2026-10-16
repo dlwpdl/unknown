@@ -1,3 +1,4 @@
+import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, FlatList } from '@/components/analytics-controls';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -16,7 +17,7 @@ import { LoginPanel } from '@/components/login-panel';
 import { TabContent } from '@/components/tab-content';
 import { Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { t } from '@/i18n/ko';
+import { t, tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { loadNotificationActors, loadNotifications, markNotificationsRead, type AppNotification } from '@/lib/community-data';
 import { relativeTime } from '@/lib/feed-data';
@@ -26,10 +27,11 @@ import { NOTIFICATION_CATEGORIES, adminDashboardUrl, isAdminNotificationKind, no
 
 type InboxFilter = 'all' | 'personal' | 'admin';
 const INBOX_FILTERS: { key: InboxFilter; label: string }[] = [
-  { key: 'all', label: '전체' }, { key: 'personal', label: '내 소식' }, { key: 'admin', label: '관리자' },
+  { key: 'all', get label() { return tr("전체"); } }, { key: 'personal', get label() { return tr("내 소식"); } }, { key: 'admin', get label() { return tr("관리자"); } },
 ];
 
 export default function NotificationsScreen({ embedded = false }: { embedded?: boolean } = {}) {
+  useLanguage();
   const theme = useTheme();
   const router = useRouter();
   const { isAuthed, isAdmin, isAuthLoading, me, signInApple, signInKakao, signInGoogle, signInDev, authError } = useAuth();
@@ -99,15 +101,15 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
         {!embedded && <View style={[styles.header, { backgroundColor: theme.background }]}>
           <ThemedText accessibilityRole="header" style={styles.headerTitle}>{t.notifications.title}</ThemedText>
           <ProfileAvatarButton />
-          <GlassSurface tone="control" interactive style={styles.settingsGlass}><Pressable analyticsId="app_tabs_notifications.pressable.1" accessibilityRole="button" accessibilityLabel="알림 설정" onPress={() => { play('selection'); router.push('/profile/notifications'); }} style={({ pressed }) => [styles.settings, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
+          <GlassSurface tone="control" interactive style={styles.settingsGlass}><Pressable analyticsId="app_tabs_notifications.pressable.1" accessibilityRole="button" accessibilityLabel={tr("알림 설정")} onPress={() => { play('selection'); router.push('/profile/notifications'); }} style={({ pressed }) => [styles.settings, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
             <SymbolView name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }} size={22} tintColor={theme.text} />
           </Pressable></GlassSurface>
         </View>}
-        {isAdmin && !initialLoading && <View style={styles.filters} accessibilityLabel="알림 종류">
+        {isAdmin && !initialLoading && <View style={styles.filters} accessibilityLabel={tr("알림 종류")}>
           {INBOX_FILTERS.map(({ key, label }) => {
             const selected = filter === key;
             return <Pressable analyticsId="app_tabs_notifications.pressable.3" key={key} accessibilityRole="button"
-              accessibilityLabel={`${label} 알림`} accessibilityState={{ selected }}
+              accessibilityLabel={tr("{0} 알림", (label))} accessibilityState={{ selected }}
               onPress={() => { play('selection'); if (key !== filter) { if (!reducedMotion) { if (Platform.OS === 'android') UIManager.setLayoutAnimationEnabledExperimental?.(true); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); } setFilter(key); } }}
               style={({ pressed }) => [styles.filter, Depth.control, { backgroundColor: selected ? theme.accent : theme.card, borderColor: selected ? theme.accentDepth : theme.line, borderBottomWidth: 3, }]}>
               <ThemedText type="smallBold" style={{ color: selected ? theme.accentInk : theme.textSecondary }}>{label}</ThemedText>
@@ -125,26 +127,26 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
             onRefresh={() => void load()}
             ListEmptyComponent={error
               ? <StateCard kind="error" title={t.notifications.loadError} body={t.notifications.loadErrorBody} actionLabel={t.notifications.retry} onAction={() => void load()} />
-              : <StateCard title={filter === 'admin' ? '관리자 알림이 없어요' : filter === 'personal' ? '내 소식이 없어요' : t.notifications.empty}
+              : <StateCard title={filter === 'admin' ? tr("관리자 알림이 없어요") : filter === 'personal' ? tr("내 소식이 없어요") : t.notifications.empty}
                   body={filter === 'all' ? t.notifications.emptyBody : '새 알림이 오면 여기에서 볼 수 있어요.'} />}
             renderItem={({ item, index }) => {
               const admin = isAdminNotificationKind(item.kind);
               const actor = item.actor_id && !admin ? actors.get(item.actor_id) : undefined;
               return <View>
-                {(index === 0 || index === newRows.length) && <ThemedText type="smallBold" style={[styles.groupTitle, { color: theme.textSecondary }]}>{index === 0 && newRows.length > 0 ? '새 소식' : newRows.length > 0 ? '이전 소식' : '모든 알림'}</ThemedText>}
+                {(index === 0 || index === newRows.length) && <ThemedText type="smallBold" style={[styles.groupTitle, { color: theme.textSecondary }]}>{index === 0 && newRows.length > 0 ? tr("새 소식") : newRows.length > 0 ? tr("이전 소식") : tr("모든 알림")}</ThemedText>}
                 <Pressable analyticsId="app_tabs_notifications.pressable.2"
                 onPress={() => {
                   play('selection');
                   const dashboard = adminDashboardUrl(item.route, isAdmin && admin);
                   if (dashboard) {
-                    void Linking.openURL(dashboard).catch(() => Alert.alert('관리자 대시보드를 열지 못했어요', 'Tailscale 연결과 Mac의 관리자 서버를 확인해 주세요.'));
+                    void Linking.openURL(dashboard).catch(() => Alert.alert(tr("관리자 대시보드를 열지 못했어요"), tr("Tailscale 연결과 Mac의 관리자 서버를 확인해 주세요.")));
                     return;
                   }
                   const route = notificationRoute(item.route);
                   router.push((route?.startsWith('/admin') ? '/notifications' : route ?? '/notifications') as never);
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`${admin ? '관리자 알림' : '내 소식'}, ${item.title ? `${item.title}, ` : ''}${item.body}`}
+                accessibilityLabel={tr("{0}, {1}{2}", (admin ? '관리자 알림' : '내 소식'), (item.title ? `${item.title}, ` : ''), (item.body))}
                 style={({ pressed }) => [
                   styles.row,
                   item.read_at == null && Depth.card,
@@ -156,12 +158,12 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
                         ? <SymbolView name={{ ios: 'shield.lefthalf.filled', android: 'admin_panel_settings', web: 'shield' }} size={20} tintColor={theme.accent} />
                         : actor?.avatarUrl
                         ? <Image source={{ uri: actor.avatarUrl }} style={styles.avatarImage} contentFit="cover" accessibilityIgnoresInvertColors />
-                        : <ThemedText type="smallBold" themeColor="textSecondary">{(actor?.nickname ?? '글').trim().slice(0, 1)}</ThemedText>}
+                        : <ThemedText type="smallBold" themeColor="textSecondary">{(actor?.nickname ?? tr("글")).trim().slice(0, 1)}</ThemedText>}
                   </View>
                   <View style={styles.rowBody}>
                     <View style={styles.meta}>
                       <ThemedText type="smallBold" style={{ color: admin ? theme.accent : theme.textSecondary }}>
-                        {admin ? '관리자 알림' : NOTIFICATION_CATEGORIES.find(category => category.key === item.category)?.label ?? '글링 안내'}
+                        {admin ? tr("관리자 알림") : NOTIFICATION_CATEGORIES.find(category => category.key === item.category)?.label ?? tr("글링 안내")}
                       </ThemedText>
                       <ThemedText type="small" themeColor="textSecondary">{relativeTime(item.created_at)}</ThemedText>
                     </View>

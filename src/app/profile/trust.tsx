@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import { LayoutAnimation, Platform, Pressable, ScrollView, StyleSheet, UIManager, View } from 'react-native';
@@ -13,12 +15,13 @@ import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 const levels = [
-  { level: 1, title: '계정 확인', summary: 'Apple · 카카오 · Google 로그인', detail: '소셜 계정으로 글링에 로그인하면 적용돼요. 소셜 로그인만으로 실명이나 나이가 확인되지는 않아요.' },
-  { level: 2, title: '전화번호 확인', summary: '본인 명의 번호 확인', detail: '예정 기준: 인증 서비스에서 본인 명의 전화번호 확인이 완료되면 부여해요. 번호를 입력하거나 문자만 받는 것으로는 올라가지 않아요. 닉네임 옆에는 빨간 체크가 표시돼요.' },
-  { level: 3, title: '신분증 · 얼굴 대조', summary: '신분증과 본인 촬영 비교', detail: '예정 기준: 신분증과 본인 촬영을 대조해 일치 여부를 확인한 뒤 부여해요. 닉네임 옆에는 글링 마크가 표시돼요.' },
+  { level: 1, get title() { return tr("계정 확인"); }, get summary() { return tr("Apple · 카카오 · Google 로그인"); }, get detail() { return tr("소셜 계정으로 글링에 로그인하면 적용돼요. 소셜 로그인만으로 실명이나 나이가 확인되지는 않아요."); } },
+  { level: 2, get title() { return tr("전화번호 확인"); }, get summary() { return tr("본인 명의 번호 확인"); }, get detail() { return tr("예정 기준: 인증 서비스에서 본인 명의 전화번호 확인이 완료되면 부여해요. 번호를 입력하거나 문자만 받는 것으로는 올라가지 않아요. 닉네임 옆에는 빨간 체크가 표시돼요."); } },
+  { level: 3, get title() { return tr("신분증 · 얼굴 대조"); }, get summary() { return tr("신분증과 본인 촬영 비교"); }, get detail() { return tr("예정 기준: 신분증과 본인 촬영을 대조해 일치 여부를 확인한 뒤 부여해요. 닉네임 옆에는 글링 마크가 표시돼요."); } },
 ] as const;
 
 export default function TrustScreen() {
+  useLanguage();
   const theme = useTheme();
   const auth = useAuth();
   const { play } = useInteractionFeedback();
@@ -30,11 +33,11 @@ export default function TrustScreen() {
 
   return <ThemedView style={styles.root}><SafeAreaView edges={['bottom']} style={styles.safeArea}>
     <ScrollView contentContainerStyle={styles.content}>
-      <ThemedText type="smallBold" themeColor="textSecondary" style={styles.eyebrow}>내 계정의 인증 상태</ThemedText>
+      <ThemedText type="smallBold" themeColor="textSecondary" style={styles.eyebrow}>{tr("내 계정의 인증 상태")}</ThemedText>
       <View style={[styles.hero, Depth.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <View style={styles.heroHead}>
           <View style={styles.flex}>
-            <ThemedText type="small" themeColor="textSecondary">현재 단계</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{tr("현재 단계")}</ThemedText>
             <ThemedText accessibilityRole="header" style={styles.heroTitle}>Lv{auth.trustLevel} · {current.title}</ThemedText>
           </View>
           <View style={[styles.heroIcon, { backgroundColor: theme.backgroundElement }]}>
@@ -43,37 +46,37 @@ export default function TrustScreen() {
         </View>
         <ThemedText type="small" themeColor="textSecondary" style={styles.heroBody}>
           {auth.trustLevel === 1
-            ? '소셜 계정으로 로그인했어요. 이름과 나이는 아직 확인되지 않았어요.'
-            : '앱에 등록된 현재 단계예요. 전화번호·신분증 확인 기록은 앱에서 조회할 수 없어요.'}
+            ? tr("소셜 계정으로 로그인했어요. 이름과 나이는 아직 확인되지 않았어요.")
+            : tr("앱에 등록된 현재 단계예요. 전화번호·신분증 확인 기록은 앱에서 조회할 수 없어요.")}
         </ThemedText>
         <View style={[styles.account, { borderTopColor: theme.line }]}>
           <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold">{auth.me.nickname.trim().slice(0, 1)}</ThemedText></View>
-          <View style={styles.flex}><ThemedText type="smallBold">{auth.me.nickname}</ThemedText><ThemedText type="small" themeColor="textSecondary">{auth.trustLevel === 1 ? '확인된 조건 · 소셜 계정 로그인' : '현재 등록된 단계 · Lv' + auth.trustLevel}</ThemedText></View>
+          <View style={styles.flex}><ThemedText type="smallBold">{auth.me.nickname}</ThemedText><ThemedText type="small" themeColor="textSecondary">{auth.trustLevel === 1 ? tr("확인된 조건 · 소셜 계정 로그인") : tr("현재 등록된 단계 · Lv") + auth.trustLevel}</ThemedText></View>
           {auth.trustLevel === 1 && <SymbolView name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} size={20} tintColor={theme.accent} />}
         </View>
       </View>
 
-      <View style={styles.sectionHead}><ThemedText type="subtitle" style={styles.sectionTitle}>단계별 인증 기준</ThemedText><ThemedText type="small" themeColor="textSecondary">눌러서 자세히 보기</ThemedText></View>
+      <View style={styles.sectionHead}><ThemedText type="subtitle" style={styles.sectionTitle}>{tr("단계별 인증 기준")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("눌러서 자세히 보기")}</ThemedText></View>
       <View style={[styles.levels, { backgroundColor: theme.card, borderColor: theme.line }]}>
         {levels.map((item, index) => {
           const open = expanded === item.level;
           return <View key={item.level} style={[styles.level, index > 0 && { borderTopColor: theme.line, borderTopWidth: StyleSheet.hairlineWidth }]}>
-            <Pressable accessibilityRole="button" accessibilityLabel={`Lv${item.level} ${item.title}, ${item.level === auth.trustLevel ? '현재 단계' : item.level < auth.trustLevel ? '지난 단계' : '준비 중'}`} accessibilityState={{ expanded: open }}
+            <Pressable accessibilityRole="button" accessibilityLabel={tr("Lv{0} {1}, {2}", (item.level), (item.title), (item.level === auth.trustLevel ? '현재 단계' : item.level < auth.trustLevel ? '지난 단계' : '준비 중'))} accessibilityState={{ expanded: open }}
               onPress={() => { play('selection'); if (!reducedMotion) { if (Platform.OS === 'android') UIManager.setLayoutAnimationEnabledExperimental?.(true); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); } setExpanded(open ? null : item.level); }}
               style={({ pressed }) => [styles.levelButton, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
               <View style={[styles.number, { backgroundColor: item.level === auth.trustLevel ? theme.backgroundElement : theme.background, }]}><ThemedText type="smallBold" style={{ color: item.level === auth.trustLevel ? theme.accent : theme.textSecondary }}>{String(item.level).padStart(2, '0')}</ThemedText></View>
               <View style={styles.flex}><ThemedText type="smallBold">{item.title}</ThemedText><ThemedText type="small" themeColor="textSecondary" style={styles.summary}>{item.summary}</ThemedText></View>
-              <ThemedText type="smallBold" style={{ color: item.level === auth.trustLevel ? theme.accent : theme.textSecondary }}>{item.level === auth.trustLevel ? '현재 단계' : item.level < auth.trustLevel ? '지난 단계' : '준비 중'}</ThemedText>
+              <ThemedText type="smallBold" style={{ color: item.level === auth.trustLevel ? theme.accent : theme.textSecondary }}>{item.level === auth.trustLevel ? tr("현재 단계") : item.level < auth.trustLevel ? tr("지난 단계") : tr("준비 중")}</ThemedText>
               <SymbolView name={{ ios: open ? 'chevron.down' : 'chevron.right', android: open ? 'keyboard_arrow_down' : 'chevron_right', web: open ? 'keyboard_arrow_down' : 'chevron_right' }} size={15} tintColor={theme.textSecondary} />
             </Pressable>
-            {open && <View style={styles.detail}><ThemedText type="small" themeColor="textSecondary" style={styles.detailText}>{item.detail}</ThemedText>{item.level > 1 && <ThemedText type="small" themeColor="textSecondary" style={styles.availability}>지금은 앱에서 신청할 수 없어요.</ThemedText>}</View>}
+            {open && <View style={styles.detail}><ThemedText type="small" themeColor="textSecondary" style={styles.detailText}>{item.detail}</ThemedText>{item.level > 1 && <ThemedText type="small" themeColor="textSecondary" style={styles.availability}>{tr("지금은 앱에서 신청할 수 없어요.")}</ThemedText>}</View>}
           </View>;
         })}
       </View>
 
       <View style={[styles.note, { backgroundColor: theme.backgroundElement }]}>
-        <View style={styles.noteTitle}><SymbolView name={{ ios: 'info.circle', android: 'info_outline', web: 'info' }} size={17} tintColor={theme.textSecondary} /><ThemedText type="smallBold">인증 단계가 의미하는 것</ThemedText></View>
-        <ThemedText type="small" themeColor="textSecondary" style={styles.noteBody}>확인된 항목만 표시해요. 인증 단계는 만남의 안전이나 상대방의 행동을 보증하지 않아요. 이름·생년월일을 직접 입력해도 인증 단계는 올라가지 않아요.</ThemedText>
+        <View style={styles.noteTitle}><SymbolView name={{ ios: 'info.circle', android: 'info_outline', web: 'info' }} size={17} tintColor={theme.textSecondary} /><ThemedText type="smallBold">{tr("인증 단계가 의미하는 것")}</ThemedText></View>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.noteBody}>{tr("확인된 항목만 표시해요. 인증 단계는 만남의 안전이나 상대방의 행동을 보증하지 않아요. 이름·생년월일을 직접 입력해도 인증 단계는 올라가지 않아요.")}</ThemedText>
       </View>
     </ScrollView>
   </SafeAreaView></ThemedView>;

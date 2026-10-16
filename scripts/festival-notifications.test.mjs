@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -41,7 +42,7 @@ test('the actual inbox row shows event name and description, reads both and reta
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/app/(tabs)/notifications.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, require: name => imports[name] ?? new Proxy({}, { get: (_value, key) => key }) });
+  vm.runInNewContext(source, { exports, require: withLanguageImports(name => imports[name] ?? new Proxy({}, { get: (_value, key) => key })) });
   const walk = value => !value || typeof value !== 'object' ? [] : [value, ...Object.values(value).flatMap(walk)];
   const list = walk(exports.default()).find(node => node.type === 'FlatList');
   const row = walk(list.props.renderItem({ item: items[0], index: 0 }));

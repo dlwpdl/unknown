@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr, getLocale } from '@/i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -22,10 +24,11 @@ import { merchantMapsUrl, merchantPhoneUrl, setSavedMerchant, setSavedMerchantNo
 import { safeMerchantSourceUrl } from '@/lib/merchant-source';
 import { supabase } from '@/lib/supabase';
 
-const tabs = [{ id: 'posts', label: '게시글' }, { id: 'jobs', label: '채용' }, { id: 'reviews', label: '리뷰' }, { id: 'about', label: '소개' }] as const;
+const tabs = [{ id: 'posts', get label() { return tr("게시글"); } }, { id: 'jobs', get label() { return tr("채용"); } }, { id: 'reviews', get label() { return tr("리뷰"); } }, { id: 'about', get label() { return tr("소개"); } }] as const;
 type ProfileTab = typeof tabs[number]['id'];
 
 export default function CompanyProfileRoute() {
+  useLanguage();
   const { id, review } = useLocalSearchParams<{ id: string; review?: string }>(), router = useRouter(), theme = useTheme(), { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion(), scroll = useRef<NativeScrollView>(null), tabsTop = useRef(0);
   const { me, isAuthed, isAuthLoading, promptLogin } = useAuth(), hidden = useContentVisibility();
@@ -58,7 +61,7 @@ export default function CompanyProfileRoute() {
   const counts = countsResult?.key === key ? countsResult.value : null;
   const ratings = ratingResult?.key === key ? ratingResult.ratings : undefined;
   const reviewCount = ratings?.usage && ratings.employment ? ratings.usage.review_count + ratings.employment.review_count : undefined;
-  const displayCount = (value: number | undefined, settled: boolean) => value == null ? settled ? '—' : '…' : value.toLocaleString('ko-KR');
+  const displayCount = (value: number | undefined, settled: boolean) => value == null ? settled ? '—' : '…' : value.toLocaleString(getLocale());
   useFocusEffect(useCallback(() => {
     const operation = { key, visibility: hidden, active: true, busy: false };
     actionRequest.current = operation;
@@ -179,47 +182,47 @@ export default function CompanyProfileRoute() {
   }
   return <ThemedView style={styles.page}><SafeAreaView style={styles.page} edges={['top', 'left', 'right']}>
     <View style={[styles.header, { borderBottomColor: theme.line }]}>
-      <Pressable analyticsId="company.back" accessibilityRole="button" accessibilityLabel="뒤로 가기" style={styles.button}
+      <Pressable analyticsId="company.back" accessibilityRole="button" accessibilityLabel={tr("뒤로 가기")} style={styles.button}
         onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace('/'); }}><ThemedText type="subtitle">‹</ThemedText></Pressable>
-      <ThemedText type="subtitle" numberOfLines={1} style={styles.heading}>{profile?.name ?? '비즈니스 프로필'}</ThemedText>
+      <ThemedText type="subtitle" numberOfLines={1} style={styles.heading}>{profile?.name ?? tr("비즈니스 프로필")}</ThemedText>
     </View>
     <ScrollView ref={scroll} analyticsId="company.profile" contentContainerStyle={styles.content}>
       {profile ? <>
         <MerchantProfileHeader profile={{ ...profile, services: '', address: '' }} ratings={ratings}
           onReviewPress={profile.review_post_id ? openReviews : undefined} />
         <View style={styles.actions}>
-          {!!canMessage && <Pressable analyticsId="company.inquiry" accessibilityRole="button" accessibilityLabel="비즈니스 담당자에게 문의"
+          {!!canMessage && <Pressable analyticsId="company.inquiry" accessibilityRole="button" accessibilityLabel={tr("비즈니스 담당자에게 문의")}
             accessibilityState={{ disabled: busy, busy: busy && actionBusy?.kind === 'message' }} disabled={busy}
             style={({ pressed }) => [styles.inquiry, { backgroundColor: theme.accent, opacity: busy || pressed ? 0.65 : 1 }]}
-            onPress={() => void requestInquiry()}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{busy && actionBusy?.kind === 'message' ? '연결 중…' : '문의하기'}</ThemedText></Pressable>}
-          <Pressable analyticsId="company.save" accessibilityRole="button" accessibilityLabel={profile.saved ? '비즈니스 저장 취소' : '비즈니스 저장'}
+            onPress={() => void requestInquiry()}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{busy && actionBusy?.kind === 'message' ? tr("연결 중…") : tr("문의하기")}</ThemedText></Pressable>}
+          <Pressable analyticsId="company.save" accessibilityRole="button" accessibilityLabel={profile.saved ? tr("비즈니스 저장 취소") : tr("비즈니스 저장")}
             accessibilityState={{ selected: profile.saved, disabled: busy, busy: busy && actionBusy?.kind === 'save' }} disabled={busy}
             style={({ pressed }) => [styles.secondaryAction, { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : theme.card, opacity: busy ? 0.65 : 1 }]}
             onPress={() => void toggleSaved()}><SymbolView name={{ ios: profile.saved ? 'bookmark.fill' : 'bookmark', android: profile.saved ? 'bookmark' : 'bookmark_border', web: profile.saved ? 'bookmark' : 'bookmark_border' }} size={17} tintColor={theme.accent} />
-            <ThemedText type="smallBold" themeColor="accent">{busy && actionBusy?.kind === 'save' ? '저장 중…' : profile.saved ? '저장됨' : '저장'}</ThemedText></Pressable>
-          {isAuthed && profile.saved && <Pressable analyticsId="company.notifications" accessibilityRole="button" accessibilityLabel="새 소식 받기"
+            <ThemedText type="smallBold" themeColor="accent">{busy && actionBusy?.kind === 'save' ? tr("저장 중…") : profile.saved ? tr("저장됨") : tr("저장")}</ThemedText></Pressable>
+          {isAuthed && profile.saved && <Pressable analyticsId="company.notifications" accessibilityRole="button" accessibilityLabel={tr("새 소식 받기")}
             accessibilityState={{ selected: profile.notifications_enabled, disabled: busy, busy: busy && actionBusy?.kind === 'notifications' }} disabled={busy}
             style={({ pressed }) => [styles.secondaryAction, { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : theme.card, opacity: busy ? 0.65 : 1 }]}
             onPress={() => void toggleNotifications()}><SymbolView name={{ ios: profile.notifications_enabled ? 'bell.fill' : 'bell', android: profile.notifications_enabled ? 'notifications' : 'notifications_none', web: profile.notifications_enabled ? 'notifications' : 'notifications_none' }} size={17} tintColor={theme.accent} />
-            <ThemedText type="smallBold" themeColor="accent">{busy && actionBusy?.kind === 'notifications' ? '설정 중…' : profile.notifications_enabled ? '새 소식 받는 중' : '새 소식 받기'}</ThemedText></Pressable>}
+            <ThemedText type="smallBold" themeColor="accent">{busy && actionBusy?.kind === 'notifications' ? tr("설정 중…") : profile.notifications_enabled ? tr("새 소식 받는 중") : tr("새 소식 받기")}</ThemedText></Pressable>}
         </View>
         {!canMessage && <View style={styles.statePhoto}>
-          <ThemedText type="small" themeColor="textSecondary">앱에서 연결할 수 있는 담당자가 없어요.{!phoneUrl && !publicLinks.length ? ' 공개 연락처도 아직 등록되지 않았어요.' : ' 등록된 공개 연락처를 이용해 주세요.'}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("앱에서 연결할 수 있는 담당자가 없어요.")}{!phoneUrl && !publicLinks.length ? tr(" 공개 연락처도 아직 등록되지 않았어요.") : tr(" 등록된 공개 연락처를 이용해 주세요.")}</ThemedText>
           <View style={styles.actions}>
-            {!!phoneUrl && <Pressable analyticsId="company.contact.phone" accessibilityRole="link" accessibilityLabel={`비즈니스 공개 전화 ${profile.public_phone}`} style={styles.button} onPress={() => void openContact(phoneUrl)}><ThemedText themeColor="accent">전화하기</ThemedText></Pressable>}
-            {publicLinks.map((link, index) => <Pressable key={link.url} analyticsId={`company.contact.source.${index}`} accessibilityRole="link" accessibilityLabel={`${link.label} 공개 링크 열기`} style={styles.button} onPress={() => void openContact(link.url)}><ThemedText themeColor="accent">{link.label} ›</ThemedText></Pressable>)}
+            {!!phoneUrl && <Pressable analyticsId="company.contact.phone" accessibilityRole="link" accessibilityLabel={tr("비즈니스 공개 전화 {0}", (profile.public_phone))} style={styles.button} onPress={() => void openContact(phoneUrl)}><ThemedText themeColor="accent">{tr("전화하기")}</ThemedText></Pressable>}
+            {publicLinks.map((link, index) => <Pressable key={link.url} analyticsId={`company.contact.source.${index}`} accessibilityRole="link" accessibilityLabel={tr("{0} 공개 링크 열기", (link.label))} style={styles.button} onPress={() => void openContact(link.url)}><ThemedText themeColor="accent">{link.label} ›</ThemedText></Pressable>)}
           </View>
         </View>}
         {actionError?.key === key && <ThemedText type="small" accessibilityRole="alert" accessibilityLiveRegion="polite">{actionError.message}</ThemedText>}
         {(profile.imageLoadFailed || current?.failed) && <View style={styles.statePhoto}>
-          <ThemedText type="small" themeColor="textSecondary">사진을 다시 불러오지 못했어요. 업체 정보와 저장된 사진은 유지돼요.</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("사진을 다시 불러오지 못했어요. 업체 정보와 저장된 사진은 유지돼요.")}</ThemedText>
           <Pressable analyticsId="company.photo.retry" accessibilityRole="button" style={styles.button}
-            onPress={() => { play('selection'); setRevision((value) => value + 1); }}><ThemedText themeColor="accent">사진 다시 확인</ThemedText></Pressable>
+            onPress={() => { play('selection'); setRevision((value) => value + 1); }}><ThemedText themeColor="accent">{tr("사진 다시 확인")}</ThemedText></Pressable>
         </View>}
         {!!profile.services && <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{profile.services.split(/\r?\n/, 1)[0]}</ThemedText>}
         {!!counts?.job_count && <Pressable analyticsId="company.hiring" accessibilityRole="button" style={styles.hiring}
           onPress={() => { selectTab('jobs'); scroll.current?.scrollTo({ y: tabsTop.current, animated: !reducedMotion }); }}>
-          <ThemedText type="small" themeColor="accent">• 채용 중 · {counts.job_count.toLocaleString('ko-KR')}건 ›</ThemedText>
+          <ThemedText type="small" themeColor="accent">{tr("• 채용 중 ·") + " "}{counts.job_count.toLocaleString(getLocale())}{tr("건 ›")}</ThemedText>
         </Pressable>}
         <View onLayout={event => { tabsTop.current = event.nativeEvent.layout.y; }} style={[styles.tabs, { borderBottomColor: theme.line }]} accessibilityRole="tablist">
           {tabs.map(item => {
@@ -227,7 +230,7 @@ export default function CompanyProfileRoute() {
               : item.id === 'jobs' ? displayCount(counts?.job_count, !!currentPosts?.failed || countsResult?.key === key)
               : item.id === 'reviews' ? displayCount(reviewCount, ratingResult?.key === key) : null;
             return <Pressable key={item.id} analyticsId={`company.tab.${item.id}`} accessibilityRole="tab" accessibilityState={{ selected: tab === item.id }}
-              accessibilityLabel={`${item.label}${count == null ? '' : ` ${count}건`}`} style={[styles.tab, { borderBottomColor: tab === item.id ? theme.accent : 'transparent' }]}
+              accessibilityLabel={tr("{0}{1}", (item.label), (count == null ? '' : ` ${count}건`))} style={[styles.tab, { borderBottomColor: tab === item.id ? theme.accent : 'transparent' }]}
               onPress={() => selectTab(item.id)}>
               <ThemedText type="smallBold" themeColor={tab === item.id ? 'accent' : 'textSecondary'}>{item.label}</ThemedText>
               {count != null && <ThemedText style={styles.tabCount} themeColor={tab === item.id ? 'accent' : 'textSecondary'}>{count}</ThemedText>}
@@ -235,57 +238,57 @@ export default function CompanyProfileRoute() {
           })}
         </View>
         {(tab === 'posts' || tab === 'jobs') && <View style={styles.panel}>
-          <View style={styles.panelTitle}><ThemedText type="subtitle">{tab === 'posts' ? '최근 게시글' : '함께할 사람을 찾고 있어요'}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">최신순</ThemedText></View>
-          {postsLoading && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tab === 'posts' ? '게시글' : '채용 공고'}을 불러오는 중…</ThemedText>}
-          {currentPosts?.failed && <View style={styles.statePhoto}><ThemedText type="small">글을 불러오지 못했어요.</ThemedText>
+          <View style={styles.panelTitle}><ThemedText type="subtitle">{tab === 'posts' ? tr("최근 게시글") : tr("함께할 사람을 찾고 있어요")}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{tr("최신순")}</ThemedText></View>
+          {postsLoading && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tab === 'posts' ? tr("게시글") : tr("채용 공고")}{tr("을 불러오는 중…")}</ThemedText>}
+          {currentPosts?.failed && <View style={styles.statePhoto}><ThemedText type="small">{tr("글을 불러오지 못했어요.")}</ThemedText>
             <Pressable analyticsId="company.posts.retry" accessibilityRole="button" disabled={postsLoading} style={styles.button}
-              onPress={() => { if (postPage?.has_more) void morePosts(); else { play('selection'); setPostRevision(value => value + 1); } }}><ThemedText themeColor="accent">다시 불러오기</ThemedText></Pressable></View>}
+              onPress={() => { if (postPage?.has_more) void morePosts(); else { play('selection'); setPostRevision(value => value + 1); } }}><ThemedText themeColor="accent">{tr("다시 불러오기")}</ThemedText></Pressable></View>}
           {visiblePosts?.map(post => {
             const source = getPostImageSource(post, isAuthed ? me.id : 'guest');
-            return <Pressable key={post.id} analyticsId={`company.post.${post.id}`} accessibilityRole="link" accessibilityLabel={`${post.title} 전체 보기`}
+            return <Pressable key={post.id} analyticsId={`company.post.${post.id}`} accessibilityRole="link" accessibilityLabel={tr("{0} 전체 보기", (post.title))}
               style={[styles.post, { borderBottomColor: theme.line }]} onPress={() => { play('selection'); router.push({ pathname: '/post/[id]', params: { id: post.id } }); }}>
-              <View style={styles.postText}><ThemedText type="small" themeColor="textSecondary">{tab === 'jobs' ? '모집 중' : post.tag.label} · {post.createdAtLabel}</ThemedText>
+              <View style={styles.postText}><ThemedText type="small" themeColor="textSecondary">{tab === 'jobs' ? tr("모집 중") : post.tag.label} · {post.createdAtLabel}</ThemedText>
                 <ThemedText type="smallBold" numberOfLines={2}>{post.title}</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{post.body}</ThemedText></View>
-              {source ? <Image source={source} contentFit="cover" style={styles.postImage} accessibilityLabel={`${post.title} 사진`} /> : <ThemedText themeColor="textSecondary" accessible={false}>›</ThemedText>}
+              {source ? <Image source={source} contentFit="cover" style={styles.postImage} accessibilityLabel={tr("{0} 사진", (post.title))} /> : <ThemedText themeColor="textSecondary" accessible={false}>›</ThemedText>}
             </Pressable>;
           })}
           {!postsLoading && !currentPosts?.failed && (!postPage || !visiblePosts?.length) && <View style={styles.state}>
-            <ThemedText type="smallBold">{!postPage ? '현재 공개된 글을 볼 수 없어요' : tab === 'posts' ? '아직 게시글이 없어요' : '현재 모집 중인 공고가 없어요'}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">새 글이 등록되면 여기에서 볼 수 있어요.</ThemedText>
-            <Pressable analyticsId="company.posts.about" accessibilityRole="button" style={styles.button} onPress={() => selectTab('about')}><ThemedText themeColor="accent">비즈니스 소개 보기</ThemedText></Pressable>
+            <ThemedText type="smallBold">{!postPage ? tr("현재 공개된 글을 볼 수 없어요") : tab === 'posts' ? tr("아직 게시글이 없어요") : tr("현재 모집 중인 공고가 없어요")}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{tr("새 글이 등록되면 여기에서 볼 수 있어요.")}</ThemedText>
+            <Pressable analyticsId="company.posts.about" accessibilityRole="button" style={styles.button} onPress={() => selectTab('about')}><ThemedText themeColor="accent">{tr("비즈니스 소개 보기")}</ThemedText></Pressable>
           </View>}
           {postPage?.has_more && <Pressable analyticsId="company.posts.more" accessibilityRole="button" disabled={postsLoading} style={styles.button}
-            onPress={() => void morePosts()}><ThemedText themeColor="accent">{tab === 'posts' ? '게시글' : '채용 공고'} 더 보기</ThemedText></Pressable>}
+            onPress={() => void morePosts()}><ThemedText themeColor="accent">{tab === 'posts' ? tr("게시글") : tr("채용 공고")}{" " + tr("더 보기")}</ThemedText></Pressable>}
         </View>}
         {tab === 'about' && <View style={styles.panel}>
-          <ThemedText type="subtitle">{profile.name} 소개</ThemedText>
-          <ThemedText>{profile.services || '등록된 소개가 없어요.'}</ThemedText>
-          {[['업종', profile.industry], ['지역', profile.city_name], ['주소', profile.address], ['전화', profile.public_phone], ['영업시간', profile.business_hours]].filter(([, value]) => !!value).map(([label, value]) =>
+          <ThemedText type="subtitle">{profile.name}{" " + tr("소개")}</ThemedText>
+          <ThemedText>{profile.services || tr("등록된 소개가 없어요.")}</ThemedText>
+          {[[tr("업종"), profile.industry], [tr("지역"), profile.city_name], [tr("주소"), profile.address], [tr("전화"), profile.public_phone], [tr("영업시간"), profile.business_hours]].filter(([, value]) => !!value).map(([label, value]) =>
             <View key={label} style={styles.aboutRow}><ThemedText type="small" themeColor="textSecondary" style={styles.aboutLabel}>{label}</ThemedText><ThemedText type="small" style={styles.aboutValue}>{value}</ThemedText></View>)}
           <View style={styles.actions}>
-            {!!phoneUrl && <Pressable analyticsId="company.about.phone" accessibilityRole="link" accessibilityLabel={`공개 전화 ${profile.public_phone}`} style={styles.button} onPress={() => void openContact(phoneUrl)}><ThemedText themeColor="accent">전화하기</ThemedText></Pressable>}
-            {!!mapsUrl && <Pressable analyticsId="company.about.maps" accessibilityRole="link" accessibilityLabel="등록된 주소를 Google 지도에서 보기" style={styles.button} onPress={() => void openContact(mapsUrl)}><ThemedText themeColor="accent">길찾기</ThemedText></Pressable>}
-            {publicLinks.map((link, index) => <Pressable key={link.url} analyticsId={`company.about.source.${index}`} accessibilityRole="link" accessibilityLabel={`${link.label} 공개 링크 열기`} style={styles.button} onPress={() => void openContact(link.url)}><ThemedText themeColor="accent">{link.label} ›</ThemedText></Pressable>)}
+            {!!phoneUrl && <Pressable analyticsId="company.about.phone" accessibilityRole="link" accessibilityLabel={tr("공개 전화 {0}", (profile.public_phone))} style={styles.button} onPress={() => void openContact(phoneUrl)}><ThemedText themeColor="accent">{tr("전화하기")}</ThemedText></Pressable>}
+            {!!mapsUrl && <Pressable analyticsId="company.about.maps" accessibilityRole="link" accessibilityLabel={tr("등록된 주소를 Google 지도에서 보기")} style={styles.button} onPress={() => void openContact(mapsUrl)}><ThemedText themeColor="accent">{tr("길찾기")}</ThemedText></Pressable>}
+            {publicLinks.map((link, index) => <Pressable key={link.url} analyticsId={`company.about.source.${index}`} accessibilityRole="link" accessibilityLabel={tr("{0} 공개 링크 열기", (link.label))} style={styles.button} onPress={() => void openContact(link.url)}><ThemedText themeColor="accent">{link.label} ›</ThemedText></Pressable>)}
           </View>
         </View>}
         {(tab === 'reviews' || reviewVisited === key) && profile.review_post_id && <View
           style={[styles.panel, tab !== 'reviews' && { display: 'none' }]} accessibilityElementsHidden={tab !== 'reviews'}
           importantForAccessibility={tab !== 'reviews' ? 'no-hide-descendants' : 'auto'}>
-          <View style={styles.reviewTabs} accessibilityLabel="리뷰 종류">
+          <View style={styles.reviewTabs} accessibilityLabel={tr("리뷰 종류")}>
             {(['usage', 'employment'] as const).map(kind => <Pressable key={kind} analyticsId={`company.reviews.${kind}`} accessibilityRole="button"
               accessibilityState={{ selected: kind === reviewKind }} style={[styles.reviewTab, { borderColor: kind === reviewKind ? theme.accent : theme.line, backgroundColor: kind === reviewKind ? theme.card : theme.background }]}
               onPress={() => { play('selection'); setSelected({ merchantId, kind }); }}>
-              <ThemedText type="smallBold" themeColor={kind === reviewKind ? 'accent' : 'textSecondary'}>{kind === 'usage' ? '이용' : '근무'} {displayCount(ratings?.[kind]?.review_count, ratingResult?.key === key)}</ThemedText>
+              <ThemedText type="smallBold" themeColor={kind === reviewKind ? 'accent' : 'textSecondary'}>{kind === 'usage' ? tr("이용") : tr("근무")} {displayCount(ratings?.[kind]?.review_count, ratingResult?.key === key)}</ThemedText>
             </Pressable>)}
           </View>
           <MerchantReviews postId={profile.review_post_id} reviewKind={reviewKind} onChanged={() => setReviewRevision(value => value + 1)} />
         </View>}
       </> : <View style={styles.state}>
-        <ThemedText type="subtitle">{isAuthLoading || merchantId && !current ? '프로필을 불러오는 중…' : current?.failed ? '프로필을 불러오지 못했어요' : '공개된 비즈니스 프로필이 없어요'}</ThemedText>
+        <ThemedText type="subtitle">{isAuthLoading || merchantId && !current ? tr("프로필을 불러오는 중…") : current?.failed ? tr("프로필을 불러오지 못했어요") : tr("공개된 비즈니스 프로필이 없어요")}</ThemedText>
         {current?.failed && <Pressable analyticsId="company.retry" accessibilityRole="button" style={styles.button}
-          onPress={() => { play('selection'); setRevision((value) => value + 1); }}><ThemedText themeColor="accent">다시 불러오기</ThemedText></Pressable>}
+          onPress={() => { play('selection'); setRevision((value) => value + 1); }}><ThemedText themeColor="accent">{tr("다시 불러오기")}</ThemedText></Pressable>}
       </View>}
     </ScrollView>
   </SafeAreaView></ThemedView>;

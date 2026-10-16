@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
@@ -12,11 +14,13 @@ import { loadMyMerchantReviews, replyToMerchantReview, type MerchantReview } fro
 import { supabase } from '@/lib/supabase';
 
 export function MerchantReviewInbox({ merchantId, onDirty }: { merchantId: string; onDirty?: (dirty: boolean) => void }) {
+
   const { me, isAuthed } = useAuth();
   return <ScopedInbox key={`${merchantId}:${isAuthed ? me.id : 'guest'}`} merchantId={merchantId} onDirty={onDirty} />;
 }
 
 function ScopedInbox({ merchantId, onDirty }: { merchantId: string; onDirty?: (dirty: boolean) => void }) {
+  useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback(), { me } = useAuth();
   const hidden = useContentVisibility();
   const [rows, setRows] = useState<MerchantReview[]>([]), [hasMore, setHasMore] = useState(false);
@@ -36,7 +40,7 @@ function ScopedInbox({ merchantId, onDirty }: { merchantId: string; onDirty?: (d
       setRows((previous) => offset > 0 ? [...previous, ...page.reviews.filter((row) => !previous.some(({ id }) => id === row.id))] : page.reviews);
       setHasMore(page.has_more);
     }).catch(() => {
-      if (active) { setRows([]); setHasMore(false); setError('후기를 불러오지 못했어요. 업체 소유 확인과 계정 권한을 다시 확인해 주세요.'); }
+      if (active) { setRows([]); setHasMore(false); setError(tr("후기를 불러오지 못했어요. 업체 소유 확인과 계정 권한을 다시 확인해 주세요.")); }
     }).finally(() => { if (active) { pending.current = false; setLoading(false); } });
     return () => { active = false; };
   }, [merchantId, offset, revision]);
@@ -62,37 +66,37 @@ function ScopedInbox({ merchantId, onDirty }: { merchantId: string; onDirty?: (d
   };
   return <View style={[styles.section, { borderColor: theme.line, backgroundColor: theme.card }]}>
     <View style={styles.header}>
-      <ThemedText type="subtitle">받은 후기</ThemedText>
+      <ThemedText type="subtitle">{tr("받은 후기")}</ThemedText>
       <Pressable analyticsId="merchant.reviews.refresh" accessibilityRole="button" disabled={loading || dirty || replyBusy} accessibilityState={{ disabled: loading || dirty || replyBusy }}
-        style={styles.button} onPress={() => { play('selection'); refresh(); }}><ThemedText type="smallBold" themeColor="accent">새로 확인</ThemedText></Pressable>
+        style={styles.button} onPress={() => { play('selection'); refresh(); }}><ThemedText type="smallBold" themeColor="accent">{tr("새로 확인")}</ThemedText></Pressable>
     </View>
-    <ThemedText type="small" themeColor="textSecondary">이용 리뷰는 미인증 의견도 확인할 수 있어요. 근무 리뷰는 근무 증빙 인증 후에만 보이며, 증빙 원본은 업체에 공개되지 않아요. 공개 평균은 종류별 인증 후기만 따로 계산해요.</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary">{tr("이용 리뷰는 미인증 의견도 확인할 수 있어요. 근무 리뷰는 근무 증빙 인증 후에만 보이며, 증빙 원본은 업체에 공개되지 않아요. 공개 평균은 종류별 인증 후기만 따로 계산해요.")}</ThemedText>
     {rows.filter((row) => !hidden('merchant_review', row.id, row.author_id)).map((row) => <View key={row.id} style={styles.review}>
       <MerchantReviewCard review={row} onReport={row.author_id === me.id || draft || replyBusy ? undefined : () => setReport(row)} />
       {row.review_kind !== 'employment' && (draft?.id === row.id ? <View style={[styles.reply, { borderColor: theme.line }]}>
-        <ThemedText type="smallBold">업체 답변</ThemedText>
-        <TextInput accessibilityLabel="이용 후기 업체 답변, 최대 300자" value={draft.body} editable={!replyBusy} multiline maxLength={300}
-          placeholder="이용 후기에 답변해 주세요." placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')}
+        <ThemedText type="smallBold">{tr("업체 답변")}</ThemedText>
+        <TextInput accessibilityLabel={tr("이용 후기 업체 답변, 최대 300자")} value={draft.body} editable={!replyBusy} multiline maxLength={300}
+          placeholder={tr("이용 후기에 답변해 주세요.")} placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')}
           onChangeText={body => { setDraft({ ...draft, body }); setReplyError(''); }} style={[styles.input, { color: theme.text, borderColor: theme.line }]} />
-        <ThemedText type="small" themeColor="textSecondary">{draft.body.length}/300 · 후기 공개 범위에 따라 답변도 표시돼요.</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{draft.body.length}{tr("/300 · 후기 공개 범위에 따라 답변도 표시돼요.")}</ThemedText>
         {!!replyError && <ThemedText type="small" accessibilityRole="alert">{replyError}</ThemedText>}
         <View style={styles.actions}>
           <Pressable analyticsId="merchant.reply.save" accessibilityRole="button" disabled={replyBusy || !draft.body.trim()} accessibilityState={{ disabled: replyBusy || !draft.body.trim(), busy: replyBusy }}
-            style={styles.button} onPress={() => { play('selection'); void saveReply(); }}><ThemedText type="smallBold" themeColor="accent">{replyBusy ? '저장 중…' : '답변 저장'}</ThemedText></Pressable>
+            style={styles.button} onPress={() => { play('selection'); void saveReply(); }}><ThemedText type="smallBold" themeColor="accent">{replyBusy ? tr("저장 중…") : tr("답변 저장")}</ThemedText></Pressable>
           <Pressable analyticsId="merchant.reply.cancel" accessibilityRole="button" disabled={replyBusy} accessibilityState={{ disabled: replyBusy }} style={styles.button}
-            onPress={() => { play('selection'); setDraft(null); setReplyError(''); refresh(); }}><ThemedText type="small" themeColor="textSecondary">취소</ThemedText></Pressable>
+            onPress={() => { play('selection'); setDraft(null); setReplyError(''); refresh(); }}><ThemedText type="small" themeColor="textSecondary">{tr("취소")}</ThemedText></Pressable>
         </View>
       </View> : <Pressable analyticsId={`merchant.reply.edit.${row.id}`} accessibilityRole="button" disabled={!!draft || replyBusy} accessibilityState={{ disabled: !!draft || replyBusy }}
         style={styles.button} onPress={() => { play('selection'); setReplyError(''); setDraft({ id: row.id, body: row.reply?.body ?? '', original: row.reply?.body ?? '', updatedAt: row.reply?.updated_at ?? null }); }}>
-        <ThemedText type="smallBold" themeColor="accent">{row.reply ? '답변 수정' : '답변하기'}</ThemedText>
+        <ThemedText type="smallBold" themeColor="accent">{row.reply ? tr("답변 수정") : tr("답변하기")}</ThemedText>
       </Pressable>)}
     </View>)}
-    {loading && <ThemedText type="small" accessibilityLiveRegion="polite">후기를 불러오는 중…</ThemedText>}
-    {!loading && !rows.length && !error && <ThemedText type="small" themeColor="textSecondary">아직 받은 후기가 없어요.</ThemedText>}
+    {loading && <ThemedText type="small" accessibilityLiveRegion="polite">{tr("후기를 불러오는 중…")}</ThemedText>}
+    {!loading && !rows.length && !error && <ThemedText type="small" themeColor="textSecondary">{tr("아직 받은 후기가 없어요.")}</ThemedText>}
     {!!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
     {hasMore && !error && <Pressable analyticsId="merchant.reviews.more" accessibilityRole="button" disabled={loading || dirty || replyBusy} accessibilityState={{ disabled: loading || dirty || replyBusy }}
       style={styles.button} onPress={() => { play('selection'); if (pending.current || dirty || replying.current) return; pending.current = true; setLoading(true); setOffset((value) => value + 20); }}>
-      <ThemedText type="smallBold" themeColor="accent">후기 더 보기</ThemedText>
+      <ThemedText type="smallBold" themeColor="accent">{tr("후기 더 보기")}</ThemedText>
     </Pressable>}
     {report && <ReportSheet visible targetType="merchant_review" targetId={report.id} reportedUserId={report.author_id} reportedNickname={report.nickname}
       onClose={() => { setReport(null); if (!dirty && !replying.current) refresh(); }} />}

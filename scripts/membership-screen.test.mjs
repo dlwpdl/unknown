@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -17,7 +18,7 @@ test('membership keeps stories and direct chat free while preserving meetup and 
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/app/profile/membership.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, process: { env: {} }, require(name) {
+  vm.runInNewContext(source, { exports, process: { env: {} }, require: withLanguageImports((name) => {
     if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'react') return { useCallback: fn => fn, useEffect() {}, useState(initial) {
@@ -46,7 +47,7 @@ test('membership keeps stories and direct chat free while preserving meetup and 
     if (name === '@/lib/supabase') return {supabase:{rpc:async()=>({data:null})}};
     if (name === '@/lib/membership-provider') return { useMembership: () => value };
     throw new Error(`Unexpected import: ${name}`);
-  } });
+  }) });
   const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
   const text = tree => typeof tree === 'string' || typeof tree === 'number' ? String(tree) : tree && typeof tree === 'object' ? [tree.props?.children].flat(Infinity).map(text).join('') : '';
   const render = () => { cursor = 0; return exports.default(); };

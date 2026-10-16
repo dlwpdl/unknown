@@ -1,3 +1,4 @@
+import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable } from '@/components/analytics-controls';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -13,7 +14,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
-import { count, t } from '@/i18n/ko';
+import { count, t, tr, getLocale } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { appendUniquePosts } from '@/lib/feed-data';
@@ -23,6 +24,7 @@ import type { Post } from '@/lib/types';
 
 // 글·댓글 작성자를 눌렀을 때 여는 프로필 화면. 이 사람이 지금까지 쓴 글만 모아 보여준다.
 export default function AuthorPostsRoute() {
+  useLanguage();
   const { id, nickname } = useLocalSearchParams<{ id: string; nickname?: string }>();
   const authorId = typeof id === 'string' ? id : '';
   const { isAuthed, me } = useAuth();
@@ -86,7 +88,7 @@ export default function AuthorPostsRoute() {
           </Pressable>
           <View style={styles.heading}>
             <ThemedText type="subtitle" numberOfLines={1}>
-              {shownName ? `${shownName} 프로필` : '사용자 프로필'}
+              {shownName ? tr("{0} 프로필", (shownName)) : tr("사용자 프로필")}
             </ThemedText>
             {current && (
               <ThemedText type="small" themeColor="textSecondary">
@@ -98,7 +100,7 @@ export default function AuthorPostsRoute() {
         <View style={[styles.segments, { borderBottomColor: theme.line }]} accessibilityRole="tablist">
           {(['story', 'listing'] as const).map(value => <Pressable analyticsId={`user.activity.${value}`} key={value} accessibilityRole="tab" accessibilityState={{ selected: kind === value }}
             onPress={() => { play('selection'); setKind(value); setDetail(null); }} style={[styles.segment, kind === value && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]}>
-            <ThemedText type="smallBold">{value === 'story' ? '오늘' : '구해요·팔아요'}</ThemedText>
+            <ThemedText type="smallBold">{value === 'story' ? tr("오늘") : tr("구해요·팔아요")}</ThemedText>
           </Pressable>)}
         </View>
 
@@ -112,10 +114,10 @@ export default function AuthorPostsRoute() {
             keyExtractor={(post) => post.id}
             contentContainerStyle={styles.list}
             ListHeaderComponent={publicProfile && <View style={styles.profile}>
-              <ThemedText type="small" themeColor="textSecondary">{publicProfile.neighborhood ?? publicProfile.cityId} · 가입 {new Date(publicProfile.memberSince).toLocaleDateString('ko-KR')}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{publicProfile.neighborhood ?? publicProfile.cityId}{" " + tr("· 가입") + " "}{new Date(publicProfile.memberSince).toLocaleDateString(getLocale())}</ThemedText>
               <MannerSummary summary={publicProfile.manner} />
-              <ThemedText type="small">오늘 {publicProfile.storyCount}개 · 구해요·팔아요 {publicProfile.listingCount}개 · 거래 완료 {publicProfile.completedCount}개</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">공개한 글 이력이에요. 거래 완료는 작성자가 표시한 상태이며 실제 거래·신원 인증을 보장하지 않아요.</ThemedText>
+              <ThemedText type="small">{tr("오늘") + " "}{publicProfile.storyCount}{tr("개 · 구해요·팔아요") + " "}{publicProfile.listingCount}{tr("개 · 거래 완료") + " "}{publicProfile.completedCount}{tr("개")}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{tr("공개한 글 이력이에요. 거래 완료는 작성자가 표시한 상태이며 실제 거래·신원 인증을 보장하지 않아요.")}</ThemedText>
             </View>}
             renderItem={({ item }) => (
               <PostCard post={item} onPress={() => setDetail({ key: requestKey, post: item })} />
@@ -129,8 +131,8 @@ export default function AuthorPostsRoute() {
               </View>
             )}
             ListFooterComponent={<View style={styles.profile}>
-              {failed === requestKey && <Pressable analyticsId="user.activity.retry" accessibilityRole="button" onPress={() => { play('selection'); setRetry(n => n + 1); }} style={styles.segment}><ThemedText type="small">다시 불러오기</ThemedText></Pressable>}
-              {hasMore && <Pressable analyticsId="user.activity.more" accessibilityRole="button" accessibilityState={{ disabled: more }} disabled={more} onPress={() => void loadMore()} style={styles.segment}><ThemedText type="smallBold">{more ? '불러오는 중…' : '이전 글 더 보기'}</ThemedText></Pressable>}
+              {failed === requestKey && <Pressable analyticsId="user.activity.retry" accessibilityRole="button" onPress={() => { play('selection'); setRetry(n => n + 1); }} style={styles.segment}><ThemedText type="small">{tr("다시 불러오기")}</ThemedText></Pressable>}
+              {hasMore && <Pressable analyticsId="user.activity.more" accessibilityRole="button" accessibilityState={{ disabled: more }} disabled={more} onPress={() => void loadMore()} style={styles.segment}><ThemedText type="smallBold">{more ? tr("불러오는 중…") : tr("이전 글 더 보기")}</ThemedText></Pressable>}
             </View>}
           />
         )}

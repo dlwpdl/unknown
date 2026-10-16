@@ -1,3 +1,4 @@
+import { useLanguage } from '@/hooks/use-language';
 import type { FlatList as NativeFlatList } from 'react-native';
 import { Pressable, FlatList } from '@/components/analytics-controls';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -36,7 +37,7 @@ import { UserSheet, type SheetUser } from '@/components/user-sheet';
 import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
-import { count, t } from '@/i18n/ko';
+import { count, t, tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { buildCommentListRows, type CommentListRow } from '@/lib/comment-list';
 import { createThreadComment, loadCommentThreadContext, loadCommentThreadPage, type CommentCursor } from '@/lib/comment-threads';
@@ -75,9 +76,10 @@ type PostDetailProps = {
 type PageState = { cursor: CommentCursor | null; loading: boolean; error: boolean; loaded: boolean };
 
 export function PostDetail(props: PostDetailProps) {
+  useLanguage();
   const { isAuthed, me, promptLogin } = useAuth(), { play } = useInteractionFeedback();
   if (!isAuthed) return <ThemedView style={{ flex: 1, padding: 16, gap: 16 }}>
-    <Pressable analyticsId="post.login-gate.close" accessibilityRole="button" accessibilityLabel="글 닫기" onPress={() => { play('selection'); props.onClose(); }} style={{ minHeight: 44, justifyContent: 'center' }}><ThemedText>돌아가기</ThemedText></Pressable>
+    <Pressable analyticsId="post.login-gate.close" accessibilityRole="button" accessibilityLabel={tr("글 닫기")} onPress={() => { play('selection'); props.onClose(); }} style={{ minHeight: 44, justifyContent: 'center' }}><ThemedText>{tr("돌아가기")}</ThemedText></Pressable>
     <StateCard kind="blocked" title={props.post.title} body="전체 내용과 댓글은 로그인 후 확인할 수 있어요." actionLabel="Google·소셜 로그인"
       onAction={() => promptLogin('로그인하고 이 글을 확인해요.')} />
   </ThemedView>;
@@ -86,6 +88,7 @@ export function PostDetail(props: PostDetailProps) {
 }
 
 function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCommentCountChange, onViewCountChange, onPostRemoved, onPostChanged, management }: PostDetailProps) {
+  useLanguage();
   const theme = useTheme();
   const hidden = useContentVisibility();
   const [post, setPost] = useState(initialPost);
@@ -246,7 +249,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
 
   const startEditPost = () => {
     if ((post.imagePaths?.length ?? 0) !== (post.imageUris?.filter(Boolean).length ?? 0)) {
-      play('warning'); Alert.alert('사진을 다시 불러와 주세요.', '사진을 모두 불러오지 못했어요. 글을 다시 연 뒤 수정해 주세요.'); return;
+      play('warning'); Alert.alert(tr("사진을 다시 불러와 주세요."), tr("사진을 모두 불러오지 못했어요. 글을 다시 연 뒤 수정해 주세요.")); return;
     }
     setPostMenuOpen(false);
     setPostImages((post.imagePaths ?? []).map((path, index) => ({ path, uri: post.imageUris![index] })));
@@ -291,7 +294,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     if (!postDraft || postEditBusy.current) return;
     const title = postDraft.title.trim();
     const body = postDraft.body.trim() + linkedEventDetails;
-    if (!title || !body) { play('warning'); return Alert.alert('제목과 내용을 모두 적어주세요.'); }
+    if (!title || !body) { play('warning'); return Alert.alert(tr("제목과 내용을 모두 적어주세요.")); }
     postEditBusy.current = true;
     setSavingPost(true);
     try {
@@ -308,13 +311,13 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
       } catch {
         if (active.current) {
           play('warning');
-          Alert.alert('글은 저장됐어요.', '화면을 새로 불러오지 못했어요. 글을 다시 열어 저장된 내용을 확인해 주세요.');
+          Alert.alert(tr("글은 저장됐어요."), tr("화면을 새로 불러오지 못했어요. 글을 다시 열어 저장된 내용을 확인해 주세요."));
         }
       }
     } catch (error) {
       if (!active.current) return;
       play('warning');
-      Alert.alert(isContentRejected(error) ? '커뮤니티 규칙에 맞지 않는 표현이 있어요.' : '글을 수정하지 못했어요.', t.detail.sendErrorBody);
+      Alert.alert(isContentRejected(error) ? tr("커뮤니티 규칙에 맞지 않는 표현이 있어요.") : tr("글을 수정하지 못했어요."), t.detail.sendErrorBody);
     } finally {
       postEditBusy.current = false;
       if (active.current) setSavingPost(false);
@@ -330,7 +333,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           play('warning');
           onPostRemoved?.(post.id);
           onClose();
-        } catch { play('warning'); Alert.alert('글을 삭제하지 못했어요.', t.detail.sendErrorBody); }
+        } catch { play('warning'); Alert.alert(tr("글을 삭제하지 못했어요."), t.detail.sendErrorBody); }
         finally { postEditBusy.current = false; if (active.current) { setSavingPost(false); setDeletePostOpen(false); } }
   };
 
@@ -408,9 +411,9 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     if (!page || page.loading) return <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite" style={styles.loadMore}>{t.feed.loadingMore}</ThemedText>;
     if (!page.error && !page.cursor) return null;
     return <View>
-      {page.error && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{parentId ? '답글' : '댓글'}을 불러오지 못했어요.</ThemedText>}
+      {page.error && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{parentId ? tr("답글") : tr("댓글")}{tr("을 불러오지 못했어요.")}</ThemedText>}
       <Pressable analyticsId="components_post-detail.pressable.1" onPress={() => { play('selection'); void loadPage(parentId, page.cursor); }} accessibilityRole="button" style={({ pressed }) => [styles.loadMore, pressed && styles.pressed]}>
-        <ThemedText type="smallBold" themeColor="accent">{page.error ? '다시 시도' : parentId ? '답글 더 보기' : t.detail.loadMoreComments}</ThemedText>
+        <ThemedText type="smallBold" themeColor="accent">{page.error ? tr("다시 시도") : parentId ? tr("답글 더 보기") : t.detail.loadMoreComments}</ThemedText>
       </Pressable>
     </View>;
   };
@@ -435,7 +438,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
             });
           }}
           accessibilityRole="button"
-          accessibilityLabel={`${c.nickname} 프로필 보기`}
+          accessibilityLabel={tr("{0} 프로필 보기", (c.nickname))}
           style={({ pressed }) => [styles.avatar, { backgroundColor: mine ? theme.accent : theme.backgroundElement }, pressed && styles.pressed]}>
           <ThemedText
             type="smallBold"
@@ -455,7 +458,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               });
             }}
             accessibilityRole="button"
-            accessibilityLabel={`${c.nickname} 프로필 보기`}
+            accessibilityLabel={tr("{0} 프로필 보기", (c.nickname))}
             style={({ pressed }) => [styles.commentHead, pressed && styles.pressed]}>
             <ThemedText type="smallBold" style={{ fontSize: 13 }}>
               {c.nickname}
@@ -469,7 +472,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               </View>
             )}
           </Pressable>
-          {c.replyToNickname && <ThemedText type="small" themeColor="accent" style={styles.commentActionText}>{c.replyToNickname}님에게 답글</ThemedText>}
+          {c.replyToNickname && <ThemedText type="small" themeColor="accent" style={styles.commentActionText}>{c.replyToNickname}{tr("님에게 답글")}</ThemedText>}
           <ThemedText type="small" themeColor="textSecondary">
             {c.body}
           </ThemedText>
@@ -481,7 +484,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               accessibilityRole="button"
               aria-pressed={Platform.OS === 'web' ? !!c.likedByMe : undefined}
               aria-busy={busyCommentId === c.id}
-              accessibilityLabel={`${c.nickname}의 ${c.parentId ? '답글' : '댓글'} 공감 ${c.likes ?? 0}개`}
+              accessibilityLabel={tr("{0}의 {1} 공감 {2}개", (c.nickname), (c.parentId ? '답글' : '댓글'), (c.likes ?? 0))}
               accessibilityState={{ selected: !!c.likedByMe, disabled: !!busyCommentId, busy: busyCommentId === c.id }}>
               <ThemedText
                 type={c.likedByMe ? 'smallBold' : 'small'}
@@ -490,15 +493,15 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               </ThemedText>
             </Pressable>
             <Pressable analyticsId="components_post-detail.pressable.5" onPress={() => { play('selection'); chooseReply(c); }} disabled={sending} accessibilityRole="button"
-              accessibilityLabel={`${c.nickname}님에게 답글 쓰기`} accessibilityState={{ disabled: sending }} style={({ pressed }) => [styles.commentAction, pressed && styles.pressed]}>
-              <ThemedText type="small" themeColor="textSecondary" style={styles.commentActionText}>답글</ThemedText>
+              accessibilityLabel={tr("{0}님에게 답글 쓰기", (c.nickname))} accessibilityState={{ disabled: sending }} style={({ pressed }) => [styles.commentAction, pressed && styles.pressed]}>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.commentActionText}>{tr("답글")}</ThemedText>
             </Pressable>
             {mine && (
               <>
-                <Pressable analyticsId="components_post-detail.pressable.6" onPress={() => { play('selection'); startEdit(c); }} disabled={sending} accessibilityRole="button" accessibilityLabel={`내 ${c.parentId ? '답글' : '댓글'} 수정`} accessibilityState={{ disabled: sending }} style={({ pressed }) => [styles.commentAction, pressed && styles.pressed]}>
+                <Pressable analyticsId="components_post-detail.pressable.6" onPress={() => { play('selection'); startEdit(c); }} disabled={sending} accessibilityRole="button" accessibilityLabel={tr("내 {0} 수정", (c.parentId ? '답글' : '댓글'))} accessibilityState={{ disabled: sending }} style={({ pressed }) => [styles.commentAction, pressed && styles.pressed]}>
                   <ThemedText type="small" themeColor="textSecondary" style={styles.commentActionText}>{t.detail.edit}</ThemedText>
                 </Pressable>
-                <Pressable analyticsId="components_post-detail.pressable.7" onPress={() => { play('selection'); confirmDelete(c); }} disabled={sending} accessibilityRole="button" accessibilityLabel={`내 ${c.parentId ? '답글' : '댓글'} 삭제`} accessibilityState={{ disabled: sending }} style={({ pressed }) => [styles.commentAction, pressed && styles.pressed]}>
+                <Pressable analyticsId="components_post-detail.pressable.7" onPress={() => { play('selection'); confirmDelete(c); }} disabled={sending} accessibilityRole="button" accessibilityLabel={tr("내 {0} 삭제", (c.parentId ? '답글' : '댓글'))} accessibilityState={{ disabled: sending }} style={({ pressed }) => [styles.commentAction, pressed && styles.pressed]}>
                   <ThemedText type="small" themeColor="textSecondary" style={styles.commentActionText}>{t.detail.delete}</ThemedText>
                 </Pressable>
               </>
@@ -506,7 +509,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
             {!mine && c.authorId && (
               <Pressable analyticsId="components_post-detail.pressable.8"
                 onPress={() => { play('selection'); setReportSelection({ targetType: 'comment', targetId: c.id, reportedUserId: c.authorId!, reportedNickname: c.nickname }); }}
-                accessibilityRole="button" accessibilityLabel={`${c.nickname}의 ${c.parentId ? '답글' : '댓글'} 신고`} style={({ pressed }) => [styles.commentAction, pressed && styles.pressed]}>
+                accessibilityRole="button" accessibilityLabel={tr("{0}의 {1} 신고", (c.nickname), (c.parentId ? '답글' : '댓글'))} style={({ pressed }) => [styles.commentAction, pressed && styles.pressed]}>
                 <ThemedText type="small" themeColor="textSecondary" style={styles.commentActionText}>{t.report.short}</ThemedText>
               </Pressable>
             )}
@@ -531,7 +534,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     if (item.type === 'label') {
       return <View style={item.label === 'focus-reply' ? [styles.replyRow, styles.focusReplyLabel, { borderLeftColor: theme.accent, backgroundColor: theme.backgroundElement }] : undefined}>
         <ThemedText type="smallBold" themeColor="accent" style={item.label === 'focus-reply' ? styles.commentActionText : undefined}>
-          {item.label === 'focus-reply' ? '알림의 답글' : '알림의 댓글'}
+          {item.label === 'focus-reply' ? tr("알림의 답글") : tr("알림의 댓글")}
         </ThemedText>
       </View>;
     }
@@ -559,12 +562,12 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           toggleReplies(comment.id);
         }}
         accessibilityRole="button"
-        accessibilityLabel={`${comment.nickname}의 댓글 답글 ${count(comment.replyCount ?? 0)}개 ${expanded.has(comment.id) ? '접기' : '보기'}`}
+        accessibilityLabel={tr("{0}의 댓글 답글 {1}개 {2}", (comment.nickname), (count(comment.replyCount ?? 0)), (expanded.has(comment.id) ? '접기' : '보기'))}
         accessibilityState={{ expanded: expanded.has(comment.id) }}
         aria-expanded={expanded.has(comment.id)}
         style={({ pressed }) => [styles.replyToggle, pressed && styles.pressed]}>
         <ThemedText type="smallBold" themeColor="accent" style={styles.commentActionText}>
-          {expanded.has(comment.id) ? '답글 접기' : `답글 ${count(comment.replyCount ?? 0)}개 보기`}
+          {expanded.has(comment.id) ? tr("답글 접기") : tr("답글 {0}개 보기", (count(comment.replyCount ?? 0)))}
         </ThemedText>
       </Pressable>;
     }
@@ -577,15 +580,15 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     }
     if (item.type === 'focus-status') {
       return <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite" style={styles.focusStatus}>
-        {item.status === 'loading' ? '댓글을 불러오는 중이에요.' : item.status === 'error' ? '댓글을 불러오지 못했어요.' : '이 댓글은 확인할 수 없어요.'}
+        {item.status === 'loading' ? tr("댓글을 불러오는 중이에요.") : item.status === 'error' ? tr("댓글을 불러오지 못했어요.") : tr("이 댓글은 확인할 수 없어요.")}
       </ThemedText>;
     }
     if (item.type === 'focus-retry') {
       return <Pressable analyticsId="components_post-detail.pressable.10" onPress={() => { play('selection'); setContextRetry((current) => current + 1); }} accessibilityRole="button" style={({ pressed }) => [styles.commentAction, pressed && styles.pressed]}>
-        <ThemedText type="smallBold" themeColor="accent">다시 시도</ThemedText>
+        <ThemedText type="smallBold" themeColor="accent">{tr("다시 시도")}</ThemedText>
       </Pressable>;
     }
-    return <ThemedText type="small" themeColor="textSecondary">첫 댓글을 남겨 보세요.</ThemedText>;
+    return <ThemedText type="small" themeColor="textSecondary">{tr("첫 댓글을 남겨 보세요.")}</ThemedText>;
   };
 
   if (postHidden) return null;
@@ -596,25 +599,25 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           <Pressable analyticsId="post.manage.dismiss" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}
             onPress={() => { if (!savingPost) { play('selection'); setPostMenuOpen(false); setDeletePostOpen(false); } }} />
           <View accessibilityViewIsModal style={[styles.menuSheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, 16) }]}>
-            <ThemedText type="smallBold" accessibilityRole="header" style={styles.menuTitle}>{deletePostOpen ? '이 글을 삭제할까요?' : management ? '업체 글 관리' : '내 글 관리'}</ThemedText>
+            <ThemedText type="smallBold" accessibilityRole="header" style={styles.menuTitle}>{deletePostOpen ? tr("이 글을 삭제할까요?") : management ? tr("업체 글 관리") : tr("내 글 관리")}</ThemedText>
             {deletePostOpen ? <>
-              <ThemedText themeColor="textSecondary" style={styles.menuTitle}>삭제한 글은 되돌릴 수 없어요. 달린 댓글도 함께 보이지 않게 됩니다.</ThemedText>
-              <Pressable analyticsId="components_post-detail.pressable.15" accessibilityRole="button" accessibilityLabel={management ? '업체 글 삭제 확인' : '내 글 삭제 확인'} disabled={savingPost}
+              <ThemedText themeColor="textSecondary" style={styles.menuTitle}>{tr("삭제한 글은 되돌릴 수 없어요. 달린 댓글도 함께 보이지 않게 됩니다.")}</ThemedText>
+              <Pressable analyticsId="components_post-detail.pressable.15" accessibilityRole="button" accessibilityLabel={management ? tr("업체 글 삭제 확인") : tr("내 글 삭제 확인")} disabled={savingPost}
                 onPress={() => { play('warning'); void confirmDeletePost(); }} style={styles.menuRow}>
-                <ThemedText themeColor="danger">{savingPost ? '삭제 중…' : '글 삭제'}</ThemedText>
+                <ThemedText themeColor="danger">{savingPost ? tr("삭제 중…") : tr("글 삭제")}</ThemedText>
               </Pressable>
             </> : <>
-              <Pressable analyticsId="components_post-detail.pressable.14" accessibilityRole="button" accessibilityLabel={management ? '업체 글 수정' : '내 글 수정'} onPress={() => { play('selection'); startEditPost(); }} style={styles.menuRow}>
+              <Pressable analyticsId="components_post-detail.pressable.14" accessibilityRole="button" accessibilityLabel={management ? tr("업체 글 수정") : tr("내 글 수정")} onPress={() => { play('selection'); startEditPost(); }} style={styles.menuRow}>
                 <SymbolView name={{ ios: 'pencil', android: 'edit', web: 'edit' }} size={20} tintColor={theme.text} />
-                <ThemedText>글·사진 수정</ThemedText>
+                <ThemedText>{tr("글·사진 수정")}</ThemedText>
               </Pressable>
-              <Pressable analyticsId="post.manage.delete" accessibilityRole="button" accessibilityLabel={management ? '업체 글 삭제' : '내 글 삭제'} onPress={() => { play('warning'); setPostMenuOpen(false); setDeletePostOpen(true); }} style={styles.menuRow}>
+              <Pressable analyticsId="post.manage.delete" accessibilityRole="button" accessibilityLabel={management ? tr("업체 글 삭제") : tr("내 글 삭제")} onPress={() => { play('warning'); setPostMenuOpen(false); setDeletePostOpen(true); }} style={styles.menuRow}>
                 <SymbolView name={{ ios: 'trash', android: 'delete', web: 'delete' }} size={20} tintColor={theme.danger} />
-                <ThemedText themeColor="danger">글 삭제</ThemedText>
+                <ThemedText themeColor="danger">{tr("글 삭제")}</ThemedText>
               </Pressable>
             </>}
             <Pressable analyticsId="post.manage.cancel" accessibilityRole="button" disabled={savingPost} onPress={() => { play('selection'); setPostMenuOpen(false); setDeletePostOpen(false); }} style={[styles.menuRow, { justifyContent: 'center', borderTopColor: theme.line, borderTopWidth: StyleSheet.hairlineWidth }]}>
-              <ThemedText themeColor="textSecondary">취소</ThemedText>
+              <ThemedText themeColor="textSecondary">{tr("취소")}</ThemedText>
             </Pressable>
           </View>
         </View>
@@ -623,13 +626,13 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
         <Pressable analyticsId="components_post-detail.pressable.11" onPress={() => { play('selection'); onClose(); }} accessibilityRole="button" accessibilityLabel={t.detail.close} style={({ pressed }) => [styles.closeBtn, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
           <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={22} tintColor={theme.text} />
         </Pressable>
-        <ThemedText accessibilityRole="header" style={styles.headTitle}>{postDraft ? '글 수정' : post.room && !commentId ? '모임 상세' : commentId ? t.detail.commentsTitle(commentTotal) : '글 상세'}</ThemedText>
-        {!postDraft && <Pressable analyticsId="post.detail.share" accessibilityRole="button" accessibilityLabel={post.room ? '모임 초대 링크 공유' : '게시물 링크 공유'}
+        <ThemedText accessibilityRole="header" style={styles.headTitle}>{postDraft ? tr("글 수정") : post.room && !commentId ? tr("모임 상세") : commentId ? t.detail.commentsTitle(commentTotal) : tr("글 상세")}</ThemedText>
+        {!postDraft && <Pressable analyticsId="post.detail.share" accessibilityRole="button" accessibilityLabel={post.room ? tr("모임 초대 링크 공유") : tr("게시물 링크 공유")}
           onPress={() => { play('selection'); setShareOpen(true); }} style={({ pressed }) => [styles.shareBtn, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
           <SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={20} tintColor={theme.accent} />
-          <ThemedText type="smallBold" themeColor="accent">{post.room ? '초대' : '공유'}</ThemedText>
+          <ThemedText type="smallBold" themeColor="accent">{post.room ? tr("초대") : tr("공유")}</ThemedText>
         </Pressable>}
-        <Pressable analyticsId="post.manage.open" accessibilityRole="button" accessibilityLabel="글 관리 메뉴" disabled={!canManagePost || savingPost || pickingPostImages || !!postDraft}
+        <Pressable analyticsId="post.manage.open" accessibilityRole="button" accessibilityLabel={tr("글 관리 메뉴")} disabled={!canManagePost || savingPost || pickingPostImages || !!postDraft}
           style={({ pressed }) => [styles.closeBtn, { opacity: canManagePost ? 1 : 0, backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}
           accessibilityElementsHidden={!canManagePost}
           importantForAccessibility={!canManagePost ? 'no-hide-descendants' : 'auto'}
@@ -654,23 +657,23 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
             {canManagePost && postDraft && (
               <View style={[styles.postEdit, { borderColor: theme.line }]}>
                 <TextInput value={postDraft.title} onChangeText={(text) => setPostDraft((current) => current && { ...current, title: text })}
-                  placeholder="제목" placeholderTextColor={theme.textSecondary} maxLength={100} editable={!savingPost}
-                  accessibilityLabel="글 제목 수정"
+                  placeholder={tr("제목")} placeholderTextColor={theme.textSecondary} maxLength={100} editable={!savingPost}
+                  accessibilityLabel={tr("글 제목 수정")}
                   style={[styles.postEditInput, { color: theme.text, borderColor: theme.line }]} />
                 <PostBodyEditor value={postDraft.body} cityName={CITIES.find(city => city.id === post.cityId)?.englishName} allowLocation={!post.room} onChangeText={(text) => setPostDraft((current) => current && { ...current, body: text })}
-                  placeholder="내용" placeholderTextColor={theme.textSecondary} maxLength={4000 - linkedEventDetails.length} multiline editable={!savingPost}
-                  accessibilityLabel="글 내용 수정"
+                  placeholder={tr("내용")} placeholderTextColor={theme.textSecondary} maxLength={4000 - linkedEventDetails.length} multiline editable={!savingPost}
+                  accessibilityLabel={tr("글 내용 수정")}
                   style={[styles.postEditInput, styles.postEditBody, { color: theme.text, borderColor: theme.line }]} />
-                <ThemedText type="smallBold">사진 {postImages?.length ?? 0}/{MAX_POST_IMAGES}</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">첫 사진이 표지예요. 앞·뒤 버튼으로 순서를 바꿀 수 있어요.</ThemedText>
+                <ThemedText type="smallBold">{tr("사진") + " "}{postImages?.length ?? 0}/{MAX_POST_IMAGES}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">{tr("첫 사진이 표지예요. 앞·뒤 버튼으로 순서를 바꿀 수 있어요.")}</ThemedText>
                 <PostPhotoEditor images={postImages ?? []} disabled={savingPost || pickingPostImages} onChange={setPostImages} />
                 <View style={styles.postActions}>
                   <Pressable analyticsId="components_post-detail.replace-photos" onPress={() => void pickPostImages()} disabled={savingPost || pickingPostImages || (postImages?.length ?? 0) >= MAX_POST_IMAGES} accessibilityRole="button"
-                    accessibilityLabel={`사진 추가, 최대 ${MAX_POST_IMAGES}장`} style={[styles.postAction, { borderColor: theme.line, borderWidth: 1 }]}>
-                    <ThemedText type="smallBold" themeColor="accent">{pickingPostImages ? '사진 준비 중…' : '+ 사진 추가'}</ThemedText>
+                    accessibilityLabel={tr("사진 추가, 최대 {0}장", (MAX_POST_IMAGES))} style={[styles.postAction, { borderColor: theme.line, borderWidth: 1 }]}>
+                    <ThemedText type="smallBold" themeColor="accent">{pickingPostImages ? tr("사진 준비 중…") : tr("+ 사진 추가")}</ThemedText>
                   </Pressable>
-                  <Pressable analyticsId="post.edit.replace-all" onPress={() => void pickPostImages(true)} disabled={savingPost || pickingPostImages} accessibilityRole="button" accessibilityLabel="사진 전체 교체" style={styles.postAction}>
-                    <ThemedText type="small" themeColor="textSecondary">전체 교체</ThemedText>
+                  <Pressable analyticsId="post.edit.replace-all" onPress={() => void pickPostImages(true)} disabled={savingPost || pickingPostImages} accessibilityRole="button" accessibilityLabel={tr("사진 전체 교체")} style={styles.postAction}>
+                    <ThemedText type="small" themeColor="textSecondary">{tr("전체 교체")}</ThemedText>
                   </Pressable>
                 </View>
                 <View style={styles.postActions}>
@@ -680,7 +683,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                   </Pressable>
                   <Pressable analyticsId="components_post-detail.pressable.13" onPress={() => { play('selection'); void savePost(); }} disabled={savingPost || pickingPostImages} accessibilityRole="button"
                     accessibilityState={{ disabled: savingPost || pickingPostImages, busy: savingPost }} style={({ pressed }) => [styles.postAction, { backgroundColor: theme.accent, opacity: pressed ? 0.65 : 1 }]}>
-                    <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{savingPost ? '저장 중' : '저장'}</ThemedText>
+                    <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{savingPost ? tr("저장 중") : tr("저장")}</ThemedText>
                   </Pressable>
                 </View>
               </View>
@@ -715,7 +718,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               accessibilityRole="button"
               onPress={() => { play('selection'); onClose(); router.push({ pathname: '/profile/promotions', params: { postId: post.id } }); }}
               style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, opacity: pressed ? 0.65 : 1 })}>
-              <ThemedText type="smallBold" themeColor="accent">이 글 끌어올리기</ThemedText>
+              <ThemedText type="smallBold" themeColor="accent">{tr("이 글 끌어올리기")}</ThemedText>
             </Pressable>}
           </View>}
         />
@@ -731,16 +734,16 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           ]}>
           {editing && <View style={styles.replyContext}>
             <ThemedText type="small" themeColor="accent" style={{ flex: 1 }}>{t.detail.editing}</ThemedText>
-            <Pressable analyticsId="components_post-detail.pressable.17" onPress={() => { play('selection'); setEditing(null); setDraft(''); }} disabled={sending} accessibilityRole="button" accessibilityLabel="수정 취소"
+            <Pressable analyticsId="components_post-detail.pressable.17" onPress={() => { play('selection'); setEditing(null); setDraft(''); }} disabled={sending} accessibilityRole="button" accessibilityLabel={tr("수정 취소")}
               accessibilityState={{ disabled: sending }} style={({ pressed }) => [styles.commentAction, pressed && styles.pressed]}>
-              <ThemedText type="small" themeColor="textSecondary">취소</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{tr("취소")}</ThemedText>
             </Pressable>
           </View>}
           {replyTo && !editing && <View style={styles.replyContext}>
-            <ThemedText type="small" themeColor="accent" style={{ flex: 1 }}>{replyTo.nickname}님에게 답글</ThemedText>
-            <Pressable analyticsId="components_post-detail.pressable.18" onPress={() => { play('selection'); setReplyTo(null); }} disabled={sending} accessibilityRole="button" accessibilityLabel="답글 취소"
+            <ThemedText type="small" themeColor="accent" style={{ flex: 1 }}>{replyTo.nickname}{tr("님에게 답글")}</ThemedText>
+            <Pressable analyticsId="components_post-detail.pressable.18" onPress={() => { play('selection'); setReplyTo(null); }} disabled={sending} accessibilityRole="button" accessibilityLabel={tr("답글 취소")}
               accessibilityState={{ disabled: sending }} style={({ pressed }) => [styles.commentAction, pressed && styles.pressed]}>
-              <ThemedText type="small" themeColor="textSecondary">취소</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{tr("취소")}</ThemedText>
             </Pressable>
           </View>}
           {sendError && <ThemedText type="small" themeColor="accent" accessibilityRole="alert" style={{ paddingHorizontal: Spacing.two, paddingBottom: Spacing.two }}>{sendError}</ThemedText>}
@@ -752,8 +755,8 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               editable={!sending}
               multiline
               maxLength={1000}
-              accessibilityLabel={replyTo ? `${replyTo.nickname}님에게 답글` : '댓글 쓰기'}
-              placeholder={replyTo ? '답글을 남겨 주세요' : t.detail.commentPlaceholder}
+              accessibilityLabel={replyTo ? tr("{0}님에게 답글", (replyTo.nickname)) : tr("댓글 쓰기")}
+              placeholder={replyTo ? tr("답글을 남겨 주세요") : t.detail.commentPlaceholder}
               placeholderTextColor={theme.textSecondary}
               style={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.line }]}
             />
@@ -884,6 +887,7 @@ const styles = StyleSheet.create({
 // ponytail: 작성자 전용 리스팅 액션. 쿨다운·한도 판정은 서버가 하고 여기선 결과만 반영한다.
 // 저널 톤: 채운 버튼 대신 얇은 선 위의 텍스트 액션, 인주는 첫 번째 액션에만.
 function ListingControls({ post, onChanged }: { post: Post; onChanged: (next: Partial<Post>) => void }) {
+  useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const [busy, setBusy] = useState(false);

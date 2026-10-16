@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { createContext, useContext, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Alert } from 'react-native';
 
@@ -12,6 +14,7 @@ const CommunityCityContext = createContext<{
 } | null>(null);
 
 export function CommunityCityProvider({ children }: { children: ReactNode }) {
+  useLanguage();
   const { cityId } = useCommunityLocation();
   const { me, isAuthed, setProfileCity } = useAuth();
   const userId = isAuthed ? me.id : null;
@@ -36,7 +39,7 @@ export function CommunityCityProvider({ children }: { children: ReactNode }) {
       setSelected(null);
       return true;
     } catch {
-      if (currentUser.current === userId) Alert.alert('지역을 저장하지 못했어요', '연결을 확인한 뒤 다시 선택해 주세요. 기존 지역은 유지됩니다.');
+      if (currentUser.current === userId) Alert.alert(tr("지역을 저장하지 못했어요"), tr("연결을 확인한 뒤 다시 선택해 주세요. 기존 지역은 유지됩니다."));
       return false;
     } finally { inFlight.current = false; setSaving(false); }
   };

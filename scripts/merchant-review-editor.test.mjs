@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -34,7 +35,7 @@ function editor({ write = async () => 'review', sessionAuthor = author, upload, 
     '@/lib/supabase': { supabase: { auth: { getSession: async () => ({ data: { session: { user: { id: sessionAuthor } } } }) }, storage: { from: bucket => ({ remove: async paths => { calls.removed.push({ bucket, paths }); return { error: null }; } }) } } },
   };
   const exports = {}, source = ts.transpileModule(readFileSync(new URL('../src/components/merchant-reviews.tsx', import.meta.url), 'utf8') + '\nexports.ScopedMerchantReviews=ScopedMerchantReviews;', { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
-  vm.runInNewContext(source, { exports, require: name => imports[name] ?? {}, Date, Intl, Set, Error });
+  vm.runInNewContext(source, { exports, require: withLanguageImports(name => imports[name] ?? {}), Date, Intl, Set, Error });
   return { calls, render() { index = 0; return exports.ScopedMerchantReviews({ postId: 'post', reviewKind }); }, unmount() { cleanup.forEach(fn => fn()); cleanup.clear(); } };
 }
 async function open(view) {

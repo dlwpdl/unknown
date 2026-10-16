@@ -1,3 +1,4 @@
+import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
 import { Stack, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
@@ -5,10 +6,11 @@ import { useReducedMotion } from 'react-native-reanimated';
 
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { t } from '@/i18n/ko';
+import { t, tr } from '@/i18n';
 import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 
 export default function ProfileLayout() {
+  useLanguage();
   const theme = useTheme();
   const router = useRouter();
   const reducedMotion = useReducedMotion();
@@ -27,7 +29,7 @@ export default function ProfileLayout() {
           <Pressable analyticsId="app_profile__layout.pressable.1"
             onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace(route.name === 'index' ? '/' : '/profile'); }}
             accessibilityRole="button"
-            accessibilityLabel="뒤로가기"
+            accessibilityLabel={tr("뒤로가기")}
             style={({ pressed }) => ({ minWidth: 44, minHeight: 44, justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
             <SymbolView name={{ ios: route.name === 'membership' ? 'xmark' : 'chevron.left', android: route.name === 'membership' ? 'close' : 'arrow_back', web: route.name === 'membership' ? 'close' : 'arrow_back' }} size={22} tintColor={theme.text} />
           </Pressable>

@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { Pressable } from '@/components/analytics-controls';
 import { useEffect, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
@@ -15,6 +17,7 @@ export function MeetupKindSwitch({ value, onChange, disabled = false, analyticsI
   disabled?: boolean;
   analyticsId: string;
 }) {
+  useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
@@ -38,7 +41,7 @@ export function MeetupKindSwitch({ value, onChange, disabled = false, analyticsI
       onPress={() => { play('reaction'); if (kind !== value) onChange(kind); }}
       style={({ pressed }) => [styles.tab, { opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
       <ThemedText type="smallBold" style={{ color: value === kind ? theme.accentInk : theme.text }}>
-        {kind === 'once' ? '칠링 (일회성)' : '모임 (정기모임)'}
+        {kind === 'once' ? tr("칠링 (일회성)") : tr("모임 (정기모임)")}
       </ThemedText>
     </Pressable>)}
   </View></GlassSurface>;

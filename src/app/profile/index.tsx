@@ -1,3 +1,4 @@
+import { useLanguage } from '@/hooks/use-language';
 import { MerchantAccountEntry } from '@/components/merchant-account-connections';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
@@ -17,7 +18,7 @@ import { TrustBadge } from '@/components/trust-badge';
 import { Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
-import { count, t } from '@/i18n/ko';
+import { count, t, tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { CITIES, TAGS } from '@/lib/mock';
 import { useMembership } from '@/lib/membership-provider';
@@ -30,6 +31,7 @@ import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 import { supabase } from '@/lib/supabase';
 
 export default function ProfileScreen() {
+  useLanguage();
   const theme = useTheme();
   const hidden = useContentVisibility();
   const router = useRouter();
@@ -98,8 +100,8 @@ export default function ProfileScreen() {
     );
 
   const cityName = CITIES.find(({ id }) => id === summary?.cityId)?.name ?? summary?.cityId ?? '';
-  const membershipLabel = membership ? ({ free: '베이직', plus: '플러스', pro: '프로', premium: '프리미엄' } as const)[membership.tier] : null;
-  const unreadLabel = unread > 0 ? `새 소식 ${unread}` : '새 소식 없음';
+  const membershipLabel = membership ? tr(({ free: '베이직', plus: '플러스', pro: '프로', premium: '프리미엄' } as const)[membership.tier]) : null;
+  const unreadLabel = unread > 0 ? tr('새 소식 {0}', unread) : tr('새 소식 없음');
 
   const pickProfilePhoto = async () => {
     try {
@@ -122,30 +124,30 @@ export default function ProfileScreen() {
   const shareAppInvite = async () => {
     play('selection');
     const url = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/+$/, '');
-    const message = '글링에서 동네 이야기와 모임을 함께 나눠요.';
+    const message = tr('글링에서 동네 이야기와 모임을 함께 나눠요.');
     try {
       if (Platform.OS === 'web') {
-        if (navigator.share) await navigator.share({ title: '글링에 초대해요', text: message, url });
+        if (navigator.share) await navigator.share({ title: tr('글링에 초대해요'), text: message, url });
         else if (navigator.clipboard?.writeText) {
           await navigator.clipboard.writeText(url);
-          window.alert('초대 링크를 복사했어요.');
-        } else window.prompt('초대 링크를 복사하세요', url);
+          window.alert(tr('초대 링크를 복사했어요.'));
+        } else window.prompt(tr('초대 링크를 복사하세요'), url);
         return;
       }
-      await Share.share({ title: '글링에 초대해요', message: `${message}\n${url}`, url });
+      await Share.share({ title: tr('글링에 초대해요'), message: `${message}\n${url}`, url });
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return;
       play('warning');
-      if (Platform.OS === 'web') window.alert('초대 링크를 공유하지 못했어요. 다시 시도해 주세요.');
-      else Alert.alert('공유할 수 없어요', '잠시 후 다시 시도해 주세요.');
+      if (Platform.OS === 'web') window.alert(tr('초대 링크를 공유하지 못했어요. 다시 시도해 주세요.'));
+      else Alert.alert(tr("공유할 수 없어요"), tr("잠시 후 다시 시도해 주세요."));
     }
   };
 
   return (
     <ThemedView style={styles.container}>
-      <Stack.Screen options={{ title: '내 프로필', headerRight: () => (
+      <Stack.Screen options={{ title: tr('내 프로필'), headerRight: () => (
         <View style={styles.headerActions}>
-          <Pressable analyticsId="app_profile_index.invite" accessibilityRole="button" accessibilityLabel="친구 초대하기" accessibilityHint="글링 초대 링크를 다른 앱으로 공유합니다"
+          <Pressable analyticsId="app_profile_index.invite" accessibilityRole="button" accessibilityLabel={tr('친구 초대하기')} accessibilityHint={tr('글링 초대 링크를 다른 앱으로 공유합니다')}
             onPress={() => { void shareAppInvite(); }} style={styles.headerButton}>
             <SymbolView name={{ ios: 'square.and.arrow.up', android: 'share', web: 'share' }} size={22} tintColor={theme.text} />
           </Pressable>
@@ -192,10 +194,10 @@ export default function ProfileScreen() {
 
         <View style={[styles.manage, { backgroundColor: theme.backgroundElement }]}>
           {([
-            ['멤버십', membershipLabel, { ios: 'star.circle', android: 'stars', web: 'stars' }, false, () => router.push('/profile/membership')],
-            [`인증 Lv${trustLevel}`, trustLevel === 1 ? t.trust.short(trustLevel) : '등록된 단계', { ios: 'checkmark.seal', android: 'verified', web: 'verified' }, false, () => router.push('/profile/trust')],
+            [tr("멤버십"), membershipLabel, { ios: 'star.circle', android: 'stars', web: 'stars' }, false, () => router.push('/profile/membership')],
+            [tr("인증 Lv{0}", (trustLevel)), trustLevel === 1 ? t.trust.short(trustLevel) : tr("등록된 단계"), { ios: 'checkmark.seal', android: 'verified', web: 'verified' }, false, () => router.push('/profile/trust')],
             [t.notifications.title, unreadLabel, { ios: 'bell', android: 'notifications', web: 'notifications' }, unread > 0, () => router.push('/profile/inbox')],
-            [t.profile.saved, '모아보기', { ios: 'bookmark', android: 'bookmark', web: 'bookmark' }, false, () => router.push('/profile/saved')],
+            [t.profile.saved, tr("모아보기"), { ios: 'bookmark', android: 'bookmark', web: 'bookmark' }, false, () => router.push('/profile/saved')],
           ] as const).map(([label, sub, symbol, attention, onPress]) => (
             <Pressable analyticsId="app_profile_index.pressable.2" key={label} onPress={() => { play('selection'); onPress(); }} accessibilityRole="button" accessibilityLabel={`${label}, ${sub ?? ''}`}
               style={({ pressed }) => [styles.manageCell, {
@@ -212,15 +214,15 @@ export default function ProfileScreen() {
           ))}
         </View>
         <View style={[styles.accountMenu, { backgroundColor: theme.card, borderColor: theme.line }]}>
-          <Pressable analyticsId="profile.meetup-reviews" accessibilityRole="button" accessibilityLabel="모임 후기와 내 매너 평가 관리"
+          <Pressable analyticsId="profile.meetup-reviews" accessibilityRole="button" accessibilityLabel={tr('모임 후기와 내 매너 평가 관리')}
             onPress={() => { play('selection'); router.push('/profile/meetup-reviews'); }}
             style={({ pressed }) => [styles.accountRow, { backgroundColor: pressed ? theme.backgroundSelected : theme.card }]}>
             <View style={[styles.accountIcon, { backgroundColor: theme.backgroundElement }]}>
               <SymbolView name={{ ios: 'person.2', android: 'group', web: 'group' }} size={22} tintColor={theme.navy} />
             </View>
             <View style={styles.accountText}>
-              <ThemedText type="smallBold">모임 후기 · 매너 평가</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">내 후기와 매너 평가 관리</ThemedText>
+              <ThemedText type="smallBold">{tr('모임 후기 · 매너 평가')}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{tr('내 후기와 매너 평가 관리')}</ThemedText>
             </View>
             <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
           </Pressable>
@@ -228,37 +230,37 @@ export default function ProfileScreen() {
         </View>
         <View accessibilityRole="tablist" onLayout={event => setSegmentWidth(event.nativeEvent.layout.width)} style={[styles.segments, { borderBottomColor: theme.line }]}>
           {segmentWidth > 0 && <Animated.View pointerEvents="none" style={[styles.segmentIndicator, Depth.control, { width: segmentWidth / 3, backgroundColor: theme.backgroundElement, borderBottomColor: theme.accent, transform: [{ translateX: segmentPosition.interpolate({ inputRange: [0, 2], outputRange: [0, segmentWidth * 2 / 3] }) }] }]} />}
-          {([['story', '내 글'], ['replies', '답글'], ['listing', '구해요·팔아요']] as const).map(([key, label]) => (
+          {([['story', tr("내 글")], ['replies', tr("답글")], ['listing', tr("구해요·팔아요")]] as const).map(([key, label]) => (
             <Pressable analyticsId="app_profile_index.pressable.3" key={key} onPress={() => { play('selection'); if (key !== segment) setSegment(key); }} accessibilityRole="tab" accessibilityState={{ selected: segment === key }}
               style={({ pressed }) => [styles.segment, { opacity: pressed ? 0.65 : 1, }]}>
               <ThemedText type={segment === key ? 'smallBold' : 'small'} themeColor={segment === key ? undefined : 'textSecondary'}>{label}</ThemedText>
             </Pressable>
           ))}
         </View>
-        {segmentLoading && <GlingLoader color={theme.accent} style={{ marginVertical: Spacing.three }} accessibilityLabel="불러오는 중" />}
+        {segmentLoading && <GlingLoader color={theme.accent} style={{ marginVertical: Spacing.three }} accessibilityLabel={tr("불러오는 중")} />}
         {!segmentLoading && <Reanimated.View key={segment} entering={reducedMotion ? FadeIn.duration(150) : FadeInDown.duration(250)}>
         {segment !== 'replies' && myPosts[segment].map((row) => (
           <Pressable analyticsId="app_profile_index.pressable.4" key={row.id} onPress={() => { play('selection'); router.push(`/post/${row.id}`); }} accessibilityRole="button" style={[styles.myPost, { borderBottomColor: theme.line }]}>
             <ThemedText type="small" themeColor="textSecondary">{TAGS.find(({ id }) => id === row.tag_id)?.label ?? ''}{row.kind === 'listing' ? ` · ${t.detail.listingBadge}` : ''}{row.kind === 'listing' && row.listing_status && row.listing_status !== 'open' ? ` · ${t.detail.listingStatus[row.listing_status]}` : ''}</ThemedText>
             <ThemedText type="smallBold" style={styles.myTitle}>{row.title}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{visibleMeetupBody(row.body)}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary" style={{ fontVariant: ['tabular-nums'] }}>{row.kind === 'listing' && row.price != null ? `${t.detail.price(Number(row.price))} · ` : ''}공감 {count(row.like_count)} · 댓글 {count(row.comment_count)} · 저장 {count(row.save_count)} · {relativeTime(row.created_at)}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={{ fontVariant: ['tabular-nums'] }}>{row.kind === 'listing' && row.price != null ? `${t.detail.price(Number(row.price))} · ` : ''}{tr("공감") + " "}{count(row.like_count)}{" " + tr("· 댓글") + " "}{count(row.comment_count)}{" " + tr("· 저장") + " "}{count(row.save_count)} · {relativeTime(row.created_at)}</ThemedText>
           </Pressable>
         ))}
-        {segment !== 'replies' && myPosts[segment].length === 0 && <ThemedText type="small" themeColor="textSecondary" style={styles.emptyNote}>{segment === 'listing' ? '아직 올린 구해요·팔아요 글이 없어요.' : '아직 쓴 글이 없어요. 오늘의 한 편을 남겨보세요.'}</ThemedText>}
+        {segment !== 'replies' && myPosts[segment].length === 0 && <ThemedText type="small" themeColor="textSecondary" style={styles.emptyNote}>{segment === 'listing' ? tr("아직 올린 구해요·팔아요 글이 없어요.") : tr("아직 쓴 글이 없어요. 오늘의 한 편을 남겨보세요.")}</ThemedText>}
         {segment === 'replies' && replies.filter((reply) => !hidden('comment', reply.id, reply.author_id)).map((reply) => (
           <Pressable analyticsId="app_profile_index.pressable.5" key={reply.id} onPress={() => { play('selection'); router.push(`/post/${reply.post_id}`); }} accessibilityRole="button" style={[styles.myPost, { borderBottomColor: theme.line }]}>
-            <ThemedText type="small" themeColor="textSecondary"><ThemedText type="small" themeColor="navy">{reply.author?.nickname ?? '이웃'}</ThemedText>님이 「{reply.post?.title ?? '내 글'}」에 · {relativeTime(reply.created_at)}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary"><ThemedText type="small" themeColor="navy">{reply.author?.nickname ?? tr("이웃")}</ThemedText>{tr("님이 「")}{reply.post?.title ?? tr("내 글")}{tr("」에 ·") + " "}{relativeTime(reply.created_at)}</ThemedText>
             <ThemedText type="small">{reply.body}</ThemedText>
-            <ThemedText type="smallBold" themeColor="accent">답글 달기</ThemedText>
+            <ThemedText type="smallBold" themeColor="accent">{tr("답글 달기")}</ThemedText>
           </Pressable>
         ))}
-        {segment === 'replies' && replies.length === 0 && <ThemedText type="small" themeColor="textSecondary" style={styles.emptyNote}>아직 내 글에 달린 답글이 없어요.</ThemedText>}
+        {segment === 'replies' && replies.length === 0 && <ThemedText type="small" themeColor="textSecondary" style={styles.emptyNote}>{tr("아직 내 글에 달린 답글이 없어요.")}</ThemedText>}
         </Reanimated.View>}
 
         <View style={[styles.menu, Depth.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
           {PROMOTIONS_PREVIEW_ENABLED && <><Pressable analyticsId="app_profile_index.pressable.6" style={styles.menuRow} accessibilityRole="button" onPress={() => { play('selection'); router.push('/profile/promotions'); }}>
-            <ThemedText type="small">홍보 크레딧</ThemedText>
+            <ThemedText type="small">{tr("홍보 크레딧")}</ThemedText>
           </Pressable>
           <View style={[styles.divider, { backgroundColor: theme.line }]} /></>}
           <Pressable analyticsId="app_profile_index.pressable.7"

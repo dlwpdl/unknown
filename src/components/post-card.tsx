@@ -1,3 +1,4 @@
+import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
 import { useState, type ReactNode } from 'react';
 import { Image } from 'expo-image';
@@ -12,10 +13,10 @@ import { ReportSheet } from '@/components/report-sheet';
 import { TrustBadge } from '@/components/trust-badge';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { count, t } from '@/i18n/ko';
+import { count, t, tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { recordPostShare, togglePostReaction } from '@/lib/community-data';
-import { getPostImageSource } from '@/lib/feed-data';
+import { getPostImageSource, relativeTime } from '@/lib/feed-data';
 import { visibleMeetupBody } from '@/lib/meetup-ai';
 import { uniqueHashtags } from '@/lib/hashtags';
 import { postMapBody } from '@/lib/post-maps';
@@ -45,6 +46,7 @@ export function PostCard({
   flat?: boolean;
   afterBody?: ReactNode;
 }) {
+  useLanguage();
   const theme = useTheme();
   const { isAuthed, me, promptLogin } = useAuth();
   const { play } = useInteractionFeedback();
@@ -155,7 +157,7 @@ export function PostCard({
                 )}
               </View>
               <ThemedText type="small" themeColor="textSecondary" style={styles.meta}>
-                {post.createdAtLabel}{post.bumpedAt ? ` · ${t.detail.bumpedLabel}` : ''}
+                {post.createdAt ? relativeTime(post.createdAt) : post.createdAtLabel}{post.bumpedAt ? ` · ${t.detail.bumpedLabel}` : ''}
               </ThemedText>
             </View>
           </Pressable>
@@ -178,12 +180,12 @@ export function PostCard({
           onPress={openPost}
           disabled={!onPress}
           accessibilityRole={onPress ? 'button' : undefined}
-          accessibilityLabel={onPress ? `${post.tag.label} · ${post.title}` : undefined}
+          accessibilityLabel={onPress ? `${tr(post.tag.label)} · ${post.title}` : undefined}
           style={({ pressed }) => pressed && styles.pressed}>
           <ThemedText
             type="smallBold"
             style={[styles.category, { color: isMeetup ? theme.accent : theme.textSecondary }]}>
-            {post.tag.label}{isListing ? ` · ${t.detail.listingBadge}` : ''}
+            {tr(post.tag.label)}{isListing ? ` · ${t.detail.listingBadge}` : ''}
           </ThemedText>
           <ThemedText style={[styles.title, flat && !onPress && styles.detailTitle]}>
             {post.title}
@@ -356,14 +358,14 @@ export function PostCard({
             onPress={() => void share()}
             style={({ pressed }) => [styles.reaction, pressed && styles.pressed]}
             accessibilityRole="button"
-            accessibilityLabel={`${post.room ? '모임 초대 링크 공유' : '게시물 링크 공유'} · ${t.feed.shares(shareCount)}`}>
+            accessibilityLabel={tr("{0} · {1}", (post.room ? '모임 초대 링크 공유' : '게시물 링크 공유'), (t.feed.shares(shareCount)))}>
             <SymbolView
               name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }}
               size={20}
               tintColor={theme.textSecondary}
             />
             <ThemedText type="small" themeColor="textSecondary" style={styles.footItem}>
-              {post.room ? '초대' : '공유'}{shareCount > 0 ? ` · ${count(shareCount)}` : ''}
+              {post.room ? tr("초대") : tr("공유")}{shareCount > 0 ? ` · ${count(shareCount)}` : ''}
             </ThemedText>
           </Pressable>
           <View style={styles.reaction} accessible accessibilityLabel={t.feed.views(post.views)}>

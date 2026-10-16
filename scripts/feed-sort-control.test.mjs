@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -9,7 +10,7 @@ function control(sort) {
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/feed-sort-control.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, require(name) {
+  vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'react-native') return { View: 'View', StyleSheet: { create: x => x, hairlineWidth: 1 } };
     if (name === '@/components/analytics-controls') return { Pressable: 'Pressable' };
@@ -17,7 +18,7 @@ function control(sort) {
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ background: 'background', backgroundElement: 'element', backgroundSelected: 'selected', accent: 'accent', textSecondary: 'sub', line: 'line' }) };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: kind => events.push(kind) }) };
     throw new Error(`Unexpected import: ${name}`);
-  } });
+  }) });
   return { tree: exports.FeedSortControl({ sort, title: '오늘 글', onChange: next => events.push(next) }), events };
 }
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props.children].flat(Infinity).flatMap(nodes)];

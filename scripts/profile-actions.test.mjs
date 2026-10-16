@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -32,7 +33,7 @@ function profile() {
   const exports = {};
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/app/profile/index.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
-  }).outputText, { exports, process: { env: {} }, require(name) { if (name in imports) return imports[name]; throw Error(name); } });
+  }).outputText, { exports, process: { env: {} }, require: withLanguageImports(name => { if (name in imports) return imports[name]; throw Error(name); }) });
   return { render: exports.default, routes, feedback, shares, signOut() { authenticated = false; } };
 }
 

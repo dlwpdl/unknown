@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -42,7 +43,7 @@ function load(file, imports) {
   const source = ts.transpileModule(fs.readFileSync(new URL(`../src/components/${file}.tsx`, import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, require(name) {
+  vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
     if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
     if (name in imports) return imports[name];
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
@@ -53,7 +54,7 @@ function load(file, imports) {
     if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, four: 24 }, Depth: { card: {}, control: {} } };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
     throw new Error(`Unexpected import: ${name}`);
-  } });
+  }) });
   return exports;
 }
 

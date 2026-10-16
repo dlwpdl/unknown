@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -40,7 +41,7 @@ function settings({ userId = 'recipient', platform = 'web', load = async () => (
   };
   const source = ts.transpileModule(readFileSync(new URL('../src/app/profile/notifications.tsx', import.meta.url), 'utf8')
     + '\nexports.NotificationSettings = NotificationSettings;', { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
-  vm.runInNewContext(source, { exports, require: name => imports[name] ?? {}, JSON });
+  vm.runInNewContext(source, { exports, require: withLanguageImports(name => imports[name] ?? {}), JSON });
   return { calls, render() { index = 0; return exports.NotificationSettings({ userId, cityName: '밴쿠버' }); },
     unmount() { cleanups.forEach(fn => fn()); } };
 }

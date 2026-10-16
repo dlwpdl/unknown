@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -13,7 +14,7 @@ function module(file, imports = {}, extra = '') {
   const source = ts.transpileModule(readFileSync(new URL(file, import.meta.url), 'utf8') + extra, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
   }).outputText;
-  vm.runInNewContext(source, { exports, require: name => imports[name] ?? {}, Date, Intl,
+  vm.runInNewContext(source, { exports, require: withLanguageImports(name => imports[name] ?? {}), Date, Intl,
     fetch: async () => { throw new Error('Local asset unavailable'); } });
   return exports;
 }

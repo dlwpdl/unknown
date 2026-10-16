@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -56,7 +57,7 @@ function screen(file, { save = async () => reply, sessionOwner = owner,
     '@/lib/supabase': { supabase: { auth: { getSession: async () => ({ data: { session: { user: { id: sessionOwner } } } }) } } },
   };
   const exports = {}, source = readFileSync(new URL(file, import.meta.url), 'utf8') + '\nexports.ScopedInbox=typeof ScopedInbox === "function" ? ScopedInbox : undefined;';
-  vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, { exports, require: name => imports[name] ?? {}, Date, Intl, Error });
+  vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, { exports, require: withLanguageImports(name => imports[name] ?? {}), Date, Intl, Error });
   return { calls, feedback, dirty, render(name, props = {}) { index = 0; return exports[name]({ merchantId: merchant, onDirty: value => dirty.push(value), ...props }); }, unmount() { cleanup.forEach(fn => fn()); } };
 }
 

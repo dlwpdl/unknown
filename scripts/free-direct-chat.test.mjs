@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -12,7 +13,7 @@ const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/use
 function profile({ authenticated = true, failure } = {}) {
   const exports = {}, routes = [], starts = [], feedback = [], alerts = [], login = [];
   const elements = { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-  vm.runInNewContext(source, { exports, require(name) {
+  vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
     if (name === 'react') return { useEffect() {}, useLayoutEffect: fn => fn(), useRef: value => ({ current: value }), useState: value => [value, () => {}] };
     if (name === 'react/jsx-runtime') return elements;
     if (name === 'react-native') return { Modal: 'Modal', View: 'View', Platform: { OS: 'ios' }, StyleSheet: { create: value => value }, Alert: { alert: (...args) => alerts.push(args) } };
@@ -33,7 +34,7 @@ function profile({ authenticated = true, failure } = {}) {
     if (name === '@/components/raised-action-button') return { RaisedActionButton: 'RaisedActionButton' };
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };
     return {};
-  } });
+  }) });
   const tree = exports.UserSheet({ user: { id: 'neighbor', nickname: '이웃', listingId: 'listing' }, onClose() {} });
   const nodes = value => !value || typeof value !== 'object' ? [] : [value, ...[value.props?.children].flat(Infinity).flatMap(nodes)];
   return { button: nodes(tree).find(node => node.type === 'RaisedActionButton'), routes, starts, feedback, alerts, login };

@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useCallback, useRef, useState } from 'react';
@@ -24,10 +26,12 @@ import { useMembership } from '@/lib/membership-provider';
 import { supabase } from '@/lib/supabase';
 
 export default function MeetupApplicationRoute() {
+
   const { requestId } = useLocalSearchParams<{ requestId: string }>(), { me, isAuthed } = useAuth();
   return <Application key={`${requestId}:${isAuthed ? me.id : 'guest'}`} requestId={requestId} />;
 }
 function Application({ requestId }: { requestId: string }) {
+  useLanguage();
   const router = useRouter(), theme = useTheme(), hidden = useContentVisibility();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
@@ -91,40 +95,40 @@ function Application({ requestId }: { requestId: string }) {
   const confirmReject = () => {
     play('selection');
     if (Platform.OS === 'web') { if (globalThis.confirm('이 참여 신청을 거절할까요?')) void respond('rejected'); }
-    else Alert.alert('참여 신청 거절', '신청자에게 결과를 알리고 프로필 열람을 종료해요.', [{ text: '돌아가기', style: 'cancel' }, { text: '거절하기', style: 'destructive', onPress: () => void respond('rejected') }]);
+    else Alert.alert(tr("참여 신청 거절"), tr("신청자에게 결과를 알리고 프로필 열람을 종료해요."), [{ text: tr("돌아가기"), style: 'cancel' }, { text: tr("거절하기"), style: 'destructive', onPress: () => void respond('rejected') }]);
   };
   return <ThemedView style={styles.fill}><SafeAreaView style={styles.fill}>
     <View style={[styles.header, { backgroundColor: theme.background }]}>
-      <Pressable analyticsId="app_meetup-application.pressable.1" onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace(Platform.OS === 'web' ? '/chat' : '/(tabs)/chat'); }} accessibilityRole="button" accessibilityLabel="뒤로가기" style={({ pressed }) => [styles.back, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} /></Pressable>
-      <ThemedText accessibilityRole="header" numberOfLines={1} style={styles.headerTitle}>{own ? '내 참여 신청' : '참여 신청 검토'}</ThemedText>
+      <Pressable analyticsId="app_meetup-application.pressable.1" onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace(Platform.OS === 'web' ? '/chat' : '/(tabs)/chat'); }} accessibilityRole="button" accessibilityLabel={tr("뒤로가기")} style={({ pressed }) => [styles.back, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} /></Pressable>
+      <ThemedText accessibilityRole="header" numberOfLines={1} style={styles.headerTitle}>{own ? tr("내 참여 신청") : tr("참여 신청 검토")}</ThemedText>
       <View style={styles.back} />
     </View>
-    {loading ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel="신청 정보 불러오는 중" /></View> : <ScrollView analyticsId="app_meetup-application.scrollview.1" contentContainerStyle={styles.content}>
-    {!!actionError && <StateCard kind="error" title={actionCode === 'MEETUP_FULL' ? '정원이 차서 승인하지 못했어요' : '처리 결과를 확인해 주세요'} body={actionError} />}
-    {outcome ? <StateCard kind={outcome === 'approved' ? 'success' : 'empty'} title={outcome === 'approved' ? '참여를 승인했어요' : '신청을 거절했어요'} body="신청자가 참여 신청 화면에서 결과를 확인할 수 있어요." actionLabel="신청함 보기" onAction={() => router.replace({ pathname: '/chat', params: { view: 'requests' } })} />
+    {loading ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={tr("신청 정보 불러오는 중")} /></View> : <ScrollView analyticsId="app_meetup-application.scrollview.1" contentContainerStyle={styles.content}>
+    {!!actionError && <StateCard kind="error" title={actionCode === 'MEETUP_FULL' ? tr("정원이 차서 승인하지 못했어요") : tr("처리 결과를 확인해 주세요")} body={actionError} />}
+    {outcome ? <StateCard kind={outcome === 'approved' ? 'success' : 'empty'} title={outcome === 'approved' ? tr("참여를 승인했어요") : tr("신청을 거절했어요")} body={tr("신청자가 참여 신청 화면에서 결과를 확인할 수 있어요.")} actionLabel={tr("신청함 보기")} onAction={() => router.replace({ pathname: '/chat', params: { view: 'requests' } })} />
       : visible ? <>
-      {application.request?.post && <ThemedText type="small" themeColor="textSecondary">{application.request.post.title} · 참여 신청</ThemedText>}
+      {application.request?.post && <ThemedText type="small" themeColor="textSecondary">{application.request.post.title}{" " + tr("· 참여 신청")}</ThemedText>}
       <View style={styles.identity}>
-        {identity?.photoUri ? <Image source={{ uri: identity.photoUri }} style={styles.avatar} contentFit="cover" accessibilityLabel={`${identity.nickname} 프로필 사진`} />
-          : <View style={[styles.avatar, styles.initial, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle">{(identity?.nickname ?? '신청자').slice(0, 1)}</ThemedText></View>}
-        <View style={styles.identityBody}><ThemedText style={styles.name}>{identity?.nickname ?? '신청자'}</ThemedText>
+        {identity?.photoUri ? <Image source={{ uri: identity.photoUri }} style={styles.avatar} contentFit="cover" accessibilityLabel={tr("{0} 프로필 사진", (identity.nickname))} />
+          : <View style={[styles.avatar, styles.initial, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle">{(identity?.nickname ?? tr("신청자")).slice(0, 1)}</ThemedText></View>}
+        <View style={styles.identityBody}><ThemedText style={styles.name}>{identity?.nickname ?? tr("신청자")}</ThemedText>
           {!!identity?.city_id && <ThemedText type="small" themeColor="textSecondary">{CITIES.find(city => city.id === identity.city_id)?.name ?? identity.city_id}</ThemedText>}
-          {application.request && <ThemedText type="smallBold" themeColor="accent">{{ pending: '승인 대기', approved: '참여 승인', rejected: '신청 거절', cancelled: '신청 취소됨' }[application.request.status]}</ThemedText>}
+          {application.request && <ThemedText type="smallBold" themeColor="accent">{{ pending: tr("승인 대기"), approved: tr("참여 승인"), rejected: tr("신청 거절"), cancelled: tr("신청 취소됨") }[application.request.status]}</ThemedText>}
         </View>
       </View>
-      <View style={[styles.answerCard, { backgroundColor: theme.card }]}><ThemedText type="smallBold" themeColor="accent">모임장 질문에 대한 답변</ThemedText><ThemedText type="small" themeColor="textSecondary">{application.question}</ThemedText><ThemedText style={styles.answer}>{application.answer}</ThemedText></View>
-      <ThemedText type="smallBold">함께할 사람의 모임 프로필</ThemedText>
+      <View style={[styles.answerCard, { backgroundColor: theme.card }]}><ThemedText type="smallBold" themeColor="accent">{tr("모임장 질문에 대한 답변")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{application.question}</ThemedText><ThemedText style={styles.answer}>{application.answer}</ThemedText></View>
+      <ThemedText type="smallBold">{tr("함께할 사람의 모임 프로필")}</ThemedText>
       <ChillingProfileCard profile={application.profile} />
-      <ThemedText type="small" themeColor="textSecondary">소개와 답변은 신청할 때 공유한 내용이에요. 닉네임·사진·활동 지역은 현재 계정 프로필을 보여요.</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{tr("소개와 답변은 신청할 때 공유한 내용이에요. 닉네임·사진·활동 지역은 현재 계정 프로필을 보여요.")}</ThemedText>
       {canRespond && <>
-        <ThemedText type="small" themeColor="textSecondary">승인하면 이 모임의 멤버가 되고 모임 대화에 참여해요. 정원이 찼거나 참여 가능한 모임 수를 넘으면 승인할 수 없어요.</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{tr("승인하면 이 모임의 멤버가 되고 모임 대화에 참여해요. 정원이 찼거나 참여 가능한 모임 수를 넘으면 승인할 수 없어요.")}</ThemedText>
       </>}
-    </> : <StateCard kind={error ? 'error' : requestStatus?.status === 'approved' ? 'success' : 'blocked'} title={error ? '신청 정보를 불러오지 못했어요' : requestStatus ? { pending: '신청은 승인 대기 중이에요', approved: '이미 승인된 신청이에요', rejected: '거절된 신청이에요', cancelled: '취소된 신청이에요' }[requestStatus.status] : '신청 프로필을 볼 수 없어요'} body={error || '공유된 신청 프로필은 현재 열람할 수 없어요.'} />}
-    {(!!error || !!actionError) && <Pressable analyticsId="app_meetup-application.pressable.2" onPress={() => { play('selection'); setRetry(x => x + 1); }} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent">현재 상태 다시 확인</ThemedText></Pressable>}
+    </> : <StateCard kind={error ? 'error' : requestStatus?.status === 'approved' ? 'success' : 'blocked'} title={error ? tr("신청 정보를 불러오지 못했어요") : requestStatus ? { pending: tr("신청은 승인 대기 중이에요"), approved: tr("이미 승인된 신청이에요"), rejected: tr("거절된 신청이에요"), cancelled: tr("취소된 신청이에요") }[requestStatus.status] : tr("신청 프로필을 볼 수 없어요")} body={error || '공유된 신청 프로필은 현재 열람할 수 없어요.'} />}
+    {(!!error || !!actionError) && <Pressable analyticsId="app_meetup-application.pressable.2" onPress={() => { play('selection'); setRetry(x => x + 1); }} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent">{tr("현재 상태 다시 확인")}</ThemedText></Pressable>}
   </ScrollView>}
   {!loading && canRespond && <View style={[styles.footer, { backgroundColor: theme.background, borderColor: theme.line }]}>
-    <RaisedActionButton analyticsId="app_meetup-application.pressable.3" disabled={responding || approvalBlocked} busy={responding} onPress={() => { play('selection'); void respond('approved'); }} label={responding ? '처리 중…' : approvalBlocked ? '현재 승인할 수 없어요' : `${identity?.nickname ?? '신청자'}님 참여 승인`} />
-    <Pressable analyticsId="app_meetup-application.pressable.4" accessibilityRole="button" accessibilityLabel="참여 신청 거절" disabled={responding} accessibilityState={{ disabled: responding }} onPress={confirmReject} style={styles.reject}><ThemedText type="smallBold" themeColor="textSecondary">신청 거절</ThemedText></Pressable>
+    <RaisedActionButton analyticsId="app_meetup-application.pressable.3" disabled={responding || approvalBlocked} busy={responding} onPress={() => { play('selection'); void respond('approved'); }} label={responding ? tr("처리 중…") : approvalBlocked ? tr("현재 승인할 수 없어요") : tr("{0}님 참여 승인", (identity?.nickname ?? '신청자'))} />
+    <Pressable analyticsId="app_meetup-application.pressable.4" accessibilityRole="button" accessibilityLabel={tr("참여 신청 거절")} disabled={responding} accessibilityState={{ disabled: responding }} onPress={confirmReject} style={styles.reject}><ThemedText type="smallBold" themeColor="textSecondary">{tr("신청 거절")}</ThemedText></Pressable>
   </View>}
   </SafeAreaView></ThemedView>;
 }

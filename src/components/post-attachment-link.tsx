@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { Image } from 'expo-image';
 import { openBrowserAsync } from 'expo-web-browser';
 import { Alert, Platform, StyleSheet, View } from 'react-native';
@@ -8,6 +10,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { INSTAGRAM_LINK_SVG, instagramPostLink, safePostLink } from '../../supabase/functions/_shared/post-links';
 
 export function PostAttachmentLink({ url: input, enabled = true }: { url: string; enabled?: boolean }) {
+  useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const safe = safePostLink(input);
@@ -21,7 +24,7 @@ export function PostAttachmentLink({ url: input, enabled = true }: { url: string
     <ThemedText themeColor="accent" numberOfLines={profile ? 1 : 2} style={styles.label}>{label}</ThemedText>
   </>;
   const open = () => {
-    void openBrowserAsync(url).catch(() => { play('warning'); Alert.alert('링크를 열지 못했어요.', '잠시 후 다시 눌러주세요.'); });
+    void openBrowserAsync(url).catch(() => { play('warning'); Alert.alert(tr("링크를 열지 못했어요."), tr("잠시 후 다시 눌러주세요.")); });
   };
   return <View style={styles.container}>
     {!enabled ? <View style={styles.link}>{content}</View> : Platform.OS === 'web'
@@ -35,12 +38,12 @@ export function PostAttachmentLink({ url: input, enabled = true }: { url: string
           onPress={event => {
             event.stopPropagation(); play('selection');
             if (profile) open();
-            else Alert.alert('외부 링크 열기', `${url}\n\n악성 여부를 아직 확인하지 못했어요.`, [
-              { text: '취소', style: 'cancel', onPress: () => play('selection') },
-              { text: '이동', onPress: () => { play('selection'); open(); } },
+            else Alert.alert(tr("외부 링크 열기"), tr("{0}\n\n악성 여부를 아직 확인하지 못했어요.", (url)), [
+              { text: tr("취소"), style: 'cancel', onPress: () => play('selection') },
+              { text: tr("이동"), onPress: () => { play('selection'); open(); } },
             ]);
           }}>{content}</Pressable>}
-    {!profile && <ThemedText type="small" themeColor="textSecondary">악성 여부 미확인</ThemedText>}
+    {!profile && <ThemedText type="small" themeColor="textSecondary">{tr("악성 여부 미확인")}</ThemedText>}
   </View>;
 }
 

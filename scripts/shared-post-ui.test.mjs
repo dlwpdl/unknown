@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -84,7 +85,7 @@ function mount(file, name, data = {}, props = {}) {
   };
   const exports = {};
   const source = ts.transpileModule(readFileSync(new URL(file, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
-  vm.runInNewContext(source, { exports, Date, Intl, Error, URL, window: browser, require: key => { assert.ok(key in imports, `Known import: ${key}`); return imports[key]; },
+  vm.runInNewContext(source, { exports, Date, Intl, Error, URL, window: browser, require: withLanguageImports(key => { assert.ok(key in imports, `Known import: ${key}`); return imports[key]; }),
     navigator: { share: payload => { calls.push(['share', payload]); return data.share?.(payload) ?? Promise.resolve(); }, clipboard: { writeText: value => { calls.push(['copy', value]); return Promise.resolve(); } } } });
   const render = () => {
     assert.equal(disposed, false); index = 0; effects = []; tree = exports[name](props);

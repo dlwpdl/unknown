@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { getLocale } from '../i18n/index.ts';
 
 import { thumbPathFor } from './image-upload.ts';
 import type { ListingStatus, Post, PostComment, PostKind, RoomPreview, TagSlug } from './types.ts';
@@ -264,11 +265,12 @@ export async function attachSignedPostImages(client: SupabaseClient, posts: Post
 }
 
 export function relativeTime(value: string, now: number = Date.now()) {
+  const english = getLocale() === 'en-CA';
   const elapsedMinutes = Math.max(0, Math.floor((now - new Date(value).getTime()) / 60_000));
-  if (elapsedMinutes < 1) return '방금';
-  if (elapsedMinutes < 60) return `${elapsedMinutes}분 전`;
+  if (elapsedMinutes < 1) return english ? 'Just now' : '방금';
+  if (elapsedMinutes < 60) return english ? `${elapsedMinutes} ${elapsedMinutes === 1 ? 'minute' : 'minutes'} ago` : `${elapsedMinutes}분 전`;
   const hours = Math.floor(elapsedMinutes / 60);
-  if (hours < 24) return `${hours}시간 전`;
+  if (hours < 24) return english ? `${hours} ${hours === 1 ? 'hour' : 'hours'} ago` : `${hours}시간 전`;
   const days = Math.floor(hours / 24);
-  return days === 1 ? '어제' : `${days}일 전`;
+  return english ? days === 1 ? 'Yesterday' : `${days} days ago` : days === 1 ? '어제' : `${days}일 전`;
 }

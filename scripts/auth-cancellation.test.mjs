@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -17,7 +18,7 @@ test('cancel, dismiss and browser failure release the shared login state for ret
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/lib/auth.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, __DEV__: false, process: { env: {} }, require(name) {
+  vm.runInNewContext(source, { exports, __DEV__: false, process: { env: {} }, require: withLanguageImports((name) => {
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'react') return {
       createContext: () => ({ Provider: 'Provider' }), useCallback: fn => fn, useMemo: fn => fn(),
@@ -54,7 +55,7 @@ test('cancel, dismiss and browser failure release the shared login state for ret
     if (name === '@/constants/theme') return { Spacing: {} };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
     return {};
-  } });
+  }) });
   const render = () => { stateIndex = refIndex = 0; return exports.AuthProvider({ children: null }).props.value; };
   render(); mounted = true;
   for (const effect of effects) effect();

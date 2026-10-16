@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { Linking, Platform, StyleSheet, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -18,6 +20,7 @@ type Photos = { avatar: Photo; banner: Photo };
 const savedPhotos = (profile: MyMerchantProfile): Photos => ({ avatar: { path: profile.avatar_path, uri: profile.avatarUri }, banner: { path: profile.banner_path, uri: profile.bannerUri } });
 
 function ProfileAction({ label, onPress, disabled = false, primary = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean }) {
+
   const theme = useTheme(), { play } = useInteractionFeedback();
   return <Pressable analyticsId="merchant.profile.action" accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }}
     disabled={disabled} onPress={() => { play('selection'); onPress(); }}
@@ -27,11 +30,13 @@ function ProfileAction({ label, onPress, disabled = false, primary = false }: { 
 }
 
 export function MerchantProfileEditor({ merchantId, onDirty }: { merchantId: string; onDirty: (dirty: boolean) => void }) {
+
   const { me, isAuthed } = useAuth();
   return <ScopedProfileEditor key={`${merchantId}:${isAuthed ? me.id : 'guest'}`} merchantId={merchantId} onDirty={onDirty} />;
 }
 
 function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDirty: (dirty: boolean) => void }) {
+  useLanguage();
   const theme = useTheme(), router = useRouter(), { me } = useAuth(), { play } = useInteractionFeedback();
   const [profile, setProfile] = useState<MyMerchantProfile | null>(null), [photos, setPhotos] = useState<Photos | null>(null);
   const [contact, setContact] = useState<{ phone: string; hours: string } | null>(null);
@@ -63,7 +68,7 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
       if (!draft.current) { draft.current = savedPhotos(next); setPhotos(draft.current); }
       if (!contactDraft.current) { contactDraft.current = { phone: next.public_phone ?? '', hours: next.business_hours ?? '' }; setContact(contactDraft.current); }
       setError('');
-    }).catch(() => { if (active) setError('프로필을 불러오지 못했어요. 업체 권한과 연결 상태를 확인해 주세요.'); })
+    }).catch(() => { if (active) setError(tr("프로필을 불러오지 못했어요. 업체 권한과 연결 상태를 확인해 주세요.")); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [merchantId, revision]);
@@ -79,7 +84,7 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
       if (!asset?.uri || !isSupportedImage(asset.mimeType ?? 'image/jpeg')) throw new Error('IMAGE_UNSUPPORTED');
       const image = await preparePostImage(asset);
       if (mounted.current && draft.current) { change({ ...draft.current, [kind]: { path: null, uri: image.uri, image } }); play('selection'); }
-    } catch { if (mounted.current) { setError('사진을 준비하지 못했어요. JPEG, PNG, WebP 사진으로 다시 선택해 주세요.'); play('warning'); } }
+    } catch { if (mounted.current) { setError(tr("사진을 준비하지 못했어요. JPEG, PNG, WebP 사진으로 다시 선택해 주세요.")); play('warning'); } }
     finally { working.current = false; if (mounted.current) setBusy(false); }
   };
 
@@ -100,15 +105,15 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
       }
       const saved = await saveMyMerchantProfile(supabase, merchantId, { avatarPath: next.avatar.path, bannerPath: next.banner.path, updatedAt: profile.updated_at });
       if (!mounted.current) return;
-      setProfile(saved); change(savedPhotos(saved)); setNotice('프로필 사진을 저장했어요. 공개 가능한 업체 프로필에 표시돼요.'); play('success');
+      setProfile(saved); change(savedPhotos(saved)); setNotice(tr("프로필 사진을 저장했어요. 공개 가능한 업체 프로필에 표시돼요.")); play('success');
       const old = [profile.avatar_path, profile.banner_path, ...uploads.current].filter((path): path is string => !!path);
       if (old.length) void supabase.storage.from('merchant-profile-images').remove([...new Set(old)]).catch(() => {});
     } catch (failure) {
       if (!mounted.current) return;
       const message = failure instanceof Error ? failure.message : '';
-      setError(message.includes('MERCHANT_PROFILE_CHANGED') ? '다른 곳에서 프로필이 바뀌었어요. 선택한 사진은 남아 있어요. 최근 저장본을 확인하려면 취소 후 다시 열어주세요.'
-        : message.includes('ACCOUNT_CHANGED') ? '계정이 바뀌었어요. 현재 계정으로 다시 열어주세요.'
-        : '저장을 확인하지 못했어요. 사진은 남아 있으니 같은 내용으로 다시 시도해 주세요.');
+      setError(message.includes('MERCHANT_PROFILE_CHANGED') ? tr("다른 곳에서 프로필이 바뀌었어요. 선택한 사진은 남아 있어요. 최근 저장본을 확인하려면 취소 후 다시 열어주세요.")
+        : message.includes('ACCOUNT_CHANGED') ? tr("계정이 바뀌었어요. 현재 계정으로 다시 열어주세요.")
+        : tr("저장을 확인하지 못했어요. 사진은 남아 있으니 같은 내용으로 다시 시도해 주세요."));
       play('warning');
     } finally { working.current = false; if (mounted.current) setBusy(false); }
   };
@@ -121,14 +126,14 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
       const saved = await saveMerchantContact(supabase, merchantId, contactDraft.current.phone, contactDraft.current.hours, profile.updated_at);
       if (!mounted.current) return;
       setProfile(saved); changeContact({ phone: saved.public_phone ?? '', hours: saved.business_hours ?? '' });
-      setNotice('공개 전화번호와 영업시간을 저장했어요.'); play('success');
+      setNotice(tr("공개 전화번호와 영업시간을 저장했어요.")); play('success');
     } catch (failure) {
       if (mounted.current) {
         const message = failure instanceof Error ? failure.message : '';
-        setError(message.includes('MERCHANT_PROFILE_CHANGED') ? '다른 곳에서 프로필이 바뀌었어요. 입력한 연락 정보는 남아 있어요. 수정 취소 후 최근 저장본을 다시 확인해 주세요.'
-          : message.includes('ACCOUNT_CHANGED') ? '계정이 바뀌었어요. 현재 계정으로 다시 열어주세요.'
-          : message.includes('INVALID') ? '전화번호는 국가번호와 숫자, 공백·괄호·하이픈으로 적어주세요. 영업시간은 500자 이내로 입력해 주세요.'
-          : '연락 정보 저장을 확인하지 못했어요. 입력한 내용은 남아 있으니 다시 시도해 주세요.');
+        setError(message.includes('MERCHANT_PROFILE_CHANGED') ? tr("다른 곳에서 프로필이 바뀌었어요. 입력한 연락 정보는 남아 있어요. 수정 취소 후 최근 저장본을 다시 확인해 주세요.")
+          : message.includes('ACCOUNT_CHANGED') ? tr("계정이 바뀌었어요. 현재 계정으로 다시 열어주세요.")
+          : message.includes('INVALID') ? tr("전화번호는 국가번호와 숫자, 공백·괄호·하이픈으로 적어주세요. 영업시간은 500자 이내로 입력해 주세요.")
+          : tr("연락 정보 저장을 확인하지 못했어요. 입력한 내용은 남아 있으니 다시 시도해 주세요."));
         play('warning');
       }
     } finally { working.current = false; if (mounted.current) setBusy(false); }
@@ -139,48 +144,48 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
     contactDraft.current = null; setContact(null); change(null); reload();
   };
   return <View style={[styles.section, { borderColor: theme.line, backgroundColor: theme.card }]}>
-    <View style={styles.row}><ThemedText type="subtitle">업체 프로필</ThemedText>
-      {profile && <ProfileAction label="공개 프로필 보기" onPress={() => {
-        if (Platform.OS === 'web') void Linking.openURL(`https://gling.ej-entertainment.com/company?id=${encodeURIComponent(merchantId)}`).catch(() => setError('프로필을 열지 못했어요. 잠시 후 다시 시도해 주세요.'));
+    <View style={styles.row}><ThemedText type="subtitle">{tr("업체 프로필")}</ThemedText>
+      {profile && <ProfileAction label={tr("공개 프로필 보기")} onPress={() => {
+        if (Platform.OS === 'web') void Linking.openURL(`https://gling.ej-entertainment.com/company?id=${encodeURIComponent(merchantId)}`).catch(() => setError(tr("프로필을 열지 못했어요. 잠시 후 다시 시도해 주세요.")));
         else router.push({ pathname: '/company/[id]', params: { id: merchantId } });
       }} disabled={busy} />}
     </View>
-    {loading ? <ThemedText type="small" accessibilityLiveRegion="polite">프로필을 불러오는 중…</ThemedText>
+    {loading ? <ThemedText type="small" accessibilityLiveRegion="polite">{tr("프로필을 불러오는 중…")}</ThemedText>
       : profile && photos && <>
         <MerchantProfileHeader profile={{ ...profile, avatarUri: photos.avatar.uri, bannerUri: photos.banner.uri }} />
-        {!profile.can_edit && <ThemedText type="small" themeColor="textSecondary">업체 계정과 소유 확인이 완료되면 사진을 바꿀 수 있어요.</ThemedText>}
+        {!profile.can_edit && <ThemedText type="small" themeColor="textSecondary">{tr("업체 계정과 소유 확인이 완료되면 사진을 바꿀 수 있어요.")}</ThemedText>}
         {profile.can_edit && <>
-          <ThemedText type="small" themeColor="textSecondary">배너는 가운데 기준의 가로 화면, 로고는 원형으로 보여요. 저장 전 미리보기에서 확인해 주세요.</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("배너는 가운데 기준의 가로 화면, 로고는 원형으로 보여요. 저장 전 미리보기에서 확인해 주세요.")}</ThemedText>
           {(['banner', 'avatar'] as const).map((kind) => <View key={kind} style={styles.row}>
-            <ThemedText type="smallBold">{kind === 'banner' ? '채널 배너' : '가게 로고'}</ThemedText>
+            <ThemedText type="smallBold">{kind === 'banner' ? tr("채널 배너") : tr("가게 로고")}</ThemedText>
             <View style={styles.actions}>
-              <ProfileAction label={`${kind === 'banner' ? '배너' : '로고'} ${photos[kind].uri || photos[kind].path ? '교체' : '선택'}`} onPress={() => { void choose(kind); }} disabled={busy} />
-              {(photos[kind].uri || photos[kind].path) && <ProfileAction label={`${kind === 'banner' ? '배너' : '로고'} 제거`} onPress={() => change({ ...photos, [kind]: { path: null, uri: null } })} disabled={busy} />}
+              <ProfileAction label={tr("{0} {1}", (kind === 'banner' ? '배너' : '로고'), (photos[kind].uri || photos[kind].path ? '교체' : '선택'))} onPress={() => { void choose(kind); }} disabled={busy} />
+              {(photos[kind].uri || photos[kind].path) && <ProfileAction label={tr("{0} 제거", (kind === 'banner' ? '배너' : '로고'))} onPress={() => change({ ...photos, [kind]: { path: null, uri: null } })} disabled={busy} />}
             </View>
           </View>)}
           <View style={styles.actions}>
-            <ProfileAction label={busy ? '처리 중…' : '프로필 사진 저장'} onPress={() => { void save(); }} disabled={busy || !photoDirty} primary={photoDirty} />
-            {dirty && <ProfileAction label="수정 취소" onPress={cancel} disabled={busy} />}
+            <ProfileAction label={busy ? tr("처리 중…") : tr("프로필 사진 저장")} onPress={() => { void save(); }} disabled={busy || !photoDirty} primary={photoDirty} />
+            {dirty && <ProfileAction label={tr("수정 취소")} onPress={cancel} disabled={busy} />}
           </View>
           {contact && <View style={styles.contact}>
-            <ThemedText type="smallBold">공개 연락 정보</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">방문자가 볼 전화번호와 실제 영업시간을 적어주세요. 내부 담당자 연락처와 별도로 공개돼요.</ThemedText>
-            <ThemedText type="smallBold">전화번호 <ThemedText type="small" themeColor="textSecondary">(선택)</ThemedText></ThemedText>
-            <TextInput accessibilityLabel="업체 공개 전화번호" value={contact.phone} editable={!busy} maxLength={40} keyboardType="phone-pad" autoCapitalize="none"
+            <ThemedText type="smallBold">{tr("공개 연락 정보")}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{tr("방문자가 볼 전화번호와 실제 영업시간을 적어주세요. 내부 담당자 연락처와 별도로 공개돼요.")}</ThemedText>
+            <ThemedText type="smallBold">{tr("전화번호") + " "}<ThemedText type="small" themeColor="textSecondary">{tr("(선택)")}</ThemedText></ThemedText>
+            <TextInput accessibilityLabel={tr("업체 공개 전화번호")} value={contact.phone} editable={!busy} maxLength={40} keyboardType="phone-pad" autoCapitalize="none"
               placeholder="+1 604 555 0101" placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')} onChangeText={phone => changeContact({ ...contact, phone })}
               style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
-            <ThemedText type="smallBold">영업시간 <ThemedText type="small" themeColor="textSecondary">(선택)</ThemedText></ThemedText>
-            <TextInput accessibilityLabel="업체 영업시간" value={contact.hours} editable={!busy} maxLength={500} multiline
-              placeholder={'월–금 09:00–18:00\n토·일 휴무'} placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')} onChangeText={hours => changeContact({ ...contact, hours })}
+            <ThemedText type="smallBold">{tr("영업시간") + " "}<ThemedText type="small" themeColor="textSecondary">{tr("(선택)")}</ThemedText></ThemedText>
+            <TextInput accessibilityLabel={tr("업체 영업시간")} value={contact.hours} editable={!busy} maxLength={500} multiline
+              placeholder={tr("월–금 09:00–18:00\n토·일 휴무")} placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')} onChangeText={hours => changeContact({ ...contact, hours })}
               style={[styles.input, styles.hours, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
-            <ThemedText type="small" themeColor="textSecondary">비워 두면 공개하지 않아요.</ThemedText>
-            <ProfileAction label={busy ? '연락 정보 처리 중…' : '연락 정보 저장'} onPress={() => { void saveContact(); }} disabled={busy || !contactDirty} primary={!photoDirty && contactDirty} />
+            <ThemedText type="small" themeColor="textSecondary">{tr("비워 두면 공개하지 않아요.")}</ThemedText>
+            <ProfileAction label={busy ? tr("연락 정보 처리 중…") : tr("연락 정보 저장")} onPress={() => { void saveContact(); }} disabled={busy || !contactDirty} primary={!photoDirty && contactDirty} />
           </View>}
         </>}
-        {profile.imageLoadFailed && !dirty && <View style={styles.row}><ThemedText type="small" themeColor="textSecondary">사진 일부를 불러오지 못했어요. 저장된 사진은 유지돼요.</ThemedText><ProfileAction label="사진 다시 확인" onPress={() => { change(null); reload(); }} disabled={busy} /></View>}
+        {profile.imageLoadFailed && !dirty && <View style={styles.row}><ThemedText type="small" themeColor="textSecondary">{tr("사진 일부를 불러오지 못했어요. 저장된 사진은 유지돼요.")}</ThemedText><ProfileAction label={tr("사진 다시 확인")} onPress={() => { change(null); reload(); }} disabled={busy} /></View>}
       </>}
     {!!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
-    {!loading && !profile && <ProfileAction label="다시 불러오기" onPress={reload} disabled={busy} />}
+    {!loading && !profile && <ProfileAction label={tr("다시 불러오기")} onPress={reload} disabled={busy} />}
     {!!notice && <ThemedText type="small" themeColor="accent" accessibilityLiveRegion="polite">{notice}</ThemedText>}
   </View>;
 }

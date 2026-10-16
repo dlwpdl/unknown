@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -9,11 +10,11 @@ function load(file, imports) {
   const source = ts.transpileModule(readFileSync(new URL(`../src/${file}`, import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, require(name) {
+  vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
     if (name in imports) return imports[name];
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     throw new Error(`Unexpected import: ${name}`);
-  } });
+  }) });
   return exports;
 }
 

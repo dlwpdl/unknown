@@ -1,3 +1,4 @@
+import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, FlatList } from '@/components/analytics-controls';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -21,7 +22,7 @@ import { TabContent } from '@/components/tab-content';
 import { TrustBadge } from '@/components/trust-badge';
 import { Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { t } from '@/i18n/ko';
+import { t, tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { getCommunityActionError, loadConversations, loadPendingMeetupRequests, MEETUPS_CHANGED_EVENT, respondMeetupRequest, type ConversationPage, type ConversationFilter, type MeetupRequest } from '@/lib/community-data';
 import { meetupRestrictionError } from '@/lib/meetup-policy';
@@ -42,6 +43,7 @@ const MEETUP_CHAT_ICONS = {
 } as const;
 
 export default function ChatScreen() {
+  useLanguage();
   // Pushing a tab route from a stack screen can mount the tabs twice; keep channel names unique per mount.
   const channelId = useId();
   const theme = useTheme();
@@ -194,7 +196,7 @@ export default function ChatScreen() {
       play('warning');
       const code = getCommunityActionError(failure);
       const message = code ? t.actionErrors[code] : null;
-      Alert.alert(code === 'MEETUP_JOIN_RESTRICTED' ? '신청자의 새 모임 참여가 제한 중이에요' : message?.title ?? t.chat.requestError, meetupRestrictionError(failure) ?? getChillingError(failure));
+      Alert.alert(code === 'MEETUP_JOIN_RESTRICTED' ? tr("신청자의 새 모임 참여가 제한 중이에요") : message?.title ?? t.chat.requestError, meetupRestrictionError(failure) ?? getChillingError(failure));
       await refresh();
     } finally { processing.current = false; if (currentUser.current === owner) setRequestBusy(null); }
   };
@@ -216,21 +218,21 @@ export default function ChatScreen() {
         {/* 자리(슬롯)는 상태라 칩 안의 숫자와 한 줄 안내로만 보여준다. 큰 카드는 대화 목록을 밀어냈다. */}
         <View style={styles.filters}>{([['all', t.chat.all],
           // 관리자에게는 자리 한도가 적용되지 않으므로 숫자 대신 제한 없음을 알린다.
-          ['group', auth.isAdmin ? `${t.chat.groups} 제한 없음` : `${t.chat.groups}${meetupSlots ? ` ${meetupSlots.active}/${meetupSlots.limit}` : ''}`],
+          ['group', auth.isAdmin ? tr("{0} 제한 없음", (t.chat.groups)) : `${t.chat.groups}${meetupSlots ? ` ${meetupSlots.active}/${meetupSlots.limit}` : ''}`],
           ['direct', t.chat.direct],
           ['requests', `${t.chat.requestTab} ${pendingCount}`]] as const).map(([key, label]) => <Pressable analyticsId="app_tabs_chat.pressable.2" key={key} onPress={() => { play('selection'); if (key !== filter) { animateList(); setLoading(true); setFilter(key); } }} accessibilityRole="tab" accessibilityState={{ selected: filter === key }} style={({ pressed }) => [styles.filter, Depth.control, { backgroundColor: filter === key ? theme.accent : theme.backgroundElement, borderBottomColor: filter === key ? theme.accentDepth : theme.backgroundSelected, }]}><ThemedText type="smallBold" style={{ color: filter === key ? theme.accentInk : theme.text }}>{label}</ThemedText></Pressable>)}</View>
         {filter === 'requests' && <>
           {requests.length > 0 && <ThemedText type="smallBold">{t.chat.requestsTitle}</ThemedText>}
           {requests.map((request) => <View key={request.id} style={[styles.request, Depth.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
             <View style={styles.requestIdentity}><View style={[styles.requestAvatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle" themeColor="accent">{(request.requester?.nickname ?? t.chat.member).slice(0, 1)}</ThemedText></View>
-              <View style={styles.roomBody}><ThemedText style={styles.requestName}>{request.requester?.nickname ?? t.chat.member}</ThemedText><ThemedText type="small" themeColor="textSecondary">{request.post?.title}</ThemedText><ThemedText type="small" themeColor="accent">승인 대기</ThemedText></View>
+              <View style={styles.roomBody}><ThemedText style={styles.requestName}>{request.requester?.nickname ?? t.chat.member}</ThemedText><ThemedText type="small" themeColor="textSecondary">{request.post?.title}</ThemedText><ThemedText type="small" themeColor="accent">{tr("승인 대기")}</ThemedText></View>
             </View>
-            <ThemedText type="small" themeColor="textSecondary">{request.post?.room?.eventKind ? '모임 프로필과 질문 답변이 도착했어요.' : request.message || t.chat.requestMessageEmpty}</ThemedText>
-            {request.post?.room?.eventKind ? <Pressable analyticsId="app_tabs_chat.pressable.4" onPress={() => { play('selection'); router.push({ pathname: '/meetup-application', params: { requestId: request.id } }); }} accessibilityRole="button" accessibilityLabel={`${request.requester?.nickname ?? t.chat.member}님의 프로필과 신청 답변 검토`} style={styles.action}><ThemedText type="smallBold" themeColor="accent">프로필과 답변 검토하기 ›</ThemedText></Pressable> : <>
-            {approveId === request.id && <ThemedText type="small" themeColor="textSecondary">승인하면 신청자의 모임 자리 1개를 사용하고 모임 대화에 참여해요. 기존 멤버의 자리는 추가로 사용하지 않아요.</ThemedText>}
+            <ThemedText type="small" themeColor="textSecondary">{request.post?.room?.eventKind ? tr("모임 프로필과 질문 답변이 도착했어요.") : request.message || t.chat.requestMessageEmpty}</ThemedText>
+            {request.post?.room?.eventKind ? <Pressable analyticsId="app_tabs_chat.pressable.4" onPress={() => { play('selection'); router.push({ pathname: '/meetup-application', params: { requestId: request.id } }); }} accessibilityRole="button" accessibilityLabel={tr("{0}님의 프로필과 신청 답변 검토", (request.requester?.nickname ?? t.chat.member))} style={styles.action}><ThemedText type="smallBold" themeColor="accent">{tr("프로필과 답변 검토하기 ›")}</ThemedText></Pressable> : <>
+            {approveId === request.id && <ThemedText type="small" themeColor="textSecondary">{tr("승인하면 신청자의 모임 자리 1개를 사용하고 모임 대화에 참여해요. 기존 멤버의 자리는 추가로 사용하지 않아요.")}</ThemedText>}
             <View style={styles.requestActions}><Pressable analyticsId="app_tabs_chat.pressable.5" onPress={() => { play('selection'); void handleRequest(request, 'rejected'); }} disabled={requestBusy !== null} accessibilityRole="button" accessibilityState={{ disabled: requestBusy !== null }} style={({ pressed }) => [styles.requestButton, Depth.control, { borderColor: theme.line, backgroundColor: theme.card, }]}><ThemedText type="smallBold">{t.chat.reject}</ThemedText></Pressable>
               {approveId === request.id
-                ? <RaisedActionButton compact analyticsId="app_tabs_chat.pressable.6" onPress={() => { play('selection'); void handleRequest(request, 'approved'); }} disabled={requestBusy !== null} busy={requestBusy === request.id} label="확인하고 승인" />
+                ? <RaisedActionButton compact analyticsId="app_tabs_chat.pressable.6" onPress={() => { play('selection'); void handleRequest(request, 'approved'); }} disabled={requestBusy !== null} busy={requestBusy === request.id} label={tr("확인하고 승인")} />
                 : <Pressable analyticsId="app_tabs_chat.pressable.6" onPress={() => { play('selection'); setApproveId(request.id); }} disabled={requestBusy !== null} accessibilityRole="button" accessibilityState={{ disabled: requestBusy !== null }} style={({ pressed }) => [styles.requestButton, Depth.control, { borderColor: theme.accentDepth, backgroundColor: theme.accent, borderBottomWidth: 3, }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{t.chat.approve}</ThemedText></Pressable>}</View></>}
           </View>)}
         </>}
@@ -238,12 +240,12 @@ export default function ChatScreen() {
       </View>}
       ListEmptyComponent={initialLoading ? <GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} />
         : loading ? null
-        : filter === 'requests' ? (requests.length ? null : <StateCard title="대기 중인 모임 신청이 없어요" body="모임에 신청이 들어오면 여기서 수락하거나 거절할 수 있어요." />)
+        : filter === 'requests' ? (requests.length ? null : <StateCard title={tr("대기 중인 모임 신청이 없어요")} body="모임에 신청이 들어오면 여기서 수락하거나 거절할 수 있어요." />)
           : <StateCard title={t.chat.emptyTitle} body={t.chat.emptyBody} />}
       renderItem={({ item, index }) => <Pressable analyticsId="app_tabs_chat.pressable.7" onPress={() => { play('selection'); setModalConversation(item); setSelection({ userId: auth.me.id, id: item.id }); }} accessibilityRole="button" style={({ pressed }) => [styles.room, { borderBottomColor: theme.line, backgroundColor: pressed ? theme.backgroundElement : 'transparent', transform: [{ scale: pressed && !reducedMotion ? 0.985 : 1 }] }]}>
         <ChatAvatar kind={item.kind} title={item.title} meetupCategory={item.meetupCategory} initial={item.kind === 'direct' ? item.otherUser.nickname[0] : ''} active={focused && !shownConversation && index < 8} delay={index * 260} />
         <View style={styles.roomBody}><View style={styles.nickRow}><ThemedText style={[styles.flex, styles.roomName]} numberOfLines={1}>{item.kind === 'group' ? item.title : item.otherUser.nickname}</ThemedText>{item.kind === 'direct' && <TrustBadge verified={item.otherUser.verificationLevel >= 2} trustLevel={item.otherUser.verificationLevel === 3 ? 3 : item.otherUser.verificationLevel === 2 ? 2 : undefined} />}</View>
-          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{item.status === 'pending' ? '대화 상태 확인 중' : item.status === 'ended' ? t.chat.ended : item.latestBody ?? t.chat.newConversation}</ThemedText></View>
+          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{item.status === 'pending' ? tr("대화 상태 확인 중") : item.status === 'ended' ? t.chat.ended : item.latestBody ?? t.chat.newConversation}</ThemedText></View>
         <View style={styles.roomTime}><ThemedText type="small" themeColor="textSecondary">{chatListTime(item.latestAt)}</ThemedText></View>
       </Pressable>} />
   </SafeAreaView><Modal visible={!!openConversation} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" allowSwipeDismissal onRequestClose={() => { setSelection(null); router.setParams({ conversationId: undefined }); }} onDismiss={() => setModalConversation(undefined)}>
@@ -252,6 +254,7 @@ export default function ChatScreen() {
 }
 
 function ChatAvatar({ kind, title, meetupCategory, initial, active, delay }: { kind: 'group' | 'direct'; title: string; meetupCategory: string | null; initial: string; active: boolean; delay: number }) {
+
   const theme = useTheme();
   const reducedMotion = useReducedMotion();
   const [pulse] = useState(() => new Animated.Value(0));

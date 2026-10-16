@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -12,7 +13,7 @@ const exports = {};
 const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/relationship-slot-card.tsx', import.meta.url), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
 }).outputText;
-vm.runInNewContext(source, { exports, require(name) {
+vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
     if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
   if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
   if ((name === 'react-native' || name === '@/components/analytics-controls')) return { View: 'View', Pressable: 'Pressable', StyleSheet: { create: value => value } };
@@ -23,7 +24,7 @@ vm.runInNewContext(source, { exports, require(name) {
   if (name === '@/i18n/ko') return { t: { chat: { slotUnlock: value => `해제 ${value}` } } };
   if (name === '@/lib/membership') return { MEMBERSHIP_LIMITS };
   throw new Error(`Unexpected import: ${name}`);
-} });
+}) });
 const { relationshipSlotData, RelationshipSlotCard } = exports;
 const snapshot = (limit = MEMBERSHIP_LIMITS.free.meetups) => ({ tier: 'free', meetupLimit: limit, meetupsUsed: 1, meetupSlotsLocked: 1, meetupSlotsAvailable: limit - 2,
   meetupUnlocksAt: ['2026-09-12T12:00:00Z', '2026-09-11T12:00:00Z'],

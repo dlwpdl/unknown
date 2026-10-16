@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Image } from 'expo-image';
 import { Platform, StyleSheet, View } from 'react-native';
@@ -15,20 +17,22 @@ import { supabase } from '@/lib/supabase';
 import { subscribeVisibility, visibilityRevision } from '@/lib/content-visibility';
 
 export function SharedPreviewContent({ preview }: { preview: SharedLinkPreview }) {
+  useLanguage();
   const theme = useTheme();
   const image = preview.imageUrl ? { uri: preview.imageUrl } : preview.kind === 'meetup' ? require('@/assets/brand/chat-3d/disco-ball.png')
     : preview.kind === 'festival' ? require('@/assets/brand/chat-3d/ticket.png') : require('@/assets/brand/gling-night-app-icon.png');
   return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
     <Image source={image} style={styles.cover} contentFit={preview.imageUrl ? 'cover' : 'contain'} accessible={false} />
     <View style={styles.copy}>
-      <ThemedText type="smallBold" themeColor="accent">{preview.kind === 'meetup' ? '모임 초대' : preview.kind === 'festival' ? '페스티벌 같이 가요' : preview.label}</ThemedText>
+      <ThemedText type="smallBold" themeColor="accent">{preview.kind === 'meetup' ? tr("모임 초대") : preview.kind === 'festival' ? tr("페스티벌 같이 가요") : preview.label}</ThemedText>
       <ThemedText type="subtitle" numberOfLines={3}>{preview.title}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">{preview.city}{preview.schedule ? ` · ${chillingSchedule(preview.schedule)}` : ''}{preview.closed ? ' · 모집 마감' : ''}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">글링에서 {preview.kind === 'meetup' ? '모임 확인하기' : '전체 내용 보기'} ›</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{preview.city}{preview.schedule ? ` · ${chillingSchedule(preview.schedule)}` : ''}{preview.closed ? tr(" · 모집 마감") : ''}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{tr("글링에서") + " "}{preview.kind === 'meetup' ? tr("모임 확인하기") : tr("전체 내용 보기")} ›</ThemedText>
     </View>
   </View>;
 }
 export function SharedLinkCard({ url }: { url: string }) {
+  useLanguage();
   const target = sharedLinkTarget(url), router = useRouter(), hidden = useContentVisibility();
   const postId = target?.id;
   const revision = useSyncExternalStore(subscribeVisibility, visibilityRevision, visibilityRevision);
@@ -43,7 +47,7 @@ export function SharedLinkCard({ url }: { url: string }) {
     return () => { active = false; };
   }, [postId, key, hidden]);
   if (!target || result?.key !== key || hidden('post', target.id)) return null;
-  return <Pressable analyticsId="chat.shared-link.open" accessibilityRole="link" accessibilityLabel={`${result.preview.title} · 글링에서 보기`}
+  return <Pressable analyticsId="chat.shared-link.open" accessibilityRole="link" accessibilityLabel={tr("{0} · 글링에서 보기", (result.preview.title))}
     onPress={() => { play('selection'); router.push(Platform.OS === 'web' ? `/post?id=${target.id}${result.preview.kind === 'meetup' ? '&invite=1' : ''}` as Href : { pathname: '/post/[id]', params: { id: target.id, invite: result.preview.kind === 'meetup' ? '1' : undefined } }); }}
     style={({ pressed }) => [styles.link, { opacity: pressed ? 0.8 : 1 }]}><SharedPreviewContent preview={result.preview} /></Pressable>;
 }

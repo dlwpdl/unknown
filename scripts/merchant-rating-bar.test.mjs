@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -22,7 +23,7 @@ function rating({ score, reviewKind = 'usage', reduced = false, label }) {
   };
   const exports = {}, url = new URL('../src/components/merchant-rating-bar.tsx', import.meta.url);
   const source = ts.transpileModule(readFileSync(url, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
-  vm.runInNewContext(source, { exports, require: name => imports[name] ?? {} });
+  vm.runInNewContext(source, { exports, require: withLanguageImports(name => imports[name] ?? {}) });
   return { tree: exports.MerchantRatingBar({ score, reviewKind, label }), animations, values, cleanups };
 }
 const nodes = root => !root || typeof root !== 'object' ? [] : [root, ...Object.values(root).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];

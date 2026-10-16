@@ -1,3 +1,4 @@
+import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -11,7 +12,7 @@ import { relationshipSlotData } from '@/components/relationship-slot-card';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
-import { t } from '@/i18n/ko';
+import { t, tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { chillingSchedule } from '@/lib/chilling';
 import { leaveMeetup, loadMyMeetups, MEETUPS_CHANGED_EVENT, recordPostShare, type MyMeetup } from '@/lib/community-data';
@@ -24,10 +25,12 @@ import type { Post } from '@/lib/types';
 
 type MyMeetupsProps = { onOpen: (postId: string) => Promise<void>; showLoadingIndicator?: boolean };
 export function MyMeetups(props: MyMeetupsProps) {
+
   const { isAuthed, me } = useAuth();
   return <MyMeetupsContent key={isAuthed ? me.id : 'guest'} {...props} />;
 }
 function MyMeetupsContent({ onOpen, showLoadingIndicator = true }: MyMeetupsProps) {
+  useLanguage();
   const theme = useTheme();
   const hidden = useContentVisibility();
   const router = useRouter();
@@ -119,22 +122,22 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true }: MyMeetupsProp
       if (!post?.room || post.id !== meetup.id) throw new Error('MEETUP_UNAVAILABLE');
       setSharedPost(post);
     } catch {
-      if (active.current) { play('warning'); Alert.alert('초대 링크를 열지 못했어요', '모임을 다시 확인한 뒤 눌러주세요.'); }
+      if (active.current) { play('warning'); Alert.alert(tr("초대 링크를 열지 못했어요"), tr("모임을 다시 확인한 뒤 눌러주세요.")); }
     } finally { shareBusy.current = false; if (active.current) setBusy(null); }
   };
 
   return <View style={styles.section}>
     <View style={styles.heading}>
       <ThemedText type="smallBold" accessibilityRole="header" style={styles.title}>{t.meetup.mine}</ThemedText>
-      {isAuthed && slots && <ThemedText type="small" themeColor="textSecondary" accessibilityLabel={`모임 자리 ${slots.active} / ${slots.limit}`} style={{ fontVariant: ['tabular-nums'] }}>
-        모임 자리 <ThemedText type="smallBold">{slots.active}/{slots.limit}</ThemedText>
+      {isAuthed && slots && <ThemedText type="small" themeColor="textSecondary" accessibilityLabel={tr("모임 자리 {0} / {1}", (slots.active), (slots.limit))} style={{ fontVariant: ['tabular-nums'] }}>
+        {tr("모임 자리") + " "}<ThemedText type="smallBold">{slots.active}/{slots.limit}</ThemedText>
       </ThemedText>}
     </View>
     {isAuthed && <><MeetupPolicyNotice mode="leave" /><MeetupPolicyNotice mode="close" /></>}
     {!isAuthed ? <Pressable analyticsId="components_my-meetups.pressable.1" onPress={() => { play('selection'); promptLogin(t.auth.reasonJoinLogin); }} accessibilityRole="button" style={[styles.empty, { borderColor: theme.line }]}>
-      <ThemedText type="small" themeColor="accent">로그인하고 내 모임 보기</ThemedText>
+      <ThemedText type="small" themeColor="accent">{tr("로그인하고 내 모임 보기")}</ThemedText>
     </Pressable> : <>
-      {loading && items.length === 0 && showLoadingIndicator && <GlingLoader color={theme.accent} accessibilityLabel="내 모임 불러오는 중" />}
+      {loading && items.length === 0 && showLoadingIndicator && <GlingLoader color={theme.accent} accessibilityLabel={tr("내 모임 불러오는 중")} />}
       {error && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{t.meetup.loadError}</ThemedText>}
       {!loading && !error && items.length === 0 && <ThemedText type="small" themeColor="textSecondary">{t.meetup.empty}</ThemedText>}
       {/* 내 모임은 가로 카드로 압축해 공개 모임 소개가 첫 화면에 들어오게 한다. */}
@@ -143,13 +146,13 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true }: MyMeetupsProp
           <ThemedText type="smallBold" themeColor="accent">{t.meetup[meetup.role]}</ThemedText>
           <ThemedText type="smallBold">{meetup.title}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{chillingSchedule(meetup.room)}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">{CITIES.find(({ id }) => id === meetup.cityId)?.name ?? meetup.cityId} · {meetup.room.memberCount ?? 0}{meetup.room.capacity ? `/${meetup.room.capacity}` : ''}명</ThemedText>
-          {busy === meetup.id && <GlingLoader color={theme.accent} accessibilityLabel="모임 처리 중" />}
+          <ThemedText type="small" themeColor="textSecondary">{CITIES.find(({ id }) => id === meetup.cityId)?.name ?? meetup.cityId} · {meetup.room.memberCount ?? 0}{meetup.room.capacity ? `/${meetup.room.capacity}` : ''}{tr("명")}</ThemedText>
+          {busy === meetup.id && <GlingLoader color={theme.accent} accessibilityLabel={tr("모임 처리 중")} />}
         </Pressable>
-        {(meetup.role === 'host' || meetup.role === 'approved') && <Pressable analyticsId="meetup.share.open" accessibilityRole="button" accessibilityLabel={`${meetup.title} 초대 링크 공유`}
+        {(meetup.role === 'host' || meetup.role === 'approved') && <Pressable analyticsId="meetup.share.open" accessibilityRole="button" accessibilityLabel={tr("{0} 초대 링크 공유", (meetup.title))}
           disabled={!!busy} accessibilityState={{ disabled: !!busy, busy: busy === meetup.id }} onPress={() => void invite(meetup)}
           style={({ pressed }) => [styles.action, { borderColor: theme.line, borderWidth: 1, borderRadius: 12, backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement }]}>
-          <ThemedText type="smallBold" themeColor="accent">{meetup.role === 'host' ? '초대 링크' : '같이 가요'}</ThemedText>
+          <ThemedText type="smallBold" themeColor="accent">{meetup.role === 'host' ? tr("초대 링크") : tr("같이 가요")}</ThemedText>
         </Pressable>}
         {(meetup.role === 'host' || meetup.role === 'approved') && meetup.conversationId && <Pressable analyticsId="components_my-meetups.pressable.3"
           onPress={() => { play('selection'); router.push({ pathname: '/chat', params: { conversationId: meetup.conversationId! } }); }}

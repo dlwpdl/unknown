@@ -1,3 +1,4 @@
+import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
@@ -13,7 +14,7 @@ import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
-import { count, t } from '@/i18n/ko';
+import { count, t, tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { getCommunityActionError, loadTradeProfile, startDirectConversation, type TradeProfile } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -38,6 +39,7 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
   onClose: () => void;
   onBeforeNavigate?: () => void; // parent dismisses its own modal before we push a route
 }) {
+  useLanguage();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -101,7 +103,7 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
       const message = code ? t.actionErrors[code as keyof typeof t.actionErrors] : null;
       if (message) Alert.alert(message.title, message.body, [
         { text: t.write.cancel, style: 'cancel' },
-        ...(message.membership ? [{ text: '멤버십 보기', onPress: () => navigate('/profile/membership') }] : []),
+        ...(message.membership ? [{ text: tr("멤버십 보기"), onPress: () => navigate('/profile/membership') }] : []),
       ]);
       else Alert.alert(t.chat.startErrorTitle, t.chat.startErrorBody);
     } finally {
@@ -144,7 +146,7 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
                       onPress={() => navigate({ pathname: '/user/[id]', params: { id: user.id!, nickname: user.nickname } })}
                       accessibilityRole="button"
                       style={({ pressed }) => [styles.cta, Depth.control, { backgroundColor: theme.backgroundElement, }]}>
-                      <ThemedText type="smallBold">프로필 · 오늘·구해요·팔아요 이력</ThemedText>
+                      <ThemedText type="smallBold">{tr("프로필 · 오늘·구해요·팔아요 이력")}</ThemedText>
                     </Pressable>}
                     <RaisedActionButton analyticsId="components_user-sheet.pressable.4" onPress={() => void requestChat(user)} disabled={requesting} busy={requesting} label={requesting ? t.chat.joinSending : t.profileSheet.chatRequest} />
                     <Pressable analyticsId="components_user-sheet.pressable.5" onPress={() => { play('selection'); setReporting(user); onClose(); }} accessibilityRole="button"
@@ -168,6 +170,7 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
 // 거래 이력. 점수 한 줄로 줄이지 않는다 — 갓 도착한 사람이 낮은 점수로 깔리면
 // 정착을 돕겠다는 앱이 정착을 막는다. 기록이 없으면 "새 이웃"이라고만 적는다.
 function TradeRecord({ trade, onOpenPost }: { trade: TradeProfile; onOpenPost: (postId: string) => void }) {
+  useLanguage();
   const theme = useTheme();
   // 칩이 아니라 문장으로 적는다. 신뢰는 훑어서가 아니라 읽어서 판단된다.
   const facts: { symbol: SymbolViewProps['name']; text: string }[] = [];
@@ -189,13 +192,12 @@ function TradeRecord({ trade, onOpenPost }: { trade: TradeProfile; onOpenPost: (
         </View>
       ) : (
         <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12.5, textAlign: 'center' }}>
-          아직 거래 기록이 없는 새 이웃이에요.
-        </ThemedText>
+          {tr("아직 거래 기록이 없는 새 이웃이에요.")}</ThemedText>
       )}
 
       {trade.openListings.length > 0 && (
         <View style={styles.listings}>
-          <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12.5 }}>올려둔 구해요·팔아요</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12.5 }}>{tr("올려둔 구해요·팔아요")}</ThemedText>
           {trade.openListings.slice(0, 3).map((listing) => (
             <Pressable analyticsId="components_user-sheet.pressable.6" key={listing.id} onPress={() => onOpenPost(listing.id)} accessibilityRole="button"
               accessibilityLabel={`${listing.title}${listing.price != null ? `, ${t.detail.price(Number(listing.price))}` : ''}`}
@@ -210,12 +212,12 @@ function TradeRecord({ trade, onOpenPost }: { trade: TradeProfile; onOpenPost: (
 
       {trade.reviews.recent.length > 0 && (
         <View style={styles.listings}>
-          <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12.5 }}>받은 후기</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12.5 }}>{tr("받은 후기")}</ThemedText>
           {trade.reviews.recent.slice(0, 2).map((review) => (
             <View key={review.id} style={styles.review}>
               <ThemedText type="small" numberOfLines={2}>{review.body}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11.5 }}>
-                {review.authorNickname} · {review.wouldDealAgain ? '다시 거래하겠다' : '다시 거래 안 함'}
+                {review.authorNickname} · {review.wouldDealAgain ? tr("다시 거래하겠다") : tr("다시 거래 안 함")}
               </ThemedText>
             </View>
           ))}

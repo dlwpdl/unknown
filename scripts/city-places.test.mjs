@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -21,9 +22,9 @@ function module(file, imports = {}, dev = true) {
     module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true,
   } }).outputText;
   vm.runInNewContext(source, { exports, URL, URLSearchParams, __DEV__: dev,
-    require: name => name.endsWith('city-places.catalog.json') ? catalog()
+    require: withLanguageImports(name => name.endsWith('city-places.catalog.json') ? catalog()
       : name.endsWith('city-places.photos.json') ? photos()
-      : imports[name] ?? new Proxy({}, { get: (_value, key) => key }),
+      : imports[name] ?? new Proxy({}, { get: (_value, key) => key })),
   });
   return exports;
 }

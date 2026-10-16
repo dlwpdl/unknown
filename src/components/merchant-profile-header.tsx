@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
@@ -11,16 +13,17 @@ import type { MerchantReviewKind, MerchantReviewPage } from '@/lib/merchant-revi
 type Props = { profile: MerchantProfile; ratings?: Partial<Record<MerchantReviewKind, Pick<MerchantReviewPage, 'rating_average' | 'review_count'> | null>>; onReviewPress?: (kind: MerchantReviewKind) => void };
 
 export function MerchantProfileHeader({ profile, ratings, onReviewPress }: Props) {
+  useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const [linkError, setLinkError] = useState('');
   return <View style={styles.profile}>
     <View style={[styles.banner, { backgroundColor: theme.card }]}>
-      {profile.bannerUri ? <Image source={{ uri: profile.bannerUri }} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={`${profile.name} 배너`} />
+      {profile.bannerUri ? <Image source={{ uri: profile.bannerUri }} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={tr("{0} 배너", (profile.name))} />
         : <ThemedText style={[styles.bannerG, { color: theme.accent }]} accessible={false}>gling.</ThemedText>}
     </View>
     <View style={styles.identity}>
       <View style={[styles.avatar, { backgroundColor: theme.accent }]}>
-        {profile.avatarUri ? <Image source={{ uri: profile.avatarUri }} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={`${profile.name} 로고`} />
+        {profile.avatarUri ? <Image source={{ uri: profile.avatarUri }} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={tr("{0} 로고", (profile.name))} />
           : <ThemedText type="title" style={{ color: theme.accentInk }} accessible={false}>{profile.name.slice(0, 1)}</ThemedText>}
       </View>
       <View style={styles.name}>
@@ -31,7 +34,7 @@ export function MerchantProfileHeader({ profile, ratings, onReviewPress }: Props
         const rating = ratings?.[kind], average = rating?.rating_average ?? null, label = kind === 'usage' ? '상품·서비스' : '근무';
         const score = rating === undefined ? '…' : average == null ? '—' : (Math.round(average * 10) / 10).toFixed(1);
         return <Pressable key={kind} analyticsId={`company.rating.${kind}`} accessibilityRole="button"
-          accessibilityLabel={`${label} 리뷰 보기, ${rating === undefined ? '불러오는 중' : rating === null ? '점수를 다시 확인해 주세요' : average == null ? '점수 없음' : `10점 만점에 평균 ${score}점, 인증 후기 ${rating.review_count}개`}`}
+          accessibilityLabel={tr("{0} 리뷰 보기, {1}", (label), (rating === undefined ? '불러오는 중' : rating === null ? '점수를 다시 확인해 주세요' : average == null ? '점수 없음' : `10점 만점에 평균 ${score}점, 인증 후기 ${rating.review_count}개`))}
           style={styles.rating} onPress={() => { play('selection'); onReviewPress(kind); }}>
           {kind === 'usage' ? <ThemedText style={styles.spark} themeColor="accent" accessible={false}>✦</ThemedText>
             : <View style={styles.briefcase} accessible={false}>
@@ -47,12 +50,12 @@ export function MerchantProfileHeader({ profile, ratings, onReviewPress }: Props
     {!!profile.services && <ThemedText>{profile.services}</ThemedText>}
     {!!profile.address && <ThemedText type="small" themeColor="textSecondary">{profile.address}</ThemedText>}
     {!!profile.links?.length && <View style={styles.links}>{profile.links.map(link => <Pressable key={link.url}
-      analyticsId="company.source" accessibilityRole="link" accessibilityLabel={`${profile.name} ${link.label}, 외부 페이지 열기`}
+      analyticsId="company.source" accessibilityRole="link" accessibilityLabel={tr("{0} {1}, 외부 페이지 열기", (profile.name), (link.label))}
       style={[styles.link, { borderColor: theme.line }]} onPress={() => {
         play('selection'); setLinkError('');
         void Linking.openURL(link.url).catch(() => { setLinkError(link.url); play('warning'); });
       }}><ThemedText type="smallBold" themeColor="accent">{link.label} ↗</ThemedText></Pressable>)}</View>}
-    {profile.links?.some(link => link.url === linkError) && <ThemedText type="small" accessibilityRole="alert">업체 페이지를 열지 못했어요. 다시 눌러 주세요.</ThemedText>}
+    {profile.links?.some(link => link.url === linkError) && <ThemedText type="small" accessibilityRole="alert">{tr("업체 페이지를 열지 못했어요. 다시 눌러 주세요.")}</ThemedText>}
   </View>;
 }
 

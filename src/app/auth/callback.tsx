@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { Pressable } from '@/components/analytics-controls';
 import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
@@ -7,14 +9,15 @@ import { Colors, Spacing } from '@/constants/theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 export default function AuthCallbackRoute() {
+  useLanguage();
   const router = useRouter();
   const { play } = useInteractionFeedback();
   return (
     <View style={styles.page}>
-      <ThemedText type="subtitle">로그인을 완료하는 중입니다.</ThemedText>
+      <ThemedText type="subtitle">{tr("로그인을 완료하는 중입니다.")}</ThemedText>
       <Pressable analyticsId="app_auth_callback.pressable.1" onPress={() => { play('selection'); router.replace('/'); }} accessibilityRole="button"
         style={({ pressed }) => ({ minHeight: 44, minWidth: 44, justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
-        <ThemedText type="smallBold">돌아가기</ThemedText>
+        <ThemedText type="smallBold">{tr("돌아가기")}</ThemedText>
       </Pressable>
     </View>
   );

@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
@@ -52,7 +53,7 @@ function component(file, name, { auth, rpc, postLoader, workspaceLoader, callbac
     '@/lib/supabase': { supabase: { auth: { getSession: async () => ({ data: { session: { user: { id: auth.me.id } } } }) } } },
   };
   const source = ts.transpileModule(readFileSync(new URL(file, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;
-  vm.runInNewContext(source, { exports, require: name => { if (name.startsWith('@/assets/')) return 'brand.png'; if (!(name in imports)) throw new Error(`Unexpected import ${name}`); return imports[name]; }, window: { addEventListener(name, fn) { events[name] = fn; }, removeEventListener(name) { delete events[name]; } }, document: { visibilityState: 'visible', addEventListener() {}, removeEventListener() {} } });
+  vm.runInNewContext(source, { exports, require: withLanguageImports(name => { if (name.startsWith('@/assets/')) return 'brand.png'; if (!(name in imports)) throw new Error(`Unexpected import ${name}`); return imports[name]; }), window: { addEventListener(name, fn) { events[name] = fn; }, removeEventListener(name) { delete events[name]; } }, document: { visibilityState: 'visible', addEventListener() {}, removeEventListener() {} } });
   return { render(props) { index = 0; return exports[name](props); }, async effect() { const cleanups = effects.splice(0).map(fn => fn()); await Promise.resolve(); await Promise.resolve(); return () => cleanups.forEach(fn => fn?.()); }, calls, events };
 }
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];

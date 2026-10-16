@@ -1,3 +1,4 @@
+import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
 import { useState } from 'react';
 import { Alert, Animated, Easing, Modal, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
@@ -7,7 +8,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { ThemedText } from '@/components/themed-text';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { t } from '@/i18n/ko';
+import { t, tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { blockUser, reportContent, type ReportReason, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -30,6 +31,7 @@ export function ReportSheet({
   reportedNickname?: string;
   onClose: () => void;
 }) {
+  useLanguage();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { me } = useAuth();
@@ -72,7 +74,7 @@ export function ReportSheet({
       close();
       play('warning');
       Alert.alert(t.report.doneTitle, blockAfter ? t.report.doneBlocked
-        : targetType === 'user' ? '운영팀에 신고를 전달했어요. 활동 내역을 검토하겠습니다.' : t.report.doneBody);
+        : targetType === 'user' ? tr("운영팀에 신고를 전달했어요. 활동 내역을 검토하겠습니다.") : t.report.doneBody);
     } catch {
       play('warning');
       Alert.alert(t.report.errorTitle, t.report.errorBody);

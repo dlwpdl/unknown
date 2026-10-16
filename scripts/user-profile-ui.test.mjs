@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -46,7 +47,7 @@ function mount(file, name, data, props = {}, params = {}) {
   };
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL(file, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
-  vm.runInNewContext(source, { exports, Date, Intl, require: key => { assert.ok(key in imports, `Known import: ${key}`); return imports[key]; } });
+  vm.runInNewContext(source, { exports, Date, Intl, require: withLanguageImports(key => { assert.ok(key in imports, `Known import: ${key}`); return imports[key]; }) });
   const render = () => { index = 0; effects = []; tree = exports[name](props); effects.forEach(fn => fn()); return tree; };
   render();
   return { auth, calls, render, nodes: () => nodes(tree), async settle() { for (let i = 0; i < 4; i++) { render(); await new Promise(resolve => setImmediate(resolve)); } render(); }, cleanup() { hooks.forEach(hook => hook?.cleanup?.()); } };
