@@ -16,6 +16,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { count, t, tr, getLocale } from '@/i18n';
 import { useAuth } from '@/lib/auth';
+import { CONTENT_TRANSLATION_VIEWABILITY } from '@/lib/content-translation';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { appendUniquePosts } from '@/lib/feed-data';
 import { loadPublicUserActivity, loadPublicUserProfile, type PublicUserProfile } from '@/lib/user-profile';
@@ -38,6 +39,9 @@ export default function AuthorPostsRoute() {
   const [more, setMore] = useState(false), pending = useRef(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [detail, setDetail] = useState<{ key: string; post: Post } | null>(null);
+  const [visiblePostIds, setVisiblePostIds] = useState<Set<string>>(new Set());
+  const trackTranslationPosts = useCallback(({ viewableItems }: { viewableItems: { item: Post }[] }) =>
+    setVisiblePostIds(new Set(viewableItems.map(({ item }) => item.id))), []);
 
   const requestKey = `${authorId}:${viewerScope}:${kind}:${retry}`;
   const current = state?.key === requestKey ? state : null;
@@ -110,6 +114,8 @@ export default function AuthorPostsRoute() {
           </View>
         ) : (
           <FlatList
+            onViewableItemsChanged={trackTranslationPosts}
+            viewabilityConfig={CONTENT_TRANSLATION_VIEWABILITY}
             data={posts}
             keyExtractor={(post) => post.id}
             contentContainerStyle={styles.list}
@@ -120,7 +126,7 @@ export default function AuthorPostsRoute() {
               <ThemedText type="small" themeColor="textSecondary">{tr("공개한 글 이력이에요. 거래 완료는 작성자가 표시한 상태이며 실제 거래·신원 인증을 보장하지 않아요.")}</ThemedText>
             </View>}
             renderItem={({ item }) => (
-              <PostCard post={item} onPress={() => setDetail({ key: requestKey, post: item })} />
+              <PostCard post={item} translationVisible={visiblePostIds.has(item.id) && !detail} onPress={() => setDetail({ key: requestKey, post: item })} />
             )}
             ListEmptyComponent={(
               <View style={styles.message}>

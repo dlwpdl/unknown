@@ -9,6 +9,11 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { ThemedText } from '@/components/themed-text';
 import { PostBody } from '@/components/post-body';
 import { PostMapLink } from '@/components/post-map-link';
+import { TranslationControl } from '@/components/content-translation';
+import { useContentTranslation } from '@/hooks/use-content-translation';
+import { visibleTranslationSource } from '@/lib/translation-source';
+import { splitPostPhotoCredits } from '@/lib/post-photo-credits';
+import { splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links';
 import { ReportSheet } from '@/components/report-sheet';
 import { TrustBadge } from '@/components/trust-badge';
 import { Spacing } from '@/constants/theme';
@@ -35,6 +40,7 @@ export function PostCard({
   hideRoom = false,
   flat = false,
   afterBody,
+  translationVisible = true,
 }: {
   post: Post;
   onJoin?: () => void;
@@ -45,6 +51,7 @@ export function PostCard({
   hideRoom?: boolean;
   flat?: boolean;
   afterBody?: ReactNode;
+  translationVisible?: boolean;
 }) {
   useLanguage();
   const theme = useTheme();
@@ -75,6 +82,14 @@ export function PostCard({
   const photoCount = post.imagePaths?.length ?? 0;
   const chips = uniqueHashtags([post.author.neighborhood, ...(post.hashtags ?? [])]);
   const mapped = postMapBody(post.body);
+  const source = visibleTranslationSource('post', post.title, post.body, !!post.room);
+  const translation = useContentTranslation('post', post.id, source, translationVisible);
+  const originalBody = post.room ? visibleMeetupBody(mapped.body) : mapped.body;
+  const attached = splitPostAttachments(originalBody);
+  const credited = splitPostPhotoCredits(attached.body);
+  const displayBody = translation.translated && !translation.original
+    ? withPostAttachments(translation.display.body + (credited.credits ? attached.body.slice(credited.body.length) : ''), attached.urls)
+    : originalBody;
 
   const toggleLike = async () => {
     if (!isAuthed) return promptLogin(t.auth.reasonLike);
@@ -180,7 +195,7 @@ export function PostCard({
           onPress={openPost}
           disabled={!onPress}
           accessibilityRole={onPress ? 'button' : undefined}
-          accessibilityLabel={onPress ? `${tr(post.tag.label)} · ${post.title}` : undefined}
+          accessibilityLabel={onPress ? `${tr(post.tag.label)} · ${translation.display.title}` : undefined}
           style={({ pressed }) => pressed && styles.pressed}>
           <ThemedText
             type="smallBold"
@@ -188,7 +203,7 @@ export function PostCard({
             {tr(post.tag.label)}{isListing ? ` · ${t.detail.listingBadge}` : ''}
           </ThemedText>
           <ThemedText style={[styles.title, flat && !onPress && styles.detailTitle]}>
-            {post.title}
+            {translation.display.title}
           </ThemedText>
           {photo && (
             <View style={styles.photoMedia}>
@@ -220,7 +235,7 @@ export function PostCard({
             style={styles.body}
             numberOfLines={onPress ? 3 : undefined}
             linksEnabled={!onPress}
-            body={post.room ? visibleMeetupBody(mapped.body) : mapped.body} />
+            body={displayBody} />
           {isListing && (post.price != null || (post.listingStatus && post.listingStatus !== 'open')) && (
             <View style={styles.listingLine}>
               {post.price != null && <ThemedText style={styles.price}>{t.detail.price(post.price)}</ThemedText>}
@@ -231,6 +246,7 @@ export function PostCard({
           )}
         </Pressable>
 
+        <TranslationControl translation={translation} />
         {mapped.url && <PostMapLink url={mapped.url} label={mapped.label} />}
         {afterBody}
 

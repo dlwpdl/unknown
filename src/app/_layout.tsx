@@ -18,6 +18,7 @@ import { InteractionFeedbackProvider } from '@/lib/interaction-feedback';
 import { MembershipProvider } from '@/lib/membership-provider';
 import { ThemePreferenceProvider, useTheme, useThemePreference } from '@/hooks/use-theme';
 import { LanguagePreferenceProvider } from '@/hooks/use-language';
+import { ContentTranslationProvider } from '@/hooks/use-content-translation';
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 SplashScreen.setOptions({ fade: false });
@@ -45,6 +46,7 @@ function AppLayout() {
       <InteractionFeedbackProvider>
       <AppUpdateGate>
       <AuthProvider>
+        <ContentTranslationProvider>
         <CommunityCityProvider>
         <AppActivity />
         <NotificationObserver />
@@ -55,6 +57,7 @@ function AppLayout() {
           <PushInvite />
         </MembershipProvider>
         </CommunityCityProvider>
+        </ContentTranslationProvider>
       </AuthProvider>
       </AppUpdateGate>
       </InteractionFeedbackProvider>

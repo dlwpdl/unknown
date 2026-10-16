@@ -51,6 +51,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { t, tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
+import { CONTENT_TRANSLATION_VIEWABILITY } from '@/lib/content-translation';
 import { useCommunityCity } from '@/lib/community-city';
 import type { LocationFix } from '@/lib/location';
 import { useCommunityLocation } from '@/lib/location-provider';
@@ -91,6 +92,12 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const insets = useSafeAreaInsets();
   const bottomClear = insets.bottom + TabBarHeight; // 탭바 + 홈 인디케이터 실측 높이
   const [posts, setPosts] = useState<Post[]>([]);
+  const [visibleFeedIds, setVisibleFeedIds] = useState<Set<string>>(new Set());
+  const [visibleSearchIds, setVisibleSearchIds] = useState<Set<string>>(new Set());
+  const trackTranslationFeed = useCallback(({ viewableItems }: { viewableItems: { item: Post | null }[] }) =>
+    setVisibleFeedIds(new Set(viewableItems.flatMap(({ item }) => item ? [item.id] : []))), []);
+  const trackTranslationSearch = useCallback(({ viewableItems }: { viewableItems: { item: Post }[] }) =>
+    setVisibleSearchIds(new Set(viewableItems.map(({ item }) => item.id))), []);
   const { city, setCity } = useCommunityCity();
   const location = useCommunityLocation();
   const [draftCity, setDraftCity] = useState(city);
@@ -648,6 +655,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           <ProfileAvatarButton />
         </View>
         <FlatList analyticsId="components_feed-screen.flatlist.1" ref={feedListRef}
+          onViewableItemsChanged={trackTranslationFeed}
+          viewabilityConfig={CONTENT_TRANSLATION_VIEWABILITY}
           data={[null, ...(showFeedSort ? [null] : []), ...(feedLoading ? [] : feedData)]}
           stickyHeaderIndices={showFeedSort ? [1] : undefined}
           onContentSizeChange={() => {
@@ -715,6 +724,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 5) * 65).duration(360)}><Animated.View style={{ opacity: feedOpacity }}><PostCard
               flat
               post={item}
+              translationVisible={visibleFeedIds.has(item.id) && !searching && !detailVisible && !writing}
               onPress={() => openDetail(item)}
               onJoin={() => void onJoin(item)}
               onHashtag={openSearch}
@@ -792,6 +802,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               </View>
             ) : (
               <FlatList analyticsId="components_feed-screen.flatlist.2"
+                onViewableItemsChanged={trackTranslationSearch}
+                viewabilityConfig={CONTENT_TRANSLATION_VIEWABILITY}
                 data={searchResults.filter((post) => !hidden('post', post.id, post.author.id) && (!meetupsOnly || !post.room?.closed))}
                 keyExtractor={(p) => p.id}
                 contentContainerStyle={styles.listContent}
@@ -804,6 +816,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 renderItem={({ item }) => (
                   <PostCard
                     post={item}
+                    translationVisible={visibleSearchIds.has(item.id) && searching}
                     onPress={() => {
                       // iOS must finish dismissing search before presenting detail or login.
                       if (Platform.OS === 'ios') searchSelection.current = item;
