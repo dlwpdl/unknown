@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { lensControlStyle } from '../src/lib/lens-control.ts';
 
-const paint = new Set(['borderRadius', 'borderColor', 'borderTopColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderStartColor', 'borderEndColor', 'boxShadow', 'shadowOpacity', 'elevation']);
+const paint = new Set(['borderRadius', 'borderColor', 'borderTopColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderStartColor', 'borderEndColor', 'boxShadow', 'shadowOpacity', 'shadowOffset', 'shadowRadius', 'elevation']);
 
 test('lens changes paint only: existing small, large, selected and disabled controls keep their geometry and content', () => {
   for (const original of [
@@ -38,7 +38,7 @@ test('lens forwards native refs, accessibility, disabled state, callbacks and fu
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, { exports, require(name) {
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }) };
-    if (name === 'react-native') return { Pressable: 'NativePressable', StyleSheet: { flatten } };
+    if (name === 'react-native') return { Pressable: 'NativePressable', Platform: { OS: 'web' }, StyleSheet: { flatten } };
     if (name === '@/lib/lens-control') return { lensControlStyle };
     throw new Error(name);
   } });
@@ -57,4 +57,15 @@ test('lens forwards native refs, accessibility, disabled state, callbacks and fu
     assert.equal(result.paddingHorizontal, 12);
     assert.equal(result.opacity, pressed ? .5 : 1);
   }
+});
+
+test('Android without inset shadows retains a visible existing-width edge and solid fill', () => {
+  const style = { borderWidth: 1, borderBottomWidth: 3, borderColor: '#CBB9FF', backgroundColor: '#222231', minHeight: 44 };
+  const result = { ...style, ...lensControlStyle(style, false, false) };
+  assert.equal(result.borderColor, '#CBB9FF');
+  assert.equal(result.borderBottomColor, '#CBB9FF');
+  assert.equal(result.boxShadow, undefined);
+  assert.equal(result.backgroundColor, style.backgroundColor);
+  assert.equal(result.minHeight, 44);
+  assert.equal(result.borderBottomWidth, 3);
 });
