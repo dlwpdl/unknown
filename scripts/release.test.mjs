@@ -210,6 +210,48 @@ test('building and submitting a release cannot raise the mandatory update policy
   }
 });
 
+test('iOS resubmission preserves current ATT review instructions and falls back to prior contact details', () => {
+  const result = spawnSync('python3', ['-c', `
+import importlib.util, json, os, tempfile
+from pathlib import Path
+spec = importlib.util.spec_from_file_location('release', 'scripts/release.py')
+r = importlib.util.module_from_spec(spec); spec.loader.exec_module(r)
+class PublishCaptured(Exception): pass
+with tempfile.TemporaryDirectory() as directory:
+    os.chdir(directory)
+    Path('app.json').write_text(json.dumps({'expo': {'version': '1.3.1'}}))
+    Path('release-notes').mkdir(); Path('release-notes/1.3.1.ko.txt').write_text('광고 추적 권한을 먼저 확인해요.')
+    r.apple_versions = lambda env: ('test-apple', [
+        {'id': 'current', 'attributes': {'versionString': '1.3.1', 'appStoreState': 'PREPARE_FOR_SUBMISSION'}},
+        {'id': 'previous', 'attributes': {'versionString': '1.2.3', 'appStoreState': 'READY_FOR_SALE'}}])
+    prior = {'notes': 'Older review instructions', 'contactEmail': 'support@example.invalid', 'demoAccountPassword': 'old-test-password'}
+    for current, expected_notes, expected_password in [
+        (None, 'Older review instructions', 'old-test-password'),
+        ({'notes': 'ATT: Home or Settings before any ads', 'demoAccountPassword': 'new-test-password'}, 'ATT: Home or Settings before any ads', 'new-test-password'),
+        ({'notes': 'ATT: Home or Settings before any ads', 'contactEmail': None}, 'ATT: Home or Settings before any ads', 'old-test-password')]:
+        writes = []
+        def request(url, token=None, data=None, method='GET'):
+            assert token == 'test-apple'
+            if url.endswith('/appStoreVersionLocalizations'): return {'data': []}
+            if url.endswith('/previous/appStoreReviewDetail'): return {'data': {'attributes': prior}}
+            if url.endswith('/current/appStoreReviewDetail'): return {'data': {'id': 'current-review', 'attributes': current} if current is not None else None}
+            assert method in ['POST', 'PATCH'] and '/appStoreReviewDetails' in url
+            writes.append(data['data']['attributes']); return {}
+        def run(args, capture=False, env=None):
+            assert args[:3] == ['asc', 'publish', 'appstore']
+            raise PublishCaptured()
+        r.request = request; r.run = run; r.summary = lambda *args: None
+        try: r.submit('ios', {}, {}, Path(directory))
+        except PublishCaptured: pass
+        else: raise AssertionError('did not reach the intercepted publish command')
+        assert len(writes) == 1
+        assert writes[0]['notes'] == expected_notes, 'current ATT instructions were overwritten'
+        assert writes[0]['demoAccountPassword'] == expected_password
+        assert writes[0]['contactEmail'] == 'support@example.invalid'
+`], { cwd: new URL('../', import.meta.url), encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+});
+
 test('an arbitrary unverified build cannot be enforced through the release command', () => {
   const result = spawnSync('python3', ['scripts/release.py', 'require-update', '--platform', 'ios', '--build-number', '65'], {
     cwd: new URL('../', import.meta.url), encoding: 'utf8', env: { PATH: process.env.PATH },

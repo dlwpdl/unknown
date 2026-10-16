@@ -352,7 +352,10 @@ def submit(platform, env, google, directory):
                 request(f'{api}/appStoreVersionLocalizations/{item["id"]}', token, {"data": {"type": "appStoreVersionLocalizations", "id": item["id"], "attributes": {"whatsNew": notes}}}, "PATCH")
         review = request(f'{api}/appStoreVersions/{previous["id"]}/appStoreReviewDetail', token)["data"]
         existing = request(f"{api}/appStoreVersions/{version_id}/appStoreReviewDetail", token).get("data")
-        attributes = {k: v for k, v in review["attributes"].items() if k in {"contactFirstName", "contactLastName", "contactPhone", "contactEmail", "demoAccountRequired", "demoAccountName", "demoAccountPassword", "notes"} and v is not None}
+        review_attributes = review["attributes"].copy()
+        if existing:
+            review_attributes.update({k: v for k, v in existing["attributes"].items() if v is not None})
+        attributes = {k: v for k, v in review_attributes.items() if k in {"contactFirstName", "contactLastName", "contactPhone", "contactEmail", "demoAccountRequired", "demoAccountName", "demoAccountPassword", "notes"} and v is not None}
         if existing:
             request(f'{api}/appStoreReviewDetails/{existing["id"]}', token, {"data": {"type": "appStoreReviewDetails", "id": existing["id"], "attributes": attributes}}, "PATCH")
         else:

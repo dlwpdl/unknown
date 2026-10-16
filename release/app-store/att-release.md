@@ -20,7 +20,9 @@ ATT is checked in all regions. Google's additional consent form appears only whe
 
 The signed iOS archive and IPA were built locally as 1.3.1 (68). Verification checked the bundle version, ATT framework linkage, both localized purpose strings, the delayed measurement flag, the tracking manifest and the code signature. Regression tests cover permission ordering, denial, native failures, concurrent feed slots, system permission changes, privacy settings, Android consent and web/Expo Go boundaries.
 
-For the requested iOS build number, reuse the reviewed 1.3.1 (68) artifact or the existing `release.py build --platform ios --build-number 68 --local` command. Do not run the shared build-number allocator for this correction: Android already uses code 68 and the shared allocator would advance to 69. Do not re-upload a changed Android artifact as code 68.
+For the requested iOS build number, reuse the verified 1.3.1 (68) artifact when it matches the approved source, or use the existing `release.py build --platform ios --build-number 68 --local` command. Do not run the shared build-number allocator for this correction: Android already uses code 68 and the shared allocator would advance to 69. Do not re-upload a changed Android artifact as code 68.
+
+The release command preserves current review instructions and credentials while filling missing fields from the previous version. This prevents a resubmission from replacing the ATT instructions with old review notes. Korean release notes are saved as `release-notes/1.3.1.ko.txt`.
 
 Evidence: `/Users/ash/Desktop/Git/unknown/output/reviews/gling-att-fix-20261016/`.
 
