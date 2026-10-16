@@ -1,23 +1,23 @@
 import { supabase } from '@/lib/supabase';
-import { getLocale, tr } from '@/i18n';
+import { getLocale, translateUi, tr } from '@/i18n';
 import { eventTime as koreanEventTime, eventPriceLabel as koreanEventPriceLabel } from '../../supabase/functions/_shared/ticketmaster';
 import { meetupAllowed, type EventQuery, type FestivalSlot, type TicketmasterEvent } from '../../supabase/functions/_shared/ticketmaster';
 export { EVENT_CITIES, EVENT_CATEGORIES, eventMatchesPriceFilter, festivalLocalDay, featuredLocalEvents, isFestivalEvent, spotlightLocalEvents, meetupAllowed } from '../../supabase/functions/_shared/ticketmaster';
 export type { EventCity, EventCategory, EventPriceFilter, TicketmasterEvent } from '../../supabase/functions/_shared/ticketmaster';
 export type EventList = { events: TicketmasterEvent[]; page: number; hasMore: boolean; fetchedAt: string; festivalSlots?: FestivalSlot[]; nextRefreshAt?: string };
 export type EventDays = { month: string; days: string[]; complete: boolean; fetchedAt: string };
-export function eventTime(event: TicketmasterEvent) {
-  if (getLocale() === 'ko-KR') return koreanEventTime(event);
+export function eventTime(event: TicketmasterEvent, locale = getLocale()) {
+  if (locale === 'ko-KR') return koreanEventTime(event);
   if (!event.startsAt || event.timeUnconfirmed || !event.timezone) return `${event.localDate ?? 'Date TBA'} · Time TBA`;
   return new Date(event.startsAt).toLocaleString('en-CA', { timeZone: event.timezone, month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' });
 }
-export function eventPriceLabel(event: TicketmasterEvent) {
-  if (getLocale() === 'ko-KR') return koreanEventPriceLabel(event);
+export function eventPriceLabel(event: TicketmasterEvent, locale = getLocale()) {
+  if (locale === 'ko-KR') return koreanEventPriceLabel(event);
   if (!event.price) return 'Price unavailable';
   if (event.price.min === 0) return 'Listed from free · Check seller';
   return koreanEventPriceLabel(event).replace(/^약 /, 'From approx. ').replace(/부터$/, '');
 }
-export const EVENT_CATEGORY_LABELS = { get all() { return tr('전체'); }, get music() { return tr('음악'); }, get sports() { return tr('스포츠'); }, get arts() { return tr('공연·예술'); } } as const;
+export const EVENT_CATEGORY_LABELS = { all: '전체', music: '음악', sports: '스포츠', arts: '공연·예술' } as const;
 const ERRORS: Record<string, string> = {
   AUTH_REQUIRED: '로그인 후 주변 행사를 확인할 수 있어요.',
   NOT_CONFIGURED: '행사 연결을 준비하고 있어요. 잠시 후 다시 확인해 주세요.',
@@ -42,12 +42,12 @@ export async function recordTicketmasterEventClick(cityId: string, eventId: stri
   const { error } = await supabase.rpc('record_ticketmaster_event_click', { p_city_id: cityId, p_event_id: eventId });
   if (error) throw error;
 }
-export function eventNotice(event: TicketmasterEvent) {
+export function eventNotice(event: TicketmasterEvent, locale = getLocale()) {
   const status: Record<string, string> = { canceled: '취소된 행사예요.', cancelled: '취소된 행사예요.', postponed: '행사 일정이 연기됐어요.', rescheduled: '일정이 변경됐어요. 판매처에서 확인해 주세요.', offsale: '현재 판매가 중단됐어요.' };
-  if (status[event.status]) return tr(status[event.status]);
-  if (event.timeUnconfirmed) return tr('일정이 확정되면 함께 갈 모임을 열 수 있어요.');
-  if (event.startsAt && Date.parse(event.startsAt) <= Date.now()) return tr('이미 시작된 행사예요.');
-  return meetupAllowed(event) ? '' : tr('판매처에서 행사 상태를 확인해 주세요.');
+  if (status[event.status]) return translateUi(locale === 'ko-KR' ? 'ko' : 'en', status[event.status]);
+  if (event.timeUnconfirmed) return translateUi(locale === 'ko-KR' ? 'ko' : 'en', '일정이 확정되면 함께 갈 모임을 열 수 있어요.');
+  if (event.startsAt && Date.parse(event.startsAt) <= Date.now()) return translateUi(locale === 'ko-KR' ? 'ko' : 'en', '이미 시작된 행사예요.');
+  return meetupAllowed(event) ? '' : translateUi(locale === 'ko-KR' ? 'ko' : 'en', '판매처에서 행사 상태를 확인해 주세요.');
 }
 export function eventMeetupDraft(event: TicketmasterEvent) {
   if (!meetupAllowed(event)) throw new Error(eventNotice(event));

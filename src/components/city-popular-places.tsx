@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { StyleSheet, View } from 'react-native';
@@ -14,15 +13,15 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 
 export function CityPopularPlaces({ cityId }: { cityId: string }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
   const city = CITIES.find(item => item.id === cityId);
   if (!city) return null;
   const places = getCityPlaces(cityId);
   return <View style={styles.section}>
     <View style={styles.heading}>
-      <ThemedText accessibilityRole="header" style={styles.title}>{tr("이 도시에서 요즘 많이 가는 곳")}</ThemedText>
-      <Pressable analyticsId="today.places.open" accessibilityRole="button" accessibilityLabel={tr("{0}의 실제 장소 {1}곳 보기", (city.name), (places.length))}
+      <ThemedText accessibilityRole="header" style={styles.title}>{tr("이 도시에서 가볼 만한 곳")}</ThemedText>
+      <Pressable analyticsId="today.places.open" accessibilityRole="button" accessibilityLabel={tr("{0}의 실제 장소 {1}곳 보기", (tr(city.name)), (places.length))}
         onPress={() => { play('selection'); router.push({ pathname: '/places', params: { cityId } }); }}
         style={({ pressed }) => [styles.all, { opacity: pressed ? 0.65 : 1 }]}>
         <ThemedText style={styles.allText} themeColor="accent">{tr("전체 보기")}</ThemedText>

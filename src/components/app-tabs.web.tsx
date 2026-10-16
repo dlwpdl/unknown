@@ -17,13 +17,12 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { t } from '@/i18n';
 import { useTheme } from '@/hooks/use-theme';
 import { useUnreadCount } from '@/hooks/use-unread-count';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 export default function AppTabs() {
-  useLanguage();
+  const { t } = useLanguage();
   const pathname = usePathname();
   const unreadCount = useUnreadCount();
   return (

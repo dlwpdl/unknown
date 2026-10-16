@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr, getLocale } from '@/i18n';
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
@@ -25,7 +24,7 @@ import { recordProductEvent } from '@/lib/product-analytics';
 import { supabase } from '@/lib/supabase';
 
 export default function PlaceDetailScreen() {
-  useLanguage();
+  const { tr, locale: appLocale } = useLanguage();
   const [viewport, setViewport] = useState({ y: 0, height: 0 });
   const { cityId, id } = useLocalSearchParams<{ cityId?: string; id?: string }>();
   const { isAuthed, me } = useAuth();
@@ -80,7 +79,7 @@ export default function PlaceDetailScreen() {
         </Pressable>}
         <ThemedText type="small" themeColor="textSecondary">{tr("방문 전 운영 여부와 시간을 확인해 주세요.")}</ThemedText>
         <Pressable analyticsId="places.detail.attribution" accessibilityRole="link" accessibilityLabel={tr("OpenStreetMap 자료 출처와 이용 조건")} onPress={() => openSource('https://www.openstreetmap.org/copyright')} style={styles.link}>
-          <ThemedText type="small" themeColor="textSecondary">{tr("© OpenStreetMap contributors · {0} 확인 자료", (new Date(CITY_PLACES_COLLECTED_AT).toLocaleDateString(getLocale())))}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("© OpenStreetMap contributors · {0} 확인 자료", (new Date(CITY_PLACES_COLLECTED_AT).toLocaleDateString(appLocale)))}</ThemedText>
         </Pressable>
         <PlaceReviews cityId={city.id} placeId={place.id} viewport={viewport} />
       </>}

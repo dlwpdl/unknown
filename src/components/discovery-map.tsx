@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Linking, Platform, StyleSheet, View } from 'react-native';
 import WebView from 'react-native-webview';
@@ -21,7 +20,7 @@ export function DiscoveryMap(props: Props) {
 }
 
 function Canvas({ markers, cityName, selectedId = null, center = null, bottomInset = 0, onSelect }: Props) {
-  const { language } = useLanguage();
+  const { language, tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const native = useRef<WebView>(null), web = useRef<HTMLIFrameElement>(null), id = useId();
   const [seed] = useState({ markers, cityName, selectedId, center, bottomInset });

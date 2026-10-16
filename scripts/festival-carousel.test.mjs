@@ -4,10 +4,12 @@ import fs from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { translateUi, translationsFor } from '../src/i18n/index.ts';
 import * as ticketmaster from '../supabase/functions/_shared/ticketmaster.ts';
 
 function carousel({ web = false, focused = true, activeCard = true, reducedMotion = false, screenReader = false, eventCount = 8, now = '2026-10-12T06:59:00Z', nextRefreshAt, failRequest } = {}) {
-  let hook = 0, dirty = false, time = Date.parse(now), focus = focused, cityId = 'vancouver', tree;
+  let hook = 0, dirty = false, time = Date.parse(now), focus = focused, cityId = 'vancouver', tree, language = 'ko';
+  const formats = [];
   const hooks = [], pending = [], timers = new Map(), listeners = new Map(), requests = [], motion = [], scrolls = [], feedback = [];
   const events = Array.from({ length: eventCount }, (_, index) => ({ id: `f${index}`, name: `f${index} Festival`, startsAt: `2099-01-${String(index + 1).padStart(2, '0')}T20:00:00Z`, localDate: `2099-01-${String(index + 1).padStart(2, '0')}`, status: 'onsale', timeUnconfirmed: false, city: 'Vancouver', country: 'CA', venue: 'Park', image: 'https://example.invalid/image.jpg', ticketUrl: null }));
   const same = (a, b) => a && b && a.length === b.length && a.every((item, index) => Object.is(item, b[index]));
@@ -41,14 +43,15 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/lib/event-videos': { eventVideo: event => event.id === 'f2' ? { youtubeId: 'video' } : null },
-    '@/lib/ticketmaster': { ...ticketmaster, festivalLocalDay: city => ticketmaster.festivalLocalDay(city, time), loadTicketmasterEvents: load },
+    '@/lib/ticketmaster': { ...ticketmaster, eventTime: (event, locale) => { formats.push(['time', locale]); return ticketmaster.eventTime(event); }, eventPriceLabel: (event, locale) => { formats.push(['price', locale]); return ticketmaster.eventPriceLabel(event); }, festivalLocalDay: city => ticketmaster.festivalLocalDay(city, time), loadTicketmasterEvents: load },
     '@/lib/public-web': { loadPublicFestivals: async (_, cityId) => { const data = await load({ cityId }); return { events: ticketmaster.spotlightLocalEvents(data.events, time, data.festivalSlots), nextRefreshAt: nextRefreshAt && Date.parse(nextRefreshAt) > time ? nextRefreshAt : undefined }; } },
     '../../../supabase/functions/_shared/ticketmaster': { ...ticketmaster, festivalLocalDay: city => ticketmaster.festivalLocalDay(city, time) },
   };
   const file = web ? '../src/components/public-web/festivals.tsx' : '../src/components/local-events-carousel.tsx';
   const source = ts.transpileModule(fs.readFileSync(new URL(file, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   const exports = {};
-  vm.runInNewContext(source + (web ? '' : '\nexports.card = FeaturedEventCard;'), { exports, require: withLanguageImports(name => imports[name] ?? {}), Date: Clock, document, window, setInterval: interval, clearInterval: id => timers.delete(id) });
+  const resolve = withLanguageImports(name => imports[name] ?? {});
+  vm.runInNewContext(source + (web ? '' : '\nexports.card = FeaturedEventCard;'), { exports, require: name => name === '@/hooks/use-language' ? { useLanguage: () => ({ t: translationsFor(language), tr: (key, ...args) => translateUi(language, key, ...args), locale: language === 'en' ? 'en-CA' : 'ko-KR' }) } : resolve(name), Date: Clock, document, window, setInterval: interval, clearInterval: id => timers.delete(id) });
   const render = async (card = false) => {
     let count = 0;
     do {
@@ -64,8 +67,20 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
     return tree;
   };
   const ready = () => {};
-  return { requests, motion, scrolls, feedback, render, tree: () => tree, remove(id) { events.splice(events.findIndex(event => event.id === id), 1); }, async city(value) { cityId = value; await render(); }, async focus(value) { focus = value; await render(); }, async emit(name, value) { if (name === 'appState') appState.currentState = value; if (name === 'visibilitychange') document.visibilityState = value; for (const callback of [...(listeners.get(name) ?? [])]) callback(value); await render(); }, async tick(delay, advance = 0) { time += advance; for (const timer of [...timers.values()]) if (timer.delay === delay) timer.callback(); await render(); } };
+  return { requests, motion, scrolls, feedback, formats, language(value) { language = value; }, render, tree: () => tree, remove(id) { events.splice(events.findIndex(event => event.id === id), 1); }, async city(value) { cityId = value; await render(); }, async focus(value) { focus = value; await render(); }, async emit(name, value) { if (name === 'appState') appState.currentState = value; if (name === 'visibilitychange') document.visibilityState = value; for (const callback of [...(listeners.get(name) ?? [])]) callback(value); await render(); }, async tick(delay, advance = 0) { time += advance; for (const timer of [...timers.values()]) if (timer.delay === delay) timer.callback(); await render(); } };
 }
+
+test('the same featured card supplies its reactive locale to visible and accessible date and price copy', async () => {
+  const ui = carousel({ reducedMotion: true });
+  for (const language of ['ko', 'en', 'ko']) {
+    ui.language(language); ui.formats.length = 0;
+    await ui.render(true);
+    assert.ok(ui.formats.some(([kind]) => kind === 'time'));
+    assert.ok(ui.formats.some(([kind]) => kind === 'price'));
+    assert.ok(ui.formats.every(([, locale]) => locale === (language === 'en' ? 'en-CA' : 'ko-KR')));
+  }
+  assert.equal(ui.requests.length, 0);
+});
 
 function elements(tree) {
   if (!tree || typeof tree !== 'object') return [];

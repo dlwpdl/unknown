@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { Pressable, FlatList } from '@/components/analytics-controls';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -16,7 +15,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 
 export function ChatMembers({ conversationId, groupPostId, currentUserId }: { conversationId: string; groupPostId: string; currentUserId: string }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();

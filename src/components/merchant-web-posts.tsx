@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,7 +18,7 @@ import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
 
 export function MerchantWebPosts({ merchantId, posts, onChanged }: { merchantId: string; posts: MerchantPost[]; onChanged?: () => void }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const { isAuthed, me } = useAuth(), theme = useTheme(), { play } = useInteractionFeedback();
   const owner = isAuthed ? `${me.id}:${merchantId}` : '';
   const currentOwner = useRef(owner);
@@ -46,7 +45,7 @@ export function MerchantWebPosts({ merchantId, posts, onChanged }: { merchantId:
     } catch (e) {
       if (currentOwner.current === requestOwner) {
         play('warning'); setError(e instanceof Error && e.message === 'MERCHANT_POST_UNAVAILABLE'
-          ? tr("삭제되었거나 공개되지 않은 글이에요.") : tr("글을 열지 못했어요. 현재 계정의 업체 권한과 연결 상태를 확인해 주세요."));
+          ? "삭제되었거나 공개되지 않은 글이에요." : "글을 열지 못했어요. 현재 계정의 업체 권한과 연결 상태를 확인해 주세요.");
       }
     } finally { opening.current = false; if (currentOwner.current === requestOwner) setBusy(false); }
   }
@@ -63,7 +62,7 @@ export function MerchantWebPosts({ merchantId, posts, onChanged }: { merchantId:
   return <View style={styles.list}>
     <ThemedText type="subtitle" accessibilityRole="header">{tr("업체의 글과 사진")}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary">{tr("연결된 글을 열어서 수정·삭제할 수 있어요. 사진을 추가하거나 순서를 바꾸면 첫 사진이 대표 사진이 돼요. 업체에서 관리하려면 소유 확인을 먼저 완료해 주세요.")}</ThemedText>
-    {error && <ThemedText accessibilityRole="alert">{error}</ThemedText>}
+    {error && <ThemedText accessibilityRole="alert">{tr(error)}</ThemedText>}
     {busy && <GlingLoader accessibilityLabel={tr("저장된 업체 글과 사진을 여는 중")} />}
     {posts.filter(row => !removed.includes(row.post_id)).map(row => <Pressable key={row.post_id} analyticsId="merchant-web.post.open" accessibilityRole="button"
       accessibilityLabel={tr("{0} · 글과 사진 열기", (titles[row.post_id] ?? row.title))} accessibilityState={{ disabled: busy }} disabled={busy}

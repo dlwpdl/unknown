@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, FlatList, Switch } from '@/components/analytics-controls';
 import { useCallback, useRef, useState } from 'react';
@@ -43,10 +42,11 @@ export default function MeetupsScreen() {
 }
 
 function MeetupDiscovery({ eventId }: { eventId: string }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme(), router = useRouter(), insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
-  const { height: screenHeight, fontScale } = useWindowDimensions();
+  const { height: screenHeight, width: screenWidth, fontScale } = useWindowDimensions();
+  const compactHeader = fontScale > 1.2 || screenWidth < 420;
   const { city } = useCommunityCity();
   const { me, isAuthed, promptLogin } = useAuth();
   const { membership } = useMembership();
@@ -158,12 +158,16 @@ function MeetupDiscovery({ eventId }: { eventId: string }) {
   };
   return <TabContent style={styles.root}><SafeAreaView edges={['top', 'left', 'right']} style={[styles.root, { backgroundColor: theme.background }]}>
     {/* 헤더는 스크롤과 함께 사라지면 안 된다(홈과 동일). 목록 밖에 두고 고정한다. */}
-    <View style={[styles.head, styles.headFixed, fontScale > 1.2 && styles.headLarge, { backgroundColor: theme.background }]}>
-      <ThemedText accessibilityRole="header" style={[styles.title, fontScale > 1.2 && styles.titleLarge]}>{tr("모임")}<ThemedText style={styles.title} themeColor="accent">.</ThemedText></ThemedText>
-      <GlassSurface tone="control" interactive style={[styles.cityGlass, fontScale > 1.2 && styles.cityGlassLarge]}><Pressable analyticsId="app_tabs_meetups.pressable.1" onPress={() => { play('selection'); setCityPicker(true); }} accessibilityRole="button" accessibilityLabel={tr("{0} 활동 지역 선택", (city.name))} style={({ pressed }) => [styles.city, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}><ThemedText type="small" themeColor="textSecondary" numberOfLines={1} maxFontSizeMultiplier={1.3} style={styles.cityText}>{tr(city.name)}{tr("에서")}</ThemedText><SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={14} tintColor={theme.textSecondary} /></Pressable></GlassSurface>
+    <View style={[styles.head, styles.headFixed, compactHeader && styles.headLarge, { backgroundColor: theme.background }]}>
+      <ThemedText accessibilityRole="header" style={[styles.title, compactHeader && styles.titleLarge]}>{tr("모임")}<ThemedText style={styles.title} themeColor="accent">.</ThemedText></ThemedText>
+      <GlassSurface tone="control" interactive style={[styles.cityGlass, compactHeader && styles.cityGlassLarge]}><Pressable analyticsId="app_tabs_meetups.pressable.1" onPress={() => { play('selection'); setCityPicker(true); }} accessibilityRole="button" accessibilityLabel={tr("{0} 활동 지역 선택", tr(city.name))} style={({ pressed }) => [styles.city, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}><ThemedText type="small" themeColor="textSecondary" numberOfLines={1} maxFontSizeMultiplier={1.3} style={styles.cityText}>{tr(city.name)}{tr("에서")}</ThemedText><SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={14} tintColor={theme.textSecondary} /></Pressable></GlassSurface>
       <GlassSurface tone="control" interactive style={styles.circleGlass}><Pressable analyticsId="app_tabs_meetups.pressable.13" accessibilityRole="button" accessibilityLabel={searchOpen ? tr("검색 닫기") : tr("모임 검색")} accessibilityState={{ expanded: searchOpen }}
         onPress={toggleSearch} style={({ pressed }) => [styles.circle, { backgroundColor: pressed || searchOpen ? 'rgba(255,255,255,0.13)' : 'transparent' }]}>
         <SymbolView name={{ ios: searchOpen ? 'xmark' : 'magnifyingglass', android: searchOpen ? 'close' : 'search', web: searchOpen ? 'close' : 'search' }} size={20} tintColor={searchOpen ? theme.accent : theme.text} />
+      </Pressable></GlassSurface>
+      <GlassSurface tone="control" interactive style={styles.circleGlass}><Pressable analyticsId="meetups.discovery.open" accessibilityRole="button" accessibilityLabel={tr('부동산·중고거래·장소·행사 통합 지도')}
+        onPress={() => { play('reaction'); router.push('/map'); }} style={({ pressed }) => [styles.circle, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
+        <SymbolView name={{ ios: 'map', android: 'map', web: 'map' }} size={21} tintColor={theme.text} />
       </Pressable></GlassSurface>
       <GlassSurface tone="control" interactive style={styles.circleGlass}><Pressable analyticsId="app_tabs_meetups.pressable.2" accessibilityRole="button" accessibilityLabel={tr("내 모임 프로필")} onPress={() => { play('selection'); action('/meetup-profile'); }} style={({ pressed }) => [styles.circle, { backgroundColor: pressed ? 'rgba(255,255,255,0.13)' : 'transparent' }]}><ThemedText type="smallBold">{isAuthed ? me.nickname.slice(0, 1) : tr("나")}</ThemedText></Pressable></GlassSurface>
       {/* 만들기는 화면당 하나뿐인 primary — 하단 고정 라벨 버튼이 맡고, 헤더에서는 뺐다. */}
@@ -271,7 +275,7 @@ const styles = StyleSheet.create({
   flexText: { flexShrink: 1, gap: 2 },
   // 목록 밖에 고정되는 헤더: 좌우 여백은 목록과 맞춘다.
   headFixed: { marginBottom: 0, paddingHorizontal: 22, paddingTop: Spacing.one, paddingBottom: 10, width: '100%', maxWidth: 640, alignSelf: 'center' }, headLarge: { flexWrap: 'wrap' }, titleLarge: { width: '100%' },
-  city: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Spacing.one, borderRadius: 12, paddingHorizontal: Spacing.two, flexShrink: 1 }, cityText: { fontSize: 14, lineHeight: 20, flexShrink: 1 }, cityGlass: { marginLeft: 'auto', flexShrink: 1, borderRadius: 12 }, cityGlassLarge: { minWidth: 176 }, title: { fontSize: 32, lineHeight: 40, fontWeight: '800', letterSpacing: -1 }, circle: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }, circleGlass: { borderRadius: 22 }, filterGlass: { borderRadius: 12 },
+  city: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Spacing.one, borderRadius: 12, paddingHorizontal: Spacing.two, flexShrink: 1 }, cityText: { fontSize: 14, lineHeight: 20, flexShrink: 1 }, cityGlass: { marginLeft: 'auto', flexShrink: 1, borderRadius: 12 }, cityGlassLarge: { flex: 1, minWidth: 0 }, title: { fontSize: 32, lineHeight: 40, fontWeight: '800', letterSpacing: -1 }, circle: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }, circleGlass: { borderRadius: 22 }, filterGlass: { borderRadius: 12 },
   fab: { position: 'absolute', right: 22, minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 20, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)', shadowOpacity: 0.38, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 6 },
   filterRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },

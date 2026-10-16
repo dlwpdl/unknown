@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { Pressable } from '@/components/analytics-controls';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -20,7 +19,7 @@ export function PersonalInfoCard({ userId, nickname }: { userId: string; nicknam
 }
 
 function PersonalInfoEditor({ userId, nickname, onRetry }: { userId: string; nickname: string; onRetry: () => void }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const active = useRef(true);
@@ -38,11 +37,11 @@ function PersonalInfoEditor({ userId, nickname, onRetry }: { userId: string; nic
     active.current = true;
     void supabase.rpc('get_my_personal_info').then(({ data: result, error: failure }) => {
       if (!current) return;
-      if (failure || !result) { setError(tr("계정 정보를 불러오지 못했습니다. 다시 불러온 뒤 수정해주세요.")); return; }
+      if (failure || !result) { setError("계정 정보를 불러오지 못했습니다. 다시 불러온 뒤 수정해주세요."); return; }
       const info = result as PersonalInfo;
       setData(info);
       setDraft({ fullName: info.full_name ?? '', dateOfBirth: info.date_of_birth ?? '', accepted: false, gender: info.gender ?? '' });
-    }, () => { if (current) setError(tr("계정 정보를 불러오지 못했습니다. 다시 불러온 뒤 수정해주세요.")); });
+    }, () => { if (current) setError("계정 정보를 불러오지 못했습니다. 다시 불러온 뒤 수정해주세요."); });
     return () => { current = false; active.current = false; };
   }, [userId]);
 
@@ -54,8 +53,8 @@ function PersonalInfoEditor({ userId, nickname, onRetry }: { userId: string; nic
     const gender = remove ? '' : draft.gender;
     const validation = validatePersonalInfo(fullName, dateOfBirth, gender);
     if (validation) { setError(validation); return; }
-    if (!remove && (!fullName || !dateOfBirth)) { setError(tr("이름과 생년월일을 입력해주세요. 저장된 정보는 아래 삭제 버튼으로 지울 수 있어요.")); return; }
-    if (!remove && !draft.accepted) { setError(tr("이름·생년월일·성별 수집·이용에 별도로 동의해주세요.")); return; }
+    if (!remove && (!fullName || !dateOfBirth)) { setError("이름과 생년월일을 입력해주세요. 저장된 정보는 아래 삭제 버튼으로 지울 수 있어요."); return; }
+    if (!remove && !draft.accepted) { setError("이름·생년월일·성별 수집·이용에 별도로 동의해주세요."); return; }
     saving.current = true; setBusy(true); setError(null); setNotice(null);
     let savedSuccessfully = false;
     try {
@@ -69,14 +68,14 @@ function PersonalInfoEditor({ userId, nickname, onRetry }: { userId: string; nic
       setDraft({ fullName: '', dateOfBirth: '', accepted: false, gender: '' });
       const result = await supabase.rpc('get_my_personal_info');
       if (!active.current) return;
-      if (result.error || !result.data) { setError(tr("저장은 완료했지만 최신 정보를 불러오지 못했습니다. 다시 불러와 확인해주세요.")); return; }
+      if (result.error || !result.data) { setError("저장은 완료했지만 최신 정보를 불러오지 못했습니다. 다시 불러와 확인해주세요."); return; }
       const info = result.data as PersonalInfo;
       setData(info);
       setDraft({ fullName: info.full_name ?? '', dateOfBirth: info.date_of_birth ?? '', accepted: false, gender: info.gender ?? '' });
       setEditing(false);
-      setNotice(remove ? tr("이름과 생년월일, 성별을 삭제했어요.") : tr("비공개 계정 정보를 저장했어요."));
+      setNotice(remove ? "이름과 생년월일, 성별을 삭제했어요." : "비공개 계정 정보를 저장했어요.");
       play(remove ? 'warning' : 'success');
-    } catch { if (active.current) { play('warning'); setError(savedSuccessfully ? tr("저장은 완료했지만 최신 정보를 불러오지 못했습니다. 다시 불러와 확인해주세요.") : tr("계정 정보를 저장하지 못했습니다. 입력 내용과 연결 상태를 확인해주세요.")); } }
+    } catch { if (active.current) { play('warning'); setError(savedSuccessfully ? "저장은 완료했지만 최신 정보를 불러오지 못했습니다. 다시 불러와 확인해주세요." : "계정 정보를 저장하지 못했습니다. 입력 내용과 연결 상태를 확인해주세요."); } }
     finally { saving.current = false; if (active.current) setBusy(false); }
   };
 
@@ -87,14 +86,14 @@ function PersonalInfoEditor({ userId, nickname, onRetry }: { userId: string; nic
     </View>
     <View style={[styles.divider, { backgroundColor: theme.line }]} />
     {!data ? <>
-      <ThemedText accessibilityRole={error ? 'alert' : 'progressbar'} type="small" themeColor="textSecondary">{error ?? tr("계정 정보를 불러오는 중이에요.")}</ThemedText>
+      <ThemedText accessibilityRole={error ? 'alert' : 'progressbar'} type="small" themeColor="textSecondary">{tr(error ?? "계정 정보를 불러오는 중이에요.")}</ThemedText>
       {error && <Pressable analyticsId="components_personal-info-card.pressable.1" onPress={() => { play('selection'); onRetry(); }} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold">{tr("다시 불러오기")}</ThemedText></Pressable>}
     </> : <>
       <View style={styles.summaryRow}>
         <View style={styles.summaryLabel}><ThemedText type="small">{tr("생년월일")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("비공개 · 본인 입력 · 생년월일 미인증")}</ThemedText></View>
         <ThemedText type="small" themeColor="textSecondary" style={styles.summaryValue}>{data.date_of_birth ?? tr("미등록")}</ThemedText>
       </View>
-      {notice && <ThemedText accessibilityLiveRegion="polite" type="small">{notice}</ThemedText>}
+      {notice && <ThemedText accessibilityLiveRegion="polite" type="small">{tr(notice)}</ThemedText>}
       <View style={[styles.divider, { backgroundColor: theme.line }]} />
       <Pressable analyticsId="components_personal-info-card.pressable.6" accessibilityRole="button" accessibilityState={{ expanded: editing, disabled: busy }} disabled={busy}
         onPress={() => { play('selection'); setEditing(value => !value); }} style={styles.editRow}>
@@ -103,7 +102,7 @@ function PersonalInfoEditor({ userId, nickname, onRetry }: { userId: string; nic
       </Pressable>
       {editing && <View style={styles.editor}>
         <PersonalInfoFields value={draft} disabled={busy} onChange={(value) => { setDraft(value); setError(null); setNotice(null); setConfirmDelete(false); }} />
-        {error && <ThemedText accessibilityRole="alert" type="small" style={{ color: theme.accent }}>{error}</ThemedText>}
+        {error && <ThemedText accessibilityRole="alert" type="small" style={{ color: theme.accent }}>{tr(error)}</ThemedText>}
         <Pressable analyticsId="components_personal-info-card.pressable.2" disabled={busy} onPress={() => void save()} accessibilityRole="button" accessibilityState={{ disabled: busy, busy }} style={({ pressed }) => [styles.button, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: busy ? 0.55 : 1, }]}>
           <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{busy ? tr("저장 중…") : tr("계정 정보 저장")}</ThemedText>
         </Pressable>

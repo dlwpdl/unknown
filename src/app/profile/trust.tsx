@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import { LayoutAnimation, Platform, Pressable, ScrollView, StyleSheet, UIManager, View } from 'react-native';
@@ -14,14 +13,15 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
-const levels = [
-  { level: 1, get title() { return tr("계정 확인"); }, get summary() { return tr("Apple · 카카오 · Google 로그인"); }, get detail() { return tr("소셜 계정으로 글링에 로그인하면 적용돼요. 소셜 로그인만으로 실명이나 나이가 확인되지는 않아요."); } },
-  { level: 2, get title() { return tr("전화번호 확인"); }, get summary() { return tr("본인 명의 번호 확인"); }, get detail() { return tr("예정 기준: 인증 서비스에서 본인 명의 전화번호 확인이 완료되면 부여해요. 번호를 입력하거나 문자만 받는 것으로는 올라가지 않아요. 닉네임 옆에는 빨간 체크가 표시돼요."); } },
-  { level: 3, get title() { return tr("신분증 · 얼굴 대조"); }, get summary() { return tr("신분증과 본인 촬영 비교"); }, get detail() { return tr("예정 기준: 신분증과 본인 촬영을 대조해 일치 여부를 확인한 뒤 부여해요. 닉네임 옆에는 글링 마크가 표시돼요."); } },
-] as const;
+
 
 export default function TrustScreen() {
-  useLanguage();
+  const { tr } = useLanguage();
+  const levels = [
+    { level: 1, get title() { return tr("계정 확인"); }, get summary() { return tr("Apple · 카카오 · Google 로그인"); }, get detail() { return tr("소셜 계정으로 글링에 로그인하면 적용돼요. 소셜 로그인만으로 실명이나 나이가 확인되지는 않아요."); } },
+    { level: 2, get title() { return tr("전화번호 확인"); }, get summary() { return tr("본인 명의 번호 확인"); }, get detail() { return tr("예정 기준: 인증 서비스에서 본인 명의 전화번호 확인이 완료되면 부여해요. 번호를 입력하거나 문자만 받는 것으로는 올라가지 않아요. 닉네임 옆에는 빨간 체크가 표시돼요."); } },
+    { level: 3, get title() { return tr("신분증 · 얼굴 대조"); }, get summary() { return tr("신분증과 본인 촬영 비교"); }, get detail() { return tr("예정 기준: 신분증과 본인 촬영을 대조해 일치 여부를 확인한 뒤 부여해요. 닉네임 옆에는 글링 마크가 표시돼요."); } },
+  ] as const;
   const theme = useTheme();
   const auth = useAuth();
   const { play } = useInteractionFeedback();

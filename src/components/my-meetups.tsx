@@ -12,7 +12,6 @@ import { relationshipSlotData } from '@/components/relationship-slot-card';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
-import { t, tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { chillingSchedule } from '@/lib/chilling';
 import { leaveMeetup, loadMyMeetups, MEETUPS_CHANGED_EVENT, recordPostShare, type MyMeetup } from '@/lib/community-data';
@@ -30,7 +29,7 @@ export function MyMeetups(props: MyMeetupsProps) {
   return <MyMeetupsContent key={isAuthed ? me.id : 'guest'} {...props} />;
 }
 function MyMeetupsContent({ onOpen, showLoadingIndicator = true }: MyMeetupsProps) {
-  useLanguage();
+  const { tr, t, locale: appLocale } = useLanguage();
   const theme = useTheme();
   const hidden = useContentVisibility();
   const router = useRouter();
@@ -145,7 +144,7 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true }: MyMeetupsProp
         <Pressable analyticsId="components_my-meetups.pressable.2" onPress={() => void open(meetup)} accessibilityRole="button" disabled={!!busy} accessibilityState={{ disabled: !!busy, busy: busy === meetup.id }} style={({ pressed }) => [styles.copy, { opacity: pressed ? 0.7 : 1 }]}>
           <ThemedText type="smallBold" themeColor="accent">{t.meetup[meetup.role]}</ThemedText>
           <ThemedText type="smallBold">{meetup.title}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">{chillingSchedule(meetup.room)}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{chillingSchedule(meetup.room, appLocale)}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{CITIES.find(({ id }) => id === meetup.cityId)?.name ?? meetup.cityId} · {meetup.room.memberCount ?? 0}{meetup.room.capacity ? `/${meetup.room.capacity}` : ''}{tr("명")}</ThemedText>
           {busy === meetup.id && <GlingLoader color={theme.accent} accessibilityLabel={tr("모임 처리 중")} />}
         </Pressable>

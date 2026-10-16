@@ -1,6 +1,5 @@
 import { FlatPressable as Pressable } from '@/components/flat-pressable';
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { useRef, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
@@ -16,7 +15,7 @@ export function MannerReviewButton(props: { subjectId: string; nickname: string;
   return isAuthed ? <MannerReview key={`${me.id}:${props.subjectId}:${props.context.sessionId ?? props.context.conversationId}`} {...props} /> : null;
 }
 function MannerReview({ subjectId, nickname, context }: { subjectId: string; nickname: string; context: MannerContext }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const [open, setOpen] = useState(false), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false);
   const [signals, setSignals] = useState<MannerSignals>({ punctual: null, respectful: null, boundaries: null }), [body, setBody] = useState('');
@@ -29,10 +28,10 @@ function MannerReview({ subjectId, nickname, context }: { subjectId: string; nic
     pending.current = true; setBusy(true); setNotice(''); play('selection');
     try {
       const state = await loadMannerReviewState(supabase, subjectId, context);
-      if (state.submitted) setNotice(tr("리뷰를 이미 제출했어요. 검토 후 반영됩니다."));
-      else if (!state.eligible) setNotice(context.sessionId ? tr("종료 후 두 사람의 참석 확인이 필요해요. 참석 이의제기는 별도로 신청할 수 있어요.") : tr("양쪽이 충분히 대화한 뒤 대화 리뷰를 남길 수 있어요. 신고는 언제든 가능해요."));
+      if (state.submitted) setNotice("리뷰를 이미 제출했어요. 검토 후 반영됩니다.");
+      else if (!state.eligible) setNotice(context.sessionId ? "종료 후 두 사람의 참석 확인이 필요해요. 참석 이의제기는 별도로 신청할 수 있어요." : "양쪽이 충분히 대화한 뒤 대화 리뷰를 남길 수 있어요. 신고는 언제든 가능해요.");
       else setOpen(true);
-    } catch { setNotice(tr("리뷰 자격을 확인하지 못했어요. 다시 눌러주세요.")); play('warning'); }
+    } catch { setNotice("리뷰 자격을 확인하지 못했어요. 다시 눌러주세요."); play('warning'); }
     finally { pending.current = false; setBusy(false); }
   }
   async function submit() {
@@ -40,8 +39,8 @@ function MannerReview({ subjectId, nickname, context }: { subjectId: string; nic
     pending.current = true; setBusy(true); setNotice(''); play('selection');
     try {
       await writeMannerReview(supabase, subjectId, context, signals, score!, body);
-      setOpen(false); setNotice(tr("제출했어요. 두 사람 모두 제출하거나 7일이 지난 뒤, 검토된 평가만 반영돼요.")); play('success');
-    } catch { setNotice(tr("저장을 확인하지 못했어요. 입력은 유지했어요. 같은 내용으로 다시 제출할 수 있어요.")); play('warning'); }
+      setOpen(false); setNotice("제출했어요. 두 사람 모두 제출하거나 7일이 지난 뒤, 검토된 평가만 반영돼요."); play('success');
+    } catch { setNotice("저장을 확인하지 못했어요. 입력은 유지했어요. 같은 내용으로 다시 제출할 수 있어요."); play('warning'); }
     finally { pending.current = false; setBusy(false); }
   }
   const button = [styles.button, { borderColor: theme.line, backgroundColor: theme.backgroundElement }];
@@ -73,7 +72,7 @@ function MannerReview({ subjectId, nickname, context }: { subjectId: string; nic
         <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => { play('selection'); setOpen(false); }} style={button}><ThemedText type="small">{tr("닫기")}</ThemedText></Pressable>
       </View>
     </>}
-    {!!notice && <ThemedText type="small" accessibilityLiveRegion="polite">{notice}</ThemedText>}
+    {!!notice && <ThemedText type="small" accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
   </View>;
 }
 const styles = StyleSheet.create({ container: { gap: 8 }, row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

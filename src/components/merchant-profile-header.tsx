@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
@@ -13,7 +12,7 @@ import type { MerchantReviewKind, MerchantReviewPage } from '@/lib/merchant-revi
 type Props = { profile: MerchantProfile; ratings?: Partial<Record<MerchantReviewKind, Pick<MerchantReviewPage, 'rating_average' | 'review_count'> | null>>; onReviewPress?: (kind: MerchantReviewKind) => void };
 
 export function MerchantProfileHeader({ profile, ratings, onReviewPress }: Props) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const [linkError, setLinkError] = useState('');
   return <View style={styles.profile}>
@@ -31,10 +30,10 @@ export function MerchantProfileHeader({ profile, ratings, onReviewPress }: Props
         <ThemedText type="small" themeColor="textSecondary">{[profile.city_name, profile.industry].filter(Boolean).join(' · ')}</ThemedText>
       </View>
       {onReviewPress && <View style={styles.ratings}>{(['usage', 'employment'] as const).map(kind => {
-        const rating = ratings?.[kind], average = rating?.rating_average ?? null, label = kind === 'usage' ? '상품·서비스' : '근무';
+        const rating = ratings?.[kind], average = rating?.rating_average ?? null, label = tr(kind === 'usage' ? '상품·서비스' : '근무');
         const score = rating === undefined ? '…' : average == null ? '—' : (Math.round(average * 10) / 10).toFixed(1);
         return <Pressable key={kind} analyticsId={`company.rating.${kind}`} accessibilityRole="button"
-          accessibilityLabel={tr("{0} 리뷰 보기, {1}", (label), (rating === undefined ? '불러오는 중' : rating === null ? '점수를 다시 확인해 주세요' : average == null ? '점수 없음' : `10점 만점에 평균 ${score}점, 인증 후기 ${rating.review_count}개`))}
+          accessibilityLabel={tr("{0} 리뷰 보기, {1}", (label), (rating === undefined ? tr('불러오는 중') : rating === null ? tr('점수를 다시 확인해 주세요') : average == null ? tr('점수 없음') : tr('10점 만점에 평균 {0}점, 인증 후기 {1}개', score, rating.review_count)))}
           style={styles.rating} onPress={() => { play('selection'); onReviewPress(kind); }}>
           {kind === 'usage' ? <ThemedText style={styles.spark} themeColor="accent" accessible={false}>✦</ThemedText>
             : <View style={styles.briefcase} accessible={false}>

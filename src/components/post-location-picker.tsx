@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { AppState, KeyboardAvoidingView, Modal, Platform, StyleSheet, TextInput, View } from 'react-native';
 import * as Location from 'expo-location';
@@ -16,7 +15,7 @@ import { googlePinUrl, type PostPin } from '@/lib/post-maps';
 export function PostLocationPicker({ visible, initialPin, initialLabel = '', cityName = '', onClose, onConfirm }: {
   visible: boolean; initialPin: PostPin | null; initialLabel?: string; cityName?: string; onClose: () => void; onConfirm: (pin: PostPin, label: string) => void;
 }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback(), insets = useSafeAreaInsets(), reduced = useReducedMotion();
   const [pin, setPin] = useState<PostPin | null>(initialPin), [label, setLabel] = useState(initialLabel);
   const [query, setQuery] = useState(''), [busy, setBusy] = useState(false), [message, setMessage] = useState('');

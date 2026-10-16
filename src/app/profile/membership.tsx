@@ -15,7 +15,6 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { t, tr, getLocale } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { BUSINESS_LIMITS, GENERAL_BUMP_HOURS, MEMBERSHIP_LIMITS, type BusinessMembershipSnapshot, type MembershipKind, type MembershipOffer } from '@/lib/membership';
@@ -29,10 +28,11 @@ const plans = [
   { tier: 'premium', name: '프리미엄' },
 ] as const;
 const tierNames = { free: '베이직', plus: '플러스', pro: '프로', premium: '프리미엄' };
-const periodNames = { get month() { return tr("월"); }, get year() { return tr("년"); } };
+
 
 export default function MembershipScreen() {
-  useLanguage();
+  const { tr, t, locale: appLocale } = useLanguage();
+  const periodNames = { get month() { return tr("월"); }, get year() { return tr("년"); } };
   const theme = useTheme();
   const router = useRouter();
   const auth = useAuth();
@@ -140,7 +140,7 @@ export default function MembershipScreen() {
               {activeMembership?.tier === 'free' && <View style={[styles.badge, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" themeColor="textSecondary">{tr("무료")}</ThemedText></View>}
             </View>
             {activeMembership?.expiresAt && activeMembership.tier !== 'free' && <ThemedText type="small" themeColor="textSecondary" style={styles.statusNote}>
-              {new Date(activeMembership.expiresAt).toLocaleDateString(getLocale())} {activeMembership.willRenew === true ? tr("갱신 예정") : activeMembership.willRenew === false ? tr("까지 이용 가능") : tr("이용 기간 종료 예정")}
+              {new Date(activeMembership.expiresAt).toLocaleDateString(appLocale)} {activeMembership.willRenew === true ? tr("갱신 예정") : activeMembership.willRenew === false ? tr("까지 이용 가능") : tr("이용 기간 종료 예정")}
             </ThemedText>}
             {kind === 'general' && auth.isAdmin && <ThemedText type="small" themeColor="accent" style={styles.statusNote}>{tr("관리자 계정 · 모임을 제한 없이 이용해요.")}</ThemedText>}
             {kind === 'general' && membership?.planVersion === 1 && <ThemedText type="small" themeColor="textSecondary" style={styles.statusNote}>{tr("기존 구독 가격과 더 빠른 끌어올리기 혜택을 유지해요.")}</ThemedText>}
@@ -194,7 +194,7 @@ export default function MembershipScreen() {
           <MeetupPolicyNotice mode="join" />
           <MeetupPolicyNotice mode="once" />
           </> : <View style={styles.detailContent}>
-            <SectionHead title={tr("이번 달 사용")} note={business ? tr("{0} 초기화", (new Date(business.resetsAt).toLocaleDateString(getLocale()))) : tr("업체별 합산")} />
+            <SectionHead title={tr("이번 달 사용")} note={business ? tr("{0} 초기화", (new Date(business.resetsAt).toLocaleDateString(appLocale))) : tr("업체별 합산")} />
             {business && <ThemedText>{tr("신규") + " "}{business.postsUsed} / {business.postLimit ?? tr("기존 약정 유지")}{tr("편 · 끌어올리기") + " "}{business.bumpsUsed} / {business.bumpLimit}{tr("회")}</ThemedText>}
             {business?.tier === 'premium' && <ThemedText type="small">{tr("운영대행 사용: 신규") + " "}{business.managedPostsUsed}{tr("/4편 · 끌어올리기") + " "}{business.managedBumpsUsed}{tr("/8회 · 보고서") + " "}{business.reportsUsed}{tr("/1회")}</ThemedText>}
             <ThemedText type="small" themeColor="textSecondary">{tr("같은 내용은 새 글로 다시 올릴 수 없어요. 기존 글을 수정하거나 끌어올려 주세요. 같은 글은 플러스 72시간·프로 60시간·프리미엄 48시간 간격이에요. 비즈니스 전체는 24시간 간격을 지켜 주세요.")}</ThemedText>

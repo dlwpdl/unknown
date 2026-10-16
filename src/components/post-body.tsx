@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { Alert, Platform, StyleSheet, View } from 'react-native';
 import { openBrowserAsync } from 'expo-web-browser';
 import { ThemedText, type ThemedTextProps } from '@/components/themed-text';
@@ -8,7 +7,7 @@ import { PostAttachmentLink } from '@/components/post-attachment-link';
 import { instagramPostLink, splitPostAttachments, splitPostLinks } from '../../supabase/functions/_shared/post-links';
 
 export function PostBody({ body, linksEnabled = true, ...props }: Omit<ThemedTextProps, 'children'> & { body: string; linksEnabled?: boolean }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const { play } = useInteractionFeedback();
   const attached = splitPostAttachments(body);
   return <View><ThemedText {...props}>{splitPostLinks(attached.body).map((part, index) => !part.url || !linksEnabled ? part.text

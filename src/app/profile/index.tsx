@@ -18,7 +18,7 @@ import { TrustBadge } from '@/components/trust-badge';
 import { Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
-import { count, t, tr } from '@/i18n';
+import { count } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { CITIES, TAGS } from '@/lib/mock';
 import { useMembership } from '@/lib/membership-provider';
@@ -31,7 +31,7 @@ import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 import { supabase } from '@/lib/supabase';
 
 export default function ProfileScreen() {
-  useLanguage();
+  const { tr, t, locale: appLocale } = useLanguage();
   const theme = useTheme();
   const hidden = useContentVisibility();
   const router = useRouter();
@@ -185,7 +185,7 @@ export default function ProfileScreen() {
             <TrustBadge trustLevel={trustLevel === 1 ? undefined : trustLevel} />
           </View>
           <ThemedText type="small" themeColor="textSecondary">
-            {t.profile.location(cityName, summary?.neighborhood)}
+            {t.profile.location(tr(cityName), summary?.neighborhood)}
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary" style={{ fontVariant: ['tabular-nums'] }}>
             {t.profile.stats(summary?.posts ?? 0, summary?.likes ?? 0, summary?.meetups ?? 0)}
@@ -241,16 +241,16 @@ export default function ProfileScreen() {
         {!segmentLoading && <Reanimated.View key={segment} entering={reducedMotion ? FadeIn.duration(150) : FadeInDown.duration(250)}>
         {segment !== 'replies' && myPosts[segment].map((row) => (
           <Pressable analyticsId="app_profile_index.pressable.4" key={row.id} onPress={() => { play('selection'); router.push(`/post/${row.id}`); }} accessibilityRole="button" style={[styles.myPost, { borderBottomColor: theme.line }]}>
-            <ThemedText type="small" themeColor="textSecondary">{TAGS.find(({ id }) => id === row.tag_id)?.label ?? ''}{row.kind === 'listing' ? ` · ${t.detail.listingBadge}` : ''}{row.kind === 'listing' && row.listing_status && row.listing_status !== 'open' ? ` · ${t.detail.listingStatus[row.listing_status]}` : ''}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{tr(TAGS.find(({ id }) => id === row.tag_id)?.label ?? '')}{row.kind === 'listing' ? ` · ${t.detail.listingBadge}` : ''}{row.kind === 'listing' && row.listing_status && row.listing_status !== 'open' ? ` · ${t.detail.listingStatus[row.listing_status]}` : ''}</ThemedText>
             <ThemedText type="smallBold" style={styles.myTitle}>{row.title}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{visibleMeetupBody(row.body)}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary" style={{ fontVariant: ['tabular-nums'] }}>{row.kind === 'listing' && row.price != null ? `${t.detail.price(Number(row.price))} · ` : ''}{tr("공감") + " "}{count(row.like_count)}{" " + tr("· 댓글") + " "}{count(row.comment_count)}{" " + tr("· 저장") + " "}{count(row.save_count)} · {relativeTime(row.created_at)}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={{ fontVariant: ['tabular-nums'] }}>{row.kind === 'listing' && row.price != null ? `${t.detail.price(Number(row.price))} · ` : ''}{tr("공감") + " "}{count(row.like_count)}{" " + tr("· 댓글") + " "}{count(row.comment_count)}{" " + tr("· 저장") + " "}{count(row.save_count)} · {relativeTime(row.created_at, undefined, appLocale)}</ThemedText>
           </Pressable>
         ))}
         {segment !== 'replies' && myPosts[segment].length === 0 && <ThemedText type="small" themeColor="textSecondary" style={styles.emptyNote}>{segment === 'listing' ? tr("아직 올린 구해요·팔아요 글이 없어요.") : tr("아직 쓴 글이 없어요. 오늘의 한 편을 남겨보세요.")}</ThemedText>}
         {segment === 'replies' && replies.filter((reply) => !hidden('comment', reply.id, reply.author_id)).map((reply) => (
           <Pressable analyticsId="app_profile_index.pressable.5" key={reply.id} onPress={() => { play('selection'); router.push(`/post/${reply.post_id}`); }} accessibilityRole="button" style={[styles.myPost, { borderBottomColor: theme.line }]}>
-            <ThemedText type="small" themeColor="textSecondary"><ThemedText type="small" themeColor="navy">{reply.author?.nickname ?? tr("이웃")}</ThemedText>{tr("님이 「")}{reply.post?.title ?? tr("내 글")}{tr("」에 ·") + " "}{relativeTime(reply.created_at)}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary"><ThemedText type="small" themeColor="navy">{reply.author?.nickname ?? tr("이웃")}</ThemedText>{tr("님이 「")}{reply.post?.title ?? tr("내 글")}{tr("」에 ·") + " "}{relativeTime(reply.created_at, undefined, appLocale)}</ThemedText>
             <ThemedText type="small">{reply.body}</ThemedText>
             <ThemedText type="smallBold" themeColor="accent">{tr("답글 달기")}</ThemedText>
           </Pressable>

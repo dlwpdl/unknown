@@ -264,8 +264,8 @@ export async function attachSignedPostImages(client: SupabaseClient, posts: Post
   }));
 }
 
-export function relativeTime(value: string, now: number = Date.now()) {
-  const english = getLocale() === 'en-CA';
+export function relativeTime(value: string, now: number = Date.now(), locale = getLocale()) {
+  const english = locale === 'en-CA';
   const elapsedMinutes = Math.max(0, Math.floor((now - new Date(value).getTime()) / 60_000));
   if (elapsedMinutes < 1) return english ? 'Just now' : '방금';
   if (elapsedMinutes < 60) return english ? `${elapsedMinutes} ${elapsedMinutes === 1 ? 'minute' : 'minutes'} ago` : `${elapsedMinutes}분 전`;

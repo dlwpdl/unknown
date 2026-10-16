@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
@@ -8,7 +7,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { STORY_POLL, type PollDraft } from '@/lib/post-polls';
 
 export function PollDraftFields({ poll, onChange, disabled = false }: { poll: PollDraft | null; onChange: (value: PollDraft | null) => void; disabled?: boolean }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const field = [styles.field, { color: theme.text, borderColor: theme.line, backgroundColor: theme.backgroundElement }];
   return <View style={styles.wrap}>

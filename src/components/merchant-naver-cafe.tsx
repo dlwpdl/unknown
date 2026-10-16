@@ -27,7 +27,7 @@ const errors: Record<string, string> = {
   MERCHANT_OPERATIONS_PAUSED: '중단된 업체는 게시할 수 없어요.', RATE_LIMITED: '오늘 게시 한도 또는 연결 요청 한도에 도달했어요. 잠시 후 다시 확인해 주세요.',
 };
 const errorText = (error: unknown) => errors[error instanceof Error ? error.message : ''] ?? '처리하지 못했어요. 입력은 유지했으니 상태를 다시 확인해 주세요.';
-const labels = { get prepared() { return tr("발행 준비"); }, get in_flight() { return tr("결과 확인 중"); }, get succeeded() { return tr("게시 완료"); }, get failed() { return tr("게시 거절"); }, get uncertain() { return tr("결과 불확실"); } } as const;
+
 const NO_PHOTOS: string[] = [];
 export type MerchantNaverCallbackData = { state: string | null; code: string | null; result: string | null };
 let capturedCallback: MerchantNaverCallbackData | null | undefined;
@@ -47,7 +47,7 @@ export function MerchantNaverCallback({ callback, onConnected }: { callback?: Me
   return <CafeCallback key={me.id} userId={me.id} callback={callback} onConnected={onConnected} />;
 }
 function CafeCallback({ callback: provided, onConnected, userId }: { callback?: MerchantNaverCallbackData | null; onConnected: (merchantId: string) => void; userId: string }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const [callback] = useState(() => provided === undefined ? captureMerchantNaverCallback() : provided);
   const [error, setError] = useState(''), [done, setDone] = useState(false);
   const operation = useRef<ReturnType<typeof completeMerchantNaverCafe> | null>(null), delivered = useRef(false), currentUser = useRef(userId);
@@ -69,7 +69,7 @@ function CafeCallback({ callback: provided, onConnected, userId }: { callback?: 
   }, [callback, onConnected, userId, play]);
   if (!callback) return null;
   return <ThemedText accessibilityLiveRegion="polite" accessibilityRole={error ? 'alert' : undefined} type="small" themeColor={error ? 'danger' : undefined}>
-    {error || (done ? tr("네이버 연결을 완료했어요. 카페 가입·게시판 쓰기 권한은 발행할 때 확인해요.") : tr("네이버 연결을 확인하고 있어요…"))}
+    {error ? tr(error) : done ? tr("네이버 연결을 완료했어요. 카페 가입·게시판 쓰기 권한은 발행할 때 확인해요.") : tr("네이버 연결을 확인하고 있어요…")}
   </ThemedText>;
 }
 async function confirm(title: string, body: string) {
@@ -93,14 +93,15 @@ export function MerchantNaverCafe(props: Props) {
   return <CafeWorkspace key={`${me.id}:${props.merchantId}`} {...props} userId={me.id} />;
 }
 function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { userId: string }) {
-  useLanguage();
+  const { tr } = useLanguage();
+  const labels = { get prepared() { return tr("발행 준비"); }, get in_flight() { return tr("결과 확인 중"); }, get succeeded() { return tr("게시 완료"); }, get failed() { return tr("게시 거절"); }, get uncertain() { return tr("결과 불확실"); } } as const;
   const theme = useTheme(), { play } = useInteractionFeedback();
   const context = `${userId}:${merchantId}`, contextRef = useRef(context);
   useLayoutEffect(() => { contextRef.current = context; return () => { contextRef.current = ''; }; }, [context]);
   const storageKey = `gling:merchant-naver:${context}`;
   const [status, setStatus] = useState<MerchantNaverStatus | null>(null), [boardUrl, setBoardUrl] = useState('');
   const [draftId, setDraftId] = useState<string | null>(null), [busy, setBusy] = useState(false), busyRef = useRef(false);
-  const [error, setError] = useState(''), [notice, setNotice] = useState(''), [pending, setPending] = useState<PendingPublish | null>(null);
+  const [error, setError] = useState(''), [notice, setNotice] = useState<string | { errorCode: string }>(''), [pending, setPending] = useState<PendingPublish | null>(null);
   const [photos, setPhotos] = useState<{ key: string; urls: string[] } | null>(null), [photoFailure, setPhotoFailure] = useState<string | null>(null);
   const eligible = drafts.filter(draft => draft.approved_at && !draft.archived_at && !draft.external_url);
   const draft = eligible.find(draft => draft.id === draftId);
@@ -124,11 +125,11 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
           if (restored.observedArticleUrl !== undefined && (typeof restored.observedArticleUrl !== 'string' || !safeArticleUrl(restored.observedArticleUrl))) throw new Error('NAVER_PENDING_STORAGE_REQUIRED');
           if (next.requests.some(request => request.id === restored.requestId && ['succeeded', 'failed'].includes(request.status))) {
             await AsyncStorage.removeItem(storageKey);
-            if (active && contextRef.current === context) setNotice(tr("이전 요청의 최종 결과를 확인했어요. 새 원고를 선택할 수 있어요."));
+            if (active && contextRef.current === context) setNotice("이전 요청의 최종 결과를 확인했어요. 새 원고를 선택할 수 있어요.");
             return;
           }
           setPending(restored); setBoardUrl(restored.boardUrl); setDraftId(restored.draftId);
-          setNotice(tr("이전 발행 요청이 있어요. 먼저 결과를 확인해 주세요."));
+          setNotice("이전 발행 요청이 있어요. 먼저 결과를 확인해 주세요.");
         }
       }).catch(err => { if (active && contextRef.current === context) setError(errorText(err)); });
     return () => { active = false; };
@@ -172,7 +173,7 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
     <View style={styles.actions}>
       <CafeAction label={tr("상태 다시 확인")} disabled={busy} onPress={() => { void run(refreshStatus); }} />
       <CafeAction label={status?.connection ? tr("네이버 다시 연결") : tr("네이버 계정 연결")} disabled={busy || !status?.configured} onPress={() => { void run(async () => {
-        if (Platform.OS !== 'web') { setNotice(tr("업체용 웹에서 네이버 계정을 연결해 주세요.")); return; }
+        if (Platform.OS !== 'web') { setNotice("업체용 웹에서 네이버 계정을 연결해 주세요."); return; }
         const next = await startMerchantNaverCafe(supabase, merchantId);
         const target = new URL(next.authorizationUrl);
         if (target.protocol !== 'https:' || target.hostname !== 'nid.naver.com' || target.pathname !== '/oauth2.0/authorize') throw new Error('INVALID_NAVER_STATE');
@@ -183,18 +184,18 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
         play('selection'); const result = await disconnectMerchantNaverCafe(supabase, merchantId);
         if (contextRef.current !== context) return;
         setStatus(await loadMerchantNaverCafe(supabase, merchantId)); play('success');
-        setNotice(result.providerRevoked ? tr("네이버 연결을 해제했어요.") : tr("글링 연결은 해제했어요. 네이버의 연결된 서비스에서도 권한 해제를 확인해 주세요."));
+        setNotice(result.providerRevoked ? "네이버 연결을 해제했어요." : "글링 연결은 해제했어요. 네이버의 연결된 서비스에서도 권한 해제를 확인해 주세요.");
       }); }} />}
     </View>
-    {error ? <ThemedText accessibilityRole="alert" type="small" themeColor="danger">{error}</ThemedText> : null}
-    {notice ? <ThemedText accessibilityLiveRegion="polite" type="small">{notice}</ThemedText> : null}
+    {error ? <ThemedText accessibilityRole="alert" type="small" themeColor="danger">{tr(error)}</ThemedText> : null}
+    {notice ? <ThemedText accessibilityLiveRegion="polite" type="small">{typeof notice === 'string' ? tr(notice) : tr('네이버가 게시를 거절했어요 ({0}). 카페 권한과 사진을 확인해 주세요.', notice.errorCode || tr('권한 확인'))}</ThemedText> : null}
     {preparation && <CafeAction label={tr("이전 발행 준비 취소")} disabled={busy} onPress={() => { void run(async () => {
       if (!await confirm('이전 발행 준비를 취소할까요?', '아직 외부 게시를 시작하지 않은 요청만 취소할 수 있어요. 발행이 시작됐다면 결과 확인을 계속해요.')) return;
       play('selection');
       const result = await cancelMerchantNaverPreparation(supabase, merchantId, preparation.id);
       if (contextRef.current !== context) return;
       if (result.request.status === 'failed' && result.request.error_code === 'NAVER_PREPARATION_CANCELLED') {
-        await AsyncStorage.removeItem(storageKey); setPending(null); setNotice(tr("발행 준비를 취소했어요. 최신 원고를 선택해 주세요.")); play('success');
+        await AsyncStorage.removeItem(storageKey); setPending(null); setNotice("발행 준비를 취소했어요. 최신 원고를 선택해 주세요."); play('success');
       } else setNotice(errors.NAVER_PUBLISH_UNCERTAIN);
       await refreshStatus();
     }); }} />}
@@ -242,7 +243,7 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
           if (['succeeded', 'failed'].includes(result.request.status)) {
             await AsyncStorage.removeItem(storageKey); setPending(null);
             play(result.request.status === 'succeeded' ? 'success' : 'warning');
-            setNotice(result.request.status === 'succeeded' ? tr("실제 네이버 게시글 링크를 확인하고 저장했어요.") : tr("네이버가 게시를 거절했어요 ({0}). 카페 권한과 사진을 확인해 주세요.", (result.request.error_code ?? '권한 확인')));
+            setNotice(result.request.status === 'succeeded' ? "실제 네이버 게시글 링크를 확인하고 저장했어요." : { errorCode: result.request.error_code ?? '' });
             await onChanged?.();
           } else setNotice(errors.NAVER_PUBLISH_UNCERTAIN);
           setStatus(await loadMerchantNaverCafe(supabase, merchantId));

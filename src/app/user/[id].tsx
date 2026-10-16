@@ -14,7 +14,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
-import { count, t, tr, getLocale } from '@/i18n';
+import { count } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { CONTENT_TRANSLATION_VIEWABILITY } from '@/lib/content-translation';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -25,7 +25,7 @@ import type { Post } from '@/lib/types';
 
 // 글·댓글 작성자를 눌렀을 때 여는 프로필 화면. 이 사람이 지금까지 쓴 글만 모아 보여준다.
 export default function AuthorPostsRoute() {
-  useLanguage();
+  const { tr, t, locale: appLocale } = useLanguage();
   const { id, nickname } = useLocalSearchParams<{ id: string; nickname?: string }>();
   const authorId = typeof id === 'string' ? id : '';
   const { isAuthed, me } = useAuth();
@@ -120,7 +120,7 @@ export default function AuthorPostsRoute() {
             keyExtractor={(post) => post.id}
             contentContainerStyle={styles.list}
             ListHeaderComponent={publicProfile && <View style={styles.profile}>
-              <ThemedText type="small" themeColor="textSecondary">{publicProfile.neighborhood ?? publicProfile.cityId}{" " + tr("· 가입") + " "}{new Date(publicProfile.memberSince).toLocaleDateString(getLocale())}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{publicProfile.neighborhood ?? publicProfile.cityId}{" " + tr("· 가입") + " "}{new Date(publicProfile.memberSince).toLocaleDateString(appLocale)}</ThemedText>
               <MannerSummary summary={publicProfile.manner} />
               <ThemedText type="small">{tr("오늘") + " "}{publicProfile.storyCount}{tr("개 · 구해요·팔아요") + " "}{publicProfile.listingCount}{tr("개 · 거래 완료") + " "}{publicProfile.completedCount}{tr("개")}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">{tr("공개한 글 이력이에요. 거래 완료는 작성자가 표시한 상태이며 실제 거래·신원 인증을 보장하지 않아요.")}</ThemedText>

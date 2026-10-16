@@ -90,3 +90,22 @@ test('native device defaults read actual iOS and Android locale fields', async (
   platform.OS = 'android';
   assert.deepEqual(Array.from(exports.deviceLanguages()), ['en_CA']);
 });
+
+test('render formatters accept an explicit locale while preserving stored cadence and global defaults', async () => {
+  const { setActiveLanguage } = await import('../src/i18n/index.ts');
+  const { relativeTime } = await import('../src/lib/feed-data.ts');
+  const { chillingSchedule, recommendedAgeLabel, recommendedAgeMessage, chillingCountdown } = await import('../src/lib/chilling.ts');
+  const now = Date.parse('2026-10-15T18:30:00Z');
+  const age = { recommendedAgeMin: 20, recommendedAgeMax: 39 };
+  try {
+    setActiveLanguage('ko');
+    assert.equal(relativeTime(new Date(now - 5 * 60000).toISOString(), now, 'en-CA'), '5 minutes ago');
+    assert.equal(recommendedAgeLabel(age, 'en-CA'), 'Recommended ages 20–39');
+    assert.match(recommendedAgeMessage(age, 25, 'en-CA'), /Self-reported age 25/);
+    assert.equal(chillingCountdown({ eventKind: 'once', startsAt: new Date(now + 60000).toISOString() }, now, 'en-CA'), 'Today');
+    assert.equal(chillingSchedule({ eventKind: 'group', cadence: '회원이 정한 원래 주기' }, 'en-CA'), '회원이 정한 원래 주기');
+    assert.equal(relativeTime(new Date(now - 5 * 60000).toISOString(), now), '5분 전');
+    setActiveLanguage('en');
+    assert.equal(relativeTime(new Date(now - 5 * 60000).toISOString(), now, 'ko-KR'), '5분 전');
+  } finally { setActiveLanguage('ko'); }
+});

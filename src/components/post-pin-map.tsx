@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Platform, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
@@ -18,7 +17,7 @@ export function PostPinMap({ pin, cityName = '', preview = false, bottomInset = 
   pin: PostPin | null; label?: string; cityName?: string; preview?: boolean; bottomInset?: number;
   onSelect?: (pin: PostPin, label?: string) => void; onReadyChange?: (ready: boolean) => void;
 }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback(), native = useRef<WebView>(null), web = useRef<HTMLIFrameElement>(null);
   const { isAuthed, me } = useAuth(), userId = isAuthed ? me.id : null;
   const identity = useRef(userId);

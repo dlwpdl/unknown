@@ -26,6 +26,9 @@ insert into public.posts(id,author_id,city_id,tag_id,title,body,status,created_a
  ('af520000-0000-4000-8000-000000000010','af510000-0000-4000-8000-000000000003','vancouver',4,'차단 작성자','본문','published',now()-interval '1 day',1000,0,0,'{}',null),
  ('af520000-0000-4000-8000-000000000011','af510000-0000-4000-8000-000000000002','vancouver',4,'신고한 글','본문','published',now()-interval '1 day',1000,0,0,'{}',null),
  ('af520000-0000-4000-8000-000000000012','af510000-0000-4000-8000-000000000002','vancouver',4,'만료 매물','본문','published',now()-interval '1 day',1000,0,0,'{}',null);
+insert into public.posts(id,author_id,city_id,tag_id,title,body,status,created_at,view_count) values
+ ('af520000-0000-4000-8000-000000000013','af510000-0000-4000-8000-000000000002','vancouver',1,'많이 본 옛 글','본문','published',now()-interval '2 days',77),
+ ('af520000-0000-4000-8000-000000000014','af510000-0000-4000-8000-000000000002','vancouver',1,'적게 본 새 글','본문','published',now()-interval '5 minutes',3);
 update public.posts set kind='listing',listing_status='open',expires_at=now()-interval '1 hour' where id='af520000-0000-4000-8000-000000000012';
 insert into public.blocks(blocker_id,blocked_id) values('af510000-0000-4000-8000-000000000001','af510000-0000-4000-8000-000000000003');
 insert into public.reports(reporter_id,reported_user_id,target_type,target_id,reason_code) values('af510000-0000-4000-8000-000000000001','af510000-0000-4000-8000-000000000002','post','af520000-0000-4000-8000-000000000011','spam');
@@ -46,6 +49,11 @@ select ok(not exists(select 1 from popular_page where city_id<>'vancouver' or ta
 select results_eq($$select id::text from popular_page where id in ('af520000-0000-4000-8000-000000000001','af520000-0000-4000-8000-000000000002','af520000-0000-4000-8000-000000000003') order by popularity_score desc,created_at desc,id desc$$,
  array['af520000-0000-4000-8000-000000000001','af520000-0000-4000-8000-000000000002','af520000-0000-4000-8000-000000000003'],'equal scores break ties by newest creation time');
 select is((select count(distinct ranking_as_of)::integer from popular_page),1,'the page has a single eligibility timestamp');
+select is((select popularity_score from public.get_public_popular_feed_page('vancouver',1::smallint) where id='af520000-0000-4000-8000-000000000013'),77::bigint,'views contribute even when likes, comments and saves are zero');
+select results_eq($$select id::text from public.get_public_popular_feed_page('vancouver',1::smallint) where id in ('af520000-0000-4000-8000-000000000004','af520000-0000-4000-8000-000000000013','af520000-0000-4000-8000-000000000014')$$,
+ array['af520000-0000-4000-8000-000000000013','af520000-0000-4000-8000-000000000014','af520000-0000-4000-8000-000000000004'],'viewed older posts outrank newer posts without engagement');
+select results_eq($$select id::text from public.get_public_popular_feed_page('vancouver',1::smallint,77,now()-interval '2 days','af520000-0000-4000-8000-000000000013',now()) where id in ('af520000-0000-4000-8000-000000000004','af520000-0000-4000-8000-000000000013','af520000-0000-4000-8000-000000000014')$$,
+ array['af520000-0000-4000-8000-000000000014','af520000-0000-4000-8000-000000000004'],'view-based score cursor reaches the remaining rows without repeating the previous page');
 
 create temp table second_page as select * from public.get_public_popular_feed_page('vancouver',4::smallint,29,now()-interval '2 hours','af520000-0000-4000-8000-000000000002',now(),50);
 select ok(exists(select 1 from second_page where id='af520000-0000-4000-8000-000000000003'),'score cursor reaches equal-score older posts');
