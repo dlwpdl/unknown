@@ -7,6 +7,7 @@ import { Alert, Animated, Easing, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
+import { PostAdLabel } from '@/components/post-ad-label';
 import { PostBody } from '@/components/post-body';
 import { PostMapLink } from '@/components/post-map-link';
 import { TranslationControl } from '@/components/content-translation';
@@ -165,6 +166,7 @@ export function PostCard({
               <View style={styles.nickRow}>
                 <ThemedText type="smallBold" style={styles.nickname}>{post.author.nickname}</ThemedText>
                 <TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} />
+                <PostAdLabel hashtags={post.hashtags} />
                 {mine && (
                   <ThemedText type="smallBold" style={{ color: theme.accent }}>
                     {t.feed.mineBadge}

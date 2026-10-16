@@ -77,6 +77,7 @@ function mount(file, name, data = {}, props = {}) {
     '../../supabase/functions/_shared/post-links': postLinks, '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
     '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/components/manner-summary': { MannerSummary: 'MannerSummary' },
+    '@/components/post-ad-label': { PostAdLabel: 'PostAdLabel' },
     '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' },
     '@/constants/theme': { Depth: {}, Spacing: { one: 4, two: 8, three: 16 } }, '@/i18n/ko': { count, t },
     '@/lib/hashtags': { uniqueHashtags }, '@/lib/post-maps': { postMapBody }, '@/lib/meetup-ai': { visibleMeetupBody: body => body },

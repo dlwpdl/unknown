@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PostCard } from '@/components/post-card';
 import { MannerSummary } from '@/components/manner-summary';
+import { TrustBadge } from '@/components/trust-badge';
 import { PostDetail } from '@/components/post-detail';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -21,12 +22,13 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { appendUniquePosts } from '@/lib/feed-data';
 import { loadPublicUserActivity, loadPublicUserProfile, type PublicUserProfile } from '@/lib/user-profile';
 import { supabase } from '@/lib/supabase';
+import { CITIES } from '@/lib/mock';
 import type { Post } from '@/lib/types';
 
 // 글·댓글 작성자를 눌렀을 때 여는 프로필 화면. 이 사람이 지금까지 쓴 글만 모아 보여준다.
 export default function AuthorPostsRoute() {
   const { tr, t, locale: appLocale } = useLanguage();
-  const { id, nickname } = useLocalSearchParams<{ id: string; nickname?: string }>();
+  const { id } = useLocalSearchParams<{ id: string; nickname?: string }>();
   const authorId = typeof id === 'string' ? id : '';
   const { isAuthed, me } = useAuth();
   const viewerScope = isAuthed ? me.id : 'guest';
@@ -77,7 +79,6 @@ export default function AuthorPostsRoute() {
   const posts = (current?.posts ?? []).filter(post => !hidden('post', post.id, post.author.id));
   const publicProfile = profile?.key === requestKey && !hidden('user', authorId) ? profile.value : null;
   const shownDetail = detail?.key === requestKey && !hidden('post', detail.post.id, detail.post.author.id) ? detail.post : null;
-  const shownName = publicProfile?.nickname ?? (typeof nickname === 'string' ? nickname : posts[0]?.author.nickname);
 
   return (
     <ThemedView style={styles.container}>
@@ -91,9 +92,7 @@ export default function AuthorPostsRoute() {
             <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} />
           </Pressable>
           <View style={styles.heading}>
-            <ThemedText type="subtitle" numberOfLines={1}>
-              {shownName ? tr("{0} 프로필", (shownName)) : tr("사용자 프로필")}
-            </ThemedText>
+            <ThemedText type="smallBold" style={{ fontSize: 16 }}>{tr("사용자 프로필")}</ThemedText>
             {current && (
               <ThemedText type="small" themeColor="textSecondary">
                 {t.authorPosts.count(count(posts.length))}
@@ -101,12 +100,7 @@ export default function AuthorPostsRoute() {
             )}
           </View>
         </View>
-        <View style={[styles.segments, { borderBottomColor: theme.line }]} accessibilityRole="tablist">
-          {(['story', 'listing'] as const).map(value => <Pressable analyticsId={`user.activity.${value}`} key={value} accessibilityRole="tab" accessibilityState={{ selected: kind === value }}
-            onPress={() => { play('selection'); setKind(value); setDetail(null); }} style={[styles.segment, kind === value && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]}>
-            <ThemedText type="smallBold">{value === 'story' ? tr("오늘") : tr("구해요·팔아요")}</ThemedText>
-          </Pressable>)}
-        </View>
+
 
         {loading ? (
           <View style={styles.center}>
@@ -120,11 +114,23 @@ export default function AuthorPostsRoute() {
             keyExtractor={(post) => post.id}
             contentContainerStyle={styles.list}
             ListHeaderComponent={publicProfile && <View style={styles.profile}>
-              <ThemedText type="small" themeColor="textSecondary">{publicProfile.neighborhood ?? publicProfile.cityId}{" " + tr("· 가입") + " "}{new Date(publicProfile.memberSince).toLocaleDateString(appLocale)}</ThemedText>
+              <View style={styles.identity}>
+                <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle" style={{ color: theme.accent }}>{publicProfile.nickname[0]}</ThemedText></View>
+                <View style={{ flex: 1, minWidth: 0, gap: 4 }}><View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}><ThemedText type="subtitle" style={{ flexShrink: 1 }}>{publicProfile.nickname}</ThemedText><TrustBadge verified={publicProfile.verificationLevel >= 2} trustLevel={publicProfile.verificationLevel === 3 ? 3 : publicProfile.verificationLevel === 2 ? 2 : undefined} /></View><ThemedText type="small" themeColor="textSecondary">{publicProfile.neighborhood ?? tr(CITIES.find(city => city.id === publicProfile.cityId)?.name ?? publicProfile.cityId)}{" " + tr("· 가입") + " "}{new Date(publicProfile.memberSince).toLocaleDateString(appLocale)}</ThemedText></View>
+              </View>
+              <View style={[styles.stats, { borderColor: theme.line }]}>
+                {([[publicProfile.storyCount, tr('오늘')], [publicProfile.listingCount, tr('구해요·팔아요')], [publicProfile.completedCount, tr('거래 완료')]] as const).map(([value, label]) => <View key={label} style={styles.stat}><ThemedText type="subtitle">{count(value)}</ThemedText><ThemedText type="small" themeColor="textSecondary">{label}</ThemedText></View>)}
+              </View>
               <MannerSummary summary={publicProfile.manner} />
-              <ThemedText type="small">{tr("오늘 {0}개 · 구해요·팔아요 {1}개 · 거래 완료 {2}개", publicProfile.storyCount, publicProfile.listingCount, publicProfile.completedCount)}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">{tr("공개한 글 이력이에요. 거래 완료는 작성자가 표시한 상태이며 실제 거래·신원 인증을 보장하지 않아요.")}</ThemedText>
+        <View style={[styles.segments, { borderBottomColor: theme.line }]} accessibilityRole="tablist">
+          {(['story', 'listing'] as const).map(value => <Pressable analyticsId={`user.activity.${value}`} key={value} accessibilityRole="tab" accessibilityState={{ selected: kind === value }}
+            onPress={() => { play('selection'); setKind(value); setDetail(null); }} style={[styles.segment, kind === value && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]}>
+            <ThemedText type="smallBold">{value === 'story' ? tr("오늘") : tr("구해요·팔아요")}</ThemedText>
+          </Pressable>)}
+        </View>
             </View>}
+
             renderItem={({ item }) => (
               <PostCard post={item} translationVisible={visiblePostIds.has(item.id) && !detail} onPress={() => setDetail({ key: requestKey, post: item })} />
             )}
@@ -166,13 +172,17 @@ export default function AuthorPostsRoute() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingHorizontal: 16, paddingBottom: 8, gap: 4 },
+  header: { paddingHorizontal: 16, paddingBottom: 8, gap: 8, flexDirection: 'row', alignItems: 'center' },
   backButton: { alignSelf: 'flex-start', minWidth: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  heading: { gap: 2, paddingBottom: 4 },
+  heading: { flex: 1, minWidth: 0, gap: 2, paddingBottom: 4 },
   list: { paddingHorizontal: 16, paddingBottom: 32, gap: 12 },
-  profile: { gap: 12, marginBottom: 16 },
-  segments: { flexDirection: 'row', borderBottomWidth: 1, marginHorizontal: 16, marginBottom: 12 },
-  segment: { minHeight: 44, paddingHorizontal: 16, justifyContent: 'center' },
+  profile: { gap: 16, marginBottom: 16 },
+  identity: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  avatar: { width: 64, height: 64, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  stats: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 16 },
+  stat: { flex: 1, minWidth: 0, alignItems: 'center', gap: 4 },
+  segments: { flexDirection: 'row', borderBottomWidth: 1, marginBottom: 0 },
+  segment: { minHeight: 44, flexGrow: 1, alignItems: 'center', paddingHorizontal: 16, justifyContent: 'center' },
   center: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   message: { gap: 6, alignItems: 'center' },
 });
