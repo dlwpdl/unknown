@@ -72,3 +72,16 @@ test('members keep identities when optional avatar signing fails, and RPC failur
   assert.equal(rows[0].avatarUrl, undefined);
   await assert.rejects(loadChatMembers({ rpc: async () => ({ error: new Error('FORBIDDEN') }) }, 'room'), /FORBIDDEN/);
 });
+
+
+test('chat dates and times follow an explicit selected locale and keep local-day boundaries', () => {
+  const now = new Date(2026, 8, 17, 12, 5);
+  assert.equal(chatDateLabel('2026-09-17T00:01:00', undefined, now, 'en-CA'), 'Today');
+  assert.equal(chatDateLabel('2026-09-16T23:59:00', undefined, now, 'en-CA'), 'Yesterday');
+  assert.equal(chatListTime('2026-09-15T09:05:00', now, 'en-CA'), new Intl.DateTimeFormat('en-CA', { month: 'short', day: 'numeric' }).format(new Date('2026-09-15T09:05:00')));
+  assert.equal(chatMessageTime('2026-09-17T15:42:00', 'en-CA'), new Intl.DateTimeFormat('en-CA', { hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date('2026-09-17T15:42:00')));
+  assert.equal(chatDateLabel('2025-09-15T23:59:00', undefined, now, 'en-CA'), new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date('2025-09-15T23:59:00')));
+  assert.equal(chatDateLabel('2026-09-15T23:59:00', '2026-09-15T01:00:00', now, 'en-CA'), null);
+  assert.equal(chatListTime('2026-09-15T09:05:00', now, 'ko-KR'), '9월 15일');
+  assert.equal(chatListTime('not-a-date', now, 'en-CA'), '');
+});

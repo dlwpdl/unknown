@@ -34,19 +34,19 @@ export function RelationshipSlotCard({ kind, membership, loading = false, onMemb
   const { tr, t } = useLanguage();
   const theme = useTheme();
   const data = relationshipSlotData(membership, kind);
-  const title = kind === 'meetup' ? '모임 자리' : '1:1 대화 자리';
-  const unknown = loading ? '자리를 확인하고 있어요' : '자리 정보를 다시 확인해 주세요';
+  const title = tr(kind === 'meetup' ? '모임 자리' : '1:1 대화 자리');
+  const unknown = tr(loading ? '자리를 확인하고 있어요' : '자리 정보를 다시 확인해 주세요');
   const showLock = kind === 'conversation' || !!data?.locked;
   const summary = data
-    ? `${title}, 전체 ${data.limit}개 중 남은 자리 ${data.available}개, 사용 중 ${data.active}개${showLock ? `, 24시간 잠금 ${data.locked}개` : ''}.${data.unlockAt ? ` ${t.chat.slotUnlock(data.unlockAt)}` : ''}`
-    : `${title}, ${unknown}`;
+    ? tr('{0}, 전체 {1}개 중 남은 자리 {2}개, 사용 중 {3}개{4}.{5}', title, data.limit, data.available, data.active, showLock ? tr(', 24시간 잠금 {0}개', data.locked) : '', data.unlockAt ? ` ${t.chat.slotUnlock(data.unlockAt)}` : '')
+    : tr('{0}, {1}', title, unknown);
   const colors = { active: theme.accent, locked: theme.navy };
 
   return <View style={[styles.card, Depth.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
     <View style={styles.content}>
       <View style={styles.header}>
         <ThemedText type="smallBold">{title}</ThemedText>
-        {membership && <View style={[styles.tier, { backgroundColor: theme.backgroundElement }]}><ThemedText type="small" themeColor="textSecondary">{tierNames[membership.tier]}</ThemedText></View>}
+        {membership && <View style={[styles.tier, { backgroundColor: theme.backgroundElement }]}><ThemedText type="small" themeColor="textSecondary">{tr(tierNames[membership.tier])}</ThemedText></View>}
       </View>
       <View accessible accessibilityRole="image" accessibilityLabel={summary} accessibilityState={{ busy: loading && !data }} accessibilityLiveRegion="polite">
         <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>

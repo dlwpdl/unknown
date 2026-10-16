@@ -65,7 +65,7 @@ export default function SharedPostRoute() {
 
   return (
     <ThemedView style={styles.container}>
-      {Platform.OS === 'web' && <Head><title>{tr("{0} | 글링", (preview?.key === requestKey ? preview.value?.title ?? '글링 공유' : current?.post?.title ?? '글링 공유'))}</title>
+      {Platform.OS === 'web' && <Head><title>{tr("{0} | 글링", (preview?.key === requestKey ? preview.value?.title ?? tr('글링 공유') : current?.post?.title ?? tr('글링 공유')))}</title>
         <meta name="robots" content="noindex, follow" />
         <meta property="og:site_name" content={tr("글링")} /><meta property="og:title" content={preview?.key === requestKey ? preview.value?.title ?? '글링 공유' : current?.post?.title ?? '글링 공유'} />
         <meta property="og:description" content={tr("Google·소셜 로그인 후 전체 내용과 모임을 확인해요.")} />

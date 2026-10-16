@@ -187,11 +187,11 @@ function MeetupDiscovery({ eventId }: { eventId: string }) {
       ListHeaderComponent={initialLoading ? null : <>
         <Pressable analyticsId="ticketmaster.discover" accessibilityRole="button" accessibilityLabel={tr("이 지역 공연과 행사 보기")} onPress={() => { play('selection'); router.push('/events'); }} style={({ pressed }) => [styles.pending, Depth.card, { borderColor: theme.line, backgroundColor: theme.card, opacity: pressed ? 0.9 : 1, }]}>
           <ThemedText type="smallBold">{tr("함께 가고 싶은 공연·행사")}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">{tr(city.name)}{tr("에서 찾고, 같이 갈 모임을 열어요 ›")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("{0}에서 찾고, 같이 갈 모임을 열어요 ›", tr(city.name))}</ThemedText>
         </Pressable>
         {pendingCount > 0 && <Pressable analyticsId="app_tabs_meetups.pressable.7" accessibilityRole="button" accessibilityLabel={tr("참여 신청 {0}건 처리하기", (pendingCount))}
           onPress={() => { play('selection'); router.push({ pathname: '/chat', params: { view: 'requests' } }); }} style={({ pressed }) => [styles.pending, Depth.card, { borderColor: theme.accent, backgroundColor: theme.card, opacity: pressed ? 0.9 : 1, }]}>
-          <ThemedText type="smallBold" themeColor="accent">{tr("참여 신청") + " "}{pendingCount}{tr("건")}</ThemedText>
+          <ThemedText type="smallBold" themeColor="accent">{tr("참여 신청 {0}건", pendingCount)}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{tr("프로필을 검토하고 승인·거절해요 ›")}</ThemedText>
         </Pressable>}
         <View style={styles.filterRow}>
@@ -205,7 +205,7 @@ function MeetupDiscovery({ eventId }: { eventId: string }) {
         </View>
         {slots && <Pressable analyticsId="app_tabs_meetups.pressable.12" accessibilityRole="button" accessibilityLabel={tr("모임 자리 {0} / {1}, 남은 자리 {2}", (slots.active), (slots.limit), (slots.available))}
           onPress={() => { play('selection'); router.push('/profile/membership'); }} style={({ pressed }) => [styles.slots, { opacity: pressed ? 0.7 : 1 }]}>
-          <ThemedText type="small" themeColor="textSecondary">{tr("동시 모임 자리") + " "}<ThemedText type="smallBold">{slots.active}/{slots.limit}</ThemedText> {" " + tr("사용 중 · 남은") + " "}{slots.available}{tr("개")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("동시 모임 자리") + " "}<ThemedText type="smallBold">{slots.active}/{slots.limit}</ThemedText>{tr(" 사용 중 · 남은 자리 {0}개", slots.available)}</ThemedText>
           <ThemedText type="smallBold" themeColor="accent">{slots.available === 0 ? tr("자리 늘리기 ›") : tr("멤버십 ›")}</ThemedText>
         </Pressable>}
         {!!query && <Pressable analyticsId="app_tabs_meetups.pressable.9" accessibilityRole="button" accessibilityLabel={query === eventId ? tr("행사 모임 검색 해제") : tr("검색어 {0} 해제", (query))}

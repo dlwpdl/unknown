@@ -153,7 +153,7 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
                   router.push((route?.startsWith('/admin') ? '/notifications' : route ?? '/notifications') as never);
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={tr("{0}, {1}{2}", (admin ? '관리자 알림' : '내 소식'), (item.title ? `${item.title}, ` : ''), (item.body))}
+                accessibilityLabel={tr("{0}, {1}{2}", (admin ? tr('관리자 알림') : tr('내 소식')), (item.title ? `${item.title}, ` : ''), (item.body))}
                 style={({ pressed }) => [
                   styles.row,
                   item.read_at == null && Depth.card,

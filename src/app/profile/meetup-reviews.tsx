@@ -72,7 +72,7 @@ function Feedback({ item, onChanged }: { item: MyMannerFeedback; onChanged: () =
   return <View style={[styles.card, { borderColor: theme.line }]}>
     <ThemedText type="smallBold">{item.context === 'meeting' ? tr("실제 만남") : tr("대화")} · {item.status === 'held' ? tr("검토 중 · 집계 제외") : tr("반영된 리뷰")}</ThemedText>
     {item.score != null && <ThemedText type="subtitle">{item.score.toFixed(1)} / 10</ThemedText>}
-    {MANNER_QUESTIONS.filter(({ key }) => item.context !== 'chat' || key !== 'punctual').map(({ key, label }) => <ThemedText key={key} type="small">{label} · {item.signals[key] === null ? tr("확인 못함") : item.signals[key] ? tr("그랬어요") : tr("아쉬웠어요")}</ThemedText>)}
+    {MANNER_QUESTIONS.filter(({ key }) => item.context !== 'chat' || key !== 'punctual').map(({ key, label }) => <ThemedText key={key} type="small">{tr(label)} · {item.signals[key] === null ? tr("확인 못함") : item.signals[key] ? tr("그랬어요") : tr("아쉬웠어요")}</ThemedText>)}
     {!item.appealed && item.status === 'published' && <Pressable accessibilityRole="button" onPress={() => { play('selection'); setOpen(old => !old); }} style={button}><ThemedText type="small">{tr("리뷰에 이의제기")}</ThemedText></Pressable>}
     {open && <>
       <TextInput accessibilityLabel={tr("사용자 리뷰 이의제기 사유")} editable={!busy} value={body} onChangeText={setBody} onFocus={() => play('selection')} multiline maxLength={1000} placeholder={tr("사실관계·맥락을 적어주세요. (10자 이상)")} placeholderTextColor={theme.textSecondary} style={[styles.input, { color: theme.text, borderColor: theme.line }]} />
