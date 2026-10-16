@@ -137,7 +137,7 @@ function ScopedPlaceReviews({ cityId, placeId, userId, viewport }: Props & { use
         setRowLayouts(previous => previous[post.id]?.y === layout.y && previous[post.id]?.height === layout.height ? previous
           : { ...previous, [post.id]: { y: layout.y, height: layout.height } });
       }}>
-        <PostCard post={post} flat {...{ translationVisible }}
+        <PostCard post={post} flat translationVisible={translationVisible}
           onPress={() => router.push({ pathname: '/post/[id]', params: { id: post.id } })}
           onAuthor={() => { if (post.author.id) router.push({ pathname: '/user/[id]', params: { id: post.author.id } }); }} />
       </View>;

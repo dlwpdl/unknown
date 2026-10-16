@@ -206,16 +206,18 @@ function detailViewport() {
   const exports = {}, states = [], jsx = (type, props, key) => ({ type, props, key });
   let index = 0;
   const imports = {
-    react: { useState(initial) { const slot = index++; if (!(slot in states)) states[slot] = initial; return [states[slot], next => { states[slot] = typeof next === 'function' ? next(states[slot]) : next; }]; } },
+    react: { useRef: current => ({ current }), useEffect() {}, useLayoutEffect() {}, useCallback: fn => fn,
+      useState(initial) { const slot = index++; if (!(slot in states)) states[slot] = initial; return [states[slot], next => { states[slot] = typeof next === 'function' ? next(states[slot]) : next; }]; } },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { StyleSheet: { create: x => x }, View: 'View' },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
-    'expo-router': { useLocalSearchParams: () => ({ cityId: 'toronto', id: 'osm:node:1' }), useRouter: () => ({}) },
+    'expo-router': { useIsFocused: () => true, useLocalSearchParams: () => ({ cityId: 'toronto', id: 'osm:node:1' }), useRouter: () => ({}) },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/components/place-reviews': { PlaceReviews: 'PlaceReviews' },
     '@/hooks/use-language': { useLanguage() {} }, '@/i18n': { tr, getLocale: () => 'en-CA' },
     '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'toronto' } }) },
+    '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'guest' } }) },
     '@/lib/city-places': { getCityPlaces: () => [{ id: 'osm:node:1', name: 'Place', sourceUrl: 'https://www.openstreetmap.org/node/1' }] },
     '@/lib/mock': { CITIES: [{ id: 'toronto', name: 'Toronto', englishName: 'Toronto' }] },
     '@/lib/merchant-source': { safeMerchantSourceUrl: () => null, merchantMapsUrl: () => null },
