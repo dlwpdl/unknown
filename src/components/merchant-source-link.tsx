@@ -1,4 +1,4 @@
-import { LensPressable as Pressable } from '@/components/lens-pressable';
+import { FlatPressable as Pressable } from '@/components/flat-pressable';
 import { useEffect, useState } from 'react';
 import { Linking, Platform, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';

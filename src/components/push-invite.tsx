@@ -101,13 +101,13 @@ export function PushInvite() {
             <Line symbol={{ ios: 'flame', android: 'local_fire_department', web: 'local_fire_department' }}
               text="내 지역의 새 글과 인기 소식" hint="관심사와 지역에 맞는 알림을 선택할 수 있어요" />
           </View>
-          <Pressable lens analyticsId="components_push-invite.pressable.2" onPress={() => void allow()} disabled={busy} accessibilityRole="button"
+          <Pressable analyticsId="components_push-invite.pressable.2" onPress={() => void allow()} disabled={busy} accessibilityRole="button"
             accessibilityState={{ disabled: busy, busy }}
             style={({ pressed }) => [styles.primary, { backgroundColor: theme.accent },
               (pressed || busy) && { opacity: 0.82, transform: [{ scale: busy ? 1 : 0.985 }] }]}>
             <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{busy ? '설정 중' : '알림 받기'}</ThemedText>
           </Pressable>
-          <Pressable lens analyticsId="components_push-invite.pressable.3" onPress={() => void close()} disabled={busy} accessibilityRole="button"
+          <Pressable analyticsId="components_push-invite.pressable.3" onPress={() => void close()} disabled={busy} accessibilityRole="button"
             style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.6 }]}>
             <ThemedText type="smallBold" themeColor="textSecondary">나중에</ThemedText>
           </Pressable>

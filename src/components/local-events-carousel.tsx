@@ -116,12 +116,12 @@ export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityRea
         <ThemedText accessibilityRole="header" style={styles.title}>다가오는 페스티벌</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">가고 싶은 무대를 먼저 둘러보세요</ThemedText>
       </View>
-      <Pressable lens analyticsId="today.events.browse" accessibilityRole="button" accessibilityLabel="행사 전체 보기" onPress={browse} style={({ pressed }) => [styles.browse, { opacity: pressed ? 0.65 : 1 }]}>
+      <Pressable analyticsId="today.events.browse" accessibilityRole="button" accessibilityLabel="행사 전체 보기" onPress={browse} style={({ pressed }) => [styles.browse, { opacity: pressed ? 0.65 : 1 }]}>
         <ThemedText type="smallBold" themeColor="accent">전체 보기 ›</ThemedText>
       </Pressable>
     </View>
     {!current ? <View style={[styles.loading, { width: cardWidth, backgroundColor: cityLoading ? theme.backgroundElement : 'transparent' }]}>{!cityLoading && <GlingLoader color={theme.accent} accessibilityLabel="행사 불러오는 중" />}</View>
-        : current.error ? <Pressable lens analyticsId="today.events.retry" accessibilityRole="button" onPress={() => { play('selection'); setAttempt(value => value + 1); }} style={[styles.message, { borderColor: theme.line, backgroundColor: theme.card }]}><ThemedText type="small" themeColor="textSecondary">{current.error} 눌러서 다시 시도해 주세요.</ThemedText></Pressable>
+        : current.error ? <Pressable analyticsId="today.events.retry" accessibilityRole="button" onPress={() => { play('selection'); setAttempt(value => value + 1); }} style={[styles.message, { borderColor: theme.line, backgroundColor: theme.card }]}><ThemedText type="small" themeColor="textSecondary">{current.error} 눌러서 다시 시도해 주세요.</ThemedText></Pressable>
           : current.events.length === 0 ? <View style={[styles.message, { borderColor: theme.line, backgroundColor: theme.card }]}><ThemedText type="small" themeColor="textSecondary">예정된 페스티벌이 아직 없어요. 나중에 다시 확인해 주세요.</ThemedText></View>
             : <View><ScrollView ref={carousel} analyticsId="today.events.carousel" horizontal snapToInterval={cardWidth + 12} decelerationRate="fast" showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards} onScrollBeginDrag={() => { userPauseUntil.current = Date.now() + 20000; }} onMomentumScrollEnd={event => {
               const index = Math.max(0, Math.min(current.events.length - 1, Math.round(event.nativeEvent.contentOffset.x / (cardWidth + 12))));
@@ -131,10 +131,10 @@ export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityRea
               {current.events.map((event, index) => <View key={event.id} collapsable={false} style={[styles.ticket, { width: cardWidth }]}><FeaturedEventCard key={`${event.id}:${isFocused && activeIndex === index}`} event={event} cityId={cityId} index={index} active={isFocused && activeIndex === index} reducedMotion={!!reducedMotion} onOpen={() => { userPauseUntil.current = Date.now() + 60000; play('selection'); }} /></View>)}
             </ScrollView>
               {current.events.length > 1 && <View pointerEvents="box-none" style={[styles.navigation, { width: cardWidth }]}>
-                <Pressable lens analyticsId="today.events.previous" accessibilityRole="button" accessibilityLabel="이전 페스티벌" accessibilityHint={`현재 ${activeIndex + 1}/${current.events.length}`} onPress={() => move(-1)} style={({ pressed }) => [styles.arrow, { left: 6, opacity: pressed ? 0.65 : 1 }]}>
+                <Pressable analyticsId="today.events.previous" accessibilityRole="button" accessibilityLabel="이전 페스티벌" accessibilityHint={`현재 ${activeIndex + 1}/${current.events.length}`} onPress={() => move(-1)} style={({ pressed }) => [styles.arrow, { left: 6, opacity: pressed ? 0.65 : 1 }]}>
                   <GlassSurface colorScheme="dark" tone="control" interactive style={styles.arrowSurface}><SymbolView name={{ ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }} size={15} tintColor="#F6F3F0" /></GlassSurface>
                 </Pressable>
-                <Pressable lens analyticsId="today.events.next" accessibilityRole="button" accessibilityLabel="다음 페스티벌" accessibilityHint={`현재 ${activeIndex + 1}/${current.events.length}`} onPress={() => move(1)} style={({ pressed }) => [styles.arrow, { right: 6, opacity: pressed ? 0.65 : 1 }]}>
+                <Pressable analyticsId="today.events.next" accessibilityRole="button" accessibilityLabel="다음 페스티벌" accessibilityHint={`현재 ${activeIndex + 1}/${current.events.length}`} onPress={() => move(1)} style={({ pressed }) => [styles.arrow, { right: 6, opacity: pressed ? 0.65 : 1 }]}>
                   <GlassSurface colorScheme="dark" tone="control" interactive style={styles.arrowSurface}><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={15} tintColor="#F6F3F0" /></GlassSurface>
                 </Pressable>
               </View>}

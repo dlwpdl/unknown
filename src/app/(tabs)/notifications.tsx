@@ -99,17 +99,17 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
         {!embedded && <View style={[styles.header, { backgroundColor: theme.background }]}>
           <ThemedText accessibilityRole="header" style={styles.headerTitle}>{t.notifications.title}</ThemedText>
           <ProfileAvatarButton />
-          <GlassSurface tone="control" interactive style={styles.settingsGlass}><Pressable lens analyticsId="app_tabs_notifications.pressable.1" accessibilityRole="button" accessibilityLabel="알림 설정" onPress={() => { play('selection'); router.push('/profile/notifications'); }} style={({ pressed }) => [styles.settings, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
+          <GlassSurface tone="control" interactive style={styles.settingsGlass}><Pressable analyticsId="app_tabs_notifications.pressable.1" accessibilityRole="button" accessibilityLabel="알림 설정" onPress={() => { play('selection'); router.push('/profile/notifications'); }} style={({ pressed }) => [styles.settings, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
             <SymbolView name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }} size={22} tintColor={theme.text} />
           </Pressable></GlassSurface>
         </View>}
         {isAdmin && !initialLoading && <View style={styles.filters} accessibilityLabel="알림 종류">
           {INBOX_FILTERS.map(({ key, label }) => {
             const selected = filter === key;
-            return <Pressable lens analyticsId="app_tabs_notifications.pressable.3" key={key} accessibilityRole="button"
+            return <Pressable analyticsId="app_tabs_notifications.pressable.3" key={key} accessibilityRole="button"
               accessibilityLabel={`${label} 알림`} accessibilityState={{ selected }}
               onPress={() => { play('selection'); if (key !== filter) { if (!reducedMotion) { if (Platform.OS === 'android') UIManager.setLayoutAnimationEnabledExperimental?.(true); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); } setFilter(key); } }}
-              style={({ pressed }) => [styles.filter, Depth.control, { backgroundColor: selected ? theme.accent : theme.card, borderColor: selected ? theme.accentDepth : theme.line, borderBottomWidth: 3, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
+              style={({ pressed }) => [styles.filter, Depth.control, { backgroundColor: selected ? theme.accent : theme.card, borderColor: selected ? theme.accentDepth : theme.line, borderBottomWidth: 3, }]}>
               <ThemedText type="smallBold" style={{ color: selected ? theme.accentInk : theme.textSecondary }}>{label}</ThemedText>
             </Pressable>;
           })}
@@ -148,7 +148,7 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
                 style={({ pressed }) => [
                   styles.row,
                   item.read_at == null && Depth.card,
-                  { borderColor: theme.line, borderWidth: item.read_at == null ? 1 : 0, backgroundColor: item.read_at == null ? theme.card : 'transparent', marginBottom: item.read_at == null ? Spacing.two : 0, opacity: pressed ? 0.82 : 1, transform: [{ translateY: pressed && item.read_at == null ? 2 : 0 }] },
+                  { borderColor: theme.line, borderWidth: item.read_at == null ? 1 : 0, backgroundColor: item.read_at == null ? theme.card : 'transparent', marginBottom: item.read_at == null ? Spacing.two : 0, opacity: pressed ? 0.82 : 1, },
                 ]}>
                 <View style={styles.rowLine}>
                   <View style={[styles.avatar, { backgroundColor: admin ? theme.backgroundSelected : theme.backgroundElement, borderColor: theme.line }]}>

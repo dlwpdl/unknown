@@ -88,7 +88,7 @@ export default function SavedPostsScreen() {
       onRefresh={reload}
       ListHeaderComponent={<View>
         <View style={[styles.tabs, { borderBottomColor: theme.line }]} accessibilityRole="tablist">
-          {(['posts', 'merchants'] as const).map(kind => <Pressable lens key={kind} analyticsId={`saved.tab.${kind}`} accessibilityRole="tab" accessibilityLabel={kind === 'posts' ? '저장한 글·모임' : '저장한 비즈니스'}
+          {(['posts', 'merchants'] as const).map(kind => <Pressable key={kind} analyticsId={`saved.tab.${kind}`} accessibilityRole="tab" accessibilityLabel={kind === 'posts' ? '저장한 글·모임' : '저장한 비즈니스'}
             accessibilityState={{ selected: kind === tab }} style={[styles.tab, { borderBottomColor: kind === tab ? theme.accent : 'transparent' }]}
             onPress={() => { play('selection'); setTab(kind); }}><ThemedText type="smallBold" themeColor={kind === tab ? 'accent' : 'textSecondary'}>{kind === 'posts' ? '글·모임' : '비즈니스'}</ThemedText></Pressable>)}
         </View>
@@ -100,15 +100,15 @@ export default function SavedPostsScreen() {
       ListFooterComponent={<View style={styles.footer}>
         {loading && rows.length > 0 && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">불러오는 중…</ThemedText>}
         {current?.failed && rows.length > 0 && <><ThemedText type="small" accessibilityRole="alert">목록을 불러오지 못했어요. 앞서 불러온 항목은 유지돼요.</ThemedText>
-          <Pressable lens analyticsId="saved.retry" accessibilityRole="button" accessibilityLabel="저장 목록 다시 불러오기" disabled={loading} accessibilityState={{ disabled: loading }} style={styles.action} onPress={retry}><ThemedText themeColor="accent">다시 시도</ThemedText></Pressable></>}
-        {page?.has_more && !current?.failed && <Pressable lens analyticsId="saved.more" accessibilityRole="button" accessibilityLabel={tab === 'posts' ? '저장한 글 더 보기' : '저장한 비즈니스 더 보기'} disabled={loading} accessibilityState={{ disabled: loading, busy: loading }} style={styles.action} onPress={() => void more()}><ThemedText themeColor="accent">더 보기</ThemedText></Pressable>}
+          <Pressable analyticsId="saved.retry" accessibilityRole="button" accessibilityLabel="저장 목록 다시 불러오기" disabled={loading} accessibilityState={{ disabled: loading }} style={styles.action} onPress={retry}><ThemedText themeColor="accent">다시 시도</ThemedText></Pressable></>}
+        {page?.has_more && !current?.failed && <Pressable analyticsId="saved.more" accessibilityRole="button" accessibilityLabel={tab === 'posts' ? '저장한 글 더 보기' : '저장한 비즈니스 더 보기'} disabled={loading} accessibilityState={{ disabled: loading, busy: loading }} style={styles.action} onPress={() => void more()}><ThemedText themeColor="accent">더 보기</ThemedText></Pressable>}
       </View>}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
-      renderItem={({ item }) => 'author' in item ? <Pressable analyticsId={`saved.post.${item.id}`} accessibilityRole="button" accessibilityLabel={`${item.title} 글 열기`} onPress={() => { play('selection'); router.push(`/post/${item.id}`); }} style={({ pressed }) => [styles.post, Depth.card, { backgroundColor: pressed ? theme.backgroundSelected : theme.card, borderColor: theme.line, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
+      renderItem={({ item }) => 'author' in item ? <Pressable analyticsId={`saved.post.${item.id}`} accessibilityRole="button" accessibilityLabel={`${item.title} 글 열기`} onPress={() => { play('selection'); router.push(`/post/${item.id}`); }} style={({ pressed }) => [styles.post, Depth.card, { backgroundColor: pressed ? theme.backgroundSelected : theme.card, borderColor: theme.line, }]}>
         <View style={styles.postMeta}><ThemedText type="small" themeColor="textSecondary">{item.tag.label} · {item.author.nickname} · {item.createdAtLabel}</ThemedText><SymbolView name={{ ios: 'bookmark.fill', android: 'bookmark', web: 'bookmark' }} size={17} tintColor={theme.accent} /></View>
         <ThemedText type="smallBold" style={styles.postTitle} numberOfLines={2}>{item.title}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary" style={styles.postBody} numberOfLines={2}>{item.room ? visibleMeetupBody(item.body) : item.body}</ThemedText>
-      </Pressable> : <Pressable analyticsId={`saved.merchant.${item.id}`} accessibilityRole="button" accessibilityLabel={`${item.name} 비즈니스 프로필 열기`} onPress={() => { play('selection'); router.push({ pathname: '/company/[id]', params: { id: item.id } }); }} style={({ pressed }) => [styles.post, Depth.card, { backgroundColor: pressed ? theme.backgroundSelected : theme.card, borderColor: theme.line, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
+      </Pressable> : <Pressable analyticsId={`saved.merchant.${item.id}`} accessibilityRole="button" accessibilityLabel={`${item.name} 비즈니스 프로필 열기`} onPress={() => { play('selection'); router.push({ pathname: '/company/[id]', params: { id: item.id } }); }} style={({ pressed }) => [styles.post, Depth.card, { backgroundColor: pressed ? theme.backgroundSelected : theme.card, borderColor: theme.line, }]}>
         <View style={styles.postMeta}><ThemedText type="small" themeColor="textSecondary">{[item.industry, item.city_name].filter(Boolean).join(' · ')}</ThemedText><SymbolView name={{ ios: 'bookmark.fill', android: 'bookmark', web: 'bookmark' }} size={17} tintColor={theme.accent} /></View>
         <ThemedText type="smallBold" style={styles.postTitle} numberOfLines={2}>{item.name}</ThemedText>
         {!!item.address && <ThemedText type="small" themeColor="textSecondary" style={styles.postBody} numberOfLines={2}>{item.address}</ThemedText>}

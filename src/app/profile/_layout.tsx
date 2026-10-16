@@ -24,7 +24,7 @@ export default function ProfileLayout() {
         headerBackButtonDisplayMode: 'minimal',
         animation: reducedMotion ? 'none' : 'default',
         headerLeft: () => (
-          <Pressable lens analyticsId="app_profile__layout.pressable.1"
+          <Pressable analyticsId="app_profile__layout.pressable.1"
             onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace(route.name === 'index' ? '/' : '/profile'); }}
             accessibilityRole="button"
             accessibilityLabel="뒤로가기"

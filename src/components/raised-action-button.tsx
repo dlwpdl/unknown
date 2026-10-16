@@ -1,5 +1,4 @@
 import { StyleSheet, View } from 'react-native';
-import Reanimated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { Pressable } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
@@ -12,35 +11,29 @@ type Props = {
   disabled?: boolean;
   busy?: boolean;
   compact?: boolean;
-  lens?: boolean;
 };
 
-export function RaisedActionButton({ analyticsId, label, onPress, disabled = false, busy = false, compact = false, lens = true }: Props) {
+export function RaisedActionButton({ analyticsId, label, onPress, disabled = false, busy = false, compact = false }: Props) {
   const theme = useTheme();
-  const reducedMotion = useReducedMotion();
-  const depth = useSharedValue(0);
-  const faceMotion = useAnimatedStyle(() => ({ transform: lens ? [{ scale: reducedMotion ? 1 : 1 - depth.value * 0.025 }] : [{ translateY: depth.value * 4 }, { scale: 1 - depth.value * 0.012 }] }));
-  const press = (down: number) => { depth.value = reducedMotion ? down : withSpring(down, { stiffness: 420, damping: 32, mass: 0.7 }); };
 
-  return <View style={[styles.base, compact ? styles.compact : styles.wide, { backgroundColor: lens ? 'transparent' : theme.accentDepth, opacity: disabled ? 0.62 : 1 }]}>
-    <Reanimated.View style={[styles.face, lens && { shadowOpacity: 0, elevation: 0 }, compact ? styles.compact : styles.wide, { backgroundColor: theme.accent, shadowColor: '#000' }, faceMotion]}>
-      <Pressable lens={lens} analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled, busy }} disabled={disabled}
-        onPressIn={() => press(1)} onPressOut={() => press(0)} onPress={onPress}
-        style={[styles.touch, compact ? styles.compactTouch : styles.wideTouch]}>
+  return <View style={[styles.base, compact ? styles.compact : styles.wide, { backgroundColor: 'transparent', opacity: disabled ? 0.62 : 1 }]}>
+    <View style={[compact ? styles.compact : styles.wide, { backgroundColor: theme.accent }]}>
+      <Pressable analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled, busy }} disabled={disabled}
+        onPress={onPress}
+        style={({ pressed }) => [styles.touch, compact ? styles.compactTouch : styles.wideTouch, { opacity: pressed ? 0.82 : 1 }]}>
         <ThemedText type="smallBold" style={[styles.label, !compact && styles.wideLabel, { color: theme.accentInk }]}>{label}</ThemedText>
       </Pressable>
-    </Reanimated.View>
+    </View>
   </View>;
 }
 
 const styles = StyleSheet.create({
   base: { paddingBottom: 2 },
-  compact: { borderRadius: 999 },
-  wide: { width: '100%', maxWidth: 596, alignSelf: 'center', borderRadius: 999 },
-  face: { shadowOpacity: 0.25, shadowRadius: 13, shadowOffset: { width: 0, height: 6 }, elevation: 5 },
-  touch: { overflow: 'hidden', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
-  compactTouch: { minHeight: 44, paddingHorizontal: 16, borderRadius: 999 },
-  wideTouch: { minHeight: 52, paddingHorizontal: 20, borderRadius: 999 },
+  compact: { borderRadius: 14 },
+  wide: { width: '100%', maxWidth: 596, alignSelf: 'center', borderRadius: 14 },
+  touch: { overflow: 'hidden', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent' },
+  compactTouch: { minHeight: 44, paddingHorizontal: 16, borderRadius: 14 },
+  wideTouch: { minHeight: 52, paddingHorizontal: 20, borderRadius: 14 },
   label: { textAlign: 'center' },
   wideLabel: { fontSize: 16 },
 });

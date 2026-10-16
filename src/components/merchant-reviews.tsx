@@ -156,13 +156,13 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
   return <View style={[styles.section, { borderTopColor: theme.line }]}>
     <View style={styles.header}>
       <ThemedText type="smallBold" style={styles.heading}>{employment ? '근무 리뷰' : '상품·서비스 이용 리뷰'}</ThemedText>
-      {page && !editing && (!isAuthed || page.can_review) && <Pressable lens analyticsId="merchant.review.edit" accessibilityRole="button"
+      {page && !editing && (!isAuthed || page.can_review) && <Pressable analyticsId="merchant.review.edit" accessibilityRole="button"
         disabled={loading || isAuthLoading} accessibilityState={{ disabled: loading || isAuthLoading }}
         style={[styles.outlineButton, { borderColor: theme.line, opacity: loading ? 0.5 : 1 }]} onPress={openEditor}>
         <ThemedText type="smallBold" themeColor="accent">{mine ? '내 후기 수정' : '후기 남기기'}</ThemedText>
       </Pressable>}
     </View>
-    {page?.merchant_id && onOpenProfile && <Pressable lens analyticsId="merchant.review.profile" accessibilityRole="button" accessibilityLabel={`${page.merchant_name} 업체 프로필 보기`}
+    {page?.merchant_id && onOpenProfile && <Pressable analyticsId="merchant.review.profile" accessibilityRole="button" accessibilityLabel={`${page.merchant_name} 업체 프로필 보기`}
       style={[styles.outlineButton, { borderColor: theme.line, alignSelf: 'flex-start' }]} onPress={() => { play('selection'); onOpenProfile(page.merchant_id); }}>
       <ThemedText type="smallBold" themeColor="accent">{page.merchant_name} 프로필 보기 →</ThemedText>
     </Pressable>}
@@ -182,7 +182,7 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
     {editing && <View style={[styles.editor, { backgroundColor: theme.card, borderColor: theme.line }]}>
       <View style={styles.header}>
         <ThemedText type="smallBold">{score == null ? '점수를 선택해 주세요' : `${score.toFixed(1)}점 / 10점`}</ThemedText>
-        <Pressable lens analyticsId="merchant.review.cancel" accessibilityRole="button" disabled={saving || pickingReceipt} accessibilityState={{ disabled: saving || pickingReceipt }}
+        <Pressable analyticsId="merchant.review.cancel" accessibilityRole="button" disabled={saving || pickingReceipt} accessibilityState={{ disabled: saving || pickingReceipt }}
           style={styles.textButton} onPress={() => {
             play('selection'); setEditing(false); setWriteError(''); setReceipt(null);
             if (uploads.current.size) void supabase.storage.from('merchant-review-receipts').remove([...uploads.current]).catch(() => {});
@@ -193,7 +193,7 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
       </View>
       <ThemedText type="small" themeColor="textSecondary">최저 1점 · 최고 10점 · 0.5점 단위</ThemedText>
       <View style={styles.scores} accessibilityRole="radiogroup" accessibilityLabel="업체 후기 점수">
-        {SCORES.map((value) => <Pressable lens key={value} analyticsId={`merchant.review.score.${value}`} accessibilityRole="radio"
+        {SCORES.map((value) => <Pressable key={value} analyticsId={`merchant.review.score.${value}`} accessibilityRole="radio"
           accessibilityLabel={`${value}점`} aria-checked={value === score} accessibilityState={{ checked: value === score, disabled: saving }} disabled={saving}
           onPress={() => { play('selection'); setScore(value); setWriteError(''); }}
           style={[styles.score, { borderColor: value === score ? theme.accent : theme.line, backgroundColor: value === score ? theme.accent : theme.background, opacity: saving ? 0.5 : 1 }]}>
@@ -213,17 +213,17 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
       {receipt?.uri && <Image source={{ uri: receipt.uri }} contentFit="contain" style={styles.receiptImage} accessibilityLabel={`내가 첨부한 비공개 ${proofLabel}`} />}
       {receipt && <ThemedText type="small">{receipt.path === mine?.receipt_path ? merchantReceiptLabel(mine.receipt_status, reviewKind) : `${proofLabel} 사진 첨부됨 · 저장 후 검토`}</ThemedText>}
       <View style={styles.receiptActions}>
-        <Pressable lens analyticsId="merchant.review.receipt.pick" accessibilityRole="button" disabled={saving || pickingReceipt}
+        <Pressable analyticsId="merchant.review.receipt.pick" accessibilityRole="button" disabled={saving || pickingReceipt}
           accessibilityState={{ disabled: saving || pickingReceipt, busy: pickingReceipt }} style={[styles.outlineButton, { borderColor: theme.line }]}
           onPress={() => { play('selection'); void pickReceipt(); }}><ThemedText type="smallBold" themeColor="accent">{pickingReceipt ? `${proofLabel} 준비 중…` : receipt ? `${proofLabel} 교체` : `${proofLabel} 첨부`}</ThemedText></Pressable>
-        {receipt && <Pressable lens analyticsId="merchant.review.receipt.remove" accessibilityRole="button" disabled={saving || pickingReceipt}
+        {receipt && <Pressable analyticsId="merchant.review.receipt.remove" accessibilityRole="button" disabled={saving || pickingReceipt}
           accessibilityState={{ disabled: saving || pickingReceipt }} style={styles.textButton}
           onPress={() => { play('selection'); setReceipt(null); }}><ThemedText type="small" themeColor="textSecondary">첨부 제거</ThemedText></Pressable>}
       </View>
       <ThemedText type="small" themeColor="textSecondary">업체마다 계정당 이용 리뷰와 근무 리뷰를 각각 1개씩 남길 수 있어요. 저장한 후기도 수정할 수 있어요.</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">후기글은 안전 점검을 위해 AI와 권한 있는 관리자가 검토할 수 있어요.</ThemedText>
       {!!writeError && <ThemedText type="small" accessibilityRole="alert">{writeError}</ThemedText>}
-      <Pressable lens analyticsId="merchant.review.save" accessibilityRole="button" accessibilityLabel={mine ? '내 후기 수정 저장' : '후기 저장'}
+      <Pressable analyticsId="merchant.review.save" accessibilityRole="button" accessibilityLabel={mine ? '내 후기 수정 저장' : '후기 저장'}
         disabled={saving || pickingReceipt || score == null} accessibilityState={{ disabled: saving || pickingReceipt || score == null, busy: saving }}
         style={[styles.save, { backgroundColor: theme.accent, opacity: saving || pickingReceipt || score == null ? 0.5 : 1 }]}
         onPress={() => { play('selection'); void save(); }}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{saving ? '저장 중…' : '후기 저장'}</ThemedText></Pressable>
@@ -234,11 +234,11 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
       onReport={isAuthed && row.author_id === me.id ? undefined : () => { if (!isAuthed) promptLogin('후기를 신고하려면 로그인해 주세요.'); else setReport(row); }} />)}
     {!!readError && <View style={styles.error}>
       <ThemedText type="small" accessibilityRole="alert">{readError}</ThemedText>
-      <Pressable lens analyticsId="merchant.review.retry" accessibilityRole="button" disabled={loading} accessibilityState={{ disabled: loading }}
+      <Pressable analyticsId="merchant.review.retry" accessibilityRole="button" disabled={loading} accessibilityState={{ disabled: loading }}
         style={styles.textButton} onPress={() => { play('selection'); refresh(); }}><ThemedText type="smallBold" themeColor="accent">다시 불러오기</ThemedText></Pressable>
     </View>}
     {loading && page && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">후기를 불러오는 중…</ThemedText>}
-    {page?.has_more && !readError && <Pressable lens analyticsId="merchant.review.more" accessibilityRole="button" disabled={loading}
+    {page?.has_more && !readError && <Pressable analyticsId="merchant.review.more" accessibilityRole="button" disabled={loading}
       accessibilityState={{ disabled: loading }} style={styles.textButton} onPress={() => {
         play('selection'); if (pendingRead.current) return; pendingRead.current = true; setLoading(true); setOffset((value) => value + 20);
       }}><ThemedText type="smallBold" themeColor="accent">후기 더 보기</ThemedText></Pressable>}
@@ -259,7 +259,7 @@ export function MerchantReviewCard({ review, own = false, onReport, onReportRepl
   const theme = useTheme(), { play } = useInteractionFeedback();
   const [expanded, setExpanded] = useState(false);
   return <View style={[styles.review, { borderTopColor: theme.line }]}>
-    <Pressable lens analyticsId="merchant.review.detail" accessibilityRole="button" accessibilityLabel={`${review.nickname}님의 후기 ${expanded ? '접기' : '전체 보기'}`}
+    <Pressable analyticsId="merchant.review.detail" accessibilityRole="button" accessibilityLabel={`${review.nickname}님의 후기 ${expanded ? '접기' : '전체 보기'}`}
       accessibilityState={{ expanded }} style={styles.reviewLink} onPress={() => { play('selection'); setExpanded((value) => !value); }}>
       <View style={styles.header}>
         <View style={styles.reviewCopy}>
@@ -276,10 +276,10 @@ export function MerchantReviewCard({ review, own = false, onReport, onReportRepl
     {own && review.receipt_status === 'rejected' && !!review.receipt_review_note && <ThemedText type="small" themeColor="textSecondary">재확인 사유: {review.receipt_review_note}</ThemedText>}
     {expanded && review.review_kind !== 'employment' && review.reply && <View style={[styles.reply, { borderLeftColor: theme.accent }]}>
       <ThemedText type="smallBold">업체 답변</ThemedText><ThemedText type="small">{review.reply.body}</ThemedText>
-      {onReportReply && <Pressable lens analyticsId="merchant.reply.report" accessibilityRole="button" accessibilityLabel="업체 답변 신고" style={[styles.textButton, styles.report]}
+      {onReportReply && <Pressable analyticsId="merchant.reply.report" accessibilityRole="button" accessibilityLabel="업체 답변 신고" style={[styles.textButton, styles.report]}
         onPress={() => { play('selection'); onReportReply(); }}><ThemedText type="small" themeColor="textSecondary">답변 신고</ThemedText></Pressable>}
     </View>}
-    {onReport && <Pressable lens analyticsId="merchant.review.report" accessibilityRole="button" accessibilityLabel={`${review.nickname}님의 업체 후기 신고`}
+    {onReport && <Pressable analyticsId="merchant.review.report" accessibilityRole="button" accessibilityLabel={`${review.nickname}님의 업체 후기 신고`}
       style={[styles.textButton, styles.report]} onPress={() => { play('selection'); onReport(); }}><ThemedText type="small" themeColor="textSecondary">신고</ThemedText></Pressable>}
   </View>;
 }

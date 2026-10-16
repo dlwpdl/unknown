@@ -74,7 +74,7 @@ test('native wrappers preserve callbacks and refs, record fixed IDs, and reset s
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }) };
     if (name === 'react-native') return { Pressable: 'Pressable', ScrollView: 'ScrollView', FlatList: 'FlatList', SectionList: 'SectionList', Switch: 'Switch' };
     if (name === '@/lib/behavior-analytics') return { behavior: (...args) => events.push(args), behaviorView: () => view, scrollThresholds };
-    if (name === '@/components/lens-pressable') return { LensPressable: 'LensPressable' };
+    if (name === '@/components/flat-pressable') return { FlatPressable: 'FlatPressable' };
     throw new Error(name);
   } });
   const ref = { current: null };
@@ -83,12 +83,12 @@ test('native wrappers preserve callbacks and refs, record fixed IDs, and reset s
   assert.equal(press.props.ref, ref);
   assert.deepEqual(calls, ['gesture']);
   assert.deepEqual(events, [['press', 'fixed']]);
-  const lens = exports.Pressable({ analyticsId: 'lens', lens: true, ref, disabled: true, accessibilityState: { busy: true } });
-  assert.equal(lens.type, 'LensPressable');
-  assert.equal(lens.props.ref, ref);
-  assert.equal(lens.props.disabled, true);
-  assert.equal(lens.props.accessibilityState.busy, true);
-  assert.equal(lens.props.lens, undefined);
+  const flat = exports.Pressable({ analyticsId: 'flat', ref, disabled: true, accessibilityState: { busy: true } });
+  assert.equal(flat.type, 'FlatPressable');
+  assert.equal(flat.props.ref, ref);
+  assert.equal(flat.props.disabled, true);
+  assert.equal(flat.props.accessibilityState.busy, true);
+  assert.equal(flat.props.analyticsId, undefined);
   const list = exports.FlatList({ analyticsId: 'list', ref, onScroll: () => calls.push('scroll') });
   const event = { nativeEvent: { contentOffset: { y: 100 }, layoutMeasurement: { height: 100 }, contentSize: { height: 400 } } };
   list.props.onScroll(event); list.props.onScroll(event);

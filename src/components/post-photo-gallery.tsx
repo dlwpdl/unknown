@@ -153,11 +153,11 @@ export function PostPhotoGallery({ post }: { post: Post }) {
       <View accessibilityViewIsModal style={[styles.viewer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <View style={styles.toolbar}>
           <ThemedText style={styles.viewerText}>{fullIndex + 1}/{photos.length}</ThemedText>
-          <Pressable lens analyticsId="post.photo.zoom" accessibilityRole="button" accessibilityLabel={zoomed ? '사진 축소' : '사진 확대'} accessibilityState={{ expanded: zoomed }}
+          <Pressable analyticsId="post.photo.zoom" accessibilityRole="button" accessibilityLabel={zoomed ? '사진 축소' : '사진 확대'} accessibilityState={{ expanded: zoomed }}
             onPress={() => { play('selection'); const enlarged = !zoomed; scale.set(enlarged ? 2 : 1); x.set(0); y.set(0); setZoomed(enlarged); }} style={styles.control}>
             <ThemedText style={styles.viewerText}>{zoomed ? '축소' : '확대'}</ThemedText>
           </Pressable>
-          <Pressable lens analyticsId="post.photo.close" accessibilityRole="button" accessibilityLabel="사진 닫기" onPress={close} style={styles.control}>
+          <Pressable analyticsId="post.photo.close" accessibilityRole="button" accessibilityLabel="사진 닫기" onPress={close} style={styles.control}>
             <ThemedText style={styles.viewerText}>닫기 ✕</ThemedText>
           </Pressable>
         </View>
@@ -174,12 +174,12 @@ export function PostPhotoGallery({ post }: { post: Post }) {
               contentFit="contain" allowDownscaling={false} accessible={false} cachePolicy="memory-disk" transition={0} />
           </Animated.View>
         </View></GestureDetector></GestureHandlerRootView>
-        {Platform.OS === 'web' && <View style={styles.panControls}>{zoomed && directions.map(direction => <Pressable lens key={direction.name}
+        {Platform.OS === 'web' && <View style={styles.panControls}>{zoomed && directions.map(direction => <Pressable key={direction.name}
           analyticsId="post.photo.pan" accessibilityRole="button" accessibilityLabel={direction.label} style={styles.control} onPress={() => moveDirection(direction.name)}>
           <ThemedText style={styles.viewerText}>{direction.arrow}</ThemedText>
         </Pressable>)}</View>}
         {photos.length > 1 && <View style={styles.toolbar}>
-          {([-1, 1] as const).map(direction => <Pressable lens key={direction} analyticsId="post.photo.page" accessibilityRole="button"
+          {([-1, 1] as const).map(direction => <Pressable key={direction} analyticsId="post.photo.page" accessibilityRole="button"
             accessibilityLabel={direction < 0 ? '이전 사진' : '다음 사진'} disabled={fullIndex + direction < 0 || fullIndex + direction >= photos.length}
             style={styles.control} onPress={() => { selectPhoto(fullIndex + direction); resetZoom(); setViewer({ key: galleryKey, index: fullIndex + direction }); }}>
             <ThemedText style={[styles.viewerText, { opacity: fullIndex + direction < 0 || fullIndex + direction >= photos.length ? 0.35 : 1 }]}>{direction < 0 ? '← 이전' : '다음 →'}</ThemedText>

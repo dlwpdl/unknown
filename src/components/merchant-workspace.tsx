@@ -95,7 +95,7 @@ function Action({ label, onPress, disabled, selected, primary = false, role = 'b
   const theme = useTheme(); const { play } = useInteractionFeedback();
   const press = () => { play('selection'); onPress(); };
   if (primary) return <RaisedActionButton analyticsId="merchant.primary" label={label} onPress={press} disabled={disabled} />;
-  return <Pressable lens analyticsId="merchant.action" accessibilityRole={role} accessibilityLabel={label} accessibilityState={{ disabled: !!disabled, selected: !!selected }} aria-selected={role === 'tab' ? !!selected : undefined} disabled={disabled} onPress={press}
+  return <Pressable analyticsId="merchant.action" accessibilityRole={role} accessibilityLabel={label} accessibilityState={{ disabled: !!disabled, selected: !!selected }} aria-selected={role === 'tab' ? !!selected : undefined} disabled={disabled} onPress={press}
     style={[styles.action, { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.backgroundSelected : theme.backgroundElement, opacity: disabled ? 0.5 : 1 }]}>
     <ThemedText type="smallBold">{label}</ThemedText>
   </Pressable>;
