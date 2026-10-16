@@ -7,6 +7,9 @@ import { getPostImageSource } from '../src/lib/feed-data.ts';
 import { uniqueHashtags } from '../src/lib/hashtags.ts';
 import { count, t } from '../src/i18n/ko.ts';
 import { googleMapsPin, googleMapsUrl, postMapBody } from '../src/lib/post-maps.ts';
+import { visibleTranslationSource } from '../src/lib/translation-source.ts';
+import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
+import * as postLinks from '../supabase/functions/_shared/post-links.ts';
 
 // Native image events and React state are supplied here; sizing/rendering runs the real components.
 function cardRenderer(component = 'PostCard') {
@@ -16,7 +19,7 @@ function cardRenderer(component = 'PostCard') {
   const feedback = [];
   const openedMaps = [];
   const alerts = [];
-  let mapFailure = false;
+  let mapFailure = false, translatedBody = null;
   const react = {
     useCallback: (callback) => callback,
     useMemo: (callback) => callback(),
@@ -47,6 +50,12 @@ function cardRenderer(component = 'PostCard') {
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/components/themed-text': { ThemedText: 'ThemedText' },
     '@/components/post-body': { PostBody: 'PostBody' },
+    '@/components/content-translation': { TranslationControl: 'TranslationControl', TranslatedCommentBody: 'TranslatedCommentBody' },
+    '@/hooks/use-content-translation': { useContentTranslation: (_kind, _id, source) => ({ display: translatedBody == null ? source : { ...source, body: translatedBody }, translated: translatedBody != null, original: translatedBody == null }) },
+    '@/lib/translation-source': { visibleTranslationSource },
+    '@/lib/post-photo-credits': { splitPostPhotoCredits },
+    '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 } },
+    '../../supabase/functions/_shared/post-links': postLinks,
     '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
     '@/components/post-pin-map': { PostPinMap: 'PostPinMap' },
     '@/components/post-share-sheet': { PostShareSheet: 'PostShareSheet' },
@@ -75,7 +84,7 @@ function cardRenderer(component = 'PostCard') {
     return modules[name];
   } });
   return { render(props) { cursor = 0; return exports[component](props); }, feedback, openedMaps, alerts,
-    failMap: () => { mapFailure = true; }, setViewer: (id) => { viewer = id; } };
+    translate: body => { translatedBody = body; }, failMap: () => { mapFailure = true; }, setViewer: (id) => { viewer = id; } };
 }
 
 const nodes = (tree) => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap((value) => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
@@ -232,4 +241,20 @@ test('사진 순서 변경은 표지를 바꾸고 개별 제거·양끝 비활�
   tree = editor.render({ ...props, disabled: true });
   assert.ok(nodes(tree).filter(n => n.type === 'Pressable').every(n => n.props.disabled));
   assert.deepEqual(editor.feedback, ['selection', 'selection']);
+});
+
+
+test('translated cards preserve original photo credits and each attachment exactly once', () => {
+  const card = cardRenderer();
+  const credit = '\n\n사진 출처·이용 조건\nPhoto by Sam · https://unsplash.com/photos/example';
+  const url = 'https://www.instagram.com/p/Example/';
+  const body = postLinks.withPostAttachments('Hello neighbours' + credit, [url]);
+  card.translate('이웃 여러분 안녕하세요');
+  const tree = card.render({ post: { id: 'credited', title: 'Hello', body,
+    author: { id: 'author', nickname: '작성자' }, tag: { kind: 'post', label: '라이프' }, likes: 0, saves: 0, comments: 0, views: 0 } });
+  const displayed = nodes(tree).find(node => node.type === 'PostBody').props.body;
+  assert.ok(displayed.includes('이웃 여러분 안녕하세요'));
+  assert.ok(displayed.includes(credit), 'photo license attribution must survive translation');
+  assert.equal(displayed.split(url).length - 1, 1, 'attached account links remain unchanged and are not duplicated');
+  assert.ok(body.startsWith('Hello neighbours'), 'translation never changes the source post');
 });

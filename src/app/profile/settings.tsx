@@ -9,6 +9,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { NearbyCityCard } from '@/components/nearby-city-card';
+import { LanguageCard } from '@/components/language-card';
+import { ContentTranslationSettings } from '@/components/content-translation';
 import { PersonalInfoCard } from '@/components/personal-info-card';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
@@ -98,6 +100,8 @@ export default function SettingsScreen() {
         <ScrollView analyticsId="app_profile_settings.scrollview.1" contentContainerStyle={styles.content}>
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{t.profile.account}</ThemedText>
           <PersonalInfoCard userId={me.id} nickname={me.nickname} />
+          <LanguageCard />
+          <ContentTranslationSettings />
 
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{t.profile.appearance}</ThemedText>
           <View style={[styles.card, styles.appearanceCard, { backgroundColor: theme.card, borderColor: theme.accent }]}>

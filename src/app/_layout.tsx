@@ -17,6 +17,8 @@ import { installErrorReporting } from '@/lib/error-reporting';
 import { InteractionFeedbackProvider } from '@/lib/interaction-feedback';
 import { MembershipProvider } from '@/lib/membership-provider';
 import { ThemePreferenceProvider, useTheme, useThemePreference } from '@/hooks/use-theme';
+import { LanguagePreferenceProvider } from '@/hooks/use-language';
+import { ContentTranslationProvider } from '@/hooks/use-content-translation';
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 SplashScreen.setOptions({ fade: false });
@@ -24,7 +26,7 @@ SplashScreen.setOptions({ fade: false });
 installErrorReporting();
 
 export default function TabLayout() {
-  return <ThemePreferenceProvider><AppLayout /></ThemePreferenceProvider>;
+  return <LanguagePreferenceProvider><ThemePreferenceProvider><AppLayout /></ThemePreferenceProvider></LanguagePreferenceProvider>;
 }
 
 function AppLayout() {
@@ -44,6 +46,7 @@ function AppLayout() {
       <InteractionFeedbackProvider>
       <AppUpdateGate>
       <AuthProvider>
+        <ContentTranslationProvider>
         <CommunityCityProvider>
         <AppActivity />
         <NotificationObserver />
@@ -54,6 +57,7 @@ function AppLayout() {
           <PushInvite />
         </MembershipProvider>
         </CommunityCityProvider>
+        </ContentTranslationProvider>
       </AuthProvider>
       </AppUpdateGate>
       </InteractionFeedbackProvider>
