@@ -7,6 +7,10 @@ const centers: Record<string, [number, number]> = {
   Edmonton: [53.55, -113.49], Winnipeg: [49.9, -97.14], Saskatoon: [52.16, -106.67], Ottawa: [45.42, -75.7],
   Regina: [50.45, -104.62], 'Saint John': [45.27, -66.06], Halifax: [44.65, -63.58],
 };
+export function mapCityCenter(cityName: string): [number, number] {
+  const [latitude, longitude] = Object.hasOwn(centers, cityName) ? centers[cityName] : centers.Vancouver;
+  return [longitude, latitude];
+}
 type MapMessage = { type: 'pick'; pin: PostPin; label: string } | { type: 'ready' | 'error' | 'feedback' }
   | { type: 'credit'; url: string } | { type: 'snapshot'; uri: string };
 const snapshot = (uri: unknown): uri is string => typeof uri === 'string' && uri.length <= 290000 && /^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(uri);
@@ -44,7 +48,7 @@ export function mapHtml({ pin, cityName = '', preview = false, accent = '#CBB9FF
   if (!/^#[a-f\d]{6}$/i.test(accent)) throw new Error('INVALID_MAP_COLOR');
   if (!Number.isFinite(bottomInset) || bottomInset < 0 || bottomInset > 1000) throw new Error('INVALID_MAP_INSET');
   if (pin) googlePinUrl(pin);
-  const [latitude, longitude] = centers[cityName] ?? centers.Vancouver;
+  const [longitude, latitude] = mapCityCenter(cityName);
   const config = JSON.stringify({ pin: pin && { latitude: pin.latitude, longitude: pin.longitude }, center: [pin?.longitude ?? longitude, pin?.latitude ?? latitude], preview, accent });
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-gling-map' blob:; style-src 'unsafe-inline'; worker-src blob:; connect-src https://tiles.openfreemap.org; img-src data: blob: https://tiles.openfreemap.org; base-uri 'none'; form-action 'none'; object-src 'none'"><style>${assets.css}
 html,body,#map{margin:0;width:100%;height:100%;overflow:hidden;background:#dedbcf}.maplibregl-ctrl-top-right{top:${preview ? 0 : 74}px}.maplibregl-ctrl-bottom-right{bottom:${bottomInset}px}.maplibregl-ctrl-group button{width:44px;height:44px}#credits{display:${preview ? 'none' : 'block'};position:absolute;right:0;bottom:0;max-width:100%;font:9px/1.5 system-ui;background:#fffffff0;color:#333;z-index:4;padding:2px 4px}#credits a{color:#333}.pin{width:34px;height:44px;cursor:grab}.pin::before{content:'';position:absolute;left:3px;top:1px;width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid white;background:${accent};box-shadow:0 2px 6px #0003}.pin::after{content:'';position:absolute;left:13px;top:11px;width:8px;height:8px;border-radius:50%;background:#302047}

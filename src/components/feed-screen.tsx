@@ -640,6 +640,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
             <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={21} tintColor={theme.text} />
           </Pressable></GlassSurface>
+          {!meetupsOnly && <GlassSurface tone="control" interactive style={styles.iconGlass}><Pressable analyticsId="discovery.open"
+            onPress={() => { play('reaction'); router.push('/map'); }} accessibilityRole="button" accessibilityLabel={tr('부동산·중고거래·장소·행사 통합 지도')}
+            style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
+            <SymbolView name={{ ios: 'map', android: 'map', web: 'map' }} size={21} tintColor={theme.text} />
+          </Pressable></GlassSurface>}
           <ProfileAvatarButton />
         </View>
         <FlatList analyticsId="components_feed-screen.flatlist.1" ref={feedListRef}

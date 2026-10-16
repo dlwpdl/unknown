@@ -1,0 +1,17 @@
+{
+  "source": "marketing/festival-template.json#current_production.category_point_colors",
+  "source_sha256": "ef95924e73b89d7f55b3063abc0a7c131da485e20385dc06a85a743cd62afb7f",
+  "categoryPointColors": {
+    "페스티벌": "#CBB9FF",
+    "전시": "#E7A5C0",
+    "이벤트": "#5F7CF3",
+    "자연": "#A8C39B",
+    "카페": "#D7BD92",
+    "다이닝": "#D79681",
+    "쇼핑": "#92C4C7",
+    "근교 여행": "#9BAED1",
+    "액티비티": "#82ADF0",
+    "나이트라이프": "#DD737F",
+    "도서관": "#B8A270"
+  }
+}

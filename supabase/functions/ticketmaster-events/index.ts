@@ -29,7 +29,7 @@ Deno.serve(async request => {
       if (assigned.error) throw new Error('CACHE_ERROR');
       const festivalSlots = (assigned.data ?? []).map(slot => ({ slot: slot.slot, eventId: slot.event_id, endsAt: slot.ends_at }));
       const events = new Map(payload.events.map(event => [event.id, event]));
-      for (const slot of assigned.data ?? []) if (slot.event) events.set(slot.event_id, slot.event);
+      for (const slot of assigned.data ?? []) if (slot.event && !events.has(slot.event_id)) events.set(slot.event_id, slot.event);
       const selected = spotlightLocalEvents([...events.values()].filter(inCity), Date.now(), festivalSlots);
       const nextRefreshAt = new Date(Math.min(Date.parse(festivalCacheExpiry(query.cityId)),
         ...selected.map(event => Date.parse(event.startsAt)), ...festivalSlots.map(slot => Date.parse(slot.endsAt)).filter(at => at > Date.now()))).toISOString();
@@ -37,17 +37,24 @@ Deno.serve(async request => {
     };
     const cached = await db.from('ticketmaster_event_cache').select('payload,updated_at').eq('cache_key', cacheKey).gt('expires_at', new Date().toISOString()).maybeSingle();
     if (cached.error) throw new Error('CACHE_ERROR');
-    if (cached.data && (!query.festival || Array.isArray(cached.data.payload.events))) {
+    const mapped = payload => query.month || (payload.event ? Object.hasOwn(payload.event, 'location')
+      : Array.isArray(payload.events) && payload.events.every(event => Object.hasOwn(event, 'location')));
+    if (cached.data && mapped(cached.data.payload) && (!query.festival || Array.isArray(cached.data.payload.events))) {
       if (query.eventId && (!inCity(cached.data.payload.event) || cached.data.payload.event.status === 'unavailable')) return reply({ error: 'NOT_FOUND' }, 404);
       return await result(cached.data.payload, cached.data.updated_at);
     }
     if (query.festival) {
+      if (cached.data && !mapped(cached.data.payload)) {
+        const expired = await db.from('ticketmaster_event_cache').update({ expires_at: new Date().toISOString() })
+          .eq('cache_key', cacheKey).eq('updated_at', cached.data.updated_at);
+        if (expired.error) throw new Error('CACHE_ERROR');
+      }
       const claim = await db.rpc('claim_ticketmaster_festival_refresh', { p_city_id: query.cityId });
       if (claim.error) throw new Error('CACHE_ERROR');
       if (!claim.data) {
         const ready = await db.from('ticketmaster_event_cache').select('payload,updated_at').eq('cache_key', cacheKey).gt('expires_at', new Date().toISOString()).maybeSingle();
         if (ready.error) throw new Error('CACHE_ERROR');
-        if (ready.data && Array.isArray(ready.data.payload.events)) return await result(ready.data.payload, ready.data.updated_at);
+        if (ready.data && mapped(ready.data.payload) && Array.isArray(ready.data.payload.events)) return await result(ready.data.payload, ready.data.updated_at);
         return reply({ error: 'RATE_LIMITED' }, 429);
       }
     }
