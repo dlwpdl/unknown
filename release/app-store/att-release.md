@@ -1,4 +1,4 @@
-# ATT privacy fix — 1.3.1 (68)
+# ATT privacy fix — 1.3.1 (69)
 
 Apple rejected 1.4.0 (68) under Guideline 5.1.2(i): the Google consent form disclosed tracking, but the app never requested Apple's App Tracking Transparency permission. Google UMP consent and non-personalized ad requests do not replace ATT.
 
@@ -6,7 +6,7 @@ The iOS advertising entry points now check native ATT permission before importin
 
 `expo-tracking-transparency` supplies the native Apple permission API missing from the installed advertising SDK's JavaScript interface. English and Korean purpose messages are bundled, app measurement remains delayed, and the privacy manifest discloses advertising tracking. App Store Connect tracking disclosures for Device ID, Product Interaction and Advertising Data were also updated and read back on October 16, 2026.
 
-The rejected submission was canceled. Its terminal API state is `COMPLETE`; the editable version is now `1.3.1`, `PREPARE_FOR_SUBMISSION`, with manual release and the old 1.4.0 build unlinked. No new review submission has been started.
+The rejected 1.4.0 submission was canceled; its terminal API state is `COMPLETE`. At that checkpoint the editable version was `1.3.1`, `PREPARE_FOR_SUBMISSION`, with manual release and the old 1.4.0 build unlinked. The later 1.3.1 (68) resubmission was automatically marked invalid, as recorded below.
 
 ## Review Notes addendum
 
@@ -18,9 +18,9 @@ ATT is checked in all regions. Google's additional consent form appears only whe
 
 ## Build and verification
 
-The signed iOS archive and IPA were built locally as 1.3.1 (68). Verification checked the bundle version, ATT framework linkage, both localized purpose strings, the delayed measurement flag, the tracking manifest and the code signature. Regression tests cover permission ordering, denial, native failures, concurrent feed slots, system permission changes, privacy settings, Android consent and web/Expo Go boundaries.
+The initial signed iOS archive and IPA were built locally as 1.3.1 (68). Verification checked the bundle version, ATT framework linkage, both localized purpose strings, the delayed measurement flag, the tracking manifest and the code signature. Regression tests cover permission ordering, denial, native failures, concurrent feed slots, system permission changes, privacy settings, Android consent and web/Expo Go boundaries.
 
-For the requested iOS build number, reuse the verified 1.3.1 (68) artifact when it matches the approved source, or use the existing `release.py build --platform ios --build-number 68 --local` command. Do not run the shared build-number allocator for this correction: Android already uses code 68 and the shared allocator would advance to 69. Do not re-upload a changed Android artifact as code 68.
+The next upload must be 1.3.1 (69). Apple rejected the corrected build 68 before creating an upload record: "The bundle version must be higher than the previously uploaded version." Use the existing `release.py build --platform ios --build-number 69 --local` command in the isolated release checkout, restoring the unchanged Android source code after its temporary configuration change. Keep the marketing version at 1.3.1. Do not repeat a build 68 upload or re-upload a changed Android artifact as code 68.
 
 The release command preserves current review instructions and credentials while filling missing fields from the previous version. This prevents a resubmission from replacing the ATT instructions with old review notes. Korean release notes are saved as `release-notes/1.3.1.ko.txt`.
 
@@ -36,3 +36,5 @@ Apple initially accepted the corrected 1.3.1 (68) submission, then marked the bi
 The signed IPA had tracking enabled with an empty tracking-domain list. Apple's privacy manifest contract requires a domain list when tracking is enabled. The release configuration now declares the two Google advertising hosts found in the bundled SDK: `googleads.g.doubleclick.net` and `pagead2.googlesyndication.com`. The original ATT permission gate remains in place. This corrects a confirmed declaration omission; Apple's exact automatic validation error remains separate until its diagnostic message is available.
 
 Never raise the minimum supported build on build, upload or review submission. Apply the existing update policy only after the new version has passed review and is actually available to users in the store. During this resubmission the live policies remain iOS 65 and Android 64; the current public iOS version remains 1.2.3. Owner instruction: `/Users/ash/.codex/memories/release-availability-gating.md`.
+
+The user originally requested 1.3.1 and build 68, then authorized fixing and resubmitting. The October 16 coordination clarification confirms the required increment to 69 is covered by that submission authorization. It does not authorize a marketing-version jump or an early minimum-build increase. Build 69 uses a separate Orca worktree and copied dependencies so the ongoing simulator compile keeps its original source, generated iOS project and Pods.

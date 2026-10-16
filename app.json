@@ -21,7 +21,7 @@
       "icon": "./assets/brand/gling-night-app-icon.png",
       "bundleIdentifier": "com.dlwpdl.gling",
       "appleTeamId": "P3X3452TDZ",
-      "buildNumber": "68",
+      "buildNumber": "69",
       "usesAppleSignIn": true,
       "entitlements": {
         "aps-environment": "production"
