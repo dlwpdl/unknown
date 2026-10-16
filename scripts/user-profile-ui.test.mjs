@@ -43,6 +43,7 @@ function mount(file, name, data, props = {}, params = {}) {
     '@/lib/auth': { useAuth: () => auth }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => calls.push(['feedback', kind]) }) },
     '@/hooks/use-content-visibility': { useContentVisibility: () => data.hidden ?? visible },
     '@/lib/supabase': { supabase: {} }, '@/lib/user-profile': data, '@/lib/community-data': data,
+    '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 } },
     '@/lib/feed-data': { appendUniquePosts }, '@/i18n/ko': { count, t },
   };
   const exports = {};
