@@ -1,8 +1,7 @@
-import { useState } from 'react';
 import { useLanguage } from '@/hooks/use-language';
 import { tr, getLocale } from '@/i18n';
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { Alert, Linking, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
