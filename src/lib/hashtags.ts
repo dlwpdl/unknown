@@ -93,6 +93,16 @@ export function addHashtag(input: string, hashtag: string) {
   return parseHashtags(`${input} ${hashtag}`).join(' ');
 }
 
+export function hasAdLabel(hashtags: readonly string[] = []) {
+  return hashtags.some(value => ['ad', '광고'].includes(canonicalizeHashtag(value).toLocaleLowerCase()));
+}
+
+export function toggleAdLabel(input: string) {
+  const tags = parseHashtags(input);
+  if (hasAdLabel(tags)) return tags.filter(tag => !hasAdLabel([tag])).join(' ');
+  return tags.length < MAX_HASHTAGS ? [...tags, 'AD'].join(' ') : input;
+}
+
 export function uniqueHashtags(values: readonly (string | undefined)[]) {
   return [...new Set(values.filter((value): value is string => Boolean(value)))];
 }

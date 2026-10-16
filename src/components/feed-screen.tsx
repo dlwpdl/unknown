@@ -65,7 +65,7 @@ import {
   requestMeetupJoin,
 } from '@/lib/community-data';
 import { appendUniquePosts, loadPublicFeed, loadPublicPost, type FeedSort } from '@/lib/feed-data';
-import { addHashtag, canonicalizeHashtag, getSuggestedHashtags, parseHashtags } from '@/lib/hashtags';
+import { addHashtag, canonicalizeHashtag, getSuggestedHashtags, hasAdLabel, MAX_HASHTAGS, parseHashtags, toggleAdLabel } from '@/lib/hashtags';
 import { canAddPostImage, MAX_POST_IMAGES } from '@/lib/image-upload';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { normalizePoll, type PollDraft } from '@/lib/post-polls';
@@ -482,7 +482,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       setTag(TAGS.find(({ slug }) => slug === draft.categorySlug) ?? tag);
       setTitle(draft.title);
       setBody(withPostMap(withPostAttachments(draft.body, attached.urls), mapped.url ?? '', mapped.label));
-      setHashtagInput(draft.hashtags.map((hashtag) => `#${hashtag}`).join(' '));
+      setHashtagInput(current => parseHashtags(`${hasAdLabel(parseHashtags(current)) ? 'AD ' : ''}${draft.hashtags.join(' ')}`).map(hashtag => `#${hashtag}`).join(' '));
       setAiDraftReady(true);
     } catch {
       Alert.alert(t.write.aiErrorTitle, t.write.aiErrorBody);
@@ -1029,6 +1029,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   placeholder={tag.kind !== 'meetup' && postKind === 'listing' ? t.write.listingBodyPlaceholder : t.write.bodyPlaceholder[tag.slug]} placeholderTextColor={theme.textSecondary} multiline
                   style={[styles.bodyInput, { color: theme.text, borderBottomColor: theme.line }]} />
                 {tag.kind !== 'meetup' && postKind === 'story' && <PollDraftFields poll={pollDraft} onChange={setPollDraft} disabled={submitting || creatingDraft} />}
+                {isAdmin && tag.kind !== 'meetup' && <Pressable analyticsId="post.ad_label" accessibilityRole="checkbox" accessibilityLabel={tr('광고')}
+                  accessibilityState={{ checked: hasAdLabel(selectedHashtags), disabled: submitting || creatingDraft || (!hasAdLabel(selectedHashtags) && selectedHashtags.length >= MAX_HASHTAGS) }}
+                  disabled={submitting || creatingDraft || (!hasAdLabel(selectedHashtags) && selectedHashtags.length >= MAX_HASHTAGS)}
+                  onPress={() => { play('selection'); setHashtagInput(toggleAdLabel); }}
+                  style={[styles.aiButton, { backgroundColor: hasAdLabel(selectedHashtags) ? theme.backgroundSelected : theme.backgroundElement }]}>
+                  <ThemedText type="smallBold">{hasAdLabel(selectedHashtags) ? '☑ AD' : '□ AD'}</ThemedText>
+                </Pressable>}
                 <Pressable analyticsId="components_feed-screen.pressable.23"
                   onPress={() => { play('selection'); void createAiDraft(); }}
                   disabled={creatingDraft || (draftImages.length === 0 && !hasDraftText)}

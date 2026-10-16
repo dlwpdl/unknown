@@ -174,17 +174,35 @@ test('a moderation response after panel unmount does not read back with the next
 
 test('member summary shows ten-point reviews and suppresses legacy ratios and small samples', () => {
   const component = view('../src/components/manner-summary.tsx', 'MannerSummary', {
-    imports: { '@/lib/user-profile': module('../src/lib/user-profile.ts'), '@/components/merchant-rating-bar': { MerchantRatingBar: 'MerchantRatingBar' } },
+    imports: { '@/lib/user-profile': module('../src/lib/user-profile.ts'), '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) } },
   });
   const tree = component.render({ summary: {
     meeting: { participants: 8, score: 80, rating: { participants: 5, score: 8.7 } },
     chat: { participants: 4, score: 100, rating: { participants: 4, score: 9.5 } },
   } });
-  assert.ok(nodes(tree).some(n => n.props?.children === '글링 리뷰'));
-  assert.ok(nodes(tree).some(n => n.props?.children === '8.7 / 10 · 5명'));
-  const bars = nodes(tree).filter(n => n.type === 'MerchantRatingBar');
-  assert.deepEqual(bars.map(n => n.props.score), [8.7, null]);
+  assert.ok(nodes(tree).some(n => n.props?.children === '이웃이 남긴 리뷰'));
+  assert.ok(nodes(tree).some(n => n.props?.children === '8.7 / 10'));
+  assert.ok(nodes(tree).some(n => n.props?.children === '5명이 남긴 리뷰'));
+  assert.ok(!nodes(tree).some(n => typeof n.props?.children === 'string' && n.props.children.includes('9.5')));
   assert.ok(!nodes(tree).some(n => typeof n.props?.children === 'string' && n.props.children.includes('/100')));
+});
+
+test('member review criteria expand on demand with feedback', () => {
+  const feedback = [], props = { summary: { meeting: { participants: 0, score: null }, chat: { participants: 0, score: null } } };
+  const component = view('../src/components/manner-summary.tsx', 'MannerSummary', {
+    imports: {
+      '@/components/analytics-controls': { Pressable: 'Pressable' },
+      '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
+      '@/lib/user-profile': module('../src/lib/user-profile.ts'),
+    },
+  });
+  let tree = component.render(props);
+  let criteria = nodes(tree).find(node => node.props?.analyticsId === 'user.manner.criteria'); assert.ok(criteria);
+  assert.equal(criteria.props.accessibilityState.expanded, false);
+  criteria.props.onPress(); tree = component.render(props);
+  criteria = nodes(tree).find(node => node.props?.analyticsId === 'user.manner.criteria');
+  assert.equal(criteria.props.accessibilityState.expanded, true); assert.deepEqual(feedback, ['selection']);
+  assert.ok(nodes(tree).some(node => typeof node.props?.children === 'string' && node.props.children.includes('최근 30일')));
 });
 
 test('personal feedback requires a specific negative reason and preserves it across an uncertain send', async () => {

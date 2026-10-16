@@ -19,3 +19,8 @@
 실제 앱 컴포넌트 격리 검수에서 TOP 25만 선택하면 예시3곳·카페 검색이면1곳, 같은 추천 글은 카드 하나로 모임을 확인했다. 원래 카테고리 색·선정 출처·외부 Waze URL·위치 요청0·320px 가로 넘침 없음·44px 길찾기 버튼을 확인했다. 마지막 카메라 검사는 MapLibre setPadding이 jumpTo를 호출하는 설치본 계약을 확인한 뒤 같은 여백 중복 갱신을 막고, 카드 크기가 바뀌면 현재 선택/명시적 GPS 대상을 다시 맞추도록 수정했다. Node 회귀 검사에서 먼저 실패를 확인한 뒤 통과시켰다.
 
 최종 실제 화면/조건은 ../output/reviews/unified-map-top25-2026-10-15의 영수증에 기록한다. 검토 파일은 output/design/unified-map-top25-2026-10-15/applied.html이다. 실제 편집 목록은0개, DB/서버/앱 배포0이다. 테스트 예시는 배포용 원본과 분리했다.
+
+
+## Manual advertisement disclosure — 2026-10-16
+
+The owner clarified that they will author partner posts and only need an AD label. Reuse the existing post hashtags and writer: `AD` or `광고` produces a visible disclosure on the card/detail, discovery result and pin label. This does not affect selection, union/deduplication, category/date/city/privacy rules or ranking. Credit sales and automatic campaign/priority placement remain outside this change.

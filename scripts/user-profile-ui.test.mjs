@@ -45,6 +45,7 @@ function mount(file, name, data, props = {}, params = {}) {
     '@/lib/supabase': { supabase: {} }, '@/lib/user-profile': data, '@/lib/community-data': data,
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 } },
     '@/lib/feed-data': { appendUniquePosts }, '@/i18n/ko': { count, t },
+    '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버' }] },
   };
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL(file, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
@@ -60,6 +61,40 @@ const list = harness => harness.nodes().find(node => node.type === 'FlatList');
 const detail = harness => harness.nodes().find(node => node.type === 'PostDetail');
 const control = (harness, id) => harness.nodes().find(node => node.props?.analyticsId === id);
 
+test('approved mini profile has an explicit close action with feedback', async context => {
+  const closed = [], harness = mount('../src/components/user-sheet.tsx', 'UserSheet', {
+    loadTradeProfile: async () => null, loadMannerSummary: async () => manner,
+  }, { user: { id: 'neighbor', nickname: '이웃' }, onClose: () => closed.push(true) });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const close = control(harness, 'user.profile.close'); assert.ok(close);
+  assert.equal(control(harness, 'components_user-sheet.pressable.1').props.children, undefined, 'dismiss backdrop must not contain other interactive controls');
+  close.props.onPress();
+  assert.equal(closed.length, 1); assert.ok(harness.calls.some(call => call[0] === 'feedback' && call[1] === 'selection'));
+});
+
+test('approved mini profile expands trade detail on demand and keeps chat available', async context => {
+  const harness = mount('../src/components/user-sheet.tsx', 'UserSheet', {
+    loadTradeProfile: async () => ({ userId: 'neighbor', dealPartners: 2, closedListings: 3, memberMonths: 4 }), loadMannerSummary: async () => manner,
+  }, { user: { id: 'neighbor', nickname: '이웃' }, onClose() {} });
+  context.after(() => harness.cleanup()); await harness.settle();
+  assert.ok(!harness.nodes().some(node => node.props?.trade), 'trade detail starts collapsed');
+  const trade = control(harness, 'user.profile.trade'); assert.ok(trade);
+  assert.equal(trade.props.accessibilityState.expanded, false); trade.props.onPress(); harness.render();
+  assert.ok(harness.nodes().some(node => node.props?.trade?.userId === 'neighbor'));
+  assert.equal(control(harness, 'user.profile.trade').props.accessibilityState.expanded, true);
+  assert.ok(control(harness, 'components_user-sheet.pressable.4'));
+});
+
+test('approved full profile keeps a compact title and reviews before the public activity tabs', async context => {
+  const harness = mount('../src/app/user/[id].tsx', 'default', {
+    loadPublicUserActivity: async () => [], loadPublicUserProfile: async () => profile('author'),
+  }, {}, { id: 'author', nickname: 'a long unverified route label' });
+  context.after(() => harness.cleanup()); await harness.settle();
+  assert.ok(harness.nodes().some(node => node.props?.children === '사용자 프로필'));
+  const header = nodes(list(harness).props.ListHeaderComponent);
+  assert.ok(header.findIndex(node => node.type === 'MannerSummary') < header.findIndex(node => node.props?.analyticsId === 'user.activity.story'));
+});
+
 test('switching sheet users and viewers immediately drops the previous trade and manner snapshot', async context => {
   const slow = deferred(), props = { user: { id: 'first', nickname: '첫 이웃' }, onClose() {} };
   let delay = false;
@@ -68,6 +103,7 @@ test('switching sheet users and viewers immediately drops the previous trade and
     loadMannerSummary: async () => delay ? slow.promise : manner,
   }, props);
   context.after(() => harness.cleanup()); await harness.settle();
+  control(harness, 'user.profile.trade').props.onPress(); harness.render();
   assert.ok(harness.nodes().some(node => node.props?.trade?.userId === 'first'));
   delay = true; props.user = { id: 'second', nickname: '다른 이웃' }; harness.render();
   assert.ok(!harness.nodes().some(node => node.props?.trade), 'other person must not inherit the first trade history');

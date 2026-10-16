@@ -83,6 +83,7 @@ function cardRenderer(component = 'PostCard') {
   const source = ts.transpileModule(fs.readFileSync(new URL(`../src/components/${file}.tsx`, import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
+  modules['@/components/post-ad-label'] = { PostAdLabel: 'PostAdLabel' };
   vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
     assert.ok(name in modules, `Unexpected import: ${name}`);
     return modules[name];

@@ -2,7 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Alert, Modal, Platform, StyleSheet, View } from 'react-native';
+import { Alert, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ReportSheet } from '@/components/report-sheet';
@@ -11,7 +11,7 @@ import { ThemedText } from '@/components/themed-text';
 import { TrustBadge } from '@/components/trust-badge';
 import { MannerSummary } from '@/components/manner-summary';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
-import { Depth, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { count } from '@/i18n';
@@ -47,6 +47,7 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
   const hidden = useContentVisibility();
   const { play } = useInteractionFeedback();
   const [requesting, setRequesting] = useState(false);
+  const [openTradeKey, setOpenTradeKey] = useState<string | null>(null);
   const [reporting, setReporting] = useState<SheetUser | null>(null);
   const [trade, setTrade] = useState<{ key: string; value: TradeProfile } | null>(null);
   const [manner, setManner] = useState<{ key: string; value: Summary } | null>(null);
@@ -55,6 +56,7 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
   // 대화 기반 거래 이력과 현장 참석 확인은 서로 다른 신호다.
   const userId = user?.id;
   const requestKey = `${isAuthed ? me.id : 'guest'}:${userId ?? ''}:${user?.contextPostId ?? user?.listingId ?? ''}`;
+  const tradeOpen = openTradeKey === requestKey;
   const currentRequest = useRef<{ key: string } | null>({ key: requestKey });
   useLayoutEffect(() => {
     currentRequest.current = { key: requestKey };
@@ -115,50 +117,50 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
   return (
     <>
       <Modal visible={!!user} transparent animationType="fade" onRequestClose={onClose}>
-        <Pressable analyticsId="components_user-sheet.pressable.1" style={styles.backdrop} onPress={() => { play('selection'); onClose(); }} accessibilityRole="button">
-          <Pressable analyticsId="components_user-sheet.pressable.2" style={() => [styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.three) }]} onPress={() => {}}>
-            {user && (
-              <>
-                <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}>
-                  <ThemedText type="subtitle" style={{ color: theme.navy }}>{user.nickname[0]}</ThemedText>
+        <View style={styles.backdrop}>
+          <Pressable analyticsId="components_user-sheet.pressable.1" style={StyleSheet.absoluteFill} onPress={() => { play('selection'); onClose(); }} accessibilityRole="button" accessibilityLabel={tr('닫기')} />
+          <View accessibilityViewIsModal style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: user?.mine ? Math.max(insets.bottom, 12) : 0 }]}>
+            <View style={[styles.handle, { backgroundColor: theme.line }]} />
+            <View style={styles.sheetTools}>
+              <ThemedText type="small" themeColor="textSecondary">{tr('이웃 프로필')}</ThemedText>
+              <View style={styles.tools}>
+                {!!user && !user.mine && !!user.id && <Pressable analyticsId="components_user-sheet.pressable.5" onPress={() => { play('selection'); setReporting(user); onClose(); }} accessibilityRole="button" accessibilityLabel={t.report.userAction} style={styles.iconButton}>
+                  <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={21} tintColor={theme.textSecondary} />
+                </Pressable>}
+                <Pressable analyticsId="user.profile.close" onPress={() => { play('selection'); onClose(); }} accessibilityRole="button" accessibilityLabel={tr('닫기')} style={styles.iconButton}>
+                  <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={19} tintColor={theme.textSecondary} />
+                </Pressable>
+              </View>
+            </View>
+            {user && <>
+              <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false}>
+                <View style={styles.identity}>
+                  <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle" style={{ color: theme.accent }}>{user.nickname[0]}</ThemedText></View>
+                  <View style={styles.identityCopy}>
+                    <View style={styles.nickRow}><ThemedText type="subtitle" style={styles.nickname}>{user.nickname}</ThemedText><TrustBadge verified={user.verified} trustLevel={user.trustLevel} /></View>
+                    {user.neighborhood && <ThemedText type="small" themeColor="textSecondary">{user.neighborhood}</ThemedText>}
+                    {trade?.key === requestKey && trade.value.memberMonths >= 1 && !hidden('user', user.id ?? '') && <ThemedText type="small" themeColor="textSecondary">{tr('글링과 함께한 지 {0}개월', count(trade.value.memberMonths))}</ThemedText>}
+                  </View>
                 </View>
-                <View style={styles.nickRow}>
-                  <ThemedText type="smallBold" style={{ fontSize: 18 }}>{user.nickname}</ThemedText>
-                  <TrustBadge verified={user.verified} trustLevel={user.trustLevel} />
-                </View>
-                {user.neighborhood && <ThemedText type="small" themeColor="textSecondary">{user.neighborhood}</ThemedText>}
                 {manner?.key === requestKey && !hidden('user', user.id ?? '') && <MannerSummary summary={manner.value} />}
-                {trade?.key === requestKey && !user.mine && !hidden('user', user.id ?? '') && <TradeRecord trade={trade.value} onOpenPost={(postId) => navigate(`/post/${postId}`)} />}
-                <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12.5 }}>
-                  {user.mine ? t.profileSheet.self
-                    : user.trustLevel === 3 ? t.profileSheet.verifiedL3
-                    : user.verified || user.trustLevel === 2 ? t.profileSheet.verifiedL2
-                    : t.profileSheet.verifiedL1}
-                </ThemedText>
-                {user.mine && Platform.OS !== 'web' && (
-                  <Pressable analyticsId="components_user-sheet.pressable.3" onPress={() => navigate('/profile')} accessibilityRole="button" style={({ pressed }) => [styles.cta, Depth.control, { backgroundColor: theme.backgroundElement, }]}>
-                    <ThemedText type="smallBold">{t.tabs.profile}</ThemedText>
+                {trade?.key === requestKey && !user.mine && !hidden('user', user.id ?? '') && <>
+                  <Pressable analyticsId="user.profile.trade" accessibilityRole="button" accessibilityState={{ expanded: tradeOpen }} onPress={() => { play('selection'); setOpenTradeKey(value => value === requestKey ? null : requestKey); }} style={[styles.profileRow, { borderBottomColor: theme.line }]}>
+                    <View style={styles.identityCopy}><ThemedText type="smallBold">{tr('거래 기록')}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('이웃 {0}명과 거래 · 완료 {1}건', count(trade.value.dealPartners ?? 0), count(trade.value.closedListings ?? 0))}</ThemedText></View>
+                    <SymbolView name={{ ios: tradeOpen ? 'chevron.down' : 'chevron.right', android: tradeOpen ? 'expand_more' : 'chevron_right', web: tradeOpen ? 'expand_more' : 'chevron_right' }} size={17} tintColor={theme.textSecondary} />
                   </Pressable>
-                )}
-                {!user.mine && user.id && (
-                  <>
-                    {Platform.OS !== 'web' && <Pressable analyticsId="components_user-sheet.pressable.7"
-                      onPress={() => navigate({ pathname: '/user/[id]', params: { id: user.id!, nickname: user.nickname } })}
-                      accessibilityRole="button"
-                      style={({ pressed }) => [styles.cta, Depth.control, { backgroundColor: theme.backgroundElement, }]}>
-                      <ThemedText type="smallBold">{tr("프로필 · 오늘·구해요·팔아요 이력")}</ThemedText>
-                    </Pressable>}
-                    <RaisedActionButton analyticsId="components_user-sheet.pressable.4" onPress={() => void requestChat(user)} disabled={requesting} busy={requesting} label={requesting ? t.chat.joinSending : t.profileSheet.chatRequest} />
-                    <Pressable analyticsId="components_user-sheet.pressable.5" onPress={() => { play('selection'); setReporting(user); onClose(); }} accessibilityRole="button"
-                      style={({ pressed }) => [styles.cta, Depth.control, { backgroundColor: theme.backgroundElement, }]}>
-                      <ThemedText type="smallBold" themeColor="textSecondary">{t.report.userAction}</ThemedText>
-                    </Pressable>
-                  </>
-                )}
-              </>
-            )}
-          </Pressable>
-        </Pressable>
+                  {tradeOpen && <TradeRecord trade={trade.value} onOpenPost={(postId) => navigate(`/post/${postId}`)} />}
+                </>}
+                <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12 }}>{user.mine ? t.profileSheet.self : user.trustLevel === 3 ? t.profileSheet.verifiedL3 : user.verified || user.trustLevel === 2 ? t.profileSheet.verifiedL2 : t.profileSheet.verifiedL1}</ThemedText>
+                {user.mine && Platform.OS !== 'web' && <Pressable analyticsId="components_user-sheet.pressable.3" onPress={() => navigate('/profile')} accessibilityRole="button" style={[styles.profileRow, { borderBottomColor: theme.line }]}><ThemedText type="smallBold">{t.tabs.profile}</ThemedText><ThemedText>›</ThemedText></Pressable>}
+                {!user.mine && user.id && Platform.OS !== 'web' && <Pressable analyticsId="components_user-sheet.pressable.7" onPress={() => navigate({ pathname: '/user/[id]', params: { id: user.id!, nickname: user.nickname } })} accessibilityRole="button" style={[styles.profileRow, { borderBottomColor: theme.line }]}>
+                  <View style={[styles.rowIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'doc.text', android: 'description', web: 'description' }} size={18} tintColor={theme.navy} /></View>
+                  <View style={styles.identityCopy}><ThemedText type="smallBold">{tr('공개한 글 보기')}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('오늘·구해요·팔아요')}</ThemedText></View><ThemedText themeColor="textSecondary">›</ThemedText>
+                </Pressable>}
+              </ScrollView>
+              {!user.mine && user.id && <View style={[styles.actionArea, { paddingBottom: Math.max(insets.bottom, Spacing.three) }]}><RaisedActionButton analyticsId="components_user-sheet.pressable.4" onPress={() => void requestChat(user)} disabled={requesting} busy={requesting} label={requesting ? t.chat.joinSending : t.profileSheet.chatRequest} /></View>}
+            </>}
+          </View>
+        </View>
       </Modal>
       {reporting?.id && (
         <ReportSheet visible targetType="user" targetId={reporting.id} reportedUserId={reporting.id} reportedNickname={reporting.nickname} onClose={() => setReporting(null)} />
@@ -174,10 +176,10 @@ function TradeRecord({ trade, onOpenPost }: { trade: TradeProfile; onOpenPost: (
   const theme = useTheme();
   // 칩이 아니라 문장으로 적는다. 신뢰는 훑어서가 아니라 읽어서 판단된다.
   const facts: { symbol: SymbolViewProps['name']; text: string }[] = [];
-  if (trade.dealPartners > 0) facts.push({ symbol: { ios: 'person.2', android: 'group', web: 'group' }, text: `이웃 ${count(trade.dealPartners)}명과 거래했어요` });
-  if (trade.closedListings > 0) facts.push({ symbol: { ios: 'shippingbox', android: 'inventory_2', web: 'inventory_2' }, text: `거래 완료 ${count(trade.closedListings)}건` });
-  if (trade.reviews.total > 0) facts.push({ symbol: { ios: 'arrow.uturn.left', android: 'replay', web: 'replay' }, text: `${count(trade.reviews.total)}명 중 ${count(trade.reviews.wouldDealAgain)}명이 다시 거래하겠다고 했어요` });
-  if (trade.memberMonths >= 1) facts.push({ symbol: { ios: 'calendar', android: 'calendar_month', web: 'calendar_month' }, text: `글링과 함께한 지 ${count(trade.memberMonths)}개월` });
+  if (trade.dealPartners > 0) facts.push({ symbol: { ios: 'person.2', android: 'group', web: 'group' }, text: tr("이웃 {0}명과 거래했어요", count(trade.dealPartners)) });
+  if (trade.closedListings > 0) facts.push({ symbol: { ios: 'shippingbox', android: 'inventory_2', web: 'inventory_2' }, text: tr("거래 완료 {0}건", count(trade.closedListings)) });
+  if (trade.reviews.total > 0) facts.push({ symbol: { ios: 'arrow.uturn.left', android: 'replay', web: 'replay' }, text: tr("{0}명 중 {1}명이 다시 거래하겠다고 했어요", count(trade.reviews.total), count(trade.reviews.wouldDealAgain)) });
+  if (trade.memberMonths >= 1) facts.push({ symbol: { ios: 'calendar', android: 'calendar_month', web: 'calendar_month' }, text: tr("글링과 함께한 지 {0}개월", count(trade.memberMonths)) });
 
   return (
     <View style={styles.record}>
@@ -229,14 +231,22 @@ function TradeRecord({ trade, onOpenPost }: { trade: TradeProfile; onOpenPost: (
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  sheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: Spacing.four, paddingTop: Spacing.four, alignItems: 'center', gap: 6 },
-  avatar: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  nickRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  sheet: { maxHeight: '88%', borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 8, paddingBottom: 12 },
+  handle: { width: 32, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 4 },
+  sheetTools: { minHeight: 44, paddingLeft: 24, paddingRight: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  tools: { flexDirection: 'row' }, iconButton: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  sheetScroll: { flexShrink: 1 }, sheetContent: { paddingHorizontal: 24, paddingTop: 12, gap: 16 },
+  identity: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingBottom: 4 },
+  avatar: { width: 64, height: 64, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  identityCopy: { flex: 1, minWidth: 0, gap: 4 }, nickname: { flexShrink: 1, fontSize: 20, lineHeight: 27 },
+  nickRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
+  profileRow: { minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  rowIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  actionArea: { paddingHorizontal: 24, paddingTop: 16 },
   record: { alignSelf: 'stretch', gap: Spacing.two, marginTop: Spacing.one },
   facts: { borderWidth: 1, borderRadius: 12, overflow: 'hidden' },
   fact: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: 9 },
   listings: { gap: Spacing.one },
-  listing: { minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.two, borderWidth: 1, borderRadius: 8 },
+  listing: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.two, borderWidth: 1, borderRadius: 8 },
   review: { gap: 2, paddingHorizontal: Spacing.two },
-  cta: { alignSelf: 'stretch', alignItems: 'center', borderRadius: 999, paddingVertical: 13, marginTop: Spacing.two },
 });

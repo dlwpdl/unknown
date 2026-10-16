@@ -18,6 +18,7 @@ import { CITIES, TAGS } from '@/lib/mock';
 import { visibleMeetupBody } from '@/lib/meetup-ai';
 import { googleMapsUrl, postMapBody } from '@/lib/post-maps';
 import { t } from '@/i18n/ko';
+import { hasAdLabel } from '@/lib/hashtags';
 import { publicMerchantId, publicWebTarget } from '@/lib/public-web';
 import { publicWebClient } from '@/lib/public-web-client';
 import { jsonLd, postSeo, PUBLIC_SITE } from '@/lib/public-seo';
@@ -216,7 +217,7 @@ function ReaderContent() {
           {hydrated && <InteractionFeedbackProvider><PublicFestivals cityId={city.id} cityName={city.name} /></InteractionFeedbackProvider>}
           <div aria-busy={loading}>
             {current && <InteractionFeedbackProvider>{current.posts.map((item) => { const mapped = postMapBody(item.body); const attached = splitPostAttachments(mapped.body); return <article className="reader-card" key={item.id}>
-              <div><p className="reader-kicker">{item.tag.label}{item.room?.closed ? ' · 모집 마감' : ''}</p>
+              <div><p className="reader-kicker">{hasAdLabel(item.hashtags) && <span aria-label="광고">AD · </span>}{item.tag.label}{item.room?.closed ? ' · 모집 마감' : ''}</p>
                 <h3><a data-analytics="web_control_10" href={`/post?id=${encodeURIComponent(item.id)}`}>{item.title}</a></h3>
                 <p className="reader-excerpt">{item.room ? visibleMeetupBody(attached.body) : attached.body}</p>
                 {attached.urls.map((url, index) => <PostAttachmentLink key={`${url}-${index}`} url={url} />)}
@@ -235,7 +236,7 @@ function ReaderContent() {
           <a data-analytics="web_control_12" className="reader-back" href="/">← 동네 이야기로</a>
           {post && <InteractionFeedbackProvider><article className="reader-post"><p className="reader-kicker">{CITIES.find((item) => item.id === post.cityId)?.name} · {post.tag.label}</p>
             {!!post.hashtags?.length && <p className="reader-kicker" aria-label="게시글 해시태그">{post.hashtags.map(tag => `#${tag}`).join(' · ')}</p>}
-            <h1>{post.title}</h1><p className="reader-meta">{post.author.nickname} · <time dateTime={metadata?.published}>{post.createdAtLabel}</time></p>
+            <h1>{post.title}</h1><p className="reader-meta">{hasAdLabel(post.hashtags) && <span aria-label="광고">AD · </span>}{post.author.nickname} · <time dateTime={metadata?.published}>{post.createdAtLabel}</time></p>
             <PublicMerchantProfileLink postId={post.id} />
             {post.imageUris?.map((uri, index) => uri && <img className="reader-photo" key={uri} src={uri} alt={`${post.title} 사진 ${index + 1}`} loading="lazy" />)}
             <BodyLinks body={post.room ? visibleMeetupBody(mappedPost!.body) : mappedPost!.body} /><MeetupInfo post={post} />

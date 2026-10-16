@@ -83,12 +83,12 @@ test('notification categories and manner questions render translated app-owned l
 });
 
 
-function renderedText(file, contains, scope) {
-  const element = nodes(tree(file)).find(node => ts.isJsxElement(node) && node.openingElement.tagName.getText() === 'ThemedText' && contains.every(text => node.getText().includes(text)));
+function renderedText(file, contains, scope, tag = 'ThemedText') {
+  const element = nodes(tree(file)).find(node => ts.isJsxElement(node) && node.openingElement.tagName.getText() === tag && contains.every(text => node.getText().includes(text)) && (tag !== 'View' || node.openingElement.getText().includes(contains[0])));
   assert.ok(element, file + ': rendered label exists');
   const code = ts.transpileModule('exports.view = (' + element.getText() + ');', { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   const exports = {}, jsx = (_type, props) => props.children;
-  vm.runInNewContext(code, { exports, ThemedText: 'Text', styles: {}, isAdmin: false, tr: (text, ...values) => translateUi('en', text, ...values), require: () => ({ jsx, jsxs: jsx }), ...scope });
+  vm.runInNewContext(code, { exports, View: 'View', ThemedText: 'Text', styles: {}, isAdmin: false, tr: (text, ...values) => translateUi('en', text, ...values), require: () => ({ jsx, jsxs: jsx }), ...scope });
   return [exports.view].flat(Infinity).filter(value => value != null && value !== false).join('');
 }
 
@@ -102,7 +102,7 @@ test('meetup city, capacity and slot copy preserves word spacing and uses slot u
 
 
 test('profile and business counters use contextual units rather than a shared reviews suffix', () => {
-  assert.equal(renderedText('src/app/user/[id].tsx', ['publicProfile.storyCount'], { publicProfile: { storyCount: 3, listingCount: 2, completedCount: 1 } }), 'Posts 3 · Listings 2 · Completed trades 1');
+  assert.equal(renderedText('src/app/user/[id].tsx', ['styles.stats', 'publicProfile.storyCount'], { publicProfile: { storyCount: 3, listingCount: 2, completedCount: 1 }, count: String, theme: {} }, 'View'), '3Today2Listings1Marked complete');
   assert.equal(renderedText('src/components/merchant-workspace.tsx', ['data.metrics.member_clickers'], { data: { metrics: { member_clickers: 2, anonymous_sessions: 4 } } }), 'Signed-in clickers: 2 · Anonymous click sessions: 4');
 });
 

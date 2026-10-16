@@ -4,7 +4,7 @@ Deployment is held by the owner. The combined source is on `dlwpdl/gling-combine
 
 The combined source retains profile A, the complete reactive Korean/English UI, unified discovery and TOP25 A, the factual merchant AI draft/review/channel flow, private admin/creator/directory changes, app analytics, operated-meetup alerts, and the reproducible router URI decoder repair. General catalog-place community reviews and their visibility-aware native translation are also connected. Existing chat/photo/auth/2D/back/notification behavior is preserved.
 
-The existing OSM catalog now participates in the unified map. Catalog IDs and coordinates stay unchanged. Ordinary catalog cards open the existing place detail and review path; exact matching TOP25 IDs merge into one record. A catalog record is not an editorial selection, popularity result or verified visit. Real TOP25 selections remain empty. Credits and Sponsored map proposals remain on their original holds.
+The existing OSM catalog now participates in the unified map. Catalog IDs and coordinates stay unchanged. Ordinary catalog cards open the existing place detail and review path; exact matching TOP25 IDs merge into one record. A catalog record is not an editorial selection, popularity result or verified visit. Real TOP25 selections remain empty. Credit sales remain held. The owner later approved manually authored partner posts with an AD label; the existing hashtags carry this disclosure through cards, details, map results and pin labels without changing ranking or TOP25 selection.
 
 Map categories now combine with OR: TOP25 + Cafés includes both collections, with exact-ID overlaps once. Removing a category preserves the others; All resets the selection. The content order is TOP25, Restaurants, Cafés, Festivals, Nightlife, Places to Visit, Housing and Buy & Sell, followed by the retained All Events utility. Places to Visit covers attractions rather than the separate food/nightlife categories. City, search, visibility, listing expiry and event dates still constrain the shared map/list results. An active date remains visible and resettable after switching categories.
 
@@ -41,12 +41,14 @@ Apply only missing, reviewed migrations in dependency order:
 1. `20261014210000_admin_performance.sql`
 2. `20261015003000_admin_client_error_audit.sql`
 3. `20261015190000_admin_partnerships.sql`
-4. `20261015203000_popular_feed_views.sql`
-5. `20261015210000_admin_merchant_directory.sql`
-6. `20261015212000_unified_discovery_map.sql`
-7. `20261015223000_admin_operated_meetup_alerts.sql`
-8. `20261015234000_place_review_behavior_targets.sql`
-9. `20261016043500_creator_profile_details.sql`
+4. `20261015192052_public_web_analytics_targets.sql`
+5. `20261015203000_popular_feed_views.sql`
+6. `20261015210000_admin_merchant_directory.sql`
+7. `20261015212000_unified_discovery_map.sql`
+8. `20261015223000_admin_operated_meetup_alerts.sql`
+9. `20261015234000_place_review_behavior_targets.sql`
+10. `20261016043500_creator_profile_details.sql`
+11. `20261016073000_live_behavior_targets.sql`
 
 The normal migration role is required. Compare existing applied definitions before applying: parts of private admin were delivered earlier. Preserve fail-closed function anchors and MFA/audit checks. Run the relevant deployed read checks after schema application.
 
@@ -57,3 +59,16 @@ After schema readiness, deploy the reviewed `ticketmaster-events` venue-coordina
 The existing `.github/workflows/deploy-pages.yml` publishes Pages on `mobile-app` pushes. The existing `.github/workflows/mobile-release.yml` builds/submits from version tags and supports its current manual build operation. `scripts/release.py` validates matching versions, unfinished App Store submissions and unused native build numbers. Keep its actual published-store checks before changing forced-update policy. Do not bump versions, push `mobile-app`, create `v*` tags or dispatch either workflow while the hold is in force.
 
 Physical-device purchase/refund/restore, push reception, provider permissions and real external publishing retain their separate verification status. They are not proven by this simulator/source integration.
+
+
+## Owner-approved source corrections — 2026-10-16
+
+The new public member profile proposal now uses a left-aligned identity, two compact review columns, expandable rating criteria and trading detail, an explicit close action, public activity history and a persistent chat action. This is separate from the previously integrated own-profile A. Existing account/target request keys, blocking/reporting, guest login, conversation context and stale-response guards remain. Scores still require five distinct reviewers; no score is invented for a new neighbour. The full activity route retains its visibility filters, cursors and translated metadata.
+
+Map GPS and invalid-date feedback now retain canonical owned strings and translate at render. Same-view English/Korean regressions pass without repeating GPS or changing the entered date.
+
+Analytics migrations add the two public-reader targets and150 current fixed app targets, including static scroll identifiers and the new profile/AD actions. The live-component coverage check reads the current AST rather than relying only on the historical snapshot. Both migrations applied twice and the actual RPC acceptance/retry/unknown-target checks passed inside a rollback transaction in the existing local database. No production database was changed.
+
+For manual advertisements, the owner can enable AD in the existing writer; the existing `AD`/`광고` hashtags persist the disclosure. Other hashtags are preserved; a full five-tag selection is not silently truncated. AI rewriting retains an existing manual AD choice. Native cards/details, discovery results/pin labels and the public reader display the disclosure. A voluntary AD label is not a verified campaign, paid ranking or editorial TOP25 award. No buying, billing, automatic promotion or new backend service was added.
+
+Evidence: `/Users/ash/Desktop/Git/unknown/output/reviews/three-fixes-20261016/`. The actual-component render preview is `/Users/ash/Desktop/Git/unknown/output/design/three-fixes-2026-10-16/index.html`; identity, counts and ratings there are controlled QA fixtures. The existing iPhone is on a meetup-creation form, so its navigation/input was preserved. Source tests and JavaScript/Hermes exports are separate from signed native installation, physical-device verification and production activation. Deployment remains held.

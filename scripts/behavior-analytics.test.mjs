@@ -43,6 +43,45 @@ test('every instrumented control is in the server allowlist', () => {
   }
 });
 
+test('live native controls and public reader actions have fixed server targets', async () => {
+  const { default: ts } = await import('typescript');
+  const migrations = new URL('../supabase/migrations/', import.meta.url);
+  const registered = new Set(readdirSync(migrations).filter(name => name.endsWith('.sql')).flatMap(name => {
+    const sql = readFileSync(new URL(name, migrations), 'utf8');
+    return [...sql.matchAll(/insert\s+into\s+private\.behavior_targets\s*\(id\)\s*values\s*([\s\S]*?);/gi)]
+      .flatMap(insert => [...insert[1].matchAll(/\('([^']+)'\)/g)].map(match => match[1]));
+  }));
+  const missing = [];
+  const scan = directory => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      if (['admin', 'merchant-web'].includes(entry.name)) continue;
+      const file = new URL(entry.name + (entry.isDirectory() ? '/' : ''), directory);
+      if (entry.isDirectory()) { scan(file); continue; }
+      if (!entry.name.endsWith('.tsx')) continue;
+      const ast = ts.createSourceFile(file.pathname, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+      const controls = new Map();
+      for (const node of ast.statements) if (ts.isImportDeclaration(node) && node.moduleSpecifier.text === '@/components/analytics-controls') {
+        for (const item of node.importClause?.namedBindings?.elements ?? []) controls.set(item.name.text, item.propertyName?.text ?? item.name.text);
+      }
+      const visit = node => {
+        if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+          const kind = controls.get(node.tagName.getText(ast));
+          for (const attribute of node.attributes.properties) {
+            if (!ts.isJsxAttribute(attribute) || !ts.isStringLiteral(attribute.initializer ?? {})) continue;
+            if (attribute.name.text !== 'data-analytics' && !(kind && attribute.name.text === 'analyticsId')) continue;
+            const id = attribute.initializer.text;
+            for (const target of kind === 'Switch' ? [id + '.on', id + '.off'] : [id]) if (!registered.has(target)) missing.push(`${target} (${file.pathname})`);
+          }
+        }
+        ts.forEachChild(node, visit);
+      };
+      visit(ast);
+    }
+  };
+  scan(new URL('../src/', import.meta.url));
+  assert.deepEqual(missing, [], 'instrumented controls must not reject their entire analytics batch');
+});
+
 test('success dispatches before account rotation even with an in-flight batch', async () => {
   const batches = [];
   let complete;
