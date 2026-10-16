@@ -46,7 +46,7 @@ function MeetupDiscovery({ eventId }: { eventId: string }) {
   const theme = useTheme(), router = useRouter(), insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
   const { height: screenHeight, width: screenWidth, fontScale } = useWindowDimensions();
-  const compactHeader = fontScale > 1.2 || screenWidth < 420;
+  const compactHeader = fontScale > 1.2 || screenWidth < 480;
   const { city } = useCommunityCity();
   const { me, isAuthed, isAdmin, promptLogin } = useAuth();
   const { membership } = useMembership();
@@ -160,7 +160,7 @@ function MeetupDiscovery({ eventId }: { eventId: string }) {
     {/* 헤더는 스크롤과 함께 사라지면 안 된다(홈과 동일). 목록 밖에 두고 고정한다. */}
     <View style={[styles.head, styles.headFixed, compactHeader && styles.headLarge, { backgroundColor: theme.background }]}>
       <ThemedText accessibilityRole="header" style={[styles.title, compactHeader && styles.titleLarge]}>{tr("모임")}<ThemedText style={styles.title} themeColor="accent">.</ThemedText></ThemedText>
-      <GlassSurface tone="control" interactive style={[styles.cityGlass, compactHeader && styles.cityGlassLarge]}><Pressable analyticsId="app_tabs_meetups.pressable.1" onPress={() => { play('selection'); setCityPicker(true); }} accessibilityRole="button" accessibilityLabel={tr("{0} 활동 지역 선택", tr(city.name))} style={({ pressed }) => [styles.city, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}><ThemedText type="small" themeColor="textSecondary" numberOfLines={1} maxFontSizeMultiplier={1.3} style={styles.cityText}>{tr(city.name)}{tr("에서")}</ThemedText><SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={14} tintColor={theme.textSecondary} /></Pressable></GlassSurface>
+      <GlassSurface tone="control" interactive style={[styles.cityGlass, compactHeader && styles.cityGlassLarge]}><Pressable analyticsId="app_tabs_meetups.pressable.1" onPress={() => { play('selection'); setCityPicker(true); }} accessibilityRole="button" accessibilityLabel={tr("{0} 활동 지역 선택", tr(city.name))} style={({ pressed }) => [styles.city, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}><ThemedText type="small" themeColor="textSecondary" numberOfLines={1} maxFontSizeMultiplier={1.3} style={styles.cityText}>{tr("{0}에서", tr(city.name))}</ThemedText><SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={14} tintColor={theme.textSecondary} /></Pressable></GlassSurface>
       <GlassSurface tone="control" interactive style={styles.circleGlass}><Pressable analyticsId="app_tabs_meetups.pressable.13" accessibilityRole="button" accessibilityLabel={searchOpen ? tr("검색 닫기") : tr("모임 검색")} accessibilityState={{ expanded: searchOpen }}
         onPress={toggleSearch} style={({ pressed }) => [styles.circle, { backgroundColor: pressed || searchOpen ? 'rgba(255,255,255,0.13)' : 'transparent' }]}>
         <SymbolView name={{ ios: searchOpen ? 'xmark' : 'magnifyingglass', android: searchOpen ? 'close' : 'search', web: searchOpen ? 'close' : 'search' }} size={20} tintColor={searchOpen ? theme.accent : theme.text} />

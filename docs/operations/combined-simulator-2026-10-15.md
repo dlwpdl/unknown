@@ -6,22 +6,31 @@ The combined source retains profile A, the complete reactive Korean/English UI, 
 
 The existing OSM catalog now participates in the unified map. Catalog IDs and coordinates stay unchanged. Ordinary catalog cards open the existing place detail and review path; exact matching TOP25 IDs merge into one record. A catalog record is not an editorial selection, popularity result or verified visit. Real TOP25 selections remain empty. Credits and Sponsored map proposals remain on their original holds.
 
+Map categories now combine with OR: TOP25 + Cafés includes both collections, with exact-ID overlaps once. Removing a category preserves the others; All resets the selection. The content order is TOP25, Nightlife, Festivals, Cafés, Restaurants, Places to Visit, Housing and Buy & Sell, followed by the retained All Events utility. Places to Visit covers attractions rather than the separate food/nightlife categories. City, search, visibility, listing expiry and event dates still constrain the shared map/list results. An active date remains visible and resettable after switching categories.
+
+The fixed-label follow-up translates owned Chilling/Meetup terms, contextual counts and chat dates while retaining member content, nicknames and edited drafts. Meetup creation now translates its catalog city label. Both meetup slot summaries show the existing administrator exemption rather than a finite allowance; this does not alter membership or admission checks.
+
+Native English review also caught a truncated meetup city and the concatenated wording `Vancouverin`. Phone headers now wrap before the city is squeezed, and the city uses one translated template (`in Vancouver` / `밴쿠버에서`).
+
 ## Local evidence
 
 Evidence is outside this checkout at `/Users/ash/Desktop/Git/unknown/output/reviews/all-features-simulator-integration-2026-10-15/`. The original72-request audit is preserved; the final resolution report adds current integration/runtime status without rewriting historical observations.
 
-- `combined-final-full-tests.txt`:1191 passed, zero failed, one existing real-clock skip before the subsequent fixed-label and union-filter follow-ups. `verification.json` records the final accepted source and latest checks.
-- `combined-final-types.txt`, `combined-final-lint.txt`: successful full type and lint checks.
-- `combined-final-exports.txt`: iOS/Android Hermes and web exports. `combined-final-public-merchant-exports.txt` and both web-check logs verify the separate public and merchant bundles. These are JavaScript exports, not signed native releases.
+- `combined-final-union-tests.txt`:1208 passed, zero failed, one existing real-clock skip. `verification.json` records the accepted source and check exit receipts.
+- `combined-final-union-types.txt`, `combined-final-union-lint.txt`: successful full type and lint checks.
+- `combined-final-union-exports.txt`: iOS/Android Hermes and web exports. `combined-final-union-public-merchant-exports.txt` and both `combined-final-union-*-web-check.txt` logs verify the separate public and merchant bundles. These are JavaScript exports, not signed native releases.
 - `uri-clean-install-verified.json` and `uri-clean-installed-behavior.txt`: isolated offline `npm ci`, actual patched decoder/router behavior and cleanup. Shared dependencies were not changed.
 - Local SQL checks ran in rollback scope. The map test includes the unchanged preceding performance-target baseline required by the ordered migration. Admin integration evidence includes374 SQL assertions and10 concurrency probes.
 - Actual iPhone screenshots/AX records include75 catalog pins in Toronto and Vancouver, map/list views, profile A, place detail and an empty review composer. Live list counts vary with city and event expiry. `ios-header-map-route-verification.json` verifies that Meetups and Chat open the shared map and return to their original list. Screenshots and test receipts remain distinct from native inference.
+- `ui-labels-review/coordinator-acceptance.json` verifies the independent35-file source review. `map-union-source-acceptance.json` and `map-union-review-resolution.json` bind the single map implementation and its two resolved review findings. The original72-row audit remains unchanged; `request-resolution-final.json` supplies current paths, evidence and external-validation limits.
 
 The installed React Compiler exposed a real language-state bug: components called the language hook but discarded its returned dictionary, allowing first-language copy to remain cached. Render owners now bind the context dictionary/locale. Canonical owned feedback stays untranslated in state and is translated at display, preserving original member text and action results. Regression checks include actual installed-compiler output and mounted language switches without repeating requests, copying links or sending messages.
 
 The existing Today-fix owner supplied `9cc9d26` as an exact four-file handoff. The client now waits abortably for the existing bounded translation queue instead of rejecting the next visible card after rapid scrolling during model download. The popular-feed SQL source adds existing views to the ranking score and retains its eligibility/cursor/access rules. Its rollback regressions passed; production ranking is not changed until the reviewed migration is activated.
 
 The existing Android translation QA binary supplied real Korean↔English model results with protected URLs, mentions, amounts and line breaks. Its native source is `171f9fb`. The installed iPhone26.5 simulator binary predates this native module. The vendor pod excludes arm64 simulators; the compatible x86_64 iOS18.4 simulator failed at launch with `NSMachErrorDomain -308`. Do not claim iPhone inference or signed release install size from JavaScript exports or Android fixture results.
+
+The installed iPhone's compact native date controls still show device-language Korean inside the English meetup form. The shared component already passes the reactive `appLocale` through the installed `@expo/ui` locale contract; its implementation forwards that value to SwiftUI's locale environment. Surrounding labels, city, initial question and action are English. This native-control locale discrepancy remains a runtime validation item; its cause and behavior in an updated binary are not established. No date, time or submitted content was changed to test it.
 
 ## Start deployment only after the owner says to deploy
 

@@ -17,7 +17,7 @@ test('Top 25 merges only visible recommendations before filtering and keeps the 
   const pick = { id: 'park', cityId: 'vancouver', title: '공원', label: '공개 장소', category: 'nature', latitude: 49.28, longitude: -123.12, reason: '선정 이유', sourceUrl: 'https://example.org/park', postIds: ['hidden-post'] };
   const exports = {};
   const item = { id: 'post:hidden-post', source: 'post', sourceId: 'hidden-post', cityId: 'vancouver', title: '비공개 제목', category: 'nature', label: '공개 위치', latitude: 49.28, longitude: -123.12, price: null, imageUri: 'private-image', post: { id: 'hidden-post', kind: 'story', author: { id: 'blocked-author' } } };
-  const context = { exports, catalogItems: [], current: { items: [item], limited: false }, city: { id: 'vancouver' }, now: Date.now(), filter: 'all', query: '', top25Only: true, days: [], hidden: () => true,
+  const context = { exports, catalogItems: [], current: { items: [item], limited: false }, city: { id: 'vancouver' }, now: Date.now(), selectedFilters: ['top25'], query: '', days: [], hidden: () => true,
     discoveryMatches, mergeCityTop25: (items, city) => mergeCityTop25(items, city, [pick]), discoveryEvent: () => null };
   vm.runInNewContext(compile(`export function run() { ${source.slice(start, end)} return { items, limited }; }`), context);
   const result = exports.run();
@@ -31,7 +31,7 @@ test('Top 25 merges only visible recommendations before filtering and keeps the 
   pick.category = 'nature';
   context.days = [];
   context.hidden = () => false;
-  context.top25Only = false;
+  context.selectedFilters = [];
   context.current.items = Array.from({ length: 500 }, (_, i) => ({ ...item, id: `post:${i}`, sourceId: String(i), post: { ...item.post, id: String(i) } }));
   const bounded = exports.run();
   assert.equal(bounded.items.length, 500);
@@ -53,25 +53,25 @@ test('changing accounts remounts the map and clears the previous private GPS cam
   assert.notEqual(exports.default().key, first);
 });
 
-function requests({ deferFirst = false, filter = 'used' } = {}) {
+function requests({ deferFirst = false, filter = 'used', includeEvents = filter === 'all' || filter === 'events' || filter === 'festival' } = {}) {
   const start = source.indexOf('    request.current?.abort();');
-  const end = source.indexOf('  }, [key, isAuthed, filter, city.id, search, viewerScope, daysKey]);', start);
+  const end = source.indexOf('  }, [key, isAuthed, filter, city.id, search, viewerScope, daysKey, includeEvents]);', start);
   assert.ok(start > 0 && end > start);
-  const calls = [], results = [], exports = {}, request = { current: null };
+  const calls = [], eventCalls = [], results = [], exports = {}, request = { current: null };
   let finishOld;
   vm.runInNewContext(compile(`export function run(previous) { ${source.slice(start, end)}\n}`), {
-    exports, request, tr, key: previous.key, AbortController, Promise, Map, Set, isAuthed: true, filter,
+    exports, request, tr, key: previous.key, AbortController, Promise, Map, Set, isAuthed: true, filter, includeEvents,
     city: { id: 'vancouver' }, search: '', viewerScope: 'viewer', daysKey: '', supabase: {}, morePending: { current: false },
     setResult: value => results.push(value), setPendingKey() {},
     EVENT_CITIES: { vancouver: 'Vancouver' }, discoveryEvent: event => ({ id: `event:${event.id}` }),
-    loadTicketmasterEvents: async query => { if (query.festival) throw new Error('offline'); return { events: [{ id: 'available' }], hasMore: false }; },
+    loadTicketmasterEvents: async query => { eventCalls.push(query); if (query.festival) throw new Error('offline'); return { events: [{ id: 'available' }], hasMore: false }; },
     loadDiscoveryPosts: (...args) => {
       calls.push(args);
       if (deferFirst && calls.length === 1) return new Promise(resolve => { finishOld = resolve; });
       return Promise.resolve({ items: [{ id: 'post:new' }], cursor: null, hasMore: false });
     },
   });
-  return { load: exports.run, calls, results, request, finish: () => finishOld({ items: [{ id: 'post:stale' }], cursor: null, hasMore: false }) };
+  return { load: exports.run, calls, eventCalls, results, request, finish: () => finishOld({ items: [{ id: 'post:stale' }], cursor: null, hasMore: false }) };
 }
 test('focus entry starts at page zero and cancels the request on blur', () => {
   const marker = '  useFocusEffect(useCallback(() => {';
@@ -128,4 +128,13 @@ test('a failed festival supplement keeps available results and reports the parti
 test('pagination retains a source warning until a full refresh retries it', async () => {
   const ui = requests(); ui.load({ ...previous, errors: ['게시물 위치를 불러오지 못했어요.'] }); await tick();
   assert.equal(ui.results.at(-1).errors.length, 1);
+});
+
+
+test('mixed place or trading selections fetch an unrestricted public post page without unselected event calls', async () => {
+  const ui = requests({ filter: 'all', includeEvents: false });
+  ui.load(null); await tick();
+  assert.equal(ui.calls[0][2], 'all');
+  assert.equal(ui.eventCalls.length, 0);
+  assert.deepEqual(Array.from(ui.results.at(-1).items, item => item.id), ['post:new']);
 });

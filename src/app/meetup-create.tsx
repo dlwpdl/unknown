@@ -183,7 +183,7 @@ function MeetupCreateForm() {
         {!!ticketmasterEventId && <ThemedText type="small" themeColor="textSecondary">{tr("모임 종료는 행사 시작 2시간 뒤로 임시 설정했어요. 실제 만날 시간과 종료 시간을 확인해 주세요.")}</ThemedText>}
         <ThemedText type="small" themeColor="textSecondary">{event.timezone}{" " + tr("· 기기 시간대 기준이에요. 활동 지역과 다른 시간대라면 기기 시간에 맞춰 선택해 주세요. 종료 후 신규 신청을 받지 않아요.")}</ThemedText>
       </>}
-      <View style={styles.field}><ThemedText type="smallBold">{tr("활동 지역")}</ThemedText><ThemedText>{meetupCity?.name ?? city.name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("지역을 바꾸려면 모임 화면에서 지역을 선택해 주세요.")}</ThemedText></View>
+      <View style={styles.field}><ThemedText type="smallBold">{tr("활동 지역")}</ThemedText><ThemedText>{tr(meetupCity?.name ?? city.name)}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("지역을 바꾸려면 모임 화면에서 지역을 선택해 주세요.")}</ThemedText></View>
       <View style={styles.field}><ThemedText type="smallBold">{tr("정원 (호스트 포함)")}</ThemedText><TextInput accessibilityLabel={tr("정원, 2명부터 50명")} keyboardType="number-pad" value={capacity} onChangeText={setCapacity} editable={!saving && eventReady} maxLength={2} style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.card }]} /></View>
       <ThemedText accessibilityRole="header" type="subtitle" style={styles.sectionTitle}>{tr("신청 설정")}</ThemedText>
       <View style={styles.field}>

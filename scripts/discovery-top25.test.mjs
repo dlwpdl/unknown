@@ -33,12 +33,12 @@ test('city scoping and listing/event separation prevent false merges', () => {
   assert.equal(merge([post('p1', { cityId: 'toronto' })], 'vancouver', [pick]).length, 1);
   assert.equal(merge([post('p1')], 'toronto', [pick]).length, 0);
 });
-test('Top 25 filter intersects category and search; hashtags cannot award membership', () => {
+test('legacy Top25-only calls retain query restrictions and hashtags cannot award membership', () => {
   const [item] = merge([], 'vancouver', [pick]);
-  assert.equal(discovery.discoveryMatches(item, 'places', 'café', true), true);
+  assert.equal(discovery.discoveryMatches(item, 'cafe', 'café', true), true);
   assert.equal(discovery.discoveryMatches(item, 'housing', '', true), false);
-  assert.equal(discovery.discoveryMatches(post('unverified', { hashtags: ['카페', 'TOP25'] }), 'places', '', true), false);
-  assert.equal(discovery.discoveryMatches(post('unverified'), 'places', '', false), true);
+  assert.equal(discovery.discoveryMatches(post('unverified', { hashtags: ['카페', 'TOP25'] }), 'cafe', '', true), false);
+  assert.equal(discovery.discoveryMatches(post('unverified'), 'cafe', '', false), true);
   assert.equal(discovery.discoveryMatches({ ...item, category: 'exhibition' }, 'places', '', true), true);
   assert.equal(discovery.discoveryMatches({ ...item, category: 'exhibition' }, 'events', '', true), false);
 });

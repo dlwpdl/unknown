@@ -22,7 +22,7 @@ test('existing catalog places retain their public coordinates, category and exac
     assert.equal(item.category, stored.category === 'food' ? 'dining' : stored.category === 'cafe' ? 'cafe' : 'place');
     assert.equal(item.place, stored);
     assert.equal(item.top25, undefined);
-    assert.equal(discovery.discoveryMatches(item, 'places', ''), true);
+    assert.equal(discovery.discoveryMatches(item, 'places', ''), stored.category === 'places');
     assert.equal(discovery.discoveryMatches(item, 'housing', ''), false);
     assert.equal(discovery.discoveryMatches(item, 'events', ''), false);
     assert.equal(discovery.discoveryMatches(item, 'all', stored.name), true);
@@ -49,7 +49,7 @@ test('the combined screen includes its current-city catalog while backend rows a
   const start = mapSource.indexOf('  const publicItems = '), end = mapSource.indexOf('  const pins = ', start);
   const exports = {};
   vm.runInNewContext(compile(`exports.run = () => { ${mapSource.slice(start, end)} return items; };`), {
-    exports, current: null, catalogItems: [discovery.discoveryPlace(place)], city: { id: place.cityId }, now: Date.now(), filter: 'places', query: '', top25Only: false, days: [],
+    exports, current: null, catalogItems: [discovery.discoveryPlace(place)], city: { id: place.cityId }, now: Date.now(), selectedFilters: [], query: '', days: [],
     hidden: () => false, discoveryEvent: () => null, mergeCityTop25: discovery.mergeCityTop25, discoveryMatches: discovery.discoveryMatches,
   });
   assert.equal(exports.run().length, 1);
