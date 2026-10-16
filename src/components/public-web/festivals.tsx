@@ -113,10 +113,14 @@ export function PublicFestivals({ cityId, cityName }: { cityId: string; cityName
               </div>
               {events.length > 1 && <div className="reader-festival-controls">
                 <span aria-live={rotating ? 'off' : 'polite'} aria-atomic="true">{index % events.length + 1} / {events.length}</span>
-                <button className="reader-festival-arrow reader-festival-previous" type="button" aria-label="이전 페스티벌" onClick={() => move(-1)}><span aria-hidden="true">‹</span></button>
+                <button className="reader-festival-arrow reader-festival-previous" type="button" aria-label="이전 페스티벌" onClick={() => move(-1)}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="m15 6-6 6 6 6" /></svg>
+                </button>
                 <button className="reader-festival-toggle" type="button" onClick={() => { play('selection'); setPlaying((value) => !value); }}
                   aria-label={playing ? '페스티벌 자동 넘김 일시정지' : '페스티벌 자동 넘김 시작'}>{playing ? '일시정지' : '자동 넘김'}</button>
-                <button className="reader-festival-arrow reader-festival-next" type="button" aria-label="다음 페스티벌" onClick={() => move(1)}><span aria-hidden="true">›</span></button>
+                <button className="reader-festival-arrow reader-festival-next" type="button" aria-label="다음 페스티벌" onClick={() => move(1)}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="m9 6 6 6-6 6" /></svg>
+                </button>
               </div>}
             </article>
             <p className="reader-festival-source">행사 정보: Ticketmaster · 일정과 판매 상태는 달라질 수 있어요.</p>
