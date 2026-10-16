@@ -7,6 +7,7 @@ import ts from 'typescript';
 import { t } from '../src/i18n/ko.ts';
 import { loadNotifications } from '../src/lib/community-data.ts';
 import * as preferences from '../src/lib/notification-preferences.ts';
+import * as product from '../src/lib/product-analytics.ts';
 
 test('inbox loads optional event titles while remaining compatible with databases without the new column', async () => {
   for (const title of [undefined, 'Jazz in the Park']) {
@@ -26,15 +27,17 @@ test('the actual inbox row shows event name and description, reads both and reta
   let state = 0; const routes = [], feedback = [], exports = {};
   const jsx = (type, props) => ({ type, props });
   const imports = {
-    react: { useState: value => [state++ === 0 ? { userId: 'member', rows: items } : typeof value === 'boolean' ? false : value, () => {}], useRef: current => ({ current }), useCallback: fn => fn },
+    react: { useLayoutEffect: fn => fn(), useState: value => [state++ === 0 ? { userId: 'member', rows: items } : typeof value === 'boolean' ? false : value, () => {}], useRef: current => ({ current }), useCallback: fn => fn },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'expo-router': { useFocusEffect() {}, useRouter: () => ({ push: route => routes.push(route) }) },
-    'react-native': new Proxy({ StyleSheet: { create: value => value } }, { get: (value, key) => value[key] ?? key }),
+    'react-native': new Proxy({ StyleSheet: { create: value => value }, Platform: { OS: 'ios' } }, { get: (value, key) => value[key] ?? key }),
     'react-native-reanimated': { useReducedMotion: () => true },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, isAdmin: false, isAuthLoading: false, me: { id: 'member' } }) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: event => feedback.push(event) }) },
     '@/lib/notification-preferences': preferences,
+    '@/lib/product-analytics': product,
+    '@/lib/supabase': { supabase: { rpc: async () => ({ data: false, error: null }) } },
     '@/constants/theme': { Depth: {}, Spacing: {}, MaxContentWidth: 920, TabBarHeight: 80 },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/i18n/ko': { t },
     '@/lib/feed-data': { relativeTime: () => '방금' },

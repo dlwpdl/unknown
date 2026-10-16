@@ -2,12 +2,13 @@ import { tr } from '@/i18n';
 import { useRootNavigationState, useRouter } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { useEffect } from 'react';
-import { Alert, AppState, DeviceEventEmitter, Linking } from 'react-native';
+import { Alert, AppState, DeviceEventEmitter, Linking, Platform } from 'react-native';
 
 import { useAuth } from '@/lib/auth';
 import { markNotificationsRead } from '@/lib/community-data';
 import { adminDashboardUrl, loadNotificationPreferences, NOTIFICATION_PREFERENCES_CHANGED, notificationRoute, type NotificationCategory, type NotificationPreferences } from '@/lib/notification-preferences';
 import { pushConfigured, pushSupported, registerPushDevice } from '@/lib/push-notifications';
+import { recordProductEvent } from '@/lib/product-analytics';
 import { supabase } from '@/lib/supabase';
 
 export function NotificationObserver() {
@@ -43,16 +44,18 @@ export function NotificationObserver() {
     } });
     const open = (response: Notifications.NotificationResponse) => {
       const data = response.notification.request.content.data ?? {};
-      if (!active || data.userId !== userId || opened === response.notification.request.identifier) return;
+      if (!active || response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER || data.userId !== userId || opened === response.notification.request.identifier) return;
       opened = response.notification.request.identifier;
+      const notificationId = typeof data.notificationId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.notificationId) ? data.notificationId : null;
+      if (notificationId) void recordProductEvent(supabase, { kind: 'notification_push_open', targetId: notificationId, platform: Platform.OS }).catch(() => {});
       const dashboard = adminDashboardUrl(data.route, isAdmin);
       if (dashboard) void Linking.openURL(dashboard).catch(() => Alert.alert(tr("관리자 대시보드를 열지 못했어요"), tr("Tailscale 연결과 Mac의 관리자 서버를 확인해 주세요.")));
       else {
         const route = notificationRoute(data.route);
         router.navigate((route?.startsWith('/admin') ? '/notifications' : route ?? '/notifications') as never);
       }
-      if (typeof data.notificationId === 'string' && /^[0-9a-f-]{36}$/i.test(data.notificationId)) {
-        void markNotificationsRead(supabase, [data.notificationId]).catch(() => {});
+      if (notificationId) {
+        void markNotificationsRead(supabase, [notificationId]).catch(() => {});
       }
       void Notifications.clearLastNotificationResponseAsync().catch(() => {});
     };

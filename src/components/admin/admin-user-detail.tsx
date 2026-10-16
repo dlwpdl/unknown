@@ -6,7 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { AdminUserReview } from '@/components/admin/admin-user-review';
 import { Colors, Spacing } from '@/constants/theme';
 import { reportReasonLabel, reportStatusLabel, reportTargetLabel } from '@/lib/admin';
-import { displayName, shortId } from '@/lib/admin-labels';
+import { displayName } from '@/lib/admin-labels';
 import {
   getLocalAdminUserActivity,
   type AdminDashboardData,
@@ -39,8 +39,8 @@ export function AdminUserDetail({
         <View nativeID="gling-admin-detail" style={styles.sheet} accessibilityViewIsModal accessibilityLabel="사용자 전체 활동">
           <View style={[styles.header, compact && styles.headerCompact]}>
             <View style={{ flex: 1, minWidth: 0 }}>
-              <ThemedText accessibilityRole="header" style={styles.title}>회원 상세 · 활동</ThemedText>
-              <ThemedText type="small" numberOfLines={1} style={styles.muted}>{userId}</ThemedText>
+              <ThemedText accessibilityRole="header" style={styles.title}>회원 활동</ThemedText>
+              <ThemedText type="small" style={styles.muted}>계정 상태와 저장된 활동</ThemedText>
             </View>
             <Pressable onPress={() => { play('selection'); onClose(); }} accessibilityRole="button" accessibilityLabel="사용자 상세 닫기" style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
               <ThemedText type="smallBold">닫기</ThemedText>
@@ -90,10 +90,10 @@ function ActivityContent({
         {activity.posts.map((post) => <ActivityRow key={post.id} title={post.title} body={post.body} meta={`${post.status === 'removed' ? '삭제됨' : '게시중'} · ${formatDate(post.created_at)}`} />)}
       </ActivityGroup>
       <ActivityGroup title="댓글" empty={activity.comments.length === 0}>
-        {activity.comments.map((comment) => <ActivityRow key={comment.id} title={`게시글 ${shortId(comment.post_id)}`} body={comment.body} meta={`${comment.deleted_at ? '삭제됨' : '게시중'} · ${formatDate(comment.created_at)}`} />)}
+        {activity.comments.map((comment) => <ActivityRow key={comment.id} title="댓글" body={comment.body} meta={`${comment.deleted_at ? '삭제됨' : '게시중'} · ${formatDate(comment.created_at)}`} />)}
       </ActivityGroup>
       <ActivityGroup title="대화 내용" empty={activity.messages.length === 0}>
-        {activity.messages.map((message) => <ActivityRow key={message.id} title={displayName(profiles.get(message.sender_id), message.sender_id)} body={message.body} meta={`대화 ${shortId(message.conversation_id)} · ${formatDate(message.created_at)}`} />)}
+        {activity.messages.map((message) => <ActivityRow key={message.id} title={displayName(profiles.get(message.sender_id), message.sender_id)} body={message.body} meta={formatDate(message.created_at)} />)}
       </ActivityGroup>
       <ActivityGroup title="신고 이력" empty={activity.reports.length === 0}>
         {activity.reports.map((report) => <ActivityRow key={report.id} title={`${reportReasonLabel(report.reason_code)} · ${reportStatusLabel(report.status)}`} body={report.details || '상세 설명 없음'} meta={`${reportTargetLabel(report.target_type)} · ${formatDate(report.created_at)}`} />)}
@@ -117,10 +117,10 @@ function formatDate(value: string) { return new Intl.DateTimeFormat('ko-KR', { d
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, alignItems: 'flex-end', backgroundColor: 'rgba(24, 26, 29, 0.35)' },
-  sheet: { width: 720, maxWidth: '100%', height: '100%', backgroundColor: Colors.admin.background, borderLeftWidth: 1, borderLeftColor: Colors.admin.line },
-  header: { minHeight: 76, paddingHorizontal: Spacing.four, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three, borderBottomWidth: 1, borderBottomColor: Colors.admin.line, backgroundColor: Colors.admin.card },
-  headerCompact: { paddingHorizontal: Spacing.three }, title: { fontSize: 17, lineHeight: 24, fontWeight: 600 },
-  close: { minHeight: 44, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.background },
+  sheet: { width: 800, maxWidth: '100%', height: '100%', backgroundColor: Colors.admin.card, borderLeftWidth: 1, borderLeftColor: Colors.admin.line },
+  header: { minHeight: 88, paddingHorizontal: Spacing.four, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three, borderBottomWidth: 1, borderBottomColor: Colors.admin.line, backgroundColor: Colors.admin.card },
+  headerCompact: { paddingHorizontal: Spacing.three }, title: { fontSize: 20, lineHeight: 28, fontWeight: 600 },
+  close: { minHeight: 44, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 10, backgroundColor: Colors.admin.card },
   pressed: { opacity: 0.65 },
   body: { padding: Spacing.four, gap: Spacing.four, paddingBottom: Spacing.six },
   bodyCompact: { padding: Spacing.three, paddingBottom: Spacing.six },

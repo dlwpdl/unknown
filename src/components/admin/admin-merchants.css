@@ -17,6 +17,12 @@
 .merchant-ai { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:0 0 20px; margin-bottom:20px; border-bottom:1px solid var(--admin-line); }
 .merchant-ai small { color:var(--admin-muted); }
 .merchant-directory { min-width:0; }
+.merchant-directory-toolbar { display:flex; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:16px; }
+.merchant-directory-toolbar .merchant-search { flex:1 1 280px; margin:0; }
+.merchant-directory-toolbar label.admin-select { flex-direction:row; margin:0; min-height:44px; gap:8px; font-weight:400; }
+.merchant-directory-toolbar .admin-select select { width:auto; min-height:42px; padding:0; border:0; background:transparent; }
+.merchant-directory-toolbar .admin-filter-shell { flex:0 0 auto; margin:0; }
+.merchant-directory-toolbar .admin-filter-panel { box-sizing:border-box; min-width:0; }
 .merchant-search { display:flex; gap:8px; max-width:480px; margin-bottom:16px; }
 .merchant-search input { width:0; flex:1; min-width:0; }
 .merchant-search button { flex-shrink:0; white-space:nowrap; }
@@ -24,24 +30,32 @@
 .merchant-directory-table { width:100%; min-width:1280px; table-layout:fixed; border-collapse:collapse; text-align:left; font-size:13px; }
 .merchant-table-caption { text-align:left; padding:10px 12px; color:var(--admin-muted); background:var(--admin-paper); border-bottom:1px solid var(--admin-line); }
 .merchant-directory-table thead th { background:var(--admin-subtle); color:var(--admin-muted); font-weight:500; padding:8px 12px; }
-.merchant-directory-table :is(th,td) { border-bottom:1px solid var(--admin-line); padding:4px 12px; }
+.merchant-directory-table :is(th,td) { box-sizing:border-box; border-bottom:1px solid var(--admin-line); padding:4px 12px; }
 .merchant-directory-table tbody tr:last-child :is(th,td) { border-bottom:0; }
 .merchant-directory-table thead th:first-child { width:52px; }
-.merchant-directory-table thead th:nth-child(2) { width:20%; }
-.merchant-directory-table thead th:nth-child(3) { width:12%; }
-.merchant-directory-table thead th:nth-child(4) { width:12%; }
-.merchant-directory-table thead th:nth-child(5) { width:18%; }
-.merchant-directory-table thead th:nth-child(6) { width:10%; }
-.merchant-directory-table thead th:nth-child(7) { width:8%; }
-.merchant-directory-table thead th:nth-child(8),.merchant-directory-table thead th:nth-child(9) { width:44px; text-align:right; }
-.merchant-directory-table thead th:last-child { width:140px; }
-.merchant-directory-table tbody tr { cursor:pointer; }
+.merchant-directory-table thead th:nth-child(2) { width:216px; }
+.merchant-directory-table thead th:nth-child(3) { width:160px; }
+.merchant-directory-table thead th:nth-child(4) { width:100px; }
+.merchant-directory-table thead th:nth-child(5) { width:124px; }
+.merchant-directory-table thead th:nth-child(6) { width:120px; }
+.merchant-directory-table thead th:nth-child(7),.merchant-directory-table thead th:nth-child(8) { width:88px; }
+.merchant-directory-table thead th:nth-child(9),.merchant-directory-table thead th:nth-child(10) { width:48px; text-align:right; }
+.merchant-directory-table thead th:last-child { width:128px; }
+.merchant-directory-table tbody tr { cursor:pointer; height:64px; }
+.merchant-directory-table tbody :is(th,td) { vertical-align:middle; white-space:nowrap; }
 .merchant-directory-table tbody tr:is(:hover,[data-selected="true"],[data-checked="true"]) { background:var(--admin-subtle); }
 .merchant-directory-table tbody button { display:flex; flex-direction:column; justify-content:center; align-items:flex-start; width:100%; padding:2px 0; gap:0; border:0; border-radius:4px; text-align:left; background:transparent; }
 .merchant-directory-table tbody button[aria-pressed="true"] { background:transparent; }
 .merchant-directory-table strong { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; line-height:20px; }
-.merchant-directory-table small { color:var(--admin-muted); font-size:11px; font-weight:400; line-height:16px; }
-.merchant-contact span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.merchant-directory-table small { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--admin-muted); font-size:11px; font-weight:400; line-height:16px; }
+.merchant-contact > span { color:var(--admin-muted); }
+.merchant-directory-table .merchant-contact-link { display:flex; width:100%; white-space:nowrap; overflow:hidden; }
+.merchant-directory-table .merchant-contact-link > span:first-child { overflow:hidden; text-overflow:ellipsis; }
+.merchant-directory-table .merchant-contact-link > span:last-child { flex-shrink:0; }
+.merchant-registered { color:var(--admin-muted); font-size:12px; font-variant-numeric:tabular-nums; }
+.merchant-contact-link { display:inline-flex; align-items:center; gap:4px; min-height:44px; max-width:100%; color:var(--admin-accent); text-decoration:underline; text-underline-offset:3px; overflow-wrap:anywhere; }
+.merchant-contact-link:hover { text-decoration-thickness:2px; }
+.merchant-contact-link:focus-visible { outline:2px solid var(--admin-accent); outline-offset:3px; border-radius:4px; }
 .merchant-location span,.merchant-account span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .merchant-location small,.merchant-account small { display:block; }
 .merchant-account { color:var(--admin-muted); }
@@ -119,7 +133,7 @@
   .merchant-directory-table,.merchant-directory-table tbody { display:block; min-width:0; width:100%; }
   .merchant-table-caption { display:block; box-sizing:border-box; width:100%; }
   .merchant-directory-table thead { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
-  .merchant-directory-table tbody tr { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 16px; padding:16px; border-bottom:1px solid var(--admin-line); }
+  .merchant-directory-table tbody tr { display:grid; height:auto; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 16px; padding:16px; border-bottom:1px solid var(--admin-line); }
   .merchant-directory-table tbody tr:last-child { border-bottom:0; }
   .merchant-directory-table tbody :is(th,td) { padding:0; height:auto; min-width:0; border:0; background:transparent; text-align:left; }
   .merchant-directory-table tbody th { grid-column:1 / -1; grid-row:1; width:auto; padding-right:52px; }

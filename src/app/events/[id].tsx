@@ -1,7 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
 import { tr } from '@/i18n';
 import { GlingLoader } from '@/components/gling-loader';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { LayoutAnimation, Linking, Platform, StyleSheet, UIManager, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -20,6 +20,8 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { eventVideo } from '@/lib/event-videos';
 import { useCommunityCity } from '@/lib/community-city';
 import { useAuth } from '@/lib/auth';
+import { recordProductEvent } from '@/lib/product-analytics';
+import { supabase } from '@/lib/supabase';
 import { CITIES } from '@/lib/mock';
 import { eventNotice, eventPriceLabel, eventTime, loadTicketmasterEvent, meetupAllowed, recordTicketmasterEventClick, type TicketmasterEvent } from '@/lib/ticketmaster';
 
@@ -28,7 +30,10 @@ export default function EventDetailScreen() {
   const { id, cityId } = useLocalSearchParams<{ id: string; cityId: string }>();
   const theme = useTheme(), router = useRouter();
   const { setCity } = useCommunityCity();
-  const { isAuthed, promptLogin } = useAuth();
+  const { isAuthed, me, promptLogin } = useAuth();
+  const userId = isAuthed ? me.id : null;
+  const identity = useRef(userId);
+  useLayoutEffect(() => { identity.current = userId; return () => { identity.current = null; }; }, [userId]);
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
   const isFocused = useIsFocused();
@@ -57,8 +62,17 @@ export default function EventDetailScreen() {
     return () => { active = false; };
   }, [cityId, id, requestKey, reducedMotion]);
   useEffect(() => {
-    if (isAuthed && isFocused && event?.id) void recordTicketmasterEventClick(cityId, event.id).catch(() => {});
-  }, [cityId, event?.id, isAuthed, isFocused]);
+    if (userId && isFocused && event?.id) {
+      void recordTicketmasterEventClick(cityId, event.id).catch(() => {});
+      void recordProductEvent(supabase, { kind: 'event_view', targetId: event.id, cityId, platform: Platform.OS }).catch(() => {});
+    }
+  }, [cityId, event?.id, userId, isFocused]);
+  const openTicket = () => {
+    play('selection'); setLinkError('');
+    if (event?.ticketUrl) void Linking.openURL(event.ticketUrl).then(() => {
+      if (userId && identity.current === userId) void recordProductEvent(supabase, { kind: 'event_website', targetId: event.id, cityId, platform: Platform.OS }).catch(() => {});
+    }, () => setLinkError('티켓 페이지를 열지 못했어요. 다시 시도해 주세요.'));
+  };
   const create = () => {
     play('selection');
     const city = CITIES.find(item => item.id === cityId && item.state === 'open');
@@ -92,7 +106,7 @@ export default function EventDetailScreen() {
         <View style={styles.description}><ThemedText type="smallBold" accessibilityRole="header">{tr("행사 소개")}</ThemedText><ThemedText type="small" themeColor="textSecondary" numberOfLines={3}>{event.description || tr("자세한 소개는 티켓에서 확인해 주세요.")}</ThemedText></View>
         <Pressable analyticsId="ticketmaster.meetup.find" accessibilityRole="button" accessibilityState={{ disabled: !meetupAllowed(event) }} disabled={!meetupAllowed(event)} onPress={findMeetups} style={({ pressed }) => [styles.button, Depth.control, { borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card, opacity: !meetupAllowed(event) ? 0.4 : 1, }]}><ThemedText type="smallBold">{tr("함께 갈 모임 찾기")}</ThemedText></Pressable>
         <RaisedActionButton analyticsId="ticketmaster.meetup.create" label={tr("함께 갈 모임 만들기")} disabled={!meetupAllowed(event)} onPress={create} />
-        <Pressable analyticsId="ticketmaster.purchase" accessibilityRole="link" accessibilityState={{ disabled: !event.ticketUrl }} disabled={!event.ticketUrl} onPress={() => { play('selection'); setLinkError(''); if (event.ticketUrl) void Linking.openURL(event.ticketUrl).catch(() => setLinkError('티켓 페이지를 열지 못했어요. 다시 시도해 주세요.')); }} style={({ pressed }) => [styles.button, Depth.control, { borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card, opacity: !event.ticketUrl ? 0.4 : 1, }]}><ThemedText type="smallBold">{tr("티켓 확인하기")}</ThemedText></Pressable>
+        <Pressable analyticsId="ticketmaster.purchase" accessibilityRole="link" accessibilityState={{ disabled: !event.ticketUrl }} disabled={!event.ticketUrl} onPress={openTicket} style={({ pressed }) => [styles.button, Depth.control, { borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card, opacity: !event.ticketUrl ? 0.4 : 1, }]}><ThemedText type="smallBold">{tr("티켓 확인하기")}</ThemedText></Pressable>
         {!!linkError && <ThemedText accessibilityRole="alert" themeColor="accent">{linkError}</ThemedText>}
       </>}
     </ScrollView>

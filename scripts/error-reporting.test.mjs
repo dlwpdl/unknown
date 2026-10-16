@@ -3,12 +3,14 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
+import * as product from '../src/lib/product-analytics.ts';
 
 // 모듈이 @/ 별칭과 expo/react-native 를 쓰므로 sandbox 에서 대체물을 끼워 넣는다.
-function loadModule(calls, platform = 'ios') {
+function loadModule(calls, platform = 'ios', options = {}) {
   const source = readFileSync(new URL('../src/lib/error-reporting.ts', import.meta.url), 'utf8');
   const js = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const handlers = {};
+  const productCalls = [];
   const box = { exports: {} };
   const sandbox = {
     exports: box.exports, module: box, globalThis: {
@@ -19,15 +21,20 @@ function loadModule(calls, platform = 'ios') {
     },
     require: (name) => {
       if (name === 'expo-constants') return { __esModule: true, default: { expoConfig: { version: '1.0.1', ios: { buildNumber: '23' } } } };
+      if (name === 'expo-application') return { nativeApplicationVersion: '1.2.2', nativeBuildVersion: '64', ...options.application };
       if (name === 'react-native') return { Platform: { OS: platform, Version: '26.5', select: (map) => map[platform] } };
-      if (name === '@/lib/supabase') return { supabase: { rpc: (fn, args) => { calls.push([fn, args]); return Promise.resolve({ error: null }); } } };
+      if (name === '@/lib/product-analytics') return product;
+      if (name === '@/lib/supabase') return { supabase: { rpc: (fn, args) => {
+        (fn === 'record_product_event' ? productCalls : calls).push([fn, JSON.parse(JSON.stringify(args))]);
+        return options.reject ? Promise.reject(new Error('offline')) : Promise.resolve({ error: options.error ?? null });
+      } } };
       throw new Error(`unexpected import ${name}`);
     },
   };
   sandbox.globalThis.globalThis = sandbox.globalThis;
   vm.createContext(sandbox);
   vm.runInContext(js, sandbox);
-  return { module: box.exports, handlers };
+  return { module: box.exports, handlers, productCalls };
 }
 
 test('오류를 앱 버전과 화면과 함께 보낸다', () => {
@@ -40,7 +47,7 @@ test('오류를 앱 버전과 화면과 함께 보낸다', () => {
   assert.equal(args.p_message, 'boom');
   assert.equal(args.p_screen, 'feed');
   assert.equal(args.p_platform, 'ios');
-  assert.equal(args.p_app_version, '1.0.1(23)');
+  assert.equal(args.p_app_version, '1.2.2(64)');
 });
 
 test('같은 오류가 반복돼도 한 번만 보낸다', () => {
@@ -76,4 +83,32 @@ test('전역 처리기를 감싸되 원래 처리기를 계속 부른다', () =>
   handlers.installed(new Error('fatal'), true);
   assert.equal(calls.length, 1, '보고한다');
   assert.ok(passedThrough, '개발 중 빨간 화면이 그대로 떠야 한다');
+});
+
+test('accepted reports add only a bounded client_error event, preserving deduplication and the cap', () => {
+  const calls = [], { module, productCalls } = loadModule(calls);
+  const error = new Error('private message with email and file paths');
+  module.reportError(error, 'private-screen'); module.reportError(error, 'private-screen'); module.reportError(new Error(''));
+  assert.equal(calls.length, 1); assert.deepEqual(productCalls, [['record_product_event', {
+    p_kind: 'client_error', p_target_id: null, p_city_id: null, p_platform: 'ios',
+  }]]);
+  for (let i = 0; i < 100; i++) module.reportError(new Error(`error ${i}`));
+  assert.equal(productCalls.length, 20); assert.equal(calls.length, 20);
+});
+
+test('native labels use installed versions, unavailable native versions stay unknown, and web keeps its fallback', () => {
+  for (const [platform, application, expected] of [['android', {}, '1.2.2(64)'], ['ios', { nativeApplicationVersion: null, nativeBuildVersion: null }, 'unknown'], ['ios', { nativeApplicationVersion: null }, 'unknown'], ['web', {}, '1.0.1']]) {
+    const calls = [], { module } = loadModule(calls, platform, { application }); module.reportError(new Error('boom'));
+    assert.equal(calls[0][1].p_app_version, expected);
+  }
+});
+
+test('both telemetry failures stay best effort and the original global error handler still runs', async () => {
+  for (const options of [{ reject: true }, { error: new Error('offline') }]) {
+    const calls = [], { module, handlers, productCalls } = loadModule(calls, 'ios', options); let previous = 0;
+    handlers.previous = () => { previous++; }; module.installErrorReporting(); module.installErrorReporting();
+    assert.doesNotThrow(() => handlers.installed(new Error('failure'), true));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(previous, 1); assert.equal(calls.length, 1); assert.equal(productCalls.length, 1);
+  }
 });

@@ -11,6 +11,7 @@ import { googleMapsPin, googleMapsUrl, postMapBody } from '../src/lib/post-maps.
 import { visibleTranslationSource } from '../src/lib/translation-source.ts';
 import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
 import * as postLinks from '../supabase/functions/_shared/post-links.ts';
+import * as product from '../src/lib/product-analytics.ts';
 
 // Native image events and React state are supplied here; sizing/rendering runs the real components.
 function cardRenderer(component = 'PostCard') {
@@ -25,6 +26,7 @@ function cardRenderer(component = 'PostCard') {
     useCallback: (callback) => callback,
     useMemo: (callback) => callback(),
     useEffect: () => {},
+    useLayoutEffect: () => {},
     useRef: (value) => ({ current: value }),
     useState(initial) {
       const index = cursor++;
@@ -73,7 +75,8 @@ function cardRenderer(component = 'PostCard') {
     '@/lib/post-maps': { googleMapsPin, googleMapsUrl, postMapBody },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: (kind) => feedback.push(kind) }) },
     '@/lib/sharing': {},
-    '@/lib/supabase': {},
+    '@/lib/product-analytics': product,
+    '@/lib/supabase': { supabase: { rpc: async () => ({ error: null }) } },
   };
   const exports = {};
   const file = component === 'PostCard' ? 'post-card' : component === 'PostMapLink' ? 'post-map-link' : component === 'PostPhotoEditor' ? 'post-photo-editor' : 'post-photo-gallery';

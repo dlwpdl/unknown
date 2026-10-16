@@ -26,6 +26,7 @@ export function AdminSectionView({ section, data, onUser, onLoadMore, loadingMor
   onUser: (userId: string) => void;
   onResolve: (reportId: string | string[], action: 'dismissed' | 'warned' | 'blocked' | 'hidden', note: string) => Promise<string[]>;
   onLoadMore: () => void;
+  onSection?: (section: AdminSection) => void;
   localPreview?: boolean;
 }) {
   const { play } = useInteractionFeedback();

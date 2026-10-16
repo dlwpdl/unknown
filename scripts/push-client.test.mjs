@@ -5,6 +5,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as preferences from '../src/lib/notification-preferences.ts';
+import * as product from '../src/lib/product-analytics.ts';
 
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
@@ -68,6 +69,7 @@ test('an in-flight preference refresh cannot restore foreground push after optin
     },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: 'member' } }) },
     '@/lib/community-data': {},
+    '@/lib/product-analytics': product,
     '@/lib/notification-preferences': preferences,
     '@/lib/push-notifications': { pushSupported: true, pushConfigured: true, registerPushDevice: async () => { registrations++; } },
     '@/lib/supabase': { supabase: { rpc: () => new Promise(resolve => { resolveRead = resolve; }) } },

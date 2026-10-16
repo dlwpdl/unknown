@@ -24,6 +24,41 @@ export function safeMerchantSourceUrl(value: string): string | null {
   } catch { return null; }
 }
 
+export function merchantContactLinks(value: string): { text: string; href?: string }[] {
+  const parts: { text: string; href?: string }[] = [];
+  if (value.length > 1000 || /[\x00-\x1f\x7f]/.test(value)) return [{ text: value }];
+  const pattern = /https:\/\/[^\s<>"']+|(?:instagram|인스타(?:그램)?|ig|threads|스레드|tiktok|틱톡|youtube|유튜브)\s*[:：]?\s*@[a-z0-9_.-]+/gi;
+  let cursor = 0;
+  for (const match of value.matchAll(pattern)) {
+    const start = match.index!, text = match[0].replace(/[),.;，。]+$/u, '');
+    if (start && /[\p{L}\p{N}_@]/u.test(value[start - 1])) continue;
+    let target = text;
+    if (!/^https:\/\//i.test(text)) {
+      const [platform, handle] = text.split(/\s*[:：]?\s*@/);
+      const instagram = /^(instagram|ig|인스타|인스타그램)$/i.test(platform);
+      const threads = /^(threads|스레드)$/i.test(platform);
+      const tiktok = /^(tiktok|틱톡)$/i.test(platform);
+      if (!(instagram || threads ? /^[a-z0-9_.]{1,30}$/i : tiktok ? /^[a-z0-9_.]{1,24}$/i : /^[a-z0-9_.-]{3,30}$/i).test(handle)) continue;
+      target = instagram ? `https://www.instagram.com/${handle}/` : threads ? `https://www.threads.com/@${handle}` : tiktok ? `https://www.tiktok.com/@${handle}` : `https://www.youtube.com/@${handle}`;
+    }
+    const href = safeMerchantSourceUrl(target);
+    if (!href) continue;
+    if (start > cursor) parts.push({ text: value.slice(cursor, start) });
+    parts.push({ text, href }); cursor = start + text.length;
+  }
+  if (cursor < value.length) parts.push({ text: value.slice(cursor) });
+  return parts;
+}
+
+export function merchantPrimaryContactLink(value: string): { text: string; href: string } | null {
+  const links = merchantContactLinks(value).filter((part): part is { text: string; href: string } => !!part.href);
+  const instagram = links.find((part) => /^(?:www\.|m\.)?instagram\.com$/i.test(new URL(part.href).hostname));
+  const link = instagram ?? links[0];
+  if (!link) return null;
+  const url = new URL(link.href), handle = url.pathname.split('/').filter(Boolean)[0];
+  return { href: link.href, text: instagram ? handle && !['p', 'reel', 'reels', 'stories', 'explore'].includes(handle) ? `@${handle}` : 'Instagram' : url.hostname.replace(/^www\./, '') };
+}
+
 // Correlation only; memory-only and never an authentication credential.
 const session = `merchant-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 export function merchantEventId() {
