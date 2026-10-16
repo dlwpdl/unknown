@@ -14,8 +14,8 @@ export async function loadDiscoveryPosts(client: SupabaseClient, cityId: string,
     const posts = await loadPublicFeed(client, cityId, filter === 'housing' ? 14 : filter === 'used' ? 19 : null,
       query.trim() || null, cursor, { viewerScope, signal });
     const last = posts.at(-1);
-    return { items: posts.map(post => discoveryPost(post)).filter(item => item !== null), hasMore: posts.length === 30,
-      cursor: last ? { createdAt: last.createdAt, sortAt: last.sortAt ?? last.createdAt, id: last.id } : null };
+    return { items: posts.map(post => discoveryPost(post)).filter(item => item !== null), hasMore: posts.length === 30 && !!last?.createdAt,
+      cursor: last?.createdAt ? { createdAt: last.createdAt, sortAt: last.sortAt ?? last.createdAt, id: last.id } : null };
   }
   if (error) throw error;
   const rows = (data ?? []) as PublicFeedRow[];
