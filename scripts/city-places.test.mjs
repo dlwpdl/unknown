@@ -35,7 +35,7 @@ function screen(file, params = { cityId: 'toronto' }, dev = true) {
   const exports = module(file, {
     react: { useState(v) { const i = cursor++; if (!(i in states)) states[i] = v; return [states[i], next => { states[i] = typeof next === 'function' ? next(states[i]) : next; }]; } },
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    'expo-router': { useRouter: () => ({ push: p => routes.push(p), back: () => routes.push('back') }), useLocalSearchParams: () => params },
+    'expo-router': { useRouter: () => ({ push: p => routes.push(p), canGoBack: () => true, back: () => routes.push('back') }), useLocalSearchParams: () => params },
     'react-native': { StyleSheet: { create: v => v }, View: 'View', TextInput: 'TextInput' },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     '@/lib/mock': { CITIES: cities },
