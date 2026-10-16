@@ -1,5 +1,5 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { DeviceEventEmitter, Platform } from 'react-native';
+import { AppState, DeviceEventEmitter, Platform } from 'react-native';
 
 type AdSDK = typeof import('react-native-google-mobile-ads');
 export const testAds = __DEV__ || process.env.EXPO_PUBLIC_ADS_MODE !== 'live';
@@ -8,9 +8,23 @@ export const adsSupported = Platform.OS !== 'web' && Constants.executionEnvironm
 export const feedAdPosition = (index: number) => index >= 5 && (index - 5) % 7 === 0;
 export const AD_PRIVACY_CHANGED = 'gling:ad-privacy-changed';
 let initialization: Promise<AdSDK | null> | null = null;
+let trackingPermission: Promise<boolean> | null = null;
 
-export function prepareAds(): Promise<AdSDK | null> {
-  if (!adsSupported) return Promise.resolve(null);
+async function trackingAllowed(): Promise<boolean> {
+  if (Platform.OS !== 'ios') return true;
+  if (AppState.currentState !== 'active') return false;
+  if (!trackingPermission) trackingPermission = (async () => {
+    const tracking = await import('expo-tracking-transparency');
+    if (!tracking.isAvailable()) return false;
+    let permission = await tracking.getTrackingPermissionsAsync();
+    if (permission.status === 'undetermined') permission = await tracking.requestTrackingPermissionsAsync();
+    return permission.granted;
+  })().catch(() => false).finally(() => { trackingPermission = null; });
+  return trackingPermission;
+}
+
+export async function prepareAds(): Promise<AdSDK | null> {
+  if (!adsSupported || !(await trackingAllowed())) return null;
   if (!initialization) initialization = (async () => {
     const sdk = await import('react-native-google-mobile-ads');
     // Test builds only request Google's demo units; live requests require UMP clearance.
@@ -26,7 +40,7 @@ export function prepareAds(): Promise<AdSDK | null> {
 }
 
 export async function showAdPrivacyOptions() {
-  if (!adsSupported || testAds) return false;
+  if (!adsSupported || testAds || !(await trackingAllowed())) return false;
   const sdk = await import('react-native-google-mobile-ads');
   const info = await sdk.AdsConsent.requestInfoUpdate();
   if (info.privacyOptionsRequirementStatus !== sdk.AdsConsentPrivacyOptionsRequirementStatus.REQUIRED) return false;

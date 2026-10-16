@@ -1,0 +1,5 @@
+{
+  "ios": {
+    "NSUserTrackingUsageDescription": "허용하면 Google AdMob이 기기 광고 식별자와 앱 활동을 다른 회사의 데이터와 연결해 광고 성과를 측정하고 부정 이용을 방지합니다. 거부해도 글링을 이용할 수 있습니다."
+  }
+}

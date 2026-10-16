@@ -1,6 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { useEffect, useState } from 'react';
-import { DeviceEventEmitter, Image, StyleSheet, Text, View } from 'react-native';
+import { AppState, DeviceEventEmitter, Image, StyleSheet, Text, View } from 'react-native';
 import type { NativeAd } from 'react-native-google-mobile-ads';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -12,8 +12,12 @@ export function FeedAd() {
   const [revision, setRevision] = useState(0);
   const [loaded, setLoaded] = useState<{ ad: NativeAd; sdk: NonNullable<Awaited<ReturnType<typeof prepareAds>>> } | null>(null);
   useEffect(() => {
-    const listener = DeviceEventEmitter.addListener(AD_PRIVACY_CHANGED, () => { setLoaded(null); setRevision(value => value + 1); });
-    return () => listener.remove();
+    const refresh = () => { setLoaded(null); setRevision(value => value + 1); };
+    const listener = DeviceEventEmitter.addListener(AD_PRIVACY_CHANGED, refresh);
+    const activity = AppState.addEventListener('change', state => {
+      if (state === 'active') refresh();
+    });
+    return () => { listener.remove(); activity.remove(); };
   }, []);
   useEffect(() => {
     let active = true, ad: NativeAd | null = null;
