@@ -128,3 +128,49 @@ test('spaces around protected values survive native translators that trim segmen
   const result = await api.requestContentTranslation('a', request(' \tHello @sam CA$25  '));
   assert.equal(result.body, ' \t번역 Hello @sam CA$25  ');
 });
+
+test('fast scrolling during a language-pack download waits for capacity instead of stranding the next visible card', async () => {
+  let releaseFirst, calls = 0;
+  const api = client({ async translate(texts) {
+    calls++;
+    if (calls === 1) await new Promise(resolve => { releaseFirst = resolve; });
+    return texts.map(text => 'Translated ' + text);
+  } });
+  for (let i = 0; i < 32; i++) {
+    const controller = new AbortController();
+    const stale = api.requestContentTranslation('viewer', request('Card ' + i), controller.signal);
+    const cancelled = assert.rejects(stale, /TRANSLATION_CANCELLED/);
+    await tick(); controller.abort(); await cancelled; await tick();
+  }
+  let failure;
+  const visible = Promise.all([
+    api.requestContentTranslation('viewer', request('Current visible card')),
+    api.requestContentTranslation('viewer', request('Current visible card')),
+  ]).catch(error => { failure = error; });
+  await tick();
+  releaseFirst();
+  const results = await visible;
+  assert.equal(failure, undefined, 'a full queue of cancelled cards must not fail the currently visible card');
+  assert.ok(results[0].body.includes('Current visible card'));
+  assert.deepEqual(plain(results[0]), plain(results[1]), 'waiting readers still share the same translation');
+  assert.equal(calls, 2, 'cancelled queued cards do not run native inference');
+});
+
+test('capacity waiters cancel on leaving the screen or changing accounts without starting native work', async () => {
+  let releaseFirst, calls = 0;
+  const api = client({ async translate(texts) {
+    calls++;
+    if (calls === 1) await new Promise(resolve => { releaseFirst = resolve; });
+    return texts.map(text => 'Translated ' + text);
+  } });
+  const queued = Promise.allSettled(Array.from({ length: 32 }, (_, index) => api.requestContentTranslation('old-account', request('Card ' + index))));
+  await tick();
+  const controller = new AbortController();
+  const leaving = assert.rejects(api.requestContentTranslation('old-account', request('Leaving card'), controller.signal), /TRANSLATION_CANCELLED/);
+  await tick(); controller.abort(); await leaving;
+  const accountChanged = assert.rejects(api.requestContentTranslation('old-account', request('Old account waiting card')), /TRANSLATION_CANCELLED/);
+  await tick(); api.resetContentTranslations(); releaseFirst();
+  await accountChanged;
+  assert.ok((await queued).every(result => result.status === 'rejected'));
+  assert.equal(calls, 1);
+});
