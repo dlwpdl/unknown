@@ -12,6 +12,7 @@ export type TicketmasterEvent = {
   status: string; timeUnconfirmed: boolean; venue: string; city: string; country: string;
   price: { min: number; max: number; currency: string } | null; description: string | null;
   segment?: string | null; genre?: string | null;
+  location?: { latitude: number; longitude: number } | null; endsAt?: string | null;
 };
 export function parseEventQuery(value: unknown): EventQuery {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('INVALID_INPUT');
@@ -97,8 +98,8 @@ type RawEvent = {
   id?: string; name?: string; url?: string; info?: string; images?: { url?: string; ratio?: string; width?: number }[];
   classifications?: { primary?: boolean; segment?: { name?: string }; genre?: { name?: string } }[];
   externalLinks?: { youtube?: { url?: string }[] };
-  dates?: { start?: { dateTime?: string; localDate?: string; localTime?: string; dateTBD?: boolean; dateTBA?: boolean; timeTBA?: boolean; noSpecificTime?: boolean }; timezone?: string; status?: { code?: string } };
-  _embedded?: { venues?: { name?: string; city?: { name?: string }; country?: { countryCode?: string }; timezone?: string }[]; attractions?: { externalLinks?: { youtube?: { url?: string }[] } }[] };
+  dates?: { start?: { dateTime?: string; localDate?: string; localTime?: string; dateTBD?: boolean; dateTBA?: boolean; timeTBA?: boolean; noSpecificTime?: boolean }; end?: { dateTime?: string }; timezone?: string; status?: { code?: string } };
+  _embedded?: { venues?: { name?: string; city?: { name?: string }; country?: { countryCode?: string }; timezone?: string; location?: { latitude?: string | number; longitude?: string | number } }[]; attractions?: { externalLinks?: { youtube?: { url?: string }[] } }[] };
   priceRanges?: { min?: number; max?: number; currency?: string }[];
 };
 export function normalizeEvent(value: unknown): TicketmasterEvent {
@@ -112,10 +113,15 @@ export function normalizeEvent(value: unknown): TicketmasterEvent {
   const categoryName = (value: unknown) => typeof value === 'string' && !/^(undefined|other)$/i.test(value.trim()) ? value.trim().slice(0, 100) || null : null;
   const image = raw.images?.filter(item => typeof item.url === 'string' && item.url.startsWith('https://')).sort((a, b) => (b.width ?? 0) - (a.width ?? 0))[0]?.url ?? null;
   const startsAt = start?.dateTime && Number.isFinite(Date.parse(start.dateTime)) ? start.dateTime : null;
+  const coordinate = (value: unknown) => typeof value === 'number' ? value : typeof value === 'string' && /^-?\d+(?:\.\d+)?$/.test(value.trim()) ? Number(value) : NaN;
+  const latitude = coordinate(venue?.location?.latitude), longitude = coordinate(venue?.location?.longitude);
+  const location = Number.isFinite(latitude) && Math.abs(latitude) <= 90 && Number.isFinite(longitude) && Math.abs(longitude) <= 180 ? { latitude, longitude } : null;
+  const endsAt = raw.dates?.end?.dateTime && Number.isFinite(Date.parse(raw.dates.end.dateTime))
+    && (!startsAt || Date.parse(raw.dates.end.dateTime) > Date.parse(startsAt)) ? raw.dates.end.dateTime : null;
   let timezone = raw.dates?.timezone ?? venue?.timezone ?? null;
   try { if (timezone) new Intl.DateTimeFormat('en', { timeZone: timezone }).format(); } catch { timezone = null; }
   return {
-    id: raw.id, name: raw.name.slice(0, 300), ticketUrl: safeTicketUrl(raw.url), image,
+    id: raw.id, name: raw.name.slice(0, 300), ticketUrl: safeTicketUrl(raw.url), image, location, endsAt,
     videoYoutubeId: [raw.externalLinks?.youtube, ...(raw._embedded?.attractions ?? []).map(item => item.externalLinks?.youtube)]
       .flatMap(links => Array.isArray(links) ? links : []).map(link => youtubeVideoId(link?.url)).find(Boolean) ?? null, startsAt,
     localDate: start?.localDate ?? null, localTime: start?.localTime ?? null, timezone,

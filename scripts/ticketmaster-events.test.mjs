@@ -17,6 +17,16 @@ test('normalization retains only official primary category and genre for factual
   }
 });
 const raw = { id: 'G5vYZabc', name: 'Live show', url: 'https://www.ticketmaster.ca/event/G5vYZabc?irgwc=1', dates: { start: { dateTime: '2027-01-02T04:00:00Z', localDate: '2027-01-01', localTime: '20:00:00' }, timezone: 'America/Vancouver', status: { code: 'onsale' } }, _embedded: { venues: [{ name: 'Arena', city: { name: 'Vancouver' }, country: { countryCode: 'CA' } }] } };
+test('venue coordinates and known end time survive normalization without inventing missing locations', () => {
+  const venue = raw._embedded.venues[0];
+  const event = normalizeEvent({ ...raw, dates: { ...raw.dates, end: { dateTime: '2027-01-02T07:00:00Z' } }, _embedded: { venues: [{ ...venue, location: { latitude: '49.28', longitude: '-123.12' } }] } });
+  assert.deepEqual(event.location, { latitude: 49.28, longitude: -123.12 });
+  assert.equal(event.endsAt, '2027-01-02T07:00:00Z');
+  assert.equal(normalizeEvent(raw).location, null);
+  for (const location of [{ latitude: '', longitude: '' }, { latitude: 'Infinity', longitude: '-123' }, { latitude: '91', longitude: '0' }]) {
+    assert.equal(normalizeEvent({ ...raw, _embedded: { venues: [{ ...venue, location }] } }).location, null);
+  }
+});
 test('bounded city/category/page validation keeps upstream requests controlled', () => {
   assert.deepEqual(parseEventQuery({ cityId: 'vancouver' }), { cityId: 'vancouver', category: 'all', page: 0 });
   assert.deepEqual(parseEventQuery({ cityId: 'vancouver', festival: true }), { cityId: 'vancouver', category: 'all', page: 0, festival: true });

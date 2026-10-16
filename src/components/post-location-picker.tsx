@@ -76,7 +76,7 @@ export function PostLocationPicker({ visible, initialPin, initialLabel = '', cit
           {pin ? <TextInput value={label} onChangeText={value => { revision.current++; setBusy(false); setLabel(value.replace(/[\u0000-\u001f\u007f]/g, ' ')); }} maxLength={100} accessibilityLabel={tr("첨부할 위치 이름")} placeholder={tr("선택한 위치")} placeholderTextColor={theme.textSecondary}
             onFocus={() => play('selection')} style={[styles.name, { color: theme.text, borderColor: theme.line }]} /> : <ThemedText type="smallBold">{tr("지도에서 위치를 선택해 주세요.")}</ThemedText>}
           {!pin && <ThemedText type="small" themeColor="textSecondary">{tr("가게를 누르거나, 원하는 지점으로 핀을 옮겨보세요.")}</ThemedText>}
-          {pin && <ThemedText type="small" themeColor="textSecondary">{tr("글을 게시하면 이 위치도 함께 공개돼요.")}</ThemedText>}
+          {pin && <ThemedText type="small" themeColor="textSecondary">{tr("글을 게시하면 글과 통합 지도에 이 위치가 공개돼요.")}</ThemedText>}
           {!!message && <ThemedText type="small" accessibilityRole="alert">{message}</ThemedText>}
           <Pressable analyticsId="post.location.confirm" accessibilityRole="button" disabled={!ready || !pin || busy} onPress={() => { if (!ready || !pin || busy) return; revision.current++; play('selection'); onConfirm(pin, label.trim() || '선택한 위치'); }}
             style={[styles.confirm, { backgroundColor: theme.accent, opacity: !ready || !pin || busy ? 0.5 : 1 }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr("이 위치 첨부")}</ThemedText></Pressable>
