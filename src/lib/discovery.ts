@@ -23,7 +23,7 @@ export const DISCOVERY_CATEGORIES = [
   { id: 'place', label: '장소', short: '장소', color: '#B6B9CC' },
 ] as const;
 export type DiscoveryCategory = typeof DISCOVERY_CATEGORIES[number]['id'];
-export type DiscoveryFilter = 'all' | 'housing' | 'used' | 'places' | 'events';
+export type DiscoveryFilter = 'all' | 'top25' | 'nightlife' | 'festival' | 'cafe' | 'dining' | 'places' | 'events' | 'housing' | 'used';
 export type DiscoveryDate = 'all' | 'today' | 'weekend' | 'date';
 export type DiscoveryItem = {
   id: string; source: 'post' | 'event' | 'place'; sourceId: string; cityId: string; title: string;
@@ -132,9 +132,11 @@ export function discoveryDays(filter: DiscoveryDate, cityId: string, date = '', 
   day.setUTCDate(day.getUTCDate() + 1);
   return [saturday, day.toISOString().slice(0, 10)];
 }
-export function discoveryMatches(item: DiscoveryItem, filter: DiscoveryFilter, query: string, top25Only = false) {
+export function discoveryMatches(item: DiscoveryItem, filters: DiscoveryFilter | readonly DiscoveryFilter[], query: string, top25Only = false) {
   const category = item.category;
-  return (!top25Only || !!item.top25) && (filter === 'all' || (filter === 'events' ? item.source !== 'place' && ['festival', 'exhibition', 'event'].includes(category)
-    : filter === 'places' ? item.source === 'place' || !['housing', 'used', 'festival', 'exhibition', 'event'].includes(category) : category === filter))
+  const selected = typeof filters === 'string' ? [filters] : filters;
+  return (!top25Only || !!item.top25) && (!selected.length || selected.some(filter => filter === 'all'
+    || (filter === 'top25' ? !!item.top25 : filter === 'events' ? item.source !== 'place' && ['festival', 'exhibition', 'event'].includes(category)
+      : filter === 'places' ? !['housing', 'used', 'festival', 'event', 'nightlife', 'cafe', 'dining'].includes(category) : category === filter)))
     && `${item.title} ${item.label} ${item.top25?.reason ?? ''} ${item.post?.body ?? ''} ${(item.post?.hashtags ?? []).join(' ')} ${DISCOVERY_CATEGORIES.find(value => value.id === category)?.label}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
 }

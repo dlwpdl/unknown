@@ -93,6 +93,8 @@ function renderedText(file, contains, scope) {
 }
 
 test('meetup city, capacity and slot copy preserves word spacing and uses slot units', () => {
+  assert.equal(renderedText('src/app/(tabs)/meetups.tsx', ['styles.cityText'], { city: { name: '밴쿠버' } }), 'in Vancouver');
+  assert.equal(renderedText('src/app/meetup-create.tsx', ['meetupCity?.name'], { meetupCity: { name: '밴쿠버' }, city: { name: '토론토' } }), 'Vancouver');
   assert.equal(renderedText('src/app/(tabs)/meetups.tsx', ['같이 갈 모임을 열어요'], { city: { name: '밴쿠버' } }), 'Find an event in Vancouver and host a meetup to go together ›');
   assert.equal(renderedText('src/app/(tabs)/meetups.tsx', ['slots.active', 'slots.available'], { slots: { active: 0, limit: 3, available: 3 } }), 'Concurrent meetup slots 0/3 used · 3 available');
   assert.equal(renderedText('src/components/my-meetups.tsx', ['meetup.room.memberCount'], { CITIES: [{ id: 'toronto', name: '토론토' }], meetup: { cityId: 'toronto', room: { memberCount: 1, capacity: 8 } } }), 'Toronto · 1/8 people');
