@@ -1,0 +1,5 @@
+{
+  "ios": {
+    "NSUserTrackingUsageDescription": "With your permission, Google AdMob uses this device's advertising identifier and app activity with other companies' data to measure ads and prevent ad fraud. You can use gling without allowing tracking."
+  }
+}

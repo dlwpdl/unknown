@@ -1965,6 +1965,7 @@ export const uiEnglish: Record<string, string> = {
   "도움말 및 정책": "Help and policies",
   "광고 개인정보 설정": "Ad privacy settings",
   "현재 지역에서 변경할 광고 동의 설정이 없습니다. 글링은 개인 맞춤 광고를 요청하지 않습니다.": "No ad consent settings are available to change in this region. gling does not request personalized ads.",
+  "변경할 Google 광고 동의 설정이 없거나, iPhone에서 추적을 허용하지 않은 상태입니다. 추적 허용은 기기의 설정 > 개인정보 보호 및 보안 > 추적에서 변경할 수 있습니다. 글링은 개인 맞춤 광고를 요청하지 않습니다.": "There are no Google ad consent settings to change, or tracking is not allowed on your iPhone. You can change tracking permission in your device's Settings > Privacy & Security > Tracking. gling does not request personalized ads.",
   "광고 설정을 열지 못했어요": "Could not open ad settings",
   "내 계정의 인증 상태": "My account verification",
   "현재 단계": "Current level",

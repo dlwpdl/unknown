@@ -6,7 +6,7 @@ import Constants from 'expo-constants';
 import { Redirect, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { Alert, Linking, StyleSheet, View } from 'react-native';
+import { Alert, Linking, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -202,7 +202,9 @@ export default function SettingsScreen() {
               <Pressable analyticsId="app_profile_settings.pressable.2" accessibilityRole="button" style={({ pressed }) => [styles.navRow, pressed && { backgroundColor: theme.backgroundSelected }]} onPress={() => {
                 play('selection');
                 void showAdPrivacyOptions().then((shown) => {
-                  if (!shown) Alert.alert(tr("광고 개인정보 설정"), tr("현재 지역에서 변경할 광고 동의 설정이 없습니다. 글링은 개인 맞춤 광고를 요청하지 않습니다."));
+                  if (!shown) Alert.alert(tr("광고 개인정보 설정"), tr(Platform.OS === 'ios'
+                    ? "변경할 Google 광고 동의 설정이 없거나, iPhone에서 추적을 허용하지 않은 상태입니다. 추적 허용은 기기의 설정 > 개인정보 보호 및 보안 > 추적에서 변경할 수 있습니다. 글링은 개인 맞춤 광고를 요청하지 않습니다."
+                    : "현재 지역에서 변경할 광고 동의 설정이 없습니다. 글링은 개인 맞춤 광고를 요청하지 않습니다."));
                 }).catch(() => Alert.alert(tr("광고 설정을 열지 못했어요"), tr("잠시 후 다시 시도해 주세요.")));
               }}><ThemedText type="smallBold" style={styles.navCopy}>{tr("광고 개인정보 설정")}</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText></Pressable>
             </>}

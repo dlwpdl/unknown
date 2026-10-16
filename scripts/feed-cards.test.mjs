@@ -172,6 +172,37 @@ test('city picker searches Canadian cities and keeps upcoming cities and the US 
   assert.equal(closed, 1);
 });
 
+test('returning from system settings or a permission sheet checks feed ad permission again', () => {
+  const listeners = {}, cleanups = [];
+  let cleared = 0, revision = 0, removed = 0;
+  const { FeedAd } = load('feed-ad', {
+    react: {
+      useState: initial => [initial, initial === 0 ? next => { revision = next(revision); } : next => { assert.equal(next, null); cleared++; }],
+      useEffect: effect => { cleanups.push(effect()); },
+    },
+    'react-native': {
+      AppState: { addEventListener: (_, handler) => { listeners.activity = handler; return { remove: () => { removed++; } }; } },
+      DeviceEventEmitter: { addListener: (_, handler) => { listeners.privacy = handler; return { remove: () => { removed++; } }; } },
+      StyleSheet: { create: value => value, hairlineWidth: 1 },
+    },
+    '@/lib/ads': { prepareAds: async () => null },
+  });
+  assert.equal(FeedAd(), null);
+  listeners.activity('inactive');
+  assert.equal(revision, 0);
+  listeners.activity('active');
+  assert.equal(revision, 1, 'ads deferred while another permission sheet was open must retry');
+  listeners.activity('background');
+  listeners.activity('inactive');
+  listeners.activity('active');
+  assert.equal(revision, 2);
+  assert.equal(cleared, 2);
+  listeners.privacy();
+  assert.equal(revision, 3);
+  for (const cleanup of cleanups) cleanup?.();
+  assert.equal(removed, 2);
+});
+
 test('native ads keep attribution and required assets inside an uninset native view', () => {
   const sdk = { NativeAdView: 'NativeAdView', NativeAsset: 'NativeAsset', NativeMediaView: 'NativeMediaView',
     NativeAssetType: { HEADLINE: 'headline', BODY: 'body', ICON: 'icon', ADVERTISER: 'advertiser', CALL_TO_ACTION: 'callToAction' } };
