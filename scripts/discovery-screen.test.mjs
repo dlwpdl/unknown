@@ -17,7 +17,7 @@ test('Top 25 merges only visible recommendations before filtering and keeps the 
   const pick = { id: 'park', cityId: 'vancouver', title: '공원', label: '공개 장소', category: 'nature', latitude: 49.28, longitude: -123.12, reason: '선정 이유', sourceUrl: 'https://example.org/park', postIds: ['hidden-post'] };
   const exports = {};
   const item = { id: 'post:hidden-post', source: 'post', sourceId: 'hidden-post', cityId: 'vancouver', title: '비공개 제목', category: 'nature', label: '공개 위치', latitude: 49.28, longitude: -123.12, price: null, imageUri: 'private-image', post: { id: 'hidden-post', kind: 'story', author: { id: 'blocked-author' } } };
-  const context = { exports, current: { items: [item], limited: false }, city: { id: 'vancouver' }, now: Date.now(), filter: 'all', query: '', top25Only: true, days: [], hidden: () => true,
+  const context = { exports, catalogItems: [], current: { items: [item], limited: false }, city: { id: 'vancouver' }, now: Date.now(), filter: 'all', query: '', top25Only: true, days: [], hidden: () => true,
     discoveryMatches, mergeCityTop25: (items, city) => mergeCityTop25(items, city, [pick]), discoveryEvent: () => null };
   vm.runInNewContext(compile(`export function run() { ${source.slice(start, end)} return { items, limited }; }`), context);
   const result = exports.run();

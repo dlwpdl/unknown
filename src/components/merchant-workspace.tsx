@@ -366,7 +366,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, initi
     if (busy) return;
     play('selection'); setSelection((ids) => ids.includes(draftId) ? ids.filter((x) => x !== draftId) : ids.length < 50 ? [...ids, draftId] : ids);
   }
-  if (!data) return <View style={styles.workspace}>{error ? <><ThemedText accessibilityRole="alert">{error}</ThemedText><Action label={tr("다시 불러오기")} onPress={() => { setError(''); setRevision((v) => v + 1); }} /></> : <GlingLoader accessibilityLabel={tr("업체 도구를 불러오는 중")} />}</View>;
+  if (!data) return <View style={styles.workspace}>{error ? <><ThemedText accessibilityRole="alert">{tr(error)}</ThemedText><Action label={tr("다시 불러오기")} onPress={() => { setError(''); setRevision((v) => v + 1); }} /></> : <GlingLoader accessibilityLabel={tr("업체 도구를 불러오는 중")} />}</View>;
   const fullAccess = data.can_manage_business ?? data.merchant.owner_id === me.id;
   const contentTab = ['posts','profile','drafts'].includes(tab);
   const activeTab = fullAccess || contentTab ? tab : 'posts';
@@ -423,7 +423,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, initi
     <ScrollView analyticsId="merchant.tabs" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.actions} accessibilityRole="tablist">
       {([['posts', tr("글·사진")], ['profile', tr("프로필")], ['reviews', tr("이용 후기")], ['drafts', tr("홍보글")], ['channels', tr("카페 연결")], ['cost', tr("원가 계산")], ['stock', tr("재고")], ['membership', tr("성과·멤버십")], ['accounts', tr("계정 관리")]] as const).filter(([key]) => fullAccess || ['posts','profile','drafts'].includes(key)).map(([key, label]) => <Action role="tab" key={key} label={label} selected={activeTab === key} disabled={busy} onPress={() => setTab(key)} />)}
     </ScrollView>
-    {error && <><ThemedText accessibilityRole="alert">{error}</ThemedText><Action label={tr("자료 새로 확인")} disabled={busy} onPress={() => { setError(''); setRevision((v) => v + 1); }} /></>}{notice && <ThemedText accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
+    {error && <><ThemedText accessibilityRole="alert">{tr(error)}</ThemedText><Action label={tr("자료 새로 확인")} disabled={busy} onPress={() => { setError(''); setRevision((v) => v + 1); }} /></>}{notice && <ThemedText accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
     {activeTab === 'posts' && <MerchantWebPosts merchantId={id} posts={data.posts} onChanged={() => setRevision(v => v + 1)} />}
     <View style={{ display: activeTab === 'profile' ? 'flex' : 'none' }}><MerchantProfileEditor merchantId={id} onDirty={setProfileDirty} /></View>
     {fullAccess && (activeTab === 'reviews' || replyDirty) && <View style={{ display: activeTab === 'reviews' ? 'flex' : 'none' }} accessibilityElementsHidden={activeTab !== 'reviews'} importantForAccessibility={activeTab !== 'reviews' ? 'no-hide-descendants' : 'auto'}>
@@ -450,7 +450,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, initi
         </View>{!canApprove && selection.length > 1 && <ThemedText type="small" themeColor="textSecondary">기본 이용에서는 한 건씩 승인할 수 있어요.</ThemedText>}</>}
       </Section>}
       <Section title={draftStep === 'idea' ? tr("어떤 소식을 알릴까요?") : draftStep === 'channels' ? tr("게시 전 확인") : published ? tr("게시한 원고") : tr("초안을 확인해 주세요")}>
-        {draftChanged && <ThemedText accessibilityRole="alert">{errorText(new Error('MERCHANT_DRAFT_CHANGED'))}</ThemedText>}
+        {draftChanged && <ThemedText accessibilityRole="alert">{tr(errorText(new Error('MERCHANT_DRAFT_CHANGED')))}</ThemedText>}
         {draftStep === 'idea' ? <>
           <ThemedText type="small" themeColor="textSecondary">{tr("가게 이름·도시와 이번 소식으로 초안을 만들어요.")}</ThemedText>
           <View style={styles.actions}>{draftPurposes.map((label) => <Action key={label} label={tr(label)} selected={purpose === label} disabled={busy} onPress={() => { setPurpose(label); setDirty(true); }} />)}</View>
@@ -514,7 +514,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, initi
     {activeTab === 'cost' && <Section title={tr("개당 원가 계산")}>
       <ThemedText type="small" themeColor="textSecondary">{tr("한 번 만드는 묶음 기준으로 입력해요. 금액은 CAD예요.")}</ThemedText>
       {([['batchCost', tr("묶음 전체 재료비")], ['yield', tr("판매 가능한 수량")], ['packaging', tr("개당 포장비")], ['other', tr("개당 기타비")], ['price', tr("개당 판매가")], ['feePercent', tr("결제·판매 수수료율 (%)")]] as const).map(([key, label]) => <Field key={key} label={label} value={cost[key]} numeric onChange={(value) => setCost({ ...cost, [key]: value })} />)}
-      {calculated ? <View style={styles.result}><ThemedText type="subtitle">{tr("개당 변동 원가") + " "}{money(calculated.unitCost)}</ThemedText><ThemedText>{tr("개당 공헌이익") + " "}{money(calculated.contribution)}</ThemedText><ThemedText type="small">{tr("원가율") + " "}{calculated.costPercent?.toFixed(1) ?? '—'}{tr("% · 공헌이익률") + " "}{calculated.marginPercent?.toFixed(1) ?? '—'}%</ThemedText></View> : <ThemedText accessibilityRole="alert">{errorText(new Error('INVALID_COST_INPUT'))}</ThemedText>}
+      {calculated ? <View style={styles.result}><ThemedText type="subtitle">{tr("개당 변동 원가") + " "}{money(calculated.unitCost)}</ThemedText><ThemedText>{tr("개당 공헌이익") + " "}{money(calculated.contribution)}</ThemedText><ThemedText type="small">{tr("원가율") + " "}{calculated.costPercent?.toFixed(1) ?? '—'}{tr("% · 공헌이익률") + " "}{calculated.marginPercent?.toFixed(1) ?? '—'}%</ThemedText></View> : <ThemedText accessibilityRole="alert">{tr(errorText(new Error('INVALID_COST_INPUT')))}</ThemedText>}
       <ThemedText type="small" themeColor="textSecondary">{tr("공헌이익은 입력한 변동 비용을 뺀 금액이에요. 임대료·인건비·세금 등을 반영하기 전이므로 순이익과 달라요.")}</ThemedText>
       <Action label={tr("계산 내역 복사·공유")} disabled={!calculated || busy} onPress={() => { if (calculated) void run(() => shareText(`${data.merchant.name} 원가 계산\n전체 재료비 ${money(amount(cost.batchCost))} / 수량 ${cost.yield}\n개당 포장비 ${money(amount(cost.packaging))} · 기타비 ${money(amount(cost.other))}\n판매가 ${money(amount(cost.price))} · 수수료 ${cost.feePercent}%\n개당 변동 원가 ${money(calculated.unitCost)}\n개당 공헌이익 ${money(calculated.contribution)} (고정비·세금 반영 전)`), '계산 내역을 준비했어요.', false); }} />
     </Section>}
