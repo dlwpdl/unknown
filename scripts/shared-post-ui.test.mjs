@@ -11,6 +11,9 @@ import { hideContent, subscribeVisibility, visibilityRevision } from '../src/lib
 import { count, t } from '../src/i18n/ko.ts';
 import { uniqueHashtags } from '../src/lib/hashtags.ts';
 import { postMapBody } from '../src/lib/post-maps.ts';
+import { visibleTranslationSource } from '../src/lib/translation-source.ts';
+import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
+import * as postLinks from '../supabase/functions/_shared/post-links.ts';
 
 const id = '9f100000-0000-4000-8000-000000000001';
 const otherId = '9f100000-0000-4000-8000-000000000002';
@@ -63,7 +66,13 @@ function mount(file, name, data = {}, props = {}) {
     'expo-router/head': { default: 'Head' },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' }, '@/components/themed-text': { ThemedText: 'Text' },
     '@/components/themed-view': { ThemedView: 'View' }, '@/components/gling-loader': { GlingLoader: 'Loader' }, '@/components/state-card': { StateCard: 'StateCard' },
-    '@/components/post-body': { PostBody: 'PostBody' }, '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
+    '@/components/post-body': { PostBody: 'PostBody' },
+    '@/components/content-translation': { TranslationControl: 'TranslationControl', TranslatedCommentBody: 'TranslatedCommentBody' },
+    '@/hooks/use-content-translation': { useContentTranslation: (_kind, _id, source) => ({ display: source, translated: false, original: true }) },
+    '@/lib/translation-source': { visibleTranslationSource },
+    '@/lib/post-photo-credits': { splitPostPhotoCredits },
+    '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 } },
+    '../../supabase/functions/_shared/post-links': postLinks, '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
     '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/components/manner-summary': { MannerSummary: 'MannerSummary' },
     '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' },

@@ -152,6 +152,7 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
     if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16 } };
     if (name === '@/i18n/ko') return { t, count };
+    if (name === '@/components/content-translation') return { TranslatedCommentBody: 'TranslatedCommentBody' };
     if (name === '@/lib/comment-list') return { buildCommentListRows };
     if (name === '@/lib/post-photo-credits') return { splitPostPhotoCredits };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
@@ -199,7 +200,7 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
     if (!value || typeof value !== 'object') return [];
     const virtualChildren = value.type === 'FlatList'
       ? [value.props.ListHeaderComponent, ...value.props.data.map((item, rowIndex) => value.props.renderItem({ item, index: rowIndex }))]
-      : [];
+      : value.type === 'TranslatedCommentBody' ? [jsx('ThemedText', { children: value.props.body })] : [];
     return [...(value.type ? [value] : []), ...virtualChildren.flatMap(child => nodes(child)), ...Object.values(value).flatMap(child => nodes(child))];
   };
   const byLabel = label => nodes(tree).find(node => node.props?.accessibilityLabel === label);
