@@ -71,7 +71,7 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
       <ThemedText accessibilityRole="header" style={styles.title}>{post.title}</ThemedText>
       <View style={styles.footer}>
         <ThemedText type="small" themeColor="textSecondary">{city}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">{post.room?.memberCount ?? 0}{post.room?.capacity ? tr(" / {0}명", (post.room.capacity)) : tr("명")}{seatsLeft !== null ? seatsLeft > 0 ? tr(" · {0}자리 남음", (seatsLeft)) : tr(" · 정원 마감") : ''}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{tr(post.room?.capacity ? "{0} / {1}명" : "{0}명", post.room?.memberCount ?? 0, post.room?.capacity)}{seatsLeft !== null ? seatsLeft > 0 ? tr(" · {0}자리 남음", (seatsLeft)) : tr(" · 정원 마감") : ''}</ThemedText>
       </View>
       {/* 자리 현황은 숫자보다 막대가 먼저 읽힌다(정원이 있는 모임만). */}
       {room?.capacity ? <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden

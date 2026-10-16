@@ -59,7 +59,7 @@ function MeetupCreateForm() {
   const [eventDetails, setEventDetails] = useState('');
   const [creatingDraft, setCreatingDraft] = useState(false), [aiDraftReady, setAiDraftReady] = useState(false);
   const [draftEdited, setDraftEdited] = useState(false);
-  const [question, setQuestion] = useState('어떤 분위기의 모임을 기대하세요?');
+  const [question, setQuestion] = useState(() => tr('어떤 분위기의 모임을 기대하세요?'));
   const [event, setEvent] = useState<ChillingEventDraft>(() => {
     const start = new Date(Date.now() + 86400000); start.setMinutes(0, 0, 0);
     return { kind: 'once', startsAt: start.toISOString(), endsAt: new Date(start.getTime() + 3600000).toISOString(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, cadence: '', capacity: 6, category: 'casual' };
@@ -207,7 +207,7 @@ function MeetupCreateForm() {
       {membershipError && <Pressable analyticsId="app_meetup-create.pressable.5" accessibilityRole="button" onPress={() => { play('selection'); router.push('/profile/membership'); }} style={styles.membership}>
         <ThemedText type="smallBold" themeColor="accent">{tr("멤버십과 모임 자리 보기 ›")}</ThemedText>
       </Pressable>}
-    </ScrollView><View style={[styles.footer, { backgroundColor: theme.background, borderTopColor: theme.line }]}><RaisedActionButton analyticsId="app_meetup-create.pressable.4" disabled={saving || creatingDraft || pickingCover || !eventReady} busy={saving || creatingDraft || pickingCover} onPress={() => { play('selection'); void submit(); }} label={saving ? tr("모임을 여는 중…") : pickingCover ? tr("사진을 준비하는 중…") : ticketmasterEventId ? tr("모임 열기") : tr("{0} 열기", (event.kind === 'once' ? '칠링' : '모임'))} /></View></KeyboardAvoidingView>
+    </ScrollView><View style={[styles.footer, { backgroundColor: theme.background, borderTopColor: theme.line }]}><RaisedActionButton analyticsId="app_meetup-create.pressable.4" disabled={saving || creatingDraft || pickingCover || !eventReady} busy={saving || creatingDraft || pickingCover} onPress={() => { play('selection'); void submit(); }} label={saving ? tr("모임을 여는 중…") : pickingCover ? tr("사진을 준비하는 중…") : ticketmasterEventId ? tr("모임 열기") : tr("{0} 열기", (event.kind === 'once' ? tr('칠링') : tr('모임')))} /></View></KeyboardAvoidingView>
   </SafeAreaView>;
 }
 const styles = StyleSheet.create({

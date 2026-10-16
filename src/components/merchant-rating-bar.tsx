@@ -25,7 +25,7 @@ export function MerchantRatingBar({ score, reviewKind = 'usage', label }: { scor
   const shape = (color: string) => employment
     ? <View testID="merchant-rating-segment" style={[styles.segment, { backgroundColor: color }]} />
     : <Text style={[styles.sparkle, { color }]} accessible={false}>✦</Text>;
-  return <View style={[styles.bar, employment && styles.employmentBar]} accessible accessibilityLabel={tr("{0} {1}", (label ?? (employment ? '근무' : '상품·서비스')), (rounded == null ? '점수 없음' : `평균 ${rounded.toFixed(1)}점, 10점 만점`))}>
+  return <View style={[styles.bar, employment && styles.employmentBar]} accessible accessibilityLabel={tr("{0} {1}", (label ?? (employment ? tr('근무') : tr('상품·서비스'))), (rounded == null ? tr('점수 없음') : tr("평균 {0}점, 10점 만점", rounded.toFixed(1))))}>
     {progress.map((value, index) => <View key={index} style={[styles.unit, employment && styles.employmentUnit]} accessible={false}>
       {shape(theme.line)}
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: value.interpolate({ inputRange: [0, 1], outputRange: [0.25, 1] }),

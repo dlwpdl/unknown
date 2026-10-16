@@ -145,7 +145,7 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true }: MyMeetupsProp
           <ThemedText type="smallBold" themeColor="accent">{t.meetup[meetup.role]}</ThemedText>
           <ThemedText type="smallBold">{meetup.title}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{chillingSchedule(meetup.room, appLocale)}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">{CITIES.find(({ id }) => id === meetup.cityId)?.name ?? meetup.cityId} · {meetup.room.memberCount ?? 0}{meetup.room.capacity ? `/${meetup.room.capacity}` : ''}{tr("명")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr(meetup.room.capacity ? "{0} · {1}/{2}명" : "{0} · {1}명", tr(CITIES.find(({ id }) => id === meetup.cityId)?.name ?? meetup.cityId), meetup.room.memberCount ?? 0, meetup.room.capacity)}</ThemedText>
           {busy === meetup.id && <GlingLoader color={theme.accent} accessibilityLabel={tr("모임 처리 중")} />}
         </Pressable>
         {(meetup.role === 'host' || meetup.role === 'approved') && <Pressable analyticsId="meetup.share.open" accessibilityRole="button" accessibilityLabel={tr("{0} 초대 링크 공유", (meetup.title))}

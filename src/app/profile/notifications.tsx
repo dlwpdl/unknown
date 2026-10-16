@@ -108,7 +108,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
       </View>
       <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">{tr("나의 활동")}</ThemedText>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-        {NOTIFICATION_CATEGORIES.slice(0, 7).map(item => <ToggleRow key={item.key} label={item.label} value={preferences[item.key]} onChange={value => void save({ [item.key]: value })} disabled={busy} />)}
+        {NOTIFICATION_CATEGORIES.slice(0, 7).map(item => <ToggleRow key={item.key} label={tr(item.label)} value={preferences[item.key]} onChange={value => void save({ [item.key]: value })} disabled={busy} />)}
       </View>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <ToggleRow label={tr("메시지 미리보기")} value={preferences.message_preview ?? false} onChange={value => void save({ message_preview: value })} disabled={busy} />
@@ -118,13 +118,13 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{tr("변경 후 발송되는 푸시부터 적용돼요.")}</ThemedText>
       </View>
       <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">{tr("관심사와 내 도시")}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">{cityName}{tr("의 맛집·레스토랑, 가볼 만한 곳·행사와 새 글·모임 소식을 골라 받을 수 있어요. 이사 후 선호 지역을 바꾸면 알림 지역도 함께 바뀝니다.")}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{tr(cityName)}{tr("의 맛집·레스토랑, 가볼 만한 곳·행사와 새 글·모임 소식을 골라 받을 수 있어요. 이사 후 선호 지역을 바꾸면 알림 지역도 함께 바뀝니다.")}</ThemedText>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-        {NOTIFICATION_CATEGORIES.slice(7, 13).map(item => <ToggleRow key={item.key} label={item.label} value={preferences[item.key]} onChange={value => void save({ [item.key]: value })} disabled={busy} />)}
+        {NOTIFICATION_CATEGORIES.slice(7, 13).map(item => <ToggleRow key={item.key} label={tr(item.label)} value={preferences[item.key]} onChange={value => void save({ [item.key]: value })} disabled={busy} />)}
       </View>
       <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">{tr("비즈니스와 계정")}</ThemedText>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-        {NOTIFICATION_CATEGORIES.slice(13).map(item => <ToggleRow key={item.key} label={item.label} value={preferences[item.key]} onChange={value => void save({ [item.key]: value })} disabled={busy} />)}
+        {NOTIFICATION_CATEGORIES.slice(13).map(item => <ToggleRow key={item.key} label={tr(item.label)} value={preferences[item.key]} onChange={value => void save({ [item.key]: value })} disabled={busy} />)}
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{tr("새 소식은 저장한 비즈니스에서 “새 소식 받기”를 켠 경우에만 받아요.")}</ThemedText>
       </View>
       <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">{tr("관심 태그")}</ThemedText>
@@ -132,7 +132,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
         aria-checked={tagIds.includes(tag.id)}
         disabled={busy} onPress={() => { play('selection'); setTagIds(current => current.includes(tag.id) ? current.filter(id => id !== tag.id) : [...current, tag.id].sort((a, b) => a - b)); }}
         style={({ pressed }) => [styles.tag, Depth.control, { backgroundColor: tagIds.includes(tag.id) ? theme.accent : theme.backgroundElement, borderBottomColor: tagIds.includes(tag.id) ? theme.accentDepth : theme.line, borderBottomWidth: 3, }]}>
-        <ThemedText type="smallBold" style={{ color: tagIds.includes(tag.id) ? theme.accentInk : theme.textSecondary }}>{tag.label}</ThemedText>
+        <ThemedText type="smallBold" style={{ color: tagIds.includes(tag.id) ? theme.accentInk : theme.textSecondary }}>{tr(tag.label)}</ThemedText>
       </Pressable>)}</View>
       <TextInput accessibilityLabel={tr("관심 해시태그")} value={hashtags} onChangeText={setHashtags} editable={!busy}
         placeholder={tr("#러닝 #맛집 #워홀")} placeholderTextColor={theme.textSecondary} maxLength={1000} autoCapitalize="none" autoCorrect={false}

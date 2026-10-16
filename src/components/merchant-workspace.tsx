@@ -506,7 +506,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, initi
           {channels.gling && !data.merchant.owner_verified_at && <ThemedText type="small" themeColor="textSecondary">{tr("글링 공개 게시에는 업체 소유 확인이 필요해요.")}</ThemedText>}
           <ThemedText type="small" themeColor="textSecondary">{tr("글링에는 업체 안내 표시와 게시 기준이 적용돼요. 카페는 가입·게시 규칙을 확인해 직접 올려주세요.")}</ThemedText>
           {published ? <ThemedText accessibilityLiveRegion="polite">{tr("글링에 게시된 원고예요.")}</ThemedText> : <Action primary label={tr(channels.gling ? tr("선택한 내용으로 게시 확인") : channels.naver || channels.daum ? tr("원고 준비 확인") : tr("게시할 채널을 선택해 주세요"))} disabled={busy || !draftReady || !!saved?.archived_at || (!channels.gling && !channels.naver && !channels.daum) || (channels.gling && (!data.merchant.owner_verified_at || data.merchant.status === 'paused'))} onPress={() => { void confirmChannels(); }} />}
-          {(['naver', 'daum'] as const).map((key) => channels[key] && (preparedChannels?.[key] || published) && <Action key={key} label={`${key === 'naver' ? tr("네이버") : tr("다음")} 카페용 원고 ${Platform.OS === 'web' ? tr("복사") : tr("공유·복사")}`} disabled={busy || !draftReady} onPress={() => { void run(() => shareText(merchantDraftCopy(saved!)), tr("원고를 준비했어요. 카페에서 직접 등록해 주세요."), false); }} />)}
+          {(['naver', 'daum'] as const).map((key) => channels[key] && (preparedChannels?.[key] || published) && <Action key={key} label={tr("{0} 카페용 원고 {1}", key === 'naver' ? tr("네이버") : tr("다음"), Platform.OS === 'web' ? tr("복사") : tr("공유·복사"))} disabled={busy || !draftReady} onPress={() => { void run(() => shareText(merchantDraftCopy(saved!)), tr("원고를 준비했어요. 카페에서 직접 등록해 주세요."), false); }} />)}
           <Action label={tr("원고 수정")} disabled={busy} onPress={() => setDraftStep('edit')} />
         </>}
       </Section>
@@ -555,8 +555,8 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, initi
         <ThemedText type="small" themeColor="textSecondary">{tr("체험·기존 운영 기간 또는 비즈니스 유료 멤버십에서는 여러 건을 한 번에 승인하거나 입출고할 수 있어요. 기간이 끝나도 저장한 자료는 남아요. 개인 멤버십과 업체 구독은 별도로 관리해요.")}</ThemedText>
       </Section>
       <Section title={tr("최근 14일 성과")}><ThemedText>{tr("연결 게시글") + " "}{data.metrics.linked_posts}{tr("편 · 새 글") + " "}{data.metrics.new_posts}{tr("편")}</ThemedText>
-        <ThemedText>{tr("로그인 회원 최초 열람") + " "}{data.metrics.first_reads}{tr("회 ·") + " "}{data.metrics.unique_readers}{tr("명")}</ThemedText><ThemedText>{tr("원문 클릭") + " "}{data.metrics.source_clicks}{tr("회")}</ThemedText>
-        <ThemedText type="small">{tr("로그인 클릭 회원") + " "}{data.metrics.member_clickers}{tr("명 · 익명 클릭 세션") + " "}{data.metrics.anonymous_sessions}{tr("개")}</ThemedText>
+        <ThemedText>{tr("로그인 회원 최초 열람 {0}회 · {1}명", data.metrics.first_reads, data.metrics.unique_readers)}</ThemedText><ThemedText>{tr("원문 클릭 {0}회", data.metrics.source_clicks)}</ThemedText>
+        <ThemedText type="small">{tr("로그인 클릭 회원 {0}명 · 익명 클릭 세션 {1}개", data.metrics.member_clickers, data.metrics.anonymous_sessions)}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">{tr("누적 표시 조회") + " "}{data.metrics.displayed_views}{tr("회 · 익명 조회·운영 조정 포함. 실제 열람 인원과 달라요. 원문 클릭은 문의·주문 완료를 뜻하지 않아요. 업체 소유자·작성자·관리자 기록은 측정 성과에서 제외해요.")}</ThemedText>
         {data.reports.map((report) => <Action key={report.id} label={tr("{0} 보고서 공유", (report.period_end))} disabled={busy} onPress={() => { void run(() => shareText(merchantReportText(report)), '저장된 보고서를 준비했어요.', false); }} />)}
       </Section>

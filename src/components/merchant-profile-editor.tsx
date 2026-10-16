@@ -158,8 +158,8 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
           {(['banner', 'avatar'] as const).map((kind) => <View key={kind} style={styles.row}>
             <ThemedText type="smallBold">{kind === 'banner' ? tr("채널 배너") : tr("가게 로고")}</ThemedText>
             <View style={styles.actions}>
-              <ProfileAction label={tr("{0} {1}", (kind === 'banner' ? '배너' : '로고'), (photos[kind].uri || photos[kind].path ? '교체' : '선택'))} onPress={() => { void choose(kind); }} disabled={busy} />
-              {(photos[kind].uri || photos[kind].path) && <ProfileAction label={tr("{0} 제거", (kind === 'banner' ? '배너' : '로고'))} onPress={() => change({ ...photos, [kind]: { path: null, uri: null } })} disabled={busy} />}
+              <ProfileAction label={tr("{0} {1}", (kind === 'banner' ? tr('배너') : tr('로고')), (photos[kind].uri || photos[kind].path ? tr('교체') : tr('선택')))} onPress={() => { void choose(kind); }} disabled={busy} />
+              {(photos[kind].uri || photos[kind].path) && <ProfileAction label={tr("{0} 제거", (kind === 'banner' ? tr('배너') : tr('로고')))} onPress={() => change({ ...photos, [kind]: { path: null, uri: null } })} disabled={busy} />}
             </View>
           </View>)}
           <View style={styles.actions}>
