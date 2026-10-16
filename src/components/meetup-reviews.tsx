@@ -1,6 +1,5 @@
 import { FlatPressable as Pressable } from '@/components/flat-pressable';
 import { useLanguage } from '@/hooks/use-language';
-import { tr, getLocale } from '@/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, StyleSheet, TextInput, View } from 'react-native';
 import { ChillingDateInput } from '@/components/chilling-date-input';
@@ -20,7 +19,7 @@ export function MeetupReviews(props: { postId: string; kind: 'once' | 'group'; a
   return <Reviews key={`${isAuthed ? me.id : 'guest'}:${props.postId}`} {...props} />;
 }
 function Reviews({ postId, kind, attendanceOnly = false }: { postId: string; kind: 'once' | 'group'; attendanceOnly?: boolean }) {
-  useLanguage();
+  const { tr, locale: appLocale } = useLanguage();
   const theme = useTheme(), { isAuthed, me } = useAuth(), { play } = useInteractionFeedback();
   const hidden = useContentVisibility();
   const [page, setPage] = useState<MeetupReviewPage | null>(null), [sessions, setSessions] = useState<MeetupSessions | null>(null);
@@ -40,7 +39,7 @@ function Reviews({ postId, kind, attendanceOnly = false }: { postId: string; kin
       try {
         const [next, participation] = await Promise.all([kind === 'group' && !attendanceOnly ? loadMeetupReviews(supabase, postId) : null, isAuthed ? loadMeetupSessions(supabase, postId) : null]);
         if (active) { setPage(next); setSessions(participation); setNow(Date.now()); setError(''); }
-      } catch { if (active) setError(tr("모임 후기·참석 정보를 불러오지 못했어요.")); }
+      } catch { if (active) setError("모임 후기·참석 정보를 불러오지 못했어요."); }
     })();
     return () => { active = false; };
   }, [postId, kind, attendanceOnly, isAuthed, retry]);
@@ -48,14 +47,14 @@ function Reviews({ postId, kind, attendanceOnly = false }: { postId: string; kin
     if (pending.current) return;
     pending.current = true; setBusy(true); setError(''); play('selection');
     try { await createMeetupSession(supabase, postId, kind === 'group' ? startsAt : undefined, kind === 'group' ? endsAt : undefined); setRetry(n => n + 1); play('success'); }
-    catch { setError(tr("회차를 확인하지 못했어요. 시간·중복 회차·참가 권한을 확인해주세요.")); play('warning'); }
+    catch { setError("회차를 확인하지 못했어요. 시간·중복 회차·참가 권한을 확인해주세요."); play('warning'); }
     finally { pending.current = false; setBusy(false); }
   }
   async function more() {
     if (!page || pending.current) return;
     pending.current = true; setBusy(true); play('selection');
     try { const next = await loadMeetupReviews(supabase, postId, page.reviews.length); setPage(current => current ? { ...next, reviews: [...current.reviews, ...next.reviews.filter(r => !current.reviews.some(old => old.id === r.id))] } : next); }
-    catch { setError(tr("이전 후기를 불러오지 못했어요.")); play('warning'); }
+    catch { setError("이전 후기를 불러오지 못했어요."); play('warning'); }
     finally { pending.current = false; setBusy(false); }
   }
   const button = [styles.button, { borderColor: theme.line, backgroundColor: theme.backgroundElement }];
@@ -66,7 +65,7 @@ function Reviews({ postId, kind, attendanceOnly = false }: { postId: string; kin
       <ThemedText type="small" themeColor="textSecondary">{tr("회차별 후기는 모임에 쌓이고, 같은 사람의 반복 참여는 평점을 여러 번 올리지 않아요.")}</ThemedText>
       {page?.reviews.filter(review => !hidden('meetup_review', review.id, review.authorId)).map(review => <View key={review.id} style={[styles.review, { borderColor: theme.line }]}>
         <ThemedText type="smallBold">{review.nickname} · {review.score}/10</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">{new Date(review.sessionDate).toLocaleDateString(getLocale())}{" " + tr("참석 후기")}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{new Date(review.sessionDate).toLocaleDateString(appLocale)}{" " + tr("참석 후기")}</ThemedText>
         {!!review.body && <ThemedText type="small">{review.body}</ThemedText>}
         {isAuthed && review.authorId !== me.id && <Pressable accessibilityRole="button" onPress={() => { play('selection'); setReport(review); }} style={button}><ThemedText type="small">{tr("후기 신고")}</ThemedText></Pressable>}
       </View>)}
@@ -85,12 +84,12 @@ function Reviews({ postId, kind, attendanceOnly = false }: { postId: string; kin
       {sessions.sessions.map(session => <Session key={session.id} now={now} session={session} meId={me.id} onChanged={() => setRetry(n => n + 1)} />)}
       <Pressable accessibilityRole="button" onPress={() => { play('selection'); setRetry(n => n + 1); }} style={button}><ThemedText type="small">{tr("참석·후기 상태 다시 확인")}</ThemedText></Pressable>
     </>}
-    {!!error && <><ThemedText type="small" accessibilityRole="alert">{error}</ThemedText><Pressable accessibilityRole="button" onPress={() => { play('selection'); setRetry(n => n + 1); }} style={button}><ThemedText type="small">{tr("다시 불러오기")}</ThemedText></Pressable></>}
+    {!!error && <><ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText><Pressable accessibilityRole="button" onPress={() => { play('selection'); setRetry(n => n + 1); }} style={button}><ThemedText type="small">{tr("다시 불러오기")}</ThemedText></Pressable></>}
     {report && <ReportSheet visible targetType="meetup_review" targetId={report.id} reportedUserId={report.authorId} reportedNickname={report.nickname} onClose={() => { setReport(null); setRetry(n => n + 1); }} />}
   </View>;
 }
 function Session({ session, meId, onChanged, now }: { session: MeetupSession; meId: string; onChanged: () => void; now: number }) {
-  useLanguage();
+  const { tr, locale: appLocale } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const [busy, setBusy] = useState(false), pending = useRef(false), [notice, setNotice] = useState('');
   const [claim, setClaim] = useState(''), [claimOpen, setClaimOpen] = useState(false), [body, setBody] = useState('');
@@ -101,7 +100,7 @@ function Session({ session, meId, onChanged, now }: { session: MeetupSession; me
     if (pending.current) return;
     pending.current = true; setBusy(true); setNotice(''); play('selection');
     try { await action(); setNotice(message); play('success'); onChanged(); }
-    catch { setNotice(tr("처리 결과를 확인하지 못했어요. 입력은 유지했어요. 최신 참석 정보를 다시 확인해주세요.")); play('warning'); }
+    catch { setNotice("처리 결과를 확인하지 못했어요. 입력은 유지했어요. 최신 참석 정보를 다시 확인해주세요."); play('warning'); }
     finally { pending.current = false; setBusy(false); }
   }
   function confirm(userId: string, nickname: string) {
@@ -112,7 +111,7 @@ function Session({ session, meId, onChanged, now }: { session: MeetupSession; me
     ]);
   }
   return <View style={[styles.review, { borderColor: theme.line }]}>
-    <ThemedText type="smallBold">{new Date(session.startsAt).toLocaleString(getLocale())} ~ {new Date(session.endsAt).toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' })}</ThemedText>
+    <ThemedText type="smallBold">{new Date(session.startsAt).toLocaleString(appLocale)} ~ {new Date(session.endsAt).toLocaleTimeString(appLocale, { hour: '2-digit', minute: '2-digit' })}</ThemedText>
     <ThemedText type="small">{session.verified ? tr("참석 확인됨") : session.checkedIn ? tr("체크인 완료 · 참석 확인 대기") : tr("참석 미확인")}</ThemedText>
     {!ended && now >= Date.parse(session.startsAt) && !session.checkedIn && <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => void act(() => checkInMeetup(supabase, session.id), '체크인했어요. 종료 후 서로 참석을 확인해주세요.')} style={button}><ThemedText type="smallBold">{tr("현장 체크인")}</ThemedText></Pressable>}
     {inWindow && session.members.filter(member => member.id !== meId).map(member => <View key={member.id} style={styles.container}>
@@ -136,7 +135,7 @@ function Session({ session, meId, onChanged, now }: { session: MeetupSession; me
         onPress={() => void act(async () => { await writeMeetupReview(supabase, session.id, score!, body); setSubmitted(true); }, '후기를 제출했어요. 검토 후 모임에 반영됩니다.')}><ThemedText type="smallBold">{tr("후기 제출")}</ThemedText></Pressable>
     </>}
     {!!session.reviewStatus && <ThemedText type="small">{tr("이 회차 후기는") + " "}{session.reviewStatus === 'published' ? tr("반영되었어요.") : tr("제출했어요. 검토 상태에 따라 공개돼요.")}</ThemedText>}
-    {!!notice && <ThemedText type="small" accessibilityLiveRegion="polite">{notice}</ThemedText>}
+    {!!notice && <ThemedText type="small" accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
   </View>;
 }
 const styles = StyleSheet.create({ container: { gap: 12, marginVertical: 8 }, review: { gap: 8, padding: 12, borderWidth: 1, borderRadius: 12 },

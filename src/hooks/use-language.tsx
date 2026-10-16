@@ -79,5 +79,6 @@ export function useLanguage() {
   const context = useContext(LanguageContext);
   // Public readers/admin exports remain Korean when they do not mount the app provider.
   const language = context?.language ?? 'ko';
-  return { ...context, language, t: translationsFor(language), tr: (text: string, ...values: unknown[]) => translateUi(language, text, ...values), locale: language === 'ko' ? 'ko-KR' : 'en-CA' };
+  const tr = useCallback((text: string, ...values: unknown[]) => translateUi(language, text, ...values), [language]);
+  return { ...context, language, t: translationsFor(language), tr, locale: language === 'ko' ? 'ko-KR' : 'en-CA' };
 }

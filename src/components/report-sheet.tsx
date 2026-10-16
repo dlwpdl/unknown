@@ -8,7 +8,6 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { ThemedText } from '@/components/themed-text';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { t, tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { blockUser, reportContent, type ReportReason, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -31,7 +30,7 @@ export function ReportSheet({
   reportedNickname?: string;
   onClose: () => void;
 }) {
-  useLanguage();
+  const { tr, t } = useLanguage();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { me } = useAuth();

@@ -9,7 +9,6 @@ import { GlassSurface } from '@/components/glass-surface';
 import { ThemedText } from '@/components/themed-text';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { t, tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -18,7 +17,7 @@ import { CITIES } from '@/lib/mock';
 import type { City } from '@/lib/types';
 
 export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { city: City; onSelect: (city: City) => void } }) {
-  const { language } = useLanguage();
+  const { language, tr, t } = useLanguage();
   const theme = useTheme();
   const { city, selectCity, saving } = useCommunityCity();
   const { play } = useInteractionFeedback();

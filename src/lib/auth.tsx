@@ -1,3 +1,4 @@
+import { t as sourceCopy } from '@/i18n/ko';
 import { useLanguage } from '@/hooks/use-language';
 import { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,7 +16,6 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { t } from '@/i18n';
 import { isAdminRole } from '@/lib/admin';
 import { registerSecurityDevice } from '@/lib/account-security-device';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -80,7 +80,7 @@ export function useAuth(): AuthValue {
 }
 
 export function AuthProvider({ children, publicPage = false }: { children: ReactNode; publicPage?: boolean }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const { play } = useInteractionFeedback();
   const [session, setSession] = useState<Session | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
@@ -107,7 +107,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
         .then(async ({ data, error }) => {
           if (!active) return;
           setProfileCheckedUserId(session.user.id);
-          if (error) { setAuthError(t.auth.loginError); return; }
+          if (error) { setAuthError(sourceCopy.auth.loginError); return; }
           setProfile(data);
           setMissingProfileUserId(
             data == null
@@ -121,7 +121,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
             if (active && signed.data?.signedUrl) setProfilePhotoUri(signed.data.signedUrl);
           }
         }).catch(() => {
-          if (active) { setProfileCheckedUserId(session.user.id); setAuthError(t.auth.loginError); }
+          if (active) { setProfileCheckedUserId(session.user.id); setAuthError(sourceCopy.auth.loginError); }
         });
     };
     refreshProfile();
@@ -143,7 +143,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       if (!active) return;
       setSession(data.session);
       setSessionReady(true);
-      if (expired && lastActive != null) { setReason(t.auth.sessionExpired); setVisible(true); }
+      if (expired && lastActive != null) { setReason(sourceCopy.auth.sessionExpired); setVisible(true); }
     });
     const appState = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
@@ -177,7 +177,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     const listener = DeviceEventEmitter.addListener(AUTH_EXPIRED_EVENT, () => {
       void supabase.auth.signOut({ scope: 'local' }).catch(() => {});
       setAuthError(null);
-      setReason(t.auth.sessionExpired);
+      setReason(sourceCopy.auth.sessionExpired);
       setVisible(true);
     });
     return () => listener.remove();
@@ -219,7 +219,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       if (exchangeError) throw new Error('OAUTH_EXCHANGE_FAILED');
       setVisible(false);
     } catch {
-      setAuthError(t.auth.loginError);
+      setAuthError(sourceCopy.auth.loginError);
     } finally {
       signInInFlight.current = false;
       setSigningIn(false);
@@ -238,7 +238,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       if (error) throw error;
       setVisible(false);
     } catch (error) {
-      if (!(isErrorWithCode(error) && error.code === statusCodes.SIGN_IN_CANCELLED)) setAuthError(t.auth.loginError);
+      if (!(isErrorWithCode(error) && error.code === statusCodes.SIGN_IN_CANCELLED)) setAuthError(sourceCopy.auth.loginError);
     } finally {
       signInInFlight.current = false;
       setSigningIn(false);
@@ -272,7 +272,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       const updated = await supabase.auth.updateUser({ data: metadata });
       if (updated.error) throw updated.error;
     } catch (error) {
-      if ((error as { code?: string }).code !== 'ERR_REQUEST_CANCELED') setAuthError(t.auth.loginError);
+      if ((error as { code?: string }).code !== 'ERR_REQUEST_CANCELED') setAuthError(sourceCopy.auth.loginError);
     } finally {
       signInInFlight.current = false;
       setSigningIn(false);
@@ -295,7 +295,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       if (error) throw error;
       setVisible(false);
     } catch {
-      setAuthError(t.auth.devLoginError);
+      setAuthError(sourceCopy.auth.devLoginError);
     } finally {
       signInInFlight.current = false;
       setSigningIn(false);
@@ -307,7 +307,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       await signInReviewAccount(email, password);
       setVisible(false);
     } catch {
-      setAuthError(t.auth.reviewLoginError);
+      setAuthError(sourceCopy.auth.reviewLoginError);
     } finally {
       signInInFlight.current = false;
       setSigningIn(false);
@@ -321,12 +321,12 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     try {
       if (currentSession) await unregisterPushDevice(supabase, currentSession.user.id);
     } catch {
-      setAuthError(t.auth.signOutError);
+      setAuthError(sourceCopy.auth.signOutError);
       return;
     }
     const { error } = await supabase.auth.signOut();
     if (error) {
-      setAuthError(t.auth.signOutError);
+      setAuthError(sourceCopy.auth.signOutError);
       return;
     }
     setProfilePhotoUri(null);
@@ -441,7 +441,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       isAuthLoading: !sessionReady || signingIn || (session != null && (
         (!activeProfile && profileCheckedUserId !== session.user.id) || missingProfileUserId === session.user.id
       )),
-      authError,
+      authError: authError ? tr(authError) : null,
       signInApple,
       prepareAppleAccountDeletion,
       signInKakao,
@@ -467,6 +467,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       missingProfileUserId,
       signingIn,
       authError,
+      tr,
       isAdmin,
       signInApple,
       prepareAppleAccountDeletion,
@@ -539,7 +540,7 @@ function AccountLockedPanel({
   note?: string | null;
   onSignOut: () => Promise<void>;
 }) {
-  useLanguage();
+  const { t } = useLanguage();
   const theme = useTheme();
   const supportEmail = process.env.EXPO_PUBLIC_SUPPORT_EMAIL ?? CONTACT_EMAIL;
   return (

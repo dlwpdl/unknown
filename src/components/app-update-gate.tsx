@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { GlingLoader } from '@/components/gling-loader';
 import * as Application from 'expo-application';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
@@ -23,7 +22,7 @@ const storeUrl = Platform.OS === 'ios'
   : 'https://play.google.com/store/apps/details?id=com.dlwpdl.gling';
 
 export function AppUpdateGate({ children }: { children: ReactNode }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const [status, setStatus] = useState<'checking' | 'allowed' | 'blocked' | 'error'>(Platform.OS === 'web' || !build ? 'allowed' : 'checking');
@@ -68,7 +67,7 @@ export function AppUpdateGate({ children }: { children: ReactNode }) {
       {status === 'blocked' ? <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
         <View style={styles.content}>
           <StateCard kind="update" title={tr("새 버전으로 업데이트해 주세요")}
-            body={storeError ? '스토어를 열지 못했어요. 잠시 후 다시 시도해 주세요.' : '글링을 계속 사용하려면 최신 버전을 설치해 주세요.'}
+            body={tr(storeError ? '스토어를 열지 못했어요. 잠시 후 다시 시도해 주세요.' : '글링을 계속 사용하려면 최신 버전을 설치해 주세요.')}
             actionLabel={tr("스토어에서 업데이트")} onAction={() => {
               play('selection');
               setStoreError(false);

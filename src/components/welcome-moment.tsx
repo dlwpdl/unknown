@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { useEffect, useState } from 'react';
 import { Animated, Easing, Image, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,7 +15,7 @@ const confetti = [
 ] as const;
 
 export function WelcomeMoment({ nickname, onContinue }: { nickname: string; onContinue: () => void }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const reducedMotion = useReducedMotion();
   const { play } = useInteractionFeedback();
   const [burst] = useState(() => new Animated.Value(reducedMotion ? 1 : 0));

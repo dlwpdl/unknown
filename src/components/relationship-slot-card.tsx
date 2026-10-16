@@ -6,7 +6,6 @@ import { StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { t, tr } from '@/i18n';
 import { MEMBERSHIP_LIMITS, type MembershipSnapshot } from '@/lib/membership';
 
 type Kind = 'meetup' | 'conversation';
@@ -32,7 +31,7 @@ export function relationshipSlotData(membership: MembershipSnapshot | null, kind
 export function RelationshipSlotCard({ kind, membership, loading = false, onMembershipPress }: {
   kind: Kind; membership: MembershipSnapshot | null; loading?: boolean; onMembershipPress?: () => void;
 }) {
-  useLanguage();
+  const { tr, t } = useLanguage();
   const theme = useTheme();
   const data = relationshipSlotData(membership, kind);
   const title = kind === 'meetup' ? '모임 자리' : '1:1 대화 자리';

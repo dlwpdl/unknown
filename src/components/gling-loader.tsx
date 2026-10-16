@@ -1,3 +1,4 @@
+import { useLanguage } from '@/hooks/use-language';
 import { useEffect, useState } from 'react';
 import { Animated, Easing, Image, type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -16,6 +17,7 @@ export function GlingLoader({
   size?: number;
   style?: StyleProp<ViewStyle>;
 }) {
+  const { tr } = useLanguage();
   const theme = useTheme();
   const reducedMotion = useReducedMotion();
   const [progress] = useState(() => new Animated.Value(0));
@@ -31,7 +33,7 @@ export function GlingLoader({
     return () => motion.stop();
   }, [progress, reducedMotion]);
 
-  return <View accessibilityRole="progressbar" accessibilityLabel={accessibilityLabel} style={[styles.container, style]}>
+  return <View accessibilityRole="progressbar" accessibilityLabel={tr(accessibilityLabel)} style={[styles.container, style]}>
     <Animated.View style={{ opacity: reducedMotion ? 1 : progress.interpolate({ inputRange: [0, 1], outputRange: [0.45, 1] }), transform: reducedMotion ? undefined : [
       { scale: progress.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1.04] }) },
     ] }}>

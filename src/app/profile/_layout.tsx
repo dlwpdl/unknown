@@ -6,11 +6,10 @@ import { useReducedMotion } from 'react-native-reanimated';
 
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { t, tr } from '@/i18n';
 import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 
 export default function ProfileLayout() {
-  useLanguage();
+  const { tr, t } = useLanguage();
   const theme = useTheme();
   const router = useRouter();
   const reducedMotion = useReducedMotion();
@@ -37,13 +36,13 @@ export default function ProfileLayout() {
       })}>
       <Stack.Screen name="index" options={{ title: t.tabs.profile }} />
       <Stack.Screen name="guidelines" options={{ title: t.profile.guidelines }} />
-      <Stack.Screen name="membership" options={{ title: '멤버십', presentation: 'modal', animation: reducedMotion ? 'none' : 'slide_from_bottom' }} />
-      <Stack.Screen name="merchant" options={{ title: '비지니스' }} />
-      <Stack.Screen name="trust" options={{ title: '인증 단계' }} />
+      <Stack.Screen name="membership" options={{ title: tr('멤버십'), presentation: 'modal', animation: reducedMotion ? 'none' : 'slide_from_bottom' }} />
+      <Stack.Screen name="merchant" options={{ title: tr('비즈니스') }} />
+      <Stack.Screen name="trust" options={{ title: tr('인증 단계') }} />
       <Stack.Screen name="saved" options={{ title: t.profile.saved }} />
-      <Stack.Screen name="promotions" options={{ title: PROMOTIONS_PREVIEW_ENABLED ? '홍보 크레딧' : '', headerShown: PROMOTIONS_PREVIEW_ENABLED }} />
+      <Stack.Screen name="promotions" options={{ title: tr(PROMOTIONS_PREVIEW_ENABLED ? '홍보 크레딧' : ''), headerShown: PROMOTIONS_PREVIEW_ENABLED }} />
       <Stack.Screen name="settings" options={{ title: t.profile.settings }} />
-      <Stack.Screen name="notifications" options={{ title: '알림 설정' }} />
+      <Stack.Screen name="notifications" options={{ title: tr('알림 설정') }} />
       <Stack.Screen name="inbox" options={{ title: t.notifications.title }} />
     </Stack>
   );

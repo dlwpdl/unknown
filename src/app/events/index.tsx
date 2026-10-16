@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { GlingLoader } from '@/components/gling-loader';
 import { useEffect, useState } from 'react';
 import { Link, useRouter } from 'expo-router';
@@ -18,7 +17,7 @@ import { EVENT_CITIES, EVENT_CATEGORY_LABELS, eventMatchesPriceFilter, eventPric
 
 const dateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 const DAY_SIZE = 48;
-const PRICE_FILTERS: { key: EventPriceFilter; label: string }[] = [{ key: 'all', get label() { return tr("전체 가격"); } }, { key: 'free', get label() { return tr("무료 표시"); } }, { key: 'under50', get label() { return tr("CA$50 이하"); } }, { key: 'under100', get label() { return tr("CA$100 이하"); } }, { key: 'unknown', get label() { return tr("가격 미확인"); } }];
+
 
 export default function EventsScreen() {
 
@@ -26,7 +25,8 @@ export default function EventsScreen() {
   return <EventListScreen key={city.id} />;
 }
 function EventListScreen() {
-  const { locale } = useLanguage();
+  const { locale, tr } = useLanguage();
+  const PRICE_FILTERS: { key: EventPriceFilter; label: string }[] = [{ key: 'all', get label() { return tr("전체 가격"); } }, { key: 'free', get label() { return tr("무료 표시"); } }, { key: 'under50', get label() { return tr("CA$50 이하"); } }, { key: 'under100', get label() { return tr("CA$100 이하"); } }, { key: 'unknown', get label() { return tr("가격 미확인"); } }];
   const theme = useTheme(), router = useRouter();
   const reducedMotion = useReducedMotion(), { height: screenHeight } = useWindowDimensions();
   const { city } = useCommunityCity();
@@ -103,13 +103,13 @@ function EventListScreen() {
       <Pressable analyticsId="ticketmaster.back" accessibilityRole="button" accessibilityLabel={tr("뒤로가기")} onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace('/'); }} style={({ pressed }) => [styles.back, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} /></Pressable>
       <View style={styles.headerCopy}>
         <ThemedText style={styles.headerTitle} accessibilityRole="header" numberOfLines={2}>{tr("함께 가고 싶은 페스티벌")}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{tr(city.name)} · Ticketmaster{date ? tr(" · {0}월 {1}일", (Number(date.slice(5, 7))), (Number(date.slice(8)))) : ''}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{tr(city.name)} · Ticketmaster{tr(date ? tr(" · {0}월 {1}일", (Number(date.slice(5, 7))), (Number(date.slice(8)))) : '')}</ThemedText>
       </View>
     </View>
     <Animated.View style={{ flex: 1, opacity: pageReveal, transform: [{ translateY: pageReveal.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] }}>
     <FlatList analyticsId="ticketmaster.events" data={visibleEvents} keyExtractor={item => item.id} contentContainerStyle={styles.content}
       ListHeaderComponent={<View style={styles.listHeader}>
-        <View style={styles.calendarHeader}><SymbolView name={{ ios: 'calendar', android: 'calendar_month', web: 'calendar_month' }} size={20} tintColor={theme.accent} /><ThemedText type="smallBold">{tr("날짜별 행사")}</ThemedText><Pressable analyticsId="ticketmaster.date.open" accessibilityRole="button" accessibilityLabel={calendarExpanded ? tr("달력 접기") : tr("한 달 달력 펼치기")} accessibilityState={{ expanded: calendarExpanded }} onPress={() => { play('selection'); setCalendarOpen(!calendarExpanded); }} style={({ pressed }) => [styles.calendarToggle, { opacity: pressed ? 0.65 : 1 }, pressScale(pressed)]}><ThemedText type="smallBold" themeColor="accent">{calendarExpanded ? tr("접기 ⌃") : tr("한 달 보기 ⌄")}</ThemedText></Pressable></View>
+        <View style={styles.calendarHeader}><SymbolView name={{ ios: 'calendar', android: 'calendar_month', web: 'calendar_month' }} size={20} tintColor={theme.accent} /><ThemedText type="smallBold">{tr("날짜별 행사")}</ThemedText><Pressable analyticsId="ticketmaster.date.open" accessibilityRole="button" accessibilityLabel={tr(calendarExpanded ? tr("달력 접기") : tr("한 달 달력 펼치기"))} accessibilityState={{ expanded: calendarExpanded }} onPress={() => { play('selection'); setCalendarOpen(!calendarExpanded); }} style={({ pressed }) => [styles.calendarToggle, { opacity: pressed ? 0.65 : 1 }, pressScale(pressed)]}><ThemedText type="smallBold" themeColor="accent">{tr(calendarExpanded ? tr("접기 ⌃") : tr("한 달 보기 ⌄"))}</ThemedText></Pressable></View>
         <View style={styles.monthHeader}>
           <Pressable analyticsId="ticketmaster.date.month" accessibilityRole="button" accessibilityLabel={tr("이전 달")} disabled={calendarMonth <= dateKey(minimumDate).slice(0, 7)} onPress={() => changeMonth(-1)} style={({ pressed }) => [styles.monthArrow, pressScale(pressed, 0.88)]}><ThemedText type="subtitle" themeColor={calendarMonth <= dateKey(minimumDate).slice(0, 7) ? 'textSecondary' : 'accent'}>‹</ThemedText></Pressable>
           <ThemedText type="smallBold">{calendarYear}{tr("년") + " "}{calendarMonthNumber}{tr("월")}</ThemedText>
@@ -128,20 +128,20 @@ function EventListScreen() {
           })}
         </Animated.View>
         </Animated.View>
-        {(calendarExpanded || calendar?.error || (calendar?.data && !calendar.data.complete)) ? <View style={styles.calendarNote}>{calendar && !calendar.error ? <View style={[styles.legendDot, { backgroundColor: theme.accent }]} /> : null}<ThemedText type="small" themeColor="textSecondary" style={styles.legendText}>{!calendar ? tr("행사 날짜를 확인하고 있어요.") : calendar.error ? tr("현재 목록에서 확인된 날짜만 표시했어요. 다른 날도 검색할 수 있어요.") : calendar.data?.complete ? tr("표시된 날에는 이 도시의 행사가 확인됐어요.") : tr("확인된 일부 행사 날짜예요. 점이 없어도 날짜를 눌러 검색할 수 있어요.")}</ThemedText></View> : null}
-        <View style={styles.resultHeader}><ThemedText type="subtitle" style={styles.resultTitle}>{date ? tr("{0}월 {1}일 행사", (Number(date.slice(5, 7))), (Number(date.slice(8)))) : tr("다가오는 행사")}</ThemedText><View style={styles.resultActions}>{date ? <Pressable analyticsId="ticketmaster.date.clear" accessibilityRole="button" accessibilityLabel={tr("날짜 선택 해제하고 다가오는 행사 보기")} onPress={() => { play('selection'); setDate(''); setPage(0); }} style={({ pressed }) => [styles.clearDate, { opacity: pressed ? 0.65 : 1 }, pressScale(pressed)]}><ThemedText type="smallBold" themeColor="accent">{tr("전체 날짜")}</ThemedText></Pressable> : null}<Pressable analyticsId="ticketmaster.price.filters" accessibilityRole="button" accessibilityLabel={tr("필터, 행사 종류 {0}, {1}", (EVENT_CATEGORY_LABELS[category]), (PRICE_FILTERS.find(filter => filter.key === priceFilter)?.label))} onPress={() => { play('selection'); setDraftCategory(category); setDraftPriceFilter(priceFilter); setFilterOpen(true); }} style={({ pressed }) => [styles.filterButton, { borderColor: filterCount ? theme.accent : theme.line, backgroundColor: theme.card, opacity: pressed ? 0.7 : 1 }]}><SymbolView name={{ ios: 'line.3.horizontal.decrease', android: 'tune', web: 'tune' }} size={16} tintColor={filterCount ? theme.accent : theme.text} /><ThemedText type="smallBold" themeColor={filterCount ? 'accent' : 'text'}>{tr("필터")}{filterCount ? ` ${filterCount}` : ''}</ThemedText></Pressable></View></View>
+        {(calendarExpanded || calendar?.error || (calendar?.data && !calendar.data.complete)) ? <View style={styles.calendarNote}>{calendar && !calendar.error ? <View style={[styles.legendDot, { backgroundColor: theme.accent }]} /> : null}<ThemedText type="small" themeColor="textSecondary" style={styles.legendText}>{tr(!calendar ? tr("행사 날짜를 확인하고 있어요.") : calendar.error ? tr("현재 목록에서 확인된 날짜만 표시했어요. 다른 날도 검색할 수 있어요.") : calendar.data?.complete ? tr("표시된 날에는 이 도시의 행사가 확인됐어요.") : tr("확인된 일부 행사 날짜예요. 점이 없어도 날짜를 눌러 검색할 수 있어요."))}</ThemedText></View> : null}
+        <View style={styles.resultHeader}><ThemedText type="subtitle" style={styles.resultTitle}>{tr(date ? tr("{0}월 {1}일 행사", (Number(date.slice(5, 7))), (Number(date.slice(8)))) : tr("다가오는 행사"))}</ThemedText><View style={styles.resultActions}>{date ? <Pressable analyticsId="ticketmaster.date.clear" accessibilityRole="button" accessibilityLabel={tr("날짜 선택 해제하고 다가오는 행사 보기")} onPress={() => { play('selection'); setDate(''); setPage(0); }} style={({ pressed }) => [styles.clearDate, { opacity: pressed ? 0.65 : 1 }, pressScale(pressed)]}><ThemedText type="smallBold" themeColor="accent">{tr("전체 날짜")}</ThemedText></Pressable> : null}<Pressable analyticsId="ticketmaster.price.filters" accessibilityRole="button" accessibilityLabel={tr("필터, 행사 종류 {0}, {1}", (tr(EVENT_CATEGORY_LABELS[category])), (PRICE_FILTERS.find(filter => filter.key === priceFilter)?.label))} onPress={() => { play('selection'); setDraftCategory(category); setDraftPriceFilter(priceFilter); setFilterOpen(true); }} style={({ pressed }) => [styles.filterButton, { borderColor: filterCount ? theme.accent : theme.line, backgroundColor: theme.card, opacity: pressed ? 0.7 : 1 }]}><SymbolView name={{ ios: 'line.3.horizontal.decrease', android: 'tune', web: 'tune' }} size={16} tintColor={filterCount ? theme.accent : theme.text} /><ThemedText type="smallBold" themeColor={filterCount ? 'accent' : 'text'}>{tr("필터")}{filterCount ? ` ${filterCount}` : ''}</ThemedText></Pressable></View></View>
       </View>}
       ListEmptyComponent={loading ? <View style={styles.loading}><GlingLoader color={theme.accent} /><ThemedText type="small">{tr("행사를 불러오고 있어요")}</ThemedText></View>
-        : !supported ? <StateCard title={tr("이 지역 행사는 준비 중이에요")} body="모임 화면에서 지원하는 캐나다 도시를 선택해 주세요." />
-            : error ? <StateCard kind="error" title={tr("행사를 불러오지 못했어요")} body={error} actionLabel="다시 시도" onAction={() => { play('selection'); setAttempt(n => n + 1); }} />
-              : <StateCard title={priceFilter !== 'all' && !!data?.events.length ? tr("이 페이지에 해당 가격의 행사가 없어요") : date ? tr("이 날짜의 행사가 없어요") : tr("예정된 행사가 아직 없어요")} body={data?.hasMore && priceFilter !== 'all' ? '다음 페이지에도 행사가 있어요. 다른 페이지를 확인해 주세요.' : '다른 날짜나 가격·카테고리를 선택해 주세요.'} />}
-      renderItem={({ item }) => <Link href={{ pathname: '/events/[id]', params: { id: item.id, cityId: city.id } }} asChild><Link.AppleZoom><Pressable analyticsId="ticketmaster.event.open" accessibilityRole="button" accessibilityLabel={`${item.name}, ${eventTime(item)}, ${item.venue}`} onPress={() => play('selection')} style={StyleSheet.flatten([styles.card, { backgroundColor: theme.card }])}>
+        : !supported ? <StateCard title={tr("이 지역 행사는 준비 중이에요")} body={tr("모임 화면에서 지원하는 캐나다 도시를 선택해 주세요.")} />
+            : error ? <StateCard kind="error" title={tr("행사를 불러오지 못했어요")} body={error} actionLabel={tr("다시 시도")} onAction={() => { play('selection'); setAttempt(n => n + 1); }} />
+              : <StateCard title={tr(priceFilter !== 'all' && !!data?.events.length ? tr("이 페이지에 해당 가격의 행사가 없어요") : date ? tr("이 날짜의 행사가 없어요") : tr("예정된 행사가 아직 없어요"))} body={tr(data?.hasMore && priceFilter !== 'all' ? '다음 페이지에도 행사가 있어요. 다른 페이지를 확인해 주세요.' : '다른 날짜나 가격·카테고리를 선택해 주세요.')} />}
+      renderItem={({ item }) => <Link href={{ pathname: '/events/[id]', params: { id: item.id, cityId: city.id } }} asChild><Link.AppleZoom><Pressable analyticsId="ticketmaster.event.open" accessibilityRole="button" accessibilityLabel={`${item.name}, ${eventTime(item, locale)}, ${item.venue}`} onPress={() => play('selection')} style={StyleSheet.flatten([styles.card, { backgroundColor: theme.card }])}>
         {item.image ? <Image source={{ uri: item.image }} style={styles.image} contentFit="cover" accessibilityLabel={tr("행사 이미지")} /> : <View style={[styles.image, { backgroundColor: theme.backgroundElement }]} />}
         <View style={styles.cardBody}>
-          <ThemedText type="smallBold" themeColor="textSecondary" numberOfLines={1}>{eventTime(item)}</ThemedText>
+          <ThemedText type="smallBold" themeColor="textSecondary" numberOfLines={1}>{eventTime(item, locale)}</ThemedText>
           <ThemedText type="smallBold" style={styles.cardTitle} numberOfLines={2}>{item.name}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{item.venue || item.city}</ThemedText>
-          <ThemedText type="smallBold" themeColor={item.price ? 'accent' : 'textSecondary'} numberOfLines={1}>{eventNotice(item) || eventPriceLabel(item)}</ThemedText>
+          <ThemedText type="smallBold" themeColor={item.price ? 'accent' : 'textSecondary'} numberOfLines={1}>{eventNotice(item, locale) || eventPriceLabel(item, locale)}</ThemedText>
         </View>
       </Pressable></Link.AppleZoom></Link>}
       ListFooterComponent={<View style={styles.footer}>{!!data && <View style={styles.paging}>

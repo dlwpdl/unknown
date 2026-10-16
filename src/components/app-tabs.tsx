@@ -3,13 +3,12 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { Platform } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { t } from '@/i18n';
 import { useUnreadCount } from '@/hooks/use-unread-count';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 // Native selected-state motion stays quiet; the commit actions get stronger feedback elsewhere.
 export default function AppTabs() {
-  useLanguage();
+  const { t } = useLanguage();
   const { play } = useInteractionFeedback();
   const unreadCount = useUnreadCount('other');
   const chatCount = useUnreadCount('chat');

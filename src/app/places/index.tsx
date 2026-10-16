@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr, getLocale } from '@/i18n';
 import { useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
@@ -17,9 +16,7 @@ import { CITY_PLACES_COLLECTED_AT, getCityPlaces, getCityPlacesCoverage, type Ci
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 
-const categories: { id: PlaceCategory; label: string }[] = [
-  { id: 'all', get label() { return tr("전체"); } }, { id: 'food', get label() { return tr("맛집"); } }, { id: 'cafe', get label() { return tr("카페"); } }, { id: 'places', get label() { return tr("가볼 만한 곳"); } },
-];
+
 
 export default function PlacesScreen() {
 
@@ -30,7 +27,10 @@ export default function PlacesScreen() {
 }
 
 function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
-  useLanguage();
+  const { tr, locale: appLocale } = useLanguage();
+  const categories: { id: PlaceCategory; label: string }[] = [
+    { id: 'all', get label() { return tr("전체"); } }, { id: 'food', get label() { return tr("맛집"); } }, { id: 'cafe', get label() { return tr("카페"); } }, { id: 'places', get label() { return tr("가볼 만한 곳"); } },
+  ];
   const theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
   const [limit, setLimit] = useState(10), [category, setCategory] = useState<PlaceCategory>('all'), [query, setQuery] = useState('');
   let places: CityPlace[] = [], error = '';
@@ -85,7 +85,7 @@ function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
             </Pressable>)}
           </View>
           {!places.length && <StateCard kind="empty" title={tr("목록에서 찾지 못했어요")} body={tr("검색어를 바꾸거나 다른 분류를 골라보세요.")} />}
-          <ThemedText type="small" themeColor="textSecondary">{tr("© OpenStreetMap contributors · {0} 확인 자료", (new Date(CITY_PLACES_COLLECTED_AT).toLocaleDateString(getLocale())))}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("© OpenStreetMap contributors · {0} 확인 자료", (new Date(CITY_PLACES_COLLECTED_AT).toLocaleDateString(appLocale)))}</ThemedText>
         </>}
     </ScrollView>
   </SafeAreaView>;

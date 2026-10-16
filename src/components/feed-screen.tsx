@@ -49,7 +49,6 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors, Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
-import { t, tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { CONTENT_TRANSLATION_VIEWABILITY } from '@/lib/content-translation';
 import { useCommunityCity } from '@/lib/community-city';
@@ -80,7 +79,7 @@ import { splitPostAttachments, withPostAttachments } from '../../supabase/functi
 
 
 export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: boolean }) {
-  useLanguage();
+  const { tr, t, locale: appLocale } = useLanguage();
   const theme = useTheme();
   const hidden = useContentVisibility();
   const reducedMotion = useReducedMotion();
@@ -347,7 +346,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       { text: t.write.cancel, style: 'cancel' },
       ...(message.membership ? [{ text: tr("멤버십 보기"), onPress: () => { setWriting(false); setJoinPost(null); setDetailVisible(false); setDetailPost(null); router.push('/profile/membership'); } }] : []),
     ]);
-  }, [router]);
+  }, [router, t, tr]);
 
   const onJoin = (post: Post) => {
     play('selection');
@@ -399,7 +398,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       if (revision !== writerRevision.current) return;
       draftLocation.current = fix;
     });
-  }, [isAuthed, promptLogin, writing, city, location, title, body, hashtagInput, draftImages, pollDraft, play]);
+  }, [isAuthed, promptLogin, writing, city, location, title, body, hashtagInput, draftImages, pollDraft, play, t.auth.reasonWrite]);
 
   useEffect(() => {
     if (!writing) { writerRevision.current++; draftLocation.current = null; }
@@ -600,7 +599,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const feedState = cityOpen && feedLoading ? <View style={styles.categoryLoading}>{cityLoading ? <View style={[styles.feedPlaceholder, { backgroundColor: theme.backgroundElement }]} accessible={false} /> : <GlingLoader color={theme.accent} accessibilityLabel={tr("글 불러오는 중")} />}</View> : (
     cityOpen ? (
       feedError && feedData.length === 0 ? (
-        <StateCard kind="error" title={tr("글을 불러오지 못했어요")} body="연결을 확인하고 다시 시도해 주세요." actionLabel="다시 시도" onAction={() => { play('selection'); void refreshFeed().catch(() => {}); }} />
+        <StateCard kind="error" title={tr("글을 불러오지 못했어요")} body={tr("연결을 확인하고 다시 시도해 주세요.")} actionLabel={tr("다시 시도")} onAction={() => { play('selection'); void refreshFeed().catch(() => {}); }} />
       ) : feedData.length === 0 ? (
         <View style={styles.soon}>
           <ThemedText accessibilityRole="header" style={styles.soonTitle}>{meetupsOnly ? t.feed.meetupEmptyTitle : activeSort === 'popular' ? tr("최근 7일 글이 아직 없어요") : t.feed.emptyTitle}</ThemedText>
@@ -683,7 +682,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             <View style={styles.header} onLayout={event => { feedIntroHeight.current = event.nativeEvent.layout.height; }}>
               <View style={styles.journalIntro}>
                 <View style={styles.journalStatusRow}>
-                  <ThemedText type="smallBold" themeColor="textSecondary" style={styles.journalDate}>{todayLabel()}</ThemedText>
+                  <ThemedText type="smallBold" themeColor="textSecondary" style={styles.journalDate}>{todayLabel(appLocale)}</ThemedText>
                   {cityLoading && <View style={styles.cityLoadingStatus}><GlingLoader color={theme.accent} size={18} accessibilityLabel={tr("{0} 소식 불러오는 중", (city.name))} /><ThemedText type="small" themeColor="textSecondary">{tr("소식 불러오는 중")}</ThemedText></View>}
                 </View>
                 <ThemedText accessibilityRole="header" style={styles.journalTitle}>{meetupsOnly ? t.feed.meetupTitle : t.feed.journalTitle}</ThemedText>

@@ -214,7 +214,7 @@ function detailViewport() {
     'expo-router': { useIsFocused: () => true, useLocalSearchParams: () => ({ cityId: 'toronto', id: 'osm:node:1' }), useRouter: () => ({}) },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/components/place-reviews': { PlaceReviews: 'PlaceReviews' },
-    '@/hooks/use-language': { useLanguage() {} }, '@/i18n': { tr, getLocale: () => 'en-CA' },
+    '@/hooks/use-language': { useLanguage: () => ({ tr, locale: 'en-CA' }) }, '@/i18n': { tr, getLocale: () => 'en-CA' },
     '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'toronto' } }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'guest' } }) },

@@ -1,3 +1,4 @@
+import { t as sourceCopy } from '@/i18n/ko';
 import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, FlatList } from '@/components/analytics-controls';
@@ -22,7 +23,6 @@ import { TabContent } from '@/components/tab-content';
 import { TrustBadge } from '@/components/trust-badge';
 import { Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { t, tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { getCommunityActionError, loadConversations, loadPendingMeetupRequests, MEETUPS_CHANGED_EVENT, respondMeetupRequest, type ConversationPage, type ConversationFilter, type MeetupRequest } from '@/lib/community-data';
 import { meetupRestrictionError } from '@/lib/meetup-policy';
@@ -43,7 +43,7 @@ const MEETUP_CHAT_ICONS = {
 } as const;
 
 export default function ChatScreen() {
-  useLanguage();
+  const { tr, t, locale: appLocale } = useLanguage();
   // Pushing a tab route from a stack screen can mount the tabs twice; keep channel names unique per mount.
   const channelId = useId();
   const theme = useTheme();
@@ -106,7 +106,7 @@ export default function ChatScreen() {
         animateList();
         setInbox({ ...next, userId, filter, requests: nextRequests });
         if (conversationId && next.selectedConversation) { setSelection({ userId, id: next.selectedConversation.id }); setModalConversation(next.selectedConversation); }
-      } catch { if (currentUser.current === userId && version.current === request) setError({ userId, text: t.chat.loadError }); }
+      } catch { if (currentUser.current === userId && version.current === request) setError({ userId, text: sourceCopy.chat.loadError }); }
       finally {
         if (currentUser.current === userId && version.current === request) setLoading(false);
         if (inFlight.current?.request === request) inFlight.current = null;
@@ -196,7 +196,7 @@ export default function ChatScreen() {
       play('warning');
       const code = getCommunityActionError(failure);
       const message = code ? t.actionErrors[code] : null;
-      Alert.alert(code === 'MEETUP_JOIN_RESTRICTED' ? tr("신청자의 새 모임 참여가 제한 중이에요") : message?.title ?? t.chat.requestError, meetupRestrictionError(failure) ?? getChillingError(failure));
+      Alert.alert(code === 'MEETUP_JOIN_RESTRICTED' ? tr("신청자의 새 모임 참여가 제한 중이에요") : message?.title ?? t.chat.requestError, meetupRestrictionError(failure, appLocale) ?? getChillingError(failure));
       await refresh();
     } finally { processing.current = false; if (currentUser.current === owner) setRequestBusy(null); }
   };
@@ -206,6 +206,10 @@ export default function ChatScreen() {
     {/* 홈·모임과 같게 제목 줄은 고정한다. 필터와 안내는 목록과 함께 스크롤된다. */}
     <View style={[styles.headRow, styles.headFixed, { backgroundColor: theme.background }]}>
       <ThemedText accessibilityRole="header" style={styles.heading}>{t.tabs.chat}</ThemedText>
+      <GlassSurface tone="control" interactive style={styles.refreshGlass}><Pressable analyticsId="chat.discovery.open" accessibilityRole="button" accessibilityLabel={tr('부동산·중고거래·장소·행사 통합 지도')}
+        onPress={() => { play('reaction'); router.push('/map'); }} style={({ pressed }) => [styles.refreshAction, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
+        <SymbolView name={{ ios: 'map', android: 'map', web: 'map' }} size={21} tintColor={theme.text} />
+      </Pressable></GlassSurface>
       <ProfileAvatarButton />
       <GlassSurface tone="control" interactive style={styles.refreshGlass}><Pressable analyticsId="app_tabs_chat.pressable.1" onPress={() => { play('selection'); void changed(); }} accessibilityRole="button" accessibilityLabel={t.chat.refresh} disabled={loading} accessibilityState={{ disabled: loading }} style={({ pressed }) => [styles.refreshAction, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent', opacity: loading ? 0.45 : 1 }]}><SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={19} tintColor={theme.accent} /></Pressable></GlassSurface>
     </View>
@@ -236,11 +240,11 @@ export default function ChatScreen() {
                 : <Pressable analyticsId="app_tabs_chat.pressable.6" onPress={() => { play('selection'); setApproveId(request.id); }} disabled={requestBusy !== null} accessibilityRole="button" accessibilityState={{ disabled: requestBusy !== null }} style={({ pressed }) => [styles.requestButton, Depth.control, { borderColor: theme.accentDepth, backgroundColor: theme.accent, borderBottomWidth: 3, }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{t.chat.approve}</ThemedText></Pressable>}</View></>}
           </View>)}
         </>}
-        {error?.userId === userId && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{error.text}</ThemedText>}
+        {error?.userId === userId && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{tr(error.text)}</ThemedText>}
       </View>}
       ListEmptyComponent={initialLoading ? <GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} />
         : loading ? null
-        : filter === 'requests' ? (requests.length ? null : <StateCard title={tr("대기 중인 모임 신청이 없어요")} body="모임에 신청이 들어오면 여기서 수락하거나 거절할 수 있어요." />)
+        : filter === 'requests' ? (requests.length ? null : <StateCard title={tr("대기 중인 모임 신청이 없어요")} body={tr("모임에 신청이 들어오면 여기서 수락하거나 거절할 수 있어요.")} />)
           : <StateCard title={t.chat.emptyTitle} body={t.chat.emptyBody} />}
       renderItem={({ item, index }) => <Pressable analyticsId="app_tabs_chat.pressable.7" onPress={() => { play('selection'); setModalConversation(item); setSelection({ userId: auth.me.id, id: item.id }); }} accessibilityRole="button" style={({ pressed }) => [styles.room, { borderBottomColor: theme.line, backgroundColor: pressed ? theme.backgroundElement : 'transparent', transform: [{ scale: pressed && !reducedMotion ? 0.985 : 1 }] }]}>
         <ChatAvatar kind={item.kind} title={item.title} meetupCategory={item.meetupCategory} initial={item.kind === 'direct' ? item.otherUser.nickname[0] : ''} active={focused && !shownConversation && index < 8} delay={index * 260} />

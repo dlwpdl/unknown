@@ -5,7 +5,6 @@ import { SymbolView } from 'expo-symbols';
 import { Pressable } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
-import { t } from '@/i18n';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { googleMapsPin, googleMapsUrl } from '@/lib/post-maps';
 import { PostPinMap } from '@/components/post-pin-map';
@@ -14,7 +13,7 @@ import { recordProductEvent } from '@/lib/product-analytics';
 import { supabase } from '@/lib/supabase';
 
 export function PostMapLink({ url, label, onOpened }: { url: string; label?: string; onOpened?: () => void }) {
-  useLanguage();
+  const { t } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const { isAuthed, me } = useAuth(), userId = isAuthed ? me.id : null;
   const identity = useRef(userId);

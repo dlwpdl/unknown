@@ -14,7 +14,6 @@ import { ThemedView } from '@/components/themed-view';
 import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useTheme } from '@/hooks/use-theme';
-import { t, tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { loadSavedPosts } from '@/lib/community-data';
 import { appendUniquePosts, type FeedCursor } from '@/lib/feed-data';
@@ -28,7 +27,7 @@ import type { Post } from '@/lib/types';
 type SavedPage = SavedMerchantPage & { posts: Post[]; cursor: FeedCursor | null };
 
 export default function SavedPostsScreen() {
-  useLanguage();
+  const { tr, t } = useLanguage();
   const auth = useAuth();
   const theme = useTheme();
   const router = useRouter();
@@ -98,7 +97,7 @@ export default function SavedPostsScreen() {
       </View>}
       ListEmptyComponent={loading
         ? <GlingLoader color={theme.accent} accessibilityLabel={tab === 'posts' ? t.profile.savedLoading : tr("저장한 비즈니스를 불러오는 중")} style={styles.state} />
-        : <View style={styles.state}><StateCard kind={current?.failed ? 'error' : 'empty'} title={current?.failed ? t.profile.savedError : tab === 'posts' ? t.profile.savedEmpty : tr("저장한 비즈니스가 없어요")} body={current?.failed ? '연결을 확인하고 다시 시도해 주세요.' : tab === 'posts' ? '관심 가는 글이나 모임에서 저장을 누르면 여기에 모여요.' : '비즈니스 프로필에서 저장을 누르면 여기에 모여요.'} actionLabel={current?.failed ? '다시 시도' : '오늘 글 둘러보기'} onAction={current?.failed ? retry : () => router.push('/')} /></View>}
+        : <View style={styles.state}><StateCard kind={current?.failed ? 'error' : 'empty'} title={current?.failed ? t.profile.savedError : tab === 'posts' ? t.profile.savedEmpty : tr("저장한 비즈니스가 없어요")} body={tr(current?.failed ? '연결을 확인하고 다시 시도해 주세요.' : tab === 'posts' ? '관심 가는 글이나 모임에서 저장을 누르면 여기에 모여요.' : '비즈니스 프로필에서 저장을 누르면 여기에 모여요.')} actionLabel={tr(current?.failed ? '다시 시도' : '오늘 글 둘러보기')} onAction={current?.failed ? retry : () => router.push('/')} /></View>}
       ListFooterComponent={<View style={styles.footer}>
         {loading && rows.length > 0 && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr("불러오는 중…")}</ThemedText>}
         {current?.failed && rows.length > 0 && <><ThemedText type="small" accessibilityRole="alert">{tr("목록을 불러오지 못했어요. 앞서 불러온 항목은 유지돼요.")}</ThemedText>

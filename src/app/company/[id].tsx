@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr, getLocale } from '@/i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -24,11 +23,11 @@ import { merchantMapsUrl, merchantPhoneUrl, setSavedMerchant, setSavedMerchantNo
 import { safeMerchantSourceUrl } from '@/lib/merchant-source';
 import { supabase } from '@/lib/supabase';
 
-const tabs = [{ id: 'posts', get label() { return tr("게시글"); } }, { id: 'jobs', get label() { return tr("채용"); } }, { id: 'reviews', get label() { return tr("리뷰"); } }, { id: 'about', get label() { return tr("소개"); } }] as const;
+const tabs = [{ id: 'posts', label: '게시글' }, { id: 'jobs', label: '채용' }, { id: 'reviews', label: '리뷰' }, { id: 'about', label: '소개' }] as const;
 type ProfileTab = typeof tabs[number]['id'];
 
 export default function CompanyProfileRoute() {
-  useLanguage();
+  const { tr, locale: appLocale } = useLanguage();
   const { id, review } = useLocalSearchParams<{ id: string; review?: string }>(), router = useRouter(), theme = useTheme(), { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion(), scroll = useRef<NativeScrollView>(null), tabsTop = useRef(0);
   const { me, isAuthed, isAuthLoading, promptLogin } = useAuth(), hidden = useContentVisibility();
@@ -61,7 +60,7 @@ export default function CompanyProfileRoute() {
   const counts = countsResult?.key === key ? countsResult.value : null;
   const ratings = ratingResult?.key === key ? ratingResult.ratings : undefined;
   const reviewCount = ratings?.usage && ratings.employment ? ratings.usage.review_count + ratings.employment.review_count : undefined;
-  const displayCount = (value: number | undefined, settled: boolean) => value == null ? settled ? '—' : '…' : value.toLocaleString(getLocale());
+  const displayCount = (value: number | undefined, settled: boolean) => value == null ? settled ? '—' : '…' : value.toLocaleString(appLocale);
   useFocusEffect(useCallback(() => {
     const operation = { key, visibility: hidden, active: true, busy: false };
     actionRequest.current = operation;
@@ -222,7 +221,7 @@ export default function CompanyProfileRoute() {
         {!!profile.services && <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{profile.services.split(/\r?\n/, 1)[0]}</ThemedText>}
         {!!counts?.job_count && <Pressable analyticsId="company.hiring" accessibilityRole="button" style={styles.hiring}
           onPress={() => { selectTab('jobs'); scroll.current?.scrollTo({ y: tabsTop.current, animated: !reducedMotion }); }}>
-          <ThemedText type="small" themeColor="accent">{tr("• 채용 중 ·") + " "}{counts.job_count.toLocaleString(getLocale())}{tr("건 ›")}</ThemedText>
+          <ThemedText type="small" themeColor="accent">{tr("• 채용 중 ·") + " "}{counts.job_count.toLocaleString(appLocale)}{tr("건 ›")}</ThemedText>
         </Pressable>}
         <View onLayout={event => { tabsTop.current = event.nativeEvent.layout.y; }} style={[styles.tabs, { borderBottomColor: theme.line }]} accessibilityRole="tablist">
           {tabs.map(item => {
@@ -230,9 +229,9 @@ export default function CompanyProfileRoute() {
               : item.id === 'jobs' ? displayCount(counts?.job_count, !!currentPosts?.failed || countsResult?.key === key)
               : item.id === 'reviews' ? displayCount(reviewCount, ratingResult?.key === key) : null;
             return <Pressable key={item.id} analyticsId={`company.tab.${item.id}`} accessibilityRole="tab" accessibilityState={{ selected: tab === item.id }}
-              accessibilityLabel={tr("{0}{1}", (item.label), (count == null ? '' : ` ${count}건`))} style={[styles.tab, { borderBottomColor: tab === item.id ? theme.accent : 'transparent' }]}
+              accessibilityLabel={tr("{0}{1}", (tr(item.label)), (count == null ? '' : tr(" {0}건", count)))} style={[styles.tab, { borderBottomColor: tab === item.id ? theme.accent : 'transparent' }]}
               onPress={() => selectTab(item.id)}>
-              <ThemedText type="smallBold" themeColor={tab === item.id ? 'accent' : 'textSecondary'}>{item.label}</ThemedText>
+              <ThemedText type="smallBold" themeColor={tab === item.id ? 'accent' : 'textSecondary'}>{tr(item.label)}</ThemedText>
               {count != null && <ThemedText style={styles.tabCount} themeColor={tab === item.id ? 'accent' : 'textSecondary'}>{count}</ThemedText>}
             </Pressable>;
           })}

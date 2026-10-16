@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { Pressable } from '@/components/analytics-controls';
 import { useState } from 'react';
 import { Platform, StyleSheet, TextInput, View } from 'react-native';
@@ -10,12 +9,13 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { ageOnDate, formatDateOfBirth, PERSONAL_INFO_GENDERS, PERSONAL_INFO_NOTICE, validatePersonalInfo } from '@/lib/personal-info';
 
 export type PersonalInfoDraft = { fullName: string; dateOfBirth: string; accepted: boolean; gender: string };
-const GENDER_OPTIONS = [...Object.entries(PERSONAL_INFO_GENDERS).map(([value, label]) => ({ value, label })), { value: '', get label() { return tr("선택 안 함"); } }];
+
 
 export function PersonalInfoFields({ value, onChange, disabled = false, showConsent = true }: {
   value: PersonalInfoDraft; onChange: (value: PersonalInfoDraft) => void; disabled?: boolean; showConsent?: boolean;
 }) {
-  useLanguage();
+  const { tr } = useLanguage();
+  const GENDER_OPTIONS = [...Object.entries(PERSONAL_INFO_GENDERS).map(([value, label]) => ({ value, label })), { value: '', get label() { return tr("선택 안 함"); } }];
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const [touched, setTouched] = useState(false);
@@ -40,7 +40,7 @@ export function PersonalInfoFields({ value, onChange, disabled = false, showCons
         style={[styles.input, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]} />
       {age != null && <ThemedText type="small" themeColor="textSecondary">{tr("만") + " "}{age}{tr("세 · 본인 입력 · 생년월일 미인증")}</ThemedText>}
     </View>
-    {touched && error && <ThemedText type="small" accessibilityRole="alert" style={{ color: theme.accent }}>{error}</ThemedText>}
+    {touched && error && <ThemedText type="small" accessibilityRole="alert" style={{ color: theme.accent }}>{tr(error)}</ThemedText>}
     <View style={styles.field}>
       <ThemedText type="smallBold">{tr("성별 · 선택")}</ThemedText>
       <View accessibilityRole="radiogroup" accessibilityLabel={tr("성별")} style={styles.genderRow}>
@@ -50,13 +50,13 @@ export function PersonalInfoFields({ value, onChange, disabled = false, showCons
             disabled={disabled} onPress={() => { play('selection'); onChange({ ...value, gender: option.value }); }} accessibilityRole="radio" aria-checked={selected}
             accessibilityState={{ checked: selected, disabled }}
             style={({ pressed }) => [styles.genderOption, { borderColor: selected ? theme.accent : theme.line, backgroundColor: theme.card, opacity: disabled ? 0.55 : pressed ? 0.7 : 1 }]}>
-            <ThemedText type="small" style={selected ? { color: theme.accent } : undefined}>{option.label}</ThemedText>
+            <ThemedText type="small" style={selected ? { color: theme.accent } : undefined}>{tr(option.label)}</ThemedText>
           </Pressable>;
         })}
       </View>
     </View>
     {showConsent && <>
-    <ThemedText type="small" themeColor="textSecondary">{PERSONAL_INFO_NOTICE}</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary">{tr(PERSONAL_INFO_NOTICE)}</ThemedText>
     <Pressable analyticsId="components_personal-info-fields.pressable.1" disabled={disabled} onPress={toggleConsent} accessibilityRole="checkbox" aria-checked={value.accepted} accessibilityState={{ checked: value.accepted, disabled }}
       {...(Platform.OS === 'web' ? { onKeyDown: (event: { key: string; preventDefault: () => void }) => { if (event.key === ' ') { event.preventDefault(); toggleConsent(); } } } : {})}
       style={({ pressed }) => [styles.consent, { borderColor: value.accepted ? theme.accent : theme.line, backgroundColor: theme.card, opacity: disabled ? 0.55 : pressed ? 0.7 : 1 }]}>

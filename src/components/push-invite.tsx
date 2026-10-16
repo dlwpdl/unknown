@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { Pressable } from '@/components/analytics-controls';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
@@ -25,7 +24,7 @@ const ASKED_KEY = 'gling.pushInviteAsked';
 const REASK_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function PushInvite() {
-  useLanguage();
+  const { tr } = useLanguage();
   const { isAuthed, me } = useAuth();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
