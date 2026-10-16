@@ -23,9 +23,10 @@ export function ContentTranslationProvider({ children }: PropsWithChildren) {
   useEffect(() => { resetContentTranslations(); }, [scope]);
   const current = useRef(scope);
   useLayoutEffect(() => { current.current = scope; }, [scope]);
-  const [saved, setSaved] = useState<{ scope: string | null; mode: TranslationMode; ready: boolean }>({ scope: null, mode: 'off', ready: false });
+  const [saved, setSaved] = useState<{ scope: string | null; mode: TranslationMode; ready: boolean; hasPreference: boolean }>({ scope: null, mode: 'off', ready: false, hasPreference: false });
   const [saving, setSaving] = useState(false);
   const busy = useRef(false);
+  const offered = useRef<string | null>(null);
   const mode = saved.scope === scope ? saved.mode : 'off';
   const ready = !scope || saved.scope === scope && saved.ready;
 
@@ -33,7 +34,7 @@ export function ContentTranslationProvider({ children }: PropsWithChildren) {
     let active = true;
     if (!scope) return;
     void AsyncStorage.getItem('gling.device-translation.v1:' + scope).catch(() => null).then((value) => {
-      if (active) setSaved({ scope, mode: value === 'auto' || value === 'manual' ? value : 'off', ready: true });
+      if (active) setSaved({ scope, mode: value === 'auto' || value === 'manual' ? value : 'off', ready: true, hasPreference: value === 'off' || value === 'manual' || value === 'auto' });
     });
     return () => { active = false; };
   }, [scope]);
@@ -45,7 +46,7 @@ export function ContentTranslationProvider({ children }: PropsWithChildren) {
     try {
       await AsyncStorage.setItem('gling.device-translation.v1:' + scope, next);
       if (current.current !== scope) return false;
-      setSaved({ scope, mode: next, ready: true });
+      setSaved({ scope, mode: next, ready: true, hasPreference: true });
       return true;
     } catch {
       play('warning');
@@ -75,6 +76,12 @@ export function ContentTranslationProvider({ children }: PropsWithChildren) {
         ], { cancelable: true, onDismiss: () => { if (!answered) resolve(false); } });
     });
   }, [scope, ready, mode, save, language, play]);
+
+  useEffect(() => {
+    if (!scope || !ready || language !== 'en' || saved.hasPreference || offered.current === scope || !isDeviceTranslationSupported()) return;
+    offered.current = scope;
+    void requestMode('auto');
+  }, [scope, ready, language, saved.hasPreference, requestMode]);
 
   return <PreferenceContext.Provider value={{ mode, ready, saving, requestMode }}>{children}</PreferenceContext.Provider>;
 }
