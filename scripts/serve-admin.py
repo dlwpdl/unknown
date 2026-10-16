@@ -10,7 +10,6 @@ class AdminHandler(SimpleHTTPRequestHandler):
     def json_response(self, status, value):
         self.send_response(status)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
-        self.send_header('X-Content-Type-Options', 'nosniff')
         self.end_headers()
         self.wfile.write(json.dumps(value).encode())
 
@@ -46,6 +45,10 @@ class AdminHandler(SimpleHTTPRequestHandler):
 
     def end_headers(self):
         self.send_header('Cache-Control', 'no-store')
+        self.send_header('Content-Security-Policy', "frame-ancestors 'none'; object-src 'none'; base-uri 'self'")
+        self.send_header('X-Frame-Options', 'DENY')
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('Referrer-Policy', 'strict-origin-when-cross-origin')
         super().end_headers()
 
 

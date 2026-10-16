@@ -33,6 +33,7 @@ import { chatDateLabel, chatImagePaths, chatMessageTime, firstUnreadMessageIndex
 import { blockUser, endConversation, editChatMessage, deleteChatMessage, loadListingReviewState, writeListingReview, type ListingReviewState, isContentRejected, loadChatReadPosition, loadConversationMessages, loadConversationMessagesByIds, loadMessageReactions, markChatRead, mergeChatMessages, sendChatAttachment, sendDirectMessage, setMessageReaction, uploadChatImage, type ChatMessageRecord, type ConversationPreview, type MessageReaction, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
+import { recordProductEvent } from '@/lib/product-analytics';
 
 export function conversationCapabilities(status: ConversationPreview['status']) {
   return { read: status === 'active' || status === 'ended', write: status === 'active' };
@@ -495,7 +496,10 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       setPhotoProgress({ stage: 'upload', completed: pending.paths.length, total: pending.photos.length });
       for (let i = pending.paths.length; i < pending.photos.length; i++) {
         if (!valid()) return;
-        pending.paths.push(await uploadChatImage(supabase, currentUserId, conversation.id, pending.photos[i].base64));
+        pending.paths.push(await uploadChatImage(supabase, currentUserId, conversation.id, pending.photos[i].base64).catch(failure => {
+          if (valid()) void recordProductEvent(supabase, { kind: 'photo_upload_error', platform: Platform.OS }).catch(() => {});
+          throw failure;
+        }));
         if (valid()) setPhotoProgress({ stage: 'upload', completed: pending.paths.length, total: pending.photos.length });
       }
       if (!valid()) return;

@@ -62,6 +62,7 @@ export function ConversationThread({ detail, loading, error, loadingMessages, na
   onBack: () => void; onReview: () => void; onEarlier: () => void; onLatest: () => void;
   onFirstSignal: () => void; onRetry: () => void;
 }) {
+  const { play } = useInteractionFeedback();
   const list = useRef<FlatList<ConversationMessage>>(null);
   const scrollEnd = useRef(true);
   const scrollTarget = useRef<number | null>(null);
@@ -76,7 +77,7 @@ export function ConversationThread({ detail, loading, error, loadingMessages, na
     if (!paths.length) return;
     void supabase.storage.from('chat-images').createSignedUrls(paths, 3600).then((result) => {
       if (active) setImageUrls(Object.fromEntries((result.data ?? []).flatMap((image) => image.path && image.signedUrl ? [[image.path, image.signedUrl]] : [])));
-    }).catch(() => { /* Original attachment paths stay visible if image storage is unavailable. */ });
+    }).catch(() => { /* A visible photo warning and trace disclosure retain the unavailable attachment. */ });
     return () => { active = false; };
   }, [pathsKey, roomId]);
   useEffect(() => {
@@ -140,17 +141,24 @@ export function ConversationThread({ detail, loading, error, loadingMessages, na
             accessibilityLabel={`${sender?.nickname ?? '참여자 정보 없음'}, ${conversationTime(message.created_at)}${flagged ? ', 감지 신호' : ''}`} style={styles.message}>
             <View style={[styles.avatar, second && styles.accentTag]} aria-hidden accessibilityElementsHidden><Text style={styles.avatarText}>{sender?.nickname.slice(0, 1) ?? '?'}</Text></View>
             <View style={styles.messageBody}><View style={styles.row}><Text style={styles.caseTitle}>{sender?.nickname ?? '참여자 정보 없음'}</Text><Text style={styles.caption}>{conversationTime(message.created_at)}</Text></View>
-              {!!message.reply_to_id && <Text style={styles.caption}>답장 대상 · {message.reply_to_id}</Text>}
+              {!!message.reply_to_id && <Text style={styles.caption}>이전 메시지에 답장</Text>}
               <View style={[styles.bubble, second && styles.bubbleSecond, flagged && styles.flaggedBubble, focusId === message.id && styles.focusedBubble]}>
                 <Text selectable style={styles.messageText}>{message.body}</Text>
                 {(message.kind === 'image' || paths.length > 0) && (paths.length ? paths : [null]).map((path, position) => <View key={path ?? 'missing'} style={styles.attachment}>
                   {path && imageUrls[path] && !failedImages[path] ? <Image source={{ uri: imageUrls[path] }} style={styles.image} contentFit="contain" accessibilityLabel={`대화에 첨부한 원본 사진 ${position + 1}/${paths.length}`}
                     onError={() => setFailedImages((current) => ({ ...current, [path]: true }))} /> : <Text style={styles.caption}>사진을 표시할 수 없어요.</Text>}
-                  <Text selectable style={styles.caption}>사진 {position + 1} · {path ?? '원본 경로 없음'}</Text>
+                  <Text style={styles.caption}>첨부 사진 {position + 1}/{paths.length || 1}</Text>
                 </View>)}
                 {message.kind === 'location' && <View style={styles.attachment}><Text style={styles.body}>공유한 위치</Text>
                   <Text selectable style={styles.caption}>{message.latitude != null && message.longitude != null ? `위도 ${message.latitude} · 경도 ${message.longitude}` : '좌표 정보 없음'}</Text></View>}
               </View>
+              {(message.reply_to_id || paths.length > 0 || message.kind === 'image') && <details onToggle={() => play('selection')}>
+                <summary style={{ minHeight: 44, cursor: 'pointer', alignContent: 'center' }}>문제 추적 정보</summary>
+                {!!message.reply_to_id && <Text selectable style={styles.caption}>답장 대상 ID · {message.reply_to_id}</Text>}
+                <Text selectable style={styles.caption}>메시지 ID · {message.id}</Text>
+                {paths.map((path, position) => <Text key={path} selectable style={styles.caption}>사진 {position + 1} 원본 경로 · {path}</Text>)}
+                {message.kind === 'image' && !paths.length && <Text style={styles.caption}>원본 경로 없음</Text>}
+              </details>}
               {flagged && <Text style={[styles.caption, styles.warningText]}>감지 신호 · 맥락 확인 필요</Text>}
             </View>
           </View>
@@ -212,15 +220,24 @@ export function ConversationReviewPanel({ detail, draft, saving, saveError, noti
         {validation && <Text accessibilityRole="alert" style={styles.error}>판단 근거나 검토 메모를 남겨 주세요.</Text>}
         {!!saveError && <View accessibilityRole="alert" style={{ gap: 8 }}><Text style={styles.error}>{saveError}</Text><ConversationButton testID="conversation-review-reload" label="최신 기록 불러오기" onPress={onReload} disabled={saving} /></View>}
       </View>
-      <View style={styles.reviewSection}><Text style={styles.sectionLabel}>저장된 검토 이력 · {detail.review_history.length}건</Text>
-        {!detail.review_history.length && <Text style={styles.caption}>아직 저장된 검토 기록이 없어요.</Text>}
-        {detail.review_history.map((review) => <View key={review.id} testID={`conversation-review-history-${review.id}`} style={styles.history}>
-          <Text style={styles.body}>{CONVERSATION_REVIEW_STATUS[review.status]}</Text>
-          <Text style={styles.caption}>{conversationTime(review.created_at)} · {review.actor_name ?? '운영자'}</Text>
-          <Text selectable style={styles.body}>{review.note}</Text>
-        </View>)}
+      <View style={styles.reviewSection}>
+        {!detail.review_history.length ? <Text style={styles.caption}>저장된 검토 이력 0건</Text> : <>
+          <Text style={styles.sectionLabel}>최근 저장된 검토 · {CONVERSATION_REVIEW_STATUS[detail.review_history[0].status]}</Text>
+          <Text style={styles.caption}>{conversationTime(detail.review_history[0].created_at)} · {detail.review_history[0].actor_name ?? '운영자'}</Text>
+          <details onToggle={() => play('selection')}>
+            <summary style={{ minHeight: 44, cursor: 'pointer', alignContent: 'center' }}>저장된 검토 이력 {detail.review_history.length}건</summary>
+            {detail.review_history.map((review) => <View key={review.id} testID={`conversation-review-history-${review.id}`} style={styles.history}>
+              <Text style={styles.body}>{CONVERSATION_REVIEW_STATUS[review.status]}</Text>
+              <Text style={styles.caption}>{conversationTime(review.created_at)} · {review.actor_name ?? '운영자'}</Text>
+              <Text selectable style={styles.body}>{review.note}</Text>
+            </View>)}
+          </details>
+        </>}
       </View>
-      <Text selectable style={styles.caption}>대화 ID · {room.id}</Text>
+      <details onToggle={() => play('selection')}>
+        <summary style={{ minHeight: 44, cursor: 'pointer', alignContent: 'center' }}>문제 추적 정보</summary>
+        <Text selectable style={styles.caption}>대화 ID · {room.id}</Text>
+      </details>
     </ScrollView>
     <View style={styles.reviewFooter}>
       <ConversationButton testID="conversation-save" primary label={saving ? '저장 중…' : '검토 기록 저장'} disabled={saving || !!saveError || loadingMessages} busy={saving} onPress={() => {

@@ -1,0 +1,105 @@
+.partnership-admin { color:var(--admin-ink); font:14px/1.55 system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif; }
+.partnership-admin * { box-sizing:border-box; }
+.partnership-admin h1,.partnership-admin h2,.partnership-admin h3,.partnership-admin p { margin:0; }
+.partnership-admin h1 { font-size:26px; line-height:1.3; letter-spacing:-.6px; margin:4px 0 8px; }
+.partnership-admin h2 { font-size:20px; line-height:1.4; letter-spacing:-.3px; }
+.partnership-admin h3 { font-size:15px; margin-bottom:12px; }
+.partnership-admin a { display:inline-flex; align-items:center; min-height:44px; color:var(--admin-accent); text-underline-offset:3px; overflow-wrap:anywhere; }
+.partnership-admin ::selection { background:var(--admin-subtle); }
+.partnership-admin :is(button,input,select,textarea) { font:inherit; color:inherit; border:1px solid var(--admin-line); border-radius:8px; background:var(--admin-card); min-height:44px; padding:9px 12px; max-width:100%; }
+.partnership-admin button { cursor:pointer; font-weight:600; }
+.partnership-admin button:hover:not(:disabled) { background:var(--admin-subtle); }
+.partnership-admin button:active:not(:disabled) { transform:translateY(1px); }
+.partnership-admin button:disabled { opacity:.45; cursor:default; }
+.partnership-admin :is(button,input,select,textarea,a,summary):focus-visible { outline:2px solid var(--admin-accent); outline-offset:3px; }
+.partnership-admin button.partnership-primary { color:var(--admin-accent-ink); background:var(--admin-accent); border-color:var(--admin-accent); }
+.partnership-heading,.partnership-toolbar,.partnership-section-heading,.partnership-detail-actions,.partnership-form-actions { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.partnership-heading { margin-bottom:24px; }
+.partnership-muted { color:var(--admin-muted); font-size:13px; }
+.partnership-toolbar { margin-bottom:12px; }
+.partnership-toolbar .admin-search { flex:0 1 420px; width:100%; min-width:0; }
+.partnership-admin .admin-search input { padding-left:40px; }
+.partnership-table-wrap { width:100%; overflow:auto; border:1px solid var(--admin-line); border-radius:10px; background:var(--admin-card); }
+.partnership-table { width:100%; min-width:600px; border-collapse:collapse; text-align:left; font-variant-numeric:tabular-nums; }
+.partnership-table :is(th,td) { padding:12px 16px; border-bottom:1px solid var(--admin-line); vertical-align:middle; }
+.partnership-table th { font-size:12px; font-weight:500; color:var(--admin-muted); background:var(--admin-subtle); }
+.partnership-table tbody tr:last-child td { border-bottom:0; }
+.partnership-table tr[data-selected="true"] { background:var(--admin-subtle); }
+.partnership-table small { display:block; color:var(--admin-muted); margin-top:3px; }
+.partnership-admin .partnership-row-button { display:flex; flex-direction:column; justify-content:center; align-items:flex-start; padding:2px 0; width:100%; border:0; text-align:left; background:transparent; }
+.partnership-row-button strong { font-size:14px; overflow-wrap:anywhere; }
+.partnership-status { display:inline-block; color:var(--admin-muted); background:var(--admin-subtle); border:1px solid var(--admin-line); border-radius:5px; padding:2px 7px; font-size:12px; font-weight:500; white-space:nowrap; }
+.partnership-pages { display:flex; align-items:center; justify-content:flex-end; gap:12px; margin-top:16px; color:var(--admin-muted); font-size:12px; }
+.partnership-state { padding:40px 20px; text-align:center; border:1px solid var(--admin-line); border-radius:10px; background:var(--admin-paper); }
+.partnership-state p { margin:8px 0 16px; }
+.partnership-notice { padding:12px 16px; border:1px solid var(--admin-line); border-radius:8px; margin-bottom:16px!important; background:var(--admin-subtle); }
+.partnership-dialog { padding:0; width:min(920px,calc(100vw - 48px)); max-width:100%; height:min(900px,calc(100dvh - 48px)); max-height:100dvh; border:1px solid var(--admin-line); border-radius:14px; background:var(--admin-card); color:var(--admin-ink); overflow:hidden; }
+.partnership-dialog::backdrop { background:rgb(15 20 30 / .32); }
+.partnership-dialog[open] { display:flex; flex-direction:column; }
+.partnership-dialog-heading { display:flex; flex-shrink:0; gap:16px; align-items:center; justify-content:space-between; padding:20px 24px; border-bottom:1px solid var(--admin-line); }
+.partnership-dialog-heading h2 { min-width:0; overflow-wrap:anywhere; }
+.partnership-dialog-heading button { flex-shrink:0; }
+.partnership-dialog-body { flex:1; min-height:0; padding:24px; overflow:auto; overscroll-behavior:contain; }
+.partnership-detail-actions { justify-content:flex-end; margin-bottom:20px; }
+.partnership-facts { display:grid; grid-template-columns:1fr 1fr; gap:18px 24px; margin:0; }
+.partnership-facts dt { color:var(--admin-muted); font-size:12px; margin-bottom:3px; }
+.partnership-facts dd { margin:0; overflow-wrap:anywhere; }
+.partnership-detail-section { margin-top:28px; padding-top:24px; border-top:1px solid var(--admin-line); }
+.partnership-copy { white-space:pre-wrap; overflow-wrap:anywhere; margin-top:12px!important; }
+.partnership-history { list-style:none; margin:0; padding:0; }
+.partnership-history li { display:flex; justify-content:space-between; gap:16px; border-bottom:1px solid var(--admin-line); padding:10px 0; font-size:12px; }
+.partnership-history span { color:var(--admin-muted); }
+.partnership-inline-actions { display:flex; gap:6px; }
+.partnership-code { font:12px ui-monospace,SFMono-Regular,Menlo,monospace; }
+.partnership-form { display:flex; flex-direction:column; gap:20px; }
+.partnership-form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.partnership-form label { display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:600; min-width:0; }
+.partnership-form input,.partnership-form select,.partnership-form textarea { width:100%; font-weight:400; }
+.partnership-form textarea { resize:vertical; min-height:100px; }
+.partnership-form .partnership-check { flex-direction:row; align-items:center; gap:10px; min-height:44px; font-weight:400; }
+.partnership-check input { width:20px; height:20px; min-height:20px; flex-shrink:0; }
+.partnership-form fieldset { border:0; margin:0; padding:0; min-width:0; }
+.partnership-form fieldset:disabled { opacity:.6; }
+.partnership-form legend { padding:0; font-size:15px; font-weight:700; margin-bottom:12px; }
+.partnership-form-actions { justify-content:flex-end; position:sticky; bottom:-24px; padding:16px 0; border-top:1px solid var(--admin-line); background:var(--admin-card); }
+.partnership-form-error { padding:12px; border:1px solid var(--admin-line); border-radius:8px; background:var(--admin-subtle); white-space:pre-wrap; }
+.partnership-picker { padding:16px; border:1px solid var(--admin-line); border-radius:8px; }
+.partnership-picker-search { display:flex; gap:8px; margin-top:10px; }
+.partnership-picker-search input { min-width:0; flex:1; }
+.partnership-picker-results { list-style:none; padding:0; margin:8px 0 0; max-height:220px; overflow:auto; }
+.partnership-picker-results button { width:100%; text-align:left; margin-top:6px; }
+.partnership-picker-selection { display:flex; gap:12px; align-items:center; justify-content:space-between; overflow-wrap:anywhere; }
+.partnership-picker h3 { margin-bottom:0; }
+@media(max-width:600px) { .partnership-heading { gap:12px; } .partnership-heading h1 { font-size:23px; } .partnership-dialog { width:100%; height:100dvh; max-height:100dvh; margin:0; border:0; border-radius:0; } .partnership-dialog-heading { padding:16px; } .partnership-dialog-body { padding:16px; } .partnership-facts,.partnership-form-grid { grid-template-columns:1fr; gap:14px; } .partnership-history li { flex-direction:column; gap:4px; } .partnership-form-actions { bottom:-16px; } .partnership-toolbar { gap:8px; } }
+@media(prefers-reduced-motion:reduce) { .partnership-admin button:active:not(:disabled) { transform:none; } }
+
+.creator-directory { min-width:1000px; table-layout:fixed; }
+.creator-directory :is(th,td) { padding:4px 12px; }
+.creator-directory thead th { padding-top:10px; padding-bottom:10px; }
+.creator-directory tbody tr { height:64px; }
+.creator-directory tbody tr:is(:hover,[data-checked="true"]) { background:var(--admin-subtle); }
+.creator-directory th:first-child { width:56px; }
+.creator-directory th:nth-child(2) { width:180px; }
+.creator-directory th:nth-child(3) { width:110px; }
+.creator-directory th:nth-child(4) { width:140px; }
+.creator-directory th:nth-child(5) { width:140px; }
+.creator-directory th:nth-child(6) { width:160px; }
+.creator-directory th:nth-child(7) { width:90px; }
+.creator-directory th:nth-child(8) { width:80px; }
+.creator-directory td,.creator-directory :is(strong,small) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.creator-directory .partnership-row-button { width:100%; min-width:0; padding:0; }
+.creator-directory .partnership-row-button strong { display:block; max-width:100%; }
+.creator-batch-actions { display:flex; align-items:center; flex-wrap:wrap; gap:8px 16px; margin-bottom:12px; }
+.creator-select { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-width:44px; min-height:44px; cursor:pointer; }
+.partnership-admin .creator-select input { width:20px; height:20px; min-width:20px; min-height:20px; margin:0; padding:0; accent-color:var(--admin-accent); }
+.creator-fact-note { display:block; margin-top:4px; }
+.creator-platform { display:grid; grid-template-columns:minmax(0,1fr) 150px; align-items:center; gap:24px; padding:16px 0; border-bottom:1px solid var(--admin-line); }
+.creator-platform:first-child { padding-top:0; }
+.creator-platform:last-child { border-bottom:0; padding-bottom:0; }
+.creator-platform .partnership-status { margin-left:8px; }
+.creator-platform a { max-width:100%; }
+.creator-audience { display:flex; flex-direction:column; gap:3px; font-variant-numeric:tabular-nums; }
+.partnership-form .creator-profile-fields { border-top:1px solid var(--admin-line); padding-top:16px; }
+.creator-profile-editor { display:grid; gap:16px; }
+.creator-profile-options { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:12px; }
+@media(max-width:600px) { .creator-platform { grid-template-columns:minmax(0,1fr); gap:8px; } .creator-profile-options { align-items:flex-start; flex-direction:column; gap:8px; } }

@@ -1,5 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
-import { Alert, Linking, StyleSheet, View } from 'react-native';
+import { useLayoutEffect, useRef } from 'react';
+import { Alert, Linking, Platform, StyleSheet, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import { Pressable } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
@@ -8,10 +9,16 @@ import { t } from '@/i18n';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { googleMapsPin, googleMapsUrl } from '@/lib/post-maps';
 import { PostPinMap } from '@/components/post-pin-map';
+import { useAuth } from '@/lib/auth';
+import { recordProductEvent } from '@/lib/product-analytics';
+import { supabase } from '@/lib/supabase';
 
-export function PostMapLink({ url, label }: { url: string; label?: string }) {
+export function PostMapLink({ url, label, onOpened }: { url: string; label?: string; onOpened?: () => void }) {
   useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
+  const { isAuthed, me } = useAuth(), userId = isAuthed ? me.id : null;
+  const identity = useRef(userId);
+  useLayoutEffect(() => { identity.current = userId; return () => { identity.current = null; }; }, [userId]);
   const target = googleMapsUrl(url);
   if (!target) return null;
   const pin = googleMapsPin(target);
@@ -20,7 +27,10 @@ export function PostMapLink({ url, label }: { url: string; label?: string }) {
     style={({ pressed }) => [styles.link, { borderColor: theme.line, opacity: pressed ? 0.6 : 1 }]}
     onPress={() => {
       play('selection');
-      void Linking.openURL(target).catch(() => { play('warning'); Alert.alert(t.map.errorTitle, t.map.errorBody); });
+      void Linking.openURL(target).then(() => onOpened?.(), () => {
+        if (userId && identity.current === userId) void recordProductEvent(supabase, { kind: 'map_error', platform: Platform.OS }).catch(() => {});
+        play('warning'); Alert.alert(t.map.errorTitle, t.map.errorBody);
+      }).catch(() => {});
     }}>
     <View style={styles.row}>{pin ? <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.preview}><PostPinMap key={target} pin={pin} label={label} preview /></View>
       : <SymbolView name={{ ios: 'map', android: 'map', web: 'map' }} size={24} tintColor={theme.accent} />}

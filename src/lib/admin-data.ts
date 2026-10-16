@@ -169,7 +169,7 @@ export type AdminSectionPage = (
   | { section: 'reports'; rows: AdminReport[] }
   | { section: 'users'; rows: AdminProfile[] }
   | { section: 'posts'; rows: AdminPost[] }
-  | { section: 'conversations'; rows: AdminMessage[] }
+  | { section: 'conversations'; rows: AdminConversation[]; contextPosts: AdminPost[] }
 ) & { profiles?: AdminProfile[] };
 
 export function getLocalAdminDashboard(): AdminDashboardData {
@@ -289,7 +289,7 @@ export async function loadAdminDashboard(client: SupabaseClient): Promise<AdminD
       client.from('reports').select('*').order('created_at', { ascending: false }).limit(ADMIN_PAGE_SIZE),
       client.from('profiles').select('*').order('created_at', { ascending: false }).limit(ADMIN_PAGE_SIZE),
       client.from('posts').select('*').order('created_at', { ascending: false }).limit(ADMIN_PAGE_SIZE),
-      client.from('conversations').select('*').order('created_at', { ascending: false }).limit(ADMIN_PAGE_SIZE),
+      client.from('conversations').select('*').order('created_at', { ascending: false }).order('id', { ascending: false }).limit(ADMIN_PAGE_SIZE),
       client.from('messages').select('*').order('created_at', { ascending: false }).limit(ADMIN_PAGE_SIZE),
       client.from('moderation_actions').select('*').order('created_at', { ascending: false }).limit(ADMIN_PAGE_SIZE),
       client.from('safety_review_queue').select('*').order('created_at', { ascending: false }).limit(ADMIN_PAGE_SIZE),
@@ -363,10 +363,10 @@ export async function loadAdminDashboard(client: SupabaseClient): Promise<AdminD
 
 export async function loadMoreAdminData(
   client: SupabaseClient,
-  section: Exclude<AdminSection, 'overview' | 'analytics' | 'ticketmaster' | 'merchants' | 'trending' | 'errors'>,
+  section: Exclude<AdminSection, 'overview' | 'analytics' | 'ticketmaster' | 'merchants' | 'creators' | 'campaigns' | 'benefits' | 'meetups' | 'trending' | 'errors'>,
   offset: number,
 ): Promise<AdminSectionPage> {
-  await logAdminAccess(client, section === 'conversations' ? 'messages' : section);
+  await logAdminAccess(client, section);
   const last = offset + ADMIN_PAGE_SIZE - 1;
 
   if (section === 'alerts') {
@@ -394,9 +394,10 @@ export async function loadMoreAdminData(
     return { section, rows, profiles: await loadAdminProfilesByIds(client, referencedUserIds({ posts: rows })) };
   }
 
-  const result = await client.from('messages').select('*').order('created_at', { ascending: false }).range(offset, last);
-  const rows = dataOrThrow<AdminMessage[]>(result);
-  return { section, rows, profiles: await loadAdminProfilesByIds(client, referencedUserIds({ messages: rows })) };
+  const result = await client.from('conversations').select('*').order('created_at', { ascending: false }).order('id', { ascending: false }).range(offset, last);
+  const rows = dataOrThrow<AdminConversation[]>(result);
+  return { section, rows, profiles: await loadAdminProfilesByIds(client, referencedUserIds({ conversations: rows })),
+    contextPosts: await loadRowsByIds<AdminPost>(client, 'posts', rows.map(row => row.group_post_id).filter((id): id is string => !!id)) };
 }
 
 export async function moderateAdminReport(

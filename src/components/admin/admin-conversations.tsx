@@ -1,157 +1,138 @@
-import { useEffect, useState } from 'react';
-import { SymbolView } from 'expo-symbols';
-import { FlatList, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { Colors } from '@/constants/theme';
-import { useAdminConversations } from '@/hooks/use-admin-conversations';
-import { adminOptionKeys } from '@/lib/admin';
-import type { ConversationFilters } from '@/lib/admin-conversations';
+import { AdminFilterBar, AdminFilterReset, AdminSearch, AdminSelect, AdminTableSummary } from '@/components/admin/admin-table-controls';
+import { AdminConversationReviewView } from '@/components/admin/admin-conversation-review';
+import { loadAdminConversationMessages, type AdminConversationPage } from '@/lib/admin-conversation-messages';
+import type { AdminConversation, AdminDashboardData, AdminMessage, AdminProfile } from '@/lib/admin-data';
+import { conversationLabel, displayName } from '@/lib/admin-labels';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { CITIES } from '@/lib/mock';
-import { ConversationButton, ConversationDialog, ConversationPicker, ConversationState } from './admin-conversation-controls';
-import { ConversationCaseRow, ConversationReviewPanel, ConversationThread, type ConversationDraft } from './admin-conversation-panels';
-import { conversationStyles as styles } from './admin-conversation-styles';
+import { supabase } from '@/lib/supabase';
 
-type Period = 'week' | 'today' | 'all';
-const PERIODS = [{ value: 'week', label: '최근 7일' }, { value: 'today', label: '오늘' }, { value: 'all', label: '전체 기간' }];
-const KINDS = [{ value: 'all', label: '모든 대화' }, { value: 'direct', label: '1:1 대화' }, { value: 'group', label: '그룹 대화' }];
-const RISKS = [{ value: 'all', label: '모든 위험 수준' }, { value: 'high', label: '높음·긴급' }, { value: 'medium', label: '보통' }, { value: 'low', label: '낮음' }, { value: 'none', label: '감지 신호 없음' }];
-const SCOPES = [{ value: 'pending', label: '검토 필요' }, { value: 'all', label: '전체 대화' }, { value: 'done', label: '검토 완료' }] as const;
-const CITIES_OPTIONS = [{ value: 'all', label: '전체 도시' }, ...CITIES.map((city) => ({ value: city.id, label: city.name })), { value: 'unknown', label: '도시 미등록' }];
-function sinceForPeriod(period: Period) {
-  if (period === 'all') return null;
-  const date = new Date();
-  if (period === 'today') date.setHours(0, 0, 0, 0);
-  else date.setDate(date.getDate() - 7);
-  return date.toISOString();
+const formatDate = (value: string) => new Date(value).toLocaleString('ko-KR');
+
+export function AdminConversationWorkspace(props: Parameters<typeof AdminConversationsView>[0]) {
+  const { play } = useInteractionFeedback();
+  const [reviewOpened, setReviewOpened] = useState(false);
+  return <section>
+    <AdminConversationsView {...props} />
+    {!props.localPreview && <details className="admin-context-details" aria-label="위험 신호·검토 기록" onToggle={event => {
+      play('selection'); if (event.currentTarget.open) setReviewOpened(true);
+    }}><summary>위험 신호·검토 기록</summary>
+      {reviewOpened && <AdminConversationReviewView onUser={props.onUser} refreshSignal={props.refreshSignal ?? 0} />}
+    </details>}
+  </section>;
 }
 
-export function AdminConversationsView({ onUser, refreshSignal }: { onUser: (id: string) => void; refreshSignal: number }) {
+export function AdminConversationsView({ data, loadingMore, noMore, onLoadMore, onUser, localPreview = false, refreshSignal = 0 }: {
+  data: Pick<AdminDashboardData, 'profiles' | 'posts' | 'contextPosts' | 'conversations' | 'messages'>;
+  loadingMore: boolean; noMore: boolean; onLoadMore: () => void; onUser: (id: string) => void; localPreview?: boolean; refreshSignal?: number;
+}) {
   const { play } = useInteractionFeedback();
-  const [filters, setFilters] = useState<ConversationFilters>(() => ({ city: 'all', scope: 'pending', kind: 'all', risk: 'all', since: sinceForPeriod('week'), query: '', sort: 'risk' }));
-  const [period, setPeriod] = useState<Period>('week');
-  const [search, setSearch] = useState('');
-  const [width, setWidth] = useState(0);
-  const [threadOpen, setThreadOpen] = useState(false);
-  const [reviewOpen, setReviewOpen] = useState(false);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [filterDraft, setFilterDraft] = useState<{ period: Period; kind: ConversationFilters['kind']; risk: ConversationFilters['risk']; since: string | null }>({ period: 'week', kind: 'all', risk: 'all', since: filters.since });
-  const [drafts, setDrafts] = useState<Record<string, ConversationDraft>>({});
-  const [focus, setFocus] = useState<{ roomId: string; messageId: string } | null>(null);
-  const state = useAdminConversations(filters, refreshSignal);
-  const wide = width >= 960, narrow = width < 640;
-  const focusId = focus?.roomId === state.selectedId ? focus.messageId : null;
-  const room = state.detail?.conversation;
-  const draft = room ? drafts[room.id] ?? { status: room.status, note: room.review?.note ?? '' } : null;
+  const [query, setQuery] = useState('');
+  const [kind, setKind] = useState('all');
+  const [selected, setSelected] = useState<AdminConversation | null>(null);
+  const trigger = useRef<HTMLButtonElement | null>(null);
+  const profiles = useMemo(() => new Map(data.profiles.map(profile => [profile.id, profile])), [data.profiles]);
+  const label = (room: AdminConversation) => conversationLabel(room, profiles, [...data.posts, ...(data.contextPosts ?? [])]);
+  const needle = query.trim().toLocaleLowerCase('ko-KR');
+  const rows = data.conversations.filter(room => (kind === 'all' || (kind === 'group') === !!room.group_post_id)
+    && [room.id, room.user_low_id, room.user_high_id, label(room).primary].some(value => value?.toLocaleLowerCase('ko-KR').includes(needle)));
+  useEffect(() => { if (!selected) trigger.current?.focus(); }, [selected]);
+  const selectedLabel = selected && label(selected);
+  return <section>
+    <div hidden={!!selected} className="admin-conversation-list">
+      <div className="admin-detail-heading"><h2>대화 모니터링</h2><p className="admin-muted">대화방을 선택하면 참여자와 전체 대화를 확인할 수 있습니다.</p></div>
+      <div className="admin-toolbar"><AdminSearch value={query} onChange={setQuery} placeholder="대화방, 참여자 이름 또는 ID 검색" />
+        <AdminFilterBar applied={kind === 'all' ? 0 : 1}><div className="admin-filter-row">
+          <AdminSelect label="대화 유형" value={kind} onChange={setKind} options={[{ value: 'all', label: '전체' }, { value: 'direct', label: '1:1 대화' }, { value: 'group', label: '모임 대화' }]} />
+          <AdminFilterReset onReset={() => { setQuery(''); setKind('all'); }} />
+        </div></AdminFilterBar><AdminTableSummary shown={rows.length} loaded={data.conversations.length} /></div>
+      <div className="admin-card-list" aria-label="대화방 목록">
+        {rows.map(room => {
+          const roomLabel = label(room);
+          const latest = data.messages.filter(message => message.conversation_id === room.id).sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+          return <button key={room.id} type="button" className="admin-card" data-conversation-id={room.id} aria-label={`${roomLabel.primary} 상세 대화 보기`}
+            onClick={event => { play('selection'); trigger.current = event.currentTarget; setSelected(room); }}>
+            <span className="admin-card-top"><span className="admin-card-title">{roomLabel.primary}</span><span className="admin-card-chevron" aria-hidden>›</span></span>
+            {latest && <span className="admin-card-excerpt">{displayName(profiles.get(latest.sender_id), latest.sender_id)} · {latest.body || '(내용 없음)'}</span>}
+            <span className="admin-card-meta"><span>{roomLabel.secondary}</span><span>{latest ? '최근 메시지' : '대화 개설'} · {formatDate(latest?.created_at ?? room.created_at)}</span></span>
+          </button>;
+        })}
+        {!rows.length && <div className="admin-empty">조건에 맞는 대화방이 없습니다.</div>}
+      </div>
+      {!noMore && <button type="button" className="admin-reset" disabled={loadingMore} onClick={() => { play('selection'); onLoadMore(); }}>{loadingMore ? '불러오는 중…' : '대화방 더 보기'}</button>}
+    </div>
+    {selected && selectedLabel && <AdminConversationDetail key={selected.id} conversationId={selected.id} title={selectedLabel.primary} subtitle={selectedLabel.secondary}
+      profiles={data.profiles} localMessages={localPreview ? data.messages : undefined} refreshSignal={refreshSignal} onUser={onUser} onClose={() => setSelected(null)} />}
+  </section>;
+}
 
+export function AdminConversationDetail({ conversationId, title, subtitle, profiles = [], localMessages, refreshSignal = 0, onUser, onClose, embedded = false }: {
+  conversationId: string; title: string; subtitle?: string; profiles?: AdminProfile[]; localMessages?: AdminMessage[]; refreshSignal?: number;
+  onUser: (id: string) => void; onClose?: () => void; embedded?: boolean;
+}) {
+  const { play } = useInteractionFeedback();
+  const [retry, setRetry] = useState(0);
+  const [response, setResponse] = useState<{ key: string; page?: AdminConversationPage; error?: string }>({ key: '' });
+  const [moreBusy, setMoreBusy] = useState(false);
+  const [moreError, setMoreError] = useState('');
+  const revision = useRef(0);
+  const pendingMore = useRef(false);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const key = JSON.stringify([conversationId, refreshSignal, retry]);
+  const page = response.key === key ? response.page : undefined;
+  const error = response.key === key ? response.error : undefined;
+  const namedProfiles = useMemo(() => new Map([...profiles, ...(page?.profiles ?? [])].map(profile => [profile.id, profile])), [profiles, page?.profiles]);
+
+  useEffect(() => { heading.current?.focus(); }, [conversationId]);
   useEffect(() => {
-    const timer = setTimeout(() => setFilters((current) => current.query === search ? current : { ...current, query: search }), 250);
-    return () => clearTimeout(timer);
-  }, [search]);
+    const generation = ++revision.current;
+    pendingMore.current = false;
+    const rows = localMessages?.filter(message => message.conversation_id === conversationId).sort((a, b) => b.created_at.localeCompare(a.created_at));
+    const request = rows ? Promise.resolve({ rows, total: rows.length, profiles: [] }) : loadAdminConversationMessages(supabase, conversationId);
+    void request.then(next => { if (revision.current === generation) { setMoreBusy(false); setMoreError(''); setResponse({ key, page: next }); } })
+      .catch(() => { if (revision.current === generation) { setMoreBusy(false); setMoreError(''); setResponse({ key, error: '대화를 불러오지 못했습니다. 권한과 연결 상태를 확인해주세요.' }); } });
+    return () => { revision.current = generation + 1; };
+  }, [conversationId, key, localMessages]);
 
-  const updateFilter = (next: Partial<ConversationFilters>) => {
-    setFilters((current) => ({ ...current, ...next }));
-    setThreadOpen(false); setReviewOpen(false); setFocus(null);
+  const more = async () => {
+    if (!page || pendingMore.current) return;
+    const generation = revision.current;
+    pendingMore.current = true; setMoreBusy(true); setMoreError('');
+    try {
+      const next = await loadAdminConversationMessages(supabase, conversationId, page.rows.length);
+      if (revision.current !== generation) return;
+      const known = new Set(page.rows.map(row => row.id));
+      setResponse({ key, page: { rows: [...page.rows, ...next.rows.filter(row => !known.has(row.id))], total: next.total, profiles: [...page.profiles, ...next.profiles] } });
+    } catch {
+      if (revision.current === generation) setMoreError('이전 대화를 불러오지 못했습니다. 다시 시도해주세요.');
+    } finally {
+      if (revision.current === generation) { pendingMore.current = false; setMoreBusy(false); }
+    }
   };
-  const reset = () => {
-    setSearch(''); setPeriod('week');
-    updateFilter({ city: 'all', scope: 'pending', kind: 'all', risk: 'all', since: sinceForPeriod('week'), query: '', sort: 'risk' });
-  };
-  const focusSignal = async (messageId: string) => {
-    if (!state.selectedId) return;
-    const roomId = state.selectedId;
-    setReviewOpen(false);
-    const loaded = await state.loadMessages(messageId);
-    if (loaded) setFocus({ roomId, messageId });
-    else play('warning');
-  };
-  const save = async () => {
-    if (!room || !draft) return;
-    const id = room.id, submitted = draft;
-    const saved = await state.saveReview(submitted.status, submitted.note);
-    if (saved) {
-      play('success');
-      setDrafts((current) => {
-        if (current[id] && (current[id].note !== submitted.note || current[id].status !== submitted.status)) return current;
-        const next = { ...current }; delete next[id]; return next;
-      });
-    } else play('warning');
-  };
-  const review = state.detail && draft ? <ConversationReviewPanel key={state.detail.conversation.id} detail={state.detail} draft={draft}
-    saving={state.saving} saveError={state.saveError} notice={state.notice} inModal={!wide} loadingMessages={state.loadingMessages}
-    onDraft={(next) => setDrafts((current) => ({ ...current, [state.detail!.conversation.id]: next }))} onSave={() => void save()}
-    onReload={state.reloadDetail} onSignal={(id) => void focusSignal(id)} onUser={(id) => { setReviewOpen(false); onUser(id); }} /> : null;
 
-  return <View testID="admin-conversations" style={styles.root} onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
-    <View style={styles.heading}><View style={styles.grow}><Text accessibilityRole="header" style={styles.pageTitle}>대화 조사</Text>
-      <Text style={styles.subtitle}>대화 단위로 좁히고, 앞뒤 맥락을 함께 확인하세요.</Text></View>
-      {!!state.page && <Text style={styles.highCount}>높은 위험 신호 {state.page.counts.high.toLocaleString()}건</Text>}
-    </View>
-    <View style={styles.toolbar}>
-      <ConversationPicker testID="conversation-city" label="참여자 등록 도시" value={filters.city} options={CITIES_OPTIONS} onChange={(city) => updateFilter({ city })} />
-      <View style={styles.segments} accessibilityRole="tablist" accessibilityLabel="대화 검토 범위">
-        {SCOPES.map((scope) => <Pressable key={scope.value} testID={`conversation-scope-${scope.value}`} accessibilityRole="tab" accessibilityLabel={scope.label}
-          aria-selected={filters.scope === scope.value} tabIndex={filters.scope === scope.value ? 0 : -1}
-          {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})}
-          onPress={() => { play('selection'); updateFilter({ scope: scope.value }); }} style={({ pressed }) => [styles.segment, filters.scope === scope.value && styles.segmentSelected, pressed && styles.pressed]}>
-          <Text style={[styles.segmentText, filters.scope === scope.value && styles.segmentTextSelected]}>{scope.label} {state.page?.counts[scope.value]?.toLocaleString() ?? '…'}</Text>
-        </Pressable>)}
-      </View>
-      <Text style={styles.filterSummary}>{PERIODS.find((entry) => entry.value === period)?.label} · {KINDS.find((entry) => entry.value === filters.kind)?.label}</Text>
-      <ConversationButton testID="conversation-filters" label="상세 필터" onPress={() => { setFilterDraft({ period, kind: filters.kind, risk: filters.risk, since: filters.since }); setFilterOpen(true); }}>
-        <SymbolView name={{ ios: 'line.3.horizontal.decrease', web: 'filter_list' }} size={16} tintColor={Colors.admin.textSecondary} /><Text style={styles.buttonText}>상세 필터{period !== 'week' || filters.kind !== 'all' || filters.risk !== 'all' ? ' · 적용 중' : ''}</Text>
-      </ConversationButton>
-    </View>
-    <View style={styles.workbench}>
-      {(!narrow || !threadOpen) && <View testID="conversation-list" accessibilityLabel="대화방 목록" style={[styles.list, narrow && styles.fullPanel]}>
-        <View style={styles.listTools}><View style={styles.search}>
-          <SymbolView name={{ ios: 'magnifyingglass', web: 'search' }} size={16} tintColor={Colors.admin.textSecondary} />
-          <TextInput testID="conversation-search" accessibilityLabel="이름과 대화 내용 검색" placeholder="이름·대화 내용 검색" placeholderTextColor={Colors.admin.textSecondary}
-            value={search} onFocus={() => play('selection')} onChangeText={setSearch} onSubmitEditing={() => setFilters((current) => current.query === search ? current : { ...current, query: search })} style={styles.searchInput} />
-          {!!search && <ConversationButton testID="conversation-search-clear" label="검색어 지우기" onPress={() => setSearch('')} style={styles.iconButton}><SymbolView name={{ ios: 'xmark', web: 'close' }} size={14} tintColor={Colors.admin.textSecondary} /></ConversationButton>}
-        </View><View style={styles.listCaption}><Text style={styles.caption}>대화 {state.page?.counts[filters.scope]?.toLocaleString() ?? '…'}개</Text>
-          <ConversationPicker compact testID="conversation-sort" label="대화 정렬" value={filters.sort} options={[{ value: 'risk', label: '위험 신호 우선' }, { value: 'recent', label: '최근 대화순' }]}
-            onChange={(sort) => updateFilter({ sort: sort as ConversationFilters['sort'] })} />
-        </View></View>
-        {state.loading ? <ConversationState testID="conversation-list-loading" loading title="목록을 불러오는 중이에요." /> : !state.page ? <ConversationState title="대화 목록을 열 수 없어요." body={state.listError} action="다시 시도" onAction={state.reloadList} /> :
-          <FlatList testID="conversation-case-list" style={styles.scroll} data={state.page.rows} keyExtractor={(item) => item.id} extraData={state.selectedId}
-            renderItem={({ item }) => <ConversationCaseRow room={item} selected={item.id === state.selectedId} onPress={() => {
-              state.setSelectedId(item.id); setFocus(null); setThreadOpen(true);
-              if (Platform.OS === 'web') requestAnimationFrame(() => document.getElementById('conversation-thread-title')?.focus({ preventScroll: true }));
-            }} />}
-            ListEmptyComponent={<ConversationState title="조건에 맞는 대화가 없어요." body="도시나 위험 수준을 바꾸거나 전체 대화에서 다시 확인하세요." action="필터 초기화" onAction={reset} />}
-            ListFooterComponent={<View style={styles.listFooter}>
-              {!!state.listError && <Text accessibilityRole="alert" style={styles.error}>{state.listError}</Text>}
-              {state.page.nextOffset != null && <ConversationButton testID="conversation-list-more" label={state.loadingMore ? '불러오는 중…' : '대화 더 보기'} disabled={state.loadingMore} busy={state.loadingMore} onPress={() => void state.loadMore()} />}
-              <Text style={styles.caption}>불러온 대화 {state.page.rows.length.toLocaleString()}개</Text>
-            </View>} />}
-        <View style={styles.listFooter}><Text style={styles.caption}>신고 여부와 관계없이 전체 대화를 조사할 수 있어요.</Text></View>
-      </View>}
-      {(!narrow || threadOpen) && <ConversationThread detail={state.detail} loading={state.detailLoading} error={state.detailError} loadingMessages={state.loadingMessages}
-        narrow={narrow} showReviewButton={!wide} focusId={focusId} onBack={() => { setThreadOpen(false); setReviewOpen(false); }}
-        onReview={() => setReviewOpen(true)} onEarlier={() => void state.loadMessages()} onLatest={() => { setFocus(null); void state.loadMessages(null, true); }}
-        onFirstSignal={() => { const signal = state.detail?.signals[0]; if (signal) void focusSignal(signal.message_id); }} onRetry={state.reloadDetail} />}
-      {wide && (review ?? <View style={styles.review}><ConversationState title="조사 기록" body="대화를 선택하면 신호와 검토 이력이 표시돼요." /></View>)}
-    </View>
-    {!!state.notice && <Text accessibilityLiveRegion="polite" style={styles.notice}>{state.notice}</Text>}
-    <Text style={styles.footer}>대화 열람과 검토 기록이 남아요. AI 신호의 최종 판단은 운영자가 해요.</Text>
-    <ConversationDialog title="조사 기록" visible={reviewOpen && !wide} onClose={() => setReviewOpen(false)} review testID="conversation-review-dialog">
-      {review ?? <ConversationState loading title="조사 기록을 불러오는 중이에요." />}
-    </ConversationDialog>
-    <ConversationDialog title="대화 필터" visible={filterOpen} onClose={() => setFilterOpen(false)} testID="conversation-filter-dialog">
-      <ScrollView contentContainerStyle={styles.filterContent}>
-        <Text style={styles.sectionLabel}>기간</Text><ConversationPicker testID="conversation-period" label="기간" value={filterDraft.period} options={PERIODS}
-          onChange={(value) => { const next = value as Period; setFilterDraft((current) => ({ ...current, period: next, since: sinceForPeriod(next) })); }} />
-        <Text style={styles.sectionLabel}>대화 종류</Text><ConversationPicker testID="conversation-kind" label="대화 종류" value={filterDraft.kind} options={KINDS}
-          onChange={(kind) => setFilterDraft((current) => ({ ...current, kind: kind as ConversationFilters['kind'] }))} />
-        <Text style={styles.sectionLabel}>위험 신호</Text><ConversationPicker testID="conversation-risk" label="위험 신호" value={filterDraft.risk} options={RISKS}
-          onChange={(risk) => setFilterDraft((current) => ({ ...current, risk: risk as ConversationFilters['risk'] }))} />
-        <Text style={styles.caption}>참여자의 등록 도시를 기준으로 찾아요. 서로 다른 도시의 대화는 양쪽 도시에서 확인할 수 있고, 미등록 대화도 볼 수 있어요.</Text>
-      </ScrollView>
-      <View style={styles.filterActions}><ConversationButton testID="conversation-filter-reset" label="초기화" onPress={() => setFilterDraft({ period: 'week', kind: 'all', risk: 'all', since: sinceForPeriod('week') })} />
-        <ConversationButton testID="conversation-filter-apply" label="필터 적용" primary onPress={() => {
-          setPeriod(filterDraft.period); updateFilter({ kind: filterDraft.kind, risk: filterDraft.risk, since: filterDraft.since }); setFilterOpen(false);
-        }} /></View>
-    </ConversationDialog>
-  </View>;
+  return <section className="admin-meetup-detail" aria-label="상세 대화">
+    {onClose && <button type="button" className="admin-reset admin-back-button" onClick={() => { play('selection'); onClose(); }}>← 대화방 목록</button>}
+    {!embedded && <div className="admin-detail-heading"><h2 ref={heading} tabIndex={-1}>{title}</h2><p className="admin-muted">{subtitle ?? '선택한 대화방의 메시지와 참여자 이력을 확인합니다.'}</p></div>}
+    <div className="admin-detail-content">
+      <div className="admin-detail-record-head"><div><h3>대화 내용</h3><p className="admin-muted">오래된 메시지부터 시간순으로 표시합니다.</p></div>
+        <button type="button" className="admin-reset" aria-label="대화 새로고침" onClick={() => { play('selection'); setRetry(value => value + 1); }}>새로고침</button>
+      </div>
+      {error ? <div role="alert" className="admin-meetup-error">{error}<button type="button" className="admin-reset" onClick={() => { play('selection'); setRetry(value => value + 1); }}>다시 시도</button></div>
+        : !page ? <div role="status" className="admin-empty">대화를 불러오는 중입니다.</div> : <>
+          <div className="admin-table-summary" role="status">전체 {page.total.toLocaleString()}개 메시지 · {page.rows.length.toLocaleString()}개 표시</div>
+          {!!moreError && <div role="alert" className="admin-meetup-error">{moreError}</div>}
+          {page.rows.length < page.total && <button type="button" className="admin-reset" aria-label="이전 대화 더 보기" disabled={moreBusy} onClick={() => { play('selection'); return more(); }}>{moreBusy ? '불러오는 중…' : '이전 대화 더 보기'}</button>}
+          <div className="admin-meetup-activity" aria-label="시간순 메시지">
+            {[...page.rows].reverse().map(message => <article key={message.id}>
+              <div className="admin-detail-record-meta"><button type="button" className="admin-inline-button" onClick={() => { play('selection'); onUser(message.sender_id); }}>{displayName(namedProfiles.get(message.sender_id), message.sender_id)}</button>
+                <time className="admin-muted" dateTime={message.created_at}>{formatDate(message.created_at)}</time></div>
+              <p className="admin-meetup-body">{message.body || '(내용 없음)'}</p>
+            </article>)}
+            {!page.rows.length && <div className="admin-empty">이 대화방에 아직 메시지가 없습니다.</div>}
+          </div>
+          <details className="admin-context-details" onToggle={() => play('selection')}><summary>문제 추적 정보</summary><p>대화 ID {conversationId}</p></details>
+        </>}
+    </div>
+  </section>;
 }

@@ -4,6 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as merchantApi from '../src/lib/admin-merchants.ts';
+import * as merchantSource from '../src/lib/merchant-source.ts';
 const { merchantAddressCity } = merchantApi;
 
 const merchants = ['first', 'second'].map((id, i) => ({ id, name: `업체 ${i + 1}`, city_id: 'vancouver', city_name: '밴쿠버', timezone: 'America/Vancouver', industry: '카페', services: '', address: '', contact: `contact${i + 1}@example.test`, status: 'trial', consent: 'pending', consent_note: '', trial_ends_at: null, post_count: i + 1, report_count: 0, updated_at: '2026-10-11T00:00:00Z' }));
@@ -11,7 +12,7 @@ const merchants = ['first', 'second'].map((id, i) => ({ id, name: `업체 ${i + 
 function app({ failure = null } = {}) {
   const state = [], refs = [], effects = [], feedback = [], prompts = [], calls = [];
   let stateIndex = 0, refIndex = 0, effectIndex = 0, allowReplace = false;
-  state[5] = { key: ':0:0:0:0', rows: merchants, more: false, owners: { owned: '벤더 회원' } };
+  state[5] = { key: `:0:0:0:0:${JSON.stringify(merchantApi.MERCHANT_DEFAULT_FILTERS)}`, rows: merchants, more: false, owners: { owned: '벤더 회원' } };
   const exports = {};
   const source = ts.transpileModule(readFileSync(new URL('../src/components/admin/admin-merchants.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
@@ -29,10 +30,11 @@ function app({ failure = null } = {}) {
     if (name === 'expo-asset') return { Asset: { fromModule: uri => ({ uri }) } };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) };
     if (name === '@/lib/mock') return { CITIES: [{ id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver', timezone: 'America/Vancouver' }], TAGS: [] };
-    if (name === '@/lib/merchant-source') return { merchantEventId: () => 'new-merchant' };
+    if (name === '@/lib/merchant-source') return { ...merchantSource, merchantEventId: () => 'new-merchant' };
     if (name === '@/lib/admin-merchants') return { ...merchantApi, merchantMapsUrl: () => null };
     if (name === '@/lib/supabase') return { supabase: { rpc: async (name, args) => { calls.push({ name, args }); if (name === 'get_admin_merchants') return { data: { merchants: merchants.map(m => ({ ...m, updated_at: '2026-10-12T00:00:00Z' })), more: false }, error: null }; return failure ? { data: null, error: { message: failure } } : { data: args.p_merchants.length, error: null }; } } };
     if (name === './admin-ai-connection') return { AdminAiConnection: 'AdminAiConnection' };
+    if (name === './admin-table-controls') return { AdminSelect: 'AdminSelect', AdminFilterBar: 'AdminFilterBar', AdminFilterReset: 'AdminFilterReset' };
     if (name === './admin-merchant-connections') return { AdminMerchantConnections: 'AdminMerchantConnections' };
     return {};
   } });
@@ -55,17 +57,93 @@ function text(node) {
 }
 const button = (root, label) => nodes(root).find(n => n.type === 'button' && (text(n).trim() === label || n.props['aria-label'] === label));
 
-test('the overview exposes every merchant contact and count before a detail is opened', () => {
+test('merchant contact links preserve text, recognize named platforms and reject unsafe targets', () => {
+  assert.equal(typeof merchantSource.merchantContactLinks, 'function');
+  const contact = '담당자 hello@example.test · Instagram @sample.cafe · 스레드 @sample.cafe · TikTok @sample_cafe · YouTube @sample-cafe · https://cafe.example.com/menu?x=1';
+  const parts = merchantSource.merchantContactLinks(contact);
+  assert.equal(parts.map(part => part.text).join(''), contact);
+  assert.deepEqual(parts.filter(part => part.href).map(part => part.href), ['https://www.instagram.com/sample.cafe/', 'https://www.threads.com/@sample.cafe', 'https://www.tiktok.com/@sample_cafe', 'https://www.youtube.com/@sample-cafe', 'https://cafe.example.com/menu?x=1']);
+  for (const contact of ['hello@example.test', '@ambiguous', 'javascript:alert(1)', 'https://localhost/a', 'https://127.0.0.1/a', 'https://user:pass@example.com/a', 'https://example.com/\n<script>']) {
+    assert.equal(merchantSource.merchantContactLinks(contact).filter(part => part.href).length, 0, contact);
+  }
+  assert.equal(merchantSource.merchantPrimaryContactLink('https://example.com/menu · Instagram @cafe')?.text, '@cafe');
+  assert.equal(merchantSource.merchantPrimaryContactLink('https://example.com/menu · https://threads.com/@cafe')?.href, 'https://example.com/menu');
+  assert.equal(merchantSource.merchantPrimaryContactLink('https://instagram.com/p/123')?.text, 'Instagram');
+  assert.equal(merchantSource.merchantPrimaryContactLink('email@example.test'), null);
+  assert.equal(merchantSource.merchantPrimaryContactLink('https://instagram.com.evil.test/ · Instagram @cafe')?.href, 'https://www.instagram.com/cafe/');
+});
+
+test('merchant accounts open directly from the list and detail without opening the row editor', () => {
+  const view = app();
+  view.refreshMerchant({ ...merchants[0], contact: 'Instagram @sample.cafe · https://cafe.example.com/' });
+  const table = nodes(view.render()).find(n => n.type === 'table');
+  const links = nodes(table).filter(n => n.type === 'a');
+  assert.equal(links.length, 1);
+  assert.equal(links[0].props.href, 'https://www.instagram.com/sample.cafe/');
+  for (const link of links) { assert.equal(link.props.target, '_blank'); assert.equal(link.props.rel, 'noopener noreferrer'); link.props.onClick(); }
+  const row = nodes(table).find(n => n.type === 'tr' && n.props.onClick);
+  row.props.onClick({ target: { closest: selectors => selectors.split(',').includes('a') ? {} : null } });
+  assert.equal(nodes(view.render()).find(n => n.type === 'h2' && n.props.id === 'merchant-detail-title')?.props.children, '등록 종류와 정보');
+  button(view.render(), '업체 1 활동과 정보 보기').props.onClick();
+  const heading = nodes(view.render()).find(n => n.type === 'header' && n.props.className === 'merchant-detail-heading');
+  assert.equal(nodes(heading).filter(n => n.type === 'a').length, 2);
+  assert.ok(view.feedback.includes('selection'));
+});
+
+test('the overview keeps full contacts in detail while exposing merchant names and counts', () => {
   const view = app(), root = view.render();
   const table = nodes(root).find(n => n.type === 'table');
   assert.ok(table, 'Use a full-width table rather than the old card sidebar.');
   for (const merchant of merchants) {
     assert.ok(text(table).includes(merchant.name));
-    assert.ok(text(table).includes(merchant.contact));
+    assert.ok(!text(table).includes(merchant.contact));
     assert.ok(button(table, `${merchant.name} 활동과 정보 보기`));
   }
-  assert.ok(text(table).includes('연락처'));
+  assert.ok(text(table).includes('SNS'));
   assert.equal(nodes(root).filter(n => n.type === 'dialog').length, 1);
+});
+
+test('the directory prefers one Instagram link even when other links appear first', () => {
+  const view = app();
+  view.refreshMerchant({ ...merchants[0], contact: '담당자 긴 연락처 · https://example.com/menu · Threads @sample.cafe · Instagram @sample.cafe · https://instagram.com/other/' });
+  const table = nodes(view.render()).find(n => n.type === 'table');
+  const links = nodes(table).filter(n => n.type === 'a');
+  assert.equal(links.length, 1);
+  assert.equal(links[0].props.href, 'https://www.instagram.com/sample.cafe/');
+  assert.ok(!text(table).includes('긴 연락처'));
+  button(view.render(), '업체 1 활동과 정보 보기').props.onClick();
+  const heading = nodes(view.render()).find(n => n.type === 'header' && n.props.className === 'merchant-detail-heading');
+  assert.equal(nodes(heading).filter(n => n.type === 'a').length, 4);
+  assert.ok(text(heading).includes('긴 연락처'));
+});
+
+test('registration date uses the merchant timezone and never substitutes the update date', () => {
+  const view = app();
+  view.refreshMerchant({ ...merchants[0], created_at: '2026-10-15T00:30:00Z' });
+  const table = nodes(view.render()).find(n => n.type === 'table');
+  assert.ok(text(table).includes('등록일'));
+  const dates = nodes(table).filter(n => n.type === 'time');
+  assert.equal(dates.length, 1);
+  assert.equal(dates[0].props.dateTime, '2026-10-15T00:30:00Z');
+  assert.match(text(dates[0]), /2026[-. ]+10[-. ]+14/);
+});
+
+test('sorting and filters invalidate old rows and bulk selection, then reload the first page on the server', async () => {
+  const view = app();
+  checkbox(view.render(), '업체 1 선택').props.onChange({ target: { checked: true } });
+  nodes(view.render()).find(n => n.type === 'AdminSelect' && n.props.label === '정렬').props.onChange('name_desc');
+  assert.ok(!nodes(view.render()).some(n => n.type === 'table'), 'Previous sort rows must not stay selectable.');
+  assert.equal(button(view.render(), '선택 삭제').props.disabled, true);
+  view.reloadList(); await settle();
+  assert.equal(view.calls.at(-1).args.p_offset, 0);
+  assert.equal(view.calls.at(-1).args.p_filters.sort, 'name_desc');
+  nodes(view.render()).find(n => n.type === 'AdminSelect' && n.props.label === '운영 상태').props.onChange('paid');
+  view.render(); view.reloadList(); await settle();
+  assert.equal(view.calls.at(-1).args.p_filters.status, 'paid');
+  assert.equal(nodes(view.render()).find(n => n.type === 'AdminFilterBar').props.applied, 1);
+  nodes(view.render()).find(n => n.type === 'AdminFilterReset').props.onReset();
+  view.render(); view.reloadList(); await settle();
+  assert.deepEqual({ ...view.calls.at(-1).args.p_filters }, { ...merchantApi.MERCHANT_DEFAULT_FILTERS, sort: 'name_desc' });
 });
 
 test('벤더 목록은 주소 기반 소재지와 연결 계정을 구분하고 전체 주소는 상세에 둔다', () => {
@@ -73,7 +151,7 @@ test('벤더 목록은 주소 기반 소재지와 연결 계정을 구분하고 
   const address = '77 Finch Ave W, Suite 202, North York, ON M2N 2H5';
   view.refreshMerchant({ ...merchants[0], address, owner_id: 'owned' });
   const table = nodes(view.render()).find(n => n.type === 'table');
-  assert.ok(text(view.render()).includes('벤더 관리'));
+  assert.ok(text(view.render()).includes('업체 관리'));
   assert.ok(text(table).includes('North York, ON'));
   assert.ok(text(table).includes('벤더 회원'));
   assert.ok(text(table).includes('미연결'));
@@ -102,6 +180,25 @@ test('closing and reopening the same merchant keeps its unsaved profile; replaci
   button(view.render(), '업체 2 활동과 정보 보기').props.onClick();
   assert.ok(nodes(view.render()).some(n => n.type === 'input' && n.props.value === '업체 2'));
   assert.ok(view.feedback.includes('selection'));
+});
+
+test('linked post management belongs to the profile tab and retains unsaved input across tabs', () => {
+  const view = app();
+  view.refreshMerchant({ ...merchants[0], consent: 'granted' });
+  button(view.render(), '업체 1 활동과 정보 보기').props.onClick(); view.detail();
+  const linked = root => nodes(root).find(n => n.type === 'section' && text(n).startsWith('연결된 글'));
+  const profile = root => nodes(root).find(n => n.type === 'div' && n.props.hidden === true && nodes(n).includes(linked(root)));
+  assert.ok(profile(view.render()), 'linked posts must be mounted inside the hidden profile, not crowd the activity tab');
+  button(view.render(), '업체 정보').props.onClick();
+  const source = root => nodes(linked(root)).find(n => n.type === 'input' && n.props.type === 'url');
+  source(view.render()).props.onChange({ target: { value: 'https://example.test/unsaved' } });
+  button(view.render(), '활동 · 성과').props.onClick();
+  assert.equal(source(view.render()).props.value, 'https://example.test/unsaved');
+  button(view.render(), '업체 정보').props.onClick();
+  assert.equal(source(view.render()).props.value, 'https://example.test/unsaved');
+  button(view.render(), '업체 2 활동과 정보 보기').props.onClick();
+  assert.equal(view.prompts.length, 1);
+  assert.equal(source(view.render()).props.value, 'https://example.test/unsaved');
 });
 
 test('reopening a clean merchant uses the latest saved name and contact from the refreshed directory', () => {

@@ -10,11 +10,12 @@ import { AdminMerchantReviewContent } from '@/components/admin/admin-merchant-re
 import { AdminMerchantReviewReplyContent } from '@/components/admin/admin-merchant-review-reply-content';
 import { AdminTrendingPanel } from '@/components/admin/admin-trending-panel';
 import { AdminUserDirectoryPanel } from '@/components/admin/admin-user-directory';
-import { conversationLabel, decodeUserAgent, displayName, shortId } from '@/lib/admin-labels';
+import { AdminConversationWorkspace } from '@/components/admin/admin-conversations';
+import { decodeUserAgent, displayName } from '@/lib/admin-labels';
 import { isCompactAdminWidth } from '@/lib/admin-layout';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
-import type { AdminSection } from '@/lib/admin';
+import { reportReasonLabel, reportTargetLabel, type AdminSection } from '@/lib/admin';
 import { exportAdminSafetyEvidence, loadAdminChillingContent, loadAdminClientErrors, resolveAdminClientError, resolveAdminSafetyAlert, setAdminPostFields, type AdminDashboardData, type AdminPost, type AdminProfile, type AdminSafetyAlert, type AdminSafetyTargetType } from '@/lib/admin-data';
 import type { AdminClientError, AdminPostFields, AdminPostPatch } from '@/lib/admin-trending';
 import { count } from '@/i18n/ko';
@@ -30,6 +31,7 @@ export function AdminSectionView({
   onUser,
   onResolve,
   onLoadMore,
+  onSection,
   localPreview = false,
 }: {
   section: AdminSection;
@@ -40,6 +42,7 @@ export function AdminSectionView({
   onUser: (userId: string) => void;
   onResolve: (reportId: string | string[], action: 'dismissed' | 'warned' | 'blocked' | 'hidden', note: string) => Promise<string[]>;
   onLoadMore: () => void;
+  onSection?: (section: AdminSection) => void;
   localPreview?: boolean;
 }) {
   const { play } = useInteractionFeedback();
@@ -49,8 +52,6 @@ export function AdminSectionView({
   const [targets, setTargets] = useState<string[]>([]);
   const [risks, setRisks] = useState<string[]>([]);
   const [statuses, setStatuses] = useState<string[]>([]);
-  const [senders, setSenders] = useState<string[]>([]);
-  const [rooms, setRooms] = useState<string[]>([]);
   const [postSort, setPostSort] = useState('new');
   const windowWidth = useWindowDimensions().width;
   const compactUsers = windowWidth < 560;
@@ -60,17 +61,17 @@ export function AdminSectionView({
 
   if (section === 'overview') {
     const attention = [
-      { key: 'openReports' as const, label: '미처리 신고', value: data.counts.openReports, urgent: true },
-      { key: 'alertsOpen' as const, label: '감시어 경보', value: data.counts.alertsOpen, urgent: data.counts.alertsOpen > 0 },
-      { key: 'safetyHigh' as const, label: 'AI 고위험', value: data.counts.safetyHigh, urgent: true },
-      { key: 'safetyPending' as const, label: 'AI 처리 대기', value: data.counts.safetyPending },
+      { key: 'openReports' as const, label: '미처리 신고', value: data.counts.openReports, urgent: true, section: 'reports' as const },
+      { key: 'alertsOpen' as const, label: '감시어 경보', value: data.counts.alertsOpen, urgent: true, section: 'alerts' as const },
+      { key: 'safetyHigh' as const, label: 'AI 고위험', value: data.counts.safetyHigh, urgent: true, section: 'safety' as const },
+      { key: 'safetyPending' as const, label: 'AI 처리 대기', value: data.counts.safetyPending, section: 'safety' as const },
     ];
     const scale = [
       { key: 'profiles' as const, label: '전체 사용자', value: data.counts.profiles },
       { key: 'posts' as const, label: '전체 게시글', value: data.counts.posts },
       { key: 'messages' as const, label: '전체 메시지', value: data.counts.messages },
     ];
-    type Metric = { key: keyof NonNullable<AdminDashboardData['deltas']>; label: string; value: number; urgent?: boolean };
+    type Metric = { key: keyof NonNullable<AdminDashboardData['deltas']>; label: string; value: number; urgent?: boolean; section: AdminSection };
     const deltaText = (key: Metric['key']) => {
       const delta = data.deltas?.[key];
       if (!delta) return null;
@@ -81,11 +82,11 @@ export function AdminSectionView({
     const metrics = (items: Metric[]) => (
       <View style={styles.metrics}>
         {items.map((item) => (
-          <View key={item.label} accessibilityLabel={`${item.label} ${item.value}건`} style={[styles.metric, item.urgent && item.value > 0 && styles.metricUrgent]}>
+          <Pressable key={item.label} accessibilityRole="button" accessibilityLabel={`${item.label} ${item.value}건 확인`} onPress={() => { play('selection'); onSection?.(item.section); }} style={({ pressed }) => [styles.metric, item.urgent && item.value > 0 && styles.metricUrgent, pressed && styles.pressed]}>
             <ThemedText type="small" style={styles.muted}>{item.label}</ThemedText>
             <ThemedText type="title" style={[styles.metricValue, item.urgent && item.value > 0 && styles.urgent]}>{count(item.value)}</ThemedText>
             {!!deltaText(item.key) && <ThemedText type="small" style={styles.muted}>{deltaText(item.key)}</ThemedText>}
-          </View>
+          </Pressable>
         ))}
       </View>
     );
@@ -96,11 +97,8 @@ export function AdminSectionView({
           <ThemedText type="smallBold">지금 처리할 일</ThemedText>
         </View>
         {metrics(attention)}
-        <View style={styles.heading}>
-          <ThemedText type="smallBold">서비스 규모</ThemedText>
-        </View>
-        {metrics(scale)}
-        {data.sharedSessions.length > 0 && <>
+        <div className="admin-summary-strip">{scale.map(item => <span key={item.key}>{item.label}<strong>{count(item.value)}</strong></span>)}</div>
+        {data.sharedSessions.length > 0 && <details className="admin-context-details" onToggle={() => play('selection')}><summary>같은 접속 환경의 계정 · {data.sharedSessions.length}건</summary>
           <View style={styles.subheading}>
             <ThemedText type="subtitle" accessibilityRole="header">다계정 의심 · {data.sharedSessions.length}건</ThemedText>
             <ThemedText type="small" style={styles.muted}>최근 30일 안에 같은 IP(또는 같은 IP·기기)로 접속한 계정이 둘 이상입니다. 가정·사무실·통신사 공유 IP일 수 있으니 댓글·글 활동을 함께 보고 판단하세요.</ThemedText>
@@ -109,10 +107,10 @@ export function AdminSectionView({
             {data.sharedSessions.map((group) => (
               <View key={`${group.ip}:${group.user_agent ?? 'ip'}`} style={styles.row}>
                 <View style={styles.rowTop}>
-                  <ThemedText type="smallBold">{group.same_device ? '같은 IP · 같은 기기' : '같은 IP'} · {group.ip}</ThemedText>
+                  <ThemedText type="smallBold">{group.same_device ? '같은 접속 환경 · 같은 기기' : '같은 접속 환경'}</ThemedText>
                   <StateText text={`${group.user_count}개 계정`} danger={group.same_device} />
                 </View>
-                {group.user_agent && <ThemedText type="small" style={styles.muted} numberOfLines={1}>{decodeUserAgent(group.user_agent)}</ThemedText>}
+                <details className="admin-context-details" onToggle={() => play('selection')}><summary>문제 추적 정보</summary><p>IP {group.ip}{group.user_agent ? ` · ${decodeUserAgent(group.user_agent)}` : ''}</p></details>
                 <View style={styles.rowTop}>
                   {group.users.map((user) => (
                     <Pressable key={user.id} onPress={() => { play('selection'); return onUser(user.id); }} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
@@ -123,12 +121,16 @@ export function AdminSectionView({
               </View>
             ))}
           </View>
-        </>}
+        </details>}
         <View style={styles.subheading}>
-          <ThemedText type="subtitle" accessibilityRole="header">최근 신고</ThemedText>
-          <ThemedText type="small" style={styles.muted}>미처리 항목을 먼저 표시합니다.</ThemedText>
+          <ThemedText type="subtitle" accessibilityRole="header">확인할 신고</ThemedText>
+          <ThemedText type="small" style={styles.muted}>처리가 필요한 항목만 표시합니다.</ThemedText>
         </View>
-        <AdminReportQueue reports={data.reports.slice(0, 5)} profiles={profiles} actions={data.moderationActions} resolving={resolving} onUser={onUser} onResolve={onResolve} />
+        <div className="admin-card-list">{data.reports.filter(report => report.status === 'open').slice(0, 5).map(report => <button key={report.id} type="button" className="admin-card" onClick={() => { play('selection'); onSection?.('reports'); }}>
+          <span className="admin-card-top"><strong>{reportReasonLabel(report.reason_code)} · {displayName(profiles.get(report.reported_user_id), report.reported_user_id)}</strong><span className="admin-badge admin-badge-warning">검토 대기</span></span>
+          <span className="admin-card-excerpt">{report.details || '신고 목록에서 원문을 확인해주세요.'}</span><span className="admin-card-meta">{reportTargetLabel(report.target_type)} · {formatDate(report.created_at)}</span>
+        </button>)}{!data.reports.some(report => report.status === 'open') && <div className="admin-empty">{data.counts.openReports === 0 ? '현재 처리할 신고가 없습니다.' : '미처리 신고가 있습니다. 신고 목록에서 확인해주세요.'}</div>}</div>
+        <button type="button" className="admin-reset" onClick={() => { play('selection'); onSection?.('reports'); }}>신고 전체 보기</button>
       </View>
     );
   }
@@ -164,7 +166,6 @@ export function AdminSectionView({
   }
 
   if (section === 'safety') {
-    // 대상이 글일 때는 ID 대신 제목을 보여준다. 댓글·메시지는 본문을 따로 불러오지 않으므로 짧은 ID를 유지한다.
     const allPosts = [...data.posts, ...(data.contextPosts ?? [])];
     const targetLabel = (review: { target_type: AdminSafetyTargetType; target_id: string }) => {
       const label = SAFETY_TARGET_LABEL[review.target_type] ?? review.target_type;
@@ -172,7 +173,7 @@ export function AdminSectionView({
         const post = allPosts.find((row) => row.id === review.target_id);
         if (post) return `${label} · ${post.title}`;
       }
-      return `${label} · ${shortId(review.target_id)}`;
+      return label;
     };
     const reviews = data.safetyReviews.filter((review) => matches(needle, review.target_id, review.last_error, ...review.risk_reasons)
       && selected(targets, review.target_type) && selected(risks, review.risk_level ?? 'pending') && selected(statuses, review.status));
@@ -180,7 +181,7 @@ export function AdminSectionView({
       <View style={styles.section}>
         <SectionHeading title="AI 안전 모니터링" description="전체 활동의 분석 결과를 확인하고 위험 신호를 검토합니다." />
         <div className="admin-summary-strip"><span>처리 대기<strong>{count(data.counts.safetyPending)}건</strong></span><span>고위험<strong className={data.counts.safetyHigh ? 'admin-summary-danger' : undefined}>{count(data.counts.safetyHigh)}건</strong></span><span>불러온 분석<strong>{count(data.safetyReviews.length)}건</strong></span></div>
-        <div className="admin-toolbar"><AdminSearch value={query} onChange={setQuery} placeholder="대상 ID, 분석 이유, 오류 검색" />
+        <div className="admin-toolbar"><AdminSearch value={query} onChange={setQuery} placeholder="분석 이유 검색" />
           <AdminFilterBar applied={targets.length + risks.length + statuses.length}>
             <div className="admin-filter-row">
               <AdminMultiFilter label="대상" options={recordOptions(SAFETY_TARGET_LABEL)} value={targets} onChange={setTargets} />
@@ -201,18 +202,17 @@ export function AdminSectionView({
           {reviews.map((review) => (
             <details key={review.id} className="admin-review-row" onToggle={() => play('selection')}>
               <summary className="admin-review-summary">
-                <span className="admin-review-title"><strong>{targetLabel(review)}</strong><span className="admin-muted">{review.risk_reasons.join(' · ') || review.last_error || '분석 결과를 기다리고 있습니다.'}</span></span>
+                <span className="admin-review-title"><strong>{targetLabel(review)}</strong><span className="admin-muted">{review.risk_reasons.join(' · ') || (review.status === 'failed' ? '분석을 완료하지 못했습니다.' : '분석 결과를 기다리고 있습니다.')}</span></span>
                 <span className={`admin-badge${review.risk_level === 'critical' || review.risk_level === 'high' ? ' admin-badge-danger' : review.risk_level === 'medium' ? ' admin-badge-warning' : review.risk_level === 'low' ? ' admin-badge-success' : ''}`}>{SAFETY_RISK_LABEL[review.risk_level ?? 'pending']}</span>
                 <span className={`admin-badge${review.status === 'failed' ? ' admin-badge-danger' : review.status === 'reviewed' ? ' admin-badge-success' : ' admin-badge-accent'}`}>{SAFETY_STATUS_LABEL[review.status]}</span>
                 <time className="admin-review-time" dateTime={review.created_at}>{formatDate(review.created_at)}</time><span className="admin-review-chevron" aria-hidden="true" />
               </summary><div className="admin-review-detail"><View style={{ gap: Spacing.three }}>
               <View style={styles.rowTop}>
                 <ThemedText type="smallBold">{targetLabel(review)}</ThemedText>
-                <ThemedText type="small" style={styles.muted}>{shortId(review.target_id)}</ThemedText>
                 <StateText text={SAFETY_RISK_LABEL[review.risk_level ?? 'pending']} danger={review.risk_level === 'high' || review.risk_level === 'critical' || review.status === 'failed'} />
               </View>
-              <ThemedText type="small">{review.risk_reasons.length ? review.risk_reasons.join(' · ') : review.last_error ?? '분석 결과 대기 중'}</ThemedText>
-              <ThemedText type="small" style={styles.muted}>분석 점수 {review.risk_score ?? '미분석'} · 시도 {review.attempts}회 · 대상 ID {review.target_id}</ThemedText>
+              <ThemedText type="small">{review.risk_reasons.length ? review.risk_reasons.join(' · ') : review.status === 'failed' ? '분석을 완료하지 못했습니다.' : '분석 결과 대기 중'}</ThemedText>
+              <details className="admin-context-details" onToggle={() => play('selection')}><summary>문제 추적 정보</summary><p>분석 점수 {review.risk_score ?? '미분석'} · 시도 {review.attempts}회 · 대상 ID {review.target_id}{review.last_error ? ` · 오류 ${review.last_error}` : ''}</p></details>
               {(review.target_type === 'chilling_profile' || review.target_type === 'chilling_application') && <AdminChillingContent targetType={review.target_type} targetId={review.target_id} localPreview={localPreview} onUser={onUser} />}
               {review.target_type === 'merchant_review' && <AdminMerchantReviewContent targetId={review.target_id} localPreview={localPreview} onUser={onUser} />}
               {review.target_type === 'merchant_review_reply' && <AdminMerchantReviewReplyContent targetId={review.target_id} localPreview={localPreview} onUser={onUser} />}
@@ -277,52 +277,7 @@ export function AdminSectionView({
     );
   }
 
-  const conversationsById = new Map(data.conversations.map((conversation) => [conversation.id, conversation]));
-  const roomLabel = (conversationId: string) => {
-    const conversation = conversationsById.get(conversationId);
-    return conversation
-      ? conversationLabel(conversation, profiles, [...data.posts, ...(data.contextPosts ?? [])])
-      : { primary: `대화 ${shortId(conversationId)}`, secondary: '대화 정보 없음' };
-  };
-  const roomOptions = [...new Set([...data.conversations.map((conversation) => conversation.id), ...data.messages.map((message) => message.conversation_id)])]
-    .map((id) => ({ value: id, label: roomLabel(id).primary }))
-    .sort((a, b) => a.label.localeCompare(b.label, 'ko-KR'));
-  const messages = data.messages.filter((message) => matches(needle, message.body, message.sender_id, message.conversation_id, profiles.get(message.sender_id)?.nickname, roomLabel(message.conversation_id).primary)
-    && selected(senders, message.sender_id) && selected(rooms, message.conversation_id));
-  return <View style={styles.section}>
-    <SectionHeading title="대화" description="불러온 메시지를 검색합니다. 내용을 펼치면 전문과 작성자 이력을 확인할 수 있습니다." />
-    <div className="admin-toolbar"><AdminSearch value={query} onChange={setQuery} placeholder="내용, 작성자 이름 검색" />
-      <AdminFilterBar applied={senders.length + rooms.length}>
-        <div className="admin-filter-row">
-          <AdminMultiFilter label="작성자" options={Array.from(new Set(data.messages.map((message) => message.sender_id))).map((id) => ({ value: id, label: displayName(profiles.get(id), id) })).sort((a, b) => a.label.localeCompare(b.label, 'ko-KR'))} value={senders} onChange={setSenders} />
-          <AdminMultiFilter label="대화방" options={roomOptions} value={rooms} onChange={setRooms} />
-          <AdminFilterReset onReset={() => { setQuery(''); setSenders([]); setRooms([]); }} />
-        </div>
-      </AdminFilterBar><AdminTableSummary shown={messages.length} loaded={data.messages.length} />
-    </div>
-    {compact ? (
-      // 폰에서는 680px 표를 가로로 밀기보다 한 줄에 한 건씩 카드로 본다.
-      <div className="admin-card-list" aria-label="대화 목록">
-        {messages.map((message) => <button key={message.id} type="button" className="admin-card" onClick={() => { play('selection'); return onUser(message.sender_id); }} aria-label={`${displayName(profiles.get(message.sender_id), message.sender_id)}의 메시지, 작성자 활동 보기`}>
-          <span className="admin-card-top">
-            <span className="admin-card-title">{displayName(profiles.get(message.sender_id), message.sender_id)}</span>
-            <span className="admin-card-meta">{formatDate(message.created_at)}</span>
-          </span>
-          <span className="admin-card-excerpt">{message.body || '(내용 없음)'}</span>
-          <span className="admin-card-meta"><span>{roomLabel(message.conversation_id).primary}</span><span>{roomLabel(message.conversation_id).secondary}</span></span>
-        </button>)}
-        {messages.length === 0 && <div className="admin-empty">조건에 맞는 메시지가 없습니다.</div>}
-      </div>
-    ) : (
-      <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>작성자</th><th>메시지</th><th>대화방</th><th>보낸 시각</th></tr></thead>
-        <tbody>{messages.map((message) => <tr key={message.id}>
-          <td><button className="admin-row-button" onClick={() => { play('selection'); return onUser(message.sender_id); }} title={message.sender_id}>{displayName(profiles.get(message.sender_id), message.sender_id)}</button></td>
-          <td><details><summary style={{ cursor: 'pointer', maxWidth: 480, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{message.body || '(내용 없음)'}</summary><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{message.body}</p></details></td>
-          <td title={message.conversation_id}><span className="admin-cell-primary" style={{ fontWeight: 400 }}>{roomLabel(message.conversation_id).primary}</span><span className="admin-cell-secondary">{roomLabel(message.conversation_id).secondary}</span></td><td>{formatDate(message.created_at)}</td>
-        </tr>)}</tbody></table>{messages.length === 0 && <Empty text="조건에 맞는 메시지가 없습니다." />}</div>
-    )}
-    <LoadMore loading={loadingMore} noMore={noMore} onPress={onLoadMore} />
-  </View>;
+  return <AdminConversationWorkspace data={data} loadingMore={loadingMore} noMore={noMore} onLoadMore={onLoadMore} onUser={onUser} localPreview={localPreview} />;
 }
 
 // 글 자체의 수정·삭제는 작성자가 앱에서 한다. 여기서는 노출에 영향을 주는 값만 손댄다.
@@ -412,10 +367,15 @@ function AdminPostRow({ post, author, first, localPreview, compact, onUser }: {
       </Pressable>
       {open && (
         <View style={styles.postBody}>
-          <Pressable onPress={() => { play('selection'); return onUser(post.author_id); }} accessibilityRole="button" style={{ paddingVertical: Spacing.two }}>
-            <ThemedText type="small" selectable>{post.body}</ThemedText>
-            <ThemedText type="small" style={styles.muted}>글쓴이 보기</ThemedText>
-          </Pressable>
+          <ThemedText type="small" selectable>{post.body}</ThemedText>
+          <View style={styles.rowTop}>
+            <ActionText label="글쓴이 보기" onPress={() => onUser(post.author_id)} />
+            {down
+              ? <ActionText label="되돌리기" onPress={() => void apply({ status: 'published' }, '상태')} disabled={busy} />
+              : <ActionText label="내리기" onPress={() => void apply({ status: 'removed' }, '상태')} disabled={busy} danger />}
+          </View>
+          <details className="admin-context-details admin-post-management">
+          <summary onClick={() => play('selection')}>노출·수치 관리{dirty && <span className="admin-badge admin-badge-warning">저장하지 않은 변경</span>}</summary>
           <View style={styles.fieldRow}>
             {POST_COUNTERS.map(({ key, label }) => (
               <View key={key} style={styles.field}>
@@ -435,9 +395,6 @@ function AdminPostRow({ post, author, first, localPreview, compact, onUser }: {
             <View style={{ flexDirection: 'row' }}>
               <ActionText label="맨 위로" onPress={() => void apply({ sort_at: new Date(Date.now() + 36e5).toISOString() }, '노출 순서')} disabled={busy} />
               <ActionText label="순서 원래대로" onPress={() => void apply({ sort_at: post.created_at }, '노출 순서')} disabled={busy} />
-              {down
-                ? <ActionText label="되돌리기" onPress={() => void apply({ status: 'published' }, '상태')} disabled={busy} />
-                : <ActionText label="내리기" onPress={() => void apply({ status: 'removed' }, '상태')} disabled={busy} danger />}
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <ThemedText type="small" style={styles.muted}>{dirty ? '저장하지 않은 값이 있어요' : '저장됨'}</ThemedText>
@@ -445,6 +402,7 @@ function AdminPostRow({ post, author, first, localPreview, compact, onUser }: {
               <ActionText label={busy ? '반영 중' : '반영'} onPress={applyEdits} disabled={busy || !dirty} />
             </View>
           </View>
+          </details>
         </View>
       )}
     </View>

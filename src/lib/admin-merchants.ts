@@ -9,7 +9,7 @@ export type Merchant = {
   id: string; name: string; city_id: string; city_name: string; timezone: string;
   contact: string; status: 'lead' | 'trial' | 'paid' | 'paused';
   consent: 'pending' | 'granted' | 'revoked'; consent_note: string;
-  trial_ends_at: string | null; post_count: number; report_count: number; updated_at: string;
+  trial_ends_at: string | null; post_count: number; report_count: number; updated_at: string; created_at?: string;
   owner_id?: string | null; owner_verified_at?: string | null; workspace_until?: string | null;
   industry?: string; services?: string; address?: string;
   record_kind?: 'business' | 'source';
@@ -32,7 +32,17 @@ async function rpc<T>(client: SupabaseClient, name: string, args: Record<string,
   if (error || data == null) throw new Error(error?.message ?? 'MERCHANT_DATA_MISSING');
   return data as T;
 }
-export const loadMerchants = (client: SupabaseClient, search = '', offset = 0) => rpc<{ merchants: Merchant[]; more: boolean }>(client, 'get_admin_merchants', { p_search: search.trim(), p_offset: offset });
+export type MerchantDirectoryFilters = {
+  sort: 'name_asc' | 'name_desc' | 'created_desc' | 'created_asc'; city_id: string;
+  status: Merchant['status'] | ''; consent: Merchant['consent'] | '';
+  record_kind: 'business' | 'source' | ''; account: 'connected' | 'unconnected' | '';
+};
+export const MERCHANT_DEFAULT_FILTERS: MerchantDirectoryFilters = { sort: 'name_asc', city_id: '', status: '', consent: '', record_kind: '', account: '' };
+export const loadMerchants = (client: SupabaseClient, search = '', offset = 0, filters?: MerchantDirectoryFilters) => rpc<{ merchants: Merchant[]; more: boolean; total?: number }>(client, 'get_admin_merchants', { p_search: search.trim(), p_offset: offset, ...(filters ? { p_filters: filters } : {}) });
+export function merchantRegisteredDate(merchant: Pick<Merchant, 'created_at' | 'timezone'>): string {
+  if (!merchant.created_at || !Number.isFinite(Date.parse(merchant.created_at))) return '확인 중';
+  return new Intl.DateTimeFormat('en-CA', { timeZone: merchant.timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(merchant.created_at));
+}
 export const loadMerchant = (client: SupabaseClient, id: string, start: string, end: string) => rpc<MerchantDetail>(client, 'get_admin_merchant', { p_merchant_id: id, p_start: start, p_end: end });
 export const saveMerchant = (client: SupabaseClient, value: { id: string | null; name: string; city_id: string; contact: string; status: Merchant['status']; consent: Merchant['consent']; consent_note: string; trial_ends_at: string | null; industry?: string; services?: string; address?: string; record_kind?: Merchant['record_kind'] }) => rpc<string>(client, value.record_kind ? 'save_admin_merchant_record' : 'save_admin_merchant', Object.fromEntries(Object.entries(value).map(([key, v]) => [`p_${key}`, v])));
 export const deleteMerchants = (client: SupabaseClient, merchants: Pick<Merchant, 'id' | 'updated_at'>[]) => rpc<number>(client, 'delete_admin_merchants', { p_merchants: merchants.map(({ id, updated_at }) => ({ id, updated_at })) });
