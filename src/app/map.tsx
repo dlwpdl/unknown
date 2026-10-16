@@ -33,8 +33,8 @@ import { EVENT_CITIES, eventPriceLabel, eventTime, loadTicketmasterEvents, type 
 
 const filters: { id: DiscoveryFilter; label: string; color?: string }[] = [
   { id: 'all', label: '전체' }, { id: 'top25', label: 'TOP 25', color: TOP25_GOLD },
-  { id: 'nightlife', label: '나이트라이프', color: '#DD737F' }, { id: 'festival', label: '페스티벌', color: '#CBB9FF' },
-  { id: 'cafe', label: '카페', color: '#D7BD92' }, { id: 'dining', label: '레스토랑', color: '#D79681' },
+  { id: 'dining', label: '레스토랑', color: '#D79681' }, { id: 'cafe', label: '카페', color: '#D7BD92' },
+  { id: 'festival', label: '페스티벌', color: '#CBB9FF' }, { id: 'nightlife', label: '나이트라이프', color: '#DD737F' },
   { id: 'places', label: '가볼 만한 곳', color: '#A8C39B' },
   { id: 'housing', label: '부동산', color: '#70BFAF' }, { id: 'used', label: '중고거래', color: '#E9B86C' },
   { id: 'events', label: '행사 전체', color: '#5F7CF3' },

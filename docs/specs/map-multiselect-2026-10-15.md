@@ -3,7 +3,7 @@
 Approved by the owner on2026-10-15. Source application is authorized; deployment remains held.
 
 - Selected filters combine with OR. TOP25+Cafés shows every verified Top25 place and ordinary cafes. Existing exact-ID merge runs once before filtering, so the overlap appears once and distinct branches stay separate.
-- Categories appear in this order: TOP25, Nightlife, Festivals, Cafés, Restaurants, Places to Visit, Housing and Buy & Sell, followed by the retained All Events utility. All/reset remains before the category chips. No selection shows all results; tapping a selected chip removes only that selection.
+- Categories appear in this order: TOP25, Restaurants, Cafés, Festivals, Nightlife, Places to Visit, Housing and Buy & Sell, followed by the retained All Events utility. All/reset remains before the category chips. No selection shows all results; tapping a selected chip removes only that selection.
 - Places to Visit covers attractions/nature/activities/libraries/shopping/trips/exhibitions, separate from the explicit cafe, dining, nightlife, festival and trading filters. The existing events deep link and nonfestival event access remain available through All Events.
 - Query, current city, visibility/block/report rules, listing status/expiry, event dates and500-result limits apply outside the union. Map and list share the same results.
 - An active event date remains visible and can be reset after switching to a place category.
