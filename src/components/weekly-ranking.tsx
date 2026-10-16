@@ -1,3 +1,4 @@
+import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
 import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
@@ -10,7 +11,7 @@ import { GlingLoader } from '@/components/gling-loader';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
-import { count } from '@/i18n/ko';
+import { count, tr } from '@/i18n';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadWeeklyRanking, type WeeklyRanking as Ranking, type WeeklyRankingEntry } from '@/lib/community-data';
 import { supabase } from '@/lib/supabase';
@@ -28,6 +29,7 @@ const FADE_MS = 180;
 const ROTATE_MIN = 4;
 
 export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; refreshKey?: number; onOpen: (postId: string) => Promise<void> }) {
+  useLanguage();
   const theme = useTheme();
   const hidden = useContentVisibility();
   const reducedMotion = useReducedMotion();
@@ -103,7 +105,7 @@ export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; 
       <View style={styles.wrap}>
         <View style={[styles.card, { borderColor: theme.line, backgroundColor: theme.card }]}>
           <View style={styles.headRow}>
-            <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.heading}>이번 주 많이 읽은 글</ThemedText>
+            <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.heading}>{tr("이번 주 많이 읽은 글")}</ThemedText>
           </View>
           {ranking.entries.map((entry, index) => (
             <Row key={entry.postId} entry={entry} last={index === total - 1}
@@ -123,11 +125,11 @@ export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; 
         {expanded && (
           <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.duration(250)}>
           <Pressable analyticsId="components_weekly-ranking.pressable.1" onPress={toggle} accessibilityRole="button"
-            accessibilityState={{ expanded }} accessibilityLabel="주간 순위 접기"
+            accessibilityState={{ expanded }} accessibilityLabel={tr("주간 순위 접기")}
             style={({ pressed }) => [styles.headRow, pressed && { backgroundColor: theme.backgroundElement, transform: [{ scale: 0.985 }] }]}>
-            <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.heading}>이번 주 많이 읽은 글</ThemedText>
+            <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.heading}>{tr("이번 주 많이 읽은 글")}</ThemedText>
             <View style={styles.hintGroup}>
-              <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>접기</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>{tr("접기")}</ThemedText>
               <Animated.View style={{ transform: [{ rotate: arrow.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] }) }] }}>
                 <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={13} tintColor={theme.textSecondary} />
               </Animated.View>
@@ -145,12 +147,11 @@ export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; 
         ) : (
           <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.duration(220)}>
           <Pressable analyticsId="components_weekly-ranking.pressable.1" onPress={toggle} accessibilityRole="button"
-            accessibilityState={{ expanded }} accessibilityLabel={`이번 주 많이 읽은 글 ${count(total)}편, 눌러서 전체 보기`}
+            accessibilityState={{ expanded }} accessibilityLabel={tr("이번 주 많이 읽은 글 {0}편, 눌러서 전체 보기", (count(total)))}
             style={({ pressed }) => [pressed && { backgroundColor: theme.backgroundElement, transform: [{ scale: reducedMotion ? 1 : 0.985 }] }]}>
           <Animated.View style={[styles.collapsed, { opacity: fade }]}>
             <ThemedText type="smallBold" style={[styles.label, { color: theme.accent }]}>
-              이번 주 {showing.rank}위
-            </ThemedText>
+              {tr("이번 주") + " "}{showing.rank}{tr("위")}</ThemedText>
             <ThemedText type="small" numberOfLines={1} style={styles.title}>{showing.title}</ThemedText>
             <Animated.View style={{ transform: [{ rotate: arrow.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] }) }] }}>
               <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={13} tintColor={theme.textSecondary} />
@@ -165,20 +166,21 @@ export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; 
 }
 
 function Row({ entry, last, onPress }: { entry: WeeklyRankingEntry; last: boolean; onPress: () => Promise<void> }) {
+  useLanguage();
   const theme = useTheme();
   const reducedMotion = useReducedMotion();
   const [busy, setBusy] = useState(false);
   return (
     <Pressable analyticsId="components_weekly-ranking.pressable.2" onPress={async () => { if (busy) return; setBusy(true); try { await onPress(); } finally { setBusy(false); } }} accessibilityRole="button"
       accessibilityState={{ busy }}
-      accessibilityLabel={`${entry.rank}위 ${entry.title}, ${entry.nickname}, 조회 ${count(entry.views)}`}
+      accessibilityLabel={tr("{0}위 {1}, {2}, 조회 {3}", (entry.rank), (entry.title), (entry.nickname), (count(entry.views)))}
       style={({ pressed }) => [styles.row, !last && { borderBottomWidth: 1, borderBottomColor: theme.line },
         pressed && { backgroundColor: theme.backgroundSelected, transform: [{ scale: reducedMotion ? 1 : 0.985 }] }]}>
       <ThemedText type="smallBold" style={[styles.rank, { color: entry.rank <= 3 ? theme.accent : theme.textSecondary }]}>
         {entry.rank}
       </ThemedText>
       <ThemedText type="small" numberOfLines={1} style={styles.title}>{entry.title}</ThemedText>
-      {busy ? <GlingLoader color={theme.accent} size={18} accessibilityLabel="글 여는 중" />
+      {busy ? <GlingLoader color={theme.accent} size={18} accessibilityLabel={tr("글 여는 중")} />
         : <ThemedText type="small" themeColor="textSecondary" style={styles.views}>{count(entry.views)}</ThemedText>}
     </Pressable>
   );

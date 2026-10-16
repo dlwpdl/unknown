@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -17,7 +18,7 @@ function cityCache(file) {
   const source = ts.transpileModule(readFileSync(new URL(`../src/${file}`, import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, require(name) {
+  vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
     if (name === 'react') return {
       useState(initial) { const i = cursor++; if (!(i in state)) state[i] = initial; return [state[i], next => { state[i] = typeof next === 'function' ? next(state[i]) : next; }]; },
       useRef(initial) { return refs[refCursor++] ??= { current: initial }; },
@@ -42,7 +43,7 @@ function cityCache(file) {
     if (name === '@/lib/notification-preferences') return { NOTIFICATION_CATEGORIES: [], isAdminNotificationKind: () => false };
     if (name === '@/lib/feed-data') return { relativeTime: () => '' };
     return new Proxy({}, { get: (_target, key) => String(key) });
-  } });
+  }) });
   return {
     me, requests,
     render(scope) { cursor = refCursor = 0; return file.startsWith('hooks/') ? exports.useUnreadCount(scope) : exports.default(); },

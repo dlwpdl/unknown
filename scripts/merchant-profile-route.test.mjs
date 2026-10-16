@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -48,7 +49,7 @@ function screen({ loadReviews = async (_, __, ___, kind) => ({ review_kind: kind
     '@/lib/supabase': { supabase: { rpc: async (name, args) => { rpcCalls.push([name, args]); return rpc(name, args); } } },
   };
   const exports = {}, source = ts.transpileModule(readFileSync(new URL('../src/app/company/[id].tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
-  vm.runInNewContext(source, { exports, Error, require: name => imports[name] ?? {} });
+  vm.runInNewContext(source, { exports, Error, require: withLanguageImports(name => imports[name] ?? {}) });
   return { calls, postCalls, routes, feedback, rpcCalls, login, links, hidePost(id) { hidden = (type, target, author) => type === 'post' && (target === id || author === 'blocked-writer'); }, setAccount(value) { account = value; }, setFocus(value) { focused = value; }, unmount() { for (const fn of cleanup.values()) fn(); }, render() { index = 0; return exports.default(); } };
 }
 

@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView, Switch } from '@/components/analytics-controls';
 import { Redirect } from 'expo-router';
@@ -17,6 +19,7 @@ import { pushConfigured, pushPermissionGranted, pushSupported, registerPushDevic
 import { supabase } from '@/lib/supabase';
 
 export default function NotificationSettingsScreen() {
+
   const { isAuthLoading, isAuthed, me } = useAuth();
   if (isAuthLoading) return <GlingLoader style={styles.loading} />;
   if (!isAuthed) return <Redirect href="/profile" />;
@@ -24,6 +27,7 @@ export default function NotificationSettingsScreen() {
 }
 
 function NotificationSettings({ userId, cityName }: { userId: string; cityName: string }) {
+  useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const { fontScale } = useWindowDimensions();
@@ -60,8 +64,8 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
         setPermission(granted);
         if (!granted) {
           play('warning');
-          Alert.alert('휴대폰 알림이 꺼져 있어요', '기기 설정에서 글링 알림을 허용한 뒤 다시 켜주세요.', [
-            { text: '닫기', style: 'cancel' }, { text: '기기 설정 열기', onPress: () => void Linking.openSettings() },
+          Alert.alert(tr("휴대폰 알림이 꺼져 있어요"), tr("기기 설정에서 글링 알림을 허용한 뒤 다시 켜주세요."), [
+            { text: tr("닫기"), style: 'cancel' }, { text: tr("기기 설정 열기"), onPress: () => void Linking.openSettings() },
           ]);
           return;
         }
@@ -80,7 +84,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
       if (active.current) {
         play('warning');
         setSaveError(true);
-        if (pushSupported) Alert.alert('알림 설정을 저장하지 못했어요', '연결 상태를 확인하고 다시 시도해 주세요.');
+        if (pushSupported) Alert.alert(tr("알림 설정을 저장하지 못했어요"), tr("연결 상태를 확인하고 다시 시도해 주세요."));
       }
     } finally { saving.current = false; if (active.current) setBusy(false); }
   };
@@ -89,65 +93,66 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
   const interestsChanged = preferences && (JSON.stringify(tagIds) !== JSON.stringify(preferences.interest_tag_ids)
     || JSON.stringify(parsedHashtags) !== JSON.stringify(preferences.interest_hashtags));
   if (!preferences) return <View style={styles.loading}>{error ? <>
-    <ThemedText>알림 설정을 불러오지 못했어요.</ThemedText>
-    <Pressable analyticsId="app_profile_notifications.pressable.1" accessibilityRole="button" style={styles.button} onPress={() => { play('selection'); void load(); }}><ThemedText themeColor="accent">다시 시도</ThemedText></Pressable>
+    <ThemedText>{tr("알림 설정을 불러오지 못했어요.")}</ThemedText>
+    <Pressable analyticsId="app_profile_notifications.pressable.1" accessibilityRole="button" style={styles.button} onPress={() => { play('selection'); void load(); }}><ThemedText themeColor="accent">{tr("다시 시도")}</ThemedText></Pressable>
   </> : <GlingLoader color={theme.accent} />}</View>;
   return <SafeAreaView key={fontScale} style={styles.container} edges={['bottom']}>
     <ScrollView analyticsId="app_profile_notifications.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-      <ThemedText type="small" themeColor="textSecondary">받고 싶은 소식만 골라주세요. 소식 종류 설정은 앱의 알림 목록에도 적용돼요.</ThemedText>
-      {saveError && <ThemedText accessibilityRole="alert" type="small" themeColor="accent">설정을 저장하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.</ThemedText>}
+      <ThemedText type="small" themeColor="textSecondary">{tr("받고 싶은 소식만 골라주세요. 소식 종류 설정은 앱의 알림 목록에도 적용돼요.")}</ThemedText>
+      {saveError && <ThemedText accessibilityRole="alert" type="small" themeColor="accent">{tr("설정을 저장하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.")}</ThemedText>}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-        <ToggleRow label="휴대폰 푸시 알림" value={preferences.push_enabled} onChange={value => void save({ push_enabled: value })} disabled={busy || (!pushConfigured && !preferences.push_enabled)} />
-        <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{!pushSupported ? '휴대폰 앱에서 푸시 알림을 켤 수 있어요.'
-          : !pushConfigured ? '휴대폰 알림 연결을 준비하고 있어요.'
-          : preferences.push_enabled && !permission ? '기기 설정에서 글링 알림이 꺼져 있어요.' : '앱을 닫아도 선택한 소식을 받을 수 있어요.'}</ThemedText>
-        {pushSupported && <Pressable analyticsId="app_profile_notifications.pressable.2" accessibilityRole="button" style={styles.button} onPress={() => { play('selection'); void Linking.openSettings(); }}><ThemedText type="smallBold" themeColor="accent">기기 알림 설정</ThemedText></Pressable>}
+        <ToggleRow label={tr("휴대폰 푸시 알림")} value={preferences.push_enabled} onChange={value => void save({ push_enabled: value })} disabled={busy || (!pushConfigured && !preferences.push_enabled)} />
+        <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{!pushSupported ? tr("휴대폰 앱에서 푸시 알림을 켤 수 있어요.")
+          : !pushConfigured ? tr("휴대폰 알림 연결을 준비하고 있어요.")
+          : preferences.push_enabled && !permission ? tr("기기 설정에서 글링 알림이 꺼져 있어요.") : tr("앱을 닫아도 선택한 소식을 받을 수 있어요.")}</ThemedText>
+        {pushSupported && <Pressable analyticsId="app_profile_notifications.pressable.2" accessibilityRole="button" style={styles.button} onPress={() => { play('selection'); void Linking.openSettings(); }}><ThemedText type="smallBold" themeColor="accent">{tr("기기 알림 설정")}</ThemedText></Pressable>}
       </View>
-      <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">나의 활동</ThemedText>
+      <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">{tr("나의 활동")}</ThemedText>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         {NOTIFICATION_CATEGORIES.slice(0, 7).map(item => <ToggleRow key={item.key} label={item.label} value={preferences[item.key]} onChange={value => void save({ [item.key]: value })} disabled={busy} />)}
       </View>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-        <ToggleRow label="메시지 미리보기" value={preferences.message_preview ?? false} onChange={value => void save({ message_preview: value })} disabled={busy} />
+        <ToggleRow label={tr("메시지 미리보기")} value={preferences.message_preview ?? false} onChange={value => void save({ message_preview: value })} disabled={busy} />
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{preferences.message_preview
-          ? '잠금 화면에 보낸 사람과 짧은 메시지가 표시돼요. 사진은 사진 안내만 보여요.'
-          : '보낸 사람과 내용 없이 “메시지가 도착했어요.”만 표시돼요.'}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary" style={styles.note}>변경 후 발송되는 푸시부터 적용돼요.</ThemedText>
+          ? tr("잠금 화면에 보낸 사람과 짧은 메시지가 표시돼요. 사진은 사진 안내만 보여요.")
+          : tr("보낸 사람과 내용 없이 “메시지가 도착했어요.”만 표시돼요.")}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{tr("변경 후 발송되는 푸시부터 적용돼요.")}</ThemedText>
       </View>
-      <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">관심사와 내 도시</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">{cityName}의 맛집·레스토랑, 가볼 만한 곳·행사와 새 글·모임 소식을 골라 받을 수 있어요. 이사 후 선호 지역을 바꾸면 알림 지역도 함께 바뀝니다.</ThemedText>
+      <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">{tr("관심사와 내 도시")}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{cityName}{tr("의 맛집·레스토랑, 가볼 만한 곳·행사와 새 글·모임 소식을 골라 받을 수 있어요. 이사 후 선호 지역을 바꾸면 알림 지역도 함께 바뀝니다.")}</ThemedText>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         {NOTIFICATION_CATEGORIES.slice(7, 13).map(item => <ToggleRow key={item.key} label={item.label} value={preferences[item.key]} onChange={value => void save({ [item.key]: value })} disabled={busy} />)}
       </View>
-      <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">비즈니스와 계정</ThemedText>
+      <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">{tr("비즈니스와 계정")}</ThemedText>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         {NOTIFICATION_CATEGORIES.slice(13).map(item => <ToggleRow key={item.key} label={item.label} value={preferences[item.key]} onChange={value => void save({ [item.key]: value })} disabled={busy} />)}
-        <ThemedText type="small" themeColor="textSecondary" style={styles.note}>새 소식은 저장한 비즈니스에서 “새 소식 받기”를 켠 경우에만 받아요.</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{tr("새 소식은 저장한 비즈니스에서 “새 소식 받기”를 켠 경우에만 받아요.")}</ThemedText>
       </View>
-      <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">관심 태그</ThemedText>
+      <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">{tr("관심 태그")}</ThemedText>
       <View style={styles.tags}>{TAGS.map(tag => <Pressable analyticsId="app_profile_notifications.pressable.3" key={tag.id} accessibilityRole="checkbox" accessibilityState={{ checked: tagIds.includes(tag.id), disabled: busy }}
         aria-checked={tagIds.includes(tag.id)}
         disabled={busy} onPress={() => { play('selection'); setTagIds(current => current.includes(tag.id) ? current.filter(id => id !== tag.id) : [...current, tag.id].sort((a, b) => a - b)); }}
         style={({ pressed }) => [styles.tag, Depth.control, { backgroundColor: tagIds.includes(tag.id) ? theme.accent : theme.backgroundElement, borderBottomColor: tagIds.includes(tag.id) ? theme.accentDepth : theme.line, borderBottomWidth: 3, }]}>
         <ThemedText type="smallBold" style={{ color: tagIds.includes(tag.id) ? theme.accentInk : theme.textSecondary }}>{tag.label}</ThemedText>
       </Pressable>)}</View>
-      <TextInput accessibilityLabel="관심 해시태그" value={hashtags} onChangeText={setHashtags} editable={!busy}
-        placeholder="#러닝 #맛집 #워홀" placeholderTextColor={theme.textSecondary} maxLength={1000} autoCapitalize="none" autoCorrect={false}
+      <TextInput accessibilityLabel={tr("관심 해시태그")} value={hashtags} onChangeText={setHashtags} editable={!busy}
+        placeholder={tr("#러닝 #맛집 #워홀")} placeholderTextColor={theme.textSecondary} maxLength={1000} autoCapitalize="none" autoCorrect={false}
         style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.card }]} />
-      <ThemedText type="small" themeColor="textSecondary">카테고리나 해시태그를 골라주세요. 해시태그는 최대 20개까지, 공백으로 나눠 적을 수 있어요.</ThemedText>
-      {invalidHashtags && <ThemedText accessibilityRole="alert" type="small" themeColor="accent">해시태그는 20개까지, 각각 50자 이내로 적어주세요.</ThemedText>}
+      <ThemedText type="small" themeColor="textSecondary">{tr("카테고리나 해시태그를 골라주세요. 해시태그는 최대 20개까지, 공백으로 나눠 적을 수 있어요.")}</ThemedText>
+      {invalidHashtags && <ThemedText accessibilityRole="alert" type="small" themeColor="accent">{tr("해시태그는 20개까지, 각각 50자 이내로 적어주세요.")}</ThemedText>}
       <Pressable analyticsId="app_profile_notifications.pressable.4" accessibilityRole="button" disabled={busy || !interestsChanged || invalidHashtags} accessibilityState={{ disabled: busy || !interestsChanged || invalidHashtags, busy }}
         aria-busy={busy}
         style={({ pressed }) => [styles.save, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: busy || !interestsChanged || invalidHashtags ? 0.45 : 1, }]}
         onPress={() => { play('selection'); void save({ interest_tag_ids: tagIds, interest_hashtags: parsedHashtags }); }}>
-        <ThemedText type="smallBold" style={{ color: theme.accentInk }}>관심 태그 저장</ThemedText>
+        <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr("관심 태그 저장")}</ThemedText>
       </Pressable>
-      <ThemedText type="small" themeColor="textSecondary">안전·계정 이용에 꼭 필요한 안내는 앱의 알림 목록에 남습니다.</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{tr("안전·계정 이용에 꼭 필요한 안내는 앱의 알림 목록에 남습니다.")}</ThemedText>
     </ScrollView>
   </SafeAreaView>;
 }
 
 function ToggleRow({ label, value, onChange, disabled }: { label: string; value: boolean; onChange: (next: boolean) => void; disabled: boolean }) {
+
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   return <View style={styles.row}>

@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, FlatList, Switch } from '@/components/analytics-controls';
 import { useCallback, useRef, useState } from 'react';
@@ -32,6 +34,7 @@ import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
 
 export default function MeetupsScreen() {
+
   const { me, isAuthed } = useAuth();
   const { city } = useCommunityCity();
   const { ticketmasterEventId } = useLocalSearchParams<{ ticketmasterEventId?: string }>();
@@ -40,6 +43,7 @@ export default function MeetupsScreen() {
 }
 
 function MeetupDiscovery({ eventId }: { eventId: string }) {
+  useLanguage();
   const theme = useTheme(), router = useRouter(), insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
   const { height: screenHeight, fontScale } = useWindowDimensions();
@@ -155,105 +159,105 @@ function MeetupDiscovery({ eventId }: { eventId: string }) {
   return <TabContent style={styles.root}><SafeAreaView edges={['top', 'left', 'right']} style={[styles.root, { backgroundColor: theme.background }]}>
     {/* 헤더는 스크롤과 함께 사라지면 안 된다(홈과 동일). 목록 밖에 두고 고정한다. */}
     <View style={[styles.head, styles.headFixed, fontScale > 1.2 && styles.headLarge, { backgroundColor: theme.background }]}>
-      <ThemedText accessibilityRole="header" style={[styles.title, fontScale > 1.2 && styles.titleLarge]}>모임<ThemedText style={styles.title} themeColor="accent">.</ThemedText></ThemedText>
-      <GlassSurface tone="control" interactive style={[styles.cityGlass, fontScale > 1.2 && styles.cityGlassLarge]}><Pressable analyticsId="app_tabs_meetups.pressable.1" onPress={() => { play('selection'); setCityPicker(true); }} accessibilityRole="button" accessibilityLabel={`${city.name} 활동 지역 선택`} style={({ pressed }) => [styles.city, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}><ThemedText type="small" themeColor="textSecondary" numberOfLines={1} maxFontSizeMultiplier={1.3} style={styles.cityText}>{city.name}에서</ThemedText><SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={14} tintColor={theme.textSecondary} /></Pressable></GlassSurface>
-      <GlassSurface tone="control" interactive style={styles.circleGlass}><Pressable analyticsId="app_tabs_meetups.pressable.13" accessibilityRole="button" accessibilityLabel={searchOpen ? '검색 닫기' : '모임 검색'} accessibilityState={{ expanded: searchOpen }}
+      <ThemedText accessibilityRole="header" style={[styles.title, fontScale > 1.2 && styles.titleLarge]}>{tr("모임")}<ThemedText style={styles.title} themeColor="accent">.</ThemedText></ThemedText>
+      <GlassSurface tone="control" interactive style={[styles.cityGlass, fontScale > 1.2 && styles.cityGlassLarge]}><Pressable analyticsId="app_tabs_meetups.pressable.1" onPress={() => { play('selection'); setCityPicker(true); }} accessibilityRole="button" accessibilityLabel={tr("{0} 활동 지역 선택", (city.name))} style={({ pressed }) => [styles.city, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}><ThemedText type="small" themeColor="textSecondary" numberOfLines={1} maxFontSizeMultiplier={1.3} style={styles.cityText}>{tr(city.name)}{tr("에서")}</ThemedText><SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={14} tintColor={theme.textSecondary} /></Pressable></GlassSurface>
+      <GlassSurface tone="control" interactive style={styles.circleGlass}><Pressable analyticsId="app_tabs_meetups.pressable.13" accessibilityRole="button" accessibilityLabel={searchOpen ? tr("검색 닫기") : tr("모임 검색")} accessibilityState={{ expanded: searchOpen }}
         onPress={toggleSearch} style={({ pressed }) => [styles.circle, { backgroundColor: pressed || searchOpen ? 'rgba(255,255,255,0.13)' : 'transparent' }]}>
         <SymbolView name={{ ios: searchOpen ? 'xmark' : 'magnifyingglass', android: searchOpen ? 'close' : 'search', web: searchOpen ? 'close' : 'search' }} size={20} tintColor={searchOpen ? theme.accent : theme.text} />
       </Pressable></GlassSurface>
-      <GlassSurface tone="control" interactive style={styles.circleGlass}><Pressable analyticsId="app_tabs_meetups.pressable.2" accessibilityRole="button" accessibilityLabel="내 모임 프로필" onPress={() => { play('selection'); action('/meetup-profile'); }} style={({ pressed }) => [styles.circle, { backgroundColor: pressed ? 'rgba(255,255,255,0.13)' : 'transparent' }]}><ThemedText type="smallBold">{isAuthed ? me.nickname.slice(0, 1) : '나'}</ThemedText></Pressable></GlassSurface>
+      <GlassSurface tone="control" interactive style={styles.circleGlass}><Pressable analyticsId="app_tabs_meetups.pressable.2" accessibilityRole="button" accessibilityLabel={tr("내 모임 프로필")} onPress={() => { play('selection'); action('/meetup-profile'); }} style={({ pressed }) => [styles.circle, { backgroundColor: pressed ? 'rgba(255,255,255,0.13)' : 'transparent' }]}><ThemedText type="smallBold">{isAuthed ? me.nickname.slice(0, 1) : tr("나")}</ThemedText></Pressable></GlassSurface>
       {/* 만들기는 화면당 하나뿐인 primary — 하단 고정 라벨 버튼이 맡고, 헤더에서는 뺐다. */}
     </View>
     {searchOpen && <Animated.View style={[styles.searchRow, { backgroundColor: theme.background, borderBottomColor: theme.line, opacity: reducedMotion ? 1 : searchMotion, transform: [{ translateY: searchMotion.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }) }, { scale: searchMotion.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1] }) }] }]}>
       <TextInput ref={searchInput} value={search} onChangeText={setSearch} onSubmitEditing={() => { setQuery(search.trim()); Keyboard.dismiss(); }} returnKeyType="search"
-        accessibilityLabel="모임 검색어" placeholder="모임·동네·키워드 검색" placeholderTextColor={theme.textSecondary} maxLength={40}
+        accessibilityLabel={tr("모임 검색어")} placeholder={tr("모임·동네·키워드 검색")} placeholderTextColor={theme.textSecondary} maxLength={40}
         style={[styles.search, { color: theme.text, borderColor: theme.line, backgroundColor: theme.card }]} />
-      <Pressable analyticsId="app_tabs_meetups.pressable.8" accessibilityRole="button" accessibilityLabel="검색"
+      <Pressable analyticsId="app_tabs_meetups.pressable.8" accessibilityRole="button" accessibilityLabel={tr("검색")}
         onPress={() => { play('reaction'); setQuery(search.trim()); Keyboard.dismiss(); }} style={({ pressed }) => [styles.searchButton, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, }]}>
-        <ThemedText type="smallBold" style={{ color: theme.accentInk }}>검색</ThemedText>
+        <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr("검색")}</ThemedText>
       </Pressable>
     </Animated.View>}
     <FlatList analyticsId="app_tabs_meetups.flatlist.1" data={visible} keyExtractor={p => p.id} keyboardShouldPersistTaps="handled" refreshing={loading && posts.length > 0} onRefresh={() => void fetchPage()}
       // 하단 고정 '모임 만들기' 버튼이 마지막 카드를 가리지 않도록 그만큼 비워 둔다.
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + TabBarHeight + 84, flexGrow: initialLoading ? 1 : undefined, justifyContent: initialLoading ? 'center' : undefined }]}
       ListHeaderComponent={initialLoading ? null : <>
-        <Pressable analyticsId="ticketmaster.discover" accessibilityRole="button" accessibilityLabel="이 지역 공연과 행사 보기" onPress={() => { play('selection'); router.push('/events'); }} style={({ pressed }) => [styles.pending, Depth.card, { borderColor: theme.line, backgroundColor: theme.card, opacity: pressed ? 0.9 : 1, }]}>
-          <ThemedText type="smallBold">함께 가고 싶은 공연·행사</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">{city.name}에서 찾고, 같이 갈 모임을 열어요 ›</ThemedText>
+        <Pressable analyticsId="ticketmaster.discover" accessibilityRole="button" accessibilityLabel={tr("이 지역 공연과 행사 보기")} onPress={() => { play('selection'); router.push('/events'); }} style={({ pressed }) => [styles.pending, Depth.card, { borderColor: theme.line, backgroundColor: theme.card, opacity: pressed ? 0.9 : 1, }]}>
+          <ThemedText type="smallBold">{tr("함께 가고 싶은 공연·행사")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr(city.name)}{tr("에서 찾고, 같이 갈 모임을 열어요 ›")}</ThemedText>
         </Pressable>
-        {pendingCount > 0 && <Pressable analyticsId="app_tabs_meetups.pressable.7" accessibilityRole="button" accessibilityLabel={`참여 신청 ${pendingCount}건 처리하기`}
+        {pendingCount > 0 && <Pressable analyticsId="app_tabs_meetups.pressable.7" accessibilityRole="button" accessibilityLabel={tr("참여 신청 {0}건 처리하기", (pendingCount))}
           onPress={() => { play('selection'); router.push({ pathname: '/chat', params: { view: 'requests' } }); }} style={({ pressed }) => [styles.pending, Depth.card, { borderColor: theme.accent, backgroundColor: theme.card, opacity: pressed ? 0.9 : 1, }]}>
-          <ThemedText type="smallBold" themeColor="accent">참여 신청 {pendingCount}건</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">프로필을 검토하고 승인·거절해요 ›</ThemedText>
+          <ThemedText type="smallBold" themeColor="accent">{tr("참여 신청") + " "}{pendingCount}{tr("건")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("프로필을 검토하고 승인·거절해요 ›")}</ThemedText>
         </Pressable>}
         <View style={styles.filterRow}>
           <MeetupKindSwitch value={kind} onChange={changeKind} analyticsId="app_tabs_meetups.pressable.4" />
-          <GlassSurface tone="control" interactive style={[styles.filterGlass, activeFilters > 0 && { borderColor: theme.accent }]}><Pressable analyticsId="app_tabs_meetups.pressable.14" accessibilityRole="button" accessibilityLabel={activeFilters ? `필터, ${activeFilters}개 적용됨` : '필터'}
+          <GlassSurface tone="control" interactive style={[styles.filterGlass, activeFilters > 0 && { borderColor: theme.accent }]}><Pressable analyticsId="app_tabs_meetups.pressable.14" accessibilityRole="button" accessibilityLabel={activeFilters ? tr("필터, {0}개 적용됨", (activeFilters)) : tr("필터")}
             onPress={() => { play('reaction'); setFiltersOpen(true); }}
             style={({ pressed }) => [styles.filterButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
             <SymbolView name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }} size={16} tintColor={activeFilters ? theme.accent : theme.text} />
-            <ThemedText type="smallBold" themeColor={activeFilters ? 'accent' : 'text'}>{activeFilters ? `필터 · ${activeFilters}` : '필터'}</ThemedText>
+            <ThemedText type="smallBold" themeColor={activeFilters ? 'accent' : 'text'}>{activeFilters ? tr("필터 · {0}", (activeFilters)) : tr("필터")}</ThemedText>
           </Pressable></GlassSurface>
         </View>
-        {slots && <Pressable analyticsId="app_tabs_meetups.pressable.12" accessibilityRole="button" accessibilityLabel={`모임 자리 ${slots.active} / ${slots.limit}, 남은 자리 ${slots.available}`}
+        {slots && <Pressable analyticsId="app_tabs_meetups.pressable.12" accessibilityRole="button" accessibilityLabel={tr("모임 자리 {0} / {1}, 남은 자리 {2}", (slots.active), (slots.limit), (slots.available))}
           onPress={() => { play('selection'); router.push('/profile/membership'); }} style={({ pressed }) => [styles.slots, { opacity: pressed ? 0.7 : 1 }]}>
-          <ThemedText type="small" themeColor="textSecondary">동시 모임 자리 <ThemedText type="smallBold">{slots.active}/{slots.limit}</ThemedText> 사용 중 · 남은 {slots.available}개</ThemedText>
-          <ThemedText type="smallBold" themeColor="accent">{slots.available === 0 ? '자리 늘리기 ›' : '멤버십 ›'}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("동시 모임 자리") + " "}<ThemedText type="smallBold">{slots.active}/{slots.limit}</ThemedText> {" " + tr("사용 중 · 남은") + " "}{slots.available}{tr("개")}</ThemedText>
+          <ThemedText type="smallBold" themeColor="accent">{slots.available === 0 ? tr("자리 늘리기 ›") : tr("멤버십 ›")}</ThemedText>
         </Pressable>}
-        {!!query && <Pressable analyticsId="app_tabs_meetups.pressable.9" accessibilityRole="button" accessibilityLabel={query === eventId ? '행사 모임 검색 해제' : `검색어 ${query} 해제`}
-          onPress={() => { play('selection'); setSearch(''); setQuery(''); if (eventId) router.setParams({ ticketmasterEventId: '' }); }} style={({ pressed }) => [styles.clear, { opacity: pressed ? 0.65 : 1 }]}><ThemedText type="small" themeColor="accent">{query === eventId ? '이 행사 모임 검색 중 · 지우기' : `“${query}” 검색 중 · 지우기`}</ThemedText></Pressable>}
+        {!!query && <Pressable analyticsId="app_tabs_meetups.pressable.9" accessibilityRole="button" accessibilityLabel={query === eventId ? tr("행사 모임 검색 해제") : tr("검색어 {0} 해제", (query))}
+          onPress={() => { play('selection'); setSearch(''); setQuery(''); if (eventId) router.setParams({ ticketmasterEventId: '' }); }} style={({ pressed }) => [styles.clear, { opacity: pressed ? 0.65 : 1 }]}><ThemedText type="small" themeColor="accent">{query === eventId ? tr("이 행사 모임 검색 중 · 지우기") : tr("“{0}” 검색 중 · 지우기", (query))}</ThemedText></Pressable>}
         <Animated.View style={[styles.sectionRow, { opacity: listOpacity }]}>
-          <ThemedText accessibilityRole="header" style={styles.section}>{kind === 'once' ? '다가오는 칠링' : '함께할 모임'}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary" style={styles.sectionNote}>{kind === 'once' ? '이번 한 번, 가볍게 만나봐요.' : '취향이 맞는 사람들과, 오래 봐요.'}</ThemedText>
+          <ThemedText accessibilityRole="header" style={styles.section}>{kind === 'once' ? tr("다가오는 칠링") : tr("함께할 모임")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.sectionNote}>{kind === 'once' ? tr("이번 한 번, 가볍게 만나봐요.") : tr("취향이 맞는 사람들과, 오래 봐요.")}</ThemedText>
         </Animated.View>
       </>}
-      renderItem={({ item, index }) => <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 5) * 65).duration(360)}><Animated.View style={{ opacity: listOpacity }}><ChillingEvent post={item} city={city.name} onOpen={() => void open(item.id)} onAuthor={() => setUser({ ...item.author, mine: item.author.id === me.id })} /></Animated.View></Reanimated.View>}
-      ListEmptyComponent={initialLoading ? <View style={styles.loadingState}><GlingLoader color={theme.accent} accessibilityLabel="만남 불러오는 중" /></View>
+      renderItem={({ item, index }) => <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 5) * 65).duration(360)}><Animated.View style={{ opacity: listOpacity }}><ChillingEvent post={item} city={tr(city.name)} onOpen={() => void open(item.id)} onAuthor={() => setUser({ ...item.author, mine: item.author.id === me.id })} /></Animated.View></Reanimated.View>}
+      ListEmptyComponent={initialLoading ? <View style={styles.loadingState}><GlingLoader color={theme.accent} accessibilityLabel={tr("만남 불러오는 중")} /></View>
         : !loading && !error ? <Animated.View style={{ opacity: listOpacity }}>{city.state !== 'open'
-        ? <StateCard title="이 지역은 아직 준비 중이에요" body="다른 동네를 골라보거나, 곧 문을 열 때 알려드릴게요." />
-        : eventId && query === eventId ? <StateCard title="이 행사에 갈 모임이 아직 없어요" body="아래 버튼으로 첫 모임을 열어 함께 갈 사람을 찾아보세요." />
-          : narrowed ? <StateCard title="조건에 맞는 만남이 없어요" body="검색어나 필터를 바꾸면 더 찾을 수 있어요." actionLabel="필터 초기화" onAction={() => { setSearch(''); setQuery(''); clearFilters(); }} />
-          : cursor ? <StateCard title="이 페이지에는 조건에 맞는 만남이 없어요" body="아래에서 다음 만남을 더 살펴보세요." />
-            : <StateCard title="아직 등록된 만남이 없어요" body="가까운 동네에서 첫 모임을 열어보세요. 한 명이 신청하면 바로 알려드려요." />}</Animated.View> : null}
-      ListFooterComponent={initialLoading ? null : <View style={{ gap: 16, paddingTop: Spacing.four }}>{loading && <GlingLoader color={theme.accent} accessibilityLabel="만남 더 불러오는 중" />}
-        {error && <StateCard kind="error" title="만남을 불러오지 못했어요" body="연결이 잠시 끊겼어요. 다시 시도해 주세요." actionLabel="다시 시도" onAction={() => void fetchPage(failedCursor.current)} />}
-        {!loading && !error && cursor && <Pressable analyticsId="app_tabs_meetups.pressable.6" accessibilityRole="button" onPress={() => { play('selection'); void fetchPage(cursor); }} style={styles.more}><ThemedText themeColor="accent">만남 더 보기</ThemedText></Pressable>}
+        ? <StateCard title={tr("이 지역은 아직 준비 중이에요")} body={tr("다른 동네를 골라보거나, 곧 문을 열 때 알려드릴게요.")} />
+        : eventId && query === eventId ? <StateCard title={tr("이 행사에 갈 모임이 아직 없어요")} body={tr("아래 버튼으로 첫 모임을 열어 함께 갈 사람을 찾아보세요.")} />
+          : narrowed ? <StateCard title={tr("조건에 맞는 만남이 없어요")} body={tr("검색어나 필터를 바꾸면 더 찾을 수 있어요.")} actionLabel={tr("필터 초기화")} onAction={() => { setSearch(''); setQuery(''); clearFilters(); }} />
+          : cursor ? <StateCard title={tr("이 페이지에는 조건에 맞는 만남이 없어요")} body={tr("아래에서 다음 만남을 더 살펴보세요.")} />
+            : <StateCard title={tr("아직 등록된 만남이 없어요")} body={tr("가까운 동네에서 첫 모임을 열어보세요. 한 명이 신청하면 바로 알려드려요.")} />}</Animated.View> : null}
+      ListFooterComponent={initialLoading ? null : <View style={{ gap: 16, paddingTop: Spacing.four }}>{loading && <GlingLoader color={theme.accent} accessibilityLabel={tr("만남 더 불러오는 중")} />}
+        {error && <StateCard kind="error" title={tr("만남을 불러오지 못했어요")} body={tr("연결이 잠시 끊겼어요. 다시 시도해 주세요.")} actionLabel={tr("다시 시도")} onAction={() => void fetchPage(failedCursor.current)} />}
+        {!loading && !error && cursor && <Pressable analyticsId="app_tabs_meetups.pressable.6" accessibilityRole="button" onPress={() => { play('selection'); void fetchPage(cursor); }} style={styles.more}><ThemedText themeColor="accent">{tr("만남 더 보기")}</ThemedText></Pressable>}
         <MyMeetups onOpen={open} showLoadingIndicator={false} /></View>} />
     {/* 화면에서 가장 중요한 행동. 스크롤 위치와 무관하게 항상 보이도록 하단에 고정한다. */}
-    <Pressable analyticsId="app_tabs_meetups.pressable.3" accessibilityRole="button" accessibilityLabel={eventId ? '이 행사 모임 만들기' : '모임 만들기'}
+    <Pressable analyticsId="app_tabs_meetups.pressable.3" accessibilityRole="button" accessibilityLabel={eventId ? tr("이 행사 모임 만들기") : tr("모임 만들기")}
       onPress={() => { play('selection'); action('/meetup-create'); }}
       style={({ pressed }) => [styles.fab, { backgroundColor: theme.accent, shadowColor: '#000', bottom: insets.bottom + TabBarHeight + 16, transform: [{ scale: pressed && !reducedMotion ? 0.98 : 1 }] }]}>
       <ThemedText style={{ fontSize: 18, color: theme.accentInk }}>＋</ThemedText>
-      <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{eventId ? '이 행사 모임 만들기' : '모임 만들기'}</ThemedText>
+      <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{eventId ? tr("이 행사 모임 만들기") : tr("모임 만들기")}</ThemedText>
     </Pressable>
     <Modal visible={cityPicker} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setCityPicker(false)}><SafeAreaView style={[styles.root, { backgroundColor: theme.background }]}><CityPicker onClose={() => setCityPicker(false)} /></SafeAreaView></Modal>
     {/* 카테고리·일정·자리 남음은 시트에서만 편다(목록이 먼저 보여야 한다). 값은 켜는 즉시 적용된다. */}
     <Modal visible={filtersOpen} transparent animationType="none" onRequestClose={closeFilters}
       onShow={() => { sheetOffset.setValue(screenHeight); if (reducedMotion) sheetOffset.setValue(0); else Animated.timing(sheetOffset, { toValue: 0, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); }}>
       <View style={styles.sheetWrap}>
-        <Pressable analyticsId="app_tabs_meetups.pressable.15" accessibilityRole="button" accessibilityLabel="필터 닫기" onPress={() => { play('selection'); closeFilters(); }} style={styles.scrim} />
+        <Pressable analyticsId="app_tabs_meetups.pressable.15" accessibilityRole="button" accessibilityLabel={tr("필터 닫기")} onPress={() => { play('selection'); closeFilters(); }} style={styles.scrim} />
         <Animated.View style={{ transform: [{ translateY: sheetOffset }] }}><GlassSurface style={styles.sheetGlass}><SafeAreaView edges={['bottom']} style={styles.sheet}>
           <View style={styles.sheetHead}>
-            <ThemedText type="subtitle">필터</ThemedText>
-            <Pressable analyticsId="app_tabs_meetups.pressable.15" accessibilityRole="button" accessibilityLabel="필터 닫기" onPress={() => { play('selection'); closeFilters(); }} style={({ pressed }) => [styles.circle, Depth.control, { backgroundColor: theme.backgroundElement, }]}>
+            <ThemedText type="subtitle">{tr("필터")}</ThemedText>
+            <Pressable analyticsId="app_tabs_meetups.pressable.15" accessibilityRole="button" accessibilityLabel={tr("필터 닫기")} onPress={() => { play('selection'); closeFilters(); }} style={({ pressed }) => [styles.circle, Depth.control, { backgroundColor: theme.backgroundElement, }]}>
               <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={19} tintColor={theme.text} />
             </Pressable>
           </View>
-          <ThemedText type="smallBold">분위기</ThemedText>
-          <View style={styles.sheetChips}>{[['all','전체'],['party','파티'],['festival','페스티벌'],['sports','스포츠'],['casual','가볍게'],['hobby','취미'],['travel','여행']].map(([value,label]) => <Pressable analyticsId="app_tabs_meetups.pressable.5" key={value} accessibilityRole="radio" aria-checked={category === value} accessibilityState={{ selected: category === value }} onPress={() => { play('selection'); setCategory(value); }} style={({ pressed }) => [styles.chip, Depth.control, { borderColor: category === value ? theme.accent : theme.line, borderBottomColor: category === value ? theme.accentDepth : theme.line, backgroundColor: category === value ? theme.accent : theme.card, borderBottomWidth: 3, }]}><ThemedText type="smallBold" style={{ color: category === value ? theme.accentInk : theme.text }}>{label}</ThemedText></Pressable>)}</View>
-          {kind === 'once' && <><ThemedText type="smallBold">일정</ThemedText>
-            <View style={styles.sheetChips}>{([['all','일정 전체'],['today','오늘'],['week','7일 이내']] as const).map(([value,label]) => <Pressable analyticsId="app_tabs_meetups.pressable.10" key={value} accessibilityRole="radio" aria-checked={dateWindow === value} accessibilityState={{ selected: dateWindow === value }} onPress={() => { play('selection'); setDateWindow(value); }} style={({ pressed }) => [styles.chip, Depth.control, { borderColor: dateWindow === value ? theme.accentDepth : theme.line, backgroundColor: dateWindow === value ? theme.accent : theme.card, borderBottomWidth: 3, }]}><ThemedText type="smallBold" style={{ color: dateWindow === value ? theme.accentInk : theme.text }}>{label}</ThemedText></Pressable>)}</View></>}
+          <ThemedText type="smallBold">{tr("분위기")}</ThemedText>
+          <View style={styles.sheetChips}>{[['all',tr("전체")],['party',tr("파티")],['festival',tr("페스티벌")],['sports',tr("스포츠")],['casual',tr("가볍게")],['hobby',tr("취미")],['travel',tr("여행")]].map(([value,label]) => <Pressable analyticsId="app_tabs_meetups.pressable.5" key={value} accessibilityRole="radio" aria-checked={category === value} accessibilityState={{ selected: category === value }} onPress={() => { play('selection'); setCategory(value); }} style={({ pressed }) => [styles.chip, Depth.control, { borderColor: category === value ? theme.accent : theme.line, borderBottomColor: category === value ? theme.accentDepth : theme.line, backgroundColor: category === value ? theme.accent : theme.card, borderBottomWidth: 3, }]}><ThemedText type="smallBold" style={{ color: category === value ? theme.accentInk : theme.text }}>{label}</ThemedText></Pressable>)}</View>
+          {kind === 'once' && <><ThemedText type="smallBold">{tr("일정")}</ThemedText>
+            <View style={styles.sheetChips}>{([['all',tr("일정 전체")],['today',tr("오늘")],['week',tr("7일 이내")]] as const).map(([value,label]) => <Pressable analyticsId="app_tabs_meetups.pressable.10" key={value} accessibilityRole="radio" aria-checked={dateWindow === value} accessibilityState={{ selected: dateWindow === value }} onPress={() => { play('selection'); setDateWindow(value); }} style={({ pressed }) => [styles.chip, Depth.control, { borderColor: dateWindow === value ? theme.accentDepth : theme.line, backgroundColor: dateWindow === value ? theme.accent : theme.card, borderBottomWidth: 3, }]}><ThemedText type="smallBold" style={{ color: dateWindow === value ? theme.accentInk : theme.text }}>{label}</ThemedText></Pressable>)}</View></>}
           {/* 켜짐/꺼짐은 칩이 아니라 스위치로 — 모양이 의미를 따라간다. */}
           <View style={styles.switchRow}>
             <View style={styles.flexText}>
-              <ThemedText type="smallBold">자리 남음만 보기</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">정원이 찬 모임은 숨겨요.</ThemedText>
+              <ThemedText type="smallBold">{tr("자리 남음만 보기")}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{tr("정원이 찬 모임은 숨겨요.")}</ThemedText>
             </View>
-            <Switch analyticsId="app_tabs_meetups.switch.1" accessibilityLabel="자리 남음만 보기" value={seatsOnly} onValueChange={value => { play('selection'); setSeatsOnly(value); }} />
+            <Switch analyticsId="app_tabs_meetups.switch.1" accessibilityLabel={tr("자리 남음만 보기")} value={seatsOnly} onValueChange={value => { play('selection'); setSeatsOnly(value); }} />
           </View>
           <View style={styles.sheetActions}>
-            <Pressable analyticsId="app_tabs_meetups.pressable.16" accessibilityRole="button" onPress={() => { play('selection'); clearFilters(); }} style={({ pressed }) => [styles.ghostButton, Depth.control, { backgroundColor: theme.card, borderColor: theme.line, }]}><ThemedText type="smallBold">필터 초기화</ThemedText></Pressable>
-            <Pressable analyticsId="app_tabs_meetups.pressable.15" accessibilityRole="button" onPress={() => { play('selection'); closeFilters(); }} style={({ pressed }) => [styles.sheetPrimary, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>목록 보기</ThemedText></Pressable>
+            <Pressable analyticsId="app_tabs_meetups.pressable.16" accessibilityRole="button" onPress={() => { play('selection'); clearFilters(); }} style={({ pressed }) => [styles.ghostButton, Depth.control, { backgroundColor: theme.card, borderColor: theme.line, }]}><ThemedText type="smallBold">{tr("필터 초기화")}</ThemedText></Pressable>
+            <Pressable analyticsId="app_tabs_meetups.pressable.15" accessibilityRole="button" onPress={() => { play('selection'); closeFilters(); }} style={({ pressed }) => [styles.sheetPrimary, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr("목록 보기")}</ThemedText></Pressable>
           </View>
         </SafeAreaView></GlassSurface></Animated.View>
       </View>

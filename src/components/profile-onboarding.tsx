@@ -1,3 +1,4 @@
+import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { behavior, flushBehavior } from '@/lib/behavior-analytics';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
@@ -14,7 +15,7 @@ import { PersonalInfoFields, type PersonalInfoDraft } from '@/components/persona
 import { WelcomeMoment } from '@/components/welcome-moment';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { t } from '@/i18n/ko';
+import { t, tr } from '@/i18n';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 import { generateNickname } from '@/lib/nickname';
@@ -49,6 +50,7 @@ export function ProfileOnboarding({
   existingProfile?: ExistingProfile | null;
   onComplete: (profile: CompletedProfile) => void;
 }) {
+  useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
@@ -213,7 +215,7 @@ export function ProfileOnboarding({
                 {photoUri ? (
                   <Image source={{ uri: photoUri }} style={styles.avatarImage} contentFit="cover" />
                 ) : (
-                  <ThemedText type="subtitle" style={{ color: theme.navy }}>{nickname.trim()[0] ?? '글'}</ThemedText>
+                  <ThemedText type="subtitle" style={{ color: theme.navy }}>{nickname.trim()[0] ?? tr("글")}</ThemedText>
                 )}
               </View>
               <View style={styles.photoActions}>
@@ -264,7 +266,7 @@ export function ProfileOnboarding({
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
                       style={({ pressed }) => [styles.cityButton, Depth.control, { backgroundColor: selected ? theme.accent : theme.backgroundElement, borderBottomColor: selected ? theme.accentDepth : theme.line, borderBottomWidth: 3, }]}>
-                      <ThemedText type="smallBold" style={{ color: selected ? theme.accentInk : theme.text }}>{city.name}</ThemedText>
+                      <ThemedText type="smallBold" style={{ color: selected ? theme.accentInk : theme.text }}>{tr(city.name)}</ThemedText>
                     </Pressable>
                   );
                 })}
@@ -275,14 +277,14 @@ export function ProfileOnboarding({
 
             <View style={[styles.consents, { backgroundColor: theme.card, borderColor: theme.line }]}>
               <Pressable analyticsId="components_profile-onboarding.pressable.7" onPress={toggleAll} disabled={saving} accessibilityRole="checkbox"
-                accessibilityLabel={consentOnly ? '모두 동의' : '모두 동의, 선택 항목 포함'} aria-checked={allChecked}
+                accessibilityLabel={consentOnly ? tr("모두 동의") : tr("모두 동의, 선택 항목 포함")} aria-checked={allChecked}
                 accessibilityState={{ checked: allChecked, disabled: saving }}
                 {...(Platform.OS === 'web' ? { onKeyDown: (event: { key: string; preventDefault: () => void }) => { if (event.key === ' ') { event.preventDefault(); toggleAll(); } } } : {})}
                 style={[styles.consent, styles.allConsent, { borderBottomColor: theme.line }]}>
                 <View aria-hidden accessibilityElementsHidden style={[styles.checkbox, { backgroundColor: someAccepted ? theme.accent : 'transparent', borderColor: someAccepted ? theme.accent : theme.line }]}>
                   {someAccepted && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{allAccepted ? '✓' : '−'}</ThemedText>}
                 </View>
-                <ThemedText type="smallBold" style={styles.consentText}>모두 동의{!consentOnly && <ThemedText type="small" themeColor="textSecondary"> (선택 포함)</ThemedText>}</ThemedText>
+                <ThemedText type="smallBold" style={styles.consentText}>{tr("모두 동의")}{!consentOnly && <ThemedText type="small" themeColor="textSecondary"> {" " + tr("(선택 포함)")}</ThemedText>}</ThemedText>
               </Pressable>
               {consentItems.map((item) => {
                 const toggle = () => { if (!saving) { play('selection'); item.change(!item.checked); setError(null); } };
@@ -298,20 +300,20 @@ export function ProfileOnboarding({
                       </View>
                       <ThemedText type="small" style={styles.consentText}>{item.label}</ThemedText>
                     </Pressable>
-                    {'url' in item ? <Pressable analyticsId="components_profile-onboarding.pressable.9" accessibilityRole="link" accessibilityLabel={`${item.label} 자세히 보기`}
+                    {'url' in item ? <Pressable analyticsId="components_profile-onboarding.pressable.9" accessibilityRole="link" accessibilityLabel={tr("{0} 자세히 보기", (item.label))}
                       onPress={() => { play('selection'); if (item.url) void Linking.openURL(item.url); }} style={styles.detailButton}>
-                      <ThemedText type="small" themeColor="textSecondary">보기 ↗</ThemedText>
-                    </Pressable> : <Pressable analyticsId="components_profile-onboarding.pressable.10" accessibilityRole="button" accessibilityLabel={`${item.label} 자세히 ${expanded ? '접기' : '보기'}`}
+                      <ThemedText type="small" themeColor="textSecondary">{tr("보기 ↗")}</ThemedText>
+                    </Pressable> : <Pressable analyticsId="components_profile-onboarding.pressable.10" accessibilityRole="button" accessibilityLabel={tr("{0} 자세히 {1}", (item.label), (expanded ? '접기' : '보기'))}
                       accessibilityState={{ expanded }} aria-expanded={expanded}
                       onPress={() => { play('selection'); setExpandedConsent(expanded ? null : item.id); }} style={styles.detailButton}>
-                      <ThemedText type="small" themeColor="textSecondary">{expanded ? '접기 ∧' : '보기 ∨'}</ThemedText>
+                      <ThemedText type="small" themeColor="textSecondary">{expanded ? tr("접기 ∧") : tr("보기 ∨")}</ThemedText>
                     </Pressable>}
                   </View>
                   {'details' in item && expanded && <ThemedText type="small" themeColor="textSecondary" style={styles.consentDetails}>{item.details}</ThemedText>}
                 </View>;
               })}
             </View>
-            <ThemedText type="small" themeColor="textSecondary">{consentOnly ? '필수 항목에 동의하면 계속 이용할 수 있어요.' : '필수 항목에 동의하면 가입할 수 있어요. 이름·생년월일 입력과 동의는 선택이에요.'}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{consentOnly ? tr("필수 항목에 동의하면 계속 이용할 수 있어요.") : tr("필수 항목에 동의하면 가입할 수 있어요. 이름·생년월일 입력과 동의는 선택이에요.")}</ThemedText>
 
             {!!error && <ThemedText accessibilityRole="alert" type="small" style={{ color: theme.accent }}>{error}</ThemedText>}
           </ScrollView>

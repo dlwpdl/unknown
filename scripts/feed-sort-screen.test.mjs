@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -40,10 +41,10 @@ function screen({ createdPost, deferPublish = false } = {}) {
   };
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/feed-screen.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;
-  vm.runInNewContext(source, { exports, require(name) {
+  vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
     if (name in imports) return imports[name];
     return new Proxy({}, { get: (_, key) => key === '__esModule' ? true : key === 'Image' ? 'Image' : key === 'default' ? { View: 'ReanimatedView' } : String(key) });
-  }, requestAnimationFrame: fn => fn(), setTimeout, clearTimeout });
+  }), requestAnimationFrame: fn => fn(), setTimeout, clearTimeout });
   let cleanup;
   const render = () => { at = 0; effects.length = 0; return exports.default({}); };
   const refresh = () => { cleanup?.(); cleanup = effects.find(fn => String(fn).includes('return cancelFeedRequests'))(); };

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { normalizeChillingEvent, type ChillingEventDraft } from './chilling.ts';
-import { t } from '../i18n/ko.ts';
+import { t } from '../i18n/index.ts';
 import { meetupRestrictionError } from './meetup-policy.ts';
 import { removePostImages, uploadPostImage, type PostDraftImage } from './community-data.ts';
 

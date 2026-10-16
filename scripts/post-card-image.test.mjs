@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -70,10 +71,10 @@ function cardRenderer(component = 'PostCard') {
   const source = ts.transpileModule(fs.readFileSync(new URL(`../src/components/${file}.tsx`, import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, require(name) {
+  vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
     assert.ok(name in modules, `Unexpected import: ${name}`);
     return modules[name];
-  } });
+  }) });
   return { render(props) { cursor = 0; return exports[component](props); }, feedback, openedMaps, alerts,
     failMap: () => { mapFailure = true; }, setViewer: (id) => { viewer = id; } };
 }

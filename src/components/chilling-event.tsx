@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { Pressable } from '@/components/analytics-controls';
 import { memo, useState } from 'react';
 import { Image } from 'expo-image';
@@ -16,26 +18,29 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import type { Post } from '@/lib/types';
 
 export function ChillingKindTabs({ value, onChange }: { value: ChillingKind; onChange: (kind: ChillingKind) => void }) {
+  useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
-  return <View accessibilityRole="tablist" accessibilityLabel="만남 유형" style={[styles.tabs, { backgroundColor: theme.backgroundElement }]}>
-    {(['once', 'group'] as const).map(kind => <Pressable analyticsId="components_chilling-event.pressable.1" key={kind} accessibilityRole="tab" accessibilityState={{ selected: value === kind }} onPress={() => { play('selection'); onChange(kind); }} style={[styles.tab, value === kind && { backgroundColor: theme.background }]}><ThemedText type="smallBold">{kind === 'once' ? '칠링 (일회성)' : '모임 (정기모임)'}</ThemedText></Pressable>)}
+  return <View accessibilityRole="tablist" accessibilityLabel={tr("만남 유형")} style={[styles.tabs, { backgroundColor: theme.backgroundElement }]}>
+    {(['once', 'group'] as const).map(kind => <Pressable analyticsId="components_chilling-event.pressable.1" key={kind} accessibilityRole="tab" accessibilityState={{ selected: value === kind }} onPress={() => { play('selection'); onChange(kind); }} style={[styles.tab, value === kind && { backgroundColor: theme.background }]}><ThemedText type="smallBold">{kind === 'once' ? tr("칠링 (일회성)") : tr("모임 (정기모임)")}</ThemedText></Pressable>)}
   </View>;
 }
 
 export function ChillingEventSchedule({ room }: { room: ChillingSchedule }) {
+  useLanguage();
   const once = chillingKind(room) === 'once';
   return <View style={{ gap: 4 }}>
-    <ThemedText type="smallBold" themeColor="accent">{once ? '칠링 · 일회성' : '모임 · 정기모임'}</ThemedText>
+    <ThemedText type="smallBold" themeColor="accent">{once ? tr("칠링 · 일회성") : tr("모임 · 정기모임")}</ThemedText>
     <ThemedText type="small">{chillingSchedule(room)}</ThemedText>
-    <ThemedText type="small" themeColor="textSecondary">{recommendedAgeLabel(room)}{room.recommendedAgeMin != null ? ' · 권장 범위 밖이어도 신청 가능' : ''}</ThemedText>
-    {once && room.timezone ? <ThemedText type="small" themeColor="textSecondary">{room.timezone} 기준</ThemedText> : null}
+    <ThemedText type="small" themeColor="textSecondary">{recommendedAgeLabel(room)}{room.recommendedAgeMin != null ? tr(" · 권장 범위 밖이어도 신청 가능") : ''}</ThemedText>
+    {once && room.timezone ? <ThemedText type="small" themeColor="textSecondary">{room.timezone}{" " + tr("기준")}</ThemedText> : null}
   </View>;
 }
 
 export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, onAuthor }: {
   post: Post; city: string; onOpen: () => void; onAuthor: () => void;
 }) {
+  useLanguage();
   const theme = useTheme();
   const { me, isAuthed, promptLogin } = useAuth();
   const { play } = useInteractionFeedback();
@@ -60,14 +65,14 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
         </View>}
       <View style={styles.meta}>
         {countdown && <View style={[styles.countdown, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{countdown}</ThemedText></View>}
-        <ThemedText type="smallBold" themeColor="accent">{categoryLabel ? `${categoryLabel} · ` : ''}{group ? '모임 · 정기모임' : '칠링 · 일회성'}</ThemedText>
+        <ThemedText type="smallBold" themeColor="accent">{categoryLabel ? `${categoryLabel} · ` : ''}{group ? tr("모임 · 정기모임") : tr("칠링 · 일회성")}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">{schedule}</ThemedText>
       </View>
       <ThemedText type="small" themeColor="textSecondary">{recommendedAgeLabel(post.room ?? {})}</ThemedText>
       <ThemedText accessibilityRole="header" style={styles.title}>{post.title}</ThemedText>
       <View style={styles.footer}>
         <ThemedText type="small" themeColor="textSecondary">{city}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">{post.room?.memberCount ?? 0}{post.room?.capacity ? ` / ${post.room.capacity}명` : '명'}{seatsLeft !== null ? seatsLeft > 0 ? ` · ${seatsLeft}자리 남음` : ' · 정원 마감' : ''}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{post.room?.memberCount ?? 0}{post.room?.capacity ? tr(" / {0}명", (post.room.capacity)) : tr("명")}{seatsLeft !== null ? seatsLeft > 0 ? tr(" · {0}자리 남음", (seatsLeft)) : tr(" · 정원 마감") : ''}</ThemedText>
       </View>
       {/* 자리 현황은 숫자보다 막대가 먼저 읽힌다(정원이 있는 모임만). */}
       {room?.capacity ? <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden
@@ -76,10 +81,10 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
       </View> : null}
     </Pressable>
     <View style={styles.footer}>
-      <Pressable analyticsId="components_chilling-event.pressable.3" onPress={() => { play('selection'); onAuthor(); }} accessibilityRole="button" accessibilityLabel={`${post.author.nickname} 프로필`} style={styles.author}><TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} /><ThemedText type="small" themeColor="textSecondary">{post.author.nickname}님이 열었어요 ›</ThemedText></Pressable>
-      <Pressable analyticsId="meetup.share.open" accessibilityRole="button" accessibilityLabel={post.author.id === me.id ? '내 모임에 초대하기' : '모임 공유하기'} style={styles.action}
-        onPress={() => { play('selection'); if (isAuthed) setSharing(true); else promptLogin('모임을 공유하려면 로그인해주세요.'); }}><ThemedText type="smallBold" themeColor="accent">{post.author.id === me.id ? '초대' : '공유'}</ThemedText></Pressable>
-      {post.author.id !== me.id && <Pressable analyticsId="components_chilling-event.pressable.4" accessibilityRole="button" accessibilityLabel="신고 및 차단" style={styles.action} onPress={() => { play('selection'); if (isAuthed) setReport(true); else promptLogin('신고하려면 로그인해 주세요.'); }}><ThemedText style={{ color: theme.textSecondary }}>···</ThemedText></Pressable>}
+      <Pressable analyticsId="components_chilling-event.pressable.3" onPress={() => { play('selection'); onAuthor(); }} accessibilityRole="button" accessibilityLabel={tr("{0} 프로필", (post.author.nickname))} style={styles.author}><TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} /><ThemedText type="small" themeColor="textSecondary">{post.author.nickname}{tr("님이 열었어요 ›")}</ThemedText></Pressable>
+      <Pressable analyticsId="meetup.share.open" accessibilityRole="button" accessibilityLabel={post.author.id === me.id ? tr("내 모임에 초대하기") : tr("모임 공유하기")} style={styles.action}
+        onPress={() => { play('selection'); if (isAuthed) setSharing(true); else promptLogin('모임을 공유하려면 로그인해주세요.'); }}><ThemedText type="smallBold" themeColor="accent">{post.author.id === me.id ? tr("초대") : tr("공유")}</ThemedText></Pressable>
+      {post.author.id !== me.id && <Pressable analyticsId="components_chilling-event.pressable.4" accessibilityRole="button" accessibilityLabel={tr("신고 및 차단")} style={styles.action} onPress={() => { play('selection'); if (isAuthed) setReport(true); else promptLogin('신고하려면 로그인해 주세요.'); }}><ThemedText style={{ color: theme.textSecondary }}>···</ThemedText></Pressable>}
     </View>
     <ReportSheet visible={report} targetType="post" targetId={post.id} reportedUserId={post.author.id} reportedNickname={post.author.nickname} onClose={() => setReport(false)} />
     {sharing && <PostShareSheet post={post} visible={sharing} onClose={() => setSharing(false)} onShared={() => { void recordPostShare(supabase, post.id).catch(() => {}); }} />}

@@ -1,9 +1,12 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Image, StyleSheet } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
 export function LaunchMoment({ ready, onComplete }: { ready: boolean; onComplete: () => void }) {
+  useLanguage();
   const reducedMotion = useReducedMotion();
   const [entered, setEntered] = useState(false);
   const started = useRef(false);
@@ -34,7 +37,7 @@ export function LaunchMoment({ ready, onComplete }: { ready: boolean; onComplete
   }, [entered, ready, reducedMotion, wordmarkOpacity]);
 
   return <Animated.View
-    accessible accessibilityLabel="글링을 여는 중"
+    accessible accessibilityLabel={tr("글링을 여는 중")}
     onLayout={() => {
       if (started.current) return;
       started.current = true;

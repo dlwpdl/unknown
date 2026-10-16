@@ -1,3 +1,4 @@
+import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
 import {
   Tabs,
@@ -16,12 +17,13 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { t } from '@/i18n/ko';
+import { t } from '@/i18n';
 import { useTheme } from '@/hooks/use-theme';
 import { useUnreadCount } from '@/hooks/use-unread-count';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 export default function AppTabs() {
+  useLanguage();
   const pathname = usePathname();
   const unreadCount = useUnreadCount();
   return (

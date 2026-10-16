@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -12,7 +13,7 @@ function loadGallery(page = null, width = 390, platform = 'ios') {
   }).outputText;
   const values = [], refs = [], effects = [], scrolls = [], feedback = [];
   let stateCall = 0, refCall = 0, effectCall = 0, pending = [], viewer = 'author';
-  vm.runInNewContext(source, { exports, require(name) {
+  vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
     if (name === 'expo-image') return { Image: (props) => ({ type: 'Image', props }) };
     if (name === 'react') return {
       useCallback: (fn) => fn,
@@ -54,7 +55,7 @@ function loadGallery(page = null, width = 390, platform = 'ios') {
     if (name === '@/components/themed-text') return { ThemedText: (props) => ({ type: 'ThemedText', props }) };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ backgroundElement: '#222231', card: '#171722', line: '#343443', accent: '#CBB9FF' }) };
     throw new Error(`Unexpected import: ${name}`);
-  } });
+  }) });
   return { Gallery(props) {
     stateCall = refCall = effectCall = 0;
     pending = [];

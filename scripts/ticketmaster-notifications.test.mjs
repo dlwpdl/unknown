@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -30,7 +31,7 @@ function detail({ authed = true, focused = true, loaded = true, offline = false,
       recordTicketmasterEventClick: async (...args) => { clicks.push(args); if (offline) throw new Error('offline'); } },
   };
   const exports = {};
-  vm.runInNewContext(component, { exports, require: name => imports[name] ?? {} });
+  vm.runInNewContext(component, { exports, require: withLanguageImports(name => imports[name] ?? {}) });
   const tree = exports.default();
   return { tree, clicks, effects, event };
 }

@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr, getLocale } from '@/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
@@ -11,6 +13,7 @@ import { loadPostPoll, votePostPoll, type PostPoll as Poll } from '@/lib/post-po
 import { supabase } from '@/lib/supabase';
 
 export function PostPoll({ postId }: { postId: string }) {
+  useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback(), { isAuthed, me, promptLogin } = useAuth();
   const key = `${postId}:${me.id}`;
   const [loaded, setLoaded] = useState<{ key: string; poll: Poll | null; error: boolean } | null>(null);
@@ -31,7 +34,7 @@ export function PostPoll({ postId }: { postId: string }) {
     return () => { request.active = false; };
   }, [postId, key, reload]);
   if (!poll) return loadError ? <Pressable analyticsId="post.poll.retry" accessibilityRole="button" onPress={() => { play('selection'); setLoaded(null); setReload(value => value + 1); }} style={styles.retry}>
-    <ThemedText type="small">투표를 불러오지 못했어요. 다시 불러오기</ThemedText>
+    <ThemedText type="small">{tr("투표를 불러오지 못했어요. 다시 불러오기")}</ThemedText>
   </Pressable> : null;
   const total = poll.counts.reduce((sum, value) => sum + value, 0), voted = poll.my_vote !== null, results = preview || voted;
   const submit = async () => {
@@ -51,12 +54,12 @@ export function PostPoll({ postId }: { postId: string }) {
   };
   return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
     <ThemedText type="smallBold">{poll.question}</ThemedText>
-    <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">투표 참여 {total.toLocaleString('ko-KR')}명 · 한 개만 고를 수 있어요</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr("투표 참여") + " "}{total.toLocaleString(getLocale())}{tr("명 · 한 개만 고를 수 있어요")}</ThemedText>
     <View style={styles.options} accessibilityRole="radiogroup">
       {poll.options.map((label, index) => {
         const percentage = total ? Math.round(poll.counts[index] / total * 100) : 0;
         return <Pressable key={index} analyticsId={`post.poll.option.${index}`} accessibilityRole="radio"
-          accessibilityLabel={`${label}${results ? `, ${percentage}퍼센트, ${poll.counts[index]}표` : ''}`}
+          accessibilityLabel={tr("{0}{1}", (label), (results ? `, ${percentage}퍼센트, ${poll.counts[index]}표` : ''))}
           accessibilityState={{ checked: selected === index, disabled: pending || voted }} disabled={pending || voted}
           onPress={() => { play('selection'); setSelected(index); }}
           style={[styles.option, { borderColor: selected === index ? theme.accent : theme.line, backgroundColor: theme.backgroundElement }]}>
@@ -66,17 +69,17 @@ export function PostPoll({ postId }: { postId: string }) {
         </Pressable>;
       })}
     </View>
-    {error && <ThemedText type="small" accessibilityLiveRegion="polite">투표를 저장하지 못했어요. 다시 시도해 주세요.</ThemedText>}
-    <Pressable analyticsId="post.poll.vote" accessibilityRole="button" accessibilityLabel={voted ? '투표 완료' : '투표하기'}
+    {error && <ThemedText type="small" accessibilityLiveRegion="polite">{tr("투표를 저장하지 못했어요. 다시 시도해 주세요.")}</ThemedText>}
+    <Pressable analyticsId="post.poll.vote" accessibilityRole="button" accessibilityLabel={voted ? tr("투표 완료") : tr("투표하기")}
       accessibilityState={{ disabled: voted || pending || selected === null, busy: pending }} disabled={voted || pending || selected === null}
       onPress={() => void submit()} style={[styles.submit, { backgroundColor: theme.accent, opacity: voted || pending || selected === null ? .55 : 1 }]}>
-      {pending ? <GlingLoader accessibilityLabel="투표 저장 중" size={16} /> : <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{voted ? '투표 완료' : '투표하기'}</ThemedText>}
+      {pending ? <GlingLoader accessibilityLabel={tr("투표 저장 중")} size={16} /> : <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{voted ? tr("투표 완료") : tr("투표하기")}</ThemedText>}
     </Pressable>
-    {!voted && <Pressable analyticsId="post.poll.preview" accessibilityRole="button" accessibilityLabel={preview ? '결과 미리 보기 닫기' : '투표 결과 미리 보기'}
+    {!voted && <Pressable analyticsId="post.poll.preview" accessibilityRole="button" accessibilityLabel={preview ? tr("결과 미리 보기 닫기") : tr("투표 결과 미리 보기")}
       onPress={() => { play('selection'); setPreview(value => !value); }} style={styles.preview}>
-      <ThemedText type="small" themeColor="textSecondary">{preview ? '미리 보기 닫기' : '투표 결과 미리 보기'}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{preview ? tr("미리 보기 닫기") : tr("투표 결과 미리 보기")}</ThemedText>
     </Pressable>}
-    <ThemedText type="small" themeColor="textSecondary">투표한 계정은 공개되지 않아요.</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary">{tr("투표한 계정은 공개되지 않아요.")}</ThemedText>
   </View>;
 }
 

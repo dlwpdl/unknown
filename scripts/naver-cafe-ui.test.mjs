@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
@@ -32,7 +33,7 @@ function fixture(statusName, drafts = [], outcome = null) {
       publishMerchantNaverCafe: async () => { calls.push(['publish']); const result = outcome ?? receipt('succeeded'); state.requests = [{ ...result, ...(result.status === 'uncertain' ? { article_url: null } : {}) }]; return { request: result }; },
     },
   };
-  vm.runInNewContext(source, { exports, require: name => { if (!(name in imports)) throw new Error(name); return imports[name]; }, URL, window: { confirm: () => true } });
+  vm.runInNewContext(source, { exports, require: withLanguageImports(name => { if (!(name in imports)) throw new Error(name); return imports[name]; }), URL, window: { confirm: () => true } });
   return { state, storage, calls, render() { cursor = 0; return exports.__Workspace({ merchantId: 'merchant', userId: 'owner', drafts }); }, async settle() { const pending = effects.splice(0); pending.forEach(fn => fn()); await new Promise(resolve => setTimeout(resolve, 0)); } };
 }
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];

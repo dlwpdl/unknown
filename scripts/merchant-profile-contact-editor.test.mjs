@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -31,7 +32,7 @@ function editor({ fail = false, sessionUser = user } = {}) {
     '@/lib/supabase': { supabase: { auth: { getSession: async () => ({ data: { session: { user: { id: sessionUser } } } }) } } },
   };
   const exports = {}, source = readFileSync(new URL('../src/components/merchant-profile-editor.tsx', import.meta.url), 'utf8') + '\nexports.Editor=ScopedProfileEditor;';
-  vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, { exports, require: name => imports[name] ?? {}, Error });
+  vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, { exports, require: withLanguageImports(name => imports[name] ?? {}), Error });
   const onDirty = value => dirty.push(value);
   return { calls, feedback, dirty, render() { index = 0; return exports.Editor({ merchantId: merchant, onDirty }); } };
 }

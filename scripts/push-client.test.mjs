@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -43,10 +44,10 @@ function load(path, imports, globals = {}) {
   const source = ts.transpileModule(fs.readFileSync(new URL(path, import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: false },
   }).outputText;
-  vm.runInNewContext(source, { exports, ...globals, process: { env: {} }, require(name) {
+  vm.runInNewContext(source, { exports, ...globals, process: { env: {} }, require: withLanguageImports((name) => {
     if (name in imports) return imports[name];
     throw new Error(`Unexpected import: ${name}`);
-  } });
+  }) });
   return exports;
 }
 

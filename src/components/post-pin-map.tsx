@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Platform, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
@@ -13,6 +15,7 @@ export function PostPinMap({ pin, cityName = '', preview = false, bottomInset = 
   pin: PostPin | null; label?: string; cityName?: string; preview?: boolean; bottomInset?: number;
   onSelect?: (pin: PostPin, label?: string) => void; onReadyChange?: (ready: boolean) => void;
 }) {
+  useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback(), native = useRef<WebView>(null), web = useRef<HTMLIFrameElement>(null);
   const mapStyle = [styles.map, preview && styles.preview];
   const [initialPin] = useState(pin);
@@ -43,10 +46,10 @@ export function PostPinMap({ pin, cityName = '', preview = false, bottomInset = 
     return () => window.removeEventListener('message', receive);
   }, [onSelect, onReadyChange, preview, key, play, pin, bottomInset]);
   const fail = () => { setFailed(true); onReadyChange?.(false); };
-  if (cached) return <Image source={{ uri: cached }} accessibilityLabel="선택한 위치의 지도. OpenStreetMap·OpenMapTiles" contentFit="cover" style={mapStyle} />;
-  if (preview && failed) return <View style={[mapStyle, styles.previewError, { backgroundColor: theme.card }]}><ThemedText type="small" themeColor="accent">지도</ThemedText></View>;
+  if (cached) return <Image source={{ uri: cached }} accessibilityLabel={tr("선택한 위치의 지도. OpenStreetMap·OpenMapTiles")} contentFit="cover" style={mapStyle} />;
+  if (preview && failed) return <View style={[mapStyle, styles.previewError, { backgroundColor: theme.card }]}><ThemedText type="small" themeColor="accent">{tr("지도")}</ThemedText></View>;
   return <View style={mapStyle}>
-    {Platform.OS === 'web' ? <iframe key={retry} ref={web} srcDoc={html} title="지도에서 위치 선택" sandbox="allow-scripts allow-same-origin"
+    {Platform.OS === 'web' ? <iframe key={retry} ref={web} srcDoc={html} title={tr("지도에서 위치 선택")} sandbox="allow-scripts allow-same-origin"
       onLoad={() => { setFailed(false); web.current?.contentWindow?.postMessage({ type: 'move', pin, bottomInset }, '*'); }}
       style={{ border: 0, width: '100%', height: '100%', minHeight: preview ? 0 : 140, flex: 1 }} />
       : <WebView key={retry} ref={native} source={{ html }} originWhitelist={['*']} applicationNameForUserAgent="GlingMap/1.0"
@@ -62,8 +65,8 @@ export function PostPinMap({ pin, cityName = '', preview = false, bottomInset = 
           else if (message.type === 'feedback') play('selection');
           else if (message.type === 'credit') { play('selection'); void Linking.openURL(message.url).catch(() => play('warning')); }
         }} />}
-    {failed && <View style={[styles.error, { backgroundColor: theme.card }]}><ThemedText type="small">지도를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.</ThemedText>
-      <Pressable analyticsId="post.location.map.retry" accessibilityRole="button" onPress={() => { play('selection'); setFailed(false); setRetry(value => value + 1); }} style={styles.retry}><ThemedText themeColor="accent">다시 시도</ThemedText></Pressable></View>}
+    {failed && <View style={[styles.error, { backgroundColor: theme.card }]}><ThemedText type="small">{tr("지도를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.")}</ThemedText>
+      <Pressable analyticsId="post.location.map.retry" accessibilityRole="button" onPress={() => { play('selection'); setFailed(false); setRetry(value => value + 1); }} style={styles.retry}><ThemedText themeColor="accent">{tr("다시 시도")}</ThemedText></Pressable></View>}
   </View>;
 }
 

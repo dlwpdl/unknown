@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -14,7 +15,7 @@ test('preferred city persists before switching, survives remounts, and isolates 
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/lib/community-city.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, require(name) {
+  vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }) };
     if (name === 'react') return {
       createContext: () => ({ Provider: 'Provider' }), useCallback: fn => fn, useLayoutEffect: fn => fn(),
@@ -35,7 +36,7 @@ test('preferred city persists before switching, survives remounts, and isolates 
       auth = { ...auth, me: { ...auth.me, cityId: id } };
     } }) };
     throw new Error(`Unexpected import: ${name}`);
-  } });
+  }) });
   const render = () => { cursor = 0; return exports.CommunityCityProvider({}).props.value; };
   assert.equal(render().city.id, 'vancouver', 'saved preference wins over nearby GPS city');
   assert.equal(await render().selectCity({ ...cities[2], state: 'open' }), false, 'catalog availability wins over caller-provided state');
@@ -79,7 +80,7 @@ test('auth saves only the signed-in profile and publishes the city only after a 
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/lib/auth.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, __DEV__: false, process: { env: {} }, require(name) {
+  vm.runInNewContext(source, { exports, __DEV__: false, process: { env: {} }, require: withLanguageImports((name) => {
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'react') return {
       createContext: () => ({ Provider: 'Provider' }), useCallback: fn => fn, useMemo: fn => fn(), useEffect() {},
@@ -103,7 +104,7 @@ test('auth saves only the signed-in profile and publishes the city only after a 
       }; } };
     } } };
     return {};
-  } });
+  }) });
   const render = () => { cursor = refCursor = 0; return exports.AuthProvider({ children: null }); };
   const node = render();
   assert.equal(node.props.value.isAuthed, false, 'social authentication alone does not complete signup');

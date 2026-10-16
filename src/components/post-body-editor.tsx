@@ -1,3 +1,4 @@
+import { useLanguage } from '@/hooks/use-language';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -11,10 +12,11 @@ import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { googleMapsPin, googlePinUrl, postMapBody, withPostMap } from '@/lib/post-maps';
-import { t } from '@/i18n/ko';
+import { t, tr } from '@/i18n';
 import { instagramPostLink, postLinkChecks, safePostLink, splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links';
 
 export function PostBodyEditor({ value = '', onChangeText, editable = true, maxLength = 4000, onFocus, cityName = '', allowLocation = true, ...props }: TextInputProps & { cityName?: string; allowLocation?: boolean }) {
+  useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const insets = useSafeAreaInsets();
@@ -54,10 +56,10 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
       }} />
     <View style={styles.attachments}>
       <View style={styles.actions}>
-      <Pressable analyticsId="post.attachment.add" accessibilityRole="button" accessibilityLabel="링크 첨부" disabled={!editable}
+      <Pressable analyticsId="post.attachment.add" accessibilityRole="button" accessibilityLabel={tr("링크 첨부")} disabled={!editable}
         onPress={() => { Keyboard.dismiss(); choose('choices'); }} style={[styles.attachButton, { borderColor: theme.line, opacity: editable ? 1 : 0.5 }]}>
         <SymbolView name={{ ios: 'paperclip', android: 'attach_file', web: 'attach_file' }} size={18} tintColor={theme.text} />
-        <ThemedText type="smallBold">첨부</ThemedText>
+        <ThemedText type="smallBold">{tr("첨부")}</ThemedText>
       </Pressable>
       {allowLocation && <Pressable analyticsId="post.location.add" accessibilityRole="button" accessibilityLabel={mapped.url ? t.write.placeChange : t.write.placeAdd} disabled={!editable}
         onPress={() => { Keyboard.dismiss(); choose('location'); }} style={[styles.attachButton, { borderColor: theme.line, opacity: editable ? 1 : 0.5 }]}>
@@ -74,13 +76,13 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
       </View>}
       {attached.urls.map((url, index) => <View key={`${url}-${index}`} style={styles.row}>
         <PostAttachmentLink url={url} />
-        <Pressable analyticsId="post.attachment.remove" accessibilityRole="button" accessibilityLabel={`${instagramPostLink(url)?.handle ?? url} 첨부 삭제`} disabled={!editable}
+        <Pressable analyticsId="post.attachment.remove" accessibilityRole="button" accessibilityLabel={tr("{0} 첨부 삭제", (instagramPostLink(url)?.handle ?? url))} disabled={!editable}
           onPress={() => { play('selection'); onChangeText?.(withPostAttachments(value, attached.urls.filter((_, position) => position !== index))); }} style={styles.iconButton}>
           <ThemedText themeColor="textSecondary">×</ThemedText>
         </Pressable>
       </View>)}
-      {blocked > 0 && <ThemedText type="small" accessibilityRole="alert">활성화할 수 없는 본문 링크 {blocked}개가 있어요. 주소를 확인해 주세요.</ThemedText>}
-      {checks.length > blocked && <ThemedText type="small" themeColor="textSecondary">본문 외부 링크의 악성 여부는 아직 확인하지 못했어요.</ThemedText>}
+      {blocked > 0 && <ThemedText type="small" accessibilityRole="alert">{tr("활성화할 수 없는 본문 링크") + " "}{blocked}{tr("개가 있어요. 주소를 확인해 주세요.")}</ThemedText>}
+      {checks.length > blocked && <ThemedText type="small" themeColor="textSecondary">{tr("본문 외부 링크의 악성 여부는 아직 확인하지 못했어요.")}</ThemedText>}
     </View>
     {stage === 'location' && editable && <PostLocationPicker visible initialPin={initialPin} initialLabel={mapped.label} cityName={cityName} onClose={close}
       onConfirm={(pin, label) => {
@@ -92,25 +94,25 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
       }} />}
     <Modal visible={stage !== null && editable && stage !== 'location'} transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={close}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.overlay}>
-        <Pressable analyticsId="post.attachment.backdrop" accessibilityRole="button" accessibilityLabel="첨부 취소" onPress={close} style={StyleSheet.absoluteFill} />
+        <Pressable analyticsId="post.attachment.backdrop" accessibilityRole="button" accessibilityLabel={tr("첨부 취소")} onPress={close} style={StyleSheet.absoluteFill} />
         <View accessibilityViewIsModal style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(16, insets.bottom) }]}>
           <View style={styles.header}>
-            {stage === 'choices' ? <View style={styles.iconButton} /> : <Pressable analyticsId="post.attachment.back" accessibilityRole="button" accessibilityLabel="이전 단계"
+            {stage === 'choices' ? <View style={styles.iconButton} /> : <Pressable analyticsId="post.attachment.back" accessibilityRole="button" accessibilityLabel={tr("이전 단계")}
               onPress={() => choose(stage === 'instagram' ? 'sns' : 'choices')} style={styles.iconButton}><ThemedText>‹</ThemedText></Pressable>}
-            <ThemedText type="smallBold">{stage === 'instagram' ? 'Instagram 프로필' : stage === 'url' ? 'URL 링크' : stage === 'sns' ? 'SNS' : '첨부'}</ThemedText>
-            <Pressable analyticsId="post.attachment.close" accessibilityRole="button" accessibilityLabel="첨부 창 닫기" onPress={close} style={styles.iconButton}><ThemedText>×</ThemedText></Pressable>
+            <ThemedText type="smallBold">{stage === 'instagram' ? tr("Instagram 프로필") : stage === 'url' ? tr("URL 링크") : stage === 'sns' ? 'SNS' : tr("첨부")}</ThemedText>
+            <Pressable analyticsId="post.attachment.close" accessibilityRole="button" accessibilityLabel={tr("첨부 창 닫기")} onPress={close} style={styles.iconButton}><ThemedText>×</ThemedText></Pressable>
           </View>
           <ScrollView analyticsId="post.attachment.sheet" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
             {stage === 'choices' && <>
-              <Pressable analyticsId="post.attachment.url" accessibilityRole="button" accessibilityLabel="URL 링크" onPress={() => choose('url')} style={styles.choice}><ThemedText>URL 링크</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText></Pressable>
+              <Pressable analyticsId="post.attachment.url" accessibilityRole="button" accessibilityLabel={tr("URL 링크")} onPress={() => choose('url')} style={styles.choice}><ThemedText>{tr("URL 링크")}</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText></Pressable>
               <Pressable analyticsId="post.attachment.sns" accessibilityRole="button" accessibilityLabel="SNS" onPress={() => choose('sns')} style={styles.choice}><ThemedText>SNS</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText></Pressable>
             </>}
             {stage === 'sns' && <Pressable analyticsId="post.attachment.instagram" accessibilityRole="button" accessibilityLabel="Instagram" onPress={() => choose('instagram')} style={styles.choice}><ThemedText>Instagram</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText></Pressable>}
             {(stage === 'url' || stage === 'instagram') && <>
-              <ThemedText type="small" themeColor="textSecondary">{stage === 'instagram' ? 'Instagram 프로필 주소를 넣어주세요.' : '첨부할 HTTPS 주소를 넣어주세요.'}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{stage === 'instagram' ? tr("Instagram 프로필 주소를 넣어주세요.") : tr("첨부할 HTTPS 주소를 넣어주세요.")}</ThemedText>
               <TextInput ref={inputRef} value={input} onChangeText={setInput} onFocus={() => play('selection')}
-                accessibilityLabel={stage === 'instagram' ? 'Instagram 프로필 URL' : '첨부할 URL'}
-                placeholder={stage === 'instagram' ? 'https://www.instagram.com/아이디/' : 'https://example.com/'} placeholderTextColor={theme.textSecondary}
+                accessibilityLabel={stage === 'instagram' ? tr("Instagram 프로필 URL") : tr("첨부할 URL")}
+                placeholder={stage === 'instagram' ? tr("https://www.instagram.com/아이디/") : 'https://example.com/'} placeholderTextColor={theme.textSecondary}
                 keyboardType="url" autoCapitalize="none" autoCorrect={false} maxLength={2048}
                 style={[styles.urlInput, { color: theme.text, borderColor: theme.line }]} />
               {!!candidate && <PostAttachmentLink url={candidate} />}
@@ -118,7 +120,7 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
               <Pressable analyticsId="post.attachment.confirm" accessibilityRole="button" disabled={!next || !!error}
                 onPress={() => { if (!next || error) return; play('selection'); onChangeText?.(next); setStage(null); setInput(''); }}
                 style={[styles.confirm, { backgroundColor: theme.accent, opacity: !next || error ? 0.5 : 1 }]}>
-                <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{'첨부하기'}</ThemedText>
+                <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr("첨부하기")}</ThemedText>
               </Pressable>
             </>}
           </ScrollView>

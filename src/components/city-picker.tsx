@@ -1,3 +1,4 @@
+import { useLanguage } from '@/hooks/use-language';
 import { Pressable, SectionList } from '@/components/analytics-controls';
 import { useState } from 'react';
 import { KeyboardAvoidingView, LayoutAnimation, Platform, StyleSheet, TextInput, UIManager, useWindowDimensions, View } from 'react-native';
@@ -8,7 +9,7 @@ import { GlassSurface } from '@/components/glass-surface';
 import { ThemedText } from '@/components/themed-text';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { t } from '@/i18n/ko';
+import { t, tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -17,6 +18,7 @@ import { CITIES } from '@/lib/mock';
 import type { City } from '@/lib/types';
 
 export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { city: City; onSelect: (city: City) => void } }) {
+  const { language } = useLanguage();
   const theme = useTheme();
   const { city, selectCity, saving } = useCommunityCity();
   const { play } = useInteractionFeedback();
@@ -85,19 +87,19 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
       keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.list}
       ListHeaderComponent={draft || !isAuthed ? null : <GlassSurface tone="control" interactive style={styles.locationRow}>
         <Pressable analyticsId="components_city-picker.pressable.5" accessibilityRole="button" disabled={locationBusy} accessibilityState={{ disabled: locationBusy, busy: location.busy, expanded: locationOpen }}
-          accessibilityLabel="내 위치로 찾기" onPress={onLocation}
+          accessibilityLabel={tr("내 위치로 찾기")} onPress={onLocation}
           style={({ pressed }) => [styles.locationMain, pressed && { backgroundColor: theme.backgroundSelected }, locationBusy && styles.disabled]}>
           <SymbolView name={{ ios: 'location', android: 'near_me', web: 'near_me' }} size={22} tintColor={theme.accent} />
           <View style={styles.name}>
-            <ThemedText style={[styles.rowTitle, { color: theme.accent }]}>{location.busy ? '위치 확인 중…' : location.enabled ? '위치 다시 확인' : locationOpen ? '동의하고 찾기' : '내 위치로 찾기'}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">{location.message || (locationOpen && !location.enabled ? '아래 내용에 동의하면 위치를 한 번 확인해요' : 'GPS로 가까운 도시를 한 번만 확인해요')}</ThemedText>
+            <ThemedText style={[styles.rowTitle, { color: theme.accent }]}>{location.busy ? tr("위치 확인 중…") : location.enabled ? tr("위치 다시 확인") : locationOpen ? tr("동의하고 찾기") : tr("내 위치로 찾기")}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{location.message || (locationOpen && !location.enabled ? tr("아래 내용에 동의하면 위치를 한 번 확인해요") : tr("GPS로 가까운 도시를 한 번만 확인해요"))}</ThemedText>
           </View>
           {!location.enabled && <SymbolView name={{ ios: locationOpen ? 'chevron.up' : 'chevron.down', android: locationOpen ? 'expand_less' : 'expand_more', web: locationOpen ? 'expand_less' : 'expand_more' }} size={18} tintColor={theme.textSecondary} />}
         </Pressable>
         {locationOpen && !location.enabled && <View style={[styles.locationDetails, { borderColor: theme.line }]}>
-          <ThemedText type="small" themeColor="textSecondary">직접 선택해 저장한 선호 지역이 우선 적용돼요. 동의하지 않아도 아래에서 도시를 고를 수 있어요.</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">동의하면 로그인과 글·모임 작성 때만 위치를 한 번 확인해요. 다른 회원에게는 선택한 도시만 공개돼요.</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">좌표·정확도·측정 시각은 안전 운영을 위해 30일 보관하며 권한 있는 관리자만 조회해요. 설정에서 공유를 끄고 기록을 삭제할 수 있어요.</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("직접 선택해 저장한 선호 지역이 우선 적용돼요. 동의하지 않아도 아래에서 도시를 고를 수 있어요.")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("동의하면 로그인과 글·모임 작성 때만 위치를 한 번 확인해요. 다른 회원에게는 선택한 도시만 공개돼요.")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("좌표·정확도·측정 시각은 안전 운영을 위해 30일 보관하며 권한 있는 관리자만 조회해요. 설정에서 공유를 끄고 기록을 삭제할 수 있어요.")}</ThemedText>
         </View>}
       </GlassSurface>}
       ListEmptyComponent={<ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite" style={styles.empty}>{t.feed.cityNoResults}</ThemedText>}
@@ -109,7 +111,7 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
         const busy = !draft && saving;
         const disabled = busy || !open;
         return <View style={[styles.rowGlass, { backgroundColor: theme.card, borderColor: selected ? theme.accent : theme.line }]}><Pressable analyticsId="components_city-picker.pressable.6" disabled={disabled} accessibilityRole="button" accessibilityState={{ selected, disabled, busy }}
-          accessibilityLabel={[item.name, item.englishName, item.province, !open && t.feed.citySoon, selected && t.feed.citySelected].filter(Boolean).join(', ')}
+          accessibilityLabel={[tr(item.name), language === 'ko' && item.englishName, item.province, !open && t.feed.citySoon, selected && t.feed.citySelected].filter(Boolean).join(', ')}
           onPress={async () => {
             if (disabled) return;
             play('selection');
@@ -118,10 +120,10 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
           }}
           style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
           <View style={styles.name}>
-            <ThemedText style={[styles.rowTitle, { color: selected ? theme.accent : open ? theme.text : theme.textSecondary }]}>{item.name}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">{item.englishName} · {item.province}</ThemedText>
+            <ThemedText style={[styles.rowTitle, { color: selected ? theme.accent : open ? theme.text : theme.textSecondary }]}>{tr(item.name)}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{language === 'ko' ? `${item.englishName} · ${item.province}` : item.province}</ThemedText>
           </View>
-          {!draft && item.id === location.cityId && !selected && <ThemedText type="small" style={[styles.near, { backgroundColor: theme.backgroundElement, color: theme.accent }]}>가까움</ThemedText>}
+          {!draft && item.id === location.cityId && !selected && <ThemedText type="small" style={[styles.near, { backgroundColor: theme.backgroundElement, color: theme.accent }]}>{tr("가까움")}</ThemedText>}
           {!open && <ThemedText type="small" themeColor="textSecondary">{t.feed.citySoon}</ThemedText>}
           {selected && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={21} tintColor={theme.accent} />}
         </Pressable></View>;

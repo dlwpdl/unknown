@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -22,11 +24,13 @@ import { supabase } from '@/lib/supabase';
 import { CITIES } from '@/lib/mock';
 
 export default function MeetupProfileRoute() {
+
   const { me, isAuthed } = useAuth();
   const { postId, returnPostId } = useLocalSearchParams<{ postId?: string; returnPostId?: string }>();
   return <ProfileForm key={`${isAuthed ? me.id : 'guest'}:${postId ?? 'mine'}`} postId={postId} returnPostId={returnPostId} />;
 }
 function ProfileForm({ postId, returnPostId }: { postId?: string; returnPostId?: string }) {
+  useLanguage();
   const theme = useTheme(), router = useRouter();
   const { isAuthed, me, setProfilePhoto, promptLogin } = useAuth();
   const { play } = useInteractionFeedback();
@@ -50,7 +54,7 @@ function ProfileForm({ postId, returnPostId }: { postId?: string; returnPostId?:
       if (!active) return;
       if (value) { setProfile(value); setTags(value.interests); }
       setLoaded(true);
-      if (postId && !value) setError('지금은 이 프로필을 볼 수 없어요.');
+      if (postId && !value) setError(tr("지금은 이 프로필을 볼 수 없어요."));
     }).catch(e => { if (active) setError(getChillingError(e)); })
       .finally(() => { if (active) {
         if (!reducedMotion && Platform.OS !== 'web') {
@@ -90,7 +94,7 @@ function ProfileForm({ postId, returnPostId }: { postId?: string; returnPostId?:
       });
       const asset = result.assets?.[0];
       if (!result.canceled && asset?.uri && asset.base64) { await setProfilePhoto(asset.uri, asset.base64); play('success'); }
-    } catch { play('warning'); Alert.alert('사진을 바꾸지 못했어요', '잠시 후 다시 시도해 주세요.'); }
+    } catch { play('warning'); Alert.alert(tr("사진을 바꾸지 못했어요"), tr("잠시 후 다시 시도해 주세요.")); }
     finally { if (mounted.current) setPhotoSaving(false); }
   };
   const save = async () => {
@@ -108,25 +112,25 @@ function ProfileForm({ postId, returnPostId }: { postId?: string; returnPostId?:
   return <ThemedView style={styles.fill}><SafeAreaView style={styles.fill}>
     {/* 한 번에 한 질문, 다음 행동은 항상 손 닿는 곳에 둔다. */}
     <View style={[styles.appbar, { backgroundColor: theme.background }]}>
-      <Pressable analyticsId="app_meetup-profile.pressable.1" onPress={() => { play('selection'); if (!postId && step > 0) changeStep(step - 1); else back(); }} accessibilityRole="button" accessibilityLabel={step > 0 && !postId ? '이전 질문' : '뒤로가기'} style={({ pressed }) => [styles.appbarButton, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
+      <Pressable analyticsId="app_meetup-profile.pressable.1" onPress={() => { play('selection'); if (!postId && step > 0) changeStep(step - 1); else back(); }} accessibilityRole="button" accessibilityLabel={step > 0 && !postId ? tr("이전 질문") : tr("뒤로가기")} style={({ pressed }) => [styles.appbarButton, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
         <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} />
       </Pressable>
-      <ThemedText accessibilityRole="header" style={styles.appbarTitle}>{postId ? '호스트 모임 프로필' : '모임 프로필'}</ThemedText>
+      <ThemedText accessibilityRole="header" style={styles.appbarTitle}>{postId ? tr("호스트 모임 프로필") : tr("모임 프로필")}</ThemedText>
       <View style={styles.appbarButton} />
     </View>
-    {isAuthed && !postId && loaded && <View style={styles.progress} accessibilityLabel={`프로필 작성 ${step + 1}단계, 총 5단계. 필수 항목 ${complete}/4 완료`}>
+    {isAuthed && !postId && loaded && <View style={styles.progress} accessibilityLabel={tr("프로필 작성 {0}단계, 총 5단계. 필수 항목 {1}/4 완료", (step + 1), (complete))}>
       {steps.map((label, index) => <View key={label} style={[styles.bar, { backgroundColor: index <= step ? theme.accent : theme.backgroundElement }]} />)}
       <ThemedText type="small" themeColor="textSecondary">{step + 1}/5</ThemedText>
     </View>}
     <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      {loading && isAuthed ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel="프로필 불러오는 중" /></View> : <ScrollView ref={scroll} analyticsId="app_meetup-profile.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}
+      {loading && isAuthed ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={tr("프로필 불러오는 중")} /></View> : <ScrollView ref={scroll} analyticsId="app_meetup-profile.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}
         onLayout={() => { if (TextInput.State.currentlyFocusedInput()) scroll.current?.scrollToEnd({ animated: false }); }}>
-        {!isAuthed ? <Pressable analyticsId="app_meetup-profile.pressable.2" onPress={() => { play('selection'); promptLogin('모임 프로필을 확인하려면 로그인해 주세요.'); }} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent">로그인하기</ThemedText></Pressable>
+        {!isAuthed ? <Pressable analyticsId="app_meetup-profile.pressable.2" onPress={() => { play('selection'); promptLogin('모임 프로필을 확인하려면 로그인해 주세요.'); }} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent">{tr("로그인하기")}</ThemedText></Pressable>
           : postId ? loaded && !error && <ChillingProfileCard profile={profile} />
               : loaded && <>
                 <View style={styles.field}>
                   <ThemedText type="subtitle" style={styles.stepTitle}>{steps[step]}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">{step === 4 ? '모임장에게 공유될 나의 카드예요.' : '스펙보다, 함께 노는 방식을 알려주세요.'}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">{step === 4 ? tr("모임장에게 공유될 나의 카드예요.") : tr("스펙보다, 함께 노는 방식을 알려주세요.")}</ThemedText>
                 </View>
                 {step === 0 && <>
                 <View style={styles.photoRow}>
@@ -135,25 +139,25 @@ function ProfileForm({ postId, returnPostId }: { postId?: string; returnPostId?:
                     : <View style={[styles.photo, styles.photoFallback, { backgroundColor: theme.backgroundElement }]}><ThemedText style={styles.photoLetter}>{me.nickname.slice(0, 1)}</ThemedText></View>}
                   <View style={styles.photoBody}>
                     <ThemedText type="subtitle">{me.nickname}</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">사진은 선택이에요.</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">{tr("사진은 선택이에요.")}</ThemedText>
                     <Pressable analyticsId="app_meetup-profile.pressable.5" accessibilityRole="button" onPress={() => void pickPhoto()} disabled={saving || photoSaving} accessibilityState={{ disabled: saving || photoSaving, busy: photoSaving }} style={({ pressed }) => [styles.ghost, Depth.control, { borderColor: theme.line, backgroundColor: theme.card, }]}>
-                      <ThemedText type="smallBold" themeColor="accent">{photoSaving ? '사진 저장 중…' : me.photoUri ? '사진 바꾸기' : '사진 선택'}</ThemedText>
+                      <ThemedText type="smallBold" themeColor="accent">{photoSaving ? tr("사진 저장 중…") : me.photoUri ? tr("사진 바꾸기") : tr("사진 선택")}</ThemedText>
                     </Pressable>
                   </View>
                 </View>
                 <View style={styles.field}>
-                  <ThemedText type="smallBold">활동 지역</ThemedText>
-                  <Pressable analyticsId="app_meetup-profile.pressable.12" accessibilityRole="button" accessibilityLabel="활동 지역 선택" disabled={saving || photoSaving}
+                  <ThemedText type="smallBold">{tr("활동 지역")}</ThemedText>
+                  <Pressable analyticsId="app_meetup-profile.pressable.12" accessibilityRole="button" accessibilityLabel={tr("활동 지역 선택")} disabled={saving || photoSaving}
                     onPress={() => { play('selection'); Keyboard.dismiss(); setCityOpen(true); }} style={({ pressed }) => [styles.region, { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : theme.card }]}>
-                    <ThemedText>{cityName ?? '활동 지역을 선택해 주세요'}</ThemedText><ThemedText type="small" themeColor="accent">변경</ThemedText>
+                    <ThemedText>{cityName ?? tr("활동 지역을 선택해 주세요")}</ThemedText><ThemedText type="small" themeColor="accent">{tr("변경")}</ThemedText>
                   </Pressable>
-                  <ThemedText type="small" themeColor="textSecondary">계정과 같은 지역이에요. 정확한 위치는 표시하지 않아요.</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">{tr("계정과 같은 지역이에요. 정확한 위치는 표시하지 않아요.")}</ThemedText>
                 </View>
                 </>}
                 {([
-                  { key: 'intro', label: '한 줄 소개', hint: '하나를 고르거나 직접 적어주세요.', limit: 160, examples: ['처음엔 조용하지만 금방 편해져요', '먼저 말을 거는 편이에요', '함께 활동하는 걸 좋아해요'] },
-                  { key: 'promptOne', label: '나랑 만나면 주로…', hint: '하나를 고르거나 직접 적어주세요.', limit: 300, examples: ['페스티벌 같이 가기', '라이브 공연 보기', '조용한 카페에서 수다', '가볍게 걷기', '맛집 원정', '보드게임', '맥주 한잔'] },
-                  { key: 'promptTwo', label: '이런 모임이면 바로 신청해요', hint: '하나를 고르거나 직접 적어주세요.', limit: 300, examples: ['공연 취향이 맞는 사람들', '소규모(4명 이하)', '주말 낮', '처음 보는 사람과도 편한 분위기'] },
+                  { key: 'intro', label: tr("한 줄 소개"), hint: tr("하나를 고르거나 직접 적어주세요."), limit: 160, examples: [tr("처음엔 조용하지만 금방 편해져요"), tr("먼저 말을 거는 편이에요"), tr("함께 활동하는 걸 좋아해요")] },
+                  { key: 'promptOne', label: tr("나랑 만나면 주로…"), hint: tr("하나를 고르거나 직접 적어주세요."), limit: 300, examples: [tr("페스티벌 같이 가기"), tr("라이브 공연 보기"), tr("조용한 카페에서 수다"), tr("가볍게 걷기"), tr("맛집 원정"), tr("보드게임"), tr("맥주 한잔")] },
+                  { key: 'promptTwo', label: tr("이런 모임이면 바로 신청해요"), hint: tr("하나를 고르거나 직접 적어주세요."), limit: 300, examples: [tr("공연 취향이 맞는 사람들"), tr("소규모(4명 이하)"), tr("주말 낮"), tr("처음 보는 사람과도 편한 분위기")] },
                 ] as const).filter((_, index) => index === step).map(field => <View key={field.key} style={[styles.promptPanel, { backgroundColor: theme.card }]}>
                   <ThemedText style={styles.question}>{field.label}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">{field.hint}</ThemedText>
@@ -168,55 +172,55 @@ function ProfileForm({ postId, returnPostId }: { postId?: string; returnPostId?:
                     </Pressable>;
                   })}</View>
                   {customOpen === field.key || (profile[field.key] && !field.examples.some(example => profile[field.key] === example))
-                    ? <TextInput accessibilityLabel={`${field.label} 직접 입력`} value={profile[field.key]} autoFocus={customOpen === field.key}
-                        placeholder="직접 적어주세요" placeholderTextColor={theme.textSecondary} multiline maxLength={field.limit} editable={!saving}
+                    ? <TextInput accessibilityLabel={tr("{0} 직접 입력", (field.label))} value={profile[field.key]} autoFocus={customOpen === field.key}
+                        placeholder={tr("직접 적어주세요")} placeholderTextColor={theme.textSecondary} multiline maxLength={field.limit} editable={!saving}
                         onFocus={() => scroll.current?.scrollToEnd({ animated: false })}
                         onChangeText={text => setProfile(p => ({ ...p, [field.key]: text }))} style={[styles.input, { color: theme.text, borderColor: theme.line }]} />
-                    : <Pressable analyticsId="app_meetup-profile.pressable.11" accessibilityRole="button" accessibilityLabel={`${field.label} 직접 입력`}
+                    : <Pressable analyticsId="app_meetup-profile.pressable.11" accessibilityRole="button" accessibilityLabel={tr("{0} 직접 입력", (field.label))}
                         disabled={saving} onPress={() => { play('selection'); setCustomOpen(field.key); }}
                         style={({ pressed }) => [styles.promptChip, Depth.control, { alignSelf: 'flex-start', borderColor: theme.line, backgroundColor: theme.card, }]}>
-                        <ThemedText type="small" themeColor="textSecondary">＋ 직접 입력</ThemedText>
+                        <ThemedText type="small" themeColor="textSecondary">{tr("＋ 직접 입력")}</ThemedText>
                       </Pressable>}
                   <ThemedText type="small" themeColor="textSecondary" style={styles.count}>{profile[field.key].length}/{field.limit}</ThemedText>
                 </View>)}
                 {step === 3 && <View style={styles.field}>
-                  <ThemedText type="smallBold">관심사 <ThemedText type="small" themeColor="textSecondary">필수</ThemedText></ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">선택하거나 직접 추가해 주세요. 최대 8개.</ThemedText>
+                  <ThemedText type="smallBold">{tr("관심사") + " "}<ThemedText type="small" themeColor="textSecondary">{tr("필수")}</ThemedText></ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">{tr("선택하거나 직접 추가해 주세요. 최대 8개.")}</ThemedText>
                   <View style={styles.chips}>
-                    {tags.map(tag => <Pressable analyticsId="app_meetup-profile.pressable.6" key={tag} accessibilityRole="button" accessibilityLabel={`${tag} 삭제`}
+                    {tags.map(tag => <Pressable analyticsId="app_meetup-profile.pressable.6" key={tag} accessibilityRole="button" accessibilityLabel={tr("{0} 삭제", (tag))}
                       disabled={saving} onPress={() => { play('selection'); setTags(current => current.filter(value => value !== tag)); }}
                       style={({ pressed }) => [styles.promptChip, Depth.control, { borderColor: theme.accentDepth, backgroundColor: theme.accent, }]}>
                       <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{`${tag} ✕`}</ThemedText>
                     </Pressable>)}
-                    {tags.length < 8 && ['페스티벌', '라이브 공연', '파티', '산책', '커피', '맛집', '여행', '보드게임', '운동'].filter(tag => !tags.includes(tag)).map(tag =>
-                      <Pressable analyticsId="app_meetup-profile.pressable.10" key={tag} accessibilityRole="button" accessibilityLabel={`${tag} 추가`}
+                    {tags.length < 8 && [tr("페스티벌"), tr("라이브 공연"), tr("파티"), tr("산책"), tr("커피"), tr("맛집"), tr("여행"), tr("보드게임"), tr("운동")].filter(tag => !tags.includes(tag)).map(tag =>
+                      <Pressable analyticsId="app_meetup-profile.pressable.10" key={tag} accessibilityRole="button" accessibilityLabel={tr("{0} 추가", (tag))}
                         disabled={saving} onPress={() => { play('selection'); Keyboard.dismiss(); setTags(current => current.length >= 8 || current.includes(tag) ? current : [...current, tag]); }}
                         style={({ pressed }) => [styles.promptChip, Depth.control, { borderColor: theme.line, backgroundColor: theme.backgroundElement, }]}>
                         <ThemedText type="small">＋ {tag}</ThemedText>
                       </Pressable>)}
                     {tags.length < 8 && (tagOpen
-                      ? <TextInput autoFocus accessibilityLabel="관심사 추가" value={tagDraft} maxLength={20} editable={!saving} returnKeyType="done"
+                      ? <TextInput autoFocus accessibilityLabel={tr("관심사 추가")} value={tagDraft} maxLength={20} editable={!saving} returnKeyType="done"
                         onFocus={() => scroll.current?.scrollToEnd({ animated: false })}
                         onChangeText={setTagDraft} onSubmitEditing={() => addTags(tagDraft)} onBlur={() => { addTags(tagDraft); setTagOpen(false); }}
-                        placeholder="예: 산책" placeholderTextColor={theme.textSecondary} style={[styles.tagInput, { color: theme.text, borderColor: theme.accent }]} />
-                      : <Pressable analyticsId="app_meetup-profile.pressable.7" accessibilityRole="button" accessibilityLabel="관심사 추가"
+                        placeholder={tr("예: 산책")} placeholderTextColor={theme.textSecondary} style={[styles.tagInput, { color: theme.text, borderColor: theme.accent }]} />
+                      : <Pressable analyticsId="app_meetup-profile.pressable.7" accessibilityRole="button" accessibilityLabel={tr("관심사 추가")}
                         disabled={saving} onPress={() => { play('selection'); setTagOpen(true); }} style={({ pressed }) => [styles.promptChip, Depth.control, { borderColor: theme.line, backgroundColor: theme.card, }]}>
-                        <ThemedText type="small" themeColor="textSecondary">＋ 추가</ThemedText>
+                        <ThemedText type="small" themeColor="textSecondary">{tr("＋ 추가")}</ThemedText>
                       </Pressable>)}
                   </View>
                 </View>}
                 {step === 4 && <>
                 <ChillingProfileCard profile={{ ...profile, interests: tags }} identity={me} />
-                <ThemedText type="small" themeColor="textSecondary">모임을 열면 로그인한 회원이 내 카드를 볼 수 있어요. 참여 신청 시에는 확인과 동의 후 해당 호스트에게 카드와 답변을 보내요. 안전을 위해 자동 분석과 권한 있는 운영자 검토가 적용돼요.</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">{tr("모임을 열면 로그인한 회원이 내 카드를 볼 수 있어요. 참여 신청 시에는 확인과 동의 후 해당 호스트에게 카드와 답변을 보내요. 안전을 위해 자동 분석과 권한 있는 운영자 검토가 적용돼요.")}</ThemedText>
                 </>}
               </>}
         {!!error && <><ThemedText accessibilityRole="alert" themeColor="accent">{error}</ThemedText>
-          {!loaded && <Pressable analyticsId="app_meetup-profile.pressable.9" onPress={() => { play('selection'); setLoading(true); setError(''); setRetry(x => x + 1); }} accessibilityRole="button" style={styles.button}><ThemedText>다시 불러오기</ThemedText></Pressable>}</>}
+          {!loaded && <Pressable analyticsId="app_meetup-profile.pressable.9" onPress={() => { play('selection'); setLoading(true); setError(''); setRetry(x => x + 1); }} accessibilityRole="button" style={styles.button}><ThemedText>{tr("다시 불러오기")}</ThemedText></Pressable>}</>}
       </ScrollView>}
       {isAuthed && !postId && loaded && !loading && <View style={[styles.footer, { borderColor: theme.line, backgroundColor: theme.background }]}>
-        <ThemedText type="small" themeColor="textSecondary">필수 항목 {complete}/4 완료 · {step === 4 ? '저장하면 다음 모임에서도 사용할 수 있어요' : '답변은 나중에도 바꿀 수 있어요'}</ThemedText>
-        {step === 4 ? <RaisedActionButton analyticsId="app_meetup-profile.pressable.8" disabled={saving || photoSaving || !stepReady} busy={saving} onPress={() => void save()} label={saving ? '저장 중…' : returnPostId ? '저장하고 신청 계속' : '이 프로필로 시작하기'} />
-          : <RaisedActionButton analyticsId="app_meetup-profile.pressable.13" disabled={saving || photoSaving || !stepReady} onPress={() => { play('selection'); if (step === 3) addTags(tagDraft); changeStep(step + 1); }} label={step === 3 ? '내 프로필 미리보기' : '다음'} />}
+        <ThemedText type="small" themeColor="textSecondary">{tr("필수 항목") + " "}{complete}{tr("/4 완료 ·") + " "}{step === 4 ? tr("저장하면 다음 모임에서도 사용할 수 있어요") : tr("답변은 나중에도 바꿀 수 있어요")}</ThemedText>
+        {step === 4 ? <RaisedActionButton analyticsId="app_meetup-profile.pressable.8" disabled={saving || photoSaving || !stepReady} busy={saving} onPress={() => void save()} label={saving ? tr("저장 중…") : returnPostId ? tr("저장하고 신청 계속") : tr("이 프로필로 시작하기")} />
+          : <RaisedActionButton analyticsId="app_meetup-profile.pressable.13" disabled={saving || photoSaving || !stepReady} onPress={() => { play('selection'); if (step === 3) addTags(tagDraft); changeStep(step + 1); }} label={step === 3 ? tr("내 프로필 미리보기") : tr("다음")} />}
       </View>}
     </KeyboardAvoidingView>
     <Modal visible={cityOpen} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setCityOpen(false)}>

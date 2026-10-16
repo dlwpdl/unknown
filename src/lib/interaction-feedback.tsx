@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
@@ -34,6 +36,7 @@ const CONFETTI = Array.from({ length: 24 }, (_, index) => {
 });
 
 export function InteractionFeedbackProvider({ children }: { children: ReactNode }) {
+
   if (Platform.OS === 'web' && typeof window === 'undefined') {
     // Match the interactive root's child slots so hydration keeps useId links intact.
     return (
@@ -46,6 +49,7 @@ export function InteractionFeedbackProvider({ children }: { children: ReactNode 
 }
 
 function InteractiveFeedbackProvider({ children }: { children: ReactNode }) {
+  useLanguage();
   const [preferences, setPreferences] = useState(DEFAULT_INTERACTION_PREFERENCES);
   const [commit, setCommit] = useState<'success' | 'meetup' | null>(null);
   const [celebrating, setCelebrating] = useState<'meetup' | 'post' | 'verification2' | 'verification3' | null>(null);
@@ -157,16 +161,16 @@ function InteractiveFeedbackProvider({ children }: { children: ReactNode }) {
       }}>
       <View style={styles.root}>
         {children}
-        {commit && <Animated.View pointerEvents="none" accessibilityLiveRegion="polite" accessibilityLabel={commit === 'meetup' ? '모임 신청을 처리했어요' : '완료했어요'} style={[styles.commitOverlay, { opacity: commitOpacity, transform: [{ scale: commitScale }] }]}>
+        {commit && <Animated.View pointerEvents="none" accessibilityLiveRegion="polite" accessibilityLabel={commit === 'meetup' ? tr("모임 신청을 처리했어요") : tr("완료했어요")} style={[styles.commitOverlay, { opacity: commitOpacity, transform: [{ scale: commitScale }] }]}>
           <View style={styles.commitRing}>
             {[[5, -22, '#F9C76C', '-30deg'], [54, -38, '#F35CBB', '24deg'], [103, -14, '#83D9E7', '42deg'], [-25, 30, '#CBB9FF', '19deg'], [125, 39, '#F9C76C', '-18deg'], [-29, 89, '#F35CBB', '35deg'], [120, 101, '#83D9E7', '-40deg'], [20, 128, '#F9C76C', '28deg'], [76, 136, '#CBB9FF', '-22deg']].map(([left, top, color, rotate], index) => <View key={index} style={[styles.commitParticle, { left: left as number, top: top as number, backgroundColor: color as string, transform: [{ rotate: rotate as string }] }]} />)}
             <View style={styles.commitCore}><Text style={styles.commitGlyph}>{commit === 'meetup' ? '✦' : '✓'}</Text></View>
           </View>
-          <Text style={styles.commitLabel}>{commit === 'meetup' ? '모임 신청을 처리했어요' : '완료했어요'}</Text>
+          <Text style={styles.commitLabel}>{commit === 'meetup' ? tr("모임 신청을 처리했어요") : tr("완료했어요")}</Text>
         </Animated.View>}
         <Modal visible={celebrating !== null} transparent animationType="none" statusBarTranslucent onRequestClose={() => setCelebrating(null)}>
           <Animated.View style={[styles.celebrationScreen, { opacity: celebrationOpacity }]}>
-            <Pressable accessibilityRole="button" accessibilityLabel={`${celebrating?.startsWith('verification') ? `인증 레벨 ${celebrating.slice(-1)} 달성` : celebrating === 'meetup' ? '모임을 열었어요' : '글을 올렸어요'}. 축하 화면 닫기`} onPress={() => setCelebrating(null)} style={styles.celebrationCenter}>
+            <Pressable accessibilityRole="button" accessibilityLabel={tr("{0}. 축하 화면 닫기", (celebrating?.startsWith('verification') ? `인증 레벨 ${celebrating.slice(-1)} 달성` : celebrating === 'meetup' ? '모임을 열었어요' : '글을 올렸어요'))} onPress={() => setCelebrating(null)} style={styles.celebrationCenter}>
               <View style={styles.celebrationStage}>
                 {!reducedMotion && CONFETTI.map((piece, index) => <Animated.View key={index} pointerEvents="none" style={[styles.celebrationParticle, {
                   backgroundColor: piece.color,
@@ -183,8 +187,8 @@ function InteractiveFeedbackProvider({ children }: { children: ReactNode }) {
                     : <Text style={styles.celebrationGlyph}>{celebrating === 'meetup' ? '✦' : '✓'}</Text>}</View>
                 </Animated.View>
               </View>
-              <Text style={styles.celebrationTitle}>{celebrating?.startsWith('verification') ? `인증 Lv${celebrating.slice(-1)} 달성!` : celebrating === 'meetup' ? '모임을 열었어요!' : '글을 올렸어요!'}</Text>
-              <Text style={styles.celebrationSubtitle}>{celebrating?.startsWith('verification') ? '새로운 인증 단계가 프로필에 반영됐어요.' : celebrating === 'meetup' ? '이제 함께할 사람을 만날 차례예요.' : '오늘의 이야기가 동네에 닿았어요.'}</Text>
+              <Text style={styles.celebrationTitle}>{celebrating?.startsWith('verification') ? tr("인증 Lv{0} 달성!", (celebrating.slice(-1))) : celebrating === 'meetup' ? tr("모임을 열었어요!") : tr("글을 올렸어요!")}</Text>
+              <Text style={styles.celebrationSubtitle}>{celebrating?.startsWith('verification') ? tr("새로운 인증 단계가 프로필에 반영됐어요.") : celebrating === 'meetup' ? tr("이제 함께할 사람을 만날 차례예요.") : tr("오늘의 이야기가 동네에 닿았어요.")}</Text>
             </Pressable>
           </Animated.View>
         </Modal>

@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { useEffect, useState } from 'react';
 import { Animated, Easing, Image, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +16,7 @@ const confetti = [
 ] as const;
 
 export function WelcomeMoment({ nickname, onContinue }: { nickname: string; onContinue: () => void }) {
+  useLanguage();
   const reducedMotion = useReducedMotion();
   const { play } = useInteractionFeedback();
   const [burst] = useState(() => new Animated.Value(reducedMotion ? 1 : 0));
@@ -43,12 +46,12 @@ export function WelcomeMoment({ nickname, onContinue }: { nickname: string; onCo
         <Animated.View style={{ transform: reducedMotion ? undefined : [{ scale: burst.interpolate({ inputRange: [0, 0.65, 1], outputRange: [0.72, 1.08, 1] }) }] }}>
           <Image source={require('@/assets/brand/gling-night-wordmark.png')} resizeMode="contain" style={styles.mark} />
         </Animated.View>
-        <ThemedText accessibilityRole="header" style={styles.title}>글링에 오신 걸 환영해요, {nickname}님!</ThemedText>
-        <ThemedText style={styles.subtitle}>페스티벌도, 동네의 작은 한잔도. 마음 맞는 사람을 여기서 만나요.</ThemedText>
+        <ThemedText accessibilityRole="header" style={styles.title}>{tr("글링에 오신 걸 환영해요,") + " "}{nickname}{tr("님!")}</ThemedText>
+        <ThemedText style={styles.subtitle}>{tr("페스티벌도, 동네의 작은 한잔도. 마음 맞는 사람을 여기서 만나요.")}</ThemedText>
       </Animated.View>
     </View>
     <Pressable analyticsId="onboarding.welcome.start" accessibilityRole="button" onPress={() => { play('selection'); onContinue(); }} style={({ pressed }) => [styles.button, { opacity: pressed ? 0.72 : 1, transform: [{ scale: pressed && !reducedMotion ? 0.97 : 1 }] }]}>
-      <ThemedText type="smallBold" style={styles.buttonText}>글링 시작하기</ThemedText>
+      <ThemedText type="smallBold" style={styles.buttonText}>{tr("글링 시작하기")}</ThemedText>
     </Pressable>
   </SafeAreaView>;
 }

@@ -1,5 +1,5 @@
 // 한국어 스트링 단일 소스 — 화면에 문자열 하드코딩 금지 (원페이저 '언어 전략').
-// 영어 확장 시: en.ts 추가 + 로케일 스위치만 붙이면 됨 (expo-localization).
+// 화면에서는 useLanguage()로 현재 언어의 문구를 읽는다.
 
 // 세 자리마다 쉼표. Hermes 의 Intl 지원이 플랫폼·버전마다 달라 직접 넣는다.
 export const count = (value: number) =>
@@ -7,6 +7,12 @@ export const count = (value: number) =>
 
 export const t = {
   appName: '글링',
+
+  language: {
+    title: '앱 언어', system: '기기 설정 따름', korean: '한국어', english: 'English',
+    note: '앱에서만 적용돼요. 기기의 언어 설정은 바뀌지 않아요.',
+    saving: '언어 설정 저장 중', saveError: '언어 설정을 저장하지 못했어요. 다시 선택해 주세요.',
+  },
 
   trust: {
     accessibilityLabel: (level: 1 | 2 | 3) =>
@@ -529,3 +535,9 @@ export const t = {
     version: 'gling 1.0.0',
   },
 } as const;
+
+export type Translated<T> = T extends string ? string
+  : T extends (...args: infer A) => infer R ? (...args: A) => Translated<R>
+  : T extends readonly (infer I)[] ? readonly Translated<I>[]
+  : T extends object ? { [K in keyof T]: Translated<T[K]> } : T;
+export type Translations = Translated<typeof t>;

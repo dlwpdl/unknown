@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
@@ -109,7 +110,7 @@ function savedScreen({ posts = async () => [post], rpc = async () => ({ data: { 
     '@/lib/supabase': { supabase: { rpc: async (name, args) => { calls.push([name, args]); return rpc(name, args); } } },
   };
   const exports = {}, source = ts.transpileModule(readFileSync(new URL('../src/app/profile/saved.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
-  vm.runInNewContext(source, { exports, Error, require: name => imports[name] ?? {} });
+  vm.runInNewContext(source, { exports, Error, require: withLanguageImports(name => imports[name] ?? {}) });
   return { routes, calls, feedback, setAccount(value) { account = value; }, hidePost(id) { hidden = (type, target) => type === 'post' && target === id; }, setFocus(value) { focused = value; }, render() { index = 0; return exports.default(); } };
 }
 

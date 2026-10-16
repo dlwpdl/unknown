@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import * as Location from 'expo-location';
 import { useEffect, useRef, useState, type ComponentProps } from 'react';
 import { SymbolView } from 'expo-symbols';
@@ -14,6 +16,7 @@ import { googlePinUrl, type PostPin } from '@/lib/post-maps';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 function LocationAction({ label, onPress, disabled = false, primary = false, icon }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean; icon?: ComponentProps<typeof SymbolView>['name'] }) {
+
   const theme = useTheme(), { play } = useInteractionFeedback();
   return <Pressable analyticsId={'chat-location.' + (primary ? 'send' : label)} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled}
     onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.button, { backgroundColor: primary ? theme.accent : 'transparent', opacity: disabled ? 0.45 : pressed ? 0.7 : 1 }]}>
@@ -22,6 +25,7 @@ function LocationAction({ label, onPress, disabled = false, primary = false, ico
 }
 
 export function ChatLocationPicker({ sending, onSend, onClose }: { sending: boolean; onSend: (point: ChatLocation) => Promise<void>; onClose: () => void }) {
+  useLanguage();
   const theme = useTheme(), insets = useSafeAreaInsets(), reducedMotion = useReducedMotion(), { height } = useWindowDimensions();
   const { play } = useInteractionFeedback();
   const revision = useRef(0);
@@ -42,7 +46,7 @@ export function ChatLocationPicker({ sending, onSend, onClose }: { sending: bool
   const close = () => { if (!sending) { revision.current++; onClose(); } };
   const locate = async (search: boolean) => {
     if (busy || sending || (search && (!ready || !query.trim()))) return;
-    if (search && Platform.OS === 'web') { play('warning'); setError('주소 검색은 앱에서 지원해요. 지도에서 원하는 지점을 골라주세요.'); return; }
+    if (search && Platform.OS === 'web') { play('warning'); setError(tr("주소 검색은 앱에서 지원해요. 지도에서 원하는 지점을 골라주세요.")); return; }
     const operation = ++revision.current; setBusy(true); setError(null);
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
@@ -66,37 +70,37 @@ export function ChatLocationPicker({ sending, onSend, onClose }: { sending: bool
       }
     } catch (failure) {
       if (revision.current === operation) { play('warning'); setError(failure instanceof Error && failure.message === 'PERMISSION'
-        ? '위치 권한을 허용하거나 지도에서 원하는 지점을 골라주세요.'
-        : failure instanceof Error && failure.message === 'SEARCH_PERMISSION' ? '주소 검색에 위치 권한이 필요해요. 현재 위치를 눌러 권한을 허용하거나 지도에서 골라주세요.'
-        : '위치를 찾지 못했어요. 주소를 확인하거나 지도에서 골라주세요.'); }
+        ? tr("위치 권한을 허용하거나 지도에서 원하는 지점을 골라주세요.")
+        : failure instanceof Error && failure.message === 'SEARCH_PERMISSION' ? tr("주소 검색에 위치 권한이 필요해요. 현재 위치를 눌러 권한을 허용하거나 지도에서 골라주세요.")
+        : tr("위치를 찾지 못했어요. 주소를 확인하거나 지도에서 골라주세요.")); }
     } finally { clearTimeout(timer); if (revision.current === operation) setBusy(false); }
   };
   return <Modal visible transparent statusBarTranslucent animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => { play('selection'); close(); }}>
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.backdrop}>
-      <Pressable analyticsId="chat-location.dismiss" accessibilityRole="button" accessibilityLabel="위치 공유 닫기" disabled={sending} onPress={() => { play('selection'); close(); }} style={StyleSheet.absoluteFill} />
+      <Pressable analyticsId="chat-location.dismiss" accessibilityRole="button" accessibilityLabel={tr("위치 공유 닫기")} disabled={sending} onPress={() => { play('selection'); close(); }} style={StyleSheet.absoluteFill} />
       <View style={[styles.sheet, { maxHeight: Math.min(height * 0.82, 640), backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, 12) }]} accessibilityViewIsModal>
-        <View style={styles.row}><ThemedText type="smallBold" style={{ flex: 1, fontSize: 18 }}>위치 공유하기</ThemedText>
-          <Pressable analyticsId="chat-location.close" accessibilityRole="button" accessibilityLabel="위치 공유 닫기" accessibilityState={{ disabled: sending }} disabled={sending} onPress={() => { play('selection'); close(); }} style={({ pressed }) => [styles.close, { backgroundColor: theme.backgroundElement, opacity: sending ? 0.45 : pressed ? 0.7 : 1 }]}>
+        <View style={styles.row}><ThemedText type="smallBold" style={{ flex: 1, fontSize: 18 }}>{tr("위치 공유하기")}</ThemedText>
+          <Pressable analyticsId="chat-location.close" accessibilityRole="button" accessibilityLabel={tr("위치 공유 닫기")} accessibilityState={{ disabled: sending }} disabled={sending} onPress={() => { play('selection'); close(); }} style={({ pressed }) => [styles.close, { backgroundColor: theme.backgroundElement, opacity: sending ? 0.45 : pressed ? 0.7 : 1 }]}>
             <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={18} tintColor={theme.textSecondary} />
           </Pressable>
         </View>
         <ScrollView keyboardShouldPersistTaps="handled" style={{ flexShrink: 1 }} contentContainerStyle={styles.content}>
           <View style={[styles.search, { backgroundColor: theme.backgroundElement }]}><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden><SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={18} tintColor={theme.textSecondary} /></View>
-            <TextInput value={query} onChangeText={setQuery} placeholder="장소 이름 또는 주소" accessibilityLabel="장소 이름 또는 주소" maxLength={240} editable={ready && !sending} returnKeyType="search" onSubmitEditing={() => { play('selection'); void locate(true); }}
-              placeholderTextColor={theme.textSecondary} style={[styles.input, { color: theme.text }]} /><LocationAction label="검색" onPress={() => void locate(true)} disabled={!ready || !query.trim() || busy || sending} />
+            <TextInput value={query} onChangeText={setQuery} placeholder={tr("장소 이름 또는 주소")} accessibilityLabel={tr("장소 이름 또는 주소")} maxLength={240} editable={ready && !sending} returnKeyType="search" onSubmitEditing={() => { play('selection'); void locate(true); }}
+              placeholderTextColor={theme.textSecondary} style={[styles.input, { color: theme.text }]} /><LocationAction label={tr("검색")} onPress={() => void locate(true)} disabled={!ready || !query.trim() || busy || sending} />
           </View>
           <View pointerEvents={sending ? 'none' : 'auto'} style={[styles.map, { height: Math.min(240, height * 0.32), backgroundColor: theme.backgroundElement }]}>
             <PostPinMap pin={selection} onSelect={select} onReadyChange={setReady} bottomInset={68} />
-            <View style={[styles.current, { backgroundColor: theme.card, borderColor: theme.line }]}><LocationAction label={busy ? '위치 찾는 중' : '현재 위치 선택'} icon={{ ios: 'location.fill', android: 'my_location', web: 'my_location' }} onPress={() => void locate(false)} disabled={busy || sending} /></View>
+            <View style={[styles.current, { backgroundColor: theme.card, borderColor: theme.line }]}><LocationAction label={busy ? tr("위치 찾는 중") : tr("현재 위치 선택")} icon={{ ios: 'location.fill', android: 'my_location', web: 'my_location' }} onPress={() => void locate(false)} disabled={busy || sending} /></View>
           </View>
           {!!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
           <View style={styles.place}><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden style={[styles.placeIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={22} tintColor={theme.accent} /></View>
-            <View style={{ flex: 1 }}><ThemedText type="smallBold" numberOfLines={3}>{selection?.label ?? '공유할 위치를 골라주세요.'}</ThemedText><ThemedText type="small" themeColor="textSecondary">이 대화에 공유</ThemedText></View>
+            <View style={{ flex: 1 }}><ThemedText type="smallBold" numberOfLines={3}>{selection?.label ?? tr("공유할 위치를 골라주세요.")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("이 대화에 공유")}</ThemedText></View>
           </View>
-          <LocationAction label={sending ? '보내는 중' : '이 위치 공유하기'} icon={{ ios: 'paperplane.fill', android: 'send', web: 'send' }} onPress={() => {
+          <LocationAction label={sending ? tr("보내는 중") : tr("이 위치 공유하기")} icon={{ ios: 'paperplane.fill', android: 'send', web: 'send' }} onPress={() => {
             if (!selection) return;
             const operation = revision.current;
-            void onSend(selection).catch(() => { if (revision.current === operation) { play('warning'); setError('위치를 보내지 못했어요. 선택한 위치는 유지했으니 다시 시도해 주세요.'); } });
+            void onSend(selection).catch(() => { if (revision.current === operation) { play('warning'); setError(tr("위치를 보내지 못했어요. 선택한 위치는 유지했으니 다시 시도해 주세요.")); } });
           }} disabled={sending || busy || !selection} primary />
         </ScrollView>
       </View>

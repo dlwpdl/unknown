@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -23,7 +24,7 @@ function app(component = 'MerchantAccountEntry') {
   const source = ts.transpileModule(readFileSync(new URL('../src/components/merchant-account-connections.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, window: { confirm: () => true }, Date, require(name) {
+  vm.runInNewContext(source, { exports, window: { confirm: () => true }, Date, require: withLanguageImports((name) => {
     if (name === 'react') return React;
     if (name === 'expo-symbols') return { SymbolView: 'SymbolView' };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
@@ -37,7 +38,7 @@ function app(component = 'MerchantAccountEntry') {
     if (name === '@/lib/merchant-connections') return connections;
     if (name === '@/lib/supabase') return { supabase: client };
     throw new Error('Unexpected import ' + name);
-  } });
+  }) });
   let props = { refreshSignal: 0, onChanged: () => {}, merchantId: 'company-a' };
   return { calls, pending, routes, feedback,
     auth(value) { auth = { ...auth, ...value }; }, props(value) { props = { ...props, ...value }; },

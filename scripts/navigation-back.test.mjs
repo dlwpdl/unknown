@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -61,7 +62,7 @@ function screen(path, imports) {
   const source = ts.transpileModule(fs.readFileSync(new URL(path, import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, require(name) {
+  vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
     if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
     if (name === 'react/jsx-runtime') return { Fragment: 'Fragment', jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if ((name === 'react-native' || name === '@/components/analytics-controls')) return { ActivityIndicator: 'ActivityIndicator', View: 'View', Pressable: 'Pressable', Platform: { OS: 'ios' }, StyleSheet: { create: value => value } };
@@ -69,7 +70,7 @@ function screen(path, imports) {
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ background: '#fff', text: '#123', accent: '#b34' }) };
     if (name in imports) return imports[name];
     throw new Error(`Unexpected import: ${name}`);
-  } });
+  }) });
   return exports.default;
 }
 

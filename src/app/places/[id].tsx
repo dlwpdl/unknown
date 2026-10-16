@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr, getLocale } from '@/i18n';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Alert, Linking, StyleSheet, View } from 'react-native';
@@ -18,6 +20,7 @@ import { CITIES } from '@/lib/mock';
 import { merchantMapsUrl, safeMerchantSourceUrl } from '@/lib/merchant-source';
 
 export default function PlaceDetailScreen() {
+  useLanguage();
   const { cityId, id } = useLocalSearchParams<{ cityId?: string; id?: string }>();
   const { city: selected } = useCommunityCity();
   const city = CITIES.find(item => item.id === (cityId ?? selected.id));
@@ -28,37 +31,37 @@ export default function PlaceDetailScreen() {
   const mapsUrl = place && city ? merchantMapsUrl([place.name, place.address, city.englishName, city.province, 'Canada'].filter(Boolean).join(', ')) : null;
   const openSource = (url: string) => {
     play('selection');
-    void Linking.openURL(url).catch(() => { play('warning'); Alert.alert('페이지를 열지 못했어요', '잠시 후 다시 시도해 주세요.'); });
+    void Linking.openURL(url).catch(() => { play('warning'); Alert.alert(tr("페이지를 열지 못했어요"), tr("잠시 후 다시 시도해 주세요.")); });
   };
   return <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
     <View style={[styles.header, { borderBottomColor: theme.line }]}>
-      <Pressable analyticsId="places.detail.back" accessibilityRole="button" accessibilityLabel="이전 화면으로 돌아가기"
+      <Pressable analyticsId="places.detail.back" accessibilityRole="button" accessibilityLabel={tr("이전 화면으로 돌아가기")}
         onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace({ pathname: '/places', params: { cityId: city?.id ?? selected.id } }); }} style={styles.back}>
         <SymbolView name={{ ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }} size={19} tintColor={theme.text} />
-        <ThemedText type="smallBold">돌아가기</ThemedText>
+        <ThemedText type="smallBold">{tr("돌아가기")}</ThemedText>
       </Pressable>
     </View>
     <ScrollView analyticsId="places.detail.scroll" contentContainerStyle={styles.content}>
-      {!place || !city ? <StateCard kind="error" title="장소를 찾지 못했어요" body="선택한 도시의 장소 목록에서 다시 열어 주세요." /> : <>
+      {!place || !city ? <StateCard kind="error" title={tr("장소를 찾지 못했어요")} body={tr("선택한 도시의 장소 목록에서 다시 열어 주세요.")} /> : <>
         <CityPlacePhoto place={place} style={styles.photo} />
         {!!place.photo && <PostPhotoCredits credits={`사진: ${place.photo.artist}\n${place.photo.sourceUrl}\n${place.photo.license}\n${place.photo.licenseUrl}\n사진은 촬영 시점의 모습이며 현재와 다를 수 있어요.`} />}
-        <ThemedText type="small" themeColor="textSecondary">{city.name} · 지도 등록 장소</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{tr(city.name)}{" " + tr("· 지도 등록 장소")}</ThemedText>
         <ThemedText accessibilityRole="header" style={styles.title}>{place.name}</ThemedText>
         <View style={[styles.facts, { backgroundColor: theme.card }]}>
-          <ThemedText type="smallBold" themeColor="accent">{place.category === 'food' ? '맛집' : place.category === 'cafe' ? '카페' : '가볼 만한 곳'}</ThemedText>
-          <ThemedText>{place.address || '등록된 주소 정보가 없어요. 지도에서 위치를 확인해 주세요.'}</ThemedText>
-          {!!place.openingHours && <ThemedText type="small" themeColor="textSecondary">{`등록된 운영 시간: ${place.openingHours}`}</ThemedText>}
+          <ThemedText type="smallBold" themeColor="accent">{place.category === 'food' ? tr("맛집") : place.category === 'cafe' ? tr("카페") : tr("가볼 만한 곳")}</ThemedText>
+          <ThemedText>{place.address || tr("등록된 주소 정보가 없어요. 지도에서 위치를 확인해 주세요.")}</ThemedText>
+          {!!place.openingHours && <ThemedText type="small" themeColor="textSecondary">{tr("등록된 운영 시간: {0}", (place.openingHours))}</ThemedText>}
         </View>
         {mapsUrl && <PostMapLink url={mapsUrl} label={place.name} />}
-        <Pressable analyticsId="places.detail.source" accessibilityRole="link" accessibilityLabel="OpenStreetMap에서 장소 정보 보기" onPress={() => openSource(place.sourceUrl)} style={styles.link}>
-          <ThemedText type="smallBold" themeColor="accent">OpenStreetMap에서 장소 정보 보기</ThemedText>
+        <Pressable analyticsId="places.detail.source" accessibilityRole="link" accessibilityLabel={tr("OpenStreetMap에서 장소 정보 보기")} onPress={() => openSource(place.sourceUrl)} style={styles.link}>
+          <ThemedText type="smallBold" themeColor="accent">{tr("OpenStreetMap에서 장소 정보 보기")}</ThemedText>
         </Pressable>
-        {!!website && <Pressable analyticsId="places.detail.website" accessibilityRole="link" accessibilityLabel={`${place.name} 웹사이트 열기`} onPress={() => openSource(website)} style={styles.link}>
-          <ThemedText type="smallBold" themeColor="accent">장소 웹사이트</ThemedText>
+        {!!website && <Pressable analyticsId="places.detail.website" accessibilityRole="link" accessibilityLabel={tr("{0} 웹사이트 열기", (place.name))} onPress={() => openSource(website)} style={styles.link}>
+          <ThemedText type="smallBold" themeColor="accent">{tr("장소 웹사이트")}</ThemedText>
         </Pressable>}
-        <ThemedText type="small" themeColor="textSecondary">방문 전 운영 여부와 시간을 확인해 주세요.</ThemedText>
-        <Pressable analyticsId="places.detail.attribution" accessibilityRole="link" accessibilityLabel="OpenStreetMap 자료 출처와 이용 조건" onPress={() => openSource('https://www.openstreetmap.org/copyright')} style={styles.link}>
-          <ThemedText type="small" themeColor="textSecondary">{`© OpenStreetMap contributors · ${new Date(CITY_PLACES_COLLECTED_AT).toLocaleDateString('ko-KR')} 확인 자료`}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{tr("방문 전 운영 여부와 시간을 확인해 주세요.")}</ThemedText>
+        <Pressable analyticsId="places.detail.attribution" accessibilityRole="link" accessibilityLabel={tr("OpenStreetMap 자료 출처와 이용 조건")} onPress={() => openSource('https://www.openstreetmap.org/copyright')} style={styles.link}>
+          <ThemedText type="small" themeColor="textSecondary">{tr("© OpenStreetMap contributors · {0} 확인 자료", (new Date(CITY_PLACES_COLLECTED_AT).toLocaleDateString(getLocale())))}</ThemedText>
         </Pressable>
       </>}
     </ScrollView>

@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -129,7 +130,7 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
     const state = hooks[slot] = { deps, cleanup: previous?.cleanup };
     pendingEffects.push(() => { state.cleanup?.(); state.cleanup = fn(); });
   };
-  vm.runInNewContext(source, { exports, require(name) {
+  vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
     if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
     if (name === 'react') return {
       useState(initial) {
@@ -183,7 +184,7 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
       },
     };
     return new Proxy({}, { get: (_target, key) => key });
-  } });
+  }) });
   const render = () => {
     const node = exports.PostDetail({ post, commentId, onClose() {}, onCommentCountChange: value => counts.push(value) });
     if (mountedKey !== node.key) {

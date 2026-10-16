@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr, getLocale } from '@/i18n';
 import { useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
@@ -16,10 +18,11 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 
 const categories: { id: PlaceCategory; label: string }[] = [
-  { id: 'all', label: '전체' }, { id: 'food', label: '맛집' }, { id: 'cafe', label: '카페' }, { id: 'places', label: '가볼 만한 곳' },
+  { id: 'all', get label() { return tr("전체"); } }, { id: 'food', get label() { return tr("맛집"); } }, { id: 'cafe', get label() { return tr("카페"); } }, { id: 'places', get label() { return tr("가볼 만한 곳"); } },
 ];
 
 export default function PlacesScreen() {
+
   const { cityId } = useLocalSearchParams<{ cityId?: string }>();
   const { city: selected } = useCommunityCity();
   const city = CITIES.find(item => item.id === (cityId ?? selected.id));
@@ -27,6 +30,7 @@ export default function PlacesScreen() {
 }
 
 function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
+  useLanguage();
   const theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
   const [limit, setLimit] = useState(10), [category, setCategory] = useState<PlaceCategory>('all'), [query, setQuery] = useState('');
   let places: CityPlace[] = [], error = '';
@@ -36,39 +40,39 @@ function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
   }
   return <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
     <View style={[styles.header, { borderBottomColor: theme.line }]}>
-      <Pressable analyticsId="places.back" accessibilityRole="button" accessibilityLabel="이전 화면으로 돌아가기"
+      <Pressable analyticsId="places.back" accessibilityRole="button" accessibilityLabel={tr("이전 화면으로 돌아가기")}
         onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace('/'); }} style={styles.back}>
         <SymbolView name={{ ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }} size={19} tintColor={theme.text} />
-        <ThemedText type="smallBold">장소 둘러보기</ThemedText>
+        <ThemedText type="smallBold">{tr("장소 둘러보기")}</ThemedText>
       </Pressable>
-      {!!city && <ThemedText type="small" themeColor="textSecondary">{city.name}</ThemedText>}
+      {!!city && <ThemedText type="small" themeColor="textSecondary">{tr(city.name)}</ThemedText>}
     </View>
     <ScrollView analyticsId="places.list.scroll" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-      {!city ? <StateCard kind="error" title="도시를 확인해 주세요" body="홈에서 도시를 선택한 뒤 다시 열어 주세요." />
-        : error ? <StateCard kind="error" title="장소를 불러오지 못했어요" body={error} /> : <>
-          <ThemedText type="small" themeColor="textSecondary">{city.name} · {getCityPlacesCoverage(city.id)}</ThemedText>
-          <ThemedText accessibilityRole="header" style={styles.title}>이 도시에서 요즘 많이 가는 곳</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">지도에 등록된 실제 장소예요. 인기 순위는 아직 집계 전이에요.</ThemedText>
-          <TextInput accessibilityLabel="장소 검색" value={query} onChangeText={setQuery} onFocus={() => play('selection')}
-            placeholder="목록에서 이름·주소 검색" placeholderTextColor={theme.textSecondary} returnKeyType="search" autoCorrect={false}
+      {!city ? <StateCard kind="error" title={tr("도시를 확인해 주세요")} body={tr("홈에서 도시를 선택한 뒤 다시 열어 주세요.")} />
+        : error ? <StateCard kind="error" title={tr("장소를 불러오지 못했어요")} body={error} /> : <>
+          <ThemedText type="small" themeColor="textSecondary">{tr(city.name)} · {getCityPlacesCoverage(city.id)}</ThemedText>
+          <ThemedText accessibilityRole="header" style={styles.title}>{tr("이 도시에서 요즘 많이 가는 곳")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("지도에 등록된 실제 장소예요. 인기 순위는 아직 집계 전이에요.")}</ThemedText>
+          <TextInput accessibilityLabel={tr("장소 검색")} value={query} onChangeText={setQuery} onFocus={() => play('selection')}
+            placeholder={tr("목록에서 이름·주소 검색")} placeholderTextColor={theme.textSecondary} returnKeyType="search" autoCorrect={false}
             onSubmitEditing={() => play('selection')} style={[styles.search, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]} />
           <View style={styles.heading}>
-            <ThemedText type="smallBold">{`${city.name} · ${Math.min(limit, places.length)}곳`}</ThemedText>
-            <Pressable analyticsId="places.view-more" accessibilityRole="button" accessibilityLabel={limit === 10 ? '25곳까지 보기' : '10곳 먼저 보기'}
+            <ThemedText type="smallBold">{tr("{0} · {1}곳", (city.name), (Math.min(limit, places.length)))}</ThemedText>
+            <Pressable analyticsId="places.view-more" accessibilityRole="button" accessibilityLabel={limit === 10 ? tr("25곳까지 보기") : tr("10곳 먼저 보기")}
               onPress={() => { play('selection'); setLimit(limit === 10 ? 25 : 10); }} style={styles.control}>
-              <ThemedText type="smallBold" themeColor="accent">{limit === 10 ? '25곳까지 보기' : '10곳 먼저 보기'}</ThemedText>
+              <ThemedText type="smallBold" themeColor="accent">{limit === 10 ? tr("25곳까지 보기") : tr("10곳 먼저 보기")}</ThemedText>
             </Pressable>
           </View>
           <View style={styles.categories}>
             {categories.map(item => <Pressable key={item.id} analyticsId={`places.category.${item.id}`} accessibilityRole="button"
-              accessibilityLabel={`${item.label} 장소`} accessibilityState={{ selected: category === item.id }}
+              accessibilityLabel={tr("{0} 장소", (item.label))} accessibilityState={{ selected: category === item.id }}
               onPress={() => { play('selection'); setCategory(item.id); setLimit(item.id === 'all' ? 10 : 25); }}
               style={[styles.category, { borderColor: category === item.id ? theme.accent : theme.line, backgroundColor: category === item.id ? theme.accent : 'transparent' }]}>
               <ThemedText type="smallBold" style={{ color: category === item.id ? theme.accentInk : theme.text }}>{item.label}</ThemedText>
             </Pressable>)}
           </View>
           <View>
-            {places.slice(0, limit).map(place => <Pressable key={place.id} analyticsId="places.open" accessibilityRole="button" accessibilityLabel={`${place.name} 장소 정보`}
+            {places.slice(0, limit).map(place => <Pressable key={place.id} analyticsId="places.open" accessibilityRole="button" accessibilityLabel={tr("{0} 장소 정보", (place.name))}
               onPress={() => { play('selection'); router.push({ pathname: '/places/[id]', params: { id: place.id, cityId: city.id } }); }}
               style={({ pressed }) => [styles.place, { borderBottomColor: theme.line, opacity: pressed ? 0.65 : 1 }]}>
               <CityPlacePhoto place={place} style={styles.photo} />
@@ -80,8 +84,8 @@ function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
               <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={14} tintColor={theme.textSecondary} />
             </Pressable>)}
           </View>
-          {!places.length && <StateCard kind="empty" title="목록에서 찾지 못했어요" body="검색어를 바꾸거나 다른 분류를 골라보세요." />}
-          <ThemedText type="small" themeColor="textSecondary">{`© OpenStreetMap contributors · ${new Date(CITY_PLACES_COLLECTED_AT).toLocaleDateString('ko-KR')} 확인 자료`}</ThemedText>
+          {!places.length && <StateCard kind="empty" title={tr("목록에서 찾지 못했어요")} body={tr("검색어를 바꾸거나 다른 분류를 골라보세요.")} />}
+          <ThemedText type="small" themeColor="textSecondary">{tr("© OpenStreetMap contributors · {0} 확인 자료", (new Date(CITY_PLACES_COLLECTED_AT).toLocaleDateString(getLocale())))}</ThemedText>
         </>}
     </ScrollView>
   </SafeAreaView>;

@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -48,7 +49,7 @@ function invite({ denied = false, failure = null } = {}) {
       'expo-notifications': { setNotificationHandler: value => { handler = value; }, getLastNotificationResponse: () => null,
         addNotificationResponseReceivedListener: subscription, addPushTokenListener: subscription },
     };
-    vm.runInNewContext(source, { exports, require(name) { assert.ok(name in imports, `Unexpected import ${name}`); return imports[name]; } });
+    vm.runInNewContext(source, { exports, require: withLanguageImports((name) => { assert.ok(name in imports, `Unexpected import ${name}`); return imports[name]; }) });
     return exports;
   }
   load('../src/components/notification-observer.tsx', { useEffect: callback => { observerCleanup = callback(); } }).NotificationObserver();

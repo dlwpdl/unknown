@@ -1,3 +1,4 @@
+import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -7,12 +8,13 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { GlassSurface } from '@/components/glass-surface';
 import { useTheme } from '@/hooks/use-theme';
-import { t } from '@/i18n/ko';
+import { t } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 // Top-right entry to "나" on every tab: the member's photo when signed in, the person symbol otherwise.
 export function ProfileAvatarButton() {
+  useLanguage();
   const theme = useTheme();
   const router = useRouter();
   const { isAuthed, me } = useAuth();

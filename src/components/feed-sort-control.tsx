@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
@@ -7,6 +9,7 @@ import type { FeedSort } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 export function FeedSortControl({ sort, title, onChange }: { sort: FeedSort; title: string; onChange: (sort: FeedSort) => void }) {
+  useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   return <View style={[styles.container, { backgroundColor: theme.background, borderBottomColor: theme.line }]}>
@@ -17,7 +20,7 @@ export function FeedSortControl({ sort, title, onChange }: { sort: FeedSort; tit
           const selected = sort === option;
           const label = option === 'latest' ? '최신순' : '인기순';
           return <Pressable key={option} analyticsId="components_feed-sort-control.order"
-            accessibilityRole="button" accessibilityLabel={`${label}으로 정렬`} accessibilityState={{ selected }} aria-pressed={selected}
+            accessibilityRole="button" accessibilityLabel={tr("{0}으로 정렬", (label))} accessibilityState={{ selected }} aria-pressed={selected}
             onPress={() => { play('selection'); onChange(option); }}
             style={({ pressed }) => [styles.option, { backgroundColor: selected ? theme.backgroundSelected : 'transparent', borderColor: selected ? theme.accent : 'transparent', opacity: pressed ? 0.65 : 1 }]}>
             <ThemedText type="smallBold" style={{ color: selected ? theme.accent : theme.textSecondary }}>{label}</ThemedText>
@@ -26,7 +29,7 @@ export function FeedSortControl({ sort, title, onChange }: { sort: FeedSort; tit
       </View>
     </View>
     <ThemedText type="small" themeColor="textSecondary" style={styles.description}>
-      {sort === 'latest' ? '새로 올라온 글부터' : '최근 7일 · 반응이 많은 글부터'}
+      {sort === 'latest' ? tr("새로 올라온 글부터") : tr("최근 7일 · 반응이 많은 글부터")}
     </ThemedText>
   </View>;
 }

@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +19,7 @@ import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
 
 export function MerchantWebPosts({ merchantId, posts, onChanged }: { merchantId: string; posts: MerchantPost[]; onChanged?: () => void }) {
+  useLanguage();
   const { isAuthed, me } = useAuth(), theme = useTheme(), { play } = useInteractionFeedback();
   const owner = isAuthed ? `${me.id}:${merchantId}` : '';
   const currentOwner = useRef(owner);
@@ -43,7 +46,7 @@ export function MerchantWebPosts({ merchantId, posts, onChanged }: { merchantId:
     } catch (e) {
       if (currentOwner.current === requestOwner) {
         play('warning'); setError(e instanceof Error && e.message === 'MERCHANT_POST_UNAVAILABLE'
-          ? '삭제되었거나 공개되지 않은 글이에요.' : '글을 열지 못했어요. 현재 계정의 업체 권한과 연결 상태를 확인해 주세요.');
+          ? tr("삭제되었거나 공개되지 않은 글이에요.") : tr("글을 열지 못했어요. 현재 계정의 업체 권한과 연결 상태를 확인해 주세요."));
       }
     } finally { opening.current = false; if (currentOwner.current === requestOwner) setBusy(false); }
   }
@@ -58,21 +61,21 @@ export function MerchantWebPosts({ merchantId, posts, onChanged }: { merchantId:
   };
   if (!isAuthed) return null;
   return <View style={styles.list}>
-    <ThemedText type="subtitle" accessibilityRole="header">업체의 글과 사진</ThemedText>
-    <ThemedText type="small" themeColor="textSecondary">연결된 글을 열어서 수정·삭제할 수 있어요. 사진을 추가하거나 순서를 바꾸면 첫 사진이 대표 사진이 돼요. 업체에서 관리하려면 소유 확인을 먼저 완료해 주세요.</ThemedText>
+    <ThemedText type="subtitle" accessibilityRole="header">{tr("업체의 글과 사진")}</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary">{tr("연결된 글을 열어서 수정·삭제할 수 있어요. 사진을 추가하거나 순서를 바꾸면 첫 사진이 대표 사진이 돼요. 업체에서 관리하려면 소유 확인을 먼저 완료해 주세요.")}</ThemedText>
     {error && <ThemedText accessibilityRole="alert">{error}</ThemedText>}
-    {busy && <GlingLoader accessibilityLabel="저장된 업체 글과 사진을 여는 중" />}
+    {busy && <GlingLoader accessibilityLabel={tr("저장된 업체 글과 사진을 여는 중")} />}
     {posts.filter(row => !removed.includes(row.post_id)).map(row => <Pressable key={row.post_id} analyticsId="merchant-web.post.open" accessibilityRole="button"
-      accessibilityLabel={`${titles[row.post_id] ?? row.title} · 글과 사진 열기`} accessibilityState={{ disabled: busy }} disabled={busy}
+      accessibilityLabel={tr("{0} · 글과 사진 열기", (titles[row.post_id] ?? row.title))} accessibilityState={{ disabled: busy }} disabled={busy}
       onPress={() => open(row.post_id)} style={({ pressed }) => [styles.row, { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : theme.card, opacity: busy ? 0.6 : 1 }]}>
-      <View style={styles.rowText}><ThemedText type="smallBold" numberOfLines={2}>{titles[row.post_id] ?? row.title}</ThemedText><ThemedText type="small" themeColor="textSecondary">누적 표시 조회 {row.displayed_views}회</ThemedText></View>
-      <ThemedText type="smallBold" themeColor="accent">열기</ThemedText>
+      <View style={styles.rowText}><ThemedText type="smallBold" numberOfLines={2}>{titles[row.post_id] ?? row.title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("누적 표시 조회") + " "}{row.displayed_views}{tr("회")}</ThemedText></View>
+      <ThemedText type="smallBold" themeColor="accent">{tr("열기")}</ThemedText>
     </Pressable>)}
-    {posts.length === 0 && <ThemedText themeColor="textSecondary">아직 연결된 글이 없어요. 초안을 저장하고 글링에 게시하면 여기에 보여요.</ThemedText>}
+    {posts.length === 0 && <ThemedText themeColor="textSecondary">{tr("아직 연결된 글이 없어요. 초안을 저장하고 글링에 게시하면 여기에 보여요.")}</ThemedText>}
     <Modal visible={!!post} animationType="fade" onRequestClose={close}>
       <SafeAreaView style={[styles.modal, { backgroundColor: theme.background }]}>
         {post && <View style={styles.detail}>
-          {post.author.id !== me.id && !selected?.verifiedOwner && <ThemedText type="small" themeColor="textSecondary" style={styles.note}>업체 소유 확인이 끝나면 이 소개글과 사진도 관리할 수 있어요.</ThemedText>}
+          {post.author.id !== me.id && !selected?.verifiedOwner && <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{tr("업체 소유 확인이 끝나면 이 소개글과 사진도 관리할 수 있어요.")}</ThemedText>}
           <PostDetail post={post} onClose={close} onPostChanged={saved} onPostRemoved={id => {
             if (selected?.owner !== currentOwner.current) return;
             changed.current = true; setRemoved(value => [...value, id]);

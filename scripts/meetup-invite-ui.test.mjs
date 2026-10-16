@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -27,7 +28,7 @@ function mount(data = {}) {
   };
   const exports = {}, native = new Proxy({ StyleSheet: { create: value => value }, Alert: { alert: (...args) => calls.push(['alert', ...args]) }, DeviceEventEmitter: { addListener: () => ({ remove() {} }) } }, { get: (value, key) => value[key] ?? key });
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/components/my-meetups.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
-    exports, require(name) {
+    exports, require: withLanguageImports((name) => {
       if (name === 'react') return react;
       if (name === 'react/jsx-runtime') return { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }) };
       if (name === 'react-native') return native;
@@ -45,7 +46,7 @@ function mount(data = {}) {
       if (name === '@/i18n/ko') return { t };
       if (name === '@/constants/theme') return { Spacing: {} };
       return new Proxy({}, { get: (_value, key) => key });
-    },
+    }),
   });
   const render = () => {
     tree = exports.MyMeetups({ onOpen: async () => {} });

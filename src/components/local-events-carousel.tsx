@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { GlingLoader } from '@/components/gling-loader';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useFocusEffect, useIsFocused, useRouter } from 'expo-router';
@@ -18,6 +20,7 @@ import { supabase } from '@/lib/supabase';
 import { EVENT_CITIES, eventPriceLabel, eventTime, festivalLocalDay, type EventCity, type TicketmasterEvent } from '@/lib/ticketmaster';
 
 export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityReady }: { cityId: string; refreshKey: number; cityLoading: boolean; onCityReady: (cityId: string) => void }) {
+  useLanguage();
   const theme = useTheme();
   const router = useRouter();
   const { play } = useInteractionFeedback();
@@ -113,16 +116,16 @@ export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityRea
   return <View style={styles.section}>
     <View style={styles.heading}>
       <View style={styles.titleGroup}>
-        <ThemedText accessibilityRole="header" style={styles.title}>다가오는 페스티벌</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">가고 싶은 무대를 먼저 둘러보세요</ThemedText>
+        <ThemedText accessibilityRole="header" style={styles.title}>{tr("다가오는 페스티벌")}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{tr("가고 싶은 무대를 먼저 둘러보세요")}</ThemedText>
       </View>
-      <Pressable analyticsId="today.events.browse" accessibilityRole="button" accessibilityLabel="행사 전체 보기" onPress={browse} style={({ pressed }) => [styles.browse, { opacity: pressed ? 0.65 : 1 }]}>
-        <ThemedText type="smallBold" themeColor="accent">전체 보기 ›</ThemedText>
+      <Pressable analyticsId="today.events.browse" accessibilityRole="button" accessibilityLabel={tr("행사 전체 보기")} onPress={browse} style={({ pressed }) => [styles.browse, { opacity: pressed ? 0.65 : 1 }]}>
+        <ThemedText type="smallBold" themeColor="accent">{tr("전체 보기 ›")}</ThemedText>
       </Pressable>
     </View>
-    {!current ? <View style={[styles.loading, { width: cardWidth, backgroundColor: cityLoading ? theme.backgroundElement : 'transparent' }]}>{!cityLoading && <GlingLoader color={theme.accent} accessibilityLabel="행사 불러오는 중" />}</View>
-        : current.error ? <Pressable analyticsId="today.events.retry" accessibilityRole="button" onPress={() => { play('selection'); setAttempt(value => value + 1); }} style={[styles.message, { borderColor: theme.line, backgroundColor: theme.card }]}><ThemedText type="small" themeColor="textSecondary">{current.error} 눌러서 다시 시도해 주세요.</ThemedText></Pressable>
-          : current.events.length === 0 ? <View style={[styles.message, { borderColor: theme.line, backgroundColor: theme.card }]}><ThemedText type="small" themeColor="textSecondary">예정된 페스티벌이 아직 없어요. 나중에 다시 확인해 주세요.</ThemedText></View>
+    {!current ? <View style={[styles.loading, { width: cardWidth, backgroundColor: cityLoading ? theme.backgroundElement : 'transparent' }]}>{!cityLoading && <GlingLoader color={theme.accent} accessibilityLabel={tr("행사 불러오는 중")} />}</View>
+        : current.error ? <Pressable analyticsId="today.events.retry" accessibilityRole="button" onPress={() => { play('selection'); setAttempt(value => value + 1); }} style={[styles.message, { borderColor: theme.line, backgroundColor: theme.card }]}><ThemedText type="small" themeColor="textSecondary">{current.error}{" " + tr("눌러서 다시 시도해 주세요.")}</ThemedText></Pressable>
+          : current.events.length === 0 ? <View style={[styles.message, { borderColor: theme.line, backgroundColor: theme.card }]}><ThemedText type="small" themeColor="textSecondary">{tr("예정된 페스티벌이 아직 없어요. 나중에 다시 확인해 주세요.")}</ThemedText></View>
             : <View><ScrollView ref={carousel} analyticsId="today.events.carousel" horizontal snapToInterval={cardWidth + 12} decelerationRate="fast" showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards} onScrollBeginDrag={() => { userPauseUntil.current = Date.now() + 20000; }} onMomentumScrollEnd={event => {
               const index = Math.max(0, Math.min(current.events.length - 1, Math.round(event.nativeEvent.contentOffset.x / (cardWidth + 12))));
               activeIndexRef.current = index;
@@ -131,19 +134,20 @@ export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityRea
               {current.events.map((event, index) => <View key={event.id} collapsable={false} style={[styles.ticket, { width: cardWidth }]}><FeaturedEventCard key={`${event.id}:${isFocused && activeIndex === index}`} event={event} cityId={cityId} index={index} active={isFocused && activeIndex === index} reducedMotion={!!reducedMotion} onOpen={() => { userPauseUntil.current = Date.now() + 60000; play('selection'); }} /></View>)}
             </ScrollView>
               {current.events.length > 1 && <View pointerEvents="box-none" style={[styles.navigation, { width: cardWidth }]}>
-                <Pressable analyticsId="today.events.previous" accessibilityRole="button" accessibilityLabel="이전 페스티벌" accessibilityHint={`현재 ${activeIndex + 1}/${current.events.length}`} onPress={() => move(-1)} style={({ pressed }) => [styles.arrow, { left: 6, opacity: pressed ? 0.65 : 1 }]}>
+                <Pressable analyticsId="today.events.previous" accessibilityRole="button" accessibilityLabel={tr("이전 페스티벌")} accessibilityHint={tr("현재 {0}/{1}", (activeIndex + 1), (current.events.length))} onPress={() => move(-1)} style={({ pressed }) => [styles.arrow, { left: 6, opacity: pressed ? 0.65 : 1 }]}>
                   <GlassSurface colorScheme="dark" tone="control" interactive style={styles.arrowSurface}><SymbolView name={{ ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }} size={15} tintColor="#F6F3F0" /></GlassSurface>
                 </Pressable>
-                <Pressable analyticsId="today.events.next" accessibilityRole="button" accessibilityLabel="다음 페스티벌" accessibilityHint={`현재 ${activeIndex + 1}/${current.events.length}`} onPress={() => move(1)} style={({ pressed }) => [styles.arrow, { right: 6, opacity: pressed ? 0.65 : 1 }]}>
+                <Pressable analyticsId="today.events.next" accessibilityRole="button" accessibilityLabel={tr("다음 페스티벌")} accessibilityHint={tr("현재 {0}/{1}", (activeIndex + 1), (current.events.length))} onPress={() => move(1)} style={({ pressed }) => [styles.arrow, { right: 6, opacity: pressed ? 0.65 : 1 }]}>
                   <GlassSurface colorScheme="dark" tone="control" interactive style={styles.arrowSurface}><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={15} tintColor="#F6F3F0" /></GlassSurface>
                 </Pressable>
               </View>}
             </View>}
-    <ThemedText type="small" themeColor="textSecondary" style={styles.source}>행사 정보: Ticketmaster · 일정과 판매 상태는 변경될 수 있어요</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary" style={styles.source}>{tr("행사 정보: Ticketmaster · 일정과 판매 상태는 변경될 수 있어요")}</ThemedText>
   </View>;
 }
 
 function FeaturedEventCard({ event, cityId, index, active, reducedMotion, onOpen }: { event: TicketmasterEvent; cityId: string; index: number; active: boolean; reducedMotion: boolean; onOpen: () => void }) {
+
   const theme = useTheme();
   const promo = eventVideo(event);
   const [videoPlaying, setVideoPlaying] = useState(false);

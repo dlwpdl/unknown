@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -11,7 +12,7 @@ function panel(opened = []) {
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/login-panel.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, __DEV__: true, process: { env: {} }, require(name) {
+  vm.runInNewContext(source, { exports, __DEV__: true, process: { env: {} }, require: withLanguageImports((name) => {
     if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
     if (name === 'react') return { useCallback: fn => fn, useRef: current => ({ current }), useState(initial) { const i = index++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = typeof value === 'function' ? value(states[i]) : value; }]; } };
     if (name === 'expo-router') return { useFocusEffect() {} };
@@ -27,7 +28,7 @@ if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () =
     if (name === '@/constants/theme') return { Colors: { dark: {} }, Spacing: {}, Depth: { card: {}, control: {} } };
     if (name === '@/i18n/ko') return { t };
     return {};
-  } });
+  }) });
   return props => { index = 0; return exports.LoginPanel(props); };
 }
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(v => Array.isArray(v) ? v.flatMap(nodes) : nodes(v))];
@@ -65,7 +66,7 @@ test('authentication never records signup consent on behalf of the user', async 
     const source = ts.transpileModule(fs.readFileSync(new URL('../src/lib/auth.tsx', import.meta.url), 'utf8'), {
       compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
     }).outputText;
-    vm.runInNewContext(source, { exports, __DEV__: true, process: { env: {} }, require(name) {
+    vm.runInNewContext(source, { exports, __DEV__: true, process: { env: {} }, require: withLanguageImports((name) => {
     if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
       if (name === 'react') return { createContext: () => ({ Provider: 'Provider' }), useState: initial => [initial, () => {}], useRef: current => ({ current }), useCallback: fn => fn, useMemo: fn => fn(), useEffect() {} };
       if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
@@ -81,7 +82,7 @@ test('authentication never records signup consent on behalf of the user', async 
       if (name === '@/i18n/ko') return { t };
       if (name === '@/constants/theme') return { Spacing: {} };
       return {};
-    } });
+    }) });
     const auth = exports.AuthProvider({ children: null }).props.value;
     const args = ['signInReview','signInDev','signInAdmin'].includes(method) ? ['user','pass'] : [];
     await auth[method](...args);

@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -11,7 +12,7 @@ function provider(platform, initial, { bindingFails=false, namedOffering=false, 
   const offer=membershipOffer(item);
   const exports={};
   const source=ts.transpileModule(fs.readFileSync(new URL('../src/lib/membership-provider.tsx',import.meta.url),'utf8'),{ compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX} }).outputText;
-  vm.runInNewContext(source,{exports,Map,require(name){
+  vm.runInNewContext(source,{exports,Map,require: withLanguageImports((name) => {
     if(name==='react/jsx-runtime')return {jsx:(type,props)=>({type,props})};
     if(name==='react')return {
       createContext:()=>({Provider:'Provider'}),useCallback:fn=>fn,useEffect(){},useLayoutEffect:fn=>fn(),
@@ -43,7 +44,7 @@ function provider(platform, initial, { bindingFails=false, namedOffering=false, 
       });
     }};
     throw new Error(name);
-  }});
+  })});
   const render=()=>{cursor=0;return exports.MembershipProvider({}).props.value;};
   return {render,offer,purchased,binds,notices};
 }

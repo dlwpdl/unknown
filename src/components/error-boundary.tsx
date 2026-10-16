@@ -1,3 +1,4 @@
+import { tr } from '@/i18n';
 import { Pressable } from '@/components/analytics-controls';
 import { Component, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -23,15 +24,14 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: 
     if (!this.state.failed) return this.props.children;
     return (
       <View style={styles.screen}>
-        <ThemedText type="smallBold" style={styles.title}>화면을 그리지 못했어요</ThemedText>
+        <ThemedText type="smallBold" style={styles.title}>{tr("화면을 그리지 못했어요")}</ThemedText>
         <ThemedText type="small" style={styles.body}>
-          문제는 저희에게 전달됐어요. 다시 시도해 보시고, 계속 이러면 앱을 껐다 켜주세요.
-        </ThemedText>
+          {tr("문제는 저희에게 전달됐어요. 다시 시도해 보시고, 계속 이러면 앱을 껐다 켜주세요.")}</ThemedText>
         <Pressable analyticsId="components_error-boundary.pressable.1"
           onPress={() => this.setState({ failed: false })}
           accessibilityRole="button"
           style={({ pressed }) => [styles.retry, pressed && { opacity: 0.7 }]}>
-          <ThemedText type="smallBold" style={styles.retryText}>다시 시도</ThemedText>
+          <ThemedText type="smallBold" style={styles.retryText}>{tr("다시 시도")}</ThemedText>
         </Pressable>
       </View>
     );

@@ -1,3 +1,4 @@
+import { useLanguage } from '@/hooks/use-language';
 import { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session } from '@supabase/supabase-js';
@@ -14,7 +15,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { t } from '@/i18n/ko';
+import { t } from '@/i18n';
 import { isAdminRole } from '@/lib/admin';
 import { registerSecurityDevice } from '@/lib/account-security-device';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -79,6 +80,7 @@ export function useAuth(): AuthValue {
 }
 
 export function AuthProvider({ children, publicPage = false }: { children: ReactNode; publicPage?: boolean }) {
+  useLanguage();
   const { play } = useInteractionFeedback();
   const [session, setSession] = useState<Session | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
@@ -537,6 +539,7 @@ function AccountLockedPanel({
   note?: string | null;
   onSignOut: () => Promise<void>;
 }) {
+  useLanguage();
   const theme = useTheme();
   const supportEmail = process.env.EXPO_PUBLIC_SUPPORT_EMAIL ?? CONTACT_EMAIL;
   return (

@@ -1,14 +1,16 @@
+import { useLanguage } from '@/hooks/use-language';
 import { Alert, Linking, StyleSheet, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import { Pressable } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
-import { t } from '@/i18n/ko';
+import { t } from '@/i18n';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { googleMapsPin, googleMapsUrl } from '@/lib/post-maps';
 import { PostPinMap } from '@/components/post-pin-map';
 
 export function PostMapLink({ url, label }: { url: string; label?: string }) {
+  useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const target = googleMapsUrl(url);
   if (!target) return null;

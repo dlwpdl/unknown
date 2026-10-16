@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { useEffect, useState } from 'react';
 import { DeviceEventEmitter, Image, StyleSheet, Text, View } from 'react-native';
 import type { NativeAd } from 'react-native-google-mobile-ads';
@@ -6,6 +8,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { AD_PRIVACY_CHANGED, feedAdUnit, prepareAds } from '@/lib/ads';
 
 export function FeedAd() {
+  useLanguage();
   const theme = useTheme();
   const [revision, setRevision] = useState(0);
   const [loaded, setLoaded] = useState<{ ad: NativeAd; sdk: NonNullable<Awaited<ReturnType<typeof prepareAds>>> } | null>(null);
@@ -33,7 +36,7 @@ export function FeedAd() {
   // Fabric insets the native content view by padding/borders; keep those on the outer View.
   return <View style={[styles.ad, { backgroundColor: theme.background, borderColor: theme.line }]}>
     <NativeAdView nativeAd={ad}>
-      <Text accessibilityLabel="광고" style={[styles.category, { color: theme.textSecondary }]}>Ad</Text>
+      <Text accessibilityLabel={tr("광고")} style={[styles.category, { color: theme.textSecondary }]}>Ad</Text>
       <NativeAsset assetType={NativeAssetType.HEADLINE}><Text style={[styles.headline, { color: theme.text }]}>{ad.headline}</Text></NativeAsset>
       {!!ad.body && <NativeAsset assetType={NativeAssetType.BODY}><Text style={[styles.body, { color: theme.textSecondary }]}>{ad.body}</Text></NativeAsset>}
       <NativeMediaView resizeMode="contain" style={styles.media} />

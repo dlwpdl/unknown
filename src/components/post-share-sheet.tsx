@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Share, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
@@ -19,10 +21,12 @@ import type { Post } from '@/lib/types';
 
 type ShareSheetProps = { post: Post; visible: boolean; onClose: () => void; onShared: () => void };
 export function PostShareSheet(props: ShareSheetProps) {
+
   const { me, isAuthed } = useAuth();
   return isAuthed ? <ShareSheetContent key={`${props.post.id}:${me.id}`} {...props} /> : null;
 }
 function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps) {
+  useLanguage();
   const theme = useTheme(), { me, isAuthed } = useAuth(), { play } = useInteractionFeedback(), router = useRouter();
   const insets = useSafeAreaInsets();
   const [inbox, setInbox] = useState<ConversationPage | null>(null), [notice, setNotice] = useState('');
@@ -34,7 +38,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
     if (!visible || !isAuthed) return;
     let live = true;
     void loadConversations(supabase, me.id).then(page => { if (live) setInbox(page); })
-      .catch(() => { if (live) setNotice('대화 목록을 불러오지 못했어요. 다시 확인해주세요.'); })
+      .catch(() => { if (live) setNotice(tr("대화 목록을 불러오지 못했어요. 다시 확인해주세요.")); })
       .finally(() => { if (live) setLoading(false); });
     return () => { live = false; };
   }, [visible, isAuthed, me.id, retry]);
@@ -49,14 +53,14 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
     try {
       if (Platform.OS === 'web') {
         if (!copy && navigator.share) await navigator.share({ title: post.title, text: invite ? '같이 가요!' : undefined, url });
-        else { await navigator.clipboard.writeText(url); if (active.current) setNotice('링크를 복사했어요.'); }
+        else { await navigator.clipboard.writeText(url); if (active.current) setNotice(tr("링크를 복사했어요.")); }
       } else {
         const result = await Share.share({ title: post.title, message: sharedPostMessage(post), url });
         if (result.action !== Share.sharedAction) return;
       }
       if (active.current) { onShared(); play('message'); }
     } catch (error) {
-      if (active.current && !(error instanceof Error && error.name === 'AbortError')) { setNotice('공유하지 못했어요. 다시 눌러주세요.'); play('warning'); }
+      if (active.current && !(error instanceof Error && error.name === 'AbortError')) { setNotice(tr("공유하지 못했어요. 다시 눌러주세요.")); play('warning'); }
     } finally { pending.current = false; if (active.current) setBusy(false); }
   }
   async function send(conversation: ConversationPreview) {
@@ -65,11 +69,11 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
     try {
       const id = await sendDirectMessage(supabase, conversation.id, sharedPostMessage(post));
       if (!id) throw new Error('MESSAGE_SAVE_NOT_VERIFIED');
-      if (active.current) { setSent(values => [...values, conversation.id]); setNotice(`${conversation.title} 대화로 보냈어요.`); onShared(); play('message'); }
+      if (active.current) { setSent(values => [...values, conversation.id]); setNotice(tr("{0} 대화로 보냈어요.", (conversation.title))); onShared(); play('message'); }
     } catch {
       if (active.current) {
         setUncertain(values => [...values, conversation.id]);
-        setNotice('전송 결과를 확인하지 못했어요. 같은 대화로 다시 보내기 전에 대화 내용을 확인해주세요.'); play('warning');
+        setNotice(tr("전송 결과를 확인하지 못했어요. 같은 대화로 다시 보내기 전에 대화 내용을 확인해주세요.")); play('warning');
       }
     } finally { pending.current = false; if (active.current) setBusy(false); }
   }
@@ -79,7 +83,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
     try {
       const page = await loadConversations(supabase, me.id, 'all', inbox.cursor);
       if (active.current) setInbox(previous => previous && { ...page, conversations: appendUniquePosts(previous.conversations, page.conversations) });
-    } catch { if (active.current) { setNotice('다음 대화를 불러오지 못했어요. 다시 눌러주세요.'); play('warning'); } }
+    } catch { if (active.current) { setNotice(tr("다음 대화를 불러오지 못했어요. 다시 눌러주세요.")); play('warning'); } }
     finally { pending.current = false; if (active.current) setLoading(false); }
   }
   return <Modal visible={visible && isAuthed} transparent animationType="slide" presentationStyle="overFullScreen" onRequestClose={dismiss}>
@@ -87,7 +91,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
       <View accessibilityViewIsModal onAccessibilityEscape={dismiss} style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.line, paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View accessible={false} style={[styles.handle, { backgroundColor: theme.line }]} />
         <View style={styles.header}><ThemedText type="smallBold" style={styles.heading}>{label}</ThemedText>
-          <Pressable analyticsId="post.share.close" accessibilityRole="button" accessibilityLabel="공유 닫기" disabled={requesting} accessibilityState={{ disabled: requesting }}
+          <Pressable analyticsId="post.share.close" accessibilityRole="button" accessibilityLabel={tr("공유 닫기")} disabled={requesting} accessibilityState={{ disabled: requesting }}
             onPress={dismiss} style={[styles.close, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={20} tintColor={theme.text} accessible={false} /></Pressable>
         </View>
         <ScrollView analyticsId="post.share.sheet" style={styles.scroll} contentContainerStyle={styles.content}>
@@ -95,41 +99,41 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
             {image ? <Image source={image} style={styles.cover} contentFit="cover" accessible={false} /> : <View style={[styles.cover, styles.placeholder, { backgroundColor: theme.backgroundElement }]}>
               <SymbolView name={invite ? { ios: 'person.2', android: 'groups', web: 'groups' } : { ios: 'doc.text', android: 'description', web: 'description' }} size={24} tintColor={theme.textSecondary} accessible={false} />
             </View>}
-            <View style={styles.previewText}><ThemedText type="small" themeColor="accent">{invite ? '모임 초대' : post.tag.label}</ThemedText>
+            <View style={styles.previewText}><ThemedText type="small" themeColor="accent">{invite ? tr("모임 초대") : post.tag.label}</ThemedText>
               <ThemedText type="smallBold" style={styles.previewTitle} numberOfLines={2}>{post.title}</ThemedText>
-              {post.room && <ThemedText type="small" themeColor="textSecondary">{chillingSchedule(post.room)}{post.room.closed ? ' · 모집 마감' : ''}</ThemedText>}
+              {post.room && <ThemedText type="small" themeColor="textSecondary">{chillingSchedule(post.room)}{post.room.closed ? tr(" · 모집 마감") : ''}</ThemedText>}
             </View>
           </View>
-          <View style={styles.conversationHeader}><ThemedText type="smallBold" style={styles.sectionTitle}>글링 대화로 보내기</ThemedText>
-            {inbox?.cursor && <Pressable analyticsId="post.share.more" accessibilityRole="button" disabled={loading || busy} accessibilityState={{ disabled: loading || busy }} onPress={() => void more()} style={styles.more}><ThemedText type="small" themeColor="textSecondary" style={styles.moreLabel}>다른 대화 더 보기</ThemedText></Pressable>}
+          <View style={styles.conversationHeader}><ThemedText type="smallBold" style={styles.sectionTitle}>{tr("글링 대화로 보내기")}</ThemedText>
+            {inbox?.cursor && <Pressable analyticsId="post.share.more" accessibilityRole="button" disabled={loading || busy} accessibilityState={{ disabled: loading || busy }} onPress={() => void more()} style={styles.more}><ThemedText type="small" themeColor="textSecondary" style={styles.moreLabel}>{tr("다른 대화 더 보기")}</ThemedText></Pressable>}
           </View>
-          <ThemedText type="small" themeColor="textSecondary">대화를 누르면 바로 보내요.</ThemedText>
-          {loading && <StateCard kind="pending" title="대화를 불러오는 중…" body="잠시만 기다려주세요." />}
-          {!loading && inbox && !inbox.conversations.some(c => c.status === 'active') && <StateCard kind="empty" title="진행 중인 대화가 없어요" body={Platform.OS === 'web' ? '다른 앱으로 공유하거나 링크를 복사해보세요.' : '아래 버튼으로 다른 앱에 공유해보세요.'} />}
-          {!inbox && !loading && <><StateCard kind="error" title="대화를 불러오지 못했어요" body="공유 링크는 다른 앱으로 보낼 수 있어요." />
-            <Pressable analyticsId="post.share.retry" accessibilityRole="button" disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => { play('selection'); setLoading(true); setRetry(value => value + 1); }} style={control}><ThemedText type="smallBold">대화 목록 다시 확인</ThemedText></Pressable>
+          <ThemedText type="small" themeColor="textSecondary">{tr("대화를 누르면 바로 보내요.")}</ThemedText>
+          {loading && <StateCard kind="pending" title={tr("대화를 불러오는 중…")} body={tr("잠시만 기다려주세요.")} />}
+          {!loading && inbox && !inbox.conversations.some(c => c.status === 'active') && <StateCard kind="empty" title={tr("진행 중인 대화가 없어요")} body={Platform.OS === 'web' ? '다른 앱으로 공유하거나 링크를 복사해보세요.' : '아래 버튼으로 다른 앱에 공유해보세요.'} />}
+          {!inbox && !loading && <><StateCard kind="error" title={tr("대화를 불러오지 못했어요")} body={tr("공유 링크는 다른 앱으로 보낼 수 있어요.")} />
+            <Pressable analyticsId="post.share.retry" accessibilityRole="button" disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => { play('selection'); setLoading(true); setRetry(value => value + 1); }} style={control}><ThemedText type="smallBold">{tr("대화 목록 다시 확인")}</ThemedText></Pressable>
           </>}
           {inbox?.conversations.filter(c => c.status === 'active').map(conversation => {
             const done = sent.includes(conversation.id), unconfirmed = uncertain.includes(conversation.id), disabled = requesting || done || unconfirmed;
             return <Pressable key={conversation.id} analyticsId="post.share.conversation" accessibilityRole="button"
-              accessibilityLabel={`${conversation.title} ${done ? '전송 완료' : unconfirmed ? '전송 확인 필요' : '대화로 보내기'}`} disabled={disabled} accessibilityState={{ disabled }}
+              accessibilityLabel={tr("{0} {1}", (conversation.title), (done ? '전송 완료' : unconfirmed ? '전송 확인 필요' : '대화로 보내기'))} disabled={disabled} accessibilityState={{ disabled }}
               onPress={() => void send(conversation)} style={({ pressed }) => [styles.conversation, { backgroundColor: pressed ? theme.backgroundElement : 'transparent', opacity: requesting ? 0.6 : 1 }]}>
               <View accessible={false} style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}>{conversation.kind === 'group'
                 ? <SymbolView name={{ ios: 'person.2', android: 'groups', web: 'groups' }} size={20} tintColor={theme.textSecondary} accessible={false} />
                 : <ThemedText type="smallBold" themeColor="navy">{Array.from(conversation.title.trim())[0] || '?'}</ThemedText>}</View>
-              <View style={styles.conversationText}><ThemedText type="smallBold" style={styles.conversationTitle} numberOfLines={2}>{conversation.title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{conversation.kind === 'group' ? '모임 대화' : '1:1 대화'}</ThemedText></View>
-              <View style={[styles.sendMarker, { backgroundColor: done || unconfirmed ? 'transparent' : theme.backgroundElement }]}><ThemedText type="small" themeColor={done ? 'accent' : 'textSecondary'}>{done ? '✓ 보냈어요' : unconfirmed ? '확인 필요' : '보내기'}</ThemedText></View>
+              <View style={styles.conversationText}><ThemedText type="smallBold" style={styles.conversationTitle} numberOfLines={2}>{conversation.title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{conversation.kind === 'group' ? tr("모임 대화") : tr("1:1 대화")}</ThemedText></View>
+              <View style={[styles.sendMarker, { backgroundColor: done || unconfirmed ? 'transparent' : theme.backgroundElement }]}><ThemedText type="small" themeColor={done ? 'accent' : 'textSecondary'}>{done ? tr("✓ 보냈어요") : unconfirmed ? tr("확인 필요") : tr("보내기")}</ThemedText></View>
             </Pressable>;
           })}
-          {uncertain.map(id => <Pressable key={id} analyticsId="post.share.verify-chat" accessibilityRole="button" accessibilityLabel="전송 결과를 대화에서 확인" disabled={requesting} accessibilityState={{ disabled: requesting }}
-            onPress={() => { if (pending.current) return; play('selection'); onClose(); router.push({ pathname: '/chat', params: { conversationId: id } }); }} style={control}><ThemedText type="smallBold">대화를 열어 전송 결과 확인</ThemedText></Pressable>)}
+          {uncertain.map(id => <Pressable key={id} analyticsId="post.share.verify-chat" accessibilityRole="button" accessibilityLabel={tr("전송 결과를 대화에서 확인")} disabled={requesting} accessibilityState={{ disabled: requesting }}
+            onPress={() => { if (pending.current) return; play('selection'); onClose(); router.push({ pathname: '/chat', params: { conversationId: id } }); }} style={control}><ThemedText type="smallBold">{tr("대화를 열어 전송 결과 확인")}</ThemedText></Pressable>)}
         </ScrollView>
         <View style={[styles.footer, { borderColor: theme.line }]}>
           {!!notice && <ThemedText type="small" accessibilityLiveRegion="polite" themeColor="textSecondary">{notice}</ThemedText>}
-          <ThemedText type="small" themeColor="textSecondary">{invite ? '초대받은 사람도 로그인 후 참여 신청과 모임장 승인이 필요해요. 상세 집결 정보는 승인된 모임 대화에서만 확인해요.' : '글링에서 로그인 후 전체 내용을 확인해요.'}</ThemedText>
-          <Pressable analyticsId="post.share.external" accessibilityRole="button" accessibilityLabel={invite ? '초대 링크 공유' : '다른 앱으로 공유'} disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => void external()}
-            style={[styles.button, styles.external, { backgroundColor: theme.accent, borderColor: theme.accent }]}><SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={20} tintColor={theme.accentInk} accessible={false} /><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{invite ? '초대 링크 공유' : '다른 앱으로 공유'}</ThemedText></Pressable>
-          {Platform.OS === 'web' && <Pressable analyticsId="post.share.copy" accessibilityRole="button" disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => void external(true)} style={control}><ThemedText type="smallBold">링크 복사</ThemedText></Pressable>}
+          <ThemedText type="small" themeColor="textSecondary">{invite ? tr("초대받은 사람도 로그인 후 참여 신청과 모임장 승인이 필요해요. 상세 집결 정보는 승인된 모임 대화에서만 확인해요.") : tr("글링에서 로그인 후 전체 내용을 확인해요.")}</ThemedText>
+          <Pressable analyticsId="post.share.external" accessibilityRole="button" accessibilityLabel={invite ? tr("초대 링크 공유") : tr("다른 앱으로 공유")} disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => void external()}
+            style={[styles.button, styles.external, { backgroundColor: theme.accent, borderColor: theme.accent }]}><SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={20} tintColor={theme.accentInk} accessible={false} /><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{invite ? tr("초대 링크 공유") : tr("다른 앱으로 공유")}</ThemedText></Pressable>
+          {Platform.OS === 'web' && <Pressable analyticsId="post.share.copy" accessibilityRole="button" disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => void external(true)} style={control}><ThemedText type="smallBold">{tr("링크 복사")}</ThemedText></Pressable>}
         </View>
       </View>
     </SafeAreaView>

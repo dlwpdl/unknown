@@ -1,3 +1,4 @@
+import { useLanguage } from '@/hooks/use-language';
 import { ScrollView } from '@/components/analytics-controls';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,9 +7,10 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { t } from '@/i18n/ko';
+import { t } from '@/i18n';
 
 export default function GuidelinesScreen() {
+  useLanguage();
   const theme = useTheme();
 
   return (

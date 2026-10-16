@@ -1,10 +1,12 @@
+import { useLanguage } from '@/hooks/use-language';
 import { Redirect, router } from 'expo-router';
 
 import { LoginPanel } from '@/components/login-panel';
-import { t } from '@/i18n/ko';
+import { t } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 
 export default function ReviewAccessRoute() {
+  useLanguage();
   const { isAuthed, isAuthLoading, authError, signInReview } = useAuth();
   if (isAuthed) return <Redirect href="/profile" />;
   return (

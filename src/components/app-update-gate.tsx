@@ -1,3 +1,5 @@
+import { useLanguage } from '@/hooks/use-language';
+import { tr } from '@/i18n';
 import { GlingLoader } from '@/components/gling-loader';
 import * as Application from 'expo-application';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
@@ -21,6 +23,7 @@ const storeUrl = Platform.OS === 'ios'
   : 'https://play.google.com/store/apps/details?id=com.dlwpdl.gling';
 
 export function AppUpdateGate({ children }: { children: ReactNode }) {
+  useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const [status, setStatus] = useState<'checking' | 'allowed' | 'blocked' | 'error'>(Platform.OS === 'web' || !build ? 'allowed' : 'checking');
@@ -64,9 +67,9 @@ export function AppUpdateGate({ children }: { children: ReactNode }) {
     <Modal visible={status !== 'allowed' || !introDone} animationType="none" onRequestClose={() => {}}>
       {status === 'blocked' ? <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
         <View style={styles.content}>
-          <StateCard kind="update" title="새 버전으로 업데이트해 주세요"
+          <StateCard kind="update" title={tr("새 버전으로 업데이트해 주세요")}
             body={storeError ? '스토어를 열지 못했어요. 잠시 후 다시 시도해 주세요.' : '글링을 계속 사용하려면 최신 버전을 설치해 주세요.'}
-            actionLabel="스토어에서 업데이트" onAction={() => {
+            actionLabel={tr("스토어에서 업데이트")} onAction={() => {
               play('selection');
               setStoreError(false);
               void Linking.openURL(storeUrl).catch(() => setStoreError(true));
@@ -74,10 +77,10 @@ export function AppUpdateGate({ children }: { children: ReactNode }) {
         </View>
       </SafeAreaView> : status === 'error' ? <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
         <View style={styles.content}>
-          <StateCard kind="error" title="업데이트를 확인할 수 없어요" body="인터넷 연결을 확인하고 다시 시도해 주세요."
-            actionLabel="다시 확인" onAction={() => { play('selection'); setStatus('checking'); void check(); }} />
+          <StateCard kind="error" title={tr("업데이트를 확인할 수 없어요")} body={tr("인터넷 연결을 확인하고 다시 시도해 주세요.")}
+            actionLabel={tr("다시 확인")} onAction={() => { play('selection'); setStatus('checking'); void check(); }} />
         </View>
-      </SafeAreaView> : introDone ? <View style={[styles.screen, { backgroundColor: theme.background }]} accessibilityLabel="새 버전 확인 중">
+      </SafeAreaView> : introDone ? <View style={[styles.screen, { backgroundColor: theme.background }]} accessibilityLabel={tr("새 버전 확인 중")}>
         <GlingLoader color={theme.accent} style={styles.spinner} />
       </View> : <LaunchMoment ready={status === 'allowed'} onComplete={() => setIntroDone(true)} />}
     </Modal>

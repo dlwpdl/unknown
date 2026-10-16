@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -7,7 +8,7 @@ test('cover picker preserves draft on cancel, optimizes selection, and supports 
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/meetup-cover-picker.tsx', import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
   let result={canceled:true}, selected='unchanged', options;
   const exports={};
-  vm.runInNewContext(source,{exports,require(name){
+  vm.runInNewContext(source,{exports,require: withLanguageImports((name) => {
     if(name==='react') return {useState:value=>[value,()=>{}],useRef:value=>({current:value}),useLayoutEffect:fn=>fn()};
     if(name==='react/jsx-runtime')return {jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props})};
     if(name==='react-native')return {Pressable:'Pressable',View:'View',StyleSheet:{create:x=>x}};
@@ -22,7 +23,7 @@ test('cover picker preserves draft on cancel, optimizes selection, and supports 
     };
     if(name==='@/components/themed-text')return {ThemedText:'Text'};
     return {};
-  }});
+  })});
   const find=(node,label)=>node&&typeof node==='object'?(node.props?.accessibilityLabel===label?node:Object.values(node).flatMap(x=>Array.isArray(x)?x:[x]).map(x=>find(x,label)).find(Boolean)):null;
   const picking=[],prepareCalls=[];
   const props={value:null,onChange:value=>{selected=value;},onPickingChange:value=>picking.push(value),disabled:false};

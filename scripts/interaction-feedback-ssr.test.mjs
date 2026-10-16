@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -22,7 +23,7 @@ function renderFeedback({ browser = false, platform = 'web' } = {}) {
     './interaction-feedback-preferences': preferences,
   };
   const exports = {};
-  vm.runInNewContext(source, { exports, require: name => imports[name] ?? {}, ...(browser ? { window: {} } : {}) });
+  vm.runInNewContext(source, { exports, require: withLanguageImports(name => imports[name] ?? {}), ...(browser ? { window: {} } : {}) });
   function Child() {
     const value = exports.useInteractionFeedback();
     assert.equal(value.soundEnabled, true);

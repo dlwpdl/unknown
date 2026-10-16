@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -59,7 +60,7 @@ function mount(initialSession = session('member')) {
   const source = ts.transpileModule(readFileSync(new URL('../src/lib/auth.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, __DEV__: false, Date, process: { env: {} }, require: name => { assert.ok(name in imports, `Known import: ${name}`); return imports[name]; } });
+  vm.runInNewContext(source, { exports, __DEV__: false, Date, process: { env: {} }, require: withLanguageImports(name => { assert.ok(name in imports, `Known import: ${name}`); return imports[name]; }) });
   const render = () => { index = 0; effects = []; tree = exports.AuthProvider({ children: null }); effects.forEach(fn => fn()); return tree.props.value; };
   render();
   return { reads, render, nodes: () => nodes(tree), async settle() { for (let i = 0; i < 4; i++) { await tick(); render(); } return tree.props.value; },
