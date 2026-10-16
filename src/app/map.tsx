@@ -1,3 +1,4 @@
+import { Colors } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
 import { tr } from '@/i18n';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -21,7 +22,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
-import { DISCOVERY_CATEGORIES, TOP25_GOLD, discoveryDays, discoveryEvent, discoveryMatches, directionsUrl, mergeCityTop25, type DiscoveryDate, type DiscoveryFilter, type DiscoveryItem } from '@/lib/discovery';
+import { DISCOVERY_CATEGORIES, TOP25_GOLD, discoveryDays, discoveryEvent, discoveryMatches, discoveryPlace, directionsUrl, mergeCityTop25, type DiscoveryDate, type DiscoveryFilter, type DiscoveryItem } from '@/lib/discovery';
+import { getCityPlaces } from '@/lib/city-places';
 import { loadDiscoveryPosts } from '@/lib/discovery-data';
 import { getPostImageSource, type FeedCursor } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -46,6 +48,7 @@ export default function MapScreen() {
 function CityMap() {
   useLanguage();
   const theme = useTheme(), router = useRouter(), reduced = useReducedMotion();
+  const top25Ink = theme === Colors.light ? '#68543A' : TOP25_GOLD;
   const { city } = useCommunityCity(), { isAuthed, me, promptLogin } = useAuth(), hidden = useContentVisibility();
   const { play } = useInteractionFeedback();
   const { category: initialCategory } = useLocalSearchParams<{ category?: string }>();
@@ -117,7 +120,8 @@ function CityMap() {
     return () => { request.current?.abort(); request.current = null; morePending.current = false; locationRevision.current++; setLocating(false); };
   }, [loadPage]));
 
-  const publicItems = (current?.items ?? []).filter(item => (!item.post || (!hidden('post', item.post.id, item.post.author.id) && (item.post.kind !== 'listing' || (['open', 'partial'].includes(item.post.listingStatus ?? '') && Date.parse(item.post.expiresAt ?? '') > now))))
+  const catalogItems = useMemo(() => getCityPlaces(city.id).map(discoveryPlace).filter(item => item !== null), [city.id]);
+  const publicItems = [...(current?.items ?? []), ...catalogItems].filter(item => (!item.post || (!hidden('post', item.post.id, item.post.author.id) && (item.post.kind !== 'listing' || (['open', 'partial'].includes(item.post.listingStatus ?? '') && Date.parse(item.post.expiresAt ?? '') > now))))
     && (!item.event || discoveryEvent(item.event, item.cityId, now) !== null));
   const cityItems = mergeCityTop25(publicItems, city.id);
   const top25Ready = cityItems.some(item => item.top25);
@@ -136,7 +140,8 @@ function CityMap() {
   const open = (item: DiscoveryItem) => {
     play('selection');
     if (item.source === 'place' && !item.post) {
-      void Linking.openURL(item.top25!.sourceUrl).catch(() => { play('warning'); Alert.alert(tr("장소 정보를 열지 못했어요"), tr("인터넷 연결을 확인하고 다시 시도해 주세요.")); });
+      if (item.place) router.push({ pathname: '/places/[id]', params: { id: item.place.id, cityId: item.place.cityId } });
+      else void Linking.openURL(item.top25!.sourceUrl).catch(() => { play('warning'); Alert.alert(tr("장소 정보를 열지 못했어요"), tr("인터넷 연결을 확인하고 다시 시도해 주세요.")); });
     } else if (item.source === 'event') router.push({ pathname: '/events/[id]', params: { id: item.sourceId, cityId: city.id } });
     else router.push({ pathname: '/post/[id]', params: { id: item.post?.id ?? item.sourceId } });
   };
@@ -182,7 +187,7 @@ function CityMap() {
       {filters.map(value => <Pressable key={value.id} analyticsId="discovery.filter" accessibilityRole="button" accessibilityState={{ selected: filter === value.id }} onPress={() => { play('selection'); setFilter(value.id); }} style={[styles.chip, { borderColor: filter === value.id ? theme.accent : theme.line, backgroundColor: filter === value.id ? theme.backgroundSelected : theme.backgroundElement }]}>{value.color && <View style={[styles.dot, { backgroundColor: value.color }]} />}<ThemedText type="smallBold" style={{ color: filter === value.id ? theme.accent : theme.text }}>{tr(value.label)}</ThemedText></Pressable>)}
     </ScrollView>
     <View style={styles.collectionRow}>
-      <Pressable analyticsId="discovery.filter" accessibilityRole="checkbox" accessibilityState={{ checked: top25Only }} accessibilityLabel={tr("TOP 25 선정 장소만 보기")} onPress={() => { play('selection'); setTop25Only(value => !value); }} style={[styles.collectionToggle, { borderColor: top25Only ? theme.accent : '#68543A', backgroundColor: top25Only ? theme.backgroundSelected : theme.card }]}><View style={[styles.collectionCheck, { borderColor: top25Only ? theme.accent : '#A78B59', backgroundColor: top25Only ? theme.accent : 'transparent' }]}>{top25Only && <ThemedText style={{ color: theme.accentInk, fontSize: 11, lineHeight: 14 }}>✓</ThemedText>}</View><ThemedText type="smallBold" style={{ color: TOP25_GOLD }}>{tr("✦ TOP 25만 보기")}</ThemedText></Pressable>
+      <Pressable analyticsId="discovery.filter" accessibilityRole="checkbox" accessibilityState={{ checked: top25Only }} accessibilityLabel={tr("TOP 25 선정 장소만 보기")} onPress={() => { play('selection'); setTop25Only(value => !value); }} style={[styles.collectionToggle, { borderColor: top25Only ? theme.accent : '#68543A', backgroundColor: top25Only ? theme.backgroundSelected : theme.card }]}><View style={[styles.collectionCheck, { borderColor: top25Only ? theme.accent : '#A78B59', backgroundColor: top25Only ? theme.accent : 'transparent' }]}>{top25Only && <ThemedText style={{ color: theme.accentInk, fontSize: 11, lineHeight: 14 }}>✓</ThemedText>}</View><ThemedText type="smallBold" style={{ color: top25Ink }}>{tr("✦ TOP 25만 보기")}</ThemedText></Pressable>
       <Pressable analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr("TOP 25 선정 배지 안내")} onPress={() => { play('selection'); Alert.alert(tr("도시의 TOP 25"), tr("카페·맛집·공원 등 도시별로 선정한 장소예요. 같은 장소의 추천글은 하나로 모아 보여줘요. 방문 수나 인기 순위를 뜻하지 않아요.")); }} style={styles.icon}><SymbolView name={{ ios: 'info.circle', android: 'info', web: 'info' }} size={18} tintColor={theme.textSecondary} /></Pressable>
     </View>
     {filter !== 'housing' && filter !== 'used' && Object.hasOwn(EVENT_CITIES, city.id) && <View style={styles.dates}><ThemedText type="small" themeColor="textSecondary">{tr("행사")}</ThemedText>{([{ id: 'all', label: tr("전체 날짜") }, { id: 'today', label: tr("오늘") }, { id: 'weekend', label: tr("이번 주말") }, { id: 'date', label: dateFilter === 'date' ? date.slice(5).replace('-', '/') : tr("날짜 지정") }] as const).map(value => <Pressable key={value.id} analyticsId="discovery.date" accessibilityRole="button" accessibilityState={{ selected: dateFilter === value.id }} onPress={() => chooseDate(value.id)} style={[styles.date, dateFilter === value.id && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]}><ThemedText type="small" style={{ color: dateFilter === value.id ? theme.accent : theme.textSecondary }}>{tr(value.label)}</ThemedText></Pressable>)}</View>}
@@ -198,7 +203,7 @@ function CityMap() {
           : !loading && <View style={styles.mapEmpty}><StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : items.length ? tr("주소가 있는 항목은 목록에서 볼 수 있어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 25가 없어요") : tr("이 도시의 TOP 25를 준비하고 있어요") : tr("아직 표시할 공개 위치가 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : top25Only ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : tr("직접 첨부한 핀과 위치가 확인된 행사만 지도에 표시해요.")} actionLabel={current?.errors.length ? tr("다시 시도") : tr("리스트 보기")} onAction={current?.errors.length ? refresh : () => changeMode('list')} /></View>}
       </> : <FlatList analyticsId="discovery.list" onViewableItemsChanged={trackTranslationResults} viewabilityConfig={CONTENT_TRANSLATION_VIEWABILITY} data={items} keyExtractor={item => item.id} contentContainerStyle={styles.list} renderItem={({ item }) => <View style={[styles.listCard, { backgroundColor: theme.card, borderColor: theme.line }]}><DiscoveryCard item={item} translationVisible={visibleResultIds.has(item.id)} viewerScope={viewerScope} onOpen={() => open(item)} /><Top25Note item={item} />{located(item) && <Directions item={item} />}</View>}
         ListEmptyComponent={loading ? null : <StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 25가 없어요") : tr("이 도시의 TOP 25를 준비하고 있어요") : tr("조건에 맞는 항목이 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : tr("다른 분류나 날짜를 선택해 보세요. 장소 위치는 글을 쓸 때 첨부할 수 있어요.")} actionLabel={current?.errors.length ? tr("다시 시도") : undefined} onAction={current?.errors.length ? refresh : undefined} />}
-        ListFooterComponent={<>{more && <Pressable analyticsId="discovery.more" accessibilityRole="button" disabled={loading} onPress={() => { if (morePending.current || loading) return; morePending.current = true; play('selection'); loadPage(current); }} style={[styles.more, { borderColor: theme.line }]}><ThemedText themeColor="accent">{loading ? tr("불러오는 중…") : tr("더 보기")}</ThemedText></Pressable>}{limited && <ThemedText type="small" themeColor="textSecondary">{tr("500개까지 표시했어요. 검색어나 분류로 범위를 줄여 주세요.")}</ThemedText>}<ThemedText type="small" themeColor="textSecondary" style={styles.source}>{tr("글링 공개 위치 · 도시 선정 장소 · 행사 정보: Ticketmaster")}{items.some(item => !located(item)) ? tr("\n위치 확인 전 항목은 지도 핀 없이 목록에 표시해요.") : ''}</ThemedText></>} />}
+        ListFooterComponent={<>{more && <Pressable analyticsId="discovery.more" accessibilityRole="button" disabled={loading} onPress={() => { if (morePending.current || loading) return; morePending.current = true; play('selection'); loadPage(current); }} style={[styles.more, { borderColor: theme.line }]}><ThemedText themeColor="accent">{loading ? tr("불러오는 중…") : tr("더 보기")}</ThemedText></Pressable>}{limited && <ThemedText type="small" themeColor="textSecondary">{tr("500개까지 표시했어요. 검색어나 분류로 범위를 줄여 주세요.")}</ThemedText>}<ThemedText type="small" themeColor="textSecondary" style={styles.source}>{tr("글링 공개 위치 · 장소 자료: OpenStreetMap · 행사 정보: Ticketmaster")}{items.some(item => !located(item)) ? tr("\n위치 확인 전 항목은 지도 핀 없이 목록에 표시해요.") : ''}</ThemedText></>} />}
       {loading && <View pointerEvents="none" style={[styles.loading, { backgroundColor: theme.card }]}><GlingLoader color={theme.accent} accessibilityLabel={tr("지도 결과 불러오는 중")} /></View>}
     </View>
     {mode === 'map' && more && <Pressable analyticsId="discovery.more" accessibilityRole="button" disabled={loading} onPress={() => { if (morePending.current || loading) return; morePending.current = true; play('selection'); loadPage(current); }} style={[styles.moreMap, { borderColor: theme.line }]}><ThemedText type="smallBold" themeColor="accent">{loading ? tr("불러오는 중…") : tr("이 도시의 결과 더 보기")}</ThemedText></Pressable>}
@@ -218,7 +223,7 @@ function DiscoveryCard({ item, viewerScope, onOpen, translationVisible = true }:
   const category = DISCOVERY_CATEGORIES.find(value => value.id === item.category)!;
   const image = item.post ? getPostImageSource(item.post, viewerScope) : item.imageUri ? { uri: item.imageUri } : undefined;
   const price = item.event ? eventPriceLabel(item.event) : item.price === null ? '' : item.price === 0 ? tr("나눔") : `CA$${item.price.toLocaleString('en-CA')}`;
-  return <View><Pressable analyticsId="discovery.card" accessibilityRole="button" accessibilityLabel={`${item.top25 ? tr("TOP 25 선정 장소, ") : ''}${tr(category.label)}, ${displayTitle}, ${item.label}, ${item.source === 'place' && !item.post ? tr("선정 출처 열기") : tr("상세 보기")}`} onPress={onOpen} style={styles.cardBody}>
+  return <View><Pressable analyticsId="discovery.card" accessibilityRole="button" accessibilityLabel={`${item.top25 ? tr("TOP 25 선정 장소, ") : ''}${tr(category.label)}, ${displayTitle}, ${item.label}, ${item.source === 'place' && !item.post && !item.place ? tr("선정 출처 열기") : tr("상세 보기")}`} onPress={onOpen} style={styles.cardBody}>
     <View style={[styles.thumbnail, { backgroundColor: theme.backgroundElement }]}>{image ? <Image source={image} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} /> : <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={26} tintColor={category.color} />}</View>
     <View style={styles.cardText}><View style={styles.badge}><View style={[styles.dot, { backgroundColor: category.color }]} /><ThemedText type="small" themeColor="textSecondary">{tr(category.label)}{!located(item) ? tr(" · 위치 확인 전") : ''}</ThemedText>{item.top25 && <View style={styles.top25Badge}><ThemedText style={styles.top25BadgeText}>✦ TOP 25</ThemedText></View>}</View><ThemedText type="smallBold" numberOfLines={2}>{displayTitle}</ThemedText><ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{item.label}</ThemedText>{item.event && <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{eventTime(item.event)}</ThemedText>}{!!price && <ThemedText type="smallBold" themeColor="accent">{price}</ThemedText>}</View>
     <ThemedText themeColor="textSecondary">›</ThemedText>
@@ -226,13 +231,14 @@ function DiscoveryCard({ item, viewerScope, onOpen, translationVisible = true }:
 }
 function Top25Note({ item }: { item: DiscoveryItem }) {
   const theme = useTheme(), { play } = useInteractionFeedback();
+  const top25Ink = theme === Colors.light ? '#68543A' : TOP25_GOLD;
   useLanguage();
   if (!item.top25) return null;
   return <View style={[styles.top25Note, { borderTopColor: theme.line }]}>
-    <ThemedText type="smallBold" style={{ color: TOP25_GOLD }}>{tr("TOP 25 선정 이유")}</ThemedText>
+    <ThemedText type="smallBold" style={{ color: top25Ink }}>{tr("TOP 25 선정 이유")}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary">{item.top25.reason}</ThemedText>
     {!!item.post && <ThemedText type="small" themeColor="textSecondary">{tr("글링 추천 글에서도 소개한 장소예요.")}</ThemedText>}
-    <Pressable analyticsId="discovery.card" accessibilityRole="link" accessibilityLabel={tr('{0} TOP 25 선정 출처 열기, 외부 사이트', item.title)} onPress={() => { play('selection'); void Linking.openURL(item.top25!.sourceUrl).catch(() => { play('warning'); Alert.alert(tr("선정 출처를 열지 못했어요"), tr("인터넷 연결을 확인하고 다시 시도해 주세요.")); }); }} style={styles.top25Source}><ThemedText type="small" style={{ color: TOP25_GOLD }}>{tr("선정 출처 보기 ↗")}</ThemedText></Pressable>
+    <Pressable analyticsId="discovery.card" accessibilityRole="link" accessibilityLabel={tr('{0} TOP 25 선정 출처 열기, 외부 사이트', item.title)} onPress={() => { play('selection'); void Linking.openURL(item.top25!.sourceUrl).catch(() => { play('warning'); Alert.alert(tr("선정 출처를 열지 못했어요"), tr("인터넷 연결을 확인하고 다시 시도해 주세요.")); }); }} style={styles.top25Source}><ThemedText type="small" style={{ color: top25Ink }}>{tr("선정 출처 보기 ↗")}</ThemedText></Pressable>
   </View>;
 }
 function Directions({ item }: { item: DiscoveryItem & PostPin }) {

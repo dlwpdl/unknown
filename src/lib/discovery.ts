@@ -2,6 +2,7 @@ import { googleMapsPin, googlePinUrl, postMapBody, type PostPin } from './post-m
 import type { Post } from './types.ts';
 import { EVENT_TIMEZONES, festivalLocalDay, isFestivalEvent, type EventCity, type TicketmasterEvent } from '../../supabase/functions/_shared/ticketmaster.ts';
 import { CITY_TOP25, type CityTop25Place } from './city-top25.ts';
+import type { CityPlace } from './city-places.ts';
 
 export const TOP25_GOLD = '#F4CA78';
 
@@ -30,7 +31,15 @@ export type DiscoveryItem = {
   price: number | null; imageUri?: string; post?: Post; event?: TicketmasterEvent;
   startsAt?: string | null; endsAt?: string | null; localDate?: string | null;
   top25?: CityTop25Place;
+  place?: CityPlace;
 };
+
+export function discoveryPlace(place: CityPlace): DiscoveryItem | null {
+  if (!Number.isFinite(place.latitude) || Math.abs(place.latitude) > 90 || !Number.isFinite(place.longitude) || Math.abs(place.longitude) > 180) return null;
+  return { id: `place:${place.cityId}:${place.id}`, source: 'place', sourceId: place.id, cityId: place.cityId, title: place.name,
+    category: place.category === 'food' ? 'dining' : place.category === 'cafe' ? 'cafe' : 'place', label: place.address || place.name,
+    latitude: place.latitude, longitude: place.longitude, price: null, place };
+}
 
 export function mergeCityTop25(items: DiscoveryItem[], cityId: string, picks: readonly CityTop25Place[] = CITY_TOP25): DiscoveryItem[] {
   const ids = new Set<string>(), bindings = new Set<string>(), counts = new Map<string, number>();
@@ -56,13 +65,15 @@ export function mergeCityTop25(items: DiscoveryItem[], cityId: string, picks: re
   }
   const visible = items.filter(item => item.cityId === cityId), merged = new Set<string>();
   const places = picks.filter(pick => pick.cityId === cityId).map(pick => {
+    const catalog = visible.find(item => item.source === 'place' && item.place && item.sourceId === pick.id);
+    if (catalog) merged.add(catalog.id);
     const recommendations = visible.filter(item => item.source === 'post' && item.post && item.post.kind !== 'listing'
       && !['housing', 'used', 'event', 'festival'].includes(item.category) && pick.postIds.includes(item.sourceId));
     recommendations.forEach(item => merged.add(item.id));
     const first = recommendations[0];
     return { id: `place:${cityId}:${pick.id}`, source: 'place' as const, sourceId: pick.id, cityId, title: pick.title,
       category: pick.category, label: pick.label, latitude: pick.latitude, longitude: pick.longitude,
-      price: first?.price ?? null, imageUri: first?.imageUri, post: first?.post, top25: pick };
+      price: first?.price ?? null, imageUri: first?.imageUri, post: first?.post, top25: pick, place: catalog?.place };
   });
   return [...places, ...visible.filter(item => !merged.has(item.id))];
 }
