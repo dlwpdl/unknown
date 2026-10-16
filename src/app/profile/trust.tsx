@@ -61,7 +61,7 @@ export default function TrustScreen() {
         {levels.map((item, index) => {
           const open = expanded === item.level;
           return <View key={item.level} style={[styles.level, index > 0 && { borderTopColor: theme.line, borderTopWidth: StyleSheet.hairlineWidth }]}>
-            <Pressable accessibilityRole="button" accessibilityLabel={tr("Lv{0} {1}, {2}", (item.level), (item.title), (item.level === auth.trustLevel ? '현재 단계' : item.level < auth.trustLevel ? '지난 단계' : '준비 중'))} accessibilityState={{ expanded: open }}
+            <Pressable accessibilityRole="button" accessibilityLabel={tr("Lv{0} {1}, {2}", (item.level), (item.title), (item.level === auth.trustLevel ? tr('현재 단계') : item.level < auth.trustLevel ? tr('지난 단계') : tr('준비 중')))} accessibilityState={{ expanded: open }}
               onPress={() => { play('selection'); if (!reducedMotion) { if (Platform.OS === 'android') UIManager.setLayoutAnimationEnabledExperimental?.(true); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); } setExpanded(open ? null : item.level); }}
               style={({ pressed }) => [styles.levelButton, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
               <View style={[styles.number, { backgroundColor: item.level === auth.trustLevel ? theme.backgroundElement : theme.background, }]}><ThemedText type="smallBold" style={{ color: item.level === auth.trustLevel ? theme.accent : theme.textSecondary }}>{String(item.level).padStart(2, '0')}</ThemedText></View>

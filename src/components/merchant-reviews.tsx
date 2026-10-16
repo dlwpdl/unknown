@@ -175,7 +175,7 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
       </ThemedText>
       <View style={styles.summaryCopy}>
         <ThemedText type="smallBold">{tr("10점 만점")}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">{tr("인증 후기") + " "}{page.review_count}{tr("개")}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{tr("인증 후기 {0}개", page.review_count)}</ThemedText>
       </View>
     </View>}
     {page && <MerchantRatingBar score={page.rating_average} reviewKind={reviewKind} />}
@@ -205,7 +205,7 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
       </View>
       <ThemedText type="smallBold">{tr("후기글") + " "}<ThemedText type="small" themeColor="textSecondary">{tr("(선택)")}</ThemedText></ThemedText>
       <TextInput value={body} onChangeText={setBody} onFocus={() => play('selection')} editable={!saving} multiline maxLength={300}
-        placeholder={employment ? tr("이 회사에서 직접 근무한 경험을 남겨 주세요.") : tr("직접 이용한 경험을 남겨 주세요.")} placeholderTextColor={theme.textSecondary} accessibilityLabel={tr("{0} 후기글, 선택 입력, 최대 300자", (employment ? '근무' : '업체'))}
+        placeholder={employment ? tr("이 회사에서 직접 근무한 경험을 남겨 주세요.") : tr("직접 이용한 경험을 남겨 주세요.")} placeholderTextColor={theme.textSecondary} accessibilityLabel={tr("{0} 후기글, 선택 입력, 최대 300자", (employment ? tr('근무') : tr('업체')))}
         style={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.line }]} />
       <ThemedText type="small" themeColor="textSecondary" style={styles.counter}>{body.length}/300</ThemedText>
       <ThemedText type="smallBold">{tr("{0} 인증", (tr(proofLabel)))} <ThemedText type="small" themeColor="textSecondary">{employment ? tr("(공개하려면 필수)") : tr("(선택)")}</ThemedText></ThemedText>
@@ -263,7 +263,7 @@ export function MerchantReviewCard({ review, own = false, onReport, onReportRepl
   const theme = useTheme(), { play } = useInteractionFeedback();
   const [expanded, setExpanded] = useState(false);
   return <View style={[styles.review, { borderTopColor: theme.line }]}>
-    <Pressable analyticsId="merchant.review.detail" accessibilityRole="button" accessibilityLabel={tr("{0}님의 후기 {1}", (review.nickname), (expanded ? '접기' : '전체 보기'))}
+    <Pressable analyticsId="merchant.review.detail" accessibilityRole="button" accessibilityLabel={tr("{0}님의 후기 {1}", (review.nickname), (expanded ? tr('접기') : tr('전체 보기')))}
       accessibilityState={{ expanded }} style={styles.reviewLink} onPress={() => { play('selection'); setExpanded((value) => !value); }}>
       <View style={styles.header}>
         <View style={styles.reviewCopy}>
