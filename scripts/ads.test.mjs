@@ -119,6 +119,11 @@ test('native configuration includes localized ATT purpose, tracking disclosure a
   }
   assert.equal(plugins.get('react-native-google-mobile-ads').delayAppMeasurementInit, true);
   assert.equal(expo.ios.privacyManifests.NSPrivacyTracking, true);
+  const trackingDomains = expo.ios.privacyManifests.NSPrivacyTrackingDomains;
+  assert.ok(Array.isArray(trackingDomains) && trackingDomains.length > 0, 'Apple requires tracking domains when NSPrivacyTracking is true');
+  assert.ok(trackingDomains.includes('googleads.g.doubleclick.net'));
+  assert.ok(trackingDomains.includes('pagead2.googlesyndication.com'));
+  for (const domain of trackingDomains) assert.match(domain, /^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/);
   const identifier = expo.ios.privacyManifests.NSPrivacyCollectedDataTypes.find(type => type.NSPrivacyCollectedDataType === 'NSPrivacyCollectedDataTypeDeviceID');
   assert.equal(identifier.NSPrivacyCollectedDataTypeTracking, true);
   assert.ok(identifier.NSPrivacyCollectedDataTypePurposes.includes('NSPrivacyCollectedDataTypePurposeThirdPartyAdvertising'));

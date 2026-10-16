@@ -27,3 +27,12 @@ The release command preserves current review instructions and credentials while 
 Evidence: `/Users/ash/Desktop/Git/unknown/output/reviews/gling-att-fix-20261016/`.
 
 Sources: [Expo SDK 57 ATT](https://docs.expo.dev/versions/v57.0.0/sdk/tracking-transparency/), [Apple ATT](https://developer.apple.com/documentation/apptrackingtransparency), [Google privacy strategies](https://developers.google.com/admob/ios/privacy/strategies), [Google UMP and ATT](https://developers.google.com/admob/ios/privacy/idfa).
+
+
+## Resubmission validation on October 16
+
+Apple initially accepted the corrected 1.3.1 (68) submission, then marked the binary invalid during subsequent validation. The public API temporarily continued to report VALID while App Store Connect reported INVALID. Preserve en-CA metadata and its seven screenshots added by the parallel localization owner.
+
+The signed IPA had tracking enabled with an empty tracking-domain list. Apple's privacy manifest contract requires a domain list when tracking is enabled. The release configuration now declares the two Google advertising hosts found in the bundled SDK: `googleads.g.doubleclick.net` and `pagead2.googlesyndication.com`. The original ATT permission gate remains in place. This corrects a confirmed declaration omission; Apple's exact automatic validation error remains separate until its diagnostic message is available.
+
+Never raise the minimum supported build on build, upload or review submission. Apply the existing update policy only after the new version has passed review and is actually available to users in the store. During this resubmission the live policies remain iOS 65 and Android 64; the current public iOS version remains 1.2.3. Owner instruction: `/Users/ash/.codex/memories/release-availability-gating.md`.
