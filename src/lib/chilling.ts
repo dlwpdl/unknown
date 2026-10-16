@@ -34,12 +34,12 @@ export function chillingAvailability(room: ChillingSchedule & { closed?: boolean
   return 'open';
 }
 
-export function chillingSchedule(room: ChillingSchedule): string {
-  const missing = getLocale() === 'en-CA' ? 'Schedule needs confirmation' : '일정 확인 필요';
-  if (chillingKind(room) === 'group') return room.cadence?.trim() || (getLocale() === 'en-CA' ? 'Recurring meetup' : '지속 모임');
+export function chillingSchedule(room: ChillingSchedule, locale = getLocale()): string {
+  const missing = locale === 'en-CA' ? 'Schedule needs confirmation' : '일정 확인 필요';
+  if (chillingKind(room) === 'group') return room.cadence?.trim() || (locale === 'en-CA' ? 'Recurring meetup' : '지속 모임');
   if (!room.startsAt || !room.timezone) return missing;
   try {
-    const formatter = new Intl.DateTimeFormat(getLocale(), {
+    const formatter = new Intl.DateTimeFormat(locale, {
       timeZone: room.timezone, month: 'long', day: 'numeric', weekday: 'short',
       hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
     });
@@ -48,25 +48,25 @@ export function chillingSchedule(room: ChillingSchedule): string {
   } catch { return missing; }
 }
 
-export function recommendedAgeLabel(room: ChillingSchedule): string {
-  if (getLocale() === 'en-CA') return room.recommendedAgeMin != null && room.recommendedAgeMax != null
+export function recommendedAgeLabel(room: ChillingSchedule, locale = getLocale()): string {
+  if (locale === 'en-CA') return room.recommendedAgeMin != null && room.recommendedAgeMax != null
     ? `Recommended ages ${room.recommendedAgeMin}–${room.recommendedAgeMax}` : 'All ages';
   return room.recommendedAgeMin != null && room.recommendedAgeMax != null
     ? `권장 만 ${room.recommendedAgeMin}~${room.recommendedAgeMax}세` : '연령대 무관';
 }
 
 // 다가오는 일회성 모임에만 붙는 임박 표시. 기기 기준 하루 경계로 센다.
-export function chillingCountdown(room: ChillingSchedule, now = Date.now()): string | null {
+export function chillingCountdown(room: ChillingSchedule, now = Date.now(), locale = getLocale()): string | null {
   if (chillingKind(room) !== 'once' || !room.startsAt) return null;
   const start = Date.parse(room.startsAt);
   if (!Number.isFinite(start) || start <= now) return null;
   const midnight = (value: number) => { const date = new Date(value); date.setHours(0, 0, 0, 0); return date.getTime(); };
   const days = Math.round((midnight(start) - midnight(now)) / 86400000);
-  return days === 0 ? (getLocale() === 'en-CA' ? 'Today' : '오늘') : days === 1 ? (getLocale() === 'en-CA' ? 'Tomorrow' : '내일') : `D-${days}`;
+  return days === 0 ? (locale === 'en-CA' ? 'Today' : '오늘') : days === 1 ? (locale === 'en-CA' ? 'Tomorrow' : '내일') : `D-${days}`;
 }
 
-export function recommendedAgeMessage(room: ChillingSchedule, age: number | null): string {
-  if (getLocale() === 'en-CA') {
+export function recommendedAgeMessage(room: ChillingSchedule, age: number | null, locale = getLocale()): string {
+  if (locale === 'en-CA') {
     if (age == null) return 'You can apply without a birth date. Refer to the recommended ages.';
     const matches = room.recommendedAgeMin == null || room.recommendedAgeMax == null || (age >= room.recommendedAgeMin && age <= room.recommendedAgeMax);
     return `Self-reported age ${age} · Birth date unverified. ${matches ? 'Within the recommended range.' : 'You can apply outside the recommended range.'}`;

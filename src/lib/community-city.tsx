@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { createContext, useContext, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Alert } from 'react-native';
 
@@ -14,7 +13,7 @@ const CommunityCityContext = createContext<{
 } | null>(null);
 
 export function CommunityCityProvider({ children }: { children: ReactNode }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const { cityId } = useCommunityLocation();
   const { me, isAuthed, setProfileCity } = useAuth();
   const userId = isAuthed ? me.id : null;

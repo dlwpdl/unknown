@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { ThemedText } from '@/components/themed-text';
@@ -9,7 +8,7 @@ import type { ChillingProfile } from '@/lib/chilling-data';
 import { CITIES } from '@/lib/mock';
 
 export function ChillingProfileCard({ profile, identity }: { profile: ChillingProfile; identity?: { nickname: string; photoUri?: string | null; cityId?: string } }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme();
   return <View style={styles.card}>
     {identity && <View style={styles.identity}>

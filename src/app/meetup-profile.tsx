@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -30,7 +29,7 @@ export default function MeetupProfileRoute() {
   return <ProfileForm key={`${isAuthed ? me.id : 'guest'}:${postId ?? 'mine'}`} postId={postId} returnPostId={returnPostId} />;
 }
 function ProfileForm({ postId, returnPostId }: { postId?: string; returnPostId?: string }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme(), router = useRouter();
   const { isAuthed, me, setProfilePhoto, promptLogin } = useAuth();
   const { play } = useInteractionFeedback();
@@ -54,7 +53,7 @@ function ProfileForm({ postId, returnPostId }: { postId?: string; returnPostId?:
       if (!active) return;
       if (value) { setProfile(value); setTags(value.interests); }
       setLoaded(true);
-      if (postId && !value) setError(tr("지금은 이 프로필을 볼 수 없어요."));
+      if (postId && !value) setError("지금은 이 프로필을 볼 수 없어요.");
     }).catch(e => { if (active) setError(getChillingError(e)); })
       .finally(() => { if (active) {
         if (!reducedMotion && Platform.OS !== 'web') {
@@ -129,7 +128,7 @@ function ProfileForm({ postId, returnPostId }: { postId?: string; returnPostId?:
           : postId ? loaded && !error && <ChillingProfileCard profile={profile} />
               : loaded && <>
                 <View style={styles.field}>
-                  <ThemedText type="subtitle" style={styles.stepTitle}>{steps[step]}</ThemedText>
+                  <ThemedText type="subtitle" style={styles.stepTitle}>{tr(steps[step])}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">{step === 4 ? tr("모임장에게 공유될 나의 카드예요.") : tr("스펙보다, 함께 노는 방식을 알려주세요.")}</ThemedText>
                 </View>
                 {step === 0 && <>
@@ -214,7 +213,7 @@ function ProfileForm({ postId, returnPostId }: { postId?: string; returnPostId?:
                 <ThemedText type="small" themeColor="textSecondary">{tr("모임을 열면 로그인한 회원이 내 카드를 볼 수 있어요. 참여 신청 시에는 확인과 동의 후 해당 호스트에게 카드와 답변을 보내요. 안전을 위해 자동 분석과 권한 있는 운영자 검토가 적용돼요.")}</ThemedText>
                 </>}
               </>}
-        {!!error && <><ThemedText accessibilityRole="alert" themeColor="accent">{error}</ThemedText>
+        {!!error && <><ThemedText accessibilityRole="alert" themeColor="accent">{tr(error)}</ThemedText>
           {!loaded && <Pressable analyticsId="app_meetup-profile.pressable.9" onPress={() => { play('selection'); setLoading(true); setError(''); setRetry(x => x + 1); }} accessibilityRole="button" style={styles.button}><ThemedText>{tr("다시 불러오기")}</ThemedText></Pressable>}</>}
       </ScrollView>}
       {isAuthed && !postId && loaded && !loading && <View style={[styles.footer, { borderColor: theme.line, backgroundColor: theme.background }]}>

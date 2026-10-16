@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable } from '@/components/analytics-controls';
@@ -12,7 +11,7 @@ import { eventNotice, eventPriceLabel, eventTime, isFestivalEvent, loadTicketmas
 import { safeTicketUrl, ticketmasterReference } from '../../supabase/functions/_shared/ticketmaster';
 
 export function TicketmasterSourceLink({ body, cityId, onNavigate }: { body: string; cityId: string; onNavigate: () => void }) {
-  useLanguage();
+  const { tr, locale: appLocale } = useLanguage();
   const router = useRouter(), theme = useTheme();
   const { play } = useInteractionFeedback();
   const id = ticketmasterReference(body);
@@ -31,14 +30,14 @@ export function TicketmasterSourceLink({ body, cityId, onNavigate }: { body: str
   const current = result?.key === key ? result : null;
   const event = current?.event;
   const ticketUrl = safeTicketUrl(event?.ticketUrl);
-  const notice = event ? eventNotice(event) : '';
+  const notice = event ? eventNotice(event, appLocale) : '';
   return <View style={styles.section} accessibilityRole="summary">
     <ThemedText type="smallBold" themeColor="accent">{event && isFestivalEvent(event) ? tr("함께 갈 페스티벌") : tr("함께 갈 행사")}</ThemedText>
     {event ? <>
       <ThemedText type="smallBold">{event.name}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">{eventTime(event)}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{eventTime(event, appLocale)}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{[event.venue, event.city].filter(Boolean).join(' · ') || tr("장소 확인 필요")}</ThemedText>
-      {event.price && <ThemedText type="small" themeColor="textSecondary">{eventPriceLabel(event)}</ThemedText>}
+      {event.price && <ThemedText type="small" themeColor="textSecondary">{eventPriceLabel(event, appLocale)}</ThemedText>}
       {!!notice && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{notice}</ThemedText>}
     </> : <ThemedText type="small" themeColor="textSecondary">{current?.error ? tr("행사 정보를 불러오지 못했어요.") : tr("행사 정보를 불러오는 중…")}</ThemedText>}
     {(Platform.OS !== 'web' || ticketUrl) && <Pressable analyticsId="ticketmaster.meetup.source" accessibilityRole="link" accessibilityLabel={Platform.OS === 'web' ? tr("Ticketmaster에서 행사 확인") : tr("행사 상세 보기")} onPress={() => {

@@ -19,7 +19,6 @@ import { MeetupKindSwitch } from '@/components/meetup-kind-switch';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { relationshipSlotData } from '@/components/relationship-slot-card';
 import { useTheme } from '@/hooks/use-theme';
-import { t, tr } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
 import { createChillingEvent, getChillingError, loadChillingProfile } from '@/lib/chilling-data';
@@ -40,7 +39,7 @@ export default function MeetupCreateScreen() {
 }
 
 function MeetupCreateForm() {
-  useLanguage();
+  const { tr, t } = useLanguage();
   const theme = useTheme(), router = useRouter();
   const { city } = useCommunityCity();
   const { ticketmasterEventId, ticketmasterCityId } = useLocalSearchParams<{ ticketmasterEventId?: string; ticketmasterCityId?: string }>();
@@ -126,16 +125,16 @@ function MeetupCreateForm() {
         [{ text: tr("닫기"), style: 'cancel' }, { text: tr("멤버십 보기"), onPress: () => router.push('/profile/membership') }]);
       return;
     }
-    if (event.kind === 'once' && event.timezone !== Intl.DateTimeFormat().resolvedOptions().timeZone) { setError(tr("기기 시간대가 바뀌었어요. 화면을 닫고 다시 열어 일정을 확인해 주세요.")); return; }
-    if (!title.trim() || !body.trim() || !question.trim()) { setError(tr("제목, 소개와 신청 질문을 모두 적어주세요.")); return; }
-    if (!/^\d+$/.test(capacity) || Number(capacity) < 2 || Number(capacity) > 50) { setError(tr("정원은 호스트를 포함해 2명부터 50명까지예요.")); return; }
-    if ((ageMin || ageMax) && (!/^\d+$/.test(ageMin) || !/^\d+$/.test(ageMax) || Number(ageMin) > Number(ageMax) || Number(ageMax) > 120)) { setError(tr("권장 연령은 만 0~120세 안에서 최소·최대 나이를 함께 입력해주세요.")); return; }
+    if (event.kind === 'once' && event.timezone !== Intl.DateTimeFormat().resolvedOptions().timeZone) { setError("기기 시간대가 바뀌었어요. 화면을 닫고 다시 열어 일정을 확인해 주세요."); return; }
+    if (!title.trim() || !body.trim() || !question.trim()) { setError("제목, 소개와 신청 질문을 모두 적어주세요."); return; }
+    if (!/^\d+$/.test(capacity) || Number(capacity) < 2 || Number(capacity) > 50) { setError("정원은 호스트를 포함해 2명부터 50명까지예요."); return; }
+    if ((ageMin || ageMax) && (!/^\d+$/.test(ageMin) || !/^\d+$/.test(ageMax) || Number(ageMin) > Number(ageMax) || Number(ageMax) > 120)) { setError("권장 연령은 만 0~120세 안에서 최소·최대 나이를 함께 입력해주세요."); return; }
     busy.current = true; setSaving(true); setError(''); setErrorCode(null);
     try {
       if (ticketmasterEventId) {
         const latest = await loadTicketmasterEvent(ticketmasterCityId ?? '', ticketmasterEventId).catch(cause => { if (mounted.current) setError(cause.message); return null; });
         if (!latest || !mounted.current) return;
-        if (!meetupAllowed(latest.event)) { setError(tr("행사 일정 또는 판매 상태가 바뀌었어요. 행사 상세를 다시 확인해 주세요.")); return; }
+        if (!meetupAllowed(latest.event)) { setError("행사 일정 또는 판매 상태가 바뀌었어요. 행사 상세를 다시 확인해 주세요."); return; }
       }
       const profile = await loadChillingProfile(supabase);
       if (!mounted.current) return;
@@ -168,7 +167,7 @@ function MeetupCreateForm() {
   return <SafeAreaView style={[styles.root, { backgroundColor: theme.background }]}>
     <View style={[styles.head, { backgroundColor: theme.background }]}><Pressable analyticsId="app_meetup-create.pressable.1" accessibilityRole="button" accessibilityLabel={tr("뒤로가기")} onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace(Platform.OS === 'web' ? '/?tag=meetup' : '/(tabs)/meetups'); }} style={({ pressed }) => [styles.back, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} /></Pressable><ThemedText accessibilityRole="header" style={styles.headTitle}>{tr("모임 열기")}</ThemedText></View>
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView analyticsId="app_meetup-create.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-      {ticketmasterEventId && (!isAuthed ? <StateCard kind="blocked" title={tr("로그인 후 모임을 열 수 있어요")} body={tr("로그인하면 행사 정보를 불러와요.")} actionLabel={tr("로그인")} onAction={() => promptLogin('행사 모임을 열려면 로그인해 주세요.')} /> : !eventReady ? <StateCard kind={eventError ? 'error' : 'empty'} title={eventError ? tr("행사를 확인하지 못했어요") : tr("행사 정보를 확인하고 있어요")} body={eventError || '확인 후 제목과 일정을 채워드려요.'} actionLabel={eventError ? '다시 시도' : undefined} onAction={eventError ? () => setEventAttempt(n => n + 1) : undefined} /> : sourceEvent && <View style={styles.eventHero} accessibilityRole="summary"><View style={styles.eventHeroText}><ThemedText type="smallBold" style={styles.eventHeroLabel}>{isFestivalEvent(sourceEvent) ? tr("함께 가고 싶은 페스티벌") : tr("함께 갈 행사")}</ThemedText><ThemedText type="smallBold" numberOfLines={2} style={styles.eventHeroTitle}>{sourceEvent.name}</ThemedText><ThemedText type="small" numberOfLines={1} style={styles.eventHeroPlace}>{sourceEvent.venue}{sourceEvent.venue && sourceEvent.city ? ' · ' : ''}{sourceEvent.city}</ThemedText></View><Image source={require('@/assets/images/festival-glass-orbs.webp')} style={styles.eventHeroArt} contentFit="contain" accessible={false} /></View>)}
+      {ticketmasterEventId && (!isAuthed ? <StateCard kind="blocked" title={tr("로그인 후 모임을 열 수 있어요")} body={tr("로그인하면 행사 정보를 불러와요.")} actionLabel={tr("로그인")} onAction={() => promptLogin('행사 모임을 열려면 로그인해 주세요.')} /> : !eventReady ? <StateCard kind={eventError ? 'error' : 'empty'} title={eventError ? tr("행사를 확인하지 못했어요") : tr("행사 정보를 확인하고 있어요")} body={eventError ? tr(eventError) : tr('확인 후 제목과 일정을 채워드려요.')} actionLabel={eventError ? tr('다시 시도') : undefined} onAction={eventError ? () => setEventAttempt(n => n + 1) : undefined} /> : sourceEvent && <View style={styles.eventHero} accessibilityRole="summary"><View style={styles.eventHeroText}><ThemedText type="smallBold" style={styles.eventHeroLabel}>{isFestivalEvent(sourceEvent) ? tr("함께 가고 싶은 페스티벌") : tr("함께 갈 행사")}</ThemedText><ThemedText type="smallBold" numberOfLines={2} style={styles.eventHeroTitle}>{sourceEvent.name}</ThemedText><ThemedText type="small" numberOfLines={1} style={styles.eventHeroPlace}>{sourceEvent.venue}{sourceEvent.venue && sourceEvent.city ? ' · ' : ''}{sourceEvent.city}</ThemedText></View><Image source={require('@/assets/images/festival-glass-orbs.webp')} style={styles.eventHeroArt} contentFit="contain" accessible={false} /></View>)}
       {!ticketmasterEventId && <><MeetupKindSwitch value={event.kind} onChange={changeKind} disabled={saving} analyticsId="app_meetup-create.pressable.2" /><ThemedText type="small" themeColor="textSecondary">{event.kind === 'once' ? tr("이번 한 번, 가볍게 만나요.") : tr("취향이 맞는 사람들과 정기적으로 만나요.")}{" " + tr("무료로 열 수 있어요.")}</ThemedText><ThemedText accessibilityRole="header" type="subtitle" style={styles.sectionTitle}>{tr("기본 정보")}</ThemedText></>}
       <MeetupCoverPicker value={cover} onChange={setCover} onPickingChange={setPickingCover} disabled={saving || creatingDraft || !eventReady} />
       {field(tr("모임 제목"), title, value => { setTitle(value); setDraftEdited(true); setAiDraftReady(false); }, tr("예: 퇴근하고 노을 보러 갈래요?"), 60)}
@@ -204,7 +203,7 @@ function MeetupCreateForm() {
           : tr("동시 모임 자리 {0}/{1} 사용 중 · 남은 자리 {2}개", (slots.active), (slots.limit), (slots.available))}
       </ThemedText>}
       <MeetupPolicyNotice mode={event.kind === 'once' ? 'once' : 'host'} />
-      {!!error && <ThemedText accessibilityRole="alert" themeColor="accent">{error}</ThemedText>}
+      {!!error && <ThemedText accessibilityRole="alert" themeColor="accent">{tr(error)}</ThemedText>}
       {membershipError && <Pressable analyticsId="app_meetup-create.pressable.5" accessibilityRole="button" onPress={() => { play('selection'); router.push('/profile/membership'); }} style={styles.membership}>
         <ThemedText type="smallBold" themeColor="accent">{tr("멤버십과 모임 자리 보기 ›")}</ThemedText>
       </Pressable>}

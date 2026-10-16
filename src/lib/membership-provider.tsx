@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import type { PurchasesPackage } from 'react-native-purchases';
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { AppState, Linking, Platform } from 'react-native';
@@ -27,7 +26,7 @@ export function useMembership() {
 }
 
 export function MembershipProvider({ children }: { children: ReactNode }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const { isAuthed, me } = useAuth();
   const userId = isAuthed ? me.id : null;
   const currentUser = useRef(userId);
@@ -97,13 +96,13 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
           const offers = items.map(membershipOffer).filter((offer): offer is MembershipOffer => offer !== null);
           packages.current = { userId, values: new Map(items.map((item) => [item.identifier, item])) };
           setOffers({ userId, values: offers });
-          if (!offers.length) setError(tr("스토어에서 구매 가능한 구독 상품을 받지 못했어요. 최신 테스트 앱과 스토어 계정을 확인한 뒤 다시 시도해 주세요."));
+          if (!offers.length) setError("스토어에서 구매 가능한 구독 상품을 받지 못했어요. 최신 테스트 앱과 스토어 계정을 확인한 뒤 다시 시도해 주세요.");
         } catch {
-          if (currentUser.current === userId && generation.current === requestGeneration) setError(tr("구독 상품을 불러오지 못했어요. 현재 멤버십은 계속 이용할 수 있어요."));
+          if (currentUser.current === userId && generation.current === requestGeneration) setError("구독 상품을 불러오지 못했어요. 현재 멤버십은 계속 이용할 수 있어요.");
         }
       }
     } catch {
-      if (currentUser.current === userId && generation.current === requestGeneration) setError(tr("멤버십 정보를 확인하지 못했어요. 잠시 후 다시 확인해 주세요."));
+      if (currentUser.current === userId && generation.current === requestGeneration) setError("멤버십 정보를 확인하지 못했어요. 잠시 후 다시 확인해 주세요.");
     } finally {
       if (refreshing.current === userId) refreshing.current = null;
       if (currentUser.current === userId && generation.current === requestGeneration) { setLoading(false); setOffersLoading(false); }
@@ -142,7 +141,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       }
       const nativeStore = Platform.OS === 'ios' ? 'app_store' : 'play_store';
       if (offer && before.tier !== 'free' && before.store !== nativeStore && before.store !== 'test_store') {
-        setNotice(tr("이미 다른 스토어에서 구독 중이에요. 구독 관리에서 변경해 주세요.")); return;
+        setNotice("이미 다른 스토어에서 구독 중이에요. 구독 관리에서 변경해 주세요."); return;
       }
       if (offer && kind === 'business') {
         if (!merchantId || !verified.businessSubscription) throw new Error('BUSINESS_REQUIRED');
@@ -166,19 +165,19 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       // A successful paid-plan change may be deferred by the store until renewal.
       if (offer && after.tier !== 'free') setPending(null);
       if (currentUser.current === userId) setNotice(after.tier === 'free'
-        ? offer ? tr("구매를 확인하고 있어요. 잠시 후 다시 확인해 주세요.") : pending?.userId === userId
-          ? tr("현재 활성 구독은 없어요. 이전 구매의 승인 대기 상태는 결제한 스토어에서 확인해 주세요.") : tr("복원할 활성 구독이 없어요.")
-        : offer ? tr("구독 상태를 확인했어요. 변경 예약은 스토어의 적용일에 반영돼요.") : tr("구매를 복원했어요."));
+        ? offer ? "구매를 확인하고 있어요. 잠시 후 다시 확인해 주세요." : pending?.userId === userId
+          ? "현재 활성 구독은 없어요. 이전 구매의 승인 대기 상태는 결제한 스토어에서 확인해 주세요." : "복원할 활성 구독이 없어요."
+        : offer ? "구독 상태를 확인했어요. 변경 예약은 스토어의 적용일에 반영돼요." : "구매를 복원했어요.");
     } catch (failure) {
       if (currentUser.current !== userId) return;
-      if ((failure as { userCancelled?: boolean })?.userCancelled) setNotice(tr("구매를 취소했어요. 현재 멤버십은 그대로 유지돼요."));
+      if ((failure as { userCancelled?: boolean })?.userCancelled) setNotice("구매를 취소했어요. 현재 멤버십은 그대로 유지돼요.");
       else if (String((failure as { code?: string })?.code) === '20') {
-        setPending({ userId, kind, previousProductId, awaitingApproval: true }); setNotice(tr("스토어에서 결제 승인을 기다리고 있어요. 승인되면 멤버십이 반영돼요."));
+        setPending({ userId, kind, previousProductId, awaitingApproval: true }); setNotice("스토어에서 결제 승인을 기다리고 있어요. 승인되면 멤버십이 반영돼요.");
       }
-      else if (storeCompleted) setError(tr("스토어 처리는 완료됐지만 멤버십 반영을 확인하지 못했어요. 다시 결제하지 말고 잠시 후 다시 확인해 주세요."));
-      else if ((failure as Error)?.message === 'MEMBERSHIP_SCHEMA_NOT_READY') setError(tr("새 멤버십 연결을 준비 중이에요. 현재 구독은 그대로 이용할 수 있어요."));
-      else if (kind === 'business') setError(tr("업체 소유 확인과 구독 연결을 확인해 주세요. 결제 내역이 있다면 다시 결제하지 말고 구매 복원을 이용해 주세요."));
-      else setError(tr("구독을 처리하지 못했어요. 결제 내역이 있다면 구매 복원을 이용해 주세요."));
+      else if (storeCompleted) setError("스토어 처리는 완료됐지만 멤버십 반영을 확인하지 못했어요. 다시 결제하지 말고 잠시 후 다시 확인해 주세요.");
+      else if ((failure as Error)?.message === 'MEMBERSHIP_SCHEMA_NOT_READY') setError("새 멤버십 연결을 준비 중이에요. 현재 구독은 그대로 이용할 수 있어요.");
+      else if (kind === 'business') setError("업체 소유 확인과 구독 연결을 확인해 주세요. 결제 내역이 있다면 다시 결제하지 말고 구매 복원을 이용해 주세요.");
+      else setError("구독을 처리하지 못했어요. 결제 내역이 있다면 구매 복원을 이용해 주세요.");
     } finally { processing.current = false; setBusy(false); }
   }, [offersState, pending, sync, userId]);
 
@@ -193,10 +192,10 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       const value = subscription(await sync(requestGeneration), pending.kind);
       setPending((previous) => previous === pending ? null : previous);
       setNotice(value.tier === 'free' || value.productId === pending.previousProductId
-        ? tr("확인한 취소·거절 내용을 반영했어요. 새 구매는 구독하기에서 따로 진행해 주세요.")
-        : tr("현재 구독 상태를 확인했어요. 결제 내역은 구독 관리에서 확인해 주세요."));
+        ? "확인한 취소·거절 내용을 반영했어요. 새 구매는 구독하기에서 따로 진행해 주세요."
+        : "현재 구독 상태를 확인했어요. 결제 내역은 구독 관리에서 확인해 주세요.");
     } catch {
-      if (currentUser.current === userId) setError(tr("계정과 구독 상태를 확인하지 못했어요. 구매 대기는 유지돼요. 잠시 후 다시 확인해 주세요."));
+      if (currentUser.current === userId) setError("계정과 구독 상태를 확인하지 못했어요. 구매 대기는 유지돼요. 잠시 후 다시 확인해 주세요.");
     } finally { processing.current = false; setBusy(false); }
   }, [pending, sync, userId]);
 
@@ -206,12 +205,13 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       const store = (membership ? subscription(membership, family).store : null) ?? (Platform.OS === 'ios' ? 'app_store' : 'play_store');
       await Linking.openURL(store === 'app_store' ? 'https://apps.apple.com/account/subscriptions'
         : 'https://play.google.com/store/account/subscriptions?package=com.dlwpdl.gling');
-    } catch { setError(tr("구독 관리를 열지 못했어요. 결제한 스토어에서 구독을 확인해 주세요.")); }
+    } catch { setError("구독 관리를 열지 못했어요. 결제한 스토어에서 구독을 확인해 주세요."); }
   }, [membership, pending, userId]);
 
-  return <MembershipContext.Provider value={{ membership, offers, loading, offersLoading, busy, error, notice,
+  const unavailableReason = unavailable ?? (pending?.userId === userId && userId ? '구매 확인이 진행 중이에요. 확인이 끝나면 멤버십이 반영돼요.' : syncReadyUser === userId ? null : '구독 연결을 확인하고 있어요. 무료 기능은 계속 이용할 수 있어요.');
+  return <MembershipContext.Provider value={{ membership, offers, loading, offersLoading, busy, error: error ? tr(error) : null, notice: notice ? tr(notice) : null,
     pendingApproval: !unavailable && pending?.userId === userId && !!pending?.awaitingApproval, confirmPendingCancellation,
-    purchaseUnavailableReason: unavailable ?? (pending?.userId === userId && userId ? '구매 확인이 진행 중이에요. 확인이 끝나면 멤버십이 반영돼요.' : syncReadyUser === userId ? null : '구독 연결을 확인하고 있어요. 무료 기능은 계속 이용할 수 있어요.'),
+    purchaseUnavailableReason: unavailableReason ? tr(unavailableReason) : null,
     refresh, purchase: (offer, merchantId) => transact(offer, merchantId), restore: () => transact(), manage }}>
     {children}
   </MembershipContext.Provider>;

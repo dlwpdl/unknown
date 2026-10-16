@@ -17,7 +17,6 @@ import { LanguageCard } from '@/components/language-card';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { Colors, Spacing } from '@/constants/theme';
 import { ThemeOverrideProvider, useTheme } from '@/hooks/use-theme';
-import { t, tr } from '@/i18n';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 const WELCOME_LINES = ['모임을 찾아요', '공연을 만나요', '이야기를 나눠요'];
@@ -45,7 +44,7 @@ export function LoginPanel({
   error?: string | null;
   onClose?: () => void;
 }) {
-  useLanguage();
+  const { tr, t } = useLanguage();
   const theme = useTheme();
   const dark = theme === Colors.dark;
   const { play } = useInteractionFeedback();
@@ -110,7 +109,7 @@ export function LoginPanel({
                   onFocus={() => { play('selection'); setAdminFocusedField('password'); }} onBlur={() => setAdminFocusedField(null)}
                   style={[styles.adminInput, { borderColor: adminFocusedField === 'password' ? Colors.dark.accent : Colors.dark.line }]} />
               </View>
-              {!!error && <View style={styles.adminError} accessibilityRole="alert" accessibilityLiveRegion="polite"><ThemedText type="small">{error}</ThemedText></View>}
+              {!!error && <View style={styles.adminError} accessibilityRole="alert" accessibilityLiveRegion="polite"><ThemedText type="small">{tr(error)}</ThemedText></View>}
               <RaisedActionButton analyticsId="components_login-panel.pressable.3" label={loading ? tr("로그인 중…") : tr("관리자 로그인")} onPress={submitAdmin} disabled={submitDisabled} busy={loading} />
               {onGoogle && <Pressable analyticsId="components_login-panel.pressable.2" accessibilityRole="button" accessibilityLabel={t.auth.google}
                 disabled={disabled} accessibilityState={{ disabled, busy: loading }} onPress={() => { if (!disabled) { play('selection'); onGoogle(); } }}
@@ -157,7 +156,7 @@ export function LoginPanel({
               </Animated.View>
             </View>}
             <ThemedText type="small" themeColor="textSecondary" style={styles.tagline}>
-              {reason ?? t.auth.tagline}
+              {reason == null ? t.auth.tagline : tr(reason)}
             </ThemedText>
           </View>
         </GlassSurface>
@@ -241,7 +240,7 @@ export function LoginPanel({
 
         {!!error && (
           <ThemedText accessibilityRole="alert" type="small" style={[styles.error, { color: theme.accent }]}>
-            {error}
+            {tr(error)}
           </ThemedText>
         )}
 

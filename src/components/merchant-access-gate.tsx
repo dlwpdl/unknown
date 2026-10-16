@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { useEffect, useState, type ReactNode } from 'react';
 import { AppState, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
@@ -10,7 +9,7 @@ import { getMyMerchantAccess } from '@/lib/merchant-workspace';
 import { supabase } from '@/lib/supabase';
 
 export function MerchantAccessGate({ children, refreshSignal = 0 }: { children: ReactNode; refreshSignal?: number }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const { me, isAuthed } = useAuth(); const { play } = useInteractionFeedback();
   const [access, setAccess] = useState<{ user: string; enabled: boolean } | null>(null);
   const [error, setError] = useState(false), [retry, setRetry] = useState(0);

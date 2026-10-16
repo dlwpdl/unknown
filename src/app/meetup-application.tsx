@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useCallback, useRef, useState } from 'react';
@@ -31,7 +30,7 @@ export default function MeetupApplicationRoute() {
   return <Application key={`${requestId}:${isAuthed ? me.id : 'guest'}`} requestId={requestId} />;
 }
 function Application({ requestId }: { requestId: string }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const router = useRouter(), theme = useTheme(), hidden = useContentVisibility();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
@@ -104,7 +103,7 @@ function Application({ requestId }: { requestId: string }) {
       <View style={styles.back} />
     </View>
     {loading ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={tr("신청 정보 불러오는 중")} /></View> : <ScrollView analyticsId="app_meetup-application.scrollview.1" contentContainerStyle={styles.content}>
-    {!!actionError && <StateCard kind="error" title={actionCode === 'MEETUP_FULL' ? tr("정원이 차서 승인하지 못했어요") : tr("처리 결과를 확인해 주세요")} body={actionError} />}
+    {!!actionError && <StateCard kind="error" title={actionCode === 'MEETUP_FULL' ? tr("정원이 차서 승인하지 못했어요") : tr("처리 결과를 확인해 주세요")} body={tr(actionError)} />}
     {outcome ? <StateCard kind={outcome === 'approved' ? 'success' : 'empty'} title={outcome === 'approved' ? tr("참여를 승인했어요") : tr("신청을 거절했어요")} body={tr("신청자가 참여 신청 화면에서 결과를 확인할 수 있어요.")} actionLabel={tr("신청함 보기")} onAction={() => router.replace({ pathname: '/chat', params: { view: 'requests' } })} />
       : visible ? <>
       {application.request?.post && <ThemedText type="small" themeColor="textSecondary">{application.request.post.title}{" " + tr("· 참여 신청")}</ThemedText>}

@@ -12,11 +12,10 @@ import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { googleMapsPin, googlePinUrl, postMapBody, withPostMap } from '@/lib/post-maps';
-import { t, tr } from '@/i18n';
 import { instagramPostLink, postLinkChecks, safePostLink, splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links';
 
 export function PostBodyEditor({ value = '', onChangeText, editable = true, maxLength = 4000, onFocus, cityName = '', allowLocation = true, ...props }: TextInputProps & { cityName?: string; allowLocation?: boolean }) {
-  useLanguage();
+  const { tr, t } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const insets = useSafeAreaInsets();

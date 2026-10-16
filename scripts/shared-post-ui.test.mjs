@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { translateUi, translationsFor } from '../src/i18n/index.ts';
 import { appendUniquePosts, getPostImageSource } from '../src/lib/feed-data.ts';
 import { chillingSchedule } from '../src/lib/chilling.ts';
 import * as sharing from '../src/lib/sharing.ts';
@@ -94,7 +95,8 @@ function mount(file, name, data = {}, props = {}) {
   };
   const exports = {};
   const source = ts.transpileModule(readFileSync(new URL(file, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
-  vm.runInNewContext(source, { exports, Date, Intl, Error, URL, window: browser, require: withLanguageImports(key => { assert.ok(key in imports, `Known import: ${key}`); return imports[key]; }),
+  const resolve = withLanguageImports(key => { assert.ok(key in imports, `Known import: ${key}`); return imports[key]; });
+  vm.runInNewContext(source, { exports, Date, Intl, Error, URL, window: browser, require: key => data.language && key === '@/hooks/use-language' ? { useLanguage: () => ({ t: translationsFor(data.language()), tr: (text, ...args) => translateUi(data.language(), text, ...args), locale: data.language() === 'en' ? 'en-CA' : 'ko-KR' }) } : resolve(key),
     navigator: { share: payload => { calls.push(['share', payload]); return data.share?.(payload) ?? Promise.resolve(); }, clipboard: { writeText: value => { calls.push(['copy', value]); return Promise.resolve(); } } } });
   const render = () => {
     assert.equal(disposed, false); index = 0; effects = []; tree = exports[name](props);
@@ -291,6 +293,25 @@ function sheet(context, data = {}) {
   const harness = mount('../src/components/post-share-sheet.tsx', 'PostShareSheet', data, props);
   context.after(() => harness.unmount()); return { harness, shared, closed };
 }
+
+test('existing share notices switch languages without repeating a copy or send', async context => {
+  for (const send of [false, true]) {
+    let language = 'en';
+    const title = '서울 모임';
+    const { harness, shared } = sheet(context, { os: 'web', language: () => language, inbox: async () => page([conversation('chat-a', title)]) });
+    await harness.settle();
+    await control(harness, send ? 'post.share.conversation' : 'post.share.copy').props.onPress();
+    await harness.settle();
+    const key = send ? '{0} 대화로 보냈어요.' : '링크를 복사했어요.';
+    const expected = selected => translateUi(selected, key, ...(send ? [title] : []));
+    assert.ok(text(harness.render()).includes(expected('en')));
+    language = 'ko'; assert.ok(text(harness.render()).includes(expected('ko')));
+    language = 'en'; assert.ok(text(harness.render()).includes(expected('en')));
+    assert.equal(shared.length, 1);
+    assert.equal(harness.calls.filter(call => call[0] === (send ? 'send' : 'copy')).length, 1);
+    assert.equal(harness.calls.filter(call => call[0] === 'inbox').length, 1);
+  }
+});
 
 test('share sheet stays over the post and keeps external sharing, status and approval outside the recipient scroll', async context => {
   const { harness } = sheet(context); await harness.settle();

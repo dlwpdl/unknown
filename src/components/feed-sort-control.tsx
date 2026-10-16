@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
@@ -9,7 +8,7 @@ import type { FeedSort } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 export function FeedSortControl({ sort, title, onChange }: { sort: FeedSort; title: string; onChange: (sort: FeedSort) => void }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   return <View style={[styles.container, { backgroundColor: theme.background, borderBottomColor: theme.line }]}>
@@ -18,7 +17,7 @@ export function FeedSortControl({ sort, title, onChange }: { sort: FeedSort; tit
       <View style={[styles.options, { backgroundColor: theme.backgroundElement }]}>
         {(['latest', 'popular'] as const).map(option => {
           const selected = sort === option;
-          const label = option === 'latest' ? '최신순' : '인기순';
+          const label = tr(option === 'latest' ? '최신순' : '인기순');
           return <Pressable key={option} analyticsId="components_feed-sort-control.order"
             accessibilityRole="button" accessibilityLabel={tr("{0}으로 정렬", (label))} accessibilityState={{ selected }} aria-pressed={selected}
             onPress={() => { play('selection'); onChange(option); }}

@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Image } from 'expo-image';
 import { Platform, StyleSheet, View } from 'react-native';
@@ -17,7 +16,7 @@ import { supabase } from '@/lib/supabase';
 import { subscribeVisibility, visibilityRevision } from '@/lib/content-visibility';
 
 export function SharedPreviewContent({ preview }: { preview: SharedLinkPreview }) {
-  useLanguage();
+  const { tr, locale: appLocale } = useLanguage();
   const theme = useTheme();
   const image = preview.imageUrl ? { uri: preview.imageUrl } : preview.kind === 'meetup' ? require('@/assets/brand/chat-3d/disco-ball.png')
     : preview.kind === 'festival' ? require('@/assets/brand/chat-3d/ticket.png') : require('@/assets/brand/gling-night-app-icon.png');
@@ -26,13 +25,13 @@ export function SharedPreviewContent({ preview }: { preview: SharedLinkPreview }
     <View style={styles.copy}>
       <ThemedText type="smallBold" themeColor="accent">{preview.kind === 'meetup' ? tr("모임 초대") : preview.kind === 'festival' ? tr("페스티벌 같이 가요") : preview.label}</ThemedText>
       <ThemedText type="subtitle" numberOfLines={3}>{preview.title}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">{preview.city}{preview.schedule ? ` · ${chillingSchedule(preview.schedule)}` : ''}{preview.closed ? tr(" · 모집 마감") : ''}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{preview.city}{preview.schedule ? ` · ${chillingSchedule(preview.schedule, appLocale)}` : ''}{preview.closed ? tr(" · 모집 마감") : ''}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{tr("글링에서") + " "}{preview.kind === 'meetup' ? tr("모임 확인하기") : tr("전체 내용 보기")} ›</ThemedText>
     </View>
   </View>;
 }
 export function SharedLinkCard({ url }: { url: string }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const target = sharedLinkTarget(url), router = useRouter(), hidden = useContentVisibility();
   const postId = target?.id;
   const revision = useSyncExternalStore(subscribeVisibility, visibilityRevision, visibilityRevision);

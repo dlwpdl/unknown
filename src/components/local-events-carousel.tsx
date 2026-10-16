@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { GlingLoader } from '@/components/gling-loader';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useFocusEffect, useIsFocused, useRouter } from 'expo-router';
@@ -20,7 +19,7 @@ import { supabase } from '@/lib/supabase';
 import { EVENT_CITIES, eventPriceLabel, eventTime, festivalLocalDay, type EventCity, type TicketmasterEvent } from '@/lib/ticketmaster';
 
 export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityReady }: { cityId: string; refreshKey: number; cityLoading: boolean; onCityReady: (cityId: string) => void }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme();
   const router = useRouter();
   const { play } = useInteractionFeedback();
@@ -147,7 +146,7 @@ export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityRea
 }
 
 function FeaturedEventCard({ event, cityId, index, active, reducedMotion, onOpen }: { event: TicketmasterEvent; cityId: string; index: number; active: boolean; reducedMotion: boolean; onOpen: () => void }) {
-
+  const { locale } = useLanguage();
   const theme = useTheme();
   const promo = eventVideo(event);
   const [videoPlaying, setVideoPlaying] = useState(false);
@@ -164,7 +163,7 @@ function FeaturedEventCard({ event, cityId, index, active, reducedMotion, onOpen
   }, [active, event.image, imageScale, reducedMotion, videoPlaying]));
 
   return <Link href={{ pathname: '/events/[id]', params: { id: event.id, cityId } }} asChild><Link.AppleZoom>
-  <Pressable analyticsId="today.events.open" accessibilityRole="button" accessibilityLabel={`${event.name}, ${eventTime(event)}, ${event.venue}`} onPress={onOpen} style={StyleSheet.flatten([styles.card, { backgroundColor: theme.card }])}>
+  <Pressable analyticsId="today.events.open" accessibilityRole="button" accessibilityLabel={`${event.name}, ${eventTime(event, locale)}, ${event.venue}`} onPress={onOpen} style={StyleSheet.flatten([styles.card, { backgroundColor: theme.card }])}>
     {event.image ? <Animated.View style={[styles.image, { transform: [{ scale: imageScale }, { translateX: imageScale.interpolate({ inputRange: [1, 1.22], outputRange: [0, -12] }) }, { translateY: imageScale.interpolate({ inputRange: [1, 1.22], outputRange: [0, 8] }) }] }]}><Image source={{ uri: event.image }} style={styles.imageFill} contentFit="cover" accessibilityLabel={event.name} /></Animated.View> : <View style={[styles.image, styles.fallback, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'calendar', android: 'event', web: 'event' }} size={38} tintColor={theme.textSecondary} /></View>}
     {promo && active && !reducedMotion && !videoFailed && <FestivalVideo youtubeId={promo.youtubeId} ambient visible={videoPlaying} onPlaying={() => setVideoPlaying(true)} onError={() => { setVideoPlaying(false); setVideoFailed(true); }} />}
     <Image source={require('@/assets/brand/event-card-scrim.png')} style={styles.scrim} contentFit="fill" accessible={false} />
@@ -172,8 +171,8 @@ function FeaturedEventCard({ event, cityId, index, active, reducedMotion, onOpen
     {promo && !videoFailed && <GlassSurface colorScheme="dark" style={styles.videoBadge}><SymbolView name={{ ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' }} size={12} tintColor="#F6F3F0" /><ThemedText style={styles.videoBadgeText}>{promo.label} · YouTube</ThemedText></GlassSurface>}
     <View style={styles.cardBody}>
       <ThemedText style={styles.eventTitle} numberOfLines={2}>{event.name}</ThemedText>
-      <ThemedText style={styles.eventMeta} numberOfLines={1}>{event.timeUnconfirmed ? eventTime(event) : eventTime(event).split(' · ')[0]} · {event.venue || event.city}</ThemedText>
-      <ThemedText style={styles.price} numberOfLines={1}>{eventPriceLabel(event)}</ThemedText>
+      <ThemedText style={styles.eventMeta} numberOfLines={1}>{event.timeUnconfirmed ? eventTime(event, locale) : eventTime(event, locale).split(' · ')[0]} · {event.venue || event.city}</ThemedText>
+      <ThemedText style={styles.price} numberOfLines={1}>{eventPriceLabel(event, locale)}</ThemedText>
     </View>
   </Pressable></Link.AppleZoom></Link>;
 }

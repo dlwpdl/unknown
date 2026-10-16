@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
@@ -20,7 +19,7 @@ export function MerchantReviewInbox({ merchantId, onDirty }: { merchantId: strin
 }
 
 function ScopedInbox({ merchantId, onDirty }: { merchantId: string; onDirty?: (dirty: boolean) => void }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback(), { me } = useAuth();
   const hidden = useContentVisibility();
   const [rows, setRows] = useState<MerchantReview[]>([]), [hasMore, setHasMore] = useState(false);
@@ -40,7 +39,7 @@ function ScopedInbox({ merchantId, onDirty }: { merchantId: string; onDirty?: (d
       setRows((previous) => offset > 0 ? [...previous, ...page.reviews.filter((row) => !previous.some(({ id }) => id === row.id))] : page.reviews);
       setHasMore(page.has_more);
     }).catch(() => {
-      if (active) { setRows([]); setHasMore(false); setError(tr("후기를 불러오지 못했어요. 업체 소유 확인과 계정 권한을 다시 확인해 주세요.")); }
+      if (active) { setRows([]); setHasMore(false); setError("후기를 불러오지 못했어요. 업체 소유 확인과 계정 권한을 다시 확인해 주세요."); }
     }).finally(() => { if (active) { pending.current = false; setLoading(false); } });
     return () => { active = false; };
   }, [merchantId, offset, revision]);
@@ -93,7 +92,7 @@ function ScopedInbox({ merchantId, onDirty }: { merchantId: string; onDirty?: (d
     </View>)}
     {loading && <ThemedText type="small" accessibilityLiveRegion="polite">{tr("후기를 불러오는 중…")}</ThemedText>}
     {!loading && !rows.length && !error && <ThemedText type="small" themeColor="textSecondary">{tr("아직 받은 후기가 없어요.")}</ThemedText>}
-    {!!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
+    {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
     {hasMore && !error && <Pressable analyticsId="merchant.reviews.more" accessibilityRole="button" disabled={loading || dirty || replyBusy} accessibilityState={{ disabled: loading || dirty || replyBusy }}
       style={styles.button} onPress={() => { play('selection'); if (pending.current || dirty || replying.current) return; pending.current = true; setLoading(true); setOffset((value) => value + 20); }}>
       <ThemedText type="smallBold" themeColor="accent">{tr("후기 더 보기")}</ThemedText>

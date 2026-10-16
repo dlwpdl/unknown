@@ -18,7 +18,7 @@ import { ReportSheet } from '@/components/report-sheet';
 import { TrustBadge } from '@/components/trust-badge';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { count, t, tr } from '@/i18n';
+import { count } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { recordPostShare, togglePostReaction } from '@/lib/community-data';
 import { getPostImageSource, relativeTime } from '@/lib/feed-data';
@@ -53,7 +53,7 @@ export function PostCard({
   afterBody?: ReactNode;
   translationVisible?: boolean;
 }) {
-  useLanguage();
+  const { tr, t, locale: appLocale } = useLanguage();
   const theme = useTheme();
   const { isAuthed, me, promptLogin } = useAuth();
   const { play } = useInteractionFeedback();
@@ -172,7 +172,7 @@ export function PostCard({
                 )}
               </View>
               <ThemedText type="small" themeColor="textSecondary" style={styles.meta}>
-                {post.createdAt ? relativeTime(post.createdAt) : post.createdAtLabel}{post.bumpedAt ? ` · ${t.detail.bumpedLabel}` : ''}
+                {post.createdAt ? relativeTime(post.createdAt, undefined, appLocale) : post.createdAtLabel}{post.bumpedAt ? ` · ${t.detail.bumpedLabel}` : ''}
               </ThemedText>
             </View>
           </Pressable>
@@ -374,7 +374,7 @@ export function PostCard({
             onPress={() => void share()}
             style={({ pressed }) => [styles.reaction, pressed && styles.pressed]}
             accessibilityRole="button"
-            accessibilityLabel={tr("{0} · {1}", (post.room ? '모임 초대 링크 공유' : '게시물 링크 공유'), (t.feed.shares(shareCount)))}>
+            accessibilityLabel={tr("{0} · {1}", (tr(post.room ? '모임 초대 링크 공유' : '게시물 링크 공유')), (t.feed.shares(shareCount)))}>
             <SymbolView
               name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }}
               size={20}

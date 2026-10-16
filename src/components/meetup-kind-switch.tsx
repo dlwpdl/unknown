@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { Pressable } from '@/components/analytics-controls';
 import { useEffect, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
@@ -17,7 +16,7 @@ export function MeetupKindSwitch({ value, onChange, disabled = false, analyticsI
   disabled?: boolean;
   analyticsId: string;
 }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();

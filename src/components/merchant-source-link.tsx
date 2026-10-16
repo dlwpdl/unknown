@@ -1,6 +1,5 @@
 import { FlatPressable as Pressable } from '@/components/flat-pressable';
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { useEffect, useState } from 'react';
 import { Linking, Platform, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
@@ -10,7 +9,7 @@ import { loadMerchantSource, merchantSourceActionLabel, trackMerchantSourceClick
 import { supabase } from '@/lib/supabase';
 
 export function MerchantSourceLink({ postId }: { postId: string }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const [result, setResult] = useState<{ id: string; source: MerchantSource } | null>(null);
   const [error, setError] = useState('');
@@ -27,9 +26,9 @@ export function MerchantSourceLink({ postId }: { postId: string }) {
       onPress={() => {
         play('selection'); setError('');
         void trackMerchantSourceClick(supabase, postId, Platform.OS);
-        void Linking.openURL(result.source.original_url).catch(() => { setError(tr("업체 페이지를 열지 못했어요. 잠시 후 다시 눌러주세요.")); play('warning'); });
+        void Linking.openURL(result.source.original_url).catch(() => { setError("업체 페이지를 열지 못했어요. 잠시 후 다시 눌러주세요."); play('warning'); });
       }}><ThemedText type="smallBold" themeColor="accent">{label} ↗</ThemedText></Pressable>
-    {!!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
+    {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
   </View>;
 }
 const styles = StyleSheet.create({

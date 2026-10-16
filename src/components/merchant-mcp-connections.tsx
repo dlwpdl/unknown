@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr, getLocale } from '@/i18n';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Image } from 'expo-image';
 import { AppState, Platform, StyleSheet, View } from 'react-native';
@@ -14,9 +13,9 @@ import { connectMerchantMcp, denyMerchantMcp, loadMerchantMcpAuthorization, load
 import { loadMyMerchants, type BusinessMerchant } from '@/lib/merchant-workspace';
 import { supabase } from '@/lib/supabase';
 
-const labels: Record<string, string> = { get name() { return tr("비즈니스명"); }, get industry() { return tr("업종"); }, get services() { return tr("서비스 소개"); }, get address() { return tr("주소"); }, get avatar_path() { return tr("프로필 사진"); }, get banner_path() { return tr("커버 사진"); }, get title() { return tr("제목"); }, get body() { return tr("본문"); }, get image_paths() { return tr("게시글 사진"); } };
+
 const valueText = (value: unknown) => value == null || value === '' ? '없음' : Array.isArray(value) ? value.length ? value.join('\n') : '없음' : String(value);
-const dateText = (value: string) => new Date(value).toLocaleDateString(getLocale(), { year: 'numeric', month: 'long', day: 'numeric' });
+
 function errorText(error: unknown) {
   const code = error instanceof Error ? error.message : '';
   if (code.includes('ACCOUNT_CHANGED')) return '계정이 바뀌었어요. 현재 계정으로 다시 열어 주세요.';
@@ -52,7 +51,8 @@ function Choice({ title, detail, checked, onPress, disabled = false }: { title: 
   </Pressable>;
 }
 function ChangeReview({ change, busy, expired, confirming, onApply, onReject }: { change: MerchantMcpChange; busy: boolean; expired: boolean; confirming: boolean; onApply: () => void; onReject: () => void }) {
-  useLanguage();
+  const { tr } = useLanguage();
+  const labels: Record<string, string> = { get name() { return tr("비즈니스명"); }, get industry() { return tr("업종"); }, get services() { return tr("서비스 소개"); }, get address() { return tr("주소"); }, get avatar_path() { return tr("프로필 사진"); }, get banner_path() { return tr("커버 사진"); }, get title() { return tr("제목"); }, get body() { return tr("본문"); }, get image_paths() { return tr("게시글 사진"); } };
   const theme = useTheme();
   const [photos, setPhotos] = useState<MerchantMcpPhotoGroup[] | null>(null), [loaded, setLoaded] = useState<string[]>([]);
   const [photoError, setPhotoError] = useState(false), [retry, setRetry] = useState(0);
@@ -89,7 +89,8 @@ function ChangeReview({ change, busy, expired, confirming, onApply, onReject }: 
 }
 
 export function MerchantMcpConnections({ userId, authorizationId }: { userId: string; authorizationId?: string }) {
-  useLanguage();
+  const { tr, locale: appLocale } = useLanguage();
+  const dateText = (value: string) => new Date(value).toLocaleDateString(appLocale, { year: 'numeric', month: 'long', day: 'numeric' });
   const theme = useTheme(), { play } = useInteractionFeedback();
   const [merchants, setMerchants] = useState<BusinessMerchant[]>([]), [connections, setConnections] = useState<MerchantMcpConnection[]>([]);
   const [authorization, setAuthorization] = useState<MerchantMcpAuthorization | null>(null), [selected, setSelected] = useState<string[]>([]);
@@ -150,8 +151,8 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
       <ThemedText type="title" accessibilityRole="header">{tr("평소 쓰는 AI로,")}{`\n`}{tr("내 가게 소식을 만들어요.")}</ThemedText>
       <ThemedText themeColor="textSecondary">{tr("Codex · Claude Code · ChatGPT · Claude에서 글과 프로필을 준비하고, 글링에서 검토해요.")}</ThemedText>
     </View>
-    {error && <View style={[styles.card, { borderColor: theme.line }]}><ThemedText accessibilityRole="alert">{error}</ThemedText><Action label={tr("다시 확인")} onPress={refresh} disabled={busy} /></View>}
-    {notice && <ThemedText accessibilityLiveRegion="polite" aria-live="polite" themeColor="accent">{notice}</ThemedText>}
+    {error && <View style={[styles.card, { borderColor: theme.line }]}><ThemedText accessibilityRole="alert">{tr(error)}</ThemedText><Action label={tr("다시 확인")} onPress={refresh} disabled={busy} /></View>}
+    {notice && <ThemedText accessibilityLiveRegion="polite" aria-live="polite" themeColor="accent">{tr(notice)}</ThemedText>}
     {loading ? <GlingLoader accessibilityLabel={tr("AI 연결과 비즈니스 권한을 확인하는 중")} /> : <>
       {authorization && <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <ThemedText type="subtitle" accessibilityRole="header">{authorization.client_name}{" " + tr("연결하기")}</ThemedText>
@@ -173,7 +174,7 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
         <ThemedText type="subtitle" accessibilityRole="header">{tr("AI 도구에서 글링 연결을 추가해요.")}</ThemedText>
         <ThemedText themeColor="textSecondary">{tr("연결 주소를 복사해 AI 도구의 MCP 또는 커넥터 설정에 붙여 넣으세요. 로그인하면 이 화면에서 비즈니스와 권한을 고를 수 있어요.")}</ThemedText>
         <ThemedText type="small" selectable>{endpoint}</ThemedText>
-        <Action label={tr("연결 주소 복사")} disabled={busy} onPress={() => { void run(async () => { if (!navigator.clipboard?.writeText) throw new Error('CLIPBOARD_UNAVAILABLE'); await navigator.clipboard.writeText(endpoint); if (active.current) { setNotice(tr("연결 주소를 복사했어요.")); play('success'); } }); }} />
+        <Action label={tr("연결 주소 복사")} disabled={busy} onPress={() => { void run(async () => { if (!navigator.clipboard?.writeText) throw new Error('CLIPBOARD_UNAVAILABLE'); await navigator.clipboard.writeText(endpoint); if (active.current) { setNotice("연결 주소를 복사했어요."); play('success'); } }); }} />
       </View>}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <ThemedText type="subtitle" accessibilityRole="header">{tr("연결된 AI 도구")}</ThemedText>
@@ -182,7 +183,7 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
           <ThemedText type="smallBold">{c.client_name} · {c.is_connected ? tr("연결됨") : tr("AI 도구에서 완료 필요")}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{c.businesses.map(m => m.name).join(' · ') || tr("현재 연결된 비즈니스 없음")}{`\n`}{tr("읽기")}{c.allow_drafts ? tr(" · 초안과 제안") : ''}{c.allow_publish ? tr(" · 승인한 원고 게시") : ''}{`\n`}{dateText(c.expires_at)}{tr("까지")}</ThemedText>
           {revokeId === c.id ? <><ThemedText>{tr("해제하면 이 도구에서 글링에 접근할 수 없어요.")}</ThemedText><View style={styles.row}>
-            <Action label={tr("연결 해제하기")} danger disabled={busy} onPress={() => { void run(async () => { await revokeMerchantMcp(supabase, userId, c.id); if (active.current) { setRevokeId(null); setNotice(tr("AI 연결을 해제했어요.")); refresh(); play('success'); } }); }} />
+            <Action label={tr("연결 해제하기")} danger disabled={busy} onPress={() => { void run(async () => { await revokeMerchantMcp(supabase, userId, c.id); if (active.current) { setRevokeId(null); setNotice("AI 연결을 해제했어요."); refresh(); play('success'); } }); }} />
             <Action label={tr("계속 연결")} disabled={busy} onPress={() => setRevokeId(null)} /></View></>
             : <Action label={tr("연결 해제")} disabled={busy} onPress={() => setRevokeId(c.id)} />}
         </View>)}
@@ -193,8 +194,8 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
         <View style={styles.row}>{merchants.map(m => <Action key={m.id} label={m.name} primary={reviewMerchant === m.id} disabled={busy} onPress={() => { setApplyId(null); setReviewMerchant(m.id); }} />)}</View>
         {changesLoading ? <GlingLoader accessibilityLabel={tr("변경 제안을 불러오는 중")} /> : !changes.some(c => c.status === 'pending') && <ThemedText themeColor="textSecondary">{tr("검토할 제안이 없어요.")}</ThemedText>}
         {changes.filter(c => c.status === 'pending').map(change => <ChangeReview key={`${revision}:${change.id}`} change={change} busy={busy} expired={Date.parse(change.expires_at) <= checkedAt} confirming={applyId === change.id}
-          onApply={() => { if (applyId !== change.id) { setApplyId(change.id); return; } void run(async () => { const result = await reviewMerchantMcpChange(supabase, userId, change.id, true); if (active.current) { setNotice(result.status === 'applied' ? tr("검토한 내용을 적용했어요.") : tr("이 제안은 이미 검토됐어요.")); refresh(); play('success'); } }); }}
-          onReject={() => { void run(async () => { await reviewMerchantMcpChange(supabase, userId, change.id, false); if (active.current) { setNotice(tr("제안을 거절했어요.")); refresh(); play('success'); } }); }} />)}
+          onApply={() => { if (applyId !== change.id) { setApplyId(change.id); return; } void run(async () => { const result = await reviewMerchantMcpChange(supabase, userId, change.id, true); if (active.current) { setNotice(result.status === 'applied' ? "검토한 내용을 적용했어요." : "이 제안은 이미 검토됐어요."); refresh(); play('success'); } }); }}
+          onReject={() => { void run(async () => { await reviewMerchantMcpChange(supabase, userId, change.id, false); if (active.current) { setNotice("제안을 거절했어요."); refresh(); play('success'); } }); }} />)}
       </View>
     </>}
   </View>;

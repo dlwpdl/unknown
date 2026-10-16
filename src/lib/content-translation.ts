@@ -8,9 +8,10 @@ export const isDeviceTranslationSupported = () => !!native;
 export const CONTENT_TRANSLATION_VIEWABILITY = { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 };
 type Job = { promise: Promise<TranslationSource>; controller: AbortController; readers: number; settled: boolean };
 const pending = new Map<string, Job>(), cache = new Map<string, TranslationSource>();
-let queue = Promise.resolve();
+let queue = Promise.resolve(), generation = 0;
 
 export function resetContentTranslations() {
+  generation++;
   pending.forEach(job => job.controller.abort());
   cache.clear();
 }
@@ -25,7 +26,23 @@ export async function requestContentTranslation(viewerScope: string, input: Tran
   if (cached) { cache.delete(key); cache.set(key, cached); return { ...cached }; }
   let job = pending.get(key);
   if (!job || job.controller.signal.aborted) {
-    if (pending.size >= 32) throw new Error('TRANSLATION_BUSY');
+    if (pending.size >= 32) {
+      const currentGeneration = generation;
+      const available = Promise.race([...pending.values()].map(current => current.promise.then(() => {}, () => {})));
+      let onAbort: (() => void) | undefined;
+      try {
+        await new Promise<void>((resolve, reject) => {
+          onAbort = () => reject(new Error('TRANSLATION_CANCELLED'));
+          signal?.addEventListener('abort', onAbort, { once: true });
+          if (signal?.aborted) onAbort();
+          void available.then(resolve);
+        });
+      } finally {
+        if (onAbort) signal?.removeEventListener('abort', onAbort);
+      }
+      if (generation !== currentGeneration) throw new Error('TRANSLATION_CANCELLED');
+      return requestContentTranslation(viewerScope, request, signal);
+    }
     const controller = new AbortController();
     const promise = queue.then(() => translate(request, controller.signal));
     queue = promise.then(() => {}, () => {});

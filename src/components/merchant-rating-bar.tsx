@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { useEffect, useState } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -9,7 +8,7 @@ import type { MerchantReviewKind } from '@/lib/merchant-reviews';
 const IRIS = ['#EEE7FF', '#E3D6FF', '#D8C4FF', '#CDB0FF', '#BD97FF', '#AD7BFF', '#9F61FF', '#9148FF', '#8538FF', '#7B2CFF'];
 
 export function MerchantRatingBar({ score, reviewKind = 'usage', label }: { score: number | null; reviewKind?: MerchantReviewKind; label?: string }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme(), reducedMotion = useReducedMotion();
   const [progress] = useState(() => Array.from({ length: 10 }, () => new Animated.Value(1)));
   const rounded = score != null && Number.isFinite(score) && score >= 1 && score <= 10 ? Math.round(score * 10) / 10 : null;

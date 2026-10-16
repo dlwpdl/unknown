@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
 import { type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollView as NativeScrollView, Modal, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
@@ -15,15 +14,16 @@ import { useAuth } from '@/lib/auth';
 import { getPostImageSource } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
-const directions = [
-  { name: 'left', get label() { return tr("사진 왼쪽 부분 보기"); }, arrow: '←', x: 1, y: 0 },
-  { name: 'right', get label() { return tr("사진 오른쪽 부분 보기"); }, arrow: '→', x: -1, y: 0 },
-  { name: 'up', get label() { return tr("사진 위쪽 부분 보기"); }, arrow: '↑', x: 0, y: 1 },
-  { name: 'down', get label() { return tr("사진 아래쪽 부분 보기"); }, arrow: '↓', x: 0, y: -1 },
-];
+
 
 export function PostPhotoGallery({ post }: { post: Post }) {
-  useLanguage();
+  const { tr } = useLanguage();
+  const directions = [
+    { name: 'left', get label() { return tr("사진 왼쪽 부분 보기"); }, arrow: '←', x: 1, y: 0 },
+    { name: 'right', get label() { return tr("사진 오른쪽 부분 보기"); }, arrow: '→', x: -1, y: 0 },
+    { name: 'up', get label() { return tr("사진 위쪽 부분 보기"); }, arrow: '↑', x: 0, y: 1 },
+    { name: 'down', get label() { return tr("사진 아래쪽 부분 보기"); }, arrow: '↓', x: 0, y: -1 },
+  ];
   const theme = useTheme();
   const { isAuthed, me } = useAuth();
   const { play } = useInteractionFeedback();

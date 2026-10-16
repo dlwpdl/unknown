@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { translateUi } from '../src/i18n/index.ts';
 
 const require = createRequire(import.meta.url);
 const config = require('../app.config.js');
@@ -28,7 +29,7 @@ test('merchant web selects only its own router root and preserves public/admin b
   }
 });
 
-function component(file, name, { auth, rpc, postLoader, workspaceLoader, callback = null } = {}) {
+function component(file, name, { auth, rpc, postLoader, workspaceLoader, callback = null, language } = {}) {
   const exports = {}, state = [], effects = [], calls = [], events = {};
   let index = 0;
   const imports = {
@@ -53,11 +54,27 @@ function component(file, name, { auth, rpc, postLoader, workspaceLoader, callbac
     '@/lib/supabase': { supabase: { auth: { getSession: async () => ({ data: { session: { user: { id: auth.me.id } } } }) } } },
   };
   const source = ts.transpileModule(readFileSync(new URL(file, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;
-  vm.runInNewContext(source, { exports, require: withLanguageImports(name => { if (name.startsWith('@/assets/')) return 'brand.png'; if (!(name in imports)) throw new Error(`Unexpected import ${name}`); return imports[name]; }), window: { addEventListener(name, fn) { events[name] = fn; }, removeEventListener(name) { delete events[name]; } }, document: { visibilityState: 'visible', addEventListener() {}, removeEventListener() {} } });
+  const resolve = withLanguageImports(name => { if (name.startsWith('@/assets/')) return 'brand.png'; if (!(name in imports)) throw new Error(`Unexpected import ${name}`); return imports[name]; });
+  vm.runInNewContext(source, { exports, require: name => language && name === '@/hooks/use-language' ? { useLanguage: () => ({ tr: (key, ...args) => translateUi(language(), key, ...args) }) } : resolve(name), window: { addEventListener(name, fn) { events[name] = fn; }, removeEventListener(name) { delete events[name]; } }, document: { visibilityState: 'visible', addEventListener() {}, removeEventListener() {} } });
   return { render(props) { index = 0; return exports[name](props); }, async effect() { const cleanups = effects.splice(0).map(fn => fn()); await Promise.resolve(); await Promise.resolve(); return () => cleanups.forEach(fn => fn?.()); }, calls, events };
 }
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
 const authed = () => ({ me: { id: 'owner', nickname: '가게 담당자' }, isAuthed: true, isAuthLoading: false, authError: null, signOut: async () => {}, promptLogin() {} });
+
+test('an existing merchant error follows language changes without retrying the protected request', async () => {
+  let language = 'en', requests = 0;
+  const manager = component('../src/components/merchant-web-posts.tsx', 'MerchantWebPosts', {
+    auth: authed(), language: () => language, rpc: async () => { requests++; return false; },
+  });
+  const props = { merchantId: 'merchant', posts: [{ post_id: 'post', title: '원래 제목' }] };
+  const message = '글을 열지 못했어요. 현재 계정의 업체 권한과 연결 상태를 확인해 주세요.';
+  const text = () => nodes(manager.render(props)).find(node => node.props?.accessibilityRole === 'alert')?.props.children;
+  await nodes(manager.render(props)).find(node => node.props?.analyticsId === 'merchant-web.post.open').props.onPress();
+  assert.equal(text(), translateUi('en', message));
+  language = 'ko'; assert.equal(text(), message);
+  language = 'en'; assert.equal(text(), translateUi('en', message));
+  assert.equal(requests, 1);
+});
 
 test('merchant web cannot mount management when current server access is false', async () => {
   const auth = authed(), screen = component('../src/merchant-web/index.tsx', 'default', { auth, rpc: async () => false });

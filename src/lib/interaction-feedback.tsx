@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
@@ -49,7 +48,7 @@ export function InteractionFeedbackProvider({ children }: { children: ReactNode 
 }
 
 function InteractiveFeedbackProvider({ children }: { children: ReactNode }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const [preferences, setPreferences] = useState(DEFAULT_INTERACTION_PREFERENCES);
   const [commit, setCommit] = useState<'success' | 'meetup' | null>(null);
   const [celebrating, setCelebrating] = useState<'meetup' | 'post' | 'verification2' | 'verification3' | null>(null);

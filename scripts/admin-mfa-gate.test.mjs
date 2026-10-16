@@ -1,3 +1,4 @@
+import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -13,7 +14,7 @@ function gate(auth, level = 'aal1', factorError = null, verify = async () => ({ 
   const source = ts.transpileModule(readFileSync(new URL('../src/components/admin/admin-mfa-gate.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, require(name) {
+  vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'react') return {
       useEffect: fn => { if (!mounted) effects.push(fn); },
@@ -40,7 +41,7 @@ function gate(auth, level = 'aal1', factorError = null, verify = async () => ({ 
       },
     } } };
     throw new Error(`Unexpected import: ${name}`);
-  } });
+  }) });
   const children = { type: 'AdminScreen' };
   const render = () => { stateIndex = refIndex = 0; return exports.AdminMfaGate({ children }); };
   return { children, render, verification, reads: () => reads, event: name => listener(name), async mount() {

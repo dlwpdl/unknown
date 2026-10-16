@@ -1,5 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr } from '@/i18n';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView, Switch } from '@/components/analytics-controls';
 import { Redirect } from 'expo-router';
@@ -27,7 +26,7 @@ export default function NotificationSettingsScreen() {
 }
 
 function NotificationSettings({ userId, cityName }: { userId: string; cityName: string }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const { fontScale } = useWindowDimensions();

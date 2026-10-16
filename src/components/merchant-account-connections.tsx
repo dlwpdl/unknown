@@ -1,5 +1,5 @@
 import { useLanguage } from '@/hooks/use-language';
-import { tr, getLocale } from '@/i18n';
+import { tr } from '@/i18n';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
@@ -33,7 +33,7 @@ async function confirmConnection(message: string) {
 }
 
 export function MerchantAccountEntry() {
-  useLanguage();
+  const { tr } = useLanguage();
   const { me, isAuthed, isAdmin } = useAuth(), theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
   const [response, setResponse] = useState<MyMerchantConnections | null>(null), [busy, setBusy] = useState(false);
   const current = useRef(me.id), serial = useRef(0), opening = useRef(false);
@@ -70,13 +70,13 @@ export function MerchantAccountEntry() {
       <SymbolView name={{ ios: 'storefront', android: 'storefront', web: 'storefront' }} size={22} tintColor={theme.navy} />
     </View>
     <View style={{ flex: 1, gap: 4 }}><ThemedText type="smallBold">{invitationOnly ? tr("업체 계정 초대") : tr("비즈니스")}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">{busy ? tr("현재 연결 확인 중…") : invitationOnly ? tr("초대한 업체와 권한을 확인해 주세요.") : (data?.merchants.length ?? 0) + tr("개 업체 · 프로필 전환")}</ThemedText></View>
+      <ThemedText type="small" themeColor="textSecondary">{busy ? tr("현재 연결 확인 중…") : invitationOnly ? tr("초대한 업체와 권한을 확인해 주세요.") : tr('{0}개 업체 · 프로필 전환', data?.merchants.length ?? 0)}</ThemedText></View>
     <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
   </Pressable>;
 }
 
 export function MerchantAccountInvitations({ refreshSignal = 0, onChanged }: { refreshSignal?: number; onChanged: () => void }) {
-  useLanguage();
+  const { tr, locale: appLocale } = useLanguage();
   const { me, isAuthed } = useAuth(), theme = useTheme(), { play } = useInteractionFeedback();
   const [response, setResponse] = useState<MyMerchantConnections | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const current = useRef(me.id), pending = useRef(false);
@@ -105,14 +105,14 @@ export function MerchantAccountInvitations({ refreshSignal = 0, onChanged }: { r
       if (accept) await acceptMerchantAccountInvitation(supabase, invitation);
       else await cancelMerchantAccountInvitation(supabase, invitation.id);
       if (current.current === me.id) { setResponse(null); onChanged(); }
-    } catch { if (current.current === me.id) { setResponse(null); setError(tr("초대가 만료되었거나 업체 정보가 바뀌었어요. 다시 확인해 주세요.")); play('warning'); onChanged(); } }
+    } catch { if (current.current === me.id) { setResponse(null); setError("초대가 만료되었거나 업체 정보가 바뀌었어요. 다시 확인해 주세요."); play('warning'); onChanged(); } }
     finally { pending.current = false; if (current.current === me.id) setBusy(false); }
   }
   if (!isAuthed || (!invitations.length && !error)) return null;
-  return <View style={styles.list}>{error && <ThemedText accessibilityRole="alert">{error}</ThemedText>}{invitations.map(invitation => <View key={invitation.id} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={styles.list}>{error && <ThemedText accessibilityRole="alert">{tr(error)}</ThemedText>}{invitations.map(invitation => <View key={invitation.id} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
     <ThemedText type="smallBold">{tr("업체 계정 초대")}</ThemedText><ThemedText type="subtitle">{invitation.merchant_name}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary">{invitation.address} · {invitation.city_name}</ThemedText>
-    <ThemedText type="small">{MERCHANT_ACCOUNT_ROLES[invitation.role]} · {new Date(invitation.expires_at).toLocaleDateString(getLocale())}{tr("까지")}</ThemedText>
+    <ThemedText type="small">{MERCHANT_ACCOUNT_ROLES[invitation.role]} · {new Date(invitation.expires_at).toLocaleDateString(appLocale)}{tr("까지")}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary">{invitation.role === 'owner' ? tr("업체 전체 정보와 운영 도구를 관리해요.") : tr("업체 프로필·글·사진·초안을 관리해요.")}</ThemedText>
     {!invitation.can_accept && <ThemedText type="small" accessibilityRole="alert">{tr("업체 정보가 바뀌었어요. 관리자에게 새 초대를 요청해 주세요.")}</ThemedText>}
     <View style={styles.actions}><AccountAction label={tr("거절")} disabled={busy} onPress={() => { void act(invitation, false); }} /><AccountAction primary label={tr("확인하고 연결")} disabled={busy || !invitation.can_accept} onPress={() => { void act(invitation, true); }} /></View>
@@ -120,7 +120,7 @@ export function MerchantAccountInvitations({ refreshSignal = 0, onChanged }: { r
 }
 
 export function MerchantAccountManagement({ merchantId, merchantName, refreshSignal, onChanged }: { merchantId: string; merchantName: string; refreshSignal: number; onChanged: () => void }) {
-  useLanguage();
+  const { tr } = useLanguage();
   const { me, isAdmin } = useAuth(), theme = useTheme(), { play } = useInteractionFeedback();
   const scope = me.id + ':' + merchantId;
   const current = useRef(scope), pending = useRef(false);
@@ -130,7 +130,7 @@ export function MerchantAccountManagement({ merchantId, merchantName, refreshSig
   useEffect(() => {
     let active = true;
     void loadMerchantAccountConnections(supabase, merchantId).then(data => { if (active) { setResponse({ scope, data }); setError(''); } })
-      .catch(() => { if (active) { setResponse(null); setError(tr("연결을 확인하지 못했어요. 현재 업체 권한을 다시 확인해 주세요.")); } });
+      .catch(() => { if (active) { setResponse(null); setError("연결을 확인하지 못했어요. 현재 업체 권한을 다시 확인해 주세요."); } });
     return () => { active = false; };
   }, [merchantId, scope, refreshSignal, retry]);
   const data = response?.scope === scope ? response.data : null;
@@ -140,11 +140,11 @@ export function MerchantAccountManagement({ merchantId, merchantName, refreshSig
     if (!await confirmConnection(merchantName + '\n\n' + message) || current.current !== scope) return;
     pending.current = true; setBusy(true);
     try { await action(); if (current.current === scope) { setResponse(null); onChanged(); setRetry(v => v + 1); } }
-    catch { if (current.current === scope) { setResponse(null); setError(tr("연결 상태가 바뀌었어요. 다시 확인한 뒤 시도해 주세요.")); play('warning'); setRetry(v => v + 1); } }
+    catch { if (current.current === scope) { setResponse(null); setError("연결 상태가 바뀌었어요. 다시 확인한 뒤 시도해 주세요."); play('warning'); setRetry(v => v + 1); } }
     finally { pending.current = false; if (current.current === scope) setBusy(false); }
   }
   return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="subtitle">{tr("업체 계정 연결")}</ThemedText>
-    {error && <ThemedText accessibilityRole="alert">{error}</ThemedText>}
+    {error && <ThemedText accessibilityRole="alert">{tr(error)}</ThemedText>}
     {!data ? <AccountAction label={tr("연결 다시 확인")} disabled={busy} onPress={() => setRetry(v => v + 1)} /> : <>
       {[...(data.owner ? [data.owner] : []), ...data.operators].map(connection => <View key={connection.user_id + connection.role} style={styles.row}>
         <View style={{ flex: 1 }}><ThemedText type="smallBold">{connection.nickname}</ThemedText><ThemedText type="small" themeColor="textSecondary">{MERCHANT_ACCOUNT_ROLES[connection.role]} · ID {connection.user_id.slice(-6)}</ThemedText></View>
