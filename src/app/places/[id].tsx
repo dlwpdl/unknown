@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useLanguage } from '@/hooks/use-language';
 import { tr, getLocale } from '@/i18n';
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
@@ -26,6 +27,7 @@ import { supabase } from '@/lib/supabase';
 
 export default function PlaceDetailScreen() {
   useLanguage();
+  const [viewport, setViewport] = useState({ y: 0, height: 0 });
   const { cityId, id } = useLocalSearchParams<{ cityId?: string; id?: string }>();
   const { isAuthed, me } = useAuth();
   const isFocused = useIsFocused(), userId = isAuthed ? me.id : null;
@@ -57,7 +59,9 @@ export default function PlaceDetailScreen() {
         <ThemedText type="smallBold">{tr("돌아가기")}</ThemedText>
       </Pressable>
     </View>
-    <ScrollView analyticsId="places.detail.scroll" contentContainerStyle={styles.content}>
+    <ScrollView analyticsId="places.detail.scroll" contentContainerStyle={styles.content} scrollEventThrottle={100}
+      onLayout={({ nativeEvent: { layout: { height } } }) => setViewport(previous => previous.height === height ? previous : { ...previous, height })}
+      onScroll={({ nativeEvent }) => setViewport({ y: nativeEvent.contentOffset.y, height: nativeEvent.layoutMeasurement.height })}>
       {!place || !city ? <StateCard kind="error" title={tr("장소를 찾지 못했어요")} body={tr("선택한 도시의 장소 목록에서 다시 열어 주세요.")} /> : <>
         <CityPlacePhoto place={place} style={styles.photo} />
         {!!place.photo && <PostPhotoCredits credits={`사진: ${place.photo.artist}\n${place.photo.sourceUrl}\n${place.photo.license}\n${place.photo.licenseUrl}\n사진은 촬영 시점의 모습이며 현재와 다를 수 있어요.`} />}
@@ -79,7 +83,7 @@ export default function PlaceDetailScreen() {
         <Pressable analyticsId="places.detail.attribution" accessibilityRole="link" accessibilityLabel={tr("OpenStreetMap 자료 출처와 이용 조건")} onPress={() => openSource('https://www.openstreetmap.org/copyright')} style={styles.link}>
           <ThemedText type="small" themeColor="textSecondary">{tr("© OpenStreetMap contributors · {0} 확인 자료", (new Date(CITY_PLACES_COLLECTED_AT).toLocaleDateString(getLocale())))}</ThemedText>
         </Pressable>
-        <PlaceReviews cityId={city.id} placeId={place.id} />
+        <PlaceReviews cityId={city.id} placeId={place.id} viewport={viewport} />
       </>}
     </ScrollView>
   </SafeAreaView>;
