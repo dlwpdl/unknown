@@ -110,7 +110,7 @@ export function ReportSheet({
             {REASONS.map((item) => {
               const selected = reason === item;
               return (
-                <Pressable lens analyticsId="components_report-sheet.pressable.3"
+                <Pressable analyticsId="components_report-sheet.pressable.3"
                   key={item}
                   onPress={() => { play('selection'); setReason(item); }}
                   accessibilityRole="radio"
@@ -118,7 +118,7 @@ export function ReportSheet({
                   style={({ pressed }) => [
                     styles.reason,
                     Depth.control,
-                    { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.backgroundElement : theme.card, transform: [{ translateY: pressed ? 2 : 0 }] },
+                    { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.backgroundElement : theme.card, },
                   ]}>
                   <ThemedText type={selected ? 'smallBold' : 'small'}>{t.report.reasons[item]}</ThemedText>
                 </Pressable>
@@ -153,12 +153,12 @@ export function ReportSheet({
             </Pressable>
           )}
 
-          <Pressable lens analyticsId="components_report-sheet.pressable.5"
+          <Pressable analyticsId="components_report-sheet.pressable.5"
             onPress={() => { play('selection'); void submit(); }}
             disabled={!reason || submitting}
             accessibilityRole="button"
             accessibilityState={{ disabled: !reason || submitting, busy: submitting }}
-            style={({ pressed }) => [styles.submit, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: !reason || submitting ? 0.55 : 1, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
+            style={({ pressed }) => [styles.submit, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: !reason || submitting ? 0.55 : 1, }]}>
             <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
               {submitting ? t.report.submitting : t.report.submit}
             </ThemedText>

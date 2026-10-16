@@ -19,7 +19,7 @@ export function ChillingKindTabs({ value, onChange }: { value: ChillingKind; onC
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   return <View accessibilityRole="tablist" accessibilityLabel="만남 유형" style={[styles.tabs, { backgroundColor: theme.backgroundElement }]}>
-    {(['once', 'group'] as const).map(kind => <Pressable lens analyticsId="components_chilling-event.pressable.1" key={kind} accessibilityRole="tab" accessibilityState={{ selected: value === kind }} onPress={() => { play('selection'); onChange(kind); }} style={[styles.tab, value === kind && { backgroundColor: theme.background }]}><ThemedText type="smallBold">{kind === 'once' ? '칠링 (일회성)' : '모임 (정기모임)'}</ThemedText></Pressable>)}
+    {(['once', 'group'] as const).map(kind => <Pressable analyticsId="components_chilling-event.pressable.1" key={kind} accessibilityRole="tab" accessibilityState={{ selected: value === kind }} onPress={() => { play('selection'); onChange(kind); }} style={[styles.tab, value === kind && { backgroundColor: theme.background }]}><ThemedText type="smallBold">{kind === 'once' ? '칠링 (일회성)' : '모임 (정기모임)'}</ThemedText></Pressable>)}
   </View>;
 }
 
@@ -77,9 +77,9 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
     </Pressable>
     <View style={styles.footer}>
       <Pressable analyticsId="components_chilling-event.pressable.3" onPress={() => { play('selection'); onAuthor(); }} accessibilityRole="button" accessibilityLabel={`${post.author.nickname} 프로필`} style={styles.author}><TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} /><ThemedText type="small" themeColor="textSecondary">{post.author.nickname}님이 열었어요 ›</ThemedText></Pressable>
-      <Pressable lens analyticsId="meetup.share.open" accessibilityRole="button" accessibilityLabel={post.author.id === me.id ? '내 모임에 초대하기' : '모임 공유하기'} style={styles.action}
+      <Pressable analyticsId="meetup.share.open" accessibilityRole="button" accessibilityLabel={post.author.id === me.id ? '내 모임에 초대하기' : '모임 공유하기'} style={styles.action}
         onPress={() => { play('selection'); if (isAuthed) setSharing(true); else promptLogin('모임을 공유하려면 로그인해주세요.'); }}><ThemedText type="smallBold" themeColor="accent">{post.author.id === me.id ? '초대' : '공유'}</ThemedText></Pressable>
-      {post.author.id !== me.id && <Pressable lens analyticsId="components_chilling-event.pressable.4" accessibilityRole="button" accessibilityLabel="신고 및 차단" style={styles.action} onPress={() => { play('selection'); if (isAuthed) setReport(true); else promptLogin('신고하려면 로그인해 주세요.'); }}><ThemedText style={{ color: theme.textSecondary }}>···</ThemedText></Pressable>}
+      {post.author.id !== me.id && <Pressable analyticsId="components_chilling-event.pressable.4" accessibilityRole="button" accessibilityLabel="신고 및 차단" style={styles.action} onPress={() => { play('selection'); if (isAuthed) setReport(true); else promptLogin('신고하려면 로그인해 주세요.'); }}><ThemedText style={{ color: theme.textSecondary }}>···</ThemedText></Pressable>}
     </View>
     <ReportSheet visible={report} targetType="post" targetId={post.id} reportedUserId={post.author.id} reportedNickname={post.author.nickname} onClose={() => setReport(false)} />
     {sharing && <PostShareSheet post={post} visible={sharing} onClose={() => setSharing(false)} onShared={() => { void recordPostShare(supabase, post.id).catch(() => {}); }} />}

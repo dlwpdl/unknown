@@ -47,7 +47,7 @@ export function WelcomeMoment({ nickname, onContinue }: { nickname: string; onCo
         <ThemedText style={styles.subtitle}>페스티벌도, 동네의 작은 한잔도. 마음 맞는 사람을 여기서 만나요.</ThemedText>
       </Animated.View>
     </View>
-    <Pressable lens analyticsId="onboarding.welcome.start" accessibilityRole="button" onPress={() => { play('selection'); onContinue(); }} style={({ pressed }) => [styles.button, { opacity: pressed ? 0.72 : 1, transform: [{ scale: pressed && !reducedMotion ? 0.97 : 1 }] }]}>
+    <Pressable analyticsId="onboarding.welcome.start" accessibilityRole="button" onPress={() => { play('selection'); onContinue(); }} style={({ pressed }) => [styles.button, { opacity: pressed ? 0.72 : 1, transform: [{ scale: pressed && !reducedMotion ? 0.97 : 1 }] }]}>
       <ThemedText type="smallBold" style={styles.buttonText}>글링 시작하기</ThemedText>
     </Pressable>
   </SafeAreaView>;

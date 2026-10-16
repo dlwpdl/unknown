@@ -1,4 +1,4 @@
-import { LensPressable as Pressable } from '@/components/lens-pressable';
+import { FlatPressable as Pressable } from '@/components/flat-pressable';
 import { loadMannerSummary, type MannerSummary as Summary } from '@/lib/user-profile';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';

@@ -19,7 +19,7 @@ export function CityPopularPlaces({ cityId }: { cityId: string }) {
   return <View style={styles.section}>
     <View style={styles.heading}>
       <ThemedText accessibilityRole="header" style={styles.title}>이 도시에서 요즘 많이 가는 곳</ThemedText>
-      <Pressable lens analyticsId="today.places.open" accessibilityRole="button" accessibilityLabel={`${city.name}의 실제 장소 ${places.length}곳 보기`}
+      <Pressable analyticsId="today.places.open" accessibilityRole="button" accessibilityLabel={`${city.name}의 실제 장소 ${places.length}곳 보기`}
         onPress={() => { play('selection'); router.push({ pathname: '/places', params: { cityId } }); }}
         style={({ pressed }) => [styles.all, { opacity: pressed ? 0.65 : 1 }]}>
         <ThemedText style={styles.allText} themeColor="accent">전체 보기</ThemedText>

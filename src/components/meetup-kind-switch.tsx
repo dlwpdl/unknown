@@ -31,16 +31,12 @@ export function MeetupKindSwitch({ value, onChange, disabled = false, analyticsI
     {width > 0 && <Animated.View pointerEvents="none" style={[styles.selection, {
       width: (width - 12) / 2,
       backgroundColor: theme.accent,
-      shadowColor: '#000',
-      shadowOpacity: 0.32,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 3 },
       transform: [{ translateX: position.interpolate({ inputRange: [0, 1], outputRange: [0, (width - 12) / 2 + 4] }) }],
     }]} />}
-    {(['once', 'group'] as const).map(kind => <Pressable lens analyticsId={analyticsId} key={kind}
+    {(['once', 'group'] as const).map(kind => <Pressable analyticsId={analyticsId} key={kind}
       accessibilityRole="tab" accessibilityState={{ selected: value === kind, disabled }} disabled={disabled}
       onPress={() => { play('reaction'); if (kind !== value) onChange(kind); }}
-      style={({ pressed }) => [styles.tab, { opacity: pressed ? 0.8 : 1, transform: [{ translateY: pressed ? 2 : 0 }, { scale: pressed ? 0.97 : 1 }] }]}>
+      style={({ pressed }) => [styles.tab, { opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
       <ThemedText type="smallBold" style={{ color: value === kind ? theme.accentInk : theme.text }}>
         {kind === 'once' ? '칠링 (일회성)' : '모임 (정기모임)'}
       </ThemedText>

@@ -1,4 +1,4 @@
-import { LensPressable as Pressable } from '@/components/lens-pressable';
+import { FlatPressable as Pressable } from '@/components/flat-pressable';
 import { SymbolView } from 'expo-symbols';
 import { Stack, useRouter } from 'expo-router';
 

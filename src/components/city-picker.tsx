@@ -53,11 +53,11 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
   // Recreate native text layout when Dynamic Type changes while the sheet is open.
   return <KeyboardAvoidingView key={fontScale} style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <View style={styles.head}>
-      {draft && <GlassSurface tone="control" interactive style={styles.iconGlass}><Pressable lens analyticsId="components_city-picker.pressable.1" accessibilityRole="button" accessibilityLabel={t.write.backToDraft} onPress={() => { play('selection'); onClose(); }} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
+      {draft && <GlassSurface tone="control" interactive style={styles.iconGlass}><Pressable analyticsId="components_city-picker.pressable.1" accessibilityRole="button" accessibilityLabel={t.write.backToDraft} onPress={() => { play('selection'); onClose(); }} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
         <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={21} tintColor={theme.text} />
       </Pressable></GlassSurface>}
       <ThemedText accessibilityRole="header" style={styles.title}>{draft ? t.write.postCity : t.feed.cityPickerTitle}</ThemedText>
-      {!draft && <GlassSurface tone="control" interactive style={styles.iconGlass}><Pressable lens analyticsId="components_city-picker.pressable.2" accessibilityRole="button" accessibilityLabel={t.write.cancel} onPress={() => { play('selection'); onClose(); }} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
+      {!draft && <GlassSurface tone="control" interactive style={styles.iconGlass}><Pressable analyticsId="components_city-picker.pressable.2" accessibilityRole="button" accessibilityLabel={t.write.cancel} onPress={() => { play('selection'); onClose(); }} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
         <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={21} tintColor={theme.text} />
       </Pressable></GlassSurface>}
     </View>
@@ -66,7 +66,7 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
         <View accessible accessibilityRole="tab" accessibilityState={{ selected: true }} style={[styles.country, Depth.control, { backgroundColor: theme.card }]}>
           <ThemedText type="smallBold" themeColor="accent">{t.feed.cityCanada}</ThemedText>
         </View>
-        <Pressable lens analyticsId="components_city-picker.pressable.3" disabled accessibilityRole="tab" accessibilityState={{ selected: false, disabled: true }} accessibilityLabel={`${t.feed.cityUnitedStates}, ${t.feed.citySoon}`} style={styles.country}>
+        <Pressable analyticsId="components_city-picker.pressable.3" disabled accessibilityRole="tab" accessibilityState={{ selected: false, disabled: true }} accessibilityLabel={`${t.feed.cityUnitedStates}, ${t.feed.citySoon}`} style={styles.country}>
           <ThemedText type="smallBold" themeColor="textSecondary">{t.feed.cityUnitedStates}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{t.feed.citySoon}</ThemedText>
         </Pressable>
@@ -76,7 +76,7 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
         <TextInput accessibilityLabel={t.feed.citySearch} placeholder={t.feed.citySearch} placeholderTextColor={theme.textSecondary}
           value={query} onChangeText={setQuery} autoCapitalize="none" autoCorrect={false} returnKeyType="search"
           style={[styles.input, { color: theme.text }]} />
-        {!!query && <Pressable lens analyticsId="components_city-picker.pressable.4" accessibilityRole="button" accessibilityLabel={t.feed.citySearchClear} onPress={() => { play('selection'); setQuery(''); }} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
+        {!!query && <Pressable analyticsId="components_city-picker.pressable.4" accessibilityRole="button" accessibilityLabel={t.feed.citySearchClear} onPress={() => { play('selection'); setQuery(''); }} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
           <SymbolView name={{ ios: 'xmark.circle.fill', android: 'cancel', web: 'cancel' }} size={19} tintColor={theme.textSecondary} />
         </Pressable>}
       </View></GlassSurface>
@@ -84,7 +84,7 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
     <SectionList analyticsId="components_city-picker.sectionlist.1" sections={sections} keyExtractor={item => item.id} stickySectionHeadersEnabled={false}
       keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.list}
       ListHeaderComponent={draft || !isAuthed ? null : <GlassSurface tone="control" interactive style={styles.locationRow}>
-        <Pressable lens analyticsId="components_city-picker.pressable.5" accessibilityRole="button" disabled={locationBusy} accessibilityState={{ disabled: locationBusy, busy: location.busy, expanded: locationOpen }}
+        <Pressable analyticsId="components_city-picker.pressable.5" accessibilityRole="button" disabled={locationBusy} accessibilityState={{ disabled: locationBusy, busy: location.busy, expanded: locationOpen }}
           accessibilityLabel="내 위치로 찾기" onPress={onLocation}
           style={({ pressed }) => [styles.locationMain, pressed && { backgroundColor: theme.backgroundSelected }, locationBusy && styles.disabled]}>
           <SymbolView name={{ ios: 'location', android: 'near_me', web: 'near_me' }} size={22} tintColor={theme.accent} />

@@ -61,11 +61,9 @@ test('glass uses the native surface only when iOS offers both required APIs', ()
     const GlassSurface = glass('dark', platform, api, liquid);
     assert.equal(GlassSurface({ children: 'content' }).type, expected);
     const control = GlassSurface({ children: 'content', tone: 'control', interactive: true });
-    assert.equal(control.type, expected);
-    if (expected === 'GlassView') {
-      assert.equal(control.props.glassEffectStyle, 'clear');
-      assert.equal(control.props.isInteractive, true);
-    }
+    assert.equal(control.type, 'View', 'controls remain flat even when native glass is available');
+    assert.equal(control.props.glassEffectStyle, undefined);
+    assert.equal(flatten(control.props.style).shadowOpacity, 0);
   }
 });
 
@@ -80,26 +78,26 @@ test('native glass follows the effective theme and preserves tone, children and 
     assert.equal(overlay.props.children, 'content');
     assert.equal(flatten(overlay.props.style).borderColor, scheme === 'dark' ? 'rgba(255,255,255,0.4)' : Colors.light.line);
     const control = GlassSurface({ tone: 'control', interactive: true });
-    assert.equal(control.props.colorScheme, scheme);
+    assert.equal(control.type, 'View');
     assert.equal(control.props.tintColor, undefined);
-    assert.equal(control.props.glassEffectStyle, 'clear');
-    assert.equal(control.props.isInteractive, true);
+    assert.equal(control.props.glassEffectStyle, undefined);
+    assert.equal(flatten(control.props.style).backgroundColor, Colors[scheme].backgroundElement);
     assert.equal(flatten(control.props.style).borderWidth, 1);
-    assert.equal(flatten(control.props.style).borderColor, scheme === 'dark' ? 'rgba(255,255,255,0.24)' : Colors.light.line);
+    assert.equal(flatten(control.props.style).borderColor, Colors[scheme].line);
     const custom = { borderColor: 'red', borderWidth: 3, backgroundColor: 'blue' };
-    assert.deepEqual(flatten(GlassSurface({ tone: 'control', style: custom }).props.style), { overflow: 'hidden', ...custom });
+    assert.deepEqual(flatten(GlassSurface({ tone: 'control', style: custom }).props.style), { overflow: 'hidden', ...custom, shadowOpacity: 0, elevation: 0, boxShadow: undefined });
   }
 });
 
-test('fallback glass pairs light and dark surfaces and keeps caller styles last', () => {
+test('fallback surfaces preserve light/dark palette and caller geometry while controls stay flat', () => {
   for (const scheme of ['light', 'dark']) for (const platform of ['ios', 'android', 'web']) {
     const GlassSurface = glass(scheme, platform, false);
     for (const tone of ['overlay', 'control']) {
       const surface = GlassSurface({ tone });
       const style = flatten(surface.props.style);
       assert.equal(surface.type, 'View');
-      assert.equal(style.borderColor, scheme === 'light' ? Colors.light.line : tone === 'control' ? 'rgba(255,255,255,0.24)' : 'rgba(255,255,255,0.4)');
-      assert.equal(style.backgroundColor, scheme === 'light' ? `${tone === 'control' ? Colors.light.backgroundElement : Colors.light.background}${tone === 'control' ? 'C2' : 'D6'}` : tone === 'control' ? 'rgba(33,33,40,0.76)' : 'rgba(11,11,18,0.84)');
+      assert.equal(style.borderColor, tone === 'control' ? Colors[scheme].line : scheme === 'light' ? Colors.light.line : 'rgba(255,255,255,0.4)');
+      assert.equal(style.backgroundColor, tone === 'control' ? Colors[scheme].backgroundElement : scheme === 'light' ? `${Colors.light.background}D6` : 'rgba(11,11,18,0.84)');
       const custom = { backgroundColor: 'red', borderColor: 'blue' };
       const overridden = flatten(GlassSurface({ tone, style: custom }).props.style);
       assert.equal(overridden.backgroundColor, custom.backgroundColor);
@@ -113,8 +111,8 @@ test('explicit media appearance overrides the effective theme on native and fall
     const props = { children: 'fixed foreground', tone, interactive: true };
     const expected = glass(scheme, 'ios', native)(props);
     const actual = glass(scheme === 'dark' ? 'light' : 'dark', 'ios', native)({ ...props, colorScheme: scheme });
-    if (native) assert.equal(actual.props.colorScheme, scheme);
-    else assert.equal(flatten(actual.props.style).backgroundColor, scheme === 'light' ? `${tone === 'control' ? Colors.light.backgroundElement : Colors.light.background}${tone === 'control' ? 'C2' : 'D6'}` : tone === 'control' ? 'rgba(33,33,40,0.76)' : 'rgba(11,11,18,0.84)');
+    if (native && tone === 'overlay') assert.equal(actual.props.colorScheme, scheme);
+    else assert.equal(flatten(actual.props.style).backgroundColor, tone === 'control' ? Colors[scheme].backgroundElement : scheme === 'light' ? `${Colors.light.background}D6` : 'rgba(11,11,18,0.84)');
     assert.equal(JSON.stringify(actual), JSON.stringify(expected));
   }
 });

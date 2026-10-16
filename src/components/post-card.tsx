@@ -160,7 +160,7 @@ export function PostCard({
             </View>
           </Pressable>
           {!mine && (
-            <Pressable lens analyticsId="components_post-card.pressable.5"
+            <Pressable analyticsId="components_post-card.pressable.5"
               onPress={() => { play('reaction'); if (isAuthed) setReportOpen(true); else promptLogin(t.auth.reasonReport); }}
               accessibilityRole="button"
               accessibilityLabel={t.report.title(post.author.nickname)}
@@ -277,7 +277,7 @@ export function PostCard({
               </View>
             </View>
             {onJoin && !post.room.closed && (
-              <Pressable lens analyticsId="components_post-card.pressable.6"
+              <Pressable analyticsId="components_post-card.pressable.6"
                 onPress={() => { play('selection'); onJoin(); }}
                 style={({ pressed }) => [styles.join, { backgroundColor: theme.accent }, pressed && styles.pressed]}
                 accessibilityRole="button"
@@ -291,7 +291,7 @@ export function PostCard({
         )}
 
         <View style={[styles.foot, flat && styles.flatFoot, { borderTopColor: theme.line }]}>
-          <Pressable lens analyticsId="components_post-card.pressable.7"
+          <Pressable analyticsId="components_post-card.pressable.7"
             onPress={toggleLike}
             disabled={!!busyReaction}
             style={({ pressed }) => [styles.reaction, pressed && styles.pressed]}
@@ -309,7 +309,7 @@ export function PostCard({
               {count(likeCount)}
             </ThemedText>
           </Pressable>
-          <Pressable lens analyticsId="components_post-card.pressable.8"
+          <Pressable analyticsId="components_post-card.pressable.8"
             onPress={openPost}
             disabled={!onPress}
             style={({ pressed }) => [styles.reaction, pressed && styles.pressed]}
@@ -324,7 +324,7 @@ export function PostCard({
               {count(post.comments)}
             </ThemedText>
           </Pressable>
-          <Pressable lens analyticsId="components_post-card.pressable.9"
+          <Pressable analyticsId="components_post-card.pressable.9"
             onPress={toggleSave}
             disabled={!!busyReaction}
             style={({ pressed }) => [styles.reaction, pressed && styles.pressed]}
@@ -352,7 +352,7 @@ export function PostCard({
               {count(saveCount)}
             </ThemedText>
           </Pressable>
-          <Pressable lens analyticsId="components_post-card.pressable.10"
+          <Pressable analyticsId="components_post-card.pressable.10"
             onPress={() => void share()}
             style={({ pressed }) => [styles.reaction, pressed && styles.pressed]}
             accessibilityRole="button"

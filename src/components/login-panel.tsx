@@ -108,7 +108,7 @@ export function LoginPanel({
                   style={[styles.adminInput, { borderColor: adminFocusedField === 'password' ? Colors.dark.accent : Colors.dark.line }]} />
               </View>
               {!!error && <View style={styles.adminError} accessibilityRole="alert" accessibilityLiveRegion="polite"><ThemedText type="small">{error}</ThemedText></View>}
-              <RaisedActionButton lens={false} analyticsId="components_login-panel.pressable.3" label={loading ? '로그인 중…' : '관리자 로그인'} onPress={submitAdmin} disabled={submitDisabled} busy={loading} />
+              <RaisedActionButton analyticsId="components_login-panel.pressable.3" label={loading ? '로그인 중…' : '관리자 로그인'} onPress={submitAdmin} disabled={submitDisabled} busy={loading} />
               {onGoogle && <Pressable analyticsId="components_login-panel.pressable.2" accessibilityRole="button" accessibilityLabel={t.auth.google}
                 disabled={disabled} accessibilityState={{ disabled, busy: loading }} onPress={() => { if (!disabled) { play('selection'); onGoogle(); } }}
                 style={({ pressed }) => [styles.adminGoogle, { opacity: disabled ? 0.6 : pressed ? 0.8 : 1 }]}>
@@ -222,7 +222,7 @@ export function LoginPanel({
                   accessibilityLabel={onAdminLogin ? '관리자 비밀번호' : onReviewLogin ? t.auth.reviewPassword : t.auth.devPassword}
                   style={[styles.devInput, { color: theme.text, borderColor: theme.line }]}
                 />
-                <Pressable lens analyticsId="components_login-panel.pressable.3"
+                <Pressable analyticsId="components_login-panel.pressable.3"
                   onPress={() => { if (!disabled && email.trim() && password) { play('selection'); passwordLogin(email, password); } }}
                   disabled={disabled || !email.trim() || !password}
                   accessibilityRole="button"
@@ -253,7 +253,7 @@ export function LoginPanel({
         </View>
 
         {onClose && (
-          <Pressable lens analyticsId="components_login-panel.pressable.6" onPress={() => { play('selection'); onClose(); }} accessibilityRole="button" style={styles.close}>
+          <Pressable analyticsId="components_login-panel.pressable.6" onPress={() => { play('selection'); onClose(); }} accessibilityRole="button" style={styles.close}>
             <ThemedText type="smallBold" themeColor="textSecondary">
               {t.auth.close}
             </ThemedText>

@@ -106,10 +106,10 @@ export const Spacing = {
   six: 64,
 } as const;
 
-// 같은 높이의 표면은 앱 어디서든 같은 그림자와 눌림 깊이를 쓴다.
+// 카드는 층을 구분하고, 컨트롤은 평면으로 유지한다.
 export const Depth = {
   card: { shadowColor: '#000000', shadowOffset: { width: 0, height: 7 }, shadowOpacity: 0.22, shadowRadius: 14, elevation: 5 },
-  control: { shadowColor: '#000000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.18, shadowRadius: 7, elevation: 3 },
+  control: { shadowOpacity: 0, elevation: 0 },
 } as const;
 
 // 네이티브 탭바 자체 높이 (세이프에어리어 제외). 실제 하단 점유 = TabBarHeight + insets.bottom

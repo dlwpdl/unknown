@@ -84,7 +84,7 @@ function PersonalInfoEditor({ userId, nickname, onRetry }: { userId: string; nic
     <View style={[styles.divider, { backgroundColor: theme.line }]} />
     {!data ? <>
       <ThemedText accessibilityRole={error ? 'alert' : 'progressbar'} type="small" themeColor="textSecondary">{error ?? '계정 정보를 불러오는 중이에요.'}</ThemedText>
-      {error && <Pressable lens analyticsId="components_personal-info-card.pressable.1" onPress={() => { play('selection'); onRetry(); }} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold">다시 불러오기</ThemedText></Pressable>}
+      {error && <Pressable analyticsId="components_personal-info-card.pressable.1" onPress={() => { play('selection'); onRetry(); }} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold">다시 불러오기</ThemedText></Pressable>}
     </> : <>
       <View style={styles.summaryRow}>
         <View style={styles.summaryLabel}><ThemedText type="small">생년월일</ThemedText><ThemedText type="small" themeColor="textSecondary">비공개 · 본인 입력 · 생년월일 미인증</ThemedText></View>
@@ -100,15 +100,15 @@ function PersonalInfoEditor({ userId, nickname, onRetry }: { userId: string; nic
       {editing && <View style={styles.editor}>
         <PersonalInfoFields value={draft} disabled={busy} onChange={(value) => { setDraft(value); setError(null); setNotice(null); setConfirmDelete(false); }} />
         {error && <ThemedText accessibilityRole="alert" type="small" style={{ color: theme.accent }}>{error}</ThemedText>}
-        <Pressable lens analyticsId="components_personal-info-card.pressable.2" disabled={busy} onPress={() => void save()} accessibilityRole="button" accessibilityState={{ disabled: busy, busy }} style={({ pressed }) => [styles.button, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: busy ? 0.55 : 1, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
+        <Pressable analyticsId="components_personal-info-card.pressable.2" disabled={busy} onPress={() => void save()} accessibilityRole="button" accessibilityState={{ disabled: busy, busy }} style={({ pressed }) => [styles.button, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: busy ? 0.55 : 1, }]}>
           <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{busy ? '저장 중…' : '계정 정보 저장'}</ThemedText>
         </Pressable>
-        {data.full_name && !confirmDelete && <Pressable lens analyticsId="components_personal-info-card.pressable.3" disabled={busy} onPress={() => { play('selection'); setConfirmDelete(true); }} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold" style={{ color: theme.accent }}>저장된 이름·생년월일 삭제</ThemedText></Pressable>}
+        {data.full_name && !confirmDelete && <Pressable analyticsId="components_personal-info-card.pressable.3" disabled={busy} onPress={() => { play('selection'); setConfirmDelete(true); }} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold" style={{ color: theme.accent }}>저장된 이름·생년월일 삭제</ThemedText></Pressable>}
         {confirmDelete && <View style={styles.confirm}>
           <ThemedText type="small">저장된 이름과 생년월일을 삭제할까요? 공개 프로필은 유지돼요.</ThemedText>
           <View style={styles.actions}>
-            <Pressable lens analyticsId="components_personal-info-card.pressable.4" disabled={busy} onPress={() => { play('selection'); setConfirmDelete(false); }} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold">취소</ThemedText></Pressable>
-            <Pressable lens analyticsId="components_personal-info-card.pressable.5" disabled={busy} onPress={() => void save(true)} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold" style={{ color: theme.accent }}>삭제 확인</ThemedText></Pressable>
+            <Pressable analyticsId="components_personal-info-card.pressable.4" disabled={busy} onPress={() => { play('selection'); setConfirmDelete(false); }} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold">취소</ThemedText></Pressable>
+            <Pressable analyticsId="components_personal-info-card.pressable.5" disabled={busy} onPress={() => void save(true)} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold" style={{ color: theme.accent }}>삭제 확인</ThemedText></Pressable>
           </View>
         </View>}
       </View>}
