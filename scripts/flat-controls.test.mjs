@@ -31,6 +31,8 @@ test('flat primary paint hides the raised bottom strip without changing its layo
 test('flat controls preserve meaningful thin outlines and text-tab underlines', () => {
   for (const style of [
     { borderWidth: 1, borderColor: '#AAA', borderBottomWidth: 1, borderBottomColor: '#AAA', backgroundColor: '#FFF' },
+    { borderBottomWidth: 1, borderBottomColor: '#AAA', backgroundColor: '#FFF' },
+    { borderBottomWidth: 2, borderBottomColor: '#CBB9FF', backgroundColor: '#EEEAF7' },
     { borderBottomWidth: 2, borderBottomColor: '#CBB9FF', backgroundColor: 'transparent' },
   ]) {
     const result = { ...style, ...flatControlStyle(style) };
