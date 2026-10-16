@@ -19,7 +19,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadPlaceReviews, PLACE_REVIEW_MAX_LENGTH, writePlaceReview, type PlaceReviewPage } from '@/lib/place-reviews';
 import { supabase } from '@/lib/supabase';
 
-type Props = { cityId: string; placeId: string };
+type Props = { cityId: string; placeId: string; viewport?: { y: number; height: number } };
 
 export function PlaceReviews(props: Props) {
   useLanguage();
@@ -31,7 +31,7 @@ export function PlaceReviews(props: Props) {
   return <ScopedPlaceReviews key={`${me.id}:${props.cityId}:${props.placeId}`} {...props} userId={me.id} />;
 }
 
-function ScopedPlaceReviews({ cityId, placeId, userId }: Props & { userId: string }) {
+function ScopedPlaceReviews({ cityId, placeId, userId, viewport }: Props & { userId: string }) {
   useLanguage();
   const theme = useTheme(), router = useRouter(), hidden = useContentVisibility();
   const { play } = useInteractionFeedback();
@@ -39,6 +39,8 @@ function ScopedPlaceReviews({ cityId, placeId, userId }: Props & { userId: strin
   const [loading, setLoading] = useState(true), [readError, setReadError] = useState(false), [retryMore, setRetryMore] = useState(false);
   const [editing, setEditing] = useState(false), [body, setBody] = useState(''), [saving, setSaving] = useState(false);
   const [writeError, setWriteError] = useState(''), [saved, setSaved] = useState(false);
+  const [sectionY, setSectionY] = useState<number | null>(null);
+  const [rowLayouts, setRowLayouts] = useState<Record<string, { y: number; height: number }>>({});
   const pageRef = useRef<PlaceReviewPage | null>(null), lifecycle = useRef({ active: false });
   const pendingRead = useRef(false), pendingSave = useRef(false);
 
@@ -89,7 +91,8 @@ function ScopedPlaceReviews({ cityId, placeId, userId }: Props & { userId: strin
     }
   };
   const visible = page?.posts.filter(post => !hidden('post', post.id, post.author.id)) ?? [];
-  return <View style={[styles.section, { borderTopColor: theme.line }]}>
+  return <View testID="places.reviews.section" onLayout={({ nativeEvent }) => setSectionY(nativeEvent.layout.y)}
+    style={[styles.section, { borderTopColor: theme.line }]}>
     <View style={styles.header}>
       <ThemedText type="smallBold" accessibilityRole="header">{tr('장소 후기')}</ThemedText>
       <Pressable analyticsId="places.reviews.refresh" accessibilityRole="button" disabled={loading || saving} accessibilityState={{ disabled: loading || saving }}
@@ -125,9 +128,20 @@ function ScopedPlaceReviews({ cityId, placeId, userId }: Props & { userId: strin
     {page && !loading && !readError && !visible.length && <StateCard kind="empty"
       title={tr(page.hasMore ? '이 페이지에는 장소 후기가 없어요' : '표시할 장소 후기가 없어요')}
       body={tr(page.hasMore ? '더 불러오기로 이전 글을 확인할 수 있어요.' : '경험을 나누고 싶다면 첫 후기를 남겨 주세요.')} />}
-    {visible.map(post => <PostCard key={`${userId}:${post.id}`} post={post} flat
-      onPress={() => router.push({ pathname: '/post/[id]', params: { id: post.id } })}
-      onAuthor={() => { if (post.author.id) router.push({ pathname: '/user/[id]', params: { id: post.author.id } }); }} />)}
+    {visible.map(post => {
+      const row = rowLayouts[post.id];
+      const translationVisible = !!(viewport && viewport.height > 0 && sectionY != null && row?.height > 0
+        && Math.max(0, Math.min(sectionY + row.y + row.height, viewport.y + viewport.height)
+          - Math.max(sectionY + row.y, viewport.y)) >= Math.min(row.height, viewport.height) * 0.5);
+      return <View key={`${userId}:${post.id}`} testID={`places.reviews.row.${post.id}`} onLayout={({ nativeEvent: { layout } }) => {
+        setRowLayouts(previous => previous[post.id]?.y === layout.y && previous[post.id]?.height === layout.height ? previous
+          : { ...previous, [post.id]: { y: layout.y, height: layout.height } });
+      }}>
+        <PostCard post={post} flat {...{ translationVisible }}
+          onPress={() => router.push({ pathname: '/post/[id]', params: { id: post.id } })}
+          onAuthor={() => { if (post.author.id) router.push({ pathname: '/user/[id]', params: { id: post.author.id } }); }} />
+      </View>;
+    })}
     {page?.hasMore && <Pressable analyticsId="places.reviews.more" accessibilityRole="button" disabled={loading || saving} accessibilityState={{ disabled: loading || saving }}
       onPress={() => { play('selection'); void read(true); }} style={styles.action}>
       <ThemedText type="smallBold" themeColor="accent">{tr('후기 더 불러오기')}</ThemedText>

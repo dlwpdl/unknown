@@ -50,7 +50,7 @@ function view({ load = async () => ({ posts: [], cursor: null, hasMore: false })
   function unmount() { cleanup.forEach(fn => fn()); cleanup.clear(); state = []; effects.length = 0; }
   return {
     calls, hidden, unmount,
-    account(value) { account = value; }, place(value) { scope = { ...scope, ...value }; }, language(value) { language = value; },
+    account(value) { account = value; }, place(value) { scope = { ...scope, ...value }; }, language(value) { language = value; }, viewport(value) { scope = { ...scope, viewport: value }; },
     render() {
       setActiveLanguage(language); assert.equal(typeof exports.PlaceReviews, 'function', 'place review UI is missing');
       index = 0; const outer = exports.PlaceReviews(scope);
@@ -144,4 +144,118 @@ test('late save completion cannot erase the next account draft or refresh it wit
   pending.resolve({ id: 'old-saved' }); await settle(); tree = ui.render();
   assert.equal(find(tree, 'places.reviews.body').props.value, 'new account draft');
   assert.equal(ui.calls.reads.length, reads);
+});
+
+
+const layout = (node, y, height) => node.props.onLayout({ nativeEvent: { layout: { x: 0, y, width: 360, height } } });
+const reviewSection = tree => nodes(tree).find(n => n.props?.testID === 'places.reviews.section');
+const reviewRow = (tree, id) => nodes(tree).find(n => n.props?.testID === `places.reviews.row.${id}`);
+const translates = (tree, id) => cards(tree).find(n => n.props.post.id === id)?.props.translationVisible ?? true;
+
+test('F1: unmeasured and offscreen review cards do not opt into automatic translation', async () => {
+  const ui = view({ load: async () => ({ posts: [row('one'), row('two')], cursor: null, hasMore: false }) });
+  ui.viewport({ y: 0, height: 600 }); ui.render(); await settle(); let tree = ui.render();
+  assert.equal(translates(tree, 'one'), false, 'PostCard defaults translationVisible to true when no flag is provided');
+  assert.equal(translates(tree, 'two'), false);
+  layout(reviewSection(tree), 900, 700);
+  ui.viewport({ y: 500, height: 600 }); tree = ui.render();
+  assert.equal(translates(tree, 'one'), false, 'section layout alone is insufficient');
+  layout(reviewRow(tree, 'one'), 100, 0); assert.equal(translates(ui.render(), 'one'), false);
+  layout(reviewRow(tree, 'one'), 100, 200); layout(reviewRow(tree, 'two'), 350, 200);
+  ui.viewport({ y: 0, height: 600 }); tree = ui.render(); assert.equal(translates(tree, 'one'), false); assert.equal(translates(tree, 'two'), false);
+  cards(tree)[0].props.onPress(); assert.equal(ui.calls.routes.at(-1).params.id, 'one');
+});
+
+test('F1: row visibility uses parent offset plus measured section/row positions and fifty percent coverage', async () => {
+  const ui = view({ load: async () => ({ posts: [row('one'), row('two')], cursor: null, hasMore: false }) });
+  ui.render(); await settle(); let tree = ui.render();
+  layout(reviewSection(tree), 900, 700);
+  layout(reviewRow(tree, 'one'), 100, 200); layout(reviewRow(tree, 'two'), 350, 200);
+  ui.viewport({ y: 0, height: 0 }); tree = ui.render(); assert.equal(translates(tree, 'one'), false);
+  ui.viewport({ y: 500, height: 600 }); tree = ui.render();
+  assert.equal(translates(tree, 'one'), true, '100 of the 200 measured row pixels are visible');
+  assert.equal(translates(tree, 'two'), false);
+  ui.viewport({ y: 499, height: 600 }); assert.equal(translates(ui.render(), 'one'), false);
+  ui.viewport({ y: 1200, height: 600 }); tree = ui.render();
+  assert.equal(translates(tree, 'one'), false); assert.equal(translates(tree, 'two'), true);
+  ui.viewport({ y: 1451, height: 600 }); assert.equal(translates(ui.render(), 'two'), false);
+  // Reflow/orientation changes remeasure positions rather than reusing an assumed row size.
+  ui.viewport({ y: 500, height: 600 }); tree = ui.render(); layout(reviewSection(tree), 1600, 700);
+  assert.equal(translates(ui.render(), 'one'), false);
+});
+
+test('F1: paginated rows start unmeasured, then enter/leave independently without resetting the draft', async () => {
+  let reads = 0;
+  const ui = view({ load: async () => (++reads === 1
+    ? { posts: [row('one')], cursor: { id: 'raw-last' }, hasMore: true }
+    : { posts: [row('two')], cursor: null, hasMore: false }) });
+  ui.viewport({ y: 500, height: 600 }); ui.render(); await settle(); let tree = ui.render();
+  layout(reviewSection(tree), 900, 700); layout(reviewRow(tree, 'one'), 100, 200);
+  tree = ui.render(); find(tree, 'places.reviews.more').props.onPress(); await settle(); tree = ui.render();
+  assert.equal(translates(tree, 'one'), true); assert.equal(translates(tree, 'two'), false);
+  layout(reviewRow(tree, 'two'), 350, 200); ui.viewport({ y: 1200, height: 600 }); tree = ui.render();
+  assert.equal(translates(tree, 'one'), false); assert.equal(translates(tree, 'two'), true);
+  find(tree, 'places.reviews.write').props.onPress(); tree = ui.render();
+  find(tree, 'places.reviews.body').props.onChangeText('scroll preserves this draft');
+  ui.viewport({ y: 1700, height: 600 }); tree = ui.render();
+  assert.equal(find(tree, 'places.reviews.body').props.value, 'scroll preserves this draft');
+  assert.equal(translates(tree, 'two'), false);
+});
+
+function detailViewport() {
+  const exports = {}, states = [], jsx = (type, props, key) => ({ type, props, key });
+  let index = 0;
+  const imports = {
+    react: { useState(initial) { const slot = index++; if (!(slot in states)) states[slot] = initial; return [states[slot], next => { states[slot] = typeof next === 'function' ? next(states[slot]) : next; }]; } },
+    'react/jsx-runtime': { jsx, jsxs: jsx },
+    'react-native': { StyleSheet: { create: x => x }, View: 'View' },
+    'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
+    'expo-router': { useLocalSearchParams: () => ({ cityId: 'toronto', id: 'osm:node:1' }), useRouter: () => ({}) },
+    '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
+    '@/components/place-reviews': { PlaceReviews: 'PlaceReviews' },
+    '@/hooks/use-language': { useLanguage() {} }, '@/i18n': { tr, getLocale: () => 'en-CA' },
+    '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'toronto' } }) },
+    '@/lib/city-places': { getCityPlaces: () => [{ id: 'osm:node:1', name: 'Place', sourceUrl: 'https://www.openstreetmap.org/node/1' }] },
+    '@/lib/mock': { CITIES: [{ id: 'toronto', name: 'Toronto', englishName: 'Toronto' }] },
+    '@/lib/merchant-source': { safeMerchantSourceUrl: () => null, merchantMapsUrl: () => null },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+    '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16 }, MaxContentWidth: 920 },
+  };
+  vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/app/places/[id].tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText,
+    { exports, require: name => imports[name] ?? {} });
+  return { render() { index = 0; return exports.default(); } };
+}
+
+test('F1: real outer detail onLayout/scroll drives visible cards with modest throttling', async () => {
+  const detail = detailViewport(); let tree = detail.render();
+  const scroll = nodes(tree).find(n => n.type === 'ScrollView');
+  const reviews = () => nodes(detail.render()).find(n => n.type === 'PlaceReviews');
+  const ui = view({ load: async () => ({ posts: [row('one')], cursor: null, hasMore: false }) });
+  assert.deepEqual(JSON.parse(JSON.stringify(reviews().props.viewport)), { y: 0, height: 0 });
+  assert.ok(scroll.props.scrollEventThrottle >= 64, 'parent must not rerender on every display frame');
+  ui.viewport(reviews().props.viewport); ui.render(); await settle(); tree = ui.render();
+  layout(reviewSection(tree), 900, 1000); layout(reviewRow(tree, 'one'), 600, 200);
+  assert.equal(translates(ui.render(), 'one'), false);
+  layout(scroll, 0, 600); ui.viewport(reviews().props.viewport);
+  assert.equal(reviews().props.viewport.height, 600); assert.equal(translates(ui.render(), 'one'), false);
+  scroll.props.onScroll({ nativeEvent: { contentOffset: { y: 1250 }, layoutMeasurement: { height: 520 } } });
+  ui.viewport(reviews().props.viewport); assert.equal(translates(ui.render(), 'one'), true);
+  assert.equal(reviews().props.viewport.y, 1250); assert.equal(reviews().props.viewport.height, 520);
+  layout(scroll, 0, 420); ui.viewport(reviews().props.viewport);
+  assert.equal(reviews().props.viewport.y, 1250); assert.equal(reviews().props.viewport.height, 420);
+  assert.equal(translates(ui.render(), 'one'), true);
+  scroll.props.onScroll({ nativeEvent: { contentOffset: { y: 1800 }, layoutMeasurement: { height: 420 } } });
+  ui.viewport(reviews().props.viewport); assert.equal(translates(ui.render(), 'one'), false);
+});
+
+test('F1: a tall review is eligible at half of the smaller row/viewport height', async () => {
+  const ui = view({ load: async () => ({ posts: [row('tall')], cursor: null, hasMore: false }) });
+  ui.viewport({ y: 1600, height: 600 }); ui.render(); await settle(); let tree = ui.render();
+  layout(reviewSection(tree), 900, 2200); layout(reviewRow(tree, 'tall'), 100, 1800);
+  assert.equal(translates(ui.render(), 'tall'), true, 'a full viewport inside a long review is visibly read');
+  ui.viewport({ y: 699, height: 600 }); assert.equal(translates(ui.render(), 'tall'), false);
+  ui.viewport({ y: 700, height: 600 }); assert.equal(translates(ui.render(), 'tall'), true);
+  ui.viewport({ y: 2500, height: 600 }); assert.equal(translates(ui.render(), 'tall'), true);
+  ui.viewport({ y: 2501, height: 600 }); assert.equal(translates(ui.render(), 'tall'), false);
 });
