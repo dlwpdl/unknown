@@ -25,6 +25,7 @@ function Canvas({ markers, cityName, selectedId = null, center = null, bottomIns
   const native = useRef<WebView>(null), web = useRef<HTMLIFrameElement>(null), id = useId();
   const [seed] = useState({ markers, cityName, selectedId, center, bottomInset });
   const [failed, setFailed] = useState(false), [retry, setRetry] = useState(0);
+  const [readySession, setReadySession] = useState<string | null>(null);
   const sessionId = `${id}.${retry}`;
   const parentOrigin = Platform.OS === 'web' && typeof window !== 'undefined' && window.location.protocol !== 'file:' ? window.location.origin : 'null';
   const html = useMemo(() => {
@@ -47,13 +48,19 @@ function Canvas({ markers, cityName, selectedId = null, center = null, bottomIns
     if (!update) return;
     const message = discoveryMapMessage(raw, sessionId, update.state.markers);
     if (!message) return;
-    if (message.type === 'ready') { setFailed(false); sync(); }
+    if (message.type === 'ready') { setReadySession(sessionId); setFailed(false); sync(); }
     else if (message.type === 'error') setFailed(true);
     else if (message.type === 'select') onSelect(message.id);
     else if (message.type === 'feedback') play('selection');
     else if (message.type === 'credits') void Linking.openURL(message.url).catch(() => play('warning'));
   }, [sessionId, update, sync, onSelect, play]);
   useEffect(() => { sync(); }, [sync]);
+  useEffect(() => {
+    if (!html || readySession === sessionId) return;
+    // WebView/GPU startup can stall before the embedded timeout ever runs.
+    const timer = setTimeout(() => setFailed(true), 15000);
+    return () => clearTimeout(timer);
+  }, [html, sessionId, readySession]);
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const listener = (event: MessageEvent) => {
