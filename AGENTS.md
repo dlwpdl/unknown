@@ -2,6 +2,10 @@
 
 Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing any code.
 
+# Current private admin runtime — owner correction 2026-10-17
+
+This checkout is the canonical private administrator dashboard. Keep creator, vendor, campaign and benefit management together with the approved admin LoginPanel and AdminMfaGate. Run `npm run admin` here; the older `/Users/ash/Desktop/Git/unknown/mobile` command delegates here and its `.admin-dist` points here. Keep the same loopback port 54321 and Tailscale HTTPS origin. Never restore a feature-incomplete export or overwrite the approved admin login/MFA from a native-only checkout. Preserve normal AAL2, Keychain connection, saved data and the separate native upload/review hold.
+
 # Orca browser workspace
 
 Keep Gling account, store, and test browser tabs in the existing `Git → gling` folder workspace. Do not create them under Rottery, TMS, or the separate `mobile` Git workspace. Verify the visible browser tab when the user asks to open a page; CLI tab selection alone may leave the terminal visible.
