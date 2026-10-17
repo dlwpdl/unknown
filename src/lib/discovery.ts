@@ -88,6 +88,7 @@ const categoryFor = (post: Post): DiscoveryCategory => {
   return ({ festival: 'festival', food: 'dining', travel: 'trip', shopping: 'shopping' } as Partial<Record<Post['tag']['slug'], DiscoveryCategory>>)[post.tag.slug] ?? 'place';
 };
 export function discoveryPost(post: Post, now = Date.now()): DiscoveryItem | null {
+  if (!['housing', 'used', 'food', 'travel', 'festival', 'shopping'].includes(post.tag.slug)) return null;
   if (post.kind === 'listing' && (!['open', 'partial'].includes(post.listingStatus ?? '') || !(Date.parse(post.expiresAt ?? '') > now))) return null;
   const location = postMapBody(post.body), pin = location.url ? googleMapsPin(location.url) : null;
   if (!location.url) return null;

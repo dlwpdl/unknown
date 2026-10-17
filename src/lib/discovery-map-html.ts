@@ -3,12 +3,13 @@ import { mapCityCenter } from './post-map-html.ts';
 import { TOP25_GOLD } from './discovery.ts';
 
 export type DiscoveryMarker = { id: string; latitude: number; longitude: number; color: string; label: string; top25?: boolean };
-type Center = { latitude: number; longitude: number };
+type Center = { latitude: number; longitude: number; requestId?: number };
 type MapState = { markers: DiscoveryMarker[]; selectedId?: string | null; center?: Center | null; bottomInset?: number };
 type DiscoveryMessage = { type: 'ready' | 'error' | 'feedback' } | { type: 'select'; id: string } | { type: 'credits'; url: string };
 const credits = ['https://openfreemap.org/', 'https://www.openmaptiles.org/', 'https://www.openstreetmap.org/copyright'];
 const text = (value: unknown, length: number): value is string => typeof value === 'string' && value.length > 0 && value.length <= length && !/[\u0000-\u001f\u007f]/.test(value);
-const coordinate = (value: Center) => value && Number.isFinite(value.latitude) && Math.abs(value.latitude) <= 90 && Number.isFinite(value.longitude) && Math.abs(value.longitude) <= 180;
+const coordinate = (value: Center) => value && Number.isFinite(value.latitude) && Math.abs(value.latitude) <= 90 && Number.isFinite(value.longitude) && Math.abs(value.longitude) <= 180
+  && (value.requestId === undefined || Number.isSafeInteger(value.requestId) && value.requestId >= 0);
 const json = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 
 export function discoveryMarkers(markers: DiscoveryMarker[]): DiscoveryMarker[] {
@@ -27,7 +28,7 @@ function state({ markers, selectedId = null, center = null, bottomInset = 0 }: M
   if (selectedId !== null && !text(selectedId, 180)) throw new Error('INVALID_DISCOVERY_SELECTION');
   if (center !== null && !coordinate(center)) throw new Error('INVALID_DISCOVERY_CENTER');
   if (!Number.isFinite(bottomInset) || bottomInset < 0 || bottomInset > 1000) throw new Error('INVALID_DISCOVERY_INSET');
-  return { markers: discoveryMarkers(markers), selectedId, center: center && { latitude: center.latitude, longitude: center.longitude }, bottomInset };
+  return { markers: discoveryMarkers(markers), selectedId, center: center && { latitude: center.latitude, longitude: center.longitude, ...(center.requestId !== undefined ? { requestId: center.requestId } : {}) }, bottomInset };
 }
 
 export function discoveryMapMessage(raw: string, sessionId: string, markers: DiscoveryMarker[]): DiscoveryMessage | null {
@@ -59,7 +60,7 @@ html,body,#map{margin:0;width:100%;height:100%;overflow:hidden;background:#efeee
 const config=${config};let map,loaded=false,failed=false,current=config,previousSelection=null,previousCenter=null,previousPadding=null,revision=0;
 const send=payload=>{const message=JSON.stringify({...payload,sessionId:config.sessionId});if(window.ReactNativeWebView)window.ReactNativeWebView.postMessage(message);else window.parent.postMessage(message,config.parentOrigin==='null'?'*':config.parentOrigin)};
 const fail=()=>{if(!failed){failed=true;send({type:'error'})}};
-const validPoint=p=>p&&Number.isFinite(p.latitude)&&Math.abs(p.latitude)<=90&&Number.isFinite(p.longitude)&&Math.abs(p.longitude)<=180;
+const validPoint=p=>p&&Number.isFinite(p.latitude)&&Math.abs(p.latitude)<=90&&Number.isFinite(p.longitude)&&Math.abs(p.longitude)<=180&&(p.requestId===undefined||Number.isSafeInteger(p.requestId)&&p.requestId>=0);
 const validText=(s,max)=>typeof s==='string'&&s.length>0&&s.length<=max&&!/[\\u0000-\\u001f\\u007f]/.test(s);
 const validState=s=>{if(!s||!Array.isArray(s.markers)||s.markers.length>500||(s.center!=null&&!validPoint(s.center))||(s.selectedId!=null&&!validText(s.selectedId,180))||(s.bottomInset!=null&&(!Number.isFinite(s.bottomInset)||s.bottomInset<0||s.bottomInset>1000)))return false;const ids=new Set();return s.markers.every(m=>{if(!m||!validText(m.id,180)||ids.has(m.id)||typeof m.label!=='string'||m.label.length>80||!validPoint(m)||typeof m.color!=='string'||!/^#[a-f\\d]{6}$/i.test(m.color)||(m.top25!==undefined&&typeof m.top25!=='boolean'))return false;ids.add(m.id);return true})};
 const geojson=(selection=false)=>({type:'FeatureCollection',features:current.markers.filter(m=>!selection||m.id===current.selectedId).map(m=>({type:'Feature',geometry:{type:'Point',coordinates:[m.longitude,m.latitude]},properties:{id:m.id,label:m.label,color:m.color,top25:m.top25===true}}))});
@@ -73,9 +74,9 @@ const apply=()=>{if(!loaded)return;map.getSource('discovery').setData(geojson())
  if(paddingChanged){map.setPadding({top:0,right:0,left:0,bottom});previousPadding=bottom}
  map.setFilter('discovery-labels',['all',['!', ['has','point_count']],['!=',['get','id'],current.selectedId??'']]);
  const selected=current.markers.find(m=>m.id===current.selectedId),c=current.center;
- const changedCenter=c&&(!previousCenter||c.latitude!==previousCenter.latitude||c.longitude!==previousCenter.longitude);
+ const changedCenter=c&&(!previousCenter||c.latitude!==previousCenter.latitude||c.longitude!==previousCenter.longitude||c.requestId!==previousCenter.requestId);
  if(c&&(changedCenter||paddingChanged))move({center:[c.longitude,c.latitude]});else if(selected&&(current.selectedId!==previousSelection||paddingChanged))move({center:[selected.longitude,selected.latitude]});
- previousSelection=current.selectedId;previousCenter=c&&{latitude:c.latitude,longitude:c.longitude};
+ previousSelection=current.selectedId;previousCenter=c&&{latitude:c.latitude,longitude:c.longitude,requestId:c.requestId};
 };
 window.glingDiscoveryUpdate=(sessionId,update)=>{if(sessionId!==config.sessionId||!validState(update))return;current=update;revision++;apply()};
 window.addEventListener('message',e=>{if(e.source!==window.parent||e.origin!==config.parentOrigin||!e.data||e.data.type!=='discovery.update'||e.data.sessionId!==config.sessionId)return;window.glingDiscoveryUpdate(e.data.sessionId,e.data.state)});

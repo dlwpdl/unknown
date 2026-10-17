@@ -4,6 +4,14 @@ import { readFileSync } from 'node:fs';
 import { discoveryPost, discoveryEvent, discoveryDays, discoveryMatches, directionsUrl, DISCOVERY_CATEGORIES } from '../src/lib/discovery.ts';
 
 const post = { id: 'p1', cityId: 'vancouver', author: { id: 'u1' }, tag: { slug: 'used' }, kind: 'listing', listingStatus: 'open', expiresAt: '2027-01-01T00:00:00Z', price: 20, title: '책상', body: '거래 장소\n\nGoogle 지도: https://www.google.com/maps/search/?api=1&query=49.28%2C-123.12\n위치: 도서관 앞' };
+test('a Google Maps attachment does not turn an unrelated community topic into a discovery listing', () => {
+  for (const slug of ['life', 'settlement', 'jobs', 'education', 'transport', 'meetup', 'business']) {
+    assert.equal(discoveryPost({ ...post, kind: 'story', tag: { slug }, hashtags: ['카페'], title: '일반 질문' }), null, slug);
+  }
+  for (const slug of ['food', 'travel', 'festival', 'shopping']) {
+    assert.ok(discoveryPost({ ...post, kind: 'story', tag: { slug } }), slug);
+  }
+});
 test('지도에는 공개 첨부 핀만 쓰며 거래 종료·만료 위치는 제외한다', () => {
   const item = discoveryPost(post, Date.parse('2026-10-15T00:00:00Z'));
   assert.equal(item.category, 'used');
