@@ -12,6 +12,20 @@ const compile = text => ts.transpileModule(text, { compilerOptions: { module: ts
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const previous = { key: 'viewer-and-city', page: 0, items: [{ id: 'post:old' }], cursor: { id: 'last-post', sortAt: '2026-10-14' }, postMore: true, eventMore: false };
 
+test('a system permission dialog preserves GPS while an actual background transition cancels it', () => {
+  const start = source.indexOf("    const listener = AppState.addEventListener('change', state => {");
+  const end = source.indexOf('    const revision = locationRevision;', start);
+  let listener;
+  const locationRevision = { current: 1 }, states = [], times = [], exports = {};
+  vm.runInNewContext(compile(source.slice(start, end) + '\nexports.ready = true;'), {
+    exports, Date, locationRevision, AppState: { addEventListener: (_event, callback) => { listener = callback; return { remove() {} }; } },
+    setLocating: value => states.push(value), setNow: value => times.push(value),
+  });
+  listener('inactive'); assert.equal(locationRevision.current, 1); assert.equal(states.length, 0);
+  listener('active'); assert.equal(times.length, 1);
+  listener('background'); assert.equal(locationRevision.current, 2); assert.deepEqual(states, [false]);
+});
+
 function gps({ granted = true, fix, defer = false } = {}) {
   const start = source.indexOf('  const locate = async () => {'), end = source.indexOf('  const changeMode = ', start);
   const changes = { center: null }, calls = [], locationRevision = { current: 0 }, AppState = { currentState: 'active' }, exports = {};
