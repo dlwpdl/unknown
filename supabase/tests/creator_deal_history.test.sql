@@ -75,6 +75,11 @@ set local role authenticated;
 create temp table deal_before as select public.get_admin_creator_deal('d1520000-0000-0000-0000-000000000001') value;
 select lives_ok($$select public.link_admin_creator_deal_merchant('d1520000-0000-0000-0000-000000000001','d1530000-0000-0000-0000-000000000001','2026-12-01',(select (value->>'updated_at')::timestamptz from deal_before))$$,'existing history can be linked to a vendor and a future planned collaboration date');
 select is(public.get_admin_creator_deal('d1520000-0000-0000-0000-000000000001')->>'merchant_name','Vendor one','linked vendor name is canonical');
+select is(public.get_admin_merchant_creator_deals('d1530000-0000-0000-0000-000000000001')->'rows'->0->>'id','d1520000-0000-0000-0000-000000000001','vendor side returns the same agreement ID');
+select is(public.get_admin_merchant_creator_deals('d1530000-0000-0000-0000-000000000001')->'rows'->0->>'creator_name','Deal fixture 55','vendor side resolves the creator name');
+select is(jsonb_array_length(public.get_admin_merchant_creator_deals('d1530000-0000-0000-0000-000000000002')->'rows'),0,'another vendor has no unrelated history');
+select throws_ok($$select public.get_admin_merchant_creator_deals('d1530000-0000-0000-0000-000000000001',-1)$$,'P0001','INVALID_PARTNERSHIP','vendor history bounds its offset');
+
 select is(public.get_admin_creator_deal('d1520000-0000-0000-0000-000000000001')->>'collaboration_on','2026-12-01','collaboration date is separate from agreement date');
 select is(public.get_admin_creator_deal('d1520000-0000-0000-0000-000000000001')-array['merchant_id','merchant_name','collaboration_on','updated_at'],(select value-array['merchant_id','merchant_name','collaboration_on','updated_at'] from deal_before),'linking preserves every cost, evidence and original creator/date field');
 select lives_ok($$select public.link_admin_creator_deal_merchant('d1520000-0000-0000-0000-000000000001','d1530000-0000-0000-0000-000000000001','2026-12-01',(select (value->>'updated_at')::timestamptz from deal_before))$$,'same link retry is idempotent despite the original revision');
@@ -91,6 +96,7 @@ update auth.sessions set aal='aal1' where id='d1560000-0000-0000-0000-0000000000
 set local role authenticated;
 select throws_ok($$select public.get_admin_creator_directory()$$,'P0001','ADMIN_REQUIRED','AAL1 session cannot read costs');
 select throws_ok($$select public.get_admin_creator_deal('d1520000-0000-0000-0000-000000000001')$$,'P0001','ADMIN_REQUIRED','AAL1 session cannot read exact history');
+select throws_ok($$select public.get_admin_merchant_creator_deals(null)$$,'P0001','ADMIN_REQUIRED','vendor history requires live MFA');
 select throws_ok($$select public.link_admin_creator_deal_merchant(null,null,null,null)$$,'P0001','ADMIN_REQUIRED','AAL1 cannot link vendors');
 select throws_ok($$select public.record_admin_creator_deal('{}')$$,'P0001','ADMIN_REQUIRED','authorization precedes payload parsing');
 reset role;
