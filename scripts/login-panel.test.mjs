@@ -1,4 +1,3 @@
-import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
@@ -13,7 +12,7 @@ test('iOS and Android public login omit review access while the explicit review 
     const code = ts.transpileModule(readFileSync(new URL('../src/components/login-panel.tsx', import.meta.url), 'utf8'), {
       compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
     }).outputText;
-    vm.runInNewContext(code, { exports, __DEV__: dev, process: { env: {} }, require: withLanguageImports((name) => {
+    vm.runInNewContext(code, { exports, __DEV__: dev, process: { env: {} }, require(name) {
       if (name === 'react/jsx-runtime') return { jsx, jsxs };
       if (name === 'react') return { useCallback: fn => fn, useRef: value => ({ current: value }), useState: value => [typeof value === 'function' ? value() : value, () => {}] };
       if (name === 'expo-router') return { useFocusEffect() {} };
@@ -26,7 +25,7 @@ if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () =
       if (name === 'react-native') return { Platform: { OS }, StyleSheet: { create: value => value }, Animated: { Value: class { interpolate() { return 1; } }, View: 'AnimatedView' }, View: 'View', TextInput: 'TextInput', KeyboardAvoidingView: 'KeyboardAvoidingView' };
       if (name === 'expo-apple-authentication') return { AppleAuthenticationButton: 'AppleButton', AppleAuthenticationButtonType: { SIGN_IN: 0 }, AppleAuthenticationButtonStyle: { WHITE: 0, BLACK: 1 } };
       return new Proxy({}, { get: (_, key) => key });
-    }) });
+    } });
     const props = { onApple() {}, onKakao() {}, onGoogle() {} };
     const publicTree = JSON.stringify(exports.LoginPanel(props));
     assert.ok(publicTree.includes(t.auth.kakao));
