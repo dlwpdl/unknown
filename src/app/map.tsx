@@ -84,8 +84,8 @@ function CityMap() {
   useEffect(() => {
     const timer = setInterval(() => { if (AppState.currentState === 'active') setNow(Date.now()); }, 60000);
     const listener = AppState.addEventListener('change', state => {
-      if (state !== 'active') { locationRevision.current++; setLocating(false); }
-      else setNow(Date.now());
+      if (state === 'background') { locationRevision.current++; setLocating(false); }
+      else if (state === 'active') setNow(Date.now());
     });
     const revision = locationRevision;
     return () => { clearInterval(timer); listener.remove(); revision.current++; };
