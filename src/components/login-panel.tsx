@@ -1,4 +1,3 @@
-import { useLanguage } from '@/hooks/use-language';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { Image } from 'expo-image';
 import { useFonts } from 'expo-font';
@@ -13,10 +12,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { GlassSurface } from '@/components/glass-surface';
-import { LanguageCard } from '@/components/language-card';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { Colors, Spacing } from '@/constants/theme';
 import { ThemeOverrideProvider, useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n/ko';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 const WELCOME_LINES = ['모임을 찾아요', '공연을 만나요', '이야기를 나눠요'];
@@ -44,7 +43,6 @@ export function LoginPanel({
   error?: string | null;
   onClose?: () => void;
 }) {
-  const { tr, t } = useLanguage();
   const theme = useTheme();
   const dark = theme === Colors.dark;
   const { play } = useInteractionFeedback();
@@ -87,42 +85,51 @@ export function LoginPanel({
       <View style={[styles.wrap, styles.adminBackground]}><SafeAreaView style={styles.wrap}>
         <KeyboardAvoidingView style={styles.wrap} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView analyticsId="components_login-panel.scrollview.1" contentContainerStyle={styles.adminCenter} keyboardShouldPersistTaps="handled">
-            <Image source={require('@/assets/brand/gling-night-wordmark.png')} style={styles.adminLogo} contentFit="contain" accessibilityLabel={t.appName} />
+            <View style={styles.adminBrand}>
+              <Image source={require('@/assets/brand/gling-night-wordmark.png')} style={styles.adminLogo} contentFit="contain" accessibilityLabel={t.appName} />
+              <View style={styles.adminBrandDivider} />
+              <ThemedText type="small" themeColor="textSecondary" style={styles.adminBrandLabel}>ADMIN</ThemedText>
+            </View>
+            <View style={styles.adminPanel}>
             <View style={styles.adminHeader}>
-              <ThemedText type="subtitle" accessibilityRole="header">{tr("관리자 로그인")}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">{reason ?? tr("관리자 계정으로 로그인해 주세요.")}</ThemedText>
+              <ThemedText type="subtitle" accessibilityRole="header" style={styles.adminTitle}>관리자 로그인</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.adminDescription}>{reason ?? '등록된 관리자 계정으로 로그인해 주세요.'}</ThemedText>
             </View>
             <View style={styles.adminForm} aria-busy={loading}>
               <View style={styles.adminField}>
-                <ThemedText type="smallBold">{tr("이메일")}</ThemedText>
+                <ThemedText type="smallBold">이메일</ThemedText>
                 <TextInput value={email} onChangeText={setEmail} editable={!disabled} autoCapitalize="none" autoCorrect={false} spellCheck={false}
                   autoComplete="email" textContentType="username" keyboardType="email-address" returnKeyType="next" onSubmitEditing={() => adminPasswordInput.current?.focus()}
-                  accessibilityLabel={tr("관리자 이메일")} placeholder={tr("관리자 이메일")} placeholderTextColor={Colors.dark.textSecondary}
+                  accessibilityLabel="관리자 이메일" placeholder="관리자 이메일" placeholderTextColor={Colors.dark.textSecondary}
                   onFocus={() => { play('selection'); setAdminFocusedField('email'); }} onBlur={() => setAdminFocusedField(null)}
                   style={[styles.adminInput, { borderColor: adminFocusedField === 'email' ? Colors.dark.accent : Colors.dark.line }]} />
               </View>
               <View style={styles.adminField}>
-                <ThemedText type="smallBold">{tr("비밀번호")}</ThemedText>
+                <ThemedText type="smallBold">비밀번호</ThemedText>
                 <TextInput ref={adminPasswordInput} value={password} onChangeText={setPassword} editable={!disabled} secureTextEntry
                   autoCapitalize="none" autoCorrect={false} spellCheck={false} autoComplete="current-password" textContentType="password"
-                  returnKeyType="go" onSubmitEditing={submitAdmin} accessibilityLabel={tr("관리자 비밀번호")} placeholder={tr("관리자 비밀번호")} placeholderTextColor={Colors.dark.textSecondary}
+                  returnKeyType="go" onSubmitEditing={submitAdmin} accessibilityLabel="관리자 비밀번호" placeholder="관리자 비밀번호" placeholderTextColor={Colors.dark.textSecondary}
                   onFocus={() => { play('selection'); setAdminFocusedField('password'); }} onBlur={() => setAdminFocusedField(null)}
                   style={[styles.adminInput, { borderColor: adminFocusedField === 'password' ? Colors.dark.accent : Colors.dark.line }]} />
               </View>
-              {!!error && <View style={styles.adminError} accessibilityRole="alert" accessibilityLiveRegion="polite"><ThemedText type="small">{tr(error)}</ThemedText></View>}
-              <RaisedActionButton analyticsId="components_login-panel.pressable.3" label={loading ? tr("로그인 중…") : tr("관리자 로그인")} onPress={submitAdmin} disabled={submitDisabled} busy={loading} />
-              {onGoogle && <Pressable analyticsId="components_login-panel.pressable.2" accessibilityRole="button" accessibilityLabel={t.auth.google}
+              {!!error && <View style={styles.adminError} accessibilityRole="alert" accessibilityLiveRegion="polite"><ThemedText type="small">{error}</ThemedText></View>}
+              <RaisedActionButton analyticsId="components_login-panel.pressable.3" label={loading ? '로그인 중…' : '로그인'} onPress={submitAdmin} disabled={submitDisabled} busy={loading} />
+              {onGoogle && <>
+              <View style={styles.adminDivider} accessible={false}>
+                <View style={styles.adminDividerLine} /><ThemedText type="small" themeColor="textSecondary">또는</ThemedText><View style={styles.adminDividerLine} />
+              </View>
+              <Pressable analyticsId="components_login-panel.pressable.2" accessibilityRole="button" accessibilityLabel={t.auth.google}
                 disabled={disabled} accessibilityState={{ disabled, busy: loading }} onPress={() => { if (!disabled) { play('selection'); onGoogle(); } }}
                 style={({ pressed }) => [styles.adminGoogle, { opacity: disabled ? 0.6 : pressed ? 0.8 : 1 }]}>
                 <Image source={require('@/assets/brand/google-g.png')} style={styles.googleIcon} contentFit="contain" accessible={false} />
                 <ThemedText type="small" style={[styles.googleText, googleFontLoaded && { fontFamily: 'GoogleSansMedium' }]}>{t.auth.google}</ThemedText>
-              </Pressable>}
+              </Pressable></>}
+            </View>
             </View>
             <View style={styles.adminFooter}>
-              <ThemedText type="small" themeColor="textSecondary" style={styles.adminNote}>{tr("사전에 등록된 관리자 계정만 접근할 수 있습니다.")}</ThemedText>
               <View style={[styles.legalLinks, styles.adminLegalLinks]}>{['terms', 'privacy'].map((path) => <Pressable analyticsId="components_login-panel.pressable.4" key={path}
                 accessibilityRole="link" onPress={() => { play('selection'); void Linking.openURL(`${publicSiteUrl}/${path}`); }} style={styles.legalLink}>
-                <ThemedText type="small" themeColor="textSecondary">{path === 'terms' ? tr("이용약관") : tr("개인정보처리방침")}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">{path === 'terms' ? '이용약관' : '개인정보처리방침'}</ThemedText>
               </Pressable>)}</View>
               {onClose && <Pressable analyticsId="components_login-panel.pressable.6" accessibilityRole="button" style={styles.adminClose} onPress={() => { play('selection'); onClose(); }}>
                 <ThemedText type="smallBold" themeColor="textSecondary">{t.auth.close}</ThemedText>
@@ -149,19 +156,18 @@ export function LoginPanel({
         <GlassSurface tone="control" style={styles.welcomeGlass}>
           <View style={styles.welcomeContent}>
             {showWelcome && <View style={styles.welcomeLine}>
-              <ThemedText type="subtitle">{tr("오늘은") + " "}</ThemedText>
+              <ThemedText type="subtitle">오늘은 </ThemedText>
               <Animated.View style={{ opacity: welcomeOpacity,
                 transform: [{ translateY: welcomeOpacity.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] }}>
-                <ThemedText type="subtitle" style={{ color: theme.accent }}>{tr(WELCOME_LINES[welcomeIndex])}</ThemedText>
+                <ThemedText type="subtitle" style={{ color: theme.accent }}>{WELCOME_LINES[welcomeIndex]}</ThemedText>
               </Animated.View>
             </View>}
             <ThemedText type="small" themeColor="textSecondary" style={styles.tagline}>
-              {reason == null ? t.auth.tagline : tr(reason)}
+              {reason ?? t.auth.tagline}
             </ThemedText>
           </View>
         </GlassSurface>
 
-        <LanguageCard />
         <View style={styles.actions}>
             {Platform.OS === 'ios' && onApple && (<GlassSurface tone="control" interactive style={styles.socialGlass}><View style={styles.appleInset}>
               <AppleAuthentication.AppleAuthenticationButton
@@ -173,7 +179,7 @@ export function LoginPanel({
                 style={[styles.appleButton, { opacity: disabled ? 0.6 : 1 }]}
               />
             </View></GlassSurface>)}
-            {onKakao && <GlassSurface colorScheme="dark" tone="control" interactive style={styles.socialGlass}><Pressable analyticsId="components_login-panel.pressable.1"
+            {onKakao && <GlassSurface tone="control" interactive style={styles.socialGlass}><Pressable analyticsId="components_login-panel.pressable.1"
               onPress={() => { if (!disabled) { play('selection'); onKakao(); } }}
               disabled={disabled}
               accessibilityRole="button"
@@ -197,16 +203,16 @@ export function LoginPanel({
             {passwordLogin && (
               <GlassSurface tone="control" style={styles.devGlass}>
               <View style={styles.devBox}>
-                <ThemedText type="smallBold">{onAdminLogin ? tr("관리자 계정 로그인") : onReviewLogin ? t.auth.reviewLoginTitle : t.auth.devLoginTitle}</ThemedText>
+                <ThemedText type="smallBold">{onAdminLogin ? '관리자 계정 로그인' : onReviewLogin ? t.auth.reviewLoginTitle : t.auth.devLoginTitle}</ThemedText>
                 <TextInput
                   value={email}
                   onChangeText={setEmail}
                   autoCapitalize="none"
                   autoComplete="email"
                   keyboardType="email-address"
-                  placeholder={onAdminLogin ? tr("관리자 이메일") : onReviewLogin ? t.auth.reviewEmail : t.auth.devEmail}
+                  placeholder={onAdminLogin ? '관리자 이메일' : onReviewLogin ? t.auth.reviewEmail : t.auth.devEmail}
                   placeholderTextColor={theme.textSecondary}
-                  accessibilityLabel={onAdminLogin ? tr("관리자 이메일") : onReviewLogin ? t.auth.reviewEmail : t.auth.devEmail}
+                  accessibilityLabel={onAdminLogin ? '관리자 이메일' : onReviewLogin ? t.auth.reviewEmail : t.auth.devEmail}
                   autoCorrect={false}
                   spellCheck={false}
                   style={[styles.devInput, { color: theme.text, borderColor: theme.line }]}
@@ -220,9 +226,9 @@ export function LoginPanel({
                   autoCorrect={false}
                   spellCheck={false}
                   autoComplete="current-password"
-                  placeholder={onAdminLogin ? tr("관리자 비밀번호") : onReviewLogin ? t.auth.reviewPassword : t.auth.devPassword}
+                  placeholder={onAdminLogin ? '관리자 비밀번호' : onReviewLogin ? t.auth.reviewPassword : t.auth.devPassword}
                   placeholderTextColor={theme.textSecondary}
-                  accessibilityLabel={onAdminLogin ? tr("관리자 비밀번호") : onReviewLogin ? t.auth.reviewPassword : t.auth.devPassword}
+                  accessibilityLabel={onAdminLogin ? '관리자 비밀번호' : onReviewLogin ? t.auth.reviewPassword : t.auth.devPassword}
                   style={[styles.devInput, { color: theme.text, borderColor: theme.line }]}
                 />
                 <Pressable analyticsId="components_login-panel.pressable.3"
@@ -231,7 +237,7 @@ export function LoginPanel({
                   accessibilityRole="button"
                   accessibilityState={{ disabled: disabled || !email.trim() || !password, busy: loading }}
                   style={({ pressed }) => [styles.devButton, { backgroundColor: theme.accent, opacity: disabled || !email.trim() || !password ? 0.5 : pressed ? 0.8 : 1, transform: [{ scale: pressed && !reducedMotion ? 0.97 : 1 }] }]}>
-                  <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{onAdminLogin ? tr("관리자 로그인") : onReviewLogin ? t.auth.reviewLoginCta : t.auth.devLoginCta}</ThemedText>
+                  <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{onAdminLogin ? '관리자 로그인' : onReviewLogin ? t.auth.reviewLoginCta : t.auth.devLoginCta}</ThemedText>
                 </Pressable>
               </View>
               </GlassSurface>
@@ -240,18 +246,18 @@ export function LoginPanel({
 
         {!!error && (
           <ThemedText accessibilityRole="alert" type="small" style={[styles.error, { color: theme.accent }]}>
-            {tr(error)}
+            {error}
           </ThemedText>
         )}
 
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>
-          {onAdminLogin ? tr("사전에 등록된 관리자 계정만 접근할 수 있습니다.") : onReviewLogin ? t.auth.reviewLoginNote : t.auth.loginNote}
+          {onAdminLogin ? '사전에 등록된 관리자 계정만 접근할 수 있습니다.' : onReviewLogin ? t.auth.reviewLoginNote : t.auth.loginNote}
         </ThemedText>
 
         <View style={styles.legalLinks}>
           {['terms', 'privacy'].map((path) => <Pressable analyticsId="components_login-panel.pressable.4" key={path} onPress={() => { play('selection'); void Linking.openURL(`${publicSiteUrl}/${path}`); }}
             accessibilityRole="link" style={styles.legalLink}>
-            <ThemedText type="small" themeColor="textSecondary">{path === 'terms' ? tr("이용약관") : tr("개인정보처리방침")}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{path === 'terms' ? '이용약관' : '개인정보처리방침'}</ThemedText>
           </Pressable>)}
         </View>
 
@@ -271,13 +277,19 @@ export function LoginPanel({
 
 const styles = StyleSheet.create({
   adminBackground: { backgroundColor: Colors.dark.background },
-  adminCenter: { flexGrow: 1, width: '100%', maxWidth: 440, alignSelf: 'center', justifyContent: 'center', paddingHorizontal: Spacing.four, paddingVertical: Spacing.five, gap: Spacing.five },
-  adminLogo: { width: 180, height: 64, alignSelf: 'flex-start' },
-  adminHeader: { gap: Spacing.two }, adminForm: { gap: Spacing.three }, adminField: { gap: Spacing.two },
-  adminInput: { minHeight: 52, minWidth: 0, borderWidth: 1, borderRadius: 12, paddingHorizontal: Spacing.three, paddingVertical: 12, color: Colors.dark.text, backgroundColor: Colors.dark.backgroundElement, fontSize: 16, lineHeight: 24 },
+  adminCenter: { flexGrow: 1, width: '100%', maxWidth: 472, alignSelf: 'center', justifyContent: 'center', paddingHorizontal: Spacing.three, paddingVertical: Spacing.five, gap: Spacing.four },
+  adminBrand: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.three },
+  adminLogo: { width: 116, height: 40 },
+  adminBrandDivider: { height: 16, width: 1, backgroundColor: Colors.dark.line },
+  adminBrandLabel: { fontSize: 11, letterSpacing: 2, fontWeight: '600' },
+  adminPanel: { padding: Spacing.four, gap: Spacing.four, borderRadius: 24, borderWidth: 1, borderColor: Colors.dark.line, backgroundColor: Colors.dark.card },
+  adminHeader: { gap: Spacing.two }, adminTitle: { fontSize: 28, lineHeight: 36, letterSpacing: -0.6 },
+  adminDescription: { fontSize: 14, lineHeight: 22 }, adminForm: { gap: 20 }, adminField: { gap: Spacing.two },
+  adminInput: { minHeight: 52, minWidth: 0, borderWidth: 1, borderRadius: 12, paddingHorizontal: Spacing.three, paddingVertical: 12, color: Colors.dark.text, backgroundColor: Colors.dark.background, fontSize: 16, lineHeight: 24 },
   adminError: { padding: Spacing.three, borderWidth: 1, borderColor: Colors.dark.accent, borderRadius: 12, backgroundColor: Colors.dark.card },
+  adminDivider: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three }, adminDividerLine: { flex: 1, height: 1, backgroundColor: Colors.dark.line },
   adminGoogle: { minHeight: 52, borderWidth: 1, borderColor: Colors.dark.line, borderRadius: 999, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
-  adminFooter: { gap: Spacing.two }, adminNote: { textAlign: 'center' },
+  adminFooter: { gap: Spacing.two },
   adminLegalLinks: { justifyContent: 'center', flexWrap: 'wrap' }, adminClose: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   wrap: {
     flex: 1,
