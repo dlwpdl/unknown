@@ -40,15 +40,15 @@ select ('13810000-0000-0000-0000-'||lpad(i::text,12,'0'))::uuid,
  '13800000-0000-0000-0000-000000000001','vancouver',4,'추천 카페 '||i,'Verified cafe introduction',first_slot-make_interval(hours=>25+i)
 from rec_clock cross join generate_series(1,6) i;
 insert into public.posts(id,author_id,city_id,tag_id,title,body,created_at)
-select '13810000-0000-0000-0000-000000000011','13800000-0000-0000-0000-000000000001','toronto',1,
+select '13810000-0000-0000-0000-000000000011','13800000-0000-0000-0000-000000000001','toronto',4,
  'Toronto recommendation','A separate city story',first_slot-interval '24 hours' from rec_clock;
 select private.send_city_recommendations((select first_slot-interval '3 hours' from rec_clock));
-select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000011'),1,'Toronto receives its own 11:00 rather than Vancouver time');
+select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000011'),1,'Toronto receives its own 09:00 rather than Vancouver time');
 select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002'),0,'Toronto slot does not send early to Vancouver');
 
 select lives_ok($$select private.send_city_recommendations((select first_slot-interval '15 minutes' from rec_clock))$$,'no early regular recommendation');
 select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002'),0,'regular slots are not sent early');
-select lives_ok($$select private.send_city_recommendations((select first_slot from rec_clock))$$,'11:00 recommendation succeeds');
+select lives_ok($$select private.send_city_recommendations((select first_slot from rec_clock))$$,'09:00 recommendation succeeds');
 select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002'),1,'first local slot is delivered');
 select is((select count(*)::int from public.notifications where user_id in ('13800000-0000-0000-0000-000000000005','13800000-0000-0000-0000-000000000006','13800000-0000-0000-0000-000000000007','13800000-0000-0000-0000-000000000008','13800000-0000-0000-0000-000000000009')),0,'opt-outs, expired sessions and example accounts stay excluded');
 select private.send_city_recommendations((select first_slot+interval '15 minutes' from rec_clock));
@@ -96,7 +96,7 @@ insert into private.ticketmaster_event_clicks(target_id,user_id,day,created_at)
 select md5('ticketmaster:vancouver:real-fest')::uuid,id,(first_slot at time zone 'UTC')::date,first_slot-interval '1 hour'
 from public.profiles cross join rec_clock where id in ('13800000-0000-0000-0000-000000000003','13800000-0000-0000-0000-000000000004');
 select private.send_city_recommendations((select first_slot from rec_clock));
-select ok((select title='Real Festival' and body='지역 밴드들이 함께하는 야외 음악 축제예요. 같이 갈 사람!?' from public.notifications where user_id='13800000-0000-0000-0000-000000000002' limit 1),'three distinct real members qualify a festival with its specific title and introduction');
+select ok((select title='Real Festival' and body like '%지역 밴드들이 함께하는 야외 음악 축제예요.' from public.notifications where user_id='13800000-0000-0000-0000-000000000002' limit 1),'three distinct real members qualify a festival with its specific title and introduction');
 select is((select route from public.notifications where user_id='13800000-0000-0000-0000-000000000002' limit 1),'/events/real-fest?cityId=vancouver','festival opens its exact city event');
 select is((select count(*)::int from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id where n.user_id='13800000-0000-0000-0000-000000000002'),1,'festival uses the existing push delivery queue');
 update public.ticketmaster_event_cache set payload=jsonb_set(payload,'{events,0,status}','"canceled"');
@@ -106,15 +106,15 @@ update public.ticketmaster_event_cache set updated_at=now()-interval '24 hours',
 select is(private.notification_target_visible('13800000-0000-0000-0000-000000000002','ticketmaster_event',md5('ticketmaster:vancouver:real-fest')::uuid),false,'stale event data is not recommended or delivered');
 update public.ticketmaster_event_cache set updated_at=now(),expires_at=now()+interval '15 minutes';
 
--- Fresh event discovery is distinct from upstream creation and real popularity.
+-- A fresh cache observation alone is insufficient reason to push generic inventory.
 insert into public.ticketmaster_event_cache(cache_key,payload,expires_at)
 values('tm-event:vancouver:new-event',jsonb_build_object('event',jsonb_build_object(
  'id','new-event','name','Newly discovered concert','country','CA','city','Vancouver','status','onsale',
  'startsAt',(now()+interval '31 days')::text,'timeUnconfirmed',false)),now()+interval '15 minutes');
 select private.send_city_recommendations((select first_slot+interval '90 minutes' from rec_clock));
-select ok((select title='Newly discovered concert' and body like '행사예요. %같이 갈 사람!?' from public.notifications where user_id='13800000-0000-0000-0000-000000000002' and route like '%new-event%'),'a newly observed event gets a factual description without claiming upstream publication time');
+select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002' and route like '%new-event%'),0,'a newly observed distant generic event is not used as slot filler');
 select private.send_city_recommendations((select first_slot+interval '95 minutes' from rec_clock));
-select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002' and route like '%new-event%'),1,'the event is not repeated');
+select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002' and route like '%new-event%'),0,'repeated runs do not promote unqualified inventory');
 
 insert into public.posts(id,author_id,city_id,tag_id,title,body,view_count,created_at)
 select '13810000-0000-0000-0000-000000000100','13800000-0000-0000-0000-000000000001','vancouver',1,
@@ -137,7 +137,7 @@ select private.send_city_recommendations((select first_slot+interval '4 hours 30
 select is((select count(*)::int from public.notifications where user_id='13800000-0000-0000-0000-000000000002'),3,'blocked place authors are excluded');
 delete from public.blocks where blocker_id='13800000-0000-0000-0000-000000000002';
 select private.send_city_recommendations((select first_slot+interval '4 hours 35 minutes' from rec_clock));
-select ok((select body='새 맛집 이야기가 올라왔어요. New cafe' from public.notifications
+select ok((select body='New cafe' from public.notifications
  where user_id='13800000-0000-0000-0000-000000000002' and target_id='13810000-0000-0000-0000-000000000101'),'a fresh place post produces its own recommendation');
 insert into public.posts(id,author_id,city_id,tag_id,title,body,created_at)
 select ('13810000-0000-0000-0000-'||lpad((200+i)::text,12,'0'))::uuid,'13800000-0000-0000-0000-000000000001','vancouver',4,
@@ -187,7 +187,7 @@ update public.posts set status='removed';
 delete from public.ticketmaster_event_cache;
 delete from public.notifications where user_id::text like '13800000-%';
 delete from private.trending_topic_sent;
-update public.notification_preferences set push_enabled=(right(user_id::text,2) in ('02','04')),trending=true where user_id::text like '13800000-%';
+update public.notification_preferences set push_enabled=(right(user_id::text,2) in ('02','04')),trending=true,interests=true,interest_tag_ids=array[1] where user_id::text like '13800000-%';
 insert into public.posts(id,author_id,city_id,tag_id,title,body,created_at)
 select '13810000-0000-0000-0000-000000000c01','13800000-0000-0000-0000-000000000001','vancouver',1,
  'First member target','A regular slot target',first_slot-interval '24 hours' from rec_clock;
