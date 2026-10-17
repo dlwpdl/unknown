@@ -78,7 +78,7 @@ export function mergeCityTop25(items: DiscoveryItem[], cityId: string, picks: re
   return [...places, ...visible.filter(item => !merged.has(item.id))];
 }
 const categoryFor = (post: Post): DiscoveryCategory => {
-  if (post.tag.slug === 'housing' || post.tag.slug === 'used') return post.tag.slug;
+  if (post.tag.slug === 'housing' || post.tag.slug === 'used' || post.tag.slug === 'festival') return post.tag.slug;
   const tags = (post.hashtags ?? []).join(' ');
   for (const [pattern, category] of [
     [/전시|exhibition/i, 'exhibition'], [/도서관|library/i, 'library'], [/카페|cafe|café/i, 'cafe'],
