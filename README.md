@@ -1,6 +1,5 @@
 
 
-저장소는 **[dlwpdl/gling](https://github.com/dlwpdl/gling)**, 앱 작업 브랜치는 `mobile-app`입니다.
 
 ## 실행
 
