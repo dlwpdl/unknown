@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { loadMerchants } from '@/lib/admin-merchants';
 import {
-  creatorPlatformName, creatorProfiles, amountToCents, actBenefitCoupon, issueBenefitCoupon, loadPartnerships, savePartnership, partnershipError,
+  creatorPlatformName, creatorProfiles, amountToCents, actBenefitCoupon, issueBenefitCoupon, loadPartnerships, savePartnership, partnershipError, recordCreatorDeal,
   BENEFIT_STATUSES, CAMPAIGN_STATUSES, CREATOR_STATUSES, PARTICIPATION_STAGES, PAYMENT_STATUSES,
   type Benefit, type BenefitCoupon, type Creator, type CreatorProfile, type PartnershipKind,
 } from '@/lib/admin-partnerships';
@@ -181,6 +181,38 @@ export function PartnershipEditor({ state, ...callbacks }: { state: PartnershipE
     </fieldset>
     {action.acknowledged && <p className="partnership-muted">저장 요청을 다시 보내지 않고, 저장된 내용만 조회합니다.</p>}
     <div className="partnership-form-actions"><button type="button" disabled={action.busy} onClick={callbacks.onCancel}>돌아가기</button><button type="submit" className="partnership-primary" disabled={action.busy}>{action.busy ? action.acknowledged ? '내용 확인 중…' : '저장 중…' : action.acknowledged ? '저장 내용 다시 확인' : '저장'}</button></div>
+  </form>;
+}
+
+export function CreatorDealForm({ requestId, creator, initialCurrency = 'CAD', ...callbacks }: { requestId: string; creator: Creator; initialCurrency?: 'CAD' | 'USD' } & Callbacks) {
+  const { play } = useInteractionFeedback();
+  const [data, setData] = useState({ agreed_on: new Date().toLocaleDateString('sv-SE'), adFee: '', mealSupport: '', deliverables: '', source_url: '', notes: '' });
+  const [currency, setCurrency] = useState<'CAD' | 'USD'>(initialCurrency);
+  const [merchant, setMerchant] = useState<{ id: string | null; name: string }>({ id: null, name: '' });
+  const action = useSave(callbacks);
+  const change = (field: keyof typeof data, value: string) => { setData(current => ({ ...current, [field]: value })); callbacks.onDirty(true); };
+  return <form className="partnership-form" onSubmit={event => { event.preventDefault(); void action.save(() => recordCreatorDeal(supabase, {
+    id: requestId, creator_id: creator.id, merchant_id: merchant.id, agreed_on: data.agreed_on, currency,
+    ad_fee_cents: amountToCents(data.adFee), meal_support_cents: amountToCents(data.mealSupport),
+    deliverables: data.deliverables.trim(), source_url: data.source_url.trim(), notes: data.notes.trim(),
+  })); }}>
+    {action.error && <p role="alert" className="partnership-form-error">{action.error}</p>}
+    <p className="partnership-muted">{creator.display_name}의 합의 조건을 새 이력으로 남깁니다. 이전 기록은 보존됩니다.</p>
+    <fieldset className="partnership-form" disabled={action.busy || action.acknowledged}>
+      <EntityPicker type="merchant" value={merchant.id ?? ''} selectedLabel={merchant.name} label="협업 업체" optional disabled={action.busy} onPick={(id, name) => { setMerchant({ id, name }); callbacks.onDirty(true); }} />
+      <div className="partnership-form-grid">
+        <label>합의 날짜<input type="date" required min="1900-01-01" value={data.agreed_on} onFocus={() => play('selection')} onChange={event => change('agreed_on', event.target.value)} /></label>
+        <label>통화<select value={currency} onChange={event => { const value = event.target.value; if (value === 'CAD' || value === 'USD') { play('selection'); setCurrency(value); callbacks.onDirty(true); } }}><option value="CAD">CAD</option><option value="USD">USD</option></select></label>
+        <label>광고비<input inputMode="decimal" maxLength={12} placeholder="없으면 0 · 모르면 비워 두세요" value={data.adFee} onFocus={() => play('selection')} onChange={event => change('adFee', event.target.value)} /></label>
+        <label>식사 지원 한도<input inputMode="decimal" maxLength={12} placeholder="예: 150.00" value={data.mealSupport} onFocus={() => play('selection')} onChange={event => change('mealSupport', event.target.value)} /></label>
+      </div>
+      <label>약속한 콘텐츠<input required maxLength={300} placeholder="예: 릴스 1개 · 지모코·글링 소개" value={data.deliverables} onFocus={() => play('selection')} onChange={event => change('deliverables', event.target.value)} /></label>
+      <label>합의 근거 링크 · 선택<input type="url" maxLength={2048} placeholder="DM·이메일·계약서 주소" value={data.source_url} onFocus={() => play('selection')} onChange={event => change('source_url', event.target.value)} /></label>
+      <label>조건·확인 근거<textarea required maxLength={3000} placeholder="상대 확답, 지원 범위, 초과 비용 부담, 확인한 날짜 등을 기록하세요." value={data.notes} onFocus={() => play('selection')} onChange={event => change('notes', event.target.value)} /></label>
+      <p className="partnership-muted">미확인 금액은 비워 두세요. 지원 한도와 합의 금액을 기록하며, 실제 지급·방문·게시 완료는 따로 확인합니다.</p>
+    </fieldset>
+    {action.acknowledged && <p className="partnership-muted">저장 요청을 다시 보내지 않고, 저장된 내용만 조회합니다.</p>}
+    <div className="partnership-form-actions"><button type="button" disabled={action.busy} onClick={callbacks.onCancel}>돌아가기</button><button type="submit" className="partnership-primary" disabled={action.busy}>{action.busy ? '저장 내용 확인 중…' : action.acknowledged ? '저장 내용 다시 확인' : '합의 조건 저장'}</button></div>
   </form>;
 }
 

@@ -2,19 +2,19 @@ import { useEffect, useRef, useState } from 'react';
 
 import {
   BENEFIT_STATUSES, CAMPAIGN_STATUSES, CREATOR_STATUSES, PARTICIPATION_STAGES, PAYMENT_STATUSES, PARTNERSHIP_ACTIONS,
-  creatorProfiles, loadPartnerships, partnershipError, type Benefit, type BenefitCoupon,
+  CREATOR_DEAL_SORTS, creatorDealAmount, creatorProfiles, loadCreatorDeal, loadPartnerships, partnershipError, type Benefit, type BenefitCoupon, type Creator, type CreatorDirectoryOptions,
   type Participation, type PartnershipPage, type PartnershipRecord, type PartnershipView,
 } from '@/lib/admin-partnerships';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { merchantContactLinks, merchantEventId, safeMerchantSourceUrl } from '@/lib/merchant-source';
 import { supabase } from '@/lib/supabase';
-import { CouponActionForm, CouponIssueForm, PartnershipEditor, type PartnershipEditorState } from './admin-partnership-editors';
-import { AdminSearch } from './admin-table-controls';
+import { CouponActionForm, CouponIssueForm, CreatorDealForm, PartnershipEditor, type PartnershipEditorState } from './admin-partnership-editors';
+import { AdminSearch, AdminSelect } from './admin-table-controls';
 import './admin-partnerships.css';
 
 const titles = { creators: '크리에이터', campaigns: '협업 캠페인', benefits: '혜택·쿠폰' };
 const explanations = {
-  creators: '활동 지역과 콘텐츠를 확인하고, 참여한 협업을 이어서 관리합니다.',
+  creators: '최근 협업 조건을 비교하고, 쌓인 이력을 다음 제안에 참고하세요.',
   campaigns: '업체와 크리에이터를 연결하고, 지원부터 콘텐츠 제출까지 확인합니다.',
   benefits: '방문 혜택의 조건을 정하고, 누구에게 발급하고 사용했는지 확인합니다.',
 };
@@ -33,35 +33,39 @@ export function AdminPartnershipsView({ kind, refreshSignal, onUser, onStateChan
 }) {
   const { play } = useInteractionFeedback();
   const [query, setQuery] = useState(''), [input, setInput] = useState(''), [offset, setOffset] = useState(0);
+  const [creatorSort, setCreatorSort] = useState<CreatorDirectoryOptions['sort']>('date_desc');
+  const [currency, setCurrency] = useState<CreatorDirectoryOptions['currency']>('CAD');
   const [selection, setSelection] = useState<{ kind: PartnershipView; id: string } | null>(null);
   const [childOffset, setChildOffset] = useState(0), [revision, setRevision] = useState(0);
   const [response, setResponse] = useState<{ key: string; page: PartnershipPage } | null>(null);
   const [failure, setFailure] = useState<{ key: string; message: string } | null>(null), [notice, setNotice] = useState('');
   const [editor, setEditor] = useState<PartnershipEditorState | null>(null);
+  const [dealTask, setDealTask] = useState<{ requestId: string; creator: Creator } | null>(null);
   const [couponTask, setCouponTask] = useState<{ requestId: string; benefit: Benefit } | { coupon: BenefitCoupon; action: 'redeem' | 'revoke' } | null>(null);
   const [dirty, setDirty] = useState(false), [busy, setBusy] = useState(false);
   const [checked, setChecked] = useState<{ key: string; ids: string[] }>({ key: '', ids: [] });
   const dialog = useRef<HTMLDialogElement>(null), lastTrigger = useRef<HTMLButtonElement | null>(null);
   const id = selection?.kind === kind ? selection.id : null;
-  const key = `${kind}:${query}:${offset}:${id}:${childOffset}:${revision}:${refreshSignal}`;
+  const filterKey = kind === 'creators' ? `${creatorSort}:${currency}` : '';
+  const key = `${kind}:${filterKey}:${query}:${offset}:${id}:${childOffset}:${revision}:${refreshSignal}`;
   const error = failure?.key === key ? failure.message : '';
   const responseKey = response?.key;
   const page = response?.key === key ? response.page : null;
-  const listKey = `${kind}:${query}:${offset}:${refreshSignal}:${revision}`;
+  const listKey = `${kind}:${filterKey}:${query}:${offset}:${refreshSignal}:${revision}`;
   const checkedIds = checked.key === listKey ? checked.ids : [];
   const checkedRows = page?.rows.filter(row => checkedIds.includes(row.id)) ?? [];
   const allChecked = Boolean(page?.rows.length) && checkedRows.length === page?.rows.length;
   const record = page?.record;
-  const opened = Boolean(id || editor || couponTask);
+  const opened = Boolean(id || editor || couponTask || dealTask);
 
   useEffect(() => {
     if (responseKey === key) return;
     let active = true;
-    void loadPartnerships(supabase, kind, query, offset, id, childOffset)
+    void loadPartnerships(supabase, kind, query, offset, id, childOffset, kind === 'creators' ? { sort: creatorSort, currency } : undefined)
       .then((data) => { if (active) setResponse({ key, page: data }); })
       .catch((reason) => { if (active) setFailure({ key, message: partnershipError(reason) }); });
     return () => { active = false; };
-  }, [key, kind, query, offset, id, childOffset, responseKey]);
+  }, [key, kind, query, offset, id, childOffset, responseKey, creatorSort, currency]);
   useEffect(() => {
     if (opened && !dialog.current?.open) dialog.current?.showModal();
     if (!opened && dialog.current?.open) { dialog.current.close(); lastTrigger.current?.focus(); }
@@ -79,27 +83,29 @@ export function AdminPartnershipsView({ kind, refreshSignal, onUser, onStateChan
   }
   function close() {
     if (!discard()) return;
-    play('selection'); setEditor(null); setCouponTask(null); setSelection(null); setDirty(false); setChildOffset(0);
+    play('selection'); setEditor(null); setDealTask(null); setCouponTask(null); setSelection(null); setDirty(false); setChildOffset(0);
   }
   function open(row: PartnershipRecord, trigger?: HTMLButtonElement) {
     if (!discard()) return;
     play('selection'); lastTrigger.current = trigger ?? null;
-    setSelection({ kind, id: row.id }); setChildOffset(0); setEditor(null); setCouponTask(null); setDirty(false); setNotice('');
+    setSelection({ kind, id: row.id }); setChildOffset(0); setEditor(null); setDealTask(null); setCouponTask(null); setDirty(false); setNotice('');
   }
   function edit(state: PartnershipEditorState) {
     if (!discard()) return;
-    play('selection'); setEditor(state); setCouponTask(null); setDirty(false); setNotice('');
+    play('selection'); setEditor(state); setDealTask(null); setCouponTask(null); setDirty(false); setNotice('');
   }
   async function saved(savedId: string) {
     const targetId = editor && editor.kind !== 'participation' ? savedId : id;
     try {
-      const data = await loadPartnerships(supabase, kind, query, offset, targetId, 0);
-      const matched = couponTask ? data.coupons.some((row) => row.id === savedId)
+      const savedDeal = dealTask ? await loadCreatorDeal(supabase, savedId) : null;
+      const data = await loadPartnerships(supabase, kind, query, offset, targetId, 0, kind === 'creators' ? { sort: creatorSort, currency } : undefined);
+      const matched = dealTask ? savedDeal?.creator_id === dealTask.creator.id && savedDeal.id === savedId && data.record?.id === targetId
+        : couponTask ? data.coupons.some((row) => row.id === savedId)
         : editor?.kind === 'participation' ? data.participations.some((row) => row.id === savedId) : data.record?.id === savedId;
       if (!matched) throw new Error('PARTNERSHIP_READBACK_REQUIRED');
-      setResponse({ key: `${kind}:${query}:${offset}:${targetId}:0:${revision}:${refreshSignal}`, page: data });
+      setResponse({ key: `${kind}:${filterKey}:${query}:${offset}:${targetId}:0:${revision}:${refreshSignal}`, page: data });
       if (editor && editor.kind !== 'participation') setSelection({ kind, id: savedId });
-      setChildOffset(0); setDirty(false); setEditor(null); setCouponTask(null); setNotice('저장한 내용을 확인했습니다.');
+      setChildOffset(0); setDirty(false); setEditor(null); setDealTask(null); setCouponTask(null); setNotice('저장한 내용을 확인했습니다.');
     } catch {
       setNotice('서버 저장은 완료됐습니다. 저장 내용 확인이 필요합니다.');
       throw new Error('PARTNERSHIP_READBACK_REQUIRED');
@@ -107,7 +113,7 @@ export function AdminPartnershipsView({ kind, refreshSignal, onUser, onStateChan
   }
   function cancelEditor() {
     if (!discard()) return;
-    play('selection'); setEditor(null); setCouponTask(null); setDirty(false);
+    play('selection'); setEditor(null); setDealTask(null); setCouponTask(null); setDirty(false);
   }
   function newRecord(event?: React.MouseEvent<HTMLButtonElement>) {
     lastTrigger.current = event?.currentTarget ?? null;
@@ -120,7 +126,7 @@ export function AdminPartnershipsView({ kind, refreshSignal, onUser, onStateChan
       : record && 'display_name' in record ? { creator_id: record.id, creator_name: record.display_name } : {};
     edit({ kind: 'participation', record: row ? { ...row } : { id: merchantEventId(), ...base }, revision: row?.updated_at ?? null });
   }
-  const heading = editor ? editor.revision ? '정보 수정' : `${editor.kind === 'participation' ? '참여 팀' : titles[kind]} 등록`
+  const heading = dealTask ? '협업 합의 조건 기록' : editor ? editor.revision ? '정보 수정' : `${editor.kind === 'participation' ? '참여 팀' : titles[kind]} 등록`
     : couponTask ? 'benefit' in couponTask ? '쿠폰 발급' : couponTask.action === 'redeem' ? '쿠폰 사용 확인' : '쿠폰 취소'
     : record ? recordName(record) : titles[kind];
 
@@ -129,6 +135,7 @@ export function AdminPartnershipsView({ kind, refreshSignal, onUser, onStateChan
       <button type="button" className="partnership-primary" onClick={newRecord}>{kind === 'creators' ? '크리에이터' : kind === 'campaigns' ? '캠페인' : '혜택'} 등록</button></header>
     {notice && !opened && <p role="status" className="partnership-notice">{notice}</p>}
     <div className="partnership-toolbar"><AdminSearch value={input} onChange={setInput} placeholder={kind === 'creators' ? '이름·지역·SNS 검색' : '이름·업체 검색'} onSubmit={() => { setQuery(input.trim()); setOffset(0); setChecked({ key: listKey, ids: [] }); }} />
+      {kind === 'creators' && <><AdminSelect label="정렬" value={creatorSort} options={Object.entries(CREATOR_DEAL_SORTS).map(([value, label]) => ({ value, label }))} onChange={value => { setCreatorSort(value as CreatorDirectoryOptions['sort']); setOffset(0); }} /><AdminSelect label="통화" value={currency} options={['CAD', 'USD'].map(value => ({ value, label: value }))} onChange={value => { setCurrency(value as CreatorDirectoryOptions['currency']); setOffset(0); }} /></>}
       <span className="partnership-muted">{page ? `${page.rows.length}건 표시` : '불러오는 중'}</span></div>
     {kind === 'creators' && <div className="creator-batch-actions" aria-label="선택한 크리에이터 관리">
       <label className="creator-select"><input type="checkbox" aria-label="현재 페이지 전체 선택" checked={allChecked} disabled={busy || !page?.rows.length} ref={input => { if (input) input.indeterminate = checkedRows.length > 0 && !allChecked; }} onChange={event => { play('selection'); setChecked({ key: listKey, ids: event.target.checked ? page!.rows.map(row => row.id) : [] }); }} />현재 페이지 전체 선택</label>
@@ -138,15 +145,18 @@ export function AdminPartnershipsView({ kind, refreshSignal, onUser, onStateChan
     {error ? <div role="alert" className="partnership-state"><p>{error}</p><button type="button" onClick={() => { play('selection'); setRevision((value) => value + 1); }}>다시 불러오기</button></div>
       : !page ? <p role="status" className="partnership-state">자료를 불러오는 중입니다.</p>
       : !page.rows.length ? <div className="partnership-state"><h2>{query ? '검색 결과가 없습니다.' : `등록된 ${titles[kind]}가 없습니다.`}</h2><p className="partnership-muted">{query ? '이름이나 업체명을 바꿔서 검색해 주세요.' : '첫 자료를 등록하면 이곳에서 진행 상황을 확인할 수 있습니다.'}</p></div>
-      : <div className="partnership-table-wrap"><table className={`partnership-table ${kind === 'creators' ? 'creator-directory' : ''}`}><thead><tr>{(kind === 'creators' ? ['선택', '크리에이터', '대표 플랫폼', '팔로워·구독자', '주요 콘텐츠', '활동 지역', '상태', '협업 이력'] : [kind === 'campaigns' ? '캠페인' : '혜택', '업체', '상태', kind === 'campaigns' ? '선정 팀' : '발급·사용']).map(label => <th key={label} scope="col">{label}</th>)}</tr></thead><tbody>
+      : <div className="partnership-table-wrap" tabIndex={kind === 'creators' ? 0 : undefined} aria-label={kind === 'creators' ? '크리에이터 목록 표 · 가로로 스크롤할 수 있습니다' : undefined}><table className={`partnership-table ${kind === 'creators' ? 'creator-directory' : ''}`}>
+        {kind === 'creators' && <caption className="creator-cost-caption">{currency} 최근 합의 조건 · 식사 지원은 한도 기준</caption>}
+        <thead><tr>{(kind === 'creators' ? ['선택', '크리에이터', '최근 광고비', '식사 지원 한도', '콘텐츠·합의 날짜', '대표 플랫폼', '팔로워·구독자', '주요 콘텐츠', '활동 지역', '상태', '합의 이력'] : [kind === 'campaigns' ? '캠페인' : '혜택', '업체', '상태', kind === 'campaigns' ? '선정 팀' : '발급·사용']).map(label => <th key={label} scope="col">{label}</th>)}</tr></thead><tbody>
         {page.rows.map((row) => {
           const primary = 'display_name' in row ? creatorProfiles(row)[0] : null;
           return <tr key={row.id} data-selected={id === row.id} data-checked={checkedIds.includes(row.id)}>
             {'display_name' in row && <td><label className="creator-select"><input type="checkbox" aria-label={`${row.display_name} 선택`} disabled={busy} checked={checkedIds.includes(row.id)} onChange={event => { play('selection'); setChecked({ key: listKey, ids: event.target.checked ? [...checkedIds, row.id] : checkedIds.filter(value => value !== row.id) }); }} /></label></td>}
             <td><button type="button" className="partnership-row-button" data-record-id={row.id} title={recordName(row)} onClick={(event) => open(row, event.currentTarget)}><strong>{recordName(row)}</strong>{!('display_name' in row) && <span className="partnership-muted">상세와 진행 내역 보기</span>}</button></td>
+            {'display_name' in row && <><td className="creator-cost">{row.latest_deal ? creatorDealAmount(row.latest_deal.ad_fee_cents, row.latest_deal.currency) : '미기록'}</td><td className="creator-cost">{row.latest_deal ? creatorDealAmount(row.latest_deal.meal_support_cents, row.latest_deal.currency) : '미기록'}</td><td title={row.latest_deal?.deliverables}>{row.latest_deal ? <><strong>{row.latest_deal.deliverables}</strong><small>{row.latest_deal.agreed_on}</small></> : '미기록'}</td></>}
           {'display_name' in row ? <><td>{primary ? <SourceLink url={primary.url}>{primary.platform}</SourceLink> : '미확인'}</td><td><strong>{primary?.followers || '미확인'}</strong><small>{primary?.checked_on ? `${primary.checked_on} 확인` : '수치 확인 전'}</small></td><td title={row.category}>{row.category || '미확인'}</td><td title={row.activity_regions}>{row.city_name}<small>{row.activity_regions}</small></td></> : <td>{row.merchant_name}</td>}
           <td><span className="partnership-status">{'display_name' in row ? CREATOR_STATUSES[row.status] : 'team_limit' in row ? CAMPAIGN_STATUSES[row.status] : BENEFIT_STATUSES[row.status]}</span></td>
-          <td>{'display_name' in row ? `${number(row.participation_count)}건` : 'team_limit' in row ? `${number(row.selected_count)}${row.team_limit ? ` / ${number(row.team_limit)}` : ''}팀` : `${number(row.issued_count)} 발급 · ${number(row.redeemed_count)} 사용`}</td></tr>;
+          <td>{'display_name' in row ? `${number(row.deal_count)}건` : 'team_limit' in row ? `${number(row.selected_count)}${row.team_limit ? ` / ${number(row.team_limit)}` : ''}팀` : `${number(row.issued_count)} 발급 · ${number(row.redeemed_count)} 사용`}</td></tr>;
         })}
       </tbody></table></div>}
     <nav className="partnership-pages" aria-label="목록 페이지"><button type="button" disabled={offset === 0 || !page} onClick={() => { play('selection'); setChecked({ key: listKey, ids: [] }); setOffset((value) => Math.max(0, value - 50)); }}>이전</button><span>{Math.floor(offset / 50) + 1}페이지</span><button type="button" disabled={!page?.more} onClick={() => { play('selection'); setChecked({ key: listKey, ids: [] }); setOffset((value) => value + 50); }}>다음</button></nav>
@@ -154,8 +164,9 @@ export function AdminPartnershipsView({ kind, refreshSignal, onUser, onStateChan
     <dialog ref={dialog} className="partnership-dialog" aria-labelledby="partnership-dialog-title" onCancel={(event) => { event.preventDefault(); close(); }}>
       <header className="partnership-dialog-heading"><h2 id="partnership-dialog-title">{heading}</h2><button type="button" aria-label="상세 닫기" disabled={busy} onClick={close}>닫기</button></header>
       <div className="partnership-dialog-body">
-        {notice && !editor && !couponTask && <p role="status" className="partnership-notice">{notice}</p>}
-        {editor ? <PartnershipEditor key={`${editor.kind}:${editor.record.id}:${editor.revision}`} state={editor} onSaved={saved} onCancel={cancelEditor} onDirty={setDirty} onBusy={setBusy} />
+        {notice && !editor && !couponTask && !dealTask && <p role="status" className="partnership-notice">{notice}</p>}
+        {dealTask ? <CreatorDealForm key={dealTask.requestId} requestId={dealTask.requestId} creator={dealTask.creator} initialCurrency={currency} onSaved={saved} onCancel={cancelEditor} onDirty={setDirty} onBusy={setBusy} />
+          : editor ? <PartnershipEditor key={`${editor.kind}:${editor.record.id}:${editor.revision}`} state={editor} onSaved={saved} onCancel={cancelEditor} onDirty={setDirty} onBusy={setBusy} />
           : couponTask ? 'benefit' in couponTask ? <CouponIssueForm key={couponTask.requestId} requestId={couponTask.requestId} benefit={couponTask.benefit} onSaved={saved} onCancel={cancelEditor} onDirty={setDirty} onBusy={setBusy} />
             : <CouponActionForm key={`${couponTask.coupon.id}:${couponTask.action}`} coupon={couponTask.coupon} action={couponTask.action} onSaved={saved} onCancel={cancelEditor} onDirty={setDirty} onBusy={setBusy} />
           : error ? <div role="alert"><p>{error}</p><button type="button" onClick={() => { play('selection'); setRevision((value) => value + 1); }}>다시 불러오기</button></div>
@@ -164,6 +175,9 @@ export function AdminPartnershipsView({ kind, refreshSignal, onUser, onStateChan
             <div className="partnership-detail-actions"><button type="button" onClick={() => edit({ kind: kind === 'creators' ? 'creator' : kind === 'campaigns' ? 'campaign' : 'benefit', record: { ...record }, revision: record.updated_at })}>정보 수정</button>
               {'issued_count' in record && <button type="button" className="partnership-primary" disabled={record.status !== 'active'} onClick={() => { play('selection'); setCouponTask({ requestId: merchantEventId(), benefit: record }); }}>쿠폰 발급</button>}</div>
             {'display_name' in record ? <>
+              <section className="creator-deal-history"><div className="partnership-section-heading"><h3>협업 합의 이력</h3><button type="button" className="partnership-primary" onClick={() => { play('selection'); setDealTask({ requestId: merchantEventId(), creator: record }); setEditor(null); setCouponTask(null); setDirty(false); setNotice(''); }}>합의 조건 기록</button></div>
+                {!page?.deals?.length ? <p className="partnership-muted">기록한 합의 조건이 없습니다. 이전 메모는 아래에서 확인할 수 있습니다.</p> : <ol className="creator-deals">{page.deals.map(deal => <li key={deal.id}><div className="partnership-section-heading"><strong>{deal.agreed_on} · {deal.merchant_name || '업체 미연결'}</strong><span className="partnership-status">합의 조건</span></div><dl className="creator-deal-costs"><div><dt>광고비</dt><dd>{creatorDealAmount(deal.ad_fee_cents, deal.currency)}</dd></div><div><dt>식사 지원 한도</dt><dd>{creatorDealAmount(deal.meal_support_cents, deal.currency)}</dd></div><div><dt>콘텐츠</dt><dd>{deal.deliverables}</dd></div></dl><p className="partnership-copy">{deal.notes}</p>{deal.source_url && <SourceLink url={deal.source_url}>합의 근거</SourceLink>}<small className="partnership-muted creator-fact-note">{deal.recorded_by_name || '관리자'} 기록 · {date(deal.created_at)}</small></li>)}</ol>}
+              </section>
               <dl className="partnership-facts"><div><dt>활동 지역</dt><dd>{record.city_name}{record.activity_regions && <small className="partnership-muted creator-fact-note">{record.activity_regions}</small>}</dd></div><div><dt>주요 콘텐츠</dt><dd>{record.category || '미확인'}</dd></div><div><dt>담당자 이름</dt><dd>{record.contact_name || '미확인'}</dd></div><div><dt>연락처·연락 경로</dt><dd className="partnership-copy">{record.contact ? merchantContactLinks(record.contact).map((part, index) => part.href ? <a key={index} href={part.href} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>{part.text}</a> : part.text) : '미확인'}</dd></div><div><dt>상태</dt><dd>{CREATOR_STATUSES[record.status]}</dd></div><div><dt>글링 회원</dt><dd>{record.member_id ? <button type="button" onClick={() => { play('selection'); onUser(record.member_id!); }}>{record.member_name || '연결된 회원'} 보기</button> : '아직 연결하지 않음'}</dd></div></dl>
               <section className="partnership-detail-section"><h3>소개·콘텐츠 특징</h3><p className="partnership-copy">{record.content_summary || '추가로 확인한 소개가 없습니다.'}</p></section>
               <section className="partnership-detail-section"><h3>운영 플랫폼</h3><div className="creator-platforms">{creatorProfiles(record).map((profile, index) => <div className="creator-platform" key={profile.url}><div><strong>{profile.platform}</strong>{index === 0 && <span className="partnership-status">대표</span>}<div><SourceLink url={profile.url}>{profile.url}</SourceLink></div></div><div className="creator-audience"><span className="partnership-muted">팔로워·구독자</span><strong>{profile.followers || '미확인'}</strong><small className="partnership-muted">{profile.checked_on ? `${profile.checked_on} 확인` : '수치 확인 전'}</small></div></div>)}</div><p className="partnership-muted">공개 프로필에서 확인한 표시 수치입니다. 플랫폼별 이용자가 겹칠 수 있습니다.</p></section>

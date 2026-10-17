@@ -85,3 +85,33 @@ test('creator profiles keep the representative link first and retain observed au
   assert.equal(partnerships.creatorProfiles({ profile_url: 'https://www.instagram.com/legacy/' })[0].followers, '');
   assert.equal(partnerships.creatorProfiles({ profile_url: 'javascript:alert(1)' }).length, 0);
 });
+
+test('creator cost ordering is requested from the server before pagination and keeps currency explicit', async () => {
+  const calls = [];
+  const client = { rpc: async (name, args) => { calls.push({ name, args }); return { data: { ...page, rows: [{ ...row, latest_deal: null, deal_count: 0 }], deals: [] }, error: null }; } };
+  await loadPartnerships(client, 'creators', ' 밴쿠버 ', 50, null, 0, { sort: 'fee_asc', currency: 'CAD' });
+  assert.equal(calls[0].name, 'get_admin_creator_directory');
+  assert.deepEqual(calls[0].args, { p_search: '밴쿠버', p_offset: 50, p_id: null, p_child_offset: 0, p_sort: 'fee_asc', p_currency: 'CAD' });
+  await assert.rejects(loadPartnerships(client, 'creators', '', 0, null, 0, { sort: 'fee;drop', currency: 'CAD' }), /INVALID_PARTNERSHIP/);
+  await assert.rejects(loadPartnerships(client, 'creators', '', 0, null, 0, { sort: 'fee_asc', currency: 'EUR' }), /INVALID_PARTNERSHIP/);
+  assert.equal(calls.length, 1);
+});
+
+test('cost display distinguishes no fee, an unknown amount and the currency', () => {
+  assert.match(partnerships.creatorDealAmount(0, 'CAD'), /CAD.*0\.00/);
+  assert.match(partnerships.creatorDealAmount(15050, 'USD'), /USD.*150\.50/);
+  assert.equal(partnerships.creatorDealAmount(null, 'CAD'), '미확인');
+});
+
+test('agreement requests preserve zero and null, retain one request ID, and read back the exact historical record', async () => {
+  const record = { id, creator_id: other, merchant_id: null, agreed_on: '2026-10-17', currency: 'CAD', ad_fee_cents: 0, meal_support_cents: 15000, deliverables: '릴스 1개', source_url: '', notes: '운영자 직접 확인' };
+  const calls = [];
+  const client = { rpc: async (name, args) => { calls.push({ name, args }); return { data: name === 'record_admin_creator_deal' ? id : { ...record, created_at: revision, merchant_name: null, recorded_by_name: null }, error: null }; } };
+  await partnerships.recordCreatorDeal(client, record);
+  assert.deepEqual(calls[0], { name: 'record_admin_creator_deal', args: { p_record: record } });
+  const result = await partnerships.loadCreatorDeal(client, id);
+  assert.equal(result.creator_id, other);
+  assert.deepEqual(calls[1], { name: 'get_admin_creator_deal', args: { p_id: id } });
+  const broken = { rpc: async () => ({ data: { ...record, id: other }, error: null }) };
+  await assert.rejects(partnerships.loadCreatorDeal(broken, id), /PARTNERSHIP_READ_FAILED/);
+});

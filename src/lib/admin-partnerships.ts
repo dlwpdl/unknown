@@ -5,11 +5,20 @@ export type PartnershipView = 'creators' | 'campaigns' | 'benefits';
 export type PartnershipKind = 'creator' | 'campaign' | 'benefit' | 'participation';
 type RecordBase = { id: string; created_at: string; updated_at: string };
 export type CreatorProfile = { platform: string; url: string; followers: string; checked_on: string | null };
+export type CreatorDeal = {
+  id: string; creator_id: string; merchant_id: string | null; merchant_name: string | null;
+  agreed_on: string; currency: 'CAD' | 'USD'; ad_fee_cents: number | null; meal_support_cents: number | null;
+  deliverables: string; source_url: string; notes: string; created_at: string; recorded_by_name: string | null;
+};
+export type CreatorDealInput = Omit<CreatorDeal, 'merchant_name' | 'created_at' | 'recorded_by_name'>;
+export const CREATOR_DEAL_SORTS = { date_desc: '최근 합의순', date_asc: '오래된 합의순', fee_asc: '광고비 낮은순', fee_desc: '광고비 높은순', support_asc: '식사 지원 낮은순', support_desc: '식사 지원 높은순', updated_desc: '정보 수정순' } as const;
+export type CreatorDirectoryOptions = { sort: keyof typeof CREATOR_DEAL_SORTS; currency: 'CAD' | 'USD' };
 export type Creator = RecordBase & {
   member_id: string | null; member_name: string | null; display_name: string; city_id: string; city_name: string;
   profile_url: string; category: string; contact: string; reference_url: string; reference_views: number | null;
   metrics_note: string; status: 'active' | 'paused'; notes: string; participation_count: number;
   platforms?: CreatorProfile[]; contact_name?: string; content_summary?: string; activity_regions?: string;
+  latest_deal?: CreatorDeal | null; deal_count?: number;
 };
 export type Campaign = RecordBase & {
   merchant_id: string; merchant_name: string; city_name: string; title: string; status: 'draft' | 'open' | 'paused' | 'closed';
@@ -40,6 +49,7 @@ export type PartnershipEvent = { id: number; actor_name: string | null; resource
 export type PartnershipPage = {
   kind: PartnershipView; rows: PartnershipRecord[]; record: PartnershipRecord | null; more: boolean;
   participations: Participation[]; coupons: BenefitCoupon[]; events: PartnershipEvent[]; children_more: boolean;
+  deals?: CreatorDeal[];
 };
 
 export function creatorPlatformName(value: string): string {
@@ -73,6 +83,7 @@ export const BENEFIT_STATUSES = { draft: '조건 준비', active: '사용 가능
 export const PAYMENT_STATUSES = { not_applicable: '지원금 없음', pending: '지급 대기', paid: '지급 기록 완료' } as const;
 export const PARTNERSHIP_ACTIONS: Record<string, string> = {
   creator_created: '크리에이터 등록', creator_saved: '크리에이터 정보 수정',
+  creator_deal_recorded: '협업 합의 조건 기록',
   campaign_created: '캠페인 등록', campaign_saved: '캠페인 정보 수정',
   benefit_created: '혜택 등록', benefit_saved: '혜택 정보 수정',
   participation_created: '참여 팀 접수', participation_saved: '참여 진행 기록 수정', participation_selected: '참여 팀 선정',
@@ -88,6 +99,26 @@ const validRecord = (value: unknown, kind: PartnershipView) => {
     && typeof row[kind === 'creators' ? 'display_name' : 'title'] === 'string';
 };
 
+function validCreatorDeal(value: unknown, saved = true): value is CreatorDeal {
+  if (!value || typeof value !== 'object') return false;
+  const row = value as Record<string, unknown>;
+  return typeof row.id === 'string' && uuid.test(row.id) && typeof row.creator_id === 'string' && uuid.test(row.creator_id)
+    && (row.merchant_id === null || typeof row.merchant_id === 'string' && uuid.test(row.merchant_id))
+    && ['CAD', 'USD'].includes(String(row.currency))
+    && typeof row.agreed_on === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(row.agreed_on) && row.agreed_on >= '1900-01-01' && timestamp(row.agreed_on)
+    && new Date(row.agreed_on).toISOString().slice(0, 10) === row.agreed_on
+    && [row.ad_fee_cents, row.meal_support_cents].every(amount => amount === null || typeof amount === 'number' && Number.isInteger(amount) && amount >= 0 && amount <= 99999999)
+    && typeof row.deliverables === 'string' && row.deliverables.trim().length > 0 && row.deliverables.length <= 300
+    && typeof row.notes === 'string' && row.notes.trim().length > 0 && row.notes.length <= 3000
+    && typeof row.source_url === 'string' && (row.source_url === '' || Boolean(safeMerchantSourceUrl(row.source_url)))
+    && (!saved || timestamp(row.created_at) && (row.merchant_name === null || typeof row.merchant_name === 'string')
+      && (row.recorded_by_name === null || typeof row.recorded_by_name === 'string'));
+}
+
+export function creatorDealAmount(cents: number | null, currency: 'CAD' | 'USD'): string {
+  return cents === null ? '미확인' : new Intl.NumberFormat('en-CA', { style: 'currency', currency, currencyDisplay: 'code' }).format(cents / 100);
+}
+
 export function amountToCents(input: string): number | null {
   const value = input.trim();
   if (!value) return null;
@@ -96,15 +127,21 @@ export function amountToCents(input: string): number | null {
   return Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
 }
 
-export async function loadPartnerships(client: SupabaseClient, kind: PartnershipView, search = '', offset = 0, id: string | null = null, childOffset = 0): Promise<PartnershipPage> {
+export async function loadPartnerships(client: SupabaseClient, kind: PartnershipView, search = '', offset = 0, id: string | null = null, childOffset = 0, directory?: CreatorDirectoryOptions): Promise<PartnershipPage> {
   if (!['creators', 'campaigns', 'benefits'].includes(kind) || !Number.isInteger(offset) || offset < 0 || offset > 10000
     || !Number.isInteger(childOffset) || childOffset < 0 || childOffset > 10000 || (id !== null && !uuid.test(id)) || search.length > 200) throw new Error('INVALID_PARTNERSHIP');
-  const { data, error } = await client.rpc('get_admin_partnerships', { p_kind: kind, p_search: search.trim(), p_offset: offset, p_id: id, p_child_offset: childOffset });
+  if (directory && (kind !== 'creators' || !Object.keys(CREATOR_DEAL_SORTS).includes(directory.sort) || !['CAD', 'USD'].includes(directory.currency))) throw new Error('INVALID_PARTNERSHIP');
+  const args = { p_search: search.trim(), p_offset: offset, p_id: id, p_child_offset: childOffset };
+  const { data, error } = directory ? await client.rpc('get_admin_creator_directory', { ...args, p_sort: directory.sort, p_currency: directory.currency })
+    : await client.rpc('get_admin_partnerships', { p_kind: kind, ...args });
   if (error) throw new Error(error.message);
   if (!data || data.kind !== kind || !Array.isArray(data.rows) || data.rows.length > 50 || !data.rows.every((row: unknown) => validRecord(row, kind))
     || typeof data.more !== 'boolean' || typeof data.children_more !== 'boolean'
     || !['participations', 'coupons', 'events'].every((key) => Array.isArray(data[key]) && data[key].length <= (key === 'events' ? 20 : 50))
     || (id ? !validRecord(data.record, kind) || data.record.id !== id : data.record !== null)) throw new Error('PARTNERSHIP_READ_FAILED');
+  if (directory && (!Array.isArray(data.deals) || data.deals.length > 50 || !data.deals.every((row: unknown) => validCreatorDeal(row) && row.creator_id === id)
+    || !data.rows.every((row: Creator) => typeof row.deal_count === 'number' && Number.isInteger(row.deal_count) && row.deal_count >= 0
+      && (row.latest_deal === null || validCreatorDeal(row.latest_deal) && row.latest_deal.creator_id === row.id && row.latest_deal.currency === directory.currency)))) throw new Error('PARTNERSHIP_READ_FAILED');
   return data as PartnershipPage;
 }
 
@@ -113,6 +150,19 @@ async function mutation(client: SupabaseClient, name: string, args: Record<strin
   if (error) throw new Error(error.message);
   if (data !== id) throw new Error('PARTNERSHIP_SAVE_UNVERIFIED');
   return id;
+}
+
+export async function recordCreatorDeal(client: SupabaseClient, record: CreatorDealInput): Promise<string> {
+  if (!validCreatorDeal(record, false)) throw new Error('INVALID_PARTNERSHIP');
+  return mutation(client, 'record_admin_creator_deal', { p_record: record }, record.id);
+}
+
+export async function loadCreatorDeal(client: SupabaseClient, id: string): Promise<CreatorDeal> {
+  if (!uuid.test(id)) throw new Error('INVALID_PARTNERSHIP');
+  const { data, error } = await client.rpc('get_admin_creator_deal', { p_id: id });
+  if (error) throw new Error(error.message);
+  if (!validCreatorDeal(data) || data.id !== id) throw new Error('PARTNERSHIP_READ_FAILED');
+  return data;
 }
 
 export async function savePartnership(client: SupabaseClient, kind: PartnershipKind, record: { id: string } & Record<string, unknown>, expectedUpdatedAt: string | null): Promise<string> {

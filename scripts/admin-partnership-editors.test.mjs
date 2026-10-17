@@ -34,6 +34,24 @@ const text = tree => tree == null || typeof tree === 'boolean' ? '' : typeof tre
 const field = (tree, label) => nodes(nodes(tree).find(node => node.type === 'label' && text(node).startsWith(label))).find(node => ['input', 'select', 'textarea'].includes(node.type));
 const submit = tree => nodes(tree).find(node => node.type === 'form').props.onSubmit({ preventDefault() {} });
 
+test('agreement form records explicit zero, unknown support and evidence without editing creator notes', async () => {
+  const app = editor('CreatorDealForm', { requestId: id, creator: { id: other, display_name: '밴시티 바이츠' } }, async () => ({ data: id, error: null }));
+  field(app.render(), '합의 날짜').props.onChange({ target: { value: '2026-10-17' } });
+  field(app.render(), '광고비').props.onChange({ target: { value: '0' } });
+  field(app.render(), '약속한 콘텐츠').props.onChange({ target: { value: '릴스 1개' } });
+  field(app.render(), '조건·확인 근거').props.onChange({ target: { value: '운영자 직접 확인 · 식사 방문 예정' } });
+  submit(app.render()); await new Promise(setImmediate);
+  assert.equal(app.calls.length, 1);
+  assert.equal(app.calls[0].name, 'record_admin_creator_deal');
+  assert.equal(app.calls[0].args.p_record.ad_fee_cents, 0);
+  assert.equal(app.calls[0].args.p_record.meal_support_cents, null);
+  assert.equal(app.calls[0].args.p_record.id, id);
+  assert.equal(app.calls[0].args.p_record.creator_id, other);
+  assert.equal(app.calls[0].args.p_record.agreed_on, '2026-10-17');
+  assert.equal(app.calls[0].args.p_record.deliverables, '릴스 1개');
+  assert.match(app.calls[0].args.p_record.notes, /직접 확인/);
+});
+
 test('creator details retain observed audience labels and select a secondary platform without dropping contact or revision', async () => {
   const profiles = [
     { platform: 'Instagram', url: 'https://instagram.com/creator/', followers: '1.4만', checked_on: '2026-10-15' },
