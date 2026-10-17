@@ -73,7 +73,7 @@
 @media(max-width:600px) { .partnership-heading { gap:12px; } .partnership-heading h1 { font-size:23px; } .partnership-dialog { width:100%; height:100dvh; max-height:100dvh; margin:0; border:0; border-radius:0; } .partnership-dialog-heading { padding:16px; } .partnership-dialog-body { padding:16px; } .partnership-facts,.partnership-form-grid { grid-template-columns:1fr; gap:14px; } .partnership-history li { flex-direction:column; gap:4px; } .partnership-form-actions { bottom:-16px; } .partnership-toolbar { gap:8px; } }
 @media(prefers-reduced-motion:reduce) { .partnership-admin button:active:not(:disabled) { transform:none; } }
 
-.creator-directory { min-width:1480px; table-layout:fixed; }
+.creator-directory { min-width:1660px; table-layout:fixed; }
 .creator-directory :is(th,td) { padding:4px 12px; }
 .creator-directory thead th { padding-top:10px; padding-bottom:10px; }
 .creator-directory tbody tr { height:64px; }
@@ -83,16 +83,17 @@
 .creator-directory th:nth-child(3) { width:115px; text-align:right; }
 .creator-directory th:nth-child(4) { width:125px; text-align:right; }
 .creator-directory th:nth-child(5) { width:180px; }
-.creator-directory th:nth-child(6) { width:110px; }
-.creator-directory th:nth-child(7) { width:140px; }
+.creator-directory th:nth-child(6) { width:180px; }
+.creator-directory th:nth-child(7) { width:110px; }
 .creator-directory th:nth-child(8) { width:140px; }
-.creator-directory th:nth-child(9) { width:160px; }
-.creator-directory th:nth-child(10) { width:90px; }
-.creator-directory th:nth-child(11) { width:80px; }
+.creator-directory th:nth-child(9) { width:140px; }
+.creator-directory th:nth-child(10) { width:160px; }
+.creator-directory th:nth-child(11) { width:90px; }
+.creator-directory th:nth-child(12) { width:80px; }
 .creator-directory td,.creator-directory :is(strong,small) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .creator-directory td:first-child { padding:4px; text-overflow:clip; }
 .creator-directory td.creator-cost { text-align:right; font-variant-numeric:tabular-nums; }
-.creator-directory td:nth-child(5) strong { display:block; }
+.creator-directory td:is(:nth-child(5),:nth-child(6)) strong { display:block; }
 .creator-cost-caption { text-align:left; padding:10px 12px; color:var(--admin-muted); background:var(--admin-paper); border-bottom:1px solid var(--admin-line); font-size:12px; }
 .partnership-table-wrap:focus-visible { outline:2px solid var(--admin-accent); outline-offset:3px; }
 .creator-deals { list-style:none; margin:16px 0 0; padding:0; }

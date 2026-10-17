@@ -26,7 +26,7 @@ function view(kind, load, readDeal) {
     '@/lib/admin-partnerships': { ...partnerships, loadCreatorDeal: async (_client, id) => readDeal(id), loadPartnerships: async (_client, ...args) => { requests.push(args); return load(...args); } },
     '@/lib/merchant-source': { merchantEventId: () => id, safeMerchantSourceUrl: value => value.startsWith('https://') ? value : null },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) }, '@/lib/supabase': { supabase: {} },
-    './admin-partnership-editors': Object.fromEntries(['PartnershipEditor','CouponIssueForm','CouponActionForm','CreatorDealForm'].map(name => [name, name])),
+    './admin-partnership-editors': Object.fromEntries(['PartnershipEditor','CouponIssueForm','CouponActionForm','CreatorDealForm','CreatorDealMerchantForm'].map(name => [name, name])),
     './admin-table-controls': { AdminSearch: 'AdminSearch', AdminSelect: 'AdminSelect' },
   };
   const code = ts.transpileModule(readFileSync(new URL('../src/components/admin/admin-partnerships.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
@@ -127,6 +127,19 @@ test('creator directory shows agreed costs and clears selection when the server 
   nodes(tree).find(node => node.type === 'AdminSelect' && node.props.label === '통화').props.onChange('USD');
   screen.render(); await new Promise(setImmediate); screen.render();
   assert.deepEqual({ ...screen.requests.at(-1)[5] }, { sort: 'fee_desc', currency: 'USD' });
+});
+
+test('vendor and collaboration day appear beside each dated agreement, with an editor for the existing record', async () => {
+  const deal = { id: '70000000-0000-4000-8000-000000000009', creator_id: id, merchant_id: id, merchant_name: '지모코', collaboration_on: '2026-10-24', agreed_on: '2026-10-17', currency: 'CAD', ad_fee_cents: 0, meal_support_cents: 15000, deliverables: '릴스 1개', notes: '방문 예정', created_at: '2026-10-17T22:00:00Z' };
+  const screen = view('creators', async (_kind, _query, _offset, selected) => ({ ...page('creators', selected ? rows.creators : null), rows: [{ ...rows.creators, latest_deal: deal, deal_count: 1 }], deals: selected ? [deal] : [] }));
+  screen.render(); await new Promise(setImmediate);
+  let tree = screen.render(), table = nodes(tree).find(node => node.type === 'table');
+  assert.match(text(table), /지모코/); assert.match(text(table), /2026-10-24/);
+  nodes(tree).find(node => node.type === 'button' && node.props?.['data-record-id'] === id).props.onClick({ currentTarget: { focus() {} } });
+  screen.render(); await new Promise(setImmediate); tree = screen.render();
+  nodes(tree).find(node => node.type === 'button' && /벤더·협업일/.test(text(node))).props.onClick();
+  const form = nodes(screen.render()).find(node => node.type === 'CreatorDealMerchantForm');
+  assert.equal(form.props.deal.id, deal.id);
 });
 
 test('a backdated agreement outside the visible history page still requires its exact saved readback', async () => {

@@ -12,7 +12,7 @@ const privateRpcs = ['get_admin_performance', 'write_user_review', 'write_manner
   'write_meetup_review', 'get_my_meetup_review_inbox', 'get_meetup_sessions', 'create_meetup_session', 'check_in_meetup',
   'confirm_meetup_attendance', 'claim_meetup_attendance', 'get_chat_suggestion_context', 'send_suggested_message',
   'get_admin_trust_content', 'review_admin_trust_target', 'get_trust_safety_content', 'get_message_safety_context',
-  'get_admin_creator_directory', 'get_admin_creator_deal', 'record_admin_creator_deal'];
+  'get_admin_creator_directory', 'get_admin_creator_deal', 'record_admin_creator_deal', 'link_admin_creator_deal_merchant'];
 
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'gling-web-trust-'));
