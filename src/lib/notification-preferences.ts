@@ -51,8 +51,20 @@ export async function saveNotificationPreferences(client: SupabaseClient, patch:
 }
 
 // Notifications can navigate only to the app's known content destinations.
-export function notificationRoute(value: unknown): string | null {
+export function notificationRoute(value: unknown, notification?: { kind?: unknown; category?: unknown; body?: unknown }): string | null {
   if (typeof value !== 'string') return null;
+  if (value === '/notifications' && (notification?.kind === 'trending_hashtag' || notification?.category === 'trending') && typeof notification.body === 'string') {
+    const topic = /^(?:요즘 뜨는 해시태그 ·|요즘 관심이 모이는 주제예요\.?)\s*#([\p{L}\p{M}\p{N}_-]{1,64})$/u.exec(notification.body);
+    if (topic) return `/?hashtag=${encodeURIComponent(topic[1])}`;
+  }
+  const topic = /^\/\?hashtag=([^&?#]+)$/.exec(value);
+  if (topic) {
+    try {
+      const hashtag = decodeURIComponent(topic[1]);
+      if (/^[\p{L}\p{M}\p{N}_-]{1,64}$/u.test(hashtag)) return `/?hashtag=${encodeURIComponent(hashtag)}`;
+    } catch { /* Malformed topic links stay in the inbox. */ }
+    return null;
+  }
   const event = /^\/events\/([A-Za-z0-9_-]{1,100})\?cityId=([a-z]+)$/.exec(value);
   if (event && Object.hasOwn(EVENT_CITIES, event[2])) return value;
   const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';

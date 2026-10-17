@@ -85,7 +85,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const reducedMotion = useReducedMotion();
   const { fontScale } = useWindowDimensions();
   const router = useRouter();
-  const { compose } = useLocalSearchParams<{ compose?: string }>();
+  const { compose, hashtag } = useLocalSearchParams<{ compose?: string; hashtag?: string }>();
   const { isAuthed, promptLogin, me, isAdmin } = useAuth();
   const { play } = useInteractionFeedback();
   const insets = useSafeAreaInsets();
@@ -269,6 +269,18 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     setSearchResults([]);
     setSearching(true);
   };
+
+  useEffect(() => {
+    if (meetupsOnly || !hashtag) return;
+    router.setParams({ hashtag: undefined });
+    if (typeof hashtag !== 'string' || !/^[\p{L}\p{M}\p{N}_-]{1,64}$/u.test(hashtag)) return;
+    queueMicrotask(() => {
+      setQuery(`#${canonicalizeHashtag(hashtag)}`);
+      setSearchResults([]);
+      setTagFilter(null);
+      setSearching(true);
+    });
+  }, [hashtag, meetupsOnly, router]);
 
   // 게스트는 피드만 훑고, 상세·글쓰기·참여는 로그인 후 사용한다.
   const openDetail = (post: Post) => {

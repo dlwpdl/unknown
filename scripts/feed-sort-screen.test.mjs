@@ -11,7 +11,7 @@ import { withPostMap } from '../src/lib/post-maps.ts';
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 function screen({ createdPost, deferPublish = false } = {}) {
-  const slots = [], effects = [], calls = [], writes = [];
+  const slots = [], effects = [], calls = [], writes = [], params = {};
   let viewer = 'viewer';
   let at = 0;
   const slot = initial => { const index = at++; if (!(index in slots)) slots[index] = typeof initial === 'function' ? initial() : initial; return index; };
@@ -22,7 +22,7 @@ function screen({ createdPost, deferPublish = false } = {}) {
     react: { useState: initial => { const i = slot(initial); return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; }, useRef: initial => slots[slot(() => ({ current: initial }))], useMemo: fn => fn(), useCallback: fn => fn, useEffect: fn => effects.push(fn) },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { Platform: { OS: 'web' }, useWindowDimensions: () => ({ width: 390, fontScale: 1 }), View: 'View', TextInput: 'TextInput', Modal: 'Modal', StyleSheet: { create: x => x, hairlineWidth: 1 }, Animated: { Value, View: 'AnimatedView', timing: () => ({ start() {} }), spring: () => ({ start() {} }) }, Alert: { alert() {} }, Keyboard: {}, DeviceEventEmitter: {}, Easing: { out: x => x, quad: 0 } },
-    'expo-router': { useLocalSearchParams: () => ({}), useRouter: () => ({ push() {} }), useScrollToTop() {} },
+    'expo-router': { useLocalSearchParams: () => params, useRouter: () => ({ push() {}, setParams: next => Object.assign(params, next) }), useScrollToTop() {} },
     'react-native-reanimated': { default: { View: 'ReanimatedView' }, useReducedMotion: () => true },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', SafeAreaProvider: 'SafeAreaProvider', useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) },
     '@/hooks/use-theme': { useTheme: () => theme }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
@@ -44,12 +44,12 @@ function screen({ createdPost, deferPublish = false } = {}) {
   vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
     if (name in imports) return imports[name];
     return new Proxy({}, { get: (_, key) => key === '__esModule' ? true : key === 'Image' ? 'Image' : key === 'default' ? { View: 'ReanimatedView' } : String(key) });
-  }), requestAnimationFrame: fn => fn(), setTimeout, clearTimeout });
+  }), requestAnimationFrame: fn => fn(), queueMicrotask: fn => fn(), setTimeout, clearTimeout });
   let cleanup;
   const render = () => { at = 0; effects.length = 0; return exports.default({}); };
   const refresh = () => { cleanup?.(); cleanup = effects.find(fn => String(fn).includes('return cancelFeedRequests'))(); };
   const list = () => nodes(render()).find(n => n.props?.analyticsId === 'components_feed-screen.flatlist.1').props;
-  return { calls, writes, list, refresh, setViewer: next => { viewer = next; }, sort: () => { const props = list(); return props.renderItem({ item: null, index: 1 }).props; },
+  return { calls, writes, list, refresh, params, render, openTopic: () => { render(); effects.find(fn => String(fn).includes('hashtag: undefined'))(); }, setViewer: next => { viewer = next; }, sort: () => { const props = list(); return props.renderItem({ item: null, index: 1 }).props; },
     publish: async () => {
       const inputs = nodes(render());
       inputs.find(n => n.props?.accessibilityLabel === t.write.titlePlaceholder).props.onChangeText('새 글');
@@ -60,6 +60,20 @@ function screen({ createdPost, deferPublish = false } = {}) {
   };
 }
 const post = (id, extra = {}) => ({ id, cityId: 'vancouver', author: { id: 'author' }, tag: TAGS[0], createdAt: '2026-10-12T10:00:00Z', title: id, ...extra });
+
+test('a topic notification opens today search and consumes its parameter so closing stays closed', () => {
+  const app = screen();
+  app.params.hashtag = '밴쿠버'; app.openTopic();
+  let tree = nodes(app.render());
+  assert.equal(tree.find(node => node.type === 'TextInput' && node.props.value === '#밴쿠버')?.props.value, '#밴쿠버');
+  const search = tree.find(node => node.type === 'Modal' && node.props.visible);
+  assert.ok(search, 'search is actually open');
+  assert.equal(app.params.hashtag, undefined);
+  search.props.onRequestClose(); app.openTopic();
+  assert.equal(nodes(app.render()).some(node => node.type === 'Modal' && node.props.visible), false);
+  app.params.hashtag = '토론토'; app.openTopic();
+  assert.equal(nodes(app.render()).find(node => node.type === 'TextInput' && node.props.value === '#토론토')?.props.value, '#토론토');
+});
 
 test('today has a pinned sort row and preserves server order, including meetup posts', async () => {
   const app = screen(); app.list(); app.refresh();

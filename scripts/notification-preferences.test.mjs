@@ -2,6 +2,19 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { adminDashboardUrl, notificationRoute, isAdminNotificationKind, loadNotificationPreferences, saveNotificationPreferences, NOTIFICATION_CATEGORIES } from '../src/lib/notification-preferences.ts';
 
+test('existing trending topic notifications open a validated hashtag search', () => {
+  const route = '/?hashtag=' + encodeURIComponent('밴쿠버');
+  for (const body of ['요즘 관심이 모이는 주제예요 #밴쿠버', '요즘 관심이 모이는 주제예요. #밴쿠버', '요즘 뜨는 해시태그 · #밴쿠버']) {
+    assert.equal(notificationRoute('/notifications', { kind: 'trending_hashtag', body }), route);
+    assert.equal(notificationRoute('/notifications', { category: 'trending', body }), route, 'legacy push payloads have category and body, without kind');
+    assert.equal(notificationRoute('/notifications', { category: 'messages', body }), '/notifications');
+  }
+  assert.equal(notificationRoute(route), route);
+  for (const value of ['/?hashtag=', '/?hashtag=%ZZ', '/?hashtag=topic&redirect=//example.com', '/?hashtag=%2Fadmin', '/?hashtag=a#outside']) assert.equal(notificationRoute(value), null);
+  assert.equal(notificationRoute('https://example.com', { kind: 'trending_hashtag', body: '요즘 관심이 모이는 주제예요 #밴쿠버' }), null);
+  assert.equal(notificationRoute('/notifications', { kind: 'trending_hashtag', body: '요즘 관심이 모이는 주제예요 #밴쿠버 그리고 다른 글' }), '/notifications');
+});
+
 test('notification routing accepts existing content destinations and rejects external or injected routes', () => {
   const id = '11111111-1111-4111-8111-111111111111';
   for (const route of [`/post/${id}`, `/post/${id}?commentId=${id}`, `/chat?conversationId=${id}`, '/chat?view=requests', '/profile/guidelines', '/profile/settings', '/notifications']) {
