@@ -69,7 +69,7 @@
 .merchant-batch-actions > span { color:var(--admin-muted); }
 .merchant-admin label.merchant-select { display:flex; flex-direction:row; align-items:center; justify-content:center; gap:8px; min-width:44px; min-height:44px; margin:0; cursor:pointer; }
 .merchant-admin .merchant-select input[type=checkbox] { width:20px; height:20px; min-width:20px; min-height:20px; flex:0 0 20px; padding:0; margin:0; accent-color:var(--admin-accent); }
-.merchant-directory-table .merchant-select-cell { padding:4px; }
+.merchant-directory-table .merchant-select-cell { padding:4px; text-overflow:clip; }
 .merchant-row-actions { display:flex; gap:8px; }
 .merchant-directory-table .merchant-row-actions button { display:inline-flex; align-items:center; justify-content:center; width:auto; min-width:44px; padding:0 10px; border:1px solid var(--admin-line); border-radius:8px; background:var(--admin-paper); }
 .merchant-admin button.merchant-danger { color:var(--admin-danger); border-color:var(--admin-danger); }

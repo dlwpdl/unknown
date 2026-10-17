@@ -87,6 +87,7 @@
 .creator-directory th:nth-child(7) { width:90px; }
 .creator-directory th:nth-child(8) { width:80px; }
 .creator-directory td,.creator-directory :is(strong,small) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.creator-directory td:first-child { padding:4px; text-overflow:clip; }
 .creator-directory .partnership-row-button { width:100%; min-width:0; padding:0; }
 .creator-directory .partnership-row-button strong { display:block; max-width:100%; }
 .creator-batch-actions { display:flex; align-items:center; flex-wrap:wrap; gap:8px 16px; margin-bottom:12px; }
