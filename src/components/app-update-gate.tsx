@@ -1,5 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
+import { createClient } from '@supabase/supabase-js';
 import * as Application from 'expo-application';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as SplashScreen from 'expo-splash-screen';
@@ -13,7 +14,11 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { requiresAppUpdate } from '@/lib/app-update';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { supabase } from '@/lib/supabase';
+
+// Public policy must not wait on a saved login session or token refresh.
+const releasePolicyClient = createClient(process.env.EXPO_PUBLIC_SUPABASE_URL!, process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
+  auth: { storageKey: 'gling-release-policy', persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+});
 
 // Debug binaries reload current source without changing their installed build number.
 const build = __DEV__ || Constants.executionEnvironment === ExecutionEnvironment.StoreClient ? null : Application.nativeBuildVersion;
@@ -39,9 +44,9 @@ export function AppUpdateGate({ children }: { children: ReactNode }) {
     request.current = controller;
     const timeout = setTimeout(() => controller.abort(), 4000);
     try {
-      const { data, error } = await supabase.from('app_release_policy')
+      const { data, error } = await releasePolicyClient.from('app_release_policy')
         .select('minimum_build').eq('platform', Platform.OS).abortSignal(controller.signal).maybeSingle();
-      if (error || !data) throw error ?? new Error('Missing release policy');
+      if (error || !data || !Number.isSafeInteger(data.minimum_build) || data.minimum_build < 0) throw error ?? new Error('Invalid release policy');
       if (request.current === controller) setStatus(requiresAppUpdate(build, data.minimum_build) ? 'blocked' : 'allowed');
     } catch {
       if (request.current === controller) setStatus('error');
