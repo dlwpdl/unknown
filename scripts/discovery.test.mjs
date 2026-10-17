@@ -30,6 +30,15 @@ test('릴스 카테고리 색을 바꾸지 않고 장소 유형을 구분한다'
   assert.equal(discoveryPost({ ...post, kind: 'story', tag: { slug: 'food' }, hashtags: ['카페'] }).category, 'cafe');
   assert.equal(discoveryPost({ ...post, tag: { slug: 'housing' } }, Date.parse('2026-10-15')).category, 'housing');
 });
+test('a festival topic stays in the festival filter even when its venue is a cafe or park', () => {
+  for (const hashtags of [['카페', '페스티벌'], ['산책', 'festival'], ['전시', '도서관']]) {
+    const item = discoveryPost({ ...post, kind: 'story', tag: { slug: 'festival' }, hashtags });
+    assert.equal(item.category, 'festival');
+    assert.equal(discoveryMatches(item, 'festival', ''), true);
+    assert.equal(discoveryMatches(item, 'events', ''), true);
+    assert.equal(discoveryMatches(item, 'cafe', ''), false);
+  }
+});
 test('본문과 해시태그로 찾은 장소·리스팅을 다시 숨기지 않는다', () => {
   const item = discoveryPost({ ...post, body: `UBC 학생 환영\n${post.body}`, hashtags: ['가구정리'] }, Date.parse('2026-10-15T00:00:00Z'));
   assert.equal(discoveryMatches(item, 'used', 'ubc'), true);
