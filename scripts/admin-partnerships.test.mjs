@@ -115,3 +115,14 @@ test('agreement requests preserve zero and null, retain one request ID, and read
   const broken = { rpc: async () => ({ data: { ...record, id: other }, error: null }) };
   await assert.rejects(partnerships.loadCreatorDeal(broken, id), /PARTNERSHIP_READ_FAILED/);
 });
+
+test('vendor linking keeps the exact agreement and revision, and rejects invalid collaboration dates before writing', async () => {
+  const calls = [];
+  const client = { rpc: async (name, args) => { calls.push({ name, args }); return { data: id, error: null }; } };
+  await partnerships.linkCreatorDealMerchant(client, id, other, '2026-10-24', revision);
+  assert.deepEqual(calls[0], { name: 'link_admin_creator_deal_merchant', args: { p_id: id, p_merchant_id: other, p_collaboration_on: '2026-10-24', p_expected_updated_at: revision } });
+  for (const day of ['2026-02-30', '1899-12-31', '2026-1-1', 'infinity']) await assert.rejects(partnerships.linkCreatorDealMerchant(client, id, other, day, revision), /INVALID_PARTNERSHIP/);
+  await assert.rejects(partnerships.linkCreatorDealMerchant(client, id, null, null, revision), /INVALID_PARTNERSHIP/);
+  assert.equal(calls.length, 1);
+  await assert.rejects(partnerships.linkCreatorDealMerchant({ rpc: async () => ({ data: null, error: { message: 'PARTNERSHIP_CHANGED' } }) }, id, other, null, revision), /PARTNERSHIP_CHANGED/);
+});

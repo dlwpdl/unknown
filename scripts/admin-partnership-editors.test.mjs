@@ -52,6 +52,22 @@ test('agreement form records explicit zero, unknown support and evidence without
   assert.match(app.calls[0].args.p_record.notes, /직접 확인/);
 });
 
+test('vendor form updates an existing agreement without resending costs, and retries only exact readback after save', async () => {
+  const deal = { id, creator_id: other, merchant_id: null, merchant_name: null, agreed_on: '2026-10-17', collaboration_on: null, updated_at: revision, created_at: revision, recorded_by_name: null, currency: 'CAD', ad_fee_cents: 0, meal_support_cents: 15000, deliverables: '릴스 1개', source_url: '', notes: '운영자 확인' };
+  let available = false;
+  const app = editor('CreatorDealMerchantForm', { deal }, async (name) => name === 'link_admin_creator_deal_merchant' ? { data: id, error: null } : { data: available ? { ...deal, merchant_id: other, merchant_name: '지모코', collaboration_on: '2026-10-24' } : deal, error: null });
+  nodes(app.render()).find(node => node.type?.name === 'EntityPicker').props.onPick(other, '지모코');
+  field(app.render(), '협업 날짜').props.onChange({ target: { value: '2026-10-24' } });
+  submit(app.render()); await new Promise(setImmediate);
+  assert.match(text(app.render()), /다시 확인/);
+  assert.equal(app.calls.filter(c => c.name === 'link_admin_creator_deal_merchant').length, 1);
+  assert.equal(app.calls[0].args.p_expected_updated_at, revision);
+  assert.equal('p_record' in app.calls[0].args, false);
+  available = true; submit(app.render()); await new Promise(setImmediate);
+  assert.deepEqual(app.saved, [id]);
+  assert.equal(app.calls.filter(c => c.name === 'link_admin_creator_deal_merchant').length, 1);
+});
+
 test('creator details retain observed audience labels and select a secondary platform without dropping contact or revision', async () => {
   const profiles = [
     { platform: 'Instagram', url: 'https://instagram.com/creator/', followers: '1.4만', checked_on: '2026-10-15' },

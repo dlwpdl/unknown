@@ -9,8 +9,9 @@ export type CreatorDeal = {
   id: string; creator_id: string; merchant_id: string | null; merchant_name: string | null;
   agreed_on: string; currency: 'CAD' | 'USD'; ad_fee_cents: number | null; meal_support_cents: number | null;
   deliverables: string; source_url: string; notes: string; created_at: string; recorded_by_name: string | null;
+  collaboration_on?: string | null; updated_at?: string;
 };
-export type CreatorDealInput = Omit<CreatorDeal, 'merchant_name' | 'created_at' | 'recorded_by_name'>;
+export type CreatorDealInput = Omit<CreatorDeal, 'merchant_name' | 'created_at' | 'recorded_by_name' | 'updated_at'>;
 export const CREATOR_DEAL_SORTS = { date_desc: '최근 합의순', date_asc: '오래된 합의순', fee_asc: '광고비 낮은순', fee_desc: '광고비 높은순', support_asc: '식사 지원 낮은순', support_desc: '식사 지원 높은순', updated_desc: '정보 수정순' } as const;
 export type CreatorDirectoryOptions = { sort: keyof typeof CREATOR_DEAL_SORTS; currency: 'CAD' | 'USD' };
 export type Creator = RecordBase & {
@@ -84,6 +85,7 @@ export const PAYMENT_STATUSES = { not_applicable: '지원금 없음', pending: '
 export const PARTNERSHIP_ACTIONS: Record<string, string> = {
   creator_created: '크리에이터 등록', creator_saved: '크리에이터 정보 수정',
   creator_deal_recorded: '협업 합의 조건 기록',
+  creator_deal_merchant_linked: '협업 벤더·날짜 연결',
   campaign_created: '캠페인 등록', campaign_saved: '캠페인 정보 수정',
   benefit_created: '혜택 등록', benefit_saved: '혜택 정보 수정',
   participation_created: '참여 팀 접수', participation_saved: '참여 진행 기록 수정', participation_selected: '참여 팀 선정',
@@ -92,6 +94,7 @@ export const PARTNERSHIP_ACTIONS: Record<string, string> = {
 
 const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const timestamp = (value: unknown): value is string => typeof value === 'string' && Number.isFinite(Date.parse(value));
+const calendarDate = (value: unknown): value is string => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && value >= '1900-01-01' && timestamp(value) && new Date(value).toISOString().slice(0, 10) === value;
 const validRecord = (value: unknown, kind: PartnershipView) => {
   if (!value || typeof value !== 'object') return false;
   const row = value as Record<string, unknown>;
@@ -104,6 +107,8 @@ function validCreatorDeal(value: unknown, saved = true): value is CreatorDeal {
   const row = value as Record<string, unknown>;
   return typeof row.id === 'string' && uuid.test(row.id) && typeof row.creator_id === 'string' && uuid.test(row.creator_id)
     && (row.merchant_id === null || typeof row.merchant_id === 'string' && uuid.test(row.merchant_id))
+    && (row.collaboration_on == null || calendarDate(row.collaboration_on))
+    && (row.updated_at === undefined || timestamp(row.updated_at))
     && ['CAD', 'USD'].includes(String(row.currency))
     && typeof row.agreed_on === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(row.agreed_on) && row.agreed_on >= '1900-01-01' && timestamp(row.agreed_on)
     && new Date(row.agreed_on).toISOString().slice(0, 10) === row.agreed_on
@@ -163,6 +168,11 @@ export async function loadCreatorDeal(client: SupabaseClient, id: string): Promi
   if (error) throw new Error(error.message);
   if (!validCreatorDeal(data) || data.id !== id) throw new Error('PARTNERSHIP_READ_FAILED');
   return data;
+}
+
+export async function linkCreatorDealMerchant(client: SupabaseClient, id: string, merchantId: string, collaborationOn: string | null, expectedUpdatedAt: string): Promise<string> {
+  if (!uuid.test(id) || !merchantId || !uuid.test(merchantId) || !timestamp(expectedUpdatedAt) || (collaborationOn !== null && !calendarDate(collaborationOn))) throw new Error('INVALID_PARTNERSHIP');
+  return mutation(client, 'link_admin_creator_deal_merchant', { p_id: id, p_merchant_id: merchantId, p_collaboration_on: collaborationOn, p_expected_updated_at: expectedUpdatedAt }, id);
 }
 
 export async function savePartnership(client: SupabaseClient, kind: PartnershipKind, record: { id: string } & Record<string, unknown>, expectedUpdatedAt: string | null): Promise<string> {
