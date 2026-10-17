@@ -32,15 +32,6 @@
 .merchant-directory-table thead th { background:var(--admin-subtle); color:var(--admin-muted); font-weight:500; padding:8px 12px; }
 .merchant-directory-table :is(th,td) { box-sizing:border-box; border-bottom:1px solid var(--admin-line); padding:4px 12px; }
 .merchant-directory-table tbody tr:last-child :is(th,td) { border-bottom:0; }
-.merchant-directory-table thead th:first-child { width:52px; }
-.merchant-directory-table thead th:nth-child(2) { width:216px; }
-.merchant-directory-table thead th:nth-child(3) { width:160px; }
-.merchant-directory-table thead th:nth-child(4) { width:100px; }
-.merchant-directory-table thead th:nth-child(5) { width:124px; }
-.merchant-directory-table thead th:nth-child(6) { width:120px; }
-.merchant-directory-table thead th:nth-child(7),.merchant-directory-table thead th:nth-child(8) { width:88px; }
-.merchant-directory-table thead th:nth-child(9),.merchant-directory-table thead th:nth-child(10) { width:48px; text-align:right; }
-.merchant-directory-table thead th:last-child { width:128px; }
 .merchant-directory-table tbody tr { cursor:pointer; height:64px; }
 .merchant-directory-table tbody :is(th,td) { vertical-align:middle; white-space:nowrap; }
 .merchant-directory-table tbody tr:is(:hover,[data-selected="true"],[data-checked="true"]) { background:var(--admin-subtle); }

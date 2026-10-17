@@ -9,6 +9,14 @@ const { merchantAddressCity } = merchantApi;
 
 const merchants = ['first', 'second'].map((id, i) => ({ id, name: `업체 ${i + 1}`, city_id: 'vancouver', city_name: '밴쿠버', timezone: 'America/Vancouver', industry: '카페', services: '', address: '', contact: `contact${i + 1}@example.test`, status: 'trial', consent: 'pending', consent_note: '', trial_ends_at: null, post_count: i + 1, report_count: 0, updated_at: '2026-10-11T00:00:00Z' }));
 
+test('vendor workspace groups the directory into seven columns without dropping location, account or actions', () => {
+  const tree = app().render(), table = nodes(tree).find(n => n.type === 'table');
+  const head = nodes(table).find(n => n.type === 'thead');
+  assert.equal(nodes(head).filter(n => n.type === 'th').length, 7);
+  assert.match(text(table), /미연결/); assert.match(text(table), /게시 지역/);
+  assert.ok(button(tree, '업체 1 크리에이터 협업')); assert.ok(button(tree, '업체 1 삭제'));
+});
+
 function app({ failure = null } = {}) {
   const state = [], refs = [], effects = [], feedback = [], prompts = [], calls = [];
   let stateIndex = 0, refIndex = 0, effectIndex = 0, allowReplace = false;

@@ -112,7 +112,7 @@ def blocked_recheck(database, lock, mutation, operation, expected):
 def main():
     fixture = TEST.read_text()
     assert fixture.startswith('begin;') and fixture.rstrip().endswith('rollback;')
-    migration = MIGRATION.read_text() + '\n' + DETAIL_MIGRATION.read_text() + '\n' + DEAL_MIGRATION.read_text() + '\n' + (ROOT / 'supabase/migrations/20261018003000_creator_deal_merchant_link.sql').read_text() + '\n' + (ROOT / 'supabase/migrations/20261018003500_creator_deal_date_range.sql').read_text()
+    migration = MIGRATION.read_text() + '\n' + DETAIL_MIGRATION.read_text() + '\n' + DEAL_MIGRATION.read_text() + '\n' + (ROOT / 'supabase/migrations/20261018003000_creator_deal_merchant_link.sql').read_text() + '\n' + (ROOT / 'supabase/migrations/20261018003500_creator_deal_date_range.sql').read_text() + '\n' + (ROOT / 'supabase/migrations/20261018010000_merchant_creator_deals.sql').read_text()
     before = sql('postgres', "select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='private' and c.relname like 'partnership_%';").stdout
     passed = 0
     for test in (fixture, DETAIL_TEST.read_text(), DEAL_TEST.read_text()):

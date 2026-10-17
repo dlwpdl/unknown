@@ -155,3 +155,15 @@ test('a backdated agreement outside the visible history page still requires its 
   assert.deepEqual(reads, [savedId]);
   assert.match(text(screen.render()), /저장한 내용을 확인했습니다/);
 });
+
+test('creator workspace keeps seven scan columns and separates collaboration history from the full profile', async () => {
+  const screen = view('creators', async (_kind, _query, _offset, selected) => page('creators', selected ? rows.creators : null));
+  screen.render(); await new Promise(setImmediate); let tree = screen.render();
+  const table = nodes(tree).find(n => n.type === 'table');
+  assert.equal(nodes(table).filter(n => n.type === 'th').length, 7);
+  nodes(tree).find(n => n.type === 'button' && n.props?.['data-record-id'] === id).props.onClick({ currentTarget: { focus() {} } });
+  screen.render(); await new Promise(setImmediate); tree = screen.render();
+  assert.equal(nodes(tree).find(n => n.props?.className === 'creator-detail-profile').props.hidden, true);
+  nodes(tree).find(n => n.type === 'button' && text(n) === '프로필·연락처').props.onClick();
+  assert.equal(nodes(screen.render()).find(n => n.props?.className === 'creator-detail-profile').props.hidden, false);
+});

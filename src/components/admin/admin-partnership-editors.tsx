@@ -40,7 +40,7 @@ function useSave(callbacks: Callbacks) {
   return { error, busy, acknowledged, save };
 }
 
-function EntityPicker({ type, value, label, selectedLabel, onPick, disabled, optional = false, locked = false }: {
+export function EntityPicker({ type, value, label, selectedLabel, onPick, disabled, optional = false, locked = false }: {
   type: PickKind; value: string; label: string; selectedLabel: string; onPick: (id: string | null, name: string) => void;
   disabled?: boolean; optional?: boolean; locked?: boolean;
 }) {
@@ -184,11 +184,11 @@ export function PartnershipEditor({ state, ...callbacks }: { state: PartnershipE
   </form>;
 }
 
-export function CreatorDealForm({ requestId, creator, initialCurrency = 'CAD', ...callbacks }: { requestId: string; creator: Creator; initialCurrency?: 'CAD' | 'USD' } & Callbacks) {
+export function CreatorDealForm({ requestId, creator, initialCurrency = 'CAD', initialMerchant, ...callbacks }: { requestId: string; creator: Creator; initialCurrency?: 'CAD' | 'USD'; initialMerchant?: { id: string; name: string } } & Callbacks) {
   const { play } = useInteractionFeedback();
   const [data, setData] = useState({ agreed_on: new Date().toLocaleDateString('sv-SE'), collaboration_on: '', adFee: '', mealSupport: '', deliverables: '', source_url: '', notes: '' });
   const [currency, setCurrency] = useState<'CAD' | 'USD'>(initialCurrency);
-  const [merchant, setMerchant] = useState<{ id: string | null; name: string }>({ id: null, name: '' });
+  const [merchant, setMerchant] = useState<{ id: string | null; name: string }>(initialMerchant ?? { id: null, name: '' });
   const action = useSave(callbacks);
   const change = (field: keyof typeof data, value: string) => { setData(current => ({ ...current, [field]: value })); callbacks.onDirty(true); };
   return <form className="partnership-form" onSubmit={event => { event.preventDefault(); void action.save(() => recordCreatorDeal(supabase, {
@@ -199,10 +199,11 @@ export function CreatorDealForm({ requestId, creator, initialCurrency = 'CAD', .
     {action.error && <p role="alert" className="partnership-form-error">{action.error}</p>}
     <p className="partnership-muted">{creator.display_name}의 합의 조건을 새 이력으로 남깁니다. 이전 기록은 보존됩니다.</p>
     <fieldset className="partnership-form" disabled={action.busy || action.acknowledged}>
-      <EntityPicker type="merchant" value={merchant.id ?? ''} selectedLabel={merchant.name} label="협업 벤더" optional disabled={action.busy} onPick={(id, name) => { setMerchant({ id, name }); callbacks.onDirty(true); }} />
+      <EntityPicker type="merchant" value={merchant.id ?? ''} selectedLabel={merchant.name} label="협업 벤더" optional={!initialMerchant} locked={Boolean(initialMerchant)} disabled={action.busy} onPick={(id, name) => { setMerchant({ id, name }); callbacks.onDirty(true); }} />
       <div className="partnership-form-grid">
         <label>합의 날짜<input type="date" required min="1900-01-01" value={data.agreed_on} onFocus={() => play('selection')} onChange={event => change('agreed_on', event.target.value)} /></label>
         <label>협업 날짜 · 예정 포함<input type="date" min="1900-01-01" value={data.collaboration_on} onFocus={() => play('selection')} onChange={event => change('collaboration_on', event.target.value)} /></label>
+      </div><div className="partnership-form-grid creator-cost-inputs">
         <label>통화<select value={currency} onChange={event => { const value = event.target.value; if (value === 'CAD' || value === 'USD') { play('selection'); setCurrency(value); callbacks.onDirty(true); } }}><option value="CAD">CAD</option><option value="USD">USD</option></select></label>
         <label>광고비<input inputMode="decimal" maxLength={12} placeholder="없으면 0 · 모르면 비워 두세요" value={data.adFee} onFocus={() => play('selection')} onChange={event => change('adFee', event.target.value)} /></label>
         <label>식사 지원 한도<input inputMode="decimal" maxLength={12} placeholder="예: 150.00" value={data.mealSupport} onFocus={() => play('selection')} onChange={event => change('mealSupport', event.target.value)} /></label>
@@ -217,9 +218,9 @@ export function CreatorDealForm({ requestId, creator, initialCurrency = 'CAD', .
   </form>;
 }
 
-export function CreatorDealMerchantForm({ deal, ...callbacks }: { deal: CreatorDeal } & Callbacks) {
+export function CreatorDealMerchantForm({ deal, initialMerchant, ...callbacks }: { deal: CreatorDeal; initialMerchant?: { id: string; name: string } } & Callbacks) {
   const { play } = useInteractionFeedback();
-  const [merchant, setMerchant] = useState({ id: deal.merchant_id, name: deal.merchant_name ?? '' });
+  const [merchant, setMerchant] = useState<{ id: string | null; name: string }>(initialMerchant ?? { id: deal.merchant_id, name: deal.merchant_name ?? '' });
   const [day, setDay] = useState(deal.collaboration_on ?? '');
   const action = useSave({ ...callbacks, onSaved: async id => {
     const saved = await loadCreatorDeal(supabase, id);
@@ -230,7 +231,7 @@ export function CreatorDealMerchantForm({ deal, ...callbacks }: { deal: CreatorD
     {action.error && <p role="alert" className="partnership-form-error">{action.error}</p>}
     <p className="partnership-muted">{deal.agreed_on} 합의 · {deal.deliverables}. 이 기록의 벤더와 협업 날짜를 연결합니다. 비용과 기존 합의 내용은 유지됩니다.</p>
     <fieldset className="partnership-form" disabled={action.busy || action.acknowledged}>
-      <EntityPicker type="merchant" value={merchant.id ?? ''} selectedLabel={merchant.name} label="협업 벤더" disabled={action.busy || action.acknowledged} onPick={(id, name) => { setMerchant({ id, name }); callbacks.onDirty(true); }} />
+      <EntityPicker type="merchant" value={merchant.id ?? ''} selectedLabel={merchant.name} label="협업 벤더" locked={Boolean(initialMerchant)} disabled={action.busy || action.acknowledged} onPick={(id, name) => { setMerchant({ id, name }); callbacks.onDirty(true); }} />
       <label>협업 날짜 · 예정 포함<input type="date" min="1900-01-01" value={day} onFocus={() => play('selection')} onChange={event => { setDay(event.target.value); callbacks.onDirty(true); }} /></label>
       <p className="partnership-muted">확인한 날짜만 입력하세요. 예정일도 기록할 수 있으며, 날짜 연결이 실제 방문·지급·게시 완료를 뜻하지 않습니다.</p>
     </fieldset>

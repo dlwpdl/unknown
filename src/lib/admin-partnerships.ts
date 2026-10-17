@@ -12,6 +12,7 @@ export type CreatorDeal = {
   collaboration_on?: string | null; updated_at?: string;
 };
 export type CreatorDealInput = Omit<CreatorDeal, 'merchant_name' | 'created_at' | 'recorded_by_name' | 'updated_at'>;
+export type MerchantCreatorDeal = CreatorDeal & { creator_name: string; creator_profile_url: string };
 export const CREATOR_DEAL_SORTS = { date_desc: '최근 합의순', date_asc: '오래된 합의순', fee_asc: '광고비 낮은순', fee_desc: '광고비 높은순', support_asc: '식사 지원 낮은순', support_desc: '식사 지원 높은순', updated_desc: '정보 수정순' } as const;
 export type CreatorDirectoryOptions = { sort: keyof typeof CREATOR_DEAL_SORTS; currency: 'CAD' | 'USD' };
 export type Creator = RecordBase & {
@@ -173,6 +174,15 @@ export async function loadCreatorDeal(client: SupabaseClient, id: string): Promi
 export async function linkCreatorDealMerchant(client: SupabaseClient, id: string, merchantId: string, collaborationOn: string | null, expectedUpdatedAt: string): Promise<string> {
   if (!uuid.test(id) || !merchantId || !uuid.test(merchantId) || !timestamp(expectedUpdatedAt) || (collaborationOn !== null && !calendarDate(collaborationOn))) throw new Error('INVALID_PARTNERSHIP');
   return mutation(client, 'link_admin_creator_deal_merchant', { p_id: id, p_merchant_id: merchantId, p_collaboration_on: collaborationOn, p_expected_updated_at: expectedUpdatedAt }, id);
+}
+
+export async function loadMerchantCreatorDeals(client: SupabaseClient, merchantId: string, offset = 0): Promise<{ rows: MerchantCreatorDeal[]; more: boolean }> {
+  if (!uuid.test(merchantId) || !Number.isInteger(offset) || offset < 0 || offset > 10000) throw new Error('INVALID_PARTNERSHIP');
+  const { data, error } = await client.rpc('get_admin_merchant_creator_deals', { p_merchant_id: merchantId, p_offset: offset });
+  if (error) throw new Error(error.message);
+  if (!data || data.merchant_id !== merchantId || typeof data.more !== 'boolean' || !Array.isArray(data.rows) || data.rows.length > 50
+    || !data.rows.every((row: MerchantCreatorDeal) => validCreatorDeal(row) && row.merchant_id === merchantId && typeof row.creator_name === 'string' && Boolean(safeMerchantSourceUrl(row.creator_profile_url)))) throw new Error('PARTNERSHIP_READ_FAILED');
+  return data;
 }
 
 export async function savePartnership(client: SupabaseClient, kind: PartnershipKind, record: { id: string } & Record<string, unknown>, expectedUpdatedAt: string | null): Promise<string> {

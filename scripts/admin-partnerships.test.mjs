@@ -126,3 +126,14 @@ test('vendor linking keeps the exact agreement and revision, and rejects invalid
   assert.equal(calls.length, 1);
   await assert.rejects(partnerships.linkCreatorDealMerchant({ rpc: async () => ({ data: null, error: { message: 'PARTNERSHIP_CHANGED' } }) }, id, other, null, revision), /PARTNERSHIP_CHANGED/);
 });
+
+test('the vendor side reads the same saved agreements and rejects a different vendor response', async () => {
+  const deal = { id, creator_id: other, creator_name: '크리에이터', creator_profile_url: 'https://example.com/creator', merchant_id: other, merchant_name: '벤더', agreed_on: '2026-10-17', collaboration_on: '2026-10-24', currency: 'CAD', ad_fee_cents: 0, meal_support_cents: 15000, deliverables: '릴스 1개', source_url: '', notes: '직접 확인', created_at: revision, updated_at: revision, recorded_by_name: null };
+  const calls = [];
+  const client = { rpc: async (name, args) => { calls.push({ name, args }); return { data: { merchant_id: other, rows: [deal], more: false }, error: null }; } };
+  const result = await partnerships.loadMerchantCreatorDeals(client, other, 50);
+  assert.equal(calls[0].name, 'get_admin_merchant_creator_deals');
+  assert.deepEqual(calls[0].args, { p_merchant_id: other, p_offset: 50 });
+  assert.equal(result.rows[0].id, id);
+  await assert.rejects(partnerships.loadMerchantCreatorDeals(client, id), /PARTNERSHIP_READ_FAILED/);
+});
