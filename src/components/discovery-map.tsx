@@ -11,7 +11,7 @@ import { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMar
 export type { DiscoveryMarker } from '@/lib/discovery-map-html';
 type Props = {
   markers: DiscoveryMarker[]; cityName: string; selectedId?: string | null;
-  center?: { latitude: number; longitude: number } | null; onSelect: (id: string) => void;
+  center?: { latitude: number; longitude: number; requestId?: number } | null; onSelect: (id: string) => void;
   bottomInset?: number;
 };
 

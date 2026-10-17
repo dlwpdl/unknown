@@ -81,6 +81,18 @@ function canvas(markers = [marker]) {
   return { window, listeners, cameras, sources, layers, images, paddingCalls, messages, map, html };
 }
 
+test('each explicit current-location request recenters even when GPS coordinates have not changed', () => {
+  const c = canvas();
+  const state = { markers: [marker], selectedId: null, center: { latitude: 49.28, longitude: -123.12, requestId: 1 } };
+  vm.runInNewContext(discoveryMapScript(state, sessionId), { window: c.window });
+  const count = c.cameras.length;
+  vm.runInNewContext(discoveryMapScript(state, sessionId), { window: c.window });
+  assert.equal(c.cameras.length, count, 'ordinary pin updates preserve a manual pan');
+  vm.runInNewContext(discoveryMapScript({ ...state, center: { ...state.center, requestId: 2 } }, sessionId), { window: c.window });
+  assert.equal(c.cameras.length, count + 1, 'pressing My Location again returns to the same GPS point');
+  assert.deepEqual(Array.from(c.cameras.at(-1).center), [-123.12, 49.28]);
+});
+
 test('unchanged inset does not interrupt camera motion, and resized cards finish recentering the current target', () => {
   const c = canvas([{ ...marker, top25: true }]);
   const state = { markers: [{ ...marker, top25: true }], selectedId: marker.id, center: null, bottomInset: 220 };
