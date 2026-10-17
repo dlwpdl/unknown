@@ -16,9 +16,11 @@ test('only an older installed native build is blocked', () => {
   assert.equal(requiresAppUpdate('49', null), false);
 });
 
-function updateGate({ dev = false, os = 'ios', environment = 'bare', build = '61', minimum = 64, failure = false } = {}) {
+function updateGate({ dev = false, os = 'ios', environment = 'bare', build = '61', minimum = 64, failure = false, sessionPending = false } = {}) {
   let hook = 0, dirty, tree, requests = 0;
-  const hooks = [], pending = [], timers = new Map(), listeners = [];
+  const hooks = [], pending = [], timers = new Map(), listeners = [], publicClientOptions = [];
+  const client = (waitForSession = false) => ({ from: () => { const query = { select: () => query, eq: () => query, abortSignal: () => query,
+    maybeSingle: async () => { requests++; if (waitForSession && sessionPending) return new Promise(() => {}); return { data: { minimum_build: minimum }, error: failure ? new Error('network') : null }; } }; return query; } });
   const same = (a, b) => a && b && a.length === b.length && a.every((value, index) => Object.is(value, b[index]));
   const imports = {
     react: {
@@ -35,11 +37,12 @@ function updateGate({ dev = false, os = 'ios', environment = 'bare', build = '61
     '@/constants/theme': { Spacing: { three: 12 } }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/app-update': { requiresAppUpdate }, '@/components/launch-moment': { LaunchMoment: 'LaunchMoment' }, '@/components/state-card': { StateCard: 'StateCard' },
-    '@/lib/supabase': { supabase: { from: () => { const query = { select: () => query, eq: () => query, abortSignal: () => query, maybeSingle: async () => { requests++; return { data: { minimum_build: minimum }, error: failure ? new Error('network') : null }; } }; return query; } } },
+    '@/lib/supabase': { supabase: client(true) },
+    '@supabase/supabase-js': { createClient: (_url, _key, options) => { publicClientOptions.push(options); return client(); } },
   };
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/app-update-gate.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   const exports = {};
-  vm.runInNewContext(source, { exports, require: withLanguageImports(name => imports[name] ?? {}), __DEV__: dev, AbortController,
+  vm.runInNewContext(source, { exports, require: withLanguageImports(name => imports[name] ?? {}), __DEV__: dev, AbortController, process: { env: { EXPO_PUBLIC_SUPABASE_URL: 'https://example.supabase.co', EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'public-key' } },
     setTimeout: (callback, delay) => { const id = Symbol(); timers.set(id, { callback, delay }); return id; }, clearTimeout: id => timers.delete(id) });
   const modal = () => tree.props.children.find(node => node?.type === 'Modal');
   const render = async () => {
@@ -54,7 +57,7 @@ function updateGate({ dev = false, os = 'ios', environment = 'bare', build = '61
     if (modal().props.children?.type === 'LaunchMoment') { modal().props.children.props.onComplete(); await render(); }
   };
   const nodes = node => !node || typeof node !== 'object' ? [] : Array.isArray(node) ? node.flatMap(nodes) : [node, ...nodes(node.props?.children)];
-  return { render, modal, title: () => nodes(tree).find(node => node.type === 'StateCard')?.props.title, requests: () => requests,
+  return { render, modal, publicClientOptions, title: () => nodes(tree).find(node => node.type === 'StateCard')?.props.title, requests: () => requests,
     async foreground(nextMinimum = minimum) { minimum = nextMinimum; for (const state of ['background','active']) for (const callback of listeners) callback(state); await render(); } };
 }
 
@@ -70,4 +73,22 @@ test('release binaries remain blocked at startup and when the minimum rises in t
 });
 test('a release policy network error remains closed', async () => {
   const ui = updateGate({ failure: true }); await ui.render(); assert.equal(ui.title(), '업데이트를 확인할 수 없어요'); assert.equal(ui.modal().props.visible, true);
+});
+
+test('the public release policy does not wait on stored login-session initialization', async () => {
+  const ui = updateGate({ build: '69', minimum: 69, sessionPending: true }); await ui.render();
+  assert.equal(ui.modal().props.visible, false);
+  assert.equal(ui.publicClientOptions.length, 1);
+  const auth = ui.publicClientOptions[0].auth;
+  assert.equal(auth.persistSession, false);
+  assert.equal(auth.autoRefreshToken, false);
+  assert.equal(auth.detectSessionInUrl, false);
+  assert.equal(auth.storageKey, 'gling-release-policy');
+});
+
+test('missing or malformed public minimum-build data remains closed', async () => {
+  for (const minimum of [null, -1, '69', NaN]) {
+    const ui = updateGate({ minimum }); await ui.render();
+    assert.equal(ui.title(), '업데이트를 확인할 수 없어요');
+  }
 });
