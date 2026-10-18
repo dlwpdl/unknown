@@ -59,6 +59,15 @@ class DailyPlaces(unittest.TestCase):
             self.assertEqual(city['recommendations'], [])
             self.assertEqual(city['places'][0]['id'], 'osm:node:1')
 
+    def test_reviewed_bridge_name_is_not_mistaken_for_a_renamed_road(self):
+        m = implementation(); seed, osm, now = self.fixture()
+        seed['cities']['vancouver']['places'][0]['name'] = 'Broadway Bridge'
+        osm[0]['tags'] = {'name': 'Broadway Avenue', 'bridge': 'yes', 'bridge:name': 'Broadway Bridge'}
+        city = m.build_catalog(seed, osm, now)['cities']['vancouver']
+        self.assertEqual(len(city['recommendations']), 1)
+        osm[0]['tags'].pop('bridge:name')
+        self.assertEqual(m.build_catalog(seed, osm, now)['cities']['vancouver']['recommendations'], [])
+
     def test_invalid_or_empty_upstream_is_not_a_new_verified_snapshot(self):
         m = implementation(); seed, osm, now = self.fixture()
         with self.assertRaises(ValueError): m.build_catalog(seed, [], now)
