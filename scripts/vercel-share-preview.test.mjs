@@ -15,6 +15,7 @@ for (const file of files) { mkdirSync(join(dist, file, '..'), { recursive: true 
 buildVercelOutput(dist, output);
 const config = JSON.parse(readFileSync(join(output, 'config.json')));
 const id = '123e4567-e89b-42d3-a456-426614174000';
+const short = 'Ej5FZ-ibQtOkVkJmFBdAAA';
 const route = input => {
   const url = new URL(input, 'https://gling.ej-entertainment.com');
   const available = path => existsSync(join(output, 'static', path)) && statSync(join(output, 'static', path)).isFile();
@@ -43,14 +44,14 @@ test('prebuilt output preserves static assets and routes while authentication st
   const settings = JSON.parse(readFileSync(join(output, 'functions/_gling-share-preview.func/.vc-config.json')));
   assert.equal(settings.runtime, 'nodejs22.x');
   assert.equal(settings.launcherType, 'Nodejs');
-  assert.equal(settings.handler, 'node-share-preview.js');
+  assert.equal(settings.handler, 'infra/node-share-preview.js');
   assert.ok(existsSync(join(output, 'functions/_gling-share-preview.func', settings.handler)));
   assert.equal(JSON.parse(readFileSync(join(output, 'functions/_gling-share-preview.func/package.json'))).type, 'module');
 });
 
 test('compiled shared Web adapter retains the original or captured UUID and fixed-origin public boundary', async context => {
   const folder = join(output, 'functions/_gling-share-preview.func');
-  const { default: handler } = await import(pathToFileURL(join(folder, 'vercel-share-preview.js')));
+  const { default: handler } = await import(pathToFileURL(join(folder, 'infra/vercel-share-preview.js')));
   const env = { APP_URL: 'https://gling.ej-entertainment.com', SUPABASE_URL: 'https://project.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_fixture' };
   const before = Object.fromEntries([...Object.keys(env), 'SHARE_ORIGIN'].map(key => [key, process.env[key]]));
   delete process.env.SHARE_ORIGIN;
@@ -87,7 +88,7 @@ test('compiled shared Web adapter retains the original or captured UUID and fixe
 test('native Node HTTP adapter preserves HTML, HEAD,405 and request privacy', async context => {
   const folder = join(output, 'functions/_gling-share-preview.func');
   const settings = JSON.parse(readFileSync(join(folder, '.vc-config.json')));
-  assert.equal(settings.handler, 'node-share-preview.js', 'native Node handler must be declared');
+  assert.equal(settings.handler, 'infra/node-share-preview.js', 'native Node handler must be declared');
   const { default: handler } = await import(pathToFileURL(join(folder, settings.handler)));
   const env = { APP_URL: 'https://gling.ej-entertainment.com', SHARE_ORIGIN: 'https://gling-share-preview.vercel.app', SUPABASE_URL: 'https://project.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_fixture' };
   const before = Object.fromEntries(Object.keys(env).map(key => [key, process.env[key]]));
@@ -132,4 +133,37 @@ test('native Node HTTP adapter preserves HTML, HEAD,405 and request privacy', as
   assert.equal((await send(`//evil.example/share/${id}`)).status, 404);
   const rewritten = await send(route(`/share/${id}`).dest); assert.equal(rewritten.status, 200);
   assert.equal(calls, 3);
+});
+
+test('production short rewrites reach the emitted Node handler and reject reserved-query collisions', async context => {
+  assert.deepEqual(route(`/s/${short}?__gling_share_id=wrong`), { dest: '/404.html', status: 404 });
+  const mapped = route(`/s/${short}`);
+  assert.deepEqual(mapped, { dest: `/_gling-share-preview?__gling_share_id=${short}`, status: 200 });
+  const folder = join(output, 'functions/_gling-share-preview.func');
+  const settings = JSON.parse(readFileSync(join(folder, '.vc-config.json')));
+  const { default: handler } = await import(pathToFileURL(join(folder, settings.handler)));
+  const env = { APP_URL: 'https://gling.ej-entertainment.com', SHARE_ORIGIN: 'https://gling-share-preview.vercel.app', SUPABASE_URL: 'https://project.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_fixture' };
+  const before = Object.fromEntries(Object.keys(env).map(key => [key, process.env[key]]));
+  Object.assign(process.env, env);
+  context.after(() => { for (const [key, value] of Object.entries(before)) if (value === undefined) delete process.env[key]; else process.env[key] = value; });
+  let calls = 0;
+  context.mock.method(globalThis, 'fetch', async (_url, init) => {
+    calls++; assert.deepEqual(JSON.parse(init.body), { p_post_id: id });
+    assert.deepEqual(Object.keys(init.headers).sort(), ['Content-Type', 'apikey']);
+    return Response.json({ id, title: 'Short preview', kind: 'post', closed: false, body: 'PRIVATE-BODY' });
+  });
+  for (const path of [`/s/${short}`, mapped.dest]) {
+    const response = { headers: {}, setHeader(name, value) { this.headers[name] = value; }, end(body) { this.body = body.toString(); } };
+    await handler({ url: path, method: 'GET', headers: { Authorization: 'Bearer PRIVATE-SESSION' } }, response);
+    assert.equal(response.statusCode, 200);
+    assert.ok(response.body.includes(`${env.SHARE_ORIGIN}/s/${short}`));
+    assert.ok(response.body.includes(`${env.APP_URL}/post?id=${id}&amp;shared=1`));
+    assert.doesNotMatch(response.body, /PRIVATE-/);
+  }
+  for (const value of [short.slice(0, -1) + 'B', short + '=', short.slice(1), short + 'A']) {
+    const response = { setHeader() {}, end() {} };
+    await handler({ url: `/_gling-share-preview?__gling_share_id=${value}`, method: 'GET' }, response);
+    assert.equal(response.statusCode, 404);
+  }
+  assert.equal(calls, 2);
 });

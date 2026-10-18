@@ -6,6 +6,7 @@ import vm from 'node:vm';
 import worker, { handleSharePreview } from '../infra/share-preview-worker.ts';
 
 const id = '123e4567-e89b-42d3-a456-426614174000';
+const short = 'Ej5FZ-ibQtOkVkJmFBdAAA';
 const env = {
   APP_URL: 'https://gling.example',
   SUPABASE_URL: 'https://project.supabase.co',
@@ -75,7 +76,7 @@ function runRedirect(href, options = {}) {
   const location = { origin: 'https://gling.ej-entertainment.com', href: `https://gling.ej-entertainment.com/share/${id}`, pathname: `/share/${id}`, replace: value => replacements.push(value), ...options.location };
   const anchor = options.missing ? null : { tagName: options.tagName || 'A', href };
   vm.runInNewContext(redirectScript(), {
-    URL,
+    URL, btoa, atob,
     document: { getElementById: name => { assert.equal(name, 'share-primary-cta'); return anchor; } },
     location,
   });
@@ -126,7 +127,10 @@ test('static continuation rejects external, forged and ambiguous destinations', 
     `https://gling.ej-entertainment.com/post?id=${id}&shared=1&next=https://evil.example`, `https://gling.ej-entertainment.com/post?id=${id}&shared=1#redirect`,
     `https://gling.ej-entertainment.com/post?id=${id}&shared=1&invite=999`, `https://gling.ej-entertainment.com/post?id=${id}&shared=1&shared=1`,
     `https://gling.ej-entertainment.com/post?id=123e4567-e89b-42d3-a456-426614174999&shared=1`, `javascript:alert(1)`,
-  ]) assert.deepEqual(runRedirect(href), [], href);
+  ]) {
+    assert.deepEqual(runRedirect(href), [], href);
+    assert.deepEqual(runRedirect(href, { location: { pathname: `/s/${short}` } }), [], href);
+  }
   const valid = `https://gling.ej-entertainment.com/post?id=${id}&shared=1`;
   assert.deepEqual(runRedirect(valid, { missing: true }), []);
   assert.deepEqual(runRedirect(valid, { tagName: 'DIV' }), []);
@@ -281,4 +285,34 @@ test('HEAD has metadata headers but no body, methods are bounded and malformed d
   assert.ok(html.includes('모집 마감'));
   assert.doesNotMatch(html, /Invalid Date|bad-date|<script>/);
   assert.equal(typeof worker.fetch, 'function');
+});
+
+test('short gateway routes preserve the legacy preview, privacy headers and UUID RPC input', async () => {
+  const gateway = 'https://gling-share-preview.vercel.app';
+  const configured = { ...env, SHARE_ORIGIN: gateway };
+  let calls = 0;
+  const fetcher = async (_url, init) => {
+    calls++;
+    assert.deepEqual(JSON.parse(init.body), { p_post_id: id });
+    assert.equal(init.headers.Authorization, undefined); assert.equal(init.headers.Cookie, undefined);
+    return json({ ...preview, body: 'PRIVATE-BODY' });
+  };
+  const legacy = await handleSharePreview(request(), configured, fetcher);
+  const compact = await handleSharePreview(new Request(`${gateway}/s/${short}/?token=PRIVATE-TOKEN`, { headers: { Authorization: 'Bearer PRIVATE-SESSION', Cookie: 'private=1' } }), configured, fetcher);
+  assert.equal(compact.status, 200);
+  assert.deepEqual([...compact.headers], [...legacy.headers]);
+  assert.equal((await compact.text()).replaceAll(`/s/${short}`, `/share/${id}`), await legacy.text());
+  const head = await handleSharePreview(new Request(`${gateway}/s/${short}`, { method: 'HEAD' }), configured, fetcher);
+  assert.equal(head.status, 200); assert.equal(await head.text(), '');
+  assert.equal(calls, 3);
+  for (const invalid of [short.slice(0, -1) + 'B', short + '=', short.slice(1), short + 'A', short.replace('-', '+'), '%45' + short.slice(1), id, short + '/private']) {
+    assert.equal((await handleSharePreview(new Request(`${gateway}/s/${invalid}`), configured, noFetch)).status, 404, invalid);
+  }
+});
+
+test('static continuation matches canonical short UUIDs and rejects aliases or mismatched posts', () => {
+  const href = `https://gling.ej-entertainment.com/post?id=${id}&shared=1&invite=1`;
+  for (const path of [`/s/${short}`, `/s/${short}/`]) assert.deepEqual(runRedirect(href, { location: { origin: 'https://gling-share-preview.vercel.app', href: `https://gling-share-preview.vercel.app${path}`, pathname: path } }), [href]);
+  for (const value of [short.slice(0, -1) + 'B', short + '=', short.slice(1), short + 'A', '%45' + short.slice(1), short + '/private']) assert.deepEqual(runRedirect(href, { location: { pathname: `/s/${value}` } }), []);
+  assert.deepEqual(runRedirect(href.replace(id, '123e4567-e89b-42d3-a456-426614174999'), { location: { pathname: `/s/${short}` } }), []);
 });

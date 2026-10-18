@@ -20,7 +20,8 @@ import * as postLinks from '../supabase/functions/_shared/post-links.ts';
 const id = '9f100000-0000-4000-8000-000000000001';
 const otherId = '9f100000-0000-4000-8000-000000000002';
 const link = `https://gling.ej-entertainment.com/post?id=${id}`;
-const gatewayLink = `https://gling-share-preview.vercel.app/share/${id}`;
+const legacyGatewayLink = `https://gling-share-preview.vercel.app/share/${id}`;
+const gatewayLink = 'https://gling-share-preview.vercel.app/s/nxAAAAAAQACAAAAAAAAAAQ';
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
@@ -217,7 +218,7 @@ test('popup callbacks leave code exchange and invitation navigation to their ope
 });
 
 test('stored external or malformed OAuth return links are rejected after login', async context => {
-  for (const target of [`https://evil.test/post?id=${id}`, `//evil.test/post?id=${id}`, `/post?id=${id}&id=${otherId}`, gatewayLink, `https://gling-share-preview.vercel.app/post?id=${id}`]) {
+  for (const target of [`https://evil.test/post?id=${id}`, `//evil.test/post?id=${id}`, `/post?id=${id}&id=${otherId}`, gatewayLink, legacyGatewayLink, `https://gling-share-preview.vercel.app/post?id=${id}`]) {
     const harness = mount('../src/web/auth/callback.tsx', 'default', { auth: { isAuthed: true }, returnPath: target }); context.after(() => harness.unmount()); await harness.settle();
     assert.deepEqual(harness.calls.filter(call => call[0] === 'navigate'), [['navigate', '/']]); assert.equal(harness.browser.sessionStorage.getItem(sharing.SHARED_POST_RETURN_KEY), null);
   }
@@ -476,7 +477,7 @@ test('host invites and closed meetups share a link while preserving join applica
 
 
 test('web chat preview opens the hosted flat post route and keeps the invitation flag', async context => {
-  for (const url of [link, gatewayLink]) {
+  for (const url of [link, gatewayLink, legacyGatewayLink]) {
     const harness = mount('../src/components/shared-link-card.tsx', 'SharedLinkCard', { os: 'web' }, { url }); context.after(() => harness.unmount()); await harness.settle();
     control(harness, 'chat.shared-link.open').props.onPress();
     assert.equal(harness.calls.find(call => call[0] === 'navigate')[1], `/post?id=${id}&invite=1`);

@@ -11,12 +11,13 @@ export function buildVercelOutput(dist, output) {
   mkdirSync(functionDirectory, { recursive: true });
   cpSync(dist, join(output, 'static'), { recursive: true });
   execFileSync(process.execPath, [join(root, 'node_modules/typescript/bin/tsc'), '--ignoreConfig', '--strict', '--target', 'es2022', '--module', 'esnext', '--moduleResolution', 'bundler', '--lib', 'es2022,dom', '--types', 'node', '--skipLibCheck', '--rewriteRelativeImportExtensions', '--noEmitOnError', '--outDir', functionDirectory, 'infra/node-share-preview.ts'], { cwd: root, stdio: 'inherit' });
-  writeFileSync(join(functionDirectory, '.vc-config.json'), JSON.stringify({ runtime: 'nodejs22.x', handler: 'node-share-preview.js', launcherType: 'Nodejs' }, null, 2) + '\n');
+  writeFileSync(join(functionDirectory, '.vc-config.json'), JSON.stringify({ runtime: 'nodejs22.x', handler: 'infra/node-share-preview.js', launcherType: 'Nodejs' }, null, 2) + '\n');
   writeFileSync(join(functionDirectory, 'package.json'), JSON.stringify({ type: 'module' }) + '\n');
   writeFileSync(join(output, 'config.json'), JSON.stringify({ version: 3, routes: [
     { src: '^/_gling-share-preview(?:/.*)?$', dest: '/404.html', status: 404 },
     { src: '^/(?:auth|merchant/auth)(?:/.*)?$', dest: '/404.html', status: 404 },
     { src: '^/share/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})/?$', dest: '/_gling-share-preview?__gling_share_id=$1', missing: [{ type: 'query', key: '__gling_share_id' }] },
+    { src: '^/s/([A-Za-z0-9_-]{22})/?$', dest: '/_gling-share-preview?__gling_share_id=$1', missing: [{ type: 'query', key: '__gling_share_id' }] },
     { handle: 'filesystem' },
     { src: '^/$', dest: '/index.html' },
     { src: '^/merchant/?$', dest: '/merchant/index.html' },
