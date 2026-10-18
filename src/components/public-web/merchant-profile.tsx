@@ -317,7 +317,7 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
       {!!profile.links?.length && <nav className="reader-company-sources" aria-label="비즈니스 외부 페이지">{profile.links.map(link =>
         <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" aria-label={`${profile.name} ${link.label}, 새 창 열기`}
           onClick={() => play('selection')}>{link.label} <span aria-hidden="true">↗</span></a>)}</nav>}
-      <a className="reader-company-app-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>앱에서 문의·저장 <span aria-hidden="true">↗</span></a>
+      <a className="reader-company-app-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>앱에서 비즈니스 보기 <span aria-hidden="true">↗</span></a>
       {(profile.imageLoadFailed || broken.banner || broken.avatar) && <div className="reader-company-image-notice" role="status">
         <p>일부 프로필 사진을 불러오지 못했어요.</p><button disabled={busy} onClick={() => { play('selection'); setRetry((value) => value + 1); }}>사진 다시 불러오기</button></div>}
       <div className="reader-company-tabs" role="tablist" aria-label="비즈니스 프로필 내용">{tabs.map((item, index) => <button type="button" role="tab" key={item.id} data-tab={item.id}

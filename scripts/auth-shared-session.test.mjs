@@ -9,8 +9,9 @@ import * as nickname from '../src/lib/nickname.ts';
 
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
+import { getPostImageSource, setBusinessImageSession } from '../src/lib/feed-data.ts';
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
-const session = id => ({ user: { id, last_sign_in_at: '2026-10-11T18:00:00Z', app_metadata: {}, user_metadata: {}, identities: [] } });
+const session = id => ({ access_token: `token-${id}`, user: { id, last_sign_in_at: '2026-10-11T18:00:00Z', app_metadata: {}, user_metadata: {}, identities: [] } });
 const profile = (id, patch = {}) => ({ id, nickname: `${id} 이웃`, city_id: 'vancouver', avatar_path: null, verification_level: 1,
   account_status: 'active', ai_safety_consent_at: '2026-10-11T18:00:00Z', ...patch });
 
@@ -52,7 +53,7 @@ function mount(initialSession = session('member')) {
     '@/constants/theme': { Spacing: {} }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/i18n/ko': { t: { auth: { loginError: '로그인 오류', sessionExpired: '세션 만료' } } }, '@/lib/admin': { isAdminRole: () => false },
     '@/lib/account-security-device': { registerSecurityDevice: async () => {} }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play }) },
-    '@/lib/nickname': nickname, '@/lib/kakao-auth': kakao, '@/lib/legal-documents': { CONTACT_EMAIL: 'fixture@example.invalid' },
+    '@/lib/feed-data': { setBusinessImageSession }, '@/lib/nickname': nickname, '@/lib/kakao-auth': kakao, '@/lib/legal-documents': { CONTACT_EMAIL: 'fixture@example.invalid' },
     '@/lib/location-provider': { CommunityLocationProvider: 'CommunityLocationProvider' }, '@/lib/mock': { CITIES: [{ id: 'vancouver' }] },
     '@/lib/supabase': { supabase, AUTH_EXPIRED_EVENT: 'authExpired' }, '@/lib/push-notifications': { unregisterPushDevice: async () => {} },
     '@/lib/trust': { shouldCelebrateVerificationUpgrade: () => false },
@@ -65,7 +66,7 @@ function mount(initialSession = session('member')) {
   const render = () => { index = 0; effects = []; tree = exports.AuthProvider({ children: null }); effects.forEach(fn => fn()); return tree.props.value; };
   render();
   return { reads, render, nodes: () => nodes(tree), async settle() { for (let i = 0; i < 4; i++) { await tick(); render(); } return tree.props.value; },
-    changeSession(next) { currentSession = next; onAuthChange(next ? 'SIGNED_IN' : 'SIGNED_OUT', next); return render(); },
+    changeSession(next,event=next ? 'SIGNED_IN' : 'SIGNED_OUT') { currentSession = next; onAuthChange(event, next); return render(); },
     unmount() { state.forEach(hook => hook?.cleanup?.()); } };
 }
 const onboarding = harness => harness.nodes().find(node => node.type === 'ProfileOnboarding');
@@ -142,4 +143,16 @@ test('confirmed nickname updates auth immediately and a stale account callback c
   assert.equal(harness.render().me.nickname, '새로운 이웃');
   harness.changeSession(session('another-member'));
   await assert.rejects(auth.setProfileNickname('잘못된 이름', '새로운 이웃'), /AUTH_REQUIRED/);
+});
+
+test('business gallery session follows token refresh and clears immediately on logout',async context=>{
+ const harness=mount();context.after(()=>harness.unmount());await harness.settle();
+ const post={id:'gallery',imagePaths:['business-post/a2000000-0000-4000-8000-000000000001/1/'+'a'.repeat(32)],imageUris:['opaque-gallery'],imageThumbs:['opaque-gallery']};
+ assert.equal(getPostImageSource(post,'member','full').headers.Authorization,'Bearer token-member');
+ harness.changeSession({...session('member'),access_token:'token-refreshed'},'TOKEN_REFRESHED');
+ assert.equal(getPostImageSource(post,'member','full').headers.Authorization,'Bearer token-refreshed');
+ harness.changeSession(null);assert.equal(getPostImageSource(post,'member','full'),undefined);
+ harness.changeSession(session('next'));assert.equal(getPostImageSource(post,'member','full'),undefined);
+ assert.equal(getPostImageSource(post,'next','full').headers.Authorization,'Bearer token-next');
+ harness.unmount();assert.equal(getPostImageSource(post,'next','full'),undefined);
 });

@@ -85,7 +85,7 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
         onPress={() => { play('selection'); if (isAuthed) setSharing(true); else promptLogin('모임을 공유하려면 로그인해주세요.'); }}><ThemedText type="smallBold" themeColor="accent">{post.author.id === me.id ? tr("초대") : tr("공유")}</ThemedText></Pressable>
       {post.author.id !== me.id && <Pressable analyticsId="components_chilling-event.pressable.4" accessibilityRole="button" accessibilityLabel={tr("신고 및 차단")} style={styles.action} onPress={() => { play('selection'); if (isAuthed) setReport(true); else promptLogin('신고하려면 로그인해 주세요.'); }}><ThemedText style={{ color: theme.textSecondary }}>···</ThemedText></Pressable>}
     </View>
-    <ReportSheet visible={report} targetType="post" targetId={post.id} reportedUserId={post.author.id} reportedNickname={post.author.nickname} onClose={() => setReport(false)} />
+    <ReportSheet visible={report} targetType="post" targetId={post.id} reportedUserId={post.business ? undefined : post.author.id} reportedBusinessId={post.business?.id} reportedNickname={post.business?.name ?? post.author.nickname} onClose={() => setReport(false)} />
     {sharing && <PostShareSheet post={post} visible={sharing} onClose={() => setSharing(false)} onShared={() => { void recordPostShare(supabase, post.id).catch(() => {}); }} />}
   </View>;
 });

@@ -27,6 +27,7 @@ import { AUTH_EXPIRED_EVENT, signInAdminAccount, signInReviewAccount, supabase }
 import { unregisterPushDevice } from '@/lib/push-notifications';
 import { shouldCelebrateVerificationUpgrade, type TrustLevel } from '@/lib/trust';
 import { changeProfileNickname } from '@/lib/nickname';
+import { setBusinessImageSession } from '@/lib/feed-data';
 
 type Level = 0 | 1;
 type OAuthProvider = 'kakao' | 'google';
@@ -143,6 +144,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       await AsyncStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
       const { data } = await supabase.auth.getSession();
       if (!active) return;
+      setBusinessImageSession(data.session?.user.id ?? null, data.session?.access_token ?? null);
       setSession(data.session);
       setSessionReady(true);
       if (expired && lastActive != null) { setReason(sourceCopy.auth.sessionExpired); setVisible(true); }
@@ -162,11 +164,13 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       if (event === 'SIGNED_IN' && nextLogin && nextLogin !== observedLogin.current) setLoginKey(nextLogin);
       if (!nextSession) { setLoginKey(null); setProfileCheckedUserId(null); }
       observedLogin.current = nextLogin;
+      setBusinessImageSession(nextSession?.user.id ?? null, nextSession?.access_token ?? null);
       setSession(nextSession);
       setSessionReady(true);
     });
     return () => {
       active = false;
+      setBusinessImageSession(null, null);
       appState.remove();
       supabase.auth.stopAutoRefresh();
       data.subscription.unsubscribe();
