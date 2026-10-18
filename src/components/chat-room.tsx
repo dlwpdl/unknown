@@ -214,19 +214,21 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   }, [business, conversation.id, valid]);
 
   useEffect(() => {
-    if (loading || readAt === undefined || initialScroll.current) return;
+    if (discoveryOpen || loading || readAt === undefined || initialScroll.current) return;
+    let positioned = false;
     initialScroll.current = true;
     const index = firstUnreadMessageIndex(messages, readAt, publicSelfId);
     setUnreadStart(index < 0 ? null : messages[index].id);
     followingLatest.current = index < 0;
     setAwayFromLatest(index >= 0 && index < messages.length - 1);
     const timer = setTimeout(() => {
-      if (discoveryVisible.current) return;
+      if (discoveryVisible.current) { initialScroll.current = false; return; }
+      positioned = true;
       if (index > 0) messageList.current?.scrollToIndex({ index, viewPosition: 0.12, animated: false });
       else if (index < 0) messageList.current?.scrollToEnd({ animated: false });
     }, 50);
-    return () => clearTimeout(timer);
-  }, [messages, publicSelfId, loading, readAt]);
+    return () => { clearTimeout(timer); if (!positioned) initialScroll.current = false; };
+  }, [messages, publicSelfId, loading, readAt, discoveryOpen]);
 
   const trackVisibleMessages = useCallback(({ viewableItems }: { viewableItems: ViewToken<ChatMessageRecord>[] }) => {
     if (discoveryVisible.current || !readReady.current || !valid()) return;

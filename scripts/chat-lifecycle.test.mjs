@@ -218,6 +218,28 @@ test('messages still arrive under discovery without hidden read receipts or auto
   assert.deepEqual(marked, [incoming.id], 'a genuinely visible message can be marked after returning');
 });
 
+test('initial unread positioning waits for discovery to close, including a covered pending scroll timer', async context => {
+  for (const stage of ['loading', 'timer-pending']) {
+    const rows = [message(1), message(2), message(3)], scrolls = [], marked = [];
+    let finish;
+    const pending = new Promise(resolve => { finish = resolve; });
+    const harness = room({ loadConversationMessages: () => stage === 'loading' ? pending : Promise.resolve(rows),
+      loadChatReadPosition: async () => rows[0].created_at,
+      markChatRead: async (_client, _room, id) => marked.push(id) });
+    context.after(() => harness.cleanup()); await harness.settle();
+    const action = harness.nodes().find(node => node.props?.label === '장소 찾기 ↗'); action.type(action.props).props.onPress(); await harness.settle();
+    if (stage === 'loading') { finish(rows); await harness.settle(); }
+    const list = () => harness.nodes().find(node => node.type === 'FlatList');
+    list().props.ref.current = { scrollToIndex: ({ index }) => scrolls.push(index), scrollToEnd: () => scrolls.push('end') };
+    await harness.timers();
+    list().props.onViewableItemsChanged({ viewableItems: [{ item: rows[2] }] });
+    assert.deepEqual(scrolls, []); assert.deepEqual(marked, []);
+    harness.nodes().find(node => node.type === 'MapScreen').props.onClose(); await harness.settle(); await harness.timers();
+    assert.deepEqual(scrolls, [1], stage);
+    harness.rerender(); await harness.timers(); assert.deepEqual(scrolls, [1], 'initial unread positioning runs once');
+  }
+});
+
 test('report then block stops when its sheet, account, profile or target changes', async () => {
   for (const change of ['none', 'unmount', 'account', 'identity', 'dismiss', 'target', 'hidden', 'stale-error']) {
     const calls = [], alerts = [];
