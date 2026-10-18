@@ -59,23 +59,26 @@ export function ChatIdentitySwitcher({ onChanged }: { onChanged?: () => void }) 
       if (user.current === me.id && request === serial.current) { pending.current = false; setBusy(false); }
     }
   }
-  const optionStyle = (selected: boolean) => [styles.option, { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.backgroundSelected : theme.card, opacity: busy ? 0.5 : 1 }];
+  const optionStyle = (selected: boolean) => [styles.option, { backgroundColor: selected ? theme.backgroundSelected : theme.card, opacity: busy ? 0.5 : 1 }];
   return <>
     <Pressable analyticsId="chat.identity.open" accessibilityRole="button" accessibilityLabel={tr('대화 프로필 선택: {0}', name)}
-      onPress={() => { void open(); }} style={({ pressed }) => [styles.current, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement }]}>
-      <SymbolView name={business ? { ios: 'storefront', android: 'storefront', web: 'storefront' } : { ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} size={20} tintColor={theme.accent} />
-      <View style={{ flex: 1 }}><ThemedText type="smallBold" numberOfLines={1}>{name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr(business ? '비즈니스 대화함' : '개인 대화함')}</ThemedText></View>
+      accessibilityState={{ expanded: openedFor === me.id }}
+      onPress={() => { void open(); }} style={({ pressed }) => [styles.current, { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : theme.card }]}>
+      <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><SymbolView name={business ? { ios: 'storefront', android: 'storefront', web: 'storefront' } : { ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} size={22} tintColor={theme.accent} /></View>
+      <View style={styles.identity}><ThemedText style={styles.name} numberOfLines={1}>{name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr(business ? '비즈니스 대화함' : '개인 대화함')}</ThemedText></View>
       <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={14} tintColor={theme.textSecondary} />
     </Pressable>
     <Modal visible={openedFor === me.id} transparent animationType="fade" onRequestClose={close}>
       <View style={styles.backdrop}><SafeAreaView edges={['bottom']} accessibilityViewIsModal onAccessibilityEscape={close} style={[styles.sheet, { backgroundColor: theme.card }]}>
-        <View style={styles.heading}><ThemedText type="subtitle">{tr('대화 프로필')}</ThemedText><Pressable analyticsId="chat.identity.close" accessibilityRole="button" accessibilityLabel={tr('프로필 선택 닫기')} onPress={close} style={styles.close}><ThemedText type="smallBold">{tr('닫기')}</ThemedText></Pressable></View>
+        <View style={styles.heading}><ThemedText style={styles.sheetTitle}>{tr('대화 프로필')}</ThemedText><Pressable analyticsId="chat.identity.close" accessibilityRole="button" accessibilityLabel={tr('프로필 선택 닫기')} onPress={close} style={styles.close}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={18} tintColor={theme.textSecondary} /></Pressable></View>
         <ScrollView analyticsId="chat.identity.options" contentContainerStyle={{ gap: 10 }}>
           <Pressable analyticsId="chat.identity.personal" accessibilityRole="radio" accessibilityState={{ selected: !business, disabled: busy }} disabled={busy} onPress={() => { void choose(null); }} style={optionStyle(!business)}>
-            <View style={styles.optionHeading}><ThemedText type="smallBold" style={{ flex: 1 }}>{me.nickname}</ThemedText>{!business && <ThemedText type="smallBold" themeColor="accent">✓</ThemedText>}</View><ThemedText type="small" themeColor="textSecondary">{tr('개인 프로필')}</ThemedText>
+            <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} size={22} tintColor={theme.accent} /></View>
+            <View style={styles.identity}><ThemedText style={styles.name}>{me.nickname}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('개인 프로필')}</ThemedText></View>{!business && <SymbolView name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} size={22} tintColor={theme.accent} />}
           </Pressable>
           {rows.map(row => <Pressable key={row.id} analyticsId="chat.identity.business" accessibilityRole="radio" accessibilityState={{ selected: row.id === business?.id, disabled: busy }} disabled={busy} onPress={() => { void choose(row.id); }} style={optionStyle(row.id === business?.id)}>
-            <View style={styles.optionHeading}><ThemedText type="smallBold" style={{ flex: 1 }}>{row.name}</ThemedText>{row.id === business?.id && <ThemedText type="smallBold" themeColor="accent">✓</ThemedText>}</View><ThemedText type="small" themeColor="textSecondary">{tr('비즈니스')}</ThemedText>
+            <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'storefront', android: 'storefront', web: 'storefront' }} size={22} tintColor={theme.accent} /></View>
+            <View style={styles.identity}><ThemedText style={styles.name}>{row.name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('비즈니스')}</ThemedText></View>{row.id === business?.id && <SymbolView name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} size={22} tintColor={theme.accent} />}
           </Pressable>)}
           {busy && <ThemedText accessibilityLiveRegion="polite" type="small">{tr('현재 연결 확인 중…')}</ThemedText>}
           {!!error && <ThemedText accessibilityRole="alert" type="small">{tr(error)}</ThemedText>}
@@ -86,11 +89,14 @@ export function ChatIdentitySwitcher({ onChanged }: { onChanged?: () => void }) 
 }
 
 const styles = StyleSheet.create({
-  current: { minHeight: 56, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  current: { flexShrink: 0, minHeight: 72, marginBottom: 16, borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  identity: { flex: 1, minWidth: 0, gap: 2 },
+  name: { fontWeight: '700' },
   backdrop: { flex: 1, backgroundColor: '#0008', justifyContent: 'flex-end' },
   sheet: { width: '100%', maxWidth: 560, maxHeight: '75%', alignSelf: 'center', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 24, gap: 16 },
   heading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sheetTitle: { flex: 1, fontSize: 20, lineHeight: 28, fontWeight: '700' },
   close: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  optionHeading: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  option: { minHeight: 64, padding: 14, gap: 4, borderWidth: 1, borderRadius: 14 },
+  option: { minHeight: 72, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 16 },
 });
