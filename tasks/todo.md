@@ -227,6 +227,12 @@
 - [ ] Validate GPS on devices and update store disclosures for the next native binary (not build 11).
 - Evidence: `tasks/location-admin-2026-09-12.md`.
 
+## 2026-10-17 — Business public identity privacy
+
+- [x] 비즈니스 작성자·로고·배너·공식 작성글 연결과 공개 개인 정보 분리의 로컬 구현 및 검증.
+- [ ] 배포 보류 해제 후030/031/032/033/035/036과 public-post Edge를 함께 적용하고 실제 공개 경로 확인.032 단독 적용 금지, 구버전 차단 금지.
+- 명세: [business-public-identity-privacy-2026-10-17](../docs/specs/business-public-identity-privacy-2026-10-17.md).
+
 ## 2026-09-12 — Private member name and birth date
 
 - [x] Private self-reported name/DOB RPCs, computed age, validation and deletion/security checks.

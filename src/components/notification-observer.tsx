@@ -51,7 +51,7 @@ export function NotificationObserver() {
       const dashboard = adminDashboardUrl(data.route, isAdmin);
       if (dashboard) void Linking.openURL(dashboard).catch(() => Alert.alert(tr("관리자 대시보드를 열지 못했어요"), tr("Tailscale 연결과 Mac의 관리자 서버를 확인해 주세요.")));
       else {
-        const route = notificationRoute(data.route);
+        const route = notificationRoute(data.route, { category: data.category, body: response.notification.request.content.body });
         router.navigate((route?.startsWith('/admin') ? '/notifications' : route ?? '/notifications') as never);
       }
       if (notificationId) {

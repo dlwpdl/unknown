@@ -219,5 +219,20 @@ select is((select reported_user_id from public.reports where id=current_setting(
 select is((select count(*) from public.listing_reviews where post_id=current_setting('test.business_post')::uuid),1::bigint,'verified admin preserves business-related historical review evidence');
 reset role;
 
+select ok(not has_function_privilege('anon','public.publish_merchant_workspace_draft(uuid,uuid,timestamptz,boolean)','EXECUTE'),'anonymous callers cannot use the privacy-ready publisher');
+select ok(has_function_privilege('authenticated','public.publish_merchant_workspace_draft(uuid,uuid,timestamptz,boolean)','EXECUTE'),'authenticated callers retain the protected publication entry');
+select ok((select not prosecdef and coalesce(array_to_string(proconfig,','),'') ~ '(^|,)search_path=(""|)(,|$)'
+  from pg_proc where oid='public.publish_merchant_workspace_draft(uuid,uuid,timestamptz,boolean)'::regprocedure),'readiness entry adds no privilege and uses an empty search path');
+insert into private.merchant_workspace_drafts(id,merchant_id,channel,title,body,tag_slug,kind,approved_at,approved_by)
+values('b1830000-0000-4000-8000-000000000004','b1810000-0000-4000-8000-000000000001','gling','준비 확인','합성 롤백 게시 검사','life','story',now(),'b1800000-0000-4000-8000-000000000001');
+select set_config('request.jwt.claims','{"sub":"b1800000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+set local role authenticated;
+select throws_ok($$select public.publish_merchant_workspace_draft('b1810000-0000-4000-8000-000000000001','b1830000-0000-4000-8000-000000000004',now(),false)$$,'P0001','BUSINESS_PRIVACY_REQUIRED','false readiness cannot publish');
+select throws_ok($$select public.publish_merchant_workspace_draft('b1810000-0000-4000-8000-000000000001','b1830000-0000-4000-8000-000000000004',now(),null)$$,'P0001','BUSINESS_PRIVACY_REQUIRED','null readiness cannot publish');
+select throws_ok($$select public.publish_merchant_workspace_draft('b1810000-0000-4000-8000-000000000001','b1830000-0000-4000-8000-000000000004',now()-interval '1 second',true)$$,'P0001','MERCHANT_DRAFT_CHANGED','privacy-ready entry preserves stale-write protection');
+select lives_ok($$select public.publish_merchant_workspace_draft('b1810000-0000-4000-8000-000000000001','b1830000-0000-4000-8000-000000000004',now(),true)$$,'privacy-ready entry publishes through the existing protected writer');
+reset role;
+select is((select p.business_author_id from public.posts p join private.merchant_workspace_drafts d on d.post_id=p.id where d.id='b1830000-0000-4000-8000-000000000004'),'b1810000-0000-4000-8000-000000000001'::uuid,'readiness entry retains official business provenance');
+
 select * from finish();
 rollback;
