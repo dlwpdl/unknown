@@ -2,16 +2,14 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { attachMerchantProfileImages, mapMerchantProfile, type MerchantProfile } from './merchant-profile.ts';
 import type { MyMerchantProfile } from './merchant-profile-editor.ts';
 import { merchantPhoneUrl } from './merchant-source.ts';
+import { startBusinessConversation } from './business-chat.ts';
 export { merchantMapsUrl, merchantPhoneUrl } from './merchant-source.ts';
 
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
-export async function startMerchantConversation(client: SupabaseClient, merchantId: string): Promise<string> {
+export async function startMerchantConversation(client: SupabaseClient, merchantId: string, asBusinessId: string | null = null, postId?: string): Promise<string> {
   if (!UUID.test(merchantId)) throw new Error('INVALID_MERCHANT');
-  const result = await client.rpc('start_merchant_conversation', { p_merchant_id: merchantId });
-  if (result.error) throw new Error(result.error.message);
-  if (typeof result.data !== 'string' || !UUID.test(result.data)) throw new Error('MERCHANT_CONVERSATION_READ_FAILED');
-  return result.data;
+  return startBusinessConversation(client, { businessId: merchantId }, asBusinessId, postId);
 }
 
 export async function setSavedMerchant(client: SupabaseClient, merchantId: string, saved: boolean): Promise<boolean> {

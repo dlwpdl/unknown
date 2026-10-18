@@ -52,6 +52,36 @@
         "license": "CC BY-SA 4.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
         "imageSha256": "3e270ddc51588b0fe78cf1a08ac3b2b633956d41b762b0585c199882c1cee362"
+      },
+      {
+        "placeId": "osm:way:198500757",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9f/Nathan_Phillips_square_-_Toronto.jpg/960px-Nathan_Phillips_square_-_Toronto.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Nathan_Phillips_square_-_Toronto.jpg",
+        "artist": "Paolo Costa Baldi",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "20b982b9eb93c9ba3b0802e563f31d5d344d00db2025a2f47d9e31aa177f3130"
+      },
+      {
+        "placeId": "osm:way:14344414",
+        "cityId": "toronto",
+        "uri": "https://upload.wikimedia.org/wikipedia/commons/4/4e/Autumn_Colours_%281733568512%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Autumn_Colours_(1733568512).jpg",
+        "artist": "Diego Torres Silvestre from Sao Paulo, Brazil",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "9ab3212823b931b51cad440f1953146da320000ad2f6639b7092de9d36ff9766"
+      },
+      {
+        "placeId": "osm:way:189780702",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ae/Toronto_skyline_tommythompsonpark_cropped.jpg/960px-Toronto_skyline_tommythompsonpark_cropped.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Toronto_skyline_tommythompsonpark_cropped.jpg",
+        "artist": "derivative work: Jphillips23 (talk)\nToronto_skyline_tommythompsonpark.jpg: John Vetterli from Toronto, Canada",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "imageSha256": "e81f9c4801620edb6b328c56ba77a394144e5c0bfd1e4ae714305379975e3d61"
       }
     ],
     "vancouver": [
@@ -84,6 +114,16 @@
         "license": "CC BY-SA 2.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
         "imageSha256": "855738ca6ad86244a11f5262acbdcb83f5ba2b3177eabfc780ba6d289f7bf35d"
+      },
+      {
+        "placeId": "osm:node:1856357128",
+        "cityId": "vancouver",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2d/Siwash_Vancouver_Seawall.jpg/960px-Siwash_Vancouver_Seawall.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Siwash_Vancouver_Seawall.jpg",
+        "artist": "Bitan Banerjee",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "158a51897dad1e2a28bb6f009ca46d96206ec0ea848eb27f7e218cff37aa0816"
       }
     ],
     "montreal": [
@@ -126,6 +166,16 @@
         "license": "CC BY-SA 2.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
         "imageSha256": "ec835a8ddaa573ad9df327a7fe346567f9469d851de13af7e08369d4d03ddbb5"
+      },
+      {
+        "placeId": "osm:way:182750657",
+        "cityId": "montreal",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/21/20181012_-_16_-_Montreal_panorama_%28Mount_Royal_Park%29.jpg/960px-20181012_-_16_-_Montreal_panorama_%28Mount_Royal_Park%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:20181012_-_16_-_Montreal_panorama_(Mount_Royal_Park).jpg",
+        "artist": "Andre Carrotflower",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "f79eaff069d36e9ea72a31a71f92d668f6c3f55de7c3c5ec584c278d32c08c29"
       }
     ],
     "calgary": [
@@ -190,6 +240,26 @@
         "license": "CC BY-SA 4.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
         "imageSha256": "7c2ea2990602eb87836d7714cba91185dc5165e28509c2a8272a4a7deb058d88"
+      },
+      {
+        "placeId": "osm:relation:17644228",
+        "cityId": "edmonton",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fc/Muttart_Conservatories_Edmonton_Alberta_Canada_01A.jpg/960px-Muttart_Conservatories_Edmonton_Alberta_Canada_01A.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Muttart_Conservatories_Edmonton_Alberta_Canada_01A.jpg",
+        "artist": "WinterE229 WinterforceMedia",
+        "license": "Public domain",
+        "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "imageSha256": "f4852a8fea2faeca1a056bef7d7c85e916fe6469813cf9a22105efcf92a91b8e"
+      },
+      {
+        "placeId": "osm:relation:9911642",
+        "cityId": "edmonton",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/33/The_new_Walterdale_Bridge_%2826863140898%29.jpg/960px-The_new_Walterdale_Bridge_%2826863140898%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:The_new_Walterdale_Bridge_(26863140898).jpg",
+        "artist": "KMW2700 from Edmonton, Canada",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "imageSha256": "b6ce2a6300607179077be91433325bb010af9436aba0a3c106a41e0ee0978afa"
       }
     ],
     "winnipeg": [
@@ -222,6 +292,26 @@
         "license": "CC BY-SA 3.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
         "imageSha256": "50f42d7d627f37cd8481ab207c4aab8ff361eea0281cb6c51963ca09fa1a5f6d"
+      },
+      {
+        "placeId": "osm:way:306150488",
+        "cityId": "winnipeg",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ea/Esplanade_Riel_Bridge_at_dusk%2C_Winnipeg%2C_Canada.jpg/960px-Esplanade_Riel_Bridge_at_dusk%2C_Winnipeg%2C_Canada.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Esplanade_Riel_Bridge_at_dusk,_Winnipeg,_Canada.jpg",
+        "artist": "Ethan Sahagun",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "imageSha256": "e93829f86a33a0c10c459f032c6a7759a1244c6d23529f49797c793c35599266"
+      },
+      {
+        "placeId": "osm:node:639365682",
+        "cityId": "winnipeg",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/99/Doorway_to_ruins_%286815981535%29.jpg/960px-Doorway_to_ruins_%286815981535%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Doorway_to_ruins_(6815981535).jpg",
+        "artist": "Thomas Quine",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "532178cf153be94d411d6fbcbbfb2c2a7cf59847f5d8a7d09b2ba3a44287565d"
       }
     ],
     "saskatoon": [
@@ -254,6 +344,16 @@
         "license": "CC BY 4.0",
         "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
         "imageSha256": "d93c1c3a5c84d4c8af32f1920c53def616c8e110ba39cea39a48dec81ae946fb"
+      },
+      {
+        "placeId": "osm:way:256402002",
+        "cityId": "saskatoon",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Broadway_Bridge_and_South_Saskatchewan_River%2C_Saskatoon_%28505716%29_%2826106537356%29.jpg/960px-Broadway_Bridge_and_South_Saskatchewan_River%2C_Saskatoon_%28505716%29_%2826106537356%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Broadway_Bridge_and_South_Saskatchewan_River,_Saskatoon_(505716)_(26106537356).jpg",
+        "artist": "Robert Linsdell from St. Andrews, Canada",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "c98a870e82ac8e32002442dd06dc588d7949bd4eeebc42f72b9b609d79272966"
       }
     ],
     "ottawa": [
@@ -318,6 +418,26 @@
         "license": "CC BY-SA 3.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
         "imageSha256": "0a562ca4b2cf29fad5821241feafecd71af0097bbb812e46b1d94cdd6f4cba4e"
+      },
+      {
+        "placeId": "osm:way:71153155",
+        "cityId": "regina",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b5/Saskatchewan_legislative_building.jpg/960px-Saskatchewan_legislative_building.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Saskatchewan_legislative_building.jpg",
+        "artist": "daryl_mitchell",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "imageSha256": "341dbc62a058cf2831e29f0823ed10f3fc7c33eeb6d2ec3ad72afdf03bc2d36b"
+      },
+      {
+        "placeId": "osm:way:285051056",
+        "cityId": "regina",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fb/Regina_Saskatchewan_Canada_Government_House_2016.jpg/960px-Regina_Saskatchewan_Canada_Government_House_2016.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Regina_Saskatchewan_Canada_Government_House_2016.jpg",
+        "artist": "Grahampurse",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "33a8e658a327dccda65d8acf65d6ce797945cd7e795d3eb0c2e05306bbb0ed00"
       }
     ],
     "saint-john": [
@@ -382,7 +502,18 @@
         "license": "CC BY 2.5",
         "licenseUrl": "https://creativecommons.org/licenses/by/2.5",
         "imageSha256": "adc3ee207c08d9bbacc2cb248835f5c564144f4c0feb48b10abcd404444d52af"
+      },
+      {
+        "placeId": "osm:node:4422934789",
+        "cityId": "halifax",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b1/BridgeHalifaxPublicGardenHalifaxNovaScotia.jpg/960px-BridgeHalifaxPublicGardenHalifaxNovaScotia.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:BridgeHalifaxPublicGardenHalifaxNovaScotia.jpg",
+        "artist": "Hantsheroes",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "d51cecc791da9d38a614020d1b3e037a01435405b730a60d22f405dfaad23447"
       }
     ]
-  }
+  },
+  "photoSelectionsReviewedAt": "2026-10-18T08:50:21.589404+00:00"
 }

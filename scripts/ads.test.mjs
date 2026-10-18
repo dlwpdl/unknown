@@ -8,7 +8,7 @@ const source = ts.transpileModule(fs.readFileSync(new URL('../src/lib/ads.ts', i
   compilerOptions: { module: ts.ModuleKind.CommonJS },
 }).outputText;
 
-function load({ platform = 'ios', mode = 'live', expoGo = false, status = 'granted', answer = 'granted', allowed = true, available = true, trackingError = false, activity = 'active' } = {}) {
+function load({ platform = 'ios', mode = 'live', dev = false, expoGo = false, status = 'granted', answer = 'granted', allowed = true, available = true, trackingError = false, activity = 'active' } = {}) {
   const events = [], state = { status, allowed, activity };
   const permission = () => ({ status: state.status, granted: state.status === 'granted' });
   const sdk = { __esModule: true, default: () => ({
@@ -22,7 +22,7 @@ function load({ platform = 'ios', mode = 'live', expoGo = false, status = 'grant
     showPrivacyOptionsForm: async () => { events.push('privacy-form'); },
   } };
   const exports = {};
-  vm.runInNewContext(source, { exports, __DEV__: false, process: { env: { EXPO_PUBLIC_ADS_MODE: mode } }, require(name) {
+  vm.runInNewContext(source, { exports, __DEV__: dev, process: { env: { EXPO_PUBLIC_ADS_MODE: mode } }, require(name) {
     if (name === 'expo-constants') return { __esModule: true, default: { executionEnvironment: expoGo ? 'go' : 'native' }, ExecutionEnvironment: { StoreClient: 'go' } };
     if (name === 'react-native') return { Platform: { OS: platform }, AppState: { get currentState() { return state.activity; } }, DeviceEventEmitter: { emit: () => { events.push('changed'); } } };
     if (name === 'expo-tracking-transparency') {
@@ -72,7 +72,7 @@ test('tracking permission is checked again after a system settings change', asyn
 
 test('feed ads retain placement, UMP clearance, one initialization and privacy change notifications', async () => {
   const { ads, sdk, events, state } = load({ allowed: false });
-  assert.deepEqual(Array.from({ length: 25 }, (_, i) => i).filter(ads.feedAdPosition), [5, 12, 19]);
+  assert.deepEqual(Array.from({ length: 25 }, (_, i) => i).filter(ads.feedAdPosition), [3, 7, 11, 15, 19, 23]);
   assert.equal(await ads.prepareAds(), null);
   assert.ok(!events.includes('initialize'));
   state.allowed = true;
@@ -127,4 +127,11 @@ test('native configuration includes localized ATT purpose, tracking disclosure a
   const identifier = expo.ios.privacyManifests.NSPrivacyCollectedDataTypes.find(type => type.NSPrivacyCollectedDataType === 'NSPrivacyCollectedDataTypeDeviceID');
   assert.equal(identifier.NSPrivacyCollectedDataTypeTracking, true);
   assert.ok(identifier.NSPrivacyCollectedDataTypePurposes.includes('NSPrivacyCollectedDataTypePurposeThirdPartyAdvertising'));
+});
+
+test('development builds never select live ad units even when the environment says live', async () => {
+  const { ads, sdk, events } = load({ mode: 'live', dev: true });
+  assert.equal(ads.feedAdUnit(sdk), sdk.TestIds.NATIVE);
+  assert.equal(await ads.prepareAds(), sdk);
+  assert.ok(!events.includes('ump'));
 });

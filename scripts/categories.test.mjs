@@ -49,7 +49,7 @@ test('글쓰기 안내가 13개 카테고리를 모두 지원한다', () => {
 test('비즈니스 글이 없어도 업체 소개와 사업 정보 해시태그를 제안한다', () => {
   const category = TAGS.find(({ slug }) => slug === 'business');
   assert.ok(category);
-  assert.deepEqual(getSuggestedHashtags([], category, 3), ['업체소개', '창업', '사업정보']);
+  assert.deepEqual(getSuggestedHashtags([], category, 3), ['비즈니스소개', '창업', '사업정보']);
 });
 
 test('실제 사용 빈도가 높은 해시태그를 먼저 제안한다', () => {

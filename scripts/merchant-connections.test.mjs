@@ -45,6 +45,18 @@ test('account connections cannot reuse another company response', async () => {
   await assert.rejects(loadMerchantAccountConnections({ rpc: async () => ({ data: { merchant_id: 'other', owner: null, operators: [], invitations: [] }, error: null }) }, merchant.id), /MERCHANT_CONNECTION_READ_FAILED/);
 });
 
+test('chat profile lookup uses only actual caller connections and rejects admin-wide rows without fallback', async () => {
+  const calls = [];
+  const data = { user_id: account.id, merchants: [{ id: merchant.id, name: merchant.name, city_name: '밴쿠버', role: 'owner' }], invitations: [] };
+  const client = { rpc: async (name, args) => { calls.push([name, args]); return { data, error: null }; } };
+  assert.deepEqual(await loadMyMerchantConnections(client, account.id, true), data);
+  assert.deepEqual(calls, [['get_my_business_chat_profiles', {}]]);
+  await assert.rejects(loadMyMerchantConnections({ rpc: async () => ({ data: { ...data, merchants: [{ ...data.merchants[0], role: 'admin' }] }, error: null }) }, account.id, true), /MERCHANT_CONNECTION_READ_FAILED/);
+  let failed = 0;
+  await assert.rejects(loadMyMerchantConnections({ rpc: async name => { failed++; assert.equal(name, 'get_my_business_chat_profiles'); return { error: { message: 'profile lookup unavailable' } }; } }, account.id, true), /profile lookup unavailable/);
+  assert.equal(failed, 1);
+});
+
 test('invitation and revocation send only the selected scope and preserve server errors', async () => {
   const calls = []; const invitation = { id: 'invite-a', merchant_id: merchant.id };
   const client = { rpc: async (name, args) => { calls.push([name, args]); return { data: merchant.id, error: null }; } };

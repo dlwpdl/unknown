@@ -40,7 +40,7 @@ Deno.serve(async (request) => {
     if (input.intent === 'merchant_promotion') {
       const owned = await supabase.rpc('get_merchant_workspace', { p_merchant_id: input.merchantId });
       const row = !owned.error && owned.data?.merchant;
-      if (!row) return jsonError('MERCHANT_ACCESS_REQUIRED', '이 업체를 관리할 권한이 필요합니다.', 403);
+      if (!row) return jsonError('MERCHANT_ACCESS_REQUIRED', '이 비즈니스를 관리할 권한이 필요합니다.', 403);
       merchant = { name: row.name, cityName: row.city_name };
     }
 
@@ -140,7 +140,7 @@ function validateInput(input: unknown) {
   if (value.titleHint != null && (typeof value.titleHint !== 'string' || value.titleHint.length > 80)) return '제목 힌트가 너무 깁니다.';
   if (value.bodyHint != null && (typeof value.bodyHint !== 'string' || value.bodyHint.length > 1000)) return '본문 힌트가 너무 깁니다.';
   if (value.intent === 'merchant_promotion') {
-    if (typeof value.merchantId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.merchantId)) return '업체가 올바르지 않습니다.';
+    if (typeof value.merchantId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.merchantId)) return '비즈니스가 올바르지 않습니다.';
     if (!['가게 소식', '메뉴·서비스 소개', '구인구직'].includes(value.purpose)) return '글의 목적이 올바르지 않습니다.';
     if (typeof value.bodyHint !== 'string' || !value.bodyHint.trim()) return '이번에 알릴 내용을 먼저 적어주세요.';
   } else if (value.intent != null && (value.intent !== 'event_meetup' || value.selectedCategory !== 'meetup' || !String(value.titleHint ?? '').trim() || !String(value.bodyHint ?? '').trim())) return '모임 초안 요청이 올바르지 않습니다.';
@@ -154,7 +154,7 @@ function validateInput(input: unknown) {
 
 function buildPrompt(merchant = false) {
   if (merchant) return [
-    '당신은 캐나다 한인 커뮤니티 글링에서 소상공인이 직접 수정할 업체 안내글의 초안을 쓰는 도우미입니다.',
+    '당신은 캐나다 한인 커뮤니티 글링에서 소상공인이 직접 수정할 비즈니스 안내글의 초안을 쓰는 도우미입니다.',
     'merchant는 권한 확인한 가게의 이름·도시입니다. 가게를 대표하는 공손하고 친근한 존댓말을 사용하세요. purpose와 bodyHint에 적힌 이번 소식을 중심으로, 선택 카테고리를 유지하여 짧은 제목과 자연스러운 한국어 해요체 본문을 쓰세요. 반말·친구끼리 쓰는 유행어·과하게 딱딱한 공문체를 피하세요.',
     '가게 소식·메뉴와 서비스 소개는 핵심 소식을 먼저 안내하고, 구인구직은 제공된 모집 내용과 지원 방법을 먼저 정리하세요. 개인의 방문 후기나 이웃에게 추천을 묻는 글로 바꾸지 마세요.',
     '제공한 사실만 사용하세요. 입력하지 않은 가격·할인·날짜·영업시간·주소·연락처·재고·급여·후기·인증·방문 경험을 추측하지 마세요. 빠진 선택 정보는 생략하고 알릴 대상이 불분명하면 그 대상만 짧게 되물으세요.',

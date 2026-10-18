@@ -71,7 +71,7 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
         ? { ...next, reviews: [...previous.reviews, ...next.reviews.filter((row) => !previous.reviews.some(({ id }) => id === row.id))] }
         : next);
     }).catch(() => {
-      if (active) setReadError('업체 후기를 불러오지 못했어요. 다시 시도해 주세요.');
+      if (active) setReadError('비즈니스 후기를 불러오지 못했어요. 다시 시도해 주세요.');
     }).finally(() => {
       if (active) { pendingRead.current = false; setLoading(false); }
     });
@@ -83,7 +83,7 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
   };
   const openEditor = () => {
     play('selection');
-    if (!isAuthed) { promptLogin('업체 후기를 남기려면 로그인해 주세요.'); return; }
+    if (!isAuthed) { promptLogin('비즈니스 후기를 남기려면 로그인해 주세요.'); return; }
     if (!page?.can_review || loading) return;
     setScore(page.my_review?.score ?? null); setBody(page.my_review?.body ?? '');
     setReceipt(page.my_review?.receipt_path ? { path: page.my_review.receipt_path } : null);
@@ -108,8 +108,8 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
       if (!mounted.current) return;
       play('success'); setEditing(false);
       setNotice(proof?.path && proof.path === page.my_review?.receipt_path && page.my_review.receipt_status === 'verified'
-        ? tr("인증 후기를 수정했어요.") : proof ? employment ? tr("후기를 저장했어요. 근무 증빙 확인 전에는 나에게만 보여요.") : tr("후기를 저장했어요. 영수증 확인 전에는 업체에만 전달돼요.")
-          : employment ? tr("후기를 나에게만 저장했어요. 근무 증빙 인증 후에 공개돼요.") : tr("후기를 업체에 전달했어요. 다른 사용자에게는 공개되지 않아요."));
+        ? tr("인증 후기를 수정했어요.") : proof ? employment ? tr("후기를 저장했어요. 근무 증빙 확인 전에는 나에게만 보여요.") : tr("후기를 저장했어요. 영수증 확인 전에는 비즈니스에만 전달돼요.")
+          : employment ? tr("후기를 나에게만 저장했어요. 근무 증빙 인증 후에 공개돼요.") : tr("후기를 비즈니스에 전달했어요. 다른 사용자에게는 공개되지 않아요."));
       const old = [page.my_review?.receipt_path, ...uploads.current].filter((path): path is string => !!path);
       if (old.length) void supabase.storage.from('merchant-review-receipts').remove([...new Set(old)]).catch(() => {});
       refresh();
@@ -121,7 +121,7 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
         : message.includes('INVALID_MERCHANT_SCORE') || message.includes('INVALID_REVIEW_SCORE') ? '1~10점에서 0.5점 단위로 선택해 주세요.'
         : message.includes('MERCHANT_REVIEW_TOO_LONG') || message.includes('INVALID_REVIEW_BODY') ? '후기글은 300자 이내로 적어 주세요.'
         : message.includes('INVALID_REVIEW_RECEIPT') ? tr("{0} 사진을 다시 선택해 주세요. 입력은 남아 있어요.", tr(proofLabel))
-        : message.includes('MERCHANT_OWNER_REVIEW_FORBIDDEN') ? '내가 운영하는 업체에는 후기를 남길 수 없어요.'
+        : message.includes('MERCHANT_OWNER_REVIEW_FORBIDDEN') ? '내가 운영하는 비즈니스에는 후기를 남길 수 없어요.'
         : message.includes('ACCOUNT_CHANGED') ? '계정이 바뀌었어요. 현재 계정으로 다시 열어주세요.'
         : '후기를 저장하지 못했어요. 입력은 남아 있어요. 다시 시도해 주세요.');
       play('warning');
@@ -165,7 +165,7 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
         <ThemedText type="smallBold" themeColor="accent">{mine ? tr("내 후기 수정") : tr("후기 남기기")}</ThemedText>
       </Pressable>}
     </View>
-    {page?.merchant_id && onOpenProfile && <Pressable analyticsId="merchant.review.profile" accessibilityRole="button" accessibilityLabel={tr("{0} 업체 프로필 보기", (page.merchant_name))}
+    {page?.merchant_id && onOpenProfile && <Pressable analyticsId="merchant.review.profile" accessibilityRole="button" accessibilityLabel={tr("{0} 비즈니스 프로필 보기", (page.merchant_name))}
       style={[styles.outlineButton, { borderColor: theme.line, alignSelf: 'flex-start' }]} onPress={() => { play('selection'); onOpenProfile(page.merchant_id); }}>
       <ThemedText type="smallBold" themeColor="accent">{page.merchant_name}{" " + tr("프로필 보기 →")}</ThemedText>
     </Pressable>}
@@ -195,7 +195,7 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
         </Pressable>
       </View>
       <ThemedText type="small" themeColor="textSecondary">{tr("최저 1점 · 최고 10점 · 0.5점 단위")}</ThemedText>
-      <View style={styles.scores} accessibilityRole="radiogroup" accessibilityLabel={tr("업체 후기 점수")}>
+      <View style={styles.scores} accessibilityRole="radiogroup" accessibilityLabel={tr("비즈니스 후기 점수")}>
         {SCORES.map((value) => <Pressable key={value} analyticsId={`merchant.review.score.${value}`} accessibilityRole="radio"
           accessibilityLabel={tr("{0}점", (value))} aria-checked={value === score} accessibilityState={{ checked: value === score, disabled: saving }} disabled={saving}
           onPress={() => { play('selection'); setScore(value); setWriteError(''); }}
@@ -205,14 +205,14 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
       </View>
       <ThemedText type="smallBold">{tr("후기글") + " "}<ThemedText type="small" themeColor="textSecondary">{tr("(선택)")}</ThemedText></ThemedText>
       <TextInput value={body} onChangeText={setBody} onFocus={() => play('selection')} editable={!saving} multiline maxLength={300}
-        placeholder={employment ? tr("이 회사에서 직접 근무한 경험을 남겨 주세요.") : tr("직접 이용한 경험을 남겨 주세요.")} placeholderTextColor={theme.textSecondary} accessibilityLabel={tr("{0} 후기글, 선택 입력, 최대 300자", (employment ? tr('근무') : tr('업체')))}
+        placeholder={employment ? tr("이 회사에서 직접 근무한 경험을 남겨 주세요.") : tr("직접 이용한 경험을 남겨 주세요.")} placeholderTextColor={theme.textSecondary} accessibilityLabel={tr("{0} 후기글, 선택 입력, 최대 300자", (employment ? tr('근무') : tr('비즈니스')))}
         style={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.line }]} />
       <ThemedText type="small" themeColor="textSecondary" style={styles.counter}>{body.length}/300</ThemedText>
       <ThemedText type="smallBold">{tr("{0} 인증", (tr(proofLabel)))} <ThemedText type="small" themeColor="textSecondary">{employment ? tr("(공개하려면 필수)") : tr("(선택)")}</ThemedText></ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{employment ? tr("관리자가 실제 근무 증빙을 확인한 후기만 공개돼요. 확인 전에는 나에게만 보이고 공개 평균에도 포함되지 않아요. 증빙 원본은 작성자와 권한 있는 관리자만 확인해요.")
         : tr("인증한 후기만 다른 사용자에게 공개돼요. 영수증 사진은 검토 관리자만 확인하며 공개되지 않아요.")}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{employment ? tr("재직증명서·근로계약서·급여명세서 중 회사명, 본인 이름, 근무 기간을 확인할 수 있는 사진 1장을 제출해 주세요. 주민등록번호·계좌번호·주소·급여액 등 불필요한 정보는 가려 주세요.")
-        : tr("업체명·이용 날짜가 보이게 제출하고, 이름·전화번호·카드번호는 가려 주세요.")}</ThemedText>
+        : tr("비즈니스명·이용 날짜가 보이게 제출하고, 이름·전화번호·카드번호는 가려 주세요.")}</ThemedText>
       {receipt?.uri && <Image source={{ uri: receipt.uri }} contentFit="contain" style={styles.receiptImage} accessibilityLabel={tr("내가 첨부한 비공개 {0}", (tr(proofLabel)))} />}
       {receipt && <ThemedText type="small">{receipt.path === mine?.receipt_path ? tr(merchantReceiptLabel(mine.receipt_status, reviewKind)) : tr("{0} 사진 첨부됨 · 저장 후 검토", (tr(proofLabel)))}</ThemedText>}
       <View style={styles.receiptActions}>
@@ -223,7 +223,7 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
           accessibilityState={{ disabled: saving || pickingReceipt }} style={styles.textButton}
           onPress={() => { play('selection'); setReceipt(null); }}><ThemedText type="small" themeColor="textSecondary">{tr("첨부 제거")}</ThemedText></Pressable>}
       </View>
-      <ThemedText type="small" themeColor="textSecondary">{tr("업체마다 계정당 이용 리뷰와 근무 리뷰를 각각 1개씩 남길 수 있어요. 저장한 후기도 수정할 수 있어요.")}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{tr("비즈니스마다 계정당 이용 리뷰와 근무 리뷰를 각각 1개씩 남길 수 있어요. 저장한 후기도 수정할 수 있어요.")}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{tr("후기글은 안전 점검을 위해 AI와 권한 있는 관리자가 검토할 수 있어요.")}</ThemedText>
       {!!writeError && <ThemedText type="small" accessibilityRole="alert">{tr(writeError)}</ThemedText>}
       <Pressable analyticsId="merchant.review.save" accessibilityRole="button" accessibilityLabel={mine ? tr("내 후기 수정 저장") : tr("후기 저장")}
@@ -233,7 +233,7 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
     </View>}
     {page && page.review_count === 0 && !editing && <ThemedText type="small" themeColor="textSecondary">{tr("아직 공개된 인증 후기가 없어요.")}</ThemedText>}
     {rows.map((row) => <MerchantReviewCard key={row.id} review={hidden('merchant_review_reply', row.id) ? { ...row, reply: null } : row} own={isAuthed && row.author_id === me.id}
-      onReportReply={() => { if (!isAuthed) promptLogin('업체 답변을 신고하려면 로그인해 주세요.'); else setReplyReport(row); }}
+      onReportReply={() => { if (!isAuthed) promptLogin('비즈니스 답변을 신고하려면 로그인해 주세요.'); else setReplyReport(row); }}
       onReport={isAuthed && row.author_id === me.id ? undefined : () => { if (!isAuthed) promptLogin('후기를 신고하려면 로그인해 주세요.'); else setReport(row); }} />)}
     {!!readError && <View style={styles.error}>
       <ThemedText type="small" accessibilityRole="alert">{tr(readError)}</ThemedText>
@@ -254,8 +254,8 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
 export function merchantReceiptLabel(status: MerchantReview['receipt_status'], reviewKind: MerchantReviewKind = 'usage') {
   if (reviewKind === 'employment') return status === 'verified' ? '근무 증빙 인증' : status === 'pending' ? '나에게만 표시 · 근무 증빙 확인 중'
     : status === 'rejected' ? '나에게만 표시 · 근무 증빙 재확인 필요' : '나에게만 표시 · 근무 미인증';
-  return status === 'verified' ? '영수증 인증' : status === 'pending' ? '업체에만 전달 · 영수증 확인 중'
-    : status === 'rejected' ? '업체에만 전달 · 영수증 재확인 필요' : '업체에만 전달';
+  return status === 'verified' ? '영수증 인증' : status === 'pending' ? '비즈니스에만 전달 · 영수증 확인 중'
+    : status === 'rejected' ? '비즈니스에만 전달 · 영수증 재확인 필요' : '비즈니스에만 전달';
 }
 
 export function MerchantReviewCard({ review, own = false, onReport, onReportReply }: { review: MerchantReview & { receipt_review_note?: string | null }; own?: boolean; onReport?: () => void; onReportReply?: () => void }) {
@@ -274,16 +274,16 @@ export function MerchantReviewCard({ review, own = false, onReport, onReportRepl
       </View>
       <ThemedText type="small" themeColor={review.receipt_status === 'verified' ? 'accent' : 'textSecondary'}>{tr(merchantReceiptLabel(review.receipt_status, review.review_kind))}</ThemedText>
       <ThemedText numberOfLines={expanded ? undefined : 2}>{review.body || tr("점수만 남긴 후기예요.")}</ThemedText>
-      {review.review_kind !== 'employment' && review.reply && <ThemedText type="small" themeColor="accent">{tr("업체 답변 1개")}</ThemedText>}
+      {review.review_kind !== 'employment' && review.reply && <ThemedText type="small" themeColor="accent">{tr("비즈니스 답변 1개")}</ThemedText>}
       <ThemedText type="small" themeColor="textSecondary">{expanded ? tr("접기") : tr("후기 전체 보기")}</ThemedText>
     </Pressable>
     {own && review.receipt_status === 'rejected' && !!review.receipt_review_note && <ThemedText type="small" themeColor="textSecondary">{tr("재확인 사유:") + " "}{review.receipt_review_note}</ThemedText>}
     {expanded && review.review_kind !== 'employment' && review.reply && <View style={[styles.reply, { borderLeftColor: theme.accent }]}>
-      <ThemedText type="smallBold">{tr("업체 답변")}</ThemedText><ThemedText type="small">{review.reply.body}</ThemedText>
-      {onReportReply && <Pressable analyticsId="merchant.reply.report" accessibilityRole="button" accessibilityLabel={tr("업체 답변 신고")} style={[styles.textButton, styles.report]}
+      <ThemedText type="smallBold">{tr("비즈니스 답변")}</ThemedText><ThemedText type="small">{review.reply.body}</ThemedText>
+      {onReportReply && <Pressable analyticsId="merchant.reply.report" accessibilityRole="button" accessibilityLabel={tr("비즈니스 답변 신고")} style={[styles.textButton, styles.report]}
         onPress={() => { play('selection'); onReportReply(); }}><ThemedText type="small" themeColor="textSecondary">{tr("답변 신고")}</ThemedText></Pressable>}
     </View>}
-    {onReport && <Pressable analyticsId="merchant.review.report" accessibilityRole="button" accessibilityLabel={tr("{0}님의 업체 후기 신고", (review.nickname))}
+    {onReport && <Pressable analyticsId="merchant.review.report" accessibilityRole="button" accessibilityLabel={tr("{0}님의 비즈니스 후기 신고", (review.nickname))}
       style={[styles.textButton, styles.report]} onPress={() => { play('selection'); onReport(); }}><ThemedText type="small" themeColor="textSecondary">{tr("신고")}</ThemedText></Pressable>}
   </View>;
 }

@@ -87,7 +87,7 @@ export default function ProfileScreen() {
   if (!isAuthed)
     return (
       <>
-      <Stack.Screen options={{ headerRight: () => null }} />
+      <Stack.Screen options={{ headerShown: false, headerRight: () => null }} />
       <LoginPanel
         reason={t.auth.reasonProfile}
         onApple={signInApple}
@@ -95,6 +95,7 @@ export default function ProfileScreen() {
         onDevLogin={signInDev}
         loading={isAuthLoading}
         error={authError}
+        onClose={() => { if (router.canGoBack()) router.back(); else router.replace('/'); }}
       />
       </>
     );
@@ -145,7 +146,7 @@ export default function ProfileScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <Stack.Screen options={{ title: tr('내 프로필'), headerRight: () => (
+      <Stack.Screen options={{ headerShown: true, title: tr('내 프로필'), headerRight: () => (
         <View style={styles.headerActions}>
           <Pressable analyticsId="app_profile_index.invite" accessibilityRole="button" accessibilityLabel={tr('친구 초대하기')} accessibilityHint={tr('글링 초대 링크를 다른 앱으로 공유합니다')}
             onPress={() => { void shareAppInvite(); }} style={styles.headerButton}>

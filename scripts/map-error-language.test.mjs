@@ -12,7 +12,7 @@ function find(predicate) {
   visit(source); assert.ok(match, 'the actual map handler or error surface must exist'); return match;
 }
 const locate = find(node => ts.isVariableDeclaration(node) && node.name.getText(source) === 'locate').initializer.getText(source);
-const submit = find(node => ts.isJsxAttribute(node) && node.name.getText(source) === 'onPress' && node.initializer?.expression?.getText(source).includes('setDateError(')).initializer.expression.getText(source);
+const submit = find(node => ts.isJsxAttribute(node) && node.name.getText(source) === 'onPress' && node.initializer?.expression?.getText(source).includes("setDateFilter('date')")).initializer.expression.getText(source);
 function feedback(state) {
   return find(node => ts.isJsxElement(node) && node.openingElement.tagName.getText(source) === 'ThemedText'
     && node.children.some(child => ts.isJsxExpression(child) && [state, `tr(${state})`].includes(child.expression?.getText(source)))).getText(source);
@@ -22,7 +22,7 @@ function mount() {
   const context = {
     exports: {}, Error, Promise, Date, setTimeout, clearTimeout, styles: {}, ThemedText: 'Text',
     AppState: { currentState: 'active' }, locating: false, locationRevision: { current: 0 },
-    locationError: '', dateError: '', dateDraft: 'invalid', city: { id: 'vancouver' },
+    locationError: '', dateError: '', dateDraft: 'invalid', dateOpen: true, city: { id: 'vancouver' },
     play() {}, setLocating() {},
     setLocationError: value => { context.locationError = value; }, setDateError: value => { context.dateError = value; },
     Location: { requestForegroundPermissionsAsync: async () => { permissionCalls++; return { granted: false }; } },

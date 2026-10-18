@@ -10,7 +10,7 @@ export const DEFAULT_HASHTAGS: Record<TagSlug, readonly string[]> = {
   transport: ['차량', '교통', '운전'],
   housing: ['상업용', '주거용', '렌트', '룸메', '매매'],
   education: ['학교', '학원', '어학'],
-  business: ['업체소개', '창업', '사업정보'],
+  business: ['비즈니스소개', '창업', '사업정보'],
   meetup: ['모임', '취미', '운동'],
   jobs: ['구인', '구직', '채용'],
   used: ['중고거래', '판매', '나눔'],

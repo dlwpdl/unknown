@@ -52,6 +52,32 @@ function load(path, imports, globals = {}) {
   return exports;
 }
 
+test('a legacy topic push opens today search once and ignores another account', () => {
+  const routes = [];
+  let receive, cleanup;
+  const subscription = () => ({ remove() {} });
+  const { NotificationObserver } = load('../src/components/notification-observer.tsx', {
+    react: { useEffect: effect => { cleanup = effect(); } },
+    'react-native': { AppState: { addEventListener: subscription }, DeviceEventEmitter: { addListener: subscription } },
+    'expo-router': { useRootNavigationState: () => ({ key: 'root' }), useRouter: () => ({ navigate: value => routes.push(value) }) },
+    'expo-notifications': { DEFAULT_ACTION_IDENTIFIER: 'open', setNotificationHandler() {}, getLastNotificationResponse: () => null,
+      addNotificationResponseReceivedListener: callback => { receive = callback; return subscription(); }, addPushTokenListener: subscription, clearLastNotificationResponseAsync: async () => {} },
+    '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: 'member' } }) },
+    '@/lib/community-data': {}, '@/lib/product-analytics': product, '@/lib/notification-preferences': preferences,
+    '@/lib/push-notifications': { pushSupported: true, pushConfigured: false },
+    '@/lib/supabase': { supabase: { rpc: async () => ({ data: { push_enabled: false } }) } },
+  });
+  NotificationObserver();
+  const response = { actionIdentifier: 'open', notification: { request: { identifier: 'topic', content: {
+    body: '요즘 관심이 모이는 주제예요. #밴쿠버', data: { userId: 'other', category: 'trending', route: '/notifications' },
+  } } } };
+  receive(response); assert.equal(routes.length, 0);
+  response.notification.request.content.data.userId = 'member';
+  receive(response); receive(response);
+  assert.deepEqual(routes, ['/?hashtag=' + encodeURIComponent('밴쿠버')]);
+  cleanup();
+});
+
 test('an in-flight preference refresh cannot restore foreground push after opting out', async t => {
   let settingsChanged, handler, resolveRead, cleanup;
   let registrations = 0;

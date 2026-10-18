@@ -12,13 +12,15 @@ import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useCommunityCity } from '@/lib/community-city';
-import { CITY_PLACES_COLLECTED_AT, getCityPlaces, getCityPlacesCoverage, type CityPlace, type PlaceCategory } from '@/lib/city-places';
+import { CITY_PLACES_COLLECTED_AT, getCityRecommendations, getCityPlacesCoverage, type CityPlace, type PlaceCategory } from '@/lib/city-places';
+import { useCityPlacesRevision } from '@/hooks/use-city-places';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 
 
 
 export default function PlacesScreen() {
+  useCityPlacesRevision();
 
   const { cityId } = useLocalSearchParams<{ cityId?: string }>();
   const { city: selected } = useCommunityCity();
@@ -35,7 +37,7 @@ function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
   const [limit, setLimit] = useState(10), [category, setCategory] = useState<PlaceCategory>('all'), [query, setQuery] = useState('');
   let places: CityPlace[] = [], error = '';
   if (city) {
-    try { places = getCityPlaces(city.id, category).filter(place => (place.name + ' ' + place.address).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())); }
+    try { places = getCityRecommendations(city.id, category).filter(place => (place.name + ' ' + place.address).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())); }
     catch { error = '이 도시의 장소 정보를 불러오지 못했어요.'; }
   }
   return <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
@@ -50,18 +52,18 @@ function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
     <ScrollView analyticsId="places.list.scroll" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
       {!city ? <StateCard kind="error" title={tr("도시를 확인해 주세요")} body={tr("홈에서 도시를 선택한 뒤 다시 열어 주세요.")} />
         : error ? <StateCard kind="error" title={tr("장소를 불러오지 못했어요")} body={error} /> : <>
-          <ThemedText type="small" themeColor="textSecondary">{tr(city.name)} · {getCityPlacesCoverage(city.id)}</ThemedText>
-          <ThemedText accessibilityRole="header" style={styles.title}>{tr("이 도시에서 요즘 많이 가는 곳")}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">{tr("지도에 등록된 실제 장소예요. 인기 순위는 아직 집계 전이에요.")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr(city.name)} · {tr(getCityPlacesCoverage(city.id))}</ThemedText>
+          <ThemedText accessibilityRole="header" style={styles.title}>{tr("이 도시에서 사진 남기기 좋은 곳")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("풍경과 건축, 공간의 매력으로 골랐어요. 인기 순위가 아니에요.")}</ThemedText>
           <TextInput accessibilityLabel={tr("장소 검색")} value={query} onChangeText={setQuery} onFocus={() => play('selection')}
             placeholder={tr("목록에서 이름·주소 검색")} placeholderTextColor={theme.textSecondary} returnKeyType="search" autoCorrect={false}
             onSubmitEditing={() => play('selection')} style={[styles.search, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]} />
           <View style={styles.heading}>
-            <ThemedText type="smallBold">{tr("{0} · {1}곳", (city.name), (Math.min(limit, places.length)))}</ThemedText>
-            <Pressable analyticsId="places.view-more" accessibilityRole="button" accessibilityLabel={limit === 10 ? tr("25곳까지 보기") : tr("10곳 먼저 보기")}
+            <ThemedText type="smallBold">{tr("{0} · {1}곳", (tr(city.name)), (Math.min(limit, places.length)))}</ThemedText>
+            {places.length > 10 && <Pressable analyticsId="places.view-more" accessibilityRole="button" accessibilityLabel={limit === 10 ? tr("25곳까지 보기") : tr("10곳 먼저 보기")}
               onPress={() => { play('selection'); setLimit(limit === 10 ? 25 : 10); }} style={styles.control}>
               <ThemedText type="smallBold" themeColor="accent">{limit === 10 ? tr("25곳까지 보기") : tr("10곳 먼저 보기")}</ThemedText>
-            </Pressable>
+            </Pressable>}
           </View>
           <View style={styles.categories}>
             {categories.map(item => <Pressable key={item.id} analyticsId={`places.category.${item.id}`} accessibilityRole="button"
@@ -79,6 +81,7 @@ function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
               <View style={styles.copy}>
                 <ThemedText style={styles.categoryLabel} themeColor="accent">{categories.find(item => item.id === place.category)?.label}</ThemedText>
                 <ThemedText style={styles.placeName} numberOfLines={2}>{place.name}</ThemedText>
+                {!!place.recommendation && <ThemedText type="small" themeColor="textSecondary" numberOfLines={3}>{appLocale === 'en' ? place.recommendation.reasonEn ?? place.recommendation.reason : place.recommendation.reason}</ThemedText>}
                 {!!place.address && <ThemedText style={styles.address} themeColor="textSecondary" numberOfLines={2}>{place.address}</ThemedText>}
               </View>
               <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={14} tintColor={theme.textSecondary} />

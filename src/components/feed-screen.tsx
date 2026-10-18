@@ -13,6 +13,7 @@ import {
   DeviceEventEmitter,
   Easing,
   Keyboard,
+  KeyboardAvoidingView,
   LayoutAnimation,
   Modal,
   Platform,
@@ -85,7 +86,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const reducedMotion = useReducedMotion();
   const { fontScale } = useWindowDimensions();
   const router = useRouter();
-  const { compose } = useLocalSearchParams<{ compose?: string }>();
+  const { compose, hashtag } = useLocalSearchParams<{ compose?: string; hashtag?: string }>();
   const { isAuthed, promptLogin, me, isAdmin } = useAuth();
   const { play } = useInteractionFeedback();
   const insets = useSafeAreaInsets();
@@ -102,11 +103,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [draftCity, setDraftCity] = useState(city);
   const draftLocation = useRef<(LocationFix & { userId: string }) | null>(null);
   const writerRevision = useRef(0);
-  const [writerPanel, setWriterPanel] = useState<'city' | 'category' | 'kind' | 'hashtags' | null>(null);
+  const [writerPanel, setWriterPanel] = useState<'city' | 'category' | 'kind' | 'more' | null>(null);
   const [writerOptionsOpen, setWriterOptionsOpen] = useState(false);
   const [cityPicker, setCityPicker] = useState(false);
   const [writing, setWriting] = useState(false);
-  const [writerKeyboardInset, setWriterKeyboardInset] = useState(0);
   const postSuccessPending = useRef(false);
   const [tag, setTag] = useState<Tag>(TAGS[0]);
   const [postKind, setPostKind] = useState<PostKind>('story');
@@ -124,7 +124,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [detailVisible, setDetailVisible] = useState(false);
   const [sheetUser, setSheetUser] = useState<SheetUser | null>(null);
   // 카드의 작성자를 누르면 글을 열지 않고 바로 미니 프로필로 간다.
-  const openAuthor = (post: Post) => setSheetUser({ id: post.author.id, nickname: post.author.nickname, neighborhood: post.author.neighborhood, verified: post.author.verified, trustLevel: post.author.trustLevel, mine: post.author.id === me.id });
+  const openAuthor = (post: Post) => {
+    if (post.business) { router.push({ pathname: '/company/[id]', params: { id: post.business.id } }); return; }
+    setSheetUser({ id: post.author.id, nickname: post.author.nickname, neighborhood: post.author.neighborhood, verified: post.author.verified, trustLevel: post.author.trustLevel, mine: post.author.id === me.id });
+  };
   const [pendingPost, setPendingPost] = useState<Post | null>(null); // 로그인 후 이어서 열 글
   const [tagFilter, setTagFilter] = useState<number | null>(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null); // 카테고리 칩
   const [feedSort, setFeedSort] = useState<FeedSort>('latest');
@@ -270,6 +273,18 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     setSearching(true);
   };
 
+  useEffect(() => {
+    if (meetupsOnly || !hashtag) return;
+    router.setParams({ hashtag: undefined });
+    if (typeof hashtag !== 'string' || !/^[\p{L}\p{M}\p{N}_-]{1,64}$/u.test(hashtag)) return;
+    queueMicrotask(() => {
+      setQuery(`#${canonicalizeHashtag(hashtag)}`);
+      setSearchResults([]);
+      setTagFilter(null);
+      setSearching(true);
+    });
+  }, [hashtag, meetupsOnly, router]);
+
   // 게스트는 피드만 훑고, 상세·글쓰기·참여는 로그인 후 사용한다.
   const openDetail = (post: Post) => {
     if (!isAuthed) {
@@ -403,12 +418,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   useEffect(() => {
     if (!writing) { writerRevision.current++; draftLocation.current = null; }
   }, [writing]);
-  useEffect(() => {
-    if (!writing || Platform.OS !== 'ios') return;
-    const frame = Keyboard.addListener('keyboardWillChangeFrame', event => setWriterKeyboardInset(event.endCoordinates.height));
-    const hide = Keyboard.addListener('keyboardWillHide', () => setWriterKeyboardInset(0));
-    return () => { frame.remove(); hide.remove(); setWriterKeyboardInset(0); };
-  }, [writing]);
+
 
   useEffect(() => {
     if (compose !== '1') return;
@@ -633,7 +643,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     <TabContent style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={[styles.headRow, { backgroundColor: theme.background }]}>
-          <Image source={theme === Colors.light ? require('@/assets/brand/gling-night-wordmark-light.png') : require('@/assets/brand/gling-night-wordmark.png')} style={styles.wordmark} contentFit="contain" accessibilityLabel={t.appName} />
+          <Pressable analyticsId="feed.home" accessibilityRole="button" accessibilityLabel={`${t.appName}, ${t.tabs.today}`}
+            onPress={() => { play('selection'); router.navigate('/'); }} style={styles.homeButton}>
+            <Image source={theme === Colors.light ? require('@/assets/brand/gling-night-wordmark-light.png') : require('@/assets/brand/gling-night-wordmark.png')} style={styles.wordmark} contentFit="contain" accessible={false} />
+          </Pressable>
           <GlassSurface tone="control" interactive style={styles.cityGlass}><Pressable analyticsId="components_feed-screen.pressable.1"
             onPress={() => { play('reaction'); setCityPicker(true); }} accessibilityRole="button"
             accessibilityLabel={`${tr(city.name)}, ${t.feed.cityPickerTitle}`}
@@ -728,7 +741,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               onJoin={() => void onJoin(item)}
               onHashtag={openSearch}
               onAuthor={() => openAuthor(item)}
-            />{!meetupsOnly && adsSupported && feedAdPosition(index - (showFeedSort ? 2 : 1)) && <FeedAd />}</Animated.View></Reanimated.View>
+            />{!meetupsOnly && adsSupported && (Platform.OS !== 'web' || (!isAuthed && !feedError && !detailVisible && !writing && !searching)) && feedAdPosition(index - (showFeedSort ? 2 : 1), feedData.length) && <FeedAd key={`ad-after-${item.id}`} />}</Animated.View></Reanimated.View>
           )}
         />
 
@@ -923,6 +936,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         }}
         onRequestClose={() => setWriting(false)}>
         <SafeAreaProvider style={[styles.writer, { backgroundColor: theme.background }]}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.writer}>
           <SafeAreaView style={styles.writer}>
             {writerPanel === 'city' ? (
               <CityPicker onClose={() => changeWriterPanel(null)} draft={{ city: draftCity, onSelect: setDraftCity }} />
@@ -938,27 +952,33 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                     ? isAdmin ? tr("관리자 계정 · 제한 없음") : t.write.meetupLimitNote
                     : isAdmin ? tr("관리자 계정 · 제한 없음") : listingQuota ? t.write.listingRemaining(listingQuota.used, listingQuota.max) : t.write.listingLimitNote}</ThemedText>}
                 </View>
-                <View style={styles.writerHeadSpacer} />
+                <RaisedActionButton analyticsId="components_feed-screen.pressable.15" compact onPress={() => { play('selection'); void submit(); }}
+                  disabled={submitting || creatingDraft || !title.trim() || !body.trim()} busy={submitting}
+                  label={submitting ? t.write.submitting : t.write.submit} />
               </View>
+              <PostBodyEditor value={body} onChangeText={setBody} cityName={draftCity.englishName} allowLocation={tag.kind !== 'meetup'} editable={!submitting && !creatingDraft} accessibilityLabel={t.write.bodyLabel}
+                placeholder={tag.kind !== 'meetup' && postKind === 'listing' ? t.write.listingBodyPlaceholder : t.write.bodyPlaceholder[tag.slug]} placeholderTextColor={theme.textSecondary} multiline
+                style={[styles.bodyInput, { color: theme.text }]}
+                renderLayout={({ input, actions, attachments }) => <View style={styles.writer}>
               <ScrollView analyticsId="components_feed-screen.scrollview.2" keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.writerScroll}>
                 <View style={styles.writerContext}>
-                  <Pressable analyticsId="components_feed-screen.writer-options" accessibilityRole="button" accessibilityLabel={tr("게시 설정 변경, {0}, {1}, {2}", (draftCity.name), (tag.label), (postKind === 'listing' ? t.write.kindListing : t.write.kindStory))} accessibilityState={{ expanded: writerOptionsOpen }} onPress={() => { play('selection'); Keyboard.dismiss(); animateLayout(); setWriterOptionsOpen(open => !open); setWriterPanel(null); }} style={({ pressed }) => [styles.writerContextSummary, Depth.control, { backgroundColor: theme.card, }]}>
-                    <ThemedText type="smallBold" numberOfLines={1} style={styles.writerContextValue}>{draftCity.name} · {tag.label}{tag.kind !== 'meetup' ? ` · ${postKind === 'listing' ? t.write.kindListing : t.write.kindStory}` : ''}</ThemedText>
+                  <Pressable analyticsId="components_feed-screen.writer-options" accessibilityRole="button" accessibilityLabel={tr("게시 설정 변경, {0}, {1}, {2}", (tr(draftCity.name)), (tr(tag.label)), (postKind === 'listing' ? t.write.kindListing : t.write.kindStory))} accessibilityState={{ expanded: writerOptionsOpen }} onPress={() => { play('selection'); Keyboard.dismiss(); animateLayout(); setWriterOptionsOpen(open => !open); setWriterPanel(null); }} style={({ pressed }) => [styles.writerContextSummary, Depth.control, { backgroundColor: theme.card, }]}>
+                    <ThemedText type="smallBold" numberOfLines={1} style={styles.writerContextValue}>{tr(draftCity.name)} · {tr(tag.label)}{tag.kind !== 'meetup' ? ` · ${postKind === 'listing' ? t.write.kindListing : t.write.kindStory}` : ''}</ThemedText>
                     <ThemedText type="smallBold" themeColor="accent">{tr("변경")}</ThemedText>
                     <SymbolView name={{ ios: writerOptionsOpen ? 'chevron.up' : 'chevron.right', android: writerOptionsOpen ? 'expand_less' : 'chevron_right', web: writerOptionsOpen ? 'expand_less' : 'chevron_right' }} size={14} tintColor={theme.accent} />
                   </Pressable>
                   {writerOptionsOpen && <View style={styles.writerOptionButtons}>
-                  <Pressable analyticsId="components_feed-screen.pressable.16" accessibilityRole="button" accessibilityLabel={`${t.write.postCity}, ${draftCity.name}, ${draftCity.province}`}
+                  <Pressable analyticsId="components_feed-screen.pressable.16" accessibilityRole="button" accessibilityLabel={`${t.write.postCity}, ${tr(draftCity.name)}, ${draftCity.province}`}
                     onPress={() => { play('reaction'); Keyboard.dismiss(); changeWriterPanel('city'); }}
                     style={({ pressed }) => [styles.contextButton, Depth.control, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement, }]}>
                     <SymbolView name={{ ios: 'mappin', android: 'location_on', web: 'location_on' }} size={16} tintColor={theme.textSecondary} />
-                    <ThemedText type="smallBold" style={styles.contextText}>{draftCity.name} · {draftCity.province}</ThemedText>
+                    <ThemedText type="smallBold" style={styles.contextText}>{tr(draftCity.name)} · {draftCity.province}</ThemedText>
                     <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={12} tintColor={theme.textSecondary} />
                   </Pressable>
-                  <Pressable analyticsId="components_feed-screen.pressable.17" accessibilityRole="button" accessibilityLabel={`${t.write.category}, ${tag.label}`} accessibilityState={{ expanded: writerPanel === 'category' }}
+                  <Pressable analyticsId="components_feed-screen.pressable.17" accessibilityRole="button" accessibilityLabel={`${t.write.category}, ${tr(tag.label)}`} accessibilityState={{ expanded: writerPanel === 'category' }}
                     onPress={() => { play('reaction'); Keyboard.dismiss(); changeWriterPanel(writerPanel === 'category' ? null : 'category'); }}
                     style={({ pressed }) => [styles.contextButton, Depth.control, { backgroundColor: pressed || writerPanel === 'category' ? theme.backgroundSelected : theme.backgroundElement, }]}>
-                    <ThemedText type="smallBold" style={styles.contextText}>{tag.label}</ThemedText>
+                    <ThemedText type="smallBold" style={styles.contextText}>{tr(tag.label)}</ThemedText>
                     <SymbolView name={{ ios: writerPanel === 'category' ? 'chevron.up' : 'chevron.down', android: writerPanel === 'category' ? 'expand_less' : 'expand_more', web: writerPanel === 'category' ? 'expand_less' : 'expand_more' }} size={12} tintColor={theme.textSecondary} />
                   </Pressable>
                   {tag.kind !== 'meetup' && <Pressable analyticsId="components_feed-screen.pressable.18" accessibilityRole="button" accessibilityLabel={`${t.write.pickKind}, ${postKind === 'listing' ? t.write.kindListing : t.write.kindStory}`} accessibilityState={{ expanded: writerPanel === 'kind' }}
@@ -1014,48 +1034,28 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                           <ThemedText
                             type="smallBold"
                             style={{ color: selected ? theme.accentInk : theme.textSecondary }}>
-                            {tg.label}
+                            {tr(tg.label)}
                           </ThemedText>
                         </Pressable>
                       );
                     })}
                   </View>
                 </View>}
-                <ThemedText type="subtitle" style={styles.writerPrompt}>{tr("나누고 싶은 이야기를 적어보세요.")}</ThemedText>
-                <TextInput value={title} onChangeText={setTitle} accessibilityLabel={t.write.titlePlaceholder}
+                <TextInput value={title} onChangeText={setTitle} onFocus={() => play('selection')} editable={!submitting && !creatingDraft} accessibilityLabel={t.write.titlePlaceholder}
                   placeholder={t.write.titlePlaceholder} placeholderTextColor={theme.textSecondary} maxLength={80}
                   style={[styles.titleInput, { color: theme.text, borderBottomColor: theme.line }]} />
-                <PostBodyEditor value={body} onChangeText={setBody} cityName={draftCity.englishName} allowLocation={tag.kind !== 'meetup'} editable={!submitting && !creatingDraft} accessibilityLabel={t.write.bodyLabel}
-                  placeholder={tag.kind !== 'meetup' && postKind === 'listing' ? t.write.listingBodyPlaceholder : t.write.bodyPlaceholder[tag.slug]} placeholderTextColor={theme.textSecondary} multiline
-                  style={[styles.bodyInput, { color: theme.text, borderBottomColor: theme.line }]} />
-                {tag.kind !== 'meetup' && postKind === 'story' && <PollDraftFields poll={pollDraft} onChange={setPollDraft} disabled={submitting || creatingDraft} />}
-                {isAdmin && tag.kind !== 'meetup' && <Pressable analyticsId="post.ad_label" accessibilityRole="checkbox" accessibilityLabel={tr('광고')}
-                  accessibilityState={{ checked: hasAdLabel(selectedHashtags), disabled: submitting || creatingDraft || (!hasAdLabel(selectedHashtags) && selectedHashtags.length >= MAX_HASHTAGS) }}
-                  disabled={submitting || creatingDraft || (!hasAdLabel(selectedHashtags) && selectedHashtags.length >= MAX_HASHTAGS)}
-                  onPress={() => { play('selection'); setHashtagInput(toggleAdLabel); }}
-                  style={[styles.aiButton, { backgroundColor: hasAdLabel(selectedHashtags) ? theme.backgroundSelected : theme.backgroundElement }]}>
-                  <ThemedText type="smallBold">{hasAdLabel(selectedHashtags) ? '☑ AD' : '□ AD'}</ThemedText>
-                </Pressable>}
-                <Pressable analyticsId="components_feed-screen.pressable.23"
-                  onPress={() => { play('selection'); void createAiDraft(); }}
-                  disabled={creatingDraft || (draftImages.length === 0 && !hasDraftText)}
-                  accessibilityRole="button"
-                  accessibilityState={{ disabled: creatingDraft || (draftImages.length === 0 && !hasDraftText), busy: creatingDraft }}
-                  style={[styles.aiButton, { backgroundColor: theme.backgroundElement, opacity: creatingDraft || (draftImages.length === 0 && !hasDraftText) ? 0.6 : 1 }]}>
-                  <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} size={16} tintColor={theme.accent} />
-                  <ThemedText type="smallBold" style={{ color: theme.accent }}>
-                    {creatingDraft ? t.write.creatingDraft : hasDraftText ? t.write.polishDraft : t.write.createDraft}
-                  </ThemedText>
-                </Pressable>
+                {input}
+                <View style={styles.writerAttachments}>{attachments}</View>
+                {tag.kind !== 'meetup' && postKind === 'story' && pollDraft && <View style={styles.writerAttachments}><PollDraftFields poll={pollDraft} onChange={setPollDraft} disabled={submitting || creatingDraft} /></View>}
                 {aiDraftReady && <ThemedText accessibilityRole="alert" type="small" themeColor="textSecondary" style={styles.aiNotice}>{t.write.reviewDraft}</ThemedText>}
                 {tag.kind === 'meetup' && <ThemedText type="small" themeColor="textSecondary" style={styles.meetupNote}>{t.write.roomNote}</ThemedText>}
                 {tag.kind !== 'meetup' && postKind === 'listing' && <>
-                  <TextInput value={priceInput} onChangeText={setPriceInput} accessibilityLabel={t.write.pricePlaceholder}
+                  <TextInput value={priceInput} onChangeText={setPriceInput} editable={!submitting && !creatingDraft} accessibilityLabel={t.write.pricePlaceholder}
                     placeholder={t.write.pricePlaceholder} placeholderTextColor={theme.textSecondary} keyboardType="decimal-pad" maxLength={10}
                     style={[styles.hashtagInput, { color: theme.text, borderBottomColor: theme.line }]} />
                   <ThemedText type="small" themeColor="textSecondary" style={styles.meetupNote}>{t.write.listingNote}</ThemedText>
                 </>}
-                <View style={[styles.aiCard, { borderColor: theme.line }]}>
+                {draftImages.length > 0 && <View style={[styles.aiCard, { borderColor: theme.line }]}>
                   {draftImages.length > 0 && (
                     <View style={styles.photoGrid}>
                       {draftImages.map((image, index) => (
@@ -1065,48 +1065,15 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                             onPress={() => { play('selection'); setDraftImages((current) => current.filter((_, position) => position !== index)); setAiDraftReady(false); }}
                             accessibilityRole="button"
                             accessibilityLabel={tr("{0}번째 사진 삭제", (index + 1))}
-                            style={styles.photoRemove}>
-                            <ThemedText type="smallBold" style={{ color: Colors.light.text }}>✕</ThemedText>
+                            style={[styles.photoRemove, { backgroundColor: theme.card }]}>
+                            <ThemedText type="smallBold" style={{ color: theme.text }}>✕</ThemedText>
                           </Pressable>
                         </View>
                       ))}
                     </View>
                   )}
-                  <View style={styles.photoActions}>
-                    {Platform.OS !== 'web' && (
-                      <Pressable analyticsId="components_feed-screen.pressable.24"
-                        onPress={() => { play('selection'); void pickDraftImage('camera'); }}
-                        disabled={!canAddPostImage(draftImages.length)}
-                        accessibilityRole="button"
-                        accessibilityLabel={t.write.takePhoto}
-                        accessibilityState={{ disabled: !canAddPostImage(draftImages.length) }}
-                        style={[styles.photoButton, styles.cameraButton, { backgroundColor: theme.backgroundElement, opacity: canAddPostImage(draftImages.length) ? 1 : 0.5 }]}>
-                        <SymbolView name={{ ios: 'camera', android: 'photo_camera', web: 'photo_camera' }} size={18} tintColor={theme.textSecondary} />
-                      </Pressable>
-                    )}
-                    <Pressable analyticsId="components_feed-screen.pressable.25"
-                      onPress={() => { play('selection'); void pickDraftImage('library'); }}
-                      disabled={!canAddPostImage(draftImages.length)}
-                      accessibilityRole="button"
-                      accessibilityLabel={draftImages.length === 0 ? t.write.choosePhoto : t.write.addPhoto}
-                      accessibilityState={{ disabled: !canAddPostImage(draftImages.length) }}
-                      style={[styles.photoButton, { backgroundColor: theme.backgroundElement, opacity: canAddPostImage(draftImages.length) ? 1 : 0.5 }]}>
-                      <SymbolView name={{ ios: 'photo', android: 'photo_library', web: 'photo_library' }} size={18} tintColor={theme.textSecondary} />
-                      <ThemedText type="smallBold" style={styles.contextText}>{draftImages.length === 0 ? tr("사진 추가") : t.write.addPhoto}</ThemedText>
-                    </Pressable>
-                    <Pressable analyticsId="components_feed-screen.pressable.26" accessibilityRole="button" accessibilityLabel={t.write.hashtags} accessibilityState={{ expanded: writerPanel === 'hashtags' }}
-                      onPress={() => { play('reaction'); changeWriterPanel(writerPanel === 'hashtags' ? null : 'hashtags'); }}
-                      style={({ pressed }) => [styles.hashtagToggle, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement, transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
-                    <SymbolView name={{ ios: 'number', android: 'tag', web: 'tag' }} size={18} tintColor={theme.textSecondary} />
-                    <ThemedText type="smallBold" themeColor="textSecondary" numberOfLines={1} style={styles.contextText}>{hashtagInput.trim() || t.write.hashtags}</ThemedText>
-                    </Pressable>
-                  </View>
-                  <ThemedText type="small" themeColor="textSecondary">{tr("사진") + " "}{draftImages.length}/{MAX_POST_IMAGES}{" " + tr("· 올릴 때 자동으로 줄여요")}</ThemedText>
-                </View>
-                {writerPanel === 'hashtags' && <View>
-                  <TextInput value={hashtagInput} onChangeText={setHashtagInput} accessibilityLabel={t.write.hashtags}
-                    placeholder={t.write.hashtagPlaceholder} placeholderTextColor={theme.textSecondary} autoCapitalize="none"
-                    style={[styles.hashtagInput, { color: theme.navy, borderBottomColor: theme.line }]} />
+                  <ThemedText type="small" themeColor="textSecondary">{tr("사진") + " "}{draftImages.length}/{MAX_POST_IMAGES}</ThemedText>
+                </View>}
                   {selectedHashtags.length > 0 && <View style={styles.selectedHashtags}>
                     {selectedHashtags.map((hashtag) => <Pressable analyticsId="components_feed-screen.pressable.27" key={hashtag} accessibilityRole="button" accessibilityLabel={tr("#{0} 삭제", (hashtag))}
                       onPress={() => { play('reaction'); animateLayout(); setHashtagInput(current => parseHashtags(current).filter(value => value !== hashtag).join(' ')); }}
@@ -1114,6 +1081,72 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                       <ThemedText type="smallBold" style={{ color: theme.accentInk }}>#{hashtag} ×</ThemedText>
                     </Pressable>)}
                   </View>}
+
+              </ScrollView>
+              <View style={[styles.writerFooter, { backgroundColor: theme.background, borderTopColor: theme.line }]}>
+                <View style={styles.writerAiRow}>
+                <Pressable analyticsId="components_feed-screen.pressable.23"
+                  onPress={() => { play('selection'); void createAiDraft(); }}
+                  disabled={submitting || creatingDraft || (draftImages.length === 0 && !hasDraftText)}
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: submitting || creatingDraft || (draftImages.length === 0 && !hasDraftText), busy: creatingDraft }}
+                  accessibilityHint={hasDraftText ? tr("적어둔 내용으로 글을 다듬어요") : tr("사진이나 한 줄 메모로 시작해요")}
+                  style={[styles.aiButton, { borderColor: theme.accent, opacity: submitting || creatingDraft || (draftImages.length === 0 && !hasDraftText) ? 0.6 : 1 }]}>
+                  <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} size={16} tintColor={theme.accent} />
+                  <ThemedText type="smallBold" style={{ color: theme.accent, flexShrink: 1 }}>
+                    {creatingDraft ? t.write.creatingDraft : hasDraftText ? t.write.polishDraft : tr("AI로 글쓰기")}
+                  </ThemedText>
+                </Pressable>
+                  <ThemedText type="small" themeColor="textSecondary" style={styles.writerAiHint}>{hasDraftText ? tr("적어둔 내용으로 글을 다듬어요") : tr("사진이나 한 줄 메모로 시작해요")}</ThemedText>
+                </View>
+                <View style={styles.writerTools}>
+                    <Pressable analyticsId="components_feed-screen.pressable.25"
+                      onPress={() => { play('selection'); void pickDraftImage('library'); }}
+                      disabled={submitting || creatingDraft || !canAddPostImage(draftImages.length)}
+                      accessibilityRole="button"
+                      accessibilityLabel={draftImages.length === 0 ? t.write.choosePhoto : t.write.addPhoto}
+                      accessibilityState={{ disabled: submitting || creatingDraft || !canAddPostImage(draftImages.length) }}
+                      style={[styles.writerTool, { opacity: canAddPostImage(draftImages.length) ? 1 : 0.5 }]}>
+                      <SymbolView name={{ ios: 'photo', android: 'photo_library', web: 'photo_library' }} size={20} tintColor={theme.textSecondary} />
+                      <ThemedText type="smallBold" style={styles.writerToolLabel}>{tr("사진")}</ThemedText>
+                    </Pressable>
+                  {actions}
+                  <Pressable analyticsId="components_feed-screen.pressable.26" accessibilityRole="button" accessibilityLabel={tr("더보기")} accessibilityState={{ expanded: writerPanel === 'more', disabled: submitting || creatingDraft }} disabled={submitting || creatingDraft}
+                    onPress={() => { play('selection'); Keyboard.dismiss(); changeWriterPanel('more'); }} style={styles.writerTool}>
+                    <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={20} tintColor={theme.textSecondary} />
+                    <ThemedText type="smallBold" style={styles.writerToolLabel} themeColor="textSecondary">{tr("더보기")}</ThemedText>
+                  </Pressable>
+                </View>
+              </View>
+              </View>} />
+              <Modal visible={writerPanel === 'more'} transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => changeWriterPanel(null)}>
+                <SafeAreaProvider>
+                  <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.writerMoreBackdrop}>
+                    <SafeAreaView edges={['bottom']} accessibilityViewIsModal style={[styles.writerMoreSheet, { backgroundColor: theme.card }]}>
+                      <View style={[styles.writerHead, { borderBottomColor: theme.line }]}>
+                        <ThemedText type="smallBold" accessibilityRole="header" style={styles.writerMoreTitle}>{tr("더보기")}</ThemedText>
+                        <Pressable analyticsId="components_feed-screen.pressable.26" accessibilityRole="button" accessibilityLabel={t.write.cancel} onPress={() => { play('selection'); changeWriterPanel(null); }} style={styles.writerClose}>
+                          <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={20} tintColor={theme.textSecondary} />
+                        </Pressable>
+                      </View>
+                      <ScrollView analyticsId="components_feed-screen.scrollview.3" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.writerMoreContent}>
+                        {postKind === 'story' && !pollDraft && <View style={styles.writerAttachments}><PollDraftFields poll={null} onChange={value => { setPollDraft(value); changeWriterPanel(null); }} disabled={submitting || creatingDraft} /></View>}
+                {isAdmin && tag.kind !== 'meetup' && <Pressable analyticsId="post.ad_label" accessibilityRole="checkbox" accessibilityLabel={tr('광고')}
+                  accessibilityState={{ checked: hasAdLabel(selectedHashtags), disabled: submitting || creatingDraft || (!hasAdLabel(selectedHashtags) && selectedHashtags.length >= MAX_HASHTAGS) }}
+                  disabled={submitting || creatingDraft || (!hasAdLabel(selectedHashtags) && selectedHashtags.length >= MAX_HASHTAGS)}
+                  onPress={() => { play('selection'); setHashtagInput(toggleAdLabel); }}
+                  style={[styles.aiButton, styles.writerAttachments, { backgroundColor: hasAdLabel(selectedHashtags) ? theme.backgroundSelected : theme.backgroundElement }]}>
+                  <ThemedText type="smallBold">{hasAdLabel(selectedHashtags) ? '☑ AD' : '□ AD'}</ThemedText>
+                </Pressable>}
+                        {Platform.OS !== 'web' && <Pressable analyticsId="components_feed-screen.pressable.24" accessibilityRole="button" accessibilityLabel={t.write.takePhoto} disabled={submitting || creatingDraft || !canAddPostImage(draftImages.length)}
+                          onPress={() => { play('selection'); void pickDraftImage('camera'); }} style={styles.writerMoreCamera}>
+                          <SymbolView name={{ ios: 'camera', android: 'photo_camera', web: 'photo_camera' }} size={20} tintColor={theme.textSecondary} />
+                          <ThemedText type="smallBold">{t.write.takePhoto}</ThemedText>
+                        </Pressable>}
+                <View>
+                  <TextInput value={hashtagInput} onChangeText={setHashtagInput} onFocus={() => play('selection')} editable={!submitting && !creatingDraft} accessibilityLabel={t.write.hashtags}
+                    placeholder={t.write.hashtagPlaceholder} placeholderTextColor={theme.textSecondary} autoCapitalize="none"
+                    style={[styles.hashtagInput, { color: theme.navy, borderBottomColor: theme.line }]} />
                   <View style={styles.writerHashtags}>
                     <ScrollView analyticsId="components_feed-screen.scrollview.3"
                       horizontal
@@ -1142,15 +1175,15 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                       ))}
                     </ScrollView>
                   </View>
-                </View>}
-              </ScrollView>
-              <View style={[styles.writerFooter, { backgroundColor: theme.background, borderTopColor: theme.line, paddingBottom: Spacing.two + writerKeyboardInset }]}>
-                <RaisedActionButton analyticsId="components_feed-screen.pressable.15" onPress={() => { play('selection'); void submit(); }}
-                  disabled={submitting || creatingDraft || !title.trim() || !body.trim()} busy={submitting}
-                  label={submitting ? t.write.submitting : t.write.submit} />
-              </View>
+                </View>
+                      </ScrollView>
+                    </SafeAreaView>
+                  </KeyboardAvoidingView>
+                </SafeAreaProvider>
+              </Modal>
             </View>}
           </SafeAreaView>
+          </KeyboardAvoidingView>
         </SafeAreaProvider>
       </Modal>
     <UserSheet user={sheetUser} onClose={() => setSheetUser(null)} />
@@ -1175,6 +1208,7 @@ const styles = StyleSheet.create({
   categoryLoading: { minHeight: 280, alignItems: 'center', justifyContent: 'center' },
   headRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, paddingHorizontal: Spacing.three, paddingTop: Spacing.one, paddingBottom: Spacing.two },
   wordmark: { width: 64, height: 36 },
+  homeButton: { minHeight: 44, justifyContent: 'center' },
   cityGlass: { marginLeft: 'auto', borderRadius: 12, flexShrink: 1 },
   iconGlass: { borderRadius: 22 },
   cityButton: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, minHeight: 44, borderRadius: 12, flexShrink: 1, paddingHorizontal: Spacing.two },
@@ -1283,10 +1317,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   writerClose: { width: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  writerHeadSpacer: { width: 44, height: 44 },
-  writerHeading: { flex: 1, alignItems: 'center', gap: Spacing.half },
+  writerHeading: { flex: 1, minWidth: 0, alignItems: 'center', gap: Spacing.half },
   writerNavTitle: { fontSize: 17, lineHeight: 22, fontWeight: '600' },
-  writerFooter: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: Spacing.four, paddingVertical: Spacing.two },
+  writerFooter: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: Spacing.two },
+  writerAiRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },
+  writerAiHint: { flex: 1, flexBasis: 120, fontSize: 11, lineHeight: 17 },
+  writerTools: { flexDirection: 'row', gap: Spacing.two },
+  writerTool: { flex: 1, minWidth: 0, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: Spacing.one },
+  writerToolLabel: { fontSize: 11, lineHeight: 16 },
+  writerAttachments: { marginHorizontal: Spacing.four },
+  writerMoreBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
+  writerMoreSheet: { maxHeight: '85%', width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' },
+  writerMoreTitle: { flex: 1 },
+  writerMoreContent: { paddingVertical: Spacing.three, gap: Spacing.two },
+  writerMoreCamera: { flexDirection: 'row', gap: Spacing.two, alignItems: 'center', minHeight: 44, paddingHorizontal: Spacing.four },
   writerContext: { gap: Spacing.two, marginHorizontal: Spacing.four, paddingVertical: Spacing.two },
   writerContextSummary: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Spacing.one, borderRadius: 12, paddingHorizontal: 12 },
   writerContextValue: { flex: 1 },
@@ -1294,7 +1338,6 @@ const styles = StyleSheet.create({
   contextButton: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 44, maxWidth: '100%', paddingHorizontal: 12, paddingVertical: Spacing.two, borderRadius: 12 },
   contextText: { flexShrink: 1 },
   writerLabel: { marginHorizontal: Spacing.four, marginBottom: Spacing.two },
-  hashtagToggle: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.two, minHeight: 44, paddingHorizontal: 12, borderRadius: 12 },
   writerScroll: {
     paddingBottom: Spacing.five,
     width: '100%',
@@ -1310,23 +1353,7 @@ const styles = StyleSheet.create({
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   photoTile: { width: '31%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden' },
   photoTileImage: { width: '100%', height: '100%' },
-  photoRemove: { position: 'absolute', top: 4, right: 4, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.92)' },
-  photoActions: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-  },
-  photoButton: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: Spacing.two,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.two,
-  },
-  cameraButton: { flex: 0, width: 44, paddingHorizontal: 0 },
+  photoRemove: { position: 'absolute', top: 0, right: 0, width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   secondaryButton: {
     minHeight: 44,
     alignItems: 'center',
@@ -1337,16 +1364,15 @@ const styles = StyleSheet.create({
   },
   aiButton: {
     alignSelf: 'flex-start',
+    maxWidth: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
     minHeight: 44,
     justifyContent: 'center',
-    borderRadius: 22,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.three,
-    marginHorizontal: Spacing.four,
-    marginTop: Spacing.two,
-    marginBottom: Spacing.three,
   },
   aiNotice: {
     marginHorizontal: Spacing.four,
@@ -1382,12 +1408,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  writerPrompt: { marginHorizontal: Spacing.four, marginTop: Spacing.three, marginBottom: Spacing.one, fontSize: 22, lineHeight: 28 },
   titleInput: {
     fontSize: 20,
     fontWeight: 700,
     marginHorizontal: Spacing.four,
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   hashtagInput: {
@@ -1398,14 +1423,13 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   bodyInput: {
-    minHeight: 160,
+    minHeight: 180,
     fontSize: 17,
     lineHeight: 26,
     textAlignVertical: 'top',
     marginHorizontal: Spacing.four,
     paddingTop: Spacing.two,
     paddingBottom: Spacing.four,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   meetupNote: {
     paddingHorizontal: Spacing.four,

@@ -9,6 +9,10 @@ import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
+import { chatBusinessIdentity } from '@/lib/chat-identity';
+import { useChatIdentity } from '@/hooks/use-chat-identity';
+import { sendBusinessChatMessage } from '@/lib/business-chat';
+import { merchantEventId } from '@/lib/merchant-source';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadConversations, sendDirectMessage, type ConversationPage, type ConversationPreview } from '@/lib/community-data';
@@ -21,12 +25,13 @@ import type { Post } from '@/lib/types';
 type ShareSheetProps = { post: Post; visible: boolean; onClose: () => void; onShared: () => void };
 export function PostShareSheet(props: ShareSheetProps) {
 
-  const { me, isAuthed } = useAuth();
-  return isAuthed ? <ShareSheetContent key={`${props.post.id}:${me.id}`} {...props} /> : null;
+  const { me, isAuthed } = useAuth(), business = useChatIdentity();
+  return isAuthed ? <ShareSheetContent key={`${props.post.id}:${me.id}:${business?.id ?? 'personal'}`} {...props} /> : null;
 }
 function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps) {
   const { tr, locale: appLocale } = useLanguage();
   const theme = useTheme(), { me, isAuthed } = useAuth(), { play } = useInteractionFeedback(), router = useRouter();
+  const business = useChatIdentity(), asBusinessId = business?.id ?? null;
   const insets = useSafeAreaInsets();
   const [inbox, setInbox] = useState<ConversationPage | null>(null), [notice, setNotice] = useState<string | { conversationTitle: string }>('');
   const [busy, setBusy] = useState(false), [loading, setLoading] = useState(true), [retry, setRetry] = useState(0);
@@ -36,11 +41,11 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
   useEffect(() => {
     if (!visible || !isAuthed) return;
     let live = true;
-    void loadConversations(supabase, me.id).then(page => { if (live) setInbox(page); })
+    void loadConversations(supabase, me.id, 'all', null, null, asBusinessId).then(page => { if (live) setInbox(page); })
       .catch(() => { if (live) setNotice("대화 목록을 불러오지 못했어요. 다시 확인해주세요."); })
       .finally(() => { if (live) setLoading(false); });
     return () => { live = false; };
-  }, [visible, isAuthed, me.id, retry]);
+  }, [visible, isAuthed, me.id, retry, asBusinessId]);
   const url = buildSharedPostUrl(post.id), image = getPostImageSource(post, me.id);
   const invite = Boolean(post.room), label = invite ? me.id === post.author.id ? '내 모임에 초대하기' : '모임 같이 가요' : post.tag.slug === 'festival' ? '페스티벌 같이 가요' : '게시물 공유';
   const control = [styles.button, { backgroundColor: theme.backgroundElement, borderColor: theme.line }];
@@ -63,10 +68,12 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
     } finally { pending.current = false; if (active.current) setBusy(false); }
   }
   async function send(conversation: ConversationPreview) {
-    if (pending.current || sent.includes(conversation.id) || uncertain.includes(conversation.id)) return;
+    if (!active.current || pending.current || sent.includes(conversation.id) || uncertain.includes(conversation.id) || (chatBusinessIdentity(me.id)?.id ?? null) !== asBusinessId) return;
     pending.current = true; setBusy(true); setNotice(''); play('selection');
     try {
-      const id = await sendDirectMessage(supabase, conversation.id, sharedPostMessage(post));
+      const id = conversation.kind === 'business'
+        ? await sendBusinessChatMessage(supabase, conversation, { clientId: merchantEventId(), body: sharedPostMessage(post) })
+        : await sendDirectMessage(supabase, conversation.id, sharedPostMessage(post));
       if (!id) throw new Error('MESSAGE_SAVE_NOT_VERIFIED');
       if (active.current) { setSent(values => [...values, conversation.id]); setNotice({ conversationTitle: conversation.title }); onShared(); play('message'); }
     } catch {
@@ -80,7 +87,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
     if (pending.current || !inbox?.cursor) return;
     pending.current = true; setLoading(true); play('selection');
     try {
-      const page = await loadConversations(supabase, me.id, 'all', inbox.cursor);
+      const page = await loadConversations(supabase, me.id, 'all', inbox.cursor, null, asBusinessId);
       if (active.current) setInbox(previous => previous && { ...page, conversations: appendUniquePosts(previous.conversations, page.conversations) });
     } catch { if (active.current) { setNotice("다음 대화를 불러오지 못했어요. 다시 눌러주세요."); play('warning'); } }
     finally { pending.current = false; if (active.current) setLoading(false); }
@@ -106,7 +113,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
           <View style={styles.conversationHeader}><ThemedText type="smallBold" style={styles.sectionTitle}>{tr("글링 대화로 보내기")}</ThemedText>
             {inbox?.cursor && <Pressable analyticsId="post.share.more" accessibilityRole="button" disabled={loading || busy} accessibilityState={{ disabled: loading || busy }} onPress={() => void more()} style={styles.more}><ThemedText type="small" themeColor="textSecondary" style={styles.moreLabel}>{tr("다른 대화 더 보기")}</ThemedText></Pressable>}
           </View>
-          <ThemedText type="small" themeColor="textSecondary">{tr("대화를 누르면 바로 보내요.")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{business ? tr('{0} 프로필로 보내요', business.name) : tr('대화를 누르면 바로 보내요.')}</ThemedText>
           {loading && <StateCard kind="pending" title={tr("대화를 불러오는 중…")} body={tr("잠시만 기다려주세요.")} />}
           {!loading && inbox && !inbox.conversations.some(c => c.status === 'active') && <StateCard kind="empty" title={tr("진행 중인 대화가 없어요")} body={tr(Platform.OS === 'web' ? '다른 앱으로 공유하거나 링크를 복사해보세요.' : '아래 버튼으로 다른 앱에 공유해보세요.')} />}
           {!inbox && !loading && <><StateCard kind="error" title={tr("대화를 불러오지 못했어요")} body={tr("공유 링크는 다른 앱으로 보낼 수 있어요.")} />
@@ -125,7 +132,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
             </Pressable>;
           })}
           {uncertain.map(id => <Pressable key={id} analyticsId="post.share.verify-chat" accessibilityRole="button" accessibilityLabel={tr("전송 결과를 대화에서 확인")} disabled={requesting} accessibilityState={{ disabled: requesting }}
-            onPress={() => { if (pending.current) return; play('selection'); onClose(); router.push({ pathname: '/chat', params: { conversationId: id } }); }} style={control}><ThemedText type="smallBold">{tr("대화를 열어 전송 결과 확인")}</ThemedText></Pressable>)}
+            onPress={() => { if (pending.current) return; play('selection'); onClose(); router.push({ pathname: '/chat', params: { conversationId: id, ...(business ? { businessId: business.id } : {}) } }); }} style={control}><ThemedText type="smallBold">{tr("대화를 열어 전송 결과 확인")}</ThemedText></Pressable>)}
         </ScrollView>
         <View style={[styles.footer, { borderColor: theme.line }]}>
           {!!notice && <ThemedText type="small" accessibilityLiveRegion="polite" themeColor="textSecondary">{typeof notice === 'string' ? tr(notice) : tr('{0} 대화로 보냈어요.', notice.conversationTitle)}</ThemedText>}

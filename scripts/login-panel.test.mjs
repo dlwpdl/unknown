@@ -31,14 +31,15 @@ if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () =
     const publicTree = JSON.stringify(exports.LoginPanel(props));
     assert.ok(publicTree.includes(t.auth.kakao));
     assert.ok(publicTree.includes(t.auth.google));
-    assert.ok(publicTree.includes('모임을 찾아요'), 'social login shows the welcome headline');
+    assert.ok(publicTree.includes('같은 도시,'), 'social login shows the approved welcome headline');
+    assert.ok(publicTree.includes('새로운 사이.'), 'the second headline line introduces the community');
     assert.ok(!publicTree.includes(t.auth.reviewLoginTitle), OS);
     assert.ok(!publicTree.includes('TextInput'), OS);
     const reviewTree = JSON.stringify(exports.LoginPanel({ onReviewLogin() {} }));
     assert.ok(reviewTree.includes(t.auth.reviewLoginTitle));
     assert.ok(reviewTree.includes(t.auth.reviewEmail));
     assert.ok(reviewTree.includes(t.auth.reviewLoginCta));
-    assert.ok(!reviewTree.includes('모임을 찾아요'), 'review credentials keep a focused form');
+    assert.ok(!reviewTree.includes('같은 도시,'), 'review credentials keep a focused form');
     const adminTree = JSON.stringify(exports.LoginPanel({ onGoogle() {}, onAdminLogin() {} }));
     assert.ok(adminTree.includes(t.auth.google), 'Google login remains visible in development');
     assert.ok(!adminTree.includes(t.auth.kakao), 'admin preview is not a Kakao login');

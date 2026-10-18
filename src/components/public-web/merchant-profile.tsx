@@ -109,7 +109,7 @@ export function PublicMerchantProfileLink({ postId }: { postId: string }) {
   }, [postId]);
   if (result?.postId !== postId) return null;
   return <a className="reader-company-link" href={`/company?id=${result.page.merchantId}`} onClick={() => play('selection')}
-    aria-label={`${result.page.merchantName} 업체 프로필과 인증 이용 리뷰 보기`}>
+    aria-label={`${result.page.merchantName} 비즈니스 프로필과 인증 이용 리뷰 보기`}>
     <span><strong>{result.page.merchantName}</strong><Rating page={result.page} /></span><span aria-hidden="true">↗</span>
   </a>;
 }
@@ -178,7 +178,7 @@ function PublicReviews({ merchantId, postId, kind = 'usage' }: { merchantId: str
             <span>{open ? '접기 ↑' : '전체 보기 ↓'}</span></span>
         </button>
         {open && <div id={`review-${kind}-${review.id}`} className="reader-company-review-detail"><p>{review.body || `점수만 남긴 ${label} 리뷰예요.`}</p>
-          {review.reply && <aside className="reader-company-reply"><strong>업체 답변</strong><p>{review.reply.body}</p></aside>}
+          {review.reply && <aside className="reader-company-reply"><strong>비즈니스 답변</strong><p>{review.reply.body}</p></aside>}
         </div>}
       </article>;
     })}
@@ -233,7 +233,7 @@ function PublicProfilePosts({ merchantId, kind, onRead, onPosts }: {
   }
 
   return <div className="reader-company-posts" data-post-kind={kind} aria-busy={loading}>
-    <div className="reader-company-panel-heading"><h2>{kind === 'posts' ? '업체 게시글' : '진행 중인 채용'}</h2>
+    <div className="reader-company-panel-heading"><h2>{kind === 'posts' ? '비즈니스 게시글' : '진행 중인 채용'}</h2>
       {page && <span>{kind === 'posts' ? page.post_count : page.job_count}개</span>}</div>
     {loading && <p role="status">{label}을 불러오고 있어요…</p>}
     {current?.failed && <div className="reader-company-error" role="alert"><p>{label}을 불러오지 못했어요.</p>
@@ -249,9 +249,9 @@ function PublicProfilePosts({ merchantId, kind, onRead, onPosts }: {
         {thumbnail ? <img className="reader-company-post-cover" src={thumbnail} alt="" loading="lazy" onError={(event) => { event.currentTarget.hidden = true; }} />
           : <span className="reader-company-post-arrow" aria-hidden="true">›</span>}</a></article>;
     })}
-    {!loading && !current?.failed && !page && <p className="reader-company-empty">현재 공개된 업체 글을 확인할 수 없어요.</p>}
+    {!loading && !current?.failed && !page && <p className="reader-company-empty">현재 공개된 비즈니스 글을 확인할 수 없어요.</p>}
     {!loading && !current?.failed && page && !page.posts.length && <div className="reader-company-empty"><h3>{kind === 'jobs' ? '진행 중인 채용이 없어요' : '아직 공개된 게시글이 없어요'}</h3>
-      <p>{kind === 'jobs' ? '새로운 모집 글이 등록되면 여기에 표시돼요.' : '업체에 연결된 공개 글이 등록되면 여기에 표시돼요.'}</p>
+      <p>{kind === 'jobs' ? '새로운 모집 글이 등록되면 여기에 표시돼요.' : '비즈니스에 연결된 공개 글이 등록되면 여기에 표시돼요.'}</p>
       {kind === 'jobs' && onPosts && <button onClick={() => { play('selection'); onPosts(); }}>게시글 보기</button>}</div>}
     {page?.has_more && <button className="reader-more" disabled={loading} onClick={() => void more()}>{label} 더 보기</button>}
   </div>;
@@ -293,14 +293,14 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
   ];
   const panelId = (id: ProfileTab) => `company-panel-${merchantId}-${id}`;
   return <article className="reader-company" aria-busy={busy}>
-    <Head>{profile && <><title>{profile.name} | 글링 업체 프로필</title><meta name="description" content={`${profile.city_name} · ${profile.industry}. ${profile.services.slice(0, 150)}`} /></>}
+    <Head>{profile && <><title>{profile.name} | 글링 비즈니스 프로필</title><meta name="description" content={`${profile.city_name} · ${profile.industry}. ${profile.services.slice(0, 150)}`} /></>}
       <link rel="canonical" href={`${PUBLIC_SITE}/company?id=${merchantId}`} />
       {unavailable && <meta name="robots" content="noindex, nofollow" />}</Head>
     <a className="reader-back" href="/" onClick={() => play('selection')}>← 동네 이야기로</a>
-    {busy && <p role="status">업체 프로필을 불러오고 있어요…</p>}
-    {current?.failed && <div role="alert" className="reader-company-error"><p>업체 프로필을 불러오지 못했어요.</p>
+    {busy && <p role="status">비즈니스 프로필을 불러오고 있어요…</p>}
+    {current?.failed && <div role="alert" className="reader-company-error"><p>비즈니스 프로필을 불러오지 못했어요.</p>
       <button disabled={busy} onClick={() => { play('selection'); setRetry((value) => value + 1); }}>다시 시도</button></div>}
-    {unavailable && <div className="reader-notice"><h1>업체 프로필을 찾을 수 없어요</h1><p>현재 공개된 업체 프로필이 아니에요.</p></div>}
+    {unavailable && <div className="reader-notice"><h1>비즈니스 프로필을 찾을 수 없어요</h1><p>현재 공개된 비즈니스 프로필이 아니에요.</p></div>}
     {profile && <>
       <div className="reader-company-banner">{profile.bannerUri && !broken.banner
         ? <img src={profile.bannerUri} alt={`${profile.name} 배너`} onError={() => setBroken((previous) => ({ ...previous, banner: true }))} />
@@ -314,13 +314,13 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
       <div className="reader-company-blurb">{profile.services && <p>{profile.services}</p>}
         {counts?.jobCount != null && counts.jobCount > 0 && <button type="button" className="reader-company-hiring" aria-controls={panelId('jobs')}
           onClick={() => { play('selection'); setTab('jobs'); }}><span aria-hidden="true">●</span> 채용 중 · {`${counts.jobCount}건`} <span aria-hidden="true">›</span></button>}</div>
-      {!!profile.links?.length && <nav className="reader-company-sources" aria-label="업체 외부 페이지">{profile.links.map(link =>
+      {!!profile.links?.length && <nav className="reader-company-sources" aria-label="비즈니스 외부 페이지">{profile.links.map(link =>
         <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" aria-label={`${profile.name} ${link.label}, 새 창 열기`}
           onClick={() => play('selection')}>{link.label} <span aria-hidden="true">↗</span></a>)}</nav>}
-      <a className="reader-company-app-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>앱에서 문의·저장 <span aria-hidden="true">↗</span></a>
+      <a className="reader-company-app-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>앱에서 비즈니스 보기 <span aria-hidden="true">↗</span></a>
       {(profile.imageLoadFailed || broken.banner || broken.avatar) && <div className="reader-company-image-notice" role="status">
         <p>일부 프로필 사진을 불러오지 못했어요.</p><button disabled={busy} onClick={() => { play('selection'); setRetry((value) => value + 1); }}>사진 다시 불러오기</button></div>}
-      <div className="reader-company-tabs" role="tablist" aria-label="업체 프로필 내용">{tabs.map((item, index) => <button type="button" role="tab" key={item.id} data-tab={item.id}
+      <div className="reader-company-tabs" role="tablist" aria-label="비즈니스 프로필 내용">{tabs.map((item, index) => <button type="button" role="tab" key={item.id} data-tab={item.id}
         id={`company-tab-${merchantId}-${item.id}`} aria-controls={panelId(item.id)} aria-selected={tab === item.id} tabIndex={tab === item.id ? 0 : -1}
         onClick={() => { play('selection'); setTab(item.id); }} onKeyDown={(event) => {
           const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : event.key === 'ArrowRight' ? (index + 1) % tabs.length

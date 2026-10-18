@@ -141,7 +141,7 @@ export function AdminSectionView({
         <SectionHeading title="감시어 경보" description="표현 일치는 신호입니다. 원문과 맥락을 검토해주세요." />
         <div className="admin-summary-strip"><span>미처리<strong className={data.counts.alertsOpen ? 'admin-summary-danger' : undefined}>{count(data.counts.alertsOpen)}건</strong></span><span>불러온 경보<strong>{count(data.safetyAlerts.length)}건</strong></span></div>
         <AdminAlertsPanel alerts={data.safetyAlerts} profiles={profiles} localPreview={localPreview} onUser={onUser} />
-        <details className="admin-context-details" onToggle={() => play('selection')}><summary>감시 범위와 판단 기준</summary><p>마약·무기·성착취·사기·자해·위협·신상공개·불법체류 관련 표현을 글·댓글·대화·칠링·업체 후기에서 감시합니다. 표현 일치는 신호이며 위반 확정이 아닙니다. 최종 판단은 운영자가 합니다.</p></details>
+        <details className="admin-context-details" onToggle={() => play('selection')}><summary>감시 범위와 판단 기준</summary><p>마약·무기·성착취·사기·자해·위협·신상공개·불법체류 관련 표현을 글·댓글·대화·칠링·비즈니스 후기에서 감시합니다. 표현 일치는 신호이며 위반 확정이 아닙니다. 최종 판단은 운영자가 합니다.</p></details>
         <LoadMore loading={loadingMore} noMore={noMore} onPress={onLoadMore} />
       </View>
     );
@@ -150,7 +150,7 @@ export function AdminSectionView({
   if (section === 'trending') {
     return (
       <View style={styles.section}>
-        <SectionHeading title="뜨는 글 알림" description="도시마다 반응이 오는 글 하나를 골라 그 도시 사용자에게만 알립니다. 점수 값을 바꾸면 아래 미리보기가 함께 바뀝니다." />
+        <SectionHeading title="뜨는 글 알림" description="도시별 인기 글 알림과 발송 미리보기를 확인합니다." />
         <AdminTrendingPanel localPreview={localPreview} />
       </View>
     );
@@ -159,7 +159,8 @@ export function AdminSectionView({
   if (section === 'errors') {
     return (
       <View style={styles.section}>
-        <SectionHeading title="앱 오류" description="사용자 폰에서 난 자바스크립트 오류입니다. 같은 오류는 한 줄로 묶이고 앱 버전별로 따로 셉니다. 네이티브 충돌은 App Store Connect 와 Play Console 에서 봅니다." />
+        <SectionHeading title="앱 오류" description="앱 버전별 오류와 발생 횟수를 확인합니다." />
+        <details className="admin-context-details" onToggle={() => play('selection')}><summary>오류 수집 범위</summary><p>사용자 폰의 자바스크립트 오류를 종류·앱 버전별로 묶습니다. 네이티브 충돌은 App Store Connect와 Play Console에서 확인하세요.</p></details>
         <AdminErrorsPanel localPreview={localPreview} />
       </View>
     );
@@ -248,7 +249,7 @@ export function AdminSectionView({
         : b.created_at.localeCompare(a.created_at));
     return (
       <View style={styles.section}>
-        <SectionHeading title="게시글" description="한 줄에 한 글입니다. 조정이 필요한 글만 펼치세요. 조회수·공감수·저장수·노출 순서·해시태그는 여기서만 바꿉니다." />
+        <SectionHeading title="게시글" description="글을 펼쳐 원문과 노출·반응 지표를 관리합니다." />
         <div className="admin-toolbar">
           <AdminSearch value={query} onChange={setQuery} placeholder="제목, 내용, 작성자 또는 ID 검색" />
           <AdminFilterBar applied={postStatus.length + postCity.length}>
@@ -473,7 +474,7 @@ function AdminErrorsPanel({ localPreview }: { localPreview?: boolean }) {
         {filtered.map((row, index) => (
           <View key={row.id} style={[styles.postRow, index === 0 && styles.postRowFirst]}>
             <Pressable onPress={() => { play('selection'); return setExpanded((current) => current === row.id ? null : row.id); }}
-              accessibilityRole="button" accessibilityState={{ expanded: expanded === row.id }}
+              accessibilityRole="button" aria-expanded={expanded === row.id} accessibilityState={{ expanded: expanded === row.id }}
               style={({ pressed }) => [styles.postHead, pressed && styles.pressed]}>
               <View style={[styles.dot, !row.resolvedAt && styles.dotDown]} />
               <View style={styles.postTitle}>
@@ -605,7 +606,7 @@ const ALERT_CATEGORY: Record<string, string> = {
   drugs: '마약', weapons: '무기', sexual_exploitation: '성착취', fraud: '사기', self_harm: '자해·자살',
   violence: '폭력·위협', doxxing: '신상 공개', illegal_status: '불법 체류·위조',
 };
-const SAFETY_TARGET_LABEL: Record<AdminSafetyTargetType, string> = { post: '게시글', comment: '댓글', message: '메시지', chilling_profile: '칠링 프로필', chilling_application: '칠링 참여 신청', merchant_review: '업체 후기', merchant_review_reply: '업체 답변', meetup_review: '모임 후기', manner_review: '비공개 매너 평가', meetup_attendance: '참석 이의제기' };
+const SAFETY_TARGET_LABEL: Record<AdminSafetyTargetType, string> = { post: '게시글', comment: '댓글', message: '메시지', chilling_profile: '칠링 프로필', chilling_application: '칠링 참여 신청', merchant_review: '비즈니스 후기', merchant_review_reply: '비즈니스 답변', meetup_review: '모임 후기', manner_review: '비공개 매너 평가', meetup_attendance: '참석 이의제기' };
 const SAFETY_RISK_LABEL = { low: '낮음', medium: '보통', high: '높음', critical: '심각', pending: '미분석' };
 const SAFETY_STATUS_LABEL = { pending: '분석 대기', processing: '분석 중', reviewed: '분석 완료', failed: '분석 실패' };
 

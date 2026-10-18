@@ -1,5 +1,17 @@
 # 글링 Supabase 백엔드 작업
 
+## 서버 적용·재조회 완료 — 알림 개선 2026-10-17
+
+- [x] 선택 도시 추천, 행사 중복 방지·문구 다양화, 인기글 실제 제목·본문과 중복 제목 제거를 구현하고 서버 387개·앱/푸시 62개 검사를 통과했다. [구현·검증 기록](notification-quality-2026-10-17.md).
+- [x] 승인된 `d9d49fb`의 SQL020을 실제 적용해 ledger 208→209와 대상 함수 8개를 재조회했다. `push-notifications` Edge v16 `ACTIVE`와 다운로드한 소스 3개의 해시 일치도 확인했다. 기존 cron·권한·최소 지원 빌드(iOS 69/Android 64)는 유지했다. [배포 기록](../docs/deployment.md).
+- [ ] 이후 공개 릴리스 SHA에도 알림 변경을 포함하고, 승인된 검증 기기에서 실제 푸시 수신·표시·탭 목적지를 별도로 확인한다. 시험푸시는 실행하지 않았으며 스토어 제출·공개 보류는 유지한다.
+
+## 공유 링크 배포·재조회 완료 — PR 보완 2026-10-17
+
+- [x] 기존 Vercel 미리보기 서버의 짧은·긴 공유 링크와 표지 HTTP 200을 실제 확인했다. 기본 사이트 `share-redirect.js`의 PR 45 병합, CI·Pages 성공과 공개 소스 해시 일치도 확인했다. [공유 배포 기록](../docs/deployment.md).
+- [x] 시뮬레이터 `314635c` 설치, 컴파일 소스 225개 일치, 실제 최신 장소 캐시=서버와 오늘→목록→상세 진입을 확인했다.
+- [ ] 이후 공개 릴리스 SHA에도 [업체 화면·공유 링크 보완 묶음](pr-consolidation-2026-10-17.md)을 포함한다. 업체 원고 보존·권한 상실 회귀 검증 결과를 유지하며, 네이티브 업로드·스토어 제출·공개 보류와 구버전 제공 기준을 지킨다.
+
 ## iOS release preparation — 2026-09-06
 
 - [x] Dependency and backend checks
@@ -217,6 +229,12 @@
 - [x] Apply Apple Design to admin layout, member directory/detail and controls.
 - [ ] Validate GPS on devices and update store disclosures for the next native binary (not build 11).
 - Evidence: `tasks/location-admin-2026-09-12.md`.
+
+## 2026-10-17 — Business public identity privacy
+
+- [x] 비즈니스 작성자·로고·배너·공식 작성글 연결과 공개 개인 정보 분리의 로컬 구현 및 검증.
+- [ ] 배포 보류 해제 후030/031/032/033/035/036과 public-post Edge를 함께 적용하고 실제 공개 경로 확인.032 단독 적용 금지, 구버전 차단 금지.
+- 명세: [business-public-identity-privacy-2026-10-17](../docs/specs/business-public-identity-privacy-2026-10-17.md).
 
 ## 2026-09-12 — Private member name and birth date
 

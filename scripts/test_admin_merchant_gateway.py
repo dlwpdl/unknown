@@ -29,6 +29,12 @@ class GatewayTests(unittest.TestCase):
     def test_only_merchant_rpcs_can_be_called(self):
         with self.assertRaisesRegex(ValueError, 'UNKNOWN_MERCHANT_OPERATION'): gateway.rpc('delete_account', {})
 
+    def test_creator_vendor_operations_use_the_same_live_mfa_session(self):
+        for name in ['get_admin_creator_directory', 'get_admin_creator_deal', 'link_admin_creator_deal_merchant', 'get_admin_merchant_creator_deals']:
+            with patch.object(gateway, 'active_session', return_value={'access_token': 'TEST'}), patch.object(gateway, 'request', return_value={'rows': []}) as request:
+                gateway.rpc(name, {'p_id': 'record'})
+                request.assert_called_once_with('/rest/v1/rpc/' + name, {'p_id': 'record'}, 'TEST')
+
     def test_status_never_exposes_tokens(self):
         with patch.object(gateway, 'keychain_read', return_value={'expires_at': 200, 'access_token': 'SECRET', 'refresh_token': 'SECRET'}), patch.object(gateway.time, 'time', return_value=100):
             status = gateway.connection_status()

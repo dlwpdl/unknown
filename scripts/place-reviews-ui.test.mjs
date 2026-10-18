@@ -216,6 +216,7 @@ function detailViewport() {
     '@/components/place-reviews': { PlaceReviews: 'PlaceReviews' },
     '@/hooks/use-language': { useLanguage: () => ({ tr, locale: 'en-CA' }) }, '@/i18n': { tr, getLocale: () => 'en-CA' },
     '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'toronto' } }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'guest' } }) },
     '@/lib/city-places': { getCityPlaces: () => [{ id: 'osm:node:1', name: 'Place', sourceUrl: 'https://www.openstreetmap.org/node/1' }] },

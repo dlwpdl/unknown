@@ -14,7 +14,7 @@ function view(width = 390, { file = 'admin-report-queue', name = 'AdminReportQue
   const imports = {
     react: { useEffect() {}, useRef: initial => ({ current: initial }), useState(initial) { const slot = index++; if (!(slot in state)) state[slot] = initial; return [state[slot], value => { state[slot] = typeof value === 'function' ? value(state[slot]) : value; }]; } },
     'react/jsx-runtime': { Fragment: 'Fragment', jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
-    'react-native': { Platform: { OS: 'web' }, View: 'View', Pressable: 'Pressable', Text: 'Text', FlatList: 'FlatList', TextInput: 'TextInput', StyleSheet: { create: value => value }, useWindowDimensions: () => ({ width }) },
+    'react-native': { Platform: { OS: 'web' }, View: 'View', Pressable: 'Pressable', Text: 'Text', FlatList: 'FlatList', TextInput: 'TextInput', ScrollView: 'ScrollView', StyleSheet: { create: value => value }, useWindowDimensions: () => ({ width }) },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/constants/theme': { Colors: { admin: {} }, Spacing: {} },
     '@/lib/admin': admin, '@/lib/admin-labels': labels, '@/lib/admin-layout': { isCompactAdminWidth: value => value < 720 },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
@@ -73,8 +73,8 @@ test('member filter drafts and activity identity survive account and filter disc
   const retained = nodes(tree).find(node => node.props?.accessibilityLabel === '활동 내용 검색');
   assert.equal(retained.props.value, '아직 적용하지 않은 검색');
   assert.ok(nodes(tree).some(node => node.type === 'View' && node.props?.style?.display === 'none' && nodes(node).includes(retained)), 'closed content stays mounted');
-  button('계정 관리').props.onPress(); tree = render(userProps);
-  button('계정 관리').props.onPress(); tree = render(userProps);
+  find(tree, 'Pressable', '계정 관리').props.onPress(); tree = render(userProps);
+  find(tree, 'Pressable', '활동 기록').props.onPress(); tree = render(userProps);
   assert.equal(timelineKey(), originalFilters, 'toggles retain applied filters and timeline key');
   assert.equal(nodes(tree).find(node => node.props?.accessibilityLabel === '활동 내용 검색').props.value, '아직 적용하지 않은 검색');
   assert.ok(nodes(tree).some(node => node.props?.value === '제한 사유 확인 필요'));
@@ -133,4 +133,44 @@ test('trust state labels distinguish attendance evidence from private review inc
     assert.ok(text(tree).includes('원문 조회와 판단은 모두 감사 기록'));
     if (targetType === 'meetup_attendance') assert.ok(text(tree).includes('독립 증거'));
   }
+});
+
+
+test('member activity opens first with fixed keyboard tabs and keeps private account information in its own pane', () => {
+  const profile = { id: 'member-a', nickname: '이웃', account_type: 'member', account_status: 'suspended', verification_level: 2, auth_role: 'member', created_at: '2026-10-14T10:00:00Z', email: 'private@example.test' };
+  const render = view(390, { file: 'admin-user-review', name: 'AdminUserReview', initialState: [{ profile, counts: [], identities: [] }] });
+  const props = { userId: 'member-a', profiles: new Map() };
+  let tree = render(props);
+  const tabs = nodes(tree).filter(n => n.props?.accessibilityRole === 'tab');
+  assert.deepEqual(tabs.map(text), ['활동 기록', '프로필', '계정 관리', '접속 정보']);
+  assert.equal(tabs[0].props['aria-selected'], true);
+  assert.equal(tabs[0].props.tabIndex, 0);
+  const scroll = nodes(tree).find(n => n.props?.nativeID === 'admin-member-scroll');
+  assert.ok(scroll); assert.equal(nodes(scroll).some(n => n.props?.accessibilityRole === 'tab'), false);
+  const pane = id => nodes(tree).find(n => n.props?.nativeID === `admin-member-${id}`);
+  assert.equal(pane('activity').props.style.display, 'flex');
+  assert.equal(pane('profile').props.style.display, 'none');
+  assert.ok(nodes(pane('profile')).some(n => n.props?.value === 'private@example.test'));
+  const timeline = nodes(tree).find(n => n.type?.name === 'ActivityTimeline');
+  tabs[2].props.onPress(); tree = render(props);
+  assert.equal(pane('management').props.style.display, 'flex');
+  assert.equal(pane('activity').props.style.display, 'none');
+  assert.equal(nodes(tree).find(n => n.type?.name === 'ActivityTimeline').props.filters, timeline.props.filters);
+});
+
+test('member timeline folds long text without discarding the original or changing conversation targets', () => {
+  const body = '보존할 원문입니다. '.repeat(30);
+  const event = { event_key: 'event-a', kind: 'message', title: '대화 메시지', body, occurred_at: '2026-10-14T10:00:00Z', actor_id: 'member-a', context_id: 'room-exact' };
+  const render = view(390, { file: 'admin-user-review', name: 'ActivityTimeline', append: '\nexports.ActivityTimeline = ActivityTimeline;', initialState: [{ total: 2, rows: [event, { ...event, event_key: 'empty-event', body: null }], nextCursor: null }, null, false] });
+  const opened = [], props = { userId: 'member-a', filters: userData.EMPTY_ACTIVITY_FILTERS, profiles: new Map(), nickname: '이웃', onConversation: id => opened.push(id) };
+  let tree = render(props);
+  const original = () => nodes(tree).find(n => n.type === 'Text' && text(n) === body);
+  assert.equal(original().props.numberOfLines, 2);
+  assert.ok(text(tree).includes('추가 내용 없음'));
+  nodes(tree).find(n => n.props?.label === '원문 펼치기').props.onPress(); tree = render(props);
+  assert.equal(original().props.numberOfLines, undefined);
+  nodes(tree).find(n => n.props?.label === '이 대화 앞뒤 내용 보기').props.onPress();
+  assert.deepEqual(opened, ['room-exact']);
+  nodes(tree).find(n => n.props?.label === '원문 접기').props.onPress(); tree = render(props);
+  assert.equal(original().props.numberOfLines, 2); assert.equal(text(original()), body);
 });

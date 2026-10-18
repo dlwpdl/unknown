@@ -36,6 +36,55 @@ test('post recommendations show the current title and excerpt in the actual Expo
     assert.deepEqual(await response.json(), { tickets: 1, providerAccepted: 0, retrying: 0, failed: 0 });
   }
 });
+for (const [name, title, preview, expected] of [
+  ['Korean heading', '밴쿠버 친구 구해요', '밴쿠버 친구 구해요\n처음 이사 와서 주말에 같이 산책하고 싶어요.', '처음 이사 와서 주말에 같이 산책하고 싶어요.'],
+  ['English heading', 'Weekend hiking', 'Weekend hiking: Meet at the trailhead at nine.', 'Meet at the trailhead at nine.'],
+  ['sentence heading', '밴쿠버 맛집 추천', '밴쿠버 맛집 추천. 여기 김치찌개가 맛있어요.', '여기 김치찌개가 맛있어요.'],
+  ['question heading', 'Weekend hiking', 'Weekend hiking? Meet at the trailhead at nine.', 'Meet at the trailhead at nine.'],
+  ['variable whitespace', '오늘 같이 걸어요', '  오늘\t같이\n걸어요\r\n\r\n공원 입구에서 만나요.', '공원 입구에서 만나요.'],
+  ['Markdown hashes', '서울 맛집 추천', '### 서울 맛집 추천 ###\n\n여기 김치찌개가 맛있어요.', '여기 김치찌개가 맛있어요.'],
+  ['Markdown bold', 'Best coffee', '**Best coffee** — The espresso is bright and fruity.', 'The espresso is bright and fruity.'],
+  ['Markdown emphasis', '동네 산책', '_동네 산책_： 호숫가를 한 바퀴 돌았어요.', '호숫가를 한 바퀴 돌았어요.'],
+  ['literal title punctuation', 'C++ (밴쿠버)?', '## C++ (밴쿠버)?\n스터디를 찾고 있어요.', '스터디를 찾고 있어요.'],
+  ['duplicate-only body', '같이 걸어요', '**같이 걸어요**', ''],
+  ['duplicate-only whitespace', 'Weekend hiking', '  Weekend\thiking \n ', ''],
+]) {
+  test(`post preview removes only a repeated leading ${name}`, async () => {
+    let message;
+    const h = harness({ sends: [{ ...job, category: 'trending', route: `/post/${notificationId}`, post_title: title, post_preview: preview }],
+      fetcher: async (_, options) => {
+        [message] = JSON.parse(options.body);
+        return Response.json({ data: [{ status: 'ok', id: ticketId }] });
+      } });
+    assert.equal((await (await h.run()).json()).tickets, 1);
+    assert.equal(message.title, title);
+    assert.equal(message.body, expected);
+    assert.equal(message.data.route, `/post/${notificationId}`);
+  });
+}
+for (const [name, title, preview, expected] of [
+  ['non-prefix mention', 'Weekend hiking', 'We discussed Weekend hiking after dinner.', 'We discussed Weekend hiking after dinner.'],
+  ['real mid-body mention', '동네 산책', '동네 산책\n주말에는 동네 산책 모임에 가요.', '주말에는 동네 산책 모임에 가요.'],
+  ['English word prefix', 'Art', 'Arthur recommended the gallery.', 'Arthur recommended the gallery.'],
+  ['Korean word prefix', '밴쿠버', '밴쿠버에서 친구를 만났어요.', '밴쿠버에서 친구를 만났어요.'],
+  ['hyphenated word prefix', 'Canada', 'Canada-based friends are welcome.', 'Canada-based friends are welcome.'],
+  ['dotted word prefix', 'C', 'C.NET developers are welcome.', 'C.NET developers are welcome.'],
+  ['empty preview', '이번 주 소식', '', ''],
+  ['real list after heading', '준비물', '준비물\n- 물 한 병을 챙겨요.', '- 물 한 병을 챙겨요.'],
+  ['bounded Unicode preview', '🌲 산책', `## 🌲 산책\n${'😀'.repeat(168)}…`, `${'😀'.repeat(168)}…`],
+]) {
+  test(`post preview preserves ${name}`, async () => {
+    let message;
+    const h = harness({ sends: [{ ...job, category: 'weekly_ranking', route: `/post/${notificationId}`, post_title: title, post_preview: preview }],
+      fetcher: async (_, options) => {
+        [message] = JSON.parse(options.body);
+        return Response.json({ data: [{ status: 'ok', id: ticketId }] });
+      } });
+    assert.equal((await (await h.run()).json()).tickets, 1);
+    assert.equal(message.title, title);
+    assert.equal(message.body, expected);
+  });
+}
 test('post previews require a recommendation and valid post destination; old claims remain compatible', async () => {
   const claims = [
     { ...job, post_title: 'private title', post_preview: 'private body' },
@@ -43,6 +92,10 @@ test('post previews require a recommendation and valid post destination; old cla
     { ...job, category: 'weekly_ranking', route: `/post/${notificationId}` },
     { ...job, category: 'trending', route: `/post/${notificationId}`, post_title: 42, post_preview: 'body' },
     { ...job, category: 'trending', route: `/post/${notificationId}`, post_title: 'title', post_preview: null },
+    { ...job, category: 'trending', route: `/post/${notificationId}`, post_title: '', post_preview: 'body' },
+    { ...job, category: 'trending', route: `/post/${notificationId}`, post_title: ' \n ', post_preview: 'body' },
+    { ...job, category: 'trending', route: `/post/${notificationId}`, post_title: null, post_preview: 'body' },
+    { ...job, category: 'trending', route: `/post/${notificationId}`, post_title: 'title', post_preview: 42 },
   ];
   for (const claim of claims) {
     const h = harness({ sends: [claim], fetcher: async (_, options) => {

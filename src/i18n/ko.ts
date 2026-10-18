@@ -12,6 +12,7 @@ export const t = {
     title: '앱 언어', system: '기기 설정 따름', korean: '한국어', english: 'English',
     note: '앱에서만 적용돼요. 기기의 언어 설정은 바뀌지 않아요.',
     saving: '언어 설정 저장 중', saveError: '언어 설정을 저장하지 못했어요. 다시 선택해 주세요.',
+    close: '닫기',
   },
 
   trust: {
@@ -171,7 +172,7 @@ export const t = {
       transport: '차량·운전·대중교통 정보를 나눠주세요',
       housing: '부동산·렌트·룸메 이야기를 나눠주세요',
       education: '학교·학원·어학 정보를 나눠주세요',
-      business: '업체 소개나 창업·사업 정보를 나눠주세요',
+      business: '비즈니스 소개나 창업·사업 정보를 나눠주세요',
       meetup: '어떤 모임인지, 몇 명이 좋을지 알려주세요',
       jobs: '모집 조건·근무 지역·급여나 찾는 일을 적어주세요',
       used: '물건 상태·금액·거래 지역을 적어주세요',
@@ -233,7 +234,7 @@ export const t = {
     DUPLICATE_POST: { title: '같은 이야기가 이미 올라갔어요', body: '같은 내용을 반복해서 올리지 말고 기존 글을 확인해 주세요.', membership: false },
     BUMP_COOLDOWN: { title: '조금 뒤에 끌어올릴 수 있어요', body: '베이직은 48시간·플러스는 36시간·프로는 30시간·프리미엄은 24시간 간격으로 끌어올릴 수 있어요. 계정과 같은 글에 함께 적용돼요. 기존 구독 혜택은 유지돼요.', membership: true },
     BUSINESS_BUMP_COOLDOWN: { title: '비즈니스 끌어올리기를 기다려 주세요', body: '같은 글은 플러스 72시간·프로 60시간·프리미엄 48시간 간격이에요. 비즈니스 전체는 24시간 간격이에요. 계정이나 AI 도구를 바꿔도 같아요.', membership: false },
-    BUSINESS_MONTHLY_LIMIT_REACHED: { title: '이번 달 업체 사용량을 모두 썼어요', body: '신규 글과 끌어올리기 사용량을 확인해 주세요. 운영대행분은 전체 한도에 포함돼요.', membership: true },
+    BUSINESS_MONTHLY_LIMIT_REACHED: { title: '이번 달 비즈니스 사용량을 모두 썼어요', body: '신규 글과 끌어올리기 사용량을 확인해 주세요. 운영대행분은 전체 한도에 포함돼요.', membership: true },
     DUPLICATE_PROMOTION: { title: '같은 홍보글이 이미 있어요', body: '기존 글을 수정하거나 끌어올려 주세요. 제목·사진 순서만 바꿔 새 글로 다시 올릴 수 없어요.', membership: false },
     LISTING_NOT_OPEN: { title: '마감된 글이에요', body: '다시 열면 살아있는 글 자리를 하나 사용해요.', membership: false },
   },
@@ -308,7 +309,9 @@ export const t = {
 
   auth: {
     // L0 소셜 로그인 (무료)
-    tagline: '해외에서 나누는 우리들의 일상',
+    welcomeTitle: '같은 도시,',
+    welcomeAccent: '새로운 사이.',
+    tagline: '캐나다에서 나누는 우리들의 일상.',
     reasonDetail: '이 글을 마저 보려면 로그인이 필요해요',
     reasonProfile: '내 프로필은 로그인하고 볼 수 있어요',
     reasonNotifications: '알림을 보려면 로그인이 필요해요',
@@ -320,7 +323,7 @@ export const t = {
     sessionExpired: '로그인이 풀렸어요. 다시 로그인하면 이어서 할 수 있어요',
     reasonReport: '신고하려면 로그인이 필요해요',
     reasonChatLogin: '대화를 시작하려면 로그인이 필요해요',
-    kakao: '카카오로 시작하기',
+    kakao: '카카오 로그인',
     google: 'Google로 로그인',
     connecting: '로그인 연결 중…',
     devLoginTitle: '개발 계정 로그인',
@@ -334,8 +337,8 @@ export const t = {
     reviewLoginCta: '심사 계정으로 로그인 / Sign in',
     reviewLoginNote: '앱 심사를 위해 미리 발급된 계정만 사용할 수 있어요. Only pre-issued review accounts can sign in.',
     reviewLoginError: '심사 계정 정보를 확인해주세요. Check your review credentials.',
-    close: '둘러보기',
-    loginNote: '소셜 계정 인증 후 처음 오신 분은 프로필 설정과 약관 동의를 진행해요.',
+    close: '먼저 둘러보기',
+    loginNote: '처음이라면 로그인 후 가입 절차가 이어져요.',
     loginError: '로그인에 실패했어요. 잠시 후 다시 시도해주세요.',
     signOutError: '로그아웃하지 못했어요. 잠시 후 다시 시도해주세요.',
     deletedTitle: '탈퇴한 계정이에요',

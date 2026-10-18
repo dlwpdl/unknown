@@ -1,4 +1,5 @@
 import { handleSharePreview } from './share-preview-worker.ts';
+import { decodeSharedUuid } from '../src/lib/shared-uuid.ts';
 
 declare const process: { env: Record<string, string | undefined> };
 
@@ -6,7 +7,8 @@ export default function sharePreview(request: Request): Promise<Response> {
   const url = new URL(request.url);
   if (url.pathname === '/_gling-share-preview') {
     const ids = url.searchParams.getAll('__gling_share_id');
-    url.pathname = ids.length === 1 && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(ids[0]) ? `/share/${ids[0]}` : '/share/invalid';
+    url.pathname = ids.length !== 1 ? '/share/invalid' : decodeSharedUuid(ids[0]) ? `/s/${ids[0]}`
+      : /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(ids[0]) ? `/share/${ids[0]}` : '/share/invalid';
     url.search = '';
     request = new Request(url, request);
   }

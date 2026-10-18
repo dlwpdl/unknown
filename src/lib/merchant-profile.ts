@@ -1,7 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { attachSignedPostImages, mapPublicFeed, type PublicFeedRow } from './feed-data.ts';
+import { hydratePublicPosts, mapPublicFeed, type PublicFeedRow } from './feed-data.ts';
 import type { Post } from './types.ts';
 import { safeMerchantSourceUrl } from './merchant-source.ts';
+import { businessMediaUrl } from './business-media.ts';
 
 export type MerchantProfile = {
   id: string; name: string; city_id: string; city_name: string;
@@ -30,15 +31,19 @@ export function mapMerchantProfile(value: unknown): Omit<MerchantProfile, 'avata
     industry: row.industry as string, services: row.services as string, address: row.address as string,
     avatar_path: row.avatar_path as string | null, banner_path: row.banner_path as string | null, review_post_id: row.review_post_id as string | null,
     public_phone: typeof row.public_phone === 'string' ? row.public_phone : '', business_hours: typeof row.business_hours === 'string' ? row.business_hours : '',
-    can_message: row.can_message === true, saved: row.saved === true, notifications_enabled: row.saved === true && row.notifications_enabled === true, links };
+    can_message: row.can_business_message === true || row.can_message === true, saved: row.saved === true, notifications_enabled: row.saved === true && row.notifications_enabled === true, links };
 }
 
 export async function attachMerchantProfileImages<T extends Pick<MerchantProfile, 'avatar_path' | 'banner_path'>>(client: SupabaseClient, profile: T) {
   const paths = [...new Set([profile.avatar_path, profile.banner_path].filter((path): path is string => !!path))];
-  const urls = new Map<string, string>();
-  if (paths.length) {
+  const urls = new Map(paths.flatMap(path => {
+    const url = businessMediaUrl(path);
+    return url ? [[path, url] as const] : [];
+  }));
+  const privatePaths = paths.filter(path => !urls.has(path));
+  if (privatePaths.length) {
     try {
-      const result = await client.storage.from('merchant-profile-images').createSignedUrls(paths, 3600);
+      const result = await client.storage.from('merchant-profile-images').createSignedUrls(privatePaths, 3600);
       if (!result.error) for (const row of result.data ?? []) if (row.path && row.signedUrl) urls.set(row.path, row.signedUrl);
     } catch { /* A failed photo read must preserve the saved profile paths. */ }
   }
@@ -70,7 +75,7 @@ export async function loadMerchantProfilePosts(client: SupabaseClient, merchantI
   if (page.merchant_id !== merchantId || page.kind !== kind || !Number.isSafeInteger(page.post_count) || page.post_count < 0
     || !Number.isSafeInteger(page.job_count) || page.job_count < 0 || typeof page.has_more !== 'boolean' || !Array.isArray(page.posts)
     || page.posts.length > 20 || page.posts.some((row: PublicFeedRow) => !row || !UUID.test(row.id) || (row.tag_slug === 'jobs') !== (kind === 'jobs'))) throw new Error('MERCHANT_POSTS_READ_FAILED');
-  const posts = await attachSignedPostImages(client, mapPublicFeed(page.posts, []), viewerScope);
+  const posts = await hydratePublicPosts(client, mapPublicFeed(page.posts, []), viewerScope);
   return { merchant_id: merchantId, kind, post_count: page.post_count, job_count: page.job_count, posts,
     has_more: page.has_more && posts.length > 0, nextOffset: offset + page.posts.length };
 }

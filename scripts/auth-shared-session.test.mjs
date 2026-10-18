@@ -5,11 +5,14 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as kakao from '../src/lib/kakao-auth.ts';
+import * as nickname from '../src/lib/nickname.ts';
+import * as chatIdentity from '../src/lib/chat-identity.ts';
 
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
+import { getPostImageSource, setBusinessImageSession } from '../src/lib/feed-data.ts';
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
-const session = id => ({ user: { id, last_sign_in_at: '2026-10-11T18:00:00Z', app_metadata: {}, user_metadata: {}, identities: [] } });
+const session = id => ({ access_token: `token-${id}`, user: { id, last_sign_in_at: '2026-10-11T18:00:00Z', app_metadata: {}, user_metadata: {}, identities: [] } });
 const profile = (id, patch = {}) => ({ id, nickname: `${id} 이웃`, city_id: 'vancouver', avatar_path: null, verification_level: 1,
   account_status: 'active', ai_safety_consent_at: '2026-10-11T18:00:00Z', ...patch });
 
@@ -33,7 +36,7 @@ function mount(initialSession = session('member')) {
     from(table) { assert.equal(table, 'profiles'); let userId;
       return { select() { return this; }, eq(field, value) { assert.equal(field, 'id'); userId = value; return this; },
         maybeSingle() { const response = deferred(); reads.push({ userId, ...response }); return response.promise; } }; },
-    rpc: async () => ({ error: null }),
+    rpc: async (name, args) => name === 'change_profile_nickname' ? { data: { id: args.p_user_id, nickname: args.p_nickname }, error: null } : { error: null },
     auth: { getSession: async () => ({ data: { session: currentSession } }),
       onAuthStateChange(callback) { onAuthChange = callback; return { data: { subscription: { unsubscribe() {} } } }; },
       startAutoRefresh() {}, stopAutoRefresh() {}, signOut: async () => { currentSession = null; onAuthChange('SIGNED_OUT', null); return {}; } },
@@ -51,7 +54,7 @@ function mount(initialSession = session('member')) {
     '@/constants/theme': { Spacing: {} }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/i18n/ko': { t: { auth: { loginError: '로그인 오류', sessionExpired: '세션 만료' } } }, '@/lib/admin': { isAdminRole: () => false },
     '@/lib/account-security-device': { registerSecurityDevice: async () => {} }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play }) },
-    '@/lib/kakao-auth': kakao, '@/lib/legal-documents': { CONTACT_EMAIL: 'fixture@example.invalid' },
+    '@/lib/feed-data': { setBusinessImageSession }, '@/lib/chat-identity': chatIdentity, '@/lib/nickname': nickname, '@/lib/kakao-auth': kakao, '@/lib/legal-documents': { CONTACT_EMAIL: 'fixture@example.invalid' },
     '@/lib/location-provider': { CommunityLocationProvider: 'CommunityLocationProvider' }, '@/lib/mock': { CITIES: [{ id: 'vancouver' }] },
     '@/lib/supabase': { supabase, AUTH_EXPIRED_EVENT: 'authExpired' }, '@/lib/push-notifications': { unregisterPushDevice: async () => {} },
     '@/lib/trust': { shouldCelebrateVerificationUpgrade: () => false },
@@ -64,7 +67,7 @@ function mount(initialSession = session('member')) {
   const render = () => { index = 0; effects = []; tree = exports.AuthProvider({ children: null }); effects.forEach(fn => fn()); return tree.props.value; };
   render();
   return { reads, render, nodes: () => nodes(tree), async settle() { for (let i = 0; i < 4; i++) { await tick(); render(); } return tree.props.value; },
-    changeSession(next) { currentSession = next; onAuthChange(next ? 'SIGNED_IN' : 'SIGNED_OUT', next); return render(); },
+    changeSession(next,event=next ? 'SIGNED_IN' : 'SIGNED_OUT') { currentSession = next; onAuthChange(event, next); return render(); },
     unmount() { state.forEach(hook => hook?.cleanup?.()); } };
 }
 const onboarding = harness => harness.nodes().find(node => node.type === 'ProfileOnboarding');
@@ -131,4 +134,41 @@ test('a late profile failure from the previous session does not release the new 
   const harness = mount(session('first')); context.after(() => harness.unmount()); await harness.settle();
   harness.changeSession(session('second')); await harness.settle(); harness.reads[0].reject(new Error('old request failed')); const auth = await harness.settle();
   assert.equal(auth.me.id, 'second'); assert.equal(auth.isAuthLoading, true); assert.equal(auth.authError, null); assert.equal(auth.isAuthed, false);
+});
+
+
+test('confirmed nickname updates auth immediately and a stale account callback cannot rename another user', async context => {
+  const harness = mount(); context.after(() => harness.unmount()); await harness.settle();
+  harness.reads[0].resolve({ data: profile('member'), error: null }); const auth = await harness.settle();
+  await auth.setProfileNickname('새로운 이웃', 'member 이웃');
+  assert.equal(harness.render().me.nickname, '새로운 이웃');
+  harness.changeSession(session('another-member'));
+  await assert.rejects(auth.setProfileNickname('잘못된 이름', '새로운 이웃'), /AUTH_REQUIRED/);
+});
+
+test('business gallery session follows token refresh and clears immediately on logout',async context=>{
+ const harness=mount();context.after(()=>harness.unmount());await harness.settle();
+ const post={id:'gallery',imagePaths:['business-post/a2000000-0000-4000-8000-000000000001/1/'+'a'.repeat(32)],imageUris:['opaque-gallery'],imageThumbs:['opaque-gallery']};
+ assert.equal(getPostImageSource(post,'member','full').headers.Authorization,'Bearer token-member');
+ harness.changeSession({...session('member'),access_token:'token-refreshed'},'TOKEN_REFRESHED');
+ assert.equal(getPostImageSource(post,'member','full').headers.Authorization,'Bearer token-refreshed');
+ harness.changeSession(null);assert.equal(getPostImageSource(post,'member','full'),undefined);
+ harness.changeSession(session('next'));assert.equal(getPostImageSource(post,'member','full'),undefined);
+ assert.equal(getPostImageSource(post,'next','full').headers.Authorization,'Bearer token-next');
+ harness.unmount();assert.equal(getPostImageSource(post,'next','full'),undefined);
+});
+
+test('business DM selection survives token refresh but is cleared on sign-out and account changes', async context => {
+  const harness = mount(); context.after(() => { harness.unmount(); chatIdentity.resetChatIdentity(); });
+  await harness.settle();
+  const business = { id: 'c1820000-0000-4000-8000-000000000001', name: 'Example Business' };
+  chatIdentity.selectChatBusiness('member', business);
+  harness.changeSession({ ...session('member'), access_token: 'refreshed' }, 'TOKEN_REFRESHED');
+  assert.deepEqual(chatIdentity.chatBusinessIdentity('member'), business);
+  harness.changeSession(session('another-member'));
+  assert.equal(chatIdentity.chatBusinessIdentity('member'), null, 'a departed account selection must be discarded');
+  chatIdentity.selectChatBusiness('another-member', business);
+  harness.changeSession(null);
+  harness.changeSession(session('another-member'));
+  assert.equal(chatIdentity.chatBusinessIdentity('another-member'), null, 'signing back in starts with personal DMs');
 });

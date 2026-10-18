@@ -1,0 +1,4 @@
+Explore scenic photo spots in each city, with a reason for every selection.
+Find places, events, housing and secondhand listings more easily on the integrated map.
+We improved the current-location marker and map controls.
+We also refined post creation, business profiles and messaging.

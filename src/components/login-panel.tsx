@@ -4,9 +4,8 @@ import { Image } from 'expo-image';
 import { useFonts } from 'expo-font';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
-import { Animated, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,8 +17,6 @@ import { RaisedActionButton } from '@/components/raised-action-button';
 import { Colors, Spacing } from '@/constants/theme';
 import { ThemeOverrideProvider, useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-
-const WELCOME_LINES = ['모임을 찾아요', '공연을 만나요', '이야기를 나눠요'];
 
 export function LoginPanel({
   reason,
@@ -54,31 +51,10 @@ export function LoginPanel({
   const [password, setPassword] = useState('');
   const adminPasswordInput = useRef<TextInput>(null);
   const [adminFocusedField, setAdminFocusedField] = useState<'email' | 'password' | null>(null);
-  const [welcomeIndex, setWelcomeIndex] = useState(0);
-  const [welcomeOpacity] = useState(() => new Animated.Value(1));
   const disabled = loading;
   const showWelcome = !onAdminLogin && !onReviewLogin;
   const passwordLogin = onAdminLogin ?? onReviewLogin ?? (__DEV__ ? onDevLogin : undefined);
   const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/$/, '');
-
-  useFocusEffect(useCallback(() => {
-    if (!showWelcome || reducedMotion || loading) {
-      welcomeOpacity.setValue(1);
-      return;
-    }
-    const timer = setInterval(() => {
-      Animated.timing(welcomeOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(({ finished }) => {
-        if (!finished) return;
-        setWelcomeIndex((current) => (current + 1) % WELCOME_LINES.length);
-        Animated.timing(welcomeOpacity, { toValue: 1, duration: 320, useNativeDriver: true }).start();
-      });
-    }, 3200);
-    return () => {
-      clearInterval(timer);
-      welcomeOpacity.stopAnimation();
-      welcomeOpacity.setValue(1);
-    };
-  }, [loading, reducedMotion, showWelcome, welcomeOpacity]));
 
   if (onAdminLogin) {
     const submitDisabled = disabled || !email.trim() || !password;
@@ -136,64 +112,42 @@ export function LoginPanel({
 
   return (
     <ThemedView style={styles.wrap}>
-      <Image source={require('@/assets/images/festival-glass-orbs.webp')} style={styles.ambientArt} contentFit="contain" accessible={false} pointerEvents="none" />
       <SafeAreaView style={styles.wrap}>
       <KeyboardAvoidingView style={styles.wrap} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView analyticsId="components_login-panel.scrollview.1" contentContainerStyle={styles.center} keyboardShouldPersistTaps="handled">
-        <Image
-          source={dark ? require('@/assets/brand/gling-night-wordmark.png') : require('@/assets/brand/gling-night-wordmark-light.png')}
-          style={styles.brandLogo}
-          contentFit="contain"
-          accessibilityLabel={t.appName}
-        />
-        <GlassSurface tone="control" style={styles.welcomeGlass}>
-          <View style={styles.welcomeContent}>
-            {showWelcome && <View style={styles.welcomeLine}>
-              <ThemedText type="subtitle">{tr("오늘은") + " "}</ThemedText>
-              <Animated.View style={{ opacity: welcomeOpacity,
-                transform: [{ translateY: welcomeOpacity.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] }}>
-                <ThemedText type="subtitle" style={{ color: theme.accent }}>{tr(WELCOME_LINES[welcomeIndex])}</ThemedText>
-              </Animated.View>
-            </View>}
-            <ThemedText type="small" themeColor="textSecondary" style={styles.tagline}>
-              {reason == null ? t.auth.tagline : tr(reason)}
-            </ThemedText>
-          </View>
-        </GlassSurface>
-
-        <LanguageCard />
-        <View style={styles.actions}>
-            {Platform.OS === 'ios' && onApple && (<GlassSurface tone="control" interactive style={styles.socialGlass}><View style={styles.appleInset}>
-              <AppleAuthentication.AppleAuthenticationButton
-                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-                cornerRadius={24}
-                onPress={() => { if (!disabled) { play('selection'); onApple(); } }}
-                accessibilityState={{ disabled, busy: loading }}
-                style={[styles.appleButton, { opacity: disabled ? 0.6 : 1 }]}
-              />
-            </View></GlassSurface>)}
-            {onKakao && <GlassSurface colorScheme="dark" tone="control" interactive style={styles.socialGlass}><Pressable analyticsId="components_login-panel.pressable.1"
-              onPress={() => { if (!disabled) { play('selection'); onKakao(); } }}
-              disabled={disabled}
-              accessibilityRole="button"
-              accessibilityState={{ disabled, busy: loading }}
-              style={({ pressed }) => [styles.btn, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent', opacity: disabled ? 0.6 : 1, transform: [{ scale: pressed && !reducedMotion ? 0.98 : 1 }] }]}>
-              <ThemedText type="smallBold" style={{ color: '#FEE500', fontSize: 16 }}>
-                {t.auth.kakao}
-              </ThemedText>
-            </Pressable></GlassSurface>}
-            {onGoogle && <GlassSurface tone="control" interactive style={styles.socialGlass}><Pressable analyticsId="components_login-panel.pressable.2"
-              onPress={() => { if (!disabled) { play('selection'); onGoogle(); } }}
-              disabled={disabled}
-              accessibilityRole="button"
-              accessibilityLabel={t.auth.google}
-              accessibilityState={{ disabled, busy: loading }}
-              style={({ pressed }) => [styles.btn, styles.googleButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent', opacity: disabled ? 0.6 : 1, transform: [{ scale: pressed && !reducedMotion ? 0.98 : 1 }] }]}>
+        <View style={styles.brandRow}>
+          <Image source={dark ? require('@/assets/brand/gling-night-wordmark.png') : require('@/assets/brand/gling-night-wordmark-light.png')}
+            style={styles.brandLogo} contentFit="contain" accessibilityLabel={t.appName} />
+          <LanguageCard compact />
+        </View>
+        <View style={styles.hero}>
+          {showWelcome && <ThemedText accessibilityRole="header" style={styles.heroTitle}>
+            {t.auth.welcomeTitle}{'\n'}<ThemedText style={[styles.heroTitle, { color: theme.accent }]}>{t.auth.welcomeAccent}</ThemedText>
+          </ThemedText>}
+          <ThemedText type="small" themeColor="textSecondary" style={styles.tagline}>{reason == null ? t.auth.tagline : tr(reason)}</ThemedText>
+        </View>
+        <View style={styles.authArea} aria-busy={loading}>
+          {!!error && <View style={[styles.errorBox, { borderLeftColor: theme.accent }]}>
+            <ThemedText accessibilityRole="alert" accessibilityLiveRegion="polite" type="small" style={styles.error}>{tr(error)}</ThemedText>
+          </View>}
+          <View style={styles.actions}>
+            {onKakao && <Pressable analyticsId="components_login-panel.pressable.1" accessibilityRole="button" accessibilityLabel={t.auth.kakao}
+              onPress={() => { if (!disabled) { play('selection'); onKakao(); } }} disabled={disabled} accessibilityState={{ disabled, busy: loading }}
+              style={({ pressed }) => [styles.socialButton, styles.kakaoButton, { opacity: disabled ? 0.6 : pressed ? 0.8 : 1, transform: [{ scale: pressed && !reducedMotion ? 0.98 : 1 }] }]}>
+              <Image source={require('@/assets/brand/kakao-login-symbol.svg')} style={styles.googleIcon} contentFit="contain" accessible={false} />
+              <ThemedText type="smallBold" style={styles.kakaoText}>{t.auth.kakao}</ThemedText>
+            </Pressable>}
+            {Platform.OS === 'ios' && onApple && <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN} buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK} cornerRadius={12}
+              onPress={() => { if (!disabled) { play('selection'); onApple(); } }} accessibilityState={{ disabled, busy: loading }}
+              style={[styles.appleButton, { opacity: disabled ? 0.6 : 1 }]} />}
+            {onGoogle && <Pressable analyticsId="components_login-panel.pressable.2" accessibilityRole="button" accessibilityLabel={t.auth.google}
+              onPress={() => { if (!disabled) { play('selection'); onGoogle(); } }} disabled={disabled} accessibilityState={{ disabled, busy: loading }}
+              style={({ pressed }) => [styles.socialButton, { backgroundColor: dark ? '#131314' : '#FFFFFF', borderColor: dark ? '#8E918F' : '#747775', opacity: disabled ? 0.6 : pressed ? 0.8 : 1, transform: [{ scale: pressed && !reducedMotion ? 0.98 : 1 }] }]}>
               <Image source={require('@/assets/brand/google-g.png')} style={styles.googleIcon} contentFit="contain" accessible={false} />
-              <ThemedText type="small" style={[styles.googleText, { color: theme.text }, googleFontLoaded && { fontFamily: 'GoogleSansMedium' }]}>{t.auth.google}</ThemedText>
-            </Pressable></GlassSurface>}
-            {loading && <ThemedText type="small" themeColor="textSecondary" accessibilityRole="progressbar" style={styles.note}>{t.auth.connecting}</ThemedText>}
+              <ThemedText type="small" style={[styles.googleText, { color: dark ? '#E3E3E3' : '#1F1F1F' }, googleFontLoaded && { fontFamily: 'GoogleSansMedium' }]}>{t.auth.google}</ThemedText>
+            </Pressable>}
+            {loading && <ThemedText type="small" themeColor="textSecondary" accessibilityRole="progressbar" accessibilityLiveRegion="polite" style={styles.note}>{t.auth.connecting}</ThemedText>}
             {passwordLogin && (
               <GlassSurface tone="control" style={styles.devGlass}>
               <View style={styles.devBox}>
@@ -237,31 +191,17 @@ export function LoginPanel({
               </GlassSurface>
             )}
           </View>
-
-        {!!error && (
-          <ThemedText accessibilityRole="alert" type="small" style={[styles.error, { color: theme.accent }]}>
-            {tr(error)}
-          </ThemedText>
-        )}
-
-        <ThemedText type="small" themeColor="textSecondary" style={styles.note}>
-          {onAdminLogin ? tr("사전에 등록된 관리자 계정만 접근할 수 있습니다.") : onReviewLogin ? t.auth.reviewLoginNote : t.auth.loginNote}
-        </ThemedText>
-
+          <ThemedText type="small" themeColor="textSecondary" style={styles.signupNote}>{onReviewLogin ? t.auth.reviewLoginNote : t.auth.loginNote}</ThemedText>
+        </View>
         <View style={styles.legalLinks}>
           {['terms', 'privacy'].map((path) => <Pressable analyticsId="components_login-panel.pressable.4" key={path} onPress={() => { play('selection'); void Linking.openURL(`${publicSiteUrl}/${path}`); }}
             accessibilityRole="link" style={styles.legalLink}>
-            <ThemedText type="small" themeColor="textSecondary">{path === 'terms' ? tr("이용약관") : tr("개인정보처리방침")}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.legalCopy}>{path === 'terms' ? tr('이용약관') : tr('개인정보처리방침')}</ThemedText>
           </Pressable>)}
         </View>
-
-        {onClose && (
-          <Pressable analyticsId="components_login-panel.pressable.6" onPress={() => { play('selection'); onClose(); }} accessibilityRole="button" style={styles.close}>
-            <ThemedText type="smallBold" themeColor="textSecondary">
-              {t.auth.close}
-            </ThemedText>
-          </Pressable>
-        )}
+        {onClose && <Pressable analyticsId="components_login-panel.pressable.6" onPress={() => { play('selection'); onClose(); }} accessibilityRole="button" style={styles.close}>
+          <ThemedText type="smallBold">{t.auth.close}</ThemedText>
+        </Pressable>}
       </ScrollView>
       </KeyboardAvoidingView>
       </SafeAreaView>
@@ -279,59 +219,24 @@ const styles = StyleSheet.create({
   adminGoogle: { minHeight: 52, borderWidth: 1, borderColor: Colors.dark.line, borderRadius: 999, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
   adminFooter: { gap: Spacing.two }, adminNote: { textAlign: 'center' },
   adminLegalLinks: { justifyContent: 'center', flexWrap: 'wrap' }, adminClose: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  wrap: {
-    flex: 1,
-  },
-  center: {
-    flexGrow: 1,
-    width: '100%',
-    maxWidth: 440,
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingHorizontal: Spacing.five,
-    paddingVertical: Spacing.four,
-    gap: Spacing.two,
-  },
-  brandLogo: { width: 180, height: 80 },
-  ambientArt: { position: 'absolute', top: 84, right: -118, width: 510, height: 340, opacity: 0.16 },
-  welcomeGlass: { alignSelf: 'stretch', borderRadius: 24, marginBottom: Spacing.two },
-  welcomeContent: { alignItems: 'center', paddingHorizontal: Spacing.three, paddingVertical: Spacing.three, gap: Spacing.one },
-  welcomeLine: { minHeight: 34, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  tagline: {
-    textAlign: 'center',
-    maxWidth: 280,
-  },
-  actions: {
-    alignSelf: 'stretch',
-    gap: Spacing.two,
-  },
-  socialGlass: { alignSelf: 'stretch', borderRadius: 999, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 4 },
-  btn: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    borderRadius: 999,
-    paddingVertical: 15,
-  },
-  appleButton: { width: '100%', height: 50 },
-  appleInset: { padding: 3 },
-  googleButton: { flexDirection: 'row', justifyContent: 'center', gap: 12, paddingHorizontal: 16, minHeight: 50 },
-  googleIcon: { width: 20, height: 20 },
-  googleText: { fontSize: 16, flexShrink: 1 },
-  error: { textAlign: 'center', fontSize: 12 },
-  note: {
-    textAlign: 'center',
-    fontSize: 12,
-    marginTop: Spacing.two,
-    maxWidth: 280,
-  },
-  legalLink: { minHeight: 44, justifyContent: 'center' },
-  legalLinks: { flexDirection: 'row', gap: Spacing.three },
-  close: {
-    marginTop: Spacing.four,
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.four,
-  },
+  wrap: { flex: 1 },
+  center: { flexGrow: 1, width: '100%', maxWidth: 440, alignSelf: 'center', paddingHorizontal: Spacing.four, paddingVertical: 12 },
+  brandRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three },
+  brandLogo: { width: 112, height: 40 },
+  hero: { flexGrow: 1, justifyContent: 'center', gap: 18, paddingTop: Spacing.four, paddingBottom: Spacing.five },
+  heroTitle: { fontSize: 34, lineHeight: 42, fontWeight: '700', letterSpacing: -1.3 },
+  tagline: { fontSize: 15, lineHeight: 24, fontWeight: '400' },
+  authArea: { alignSelf: 'stretch' }, actions: { alignSelf: 'stretch', gap: 12 },
+  socialButton: { minHeight: 56, borderWidth: 1, borderRadius: 12, paddingHorizontal: Spacing.three, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  kakaoButton: { backgroundColor: '#FEE500', borderColor: '#FEE500' }, kakaoText: { fontSize: 16, lineHeight: 24, color: '#191919' },
+  appleButton: { width: '100%', height: 56, borderWidth: 1, borderColor: '#777780', borderRadius: 12 },
+  googleIcon: { width: 20, height: 20 }, googleText: { fontSize: 16, flexShrink: 1 },
+  errorBox: { borderLeftWidth: 2, paddingLeft: 12, marginBottom: Spacing.three }, error: { fontSize: 13, lineHeight: 20 },
+  note: { textAlign: 'center', fontSize: 12, lineHeight: 19 },
+  signupNote: { textAlign: 'center', fontSize: 12, lineHeight: 19, fontWeight: '400', marginTop: Spacing.three, marginBottom: 6 },
+  legalLink: { minHeight: 44, justifyContent: 'center' }, legalCopy: { fontSize: 11.5, lineHeight: 18, fontWeight: '400' },
+  legalLinks: { flexDirection: 'row', gap: Spacing.three, justifyContent: 'center', flexWrap: 'wrap' },
+  close: { minHeight: 48, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', paddingHorizontal: Spacing.three },
   devGlass: { marginTop: Spacing.two, alignSelf: 'stretch', borderRadius: 18 },
   devBox: { padding: Spacing.three, gap: Spacing.two },
   devInput: { minHeight: 44, paddingHorizontal: Spacing.three, borderWidth: 1, borderRadius: 8, backgroundColor: 'rgba(11,11,18,0.46)' },

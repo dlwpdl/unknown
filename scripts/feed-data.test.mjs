@@ -15,6 +15,8 @@ test('프로필 화면은 작성자 글 RPC에 작성자와 커서를 넘기고 
   const client = {
     rpc(name, params) {
       calls.push({ name, params });
+      if (name === 'get_public_post_businesses') return Promise.resolve({ data: [], error: null });
+      assert.equal(name, 'get_public_author_posts');
       const request = Promise.resolve({
         error: null,
         data: [{
@@ -33,7 +35,7 @@ test('프로필 화면은 작성자 글 RPC에 작성자와 커서를 넘기고 
 
   const posts = await loadAuthorPosts(client, 'author-1', { createdAt: '2026-09-25T00:00:00Z', id: 'post-9' }, { viewerScope: 'viewer' });
 
-  assert.equal(calls.length, 1);
+  assert.equal(calls.length, 2);
   assert.equal(calls[0].name, 'get_public_author_posts');
   assert.deepEqual(calls[0].params, {
     p_author_id: 'author-1',
@@ -41,6 +43,7 @@ test('프로필 화면은 작성자 글 RPC에 작성자와 커서를 넘기고 
     p_before_id: 'post-9',
     p_limit: 30,
   });
+  assert.deepEqual(calls[1], { name: 'get_public_post_businesses', params: { p_post_ids: ['post-1'] } });
   assert.equal(posts[0].author.nickname, '두바퀴메이플');
   assert.equal(posts[0].views, 12);
 });
