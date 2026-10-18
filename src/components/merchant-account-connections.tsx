@@ -45,12 +45,12 @@ export function MerchantAccountEntry() {
       try { const next = await loadMyMerchantConnections(supabase, me.id); if (active && request === serial.current) setResponse(next); }
       catch { if (active && request === serial.current) setResponse(null); }
     };
-    if (isAuthed) void check();
-    const listener = AppState.addEventListener('change', state => { if (state === 'active' && isAuthed) void check(); });
+    if (isAuthed && !isAdmin) void check();
+    const listener = AppState.addEventListener('change', state => { if (state === 'active' && isAuthed && !isAdmin) void check(); });
     return () => { active = false; serial.current++; listener.remove(); };
-  }, [isAuthed, me.id]));
+  }, [isAuthed, isAdmin, me.id]));
   const data = response?.user_id === me.id ? response : null;
-  if (!isAuthed || (!isAdmin && !data?.merchants.length && !data?.invitations.length)) return null;
+  if (!isAuthed || isAdmin || (!data?.merchants.length && !data?.invitations.length)) return null;
   async function open() {
     if (opening.current) return;
     opening.current = true; setBusy(true); play('selection');
@@ -60,8 +60,8 @@ export function MerchantAccountEntry() {
       if (current.current !== me.id || serial.current !== request) return;
       setResponse(next);
       if (next.merchants.length === 1 && next.merchants[0].role !== 'admin') router.push({ pathname: '/profile/merchant', params: { merchant: next.merchants[0].id, tab: 'drafts' } });
-      else if (next.merchants.length || next.invitations.length || isAdmin) router.push('/profile/merchant');
-    } catch { if (current.current === me.id) { setResponse(null); if (isAdmin) router.push('/profile/merchant'); else play('warning'); } }
+      else if (next.merchants.length || next.invitations.length) router.push('/profile/merchant');
+    } catch { if (current.current === me.id) { setResponse(null); play('warning'); } }
     finally { opening.current = false; if (current.current === me.id) setBusy(false); }
   }
   const invitationOnly = !data?.merchants.length && !!data?.invitations.length;
