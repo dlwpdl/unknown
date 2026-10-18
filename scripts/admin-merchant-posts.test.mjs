@@ -59,7 +59,7 @@ test('expanding a linked post shows its actual author, photos and body without d
   assert.ok(all.findIndex(node => node.type === 'summary') < all.findIndex(node => node.type === 'img'));
   assert.ok(view.feedback.includes('selection'));
   view.props({ ownerId: 'delegate' });
-  assert.match(text(view.render()), /업체 계정 작성/);
+  assert.match(text(view.render()), /비즈니스 계정 작성/);
 });
 
 test('unavailable posts stay unavailable, while a failed read can be retried', async () => {

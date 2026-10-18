@@ -1,5 +1,14 @@
 # 글링 Supabase 백엔드 작업
 
+## 다음 배포 대기 — 알림 개선 2026-10-17
+
+- [x] 선택 도시 추천, 행사 중복 방지·문구 다양화, 인기글 실제 제목·본문과 중복 제목 제거를 구현하고 서버 387개·앱/푸시 62개 검사를 통과했다. [구현·검증 기록](notification-quality-2026-10-17.md).
+- [ ] 다음 배포 SHA에 이 변경을 포함하고 DB 마이그레이션과 `push-notifications` Edge Function을 함께 적용·재조회한다. [배포 체크리스트](../docs/deployment.md)를 따르며 기존 배포 보류를 유지한다.
+
+## 다음 배포 대기 — PR 보완 2026-10-17
+
+- [ ] [업체 화면·공유 링크 보완 묶음](pr-consolidation-2026-10-17.md)을 최종 배포 SHA에 포함한다. 기존 미리보기 서버와 `share-redirect.js`의 짧은 링크 지원을 먼저 확인하고 새 클라이언트를 공개한다. 업체 원고 보존·권한 상실 회귀 검사를 유지하며 배포 보류와 구버전 제공 기준을 지킨다.
+
 ## iOS release preparation — 2026-09-06
 
 - [x] Dependency and backend checks

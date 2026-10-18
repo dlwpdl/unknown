@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { attachSignedPostImages, mapPublicFeed, type PublicFeedRow } from './feed-data.ts';
+import { hydratePublicPosts, mapPublicFeed, type PublicFeedRow } from './feed-data.ts';
 import type { Post } from './types.ts';
 import { safeMerchantSourceUrl } from './merchant-source.ts';
 
@@ -70,7 +70,7 @@ export async function loadMerchantProfilePosts(client: SupabaseClient, merchantI
   if (page.merchant_id !== merchantId || page.kind !== kind || !Number.isSafeInteger(page.post_count) || page.post_count < 0
     || !Number.isSafeInteger(page.job_count) || page.job_count < 0 || typeof page.has_more !== 'boolean' || !Array.isArray(page.posts)
     || page.posts.length > 20 || page.posts.some((row: PublicFeedRow) => !row || !UUID.test(row.id) || (row.tag_slug === 'jobs') !== (kind === 'jobs'))) throw new Error('MERCHANT_POSTS_READ_FAILED');
-  const posts = await attachSignedPostImages(client, mapPublicFeed(page.posts, []), viewerScope);
+  const posts = await hydratePublicPosts(client, mapPublicFeed(page.posts, []), viewerScope);
   return { merchant_id: merchantId, kind, post_count: page.post_count, job_count: page.job_count, posts,
     has_more: page.has_more && posts.length > 0, nextOffset: offset + page.posts.length };
 }

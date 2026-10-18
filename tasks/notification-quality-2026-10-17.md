@@ -1,0 +1,20 @@
+# Selected-city notification quality and varied copy
+
+Owner approval: “추천안대로 진행해 … 알람 멘트도 … 다양하게”. The accepted diagnosis/recommendation is in unknown/output/reviews/gling-notification-diagnosis-2026-10-17. This is a bounded change to existing DB selectors/formatters, not a new notification system.
+
+Keep current selected-city gates, device-local09:00–19:30 eight slots, aggregate eight/day limit, consent, real-activity rules, leases/retries and personal message/reply/meetup/security notifications. Good content is required; slots are not quotas. Do not change schedules, services, native versions, minimum versions, release holds or production settings.
+
+Implement in one additive migration plus meaningful transaction-only SQL regression tests:
+1. Persist a server-derived same-city/name/venue/local-date event identity, retain exact event IDs/routes, and deduplicate creation and pre-send claims. Missing venue/date falls back to exact IDs rather than merging unrelated events.
+2. Prioritize useful local festival/food/place posts and timely verified events, using each recipient device clock for relevance; generic inventory and hashtag-only notices must not fill empty slots. Keep personal alerts and inbox topics.
+3. Curated Korean event/place guidance varies by recipient history; do not repeat the most recent opening. Store the choice at insertion and reuse it during delivery/retries while refreshing source facts. Owner follow-up explicitly preserves popular/post recommendations as actual title + actual body preview, with a repeated title header removed from the preview; do not prepend generic rotating copy to a post preview or invent replacement facts when no unique body remains. Remove the superseded universal “같이 갈 사람!?” event ending.
+
+Sources: supabase/migrations and tests; existing push worker remains its caller. No new dependency or paid call. SQL helpers stay private with empty search_path and least privilege. Local Docker PostgreSQL only, jobs disabled; no production fixtures or test pushes.
+
+Verification: run new SQL tests on the old code and observe relevant failures; apply migration in a local transaction and run new tests plus affected recommendation/city/push/festival/message/security suites; inspect SQL source and privilege changes; run `node --test scripts/push-delivery.test.mjs scripts/festival-notifications.test.mjs scripts/notification-preferences.test.mjs scripts/notification-city-cache.test.mjs`. Preserve the unrelated dirty admin changes in this shared checkout.
+
+Scope explicitly excludes a new reminder-subscription UI or inferred event dates/deadlines. Future saved-event reminders need an explicit existing subscription path and are not fabricated from descriptions. Operational rollout remains on the owner’s deployment hold; prepare reviewable source/test evidence only.
+
+Verified on 2026-10-17: 387 assertions across 11 local PostgreSQL suites and 62 Node checks passed, plus scoped ESLint and whitespace checks. The 27 quality assertions cover provider cache eviction, different event days/venues, real legacy NULL-key queues, and one notification reaching two devices. Independent source review found a recoverable legacy-key gap; the failing regression and claim-time correction now pass. Existing post/festival fixtures were isolated from seed rankings and given valid device timezones so content/privacy tests exercise real pending sends; the cadence suite still checks the actual clock.
+
+Evidence: [final verification](/Users/ash/Desktop/Git/unknown/output/reviews/gling-notification-improvement-2026-10-17/verification.json). Source is prepared, with no production application, test push, native release, minimum-version change, or outcome claim. The 2026-10-15 owner deployment hold remains recorded in `/Users/ash/Desktop/Git/automation-coordination.md`. Missing historical source/venue cannot establish semantic identity and retains exact-ID fallback. Representative production-volume performance and actual handset receipt remain unverified.

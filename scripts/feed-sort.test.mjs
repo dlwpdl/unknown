@@ -15,7 +15,7 @@ function client(result = { data: [row], error: null }) {
   const calls = [];
   return { calls, rpc(name, params) {
     const call = { name, params }; calls.push(call);
-    const request = Promise.resolve(result);
+    const request = Promise.resolve(name === 'get_public_post_businesses' ? { data: [], error: null } : result);
     request.abortSignal = signal => { call.signal = signal; return request; };
     return request;
   } };

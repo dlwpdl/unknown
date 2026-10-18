@@ -67,7 +67,7 @@ test('an existing merchant error follows language changes without retrying the p
     auth: authed(), language: () => language, rpc: async () => { requests++; return false; },
   });
   const props = { merchantId: 'merchant', posts: [{ post_id: 'post', title: '원래 제목' }] };
-  const message = '글을 열지 못했어요. 현재 계정의 업체 권한과 연결 상태를 확인해 주세요.';
+  const message = '글을 열지 못했어요. 현재 계정의 비즈니스 권한과 연결 상태를 확인해 주세요.';
   const text = () => nodes(manager.render(props)).find(node => node.props?.accessibilityRole === 'alert')?.props.children;
   await nodes(manager.render(props)).find(node => node.props?.analyticsId === 'merchant-web.post.open').props.onPress();
   assert.equal(text(), translateUi('en', message));
@@ -80,7 +80,7 @@ test('merchant web cannot mount management when current server access is false',
   const auth = authed(), screen = component('../src/merchant-web/index.tsx', 'default', { auth, rpc: async () => false });
   screen.render(); await screen.effect();
   assert.ok(!nodes(screen.render()).some(n => n.type === 'MerchantWorkspace'));
-  assert.ok(nodes(screen.render()).some(n => n.props?.children === '업체 관리 권한이 필요해요'));
+  assert.ok(nodes(screen.render()).some(n => n.props?.children === '비즈니스 관리 권한이 필요해요'));
 });
 test('merchant web access belongs to one account and does not carry across account switches', async () => {
   const auth = authed(), screen = component('../src/merchant-web/index.tsx', 'default', { auth, rpc: async () => true });

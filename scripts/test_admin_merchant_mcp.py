@@ -29,6 +29,14 @@ class MerchantProfileToolsTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(rpc.call_args.args[1]['p_services'], '커피')
             self.assertEqual(rpc.call_args.args[1]['p_address'], '')
 
+    def test_creator_vendor_link_preserves_date_and_current_revision(self):
+        from datetime import date
+        with patch.object(tools, 'rpc', return_value=str(self.values['id'])) as rpc:
+            tools.link_creator_vendor(self.values['id'], self.values['id'], date(2026, 10, 17), '2026-10-17T22:00:00.123456Z')
+            self.assertEqual(rpc.call_args.args[0], 'link_admin_creator_deal_merchant')
+            self.assertEqual(rpc.call_args.args[1]['p_collaboration_on'], '2026-10-17')
+            self.assertEqual(rpc.call_args.args[1]['p_expected_updated_at'], '2026-10-17T22:00:00.123456Z')
+
     async def test_registered_tool_rejects_oversized_details_before_rpc(self):
         for field, limit in [('industry', 80), ('services', 1500), ('address', 300)]:
             values = {**self.values, 'id': str(self.values['id']), field: '가' * (limit + 1)}

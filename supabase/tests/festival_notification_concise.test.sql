@@ -7,7 +7,7 @@ select is(private.festival_notification_body('{
   "description":"EARLY FUTURE CLUB SESSION 7 -- OCTOBER SOULS Calling all goons, goblins, and glorious goddesses. The EFC Halloween Session is here -- and we are taking over VILLAGE STUDIOS to kick off the season.",
   "venue":"Village Studios ","startsAt":"2026-10-25T02:00:00Z"
 }','vancouver'),
- '할로윈 행사예요. 10월 24일, Village Studios에서 열려요. 같이 갈 사람!?',
+ '할로윈 행사예요. 10월 24일, Village Studios에서 열려요.',
  'Halloween alerts explain the event briefly without repeating the English promotion');
 
 select is(private.festival_notification_body('{
@@ -15,14 +15,14 @@ select is(private.festival_notification_body('{
   "description":"Legal Age 19+ (Valid Photo I.D. Required)Independent Trucks Vancouver Trip video featuring Pedro Delfino, Jhankcarlos González, Kieran Wooley, Greyson Fletcher, Roman Pabich, Ryan Decenzo, Spencer Hamilton, Sasha Daley, Ethan Loy and Tj Rogers.",
   "venue":"The Pearl","startsAt":"2026-10-18T02:00:00Z"
 }','vancouver'),
- '영상 소개 행사예요. 10월 17일, The Pearl에서 열려요. 같이 갈 사람!?',
+ '영상 소개 행사예요. 10월 17일, The Pearl에서 열려요.',
  'admission abbreviations cannot leave Required) fragments or a long participant list');
 
 select is(private.festival_notification_body('{
   "description":"야외 무대에서 밴드 공연과 공개 잼 세션이 열려요. 자세한 출연진과 시간표는 행사 페이지를 확인해 주세요. No refunds or exchanges permitted.",
   "segment":"Music","genre":"Rock"
 }','vancouver'),
- '야외 무대에서 밴드 공연과 공개 잼 세션이 열려요. 같이 갈 사람!?',
+ '야외 무대에서 밴드 공연과 공개 잼 세션이 열려요.',
  'one useful Korean sentence is enough for the notification');
 
 select ok(char_length(private.festival_notification_body(jsonb_build_object(

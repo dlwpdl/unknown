@@ -58,8 +58,8 @@ export default function MembershipScreen() {
       if (!active) return;
       setMerchants({ userId: auth.me.id, values });
       setMerchantId((previous) => values.some((item) => item.id === previous) ? previous : values.find((item) => item.id === membership?.businessSubscription?.merchantId)?.id ?? values.find((item) => item.role === 'owner')?.id ?? values[0]?.id ?? null);
-      setBusinessError(values.length ? null : '연결된 업체가 없어요. 업체 소유 확인 후 구독할 수 있어요.');
-    }).catch(() => { if (active) setBusinessError('업체 연결과 소유 확인이 필요해요. 결제는 진행되지 않아요.'); });
+      setBusinessError(values.length ? null : '연결된 비즈니스가 없어요. 비즈니스 소유 확인 후 구독할 수 있어요.');
+    }).catch(() => { if (active) setBusinessError('비즈니스 연결과 소유 확인이 필요해요. 결제는 진행되지 않아요.'); });
     return () => { active = false; };
   }, [auth.isAuthed, auth.me.id, kind, membership?.businessSubscription?.merchantId]);
   useEffect(() => {
@@ -67,9 +67,9 @@ export default function MembershipScreen() {
     let active = true;
     void Promise.resolve(supabase.rpc('get_business_membership', { p_merchant_id: merchantId })).then(({ data, error }) => {
       if (!active) return;
-      if (error || !data || data.merchantId !== merchantId) { setBusinessError('업체 멤버십을 확인하지 못했어요. 잠시 후 다시 확인해 주세요.'); return; }
+      if (error || !data || data.merchantId !== merchantId) { setBusinessError('비즈니스 멤버십을 확인하지 못했어요. 잠시 후 다시 확인해 주세요.'); return; }
       setBusiness({ userId: auth.me.id, value: data as BusinessMembershipSnapshot }); setBusinessError(null);
-    }).catch(() => { if (active) setBusinessError('업체 멤버십을 확인하지 못했어요. 잠시 후 다시 확인해 주세요.'); });
+    }).catch(() => { if (active) setBusinessError('비즈니스 멤버십을 확인하지 못했어요. 잠시 후 다시 확인해 주세요.'); });
     return () => { active = false; };
   }, [auth.isAuthed, auth.me.id, kind, merchantId, membership]);
   const [rulesExpanded, setRulesExpanded] = useState(false);
@@ -122,14 +122,14 @@ export default function MembershipScreen() {
               onPress={() => { play('selection'); animateLayout(); setKind(value); }} style={({ pressed }) => [styles.period, { backgroundColor: kind === value ? theme.backgroundElement : 'transparent', opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold">{label}</ThemedText></Pressable>)}
           </View>
           {kind === 'business' && <View style={styles.detailContent}>
-            <ThemedText type="small" themeColor="textSecondary">{tr("업체별로 글링 안의 홍보글을 관리해요. 개인 멤버십과 별도예요.")}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{tr("비즈니스별로 글링 안의 홍보글을 관리해요. 개인 멤버십과 별도예요.")}</ThemedText>
             {companies.map((company) => <Pressable analyticsId="membership.business.select" key={company.id} accessibilityRole="radio" accessibilityState={{ selected: merchantId === company.id, checked: merchantId === company.id, disabled: busy }} disabled={busy}
               onPress={() => { play('selection'); setMerchantId(company.id); }} style={({ pressed }) => [styles.row, { borderWidth: 1, borderRadius: 12, borderColor: merchantId === company.id ? theme.accent : theme.line, opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold">{company.name}</ThemedText></Pressable>)}
             {businessError && <ThemedText type="small" accessibilityRole="alert">{businessError}</ThemedText>}
-            {business && !business.canPurchase && <ThemedText type="small">{tr("확인된 업체 소유자만 구독을 연결할 수 있어요.")}</ThemedText>}
-            {otherBusiness && <ThemedText type="small">{tr("결제 연결은 다른 업체에 묶여 있어요. 해당 업체를 선택해 주세요.")}</ThemedText>}
+            {business && !business.canPurchase && <ThemedText type="small">{tr("확인된 비즈니스 소유자만 구독을 연결할 수 있어요.")}</ThemedText>}
+            {otherBusiness && <ThemedText type="small">{tr("결제 연결은 다른 비즈니스에 묶여 있어요. 해당 비즈니스를 선택해 주세요.")}</ThemedText>}
             {business?.canPurchase && membership?.businessSubscription?.tier !== 'free' && membership?.businessSubscription && !membership.businessSubscription.merchantId && <Pressable analyticsId="membership.business.bind" accessibilityRole="button" disabled={busy || loading} style={styles.textButton}
-              onPress={() => { play('selection'); void supabase.rpc('bind_business_membership', { p_merchant_id: merchantId }).then(({ error }) => { if (error) setBusinessError('현재 계정의 업체 소유 확인을 다시 확인해 주세요.'); else void refresh(); }); }}><ThemedText type="smallBold" themeColor="accent">{tr("기존 구독을 이 업체에 연결")}</ThemedText></Pressable>}
+              onPress={() => { play('selection'); void supabase.rpc('bind_business_membership', { p_merchant_id: merchantId }).then(({ error }) => { if (error) setBusinessError('현재 계정의 비즈니스 소유 확인을 다시 확인해 주세요.'); else void refresh(); }); }}><ThemedText type="smallBold" themeColor="accent">{tr("기존 구독을 이 비즈니스에 연결")}</ThemedText></Pressable>}
           </View>}
           <View style={[styles.card, Depth.card, { borderColor: theme.line, backgroundColor: theme.card }]}>
             <View style={styles.row}>
@@ -194,7 +194,7 @@ export default function MembershipScreen() {
           <MeetupPolicyNotice mode="join" />
           <MeetupPolicyNotice mode="once" />
           </> : <View style={styles.detailContent}>
-            <SectionHead title={tr("이번 달 사용")} note={business ? tr("{0} 초기화", (new Date(business.resetsAt).toLocaleDateString(appLocale))) : tr("업체별 합산")} />
+            <SectionHead title={tr("이번 달 사용")} note={business ? tr("{0} 초기화", (new Date(business.resetsAt).toLocaleDateString(appLocale))) : tr("비즈니스별 합산")} />
             {business && <ThemedText>{tr("신규") + " "}{business.postsUsed} / {business.postLimit ?? tr("기존 약정 유지")}{tr("편 · 끌어올리기") + " "}{business.bumpsUsed} / {business.bumpLimit}{tr("회")}</ThemedText>}
             {business?.tier === 'premium' && <ThemedText type="small">{tr("운영대행 사용: 신규") + " "}{business.managedPostsUsed}{tr("/4편 · 끌어올리기") + " "}{business.managedBumpsUsed}{tr("/8회 · 보고서") + " "}{business.reportsUsed}{tr("/1회")}</ThemedText>}
             <ThemedText type="small" themeColor="textSecondary">{tr("같은 내용은 새 글로 다시 올릴 수 없어요. 기존 글을 수정하거나 끌어올려 주세요. 같은 글은 플러스 72시간·프로 60시간·프리미엄 48시간 간격이에요. 비즈니스 전체는 24시간 간격을 지켜 주세요.")}</ThemedText>

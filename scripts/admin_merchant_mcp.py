@@ -1,6 +1,7 @@
 """MFA-bound merchant tools. No admin password, SQL or service-role key is exposed."""
 import json
 import os
+from datetime import date
 from typing import Annotated, Literal
 from uuid import UUID
 import subprocess
@@ -162,5 +163,28 @@ def publish_workspace_draft(merchant_id: UUID, draft_id: UUID, expected_updated_
 def record_external_post(merchant_id: UUID, draft_id: UUID, url: str, expected_updated_at: str) -> dict:
     """Record the actual approved café post's public URL supplied by its owner. Does not publish, sign up, verify reach or execute external website actions."""
     return {'draft_id': rpc('record_merchant_external_post', arguments(merchant_id=merchant_id, draft_id=draft_id, url=url, expected_updated_at=expected_updated_at))}
+
+@mcp.tool(annotations=READ)
+def list_creator_agreements(search: Annotated[str, Field(max_length=200)] = '', creator_id: UUID | None = None,
+                            offset: Annotated[int, Field(ge=0, le=10000)] = 0, history_offset: Annotated[int, Field(ge=0, le=10000)] = 0) -> dict:
+    """Read creators and their dated agreement costs. Terms and meal limits do not prove payment, a visit or publication."""
+    return rpc('get_admin_creator_directory', arguments(search=search, id=creator_id, offset=offset, child_offset=history_offset, sort='date_desc', currency='CAD'))
+
+@mcp.tool(annotations=READ)
+def get_creator_agreement(id: UUID) -> dict:
+    """Read the exact existing agreement, including its vendor, collaboration date and current revision."""
+    return rpc('get_admin_creator_deal', arguments(id=id))
+
+@mcp.tool(annotations=READ)
+def list_vendor_creator_agreements(merchant_id: UUID, offset: Annotated[int, Field(ge=0, le=10000)] = 0) -> dict:
+    """Read the same creator agreement records from the vendor side, 50 per page."""
+    return rpc('get_admin_merchant_creator_deals', arguments(merchant_id=merchant_id, offset=offset))
+
+@mcp.tool(annotations=WRITE)
+def link_creator_vendor(id: UUID, merchant_id: UUID, collaboration_on: date | None,
+                        expected_updated_at: Annotated[str, Field(min_length=1, max_length=80)]) -> dict:
+    """Link a reviewed existing agreement to the actual vendor and known/planned date using its current revision. Never invent a second agreement or claim completion/payment. Read back the same ID after an uncertain result before retrying."""
+    return {'agreement_id': rpc('link_admin_creator_deal_merchant', arguments(id=id, merchant_id=merchant_id,
+        collaboration_on=collaboration_on.isoformat() if collaboration_on else None, expected_updated_at=expected_updated_at))}
 
 if __name__ == '__main__': mcp.run(transport='stdio')

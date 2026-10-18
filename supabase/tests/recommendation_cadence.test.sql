@@ -90,8 +90,8 @@ select is((select count(*)::integer from public.notifications where kind='trendi
  and user_id in ('13900000-0000-0000-0000-000000000002','13900000-0000-0000-0000-000000000003')),2,
  'the real topic producer retains both device-zone recipients');
 select is((select count(distinct n.user_id)::integer from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id
- where n.kind='trending_hashtag' and n.user_id in ('13900000-0000-0000-0000-000000000002','13900000-0000-0000-0000-000000000003')),2,
- 'both cohorts have durable delivery work before the city-wide marker is consumed');
+ where n.kind='trending_hashtag' and n.user_id in ('13900000-0000-0000-0000-000000000002','13900000-0000-0000-0000-000000000003')),0,
+ 'topic inbox history does not interrupt either timezone cohort with a push');
 select public.send_trending_topic_notifications();
 select is((select count(*)::integer from public.notifications where kind='trending_hashtag'
  and user_id in ('13900000-0000-0000-0000-000000000002','13900000-0000-0000-0000-000000000003')),2,'repeating the topic producer does not duplicate either cohort');

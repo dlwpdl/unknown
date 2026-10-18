@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 
 import { loadMerchants } from '@/lib/admin-merchants';
 import {
-  creatorPlatformName, creatorProfiles, amountToCents, actBenefitCoupon, issueBenefitCoupon, loadPartnerships, savePartnership, partnershipError,
+  creatorPlatformName, creatorProfiles, amountToCents, actBenefitCoupon, issueBenefitCoupon, loadPartnerships, savePartnership, partnershipError, recordCreatorDeal, linkCreatorDealMerchant, loadCreatorDeal,
   BENEFIT_STATUSES, CAMPAIGN_STATUSES, CREATOR_STATUSES, PARTICIPATION_STAGES, PAYMENT_STATUSES,
-  type Benefit, type BenefitCoupon, type Creator, type CreatorProfile, type PartnershipKind,
+  type Benefit, type BenefitCoupon, type Creator, type CreatorDeal, type CreatorProfile, type PartnershipKind,
 } from '@/lib/admin-partnerships';
 import { searchAdminUsers } from '@/lib/admin-user-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -40,7 +40,7 @@ function useSave(callbacks: Callbacks) {
   return { error, busy, acknowledged, save };
 }
 
-function EntityPicker({ type, value, label, selectedLabel, onPick, disabled, optional = false, locked = false }: {
+export function EntityPicker({ type, value, label, selectedLabel, onPick, disabled, optional = false, locked = false }: {
   type: PickKind; value: string; label: string; selectedLabel: string; onPick: (id: string | null, name: string) => void;
   disabled?: boolean; optional?: boolean; locked?: boolean;
 }) {
@@ -142,8 +142,8 @@ export function PartnershipEditor({ state, ...callbacks }: { state: PartnershipE
       && !window.confirm('실제로 지급한 지원금의 확인 기록을 저장할까요? 송금은 실행되지 않습니다.')) throw new Error('PARTNERSHIP_STAGE');
     return savePartnership(supabase, state.kind, record, state.revision);
   }
-  const merchantPicker = <EntityPicker type="merchant" value={value('merchant_id')} selectedLabel={value('merchant_name')} label="업체" locked={Boolean(state.revision)} disabled={action.busy} onPick={(next, name) => pick('merchant_id', 'merchant_name', next, name)} />;
-  const terms = <><label>제공 조건·확인할 내용<textarea value={value('terms')} maxLength={3000} required={Boolean(data.terms_confirmed)} onChange={(event) => change('terms', event.target.value)} /></label><label className="partnership-check"><input type="checkbox" checked={Boolean(data.terms_confirmed)} onChange={(event) => { play('selection'); change('terms_confirmed', event.target.checked); }} />업체와 대상·제공 조건·기한을 확인했습니다.</label></>;
+  const merchantPicker = <EntityPicker type="merchant" value={value('merchant_id')} selectedLabel={value('merchant_name')} label="비즈니스" locked={Boolean(state.revision)} disabled={action.busy} onPick={(next, name) => pick('merchant_id', 'merchant_name', next, name)} />;
+  const terms = <><label>제공 조건·확인할 내용<textarea value={value('terms')} maxLength={3000} required={Boolean(data.terms_confirmed)} onChange={(event) => change('terms', event.target.value)} /></label><label className="partnership-check"><input type="checkbox" checked={Boolean(data.terms_confirmed)} onChange={(event) => { play('selection'); change('terms_confirmed', event.target.checked); }} />비즈니스와 대상·제공 조건·기한을 확인했습니다.</label></>;
   return <form className="partnership-form" onSubmit={(event) => { event.preventDefault(); void action.save(submit); }}>
     {action.error && <p role="alert" className="partnership-form-error">{action.error}</p>}
     <fieldset disabled={action.busy || action.acknowledged} className="partnership-form">
@@ -181,6 +181,61 @@ export function PartnershipEditor({ state, ...callbacks }: { state: PartnershipE
     </fieldset>
     {action.acknowledged && <p className="partnership-muted">저장 요청을 다시 보내지 않고, 저장된 내용만 조회합니다.</p>}
     <div className="partnership-form-actions"><button type="button" disabled={action.busy} onClick={callbacks.onCancel}>돌아가기</button><button type="submit" className="partnership-primary" disabled={action.busy}>{action.busy ? action.acknowledged ? '내용 확인 중…' : '저장 중…' : action.acknowledged ? '저장 내용 다시 확인' : '저장'}</button></div>
+  </form>;
+}
+
+export function CreatorDealForm({ requestId, creator, initialCurrency = 'CAD', initialMerchant, ...callbacks }: { requestId: string; creator: Creator; initialCurrency?: 'CAD' | 'USD'; initialMerchant?: { id: string; name: string } } & Callbacks) {
+  const { play } = useInteractionFeedback();
+  const [data, setData] = useState({ agreed_on: new Date().toLocaleDateString('sv-SE'), collaboration_on: '', adFee: '', mealSupport: '', deliverables: '', source_url: '', notes: '' });
+  const [currency, setCurrency] = useState<'CAD' | 'USD'>(initialCurrency);
+  const [merchant, setMerchant] = useState<{ id: string | null; name: string }>(initialMerchant ?? { id: null, name: '' });
+  const action = useSave(callbacks);
+  const change = (field: keyof typeof data, value: string) => { setData(current => ({ ...current, [field]: value })); callbacks.onDirty(true); };
+  return <form className="partnership-form" onSubmit={event => { event.preventDefault(); void action.save(() => recordCreatorDeal(supabase, {
+    id: requestId, creator_id: creator.id, merchant_id: merchant.id, agreed_on: data.agreed_on, collaboration_on: data.collaboration_on || null, currency,
+    ad_fee_cents: amountToCents(data.adFee), meal_support_cents: amountToCents(data.mealSupport),
+    deliverables: data.deliverables.trim(), source_url: data.source_url.trim(), notes: data.notes.trim(),
+  })); }}>
+    {action.error && <p role="alert" className="partnership-form-error">{action.error}</p>}
+    <p className="partnership-muted">{creator.display_name}의 합의 조건을 새 이력으로 남깁니다. 이전 기록은 보존됩니다.</p>
+    <fieldset className="partnership-form" disabled={action.busy || action.acknowledged}>
+      <EntityPicker type="merchant" value={merchant.id ?? ''} selectedLabel={merchant.name} label="협업 비즈니스" optional={!initialMerchant} locked={Boolean(initialMerchant)} disabled={action.busy} onPick={(id, name) => { setMerchant({ id, name }); callbacks.onDirty(true); }} />
+      <div className="partnership-form-grid">
+        <label>합의 날짜<input type="date" required min="1900-01-01" value={data.agreed_on} onFocus={() => play('selection')} onChange={event => change('agreed_on', event.target.value)} /></label>
+        <label>협업 날짜 · 예정 포함<input type="date" min="1900-01-01" value={data.collaboration_on} onFocus={() => play('selection')} onChange={event => change('collaboration_on', event.target.value)} /></label>
+      </div><div className="partnership-form-grid creator-cost-inputs">
+        <label>통화<select value={currency} onChange={event => { const value = event.target.value; if (value === 'CAD' || value === 'USD') { play('selection'); setCurrency(value); callbacks.onDirty(true); } }}><option value="CAD">CAD</option><option value="USD">USD</option></select></label>
+        <label>광고비<input inputMode="decimal" maxLength={12} placeholder="없으면 0 · 모르면 비워 두세요" value={data.adFee} onFocus={() => play('selection')} onChange={event => change('adFee', event.target.value)} /></label>
+        <label>식사 지원 한도<input inputMode="decimal" maxLength={12} placeholder="예: 150.00" value={data.mealSupport} onFocus={() => play('selection')} onChange={event => change('mealSupport', event.target.value)} /></label>
+      </div>
+      <label>약속한 콘텐츠<input required maxLength={300} placeholder="예: 릴스 1개 · 지모코·글링 소개" value={data.deliverables} onFocus={() => play('selection')} onChange={event => change('deliverables', event.target.value)} /></label>
+      <label>합의 근거 링크 · 선택<input type="url" maxLength={2048} placeholder="DM·이메일·계약서 주소" value={data.source_url} onFocus={() => play('selection')} onChange={event => change('source_url', event.target.value)} /></label>
+      <label>조건·확인 근거<textarea required maxLength={3000} placeholder="상대 확답, 지원 범위, 초과 비용 부담, 확인한 날짜 등을 기록하세요." value={data.notes} onFocus={() => play('selection')} onChange={event => change('notes', event.target.value)} /></label>
+      <p className="partnership-muted">미확인 금액은 비워 두세요. 지원 한도와 합의 금액을 기록하며, 실제 지급·방문·게시 완료는 따로 확인합니다.</p>
+    </fieldset>
+    {action.acknowledged && <p className="partnership-muted">저장 요청을 다시 보내지 않고, 저장된 내용만 조회합니다.</p>}
+    <div className="partnership-form-actions"><button type="button" disabled={action.busy} onClick={callbacks.onCancel}>돌아가기</button><button type="submit" className="partnership-primary" disabled={action.busy}>{action.busy ? '저장 내용 확인 중…' : action.acknowledged ? '저장 내용 다시 확인' : '합의 조건 저장'}</button></div>
+  </form>;
+}
+
+export function CreatorDealMerchantForm({ deal, initialMerchant, ...callbacks }: { deal: CreatorDeal; initialMerchant?: { id: string; name: string } } & Callbacks) {
+  const { play } = useInteractionFeedback();
+  const [merchant, setMerchant] = useState<{ id: string | null; name: string }>(initialMerchant ?? { id: deal.merchant_id, name: deal.merchant_name ?? '' });
+  const [day, setDay] = useState(deal.collaboration_on ?? '');
+  const action = useSave({ ...callbacks, onSaved: async id => {
+    const saved = await loadCreatorDeal(supabase, id);
+    if (saved.creator_id !== deal.creator_id || saved.merchant_id !== merchant.id || (saved.collaboration_on ?? null) !== (day || null)) throw new Error('PARTNERSHIP_READBACK_REQUIRED');
+    await callbacks.onSaved(id);
+  } });
+  return <form className="partnership-form" onSubmit={event => { event.preventDefault(); void action.save(() => linkCreatorDealMerchant(supabase, deal.id, merchant.id ?? '', day || null, deal.updated_at ?? '')); }}>
+    {action.error && <p role="alert" className="partnership-form-error">{action.error}</p>}
+    <p className="partnership-muted">{deal.agreed_on} 합의 · {deal.deliverables}. 이 기록의 비즈니스와 협업 날짜를 연결합니다. 비용과 기존 합의 내용은 유지됩니다.</p>
+    <fieldset className="partnership-form" disabled={action.busy || action.acknowledged}>
+      <EntityPicker type="merchant" value={merchant.id ?? ''} selectedLabel={merchant.name} label="협업 비즈니스" locked={Boolean(initialMerchant)} disabled={action.busy || action.acknowledged} onPick={(id, name) => { setMerchant({ id, name }); callbacks.onDirty(true); }} />
+      <label>협업 날짜 · 예정 포함<input type="date" min="1900-01-01" value={day} onFocus={() => play('selection')} onChange={event => { setDay(event.target.value); callbacks.onDirty(true); }} /></label>
+      <p className="partnership-muted">확인한 날짜만 입력하세요. 예정일도 기록할 수 있으며, 날짜 연결이 실제 방문·지급·게시 완료를 뜻하지 않습니다.</p>
+    </fieldset>
+    <div className="partnership-form-actions"><button type="button" disabled={action.busy} onClick={callbacks.onCancel}>돌아가기</button><button type="submit" className="partnership-primary" disabled={action.busy || !merchant.id || !deal.updated_at}>{action.busy ? '저장 내용 확인 중…' : action.acknowledged ? '저장 내용 다시 확인' : '비즈니스·협업일 저장'}</button></div>
   </form>;
 }
 

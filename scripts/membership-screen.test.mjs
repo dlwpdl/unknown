@@ -81,7 +81,7 @@ test('membership keeps stories and direct chat free while preserving meetup and 
   assert.equal(nodes(render()).filter(node=>node.type==='RelationshipSlotCard').length,0);
   assert.equal(button(render(),'구독 준비 중').props.disabled,true,'unverified business cannot purchase');
   value.membership.businessSubscription = { tier:'free', merchantId:'bound-business' };
-  assert.match(text(render()), /결제 연결은 다른 업체에 묶여 있어요/, 'an expired or pending business binding must remain visible');
+  assert.match(text(render()), /결제 연결은 다른 비즈니스에 묶여 있어요/, 'an expired or pending business binding must remain visible');
   delete value.membership.businessSubscription;
   value.error = '업체 결제 확인 실패'; value.notice = '복원 확인 중'; value.pendingApproval = true;
   assert.match(text(render()), /업체 결제 확인 실패/);

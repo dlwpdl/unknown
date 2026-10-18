@@ -50,10 +50,10 @@ export default function MerchantWebIndex() {
   }
   const retry = () => { play('selection'); setAccess(null); setRevision(value => value + 1); };
   return <View style={[styles.page, { backgroundColor: theme.background }]}>
-    <Head><title>업체 관리 | gling</title><meta name="robots" content="noindex,nofollow" /></Head>
+    <Head><title>비즈니스 관리 | gling</title><meta name="robots" content="noindex,nofollow" /></Head>
     <View style={[styles.header, { borderColor: theme.line }]}>
       <View style={styles.headerContent}>
-        <View style={styles.brand}><Image source={require('@/assets/brand/gling-night-wordmark.png')} style={styles.wordmark} contentFit="contain" accessibilityLabel="글링" /><ThemedText type="smallBold">업체 관리</ThemedText></View>
+        <View style={styles.brand}><Image source={require('@/assets/brand/gling-night-wordmark.png')} style={styles.wordmark} contentFit="contain" accessibilityLabel="글링" /><ThemedText type="smallBold">비즈니스 관리</ThemedText></View>
         {isAuthed && <View style={styles.account}>
           <ThemedText type="small" numberOfLines={1} style={styles.nickname}>{me.nickname}</ThemedText>
           <Pressable analyticsId="merchant-web.ai" accessibilityRole="button" accessibilityLabel="AI 연결" onPress={() => { play('selection'); router.push('/ai'); }}
@@ -67,18 +67,18 @@ export default function MerchantWebIndex() {
     </View>
     <ScrollView analyticsId="merchant-web.workspace" contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       {authError && <ThemedText accessibilityRole="alert">{authError}</ThemedText>}
-      {isAuthLoading || isAuthed && !current ? <View style={styles.state}><GlingLoader accessibilityLabel="업체 관리 권한을 확인하는 중" /><ThemedText themeColor="textSecondary">계정과 업체를 확인하고 있어요.</ThemedText></View>
+      {isAuthLoading || isAuthed && !current ? <View style={styles.state}><GlingLoader accessibilityLabel="비즈니스 관리 권한을 확인하는 중" /><ThemedText themeColor="textSecondary">계정과 비즈니스를 확인하고 있어요.</ThemedText></View>
         : !isAuthed ? <View style={[styles.state, { backgroundColor: theme.card, borderColor: theme.line }]}>
           <ThemedText type="title" accessibilityRole="header">가게 소식을 편하게 관리해요.</ThemedText>
-          <ThemedText themeColor="textSecondary">평소 쓰던 글링 계정으로 로그인하면 웹에서도 내 업체의 글과 사진을 관리할 수 있어요.</ThemedText>
-          <Pressable analyticsId="merchant-web.login" accessibilityRole="button" accessibilityLabel="비즈니스 로그인" onPress={() => { play('selection'); promptLogin('내 업체의 글과 사진을 관리해요.'); }}
+          <ThemedText themeColor="textSecondary">평소 쓰던 글링 계정으로 로그인하면 웹에서도 내 비즈니스의 글과 사진을 관리할 수 있어요.</ThemedText>
+          <Pressable analyticsId="merchant-web.login" accessibilityRole="button" accessibilityLabel="비즈니스 로그인" onPress={() => { play('selection'); promptLogin('내 비즈니스의 글과 사진을 관리해요.'); }}
             style={({ pressed }) => [styles.primary, { backgroundColor: theme.accent, opacity: pressed ? 0.8 : 1 }]}>
             <ThemedText type="smallBold" style={{ color: theme.accentInk }}>비즈니스 로그인</ThemedText>
           </Pressable>
         </View>
           : !current?.enabled ? <View style={[styles.state, { backgroundColor: theme.card, borderColor: theme.line }]}>
-            <ThemedText type="subtitle" accessibilityRole="header">{current?.failed ? '권한을 확인하지 못했어요' : '업체 관리 권한이 필요해요'}</ThemedText>
-            <ThemedText themeColor="textSecondary">{current?.failed ? '연결 상태를 확인한 뒤 다시 시도해 주세요.' : '담당자가 이 계정의 업체 관리 권한을 승인하면, 연결된 내 업체를 관리할 수 있어요.'}</ThemedText>
+            <ThemedText type="subtitle" accessibilityRole="header">{current?.failed ? '권한을 확인하지 못했어요' : '비즈니스 관리 권한이 필요해요'}</ThemedText>
+            <ThemedText themeColor="textSecondary">{current?.failed ? '연결 상태를 확인한 뒤 다시 시도해 주세요.' : '담당자가 이 계정의 비즈니스 관리 권한을 승인하면, 연결된 내 비즈니스를 관리할 수 있어요.'}</ThemedText>
             <Pressable analyticsId="merchant-web.access.retry" accessibilityRole="button" accessibilityLabel="권한 다시 확인" onPress={retry}
               style={({ pressed }) => [styles.action, { borderColor: theme.line, opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold">권한 다시 확인</ThemedText></Pressable>
           </View>

@@ -20,6 +20,7 @@ export function AdminUserDetail({
   localData,
   onStatusChange,
   onTrustLevelChange,
+  onProfileChanged,
   onClose,
 }: {
   userId: string | null;
@@ -27,6 +28,7 @@ export function AdminUserDetail({
   localData?: AdminDashboardData;
   onStatusChange?: (userId: string, status: 'active' | 'reactivation_pending') => Promise<void>;
   onTrustLevelChange?: (userId: string, level: 1 | 2 | 3) => Promise<void>;
+  onProfileChanged?: () => Promise<void>;
   onClose: () => void;
 }) {
   const { play } = useInteractionFeedback();
@@ -48,7 +50,7 @@ export function AdminUserDetail({
           </View>
 
           <ScrollView contentContainerStyle={[styles.body, compact && styles.bodyCompact]}>
-            {userId && !localData ? <AdminUserReview key={userId} userId={userId} profiles={profiles} onStatusChange={onStatusChange} onTrustLevelChange={onTrustLevelChange} /> : activity ? <ActivityContent activity={activity} profiles={profiles} /> : null}
+            {userId && !localData ? <AdminUserReview key={userId} userId={userId} profiles={profiles} onStatusChange={onStatusChange} onTrustLevelChange={onTrustLevelChange} onProfileChanged={onProfileChanged} /> : activity ? <ActivityContent activity={activity} profiles={profiles} /> : null}
           </ScrollView>
         </View>
       </View>
