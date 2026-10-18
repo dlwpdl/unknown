@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { hydratePublicPosts, mapPublicFeed, type PublicFeedRow } from './feed-data.ts';
 import type { Post } from './types.ts';
 import { safeMerchantSourceUrl } from './merchant-source.ts';
+import { businessMediaUrl } from './business-media.ts';
 
 export type MerchantProfile = {
   id: string; name: string; city_id: string; city_name: string;
@@ -35,10 +36,14 @@ export function mapMerchantProfile(value: unknown): Omit<MerchantProfile, 'avata
 
 export async function attachMerchantProfileImages<T extends Pick<MerchantProfile, 'avatar_path' | 'banner_path'>>(client: SupabaseClient, profile: T) {
   const paths = [...new Set([profile.avatar_path, profile.banner_path].filter((path): path is string => !!path))];
-  const urls = new Map<string, string>();
-  if (paths.length) {
+  const urls = new Map(paths.flatMap(path => {
+    const url = businessMediaUrl(path);
+    return url ? [[path, url] as const] : [];
+  }));
+  const privatePaths = paths.filter(path => !urls.has(path));
+  if (privatePaths.length) {
     try {
-      const result = await client.storage.from('merchant-profile-images').createSignedUrls(paths, 3600);
+      const result = await client.storage.from('merchant-profile-images').createSignedUrls(privatePaths, 3600);
       if (!result.error) for (const row of result.data ?? []) if (row.path && row.signedUrl) urls.set(row.path, row.signedUrl);
     } catch { /* A failed photo read must preserve the saved profile paths. */ }
   }

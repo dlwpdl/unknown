@@ -9,7 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
-import { blockUser, reportContent, type ReportReason, type ReportTarget } from '@/lib/community-data';
+import { blockBusiness, blockUser, reportContent, type ReportReason, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 
@@ -20,6 +20,7 @@ export function ReportSheet({
   targetType,
   targetId,
   reportedUserId,
+  reportedBusinessId,
   reportedNickname = '비즈니스 답변',
   onClose,
 }: {
@@ -27,6 +28,7 @@ export function ReportSheet({
   targetType: ReportTarget;
   targetId: string;
   reportedUserId?: string;
+  reportedBusinessId?: string;
   reportedNickname?: string;
   onClose: () => void;
 }) {
@@ -60,9 +62,10 @@ export function ReportSheet({
     setSubmitting(true);
     try {
       await reportContent(supabase, targetType, targetId, reason, details, me.id);
-      if (blockAfter && reportedUserId) {
+      if (blockAfter && (reportedUserId || reportedBusinessId)) {
         try {
-          await blockUser(supabase, me.id, reportedUserId);
+          if (reportedBusinessId) await blockBusiness(supabase, me.id, reportedBusinessId);
+          else await blockUser(supabase, me.id, reportedUserId!);
         } catch {
           close();
           play('warning');
@@ -138,7 +141,7 @@ export function ReportSheet({
             style={[styles.details, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]}
           />
 
-          {!!reportedUserId && reportedUserId !== me.id && (
+          {!!(reportedBusinessId || reportedUserId) && reportedUserId !== me.id && (
             <Pressable analyticsId="components_report-sheet.pressable.4"
                   onPress={() => { play('selection'); setBlockAfter((value) => !value); }}
               accessibilityRole="checkbox"

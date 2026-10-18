@@ -343,6 +343,12 @@ export async function blockUser(client: SupabaseClient, userId: string, blockedU
   hideContent(userId, 'user', blockedUserId);
 }
 
+export async function blockBusiness(client: SupabaseClient, userId: string, businessId: string) {
+  const result = await client.rpc('block_business', { p_business_id: businessId, p_user_id: userId });
+  if (result.error) throw result.error;
+  hideContent(userId, 'user', businessId);
+}
+
 // postId 를 넘기면 그 구해요·팔아요 글이 대화의 출처로 남고, 거래 후기를 쓸 자격이 생긴다.
 // 서버는 상대가 실제 그 글의 작성자일 때만 출처로 인정한다.
 

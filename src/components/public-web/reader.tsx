@@ -58,7 +58,13 @@ function MapAction({ url, label }: { url: string; label?: string }) {
 
 function PostAuthor({ post }: { post: Post }) {
   const { play } = useInteractionFeedback();
-  return post.business ? <a className="reader-business-author" href={`/company/${post.business.id}`} onClick={() => play('selection')}>{post.business.name} · 비즈니스</a> : <>{post.author.nickname}</>;
+  const [failedLogo, setFailedLogo] = useState<string | null>(null);
+  return post.business ? <a className="reader-business-author" href={`/company/${post.business.id}`} onClick={() => play('selection')}
+    style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minHeight: 44 }}>
+    {post.business.avatarUri && failedLogo !== post.business.avatarUri ? <img src={post.business.avatarUri} alt="" width={32} height={32}
+      style={{ borderRadius: '50%', objectFit: 'cover' }} onError={() => setFailedLogo(post.business!.avatarUri!)} /> :
+      <span aria-hidden="true" style={{ width: 32, height: 32, borderRadius: '50%', display: 'inline-grid', placeItems: 'center', background: 'var(--backgroundElement)' }}>{post.business.name[0]}</span>}
+    {post.business.name} · 비즈니스</a> : <>{post.author.nickname}</>;
 }
 
 function BodyLinks({ body }: { body: string }) {
