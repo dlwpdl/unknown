@@ -78,6 +78,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (name === 'react') return react;
       if (name === 'react-native') return new Proxy({
+        Keyboard: { dismiss() {} },
         StyleSheet: { create: value => value }, Platform: { OS: data.platform ?? 'ios' }, useWindowDimensions: () => ({ width: 390, height: 844 }),
         LayoutAnimation: { configureNext: config => animations.push(config), Presets: { easeInEaseOut: {} }, Types: { easeOut: 'easeOut' }, Properties: { opacity: 'opacity' } },
         AppState: { currentState: 'active', addEventListener(_name, callback) { appListeners.add(callback); return { remove: () => appListeners.delete(callback) }; } },
@@ -85,6 +86,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
         ...data.native,
       }, { get: (target, key) => target[key] ?? key });
       if (name === 'expo-router') return { useFocusEffect: fn => effect(fn, [fn]), useLocalSearchParams: () => params, useRouter: () => ({ setParams(value) { Object.assign(params, value); }, push(value) { data.routes?.push(value); } }) };
+      if (name === '@/app/map') return { __esModule: true, default: 'MapScreen' };
       if (name === 'react-native-reanimated') return { useReducedMotion: () => data.reducedMotion ?? false };
       if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ bottom: 0 }) };
       if (name === '@/hooks/use-chat-identity') return { useChatIdentity: () => data.businessIdentity ?? null };
@@ -101,7 +103,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
       } };
       if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, four: 24 }, Depth: { card: {}, control: {} } };
       if (name === '@/i18n/ko') return { t, count };
-      if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
+      if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: kind => data.feedback?.push(kind) }) };
       // 하트 리액션 기본값: 테스트가 필요하면 data 로 덮어쓴다.
       if (name === '@/lib/community-data') return { isContentRejected, mergeChatMessages, loadMessageReactions: async () => new Map(), setMessageReaction: async () => 1,
         loadChatReadPosition: async () => null, markChatRead: async () => {}, ...data };
@@ -158,6 +160,63 @@ const roomProps = { conversation, currentUserId: 'me', onClose() {}, onChanged: 
 const room = data => mount('../src/components/chat-room.tsx', 'ChatRoom', data, roomProps);
 const olderButton = harness => harness.nodes().find(node => node.props?.label === t.chat.loadOlder);
 const suggestionButtons = harness => harness.nodes().filter(node => node.props?.analyticsId === 'components_chat-room.suggestion');
+
+test('public discovery opens above the current room and returns with the same draft/messages/read position', async context => {
+  for (const kind of ['group', 'direct']) {
+    let reads = 0, closes = 0;
+    const feedback = [], routes = [], rows = [message(1), message(2)];
+    const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', {
+      feedback, routes, loadConversationMessages: async () => { reads++; return rows; },
+      loadChatReadPosition: async () => rows[0].created_at,
+    }, { ...roomProps, conversation: { ...conversation, kind }, onClose: () => closes++ });
+    context.after(() => harness.cleanup()); await harness.settle();
+    const input = () => harness.nodes().find(node => node.type === 'TextInput' && node.props.placeholder === t.chat.messagePlaceholder);
+    input().props.onChangeText('unfinished private draft'); await harness.settle();
+    const before = harness.messages(), list = harness.nodes().find(node => node.type === 'FlatList');
+    const readPosition = list.props.initialScrollIndex, initialReads = reads;
+    const action = harness.nodes().find(node => node.props?.label === '장소 찾기 ↗');
+    assert.ok(action, 'conversation header must offer the approved public discovery action');
+    action.type(action.props).props.onPress(); await harness.settle();
+    const map = harness.nodes().find(node => node.type === 'MapScreen');
+    assert.ok(map); assert.deepEqual(Object.keys(map.props), ['onClose']);
+    assert.equal(harness.nodes().filter(node => node.type === 'MapScreen').length, 1);
+    assert.ok(harness.nodes().some(node => node.type === 'Modal' && node.props.visible && node.props.presentationStyle === 'fullScreen'));
+    assert.equal(input().props.value, 'unfinished private draft');
+    assert.equal(closes, 0); assert.deepEqual(routes, []); assert.ok(feedback.includes('selection'));
+    map.props.onClose(); await harness.settle();
+    assert.ok(!harness.nodes().some(node => node.type === 'MapScreen'));
+    assert.equal(input().props.value, 'unfinished private draft');
+    assert.deepEqual(harness.messages(), before); assert.equal(reads, initialReads);
+    assert.equal(harness.nodes().find(node => node.type === 'FlatList').props.initialScrollIndex, readPosition);
+    assert.ok(!harness.nodes().some(node => node.type === 'FeedAd'));
+  }
+});
+
+test('messages still arrive under discovery without hidden read receipts or automatic scrolling', async context => {
+  const rows = [message(1)], incoming = message(2), marked = [], scrolls = [];
+  const harness = room({ loadConversationMessages: async () => rows,
+    loadConversationMessagesByIds: async () => [incoming],
+    markChatRead: async (_client, _room, id) => marked.push(id) });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const list = () => harness.nodes().find(node => node.type === 'FlatList');
+  list().props.ref.current = { scrollToEnd: () => scrolls.push('end'), scrollToIndex: () => scrolls.push('index') };
+  await harness.timers(); scrolls.length = 0;
+  const input = () => harness.nodes().find(node => node.type === 'TextInput' && node.props.placeholder === t.chat.messagePlaceholder);
+  input().props.onChangeText('private unfinished draft'); await harness.settle();
+  const action = harness.nodes().find(node => node.props?.label === '장소 찾기 ↗'); action.type(action.props).props.onPress(); await harness.settle();
+  harness.message(incoming); await harness.timers();
+  assert.ok(harness.messages().some(row => row.id === incoming.id), 'realtime updates and safety visibility remain active');
+  list().props.onViewableItemsChanged({ viewableItems: [{ item: incoming }] });
+  list().props.onLayout(); list().props.onContentSizeChange(); await harness.settle();
+  assert.deepEqual(marked, []); assert.deepEqual(scrolls, []);
+  harness.nodes().find(node => node.type === 'MapScreen').props.onClose(); await harness.settle();
+  list().props.onLayout(); list().props.onContentSizeChange();
+  assert.deepEqual(scrolls, [], 'return must not jump to messages that arrived behind the overlay');
+  assert.equal(input().props.value, 'private unfinished draft');
+  assert.ok(harness.nodes().some(node => node.props?.analyticsId === 'components_chat-room.jump-latest'));
+  list().props.onViewableItemsChanged({ viewableItems: [{ item: incoming }] }); await harness.settle();
+  assert.deepEqual(marked, [incoming.id], 'a genuinely visible message can be marked after returning');
+});
 
 test('report then block stops when its sheet, account, profile or target changes', async () => {
   for (const change of ['none', 'unmount', 'account', 'identity', 'dismiss', 'target', 'hidden', 'stale-error']) {

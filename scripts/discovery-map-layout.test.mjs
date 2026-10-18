@@ -24,6 +24,7 @@ function mount({ light = false, reduced = false } = {}) {
     react: hooks, 'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
     'react-native': { ActivityIndicator: 'ActivityIndicator', Alert: { alert: (...args) => alerts.push(args) }, AppState: { currentState: 'active' }, Linking: {}, Modal: 'Modal', StyleSheet: { create: value => value, hairlineWidth: 1 }, TextInput: 'TextInput', View: 'View', KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'ios' } },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' }, 'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'SymbolView' }, 'expo-location': {},
+    'expo-web-browser': {}, '@/lib/merchant-source': {}, '@/lib/public-seo': {},
     'react-native-reanimated': { useReducedMotion: () => reduced },
     'expo-router': { useFocusEffect() {}, useLocalSearchParams: () => ({}), useRouter: () => ({}) },
     '@/constants/theme': { Colors: { dark: { ...theme, card: '#171722' }, light: theme } }, '@/hooks/use-language': { useLanguage: () => ({ tr }) },

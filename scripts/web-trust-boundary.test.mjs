@@ -26,6 +26,7 @@ function fixture(t) {
   for (const page of ['index', 'company', 'terms', 'privacy', 'account-deletion', 'child-safety', 'post', 'chat', 'meetup-join', 'meetup-profile', 'meetup-application', 'auth/callback', 'profile/membership']) writeFileSync(join(publicDir, `${page}.html`), publicHtml);
   writeFileSync(join(publicDir, 'robots.txt'), 'Sitemap: https://gling.ej-entertainment.com/sitemap.xml format=sitemap&city= Disallow: /merchant/ Disallow: /admin');
   for (const file of ['sitemap.xml', 'llms.txt']) writeFileSync(join(publicDir, file), 'public discovery');
+  writeFileSync(join(publicDir, 'ads.txt'), 'google.com, pub-2361293253164911, DIRECT, f08c47fec0942fa0\n');
   const merchantHtml = '<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><script src="/merchant/_expo/entry.js"></script>';
   for (const page of ['index', 'terms', 'privacy', 'auth/callback', 'auth/kakao']) writeFileSync(join(merchantDir, `${page}.html`), merchantHtml);
   return { publicDir, merchantDir, publicBundle: join(publicDir, '_expo', 'entry.js'), merchantBundle: join(merchantDir, '_expo', 'entry.js') };

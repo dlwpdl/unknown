@@ -146,7 +146,7 @@ function EventListScreen() {
           <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{item.venue || item.city}</ThemedText>
           <ThemedText type="smallBold" themeColor={item.price ? 'accent' : 'textSecondary'} numberOfLines={1}>{eventNotice(item, locale) || eventPriceLabel(item, locale)}</ThemedText>
         </View>
-      </Pressable></Link.AppleZoom></Link>{adsSupported && !loading && !error && contentAdPosition(index, visibleEvents.length) && <FeedAd key={`ad-after-${item.id}`} />}</>}
+      </Pressable></Link.AppleZoom></Link>{adsSupported && !loading && !error && contentAdPosition(index, visibleEvents.length) && <FeedAd key={`ad-after-${item.id}`} surface="events" />}</>}
       ListFooterComponent={<View style={styles.footer}>{!!data && <View style={styles.paging}>
         <Pressable analyticsId="ticketmaster.previous" accessibilityRole="button" disabled={!page || loading} accessibilityState={{ disabled: !page || loading }} onPress={() => { play('selection'); setPage(n => n - 1); }} style={({ pressed }) => [styles.chip, { borderColor: theme.line, backgroundColor: theme.card, opacity: !page || loading ? 0.35 : pressed ? 0.7 : 1 }]}><ThemedText>{tr("이전")}</ThemedText></Pressable>
         <ThemedText type="small">{page + 1}{" " + tr("페이지")}</ThemedText>
