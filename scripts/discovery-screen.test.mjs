@@ -108,7 +108,8 @@ test('Top 25 merges only visible recommendations before filtering and keeps the 
 });
 
 test('changing accounts remounts the map and clears the previous private GPS camera state', () => {
-  const start = source.indexOf('export default function MapScreen()'), end = source.indexOf('function CityMap()', start);
+  const start = source.indexOf('export default function MapScreen('), end = source.indexOf('function CityMap(', start);
+  assert.ok(start >= 0 && end > start);
   let auth = { isAuthed: true, me: { id: 'viewer-a' } };
   const exports = {};
   const code = ts.transpileModule(source.slice(start, end), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;

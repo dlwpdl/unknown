@@ -61,7 +61,7 @@ test('opening a catalog map card uses the existing place detail route and leaves
   const start = mapSource.indexOf('  const open = (item: DiscoveryItem) => {'), end = mapSource.indexOf('  const selectPin = ', start);
   const exports = {}, routes = [], links = [], feedback = [];
   vm.runInNewContext(compile(mapSource.slice(start, end) + '\nexports.open = open;'), {
-    exports, city: { id: place.cityId }, router: { push: value => routes.push(value) }, play: value => feedback.push(value),
+    exports, onClose: undefined, city: { id: place.cityId }, router: { push: value => routes.push(value) }, play: value => feedback.push(value),
     Linking: { openURL: async url => links.push(url) }, tr: value => value, Alert: { alert() {} },
   });
   exports.open(discovery.discoveryPlace(place));

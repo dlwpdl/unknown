@@ -10,11 +10,12 @@ import { loadBusinessChatMessages, sendBusinessChatMessage, editBusinessChatMess
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
-import { AppState, KeyboardAvoidingView, LayoutAnimation, Linking, Modal, Platform, ScrollView, StyleSheet, TextInput, UIManager, View, type FlatList as NativeFlatList, type NativeScrollEvent, type NativeSyntheticEvent, type ViewToken, useWindowDimensions } from 'react-native';
+import { AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Linking, Modal, Platform, ScrollView, StyleSheet, TextInput, UIManager, View, type FlatList as NativeFlatList, type NativeScrollEvent, type NativeSyntheticEvent, type ViewToken, useWindowDimensions } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ReportSheet } from '@/components/report-sheet';
+import MapScreen from '@/app/map';
 import { SharedLinkCard } from '@/components/shared-link-card';
 import { sharedLinkInMessage } from '@/lib/sharing';
 import { ChatMembers } from '@/components/chat-members';
@@ -139,6 +140,9 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const [pickingPhoto, setPickingPhoto] = useState(false);
   const [attachmentsOpen, setAttachmentsOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
+  const [discoveryOpen, setDiscoveryOpen] = useState(false);
+  const discoveryVisible = useRef(false);
+  const discoveryLastMessage = useRef<string | undefined>(undefined);
   const [photoViewer, setPhotoOpen] = useState<{ photos: ChatPhoto[]; index: number; initialIndex: number; messageId?: string } | null>(null);
   const photoOpen = photoViewer && (!photoViewer.messageId || messages.some(message => message.id === photoViewer.messageId && !message.deleted_at)) ? photoViewer : null;
   const photoPages = useRef<ScrollView>(null);
@@ -161,6 +165,11 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const [readAt, setReadAt] = useState<string | null | undefined>(undefined);
   const [unreadStart, setUnreadStart] = useState<string | null>(null);
   const [awayFromLatest, setAwayFromLatest] = useState(false);
+  const openDiscovery = () => { discoveryVisible.current = true; discoveryLastMessage.current = latestMessages.current.at(-1)?.id; Keyboard.dismiss(); setDiscoveryOpen(true); };
+  const closeDiscovery = () => {
+    if (discoveryLastMessage.current !== latestMessages.current.at(-1)?.id) { followingLatest.current = false; setAwayFromLatest(true); }
+    discoveryVisible.current = false; setDiscoveryOpen(false);
+  };
 
   const [loading, setLoading] = useState(access.read);
   const [sending, setSending] = useState(false);
@@ -212,6 +221,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     followingLatest.current = index < 0;
     setAwayFromLatest(index >= 0 && index < messages.length - 1);
     const timer = setTimeout(() => {
+      if (discoveryVisible.current) return;
       if (index > 0) messageList.current?.scrollToIndex({ index, viewPosition: 0.12, animated: false });
       else if (index < 0) messageList.current?.scrollToEnd({ animated: false });
     }, 50);
@@ -219,7 +229,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   }, [messages, publicSelfId, loading, readAt]);
 
   const trackVisibleMessages = useCallback(({ viewableItems }: { viewableItems: ViewToken<ChatMessageRecord>[] }) => {
-    if (!readReady.current || !valid()) return;
+    if (discoveryVisible.current || !readReady.current || !valid()) return;
     const newest = viewableItems.map(({ item }) => item).filter((item): item is ChatMessageRecord => !!item)
       .reduce<ChatMessageRecord | null>((latest, item) => !latest || Date.parse(item.created_at) > Date.parse(latest.created_at) ? item : latest, null);
     if (!newest || Date.parse(newest.created_at) <= lastReadAt.current) return;
@@ -227,6 +237,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     void (business ? markBusinessChatRead(supabase, conversation, newest.id) : markChatRead(supabase, conversation.id, newest.id)).catch(() => {});
   }, [business, conversation, valid]);
   const onMessageScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (discoveryVisible.current) return;
     closeMessageMenu();
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
     const nearLatest = contentSize.height - layoutMeasurement.height - contentOffset.y < 88;
@@ -234,9 +245,10 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     setAwayFromLatest(!nearLatest);
   };
   const scrollToLatest = (animated = false) => {
+    if (discoveryVisible.current) return;
     followingLatest.current = true;
     setAwayFromLatest(false);
-    requestAnimationFrame(() => requestAnimationFrame(() => messageList.current?.scrollToEnd({ animated })));
+    requestAnimationFrame(() => requestAnimationFrame(() => { if (!discoveryVisible.current) messageList.current?.scrollToEnd({ animated }); }));
   };
   const animateNewMessage = useCallback(() => {
     if (reducedMotion || Platform.OS === 'web' || !initialScroll.current) return;
@@ -610,7 +622,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
 
   if (!auth.isAuthed || auth.me.id !== currentUserId || !scopeMatches) return null;
   return <ThemedView style={{ flex: 1 }}>
-    <View style={[styles.head, { borderBottomColor: theme.line }]}><View style={styles.titleRow}>{conversation.otherIdentity?.kind === 'business' ? <Pressable analyticsId="chat.peer-profile" accessibilityRole="button" accessibilityLabel={tr('{0} 프로필 보기', title)} onPress={() => { play('selection'); if (conversation.otherIdentity?.kind === 'business') { onClose(); router.push({ pathname: '/company/[id]', params: { id: conversation.otherIdentity.id } }); } }} style={{ minHeight: 44, flex: 1, flexDirection: 'row', gap: 8, alignItems: 'center' }}>{conversation.otherIdentity?.avatarUri && <Image source={{ uri: conversation.otherIdentity.avatarUri }} style={{ width: 32, height: 32, borderRadius: 16 }} />}<ThemedText type="smallBold" style={styles.title}>{title}</ThemedText></Pressable> : <ThemedText type="smallBold" style={styles.title}>{title}</ThemedText>}{!group && !business && <TrustBadge verified={conversation.otherUser.verificationLevel >= 2} trustLevel={conversation.otherUser.verificationLevel === 3 ? 3 : conversation.otherUser.verificationLevel === 2 ? 2 : undefined} />}</View><RoomAction label={t.detail.close} onPress={onClose} /></View>
+    <View style={[styles.head, { borderBottomColor: theme.line }]}><View style={styles.titleRow}>{conversation.otherIdentity?.kind === 'business' ? <Pressable analyticsId="chat.peer-profile" accessibilityRole="button" accessibilityLabel={tr('{0} 프로필 보기', title)} onPress={() => { play('selection'); if (conversation.otherIdentity?.kind === 'business') { onClose(); router.push({ pathname: '/company/[id]', params: { id: conversation.otherIdentity.id } }); } }} style={{ minHeight: 44, flex: 1, flexDirection: 'row', gap: 8, alignItems: 'center' }}>{conversation.otherIdentity?.avatarUri && <Image source={{ uri: conversation.otherIdentity.avatarUri }} style={{ width: 32, height: 32, borderRadius: 16 }} />}<ThemedText type="smallBold" style={styles.title}>{title}</ThemedText></Pressable> : <ThemedText type="smallBold" style={styles.title}>{title}</ThemedText>}{!group && !business && <TrustBadge verified={conversation.otherUser.verificationLevel >= 2} trustLevel={conversation.otherUser.verificationLevel === 3 ? 3 : conversation.otherUser.verificationLevel === 2 ? 2 : undefined} />}</View><RoomAction label={tr('장소 찾기 ↗')} onPress={openDiscovery} /><RoomAction label={t.detail.close} onPress={onClose} /></View>
     <View style={[styles.toolbar, group && styles.groupToolbar]}>{group && access.read && conversation.groupPostId && <ChatMembers key={`${currentUserId}:${conversation.id}`} conversationId={conversation.id} groupPostId={conversation.groupPostId} currentUserId={currentUserId} />}{access.write && <RoomAction label={group ? conversation.isGroupHost ? t.meetup.end : t.meetup.leave : t.chat.end} onPress={() => setConfirmEnd(true)} />}{!group && <>{!business && <RoomAction label={t.report.short} onPress={() => setReport({ targetType: 'user', targetId: conversation.otherUser.id, reportedUserId: conversation.otherUser.id, reportedNickname: conversation.otherUser.nickname })} />}<RoomAction label={t.chat.block} onPress={() => void block(conversation.otherUser.id)} /></>}</View>
     {!group && !business && <View style={styles.toolbar}><MannerReviewButton subjectId={conversation.otherUser.id} nickname={conversation.otherUser.nickname} context={{ conversationId: conversation.id }} /></View>}
     {review?.canWrite && <View style={styles.toolbar}>
@@ -652,12 +664,12 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       {access.read ? loading && messages.length === 0 ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} /></View> : <View ref={listRegion} style={styles.messageList} onLayout={closeMessageMenu}><FlatList ref={messageList} analyticsId="components_chat-room.flatlist.1" data={messages} keyExtractor={(message) => message.id} contentContainerStyle={styles.scroll}
         onViewableItemsChanged={trackVisibleMessages} viewabilityConfig={viewability}
         onScrollBeginDrag={closeMessageMenu} onScroll={onMessageScroll} scrollEventThrottle={32} maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
-        onLayout={() => { if (initialScroll.current && followingLatest.current) requestAnimationFrame(() => messageList.current?.scrollToEnd({ animated: false })); }}
-        onContentSizeChange={() => { if (initialScroll.current && followingLatest.current && !loadingOlder) requestAnimationFrame(() => messageList.current?.scrollToEnd({ animated: false })); }}
+        onLayout={() => { if (!discoveryVisible.current && initialScroll.current && followingLatest.current) requestAnimationFrame(() => { if (!discoveryVisible.current) messageList.current?.scrollToEnd({ animated: false }); }); }}
+        onContentSizeChange={() => { if (!discoveryVisible.current && initialScroll.current && followingLatest.current && !loadingOlder) requestAnimationFrame(() => { if (!discoveryVisible.current) messageList.current?.scrollToEnd({ animated: false }); }); }}
         onScrollToIndexFailed={({ index, averageItemLength }) => {
-          if (++scrollRetries.current > 3) return;
+          if (discoveryVisible.current || ++scrollRetries.current > 3) return;
           messageList.current?.scrollToOffset({ offset: Math.max(0, averageItemLength * index), animated: false });
-          setTimeout(() => messageList.current?.scrollToIndex({ index, viewPosition: 0.12, animated: false }), 120);
+          setTimeout(() => { if (!discoveryVisible.current) messageList.current?.scrollToIndex({ index, viewPosition: 0.12, animated: false }); }, 120);
         }}
         ListEmptyComponent={<ThemedText type="small" themeColor="textSecondary" style={styles.empty}>{access.write ? t.chat.newConversation : t.chat.endedBody}</ThemedText>}
         ListFooterComponent={<View style={{ height: Spacing.four }} />}
@@ -781,6 +793,9 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       </> : status === 'ended' && <ThemedText type="small" themeColor="textSecondary" style={[styles.feedback, { paddingBottom: Math.max(insets.bottom, Spacing.three) }]}>{t.chat.endedBody}</ThemedText>}
     </KeyboardAvoidingView>
     {locationOpen && auth.isAuthed && auth.me.id === currentUserId && access.write && <ChatLocationPicker sending={sending} onSend={sendLocation} onClose={() => setLocationOpen(false)} />}
+    {discoveryOpen && auth.isAuthed && auth.me.id === currentUserId && scopeMatches && <Modal visible presentationStyle="fullScreen" animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={closeDiscovery}>
+      <MapScreen onClose={closeDiscovery} />
+    </Modal>}
     {messageMenu && menuFrame && !deleteConfirm && !hidden('message', messageMenu.id, messageMenu.sender_id) && auth.isAuthed && auth.me.id === currentUserId && access.write && <Modal visible transparent statusBarTranslucent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => { play('selection'); closeMessageMenu(); }}>
       <View style={{ flex: 1 }} accessibilityViewIsModal>
         <Pressable analyticsId="chat.message.menu-dismiss" accessibilityRole="button" accessibilityLabel={tr("메시지 메뉴 닫기")} style={StyleSheet.absoluteFill}
