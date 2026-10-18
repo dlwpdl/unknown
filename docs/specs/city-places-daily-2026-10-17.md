@@ -1,0 +1,9 @@
+# Daily city place recommendations
+
+Owner approved the proposed server-fed place list, correcting its refresh frequency to once daily on 2026-10-17. The selected compact map is already accepted at 7520ead; preserve its layout and the separate simulator owner's frozen build.
+
+Use the existing Supabase project, public place identities, licensed photo metadata and installed dependencies. One private catalog snapshot and a read-only public RPC serve all supported cities. The app checks once per Vancouver calendar day with persisted last-good data and shared in-flight work. Home, list, detail and map subscribe to the same catalog revision. Archived OSM IDs remain readable for existing details/reviews; curated eligibility is separate from catalog existence. A verified recommendation includes its exact source, reason and review date; a successful map extraction is not an operation/popularity verification.
+
+Daily publication reuses the existing Keychain-backed Supabase Management API operations pattern and an atomic database date guard. Existing native jobs/runs must be checked before assigning one responsibility owner; do not create a duplicate content/research job, alter G6/G7 creative deadlines, add paid providers, or publish social content. The collector only requests approved OSM identities in one bounded batch, retains editorial review dates and removes explicitly closed/private candidates. Failures preserve the last good snapshot. Publishing a catalog and installing the app are separate evidence.
+
+Verify daily boundaries and restart caching, concurrent readers, malformed/foreign-city records, failure fallback, stale responses, selection versus archive identity, exact sources and date guards. Run focused Node/Python/SQL checks, typecheck and lint before the scoped commit. Use existing isolated Postgres test tooling. No credentials in output, new auth flow, new dependency, store upload or minimum-version change.

@@ -16,6 +16,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useCommunityCity } from '@/lib/community-city';
 import { CITY_PLACES_COLLECTED_AT, getCityPlaces, type CityPlace } from '@/lib/city-places';
+import { useCityPlacesRevision } from '@/hooks/use-city-places';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 import { merchantMapsUrl, safeMerchantSourceUrl } from '@/lib/merchant-source';
@@ -24,6 +25,7 @@ import { recordProductEvent } from '@/lib/product-analytics';
 import { supabase } from '@/lib/supabase';
 
 export default function PlaceDetailScreen() {
+  useCityPlacesRevision();
   const { tr, locale: appLocale } = useLanguage();
   const [viewport, setViewport] = useState({ y: 0, height: 0 });
   const { cityId, id } = useLocalSearchParams<{ cityId?: string; id?: string }>();

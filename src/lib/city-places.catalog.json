@@ -913,6 +913,29 @@
           "website": null,
           "openingHours": null
         }
+      ],
+      "recommendations": [
+        {
+          "placeId": "osm:node:249295975",
+          "reason": "공연이 있는 저녁, 동유럽 음식과 라이브 음악을 함께 즐기고 싶을 때 들러보세요.",
+          "sourceUrl": "https://www.dromtaberna.com/contact",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Enjoy Eastern European food and live music in one place. Plan an evening visit around a performance."
+        },
+        {
+          "placeId": "osm:node:276474692",
+          "reason": "에티오피아 원두를 다루는 로컬 커피숍이에요. 프런트 스트리트를 걷다가 커피 한 잔으로 쉬어가기 좋아요.",
+          "sourceUrl": "https://www.mofercoffee.com/pages/mofer-coffee-front",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "This local coffee shop focuses on Ethiopian beans. Stop for a coffee break while walking along Front Street."
+        },
+        {
+          "placeId": "osm:node:277039070",
+          "reason": "옛 벽돌 공장과 계곡 풍경을 함께 둘러볼 수 있어요. 토요일에는 파머스 마켓도 열려 산책과 장보기를 묶기 좋아요.",
+          "sourceUrl": "https://www.evergreen.ca/evergreen-brick-works/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Explore the former brick factory and surrounding valley. The Saturday farmers market makes it easy to combine a walk with some shopping."
+        }
       ]
     },
     "vancouver": {
@@ -1822,6 +1845,36 @@
           "sourceUrl": "https://www.openstreetmap.org/node/3672622874",
           "website": null,
           "openingHours": null
+        }
+      ],
+      "recommendations": [
+        {
+          "placeId": "osm:node:582801920",
+          "reason": "가족이 운영하는 베트남 식당. 메인 스트리트에서 여럿이 음식을 나눠 먹을 날 골라볼 만해요.",
+          "sourceUrl": "https://anhandchi.com/",
+          "verifiedAt": "2026-10-18T01:44:04.083617+00:00",
+          "reasonEn": "A family-run Vietnamese restaurant on Main Street. Consider it for a meal where everyone can share a few dishes."
+        },
+        {
+          "placeId": "osm:node:582801326",
+          "reason": "마운트 플레전트에서 작은 케이크나 크루아상을 커피와 함께 먹으며 쉬어가기 좋아요.",
+          "sourceUrl": "https://melopatisserie.com/",
+          "verifiedAt": "2026-10-18T01:44:04.083617+00:00",
+          "reasonEn": "Choose from small cakes, croissants and coffee. A Mount Pleasant stop for a dessert break."
+        },
+        {
+          "placeId": "osm:node:644342018",
+          "reason": "제철 식재료로 만든 비건 코스 요리를 경험할 수 있어요. 채소 중심의 저녁 식사를 천천히 즐기고 싶은 날 골라보세요.",
+          "sourceUrl": "https://www.folkerestaurant.com/",
+          "verifiedAt": "2026-10-18T01:51:27.793938+00:00",
+          "reasonEn": "Book a weekend brunch or an evening meal. Check the opening days and hours before visiting."
+        },
+        {
+          "placeId": "osm:node:889550078",
+          "reason": "유리 엘리베이터를 타고 올라가 도심과 항구를 한눈에 볼 수 있어요. 밴쿠버의 지형을 넓게 보고 싶은 날에 어울려요.",
+          "sourceUrl": "https://www.destinationvancouver.com/things-to-do/listings/vancouver-lookout",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Ride the glass elevator for a broad view of the city and harbour. A way to get a sense of Vancouver’s geography."
         }
       ]
     },
@@ -2733,6 +2786,29 @@
           "website": "https://vavgallery.concordia.ca/",
           "openingHours": null
         }
+      ],
+      "recommendations": [
+        {
+          "placeId": "osm:node:343490371",
+          "reason": "몬트리올식 스모크드 미트 샌드위치를 먹은 뒤 생로랑 거리를 이어 걸어보세요.",
+          "sourceUrl": "https://schwartzsdeli.com/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Stop for a Montreal-style smoked meat sandwich, then continue your walk along Saint-Laurent Boulevard."
+        },
+        {
+          "placeId": "osm:node:213716077",
+          "reason": "전시를 천천히 둘러보며 실내에서 시간을 보내기 좋아요. 방문 전에 보고 싶은 전시와 입장 조건을 골라보세요.",
+          "sourceUrl": "https://www.mbam.qc.ca/en/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Take your time with the exhibitions indoors. Check which shows you want to see and their admission conditions before visiting."
+        },
+        {
+          "placeId": "osm:node:522863914",
+          "reason": "여러 로스터의 원두를 고르며 커피 취향을 찾아보고 싶다면 로리에 거리의 이 매장을 살펴보세요.",
+          "sourceUrl": "https://mechantspinsons.com/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Explore coffees from different roasters on Laurier Street. A stop for anyone who wants to discover their coffee preferences."
+        }
       ]
     },
     "calgary": {
@@ -3642,6 +3718,29 @@
           "sourceUrl": "https://www.openstreetmap.org/node/2284826753",
           "website": null,
           "openingHours": null
+        }
+      ],
+      "recommendations": [
+        {
+          "placeId": "osm:node:623427724",
+          "reason": "동네 카페에서 여유롭게 아침이나 점심을 먹고 싶을 때 살펴보세요. 이 추천은 에든월드 드라이브 매장이에요.",
+          "sourceUrl": "https://friendscafeyyc.ca/locations/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Consider this neighbourhood cafe for a leisurely breakfast or lunch. This recommendation is for the Edenwold Drive location."
+        },
+        {
+          "placeId": "osm:node:294093060",
+          "reason": "바비큐를 먹으러 갈 날 골라볼 만해요. 매크마흔 지점의 위치와 운영 시간을 확인하고 찾아가세요.",
+          "sourceUrl": "https://bigtsbbq.com/locations/mcmahon/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "An option for a barbecue meal. Check the McMahon location and its opening hours before heading over."
+        },
+        {
+          "placeId": "osm:node:577280929",
+          "reason": "추운 날에도 나무와 연못을 보며 쉬어갈 수 있는 쇼핑센터 안 실내 정원이에요.",
+          "sourceUrl": "https://www.calgary.ca/parks/devonian-gardens.html",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Take a break among trees and ponds inside a shopping centre. An indoor walk with some greenery on a cold day."
         }
       ]
     },
@@ -4553,6 +4652,29 @@
           "website": null,
           "openingHours": null
         }
+      ],
+      "recommendations": [
+        {
+          "placeId": "osm:node:944921445",
+          "reason": "캘거리 트레일에서 잠깐 쉬어가며 커피와 이곳의 크럼 쿠키를 함께 먹어보세요.",
+          "sourceUrl": "https://crumcoffeebar.com/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Take a break with coffee and a Crum cookie. A coffee stop along Calgary Trail."
+        },
+        {
+          "placeId": "osm:node:3868190323",
+          "reason": "앨버타 의회가 자리 잡은 곳의 이야기를 전시로 살펴볼 수 있어요. 실내에서 지역 역사를 알아보는 코스로 골라보세요.",
+          "sourceUrl": "https://www.assembly.ab.ca/visit/visitor-centre/borealis-gallery",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Explore exhibitions on the grounds of Alberta’s Legislature. An indoor stop for discovering local stories."
+        },
+        {
+          "placeId": "osm:node:4263896991",
+          "reason": "거리에 걸린 옛 네온사인을 보며 에드먼턴의 상점 역사를 따라가 볼 수 있어요. 해가 진 뒤 짧게 걷는 코스로 어울려요.",
+          "sourceUrl": "https://www.travelalberta.com/listings/neon-sign-museum-11519",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "See old neon signs and trace the history of Edmonton’s shops. Consider a short walk after dark."
+        }
       ]
     },
     "winnipeg": {
@@ -5462,6 +5584,29 @@
           "sourceUrl": "https://www.openstreetmap.org/node/704612372",
           "website": "https://www.wokbox.ca/",
           "openingHours": null
+        }
+      ],
+      "recommendations": [
+        {
+          "placeId": "osm:node:638868123",
+          "reason": "더 포크스 마켓을 둘러보다가 푸어오버나 에스프레소로 쉬어가기 좋아요. 시장 구경 중 커피를 위한 한 정거장으로 골라보세요.",
+          "sourceUrl": "https://www.foolsandhorses.ca/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Take a pour-over or espresso break while exploring The Forks Market. A coffee stop between browsing the stalls."
+        },
+        {
+          "placeId": "osm:node:664944216",
+          "reason": "더 포크스 주변을 걷는 날, 존스턴 터미널 151호에서 커피를 마시며 쉬어갈 수 있어요.",
+          "sourceUrl": "https://www.harrisonscoffeeco.com/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Have a coffee inside Johnston Terminal. A place to take a break while walking around The Forks."
+        },
+        {
+          "placeId": "osm:node:638868132",
+          "reason": "더 포크스에서 브런치나 저녁 식사를 길게 잡고 싶을 때 살펴보세요. 호텔 안에 있어 식사 후 주변 산책을 이어가기 좋아요.",
+          "sourceUrl": "https://smithrestaurant.ca/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Consider a longer brunch or dinner at The Forks. The restaurant is inside a hotel, with nearby paths for a walk afterwards."
         }
       ]
     },
@@ -6373,6 +6518,36 @@
           "website": null,
           "openingHours": null
         }
+      ],
+      "recommendations": [
+        {
+          "placeId": "osm:node:2748206723",
+          "reason": "직접 굽는 디저트와 수프, 샌드위치를 커피와 함께 고를 수 있어요. 시티 파크 동네에서 가벼운 점심을 먹기 좋은 후보예요.",
+          "sourceUrl": "https://cityperks.ca/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Choose house-baked desserts, soup or a sandwich with your coffee. A City Park option for a light lunch."
+        },
+        {
+          "placeId": "osm:node:9673905860",
+          "reason": "캐나다 여러 지역의 원두를 소개한 리버스데일 카페에서 에스프레소 한 잔으로 쉬어가 보세요.",
+          "sourceUrl": "https://prismcoffee.ca/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Take an espresso break while walking through Riversdale. The cafe showcases coffee from Canadian roasters."
+        },
+        {
+          "placeId": "osm:node:9696265514",
+          "reason": "공룡 골격 복제품과 암석·화석을 보며 지구의 역사를 살펴볼 수 있어요. 아이와 함께하는 실내 나들이로 골라보세요.",
+          "sourceUrl": "https://artsandscience.usask.ca/museumofnaturalsciences/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Explore Earth’s history through dinosaur skeleton replicas, rocks and fossils. An indoor outing to consider with children."
+        },
+        {
+          "placeId": "osm:node:9697113058",
+          "reason": "고대 조각 복제품과 실제 유리·도자기·동전을 함께 볼 수 있어요. 대학 캠퍼스에서 미술과 역사를 살펴보는 코스로 어울려요.",
+          "sourceUrl": "https://artsandscience.usask.ca/antiquities/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "See replicas of ancient sculptures alongside original glass, pottery and coins. Combine art and history with a visit to the university campus."
+        }
       ]
     },
     "ottawa": {
@@ -7282,6 +7457,29 @@
           "sourceUrl": "https://www.openstreetmap.org/node/600101630",
           "website": null,
           "openingHours": null
+        }
+      ],
+      "recommendations": [
+        {
+          "placeId": "osm:node:438892467",
+          "reason": "커피 대신 차가 생각나는 날, 바이워드 마켓에서 잎차를 고르며 쉬어갈 곳이에요.",
+          "sourceUrl": "https://www.teastore.ca/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Browse loose-leaf teas at ByWard Market and take a break. An option for a day when you would rather have tea than coffee."
+        },
+        {
+          "placeId": "osm:node:765366980",
+          "reason": "바이워드 마켓 골목에서 커피와 직접 굽는 디저트를 고를 수 있어요. 시장 구경 중 잠깐 쉬어갈 곳을 찾을 때 살펴보세요.",
+          "sourceUrl": "https://www.planetcoffeeottawa.com/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Choose coffee and house-baked desserts in a ByWard Market lane. A stop for a break while exploring the market."
+        },
+        {
+          "placeId": "osm:node:1735093018",
+          "reason": "물가 풍경이 보고 싶은 날, 리도강이 오타와강으로 떨어지는 물줄기를 보며 산책해 보세요.",
+          "sourceUrl": "https://ncc-ccn.gc.ca/places/rideau-falls-park-and-green-island",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Walk beside the water where the Rideau River drops into the Ottawa River. Consider a short stop for the waterside scenery."
         }
       ]
     },
@@ -8193,6 +8391,29 @@
           "website": null,
           "openingHours": null
         }
+      ],
+      "recommendations": [
+        {
+          "placeId": "osm:node:6040504170",
+          "reason": "고양이와 시간을 보내고 커피도 마실 수 있는 카페예요. 방문 예약과 고양이 공간 이용 규칙을 먼저 확인해 주세요.",
+          "sourceUrl": "https://excalipurr.ca/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Spend time with cats and have a coffee. Check reservations and the cat lounge rules before visiting."
+        },
+        {
+          "placeId": "osm:node:439897601",
+          "reason": "옛 아시니보이아 클럽 건물에서 식사와 와인을 즐기는 다운타운 저녁 약속을 잡아보세요.",
+          "sourceUrl": "https://www.tourismsaskatchewan.com/listings/2123/crave-kitchen--wine-bar",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Enjoy a meal and wine in the former Assiniboia Club building. Consider it for a dinner in downtown Regina."
+        },
+        {
+          "placeId": "osm:node:5114212127",
+          "reason": "서스캐처원 선수들의 기록과 스포츠 유물을 둘러볼 수 있어요. 지역 이야기가 담긴 실내 나들이를 찾을 때 골라보세요.",
+          "sourceUrl": "https://sasksportshalloffame.com/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Explore Saskatchewan athletes’ records and sporting memorabilia. An indoor outing with local stories."
+        }
       ]
     },
     "saint-john": {
@@ -8934,6 +9155,29 @@
           "sourceUrl": "https://www.openstreetmap.org/node/5740000560",
           "website": null,
           "openingHours": null
+        }
+      ],
+      "recommendations": [
+        {
+          "placeId": "osm:node:1869399088",
+          "reason": "록우드 공원을 걷는 날, 릴리 호수를 바라보며 식사하는 코스를 함께 계획해 보세요.",
+          "sourceUrl": "https://www.lilylake.ca/lilys",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Have a meal overlooking Lily Lake. Consider combining it with a walk through Rockwood Park."
+        },
+        {
+          "placeId": "osm:node:1867369780",
+          "reason": "워터프런트에서 태국식 식사를 하고 싶을 때 골라보세요. 매운 정도와 고기·두부 선택을 조절할 수 있다고 안내돼 있어요.",
+          "sourceUrl": "https://www.discoversaintjohn.com/place/lemongrass-thai-fare",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "An option for a Thai meal by the waterfront. Its information lists adjustable spice levels and choices of meat or tofu."
+        },
+        {
+          "placeId": "osm:node:1961419476",
+          "reason": "업타운을 걷다가 로컬 로스터의 커피로 쉬어가기 좋아요. 프린스 윌리엄 스트리트 매장을 가리키는 추천이에요.",
+          "sourceUrl": "https://www.discoversaintjohn.com/place/java-moose-coffee-uptown",
+          "verifiedAt": "2026-10-18T01:51:27.793938+00:00",
+          "reasonEn": "See river currents and whirlpools change with the tides. Check tide times before visiting the Reversing Falls lookout."
         }
       ]
     },
@@ -9844,6 +10088,36 @@
           "sourceUrl": "https://www.openstreetmap.org/node/37132707",
           "website": null,
           "openingHours": null
+        }
+      ],
+      "recommendations": [
+        {
+          "placeId": "osm:node:33117712",
+          "reason": "퀸풀 로드에서 커피와 브런치를 함께 고를 수 있어요. 동네를 걷다가 식사 겸 쉬어갈 곳을 찾을 때 살펴보세요.",
+          "sourceUrl": "https://discoverhalifaxns.com/listings/dilly-dally-coffee-cafe/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Choose coffee and brunch on Quinpool Road. A neighbourhood stop for a meal and a break during a walk."
+        },
+        {
+          "placeId": "osm:node:886747513",
+          "reason": "중고책을 고르고 커피나 잎차를 마시며 혼자 느긋하게 쉬어가기 좋은 곳이에요.",
+          "sourceUrl": "https://tridenthalifax.ca/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Browse used books with coffee or loose-leaf tea. Consider it for a day when you want to read and take a break on your own."
+        },
+        {
+          "placeId": "osm:node:4839118321",
+          "reason": "직접 만져보고 실험하는 과학 전시를 즐길 수 있어요. 아이와 함께 실내에서 시간을 보내고 싶은 날 골라보세요.",
+          "sourceUrl": "https://thediscoverycentre.ca/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Explore hands-on science exhibits. An indoor outing to consider with children."
+        },
+        {
+          "placeId": "osm:node:4422934789",
+          "reason": "해 지기 전 여유가 있다면 정원 길을 천천히 걸으며 도심에서 잠깐 쉬어가 보세요.",
+          "sourceUrl": "https://www.halifaxpublicgardens.ca/",
+          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
+          "reasonEn": "Stroll along the garden paths for a break from downtown. Visit when you have time to spare before sunset."
         }
       ]
     }

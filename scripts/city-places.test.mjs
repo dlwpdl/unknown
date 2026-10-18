@@ -30,6 +30,33 @@ function module(file, imports = {}, dev = true) {
   return exports;
 }
 const data = () => module('src/lib/city-places.ts', { '@/lib/mock': { CITIES: cities } });
+function dailyCatalog() {
+  const next = catalog(); next.collectedAt = '2026-10-17T20:00:00Z';
+  for (const city of cities) next.cities[city.id].recommendations = next.cities[city.id].places.slice(-3).map(p => ({ placeId: p.id, reason: 'Test-reviewed selection', sourceUrl: 'https://example.org/reviewed', verifiedAt: next.collectedAt }));
+  return next;
+}
+test('daily recommendations use reviewed order while archived place identities remain readable', () => {
+  const api = data(), next = dailyCatalog();
+  assert.equal(typeof api.replaceCityPlacesCatalog, 'function');
+  api.replaceCityPlacesCatalog(next, Date.parse('2026-10-18T00:00:00Z'));
+  assert.equal(api.getCityRecommendations('toronto')[0].id, next.cities.toronto.recommendations[0].placeId);
+  assert.equal(api.getCityPlaces('toronto').length, catalog().cities.toronto.places.length);
+});
+test('reviewed recommendation metadata preserves the English reason without inventing a ranking', () => {
+  const api = data(), next = dailyCatalog();
+  next.cities.toronto.recommendations[0].reasonEn = 'A source-checked place to explore.';
+  api.replaceCityPlacesCatalog(next, Date.parse('2026-10-18T00:00:00Z'));
+  assert.equal(api.getCityRecommendations('toronto')[0].recommendation.reasonEn, 'A source-checked place to explore.');
+});
+test('foreign-city IDs, unsafe sources and malformed daily payloads cannot replace the last valid catalog', () => {
+  const api = data(); assert.equal(typeof api.replaceCityPlacesCatalog, 'function');
+  const original = JSON.stringify(api.getCityPlaces('toronto'));
+  for (const mutate of [next => { next.cities.toronto.places[0].cityId = 'vancouver'; }, next => { next.cities.toronto.places[0].sourceUrl = 'https://evil.example/'; }, next => { next.cities.toronto.places[0].latitude = NaN; }, next => { delete next.cities.vancouver; }]) {
+    const next = dailyCatalog(); mutate(next);
+    assert.throws(() => api.replaceCityPlacesCatalog(next, Date.parse('2026-10-18T00:00:00Z')), /INVALID_PLACE_CATALOG/);
+    assert.equal(JSON.stringify(api.getCityPlaces('toronto')), original);
+  }
+});
 function screen(file, params = { cityId: 'toronto' }, dev = true) {
   const states = [], routes = [], feedback = [];
   let cursor = 0;
@@ -46,6 +73,7 @@ function screen(file, params = { cityId: 'toronto' }, dev = true) {
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'anonymous' } }) },
     '@/lib/product-analytics': product,
     '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16, four: 24 }, MaxContentWidth: 920 },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: v => feedback.push(v) }) },
     '@/lib/city-places': data(), '@/lib/post-maps': module('src/lib/post-maps.ts'),
@@ -112,10 +140,10 @@ test('real home entry works in release and debug, preserves every city and gives
 });
 test('native list renders real data, expands, filters search and category, then opens the same place/city', () => {
   assert.equal(typeof data().getCityPlaces, 'function');
-  const ui = screen('src/app/places/index.tsx'), first = data().getCityPlaces('toronto')[0];
+  const ui = screen('src/app/places/index.tsx'), choices = data().getCityRecommendations('toronto'), first = choices[0];
   let tree = ui.render();
   const rows = () => nodes(tree).filter(n => n.props?.analyticsId === 'places.open');
-  assert.equal(rows().length, 10);
+  assert.equal(rows().length, Math.min(10, choices.length));
   assert.ok(nodes(tree).some(n => n.props?.children === first.name));
   assert.equal(nodes(tree).some(n => n.props?.title === '장소 데이터 연결 전이에요'), false);
   rows()[0].props.onPress();
@@ -124,7 +152,7 @@ test('native list renders real data, expands, filters search and category, then 
   assert.equal(ui.routes.at(-1).params.id, first.id);
   assert.equal(ui.feedback.at(-1), 'selection');
   nodes(tree).find(n => n.props?.analyticsId === 'places.view-more').props.onPress();
-  tree = ui.render(); assert.equal(rows().length, 25);
+  tree = ui.render(); assert.equal(rows().length, Math.min(25, choices.length));
   nodes(tree).find(n => n.props?.accessibilityLabel === '장소 검색').props.onChangeText('__no_actual_place_match__');
   tree = ui.render(); assert.equal(rows().length, 0);
   nodes(tree).find(n => n.props?.accessibilityLabel === '장소 검색').props.onChangeText('');
@@ -197,14 +225,16 @@ test('every city has at least three licensed same-place photos and missing photo
   }
 });
 
-test('home shows exactly three photo cards in every city and opens each actual place with feedback', () => {
+test('home shows three reviewed place cards and preserves same-place photos or honest empty photo slots', () => {
   for (const city of cities) {
     const ui = screen('src/components/city-popular-places.tsx'), tree = ui.render({ cityId: city.id });
     const cards = nodes(tree).filter(n => n.props?.analyticsId === 'today.places.place-open');
     assert.equal(cards.length, 3, city.id);
     for (const card of cards) {
       const picture = nodes(card).find(n => n.type === 'CityPlacePhoto');
-      assert.ok(picture?.props.place.photo);
+      assert.ok(picture?.props.place);
+      assert.ok(data().getCityRecommendations(city.id).some(p => p.id === picture.props.place.id));
+      if (picture.props.place.photo) assert.equal(picture.props.place.photo.placeId, picture.props.place.id);
       assert.equal(picture.props.place.cityId, city.id);
       card.props.onPress();
       assert.equal(ui.routes.at(-1).pathname, '/places/[id]');
@@ -218,7 +248,7 @@ test('home shows exactly three photo cards in every city and opens each actual p
 test('list uses each actual place photo and detail retains its credit and named map', () => {
   const ui = screen('src/app/places/index.tsx'), tree = ui.render();
   const rows = nodes(tree).filter(n => n.props?.analyticsId === 'places.open');
-  assert.equal(rows.length, 10);
+  assert.equal(rows.length, Math.min(10, data().getCityRecommendations('toronto').length));
   for (const row of rows) {
     const picture = nodes(row).find(n => n.type === 'CityPlacePhoto');
     assert.ok(picture, 'left photo slot missing');
