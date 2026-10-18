@@ -66,6 +66,7 @@ function CityMap() {
   const [dateOpen, setDateOpen] = useState(false), [dateDraft, setDateDraft] = useState(''), [dateError, setDateError] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null), [center, setCenter] = useState<(PostPin & { requestId: number }) | null>(null);
+  const [userLocation, setUserLocation] = useState<PostPin | null>(null);
   const [cardHeight, setCardHeight] = useState(0);
   const [visibleResultIds, setVisibleResultIds] = useState<Set<string>>(new Set());
   const trackTranslationResults = useCallback(({ viewableItems }: { viewableItems: { item: DiscoveryItem }[] }) =>
@@ -170,6 +171,7 @@ function CityMap() {
       if (revision !== locationRevision.current || AppState.currentState !== 'active') return;
       const fix = { latitude: value.coords.latitude, longitude: value.coords.longitude, accuracy: value.coords.accuracy, measuredAt: value.timestamp, mocked: value.mocked ?? false };
       if (!isFreshLocation(fix) || fix.accuracy === null || fix.accuracy > 250 || Date.now() - fix.measuredAt > 120000) throw new Error('INACCURATE');
+      setUserLocation({ latitude: fix.latitude, longitude: fix.longitude });
       setSelectedId(null); setCenter({ latitude: fix.latitude, longitude: fix.longitude, requestId: revision }); play('success');
     } catch (error) {
       if (revision !== locationRevision.current) return;
@@ -218,7 +220,7 @@ function CityMap() {
     {!!current?.errors.length && <View style={styles.notice}><ThemedText type="small" accessibilityRole="alert">{current.errors.map(error => tr(error)).join(' ')}{tr("새로고침으로 다시 시도할 수 있어요.")}</ThemedText></View>}
     <View style={styles.content}>
       {mode === 'map' ? <>
-        <DiscoveryMap markers={markers} cityName={city.englishName} selectedId={selected?.id} center={center} bottomInset={selected && located(selected) ? Math.min(cardHeight + 56, 1000) : 0} onSelect={selectPin} />
+        <DiscoveryMap markers={markers} cityName={city.englishName} selectedId={selected?.id} center={center} userLocation={userLocation} bottomInset={selected && located(selected) ? Math.min(cardHeight + 56, 1000) : 0} onSelect={selectPin} />
         <View style={styles.mapControls}>
           <Pressable analyticsId="discovery.current" accessibilityRole="button" accessibilityLabel={locating ? tr("현재 위치 확인 중") : tr("내 위치로 지도 이동")} disabled={locating} onPress={() => void locate()} style={[styles.mapControl, { backgroundColor: theme.card, borderColor: theme.line }]}>{locating ? <GlingLoader size={12} accessibilityLabel={tr("현재 위치 확인 중")} /> : <SymbolView name={{ ios: 'location', android: 'my_location', web: 'my_location' }} size={21} tintColor={theme.text} />}</Pressable>
           <Pressable analyticsId="discovery.refresh" accessibilityRole="button" accessibilityLabel={tr("지도 결과 새로고침")} onPress={() => { play('selection'); refresh(); }} style={[styles.mapControl, { backgroundColor: theme.card, borderColor: theme.line }]}><SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={21} tintColor={theme.text} /></Pressable>

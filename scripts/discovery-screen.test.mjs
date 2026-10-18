@@ -28,7 +28,7 @@ test('a system permission dialog preserves GPS while an actual background transi
 
 function gps({ granted = true, fix, defer = false } = {}) {
   const start = source.indexOf('  const locate = async () => {'), end = source.indexOf('  const changeMode = ', start);
-  const changes = { center: null }, calls = [], locationRevision = { current: 0 }, AppState = { currentState: 'active' }, exports = {};
+  const changes = { center: null, userLocation: null }, calls = [], locationRevision = { current: 0 }, AppState = { currentState: 'active' }, exports = {};
   let finish;
   const value = fix ?? { coords: { latitude: 49.28, longitude: -123.12, accuracy: 10 }, timestamp: Date.now() };
   vm.runInNewContext(compile(source.slice(start, end) + '\nexports.locate = locate;'), {
@@ -36,7 +36,7 @@ function gps({ granted = true, fix, defer = false } = {}) {
     Location: { Accuracy: { Balanced: 3 }, requestForegroundPermissionsAsync: async () => { calls.push('permission'); return { granted }; },
       getCurrentPositionAsync: async () => { calls.push('gps'); return defer ? new Promise(resolve => { finish = resolve; }) : value; } },
     play: kind => calls.push(kind), setLocating: value => { changes.locating = value; }, setLocationError: value => { changes.error = value; },
-    setSelectedId: value => { changes.selectedId = value; }, setCenter: value => { changes.center = value; }, setTimeout: () => 1, clearTimeout() {},
+    setSelectedId: value => { changes.selectedId = value; }, setCenter: value => { changes.center = value; }, setUserLocation: value => { changes.userLocation = value; }, setTimeout: () => 1, clearTimeout() {},
   });
   return { ...exports, changes, calls, locationRevision, AppState, finish: () => finish(value) };
 }
@@ -47,6 +47,7 @@ test('My Location uses the actual fresh device fix and sends a new camera reques
     await ui.locate();
     assert.equal(ui.changes.center.latitude, latitude);
     assert.equal(ui.changes.center.longitude, longitude);
+    assert.deepEqual({ ...ui.changes.userLocation }, { latitude, longitude });
     const requestId = ui.changes.center.requestId;
     await ui.locate();
     assert.ok(ui.changes.center.requestId > requestId);
@@ -58,11 +59,13 @@ test('denied, stale, mocked and inaccurate GPS results never move the map to a f
   const denied = gps({ granted: false }); await denied.locate();
   assert.equal(denied.calls.includes('gps'), false);
   assert.equal(denied.changes.center, null);
+  assert.equal(denied.changes.userLocation, null);
   assert.ok(denied.changes.error.includes('권한'));
   for (const patch of [{ timestamp: Date.now() - 121000 }, { mocked: true }, { coords: { latitude: 49.28, longitude: -123.12, accuracy: 251 } }, { timestamp: Date.now() + 60000 }]) {
     const ui = gps({ fix: { coords: { latitude: 49.28, longitude: -123.12, accuracy: 10 }, timestamp: Date.now(), ...patch } });
     await ui.locate();
     assert.equal(ui.changes.center, null);
+    assert.equal(ui.changes.userLocation, null);
     assert.ok(ui.changes.error);
     assert.equal(ui.changes.locating, false);
   }
@@ -73,6 +76,7 @@ test('a late GPS completion cannot override a chosen pin or a backgrounded scree
     const ui = gps({ defer: true }), pending = ui.locate(); await tick();
     cancel(ui); ui.finish(); await pending;
     assert.equal(ui.changes.center, null);
+    assert.equal(ui.changes.userLocation, null);
   }
 });
 
