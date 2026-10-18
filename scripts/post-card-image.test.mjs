@@ -79,7 +79,7 @@ function cardRenderer(component = 'PostCard') {
     '@/lib/supabase': { supabase: { rpc: async () => ({ error: null }) } },
   };
   const exports = {};
-  const file = component === 'PostCard' ? 'post-card' : component === 'PostMapLink' ? 'post-map-link' : component === 'PostPhotoEditor' ? 'post-photo-editor' : 'post-photo-gallery';
+  const file = component === 'MerchantProfileHeader' ? 'merchant-profile-header' : component === 'PostCard' ? 'post-card' : component === 'PostMapLink' ? 'post-map-link' : component === 'PostPhotoEditor' ? 'post-photo-editor' : 'post-photo-gallery';
   const source = ts.transpileModule(fs.readFileSync(new URL(`../src/components/${file}.tsx`, import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
@@ -262,4 +262,27 @@ test('translated cards preserve original photo credits and each attachment exact
   assert.ok(displayed.includes(credit), 'photo license attribution must survive translation');
   assert.equal(displayed.split(url).length - 1, 1, 'attached account links remain unchanged and are not duplicated');
   assert.ok(body.startsWith('Hello neighbours'), 'translation never changes the source post');
+});
+
+test('business author uses its logo, report target and business fallback after photo failure',()=>{
+ const card=cardRenderer();let opened=0;
+ const post={id:'business-post',title:'합성 안내',body:'비즈니스 본문',author:{id:'business',nickname:'지모코',verified:false},business:{id:'business',name:'지모코',avatarUri:'opaque-logo'},tag:{kind:'post',label:'라이프'},likes:0,saves:0,comments:0,views:0};
+ const render=()=>card.render({post,onAuthor:()=>{opened++;}});
+ const logo=image(render());assert.equal(logo.props.source.uri,'opaque-logo');
+ const report=nodes(render()).find(n=>n.type==='ReportSheet');assert.equal(report.props.reportedUserId,undefined);assert.equal(report.props.reportedBusinessId,'business');
+ const author=nodes(render()).find(n=>n.props?.analyticsId==='components_post-card.pressable.4');
+ author.props.onPress();assert.equal(opened,1);assert.ok(card.feedback.includes('reaction'));
+ logo.props.onError();assert.equal(image(render()),undefined);
+ assert.ok(nodes(render()).some(n=>n.type==='ThemedText' && n.props.children==='지'));
+ post.business.avatarUri='opaque-logo-v2';assert.equal(image(render()).props.source.uri,'opaque-logo-v2');
+});
+
+test('profile logo/banner failures retain only the business fallback and recover on new images',()=>{
+ const renderer=cardRenderer('MerchantProfileHeader');
+ const profile={name:'지모코',city_name:'밴쿠버',industry:'카페',services:'',address:'',links:[],avatarUri:'logo',bannerUri:'banner'};
+ const render=()=>renderer.render({profile});
+ let images=nodes(render()).filter(n=>n.type==='Image');assert.equal(images.length,2);
+ images.forEach(n=>n.props.onError());assert.equal(nodes(render()).filter(n=>n.type==='Image').length,0);
+ assert.ok(nodes(render()).some(n=>n.type==='ThemedText'&&n.props.children==='지'));
+ profile.avatarUri='new-logo';assert.equal(nodes(render()).find(n=>n.type==='Image').props.source.uri,'new-logo');
 });
