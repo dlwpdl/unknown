@@ -85,16 +85,20 @@ insert into public.ticketmaster_event_cache(cache_key,payload,expires_at)
 select private.send_city_recommendations(first_slot+i*interval '90 minutes') from quality_clock cross join generate_series(0,5) i;
 select is((select count(*)::int from public.notifications where user_id='17800000-0000-4000-8000-000000000002'),6,
  'six useful distinct events can occupy six existing slots');
-select ok((select count(distinct split_part(body,'. ',1))>=4 from public.notifications where user_id='17800000-0000-4000-8000-000000000002'),
- 'different events rotate through at least four openings instead of a fixed catchphrase');
-select ok(not exists(select 1 from (select split_part(body,'. ',1) opening,
- lag(split_part(body,'. ',1)) over(order by created_at,id) previous from public.notifications
- where user_id='17800000-0000-4000-8000-000000000002') x where opening=previous),'consecutive event openings do not repeat');
+create temp table quality_styles as select
+ case when body ~ '^[0-9]{1,2}월 [0-9]{1,2}일, ' then 0 else 1 end
+ + case when body like '% 열릴 예정이에요.' then 2 else 0 end style,
+ row_number() over(order by created_at,id) position
+ from public.notifications where user_id='17800000-0000-4000-8000-000000000002';
+select is((select count(distinct style)::int from quality_styles),4,
+ 'different events rotate through four complete sentence styles');
+select ok(not exists(select 1 from (select style,lag(style) over(order by position) previous from quality_styles) x
+ where style=previous),'consecutive event sentence styles do not repeat');
 select ok(not exists(select 1 from public.notifications where body like '%같이 갈 사람!?%'),
  'the superseded universal invitation is not appended to every event');
 select ok((select bool_and(char_length(body)<=90) from public.notifications),'variety preserves the concise event body budget');
 
--- A send refreshes facts but keeps the selected opening through a retry.
+-- A send refreshes facts and preserves the resulting copy through a retry.
 create or replace function private.recommendation_time(p_at timestamptz,p_timezone text) returns boolean language sql stable as $$select true$$;
 update private.push_delivery_queue set next_attempt_at=now()+interval '1 day';
 update private.push_delivery_queue set next_attempt_at=now() where notification_id=(select id from public.notifications
@@ -103,8 +107,8 @@ update public.ticketmaster_event_cache set payload=jsonb_set(payload,'{events,0,
 create temp table quality_claim as select * from public.claim_push_notifications('send',100);
 select is((select count(*)::int from quality_claim),1,'only the due event is claimed');
 select ok((select body like '%야외 무대에서 재즈 공연이 열려요.%' from quality_claim),'delivery refreshes the real event description');
-select is((select split_part(c.body,'. ',1) from quality_claim c),
- (select split_part(n.body,'. ',1) from public.notifications n join quality_claim c on c.notification_id=n.id),'delivery preserves the stored opening');
+select is((select body from quality_claim),'야외 무대에서 재즈 공연이 열려요.',
+ 'a refreshed source sentence needs no decorative opening');
 select public.complete_push_notification(id,lease_id,'retry',null,'EXPO_UNAVAILABLE') from quality_claim;
 update private.push_delivery_queue set next_attempt_at=now() where id in(select id from quality_claim);
 create temp table quality_retry as select * from public.claim_push_notifications('send',100);
