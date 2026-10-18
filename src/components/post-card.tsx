@@ -62,7 +62,7 @@ export function PostCard({
   const reducedMotion = useReducedMotion();
   const [saveBurst] = useState(() => new Animated.Value(0));
   const openPost = () => { play('selection'); onPress?.(); };
-  const mine = post.author.id === me.id;
+  const mine = !post.business && post.author.id === me.id;
   const viewerId = isAuthed ? me.id : 'guest';
   const reactions = useSyncExternalStore(subscribePostReactions,
     useCallback(() => postReactionsSnapshot(viewerId, post.id), [viewerId, post.id]), () => undefined);
@@ -76,6 +76,7 @@ export function PostCard({
   }, [viewerId, post.id, post.likedByMe, post.likes, post.savedByMe, post.saves]);
   const [shareCount, setShareCount] = useState(post.shares ?? 0);
   const [reportOpen, setReportOpen] = useState(false);
+  const [failedBusinessLogo, setFailedBusinessLogo] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [failedPhoto, setFailedPhoto] = useState<{ postId: string; uri: string } | null>(null);
   const [loadedPhoto, setLoadedPhoto] = useState<{ key: string; aspectRatio: number } | null>(null);
@@ -152,9 +153,12 @@ export function PostCard({
             accessibilityRole={onAuthor ? 'button' : undefined}
             style={({ pressed }) => [styles.author, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent', transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
             <View style={[styles.avatar, { backgroundColor: mine ? theme.accent : theme.backgroundElement }]}>
+              {post.business?.avatarUri && failedBusinessLogo !== post.business.avatarUri ? <Image
+                source={{ uri: post.business.avatarUri }} style={{ width: 32, height: 32, borderRadius: 16 }} contentFit="cover"
+                accessibilityIgnoresInvertColors onError={() => setFailedBusinessLogo(post.business!.avatarUri!)} /> :
               <ThemedText type="smallBold" style={{ color: mine ? theme.accentInk : theme.navy }}>
                 {(post.business?.name ?? post.author.nickname)[0]}
-              </ThemedText>
+              </ThemedText>}
             </View>
             <View style={styles.authorCopy}>
               <View style={styles.nickRow}>
@@ -398,7 +402,8 @@ export function PostCard({
         visible={reportOpen}
         targetType="post"
         targetId={post.id}
-        reportedUserId={post.author.id}
+        reportedUserId={post.business ? undefined : post.author.id}
+        reportedBusinessId={post.business?.id}
         reportedNickname={post.business?.name ?? post.author.nickname}
         onClose={() => setReportOpen(false)}
       />

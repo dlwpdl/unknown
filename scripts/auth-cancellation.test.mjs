@@ -49,6 +49,7 @@ test('cancel, dismiss and browser failure release the shared login state for ret
       async signInWithIdToken(options) { idTokenCalls++; assert.equal(`${options.provider}:${options.token}`, 'google:valid-id-token'); return {}; },
     } } };
     if (name === '@/lib/kakao-auth') return kakao;
+    if (name === '@/lib/feed-data') return { setBusinessImageSession() {} };
     if (name === '@/lib/admin') return { isAdminRole: () => false };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
     if (name === '@/i18n/ko') return { t: { auth: { loginError: '로그인 오류', sessionExpired: '세션 만료' } } };

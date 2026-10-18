@@ -15,14 +15,17 @@ export function MerchantProfileHeader({ profile, ratings, onReviewPress }: Props
   const { tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const [linkError, setLinkError] = useState('');
+  const [failedImage, setFailedImage] = useState<{ avatar?: string; banner?: string }>({});
   return <View style={styles.profile}>
     <View style={[styles.banner, { backgroundColor: theme.card }]}>
-      {profile.bannerUri ? <Image source={{ uri: profile.bannerUri }} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={tr("{0} 배너", (profile.name))} />
+      {profile.bannerUri && failedImage.banner !== profile.bannerUri ? <Image source={{ uri: profile.bannerUri }} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={tr("{0} 배너", (profile.name))}
+        onError={() => setFailedImage(value => ({ ...value, banner: profile.bannerUri! }))} />
         : <ThemedText style={[styles.bannerG, { color: theme.accent }]} accessible={false}>gling.</ThemedText>}
     </View>
     <View style={styles.identity}>
       <View style={[styles.avatar, { backgroundColor: theme.accent }]}>
-        {profile.avatarUri ? <Image source={{ uri: profile.avatarUri }} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={tr("{0} 로고", (profile.name))} />
+        {profile.avatarUri && failedImage.avatar !== profile.avatarUri ? <Image source={{ uri: profile.avatarUri }} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={tr("{0} 로고", (profile.name))}
+          onError={() => setFailedImage(value => ({ ...value, avatar: profile.avatarUri! }))} />
           : <ThemedText type="title" style={{ color: theme.accentInk }} accessible={false}>{profile.name.slice(0, 1)}</ThemedText>}
       </View>
       <View style={styles.name}>

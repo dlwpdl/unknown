@@ -1,13 +1,18 @@
 // @ts-nocheck
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { postSeo, jsonLd, PUBLIC_SITE, PUBLIC_SOURCE } from '../../../src/lib/public-seo.ts';
+import { businessMediaUrl } from '../../../src/lib/business-media.ts';
+import { serveBusinessMedia } from '../_shared/business-media.ts';
 
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
 Deno.serve(async (request) => {
-  if (request.method !== 'GET') return unavailable(405);
   const params = new URL(request.url).searchParams;
   const format = params.get('format');
+  if (format === 'business-image') return serveBusinessMedia(request, createClient(
+    Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } },
+  ));
+  if (request.method !== 'GET') return unavailable(405);
   if (format && !['markdown', 'sitemap'].includes(format)) return unavailable(400);
   const id = params.get('id') ?? '';
   const catalog = format === 'sitemap' || (format === 'markdown' && !params.has('id'));
@@ -54,8 +59,11 @@ Deno.serve(async (request) => {
     if (format === 'markdown') return new Response(`# ${preview.title.replace(/[\r\n]/g, ' ')}\n\n원문: ${metadata.canonical}\n도시: ${preview.city ?? ''}\n주제: ${preview.label ?? ''}\n\n전체 내용은 글링에서 로그인 후 확인해주세요.\n`, { headers: { 'Content-Type': 'text/markdown; charset=utf-8', 'Cache-Control': 'no-store', 'Link': `<${metadata.canonical}>; rel="canonical"`, 'X-Robots-Tag': 'noindex, follow', 'X-Content-Type-Options': 'nosniff' } });
     let imageUrl = '';
     if (preview.imagePath) {
-      const signed = await supabase.storage.from('post-images').createSignedUrl(preview.imagePath, 3600);
-      imageUrl = signed.data?.signedUrl ?? '';
+      imageUrl = businessMediaUrl(preview.imagePath) ?? '';
+      if (!imageUrl) {
+        const signed = await supabase.storage.from('post-images').createSignedUrl(preview.imagePath, 3600);
+        imageUrl = signed.data?.signedUrl ?? '';
+      }
     }
     return page(preview.title, 200, id, imageUrl, metadata);
 

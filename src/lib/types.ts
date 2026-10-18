@@ -80,7 +80,7 @@ export interface Post {
   id: string;
   cityId: string; // 소속 도시 (피드 필터). 소도시·동네는 author.neighborhood로
   author: Author;
-  business?: { id: string; name: string };
+  business?: { id: string; name: string; avatarUri?: string | null };
   tag: Tag;
   title: string;
   body: string;
