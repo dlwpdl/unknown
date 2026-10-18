@@ -113,6 +113,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const [context, setContext] = useState<{ id: string; comments: PostComment[]; error: boolean } | null>(null);
   const [contextRetry, setContextRetry] = useState(0);
   const [draft, setDraft] = useState('');
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [editing, setEditing] = useState<PostComment | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
   const [sheetUser, setSheetUser] = useState<SheetUser | null>(null);
@@ -135,6 +136,8 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const loadedPages = useRef(new Set<string>());
   const inputRef = useRef<TextInput>(null);
   const scrollRef = useRef<NativeFlatList<CommentListRow>>(null);
+  const createdCommentToReveal = useRef<string | null>(null);
+  const listHeaderHeight = useRef(0);
   const scrolledContext = useRef<string | undefined>(undefined);
   const active = useRef(true);
   const visibleComments = (items: PostComment[]) => items.filter((item) =>
@@ -370,13 +373,17 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     try {
       const id = await createThreadComment(supabase, post.id, body, replyTo?.id);
       if (!active.current) return;
+      createdCommentToReveal.current = id;
       const nextTotal = commentTotal + 1;
       setComments((current) => [{
         id, authorId: me.id, nickname: me.nickname, body, likes: 0, likedByMe: false,
         verified: isVerified, trustLevel: trustLevel === 3 ? 3 : undefined,
         parentId: parentId ?? undefined, replyToId: replyTo?.id, replyToNickname: replyTo?.nickname, replyCount: 0,
       }, ...current]);
-      if (parentId) updateComment(parentId, (comment) => ({ ...comment, replyCount: (comment.replyCount ?? 0) + 1 }));
+      if (parentId) {
+        setExpanded(current => new Set(current).add(parentId));
+        updateComment(parentId, (comment) => ({ ...comment, replyCount: (comment.replyCount ?? 0) + 1 }));
+      }
       setCommentTotal(nextTotal);
       onCommentCountChange?.(nextTotal);
       setDraft('');
@@ -534,6 +541,11 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     rootPageLoaded: !!pages.root?.loaded,
   });
 
+  const revealCreatedComment = () => {
+    const index = listRows.findIndex(row => row.type === 'comment' && row.comment.id === createdCommentToReveal.current);
+    if (index >= 0) scrollRef.current?.scrollToIndex({ index, viewPosition: 1, animated: true });
+  };
+
   const renderRow = ({ item }: { item: CommentListRow }) => {
     if (item.type === 'label') {
       return <View style={item.label === 'focus-reply' ? [styles.replyRow, styles.focusReplyLabel, { borderLeftColor: theme.accent, backgroundColor: theme.backgroundElement }] : undefined}>
@@ -550,7 +562,13 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           : item.focusTarget ? styles.focusRoot : item.sectionStart ? styles.threadStart : undefined;
       return <View
         style={replyStyle}
-        onLayout={item.focusTarget ? () => {
+        onLayout={createdCommentToReveal.current === item.comment.id ? () => {
+          requestAnimationFrame(() => {
+            if (!active.current || createdCommentToReveal.current !== item.comment.id) return;
+            revealCreatedComment();
+            createdCommentToReveal.current = null;
+          });
+        } : item.focusTarget ? () => {
           if (scrolledContext.current === commentId) return;
           scrolledContext.current = commentId;
           scrollRef.current?.scrollToIndex({ index: 0, animated: false });
@@ -597,7 +615,10 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
 
   if (postHidden) return null;
   return (
-    <ThemedView style={{ flex: 1, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' }}>
+    <ThemedView style={{ flex: 1, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' }}
+      onLayout={event => {
+        if (Platform.OS === 'ios') event.currentTarget.measureInWindow((_x, y) => setKeyboardOffset(y));
+      }}>
       <Modal visible={postMenuOpen || deletePostOpen} transparent animationType="fade" onRequestClose={() => { if (!savingPost) { play('selection'); setPostMenuOpen(false); setDeletePostOpen(false); } }}>
         <View style={styles.menuOverlay}>
           <Pressable analyticsId="post.manage.dismiss" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}
@@ -647,7 +668,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
       {shareOpen && <PostShareSheet post={post} visible onClose={() => setShareOpen(false)}
         onShared={() => { void recordPostShare(supabase, post.id).catch(() => {}); }} />}
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={keyboardOffset}>
         <FlatList analyticsId="components_post-detail.flatlist.1"
           ref={scrollRef}
           data={postDraft ? [] : listRows}
@@ -658,8 +679,12 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
-          onScrollBeginDrag={() => { scrolledContext.current = commentId; }}
-          ListHeaderComponent={<View style={styles.listHeader}>
+          onContentSizeChange={revealCreatedComment}
+          onScrollToIndexFailed={({ index, averageItemLength }) => {
+            scrollRef.current?.scrollToOffset({ offset: listHeaderHeight.current + index * averageItemLength, animated: false });
+          }}
+          onScrollBeginDrag={() => { scrolledContext.current = commentId; createdCommentToReveal.current = null; }}
+          ListHeaderComponent={<View style={styles.listHeader} onLayout={event => { listHeaderHeight.current = event.nativeEvent.layout.height; }}>
             {canManagePost && postDraft && (
               <View style={[styles.postEdit, { borderColor: theme.line }]}>
                 <TextInput value={postDraft.title} onChangeText={(text) => setPostDraft((current) => current && { ...current, title: text })}
