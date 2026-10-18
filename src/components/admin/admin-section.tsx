@@ -474,7 +474,7 @@ function AdminErrorsPanel({ localPreview }: { localPreview?: boolean }) {
         {filtered.map((row, index) => (
           <View key={row.id} style={[styles.postRow, index === 0 && styles.postRowFirst]}>
             <Pressable onPress={() => { play('selection'); return setExpanded((current) => current === row.id ? null : row.id); }}
-              accessibilityRole="button" accessibilityState={{ expanded: expanded === row.id }}
+              accessibilityRole="button" aria-expanded={expanded === row.id} accessibilityState={{ expanded: expanded === row.id }}
               style={({ pressed }) => [styles.postHead, pressed && styles.pressed]}>
               <View style={[styles.dot, !row.resolvedAt && styles.dotDown]} />
               <View style={styles.postTitle}>
