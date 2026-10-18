@@ -72,7 +72,7 @@ test('tracking permission is checked again after a system settings change', asyn
 
 test('feed ads retain placement, UMP clearance, one initialization and privacy change notifications', async () => {
   const { ads, sdk, events, state } = load({ allowed: false });
-  assert.deepEqual(Array.from({ length: 25 }, (_, i) => i).filter(ads.feedAdPosition), [3, 7, 11, 15, 19, 23]);
+  assert.deepEqual(Array.from({ length: 25 }, (_, i) => i).filter(ads.feedAdPosition), [5, 12, 19]);
   assert.equal(await ads.prepareAds(), null);
   assert.ok(!events.includes('initialize'));
   state.allowed = true;

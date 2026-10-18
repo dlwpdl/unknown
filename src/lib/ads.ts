@@ -4,8 +4,8 @@ import { AppState, DeviceEventEmitter, Platform } from 'react-native';
 type AdSDK = typeof import('react-native-google-mobile-ads');
 export const testAds = __DEV__ || process.env.EXPO_PUBLIC_ADS_MODE !== 'live';
 export const adsSupported = Platform.OS !== 'web' && Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
-// Show an ad after every 4 posts (owner decision 2026-10-17).
-export const feedAdPosition = (index: number) => index >= 3 && (index - 3) % 4 === 0;
+// Native main-feed cadence is separate from the approved web/list placements.
+export const feedAdPosition = (index: number, _total?: number) => index >= 5 && (index - 5) % 7 === 0;
 export const AD_PRIVACY_CHANGED = 'gling:ad-privacy-changed';
 let initialization: Promise<AdSDK | null> | null = null;
 let trackingPermission: Promise<boolean> | null = null;
