@@ -33,10 +33,10 @@ select private.create_notification(('f7130000-0000-4000-8000-'||lpad(n::text,12,
 from (values(1,'copy-fest'),(2,'rock-fest'),(3,'policy-fest'),(4,'legacy-fest'),(5,'sports-fest'),(8,'copy-fest'))v(n,event);
 select is((select title from public.notifications where user_id='f7130000-0000-4000-8000-000000000001'),'Jazz Festival','the title is the clean event name');
 select ok((select body like '%두 그룹의 공연과 공개 잼 세션이 열려요.' from public.notifications where user_id='f7130000-0000-4000-8000-000000000001'),'the body retains the actual event description');
-select ok((select body like '%록 공연이에요.%Fixture Park%' from public.notifications where user_id='f7130000-0000-4000-8000-000000000002'),'missing introductions use official genre and venue');
-select ok((select body like '%재즈 공연이에요.%' and body not like '%refund%' from public.notifications where user_id='f7130000-0000-4000-8000-000000000003'),'entry and refund policies are not the event introduction');
-select ok((select body like '%행사예요.%Fixture Park%' from public.notifications where user_id='f7130000-0000-4000-8000-000000000004'),'legacy caches do not invent a genre');
-select ok((select body like '%농구 경기예요.%' from public.notifications where user_id='f7130000-0000-4000-8000-000000000005'),'official sports classifications describe the actual event type');
+select ok((select body like '%Fixture Park%록 공연이 열려요.' from public.notifications where user_id='f7130000-0000-4000-8000-000000000002'),'missing introductions use official genre and venue');
+select ok((select body like '%재즈 공연이 열려요.' and body not like '%refund%' from public.notifications where user_id='f7130000-0000-4000-8000-000000000003'),'entry and refund policies are not the event introduction');
+select ok((select body like '%Fixture Park%행사가 열려요.' from public.notifications where user_id='f7130000-0000-4000-8000-000000000004'),'legacy caches do not invent a genre');
+select ok((select body like '%농구 경기가 열려요.' from public.notifications where user_id='f7130000-0000-4000-8000-000000000005'),'official sports classifications describe the actual event type');
 select is((select count(*)::int from public.notifications where user_id='f7130000-0000-4000-8000-000000000008'),0,'content formatting preserves the selected-city boundary');
 select is((select count(*)::int from private.push_delivery_queue q join public.notifications n on n.id=q.notification_id where n.user_id::text like 'f7130000-%'),5,'copy changes retain one existing queue entry per eligible device');
 select ok(private.festival_notification_body('{"description":null,"segment":"Music","genre":"Rock","startsAt":"2026-11-01T04:30:00Z","venue":"Fixture Park"}','vancouver') like '%10월 31일%','the concise fallback date is local across daylight-saving changes');
