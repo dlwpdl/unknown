@@ -1,3 +1,5 @@
+import { decodeSharedUuid } from '../src/lib/shared-uuid.ts';
+
 export type SharePreviewEnv = {
   APP_URL: string;
   SHARE_ORIGIN?: string;
@@ -75,9 +77,9 @@ async function coverUrl(path: unknown, kind: Kind, app: string, supabase: string
 export async function handleSharePreview(request: Request, env: SharePreviewEnv, fetcher: typeof fetch = fetch): Promise<Response> {
   const head = request.method === 'HEAD';
   if (request.method !== 'GET' && !head) return unavailable(405);
-  const route = new URL(request.url).pathname.match(/^\/share\/([^/]+)\/?$/);
-  if (!route || !UUID.test(route[1])) return unavailable(404, head);
-  const id = route[1].toLowerCase();
+  const route = new URL(request.url).pathname.match(/^\/(share|s)\/([^/]+)\/?$/);
+  const id = route?.[1] === 's' ? decodeSharedUuid(route[2]) : route && UUID.test(route[2]) ? route[2].toLowerCase() : null;
+  if (!route || !id) return unavailable(404, head);
   let stage = 'APP_ORIGIN';
   let signal: AbortSignal | undefined;
   try {
@@ -109,7 +111,7 @@ export async function handleSharePreview(request: Request, env: SharePreviewEnv,
     const schedule = scheduleLabel(preview.schedule);
     const closed = kind === 'meetup' && preview.closed;
     const description = [kinds[kind], city, schedule, closed ? '모집 마감' : '', '로그인한 뒤 자세한 내용을 볼 수 있어요.'].filter(Boolean).join(' · ');
-    const canonical = `${share}/share/${id}`;
+    const canonical = `${share}/${route[1]}/${route[1] === 's' ? route[2] : id}`;
     const destination = `${app}/post?id=${id}&shared=1${kind === 'meetup' ? '&invite=1' : ''}`;
     const image = await coverUrl(preview.imagePath, kind, app, supabase, auth, fetcher);
     const safeTitle = escapeHtml(title);
