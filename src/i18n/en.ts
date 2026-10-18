@@ -5,7 +5,7 @@ export const en: Translations = {
   language: {
     title: 'App language', system: 'Use device language', korean: '한국어', english: 'English',
     note: 'Applies only to gling. Your device language stays the same.',
-    saving: 'Saving language', saveError: 'Could not save your language. Please select it again.',
+    saving: 'Saving language', saveError: 'Could not save your language. Please select it again.', close: 'Close',
   },
   trust: {
     accessibilityLabel: (level) => `Level ${level} verification · ${level === 1 ? 'Social account checked' : level === 2 ? 'Phone verified' : 'ID and selfie matched'}`,
@@ -137,15 +137,16 @@ export const en: Translations = {
     slotsFull: 'All direct chat slots are in use. A slot returns 24 hours after a chat ends.', membership: 'Membership',
   },
   auth: {
-    tagline: 'Everyday life, shared abroad', reasonDetail: 'Sign in to read the rest of this story', reasonProfile: 'Sign in to view your profile',
+    welcomeTitle: 'Your city.', welcomeAccent: 'Your people.',
+    tagline: 'Everyday life, shared in Canada.', reasonDetail: 'Sign in to read the rest of this story', reasonProfile: 'Sign in to view your profile',
     reasonNotifications: 'Sign in to view notifications', reasonWrite: 'Sign in to share a story', reasonLike: 'Sign in to like this post',
     reasonSave: 'Sign in to save this post', reasonShare: 'Sign in to share this post', reasonComment: 'Sign in to leave a comment',
     sessionExpired: 'Your session has expired. Sign in again to continue', reasonReport: 'Sign in to report this content', reasonChatLogin: 'Sign in to start a chat',
-    kakao: 'Continue with Kakao', google: 'Sign in with Google', connecting: 'Connecting…', devLoginTitle: 'Developer sign-in',
+    kakao: 'Login with Kakao', google: 'Sign in with Google', connecting: 'Connecting…', devLoginTitle: 'Developer sign-in',
     devEmail: 'Developer email', devPassword: 'Password', devLoginCta: 'Start a developer session', devLoginError: 'Check your developer credentials.',
     reviewLoginTitle: 'Review access', reviewEmail: 'Review email', reviewPassword: 'Password', reviewLoginCta: 'Sign in for review',
     reviewLoginNote: 'Only pre-issued app review accounts can sign in here.', reviewLoginError: 'Check your review credentials.',
-    close: 'Explore first', loginNote: 'New members set up a profile and agree to the terms after signing in with a social account.',
+    close: 'Explore first', loginNote: 'New members create a profile after signing in.',
     loginError: 'Could not sign in. Please try again later.', signOutError: 'Could not sign out. Please try again later.',
     deletedTitle: 'This account has been deleted', deletedBody: 'This account is being deleted. Contact support if the problem continues.',
     suspendedTitle: 'This account is restricted', suspendedBody: 'New activity is restricted by the moderation team. Existing moderation records are retained.',

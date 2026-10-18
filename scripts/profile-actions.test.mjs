@@ -8,11 +8,12 @@ import ts from 'typescript';
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 function profile() {
   let authenticated = true;
+  let canGoBack = true;
   const routes = [], feedback = [], shares = [];
   const imports = {
     react: { useEffect() {}, useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}] },
     'react/jsx-runtime': { Fragment: 'Fragment', jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
-    'expo-router': { Stack: { Screen: 'Screen' }, useRouter: () => ({ push: route => routes.push(route) }) },
+    'expo-router': { Stack: { Screen: 'Screen' }, useRouter: () => ({ push: route => routes.push(route), canGoBack: () => canGoBack, back: () => routes.push('back'), replace: route => routes.push(route) }) },
     'expo-symbols': { SymbolView: 'SymbolView' }, 'expo-image': { Image: 'Image' }, 'expo-image-picker': {},
     'react-native': { View: 'View', StyleSheet: { create: value => value }, Platform: { OS: 'ios' }, Animated: { Value: class {}, View: 'AnimatedView' }, Share: { share: async value => shares.push(value) } },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
@@ -34,7 +35,7 @@ function profile() {
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/app/profile/index.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, { exports, process: { env: {} }, require: withLanguageImports(name => { if (name in imports) return imports[name]; throw Error(name); }) });
-  return { render: exports.default, routes, feedback, shares, signOut() { authenticated = false; } };
+  return { render: exports.default, routes, feedback, shares, signOut() { authenticated = false; }, signIn() { authenticated = true; }, setCanGoBack(value) { canGoBack = value; } };
 }
 
 test('profile header keeps invite and settings actions, then clears both on sign-out', async () => {
@@ -51,4 +52,20 @@ test('profile header keeps invite and settings actions, then clears both on sign
   const guestHeader = nodes(guest).find(n => n.type === 'Screen');
   assert.ok(guestHeader, 'the signed-out render must clear previously configured native header actions');
   assert.equal(guestHeader.props.options.headerRight(), null);
+});
+
+test('guest profile hides the extra native header, preserves an exit, and restores the member header', () => {
+  const app = profile();
+  app.signOut();
+  const guest = app.render();
+  assert.equal(nodes(guest).find(n => n.type === 'Screen').props.options.headerShown, false);
+  const login = nodes(guest).find(n => n.type === 'LoginPanel');
+  assert.equal(typeof login.props.onClose, 'function');
+  login.props.onClose();
+  assert.equal(app.routes.at(-1), 'back');
+  app.setCanGoBack(false);
+  login.props.onClose();
+  assert.equal(app.routes.at(-1), '/');
+  app.signIn();
+  assert.equal(nodes(app.render()).find(n => n.type === 'Screen').props.options.headerShown, true);
 });

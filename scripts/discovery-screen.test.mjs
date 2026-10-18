@@ -5,11 +5,76 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { discoveryMatches, mergeCityTop25 } from '../src/lib/discovery.ts';
+import { isFreshLocation } from '../src/lib/location.ts';
 
 const source = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
 const compile = text => ts.transpileModule(text, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const previous = { key: 'viewer-and-city', page: 0, items: [{ id: 'post:old' }], cursor: { id: 'last-post', sortAt: '2026-10-14' }, postMore: true, eventMore: false };
+
+test('a system permission dialog preserves GPS while an actual background transition cancels it', () => {
+  const start = source.indexOf("    const listener = AppState.addEventListener('change', state => {");
+  const end = source.indexOf('    const revision = locationRevision;', start);
+  let listener;
+  const locationRevision = { current: 1 }, states = [], times = [], exports = {};
+  vm.runInNewContext(compile(source.slice(start, end) + '\nexports.ready = true;'), {
+    exports, Date, locationRevision, AppState: { addEventListener: (_event, callback) => { listener = callback; return { remove() {} }; } },
+    setLocating: value => states.push(value), setNow: value => times.push(value),
+  });
+  listener('inactive'); assert.equal(locationRevision.current, 1); assert.equal(states.length, 0);
+  listener('active'); assert.equal(times.length, 1);
+  listener('background'); assert.equal(locationRevision.current, 2); assert.deepEqual(states, [false]);
+});
+
+function gps({ granted = true, fix, defer = false } = {}) {
+  const start = source.indexOf('  const locate = async () => {'), end = source.indexOf('  const changeMode = ', start);
+  const changes = { center: null }, calls = [], locationRevision = { current: 0 }, AppState = { currentState: 'active' }, exports = {};
+  let finish;
+  const value = fix ?? { coords: { latitude: 49.28, longitude: -123.12, accuracy: 10 }, timestamp: Date.now() };
+  vm.runInNewContext(compile(source.slice(start, end) + '\nexports.locate = locate;'), {
+    exports, locating: false, locationRevision, AppState, isFreshLocation, Date,
+    Location: { Accuracy: { Balanced: 3 }, requestForegroundPermissionsAsync: async () => { calls.push('permission'); return { granted }; },
+      getCurrentPositionAsync: async () => { calls.push('gps'); return defer ? new Promise(resolve => { finish = resolve; }) : value; } },
+    play: kind => calls.push(kind), setLocating: value => { changes.locating = value; }, setLocationError: value => { changes.error = value; },
+    setSelectedId: value => { changes.selectedId = value; }, setCenter: value => { changes.center = value; }, setTimeout: () => 1, clearTimeout() {},
+  });
+  return { ...exports, changes, calls, locationRevision, AppState, finish: () => finish(value) };
+}
+
+test('My Location uses the actual fresh device fix and sends a new camera request on every press', async () => {
+  for (const [latitude, longitude] of [[49.28, -123.12], [37.7749, -122.4194]]) {
+    const ui = gps({ fix: { coords: { latitude, longitude, accuracy: 10 }, timestamp: Date.now() } });
+    await ui.locate();
+    assert.equal(ui.changes.center.latitude, latitude);
+    assert.equal(ui.changes.center.longitude, longitude);
+    const requestId = ui.changes.center.requestId;
+    await ui.locate();
+    assert.ok(ui.changes.center.requestId > requestId);
+    assert.equal(ui.changes.locating, false);
+  }
+});
+
+test('denied, stale, mocked and inaccurate GPS results never move the map to a fallback city', async () => {
+  const denied = gps({ granted: false }); await denied.locate();
+  assert.equal(denied.calls.includes('gps'), false);
+  assert.equal(denied.changes.center, null);
+  assert.ok(denied.changes.error.includes('권한'));
+  for (const patch of [{ timestamp: Date.now() - 121000 }, { mocked: true }, { coords: { latitude: 49.28, longitude: -123.12, accuracy: 251 } }, { timestamp: Date.now() + 60000 }]) {
+    const ui = gps({ fix: { coords: { latitude: 49.28, longitude: -123.12, accuracy: 10 }, timestamp: Date.now(), ...patch } });
+    await ui.locate();
+    assert.equal(ui.changes.center, null);
+    assert.ok(ui.changes.error);
+    assert.equal(ui.changes.locating, false);
+  }
+});
+
+test('a late GPS completion cannot override a chosen pin or a backgrounded screen', async () => {
+  for (const cancel of [ui => { ui.locationRevision.current++; }, ui => { ui.AppState.currentState = 'background'; }]) {
+    const ui = gps({ defer: true }), pending = ui.locate(); await tick();
+    cancel(ui); ui.finish(); await pending;
+    assert.equal(ui.changes.center, null);
+  }
+});
 
 test('Top 25 merges only visible recommendations before filtering and keeps the 500-row bound', () => {
   const start = source.indexOf('  const publicItems = '), end = source.indexOf('  const pins = ', start);

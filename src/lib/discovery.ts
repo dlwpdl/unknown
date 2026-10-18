@@ -78,7 +78,7 @@ export function mergeCityTop25(items: DiscoveryItem[], cityId: string, picks: re
   return [...places, ...visible.filter(item => !merged.has(item.id))];
 }
 const categoryFor = (post: Post): DiscoveryCategory => {
-  if (post.tag.slug === 'housing' || post.tag.slug === 'used') return post.tag.slug;
+  if (post.tag.slug === 'housing' || post.tag.slug === 'used' || post.tag.slug === 'festival') return post.tag.slug;
   const tags = (post.hashtags ?? []).join(' ');
   for (const [pattern, category] of [
     [/전시|exhibition/i, 'exhibition'], [/도서관|library/i, 'library'], [/카페|cafe|café/i, 'cafe'],
@@ -88,6 +88,7 @@ const categoryFor = (post: Post): DiscoveryCategory => {
   return ({ festival: 'festival', food: 'dining', travel: 'trip', shopping: 'shopping' } as Partial<Record<Post['tag']['slug'], DiscoveryCategory>>)[post.tag.slug] ?? 'place';
 };
 export function discoveryPost(post: Post, now = Date.now()): DiscoveryItem | null {
+  if (!['housing', 'used', 'food', 'travel', 'festival', 'shopping'].includes(post.tag.slug)) return null;
   if (post.kind === 'listing' && (!['open', 'partial'].includes(post.listingStatus ?? '') || !(Date.parse(post.expiresAt ?? '') > now))) return null;
   const location = postMapBody(post.body), pin = location.url ? googleMapsPin(location.url) : null;
   if (!location.url) return null;

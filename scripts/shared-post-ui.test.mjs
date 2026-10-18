@@ -16,6 +16,7 @@ import { postMapBody } from '../src/lib/post-maps.ts';
 import { visibleTranslationSource } from '../src/lib/translation-source.ts';
 import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
 import * as postLinks from '../supabase/functions/_shared/post-links.ts';
+import * as postReactions from '../src/lib/post-reactions.ts';
 
 const id = '9f100000-0000-4000-8000-000000000001';
 const otherId = '9f100000-0000-4000-8000-000000000002';
@@ -74,6 +75,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/hooks/use-content-translation': { useContentTranslation: (_kind, _id, source) => ({ display: source, translated: false, original: true }) },
     '@/lib/translation-source': { visibleTranslationSource },
     '@/lib/post-photo-credits': { splitPostPhotoCredits },
+    '@/lib/post-reactions': postReactions,
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 } },
     '../../supabase/functions/_shared/post-links': postLinks, '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
     '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },

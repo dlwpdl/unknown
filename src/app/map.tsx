@@ -63,7 +63,7 @@ function CityMap() {
   const [mode, setMode] = useState<'map' | 'list'>('map'), [query, setQuery] = useState(''), [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState<DiscoveryDate>('all'), [date, setDate] = useState('');
   const [dateOpen, setDateOpen] = useState(false), [dateDraft, setDateDraft] = useState(''), [dateError, setDateError] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null), [center, setCenter] = useState<PostPin | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null), [center, setCenter] = useState<(PostPin & { requestId: number }) | null>(null);
   const [cardHeight, setCardHeight] = useState(0);
   const [visibleResultIds, setVisibleResultIds] = useState<Set<string>>(new Set());
   const trackTranslationResults = useCallback(({ viewableItems }: { viewableItems: { item: DiscoveryItem }[] }) =>
@@ -84,8 +84,8 @@ function CityMap() {
   useEffect(() => {
     const timer = setInterval(() => { if (AppState.currentState === 'active') setNow(Date.now()); }, 60000);
     const listener = AppState.addEventListener('change', state => {
-      if (state !== 'active') { locationRevision.current++; setLocating(false); }
-      else setNow(Date.now());
+      if (state === 'background') { locationRevision.current++; setLocating(false); }
+      else if (state === 'active') setNow(Date.now());
     });
     const revision = locationRevision;
     return () => { clearInterval(timer); listener.remove(); revision.current++; };
@@ -166,7 +166,7 @@ function CityMap() {
       if (revision !== locationRevision.current || AppState.currentState !== 'active') return;
       const fix = { latitude: value.coords.latitude, longitude: value.coords.longitude, accuracy: value.coords.accuracy, measuredAt: value.timestamp, mocked: value.mocked ?? false };
       if (!isFreshLocation(fix) || fix.accuracy === null || fix.accuracy > 250 || Date.now() - fix.measuredAt > 120000) throw new Error('INACCURATE');
-      setSelectedId(null); setCenter({ latitude: fix.latitude, longitude: fix.longitude }); play('success');
+      setSelectedId(null); setCenter({ latitude: fix.latitude, longitude: fix.longitude, requestId: revision }); play('success');
     } catch (error) {
       if (revision !== locationRevision.current) return;
       play('warning'); setLocationError(error instanceof Error && error.message === 'PERMISSION' ? "위치 권한이 꺼져 있어요. 선택한 도시의 지도는 계속 볼 수 있어요." : "현재 위치를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.");

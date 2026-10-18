@@ -1,6 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
-import { useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { Alert, Animated, Easing, StyleSheet, View } from 'react-native';
@@ -26,6 +26,7 @@ import { getPostImageSource, relativeTime } from '@/lib/feed-data';
 import { visibleMeetupBody } from '@/lib/meetup-ai';
 import { uniqueHashtags } from '@/lib/hashtags';
 import { postMapBody } from '@/lib/post-maps';
+import { changePostReaction, postReactionsSnapshot, subscribePostReactions, syncPostReactions } from '@/lib/post-reactions';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { PostShareSheet } from '@/components/post-share-sheet';
 import { supabase } from '@/lib/supabase';
@@ -62,12 +63,18 @@ export function PostCard({
   const [saveBurst] = useState(() => new Animated.Value(0));
   const openPost = () => { play('selection'); onPress?.(); };
   const mine = !post.business && post.author.id === me.id;
-  const [savedOn, setSavedOn] = useState(post.savedByMe ?? false);
-  const [likedOn, setLikedOn] = useState(post.likedByMe ?? false);
-  const [likeCount, setLikeCount] = useState(post.likes);
-  const [saveCount, setSaveCount] = useState(post.saves);
+  const viewerId = isAuthed ? me.id : 'guest';
+  const reactions = useSyncExternalStore(subscribePostReactions,
+    useCallback(() => postReactionsSnapshot(viewerId, post.id), [viewerId, post.id]), () => undefined);
+  const likedOn = reactions?.like?.isOn ?? post.likedByMe ?? false;
+  const savedOn = reactions?.save?.isOn ?? post.savedByMe ?? false;
+  const likeCount = reactions?.like?.count ?? post.likes;
+  const saveCount = reactions?.save?.count ?? post.saves;
+  const busyReaction = reactions?.pending ?? null;
+  useEffect(() => {
+    syncPostReactions(viewerId, post.id, { isOn: post.likedByMe ?? false, count: post.likes }, { isOn: post.savedByMe ?? false, count: post.saves });
+  }, [viewerId, post.id, post.likedByMe, post.likes, post.savedByMe, post.saves]);
   const [shareCount, setShareCount] = useState(post.shares ?? 0);
-  const [busyReaction, setBusyReaction] = useState<'like' | 'save' | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [failedBusinessLogo, setFailedBusinessLogo] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
@@ -97,19 +104,12 @@ export function PostCard({
     if (!isAuthed) return promptLogin(t.auth.reasonLike);
     if (busyReaction) return;
     play('reaction');
-    const previous = likedOn;
-    setLikedOn(!previous);
-    setLikeCount((count) => Math.max(0, count + (previous ? -1 : 1)));
-    setBusyReaction('like');
     try {
-      await togglePostReaction(supabase, post.id, me.id, 'like', previous);
+      await changePostReaction(me.id, post.id, 'like', { isOn: likedOn, count: likeCount },
+        previous => togglePostReaction(supabase, post.id, me.id, 'like', previous));
     } catch {
       play('warning');
-      setLikedOn(previous);
-      setLikeCount((count) => Math.max(0, count + (previous ? 1 : -1)));
       Alert.alert(t.feed.actionErrorTitle, t.feed.actionErrorBody);
-    } finally {
-      setBusyReaction(null);
     }
   };
 
@@ -123,18 +123,12 @@ export function PostCard({
       saveBurst.setValue(0);
       Animated.timing(saveBurst, { toValue: 1, duration: 560, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
     }
-    setSavedOn(!previous);
-    setSaveCount((count) => Math.max(0, count + (previous ? -1 : 1)));
-    setBusyReaction('save');
     try {
-      await togglePostReaction(supabase, post.id, me.id, 'save', previous);
+      await changePostReaction(me.id, post.id, 'save', { isOn: savedOn, count: saveCount },
+        wasOn => togglePostReaction(supabase, post.id, me.id, 'save', wasOn));
     } catch {
       play('warning');
-      setSavedOn(previous);
-      setSaveCount((count) => Math.max(0, count + (previous ? 1 : -1)));
       Alert.alert(t.feed.actionErrorTitle, t.feed.actionErrorBody);
-    } finally {
-      setBusyReaction(null);
     }
   };
 
