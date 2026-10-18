@@ -128,7 +128,7 @@ export default function ChatScreen() {
     if (!userId || !conversationId) return;
     let active = true;
     if (!businessId) { selectChatBusiness(userId, null); return; }
-    void loadMyMerchantConnections(supabase, userId).then(result => {
+    void loadMyMerchantConnections(supabase, userId, true).then(result => {
       if (!active) return;
       const target = result.merchants.find(item => item.id === businessId && item.role !== 'admin');
       if (!target) throw new Error('MERCHANT_ACCESS_REQUIRED');

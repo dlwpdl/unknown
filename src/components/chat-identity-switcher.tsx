@@ -14,16 +14,16 @@ import { loadMyMerchantConnections, type MyMerchantConnections } from '@/lib/mer
 import { supabase } from '@/lib/supabase';
 
 export function ChatIdentitySwitcher({ onChanged }: { onChanged?: () => void }) {
-  const { me, isAuthed, isAdmin } = useAuth(), business = useChatIdentity();
+  const { me, isAuthed } = useAuth(), business = useChatIdentity();
   const { tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback();
   const [openedFor, setOpenedFor] = useState<string | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const [result, setResult] = useState<MyMerchantConnections | null>(null);
   const user = useRef(me.id), serial = useRef(0), pending = useRef(false);
   useLayoutEffect(() => {
-    user.current = isAuthed && !isAdmin ? me.id : ''; serial.current++; pending.current = false;
+    user.current = isAuthed ? me.id : ''; serial.current++; pending.current = false;
     return () => { user.current = ''; };
-  }, [me.id, isAuthed, isAdmin]);
-  if (!isAuthed || isAdmin) return null;
+  }, [me.id, isAuthed]);
+  if (!isAuthed) return null;
   const rows = result?.user_id === me.id ? result.merchants.filter(row => row.role !== 'admin') : [];
   const name = business?.name ?? me.nickname;
   function close() { play('selection'); serial.current++; pending.current = false; setBusy(false); setOpenedFor(null); }
@@ -32,7 +32,7 @@ export function ChatIdentitySwitcher({ onChanged }: { onChanged?: () => void }) 
     play('selection'); pending.current = true; setBusy(true); setError(''); setResult(null); setOpenedFor(me.id);
     const request = ++serial.current;
     try {
-      const next = await loadMyMerchantConnections(supabase, me.id);
+      const next = await loadMyMerchantConnections(supabase, me.id, true);
       if (user.current === me.id && request === serial.current) setResult(next);
     } catch {
       if (user.current === me.id && request === serial.current) { setError('연결을 확인하지 못했어요. 현재 프로필은 유지돼요.'); play('warning'); }
@@ -47,7 +47,7 @@ export function ChatIdentitySwitcher({ onChanged }: { onChanged?: () => void }) 
     pending.current = true; setBusy(true); setError('');
     const request = ++serial.current;
     try {
-      const next = await loadMyMerchantConnections(supabase, me.id);
+      const next = await loadMyMerchantConnections(supabase, me.id, true);
       if (user.current !== me.id || request !== serial.current) return;
       setResult(next);
       const selected = next.merchants.find(row => row.id === id && row.role !== 'admin');
