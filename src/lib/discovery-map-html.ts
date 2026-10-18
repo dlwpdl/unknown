@@ -68,8 +68,16 @@ const validState=s=>{if(!s||!Array.isArray(s.markers)||s.markers.length>500||(s.
 const geojson=(selection=false)=>({type:'FeatureCollection',features:current.markers.filter(m=>!selection||m.id===current.selectedId).map(m=>({type:'Feature',geometry:{type:'Point',coordinates:[m.longitude,m.latitude]},properties:{id:m.id,label:m.label,color:m.color,top25:m.top25===true}}))});
 const move=camera=>map.easeTo({...camera,duration:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?0:300});
 const hitLayers=['discovery-selected-top25','discovery-selected-hit','discovery-selected-label','discovery-top25','discovery-clusters','discovery-hit','discovery-labels'];
-const top25Filter=()=>['any',['all',['has','point_count'],['>',['coalesce',['get','top25Count'],0],0]],['all',['!',['has','point_count']],['==',['get','top25'],true],['!=',['get','id'],current.selectedId??'']]];
-const ensureBadges=()=>{if(!current.markers.some(m=>m.top25))return;for(const full of [false,true]){const id=full?'top25-full':'top25-small';if(map.hasImage(id))continue;const canvas=document.createElement('canvas');canvas.width=full?148:44;canvas.height=36;const ctx=canvas.getContext('2d');if(!ctx)throw Error('TOP25_CANVAS');ctx.scale(2,2);ctx.fillStyle='${TOP25_GOLD}';ctx.fillRect(0,0,canvas.width/2,18);ctx.fillStyle='#342611';ctx.beginPath();for(const [i,p]of [[8,3],[10,7],[14,9],[10,11],[8,15],[6,11],[2,9],[6,7]].entries())i?ctx.lineTo(...p):ctx.moveTo(...p);ctx.closePath();ctx.fill();if(full){ctx.font='700 12px system-ui';ctx.textBaseline='middle';ctx.fillText('TOP 25',19,9)}map.addImage(id,ctx.getImageData(0,0,canvas.width,canvas.height),{pixelRatio:2})}};
+const top25Filter=()=>['all',['!',['has','point_count']],['==',['get','top25'],true],['!=',['get','id'],current.selectedId??'']];
+const ensureBadges=()=>{
+ if(!current.markers.some(m=>m.top25)||map.hasImage('top25-full'))return;
+ const canvas=document.createElement('canvas');canvas.width=136;canvas.height=48;
+ const ctx=canvas.getContext('2d');if(!ctx)throw Error('TOP25_CANVAS');ctx.scale(2,2);
+ ctx.beginPath();ctx.moveTo(12,1);ctx.arcTo(67,1,67,23,11);ctx.arcTo(67,23,1,23,11);ctx.arcTo(1,23,1,1,11);ctx.arcTo(1,1,67,1,11);ctx.closePath();
+ ctx.fillStyle='#FFF8E9';ctx.fill();ctx.strokeStyle='${TOP25_GOLD}';ctx.lineWidth=1;ctx.stroke();
+ ctx.fillStyle='#6F5129';ctx.font='700 11px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('TOP 25',34,12);
+ map.addImage('top25-full',ctx.getImageData(0,0,canvas.width,canvas.height),{pixelRatio:2});
+};
 const apply=()=>{if(!loaded)return;map.getSource('discovery').setData(geojson());map.getSource('discovery-selection').setData(geojson(true));
  const p=current.userLocation;
  if(p){if(!userMarker){const el=document.createElement('div');el.className='user-location-marker';el.setAttribute('role','img');el.setAttribute('aria-label','${language === 'en' ? 'Your location' : '내 위치'}');userMarker=new maplibregl.Marker({element:el}).setLngLat([p.longitude,p.latitude]).addTo(map)}else userMarker.setLngLat([p.longitude,p.latitude])}else if(userMarker){userMarker.remove();userMarker=null}
@@ -94,17 +102,17 @@ try{
   ensureBadges();
   map.addSource('discovery',{type:'geojson',data:geojson(),cluster:true,clusterMaxZoom:16,clusterRadius:44,clusterProperties:{top25Count:['+',['case',['get','top25'],1,0]]}});
   map.addSource('discovery-selection',{type:'geojson',data:geojson(true)});
-  map.addLayer({id:'discovery-clusters',type:'circle',source:'discovery',filter:['has','point_count'],paint:{'circle-radius':22,'circle-color':'#f8f6fc','circle-stroke-color':'#9283ac','circle-stroke-width':2}});
+  map.addLayer({id:'discovery-clusters',type:'circle',source:'discovery',filter:['has','point_count'],paint:{'circle-radius':22,'circle-color':'#f8f6fc','circle-stroke-color':['case',['>',['coalesce',['get','top25Count'],0],0],'#9C7637','#9283ac'],'circle-stroke-width':2}});
   map.addLayer({id:'discovery-counts',type:'symbol',source:'discovery',filter:['has','point_count'],layout:{'text-field':'{point_count_abbreviated}','text-font':['Noto Sans Regular'],'text-size':14,'text-allow-overlap':true,'text-ignore-placement':true},paint:{'text-color':'#302047'}});
   map.addLayer({id:'discovery-pins',type:'circle',source:'discovery',filter:['!', ['has','point_count']],paint:{'circle-radius':11,'circle-color':['get','color'],'circle-stroke-color':'#ffffff','circle-stroke-width':2}});
   map.addLayer({id:'discovery-labels',type:'symbol',source:'discovery',filter:['!', ['has','point_count']],layout:{'text-field':['get','label'],'text-font':['Noto Sans Regular'],'text-size':12,'text-anchor':'left','text-offset':[2,0],'text-max-width':14,'text-padding':4},paint:{'text-color':'#302047','text-halo-color':'#ffffff','text-halo-width':2}});
   map.addLayer({id:'discovery-hit',type:'circle',source:'discovery',filter:['!', ['has','point_count']],paint:{'circle-radius':22,'circle-opacity':0}});
-  map.addLayer({id:'discovery-top25',type:'symbol',source:'discovery',filter:top25Filter(),layout:{'icon-image':'top25-small','icon-offset':['case',['has','point_count'],['literal',[18,-18]],['literal',[12,-12]]],'icon-allow-overlap':true,'icon-ignore-placement':true}});
+  map.addLayer({id:'discovery-top25',type:'circle',source:'discovery',filter:top25Filter(),paint:{'circle-radius':15,'circle-opacity':0,'circle-stroke-color':'#9C7637','circle-stroke-width':2}});
   map.addLayer({id:'discovery-selected',type:'circle',source:'discovery-selection',paint:{'circle-radius':17,'circle-color':'#ffffff','circle-stroke-color':'${accent}','circle-stroke-width':4}});
   map.addLayer({id:'discovery-selected-pin',type:'circle',source:'discovery-selection',paint:{'circle-radius':11,'circle-color':['get','color'],'circle-stroke-color':'#ffffff','circle-stroke-width':2}});
   map.addLayer({id:'discovery-selected-label',type:'symbol',source:'discovery-selection',layout:{'text-field':['get','label'],'text-font':['Noto Sans Regular'],'text-size':12,'text-anchor':'left','text-offset':[2,0],'text-max-width':14,'text-allow-overlap':true},paint:{'text-color':'#302047','text-halo-color':'#ffffff','text-halo-width':2}});
   map.addLayer({id:'discovery-selected-hit',type:'circle',source:'discovery-selection',paint:{'circle-radius':22,'circle-opacity':0}});
-  map.addLayer({id:'discovery-selected-top25',type:'symbol',source:'discovery-selection',filter:['==',['get','top25'],true],layout:{'icon-image':'top25-full','icon-anchor':'left','icon-offset':[21,-19],'icon-allow-overlap':true,'icon-ignore-placement':true}});
+  map.addLayer({id:'discovery-selected-top25',type:'symbol',source:'discovery-selection',filter:['==',['get','top25'],true],layout:{'icon-image':'top25-full','icon-anchor':'left','icon-offset':[21,-24],'icon-allow-overlap':true,'icon-ignore-placement':true}});
   clearTimeout(timer);loaded=true;failed=false;
   apply();send({type:'ready'});
  }catch{fail()}});
