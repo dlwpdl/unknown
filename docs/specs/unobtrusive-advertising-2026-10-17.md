@@ -32,7 +32,7 @@ The CMP must be installed before the ad component subscribes, expose the TCF API
 
 Google Auto ads must remain off for this mixed public/private application. Only explicit eligible public slots request ads. The separate public-web route set has a reader and chat participant route; it has no standalone `/map` or `/events` route. The app web route set has those index screens. Web discovery embedded above `/chat` remains ineligible for AdSense.
 
-After valid configuration, consent, public-route eligibility, foreground visibility and near-viewport intersection, the official async script loads once per document with `crossOrigin="anonymous"`. Each unit pushes one empty request object. Delayed loads recheck consent, mounting, viewport and visibility; natural return can complete the original request without refresh loops. Observer/CMP listeners clean up on unmount. No private context is added to request fields.
+After valid configuration, consent, public-route eligibility, foreground visibility and near-viewport intersection, the official async script loads once per document with `crossOrigin="anonymous"`. Dormant units reserve their geometry without the `adsbygoogle` class; only the unit ready to request exposes that class immediately before its one empty SDK push. A first-match SDK test verifies that jumping to a later unit cannot fill an earlier offscreen one. Delayed loads recheck consent, mounting, viewport and visibility; natural return can complete the original request without refresh loops. Observer/CMP listeners clean up on unmount. No private context is added to request fields.
 
 Unconfigured or denied components render nothing. Pending inventory reserves space without a fake creative; no-fill hides the ad and its label while retaining blank space to avoid moving already-read content. Google attribution and AdChoices remain under SDK control. `public/ads.txt` repeats the verified owned seller line from `app-ads.txt`; approval and consent remain separate readiness dependencies.
 
@@ -44,7 +44,7 @@ Final commands and bundle hashes are recorded in `.expo/advertising-verification
 
 | Final check | Result |
 | --- | --- |
-| `npm test` | 1,421 tests: 1,420 passed, zero failed, one artifact-dependent test skipped. |
+| `npm test` | 1,422 tests: 1,421 passed, zero failed, one artifact-dependent test skipped. |
 | Merchant artifact test with `GLING_MERCHANT_WEB_EXPORT_DIR=.merchant-dist GLING_WEB_BASE_URL=/merchant` | The skipped test was separately run against the actual export and passed. |
 | `npm run typecheck`, `npm run lint` | Passed. |
 | `npm run export:web`, `check:public-web`, `check:merchant-web` | Public and merchant exports/checks passed. |
