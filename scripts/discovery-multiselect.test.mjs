@@ -78,11 +78,12 @@ test('real map chips toggle independently, expose checked state and reset withou
     get selectedFilters() { return selected; },
     require: () => ({ jsx: element, jsxs: element }),
   };
-  const code = `${source.slice(filterStart, filterEnd)}\n${source.slice(start, end)}\nexports.render = () => (${source.slice(jsxStart, jsxEnd)});`;
+  const chipStart = source.indexOf('  const filterChip = '), chipEnd = source.indexOf('  return <SafeAreaView', chipStart);
+  const code = `${source.slice(filterStart, filterEnd)}\n${source.slice(start, end)}\n${source.slice(chipStart, chipEnd)}\nexports.render = () => (${source.slice(jsxStart, jsxEnd)});`;
   vm.runInNewContext(ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, context);
   const buttons = () => [exports.render().props.children].flat(Infinity);
   const button = id => buttons().find(node => node.key === id);
-  assert.deepEqual(buttons().map(node => node.key), ['all', 'top25', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used', 'events']);
+  assert.deepEqual(buttons().map(node => node.key), ['all', 'top25', 'cafe', 'dining', 'festival', 'places']);
   button('top25').props.onPress();
   button('cafe').props.onPress();
   assert.deepEqual(selected, ['top25', 'cafe']);
@@ -104,8 +105,8 @@ test('an active date filter stays visible and resettable after selecting a place
   const ast = ts.createSourceFile('map.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   let row;
   const visit = node => {
-    if (ts.isBinaryExpression(node) && ts.isJsxElement(node.right)
-      && node.right.openingElement.attributes.properties.some(prop => prop.name?.getText(ast) === 'style' && prop.initializer?.expression?.getText(ast) === 'styles.dates')) row = node;
+    if (ts.isBinaryExpression(node) && ts.isJsxFragment(node.right)
+      && node.left.getText(ast) === 'Object.hasOwn(EVENT_CITIES, city.id)' && node.right.getText(ast).includes('styles.dates')) row = node;
     ts.forEachChild(node, visit);
   };
   visit(ast);
@@ -114,7 +115,7 @@ test('an active date filter stays visible and resettable after selecting a place
     includeEvents, dateFilter, city: { id: cityId }, EVENT_CITIES: { vancouver: 'Vancouver' },
   });
   assert.equal(visible(false, 'today'), true);
-  assert.equal(visible(false, 'all'), false);
+  assert.equal(visible(false, 'all'), true);
   assert.equal(visible(true, 'all'), true);
   assert.equal(visible(false, 'today', 'unsupported'), false);
 });
