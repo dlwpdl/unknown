@@ -107,7 +107,7 @@ test('the independent public reader counts across appended pages without replaci
   const posts = Array.from({ length: 33 }, (_, index) => ({ id: `post-${index}`, body: `Body ${index}`, title: `Title ${index}`, tag: { label: '동네' }, author: { nickname: '이웃' }, createdAt: '2026-10-17T12:00:00Z' }));
   let calls = 0;
   const view = mount('../src/components/public-web/reader.tsx', 'ReaderContent', {
-    '@/lib/feed-data': { appendUniquePosts, loadPublicFeed: async () => (++calls === 1 ? posts.slice(0, 30) : posts.slice(30)) },
+    '@/lib/feed-data': { appendUniquePosts, loadPublicFeed: async () => { if (++calls === 2) throw new Error('append failed'); return calls === 1 ? posts.slice(0, 30) : posts.slice(30); } },
     '@/lib/mock': { CITIES: [city], TAGS: [] }, '@/lib/post-maps': { postMapBody: body => ({ body }) },
     '../../../supabase/functions/_shared/post-links': { splitPostAttachments: body => ({ body, urls: [] }) },
     '@/lib/public-web': { publicMerchantId: () => null, publicWebTarget: () => 'gling://' }, '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.example', jsonLd: JSON.stringify },
@@ -117,6 +117,11 @@ test('the independent public reader counts across appended pages without replaci
   const before = nodes(view.tree).filter(node => node.type === 'article' || node.type === 'FeedAd');
   assert.equal(before.filter(node => node.type === 'article').length, 30);
   assert.equal(ads(view.tree).length, 7);
+  nodes(view.tree).find(node => node.props?.className === 'reader-more').props.onClick(); await view.settle();
+  const failed = nodes(view.tree).filter(node => node.type === 'article' || node.type === 'FeedAd');
+  assert.equal(failed.filter(node => node.type === 'article').length, 30);
+  assert.equal(ads(view.tree).length, 7, 'a failed append cannot remove already-mounted slots above the reader');
+  assert.deepEqual(failed.map(node => [node.type, node.key]), before.map(node => [node.type, node.key]));
   nodes(view.tree).find(node => node.props?.className === 'reader-more').props.onClick(); await view.settle();
   const after = nodes(view.tree).filter(node => node.type === 'article' || node.type === 'FeedAd');
   assert.equal(after.filter(node => node.type === 'article').length, 33);
