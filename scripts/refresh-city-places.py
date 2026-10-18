@@ -67,6 +67,7 @@ def build_catalog(seed, elements, now):
                     p['address'] = (number+' '+street)[:1000]
                 closed = any(tags.get(k) == 'yes' for k in ['disused','abandoned','demolished','closed']) or any(k in tags for k in ['disused:amenity','abandoned:amenity','demolished:amenity'])
                 names = [tags.get(k) for k in ['name','name:en','name:fr','official_name','brand']]
+                if tags.get('bridge') == 'yes': names.append(tags.get('bridge:name'))
                 renamed = p['name'].casefold() not in [v.casefold() for v in names if isinstance(v, str)]
                 if not closed and not renamed and tags.get('access') not in ['private','no'] and hours not in ['closed','off']: eligible.add(ident)
             places.append(p)
