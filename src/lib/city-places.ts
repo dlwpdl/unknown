@@ -64,6 +64,15 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
   return true;
 }
 
+function reviewedPicks(cityId: string): PlaceRecommendation[] {
+  if (catalog.recommendationTheme !== 'photo-spots') return [];
+  const current = catalog.cities[cityId].recommendations ?? [];
+  // An older daily snapshot has not seen newly reviewed bundled additions yet.
+  const additions = ((snapshot as PlaceCatalog).cities[cityId].recommendations ?? [])
+    .filter(pick => Date.parse(pick.verifiedAt) > Date.parse(catalog.collectedAt) && !current.some(item => item.placeId === pick.placeId));
+  return [...current, ...additions].slice(0, 25);
+}
+
 // Keep unselected OSM identities available to existing detail and review links.
 export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): CityPlace[] {
   if (!CITIES.some(city => city.id === cityId)) throw new Error('INVALID_PLACE_CITY');
@@ -73,7 +82,7 @@ export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): 
   // shortcut: verified photos cover a subset; add licensed same-place images as they are checked.
   const photos = photoCatalog.cities[cityId] ?? [];
   const photoOrder = new Map(photos.map((photo, index) => [photo.placeId, index]));
-  const reviewed = new Map((catalog.recommendationTheme === 'photo-spots' ? city.recommendations ?? [] : []).map(pick => [pick.placeId, pick]));
+  const reviewed = new Map(reviewedPicks(cityId).map(pick => [pick.placeId, pick]));
   const currentIds = new Set(city.places.map(place => place.id));
   const archived = (snapshot as PlaceCatalog).cities[cityId]?.places.filter(place => !currentIds.has(place.id)) ?? [];
   return [...city.places, ...archived].filter(place => category === 'all' || place.category === category)
@@ -82,8 +91,7 @@ export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): 
 }
 
 export function getCityRecommendations(cityId: string, category: PlaceCategory = 'all'): CityPlace[] {
-  const places = getCityPlaces(cityId, category), picks = catalog.cities[cityId].recommendations;
-  if (catalog.recommendationTheme !== 'photo-spots' || !picks) return [];
+  const places = getCityPlaces(cityId, category), picks = reviewedPicks(cityId);
   const byId = new Map(places.map(place => [place.id, place]));
   return picks.flatMap(pick => {
     const place = byId.get(pick.placeId);

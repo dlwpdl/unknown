@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { tr, setActiveLanguage } from '../src/i18n/index.ts';
 
 const root = new URL('../', import.meta.url);
 const snapshot = () => JSON.parse(readFileSync(new URL('src/lib/place-external-ratings.json', root), 'utf8'));
@@ -50,4 +51,53 @@ test('every bundled rating matches an existing place and keeps its observed sour
     assert.ok(row.via === 'Wanderlog' || row.via === 'Resy');
     assert.equal(Object.hasOwn(row, 'reviews'), false, 'external data must not masquerade as member reviews');
   }
+});
+
+function view({ language = 'ko', failOpen = false } = {}) {
+  setActiveLanguage(language);
+  const exports = {}, calls = { links: [], feedback: [], alerts: [] };
+  const imports = {
+    'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
+    'react-native': { View: 'View', StyleSheet: { create: value => value, hairlineWidth: 1 },
+      Linking: { openURL: async url => { calls.links.push(url); if (failOpen) throw Error('offline'); } },
+      Alert: { alert: (...args) => calls.alerts.push(args) } },
+    'expo-symbols': { SymbolView: 'SymbolView' },
+    '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/themed-text': { ThemedText: 'Text' },
+    '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16 } },
+    '@/hooks/use-language': { useLanguage: () => ({ tr, locale: language }) },
+    '@/hooks/use-theme': { useTheme: () => ({ card: '#fff', line: '#ddd', textSecondary: '#666' }) },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => calls.feedback.push(kind) }) },
+    '@/lib/place-external-ratings': load(),
+  };
+  vm.runInNewContext(ts.transpileModule(readFileSync(new URL('src/components/place-external-ratings.tsx', root), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+  }).outputText, { exports, require: name => imports[name], Date });
+  return { ...exports, calls };
+}
+const nodes = value => !value || typeof value !== 'object' ? [] : [value, ...Object.values(value).flatMap(v => Array.isArray(v) ? v.flatMap(nodes) : nodes(v))];
+const text = value => typeof value === 'string' || typeof value === 'number' ? String(value) : Array.isArray(value)
+  ? value.map(text).join(' ') : value?.props ? text(value.props.children) : '';
+const scope = { cityId: 'vancouver', placeId: 'osm:node:703754423' };
+
+test('rating cards disclose the intermediary and date; source taps provide feedback and handle failure', async () => {
+  const ui = view({ failOpen: true }), tree = ui.PlaceExternalRatings(scope);
+  assert.match(text(tree), /Google/); assert.match(text(tree), /Tripadvisor/);
+  assert.match(text(tree), /Wanderlog/); assert.match(text(tree), /2026/); assert.match(text(tree), /28,661/);
+  const links = nodes(tree).filter(node => node.props?.analyticsId === 'places.rating.source');
+  assert.equal(links.length, 2);
+  assert.equal(links[0].props.accessibilityRole, 'link');
+  links[0].props.onPress(); await new Promise(setImmediate);
+  assert.deepEqual(ui.calls.links, ['https://wanderlog.com/place/details/98400']);
+  assert.deepEqual(ui.calls.feedback, ['selection', 'warning']);
+  assert.equal(ui.calls.alerts.length, 1);
+});
+
+test('unmatched places stay empty and English displays ratings without claiming Gling reviews', () => {
+  const ui = view({ language: 'en' });
+  assert.equal(ui.PlaceExternalRatings({ ...scope, cityId: 'toronto' }), null);
+  assert.equal(ui.PlaceRatingSummary({ ...scope, placeId: 'missing' }), null);
+  assert.match(text(ui.PlaceExternalRatings(scope)), /Ratings from other sites/);
+  assert.match(text(ui.PlaceRatingSummary(scope)), /Google\s+4.5\s*\/5.*28,661 ratings/);
+  assert.doesNotMatch(text(ui.PlaceExternalRatings(scope)), /Gling member reviews/);
+  setActiveLanguage('ko');
 });
