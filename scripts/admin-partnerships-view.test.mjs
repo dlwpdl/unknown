@@ -167,3 +167,23 @@ test('creator workspace keeps seven scan columns and separates collaboration his
   nodes(tree).find(n => n.type === 'button' && text(n) === '프로필·연락처').props.onClick();
   assert.equal(nodes(screen.render()).find(n => n.props?.className === 'creator-detail-profile').props.hidden, false);
 });
+
+test('creator navigation stays outside the scrolling detail content', async () => {
+  const screen = view('creators', async (_kind, _query, _offset, selected) => page('creators', selected ? rows.creators : null));
+  screen.render(); await new Promise(setImmediate);
+  nodes(screen.render()).find(n => n.type === 'button' && n.props?.['data-record-id'] === id).props.onClick({ currentTarget: { focus() {} } });
+  screen.render(); await new Promise(setImmediate);
+  const tree = screen.render(), body = nodes(tree).find(n => n.props?.className === 'partnership-dialog-body');
+  const nav = nodes(tree).find(n => n.type === 'nav' && n.props['aria-label'] === '크리에이터 상세 화면');
+  const chrome = nodes(tree).find(n => n.props?.className === 'partnership-detail-chrome');
+  assert.ok(nav && chrome); assert.ok(nodes(chrome).includes(nav)); assert.ok(!nodes(body).includes(nav));
+  assert.ok(nodes(chrome).some(n => n.type === 'button' && n.props['aria-label'] === '상세 닫기'));
+});
+
+for (const kind of ['campaigns', 'benefits']) test(`${kind} uses the shared workspace and labels every directory field on narrow screens`, async () => {
+  const screen = view(kind, async () => page(kind));
+  screen.render(); await new Promise(setImmediate); const tree = screen.render();
+  assert.match(tree.props.className, /partner-workspace/);
+  const table = nodes(tree).find(n => n.type === 'table'), cells = nodes(table).filter(n => n.type === 'td');
+  assert.deepEqual(cells.map(n => n.props['data-label']), [kind === 'campaigns' ? '캠페인' : '혜택', '비즈니스', '상태', kind === 'campaigns' ? '선정 팀' : '발급·사용']);
+});

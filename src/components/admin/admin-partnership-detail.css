@@ -1,0 +1,60 @@
+.partnership-workspace .partnership-dialog {
+  width:min(860px,calc(100vw - 40px)); border-radius:16px;
+}
+.partnership-workspace .partnership-detail-chrome { flex-shrink:0; background:var(--admin-card); border-bottom:1px solid var(--admin-line); }
+.partnership-workspace .partnership-dialog-heading { padding:24px 28px; align-items:flex-start; border:0; }
+.partnership-workspace .partnership-detail-title { flex:1; min-width:0; }
+.partnership-workspace .partnership-dialog-heading h2 { font-size:24px; line-height:1.3; letter-spacing:-.025em; }
+.partnership-workspace .partnership-detail-avatar { display:grid; place-items:center; width:48px; height:48px; flex:0 0 48px; border-radius:12px; border:1px solid var(--admin-line); background:var(--admin-subtle); color:var(--admin-accent); font-size:22px; font-weight:650; }
+.partnership-workspace .partnership-detail-context { display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; margin-top:8px; color:var(--admin-muted); font-size:12px; overflow-wrap:anywhere; }
+.partnership-workspace button.partnership-detail-close { width:44px; height:44px; min-width:44px; flex:0 0 44px; padding:0; border:0; background:transparent; color:var(--admin-muted); font-size:24px; }
+.partnership-workspace .partner-detail-tabs { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; margin:0; padding:0 20px; border:0; }
+.partnership-workspace .partner-detail-tabs button { min-width:0; min-height:48px; font-size:12px; padding:12px 4px; }
+.partnership-workspace .partnership-dialog-body { padding:28px; scrollbar-width:thin; scrollbar-color:var(--admin-line) var(--admin-card); }
+.partnership-workspace .partnership-detail-actions { margin:0 0 24px; }
+.partnership-workspace .partnership-facts { gap:0 28px; }
+.partnership-workspace .partnership-facts > div { padding:16px 0; border-bottom:1px solid var(--admin-line); }
+.partnership-workspace .partnership-facts dt { margin-bottom:6px; }
+.partnership-workspace .partnership-facts dd { font-size:14px; line-height:1.65; }
+.partnership-workspace .partnership-detail-section { margin-top:28px; padding-top:24px; }
+.partnership-workspace .partnership-section-heading { align-items:center; gap:12px; }
+.partnership-workspace .partnership-section-heading h3 { margin:0; font-size:14px; }
+.partnership-workspace .partnership-detail-section > h3 { font-size:14px; }
+.partnership-workspace .partnership-status { border:0; background:var(--admin-paper); color:var(--admin-muted); font-size:11px; line-height:20px; padding:2px 8px; }
+.partnership-workspace .partnership-status:is([data-status=active],[data-status=open]) { background:var(--admin-success-soft); color:var(--admin-success); }
+.partnership-workspace .partnership-status[data-status=draft] { background:var(--admin-warning-soft); color:var(--admin-warning); }
+.partnership-workspace .partnership-form { padding-top:0; }
+.partnership-workspace .partnership-form-actions { bottom:-28px; }
+.partnership-workspace .partnership-directory-table:not(.creator-directory) { min-width:600px; table-layout:fixed; font-size:13px; }
+.partnership-workspace .partnership-directory-table:not(.creator-directory) :is(th,td) { padding:14px 12px; }
+.partnership-workspace .partnership-directory-table:not(.creator-directory) thead th { position:sticky; top:0; z-index:2; background:var(--admin-paper); font-size:11px; font-weight:600; }
+.partnership-workspace .partnership-directory-table:not(.creator-directory) thead th:first-child { width:38%; }
+.partnership-workspace .partnership-directory-table:not(.creator-directory) thead th:nth-child(2) { width:28%; }
+.partnership-workspace .partnership-directory-table:not(.creator-directory) thead th:nth-child(3) { width:16%; }
+.partnership-workspace .partnership-directory-table:not(.creator-directory) thead th:last-child { width:18%; }
+.partnership-workspace .partnership-directory-table:not(.creator-directory) tbody tr { background:var(--admin-card); }
+.partnership-workspace .partnership-directory-table:not(.creator-directory) tbody tr:is(:hover,[data-selected=true]) { background:var(--admin-subtle); }
+.partnership-workspace .partnership-directory-table:not(.creator-directory) td { overflow-wrap:anywhere; }
+.partnership-workspace .partnership-directory-table .partnership-row-button strong { line-height:1.5; }
+.partnership-workspace .partnership-directory-table .partnership-row-button .partnership-muted { font-size:11px; margin-top:4px; }
+@container partner-directory (max-width:780px) {
+  .partnership-workspace .partnership-directory-table:not(.creator-directory) { display:block; min-width:0; }
+  .partnership-workspace .partnership-directory-table:not(.creator-directory) thead { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+  .partnership-workspace .partnership-directory-table:not(.creator-directory) tbody { display:block; }
+  .partnership-workspace .partnership-directory-table:not(.creator-directory) tbody tr { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; padding:16px 4px; border-bottom:1px solid var(--admin-line); }
+  .partnership-workspace .partnership-directory-table:not(.creator-directory) td { display:block; min-width:0; padding:0; border:0; }
+  .partnership-workspace .partnership-directory-table:not(.creator-directory) td:first-child { grid-column:1/-1; }
+  .partnership-workspace .partnership-directory-table:not(.creator-directory) td:not(:first-child)::before { content:attr(data-label); display:block; color:var(--admin-muted); font-size:11px; margin-bottom:4px; }
+}
+@media(max-width:680px) {
+  .partnership-workspace .partnership-dialog { width:100%; height:100dvh; max-height:100dvh; margin:0; border-radius:0; }
+  .partnership-workspace .partnership-dialog-heading { padding:20px 16px 16px; gap:12px; }
+  .partnership-workspace .partnership-dialog-heading h2 { font-size:21px; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
+  .partnership-workspace .partnership-detail-avatar { width:44px; height:44px; flex-basis:44px; }
+  .partnership-workspace .partnership-detail-context { font-size:11px; gap:6px 8px; }
+  .partnership-workspace .partner-detail-tabs { padding-inline:12px; gap:0; }
+  .partnership-workspace .partner-detail-tabs button { min-height:44px; padding-block:10px; }
+  .partnership-workspace .partnership-dialog-body { padding:24px 16px; }
+  .partnership-workspace .partnership-facts { grid-template-columns:1fr; }
+  .partnership-workspace .partnership-form-actions { bottom:-24px; }
+}
