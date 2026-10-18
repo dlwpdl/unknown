@@ -54,7 +54,7 @@ export function MerchantProfileHeader({ profile, ratings, onReviewPress }: Props
         play('selection'); setLinkError('');
         void Linking.openURL(link.url).catch(() => { setLinkError(link.url); play('warning'); });
       }}><ThemedText type="smallBold" themeColor="accent">{link.label} ↗</ThemedText></Pressable>)}</View>}
-    {profile.links?.some(link => link.url === linkError) && <ThemedText type="small" accessibilityRole="alert">{tr("업체 페이지를 열지 못했어요. 다시 눌러 주세요.")}</ThemedText>}
+    {profile.links?.some(link => link.url === linkError) && <ThemedText type="small" accessibilityRole="alert">{tr("비즈니스 페이지를 열지 못했어요. 다시 눌러 주세요.")}</ThemedText>}
   </View>;
 }
 

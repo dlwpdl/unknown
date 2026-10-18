@@ -159,7 +159,7 @@ test('벤더 목록은 주소 기반 소재지와 연결 계정을 구분하고 
   const address = '77 Finch Ave W, Suite 202, North York, ON M2N 2H5';
   view.refreshMerchant({ ...merchants[0], address, owner_id: 'owned' });
   const table = nodes(view.render()).find(n => n.type === 'table');
-  assert.ok(text(view.render()).includes('업체 관리'));
+  assert.ok(text(view.render()).includes('비즈니스 관리'));
   assert.ok(text(table).includes('North York, ON'));
   assert.ok(text(table).includes('벤더 회원'));
   assert.ok(text(table).includes('미연결'));
@@ -175,12 +175,12 @@ test('벤더 목록은 주소 기반 소재지와 연결 계정을 구분하고 
 test('closing and reopening the same merchant keeps its unsaved profile; replacing it requires confirmation', () => {
   const view = app();
   button(view.render(), '업체 1 활동과 정보 보기').props.onClick();
-  button(view.render(), '업체 정보').props.onClick();
+  button(view.render(), '비즈니스 정보').props.onClick();
   nodes(view.render()).find(n => n.type === 'input' && n.props.value === '업체 1').props.onChange({ target: { value: '저장 전 이름' } });
-  button(view.render(), '업체 상세 닫기').props.onClick();
+  button(view.render(), '비즈니스 상세 닫기').props.onClick();
   button(view.render(), '업체 1 활동과 정보 보기').props.onClick();
   assert.ok(nodes(view.render()).some(n => n.type === 'input' && n.props.value === '저장 전 이름'));
-  assert.equal(button(view.render(), '업체 정보').props['aria-pressed'], true, 'Reopening must keep the current tab and draft visible.');
+  assert.equal(button(view.render(), '비즈니스 정보').props['aria-pressed'], true, 'Reopening must keep the current tab and draft visible.');
   button(view.render(), '업체 2 활동과 정보 보기').props.onClick();
   assert.equal(view.prompts.length, 1);
   assert.ok(nodes(view.render()).some(n => n.type === 'input' && n.props.value === '저장 전 이름'));
@@ -197,12 +197,12 @@ test('linked post management belongs to the profile tab and retains unsaved inpu
   const linked = root => nodes(root).find(n => n.type === 'section' && text(n).startsWith('연결된 글'));
   const profile = root => nodes(root).find(n => n.type === 'div' && n.props.hidden === true && nodes(n).includes(linked(root)));
   assert.ok(profile(view.render()), 'linked posts must be mounted inside the hidden profile, not crowd the activity tab');
-  button(view.render(), '업체 정보').props.onClick();
+  button(view.render(), '비즈니스 정보').props.onClick();
   const source = root => nodes(linked(root)).find(n => n.type === 'input' && n.props.type === 'url');
   source(view.render()).props.onChange({ target: { value: 'https://example.test/unsaved' } });
   button(view.render(), '활동 · 성과').props.onClick();
   assert.equal(source(view.render()).props.value, 'https://example.test/unsaved');
-  button(view.render(), '업체 정보').props.onClick();
+  button(view.render(), '비즈니스 정보').props.onClick();
   assert.equal(source(view.render()).props.value, 'https://example.test/unsaved');
   button(view.render(), '업체 2 활동과 정보 보기').props.onClick();
   assert.equal(view.prompts.length, 1);
@@ -212,7 +212,7 @@ test('linked post management belongs to the profile tab and retains unsaved inpu
 test('reopening a clean merchant uses the latest saved name and contact from the refreshed directory', () => {
   const view = app();
   button(view.render(), '업체 1 활동과 정보 보기').props.onClick();
-  button(view.render(), '업체 상세 닫기').props.onClick();
+  button(view.render(), '비즈니스 상세 닫기').props.onClick();
   view.refreshMerchant({ ...merchants[0], name: '새 서버 이름', contact: 'latest@example.test' });
   button(view.render(), '새 서버 이름 활동과 정보 보기').props.onClick();
   const inputs = nodes(view.render()).filter(n => n.type === 'input');
@@ -227,7 +227,7 @@ test('unsaved account ownership edits also protect a merchant switch', () => {
   view.detail();
   const form = nodes(view.render()).find(n => n.type === 'AdminMerchantConnections');
   form.props.onDirty(true);
-  button(view.render(), '업체 상세 닫기').props.onClick();
+  button(view.render(), '비즈니스 상세 닫기').props.onClick();
   button(view.render(), '업체 2 활동과 정보 보기').props.onClick();
   assert.equal(view.prompts.length, 1, 'Account form edits must not disappear silently.');
   assert.ok(nodes(view.render()).some(n => n.type === 'input' && n.props.value === '업체 1'));
@@ -235,10 +235,10 @@ test('unsaved account ownership edits also protect a merchant switch', () => {
 
 
 test('unknown promotions default to a source record and choosing a business gives immediate feedback', () => {
-  const view=app();button(view.render(),'업체 등록').props.onClick();
+  const view=app();button(view.render(),'비즈니스 등록').props.onClick();
   let root=view.render();let select=nodes(root).find(n=>n.type==='select'&&n.props['aria-label']==='등록 종류');
   assert.ok(select);assert.equal(select.props.value,'source');
-  assert.ok(text(root).includes('공개 회사 프로필과 업체 리뷰를 만들지 않습니다'));
+  assert.ok(text(root).includes('공개 비즈니스 프로필과 비즈니스 리뷰를 만들지 않습니다'));
   const feedback=view.feedback.length;select.props.onChange({target:{value:'business'}});
   root=view.render();select=nodes(root).find(n=>n.type==='select'&&n.props['aria-label']==='등록 종류');
   assert.equal(select.props.value,'business');assert.ok(view.feedback.length>feedback);
@@ -252,7 +252,7 @@ test('row editing opens the existing information form directly', () => {
   const edit = button(view.render(), '업체 1 수정');
   assert.ok(edit, 'A vendor must have a direct edit action.');
   edit.props.onClick();
-  const profileTab = button(view.render(), '업체 정보');
+  const profileTab = button(view.render(), '비즈니스 정보');
   assert.equal(profileTab.props['aria-pressed'], true);
   assert.ok(nodes(view.render()).some(n => n.type === 'input' && n.props.value === '업체 1'));
 });
@@ -311,7 +311,7 @@ test('deleting another vendor preserves an unsaved information draft', async () 
   const view = app(); view.allow();
   button(view.render(), '업체 1 수정').props.onClick();
   nodes(view.render()).find(n => n.type === 'input' && n.props.value === '업체 1').props.onChange({ target: { value: '저장 전 이름' } });
-  button(view.render(), '업체 상세 닫기').props.onClick();
+  button(view.render(), '비즈니스 상세 닫기').props.onClick();
   button(view.render(), '업체 2 삭제').props.onClick();
   await settle();
   assert.ok(nodes(view.render()).some(n => n.type === 'input' && n.props.value === '저장 전 이름'));
@@ -321,7 +321,7 @@ test('deleting another vendor preserves an unsaved information draft', async () 
 test('confirmed deletion of the open vendor clears its abandoned editor', async () => {
   const view = app(); view.allow();
   button(view.render(), '업체 1 수정').props.onClick();
-  button(view.render(), '업체 상세 닫기').props.onClick();
+  button(view.render(), '비즈니스 상세 닫기').props.onClick();
   button(view.render(), '업체 1 삭제').props.onClick();
   await settle();
   assert.ok(!nodes(view.render()).some(n => n.type === 'input' && n.props.value === '업체 1'));
@@ -346,7 +346,7 @@ test('deleting another vendor keeps a locally edited owner form mounted', async 
   const before = ownerForm(view.render());
   assert.ok(before);
   before.props.onDirty();
-  button(view.render(), '업체 상세 닫기').props.onClick();
+  button(view.render(), '비즈니스 상세 닫기').props.onClick();
   button(view.render(), '업체 2 삭제').props.onClick();
   await settle();
   const after = ownerForm(view.render());

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { attachSignedPostImages, loadPublicFeed, mapPublicFeed, type FeedCursor, type PublicFeedRow } from './feed-data';
+import { hydratePublicPosts, loadPublicFeed, mapPublicFeed, type FeedCursor, type PublicFeedRow } from './feed-data';
 import { discoveryPost, type DiscoveryFilter } from './discovery';
 
 export async function loadDiscoveryPosts(client: SupabaseClient, cityId: string, filter: DiscoveryFilter, query: string,
@@ -19,7 +19,7 @@ export async function loadDiscoveryPosts(client: SupabaseClient, cityId: string,
   }
   if (error) throw error;
   const rows = (data ?? []) as PublicFeedRow[];
-  const posts = await attachSignedPostImages(client, mapPublicFeed(rows, []), viewerScope);
+  const posts = await hydratePublicPosts(client, mapPublicFeed(rows, []), viewerScope);
   const last = rows.at(-1);
   return { items: posts.map(post => discoveryPost(post)).filter(item => item !== null), hasMore: rows.length === 50,
     cursor: last ? { createdAt: last.created_at, sortAt: last.sort_at ?? last.created_at, id: last.id } : null };

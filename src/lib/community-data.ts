@@ -6,7 +6,7 @@ import { isThumbPath, MAX_IMAGE_BYTES, MAX_POST_IMAGES, thumbPathFor } from './i
 import { normalizePoll, type PollDraft } from './post-polls.ts';
 import { chatImagePaths } from './chat-details.ts';
 
-import { attachSignedPostImages, loadPublicPost, mapPublicFeed, type FeedCursor, type PublicCommentRow, type PublicFeedRow } from './feed-data.ts';
+import { hydratePublicPosts, loadPublicPost, mapPublicFeed, type FeedCursor, type PublicCommentRow, type PublicFeedRow } from './feed-data.ts';
 import type { DailyQuota, ListingStatus, Post, PostComment, PostKind, RoomPreview, Tag } from './types.ts';
 
 const IMAGE_EXTENSIONS: Record<string, string> = {
@@ -624,7 +624,7 @@ export async function loadSavedPosts(client: SupabaseClient, cursor: FeedCursor 
     p_limit: 30,
   });
   if (saved.error) throw saved.error;
-  return attachSignedPostImages(client, mapPublicFeed((saved.data ?? []) as PublicFeedRow[], []));
+  return hydratePublicPosts(client, mapPublicFeed((saved.data ?? []) as PublicFeedRow[], []));
 }
 
 export async function loadPostCommentsPage(

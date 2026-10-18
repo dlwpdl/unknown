@@ -64,7 +64,7 @@ function screen(file, { save = async () => reply, sessionOwner = owner,
 test('review expansion includes company reply while rejection reason is shown only to its author', () => {
   const view = screen('../src/components/merchant-reviews.tsx');
   let root = view.render('MerchantReviewCard', { review: { ...review, receipt_status: 'rejected', receipt_review_note: '이용 날짜가 보이지 않아요.' }, own: true });
-  assert.ok(text(root).includes('업체 답변'));
+  assert.ok(text(root).includes('비즈니스 답변'));
   control(root, 'merchant.review.detail').props.onPress();
   root = view.render('MerchantReviewCard', { review: { ...review, receipt_status: 'rejected', receipt_review_note: '이용 날짜가 보이지 않아요.' }, own: true });
   assert.ok(text(root).includes(reply.body));

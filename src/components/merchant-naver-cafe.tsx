@@ -16,7 +16,7 @@ import { cancelMerchantNaverPreparation, completeMerchantNaverCafe, disconnectMe
 import { supabase } from '@/lib/supabase';
 
 const errors: Record<string, string> = {
-  MERCHANT_ACCESS_REQUIRED: '현재 계정에 업체 관리 권한이 없어요.', MERCHANT_OWNER_VERIFICATION_REQUIRED: '확인된 업체 소유자만 네이버 계정을 연결할 수 있어요.',
+  MERCHANT_ACCESS_REQUIRED: '현재 계정에 비즈니스 관리 권한이 없어요.', MERCHANT_OWNER_VERIFICATION_REQUIRED: '확인된 비즈니스 소유자만 네이버 계정을 연결할 수 있어요.',
   NAVER_NOT_CONFIGURED: '네이버 개발자 앱 설정이 아직 준비되지 않았어요.', NAVER_STATUS_UNAVAILABLE: '네이버 연결 상태를 확인하지 못했어요. 연결 설정과 서버 배포를 확인해 주세요.',
   INVALID_NAVER_STATE: '로그인 계정이 다르거나 연결 요청이 만료됐어요. 다시 연결해 주세요.', NAVER_RECONNECT_REQUIRED: '네이버 계정을 다시 연결해 주세요.',
   INVALID_NAVER_BOARD_URL: '카페의 게시판 주소를 붙여넣어 주세요. 카페 홈 주소만으로는 게시판을 선택할 수 없어요.',
@@ -24,7 +24,7 @@ const errors: Record<string, string> = {
   NAVER_CONTENT_REVIEW_REQUIRED: '안전 검토가 필요한 원고예요. 내용을 확인한 뒤 운영자에게 문의해 주세요.', CONTENT_NOT_ALLOWED: '게시 기준에 맞지 않는 내용이에요.',
   NAVER_INVALID_PHOTO: '사진 형식 또는 용량을 확인하지 못했어요. 원고의 사진을 확인해 주세요.', NAVER_PENDING_STORAGE_REQUIRED: '발행 요청을 안전하게 저장하지 못했어요. 브라우저 저장 공간을 확인해 주세요.',
   NAVER_PUBLISH_UNCERTAIN: '게시 결과가 불확실해요. 중복 게시를 막기 위해 재발행을 멈췄어요. 카페에서 실제 글을 확인해 주세요.',
-  MERCHANT_OPERATIONS_PAUSED: '중단된 업체는 게시할 수 없어요.', RATE_LIMITED: '오늘 게시 한도 또는 연결 요청 한도에 도달했어요. 잠시 후 다시 확인해 주세요.',
+  MERCHANT_OPERATIONS_PAUSED: '중단된 비즈니스는 게시할 수 없어요.', RATE_LIMITED: '오늘 게시 한도 또는 연결 요청 한도에 도달했어요. 잠시 후 다시 확인해 주세요.',
 };
 const errorText = (error: unknown) => errors[error instanceof Error ? error.message : ''] ?? '처리하지 못했어요. 입력은 유지했으니 상태를 다시 확인해 주세요.';
 
@@ -173,7 +173,7 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
     <View style={styles.actions}>
       <CafeAction label={tr("상태 다시 확인")} disabled={busy} onPress={() => { void run(refreshStatus); }} />
       <CafeAction label={status?.connection ? tr("네이버 다시 연결") : tr("네이버 계정 연결")} disabled={busy || !status?.configured} onPress={() => { void run(async () => {
-        if (Platform.OS !== 'web') { setNotice("업체용 웹에서 네이버 계정을 연결해 주세요."); return; }
+        if (Platform.OS !== 'web') { setNotice("비즈니스용 웹에서 네이버 계정을 연결해 주세요."); return; }
         const next = await startMerchantNaverCafe(supabase, merchantId);
         const target = new URL(next.authorizationUrl);
         if (target.protocol !== 'https:' || target.hostname !== 'nid.naver.com' || target.pathname !== '/oauth2.0/authorize') throw new Error('INVALID_NAVER_STATE');

@@ -33,7 +33,7 @@ test('vendor direction displays real costs and connects the same existing agreem
   nodes(tree).find(n => n.type === 'button' && text(n) === '크리에이터 연결').props.onClick();
   nodes(app.render()).find(n => n.type === 'EntityPicker').props.onPick(creator.id, creator.display_name);
   app.render(); await new Promise(setImmediate); tree = app.render();
-  assert.equal(nodes(tree).find(n => n.type === 'button' && text(n) === '다른 벤더와의 협업').props.disabled, true);
+  assert.equal(nodes(tree).find(n => n.type === 'button' && text(n) === '다른 비즈니스와의 협업').props.disabled, true);
   nodes(tree).find(n => n.type === 'button' && text(n) === '이 이력에 연결').props.onClick();
   const form = nodes(app.render()).find(n => n.type === 'CreatorDealMerchantForm');
   assert.equal(form.props.deal.id, deal.id); assert.equal(form.props.initialMerchant.id, merchant.id);

@@ -60,7 +60,7 @@ test('last connection removal hides the entry and a revoked click never navigate
   const view = app();
   assert.equal(view.render(), null);
   view.pending.shift()(context()); await flush();
-  const entry = view.render(); assert.match(text(entry), /1개 업체/);
+  const entry = view.render(); assert.match(text(entry), /업체 A로 글쓰기/);
   entry.props.onPress();
   assert.equal(view.calls.length, 2, 'every switch rechecks the current server connection');
   view.pending.shift()(context('user-a', [])); await flush();
@@ -72,7 +72,7 @@ test('foreground revocation clears switches and preserves a pending invitation e
   assert.equal(view.render(), null);
   view.foreground();
   view.pending.shift()(context('user-a', [], [{ id: 'invite-a', merchant_id: 'company-a', role: 'owner', can_accept: true }])); await flush();
-  assert.match(text(view.render()), /업체 계정 초대/);
+  assert.match(text(view.render()), /비즈니스 계정 초대/);
 });
 test('account change discards outstanding reads and an outstanding switch click', async () => {
   const view = app(); view.render(); view.pending.shift()(context()); await flush(); view.render().props.onPress();
@@ -90,6 +90,6 @@ test('invitations cannot display another account cache or accept changed busines
   const invitation = { id: 'invite-a', merchant_id: 'company-a', merchant_name: '업체 A', address: '주소 A', city_name: '밴쿠버', role: 'owner', expires_at: '2026-10-16', can_accept: false };
   view.pending.shift()(context('user-a', [], [invitation])); await flush();
   const node = view.render(), action = nodes(node).find(n => n.props?.label === '확인하고 연결');
-  assert.equal(action.props.disabled, true); assert.match(text(node), /업체 정보가 바뀌었어요/);
+  assert.equal(action.props.disabled, true); assert.match(text(node), /비즈니스 정보가 바뀌었어요/);
   view.auth({ me: { id: 'user-b' } }); assert.equal(view.render(), null);
 });

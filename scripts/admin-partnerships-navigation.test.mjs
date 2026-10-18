@@ -34,7 +34,7 @@ const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.
 
 test('businesses and creators have separate navigation while the existing merchant URL remains stable', () => {
   assert.equal(admin.initialAdminSection('merchants'), 'merchants');
-  assert.equal(admin.ADMIN_SECTIONS.find(row => row.id === 'merchants').label, '업체 관리');
+  assert.equal(admin.ADMIN_SECTIONS.find(row => row.id === 'merchants').label, '비즈니스 관리');
   assert.deepEqual(admin.ADMIN_NAV_GROUPS.find(row => row.label === '제휴 운영').sections, ['merchants', 'creators', 'campaigns', 'benefits']);
   const sections = admin.ADMIN_NAV_GROUPS.flatMap(group => group.sections);
   assert.equal(new Set(sections).size, sections.length);

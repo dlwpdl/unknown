@@ -176,7 +176,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       }
       else if (storeCompleted) setError("스토어 처리는 완료됐지만 멤버십 반영을 확인하지 못했어요. 다시 결제하지 말고 잠시 후 다시 확인해 주세요.");
       else if ((failure as Error)?.message === 'MEMBERSHIP_SCHEMA_NOT_READY') setError("새 멤버십 연결을 준비 중이에요. 현재 구독은 그대로 이용할 수 있어요.");
-      else if (kind === 'business') setError("업체 소유 확인과 구독 연결을 확인해 주세요. 결제 내역이 있다면 다시 결제하지 말고 구매 복원을 이용해 주세요.");
+      else if (kind === 'business') setError("비즈니스 소유 확인과 구독 연결을 확인해 주세요. 결제 내역이 있다면 다시 결제하지 말고 구매 복원을 이용해 주세요.");
       else setError("구독을 처리하지 못했어요. 결제 내역이 있다면 구매 복원을 이용해 주세요.");
     } finally { processing.current = false; setBusy(false); }
   }, [offersState, pending, sync, userId]);

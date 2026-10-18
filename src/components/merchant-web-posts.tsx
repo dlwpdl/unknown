@@ -45,7 +45,7 @@ export function MerchantWebPosts({ merchantId, posts, onChanged }: { merchantId:
     } catch (e) {
       if (currentOwner.current === requestOwner) {
         play('warning'); setError(e instanceof Error && e.message === 'MERCHANT_POST_UNAVAILABLE'
-          ? "삭제되었거나 공개되지 않은 글이에요." : "글을 열지 못했어요. 현재 계정의 업체 권한과 연결 상태를 확인해 주세요.");
+          ? "삭제되었거나 공개되지 않은 글이에요." : "글을 열지 못했어요. 현재 계정의 비즈니스 권한과 연결 상태를 확인해 주세요.");
       }
     } finally { opening.current = false; if (currentOwner.current === requestOwner) setBusy(false); }
   }
@@ -60,10 +60,10 @@ export function MerchantWebPosts({ merchantId, posts, onChanged }: { merchantId:
   };
   if (!isAuthed) return null;
   return <View style={styles.list}>
-    <ThemedText type="subtitle" accessibilityRole="header">{tr("업체의 글과 사진")}</ThemedText>
-    <ThemedText type="small" themeColor="textSecondary">{tr("연결된 글을 열어서 수정·삭제할 수 있어요. 사진을 추가하거나 순서를 바꾸면 첫 사진이 대표 사진이 돼요. 업체에서 관리하려면 소유 확인을 먼저 완료해 주세요.")}</ThemedText>
+    <ThemedText type="subtitle" accessibilityRole="header">{tr("비즈니스의 글과 사진")}</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary">{tr("연결된 글을 열어서 수정·삭제할 수 있어요. 사진을 추가하거나 순서를 바꾸면 첫 사진이 대표 사진이 돼요. 비즈니스에서 관리하려면 소유 확인을 먼저 완료해 주세요.")}</ThemedText>
     {error && <ThemedText accessibilityRole="alert">{tr(error)}</ThemedText>}
-    {busy && <GlingLoader accessibilityLabel={tr("저장된 업체 글과 사진을 여는 중")} />}
+    {busy && <GlingLoader accessibilityLabel={tr("저장된 비즈니스 글과 사진을 여는 중")} />}
     {posts.filter(row => !removed.includes(row.post_id)).map(row => <Pressable key={row.post_id} analyticsId="merchant-web.post.open" accessibilityRole="button"
       accessibilityLabel={tr("{0} · 글과 사진 열기", (titles[row.post_id] ?? row.title))} accessibilityState={{ disabled: busy }} disabled={busy}
       onPress={() => open(row.post_id)} style={({ pressed }) => [styles.row, { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : theme.card, opacity: busy ? 0.6 : 1 }]}>
@@ -74,7 +74,7 @@ export function MerchantWebPosts({ merchantId, posts, onChanged }: { merchantId:
     <Modal visible={!!post} animationType="fade" onRequestClose={close}>
       <SafeAreaView style={[styles.modal, { backgroundColor: theme.background }]}>
         {post && <View style={styles.detail}>
-          {post.author.id !== me.id && !selected?.verifiedOwner && <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{tr("업체 소유 확인이 끝나면 이 소개글과 사진도 관리할 수 있어요.")}</ThemedText>}
+          {post.author.id !== me.id && !selected?.verifiedOwner && <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{tr("비즈니스 소유 확인이 끝나면 이 소개글과 사진도 관리할 수 있어요.")}</ThemedText>}
           <PostDetail post={post} onClose={close} onPostChanged={saved} onPostRemoved={id => {
             if (selected?.owner !== currentOwner.current) return;
             changed.current = true; setRemoved(value => [...value, id]);

@@ -69,7 +69,7 @@ export function merchantReportHtml(report: MerchantReport, logo = '') {
   const logoImage = /^data:image\/png;base64,[a-z0-9+/=]+$/i.test(logo) ? `<img class="logo" src="${logo}" alt="글링">` : '<strong class="logo">gling</strong>';
   return `<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(report.merchant_name)} · 글링 보고서</title>
 <style>:root{color-scheme:dark;--bg:#0B0B12;--text:#F6F3F0;--accent:#CBB9FF;--sub:#B7B4C3}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.75 system-ui,-apple-system,'Apple SD Gothic Neo',sans-serif}main{max-width:860px;margin:auto;padding:56px 28px}.logo{display:block;max-width:120px;max-height:44px;font-size:30px;color:var(--accent)}h1{font-size:30px;line-height:1.4;word-break:keep-all}h2{font-size:19px;margin:32px 0 12px}small{color:var(--sub);font:12px/1.7 Menlo,monospace}pre{font:inherit;white-space:pre-wrap;overflow-wrap:anywhere;margin:28px 0}table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;padding:12px 8px;border-bottom:1px solid #343443;overflow-wrap:anywhere}a{color:var(--accent)}footer{margin-top:40px;border-top:1px solid #343443;padding-top:20px;color:var(--sub);font-size:12px}@media(max-width:480px){main{padding:28px 18px}h1{font-size:25px}}@media print{:root{color-scheme:light;--bg:white;--text:#15121D;--accent:#51446B;--sub:#555}main{padding:0;max-width:none}.logo{filter:brightness(.4)}table{font-size:11px}tr{break-inside:avoid}a{color:inherit}footer{break-inside:avoid}}</style>
-<main>${logoImage}<h1>${escape(report.merchant_name)}<br>홍보 운영 결과와 다음 제안</h1><small>보고서 작성 ${escape(report.generated_at)} · 측정 기간 ${escape(report.period_start)}~${escape(report.period_end)}</small><pre>${escape(text)}</pre><h2>소개한 게시글</h2><table><thead><tr><th>글</th><th>누적 표시 조회</th><th>기간 내 업체 링크 클릭</th></tr></thead><tbody>${report.posts.map((p) => `<tr><td>${escape(p.title)}${p.original_url && safeMerchantSourceUrl(p.original_url) ? `<br><a href="${escape(p.original_url)}" target="_blank" rel="noopener noreferrer">업체 계정으로 가기</a>` : ''}</td><td>${p.displayed_views}</td><td>${p.source_clicks}</td></tr>`).join('')}</tbody></table><footer>글링 · 한인 모임·커뮤니티<br>보고서는 저장 시점의 집계입니다. 이 문서는 유료 운영 제안이며 결제나 갱신이 자동으로 진행되지 않습니다.</footer></main></html>`;
+<main>${logoImage}<h1>${escape(report.merchant_name)}<br>홍보 운영 결과와 다음 제안</h1><small>보고서 작성 ${escape(report.generated_at)} · 측정 기간 ${escape(report.period_start)}~${escape(report.period_end)}</small><pre>${escape(text)}</pre><h2>소개한 게시글</h2><table><thead><tr><th>글</th><th>누적 표시 조회</th><th>기간 내 비즈니스 링크 클릭</th></tr></thead><tbody>${report.posts.map((p) => `<tr><td>${escape(p.title)}${p.original_url && safeMerchantSourceUrl(p.original_url) ? `<br><a href="${escape(p.original_url)}" target="_blank" rel="noopener noreferrer">비즈니스 계정으로 가기</a>` : ''}</td><td>${p.displayed_views}</td><td>${p.source_clicks}</td></tr>`).join('')}</tbody></table><footer>글링 · 한인 모임·커뮤니티<br>보고서는 저장 시점의 집계입니다. 이 문서는 유료 운영 제안이며 결제나 갱신이 자동으로 진행되지 않습니다.</footer></main></html>`;
 }
 
 export async function getAdminMerchantAccess(client: SupabaseClient, userId: string): Promise<boolean> {
@@ -87,7 +87,7 @@ export const setAdminMerchantOwner = (client: SupabaseClient, id: string, ownerI
 export async function connectAdminMerchantAccount(client: SupabaseClient,
   merchant: { id: string; updated_at: string }, account: { id: string; nickname: string; email: string | null },
   input: { role: MerchantAccountRole; method: 'direct' | 'invite'; verified: boolean; note: string }): Promise<string> {
-  if (input.verified !== true || input.note.trim().length < 6) throw new Error('MERCHANT_CONNECTION_CONFIRMATION_REQUIRED');
+  if (input.verified !== true || [...input.note.trim()].length < 6) throw new Error('MERCHANT_CONNECTION_CONFIRMATION_REQUIRED');
   const data = await rpc<string>(client, 'connect_admin_merchant_account', {
     p_merchant_id: merchant.id, p_user_id: account.id, p_role: input.role, p_method: input.method,
     p_verified: input.verified, p_note: input.note.trim(), p_expected_updated_at: merchant.updated_at,
@@ -95,4 +95,12 @@ export async function connectAdminMerchantAccount(client: SupabaseClient,
   });
   if (typeof data !== 'string' || !data || input.method === 'direct' && data !== merchant.id) throw new Error('MERCHANT_CONNECTION_SAVE_FAILED');
   return data;
+}
+
+export type AdminUserBusiness = { id: string; name: string; city_name: string; role: MerchantAccountRole };
+export async function loadAdminUserBusinesses(client: SupabaseClient, userId: string): Promise<AdminUserBusiness[]> {
+  const data = await rpc<{ user_id: string; businesses: AdminUserBusiness[] }>(client, 'get_admin_user_businesses', { p_user_id: userId });
+  if (data.user_id !== userId || !Array.isArray(data.businesses) || data.businesses.length > 50
+    || data.businesses.some(row => !row || typeof row.id !== 'string' || typeof row.name !== 'string' || typeof row.city_name !== 'string' || !['owner','operator'].includes(row.role))) throw new Error('MERCHANT_CONNECTION_READ_FAILED');
+  return data.businesses;
 }

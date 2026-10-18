@@ -214,7 +214,7 @@ export default function CompanyProfileRoute() {
         </View>}
         {actionError?.key === key && <ThemedText type="small" accessibilityRole="alert" accessibilityLiveRegion="polite">{actionError.message}</ThemedText>}
         {(profile.imageLoadFailed || current?.failed) && <View style={styles.statePhoto}>
-          <ThemedText type="small" themeColor="textSecondary">{tr("사진을 다시 불러오지 못했어요. 업체 정보와 저장된 사진은 유지돼요.")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("사진을 다시 불러오지 못했어요. 비즈니스 정보와 저장된 사진은 유지돼요.")}</ThemedText>
           <Pressable analyticsId="company.photo.retry" accessibilityRole="button" style={styles.button}
             onPress={() => { play('selection'); setRevision((value) => value + 1); }}><ThemedText themeColor="accent">{tr("사진 다시 확인")}</ThemedText></Pressable>
         </View>}

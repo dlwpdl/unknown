@@ -49,7 +49,7 @@ function ReceiptQueue({ refreshSignal, onUser, localPreview = false }: Props) {
       <ThemedText type="smallBold">미인증 후기 공개 범위 {scopeOpen ? '접기' : '펼치기'}</ThemedText>
     </Pressable>
     <View aria-hidden={!scopeOpen} style={!scopeOpen && { display: 'none' }}>
-      <ThemedText type="small" themeColor="textSecondary">미인증 근무 후기는 작성자와 관리자만 볼 수 있고, 미인증 상품·서비스 후기는 작성자·승인된 업체 계정·관리자만 볼 수 있습니다.</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">미인증 근무 후기는 작성자와 관리자만 볼 수 있고, 미인증 상품·서비스 후기는 작성자·승인된 비즈니스 계정·관리자만 볼 수 있습니다.</ThemedText>
     </View>
     <Pressable accessibilityRole="button" accessibilityLabel="검토 대기 후기 새로고침" disabled={busy || localPreview} accessibilityState={{ disabled: busy || localPreview }}
       onPress={() => { play('selection'); setRevision(value => value + 1); }} style={actionStyle}><ThemedText type="smallBold">{busy ? '불러오는 중…' : '대기 목록 새로고침'}</ThemedText></Pressable>

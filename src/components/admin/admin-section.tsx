@@ -141,7 +141,7 @@ export function AdminSectionView({
         <SectionHeading title="감시어 경보" description="표현 일치는 신호입니다. 원문과 맥락을 검토해주세요." />
         <div className="admin-summary-strip"><span>미처리<strong className={data.counts.alertsOpen ? 'admin-summary-danger' : undefined}>{count(data.counts.alertsOpen)}건</strong></span><span>불러온 경보<strong>{count(data.safetyAlerts.length)}건</strong></span></div>
         <AdminAlertsPanel alerts={data.safetyAlerts} profiles={profiles} localPreview={localPreview} onUser={onUser} />
-        <details className="admin-context-details" onToggle={() => play('selection')}><summary>감시 범위와 판단 기준</summary><p>마약·무기·성착취·사기·자해·위협·신상공개·불법체류 관련 표현을 글·댓글·대화·칠링·업체 후기에서 감시합니다. 표현 일치는 신호이며 위반 확정이 아닙니다. 최종 판단은 운영자가 합니다.</p></details>
+        <details className="admin-context-details" onToggle={() => play('selection')}><summary>감시 범위와 판단 기준</summary><p>마약·무기·성착취·사기·자해·위협·신상공개·불법체류 관련 표현을 글·댓글·대화·칠링·비즈니스 후기에서 감시합니다. 표현 일치는 신호이며 위반 확정이 아닙니다. 최종 판단은 운영자가 합니다.</p></details>
         <LoadMore loading={loadingMore} noMore={noMore} onPress={onLoadMore} />
       </View>
     );
@@ -605,7 +605,7 @@ const ALERT_CATEGORY: Record<string, string> = {
   drugs: '마약', weapons: '무기', sexual_exploitation: '성착취', fraud: '사기', self_harm: '자해·자살',
   violence: '폭력·위협', doxxing: '신상 공개', illegal_status: '불법 체류·위조',
 };
-const SAFETY_TARGET_LABEL: Record<AdminSafetyTargetType, string> = { post: '게시글', comment: '댓글', message: '메시지', chilling_profile: '칠링 프로필', chilling_application: '칠링 참여 신청', merchant_review: '업체 후기', merchant_review_reply: '업체 답변', meetup_review: '모임 후기', manner_review: '비공개 매너 평가', meetup_attendance: '참석 이의제기' };
+const SAFETY_TARGET_LABEL: Record<AdminSafetyTargetType, string> = { post: '게시글', comment: '댓글', message: '메시지', chilling_profile: '칠링 프로필', chilling_application: '칠링 참여 신청', merchant_review: '비즈니스 후기', merchant_review_reply: '비즈니스 답변', meetup_review: '모임 후기', manner_review: '비공개 매너 평가', meetup_attendance: '참석 이의제기' };
 const SAFETY_RISK_LABEL = { low: '낮음', medium: '보통', high: '높음', critical: '심각', pending: '미분석' };
 const SAFETY_STATUS_LABEL = { pending: '분석 대기', processing: '분석 중', reviewed: '분석 완료', failed: '분석 실패' };
 
