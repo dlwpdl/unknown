@@ -11,8 +11,8 @@ function refreshModule() {
   assert.equal(typeof exports.refreshCityPlaces, 'function');
   return exports.refreshCityPlaces;
 }
-function disk() {
-  let value = null;
+function disk(initial = null) {
+  let value = initial;
   return { getItem: async () => value, setItem: async (_key, next) => { value = next; } };
 }
 const beforeMidnight = Date.parse('2026-10-18T06:59:00Z'), afterMidnight = Date.parse('2026-10-18T07:01:00Z');
@@ -43,4 +43,31 @@ test('a failed or rejected update keeps the last good catalog, including after r
   let repeated = false;
   await refreshModule()(storage, async () => { repeated = true; throw new Error('offline'); }, apply, afterMidnight);
   assert.equal(repeated, false); assert.equal(applied.at(-1).version, 'good');
+});
+test('an offline first visit can recover later the same Vancouver day after restart', async () => {
+  const storage = disk(); let calls = 0;
+  await refreshModule()(storage, async () => { calls++; throw new Error('offline'); }, () => {}, afterMidnight);
+  await refreshModule()(storage, async () => { calls++; return { version: 'online' }; }, () => {}, afterMidnight + 3_600_000);
+  assert.equal(calls, 2);
+});
+test('opening before the daily publication does not hide a catalog published later that day', async () => {
+  const storage = disk(), refresh = refreshModule(); let calls = 0;
+  const early = Date.parse('2026-10-18T08:00:00Z'), published = Date.parse('2026-10-18T11:11:00Z');
+  await refresh(storage, async () => { calls++; return { recommendationTheme: 'photo-spots', collectedAt: '2026-10-17T11:10:00Z' }; }, () => true, early);
+  await refresh(storage, async () => { calls++; return { recommendationTheme: 'photo-spots', collectedAt: '2026-10-18T11:10:00Z' }; }, () => true, published);
+  assert.equal(calls, 2);
+});
+test('a legacy or empty cached response cannot mark the current photo catalog as checked', async () => {
+  for (const catalog of [null, { version: 'legacy' }]) {
+    const storage = disk(JSON.stringify({ checkedOn: '2026-10-18', catalog })); let calls = 0;
+    await refreshModule()(storage, async () => { calls++; return { version: 'photos' }; }, value => value?.version === 'photos', afterMidnight);
+    assert.equal(calls, 1);
+  }
+});
+test('a validated same-day photo catalog already bundled with the app needs no repeat request', async () => {
+  const storage = disk(); let calls = 0;
+  const fetch = async () => { calls++; return { recommendationTheme: 'photo-spots', collectedAt: '2026-10-18T07:00:00Z' }; };
+  await refreshModule()(storage, fetch, () => false, afterMidnight);
+  await refreshModule()(storage, fetch, () => false, afterMidnight + 3_600_000);
+  assert.equal(calls, 1);
 });
