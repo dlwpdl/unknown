@@ -1,5 +1,10 @@
 import importlib.util
 import unittest
+from unittest.mock import patch
+from types import SimpleNamespace
+import json
+import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -47,5 +52,22 @@ class DailyPlaces(unittest.TestCase):
         for change in [lambda c: c['places'][0].update(cityId='toronto'), lambda c: c['recommendations'][0].update(sourceUrl='javascript:alert(1)')]:
             seed, osm, now = self.fixture(); change(seed['cities']['vancouver'])
             with self.assertRaises(ValueError): m.build_catalog(seed, osm, now)
+
+    def test_duplicate_or_unrequested_osm_rows_cannot_count_as_complete_collection(self):
+        m = implementation()
+        for malformed in ['duplicate','unrequested']:
+            seed, osm, now = self.fixture()
+            if malformed == 'duplicate': osm.append(dict(osm[0]))
+            else: osm[0]['id'] = 999
+            with self.assertRaises(ValueError): m.build_catalog(seed, osm, now)
+
+    def test_missing_credentials_do_not_collect_or_leave_a_submission_marker(self):
+        m = implementation()
+        seed = json.loads((ROOT/'src/lib/city-places.catalog.json').read_text())
+        elements = [dict(type=p['id'].split(':')[1], id=int(p['id'].split(':')[2]),lat=p['latitude'],lon=p['longitude'],tags={'name':p['name']}) for c in seed['cities'].values() for p in c['places']]
+        with tempfile.TemporaryDirectory() as target, patch.object(sys,'argv',['refresh-city-places.py','--publish','--output',target]), patch.object(m,'current_catalog',return_value=None), patch.object(m,'collect',return_value={'elements':elements}) as collect, patch.object(m.subprocess,'run',return_value=SimpleNamespace(returncode=1,stdout='')):
+            with self.assertRaises(ValueError): m.main()
+            self.assertFalse((Path(target)/'attempt.json').exists())
+            collect.assert_not_called()
 
 if __name__ == '__main__': unittest.main()

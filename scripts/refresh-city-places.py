@@ -29,7 +29,15 @@ def day(value):
 
 def build_catalog(seed, elements, now):
     if not elements: raise ValueError('EMPTY_OSM_RESPONSE')
-    indexed = {f"osm:{e.get('type')}:{e.get('id')}": e for e in elements}
+    expected = {p['id'] for city in seed['cities'].values() for p in city['places']}
+    indexed = {}
+    for element in elements:
+        if not isinstance(element, dict): raise ValueError('INVALID_OSM_RESPONSE')
+        ident = f"osm:{element.get('type')}:{element.get('id')}"
+        if ident not in expected or ident in indexed: raise ValueError('UNEXPECTED_OSM_IDENTITY')
+        indexed[ident] = element
+    # shortcut: drops over 20% require review, revise after a confirmed bulk OSM cleanup.
+    if len(indexed) < len(expected) * 0.8: raise ValueError('INCOMPLETE_OSM_RESPONSE')
     result = dict(collectedAt=now, source='OpenStreetMap; source-reviewed Gling selections', license='ODbL-1.0',
                   attribution='© OpenStreetMap contributors', attributionUrl='https://www.openstreetmap.org/copyright', cities={})
     for city_id, city in seed['cities'].items():
@@ -102,15 +110,16 @@ def collect(seed):
     query = '[out:json][timeout:45][maxsize:16777216];(' + ''.join(kind+'(id:'+','.join(ids)+');' for kind, ids in grouped.items() if ids) + ');out body center;'
     response = http('https://overpass-api.de/api/interpreter', urlencode({'data':query}).encode(), {'User-Agent':'Gling-place-catalog/1.0','Content-Type':'application/x-www-form-urlencoded'})
     if response.get('remark') or not isinstance(response.get('elements'), list): raise ValueError('INVALID_OSM_RESPONSE')
-    expected = sum(len(c['places']) for c in seed['cities'].values())
-    # shortcut: drops over 20% require review, revise after a confirmed bulk OSM cleanup.
-    if len(response['elements']) < expected * 0.8: raise ValueError('INCOMPLETE_OSM_RESPONSE')
     return response
 
-def publish(payload):
+def operations_token():
     # Reuse the existing city-operations Keychain credential; never expose it in argv or logs.
     key = subprocess.run(['security','find-generic-password','-s','Supabase CLI','-w'], capture_output=True, text=True, timeout=10)
     if key.returncode or not key.stdout.strip(): raise ValueError('SUPABASE_CONNECTION_REQUIRED')
+    return key.stdout.strip()
+
+def publish(payload, token=None):
+    token = token or operations_token()
     body = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
     tag = '$city_' + hashlib.sha256(body.encode()).hexdigest()[:16] + '$'
     if tag in body: raise ValueError('INVALID_PLACE_PAYLOAD')
@@ -118,7 +127,7 @@ def publish(payload):
       values(true,{tag}{body}{tag}::jsonb,(now() at time zone 'America/Vancouver')::date)
       on conflict(id) do update set payload=excluded.payload,refreshed_on=excluded.refreshed_on,updated_at=now()
       where current.refreshed_on < excluded.refreshed_on returning refreshed_on;"""
-    return http(f'https://api.supabase.com/v1/projects/{PROJECT}/database/query', json.dumps({'query':query}).encode(), {'Content-Type':'application/json','Authorization':'Bearer '+key.stdout.strip()})
+    return http(f'https://api.supabase.com/v1/projects/{PROJECT}/database/query', json.dumps({'query':query}).encode(), {'Content-Type':'application/json','Authorization':'Bearer '+token})
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -136,6 +145,7 @@ def main():
     if previous and day(previous['collectedAt']) >= day(now):
         print(json.dumps({'status':'already_refreshed','day':day(now)})); return
     if args.publish and (out/'attempt.json').exists(): raise ValueError('PLACE_PUBLICATION_NEEDS_READBACK')
+    token = operations_token() if args.publish else None
     seed = json.loads(args.seed.read_text())
     baseline = json.loads((ROOT/'src/lib/city-places.catalog.json').read_text())
     if set(seed['cities']) != set(baseline['cities']): raise ValueError('INVALID_PLACE_CITIES')
@@ -156,7 +166,7 @@ def main():
     result = dict(status='prepared', day=day(now), payload_sha256=digest, path=str(path), upstream_json_sha256=upstream_sha, places=sum(len(c['places']) for c in payload['cities'].values()), recommendations=sum(len(c['recommendations']) for c in payload['cities'].values()))
     if args.publish:
         with (out/'attempt.json').open('x') as f: json.dump(result, f)
-        try: publish(payload)
+        try: publish(payload, token)
         except Exception: pass  # Read the actual row before deciding whether a timed-out write succeeded.
         saved = current_catalog()
         if saved != payload: raise ValueError('PLACE_PUBLICATION_NOT_VERIFIED')
