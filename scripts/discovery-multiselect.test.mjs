@@ -83,7 +83,7 @@ test('real map chips toggle independently, expose checked state and reset withou
   vm.runInNewContext(ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, context);
   const buttons = () => [exports.render().props.children].flat(Infinity);
   const button = id => buttons().find(node => node.key === id);
-  assert.deepEqual(buttons().map(node => node.key), ['all', 'top25', 'cafe', 'dining', 'festival', 'places']);
+  assert.deepEqual(buttons().map(node => node.key), ['all', 'top25', 'dining', 'cafe', 'festival', 'nightlife', 'places']);
   button('top25').props.onPress();
   button('cafe').props.onPress();
   assert.deepEqual(selected, ['top25', 'cafe']);

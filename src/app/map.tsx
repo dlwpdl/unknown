@@ -208,7 +208,7 @@ function CityMap() {
       </Pressable>
     </View>
     <ScrollView horizontal analyticsId="discovery.filter" showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filters}>
-      {(['all', 'top25', 'cafe', 'dining', 'festival', 'places'] as const).map(id => filterChip(filters.find(value => value.id === id)!))}
+      {(['all', 'top25', 'dining', 'cafe', 'festival', 'nightlife', 'places'] as const).map(id => filterChip(filters.find(value => value.id === id)!))}
     </ScrollView>
     {!!locationError && <ThemedText accessibilityRole="alert" type="small" style={styles.notice}>{tr(locationError)}</ThemedText>}
     {mode === 'list' && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite" style={styles.notice}>{tr('지도 {0}개 · 목록 {1}개', pins.length, items.length)}{limited ? tr(" · 500개까지 표시") : ''}</ThemedText>}
