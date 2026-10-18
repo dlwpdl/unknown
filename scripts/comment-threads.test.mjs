@@ -120,7 +120,7 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
   const reply = { id: 'reply', authorId: 'other', nickname: '참새', body: '답글 본문', parentId: root.id, replyToNickname: root.nickname, likes: 2 };
   let auth = { isAuthed: true, me: { id: 'account-a', nickname: '나' }, isVerified: true, trustLevel: 2 };
   let post = { id: 'post-a', body: '', tag: { id: 1, slug: 'life', label: '일상', kind: 'post' }, author: { id: 'author', nickname: '작성자' }, views: 1, comments: 61 };
-  let hooks = [], index = 0, pendingEffects = [], mountedKey, tree, failSend = true, failLike = true, failRead = true, releaseSend, commentId, platform = 'ios';
+  let hooks = [], index = 0, pendingEffects = [], mountedKey, tree, failSend = true, failLike = true, failRead = true, releaseSend, commentId, createdSerial = 0, platform = 'ios';
   const alerts = [], reads = [], writes = [], counts = [];
   const exports = {};
   const jsx = (type, props, key) => ({ type, props, key });
@@ -130,7 +130,7 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
     const state = hooks[slot] = { deps, cleanup: previous?.cleanup };
     pendingEffects.push(() => { state.cleanup?.(); state.cleanup = fn(); });
   };
-  vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
+  vm.runInNewContext(source, { exports, requestAnimationFrame: callback => { callback(); return 1; }, require: withLanguageImports((name) => {
     if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
     if (name === 'react') return {
       useState(initial) {
@@ -181,7 +181,7 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
         writes.push({ postId, body, replyToId });
         if (failSend) throw new Error('OFFLINE');
         if (releaseSend) await new Promise(resolve => { releaseSend = resolve; });
-        return 'created';
+        return createdSerial++ ? `created-${createdSerial}` : 'created';
       },
     };
     return new Proxy({}, { get: (_target, key) => key });
@@ -243,8 +243,17 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
   assert.equal(reads.at(-1).cursor.id, 'reply');
   assert.equal(button('답글 더 보기'), undefined);
   byLabel('참새님에게 답글 쓰기').props.onPress(); render();
+  const commentRevealScrolls = [];
+  const commentRevealOffsets = [];
+  const commentList = () => nodes(tree).find(node => node.type === 'FlatList');
+  commentList().props.ref.current = {
+    scrollToIndex: value => commentRevealScrolls.push(value),
+    scrollToOffset: value => commentRevealOffsets.push(value),
+  };
   input().props.onChangeText('실패해도 남을 초안'); render();
   button(t.detail.send).props.onPress(); await settle();
+  commentList().props.onContentSizeChange?.();
+  assert.equal(commentRevealScrolls.length, 0, 'a failed send preserves the reading position');
   assert.equal(input().props.value, '실패해도 남을 초안');
   assert.equal(nodes(tree).find(node => node.props?.accessibilityRole === 'alert').props.children, t.detail.sendErrorBody, 'web failures stay visible where native Alert has no dialog');
   assert.equal(input().props.accessibilityLabel, '참새님에게 답글');
@@ -254,6 +263,29 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
   assert.equal(input().props.value, '');
   assert.equal(counts.at(-1), 62);
   assert.ok(byLabel('수달의 댓글 답글 61개 접기'));
+  const createdIndex = commentList().props.data.findIndex(row => row.type === 'comment' && row.comment.id === 'created');
+  assert.ok(createdIndex >= 0, 'the new reply is visible in its expanded parent thread');
+  commentList().props.onContentSizeChange?.();
+  assert.equal(commentRevealScrolls.at(-1)?.index, createdIndex, 'successful send reveals the exact new reply inside its expanded thread');
+  assert.equal(commentRevealScrolls.at(-1)?.viewPosition, 1, 'the newly sent comment aligns above the composer');
+  commentList().props.ListHeaderComponent.props.onLayout?.({ nativeEvent: { layout: { height: 600 } } });
+  commentList().props.onScrollToIndexFailed?.({ index: createdIndex, averageItemLength: 88 });
+  assert.equal(commentRevealOffsets.at(-1)?.offset, 600 + createdIndex * 88, 'unmeasured rows are sought below the real post-header height');
+  commentList().props.renderItem({ item: commentList().props.data[createdIndex], index: createdIndex }).props.onLayout?.();
+  const completedRevealCount = commentRevealScrolls.length;
+  commentList().props.onContentSizeChange?.();
+  assert.equal(commentRevealScrolls.length, completedRevealCount, 'later content changes do not keep forcing the reader back');
+
+  input().props.onChangeText('새 루트 댓글'); render();
+  button(t.detail.send).props.onPress(); await settle();
+  const createdRootIndex = commentList().props.data.findIndex(row => row.type === 'comment' && row.comment.id === 'created-2');
+  assert.equal(createdRootIndex, 0, 'new root comments retain the existing newest-first pagination order');
+  commentList().props.onContentSizeChange?.();
+  assert.equal(commentRevealScrolls.at(-1)?.index, createdRootIndex, 'new roots are revealed above the composer too');
+  commentList().props.onScrollBeginDrag();
+  const manualReadingCount = commentRevealScrolls.length;
+  commentList().props.onContentSizeChange?.();
+  assert.equal(commentRevealScrolls.length, manualReadingCount, 'manual scrolling cancels an unfinished automatic reveal');
 
   input().props.onChangeText('이전 계정 초안'); render();
   releaseSend = true;
@@ -283,7 +315,11 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
     'focus-label', 'comment:old-root', 'focus-reply-label:old-reply', 'comment:old-reply',
   ], 'the exact notification root and reply are the first virtualized rows');
   scroll.props.ref.current = { scrollToIndex: value => scrolls.push(value.index) };
-  const layout = () => nodes(tree).find(node => node.props?.onLayout).props.onLayout({ nativeEvent: { layout: { y: 100 } } });
+  const layout = () => {
+    const list = nodes(tree).find(node => node.type === 'FlatList');
+    const target = list.props.data.find(row => row.type === 'comment' && row.focusTarget);
+    list.props.renderItem({ item: target }).props.onLayout({ nativeEvent: { layout: { y: 100 } } });
+  };
   layout(); layout();
   assert.deepEqual(scrolls, [0], 'only the initial target reveal moves the scroll');
   button('답글 더 보기').props.onPress(); await settle(); layout();
@@ -295,4 +331,8 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
   commentId = 'hidden'; render(); await settle();
   assert.equal(bodyCount('이 댓글은 확인할 수 없어요.'), 1);
   assert.equal(bodyCount('루트 본문'), 1, 'hidden target does not hide the available post and comments');
+  platform = 'ios'; render();
+  tree.props.onLayout?.({ currentTarget: { measureInWindow: callback => callback(0, 84, 430, 840) } });
+  render();
+  assert.equal(nodes(tree).find(node => node.type === 'KeyboardAvoidingView').props.keyboardVerticalOffset, 84, 'page-sheet keyboard avoidance uses the measured window origin');
 });
