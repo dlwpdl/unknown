@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
+import { PlaceRatingSummary } from '@/components/place-external-ratings';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -81,6 +82,7 @@ function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
               <View style={styles.copy}>
                 <ThemedText style={styles.categoryLabel} themeColor="accent">{categories.find(item => item.id === place.category)?.label}</ThemedText>
                 <ThemedText style={styles.placeName} numberOfLines={2}>{place.name}</ThemedText>
+                <PlaceRatingSummary cityId={city.id} placeId={place.id} />
                 {!!place.recommendation && <ThemedText type="small" themeColor="textSecondary" numberOfLines={3}>{appLocale === 'en' ? place.recommendation.reasonEn ?? place.recommendation.reason : place.recommendation.reason}</ThemedText>}
                 {!!place.address && <ThemedText style={styles.address} themeColor="textSecondary" numberOfLines={2}>{place.address}</ThemedText>}
               </View>
