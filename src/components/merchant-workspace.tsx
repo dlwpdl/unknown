@@ -18,6 +18,9 @@ import { MerchantProfileEditor } from '@/components/merchant-profile-editor';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
+import { useRouter } from 'expo-router';
+import { selectChatBusiness } from '@/lib/chat-identity';
+import { loadMyMerchantConnections } from '@/lib/merchant-connections';
 import { useAuth } from '@/lib/auth';
 import { parseAiDraftResponse } from '@/lib/ai-draft';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -143,7 +146,7 @@ export function MerchantWorkspace(props: WorkspaceProps) {
 }
 function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMerchantId, initialTab }: WorkspaceProps) {
   const { tr } = useLanguage();
-  const { me, isAuthed } = useAuth();
+  const { me, isAuthed, isAdmin } = useAuth();
   const [response, setResponse] = useState<{ user: string; rows: BusinessMerchant[]; revision: number; refreshSignal: number } | null>(null);
   const [selected, setSelected] = useState<string | null>(merchantId ?? initialMerchantId ?? null);
   const [choosing, setChoosing] = useState(false);
@@ -166,9 +169,22 @@ function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMercha
   if (!isAuthed) return <ThemedText>{tr("로그인한 뒤 비즈니스 도구를 이용해 주세요.")}</ThemedText>;
   if (merchantId) return <MerchantTools key={`${me.id}:${merchantId}`} id={merchantId} initialTab={initialTab} refreshSignal={refreshSignal} onDirty={() => {}} />;
   async function choose(id: string | null) {
-    if (id === selected && id !== null) { setChoosing(false); return; }
-    if (dirty && !await confirmAction('저장하지 않은 초안', '다른 비즈니스를 열면 저장하지 않은 수정 내용이 사라져요.')) return;
-    setDirty(false); setSelected(id); setRegistering(id === null); setChoosing(false); setError('');
+    if (busyRef.current) return;
+    if (id !== selected && dirty && !await confirmAction('저장하지 않은 초안', '다른 비즈니스를 열면 저장하지 않은 수정 내용이 사라져요.')) return;
+    busyRef.current = true; setBusy(true); setError('');
+    try {
+      if (id && !isAdmin) {
+        const connections = await loadMyMerchantConnections(supabase, me.id);
+        const current = connections.merchants.find(item => item.id === id && item.role !== 'admin');
+        const session = await supabase.auth.getSession();
+        if (session.data.session?.user.id !== me.id) throw new Error('ACCOUNT_CHANGED');
+        if (!current) throw new Error('MERCHANT_ACCESS_REQUIRED');
+        selectChatBusiness(me.id, current);
+      }
+      if (id === selected && id !== null) { setChoosing(false); return; }
+      setDirty(false); setSelected(id); setRegistering(id === null); setChoosing(false);
+    } catch (failure) { setError(errorText(failure)); }
+    finally { busyRef.current = false; setBusy(false); }
   }
   async function register() {
     if (busyRef.current) return; busyRef.current = true; setBusy(true); setError('');
@@ -207,7 +223,7 @@ function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMercha
 function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onChoose, accessChecking = false, initialTab = 'overview' }: { id: string; refreshSignal: number; onDirty: (dirty: boolean) => void; onConnectionsChanged?: () => void; onChoose?: () => void; accessChecking?: boolean; initialTab?: MerchantTab }) {
   const { tr, locale: appLocale } = useLanguage();
   const theme = useTheme();
-  const { me } = useAuth(); const { play } = useInteractionFeedback();
+  const { me, isAdmin } = useAuth(); const { play } = useInteractionFeedback(), router = useRouter();
   const [revision, setRevision] = useState(0), [tab, setTab] = useState<MerchantTab>(initialTab);
   const [response, setResponse] = useState<{ user: string; revision: number; refreshSignal: number; data: Workspace } | null>(null);
   const [membershipState, setMembership] = useState<{ user: string; value: BusinessMembershipSnapshot } | null>(null);
@@ -292,6 +308,19 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
       if (mounted.current) { setNotice(success); play('selection'); if (reload) setRevision((v) => v + 1); }
     } catch (e) { if (mounted.current) { setError(errorText(e)); play('warning'); if (e instanceof Error && e.message === 'MERCHANT_DRAFT_CHANGED') setRevision((v) => v + 1); if (accessLost(e)) { clearPrivateState(); setRevision(v => v + 1); onConnectionsChanged?.(); } } }
     finally { busyRef.current = false; if (mounted.current) setBusy(false); }
+  }
+  async function openBusinessInbox() {
+    if (dirty || profileDirty || replyDirty) {
+      if (!await confirmAction('작성 중인 내용', '대화함으로 이동하면 저장하지 않은 수정 내용이 사라질 수 있어요. 이동할까요?')) return;
+    }
+    await run(async () => {
+      const connections = await loadMyMerchantConnections(supabase, me.id);
+      if (!mounted.current) return;
+      const current = connections.merchants.find(item => item.id === id && item.role !== 'admin');
+      if (!current) throw new Error('MERCHANT_ACCESS_REQUIRED');
+      selectChatBusiness(me.id, current);
+      router.push({ pathname: '/chat', params: { view: 'direct' } });
+    }, '', false);
   }
   function changeDraft(next: Partial<DraftInput>) { setEditor({ ...editor, ...next }); setDirty(true); setPreparedChannels(null); }
   async function generateDraft() {
@@ -458,6 +487,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
     {activeTab === 'overview' && <>
       <ThemedText type="subtitle">{tr("가게 소식을 전해보세요")}</ThemedText>
       <ThemedText themeColor="textSecondary">{tr("알릴 내용을 적으면 AI가 초안을 도와드려요.")}</ThemedText>
+      {!isAdmin && data.merchant.owner_verified_at && <Action label={tr('비즈니스 대화함')} disabled={busy} onPress={() => { void openBusinessInbox(); }} />}
       <Action primary label={tr("홍보글 작성")} disabled={busy} onPress={() => { void openDraft(); }} />
       {dirty && <Action label={tr("작성 중인 초안 이어쓰기")} disabled={busy} onPress={() => { setDraftView('composer'); setTab('drafts'); }} />}
       <Section title={tr("비즈니스 관리")}>

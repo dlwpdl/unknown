@@ -6,6 +6,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import * as kakao from '../src/lib/kakao-auth.ts';
 import * as nickname from '../src/lib/nickname.ts';
+import * as chatIdentity from '../src/lib/chat-identity.ts';
 
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
@@ -53,7 +54,7 @@ function mount(initialSession = session('member')) {
     '@/constants/theme': { Spacing: {} }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/i18n/ko': { t: { auth: { loginError: '로그인 오류', sessionExpired: '세션 만료' } } }, '@/lib/admin': { isAdminRole: () => false },
     '@/lib/account-security-device': { registerSecurityDevice: async () => {} }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play }) },
-    '@/lib/feed-data': { setBusinessImageSession }, '@/lib/nickname': nickname, '@/lib/kakao-auth': kakao, '@/lib/legal-documents': { CONTACT_EMAIL: 'fixture@example.invalid' },
+    '@/lib/feed-data': { setBusinessImageSession }, '@/lib/chat-identity': chatIdentity, '@/lib/nickname': nickname, '@/lib/kakao-auth': kakao, '@/lib/legal-documents': { CONTACT_EMAIL: 'fixture@example.invalid' },
     '@/lib/location-provider': { CommunityLocationProvider: 'CommunityLocationProvider' }, '@/lib/mock': { CITIES: [{ id: 'vancouver' }] },
     '@/lib/supabase': { supabase, AUTH_EXPIRED_EVENT: 'authExpired' }, '@/lib/push-notifications': { unregisterPushDevice: async () => {} },
     '@/lib/trust': { shouldCelebrateVerificationUpgrade: () => false },
@@ -155,4 +156,19 @@ test('business gallery session follows token refresh and clears immediately on l
  harness.changeSession(session('next'));assert.equal(getPostImageSource(post,'member','full'),undefined);
  assert.equal(getPostImageSource(post,'next','full').headers.Authorization,'Bearer token-next');
  harness.unmount();assert.equal(getPostImageSource(post,'next','full'),undefined);
+});
+
+test('business DM selection survives token refresh but is cleared on sign-out and account changes', async context => {
+  const harness = mount(); context.after(() => { harness.unmount(); chatIdentity.resetChatIdentity(); });
+  await harness.settle();
+  const business = { id: 'c1820000-0000-4000-8000-000000000001', name: 'Example Business' };
+  chatIdentity.selectChatBusiness('member', business);
+  harness.changeSession({ ...session('member'), access_token: 'refreshed' }, 'TOKEN_REFRESHED');
+  assert.deepEqual(chatIdentity.chatBusinessIdentity('member'), business);
+  harness.changeSession(session('another-member'));
+  assert.equal(chatIdentity.chatBusinessIdentity('member'), null, 'a departed account selection must be discarded');
+  chatIdentity.selectChatBusiness('another-member', business);
+  harness.changeSession(null);
+  harness.changeSession(session('another-member'));
+  assert.equal(chatIdentity.chatBusinessIdentity('another-member'), null, 'signing back in starts with personal DMs');
 });

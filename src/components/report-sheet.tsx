@@ -1,6 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Alert, Animated, Easing, Modal, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -8,8 +8,11 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { ThemedText } from '@/components/themed-text';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useChatIdentity } from '@/hooks/use-chat-identity';
+import { chatBusinessIdentity } from '@/lib/chat-identity';
 import { useAuth } from '@/lib/auth';
-import { blockBusiness, blockUser, reportContent, type ReportReason, type ReportTarget } from '@/lib/community-data';
+import { blockBusiness, blockUser, reportContent, type ConversationPreview, type ReportReason, type ReportTarget } from '@/lib/community-data';
+import { blockBusinessConversation, reportBusinessChatMessage } from '@/lib/business-chat';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 
@@ -22,6 +25,7 @@ export function ReportSheet({
   reportedUserId,
   reportedBusinessId,
   reportedNickname = '비즈니스 답변',
+  businessConversation,
   onClose,
 }: {
   visible: boolean;
@@ -30,12 +34,14 @@ export function ReportSheet({
   reportedUserId?: string;
   reportedBusinessId?: string;
   reportedNickname?: string;
+  businessConversation?: ConversationPreview;
   onClose: () => void;
 }) {
   const { tr, t } = useLanguage();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { me } = useAuth();
+  const asBusinessId = useChatIdentity()?.id ?? null;
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
   const { height: screenHeight } = useWindowDimensions();
@@ -43,13 +49,27 @@ export function ReportSheet({
   const [reason, setReason] = useState<ReportReason | null>(null);
   const [details, setDetails] = useState('');
   const [blockAfter, setBlockAfter] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const scopeKey = `${me.id}:${asBusinessId ?? 'personal'}:${targetType}:${targetId}:${businessConversation?.id ?? ''}:${visible}`;
+  const [submission, setSubmission] = useState({ scope: scopeKey, busy: false });
+  if (submission.scope !== scopeKey) setSubmission({ scope: scopeKey, busy: false });
+  const submitting = submission.scope === scopeKey && submission.busy;
+  const request = useRef<{ active: boolean; busy: boolean } | null>(null);
+  useLayoutEffect(() => {
+    const operation = { active: visible, busy: false };
+    request.current = operation;
+    return () => { operation.active = false; if (request.current === operation) request.current = null; };
+  }, [visible, scopeKey]);
 
   const close = () => {
+    const operation = request.current;
+    if (!operation?.active) return;
+    operation.active = false;
     const finish = () => {
+      if (request.current !== operation) return;
       setReason(null);
       setDetails('');
       setBlockAfter(false);
+      setSubmission({ scope: scopeKey, busy: false });
       onClose();
     };
     if (reducedMotion) { finish(); return; }
@@ -58,30 +78,41 @@ export function ReportSheet({
   };
 
   const submit = async () => {
-    if (!reason || submitting) return;
-    setSubmitting(true);
+    const operation = request.current;
+    const valid = () => !!operation?.active && request.current === operation && (chatBusinessIdentity(me.id)?.id ?? null) === asBusinessId;
+    if (!reason || !operation || operation.busy || !valid()) return;
+    if (businessConversation && (chatBusinessIdentity(me.id)?.id ?? null) !== (businessConversation.selfIdentity?.kind === 'business' ? businessConversation.selfIdentity.id : null)) return;
+    operation.busy = true;
+    setSubmission({ scope: scopeKey, busy: true });
     try {
-      await reportContent(supabase, targetType, targetId, reason, details, me.id);
+      if (businessConversation) await reportBusinessChatMessage(supabase, businessConversation, targetId, reason, details);
+      else await reportContent(supabase, targetType, targetId, reason, details, me.id);
+      if (!valid()) return;
       if (blockAfter && (reportedUserId || reportedBusinessId)) {
         try {
-          if (reportedBusinessId) await blockBusiness(supabase, me.id, reportedBusinessId);
+          if (businessConversation) await blockBusinessConversation(supabase, businessConversation);
+          else if (reportedBusinessId) await blockBusiness(supabase, me.id, reportedBusinessId);
           else await blockUser(supabase, me.id, reportedUserId!);
         } catch {
+          if (!valid()) return;
           close();
           play('warning');
           Alert.alert(t.report.doneTitle, t.report.doneButBlockFailed);
           return;
         }
       }
+      if (!valid()) return;
       close();
       play('warning');
       Alert.alert(t.report.doneTitle, blockAfter ? t.report.doneBlocked
         : targetType === 'user' ? tr("운영팀에 신고를 전달했어요. 활동 내역을 검토하겠습니다.") : t.report.doneBody);
     } catch {
+      if (!valid()) return;
       play('warning');
       Alert.alert(t.report.errorTitle, t.report.errorBody);
     } finally {
-      setSubmitting(false);
+      operation.busy = false;
+      if (valid()) setSubmission({ scope: scopeKey, busy: false });
     }
   };
 

@@ -18,8 +18,8 @@ test('merchant inquiry resolves a real server conversation UUID and rejects unus
   assert.equal(typeof api.startMerchantConversation, 'function');
   const db = client(conversation);
   assert.equal(await api.startMerchantConversation(db, merchant), conversation);
-  assert.deepEqual(db.calls, [['start_merchant_conversation', { p_merchant_id: merchant }]]);
-  for (const data of [null, '../author', { id: conversation }]) await assert.rejects(api.startMerchantConversation(client(data), merchant), /MERCHANT_CONVERSATION_READ_FAILED/);
+  assert.deepEqual(db.calls, [['start_business_conversation', { p_as_business_id: null, p_other_user_id: null, p_other_business_id: merchant, p_post_id: null }]]);
+  for (const data of [null, '../author', { id: conversation }]) await assert.rejects(api.startMerchantConversation(client(data), merchant), /BUSINESS_CHAT_READ_FAILED/);
   await assert.rejects(api.startMerchantConversation(db, '../author'), /INVALID_MERCHANT/);
   assert.equal(db.calls.length, 1);
   await assert.rejects(api.startMerchantConversation({ rpc: async () => ({ error: { message: 'MERCHANT_CONTACT_UNAVAILABLE' } }) }, merchant), /MERCHANT_CONTACT_UNAVAILABLE/);

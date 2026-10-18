@@ -20,6 +20,8 @@ function profile({ authenticated = true, failure } = {}) {
     if (name === '@/components/analytics-controls') return { Pressable: 'Pressable' };
     if (name === 'expo-router') return { useRouter: () => ({ push: route => routes.push(route) }) };
     if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ bottom: 0 }) };
+    if (name === '@/hooks/use-chat-identity') return { useChatIdentity: () => null };
+    if (name === '@/lib/chat-identity') return { chatBusinessIdentity: () => null };
     if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: authenticated, me: { id: 'viewer' }, promptLogin: reason => login.push(reason) }) };
     if (name === '@/hooks/use-content-visibility') return { useContentVisibility: () => () => false };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: value => feedback.push(value) }) };

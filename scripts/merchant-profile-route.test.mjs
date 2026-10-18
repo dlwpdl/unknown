@@ -16,7 +16,7 @@ const profile = { id: company, name: '회사', services: '등록된 소개', add
 const settle = () => new Promise(setImmediate);
 const nodes = root => !root || typeof root !== 'object' ? [] : [root, ...Object.values(root).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
 
-function screen({ loadReviews = async (_, __, ___, kind) => ({ review_kind: kind, rating_average: kind === 'usage' ? 8.833333333 : 7, review_count: 3 }), loadPosts = async (_, __, kind) => ({ ...content, kind }), loadProfile = async () => profile, rpc = async () => ({ data: true }), openURL = async () => {} } = {}) {
+function screen({ business = null, loadReviews = async (_, __, ___, kind) => ({ review_kind: kind, rating_average: kind === 'usage' ? 8.833333333 : 7, review_count: 3 }), loadPosts = async (_, __, kind) => ({ ...content, kind }), loadProfile = async () => profile, rpc = async () => ({ data: true }), openURL = async () => {} } = {}) {
   const state = [], cleanup = new Map(), calls = [], postCalls = [], routes = [], feedback = [], rpcCalls = [], login = [], links = [];
   let index = 0, account = 'author', hidden = () => false, focused = true;
   const imports = {
@@ -39,6 +39,8 @@ function screen({ loadReviews = async (_, __, ___, kind) => ({ review_kind: kind
     '@/components/merchant-profile-header': { MerchantProfileHeader: 'ProfileHeader' }, '@/components/merchant-reviews': { MerchantReviews: 'Reviews' },
     '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
+    '@/hooks/use-chat-identity': { useChatIdentity: () => business },
+    '@/lib/chat-identity': { chatBusinessIdentity: () => business },
     '@/lib/auth': { useAuth: () => ({ isAuthed: !!account, isAuthLoading: false, me: { id: account ?? 'guest' }, promptLogin: reason => login.push(reason) }) },
     '@/lib/merchant-conveniences': conveniences,
     '@/lib/merchant-source': { safeMerchantSourceUrl },
@@ -169,10 +171,10 @@ test('inquiry uses only the server merchant recipient and the existing chat requ
   const inquiry = control(root, 'company.inquiry');
   assert.ok(inquiry, 'connected businesses offer a real inquiry');
   inquiry.props.onPress(); inquiry.props.onPress();
-  assert.deepEqual(view.rpcCalls, [['start_merchant_conversation', { p_merchant_id: company }]]);
+  assert.deepEqual(view.rpcCalls, [['start_business_conversation', { p_as_business_id: null, p_other_business_id: company, p_other_user_id: null, p_post_id: null }]]);
   assert.equal(control(view.render(), 'company.inquiry').props.disabled, true);
   finish({ data: conversation }); await settle();
-  assert.deepEqual(view.routes, [{ pathname: '/chat', params: { conversationId: conversation, view: 'requests' } }]);
+  assert.deepEqual(view.routes, [{ pathname: '/chat', params: { conversationId: conversation, view: 'direct' } }]);
   assert.ok(view.feedback.includes('message'));
 });
 
@@ -189,6 +191,15 @@ test('unconnected businesses offer only registered public links and never report
   empty.render(); await settle(); root = empty.render();
   assert.equal(control(root, 'company.contact.phone'), undefined);
   assert.match(text(root), /공개 연락처도 아직 등록되지 않았어요/);
+});
+
+test('a business never offers an inquiry to itself while personal visitors retain it', async () => {
+  for (const business of [null, { id: company, name: '회사' }, { id: 'another-business', name: '다른 업체' }]) {
+    const view = screen({ business }); view.render(); await settle(); const root = view.render();
+    assert.equal(!!control(root, 'company.inquiry'), business?.id !== company);
+    assert.ok(!text(root).includes('앱에서 연결할 수 있는 담당자가 없어요'));
+    assert.deepEqual(view.rpcCalls, []);
+  }
 });
 
 test('a failed or revoked recipient request preserves the profile and never opens an author conversation', async () => {

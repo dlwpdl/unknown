@@ -5,10 +5,11 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as connections from '../src/lib/merchant-connections.ts';
+import * as chatIdentity from '../src/lib/chat-identity.ts';
 
 function app(component = 'MerchantAccountEntry') {
   const states = [], refs = [], effects = [], calls = [], pending = [], routes = [], feedback = [];
-  let stateIndex = 0, refIndex = 0, effectIndex = 0, auth = { me: { id: 'user-a' }, isAuthed: true, isAdmin: false }, foreground;
+  let stateIndex = 0, refIndex = 0, effectIndex = 0, auth = { me: { id: 'user-a', nickname: '개인 이름' }, isAuthed: true, isAdmin: false }, foreground;
   const client = { rpc: (name, args) => {
     calls.push({ name, args }); return new Promise(resolve => pending.push(data => resolve({ data, error: null })));
   } };
@@ -21,7 +22,7 @@ function app(component = 'MerchantAccountEntry') {
     useLayoutEffect: recordEffect,
   };
   const exports = {};
-  const source = ts.transpileModule(readFileSync(new URL('../src/components/merchant-account-connections.tsx', import.meta.url), 'utf8'), {
+  const source = ts.transpileModule(readFileSync(new URL(component === 'ChatIdentitySwitcher' ? '../src/components/chat-identity-switcher.tsx' : '../src/components/merchant-account-connections.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   vm.runInNewContext(source, { exports, window: { confirm: () => true }, Date, require: withLanguageImports((name) => {
@@ -29,13 +30,16 @@ function app(component = 'MerchantAccountEntry') {
     if (name === 'expo-symbols') return { SymbolView: 'SymbolView' };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'expo-router') return { useRouter: () => ({ push: path => routes.push(path) }), useFocusEffect: fn => recordEffect(fn, fn.deps) };
-    if (name === 'react-native') return { Platform: { OS: 'web' }, View: 'View', StyleSheet: { create: value => value }, AppState: { addEventListener(name, fn) { foreground = fn; return { remove() {} }; } } };
-    if (name === '@/components/analytics-controls') return { Pressable: 'Pressable' };
+    if (name === 'react-native') return { Platform: { OS: 'web' }, View: 'View', Modal: 'Modal', StyleSheet: { create: value => value }, AppState: { addEventListener(name, fn) { foreground = fn; return { remove() {} }; } } };
+    if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView' };
+    if (name === '@/components/analytics-controls') return { Pressable: 'Pressable', ScrollView: 'ScrollView' };
     if (name === '@/components/themed-text') return { ThemedText: 'ThemedText' };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ accent: '#CBB9FF' }) };
     if (name === '@/lib/auth') return { useAuth: () => auth };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: value => feedback.push(value) }) };
     if (name === '@/lib/merchant-connections') return connections;
+    if (name === '@/lib/chat-identity') return chatIdentity;
+    if (name === '@/hooks/use-chat-identity') return { useChatIdentity: () => chatIdentity.chatBusinessIdentity(auth.isAuthed ? auth.me.id : null) };
     if (name === '@/lib/supabase') return { supabase: client };
     throw new Error('Unexpected import ' + name);
   }) });
@@ -75,13 +79,16 @@ test('becoming an admin hides cached business entries and cancels an outstanding
 });
 test('connected business owners and operators still switch to their business drafts', async () => {
   for (const role of ['owner', 'operator']) {
+    chatIdentity.resetChatIdentity();
     const view = app(), data = context('user-a', [{ id: 'company-a', name: '업체 A', role, city_name: '밴쿠버' }]);
     view.render(); view.pending.shift()(data); await flush();
     const entry = view.render(); assert.equal(entry.props.accessibilityLabel, '비즈니스 프로필 전환');
     entry.props.onPress(); view.pending.shift()(data); await flush();
     assert.deepEqual(JSON.parse(JSON.stringify(view.routes)), [{ pathname: '/profile/merchant', params: { merchant: 'company-a', tab: 'drafts' } }]);
     assert.deepEqual(view.feedback, ['selection']);
+    assert.deepEqual(chatIdentity.chatBusinessIdentity('user-a'), { id: 'company-a', name: '업체 A' });
   }
+  chatIdentity.resetChatIdentity();
 });
 test('last connection removal hides the entry and a revoked click never navigates', async () => {
   const view = app();
@@ -120,3 +127,47 @@ test('invitations cannot display another account cache or accept changed busines
   assert.equal(action.props.disabled, true); assert.match(text(node), /비즈니스 정보가 바뀌었어요/);
   view.auth({ me: { id: 'user-b' } }); assert.equal(view.render(), null);
 });
+
+const action = (tree, id) => { const button = nodes(tree).find(n => n.props?.analyticsId === id); assert.ok(button, id); return button; };
+
+test('inbox profile selection checks the current connection twice and returns to personal without sending anything', async context => {
+  chatIdentity.resetChatIdentity(); context.after(chatIdentity.resetChatIdentity);
+  const view = app('ChatIdentitySwitcher');
+  const open = action(view.render(), 'chat.identity.open');
+  open.props.onPress(); open.props.onPress(); assert.equal(view.calls.length, 1);
+  view.pending.shift()(contextData()); await flush();
+  action(view.render(), 'chat.identity.business').props.onPress();
+  assert.equal(view.calls.length, 2, 'a cached business row is not authorization');
+  view.pending.shift()(contextData()); await flush();
+  assert.deepEqual(chatIdentity.chatBusinessIdentity('user-a'), { id: 'company-a', name: '업체 A' });
+  assert.match(text(view.render()), /업체 A/);
+  action(view.render(), 'chat.identity.open').props.onPress();
+  view.pending.shift()(contextData()); await flush();
+  action(view.render(), 'chat.identity.personal').props.onPress();
+  assert.equal(chatIdentity.chatBusinessIdentity('user-a'), null);
+  assert.ok(view.calls.every(call => call.name === 'get_my_merchant_connections'));
+  assert.equal(view.routes.length, 0);
+});
+
+test('a revoked business selection stays in the current profile and exposes a recoverable error', async context => {
+  chatIdentity.resetChatIdentity(); context.after(chatIdentity.resetChatIdentity);
+  const view = app('ChatIdentitySwitcher');
+  action(view.render(), 'chat.identity.open').props.onPress(); view.pending.shift()(contextData()); await flush();
+  action(view.render(), 'chat.identity.business').props.onPress();
+  view.pending.shift()(contextData('user-a', [])); await flush();
+  assert.equal(chatIdentity.chatBusinessIdentity('user-a'), null);
+  assert.ok(nodes(view.render()).some(n => n.props?.accessibilityRole === 'alert'));
+});
+
+test('an outstanding profile selection cannot switch a different signed-in account', async context => {
+  chatIdentity.resetChatIdentity(); context.after(chatIdentity.resetChatIdentity);
+  const view = app('ChatIdentitySwitcher');
+  action(view.render(), 'chat.identity.open').props.onPress(); view.pending.shift()(contextData()); await flush();
+  action(view.render(), 'chat.identity.business').props.onPress();
+  view.auth({ me: { id: 'user-b', nickname: '다른 이웃' } }); view.render();
+  view.pending.shift()(contextData()); await flush();
+  assert.equal(chatIdentity.chatBusinessIdentity('user-a'), null);
+  assert.equal(chatIdentity.chatBusinessIdentity('user-b'), null);
+});
+
+const contextData = (...args) => context(...args);

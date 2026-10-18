@@ -68,6 +68,7 @@ export function notificationRoute(value: unknown, notification?: { kind?: unknow
   const event = /^\/events\/([A-Za-z0-9_-]{1,100})\?cityId=([a-z]+)$/.exec(value);
   if (event && Object.hasOwn(EVENT_CITIES, event[2])) return value;
   const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+  if (new RegExp(`^/chat\\?conversationId=${uuid}&businessId=${uuid}$`, 'i').test(value)) return value;
   if (new RegExp(`^/chat\\?requestId=${uuid}$`, 'i').test(value)) return '/chat?view=requests';
   if (new RegExp(`^/company/${uuid}\\?review=(?:usage|employment)$`, 'i').test(value)) return value;
   if (new RegExp(`^/profile/merchant\\?merchant=${uuid}$`, 'i').test(value)) return value;

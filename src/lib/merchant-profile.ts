@@ -31,7 +31,7 @@ export function mapMerchantProfile(value: unknown): Omit<MerchantProfile, 'avata
     industry: row.industry as string, services: row.services as string, address: row.address as string,
     avatar_path: row.avatar_path as string | null, banner_path: row.banner_path as string | null, review_post_id: row.review_post_id as string | null,
     public_phone: typeof row.public_phone === 'string' ? row.public_phone : '', business_hours: typeof row.business_hours === 'string' ? row.business_hours : '',
-    can_message: row.can_message === true, saved: row.saved === true, notifications_enabled: row.saved === true && row.notifications_enabled === true, links };
+    can_message: row.can_business_message === true || row.can_message === true, saved: row.saved === true, notifications_enabled: row.saved === true && row.notifications_enabled === true, links };
 }
 
 export async function attachMerchantProfileImages<T extends Pick<MerchantProfile, 'avatar_path' | 'banner_path'>>(client: SupabaseClient, profile: T) {

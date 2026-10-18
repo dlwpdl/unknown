@@ -108,3 +108,11 @@ test('preference readback rejects missing data or malformed new booleans', async
     await assert.rejects(loadNotificationPreferences({ rpc: async () => ({ data }) }), /NOTIFICATION_PREFERENCES_READ_FAILED/);
   }
 });
+
+
+test('business DM notifications retain only a validated recipient business identity', () => {
+  const room = 'c1830000-0000-4000-8000-000000000001', business = 'c1820000-0000-4000-8000-000000000001';
+  const route = `/chat?conversationId=${room}&businessId=${business}`;
+  assert.equal(notificationRoute(route), route);
+  for (const value of [route + '&ownerId=private', `/chat?conversationId=${room}&businessId=../private`, route.replace('businessId=', 'actorId=')]) assert.equal(notificationRoute(value), null);
+});

@@ -2,7 +2,11 @@ import { t as sourceCopy } from '@/i18n/ko';
 import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, FlatList } from '@/components/analytics-controls';
-import { Image } from 'expo-image';
+import { Image, type ImageSource } from 'expo-image';
+import { useRouter } from 'expo-router';
+import { chatBusinessIdentity } from '@/lib/chat-identity';
+import { useChatIdentity } from '@/hooks/use-chat-identity';
+import { loadBusinessChatMessages, sendBusinessChatMessage, editBusinessChatMessage, deleteBusinessChatMessage, markBusinessChatRead, setBusinessChatReaction, endBusinessConversation, blockBusinessConversation, subscribeBusinessChat } from '@/lib/business-chat';
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
@@ -50,14 +54,16 @@ export function conversationSender(message: Pick<ChatMessageRecord, 'sender_id' 
   return { id: message.sender_id, nickname: message.sender_nickname ?? (conversation.kind === 'direct' && message.sender_id === conversation.otherUser.id ? conversation.otherUser.nickname : copy.chat.member) };
 }
 
-type ReportSelection = { targetType: ReportTarget; targetId: string; reportedUserId: string; reportedNickname: string };
+type ReportSelection = { targetType: ReportTarget; targetId: string; reportedUserId?: string; reportedBusinessId?: string; reportedNickname: string };
+type ChatPhoto = string | ImageSource | undefined;
+const photoSource = (photo: ChatPhoto) => typeof photo === 'string' ? { uri: photo } : photo;
 function BubblePressable({ message, onMenu, ...props }: ComponentProps<typeof Pressable> & { message: ChatMessageRecord; onMenu: (message: ChatMessageRecord, bubble: View) => void }) {
   const { tr } = useLanguage();
-  const bubble = useRef<View>(null);
+  const bubble = useRef<View>(null), style = props.style;
   const open = () => {
     if (!props.disabled && bubble.current) onMenu(message, bubble.current);
   };
-  return <Pressable {...props} ref={bubble} delayLongPress={400} onLongPress={open}
+  return <Pressable {...props} style={typeof style === 'function' ? state => [style(state), message.sender_kind && { minHeight: 44, justifyContent: 'center' }] : [style, message.sender_kind && { minHeight: 44, justifyContent: 'center' }]} ref={bubble} delayLongPress={400} onLongPress={open}
     accessibilityHint={tr("길게 눌러 메시지 메뉴 열기")} accessibilityActions={[{ name: 'longpress', label: tr('메시지 메뉴') }]}
     onAccessibilityAction={event => { if (event.nativeEvent.actionName === 'longpress') open(); }}
     {...(Platform.OS === 'web' ? {
@@ -79,24 +85,32 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const { tr, t, locale: appLocale } = useLanguage();
   const theme = useTheme();
   const hidden = useContentVisibility();
-  const auth = useAuth();
+  const auth = useAuth(), selectedBusiness = useChatIdentity(), router = useRouter();
+  const business = conversation.kind === 'business';
+  const publicSelfId = conversation.selfIdentity?.id ?? currentUserId;
+  const publicSelfName = conversation.selfIdentity?.name ?? auth.me.nickname;
+  const asBusinessId = conversation.selfIdentity?.kind === 'business' ? conversation.selfIdentity.id : null;
+  const scopeMatches = (selectedBusiness?.id ?? null) === asBusinessId;
+  const scopeKey = `${currentUserId}:${asBusinessId ?? 'personal'}`;
   const insets = useSafeAreaInsets();
   const screen = useWindowDimensions();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
-  const identity = useRef(auth.isAuthed ? auth.me.id : null);
+  const identity = useRef(auth.isAuthed && scopeMatches ? scopeKey : null);
   const mounted = useRef(true);
   const processing = useRef(false);
   const loadingRequest = useRef(0);
   const snapshot = useRef<Promise<void> | null>(null);
   const olderRequest = useRef(false);
   const blockedUsers = useRef(new Set<string>());
-  useLayoutEffect(() => { identity.current = auth.isAuthed ? auth.me.id : null; }, [auth.isAuthed, auth.me.id]);
+  useLayoutEffect(() => { identity.current = auth.isAuthed && auth.me.id === currentUserId && scopeMatches ? scopeKey : null; }, [auth.isAuthed, auth.me.id, currentUserId, scopeMatches, scopeKey]);
   useLayoutEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  const valid = useCallback(() => mounted.current && identity.current === currentUserId, [currentUserId]);
+  const valid = useCallback(() => mounted.current && identity.current === scopeKey && (chatBusinessIdentity(currentUserId)?.id ?? null) === asBusinessId, [scopeKey, currentUserId, asBusinessId]);
   const [resolvedStatus, setResolvedStatus] = useState<ConversationPreview['status'] | null>(null);
   const status = conversation.status === 'ended' ? 'ended' : resolvedStatus ?? conversation.status;
-  const access = conversationCapabilities(status);
+  const [businessReady, setBusinessReady] = useState(!business);
+  const capabilities = conversationCapabilities(status);
+  const access = { read: capabilities.read, write: capabilities.write && (!business || businessReady) };
   const [allMessages, setMessages] = useState<ChatMessageRecord[]>([]);
   const latestMessages = useRef(allMessages);
   useLayoutEffect(() => { latestMessages.current = allMessages; }, [allMessages]);
@@ -105,6 +119,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const [suggestionContext, setSuggestionContext] = useState<ChatSuggestionContext | null>(null);
   const [contextLoaded, setContextLoaded] = useState(false);
   const [uncertainSuggestion, setUncertainSuggestion] = useState<string | null>(null);
+  const businessSends = useRef(new Map<string, string>());
   const suggestedSend = useRef<{ body: string; id: string } | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMessageRecord | null>(null);
   const [messageMenu, setMessageMenu] = useState<ChatMessageRecord | null>(null);
@@ -124,10 +139,10 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const [pickingPhoto, setPickingPhoto] = useState(false);
   const [attachmentsOpen, setAttachmentsOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
-  const [photoViewer, setPhotoOpen] = useState<{ photos: (string | undefined)[]; index: number; initialIndex: number; messageId?: string } | null>(null);
+  const [photoViewer, setPhotoOpen] = useState<{ photos: ChatPhoto[]; index: number; initialIndex: number; messageId?: string } | null>(null);
   const photoOpen = photoViewer && (!photoViewer.messageId || messages.some(message => message.id === photoViewer.messageId && !message.deleted_at)) ? photoViewer : null;
   const photoPages = useRef<ScrollView>(null);
-  const openPhotos = (photos: (string | undefined)[], index: number, messageId?: string) => { play('selection'); setPhotoOpen({ photos, index, initialIndex: index, messageId }); };
+  const openPhotos = (photos: ChatPhoto[], index: number, messageId?: string) => { play('selection'); setPhotoOpen({ photos, index, initialIndex: index, messageId }); };
   const changePhoto = (index: number) => {
     if (!photoOpen || index < 0 || index >= photoOpen.photos.length) return;
     play('selection'); setPhotoOpen({ ...photoOpen, index }); photoPages.current?.scrollTo({ x: index * screen.width, animated: !reducedMotion });
@@ -160,8 +175,12 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewBody, setReviewBody] = useState('');
   const [reviewPick, setReviewPick] = useState<boolean | null>(null);
-  const [reactions, setReactions] = useState<Map<string, MessageReaction>>(new Map());
+  const [reactionChanges, setReactions] = useState<Map<string, MessageReaction>>(new Map());
+  const reactions = useMemo(() => business
+    ? new Map(messages.map(message => [message.id, reactionChanges.get(message.id) ?? { message_id: message.id, hearts: message.hearts ?? 0, mine: message.mine_reacted === true }]))
+    : reactionChanges, [business, messages, reactionChanges]);
   useEffect(() => {
+    if (business) return;
     let active = true;
     void (async () => {
       try {
@@ -171,9 +190,10 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       finally { if (active && valid()) setContextLoaded(true); }
     })();
     return () => { active = false; };
-  }, [conversation.id, valid]);
+  }, [business, conversation.id, valid]);
   const lastTap = useRef<{ id: string; at: number } | null>(null);
   useEffect(() => {
+    if (business) return;
     let active = true;
     void loadChatReadPosition(supabase, conversation.id).then((position) => {
       if (!active || !valid()) return;
@@ -182,12 +202,12 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       setReadAt(position);
     }).catch(() => { if (active && valid()) { readReady.current = true; setReadAt(null); setError("안 읽은 메시지 위치를 확인하지 못했어요."); } });
     return () => { active = false; };
-  }, [conversation.id, valid]);
+  }, [business, conversation.id, valid]);
 
   useEffect(() => {
     if (loading || readAt === undefined || initialScroll.current) return;
     initialScroll.current = true;
-    const index = firstUnreadMessageIndex(messages, readAt, currentUserId);
+    const index = firstUnreadMessageIndex(messages, readAt, publicSelfId);
     setUnreadStart(index < 0 ? null : messages[index].id);
     followingLatest.current = index < 0;
     setAwayFromLatest(index >= 0 && index < messages.length - 1);
@@ -196,7 +216,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       else if (index < 0) messageList.current?.scrollToEnd({ animated: false });
     }, 50);
     return () => clearTimeout(timer);
-  }, [messages, currentUserId, loading, readAt]);
+  }, [messages, publicSelfId, loading, readAt]);
 
   const trackVisibleMessages = useCallback(({ viewableItems }: { viewableItems: ViewToken<ChatMessageRecord>[] }) => {
     if (!readReady.current || !valid()) return;
@@ -204,8 +224,8 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       .reduce<ChatMessageRecord | null>((latest, item) => !latest || Date.parse(item.created_at) > Date.parse(latest.created_at) ? item : latest, null);
     if (!newest || Date.parse(newest.created_at) <= lastReadAt.current) return;
     lastReadAt.current = Date.parse(newest.created_at);
-    void markChatRead(supabase, conversation.id, newest.id).catch(() => {});
-  }, [conversation.id, valid]);
+    void (business ? markBusinessChatRead(supabase, conversation, newest.id) : markChatRead(supabase, conversation.id, newest.id)).catch(() => {});
+  }, [business, conversation, valid]);
   const onMessageScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     closeMessageMenu();
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
@@ -239,14 +259,16 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     setAttachmentsOpen(open);
   };
   useEffect(() => {
+    if (business) return;
     let active = true;
     void loadMessageReactions(supabase, messages.map((message) => message.id))
       .then((next) => { if (active) setReactions(next); })
       .catch(() => {});
     return () => { active = false; };
-  }, [messages]);
+  }, [messages, business]);
 
   const toggleHeart = async (messageId: string) => {
+    if (!valid() || !access.write) return;
     const current = reactions.get(messageId);
     const next = !current?.mine;
     play('reaction');
@@ -254,8 +276,10 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       message_id: messageId, hearts: Math.max(0, (current?.hearts ?? 0) + (next ? 1 : -1)), mine: next,
     }));
     try {
-      const hearts = await setMessageReaction(supabase, messageId, next);
-      setReactions((previous: Map<string, MessageReaction>) => new Map(previous).set(messageId, { message_id: messageId, hearts, mine: next }));
+      const saved = business ? await setBusinessChatReaction(supabase, conversation, messageId, next) : null;
+      const hearts = saved?.hearts ?? await setMessageReaction(supabase, messageId, next);
+      if (!valid()) return;
+      setReactions((previous: Map<string, MessageReaction>) => new Map(previous).set(messageId, { message_id: messageId, hearts, mine: saved?.mine ?? next }));
     } catch {
       setReactions((previous: Map<string, MessageReaction>) => new Map(previous).set(messageId, current ?? { message_id: messageId, hearts: 0, mine: false }));
     }
@@ -286,8 +310,9 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     if (processing.current || !access.write || !valid()) return;
     processing.current = true; setSending(true); setError(null);
     try {
-      const saved = remove ? await deleteChatMessage(supabase, message.id, message.edited_at ?? null)
-        : await editChatMessage(supabase, message.id, messageEditDraft, message.edited_at ?? null);
+      const saved = business
+        ? remove ? await deleteBusinessChatMessage(supabase, conversation, message.id, message.edited_at ?? null) : await editBusinessChatMessage(supabase, conversation, message.id, messageEditDraft, message.edited_at ?? null)
+        : remove ? await deleteChatMessage(supabase, message.id, message.edited_at ?? null) : await editChatMessage(supabase, message.id, messageEditDraft, message.edited_at ?? null);
       if (!valid()) return;
       setMessages(previous => mergeChatMessages(previous, [{ ...message, ...saved }], blockedUsers.current));
       if (remove) setReplyTo(current => current?.id === message.id ? null : current);
@@ -298,11 +323,15 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   };
   const group = conversation.kind === 'group';
   const title = group ? conversation.title : conversation.otherUser.nickname;
-  const verificationNotice = !group && ![2, 3].includes(conversation.otherUser.verificationLevel)
+  const verificationNotice = !group && !business && ![2, 3].includes(conversation.otherUser.verificationLevel)
     ? <View accessible style={[styles.safetyNotice, { backgroundColor: theme.backgroundElement }]}>
       <ThemedText type="smallBold">{t.chat.unverifiedNotice}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{t.chat.unverifiedSafety}</ThemedText>
     </View> : null;
+
+  const readMessagesByIds = useCallback(async (ids: string[]) => business
+    ? (await loadBusinessChatMessages(supabase, conversation, { messageIds: ids })).messages
+    : loadConversationMessagesByIds(supabase, conversation.id, ids), [business, conversation]);
 
   const refreshMessages = useCallback(() => {
     if (!access.read || !valid()) return;
@@ -311,17 +340,25 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     setLoading(true);
     const promise = (async () => {
       try {
-        const rows = await loadConversationMessages(supabase, conversation.id);
+        const page = business ? await loadBusinessChatMessages(supabase, conversation) : null;
+        const rows = page?.messages ?? await loadConversationMessages(supabase, conversation.id);
         if (!valid() || loadingRequest.current !== request) return;
         // Reconnect starts a contiguous window and revalidates message visibility through RLS.
         setMessages(rows.filter((message) => !blockedUsers.current.has(message.sender_id)));
-        setHasOlder(rows.length === 50);
-      } catch { if (valid() && loadingRequest.current === request) setError(sourceCopy.chat.loadMessagesError); }
+        setHasOlder(page ? !!page.cursor : rows.length === 50);
+        if (page) {
+          setResolvedStatus(page.conversation.status); setBusinessReady(true);
+          lastReadAt.current = page.readAt ? Date.parse(page.readAt) : 0; readReady.current = true; setReadAt(page.readAt);
+        }
+      } catch { if (valid() && loadingRequest.current === request) {
+        if (business) { setBusinessReady(false); setMessages([]); setPhotoOpen(null); readReady.current = false; }
+        setError(sourceCopy.chat.loadMessagesError);
+      } }
       finally { if (loadingRequest.current === request) { snapshot.current = null; if (valid()) setLoading(false); } }
     })();
     snapshot.current = promise;
     return promise;
-  }, [access.read, conversation.id, valid, setError]);
+  }, [access.read, business, conversation, valid, setError, setPhotoOpen]);
 
   useEffect(() => {
     let active = true;
@@ -338,7 +375,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
         await snapshot.current;
         if (!active || !valid()) return;
         const request = loadingRequest.current;
-        const rows = await loadConversationMessagesByIds(supabase, conversation.id, ids);
+        const rows = await readMessagesByIds(ids);
         if (active && valid()) {
           if (request === loadingRequest.current) {
             const returned = new Set(rows.map(row => row.id));
@@ -362,35 +399,40 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       }
     };
     void Promise.resolve().then(refreshMessages);
-    const channel = supabase.channel(`room:${currentUserId}:${conversation.id}`)
+    const stopBusiness = business ? subscribeBusinessChat(supabase, currentUserId, event => {
+      if (!active || !valid() || event.conversationId !== conversation.id || (event.businessId ?? null) !== asBusinessId) return;
+      if (!event.messageId) { void refreshMessages(); void onChanged(); return; }
+      pending.add(event.messageId); if (!timer && !flushing) timer = setTimeout(() => void flush(), 80);
+    }) : null;
+    const channel = business ? null : supabase.channel(`room:${currentUserId}:${conversation.id}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations', filter: `id=eq.${conversation.id}` }, ({ new: value }) => {
         if (!valid()) return;
         const next = value.status as ConversationPreview['status'];
         if (['pending', 'active', 'ended', 'rejected', 'cancelled'].includes(next)) setResolvedStatus(next);
         void onChanged();
       });
-    if (access.read) channel.on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversation.id}` }, ({ new: message, old: previous }) => {
+    if (access.read && channel) channel.on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversation.id}` }, ({ new: message, old: previous }) => {
       const id = message && 'id' in message ? message.id : previous && 'id' in previous ? previous.id : null;
       if (!active || typeof id !== 'string') return;
       pending.add(id);
       if (!timer && !flushing) timer = setTimeout(() => void flush(), 80);
     });
-    channel.subscribe();
+    channel?.subscribe();
     const appState = AppState.addEventListener('change', (next) => { if (next === 'active' && valid()) { void refreshMessages(); void onChanged(); } });
-    return () => { active = false; clearTimeout(timer); pending.clear(); loadingRequest.current += 1; snapshot.current = null; appState.remove(); void supabase.removeChannel(channel); };
-  }, [access.read, animateNewMessage, conversation.id, currentUserId, onChanged, refreshMessages, valid]);
+    return () => { active = false; clearTimeout(timer); pending.clear(); loadingRequest.current += 1; snapshot.current = null; appState.remove(); stopBusiness?.(); if (channel) void supabase.removeChannel(channel); };
+  }, [access.read, animateNewMessage, business, asBusinessId, conversation.id, currentUserId, onChanged, readMessagesByIds, refreshMessages, valid]);
 
   const end = async () => {
     if (processing.current || !valid()) return;
     processing.current = true; setBusy(true); setError(null);
-    try { await endConversation(supabase, conversation.id); if (valid()) { play('warning'); setResolvedStatus('ended'); setConfirmEnd(false); await onChanged(); } }
+    try { if (business) await endBusinessConversation(supabase, conversation); else await endConversation(supabase, conversation.id); if (valid()) { play('warning'); setResolvedStatus('ended'); setConfirmEnd(false); await onChanged(); } }
     catch { if (valid()) { play('warning'); setError(sourceCopy.chat.endError); } }
     finally { processing.current = false; if (valid()) setBusy(false); }
   };
   const block = async (blockedUserId: string) => {
     if (!valid() || blockedUserId === currentUserId) return;
     try {
-      await blockUser(supabase, currentUserId, blockedUserId);
+      if (business) await blockBusinessConversation(supabase, conversation); else await blockUser(supabase, currentUserId, blockedUserId);
       if (!valid()) return;
       play('warning');
       if (group) { blockedUsers.current.add(blockedUserId); setMessages((previous) => previous.filter((message) => message.sender_id !== blockedUserId)); }
@@ -447,13 +489,16 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     const parent = replyTarget;
     try {
       if (suggestion && !suggestedSend.current) suggestedSend.current = { body, id: merchantEventId() };
-      const id = suggestion
+      const sendKey = JSON.stringify(['text', body, parent?.id ?? null]);
+      if (business && !businessSends.current.has(sendKey)) businessSends.current.set(sendKey, merchantEventId());
+      const id = business ? await sendBusinessChatMessage(supabase, conversation, { clientId: businessSends.current.get(sendKey)!, body, replyToId: parent?.id }) : suggestion
         ? await sendSuggestedMessage(supabase, conversation.id, body, suggestedSend.current!.id)
         : await sendDirectMessage(supabase, conversation.id, body, parent?.id);
       await snapshot.current;
       if (!valid()) return;
+      businessSends.current.delete(sendKey);
       animateNewMessage();
-      setMessages((previous) => previous.some((item) => item.id === id) ? previous : [...previous, { id, conversation_id: conversation.id, sender_id: currentUserId, sender_nickname: auth.me.nickname, body, reply_to_id: parent?.id, reply: parent, created_at: new Date().toISOString() }]);
+      setMessages((previous) => previous.some((item) => item.id === id) ? previous : [...previous, { id, conversation_id: conversation.id, sender_id: publicSelfId, sender_nickname: publicSelfName, ...(business ? { sender_kind: conversation.selfIdentity!.kind, is_mine: true, avatarUri: conversation.selfIdentity!.avatarUri } : {}), body, reply_to_id: parent?.id, reply: parent, created_at: new Date().toISOString() }]);
       if (!suggestion) {
         setReplyTo(current => current?.id === parent?.id ? null : current);
         setDraft((current) => current.trim() === body ? '' : current);
@@ -462,6 +507,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     } catch (failure) { if (valid()) {
       play('warning');
       if (suggestion) setUncertainSuggestion(body);
+      if (business) await refreshMessages();
       setError(isContentRejected(failure) ? sourceCopy.safety.contentBlockedBody : suggestion
         ? "전송 결과를 확인하지 못했어요. 같은 문장을 다시 누르면 중복 없이 확인해요." : sourceCopy.chat.sendError);
       await onChanged();
@@ -497,7 +543,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       setPhotoProgress({ stage: 'upload', completed: pending.paths.length, total: pending.photos.length });
       for (let i = pending.paths.length; i < pending.photos.length; i++) {
         if (!valid()) return;
-        pending.paths.push(await uploadChatImage(supabase, currentUserId, conversation.id, pending.photos[i].base64).catch(failure => {
+        pending.paths.push(await uploadChatImage(supabase, publicSelfId, conversation.id, pending.photos[i].base64).catch(failure => {
           if (valid()) void recordProductEvent(supabase, { kind: 'photo_upload_error', platform: Platform.OS }).catch(() => {});
           throw failure;
         }));
@@ -507,20 +553,21 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       setPhotoProgress({ stage: 'send', completed: pending.paths.length, total: pending.photos.length });
       pending.submitted = true;
       setReplyLocked(true);
-      const id = await sendChatAttachment(supabase, conversation.id, { kind: 'image', imagePaths: pending.paths, clientId: pending.id }, pending.parent?.id);
-      const rows = await loadConversationMessagesByIds(supabase, conversation.id, [id]).catch(() => []);
+      const id = business ? await sendBusinessChatMessage(supabase, conversation, { kind: 'image', imagePaths: pending.paths, clientId: pending.id, replyToId: pending.parent?.id })
+        : await sendChatAttachment(supabase, conversation.id, { kind: 'image', imagePaths: pending.paths, clientId: pending.id }, pending.parent?.id);
+      const rows = await readMessagesByIds([id]).catch(() => []);
       if (!valid()) return;
       animateNewMessage();
       const localUrls = pending.photos.map(photo => photo.uri);
       setMessages(previous => mergeChatMessages(previous, rows.length ? rows.map(row => row.kind === 'image'
         ? { ...row, imageUrl: row.imageUrl ?? localUrls[0], imageUrls: localUrls.map((url, index) => row.imageUrls?.[index] ?? url) } : row)
-        : [{ id, conversation_id: conversation.id, sender_id: currentUserId, sender_nickname: auth.me.nickname,
+        : [{ id, conversation_id: conversation.id, sender_id: publicSelfId, sender_nickname: publicSelfName, ...(business ? { sender_kind: conversation.selfIdentity!.kind, is_mine: true, avatarUri: conversation.selfIdentity!.avatarUri } : {}),
           body: `📷 사진 ${pending.photos.length}장`, kind: 'image', image_path: pending.paths[0], image_paths: pending.paths,
           imageUrl: localUrls[0], imageUrls: localUrls, reply_to_id: pending.parent?.id, reply: pending.parent, created_at: new Date().toISOString() }], blockedUsers.current));
       photoSend.current = null; setReplyLocked(false); setSelectedPhotos([]);
       setReplyTo(current => current?.id === pending.parent?.id ? null : current);
       scrollToLatest(); play('message');
-    } catch { if (valid()) { play('warning'); setError("사진 묶음의 전송 결과를 확인하지 못했어요. 다시 누르면 같은 묶음으로 확인해요."); } }
+    } catch { if (valid()) { if (business) await refreshMessages(); play('warning'); setError("사진 묶음의 전송 결과를 확인하지 못했어요. 다시 누르면 같은 묶음으로 확인해요."); } }
     finally { processing.current = false; if (valid()) { setSending(false); setPhotoProgress(null); } }
   };
   const sendLocation = async (point: ChatLocation) => {
@@ -529,17 +576,21 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     const parent = replyTarget;
     try {
       const { latitude, longitude, label } = point;
-      const id = await sendChatAttachment(supabase, conversation.id, { kind: 'location', latitude, longitude, label }, parent?.id);
-      const rows = await loadConversationMessagesByIds(supabase, conversation.id, [id]).catch(() => []);
+      const sendKey = JSON.stringify(['location', latitude, longitude, label, parent?.id ?? null]);
+      if (business && !businessSends.current.has(sendKey)) businessSends.current.set(sendKey, merchantEventId());
+      const id = business ? await sendBusinessChatMessage(supabase, conversation, { kind: 'location', latitude, longitude, locationLabel: label, clientId: businessSends.current.get(sendKey)!, replyToId: parent?.id })
+        : await sendChatAttachment(supabase, conversation.id, { kind: 'location', latitude, longitude, label }, parent?.id);
+      const rows = await readMessagesByIds([id]).catch(() => []);
       if (!valid()) return;
       animateNewMessage();
       setMessages((previous) => mergeChatMessages(previous, rows.length ? rows : [{ id, conversation_id: conversation.id,
-        sender_id: currentUserId, sender_nickname: auth.me.nickname, body: `📍 ${label}`, kind: 'location', latitude, longitude, location_label: label, reply_to_id: parent?.id, reply: parent,
+        sender_id: publicSelfId, sender_nickname: publicSelfName, ...(business ? { sender_kind: conversation.selfIdentity!.kind, is_mine: true, avatarUri: conversation.selfIdentity!.avatarUri } : {}), body: `📍 ${label}`, kind: 'location', latitude, longitude, location_label: label, reply_to_id: parent?.id, reply: parent,
         created_at: new Date().toISOString() }], blockedUsers.current));
+      businessSends.current.delete(sendKey);
       scrollToLatest(); play('message');
       setLocationOpen(false); setReplyTo(current => current?.id === parent?.id ? null : current);
     } catch (failure) {
-      if (valid()) { play('warning'); setError("위치를 보내지 못했어요. 선택한 위치를 확인하고 다시 시도해 주세요."); throw failure; }
+      if (valid()) { if (business) await refreshMessages(); play('warning'); setError("위치를 보내지 못했어요. 선택한 위치를 확인하고 다시 시도해 주세요."); throw failure; }
     } finally { processing.current = false; if (valid()) setSending(false); }
   };
   const openAttachments = () => { play('selection'); setAttachmentMenu(!attachmentsOpen); };
@@ -548,18 +599,20 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     const request = loadingRequest.current;
     olderRequest.current = true; setLoadingOlder(true);
     try {
-      const rows = await loadConversationMessages(supabase, conversation.id, { createdAt: messages[0].created_at, id: messages[0].id });
+      const before = { createdAt: messages[0].created_at, id: messages[0].id };
+      const page = business ? await loadBusinessChatMessages(supabase, conversation, { before }) : null;
+      const rows = page?.messages ?? await loadConversationMessages(supabase, conversation.id, before);
       if (!valid() || request !== loadingRequest.current) return;
-      setMessages((previous) => mergeChatMessages(previous, rows, blockedUsers.current)); setHasOlder(rows.length === 50);
+      setMessages((previous) => mergeChatMessages(previous, rows, blockedUsers.current)); setHasOlder(page ? !!page.cursor : rows.length === 50);
     } catch { if (valid() && request === loadingRequest.current) setError(sourceCopy.chat.loadMessagesError); }
     finally { olderRequest.current = false; if (valid()) setLoadingOlder(false); }
   };
 
-  if (!auth.isAuthed || auth.me.id !== currentUserId) return null;
+  if (!auth.isAuthed || auth.me.id !== currentUserId || !scopeMatches) return null;
   return <ThemedView style={{ flex: 1 }}>
-    <View style={[styles.head, { borderBottomColor: theme.line }]}><View style={styles.titleRow}><ThemedText type="smallBold" style={styles.title}>{title}</ThemedText>{!group && <TrustBadge verified={conversation.otherUser.verificationLevel >= 2} trustLevel={conversation.otherUser.verificationLevel === 3 ? 3 : conversation.otherUser.verificationLevel === 2 ? 2 : undefined} />}</View><RoomAction label={t.detail.close} onPress={onClose} /></View>
-    <View style={[styles.toolbar, group && styles.groupToolbar]}>{group && access.read && conversation.groupPostId && <ChatMembers key={`${currentUserId}:${conversation.id}`} conversationId={conversation.id} groupPostId={conversation.groupPostId} currentUserId={currentUserId} />}{access.write && <RoomAction label={group ? conversation.isGroupHost ? t.meetup.end : t.meetup.leave : t.chat.end} onPress={() => setConfirmEnd(true)} />}{!group && <><RoomAction label={t.report.short} onPress={() => setReport({ targetType: 'user', targetId: conversation.otherUser.id, reportedUserId: conversation.otherUser.id, reportedNickname: conversation.otherUser.nickname })} /><RoomAction label={t.chat.block} onPress={() => void block(conversation.otherUser.id)} /></>}</View>
-    {!group && <View style={styles.toolbar}><MannerReviewButton subjectId={conversation.otherUser.id} nickname={conversation.otherUser.nickname} context={{ conversationId: conversation.id }} /></View>}
+    <View style={[styles.head, { borderBottomColor: theme.line }]}><View style={styles.titleRow}>{conversation.otherIdentity?.kind === 'business' ? <Pressable analyticsId="chat.peer-profile" accessibilityRole="button" accessibilityLabel={tr('{0} 프로필 보기', title)} onPress={() => { play('selection'); if (conversation.otherIdentity?.kind === 'business') { onClose(); router.push({ pathname: '/company/[id]', params: { id: conversation.otherIdentity.id } }); } }} style={{ minHeight: 44, flex: 1, flexDirection: 'row', gap: 8, alignItems: 'center' }}>{conversation.otherIdentity?.avatarUri && <Image source={{ uri: conversation.otherIdentity.avatarUri }} style={{ width: 32, height: 32, borderRadius: 16 }} />}<ThemedText type="smallBold" style={styles.title}>{title}</ThemedText></Pressable> : <ThemedText type="smallBold" style={styles.title}>{title}</ThemedText>}{!group && !business && <TrustBadge verified={conversation.otherUser.verificationLevel >= 2} trustLevel={conversation.otherUser.verificationLevel === 3 ? 3 : conversation.otherUser.verificationLevel === 2 ? 2 : undefined} />}</View><RoomAction label={t.detail.close} onPress={onClose} /></View>
+    <View style={[styles.toolbar, group && styles.groupToolbar]}>{group && access.read && conversation.groupPostId && <ChatMembers key={`${currentUserId}:${conversation.id}`} conversationId={conversation.id} groupPostId={conversation.groupPostId} currentUserId={currentUserId} />}{access.write && <RoomAction label={group ? conversation.isGroupHost ? t.meetup.end : t.meetup.leave : t.chat.end} onPress={() => setConfirmEnd(true)} />}{!group && <>{!business && <RoomAction label={t.report.short} onPress={() => setReport({ targetType: 'user', targetId: conversation.otherUser.id, reportedUserId: conversation.otherUser.id, reportedNickname: conversation.otherUser.nickname })} />}<RoomAction label={t.chat.block} onPress={() => void block(conversation.otherUser.id)} /></>}</View>
+    {!group && !business && <View style={styles.toolbar}><MannerReviewButton subjectId={conversation.otherUser.id} nickname={conversation.otherUser.nickname} context={{ conversationId: conversation.id }} /></View>}
     {review?.canWrite && <View style={styles.toolbar}>
       <RoomAction label={tr(review.mine ? tr("거래 후기 고치기") : tr("{0}님 거래 후기 남기기", (review.subjectNickname ?? '')))}
         onPress={() => setReviewOpen((current) => !current)} disabled={busy} />
@@ -612,22 +665,22 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
         renderItem={({ item: message, index }) => {
           const author = conversationSender(message, conversation, t);
           const date = chatDateLabel(message.created_at, messages[index - 1]?.created_at, undefined, appLocale);
-          const mine = message.sender_id === currentUserId;
+          const mine = message.is_mine ?? message.sender_id === publicSelfId;
           const time = showChatMessageTime(message, messages[index + 1]) ? <ThemedText type="small" themeColor="textSecondary" style={mine ? styles.timeMine : undefined}>{chatMessageTime(message.created_at, appLocale)}</ThemedText> : null;
           const reaction = reactions.get(message.id);
           const attachment = message.kind === 'image' || message.kind === 'location';
-          const sharedUrl = attachment ? null : sharedLinkInMessage(message.body);
-          const photos = message.imageUrls ?? (message.imageUrl ? [message.imageUrl] : chatImagePaths(message).map(() => undefined));
+          const sharedUrl = attachment || message.deleted_at ? null : sharedLinkInMessage(message.body);
+          const photos: ChatPhoto[] = message.imageSources ?? message.imageUrls ?? (message.imageUrl ? [message.imageUrl] : chatImagePaths(message).map(() => undefined));
           const gridWidth = Math.min(234, screen.width - 120);
-          const messageContent = message.kind === 'image'
+          const messageContent = message.deleted_at ? <ThemedText type="small" themeColor="textSecondary">{tr('삭제된 메시지입니다.')}</ThemedText> : message.kind === 'image'
             ? photos.length > 1 ? <View style={{ width: gridWidth, gap: 6 }}>
               <View style={styles.photoGrid}>{photos.slice(0, 9).map((uri, position) => <BubblePressable key={position} analyticsId="chat.album.photo"
                 message={message} onMenu={openMessageMenu} accessibilityRole="button" accessibilityLabel={tr("묶음 사진 {0}/{1} 크게 보기", (position + 1), (photos.length))}
                 onPress={() => openPhotos(photos, position, message.id)} style={[styles.albumTile, { width: (gridWidth - (photos.length > 4 ? 4 : 2)) / (photos.length > 4 ? 3 : 2), backgroundColor: theme.backgroundElement }]}>
-                {uri ? <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} /> : <ThemedText type="small" themeColor="textSecondary">{tr("사진을 불러오지 못했어요")}</ThemedText>}
+                {uri ? <Image source={photoSource(uri)} cachePolicy={business ? 'none' : undefined} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} /> : <ThemedText type="small" themeColor="textSecondary">{tr("사진을 불러오지 못했어요")}</ThemedText>}
                 {position === 8 && photos.length > 9 && <View pointerEvents="none" style={styles.morePhotos}><ThemedText type="subtitle" style={{ color: '#fff' }}>+{photos.length - 9}</ThemedText></View>}
               </BubblePressable>)}</View><ThemedText type="small" themeColor="textSecondary">{tr("사진") + " "}{photos.length}{tr("장")}</ThemedText>
-              </View> : photos[0] ? <Image source={{ uri: photos[0] }} style={styles.chatPhoto} contentFit="cover" accessibilityLabel={tr("대화에서 보낸 사진")} />
+              </View> : photos[0] ? <Image source={photoSource(photos[0])} cachePolicy={business ? 'none' : undefined} style={styles.chatPhoto} contentFit="cover" accessibilityLabel={tr("대화에서 보낸 사진")} />
               : <ThemedText type="small" themeColor="textSecondary">{tr("사진을 불러오지 못했어요")}</ThemedText>
             : message.kind === 'location' && message.latitude != null && message.longitude != null
               ? <View style={styles.locationCard}><ThemedText type="subtitle">📍</ThemedText><ThemedText type="smallBold">{message.location_label ?? tr("공유한 위치")}</ThemedText><ThemedText type="small" themeColor="accent">{tr("지도에서 열기 ↗")}</ThemedText></View>
@@ -658,10 +711,11 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
             {message.id === unreadStart && <View style={[styles.unreadDivider, { borderColor: theme.accent }]}><ThemedText type="smallBold" themeColor="accent">{tr("여기부터 안 읽은 메시지")}</ThemedText></View>}
             {date && <ThemedText type="small" themeColor="textSecondary" style={styles.date}>{date}</ThemedText>}
             {mine ? <><BubblePressable analyticsId="components_chat-room.pressable.heart" {...menuProps} message={message} onMenu={openMessageMenu} onPress={(event: { nativeEvent?: { timestamp?: number } }) => onBubblePress(event?.nativeEvent?.timestamp ?? 0)} accessibilityRole={message.kind === 'location' ? 'link' : 'button'} accessibilityLabel={tr(message.deleted_at ? tr("삭제된 메시지입니다.") : attachment ? message.kind === 'image' ? tr("사진 크게 보기") : tr("공유한 위치 지도에서 열기") : tr("메시지에 하트 (두 번 탭)"))} style={[styles.bubbleMine, { backgroundColor: attachment ? theme.card : theme.accent }]}>{content}</BubblePressable>{heart}{time}</>
-              : <View style={styles.row}><View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" themeColor="navy">{author.nickname[0]}</ThemedText></View><View style={styles.rowBody}><ThemedText type="smallBold">{author.nickname}</ThemedText><BubblePressable analyticsId="components_chat-room.pressable.heart" {...menuProps} message={message} onMenu={openMessageMenu} onPress={(event: { nativeEvent?: { timestamp?: number } }) => onBubblePress(event?.nativeEvent?.timestamp ?? 0)} accessibilityRole={message.kind === 'location' ? 'link' : 'button'} accessibilityLabel={tr(message.deleted_at ? tr("삭제된 메시지입니다.") : attachment ? message.kind === 'image' ? tr("사진 크게 보기") : tr("공유한 위치 지도에서 열기") : tr("메시지에 하트 (두 번 탭)"))} style={[styles.bubble, { backgroundColor: theme.card, borderColor: theme.line }]}>{content}</BubblePressable>{heart}{time}<View style={styles.messageActions}><RoomAction label={t.report.short} onPress={() => setReport({ targetType: 'message', targetId: message.id, reportedUserId: author.id, reportedNickname: author.nickname })} />{group && <RoomAction label={t.chat.block} onPress={() => void block(author.id)} />}</View></View></View>}
+              : <View style={styles.row}>{message.sender_kind === 'business' ? <Pressable analyticsId="chat.sender-profile" accessibilityRole="button" accessibilityLabel={tr('{0} 프로필 보기', author.nickname)} onPress={() => { play('selection'); onClose(); router.push({ pathname: '/company/[id]', params: { id: author.id } }); }} style={[styles.avatar, { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.backgroundElement }]}>{message.avatarUri ? <Image source={{ uri: message.avatarUri }} style={{ width: 36, height: 36, borderRadius: 18 }} /> : <ThemedText type="smallBold" themeColor="navy">{author.nickname[0]}</ThemedText>}</Pressable> : <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" themeColor="navy">{author.nickname[0]}</ThemedText></View>}<View style={styles.rowBody}><ThemedText type="smallBold">{author.nickname}</ThemedText><BubblePressable analyticsId="components_chat-room.pressable.heart" {...menuProps} message={message} onMenu={openMessageMenu} onPress={(event: { nativeEvent?: { timestamp?: number } }) => onBubblePress(event?.nativeEvent?.timestamp ?? 0)} accessibilityRole={message.kind === 'location' ? 'link' : 'button'} accessibilityLabel={tr(message.deleted_at ? tr("삭제된 메시지입니다.") : attachment ? message.kind === 'image' ? tr("사진 크게 보기") : tr("공유한 위치 지도에서 열기") : tr("메시지에 하트 (두 번 탭)"))} style={[styles.bubble, { backgroundColor: theme.card, borderColor: theme.line }]}>{content}</BubblePressable>{heart}{time}<View style={styles.messageActions}><RoomAction label={t.report.short} onPress={() => setReport({ targetType: 'message', targetId: message.id, ...(message.sender_kind === 'business' ? { reportedBusinessId: author.id } : { reportedUserId: author.id }), reportedNickname: author.nickname })} />{group && <RoomAction label={t.chat.block} onPress={() => void block(author.id)} />}</View></View></View>}
             {sharedUrl && <SharedLinkCard key={`${message.id}:${currentUserId}`} url={sharedUrl} />}
           </View>;
         }} />{awayFromLatest && <Pressable analyticsId="components_chat-room.jump-latest" accessibilityRole="button" accessibilityLabel={tr("최근 메시지로 내려가기")} onPress={() => { play('selection'); followingLatest.current = true; setAwayFromLatest(false); messageList.current?.scrollToEnd({ animated: true }); }} style={[styles.jumpLatest, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="smallBold" themeColor="accent">{tr("↓ 최근 메시지")}</ThemedText></Pressable>}</View> : <View style={styles.request}><ThemedText type="small" themeColor="textSecondary">{tr("처리되거나 취소된 요청이에요. 대화 목록에서 새로 확인해 주세요.")}</ThemedText></View>}
+      {business && !businessReady && !loading && <RoomAction label={tr('대화 접근 다시 확인')} onPress={() => { setError(null); void refreshMessages(); }} />}
       {!!error && <ThemedText accessibilityRole="alert" type="small" themeColor="accent" style={styles.feedback}>{tr(error)}</ThemedText>}{notice && <ThemedText type="small" accessibilityLiveRegion="polite" style={styles.feedback}>{tr(notice)}</ThemedText>}
       {confirmEnd && access.write && <View style={[styles.confirmation, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold">{t.chat.endConfirm}</ThemedText><ThemedText type="small">{conversationExitNotice(conversation, currentUserId, t)}</ThemedText>{group && <MeetupPolicyNotice mode={conversation.isGroupHost ? 'close' : 'leave'} />}<View style={styles.messageActions}><RoomAction label={t.profile.cancel} onPress={() => setConfirmEnd(false)} disabled={busy} /><RoomAction label={group ? conversation.isGroupHost ? t.meetup.end : t.meetup.leave : t.chat.end} onPress={() => void end()} disabled={busy} primary /></View></View>}
       {photoProgress && <View testID="chat-photo-progress" accessibilityRole="progressbar" accessibilityLabel={photoProgressLabel} accessibilityLiveRegion="polite"
@@ -697,7 +751,8 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
         </Pressable>
       </ScrollView>}
       {access.write ? <>
-        {contextLoaded && !loading && !replyTarget && !allMessages.some(message => message.sender_id === currentUserId) && <View style={[styles.suggestions, { backgroundColor: theme.card }]}>
+        {business && <ThemedText type="small" themeColor="textSecondary" numberOfLines={2} style={styles.feedback}>{tr('{0} 프로필로 보내요', publicSelfName)}</ThemedText>}
+        {!business && contextLoaded && !loading && !replyTarget && !allMessages.some(message => message.sender_id === currentUserId) && <View style={[styles.suggestions, { backgroundColor: theme.card }]}>
           <ThemedText type="small" themeColor="textSecondary">{suggestionContext?.title ? `${suggestionContext.title} · ` : ''}{tr("누르면 바로 전송돼요")}</ThemedText>
           <View style={styles.suggestionRow}>{chatSuggestions(suggestionContext, suggestionContext?.authorId === currentUserId).map(body => {
             const disabled = sending || pickingPhoto || replyLocked || busy || !!uncertainSuggestion && uncertainSuggestion !== body;
@@ -732,10 +787,10 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           onPress={() => { play('selection'); closeMessageMenu(); }} />
         <View accessibilityLabel={tr("메시지 메뉴")} onLayout={({ nativeEvent: { layout } }) => setMenuSize(current => current.width === layout.width && current.height === layout.height ? current : { width: layout.width, height: layout.height })}
           style={[styles.bubbleMenu, { backgroundColor: theme.card, borderColor: theme.line, maxWidth: menuFrame.bounds.width - 16, opacity: menuSize.height ? 1 : 0 }, menuSize.width
-            ? { width: menuSize.width, ...messageMenuPosition(menuFrame.anchor, menuSize, menuFrame.bounds, messageMenu.sender_id === currentUserId) }
+            ? { width: menuSize.width, ...messageMenuPosition(menuFrame.anchor, menuSize, menuFrame.bounds, (messageMenu.is_mine ?? messageMenu.sender_id === publicSelfId)) }
             : { left: menuFrame.bounds.x + 8, top: menuFrame.bounds.y + 8 }]}>
           <Pressable analyticsId="chat.message.reply" accessibilityRole="button" accessibilityLabel={tr("답장")} disabled={sending || pickingPhoto || replyLocked} accessibilityState={{ disabled: sending || pickingPhoto || replyLocked }} onPress={() => { if (photoSend.current?.submitted) return; play('selection'); setReplyTo(messageMenu); closeMessageMenu(); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold">{tr("답장")}</ThemedText></Pressable>
-          {messageMenu.sender_id === currentUserId && <>
+          {(messageMenu.is_mine ?? messageMenu.sender_id === publicSelfId) && <>
             {(!messageMenu.kind || messageMenu.kind === 'text') && <Pressable analyticsId="chat.message.edit" accessibilityRole="button" accessibilityLabel={tr("메시지 수정")} disabled={sending} onPress={() => { play('selection'); setEditingMessage(messageMenu); setMessageEditDraft(messageMenu.body); closeMessageMenu(); setError(null); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold">{tr("수정")}</ThemedText></Pressable>}
             <Pressable analyticsId="chat.message.delete" accessibilityRole="button" accessibilityLabel={tr("메시지 삭제")} disabled={sending} onPress={() => { play('selection'); setDeleteConfirm(true); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold" themeColor="danger">{tr("삭제")}</ThemedText></Pressable>
           </>}
@@ -765,7 +820,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
         </View>
       </KeyboardAvoidingView>
     </Modal>}
-    {report && <ReportSheet visible {...report} onClose={() => {
+    {report && <ReportSheet visible {...report} businessConversation={business ? conversation : undefined} onClose={() => {
       setReport(null); void onChanged();
       void refreshMessages();
     }} />}
@@ -779,7 +834,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           onLayout={() => photoPages.current?.scrollTo({ x: photoOpen.index * screen.width, animated: false })}
           onMomentumScrollEnd={event => { const index = Math.max(0, Math.min(photoOpen.photos.length - 1, Math.round(event.nativeEvent.contentOffset.x / screen.width))); if (index !== photoOpen.index) { play('selection'); setPhotoOpen({ ...photoOpen, index }); } }}>
           {photoOpen.photos.map((uri, index) => <View key={index} style={{ width: screen.width, height: '100%', justifyContent: 'center', alignItems: 'center' }}>
-            {uri ? <Image source={Math.abs(index - photoOpen.index) <= 1 ? { uri } : null} style={styles.fullPhoto} contentFit="contain" accessibilityLabel={tr(index === photoOpen.index ? tr("대화 사진 크게 보기") : tr("묶음 사진 {0}", (index + 1)))} />
+            {uri ? <Image source={Math.abs(index - photoOpen.index) <= 1 ? photoSource(uri) : null} cachePolicy={business ? 'none' : undefined} style={styles.fullPhoto} contentFit="contain" accessibilityLabel={tr(index === photoOpen.index ? tr("대화 사진 크게 보기") : tr("묶음 사진 {0}", (index + 1)))} />
               : <ThemedText style={{ color: '#fff' }}>{tr("사진을 불러오지 못했어요")}</ThemedText>}
           </View>)}
         </ScrollView>

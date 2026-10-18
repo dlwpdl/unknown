@@ -28,6 +28,9 @@ function mount(name = 'MerchantTools', options = {}) {
   };
   const imports = {
     react: hooks, 'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }), Fragment: 'Fragment' },
+    'expo-router': { useRouter: () => ({ push: value => api.routes?.push(value) }) },
+    '@/lib/chat-identity': { selectChatBusiness: (_user, value) => { api.identity = value; } },
+    '@/lib/merchant-connections': { loadMyMerchantConnections: async () => ({ user_id: auth.me.id, merchants: await api.merchants() }) },
     'react-native': { View: 'View', TextInput: 'TextInput', Platform: { OS: 'web' }, StyleSheet: { create: v => v }, Alert: {} },
     '@react-native-async-storage/async-storage': { default: { getItem: async () => null } },
     '@/hooks/use-language': { useLanguage: () => ({ tr: v => v, locale: 'ko' }) }, '@/i18n': { tr: v => v },
