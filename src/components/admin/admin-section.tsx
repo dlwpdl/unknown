@@ -150,7 +150,7 @@ export function AdminSectionView({
   if (section === 'trending') {
     return (
       <View style={styles.section}>
-        <SectionHeading title="뜨는 글 알림" description="도시마다 반응이 오는 글 하나를 골라 그 도시 사용자에게만 알립니다. 점수 값을 바꾸면 아래 미리보기가 함께 바뀝니다." />
+        <SectionHeading title="뜨는 글 알림" description="도시별 인기 글 알림과 발송 미리보기를 확인합니다." />
         <AdminTrendingPanel localPreview={localPreview} />
       </View>
     );
@@ -159,7 +159,8 @@ export function AdminSectionView({
   if (section === 'errors') {
     return (
       <View style={styles.section}>
-        <SectionHeading title="앱 오류" description="사용자 폰에서 난 자바스크립트 오류입니다. 같은 오류는 한 줄로 묶이고 앱 버전별로 따로 셉니다. 네이티브 충돌은 App Store Connect 와 Play Console 에서 봅니다." />
+        <SectionHeading title="앱 오류" description="앱 버전별 오류와 발생 횟수를 확인합니다." />
+        <details className="admin-context-details" onToggle={() => play('selection')}><summary>오류 수집 범위</summary><p>사용자 폰의 자바스크립트 오류를 종류·앱 버전별로 묶습니다. 네이티브 충돌은 App Store Connect와 Play Console에서 확인하세요.</p></details>
         <AdminErrorsPanel localPreview={localPreview} />
       </View>
     );
@@ -248,7 +249,7 @@ export function AdminSectionView({
         : b.created_at.localeCompare(a.created_at));
     return (
       <View style={styles.section}>
-        <SectionHeading title="게시글" description="한 줄에 한 글입니다. 조정이 필요한 글만 펼치세요. 조회수·공감수·저장수·노출 순서·해시태그는 여기서만 바꿉니다." />
+        <SectionHeading title="게시글" description="글을 펼쳐 원문과 노출·반응 지표를 관리합니다." />
         <div className="admin-toolbar">
           <AdminSearch value={query} onChange={setQuery} placeholder="제목, 내용, 작성자 또는 ID 검색" />
           <AdminFilterBar applied={postStatus.length + postCity.length}>

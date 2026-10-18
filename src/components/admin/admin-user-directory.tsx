@@ -63,7 +63,7 @@ export function AdminUserDirectoryPanel({ onUser, refreshData }: { onUser: (id: 
   return <View style={styles.section}>
     <View style={styles.heading}>
       <ThemedText type="title" accessibilityRole="header" style={styles.title}>사용자</ThemedText>
-      <ThemedText type="small" style={styles.muted}>전체 회원에서 검색합니다. 이름을 선택하면 상세 정보와 활동을 확인할 수 있습니다.</ThemedText>
+      <ThemedText type="small" style={styles.muted}>이름을 선택해 회원 정보와 활동을 확인하세요.</ThemedText>
     </View>
     <div className="admin-toolbar">
       <AdminSearch value={input} onChange={setInput} onSubmit={search} placeholder="닉네임, 이메일 또는 이름 검색" />
