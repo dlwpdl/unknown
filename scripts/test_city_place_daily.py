@@ -21,7 +21,7 @@ class DailyPlaces(unittest.TestCase):
     def fixture(self):
         now = '2026-10-18T01:00:00+00:00'
         place = dict(id='osm:node:1', cityId='vancouver', name='Verified Cafe', category='cafe', latitude=49.28, longitude=-123.12, address='Address', sourceUrl='https://www.openstreetmap.org/node/1')
-        seed = dict(cities={'vancouver':dict(coverage='municipal-boundary', places=[place], recommendations=[dict(placeId=place['id'], reason='Source-checked cafe', sourceUrl='https://example.org/venue', verifiedAt='2026-10-17T10:00:00Z')])})
+        seed = dict(recommendationTheme='photo-spots', cities={'vancouver':dict(coverage='municipal-boundary', places=[place], recommendations=[dict(placeId=place['id'], reason='Source-checked photo setting', sourceUrl='https://example.org/venue', verifiedAt='2026-10-17T10:00:00Z')])})
         osm = [dict(type='node', id=1, lat=49.28, lon=-123.12, tags=dict(name='Verified Cafe', amenity='cafe', opening_hours='Mo-Su 09:00-17:00'))]
         return seed, osm, now
 
@@ -32,6 +32,24 @@ class DailyPlaces(unittest.TestCase):
         self.assertEqual(data['cities']['vancouver']['places'][0]['openingHours'], 'Mo-Su 09:00-17:00')
         self.assertEqual(data['cities']['vancouver']['recommendations'][0]['verifiedAt'], seed['cities']['vancouver']['recommendations'][0]['verifiedAt'])
         self.assertEqual(data['collectedAt'], now)
+        self.assertEqual(data.get('recommendationTheme'), 'photo-spots')
+
+    def test_general_business_seed_cannot_publish_as_photo_recommendations(self):
+        m = implementation(); seed, osm, now = self.fixture()
+        seed.pop('recommendationTheme')
+        with self.assertRaisesRegex(ValueError, 'PHOTO_SELECTION_REQUIRED'):
+            m.build_catalog(seed, osm, now)
+
+    def test_legacy_seed_does_not_spend_the_daily_collection(self):
+        m = implementation(); seed = json.loads((ROOT/'src/lib/city-places.catalog.json').read_text())
+        seed.pop('recommendationTheme')
+        osm = [dict(type=p['id'].split(':')[1], id=int(p['id'].split(':')[2]), lat=p['latitude'], lon=p['longitude'], tags={'name':p['name']}) for city in seed['cities'].values() for p in city['places']]
+        with tempfile.TemporaryDirectory() as target:
+            path = Path(target)/'legacy.json'; path.write_text(json.dumps(seed))
+            with patch.object(sys,'argv',['refresh-city-places.py','--seed',str(path),'--output',target]), patch.object(m,'current_catalog',return_value=None), patch.object(m,'collect',return_value={'elements':osm}) as collect:
+                with self.assertRaisesRegex(ValueError, 'PHOTO_SELECTION_REQUIRED'):
+                    m.main()
+                collect.assert_not_called()
 
     def test_closed_private_and_renamed_places_leave_recommendations_but_keep_archived_links(self):
         m = implementation()
