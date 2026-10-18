@@ -24,7 +24,7 @@ export const DISCOVERY_CATEGORIES = [
 ] as const;
 export type DiscoveryCategory = typeof DISCOVERY_CATEGORIES[number]['id'];
 export type DiscoveryFilter = 'all' | 'top25' | 'nightlife' | 'festival' | 'cafe' | 'dining' | 'places' | 'events' | 'housing' | 'used';
-export type DiscoveryDate = 'all' | 'today' | 'weekend' | 'date';
+export type DiscoveryDate = 'all' | 'today' | 'week' | 'weekend' | 'date';
 export type DiscoveryItem = {
   id: string; source: 'post' | 'event' | 'place'; sourceId: string; cityId: string; title: string;
   category: DiscoveryCategory; label: string; latitude: number | null; longitude: number | null;
@@ -38,7 +38,7 @@ export function discoveryPlace(place: CityPlace): DiscoveryItem | null {
   if (!Number.isFinite(place.latitude) || Math.abs(place.latitude) > 90 || !Number.isFinite(place.longitude) || Math.abs(place.longitude) > 180) return null;
   return { id: `place:${place.cityId}:${place.id}`, source: 'place', sourceId: place.id, cityId: place.cityId, title: place.name,
     category: place.category === 'food' ? 'dining' : place.category === 'cafe' ? 'cafe' : 'place', label: place.address || place.name,
-    latitude: place.latitude, longitude: place.longitude, price: null, place };
+    latitude: place.latitude, longitude: place.longitude, price: null, imageUri: place.photo?.uri, place };
 }
 
 export function mergeCityTop25(items: DiscoveryItem[], cityId: string, picks: readonly CityTop25Place[] = CITY_TOP25): DiscoveryItem[] {
@@ -73,7 +73,7 @@ export function mergeCityTop25(items: DiscoveryItem[], cityId: string, picks: re
     const first = recommendations[0];
     return { id: `place:${cityId}:${pick.id}`, source: 'place' as const, sourceId: pick.id, cityId, title: pick.title,
       category: pick.category, label: pick.label, latitude: pick.latitude, longitude: pick.longitude,
-      price: first?.price ?? null, imageUri: first?.imageUri, post: first?.post, top25: pick, place: catalog?.place };
+      price: first?.price ?? null, imageUri: first?.imageUri ?? catalog?.imageUri, post: first?.post, top25: pick, place: catalog?.place };
   });
   return [...places, ...visible.filter(item => !merged.has(item.id))];
 }
@@ -127,11 +127,25 @@ export function discoveryDays(filter: DiscoveryDate, cityId: string, date = '', 
     return [date];
   }
   const day = new Date(`${today}T12:00:00Z`), weekday = day.getUTCDay();
+  if (filter === 'week') return Array.from({ length: 7 }, (_, offset) => {
+    const date = new Date(day); date.setUTCDate(date.getUTCDate() + offset); return date.toISOString().slice(0, 10);
+  });
   if (weekday === 0) return [today];
   day.setUTCDate(day.getUTCDate() + (6 - weekday));
   const saturday = day.toISOString().slice(0, 10);
   day.setUTCDate(day.getUTCDate() + 1);
   return [saturday, day.toISOString().slice(0, 10)];
+}
+export function discoveryEventOnDays(item: DiscoveryItem, days: readonly string[]): boolean {
+  if (!days.length || item.source !== 'event') return true;
+  if (!Object.hasOwn(EVENT_TIMEZONES, item.cityId)) return false;
+  const startTime = Date.parse(item.startsAt ?? '');
+  const start = Number.isFinite(startTime) ? festivalLocalDay(item.cityId as EventCity, startTime) : item.localDate;
+  if (!start || !/^\d{4}-\d{2}-\d{2}$/.test(start)) return false;
+  const endTime = Date.parse(item.endsAt ?? '');
+  if (Number.isFinite(endTime) && Number.isFinite(startTime) && endTime < startTime) return false;
+  const end = Number.isFinite(endTime) ? festivalLocalDay(item.cityId as EventCity, endTime - 1) : start;
+  return days.some(day => day >= start && day <= end);
 }
 export function discoveryMatches(item: DiscoveryItem, filters: DiscoveryFilter | readonly DiscoveryFilter[], query: string, top25Only = false) {
   const category = item.category;

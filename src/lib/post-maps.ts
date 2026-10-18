@@ -58,10 +58,25 @@ export function postMapBody(body: string): { body: string; url: string | null; l
     const candidate = googleMapsUrl(line.trim().replace(/^Google 지도:\s*/, ''));
     if (!candidate) { lines.push(line); continue; }
     url = candidate;
+    label = '';
     previousMap = true;
     if (lines.at(-1) === '') lines.pop();
   }
   return { body: url ? withPostAttachments(lines.join('\n').trim(), attached.urls) : body, url, ...(label ? { label } : {}) };
+}
+
+export function postPublicAddress(body: string): string | null {
+  const mapped = postMapBody(body);
+  if (!mapped.url) return null;
+  const url = new URL(mapped.url);
+  for (const candidate of [mapped.label, url.searchParams.get('query') ?? url.searchParams.get('q')]) {
+    const text = candidate?.trim();
+    if (!text || !/\p{L}/u.test(text) || /^(?:내 위치|선택한 위치|공개 위치|my location|selected location|public location)$/i.test(text)
+      || /^\(?\s*[+-]?\d[\d.\s°º'′"″]*[NS]?\s*(?:,|\s)\s*[+-]?\d[\d.\s°º'′"″]*[EW]?\s*\)?$/i.test(text)
+      || googleMapsUrl(text) || !postLocationUrl(text)) continue;
+    return text;
+  }
+  return null;
 }
 
 export function withPostMap(body: string, input: string, label?: string): string {
