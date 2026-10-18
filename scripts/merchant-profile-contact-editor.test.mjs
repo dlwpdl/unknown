@@ -40,10 +40,10 @@ function editor({ fail = false, sessionUser = user } = {}) {
 test('contact save preserves a separately edited logo and uses current server revision', async () => {
   const view = editor(); view.render(); await settle();
   let root = view.render();
-  assert.equal(input(root, '업체 공개 전화번호')?.props.value, profile.public_phone);
+  assert.equal(input(root, '비즈니스 공개 전화번호')?.props.value, profile.public_phone);
   action(root, '로고 교체').props.onPress(); await settle(); root = view.render();
-  input(root, '업체 공개 전화번호').props.onChangeText('+1 604 555 0202');
-  input(view.render(), '업체 영업시간').props.onChangeText('월–토 10:00–18:00');
+  input(root, '비즈니스 공개 전화번호').props.onChangeText('+1 604 555 0202');
+  input(view.render(), '비즈니스 영업시간').props.onChangeText('월–토 10:00–18:00');
   action(view.render(), '연락 정보 저장').props.onPress(); await settle(); root = view.render();
   assert.deepEqual(view.calls, [[merchant, '+1 604 555 0202', '월–토 10:00–18:00', profile.updated_at]]);
   assert.equal(nodes(root).find(node => node.type === 'ProfileHeader').props.profile.avatarUri, 'prepared-photo');
@@ -52,20 +52,20 @@ test('contact save preserves a separately edited logo and uses current server re
 
 test('contact conflict preserves entered phone/hours and signals an unsaved profile', async () => {
   const view = editor({ fail: true }); view.render(); await settle();
-  assert.ok(input(view.render(), '업체 공개 전화번호'));
-  input(view.render(), '업체 공개 전화번호').props.onChangeText('+1 604 555 0202');
+  assert.ok(input(view.render(), '비즈니스 공개 전화번호'));
+  input(view.render(), '비즈니스 공개 전화번호').props.onChangeText('+1 604 555 0202');
   action(view.render(), '연락 정보 저장').props.onPress(); await settle();
   const root = view.render();
-  assert.equal(input(root, '업체 공개 전화번호').props.value, '+1 604 555 0202');
+  assert.equal(input(root, '비즈니스 공개 전화번호').props.value, '+1 604 555 0202');
   assert.ok(view.feedback.includes('warning'));
   assert.equal(view.dirty.at(-1), true);
 });
 
 test('contact editor rejects an account switch before sending a write', async () => {
   const view = editor({ sessionUser: 'other' }); view.render(); await settle();
-  assert.ok(input(view.render(), '업체 공개 전화번호'));
-  input(view.render(), '업체 공개 전화번호').props.onChangeText('+1 604 555 0202');
+  assert.ok(input(view.render(), '비즈니스 공개 전화번호'));
+  input(view.render(), '비즈니스 공개 전화번호').props.onChangeText('+1 604 555 0202');
   action(view.render(), '연락 정보 저장').props.onPress(); await settle();
   assert.equal(view.calls.length, 0);
-  assert.equal(input(view.render(), '업체 공개 전화번호').props.value, '+1 604 555 0202');
+  assert.equal(input(view.render(), '비즈니스 공개 전화번호').props.value, '+1 604 555 0202');
 });

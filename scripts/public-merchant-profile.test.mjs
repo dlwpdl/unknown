@@ -442,7 +442,7 @@ test('late company/tab reads cannot restore old rows and inaccessible is distinc
   assert.ok(text(root).includes(companyJob.title) && !text(root).includes(companyPost.title));
   const unavailable = app(undefined, { loadPosts: async () => null });
   unavailable.render('PublicProfilePosts', props); await settle();
-  assert.ok(text(unavailable.render('PublicProfilePosts', props)).includes('현재 공개된 업체 글을 확인할 수 없어요'));
+  assert.ok(text(unavailable.render('PublicProfilePosts', props)).includes('현재 공개된 비즈니스 글을 확인할 수 없어요'));
   assert.ok(!text(unavailable.render('PublicProfilePosts', props)).includes('채용이 없어요'));
   let returned = false;
   const empty = app(undefined, { loadPosts: async () => ({ ...postPage, merchant_id: other, kind: 'jobs', posts: [], job_count: 0 }) });

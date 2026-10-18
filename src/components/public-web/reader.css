@@ -43,6 +43,7 @@ body:has(.reader) { margin: 0; overflow-y: auto !important; }
 .reader p { margin: 10px 0; }
 .reader-kicker { color: var(--accent); font-size: 13px; font-weight: 700; }
 .reader-meta { color: var(--textSecondary); font-size: 13px; }
+.reader-business-author { display:inline-flex; align-items:center; min-height:44px; }
 .reader-section-heading { display: flex; justify-content: space-between; align-items: end; gap: 18px; margin: 2px 0 26px; }
 .reader-section-heading h2 { font-size: 30px; }
 .reader-section-heading p { margin: 8px 0 0; color: var(--textSecondary); font-size: 15px; }

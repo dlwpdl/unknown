@@ -11,14 +11,14 @@ const row = { id: postId, city_id: 'vancouver', title: '오늘의 커피', body:
 const page = { merchant_id: merchant, kind: 'posts', post_count: 24, job_count: 2, posts: [row], has_more: true };
 function client(data = page) {
   const calls = [];
-  return { calls, rpc: async (name, args) => { calls.push([name, args]); return { data, error: null }; } };
+  return { calls, rpc: async (name, args) => { calls.push([name, args]); return { data: name === 'get_public_post_businesses' ? [] : data, error: null }; } };
 }
 
 test('company lists use the public company relation, map real posts and keep whole-list counts when paging', async () => {
   assert.equal(typeof api.loadMerchantProfilePosts, 'function');
   const db = client({ ...page, private_contact: 'PRIVATE_CONTACT', posts: [{ ...row, private_draft: 'PRIVATE_DRAFT' }] });
   const result = await api.loadMerchantProfilePosts(db, merchant, 'posts', 20, 'guest');
-  assert.deepEqual(db.calls, [['get_merchant_profile_posts', { p_merchant_id: merchant, p_kind: 'posts', p_offset: 20 }]]);
+  assert.deepEqual(db.calls, [['get_merchant_profile_posts', { p_merchant_id: merchant, p_kind: 'posts', p_offset: 20 }], ['get_public_post_businesses', { p_post_ids: [postId] }]]);
   assert.equal(result.post_count, 24);
   assert.equal(result.job_count, 2);
   assert.equal(result.nextOffset, 21);

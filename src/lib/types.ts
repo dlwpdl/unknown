@@ -80,6 +80,7 @@ export interface Post {
   id: string;
   cityId: string; // 소속 도시 (피드 필터). 소도시·동네는 author.neighborhood로
   author: Author;
+  business?: { id: string; name: string };
   tag: Tag;
   title: string;
   body: string;
@@ -119,7 +120,7 @@ export interface DailyQuota {
 // 네이티브 인피드 광고 — 글 카드와 같은 셸, '광고' 라벨 명시. 피드 N개당 1 슬롯 상한
 export interface Ad {
   id: string;
-  advertiser: string; // 로컬 업체명
+  advertiser: string; // 로컬 비즈니스명
   title: string;
   body: string;
   cta: string;

@@ -251,7 +251,7 @@ test('a merchant review report is filterable, shows its captured context and hid
   const resolved = [];
   const tree = queue.render({ reports: [report], profiles: new Map(), actions: [], resolving: false, onUser() {}, onResolve: async (...args) => { resolved.push(args); return ['report-review']; } });
   const filters = nodes(tree).find(node => node.type === 'AdminMultiFilter' && node.props.label === '대상');
-  assert.ok(filters.props.options.some(option => option.value === 'merchant_review' && option.label === '업체 후기'));
+  assert.ok(filters.props.options.some(option => option.value === 'merchant_review' && option.label === '비즈니스 후기'));
   assert.ok(nodes(tree).some(node => typeof node.props?.value === 'string' && node.props.value.includes('동네 가게') && node.props.value.includes('8.5/10')));
   assert.ok(nodes(tree).some(node => node.props?.value === '접수 당시 후기'));
   const hide = nodes(tree).find(node => node.type === 'Pressable' && nodes(node).some(child => child.props?.children === '콘텐츠 전체 숨김'));
@@ -291,7 +291,7 @@ test('native safety, alerts and reports retain review labels and an audited full
   for (const section of ['safety', 'alerts', 'reports']) {
     const screen = view('../src/components/admin/admin-section.native.tsx', 'AdminSectionView');
     const tree = screen.render({ section, data: dashboard, onUser() {}, onLoadMore() {}, noMore: true, loadingMore: false });
-    assert.ok(nodes(tree).some(node => typeof node.props?.children === 'string' && node.props.children.includes('업체 후기')), section);
+    assert.ok(nodes(tree).some(node => typeof node.props?.children === 'string' && node.props.children.includes('비즈니스 후기')), section);
     assert.ok(nodes(tree).some(node => node.type === 'ReviewContent' && node.props.targetId === 'review-uuid'), section);
   }
 });
@@ -314,10 +314,10 @@ test('company reply preview shows the audited actor and ignores duplicate or lat
     rpc: () => { calls++; return new Promise(done => { resolve = done; }); }, extra: '\nexports.ReplyContent = ReplyContent;',
   });
   const users = [], props = { targetId: 'reply-id', localPreview: true, onUser: id => users.push(id) };
-  await press(screen.render(props), '업체 답변 원문 보기').props.onPress();
+  await press(screen.render(props), '비즈니스 답변 원문 보기').props.onPress();
   assert.equal(calls, 0);
   props.localPreview = false;
-  const control = press(screen.render(props), '업체 답변 원문 보기');
+  const control = press(screen.render(props), '비즈니스 답변 원문 보기');
   const pending = control.props.onPress(), duplicate = control.props.onPress();
   assert.equal(calls, 1);
   resolve({ data: { authorId: 'merchant-operator', text: '업체 답변 전체', status: 'removed' } });
@@ -326,7 +326,7 @@ test('company reply preview shows the audited actor and ignores duplicate or lat
   assert.ok(nodes(tree).some(node => node.props?.children === '업체 답변 전체'));
   press(tree, '답변 작성자 이력 보기').props.onPress();
   assert.deepEqual(users, ['merchant-operator']);
-  const late = press(tree, '업체 답변 원문 보기').props.onPress();
+  const late = press(tree, '비즈니스 답변 원문 보기').props.onPress();
   screen.unmount(); resolve({ data: { authorId: 'old-operator', text: 'late private reply', status: 'published' } }); await late;
   assert.ok(!nodes(screen.render(props)).some(node => node.props?.children === 'late private reply'));
 });

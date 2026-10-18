@@ -19,6 +19,13 @@ const routePattern = new RegExp(`^(?:/post/${UUID}(?:\\?commentId=${UUID})?|/com
 const json = (value: unknown, status = 200) => Response.json(value, { status });
 const object = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 
+function postBodyPreview(title: string, preview: string): string {
+  const heading = title.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/gu, '\\s+');
+  const repeatedHeading = new RegExp(`^\\s*(?:#{1,6}[ \\t]+)?(\\*{1,2}|_{1,2}|~~|\x60)?${heading}\\1(?:[ \\t]+#{1,6})?`
+    + `(?=$|\\s|[:：]|[.!?。！？](?=\\s|$))(?:[ \\t]*(?:[:：]|[.!?。！？](?=\\s|$))[ \\t]*|[ \\t]+[-–—|][ \\t]+)?\\s*`, 'u');
+  return preview.replace(repeatedHeading, '');
+}
+
 function resultFor(value: unknown, receipt: boolean): { result: Result; ticketId?: string; error?: string } {
   if (!object(value)) return { result: receipt ? 'receipt_pending' : 'retry', error: 'INVALID_EXPO_RESPONSE' };
   if (value.status === 'ok') {
@@ -66,7 +73,7 @@ export async function handlePushNotifications(request: Request, options: WorkerO
             && typeof job.event_title === 'string' && job.event_title.trim().length > 0;
           return {
             to: job.token, title: eventPreview ? job.event_title : postPreview ? job.post_title : route.startsWith('/admin') ? '글링 관리자' : '글링',
-            body: postPreview ? job.post_preview : job.body,
+            body: postPreview ? postBodyPreview(job.post_title!, job.post_preview!) : job.body,
             sound: 'default', channelId: 'gling-activity', ttl: 300,
             // Expo has no send idempotency key. Stable IDs collapse ambiguous retry copies on devices.
             collapseId: job.notification_id, tag: job.notification_id,

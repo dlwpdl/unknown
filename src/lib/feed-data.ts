@@ -120,7 +120,7 @@ export async function loadPublicFeed(
   const feed = await (options?.signal ? request.abortSignal(options.signal) : request);
   if (feed.error) throw feed.error;
   const rows = (feed.data ?? []) as PublicFeedRow[];
-  return attachSignedPostImages(client, mapPublicFeed(rows, []), options?.viewerScope);
+  return hydratePublicPosts(client, mapPublicFeed(rows, []), options?.viewerScope);
 }
 
 // 프로필에서 여는 "이 사람이 쓴 글". 피드와 같은 행 형식이라 카드 매핑을 그대로 쓴다.
@@ -139,7 +139,7 @@ export async function loadAuthorPosts(
   const result = await (options?.signal ? request.abortSignal(options.signal) : request);
   if (result.error) throw result.error;
   const rows = (result.data ?? []) as PublicFeedRow[];
-  return attachSignedPostImages(client, mapPublicFeed(rows, []), options?.viewerScope);
+  return hydratePublicPosts(client, mapPublicFeed(rows, []), options?.viewerScope);
 }
 
 export async function loadPublicPost(client: SupabaseClient, postId: string): Promise<Post | null> {
@@ -154,7 +154,7 @@ export async function loadPublicPost(client: SupabaseClient, postId: string): Pr
     p_limit: 30,
   });
   if (comments.error) throw comments.error;
-  const [post] = await attachSignedPostImages(client, mapPublicFeed(rows, (comments.data ?? []) as PublicCommentRow[]));
+  const [post] = await hydratePublicPosts(client, mapPublicFeed(rows, (comments.data ?? []) as PublicCommentRow[]));
   return post ?? null;
 }
 
@@ -215,6 +215,25 @@ export function mapPublicFeed(
     popularityScore: row.popularity_score,
     rankingAsOf: row.ranking_as_of,
   }));
+}
+
+export async function hydratePublicPosts(client: SupabaseClient, posts: Post[], viewerScope?: string): Promise<Post[]> {
+  if (!posts.length) return [];
+  if (posts.length > 50) throw new Error('BUSINESS_IDENTITY_READ_FAILED');
+  const ids = [...new Set(posts.map(post => post.id))];
+  const [images, response] = await Promise.all([
+    attachSignedPostImages(client, posts, viewerScope),
+    client.rpc('get_public_post_businesses', { p_post_ids: ids }),
+  ]);
+  // Before this additive migration there are no explicitly attributed business posts.
+  if (response.error?.code === 'PGRST202') return images;
+  if (response.error) throw response.error;
+  const rows = response.data as { post_id: string; business_id: string; business_name: string }[];
+  const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+  if (!Array.isArray(rows) || rows.length > ids.length || new Set(rows.map(row => row?.post_id)).size !== rows.length
+    || rows.some(row => !row || !ids.includes(row.post_id) || typeof row.business_id !== 'string' || !uuid.test(row.business_id) || typeof row.business_name !== 'string' || !row.business_name.trim() || row.business_name.length > 200)) throw new Error('BUSINESS_IDENTITY_READ_FAILED');
+  const businesses = new Map(rows.map(row => [row.post_id, { id: row.business_id, name: row.business_name }]));
+  return images.map(post => ({ ...post, business: businesses.get(post.id) }));
 }
 
 export async function attachSignedPostImages(client: SupabaseClient, posts: Post[], viewerScope?: string) {

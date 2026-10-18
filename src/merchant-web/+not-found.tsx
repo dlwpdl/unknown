@@ -9,10 +9,10 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 export default function MerchantNotFound() {
   const router = useRouter(), theme = useTheme(), { play } = useInteractionFeedback();
   return <View style={[styles.page, { backgroundColor: theme.background }]}>
-    <ThemedText type="subtitle">업체 관리에서 열 수 없는 페이지예요.</ThemedText>
-    <Pressable analyticsId="merchant-web.not-found.return" accessibilityRole="button" accessibilityLabel="업체 관리로 돌아가기"
+    <ThemedText type="subtitle">비즈니스 관리에서 열 수 없는 페이지예요.</ThemedText>
+    <Pressable analyticsId="merchant-web.not-found.return" accessibilityRole="button" accessibilityLabel="비즈니스 관리로 돌아가기"
       onPress={() => { play('selection'); router.replace('/'); }} style={({ pressed }) => [styles.button, { opacity: pressed ? 0.65 : 1 }]}>
-      <ThemedText type="smallBold" themeColor="accent">업체 관리로 돌아가기</ThemedText>
+      <ThemedText type="smallBold" themeColor="accent">비즈니스 관리로 돌아가기</ThemedText>
     </Pressable>
   </View>;
 }

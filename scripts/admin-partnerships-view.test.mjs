@@ -12,7 +12,7 @@ const rows = {
   benefits: { id, title: '크리에이터 다이닝 할인', merchant_name: '예시 파스타', status: 'draft', audience: 'creators', discount_percent: 25, issued_count: 0, redeemed_count: 0, expires_on: null },
 };
 
-function view(kind, load) {
+function view(kind, load, readDeal) {
   const state = [], cleanups = [], requests = [], guard = [];
   let index = 0;
   const hooks = {
@@ -23,11 +23,11 @@ function view(kind, load) {
   const exported = {};
   const imports = {
     react: hooks, 'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }) },
-    '@/lib/admin-partnerships': { ...partnerships, loadPartnerships: async (_client, ...args) => { requests.push(args); return load(...args); } },
+    '@/lib/admin-partnerships': { ...partnerships, loadCreatorDeal: async (_client, id) => readDeal(id), loadPartnerships: async (_client, ...args) => { requests.push(args); return load(...args); } },
     '@/lib/merchant-source': { merchantEventId: () => id, safeMerchantSourceUrl: value => value.startsWith('https://') ? value : null },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) }, '@/lib/supabase': { supabase: {} },
-    './admin-partnership-editors': Object.fromEntries(['PartnershipEditor','CouponIssueForm','CouponActionForm'].map(name => [name, name])),
-    './admin-table-controls': { AdminSearch: 'AdminSearch' },
+    './admin-partnership-editors': Object.fromEntries(['PartnershipEditor','CouponIssueForm','CouponActionForm','CreatorDealForm','CreatorDealMerchantForm'].map(name => [name, name])),
+    './admin-table-controls': { AdminSearch: 'AdminSearch', AdminSelect: 'AdminSelect' },
   };
   const code = ts.transpileModule(readFileSync(new URL('../src/components/admin/admin-partnerships.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(code, { exports: exported, require: name => imports[name] ?? {}, Date, Intl, window: { confirm: () => true, addEventListener() {}, removeEventListener() {} } });
@@ -110,4 +110,60 @@ test('a successful mutation keeps its editor until a matching saved record is re
   assert.match(text(tree), /저장한 내용을 확인했습니다/);
   assert.match(text(nodes(tree).find(node => node.type === 'dialog')), /저장한 내용을 확인했습니다/, 'The live notice must remain inside the active modal.');
   assert.equal(screen.requests.at(-1)[3], id);
+});
+
+test('creator directory shows agreed costs and clears selection when the server sort or currency changes', async () => {
+  const deal = { id: '70000000-0000-4000-8000-000000000009', creator_id: id, merchant_id: null, merchant_name: null, agreed_on: '2026-10-17', currency: 'CAD', ad_fee_cents: 0, meal_support_cents: 15000, deliverables: '릴스 1개', source_url: '', notes: '합의 근거', created_at: '2026-10-17T22:00:00Z' };
+  const screen = view('creators', async () => ({ ...page('creators'), rows: [{ ...rows.creators, latest_deal: deal, deal_count: 1 }], deals: [] }));
+  screen.render(); await new Promise(setImmediate);
+  let tree = screen.render(), table = nodes(tree).find(node => node.type === 'table');
+  assert.match(text(table), /광고비/); assert.match(text(table), /식사 지원 한도/);
+  assert.match(text(table), /CAD.*0\.00/); assert.match(text(table), /CAD.*150\.00/); assert.match(text(table), /릴스 1개/);
+  nodes(tree).find(node => node.type === 'input' && node.props['aria-label'] === '밴쿠버 식탁 선택').props.onChange({ target: { checked: true } });
+  tree = screen.render(); nodes(tree).find(node => node.type === 'AdminSelect' && node.props.label === '정렬').props.onChange('fee_desc');
+  screen.render(); await new Promise(setImmediate); tree = screen.render();
+  assert.match(text(tree), /0\s*개 선택/); assert.equal(screen.requests.at(-1)[2], 0);
+  assert.deepEqual({ ...screen.requests.at(-1)[5] }, { sort: 'fee_desc', currency: 'CAD' });
+  nodes(tree).find(node => node.type === 'AdminSelect' && node.props.label === '통화').props.onChange('USD');
+  screen.render(); await new Promise(setImmediate); screen.render();
+  assert.deepEqual({ ...screen.requests.at(-1)[5] }, { sort: 'fee_desc', currency: 'USD' });
+});
+
+test('vendor and collaboration day appear beside each dated agreement, with an editor for the existing record', async () => {
+  const deal = { id: '70000000-0000-4000-8000-000000000009', creator_id: id, merchant_id: id, merchant_name: '지모코', collaboration_on: '2026-10-24', agreed_on: '2026-10-17', currency: 'CAD', ad_fee_cents: 0, meal_support_cents: 15000, deliverables: '릴스 1개', notes: '방문 예정', created_at: '2026-10-17T22:00:00Z' };
+  const screen = view('creators', async (_kind, _query, _offset, selected) => ({ ...page('creators', selected ? rows.creators : null), rows: [{ ...rows.creators, latest_deal: deal, deal_count: 1 }], deals: selected ? [deal] : [] }));
+  screen.render(); await new Promise(setImmediate);
+  let tree = screen.render(), table = nodes(tree).find(node => node.type === 'table');
+  assert.match(text(table), /지모코/); assert.match(text(table), /2026-10-24/);
+  nodes(tree).find(node => node.type === 'button' && node.props?.['data-record-id'] === id).props.onClick({ currentTarget: { focus() {} } });
+  screen.render(); await new Promise(setImmediate); tree = screen.render();
+  nodes(tree).find(node => node.type === 'button' && /비즈니스·협업일/.test(text(node))).props.onClick();
+  const form = nodes(screen.render()).find(node => node.type === 'CreatorDealMerchantForm');
+  assert.equal(form.props.deal.id, deal.id);
+});
+
+test('a backdated agreement outside the visible history page still requires its exact saved readback', async () => {
+  const savedId = '70000000-0000-4000-8000-000000000009', reads = [];
+  const screen = view('creators', async (_kind, _query, _offset, selected) => ({ ...page('creators', selected ? rows.creators : null), deals: [] }), async saved => { reads.push(saved); return { id: saved, creator_id: id }; });
+  screen.render(); await new Promise(setImmediate);
+  let tree = screen.render(); nodes(tree).find(node => node.type === 'button' && node.props?.['data-record-id'] === id).props.onClick({ currentTarget: { focus() {} } });
+  screen.render(); await new Promise(setImmediate); tree = screen.render();
+  nodes(tree).find(node => node.type === 'button' && text(node) === '합의 조건 기록').props.onClick();
+  tree = screen.render(); const form = nodes(tree).find(node => node.type === 'CreatorDealForm');
+  assert.equal(form.props.creator.id, id);
+  await form.props.onSaved(savedId);
+  assert.deepEqual(reads, [savedId]);
+  assert.match(text(screen.render()), /저장한 내용을 확인했습니다/);
+});
+
+test('creator workspace keeps seven scan columns and separates collaboration history from the full profile', async () => {
+  const screen = view('creators', async (_kind, _query, _offset, selected) => page('creators', selected ? rows.creators : null));
+  screen.render(); await new Promise(setImmediate); let tree = screen.render();
+  const table = nodes(tree).find(n => n.type === 'table');
+  assert.equal(nodes(table).filter(n => n.type === 'th').length, 7);
+  nodes(tree).find(n => n.type === 'button' && n.props?.['data-record-id'] === id).props.onClick({ currentTarget: { focus() {} } });
+  screen.render(); await new Promise(setImmediate); tree = screen.render();
+  assert.equal(nodes(tree).find(n => n.props?.className === 'creator-detail-profile').props.hidden, true);
+  nodes(tree).find(n => n.type === 'button' && text(n) === '프로필·연락처').props.onClick();
+  assert.equal(nodes(screen.render()).find(n => n.props?.className === 'creator-detail-profile').props.hidden, false);
 });

@@ -201,7 +201,7 @@ function Notifications({ data, platform }: { data: AdminPerformance['notificatio
 }
 
 function Revenue({ data }: { data: AdminPerformance['revenue'] }) {
-  return <Section title="수익" summary={`현재 유료 회원 ${count(data.paidMembers)}명 · 정산 ${count(data.settlement, "미연결")}`} note="확인된 일반 멤버십 운영 결제의 통화별 총 결제 발생액입니다. 업체 요금제는 합산하지 않습니다. 환불·스토어 수수료 차감 전이며 정산액은 미연결입니다.">
+  return <Section title="수익" summary={`현재 유료 회원 ${count(data.paidMembers)}명 · 정산 ${count(data.settlement, "미연결")}`} note="확인된 일반 멤버십 운영 결제의 통화별 총 결제 발생액입니다. 비즈니스 요금제는 합산하지 않습니다. 환불·스토어 수수료 차감 전이며 정산액은 미연결입니다.">
     <View style={styles.metrics}>
       <Metric label="현재 유료 회원" value={count(data.paidMembers)} note="현재 일반 유료 멤버십 회원 · 스냅샷" />
       <Metric label="신규 가입 유료 전환" value={rate(data.paidConversion, '가입 대상 없음')} note="기간 내 가입 회원 중 같은 기간 첫 결제가 확인된 회원" />

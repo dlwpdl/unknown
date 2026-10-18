@@ -9,6 +9,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { PERSONAL_INFO_VERSION, validatePersonalInfo } from '@/lib/personal-info';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/auth';
+import { NicknameEditor } from '@/components/nickname-editor';
 
 type PersonalInfo = { full_name: string | null; date_of_birth: string | null; gender: string | null; age: number | null; consented_at: string | null; updated_at: string | null };
 
@@ -19,6 +21,7 @@ export function PersonalInfoCard({ userId, nickname }: { userId: string; nicknam
 }
 
 function PersonalInfoEditor({ userId, nickname, onRetry }: { userId: string; nickname: string; onRetry: () => void }) {
+  const { setProfileNickname } = useAuth();
   const { tr } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
@@ -80,10 +83,7 @@ function PersonalInfoEditor({ userId, nickname, onRetry }: { userId: string; nic
   };
 
   return <View style={[styles.card, { borderColor: theme.line, backgroundColor: theme.card }]}>
-    <View style={styles.summaryRow}>
-      <ThemedText type="small" themeColor="textSecondary">{tr("닉네임")}</ThemedText>
-      <ThemedText type="smallBold" style={styles.summaryValue}>{nickname}</ThemedText>
-    </View>
+    <NicknameEditor nickname={nickname} onSave={setProfileNickname} />
     <View style={[styles.divider, { backgroundColor: theme.line }]} />
     {!data ? <>
       <ThemedText accessibilityRole={error ? 'alert' : 'progressbar'} type="small" themeColor="textSecondary">{tr(error ?? "계정 정보를 불러오는 중이에요.")}</ThemedText>

@@ -5,6 +5,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as kakao from '../src/lib/kakao-auth.ts';
+import * as nickname from '../src/lib/nickname.ts';
 
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
@@ -33,7 +34,7 @@ function mount(initialSession = session('member')) {
     from(table) { assert.equal(table, 'profiles'); let userId;
       return { select() { return this; }, eq(field, value) { assert.equal(field, 'id'); userId = value; return this; },
         maybeSingle() { const response = deferred(); reads.push({ userId, ...response }); return response.promise; } }; },
-    rpc: async () => ({ error: null }),
+    rpc: async (name, args) => name === 'change_profile_nickname' ? { data: { id: args.p_user_id, nickname: args.p_nickname }, error: null } : { error: null },
     auth: { getSession: async () => ({ data: { session: currentSession } }),
       onAuthStateChange(callback) { onAuthChange = callback; return { data: { subscription: { unsubscribe() {} } } }; },
       startAutoRefresh() {}, stopAutoRefresh() {}, signOut: async () => { currentSession = null; onAuthChange('SIGNED_OUT', null); return {}; } },
@@ -51,7 +52,7 @@ function mount(initialSession = session('member')) {
     '@/constants/theme': { Spacing: {} }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/i18n/ko': { t: { auth: { loginError: '로그인 오류', sessionExpired: '세션 만료' } } }, '@/lib/admin': { isAdminRole: () => false },
     '@/lib/account-security-device': { registerSecurityDevice: async () => {} }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play }) },
-    '@/lib/kakao-auth': kakao, '@/lib/legal-documents': { CONTACT_EMAIL: 'fixture@example.invalid' },
+    '@/lib/nickname': nickname, '@/lib/kakao-auth': kakao, '@/lib/legal-documents': { CONTACT_EMAIL: 'fixture@example.invalid' },
     '@/lib/location-provider': { CommunityLocationProvider: 'CommunityLocationProvider' }, '@/lib/mock': { CITIES: [{ id: 'vancouver' }] },
     '@/lib/supabase': { supabase, AUTH_EXPIRED_EVENT: 'authExpired' }, '@/lib/push-notifications': { unregisterPushDevice: async () => {} },
     '@/lib/trust': { shouldCelebrateVerificationUpgrade: () => false },
@@ -131,4 +132,14 @@ test('a late profile failure from the previous session does not release the new 
   const harness = mount(session('first')); context.after(() => harness.unmount()); await harness.settle();
   harness.changeSession(session('second')); await harness.settle(); harness.reads[0].reject(new Error('old request failed')); const auth = await harness.settle();
   assert.equal(auth.me.id, 'second'); assert.equal(auth.isAuthLoading, true); assert.equal(auth.authError, null); assert.equal(auth.isAuthed, false);
+});
+
+
+test('confirmed nickname updates auth immediately and a stale account callback cannot rename another user', async context => {
+  const harness = mount(); context.after(() => harness.unmount()); await harness.settle();
+  harness.reads[0].resolve({ data: profile('member'), error: null }); const auth = await harness.settle();
+  await auth.setProfileNickname('새로운 이웃', 'member 이웃');
+  assert.equal(harness.render().me.nickname, '새로운 이웃');
+  harness.changeSession(session('another-member'));
+  await assert.rejects(auth.setProfileNickname('잘못된 이름', '새로운 이웃'), /AUTH_REQUIRED/);
 });
