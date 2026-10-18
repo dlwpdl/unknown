@@ -130,7 +130,7 @@ function canvas(markers = [marker]) {
     setPadding(padding) { this.padding = padding; paddingCalls.push(padding); }
   }
   const window = { parent: { postMessage: message => messages.push(JSON.parse(message)) }, addEventListener: (type, callback) => { listeners['window:' + type] = callback; }, matchMedia: () => ({ matches: true }) };
-  const drawing = { scale() {}, fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, closePath() {}, fill() {}, fillText() {}, getImageData: (_x, _y, width, height) => ({ width, height, data: new Uint8Array(width * height * 4) }) };
+  const drawing = { scale() {}, fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, arcTo() {}, closePath() {}, fill() {}, stroke() {}, fillText() {}, getImageData: (_x, _y, width, height) => ({ width, height, data: new Uint8Array(width * height * 4) }) };
   class Marker {
     constructor({ element }) { this.element = element; userMarkers.push(this); }
     setLngLat(point) { this.point = Array.from(point); return this; }
@@ -216,15 +216,16 @@ test('only a typed Top 25 flag crosses the embedded map boundary', () => {
   assert.throws(() => discoveryMarkers([{ ...marker, top25: 'true' }]));
 });
 
-test('Top 25 uses A flags on individual pins, selected pins and clusters without changing category color or counts', () => {
+test('Top 25 uses a circular outline and a selected-only label while preserving category colors and cluster counts', () => {
   const c = canvas([{ ...marker, top25: true }]);
   assert.equal(c.sources.discovery.data.features[0].properties.top25, true);
   assert.equal(c.sources.discovery.data.features[0].properties.color, marker.color);
   assert.ok(c.sources.discovery.clusterProperties.top25Count);
-  assert.ok(c.images['top25-small']);
+  assert.equal(c.images['top25-small'], undefined, 'ordinary map points do not carry a floating flag icon');
   assert.ok(c.images['top25-full']);
   assert.equal(c.images['top25-full'].options.pixelRatio, 2);
-  assert.ok(c.layers.some(layer => layer.id === 'discovery-top25'));
+  assert.equal(c.layers.find(layer => layer.id === 'discovery-top25').type, 'circle');
+  assert.ok(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-clusters').paint).includes('top25Count'));
   assert.ok(c.layers.some(layer => layer.id === 'discovery-selected-top25' && layer.source === 'discovery-selection'));
   c.window.glingDiscoveryUpdate(sessionId, { markers: [{ ...marker, top25: 'true' }], selectedId: null });
   assert.equal(c.sources.discovery.data.features[0].properties.top25, true);
