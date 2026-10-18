@@ -23,7 +23,7 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
   const [stage, setStage] = useState<'choices' | 'sns' | 'instagram' | 'url' | 'location' | null>(null);
   const [input, setInput] = useState('');
   const inputRef = useRef<TextInput>(null);
-  const mapped = postMapBody(value);
+  const mapped = postMapBody(value, { preserveWhitespace: true });
   const initialPin = useMemo(() => googleMapsPin(mapped.url ?? ''), [mapped.url]);
   const attached = splitPostAttachments(mapped.body);
   const bodyLimit = mapped.url ? Math.min(maxLength, 4000) : maxLength;
@@ -50,7 +50,7 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
       onChangeText={text => {
         const pasted = splitPostAttachments(text);
         const changed = withPostAttachments(pasted.body, [...attached.urls, ...pasted.urls]);
-        onChangeText?.(mapped.url ? withPostMap(changed, mapped.url, mapped.label) : changed);
+        onChangeText?.(mapped.url ? withPostMap(changed, mapped.url, mapped.label, { preserveWhitespace: true }) : changed);
       }} />;
   const actions = <View style={renderLayout ? styles.toolbarActions : styles.actions}>
       <Pressable analyticsId="post.attachment.add" accessibilityRole="button" accessibilityLabel={tr("링크 첨부")} disabled={!editable}
@@ -87,7 +87,7 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
     {stage === 'location' && editable && <PostLocationPicker visible initialPin={initialPin} initialLabel={mapped.label} cityName={cityName} onClose={close}
       onConfirm={(pin, label) => {
         try {
-          const changed = withPostMap(value, googlePinUrl(pin), label);
+          const changed = withPostMap(value, googlePinUrl(pin), label, { preserveWhitespace: true });
           if ([...changed].length > maxLength) throw new Error('POST_BODY_TOO_LONG');
           play('success'); onChangeText?.(changed); setStage(null); setInput('');
         } catch { play('warning'); Alert.alert(t.write.validationTitle, t.write.bodyTooLong); }
