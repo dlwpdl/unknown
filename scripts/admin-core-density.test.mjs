@@ -161,11 +161,12 @@ test('member activity opens first with fixed keyboard tabs and keeps private acc
 test('member timeline folds long text without discarding the original or changing conversation targets', () => {
   const body = '보존할 원문입니다. '.repeat(30);
   const event = { event_key: 'event-a', kind: 'message', title: '대화 메시지', body, occurred_at: '2026-10-14T10:00:00Z', actor_id: 'member-a', context_id: 'room-exact' };
-  const render = view(390, { file: 'admin-user-review', name: 'ActivityTimeline', append: '\nexports.ActivityTimeline = ActivityTimeline;', initialState: [{ total: 1, rows: [event], nextCursor: null }, null, false] });
+  const render = view(390, { file: 'admin-user-review', name: 'ActivityTimeline', append: '\nexports.ActivityTimeline = ActivityTimeline;', initialState: [{ total: 2, rows: [event, { ...event, event_key: 'empty-event', body: null }], nextCursor: null }, null, false] });
   const opened = [], props = { userId: 'member-a', filters: userData.EMPTY_ACTIVITY_FILTERS, profiles: new Map(), nickname: '이웃', onConversation: id => opened.push(id) };
   let tree = render(props);
   const original = () => nodes(tree).find(n => n.type === 'Text' && text(n) === body);
   assert.equal(original().props.numberOfLines, 2);
+  assert.ok(text(tree).includes('추가 내용 없음'));
   nodes(tree).find(n => n.props?.label === '원문 펼치기').props.onPress(); tree = render(props);
   assert.equal(original().props.numberOfLines, undefined);
   nodes(tree).find(n => n.props?.label === '이 대화 앞뒤 내용 보기').props.onPress();
