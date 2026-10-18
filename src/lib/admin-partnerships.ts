@@ -86,7 +86,7 @@ export const PAYMENT_STATUSES = { not_applicable: '지원금 없음', pending: '
 export const PARTNERSHIP_ACTIONS: Record<string, string> = {
   creator_created: '크리에이터 등록', creator_saved: '크리에이터 정보 수정',
   creator_deal_recorded: '협업 합의 조건 기록',
-  creator_deal_merchant_linked: '협업 벤더·날짜 연결',
+  creator_deal_merchant_linked: '협업 비즈니스·날짜 연결',
   campaign_created: '캠페인 등록', campaign_saved: '캠페인 정보 수정',
   benefit_created: '혜택 등록', benefit_saved: '혜택 정보 수정',
   participation_created: '참여 팀 접수', participation_saved: '참여 진행 기록 수정', participation_selected: '참여 팀 선정',
@@ -209,12 +209,12 @@ export function partnershipError(error: unknown): string {
     PARTNERSHIP_NOT_FOUND: '해당 자료를 찾지 못했습니다. 목록을 다시 확인해 주세요.',
     PARTNERSHIP_CHANGED: '다른 변경이 저장됐습니다. 입력을 확인하고 최신 자료를 다시 불러와 주세요.',
     PARTNERSHIP_READBACK_REQUIRED: '서버 저장은 완료됐습니다. 입력을 유지했으니 ‘저장 내용 다시 확인’을 눌러 주세요.',
-    PARTNERSHIP_TERMS_REQUIRED: '업체 동의와 혜택 조건·기한·지원 통화를 먼저 확정해 주세요.',
+    PARTNERSHIP_TERMS_REQUIRED: '비즈니스 동의와 혜택 조건·기한·지원 통화를 먼저 확정해 주세요.',
     PARTNERSHIP_TERMS_LOCKED: '선정이나 쿠폰 발급 이력이 있어 조건을 바꿀 수 없습니다. 별도 캠페인이나 혜택을 등록해 주세요.',
     PARTNERSHIP_CAPACITY: '선정 정원 또는 쿠폰 발급 한도에 도달했습니다.',
     PARTNERSHIP_STAGE: '진행 단계와 방문·콘텐츠·지급 확인 내용을 확인해 주세요.',
     PARTNERSHIP_DUPLICATE: '이미 등록된 계정 또는 참여 팀입니다. 기존 기록을 확인해 주세요.',
-    PARTNERSHIP_INACTIVE: '업체·크리에이터·캠페인 또는 혜택이 현재 이용 가능한 상태가 아닙니다.',
+    PARTNERSHIP_INACTIVE: '비즈니스·크리에이터·캠페인 또는 혜택이 현재 이용 가능한 상태가 아닙니다.',
     COUPON_ALREADY_ISSUED: '이 대상에게 이미 발급한 혜택입니다. 발급 내역을 확인해 주세요.',
     COUPON_UNAVAILABLE: '이미 사용·취소됐거나 기한이 지난 쿠폰입니다. 최신 내역을 확인해 주세요.',
   } as Record<string, string>)[code] ?? '처리 결과를 확인하지 못했습니다. 입력은 유지했습니다. 최신 내역을 다시 확인해 주세요.';

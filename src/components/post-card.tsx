@@ -159,13 +159,13 @@ export function PostCard({
             style={({ pressed }) => [styles.author, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent', transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
             <View style={[styles.avatar, { backgroundColor: mine ? theme.accent : theme.backgroundElement }]}>
               <ThemedText type="smallBold" style={{ color: mine ? theme.accentInk : theme.navy }}>
-                {post.author.nickname[0]}
+                {(post.business?.name ?? post.author.nickname)[0]}
               </ThemedText>
             </View>
             <View style={styles.authorCopy}>
               <View style={styles.nickRow}>
-                <ThemedText type="smallBold" style={styles.nickname}>{post.author.nickname}</ThemedText>
-                <TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} />
+                <ThemedText type="smallBold" style={styles.nickname}>{post.business?.name ?? post.author.nickname}</ThemedText>
+                {post.business ? <ThemedText type="small" themeColor="textSecondary">{tr('비즈니스')}</ThemedText> : <TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} />}
                 <PostAdLabel hashtags={post.hashtags} />
                 {mine && (
                   <ThemedText type="smallBold" style={{ color: theme.accent }}>
@@ -182,7 +182,7 @@ export function PostCard({
             <Pressable analyticsId="components_post-card.pressable.5"
               onPress={() => { play('reaction'); if (isAuthed) setReportOpen(true); else promptLogin(t.auth.reasonReport); }}
               accessibilityRole="button"
-              accessibilityLabel={t.report.title(post.author.nickname)}
+              accessibilityLabel={t.report.title(post.business?.name ?? post.author.nickname)}
               style={({ pressed }) => [styles.more, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent', transform: [{ scale: pressed ? 0.88 : 1 }] }]}>
               <SymbolView
                 name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }}
@@ -405,7 +405,7 @@ export function PostCard({
         targetType="post"
         targetId={post.id}
         reportedUserId={post.author.id}
-        reportedNickname={post.author.nickname}
+        reportedNickname={post.business?.name ?? post.author.nickname}
         onClose={() => setReportOpen(false)}
       />
     </View>

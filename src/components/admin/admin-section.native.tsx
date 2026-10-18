@@ -85,7 +85,7 @@ export function AdminSectionView({ section, data, onUser, onLoadMore, loadingMor
       <ThemedText type="small" selectable>{row.body}</ThemedText>
       <ThemedText type="small" style={styles.muted}>{row.meta}</ThemedText>
       {row.reviewEvidence && <>
-        <ThemedText type="smallBold">접수 당시 업체 후기 · {row.reviewEvidence.merchant_name ?? row.reviewEvidence.merchant_id ?? '업체 정보 없음'}{row.reviewEvidence.score == null ? '' : ` · ${row.reviewEvidence.score}/10`}</ThemedText>
+        <ThemedText type="smallBold">접수 당시 비즈니스 후기 · {row.reviewEvidence.merchant_name ?? row.reviewEvidence.merchant_id ?? '비즈니스 정보 없음'}{row.reviewEvidence.score == null ? '' : ` · ${row.reviewEvidence.score}/10`}</ThemedText>
         <ThemedText type="small" selectable>{row.reviewEvidence.body || '후기글 없음 · 점수만 남긴 후기'}</ThemedText>
       </>}
       {row.reviewId && <AdminMerchantReviewContent targetId={row.reviewId} localPreview={localPreview} onUser={onUser} />}

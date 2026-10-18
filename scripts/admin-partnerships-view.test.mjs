@@ -137,7 +137,7 @@ test('vendor and collaboration day appear beside each dated agreement, with an e
   assert.match(text(table), /지모코/); assert.match(text(table), /2026-10-24/);
   nodes(tree).find(node => node.type === 'button' && node.props?.['data-record-id'] === id).props.onClick({ currentTarget: { focus() {} } });
   screen.render(); await new Promise(setImmediate); tree = screen.render();
-  nodes(tree).find(node => node.type === 'button' && /벤더·협업일/.test(text(node))).props.onClick();
+  nodes(tree).find(node => node.type === 'button' && /비즈니스·협업일/.test(text(node))).props.onClick();
   const form = nodes(screen.render()).find(node => node.type === 'CreatorDealMerchantForm');
   assert.equal(form.props.deal.id, deal.id);
 });

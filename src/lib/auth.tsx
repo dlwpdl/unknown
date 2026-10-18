@@ -26,6 +26,7 @@ import { CITIES } from '@/lib/mock';
 import { AUTH_EXPIRED_EVENT, signInAdminAccount, signInReviewAccount, supabase } from '@/lib/supabase';
 import { unregisterPushDevice } from '@/lib/push-notifications';
 import { shouldCelebrateVerificationUpgrade, type TrustLevel } from '@/lib/trust';
+import { changeProfileNickname } from '@/lib/nickname';
 
 type Level = 0 | 1;
 type OAuthProvider = 'kakao' | 'google';
@@ -58,6 +59,7 @@ type AuthValue = {
   signOut: () => Promise<void>;
   setProfilePhoto: (uri: string | null, base64?: string) => Promise<void>;
   setProfileCity: (cityId: string) => Promise<void>;
+  setProfileNickname: (nickname: string, expectedNickname: string) => Promise<void>;
   promptLogin: (reason?: string) => void; // L0 게이트
 };
 
@@ -383,6 +385,14 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     setProfile((current) => current?.id === session.user.id ? { ...current, city_id: cityId } : current);
   }, [session]);
 
+  const setProfileNickname = useCallback(async (nickname: string, expectedNickname: string) => {
+    if (!session) throw new Error('AUTH_REQUIRED');
+    const current = await supabase.auth.getSession();
+    if (current.data.session?.user.id !== session.user.id) throw new Error('AUTH_REQUIRED');
+    const saved = await changeProfileNickname(supabase, session.user.id, nickname, expectedNickname);
+    setProfile(value => value?.id === session.user.id ? { ...value, nickname: saved } : value);
+  }, [session]);
+
   const metadata = session?.user.user_metadata;
   const isAdmin = isAdminRole(session?.user.app_metadata);
   const socialNickname = [metadata?.user_name, metadata?.nickname, metadata?.name, metadata?.full_name].find(
@@ -452,6 +462,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       signOut,
       setProfilePhoto,
       setProfileCity,
+      setProfileNickname,
       promptLogin,
     }),
     [
@@ -479,6 +490,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       signOut,
       setProfilePhoto,
       setProfileCity,
+      setProfileNickname,
       promptLogin,
     ],
   );

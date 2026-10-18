@@ -602,19 +602,19 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           <Pressable analyticsId="post.manage.dismiss" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}
             onPress={() => { if (!savingPost) { play('selection'); setPostMenuOpen(false); setDeletePostOpen(false); } }} />
           <View accessibilityViewIsModal style={[styles.menuSheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, 16) }]}>
-            <ThemedText type="smallBold" accessibilityRole="header" style={styles.menuTitle}>{tr(deletePostOpen ? tr("이 글을 삭제할까요?") : management ? tr("업체 글 관리") : tr("내 글 관리"))}</ThemedText>
+            <ThemedText type="smallBold" accessibilityRole="header" style={styles.menuTitle}>{tr(deletePostOpen ? tr("이 글을 삭제할까요?") : management ? tr("비즈니스 글 관리") : tr("내 글 관리"))}</ThemedText>
             {deletePostOpen ? <>
               <ThemedText themeColor="textSecondary" style={styles.menuTitle}>{tr("삭제한 글은 되돌릴 수 없어요. 달린 댓글도 함께 보이지 않게 됩니다.")}</ThemedText>
-              <Pressable analyticsId="components_post-detail.pressable.15" accessibilityRole="button" accessibilityLabel={tr(management ? tr("업체 글 삭제 확인") : tr("내 글 삭제 확인"))} disabled={savingPost}
+              <Pressable analyticsId="components_post-detail.pressable.15" accessibilityRole="button" accessibilityLabel={tr(management ? tr("비즈니스 글 삭제 확인") : tr("내 글 삭제 확인"))} disabled={savingPost}
                 onPress={() => { play('warning'); void confirmDeletePost(); }} style={styles.menuRow}>
                 <ThemedText themeColor="danger">{tr(savingPost ? tr("삭제 중…") : tr("글 삭제"))}</ThemedText>
               </Pressable>
             </> : <>
-              <Pressable analyticsId="components_post-detail.pressable.14" accessibilityRole="button" accessibilityLabel={tr(management ? tr("업체 글 수정") : tr("내 글 수정"))} onPress={() => { play('selection'); startEditPost(); }} style={styles.menuRow}>
+              <Pressable analyticsId="components_post-detail.pressable.14" accessibilityRole="button" accessibilityLabel={tr(management ? tr("비즈니스 글 수정") : tr("내 글 수정"))} onPress={() => { play('selection'); startEditPost(); }} style={styles.menuRow}>
                 <SymbolView name={{ ios: 'pencil', android: 'edit', web: 'edit' }} size={20} tintColor={theme.text} />
                 <ThemedText>{tr("글·사진 수정")}</ThemedText>
               </Pressable>
-              <Pressable analyticsId="post.manage.delete" accessibilityRole="button" accessibilityLabel={tr(management ? tr("업체 글 삭제") : tr("내 글 삭제"))} onPress={() => { play('warning'); setPostMenuOpen(false); setDeletePostOpen(true); }} style={styles.menuRow}>
+              <Pressable analyticsId="post.manage.delete" accessibilityRole="button" accessibilityLabel={tr(management ? tr("비즈니스 글 삭제") : tr("내 글 삭제"))} onPress={() => { play('warning'); setPostMenuOpen(false); setDeletePostOpen(true); }} style={styles.menuRow}>
                 <SymbolView name={{ ios: 'trash', android: 'delete', web: 'delete' }} size={20} tintColor={theme.danger} />
                 <ThemedText themeColor="danger">{tr("글 삭제")}</ThemedText>
               </Pressable>
@@ -702,7 +702,8 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               post={{ ...post, body: photoCredits.body, views: viewCount }}
               afterBody={<><MerchantSourceLink postId={post.id} /><MerchantReviews postId={post.id} reviewKind={post.tag.slug === 'jobs' ? 'employment' : 'usage'} onOpenProfile={(id) => { onClose(); router.push({ pathname: '/company/[id]', params: { id, review: post.tag.slug === 'jobs' ? 'employment' : 'usage' } }); }} />{post.room && <TicketmasterSourceLink body={post.body} cityId={post.cityId} onNavigate={onClose} />}</>}
               onJoin={onJoin ?? (() => isAuthed ? router.push({ pathname: '/meetup-join', params: { postId: post.id } }) : promptLogin('이 모임에 참여하려면 가입하거나 로그인해 주세요.'))}
-              onAuthor={() =>
+              onAuthor={() => {
+                if (post.business) { onClose(); router.push({ pathname: '/company/[id]', params: { id: post.business.id } }); return; }
                 setSheetUser({
                   id: post.author.id,
                   nickname: post.author.nickname,
@@ -712,8 +713,8 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                   mine: post.author.id === me.id,
                   listingId: post.kind === 'listing' ? post.id : undefined,
                   contextPostId: post.kind === 'listing' || post.room ? post.id : undefined,
-                })
-              }
+                });
+              }}
             />}
             {!postDraft && post.kind === 'story' && !post.room && <PostPoll postId={post.id} />}
             {!postDraft && post.room && <ChillingHostProfile post={post} onJoin={onJoin} onBeforeNavigate={onJoin ? onClose : undefined} />}

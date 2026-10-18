@@ -56,6 +56,11 @@ function MapAction({ url, label }: { url: string; label?: string }) {
     onClick={() => play('selection')}>{label ? `${label} · ` : ''}{t.map.open} ↗</a></div>;
 }
 
+function PostAuthor({ post }: { post: Post }) {
+  const { play } = useInteractionFeedback();
+  return post.business ? <a className="reader-business-author" href={`/company/${post.business.id}`} onClick={() => play('selection')}>{post.business.name} · 비즈니스</a> : <>{post.author.nickname}</>;
+}
+
 function BodyLinks({ body }: { body: string }) {
   const { play } = useInteractionFeedback();
   const attached = splitPostAttachments(body);
@@ -129,7 +134,7 @@ function ReaderContent() {
   if (cities.some((item) => item.id === readyParams.city)) filters.set('city', city.id);
   if (tag) filters.set('tag', tag.slug);
   const canonical = metadata?.canonical ?? (browse ? `${PUBLIC_SITE}/${filters.size ? `?${filters}` : ''}` : postId ? `${PUBLIC_SITE}/post?id=${postId}` : merchantId ? `${PUBLIC_SITE}/company?id=${merchantId}` : null);
-  const pageTitle = metadata?.title ?? (browse ? `${filters.size ? `${city.name} · ${tag?.label ?? '동네 이야기'} | ` : ''}글링 | 캐나다 한인 커뮤니티` : detail ? '글링 공개 글' : company ? '글링 업체 프로필' : '글링 | 앱에서 이어가기');
+  const pageTitle = metadata?.title ?? (browse ? `${filters.size ? `${city.name} · ${tag?.label ?? '동네 이야기'} | ` : ''}글링 | 캐나다 한인 커뮤니티` : detail ? '글링 공개 글' : company ? '글링 비즈니스 프로필' : '글링 | 앱에서 이어가기');
   const description = metadata?.description ?? `${browse && filters.size ? `${city.name}의 ` : '캐나다 한인 커뮤니티 글링에서 '}동네 이야기, 맛집, 비즈니스와 모임을 둘러보세요. 공유 미리보기를 둘러보고, 소셜 로그인 후 전체 내용과 모임을 확인해요.`;
   // Static /post.html has no query parameters yet; let Google render before marking a missing post.
   const noindex = (!browse && !detail && !company) || (detail && hydrated && (!postId || (current && !post))) || (company && hydrated && !merchantId);
@@ -222,7 +227,7 @@ function ReaderContent() {
                 <p className="reader-excerpt">{item.room ? visibleMeetupBody(attached.body) : attached.body}</p>
                 {attached.urls.map((url, index) => <PostAttachmentLink key={`${url}-${index}`} url={url} />)}
                 {mapped.url && <MapAction url={mapped.url} label={mapped.label} />}
-                <p className="reader-meta">{item.author.nickname} · {item.createdAtLabel}</p>
+                <p className="reader-meta"><PostAuthor post={item} /> · {item.createdAtLabel}</p>
                 {item.room && <p className="reader-meta">{chillingSchedule(item.room)} · {recommendedAgeLabel(item.room)}</p>}
               </div>
               {(item.imageThumbs?.[0] || item.imageUris?.[0]) && <img src={item.imageThumbs?.[0] || item.imageUris?.[0]} alt="" loading="lazy" className="reader-thumbnail" />}
@@ -231,12 +236,12 @@ function ReaderContent() {
           {current?.more && <button data-analytics="web_control_11" className="reader-more" onClick={() => void more()} disabled={busy}>{busy ? '불러오는 중…' : '이야기 더 보기'}</button>}
         </> : company ? <InteractionFeedbackProvider>{merchantId
           ? <PublicMerchantProfile key={merchantId} merchantId={merchantId} />
-          : hydrated ? <div className="reader-notice"><h1>업체 프로필을 찾을 수 없어요</h1><p>올바른 업체 프로필 링크를 열어 주세요.</p></div>
-            : <p role="status" className="reader-notice">업체 프로필을 불러오고 있어요…</p>}</InteractionFeedbackProvider> : detail ? <>
+          : hydrated ? <div className="reader-notice"><h1>비즈니스 프로필을 찾을 수 없어요</h1><p>올바른 비즈니스 프로필 링크를 열어 주세요.</p></div>
+            : <p role="status" className="reader-notice">비즈니스 프로필을 불러오고 있어요…</p>}</InteractionFeedbackProvider> : detail ? <>
           <a data-analytics="web_control_12" className="reader-back" href="/">← 동네 이야기로</a>
           {post && <InteractionFeedbackProvider><article className="reader-post"><p className="reader-kicker">{CITIES.find((item) => item.id === post.cityId)?.name} · {post.tag.label}</p>
             {!!post.hashtags?.length && <p className="reader-kicker" aria-label="게시글 해시태그">{post.hashtags.map(tag => `#${tag}`).join(' · ')}</p>}
-            <h1>{post.title}</h1><p className="reader-meta">{hasAdLabel(post.hashtags) && <span aria-label="광고">AD · </span>}{post.author.nickname} · <time dateTime={metadata?.published}>{post.createdAtLabel}</time></p>
+            <h1>{post.title}</h1><p className="reader-meta">{hasAdLabel(post.hashtags) && <span aria-label="광고">AD · </span>}<PostAuthor post={post} /> · <time dateTime={metadata?.published}>{post.createdAtLabel}</time></p>
             <PublicMerchantProfileLink postId={post.id} />
             {post.imageUris?.map((uri, index) => uri && <img className="reader-photo" key={uri} src={uri} alt={`${post.title} 사진 ${index + 1}`} loading="lazy" />)}
             <BodyLinks body={post.room ? visibleMeetupBody(mappedPost!.body) : mappedPost!.body} /><MeetupInfo post={post} />

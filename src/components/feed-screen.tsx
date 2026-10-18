@@ -124,7 +124,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [detailVisible, setDetailVisible] = useState(false);
   const [sheetUser, setSheetUser] = useState<SheetUser | null>(null);
   // 카드의 작성자를 누르면 글을 열지 않고 바로 미니 프로필로 간다.
-  const openAuthor = (post: Post) => setSheetUser({ id: post.author.id, nickname: post.author.nickname, neighborhood: post.author.neighborhood, verified: post.author.verified, trustLevel: post.author.trustLevel, mine: post.author.id === me.id });
+  const openAuthor = (post: Post) => {
+    if (post.business) { router.push({ pathname: '/company/[id]', params: { id: post.business.id } }); return; }
+    setSheetUser({ id: post.author.id, nickname: post.author.nickname, neighborhood: post.author.neighborhood, verified: post.author.verified, trustLevel: post.author.trustLevel, mine: post.author.id === me.id });
+  };
   const [pendingPost, setPendingPost] = useState<Post | null>(null); // 로그인 후 이어서 열 글
   const [tagFilter, setTagFilter] = useState<number | null>(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null); // 카테고리 칩
   const [feedSort, setFeedSort] = useState<FeedSort>('latest');

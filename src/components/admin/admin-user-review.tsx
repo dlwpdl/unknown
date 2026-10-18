@@ -16,13 +16,17 @@ import { CITIES } from '@/lib/mock';
 import { getAdminMerchantAccess, setAdminMerchantAccess } from '@/lib/admin-merchants';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { displayName } from '@/lib/admin-labels';
+import { NicknameEditor } from '@/components/nickname-editor';
+import { changeProfileNickname } from '@/lib/nickname';
+import { AdminUserBusiness } from './admin-user-business';
 
 const MAIN_ACTIVITY_KINDS: ActivityKind[] = ['all', 'post', 'comment', 'message', 'meetup', 'report'];
 
-export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevelChange }: {
+export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevelChange, onProfileChanged }: {
   userId: string; profiles: Map<string, AdminProfile>;
   onStatusChange?: (userId: string, status: 'active' | 'reactivation_pending') => Promise<void>;
   onTrustLevelChange?: (userId: string, level: 1 | 2 | 3) => Promise<void>;
+  onProfileChanged?: () => Promise<void>;
 }) {
   const [overview, setOverview] = useState<AdminUserOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +48,7 @@ export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevel
     void loadAdminUserOverview(supabase, userId)
       .then((value) => { if (active) setOverview(value); })
       .catch(() => { if (active) setError('회원 상세를 불러오지 못했습니다. 관리자 권한과 연결을 확인해주세요.'); });
-    void getAdminMerchantAccess(supabase, userId).then(value => { if (active) setMerchantAccess(value); }).catch(() => { if (active) setError('업체 권한을 확인하지 못했습니다.'); });
+    void getAdminMerchantAccess(supabase, userId).then(value => { if (active) setMerchantAccess(value); }).catch(() => { if (active) setError('비즈니스 권한을 확인하지 못했습니다.'); });
     return () => { active = false; };
   }, [userId, retry]);
   const changeMerchantAccess = async (enabled: boolean) => {
@@ -113,7 +117,7 @@ export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevel
     </View>
     <View style={styles.card}>
       <ThemedText type="small">{[CITIES.find((city) => city.id === profile.city_id)?.name ?? profile.city_id, profile.neighborhood].filter(Boolean).join(' · ') || '지역 미제공'}</ThemedText>
-      <ThemedText type="small">{profile.auth_role === 'admin' ? '관리자' : profile.auth_role === 'member' ? '일반 회원' : profile.auth_role} · 신뢰 {profile.verification_level} · {merchantAccess === null ? '업체 권한 확인 필요' : merchantAccess ? '업체 관리 가능' : '일반 계정'}</ThemedText>
+      <ThemedText type="small">{profile.auth_role === 'admin' ? '관리자' : profile.auth_role === 'member' ? '일반 회원' : profile.auth_role} · 신뢰 {profile.verification_level} · {merchantAccess === null ? '비즈니스 권한 확인 필요' : merchantAccess ? '비즈니스 관리 가능' : '일반 계정'}</ThemedText>
       <ThemedText type="small" style={styles.muted}>가입 {formatDate(profile.created_at)}</ThemedText>
       {!!profile.account_status_note && <Field label="최근 상태 메모" value={profile.account_status_note} />}
       {onStatusChange && profile.account_status === 'suspended' && <Button disabled={statusBusy} label="이용 제한 해제" onPress={() => void changeStatus('active')} />}
@@ -121,15 +125,21 @@ export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevel
       {error && <ThemedText accessibilityRole="alert" style={styles.error}>{error}</ThemedText>}
       <Button expanded={showManagement} label={showManagement ? '계정 관리 닫기' : '계정 관리 · 권한과 신뢰 변경'} onPress={() => setShowManagement(value => !value)} />
       <View style={{ display: showManagement ? 'flex' : 'none' }}>
+      {profile.account_status === 'active' && <NicknameEditor admin nickname={profile.nickname} onSave={async (value, expected) => {
+        const nickname = await changeProfileNickname(supabase, userId, value, expected);
+        setOverview(current => current?.profile.id === userId ? { ...current, profile: { ...current.profile, nickname } } : current);
+        await onProfileChanged?.();
+      }} />}
       <Field label="권한" value={profile.auth_role === 'admin' ? '관리자' : profile.auth_role === 'member' ? '일반 회원' : profile.auth_role} />
       <View style={styles.trustRow}>
-        <ThemedText type="small" style={styles.fieldLabel}>업체 계정</ThemedText>
-        {([true, false] as const).map(enabled => <Pressable key={String(enabled)} accessibilityRole="button" accessibilityLabel={`업체 계정 ${enabled ? 'YES' : 'NO'}`} accessibilityState={{ selected: merchantAccess === enabled, disabled: merchantBusy || merchantAccess === null || merchantAccess === enabled }} disabled={merchantBusy || merchantAccess === null || merchantAccess === enabled}
+        <ThemedText type="small" style={styles.fieldLabel}>비즈니스 계정</ThemedText>
+        {([true, false] as const).map(enabled => <Pressable key={String(enabled)} accessibilityRole="button" accessibilityLabel={`비즈니스 계정 ${enabled ? 'YES' : 'NO'}`} accessibilityState={{ selected: merchantAccess === enabled, disabled: merchantBusy || merchantAccess === null || merchantAccess === enabled }} disabled={merchantBusy || merchantAccess === null || merchantAccess === enabled}
           onPress={() => { void changeMerchantAccess(enabled); }} style={({ pressed }) => [styles.chip, { minHeight: 44 }, merchantAccess === enabled && styles.selected, pressed && styles.pressed]}><ThemedText type="smallBold">{enabled ? 'YES' : 'NO'}</ThemedText></Pressable>)}
-        <ThemedText type="small" style={styles.muted}>{merchantBusy ? '저장 중' : merchantAccess === null ? '확인 필요' : merchantAccess ? '업체 관리 가능' : '일반 계정'}</ThemedText>
+        <ThemedText type="small" style={styles.muted}>{merchantBusy ? '저장 중' : merchantAccess === null ? '확인 필요' : merchantAccess ? '비즈니스 관리 가능' : '일반 계정'}</ThemedText>
       </View>
-      <ThemedText type="small" style={styles.muted}>YES는 본인 업체의 관리 권한입니다. 업체 소유 확인과 관리자 권한은 별도이며, NO로 바꿔도 기존 글·사진은 보존합니다.</ThemedText>
-      {merchantAccess === null && <Button label="업체 권한 다시 확인" onPress={() => setRetry(v => v + 1)} />}
+      <ThemedText type="small" style={styles.muted}>YES는 본인 비즈니스의 관리 권한입니다. 비즈니스 소유 확인과 관리자 권한은 별도이며, NO로 바꿔도 기존 글·사진은 보존합니다.</ThemedText>
+      {profile.account_status === 'active' && <AdminUserBusiness key={[profile.id, profile.nickname, profile.email].join(':')} account={profile} onChanged={() => setRetry(value => value + 1)} />}
+      {merchantAccess === null && <Button label="비즈니스 권한 다시 확인" onPress={() => setRetry(v => v + 1)} />}
       {onTrustLevelChange ? (
         <View style={styles.trustRow}>
           <ThemedText type="small" style={styles.fieldLabel}>신뢰 단계</ThemedText>

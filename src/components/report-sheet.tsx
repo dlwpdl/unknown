@@ -20,7 +20,7 @@ export function ReportSheet({
   targetType,
   targetId,
   reportedUserId,
-  reportedNickname = '업체 답변',
+  reportedNickname = '비즈니스 답변',
   onClose,
 }: {
   visible: boolean;

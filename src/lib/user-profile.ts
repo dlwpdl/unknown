@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { attachSignedPostImages, mapPublicFeed, type FeedCursor, type PublicFeedRow } from './feed-data.ts';
+import { hydratePublicPosts, mapPublicFeed, type FeedCursor, type PublicFeedRow } from './feed-data.ts';
 import type { Post, PostKind } from './types.ts';
 
 export type MannerPart = { participants: number; score: number | null; rating?: { participants: number; score: number | null } };
@@ -21,5 +21,5 @@ export const loadPublicUserProfile = (client: SupabaseClient, userId: string) =>
 export async function loadPublicUserActivity(client: SupabaseClient, userId: string, kind: PostKind, cursor: FeedCursor | null, viewerScope: string): Promise<Post[]> {
   if (kind !== 'story' && kind !== 'listing') throw new Error('INVALID_POST_KIND');
   const rows = await rpc<PublicFeedRow[]>(client, 'get_public_user_activity', { p_user_id: userId, p_kind: kind, p_before_created: cursor?.createdAt ?? null, p_before_id: cursor?.id ?? null });
-  return attachSignedPostImages(client, mapPublicFeed(rows ?? [], []), viewerScope);
+  return hydratePublicPosts(client, mapPublicFeed(rows ?? [], []), viewerScope);
 }

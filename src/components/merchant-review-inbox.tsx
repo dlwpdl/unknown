@@ -39,7 +39,7 @@ function ScopedInbox({ merchantId, onDirty }: { merchantId: string; onDirty?: (d
       setRows((previous) => offset > 0 ? [...previous, ...page.reviews.filter((row) => !previous.some(({ id }) => id === row.id))] : page.reviews);
       setHasMore(page.has_more);
     }).catch(() => {
-      if (active) { setRows([]); setHasMore(false); setError("후기를 불러오지 못했어요. 업체 소유 확인과 계정 권한을 다시 확인해 주세요."); }
+      if (active) { setRows([]); setHasMore(false); setError("후기를 불러오지 못했어요. 비즈니스 소유 확인과 계정 권한을 다시 확인해 주세요."); }
     }).finally(() => { if (active) { pending.current = false; setLoading(false); } });
     return () => { active = false; };
   }, [merchantId, offset, revision]);
@@ -69,12 +69,12 @@ function ScopedInbox({ merchantId, onDirty }: { merchantId: string; onDirty?: (d
       <Pressable analyticsId="merchant.reviews.refresh" accessibilityRole="button" disabled={loading || dirty || replyBusy} accessibilityState={{ disabled: loading || dirty || replyBusy }}
         style={styles.button} onPress={() => { play('selection'); refresh(); }}><ThemedText type="smallBold" themeColor="accent">{tr("새로 확인")}</ThemedText></Pressable>
     </View>
-    <ThemedText type="small" themeColor="textSecondary">{tr("이용 리뷰는 미인증 의견도 확인할 수 있어요. 근무 리뷰는 근무 증빙 인증 후에만 보이며, 증빙 원본은 업체에 공개되지 않아요. 공개 평균은 종류별 인증 후기만 따로 계산해요.")}</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary">{tr("이용 리뷰는 미인증 의견도 확인할 수 있어요. 근무 리뷰는 근무 증빙 인증 후에만 보이며, 증빙 원본은 비즈니스에 공개되지 않아요. 공개 평균은 종류별 인증 후기만 따로 계산해요.")}</ThemedText>
     {rows.filter((row) => !hidden('merchant_review', row.id, row.author_id)).map((row) => <View key={row.id} style={styles.review}>
       <MerchantReviewCard review={row} onReport={row.author_id === me.id || draft || replyBusy ? undefined : () => setReport(row)} />
       {row.review_kind !== 'employment' && (draft?.id === row.id ? <View style={[styles.reply, { borderColor: theme.line }]}>
-        <ThemedText type="smallBold">{tr("업체 답변")}</ThemedText>
-        <TextInput accessibilityLabel={tr("이용 후기 업체 답변, 최대 300자")} value={draft.body} editable={!replyBusy} multiline maxLength={300}
+        <ThemedText type="smallBold">{tr("비즈니스 답변")}</ThemedText>
+        <TextInput accessibilityLabel={tr("이용 후기 비즈니스 답변, 최대 300자")} value={draft.body} editable={!replyBusy} multiline maxLength={300}
           placeholder={tr("이용 후기에 답변해 주세요.")} placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')}
           onChangeText={body => { setDraft({ ...draft, body }); setReplyError(''); }} style={[styles.input, { color: theme.text, borderColor: theme.line }]} />
         <ThemedText type="small" themeColor="textSecondary">{draft.body.length}{tr("/300 · 후기 공개 범위에 따라 답변도 표시돼요.")}</ThemedText>

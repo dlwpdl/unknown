@@ -138,13 +138,13 @@ export function AdminReportQueue({
       {isTrustTarget(report.target_type) && <ThemedText type="smallBold">현재 원문 · 별도 권한 확인 후 조회</ThemedText>}
       {isTrustTarget(report.target_type) && <AdminTrustReviewContent targetType={report.target_type} targetId={report.target_id} localPreview={localPreview} onUser={onUser} />}
       {report.target_type === 'merchant_review' && <>
-        <LabelValue label="접수 당시 업체 후기" value={`${report.evidence?.merchant_name ?? report.evidence?.merchant_id ?? '업체 정보 없음'}${report.evidence?.score == null ? '' : ` · ${report.evidence.score}/10`}${report.evidence?.status ? ` · ${report.evidence.status === 'removed' ? '숨김' : '게시 중'}` : ''}`} />
-        <ThemedText type="smallBold">현재 업체 후기 · 원문 조회</ThemedText>
+        <LabelValue label="접수 당시 비즈니스 후기" value={`${report.evidence?.merchant_name ?? report.evidence?.merchant_id ?? '비즈니스 정보 없음'}${report.evidence?.score == null ? '' : ` · ${report.evidence.score}/10`}${report.evidence?.status ? ` · ${report.evidence.status === 'removed' ? '숨김' : '게시 중'}` : ''}`} />
+        <ThemedText type="smallBold">현재 비즈니스 후기 · 원문 조회</ThemedText>
         <AdminMerchantReviewContent targetId={report.target_id} localPreview={localPreview} onUser={onUser} />
       </>}
       {report.target_type === 'merchant_review_reply' && <>
-        <LabelValue label="접수 당시 업체" value={report.evidence?.merchant_name ?? report.evidence?.merchant_id ?? '업체 정보 없음'} />
-        <ThemedText type="smallBold">현재 업체 답글 · 원문 조회</ThemedText>
+        <LabelValue label="접수 당시 비즈니스" value={report.evidence?.merchant_name ?? report.evidence?.merchant_id ?? '비즈니스 정보 없음'} />
+        <ThemedText type="smallBold">현재 비즈니스 답글 · 원문 조회</ThemedText>
         <AdminMerchantReviewReplyContent targetId={report.target_id} localPreview={localPreview} onUser={onUser} />
       </>}
       <details onToggle={() => play('selection')}>
@@ -210,7 +210,7 @@ export function AdminReportQueue({
             <button type="button" disabled={checked.some((report) => report.target_type === 'user')}
               onClick={() => { play('selection'); return void resolveChecked('hidden'); }}>선택 콘텐츠 전체 숨김</button>
           </div>
-          {checked.some((report) => report.target_type === 'user') && <small>콘텐츠 전체 숨김은 게시글·댓글·메시지·업체 후기 신고만 선택했을 때 사용할 수 있습니다.</small>}
+          {checked.some((report) => report.target_type === 'user') && <small>콘텐츠 전체 숨김은 게시글·댓글·메시지·비즈니스 후기 신고만 선택했을 때 사용할 수 있습니다.</small>}
           <small>선택한 신고 각각에 처리 기록과 메모가 남습니다. 같은 회원의 신고가 여러 건이면 경고·정지 알림도 신고별로 전송됩니다.</small>
         </>}
       </fieldset>
