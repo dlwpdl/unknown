@@ -91,7 +91,8 @@ function mount(file, exportName, data, props = {}, params = {}) {
       if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ bottom: 0 }) };
       if (name === '@/hooks/use-chat-identity') return { useChatIdentity: () => data.businessIdentity ?? null };
       if (name === '@/lib/chat-identity') return { chatBusinessIdentity: () => data.businessIdentity ?? null, selectChatBusiness: (_user, value) => { data.businessIdentity = value; dirty = true; } };
-      if (name === '@/lib/merchant-connections') return { loadMyMerchantConnections: async () => ({ user_id: auth.me.id, merchants: data.connections ?? [] }) };
+      if (name === '@/lib/merchant-connections') return { loadMyMerchantConnections: async (_client, userId, chatOnly = false) => data.loadMyMerchantConnections
+        ? data.loadMyMerchantConnections(userId, chatOnly) : ({ user_id: auth.me.id, merchants: data.connections ?? [] }) };
       if (name === '@/lib/business-chat') return { subscribeBusinessChat: (_client, _user, changed) => { data.privateChanged = changed; return () => { data.privateChanged = null; }; }, ...data.businessChat };
       if (name === '@/lib/auth') return { useAuth: () => auth };
       if (name === '@/lib/membership-provider') return { useMembership: () => ({ refresh: refreshMembership }) };
@@ -1028,6 +1029,21 @@ test('legacy personal deep links clear business mode, while revoked business lin
   context.after(() => revoked.cleanup()); await revoked.settle();
   assert.equal(reads, 0);
   assert.ok(revoked.nodes().some(node => node.props?.accessibilityRole === 'alert'));
+});
+
+test('business notifications use actual connected admin scope without an admin-wide lookup', async context => {
+  const lookups = [], reads = [];
+  const data = {
+    loadMyMerchantConnections: async (userId, chatOnly) => { lookups.push(chatOnly); return { user_id: userId, merchants: [{ id: businessId, name: '공개 비즈니스', role: chatOnly ? 'owner' : 'admin' }] }; },
+    loadPendingMeetupRequests: async () => [],
+    loadConversations: async (_client, _user, _filter, _cursor, _selected, asBusiness) => { reads.push(asBusiness); return { conversations: [], selectedConversation: null, pendingCount: 0, cursor: null }; },
+  };
+  const harness = mount('../src/app/(tabs)/chat.tsx', 'default', data, {}, { conversationId: 'room', businessId });
+  harness.auth.isAdmin = true; harness.rerender(); context.after(() => harness.cleanup()); await harness.settle();
+  assert.equal(data.businessIdentity?.id, businessId);
+  assert.ok(lookups.length > 0 && lookups.every(Boolean));
+  assert.deepEqual(reads, [businessId]);
+  assert.ok(!harness.nodes().some(node => node.props?.accessibilityRole === 'alert'));
 });
 
 test('business photo uploads use the public business prefix and keep the pinned identity for send and reads', async context => {

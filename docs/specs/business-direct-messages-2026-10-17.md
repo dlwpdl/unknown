@@ -15,6 +15,8 @@ the business, without revealing its linked personal account.
 - A business post/profile inquiry resolves the business ID, including hiring
   posts. It never resolves the private linked owner as the public recipient.
 - Current verified owners and connected operators can respond for their business.
+  This includes admins with a real owner/operator connection; administrative
+  access to a business alone never makes it a selectable conversation profile.
   Revoking access immediately prevents further reads and sends. Existing private
   personal history remains personal; no historical message migration/relabeling.
 - Public business messages, inbox previews, replies, participant data, storage
