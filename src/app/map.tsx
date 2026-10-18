@@ -140,7 +140,8 @@ function CityMap({ onClose }: { onClose?: () => void } = {}) {
   useCityPlacesRevision();
   const catalogPlaces = getCityRecommendations(city.id);
   const catalogItems = catalogPlaces.map(discoveryPlace).filter(item => item !== null);
-  const publicItems = [...(current?.items ?? []), ...catalogItems].filter(item => (!item.post || (!hidden('post', item.post.id, item.post.author.id) && (item.post.kind !== 'listing' || (['open', 'partial'].includes(item.post.listingStatus ?? '') && Date.parse(item.post.expiresAt ?? '') > now))))
+  const publicItems = [...(current?.items ?? []), ...catalogItems].filter(item => (item.source !== 'post' || !!item.post && item.post.kind === 'listing' && ['housing', 'used'].includes(item.category))
+    && (!item.post || (!hidden('post', item.post.id, item.post.author.id) && (item.post.kind !== 'listing' || (['open', 'partial'].includes(item.post.listingStatus ?? '') && Date.parse(item.post.expiresAt ?? '') > now))))
     && (!item.event || discoveryEvent(item.event, item.cityId, now) !== null));
   const cityItems = mergeCityTop25(publicItems, city.id);
   const top25Ready = cityItems.some(item => item.top25);

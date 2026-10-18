@@ -101,10 +101,25 @@ test('Top 25 merges only visible recommendations before filtering and keeps the 
   context.days = [];
   context.hidden = () => false;
   context.selectedFilters = [];
-  context.current.items = Array.from({ length: 500 }, (_, i) => ({ ...item, id: `post:${i}`, sourceId: String(i), post: { ...item.post, id: String(i) } }));
+  context.current.items = Array.from({ length: 500 }, (_, i) => ({ ...item, id: `post:${i}`, sourceId: String(i), category: 'used', post: { ...item.post, id: String(i), kind: 'listing', listingStatus: 'open', expiresAt: '2099-01-01T00:00:00Z' } }));
   const bounded = exports.run();
   assert.equal(bounded.items.length, 500);
   assert.equal(bounded.limited, true);
+});
+
+test('map pins, list and count exclude community stories but retain actual places, events and active sale listings', () => {
+  const start = source.indexOf('  const publicItems = '), end = source.indexOf('  const pins = ', start);
+  const story = { id: 'post:coffee-question', source: 'post', sourceId: 'coffee-question', cityId: 'vancouver', title: '원두 이름보다 추출 방식이 궁금해졌어', category: 'dining', label: '공개 위치', latitude: 49.28, longitude: -123.12, price: null, post: { id: 'coffee-question', kind: 'story', author: { id: 'visible' } } };
+  const listing = category => ({ ...story, id: `post:${category}`, sourceId: category, category, post: { ...story.post, id: category, kind: 'listing', listingStatus: 'open', expiresAt: '2099-01-01T00:00:00Z' } });
+  const place = { ...story, id: 'place:cafe', sourceId: 'cafe', source: 'place', title: '실제 카페', category: 'cafe', post: undefined };
+  const event = { ...story, id: 'event:festival', sourceId: 'festival', source: 'event', title: '실제 행사', category: 'festival', post: undefined };
+  const exports = {};
+  vm.runInNewContext(compile(`exports.run = () => { ${source.slice(start, end)} return items; };`), {
+    exports, current: { items: [story, { ...story, id: 'post:legacy', post: { ...story.post, kind: undefined } }, listing('used'), listing('housing'), listing('dining'), { ...story, id: 'post:missing', post: undefined }, event] },
+    catalogItems: [place], city: { id: 'vancouver' }, now: Date.now(), selectedFilters: [], query: '', days: [], hidden: () => false,
+    discoveryMatches, mergeCityTop25, discoveryEvent: () => null,
+  });
+  assert.deepEqual(Array.from(exports.run(), item => item.sourceId), ['used', 'housing', 'festival', 'cafe']);
 });
 
 test('changing accounts remounts the map and clears the previous private GPS camera state', () => {
