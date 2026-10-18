@@ -3,13 +3,15 @@ import SharedPostRoute from '@/app/post/[id]';
 import { PublicFestivals } from './festivals';
 import { useReaderAnalytics } from './analytics';
 import { PublicMerchantProfile, PublicMerchantProfileLink } from './merchant-profile';
+import { FeedAd } from '@/components/feed-ad';
+import { contentAdPosition } from '@/lib/content-ad-placement';
 
 import { Asset } from 'expo-asset';
 import { instagramPostLink, splitPostAttachments, splitPostLinks } from '../../../supabase/functions/_shared/post-links';
 import { PostAttachmentLink } from '@/components/post-attachment-link';
 import { useLocalSearchParams, usePathname } from 'expo-router';
 import Head from 'expo-router/head';
-import { useEffect, useState, useSyncExternalStore, type CSSProperties } from 'react';
+import { Fragment, useEffect, useState, useSyncExternalStore, type CSSProperties } from 'react';
 
 import { WebNightColors } from '@/constants/theme';
 import { chillingSchedule, recommendedAgeLabel } from '@/lib/chilling';
@@ -227,7 +229,7 @@ function ReaderContent() {
           </form>
           {hydrated && <InteractionFeedbackProvider><PublicFestivals cityId={city.id} cityName={city.name} /></InteractionFeedbackProvider>}
           <div aria-busy={loading}>
-            {current && <InteractionFeedbackProvider>{current.posts.map((item) => { const mapped = postMapBody(item.body); const attached = splitPostAttachments(mapped.body); return <article className="reader-card" key={item.id}>
+            {current && <InteractionFeedbackProvider>{current.posts.map((item, index) => { const mapped = postMapBody(item.body); const attached = splitPostAttachments(mapped.body); return <Fragment key={item.id}><article className="reader-card">
               <div><p className="reader-kicker">{hasAdLabel(item.hashtags) && <span aria-label="광고">AD · </span>}{item.tag.label}{item.room?.closed ? ' · 모집 마감' : ''}</p>
                 <h3><a data-analytics="web_control_10" href={`/post?id=${encodeURIComponent(item.id)}`}>{item.title}</a></h3>
                 <p className="reader-excerpt">{item.room ? visibleMeetupBody(attached.body) : attached.body}</p>
@@ -237,7 +239,7 @@ function ReaderContent() {
                 {item.room && <p className="reader-meta">{chillingSchedule(item.room)} · {recommendedAgeLabel(item.room)}</p>}
               </div>
               {(item.imageThumbs?.[0] || item.imageUris?.[0]) && <img src={item.imageThumbs?.[0] || item.imageUris?.[0]} alt="" loading="lazy" className="reader-thumbnail" />}
-            </article>; })}</InteractionFeedbackProvider>}
+            </article>{!current.failed && contentAdPosition(index, current.posts.length) && <FeedAd key={`ad-after-${item.id}`} />}</Fragment>; })}</InteractionFeedbackProvider>}
           </div>
           {current?.more && <button data-analytics="web_control_11" className="reader-more" onClick={() => void more()} disabled={busy}>{busy ? '불러오는 중…' : '이야기 더 보기'}</button>}
         </> : company ? <InteractionFeedbackProvider>{merchantId

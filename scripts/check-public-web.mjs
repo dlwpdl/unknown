@@ -6,6 +6,7 @@ import { checkMerchantWeb } from './check-merchant-web.mjs';
 const directory = process.argv[2] ?? 'dist';
 assert.ok(existsSync(join(directory, 'index.html')), 'Public web export is missing');
 assert.ok(existsSync(join(directory, 'company.html')), 'Public company route is missing');
+assert.equal(readFileSync(join(directory, 'ads.txt'), 'utf8').trim(), 'google.com, pub-2361293253164911, DIRECT, f08c47fec0942fa0', 'Public web seller declaration is missing');
 for (const page of ['index', 'terms', 'privacy', 'account-deletion', 'child-safety']) {
   const html = readFileSync(join(directory, `${page}.html`), 'utf8');
   assert.ok(html.includes('gling-night-wordmark.') && html.includes('--accent:#9283AC') && html.includes('#746486'), `${page} lost the cinematic night brand`);
@@ -30,6 +31,7 @@ for (const file of readdirSync(directory, { recursive: true })) {
   if (/^profile\//.test(file)) assert.equal(file, 'profile/membership.html', `Unrequested profile route in public export: ${file}`);
   if (!/\.(html|js)$/.test(file)) continue;
   const content = readFileSync(join(directory, file), 'utf8');
+  for (const marker of ['react-native-google-mobile-ads', 'RNGoogleMobileAds']) assert.ok(!content.includes(marker), `Native ad SDK in public web export: ${file}`);
   for (const marker of ['get_admin_user_businesses', 'write_user_review', 'write_manner_review', 'get_manner_review_state', 'get_my_manner_feedback', 'appeal_manner_review', 'write_meetup_review', 'get_my_meetup_review_inbox', 'get_meetup_sessions', 'create_meetup_session', 'check_in_meetup', 'confirm_meetup_attendance', 'claim_meetup_attendance', 'get_chat_suggestion_context', 'send_suggested_message', 'get_admin_trust_content','review_admin_trust_target','get_trust_safety_content','get_message_safety_context','get_admin_merchant_review_reply_content', 'get_admin_analytics', 'get_admin_performance', 'get_admin_merchants', 'get_admin_partnerships', 'get_admin_creator_directory', 'get_admin_creator_deal', 'record_admin_creator_deal', 'link_admin_creator_deal_merchant', 'get_admin_merchant_creator_deals', 'save_admin_partnership', 'issue_admin_benefit_coupon', 'act_admin_benefit_coupon', 'save_admin_merchant', 'get_admin_merchant_review_content', 'get_admin_merchant_receipt_reviews', 'set_admin_merchant_review_receipt', 'get_my_merchant_profile', 'save_my_merchant_profile', 'MFA_ADMIN_CONNECTION_REQUIRED', 'GLING / INSIGHTS', 'create_meetup_with_post']) {
     assert.ok(!content.includes(marker), `App-only code (${marker}) in public export: ${file}`);
   }

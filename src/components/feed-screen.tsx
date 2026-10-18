@@ -741,7 +741,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               onJoin={() => void onJoin(item)}
               onHashtag={openSearch}
               onAuthor={() => openAuthor(item)}
-            />{!meetupsOnly && adsSupported && feedAdPosition(index - (showFeedSort ? 2 : 1)) && <FeedAd />}</Animated.View></Reanimated.View>
+            />{!meetupsOnly && adsSupported && (Platform.OS !== 'web' || (!isAuthed && !feedError && !detailVisible && !writing && !searching)) && feedAdPosition(index - (showFeedSort ? 2 : 1), feedData.length) && <FeedAd key={`ad-after-${item.id}`} />}</Animated.View></Reanimated.View>
           )}
         />
 
