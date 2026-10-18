@@ -28,6 +28,7 @@ def day(value):
     return instant(value).astimezone(ZoneInfo('America/Vancouver')).date().isoformat()
 
 def build_catalog(seed, elements, now):
+    if seed.get('recommendationTheme') != 'photo-spots': raise ValueError('PHOTO_SELECTION_REQUIRED')
     if not elements: raise ValueError('EMPTY_OSM_RESPONSE')
     expected = {p['id'] for city in seed['cities'].values() for p in city['places']}
     indexed = {}
@@ -38,7 +39,7 @@ def build_catalog(seed, elements, now):
         indexed[ident] = element
     # shortcut: drops over 20% require review, revise after a confirmed bulk OSM cleanup.
     if len(indexed) < len(expected) * 0.8: raise ValueError('INCOMPLETE_OSM_RESPONSE')
-    result = dict(collectedAt=now, source='OpenStreetMap; source-reviewed Gling selections', license='ODbL-1.0',
+    result = dict(collectedAt=now, recommendationTheme='photo-spots', source='OpenStreetMap; source-reviewed Gling photo spots', license='ODbL-1.0',
                   attribution='© OpenStreetMap contributors', attributionUrl='https://www.openstreetmap.org/copyright', cities={})
     for city_id, city in seed['cities'].items():
         places, eligible = [], set()
@@ -66,6 +67,7 @@ def build_catalog(seed, elements, now):
                     p['address'] = (number+' '+street)[:1000]
                 closed = any(tags.get(k) == 'yes' for k in ['disused','abandoned','demolished','closed']) or any(k in tags for k in ['disused:amenity','abandoned:amenity','demolished:amenity'])
                 names = [tags.get(k) for k in ['name','name:en','name:fr','official_name','brand']]
+                if tags.get('bridge') == 'yes': names.append(tags.get('bridge:name'))
                 renamed = p['name'].casefold() not in [v.casefold() for v in names if isinstance(v, str)]
                 if not closed and not renamed and tags.get('access') not in ['private','no'] and hours not in ['closed','off']: eligible.add(ident)
             places.append(p)
@@ -145,8 +147,8 @@ def main():
     if previous and day(previous['collectedAt']) >= day(now):
         print(json.dumps({'status':'already_refreshed','day':day(now)})); return
     if args.publish and (out/'attempt.json').exists(): raise ValueError('PLACE_PUBLICATION_NEEDS_READBACK')
-    token = operations_token() if args.publish else None
     seed = json.loads(args.seed.read_text())
+    if seed.get('recommendationTheme') != 'photo-spots': raise ValueError('PHOTO_SELECTION_REQUIRED')
     baseline = json.loads((ROOT/'src/lib/city-places.catalog.json').read_text())
     if set(seed['cities']) != set(baseline['cities']): raise ValueError('INVALID_PLACE_CITIES')
     # Retain older identities that already have detail/review links.
@@ -155,6 +157,7 @@ def main():
         for city_id, city in seed['cities'].items():
             known = {p['id'] for p in city['places']}
             city['places'] += [p for p in previous['cities'][city_id]['places'] if p['id'] not in known]
+    token = operations_token() if args.publish else None
     response = collect(seed)
     upstream = json.dumps(response, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
     upstream_sha = hashlib.sha256(upstream).hexdigest()

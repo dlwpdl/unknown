@@ -1,6 +1,6 @@
 {
   "collectedAt": "2026-10-14T03:11:22.904790+00:00",
-  "source": "OpenStreetMap via one-time Overpass API extraction",
+  "source": "OpenStreetMap; source-reviewed Gling photo-spot selections",
   "license": "ODbL-1.0",
   "attribution": "© OpenStreetMap contributors",
   "attributionUrl": "https://www.openstreetmap.org/copyright",
@@ -912,29 +912,103 @@
           "sourceUrl": "https://www.openstreetmap.org/node/364925801",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:way:198500757",
+          "cityId": "toronto",
+          "name": "Nathan Phillips Square",
+          "category": "places",
+          "latitude": 43.6527083,
+          "longitude": -79.3838423,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/198500757",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:14344414",
+          "cityId": "toronto",
+          "name": "High Park",
+          "category": "places",
+          "latitude": 43.6462813,
+          "longitude": -79.4637945,
+          "address": "1873",
+          "sourceUrl": "https://www.openstreetmap.org/way/14344414",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:189780702",
+          "cityId": "toronto",
+          "name": "Tommy Thompson Park",
+          "category": "places",
+          "latitude": 43.6324831,
+          "longitude": -79.3242612,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/189780702",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:33408232",
+          "cityId": "toronto",
+          "name": "Humber Bay Park East",
+          "category": "places",
+          "latitude": 43.6220493,
+          "longitude": -79.4759093,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/33408232",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:300884214",
+          "cityId": "toronto",
+          "name": "Gooderham Building",
+          "category": "places",
+          "latitude": 43.6483668,
+          "longitude": -79.3743953,
+          "address": "49 Wellington Street East",
+          "sourceUrl": "https://www.openstreetmap.org/way/300884214",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
         {
-          "placeId": "osm:node:249295975",
-          "reason": "공연이 있는 저녁, 동유럽 음식과 라이브 음악을 함께 즐기고 싶을 때 들러보세요.",
-          "sourceUrl": "https://www.dromtaberna.com/contact",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Enjoy Eastern European food and live music in one place. Plan an evening visit around a performance."
+          "placeId": "osm:way:198500757",
+          "reason": "토론토 시청과 광장을 배경으로 도시의 모습을 남기기 좋은 곳이에요.",
+          "reasonEn": "Frame Toronto City Hall and its square for a city portrait.",
+          "sourceUrl": "https://www.destinationtoronto.com/leisure-blog/post/top-picks-for-pics-15-places-for-the-best-photos-in-toronto/",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:276474692",
-          "reason": "에티오피아 원두를 다루는 로컬 커피숍이에요. 프런트 스트리트를 걷다가 커피 한 잔으로 쉬어가기 좋아요.",
-          "sourceUrl": "https://www.mofercoffee.com/pages/mofer-coffee-front",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "This local coffee shop focuses on Ethiopian beans. Stop for a coffee break while walking along Front Street."
+          "placeId": "osm:way:14344414",
+          "reason": "나무와 산책로, 계절마다 달라지는 공원 풍경을 사진으로 남기기 좋아요.",
+          "reasonEn": "Photograph the trees, walking paths and changing seasonal landscapes.",
+          "sourceUrl": "https://www.destinationtoronto.com/leisure-blog/post/top-picks-for-pics-15-places-for-the-best-photos-in-toronto/",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:277039070",
-          "reason": "옛 벽돌 공장과 계곡 풍경을 함께 둘러볼 수 있어요. 토요일에는 파머스 마켓도 열려 산책과 장보기를 묶기 좋아요.",
-          "sourceUrl": "https://www.evergreen.ca/evergreen-brick-works/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Explore the former brick factory and surrounding valley. The Saturday farmers market makes it easy to combine a walk with some shopping."
+          "placeId": "osm:way:189780702",
+          "reason": "호숫가 자연과 멀리 보이는 도심이 함께 보여요. 풍경 사진을 남기며 걷기 좋은 곳이에요.",
+          "reasonEn": "Combine lakeside nature and the distant city skyline in a landscape photograph.",
+          "sourceUrl": "https://www.destinationtoronto.com/leisure-blog/post/top-picks-for-pics-15-places-for-the-best-photos-in-toronto/",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:way:33408232",
+          "reason": "물가와 공원 풍경 너머로 도심이 보여요. 산책하며 스카이라인을 담기 좋아요.",
+          "reasonEn": "Frame the skyline beyond the waterfront and park landscape.",
+          "sourceUrl": "https://www.destinationtoronto.com/leisure-blog/post/top-picks-for-pics-15-places-for-the-best-photos-in-toronto/",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:way:300884214",
+          "reason": "뾰족한 모퉁이의 붉은 벽돌 건물이 거리와 어우러져요. 토론토의 옛 건축을 담아보세요.",
+          "reasonEn": "Capture the red-brick flatiron building framed by the surrounding streets.",
+          "sourceUrl": "https://www.destinationtoronto.com/leisure-blog/post/top-picks-for-pics-15-places-for-the-best-photos-in-toronto/",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         }
       ]
     },
@@ -1845,36 +1919,86 @@
           "sourceUrl": "https://www.openstreetmap.org/node/3672622874",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:way:23393985",
+          "cityId": "vancouver",
+          "name": "Queen Elizabeth Park",
+          "category": "places",
+          "latitude": 49.2410336,
+          "longitude": -123.1119593,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/23393985",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:58754861",
+          "cityId": "vancouver",
+          "name": "Granville Island",
+          "category": "places",
+          "latitude": 49.2709889,
+          "longitude": -123.135324,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/58754861",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:37111640",
+          "cityId": "vancouver",
+          "name": "Vancouver Public Library",
+          "category": "places",
+          "latitude": 49.279659,
+          "longitude": -123.115614,
+          "address": "350 West Georgia Street",
+          "sourceUrl": "https://www.openstreetmap.org/way/37111640",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
         {
-          "placeId": "osm:node:582801920",
-          "reason": "가족이 운영하는 베트남 식당. 메인 스트리트에서 여럿이 음식을 나눠 먹을 날 골라볼 만해요.",
-          "sourceUrl": "https://anhandchi.com/",
-          "verifiedAt": "2026-10-18T01:44:04.083617+00:00",
-          "reasonEn": "A family-run Vietnamese restaurant on Main Street. Consider it for a meal where everyone can share a few dishes."
+          "placeId": "osm:node:703754423",
+          "reason": "증기시계와 개스타운의 오래된 건물들을 함께 담을 수 있어요.",
+          "reasonEn": "Photograph the steam clock against Gastown’s historic buildings.",
+          "sourceUrl": "https://www.destinationvancouver.com/neighbourhoods/gastown",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:582801326",
-          "reason": "마운트 플레전트에서 작은 케이크나 크루아상을 커피와 함께 먹으며 쉬어가기 좋아요.",
-          "sourceUrl": "https://melopatisserie.com/",
-          "verifiedAt": "2026-10-18T01:44:04.083617+00:00",
-          "reasonEn": "Choose from small cakes, croissants and coffee. A Mount Pleasant stop for a dessert break."
+          "placeId": "osm:node:648735254",
+          "reason": "성화대 너머로 항구와 산이 보여요. 밴쿠버의 물가 풍경을 남기기 좋아요.",
+          "reasonEn": "Frame the Olympic cauldron with the harbour and mountains.",
+          "sourceUrl": "https://www.destinationvancouver.com/things-to-do/listings/2010-olympic-cauldron-jack-poole-plaza",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:644342018",
-          "reason": "제철 식재료로 만든 비건 코스 요리를 경험할 수 있어요. 채소 중심의 저녁 식사를 천천히 즐기고 싶은 날 골라보세요.",
-          "sourceUrl": "https://www.folkerestaurant.com/",
-          "verifiedAt": "2026-10-18T01:51:27.793938+00:00",
-          "reasonEn": "Book a weekend brunch or an evening meal. Check the opening days and hours before visiting."
+          "placeId": "osm:node:1856357128",
+          "reason": "바다 위로 솟은 시워시 록과 해안선을 함께 담는 전망 지점이에요.",
+          "reasonEn": "Photograph Siwash Rock rising from the water along Stanley Park’s coastline.",
+          "sourceUrl": "https://vancouver.ca/parks-recreation-culture/landmarks-in-stanley-park.aspx",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:889550078",
-          "reason": "유리 엘리베이터를 타고 올라가 도심과 항구를 한눈에 볼 수 있어요. 밴쿠버의 지형을 넓게 보고 싶은 날에 어울려요.",
-          "sourceUrl": "https://www.destinationvancouver.com/things-to-do/listings/vancouver-lookout",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Ride the glass elevator for a broad view of the city and harbour. A way to get a sense of Vancouver’s geography."
+          "placeId": "osm:way:23393985",
+          "reason": "정원과 밴쿠버 도심, 산을 배경으로 사진을 남길 수 있는 공원이에요.",
+          "reasonEn": "Photograph the gardens with Vancouver’s skyline and mountains beyond.",
+          "sourceUrl": "https://vancouver.ca/parks-recreation-culture/queen-elizabeth-park.aspx",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:way:58754861",
+          "reason": "물가와 마켓 주변의 색감 있는 풍경을 걸으며 담기 좋아요.",
+          "reasonEn": "Explore waterfront views and colourful scenes around the market.",
+          "sourceUrl": "https://www.destinationvancouver.com/neighbourhoods/granville-island",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:way:37111640",
+          "reason": "곡선형 외관과 기둥이 눈에 띄는 도서관이에요. 건축을 배경으로 사진을 남겨보세요.",
+          "reasonEn": "Use the library’s curved exterior and columns as an architectural backdrop.",
+          "sourceUrl": "https://www.vpl.ca/branches/central",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         }
       ]
     },
@@ -2785,29 +2909,103 @@
           "sourceUrl": "https://www.openstreetmap.org/node/1263357007",
           "website": "https://vavgallery.concordia.ca/",
           "openingHours": null
+        },
+        {
+          "id": "osm:way:182750657",
+          "cityId": "montreal",
+          "name": "Kondiaronk Belvedere",
+          "category": "places",
+          "latitude": 45.5035328,
+          "longitude": -73.58705,
+          "address": "Kondiaronk Belvedere",
+          "sourceUrl": "https://www.openstreetmap.org/way/182750657",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:87415559",
+          "cityId": "montreal",
+          "name": "Place d'Armes",
+          "category": "places",
+          "latitude": 45.5048116,
+          "longitude": -73.5572431,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/87415559",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:21258128",
+          "cityId": "montreal",
+          "name": "Palais des congrès de Montréal",
+          "category": "places",
+          "latitude": 45.5047932,
+          "longitude": -73.5601183,
+          "address": "1001 Place Jean-Paul-Riopelle",
+          "sourceUrl": "https://www.openstreetmap.org/way/21258128",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:26288030",
+          "cityId": "montreal",
+          "name": "Biosphere",
+          "category": "places",
+          "latitude": 45.5140865,
+          "longitude": -73.5314268,
+          "address": "Espace 67",
+          "sourceUrl": "https://www.openstreetmap.org/way/26288030",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:1097403710",
+          "cityId": "montreal",
+          "name": "La Grande Roue de Montréal",
+          "category": "places",
+          "latitude": 45.5084815,
+          "longitude": -73.5486577,
+          "address": "Rue du Quai-de-l'Horloge",
+          "sourceUrl": "https://www.openstreetmap.org/way/1097403710",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
         {
-          "placeId": "osm:node:343490371",
-          "reason": "몬트리올식 스모크드 미트 샌드위치를 먹은 뒤 생로랑 거리를 이어 걸어보세요.",
-          "sourceUrl": "https://schwartzsdeli.com/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Stop for a Montreal-style smoked meat sandwich, then continue your walk along Saint-Laurent Boulevard."
+          "placeId": "osm:way:182750657",
+          "reason": "마운트 로열에서 몬트리올 도심을 넓게 내려다보는 전망대예요.",
+          "reasonEn": "Capture a broad view of downtown Montréal from Mount Royal.",
+          "sourceUrl": "https://www.mtl.org/en/experience/most-instagrammable-spots-montreal-part-1",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:213716077",
-          "reason": "전시를 천천히 둘러보며 실내에서 시간을 보내기 좋아요. 방문 전에 보고 싶은 전시와 입장 조건을 골라보세요.",
-          "sourceUrl": "https://www.mbam.qc.ca/en/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Take your time with the exhibitions indoors. Check which shows you want to see and their admission conditions before visiting."
+          "placeId": "osm:way:87415559",
+          "reason": "노트르담 대성당과 오래된 건물들로 둘러싸인 광장이에요. 건축 사진을 남기기 좋아요.",
+          "reasonEn": "Photograph Notre-Dame Basilica and the historic buildings surrounding the square.",
+          "sourceUrl": "https://www.mtl.org/en/experience/most-instagrammable-spots-montreal-part-1",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:522863914",
-          "reason": "여러 로스터의 원두를 고르며 커피 취향을 찾아보고 싶다면 로리에 거리의 이 매장을 살펴보세요.",
-          "sourceUrl": "https://mechantspinsons.com/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Explore coffees from different roasters on Laurier Street. A stop for anyone who wants to discover their coffee preferences."
+          "placeId": "osm:way:21258128",
+          "reason": "알록달록한 유리 외벽이 빛과 색을 만들어내는 건축 사진 명소예요.",
+          "reasonEn": "Capture the colourful glass façade and its changing light.",
+          "sourceUrl": "https://www.mtl.org/en/experience/most-instagrammable-spots-montreal-part-1",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:way:26288030",
+          "reason": "둥근 돔의 기하학적 구조를 배경으로 색다른 사진을 남길 수 있어요.",
+          "reasonEn": "Use the geodesic dome’s geometric structure as a distinctive backdrop.",
+          "sourceUrl": "https://espacepourlavie.ca/en/about-biosphere",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:way:1097403710",
+          "reason": "올드 포트의 대관람차와 물가 풍경을 함께 담기 좋아요.",
+          "reasonEn": "Frame the Old Port’s observation wheel against the waterfront.",
+          "sourceUrl": "https://www.mtl.org/en/experience/most-instagrammable-spots-montreal-part-1",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         }
       ]
     },
@@ -3718,29 +3916,67 @@
           "sourceUrl": "https://www.openstreetmap.org/node/2284826753",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:way:1313657677",
+          "cityId": "calgary",
+          "name": "Peace Bridge",
+          "category": "places",
+          "latitude": 51.0539136,
+          "longitude": -114.0789104,
+          "address": "Bow River Path (North)",
+          "sourceUrl": "https://www.openstreetmap.org/way/1313657677",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:496824026",
+          "cityId": "calgary",
+          "name": "Calgary Central Library",
+          "category": "places",
+          "latitude": 51.0455213,
+          "longitude": -114.0550679,
+          "address": "800 3 Street SE",
+          "sourceUrl": "https://www.openstreetmap.org/way/496824026",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
         {
-          "placeId": "osm:node:623427724",
-          "reason": "동네 카페에서 여유롭게 아침이나 점심을 먹고 싶을 때 살펴보세요. 이 추천은 에든월드 드라이브 매장이에요.",
-          "sourceUrl": "https://friendscafeyyc.ca/locations/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Consider this neighbourhood cafe for a leisurely breakfast or lunch. This recommendation is for the Edenwold Drive location."
-        },
-        {
-          "placeId": "osm:node:294093060",
-          "reason": "바비큐를 먹으러 갈 날 골라볼 만해요. 매크마흔 지점의 위치와 운영 시간을 확인하고 찾아가세요.",
-          "sourceUrl": "https://bigtsbbq.com/locations/mcmahon/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "An option for a barbecue meal. Check the McMahon location and its opening hours before heading over."
+          "placeId": "osm:node:4365625291",
+          "reason": "캘거리 도심과 스탬피드 파크를 내려다보는 언덕이에요. 스카이라인 사진을 남기기 좋아요.",
+          "reasonEn": "Photograph Calgary’s skyline and Stampede Park from the hill.",
+          "sourceUrl": "https://www.visitcalgary.com/plan-and-stay/itineraries-and-travel-inspiration/best-places-to-take-photos-in-and-around-calgary",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
           "placeId": "osm:node:577280929",
-          "reason": "추운 날에도 나무와 연못을 보며 쉬어갈 수 있는 쇼핑센터 안 실내 정원이에요.",
+          "reason": "실내 정원의 초록 식물과 연못을 배경으로 사진을 남길 수 있어요.",
+          "reasonEn": "Photograph greenery and ponds inside the indoor gardens.",
           "sourceUrl": "https://www.calgary.ca/parks/devonian-gardens.html",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Take a break among trees and ponds inside a shopping centre. An indoor walk with some greenery on a cold day."
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:node:91101395",
+          "reason": "역사적인 건물과 거리 풍경이 있는 곳이에요. 옛 캘거리 분위기를 사진으로 남겨보세요.",
+          "reasonEn": "Photograph historic buildings and streetscapes with an old Calgary atmosphere.",
+          "sourceUrl": "https://heritagepark.ca/plan-your-visit/",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:way:1313657677",
+          "reason": "붉은 구조물과 보 강이 어우러지는 보행교예요. 다리의 선을 살려 사진을 찍기 좋아요.",
+          "reasonEn": "Frame the red pedestrian bridge and Bow River, using its structural lines.",
+          "sourceUrl": "https://www.visitcalgary.com/plan-and-stay/itineraries-and-travel-inspiration/best-places-to-take-photos-in-and-around-calgary",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:way:496824026",
+          "reason": "곡선과 나무 마감이 눈에 띄는 도서관이에요. 안팎의 건축을 담기 좋아요.",
+          "reasonEn": "Photograph the library’s curves and wood-lined architecture.",
+          "sourceUrl": "https://www.calgarylibrary.ca/read-learn-and-explore/central-library/",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         }
       ]
     },
@@ -4651,29 +4887,91 @@
           "sourceUrl": "https://www.openstreetmap.org/node/317335758",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:relation:17644228",
+          "cityId": "edmonton",
+          "name": "Muttart Conservatory",
+          "category": "places",
+          "latitude": 53.5352125,
+          "longitude": -113.4772858,
+          "address": "9626",
+          "sourceUrl": "https://www.openstreetmap.org/relation/17644228",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:relation:9911642",
+          "cityId": "edmonton",
+          "name": "Walterdale Bridge",
+          "category": "places",
+          "latitude": 53.5283861,
+          "longitude": -113.5017099,
+          "address": "Viewpoint",
+          "sourceUrl": "https://www.openstreetmap.org/relation/9911642",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:42782487",
+          "cityId": "edmonton",
+          "name": "Alberta Legislature Building",
+          "category": "places",
+          "latitude": 53.5335503,
+          "longitude": -113.5066314,
+          "address": "10800 97 Avenue NW",
+          "sourceUrl": "https://www.openstreetmap.org/way/42782487",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:582712469",
+          "cityId": "edmonton",
+          "name": "Talus Dome",
+          "category": "places",
+          "latitude": 53.5046356,
+          "longitude": -113.5658818,
+          "address": "Fort Edmonton Park Road NW",
+          "sourceUrl": "https://www.openstreetmap.org/way/582712469",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
         {
-          "placeId": "osm:node:944921445",
-          "reason": "캘거리 트레일에서 잠깐 쉬어가며 커피와 이곳의 크럼 쿠키를 함께 먹어보세요.",
-          "sourceUrl": "https://crumcoffeebar.com/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Take a break with coffee and a Crum cookie. A coffee stop along Calgary Trail."
-        },
-        {
-          "placeId": "osm:node:3868190323",
-          "reason": "앨버타 의회가 자리 잡은 곳의 이야기를 전시로 살펴볼 수 있어요. 실내에서 지역 역사를 알아보는 코스로 골라보세요.",
-          "sourceUrl": "https://www.assembly.ab.ca/visit/visitor-centre/borealis-gallery",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Explore exhibitions on the grounds of Alberta’s Legislature. An indoor stop for discovering local stories."
-        },
-        {
           "placeId": "osm:node:4263896991",
-          "reason": "거리에 걸린 옛 네온사인을 보며 에드먼턴의 상점 역사를 따라가 볼 수 있어요. 해가 진 뒤 짧게 걷는 코스로 어울려요.",
-          "sourceUrl": "https://www.travelalberta.com/listings/neon-sign-museum-11519",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "See old neon signs and trace the history of Edmonton’s shops. Consider a short walk after dark."
+          "reason": "건물 외벽의 네온사인들이 모인 야외 전시예요. 빛과 글자를 배경으로 사진을 남겨보세요.",
+          "reasonEn": "Photograph the outdoor collection of glowing neon signs.",
+          "sourceUrl": "https://dailyhive.com/edmonton/instagram-spots-edmonton",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:relation:17644228",
+          "reason": "유리 피라미드 외관과 실내 식물 풍경을 담을 수 있는 곳이에요.",
+          "reasonEn": "Photograph the glass pyramids and the plant landscapes inside.",
+          "sourceUrl": "https://dailyhive.com/edmonton/instagram-spots-edmonton",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:relation:9911642",
+          "reason": "하얀 아치와 강, 도심이 함께 보이는 다리예요. 강변에서 건축과 풍경을 담기 좋아요.",
+          "reasonEn": "Photograph the white bridge arches with the river and city skyline.",
+          "sourceUrl": "https://dailyhive.com/edmonton/instagram-spots-edmonton",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:way:42782487",
+          "reason": "입법부 건물과 정원이 어우러져요. 건축과 녹음을 함께 담기 좋은 곳이에요.",
+          "reasonEn": "Photograph the legislature building framed by its landscaped grounds.",
+          "sourceUrl": "https://www.assembly.ab.ca/visit/plan-your-visit",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:way:582712469",
+          "reason": "반짝이는 금속 구들이 하늘과 주변 풍경을 비추는 공공미술 작품이에요.",
+          "reasonEn": "Capture the reflective steel spheres mirroring the sky and surrounding landscape.",
+          "sourceUrl": "https://dailyhive.com/edmonton/instagram-spots-edmonton",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         }
       ]
     },
@@ -5584,29 +5882,91 @@
           "sourceUrl": "https://www.openstreetmap.org/node/704612372",
           "website": "https://www.wokbox.ca/",
           "openingHours": null
+        },
+        {
+          "id": "osm:way:306150488",
+          "cityId": "winnipeg",
+          "name": "Esplanade Riel",
+          "category": "places",
+          "latitude": 49.8907589,
+          "longitude": -97.1268474,
+          "address": "Provencher Boulevard",
+          "sourceUrl": "https://www.openstreetmap.org/way/306150488",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:node:639365682",
+          "cityId": "winnipeg",
+          "name": "Old Saint Boniface Cathedral",
+          "category": "places",
+          "latitude": 49.8893217,
+          "longitude": -97.12209,
+          "address": "180 De la Cathedrale Avenue",
+          "sourceUrl": "https://www.openstreetmap.org/node/639365682",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:131229325",
+          "cityId": "winnipeg",
+          "name": "Canadian Museum for Human Rights",
+          "category": "places",
+          "latitude": 49.8906466,
+          "longitude": -97.1310776,
+          "address": "85 Israel Asper Way",
+          "sourceUrl": "https://www.openstreetmap.org/way/131229325",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:1055784750",
+          "cityId": "winnipeg",
+          "name": "The Leaf",
+          "category": "places",
+          "latitude": 49.869714,
+          "longitude": -97.2242231,
+          "address": "145 The Leaf Way",
+          "sourceUrl": "https://www.openstreetmap.org/way/1055784750",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
         {
-          "placeId": "osm:node:638868123",
-          "reason": "더 포크스 마켓을 둘러보다가 푸어오버나 에스프레소로 쉬어가기 좋아요. 시장 구경 중 커피를 위한 한 정거장으로 골라보세요.",
-          "sourceUrl": "https://www.foolsandhorses.ca/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Take a pour-over or espresso break while exploring The Forks Market. A coffee stop between browsing the stalls."
+          "placeId": "osm:node:273549349",
+          "reason": "남아 있는 석조 문과 공원 풍경이 어우러져요. 역사적인 분위기의 사진을 남기기 좋아요.",
+          "reasonEn": "Photograph the surviving stone gateway within its park setting.",
+          "sourceUrl": "https://www.tourismwinnipeg.com/things-to-do/top-tens/landmarks",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:664944216",
-          "reason": "더 포크스 주변을 걷는 날, 존스턴 터미널 151호에서 커피를 마시며 쉬어갈 수 있어요.",
-          "sourceUrl": "https://www.harrisonscoffeeco.com/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Have a coffee inside Johnston Terminal. A place to take a break while walking around The Forks."
+          "placeId": "osm:way:306150488",
+          "reason": "대칭으로 뻗은 케이블과 강변 풍경을 담을 수 있는 보행교예요.",
+          "reasonEn": "Capture the pedestrian bridge’s symmetrical cables and riverside views.",
+          "sourceUrl": "https://www.tourismwinnipeg.com/things-to-do/top-tens/landmarks",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:638868132",
-          "reason": "더 포크스에서 브런치나 저녁 식사를 길게 잡고 싶을 때 살펴보세요. 호텔 안에 있어 식사 후 주변 산책을 이어가기 좋아요.",
-          "sourceUrl": "https://smithrestaurant.ca/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Consider a longer brunch or dinner at The Forks. The restaurant is inside a hotel, with nearby paths for a walk afterwards."
+          "placeId": "osm:node:639365682",
+          "reason": "둥근 창과 석조 아치가 남은 외관이 사진의 배경이 되는 성당이에요.",
+          "reasonEn": "Photograph the cathedral’s surviving stone arches and circular window.",
+          "sourceUrl": "https://www.tourismwinnipeg.com/things-to-do/top-tens/landmarks",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:way:131229325",
+          "reason": "유리와 곡선이 겹치는 외관이 눈에 띄어요. 위니펙의 건축 풍경을 담기 좋아요.",
+          "reasonEn": "Photograph the museum’s layered glass and curving architecture.",
+          "sourceUrl": "https://www.tourismwinnipeg.com/things-to-do/top-tens/landmarks",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:way:1055784750",
+          "reason": "실내 정원의 큰 식물과 폭포를 배경으로 초록빛 사진을 남길 수 있어요.",
+          "reasonEn": "Photograph large tropical plants and the indoor waterfall.",
+          "sourceUrl": "https://www.tourismwinnipeg.com/things-to-do/top-tens/romance",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         }
       ]
     },
@@ -6517,36 +6877,91 @@
           "sourceUrl": "https://www.openstreetmap.org/node/702996899",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:way:256402002",
+          "cityId": "saskatoon",
+          "name": "Broadway Bridge",
+          "category": "places",
+          "latitude": 52.1221424,
+          "longitude": -106.6597465,
+          "address": "Meewasin Trail",
+          "sourceUrl": "https://www.openstreetmap.org/way/256402002",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:630123772",
+          "cityId": "saskatoon",
+          "name": "Traffic Bridge",
+          "category": "places",
+          "latitude": 52.121632,
+          "longitude": -106.6632681,
+          "address": "Traffic Bridge",
+          "sourceUrl": "https://www.openstreetmap.org/way/630123772",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:533217382",
+          "cityId": "saskatoon",
+          "name": "Delta Hotels by Marriott Bessborough",
+          "category": "places",
+          "latitude": 52.1260918,
+          "longitude": -106.6589654,
+          "address": "601 Spadina Crescent East",
+          "sourceUrl": "https://www.openstreetmap.org/way/533217382",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:298718480",
+          "cityId": "saskatoon",
+          "name": "Remai Modern",
+          "category": "places",
+          "latitude": 52.1231877,
+          "longitude": -106.6677262,
+          "address": "102 Spadina Crescent",
+          "sourceUrl": "https://www.openstreetmap.org/way/298718480",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
         {
-          "placeId": "osm:node:2748206723",
-          "reason": "직접 굽는 디저트와 수프, 샌드위치를 커피와 함께 고를 수 있어요. 시티 파크 동네에서 가벼운 점심을 먹기 좋은 후보예요.",
-          "sourceUrl": "https://cityperks.ca/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Choose house-baked desserts, soup or a sandwich with your coffee. A City Park option for a light lunch."
+          "placeId": "osm:node:2828091482",
+          "reason": "서스캐처원 대학교의 오래된 석조 건물과 잔디 광장을 함께 담을 수 있어요.",
+          "reasonEn": "Photograph the university’s historic stone buildings around the green.",
+          "sourceUrl": "https://www.discoversaskatoon.com/blog/post/5-saskatoon-sweet-spots-for-photographers",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:9673905860",
-          "reason": "캐나다 여러 지역의 원두를 소개한 리버스데일 카페에서 에스프레소 한 잔으로 쉬어가 보세요.",
-          "sourceUrl": "https://prismcoffee.ca/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Take an espresso break while walking through Riversdale. The cafe showcases coffee from Canadian roasters."
+          "placeId": "osm:way:256402002",
+          "reason": "강 위의 다리와 도시 풍경을 한 장에 담기 좋아요.",
+          "reasonEn": "Photograph the bridge crossing the river with the city beyond.",
+          "sourceUrl": "https://www.saskatoon.ca/heritage-register/broadway-bridge",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:9696265514",
-          "reason": "공룡 골격 복제품과 암석·화석을 보며 지구의 역사를 살펴볼 수 있어요. 아이와 함께하는 실내 나들이로 골라보세요.",
-          "sourceUrl": "https://artsandscience.usask.ca/museumofnaturalsciences/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Explore Earth’s history through dinosaur skeleton replicas, rocks and fossils. An indoor outing to consider with children."
+          "placeId": "osm:way:630123772",
+          "reason": "철골 구조의 선과 그림자를 살려 사진을 찍기 좋은 다리예요.",
+          "reasonEn": "Use the steel bridge’s structural lines and shadows in photographs.",
+          "sourceUrl": "https://www.discoversaskatoon.com/blog/best-spots-for-photographing-saskatoon",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:9697113058",
-          "reason": "고대 조각 복제품과 실제 유리·도자기·동전을 함께 볼 수 있어요. 대학 캠퍼스에서 미술과 역사를 살펴보는 코스로 어울려요.",
-          "sourceUrl": "https://artsandscience.usask.ca/antiquities/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "See replicas of ancient sculptures alongside original glass, pottery and coins. Combine art and history with a visit to the university campus."
+          "placeId": "osm:way:533217382",
+          "reason": "성처럼 보이는 호텔 외관을 강변 풍경과 함께 담을 수 있어요.",
+          "reasonEn": "Photograph the château-style hotel with the riverside landscape.",
+          "sourceUrl": "https://www.discoversaskatoon.com/blog/best-spots-for-photographing-saskatoon",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:way:298718480",
+          "reason": "강변에 자리한 미술관의 직선적인 건축과 강 풍경을 함께 담기 좋아요.",
+          "reasonEn": "Frame the riverside gallery’s angular architecture with the river.",
+          "sourceUrl": "https://www.discoversaskatoon.com/spotlight/remai-modern",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         }
       ]
     },
@@ -7457,29 +7872,67 @@
           "sourceUrl": "https://www.openstreetmap.org/node/600101630",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:node:7127264485",
+          "cityId": "ottawa",
+          "name": "Ottawa Locks",
+          "category": "places",
+          "latitude": 45.4248334,
+          "longitude": -75.6952051,
+          "address": "Wellington Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/7127264485",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:639268732",
+          "cityId": "ottawa",
+          "name": "Major's Hill Park",
+          "category": "places",
+          "latitude": 45.427215,
+          "longitude": -75.6970898,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/639268732",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
         {
-          "placeId": "osm:node:438892467",
-          "reason": "커피 대신 차가 생각나는 날, 바이워드 마켓에서 잎차를 고르며 쉬어갈 곳이에요.",
-          "sourceUrl": "https://www.teastore.ca/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Browse loose-leaf teas at ByWard Market and take a break. An option for a day when you would rather have tea than coffee."
+          "placeId": "osm:node:292324492",
+          "reason": "캐나다 의회 건물과 강변의 풍경을 남길 수 있는 도시의 대표 명소예요.",
+          "reasonEn": "Photograph Canada’s Parliament buildings and the riverside setting.",
+          "sourceUrl": "https://ottawatourism.ca/en/ottawa-insider/best-places-to-photograph-this-summer-in-ottawa",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:765366980",
-          "reason": "바이워드 마켓 골목에서 커피와 직접 굽는 디저트를 고를 수 있어요. 시장 구경 중 잠깐 쉬어갈 곳을 찾을 때 살펴보세요.",
-          "sourceUrl": "https://www.planetcoffeeottawa.com/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Choose coffee and house-baked desserts in a ByWard Market lane. A stop for a break while exploring the market."
+          "placeId": "osm:node:955338405",
+          "reason": "시장 주변의 간판과 건물, 거리의 색감을 사진으로 담기 좋아요.",
+          "reasonEn": "Photograph the market district’s signs, buildings and colourful street scenes.",
+          "sourceUrl": "https://ottawatourism.ca/en/ottawa-insider/best-places-to-photograph-this-summer-in-ottawa",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
           "placeId": "osm:node:1735093018",
-          "reason": "물가 풍경이 보고 싶은 날, 리도강이 오타와강으로 떨어지는 물줄기를 보며 산책해 보세요.",
-          "sourceUrl": "https://ncc-ccn.gc.ca/places/rideau-falls-park-and-green-island",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Walk beside the water where the Rideau River drops into the Ottawa River. Consider a short stop for the waterside scenery."
+          "reason": "리도 강이 떨어지는 물줄기와 오타와 강을 함께 볼 수 있는 곳이에요.",
+          "reasonEn": "Photograph the Rideau River’s waterfalls where they meet the Ottawa River.",
+          "sourceUrl": "https://ottawatourism.ca/en/ottawa-insider/where-to-watch-sunsets-in-ottawa",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:node:7127264485",
+          "reason": "리도 운하의 수문이 줄지어 이어져요. 운하와 의회 주변 풍경을 함께 담아보세요.",
+          "reasonEn": "Photograph the sequence of canal locks and the surrounding Parliament-area scenery.",
+          "sourceUrl": "https://ottawatourism.ca/en/ottawa-insider/best-places-to-photograph-this-summer-in-ottawa",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:way:639268732",
+          "reason": "공원에서 의회와 강이 보이는 풍경을 남길 수 있어요.",
+          "reasonEn": "Photograph Parliament and the river from the park.",
+          "sourceUrl": "https://ottawatourism.ca/en/ottawa-insider/best-places-to-photograph-this-summer-in-ottawa",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         }
       ]
     },
@@ -8390,29 +8843,72 @@
           "sourceUrl": "https://www.openstreetmap.org/node/8589940583",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:way:71153155",
+          "cityId": "regina",
+          "name": "Saskatchewan Legislative Building",
+          "category": "places",
+          "latitude": 50.4324709,
+          "longitude": -104.6151555,
+          "address": "2405 Legislative Drive",
+          "sourceUrl": "https://www.openstreetmap.org/way/71153155",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:285051056",
+          "cityId": "regina",
+          "name": "Government House",
+          "category": "places",
+          "latitude": 50.4541213,
+          "longitude": -104.6476725,
+          "address": "Century Crescent",
+          "sourceUrl": "https://www.openstreetmap.org/way/285051056",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:236508925",
+          "cityId": "regina",
+          "name": "Victoria Park",
+          "category": "places",
+          "latitude": 50.4480365,
+          "longitude": -104.6122695,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/236508925",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
         {
-          "placeId": "osm:node:6040504170",
-          "reason": "고양이와 시간을 보내고 커피도 마실 수 있는 카페예요. 방문 예약과 고양이 공간 이용 규칙을 먼저 확인해 주세요.",
-          "sourceUrl": "https://excalipurr.ca/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Spend time with cats and have a coffee. Check reservations and the cat lounge rules before visiting."
+          "placeId": "osm:way:71153155",
+          "reason": "돔이 있는 입법부 건물과 정원, 호수 주변의 풍경을 함께 담기 좋아요.",
+          "reasonEn": "Photograph the domed legislature, gardens and nearby lakeside views.",
+          "sourceUrl": "https://www.tourismsaskatchewan.com/listings/21/saskatchewan-legislative-building-and-grounds",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:439897601",
-          "reason": "옛 아시니보이아 클럽 건물에서 식사와 와인을 즐기는 다운타운 저녁 약속을 잡아보세요.",
-          "sourceUrl": "https://www.tourismsaskatchewan.com/listings/2123/crave-kitchen--wine-bar",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Enjoy a meal and wine in the former Assiniboia Club building. Consider it for a dinner in downtown Regina."
+          "placeId": "osm:node:2745408836",
+          "reason": "와스카나 호수의 물가와 섬을 바라보며 풍경 사진을 남길 수 있어요.",
+          "reasonEn": "Photograph Wascana Lake and its islands from the overlook.",
+          "sourceUrl": "https://www.tourismsaskatchewan.com/listings/2986/wascana-centre",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:5114212127",
-          "reason": "서스캐처원 선수들의 기록과 스포츠 유물을 둘러볼 수 있어요. 지역 이야기가 담긴 실내 나들이를 찾을 때 골라보세요.",
-          "sourceUrl": "https://sasksportshalloffame.com/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Explore Saskatchewan athletes’ records and sporting memorabilia. An indoor outing with local stories."
+          "placeId": "osm:way:285051056",
+          "reason": "역사적인 건물 외관과 에드워드 양식 정원이 어우러지는 곳이에요.",
+          "reasonEn": "Photograph the historic building and its Edwardian gardens.",
+          "sourceUrl": "https://www.tourismsaskatchewan.com/listings/861/government-house",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:way:236508925",
+          "reason": "도심의 공원과 주변 건물들을 배경으로 사진을 남길 수 있어요.",
+          "reasonEn": "Photograph the downtown park and its surrounding buildings.",
+          "sourceUrl": "https://tourismregina.com/98-things-to-do-in-regina/",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         }
       ]
     },
@@ -9155,29 +9651,79 @@
           "sourceUrl": "https://www.openstreetmap.org/node/5740000560",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:way:759602407",
+          "cityId": "saint-john",
+          "name": "Kings Square",
+          "category": "places",
+          "latitude": 45.2736432,
+          "longitude": -66.0580513,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/759602407",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:827160392",
+          "cityId": "saint-john",
+          "name": "Prince William Street",
+          "category": "places",
+          "latitude": 45.2713337,
+          "longitude": -66.0618717,
+          "address": "Prince William Street",
+          "sourceUrl": "https://www.openstreetmap.org/way/827160392",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:relation:19244398",
+          "cityId": "saint-john",
+          "name": "Irving Nature Park",
+          "category": "places",
+          "latitude": 45.2191101,
+          "longitude": -66.1309437,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/relation/19244398",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
         {
-          "placeId": "osm:node:1869399088",
-          "reason": "록우드 공원을 걷는 날, 릴리 호수를 바라보며 식사하는 코스를 함께 계획해 보세요.",
-          "sourceUrl": "https://www.lilylake.ca/lilys",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Have a meal overlooking Lily Lake. Consider combining it with a walk through Rockwood Park."
+          "placeId": "osm:node:1201111529",
+          "reason": "강물과 협곡, 다리가 어우러지는 전망 지점이에요. 조수에 따라 달라지는 풍경을 담아보세요.",
+          "reasonEn": "Photograph the river, gorge and bridges as the tidal scenery changes.",
+          "sourceUrl": "https://www.discoversaintjohn.com/get-sense-saint-john-region",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:1867369780",
-          "reason": "워터프런트에서 태국식 식사를 하고 싶을 때 골라보세요. 매운 정도와 고기·두부 선택을 조절할 수 있다고 안내돼 있어요.",
-          "sourceUrl": "https://www.discoversaintjohn.com/place/lemongrass-thai-fare",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "An option for a Thai meal by the waterfront. Its information lists adjustable spice levels and choices of meat or tofu."
+          "placeId": "osm:node:1748084731",
+          "reason": "세 개의 등이 달린 항구의 철제 램프예요. 물가와 함께 사진으로 남겨보세요.",
+          "reasonEn": "Photograph the historic three-lamp post beside Saint John Harbour.",
+          "sourceUrl": "https://discoversaintjohn.com/place/three-sisters-lamp",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:1961419476",
-          "reason": "업타운을 걷다가 로컬 로스터의 커피로 쉬어가기 좋아요. 프린스 윌리엄 스트리트 매장을 가리키는 추천이에요.",
-          "sourceUrl": "https://www.discoversaintjohn.com/place/java-moose-coffee-uptown",
-          "verifiedAt": "2026-10-18T01:51:27.793938+00:00",
-          "reasonEn": "See river currents and whirlpools change with the tides. Check tide times before visiting the Reversing Falls lookout."
+          "placeId": "osm:way:759602407",
+          "reason": "역사적인 도심 광장의 나무와 구조물들을 배경으로 사진을 남기기 좋아요.",
+          "reasonEn": "Photograph the trees and structures in the historic uptown square.",
+          "sourceUrl": "https://www.discoversaintjohn.com/top-spots-winter-shots",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:way:827160392",
+          "reason": "오래된 건물들이 이어지는 거리를 걸으며 건축 사진을 남겨보세요.",
+          "reasonEn": "Photograph the historic architecture lining this uptown street.",
+          "sourceUrl": "https://www.discoversaintjohn.com/top-spots-winter-shots",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:relation:19244398",
+          "reason": "해안과 숲 풍경을 걸으며 사진으로 남길 수 있는 자연공원이에요.",
+          "reasonEn": "Photograph coastal scenery and forest landscapes along the park’s trails.",
+          "sourceUrl": "https://www.discoversaintjohn.com/top-spots-winter-shots",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         }
       ]
     },
@@ -10088,40 +10634,61 @@
           "sourceUrl": "https://www.openstreetmap.org/node/37132707",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:way:915518387",
+          "cityId": "halifax",
+          "name": "The Wave",
+          "category": "places",
+          "latitude": 44.64717,
+          "longitude": -63.5700361,
+          "address": "Sackville Wharf",
+          "sourceUrl": "https://www.openstreetmap.org/way/915518387",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
         {
-          "placeId": "osm:node:33117712",
-          "reason": "퀸풀 로드에서 커피와 브런치를 함께 고를 수 있어요. 동네를 걷다가 식사 겸 쉬어갈 곳을 찾을 때 살펴보세요.",
-          "sourceUrl": "https://discoverhalifaxns.com/listings/dilly-dally-coffee-cafe/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Choose coffee and brunch on Quinpool Road. A neighbourhood stop for a meal and a break during a walk."
+          "placeId": "osm:node:26286235",
+          "reason": "언덕 위 요새와 핼리팩스 도심 풍경을 함께 담을 수 있어요.",
+          "reasonEn": "Photograph the hilltop fort and views across downtown Halifax.",
+          "sourceUrl": "https://discoverhalifaxns.com/things-to-do/outdoor-activities/best-views-in-halifax/",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:886747513",
-          "reason": "중고책을 고르고 커피나 잎차를 마시며 혼자 느긋하게 쉬어가기 좋은 곳이에요.",
-          "sourceUrl": "https://tridenthalifax.ca/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Browse used books with coffee or loose-leaf tea. Consider it for a day when you want to read and take a break on your own."
-        },
-        {
-          "placeId": "osm:node:4839118321",
-          "reason": "직접 만져보고 실험하는 과학 전시를 즐길 수 있어요. 아이와 함께 실내에서 시간을 보내고 싶은 날 골라보세요.",
-          "sourceUrl": "https://thediscoverycentre.ca/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Explore hands-on science exhibits. An indoor outing to consider with children."
+          "placeId": "osm:node:962125376",
+          "reason": "언덕 위 시계탑과 도심 건물들이 어우러지는 핼리팩스의 상징적인 풍경이에요.",
+          "reasonEn": "Photograph the hillside town clock against downtown Halifax.",
+          "sourceUrl": "https://parks.canada.ca/lhn-nhs/ns/halifax/culture/architecture/batiments-buildings",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
           "placeId": "osm:node:4422934789",
-          "reason": "해 지기 전 여유가 있다면 정원 길을 천천히 걸으며 도심에서 잠깐 쉬어가 보세요.",
-          "sourceUrl": "https://www.halifaxpublicgardens.ca/",
-          "verifiedAt": "2026-10-18T01:49:52.562535+00:00",
-          "reasonEn": "Stroll along the garden paths for a break from downtown. Visit when you have time to spare before sunset."
+          "reason": "정원의 꽃과 산책로, 정자가 사진의 배경이 되는 도심 공원이에요.",
+          "reasonEn": "Photograph the garden’s flowers, paths and bandstand.",
+          "sourceUrl": "https://www.halifaxpublicgardens.ca/about",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:node:850115195",
+          "reason": "석조 전망탑의 외관과 노스웨스트 암의 물가 풍경을 담을 수 있어요.",
+          "reasonEn": "Photograph the stone tower and views over the Northwest Arm.",
+          "sourceUrl": "https://discoverhalifaxns.com/things-to-do/the-second-timers-guide-to-halifax/",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:way:915518387",
+          "reason": "파란 물결 모양의 공공미술이 있는 항구 산책로예요. 물가에서 색감 있는 사진을 남겨보세요.",
+          "reasonEn": "Photograph the blue wave sculpture along the harbour boardwalk.",
+          "sourceUrl": "https://discoverhalifaxns.com/itineraries/double-waterfront-weekend/",
+          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         }
       ]
     }
   },
   "pendingCities": [],
-  "complete": true
+  "complete": true,
+  "recommendationTheme": "photo-spots",
+  "photoSelectionsReviewedAt": "2026-10-18T08:32:43.663074+00:00"
 }

@@ -17,7 +17,7 @@ export type CityPlace = {
 export type PlaceRecommendation = { placeId: string; reason: string; reasonEn?: string; sourceUrl: string; verifiedAt: string };
 
 type PlaceCatalog = {
-  collectedAt: string; cities: Record<string, { coverage: string; places: CityPlace[]; recommendations?: PlaceRecommendation[] }>;
+  collectedAt: string; recommendationTheme?: 'photo-spots'; cities: Record<string, { coverage: string; places: CityPlace[]; recommendations?: PlaceRecommendation[] }>;
 };
 let catalog = snapshot as PlaceCatalog;
 const photoCatalog = photoSnapshot as { cities: Record<string, PlacePhoto[]> };
@@ -37,6 +37,7 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
   const invalid = () => { throw new Error('INVALID_PLACE_CATALOG'); };
   if (!next || !text(next.collectedAt, 80) || !Number.isFinite(Date.parse(next.collectedAt)) || Date.parse(next.collectedAt) > now + 300_000
     || !next.cities || Object.keys(next.cities).length !== CITIES.length || Object.keys(next.cities).some(id => !CITIES.some(c => c.id === id))) invalid();
+  if (next.recommendationTheme !== 'photo-spots') return false;
   for (const city of CITIES) {
     const data = next.cities[city.id];
     if (!data || !['municipal-boundary', 'city-center'].includes(data.coverage) || !Array.isArray(data.places) || !data.places.length || data.places.length > 200) invalid();
@@ -72,16 +73,17 @@ export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): 
   // shortcut: verified photos cover a subset; add licensed same-place images as they are checked.
   const photos = photoCatalog.cities[cityId] ?? [];
   const photoOrder = new Map(photos.map((photo, index) => [photo.placeId, index]));
+  const reviewed = new Map((catalog.recommendationTheme === 'photo-spots' ? city.recommendations ?? [] : []).map(pick => [pick.placeId, pick]));
   const currentIds = new Set(city.places.map(place => place.id));
   const archived = (snapshot as PlaceCatalog).cities[cityId]?.places.filter(place => !currentIds.has(place.id)) ?? [];
   return [...city.places, ...archived].filter(place => category === 'all' || place.category === category)
-    .map(place => ({ ...place, photo: photos[photoOrder.get(place.id) ?? -1] ?? null }))
+    .map(place => ({ ...place, photo: photos[photoOrder.get(place.id) ?? -1] ?? null, recommendation: reviewed.get(place.id) }))
     .sort((a, b) => (photoOrder.get(a.id) ?? photos.length) - (photoOrder.get(b.id) ?? photos.length));
 }
 
 export function getCityRecommendations(cityId: string, category: PlaceCategory = 'all'): CityPlace[] {
   const places = getCityPlaces(cityId, category), picks = catalog.cities[cityId].recommendations;
-  if (!picks) return places;
+  if (catalog.recommendationTheme !== 'photo-spots' || !picks) return [];
   const byId = new Map(places.map(place => [place.id, place]));
   return picks.flatMap(pick => {
     const place = byId.get(pick.placeId);

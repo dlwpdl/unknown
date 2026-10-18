@@ -12,6 +12,17 @@ const place = catalog.cities.toronto.places[0];
 const mapSource = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
 const compile = text => ts.transpileModule(text, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
 
+test('a source-reviewed photo place carries its selection reason and badge to the map', () => {
+  const recommendation = { placeId: place.id, reason: 'A source-reviewed photo viewpoint.', reasonEn: 'A source-reviewed photo viewpoint.', sourceUrl: 'https://example.org/photo-guide', verifiedAt: '2026-10-18T00:00:00Z' };
+  const item = discovery.discoveryPlace({ ...place, recommendation });
+  assert.equal(item.top25?.id, place.id);
+  assert.equal(item.top25?.reason, recommendation.reason);
+  assert.equal(item.top25?.sourceUrl, recommendation.sourceUrl);
+  assert.equal(item.top25?.reasonEn, recommendation.reasonEn);
+  assert.equal(discovery.discoveryMatches(item, 'top25', ''), true);
+  assert.equal(discovery.discoveryPlace({ ...place, recommendation: { ...recommendation, placeId: 'other-place' } }).top25, undefined);
+});
+
 test('existing catalog places retain their public coordinates, category and exact detail identity in discovery', () => {
   assert.equal(typeof discovery.discoveryPlace, 'function');
   for (const { places } of Object.values(catalog.cities)) for (const stored of places) {
