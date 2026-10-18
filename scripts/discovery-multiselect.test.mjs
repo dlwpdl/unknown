@@ -3,7 +3,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
-import { discoveryMatches, mergeCityTop25, discoveryEvent } from '../src/lib/discovery.ts';
+import { discoveryMatches, mergeCityTop25, discoveryEvent, discoveryEventOnDays } from '../src/lib/discovery.ts';
 
 // Fixture-only contract for the owner's union requirement; no production selections.
 const cityId = 'vancouver';
@@ -83,7 +83,7 @@ test('real map chips toggle independently, expose checked state and reset withou
   vm.runInNewContext(ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, context);
   const buttons = () => [exports.render().props.children].flat(Infinity);
   const button = id => buttons().find(node => node.key === id);
-  assert.deepEqual(buttons().map(node => node.key), ['all', 'top25', 'dining', 'cafe', 'festival', 'nightlife', 'places']);
+  assert.deepEqual(buttons().map(node => node.key), ['all', 'top25', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used']);
   button('top25').props.onPress();
   button('cafe').props.onPress();
   assert.deepEqual(selected, ['top25', 'cafe']);
@@ -132,7 +132,7 @@ test('the real result pipeline applies city, hidden author, listing expiry and e
   const exports = {}, context = {
     exports, catalogItems: [], current: { items: [cafe('ordinary'), blocked, expired, { ...cafe('foreign'), cityId: 'toronto' }, event('2026-10-17'), event('2026-10-18')] },
     city: { id: cityId }, now: Date.parse('2026-10-15T12:00:00Z'), selectedFilters: ['top25', 'cafe', 'used', 'festival'], query: '', days: ['2026-10-17'],
-    hidden: (_type, _id, author) => author === 'blocked-author', discoveryEvent, discoveryMatches,
+    hidden: (_type, _id, author) => author === 'blocked-author', discoveryEvent, discoveryEventOnDays, discoveryMatches,
     mergeCityTop25: (items, city) => mergeCityTop25(items, city, picks.slice(0, 1)),
   };
   vm.runInNewContext(ts.transpileModule(`exports.run = () => { ${source.slice(start, end)} return items; };`, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, context);

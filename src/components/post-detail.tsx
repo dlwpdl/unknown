@@ -48,6 +48,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadPublicPost } from '@/lib/feed-data';
 import { MAX_POST_IMAGES } from '@/lib/image-upload';
 import { CITIES } from '@/lib/mock';
+import { postPublicAddress } from '@/lib/post-maps';
 import { splitPostPhotoCredits } from '@/lib/post-photo-credits';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
 import { splitEventMeetupBody, visibleMeetupBody } from '@/lib/meetup-ai';
@@ -700,7 +701,13 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               hideRoom={!!post.room}
               flat={!!post.room}
               post={{ ...post, body: photoCredits.body, views: viewCount }}
-              afterBody={<><MerchantSourceLink postId={post.id} /><MerchantReviews postId={post.id} reviewKind={post.tag.slug === 'jobs' ? 'employment' : 'usage'} onOpenProfile={(id) => { onClose(); router.push({ pathname: '/company/[id]', params: { id, review: post.tag.slug === 'jobs' ? 'employment' : 'usage' } }); }} />{post.room && <TicketmasterSourceLink body={post.body} cityId={post.cityId} onNavigate={onClose} />}</>}
+              afterBody={<>
+                {post.kind === 'listing' && post.tag.slug === 'housing' && <View style={{ gap: Spacing.one }}>
+                  <ThemedText type="smallBold" accessibilityRole="header">{tr("주소·위치")}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary" selectable>{postPublicAddress(post.body) ?? tr("상세주소 미등록")}</ThemedText>
+                </View>}
+                <MerchantSourceLink postId={post.id} /><MerchantReviews postId={post.id} reviewKind={post.tag.slug === 'jobs' ? 'employment' : 'usage'} onOpenProfile={(id) => { onClose(); router.push({ pathname: '/company/[id]', params: { id, review: post.tag.slug === 'jobs' ? 'employment' : 'usage' } }); }} />{post.room && <TicketmasterSourceLink body={post.body} cityId={post.cityId} onNavigate={onClose} />}
+              </>}
               onJoin={onJoin ?? (() => isAuthed ? router.push({ pathname: '/meetup-join', params: { postId: post.id } }) : promptLogin('이 모임에 참여하려면 가입하거나 로그인해 주세요.'))}
               onAuthor={() => {
                 if (post.business) { onClose(); router.push({ pathname: '/company/[id]', params: { id: post.business.id } }); return; }
