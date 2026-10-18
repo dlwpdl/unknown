@@ -1,6 +1,6 @@
 # Unobtrusive advertising — 2026-10-17
 
-The owner approved the [placement prototype](/Users/ash/Desktop/Git/unknown/output/design/gling-ad-placement-2026-10-17/index.html), its `references.json` and `verification.json`. Implementation lives in `dlwpdl/gling-ad-placement-20261017`, based on canonical commit `5b7d86d361cb865ca3c716441764fe4314332f4d`. The private admin checkout was not edited.
+The owner approved the [placement prototype](/Users/ash/Desktop/Git/unknown/output/design/gling-ad-placement-2026-10-17/index.html), its `references.json` and `verification.json`. Implementation lives in `dlwpdl/gling-ad-placement-20261017`, based on canonical commit `5b7d86d361cb865ca3c716441764fe4314332f4d`. The worker left the private admin checkout unchanged; the supervisor handled integration afterward.
 
 | Surface | Implemented behavior |
 | --- | --- |
@@ -10,7 +10,7 @@ The owner approved the [placement prototype](/Users/ash/Desktop/Git/unknown/outp
 | Map | One separate card after the fourth real list result when at least five exist. Canvas, pins, selected detail overlay and TOP25 filters stay clear. No synthetic discovery item is created. |
 | Chat | Existing list-header navigation remains. The conversation header opens the existing public map in a separate full-screen modal with only an `onClose` callback; the current room stays mounted. |
 
-The shared boundary produces 0, 1, 1 and 2 slots for 4, 5, 8 and 9 organic items. The current owner-approved native main-feed cadence remains after post 4 and every 4 thereafter, including its existing end-of-list behavior. The supervisor corrected the older 6/7 cadence in the original task packet.
+The shared boundary produces 0, 1, 1 and 2 slots for 4, 5, 8 and 9 organic items. The current owner-approved native main-feed cadence remains after post 4 and every 4 thereafter, including its existing end-of-list behavior.
 
 Embedded chat discovery uses a clearly marked external public-information action. It validates HTTPS sources, Ticketmaster hosts and public post UUIDs, then uses the installed Expo WebBrowser. Standalone map cards keep their normal internal detail navigation. No chat, thread, message, private location or authentication parameters are forwarded.
 
@@ -36,7 +36,7 @@ After valid configuration, consent, public-route eligibility, foreground visibil
 
 Unconfigured or denied components render nothing. Pending inventory reserves space without a fake creative; no-fill hides the ad and its label while retaining blank space to avoid moving already-read content. Google attribution and AdChoices remain under SDK control. `public/ads.txt` repeats the verified owned seller line from `app-ads.txt`; approval and consent remain separate readiness dependencies.
 
-## Verification and handoff
+## Worker verification and handoff
 
 The installed dependency tree was reused through a private-worktree symlink after exact package/lock compatibility checks. No dependency, service, automation, ad-task SQL, release/version floor, upload, review, deployment, PR, merge or push was added. Native ATT, UMP, non-personalized requests, PG rating and development test IDs retain executable coverage.
 
@@ -58,3 +58,11 @@ Local review artifacts: `dist/index.html`, `.merchant-dist`, and `.expo/advertis
 The supervisor owns final browser/native visual acceptance, native modal/browser presentation checks, account readiness and any authorized rollout. Worker GUI/simulator/account operations were excluded. Image generation/model research is not applicable to this implementation.
 
 Sources checked before implementation: [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/), [platform extensions](https://docs.expo.dev/router/advanced/platform-specific-modules/), [WebBrowser 57](https://docs.expo.dev/versions/v57.0.0/sdk/webbrowser/), [React effect cleanup](https://react.dev/reference/react/useEffect), Google's [responsive tag contract](https://support.google.com/adsense/answer/9183460?hl=en), [no-fill status](https://support.google.com/adsense/answer/10762946?hl=en), [display units/site readiness](https://support.google.com/adsense/answer/9274025?hl=en), [certified CMP requirements](https://support.google.com/adsense/answer/13554116?hl=en) and [TCF integration](https://support.google.com/adsense/answer/9804260?hl=en). The approved reference pack, current BrandKit tokens and the actual [Reddit promoted-card reference](https://mobbin.com/screens/62f0b383-94ab-452a-ba41-a68197287485) informed reuse of existing styles; worker Kroma access lacked its existing key and Pinterest returned no result, so no replacement direction or service was introduced.
+
+## Supervisor integration and browser verification
+
+The supervisor preserved canonical connected-profile changes through `f1fb301` and verified the combined source: 1,425 tests passed with zero failures or skips, with TypeScript, lint and public/merchant export checks also passing. `export:web` now clears the bundler cache because an actual enabled-preview build otherwise reused the previous disabled AdSense configuration.
+
+The actual public reader passed eight browser layouts across 320, 390, 768 and 1440 px, with ads disabled and with a mocked Google response. The checks cover four-post spacing, jumping directly to a later slot, pagination failure/retry, original post and slot-node preservation, script singleton behavior and consent withdrawal. Every transport request was intercepted; no live ad request or ad click occurred. [Verification and captured screens](/Users/ash/Desktop/Git/unknown/output/reviews/gling-ad-placement-implementation-2026-10-17/verification.json) distinguish mocked browser results from native runtime QA.
+
+The exact new native candidate has no verified installation receipt on the existing iPhone simulator. The existing native owner retains installation/QA responsibility; app data, release holds, server version floors and account settings were preserved. AdSense approval, real unit/CMP setup, deployment and measured revenue improvement remain pending.
