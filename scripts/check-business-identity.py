@@ -18,8 +18,9 @@ for name in ['20261018031000_admin_user_business_connections.sql',
              '20261018033000_business_display_language.sql']:
     identity_source += (root / 'supabase/migrations' / name).read_text() + '\n'
 fixture = (root / 'supabase/tests/business_post_identity.test.sql').read_text()
-privacy = sys.argv[1:] == ['--privacy']
-assert not sys.argv[1:] or privacy, 'usage: check-business-identity.py [--privacy]'
+profiles = sys.argv[1:] == ['--profiles']
+privacy = sys.argv[1:] == ['--privacy'] or profiles
+assert not sys.argv[1:] or privacy, 'usage: check-business-identity.py [--privacy|--profiles]'
 if privacy:
     # Load the exact dependency DDL/functions needed by public activity on older local snapshots.
     if not sql('postgres', "select to_regprocedure('public.get_manner_summary(uuid)');").stdout.strip():
@@ -49,9 +50,10 @@ if privacy:
     source += identity_source
     source += (root / 'supabase/migrations/20261018035000_business_public_privacy.sql').read_text() + '\n'
     source += (root / 'supabase/migrations/20261018036000_business_publication_readiness.sql').read_text() + '\n'
+    source += (root / 'supabase/migrations/20261018037000_business_profile_without_posts.sql').read_text() + '\n'
     marker = "select set_config('request.jwt.claims','{\"role\":\"anon\"}'"
     seed = fixture.split(marker, 1)[0].removeprefix('begin;').replace('select no_plan();', '')
-    fixture = (root / 'supabase/tests/business_public_privacy.test.sql').read_text().replace(
+    fixture = (root / 'supabase/tests' / ('business_profile_registration.test.sql' if profiles else 'business_public_privacy.test.sql')).read_text().replace(
         '-- The isolated checker injects business_post_identity.test.sql\'s seed prefix here.', seed)
 else:
     source += identity_source
