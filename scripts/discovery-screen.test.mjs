@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
-import { discoveryMatches, mergeCityTop25 } from '../src/lib/discovery.ts';
+import { discoveryEventOnDays, discoveryMatches, mergeCityTop25 } from '../src/lib/discovery.ts';
 import { isFreshLocation } from '../src/lib/location.ts';
 
 const source = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
@@ -87,7 +87,7 @@ test('Top 25 merges only visible recommendations before filtering and keeps the 
   const exports = {};
   const item = { id: 'post:hidden-post', source: 'post', sourceId: 'hidden-post', cityId: 'vancouver', title: '비공개 제목', category: 'nature', label: '공개 위치', latitude: 49.28, longitude: -123.12, price: null, imageUri: 'private-image', post: { id: 'hidden-post', kind: 'story', author: { id: 'blocked-author' } } };
   const context = { exports, catalogItems: [], current: { items: [item], limited: false }, city: { id: 'vancouver' }, now: Date.now(), selectedFilters: ['top25'], query: '', days: [], hidden: () => true,
-    discoveryMatches, mergeCityTop25: (items, city) => mergeCityTop25(items, city, [pick]), discoveryEvent: () => null };
+    discoveryEventOnDays, discoveryMatches, mergeCityTop25: (items, city) => mergeCityTop25(items, city, [pick]), discoveryEvent: () => null };
   vm.runInNewContext(compile(`export function run() { ${source.slice(start, end)} return { items, limited }; }`), context);
   const result = exports.run();
   assert.equal(result.items.length, 1);
@@ -117,7 +117,7 @@ test('map pins, list and count exclude community stories but retain actual place
   vm.runInNewContext(compile(`exports.run = () => { ${source.slice(start, end)} return items; };`), {
     exports, current: { items: [story, { ...story, id: 'post:legacy', post: { ...story.post, kind: undefined } }, listing('used'), listing('housing'), listing('dining'), { ...story, id: 'post:missing', post: undefined }, event] },
     catalogItems: [place], city: { id: 'vancouver' }, now: Date.now(), selectedFilters: [], query: '', days: [], hidden: () => false,
-    discoveryMatches, mergeCityTop25, discoveryEvent: () => null,
+    discoveryEventOnDays, discoveryMatches, mergeCityTop25, discoveryEvent: () => null,
   });
   assert.deepEqual(Array.from(exports.run(), item => item.sourceId), ['used', 'housing', 'festival', 'cafe']);
 });
@@ -138,7 +138,7 @@ test('changing accounts remounts the map and clears the previous private GPS cam
   assert.notEqual(exports.default().key, first);
 });
 
-function requests({ deferFirst = false, filter = 'used', includeEvents = filter === 'all' || filter === 'events' || filter === 'festival' } = {}) {
+function requests({ deferFirst = false, filter = 'used', includeEvents = filter === 'all' || filter === 'events' || filter === 'festival', daysKey = '', failDay = '' } = {}) {
   const start = source.indexOf('    request.current?.abort();');
   const end = source.indexOf('  }, [key, isAuthed, filter, city.id, search, viewerScope, daysKey, includeEvents]);', start);
   assert.ok(start > 0 && end > start);
@@ -146,10 +146,10 @@ function requests({ deferFirst = false, filter = 'used', includeEvents = filter 
   let finishOld;
   vm.runInNewContext(compile(`export function run(previous) { ${source.slice(start, end)}\n}`), {
     exports, request, tr, key: previous.key, AbortController, Promise, Map, Set, isAuthed: true, filter, includeEvents,
-    city: { id: 'vancouver' }, search: '', viewerScope: 'viewer', daysKey: '', supabase: {}, morePending: { current: false },
+    city: { id: 'vancouver' }, search: '', viewerScope: 'viewer', daysKey, supabase: {}, morePending: { current: false },
     setResult: value => results.push(value), setPendingKey() {},
     EVENT_CITIES: { vancouver: 'Vancouver' }, discoveryEvent: event => ({ id: `event:${event.id}` }),
-    loadTicketmasterEvents: async query => { eventCalls.push(query); if (query.festival) throw new Error('offline'); return { events: [{ id: 'available' }], hasMore: false }; },
+    loadTicketmasterEvents: async query => { eventCalls.push(query); if (query.festival || query.date && query.date === failDay) throw new Error('offline'); return { events: [{ id: `available${query.date ? `-${query.date}` : ''}` }], hasMore: false }; },
     loadDiscoveryPosts: (...args) => {
       calls.push(args);
       if (deferFirst && calls.length === 1) return new Promise(resolve => { finishOld = resolve; });
@@ -208,6 +208,14 @@ test('selecting a pin cancels a pending GPS recenter request', () => {
 test('a failed festival supplement keeps available results and reports the partial failure', async () => {
   const ui = requests({ filter: 'all' }); ui.load(null); await tick();
   assert.deepEqual(Array.from(ui.results.at(-1).items, item => item.id), ['post:new', 'event:available']);
+  assert.equal(ui.results.at(-1).errors.length, 1);
+});
+test('a failed day keeps the other dates in a seven-day event window and reports partial results', async () => {
+  const days = ['2026-10-18', '2026-10-19', '2026-10-20'];
+  const ui = requests({ filter: 'festival', daysKey: days.join(','), failDay: days[1] });
+  ui.load(null); await tick();
+  assert.deepEqual(Array.from(ui.results.at(-1).items, item => item.id), ['post:new', 'event:available-2026-10-18', 'event:available-2026-10-20']);
+  assert.equal(ui.eventCalls.length, 4);
   assert.equal(ui.results.at(-1).errors.length, 1);
 });
 test('pagination retains a source warning until a full refresh retries it', async () => {

@@ -4,6 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as discovery from '../src/lib/discovery.ts';
+import * as postMaps from '../src/lib/post-maps.ts';
 import { tr } from '../src/i18n/index.ts';
 import { contentAdPosition } from '../src/lib/content-ad-placement.ts';
 
@@ -38,7 +39,7 @@ function mount({ light = false, reduced = false } = {}) {
     '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'guest' }, promptLogin() {} }) },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver' } }) },
-    '@/lib/discovery': discovery, '@/lib/city-places': { getCityRecommendations: () => [] }, '@/lib/city-top25': { cityTop25Recommendations: () => [] }, '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 }, '@/lib/discovery-data': {}, '@/lib/feed-data': {},
+    '@/lib/discovery': discovery, '@/lib/post-maps': postMaps, '@/lib/city-places': { getCityRecommendations: () => [] }, '@/lib/city-top25': { cityTop25Recommendations: () => [] }, '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 }, '@/lib/discovery-data': {}, '@/lib/feed-data': {},
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) }, '@/lib/location': {}, '@/lib/supabase': { supabase: {} },
     '@/lib/ticketmaster': { EVENT_CITIES: { vancouver: {} } }, '@/components/post-ad-label': {}, '@/lib/hashtags': { hasAdLabel: () => false },
   };
@@ -68,7 +69,26 @@ test('the map keeps one category row and opens dates and all categories in its f
 test('the quick category row preserves the owner-selected restaurant, cafe, festival and nightlife order', () => {
   const tree = mount().render();
   const row = nodes(tree).find(node => node.type === 'ScrollView' && node.props.horizontal);
-  assert.deepEqual(children(row).map(node => node.props.accessibilityLabel), ['전체', 'TOP 25', '레스토랑', '카페', '페스티벌', '나이트라이프', '가볼 만한 곳']);
+  assert.deepEqual(children(row).map(node => node.props.accessibilityLabel), ['전체', 'TOP 25', '레스토랑', '카페', '페스티벌', '나이트라이프', '가볼 만한 곳', '부동산', '중고거래']);
+});
+test('visible event dates follow the initial festival choice and preserve a user-selected day across categories', () => {
+  const view = mount(); let tree = view.render();
+  assert.equal(control(tree, '행사 · 오늘').props.accessibilityState.selected, true);
+  control(tree, '페스티벌').props.onPress(); tree = view.render();
+  assert.equal(control(tree, '다가오는 7일').props.accessibilityState.selected, true);
+  control(tree, '행사 · 오늘').props.onPress(); tree = view.render();
+  control(tree, '카페').props.onPress(); tree = view.render();
+  assert.equal(control(tree, '행사 · 오늘').props.accessibilityState.selected, true);
+  assert.equal(view.feedback.length, 3);
+});
+test('housing-only views omit automatic event controls while an explicitly chosen date remains visible', () => {
+  const view = mount(); let tree = view.render();
+  control(tree, '부동산').props.onPress(); tree = view.render();
+  assert.equal(nodes(tree).some(node => node.type === 'Pressable' && text(node).trim() === '행사 · 오늘'), false);
+  control(tree, '전체').props.onPress(); tree = view.render();
+  control(tree, '다가오는 7일').props.onPress(); tree = view.render();
+  control(tree, '부동산').props.onPress(); tree = view.render();
+  assert.equal(control(tree, '다가오는 7일').props.accessibilityState.selected, true);
 });
 
 test('custom dates validate before closing and reset clears both category and date choices', () => {
@@ -85,7 +105,7 @@ test('custom dates validate before closing and reset clears both category and da
   assert.ok(!nodes(tree).some(node => node.type === 'Modal'));
   control(tree, '분류와 날짜 필터 열기').props.onPress(); tree = view.render();
   control(tree, '초기화').props.onPress(); tree = view.render();
-  assert.equal(control(tree, '전체 날짜').props.accessibilityState.selected, true);
+  assert.equal(control(tree, '오늘').props.accessibilityState.selected, true);
   assert.ok(!nodes(tree).some(node => node.props?.accessibilityRole === 'alert'));
   assert.ok(!nodes(tree).some(node => node.type === 'TextInput' && node.props.accessibilityLabel === '행사 날짜 연도-월-일'));
 });

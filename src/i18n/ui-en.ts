@@ -2207,4 +2207,12 @@ export const uiEnglish: Record<string, string> = {
   "이미 사용 중인 닉네임이에요. 다른 이름을 입력해 주세요.": "This nickname is already taken. Choose another name.",
   "닉네임이 다른 곳에서 바뀌었어요. 최신 이름을 확인한 뒤 다시 시도해 주세요.": "The nickname changed elsewhere. Check the latest name and try again.",
   "변경 결과를 확인하지 못했어요. 최신 닉네임과 연결 상태를 확인해 주세요.": "The change could not be confirmed. Check the latest nickname and your connection.",
+  "행사 · 오늘": "Events · Today",
+  "다가오는 7일": "Next 7 days",
+  "행사 날짜 변경": "Change event dates",
+  "행사 · 전체 날짜": "Events · All dates",
+  "가격 미등록": "Price not provided",
+  "상세주소 미등록": "Street address not provided",
+  "주소·위치": "Address / location",
+  "목록 {0}개": "List · {0}",
 };
