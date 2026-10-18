@@ -239,7 +239,7 @@ function ReaderContent() {
                 {item.room && <p className="reader-meta">{chillingSchedule(item.room)} · {recommendedAgeLabel(item.room)}</p>}
               </div>
               {(item.imageThumbs?.[0] || item.imageUris?.[0]) && <img src={item.imageThumbs?.[0] || item.imageUris?.[0]} alt="" loading="lazy" className="reader-thumbnail" />}
-            </article>{!current.failed && contentAdPosition(index, current.posts.length) && <FeedAd key={`ad-after-${item.id}`} />}</Fragment>; })}</InteractionFeedbackProvider>}
+            </article>{contentAdPosition(index, current.posts.length) && <FeedAd key={`ad-after-${item.id}`} />}</Fragment>; })}</InteractionFeedbackProvider>}
           </div>
           {current?.more && <button data-analytics="web_control_11" className="reader-more" onClick={() => void more()} disabled={busy}>{busy ? '불러오는 중…' : '이야기 더 보기'}</button>}
         </> : company ? <InteractionFeedbackProvider>{merchantId
