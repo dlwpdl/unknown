@@ -109,7 +109,7 @@ test('only accepts current session messages, known selection IDs and exact credi
 });
 
 function canvas(markers = [marker]) {
-  const messages = [], listeners = {}, cameras = [], sources = {}, layers = [], images = {}, paddingCalls = [];
+  const messages = [], listeners = {}, cameras = [], sources = {}, layers = [], images = {}, paddingCalls = [], userMarkers = [];
   let map;
   class Map {
     constructor(config) { this.config = config; this.zoom = 11; map = this; }
@@ -131,13 +131,55 @@ function canvas(markers = [marker]) {
   }
   const window = { parent: { postMessage: message => messages.push(JSON.parse(message)) }, addEventListener: (type, callback) => { listeners['window:' + type] = callback; }, matchMedia: () => ({ matches: true }) };
   const drawing = { scale() {}, fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, closePath() {}, fill() {}, fillText() {}, getImageData: (_x, _y, width, height) => ({ width, height, data: new Uint8Array(width * height * 4) }) };
-  const context = { window, document: { createElement: () => ({ getContext: () => drawing }), addEventListener: (type, callback) => { listeners['document:' + type] = callback; } }, maplibregl: { Map, NavigationControl: class {} }, setTimeout: () => 1, clearTimeout() {}, console };
+  class Marker {
+    constructor({ element }) { this.element = element; userMarkers.push(this); }
+    setLngLat(point) { this.point = Array.from(point); return this; }
+    addTo() { return this; }
+    remove() { this.removed = true; }
+  }
+  const context = { window, document: { createElement: () => ({ getContext: () => drawing, setAttribute(name, value) { this[name] = value; } }), addEventListener: (type, callback) => { listeners['document:' + type] = callback; } }, maplibregl: { Map, Marker, NavigationControl: class {} }, setTimeout: () => 1, clearTimeout() {}, console };
   const html = discoveryMapHtml({ ...options, markers });
   const script = [...html.matchAll(/<script nonce="gling-map">([\s\S]*?)<\/script>/g)].at(-1)[1];
   vm.runInNewContext(script, context);
   listeners.load();
-  return { window, listeners, cameras, sources, layers, images, paddingCalls, messages, map, html };
+  return { window, listeners, cameras, sources, layers, images, paddingCalls, messages, map, html, userMarkers };
 }
+
+test('own GPS marker stays separate from camera and place selection, updates and clears explicitly', () => {
+  const c = canvas();
+  const userLocation = { latitude: 49.29, longitude: -123.14 };
+  const state = { markers: [marker], selectedId: null, center: null, userLocation };
+  assert.equal(c.userMarkers.length, 0, 'no position is invented before a successful GPS fix');
+  vm.runInNewContext(discoveryMapScript(state, sessionId), { window: c.window });
+  assert.equal(c.userMarkers.length, 1);
+  const ownMarker = c.userMarkers[0];
+  assert.deepEqual(ownMarker.point, [userLocation.longitude, userLocation.latitude]);
+  assert.equal(ownMarker.element.role, 'img');
+  assert.equal(ownMarker.element['aria-label'], '내 위치');
+  assert.equal(c.cameras.length, 0, 'showing a position does not move a manually panned camera');
+  c.window.glingDiscoveryUpdate(sessionId, { ...state, selectedId: marker.id });
+  assert.equal(c.userMarkers.length, 1);
+  assert.equal(ownMarker.removed, undefined);
+  assert.deepEqual(ownMarker.point, [userLocation.longitude, userLocation.latitude]);
+  assert.deepEqual(Array.from(c.cameras.at(-1).center), [marker.longitude, marker.latitude]);
+  c.window.glingDiscoveryUpdate(sessionId, { ...state, userLocation: { latitude: 49.3, longitude: -123.15 } });
+  assert.equal(c.userMarkers.length, 1, 'reuse the location dot rather than accumulate markers');
+  assert.deepEqual(ownMarker.point, [-123.15, 49.3]);
+  c.window.glingDiscoveryUpdate(sessionId, { ...state, userLocation: null });
+  assert.equal(ownMarker.removed, true);
+});
+
+test('own location validates both update boundaries and only forwards coordinates', () => {
+  const state = { markers: [marker], userLocation: { latitude: 49.29, longitude: -123.14, privateText: 'private-location-context' } };
+  const script = discoveryMapScript(state, sessionId);
+  assert.ok(!script.includes('private-location-context'));
+  const c = canvas();
+  for (const userLocation of [{ latitude: NaN, longitude: 0 }, { latitude: 91, longitude: 0 }, { latitude: 49, longitude: -181 }, { latitude: '49', longitude: 0 }]) {
+    assert.throws(() => discoveryMapScript({ ...state, userLocation }, sessionId));
+    c.window.glingDiscoveryUpdate(sessionId, { ...state, userLocation });
+    assert.equal(c.userMarkers.length, 0);
+  }
+});
 
 test('each explicit current-location request recenters even when GPS coordinates have not changed', () => {
   const c = canvas();
