@@ -145,7 +145,7 @@ test('inbox profile selection checks the current connection twice and returns to
   view.pending.shift()(contextData()); await flush();
   action(view.render(), 'chat.identity.personal').props.onPress();
   assert.equal(chatIdentity.chatBusinessIdentity('user-a'), null);
-  assert.ok(view.calls.every(call => call.name === 'get_my_merchant_connections'));
+  assert.ok(view.calls.every(call => call.name === 'get_my_business_chat_profiles'));
   assert.equal(view.routes.length, 0);
 });
 
@@ -171,3 +171,20 @@ test('an outstanding profile selection cannot switch a different signed-in accou
 });
 
 const contextData = (...args) => context(...args);
+
+test('admins can choose their actual connected business without receiving an admin-wide switch', async context => {
+  chatIdentity.resetChatIdentity(); context.after(chatIdentity.resetChatIdentity);
+  const view = app('ChatIdentitySwitcher'); view.auth({ isAdmin: true });
+  action(view.render(), 'chat.identity.open').props.onPress();
+  assert.equal(view.calls[0].name, 'get_my_business_chat_profiles');
+  view.pending.shift()(contextData()); await flush();
+  action(view.render(), 'chat.identity.business').props.onPress();
+  view.pending.shift()(contextData()); await flush();
+  assert.equal(chatIdentity.chatBusinessIdentity('user-a')?.id, 'company-a');
+  action(view.render(), 'chat.identity.open').props.onPress();
+  view.pending.shift()(contextData('user-a', [{ id: 'unrelated-company', name: '관리 전용 업체', role: 'admin', city_name: '밴쿠버' }])); await flush();
+  assert.ok(!nodes(view.render()).some(n => n.props?.analyticsId === 'chat.identity.business'));
+  assert.ok(nodes(view.render()).some(n => n.props?.accessibilityRole === 'alert'));
+  assert.equal(chatIdentity.chatBusinessIdentity('user-a')?.id, 'company-a');
+  assert.ok(view.calls.every(call => call.name === 'get_my_business_chat_profiles'));
+});
