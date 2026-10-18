@@ -1,0 +1,50 @@
+[
+  {
+    "cityId": "vancouver",
+    "placeId": "osm:node:703754423",
+    "placeName": "Gastown Steam Clock",
+    "provider": "Google",
+    "score": 4.5,
+    "scale": 5,
+    "count": 28661,
+    "via": "Wanderlog",
+    "sourceUrl": "https://wanderlog.com/place/details/98400",
+    "checkedAt": "2026-10-18T23:34:31.159Z"
+  },
+  {
+    "cityId": "vancouver",
+    "placeId": "osm:node:703754423",
+    "placeName": "Gastown Steam Clock",
+    "provider": "Tripadvisor",
+    "score": 4.1,
+    "scale": 5,
+    "count": 1792,
+    "via": "Wanderlog",
+    "sourceUrl": "https://wanderlog.com/place/details/98400",
+    "checkedAt": "2026-10-18T23:34:31.159Z"
+  },
+  {
+    "cityId": "vancouver",
+    "placeId": "osm:way:37111640",
+    "placeName": "Vancouver Public Library",
+    "provider": "Google",
+    "score": 4.7,
+    "scale": 5,
+    "count": 2848,
+    "via": "Wanderlog",
+    "sourceUrl": "https://wanderlog.com/place/details/2573",
+    "checkedAt": "2026-10-18T23:39:04.062Z"
+  },
+  {
+    "cityId": "vancouver",
+    "placeId": "osm:way:37111640",
+    "placeName": "Vancouver Public Library",
+    "provider": "Tripadvisor",
+    "score": 4.5,
+    "scale": 5,
+    "count": 1318,
+    "via": "Wanderlog",
+    "sourceUrl": "https://wanderlog.com/place/details/2573",
+    "checkedAt": "2026-10-18T23:39:04.062Z"
+  }
+]
