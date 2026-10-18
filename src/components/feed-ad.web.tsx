@@ -28,7 +28,7 @@ export function FeedAd({ surface = 'feed' }: { surface?: AdSurface } = {}) {
   }}>
     <span style={{ display: 'block', height: 18, marginBottom: 8, fontSize: 12, lineHeight: '18px', fontWeight: 700,
       visibility: status === 'filled' ? 'visible' : 'hidden', color: `var(--textSecondary, ${WebNightColors.textSecondary})` }}>Ad</span>
-    <ins ref={unit} className="adsbygoogle" style={{ display: status === 'unfilled' ? 'none' : 'block', width: '100%', height: 250 }}
+    <ins ref={unit} style={{ display: status === 'unfilled' ? 'none' : 'block', width: '100%', height: 250 }}
       data-ad-client={webAdConfig.client} data-ad-slot={webAdConfig.slot} data-ad-format="auto" data-full-width-responsive="false" />
   </section>;
 }

@@ -77,8 +77,10 @@ export function mountWebAdUnit(unit: HTMLElement, config: WebAdConfig, isAllowed
     if (!near || doc.visibilityState !== 'visible') { started = false; return; }
     try {
       requestedUnits.add(unit);
+      // Google selects the first unprocessed .adsbygoogle tag; dormant units must not match.
+      unit.classList.add('adsbygoogle');
       (win.adsbygoogle ??= [] as object[]).push({});
-    } catch { onStatus('unfilled'); }
+    } catch { unit.classList.remove('adsbygoogle'); onStatus('unfilled'); }
   };
   const intersection = new win.IntersectionObserver(entries => {
     near = entries.some(entry => entry.isIntersecting);

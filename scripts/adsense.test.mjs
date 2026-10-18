@@ -55,14 +55,18 @@ test('runtime CMP consent is mandatory, denied/unknown/stubbed signals never all
 });
 
 function browser() {
-  const scripts = [], intersections = [], mutations = [], listeners = new Map();
+  const scripts = [], intersections = [], mutations = [], listeners = new Map(), units = [];
   const document = { visibilityState: 'visible', createElement: () => ({ addEventListener(name, fn) { this[name] = fn; } }), head: { appendChild: script => scripts.push(script) }, addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: name => listeners.delete(name) };
   const window = { document, adsbygoogle: [],
     IntersectionObserver: class { constructor(fn, options) { this.fn = fn; this.options = options; intersections.push(this); } observe() {} disconnect() { this.stopped = true; } },
     MutationObserver: class { constructor(fn) { this.fn = fn; mutations.push(this); } observe() {} disconnect() { this.stopped = true; } },
   };
-  const unit = () => ({ isConnected: true, status: null, getAttribute() { return this.status; }, getBoundingClientRect: () => ({ width: 320 }) });
-  return { window, document, scripts, intersections, mutations, listeners, unit };
+  const unit = className => {
+    const classes = new Set(className?.split(' ').filter(Boolean) ?? []);
+    const value = { isConnected: true, status: null, classList: { add: name => classes.add(name), remove: name => classes.delete(name), contains: name => classes.has(name) }, getAttribute() { return this.status; }, getBoundingClientRect: () => ({ width: 320 }) };
+    units.push(value); return value;
+  };
+  return { window, document, scripts, intersections, mutations, listeners, units, unit };
 }
 const flush = () => new Promise(setImmediate);
 
@@ -152,8 +156,28 @@ test('web component renders nothing when unconfigured/denied, uses official tags
   view.consent(false); assert.equal(view.render(), null); assert.ok(!view.calls.includes('mount'));
   view.consent(true); let tree = view.render();
   const ins = tree.props.children.find(node => node?.type === 'ins');
-  assert.equal(ins.props.className, 'adsbygoogle'); assert.equal(ins.props['data-ad-client'], input.client); assert.equal(ins.props['data-ad-slot'], input.slot); assert.equal(ins.props['data-full-width-responsive'], 'false');
+  assert.equal(ins.props.className, undefined, 'dormant units must not match the Google SDK selector'); assert.equal(ins.props['data-ad-client'], input.client); assert.equal(ins.props['data-ad-slot'], input.slot); assert.equal(ins.props['data-full-width-responsive'], 'false');
   view.status('filled'); tree = view.render(); assert.equal(tree.props.style.visibility, 'visible');
   view.status('unfilled'); tree = view.render(); assert.equal(tree.props.style.visibility, 'hidden');
   view.consent(false); assert.equal(view.render(), null); assert.ok(view.calls.includes('stop')); view.cleanup();
+});
+
+test('jumping to a later slot cannot let first-match Google push fill an earlier dormant unit', async () => {
+  const config = ads.parseWebAdConfig(input), preview = component(config);
+  preview.render(); preview.consent(true);
+  const rendered = preview.render().props.children.find(node => node?.type === 'ins');
+  const env = browser(), first = env.unit(rendered.props.className), later = env.unit(rendered.props.className), filled = [];
+  env.window.adsbygoogle = { push() {
+    const target = env.units.find(unit => unit.classList.contains('adsbygoogle') && !unit.status);
+    assert.ok(target, 'one exposed unprocessed official tag is available');
+    target.status = 'filled'; filled.push(target);
+  } };
+  const stopFirst = ads.mountWebAdUnit(first, config, () => true, () => {}, env.window);
+  const stopLater = ads.mountWebAdUnit(later, config, () => true, () => {}, env.window);
+  env.intersections[1].fn([{ isIntersecting: true }]); env.scripts[0].load(); await flush();
+  assert.deepEqual(filled, [later]); assert.equal(first.status, null);
+  assert.equal(first.classList.contains('adsbygoogle'), false);
+  env.intersections[0].fn([{ isIntersecting: true }]); await flush();
+  assert.deepEqual(filled, [later, first]); assert.equal(env.scripts.length, 1);
+  stopFirst(); stopLater(); preview.cleanup();
 });
