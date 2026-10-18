@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import { adminOptionKeys } from '@/lib/admin';
@@ -39,9 +39,12 @@ export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevel
   const [filters, setFilters] = useState<ActivityFilters>(EMPTY_ACTIVITY_FILTERS);
   const [draft, setDraft] = useState<ActivityFilters>(EMPTY_ACTIVITY_FILTERS);
   const [filterError, setFilterError] = useState<string | null>(null);
-  const [showManagement, setShowManagement] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
-  const [showConnection, setShowConnection] = useState(false);
+  const [tab, setTab] = useState('activity');
+  const [showActivityHelp, setShowActivityHelp] = useState(false);
+  const [showConnectionHelp, setShowConnectionHelp] = useState(false);
+  const scroll = useRef<ScrollView>(null);
+  const showConnection = tab === 'connection';
+  useEffect(() => { scroll.current?.scrollTo({ y: 0, animated: false }); }, [tab]);
   const [showFilters, setShowFilters] = useState(false);
   useEffect(() => {
     let active = true;
@@ -109,29 +112,70 @@ export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevel
   // Evaluate the recorded fix at measurement time, not as a fresh/live location.
   const gpsCityId = snapshot ? nearbyCommunity({ ...snapshot, measuredAt, mocked: false }, measuredAt) : null;
   const gpsCity = CITIES.find((city) => city.id === gpsCityId);
-  return <View style={styles.section}>
+  return <View style={styles.workspace}>
     <View style={styles.profileHeading}>
       <View style={styles.avatar} aria-hidden accessibilityElementsHidden><ThemedText type="subtitle" style={styles.accent}>{profile.nickname.trim().slice(0, 1)}</ThemedText></View>
-      <View style={styles.identity}><ThemedText type="title" accessibilityRole="header" style={styles.name}>{profile.nickname}</ThemedText>
-        <ThemedText type="small" style={styles.muted}>{ACCOUNT_TYPES[profile.account_type]} · {statusLabel(profile.account_status)}</ThemedText></View>
+      <View style={styles.identity}><ThemedText accessibilityRole="header" style={styles.name}>{profile.nickname}</ThemedText>
+        <ThemedText type="small" style={styles.muted}>{[CITIES.find(city => city.id === profile.city_id)?.name ?? profile.city_id, ACCOUNT_TYPES[profile.account_type], `신뢰 ${profile.verification_level}`].filter(Boolean).join(' · ')}</ThemedText></View>
+      <ThemedText type="smallBold" style={[styles.status, profile.account_status !== 'active' && styles.error]}>{statusLabel(profile.account_status)}</ThemedText>
     </View>
-    <View style={styles.card}>
-      <ThemedText type="small">{[CITIES.find((city) => city.id === profile.city_id)?.name ?? profile.city_id, profile.neighborhood].filter(Boolean).join(' · ') || '지역 미제공'}</ThemedText>
-      <ThemedText type="small">{profile.auth_role === 'admin' ? '관리자' : profile.auth_role === 'member' ? '일반 회원' : profile.auth_role} · 신뢰 {profile.verification_level} · {merchantAccess === null ? '비즈니스 권한 확인 필요' : merchantAccess ? '비즈니스 관리 가능' : '일반 계정'}</ThemedText>
-      <ThemedText type="small" style={styles.muted}>가입 {formatDate(profile.created_at)}</ThemedText>
-      {!!profile.account_status_note && <Field label="최근 상태 메모" value={profile.account_status_note} />}
-      {onStatusChange && profile.account_status === 'suspended' && <Button disabled={statusBusy} label="이용 제한 해제" onPress={() => void changeStatus('active')} />}
-      {onStatusChange && profile.account_status === 'deleted' && <Button disabled={statusBusy} label="재가입 허용" onPress={() => void changeStatus('reactivation_pending')} />}
+    <View accessibilityRole="tablist" accessibilityLabel="회원 상세 화면" style={styles.tabs}>
+      {([['activity', '활동 기록'], ['profile', '프로필'], ['management', '계정 관리'], ['connection', '접속 정보']] as const).map(([key, label]) => <Pressable key={key} nativeID={`admin-member-tab-${key}`} accessibilityRole="tab" aria-selected={tab === key} aria-controls={`admin-member-${key}`} tabIndex={tab === key ? 0 : -1} {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})} onPress={() => { play('selection'); setTab(key); }} style={({ pressed }) => [styles.tab, tab === key && styles.activeTab, pressed && styles.pressed]}><ThemedText type="smallBold" style={tab === key ? styles.accent : styles.muted}>{label}</ThemedText></Pressable>)}
+    </View>
+    <ScrollView ref={scroll} nativeID="admin-member-scroll" style={styles.scroll} contentContainerStyle={styles.body}>
       {error && <ThemedText accessibilityRole="alert" style={styles.error}>{error}</ThemedText>}
-      <Button expanded={showManagement} label={showManagement ? '계정 관리 닫기' : '계정 관리 · 권한과 신뢰 변경'} onPress={() => setShowManagement(value => !value)} />
-      <View style={{ display: showManagement ? 'flex' : 'none' }}>
-      {profile.account_status === 'active' && <NicknameEditor admin nickname={profile.nickname} onSave={async (value, expected) => {
+      <View nativeID="admin-member-activity" role="tabpanel" aria-labelledby="admin-member-tab-activity" style={{ display: tab === 'activity' ? 'flex' : 'none', gap: 16 }}>
+        <View style={styles.activityControls}>
+          <GroupTitle title={filters.conversationId ? '대화 맥락' : '활동 기록'} />
+          {filters.conversationId && <><ThemedText type="small">상대방 메시지를 포함한 대화</ThemedText><Button label="회원 전체 활동으로 돌아가기" onPress={() => conversation(null)} /></>}
+          {!filters.conversationId && <ScrollView horizontal showsHorizontalScrollIndicator={false}><View accessibilityRole="radiogroup" accessibilityLabel="활동 종류" style={styles.kindFilters}>{Object.entries(ACTIVITY_KINDS).filter(([kind]) => showFilters || MAIN_ACTIVITY_KINDS.includes(kind as ActivityKind) || kind === filters.kind).map(([kind, label]) => <Pressable key={kind} accessibilityRole="radio" aria-checked={filters.kind === kind} tabIndex={filters.kind === kind ? 0 : -1} {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})} onPress={() => chooseKind(kind as ActivityKind)} style={({ pressed }) => [styles.chip, filters.kind === kind && styles.selected, pressed && styles.pressed]}><ThemedText type="small" style={filters.kind === kind && styles.accent}>{label}{kind !== 'all' ? ` ${overview.counts.find(item => item.kind === kind)?.count ?? 0}` : ''}</ThemedText></Pressable>)}</View></ScrollView>}
+          <Button expanded={showFilters} label={showFilters ? '상세 조회 조건 접기' : '상세 조회 조건'} onPress={() => setShowFilters(value => !value)} />
+          <View style={{ display: showFilters ? 'flex' : 'none' }}>
+          <View style={styles.filters}>
+        <TextInput onFocus={() => play('selection')} accessibilityLabel="활동 시작일" placeholder="시작일 YYYY-MM-DD" value={draft.from} onChangeText={(from) => setDraft({ ...draft, from })} style={styles.input} maxLength={10} />
+        <TextInput onFocus={() => play('selection')} accessibilityLabel="활동 종료일" placeholder="종료일 YYYY-MM-DD" value={draft.until} onChangeText={(until) => setDraft({ ...draft, until })} style={styles.input} maxLength={10} />
+      </View>
+      <TextInput onFocus={() => play('selection')} accessibilityLabel="활동 내용 검색" placeholder="내용, 상태 검색" value={draft.query} onChangeText={(query) => setDraft({ ...draft, query })} onSubmitEditing={apply} maxLength={200} style={styles.input} />
+      <ThemedText type="small" style={styles.muted}>날짜 기준: {Intl.DateTimeFormat().resolvedOptions().timeZone} · 종료일 포함</ThemedText>
+      <Button label="조회 조건 적용" onPress={apply} />
+      {filterError && <ThemedText accessibilityRole="alert" style={styles.error}>{filterError}</ThemedText>}
+      </View>
+    </View>
+
+    <ActivityTimeline key={JSON.stringify(filters)} userId={userId} filters={filters} profiles={profiles} nickname={profile.nickname} onConversation={conversation} />
+    <View style={styles.helpRow}><Button expanded={showActivityHelp} label="기록 기준" onPress={() => setShowActivityHelp(value => !value)} /></View>
+    <View style={{ display: showActivityHelp ? 'flex' : 'none' }}><ThemedText type="small" style={styles.muted}>종류별 건수는 해당 회원의 전체 보관 기록이며 대화 맥락의 건수가 아닙니다. 삭제된 원문과 기록하지 않은 과거 변경은 포함되지 않습니다. 접속은 30분 구간 집계이며 최대 90일 보관됩니다.</ThemedText></View>
+      </View>
+      <View nativeID="admin-member-profile" role="tabpanel" aria-labelledby="admin-member-tab-profile" style={{ display: tab === 'profile' ? 'flex' : 'none', gap: 12 }}>
+        <GroupTitle title="프로필" />
+        <Field label="가입일" value={formatDate(profile.created_at)} />
+        <Field label="선호 지역" value={[CITIES.find(city => city.id === profile.city_id)?.name ?? profile.city_id, profile.neighborhood].filter(Boolean).join(' · ') || '미제공'} />
+          <Field label="로그인 이메일" value={profile.email ?? '미제공'} />
+          <Field label="이메일 확인" value={profile.email_confirmed_at ? '확인 완료' : '확인 기록 없음'} />
+          <Field label="입력한 이름 · 비공개" value={profile.full_name ?? '미제공'} />
+          <Field label="생년월일 · 만 나이" value={profile.date_of_birth ? `${profile.date_of_birth}${profile.age != null ? ` · 만 ${profile.age}세` : ''}` : '미제공'} />
+          <Field label="성별 · 비공개" value={profile.gender ? ADMIN_GENDERS[profile.gender] ?? profile.gender : '미제공'} />
+          {profile.personal_info_updated_at && <Field label="개인정보 갱신" value={formatDate(profile.personal_info_updated_at)} />}
+          <Field label="로그인 프로필 이름" value={profile.login_name ?? '미제공'} />
+          <ThemedText type="small" style={styles.muted}>이름·생년월일은 본인이 별도 동의 후 입력한 정보입니다. 소셜 로그인 프로필 이름과 분리되며, 두 정보 모두 실명인증 결과가 아닙니다.</ThemedText>
+          <Field label="실명인증" value="미도입 · 신뢰 단계와 별개" />
+          <Field label="최근 로그인" value={profile.last_sign_in_at ? formatDate(profile.last_sign_in_at) : '기록 없음'} />
+          {!!profile.bio && <Field label="소개" value={profile.bio} />}
+
+      </View>
+      <View nativeID="admin-member-management" role="tabpanel" aria-labelledby="admin-member-tab-management" style={{ display: tab === 'management' ? 'flex' : 'none', gap: 12 }}>
+        <GroupTitle title="계정 관리" />
+        <Field label="상태" value={statusLabel(profile.account_status)} />
+        {!!profile.account_status_note && <Field label="최근 상태 메모" value={profile.account_status_note} />}
+        {onStatusChange && profile.account_status === 'suspended' && <Button disabled={statusBusy} label="이용 제한 해제" onPress={() => void changeStatus('active')} />}
+        {onStatusChange && profile.account_status === 'deleted' && <Button disabled={statusBusy} label="재가입 허용" onPress={() => void changeStatus('reactivation_pending')} />}
+          {profile.account_status === 'active' && <NicknameEditor admin nickname={profile.nickname} onSave={async (value, expected) => {
         const nickname = await changeProfileNickname(supabase, userId, value, expected);
         setOverview(current => current?.profile.id === userId ? { ...current, profile: { ...current.profile, nickname } } : current);
         await onProfileChanged?.();
-      }} />}
-      <Field label="권한" value={profile.auth_role === 'admin' ? '관리자' : profile.auth_role === 'member' ? '일반 회원' : profile.auth_role} />
-      <View style={styles.trustRow}>
+          }} />}
+          <Field label="권한" value={profile.auth_role === 'admin' ? '관리자' : profile.auth_role === 'member' ? '일반 회원' : profile.auth_role} />
+          <View style={styles.trustRow}>
         <ThemedText type="small" style={styles.fieldLabel}>비즈니스 계정</ThemedText>
         {([true, false] as const).map(enabled => <Pressable key={String(enabled)} accessibilityRole="button" accessibilityLabel={`비즈니스 계정 ${enabled ? 'YES' : 'NO'}`} accessibilityState={{ selected: merchantAccess === enabled, disabled: merchantBusy || merchantAccess === null || merchantAccess === enabled }} disabled={merchantBusy || merchantAccess === null || merchantAccess === enabled}
           onPress={() => { void changeMerchantAccess(enabled); }} style={({ pressed }) => [styles.chip, { minHeight: 44 }, merchantAccess === enabled && styles.selected, pressed && styles.pressed]}><ThemedText type="smallBold">{enabled ? 'YES' : 'NO'}</ThemedText></Pressable>)}
@@ -158,64 +202,35 @@ export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevel
         <Field label="권한 · 신뢰" value={`${profile.auth_role} · 신뢰 ${profile.verification_level}`} />
       )}
       <ThemedText type="small" style={styles.muted}>신뢰 단계는 배지·노출 판단에만 쓰이며 실명인증 결과가 아닙니다. 변경은 감사 로그에 남습니다.</ThemedText>
+
       </View>
-      <Button expanded={showProfile} label={showProfile ? '추가 프로필 닫기' : '추가 프로필 보기'} onPress={() => setShowProfile(value => !value)} />
-      <View style={{ display: showProfile ? 'flex' : 'none' }}>
-      <Field label="로그인 이메일" value={profile.email ?? '미제공'} />
-      <Field label="이메일 확인" value={profile.email_confirmed_at ? '확인 완료' : '확인 기록 없음'} />
-      <Field label="입력한 이름 · 비공개" value={profile.full_name ?? '미제공'} />
-      <Field label="생년월일 · 만 나이" value={profile.date_of_birth ? `${profile.date_of_birth}${profile.age != null ? ` · 만 ${profile.age}세` : ''}` : '미제공'} />
-      <Field label="성별 · 비공개" value={profile.gender ? ADMIN_GENDERS[profile.gender] ?? profile.gender : '미제공'} />
-      {profile.personal_info_updated_at && <Field label="개인정보 갱신" value={formatDate(profile.personal_info_updated_at)} />}
-      <Field label="로그인 프로필 이름" value={profile.login_name ?? '미제공'} />
-      <ThemedText type="small" style={styles.muted}>이름·생년월일은 본인이 별도 동의 후 입력한 정보입니다. 소셜 로그인 프로필 이름과 분리되며, 두 정보 모두 실명인증 결과가 아닙니다.</ThemedText>
-      <Field label="실명인증" value="미도입 · 신뢰 단계와 별개" />
-      </View>
-      <Field label="최근 로그인" value={profile.last_sign_in_at ? formatDate(profile.last_sign_in_at) : '기록 없음'} />
-      {!!profile.bio && <Field label="소개" value={profile.bio} />}
-    </View>
-    <Button expanded={showConnection} label={showConnection ? '로그인·접속 정보 닫기' : '로그인·접속 정보 보기'} onPress={() => setShowConnection(value => !value)} />
-    <View style={{ display: showConnection ? 'flex' : 'none' }}><View style={styles.card}>
-      <GroupTitle title="위치 · 접속" />
-      <Field label="선호 지역 · 회원 선택" value={[CITIES.find((city) => city.id === profile.city_id)?.name ?? profile.city_id, profile.neighborhood].filter(Boolean).join(' · ') || '미제공'} />
-      <Field label="GPS 기준 가까운 도시" value={snapshot ? gpsCity?.name ?? '연결 가능한 도시 없음 · 지원 범위 또는 정확도 확인 필요' : '보관 중인 기록 없음'} />
-      <Field label="최근 기기 위치 기록" value={overview.location_snapshot ? `${overview.location_snapshot.latitude}, ${overview.location_snapshot.longitude} · 반경 ${overview.location_snapshot.accuracy}m` : '보관 중인 기록 없음'} />
-      {overview.location_snapshot && <>
+      <View nativeID="admin-member-connection" role="tabpanel" aria-labelledby="admin-member-tab-connection" style={{ display: showConnection ? 'flex' : 'none', gap: 20 }}><View style={styles.card}>
+          <GroupTitle title="위치 · 접속" />
+          <Field label="선호 지역 · 회원 선택" value={[CITIES.find((city) => city.id === profile.city_id)?.name ?? profile.city_id, profile.neighborhood].filter(Boolean).join(' · ') || '미제공'} />
+          <Field label="GPS 기준 가까운 도시" value={snapshot ? gpsCity?.name ?? '연결 가능한 도시 없음 · 지원 범위 또는 정확도 확인 필요' : '보관 중인 기록 없음'} />
+          <Field label="최근 기기 위치 기록" value={overview.location_snapshot ? `${overview.location_snapshot.latitude}, ${overview.location_snapshot.longitude} · 반경 ${overview.location_snapshot.accuracy}m` : '보관 중인 기록 없음'} />
+          {overview.location_snapshot && <>
         <Field label="위치 측정 시각" value={formatDate(overview.location_snapshot.measured_at)} />
         <Field label="서버 수신 시각" value={formatDate(overview.location_snapshot.received_at)} />
-      </>}
-      <ThemedText type="small" style={styles.muted}>선호 지역은 회원이 저장한 선택이며 지역별 회원 수 집계 기준입니다. GPS 도시는 동의한 사용자의 최근 측정 위치에 가까운 지원 커뮤니티입니다. 로그인·글·모임 작성 시점의 기록으로, 실시간 위치나 신원 인증이 아니며 30일 지난 기록은 조회되지 않습니다.</ThemedText>
-      <Field label="최근 인증 세션 IP" value={profile.session_ip ?? '기록 없음'} />
-      {!!profile.session_ip && <Field label="IP 국가 · 도시" value={geo === undefined ? '조회 중…' : geo ? formatIpGeo(geo) : '추정 결과 없음 · VPN·공유망·사내망일 수 있음'} />}
-      {profile.session_created_at && <Field label="해당 세션 생성" value={formatDate(profile.session_created_at)} />}
-      {profile.session_updated_at && <Field label="해당 세션 갱신" value={formatDate(profile.session_updated_at)} />}
-      <ThemedText type="small" style={styles.muted}>인증 서버에 남아 있는 세션 기록입니다. 공유망·VPN·인증 경로에 따라 IP가 달라질 수 있으며 현재 위치를 증명하지 않습니다. 국가·도시·통신사는 공개 IP 위치 DB(ipwho.is) 조회 결과입니다. 통신사·휴대폰 IP는 도시가 통신사 등록지로 표시될 수 있고, 회선 제공자마다 결과가 다를 수 있습니다. 보관 중인 다른 세션은 아래 계정 활동에서 조회합니다.</ThemedText>
-    </View>
-    <View style={styles.card}>
-      <GroupTitle title="연결된 로그인 계정" />
-      <Field label="회원 ID" value={profile.id} />
-      {overview.identities.map((identity) => <Field key={`${identity.provider}:${identity.provider_id}`} label={`${identity.provider} 계정 ID`} value={identity.provider_id} />)}
-      {overview.identities.length === 0 && <ThemedText type="small" style={styles.muted}>연결된 계정 기록이 없습니다.</ThemedText>}
-    </View></View>
-    <GroupTitle title="저장된 활동" />
-    <ThemedText type="small" style={styles.muted}>종류별 건수는 해당 회원의 전체 보관 기록이며 대화 맥락의 건수가 아닙니다. 삭제된 원문과 기록하지 않은 과거 변경은 포함되지 않습니다. 접속은 30분 구간 집계이며 최대 90일 보관됩니다.</ThemedText>
-    <View style={styles.card}>
-      <GroupTitle title={filters.conversationId ? '대화 맥락' : '시간순 활동'} />
-      {filters.conversationId && <><ThemedText type="small">상대방 메시지를 포함한 대화</ThemedText><Button label="회원 전체 활동으로 돌아가기" onPress={() => conversation(null)} /></>}
-      {!filters.conversationId && <View accessibilityRole="radiogroup" accessibilityLabel="활동 종류" style={styles.filters}>{Object.entries(ACTIVITY_KINDS).filter(([kind]) => showFilters || MAIN_ACTIVITY_KINDS.includes(kind as ActivityKind) || kind === filters.kind).map(([kind, label]) => <Pressable key={kind} accessibilityRole="radio" aria-checked={filters.kind === kind} tabIndex={filters.kind === kind ? 0 : -1} {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})} onPress={() => chooseKind(kind as ActivityKind)} style={({ pressed }) => [styles.chip, filters.kind === kind && styles.selected, pressed && styles.pressed]}><ThemedText type="small" style={filters.kind === kind && styles.accent}>{label}{kind !== 'all' ? ` ${overview.counts.find(item => item.kind === kind)?.count ?? 0}` : ''}</ThemedText></Pressable>)}</View>}
-      <Button expanded={showFilters} label={showFilters ? '상세 조회 조건 닫기' : `상세 조회 조건 · ${ACTIVITY_KINDS[filters.kind]}`} onPress={() => setShowFilters(value => !value)} />
-      <View style={{ display: showFilters ? 'flex' : 'none' }}>
-      <View style={styles.filters}>
-        <TextInput onFocus={() => play('selection')} accessibilityLabel="활동 시작일" placeholder="시작일 YYYY-MM-DD" value={draft.from} onChangeText={(from) => setDraft({ ...draft, from })} style={styles.input} maxLength={10} />
-        <TextInput onFocus={() => play('selection')} accessibilityLabel="활동 종료일" placeholder="종료일 YYYY-MM-DD" value={draft.until} onChangeText={(until) => setDraft({ ...draft, until })} style={styles.input} maxLength={10} />
+          </>}
+
+          <Field label="최근 인증 세션 IP" value={profile.session_ip ?? '기록 없음'} />
+          {!!profile.session_ip && <Field label="IP 국가 · 도시" value={geo === undefined ? '조회 중…' : geo ? formatIpGeo(geo) : '추정 결과 없음 · VPN·공유망·사내망일 수 있음'} />}
+          {profile.session_created_at && <Field label="해당 세션 생성" value={formatDate(profile.session_created_at)} />}
+          {profile.session_updated_at && <Field label="해당 세션 갱신" value={formatDate(profile.session_updated_at)} />}
+          <ThemedText type="small" style={styles.muted}>실시간 위치·신원 인증이 아닙니다. 위치 기록은 30일 보관됩니다.</ThemedText>
+          <Button expanded={showConnectionHelp} label="위치·IP 해석 기준" onPress={() => setShowConnectionHelp(value => !value)} />
+          <View style={{ display: showConnectionHelp ? 'flex' : 'none', gap: 12 }}><ThemedText type="small" style={styles.muted}>선호 지역은 회원이 저장한 선택이며 지역별 회원 수 집계 기준입니다. GPS 도시는 동의한 사용자의 최근 측정 위치에 가까운 지원 커뮤니티입니다. 로그인·글·모임 작성 시점의 기록으로, 실시간 위치나 신원 인증이 아니며 30일 지난 기록은 조회되지 않습니다.</ThemedText><ThemedText type="small" style={styles.muted}>인증 서버에 남아 있는 세션 기록입니다. 공유망·VPN·인증 경로에 따라 IP가 달라질 수 있으며 현재 위치를 증명하지 않습니다. 국가·도시·통신사는 공개 IP 위치 DB(ipwho.is) 조회 결과입니다. 통신사·휴대폰 IP는 도시가 통신사 등록지로 표시될 수 있고, 회선 제공자마다 결과가 다를 수 있습니다. 보관 중인 다른 세션은 아래 계정 활동에서 조회합니다.</ThemedText></View>
+        </View>
+        <View style={styles.card}>
+          <GroupTitle title="연결된 로그인 계정" />
+          <Field label="회원 ID" value={profile.id} />
+          {overview.identities.map((identity) => <Field key={`${identity.provider}:${identity.provider_id}`} label={`${identity.provider} 계정 ID`} value={identity.provider_id} />)}
+          {overview.identities.length === 0 && <ThemedText type="small" style={styles.muted}>연결된 계정 기록이 없습니다.</ThemedText>}
+        </View>
+
       </View>
-      <TextInput onFocus={() => play('selection')} accessibilityLabel="활동 내용 검색" placeholder="내용, 상태 검색" value={draft.query} onChangeText={(query) => setDraft({ ...draft, query })} onSubmitEditing={apply} maxLength={200} style={styles.input} />
-      <ThemedText type="small" style={styles.muted}>날짜 기준: {Intl.DateTimeFormat().resolvedOptions().timeZone} · 종료일 포함</ThemedText>
-      <Button label="조회 조건 적용" onPress={apply} />
-      {filterError && <ThemedText accessibilityRole="alert" style={styles.error}>{filterError}</ThemedText>}
-      </View>
-    </View>
-    <ActivityTimeline key={JSON.stringify(filters)} userId={userId} filters={filters} profiles={profiles} nickname={profile.nickname} onConversation={conversation} />
+    </ScrollView>
   </View>;
 }
 
@@ -225,6 +240,7 @@ function ActivityTimeline({ userId, filters, profiles, nickname, onConversation 
   const [page, setPage] = useState<AdminActivityPage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
+  const [expandedEvents, setExpandedEvents] = useState<string[]>([]);
   const [showTechnical, setShowTechnical] = useState(false);
   const [retry, setRetry] = useState(0);
   const revision = useRef(0);
@@ -246,9 +262,8 @@ function ActivityTimeline({ userId, filters, profiles, nickname, onConversation 
     } catch { if (id === revision.current) setError('이전 활동을 불러오지 못했습니다. 다시 시도할 수 있습니다.'); }
     finally { if (id === revision.current) setBusy(false); }
   };
-  return <View style={styles.section}>
-    {page && <ThemedText accessibilityLiveRegion="polite">조건에 맞는 {page.total}건 중 {page.rows.length}건 표시 · 최신순</ThemedText>}
-    {page && <Button label={showTechnical ? '문제 추적 정보 닫기' : '문제 추적 정보 보기'} onPress={() => setShowTechnical(value => !value)} />}
+  return <View style={styles.timeline}>
+    {page && <ThemedText type="small" accessibilityLiveRegion="polite" style={styles.muted}>{page.total}건 중 {page.rows.length}건</ThemedText>}
     {busy && !page && <ThemedText accessibilityRole="progressbar">활동을 불러오는 중입니다.</ThemedText>}
     {error && <><ThemedText accessibilityRole="alert" style={styles.error}>{error}</ThemedText><Button label="다시 시도" onPress={() => { if (page) void more(); else { setError(null); setBusy(true); setRetry((value) => value + 1); } }} /></>}
     {page?.rows.map((event) => {
@@ -256,13 +271,15 @@ function ActivityTimeline({ userId, filters, profiles, nickname, onConversation 
       return <View key={event.event_key} style={[styles.card, styles.event]}>
       <View style={styles.eventHeading}><ThemedText type="smallBold" style={styles.eventKind}>{ACTIVITY_KINDS[event.kind]}</ThemedText><ThemedText type="small" style={styles.muted}>{formatDate(event.occurred_at)}{event.state ? ` · ${statusLabel(event.state)}` : ''}</ThemedText></View>
       <ThemedText type="smallBold">{content || showTechnical ? event.title : ACTIVITY_KINDS[event.kind]}</ThemedText>
-      {(content || showTechnical) && <ThemedText selectable>{event.body || '추가 내용 없음'}</ThemedText>}
-      {event.actor_id && <ThemedText selectable type="small" style={styles.muted}>행위자 · {event.actor_id === userId ? `${nickname} (본인)` : displayName(profiles.get(event.actor_id), event.actor_id)}</ThemedText>}
+      {(content || showTechnical) && <ThemedText selectable numberOfLines={expandedEvents.includes(event.event_key) || (event.body.length <= 120 && !event.body.includes('\n')) ? undefined : 2}>{event.body || '추가 내용 없음'}</ThemedText>}
+      {(content || showTechnical) && event.body && (event.body.length > 120 || event.body.includes('\n')) && <Button expanded={expandedEvents.includes(event.event_key)} label={expandedEvents.includes(event.event_key) ? '원문 접기' : '원문 펼치기'} onPress={() => setExpandedEvents(keys => keys.includes(event.event_key) ? keys.filter(key => key !== event.event_key) : [...keys, event.event_key])} />}
+      {event.actor_id && (event.actor_id !== userId || showTechnical) && <ThemedText selectable type="small" style={styles.muted}>행위자 · {event.actor_id === userId ? `${nickname} (본인)` : displayName(profiles.get(event.actor_id), event.actor_id)}</ThemedText>}
       {showTechnical && <><ThemedText selectable type="small" style={styles.id}>{event.event_key}</ThemedText>{event.context_id && <ThemedText selectable type="small" style={styles.id}>관련 ID · {event.context_id}</ThemedText>}</>}
       {!filters.conversationId && event.context_id && ['message','conversation'].includes(event.kind) && <Button label="이 대화 앞뒤 내용 보기" onPress={() => onConversation(event.context_id!)} />}
     </View>; })}
     {page?.total === 0 && <ThemedText>이 조건에 맞는 저장된 활동이 없습니다.</ThemedText>}
     {page?.nextCursor && <Button label={busy ? '불러오는 중' : '이전 활동 50개 더 보기'} disabled={busy} onPress={() => void more()} />}
+    {page && <Button expanded={showTechnical} label={showTechnical ? '문제 추적 정보 접기' : '문제 추적 정보'} onPress={() => setShowTechnical(value => !value)} />}
     {page && !page.nextCursor && page.total > 0 && <ThemedText type="small" style={styles.muted}>이 조건의 저장된 기록을 끝까지 불러왔습니다. 삭제된 기록은 복구되지 않습니다.</ThemedText>}
   </View>;
 }
@@ -282,10 +299,16 @@ function statusLabel(value: string) {
   return ({ active: '정상', suspended: '이용 제한', deleted: '삭제됨', reactivation_pending: '재가입 허용', published: '게시중', removed: '숨김', pending: '대기', approved: '승인', rejected: '거절', cancelled: '취소', ended: '종료', open: '미처리', actioned: '조치함', dismissed: '기각', warned: '경고', blocked: '차단' } as Record<string, string>)[value] ?? value;
 }
 const styles = StyleSheet.create({
-  section: { gap: Spacing.four }, card: { padding: 20, gap: Spacing.two, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 12, backgroundColor: Colors.admin.card },
-  profileHeading: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingVertical: Spacing.two },
+  workspace: { flex: 1, minHeight: 0 }, scroll: { flex: 1 }, body: { padding: 20, paddingBottom: 40, gap: 16 },
+  section: { gap: Spacing.four }, timeline: { gap: Spacing.two }, card: { gap: Spacing.two },
+  tabs: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: Colors.admin.line, paddingHorizontal: 12 },
+  tab: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  activeTab: { borderBottomColor: Colors.admin.accent },
+  activityControls: { gap: 12 }, helpRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  status: { color: Colors.admin.success, backgroundColor: Colors.admin.backgroundElement, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, overflow: 'hidden' },
+  profileHeading: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, padding: 20 },
   avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.admin.backgroundElement, justifyContent: 'center', alignItems: 'center' },
-  identity: { flex: 1, minWidth: 0, gap: Spacing.one }, name: { fontSize: 26, lineHeight: 34, letterSpacing: -0.5 },
+  identity: { flex: 1, minWidth: 0, gap: Spacing.one }, name: { fontSize: 24, lineHeight: 32, fontWeight: 600, letterSpacing: -0.4 },
   groupTitle: { fontSize: 17, lineHeight: 24, fontWeight: 600, marginBottom: Spacing.one },
   field: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one, paddingVertical: Spacing.two, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.admin.line },
   fieldLabel: { flexBasis: 156, flexGrow: 1, color: Colors.admin.textSecondary }, fieldValue: { flexBasis: 220, flexGrow: 3, minWidth: 0 },
@@ -293,12 +316,13 @@ const styles = StyleSheet.create({
   metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   metric: { minHeight: 44, flexBasis: 120, flexGrow: 1, padding: Spacing.three, gap: Spacing.two, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 10, backgroundColor: Colors.admin.background },
   metricValue: { fontVariant: ['tabular-nums'], fontSize: 17 },
+  kindFilters: { flexDirection: 'row', gap: Spacing.two },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   chip: { minHeight: 44, paddingHorizontal: Spacing.three, justifyContent: 'center', borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 10 },
   selected: { borderColor: Colors.admin.accent, backgroundColor: Colors.admin.backgroundSelected },
   input: { minHeight: 44, flexGrow: 1, minWidth: 150, paddingHorizontal: Spacing.three, color: Colors.admin.text, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 10, backgroundColor: Colors.admin.background },
-  button: { minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.three, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 10, backgroundColor: Colors.admin.card },
-  event: { borderLeftWidth: 3, borderLeftColor: Colors.admin.navy },
+  button: { alignSelf: 'flex-start', minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.three, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 10, backgroundColor: Colors.admin.card },
+  event: { paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: Colors.admin.line },
   eventHeading: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, alignItems: 'center' }, eventKind: { color: Colors.admin.navy },
   pressed: { opacity: 0.65 }, disabled: { opacity: 0.55 },
   id: { fontFamily: 'monospace', fontSize: 11, color: Colors.admin.textSecondary },
