@@ -8,16 +8,19 @@ import { CityPlacePhoto } from '@/components/city-place-photo';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { getCityPlaces } from '@/lib/city-places';
+import { getCityRecommendations } from '@/lib/city-places';
+import { useCityPlacesRevision } from '@/hooks/use-city-places';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 
 export function CityPopularPlaces({ cityId }: { cityId: string }) {
   const { tr } = useLanguage();
   const theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
+  useCityPlacesRevision();
   const city = CITIES.find(item => item.id === cityId);
   if (!city) return null;
-  const places = getCityPlaces(cityId);
+  const places = getCityRecommendations(cityId);
+  if (!places.length) return null;
   return <View style={styles.section}>
     <View style={styles.heading}>
       <ThemedText accessibilityRole="header" style={styles.title}>{tr("이 도시에서 가볼 만한 곳")}</ThemedText>

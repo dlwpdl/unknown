@@ -12,13 +12,15 @@ import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useCommunityCity } from '@/lib/community-city';
-import { CITY_PLACES_COLLECTED_AT, getCityPlaces, getCityPlacesCoverage, type CityPlace, type PlaceCategory } from '@/lib/city-places';
+import { CITY_PLACES_COLLECTED_AT, getCityRecommendations, getCityPlacesCoverage, type CityPlace, type PlaceCategory } from '@/lib/city-places';
+import { useCityPlacesRevision } from '@/hooks/use-city-places';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 
 
 
 export default function PlacesScreen() {
+  useCityPlacesRevision();
 
   const { cityId } = useLocalSearchParams<{ cityId?: string }>();
   const { city: selected } = useCommunityCity();
@@ -35,7 +37,7 @@ function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
   const [limit, setLimit] = useState(10), [category, setCategory] = useState<PlaceCategory>('all'), [query, setQuery] = useState('');
   let places: CityPlace[] = [], error = '';
   if (city) {
-    try { places = getCityPlaces(city.id, category).filter(place => (place.name + ' ' + place.address).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())); }
+    try { places = getCityRecommendations(city.id, category).filter(place => (place.name + ' ' + place.address).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())); }
     catch { error = '이 도시의 장소 정보를 불러오지 못했어요.'; }
   }
   return <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>

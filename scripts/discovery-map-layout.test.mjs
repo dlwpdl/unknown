@@ -34,7 +34,7 @@ function mount({ light = false, reduced = false } = {}) {
     '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'guest' }, promptLogin() {} }) },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver' } }) },
-    '@/lib/discovery': discovery, '@/lib/city-places': { getCityPlaces: () => [] }, '@/lib/discovery-data': {}, '@/lib/feed-data': {},
+    '@/lib/discovery': discovery, '@/lib/city-places': { getCityRecommendations: () => [] }, '@/lib/city-top25': { cityTop25Recommendations: () => [] }, '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 }, '@/lib/discovery-data': {}, '@/lib/feed-data': {},
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) }, '@/lib/location': {}, '@/lib/supabase': { supabase: {} },
     '@/lib/ticketmaster': { EVENT_CITIES: { vancouver: {} } }, '@/components/post-ad-label': {}, '@/lib/hashtags': { hasAdLabel: () => false },
   };

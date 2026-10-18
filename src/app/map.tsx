@@ -24,7 +24,8 @@ import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
 import { DISCOVERY_CATEGORIES, TOP25_GOLD, discoveryDays, discoveryEvent, discoveryMatches, discoveryPlace, directionsUrl, mergeCityTop25, type DiscoveryDate, type DiscoveryFilter, type DiscoveryItem } from '@/lib/discovery';
-import { getCityPlaces } from '@/lib/city-places';
+import { getCityRecommendations } from '@/lib/city-places';
+import { useCityPlacesRevision } from '@/hooks/use-city-places';
 import { loadDiscoveryPosts } from '@/lib/discovery-data';
 import { getPostImageSource, type FeedCursor } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -127,7 +128,9 @@ function CityMap() {
     return () => { request.current?.abort(); request.current = null; morePending.current = false; locationRevision.current++; setLocating(false); };
   }, [loadPage]));
 
-  const catalogItems = useMemo(() => getCityPlaces(city.id).map(discoveryPlace).filter(item => item !== null), [city.id]);
+  useCityPlacesRevision();
+  const catalogPlaces = getCityRecommendations(city.id);
+  const catalogItems = catalogPlaces.map(discoveryPlace).filter(item => item !== null);
   const publicItems = [...(current?.items ?? []), ...catalogItems].filter(item => (!item.post || (!hidden('post', item.post.id, item.post.author.id) && (item.post.kind !== 'listing' || (['open', 'partial'].includes(item.post.listingStatus ?? '') && Date.parse(item.post.expiresAt ?? '') > now))))
     && (!item.event || discoveryEvent(item.event, item.cityId, now) !== null));
   const cityItems = mergeCityTop25(publicItems, city.id);
