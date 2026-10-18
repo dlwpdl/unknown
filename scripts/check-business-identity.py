@@ -48,6 +48,7 @@ if privacy:
         source += (root / 'supabase/migrations/20261011194000_login_required_post_content.sql').read_text()
     source += identity_source
     source += (root / 'supabase/migrations/20261018035000_business_public_privacy.sql').read_text() + '\n'
+    source += (root / 'supabase/migrations/20261018036000_business_publication_readiness.sql').read_text() + '\n'
     marker = "select set_config('request.jwt.claims','{\"role\":\"anon\"}'"
     seed = fixture.split(marker, 1)[0].removeprefix('begin;').replace('select no_plan();', '')
     fixture = (root / 'supabase/tests/business_public_privacy.test.sql').read_text().replace(
