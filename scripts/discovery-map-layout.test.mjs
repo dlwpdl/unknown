@@ -61,6 +61,12 @@ test('the map keeps one category row and opens dates and all categories in its f
   assert.ok(view.feedback.length >= 5);
 });
 
+test('the quick category row preserves the owner-selected restaurant, cafe, festival and nightlife order', () => {
+  const tree = mount().render();
+  const row = nodes(tree).find(node => node.type === 'ScrollView' && node.props.horizontal);
+  assert.deepEqual(children(row).map(node => node.props.accessibilityLabel), ['전체', 'TOP 25', '레스토랑', '카페', '페스티벌', '나이트라이프', '가볼 만한 곳']);
+});
+
 test('custom dates validate before closing and reset clears both category and date choices', () => {
   const view = mount(); let tree = view.render();
   control(tree, '분류와 날짜 필터 열기').props.onPress(); tree = view.render();
