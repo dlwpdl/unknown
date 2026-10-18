@@ -29,6 +29,9 @@ function loadRoom(userId = 'recipient', messagesLoaded = false) {
     if (name === 'react-native-reanimated') return { useReducedMotion: () => false };
     if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ bottom: 0 }) };
     if (name === '@/i18n/ko') return { t, count };
+    if (name === '@/hooks/use-chat-identity') return { useChatIdentity: () => null };
+    if (name === 'expo-router') return { useRouter: () => ({ push() {} }) };
+    if (name === '@/lib/chat-identity') return { chatBusinessIdentity: () => null };
     if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: true, me: { id: userId, nickname: '나' } }) };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
     if (name === '@/hooks/use-content-visibility') return { useContentVisibility: () => () => false };

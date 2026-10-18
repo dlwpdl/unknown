@@ -20,6 +20,7 @@ export function AdminUserDetail({
   localData,
   onStatusChange,
   onTrustLevelChange,
+  onProfileChanged,
   onClose,
 }: {
   userId: string | null;
@@ -27,6 +28,7 @@ export function AdminUserDetail({
   localData?: AdminDashboardData;
   onStatusChange?: (userId: string, status: 'active' | 'reactivation_pending') => Promise<void>;
   onTrustLevelChange?: (userId: string, level: 1 | 2 | 3) => Promise<void>;
+  onProfileChanged?: () => Promise<void>;
   onClose: () => void;
 }) {
   const { play } = useInteractionFeedback();
@@ -40,16 +42,13 @@ export function AdminUserDetail({
           <View style={[styles.header, compact && styles.headerCompact]}>
             <View style={{ flex: 1, minWidth: 0 }}>
               <ThemedText accessibilityRole="header" style={styles.title}>회원 활동</ThemedText>
-              <ThemedText type="small" style={styles.muted}>계정 상태와 저장된 활동</ThemedText>
             </View>
             <Pressable onPress={() => { play('selection'); onClose(); }} accessibilityRole="button" accessibilityLabel="사용자 상세 닫기" style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
               <ThemedText type="smallBold">닫기</ThemedText>
             </Pressable>
           </View>
 
-          <ScrollView contentContainerStyle={[styles.body, compact && styles.bodyCompact]}>
-            {userId && !localData ? <AdminUserReview key={userId} userId={userId} profiles={profiles} onStatusChange={onStatusChange} onTrustLevelChange={onTrustLevelChange} /> : activity ? <ActivityContent activity={activity} profiles={profiles} /> : null}
-          </ScrollView>
+          {userId && !localData ? <AdminUserReview key={userId} userId={userId} profiles={profiles} onStatusChange={onStatusChange} onTrustLevelChange={onTrustLevelChange} onProfileChanged={onProfileChanged} /> : activity ? <ScrollView contentContainerStyle={[styles.body, compact && styles.bodyCompact]}><ActivityContent activity={activity} profiles={profiles} /></ScrollView> : null}
         </View>
       </View>
     </Modal>
@@ -117,8 +116,8 @@ function formatDate(value: string) { return new Intl.DateTimeFormat('ko-KR', { d
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, alignItems: 'flex-end', backgroundColor: 'rgba(24, 26, 29, 0.35)' },
-  sheet: { width: 800, maxWidth: '100%', height: '100%', backgroundColor: Colors.admin.card, borderLeftWidth: 1, borderLeftColor: Colors.admin.line },
-  header: { minHeight: 88, paddingHorizontal: Spacing.four, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three, borderBottomWidth: 1, borderBottomColor: Colors.admin.line, backgroundColor: Colors.admin.card },
+  sheet: { width: 860, maxWidth: '100%', height: '100%', backgroundColor: Colors.admin.card, borderLeftWidth: 1, borderLeftColor: Colors.admin.line },
+  header: { minHeight: 64, paddingHorizontal: Spacing.four, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three, borderBottomWidth: 1, borderBottomColor: Colors.admin.line, backgroundColor: Colors.admin.card },
   headerCompact: { paddingHorizontal: Spacing.three }, title: { fontSize: 20, lineHeight: 28, fontWeight: 600 },
   close: { minHeight: 44, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 10, backgroundColor: Colors.admin.card },
   pressed: { opacity: 0.65 },

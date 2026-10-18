@@ -10,6 +10,11 @@ import { Alert, Animated, AppState, DeviceEventEmitter, LayoutAnimation, Modal, 
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ChatIdentitySwitcher } from '@/components/chat-identity-switcher';
+import { useChatIdentity } from '@/hooks/use-chat-identity';
+import { selectChatBusiness } from '@/lib/chat-identity';
+import { subscribeBusinessChat } from '@/lib/business-chat';
+import { loadMyMerchantConnections } from '@/lib/merchant-connections';
 import { ChatRoom } from '@/components/chat-room';
 import { GlassSurface } from '@/components/glass-surface';
 import { ProfileAvatarButton } from '@/components/profile-avatar-button';
@@ -51,70 +56,86 @@ export default function ChatScreen() {
   const [focused, setFocused] = useState(false);
   useFocusEffect(useCallback(() => { setFocused(true); return () => setFocused(false); }, []));
   const reducedMotion = useReducedMotion();
-  const { conversationId, view } = useLocalSearchParams<{ conversationId?: string; view?: string }>();
+  const { conversationId, businessId, view } = useLocalSearchParams<{ conversationId?: string; businessId?: string; view?: string }>();
   const auth = useAuth();
   const userId = auth.isAuthed ? auth.me.id : null;
+  const business = useChatIdentity(), asBusinessId = business?.id ?? null;
+  const scopeKey = userId && (business ? `${userId}:${business.id}` : userId);
+  const routeMatches = !conversationId || (businessId ? businessId === asBusinessId : asBusinessId === null);
   const { membership, refresh: refreshMembership } = useMembership();
   const { play } = useInteractionFeedback();
   const meetupSlots = relationshipSlotData(membership, 'meetup');
-  const currentUser = useRef(userId);
+  const currentUser = useRef(scopeKey);
   const version = useRef(0);
   const processing = useRef(false);
   const [inbox, setInbox] = useState<Inbox | null>(null);
   const [selection, setSelection] = useState<{ userId: string; id: string } | null>(null);
-  const [filter, setFilter] = useState<ConversationFilter>(view === 'requests' || view === 'group' || view === 'direct' ? view : 'all');
+  const [requestedFilter, setFilter] = useState<ConversationFilter>(view === 'requests' || view === 'group' || view === 'direct' ? view : 'all');
+  const filter = asBusinessId && (requestedFilter === 'group' || requestedFilter === 'requests') ? 'direct' : requestedFilter;
   const selectionId = useRef<string | null>(null);
   const activeFilter = useRef(filter);
   const inFlight = useRef<{ key: string; request: number; promise: Promise<void> } | null>(null);
   const pageBusy = useRef(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [pullRefreshing, setPullRefreshing] = useState(false);
-  useLayoutEffect(() => { currentUser.current = userId; activeFilter.current = filter; version.current += 1; }, [userId, filter, conversationId]);
-  useLayoutEffect(() => { selectionId.current = selection?.userId === userId ? selection.id : null; }, [selection, userId]);
+  useLayoutEffect(() => { currentUser.current = scopeKey; activeFilter.current = filter; version.current += 1; }, [scopeKey, filter, conversationId]);
+  useLayoutEffect(() => { selectionId.current = selection?.userId === scopeKey ? selection.id : null; }, [selection, scopeKey]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<{ userId: string; text: string } | null>(null);
   const [requestBusy, setRequestBusy] = useState<string | null>(null);
   const [approveId, setApproveId] = useState<string | null>(null);
-  const conversations = inbox?.userId === userId && inbox.filter === filter ? inbox.conversations : [];
-  const requests = inbox?.userId === userId ? inbox.requests : [];
-  const openConversation = selection?.userId === userId ? conversations.find((item) => item.id === selection.id)
-    ?? (inbox?.userId === userId && inbox.selectedConversation?.id === selection.id ? inbox.selectedConversation : undefined) : undefined;
+  const conversations = routeMatches && inbox?.userId === scopeKey && inbox.filter === filter ? inbox.conversations : [];
+  const requests = routeMatches && inbox?.userId === scopeKey ? inbox.requests : [];
+  const openConversation = selection?.userId === scopeKey ? conversations.find((item) => item.id === selection.id)
+    ?? (inbox?.userId === scopeKey && inbox.selectedConversation?.id === selection.id ? inbox.selectedConversation : undefined) : undefined;
   const [modalConversation, setModalConversation] = useState<typeof openConversation>(undefined);
-  const shownConversation = openConversation ?? modalConversation;
+  const shownConversation = selection?.userId === scopeKey && routeMatches ? openConversation ?? modalConversation : undefined;
   const animateList = useCallback(() => {
     if (reducedMotion) return;
     if (Platform.OS === 'android') UIManager?.setLayoutAnimationEnabledExperimental?.(true);
     LayoutAnimation?.configureNext?.(LayoutAnimation.Presets.easeInEaseOut);
   }, [reducedMotion]);
-  const pendingCount = (inbox?.userId === userId ? inbox.pendingCount : 0) + requests.length;
+  const pendingCount = (inbox?.userId === scopeKey ? inbox.pendingCount : 0) + requests.length;
   const displayed = conversations;
-  const initialLoading = loading && (inbox?.userId !== userId || inbox.filter !== filter);
+  const initialLoading = loading && (inbox?.userId !== scopeKey || inbox.filter !== filter);
 
   const refresh = useCallback(async () => {
-    if (!userId || currentUser.current !== userId) return;
-    const key = `${userId}:${filter}:${conversationId ?? ''}`;
+    if (!userId || currentUser.current !== scopeKey || !routeMatches) return;
+    const key = `${scopeKey}:${filter}:${conversationId ?? ''}`;
     if (inFlight.current?.key === key) return inFlight.current.promise;
     const request = ++version.current;
     setLoading(true); setError(null);
     const promise = (async () => {
       try {
         const [next, nextRequests] = await Promise.all([
-          loadConversations(supabase, userId, filter, null, conversationId ?? selectionId.current),
-          loadPendingMeetupRequests(supabase, userId),
+          loadConversations(supabase, userId, filter, null, conversationId ?? selectionId.current, asBusinessId),
+          asBusinessId ? Promise.resolve([]) : loadPendingMeetupRequests(supabase, userId),
         ]);
-        if (currentUser.current !== userId || version.current !== request) return;
+        if (currentUser.current !== scopeKey || version.current !== request) return;
         animateList();
-        setInbox({ ...next, userId, filter, requests: nextRequests });
-        if (conversationId && next.selectedConversation) { setSelection({ userId, id: next.selectedConversation.id }); setModalConversation(next.selectedConversation); }
-      } catch { if (currentUser.current === userId && version.current === request) setError({ userId, text: sourceCopy.chat.loadError }); }
+        setInbox({ ...next, userId: scopeKey!, filter, requests: nextRequests });
+        if (conversationId && next.selectedConversation) { setSelection({ userId: scopeKey!, id: next.selectedConversation.id }); setModalConversation(next.selectedConversation); }
+      } catch { if (currentUser.current === scopeKey && version.current === request) { if (asBusinessId) setInbox(null); setError({ userId: scopeKey!, text: sourceCopy.chat.loadError }); } }
       finally {
-        if (currentUser.current === userId && version.current === request) setLoading(false);
+        if (currentUser.current === scopeKey && version.current === request) setLoading(false);
         if (inFlight.current?.request === request) inFlight.current = null;
       }
     })();
     inFlight.current = { key, request, promise };
     return promise;
-  }, [animateList, conversationId, filter, userId]);
+  }, [animateList, conversationId, filter, userId, scopeKey, asBusinessId, routeMatches]);
+  useEffect(() => {
+    if (!userId || !conversationId) return;
+    let active = true;
+    if (!businessId) { selectChatBusiness(userId, null); return; }
+    void loadMyMerchantConnections(supabase, userId, true).then(result => {
+      if (!active) return;
+      const target = result.merchants.find(item => item.id === businessId && item.role !== 'admin');
+      if (!target) throw new Error('MERCHANT_ACCESS_REQUIRED');
+      selectChatBusiness(userId, target);
+    }).catch(() => { if (active) setError({ userId: scopeKey!, text: '비즈니스 대화 접근 권한을 확인하지 못했어요. 프로필을 다시 선택해 주세요.' }); });
+    return () => { active = false; };
+  }, [userId, conversationId, businessId, scopeKey]);
   const changed = useCallback(async () => { await Promise.all([refresh(), refreshMembership()]); }, [refresh, refreshMembership]);
   const pullRefresh = useCallback(async () => { setPullRefreshing(true); try { await changed(); } finally { setPullRefreshing(false); } }, [changed]);
   useFocusEffect(useCallback(() => {
@@ -138,13 +159,14 @@ export default function ChatScreen() {
         })();
       }, 150);
     };
-    const channel = supabase.channel(`inbox:${userId}:${channelId}`)
+    const stopBusiness = subscribeBusinessChat(supabase, userId, event => { if ((event.businessId ?? null) === asBusinessId) schedule(); });
+    const channel = asBusinessId ? null : supabase.channel(`inbox:${userId}:${channelId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, schedule)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, ({ new: message }) => {
         if (!active) return;
         // The event already passed message RLS. Update visible previews without refetching history.
         setInbox((current) => {
-          if (!current || current.userId !== userId) return current;
+          if (!current || current.userId !== scopeKey) return current;
           const update = (item: Inbox['conversations'][number]) => item.id === message.conversation_id
             && typeof message.created_at === 'string' && message.created_at >= item.latestAt
             ? { ...item, latestBody: message.body as string, latestAt: message.created_at } : item;
@@ -159,29 +181,29 @@ export default function ChatScreen() {
       .subscribe();
     const listener = DeviceEventEmitter.addListener(MEETUPS_CHANGED_EVENT, schedule);
     const appState = AppState.addEventListener('change', (next) => { if (next === 'active') schedule(); });
-    return () => { active = false; clearTimeout(timer); listener.remove(); appState.remove(); void supabase.removeChannel(channel); };
-  }, [changed, userId, channelId]);
+    return () => { active = false; clearTimeout(timer); listener.remove(); appState.remove(); stopBusiness(); if (channel) void supabase.removeChannel(channel); };
+  }, [changed, userId, channelId, asBusinessId, scopeKey]);
 
   const loadMore = async () => {
-    if (!userId || pageBusy.current || loading || !inbox?.cursor || inbox.userId !== userId || inbox.filter !== filter) return;
+    if (!userId || pageBusy.current || loading || !inbox?.cursor || inbox.userId !== scopeKey || inbox.filter !== filter) return;
     const request = version.current;
     pageBusy.current = true; setLoadingMore(true);
     try {
-      const next = await loadConversations(supabase, userId, filter, inbox.cursor);
-      if (currentUser.current !== userId || activeFilter.current !== filter || version.current !== request) return;
+      const next = await loadConversations(supabase, userId, filter, inbox.cursor, null, asBusinessId);
+      if (currentUser.current !== scopeKey || activeFilter.current !== filter || version.current !== request) return;
       setInbox((current) => {
-        if (!current || current.userId !== userId || current.filter !== filter) return current;
+        if (!current || current.userId !== scopeKey || current.filter !== filter) return current;
         const ids = new Set(current.conversations.map(({ id }) => id));
         return { ...current, cursor: next.cursor, pendingCount: next.pendingCount,
           conversations: [...current.conversations, ...next.conversations.filter(({ id }) => !ids.has(id))] };
       });
-    } catch { if (currentUser.current === userId && version.current === request) setError({ userId, text: t.chat.loadError }); }
+    } catch { if (currentUser.current === scopeKey && version.current === request) setError({ userId: scopeKey!, text: t.chat.loadError }); }
     finally { pageBusy.current = false; setLoadingMore(false); }
   };
 
   const handleRequest = async (request: MeetupRequest, response: 'approved' | 'rejected') => {
     if (!userId || processing.current) return;
-    const owner = userId;
+    const owner = scopeKey;
     processing.current = true; setRequestBusy(request.id);
     try {
       const nextId = await respondMeetupRequest(supabase, request.id, response);
@@ -213,18 +235,19 @@ export default function ChatScreen() {
       <ProfileAvatarButton />
       <GlassSurface tone="control" interactive style={styles.refreshGlass}><Pressable analyticsId="app_tabs_chat.pressable.1" onPress={() => { play('selection'); void changed(); }} accessibilityRole="button" accessibilityLabel={t.chat.refresh} disabled={loading} accessibilityState={{ disabled: loading }} style={({ pressed }) => [styles.refreshAction, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent', opacity: loading ? 0.45 : 1 }]}><SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={19} tintColor={theme.accent} /></Pressable></GlassSurface>
     </View>
+    <ChatIdentitySwitcher onChanged={() => { setSelection(null); setModalConversation(undefined); router.setParams({ conversationId: undefined, businessId: undefined }); setFilter('direct'); }} />
     <FlatList analyticsId="app_tabs_chat.flatlist.1" data={displayed} keyExtractor={(item) => item.id} contentContainerStyle={[styles.list, initialLoading && styles.loadingList]}
       onEndReached={() => void loadMore()} onEndReachedThreshold={0.4}
       ListFooterComponent={!initialLoading && loadingMore ? <GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} /> : null}
       refreshing={pullRefreshing} onRefresh={() => void pullRefresh()}
-      ListHeaderComponent={initialLoading ? null : <View style={styles.header}>
-        <View style={[styles.safety, { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}><ThemedText type="smallBold" themeColor="accent">{t.safety.meetTitle}</ThemedText><ThemedText type="small" themeColor="textSecondary">{t.safety.meetBody}</ThemedText></View>
+      ListHeaderComponent={<View style={styles.header}>
+        {!asBusinessId && <View style={[styles.safety, { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}><ThemedText type="smallBold" themeColor="accent">{t.safety.meetTitle}</ThemedText><ThemedText type="small" themeColor="textSecondary">{t.safety.meetBody}</ThemedText></View>}
         {/* 자리(슬롯)는 상태라 칩 안의 숫자와 한 줄 안내로만 보여준다. 큰 카드는 대화 목록을 밀어냈다. */}
         <View style={styles.filters}>{([['all', t.chat.all],
           // 관리자에게는 자리 한도가 적용되지 않으므로 숫자 대신 제한 없음을 알린다.
           ['group', auth.isAdmin ? tr("{0} 제한 없음", (t.chat.groups)) : `${t.chat.groups}${meetupSlots ? ` ${meetupSlots.active}/${meetupSlots.limit}` : ''}`],
           ['direct', t.chat.direct],
-          ['requests', `${t.chat.requestTab} ${pendingCount}`]] as const).map(([key, label]) => <Pressable analyticsId="app_tabs_chat.pressable.2" key={key} onPress={() => { play('selection'); if (key !== filter) { animateList(); setLoading(true); setFilter(key); } }} accessibilityRole="tab" accessibilityState={{ selected: filter === key }} style={({ pressed }) => [styles.filter, Depth.control, { backgroundColor: filter === key ? theme.accent : theme.backgroundElement, borderBottomColor: filter === key ? theme.accentDepth : theme.backgroundSelected, }]}><ThemedText type="smallBold" style={{ color: filter === key ? theme.accentInk : theme.text }}>{label}</ThemedText></Pressable>)}</View>
+          ['requests', `${t.chat.requestTab} ${pendingCount}`]] as const).filter(([key]) => !asBusinessId || key === 'all' || key === 'direct').map(([key, label]) => <Pressable analyticsId="app_tabs_chat.pressable.2" key={key} onPress={() => { play('selection'); if (key !== filter) { animateList(); setLoading(true); setFilter(key); } }} accessibilityRole="tab" accessibilityState={{ selected: filter === key }} style={({ pressed }) => [styles.filter, Depth.control, { backgroundColor: filter === key ? theme.accent : theme.backgroundElement, borderBottomColor: filter === key ? theme.accentDepth : theme.backgroundSelected, }]}><ThemedText type="smallBold" style={{ color: filter === key ? theme.accentInk : theme.text }}>{label}</ThemedText></Pressable>)}</View>
         {filter === 'requests' && <>
           {requests.length > 0 && <ThemedText type="smallBold">{t.chat.requestsTitle}</ThemedText>}
           {requests.map((request) => <View key={request.id} style={[styles.request, Depth.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
@@ -240,24 +263,24 @@ export default function ChatScreen() {
                 : <Pressable analyticsId="app_tabs_chat.pressable.6" onPress={() => { play('selection'); setApproveId(request.id); }} disabled={requestBusy !== null} accessibilityRole="button" accessibilityState={{ disabled: requestBusy !== null }} style={({ pressed }) => [styles.requestButton, Depth.control, { borderColor: theme.accentDepth, backgroundColor: theme.accent, borderBottomWidth: 3, }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{t.chat.approve}</ThemedText></Pressable>}</View></>}
           </View>)}
         </>}
-        {error?.userId === userId && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{tr(error.text)}</ThemedText>}
+        {error?.userId === scopeKey && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{tr(error.text)}</ThemedText>}
       </View>}
       ListEmptyComponent={initialLoading ? <GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} />
         : loading ? null
         : filter === 'requests' ? (requests.length ? null : <StateCard title={tr("대기 중인 모임 신청이 없어요")} body={tr("모임에 신청이 들어오면 여기서 수락하거나 거절할 수 있어요.")} />)
           : <StateCard title={t.chat.emptyTitle} body={t.chat.emptyBody} />}
-      renderItem={({ item, index }) => <Pressable analyticsId="app_tabs_chat.pressable.7" onPress={() => { play('selection'); setModalConversation(item); setSelection({ userId: auth.me.id, id: item.id }); }} accessibilityRole="button" style={({ pressed }) => [styles.room, { borderBottomColor: theme.line, backgroundColor: pressed ? theme.backgroundElement : 'transparent', transform: [{ scale: pressed && !reducedMotion ? 0.985 : 1 }] }]}>
-        <ChatAvatar kind={item.kind} title={item.title} meetupCategory={item.meetupCategory} initial={item.kind === 'direct' ? item.otherUser.nickname[0] : ''} active={focused && !shownConversation && index < 8} delay={index * 260} />
-        <View style={styles.roomBody}><View style={styles.nickRow}><ThemedText style={[styles.flex, styles.roomName]} numberOfLines={1}>{item.kind === 'group' ? item.title : item.otherUser.nickname}</ThemedText>{item.kind === 'direct' && <TrustBadge verified={item.otherUser.verificationLevel >= 2} trustLevel={item.otherUser.verificationLevel === 3 ? 3 : item.otherUser.verificationLevel === 2 ? 2 : undefined} />}</View>
+      renderItem={({ item, index }) => <Pressable analyticsId="app_tabs_chat.pressable.7" onPress={() => { play('selection'); setModalConversation(item); setSelection({ userId: scopeKey!, id: item.id }); }} accessibilityRole="button" style={({ pressed }) => [styles.room, { borderBottomColor: theme.line, backgroundColor: pressed ? theme.backgroundElement : 'transparent', transform: [{ scale: pressed && !reducedMotion ? 0.985 : 1 }] }]}>
+        <ChatAvatar kind={item.kind} title={item.title} meetupCategory={item.meetupCategory} initial={item.kind !== 'group' ? item.otherUser.nickname[0] : ''} avatarUri={item.otherIdentity?.avatarUri} active={focused && !shownConversation && index < 8} delay={index * 260} />
+        <View style={styles.roomBody}><View style={styles.nickRow}><ThemedText style={[styles.flex, styles.roomName]} numberOfLines={1}>{item.kind === 'group' ? item.title : item.otherUser.nickname}</ThemedText>{item.kind === 'business' && <ThemedText type="small" themeColor="accent">{tr('비즈니스')}</ThemedText>}{item.kind === 'direct' && <TrustBadge verified={item.otherUser.verificationLevel >= 2} trustLevel={item.otherUser.verificationLevel === 3 ? 3 : item.otherUser.verificationLevel === 2 ? 2 : undefined} />}</View>
           <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{item.status === 'pending' ? tr("대화 상태 확인 중") : item.status === 'ended' ? t.chat.ended : item.latestBody ?? t.chat.newConversation}</ThemedText></View>
         <View style={styles.roomTime}><ThemedText type="small" themeColor="textSecondary">{chatListTime(item.latestAt, undefined, appLocale)}</ThemedText></View>
       </Pressable>} />
-  </SafeAreaView><Modal visible={!!openConversation} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" allowSwipeDismissal onRequestClose={() => { setSelection(null); router.setParams({ conversationId: undefined }); }} onDismiss={() => setModalConversation(undefined)}>
-    {shownConversation && <ChatRoom key={`${userId}:${shownConversation.id}`} conversation={shownConversation} currentUserId={auth.me.id} onChanged={changed} onClose={() => { setSelection(null); router.setParams({ conversationId: undefined }); void changed(); }} />}
+  </SafeAreaView><Modal visible={!!openConversation && routeMatches} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" allowSwipeDismissal onRequestClose={() => { setSelection(null); router.setParams({ conversationId: undefined, businessId: undefined }); }} onDismiss={() => setModalConversation(undefined)}>
+    {shownConversation && <ChatRoom key={`${scopeKey}:${shownConversation.id}`} conversation={shownConversation} currentUserId={auth.me.id} onChanged={changed} onClose={() => { setSelection(null); router.setParams({ conversationId: undefined, businessId: undefined }); void changed(); }} />}
   </Modal></TabContent>;
 }
 
-function ChatAvatar({ kind, title, meetupCategory, initial, active, delay }: { kind: 'group' | 'direct'; title: string; meetupCategory: string | null; initial: string; active: boolean; delay: number }) {
+function ChatAvatar({ kind, title, meetupCategory, initial, avatarUri, active, delay }: { avatarUri?: string | null; kind: 'group' | 'direct' | 'business'; title: string; meetupCategory: string | null; initial: string; active: boolean; delay: number }) {
 
   const theme = useTheme();
   const reducedMotion = useReducedMotion();
@@ -287,7 +310,7 @@ function ChatAvatar({ kind, title, meetupCategory, initial, active, delay }: { k
       {icon === 'beer' && !reducedMotion && <Animated.View pointerEvents="none" style={[styles.iconOverlay, { opacity: pulse }]}><Image source={require('@/assets/brand/chat-3d/beer-full.png')} style={styles.partyIcon} contentFit="contain" accessible={false} /></Animated.View>}
       {icon === 'disco-ball' && !reducedMotion && <Animated.View pointerEvents="none" style={[styles.glint, { opacity: pulse.interpolate({ inputRange: [0, 0.3, 0.7, 1], outputRange: [0, 0, 1, 0] }), transform: [{ rotate: '45deg' }, { scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1.4] }) }] }]} />}
     </>
-      : <ThemedText type="subtitle" themeColor="accent">{initial}</ThemedText>}
+      : avatarUri ? <Image source={{ uri: avatarUri }} style={[styles.partyIcon, { borderRadius: 26 }]} contentFit="cover" accessible={false} /> : <ThemedText type="subtitle" themeColor="accent">{initial}</ThemedText>}
   </Animated.View>;
 }
 

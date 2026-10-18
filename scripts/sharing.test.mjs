@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { Buffer } from 'node:buffer';
+import { decodeSharedUuid, encodeSharedUuid } from '../src/lib/shared-uuid.ts';
 import test from 'node:test';
 import { buildSharedPostUrl, sharedLinkTarget, sharedLinkInMessage, sharedPostMessage, sharedPostReturnPath } from '../src/lib/sharing.ts';
 
@@ -16,9 +18,10 @@ test('별도로 설정한 공개 공유 주소는 유지한다', () => {
 });
 
 const id = '12345678-1234-1234-1234-123456789abc';
+const short = 'EjRWeBI0EjQSNBI0VniavA';
 test('the verified preview gateway uses its UUID route and keeps login on the original site', () => {
-  assert.equal(buildSharedPostUrl(id, 'https://gling.ej-entertainment.com/'), `https://gling-share-preview.vercel.app/share/${id}`);
-  assert.equal(buildSharedPostUrl(id, undefined, 'https://gling-share-preview.vercel.app/share/'), `https://gling-share-preview.vercel.app/share/${id}`);
+  assert.equal(buildSharedPostUrl(id, 'https://gling.ej-entertainment.com/'), `https://gling-share-preview.vercel.app/s/${short}`);
+  assert.equal(buildSharedPostUrl(id, undefined, 'https://gling-share-preview.vercel.app/share/'), `https://gling-share-preview.vercel.app/s/${short}`);
   assert.deepEqual(sharedLinkTarget(`https://gling-share-preview.vercel.app/share/${id}?invite=1`), { id, invite: true });
   for (const url of [`https://gling-share-preview.vercel.app.evil.test/share/${id}`, `https://user@gling-share-preview.vercel.app/share/${id}`, `https://gling-share-preview.vercel.app/post?id=${id}`, `https://gling-share-preview.vercel.app/auth/callback?id=${id}`]) assert.equal(sharedLinkTarget(url), null);
   assert.equal(sharedPostReturnPath(`https://gling-share-preview.vercel.app/post?id=${id}`), '/');
@@ -34,11 +37,50 @@ test('outbound sharing never copies the post body or private meetup location', (
   const post = { id, title: '페스티벌 같이 가요', body: '비공개 상세 집결 장소', room: {} };
   const text = sharedPostMessage(post);
   assert.ok(text.includes('페스티벌 같이 가요'));
-  assert.ok(text.includes(`/share/${id}`));
+  assert.ok(text.includes(`/s/${short}`));
   assert.ok(!text.includes(post.body));
 });
 test('login resumes only a validated local post, never an external redirect', () => {
   assert.equal(sharedPostReturnPath(`/post?id=${id}&invite=1`), `/post?id=${id}&invite=1`);
   for (const path of [`//evil.test/post?id=${id}`, `https://evil.test/post?id=${id}`, `/auth/callback?next=${id}`, `/post?id=${id}&id=other`, '/post?id=invalid', null]) assert.equal(sharedPostReturnPath(path), '/');
   assert.equal(sharedPostReturnPath(`/post?id=${id}&next=https://evil.test`), `/post?id=${id}`);
+});
+
+test('short UUID routes round trip without accepting malformed or noncanonical aliases', () => {
+  const gateway = 'https://gling-share-preview.vercel.app';
+  assert.equal(buildSharedPostUrl(id.toUpperCase()), `${gateway}/s/${short}`);
+  assert.equal(buildSharedPostUrl(id, 'https://custom.example'), `https://custom.example/post?id=${id}`);
+  assert.equal(buildSharedPostUrl(id, undefined, 'https://custom.example/share'), `https://custom.example/share?id=${id}`);
+  assert.equal(buildSharedPostUrl(id).length, 63);
+  assert.deepEqual(sharedLinkTarget(`${gateway}/s/${short}/?invite=1`), { id, invite: true });
+  assert.equal(sharedLinkInMessage(`hello ${gateway}/s/${short}`), `${gateway}/s/${short}`);
+  for (const value of [short.slice(0, -1) + 'B', short + '=', short.slice(1), short + 'A', short.slice(0, -1) + '+', '%45' + short.slice(1), id, short + '/private']) {
+    assert.equal(sharedLinkTarget(`${gateway}/s/${value}`), null, value);
+  }
+  for (const bad of [`https://user:pass@gling-share-preview.vercel.app/s/${short}`, `https://evil.example/s/${short}`, `http://gling-share-preview.vercel.app/s/${short}`]) assert.equal(sharedLinkTarget(bad), null);
+});
+
+test('short encoding preserves all UUID bits including URL-safe alphabet bytes', () => {
+  for (const uuid of ['00000000-0000-0000-0000-000000000000', 'ffffffff-ffff-ffff-ffff-ffffffffffff', 'fbff0000-0000-4000-8000-000000000001', id]) {
+    const encoded = Buffer.from(uuid.replaceAll('-', ''), 'hex').toString('base64url');
+    const url = `https://gling-share-preview.vercel.app/s/${encoded}`;
+    assert.equal(buildSharedPostUrl(uuid), url);
+    assert.deepEqual(sharedLinkTarget(url), { id: uuid, invite: false });
+    for (const suffix of 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_') {
+      if (suffix !== encoded.at(-1) && Buffer.from(encoded.slice(0, -1) + suffix, 'base64url').equals(Buffer.from(encoded, 'base64url'))) assert.equal(sharedLinkTarget(url.slice(0, -1) + suffix), null);
+    }
+  }
+  for (const malformed of [id.replaceAll('-', ''), id + 'x', id.replace('1', 'g'), '']) assert.equal(buildSharedPostUrl(malformed), `https://gling-share-preview.vercel.app/share/${encodeURIComponent(malformed)}`);
+});
+
+test('codec rejects non-UUID inputs and noncanonical base64url at its boundary', () => {
+  assert.equal(encodeSharedUuid(id), short);
+  assert.equal(decodeSharedUuid(short), id);
+  for (const invalid of [id + '\n', id + '\r', id + ' ', id.replaceAll('-', ''), '']) assert.equal(encodeSharedUuid(invalid), null);
+  for (const invalid of [short + '\n', short + '\r', short + ' ', short + '==', short.slice(0, -1) + 'B', short.replace('E', '+'), '']) assert.equal(decodeSharedUuid(invalid), null);
+});
+
+test('explicit owned gateway share and short aliases generate short links while custom endpoints stay exact', () => {
+  for (const path of ['/share', '/share/', '/s', '/s/']) assert.equal(buildSharedPostUrl(id, 'https://custom.example', `https://gling-share-preview.vercel.app${path}`), `https://gling-share-preview.vercel.app/s/${short}`);
+  for (const base of ['https://custom.example/share', 'https://custom.example/s', 'https://gling-share-preview.vercel.app.evil.example/share']) assert.equal(buildSharedPostUrl(id, undefined, base), `${base}?id=${id}`);
 });

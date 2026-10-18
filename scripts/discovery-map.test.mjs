@@ -1,11 +1,69 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import vm from 'node:vm';
+import { readFileSync } from 'node:fs';
+import ts from 'typescript';
 import { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers } from '../src/lib/discovery-map-html.ts';
 
 const marker = { id: 'place:1', latitude: 49.28, longitude: -123.12, color: '#d86632', label: '카페' };
 const sessionId = 'canvas-1';
 const options = { markers: [marker], cityName: 'Vancouver', sessionId, parentOrigin: 'https://gling.app' };
+
+test('native map startup has a bounded fallback, cancels after ready and rearms on retry', () => {
+  const slots = [], timers = new Map();
+  let index = 0, nextTimer = 0, effects = [];
+  const react = {
+    useId: () => 'native-canvas', useMemo: fn => fn(), useCallback: fn => fn,
+    useRef(value) { const slot = index++; return slots[slot] ??= { current: value }; },
+    useState(initial) { const slot = index++; if (!(slot in slots)) slots[slot] = initial; return [slots[slot], value => { slots[slot] = typeof value === 'function' ? value(slots[slot]) : value; }]; },
+    useEffect(fn, deps) {
+      const slot = index++, previous = slots[slot];
+      if (previous && deps.every((value, i) => Object.is(value, previous.deps[i]))) return;
+      effects.push(() => { previous?.cleanup?.(); slots[slot] = { deps, cleanup: fn() }; });
+    },
+  };
+  const jsx = (type, props) => ({ type, props });
+  const imports = {
+    react, 'react/jsx-runtime': { jsx, jsxs: jsx },
+    'react-native': { Platform: { OS: 'ios' }, View: 'View', StyleSheet: { create: value => value } },
+    'react-native-webview': { __esModule: true, default: 'WebView' },
+    '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: value => value }) },
+    '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/components/analytics-controls': { Pressable: 'Pressable' },
+    '@/components/themed-text': { ThemedText: 'Text' },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+    '@/lib/discovery-map-html': { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers },
+  };
+  const exports = {};
+  vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/components/discovery-map.tsx', import.meta.url), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+  }).outputText, {
+    exports, require(name) { assert.ok(name in imports, name); return imports[name]; },
+    setTimeout(fn, delay) { const id = ++nextTimer; timers.set(id, { fn, delay }); return id; },
+    clearTimeout: id => timers.delete(id),
+  });
+  const props = { markers: [marker], cityName: 'Vancouver', onSelect() {} };
+  const Canvas = exports.DiscoveryMap(props).type;
+  const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
+  const render = () => { index = 0; effects = []; const tree = Canvas(props); effects.forEach(fn => fn()); return nodes(tree); };
+  const failed = tree => tree.some(node => node.props?.accessibilityLiveRegion === 'polite');
+  let tree = render();
+  assert.equal(failed(tree), false);
+  assert.equal(timers.size, 1, 'native startup cannot rely on JavaScript inside a stalled WebView');
+  assert.equal([...timers.values()][0].delay, 15000);
+  [...timers.values()][0].fn();
+  tree = render(); assert.equal(failed(tree), true);
+  tree.find(node => node.props?.analyticsId === 'discovery.map.retry').props.onPress();
+  tree = render(); assert.equal(failed(tree), false); assert.equal(timers.size, 1);
+  const web = tree.find(node => node.type === 'WebView');
+  web.props.onMessage({ nativeEvent: { data: JSON.stringify({ type: 'ready', sessionId: 'native-canvas.0' }) } });
+  render(); assert.equal(timers.size, 1, 'old map readiness cannot cancel the new attempt');
+  web.props.onMessage({ nativeEvent: { data: JSON.stringify({ type: 'ready', sessionId: 'native-canvas.1' }) } });
+  tree = render(); assert.equal(failed(tree), false); assert.equal(timers.size, 0);
+  props.markers = [{ ...marker, label: 'updated' }];
+  render(); assert.equal(timers.size, 0, 'ordinary marker updates do not restart a loaded map');
+  slots.forEach(slot => slot?.cleanup?.());
+});
 
 test('validates marker bounds, coordinates, unique identifiers and CSS colors', () => {
   assert.deepEqual(discoveryMarkers([{ ...marker, privateText: 'never pass through' }]), [marker]);
@@ -51,7 +109,7 @@ test('only accepts current session messages, known selection IDs and exact credi
 });
 
 function canvas(markers = [marker]) {
-  const messages = [], listeners = {}, cameras = [], sources = {}, layers = [], images = {}, paddingCalls = [];
+  const messages = [], listeners = {}, cameras = [], sources = {}, layers = [], images = {}, paddingCalls = [], userMarkers = [];
   let map;
   class Map {
     constructor(config) { this.config = config; this.zoom = 11; map = this; }
@@ -72,14 +130,68 @@ function canvas(markers = [marker]) {
     setPadding(padding) { this.padding = padding; paddingCalls.push(padding); }
   }
   const window = { parent: { postMessage: message => messages.push(JSON.parse(message)) }, addEventListener: (type, callback) => { listeners['window:' + type] = callback; }, matchMedia: () => ({ matches: true }) };
-  const drawing = { scale() {}, fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, closePath() {}, fill() {}, fillText() {}, getImageData: (_x, _y, width, height) => ({ width, height, data: new Uint8Array(width * height * 4) }) };
-  const context = { window, document: { createElement: () => ({ getContext: () => drawing }), addEventListener: (type, callback) => { listeners['document:' + type] = callback; } }, maplibregl: { Map, NavigationControl: class {} }, setTimeout: () => 1, clearTimeout() {}, console };
+  const drawing = { scale() {}, fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, arcTo() {}, closePath() {}, fill() {}, stroke() {}, fillText() {}, getImageData: (_x, _y, width, height) => ({ width, height, data: new Uint8Array(width * height * 4) }) };
+  class Marker {
+    constructor({ element }) { this.element = element; userMarkers.push(this); }
+    setLngLat(point) { this.point = Array.from(point); return this; }
+    addTo() { return this; }
+    remove() { this.removed = true; }
+  }
+  const context = { window, document: { createElement: () => ({ getContext: () => drawing, setAttribute(name, value) { this[name] = value; } }), addEventListener: (type, callback) => { listeners['document:' + type] = callback; } }, maplibregl: { Map, Marker, NavigationControl: class {} }, setTimeout: () => 1, clearTimeout() {}, console };
   const html = discoveryMapHtml({ ...options, markers });
   const script = [...html.matchAll(/<script nonce="gling-map">([\s\S]*?)<\/script>/g)].at(-1)[1];
   vm.runInNewContext(script, context);
   listeners.load();
-  return { window, listeners, cameras, sources, layers, images, paddingCalls, messages, map, html };
+  return { window, listeners, cameras, sources, layers, images, paddingCalls, messages, map, html, userMarkers };
 }
+
+test('own GPS marker stays separate from camera and place selection, updates and clears explicitly', () => {
+  const c = canvas();
+  const userLocation = { latitude: 49.29, longitude: -123.14 };
+  const state = { markers: [marker], selectedId: null, center: null, userLocation };
+  assert.equal(c.userMarkers.length, 0, 'no position is invented before a successful GPS fix');
+  vm.runInNewContext(discoveryMapScript(state, sessionId), { window: c.window });
+  assert.equal(c.userMarkers.length, 1);
+  const ownMarker = c.userMarkers[0];
+  assert.deepEqual(ownMarker.point, [userLocation.longitude, userLocation.latitude]);
+  assert.equal(ownMarker.element.role, 'img');
+  assert.equal(ownMarker.element['aria-label'], '내 위치');
+  assert.equal(c.cameras.length, 0, 'showing a position does not move a manually panned camera');
+  c.window.glingDiscoveryUpdate(sessionId, { ...state, selectedId: marker.id });
+  assert.equal(c.userMarkers.length, 1);
+  assert.equal(ownMarker.removed, undefined);
+  assert.deepEqual(ownMarker.point, [userLocation.longitude, userLocation.latitude]);
+  assert.deepEqual(Array.from(c.cameras.at(-1).center), [marker.longitude, marker.latitude]);
+  c.window.glingDiscoveryUpdate(sessionId, { ...state, userLocation: { latitude: 49.3, longitude: -123.15 } });
+  assert.equal(c.userMarkers.length, 1, 'reuse the location dot rather than accumulate markers');
+  assert.deepEqual(ownMarker.point, [-123.15, 49.3]);
+  c.window.glingDiscoveryUpdate(sessionId, { ...state, userLocation: null });
+  assert.equal(ownMarker.removed, true);
+});
+
+test('own location validates both update boundaries and only forwards coordinates', () => {
+  const state = { markers: [marker], userLocation: { latitude: 49.29, longitude: -123.14, privateText: 'private-location-context' } };
+  const script = discoveryMapScript(state, sessionId);
+  assert.ok(!script.includes('private-location-context'));
+  const c = canvas();
+  for (const userLocation of [{ latitude: NaN, longitude: 0 }, { latitude: 91, longitude: 0 }, { latitude: 49, longitude: -181 }, { latitude: '49', longitude: 0 }]) {
+    assert.throws(() => discoveryMapScript({ ...state, userLocation }, sessionId));
+    c.window.glingDiscoveryUpdate(sessionId, { ...state, userLocation });
+    assert.equal(c.userMarkers.length, 0);
+  }
+});
+
+test('each explicit current-location request recenters even when GPS coordinates have not changed', () => {
+  const c = canvas();
+  const state = { markers: [marker], selectedId: null, center: { latitude: 49.28, longitude: -123.12, requestId: 1 } };
+  vm.runInNewContext(discoveryMapScript(state, sessionId), { window: c.window });
+  const count = c.cameras.length;
+  vm.runInNewContext(discoveryMapScript(state, sessionId), { window: c.window });
+  assert.equal(c.cameras.length, count, 'ordinary pin updates preserve a manual pan');
+  vm.runInNewContext(discoveryMapScript({ ...state, center: { ...state.center, requestId: 2 } }, sessionId), { window: c.window });
+  assert.equal(c.cameras.length, count + 1, 'pressing My Location again returns to the same GPS point');
+  assert.deepEqual(Array.from(c.cameras.at(-1).center), [-123.12, 49.28]);
+});
 
 test('unchanged inset does not interrupt camera motion, and resized cards finish recentering the current target', () => {
   const c = canvas([{ ...marker, top25: true }]);
@@ -104,15 +216,16 @@ test('only a typed Top 25 flag crosses the embedded map boundary', () => {
   assert.throws(() => discoveryMarkers([{ ...marker, top25: 'true' }]));
 });
 
-test('Top 25 uses A flags on individual pins, selected pins and clusters without changing category color or counts', () => {
+test('Top 25 uses a circular outline and a selected-only label while preserving category colors and cluster counts', () => {
   const c = canvas([{ ...marker, top25: true }]);
   assert.equal(c.sources.discovery.data.features[0].properties.top25, true);
   assert.equal(c.sources.discovery.data.features[0].properties.color, marker.color);
   assert.ok(c.sources.discovery.clusterProperties.top25Count);
-  assert.ok(c.images['top25-small']);
+  assert.equal(c.images['top25-small'], undefined, 'ordinary map points do not carry a floating flag icon');
   assert.ok(c.images['top25-full']);
   assert.equal(c.images['top25-full'].options.pixelRatio, 2);
-  assert.ok(c.layers.some(layer => layer.id === 'discovery-top25'));
+  assert.equal(c.layers.find(layer => layer.id === 'discovery-top25').type, 'circle');
+  assert.ok(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-clusters').paint).includes('top25Count'));
   assert.ok(c.layers.some(layer => layer.id === 'discovery-selected-top25' && layer.source === 'discovery-selection'));
   c.window.glingDiscoveryUpdate(sessionId, { markers: [{ ...marker, top25: 'true' }], selectedId: null });
   assert.equal(c.sources.discovery.data.features[0].properties.top25, true);

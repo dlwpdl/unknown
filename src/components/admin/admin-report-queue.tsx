@@ -132,19 +132,20 @@ export function AdminReportQueue({
         ? '신고자에게 작성자의 콘텐츠 숨김 · 다른 회원의 노출은 별도 운영 조치'
         : report.target_type === 'user' ? '사용자 검토 요청 · 자동 전체 숨김 없음'
         : '신고자에게 해당 콘텐츠 숨김 · 다른 회원의 노출은 별도 운영 조치'} />
+      <details className="admin-context-details" onToggle={() => play('selection')}><summary>접수 당시 원본 보기</summary>
       <LabelValue label="접수 당시 원본" value={report.evidence
         ? [report.evidence.title, report.evidence.body, report.evidence.nickname].filter(Boolean).join('\n') || '텍스트 없음'
-        : '이전 신고에는 원본 스냅샷이 없습니다. 사용자 전체 활동에서 확인하세요.'} />
+        : '이전 신고에는 원본 스냅샷이 없습니다. 사용자 전체 활동에서 확인하세요.'} /></details>
       {isTrustTarget(report.target_type) && <ThemedText type="smallBold">현재 원문 · 별도 권한 확인 후 조회</ThemedText>}
       {isTrustTarget(report.target_type) && <AdminTrustReviewContent targetType={report.target_type} targetId={report.target_id} localPreview={localPreview} onUser={onUser} />}
       {report.target_type === 'merchant_review' && <>
-        <LabelValue label="접수 당시 업체 후기" value={`${report.evidence?.merchant_name ?? report.evidence?.merchant_id ?? '업체 정보 없음'}${report.evidence?.score == null ? '' : ` · ${report.evidence.score}/10`}${report.evidence?.status ? ` · ${report.evidence.status === 'removed' ? '숨김' : '게시 중'}` : ''}`} />
-        <ThemedText type="smallBold">현재 업체 후기 · 원문 조회</ThemedText>
+        <LabelValue label="접수 당시 비즈니스 후기" value={`${report.evidence?.merchant_name ?? report.evidence?.merchant_id ?? '비즈니스 정보 없음'}${report.evidence?.score == null ? '' : ` · ${report.evidence.score}/10`}${report.evidence?.status ? ` · ${report.evidence.status === 'removed' ? '숨김' : '게시 중'}` : ''}`} />
+        <ThemedText type="smallBold">현재 비즈니스 후기 · 원문 조회</ThemedText>
         <AdminMerchantReviewContent targetId={report.target_id} localPreview={localPreview} onUser={onUser} />
       </>}
       {report.target_type === 'merchant_review_reply' && <>
-        <LabelValue label="접수 당시 업체" value={report.evidence?.merchant_name ?? report.evidence?.merchant_id ?? '업체 정보 없음'} />
-        <ThemedText type="smallBold">현재 업체 답글 · 원문 조회</ThemedText>
+        <LabelValue label="접수 당시 비즈니스" value={report.evidence?.merchant_name ?? report.evidence?.merchant_id ?? '비즈니스 정보 없음'} />
+        <ThemedText type="smallBold">현재 비즈니스 답글 · 원문 조회</ThemedText>
         <AdminMerchantReviewReplyContent targetId={report.target_id} localPreview={localPreview} onUser={onUser} />
       </>}
       <details onToggle={() => play('selection')}>
@@ -210,7 +211,7 @@ export function AdminReportQueue({
             <button type="button" disabled={checked.some((report) => report.target_type === 'user')}
               onClick={() => { play('selection'); return void resolveChecked('hidden'); }}>선택 콘텐츠 전체 숨김</button>
           </div>
-          {checked.some((report) => report.target_type === 'user') && <small>콘텐츠 전체 숨김은 게시글·댓글·메시지·업체 후기 신고만 선택했을 때 사용할 수 있습니다.</small>}
+          {checked.some((report) => report.target_type === 'user') && <small>콘텐츠 전체 숨김은 게시글·댓글·메시지·비즈니스 후기 신고만 선택했을 때 사용할 수 있습니다.</small>}
           <small>선택한 신고 각각에 처리 기록과 메모가 남습니다. 같은 회원의 신고가 여러 건이면 경고·정지 알림도 신고별로 전송됩니다.</small>
         </>}
       </fieldset>
@@ -234,7 +235,7 @@ export function AdminReportQueue({
                   aria-controls="admin-report-detail"
                   onClick={() => { play('selection');  setSelectedId(report.id); setDetailOpen(true); }}
                   style={{ display: 'block', flex: 1, minWidth: 0, width: '100%', minHeight: 64, padding: '8px 12px', textAlign: 'left', cursor: 'pointer',
-                    border: 'none', borderBottom: `1px solid ${Colors.admin.line}`, borderLeft: `3px solid ${active ? Colors.admin.navy : 'transparent'}`,
+                    border: 'none', borderBottom: `1px solid ${Colors.admin.line}`, borderLeft: `1px solid ${active ? Colors.admin.navy : 'transparent'}`,
                   background: active ? Colors.admin.backgroundSelected : Colors.admin.card, color: Colors.admin.text, font: 'inherit' }}>
                   <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 13 }}>
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>{displayName(profiles.get(report.reported_user_id), report.reported_user_id)}</span>

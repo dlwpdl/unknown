@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { safeMerchantSourceUrl } from '../src/lib/merchant-source.ts';
+import { safeTicketUrl } from '../supabase/functions/_shared/ticketmaster.ts';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as discovery from '../src/lib/discovery.ts';
@@ -9,6 +11,17 @@ const catalog = JSON.parse(readFileSync(new URL('../src/lib/city-places.catalog.
 const place = catalog.cities.toronto.places[0];
 const mapSource = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
 const compile = text => ts.transpileModule(text, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+
+test('a source-reviewed photo place carries its selection reason and badge to the map', () => {
+  const recommendation = { placeId: place.id, reason: 'A source-reviewed photo viewpoint.', reasonEn: 'A source-reviewed photo viewpoint.', sourceUrl: 'https://example.org/photo-guide', verifiedAt: '2026-10-18T00:00:00Z' };
+  const item = discovery.discoveryPlace({ ...place, recommendation });
+  assert.equal(item.top25?.id, place.id);
+  assert.equal(item.top25?.reason, recommendation.reason);
+  assert.equal(item.top25?.sourceUrl, recommendation.sourceUrl);
+  assert.equal(item.top25?.reasonEn, recommendation.reasonEn);
+  assert.equal(discovery.discoveryMatches(item, 'top25', ''), true);
+  assert.equal(discovery.discoveryPlace({ ...place, recommendation: { ...recommendation, placeId: 'other-place' } }).top25, undefined);
+});
 
 test('existing catalog places retain their public coordinates, category and exact detail identity in discovery', () => {
   assert.equal(typeof discovery.discoveryPlace, 'function');
@@ -50,7 +63,7 @@ test('the combined screen includes its current-city catalog while backend rows a
   const exports = {};
   vm.runInNewContext(compile(`exports.run = () => { ${mapSource.slice(start, end)} return items; };`), {
     exports, current: null, catalogItems: [discovery.discoveryPlace(place)], city: { id: place.cityId }, now: Date.now(), selectedFilters: [], query: '', days: [],
-    hidden: () => false, discoveryEvent: () => null, mergeCityTop25: discovery.mergeCityTop25, discoveryMatches: discovery.discoveryMatches,
+    hidden: () => false, discoveryEvent: () => null, discoveryEventOnDays: discovery.discoveryEventOnDays, mergeCityTop25: discovery.mergeCityTop25, discoveryMatches: discovery.discoveryMatches,
   });
   assert.equal(exports.run().length, 1);
   assert.equal(exports.run()[0].sourceId, place.id);
@@ -61,7 +74,7 @@ test('opening a catalog map card uses the existing place detail route and leaves
   const start = mapSource.indexOf('  const open = (item: DiscoveryItem) => {'), end = mapSource.indexOf('  const selectPin = ', start);
   const exports = {}, routes = [], links = [], feedback = [];
   vm.runInNewContext(compile(mapSource.slice(start, end) + '\nexports.open = open;'), {
-    exports, city: { id: place.cityId }, router: { push: value => routes.push(value) }, play: value => feedback.push(value),
+    exports, onClose: undefined, city: { id: place.cityId }, router: { push: value => routes.push(value) }, play: value => feedback.push(value),
     Linking: { openURL: async url => links.push(url) }, tr: value => value, Alert: { alert() {} },
   });
   exports.open(discovery.discoveryPlace(place));
@@ -72,4 +85,22 @@ test('opening a catalog map card uses the existing place detail route and leaves
   assert.equal(links.length, 0);
   exports.open({ source: 'place', top25: { sourceUrl: 'https://example.org/pick' } });
   assert.equal(links.at(-1), 'https://example.org/pick');
+});
+
+test('embedded discovery permits public HTTPS information and rejects invalid post and event targets', async () => {
+  const start = mapSource.indexOf('  const open = (item: DiscoveryItem) => {'), end = mapSource.indexOf('  const selectPin = ', start);
+  const exports = {}, opened = [], routes = [];
+  vm.runInNewContext(compile(mapSource.slice(start, end) + '\nexports.open = open;'), {
+    exports, onClose() {}, safeMerchantSourceUrl, safeTicketUrl, PUBLIC_SITE: 'https://gling.ej-entertainment.com',
+    openBrowserAsync: async url => opened.push(url), router: { push: value => routes.push(value) },
+    play() {}, tr: value => value, Alert: { alert() {} }, encodeURIComponent,
+  });
+  for (const item of [{ source: 'post', post: { id: 'private-conversation-id' } }, { source: 'event', event: { ticketUrl: 'https://attacker.example/login' } }, { source: 'place', place: { sourceUrl: 'javascript:alert(1)' } }]) exports.open(item);
+  assert.deepEqual(opened, []);
+  const id = '00000000-0000-0000-0000-000000000001';
+  exports.open({ source: 'post', post: { id }, conversationId: 'never-pass-this' });
+  exports.open({ source: 'event', event: { ticketUrl: 'https://www.ticketmaster.ca/event/example' } });
+  await new Promise(setImmediate);
+  assert.deepEqual(opened, [`https://gling.ej-entertainment.com/post?id=${id}`, 'https://www.ticketmaster.ca/event/example']);
+  assert.deepEqual(routes, []);
 });

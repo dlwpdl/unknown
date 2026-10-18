@@ -8,16 +8,19 @@ import { CityPlacePhoto } from '@/components/city-place-photo';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { getCityPlaces } from '@/lib/city-places';
+import { getCityRecommendations } from '@/lib/city-places';
+import { useCityPlacesRevision } from '@/hooks/use-city-places';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 
 export function CityPopularPlaces({ cityId }: { cityId: string }) {
   const { tr } = useLanguage();
   const theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
+  useCityPlacesRevision();
   const city = CITIES.find(item => item.id === cityId);
   if (!city) return null;
-  const places = getCityPlaces(cityId);
+  const places = getCityRecommendations(cityId);
+  if (!places.length) return null;
   return <View style={styles.section}>
     <View style={styles.heading}>
       <ThemedText accessibilityRole="header" style={styles.title}>{tr("이 도시에서 가볼 만한 곳")}</ThemedText>
@@ -28,7 +31,7 @@ export function CityPopularPlaces({ cityId }: { cityId: string }) {
         <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={12} tintColor={theme.accent} />
       </Pressable>
     </View>
-    <ThemedText style={styles.subtitle} themeColor="textSecondary">{tr("사진으로 먼저 둘러보세요")}</ThemedText>
+    <ThemedText style={styles.subtitle} themeColor="textSecondary">{tr("뷰와 공간이 예쁜 사진 명소를 골랐어요")}</ThemedText>
     <View style={styles.cards}>
       {places.slice(0, 3).map(place => <Pressable key={place.id} analyticsId="today.places.place-open" accessibilityRole="button" accessibilityLabel={tr("{0} 장소 정보", (place.name))}
         onPress={() => { play('selection'); router.push({ pathname: '/places/[id]', params: { id: place.id, cityId } }); }}

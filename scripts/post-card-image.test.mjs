@@ -14,7 +14,18 @@ import * as postLinks from '../supabase/functions/_shared/post-links.ts';
 import * as product from '../src/lib/product-analytics.ts';
 
 // Native image events and React state are supplied here; sizing/rendering runs the real components.
-function cardRenderer(component = 'PostCard') {
+let sharedReactions;
+function reactionModule() {
+  if (!sharedReactions) {
+    const exports = {};
+    const source = ts.transpileModule(fs.readFileSync(new URL('../src/lib/post-reactions.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+    vm.runInNewContext(source, { exports });
+    sharedReactions = exports;
+  }
+  return sharedReactions;
+}
+
+function cardRenderer(component = 'PostCard', persistReaction = async () => {}) {
   const values = [];
   let cursor = 0;
   let viewer = 'viewer-a';
@@ -27,6 +38,7 @@ function cardRenderer(component = 'PostCard') {
     useMemo: (callback) => callback(),
     useEffect: () => {},
     useLayoutEffect: () => {},
+    useSyncExternalStore: (_subscribe, snapshot) => snapshot(),
     useRef: (value) => ({ current: value }),
     useState(initial) {
       const index = cursor++;
@@ -68,7 +80,7 @@ function cardRenderer(component = 'PostCard') {
     '@/hooks/use-theme': { useTheme: () => ({ backgroundElement: '#222231' }) },
     '@/i18n/ko': { count, t },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: viewer } }) },
-    '@/lib/community-data': {},
+    '@/lib/community-data': { togglePostReaction: (_client, postId, viewerId, kind, isOn) => persistReaction({ postId, viewerId, kind, isOn }) },
     '@/lib/feed-data': { getPostImageSource },
     '@/lib/meetup-ai': {},
     '@/lib/hashtags': { uniqueHashtags },
@@ -79,12 +91,13 @@ function cardRenderer(component = 'PostCard') {
     '@/lib/supabase': { supabase: { rpc: async () => ({ error: null }) } },
   };
   const exports = {};
-  const file = component === 'PostCard' ? 'post-card' : component === 'PostMapLink' ? 'post-map-link' : component === 'PostPhotoEditor' ? 'post-photo-editor' : 'post-photo-gallery';
+  const file = component === 'MerchantProfileHeader' ? 'merchant-profile-header' : component === 'PostCard' ? 'post-card' : component === 'PostMapLink' ? 'post-map-link' : component === 'PostPhotoEditor' ? 'post-photo-editor' : 'post-photo-gallery';
   const source = ts.transpileModule(fs.readFileSync(new URL(`../src/components/${file}.tsx`, import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   modules['@/components/post-ad-label'] = { PostAdLabel: 'PostAdLabel' };
   vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
+    if (name === '@/lib/post-reactions') return reactionModule();
     assert.ok(name in modules, `Unexpected import: ${name}`);
     return modules[name];
   }) });
@@ -262,4 +275,82 @@ test('translated cards preserve original photo credits and each attachment exact
   assert.ok(displayed.includes(credit), 'photo license attribution must survive translation');
   assert.equal(displayed.split(url).length - 1, 1, 'attached account links remain unchanged and are not duplicated');
   assert.ok(body.startsWith('Hello neighbours'), 'translation never changes the source post');
+});
+
+
+test('Today and detail share a like, its pending state and rollback before another toggle', async () => {
+  const calls = [];
+  let resolve, reject;
+  const persist = args => { calls.push(args); return new Promise((yes, no) => { resolve = yes; reject = no; }); };
+  const post = { id: 'like-sync-post', title: '같은 글', body: '본문', author: { id: 'author', nickname: '이웃' }, tag: { label: '일상' }, likes: 4, saves: 0, shares: 0, likedByMe: false, savedByMe: false };
+  const feed = cardRenderer('PostCard', persist), detail = cardRenderer('PostCard', persist);
+  const like = renderer => nodes(renderer.render({ post })).find(node => node.props?.analyticsId === 'components_post-card.pressable.7');
+  const first = like(feed).props.onPress();
+  assert.equal(like(detail).props.accessibilityState.selected, true, 'Opening detail immediately must see the optimistic feed like.');
+  assert.equal(like(detail).props.disabled, true, 'Both copies block another request until persistence finishes.');
+  await like(detail).props.onPress();
+  assert.equal(calls.length, 1);
+  resolve(); await first;
+  assert.equal(like(detail).props.disabled, false);
+  const second = like(detail).props.onPress();
+  assert.equal(calls[1].isOn, true, 'Detail removes the existing reaction instead of inserting a duplicate.');
+  assert.equal(like(feed).props.accessibilityState.selected, false);
+  assert.equal(like(feed).props.accessibilityLabel, t.feed.likes(4));
+  reject(new Error('offline')); await second;
+  assert.equal(like(feed).props.accessibilityState.selected, true, 'Failure rolls back every surface.');
+  assert.equal(like(detail).props.accessibilityState.selected, true);
+  assert.equal(like(feed).props.accessibilityLabel, t.feed.likes(5));
+  feed.setViewer('different-viewer');
+  assert.equal(like(feed).props.accessibilityState.selected, false, 'A different account does not inherit the first account reaction.');
+  assert.equal(like(feed).props.accessibilityLabel, t.feed.likes(4));
+  feed.setViewer('viewer-a');
+  const retry = like(detail).props.onPress(); resolve(); await retry;
+  assert.equal(like(feed).props.accessibilityState.selected, false);
+  assert.equal(like(feed).props.accessibilityLabel, t.feed.likes(4));
+  feed.setViewer('different-viewer');
+  assert.equal(like(feed).props.accessibilityState.selected, false);
+  assert.equal(like(feed).props.accessibilityLabel, t.feed.likes(4));
+  assert.equal(detail.alerts.length, 1);
+});
+
+test('a same-frame double press sends one request and server counts reconcile after the selected flag catches up', async () => {
+  const reactions = reactionModule();
+  let writes = 0, resolve;
+  const persist = () => { writes++; return new Promise(yes => { resolve = yes; }); };
+  let updates = 0;
+  const stop = reactions.subscribePostReactions(() => updates++);
+  const first = reactions.changePostReaction('fast-viewer', 'fast-post', 'like', { isOn: false, count: 0 }, persist);
+  await reactions.changePostReaction('fast-viewer', 'fast-post', 'like', { isOn: false, count: 0 }, persist);
+  assert.equal(writes, 1);
+  reactions.syncPostReactions('fast-viewer', 'fast-post', { isOn: false, count: 0 }, { isOn: false, count: 0 });
+  assert.equal(reactions.postReactionsSnapshot('fast-viewer', 'fast-post').like.count, 1);
+  resolve(); await first;
+  reactions.syncPostReactions('fast-viewer', 'fast-post', { isOn: false, count: 0 }, { isOn: false, count: 0 });
+  assert.equal(reactions.postReactionsSnapshot('fast-viewer', 'fast-post').like.isOn, true, 'An old feed snapshot cannot erase a successful mutation.');
+  reactions.syncPostReactions('fast-viewer', 'fast-post', { isOn: true, count: 8 }, { isOn: false, count: 0 });
+  assert.equal(reactions.postReactionsSnapshot('fast-viewer', 'fast-post').like.count, 8);
+  assert.equal(updates, 3);
+  stop();
+});
+test('business author uses its logo, report target and business fallback after photo failure',()=>{
+ const card=cardRenderer();let opened=0;
+ const post={id:'business-post',title:'합성 안내',body:'비즈니스 본문',author:{id:'business',nickname:'지모코',verified:false},business:{id:'business',name:'지모코',avatarUri:'opaque-logo'},tag:{kind:'post',label:'라이프'},likes:0,saves:0,comments:0,views:0};
+ const render=()=>card.render({post,onAuthor:()=>{opened++;}});
+ const logo=image(render());assert.equal(logo.props.source.uri,'opaque-logo');
+ const report=nodes(render()).find(n=>n.type==='ReportSheet');assert.equal(report.props.reportedUserId,undefined);assert.equal(report.props.reportedBusinessId,'business');
+ const author=nodes(render()).find(n=>n.props?.analyticsId==='components_post-card.pressable.4');
+ author.props.onPress();assert.equal(opened,1);assert.ok(card.feedback.includes('reaction'));
+ logo.props.onError();assert.equal(image(render()),undefined);
+ assert.ok(nodes(render()).some(n=>n.type==='ThemedText' && n.props.children==='지'));
+ post.business.avatarUri='opaque-logo-v2';assert.equal(image(render()).props.source.uri,'opaque-logo-v2');
+});
+
+test('profile logo/banner failures retain only the business fallback and recover on new images',()=>{
+ const renderer=cardRenderer('MerchantProfileHeader');
+ const profile={name:'지모코',city_name:'밴쿠버',industry:'카페',services:'',address:'',links:[],avatarUri:'logo',bannerUri:'banner'};
+ const render=()=>renderer.render({profile});
+ let images=nodes(render()).filter(n=>n.type==='Image');assert.equal(images.length,2);
+ images.forEach(n=>n.props.onError());assert.equal(nodes(render()).filter(n=>n.type==='Image').length,0);
+ assert.ok(nodes(render()).some(n=>n.type==='ThemedText'&&n.props.children==='지'));
+ profile.avatarUri='new-logo';assert.equal(nodes(render()).find(n=>n.type==='Image').props.source.uri,'new-logo');
 });

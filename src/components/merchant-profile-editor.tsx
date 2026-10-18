@@ -67,7 +67,7 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
       if (!draft.current) { draft.current = savedPhotos(next); setPhotos(draft.current); }
       if (!contactDraft.current) { contactDraft.current = { phone: next.public_phone ?? '', hours: next.business_hours ?? '' }; setContact(contactDraft.current); }
       setError('');
-    }).catch(() => { if (active) setError("프로필을 불러오지 못했어요. 업체 권한과 연결 상태를 확인해 주세요."); })
+    }).catch(() => { if (active) setError("프로필을 불러오지 못했어요. 비즈니스 권한과 연결 상태를 확인해 주세요."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [merchantId, revision]);
@@ -104,7 +104,7 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
       }
       const saved = await saveMyMerchantProfile(supabase, merchantId, { avatarPath: next.avatar.path, bannerPath: next.banner.path, updatedAt: profile.updated_at });
       if (!mounted.current) return;
-      setProfile(saved); change(savedPhotos(saved)); setNotice("프로필 사진을 저장했어요. 공개 가능한 업체 프로필에 표시돼요."); play('success');
+      setProfile(saved); change(savedPhotos(saved)); setNotice("프로필 사진을 저장했어요. 공개 가능한 비즈니스 프로필에 표시돼요."); play('success');
       const old = [profile.avatar_path, profile.banner_path, ...uploads.current].filter((path): path is string => !!path);
       if (old.length) void supabase.storage.from('merchant-profile-images').remove([...new Set(old)]).catch(() => {});
     } catch (failure) {
@@ -143,7 +143,7 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
     contactDraft.current = null; setContact(null); change(null); reload();
   };
   return <View style={[styles.section, { borderColor: theme.line, backgroundColor: theme.card }]}>
-    <View style={styles.row}><ThemedText type="subtitle">{tr("업체 프로필")}</ThemedText>
+    <View style={styles.row}><ThemedText type="subtitle">{tr("비즈니스 프로필")}</ThemedText>
       {profile && <ProfileAction label={tr("공개 프로필 보기")} onPress={() => {
         if (Platform.OS === 'web') void Linking.openURL(`https://gling.ej-entertainment.com/company?id=${encodeURIComponent(merchantId)}`).catch(() => setError("프로필을 열지 못했어요. 잠시 후 다시 시도해 주세요."));
         else router.push({ pathname: '/company/[id]', params: { id: merchantId } });
@@ -152,7 +152,7 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
     {loading ? <ThemedText type="small" accessibilityLiveRegion="polite">{tr("프로필을 불러오는 중…")}</ThemedText>
       : profile && photos && <>
         <MerchantProfileHeader profile={{ ...profile, avatarUri: photos.avatar.uri, bannerUri: photos.banner.uri }} />
-        {!profile.can_edit && <ThemedText type="small" themeColor="textSecondary">{tr("업체 계정과 소유 확인이 완료되면 사진을 바꿀 수 있어요.")}</ThemedText>}
+        {!profile.can_edit && <ThemedText type="small" themeColor="textSecondary">{tr("비즈니스 계정과 소유 확인이 완료되면 사진을 바꿀 수 있어요.")}</ThemedText>}
         {profile.can_edit && <>
           <ThemedText type="small" themeColor="textSecondary">{tr("배너는 가운데 기준의 가로 화면, 로고는 원형으로 보여요. 저장 전 미리보기에서 확인해 주세요.")}</ThemedText>
           {(['banner', 'avatar'] as const).map((kind) => <View key={kind} style={styles.row}>
@@ -170,11 +170,11 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
             <ThemedText type="smallBold">{tr("공개 연락 정보")}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{tr("방문자가 볼 전화번호와 실제 영업시간을 적어주세요. 내부 담당자 연락처와 별도로 공개돼요.")}</ThemedText>
             <ThemedText type="smallBold">{tr("전화번호") + " "}<ThemedText type="small" themeColor="textSecondary">{tr("(선택)")}</ThemedText></ThemedText>
-            <TextInput accessibilityLabel={tr("업체 공개 전화번호")} value={contact.phone} editable={!busy} maxLength={40} keyboardType="phone-pad" autoCapitalize="none"
+            <TextInput accessibilityLabel={tr("비즈니스 공개 전화번호")} value={contact.phone} editable={!busy} maxLength={40} keyboardType="phone-pad" autoCapitalize="none"
               placeholder="+1 604 555 0101" placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')} onChangeText={phone => changeContact({ ...contact, phone })}
               style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
             <ThemedText type="smallBold">{tr("영업시간") + " "}<ThemedText type="small" themeColor="textSecondary">{tr("(선택)")}</ThemedText></ThemedText>
-            <TextInput accessibilityLabel={tr("업체 영업시간")} value={contact.hours} editable={!busy} maxLength={500} multiline
+            <TextInput accessibilityLabel={tr("비즈니스 영업시간")} value={contact.hours} editable={!busy} maxLength={500} multiline
               placeholder={tr("월–금 09:00–18:00\n토·일 휴무")} placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')} onChangeText={hours => changeContact({ ...contact, hours })}
               style={[styles.input, styles.hours, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
             <ThemedText type="small" themeColor="textSecondary">{tr("비워 두면 공개하지 않아요.")}</ThemedText>

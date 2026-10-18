@@ -16,7 +16,7 @@ export type ConversationReview = {
   status: ConversationReviewStatus; note: string; last_signal_at: string | null; created_at: string;
 };
 export type ConversationCase = {
-  id: string; kind: 'direct' | 'group'; title: string | null; participants: ConversationMember[];
+  id: string; kind: 'direct' | 'group' | 'business'; title: string | null; participants: ConversationMember[];
   latest_message_at: string; latest_excerpt: string; message_count: number;
   risk_level: ConversationRisk; signal_count: number; latest_signal_at: string | null;
   pending_analysis: number; status: ConversationReviewStatus; reopened: boolean; review: ConversationReview | null;

@@ -138,7 +138,7 @@ function ScopedPlaceReviews({ cityId, placeId, userId, viewport }: Props & { use
       }}>
         <PostCard post={post} flat translationVisible={translationVisible}
           onPress={() => router.push({ pathname: '/post/[id]', params: { id: post.id } })}
-          onAuthor={() => { if (post.author.id) router.push({ pathname: '/user/[id]', params: { id: post.author.id } }); }} />
+          onAuthor={() => { if (post.business) router.push({ pathname: '/company/[id]', params: { id: post.business.id } }); else if (post.author.id) router.push({ pathname: '/user/[id]', params: { id: post.author.id } }); }} />
       </View>;
     })}
     {page?.hasMore && <Pressable analyticsId="places.reviews.more" accessibilityRole="button" disabled={loading || saving} accessibilityState={{ disabled: loading || saving }}

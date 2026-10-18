@@ -9,6 +9,14 @@ const { merchantAddressCity } = merchantApi;
 
 const merchants = ['first', 'second'].map((id, i) => ({ id, name: `업체 ${i + 1}`, city_id: 'vancouver', city_name: '밴쿠버', timezone: 'America/Vancouver', industry: '카페', services: '', address: '', contact: `contact${i + 1}@example.test`, status: 'trial', consent: 'pending', consent_note: '', trial_ends_at: null, post_count: i + 1, report_count: 0, updated_at: '2026-10-11T00:00:00Z' }));
 
+test('vendor workspace groups the directory into seven columns without dropping location, account or actions', () => {
+  const tree = app().render(), table = nodes(tree).find(n => n.type === 'table');
+  const head = nodes(table).find(n => n.type === 'thead');
+  assert.equal(nodes(head).filter(n => n.type === 'th').length, 7);
+  assert.match(text(table), /미연결/); assert.match(text(table), /게시 지역/);
+  assert.ok(button(tree, '업체 1 크리에이터 협업')); assert.ok(button(tree, '업체 1 삭제'));
+});
+
 function app({ failure = null } = {}) {
   const state = [], refs = [], effects = [], feedback = [], prompts = [], calls = [];
   let stateIndex = 0, refIndex = 0, effectIndex = 0, allowReplace = false;
@@ -20,7 +28,7 @@ function app({ failure = null } = {}) {
   vm.runInNewContext(source, { exports, Date, Error, window: { confirm(message) { prompts.push(message); return allowReplace; } }, require(name) {
     if (name.endsWith('.css')) return {};
     if (name.endsWith('.png')) return 'preview-logo';
-    if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
+    if (name === 'react/jsx-runtime') return { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }) };
     if (name === 'react') return {
       useEffect(callback) { effects[effectIndex++] = callback; },
       useRef: initial => { const i = refIndex++; return refs[i] ??= { current: initial }; },
@@ -36,6 +44,7 @@ function app({ failure = null } = {}) {
     if (name === './admin-ai-connection') return { AdminAiConnection: 'AdminAiConnection' };
     if (name === './admin-table-controls') return { AdminSelect: 'AdminSelect', AdminFilterBar: 'AdminFilterBar', AdminFilterReset: 'AdminFilterReset' };
     if (name === './admin-merchant-connections') return { AdminMerchantConnections: 'AdminMerchantConnections' };
+    if (name === '@/components/merchant-profile-editor') return { MerchantProfileEditor: 'MerchantProfileEditor' };
     return {};
   } });
   const render = () => { stateIndex = refIndex = effectIndex = 0; return exports.AdminMerchantsView({ refreshSignal: 0 }); };
@@ -56,6 +65,47 @@ function text(node) {
   return [node?.props?.children].flat(Infinity).map(text).join(' ');
 }
 const button = (root, label) => nodes(root).find(n => n.type === 'button' && (text(n).trim() === label || n.props['aria-label'] === label));
+
+test('business detail starts with an overview and keeps profile and account management one click away', () => {
+  const view = app();
+  button(view.render(), '업체 1 활동과 정보 보기').props.onClick(); view.detail();
+  let root = view.render();
+  const overview = button(root, '개요'); assert.ok(overview, 'A business should open to a readable overview.');
+  assert.equal(overview.props['aria-pressed'], true);
+  for (const label of ['프로필', '계정 연결', '크리에이터 협업', '글·성과', '운영 도구']) assert.ok(button(root, label), label);
+  const profile = button(root, '프로필 관리'); assert.ok(profile); profile.props.onClick();
+  root = view.render(); assert.equal(button(root, '프로필').props['aria-pressed'], true);
+  assert.equal(nodes(root).find(n => n.type === 'MerchantProfileEditor')?.props.merchantId, 'first');
+  button(root, '계정 연결').props.onClick();
+  root = view.render(); assert.equal(button(root, '계정 연결').props['aria-pressed'], true);
+  assert.ok(nodes(root).find(n => n.props?.id === 'merchant-accounts-panel' && !n.props.hidden));
+  assert.ok(nodes(root).find(n => n.type === 'AdminMerchantConnections'));
+});
+
+test('public profile drafts stay mounted across sections and protect replacement with another business', () => {
+  const view = app(); button(view.render(), '업체 1 활동과 정보 보기').props.onClick(); view.detail();
+  assert.ok(!nodes(view.render()).some(n => n.type === 'MerchantProfileEditor'), 'Do not fetch an unseen public profile on initial overview.');
+  const profile = button(view.render(), '프로필'); assert.ok(profile); profile.props.onClick();
+  const editor = nodes(view.render()).find(n => n.type === 'MerchantProfileEditor'); assert.ok(editor); editor.props.onDirty(true);
+  button(view.render(), '글·성과').props.onClick();
+  assert.equal(nodes(view.render()).find(n => n.type === 'MerchantProfileEditor')?.key, editor.key);
+  button(view.render(), '비즈니스 상세 닫기').props.onClick();
+  button(view.render(), '업체 1 활동과 정보 보기').props.onClick();
+  assert.equal(nodes(view.render()).find(n => n.type === 'MerchantProfileEditor')?.key, editor.key);
+  button(view.render(), '업체 2 활동과 정보 보기').props.onClick();
+  assert.equal(view.prompts.length, 1); assert.equal(nodes(view.render()).find(n => n.type === 'MerchantProfileEditor')?.props.merchantId, 'first');
+  view.allow(); button(view.render(), '업체 2 활동과 정보 보기').props.onClick();
+  assert.ok(!nodes(view.render()).some(n => n.type === 'MerchantProfileEditor'));
+});
+
+test('source records have no business-only profile, account or collaboration controls', () => {
+  const view = app(); view.refreshMerchant({ ...merchants[0], record_kind: 'source' });
+  button(view.render(), '업체 1 활동과 정보 보기').props.onClick();
+  const nav = nodes(view.render()).find(n => n.type === 'nav' && n.props['aria-label'] === '비즈니스 상세 화면');
+  assert.ok(nav); assert.ok(button(nav, '개요')); assert.ok(button(nav, '등록 정보')); assert.ok(button(nav, '글·성과'));
+  for (const label of ['프로필', '계정 연결', '크리에이터 협업', '운영 도구']) assert.ok(!button(nav, label), label);
+  assert.ok(!nodes(view.render()).some(n => n.type === 'MerchantProfileEditor'));
+});
 
 test('merchant contact links preserve text, recognize named platforms and reject unsafe targets', () => {
   assert.equal(typeof merchantSource.merchantContactLinks, 'function');
@@ -151,7 +201,7 @@ test('벤더 목록은 주소 기반 소재지와 연결 계정을 구분하고 
   const address = '77 Finch Ave W, Suite 202, North York, ON M2N 2H5';
   view.refreshMerchant({ ...merchants[0], address, owner_id: 'owned' });
   const table = nodes(view.render()).find(n => n.type === 'table');
-  assert.ok(text(view.render()).includes('업체 관리'));
+  assert.ok(text(view.render()).includes('비즈니스 관리'));
   assert.ok(text(table).includes('North York, ON'));
   assert.ok(text(table).includes('벤더 회원'));
   assert.ok(text(table).includes('미연결'));
@@ -167,12 +217,12 @@ test('벤더 목록은 주소 기반 소재지와 연결 계정을 구분하고 
 test('closing and reopening the same merchant keeps its unsaved profile; replacing it requires confirmation', () => {
   const view = app();
   button(view.render(), '업체 1 활동과 정보 보기').props.onClick();
-  button(view.render(), '업체 정보').props.onClick();
+  button(view.render(), '프로필').props.onClick();
   nodes(view.render()).find(n => n.type === 'input' && n.props.value === '업체 1').props.onChange({ target: { value: '저장 전 이름' } });
-  button(view.render(), '업체 상세 닫기').props.onClick();
+  button(view.render(), '비즈니스 상세 닫기').props.onClick();
   button(view.render(), '업체 1 활동과 정보 보기').props.onClick();
   assert.ok(nodes(view.render()).some(n => n.type === 'input' && n.props.value === '저장 전 이름'));
-  assert.equal(button(view.render(), '업체 정보').props['aria-pressed'], true, 'Reopening must keep the current tab and draft visible.');
+  assert.equal(button(view.render(), '프로필').props['aria-pressed'], true, 'Reopening must keep the current tab and draft visible.');
   button(view.render(), '업체 2 활동과 정보 보기').props.onClick();
   assert.equal(view.prompts.length, 1);
   assert.ok(nodes(view.render()).some(n => n.type === 'input' && n.props.value === '저장 전 이름'));
@@ -182,19 +232,19 @@ test('closing and reopening the same merchant keeps its unsaved profile; replaci
   assert.ok(view.feedback.includes('selection'));
 });
 
-test('linked post management belongs to the profile tab and retains unsaved input across tabs', () => {
+test('linked post management belongs to the activity tab and retains unsaved input across tabs', () => {
   const view = app();
   view.refreshMerchant({ ...merchants[0], consent: 'granted' });
   button(view.render(), '업체 1 활동과 정보 보기').props.onClick(); view.detail();
   const linked = root => nodes(root).find(n => n.type === 'section' && text(n).startsWith('연결된 글'));
-  const profile = root => nodes(root).find(n => n.type === 'div' && n.props.hidden === true && nodes(n).includes(linked(root)));
-  assert.ok(profile(view.render()), 'linked posts must be mounted inside the hidden profile, not crowd the activity tab');
-  button(view.render(), '업체 정보').props.onClick();
+  const activity = root => nodes(root).find(n => n.type === 'div' && n.props.id === 'merchant-activity-panel' && n.props.hidden === true && nodes(n).includes(linked(root)));
+  assert.ok(activity(view.render()), 'linked posts stay mounted inside the activity section while the overview is visible');
+  button(view.render(), '글·성과').props.onClick();
   const source = root => nodes(linked(root)).find(n => n.type === 'input' && n.props.type === 'url');
   source(view.render()).props.onChange({ target: { value: 'https://example.test/unsaved' } });
-  button(view.render(), '활동 · 성과').props.onClick();
+  button(view.render(), '프로필').props.onClick();
   assert.equal(source(view.render()).props.value, 'https://example.test/unsaved');
-  button(view.render(), '업체 정보').props.onClick();
+  button(view.render(), '글·성과').props.onClick();
   assert.equal(source(view.render()).props.value, 'https://example.test/unsaved');
   button(view.render(), '업체 2 활동과 정보 보기').props.onClick();
   assert.equal(view.prompts.length, 1);
@@ -204,7 +254,7 @@ test('linked post management belongs to the profile tab and retains unsaved inpu
 test('reopening a clean merchant uses the latest saved name and contact from the refreshed directory', () => {
   const view = app();
   button(view.render(), '업체 1 활동과 정보 보기').props.onClick();
-  button(view.render(), '업체 상세 닫기').props.onClick();
+  button(view.render(), '비즈니스 상세 닫기').props.onClick();
   view.refreshMerchant({ ...merchants[0], name: '새 서버 이름', contact: 'latest@example.test' });
   button(view.render(), '새 서버 이름 활동과 정보 보기').props.onClick();
   const inputs = nodes(view.render()).filter(n => n.type === 'input');
@@ -219,7 +269,7 @@ test('unsaved account ownership edits also protect a merchant switch', () => {
   view.detail();
   const form = nodes(view.render()).find(n => n.type === 'AdminMerchantConnections');
   form.props.onDirty(true);
-  button(view.render(), '업체 상세 닫기').props.onClick();
+  button(view.render(), '비즈니스 상세 닫기').props.onClick();
   button(view.render(), '업체 2 활동과 정보 보기').props.onClick();
   assert.equal(view.prompts.length, 1, 'Account form edits must not disappear silently.');
   assert.ok(nodes(view.render()).some(n => n.type === 'input' && n.props.value === '업체 1'));
@@ -227,10 +277,10 @@ test('unsaved account ownership edits also protect a merchant switch', () => {
 
 
 test('unknown promotions default to a source record and choosing a business gives immediate feedback', () => {
-  const view=app();button(view.render(),'업체 등록').props.onClick();
+  const view=app();button(view.render(),'비즈니스 등록').props.onClick();
   let root=view.render();let select=nodes(root).find(n=>n.type==='select'&&n.props['aria-label']==='등록 종류');
   assert.ok(select);assert.equal(select.props.value,'source');
-  assert.ok(text(root).includes('공개 회사 프로필과 업체 리뷰를 만들지 않습니다'));
+  assert.ok(text(root).includes('공개 비즈니스 프로필과 비즈니스 리뷰를 만들지 않습니다'));
   const feedback=view.feedback.length;select.props.onChange({target:{value:'business'}});
   root=view.render();select=nodes(root).find(n=>n.type==='select'&&n.props['aria-label']==='등록 종류');
   assert.equal(select.props.value,'business');assert.ok(view.feedback.length>feedback);
@@ -244,7 +294,7 @@ test('row editing opens the existing information form directly', () => {
   const edit = button(view.render(), '업체 1 수정');
   assert.ok(edit, 'A vendor must have a direct edit action.');
   edit.props.onClick();
-  const profileTab = button(view.render(), '업체 정보');
+  const profileTab = button(view.render(), '프로필');
   assert.equal(profileTab.props['aria-pressed'], true);
   assert.ok(nodes(view.render()).some(n => n.type === 'input' && n.props.value === '업체 1'));
 });
@@ -303,7 +353,7 @@ test('deleting another vendor preserves an unsaved information draft', async () 
   const view = app(); view.allow();
   button(view.render(), '업체 1 수정').props.onClick();
   nodes(view.render()).find(n => n.type === 'input' && n.props.value === '업체 1').props.onChange({ target: { value: '저장 전 이름' } });
-  button(view.render(), '업체 상세 닫기').props.onClick();
+  button(view.render(), '비즈니스 상세 닫기').props.onClick();
   button(view.render(), '업체 2 삭제').props.onClick();
   await settle();
   assert.ok(nodes(view.render()).some(n => n.type === 'input' && n.props.value === '저장 전 이름'));
@@ -313,7 +363,7 @@ test('deleting another vendor preserves an unsaved information draft', async () 
 test('confirmed deletion of the open vendor clears its abandoned editor', async () => {
   const view = app(); view.allow();
   button(view.render(), '업체 1 수정').props.onClick();
-  button(view.render(), '업체 상세 닫기').props.onClick();
+  button(view.render(), '비즈니스 상세 닫기').props.onClick();
   button(view.render(), '업체 1 삭제').props.onClick();
   await settle();
   assert.ok(!nodes(view.render()).some(n => n.type === 'input' && n.props.value === '업체 1'));
@@ -338,7 +388,7 @@ test('deleting another vendor keeps a locally edited owner form mounted', async 
   const before = ownerForm(view.render());
   assert.ok(before);
   before.props.onDirty();
-  button(view.render(), '업체 상세 닫기').props.onClick();
+  button(view.render(), '비즈니스 상세 닫기').props.onClick();
   button(view.render(), '업체 2 삭제').props.onClick();
   await settle();
   const after = ownerForm(view.render());

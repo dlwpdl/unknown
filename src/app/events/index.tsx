@@ -10,6 +10,9 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { FlatList, Pressable, ScrollView } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
 import { StateCard } from '@/components/state-card';
+import { FeedAd } from '@/components/feed-ad';
+import { adsSupported } from '@/lib/ads';
+import { contentAdPosition } from '@/lib/content-ad-placement';
 import { useTheme } from '@/hooks/use-theme';
 import { useCommunityCity } from '@/lib/community-city';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -135,7 +138,7 @@ function EventListScreen() {
         : !supported ? <StateCard title={tr("이 지역 행사는 준비 중이에요")} body={tr("모임 화면에서 지원하는 캐나다 도시를 선택해 주세요.")} />
             : error ? <StateCard kind="error" title={tr("행사를 불러오지 못했어요")} body={error} actionLabel={tr("다시 시도")} onAction={() => { play('selection'); setAttempt(n => n + 1); }} />
               : <StateCard title={tr(priceFilter !== 'all' && !!data?.events.length ? tr("이 페이지에 해당 가격의 행사가 없어요") : date ? tr("이 날짜의 행사가 없어요") : tr("예정된 행사가 아직 없어요"))} body={tr(data?.hasMore && priceFilter !== 'all' ? '다음 페이지에도 행사가 있어요. 다른 페이지를 확인해 주세요.' : '다른 날짜나 가격·카테고리를 선택해 주세요.')} />}
-      renderItem={({ item }) => <Link href={{ pathname: '/events/[id]', params: { id: item.id, cityId: city.id } }} asChild><Link.AppleZoom><Pressable analyticsId="ticketmaster.event.open" accessibilityRole="button" accessibilityLabel={`${item.name}, ${eventTime(item, locale)}, ${item.venue}`} onPress={() => play('selection')} style={StyleSheet.flatten([styles.card, { backgroundColor: theme.card }])}>
+      renderItem={({ item, index }) => <><Link href={{ pathname: '/events/[id]', params: { id: item.id, cityId: city.id } }} asChild><Link.AppleZoom><Pressable analyticsId="ticketmaster.event.open" accessibilityRole="button" accessibilityLabel={`${item.name}, ${eventTime(item, locale)}, ${item.venue}`} onPress={() => play('selection')} style={StyleSheet.flatten([styles.card, { backgroundColor: theme.card }])}>
         {item.image ? <Image source={{ uri: item.image }} style={styles.image} contentFit="cover" accessibilityLabel={tr("행사 이미지")} /> : <View style={[styles.image, { backgroundColor: theme.backgroundElement }]} />}
         <View style={styles.cardBody}>
           <ThemedText type="smallBold" themeColor="textSecondary" numberOfLines={1}>{eventTime(item, locale)}</ThemedText>
@@ -143,7 +146,7 @@ function EventListScreen() {
           <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{item.venue || item.city}</ThemedText>
           <ThemedText type="smallBold" themeColor={item.price ? 'accent' : 'textSecondary'} numberOfLines={1}>{eventNotice(item, locale) || eventPriceLabel(item, locale)}</ThemedText>
         </View>
-      </Pressable></Link.AppleZoom></Link>}
+      </Pressable></Link.AppleZoom></Link>{adsSupported && !loading && !error && contentAdPosition(index, visibleEvents.length) && <FeedAd key={`ad-after-${item.id}`} surface="events" />}</>}
       ListFooterComponent={<View style={styles.footer}>{!!data && <View style={styles.paging}>
         <Pressable analyticsId="ticketmaster.previous" accessibilityRole="button" disabled={!page || loading} accessibilityState={{ disabled: !page || loading }} onPress={() => { play('selection'); setPage(n => n - 1); }} style={({ pressed }) => [styles.chip, { borderColor: theme.line, backgroundColor: theme.card, opacity: !page || loading ? 0.35 : pressed ? 0.7 : 1 }]}><ThemedText>{tr("이전")}</ThemedText></Pressable>
         <ThemedText type="small">{page + 1}{" " + tr("페이지")}</ThemedText>

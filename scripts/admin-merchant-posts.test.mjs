@@ -7,7 +7,7 @@ import ts from 'typescript';
 const linked = { post_id: 'post-1', title: '카페 소개', displayed_views: 120, source_clicks: 3, status: 'published' };
 const post = { id: 'post-1', title: linked.title, body: '업체가 요청한 소개 본문', tag: { label: '비즈니스' }, author: { id: 'delegate', nickname: '글링 운영자' }, imageUris: ['photo-1', 'photo-2'] };
 function app() {
-  const state = [], effects = [], pending = [], calls = [], feedback = [];
+  const state = [], effects = [], pending = [], calls = [], feedback = [], privateCalls = [];
   let stateIndex = 0, effectIndex = 0;
   let auth = { isAdmin: true, me: { id: 'admin' } };
   const exports = {};
@@ -21,10 +21,11 @@ function app() {
     if (name === '@/lib/auth') return { useAuth: () => auth };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) };
     if (name === '@/lib/feed-data') return {
+      attachSignedPostImages: async (_client, posts) => { privateCalls.push(['sign',posts[0].imagePaths]); return posts.map(p=>({...p,imageUris:['private-signed-photo']})); },
       loadPublicPost(client, id) { calls.push(id); return new Promise((resolve, reject) => pending.push({ resolve, reject })); },
       getPostImageSource: (value, scope, variant, position) => ({ uri: value.imageUris[position] }),
     };
-    if (name === '@/lib/supabase') return { supabase: {} };
+    if (name === '@/lib/supabase') return { supabase: {rpc:async(...args)=>{privateCalls.push(args);return {error:null};},from:table=>({select:columns=>({eq:(field,id)=>({single:async()=>{privateCalls.push([table,columns,field,id]);return {data:{image_paths:['private-actor/image.webp']},error:null};}})})})} };
     if (name === '@/lib/sharing') return { buildSharedPostUrl: id => '/p/' + id };
     throw new Error('Unexpected import: ' + name);
   } });
@@ -35,7 +36,7 @@ function app() {
     for (const effect of effects) if (effect.changed) { effect.changed = false; effect.cleanup = effect.fn(); }
     return root;
   };
-  return { render, calls, pending, feedback, props(value) { props = { ...props, ...value }; }, auth(value) { auth = value; } };
+  return { render, calls, pending, feedback, privateCalls, props(value) { props = { ...props, ...value }; }, auth(value) { auth = value; } };
 }
 function nodes(node) {
   if (!node || typeof node !== 'object') return [];
@@ -59,7 +60,7 @@ test('expanding a linked post shows its actual author, photos and body without d
   assert.ok(all.findIndex(node => node.type === 'summary') < all.findIndex(node => node.type === 'img'));
   assert.ok(view.feedback.includes('selection'));
   view.props({ ownerId: 'delegate' });
-  assert.match(text(view.render()), /업체 계정 작성/);
+  assert.match(text(view.render()), /비즈니스 계정 작성/);
 });
 
 test('unavailable posts stay unavailable, while a failed read can be retried', async () => {
@@ -103,4 +104,13 @@ test('logout and account changes hide cached photos and discard outstanding read
   assert.equal(view.render(), null);
   view.pending[1].resolve(post); await flush();
   assert.equal(view.render(), null);
+});
+
+test('private admin business photos require audited raw reads while public identity stays business',async()=>{
+ const view=app();open(view);view.pending[0].resolve({...post,business:{id:'business',name:'지모코'},author:{id:'business',nickname:'지모코'}});
+ for(let i=0;i<20;i++) await Promise.resolve();
+ const root=view.render();assert.match(text(root),/지모코/);assert.match(text(root),/비즈니스 계정 작성/);
+ assert.deepEqual(JSON.parse(JSON.stringify(view.privateCalls[0])),['log_admin_access',{scope:'posts',resource_id:'post-1'}]);
+ assert.deepEqual(view.privateCalls[1],['posts','image_paths','id','post-1']);
+ assert.deepEqual(nodes(root).filter(n=>n.type==='img').map(n=>n.props.src),['private-signed-photo']);
 });

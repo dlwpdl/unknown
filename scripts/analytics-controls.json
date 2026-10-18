@@ -273,5 +273,12 @@
   "ticketmaster.detail": "src/app/events/[id].tsx",
   "ticketmaster.meetup.find": "src/app/events/[id].tsx",
   "ticketmaster.meetup.create": "src/app/events/[id].tsx",
-  "ticketmaster.purchase": "src/app/events/[id].tsx"
+  "ticketmaster.purchase": "src/app/events/[id].tsx",
+  "chat.identity.open": "src/components/chat-identity-switcher.tsx",
+  "chat.identity.close": "src/components/chat-identity-switcher.tsx",
+  "chat.identity.options": "src/components/chat-identity-switcher.tsx",
+  "chat.identity.personal": "src/components/chat-identity-switcher.tsx",
+  "chat.peer-profile": "src/components/chat-room.tsx",
+  "chat.sender-profile": "src/components/chat-room.tsx",
+  "chat.identity.business": "src/components/chat-identity-switcher.tsx"
 }

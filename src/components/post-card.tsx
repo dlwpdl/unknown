@@ -1,6 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
-import { useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { Alert, Animated, Easing, StyleSheet, View } from 'react-native';
@@ -26,6 +26,7 @@ import { getPostImageSource, relativeTime } from '@/lib/feed-data';
 import { visibleMeetupBody } from '@/lib/meetup-ai';
 import { uniqueHashtags } from '@/lib/hashtags';
 import { postMapBody } from '@/lib/post-maps';
+import { changePostReaction, postReactionsSnapshot, subscribePostReactions, syncPostReactions } from '@/lib/post-reactions';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { PostShareSheet } from '@/components/post-share-sheet';
 import { supabase } from '@/lib/supabase';
@@ -61,14 +62,21 @@ export function PostCard({
   const reducedMotion = useReducedMotion();
   const [saveBurst] = useState(() => new Animated.Value(0));
   const openPost = () => { play('selection'); onPress?.(); };
-  const mine = post.author.id === me.id;
-  const [savedOn, setSavedOn] = useState(post.savedByMe ?? false);
-  const [likedOn, setLikedOn] = useState(post.likedByMe ?? false);
-  const [likeCount, setLikeCount] = useState(post.likes);
-  const [saveCount, setSaveCount] = useState(post.saves);
+  const mine = !post.business && post.author.id === me.id;
+  const viewerId = isAuthed ? me.id : 'guest';
+  const reactions = useSyncExternalStore(subscribePostReactions,
+    useCallback(() => postReactionsSnapshot(viewerId, post.id), [viewerId, post.id]), () => undefined);
+  const likedOn = reactions?.like?.isOn ?? post.likedByMe ?? false;
+  const savedOn = reactions?.save?.isOn ?? post.savedByMe ?? false;
+  const likeCount = reactions?.like?.count ?? post.likes;
+  const saveCount = reactions?.save?.count ?? post.saves;
+  const busyReaction = reactions?.pending ?? null;
+  useEffect(() => {
+    syncPostReactions(viewerId, post.id, { isOn: post.likedByMe ?? false, count: post.likes }, { isOn: post.savedByMe ?? false, count: post.saves });
+  }, [viewerId, post.id, post.likedByMe, post.likes, post.savedByMe, post.saves]);
   const [shareCount, setShareCount] = useState(post.shares ?? 0);
-  const [busyReaction, setBusyReaction] = useState<'like' | 'save' | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
+  const [failedBusinessLogo, setFailedBusinessLogo] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [failedPhoto, setFailedPhoto] = useState<{ postId: string; uri: string } | null>(null);
   const [loadedPhoto, setLoadedPhoto] = useState<{ key: string; aspectRatio: number } | null>(null);
@@ -96,19 +104,12 @@ export function PostCard({
     if (!isAuthed) return promptLogin(t.auth.reasonLike);
     if (busyReaction) return;
     play('reaction');
-    const previous = likedOn;
-    setLikedOn(!previous);
-    setLikeCount((count) => Math.max(0, count + (previous ? -1 : 1)));
-    setBusyReaction('like');
     try {
-      await togglePostReaction(supabase, post.id, me.id, 'like', previous);
+      await changePostReaction(me.id, post.id, 'like', { isOn: likedOn, count: likeCount },
+        previous => togglePostReaction(supabase, post.id, me.id, 'like', previous));
     } catch {
       play('warning');
-      setLikedOn(previous);
-      setLikeCount((count) => Math.max(0, count + (previous ? 1 : -1)));
       Alert.alert(t.feed.actionErrorTitle, t.feed.actionErrorBody);
-    } finally {
-      setBusyReaction(null);
     }
   };
 
@@ -122,18 +123,12 @@ export function PostCard({
       saveBurst.setValue(0);
       Animated.timing(saveBurst, { toValue: 1, duration: 560, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
     }
-    setSavedOn(!previous);
-    setSaveCount((count) => Math.max(0, count + (previous ? -1 : 1)));
-    setBusyReaction('save');
     try {
-      await togglePostReaction(supabase, post.id, me.id, 'save', previous);
+      await changePostReaction(me.id, post.id, 'save', { isOn: savedOn, count: saveCount },
+        wasOn => togglePostReaction(supabase, post.id, me.id, 'save', wasOn));
     } catch {
       play('warning');
-      setSavedOn(previous);
-      setSaveCount((count) => Math.max(0, count + (previous ? 1 : -1)));
       Alert.alert(t.feed.actionErrorTitle, t.feed.actionErrorBody);
-    } finally {
-      setBusyReaction(null);
     }
   };
 
@@ -158,14 +153,17 @@ export function PostCard({
             accessibilityRole={onAuthor ? 'button' : undefined}
             style={({ pressed }) => [styles.author, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent', transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
             <View style={[styles.avatar, { backgroundColor: mine ? theme.accent : theme.backgroundElement }]}>
+              {post.business?.avatarUri && failedBusinessLogo !== post.business.avatarUri ? <Image
+                source={{ uri: post.business.avatarUri }} style={{ width: 32, height: 32, borderRadius: 16 }} contentFit="cover"
+                accessibilityIgnoresInvertColors onError={() => setFailedBusinessLogo(post.business!.avatarUri!)} /> :
               <ThemedText type="smallBold" style={{ color: mine ? theme.accentInk : theme.navy }}>
-                {post.author.nickname[0]}
-              </ThemedText>
+                {(post.business?.name ?? post.author.nickname)[0]}
+              </ThemedText>}
             </View>
             <View style={styles.authorCopy}>
               <View style={styles.nickRow}>
-                <ThemedText type="smallBold" style={styles.nickname}>{post.author.nickname}</ThemedText>
-                <TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} />
+                <ThemedText type="smallBold" style={styles.nickname}>{post.business?.name ?? post.author.nickname}</ThemedText>
+                {post.business ? <ThemedText type="small" themeColor="textSecondary">{tr('비즈니스')}</ThemedText> : <TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} />}
                 <PostAdLabel hashtags={post.hashtags} />
                 {mine && (
                   <ThemedText type="smallBold" style={{ color: theme.accent }}>
@@ -182,7 +180,7 @@ export function PostCard({
             <Pressable analyticsId="components_post-card.pressable.5"
               onPress={() => { play('reaction'); if (isAuthed) setReportOpen(true); else promptLogin(t.auth.reasonReport); }}
               accessibilityRole="button"
-              accessibilityLabel={t.report.title(post.author.nickname)}
+              accessibilityLabel={t.report.title(post.business?.name ?? post.author.nickname)}
               style={({ pressed }) => [styles.more, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent', transform: [{ scale: pressed ? 0.88 : 1 }] }]}>
               <SymbolView
                 name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }}
@@ -404,8 +402,9 @@ export function PostCard({
         visible={reportOpen}
         targetType="post"
         targetId={post.id}
-        reportedUserId={post.author.id}
-        reportedNickname={post.author.nickname}
+        reportedUserId={post.business ? undefined : post.author.id}
+        reportedBusinessId={post.business?.id}
+        reportedNickname={post.business?.name ?? post.author.nickname}
         onClose={() => setReportOpen(false)}
       />
     </View>

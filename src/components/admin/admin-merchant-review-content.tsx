@@ -76,7 +76,7 @@ function ReviewContent({ targetId, localPreview = false, onUser, onChanged }: Pr
     {content && <>
       <ThemedText type="small" selectable>{content.text}</ThemedText>
       <ThemedText type="smallBold">{employment ? '근무 후기' : '상품·서비스 후기'}</ThemedText>
-      <ThemedText type="small" style={{ color: theme.textSecondary }}>현재 후기 · {content.status === 'removed' ? '숨김' : content.receiptStatus === 'verified' ? '공개' : employment ? '비공개' : '작성자·업체만 보기'}</ThemedText>
+      <ThemedText type="small" style={{ color: theme.textSecondary }}>현재 후기 · {content.status === 'removed' ? '숨김' : content.receiptStatus === 'verified' ? '공개' : employment ? '비공개' : '작성자·비즈니스만 보기'}</ThemedText>
       <ThemedText type="smallBold">{proofLabel} · {({ none: '없음', pending: '검토 대기', verified: '인증됨', rejected: '인증 거절' })[content.receiptStatus ?? 'none']}</ThemedText>
       {content.receiptReviewNote && <ThemedText type="small" selectable>최근 검토 메모 · {content.receiptReviewNote}</ThemedText>}
       {!!content.receiptPath && <>
@@ -85,7 +85,7 @@ function ReviewContent({ targetId, localPreview = false, onUser, onChanged }: Pr
         </Pressable>
         <ThemedText type="small" style={{ color: theme.textSecondary }}>{employment
           ? '근무 증빙은 작성자와 관리자만 볼 수 있습니다. 회사·근무자·근무 이력을 확인하고, 작성자와 근무자가 일치하는지 확인해주세요. 신분증·은행계좌번호·불필요한 급여 정보는 필요하지 않습니다.'
-          : '영수증은 작성자와 관리자만 볼 수 있습니다. 업체명·이용일·금액을 확인한 뒤 검토 메모를 남겨주세요.'}</ThemedText>
+          : '영수증은 작성자와 관리자만 볼 수 있습니다. 비즈니스명·이용일·금액을 확인한 뒤 검토 메모를 남겨주세요.'}</ThemedText>
         <TextInput accessibilityLabel={`${proofLabel} 검토 메모`} value={note} editable={!busy} onFocus={() => play('selection')} onChangeText={setNote} maxLength={1000} multiline
           placeholder="인증 또는 거절의 판단 근거 · 5자 이상" placeholderTextColor={theme.textSecondary} style={[styles.note, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]} />
         <View style={styles.actions}>

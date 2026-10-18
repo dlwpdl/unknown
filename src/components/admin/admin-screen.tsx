@@ -221,6 +221,7 @@ export function AdminScreen() {
       />}
       <AdminUserDetail
         userId={selectedUserId}
+        onProfileChanged={localPreview ? undefined : refresh}
         profiles={profiles}
         localData={localPreview ? data ?? undefined : undefined}
         onStatusChange={localPreview ? undefined : async (userId, status) => {

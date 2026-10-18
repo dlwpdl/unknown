@@ -6,7 +6,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { AD_PRIVACY_CHANGED, feedAdUnit, prepareAds } from '@/lib/ads';
 
-export function FeedAd() {
+export function FeedAd(_props: { surface?: 'feed' | 'events' | 'map' } = {}) {
   const { tr } = useLanguage();
   const theme = useTheme();
   const [revision, setRevision] = useState(0);

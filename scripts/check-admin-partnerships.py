@@ -17,6 +17,8 @@ MIGRATION = ROOT / 'supabase/migrations/20261015190000_admin_partnerships.sql'
 TEST = ROOT / 'supabase/tests/admin_partnerships.test.sql'
 DETAIL_MIGRATION = ROOT / 'supabase/migrations/20261016043500_creator_profile_details.sql'
 DETAIL_TEST = ROOT / 'supabase/tests/creator_profile_details.test.sql'
+DEAL_MIGRATION = ROOT / 'supabase/migrations/20261017233000_creator_deal_history.sql'
+DEAL_TEST = ROOT / 'supabase/tests/creator_deal_history.test.sql'
 ADMIN = 'a1500000-0000-0000-0000-000000000001'
 SESSION = 'a1560000-0000-0000-0000-000000000001'
 MERCHANT = 'a1520000-0000-0000-0000-000000000001'
@@ -110,10 +112,10 @@ def blocked_recheck(database, lock, mutation, operation, expected):
 def main():
     fixture = TEST.read_text()
     assert fixture.startswith('begin;') and fixture.rstrip().endswith('rollback;')
-    migration = MIGRATION.read_text() + '\n' + DETAIL_MIGRATION.read_text()
+    migration = MIGRATION.read_text() + '\n' + DETAIL_MIGRATION.read_text() + '\n' + DEAL_MIGRATION.read_text() + '\n' + (ROOT / 'supabase/migrations/20261018003000_creator_deal_merchant_link.sql').read_text() + '\n' + (ROOT / 'supabase/migrations/20261018003500_creator_deal_date_range.sql').read_text() + '\n' + (ROOT / 'supabase/migrations/20261018010000_merchant_creator_deals.sql').read_text()
     before = sql('postgres', "select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='private' and c.relname like 'partnership_%';").stdout
     passed = 0
-    for test in (fixture, DETAIL_TEST.read_text()):
+    for test in (fixture, DETAIL_TEST.read_text(), DEAL_TEST.read_text()):
         assert test.startswith('begin;') and test.rstrip().endswith('rollback;')
         result = sql('postgres', 'begin;\n' + prerequisites('postgres') + migration + '\n' + test.removeprefix('begin;'))
         output = result.stdout + result.stderr
@@ -171,6 +173,19 @@ commit;
         save = f"select public.save_admin_partnership('creator','{{\"id\":\"{CREATOR}\",\"notes\":\"Race edit\"}}','{revision}')"
         race(database, [save, save], 'PARTNERSHIP_CHANGED')
         probes.append('concurrent stale editor revision')
+        deal_id = 'a1580000-0000-0000-0000-000000000001'
+        deal = json.dumps({'id': deal_id, 'creator_id': CREATOR, 'merchant_id': MERCHANT, 'agreed_on': '2026-10-01', 'currency': 'CAD', 'ad_fee_cents': 0, 'meal_support_cents': 15000, 'deliverables': 'One Reel', 'source_url': '', 'notes': 'Confirmed fixture agreement'})
+        append_deal = f"select public.record_admin_creator_deal('{deal}'::jsonb)"
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(lambda _: sql(database, 'begin;\n' + AUTH + append_deal + '; commit;', False), range(2)))
+        assert all(result.returncode == 0 for result in results), [result.stderr for result in results]
+        assert sql(database, f"select count(*) from private.creator_deals where id='{deal_id}';").stdout.strip() == '1'
+        assert sql(database, f"select count(*) from private.partnership_events where resource_id='{deal_id}' and action='creator_deal_recorded';").stdout.strip() == '1'
+        probes.append('concurrent identical agreement retry creates one row and audit event')
+        link_revision = sql(database, f"select updated_at from private.creator_deals where id='{deal_id}';").stdout.strip()
+        link = f"select public.link_admin_creator_deal_merchant('{deal_id}','{MERCHANT}',{{day}},'{link_revision}')"
+        race(database, [link.format(day="'2026-12-01'"), link.format(day="'2026-12-02'")], 'PARTNERSHIP_CHANGED')
+        probes.append('concurrent vendor/date corrections reject a stale revision')
         # The auth cascade must finish while an inactive recipient's revoke waits.
         recipient = 'a1500000-0000-0000-0000-000000000004'
         erasure_benefit = 'a1550000-0000-0000-0000-000000000002'
@@ -215,6 +230,15 @@ commit;
         blocked_recheck(database, f"select 1 from private.partnership_campaigns where id='{CAMPAIGN}' for update",
                         "select pg_sleep(2.1)", select_call, 'ADMIN_REQUIRED')
         probes.append('session wall-clock expiry during resource lock wait')
+        sql(database, f"update auth.sessions set not_after=clock_timestamp()+interval '2 seconds' where id='{SESSION}';")
+        blocked_recheck(database, f"select 1 from private.partnership_creators where id='{CREATOR}' for update",
+                        "select pg_sleep(2.1)", append_deal, 'ADMIN_REQUIRED')
+        probes.append('agreement retry rechecks session expiry after creator lock wait')
+        sql(database, f"update auth.sessions set not_after=clock_timestamp()+interval '2 seconds' where id='{SESSION}';")
+        link_revision = sql(database, f"select updated_at from private.creator_deals where id='{deal_id}';").stdout.strip()
+        blocked_recheck(database, f"select 1 from private.partnership_creators where id='{CREATOR}' for update",
+                        "select pg_sleep(2.1)", f"select public.link_admin_creator_deal_merchant('{deal_id}','{MERCHANT}','2026-12-03','{link_revision}')", 'ADMIN_REQUIRED')
+        probes.append('vendor/date correction rechecks session expiry after creator lock wait')
         print(f'{len(probes)} committed concurrency/recheck probes passed in isolated schema-only database.', flush=True)
         for probe in probes:
             print('  PASS ' + probe)

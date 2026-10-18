@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { getLocale } from '../i18n/index.ts';
 
 import { thumbPathFor } from './image-upload.ts';
+import { businessMediaUrl } from './business-media.ts';
 import type { ListingStatus, Post, PostComment, PostKind, RoomPreview, TagSlug } from './types.ts';
 
 export type PublicFeedRow = {
@@ -56,6 +57,12 @@ export type FeedCursor = { createdAt: string; id: string; sortAt?: string; popul
 type SignedImage = { url: string; expiresAt: number };
 const signedImagesByClient = new WeakMap<object, Map<string, SignedImage>>();
 const viewersBySignedUrl = new Map<string, Set<string>>();
+let businessImageSession: { viewer: string; token: string } | null = null;
+let businessImageSessionRevision = 0;
+export function setBusinessImageSession(viewer: string | null, token: string | null) {
+  businessImageSession = viewer && token ? { viewer, token } : null;
+  businessImageSessionRevision++;
+}
 
 export function appendUniquePosts<T extends { id: string }>(current: readonly T[], next: readonly T[]) {
   const ids = new Set(current.map(({ id }) => id));
@@ -78,8 +85,12 @@ export function getPostImageSource(
   if (!uri) return undefined;
   const allowedViewers = viewersBySignedUrl.get(uri);
   if (allowedViewers && !allowedViewers.has(viewerScope)) return undefined;
+  const protectedBusinessImage = path?.startsWith('business-post/') && path.split('/')[2] !== '0';
+  const session = protectedBusinessImage ? businessImageSession : undefined;
+  if (protectedBusinessImage && session?.viewer !== viewerScope) return undefined;
   const keyPath = variant === 'feed' && post.imageThumbs?.[position] ? thumbPathFor(path ?? '') : path;
-  return { uri, cacheKey: `post-image:${viewerScope}:${keyPath ?? uri}` };
+  return { uri, cacheKey: `post-image:${viewerScope}:${keyPath ?? uri}`,
+    ...(session ? { headers: { Authorization: `Bearer ${session.token}` } } : {}) };
 }
 
 export function groupJournalPosts(posts: readonly Post[]) {
@@ -120,7 +131,7 @@ export async function loadPublicFeed(
   const feed = await (options?.signal ? request.abortSignal(options.signal) : request);
   if (feed.error) throw feed.error;
   const rows = (feed.data ?? []) as PublicFeedRow[];
-  return attachSignedPostImages(client, mapPublicFeed(rows, []), options?.viewerScope);
+  return hydratePublicPosts(client, mapPublicFeed(rows, []), options?.viewerScope);
 }
 
 // 프로필에서 여는 "이 사람이 쓴 글". 피드와 같은 행 형식이라 카드 매핑을 그대로 쓴다.
@@ -139,7 +150,7 @@ export async function loadAuthorPosts(
   const result = await (options?.signal ? request.abortSignal(options.signal) : request);
   if (result.error) throw result.error;
   const rows = (result.data ?? []) as PublicFeedRow[];
-  return attachSignedPostImages(client, mapPublicFeed(rows, []), options?.viewerScope);
+  return hydratePublicPosts(client, mapPublicFeed(rows, []), options?.viewerScope);
 }
 
 export async function loadPublicPost(client: SupabaseClient, postId: string): Promise<Post | null> {
@@ -154,7 +165,7 @@ export async function loadPublicPost(client: SupabaseClient, postId: string): Pr
     p_limit: 30,
   });
   if (comments.error) throw comments.error;
-  const [post] = await attachSignedPostImages(client, mapPublicFeed(rows, (comments.data ?? []) as PublicCommentRow[]));
+  const [post] = await hydratePublicPosts(client, mapPublicFeed(rows, (comments.data ?? []) as PublicCommentRow[]));
   return post ?? null;
 }
 
@@ -217,9 +228,45 @@ export function mapPublicFeed(
   }));
 }
 
+export async function hydratePublicPosts(client: SupabaseClient, posts: Post[], viewerScope?: string): Promise<Post[]> {
+  if (!posts.length) return [];
+  if (posts.length > 50) throw new Error('BUSINESS_IDENTITY_READ_FAILED');
+  const ids = [...new Set(posts.map(post => post.id))];
+  const [images, response] = await Promise.all([
+    attachSignedPostImages(client, posts, viewerScope),
+    client.rpc('get_public_post_businesses', { p_post_ids: ids }),
+  ]);
+  // Before this additive migration there are no explicitly attributed business posts.
+  if (response.error?.code === 'PGRST202') return images;
+  if (response.error) throw response.error;
+  const rows = response.data as { post_id: string; business_id: string; business_name: string; avatar_path?: string | null }[];
+  const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+  if (!Array.isArray(rows) || rows.length > ids.length || new Set(rows.map(row => row?.post_id)).size !== rows.length
+    || rows.some(row => !row || !ids.includes(row.post_id) || typeof row.business_id !== 'string' || !uuid.test(row.business_id) || typeof row.business_name !== 'string' || !row.business_name.trim() || row.business_name.length > 200
+      || (row.avatar_path != null && (typeof row.avatar_path !== 'string' || !row.avatar_path.startsWith(`business-profile/${row.business_id}/avatar/`) || !businessMediaUrl(row.avatar_path))))) throw new Error('BUSINESS_IDENTITY_READ_FAILED');
+  const businesses = new Map(rows.map(row => [row.post_id, { id: row.business_id, name: row.business_name, avatarUri: row.avatar_path ? businessMediaUrl(row.avatar_path) : null }]));
+  return images.map(post => {
+    const business = businesses.get(post.id);
+    return business ? { ...post, business, author: { id: business.id, nickname: business.name, verified: false } } : post;
+  });
+}
+
 export async function attachSignedPostImages(client: SupabaseClient, posts: Post[], viewerScope?: string) {
   // 썸네일과 원본을 한 번에 서명한다. 목록은 썸네일, 상세는 원본을 쓴다.
-  const paths = [...new Set(posts.flatMap(({ imagePaths }) => (imagePaths ?? []).flatMap((path) => [path, thumbPathFor(path)])))];
+  const allPaths = [...new Set(posts.flatMap(({ imagePaths }) => imagePaths ?? []))];
+  const publicUrls = new Map(allPaths.flatMap(path => {
+    const url = businessMediaUrl(path);
+    return url ? [[path, url] as const] : [];
+  }));
+  if (allPaths.some(path => publicUrls.has(path) && path.startsWith('business-post/') && path.split('/')[2] !== '0')) {
+    const revision = businessImageSessionRevision;
+    const { data } = await client.auth.getSession();
+    if (revision === businessImageSessionRevision) setBusinessImageSession(data.session?.user.id ?? null, data.session?.access_token ?? null);
+  }
+  const paths = [...new Set(allPaths.filter(path => !path.startsWith('business-post/') && !path.startsWith('business-profile/')).flatMap(path => [path, thumbPathFor(path)]))];
+  if (!paths.length && publicUrls.size) return posts.map(post => ({ ...post,
+    imageUris: post.imagePaths?.map(path => publicUrls.get(path) ?? ''),
+    imageThumbs: post.imagePaths?.map(path => publicUrls.get(path) ?? '') }));
   if (paths.length === 0) return posts;
   const scope = viewerScope ?? await client.auth.getSession()
     .then(({ data }) => data.session?.user.id ?? 'guest')
@@ -259,8 +306,8 @@ export async function attachSignedPostImages(client: SupabaseClient, posts: Post
   }
   return posts.map((post) => ({
     ...post,
-    imageUris: post.imagePaths?.map((path) => urls.get(path) ?? ''),
-    imageThumbs: post.imagePaths?.map((path) => urls.get(thumbPathFor(path)) ?? ''),
+    imageUris: post.imagePaths?.map((path) => publicUrls.get(path) ?? urls.get(path) ?? ''),
+    imageThumbs: post.imagePaths?.map((path) => publicUrls.get(path) ?? urls.get(thumbPathFor(path)) ?? ''),
   }));
 }
 

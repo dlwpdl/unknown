@@ -14,6 +14,8 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useTheme } from '@/hooks/use-theme';
+import { useChatIdentity } from '@/hooks/use-chat-identity';
+import { chatBusinessIdentity } from '@/lib/chat-identity';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { appendUniquePosts, getPostImageSource } from '@/lib/feed-data';
@@ -31,6 +33,7 @@ export default function CompanyProfileRoute() {
   const { id, review } = useLocalSearchParams<{ id: string; review?: string }>(), router = useRouter(), theme = useTheme(), { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion(), scroll = useRef<NativeScrollView>(null), tabsTop = useRef(0);
   const { me, isAuthed, isAuthLoading, promptLogin } = useAuth(), hidden = useContentVisibility();
+  const business = useChatIdentity();
   const merchantId = typeof id === 'string' && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id) ? id.toLowerCase() : '';
   const key = `${merchantId}:${isAuthLoading ? 'loading' : isAuthed ? me.id : 'guest'}`;
   const [reviewVisited, setReviewVisited] = useState<string | null>(review ? key : null);
@@ -114,12 +117,12 @@ export default function CompanyProfileRoute() {
     play('selection');
     if (!isAuthed) return promptLogin('비즈니스에 문의하려면 로그인해 주세요.');
     const operation = actionRequest.current;
-    if (!profile || !canMessage || operation.busy || !operation.active) return;
+    if (!profile || !canMessage || business?.id === merchantId || operation.busy || !operation.active || (chatBusinessIdentity(me.id)?.id ?? null) !== (business?.id ?? null)) return;
     operation.busy = true; setActionBusy({ operation, kind: 'message' }); setActionError(null);
     try {
-      const conversationId = await startMerchantConversation(supabase, merchantId);
-      if (!operation.active) return;
-      play('message'); router.push({ pathname: '/chat', params: { conversationId, view: 'requests' } });
+      const conversationId = await startMerchantConversation(supabase, merchantId, business?.id ?? null);
+      if (!operation.active || (chatBusinessIdentity(me.id)?.id ?? null) !== (business?.id ?? null)) return;
+      play('message'); router.push({ pathname: '/chat', params: { conversationId, view: 'direct', ...(business ? { businessId: business.id } : {}) } });
     } catch (error) {
       if (!operation.active) return;
       if (error instanceof Error && error.message.includes('MERCHANT_CONTACT_UNAVAILABLE')) setUnavailableRecipient(key);
@@ -190,7 +193,7 @@ export default function CompanyProfileRoute() {
         <MerchantProfileHeader profile={{ ...profile, services: '', address: '' }} ratings={ratings}
           onReviewPress={profile.review_post_id ? openReviews : undefined} />
         <View style={styles.actions}>
-          {!!canMessage && <Pressable analyticsId="company.inquiry" accessibilityRole="button" accessibilityLabel={tr("비즈니스 담당자에게 문의")}
+          {!!canMessage && business?.id !== merchantId && <Pressable analyticsId="company.inquiry" accessibilityRole="button" accessibilityLabel={tr("비즈니스 담당자에게 문의")}
             accessibilityState={{ disabled: busy, busy: busy && actionBusy?.kind === 'message' }} disabled={busy}
             style={({ pressed }) => [styles.inquiry, { backgroundColor: theme.accent, opacity: busy || pressed ? 0.65 : 1 }]}
             onPress={() => void requestInquiry()}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{busy && actionBusy?.kind === 'message' ? tr("연결 중…") : tr("문의하기")}</ThemedText></Pressable>}
@@ -214,7 +217,7 @@ export default function CompanyProfileRoute() {
         </View>}
         {actionError?.key === key && <ThemedText type="small" accessibilityRole="alert" accessibilityLiveRegion="polite">{actionError.message}</ThemedText>}
         {(profile.imageLoadFailed || current?.failed) && <View style={styles.statePhoto}>
-          <ThemedText type="small" themeColor="textSecondary">{tr("사진을 다시 불러오지 못했어요. 업체 정보와 저장된 사진은 유지돼요.")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("사진을 다시 불러오지 못했어요. 비즈니스 정보와 저장된 사진은 유지돼요.")}</ThemedText>
           <Pressable analyticsId="company.photo.retry" accessibilityRole="button" style={styles.button}
             onPress={() => { play('selection'); setRevision((value) => value + 1); }}><ThemedText themeColor="accent">{tr("사진 다시 확인")}</ThemedText></Pressable>
         </View>}

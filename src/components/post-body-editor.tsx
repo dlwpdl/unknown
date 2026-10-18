@@ -1,5 +1,5 @@
 import { useLanguage } from '@/hooks/use-language';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { useReducedMotion } from 'react-native-reanimated';
 import { Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
@@ -14,7 +14,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { googleMapsPin, googlePinUrl, postMapBody, withPostMap } from '@/lib/post-maps';
 import { instagramPostLink, postLinkChecks, safePostLink, splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links';
 
-export function PostBodyEditor({ value = '', onChangeText, editable = true, maxLength = 4000, onFocus, cityName = '', allowLocation = true, ...props }: TextInputProps & { cityName?: string; allowLocation?: boolean }) {
+export function PostBodyEditor({ value = '', onChangeText, editable = true, maxLength = 4000, onFocus, cityName = '', allowLocation = true, renderLayout, ...props }: TextInputProps & { cityName?: string; allowLocation?: boolean; renderLayout?: (parts: { input: ReactNode; actions: ReactNode; attachments: ReactNode }) => ReactNode }) {
   const { tr, t } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
@@ -44,28 +44,27 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
     const frame = requestAnimationFrame(() => inputRef.current?.focus());
     return () => cancelAnimationFrame(frame);
   }, [stage]);
-  return <>
-    <TextInput {...props} value={attached.body} editable={editable}
+  const field = <TextInput {...props} value={attached.body} editable={editable}
       maxLength={Math.max(0, bodyLimit - (value.length - attached.body.length))}
       onFocus={event => { play('selection'); onFocus?.(event); }}
       onChangeText={text => {
         const pasted = splitPostAttachments(text);
         const changed = withPostAttachments(pasted.body, [...attached.urls, ...pasted.urls]);
         onChangeText?.(mapped.url ? withPostMap(changed, mapped.url, mapped.label) : changed);
-      }} />
-    <View style={styles.attachments}>
-      <View style={styles.actions}>
+      }} />;
+  const actions = <View style={renderLayout ? styles.toolbarActions : styles.actions}>
       <Pressable analyticsId="post.attachment.add" accessibilityRole="button" accessibilityLabel={tr("링크 첨부")} disabled={!editable}
-        onPress={() => { Keyboard.dismiss(); choose('choices'); }} style={[styles.attachButton, { borderColor: theme.line, opacity: editable ? 1 : 0.5 }]}>
+        onPress={() => { Keyboard.dismiss(); choose('choices'); }} style={[renderLayout ? styles.toolbarButton : styles.attachButton, { borderColor: theme.line, opacity: editable ? 1 : 0.5 }]}>
         <SymbolView name={{ ios: 'paperclip', android: 'attach_file', web: 'attach_file' }} size={18} tintColor={theme.text} />
-        <ThemedText type="smallBold">{tr("첨부")}</ThemedText>
+        <ThemedText type="smallBold" style={renderLayout && styles.toolbarLabel}>{tr(renderLayout ? "링크" : "첨부")}</ThemedText>
       </Pressable>
       {allowLocation && <Pressable analyticsId="post.location.add" accessibilityRole="button" accessibilityLabel={mapped.url ? t.write.placeChange : t.write.placeAdd} disabled={!editable}
-        onPress={() => { Keyboard.dismiss(); choose('location'); }} style={[styles.attachButton, { borderColor: theme.line, opacity: editable ? 1 : 0.5 }]}>
+        onPress={() => { Keyboard.dismiss(); choose('location'); }} style={[renderLayout ? styles.toolbarButton : styles.attachButton, { borderColor: theme.line, opacity: editable ? 1 : 0.5 }]}>
         <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={18} tintColor={theme.accent} />
-        <ThemedText type="smallBold">{mapped.url ? t.write.placeChange : t.write.placeAdd}</ThemedText>
+        <ThemedText type="smallBold" style={renderLayout && styles.toolbarLabel}>{renderLayout ? tr("장소") : mapped.url ? t.write.placeChange : t.write.placeAdd}</ThemedText>
       </Pressable>}
-      </View>
+      </View>;
+  const attachments = <>
       {mapped.url && <View style={styles.row}>
         <PostMapLink url={mapped.url} label={mapped.label} />
         {allowLocation && <Pressable analyticsId="post.location.remove" accessibilityRole="button" accessibilityLabel={t.write.placeRemove} disabled={!editable}
@@ -82,7 +81,9 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
       </View>)}
       {blocked > 0 && <ThemedText type="small" accessibilityRole="alert">{tr("활성화할 수 없는 본문 링크") + " "}{blocked}{tr("개가 있어요. 주소를 확인해 주세요.")}</ThemedText>}
       {checks.length > blocked && <ThemedText type="small" themeColor="textSecondary">{tr("본문 외부 링크의 악성 여부는 아직 확인하지 못했어요.")}</ThemedText>}
-    </View>
+    </>;
+  return <>
+    {renderLayout ? renderLayout({ input: field, actions, attachments: mapped.url || attached.urls.length > 0 || checks.length > 0 ? <View style={styles.attachments}>{attachments}</View> : null }) : <>{field}<View style={styles.attachments}>{actions}{attachments}</View></>}
     {stage === 'location' && editable && <PostLocationPicker visible initialPin={initialPin} initialLabel={mapped.label} cityName={cityName} onClose={close}
       onConfirm={(pin, label) => {
         try {
@@ -132,6 +133,9 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
 const styles = StyleSheet.create({
   attachments: { gap: 8, marginVertical: 12 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  toolbarActions: { flex: 2, flexDirection: 'row', gap: 8 },
+  toolbarButton: { flex: 1, minWidth: 0, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 4 },
+  toolbarLabel: { fontSize: 11, lineHeight: 16 },
   attachButton: { alignSelf: 'flex-start', minHeight: 44, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 12 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, maxWidth: '100%' },
   iconButton: { minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'center' },

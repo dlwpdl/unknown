@@ -149,7 +149,7 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
                     void Linking.openURL(dashboard).catch(() => Alert.alert(tr("관리자 대시보드를 열지 못했어요"), tr("Tailscale 연결과 Mac의 관리자 서버를 확인해 주세요.")));
                     return;
                   }
-                  const route = notificationRoute(item.route);
+                  const route = notificationRoute(item.route, item);
                   router.push((route?.startsWith('/admin') ? '/notifications' : route ?? '/notifications') as never);
                 }}
                 accessibilityRole="button"

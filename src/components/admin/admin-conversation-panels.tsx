@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Image } from 'expo-image';
+import { Image, type ImageSource } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { FlatList, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
@@ -10,6 +10,7 @@ import {
 } from '@/lib/admin-conversations';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { chatImagePaths } from '@/lib/chat-details';
+import { authenticatedChatImages } from '@/lib/business-chat';
 import { CITIES } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
 import { ConversationButton, ConversationPicker, ConversationState } from './admin-conversation-controls';
@@ -66,20 +67,30 @@ export function ConversationThread({ detail, loading, error, loadingMessages, na
   const list = useRef<FlatList<ConversationMessage>>(null);
   const scrollEnd = useRef(true);
   const scrollTarget = useRef<number | null>(null);
-  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
+  const [imageData, setImageData] = useState<{ key: string; sources: Record<string, ImageSource> } | null>(null);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const roomId = detail?.conversation.id;
   const pathsKey = JSON.stringify([...new Set(detail?.messages.flatMap(chatImagePaths) ?? [])]);
+  const business = detail?.conversation.kind === 'business';
+  const mediaKey = `${roomId}:${business}:${pathsKey}`;
+  const imageSources = imageData?.key === mediaKey ? imageData.sources : {};
   useEffect(() => { scrollEnd.current = true; }, [roomId]);
   useEffect(() => {
     let active = true;
     const paths: string[] = JSON.parse(pathsKey);
     if (!paths.length) return;
-    void supabase.storage.from('chat-images').createSignedUrls(paths, 3600).then((result) => {
-      if (active) setImageUrls(Object.fromEntries((result.data ?? []).flatMap((image) => image.path && image.signedUrl ? [[image.path, image.signedUrl]] : [])));
-    }).catch(() => { /* A visible photo warning and trace disclosure retain the unavailable attachment. */ });
+    void (async () => {
+      if (business) {
+        const sources = await authenticatedChatImages(supabase, paths);
+        if (active) setImageData({ key: mediaKey, sources: Object.fromEntries(paths.map((path, index) => [path, sources[index]])) });
+      } else {
+        const result = await supabase.storage.from('chat-images').createSignedUrls(paths, 3600);
+        if (result.error) throw result.error;
+        if (active) setImageData({ key: mediaKey, sources: Object.fromEntries((result.data ?? []).flatMap(image => image.path && image.signedUrl ? [[image.path, { uri: image.signedUrl }]] : [])) });
+      }
+    })().catch(() => { /* Preserve the unavailable attachment and its audited trace. */ });
     return () => { active = false; };
-  }, [pathsKey, roomId]);
+  }, [pathsKey, business, mediaKey]);
   useEffect(() => {
     scrollTarget.current = null;
     const index = detail?.messages.findIndex((message) => message.id === focusId) ?? -1;
@@ -145,7 +156,7 @@ export function ConversationThread({ detail, loading, error, loadingMessages, na
               <View style={[styles.bubble, second && styles.bubbleSecond, flagged && styles.flaggedBubble, focusId === message.id && styles.focusedBubble]}>
                 <Text selectable style={styles.messageText}>{message.body}</Text>
                 {(message.kind === 'image' || paths.length > 0) && (paths.length ? paths : [null]).map((path, position) => <View key={path ?? 'missing'} style={styles.attachment}>
-                  {path && imageUrls[path] && !failedImages[path] ? <Image source={{ uri: imageUrls[path] }} style={styles.image} contentFit="contain" accessibilityLabel={`대화에 첨부한 원본 사진 ${position + 1}/${paths.length}`}
+                  {path && imageSources[path] && !failedImages[path] ? <Image source={imageSources[path]} cachePolicy={business ? 'none' : undefined} style={styles.image} contentFit="contain" accessibilityLabel={`대화에 첨부한 원본 사진 ${position + 1}/${paths.length}`}
                     onError={() => setFailedImages((current) => ({ ...current, [path]: true }))} /> : <Text style={styles.caption}>사진을 표시할 수 없어요.</Text>}
                   <Text style={styles.caption}>첨부 사진 {position + 1}/{paths.length || 1}</Text>
                 </View>)}

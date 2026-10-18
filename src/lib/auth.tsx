@@ -26,6 +26,9 @@ import { CITIES } from '@/lib/mock';
 import { AUTH_EXPIRED_EVENT, signInAdminAccount, signInReviewAccount, supabase } from '@/lib/supabase';
 import { unregisterPushDevice } from '@/lib/push-notifications';
 import { shouldCelebrateVerificationUpgrade, type TrustLevel } from '@/lib/trust';
+import { changeProfileNickname } from '@/lib/nickname';
+import { setBusinessImageSession } from '@/lib/feed-data';
+import { resetChatIdentity } from '@/lib/chat-identity';
 
 type Level = 0 | 1;
 type OAuthProvider = 'kakao' | 'google';
@@ -58,6 +61,7 @@ type AuthValue = {
   signOut: () => Promise<void>;
   setProfilePhoto: (uri: string | null, base64?: string) => Promise<void>;
   setProfileCity: (cityId: string) => Promise<void>;
+  setProfileNickname: (nickname: string, expectedNickname: string) => Promise<void>;
   promptLogin: (reason?: string) => void; // L0 게이트
 };
 
@@ -95,6 +99,8 @@ export function AuthProvider({ children, publicPage = false }: { children: React
   const [profile, setProfile] = useState<ProfileRecord | null>(null);
   const [missingProfileUserId, setMissingProfileUserId] = useState<string | null>(null);
   const [profileCheckedUserId, setProfileCheckedUserId] = useState<string | null>(null);
+
+  useEffect(() => { resetChatIdentity(); }, [session?.user.id]);
 
   useEffect(() => {
     let active = true;
@@ -141,6 +147,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       await AsyncStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
       const { data } = await supabase.auth.getSession();
       if (!active) return;
+      setBusinessImageSession(data.session?.user.id ?? null, data.session?.access_token ?? null);
       setSession(data.session);
       setSessionReady(true);
       if (expired && lastActive != null) { setReason(sourceCopy.auth.sessionExpired); setVisible(true); }
@@ -160,11 +167,13 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       if (event === 'SIGNED_IN' && nextLogin && nextLogin !== observedLogin.current) setLoginKey(nextLogin);
       if (!nextSession) { setLoginKey(null); setProfileCheckedUserId(null); }
       observedLogin.current = nextLogin;
+      setBusinessImageSession(nextSession?.user.id ?? null, nextSession?.access_token ?? null);
       setSession(nextSession);
       setSessionReady(true);
     });
     return () => {
       active = false;
+      setBusinessImageSession(null, null);
       appState.remove();
       supabase.auth.stopAutoRefresh();
       data.subscription.unsubscribe();
@@ -383,6 +392,14 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     setProfile((current) => current?.id === session.user.id ? { ...current, city_id: cityId } : current);
   }, [session]);
 
+  const setProfileNickname = useCallback(async (nickname: string, expectedNickname: string) => {
+    if (!session) throw new Error('AUTH_REQUIRED');
+    const current = await supabase.auth.getSession();
+    if (current.data.session?.user.id !== session.user.id) throw new Error('AUTH_REQUIRED');
+    const saved = await changeProfileNickname(supabase, session.user.id, nickname, expectedNickname);
+    setProfile(value => value?.id === session.user.id ? { ...value, nickname: saved } : value);
+  }, [session]);
+
   const metadata = session?.user.user_metadata;
   const isAdmin = isAdminRole(session?.user.app_metadata);
   const socialNickname = [metadata?.user_name, metadata?.nickname, metadata?.name, metadata?.full_name].find(
@@ -452,6 +469,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       signOut,
       setProfilePhoto,
       setProfileCity,
+      setProfileNickname,
       promptLogin,
     }),
     [
@@ -479,6 +497,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       signOut,
       setProfilePhoto,
       setProfileCity,
+      setProfileNickname,
       promptLogin,
     ],
   );

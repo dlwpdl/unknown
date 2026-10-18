@@ -1,6 +1,9 @@
 begin;
 set local search_path=public,extensions;
 select no_plan();
+update public.posts set status='removed';
+-- Device timing has its own suite; these fixtures exercise current post content and privacy.
+create or replace function private.recommendation_time(p_at timestamptz,p_timezone text) returns boolean language sql stable as $$select p_timezone is not null$$;
 delete from private.push_delivery_queue;
 insert into auth.users(id,email,raw_app_meta_data)
 select ('d6100000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,'post-preview-'||n||'@example.test','{}' from generate_series(1,12) n;
@@ -59,7 +62,7 @@ select is((select count(*)::int from private.trending_sent where city_id='vancou
 delete from public.notifications where user_id::text like 'd6100000-%';
 select set_config('request.jwt.claims','{"sub":"d6100000-0000-4000-8000-000000000002","session_id":"d6120000-0000-4000-8000-000000000002","role":"authenticated"}',true);
 set local role authenticated;
-select public.register_push_device('ExpoPushToken[postpreviewabcdefghijkl]','d6100000-0000-4000-8000-000000000002');
+select public.register_push_device('ExpoPushToken[postpreviewabcdefghijkl]','d6100000-0000-4000-8000-000000000002','UTC');
 select public.update_notification_preferences('{"push_enabled":true}');
 reset role;
 select private.create_notification('d6100000-0000-4000-8000-000000000002','weekly_ranking',null,'post',

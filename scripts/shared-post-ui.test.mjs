@@ -16,11 +16,13 @@ import { postMapBody } from '../src/lib/post-maps.ts';
 import { visibleTranslationSource } from '../src/lib/translation-source.ts';
 import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
 import * as postLinks from '../supabase/functions/_shared/post-links.ts';
+import * as postReactions from '../src/lib/post-reactions.ts';
 
 const id = '9f100000-0000-4000-8000-000000000001';
 const otherId = '9f100000-0000-4000-8000-000000000002';
 const link = `https://gling.ej-entertainment.com/post?id=${id}`;
-const gatewayLink = `https://gling-share-preview.vercel.app/share/${id}`;
+const legacyGatewayLink = `https://gling-share-preview.vercel.app/share/${id}`;
+const gatewayLink = 'https://gling-share-preview.vercel.app/s/nxAAAAAAQACAAAAAAAAAAQ';
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
@@ -73,6 +75,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/hooks/use-content-translation': { useContentTranslation: (_kind, _id, source) => ({ display: source, translated: false, original: true }) },
     '@/lib/translation-source': { visibleTranslationSource },
     '@/lib/post-photo-credits': { splitPostPhotoCredits },
+    '@/lib/post-reactions': postReactions,
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 } },
     '../../supabase/functions/_shared/post-links': postLinks, '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
     '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
@@ -83,6 +86,10 @@ function mount(file, name, data = {}, props = {}) {
     '@/lib/hashtags': { uniqueHashtags }, '@/lib/post-maps': { postMapBody }, '@/lib/meetup-ai': { visibleMeetupBody: body => body },
     '@/components/post-share-sheet': { PostShareSheet: 'PostShareSheet' }, '@/components/post-detail': { PostDetail: 'PostDetail' }, '@/components/shared-link-card': { SharedPreviewContent: 'SharedPreviewContent' },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/hooks/use-content-visibility': { useContentVisibility: () => data.hidden ?? unhidden },
+    '@/hooks/use-chat-identity': { useChatIdentity: () => data.businessIdentity ?? null },
+    '@/lib/business-chat': { startBusinessConversation: async (...args) => { calls.push(['business-start', ...args.slice(1)]); return 'business-conversation'; }, sendBusinessChatMessage: async (...args) => { calls.push(['business-send', ...args.slice(1)]); return 'business-message'; } },
+    '@/lib/merchant-source': { merchantEventId: () => 'c1850000-0000-4000-8000-000000000001' },
+    '@/lib/chat-identity': { chatBusinessIdentity: () => data.businessIdentity ?? null },
     '@/lib/auth': { useAuth: () => auth }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => calls.push(['feedback', kind]) }) },
     '@/lib/community-data': { recordPostShare: async () => { calls.push(['count-share']); return 1; }, loadTradeProfile: async () => null, startDirectConversation: async () => 'direct-conversation', loadConversations: (...args) => { calls.push(['inbox', ...args.slice(1)]); return data.inbox?.(...args) ?? Promise.resolve(page([conversation('chat-a')])); },
       sendDirectMessage: (...args) => { calls.push(['send', ...args.slice(1)]); return data.send?.(...args) ?? Promise.resolve('saved-message'); } },
@@ -217,7 +224,7 @@ test('popup callbacks leave code exchange and invitation navigation to their ope
 });
 
 test('stored external or malformed OAuth return links are rejected after login', async context => {
-  for (const target of [`https://evil.test/post?id=${id}`, `//evil.test/post?id=${id}`, `/post?id=${id}&id=${otherId}`, gatewayLink, `https://gling-share-preview.vercel.app/post?id=${id}`]) {
+  for (const target of [`https://evil.test/post?id=${id}`, `//evil.test/post?id=${id}`, `/post?id=${id}&id=${otherId}`, gatewayLink, legacyGatewayLink, `https://gling-share-preview.vercel.app/post?id=${id}`]) {
     const harness = mount('../src/web/auth/callback.tsx', 'default', { auth: { isAuthed: true }, returnPath: target }); context.after(() => harness.unmount()); await harness.settle();
     assert.deepEqual(harness.calls.filter(call => call[0] === 'navigate'), [['navigate', '/']]); assert.equal(harness.browser.sessionStorage.getItem(sharing.SHARED_POST_RETURN_KEY), null);
   }
@@ -476,7 +483,7 @@ test('host invites and closed meetups share a link while preserving join applica
 
 
 test('web chat preview opens the hosted flat post route and keeps the invitation flag', async context => {
-  for (const url of [link, gatewayLink]) {
+  for (const url of [link, gatewayLink, legacyGatewayLink]) {
     const harness = mount('../src/components/shared-link-card.tsx', 'SharedLinkCard', { os: 'web' }, { url }); context.after(() => harness.unmount()); await harness.settle();
     control(harness, 'chat.shared-link.open').props.onPress();
     assert.equal(harness.calls.find(call => call[0] === 'navigate')[1], `/post?id=${id}&invite=1`);

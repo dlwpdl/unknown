@@ -25,10 +25,10 @@ async function rpc(client: SupabaseClient, name: string, args: Record<string, un
   return data;
 }
 
-export async function loadMyMerchantConnections(client: SupabaseClient, userId: string): Promise<MyMerchantConnections> {
-  const data = await rpc(client, 'get_my_merchant_connections');
+export async function loadMyMerchantConnections(client: SupabaseClient, userId: string, chatOnly = false): Promise<MyMerchantConnections> {
+  const data = await rpc(client, chatOnly ? 'get_my_business_chat_profiles' : 'get_my_merchant_connections');
   if (data.user_id !== userId || !Array.isArray(data.merchants) || !Array.isArray(data.invitations)
-    || data.merchants.some((row: MyMerchantConnections['merchants'][number]) => !row || typeof row.id !== 'string' || typeof row.name !== 'string' || !['owner','operator','admin'].includes(row.role))
+    || data.merchants.some((row: MyMerchantConnections['merchants'][number]) => !row || typeof row.id !== 'string' || typeof row.name !== 'string' || !['owner','operator','admin'].includes(row.role) || chatOnly && row.role === 'admin')
     || data.invitations.some((row: MerchantAccountInvitation) => !row || typeof row.id !== 'string' || typeof row.merchant_id !== 'string'
       || !['owner','operator'].includes(row.role) || typeof row.can_accept !== 'boolean')) throw new Error('MERCHANT_CONNECTION_READ_FAILED');
   return data;
