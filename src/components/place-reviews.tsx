@@ -93,7 +93,7 @@ function ScopedPlaceReviews({ cityId, placeId, userId, viewport }: Props & { use
   return <View testID="places.reviews.section" onLayout={({ nativeEvent }) => setSectionY(nativeEvent.layout.y)}
     style={[styles.section, { borderTopColor: theme.line }]}>
     <View style={styles.header}>
-      <ThemedText type="smallBold" accessibilityRole="header">{tr('장소 후기')}</ThemedText>
+      <ThemedText type="smallBold" accessibilityRole="header">{tr('글링 회원 후기')}</ThemedText>
       <Pressable analyticsId="places.reviews.refresh" accessibilityRole="button" disabled={loading || saving} accessibilityState={{ disabled: loading || saving }}
         onPress={() => { play('selection'); void read(); }} style={styles.action}>
         <ThemedText type="smallBold" themeColor="accent">{tr('새로고침')}</ThemedText>

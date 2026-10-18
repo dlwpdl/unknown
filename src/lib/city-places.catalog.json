@@ -1955,6 +1955,18 @@
           "sourceUrl": "https://www.openstreetmap.org/way/37111640",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:node:6339016833",
+          "cityId": "vancouver",
+          "name": "AnnaLena",
+          "category": "food",
+          "latitude": 49.2708255,
+          "longitude": -123.1467646,
+          "address": "1809 West 1st Avenue, Vancouver, BC",
+          "sourceUrl": "https://www.openstreetmap.org/node/6339016833",
+          "website": "https://www.annalena.ca/",
+          "openingHours": "Tu-Su 17:00-21:00"
         }
       ],
       "recommendations": [
@@ -1999,6 +2011,13 @@
           "reasonEn": "Use the library’s curved exterior and columns as an architectural backdrop.",
           "sourceUrl": "https://www.vpl.ca/branches/central",
           "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:node:6339016833",
+          "reason": "키칠라노의 계절 테이스팅 메뉴 식당이에요. 코스 요리를 즐기고 싶은 날에 들러 보세요. 방문 전 예약 조건을 확인해 주세요.",
+          "reasonEn": "A seasonal tasting-menu restaurant in Kitsilano for a sit-down dining stop. Check reservation requirements before visiting.",
+          "sourceUrl": "https://resy.com/cities/vancouver-bc/venues/annalena",
+          "verifiedAt": "2026-10-18T23:42:26.548Z"
         }
       ]
     },

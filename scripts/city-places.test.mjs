@@ -79,6 +79,21 @@ test('opening a selected place retains its photo reason without losing other rev
   assert.equal(api.getCityPlaces('toronto').find(place => place.id === pick.placeId).recommendation?.reason, pick.reason);
   assert.ok(api.getCityPlaces('toronto').some(place => /McDonald/i.test(place.name)));
 });
+
+test('an older daily catalog retains a newly checked restaurant; a later refresh can remove its recommendation', () => {
+  const seed = catalog(), id = 'osm:node:6339016833', api = data(seed);
+  const next = structuredClone(seed);
+  next.collectedAt = '2026-10-18T08:54:42Z';
+  next.cities.vancouver.places = next.cities.vancouver.places.filter(place => place.id !== id);
+  next.cities.vancouver.recommendations = next.cities.vancouver.recommendations.filter(pick => pick.placeId !== id);
+  assert.equal(api.replaceCityPlacesCatalog(next, Date.parse('2026-10-19T00:00:00Z')), true);
+  assert.ok(api.getCityRecommendations('vancouver', 'food').some(place => place.id === id));
+  assert.ok(api.getCityPlaces('vancouver').find(place => place.id === id).recommendation);
+  const later = structuredClone(next); later.collectedAt = '2026-10-19T08:00:00Z';
+  assert.equal(api.replaceCityPlacesCatalog(later, Date.parse('2026-10-20T00:00:00Z')), true);
+  assert.equal(api.getCityRecommendations('vancouver').some(place => place.id === id), false);
+  assert.ok(api.getCityPlaces('vancouver').some(place => place.id === id), 'existing detail/review links remain valid');
+});
 test('reviewed recommendation metadata preserves the English reason without inventing a ranking', () => {
   const api = data(), next = dailyCatalog();
   next.cities.toronto.recommendations[0].reasonEn = 'A source-checked place to explore.';

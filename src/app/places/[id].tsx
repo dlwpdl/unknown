@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
 import { PlaceReviews } from '@/components/place-reviews';
+import { PlaceExternalRatings } from '@/components/place-external-ratings';
 import { PostMapLink } from '@/components/post-map-link';
 import { PostPhotoCredits } from '@/components/post-photo-credits';
 import { StateCard } from '@/components/state-card';
@@ -78,6 +79,7 @@ export default function PlaceDetailScreen() {
           <ThemedText>{place.address || tr("등록된 주소 정보가 없어요. 지도에서 위치를 확인해 주세요.")}</ThemedText>
           {!!place.openingHours && <ThemedText type="small" themeColor="textSecondary">{tr("등록된 운영 시간: {0}", (place.openingHours))}</ThemedText>}
         </View>
+        <PlaceExternalRatings cityId={city.id} placeId={place.id} />
         {mapsUrl && <PostMapLink url={mapsUrl} label={place.name} onOpened={() => record('place_directions')} />}
         <Pressable analyticsId="places.detail.source" accessibilityRole="link" accessibilityLabel={tr("OpenStreetMap에서 장소 정보 보기")} onPress={() => openSource(place.sourceUrl)} style={styles.link}>
           <ThemedText type="smallBold" themeColor="accent">{tr("OpenStreetMap에서 장소 정보 보기")}</ThemedText>
