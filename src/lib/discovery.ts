@@ -36,9 +36,14 @@ export type DiscoveryItem = {
 
 export function discoveryPlace(place: CityPlace): DiscoveryItem | null {
   if (!Number.isFinite(place.latitude) || Math.abs(place.latitude) > 90 || !Number.isFinite(place.longitude) || Math.abs(place.longitude) > 180) return null;
+  const category = place.category === 'food' ? 'dining' : place.category === 'cafe' ? 'cafe' : 'place';
+  const pick = place.recommendation?.placeId === place.id ? place.recommendation : null;
   return { id: `place:${place.cityId}:${place.id}`, source: 'place', sourceId: place.id, cityId: place.cityId, title: place.name,
-    category: place.category === 'food' ? 'dining' : place.category === 'cafe' ? 'cafe' : 'place', label: place.address || place.name,
-    latitude: place.latitude, longitude: place.longitude, price: null, imageUri: place.photo?.uri, place };
+    category, label: place.address || place.name,
+    latitude: place.latitude, longitude: place.longitude, price: null, imageUri: place.photo?.uri, place,
+    ...(pick ? { top25: { id: place.id, cityId: place.cityId, title: place.name, label: place.address || place.name,
+      category, latitude: place.latitude, longitude: place.longitude, reason: pick.reason, reasonEn: pick.reasonEn,
+      sourceUrl: pick.sourceUrl, postIds: [] } } : {}) };
 }
 
 export function mergeCityTop25(items: DiscoveryItem[], cityId: string, picks: readonly CityTop25Place[] = CITY_TOP25): DiscoveryItem[] {

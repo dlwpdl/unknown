@@ -268,7 +268,7 @@ function CityMap({ onClose }: { onClose?: () => void } = {}) {
           <ScrollView analyticsId="discovery.filter" keyboardShouldPersistTaps="handled" style={styles.sheetScroll} contentContainerStyle={styles.sheetContent}>
             <ThemedText type="small" themeColor="textSecondary">{tr("여러 분류를 고르면 함께 보여줘요.")}</ThemedText>
             <View style={styles.categoryGrid}>{filters.map(filterChip)}</View>
-            <Pressable analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr("TOP 25 선정 배지 안내")} onPress={() => { play('selection'); Alert.alert(tr("도시의 TOP 25"), tr("카페·맛집·공원 등 도시별로 선정한 장소예요. 같은 장소의 추천글은 하나로 모아 보여줘요. 방문 수나 인기 순위를 뜻하지 않아요.")); }} style={styles.info}><SymbolView name={{ ios: 'info.circle', android: 'info', web: 'info' }} size={18} tintColor={theme.textSecondary} /><ThemedText type="small" themeColor="textSecondary">{tr("TOP 25 선정 배지 안내")}</ThemedText></Pressable>
+            <Pressable analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr("TOP 25 선정 배지 안내")} onPress={() => { play('selection'); Alert.alert(tr("도시의 TOP 25"), tr("뷰와 풍경, 건축이 매력적인 사진 명소를 도시별 최대 25곳 골랐어요. 숫자는 인기 순위가 아니에요.")); }} style={styles.info}><SymbolView name={{ ios: 'info.circle', android: 'info', web: 'info' }} size={18} tintColor={theme.textSecondary} /><ThemedText type="small" themeColor="textSecondary">{tr("TOP 25 선정 배지 안내")}</ThemedText></Pressable>
             {Object.hasOwn(EVENT_CITIES, city.id) && <>
               <ThemedText type="smallBold">{tr("행사 날짜")}</ThemedText>
               <View style={styles.dates}>{([{ id: 'all', label: tr("전체 날짜") }, { id: 'today', label: tr("오늘") }, { id: 'week', label: tr('다가오는 7일') }, { id: 'weekend', label: tr("이번 주말") }, { id: 'date', label: tr("날짜 지정") }] as const).map(value => <Pressable key={value.id} analyticsId="discovery.date" accessibilityRole="button" accessibilityState={{ selected: value.id === 'date' ? dateOpen || dateFilter === 'date' : !dateOpen && dateFilter === value.id }} onPress={() => chooseDate(value.id)} style={[styles.date, { borderColor: theme.line, backgroundColor: (value.id === 'date' ? dateOpen || dateFilter === 'date' : !dateOpen && dateFilter === value.id) ? theme.backgroundSelected : theme.backgroundElement }]}><ThemedText type="small">{value.id === 'date' && dateFilter === 'date' && !dateOpen ? date.slice(5).replace('-', '/') : value.label}</ThemedText></Pressable>)}</View>
@@ -306,11 +306,11 @@ function DiscoveryCard({ item, viewerScope, onOpen, translationVisible = true, e
 function Top25Note({ item }: { item: DiscoveryItem }) {
   const theme = useTheme(), { play } = useInteractionFeedback();
   const top25Ink = theme === Colors.light ? '#68543A' : TOP25_GOLD;
-  const { tr } = useLanguage();
+  const { tr, locale } = useLanguage();
   if (!item.top25) return null;
   return <View style={[styles.top25Note, { borderTopColor: theme.line }]}>
     <ThemedText type="smallBold" style={{ color: top25Ink }}>{tr("TOP 25 선정 이유")}</ThemedText>
-    <ThemedText type="small" themeColor="textSecondary">{item.top25.reason}</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary">{locale === 'en' ? item.top25.reasonEn ?? item.top25.reason : item.top25.reason}</ThemedText>
     {!!item.post && <ThemedText type="small" themeColor="textSecondary">{tr("글링 추천 글에서도 소개한 장소예요.")}</ThemedText>}
     <Pressable analyticsId="discovery.card" accessibilityRole="link" accessibilityLabel={tr('{0} TOP 25 선정 출처 열기, 외부 사이트', item.title)} onPress={() => { play('selection'); void Linking.openURL(item.top25!.sourceUrl).catch(() => { play('warning'); Alert.alert(tr("선정 출처를 열지 못했어요"), tr("인터넷 연결을 확인하고 다시 시도해 주세요.")); }); }} style={styles.top25Source}><ThemedText type="small" style={{ color: top25Ink }}>{tr("선정 출처 보기 ↗")}</ThemedText></Pressable>
   </View>;

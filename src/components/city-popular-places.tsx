@@ -31,7 +31,7 @@ export function CityPopularPlaces({ cityId }: { cityId: string }) {
         <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={12} tintColor={theme.accent} />
       </Pressable>
     </View>
-    <ThemedText style={styles.subtitle} themeColor="textSecondary">{tr("사진으로 먼저 둘러보세요")}</ThemedText>
+    <ThemedText style={styles.subtitle} themeColor="textSecondary">{tr("뷰와 공간이 예쁜 사진 명소를 골랐어요")}</ThemedText>
     <View style={styles.cards}>
       {places.slice(0, 3).map(place => <Pressable key={place.id} analyticsId="today.places.place-open" accessibilityRole="button" accessibilityLabel={tr("{0} 장소 정보", (place.name))}
         onPress={() => { play('selection'); router.push({ pathname: '/places/[id]', params: { id: place.id, cityId } }); }}
