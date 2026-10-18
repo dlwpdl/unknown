@@ -60,6 +60,27 @@ test('merchant capability reads actual server booleans and never treats malforme
   for (const data of [null, 'true', {}, 1]) await assert.rejects(getMyMerchantAccess({ rpc: async () => ({ data, error: null }) }), /MERCHANT_ACCESS_READ_FAILED/);
   await assert.rejects(getMyMerchantAccess({ rpc: async () => ({ data: true, error: { message: 'AUTH_REQUIRED' } }) }), /AUTH_REQUIRED/);
 });
+
+test('business publication fails closed on an older server without retrying its personal publisher', async () => {
+  let writes = 0;
+  const calls = [];
+  const client = { rpc: async (name, args) => {
+    calls.push({ name, args });
+    if (args.p_require_business_privacy === true) return { data: null, error: { code: 'PGRST202', message: 'Protected business publisher is unavailable' } };
+    writes++;
+    return { data: 'personal-post', error: null };
+  } };
+  await assert.rejects(publishMerchantDraft(client, 'business', 'draft', '2026-10-17T00:00:00Z'), { code: 'PGRST202' });
+  assert.equal(writes, 0);
+  assert.equal(calls.length, 1);
+});
+
+test('business publication requires the privacy-ready publisher and preserves its stale-write token', async () => {
+  const calls = [];
+  const client = { rpc: async (name, args) => { calls.push({ name, args }); return { data: 'business-post', error: null }; } };
+  assert.equal(await publishMerchantDraft(client, 'business', 'draft', '2026-10-17T00:00:00Z'), 'business-post');
+  assert.deepEqual(calls, [{ name: 'publish_merchant_workspace_draft', args: { p_merchant_id: 'business', p_draft_id: 'draft', p_expected_updated_at: '2026-10-17T00:00:00Z', p_require_business_privacy: true } }]);
+});
 test('admin YES NO writes explicit capability and verifies same server value', async () => {
   const calls=[]; const client={rpc: async (name,args)=>{ calls.push([name,args]); return { data:false,error:null }; }};
   assert.equal(await getAdminMerchantAccess(client,'member'),false);
