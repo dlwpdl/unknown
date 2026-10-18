@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { safeMerchantSourceUrl } from '../src/lib/merchant-source.ts';
+import { safeTicketUrl } from '../supabase/functions/_shared/ticketmaster.ts';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as discovery from '../src/lib/discovery.ts';
@@ -72,4 +74,22 @@ test('opening a catalog map card uses the existing place detail route and leaves
   assert.equal(links.length, 0);
   exports.open({ source: 'place', top25: { sourceUrl: 'https://example.org/pick' } });
   assert.equal(links.at(-1), 'https://example.org/pick');
+});
+
+test('embedded discovery permits public HTTPS information and rejects invalid post and event targets', async () => {
+  const start = mapSource.indexOf('  const open = (item: DiscoveryItem) => {'), end = mapSource.indexOf('  const selectPin = ', start);
+  const exports = {}, opened = [], routes = [];
+  vm.runInNewContext(compile(mapSource.slice(start, end) + '\nexports.open = open;'), {
+    exports, onClose() {}, safeMerchantSourceUrl, safeTicketUrl, PUBLIC_SITE: 'https://gling.ej-entertainment.com',
+    openBrowserAsync: async url => opened.push(url), router: { push: value => routes.push(value) },
+    play() {}, tr: value => value, Alert: { alert() {} }, encodeURIComponent,
+  });
+  for (const item of [{ source: 'post', post: { id: 'private-conversation-id' } }, { source: 'event', event: { ticketUrl: 'https://attacker.example/login' } }, { source: 'place', place: { sourceUrl: 'javascript:alert(1)' } }]) exports.open(item);
+  assert.deepEqual(opened, []);
+  const id = '00000000-0000-0000-0000-000000000001';
+  exports.open({ source: 'post', post: { id }, conversationId: 'never-pass-this' });
+  exports.open({ source: 'event', event: { ticketUrl: 'https://www.ticketmaster.ca/event/example' } });
+  await new Promise(setImmediate);
+  assert.deepEqual(opened, [`https://gling.ej-entertainment.com/post?id=${id}`, 'https://www.ticketmaster.ca/event/example']);
+  assert.deepEqual(routes, []);
 });
