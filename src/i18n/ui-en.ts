@@ -1,4 +1,17 @@
 export const uiEnglish: Record<string, string> = {
+  "대화 프로필 선택: {0}": "Choose messaging profile: {0}",
+  "비즈니스 대화함": "Business inbox",
+  "개인 대화함": "Personal inbox",
+  "대화 프로필": "Messaging profile",
+  "프로필 선택 닫기": "Close profile selector",
+  "개인 프로필": "Personal profile",
+  "연결을 확인하지 못했어요. 현재 프로필은 유지돼요.": "Could not check your connection. Your current profile is unchanged.",
+  "비즈니스 연결을 다시 확인해 주세요. 현재 프로필은 유지돼요.": "Please check your business connection again. Your current profile is unchanged.",
+  "비즈니스 대화 접근 권한을 확인하지 못했어요. 프로필을 다시 선택해 주세요.": "Could not verify access to this business conversation. Please select your profile again.",
+  "대화 접근 다시 확인": "Check conversation access again",
+  "{0} 프로필로 보내요": "Sending as {0}",
+  "대화함으로 이동하면 저장하지 않은 수정 내용이 사라질 수 있어요. 이동할까요?": "Moving to the inbox may discard unsaved changes. Continue?",
+
   "이웃 프로필": "Neighbour profile",
   "이웃이 남긴 리뷰": "Reviews from neighbours",
   "평점 기준": "How ratings work",

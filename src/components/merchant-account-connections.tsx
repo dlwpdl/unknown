@@ -15,6 +15,7 @@ import {
   type MyMerchantConnections, type MerchantAccountConnections, type MerchantAccountInvitation,
 } from '@/lib/merchant-connections';
 import { supabase } from '@/lib/supabase';
+import { selectChatBusiness } from '@/lib/chat-identity';
 
 function AccountAction({ label, onPress, disabled, primary = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean }) {
 
@@ -59,7 +60,10 @@ export function MerchantAccountEntry() {
       const next = await loadMyMerchantConnections(supabase, me.id);
       if (current.current !== me.id || serial.current !== request) return;
       setResponse(next);
-      if (next.merchants.length === 1 && next.merchants[0].role !== 'admin') router.push({ pathname: '/profile/merchant', params: { merchant: next.merchants[0].id, tab: 'drafts' } });
+      if (next.merchants.length === 1 && next.merchants[0].role !== 'admin') {
+        selectChatBusiness(me.id, next.merchants[0]);
+        router.push({ pathname: '/profile/merchant', params: { merchant: next.merchants[0].id, tab: 'drafts' } });
+      }
       else if (next.merchants.length || next.invitations.length) router.push('/profile/merchant');
     } catch { if (current.current === me.id) { setResponse(null); play('warning'); } }
     finally { opening.current = false; if (current.current === me.id) setBusy(false); }

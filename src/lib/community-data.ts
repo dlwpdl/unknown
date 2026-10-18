@@ -5,6 +5,7 @@ import { hideContent } from './content-visibility.ts';
 import { isThumbPath, MAX_IMAGE_BYTES, MAX_POST_IMAGES, thumbPathFor } from './image-upload.ts';
 import { normalizePoll, type PollDraft } from './post-polls.ts';
 import { chatImagePaths } from './chat-details.ts';
+import { mapBusinessConversation } from './business-chat.ts';
 
 import { hydratePublicPosts, loadPublicPost, mapPublicFeed, type FeedCursor, type PublicCommentRow, type PublicFeedRow } from './feed-data.ts';
 import type { DailyQuota, ListingStatus, Post, PostComment, PostKind, RoomPreview, Tag } from './types.ts';
@@ -36,7 +37,7 @@ export type ReportReason = 'spam' | 'harassment' | 'hate' | 'sexual' | 'privacy'
 
 export type ConversationPreview = {
   id: string;
-  kind: 'direct' | 'group';
+  kind: 'direct' | 'group' | 'business';
   status: 'pending' | 'active' | 'ended' | 'rejected' | 'cancelled';
   requesterId: string | null;
   groupPostId: string | null;
@@ -46,6 +47,12 @@ export type ConversationPreview = {
   otherUser: { id: string; nickname: string; verificationLevel: number };
   latestBody: string | null;
   latestAt: string;
+  selfIdentity?: ConversationIdentity;
+  otherIdentity?: ConversationIdentity;
+};
+
+export type ConversationIdentity = {
+  kind: 'user' | 'business'; id: string; name: string; avatar_path: string | null; avatarUri: string | null;
 };
 
 export type ChatMessageRecord = {
@@ -60,6 +67,12 @@ export type ChatMessageRecord = {
   image_paths?: string[];
   imageUrl?: string;
   imageUrls?: (string | undefined)[];
+  imageSources?: { uri: string; headers: Record<string, string> }[];
+  sender_kind?: 'user' | 'business';
+  avatarUri?: string | null;
+  is_mine?: boolean;
+  hearts?: number;
+  mine_reacted?: boolean;
   latitude?: number | null;
   longitude?: number | null;
   location_label?: string | null;
@@ -497,8 +510,7 @@ export type ConversationPage = {
 };
 
 export async function loadConversations(client: SupabaseClient, userId: string, filter: ConversationFilter = 'all',
-  cursor: ConversationCursor | null = null, conversationId: string | null = null): Promise<ConversationPage> {
-  void userId; // The RPC scopes both pages and deep links to the authenticated account.
+  cursor: ConversationCursor | null = null, conversationId: string | null = null, asBusinessId?: string | null): Promise<ConversationPage> {
   type Row = {
     id: string;
     other_user_id: string;
@@ -513,10 +525,11 @@ export async function loadConversations(client: SupabaseClient, userId: string, 
     title: string;
     is_group_host: boolean;
   };
-  const result = await client.rpc('get_conversation_inbox', {
+  const result = await client.rpc(asBusinessId === undefined ? 'get_conversation_inbox' : 'get_identity_conversation_inbox', {
     p_filter: filter, p_limit: 30, p_before_status: cursor?.status ?? null,
     p_before_created: cursor?.createdAt ?? null, p_before_id: cursor?.id ?? null,
     p_conversation_id: conversationId,
+    ...(asBusinessId === undefined ? {} : { p_as_business_id: asBusinessId }),
   });
   if (result.error) throw result.error;
   const page = result.data as { items: Row[]; pending_count: number; cursor: ConversationCursor | null; selected: Row | null };
@@ -532,7 +545,9 @@ export async function loadConversations(client: SupabaseClient, userId: string, 
       }
     } catch { /* Titles still identify rooms when post metadata is unavailable. */ }
   }
-  const map = (row: Row): ConversationPreview => ({
+  const map = (row: Row): ConversationPreview => {
+    if (asBusinessId && row.kind !== 'business') throw new Error('BUSINESS_CHAT_READ_FAILED');
+    return row.kind === 'business' ? mapBusinessConversation(row, userId, asBusinessId) : ({
     id: row.id,
     kind: row.kind,
     status: row.status,
@@ -545,6 +560,7 @@ export async function loadConversations(client: SupabaseClient, userId: string, 
     latestBody: row.latest_body,
     latestAt: row.latest_at,
   });
+  };
   return { conversations: page.items.map(map), pendingCount: page.pending_count, cursor: page.cursor,
     selectedConversation: page.selected ? map(page.selected) : null };
 }

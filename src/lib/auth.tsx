@@ -28,6 +28,7 @@ import { unregisterPushDevice } from '@/lib/push-notifications';
 import { shouldCelebrateVerificationUpgrade, type TrustLevel } from '@/lib/trust';
 import { changeProfileNickname } from '@/lib/nickname';
 import { setBusinessImageSession } from '@/lib/feed-data';
+import { resetChatIdentity } from '@/lib/chat-identity';
 
 type Level = 0 | 1;
 type OAuthProvider = 'kakao' | 'google';
@@ -98,6 +99,8 @@ export function AuthProvider({ children, publicPage = false }: { children: React
   const [profile, setProfile] = useState<ProfileRecord | null>(null);
   const [missingProfileUserId, setMissingProfileUserId] = useState<string | null>(null);
   const [profileCheckedUserId, setProfileCheckedUserId] = useState<string | null>(null);
+
+  useEffect(() => { resetChatIdentity(); }, [session?.user.id]);
 
   useEffect(() => {
     let active = true;

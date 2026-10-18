@@ -15,6 +15,9 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { count } from '@/i18n';
+import { chatBusinessIdentity } from '@/lib/chat-identity';
+import { useChatIdentity } from '@/hooks/use-chat-identity';
+import { startBusinessConversation } from '@/lib/business-chat';
 import { useAuth } from '@/lib/auth';
 import { getCommunityActionError, loadTradeProfile, startDirectConversation, type TradeProfile } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -44,6 +47,7 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { isAuthed, me, promptLogin } = useAuth();
+  const business = useChatIdentity();
   const hidden = useContentVisibility();
   const { play } = useInteractionFeedback();
   const [requesting, setRequesting] = useState(false);
@@ -55,7 +59,7 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
 
   // 대화 기반 거래 이력과 현장 참석 확인은 서로 다른 신호다.
   const userId = user?.id;
-  const requestKey = `${isAuthed ? me.id : 'guest'}:${userId ?? ''}:${user?.contextPostId ?? user?.listingId ?? ''}`;
+  const requestKey = `${isAuthed ? me.id : 'guest'}:${business?.id ?? 'personal'}:${userId ?? ''}:${user?.contextPostId ?? user?.listingId ?? ''}`;
   const tradeOpen = openTradeKey === requestKey;
   const currentRequest = useRef<{ key: string } | null>({ key: requestKey });
   useLayoutEffect(() => {
@@ -89,15 +93,17 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
   const requestChat = async (u: SheetUser) => {
     play('selection');
     if (!isAuthed) return promptLogin(t.auth.reasonChatLogin);
-    if (!u.id || busy.current) return;
+    if (!u.id || busy.current || (chatBusinessIdentity(me.id)?.id ?? null) !== (business?.id ?? null)) return;
     const request = currentRequest.current;
     busy.current = true;
     setRequesting(true);
     try {
-      const conversationId = await startDirectConversation(supabase, u.id, u.contextPostId ?? u.listingId);
+      const conversationId = business
+        ? await startBusinessConversation(supabase, { userId: u.id }, business.id, u.contextPostId ?? u.listingId)
+        : await startDirectConversation(supabase, u.id, u.contextPostId ?? u.listingId);
       if (currentRequest.current !== request) return;
       play('message');
-      navigate({ pathname: '/chat', params: { conversationId, view: 'direct' } });
+      navigate({ pathname: '/chat', params: { conversationId, view: 'direct', ...(business ? { businessId: business.id } : {}) } });
     } catch (error) {
       if (currentRequest.current !== request) return;
       play('warning');
