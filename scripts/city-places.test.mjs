@@ -12,6 +12,9 @@ const cities = [...citySource.matchAll(/id: '([^']+)', name: '([^']+)', englishN
   .map(([, id, name, englishName, province]) => ({ id, name, englishName, province }));
 const nodes = v => !v || typeof v !== 'object' ? [] : [v, ...Object.values(v).flatMap(nodes)];
 const catalog = () => JSON.parse(readFileSync(new URL('src/lib/city-places.catalog.json', root), 'utf8'));
+const fixtureTime = Math.max(Date.parse(catalog().collectedAt), ...Object.values(catalog().cities)
+  .flatMap(city => (city.recommendations ?? []).map(pick => Date.parse(pick.verifiedAt)))) + 86_400_000;
+const fixtureNow = fixtureTime + 86_400_000;
 const photos = () => {
   const path = new URL('src/lib/city-places.photos.json', root);
   return existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : { cities: {} };
@@ -42,7 +45,7 @@ test('an unreviewed catalog never fills city recommendations with ordinary busin
 test('a legacy broad recommendation response cannot replace the photo-spot selection', () => {
   const api = data(), next = dailyCatalog();
   delete next.recommendationTheme;
-  assert.equal(api.replaceCityPlacesCatalog(next, Date.parse('2026-10-18T00:00:00Z')), false);
+  assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), false);
 });
 
 test('every supported city has source-checked photo selections rather than a padded business directory', () => {
@@ -50,7 +53,7 @@ test('every supported city has source-checked photo selections rather than a pad
   assert.equal(snapshot.recommendationTheme, 'photo-spots');
   for (const city of cities) {
     const places = data().getCityRecommendations(city.id);
-    assert.ok(places.length >= 3 && places.length <= 25, city.id);
+    assert.ok(places.length >= 3 && places.length <= 50, city.id);
     for (const place of places) {
       assert.doesNotMatch(place.name, /McDonald|Tim Hortons|Starbucks|Subway|Burger King|Wendy/i);
       assert.ok(place.recommendation.reason.trim());
@@ -60,28 +63,51 @@ test('every supported city has source-checked photo selections rather than a pad
   }
 });
 function dailyCatalog() {
-  const next = catalog(); next.collectedAt = '2026-10-17T20:00:00Z';
+  const next = catalog(); next.collectedAt = new Date(fixtureTime).toISOString();
   for (const city of cities) next.cities[city.id].recommendations = next.cities[city.id].places.slice(-3).map(p => ({ placeId: p.id, reason: 'Test-reviewed selection', sourceUrl: 'https://example.org/reviewed', verifiedAt: next.collectedAt }));
   return next;
 }
+test('a fifty-place source-reviewed list preserves every identity and rejects a fifty-first pick', () => {
+  const next = dailyCatalog();
+  next.cities.toronto.recommendations = next.cities.toronto.places.slice(0, 50).map(place => ({
+    placeId: place.id, reason: 'Test-reviewed selection', reasonEn: 'Test-reviewed selection',
+    sourceUrl: 'https://example.org/reviewed', verifiedAt: next.collectedAt,
+  }));
+  const api = data();
+  assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
+  assert.equal(api.getCityRecommendations('toronto').length, 50);
+  assert.deepEqual(Array.from(api.getCityRecommendations('toronto'), p => p.id), next.cities.toronto.recommendations.map(p => p.placeId));
+  const tooMany = structuredClone(next);
+  tooMany.collectedAt = new Date(fixtureTime + 3_600_000).toISOString();
+  tooMany.cities.toronto.recommendations.push({ ...tooMany.cities.toronto.recommendations[0], placeId: tooMany.cities.toronto.places[50].id });
+  assert.throws(() => api.replaceCityPlacesCatalog(tooMany, fixtureNow), /INVALID_PLACE_CATALOG/);
+});
 test('daily recommendations use reviewed order while archived place identities remain readable', () => {
   const api = data(), next = dailyCatalog();
   assert.equal(typeof api.replaceCityPlacesCatalog, 'function');
-  api.replaceCityPlacesCatalog(next, Date.parse('2026-10-18T00:00:00Z'));
+  api.replaceCityPlacesCatalog(next, fixtureNow);
   assert.equal(api.getCityRecommendations('toronto')[0].id, next.cities.toronto.recommendations[0].placeId);
   assert.equal(api.getCityPlaces('toronto').length, catalog().cities.toronto.places.length);
 });
 test('opening a selected place retains its photo reason without losing other review identities', () => {
   const api = data(), next = dailyCatalog();
   next.recommendationTheme = 'photo-spots';
-  api.replaceCityPlacesCatalog(next, Date.parse('2026-10-18T00:00:00Z'));
+  api.replaceCityPlacesCatalog(next, fixtureNow);
   const pick = next.cities.toronto.recommendations[0];
   assert.equal(api.getCityPlaces('toronto').find(place => place.id === pick.placeId).recommendation?.reason, pick.reason);
   assert.ok(api.getCityPlaces('toronto').some(place => /McDonald/i.test(place.name)));
 });
 
 test('an older daily catalog retains a newly checked restaurant; a later refresh can remove its recommendation', () => {
-  const seed = catalog(), id = 'osm:node:6339016833', api = data(seed);
+  const seed = catalog(), id = 'osm:node:6339016833';
+  // Model the historical ordering explicitly, independent of the live catalog's dates.
+  seed.collectedAt = '2026-10-14T03:11:22Z';
+  for (const city of Object.values(seed.cities)) for (const pick of city.recommendations) pick.verifiedAt = seed.collectedAt;
+  const restaurant = seed.cities.vancouver.recommendations.find(pick => pick.placeId === id)
+    ?? { placeId: id, reason: 'Test-reviewed restaurant', sourceUrl: 'https://example.org/reviewed' };
+  restaurant.verifiedAt = '2026-10-18T20:00:00Z';
+  seed.cities.vancouver.recommendations = [...seed.cities.vancouver.recommendations.filter(pick => pick.placeId !== id).slice(0, 49), restaurant];
+  const api = data(seed);
   const next = structuredClone(seed);
   next.collectedAt = '2026-10-18T08:54:42Z';
   next.cities.vancouver.places = next.cities.vancouver.places.filter(place => place.id !== id);
@@ -97,7 +123,7 @@ test('an older daily catalog retains a newly checked restaurant; a later refresh
 test('reviewed recommendation metadata preserves the English reason without inventing a ranking', () => {
   const api = data(), next = dailyCatalog();
   next.cities.toronto.recommendations[0].reasonEn = 'A source-checked place to explore.';
-  api.replaceCityPlacesCatalog(next, Date.parse('2026-10-18T00:00:00Z'));
+  api.replaceCityPlacesCatalog(next, fixtureNow);
   assert.equal(api.getCityRecommendations('toronto')[0].recommendation.reasonEn, 'A source-checked place to explore.');
 });
 test('foreign-city IDs, unsafe sources and malformed daily payloads cannot replace the last valid catalog', () => {
@@ -105,11 +131,11 @@ test('foreign-city IDs, unsafe sources and malformed daily payloads cannot repla
   const original = JSON.stringify(api.getCityPlaces('toronto'));
   for (const mutate of [next => { next.cities.toronto.places[0].cityId = 'vancouver'; }, next => { next.cities.toronto.places[0].sourceUrl = 'https://evil.example/'; }, next => { next.cities.toronto.places[0].latitude = NaN; }, next => { delete next.cities.vancouver; }]) {
     const next = dailyCatalog(); mutate(next);
-    assert.throws(() => api.replaceCityPlacesCatalog(next, Date.parse('2026-10-18T00:00:00Z')), /INVALID_PLACE_CATALOG/);
+    assert.throws(() => api.replaceCityPlacesCatalog(next, fixtureNow), /INVALID_PLACE_CATALOG/);
     assert.equal(JSON.stringify(api.getCityPlaces('toronto')), original);
   }
 });
-function screen(file, params = { cityId: 'toronto' }, dev = true) {
+function screen(file, params = { cityId: 'toronto' }, dev = true, placeData = data()) {
   const states = [], routes = [], feedback = [], opened = [], ratingScopes = [];
   let cursor = 0;
   const jsx = (type, props) => ({ type, props });
@@ -131,7 +157,7 @@ function screen(file, params = { cityId: 'toronto' }, dev = true) {
       getPlaceReviewRating: (cityId, placeId) => ({ cityId, placeId, score: null, source: null, count: null, externalScore: null }) },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16, four: 24 }, MaxContentWidth: 920 },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: v => feedback.push(v) }) },
-    '@/lib/city-places': data(), '@/lib/post-maps': module('src/lib/post-maps.ts'),
+    '@/lib/city-places': placeData, '@/lib/post-maps': module('src/lib/post-maps.ts'),
     '@/lib/merchant-source': module('src/lib/merchant-source.ts', {
       '../../supabase/functions/_shared/post-links.ts': { safePostLink: value => value },
     }),
@@ -227,7 +253,7 @@ test('native list renders real data, expands, filters search and category, then 
   const expand = nodes(tree).find(n => n.props?.analyticsId === 'places.view-more');
   assert.equal(!!expand, choices.length > 10);
   expand?.props.onPress();
-  tree = ui.render(); assert.equal(rows().length, Math.min(25, choices.length));
+  tree = ui.render(); assert.equal(rows().length, Math.min(50, choices.length));
   nodes(tree).find(n => n.props?.accessibilityLabel === '장소 검색').props.onChangeText('__no_actual_place_match__');
   tree = ui.render(); assert.equal(rows().length, 0);
   nodes(tree).find(n => n.props?.accessibilityLabel === '장소 검색').props.onChangeText('');
@@ -238,7 +264,26 @@ test('native list renders real data, expands, filters search and category, then 
   assert.equal(nodes(tree).find(n => n.props?.analyticsId === 'places.category.food').props.accessibilityState.selected, true);
   nodes(tree).find(n => n.props?.analyticsId === 'places.category.places').props.onPress();
   tree = ui.render();
-  assert.ok(rows().length > 0 && rows().length <= 25);
+  assert.ok(rows().length > 0 && rows().length <= 50);
+});
+test('the full city list expands to fifty and requests summaries for the last place too', () => {
+  const next = dailyCatalog();
+  next.cities.toronto.recommendations = next.cities.toronto.places.slice(0, 50).map(place => ({
+    placeId: place.id, reason: 'Test-reviewed selection', sourceUrl: 'https://example.org/reviewed', verifiedAt: next.collectedAt,
+  }));
+  const api = data(); api.replaceCityPlacesCatalog(next, fixtureNow);
+  const ui = screen('src/app/places/index.tsx', { cityId: 'toronto' }, true, api);
+  let tree = ui.render();
+  assert.equal(ui.ratingScopes.at(-1).ids.length, 50);
+  assert.equal(nodes(tree).filter(n => n.props?.analyticsId === 'places.open').length, 10);
+  const more = nodes(tree).find(n => n.props?.analyticsId === 'places.view-more');
+  assert.equal(more.props.accessibilityLabel, '50곳까지 보기');
+  more.props.onPress(); tree = ui.render();
+  const rows = nodes(tree).filter(n => n.props?.analyticsId === 'places.open');
+  assert.equal(rows.length, 50);
+  rows[49].props.onPress();
+  assert.equal(ui.routes.at(-1).params.id, next.cities.toronto.recommendations[49].placeId);
+  assert.equal(ui.feedback.at(-1), 'selection');
 });
 test('native detail searches Google maps by name, available address and Canadian city instead of a coordinate pin', () => {
   assert.equal(typeof data().getCityPlaces, 'function');

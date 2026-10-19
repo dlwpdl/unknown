@@ -35,6 +35,33 @@ test('one focus request batches stable place IDs and does not refetch on an ordi
   assert.equal(ui.calls.length, 1); assert.equal(ui.calls[0][2].length, 1);
 });
 
+test('all fifty places receive scores through two bounded existing RPC batches', async () => {
+  const ids = Array.from({ length: 50 }, (_, i) => `osm:node:${i + 1}`);
+  const ui = view(async (_client, cityId, batch) => Object.fromEntries(batch.map(placeId => [placeId, { cityId, placeId, average: 8.5, count: 2 }])));
+  ui.render('vancouver', ids); await settle();
+  const snapshot = ui.render('vancouver', ids);
+  assert.equal(Object.keys(snapshot).length, 50);
+  assert.equal(ui.calls.length, 2);
+  assert.ok(ui.calls.every(args => args[2].length <= 25));
+  assert.equal(new Set(ui.calls.flatMap(args => Array.from(args[2]))).size, 50);
+  assert.equal(snapshot['osm:node:50'].average, 8.5);
+});
+
+test('one failed batch preserves the whole known fifty-place snapshot', async () => {
+  const ids = Array.from({ length: 50 }, (_, i) => `osm:node:${i + 1}`);
+  let outage = false;
+  const ui = view(async (_client, cityId, batch) => {
+    if (outage && batch.includes('osm:node:50')) throw Error('offline');
+    return Object.fromEntries(batch.map(placeId => [placeId, { cityId, placeId, average: outage ? 9 : 8, count: 1 }]));
+  });
+  ui.render('vancouver', ids); await settle();
+  assert.equal(Object.keys(ui.render('vancouver', ids)).length, 50);
+  outage = true; ui.blur(); ui.focus(); await settle();
+  const snapshot = ui.render('vancouver', ids);
+  assert.equal(Object.keys(snapshot).length, 50);
+  assert.ok(Object.values(snapshot).every(row => row.average === 8));
+});
+
 test('a blur before the session check finishes does not start a background rating request', async () => {
   const ui = view(); ui.render(); ui.blur(); await settle(); assert.equal(ui.calls.length, 0);
 });
