@@ -8,7 +8,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from 'expo-symbols';
 import { Alert, AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Modal, Platform, ScrollView as NativeScrollView, StyleSheet, TextInput, UIManager, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { CityPicker } from '@/components/city-picker';
 import { RaisedActionButton } from '@/components/raised-action-button';
@@ -279,7 +279,9 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
       </View>}
     </KeyboardAvoidingView>
     <Modal visible={cityOpen} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setCityOpen(false)}>
-      <SafeAreaView style={[styles.fill, { backgroundColor: theme.background }]}><CityPicker onClose={() => setCityOpen(false)} draft={{ city: selectedCity, onSelect: city => { setProfile(current => ({ ...current, cityId: city.id })); setCityOpen(false); } }} /></SafeAreaView>
+      <SafeAreaProvider style={[styles.fill, { backgroundColor: theme.background }]}>
+        <SafeAreaView style={styles.fill}><CityPicker onClose={() => setCityOpen(false)} draft={{ city: selectedCity, onSelect: city => { setProfile(current => ({ ...current, cityId: city.id })); setCityOpen(false); } }} /></SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   </SafeAreaView></ThemedView>;
 }
