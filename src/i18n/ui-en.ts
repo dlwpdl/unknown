@@ -15,6 +15,7 @@ export const uiEnglish: Record<string, string> = {
   "모임에서 쓸 이름과 공개 범위를 확인해 주세요. 기존 소개는 남아 있어요.": "Confirm your meetup name and sharing settings. Your existing introduction is still here.",
   "모임 프로필 확인하기": "Review meetup profile",
   "모임 참여 요청이 도착했어요.": "A meetup application has arrived.",
+  "모임 참여 요청이 도착했어요. 한번 확인해 주세요.": "A meetup application has arrived. Please take a look.",
   "모임 템플릿 · 질문 재사용": "Saved templates · reusable questions",
   "템플릿 · 반복 회차 · 대기 명단 · 공동 호스트": "Templates · recurring sessions · waitlist · cohosts",
   "Pro 모임 도구 · 신청·참석 통계": "Pro meetup tools · application and attendance totals",

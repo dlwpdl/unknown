@@ -112,6 +112,8 @@ select is((select count(*)::integer from public.get_public_feed_page_v2('vancouv
 select is((select other_nickname from public.get_conversation_previews() where group_post_id=current_setting('test.profile_post')::uuid),'Meetup host','group inbox uses meetup name');
 select is((select room_preview->>'hostDisplayName' from public.posts where id=current_setting('test.profile_post')::uuid),'Meetup host','public metadata contains only published name');
 select ok(not exists(select 1 from public.notifications where target_id=current_setting('test.profile_request')::uuid and body like '%General secret%'),'request notification body does not leak account nickname');
+select is((select body from public.notifications where target_id=current_setting('test.profile_request')::uuid and kind='meetup_request'),'모임 참여 요청이 도착했어요. 한번 확인해 주세요.','request keeps the active copy variant without community identity');
+select is((select route from public.notifications where target_id=current_setting('test.profile_request')::uuid and kind='meetup_request'),'/chat?requestId='||current_setting('test.profile_request'),'request notification still opens the exact application');
 
 select is((select count(*)::integer from storage.objects where bucket_id='meetup-profiles'),2,'host reads active applicant photo');
 select lives_ok($$select public.respond_meetup_request(current_setting('test.profile_request')::uuid,'approved')$$,'existing approval path preserved');
