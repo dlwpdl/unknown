@@ -2,10 +2,11 @@ import { Children } from 'react';
 import { Platform, StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
 
 import { Fonts, ThemeColor } from '@/constants/theme';
+import { Typography } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedTextProps = TextProps & {
-  type?: 'default' | 'title' | 'small' | 'smallBold' | 'subtitle' | 'link' | 'linkPrimary' | 'code';
+  type?: 'default' | 'title' | 'small' | 'smallBold' | 'subtitle' | 'link' | 'linkPrimary' | 'code' | 'screenTitle' | 'sheetTitle' | 'section' | 'menu' | 'label' | 'supporting' | 'caption' | 'micro';
   themeColor?: ThemeColor;
 };
 
@@ -19,14 +20,7 @@ export function ThemedText({ children, style, type = 'default', themeColor, ...r
       style={[
         { color: theme[themeColor ?? 'text'] },
         Platform.OS === 'web' && styles.wordWrap,
-        type === 'default' && styles.default,
-        type === 'title' && styles.title,
-        type === 'small' && styles.small,
-        type === 'smallBold' && styles.smallBold,
-        type === 'subtitle' && styles.subtitle,
-        type === 'link' && styles.link,
-        type === 'linkPrimary' && styles.linkPrimary,
-        type === 'code' && styles.code,
+        styles[type],
         style,
       ]}
       {...rest}
@@ -41,31 +35,19 @@ export function ThemedText({ children, style, type = 'default', themeColor, ...r
 
 const styles = StyleSheet.create({
   wordWrap: { wordBreak: 'keep-all', overflowWrap: 'anywhere' } as TextStyle,
-  small: {
-    fontSize: 13,
-    lineHeight: 19,
-    fontWeight: 500,
-  },
-  smallBold: {
-    fontSize: 13,
-    lineHeight: 19,
-    fontWeight: 700,
-  },
-  default: {
-    fontSize: 15,
-    lineHeight: 22,
-    fontWeight: 500,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 600,
-    lineHeight: 40,
-  },
-  subtitle: {
-    fontSize: 24,
-    lineHeight: 32,
-    fontWeight: 600,
-  },
+  small: Typography.supporting,
+  smallBold: Typography.label,
+  default: Typography.body,
+  title: Typography.display,
+  subtitle: Typography.subtitle,
+  screenTitle: Typography.screenTitle,
+  sheetTitle: Typography.sheetTitle,
+  section: Typography.section,
+  menu: Typography.menu,
+  label: Typography.label,
+  supporting: Typography.supporting,
+  caption: Typography.caption,
+  micro: Typography.micro,
   link: {
     lineHeight: 30,
     fontSize: 14,

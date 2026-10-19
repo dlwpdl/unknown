@@ -8,6 +8,7 @@ import { SymbolView } from 'expo-symbols';
 import { GlassSurface } from '@/components/glass-surface';
 import { ThemedText } from '@/components/themed-text';
 import { Depth, Spacing } from '@/constants/theme';
+import { ControlMetrics, ControlStyles, Typography, controlPresentation } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
@@ -54,25 +55,25 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
   // Recreate native text layout when Dynamic Type changes while the sheet is open.
   return <KeyboardAvoidingView key={fontScale} style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <View style={styles.head}>
-      {draft && <GlassSurface tone="control" interactive style={styles.iconGlass}><Pressable analyticsId="components_city-picker.pressable.1" accessibilityRole="button" accessibilityLabel={t.write.backToDraft} onPress={() => { play('selection'); onClose(); }} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
+      {draft && <View style={styles.iconGlass}><Pressable analyticsId="components_city-picker.pressable.1" accessibilityRole="button" accessibilityLabel={t.write.backToDraft} onPress={() => { play('selection'); onClose(); }} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
         <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={21} tintColor={theme.text} />
-      </Pressable></GlassSurface>}
+      </Pressable></View>}
       <ThemedText accessibilityRole="header" style={styles.title}>{draft ? t.write.postCity : t.feed.cityPickerTitle}</ThemedText>
-      {!draft && <GlassSurface tone="control" interactive style={styles.iconGlass}><Pressable analyticsId="components_city-picker.pressable.2" accessibilityRole="button" accessibilityLabel={t.write.cancel} onPress={() => { play('selection'); onClose(); }} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
+      {!draft && <View style={styles.iconGlass}><Pressable analyticsId="components_city-picker.pressable.2" accessibilityRole="button" accessibilityLabel={t.write.cancel} onPress={() => { play('selection'); onClose(); }} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
         <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={21} tintColor={theme.text} />
-      </Pressable></GlassSurface>}
+      </Pressable></View>}
     </View>
     <View style={styles.controls}>
-      <GlassSurface tone="control" style={styles.countriesGlass}><View accessibilityRole="tablist" accessibilityLabel={t.feed.cityCountry} style={styles.countries}>
-        <View accessible accessibilityRole="tab" accessibilityState={{ selected: true }} style={[styles.country, Depth.control, { backgroundColor: theme.card }]}>
-          <ThemedText type="smallBold" themeColor="accent">{t.feed.cityCanada}</ThemedText>
+      <View style={[styles.countriesGlass, { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}><View accessibilityRole="tablist" accessibilityLabel={t.feed.cityCountry} style={styles.countries}>
+        <View accessible accessibilityRole="tab" accessibilityState={{ selected: true }} style={[styles.country, Depth.control, controlPresentation(theme, { selected: true }).container]}>
+          <ThemedText type="label" style={controlPresentation(theme, { selected: true }).text}>{t.feed.cityCanada}</ThemedText>
         </View>
         <Pressable analyticsId="components_city-picker.pressable.3" disabled accessibilityRole="tab" accessibilityState={{ selected: false, disabled: true }} accessibilityLabel={`${t.feed.cityUnitedStates}, ${t.feed.citySoon}`} style={styles.country}>
           <ThemedText type="smallBold" themeColor="textSecondary">{t.feed.cityUnitedStates}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{t.feed.citySoon}</ThemedText>
         </Pressable>
-      </View></GlassSurface>
-      <GlassSurface tone="control" style={styles.searchGlass}><View style={styles.search}>
+      </View></View>
+      <View style={[styles.searchGlass, { backgroundColor: theme.card, borderColor: theme.line }]}><View style={styles.search}>
         <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={19} tintColor={theme.textSecondary} />
         <TextInput accessibilityLabel={t.feed.citySearch} placeholder={t.feed.citySearch} placeholderTextColor={theme.textSecondary}
           value={query} onChangeText={setQuery} autoCapitalize="none" autoCorrect={false} returnKeyType="search"
@@ -80,7 +81,7 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
         {!!query && <Pressable analyticsId="components_city-picker.pressable.4" accessibilityRole="button" accessibilityLabel={t.feed.citySearchClear} onPress={() => { play('selection'); setQuery(''); }} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
           <SymbolView name={{ ios: 'xmark.circle.fill', android: 'cancel', web: 'cancel' }} size={19} tintColor={theme.textSecondary} />
         </Pressable>}
-      </View></GlassSurface>
+      </View></View>
     </View>
     <SectionList analyticsId="components_city-picker.sectionlist.1" sections={sections} keyExtractor={item => item.id} stickySectionHeadersEnabled={false}
       keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.list}
@@ -109,7 +110,7 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
         const open = item.state === 'open';
         const busy = !draft && saving;
         const disabled = busy || !open;
-        return <View style={[styles.rowGlass, { backgroundColor: theme.card, borderColor: selected ? theme.accent : theme.line }]}><Pressable analyticsId="components_city-picker.pressable.6" disabled={disabled} accessibilityRole="button" accessibilityState={{ selected, disabled, busy }}
+        return <View style={[styles.rowGlass, { borderColor: theme.line }]}><Pressable analyticsId="components_city-picker.pressable.6" disabled={disabled} accessibilityRole="button" accessibilityState={{ selected, disabled, busy }}
           accessibilityLabel={[tr(item.name), language === 'ko' && item.englishName, item.province, !open && t.feed.citySoon, selected && t.feed.citySelected].filter(Boolean).join(', ')}
           onPress={async () => {
             if (disabled) return;
@@ -117,7 +118,7 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
             if (draft) { draft.onSelect(item); onClose(); }
             else if (await selectCity(item)) onClose();
           }}
-          style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+          style={({ pressed }) => [styles.row, controlPresentation(theme, { tone: 'ghost', selected, pressed, disabled, busy, reducedMotion }).container]}>
           <View style={styles.name}>
             <ThemedText style={[styles.rowTitle, { color: selected ? theme.accent : open ? theme.text : theme.textSecondary }]}>{tr(item.name)}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{language === 'ko' ? `${item.englishName} · ${item.province}` : item.province}</ThemedText>
@@ -132,16 +133,16 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
 
 const styles = StyleSheet.create({
   container: { flex: 1 }, head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.four, paddingTop: Spacing.three, gap: Spacing.two },
-  title: { flex: 1, fontSize: 24, lineHeight: 32, fontWeight: '700', letterSpacing: -0.5 },
-  iconButton: { minWidth: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }, iconGlass: { borderRadius: 22 }, pressed: { backgroundColor: 'rgba(255,255,255,0.12)' },
+  title: { ...Typography.sheetTitle, flex: 1 },
+  iconButton: ControlStyles.icon, iconGlass: { borderRadius: ControlMetrics.radius.icon },
   controls: { paddingHorizontal: Spacing.four, paddingTop: Spacing.three, gap: Spacing.three },
-  countriesGlass: { borderRadius: 16 }, countries: { flexDirection: 'row', padding: 4, borderRadius: 16, gap: 4 },
-  country: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one, alignItems: 'center', justifyContent: 'center', minHeight: 44, padding: Spacing.two, borderRadius: 9 },
-  searchGlass: { borderRadius: 16 }, search: { flexDirection: 'row', alignItems: 'center', paddingLeft: Spacing.three, borderRadius: 16, gap: Spacing.two, minHeight: 48 },
+  countriesGlass: { borderRadius: ControlMetrics.radius.pill, borderWidth: StyleSheet.hairlineWidth }, countries: { flexDirection: 'row', padding: Spacing.one, borderRadius: ControlMetrics.radius.pill, gap: Spacing.one },
+  country: { ...ControlStyles.pill, flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one, padding: Spacing.two },
+  searchGlass: { borderRadius: ControlMetrics.radius.field, borderWidth: StyleSheet.hairlineWidth }, search: { flexDirection: 'row', alignItems: 'center', paddingLeft: Spacing.three, borderRadius: ControlMetrics.radius.field, gap: Spacing.two, minHeight: ControlMetrics.field },
   input: { flex: 1, minWidth: 0, minHeight: 44, fontSize: 16, paddingVertical: Spacing.two, paddingRight: Spacing.two },
   list: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.four }, sectionTitle: { paddingTop: Spacing.four, paddingBottom: Spacing.two },
-  rowGlass: { borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, marginTop: 8, overflow: 'hidden' }, row: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: 12, borderRadius: 16 },
-  name: { flex: 1, gap: Spacing.one }, rowTitle: { fontSize: 17, lineHeight: 24, fontWeight: '600' },
+  rowGlass: { borderBottomWidth: StyleSheet.hairlineWidth, overflow: 'hidden' }, row: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.one, paddingVertical: 14 },
+  name: { flex: 1, gap: Spacing.one }, rowTitle: Typography.menu,
   note: { marginTop: Spacing.four }, empty: { paddingTop: Spacing.four },
   locationRow: { marginTop: Spacing.three, borderRadius: 16 },
   locationMain: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: 12 },
