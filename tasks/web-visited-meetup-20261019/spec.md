@@ -39,3 +39,12 @@ Web artifact: npm run export:web and npm run check:public-web (only in the autho
 
 ## Current state
 Web slice1 accepted and implemented under exact Root3309 ownership grant; native flow contract remains with Root. No public deployment or native/hosted actions.
+# Native destination increment · 2026-10-19
+
+Owner intent: places, cafés, restaurants and festivals lead to a same-destination meetup; reuse existing detail/request/join and composer. Root scope/contract is Orca `msg_7e496465baf3`; no new SQL, RPC, dependency, automatic post/join/AI or global city change. Map badge state is separately completed in `8b51a1d`.
+
+Use current canonical city/place identity and exact OSM URL. Save a readable immutable source tail in the existing body; keep Ticketmaster body references compatible. Preserve it through editing and AI; hide valid tails from prose and expose meaningful source navigation. Reject stale, conflicting or invented destination routes. Escape literal ILIKE query characters, then exact-match visible results against the canonical reference. Keep the raw feed cursor before filtering: an empty filtered page with a cursor remains incomplete, never “no meetups”. Source route city is local to the screen. A late event prefill preserves manual/AI edits, host consent, visibility, quotas, existing revalidation and draft guards.
+
+Order/checkpoints: failing pure identity/tail/matching tests → helper → raw-page search and local-city routing → guarded prefill/source-tail preservation → existing join/detail reuse → source controls using the documented shared design foundation → actual KO/EN dark/light renders → full tests/types/lint and frozen source packet. Existing native installer and release coordinator perform integration/install; this task makes no native deployment claim.
+
+Commands: `node --test scripts/meetup-destination.test.mjs`; affected existing meetup/discovery/AI tests; `npm test`; `npx tsc --noEmit`; ESLint on changed runtime paths. Tests use current code with local fixtures, never production posting or joining. Existing protected source paths outside the granted native slice remain read-only.
