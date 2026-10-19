@@ -35,7 +35,8 @@ function module(file, imports = {}, dev = true) {
   });
   return exports;
 }
-const data = (snapshot) => module('src/lib/city-places.ts', { '@/lib/mock': { CITIES: cities }, './city-places.catalog.json': snapshot });
+const externalRatings = () => module('src/lib/place-external-ratings.ts', { './place-external-ratings.json': JSON.parse(readFileSync(new URL('src/lib/place-external-ratings.json', root), 'utf8')) });
+const data = (snapshot) => module('src/lib/city-places.ts', { '@/lib/mock': { CITIES: cities }, './city-places.catalog.json': snapshot, './place-external-ratings': externalRatings() });
 
 test('an unreviewed catalog never fills city recommendations with ordinary businesses', () => {
   const snapshot = catalog();
@@ -575,4 +576,37 @@ test('only a trusted exact-city place attestation marks a team visit, never remo
   assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
   assert.equal(api.getCityPlaces('toronto').find(p => p.id === next.cities.toronto.places[1].id).glingVisited, undefined);
   assert.equal(api.getCityPlaces('vancouver')[0].glingVisited, undefined);
+});
+
+
+test('saved DB photo and rating metadata is applied together on the next catalog load', () => {
+  const next = dailyCatalog(), oldPhotos = photos(), row = oldPhotos.cities.toronto[0];
+  next.photoCatalog = structuredClone(oldPhotos);
+  next.photoCatalog.cities.toronto = next.photoCatalog.cities.toronto.map(photo => photo.placeId === row.placeId ? { ...photo, imageSha256: 'd'.repeat(64) } : photo);
+  const rating = JSON.parse(readFileSync(new URL('src/lib/place-external-ratings.json', root), 'utf8')).find(r => r.cityId === 'toronto');
+  next.externalRatings = [{ ...rating, count: rating.count + 12 }];
+  const ratingsApi = externalRatings(), api = module('src/lib/city-places.ts', { '@/lib/mock': { CITIES: cities }, './place-external-ratings': ratingsApi });
+  assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
+  assert.equal(api.getCityPlaces('toronto').find(p => p.id === row.placeId).photo.imageSha256, 'd'.repeat(64));
+  assert.equal(ratingsApi.getPlaceExternalRatings(rating.cityId, rating.placeId)[0].count, rating.count + 12);
+});
+
+test('unsafe DB photo paths, wrong identities and invalid ratings leave the whole catalog unchanged', () => {
+  for (const bad of ['imageHost', 'artistControl', 'photoIdentity', 'duplicatePhoto', 'ratingCount', 'ratingIdentity']) {
+    const next = dailyCatalog(), oldPhotos = photos(); next.photoCatalog = structuredClone(oldPhotos);
+    const row = next.photoCatalog.cities.toronto[0];
+    const rating = JSON.parse(readFileSync(new URL('src/lib/place-external-ratings.json', root), 'utf8')).find(r => r.cityId === 'toronto');
+    next.externalRatings = [rating];
+    if (bad === 'artistControl') row.artist = 'Unsafe\u0000credit';
+    if (bad === 'imageHost') row.uri = 'https://evil.example/photo.jpg';
+    if (bad === 'photoIdentity') row.placeId = 'osm:node:1';
+    if (bad === 'duplicatePhoto') next.photoCatalog.cities.toronto.push(row);
+    if (bad === 'ratingCount') next.externalRatings = [{ ...rating, count: -1 }];
+    if (bad === 'ratingIdentity') next.externalRatings = [{ ...rating, placeId: 'osm:node:1' }];
+    const ratingsApi = externalRatings(), api = module('src/lib/city-places.ts', { '@/lib/mock': { CITIES: cities }, './place-external-ratings': ratingsApi });
+    const before = api.CITY_PLACES_COLLECTED_AT, count = ratingsApi.getPlaceExternalRatings(rating.cityId, rating.placeId)[0].count;
+    assert.throws(() => api.replaceCityPlacesCatalog(next, fixtureNow), /INVALID_PLACE_CATALOG/, bad);
+    assert.equal(api.CITY_PLACES_COLLECTED_AT, before);
+    assert.equal(ratingsApi.getPlaceExternalRatings(rating.cityId, rating.placeId)[0].count, count);
+  }
 });
