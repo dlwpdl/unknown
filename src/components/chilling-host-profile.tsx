@@ -6,6 +6,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { DeviceEventEmitter, StyleSheet, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
+import { MeetupWaitlist } from '@/components/meetup-host-tools';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
 import { StateCard } from '@/components/state-card';
@@ -89,6 +90,7 @@ function HostProfile({ post, onJoin, onBeforeNavigate }: { post: Post; onJoin?: 
       else promptLogin('이 모임에 참여하려면 로그인해 주세요.');
     }} label={statusLoading ? tr("신청 상태 확인 중…") : own ? tr("참여 신청자 검토하기") : participation ? tr("내 신청 결과 보기") : { open: tr("질문에 답하고 참여 신청"), full: tr("정원이 모두 찼어요"), closed: tr("모집이 마감됐어요"), ended: tr("종료된 모임이에요") }[availability]} />
     {!participation && !own && availability === 'open' && <ThemedText type="small" themeColor="textSecondary">{tr("모임장에게 답변과 프로필을 보내고, 승인 후 함께해요.")}</ThemedText>}
+    {isAuthed && !own && !participation && availability === 'full' && <MeetupWaitlist postId={post.id} />}
     {!!statusError && <StateCard kind="error" title={tr("신청 상태를 불러오지 못했어요")} body={tr(statusError)} actionLabel={tr("다시 불러오기")} onAction={() => setRetry(value => value + 1)} />}
     {!!post.room.eventKind && <>
       <Pressable analyticsId="components_chilling-host-profile.pressable.1" onPress={() => { play('selection'); if (profile) setProfile(null); else void load(); }} accessibilityRole="button" accessibilityState={{ expanded: !!profile, busy: loading }} style={[styles.disclosure, { borderColor: theme.line }]}>
@@ -96,7 +98,7 @@ function HostProfile({ post, onJoin, onBeforeNavigate }: { post: Post; onJoin?: 
         <ThemedText type="smallBold" themeColor="accent">{tr("프로필") + " "}{profile ? tr("접기") : tr("보기")} ›</ThemedText>
       </Pressable>
       {loading && <GlingLoader color={theme.accent} />}
-      {isAuthed && profile && <ChillingProfileCard profile={profile} identity={{ nickname: post.author.nickname }} />}
+      {isAuthed && profile && <ChillingProfileCard profile={profile} />}
       {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
     </>}
     <Pressable analyticsId="components_chilling-host-profile.pressable.3" accessibilityRole="button" accessibilityState={{ expanded: infoOpen }} onPress={() => { play('selection'); setInfoOpen(value => !value); }} style={styles.disclosure}>

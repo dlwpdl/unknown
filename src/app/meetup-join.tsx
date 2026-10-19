@@ -7,6 +7,7 @@ import { Alert, AppState, DeviceEventEmitter, KeyboardAvoidingView, Platform, St
 import { SymbolView } from 'expo-symbols';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
+import { MeetupWaitlist } from '@/components/meetup-host-tools';
 import { StateCard } from '@/components/state-card';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
@@ -19,7 +20,7 @@ import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { chillingAvailability, recommendedAgeMessage } from '@/lib/chilling';
 import { ageForMeetupRecommendation } from '@/lib/personal-info';
 import { useAuth } from '@/lib/auth';
-import { getChillingError, getChillingErrorCode, loadChillingProfile, loadMeetupParticipation, requestChillingJoin, type ChillingProfile, type MeetupParticipation } from '@/lib/chilling-data';
+import { chillingProfilePreview, getChillingError, getChillingErrorCode, loadChillingProfile, loadMeetupParticipation, requestChillingJoin, type ChillingProfile, type MeetupParticipation } from '@/lib/chilling-data';
 import { leaveMeetup, MEETUPS_CHANGED_EVENT, requestMeetupJoin } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadPublicPost } from '@/lib/feed-data';
@@ -58,7 +59,7 @@ function JoinForm({ postId }: { postId: string }) {
     }, () => {});
     void loadPublicPost(supabase, postId).then(async value => {
       const [ownProfile, request] = await Promise.all([
-        value?.room?.eventKind ? loadChillingProfile(supabase) : null,
+        value?.room?.eventKind ? loadChillingProfile(supabase, 'application') : null,
         value?.room && value.author.id !== me.id ? loadMeetupParticipation(supabase, postId, me.id) : null,
       ]);
       if (active) { setPost(value); setProfile(ownProfile); setParticipation(request); setSent(false); }
@@ -106,15 +107,15 @@ function JoinForm({ postId }: { postId: string }) {
     else Alert.alert(tr("참여 신청 취소"), tr("호스트가 더 이상 신청 프로필을 볼 수 없어요."), [{ text: tr("돌아가기"), style: 'cancel' }, { text: tr("신청 취소"), style: 'destructive', onPress: () => void cancelRequest() }]);
   };
   const submit = async () => {
-    if (busy.current || unavailable || availability !== 'open' || coolingDown || own || !post || result || !answer.trim() || (modern && (!profile || !consent))) return;
+    if (busy.current || unavailable || availability !== 'open' || coolingDown || own || !post || result || !answer.trim() || (modern && (profile?.version !== 2 || !consent))) return;
     busy.current = true; setSending(true); setError(''); setErrorCode(null);
     let submitted = false;
     try {
-      if (modern) await requestChillingJoin(supabase, post.id, answer, consent);
+      if (modern) await requestChillingJoin(supabase, post.id, answer, consent, profile!.revision ?? '');
       else await requestMeetupJoin(supabase, post.id, answer);
       submitted = true; setSent(true); play('meetup'); DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
       setParticipation(await loadMeetupParticipation(supabase, post.id, me.id));
-    } catch (e) { play('warning'); setError(submitted ? "신청은 접수됐어요. 현재 상태를 다시 불러와 주세요." : getChillingError(e)); setErrorCode(submitted ? null : getChillingErrorCode(e)); }
+    } catch (e) { play('warning'); setError(submitted ? "신청은 접수됐어요. 현재 상태를 다시 불러와 주세요." : getChillingError(e)); setErrorCode(submitted ? null : getChillingErrorCode(e)); if (!submitted && getChillingErrorCode(e) === 'CHILLING_PROFILE_CHANGED') { setConsent(false); setRetry(value => value + 1); } }
     finally { busy.current = false; setSending(false); }
   };
   return <ThemedView style={styles.fill}><SafeAreaView style={styles.fill}>
@@ -127,7 +128,7 @@ function JoinForm({ postId }: { postId: string }) {
         {!isAuthed ? <Pressable analyticsId="app_meetup-join.pressable.2" onPress={() => { play('selection'); promptLogin('참여하려면 로그인해 주세요.'); }} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent">{tr("로그인하기")}</ThemedText></Pressable>
           : loading ? <GlingLoader color={theme.accent} accessibilityLabel={tr("신청 정보 불러오는 중")} />
             : error && !post ? <StateCard kind="error" title={tr("신청 정보를 불러오지 못했어요")} body={tr(error)} actionLabel={tr("다시 불러오기")} onAction={() => setRetry(v => v + 1)} />
-            : unavailable ? <StateCard kind="blocked" title={tr("이 모임을 볼 수 없어요")} body={tr("삭제됐거나 현재 열람할 수 없는 모임이에요.")} />
+            : unavailable ? <StateCard kind={error ? 'error' : 'blocked'} title={error ? tr('모임 정보를 불러오지 못했어요') : tr("이 모임을 볼 수 없어요")} body={tr(error || "삭제됐거나 현재 열람할 수 없는 모임이에요.")} actionLabel={error ? tr('다시 불러오기') : undefined} onAction={error ? () => { play('selection'); setRetry(value => value + 1); } : undefined} />
               : own ? <ThemedText>{tr("내가 개최한 모임이에요. 대화 탭에서 신청자를 확인할 수 있어요.")}</ThemedText>
                 : inactive ? <><ThemedText type="subtitle">{post!.title}</ThemedText>
                     <StateCard kind="blocked" title={availability === 'ended' ? tr("종료된 모임이에요") : tr("모집이 마감됐어요")} body={`${status ? tr('내 신청 · {0}. ', tr({ pending: '승인 대기', approved: '이전에 승인됨', rejected: '거절됨', cancelled: '취소됨' }[status])) : ''}${tr('새 참여 신청과 승인을 할 수 없어요.')}${status === 'approved' ? tr('승인 기록이 있어도 종료된 모임 대화에는 입장할 수 없어요.') : ''}`} />
@@ -158,18 +159,20 @@ function JoinForm({ postId }: { postId: string }) {
                       {recommendationAge == null && Platform.OS !== 'web' && <Pressable analyticsId="app_meetup-join.pressable.4" onPress={() => { play('selection'); router.push('/profile/settings'); }} accessibilityRole="button" style={styles.button}><ThemedText type="small" themeColor="accent">{tr("계정 정보·이용 목적 확인하기")}</ThemedText></Pressable>}
                     </>}
                     <MeetupPolicyNotice mode="join" />
-                    {modern && !profile ? <>
-                      <ThemedText>{tr("함께할 사람들에게 나를 소개할 모임 프로필이 필요해요.")}</ThemedText>
-                      <Pressable analyticsId="app_meetup-join.pressable.5" onPress={() => { play('selection'); profileRoute(); }} accessibilityRole="button" style={styles.button}><ThemedText themeColor="accent">{tr("모임 프로필 작성하기")}</ThemedText></Pressable>
+                    {availability === 'full' && !own && !result && <MeetupWaitlist postId={postId} />}
+                    {modern && profile?.version !== 2 ? <>
+                      <ThemedText>{profile ? tr('모임에서 쓸 이름과 공개 범위를 확인해 주세요. 기존 소개는 남아 있어요.') : tr("함께할 사람들에게 나를 소개할 모임 프로필이 필요해요.")}</ThemedText>
+                      <Pressable analyticsId="app_meetup-join.pressable.5" onPress={() => { play('selection'); profileRoute(); }} accessibilityRole="button" style={styles.button}><ThemedText themeColor="accent">{profile ? tr('모임 프로필 확인하기') : tr("모임 프로필 작성하기")}</ThemedText></Pressable>
                     </> : <>
                       {profile && <View style={[styles.profilePreview, { borderColor: theme.line }]}>
                         <Pressable analyticsId="app_meetup-join.pressable.13" accessibilityRole="button" accessibilityState={{ expanded: previewOpen }} onPress={() => { play('selection'); setPreviewOpen(value => !value); }} style={styles.previewHead}>
-                          <View style={styles.flex}><ThemedText type="smallBold">{me.nickname}{tr("님의 모임 프로필")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("이 모임장에게 함께 보내요")}</ThemedText></View><ThemedText type="smallBold" themeColor="accent">{previewOpen ? tr("접기") : tr("미리보기")} ›</ThemedText>
+                          <View style={styles.flex}><ThemedText type="smallBold">{profile.displayName || tr("모임 멤버")}{tr("님의 모임 프로필")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("이 모임장에게 함께 보내요")}</ThemedText></View><ThemedText type="smallBold" themeColor="accent">{previewOpen ? tr("접기") : tr("미리보기")} ›</ThemedText>
                         </Pressable>
-                        {previewOpen && <ChillingProfileCard profile={profile} identity={me} />}
+                        {previewOpen && <ChillingProfileCard profile={chillingProfilePreview(profile, 'host')} />}
                         <Pressable analyticsId="app_meetup-join.pressable.6" onPress={() => { play('selection'); profileRoute(); }} accessibilityRole="button" style={styles.button}><ThemedText themeColor="accent">{tr("프로필 수정")}</ThemedText></Pressable></View>}
+                      {modern && profile?.version === 2 && <ThemedText type="small" themeColor="textSecondary">{profile.shareWithMembers ? tr("승인 후에는 선택한 사진·짧은 소개가 멤버에게도 공유돼요. 신청 답변은 호스트만 볼 수 있어요.") : tr("승인된 멤버에게는 모임 이름만 보여요. 사진·소개 공유는 프로필에서 바꿀 수 있어요.")}</ThemedText>}
                       {modern && <Pressable analyticsId="app_meetup-join.pressable.7" onPress={() => { play('selection'); setConsent(v => !v); }} disabled={sending} accessibilityRole="checkbox" accessibilityState={{ checked: consent, disabled: sending }} style={styles.consent}>
-                        <ThemedText themeColor="accent">{consent ? '☑' : '□'}</ThemedText><ThemedText type="small" style={styles.flex}>{tr("이 호스트에게 내 모임 프로필과 답변을 공유하는 데 동의해요. 다른 신청자에게는 공개되지 않아요. 신청 취소·거절·탈퇴·차단 후 호스트 열람은 종료돼요.")}</ThemedText>
+                        <ThemedText themeColor="accent">{consent ? '☑' : '□'}</ThemedText><ThemedText type="small" style={styles.flex}>{tr("이 호스트에게 신청 당시 모임 프로필과 답변을 공유하는 데 동의해요. 다른 신청자에게는 공개되지 않아요. 취소·거절·탈퇴·차단·종료 후 새 조회는 제한되지만 이미 본 내용은 회수할 수 없어요.")}</ThemedText>
                       </Pressable>}
                       <ThemedText type="small" themeColor="textSecondary">{tr("안전을 위한 자동 분석과 권한 있는 운영자 검토가 적용돼요. 신청 취소는 이 신청 화면에서 할 수 있어요.")}</ThemedText>
                     </>}
@@ -179,7 +182,7 @@ function JoinForm({ postId }: { postId: string }) {
           <Pressable analyticsId="app_meetup-join.pressable.9" onPress={() => { play('selection'); setRetry(v => v + 1); }} accessibilityRole="button" style={styles.button}><ThemedText>{tr("다시 불러오기")}</ThemedText></Pressable></>}
       </ScrollView>
       {isAuthed && !loading && !unavailable && !own && !inactive && !result && <View style={[styles.footer, { backgroundColor: theme.background, borderColor: theme.line }]}>
-        <RaisedActionButton analyticsId="app_meetup-join.pressable.8" onPress={() => { play('selection'); void submit(); }} disabled={sending || availability !== 'open' || coolingDown || !answer.trim() || (modern && (!consent || !profile))} busy={sending} label={sending ? tr("보내는 중…") : availability === 'full' ? tr("정원이 모두 찼어요") : coolingDown ? tr("재신청 대기 중") : modern && !profile ? tr("프로필 작성 후 신청 가능") : status ? tr("다시 신청하기") : modern ? tr("답변과 프로필 보내기") : tr("신청 답변 보내기")} />
+        <RaisedActionButton analyticsId="app_meetup-join.pressable.8" onPress={() => { play('selection'); void submit(); }} disabled={sending || availability !== 'open' || coolingDown || !answer.trim() || (modern && (!consent || profile?.version !== 2))} busy={sending} label={sending ? tr("보내는 중…") : availability === 'full' ? tr("정원이 모두 찼어요") : coolingDown ? tr("재신청 대기 중") : modern && profile?.version !== 2 ? tr("프로필 작성 후 신청 가능") : status ? tr("다시 신청하기") : modern ? tr("답변과 프로필 보내기") : tr("신청 답변 보내기")} />
       </View>}
     </KeyboardAvoidingView>
   </SafeAreaView></ThemedView>;
