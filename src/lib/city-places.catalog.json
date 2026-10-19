@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T09:35:43.822632+00:00",
+  "collectedAt": "2026-10-19T11:00:35.268282+00:00",
   "source": "OpenStreetMap; source-reviewed Gling photo-spot selections",
   "license": "ODbL-1.0",
   "attribution": "© OpenStreetMap contributors",
@@ -2356,9 +2356,354 @@
           "sourceUrl": "https://www.openstreetmap.org/relation/17511676",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:way:341694642",
+          "cityId": "vancouver",
+          "name": "Spanish Banks Beach",
+          "category": "places",
+          "latitude": 49.2775987,
+          "longitude": -123.2212225,
+          "address": "Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/341694642",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:4755915",
+          "cityId": "vancouver",
+          "name": "Lions Gate Bridge",
+          "category": "places",
+          "latitude": 49.3177997,
+          "longitude": -123.136393,
+          "address": "Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/4755915",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:58305151",
+          "cityId": "vancouver",
+          "name": "Vancouver Aquarium",
+          "category": "places",
+          "latitude": 49.300503,
+          "longitude": -123.1311828,
+          "address": "845, Avison Way, Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/58305151",
+          "website": "https://www.vanaqua.org/",
+          "openingHours": "10:00-17:00"
+        },
+        {
+          "id": "osm:way:24705904",
+          "cityId": "vancouver",
+          "name": "BC Place",
+          "category": "places",
+          "latitude": 49.2767054,
+          "longitude": -123.1120068,
+          "address": "777, Pacific Boulevard, Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/24705904",
+          "website": "https://www.bcplace.com/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:24705911",
+          "cityId": "vancouver",
+          "name": "Rogers Arena",
+          "category": "places",
+          "latitude": 49.2779227,
+          "longitude": -123.1089827,
+          "address": "800, Griffiths Way, Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/24705911",
+          "website": "https://rogersarena.com/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:143683932",
+          "cityId": "vancouver",
+          "name": "Christ Church Cathedral",
+          "category": "places",
+          "latitude": 49.2844809,
+          "longitude": -123.1203468,
+          "address": "690, Burrard Street, Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/143683932",
+          "website": "https://thecathedral.ca",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:86340255",
+          "cityId": "vancouver",
+          "name": "Second Beach",
+          "category": "places",
+          "latitude": 49.2940115,
+          "longitude": -123.1511703,
+          "address": "Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/86340255",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:30637354",
+          "cityId": "vancouver",
+          "name": "Victory Square",
+          "category": "places",
+          "latitude": 49.2821893,
+          "longitude": -123.1102564,
+          "address": "200, West Hastings Street, Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/30637354",
+          "website": "https://covapp.vancouver.ca/parkfinder/ParkDetail.aspx?inparkid=31",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:37054340",
+          "cityId": "vancouver",
+          "name": "Jericho Beach Park",
+          "category": "places",
+          "latitude": 49.2726138,
+          "longitude": -123.196321,
+          "address": "Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/37054340",
+          "website": "https://vancouver.ca/parks-recreation-culture/jericho-beach.aspx",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:37063035",
+          "cityId": "vancouver",
+          "name": "Sunset Beach Park",
+          "category": "places",
+          "latitude": 49.2776829,
+          "longitude": -123.1364824,
+          "address": "Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/37063035",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:37057434",
+          "cityId": "vancouver",
+          "name": "Harbour Green Park",
+          "category": "places",
+          "latitude": 49.2901916,
+          "longitude": -123.1212781,
+          "address": "Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/37057434",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:37055742",
+          "cityId": "vancouver",
+          "name": "David Lam Park",
+          "category": "places",
+          "latitude": 49.2719689,
+          "longitude": -123.1245,
+          "address": "1300, Pacific Boulevard, Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/37055742",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:37055593",
+          "cityId": "vancouver",
+          "name": "George Wainborn Park",
+          "category": "places",
+          "latitude": 49.2725139,
+          "longitude": -123.1293484,
+          "address": "Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/37055593",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:37055818",
+          "cityId": "vancouver",
+          "name": "Emery Barnes Park",
+          "category": "places",
+          "latitude": 49.2766663,
+          "longitude": -123.124147,
+          "address": "Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/37055818",
+          "website": null,
+          "openingHours": "06:00-22:00"
+        },
+        {
+          "id": "osm:way:37058200",
+          "cityId": "vancouver",
+          "name": "Coopers' Park",
+          "category": "places",
+          "latitude": 49.2733331,
+          "longitude": -123.1143938,
+          "address": "1020, Marinaside Crescent, Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/37058200",
+          "website": "https://covapp.vancouver.ca/ParkFinder/ParkDetail.aspx?InParkId=14",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:37056025",
+          "cityId": "vancouver",
+          "name": "Nelson Park",
+          "category": "places",
+          "latitude": 49.2828438,
+          "longitude": -123.1296539,
+          "address": "Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/37056025",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:37058199",
+          "cityId": "vancouver",
+          "name": "Creekside Park",
+          "category": "places",
+          "latitude": 49.2743773,
+          "longitude": -123.1029277,
+          "address": "Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/37058199",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:37055592",
+          "cityId": "vancouver",
+          "name": "Charleson Park",
+          "category": "places",
+          "latitude": 49.267429,
+          "longitude": -123.124116,
+          "address": "Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/37055592",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:361089198",
+          "cityId": "vancouver",
+          "name": "Hastings Park",
+          "category": "places",
+          "latitude": 49.2849382,
+          "longitude": -123.0378821,
+          "address": "Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/361089198",
+          "website": null,
+          "openingHours": "06:00-22:00"
+        },
+        {
+          "id": "osm:way:163539443",
+          "cityId": "vancouver",
+          "name": "Hinge Park",
+          "category": "places",
+          "latitude": 49.2712161,
+          "longitude": -123.110345,
+          "address": "215, West 1st Avenue, Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/163539443",
+          "website": "https://covapp.vancouver.ca/ParkFinder/parkdetail.aspx?inparkid=240",
+          "openingHours": null
+        },
+        {
+          "id": "osm:relation:2330465",
+          "cityId": "vancouver",
+          "name": "Hadden Park",
+          "category": "places",
+          "latitude": 49.2779929,
+          "longitude": -123.1480902,
+          "address": "Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/relation/2330465",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:node:1309734989",
+          "cityId": "vancouver",
+          "name": "Brockton Point Lighthouse",
+          "category": "places",
+          "latitude": 49.3008938,
+          "longitude": -123.1169953,
+          "address": "Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/node/1309734989",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:301875556",
+          "cityId": "vancouver",
+          "name": "Orpheum",
+          "category": "places",
+          "latitude": 49.2801422,
+          "longitude": -123.1204367,
+          "address": "601, Smithe Street, Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/301875556",
+          "website": "https://vancouvercivictheatres.com/venues/orpheum/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:32603955",
+          "cityId": "vancouver",
+          "name": "Pacific Central Station",
+          "category": "places",
+          "latitude": 49.27375,
+          "longitude": -123.0978907,
+          "address": "1150, Station Street, Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/32603955",
+          "website": "https://m.viarail.ca/en/explore-our-destinations/stations/rockies-and-pacific/vancouver",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:128059875",
+          "cityId": "vancouver",
+          "name": "Sinclair Centre",
+          "category": "places",
+          "latitude": 49.2859794,
+          "longitude": -123.1138913,
+          "address": "757, West Hastings Street, Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/128059875",
+          "website": null,
+          "openingHours": "Mo-Sa 10:00-17:30"
+        },
+        {
+          "id": "osm:way:71699194",
+          "cityId": "vancouver",
+          "name": "Granville Island Water Park",
+          "category": "places",
+          "latitude": 49.2695455,
+          "longitude": -123.1349437,
+          "address": "Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/way/71699194",
+          "website": "https://falsecreekcc.ca/waterpark/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:relation:7071553",
+          "cityId": "vancouver",
+          "name": "Granville Island Public Market",
+          "category": "food",
+          "latitude": 49.2725237,
+          "longitude": -123.1352486,
+          "address": "Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/relation/7071553",
+          "website": "https://granvilleisland.com/public-market",
+          "openingHours": "Mo-Su 09:00-19:00"
         }
       ],
       "recommendations": [
+        {
+          "placeId": "osm:way:37063023",
+          "reason": "해변과 숲길, 바닷가 산책로가 이어지는 넓은 공원이에요. 자연 풍경을 담으며 걷기 좋아요.",
+          "reasonEn": "Explore beaches, forest trails and the scenic seawall in this large urban park.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
+        {
+          "placeId": "osm:way:223635729",
+          "reason": "배를 닮은 건물의 하얀 지붕이 인상적이에요. 항구 풍경과 함께 사진에 담기 좋아요.",
+          "reasonEn": "The ship-like complex and white sail roof stand out against the harbour.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
+        {
+          "placeId": "osm:way:86340299",
+          "reason": "도심에서 바다를 가까이 만나는 해변. 모래사장을 따라 걸으며 풍경을 담아보세요.",
+          "reasonEn": "Walk the sandy shoreline and capture the seaside setting close to downtown.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
         {
           "placeId": "osm:way:316008597",
           "reason": "연못과 계절마다 달라지는 정원. 꽃과 나무 사이를 천천히 걸으며 사진을 남기기 좋아요.",
@@ -2400,27 +2745,6 @@
           "reasonEn": "Use the library’s curved exterior and columns as an architectural backdrop.",
           "sourceUrl": "https://www.vpl.ca/branches/central",
           "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
-        },
-        {
-          "placeId": "osm:way:37063023",
-          "reason": "해변과 숲길, 바닷가 산책로가 이어지는 넓은 공원이에요. 자연 풍경을 담으며 걷기 좋아요.",
-          "reasonEn": "Explore beaches, forest trails and the scenic seawall in this large urban park.",
-          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
-          "verifiedAt": "2026-10-19T04:04:51.412Z"
-        },
-        {
-          "placeId": "osm:way:223635729",
-          "reason": "배를 닮은 건물의 하얀 지붕이 인상적이에요. 항구 풍경과 함께 사진에 담기 좋아요.",
-          "reasonEn": "The ship-like complex and white sail roof stand out against the harbour.",
-          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
-          "verifiedAt": "2026-10-19T04:04:51.412Z"
-        },
-        {
-          "placeId": "osm:way:86340299",
-          "reason": "도심에서 바다를 가까이 만나는 해변. 모래사장을 따라 걸으며 풍경을 담아보세요.",
-          "reasonEn": "Walk the sandy shoreline and capture the seaside setting close to downtown.",
-          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
-          "verifiedAt": "2026-10-19T04:04:51.412Z"
         },
         {
           "placeId": "osm:relation:7440597",
@@ -2477,6 +2801,237 @@
           "reasonEn": "A restored Victorian house offers a close look at historic Vancouver architecture and domestic life.",
           "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
           "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
+        {
+          "placeId": "osm:way:341694642",
+          "reason": "모래사장 너머로 도심과 산이 펼쳐지는 스패니시 뱅크스. 바닷가 풍경을 넓게 담아보세요.",
+          "reasonEn": "Photograph the broad sandy beach with the city and mountains across the water.",
+          "sourceUrl": "https://wanderlog.com/place/details/2565",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
+        {
+          "placeId": "osm:way:4755915",
+          "reason": "항구를 가로지르는 현수교예요. 산책로에서 다리와 바다를 한 프레임에 담기 좋아요.",
+          "reasonEn": "Frame the suspension bridge and harbour from the waterfront paths.",
+          "sourceUrl": "https://wanderlog.com/place/details/20744",
+          "verifiedAt": "2026-10-19T10:22:46.787Z"
+        },
+        {
+          "placeId": "osm:way:58305151",
+          "reason": "스탠리 파크 안의 아쿠아리움. 입구의 범고래 조각과 해양생물 전시를 둘러볼 수 있어요.",
+          "reasonEn": "Visit the marine-life exhibits and the distinctive orca sculpture at the aquarium entrance.",
+          "sourceUrl": "https://wanderlog.com/place/details/20745",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
+        {
+          "placeId": "osm:node:889550078",
+          "reason": "하버 센터 타워 위 전망대에서 도심과 항구를 내려다보세요. 타워 외관도 눈에 띄는 사진 소재예요.",
+          "reasonEn": "Look over the city and harbour from the tower observatory, or photograph its distinctive exterior.",
+          "sourceUrl": "https://wanderlog.com/place/details/20755",
+          "verifiedAt": "2026-10-19T10:22:46.787Z"
+        },
+        {
+          "placeId": "osm:node:703754423",
+          "reason": "가스타운의 증기시계와 벽돌 건물을 함께 담아보세요. 주변 거리를 걷다 들르기 좋은 랜드마크예요.",
+          "reasonEn": "Frame Gastown’s steam clock against the surrounding brick buildings on a neighbourhood walk.",
+          "sourceUrl": "https://wanderlog.com/place/details/98400",
+          "verifiedAt": "2026-10-19T10:22:46.787Z"
+        },
+        {
+          "placeId": "osm:way:24705904",
+          "reason": "큰 지붕이 눈에 띄는 경기장이에요. 경기나 공연을 보러 간 날에는 관중석 풍경도 남겨보세요.",
+          "reasonEn": "Photograph the stadium’s striking roof, or its interior when attending a game or show.",
+          "sourceUrl": "https://wanderlog.com/place/details/98406",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
+        {
+          "placeId": "osm:way:24705911",
+          "reason": "캐넉스 경기와 공연이 열리는 아레나. 건물 외관과 주변 도심 풍경을 함께 담을 수 있어요.",
+          "reasonEn": "See the arena’s exterior against the downtown skyline, or visit for a Canucks game or concert.",
+          "sourceUrl": "https://wanderlog.com/place/details/99743",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
+        {
+          "placeId": "osm:way:143683932",
+          "reason": "높은 빌딩 사이에 자리한 석조 성당이에요. 첨탑과 스테인드글라스가 도심 풍경과 대비돼요.",
+          "reasonEn": "The stone cathedral and stained glass stand out among the surrounding downtown towers.",
+          "sourceUrl": "https://wanderlog.com/place/details/137687",
+          "verifiedAt": "2026-10-19T10:22:57.282Z"
+        },
+        {
+          "placeId": "osm:way:86340255",
+          "reason": "스탠리 파크 서쪽의 모래 해변. 산책로에서 바다를 바라보거나 해변 풍경을 남기기 좋아요.",
+          "reasonEn": "Stop along the seawall for sandy beach scenes and open-water views on the west side of Stanley Park.",
+          "sourceUrl": "https://wanderlog.com/place/details/532059",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
+        {
+          "placeId": "osm:way:30637354",
+          "reason": "기념비와 나무가 있는 도심 광장이에요. 오래된 건물들을 배경으로 공원 풍경을 담아보세요.",
+          "reasonEn": "Photograph the cenotaph and trees against the historic buildings around this downtown square.",
+          "sourceUrl": "https://wanderlog.com/place/details/99844",
+          "verifiedAt": "2026-10-19T10:22:36.190Z"
+        },
+        {
+          "placeId": "osm:way:37054340",
+          "reason": "넓은 잔디밭과 해변이 이어지는 제리코 비치 파크. 바다 건너 산을 바라보며 걷기 좋아요.",
+          "reasonEn": "Walk between the lawns and beach with views of the mountains across the water.",
+          "sourceUrl": "https://wanderlog.com/place/details/137673",
+          "verifiedAt": "2026-10-19T10:22:36.190Z"
+        },
+        {
+          "placeId": "osm:way:37063035",
+          "reason": "바다를 배경으로 곡선 조각이 서 있는 수변 공원이에요. 해변과 조각을 함께 담아보세요.",
+          "reasonEn": "Frame the curved waterfront sculpture with the beach and water beyond.",
+          "sourceUrl": "https://wanderlog.com/place/details/137684",
+          "verifiedAt": "2026-10-19T10:22:46.787Z"
+        },
+        {
+          "placeId": "osm:way:37057434",
+          "reason": "콜 하버 산책로와 맞닿은 공원. 물가에서 항구와 주변 건물 풍경을 볼 수 있어요.",
+          "reasonEn": "Follow the Coal Harbour waterfront for views across the water and the surrounding city.",
+          "sourceUrl": "https://wanderlog.com/place/details/137694",
+          "verifiedAt": "2026-10-19T10:22:36.190Z"
+        },
+        {
+          "placeId": "osm:way:37055742",
+          "reason": "폴스 크리크 옆 잔디밭과 산책로가 있는 공원이에요. 물가를 따라 걷다 잠시 쉬어가세요.",
+          "reasonEn": "Take a break on the lawns or follow the paths beside False Creek.",
+          "sourceUrl": "https://wanderlog.com/place/details/137722",
+          "verifiedAt": "2026-10-19T10:22:46.787Z"
+        },
+        {
+          "placeId": "osm:way:37055593",
+          "reason": "넓은 잔디밭 너머로 폴스 크리크가 보여요. 수변 건물들과 수변 풍경을 함께 담기 좋아요.",
+          "reasonEn": "Photograph the False Creek waterfront and nearby buildings from the open lawns.",
+          "sourceUrl": "https://wanderlog.com/place/details/137743",
+          "verifiedAt": "2026-10-19T10:22:36.190Z"
+        },
+        {
+          "placeId": "osm:way:37055818",
+          "reason": "분수와 정원이 있는 도심 공원이에요. 주변 거리를 걷다 초록 풍경을 만나기 좋은 곳이에요.",
+          "reasonEn": "Find gardens and a fountain tucked among the downtown streets.",
+          "sourceUrl": "https://wanderlog.com/place/details/137785",
+          "verifiedAt": "2026-10-19T10:22:36.190Z"
+        },
+        {
+          "placeId": "osm:way:37058200",
+          "reason": "폴스 크리크 수변의 공원과 놀이터. 산책로에서 도심과 물가 풍경을 함께 볼 수 있어요.",
+          "reasonEn": "Explore the waterfront park and playground beside the False Creek paths.",
+          "sourceUrl": "https://wanderlog.com/place/details/137788",
+          "verifiedAt": "2026-10-19T10:22:36.190Z"
+        },
+        {
+          "placeId": "osm:way:37056025",
+          "reason": "웨스트엔드의 작은 공원이에요. 나무와 잔디가 있는 공간에서 도심 산책을 잠시 쉬어가세요.",
+          "reasonEn": "Pause on a West End walk among the park’s trees and lawns.",
+          "sourceUrl": "https://wanderlog.com/place/details/1055482",
+          "verifiedAt": "2026-10-19T10:22:36.190Z"
+        },
+        {
+          "placeId": "osm:way:37058199",
+          "reason": "사이언스 월드 옆 수변 공원. 폴스 크리크와 도심 건물들을 바라보며 걸을 수 있어요.",
+          "reasonEn": "Walk beside Science World with False Creek and the city skyline in view.",
+          "sourceUrl": "https://wanderlog.com/place/details/1062156",
+          "verifiedAt": "2026-10-19T10:22:36.190Z"
+        },
+        {
+          "placeId": "osm:way:37055592",
+          "reason": "나무와 연못이 있는 폴스 크리크 남쪽 공원이에요. 수변 산책과 함께 들르기 좋아요.",
+          "reasonEn": "Explore the pond and wooded paths on a walk along the south side of False Creek.",
+          "sourceUrl": "https://wanderlog.com/place/details/1115618",
+          "verifiedAt": "2026-10-19T10:22:36.190Z"
+        },
+        {
+          "placeId": "osm:way:361089198",
+          "reason": "연못과 정원, 넓은 녹지가 모인 공원이에요. 여러 구역을 걸으며 풍경의 변화를 살펴보세요.",
+          "reasonEn": "Explore the ponds, gardens and open spaces across this large park.",
+          "sourceUrl": "https://wanderlog.com/place/details/1585149",
+          "verifiedAt": "2026-10-19T10:22:36.190Z"
+        },
+        {
+          "placeId": "osm:way:163539443",
+          "reason": "수로와 녹지가 어우러진 올림픽 빌리지의 공원이에요. 작은 다리와 물가 풍경이 눈에 띄어요.",
+          "reasonEn": "Photograph the small bridges, water channel and greenery in Olympic Village.",
+          "sourceUrl": "https://wanderlog.com/place/details/1644911",
+          "verifiedAt": "2026-10-19T10:22:36.190Z"
+        },
+        {
+          "placeId": "osm:relation:2330465",
+          "reason": "키칠라노 물가의 공원이에요. 바다 건너 웨스트엔드와 도심 풍경을 바라볼 수 있어요.",
+          "reasonEn": "Look across the water toward the West End and downtown from this Kitsilano waterfront park.",
+          "sourceUrl": "https://wanderlog.com/place/details/2417887",
+          "verifiedAt": "2026-10-19T10:22:36.190Z"
+        },
+        {
+          "placeId": "osm:node:648735254",
+          "reason": "올림픽 성화대와 항구 풍경을 함께 담을 수 있는 곳이에요. 콜 하버 산책 중 들러보세요.",
+          "reasonEn": "Photograph the Olympic cauldron against the harbour on a Coal Harbour walk.",
+          "sourceUrl": "https://wanderlog.com/place/details/20749",
+          "verifiedAt": "2026-10-19T10:22:46.787Z"
+        },
+        {
+          "placeId": "osm:node:1309734989",
+          "reason": "스탠리 파크 물가의 붉고 흰 등대. 등대 너머 항구와 도심까지 함께 담아보세요.",
+          "reasonEn": "Frame the red-and-white lighthouse with the harbour and city beyond.",
+          "sourceUrl": "https://wanderlog.com/place/details/99600",
+          "verifiedAt": "2026-10-19T10:22:46.787Z"
+        },
+        {
+          "placeId": "osm:node:889757499",
+          "reason": "라이언스 게이트 브리지와 항구를 내려다보는 전망 지점이에요. 스탠리 파크 풍경을 높은 곳에서 볼 수 있어요.",
+          "reasonEn": "Look over Lions Gate Bridge and the harbour from this Stanley Park viewpoint.",
+          "sourceUrl": "https://wanderlog.com/place/details/477215",
+          "verifiedAt": "2026-10-19T10:22:46.787Z"
+        },
+        {
+          "placeId": "osm:node:1856357128",
+          "reason": "시워시 록을 바라보는 해안 산책로의 전망 지점이에요. 바위와 바다를 함께 사진에 담아보세요.",
+          "reasonEn": "Photograph Siwash Rock and the sea from its shoreline viewpoint along the seawall.",
+          "sourceUrl": "https://wanderlog.com/place/details/407323",
+          "verifiedAt": "2026-10-19T10:22:46.787Z"
+        },
+        {
+          "placeId": "osm:way:301875556",
+          "reason": "화려한 천장과 무대가 있는 공연장이에요. 공연을 보러 간 날에는 내부 건축도 살펴보세요.",
+          "reasonEn": "Take in the ornate ceiling and stage when visiting the theatre for a performance.",
+          "sourceUrl": "https://wanderlog.com/place/details/2572",
+          "verifiedAt": "2026-10-19T10:22:57.282Z"
+        },
+        {
+          "placeId": "osm:way:32603955",
+          "reason": "커다란 역명 간판과 석조 외관이 눈에 띄는 기차역이에요. 건물 앞에서 여행 분위기를 담아보세요.",
+          "reasonEn": "Photograph the grand station façade and its large Pacific Central sign.",
+          "sourceUrl": "https://wanderlog.com/place/details/1643783",
+          "verifiedAt": "2026-10-19T10:22:57.282Z"
+        },
+        {
+          "placeId": "osm:way:128059875",
+          "reason": "역사적인 석조 건물들이 연결된 복합 건물이에요. 건물 외관과 도심 거리 풍경을 함께 담아보세요.",
+          "reasonEn": "Photograph the historic stone façades of Sinclair Centre and the surrounding downtown streets.",
+          "sourceUrl": "https://wanderlog.com/place/details/1742083",
+          "verifiedAt": "2026-10-19T10:22:57.282Z"
+        },
+        {
+          "placeId": "osm:way:71699194",
+          "reason": "그랜빌 아일랜드의 물놀이 공간이에요. 물놀이 시설은 계절 운영이니 방문 전 운영 일정을 확인하세요.",
+          "reasonEn": "A water-play area on Granville Island. Water features operate seasonally; check the schedule before planning a visit.",
+          "sourceUrl": "https://wanderlog.com/place/details/767681",
+          "verifiedAt": "2026-10-19T10:22:36.190Z"
+        },
+        {
+          "placeId": "osm:relation:7071553",
+          "reason": "먹거리 가판과 식재료를 둘러볼 수 있는 실내 마켓이에요. 그랜빌 아일랜드 산책 중 식사할 곳을 찾아보세요.",
+          "reasonEn": "Browse the indoor food stalls and produce vendors for a meal during a Granville Island visit.",
+          "sourceUrl": "https://wanderlog.com/place/details/2576",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
+        {
+          "placeId": "osm:node:2147184803",
+          "reason": "옛 검시 법정을 활용한 경찰 박물관이에요. 벽돌 건물 외관과 경찰 역사 전시를 둘러볼 수 있어요.",
+          "reasonEn": "Explore the police-history museum in the former coroner’s court, with its historic brick exterior.",
+          "sourceUrl": "https://wanderlog.com/place/details/20754",
+          "verifiedAt": "2026-10-19T10:58:35.768Z"
         }
       ],
       "selectionIdentityEvidence": {
@@ -11531,6 +12086,6 @@
   "pendingCities": [],
   "complete": true,
   "recommendationTheme": "photo-spots",
-  "photoSelectionsReviewedAt": "2026-10-19T09:35:43.822632+00:00",
-  "selectionRevision": 4
+  "photoSelectionsReviewedAt": "2026-10-19T11:00:35.268282+00:00",
+  "selectionRevision": 5
 }

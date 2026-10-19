@@ -1,0 +1,94 @@
+{
+  "version": 6,
+  "recordedAt": "2026-10-19T10:20:27.296780+00:00",
+  "parent": "177118ba59910f87a5434a56e62822664a9686e7",
+  "actualUserSteeringReportedBy": [
+    "msg_2442e82b94c5",
+    "msg_44ec6747bc95"
+  ],
+  "objective": "OnecombinedVancouver50 selection+sameplacephotos+realrating/count packet; fix11missingcurrentphotos withoutphoto-onlynativepartial",
+  "baseline": {
+    "VanSelected": 17,
+    "VanPhotoBacked": 6,
+    "VanProviderRated": 17,
+    "allSelected": 105,
+    "allFacts": 877
+  },
+  "acceptance": [
+    "Exactly50 distinct qualified Vancouver destinations, all actual provider score/count and local attributed same-place photo bytes; no forced aliases or fake rating aggregation.",
+    "All877 prior fact/review identities and original17 selections preserved. Distinct named venue/landmark experiences inside large parks may qualify with their own source+identity+subject evidence.",
+    "KeepF5a3e84f8 actualcountlabel/testcallerpatch separate andcompatible; source40ownsdata/JPG/staticrequiremap only",
+    "Catalogrevision5 goesonlyownsourcepacket; acceptedseed4/job72 remainuntilrootreviewsnewsource; no native/GUI/build/SQL/Edge/Store actions",
+    "No sourcepacket claimedcomplete untilall50 photo/count/identity constraints pass; iftrueprovider/rights/subject gaps persist, exactqualifiedcount+per-subjectgap reported"
+  ],
+  "callPlan": "/Users/ash/Desktop/Git/unknown/output/reviews/gling-vancouver50-2026-10-19/bounded-plan-v6-proposed.json",
+  "noNewCallsYet": false,
+  "cacheFinding": "910actualcachedWiki/Commons pages. All11missingphoto subjectscached; 8havegoodmetadata-boundapprovedthumb directly, EnglishBayheaderwrongwaterarea+anonymousartistheld; Robsonoriginalsmallupload-onlyheld; MarinealternateCCthumbnailcached. Originalupload429preserved. ActualsourceguideURLs7observed inoldrawHTML, fourphoto/park/architecture/free guides proposed.",
+  "status": "source-verified-awaiting-root-integration",
+  "selectionRevision": 5,
+  "actualCoverage": {
+    "selected": 50,
+    "photos": 50,
+    "realProviderCounts": 50,
+    "facts": 120
+  },
+  "allPrior877IdentitiesPreserved": true,
+  "tenOtherCitiesUnchanged": true,
+  "realNewAssetCount": 41,
+  "actualCallUsage": {
+    "Wanderlog": {
+      "used": 30,
+      "max": 30
+    },
+    "metadata": {
+      "used": 40,
+      "max": 40
+    },
+    "images": {
+      "used": 62,
+      "max": 62
+    }
+  },
+  "evidencePack": "/Users/ash/Desktop/Git/unknown/output/reviews/gling-vancouver50-2026-10-19",
+  "finalNewCandidateProof": "selected-new33-final-v6.json",
+  "featuredReason": "Owner-reported three missing-photo landmarks now have reviewed exact-subject images and lead the curated cards.",
+  "finalSourceChoices": {
+    "replaceAndy": "VancouverPoliceMuseum existing osm:node:2147184803, originalGoogle4.3/675,1.86m exactsource join",
+    "Nelson": "Root accepted exact-caption leaf photo fallback; no generic replacement",
+    "BillReid": "Retained original actualgallery-event photo; cathedral-dominated alternate not used",
+    "Creekside": "Actual permanentpark/waterfrontpath photo, temporaryFIFA cover not used",
+    "PolicePhoto": "Commons explicitPublicdomain/CopyrightedFalse; qualified Commons-attributed artist with uncertainty in evidence, no inventedCClicense"
+  },
+  "verifiedAt": "2026-10-19T11:03:56.599157+00:00",
+  "verification": {
+    "focused": {
+      "passed": 44,
+      "failed": 0
+    },
+    "fullApp": {
+      "passed": 1544,
+      "failed": 0,
+      "existingSkipped": 2,
+      "total": 1546
+    },
+    "typecheck": 0,
+    "lint": 0,
+    "diffCheck": 0,
+    "redBeforeData": "17 != 50 and revision4 !=5 actual regression recorded"
+  },
+  "independentPhotoReview": {
+    "owner": "run_f5bf4fbc063e",
+    "PoliceMuseumAccepted": "msg_bde54e0a54eb",
+    "CreeksideAccepted": "msg_399131f5b947",
+    "all50SourceTable": "final50-photo-rating-source-table-v6.json",
+    "fullContact": "vancouver50-full-contact.jpg",
+    "thumbnailContact": "vancouver50-thumbnail-contact.jpg"
+  },
+  "actualHTTPAudit": {
+    "capturedCalls": 76,
+    "minimumRecordedStartGapSeconds": 10.00326,
+    "sub10secondGaps": 0,
+    "sameHistoryPreserved": true,
+    "noFurtherHTTP": true
+  }
+}
