@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   photoBody: { flex: 1, gap: Spacing.one },
   ghost: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center', borderWidth: 1, borderRadius: 999, paddingHorizontal: Spacing.three },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
-  promptChip: { minHeight: 44, justifyContent: 'center', borderWidth: 1, borderBottomWidth: 3, borderRadius: 999, paddingHorizontal: Spacing.three },
+  promptChip: { minHeight: 44, justifyContent: 'center', borderWidth: 1, borderRadius: 999, paddingHorizontal: Spacing.three },
   tagInput: { minHeight: 44, minWidth: 120, borderWidth: 1, borderRadius: 999, paddingHorizontal: Spacing.three, fontSize: 15 },
   button: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' }, field: { gap: Spacing.two },
   input: { borderWidth: 1, borderRadius: 12, padding: Spacing.three, minHeight: 52, maxHeight: 128, textAlignVertical: 'top', fontSize: 16 },
