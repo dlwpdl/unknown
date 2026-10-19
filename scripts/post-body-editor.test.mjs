@@ -56,6 +56,24 @@ test('relocated editor keeps links and map pins while changing only the visible 
   assert.deepEqual(links.splitPostAttachments(mapped.body), { body: '수정한 본문', urls: ['https://example.com/menu'] });
 });
 
+test('map-attached drafts preserve spaces and repeated Enter through controlled editor updates', () => {
+  const url = 'https://www.google.com/maps/search/?api=1&query=49.2827%2C-123.1207';
+  for (const urls of [[], ['https://example.com/menu']]) {
+    let value = maps.withPostMap(links.withPostAttachments('첫 줄', urls), url, '밴쿠버');
+    const app = editor({ value, onChangeText: text => { value = text; } });
+    for (const typed of ['첫 줄 ', '첫 줄\n', '첫 줄\n\n', '  첫 줄\n둘째 줄  ', '\n', '\n\n', '😀 첫 줄\n\n']) {
+      app.compose({ value });
+      app.layout().input.props.onChangeText(typed);
+      app.compose({ value });
+      assert.equal(app.layout().input.props.value, typed, 'the visible draft must retain the user’s current whitespace');
+      const mapped = maps.postMapBody(value);
+      assert.equal(mapped.url, new URL(url).href);
+      assert.equal(mapped.label, '밴쿠버');
+      assert.deepEqual(links.splitPostAttachments(mapped.body).urls, urls);
+    }
+  }
+});
+
 test('default post/merchant editors keep their controls and compose respects read-only and location policy', () => {
   const app = editor();
   assert.ok(nodes(app.render()).some(n => n.props?.analyticsId === 'post.attachment.add'));

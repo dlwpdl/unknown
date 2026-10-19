@@ -1,6 +1,8 @@
 import { withLanguageImports } from './test-language-imports.mjs';
+import { placeMapRoute } from '../src/lib/discovery.ts';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
@@ -12,6 +14,9 @@ const cities = [...citySource.matchAll(/id: '([^']+)', name: '([^']+)', englishN
   .map(([, id, name, englishName, province]) => ({ id, name, englishName, province }));
 const nodes = v => !v || typeof v !== 'object' ? [] : [v, ...Object.values(v).flatMap(nodes)];
 const catalog = () => JSON.parse(readFileSync(new URL('src/lib/city-places.catalog.json', root), 'utf8'));
+const fixtureTime = Math.max(Date.parse(catalog().collectedAt), ...Object.values(catalog().cities)
+  .flatMap(city => (city.recommendations ?? []).map(pick => Date.parse(pick.verifiedAt)))) + 86_400_000;
+const fixtureNow = fixtureTime + 86_400_000;
 const photos = () => {
   const path = new URL('src/lib/city-places.photos.json', root);
   return existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : { cities: {} };
@@ -42,7 +47,45 @@ test('an unreviewed catalog never fills city recommendations with ordinary busin
 test('a legacy broad recommendation response cannot replace the photo-spot selection', () => {
   const api = data(), next = dailyCatalog();
   delete next.recommendationTheme;
-  assert.equal(api.replaceCityPlacesCatalog(next, Date.parse('2026-10-18T00:00:00Z')), false);
+  assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), false);
+});
+
+test('a newer daily payload cannot restore selections from an older editorial revision', () => {
+  const seed = catalog(); seed.selectionRevision = 2;
+  const api = data(seed), before = api.getCityRecommendations('vancouver').map(place => place.id);
+  for (const oldRevision of [undefined, 1]) {
+    const old = dailyCatalog();
+    if (oldRevision === undefined) delete old.selectionRevision; else old.selectionRevision = oldRevision;
+    assert.equal(api.replaceCityPlacesCatalog(old, fixtureNow), false);
+    assert.deepEqual(Array.from(api.getCityRecommendations('vancouver'), place => place.id), Array.from(before));
+  }
+});
+
+test('a newer revision-4 server or cached catalog cannot shrink the shipped Vancouver 50 back to 17', () => {
+  const snapshot = catalog(), api = data(snapshot);
+  assert.equal(snapshot.selectionRevision, 5);
+  const before = Array.from(api.getCityRecommendations('vancouver'), place => place.id);
+  assert.equal(before.length, 50);
+  const stale = structuredClone(snapshot);
+  stale.selectionRevision = 4;
+  stale.collectedAt = new Date(fixtureTime).toISOString();
+  stale.cities.vancouver.recommendations = stale.cities.vancouver.recommendations.slice(0, 17);
+  assert.equal(api.replaceCityPlacesCatalog(stale, fixtureNow), false);
+  assert.deepEqual(Array.from(api.getCityRecommendations('vancouver'), place => place.id), before);
+});
+
+test('a reviewed replacement revision changes order while old detail and review identities stay reachable', () => {
+  const seed = catalog(); seed.selectionRevision = 1;
+  const next = dailyCatalog(); next.selectionRevision = 2;
+  const removed = seed.cities.vancouver.recommendations[0].placeId;
+  next.cities.vancouver.recommendations = next.cities.vancouver.recommendations.filter(pick => pick.placeId !== removed);
+  const api = data(seed);
+  assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
+  assert.deepEqual(Array.from(api.getCityRecommendations('vancouver'), place => place.id), next.cities.vancouver.recommendations.map(pick => pick.placeId));
+  assert.ok(api.getCityPlaces('vancouver').some(place => place.id === removed));
+  const invalid = structuredClone(next); invalid.selectionRevision = 2.5;
+  invalid.collectedAt = new Date(fixtureTime + 3_600_000).toISOString();
+  assert.throws(() => api.replaceCityPlacesCatalog(invalid, fixtureNow), /INVALID_PLACE_CATALOG/);
 });
 
 test('every supported city has source-checked photo selections rather than a padded business directory', () => {
@@ -50,7 +93,7 @@ test('every supported city has source-checked photo selections rather than a pad
   assert.equal(snapshot.recommendationTheme, 'photo-spots');
   for (const city of cities) {
     const places = data().getCityRecommendations(city.id);
-    assert.ok(places.length >= 3 && places.length <= 25, city.id);
+    assert.ok(places.length >= 3 && places.length <= 50, city.id);
     for (const place of places) {
       assert.doesNotMatch(place.name, /McDonald|Tim Hortons|Starbucks|Subway|Burger King|Wendy/i);
       assert.ok(place.recommendation.reason.trim());
@@ -59,30 +102,91 @@ test('every supported city has source-checked photo selections rather than a pad
     }
   }
 });
+
+test('popular featured places have photographs and real provider counts where three subjects are verified', () => {
+  const ratings = JSON.parse(readFileSync(new URL('src/lib/place-external-ratings.json', root), 'utf8'));
+  for (const city of ['toronto', 'vancouver', 'montreal', 'calgary', 'edmonton', 'winnipeg', 'ottawa', 'regina']) {
+    const featured = data().getCityRecommendations(city).slice(0, 3);
+    assert.equal(featured.length, 3);
+    for (const place of featured) {
+      assert.ok(place.photo?.imageSha256, `${city}/${place.name}: photograph`);
+      assert.ok(ratings.some(row => row.cityId === city && row.placeId === place.id && row.count > 0), `${city}/${place.name}: actual provider count`);
+    }
+  }
+});
 function dailyCatalog() {
-  const next = catalog(); next.collectedAt = '2026-10-17T20:00:00Z';
+  const next = catalog(); next.collectedAt = new Date(fixtureTime).toISOString();
   for (const city of cities) next.cities[city.id].recommendations = next.cities[city.id].places.slice(-3).map(p => ({ placeId: p.id, reason: 'Test-reviewed selection', sourceUrl: 'https://example.org/reviewed', verifiedAt: next.collectedAt }));
   return next;
 }
+test('a fifty-place source-reviewed list preserves every identity and rejects a fifty-first pick', () => {
+  const next = dailyCatalog();
+  next.cities.toronto.recommendations = next.cities.toronto.places.slice(0, 50).map(place => ({
+    placeId: place.id, reason: 'Test-reviewed selection', reasonEn: 'Test-reviewed selection',
+    sourceUrl: 'https://example.org/reviewed', verifiedAt: next.collectedAt,
+  }));
+  const api = data();
+  assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
+  assert.equal(api.getCityRecommendations('toronto').length, 50);
+  assert.deepEqual(Array.from(api.getCityRecommendations('toronto'), p => p.id), next.cities.toronto.recommendations.map(p => p.placeId));
+  const tooMany = structuredClone(next);
+  tooMany.collectedAt = new Date(fixtureTime + 3_600_000).toISOString();
+  tooMany.cities.toronto.recommendations.push({ ...tooMany.cities.toronto.recommendations[0], placeId: tooMany.cities.toronto.places[50].id });
+  assert.throws(() => api.replaceCityPlacesCatalog(tooMany, fixtureNow), /INVALID_PLACE_CATALOG/);
+});
 test('daily recommendations use reviewed order while archived place identities remain readable', () => {
   const api = data(), next = dailyCatalog();
   assert.equal(typeof api.replaceCityPlacesCatalog, 'function');
-  api.replaceCityPlacesCatalog(next, Date.parse('2026-10-18T00:00:00Z'));
+  api.replaceCityPlacesCatalog(next, fixtureNow);
   assert.equal(api.getCityRecommendations('toronto')[0].id, next.cities.toronto.recommendations[0].placeId);
   assert.equal(api.getCityPlaces('toronto').length, catalog().cities.toronto.places.length);
 });
 test('opening a selected place retains its photo reason without losing other review identities', () => {
   const api = data(), next = dailyCatalog();
   next.recommendationTheme = 'photo-spots';
-  api.replaceCityPlacesCatalog(next, Date.parse('2026-10-18T00:00:00Z'));
+  api.replaceCityPlacesCatalog(next, fixtureNow);
   const pick = next.cities.toronto.recommendations[0];
   assert.equal(api.getCityPlaces('toronto').find(place => place.id === pick.placeId).recommendation?.reason, pick.reason);
   assert.ok(api.getCityPlaces('toronto').some(place => /McDonald/i.test(place.name)));
 });
+
+test('an older daily catalog retains a newly checked restaurant; a later refresh can remove its recommendation', () => {
+  const seed = catalog(), id = 'osm:node:6339016833';
+  // Model the historical ordering explicitly, independent of the live catalog's dates.
+  seed.collectedAt = '2026-10-14T03:11:22Z';
+  for (const city of Object.values(seed.cities)) for (const pick of city.recommendations) pick.verifiedAt = seed.collectedAt;
+  const restaurant = seed.cities.vancouver.recommendations.find(pick => pick.placeId === id)
+    ?? { placeId: id, reason: 'Test-reviewed restaurant', sourceUrl: 'https://example.org/reviewed' };
+  restaurant.verifiedAt = '2026-10-18T20:00:00Z';
+  seed.cities.vancouver.recommendations = [...seed.cities.vancouver.recommendations.filter(pick => pick.placeId !== id).slice(0, 49), restaurant];
+  const api = data(seed);
+  const next = structuredClone(seed);
+  next.collectedAt = '2026-10-18T08:54:42Z';
+  next.cities.vancouver.places = next.cities.vancouver.places.filter(place => place.id !== id);
+  next.cities.vancouver.recommendations = next.cities.vancouver.recommendations.filter(pick => pick.placeId !== id);
+  assert.equal(api.replaceCityPlacesCatalog(next, Date.parse('2026-10-19T00:00:00Z')), true);
+  assert.ok(api.getCityRecommendations('vancouver', 'food').some(place => place.id === id));
+  assert.ok(api.getCityPlaces('vancouver').find(place => place.id === id).recommendation);
+  const later = structuredClone(next); later.collectedAt = '2026-10-19T08:00:00Z';
+  assert.equal(api.replaceCityPlacesCatalog(later, Date.parse('2026-10-20T00:00:00Z')), true);
+  assert.equal(api.getCityRecommendations('vancouver').some(place => place.id === id), false);
+  assert.ok(api.getCityPlaces('vancouver').some(place => place.id === id), 'existing detail/review links remain valid');
+});
+
+test('a higher editorial revision never reattaches removed picks from the bundled revision', () => {
+  const seed = catalog(); seed.selectionRevision = 2; seed.collectedAt = '2026-10-14T03:11:22Z';
+  const removed = seed.cities.vancouver.recommendations[0]; removed.verifiedAt = '2026-10-18T20:00:00Z';
+  const next = structuredClone(seed); next.selectionRevision = 3; next.collectedAt = '2026-10-18T08:54:42Z';
+  next.cities.vancouver.recommendations = next.cities.vancouver.recommendations.filter(pick => pick.placeId !== removed.placeId);
+  const api = data(seed);
+  assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
+  assert.deepEqual(Array.from(api.getCityRecommendations('vancouver'), place => place.id), next.cities.vancouver.recommendations.map(pick => pick.placeId));
+  assert.ok(api.getCityPlaces('vancouver').some(place => place.id === removed.placeId));
+});
 test('reviewed recommendation metadata preserves the English reason without inventing a ranking', () => {
   const api = data(), next = dailyCatalog();
   next.cities.toronto.recommendations[0].reasonEn = 'A source-checked place to explore.';
-  api.replaceCityPlacesCatalog(next, Date.parse('2026-10-18T00:00:00Z'));
+  api.replaceCityPlacesCatalog(next, fixtureNow);
   assert.equal(api.getCityRecommendations('toronto')[0].recommendation.reasonEn, 'A source-checked place to explore.');
 });
 test('foreign-city IDs, unsafe sources and malformed daily payloads cannot replace the last valid catalog', () => {
@@ -90,19 +194,19 @@ test('foreign-city IDs, unsafe sources and malformed daily payloads cannot repla
   const original = JSON.stringify(api.getCityPlaces('toronto'));
   for (const mutate of [next => { next.cities.toronto.places[0].cityId = 'vancouver'; }, next => { next.cities.toronto.places[0].sourceUrl = 'https://evil.example/'; }, next => { next.cities.toronto.places[0].latitude = NaN; }, next => { delete next.cities.vancouver; }]) {
     const next = dailyCatalog(); mutate(next);
-    assert.throws(() => api.replaceCityPlacesCatalog(next, Date.parse('2026-10-18T00:00:00Z')), /INVALID_PLACE_CATALOG/);
+    assert.throws(() => api.replaceCityPlacesCatalog(next, fixtureNow), /INVALID_PLACE_CATALOG/);
     assert.equal(JSON.stringify(api.getCityPlaces('toronto')), original);
   }
 });
-function screen(file, params = { cityId: 'toronto' }, dev = true) {
-  const states = [], routes = [], feedback = [], opened = [];
+function screen(file, params = { cityId: 'toronto' }, dev = true, placeData = data()) {
+  const states = [], routes = [], feedback = [], opened = [], ratingScopes = [];
   let cursor = 0;
   const jsx = (type, props) => ({ type, props });
   const exports = module(file, {
     react: { useRef: current => ({ current }), useEffect() {}, useLayoutEffect() {}, useCallback: fn => fn,
       useState(v) { const i = cursor++; if (!(i in states)) states[i] = v; return [states[i], next => { states[i] = typeof next === 'function' ? next(states[i]) : next; }]; } },
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    'expo-router': { useIsFocused: () => true, useRouter: () => ({ push: p => routes.push(p), canGoBack: () => true, back: () => routes.push('back') }), useLocalSearchParams: () => params },
+    'expo-router': { useIsFocused: () => true, useRouter: () => ({ push: p => routes.push(p), navigate: p => routes.push(p), canGoBack: () => true, back: () => routes.push('back') }), useLocalSearchParams: () => params },
     'react-native': { StyleSheet: { create: v => v }, View: 'View', TextInput: 'TextInput', Linking: { openURL: async value => { opened.push(value); } }, Alert: { alert() {} } },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     '@/lib/mock': { CITIES: cities },
@@ -111,9 +215,12 @@ function screen(file, params = { cityId: 'toronto' }, dev = true) {
     '@/lib/product-analytics': product,
     '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
+    '@/hooks/use-place-review-summaries': { usePlaceReviewSummaries: (cityId, ids) => { ratingScopes.push({ cityId, ids }); return {}; } },
+    '@/components/place-review-summary': { PlaceReviewSummary: 'PlaceReviewSummary',
+      getPlaceReviewRating: (cityId, placeId) => ({ cityId, placeId, score: null, source: null, count: null, externalScore: null }) },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16, four: 24 }, MaxContentWidth: 920 },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: v => feedback.push(v) }) },
-    '@/lib/city-places': data(), '@/lib/post-maps': module('src/lib/post-maps.ts'),
+    '@/lib/city-places': placeData, '@/lib/discovery': { placeMapRoute }, '@/lib/post-maps': module('src/lib/post-maps.ts'),
     '@/lib/merchant-source': module('src/lib/merchant-source.ts', {
       '../../supabase/functions/_shared/post-links.ts': { safePostLink: value => value },
     }),
@@ -123,8 +230,26 @@ function screen(file, params = { cityId: 'toronto' }, dev = true) {
     if (typeof node.type === 'function') return expand(node.type(node.props));
     return Array.isArray(node) ? node.map(expand) : Object.fromEntries(Object.entries(node).map(([k, v]) => [k, expand(v)]));
   }
-  return { routes, feedback, opened, render(props) { cursor = 0; return expand(exports.default ? exports.default() : exports.CityPopularPlaces?.(props)); } };
+  return { routes, feedback, opened, ratingScopes, render(props) { cursor = 0; return expand(exports.default ? exports.default() : exports.CityPopularPlaces?.(props)); } };
 }
+test('the city places entry gives each preview card its own compact rating scope', () => {
+  const ui = screen('src/components/city-popular-places.tsx'), tree = ui.render({ cityId: 'vancouver' });
+  const cards = nodes(tree).filter(node => node.props?.analyticsId === 'today.places.place-open');
+  const expected = data().getCityRecommendations('vancouver').slice(0, 3);
+  assert.equal(cards.length, expected.length);
+  cards.forEach((card, index) => {
+    const summary = nodes(card).find(node => node.type === 'PlaceReviewSummary');
+    assert.ok(summary, 'entry card rating is missing');
+    assert.equal(summary.props.rating.cityId, 'vancouver');
+    assert.equal(summary.props.rating.placeId, expected[index].id);
+    assert.equal(summary.props.compact, true);
+  });
+  assert.equal(ui.ratingScopes.length, 1, 'home loads one batch, not one request per card');
+  assert.equal(ui.ratingScopes[0].ids.length, cards.length);
+  cards[0].props.onPress();
+  assert.equal(ui.routes.at(-1).pathname, '/map');
+  assert.equal(ui.opened.length, 0, 'review entry stays inside Gling');
+});
 test('real OSM data covers every city with canonical IDs, coordinates and extraction provenance', () => {
   assert.equal(typeof data().getCityPlaces, 'function', 'actual data loader is missing');
   const source = catalog();
@@ -184,14 +309,14 @@ test('native list renders real data, expands, filters search and category, then 
   assert.ok(nodes(tree).some(n => n.props?.children === first.name));
   assert.equal(nodes(tree).some(n => n.props?.title === '장소 데이터 연결 전이에요'), false);
   rows()[0].props.onPress();
-  assert.equal(ui.routes.at(-1).pathname, '/places/[id]');
+  assert.equal(ui.routes.at(-1).pathname, '/map');
   assert.equal(ui.routes.at(-1).params.cityId, 'toronto');
-  assert.equal(ui.routes.at(-1).params.id, first.id);
+  assert.equal(ui.routes.at(-1).params.placeId, first.id);
   assert.equal(ui.feedback.at(-1), 'selection');
   const expand = nodes(tree).find(n => n.props?.analyticsId === 'places.view-more');
   assert.equal(!!expand, choices.length > 10);
   expand?.props.onPress();
-  tree = ui.render(); assert.equal(rows().length, Math.min(25, choices.length));
+  tree = ui.render(); assert.equal(rows().length, Math.min(50, choices.length));
   nodes(tree).find(n => n.props?.accessibilityLabel === '장소 검색').props.onChangeText('__no_actual_place_match__');
   tree = ui.render(); assert.equal(rows().length, 0);
   nodes(tree).find(n => n.props?.accessibilityLabel === '장소 검색').props.onChangeText('');
@@ -202,7 +327,28 @@ test('native list renders real data, expands, filters search and category, then 
   assert.equal(nodes(tree).find(n => n.props?.analyticsId === 'places.category.food').props.accessibilityState.selected, true);
   nodes(tree).find(n => n.props?.analyticsId === 'places.category.places').props.onPress();
   tree = ui.render();
-  assert.ok(rows().length > 0 && rows().length <= 25);
+  assert.ok(rows().length > 0 && rows().length <= 50);
+});
+test('the full city list promises the available count and includes the last place rating and map link', () => {
+  for (const count of [17, 50]) {
+    const next = dailyCatalog();
+    next.cities.toronto.recommendations = next.cities.toronto.places.slice(0, count).map(place => ({
+      placeId: place.id, reason: 'Test-reviewed selection', sourceUrl: 'https://example.org/reviewed', verifiedAt: next.collectedAt,
+    }));
+    const api = data(); api.replaceCityPlacesCatalog(next, fixtureNow);
+    const ui = screen('src/app/places/index.tsx', { cityId: 'toronto' }, true, api);
+    let tree = ui.render();
+    assert.equal(ui.ratingScopes.at(-1).ids.length, count);
+    assert.equal(nodes(tree).filter(n => n.props?.analyticsId === 'places.open').length, 10);
+    const more = nodes(tree).find(n => n.props?.analyticsId === 'places.view-more');
+    assert.equal(more.props.accessibilityLabel, count + '곳 모두 보기');
+    more.props.onPress(); tree = ui.render();
+    const rows = nodes(tree).filter(n => n.props?.analyticsId === 'places.open');
+    assert.equal(rows.length, count);
+    rows[count - 1].props.onPress();
+    assert.equal(ui.routes.at(-1).params.placeId, next.cities.toronto.recommendations[count - 1].placeId);
+    assert.equal(ui.feedback.at(-1), 'selection');
+  }
 });
 test('native detail searches Google maps by name, available address and Canadian city instead of a coordinate pin', () => {
   assert.equal(typeof data().getCityPlaces, 'function');
@@ -279,8 +425,8 @@ test('home shows three reviewed place cards and preserves same-place photos or h
       if (picture.props.place.photo) assert.equal(picture.props.place.photo.placeId, picture.props.place.id);
       assert.equal(picture.props.place.cityId, city.id);
       card.props.onPress();
-      assert.equal(ui.routes.at(-1).pathname, '/places/[id]');
-      assert.equal(ui.routes.at(-1).params.id, picture.props.place.id);
+      assert.equal(ui.routes.at(-1).pathname, '/map');
+      assert.equal(ui.routes.at(-1).params.placeId, picture.props.place.id);
       assert.equal(ui.routes.at(-1).params.cityId, city.id);
       assert.equal(ui.feedback.at(-1), 'selection');
     }
@@ -295,7 +441,7 @@ test('list uses each actual place photo and detail retains its credit and named 
     const picture = nodes(row).find(n => n.type === 'CityPlacePhoto');
     assert.ok(picture, 'left photo slot missing');
     row.props.onPress();
-    assert.equal(picture.props.place.id, ui.routes.at(-1).params.id);
+    assert.equal(picture.props.place.id, ui.routes.at(-1).params.placeId);
   }
   const place = data().getCityPlaces('toronto').find(p => p.photo);
   assert.ok(place);
@@ -321,17 +467,44 @@ test('the selection source opens its actual reviewed article with interaction fe
   assert.deepEqual(ui.feedback, ['selection']);
 });
 
-test('photo load failure shows the neutral fallback and a different image can load afterwards', () => {
+function photoModule(imports = {}) {
   let failed;
   const jsx = (type, props) => ({ type, props });
-  const photo = module('src/components/city-place-photo.tsx', {
+  return module('src/components/city-place-photo.tsx', {
     react: { useState: () => [failed, value => { failed = value; }] },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { StyleSheet: { create: v => v, absoluteFill: {} }, View: 'View' },
     'expo-image': { Image: 'Image' },
     'expo-symbols': { SymbolView: 'SymbolView' },
     '@/hooks/use-theme': { useTheme: () => ({}) },
+    ...imports,
   });
+}
+
+test('verified bundled photo bytes display offline only for their exact recorded image hash', () => {
+  const directory = new URL('assets/images/city-places/', root);
+  const assets = readdirSync(directory).filter(name => name.endsWith('.jpg')).map((name, index) => ({
+    path: '../../assets/images/city-places/' + name, source: index + 1,
+    hash: createHash('sha256').update(readFileSync(new URL(name, directory))).digest('hex'),
+  }));
+  assert.ok(assets.length > 0, 'verified offline photos must be included');
+  const photo = photoModule(Object.fromEntries(assets.map(asset => [asset.path, asset.source])));
+  for (const asset of assets) {
+    const metadata = Object.values(photos().cities).flat().find(row => row.imageSha256 === asset.hash);
+    assert.ok(metadata, asset.path + ' needs its actual source and license');
+    const place = data().getCityPlaces(metadata.cityId).find(row => row.id === metadata.placeId);
+    assert.ok(place);
+    const image = nodes(photo.CityPlacePhoto({ place })).find(node => node.type === 'Image');
+    assert.equal(image?.props.source, asset.source, metadata.cityId + '/' + metadata.placeId);
+    assert.equal(place.photo.uri, metadata.uri, 'bundling must preserve the remote source and attribution');
+    const changed = { ...place, photo: { ...place.photo, imageSha256: '0'.repeat(64) } };
+    const replacement = nodes(photo.CityPlacePhoto({ place: changed })).find(node => node.type === 'Image');
+    assert.equal(replacement?.props.source.uri, metadata.uri, 'a different image must not reuse stale bundled bytes');
+  }
+});
+
+test('photo load failure shows the neutral fallback and a different image can load afterwards', () => {
+  const photo = photoModule();
   assert.equal(typeof photo.CityPlacePhoto, 'function', 'native photo fallback is missing');
   const place = { id: 'one', name: 'One', photo: { uri: 'https://thumb.wikimedia.org/one.jpg' } };
   let tree = photo.CityPlacePhoto({ place });

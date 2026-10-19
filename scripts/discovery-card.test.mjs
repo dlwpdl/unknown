@@ -17,7 +17,7 @@ function render(item) {
     useContentTranslation: () => ({ display: { title: item.post?.title ?? item.title } }), visibleTranslationSource: () => ({}),
     postPublicAddress: maps.postPublicAddress, getPostImageSource: post => post.imageUris?.[0] ? { uri: post.imageUris[0] } : undefined,
     DISCOVERY_CATEGORIES, hasAdLabel: () => false, located: value => value.latitude !== null && value.longitude !== null,
-    eventTime: () => '오늘 18:00', eventPriceLabel: () => 'CA$25', styles: {}, StyleSheet: { absoluteFill: {} }, View: 'View', Pressable: 'Pressable', Image: 'Image', SymbolView: 'SymbolView', ThemedText: 'Text', PostAdLabel: 'AdLabel', TranslationControl: 'Translation',
+    eventTime: () => '오늘 18:00', eventPriceLabel: () => 'CA$25', styles: {}, StyleSheet: { absoluteFill: {} }, View: 'View', Pressable: 'Pressable', Image: 'Image', CityPlacePhoto: 'CityPlacePhoto', SymbolView: 'SymbolView', ThemedText: 'Text', PostAdLabel: 'AdLabel', TranslationControl: 'Translation',
   });
   return exports.render({ item, viewerScope: 'test', onOpen() {} });
 }
@@ -51,4 +51,13 @@ test('merging the same catalog place into a Top 25 selection preserves its exist
   const item = discoveryPlace(place);
   const pick = { id: place.id, cityId: place.cityId, title: place.name, label: place.address, category: 'place', latitude: place.latitude, longitude: place.longitude, reason: 'Source-checked selection', sourceUrl: 'https://example.org/photo-place', postIds: [] };
   assert.equal(mergeCityTop25([item], place.cityId, [pick])[0].imageUri, place.photo.uri);
+});
+
+test('catalog map cards reuse the offline-capable same-place photo while a post keeps its scoped image', () => {
+  const place = { id: 'osm:way:58754861', cityId: 'vancouver', name: 'Granville Island', category: 'places', address: '', latitude: 49.27, longitude: -123.13, photo: { uri: 'https://upload.wikimedia.org/verified-place.jpg' } };
+  const item = discoveryPlace(place), tree = render(item);
+  assert.equal(nodes(tree).find(node => node.type === 'CityPlacePhoto')?.props.place, place);
+  const withPost = render({ ...item, post: { ...post, imageUris: ['https://example.org/scoped-post.jpg'] } });
+  assert.equal(nodes(withPost).some(node => node.type === 'CityPlacePhoto'), false);
+  assert.equal(nodes(withPost).find(node => node.type === 'Image')?.props.source.uri, 'https://example.org/scoped-post.jpg');
 });

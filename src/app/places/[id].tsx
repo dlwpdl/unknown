@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
 import { PlaceReviews } from '@/components/place-reviews';
+import { PlaceExternalRatings } from '@/components/place-external-ratings';
 import { PostMapLink } from '@/components/post-map-link';
 import { PostPhotoCredits } from '@/components/post-photo-credits';
 import { StateCard } from '@/components/state-card';
@@ -22,11 +23,12 @@ import { CITIES } from '@/lib/mock';
 import { merchantMapsUrl, safeMerchantSourceUrl } from '@/lib/merchant-source';
 import { useAuth } from '@/lib/auth';
 import { recordProductEvent } from '@/lib/product-analytics';
+import { placeMapRoute } from '@/lib/discovery';
 import { supabase } from '@/lib/supabase';
 
 export default function PlaceDetailScreen() {
   useCityPlacesRevision();
-  const { tr, locale: appLocale } = useLanguage();
+  const { tr, language, locale: appLocale } = useLanguage();
   const [viewport, setViewport] = useState({ y: 0, height: 0 });
   const { cityId, id } = useLocalSearchParams<{ cityId?: string; id?: string }>();
   const { isAuthed, me } = useAuth();
@@ -68,17 +70,23 @@ export default function PlaceDetailScreen() {
         <ThemedText type="small" themeColor="textSecondary">{tr(city.name)}{" " + tr("· 지도 등록 장소")}</ThemedText>
         <ThemedText accessibilityRole="header" style={styles.title}>{place.name}</ThemedText>
         {!!place.recommendation && <>
-          <ThemedText>{appLocale === 'en' ? place.recommendation.reasonEn ?? place.recommendation.reason : place.recommendation.reason}</ThemedText>
-          <Pressable analyticsId="places.detail.source" accessibilityRole="link" accessibilityLabel={tr("사진 명소 선정 출처 보기")} onPress={() => openSource(place.recommendation!.sourceUrl)} style={styles.link}>
-            <ThemedText type="smallBold" themeColor="accent">{tr("사진 명소 선정 출처 보기")}</ThemedText>
-          </Pressable>
+          <ThemedText>{language === 'en' ? place.recommendation.reasonEn ?? place.recommendation.reason : place.recommendation.reason}</ThemedText>
         </>}
         <View style={[styles.facts, { backgroundColor: theme.card }]}>
           <ThemedText type="smallBold" themeColor="accent">{place.category === 'food' ? tr("맛집") : place.category === 'cafe' ? tr("카페") : tr("가볼 만한 곳")}</ThemedText>
           <ThemedText>{place.address || tr("등록된 주소 정보가 없어요. 지도에서 위치를 확인해 주세요.")}</ThemedText>
           {!!place.openingHours && <ThemedText type="small" themeColor="textSecondary">{tr("등록된 운영 시간: {0}", (place.openingHours))}</ThemedText>}
         </View>
+        <Pressable analyticsId="places.open" accessibilityRole="button" accessibilityLabel={`${place.name} · ${tr('지도 보기')}`}
+          onPress={() => { play('selection'); router.navigate(placeMapRoute(place)); }} style={styles.link}>
+          <ThemedText type="smallBold" themeColor="accent">{tr('지도 보기')}</ThemedText>
+        </Pressable>
+        <PlaceReviews cityId={city.id} placeId={place.id} viewport={viewport} />
+        <PlaceExternalRatings key={`${city.id}:${place.id}`} cityId={city.id} placeId={place.id} />
         {mapsUrl && <PostMapLink url={mapsUrl} label={place.name} onOpened={() => record('place_directions')} />}
+        {!!place.recommendation && <Pressable analyticsId="places.detail.source" accessibilityRole="link" accessibilityLabel={tr("사진 명소 선정 출처 보기")} onPress={() => openSource(place.recommendation!.sourceUrl)} style={styles.link}>
+          <ThemedText type="smallBold" themeColor="accent">{tr("사진 명소 선정 출처 보기")}</ThemedText>
+        </Pressable>}
         <Pressable analyticsId="places.detail.source" accessibilityRole="link" accessibilityLabel={tr("OpenStreetMap에서 장소 정보 보기")} onPress={() => openSource(place.sourceUrl)} style={styles.link}>
           <ThemedText type="smallBold" themeColor="accent">{tr("OpenStreetMap에서 장소 정보 보기")}</ThemedText>
         </Pressable>
@@ -89,7 +97,6 @@ export default function PlaceDetailScreen() {
         <Pressable analyticsId="places.detail.attribution" accessibilityRole="link" accessibilityLabel={tr("OpenStreetMap 자료 출처와 이용 조건")} onPress={() => openSource('https://www.openstreetmap.org/copyright')} style={styles.link}>
           <ThemedText type="small" themeColor="textSecondary">{tr("© OpenStreetMap contributors · {0} 확인 자료", (new Date(CITY_PLACES_COLLECTED_AT).toLocaleDateString(appLocale)))}</ThemedText>
         </Pressable>
-        <PlaceReviews cityId={city.id} placeId={place.id} viewport={viewport} />
       </>}
     </ScrollView>
   </SafeAreaView>;

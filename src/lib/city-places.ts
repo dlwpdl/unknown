@@ -17,7 +17,7 @@ export type CityPlace = {
 export type PlaceRecommendation = { placeId: string; reason: string; reasonEn?: string; sourceUrl: string; verifiedAt: string };
 
 type PlaceCatalog = {
-  collectedAt: string; recommendationTheme?: 'photo-spots'; cities: Record<string, { coverage: string; places: CityPlace[]; recommendations?: PlaceRecommendation[] }>;
+  collectedAt: string; selectionRevision?: number; recommendationTheme?: 'photo-spots'; cities: Record<string, { coverage: string; places: CityPlace[]; recommendations?: PlaceRecommendation[] }>;
 };
 let catalog = snapshot as PlaceCatalog;
 const photoCatalog = photoSnapshot as { cities: Record<string, PlacePhoto[]> };
@@ -38,6 +38,8 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
   if (!next || !text(next.collectedAt, 80) || !Number.isFinite(Date.parse(next.collectedAt)) || Date.parse(next.collectedAt) > now + 300_000
     || !next.cities || Object.keys(next.cities).length !== CITIES.length || Object.keys(next.cities).some(id => !CITIES.some(c => c.id === id))) invalid();
   if (next.recommendationTheme !== 'photo-spots') return false;
+  const nextSelection = next.selectionRevision ?? 0, currentSelection = catalog.selectionRevision ?? 0;
+  if (!Number.isSafeInteger(nextSelection) || nextSelection < 0) invalid();
   for (const city of CITIES) {
     const data = next.cities[city.id];
     if (!data || !['municipal-boundary', 'city-center'].includes(data.coverage) || !Array.isArray(data.places) || !data.places.length || data.places.length > 200) invalid();
@@ -50,7 +52,7 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
         || (p.website != null && !https(p.website)) || (p.openingHours != null && !text(p.openingHours, 1000))) invalid();
       ids.add(p.id);
     }
-    if (!Array.isArray(data.recommendations) || data.recommendations.length > 25) invalid();
+    if (!Array.isArray(data.recommendations) || data.recommendations.length > 50) invalid();
     const selected = new Set<string>();
     for (const pick of data.recommendations!) {
       if (!pick || !ids.has(pick.placeId) || selected.has(pick.placeId) || !text(pick.reason, 500) || (pick.reasonEn !== undefined && !text(pick.reasonEn, 500)) || !https(pick.sourceUrl)
@@ -58,10 +60,19 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
       selected.add(pick.placeId);
     }
   }
-  if (Date.parse(next.collectedAt) <= Date.parse(catalog.collectedAt)) return false;
+  if (nextSelection < currentSelection || (nextSelection === currentSelection && Date.parse(next.collectedAt) <= Date.parse(catalog.collectedAt))) return false;
   catalog = next; CITY_PLACES_COLLECTED_AT = next.collectedAt; revision++;
   listeners.forEach(listener => listener());
   return true;
+}
+
+function reviewedPicks(cityId: string): PlaceRecommendation[] {
+  if (catalog.recommendationTheme !== 'photo-spots') return [];
+  const current = catalog.cities[cityId].recommendations ?? [];
+  // Bundled additions belong only to the same editorial selection.
+  const additions = (catalog.selectionRevision === (snapshot as PlaceCatalog).selectionRevision ? (snapshot as PlaceCatalog).cities[cityId].recommendations ?? [] : [])
+    .filter(pick => Date.parse(pick.verifiedAt) > Date.parse(catalog.collectedAt) && !current.some(item => item.placeId === pick.placeId));
+  return [...current, ...additions].slice(0, 50);
 }
 
 // Keep unselected OSM identities available to existing detail and review links.
@@ -73,7 +84,7 @@ export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): 
   // shortcut: verified photos cover a subset; add licensed same-place images as they are checked.
   const photos = photoCatalog.cities[cityId] ?? [];
   const photoOrder = new Map(photos.map((photo, index) => [photo.placeId, index]));
-  const reviewed = new Map((catalog.recommendationTheme === 'photo-spots' ? city.recommendations ?? [] : []).map(pick => [pick.placeId, pick]));
+  const reviewed = new Map(reviewedPicks(cityId).map(pick => [pick.placeId, pick]));
   const currentIds = new Set(city.places.map(place => place.id));
   const archived = (snapshot as PlaceCatalog).cities[cityId]?.places.filter(place => !currentIds.has(place.id)) ?? [];
   return [...city.places, ...archived].filter(place => category === 'all' || place.category === category)
@@ -82,8 +93,7 @@ export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): 
 }
 
 export function getCityRecommendations(cityId: string, category: PlaceCategory = 'all'): CityPlace[] {
-  const places = getCityPlaces(cityId, category), picks = catalog.cities[cityId].recommendations;
-  if (catalog.recommendationTheme !== 'photo-spots' || !picks) return [];
+  const places = getCityPlaces(cityId, category), picks = reviewedPicks(cityId);
   const byId = new Map(places.map(place => [place.id, place]));
   return picks.flatMap(pick => {
     const place = byId.get(pick.placeId);

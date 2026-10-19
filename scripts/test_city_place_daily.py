@@ -34,6 +34,36 @@ class DailyPlaces(unittest.TestCase):
         self.assertEqual(data['collectedAt'], now)
         self.assertEqual(data.get('recommendationTheme'), 'photo-spots')
 
+    def test_daily_refresh_preserves_the_reselected_editorial_revision_and_order(self):
+        m = implementation(); seed, osm, now = self.fixture()
+        seed['selectionRevision'] = 2
+        result = m.build_catalog(seed, osm, now)
+        self.assertEqual(result.get('selectionRevision'), 2)
+        self.assertEqual(result['cities']['vancouver']['recommendations'], seed['cities']['vancouver']['recommendations'])
+        for revision in [-1, 2.5, True]:
+            seed['selectionRevision'] = revision
+            with self.assertRaisesRegex(ValueError, 'INVALID_SELECTION_REVISION'):
+                m.build_catalog(seed, osm, now)
+
+    def test_fifty_distinct_reviewed_places_survive_refresh_but_fifty_one_is_rejected(self):
+        m = implementation()
+        for count in [50, 51]:
+            seed, _, now = self.fixture()
+            city = seed['cities']['vancouver']
+            place, pick = city['places'][0], city['recommendations'][0]
+            city['places'] = [dict(place, id=f'osm:node:{i}', name=f'Fixture photo place {i}',
+                                  sourceUrl=f'https://www.openstreetmap.org/node/{i}') for i in range(1, count + 1)]
+            city['recommendations'] = [dict(pick, placeId=p['id']) for p in city['places']]
+            osm = [dict(type='node', id=i, lat=49.28, lon=-123.12,
+                        tags={'name': f'Fixture photo place {i}', 'tourism': 'attraction'}) for i in range(1, count + 1)]
+            if count == 51:
+                with self.assertRaisesRegex(ValueError, 'CITY_RECOMMENDATIONS_NOT_VERIFIED'):
+                    m.build_catalog(seed, osm, now)
+            else:
+                result = m.build_catalog(seed, osm, now)['cities']['vancouver']
+                self.assertEqual([p['id'] for p in result['places']], [p['id'] for p in city['places']])
+                self.assertEqual(result['recommendations'], city['recommendations'])
+
     def test_general_business_seed_cannot_publish_as_photo_recommendations(self):
         m = implementation(); seed, osm, now = self.fixture()
         seed.pop('recommendationTheme')

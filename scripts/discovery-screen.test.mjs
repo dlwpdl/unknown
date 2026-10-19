@@ -119,23 +119,31 @@ test('map pins, list and count exclude community stories but retain actual place
     catalogItems: [place], city: { id: 'vancouver' }, now: Date.now(), selectedFilters: [], query: '', days: [], hidden: () => false,
     discoveryEventOnDays, discoveryMatches, mergeCityTop25, discoveryEvent: () => null,
   });
-  assert.deepEqual(Array.from(exports.run(), item => item.sourceId), ['used', 'housing', 'festival', 'cafe']);
+  assert.deepEqual(Array.from(exports.run(), item => item.sourceId), ['cafe', 'used', 'housing', 'festival']);
 });
 
 test('changing accounts remounts the map and clears the previous private GPS camera state', () => {
   const start = source.indexOf('export default function MapScreen('), end = source.indexOf('function CityMap(', start);
   assert.ok(start >= 0 && end > start);
-  let auth = { isAuthed: true, me: { id: 'viewer-a' } };
+  let auth = { isAuthed: true, me: { id: 'viewer-a' } }, params = {};
   const exports = {};
   const code = ts.transpileModule(source.slice(start, end), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(code, { exports, CityMap: 'CityMap', useAuth: () => auth, useCommunityCity: () => ({ city: { id: 'vancouver' } }),
-    require: () => ({ jsx: (_type, _props, key) => ({ key }) }),
+    CITIES: [{ id: 'toronto' }, { id: 'vancouver' }], useLocalSearchParams: () => params,
+    require: () => ({ jsx: (_type, props, key) => ({ key, props }) }),
   });
   const first = exports.default().key;
   auth = { isAuthed: true, me: { id: 'viewer-b' } };
   assert.notEqual(exports.default().key, first);
   auth = { isAuthed: false, me: { id: 'viewer-a' } };
   assert.notEqual(exports.default().key, first);
+  params = { cityId: 'toronto', placeId: 'osm:node:1' };
+  assert.equal(exports.default().props.city.id, 'toronto');
+  assert.equal(exports.default().props.placeId, params.placeId);
+  assert.equal(exports.default({ onClose() {} }).props.city.id, 'vancouver', 'embedded maps keep their community city');
+  assert.equal(exports.default({ onClose() {} }).props.placeId, undefined);
+  params = { cityId: 'unknown', placeId: 'osm:node:1' };
+  assert.equal(exports.default().props.city.id, 'vancouver', 'unregistered route city cannot create a new city');
 });
 
 function requests({ deferFirst = false, filter = 'used', includeEvents = filter === 'all' || filter === 'events' || filter === 'festival', daysKey = '', failDay = '' } = {}) {

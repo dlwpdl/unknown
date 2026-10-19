@@ -40,7 +40,7 @@ function mount(file, component, imports, globals = {}, props = {}) {
     react, 'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }), Fragment: 'Fragment' },
     'react-native': native, 'react-native-reanimated': { useReducedMotion: () => true },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
-    'expo-router': { Link: 'Link', useFocusEffect: fn => effect(fn, [fn]), useLocalSearchParams: () => ({}), useRouter: () => ({}), usePathname: () => '/' },
+    'expo-router': { Link: 'Link', useIsFocused: () => true, useFocusEffect: fn => effect(fn, [fn]), useLocalSearchParams: () => ({}), useRouter: () => ({}), usePathname: () => '/' },
     'expo-asset': { Asset: { fromModule: () => ({ uri: 'local.png' }) } },
     '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' },
     '@/components/feed-ad': { FeedAd: 'FeedAd' }, '@/lib/content-ad-placement': { contentAdPosition },
@@ -61,7 +61,7 @@ function mount(file, component, imports, globals = {}, props = {}) {
     if (name.endsWith('.css') || /assets\//.test(name)) return {};
     return new Proxy({}, { get: (_target, key) => key });
   }, ...globals });
-  const render = () => { at = 0; dirty = false; tree = exports.TestComponent(props); pending.splice(0).forEach(fn => fn()); return tree; };
+  const render = () => { at = 0; dirty = false; tree = exports.TestComponent({ ...(component === 'CityMap' ? { city } : {}), ...props }); pending.splice(0).forEach(fn => fn()); return tree; };
   return { render, get tree() { return tree; }, async settle() { for (let count = 0; count < 12; count++) { if (dirty) render(); await new Promise(setImmediate); if (!dirty) return; } assert.fail('render loop'); } };
 }
 
@@ -81,7 +81,7 @@ test('event index adds standalone ads after four organic cards, preserving every
   }
 });
 
-test('map list has one slot after the fourth real result; canvas, selected overlay and TOP25 stay clear', async () => {
+test('map list has one slot after the fourth real result; canvas, selected overlay and TOP50 stay clear', async () => {
   for (const count of [4, 5, 9]) {
     const places = Array.from({ length: count }, (_, index) => ({ id: `osm:node:${index + 1}`, cityId: city.id, name: `Place ${index}`, category: 'cafe', address: 'Vancouver', latitude: 49.28, longitude: -123.12, sourceUrl: 'https://www.openstreetmap.org/' }));
     const view = mount('../src/app/map.tsx', 'CityMap', {
@@ -96,7 +96,7 @@ test('map list has one slot after the fourth real result; canvas, selected overl
     const rows = list.data.map((item, index) => list.renderItem({ item, index }));
     assert.equal(rows.flatMap(ads).length, count >= 5 ? 1 : 0);
     if (count >= 5) assert.equal(ads(rows[3]).length, 1);
-    nodes(view.tree).find(node => node.props?.analyticsId === 'discovery.filter' && node.props.accessibilityLabel === 'TOP 25').props.onPress();
+    nodes(view.tree).find(node => node.props?.analyticsId === 'discovery.filter' && node.props.accessibilityLabel === 'TOP 50').props.onPress();
     await view.settle();
     const ranking = nodes(view.tree).find(node => node.props?.analyticsId === 'discovery.list').props;
     assert.equal(ranking.data.flatMap((item, index) => ads(ranking.renderItem({ item, index }))).length, 0);
