@@ -75,7 +75,7 @@ const ensureBadges=()=>{
  const ctx=canvas.getContext('2d');if(!ctx)throw Error('TOP25_CANVAS');ctx.scale(2,2);
  ctx.beginPath();ctx.moveTo(12,1);ctx.arcTo(67,1,67,23,11);ctx.arcTo(67,23,1,23,11);ctx.arcTo(1,23,1,1,11);ctx.arcTo(1,1,67,1,11);ctx.closePath();
  ctx.fillStyle='#FFF8E9';ctx.fill();ctx.strokeStyle='${TOP25_GOLD}';ctx.lineWidth=1;ctx.stroke();
- ctx.fillStyle='#6F5129';ctx.font='700 11px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('TOP 25',34,12);
+ ctx.fillStyle='#6F5129';ctx.font='700 11px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('TOP 50',34,12);
  map.addImage('top25-full',ctx.getImageData(0,0,canvas.width,canvas.height),{pixelRatio:2});
 };
 const apply=()=>{if(!loaded)return;map.getSource('discovery').setData(geojson());map.getSource('discovery-selection').setData(geojson(true));
