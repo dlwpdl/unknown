@@ -6,7 +6,7 @@ import test from 'node:test';
 const root = new URL('../', import.meta.url);
 const json = path => JSON.parse(readFileSync(new URL(path, root), 'utf8'));
 
-for (const [cityId, minimum] of [['vancouver', 50], ['toronto', 28], ['montreal', 20], ['calgary', 13], ['edmonton', 14], ['winnipeg', 14]]) {
+for (const [cityId, minimum] of [['vancouver', 50], ['toronto', 38], ['montreal', 20], ['calgary', 13], ['edmonton', 14], ['winnipeg', 14]]) {
 test(`the shipped ${cityId} cohort has distinct destinations with counted ratings and attributed offline photos`, () => {
   const catalog = json('src/lib/city-places.catalog.json');
   const city = catalog.cities[cityId];
@@ -38,3 +38,33 @@ test(`the shipped ${cityId} cohort has distinct destinations with counted rating
   }
 });
 }
+
+// A city Top list and separately reviewed dining must both retain exact offline proof.
+test('reviewed dining supplements have counted venue sources and the exact attributed image bytes', () => {
+  const catalog = json('src/lib/city-places.catalog.json');
+  const photos = json('src/lib/city-places.photos.json');
+  const ratings = json('src/lib/place-external-ratings.json');
+  const component = readFileSync(new URL('src/components/city-place-photo.tsx', root), 'utf8');
+  const directory = new URL('assets/images/city-places/', root);
+  const assets = new Map(readdirSync(directory).map(name => [createHash('sha256').update(readFileSync(new URL(name, directory))).digest('hex'), name]));
+  for (const [cityId, placeId] of [['calgary', 'osm:way:221143394'], ['winnipeg', 'osm:way:97925809'], ['halifax', 'osm:node:475876928']]) {
+    const city = catalog.cities[cityId];
+    assert.ok(city.diningRecommendations?.some(pick => pick.placeId === placeId), `${placeId}: reviewed dining supplement`);
+    assert.ok(city.places.some(place => place.id === placeId && ['food', 'cafe'].includes(place.category)));
+    const image = photos.cities[cityId].find(photo => photo.placeId === placeId);
+    assert.ok(image?.artist && image.licenseUrl && image.sourceUrl);
+    const file = assets.get(image.imageSha256);
+    assert.ok(file && component.includes(`'${image.imageSha256}': require('../../assets/images/city-places/${file}')`));
+    assert.ok(ratings.some(row => row.cityId === cityId && row.placeId === placeId && row.count > 0 && row.score > 0));
+  }
+  assert.equal(catalog.cities.vancouver.recommendations.length, 50);
+});
+
+test('the attested HANDSON visit binds to the actual847Denman venue without inventing a date or a photo license', () => {
+  const catalog = json('src/lib/city-places.catalog.json');
+  const visits = json('src/lib/gling-visited.json');
+  const place = catalog.cities.vancouver.places.find(item => item.id === 'osm:node:4976343547');
+  assert.ok(place?.address.includes('847 Denman'));
+  assert.equal(place.website, 'https://www.handsonyvr.ca');
+  assert.deepEqual(visits.find(item => item.placeId === place.id), {cityId: 'vancouver', placeId: place.id, sourceUrl: 'https://www.instagram.com/reel/DeoQKPNgYLe/'});
+});
