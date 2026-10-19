@@ -5,12 +5,13 @@ import { StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
-import { PlaceRatingSummary } from '@/components/place-external-ratings';
+import { getPlaceReviewRating, PlaceReviewSummary } from '@/components/place-review-summary';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getCityRecommendations } from '@/lib/city-places';
 import { useCityPlacesRevision } from '@/hooks/use-city-places';
+import { usePlaceReviewSummaries } from '@/hooks/use-place-review-summaries';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 
@@ -19,8 +20,9 @@ export function CityPopularPlaces({ cityId }: { cityId: string }) {
   const theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
   useCityPlacesRevision();
   const city = CITIES.find(item => item.id === cityId);
+  const places = city ? getCityRecommendations(cityId) : [];
+  const ratings = usePlaceReviewSummaries(cityId, places.slice(0, 3).map(place => place.id));
   if (!city) return null;
-  const places = getCityRecommendations(cityId);
   if (!places.length) return null;
   return <View style={styles.section}>
     <View style={styles.heading}>
@@ -34,14 +36,17 @@ export function CityPopularPlaces({ cityId }: { cityId: string }) {
     </View>
     <ThemedText style={styles.subtitle} themeColor="textSecondary">{tr("사진 명소와 들러 볼 만한 식당을 골랐어요")}</ThemedText>
     <View style={styles.cards}>
-      {places.slice(0, 3).map(place => <Pressable key={place.id} analyticsId="today.places.place-open" accessibilityRole="button" accessibilityLabel={tr("{0} 장소 정보", (place.name))}
+      {places.slice(0, 3).map(place => {
+        const rating = getPlaceReviewRating(cityId, place.id, ratings[place.id]);
+        return <Pressable key={place.id} analyticsId="today.places.place-open" accessibilityRole="button" accessibilityLabel={tr('{0} 장소 정보와 글링 리뷰', place.name)}
+        accessibilityValue={rating.score == null ? undefined : { text: tr(rating.source === 'gling' ? '글링 평균 {0}점, 10점 만점' : '외부 참고 {0}점, 10점 환산', rating.score.toFixed(1)) }}
         onPress={() => { play('selection'); router.push({ pathname: '/places/[id]', params: { id: place.id, cityId } }); }}
         style={({ pressed }) => [styles.card, { opacity: pressed ? 0.65 : 1 }]}>
         <CityPlacePhoto place={place} style={styles.photo} />
         <ThemedText numberOfLines={2} style={styles.name}>{place.name}</ThemedText>
-        <PlaceRatingSummary cityId={cityId} placeId={place.id} compact />
+        <PlaceReviewSummary rating={rating} compact />
         <ThemedText style={styles.category} themeColor="textSecondary">{place.category === 'food' ? tr("맛집") : place.category === 'cafe' ? tr("카페") : tr("가볼 만한 곳")}</ThemedText>
-      </Pressable>)}
+      </Pressable>; })}
     </View>
   </View>;
 }

@@ -110,7 +110,7 @@ test('foreign-city IDs, unsafe sources and malformed daily payloads cannot repla
   }
 });
 function screen(file, params = { cityId: 'toronto' }, dev = true) {
-  const states = [], routes = [], feedback = [], opened = [];
+  const states = [], routes = [], feedback = [], opened = [], ratingScopes = [];
   let cursor = 0;
   const jsx = (type, props) => ({ type, props });
   const exports = module(file, {
@@ -126,6 +126,9 @@ function screen(file, params = { cityId: 'toronto' }, dev = true) {
     '@/lib/product-analytics': product,
     '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
+    '@/hooks/use-place-review-summaries': { usePlaceReviewSummaries: (cityId, ids) => { ratingScopes.push({ cityId, ids }); return {}; } },
+    '@/components/place-review-summary': { PlaceReviewSummary: 'PlaceReviewSummary',
+      getPlaceReviewRating: (cityId, placeId) => ({ cityId, placeId, score: null, source: null, count: null, externalScore: null }) },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16, four: 24 }, MaxContentWidth: 920 },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: v => feedback.push(v) }) },
     '@/lib/city-places': data(), '@/lib/post-maps': module('src/lib/post-maps.ts'),
@@ -138,20 +141,25 @@ function screen(file, params = { cityId: 'toronto' }, dev = true) {
     if (typeof node.type === 'function') return expand(node.type(node.props));
     return Array.isArray(node) ? node.map(expand) : Object.fromEntries(Object.entries(node).map(([k, v]) => [k, expand(v)]));
   }
-  return { routes, feedback, opened, render(props) { cursor = 0; return expand(exports.default ? exports.default() : exports.CityPopularPlaces?.(props)); } };
+  return { routes, feedback, opened, ratingScopes, render(props) { cursor = 0; return expand(exports.default ? exports.default() : exports.CityPopularPlaces?.(props)); } };
 }
 test('the city places entry gives each preview card its own compact rating scope', () => {
-  const tree = screen('src/components/city-popular-places.tsx').render({ cityId: 'vancouver' });
+  const ui = screen('src/components/city-popular-places.tsx'), tree = ui.render({ cityId: 'vancouver' });
   const cards = nodes(tree).filter(node => node.props?.analyticsId === 'today.places.place-open');
   const expected = data().getCityRecommendations('vancouver').slice(0, 3);
   assert.equal(cards.length, expected.length);
   cards.forEach((card, index) => {
-    const summary = nodes(card).find(node => node.type === 'PlaceRatingSummary');
+    const summary = nodes(card).find(node => node.type === 'PlaceReviewSummary');
     assert.ok(summary, 'entry card rating is missing');
-    assert.equal(summary.props.cityId, 'vancouver');
-    assert.equal(summary.props.placeId, expected[index].id);
+    assert.equal(summary.props.rating.cityId, 'vancouver');
+    assert.equal(summary.props.rating.placeId, expected[index].id);
     assert.equal(summary.props.compact, true);
   });
+  assert.equal(ui.ratingScopes.length, 1, 'home loads one batch, not one request per card');
+  assert.equal(ui.ratingScopes[0].ids.length, cards.length);
+  cards[0].props.onPress();
+  assert.equal(ui.routes.at(-1).pathname, '/places/[id]');
+  assert.equal(ui.opened.length, 0, 'review entry stays inside Gling');
 });
 test('real OSM data covers every city with canonical IDs, coordinates and extraction provenance', () => {
   assert.equal(typeof data().getCityPlaces, 'function', 'actual data loader is missing');
