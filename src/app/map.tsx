@@ -68,7 +68,7 @@ function CityMap({ city, placeId, onClose }: { city: (typeof CITIES)[number]; pl
   const { isAuthed, me, promptLogin } = useAuth(), hidden = useContentVisibility();
   const isFocused = useIsFocused(), targetFocusRef = useRef<string | null>(null);
   const { play } = useInteractionFeedback();
-  const { category } = useLocalSearchParams<{ category?: string }>();
+  const { category, placeRequest } = useLocalSearchParams<{ category?: string; placeRequest?: string }>();
   const initialCategory = onClose ? 'all' : category;
   const [selectedFilters, setSelectedFilters] = useState<DiscoveryFilter[]>(initialCategory !== 'all' && filters.some(value => value.id === initialCategory) ? [initialCategory as DiscoveryFilter] : []);
   const filter: DiscoveryFilter = selectedFilters.length === 1 ? selectedFilters[0] : 'all';
@@ -157,15 +157,16 @@ function CityMap({ city, placeId, onClose }: { city: (typeof CITIES)[number]; pl
   if (targetItem && !catalogItems.some(item => item.id === targetItem.id)) catalogItems.push(targetItem);
   const targetId = targetItem?.id, targetLatitude = targetItem?.latitude, targetLongitude = targetItem?.longitude, targetRecommended = !!targetItem?.top25;
   useEffect(() => {
-    if (!isFocused) { targetFocusRef.current = null; return; }
-    if (!targetId || targetLatitude == null || targetLongitude == null || targetFocusRef.current === targetId) return;
-    targetFocusRef.current = targetId;
+    if (!isFocused || !targetId || targetLatitude == null || targetLongitude == null) return;
+    const requestKey = targetId + ':' + (placeRequest ?? '');
+    if (targetFocusRef.current === requestKey) return;
+    targetFocusRef.current = requestKey;
     locationRevision.current++; setLocating(false); setLocationError('');
     setSelectedFilters(targetRecommended ? ['top25'] : []);
     setQuery(''); setSearch(''); setMode('map');
     setSelectedId(targetId);
     setCenter({ latitude: targetLatitude, longitude: targetLongitude, requestId: locationRevision.current });
-  }, [isFocused, targetId, targetLatitude, targetLongitude, targetRecommended]);
+  }, [isFocused, targetId, targetLatitude, targetLongitude, targetRecommended, placeRequest]);
   const publicItems = [...catalogItems, ...(current?.items ?? [])].filter(item => (item.source !== 'post' || !!item.post && item.post.kind === 'listing' && ['housing', 'used'].includes(item.category))
     && (!item.post || (!hidden('post', item.post.id, item.post.author.id) && (item.post.kind !== 'listing' || (['open', 'partial'].includes(item.post.listingStatus ?? '') && Date.parse(item.post.expiresAt ?? '') > now))))
     && (!item.event || discoveryEvent(item.event, item.cityId, now) !== null));
