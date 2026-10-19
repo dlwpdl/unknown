@@ -164,4 +164,20 @@ class DailyPlaces(unittest.TestCase):
             self.assertEqual(result.get('photoCatalog'),previous['photoCatalog'])
             self.assertEqual(result.get('externalRatings'),previous['externalRatings'])
 
+    def test_same_revision_newer_server_enrichment_wins_over_an_older_seed(self):
+        m = implementation(); seed = json.loads((ROOT/'src/lib/city-places.catalog.json').read_text())
+        seed['collectedAt']='2026-10-16T01:00:00Z'
+        seed['externalRatings']=json.loads((ROOT/'src/lib/place-external-ratings.json').read_text())
+        previous = json.loads(json.dumps(seed)); previous['collectedAt']='2026-10-18T01:00:00Z'
+        cafe=next(p for p in previous['cities']['toronto']['places'] if p['category']=='cafe')
+        previous['cities']['toronto']['diningRecommendations']=[dict(placeId=cafe['id'],reason='Verified fixture cafe',sourceUrl='https://example.org/fixture',verifiedAt='2026-10-17T01:00:00Z')]
+        previous['externalRatings'][0]['count']+=12
+        osm=[dict(type=p['id'].split(':')[1],id=int(p['id'].split(':')[2]),lat=p['latitude'],lon=p['longitude'],tags={'name':p['name']}) for c in previous['cities'].values() for p in c['places']]
+        with tempfile.TemporaryDirectory() as target:
+            path=Path(target)/'seed.json';path.write_text(json.dumps(seed))
+            with patch.object(sys,'argv',['refresh-city-places.py','--seed',str(path),'--output',target]),patch.object(m,'current_catalog',return_value=previous),patch.object(m,'collect',return_value={'elements':osm}):m.main()
+            actual=json.loads(next(Path(target).glob('catalog-*.json')).read_text())
+            self.assertEqual(actual['cities']['toronto'].get('diningRecommendations'),previous['cities']['toronto']['diningRecommendations'])
+            self.assertEqual(actual['externalRatings'][0]['count'],previous['externalRatings'][0]['count'])
+
 if __name__ == '__main__': unittest.main()
