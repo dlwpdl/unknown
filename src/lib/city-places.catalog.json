@@ -10723,6 +10723,13 @@
           "reasonEn": "Photograph the blue wave sculpture along the harbour boardwalk.",
           "sourceUrl": "https://discoverhalifaxns.com/itineraries/double-waterfront-weekend/",
           "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:node:850025611",
+          "reason": "핼리팩스 항구의 요새와 등대가 있는 섬이에요. 입도 가능 시기는 공식 안내를 확인해 주세요.",
+          "reasonEn": "An island fort and lighthouse in Halifax Harbour; check seasonal access before visiting.",
+          "sourceUrl": "https://discoverhalifaxns.com/things-to-do/the-second-timers-guide-to-halifax/",
+          "verifiedAt": "2026-10-19T05:36:15.656259+00:00"
         }
       ]
     }
