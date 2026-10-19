@@ -41,7 +41,10 @@ export default function PublicVisited() {
         return data;
       } catch (error) { failed = true; throw error; }
       finally { clearTimeout(timeout); }
-    }, replaceCityPlacesCatalog).catch(() => { failed = true; }).finally(() => {
+    }, value => {
+      try { const changed = replaceCityPlacesCatalog(value); failed = false; return changed; }
+      catch (error) { failed = true; throw error; }
+    }).catch(() => { failed = true; }).finally(() => {
       if (active) setCatalogState(failed ? 'error' : 'ready');
     });
     return () => { active = false; };
