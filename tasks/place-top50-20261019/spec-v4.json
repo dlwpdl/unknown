@@ -1,0 +1,78 @@
+{
+  "version": 4,
+  "recordedAt": "2026-10-19T09:11:35.041014+00:00",
+  "authority": "User메뉴랑리뷰고치고다시시뮬레이터 +F5msg5aa29d/b28e, same soledataowner",
+  "objective": "Restore actualexternal score/reviewCOUNT coverage, reselect popularphotogenic places toward50/city usingverified IDs andactualsource; nextisolatedpacket after765, keep98/seed3frozen",
+  "assumptions": [
+    "Externalreviewcounts separatefromGlingownreviews; zeroGling cannotmaskexternalsnapshot",
+    "Manyreviews workingcuration targetGoogle>=1000 ORTripadvisor>=300 withscore>=4/5; thresholdsareinitialeditorialchoice, not user-set quota; no filler toforce50",
+    "Sourcepublicaggregatecounts only; no thirdpartyreviewtext/authors or borrowedreviews asGlingposts",
+    "Bulk list underlying49/50results doesnotguarantee50qualifiedmunicipalplaces"
+  ],
+  "commands": {
+    "focused": "node --experimental-strip-types --test scripts/place-external-ratings.test.mjs scripts/city-places.test.mjs scripts/city-place-refresh.test.mjs",
+    "types": "npm run typecheck",
+    "diff": "git diff --check",
+    "collector": "ExistingAPIAnythingtier1 call +samepublic24hcache,serial10s, scopedofflineextracttests"
+  },
+  "files": {
+    "data": "src/lib/place-external-ratings.json",
+    "helper": "src/lib/place-external-ratings.ts ifminimalprovenanceadditionneeded; F5confirmedownedby3b9",
+    "catalog": "src/lib/city-places.catalog.json nextrevisiononly inownedcheckout; DO NOTcopytoverifiedseeduntilrootacceptsnextcandidate",
+    "spec": "tasks/place-top50-20261019/spec-v4.json",
+    "recipe": "AdditivegetCityPlaceBatch in SAME top25-wanderlog-public site, preserveexistinggetCityList/getPlace operations verbatim",
+    "ui": "F5exclusive src/components/place-review-summary.tsx/menuMapfilters; no UIwritesbydataactor"
+  },
+  "styleExample": {
+    "provider": "Google",
+    "score": 4.8,
+    "scale": 5,
+    "count": 49177,
+    "via": "Wanderlog",
+    "sourceUrl": "Exactactualplacecarddetaillink",
+    "observedUrl": "ActualfetchedcitylistcanonicalURL",
+    "checkedAt": "ActualsavedHTTPresponse timestamp, not cacheparse time"
+  },
+  "tests": [
+    "Bulk49/50metadata extractedwithout20kcap truncation; exactgooglePlaceIDjoinscoordinateblocks, duplicate/missing/closedrejected",
+    "Externaldata matchesexactOSMid/city+geometry; providerstatsremainseparate, countspositiveint; no scoreorcountfromunrelatedsubject",
+    "Frozen98/seed3/index hashesunchanged; newsourcepairscopedcommits &fullmanifest"
+  ],
+  "boundaries": {
+    "always": [
+      "ActualrecipeexecutionandactualHTTPvsreplaycounts separately",
+      "Samehost/sitehistories,cooldowns,24hcache,10secserial, noaliases/resets",
+      "Sameoriginalnative/Store owners; no native/source98writes",
+      "Exactrights/subject/imagebytesrequiredfornewphotos"
+    ],
+    "coordinateBefore": [
+      "InternalconservativeWanderlog20/dayguard currently20used: nofreshWanderlogcalluntilboundedownerextension/coordinatorwindow",
+      "Sharedfilename/interfacechangeswithF5/root3309"
+    ],
+    "never": [
+      "Newworker/service/provider/account/paidcall/job",
+      "Fake reviews/Glingcounts/scores, chain/directorypadding, inventedOSM IDs",
+      "SQL/Edge/deploy/native/GUI bydataowner"
+    ]
+  },
+  "stages": [
+    "ExecuteadditiveAPIAnythingbulkextract against7savedrealresponses thenactualdatajoin/checkpoint",
+    "Usecurrentmunicipalidentitycache andboundedcanonicalOverpasscurrentwindow forpopularnewIDs",
+    "Fill4missingcitysourcesunderapprovedsamehostallowance; typedsource/coords/rightsproof",
+    "Shipcoherentdata+ratings/catalogpacket to3309/F5 beforeexisting6acnativeupdate"
+  ],
+  "actualFirstPacket": {
+    "externalRatingRows": 106,
+    "selectedRatedBefore": 11,
+    "selectedRatedAfter": 52,
+    "selectedTotal": 93,
+    "vancouverCoverage": "17/17",
+    "bulkEntities": 467,
+    "bulkProviderRows": 728,
+    "freshWanderlogHTTP": 3,
+    "cacheEngineReplays": 7,
+    "freshWanderlogLedger": "23/24 total incl20historical",
+    "frozenCatalogAndSeedRevision": 3,
+    "top50EveryCityComplete": false
+  }
+}

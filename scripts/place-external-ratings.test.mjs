@@ -20,7 +20,7 @@ test('external ratings stay scoped to the exact city and OSM identity, separate 
   const ratings = api.getPlaceExternalRatings('vancouver', 'osm:node:703754423');
   assert.equal(ratings.length, 2);
   assert.equal(ratings.find(r => r.provider === 'Google').score, 4.5);
-  assert.equal(ratings.find(r => r.provider === 'Google').count, 28661);
+  assert.equal(ratings.find(r => r.provider === 'Google').count, 28719);
   assert.equal(ratings.find(r => r.provider === 'Tripadvisor').score, 4.1);
   assert.equal(api.getPlaceExternalRatings('toronto', 'osm:node:703754423').length, 0);
   assert.equal(api.getPlaceExternalRatings('vancouver', 'osm:node:1').length, 0);
@@ -32,6 +32,20 @@ test('missing, invalid and unsafe source metadata never becomes a visible score'
     { provider: 'Gling' }, { checkedAt: 'unknown' }, { sourceUrl: 'javascript:alert(1)' },
     { sourceUrl: 'https://wanderlog.com.evil.test/place/details/98400' }, { sourceUrl: 'https://user:pass@wanderlog.com/place/details/98400' }]) {
     assert.equal(load([{ ...row, ...bad }]).getPlaceExternalRatings(row.cityId, row.placeId).length, 0, JSON.stringify(bad));
+  }
+});
+
+test('bulk observations retain their actual list provenance and reject incomplete or unsafe proof', () => {
+  const base = snapshot()[0];
+  const proof = { observedUrl: 'https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver', evidenceSha256: 'a'.repeat(64) };
+  assert.equal(load([{ ...base, ...proof }]).getPlaceExternalRatings(base.cityId, base.placeId).length, 1);
+  for (const bad of [
+    { observedUrl: undefined }, { evidenceSha256: undefined }, { evidenceSha256: 'unknown' },
+    { observedUrl: 'https://wanderlog.com.evil.test/list/geoCategory/105394/attractions' },
+    { observedUrl: 'https://user:pass@wanderlog.com/list/geoCategory/105394/attractions' },
+    { observedUrl: 'https://wanderlog.com/place/details/98400' },
+  ]) {
+    assert.equal(load([{ ...base, ...proof, ...bad }]).getPlaceExternalRatings(base.cityId, base.placeId).length, 0, JSON.stringify(bad));
   }
 });
 
@@ -51,6 +65,19 @@ test('every bundled rating matches an existing place and keeps its observed sour
     assert.ok(row.via === 'Wanderlog' || row.via === 'Resy');
     assert.equal(Object.hasOwn(row, 'reviews'), false, 'external data must not masquerade as member reviews');
   }
+});
+
+test('the reselected Vancouver places have real external counts, including the new featured cards', () => {
+  const catalog = JSON.parse(readFileSync(new URL('src/lib/city-places.catalog.json', root), 'utf8'));
+  const api = load();
+  for (const pick of catalog.cities.vancouver.recommendations) {
+    const rows = api.getPlaceExternalRatings('vancouver', pick.placeId);
+    assert.ok(rows.length > 0, pick.placeId);
+    assert.ok(rows.every(row => row.count > 0 && row.observedUrl && row.evidenceSha256), pick.placeId);
+  }
+  const garden = api.getPlaceExternalRatings('vancouver', 'osm:way:316008597');
+  assert.equal(garden.find(row => row.provider === 'Google').count, 13804);
+  assert.equal(garden.find(row => row.provider === 'Tripadvisor').count, 2178);
 });
 
 function view({ language = 'ko', failOpen = false } = {}) {
@@ -91,7 +118,7 @@ test('rating cards disclose the intermediary and date; source taps provide feedb
   toggle.props.onPress(); tree = ui.PlaceExternalRatings(scope);
   assert.equal(ui.calls.links.length, 0, 'expanding stays in the app');
   assert.match(text(tree), /Google/); assert.match(text(tree), /Tripadvisor/);
-  assert.match(text(tree), /Wanderlog/); assert.match(text(tree), /2026/); assert.match(text(tree), /28,661/);
+  assert.match(text(tree), /Wanderlog/); assert.match(text(tree), /2026/); assert.match(text(tree), /28,719/);
   const links = nodes(tree).filter(node => node.props?.analyticsId === 'places.detail.source');
   assert.equal(links.length, 2);
   assert.equal(links[0].props.accessibilityRole, 'link');
