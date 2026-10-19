@@ -8,6 +8,18 @@ import { useTheme } from '@/hooks/use-theme';
 import type { CityPlace } from '@/lib/city-places';
 
 const bundledPhotos: Record<string, number> = {
+  '6d097e06fcbd03cb0d46aa157de26e45af72889e5368be57e769e96f8416330a': require('../../assets/images/city-places/montreal-osm-way-26288030.jpg'),
+  'fd03f1a124c02ebeb29f619d08f64b203ab83ccc4fa8bbe974f40ebf9ed03b0e': require('../../assets/images/city-places/ottawa-osm-node-7127264485.jpg'),
+  '73c988bbf041d0757d2ef1497298ee5fe78ffa68823a3e807e1a635a83e36a38': require('../../assets/images/city-places/edmonton-osm-way-42782487.jpg'),
+  '810a673f3242addd9f39c9117d600f1ad6b6b6af90324051fb51c55af9fb48bd': require('../../assets/images/city-places/toronto-osm-way-33408232.jpg'),
+  '8ee0b5a7935af0b02c63db7289af9864ab03e0d891ce0b3fc956cd462391e7c6': require('../../assets/images/city-places/vancouver-osm-way-37111640.jpg'),
+  'dbc6bff38946aea07917f38ac4cc7f8fa91ad327ba48513f056fd88333fbc043': require('../../assets/images/city-places/toronto-osm-way-300884214.jpg'),
+  '62acda4444a055640329aa98c998e8074caf1bc64e8551910dc063a03fb81c86': require('../../assets/images/city-places/saskatoon-osm-node-2828091482.jpg'),
+  'e5c89798d26e51b6176be0b124d5bae80578dedd49edecd19ef9674906f01428': require('../../assets/images/city-places/halifax-osm-node-850115195.jpg'),
+  '74cad06fd74c0d009b25be9295613ff46510a51265bef2e694be556171edcde0': require('../../assets/images/city-places/saint-john-osm-way-759602407.jpg'),
+  '855e25f4b81fd5c70929ef893c8ff0b06484dd0754e166346e63b05fb5a15791': require('../../assets/images/city-places/vancouver-osm-way-23393985.jpg'),
+  '8bb0dd3514ba8e32112e15597bd90bf45d8d43c41b05eed708571cf72fe57b88': require('../../assets/images/city-places/halifax-osm-way-915518387.jpg'),
+  'be2fd76cbeb4c371ba7cb43e74fbd8695f54591e10129b37c22ba3d7c3e99bf0': require('../../assets/images/city-places/montreal-osm-way-1097403710.jpg'),
   'a4db0b2866192f3d1683317fca3a58dd4cccf326f3db46cc4a15f0254e8fd023': require('../../assets/images/city-places/toronto-osm-node-368385388.jpg'),
   '84abbde8b57a93722c13940c136a778416d9ddcd7a134d8c374e7bb270325d47': require('../../assets/images/city-places/toronto-osm-node-256351459.jpg'),
   '3e270ddc51588b0fe78cf1a08ac3b2b633956d41b762b0585c199882c1cee362': require('../../assets/images/city-places/toronto-osm-node-214312074.jpg'),

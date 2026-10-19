@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T05:10:40.333631+00:00",
+  "collectedAt": "2026-10-19T06:34:58.112931+00:00",
   "source": "Verified same-place Wikimedia Commons photographs; dated captures, not popularity ranking",
   "cities": {
     "toronto": [
@@ -82,6 +82,26 @@
         "license": "CC BY-SA 2.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
         "imageSha256": "e81f9c4801620edb6b328c56ba77a394144e5c0bfd1e4ae714305379975e3d61"
+      },
+      {
+        "placeId": "osm:way:300884214",
+        "cityId": "toronto",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Gooderham_Building,_Toronto,_East_view_20170417_1.jpg",
+        "artist": "DXR",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5b/Gooderham_Building%2C_Toronto%2C_East_view_20170417_1.jpg/960px-Gooderham_Building%2C_Toronto%2C_East_view_20170417_1.jpg",
+        "imageSha256": "dbc6bff38946aea07917f38ac4cc7f8fa91ad327ba48513f056fd88333fbc043"
+      },
+      {
+        "placeId": "osm:way:33408232",
+        "cityId": "toronto",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Humber_Bay_Park_East,_July_2_2025_(02).jpg",
+        "artist": "Dillan Payne",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/29/Humber_Bay_Park_East%2C_July_2_2025_%2802%29.jpg/960px-Humber_Bay_Park_East%2C_July_2_2025_%2802%29.jpg",
+        "imageSha256": "810a673f3242addd9f39c9117d600f1ad6b6b6af90324051fb51c55af9fb48bd"
       }
     ],
     "vancouver": [
@@ -134,6 +154,26 @@
         "cityId": "vancouver",
         "uri": "https://upload.wikimedia.org/wikipedia/commons/e/e1/Granville_Island_view_from_Granville_Bridge_in_2010.jpg",
         "imageSha256": "71958c060ee24183e67e6cbc6591ab80d393b6fb0ff82132fedf74d05fef7813"
+      },
+      {
+        "placeId": "osm:way:23393985",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Queen_Elizabeth_Park.jpg",
+        "artist": "Craig Nagy from Vancouver, Canada",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8b/Queen_Elizabeth_Park.jpg/960px-Queen_Elizabeth_Park.jpg",
+        "imageSha256": "855e25f4b81fd5c70929ef893c8ff0b06484dd0754e166346e63b05fb5a15791"
+      },
+      {
+        "placeId": "osm:way:37111640",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Vancouver_Public_Central_Library_(36907920883).jpg",
+        "artist": "GoToVan from Vancouver, Canada",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/Vancouver_Public_Central_Library_%2836907920883%29.jpg/960px-Vancouver_Public_Central_Library_%2836907920883%29.jpg",
+        "imageSha256": "8ee0b5a7935af0b02c63db7289af9864ab03e0d891ce0b3fc956cd462391e7c6"
       }
     ],
     "montreal": [
@@ -206,6 +246,26 @@
         "cityId": "montreal",
         "uri": "https://upload.wikimedia.org/wikipedia/commons/2/2b/J38002_ArtVille_20120407-134630_PlaceDArmes.jpg",
         "imageSha256": "619bf79140122c630249278b1f28bd8159aa68299e15819c54c65b20226b423a"
+      },
+      {
+        "placeId": "osm:way:1097403710",
+        "cityId": "montreal",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Grande_Roue_de_Montr%C3%A9al_at_night_6.jpg",
+        "artist": "Jon Kolbert",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/11/Grande_Roue_de_Montr%C3%A9al_at_night_6.jpg/960px-Grande_Roue_de_Montr%C3%A9al_at_night_6.jpg",
+        "imageSha256": "be2fd76cbeb4c371ba7cb43e74fbd8695f54591e10129b37c22ba3d7c3e99bf0"
+      },
+      {
+        "placeId": "osm:way:26288030",
+        "cityId": "montreal",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sunset_at_Jean-Drapeau.jpg",
+        "artist": "Guilhermeduartegarcia",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5a/Sunset_at_Jean-Drapeau.jpg/960px-Sunset_at_Jean-Drapeau.jpg",
+        "imageSha256": "6d097e06fcbd03cb0d46aa157de26e45af72889e5368be57e769e96f8416330a"
       }
     ],
     "calgary": [
@@ -320,6 +380,16 @@
         "cityId": "edmonton",
         "uri": "https://upload.wikimedia.org/wikipedia/commons/c/ce/Talus_dome_2020.jpg",
         "imageSha256": "2f87f5fff70d48bd2a04b635dec36dc7982b43fb7e65f8214c9bf61fbfc5e597"
+      },
+      {
+        "placeId": "osm:way:42782487",
+        "cityId": "edmonton",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Alberta_Legislature_Building,_June_7,_2024.jpg",
+        "artist": "D. Benjamin Miller",
+        "license": "CC0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b6/Alberta_Legislature_Building%2C_June_7%2C_2024.jpg/960px-Alberta_Legislature_Building%2C_June_7%2C_2024.jpg",
+        "imageSha256": "73c988bbf041d0757d2ef1497298ee5fe78ffa68823a3e807e1a635a83e36a38"
       }
     ],
     "winnipeg": [
@@ -454,6 +524,16 @@
         "cityId": "saskatoon",
         "uri": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Remai_Art_Gallery_Exterior_%2842300899864%29.jpg",
         "imageSha256": "84d8cff37476fe2b2b5c21942bda8ac41db0334ce2c39d0d639a8bcc4e1dbd74"
+      },
+      {
+        "placeId": "osm:node:2828091482",
+        "cityId": "saskatoon",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:TheBowl-UofS.jpg",
+        "artist": "SriMesh",
+        "license": "CC BY 2.5",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.5",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c8/TheBowl-UofS.jpg/960px-TheBowl-UofS.jpg",
+        "imageSha256": "62acda4444a055640329aa98c998e8074caf1bc64e8551910dc063a03fb81c86"
       }
     ],
     "ottawa": [
@@ -496,6 +576,16 @@
         "cityId": "ottawa",
         "uri": "https://upload.wikimedia.org/wikipedia/commons/c/c4/Rideau_Falls_DSCF7148.jpg",
         "imageSha256": "fec244321772d366cf3dd7815d53c1744429f10e61320d591150aa59017906de"
+      },
+      {
+        "placeId": "osm:node:7127264485",
+        "cityId": "ottawa",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Rideau_Canal.jpg",
+        "artist": "Bobak Ha'Eri",
+        "license": "CC BY-SA 2.5",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d6/Rideau_Canal.jpg/960px-Rideau_Canal.jpg",
+        "imageSha256": "fd03f1a124c02ebeb29f619d08f64b203ab83ccc4fa8bbe974f40ebf9ed03b0e"
       }
     ],
     "regina": [
@@ -600,6 +690,16 @@
         "cityId": "saint-john",
         "uri": "https://upload.wikimedia.org/wikipedia/commons/7/7d/Irving_Nature_Park.jpg",
         "imageSha256": "19d00a784278bbc6ab0d5a6ef94958e81a8762b35ba4f685dda4810d10577aec"
+      },
+      {
+        "placeId": "osm:way:759602407",
+        "cityId": "saint-john",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:BANDSTAND.JPG",
+        "artist": "Cusack5239",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b1/BANDSTAND.JPG/960px-BANDSTAND.JPG",
+        "imageSha256": "74cad06fd74c0d009b25be9295613ff46510a51265bef2e694be556171edcde0"
       }
     ],
     "halifax": [
@@ -642,6 +742,26 @@
         "license": "CC BY-SA 3.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
         "imageSha256": "d51cecc791da9d38a614020d1b3e037a01435405b730a60d22f405dfaad23447"
+      },
+      {
+        "placeId": "osm:way:915518387",
+        "cityId": "halifax",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:%22The_Wave%22,_back_to_normal_(Halifax_NS,_April_19_2007)_(465513852).jpg",
+        "artist": "RicLaf from Halifax, Canada",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/06/%22The_Wave%22%2C_back_to_normal_%28Halifax_NS%2C_April_19_2007%29_%28465513852%29.jpg/960px-%22The_Wave%22%2C_back_to_normal_%28Halifax_NS%2C_April_19_2007%29_%28465513852%29.jpg",
+        "imageSha256": "8bb0dd3514ba8e32112e15597bd90bf45d8d43c41b05eed708571cf72fe57b88"
+      },
+      {
+        "placeId": "osm:node:850115195",
+        "cityId": "halifax",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Dingle_Tower_2018.jpg",
+        "artist": "Mattnad",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/07/Dingle_Tower_2018.jpg/960px-Dingle_Tower_2018.jpg",
+        "imageSha256": "e5c89798d26e51b6176be0b124d5bae80578dedd49edecd19ef9674906f01428"
       }
     ]
   },
