@@ -29,6 +29,8 @@ def day(value):
 
 def build_catalog(seed, elements, now):
     if seed.get('recommendationTheme') != 'photo-spots': raise ValueError('PHOTO_SELECTION_REQUIRED')
+    selection_revision = seed.get('selectionRevision', 0)
+    if type(selection_revision) is not int or not 0 <= selection_revision <= 9007199254740991: raise ValueError('INVALID_SELECTION_REVISION')
     if not elements: raise ValueError('EMPTY_OSM_RESPONSE')
     expected = {p['id'] for city in seed['cities'].values() for p in city['places']}
     indexed = {}
@@ -39,7 +41,7 @@ def build_catalog(seed, elements, now):
         indexed[ident] = element
     # shortcut: drops over 20% require review, revise after a confirmed bulk OSM cleanup.
     if len(indexed) < len(expected) * 0.8: raise ValueError('INCOMPLETE_OSM_RESPONSE')
-    result = dict(collectedAt=now, recommendationTheme='photo-spots', source='OpenStreetMap; source-reviewed Gling photo spots', license='ODbL-1.0',
+    result = dict(collectedAt=now, selectionRevision=selection_revision, recommendationTheme='photo-spots', source='OpenStreetMap; source-reviewed Gling photo spots', license='ODbL-1.0',
                   attribution='© OpenStreetMap contributors', attributionUrl='https://www.openstreetmap.org/copyright', cities={})
     for city_id, city in seed['cities'].items():
         places, eligible = [], set()
