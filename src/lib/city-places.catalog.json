@@ -1009,6 +1009,13 @@
           "reasonEn": "Capture the red-brick flatiron building framed by the surrounding streets.",
           "sourceUrl": "https://www.destinationtoronto.com/leisure-blog/post/top-picks-for-pics-15-places-for-the-best-photos-in-toronto/",
           "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:node:281927817",
+          "reason": "도심 속 농장에서 동물과 정원을 둘러볼 수 있어요.",
+          "reasonEn": "Explore farm animals and gardens within the city.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+          "verifiedAt": "2026-10-19T05:29:33.300245+00:00"
         }
       ]
     },
@@ -3025,6 +3032,13 @@
           "reasonEn": "Frame the Old Port’s observation wheel against the waterfront.",
           "sourceUrl": "https://www.mtl.org/en/experience/most-instagrammable-spots-montreal-part-1",
           "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:node:213716077",
+          "reason": "퀘벡과 캐나다 미술을 만날 수 있는 미술관이에요.",
+          "reasonEn": "Explore art from Québec and Canada at this museum.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105393/top-things-to-do-and-attractions-in-montreal",
+          "verifiedAt": "2026-10-19T05:29:33.300245+00:00"
         }
       ]
     },
@@ -7952,6 +7966,13 @@
           "reasonEn": "Photograph Parliament and the river from the park.",
           "sourceUrl": "https://ottawatourism.ca/en/ottawa-insider/best-places-to-photograph-this-summer-in-ottawa",
           "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:node:1020933664",
+          "reason": "화폐와 캐나다 경제를 전시로 살펴볼 수 있는 박물관이에요.",
+          "reasonEn": "Discover money and the Canadian economy through museum exhibits.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105396/top-things-to-do-and-attractions-in-ottawa",
+          "verifiedAt": "2026-10-19T05:29:33.300245+00:00"
         }
       ]
     },
