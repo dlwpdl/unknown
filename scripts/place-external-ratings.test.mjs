@@ -104,7 +104,7 @@ test('rating cards disclose the intermediary and date; source taps provide feedb
 test('unmatched places stay empty and English displays ratings without claiming Gling reviews', () => {
   const ui = view({ language: 'en' });
   assert.equal(ui.PlaceExternalRatings({ ...scope, cityId: 'toronto' }), null);
-  assert.match(text(ui.PlaceExternalRatings(scope)), /External ratings/);
+  assert.match(text(ui.PlaceExternalRatings(scope)), /Ratings from other sites/);
   nodes(ui.PlaceExternalRatings(scope)).find(node => node.props?.analyticsId === 'places.ratings.toggle').props.onPress();
   assert.match(text(ui.PlaceExternalRatings(scope)), /Google/);
   assert.match(text(ui.PlaceExternalRatings(scope)), /4.5.*\/5/);

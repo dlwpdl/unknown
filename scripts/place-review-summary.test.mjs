@@ -30,14 +30,15 @@ test('Gling stays primary even when the external review count is vastly larger',
   assert.equal(rating.score, 8.8); assert.equal(rating.source, 'gling'); assert.equal(rating.count, 12);
   assert.equal(rating.externalScore, 9, 'external score is separately converted from five to ten');
   setActiveLanguage('ko'); const tree = api.PlaceReviewSummary({ rating, compact: true });
-  assert.match(text(tree), /8\.8/); assert.match(text(tree), /12/); assert.match(text(tree), /9\.0/);
+  assert.match(text(tree), /8\.8/); assert.match(text(tree), /12/); assert.doesNotMatch(text(tree), /9\.0/);
   assert.equal(nodes(tree).find(n => n.type === 'GlingRatingIcon').props.score, 8.8);
 });
 
-test('external numeric fallback is disclosed and never becomes a Gling average', () => {
+test('external numeric fallback shows the score without claiming Gling ratings or conversion copy', () => {
   const api = view(); const rating = api.getPlaceReviewRating(own.cityId, own.placeId, { ...own, average: null, count: 0 });
   assert.equal(rating.score, 9); assert.equal(rating.source, 'external');
-  setActiveLanguage('ko'); assert.match(text(api.PlaceReviewSummary({ rating })), /외부 참고/);
+  setActiveLanguage('ko'); assert.match(text(api.PlaceReviewSummary({ rating })), /9\.0.*\/10/);
+  assert.doesNotMatch(text(api.PlaceReviewSummary({ rating })), /외부|환산/);
   assert.doesNotMatch(text(api.PlaceReviewSummary({ rating })), /글링.*평가/);
   const unknown = api.getPlaceReviewRating(own.cityId, own.placeId);
   assert.equal(unknown.count, null, 'a missing server response must not invent zero Gling ratings');
