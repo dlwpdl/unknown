@@ -1,4 +1,4 @@
 Explore local places with photos and clearly labelled rating sources.
 Browse places and events on the updated map.
-See Gling member reviews separately from outside ratings.
+See Gling member reviews separately from ratings on other sites.
 We improved line breaks and keyboard behaviour when writing and editing posts and comments.
