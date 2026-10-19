@@ -50,7 +50,7 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
         || (p.website != null && !https(p.website)) || (p.openingHours != null && !text(p.openingHours, 1000))) invalid();
       ids.add(p.id);
     }
-    if (!Array.isArray(data.recommendations) || data.recommendations.length > 25) invalid();
+    if (!Array.isArray(data.recommendations) || data.recommendations.length > 50) invalid();
     const selected = new Set<string>();
     for (const pick of data.recommendations!) {
       if (!pick || !ids.has(pick.placeId) || selected.has(pick.placeId) || !text(pick.reason, 500) || (pick.reasonEn !== undefined && !text(pick.reasonEn, 500)) || !https(pick.sourceUrl)
@@ -70,7 +70,7 @@ function reviewedPicks(cityId: string): PlaceRecommendation[] {
   // An older daily snapshot has not seen newly reviewed bundled additions yet.
   const additions = ((snapshot as PlaceCatalog).cities[cityId].recommendations ?? [])
     .filter(pick => Date.parse(pick.verifiedAt) > Date.parse(catalog.collectedAt) && !current.some(item => item.placeId === pick.placeId));
-  return [...current, ...additions].slice(0, 25);
+  return [...current, ...additions].slice(0, 50);
 }
 
 // Keep unselected OSM identities available to existing detail and review links.

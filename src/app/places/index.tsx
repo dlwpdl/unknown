@@ -45,7 +45,7 @@ function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
     }
     catch { error = '이 도시의 장소 정보를 불러오지 못했어요.'; }
   }
-  const ratings = usePlaceReviewSummaries(city?.id ?? '', recommendations.slice(0, 25).map(place => place.id));
+  const ratings = usePlaceReviewSummaries(city?.id ?? '', recommendations.slice(0, 50).map(place => place.id));
   return <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
     <View style={[styles.header, { borderBottomColor: theme.line }]}>
       <Pressable analyticsId="places.back" accessibilityRole="button" accessibilityLabel={tr("이전 화면으로 돌아가기")}
@@ -60,21 +60,21 @@ function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
         : error ? <StateCard kind="error" title={tr("장소를 불러오지 못했어요")} body={error} /> : <>
           <ThemedText type="small" themeColor="textSecondary">{tr(city.name)} · {tr(getCityPlacesCoverage(city.id))}</ThemedText>
           <ThemedText accessibilityRole="header" style={styles.title}>{tr("이 도시에서 가볼 만한 곳")}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">{tr("사진 명소와 들러 볼 만한 식당을 골랐어요. 인기 순위가 아니에요.")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("사진 명소와 들러 볼 만한 식당을 골랐어요")}</ThemedText>
           <TextInput accessibilityLabel={tr("장소 검색")} value={query} onChangeText={setQuery} onFocus={() => play('selection')}
             placeholder={tr("목록에서 이름·주소 검색")} placeholderTextColor={theme.textSecondary} returnKeyType="search" autoCorrect={false}
             onSubmitEditing={() => play('selection')} style={[styles.search, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]} />
           <View style={styles.heading}>
             <ThemedText type="smallBold">{tr("{0} · {1}곳", (tr(city.name)), (Math.min(limit, places.length)))}</ThemedText>
-            {places.length > 10 && <Pressable analyticsId="places.view-more" accessibilityRole="button" accessibilityLabel={limit === 10 ? tr("25곳까지 보기") : tr("10곳 먼저 보기")}
-              onPress={() => { play('selection'); setLimit(limit === 10 ? 25 : 10); }} style={styles.control}>
-              <ThemedText type="smallBold" themeColor="accent">{limit === 10 ? tr("25곳까지 보기") : tr("10곳 먼저 보기")}</ThemedText>
+            {places.length > 10 && <Pressable analyticsId="places.view-more" accessibilityRole="button" accessibilityLabel={limit === 10 ? tr("50곳까지 보기") : tr("10곳 먼저 보기")}
+              onPress={() => { play('selection'); setLimit(limit === 10 ? 50 : 10); }} style={styles.control}>
+              <ThemedText type="smallBold" themeColor="accent">{limit === 10 ? tr("50곳까지 보기") : tr("10곳 먼저 보기")}</ThemedText>
             </Pressable>}
           </View>
           <View style={styles.categories}>
             {categories.map(item => <Pressable key={item.id} analyticsId={`places.category.${item.id}`} accessibilityRole="button"
               accessibilityLabel={tr("{0} 장소", (item.label))} accessibilityState={{ selected: category === item.id }}
-              onPress={() => { play('selection'); setCategory(item.id); setLimit(item.id === 'all' ? 10 : 25); }}
+              onPress={() => { play('selection'); setCategory(item.id); setLimit(item.id === 'all' ? 10 : 50); }}
               style={[styles.category, { borderColor: category === item.id ? theme.accent : theme.line, backgroundColor: category === item.id ? theme.accent : 'transparent' }]}>
               <ThemedText type="smallBold" style={{ color: category === item.id ? theme.accentInk : theme.text }}>{item.label}</ThemedText>
             </Pressable>)}
