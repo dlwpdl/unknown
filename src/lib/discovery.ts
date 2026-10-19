@@ -34,8 +34,10 @@ export type DiscoveryItem = {
   place?: CityPlace;
 };
 
+let placeMapRequestId = 0;
 export function placeMapRoute(place: Pick<CityPlace, 'id' | 'cityId'>) {
-  return { pathname: '/map' as const, params: { cityId: place.cityId, placeId: place.id, category: 'top25' } };
+  return { pathname: '/map' as const, params: { cityId: place.cityId, placeId: place.id, category: 'top25',
+    placeRequest: Date.now().toString(36) + '-' + (++placeMapRequestId).toString(36) } };
 }
 
 export function discoveryPlace(place: CityPlace): DiscoveryItem | null {
