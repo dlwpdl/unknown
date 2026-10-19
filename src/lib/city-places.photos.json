@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T04:31:24.579236+00:00",
+  "collectedAt": "2026-10-19T04:35:03.618465+00:00",
   "source": "Verified same-place Wikimedia Commons photographs; dated captures, not popularity ranking",
   "cities": {
     "toronto": [
@@ -196,6 +196,16 @@
         "cityId": "montreal",
         "uri": "https://upload.wikimedia.org/wikipedia/commons/d/d5/Palais_des_congr%C3%A8s.jpg",
         "imageSha256": "ba8982d7e04fab85f39585935ee2c859c9dea7b25cdcf65b65475dfd6ded77f1"
+      },
+      {
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:J38002_ArtVille_20120407-134630_PlaceDArmes.jpg",
+        "artist": "Emdx",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "placeId": "osm:way:87415559",
+        "cityId": "montreal",
+        "uri": "https://upload.wikimedia.org/wikipedia/commons/2/2b/J38002_ArtVille_20120407-134630_PlaceDArmes.jpg",
+        "imageSha256": "619bf79140122c630249278b1f28bd8159aa68299e15819c54c65b20226b423a"
       }
     ],
     "calgary": [
@@ -228,6 +238,26 @@
         "license": "CC BY-SA 2.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
         "imageSha256": "0793398b02062711847addc0c7575b4c59fe37138736861df2a178f5c688e5ff"
+      },
+      {
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Calgary_Central_Library,_Canada;_October_2019_(cropped).jpg",
+        "artist": "Bernard Spragg. NZ",
+        "license": "CC0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+        "placeId": "osm:way:496824026",
+        "cityId": "calgary",
+        "uri": "https://upload.wikimedia.org/wikipedia/commons/c/c5/Calgary_Central_Library%2C_Canada%3B_October_2019_%28cropped%29.jpg",
+        "imageSha256": "f65d0d310712633ff227c9c8687691c5ce8b48ebde506ffee3216782d50a3eeb"
+      },
+      {
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:The_Peace_Bridge_in_Calgary_an_HDR_photo.jpg",
+        "artist": "Ryan Quan",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "placeId": "osm:way:1313657677",
+        "cityId": "calgary",
+        "uri": "https://upload.wikimedia.org/wikipedia/commons/e/e0/The_Peace_Bridge_in_Calgary_an_HDR_photo.jpg",
+        "imageSha256": "163bd6013ee50c587b7dd159c3487391b9702b80e45b25540a9b0f6b8d58390a"
       }
     ],
     "edmonton": [
@@ -280,6 +310,16 @@
         "license": "CC BY-SA 2.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
         "imageSha256": "b6ce2a6300607179077be91433325bb010af9436aba0a3c106a41e0ee0978afa"
+      },
+      {
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Talus_dome_2020.jpg",
+        "artist": "Talusdome",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "placeId": "osm:way:582712469",
+        "cityId": "edmonton",
+        "uri": "https://upload.wikimedia.org/wikipedia/commons/c/ce/Talus_dome_2020.jpg",
+        "imageSha256": "2f87f5fff70d48bd2a04b635dec36dc7982b43fb7e65f8214c9bf61fbfc5e597"
       }
     ],
     "winnipeg": [
@@ -332,6 +372,16 @@
         "license": "CC BY 2.0",
         "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
         "imageSha256": "532178cf153be94d411d6fbcbbfb2c2a7cf59847f5d8a7d09b2ba3a44287565d"
+      },
+      {
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Canadian_Museum_for_Human_Rights_(Winnipeg,_MB).jpg",
+        "artist": "Quintin Soloviev",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "placeId": "osm:way:131229325",
+        "cityId": "winnipeg",
+        "uri": "https://upload.wikimedia.org/wikipedia/commons/d/d4/Canadian_Museum_for_Human_Rights_%28Winnipeg%2C_MB%29.jpg",
+        "imageSha256": "e35c8294dd1b95e7d713c658e1d1651a8d680d11ba63040b3daf3551922a8570"
       }
     ],
     "saskatoon": [
@@ -374,6 +424,36 @@
         "license": "CC BY 2.0",
         "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
         "imageSha256": "c98a870e82ac8e32002442dd06dc588d7949bd4eeebc42f72b9b609d79272966"
+      },
+      {
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Saskatoon-_bessborough.jpg",
+        "artist": "Grahampurse",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "placeId": "osm:way:533217382",
+        "cityId": "saskatoon",
+        "uri": "https://upload.wikimedia.org/wikipedia/commons/0/04/Saskatoon-_bessborough.jpg",
+        "imageSha256": "0293e4fc007bb87e4326edab9fd17b36035713158bb5d38087e48f06300e721b"
+      },
+      {
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Traffic_Bridge_November_2018.jpg",
+        "artist": "Drm310",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "placeId": "osm:way:630123772",
+        "cityId": "saskatoon",
+        "uri": "https://upload.wikimedia.org/wikipedia/commons/f/fa/Traffic_Bridge_November_2018.jpg",
+        "imageSha256": "be18b5c89bd9f6744158c1210590769101b35c7e62eb694eb62052f16fb50033"
+      },
+      {
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Remai_Art_Gallery_Exterior_(42300899864).jpg",
+        "artist": "daryl_mitchell from Saskatoon, Saskatchewan, Canada",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "placeId": "osm:way:298718480",
+        "cityId": "saskatoon",
+        "uri": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Remai_Art_Gallery_Exterior_%2842300899864%29.jpg",
+        "imageSha256": "84d8cff37476fe2b2b5c21942bda8ac41db0334ce2c39d0d639a8bcc4e1dbd74"
       }
     ],
     "ottawa": [
@@ -406,6 +486,16 @@
         "license": "CC BY-SA 3.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
         "imageSha256": "69418c0abc0a3fdfec32397363a0b2f0af923562772b219e154850cf3097c163"
+      },
+      {
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Rideau_Falls_DSCF7148.jpg",
+        "artist": "R Prazeres",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "placeId": "osm:node:1735093018",
+        "cityId": "ottawa",
+        "uri": "https://upload.wikimedia.org/wikipedia/commons/c/c4/Rideau_Falls_DSCF7148.jpg",
+        "imageSha256": "fec244321772d366cf3dd7815d53c1744429f10e61320d591150aa59017906de"
       }
     ],
     "regina": [
@@ -490,6 +580,16 @@
         "license": "CC BY-SA 3.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
         "imageSha256": "7c78a47151f6dec1b1f2487ad02ec3ee737a1f0f98302d2935426ff8ec0dbcec"
+      },
+      {
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Irving_Nature_Park.jpg",
+        "artist": "Enzo Francis Cameli",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "placeId": "osm:relation:19244398",
+        "cityId": "saint-john",
+        "uri": "https://upload.wikimedia.org/wikipedia/commons/7/7d/Irving_Nature_Park.jpg",
+        "imageSha256": "19d00a784278bbc6ab0d5a6ef94958e81a8762b35ba4f685dda4810d10577aec"
       }
     ],
     "halifax": [
