@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import * as aiDraft from '../src/lib/ai-draft.ts';
 import { chillingProfilePreview } from '../src/lib/chilling-data.ts';
-import { meetupAllowed, isFestivalEvent } from '../supabase/functions/_shared/ticketmaster.ts';
+import { meetupAllowed, isFestivalEvent, ticketmasterReference } from '../supabase/functions/_shared/ticketmaster.ts';
 import * as designSystem from '../src/constants/design-system.ts';
 
 import { splitEventMeetupBody, visibleMeetupBody, meetupDestination } from './test-meetup-source-imports.mjs';
@@ -33,16 +33,37 @@ test('event meetup descriptions hide saved references while keeping old and new 
 const generated = { categorySlug: 'meetup', title: '함께 산책해요', body: '편하게 걸으며 이야기해요.', hashtags: [], purpose: '이웃과 알아가요.', activities: ['인사를 나눠요.', '편한 속도로 걸어요.'], fit: '산책을 좋아하는 분', preparation: [], applicationQuestion: '어떤 산책을 좋아하세요?' };
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 
-function form({ params = {}, sourceEvent } = {}) {
+function form({ params = {}, sourceEvent, catalogReady = true } = {}) {
   const slots = [], requests = [], writes = [], feedback = [], layouts = [], effects = [];
   let at = 0;
+  let catalog = catalogReady ? JSON.parse(readFileSync(new URL('../src/lib/city-places.catalog.json', import.meta.url), 'utf8')) : null;
+  const destinations = {};
+  vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/lib/meetup-destination.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, {
+    exports: destinations, require(name) {
+      if (name.includes('city-places')) return { getCityPlaces: city => catalog?.cities[city]?.places ?? [] };
+      if (name.includes('mock')) return { CITIES: [{ id: 'vancouver', state: 'open' }, { id: 'toronto', state: 'open' }] };
+      if (name.includes('ticketmaster')) return { ticketmasterReference };
+      throw Error('Unexpected destination import ' + name);
+    },
+  });
   let hostProfile = { version: 2, revision: 'revision-one', displayName: '호스트', cityId: 'vancouver', intro: '함께 걸어요', interests: ['산책'], promptOne: '이야기해요', promptTwo: '편한 모임', photoPaths: [], publicPhotoPath: null };
   const slot = initial => { const i = at++; if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial; return i; };
   const jsx = (type, props) => ({ type, props });
   const theme = { text: '#F6F3F0', background: '#0B0B12', backgroundElement: '#222231', backgroundSelected: '#343443', card: '#171722', line: '#343443', textSecondary: '#B7B4C3', accent: '#CBB9FF', accentDepth: '#8169B1', accentInk: '#171123' };
   const t = { write: { creatingDraft: '만드는 중…', polishDraft: 'AI로 다듬기', createDraft: 'AI로 초안 만들기', reviewDraft: '초안을 확인해 주세요.', aiErrorTitle: '초안 오류', aiErrorBody: '다시 시도해 주세요.' }, actionErrors: {} };
   const imports = {
-    react: { useState: initial => { const i = slot(initial); return [slots[i], next => { slots[i] = typeof next === 'function' ? next(slots[i]) : next; }]; }, useRef: initial => slots[slot(() => ({ current: initial }))], useEffect: callback => effects.push(callback), useLayoutEffect: callback => layouts.push(callback) },
+    react: {
+      useState: initial => { const i = slot(initial); return [slots[i], next => { slots[i] = typeof next === 'function' ? next(slots[i]) : next; }]; },
+      useRef: initial => slots[slot(() => ({ current: initial }))],
+      useEffect: (callback, deps) => {
+        const i = at++, previous = slots[i];
+        if (!previous || !deps || deps.some((value, index) => !Object.is(value, previous.deps?.[index]))) {
+          slots[i] = { deps };
+          effects.push(() => { previous?.cleanup?.(); slots[i].cleanup = callback(); });
+        }
+      },
+      useLayoutEffect: callback => layouts.push(callback),
+    },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { View: 'View', TextInput: 'TextInput', KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'web' }, StyleSheet: { create: x => x, hairlineWidth: 1 }, Alert: { alert() {} }, DeviceEventEmitter: { emit() {} } },
     'expo-router': { useLocalSearchParams: () => params, useRouter: () => ({ replace() {}, push() {} }) },
@@ -59,7 +80,7 @@ function form({ params = {}, sourceEvent } = {}) {
     '@/lib/behavior-analytics': { behavior() {} },
     '@/components/relationship-slot-card': { relationshipSlotData: () => ({ available: 3, active: 0, limit: 3 }) },
     '@/lib/ai-draft': aiDraft, '@/lib/meetup-ai': { splitEventMeetupBody },
-    '@/lib/meetup-destination': meetupDestination, '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
+    '@/lib/meetup-destination': destinations, '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
     '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }, { id: 'toronto', name: '토론토', state: 'open' }] },
     '@/constants/theme': { Depth: { control: {} }, Spacing: { two: 8, three: 16, five: 32 } },
     '@/constants/design-system': designSystem,
@@ -77,7 +98,9 @@ function form({ params = {}, sourceEvent } = {}) {
   render(); const unmount = layouts[0]?.();
   const find = key => nodes(render()).find(n => n.props?.analyticsId === key || n.props?.accessibilityLabel === key);
   const edit = (label, value) => { const input = find(label); assert.ok(input, label); input.props.onChangeText(value); };
-  return { render, find, edit, requests, writes, feedback, unmount, loadEvent: () => effects[0](), changeProfileRevision: revision => { hostProfile = { ...hostProfile, revision }; },
+  const flushEffects = () => effects.splice(0).forEach(effect => effect());
+  return { render, find, edit, requests, writes, feedback, unmount, loadEvent: flushEffects, changeProfileRevision: revision => { hostProfile = { ...hostProfile, revision }; },
+    hydrateCatalog: () => { catalog = JSON.parse(readFileSync(new URL('../src/lib/city-places.catalog.json', import.meta.url), 'utf8')); render(); flushEffects(); },
     preview: () => nodes(render()).find(n => typeof n.type === 'string' && n.type === 'MeetupAiDraftPreview'),
     generate: () => { find('app_meetup-create.ai-draft').props.onPress(); },
   };
@@ -107,6 +130,31 @@ test('an invalid destination cannot silently create a meetup in the preferred ci
   const app = form({ params: { placeId: 'osm:node:999999999999999999', placeCityId: 'vancouver' } });
   const submit = app.find('app_meetup-create.pressable.4'); assert.equal(submit.props.disabled, true);
   await submit.props.onPress(); assert.equal(app.writes.length, 0); assert.equal(app.requests.length, 0);
+});
+
+test('a cold place link unlocks after catalog hydration and preserves edits through a later refresh', async () => {
+  const catalog = JSON.parse(readFileSync(new URL('../src/lib/city-places.catalog.json', import.meta.url), 'utf8'));
+  const place = catalog.cities.toronto.places.find(item => item.category === 'cafe');
+  const tail = `\n\n장소: ${place.name}\n장소 정보: ${place.sourceUrl}`;
+  const app = form({ params: { placeId: place.id, placeCityId: 'toronto' }, catalogReady: false });
+  assert.equal(app.find('app_meetup-create.pressable.4').props.disabled, true);
+  assert.equal(app.find('모임 소개').props.editable, false);
+  app.hydrateCatalog();
+  assert.equal(app.find('app_meetup-create.pressable.4').props.disabled, false);
+  assert.equal(app.find('모임 소개').props.editable, true);
+  assert.ok(app.find('모임 제목').props.value.includes(place.name));
+  assert.ok(app.find('모임 소개').props.value.includes(place.name));
+  app.edit('모임 제목', '직접 쓴 제목'); app.edit('모임 소개', '직접 쓴 소개');
+  app.hydrateCatalog();
+  assert.equal(app.find('모임 제목').props.value, '직접 쓴 제목');
+  assert.equal(app.find('모임 소개').props.value, '직접 쓴 소개');
+  app.find('app_meetup-create.pressable.4').props.onPress(); await settle();
+  assert.equal(app.writes.length, 0);
+  app.find('meetup-create.host-consent').props.onPress();
+  app.find('app_meetup-create.pressable.4').props.onPress(); await settle();
+  assert.equal(app.writes.length, 1);
+  assert.equal(app.writes[0].cityId, 'toronto');
+  assert.equal(app.writes[0].body, '직접 쓴 소개' + tail);
 });
 
 test('topic generation renders a preview without publishing or changing form facts', async () => {
