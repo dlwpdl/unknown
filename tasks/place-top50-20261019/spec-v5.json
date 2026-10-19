@@ -1,0 +1,40 @@
+{
+  "version": 5,
+  "recordedAt": "2026-10-19T09:33:22.236733+00:00",
+  "parent": "4e81010007f8e5abfe97e791226597e165c14e13",
+  "objective": "Add only visually accepted same-place licensed photos plus exact municipal IDs and actual external review counts; rank featured photo-backed popular picks before sparse/unrated entries",
+  "sourceInput": "27 manually selected exact municipal identities from5actualcompleteOSMbatches;15initial actual-photo rights bindings, no logos/generic substitution",
+  "criteria": [
+    "Newselected place has actualsame-subjectphoto+bytehash+artist/license andactualGoogle/Tripadvisorcount; nochains/directorypadding",
+    "Preserveall862oldfacts/reviewIDs; revision4 exists onlyinthischeckoutuntil3309accepts;93/seed3remainsfrozen",
+    "First3 have actualphotos+externalcounts where3verifiedsubjects exist; do not invent smallcity third ratings",
+    "Knownclosedsource venues retainedasfacts; remove fromcurrentrecommendations conservatively, do notclaimcurrentopeninghours",
+    "No new runtime behavior except static require bindings; F5menu/reviewUIseparate"
+  ],
+  "checks": [
+    "Actualsource/filerights then inspect imagebytes/contactsheet",
+    "Newfeatured rows count/provider sourceproof, bundled imagehashes and no duplicate subject promotion",
+    "Focused/fullappchecks typeslintdiff and scopedcommitmanifest"
+  ],
+  "calls": "Sameoriginalv4c27additionalimagesatmost, original25metadata/30image totals withprior11/3included; noOverpassduringactual502cooldown; noadditionalCommonsuntilsuballocationcoordinated",
+  "frozenResult": {
+    "selectionRevision": 4,
+    "facts": 877,
+    "historicalFactsPreserved": 862,
+    "selected": 105,
+    "externalProviderRows": 142,
+    "selectedRated": 68,
+    "selectedPhotoBacked": 73,
+    "featuredPhotos": "33/33",
+    "featuredProviderCount": "31/33; thirdSaintJohn/Halifax unproven, no fabricatedcount",
+    "newPhotographedDestinations": 15,
+    "newPhysicalAssets": 14,
+    "existingAssetReuse": "RoyalOntarioMuseum/MichaelLeeChinCrystal exactsamebytes, one canonicalrequirehash",
+    "allCityBulkEntities": 516,
+    "sourceProviderRows": 804,
+    "allCity50Complete": false,
+    "sourceReference": "Original rawpublicHTTP corpus and exactprovenance in unknown/output/reviews/gling-popular-reviews-2026-10-19",
+    "freezeAuthority": "msg_9106a043d474 immediateusernativepriority; further12images deferredaslaterpacket",
+    "opsSeedUpdated": false
+  }
+}
