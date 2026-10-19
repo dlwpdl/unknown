@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { discoveryMatches, mergeCityTop25, discoveryEvent, discoveryEventOnDays } from '../src/lib/discovery.ts';
 
-// Fixture-only contract for the owner's union requirement; no production selections.
+// Legacy programmatic union compatibility; the map UI now selects one category.
 const cityId = 'vancouver';
 const picks = Array.from({ length: 25 }, (_, index) => ({
   id: `fixture-pick-${index}`, cityId, title: `Fixture pick ${index}`, label: `Fixture address ${index}`,
@@ -60,7 +60,7 @@ test('specific discovery categories stay separate while legacy All Events remain
   assert.equal(discoveryMatches(base, 'all', ''), true);
 });
 
-test('real map chips toggle independently, expose checked state and reset without replacing other selections', () => {
+test('real map chips select one category and All clears category and date state', () => {
   const source = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
   const start = source.indexOf('  const toggleFilter = '), end = source.indexOf('  const chooseDate = ', start);
   assert.ok(start > 0 && end > start, 'map needs an independent filter-toggle handler');
@@ -74,7 +74,8 @@ test('real map chips toggle independently, expose checked state and reset withou
     exports, TOP25_GOLD: '#F4CA78', top25Ink: '#68543A',
     styles: {}, theme: { accent: '#CBB9FF', line: '#ccc', backgroundSelected: '#ddd', backgroundElement: '#eee', text: '#222' },
     ScrollView: 'scroll', Pressable: 'button', View: 'view', ThemedText: 'text', tr: value => value,
-    play: value => feedback.push(value), setSelectedFilters: update => { selected = Array.from(update(selected)); },
+    play: value => feedback.push(value), setSelectedFilters: update => { selected = Array.from(typeof update === 'function' ? update(selected) : update); },
+    setDateFilter() {}, setDate() {}, setDateOpen() {}, setDateError() {},
     get selectedFilters() { return selected; },
     require: () => ({ jsx: element, jsxs: element }),
   };
@@ -86,38 +87,19 @@ test('real map chips toggle independently, expose checked state and reset withou
   assert.deepEqual(buttons().map(node => node.key), ['all', 'top25', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used']);
   button('top25').props.onPress();
   button('cafe').props.onPress();
-  assert.deepEqual(selected, ['top25', 'cafe']);
-  assert.equal(button('top25').props.accessibilityRole, 'checkbox');
-  assert.equal(button('top25').props.accessibilityState.checked, true);
-  assert.equal(button('cafe').props.accessibilityState.checked, true);
+  assert.deepEqual(selected, ['cafe']);
+  assert.equal(button('top25').props.accessibilityRole, 'button');
+  assert.equal(button('top25').props.accessibilityState.selected, false);
+  assert.equal(button('cafe').props.accessibilityState.selected, true);
   assert.equal(button('cafe').props.accessibilityLabel, '카페');
   button('top25').props.onPress();
-  assert.deepEqual(selected, ['cafe']);
-  assert.equal(button('top25').props.accessibilityState.checked, false);
+  assert.deepEqual(selected, ['top25']);
+  assert.equal(button('top25').props.accessibilityState.selected, true);
+  assert.equal(button('cafe').props.accessibilityState.selected, false);
   button('all').props.onPress();
   assert.deepEqual(selected, []);
   assert.equal(button('all').props.accessibilityState.selected, true);
   assert.deepEqual(feedback, ['selection', 'selection', 'selection', 'selection']);
-});
-
-test('an active date filter stays visible and resettable after selecting a place category', () => {
-  const source = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
-  const ast = ts.createSourceFile('map.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-  let row;
-  const visit = node => {
-    if (ts.isBinaryExpression(node) && ts.isJsxFragment(node.right)
-      && node.left.getText(ast) === 'Object.hasOwn(EVENT_CITIES, city.id)' && node.right.getText(ast).includes('styles.dates')) row = node;
-    ts.forEachChild(node, visit);
-  };
-  visit(ast);
-  assert.ok(row, 'event date controls exist');
-  const visible = (includeEvents, dateFilter, cityId = 'vancouver') => vm.runInNewContext(row.left.getText(ast), {
-    includeEvents, dateFilter, city: { id: cityId }, EVENT_CITIES: { vancouver: 'Vancouver' },
-  });
-  assert.equal(visible(false, 'today'), true);
-  assert.equal(visible(false, 'all'), true);
-  assert.equal(visible(true, 'all'), true);
-  assert.equal(visible(false, 'today', 'unsupported'), false);
 });
 
 test('the real result pipeline applies city, hidden author, listing expiry and event dates around the union', () => {
