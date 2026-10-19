@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T20:09:49.766567+00:00",
+  "collectedAt": "2026-10-19T20:36:28.641419+00:00",
   "source": "OpenStreetMap; source-reviewed Gling photo-spot selections",
   "license": "ODbL-1.0",
   "attribution": "© OpenStreetMap contributors",
@@ -1236,9 +1236,28 @@
           "sourceUrl": "https://www.openstreetmap.org/way/224894996",
           "website": "https://www.toronto.ca/data/parks/prd/facilities/complex/41/index.html",
           "openingHours": null
+        },
+        {
+          "id": "osm:way:32742038",
+          "cityId": "toronto",
+          "name": "CN Tower",
+          "category": "places",
+          "latitude": 43.6425651,
+          "longitude": -79.38712,
+          "address": "290 Bremner Boulevard Toronto",
+          "sourceUrl": "https://www.openstreetmap.org/way/32742038",
+          "website": "https://www.cntower.ca/",
+          "openingHours": "Mo-Su 09:00-22:00"
         }
       ],
       "recommendations": [
+        {
+          "placeId": "osm:way:32742038",
+          "reason": "불이 켜진 CN 타워가 호숫가의 빌딩 위로 솟아 있어요. 물가에서 타워와 도시의 야경을 함께 담아보세요.",
+          "reasonEn": "Photograph the illuminated tower above the waterfront buildings and city lights.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+          "verifiedAt": "2026-10-19T18:58:27.976Z"
+        },
         {
           "placeId": "osm:way:197447638",
           "reason": "리플리 아쿠아리움의 각진 외관이 도심 건물 사이에서 눈에 띄어요. 수족관 관람과 주변 산책을 함께 계획해보세요.",
@@ -1604,6 +1623,14 @@
             "responseSha256": "f8f692cf52caa1f234b5206fe5fdcee82d147a2f17df44487f36737750f775bf",
             "reference": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
             "sourceGooglePlaceId": "ChIJqy_n4UvL1IkRJ91CoOzZV-E",
+            "sourceObservedAt": "2026-10-19T18:58:27.976Z",
+            "osmTimestamp": "2026-10-19T09:19:51Z"
+          },
+          {
+            "placeId": "osm:way:32742038",
+            "responseSha256": "f8f692cf52caa1f234b5206fe5fdcee82d147a2f17df44487f36737750f775bf",
+            "reference": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+            "sourceGooglePlaceId": "ChIJmzrzi9Y0K4gRgXUc3sTY7RU",
             "sourceObservedAt": "2026-10-19T18:58:27.976Z",
             "osmTimestamp": "2026-10-19T09:19:51Z"
           }
@@ -5759,6 +5786,66 @@
           "sourceUrl": "https://www.openstreetmap.org/relation/1715576",
           "website": "https://www.calgaryzoo.com/",
           "openingHours": "Mo-Su 09:00-17:00"
+        },
+        {
+          "id": "osm:way:127289241",
+          "cityId": "calgary",
+          "name": "Prince's Island Park",
+          "category": "places",
+          "latitude": 51.055147,
+          "longitude": -114.0710628,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/127289241",
+          "website": "https://www.calgary.ca/parks/princes-island-park.html",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:10584788",
+          "cityId": "calgary",
+          "name": "Bowness Park",
+          "category": "places",
+          "latitude": 51.0971185,
+          "longitude": -114.2183882,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/10584788",
+          "website": null,
+          "openingHours": "05:00-23:00"
+        },
+        {
+          "id": "osm:way:171779909",
+          "cityId": "calgary",
+          "name": "TELUS Spark Science Centre",
+          "category": "places",
+          "latitude": 51.0538152,
+          "longitude": -114.0245846,
+          "address": "220 Saint George's Drive Northeast, 220 St Georges Dr NE, Calgary, AB T2E 5T2, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/171779909",
+          "website": "https://www.sparkscience.ca/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:4397328",
+          "cityId": "calgary",
+          "name": "Scotiabank Saddledome",
+          "category": "places",
+          "latitude": 51.0374003,
+          "longitude": -114.0520169,
+          "address": "555 Saddledome Rise SE, Calgary, AB T2G 2W1, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/4397328",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:node:11476843476",
+          "cityId": "calgary",
+          "name": "Contemporary Calgary",
+          "category": "places",
+          "latitude": 51.0473578,
+          "longitude": -114.0894459,
+          "address": "701 11 St SW, Calgary, AB T2P 2C4, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/node/11476843476",
+          "website": "https://www.contemporarycalgary.com/",
+          "openingHours": "Mo-Tu off; We-Sa 12:00-19:00; Su 12:00-17:00"
         }
       ],
       "recommendations": [
@@ -5819,11 +5906,39 @@
           "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:1874602644",
-          "reason": "보우강과 노즈 크리크가 만나는 곳, 그 너머 캘거리 도심을 함께 바라볼 수 있는 언덕이에요.",
-          "reasonEn": "Look across the Bow River and Nose Creek confluence toward downtown Calgary.",
-          "sourceUrl": "https://en.wikivoyage.org/wiki/Calgary/City_Centre",
-          "verifiedAt": "2026-10-19T07:47:13.049433+00:00"
+          "placeId": "osm:way:127289241",
+          "reason": "강 한가운데 있는 섬 공원에서 물가와 숲길을 걸어보세요. 도심 가까이에서 여유롭게 풍경을 담기 좋아요.",
+          "reasonEn": "Walk beside the water and through trees on this island park near downtown.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161164/best-photo-spots-in-calgary",
+          "verifiedAt": "2026-10-19T19:05:06.151Z"
+        },
+        {
+          "placeId": "osm:way:10584788",
+          "reason": "나무 사이로 들어온 빛이 잔잔한 물 위에 비쳐요. 공원의 물가를 따라 걸으며 반영을 찾아보세요.",
+          "reasonEn": "Follow the water through the park and look for reflections beneath the trees.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161164/best-photo-spots-in-calgary",
+          "verifiedAt": "2026-10-19T19:05:06.151Z"
+        },
+        {
+          "placeId": "osm:way:171779909",
+          "reason": "각진 외벽과 커다란 Spark 간판이 입구에서 눈에 들어와요. 과학 전시와 함께 건물 바깥의 형태도 살펴보세요.",
+          "reasonEn": "Notice the angular facade and large Spark sign before exploring the science exhibits.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105395/top-things-to-do-and-attractions-in-calgary",
+          "verifiedAt": "2026-10-19T04:08:48.287Z"
+        },
+        {
+          "placeId": "osm:way:4397328",
+          "reason": "안장처럼 휜 지붕 뒤로 캘거리의 빌딩이 솟아 있어요. 경기장과 도심을 한 프레임에 담아보세요.",
+          "reasonEn": "Photograph the arena’s saddle-shaped roof against Calgary’s downtown towers.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105395/top-things-to-do-and-attractions-in-calgary",
+          "verifiedAt": "2026-10-19T04:08:48.287Z"
+        },
+        {
+          "placeId": "osm:node:11476843476",
+          "reason": "둥근 지붕과 콘크리트 외벽이 특징인 미술 공간이에요. 전시 관람 전후로 건물의 곡선을 둘러보세요.",
+          "reasonEn": "Explore the exhibitions and the building’s rounded roof and concrete curves.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105395/top-things-to-do-and-attractions-in-calgary",
+          "verifiedAt": "2026-10-19T04:08:48.287Z"
         }
       ],
       "selectionIdentityEvidence": {
@@ -5848,6 +5963,46 @@
             "reference": "https://wanderlog.com/list/geoCategory/105395/top-things-to-do-and-attractions-in-calgary",
             "sourceGooglePlaceId": "ChIJBS-3mq16cVMR93V1x_a4J2I",
             "sourceObservedAt": "2026-10-19T04:08:48.287Z"
+          },
+          {
+            "placeId": "osm:way:127289241",
+            "responseSha256": "267b8883050e5296d665d37e1ada42b7c11d04d105a7eb6fd762d27740275d50",
+            "reference": "https://wanderlog.com/list/geoCategory/161164/best-photo-spots-in-calgary",
+            "sourceGooglePlaceId": "ChIJpS1pyfBvcVMRR_gMg_K0K0Y",
+            "sourceObservedAt": "2026-10-19T19:05:06.151Z",
+            "osmTimestamp": "2026-10-19T09:20:48Z"
+          },
+          {
+            "placeId": "osm:way:10584788",
+            "responseSha256": "267b8883050e5296d665d37e1ada42b7c11d04d105a7eb6fd762d27740275d50",
+            "reference": "https://wanderlog.com/list/geoCategory/161164/best-photo-spots-in-calgary",
+            "sourceGooglePlaceId": "ChIJY13yQLNucVMR14sSBKsLRHw",
+            "sourceObservedAt": "2026-10-19T19:05:06.151Z",
+            "osmTimestamp": "2026-10-19T09:20:48Z"
+          },
+          {
+            "placeId": "osm:way:171779909",
+            "responseSha256": "267b8883050e5296d665d37e1ada42b7c11d04d105a7eb6fd762d27740275d50",
+            "reference": "https://wanderlog.com/list/geoCategory/105395/top-things-to-do-and-attractions-in-calgary",
+            "sourceGooglePlaceId": "ChIJQ94Uu0plcVMRus1ooc0XHrs",
+            "sourceObservedAt": "2026-10-19T04:08:48.287Z",
+            "osmTimestamp": "2026-10-19T09:20:48Z"
+          },
+          {
+            "placeId": "osm:way:4397328",
+            "responseSha256": "267b8883050e5296d665d37e1ada42b7c11d04d105a7eb6fd762d27740275d50",
+            "reference": "https://wanderlog.com/list/geoCategory/105395/top-things-to-do-and-attractions-in-calgary",
+            "sourceGooglePlaceId": "ChIJg-5B9QZwcVMRjk1pPV9hp3U",
+            "sourceObservedAt": "2026-10-19T04:08:48.287Z",
+            "osmTimestamp": "2026-10-19T09:20:48Z"
+          },
+          {
+            "placeId": "osm:node:11476843476",
+            "responseSha256": "267b8883050e5296d665d37e1ada42b7c11d04d105a7eb6fd762d27740275d50",
+            "reference": "https://wanderlog.com/list/geoCategory/105395/top-things-to-do-and-attractions-in-calgary",
+            "sourceGooglePlaceId": "ChIJlStFuGZvcVMRnd3-AT74ALE",
+            "sourceObservedAt": "2026-10-19T04:08:48.287Z",
+            "osmTimestamp": "2026-10-19T09:20:48Z"
           }
         ]
       }
@@ -6831,6 +6986,102 @@
           "sourceUrl": "https://www.openstreetmap.org/way/23236234",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:way:23472715",
+          "cityId": "edmonton",
+          "name": "West Edmonton Mall",
+          "category": "places",
+          "latitude": 53.5232195,
+          "longitude": -113.6228324,
+          "address": "8882 87 Avenue NW Edmonton",
+          "sourceUrl": "https://www.openstreetmap.org/way/23472715",
+          "website": "https://www.wem.ca/",
+          "openingHours": "Mo-Sa 10:00-21:00; Su 10:00-18:00"
+        },
+        {
+          "id": "osm:way:448626254",
+          "cityId": "edmonton",
+          "name": "Rogers Place",
+          "category": "places",
+          "latitude": 53.5466117,
+          "longitude": -113.497794,
+          "address": "10220 104 Ave NW, Edmonton, AB T5J 0H6, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/448626254",
+          "website": "https://www.rogersplace.com/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:50621140",
+          "cityId": "edmonton",
+          "name": "Edmonton Valley Zoo",
+          "category": "places",
+          "latitude": 53.5109781,
+          "longitude": -113.5565645,
+          "address": "13315 Buena Vista Road NW Edmonton",
+          "sourceUrl": "https://www.openstreetmap.org/way/50621140",
+          "website": "https://www.edmonton.ca/attractions_events/edmonton-valley-zoo",
+          "openingHours": "Th-Su 10:00-16:00"
+        },
+        {
+          "id": "osm:way:487541454",
+          "cityId": "edmonton",
+          "name": "World Waterpark",
+          "category": "places",
+          "latitude": 53.5218951,
+          "longitude": -113.6256874,
+          "address": "8882 170 St NW, Edmonton, AB T5T 2E3, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/487541454",
+          "website": "https://www.wem.ca/play/attractions/world-waterpark",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:1351822252",
+          "cityId": "edmonton",
+          "name": "Commonwealth Stadium",
+          "category": "places",
+          "latitude": 53.5596901,
+          "longitude": -113.4764241,
+          "address": "11000 Stadium Rd NW, Edmonton, AB T5J 2R7, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/1351822252",
+          "website": "https://www.edmonton.ca/attractions_events/commonwealth-stadium",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:226322818",
+          "cityId": "edmonton",
+          "name": "Louise McKinney Riverfront Park",
+          "category": "places",
+          "latitude": 53.5406696,
+          "longitude": -113.4808724,
+          "address": "9999 Grierson Hill Road NW Edmonton",
+          "sourceUrl": "https://www.openstreetmap.org/way/226322818",
+          "website": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/louise-mckinney-riverfront-park.aspx",
+          "openingHours": "Mo-Su 05:00-23:00"
+        },
+        {
+          "id": "osm:way:1373511013",
+          "cityId": "edmonton",
+          "name": "Edmonton Riverboat",
+          "category": "food",
+          "latitude": 53.5396353,
+          "longitude": -113.4819469,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/1373511013",
+          "website": "https://www.edmontonriverboat.ca/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:1018647813",
+          "cityId": "edmonton",
+          "name": "Alberta Railway Museum",
+          "category": "places",
+          "latitude": 53.7025405,
+          "longitude": -113.3871477,
+          "address": "24215 34 St NW, Edmonton, AB T5Y 6B4, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/1018647813",
+          "website": "https://albertarailwaymuseum.com/",
+          "openingHours": "Sa-Su 10:00-17:00"
         }
       ],
       "recommendations": [
@@ -6877,11 +7128,60 @@
           "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:3868190323",
-          "reason": "주의사당 방문자센터 안의 갤러리예요. 의사당 방문과 함께 전시 공간을 둘러보기 좋아요.",
-          "reasonEn": "A gallery inside the Legislative Assembly Visitor Centre, suited to a visit alongside the legislature.",
-          "sourceUrl": "https://www.assembly.ab.ca/visit/plan-your-visit",
-          "verifiedAt": "2026-10-18T08:25:24.596844+00:00"
+          "placeId": "osm:way:23472715",
+          "reason": "실내 연못을 둘러싸고 상점과 높은 유리 천장이 이어져요. 쇼핑몰 안의 넓은 아트리움을 천천히 둘러보세요.",
+          "reasonEn": "Explore the wide atrium, indoor lagoon and glass roof inside the mall.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161168/best-photo-spots-in-edmonton",
+          "verifiedAt": "2026-10-19T19:05:36.368Z"
+        },
+        {
+          "placeId": "osm:way:448626254",
+          "reason": "은빛 곡면 외벽과 빨간 Rogers Place 글자가 눈에 띄어요. 도심을 걸으며 경기장의 둥근 외관을 바라보세요.",
+          "reasonEn": "Look up at the arena’s silver curves and red lettering on a walk through downtown.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105399/top-things-to-do-and-attractions-in-edmonton",
+          "verifiedAt": "2026-10-19T04:09:00.146Z"
+        },
+        {
+          "placeId": "osm:way:50621140",
+          "reason": "길게 솟은 금속 조형물이 동물원 입구에 놓여 있어요. 동물 관람과 주변 녹지 산책을 함께 계획해보세요.",
+          "reasonEn": "Find the tall metal sculptures at the entrance and explore the zoo and surrounding greenery.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161168/best-photo-spots-in-edmonton",
+          "verifiedAt": "2026-10-19T19:05:36.368Z"
+        },
+        {
+          "placeId": "osm:way:487541454",
+          "reason": "큰 유리 지붕 아래에 수영장과 미끄럼틀이 모여 있어요. 웨스트에드먼턴몰에서 실내 물놀이를 즐길 수 있는 공간이에요.",
+          "reasonEn": "Swim beneath a large glass roof among the pools and slides inside West Edmonton Mall.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105399/top-things-to-do-and-attractions-in-edmonton",
+          "verifiedAt": "2026-10-19T04:09:00.146Z"
+        },
+        {
+          "placeId": "osm:way:1351822252",
+          "reason": "계단식 관중석이 초록빛 그라운드를 넓게 둘러싸고 있어요. 스포츠 관람이나 경기장 방문 일정에 맞춰 들러보세요.",
+          "reasonEn": "See the green field surrounded by tiered stands when attending a match or stadium visit.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105399/top-things-to-do-and-attractions-in-edmonton",
+          "verifiedAt": "2026-10-19T04:09:00.146Z"
+        },
+        {
+          "placeId": "osm:way:226322818",
+          "reason": "언덕의 풀밭 너머로 강과 도심이 보여요. 공원의 산책길에서 에드먼턴 강변 풍경을 바라보세요.",
+          "reasonEn": "Walk the park’s hillside paths for views across the river toward downtown Edmonton.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161168/best-photo-spots-in-edmonton",
+          "verifiedAt": "2026-10-19T19:05:36.368Z"
+        },
+        {
+          "placeId": "osm:way:1373511013",
+          "reason": "강가의 나무와 선착장 옆에 유람선이 자리 잡고 있어요. 운항 일정을 확인하고 강 위에서 보는 도시를 계획해보세요.",
+          "reasonEn": "Find the riverboat beside the wooded bank and check the cruise schedule for views from the water.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161168/best-photo-spots-in-edmonton",
+          "verifiedAt": "2026-10-19T19:05:36.368Z"
+        },
+        {
+          "placeId": "osm:way:1018647813",
+          "reason": "야외에 옛 기관차와 철도 차량이 전시돼 있어요. 박물관의 넓은 전시장을 걸으며 차량의 색과 형태를 살펴보세요.",
+          "reasonEn": "Walk among the historic locomotives and railway vehicles in the museum’s outdoor displays.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105399/top-things-to-do-and-attractions-in-edmonton",
+          "verifiedAt": "2026-10-19T04:09:00.146Z"
         }
       ],
       "selectionIdentityEvidence": {
@@ -6899,6 +7199,70 @@
             "reference": "https://wanderlog.com/list/geoCategory/105399/top-things-to-do-and-attractions-in-edmonton",
             "sourceGooglePlaceId": "ChIJ-3mA65EhoFMRUc1sCWgdIow",
             "sourceObservedAt": "2026-10-19T04:09:00.146Z"
+          },
+          {
+            "placeId": "osm:way:23472715",
+            "responseSha256": "f3f3a7a891df4131316c5be4b73edbec89fec77ab95146e3df1e61ebbd855467",
+            "reference": "https://wanderlog.com/list/geoCategory/161168/best-photo-spots-in-edmonton",
+            "sourceGooglePlaceId": "ChIJ2xSGOlcgoFMRy2-yCZ6iRoU",
+            "sourceObservedAt": "2026-10-19T19:05:36.368Z",
+            "osmTimestamp": "2026-10-19T09:21:51Z"
+          },
+          {
+            "placeId": "osm:way:448626254",
+            "responseSha256": "f3f3a7a891df4131316c5be4b73edbec89fec77ab95146e3df1e61ebbd855467",
+            "reference": "https://wanderlog.com/list/geoCategory/105399/top-things-to-do-and-attractions-in-edmonton",
+            "sourceGooglePlaceId": "ChIJFSwFuE4ioFMR2NTorORY7D8",
+            "sourceObservedAt": "2026-10-19T04:09:00.146Z",
+            "osmTimestamp": "2026-10-19T09:21:51Z"
+          },
+          {
+            "placeId": "osm:way:50621140",
+            "responseSha256": "f3f3a7a891df4131316c5be4b73edbec89fec77ab95146e3df1e61ebbd855467",
+            "reference": "https://wanderlog.com/list/geoCategory/161168/best-photo-spots-in-edmonton",
+            "sourceGooglePlaceId": "ChIJ__8_0k8ioFMRVDI99uZD06c",
+            "sourceObservedAt": "2026-10-19T19:05:36.368Z",
+            "osmTimestamp": "2026-10-19T09:21:51Z"
+          },
+          {
+            "placeId": "osm:way:487541454",
+            "responseSha256": "f3f3a7a891df4131316c5be4b73edbec89fec77ab95146e3df1e61ebbd855467",
+            "reference": "https://wanderlog.com/list/geoCategory/105399/top-things-to-do-and-attractions-in-edmonton",
+            "sourceGooglePlaceId": "ChIJSYumUlkgoFMRGdsFtaAuZsE",
+            "sourceObservedAt": "2026-10-19T04:09:00.146Z",
+            "osmTimestamp": "2026-10-19T09:21:51Z"
+          },
+          {
+            "placeId": "osm:way:1351822252",
+            "responseSha256": "f3f3a7a891df4131316c5be4b73edbec89fec77ab95146e3df1e61ebbd855467",
+            "reference": "https://wanderlog.com/list/geoCategory/105399/top-things-to-do-and-attractions-in-edmonton",
+            "sourceGooglePlaceId": "ChIJZRvp1wEjoFMRA3q_Vjm908w",
+            "sourceObservedAt": "2026-10-19T04:09:00.146Z",
+            "osmTimestamp": "2026-10-19T09:21:51Z"
+          },
+          {
+            "placeId": "osm:way:226322818",
+            "responseSha256": "f3f3a7a891df4131316c5be4b73edbec89fec77ab95146e3df1e61ebbd855467",
+            "reference": "https://wanderlog.com/list/geoCategory/161168/best-photo-spots-in-edmonton",
+            "sourceGooglePlaceId": "ChIJ9SeDW1sioFMRqnpuNu4-oSs",
+            "sourceObservedAt": "2026-10-19T19:05:36.368Z",
+            "osmTimestamp": "2026-10-19T09:21:51Z"
+          },
+          {
+            "placeId": "osm:way:1373511013",
+            "responseSha256": "f3f3a7a891df4131316c5be4b73edbec89fec77ab95146e3df1e61ebbd855467",
+            "reference": "https://wanderlog.com/list/geoCategory/161168/best-photo-spots-in-edmonton",
+            "sourceGooglePlaceId": "ChIJXWIrDkEioFMRAsD-hEFZH6A",
+            "sourceObservedAt": "2026-10-19T19:05:36.368Z",
+            "osmTimestamp": "2026-10-19T09:21:51Z"
+          },
+          {
+            "placeId": "osm:way:1018647813",
+            "responseSha256": "f3f3a7a891df4131316c5be4b73edbec89fec77ab95146e3df1e61ebbd855467",
+            "reference": "https://wanderlog.com/list/geoCategory/105399/top-things-to-do-and-attractions-in-edmonton",
+            "sourceGooglePlaceId": "ChIJiaYIp1EjoFMRn9eaeBgwOYw",
+            "sourceObservedAt": "2026-10-19T04:09:00.146Z",
+            "osmTimestamp": "2026-10-19T09:21:51Z"
           }
         ]
       }
@@ -7870,6 +8234,114 @@
           "sourceUrl": "https://www.openstreetmap.org/way/14869261",
           "website": "https://www.assiniboinepark.ca/",
           "openingHours": null
+        },
+        {
+          "id": "osm:way:97144932",
+          "cityId": "winnipeg",
+          "name": "Assiniboine Park Zoo",
+          "category": "places",
+          "latitude": 49.8713427,
+          "longitude": -97.2406189,
+          "address": "460 Assiniboine Park Drive",
+          "sourceUrl": "https://www.openstreetmap.org/way/97144932",
+          "website": "https://assiniboineparkzoo.ca/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:14869890",
+          "cityId": "winnipeg",
+          "name": "Canada Life Centre",
+          "category": "places",
+          "latitude": 49.8926755,
+          "longitude": -97.1437274,
+          "address": "300 Portage Ave, Winnipeg, MB R3C 5S4, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/14869890",
+          "website": "https://canadalifecentre.ca/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:relation:19755567",
+          "cityId": "winnipeg",
+          "name": "Manitoba Museum",
+          "category": "places",
+          "latitude": 49.9001106,
+          "longitude": -97.1363454,
+          "address": "190 Rupert Ave, Winnipeg, MB R3B 0N2, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/relation/19755567",
+          "website": "https://manitobamuseum.ca",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:30876368",
+          "cityId": "winnipeg",
+          "name": "Kildonan Park",
+          "category": "places",
+          "latitude": 49.9437277,
+          "longitude": -97.1045778,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/30876368",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:node:1373420051",
+          "cityId": "winnipeg",
+          "name": "Assiniboia Downs",
+          "category": "places",
+          "latitude": 49.8898772,
+          "longitude": -97.32779,
+          "address": "3975 Portage Ave, Winnipeg, MB R3K 2E9, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/node/1373420051",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:25169742",
+          "cityId": "winnipeg",
+          "name": "FortWhyte Alive",
+          "category": "places",
+          "latitude": 49.8296194,
+          "longitude": -97.2237502,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/25169742",
+          "website": "https://www.fortwhyte.org/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:14870831",
+          "cityId": "winnipeg",
+          "name": "The Forks National Historic Site",
+          "category": "places",
+          "latitude": 49.8877062,
+          "longitude": -97.1303286,
+          "address": "Forks Market Rd, Winnipeg, MB R3C 4S8, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/14870831",
+          "website": "https://www.pc.gc.ca/lhn-nhs/mb/forks/index.aspx",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:26378283",
+          "cityId": "winnipeg",
+          "name": "Manitoba Legislative Building",
+          "category": "places",
+          "latitude": 49.8844702,
+          "longitude": -97.146843,
+          "address": "450 Broadway Winnipeg",
+          "sourceUrl": "https://www.openstreetmap.org/way/26378283",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:103536967",
+          "cityId": "winnipeg",
+          "name": "Living Prairie Museum",
+          "category": "places",
+          "latitude": 49.8877574,
+          "longitude": -97.2718403,
+          "address": "2795 Ness Ave, Winnipeg, MB R3J 3S4, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/103536967",
+          "website": "https://www.winnipeg.ca/publicworks/naturalist/livingprairie/",
+          "openingHours": null
         }
       ],
       "recommendations": [
@@ -7909,25 +8381,67 @@
           "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:1957816301",
-          "reason": "정원 속 미로를 따라 천천히 걸어보세요. 작가 캐럴 실즈를 기리는 야외 공간이에요.",
-          "reasonEn": "Follow a landscaped outdoor labyrinth commemorating author Carol Shields.",
-          "sourceUrl": "https://en.wikivoyage.org/wiki/Winnipeg",
-          "verifiedAt": "2026-10-19T07:46:10.967481+00:00"
+          "placeId": "osm:way:97144932",
+          "reason": "입구의 곰 조각상과 큰 유리 건물이 눈에 들어와요. 아시니보인 공원에서 동물원까지 이어지는 하루를 계획해보세요.",
+          "reasonEn": "Look for the bear sculptures and glass entrance during a day at Assiniboine Park and its zoo.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161169/best-photo-spots-in-winnipeg",
+          "verifiedAt": "2026-10-19T19:06:06.562Z"
         },
         {
-          "placeId": "osm:node:1206839262",
-          "reason": "마니토바의 현대미술을 만나는 갤러리예요. 도시 산책 중 전시를 감상하며 쉬어가기 좋아요.",
-          "reasonEn": "Explore contemporary art at this Manitoba gallery and institute.",
-          "sourceUrl": "https://en.wikivoyage.org/wiki/Winnipeg",
-          "verifiedAt": "2026-10-19T07:46:10.967481+00:00"
+          "placeId": "osm:way:14869890",
+          "reason": "붉은 벽돌과 둥근 유리 모서리가 도심 거리와 맞닿아 있어요. 경기나 공연을 보러 갈 때 건물의 외관도 살펴보세요.",
+          "reasonEn": "Notice the red brick and curved glass corner on your way to a game or performance.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105400/top-things-to-do-and-attractions-in-winnipeg",
+          "verifiedAt": "2026-10-19T04:09:11.246Z"
         },
         {
-          "placeId": "osm:node:1191736525",
-          "reason": "1903년 소방서 건물에 남아 있는 스테인드글라스와 옛 소방 장비를 살펴볼 수 있어요.",
-          "reasonEn": "See stained-glass windows and historic firefighting equipment in a 1903 fire hall.",
-          "sourceUrl": "https://en.wikivoyage.org/wiki/Winnipeg",
-          "verifiedAt": "2026-10-19T07:46:10.967481+00:00"
+          "placeId": "osm:relation:19755567",
+          "reason": "직선적인 박물관 외벽 옆으로 둥근 전시 공간이 이어져요. 실내 전시와 함께 건물의 서로 다른 형태를 살펴보세요.",
+          "reasonEn": "Explore the museum exhibits and the contrast between its angular facade and rounded spaces.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105400/top-things-to-do-and-attractions-in-winnipeg",
+          "verifiedAt": "2026-10-19T04:09:11.246Z"
+        },
+        {
+          "placeId": "osm:way:30876368",
+          "reason": "공원 이름을 새긴 돌기둥이 입구에 있어요. 안쪽으로 이어지는 산책로와 넓은 녹지를 둘러보세요.",
+          "reasonEn": "Pass the stone entrance signs and explore the paths and open green spaces beyond.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161169/best-photo-spots-in-winnipeg",
+          "verifiedAt": "2026-10-19T19:06:06.562Z"
+        },
+        {
+          "placeId": "osm:node:1373420051",
+          "reason": "달리는 말을 그린 외벽 벽화가 눈에 띄어요. 경기장 방문을 계획한다면 운영일과 레이스 일정을 먼저 확인해보세요.",
+          "reasonEn": "Find the racing-horse mural on the exterior and check opening days and the race schedule before visiting.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105400/top-things-to-do-and-attractions-in-winnipeg",
+          "verifiedAt": "2026-10-19T04:09:11.246Z"
+        },
+        {
+          "placeId": "osm:way:25169742",
+          "reason": "호수와 갈대밭이 넓게 이어지는 자연 공간이에요. 물가의 길을 걸으며 위니펙 도심과 다른 풍경을 만나보세요.",
+          "reasonEn": "Walk the lakeside paths and reeds for a different view of Winnipeg’s natural surroundings.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161169/best-photo-spots-in-winnipeg",
+          "verifiedAt": "2026-10-19T19:06:06.562Z"
+        },
+        {
+          "placeId": "osm:way:14870831",
+          "reason": "두 강이 만나는 물가에 산책 공간과 역사 유적이 모여 있어요. 강변을 걸으며 포크스의 풍경을 둘러보세요.",
+          "reasonEn": "Explore the waterfront paths and historic grounds where the two rivers meet at The Forks.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105400/top-things-to-do-and-attractions-in-winnipeg",
+          "verifiedAt": "2026-10-19T04:09:11.246Z"
+        },
+        {
+          "placeId": "osm:way:26378283",
+          "reason": "넓은 잔디밭 뒤로 돔과 열주가 있는 주의회 건물이 보여요. 정면의 계단과 건물의 대칭을 사진에 담아보세요.",
+          "reasonEn": "Photograph the legislature’s dome, columns and symmetrical facade from the front lawn.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161169/best-photo-spots-in-winnipeg",
+          "verifiedAt": "2026-10-19T19:06:06.562Z"
+        },
+        {
+          "placeId": "osm:way:103536967",
+          "reason": "도심에 남아 있는 프레리 초원을 보존한 공간이에요. 계절에 따라 달라지는 풀과 들꽃을 산책로에서 살펴보세요.",
+          "reasonEn": "Follow the paths through this preserved urban prairie and look for seasonal grasses and wildflowers.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105400/top-things-to-do-and-attractions-in-winnipeg",
+          "verifiedAt": "2026-10-19T04:09:11.246Z"
         }
       ],
       "selectionIdentityEvidence": {
@@ -7938,6 +8452,78 @@
             "reference": "https://wanderlog.com/list/geoCategory/105400/top-things-to-do-and-attractions-in-winnipeg",
             "sourceGooglePlaceId": "ChIJHUDYlaV06lIRaM2MF8lLV4I",
             "sourceObservedAt": "2026-10-19T04:09:11.246Z"
+          },
+          {
+            "placeId": "osm:way:97144932",
+            "responseSha256": "8538bca8113bdfff8e3e0b627eb81ce4389c45cf48e3d1741d209e3c3d391de3",
+            "reference": "https://wanderlog.com/list/geoCategory/161169/best-photo-spots-in-winnipeg",
+            "sourceGooglePlaceId": "ChIJB3oX66t06lIROos5H51drvg",
+            "sourceObservedAt": "2026-10-19T19:06:06.562Z",
+            "osmTimestamp": "2026-10-19T09:22:50Z"
+          },
+          {
+            "placeId": "osm:way:14869890",
+            "responseSha256": "8538bca8113bdfff8e3e0b627eb81ce4389c45cf48e3d1741d209e3c3d391de3",
+            "reference": "https://wanderlog.com/list/geoCategory/105400/top-things-to-do-and-attractions-in-winnipeg",
+            "sourceGooglePlaceId": "ChIJj4Bko1lx6lIRMC87jjR1WuQ",
+            "sourceObservedAt": "2026-10-19T04:09:11.246Z",
+            "osmTimestamp": "2026-10-19T09:22:50Z"
+          },
+          {
+            "placeId": "osm:relation:19755567",
+            "responseSha256": "8538bca8113bdfff8e3e0b627eb81ce4389c45cf48e3d1741d209e3c3d391de3",
+            "reference": "https://wanderlog.com/list/geoCategory/105400/top-things-to-do-and-attractions-in-winnipeg",
+            "sourceGooglePlaceId": "ChIJr6oUzEJx6lIRfFLRBjjsZc0",
+            "sourceObservedAt": "2026-10-19T04:09:11.246Z",
+            "osmTimestamp": "2026-10-19T09:22:50Z"
+          },
+          {
+            "placeId": "osm:way:30876368",
+            "responseSha256": "8538bca8113bdfff8e3e0b627eb81ce4389c45cf48e3d1741d209e3c3d391de3",
+            "reference": "https://wanderlog.com/list/geoCategory/161169/best-photo-spots-in-winnipeg",
+            "sourceGooglePlaceId": "ChIJnz9TOEpw6lIRrq8TM3DFQDk",
+            "sourceObservedAt": "2026-10-19T19:06:06.562Z",
+            "osmTimestamp": "2026-10-19T09:22:50Z"
+          },
+          {
+            "placeId": "osm:node:1373420051",
+            "responseSha256": "8538bca8113bdfff8e3e0b627eb81ce4389c45cf48e3d1741d209e3c3d391de3",
+            "reference": "https://wanderlog.com/list/geoCategory/105400/top-things-to-do-and-attractions-in-winnipeg",
+            "sourceGooglePlaceId": "ChIJAz5ocW0M6lIROw8jxicJ5WQ",
+            "sourceObservedAt": "2026-10-19T04:09:11.246Z",
+            "osmTimestamp": "2026-10-19T09:22:50Z"
+          },
+          {
+            "placeId": "osm:way:25169742",
+            "responseSha256": "8538bca8113bdfff8e3e0b627eb81ce4389c45cf48e3d1741d209e3c3d391de3",
+            "reference": "https://wanderlog.com/list/geoCategory/161169/best-photo-spots-in-winnipeg",
+            "sourceGooglePlaceId": "ChIJg1N9VsoK6lIRMvZN6KMsfJo",
+            "sourceObservedAt": "2026-10-19T19:06:06.562Z",
+            "osmTimestamp": "2026-10-19T09:22:50Z"
+          },
+          {
+            "placeId": "osm:way:14870831",
+            "responseSha256": "8538bca8113bdfff8e3e0b627eb81ce4389c45cf48e3d1741d209e3c3d391de3",
+            "reference": "https://wanderlog.com/list/geoCategory/105400/top-things-to-do-and-attractions-in-winnipeg",
+            "sourceGooglePlaceId": "ChIJi3N8wk5x6lIRqkyf1yhnbqo",
+            "sourceObservedAt": "2026-10-19T04:09:11.246Z",
+            "osmTimestamp": "2026-10-19T09:22:50Z"
+          },
+          {
+            "placeId": "osm:way:26378283",
+            "responseSha256": "8538bca8113bdfff8e3e0b627eb81ce4389c45cf48e3d1741d209e3c3d391de3",
+            "reference": "https://wanderlog.com/list/geoCategory/161169/best-photo-spots-in-winnipeg",
+            "sourceGooglePlaceId": "ChIJw3EAdlVx6lIRyLGHCqDE9xM",
+            "sourceObservedAt": "2026-10-19T19:06:06.562Z",
+            "osmTimestamp": "2026-10-19T09:22:50Z"
+          },
+          {
+            "placeId": "osm:way:103536967",
+            "responseSha256": "8538bca8113bdfff8e3e0b627eb81ce4389c45cf48e3d1741d209e3c3d391de3",
+            "reference": "https://wanderlog.com/list/geoCategory/105400/top-things-to-do-and-attractions-in-winnipeg",
+            "sourceGooglePlaceId": "ChIJ00iGkr4M6lIRS2tI02n884I",
+            "sourceObservedAt": "2026-10-19T04:09:11.246Z",
+            "osmTimestamp": "2026-10-19T09:22:50Z"
           }
         ]
       }
@@ -12753,6 +13339,6 @@
   "pendingCities": [],
   "complete": true,
   "recommendationTheme": "photo-spots",
-  "photoSelectionsReviewedAt": "2026-10-19T20:09:49.766567+00:00",
-  "selectionRevision": 6
+  "photoSelectionsReviewedAt": "2026-10-19T20:36:28.641419+00:00",
+  "selectionRevision": 7
 }
