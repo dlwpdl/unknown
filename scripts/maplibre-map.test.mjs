@@ -12,7 +12,7 @@ test('지도 브리지에서 잘못된 형식·좌표·과도한 데이터와 �
 
 test('숫자 핀만 스크립트에 들어가고 지도 코드는 로컬 번들·무료 지도 서버를 사용한다', () => {
   const html = mapHtml({ pin: { latitude: 49.2, longitude: -123.1 }, accent: '#CBB9FF', preview: false, cityName: 'Vancouver' });
-  assert.ok(html.includes('https://tiles.openfreemap.org/styles/liberty'));
+  assert.ok(html.includes('https://tiles.openfreemap.org/styles/positron'));
   assert.ok(html.includes('connect-src https://tiles.openfreemap.org'));
   assert.ok(!html.includes('<script src='));
   assert.ok(html.includes("script-src 'nonce-gling-map' blob:"));
