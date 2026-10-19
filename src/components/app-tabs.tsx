@@ -5,7 +5,6 @@ import { Colors } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useUnreadCount } from '@/hooks/use-unread-count';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { Typography } from '@/constants/design-system';
 
 // Native selected-state motion stays quiet; the commit actions get stronger feedback elsewhere.
 export default function AppTabs() {
@@ -24,7 +23,7 @@ export default function AppTabs() {
       shadowColor={colors.line}
       tintColor={colors.accent}
       iconColor={{ default: colors.textSecondary, selected: colors.accent }}
-      labelStyle={{ default: { color: colors.textSecondary, fontSize: Typography.micro.fontSize }, selected: { color: colors.accent, fontSize: Typography.micro.fontSize, fontWeight: Typography.micro.fontWeight } }}
+      labelStyle={{ default: { color: colors.textSecondary }, selected: { color: colors.accent, fontWeight: '600' } }}
       indicatorColor={colors.backgroundElement}>
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>{t.tabs.today}</NativeTabs.Trigger.Label>
