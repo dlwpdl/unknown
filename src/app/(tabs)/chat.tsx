@@ -36,7 +36,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useMembership } from '@/lib/membership-provider';
 import { supabase } from '@/lib/supabase';
 
-type Inbox = ConversationPage & { userId: string; filter: ConversationFilter; requests: MeetupRequest[] };
+type Inbox = ConversationPage & { userId: string; filter: ConversationFilter; requests: MeetupRequest[]; moreRequests?: boolean };
 const MEETUP_CHAT_ICONS = {
   'disco-ball': require('@/assets/brand/chat-3d/disco-ball.png'),
   ticket: require('@/assets/brand/chat-3d/ticket.png'),
@@ -86,6 +86,7 @@ export default function ChatScreen() {
   const [approveId, setApproveId] = useState<string | null>(null);
   const conversations = routeMatches && inbox?.userId === scopeKey && inbox.filter === filter ? inbox.conversations : [];
   const requests = routeMatches && inbox?.userId === scopeKey ? inbox.requests : [];
+  const moreRequests = routeMatches && inbox?.userId === scopeKey && inbox.moreRequests === true;
   const openConversation = selection?.userId === scopeKey ? conversations.find((item) => item.id === selection.id)
     ?? (inbox?.userId === scopeKey && inbox.selectedConversation?.id === selection.id ? inbox.selectedConversation : undefined) : undefined;
   const [modalConversation, setModalConversation] = useState<typeof openConversation>(undefined);
@@ -109,11 +110,11 @@ export default function ChatScreen() {
       try {
         const [next, nextRequests] = await Promise.all([
           loadConversations(supabase, userId, filter, null, conversationId ?? selectionId.current, asBusinessId),
-          asBusinessId ? Promise.resolve([]) : loadPendingMeetupRequests(supabase, userId),
+          asBusinessId ? Promise.resolve([]) : loadPendingMeetupRequests(supabase),
         ]);
         if (currentUser.current !== scopeKey || version.current !== request) return;
         animateList();
-        setInbox({ ...next, userId: scopeKey!, filter, requests: nextRequests });
+        setInbox({ ...next, userId: scopeKey!, filter, requests: nextRequests, moreRequests: nextRequests.length === 50 });
         if (conversationId && next.selectedConversation) { setSelection({ userId: scopeKey!, id: next.selectedConversation.id }); setModalConversation(next.selectedConversation); }
       } catch { if (currentUser.current === scopeKey && version.current === request) { if (asBusinessId) setInbox(null); setError({ userId: scopeKey!, text: sourceCopy.chat.loadError }); } }
       finally {
@@ -201,6 +202,23 @@ export default function ChatScreen() {
     finally { pageBusy.current = false; setLoadingMore(false); }
   };
 
+  const loadOlderRequests = async () => {
+    const last = requests.at(-1);
+    if (!last || asBusinessId || pageBusy.current || loading || !inbox?.moreRequests || inbox.userId !== scopeKey) return;
+    const request = version.current;
+    pageBusy.current = true; setLoadingMore(true);
+    try {
+      const next = await loadPendingMeetupRequests(supabase, { createdAt: last.created_at, id: last.id });
+      if (currentUser.current !== scopeKey || activeFilter.current !== 'requests' || version.current !== request) return;
+      setInbox(current => {
+        if (!current || current.userId !== scopeKey) return current;
+        const ids = new Set(current.requests.map(({ id }) => id));
+        return { ...current, moreRequests: next.length === 50, requests: [...current.requests, ...next.filter(({ id }) => !ids.has(id))] };
+      });
+    } catch { if (currentUser.current === scopeKey && version.current === request) setError({ userId: scopeKey!, text: t.chat.loadError }); }
+    finally { pageBusy.current = false; setLoadingMore(false); }
+  };
+
   const handleRequest = async (request: MeetupRequest, response: 'approved' | 'rejected') => {
     if (!userId || processing.current) return;
     const owner = scopeKey;
@@ -247,21 +265,22 @@ export default function ChatScreen() {
           // 관리자에게는 자리 한도가 적용되지 않으므로 숫자 대신 제한 없음을 알린다.
           ['group', auth.isAdmin ? tr("{0} 제한 없음", (t.chat.groups)) : `${t.chat.groups}${meetupSlots ? ` ${meetupSlots.active}/${meetupSlots.limit}` : ''}`],
           ['direct', t.chat.direct],
-          ['requests', `${t.chat.requestTab} ${pendingCount}`]] as const).filter(([key]) => !asBusinessId || key === 'all' || key === 'direct').map(([key, label]) => <Pressable analyticsId="app_tabs_chat.pressable.2" key={key} onPress={() => { play('selection'); if (key !== filter) { animateList(); setLoading(true); setFilter(key); } }} accessibilityRole="tab" accessibilityState={{ selected: filter === key }} style={({ pressed }) => [styles.filter, Depth.control, { backgroundColor: filter === key ? theme.accent : theme.backgroundElement, borderBottomColor: filter === key ? theme.accentDepth : theme.backgroundSelected, }]}><ThemedText type="smallBold" style={{ color: filter === key ? theme.accentInk : theme.text }}>{label}</ThemedText></Pressable>)}</View>
+          ['requests', `${t.chat.requestTab} ${pendingCount}${moreRequests ? '+' : ''}`]] as const).filter(([key]) => !asBusinessId || key === 'all' || key === 'direct').map(([key, label]) => <Pressable analyticsId="app_tabs_chat.pressable.2" key={key} onPress={() => { play('selection'); if (key !== filter) { animateList(); setLoading(true); setFilter(key); } }} accessibilityRole="tab" accessibilityState={{ selected: filter === key }} style={({ pressed }) => [styles.filter, Depth.control, { backgroundColor: filter === key ? theme.accent : theme.backgroundElement, borderBottomColor: filter === key ? theme.accentDepth : theme.backgroundSelected, }]}><ThemedText type="smallBold" style={{ color: filter === key ? theme.accentInk : theme.text }}>{label}</ThemedText></Pressable>)}</View>
         {filter === 'requests' && <>
           {requests.length > 0 && <ThemedText type="smallBold">{t.chat.requestsTitle}</ThemedText>}
           {requests.map((request) => <View key={request.id} style={[styles.request, Depth.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-            <View style={styles.requestIdentity}><View style={[styles.requestAvatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle" themeColor="accent">{(request.requester?.nickname ?? t.chat.member).slice(0, 1)}</ThemedText></View>
-              <View style={styles.roomBody}><ThemedText style={styles.requestName}>{request.requester?.nickname ?? t.chat.member}</ThemedText><ThemedText type="small" themeColor="textSecondary">{request.post?.title}</ThemedText><ThemedText type="small" themeColor="accent">{tr("승인 대기")}</ThemedText></View>
+            <View style={styles.requestIdentity}><View style={[styles.requestAvatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle" themeColor="accent">{(request.requester?.nickname || t.chat.member).slice(0, 1)}</ThemedText></View>
+              <View style={styles.roomBody}><ThemedText style={styles.requestName}>{request.requester?.nickname || t.chat.member}</ThemedText><ThemedText type="small" themeColor="textSecondary">{request.post?.title}</ThemedText><ThemedText type="small" themeColor="accent">{tr("승인 대기")}</ThemedText></View>
             </View>
             <ThemedText type="small" themeColor="textSecondary">{request.post?.room?.eventKind ? tr("모임 프로필과 질문 답변이 도착했어요.") : request.message || t.chat.requestMessageEmpty}</ThemedText>
-            {request.post?.room?.eventKind ? <Pressable analyticsId="app_tabs_chat.pressable.4" onPress={() => { play('selection'); router.push({ pathname: '/meetup-application', params: { requestId: request.id } }); }} accessibilityRole="button" accessibilityLabel={tr("{0}님의 프로필과 신청 답변 검토", (request.requester?.nickname ?? t.chat.member))} style={styles.action}><ThemedText type="smallBold" themeColor="accent">{tr("프로필과 답변 검토하기 ›")}</ThemedText></Pressable> : <>
+            {request.post?.room?.eventKind ? <Pressable analyticsId="app_tabs_chat.pressable.4" onPress={() => { play('selection'); router.push({ pathname: '/meetup-application', params: { requestId: request.id } }); }} accessibilityRole="button" accessibilityLabel={tr("{0}님의 프로필과 신청 답변 검토", (request.requester?.nickname || t.chat.member))} style={styles.action}><ThemedText type="smallBold" themeColor="accent">{tr("프로필과 답변 검토하기 ›")}</ThemedText></Pressable> : <>
             {approveId === request.id && <ThemedText type="small" themeColor="textSecondary">{tr("승인하면 신청자의 모임 자리 1개를 사용하고 모임 대화에 참여해요. 기존 멤버의 자리는 추가로 사용하지 않아요.")}</ThemedText>}
             <View style={styles.requestActions}><Pressable analyticsId="app_tabs_chat.pressable.5" onPress={() => { play('selection'); void handleRequest(request, 'rejected'); }} disabled={requestBusy !== null} accessibilityRole="button" accessibilityState={{ disabled: requestBusy !== null }} style={({ pressed }) => [styles.requestButton, Depth.control, { borderColor: theme.line, backgroundColor: theme.card, }]}><ThemedText type="smallBold">{t.chat.reject}</ThemedText></Pressable>
               {approveId === request.id
                 ? <RaisedActionButton compact analyticsId="app_tabs_chat.pressable.6" onPress={() => { play('selection'); void handleRequest(request, 'approved'); }} disabled={requestBusy !== null} busy={requestBusy === request.id} label={tr("확인하고 승인")} />
                 : <Pressable analyticsId="app_tabs_chat.pressable.6" onPress={() => { play('selection'); setApproveId(request.id); }} disabled={requestBusy !== null} accessibilityRole="button" accessibilityState={{ disabled: requestBusy !== null }} style={({ pressed }) => [styles.requestButton, Depth.control, { borderColor: theme.accentDepth, backgroundColor: theme.accent, borderBottomWidth: 3, }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{t.chat.approve}</ThemedText></Pressable>}</View></>}
           </View>)}
+          {moreRequests && <Pressable analyticsId="meetup.requests.more" accessibilityRole="button" disabled={loadingMore} style={styles.requestButton} onPress={() => { play('selection'); void loadOlderRequests(); }}><ThemedText type="smallBold" themeColor="accent">{loadingMore ? tr('신청 불러오는 중…') : tr('이전 모임 신청 더 보기')}</ThemedText></Pressable>}
         </>}
         {error?.userId === scopeKey && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{tr(error.text)}</ThemedText>}
       </View>}
