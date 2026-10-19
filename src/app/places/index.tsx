@@ -17,6 +17,7 @@ import { CITY_PLACES_COLLECTED_AT, getCityRecommendations, getCityPlacesCoverage
 import { useCityPlacesRevision } from '@/hooks/use-city-places';
 import { usePlaceReviewSummaries } from '@/hooks/use-place-review-summaries';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { placeMapRoute } from '@/lib/discovery';
 import { CITIES } from '@/lib/mock';
 
 
@@ -31,7 +32,7 @@ export default function PlacesScreen() {
 }
 
 function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
-  const { tr, locale: appLocale } = useLanguage();
+  const { tr, language, locale: appLocale } = useLanguage();
   const categories: { id: PlaceCategory; label: string }[] = [
     { id: 'all', get label() { return tr("전체"); } }, { id: 'food', get label() { return tr("맛집"); } }, { id: 'cafe', get label() { return tr("카페"); } }, { id: 'places', get label() { return tr("가볼 만한 곳"); } },
   ];
@@ -82,16 +83,16 @@ function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
           <View>
             {places.slice(0, limit).map(place => {
               const rating = getPlaceReviewRating(city.id, place.id, ratings[place.id]);
-              return <Pressable key={place.id} analyticsId="places.open" accessibilityRole="button" accessibilityLabel={tr('{0} 장소 정보와 글링 리뷰', place.name)}
+              return <Pressable key={place.id} analyticsId="places.open" accessibilityRole="button" accessibilityLabel={`${place.name} · ${tr('지도 보기')}`}
               accessibilityValue={rating.score == null ? undefined : { text: tr(rating.source === 'gling' ? '글링 평균 {0}점, 10점 만점' : '{0}점, 10점 만점', rating.score.toFixed(1)) }}
-              onPress={() => { play('selection'); router.push({ pathname: '/places/[id]', params: { id: place.id, cityId: city.id } }); }}
+              onPress={() => { play('selection'); router.push(placeMapRoute(place)); }}
               style={({ pressed }) => [styles.place, { borderBottomColor: theme.line, opacity: pressed ? 0.65 : 1 }]}>
               <CityPlacePhoto place={place} style={styles.photo} />
               <View style={styles.copy}>
                 <ThemedText style={styles.categoryLabel} themeColor="accent">{categories.find(item => item.id === place.category)?.label}</ThemedText>
                 <ThemedText style={styles.placeName} numberOfLines={2}>{place.name}</ThemedText>
                 <PlaceReviewSummary rating={rating} />
-                {!!place.recommendation && <ThemedText type="small" themeColor="textSecondary" numberOfLines={3}>{appLocale === 'en' ? place.recommendation.reasonEn ?? place.recommendation.reason : place.recommendation.reason}</ThemedText>}
+                {!!place.recommendation && <ThemedText type="small" themeColor="textSecondary" numberOfLines={3}>{language === 'en' ? place.recommendation.reasonEn ?? place.recommendation.reason : place.recommendation.reason}</ThemedText>}
                 {!!place.address && <ThemedText style={styles.address} themeColor="textSecondary" numberOfLines={2}>{place.address}</ThemedText>}
               </View>
               <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={14} tintColor={theme.textSecondary} />
