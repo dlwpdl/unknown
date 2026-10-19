@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T21:17:51.406634+00:00",
+  "collectedAt": "2026-10-19T22:26:42.300410+00:00",
   "source": "Verified same-place Wikimedia Commons photographs; dated captures, not popularity ranking",
   "cities": {
     "toronto": [
@@ -944,6 +944,76 @@
         "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
         "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ea/Coroner%27s_Court.jpg/960px-Coroner%27s_Court.jpg",
         "imageSha256": "fff46f7177de3656fa0c739a556256404b7634592b9d2d05e851406913c8cb32"
+      },
+      {
+        "placeId": "osm:node:582801920",
+        "cityId": "vancouver",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d1/G%E1%BB%8Fi_Xo%C3%A0i_at_Anh_and_Chi.jpg/960px-G%E1%BB%8Fi_Xo%C3%A0i_at_Anh_and_Chi.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:G%E1%BB%8Fi_Xo%C3%A0i_at_Anh_and_Chi.jpg",
+        "artist": "Ruth Hartnup",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "0040d4df12148c750533ee3c41d5fe061835f2cf052aa91fa0f5bdf6b802f586"
+      },
+      {
+        "placeId": "osm:node:1947137885",
+        "cityId": "vancouver",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ea/Prado_Cafe%2C_Commercial_Drive_%2840166934712%29.jpg/960px-Prado_Cafe%2C_Commercial_Drive_%2840166934712%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Prado_Cafe,_Commercial_Drive_(40166934712).jpg",
+        "artist": "GoToVan from Vancouver, Canada",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "0768929c3f0c4a9d9780f27ffa89c2a5a3e03fb11bdca94bee1e2c17ec059faa"
+      },
+      {
+        "placeId": "osm:node:11566576120",
+        "cityId": "vancouver",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9b/Kissa_Tanto_interior%2C_early_evening%2C_summer.jpg/960px-Kissa_Tanto_interior%2C_early_evening%2C_summer.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Kissa_Tanto_interior,_early_evening,_summer.jpg",
+        "artist": "Premeditated Chaos",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "6e8ce57649800fb83640acff54e4e4faa8c505c852e27da41046a6c781f2d2cd"
+      },
+      {
+        "placeId": "osm:node:5581881756",
+        "cityId": "vancouver",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4f/St_lawrence_restaurant_interior.jpg/960px-St_lawrence_restaurant_interior.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:St_lawrence_restaurant_interior.jpg",
+        "artist": "Premeditated Chaos",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "121ab7fec7cf7af3531320bae162544a10702c61f9c803a21ae93baa68e71372"
+      },
+      {
+        "placeId": "osm:node:4272653091",
+        "cityId": "vancouver",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/60/Nemesis_coffee_%2839312498605%29.jpg/960px-Nemesis_coffee_%2839312498605%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Nemesis_coffee_(39312498605).jpg",
+        "artist": "GoToVan from Vancouver, Canada",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "0ee6ce506393d1eec3903809e208a5e6b41f8696bd50b7a323d6326a0fd75023"
+      },
+      {
+        "placeId": "osm:node:3836773457",
+        "cityId": "vancouver",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3f/Lunch_Lady_%281%29_%28cropped%29.jpg/960px-Lunch_Lady_%281%29_%28cropped%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Lunch_Lady_(1)_(cropped).jpg",
+        "artist": "Lunarvoyages",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "924dd8346015e99497080e1713e3b3b271853717bdd78f2f2304f102189096b3"
+      },
+      {
+        "placeId": "osm:node:4061931496",
+        "cityId": "vancouver",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/25/Caffe_Cittadella_%2840166703122%29.jpg/960px-Caffe_Cittadella_%2840166703122%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Caffe_Cittadella_(40166703122).jpg",
+        "artist": "GoToVan from Vancouver, Canada",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "5f77c770cfbac160e7edd9b8bc3fd86128e7efc2a06df9cd3d26b4326fa4396d"
       }
     ],
     "montreal": [
@@ -1500,6 +1570,16 @@
         "license": "CC BY-SA 3.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
         "imageSha256": "75648af54a957bca176a7526089894c13bc7a270f3cf18022ba35bbf9a9001e8"
+      },
+      {
+        "placeId": "osm:way:158738659",
+        "cityId": "edmonton",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4a/Duchess_Bake_Shop_%2815246497133%29.jpg/960px-Duchess_Bake_Shop_%2815246497133%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Duchess_Bake_Shop_(15246497133).jpg",
+        "artist": "Mack Male from Edmonton, AB, Canada",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "imageSha256": "8bc48119661c5db5351a76fb3c5f571e1cb444db04f2956c29c8baf782bf1d40"
       }
     ],
     "winnipeg": [
@@ -2035,5 +2115,5 @@
       }
     ]
   },
-  "photoSelectionsReviewedAt": "2026-10-19T21:17:51.406634+00:00"
+  "photoSelectionsReviewedAt": "2026-10-19T22:26:42.300410+00:00"
 }
