@@ -8,6 +8,14 @@ import { useTheme } from '@/hooks/use-theme';
 import type { CityPlace } from '@/lib/city-places';
 
 const bundledPhotos: Record<string, number> = {
+  '0040d4df12148c750533ee3c41d5fe061835f2cf052aa91fa0f5bdf6b802f586': require('../../assets/images/city-places/vancouver-osm-node-582801920.jpg'),
+  '0768929c3f0c4a9d9780f27ffa89c2a5a3e03fb11bdca94bee1e2c17ec059faa': require('../../assets/images/city-places/vancouver-osm-node-1947137885.jpg'),
+  '6e8ce57649800fb83640acff54e4e4faa8c505c852e27da41046a6c781f2d2cd': require('../../assets/images/city-places/vancouver-osm-node-11566576120.jpg'),
+  '121ab7fec7cf7af3531320bae162544a10702c61f9c803a21ae93baa68e71372': require('../../assets/images/city-places/vancouver-osm-node-5581881756.jpg'),
+  '0ee6ce506393d1eec3903809e208a5e6b41f8696bd50b7a323d6326a0fd75023': require('../../assets/images/city-places/vancouver-osm-node-4272653091.jpg'),
+  '924dd8346015e99497080e1713e3b3b271853717bdd78f2f2304f102189096b3': require('../../assets/images/city-places/vancouver-osm-node-3836773457.jpg'),
+  '5f77c770cfbac160e7edd9b8bc3fd86128e7efc2a06df9cd3d26b4326fa4396d': require('../../assets/images/city-places/vancouver-osm-node-4061931496.jpg'),
+  '8bc48119661c5db5351a76fb3c5f571e1cb444db04f2956c29c8baf782bf1d40': require('../../assets/images/city-places/edmonton-osm-way-158738659.jpg'),
   '5cd3939f93b592115719474da944647f256edd50d9a7fa5af038ca42383d4ac2': require('../../assets/images/city-places/calgary-osm-way-1272862441.jpg'),
   '1708b0a573932b1f6da5af43794d3ae1d74b354907a7791e7b6f5d487708830a': require('../../assets/images/city-places/montreal-osm-node-1751185097.jpg'),
   '218f0b1b6535f7971b75202f5f0ef2e55fdfa9cf719d2679158d5fea04ddada4': require('../../assets/images/city-places/winnipeg-osm-relation-20044708.jpg'),

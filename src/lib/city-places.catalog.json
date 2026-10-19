@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T21:17:51.406634+00:00",
+  "collectedAt": "2026-10-19T22:26:42.300410+00:00",
   "source": "OpenStreetMap; source-reviewed Gling photo-spot selections",
   "license": "ODbL-1.0",
   "attribution": "© OpenStreetMap contributors",
@@ -3339,6 +3339,162 @@
           "sourceUrl": "https://www.openstreetmap.org/node/4976343547",
           "website": "https://www.handsonyvr.ca",
           "openingHours": null
+        },
+        {
+          "id": "osm:node:2168314490",
+          "cityId": "vancouver",
+          "name": "Revolver",
+          "category": "cafe",
+          "latitude": 49.2831716,
+          "longitude": -123.109459,
+          "address": "325 Cambie Street Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/node/2168314490",
+          "website": "https://revolvercoffee.ca/",
+          "openingHours": "Mo-Fr 07:30-18:00; Sa 09:00-18:00"
+        },
+        {
+          "id": "osm:node:4682097803",
+          "cityId": "vancouver",
+          "name": "Moja Coffee",
+          "category": "cafe",
+          "latitude": 49.2747084,
+          "longitude": -123.0692817,
+          "address": "1102 Commercial Drive Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/node/4682097803",
+          "website": "https://www.mojacoffee.com/about-the-drive",
+          "openingHours": "07:00-17:00"
+        },
+        {
+          "id": "osm:node:4005041520",
+          "cityId": "vancouver",
+          "name": "Propaganda Coffee",
+          "category": "cafe",
+          "latitude": 49.2804964,
+          "longitude": -123.0990277,
+          "address": "209 East Pender Street Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/node/4005041520",
+          "website": "https://www.propagandacoffee.ca/",
+          "openingHours": "Mo-Sa 08:00-18:00; Su 09:00-17:00"
+        },
+        {
+          "id": "osm:node:1947137885",
+          "cityId": "vancouver",
+          "name": "Prado Cafe",
+          "category": "cafe",
+          "latitude": 49.2671946,
+          "longitude": -123.0694273,
+          "address": "1938 Commercial Drive Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/node/1947137885",
+          "website": "https://pradocafe.co",
+          "openingHours": "Mo-Fr 07:00-20:00, Sa-Su 08:00-19:00"
+        },
+        {
+          "id": "osm:node:11566576120",
+          "cityId": "vancouver",
+          "name": "Kissa Tanto",
+          "category": "food",
+          "latitude": 49.2804783,
+          "longitude": -123.0981769,
+          "address": "263 East Pender Street Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/node/11566576120",
+          "website": "https://www.kissatanto.com/",
+          "openingHours": "We-Th 17:30-23:00; Fr-Sa 17:30-24:00; Su 17:30-23:00"
+        },
+        {
+          "id": "osm:node:5581881756",
+          "cityId": "vancouver",
+          "name": "St. Lawrence Restaurant",
+          "category": "food",
+          "latitude": 49.2832655,
+          "longitude": -123.0978958,
+          "address": "269 Powell Street Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/node/5581881756",
+          "website": "https://www.stlawrencerestaurant.com/",
+          "openingHours": "Tu-Sa 17:00-24:00"
+        },
+        {
+          "id": "osm:node:4272653091",
+          "cityId": "vancouver",
+          "name": "Nemesis",
+          "category": "cafe",
+          "latitude": 49.282764,
+          "longitude": -123.1102832,
+          "address": "302 West Hastings Street Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/node/4272653091",
+          "website": "https://www.nemesis.coffee/",
+          "openingHours": "08:00-16:00"
+        },
+        {
+          "id": "osm:way:709015417",
+          "cityId": "vancouver",
+          "name": "Nemesis Coffee",
+          "category": "cafe",
+          "latitude": 49.2670515,
+          "longitude": -123.0926155,
+          "address": "555 Great Northern Way",
+          "sourceUrl": "https://www.openstreetmap.org/way/709015417",
+          "website": "https://www.nemesis.coffee/",
+          "openingHours": "Mo-Fr 08:00-16:00; Sa-Su 09:00-17:00"
+        },
+        {
+          "id": "osm:way:292012141",
+          "cityId": "vancouver",
+          "name": "JJ Bean",
+          "category": "cafe",
+          "latitude": 49.2649446,
+          "longitude": -123.069428,
+          "address": "2206 Commercial Drive",
+          "sourceUrl": "https://www.openstreetmap.org/way/292012141",
+          "website": null,
+          "openingHours": "Mo-Su 06:00-20:00"
+        },
+        {
+          "id": "osm:node:3769343999",
+          "cityId": "vancouver",
+          "name": "Ask for Luigi",
+          "category": "food",
+          "latitude": 49.2842123,
+          "longitude": -123.097715,
+          "address": "305 Alexander Street Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/node/3769343999",
+          "website": null,
+          "openingHours": "Mo-Su 11:30-14:30,17:30-23:00"
+        },
+        {
+          "id": "osm:node:3836773457",
+          "cityId": "vancouver",
+          "name": "Lunch Lady",
+          "category": "food",
+          "latitude": 49.2749694,
+          "longitude": -123.069283,
+          "address": "1046 Commercial Drive Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/node/3836773457",
+          "website": "https://thelunchlady.com/",
+          "openingHours": "Mo-Su 11:00-21:00"
+        },
+        {
+          "id": "osm:node:4061931496",
+          "cityId": "vancouver",
+          "name": "Caffè Cittadella",
+          "category": "cafe",
+          "latitude": 49.264819,
+          "longitude": -123.117251,
+          "address": "2310 Ash Street Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/node/4061931496",
+          "website": "https://www.caffecittadella.com/",
+          "openingHours": "Mo-Fr 07:00-19:00; Sa 08:00-19:00; Su 08:00-18:00"
+        },
+        {
+          "id": "osm:node:5827984711",
+          "cityId": "vancouver",
+          "name": "Botanist",
+          "category": "food",
+          "latitude": 49.2882856,
+          "longitude": -123.1166693,
+          "address": "1038 Canada Place Vancouver",
+          "sourceUrl": "https://www.openstreetmap.org/node/5827984711",
+          "website": null,
+          "openingHours": "Mo-Fr 06:30-22:00; Sa-Su 07:00-22:00"
         }
       ],
       "recommendations": [
@@ -3704,9 +3860,227 @@
             "responseSha256": "1e8f269acf795ece6021f6e2c2f2a24b1042b71797e49bba5e0476899e7dff94",
             "reference": "https://www.openstreetmap.org/node/4976343547",
             "osmTimestamp": "2026-10-19T21:03:50Z"
+          },
+          {
+            "placeId": "osm:node:2168314490",
+            "responseSha256": "afd2037591541caedfd8913981d0ce4b8dfc35d7358193320fbdbe86ccab16e9",
+            "reference": "https://wanderlog.com/list/geoCategory/17847/best-coffee-shops-and-best-cafes-in-vancouver",
+            "sourceGooglePlaceId": "ChIJk5IDu3lxhlQRrQ0XKyJs_mk",
+            "sourceObservedAt": "2026-10-19T10:23:07.792Z",
+            "osmTimestamp": "2026-10-19T22:14:05Z"
+          },
+          {
+            "placeId": "osm:node:4682097803",
+            "responseSha256": "afd2037591541caedfd8913981d0ce4b8dfc35d7358193320fbdbe86ccab16e9",
+            "reference": "https://wanderlog.com/list/geoCategory/17847/best-coffee-shops-and-best-cafes-in-vancouver",
+            "sourceGooglePlaceId": "ChIJlf-KUj5xhlQRIB5FC5DJB5Y",
+            "sourceObservedAt": "2026-10-19T10:23:07.792Z",
+            "osmTimestamp": "2026-10-19T22:14:05Z"
+          },
+          {
+            "placeId": "osm:node:4005041520",
+            "responseSha256": "afd2037591541caedfd8913981d0ce4b8dfc35d7358193320fbdbe86ccab16e9",
+            "reference": "https://wanderlog.com/list/geoCategory/17847/best-coffee-shops-and-best-cafes-in-vancouver",
+            "sourceGooglePlaceId": "ChIJ18_NQHBxhlQR_WCpqn_kfAs",
+            "sourceObservedAt": "2026-10-19T10:23:07.792Z",
+            "osmTimestamp": "2026-10-19T22:14:05Z"
+          },
+          {
+            "placeId": "osm:node:1947137885",
+            "responseSha256": "afd2037591541caedfd8913981d0ce4b8dfc35d7358193320fbdbe86ccab16e9",
+            "reference": "https://wanderlog.com/list/geoCategory/17847/best-coffee-shops-and-best-cafes-in-vancouver",
+            "sourceGooglePlaceId": "ChIJXUNrtUdxhlQRMWfiCLV27a0",
+            "sourceObservedAt": "2026-10-19T10:23:07.792Z",
+            "osmTimestamp": "2026-10-19T22:14:05Z"
+          },
+          {
+            "placeId": "osm:node:11566576120",
+            "responseSha256": "afd2037591541caedfd8913981d0ce4b8dfc35d7358193320fbdbe86ccab16e9",
+            "reference": "https://wanderlog.com/list/geoCategory/74966/where-to-eat-best-restaurants-in-vancouver",
+            "sourceGooglePlaceId": "ChIJD8oBSnBxhlQRaX3X1supJ0g",
+            "sourceObservedAt": "2026-10-19T19:04:25.744Z",
+            "osmTimestamp": "2026-10-19T22:14:05Z"
+          },
+          {
+            "placeId": "osm:node:5581881756",
+            "responseSha256": "afd2037591541caedfd8913981d0ce4b8dfc35d7358193320fbdbe86ccab16e9",
+            "reference": "https://wanderlog.com/list/geoCategory/74966/where-to-eat-best-restaurants-in-vancouver",
+            "sourceGooglePlaceId": "ChIJl9_waXFxhlQRbBq6lKwoHic",
+            "sourceObservedAt": "2026-10-19T19:04:25.744Z",
+            "osmTimestamp": "2026-10-19T22:14:05Z"
+          },
+          {
+            "placeId": "osm:node:4272653091",
+            "responseSha256": "afd2037591541caedfd8913981d0ce4b8dfc35d7358193320fbdbe86ccab16e9",
+            "reference": "https://wanderlog.com/list/geoCategory/17847/best-coffee-shops-and-best-cafes-in-vancouver",
+            "sourceGooglePlaceId": "ChIJRZTroXlxhlQRihHJRYedPys",
+            "sourceObservedAt": "2026-10-19T10:23:07.792Z",
+            "osmTimestamp": "2026-10-19T22:14:05Z"
+          },
+          {
+            "placeId": "osm:way:709015417",
+            "responseSha256": "afd2037591541caedfd8913981d0ce4b8dfc35d7358193320fbdbe86ccab16e9",
+            "reference": "https://wanderlog.com/list/geoCategory/17847/best-coffee-shops-and-best-cafes-in-vancouver",
+            "sourceGooglePlaceId": "ChIJZzxdHW9xhlQRKS9s0XXYUZQ",
+            "sourceObservedAt": "2026-10-19T10:23:07.792Z",
+            "osmTimestamp": "2026-10-19T22:14:05Z"
+          },
+          {
+            "placeId": "osm:way:292012141",
+            "responseSha256": "afd2037591541caedfd8913981d0ce4b8dfc35d7358193320fbdbe86ccab16e9",
+            "reference": "https://wanderlog.com/list/geoCategory/17847/best-coffee-shops-and-best-cafes-in-vancouver",
+            "sourceGooglePlaceId": "ChIJ812kokhxhlQRMkHWuTIQBuw",
+            "sourceObservedAt": "2026-10-19T10:23:07.792Z",
+            "osmTimestamp": "2026-10-19T22:14:05Z"
+          },
+          {
+            "placeId": "osm:node:3769343999",
+            "responseSha256": "afd2037591541caedfd8913981d0ce4b8dfc35d7358193320fbdbe86ccab16e9",
+            "reference": "https://wanderlog.com/list/geoCategory/74966/where-to-eat-best-restaurants-in-vancouver",
+            "sourceGooglePlaceId": "ChIJe-XLV3FxhlQRp_RhBdLadTM",
+            "sourceObservedAt": "2026-10-19T19:04:25.744Z",
+            "osmTimestamp": "2026-10-19T22:14:05Z"
+          },
+          {
+            "placeId": "osm:node:3836773457",
+            "responseSha256": "afd2037591541caedfd8913981d0ce4b8dfc35d7358193320fbdbe86ccab16e9",
+            "reference": "https://wanderlog.com/list/geoCategory/74966/where-to-eat-best-restaurants-in-vancouver",
+            "sourceGooglePlaceId": "ChIJL9D-EKBxhlQRsrmXmBaXfUU",
+            "sourceObservedAt": "2026-10-19T19:04:25.744Z",
+            "osmTimestamp": "2026-10-19T22:14:05Z"
+          },
+          {
+            "placeId": "osm:node:4061931496",
+            "responseSha256": "19fa4774aba2a6b461d96318c0c7cdd621cb7f8d85e30a7afa810802e972b40a",
+            "reference": "https://wanderlog.com/list/geoCategory/17847/best-coffee-shops-and-best-cafes-in-vancouver",
+            "sourceGooglePlaceId": "ChIJ1dHk_txzhlQREPMrE5srBLM",
+            "sourceObservedAt": "2026-10-19T10:23:07.792Z",
+            "osmTimestamp": "2026-10-19T22:06:02Z"
+          },
+          {
+            "placeId": "osm:node:5827984711",
+            "responseSha256": "0623333e754c5fc519ed123f6f2d58ff94decba9aea0a876f557c724aa724f13",
+            "reference": "https://wanderlog.com/list/geoCategory/74966/where-to-eat-best-restaurants-in-vancouver",
+            "sourceGooglePlaceId": "ChIJJYVOCYNxhlQRrkWpvkO-Ao4",
+            "sourceObservedAt": "2026-10-19T19:04:25.744Z",
+            "osmTimestamp": "2026-10-19T10:24:20Z"
           }
         ]
-      }
+      },
+      "diningRecommendations": [
+        {
+          "placeId": "osm:node:582801920",
+          "reason": "메인 스트리트에서 베트남식 한 끼를 찾을 때.",
+          "reasonEn": "Vietnamese dining on Main Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74966/where-to-eat-best-restaurants-in-vancouver",
+          "verifiedAt": "2026-10-19T19:04:25.744Z"
+        },
+        {
+          "placeId": "osm:node:644348654",
+          "reason": "웨스트 브로드웨이에서 커피 한 잔 쉬어가기.",
+          "reasonEn": "Take a coffee break on West Broadway.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17847/best-coffee-shops-and-best-cafes-in-vancouver",
+          "verifiedAt": "2026-10-19T10:23:07.792Z"
+        },
+        {
+          "placeId": "osm:node:6339016833",
+          "reason": "웨스트 1번가에서 식사 약속을 잡을 때 살펴볼 레스토랑.",
+          "reasonEn": "A restaurant to consider for a meal on West 1st Avenue.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74966/where-to-eat-best-restaurants-in-vancouver",
+          "verifiedAt": "2026-10-19T19:04:25.744Z"
+        },
+        {
+          "placeId": "osm:node:2168314490",
+          "reason": "캠비 스트리트의 커피 바. 가스타운 산책길에 들러보세요.",
+          "reasonEn": "A coffee bar on Cambie Street for a Gastown walk.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17847/best-coffee-shops-and-best-cafes-in-vancouver",
+          "verifiedAt": "2026-10-19T10:23:07.792Z"
+        },
+        {
+          "placeId": "osm:node:4682097803",
+          "reason": "커머셜 드라이브에서 커피 한 잔 쉬어가기.",
+          "reasonEn": "Take a coffee break on Commercial Drive.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17847/best-coffee-shops-and-best-cafes-in-vancouver",
+          "verifiedAt": "2026-10-19T10:23:07.792Z"
+        },
+        {
+          "placeId": "osm:node:4005041520",
+          "reason": "이스트 펜더 스트리트의 커피 바.",
+          "reasonEn": "A coffee bar on East Pender Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17847/best-coffee-shops-and-best-cafes-in-vancouver",
+          "verifiedAt": "2026-10-19T10:23:07.792Z"
+        },
+        {
+          "placeId": "osm:node:1947137885",
+          "reason": "커머셜 드라이브의 벽돌 건물 1층 카페.",
+          "reasonEn": "A ground-floor cafe in a brick building on Commercial Drive.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17847/best-coffee-shops-and-best-cafes-in-vancouver",
+          "verifiedAt": "2026-10-19T10:23:07.792Z"
+        },
+        {
+          "placeId": "osm:node:11566576120",
+          "reason": "차이나타운의 일식·이탈리안 퓨전 레스토랑.",
+          "reasonEn": "Japanese and Italian fusion in Chinatown.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74966/where-to-eat-best-restaurants-in-vancouver",
+          "verifiedAt": "2026-10-19T19:04:25.744Z"
+        },
+        {
+          "placeId": "osm:node:5581881756",
+          "reason": "파월 스트리트에서 프랑스·퀘벡 요리를 맛볼 수 있는 곳.",
+          "reasonEn": "French and Quebecois dining on Powell Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74966/where-to-eat-best-restaurants-in-vancouver",
+          "verifiedAt": "2026-10-19T19:04:25.744Z"
+        },
+        {
+          "placeId": "osm:node:4272653091",
+          "reason": "웨스트 헤이스팅스 302번지의 네메시스 가스타운 지점.",
+          "reasonEn": "Nemesis Gastown at 302 West Hastings Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17847/best-coffee-shops-and-best-cafes-in-vancouver",
+          "verifiedAt": "2026-10-19T10:23:07.792Z"
+        },
+        {
+          "placeId": "osm:way:709015417",
+          "reason": "그레이트 노던 웨이의 네메시스 지점.",
+          "reasonEn": "The Nemesis branch on Great Northern Way.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17847/best-coffee-shops-and-best-cafes-in-vancouver",
+          "verifiedAt": "2026-10-19T10:23:07.792Z"
+        },
+        {
+          "placeId": "osm:way:292012141",
+          "reason": "커머셜 드라이브 2206번지의 JJ 빈.",
+          "reasonEn": "JJ Bean at 2206 Commercial Drive.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17847/best-coffee-shops-and-best-cafes-in-vancouver",
+          "verifiedAt": "2026-10-19T10:23:07.792Z"
+        },
+        {
+          "placeId": "osm:node:3769343999",
+          "reason": "알렉산더 스트리트에서 즐기는 이탈리안 식사.",
+          "reasonEn": "Italian dining on Alexander Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74966/where-to-eat-best-restaurants-in-vancouver",
+          "verifiedAt": "2026-10-19T19:04:25.744Z"
+        },
+        {
+          "placeId": "osm:node:3836773457",
+          "reason": "커머셜 드라이브의 베트남식 레스토랑. 파란 차양을 찾아보세요.",
+          "reasonEn": "A Vietnamese restaurant on Commercial Drive with a blue awning.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74966/where-to-eat-best-restaurants-in-vancouver",
+          "verifiedAt": "2026-10-19T19:04:25.744Z"
+        },
+        {
+          "placeId": "osm:node:4061931496",
+          "reason": "애시 스트리트의 주택 모양 카페에서 커피 한 잔.",
+          "reasonEn": "Coffee in a house-shaped cafe on Ash Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17847/best-coffee-shops-and-best-cafes-in-vancouver",
+          "verifiedAt": "2026-10-19T10:23:07.792Z"
+        },
+        {
+          "placeId": "osm:node:5827984711",
+          "reason": "페어몬트 퍼시픽 림 호텔 안의 레스토랑.",
+          "reasonEn": "A restaurant inside the Fairmont Pacific Rim hotel.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74966/where-to-eat-best-restaurants-in-vancouver",
+          "verifiedAt": "2026-10-19T19:04:25.744Z"
+        }
+      ]
     },
     "montreal": {
       "boundaryId": "osm:relation:1634158",
@@ -4843,6 +5217,18 @@
           "sourceUrl": "https://www.openstreetmap.org/node/1751185097",
           "website": null,
           "openingHours": "24/7"
+        },
+        {
+          "id": "osm:node:456028172",
+          "cityId": "montreal",
+          "name": "Restaurant Beba",
+          "category": "food",
+          "latitude": 45.4648639,
+          "longitude": -73.567749,
+          "address": "3900 Rue Éthel Montréal",
+          "sourceUrl": "https://www.openstreetmap.org/node/456028172",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
@@ -5105,9 +5491,40 @@
             "sourceGooglePlaceId": "ChIJQ2XG23gZyUwRoCNTC2xte4M",
             "sourceObservedAt": "2026-10-19T04:08:37.219Z",
             "osmTimestamp": "2026-10-19T09:20:48Z"
+          },
+          {
+            "placeId": "osm:node:456028172",
+            "responseSha256": "eca934d0c7b9eb581cb609852178a573d3132caab3198e9eade4e1527fb695c8",
+            "reference": "https://wanderlog.com/list/geoCategory/74965/where-to-eat-best-restaurants-in-montreal",
+            "sourceGooglePlaceId": "ChIJsU0h0aURyUwRi0ds76tTJYw",
+            "sourceObservedAt": "2026-10-19T19:04:45.992Z",
+            "osmTimestamp": "2026-10-14T03:06:56Z"
           }
         ]
-      }
+      },
+      "diningRecommendations": [
+        {
+          "placeId": "osm:node:237589460",
+          "reason": "몬트리올에서 크루아상과 커피로 쉬어갈 카페.",
+          "reasonEn": "A Montreal stop for croissants and coffee.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17846/best-coffee-shops-and-best-cafes-in-montreal",
+          "verifiedAt": "2026-10-19T19:04:56.082Z"
+        },
+        {
+          "placeId": "osm:node:343490371",
+          "reason": "생로랑 대로의 슈워츠 델리.",
+          "reasonEn": "Schwartz’s Deli on Boulevard Saint-Laurent.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74965/where-to-eat-best-restaurants-in-montreal",
+          "verifiedAt": "2026-10-19T19:04:45.992Z"
+        },
+        {
+          "placeId": "osm:node:456028172",
+          "reason": "에텔 거리에서 식사 장소를 찾을 때 살펴볼 베바.",
+          "reasonEn": "Consider Beba for a meal on Rue Éthel.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74965/where-to-eat-best-restaurants-in-montreal",
+          "verifiedAt": "2026-10-19T19:04:45.992Z"
+        }
+      ]
     },
     "calgary": {
       "boundaryId": "osm:relation:3227127",
@@ -7428,6 +7845,30 @@
           "sourceUrl": "https://www.openstreetmap.org/way/1018647813",
           "website": "https://albertarailwaymuseum.com/",
           "openingHours": "Sa-Su 10:00-17:00"
+        },
+        {
+          "id": "osm:way:158738659",
+          "cityId": "edmonton",
+          "name": "Duchess Bake Shop",
+          "category": "cafe",
+          "latitude": 53.5515238,
+          "longitude": -113.5363087,
+          "address": "10718 124 Street NW",
+          "sourceUrl": "https://www.openstreetmap.org/way/158738659",
+          "website": "https://duchessbakeshop.com",
+          "openingHours": "Tu-Fr 09:00-19:00; Sa 10:00-18:00; Su 10:00-17:00"
+        },
+        {
+          "id": "osm:node:651254318",
+          "cityId": "edmonton",
+          "name": "High Level Diner",
+          "category": "food",
+          "latitude": 53.5239707,
+          "longitude": -113.5126678,
+          "address": "10912 88 Avenue North-west",
+          "sourceUrl": "https://www.openstreetmap.org/node/651254318",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
@@ -7609,9 +8050,55 @@
             "sourceGooglePlaceId": "ChIJiaYIp1EjoFMRn9eaeBgwOYw",
             "sourceObservedAt": "2026-10-19T04:09:00.146Z",
             "osmTimestamp": "2026-10-19T09:21:51Z"
+          },
+          {
+            "placeId": "osm:way:158738659",
+            "responseSha256": "f3f3a7a891df4131316c5be4b73edbec89fec77ab95146e3df1e61ebbd855467",
+            "reference": "https://wanderlog.com/list/geoCategory/17852/best-coffee-shops-and-best-cafes-in-edmonton",
+            "sourceGooglePlaceId": "ChIJ2x8ZfdEjoFMR9rCeZvnHvlc",
+            "sourceObservedAt": "2026-10-19T19:05:56.497Z",
+            "osmTimestamp": "2026-10-19T09:21:51Z"
+          },
+          {
+            "placeId": "osm:node:651254318",
+            "responseSha256": "332a7b5160bfc10fd7ce0c9d7bd1d6fb63389e5fd51eb944c11c8e1b527bd5a2",
+            "reference": "https://wanderlog.com/list/geoCategory/74971/where-to-eat-best-restaurants-in-edmonton",
+            "sourceGooglePlaceId": "ChIJxwr8PBkioFMRyyBwoxNFEn4",
+            "sourceObservedAt": "2026-10-19T19:05:46.430Z",
+            "osmTimestamp": "2026-10-14T03:06:56Z"
           }
         ]
-      }
+      },
+      "diningRecommendations": [
+        {
+          "placeId": "osm:node:944921445",
+          "reason": "캘거리 트레일의 커피 바에서 잠깐 쉬어가세요.",
+          "reasonEn": "Pause for coffee on Calgary Trail.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17852/best-coffee-shops-and-best-cafes-in-edmonton",
+          "verifiedAt": "2026-10-19T19:05:56.497Z"
+        },
+        {
+          "placeId": "osm:node:677232592",
+          "reason": "커피를 마실 수 있는 커뮤니티 아트 카페.",
+          "reasonEn": "A community arts coffeehouse.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17852/best-coffee-shops-and-best-cafes-in-edmonton",
+          "verifiedAt": "2026-10-19T19:05:56.497Z"
+        },
+        {
+          "placeId": "osm:way:158738659",
+          "reason": "124번가의 베이커리. 페이스트리가 생각날 때 들러보세요.",
+          "reasonEn": "A bakery on 124 Street for a pastry stop.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17852/best-coffee-shops-and-best-cafes-in-edmonton",
+          "verifiedAt": "2026-10-19T19:05:56.497Z"
+        },
+        {
+          "placeId": "osm:node:651254318",
+          "reason": "88번가의 하이레벨 다이너에서 한 끼.",
+          "reasonEn": "A meal at Highlevel Diner on 88 Avenue.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74971/where-to-eat-best-restaurants-in-edmonton",
+          "verifiedAt": "2026-10-19T19:05:46.430Z"
+        }
+      ]
     },
     "winnipeg": {
       "boundaryId": "osm:relation:1790696",
@@ -8712,6 +9199,66 @@
           "sourceUrl": "https://www.openstreetmap.org/relation/20044708",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:node:5402811587",
+          "cityId": "winnipeg",
+          "name": "Clementine Cafe",
+          "category": "food",
+          "latitude": 49.8990079,
+          "longitude": -97.1415298,
+          "address": "123 Princess Street Winnipeg",
+          "sourceUrl": "https://www.openstreetmap.org/node/5402811587",
+          "website": null,
+          "openingHours": "Mo-Su 09:00-14:00"
+        },
+        {
+          "id": "osm:node:2586950303",
+          "cityId": "winnipeg",
+          "name": "Café Postal",
+          "category": "cafe",
+          "latitude": 49.8921969,
+          "longitude": -97.1210426,
+          "address": "202 Provencher Boulevard Winnipeg",
+          "sourceUrl": "https://www.openstreetmap.org/node/2586950303",
+          "website": null,
+          "openingHours": "Mo-Sa 07:30-16:00; Su,PH 09:00-14:00"
+        },
+        {
+          "id": "osm:node:3581705767",
+          "cityId": "winnipeg",
+          "name": "Bronuts",
+          "category": "cafe",
+          "latitude": 49.8981393,
+          "longitude": -97.1413857,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/node/3581705767",
+          "website": "https://www.bronuts.ca/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:node:5471615069",
+          "cityId": "winnipeg",
+          "name": "Little Sister Coffee Maker",
+          "category": "cafe",
+          "latitude": 49.8789196,
+          "longitude": -97.1467144,
+          "address": "470 River Avenue",
+          "sourceUrl": "https://www.openstreetmap.org/node/5471615069",
+          "website": "https://www.littlesistercoffeemaker.ca/",
+          "openingHours": "Mo-Fr 07:00-17:00; Sa-Su 08:00-17:00"
+        },
+        {
+          "id": "osm:node:3905550179",
+          "cityId": "winnipeg",
+          "name": "Folio Café",
+          "category": "cafe",
+          "latitude": 49.8583724,
+          "longitude": -97.2319137,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/node/3905550179",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
@@ -8917,6 +9464,46 @@
             "sourceGooglePlaceId": "ChIJ4zI34Pxz6lIRJuzBouLyBX0",
             "sourceObservedAt": "2026-10-19T19:06:06.562Z",
             "osmTimestamp": "2026-10-19T09:22:50Z"
+          },
+          {
+            "placeId": "osm:node:5402811587",
+            "responseSha256": "8538bca8113bdfff8e3e0b627eb81ce4389c45cf48e3d1741d209e3c3d391de3",
+            "reference": "https://wanderlog.com/list/geoCategory/17853/best-coffee-shops-and-best-cafes-in-winnipeg",
+            "sourceGooglePlaceId": "ChIJNX6ENVxx6lIR3p18rYEn-yw",
+            "sourceObservedAt": "2026-10-19T19:06:26.759Z",
+            "osmTimestamp": "2026-10-19T09:22:50Z"
+          },
+          {
+            "placeId": "osm:node:2586950303",
+            "responseSha256": "7991481b1e6fee03e5fd5a19c24f966233aded629e6a6d848cd025811b8e9651",
+            "reference": "https://wanderlog.com/list/geoCategory/17853/best-coffee-shops-and-best-cafes-in-winnipeg",
+            "sourceGooglePlaceId": "ChIJ-yzO8zdx6lIRb4Rf-RRMOb4",
+            "sourceObservedAt": "2026-10-19T19:06:26.759Z",
+            "osmTimestamp": "2026-10-14T03:10:02Z"
+          },
+          {
+            "placeId": "osm:node:3581705767",
+            "responseSha256": "7991481b1e6fee03e5fd5a19c24f966233aded629e6a6d848cd025811b8e9651",
+            "reference": "https://wanderlog.com/list/geoCategory/17853/best-coffee-shops-and-best-cafes-in-winnipeg",
+            "sourceGooglePlaceId": "ChIJIwGSQFxx6lIRUfaegPgk5JQ",
+            "sourceObservedAt": "2026-10-19T19:06:26.759Z",
+            "osmTimestamp": "2026-10-14T03:10:02Z"
+          },
+          {
+            "placeId": "osm:node:5471615069",
+            "responseSha256": "7991481b1e6fee03e5fd5a19c24f966233aded629e6a6d848cd025811b8e9651",
+            "reference": "https://wanderlog.com/list/geoCategory/17853/best-coffee-shops-and-best-cafes-in-winnipeg",
+            "sourceGooglePlaceId": "ChIJ8ce6TwB06lIR7d7WvboZLAo",
+            "sourceObservedAt": "2026-10-19T19:06:26.759Z",
+            "osmTimestamp": "2026-10-14T03:10:02Z"
+          },
+          {
+            "placeId": "osm:node:3905550179",
+            "responseSha256": "7991481b1e6fee03e5fd5a19c24f966233aded629e6a6d848cd025811b8e9651",
+            "reference": "https://wanderlog.com/list/geoCategory/17853/best-coffee-shops-and-best-cafes-in-winnipeg",
+            "sourceGooglePlaceId": "ChIJmRvw47Z06lIRZD4pRTqXyqA",
+            "sourceObservedAt": "2026-10-19T19:06:26.759Z",
+            "osmTimestamp": "2026-10-14T03:10:02Z"
           }
         ]
       },
@@ -8927,6 +9514,76 @@
           "reasonEn": "A pub in a historic King Street building, a stop while exploring the Exchange District.",
           "sourceUrl": "https://wanderlog.com/list/geoCategory/74972/where-to-eat-best-restaurants-in-winnipeg",
           "verifiedAt": "2026-10-19T19:06:16.628Z"
+        },
+        {
+          "placeId": "osm:node:739144927",
+          "reason": "웨이벌리 스트리트의 이탈리안 레스토랑.",
+          "reasonEn": "Italian dining on Waverley Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74972/where-to-eat-best-restaurants-in-winnipeg",
+          "verifiedAt": "2026-10-19T19:06:16.628Z"
+        },
+        {
+          "placeId": "osm:node:638868123",
+          "reason": "더 포크스에서 커피 한 잔.",
+          "reasonEn": "A coffee stop at The Forks.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17853/best-coffee-shops-and-best-cafes-in-winnipeg",
+          "verifiedAt": "2026-10-19T19:06:26.759Z"
+        },
+        {
+          "placeId": "osm:node:792138086",
+          "reason": "위니펙에서 식사 장소를 찾을 때 살펴볼 프레리 잉크.",
+          "reasonEn": "Consider Prairie Ink when planning a meal in Winnipeg.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17853/best-coffee-shops-and-best-cafes-in-winnipeg",
+          "verifiedAt": "2026-10-19T19:06:26.759Z"
+        },
+        {
+          "placeId": "osm:node:362602191",
+          "reason": "배너타인 애비뉴의 샘스 플레이스에서 커피를 즐겨보세요.",
+          "reasonEn": "Coffee at Sam’s Place on Bannatyne Avenue.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17853/best-coffee-shops-and-best-cafes-in-winnipeg",
+          "verifiedAt": "2026-10-19T19:06:26.759Z"
+        },
+        {
+          "placeId": "osm:node:638868132",
+          "reason": "포크스마켓 로드에서 식사할 곳을 찾는다면.",
+          "reasonEn": "A dining option on Forks Market Road.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74972/where-to-eat-best-restaurants-in-winnipeg",
+          "verifiedAt": "2026-10-19T19:06:16.628Z"
+        },
+        {
+          "placeId": "osm:node:5402811587",
+          "reason": "프린세스 스트리트에서 식사를 계획할 때 살펴볼 클레멘타인.",
+          "reasonEn": "Consider Clementine for a meal on Princess Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17853/best-coffee-shops-and-best-cafes-in-winnipeg",
+          "verifiedAt": "2026-10-19T19:06:26.759Z"
+        },
+        {
+          "placeId": "osm:node:2586950303",
+          "reason": "프로방셰 대로에서 커피 한 잔 쉬어가기.",
+          "reasonEn": "Take a coffee break on Provencher Boulevard.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17853/best-coffee-shops-and-best-cafes-in-winnipeg",
+          "verifiedAt": "2026-10-19T19:06:26.759Z"
+        },
+        {
+          "placeId": "osm:node:3581705767",
+          "reason": "위니펙에서 도넛이 생각날 때 들를 브로너츠.",
+          "reasonEn": "A Winnipeg stop for doughnuts at Bronuts.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17853/best-coffee-shops-and-best-cafes-in-winnipeg",
+          "verifiedAt": "2026-10-19T19:06:26.759Z"
+        },
+        {
+          "placeId": "osm:node:5471615069",
+          "reason": "리버 애비뉴의 리틀 시스터 커피 메이커.",
+          "reasonEn": "Little Sister Coffee Maker on River Avenue.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17853/best-coffee-shops-and-best-cafes-in-winnipeg",
+          "verifiedAt": "2026-10-19T19:06:26.759Z"
+        },
+        {
+          "placeId": "osm:node:3905550179",
+          "reason": "위니펙에서 커피 마실 곳을 찾을 때 살펴볼 폴리오 카페.",
+          "reasonEn": "Consider folio café for coffee in Winnipeg.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17853/best-coffee-shops-and-best-cafes-in-winnipeg",
+          "verifiedAt": "2026-10-19T19:06:26.759Z"
         }
       ]
     },
@@ -9885,6 +10542,42 @@
           "sourceUrl": "https://www.openstreetmap.org/way/298718480",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:node:2725563231",
+          "cityId": "saskatoon",
+          "name": "Konga Cafe",
+          "category": "food",
+          "latitude": 52.131186,
+          "longitude": -106.6808587,
+          "address": "206 Avenue H North Saskatoon",
+          "sourceUrl": "https://www.openstreetmap.org/node/2725563231",
+          "website": "https://www.kongacafe.com/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:node:14181134702",
+          "cityId": "saskatoon",
+          "name": "Living Sky Café",
+          "category": "cafe",
+          "latitude": 52.1263559,
+          "longitude": -106.6634243,
+          "address": "245 3rd Avenue South",
+          "sourceUrl": "https://www.openstreetmap.org/node/14181134702",
+          "website": "https://livingskycafe.com/",
+          "openingHours": "Mo-Su 09:00-15:00"
+        },
+        {
+          "id": "osm:node:12462500957",
+          "cityId": "saskatoon",
+          "name": "Sparrow Coffee",
+          "category": "cafe",
+          "latitude": 52.1364996,
+          "longitude": -106.6596735,
+          "address": "536 2nd Avenue North Saskatoon",
+          "sourceUrl": "https://www.openstreetmap.org/node/12462500957",
+          "website": "https://www.sparrowcoffee.ca/",
+          "openingHours": "Mo-Th 07:00-19:00; Fr,Sa 07:00-17:00; Su 08:00-16:00"
         }
       ],
       "recommendations": [
@@ -9944,7 +10637,86 @@
           "sourceUrl": "https://www.discoversaskatoon.com/blog/best-spots-for-photographing-saskatoon",
           "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         }
-      ]
+      ],
+      "diningRecommendations": [
+        {
+          "placeId": "osm:node:2748206723",
+          "reason": "새스커툰에서 커피 마실 곳을 찾는다면 시티 퍼크스.",
+          "reasonEn": "Consider City Perks for a coffee stop in Saskatoon.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/287696/best-coffee-shops-and-best-cafes-in-saskatoon",
+          "verifiedAt": "2026-10-19T19:06:46.893Z"
+        },
+        {
+          "placeId": "osm:node:4550086489",
+          "reason": "14번가 이스트에서 쉬어갈 수 있는 카페.",
+          "reasonEn": "A cafe stop on 14th Street East.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/287696/best-coffee-shops-and-best-cafes-in-saskatoon",
+          "verifiedAt": "2026-10-19T19:06:46.893Z"
+        },
+        {
+          "placeId": "osm:node:9673905860",
+          "reason": "20번가 웨스트를 걷다가 커피 한 잔.",
+          "reasonEn": "Stop for coffee while exploring 20th Street West.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/287696/best-coffee-shops-and-best-cafes-in-saskatoon",
+          "verifiedAt": "2026-10-19T19:06:46.893Z"
+        },
+        {
+          "placeId": "osm:node:2712922743",
+          "reason": "론 애비뉴에서 샌드위치와 커피로 가볍게 한 끼.",
+          "reasonEn": "Sandwiches and coffee on Lorne Avenue.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/287696/best-coffee-shops-and-best-cafes-in-saskatoon",
+          "verifiedAt": "2026-10-19T19:06:46.893Z"
+        },
+        {
+          "placeId": "osm:node:2725563231",
+          "reason": "애비뉴 H 노스에서 즐길 수 있는 자메이카 음식.",
+          "reasonEn": "Jamaican food on Avenue H North.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/203180/where-to-eat-best-restaurants-in-saskatoon",
+          "verifiedAt": "2026-10-19T19:06:36.824Z"
+        },
+        {
+          "placeId": "osm:node:14181134702",
+          "reason": "3번가 사우스의 리빙 스카이 카페.",
+          "reasonEn": "Living Sky Café on 3rd Avenue South.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/287696/best-coffee-shops-and-best-cafes-in-saskatoon",
+          "verifiedAt": "2026-10-19T19:06:46.893Z"
+        },
+        {
+          "placeId": "osm:node:12462500957",
+          "reason": "2번가 노스에서 커피 한 잔 쉬어갈 곳.",
+          "reasonEn": "A coffee stop on 2nd Avenue North.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/287696/best-coffee-shops-and-best-cafes-in-saskatoon",
+          "verifiedAt": "2026-10-19T19:06:46.893Z"
+        }
+      ],
+      "selectionIdentityEvidence": {
+        "additionalResponses": [
+          {
+            "placeId": "osm:node:2725563231",
+            "responseSha256": "4666c8c2745cf81d37633d8a2578d0e8f0cc296391da13d70f39db20047ce0fd",
+            "reference": "https://wanderlog.com/list/geoCategory/203180/where-to-eat-best-restaurants-in-saskatoon",
+            "sourceGooglePlaceId": "ChIJWzw2MST3BFMRuMGRAXl_hfk",
+            "sourceObservedAt": "2026-10-19T19:06:36.824Z",
+            "osmTimestamp": "2026-10-14T03:11:02Z"
+          },
+          {
+            "placeId": "osm:node:14181134702",
+            "responseSha256": "4666c8c2745cf81d37633d8a2578d0e8f0cc296391da13d70f39db20047ce0fd",
+            "reference": "https://wanderlog.com/list/geoCategory/287696/best-coffee-shops-and-best-cafes-in-saskatoon",
+            "sourceGooglePlaceId": "ChIJsd8Recb2BFMRgtZcHAsmc9Q",
+            "sourceObservedAt": "2026-10-19T19:06:46.893Z",
+            "osmTimestamp": "2026-10-14T03:11:02Z"
+          },
+          {
+            "placeId": "osm:node:12462500957",
+            "responseSha256": "4666c8c2745cf81d37633d8a2578d0e8f0cc296391da13d70f39db20047ce0fd",
+            "reference": "https://wanderlog.com/list/geoCategory/287696/best-coffee-shops-and-best-cafes-in-saskatoon",
+            "sourceGooglePlaceId": "ChIJ2z9wEKX3BFMRVCvNSwVvd2s",
+            "sourceObservedAt": "2026-10-19T19:06:46.893Z",
+            "osmTimestamp": "2026-10-14T03:11:02Z"
+          }
+        ]
+      }
     },
     "ottawa": {
       "boundaryId": "osm:relation:4136816",
@@ -10929,6 +11701,29 @@
           "sourceUrl": "https://en.wikivoyage.org/wiki/Ottawa",
           "verifiedAt": "2026-10-19T07:46:10.967481+00:00"
         }
+      ],
+      "diningRecommendations": [
+        {
+          "placeId": "osm:node:588145957",
+          "reason": "댈하우지 스트리트의 커피 바.",
+          "reasonEn": "A coffee bar on Dalhousie Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17849/best-coffee-shops-and-best-cafes-in-ottawa",
+          "verifiedAt": "2026-10-19T19:07:17.116Z"
+        },
+        {
+          "placeId": "osm:node:765366980",
+          "reason": "바이워드 마켓을 둘러보다가 커피 한 잔 쉬어가기.",
+          "reasonEn": "Take a coffee break while exploring ByWard Market.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17849/best-coffee-shops-and-best-cafes-in-ottawa",
+          "verifiedAt": "2026-10-19T19:07:17.116Z"
+        },
+        {
+          "placeId": "osm:node:438892467",
+          "reason": "요크 스트리트에서 차 한 잔 마시고 싶은 날.",
+          "reasonEn": "A tea stop on York Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17849/best-coffee-shops-and-best-cafes-in-ottawa",
+          "verifiedAt": "2026-10-19T19:07:17.116Z"
+        }
       ]
     },
     "regina": {
@@ -11874,6 +12669,42 @@
           "sourceUrl": "https://www.openstreetmap.org/way/236508925",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:node:12862968168",
+          "cityId": "regina",
+          "name": "Cafe Drip",
+          "category": "cafe",
+          "latitude": 50.4585921,
+          "longitude": -104.6060991,
+          "address": "1275 Broad Street Regina",
+          "sourceUrl": "https://www.openstreetmap.org/node/12862968168",
+          "website": null,
+          "openingHours": "Su 11:00-18:00; Mo-Sa 09:00-20:00"
+        },
+        {
+          "id": "osm:node:12993414403",
+          "cityId": "regina",
+          "name": "Bobbi Joe's Cafe",
+          "category": "cafe",
+          "latitude": 50.4456568,
+          "longitude": -104.6186598,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/node/12993414403",
+          "website": null,
+          "openingHours": "Mo-Fr 07:00-15:00; Sa 08:30-14:30; Su off"
+        },
+        {
+          "id": "osm:node:13593478653",
+          "cityId": "regina",
+          "name": "Cafe Royale",
+          "category": "cafe",
+          "latitude": 50.4469043,
+          "longitude": -104.6116069,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/node/13593478653",
+          "website": "https://order.tbdine.com/pickup/16594/menu",
+          "openingHours": "Mo-Fr 07:00-14:00; Sa,Su 08:00-14:00"
         }
       ],
       "recommendations": [
@@ -11919,7 +12750,114 @@
           "sourceUrl": "https://en.wikivoyage.org/wiki/Regina",
           "verifiedAt": "2026-10-19T07:46:10.967481+00:00"
         }
-      ]
+      ],
+      "diningRecommendations": [
+        {
+          "placeId": "osm:node:3192427272",
+          "reason": "브루드 어웨이크닝의 해밀턴 스트리트 지점.",
+          "reasonEn": "The Hamilton Street branch of Brewed Awakening.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/287708/best-coffee-shops-and-best-cafes-in-regina",
+          "verifiedAt": "2026-10-19T19:07:37.263Z"
+        },
+        {
+          "placeId": "osm:node:6573534660",
+          "reason": "해밀턴 스트리트의 그린 스폿 카페.",
+          "reasonEn": "Green Spot Cafe on Hamilton Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/287708/best-coffee-shops-and-best-cafes-in-regina",
+          "verifiedAt": "2026-10-19T19:07:37.263Z"
+        },
+        {
+          "placeId": "osm:node:6403173765",
+          "reason": "리자이나에서 커피 마실 곳을 찾을 때 살펴볼 네이키드 빈.",
+          "reasonEn": "Consider Naked Bean for coffee in Regina.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/287708/best-coffee-shops-and-best-cafes-in-regina",
+          "verifiedAt": "2026-10-19T19:07:37.263Z"
+        },
+        {
+          "placeId": "osm:node:1740875290",
+          "reason": "리자이나의 니키스 카페에서 한 끼.",
+          "reasonEn": "A meal at Nicky’s Cafe in Regina.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/287708/best-coffee-shops-and-best-cafes-in-regina",
+          "verifiedAt": "2026-10-19T19:07:37.263Z"
+        },
+        {
+          "placeId": "osm:node:9625269782",
+          "reason": "리자이나에서 식사를 계획할 때 살펴볼 탠저린.",
+          "reasonEn": "Consider Tangerine when planning a meal in Regina.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/287708/best-coffee-shops-and-best-cafes-in-regina",
+          "verifiedAt": "2026-10-19T19:07:37.263Z"
+        },
+        {
+          "placeId": "osm:node:436194601",
+          "reason": "태국 음식이 생각날 때 살펴볼 리자이나 식당.",
+          "reasonEn": "A Regina option for Thai food.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/203192/where-to-eat-best-restaurants-in-regina",
+          "verifiedAt": "2026-10-19T19:07:27.189Z"
+        },
+        {
+          "placeId": "osm:node:439897601",
+          "reason": "빅토리아 애비뉴에서 식사와 와인 한 잔을 함께.",
+          "reasonEn": "Food and wine on Victoria Avenue.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/203192/where-to-eat-best-restaurants-in-regina",
+          "verifiedAt": "2026-10-19T19:07:27.189Z"
+        },
+        {
+          "placeId": "osm:node:12146508258",
+          "reason": "리자이나에서 샌드위치와 커피로 가볍게 한 끼.",
+          "reasonEn": "Sandwiches and coffee in Regina.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/287708/best-coffee-shops-and-best-cafes-in-regina",
+          "verifiedAt": "2026-10-19T19:07:37.263Z"
+        },
+        {
+          "placeId": "osm:node:12862968168",
+          "reason": "브로드 스트리트의 커피숍.",
+          "reasonEn": "A coffee shop on Broad Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/287708/best-coffee-shops-and-best-cafes-in-regina",
+          "verifiedAt": "2026-10-19T19:07:37.263Z"
+        },
+        {
+          "placeId": "osm:node:12993414403",
+          "reason": "리자이나에서 들러볼 동네 카페, 바비조스.",
+          "reasonEn": "Consider Bobbi-Joes Cafe for a Regina coffee stop.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/287708/best-coffee-shops-and-best-cafes-in-regina",
+          "verifiedAt": "2026-10-19T19:07:37.263Z"
+        },
+        {
+          "placeId": "osm:node:13593478653",
+          "reason": "리자이나의 카페 로열에서 잠깐 쉬어가기.",
+          "reasonEn": "A cafe break at Cafe Royale in Regina.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/287708/best-coffee-shops-and-best-cafes-in-regina",
+          "verifiedAt": "2026-10-19T19:07:37.263Z"
+        }
+      ],
+      "selectionIdentityEvidence": {
+        "additionalResponses": [
+          {
+            "placeId": "osm:node:12862968168",
+            "responseSha256": "5485470272353fe777ae327c95daaceb725381283df42b99692e9d4a3e2533ac",
+            "reference": "https://wanderlog.com/list/geoCategory/287708/best-coffee-shops-and-best-cafes-in-regina",
+            "sourceGooglePlaceId": "ChIJJ83TxlEeHFMRWUdL8vTijl4",
+            "sourceObservedAt": "2026-10-19T19:07:37.263Z",
+            "osmTimestamp": "2026-10-14T03:11:02Z"
+          },
+          {
+            "placeId": "osm:node:12993414403",
+            "responseSha256": "5485470272353fe777ae327c95daaceb725381283df42b99692e9d4a3e2533ac",
+            "reference": "https://wanderlog.com/list/geoCategory/287708/best-coffee-shops-and-best-cafes-in-regina",
+            "sourceGooglePlaceId": "ChIJy-7CA0AeHFMRFBkS9pyNc_g",
+            "sourceObservedAt": "2026-10-19T19:07:37.263Z",
+            "osmTimestamp": "2026-10-14T03:11:02Z"
+          },
+          {
+            "placeId": "osm:node:13593478653",
+            "responseSha256": "5485470272353fe777ae327c95daaceb725381283df42b99692e9d4a3e2533ac",
+            "reference": "https://wanderlog.com/list/geoCategory/287708/best-coffee-shops-and-best-cafes-in-regina",
+            "sourceGooglePlaceId": "ChIJNz7aRaAfHFMR4sNBaIk6JCc",
+            "sourceObservedAt": "2026-10-19T19:07:37.263Z",
+            "osmTimestamp": "2026-10-14T03:11:02Z"
+          }
+        ]
+      }
     },
     "saint-john": {
       "boundaryId": "osm:relation:9349818",
@@ -12696,6 +13634,42 @@
           "sourceUrl": "https://www.openstreetmap.org/relation/19244398",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:node:1961419488",
+          "cityId": "saint-john",
+          "name": "East Coast Bistro",
+          "category": "food",
+          "latitude": 45.2724936,
+          "longitude": -66.0621107,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/node/1961419488",
+          "website": "https://eastcoastbistro.com/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:node:1906144368",
+          "cityId": "saint-john",
+          "name": "Vivaldi's",
+          "category": "food",
+          "latitude": 45.2992332,
+          "longitude": -66.0384204,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/node/1906144368",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:node:1903189869",
+          "cityId": "saint-john",
+          "name": "Big Daddy's Pizza",
+          "category": "food",
+          "latitude": 45.2777924,
+          "longitude": -66.0787753,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/node/1903189869",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
@@ -12741,7 +13715,86 @@
           "sourceUrl": "https://www.discoversaintjohn.com/get-sense-saint-john-region",
           "verifiedAt": "2026-10-18T08:25:25.937608+00:00"
         }
-      ]
+      ],
+      "diningRecommendations": [
+        {
+          "placeId": "osm:node:1961419476",
+          "reason": "업타운 세인트존 산책길에 들를 커피숍.",
+          "reasonEn": "A coffee stop while exploring uptown Saint John.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/287706/best-coffee-shops-and-best-cafes-in-saint-john",
+          "verifiedAt": "2026-10-19T19:07:57.391Z"
+        },
+        {
+          "placeId": "osm:node:1867369813",
+          "reason": "워털루 스트리트에서 식사 장소를 찾는다면.",
+          "reasonEn": "A dining option on Waterloo Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/203190/where-to-eat-best-restaurants-in-saint-john",
+          "verifiedAt": "2026-10-19T19:07:47.326Z"
+        },
+        {
+          "placeId": "osm:node:778245441",
+          "reason": "랍스터 요리를 찾을 때 살펴볼 세인트존 식당.",
+          "reasonEn": "A Saint John option for lobster.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/203190/where-to-eat-best-restaurants-in-saint-john",
+          "verifiedAt": "2026-10-19T19:07:47.326Z"
+        },
+        {
+          "placeId": "osm:node:1961419488",
+          "reason": "세인트존에서 해산물 식사를 계획할 때 살펴볼 비스트로.",
+          "reasonEn": "Consider this Saint John bistro for seafood.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/203190/where-to-eat-best-restaurants-in-saint-john",
+          "verifiedAt": "2026-10-19T19:07:47.326Z"
+        },
+        {
+          "placeId": "osm:node:1906144368",
+          "reason": "세인트존에서 식사 장소를 찾을 때 살펴볼 비발디스.",
+          "reasonEn": "Consider Vivaldi’s when planning a meal in Saint John.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/203190/where-to-eat-best-restaurants-in-saint-john",
+          "verifiedAt": "2026-10-19T19:07:47.326Z"
+        },
+        {
+          "placeId": "osm:node:1869399088",
+          "reason": "레이크 드라이브 사우스에서 버거와 해산물을.",
+          "reasonEn": "Burgers and seafood on Lake Drive South.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/203190/where-to-eat-best-restaurants-in-saint-john",
+          "verifiedAt": "2026-10-19T19:07:47.326Z"
+        },
+        {
+          "placeId": "osm:node:1903189869",
+          "reason": "세인트존에서 피자가 생각날 때 들를 곳.",
+          "reasonEn": "A pizza stop in Saint John.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/203190/where-to-eat-best-restaurants-in-saint-john",
+          "verifiedAt": "2026-10-19T19:07:47.326Z"
+        }
+      ],
+      "selectionIdentityEvidence": {
+        "additionalResponses": [
+          {
+            "placeId": "osm:node:1961419488",
+            "responseSha256": "c60c419e8823a0f3dbf3fffe0d2f3c781d37bf6b7ec7e2c215c8ebce5bf310d6",
+            "reference": "https://wanderlog.com/list/geoCategory/203190/where-to-eat-best-restaurants-in-saint-john",
+            "sourceGooglePlaceId": "ChIJ0SoFBX2zp0wR8ShpWKi4jSE",
+            "sourceObservedAt": "2026-10-19T19:07:47.326Z",
+            "osmTimestamp": "2026-10-14T03:11:02Z"
+          },
+          {
+            "placeId": "osm:node:1906144368",
+            "responseSha256": "c60c419e8823a0f3dbf3fffe0d2f3c781d37bf6b7ec7e2c215c8ebce5bf310d6",
+            "reference": "https://wanderlog.com/list/geoCategory/203190/where-to-eat-best-restaurants-in-saint-john",
+            "sourceGooglePlaceId": "ChIJP0xpigSzp0wR3ZqkfyDGpsY",
+            "sourceObservedAt": "2026-10-19T19:07:47.326Z",
+            "osmTimestamp": "2026-10-14T03:11:02Z"
+          },
+          {
+            "placeId": "osm:node:1903189869",
+            "responseSha256": "c60c419e8823a0f3dbf3fffe0d2f3c781d37bf6b7ec7e2c215c8ebce5bf310d6",
+            "reference": "https://wanderlog.com/list/geoCategory/203190/where-to-eat-best-restaurants-in-saint-john",
+            "sourceGooglePlaceId": "ChIJLykpf2Czp0wRa_y61X8zaDI",
+            "sourceObservedAt": "2026-10-19T19:07:47.326Z",
+            "osmTimestamp": "2026-10-14T03:11:02Z"
+          }
+        ]
+      }
     },
     "halifax": {
       "boundaryId": "osm:relation:9092218",
@@ -13662,6 +14715,42 @@
           "sourceUrl": "https://www.openstreetmap.org/way/915518387",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:node:771698137",
+          "cityId": "halifax",
+          "name": "Waterfront Warehouse",
+          "category": "food",
+          "latitude": 44.6458363,
+          "longitude": -63.5699353,
+          "address": "1549 Lower Water Street Halifax",
+          "sourceUrl": "https://www.openstreetmap.org/node/771698137",
+          "website": "https://www.rcr.ca/restaurants/waterfront-warehouse/",
+          "openingHours": "Su-Th 11:30-21:00; Fr,Sa 11:30-22:00"
+        },
+        {
+          "id": "osm:node:3791528457",
+          "cityId": "halifax",
+          "name": "Cabin Coffee",
+          "category": "cafe",
+          "latitude": 44.6451233,
+          "longitude": -63.5716863,
+          "address": "1554 Hollis Street Halifax",
+          "sourceUrl": "https://www.openstreetmap.org/node/3791528457",
+          "website": "https://cabincoffeehalifax.com/",
+          "openingHours": "Mo-Fr 06:30-18:00; Sa-Su 07:30-17:00"
+        },
+        {
+          "id": "osm:node:1116387649",
+          "cityId": "halifax",
+          "name": "The Bicycle Thief",
+          "category": "food",
+          "latitude": 44.6435997,
+          "longitude": -63.5683874,
+          "address": "1475 Lower Water Street Halifax",
+          "sourceUrl": "https://www.openstreetmap.org/node/1116387649",
+          "website": "https://bicyclethief.ca/",
+          "openingHours": "Mo-Su 11:30-23:00"
         }
       ],
       "recommendations": [
@@ -13743,6 +14832,104 @@
           "reasonEn": "Take a coffee break on Morris Street.",
           "sourceUrl": "https://wanderlog.com/list/geoCategory/17857/best-coffee-shops-and-best-cafes-in-halifax",
           "verifiedAt": "2026-10-19T19:08:17.524Z"
+        },
+        {
+          "placeId": "osm:node:267592735",
+          "reason": "홀리스 스트리트에서 한 끼 먹을 곳을 찾는다면.",
+          "reasonEn": "A restaurant on Hollis Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74976/where-to-eat-best-restaurants-in-halifax",
+          "verifiedAt": "2026-10-19T19:08:07.457Z"
+        },
+        {
+          "placeId": "osm:node:33117712",
+          "reason": "퀸풀 로드의 딜리 달리에서 커피 한 잔.",
+          "reasonEn": "Coffee at Dilly Dally on Quinpool Road.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17857/best-coffee-shops-and-best-cafes-in-halifax",
+          "verifiedAt": "2026-10-19T19:08:17.524Z"
+        },
+        {
+          "placeId": "osm:node:2624400763",
+          "reason": "노스 스트리트에서 만나는 커피 로스터리.",
+          "reasonEn": "A coffee roaster on North Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17857/best-coffee-shops-and-best-cafes-in-halifax",
+          "verifiedAt": "2026-10-19T19:08:17.524Z"
+        },
+        {
+          "placeId": "osm:node:37132565",
+          "reason": "아가일 스트리트에서 식사와 한 잔을 함께.",
+          "reasonEn": "Food and drinks on Argyle Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74976/where-to-eat-best-restaurants-in-halifax",
+          "verifiedAt": "2026-10-19T19:08:07.457Z"
+        },
+        {
+          "placeId": "osm:node:2611276563",
+          "reason": "펜윅 스트리트의 에스프레소 바.",
+          "reasonEn": "An espresso bar on Fenwick Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17857/best-coffee-shops-and-best-cafes-in-halifax",
+          "verifiedAt": "2026-10-19T19:08:17.524Z"
+        },
+        {
+          "placeId": "osm:node:37132554",
+          "reason": "오이스터와 식사를 계획할 때 살펴볼 프레스 갱.",
+          "reasonEn": "Consider The Press Gang for oysters and a meal.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74976/where-to-eat-best-restaurants-in-halifax",
+          "verifiedAt": "2026-10-19T19:08:07.457Z"
+        },
+        {
+          "placeId": "osm:node:475876993",
+          "reason": "로워 워터 스트리트의 이탈리안 레스토랑.",
+          "reasonEn": "Italian dining on Lower Water Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74976/where-to-eat-best-restaurants-in-halifax",
+          "verifiedAt": "2026-10-19T19:08:07.457Z"
+        },
+        {
+          "placeId": "osm:node:475877047",
+          "reason": "로워 워터 스트리트에서 스시와 해산물을.",
+          "reasonEn": "Sushi and seafood on Lower Water Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74976/where-to-eat-best-restaurants-in-halifax",
+          "verifiedAt": "2026-10-19T19:08:07.457Z"
+        },
+        {
+          "placeId": "osm:node:1836752911",
+          "reason": "도일 스트리트에서 카푸치노 한 잔.",
+          "reasonEn": "A cappuccino stop on Doyle Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17857/best-coffee-shops-and-best-cafes-in-halifax",
+          "verifiedAt": "2026-10-19T19:08:17.524Z"
+        },
+        {
+          "placeId": "osm:node:37132707",
+          "reason": "아가일 스트리트에서 차를 마시며 쉬어갈 곳.",
+          "reasonEn": "Take a tea break on Argyle Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17857/best-coffee-shops-and-best-cafes-in-halifax",
+          "verifiedAt": "2026-10-19T19:08:17.524Z"
+        },
+        {
+          "placeId": "osm:node:886747513",
+          "reason": "홀리스 스트리트에서 책과 커피를 함께 즐길 수 있는 곳.",
+          "reasonEn": "Books and coffee on Hollis Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17857/best-coffee-shops-and-best-cafes-in-halifax",
+          "verifiedAt": "2026-10-19T19:08:17.524Z"
+        },
+        {
+          "placeId": "osm:node:771698137",
+          "reason": "로워 워터 스트리트에서 식사할 곳을 찾는다면.",
+          "reasonEn": "A dining option on Lower Water Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17857/best-coffee-shops-and-best-cafes-in-halifax",
+          "verifiedAt": "2026-10-19T19:08:17.524Z"
+        },
+        {
+          "placeId": "osm:node:3791528457",
+          "reason": "홀리스 스트리트의 캐빈 커피에서 잠깐 쉬어가세요.",
+          "reasonEn": "Pause for coffee at Cabin Coffee on Hollis Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17857/best-coffee-shops-and-best-cafes-in-halifax",
+          "verifiedAt": "2026-10-19T19:08:17.524Z"
+        },
+        {
+          "placeId": "osm:node:1116387649",
+          "reason": "로워 워터 스트리트에서 즐기는 이탈리안 식사.",
+          "reasonEn": "Italian dining on Lower Water Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74976/where-to-eat-best-restaurants-in-halifax",
+          "verifiedAt": "2026-10-19T19:08:07.457Z"
         }
       ],
       "selectionIdentityEvidence": {
@@ -13754,6 +14941,30 @@
             "sourceGooglePlaceId": "ChIJV4TDozUiWksRy0JWrPsKrQc",
             "sourceObservedAt": "2026-10-19T19:08:17.524Z",
             "osmTimestamp": "2026-10-14T03:12:03Z"
+          },
+          {
+            "placeId": "osm:node:771698137",
+            "responseSha256": "5af79abf4f145f3c9f60a11a3ded6002090287c360b92311046e7d447dc8479e",
+            "reference": "https://wanderlog.com/list/geoCategory/17857/best-coffee-shops-and-best-cafes-in-halifax",
+            "sourceGooglePlaceId": "ChIJzcXjSssjWksRLd1HkhwvYKc",
+            "sourceObservedAt": "2026-10-19T19:08:17.524Z",
+            "osmTimestamp": "2026-10-14T03:12:03Z"
+          },
+          {
+            "placeId": "osm:node:3791528457",
+            "responseSha256": "5af79abf4f145f3c9f60a11a3ded6002090287c360b92311046e7d447dc8479e",
+            "reference": "https://wanderlog.com/list/geoCategory/17857/best-coffee-shops-and-best-cafes-in-halifax",
+            "sourceGooglePlaceId": "ChIJMwPdsTQiWksRveZqXJA6A9o",
+            "sourceObservedAt": "2026-10-19T19:08:17.524Z",
+            "osmTimestamp": "2026-10-14T03:12:03Z"
+          },
+          {
+            "placeId": "osm:node:1116387649",
+            "responseSha256": "5af79abf4f145f3c9f60a11a3ded6002090287c360b92311046e7d447dc8479e",
+            "reference": "https://wanderlog.com/list/geoCategory/74976/where-to-eat-best-restaurants-in-halifax",
+            "sourceGooglePlaceId": "ChIJU8FsPTUiWksRkaXr2ecPDBs",
+            "sourceObservedAt": "2026-10-19T19:08:07.457Z",
+            "osmTimestamp": "2026-10-14T03:12:03Z"
           }
         ]
       }
@@ -13762,6 +14973,6 @@
   "pendingCities": [],
   "complete": true,
   "recommendationTheme": "photo-spots",
-  "photoSelectionsReviewedAt": "2026-10-19T21:17:51.406634+00:00",
-  "selectionRevision": 9
+  "photoSelectionsReviewedAt": "2026-10-19T22:26:42.300410+00:00",
+  "selectionRevision": 10
 }

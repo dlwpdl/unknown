@@ -165,6 +165,7 @@ test('an older daily catalog retains a newly checked restaurant; a later refresh
   next.collectedAt = '2026-10-18T08:54:42Z';
   next.cities.vancouver.places = next.cities.vancouver.places.filter(place => place.id !== id);
   next.cities.vancouver.recommendations = next.cities.vancouver.recommendations.filter(pick => pick.placeId !== id);
+  next.cities.vancouver.diningRecommendations = (next.cities.vancouver.diningRecommendations ?? []).filter(pick => pick.placeId !== id);
   assert.equal(api.replaceCityPlacesCatalog(next, Date.parse('2026-10-19T00:00:00Z')), true);
   assert.ok(api.getCityRecommendations('vancouver', 'food').some(place => place.id === id));
   assert.ok(api.getCityPlaces('vancouver').find(place => place.id === id).recommendation);
