@@ -20,3 +20,9 @@ The owner wants Gling reviews to be primary, external reviews secondary, and num
 4. Run `node --experimental-strip-types --test scripts/place-reviews*.test.mjs scripts/place-external-ratings.test.mjs`, `npm test`, `npx tsc --noEmit`, changed-file ESLint and `git diff --check`. Send only tested commits and exact file hashes to the current source coordinator.
 
 No new dependency, paid provider call or external review-body import is required. Use the installed PostgreSQL image only for a disposable local SQL test; do not alter the existing shared development database.
+
+## Deployment order
+
+Apply `20261019013000_place_ratings.sql` through the existing authorized database release path before enabling real ratings in the installed client. The migration is additive and does not change old-client post reads, store availability, authentication or minimum versions. If the RPCs are unavailable, main cards retain disclosed external fallbacks and the review editor stays disabled with a retry message; missing data never becomes a fabricated zero. The SQL has only been exercised in an owned disposable local database, not deployed to the production backend.
+
+For a client rollback, retain the nullable columns and existing member reviews. Do not drop rating data or weaken the visibility/safety policies. External review bodies have not been imported; expanded external cards show provider scores, dates and deliberate source links.
