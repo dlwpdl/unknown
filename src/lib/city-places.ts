@@ -14,6 +14,7 @@ export type CityPlace = {
   website?: string | null; openingHours?: string | null;
   photo?: PlacePhoto | null;
   recommendation?: PlaceRecommendation;
+  diningRecommendation?: PlaceRecommendation;
   glingVisited?: { sourceUrl: string };
 };
 export type PlaceRecommendation = { placeId: string; reason: string; reasonEn?: string; sourceUrl: string; verifiedAt: string };
@@ -89,13 +90,14 @@ export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): 
   // shortcut: verified photos cover a subset; add licensed same-place images as they are checked.
   const photos = photoCatalog.cities[cityId] ?? [];
   const photoOrder = new Map(photos.map((photo, index) => [photo.placeId, index]));
-  const reviewed = new Map([...reviewedPicks(cityId), ...(city.diningRecommendations ?? [])].map(pick => [pick.placeId, pick]));
+  const reviewed = new Map(reviewedPicks(cityId).map(pick => [pick.placeId, pick]));
+  const dining = new Map((city.diningRecommendations ?? []).map(pick => [pick.placeId, pick]));
   const currentIds = new Set(city.places.map(place => place.id));
   const archived = (snapshot as PlaceCatalog).cities[cityId]?.places.filter(place => !currentIds.has(place.id)) ?? [];
   return [...city.places, ...archived].filter(place => category === 'all' || place.category === category)
     .map(place => {
       const visit = (visitedPlaces as { cityId: string; placeId: string; sourceUrl: string }[]).find(row => row.cityId === cityId && row.placeId === place.id);
-      return { ...place, photo: photos[photoOrder.get(place.id) ?? -1] ?? null, recommendation: reviewed.get(place.id),
+      return { ...place, photo: photos[photoOrder.get(place.id) ?? -1] ?? null, recommendation: reviewed.get(place.id), diningRecommendation: dining.get(place.id),
         glingVisited: visit ? { sourceUrl: visit.sourceUrl } : undefined };
     })
     .sort((a, b) => (photoOrder.get(a.id) ?? photos.length) - (photoOrder.get(b.id) ?? photos.length));

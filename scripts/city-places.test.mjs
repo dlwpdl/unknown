@@ -532,6 +532,8 @@ test('reviewed dining reaches category browsing without replacing the accepted T
   assert.deepEqual(Array.from(api.getCityBrowsePlaces('vancouver'), place => place.id), city.recommendations.map(pick => pick.placeId));
   assert.ok(api.getCityBrowsePlaces('vancouver', 'food').some(place => place.id === food.id));
   assert.ok(api.getCityBrowsePlaces('vancouver', 'cafe').some(place => place.id === cafe.id));
+  assert.equal(api.getCityBrowsePlaces('vancouver', 'cafe').find(place => place.id === cafe.id).recommendation, undefined);
+  assert.equal(api.getCityBrowsePlaces('vancouver', 'cafe').find(place => place.id === cafe.id).diningRecommendation.placeId, cafe.id);
   assert.equal(api.getCityDiscoveryPlaces('vancouver').length, 52);
   assert.ok(!api.getCityDiscoveryPlaces('vancouver').some(place => /McDonald|Tim Hortons|Starbucks/i.test(place.name) && !city.diningRecommendations.some(pick => pick.placeId === place.id)));
 });
