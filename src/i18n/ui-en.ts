@@ -1892,6 +1892,7 @@ export const uiEnglish: Record<string, string> = {
   "{0} · {1}곳": "{0} · {1} places",
   "25곳까지 보기": "Show up to 25 places",
   "50곳까지 보기": "Show up to 50 places",
+  "{0}곳 모두 보기": "Show all {0} places",
   "10곳 먼저 보기": "Show 10 places first",
   "{0} 장소": "{0} place",
   "목록에서 찾지 못했어요": "No matches in this list",
