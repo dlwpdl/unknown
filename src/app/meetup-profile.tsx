@@ -280,7 +280,7 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
     </KeyboardAvoidingView>
     <Modal visible={cityOpen} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setCityOpen(false)}>
       <SafeAreaProvider style={[styles.fill, { backgroundColor: theme.background }]}>
-        <SafeAreaView style={styles.fill}><CityPicker onClose={() => setCityOpen(false)} draft={{ city: selectedCity, onSelect: city => { setProfile(current => ({ ...current, cityId: city.id })); setCityOpen(false); } }} /></SafeAreaView>
+        <SafeAreaView style={styles.fill}><CityPicker title={tr("활동 지역")} onClose={() => setCityOpen(false)} draft={{ city: selectedCity, onSelect: city => { setProfile(current => ({ ...current, cityId: city.id })); setCityOpen(false); } }} /></SafeAreaView>
       </SafeAreaProvider>
     </Modal>
   </SafeAreaView></ThemedView>;
