@@ -109,7 +109,7 @@ test('only accepts current session messages, known selection IDs and exact credi
 });
 
 function canvas(markers = [marker]) {
-  const messages = [], listeners = {}, cameras = [], sources = {}, layers = [], images = {}, paddingCalls = [], userMarkers = [];
+  const messages = [], listeners = {}, cameras = [], sources = {}, layers = [], images = {}, paddingCalls = [], userMarkers = [], labels = [];
   let map;
   class Map {
     constructor(config) { this.config = config; this.zoom = 11; map = this; }
@@ -130,7 +130,7 @@ function canvas(markers = [marker]) {
     setPadding(padding) { this.padding = padding; paddingCalls.push(padding); }
   }
   const window = { parent: { postMessage: message => messages.push(JSON.parse(message)) }, addEventListener: (type, callback) => { listeners['window:' + type] = callback; }, matchMedia: () => ({ matches: true }) };
-  const drawing = { scale() {}, fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, arcTo() {}, closePath() {}, fill() {}, stroke() {}, fillText() {}, getImageData: (_x, _y, width, height) => ({ width, height, data: new Uint8Array(width * height * 4) }) };
+  const drawing = { scale() {}, fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, arcTo() {}, closePath() {}, fill() {}, stroke() {}, fillText(text) { labels.push(text); }, getImageData: (_x, _y, width, height) => ({ width, height, data: new Uint8Array(width * height * 4) }) };
   class Marker {
     constructor({ element }) { this.element = element; userMarkers.push(this); }
     setLngLat(point) { this.point = Array.from(point); return this; }
@@ -142,7 +142,7 @@ function canvas(markers = [marker]) {
   const script = [...html.matchAll(/<script nonce="gling-map">([\s\S]*?)<\/script>/g)].at(-1)[1];
   vm.runInNewContext(script, context);
   listeners.load();
-  return { window, listeners, cameras, sources, layers, images, paddingCalls, messages, map, html, userMarkers };
+  return { window, listeners, cameras, sources, layers, images, paddingCalls, messages, map, html, userMarkers, labels };
 }
 
 test('own GPS marker stays separate from camera and place selection, updates and clears explicitly', () => {
@@ -216,8 +216,9 @@ test('only a typed Top 25 flag crosses the embedded map boundary', () => {
   assert.throws(() => discoveryMarkers([{ ...marker, top25: 'true' }]));
 });
 
-test('Top 25 uses a circular outline and a selected-only label while preserving category colors and cluster counts', () => {
+test('Top 50 uses a circular outline and a selected-only label while preserving category colors and cluster counts', () => {
   const c = canvas([{ ...marker, top25: true }]);
+  assert.deepEqual(c.labels, ['TOP 50']);
   assert.equal(c.sources.discovery.data.features[0].properties.top25, true);
   assert.equal(c.sources.discovery.data.features[0].properties.color, marker.color);
   assert.ok(c.sources.discovery.clusterProperties.top25Count);

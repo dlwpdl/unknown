@@ -42,10 +42,10 @@ test('legacy Top25-only calls retain query restrictions and hashtags cannot awar
   assert.equal(discovery.discoveryMatches({ ...item, category: 'exhibition' }, 'places', '', true), true);
   assert.equal(discovery.discoveryMatches({ ...item, category: 'exhibition' }, 'events', '', true), false);
 });
-test('invalid public source, coordinates, duplicate bindings and over-25 collections fail closed', () => {
+test('invalid public source, coordinates, duplicate bindings and over-fifty collections fail closed', () => {
   for (const patch of [{ id: 'x'.repeat(81) }, { cityId: 'x'.repeat(65) }, { id: 'bad\u0000id' }, { sourceUrl: 'javascript:alert(1)' }, { sourceUrl: 'http://example.org' }, { sourceUrl: 'https://user:password@example.org' }, { latitude: NaN }, { longitude: 181 }, { reason: '' }, { category: 'housing' }]) assert.throws(() => merge([], 'vancouver', [{ ...pick, ...patch }]));
   assert.throws(() => merge([], 'vancouver', [pick, pick]));
   assert.throws(() => merge([], 'vancouver', [pick, { ...pick, id: 'another-place' }]));
-  assert.throws(() => merge([], 'vancouver', Array.from({ length: 26 }, (_, i) => ({ ...pick, id: `p${i}`, postIds: [] }))));
-  assert.equal(merge([], 'vancouver', Array.from({ length: 25 }, (_, i) => ({ ...pick, id: `p${i}`, postIds: [] }))).length, 25);
+  assert.throws(() => merge([], 'vancouver', Array.from({ length: 51 }, (_, i) => ({ ...pick, id: `p${i}`, postIds: [] }))));
+  assert.equal(merge([], 'vancouver', Array.from({ length: 50 }, (_, i) => ({ ...pick, id: `p${i}`, postIds: [] }))).length, 50);
 });

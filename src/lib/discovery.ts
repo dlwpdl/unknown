@@ -60,7 +60,7 @@ export function mergeCityTop25(items: DiscoveryItem[], cityId: string, picks: re
       || ids.has(key) || !Array.isArray(pick.postIds) || pick.postIds.some(id => typeof id !== 'string' || !id.trim() || id.length > 180)) throw new Error('INVALID_TOP25_PLACE');
     ids.add(key);
     const count = (counts.get(pick.cityId) ?? 0) + 1;
-    if (count > 25) throw new Error('TOP25_CITY_LIMIT');
+    if (count > 50) throw new Error('TOP25_CITY_LIMIT');
     counts.set(pick.cityId, count);
     for (const postId of pick.postIds) {
       const binding = `${pick.cityId}:${postId}`;
