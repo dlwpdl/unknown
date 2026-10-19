@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T21:07:00.750426+00:00",
+  "collectedAt": "2026-10-19T21:17:51.406634+00:00",
   "source": "Verified same-place Wikimedia Commons photographs; dated captures, not popularity ranking",
   "cities": {
     "toronto": [
@@ -1166,6 +1166,16 @@
         "license": "CC BY-SA 4.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
         "imageSha256": "64618bcb0aca585a34eb38b6fa88cfe011225489dee48217a995c8f9069a7b0d"
+      },
+      {
+        "placeId": "osm:node:1751185097",
+        "cityId": "montreal",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5e/St-Viateur_Bagel_-_263_Saint-Viateur_Ouest.jpg/960px-St-Viateur_Bagel_-_263_Saint-Viateur_Ouest.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:St-Viateur_Bagel_-_263_Saint-Viateur_Ouest.jpg",
+        "artist": "Jeangagnon",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "1708b0a573932b1f6da5af43794d3ae1d74b354907a7791e7b6f5d487708830a"
       }
     ],
     "calgary": [
@@ -1308,6 +1318,16 @@
         "license": "CC BY-SA 4.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
         "imageSha256": "927814ba8c42a43316bbc7ffbade515b30aea87cd3b3b9e8ae7b16a1a719059c"
+      },
+      {
+        "placeId": "osm:way:1272862441",
+        "cityId": "calgary",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Military-Museums-Szmurlo.jpg/960px-Military-Museums-Szmurlo.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Military-Museums-Szmurlo.jpg",
+        "artist": "Chuck Szmurlo",
+        "license": "CC BY 2.5",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.5",
+        "imageSha256": "5cd3939f93b592115719474da944647f256edd50d9a7fa5af038ca42383d4ac2"
       }
     ],
     "edmonton": [
@@ -1662,6 +1682,16 @@
         "license": "CC BY 2.0",
         "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
         "imageSha256": "a7c328ae01568d5b578b4d2eb5980d3e99e9b64f1755824b0b56cf5d9d533471"
+      },
+      {
+        "placeId": "osm:relation:20044708",
+        "cityId": "winnipeg",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/26/Winnipeg_Art_Gallery.jpg/500px-Winnipeg_Art_Gallery.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Winnipeg_Art_Gallery.jpg",
+        "artist": "Cayla at English Wikipedia",
+        "license": "Public domain",
+        "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "imageSha256": "218f0b1b6535f7971b75202f5f0ef2e55fdfa9cf719d2679158d5fea04ddada4"
       }
     ],
     "saskatoon": [
@@ -2005,5 +2035,5 @@
       }
     ]
   },
-  "photoSelectionsReviewedAt": "2026-10-19T21:07:00.750426+00:00"
+  "photoSelectionsReviewedAt": "2026-10-19T21:17:51.406634+00:00"
 }

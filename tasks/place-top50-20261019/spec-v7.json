@@ -46,7 +46,7 @@
   "style": "Existing shapes and attribution; natural concrete descriptions; no new dependency",
   "tests": "Per-city identity/coverage/category/provenance/static-byte invariant plus existing relevant/full checks per completed packet",
   "callPlan": "/Users/ash/Desktop/Git/unknown/output/reviews/gling-cities50-dining-2026-10-19/bounded-plan-v7-proposed.json",
-  "status": "Actual revision7 saved/readback953facts/177TopPicks/186photoLinks/307externalProviderRows at2026-10-19T20:46:06.169715Z. Next bounded cohortC:9 newly canonical/photo/count-backed Toronto destinations,3 separately reviewed dining venues,actual owner-attested HANDSON identity/localVisited. Remaining-city50 still active; no550complete claim.",
+  "status": "Revision8 actuallysaved965/186Top/3dining/198photos/330ratings. NextsourceRevision9 adds3fullyphoto/rating-backed Montreal21/Calgary14/Winnipeg15; DBadoptionpending. Allcities50 stillactive,notcomplete.",
   "supplementalDining": "Separate reviewed diningRecommendations; preserve top50 order; getCityDiscoveryPlaces union, getCityBrowsePlaces category-specific, trusted local visited registry only",
   "directUserPersistence": {
     "at": "2026-10-19T19:06:14.237363+00:00",
@@ -82,5 +82,16 @@
     "metadataAndPhotoAuthority": "same v7 unchanged caps/history/23:00 expiry",
     "osmActual502HoldUntil": "2026-10-19T22:04:45.562Z",
     "oneSavedReadbackPerAcceptedCohort": true
+  },
+  "cohortD": {
+    "preparedAt": "2026-10-19T21:17:32.205269+00:00",
+    "sourceParent": "87f68018cc5bd700ceb614e52715ec120f89efda",
+    "nextRevision": 9,
+    "old965Facts198Photos330ProviderRowsExact": true,
+    "Van50AndHANDSONTrustedLocalEntryUnchanged": true,
+    "actualCCAuthorForMilitaryMuseums": "Chuck Szmurlo via originalCommonsrevision caption",
+    "WinnipegPublicDomainOriginalEvidence": "Original PD-user-w Cayla EnglishWikipedia plus ownupload; original licenseURLempty preserved in evidence, publicdomain mark URL representation",
+    "StViateurExactBranch": "263 RueSaintViateurOuest,not158",
+    "sameOriginalV7CapsExpiryHolds": true
   }
 }
