@@ -1,6 +1,7 @@
 import snapshot from './city-places.catalog.json';
 import photoSnapshot from './city-places.photos.json';
 import visitedPlaces from './gling-visited.json';
+import { replaceExternalPlaceRatings } from './place-external-ratings';
 import { CITIES } from '@/lib/mock';
 
 export type PlaceCategory = 'all' | 'food' | 'cafe' | 'places';
@@ -20,10 +21,11 @@ export type CityPlace = {
 export type PlaceRecommendation = { placeId: string; reason: string; reasonEn?: string; sourceUrl: string; verifiedAt: string };
 
 type PlaceCatalog = {
+  photoCatalog?: { cities: Record<string, PlacePhoto[]> }; externalRatings?: unknown;
   collectedAt: string; selectionRevision?: number; recommendationTheme?: 'photo-spots'; cities: Record<string, { coverage: string; places: CityPlace[]; recommendations?: PlaceRecommendation[]; diningRecommendations?: PlaceRecommendation[] }>;
 };
 let catalog = snapshot as PlaceCatalog;
-const photoCatalog = photoSnapshot as { cities: Record<string, PlacePhoto[]> };
+let photoCatalog = photoSnapshot as { cities: Record<string, PlacePhoto[]> };
 export let CITY_PLACES_COLLECTED_AT = catalog.collectedAt;
 let revision = 0;
 const listeners = new Set<() => void>();
@@ -45,6 +47,7 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
   if (!Number.isSafeInteger(nextSelection) || nextSelection < 0) invalid();
   for (const city of CITIES) {
     const data = next.cities[city.id];
+    if (next.photoCatalog && (!next.photoCatalog.cities || Object.keys(next.photoCatalog.cities).length !== CITIES.length)) invalid();
     if (!data || !['municipal-boundary', 'city-center'].includes(data.coverage) || !Array.isArray(data.places) || !data.places.length || data.places.length > 200) invalid();
     const ids = new Set<string>();
     for (const p of data.places) {
@@ -54,6 +57,20 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
         || p.sourceUrl !== `https://www.openstreetmap.org/${p.id.split(':').slice(1).join('/')}`
         || (p.website != null && !https(p.website)) || (p.openingHours != null && !text(p.openingHours, 1000))) invalid();
       ids.add(p.id);
+    }
+    if (next.photoCatalog) {
+      const photos = next.photoCatalog.cities[city.id], seenPhotos = new Set<string>();
+      if (!Array.isArray(photos) || photos.length > 200) invalid();
+      for (const photo of photos) {
+        if (!photo || photo.cityId !== city.id || !ids.has(photo.placeId) || seenPhotos.has(photo.placeId)
+          || typeof photo.artist !== 'string' || !photo.artist.trim() || photo.artist.length > 1000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(photo.artist) || !/^[a-f0-9]{64}$/.test(photo.imageSha256) || !/^(CC BY(?:-SA)? [234]\.0|CC BY(?:-SA)? 2\.5|CC0|Public domain)$/.test(photo.license)
+          || !https(photo.uri) || !https(photo.sourceUrl) || !https(photo.licenseUrl)) invalid();
+        const image = new URL(photo.uri), source = new URL(photo.sourceUrl), license = new URL(photo.licenseUrl);
+        if (!['thumb.wikimedia.org', 'upload.wikimedia.org'].includes(image.hostname) || !image.pathname.startsWith('/wikipedia/commons/')
+          || source.hostname !== 'commons.wikimedia.org' || !source.pathname.startsWith('/wiki/File:')
+          || license.hostname !== 'creativecommons.org' || !/^\/(licenses|publicdomain)\//.test(license.pathname)) invalid();
+        seenPhotos.add(photo.placeId);
+      }
     }
     for (const [picks, dining] of [[data.recommendations, false], [data.diningRecommendations ?? [], true]] as const) {
       if (!Array.isArray(picks) || picks.length > 50) invalid();
@@ -67,6 +84,12 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
     }
   }
   if (nextSelection < currentSelection || (nextSelection === currentSelection && Date.parse(next.collectedAt) <= Date.parse(catalog.collectedAt))) return false;
+  if (next.externalRatings !== undefined) {
+    if (!Array.isArray(next.externalRatings) || next.externalRatings.some(row => !row || typeof row !== 'object'
+      || !next.cities[row.cityId]?.places.some(place => place.id === row.placeId && place.name === row.placeName))
+      || !replaceExternalPlaceRatings(next.externalRatings)) invalid();
+  }
+  if (next.photoCatalog) photoCatalog = next.photoCatalog;
   catalog = next; CITY_PLACES_COLLECTED_AT = next.collectedAt; revision++;
   listeners.forEach(listener => listener());
   return true;

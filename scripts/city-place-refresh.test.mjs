@@ -16,7 +16,7 @@ function disk(initial = null) {
   return { getItem: async () => value, setItem: async (_key, next) => { value = next; } };
 }
 const beforeMidnight = Date.parse('2026-10-18T06:59:00Z'), afterMidnight = Date.parse('2026-10-18T07:01:00Z');
-test('all readers share one request and a restart reads the saved catalog without another same-day request', async () => {
+test('readers share one DB request and a restart shows saved data before checking for an incremental update', async () => {
   const refresh = refreshModule(), storage = disk(), applied = [];
   let calls = 0, finish;
   const fetch = () => { calls++; return new Promise(resolve => { finish = resolve; }); };
@@ -25,8 +25,8 @@ test('all readers share one request and a restart reads the saved catalog withou
   for (let i = 0; i < 10; i++) await Promise.resolve();
   assert.equal(calls, 1);
   finish({ version: 'one' }); await Promise.all([a, b]);
-  await refreshModule()(storage, fetch, apply, beforeMidnight);
-  assert.equal(calls, 1); assert.equal(applied.at(-1).version, 'one');
+  await refreshModule()(storage, async () => { calls++; assert.equal(applied.at(-1).version, 'one'); return { version: 'two' }; }, apply, beforeMidnight);
+  assert.equal(calls, 2); assert.equal(applied.at(-1).version, 'two');
 });
 test('the next Vancouver day refreshes even across a short midnight interval', async () => {
   const refresh = refreshModule(), storage = disk(); let calls = 0;
@@ -64,10 +64,13 @@ test('a legacy or empty cached response cannot mark the current photo catalog as
     assert.equal(calls, 1);
   }
 });
-test('a validated same-day photo catalog already bundled with the app needs no repeat request', async () => {
+test('same-session readers dedupe DB checks, then see another saved cohort after fifteen minutes', async () => {
   const storage = disk(); let calls = 0;
   const fetch = async () => { calls++; return { recommendationTheme: 'photo-spots', collectedAt: '2026-10-18T07:00:00Z' }; };
-  await refreshModule()(storage, fetch, () => false, afterMidnight);
-  await refreshModule()(storage, fetch, () => false, afterMidnight + 3_600_000);
+  const refresh = refreshModule();
+  await refresh(storage, fetch, () => false, afterMidnight);
+  await refresh(storage, fetch, () => false, afterMidnight + 60_000);
   assert.equal(calls, 1);
+  await refresh(storage, fetch, () => false, afterMidnight + 16 * 60_000);
+  assert.equal(calls, 2);
 });
