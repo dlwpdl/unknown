@@ -15,7 +15,7 @@ const text = node => node == null || typeof node === 'boolean' ? '' : typeof nod
 const control = (tree, label) => { const result = nodes(tree).find(node => node.props?.accessibilityLabel === label || node.type === 'Pressable' && text(node).trim() === label); assert.ok(result, `Missing control: ${label}`); return result; };
 
 // Render the actual route and run its handlers; only native/external services are replaced.
-function mount({ light = false, reduced = false } = {}) {
+function mount({ light = false, reduced = false, places = [] } = {}) {
   const state = [], feedback = [], alerts = [], memoValues = [];
   let index = 0;
   const theme = { background: light ? '#fff' : '#0B0B12', card: light ? '#fff' : '#171722', backgroundElement: '#222231', backgroundSelected: '#343443', text: '#F6F3F0', textSecondary: '#B7B4C3', accent: '#CBB9FF', accentInk: '#171123', line: '#343443' };
@@ -41,7 +41,7 @@ function mount({ light = false, reduced = false } = {}) {
     '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'guest' }, promptLogin() {} }) },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver' } }) },
-    '@/lib/discovery': discovery, '@/lib/post-maps': postMaps, '@/lib/city-places': { getCityRecommendations: () => [] }, '@/lib/city-top25': { cityTop25Recommendations: () => [] }, '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 }, '@/lib/discovery-data': {}, '@/lib/feed-data': {},
+    '@/lib/discovery': discovery, '@/lib/post-maps': postMaps, '@/lib/city-places': { getCityDiscoveryPlaces: () => places }, '@/lib/city-top25': { cityTop25Recommendations: () => [] }, '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 }, '@/lib/discovery-data': {}, '@/lib/feed-data': {},
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) }, '@/lib/location': {}, '@/lib/supabase': { supabase: {} },
     '@/lib/ticketmaster': { EVENT_CITIES: { vancouver: {} } }, '@/components/post-ad-label': {}, '@/lib/hashtags': { hasAdLabel: () => false },
   };
@@ -74,8 +74,33 @@ test('main categories select one option and event dates belong to the festival c
 test('the quick category row preserves the owner-selected restaurant, cafe, festival and nightlife order', () => {
   const tree = mount().render();
   const row = nodes(tree).find(node => node.type === 'ScrollView' && node.props.horizontal);
-  assert.deepEqual(children(row).map(node => node.props.accessibilityLabel), ['전체', 'TOP 50', '레스토랑', '카페', '페스티벌', '나이트라이프', '가볼 만한 곳', '부동산', '중고거래']);
+  assert.deepEqual(children(row).map(node => node.props.accessibilityLabel), ['전체', 'TOP 50', 'Gling Visited', '레스토랑', '카페', '페스티벌', '나이트라이프', '가볼 만한 곳', '부동산', '중고거래']);
 });
+
+test('Gling Visited selects only attested map pins while dining, cafe and All remain independent', () => {
+  const food = { id: 'osm:node:100', cityId: 'vancouver', name: 'Fixture team visit', category: 'food',
+    address: 'Fixture address', latitude: 49.29, longitude: -123.13, sourceUrl: 'https://www.openstreetmap.org/node/100',
+    glingVisited: { sourceUrl: 'https://www.instagram.com/reel/fixture/' } };
+  const cafe = { ...food, id: 'osm:node:101', name: 'Fixture cafe', category: 'cafe', glingVisited: undefined };
+  const view = mount({ places: [food, cafe] });
+  let tree = view.render();
+  const pins = () => nodes(tree).find(node => node.type === 'DiscoveryMap').props.markers;
+  assert.equal(pins().length, 2);
+  control(tree, 'Gling Visited').props.onPress(); tree = view.render();
+  assert.equal(control(tree, 'Gling Visited').props.accessibilityState.selected, true);
+  assert.equal(pins().length, 1);
+  assert.equal(pins()[0].label, 'Gling VISITED');
+  assert.equal(pins()[0].latitude, food.latitude);
+  assert.ok(!nodes(tree).some(node => node.props?.analyticsId === 'discovery.date'));
+  control(tree, '카페').props.onPress(); tree = view.render();
+  assert.equal(control(tree, 'Gling Visited').props.accessibilityState.selected, false);
+  assert.equal(pins().length, 1);
+  assert.equal(pins()[0].label, '카페');
+  control(tree, '전체').props.onPress(); tree = view.render();
+  assert.equal(pins().length, 2);
+  assert.deepEqual(view.feedback, ['selection', 'selection', 'selection']);
+});
+
 test('All has no date restriction, while festival dates stay in its subordinate row', () => {
   const view = mount(); let tree = view.render();
   assert.equal(control(tree, '전체').props.accessibilityState.selected, true);
