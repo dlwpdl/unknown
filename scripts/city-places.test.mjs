@@ -49,6 +49,31 @@ test('a legacy broad recommendation response cannot replace the photo-spot selec
   assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), false);
 });
 
+test('a newer daily payload cannot restore selections from an older editorial revision', () => {
+  const seed = catalog(); seed.selectionRevision = 2;
+  const api = data(seed), before = api.getCityRecommendations('vancouver').map(place => place.id);
+  for (const oldRevision of [undefined, 1]) {
+    const old = dailyCatalog();
+    if (oldRevision === undefined) delete old.selectionRevision; else old.selectionRevision = oldRevision;
+    assert.equal(api.replaceCityPlacesCatalog(old, fixtureNow), false);
+    assert.deepEqual(Array.from(api.getCityRecommendations('vancouver'), place => place.id), Array.from(before));
+  }
+});
+
+test('a reviewed replacement revision changes order while old detail and review identities stay reachable', () => {
+  const seed = catalog(); seed.selectionRevision = 1;
+  const next = dailyCatalog(); next.selectionRevision = 2;
+  const removed = seed.cities.vancouver.recommendations[0].placeId;
+  next.cities.vancouver.recommendations = next.cities.vancouver.recommendations.filter(pick => pick.placeId !== removed);
+  const api = data(seed);
+  assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
+  assert.deepEqual(Array.from(api.getCityRecommendations('vancouver'), place => place.id), next.cities.vancouver.recommendations.map(pick => pick.placeId));
+  assert.ok(api.getCityPlaces('vancouver').some(place => place.id === removed));
+  const invalid = structuredClone(next); invalid.selectionRevision = 2.5;
+  invalid.collectedAt = new Date(fixtureTime + 3_600_000).toISOString();
+  assert.throws(() => api.replaceCityPlacesCatalog(invalid, fixtureNow), /INVALID_PLACE_CATALOG/);
+});
+
 test('every supported city has source-checked photo selections rather than a padded business directory', () => {
   const snapshot = catalog();
   assert.equal(snapshot.recommendationTheme, 'photo-spots');
@@ -120,6 +145,17 @@ test('an older daily catalog retains a newly checked restaurant; a later refresh
   assert.equal(api.replaceCityPlacesCatalog(later, Date.parse('2026-10-20T00:00:00Z')), true);
   assert.equal(api.getCityRecommendations('vancouver').some(place => place.id === id), false);
   assert.ok(api.getCityPlaces('vancouver').some(place => place.id === id), 'existing detail/review links remain valid');
+});
+
+test('a higher editorial revision never reattaches removed picks from the bundled revision', () => {
+  const seed = catalog(); seed.selectionRevision = 2; seed.collectedAt = '2026-10-14T03:11:22Z';
+  const removed = seed.cities.vancouver.recommendations[0]; removed.verifiedAt = '2026-10-18T20:00:00Z';
+  const next = structuredClone(seed); next.selectionRevision = 3; next.collectedAt = '2026-10-18T08:54:42Z';
+  next.cities.vancouver.recommendations = next.cities.vancouver.recommendations.filter(pick => pick.placeId !== removed.placeId);
+  const api = data(seed);
+  assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
+  assert.deepEqual(Array.from(api.getCityRecommendations('vancouver'), place => place.id), next.cities.vancouver.recommendations.map(pick => pick.placeId));
+  assert.ok(api.getCityPlaces('vancouver').some(place => place.id === removed.placeId));
 });
 test('reviewed recommendation metadata preserves the English reason without inventing a ranking', () => {
   const api = data(), next = dailyCatalog();
