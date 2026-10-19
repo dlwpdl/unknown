@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-14T07:29:14.221717+00:00",
+  "collectedAt": "2026-10-19T04:31:24.579236+00:00",
   "source": "Verified same-place Wikimedia Commons photographs; dated captures, not popularity ranking",
   "cities": {
     "toronto": [
@@ -124,6 +124,16 @@
         "license": "CC BY-SA 4.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
         "imageSha256": "158a51897dad1e2a28bb6f009ca46d96206ec0ea848eb27f7e218cff37aa0816"
+      },
+      {
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Granville_Island_view_from_Granville_Bridge_in_2010.jpg",
+        "artist": "Joe Mabel",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "placeId": "osm:way:58754861",
+        "cityId": "vancouver",
+        "uri": "https://upload.wikimedia.org/wikipedia/commons/e/e1/Granville_Island_view_from_Granville_Bridge_in_2010.jpg",
+        "imageSha256": "71958c060ee24183e67e6cbc6591ab80d393b6fb0ff82132fedf74d05fef7813"
       }
     ],
     "montreal": [
@@ -176,6 +186,16 @@
         "license": "CC BY-SA 4.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
         "imageSha256": "f79eaff069d36e9ea72a31a71f92d668f6c3f55de7c3c5ec584c278d32c08c29"
+      },
+      {
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Palais_des_congr%C3%A8s.jpg",
+        "artist": "French Picman",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "placeId": "osm:way:21258128",
+        "cityId": "montreal",
+        "uri": "https://upload.wikimedia.org/wikipedia/commons/d/d5/Palais_des_congr%C3%A8s.jpg",
+        "imageSha256": "ba8982d7e04fab85f39585935ee2c859c9dea7b25cdcf65b65475dfd6ded77f1"
       }
     ],
     "calgary": [
