@@ -67,9 +67,9 @@ function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
             onSubmitEditing={() => play('selection')} style={[styles.search, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]} />
           <View style={styles.heading}>
             <ThemedText type="smallBold">{tr("{0} · {1}곳", (tr(city.name)), (Math.min(limit, places.length)))}</ThemedText>
-            {places.length > 10 && <Pressable analyticsId="places.view-more" accessibilityRole="button" accessibilityLabel={limit === 10 ? tr("50곳까지 보기") : tr("10곳 먼저 보기")}
+            {places.length > 10 && <Pressable analyticsId="places.view-more" accessibilityRole="button" accessibilityLabel={limit === 10 ? tr("{0}곳 모두 보기", Math.min(50, places.length)) : tr("10곳 먼저 보기")}
               onPress={() => { play('selection'); setLimit(limit === 10 ? 50 : 10); }} style={styles.control}>
-              <ThemedText type="smallBold" themeColor="accent">{limit === 10 ? tr("50곳까지 보기") : tr("10곳 먼저 보기")}</ThemedText>
+              <ThemedText type="smallBold" themeColor="accent">{limit === 10 ? tr("{0}곳 모두 보기", Math.min(50, places.length)) : tr("10곳 먼저 보기")}</ThemedText>
             </Pressable>}
           </View>
           <View style={styles.categories}>
