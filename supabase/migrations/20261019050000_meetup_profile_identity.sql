@@ -527,9 +527,9 @@ begin
     execute header||format('AS $function$ begin return query select %s from private.chilling_base_%I(%s) r left join private.chilling_host_profiles h on h.post_id=r.id; end $function$;',columns,proc.proname,coalesce(args,''));
   end loop;
   definition:=pg_get_functiondef('private.request_meetup_join(uuid,text)'::regprocedure);
-  expression:='(select nickname::text from public.profiles where id = current_user_id) || ''님이 모임 참여를 요청했어요.''';
-  if strpos(definition,expression)=0 then raise exception 'CHILLING_REQUEST_NOTIFICATION_IDENTITY_CHANGED'; end if;
-  execute replace(definition,expression,'''모임 참여 요청이 도착했어요.''');
+  expression:='(select nickname::text from public.profiles where id = current_user_id) || ''님이 모임 참여를 신청했어요. 한번 확인해 주세요.''';
+  if array_length(string_to_array(definition,expression),1)<>2 then raise exception 'CHILLING_REQUEST_NOTIFICATION_IDENTITY_CHANGED'; end if;
+  execute replace(definition,expression,'''모임 참여 요청이 도착했어요. 한번 확인해 주세요.''');
 end $identity$;
 
 -- Fixed control IDs contain no profile, answer or photo content.
