@@ -93,6 +93,15 @@ test('지도 입력 없이 쓴 글은 그대로 남고 지도 입력은 별도 �
   assert.deepEqual(postMapBody(stored), { body: '첫 문단\n\n둘째 문단', url: place });
 });
 
+test('draft map round-trips opt into whitespace preservation while public readers retain their existing formatting', () => {
+  for (const body of ['  첫 줄\n\n', '\n', '\n\n', '😀\n다음 줄  ']) {
+    const stored = withPostMap(body, place, '선택 장소', { preserveWhitespace: true });
+    assert.equal(postMapBody(stored, { preserveWhitespace: true }).body, body);
+    assert.equal(postMapBody(stored).body, body.trim());
+    assert.equal(postMapBody(stored).label, '선택 장소');
+  }
+});
+
 test('본문에 직접 붙인 지도도 표시하고 잘못된 링크를 숨기지 않는다', () => {
   assert.deepEqual(postMapBody(`본문\n\n${place}`), { body: '본문', url: place });
   const body = '안내\nGoogle 지도: https://evil.test/maps';

@@ -3,7 +3,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { PostAdLabel } from '@/components/post-ad-label';
 import { hasAdLabel } from '@/lib/hashtags';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, AppState, KeyboardAvoidingView, Linking, Modal, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -14,6 +14,7 @@ import * as Location from 'expo-location';
 import { useReducedMotion } from 'react-native-reanimated';
 import { FlatList, Pressable, ScrollView } from '@/components/analytics-controls';
 import { DiscoveryMap } from '@/components/discovery-map';
+import { CityPlacePhoto } from '@/components/city-place-photo';
 import { FeedAd } from '@/components/feed-ad';
 import { adsSupported } from '@/lib/ads';
 import { contentAdPosition } from '@/lib/content-ad-placement';
@@ -29,7 +30,8 @@ import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
 import { DISCOVERY_CATEGORIES, TOP25_GOLD, discoveryDays, discoveryEvent, discoveryEventOnDays, discoveryMatches, discoveryPlace, directionsUrl, mergeCityTop25, type DiscoveryDate, type DiscoveryFilter, type DiscoveryItem } from '@/lib/discovery';
-import { getCityRecommendations } from '@/lib/city-places';
+import { getCityPlaces, getCityRecommendations } from '@/lib/city-places';
+import { CITIES } from '@/lib/mock';
 import { useCityPlacesRevision } from '@/hooks/use-city-places';
 import { loadDiscoveryPosts } from '@/lib/discovery-data';
 import { getPostImageSource, type FeedCursor } from '@/lib/feed-data';
@@ -42,7 +44,7 @@ import { PUBLIC_SITE } from '@/lib/public-seo';
 import { EVENT_CITIES, eventPriceLabel, eventTime, loadTicketmasterEvents, type EventCity } from '@/lib/ticketmaster';
 
 const filters: { id: DiscoveryFilter; label: string; color?: string }[] = [
-  { id: 'all', label: '전체' }, { id: 'top25', label: 'TOP 25', color: TOP25_GOLD },
+  { id: 'all', label: '전체' }, { id: 'top25', label: 'TOP 50', color: TOP25_GOLD },
   { id: 'dining', label: '레스토랑', color: '#D79681' }, { id: 'cafe', label: '카페', color: '#D7BD92' },
   { id: 'festival', label: '페스티벌', color: '#CBB9FF' }, { id: 'nightlife', label: '나이트라이프', color: '#DD737F' },
   { id: 'places', label: '가볼 만한 곳', color: '#A8C39B' },
@@ -53,25 +55,29 @@ type Result = { key: string; page: number; items: DiscoveryItem[]; cursor: FeedC
 const located = (item: DiscoveryItem): item is DiscoveryItem & PostPin => item.latitude !== null && item.longitude !== null;
 
 export default function MapScreen({ onClose }: { onClose?: () => void } = {}) {
-  const { city } = useCommunityCity();
+  const { city: selectedCity } = useCommunityCity();
+  const { cityId, placeId } = useLocalSearchParams<{ cityId?: string; placeId?: string }>();
+  const city = (!onClose && CITIES.find(value => value.id === cityId)) || selectedCity;
   const { isAuthed, me } = useAuth();
-  return <CityMap key={`${city.id}:${isAuthed ? me.id : 'guest'}`} onClose={onClose} />;
+  return <CityMap key={`${city.id}:${isAuthed ? me.id : 'guest'}`} city={city} placeId={onClose ? undefined : placeId} onClose={onClose} />;
 }
-function CityMap({ onClose }: { onClose?: () => void } = {}) {
+function CityMap({ city, placeId, onClose }: { city: (typeof CITIES)[number]; placeId?: string; onClose?: () => void }) {
   const { tr } = useLanguage();
   const theme = useTheme(), router = useRouter(), reduced = useReducedMotion();
   const top25Ink = theme === Colors.light ? '#68543A' : TOP25_GOLD;
-  const { city } = useCommunityCity(), { isAuthed, me, promptLogin } = useAuth(), hidden = useContentVisibility();
+  const { isAuthed, me, promptLogin } = useAuth(), hidden = useContentVisibility();
+  const isFocused = useIsFocused(), targetFocusRef = useRef<string | null>(null);
   const { play } = useInteractionFeedback();
-  const { category } = useLocalSearchParams<{ category?: string }>();
+  const { category, placeRequest } = useLocalSearchParams<{ category?: string; placeRequest?: string }>();
   const initialCategory = onClose ? 'all' : category;
   const [selectedFilters, setSelectedFilters] = useState<DiscoveryFilter[]>(initialCategory !== 'all' && filters.some(value => value.id === initialCategory) ? [initialCategory as DiscoveryFilter] : []);
   const filter: DiscoveryFilter = selectedFilters.length === 1 ? selectedFilters[0] : 'all';
   const top25Only = selectedFilters.length === 1 && selectedFilters[0] === 'top25';
-  const includeEvents = !selectedFilters.length || selectedFilters.some(value => value === 'festival' || value === 'events');
+  const eventCategory = selectedFilters.some(value => value === 'festival' || value === 'events');
+  const includeEvents = !selectedFilters.length || eventCategory;
   const [mode, setMode] = useState<'map' | 'list'>('map'), [query, setQuery] = useState(''), [search, setSearch] = useState('');
   const [chosenDateFilter, setDateFilter] = useState<DiscoveryDate | null>(null), [date, setDate] = useState('');
-  const dateFilter: DiscoveryDate = chosenDateFilter ?? (selectedFilters.includes('festival') ? 'week' : 'today');
+  const dateFilter: DiscoveryDate = eventCategory ? chosenDateFilter ?? (selectedFilters.includes('festival') ? 'week' : 'today') : 'all';
   const [dateOpen, setDateOpen] = useState(false), [dateDraft, setDateDraft] = useState(''), [dateError, setDateError] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null), [center, setCenter] = useState<(PostPin & { requestId: number }) | null>(null);
@@ -145,8 +151,23 @@ function CityMap({ onClose }: { onClose?: () => void } = {}) {
 
   useCityPlacesRevision();
   const catalogPlaces = getCityRecommendations(city.id);
+  const targetPlace = placeId ? getCityPlaces(city.id).find(place => place.id === placeId) : undefined;
+  const targetItem = targetPlace ? discoveryPlace(targetPlace) : null;
   const catalogItems = catalogPlaces.map(discoveryPlace).filter(item => item !== null);
-  const publicItems = [...(current?.items ?? []), ...catalogItems].filter(item => (item.source !== 'post' || !!item.post && item.post.kind === 'listing' && ['housing', 'used'].includes(item.category))
+  if (targetItem && !catalogItems.some(item => item.id === targetItem.id)) catalogItems.push(targetItem);
+  const targetId = targetItem?.id, targetLatitude = targetItem?.latitude, targetLongitude = targetItem?.longitude, targetRecommended = !!targetItem?.top25;
+  useEffect(() => {
+    if (!isFocused || !targetId || targetLatitude == null || targetLongitude == null) return;
+    const requestKey = targetId + ':' + (placeRequest ?? '');
+    if (targetFocusRef.current === requestKey) return;
+    targetFocusRef.current = requestKey;
+    locationRevision.current++; setLocating(false); setLocationError('');
+    setSelectedFilters(targetRecommended ? ['top25'] : []);
+    setQuery(''); setSearch(''); setMode('map');
+    setSelectedId(targetId);
+    setCenter({ latitude: targetLatitude, longitude: targetLongitude, requestId: locationRevision.current });
+  }, [isFocused, targetId, targetLatitude, targetLongitude, targetRecommended, placeRequest]);
+  const publicItems = [...catalogItems, ...(current?.items ?? [])].filter(item => (item.source !== 'post' || !!item.post && item.post.kind === 'listing' && ['housing', 'used'].includes(item.category))
     && (!item.post || (!hidden('post', item.post.id, item.post.author.id) && (item.post.kind !== 'listing' || (['open', 'partial'].includes(item.post.listingStatus ?? '') && Date.parse(item.post.expiresAt ?? '') > now))))
     && (!item.event || discoveryEvent(item.event, item.cityId, now) !== null));
   const cityItems = mergeCityTop25(publicItems, city.id);
@@ -203,7 +224,9 @@ function CityMap({ onClose }: { onClose?: () => void } = {}) {
   const changeMode = (value: 'map' | 'list') => { play('selection'); setMode(value); };
   const toggleFilter = (value: DiscoveryFilter) => {
     play('selection');
-    setSelectedFilters(current => value === 'all' ? [] : current.includes(value) ? current.filter(filter => filter !== value) : [...current, value]);
+    if (value !== 'all' && selectedFilters[0] === value) return;
+    setSelectedFilters(value === 'all' ? [] : [value]);
+    setDateFilter(null); setDate(''); setDateOpen(false); setDateError('');
   };
   const chooseDate = (value: DiscoveryDate) => {
     play('selection');
@@ -213,7 +236,7 @@ function CityMap({ onClose }: { onClose?: () => void } = {}) {
   const closeFilters = () => { play('selection'); setFiltersOpen(false); setDateOpen(false); setDateError(''); };
   const filterChip = (value: typeof filters[number]) => {
     const selected = value.id === 'all' ? !selectedFilters.length : selectedFilters.includes(value.id);
-    return <Pressable key={value.id} analyticsId="discovery.filter" accessibilityRole={value.id === 'all' ? 'button' : 'checkbox'} accessibilityLabel={tr(value.label)} accessibilityState={value.id === 'all' ? { selected } : { checked: selected }} onPress={() => toggleFilter(value.id)} style={[styles.chip, { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.accent : theme.backgroundElement }]}>
+    return <Pressable key={value.id} analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr(value.label)} accessibilityState={{ selected }} onPress={() => toggleFilter(value.id)} style={[styles.chip, { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.accent : theme.backgroundElement }]}>
       {selected && value.id !== 'all' ? <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✓</ThemedText> : value.id === 'top25' && <View style={[styles.dot, { backgroundColor: TOP25_GOLD }]} />}
       <ThemedText type="smallBold" style={{ color: selected ? theme.accentInk : value.id === 'top25' ? top25Ink : theme.text }}>{tr(value.label)}</ThemedText>
     </Pressable>;
@@ -237,8 +260,9 @@ function CityMap({ onClose }: { onClose?: () => void } = {}) {
     <ScrollView horizontal analyticsId="discovery.filter" showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filters}>
       {(['all', 'top25', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used'] as const).map(id => filterChip(filters.find(value => value.id === id)!))}
     </ScrollView>
-    {Object.hasOwn(EVENT_CITIES, city.id) && (includeEvents || chosenDateFilter !== null) && <ScrollView horizontal analyticsId="discovery.date" showsHorizontalScrollIndicator={false} style={styles.eventDateRow} contentContainerStyle={styles.eventDates}>
-      {([{ id: 'today', label: tr('행사 · 오늘') }, { id: 'week', label: tr('다가오는 7일') }, { id: 'weekend', label: tr('이번 주말') }] as const).map(value => <Pressable key={value.id} analyticsId="discovery.date" accessibilityRole="button" accessibilityState={{ selected: dateFilter === value.id }} onPress={() => chooseDate(value.id)} style={[styles.dateChip, { borderColor: dateFilter === value.id ? theme.accent : theme.line, backgroundColor: dateFilter === value.id ? theme.accent : theme.backgroundElement }]}><ThemedText type="smallBold" style={{ color: dateFilter === value.id ? theme.accentInk : theme.text }}>{value.label}</ThemedText></Pressable>)}
+    {Object.hasOwn(EVENT_CITIES, city.id) && eventCategory && <ScrollView horizontal analyticsId="discovery.date" showsHorizontalScrollIndicator={false} style={styles.eventDateRow} contentContainerStyle={styles.eventDates}>
+      <ThemedText type="small" themeColor="textSecondary">{tr('행사 날짜')}</ThemedText>
+      {([{ id: 'today', label: tr('오늘') }, { id: 'week', label: tr('다가오는 7일') }, { id: 'weekend', label: tr('이번 주말') }] as const).map(value => <Pressable key={value.id} analyticsId="discovery.date" accessibilityRole="button" accessibilityState={{ selected: dateFilter === value.id }} onPress={() => chooseDate(value.id)} style={[styles.dateChip, { borderColor: dateFilter === value.id ? theme.accent : theme.line, backgroundColor: dateFilter === value.id ? theme.accent : theme.backgroundElement }]}><ThemedText type="smallBold" style={{ color: dateFilter === value.id ? theme.accentInk : theme.text }}>{value.label}</ThemedText></Pressable>)}
       {(dateFilter === 'all' || dateFilter === 'date') && <Pressable analyticsId="discovery.date" accessibilityRole="button" accessibilityLabel={tr('행사 날짜 변경')} onPress={() => { play('selection'); setFiltersOpen(true); }} style={[styles.dateChip, { borderColor: theme.accent, backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" themeColor="accent">{dateFilter === 'all' ? tr('행사 · 전체 날짜') : date}</ThemedText></Pressable>}
     </ScrollView>}
     {!!locationError && <ThemedText accessibilityRole="alert" type="small" style={styles.notice}>{tr(locationError)}</ThemedText>}
@@ -253,9 +277,9 @@ function CityMap({ onClose }: { onClose?: () => void } = {}) {
         </View>
         <Pressable analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={tr("리스트 보기")} onPress={() => changeMode('list')} style={[styles.listLink, { backgroundColor: theme.card, borderColor: theme.line, bottom: selected && located(selected) ? Math.min(cardHeight + 64, 1000) : 64 }]}><SymbolView name={{ ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' }} size={18} tintColor={theme.text} /><ThemedText type="smallBold" accessibilityLiveRegion="polite">{tr('목록 {0}개', items.length)}{limited ? '+' : ''}</ThemedText></Pressable>
         {selected && located(selected) ? <View onLayout={event => setCardHeight(event.nativeEvent.layout.height)} style={[styles.selected, { backgroundColor: theme.card, borderColor: theme.line }]}><ScrollView analyticsId="discovery.detail" accessibilityLabel={tr("선택한 장소 상세, 스크롤로 더 보기")} style={styles.selectedScroll} contentContainerStyle={styles.selectedContent}><DiscoveryCard item={selected} externalInfo={!!onClose} viewerScope={viewerScope} onOpen={() => open(selected)} /><Top25Note item={selected} /></ScrollView><Directions item={selected} /></View>
-          : !loading && <View style={styles.mapEmpty}><StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : items.length ? tr("주소가 있는 항목은 목록에서 볼 수 있어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 25가 없어요") : tr("이 도시의 TOP 25를 준비하고 있어요") : tr("아직 표시할 공개 위치가 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : top25Only ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : tr("직접 첨부한 핀과 위치가 확인된 행사만 지도에 표시해요.")} actionLabel={current?.errors.length ? tr("다시 시도") : tr("리스트 보기")} onAction={current?.errors.length ? refresh : () => changeMode('list')} /></View>}
+          : !loading && <View style={styles.mapEmpty}><StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : items.length ? tr("주소가 있는 항목은 목록에서 볼 수 있어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 50 장소가 없어요") : tr("이 도시의 TOP 50을 준비하고 있어요") : tr("아직 표시할 공개 위치가 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : top25Only ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : tr("직접 첨부한 핀과 위치가 확인된 행사만 지도에 표시해요.")} actionLabel={current?.errors.length ? tr("다시 시도") : tr("리스트 보기")} onAction={current?.errors.length ? refresh : () => changeMode('list')} /></View>}
       </> : <FlatList analyticsId="discovery.list" onViewableItemsChanged={trackTranslationResults} viewabilityConfig={CONTENT_TRANSLATION_VIEWABILITY} data={items} keyExtractor={item => item.id} contentContainerStyle={styles.list} renderItem={({ item, index }) => <><View style={[styles.listCard, { backgroundColor: theme.card, borderColor: theme.line }]}><DiscoveryCard item={item} externalInfo={!!onClose} translationVisible={visibleResultIds.has(item.id)} viewerScope={viewerScope} onOpen={() => open(item)} /><Top25Note item={item} />{located(item) && <Directions item={item} />}</View>{adsSupported && !loading && !current?.errors.length && !selectedFilters.includes('top25') && index === 3 && contentAdPosition(index, items.length) && <FeedAd key={`ad-after-${item.id}`} surface="map" />}</>}
-        ListEmptyComponent={loading ? null : <StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 25가 없어요") : tr("이 도시의 TOP 25를 준비하고 있어요") : tr("조건에 맞는 항목이 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : tr("다른 분류나 날짜를 선택해 보세요. 장소 위치는 글을 쓸 때 첨부할 수 있어요.")} actionLabel={current?.errors.length ? tr("다시 시도") : undefined} onAction={current?.errors.length ? refresh : undefined} />}
+        ListEmptyComponent={loading ? null : <StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 50 장소가 없어요") : tr("이 도시의 TOP 50을 준비하고 있어요") : tr("조건에 맞는 항목이 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : tr("다른 분류나 날짜를 선택해 보세요. 장소 위치는 글을 쓸 때 첨부할 수 있어요.")} actionLabel={current?.errors.length ? tr("다시 시도") : undefined} onAction={current?.errors.length ? refresh : undefined} />}
         ListFooterComponent={<>{more && <Pressable analyticsId="discovery.more" accessibilityRole="button" disabled={loading} onPress={() => { if (morePending.current || loading) return; morePending.current = true; play('selection'); loadPage(current); }} style={[styles.more, { borderColor: theme.line }]}><ThemedText themeColor="accent">{loading ? tr("불러오는 중…") : tr("더 보기")}</ThemedText></Pressable>}{limited && <ThemedText type="small" themeColor="textSecondary">{tr("500개까지 표시했어요. 검색어나 분류로 범위를 줄여 주세요.")}</ThemedText>}<ThemedText type="small" themeColor="textSecondary" style={styles.source}>{tr("글링 공개 위치 · 장소 자료: OpenStreetMap · 행사 정보: Ticketmaster")}{items.some(item => !located(item)) ? tr("\n위치 확인 전 항목은 지도 핀 없이 목록에 표시해요.") : ''}</ThemedText></>} />}
       {loading && <View pointerEvents="none" style={styles.loading}><GlingLoader variant="capsule" accessibilityLabel={tr("지도 결과 불러오는 중")} /></View>}
     </View>
@@ -266,10 +290,9 @@ function CityMap({ onClose }: { onClose?: () => void } = {}) {
         <SafeAreaView accessibilityViewIsModal style={[styles.filterSheet, { backgroundColor: theme.card, borderColor: theme.line }]} edges={['bottom', 'left', 'right']}>
           <View style={styles.sheetHeading}><ThemedText accessibilityRole="header" type="smallBold">{tr("분류와 날짜")}</ThemedText><Pressable analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr("필터 닫기")} onPress={closeFilters} style={styles.icon}><ThemedText>×</ThemedText></Pressable></View>
           <ScrollView analyticsId="discovery.filter" keyboardShouldPersistTaps="handled" style={styles.sheetScroll} contentContainerStyle={styles.sheetContent}>
-            <ThemedText type="small" themeColor="textSecondary">{tr("여러 분류를 고르면 함께 보여줘요.")}</ThemedText>
             <View style={styles.categoryGrid}>{filters.map(filterChip)}</View>
-            <Pressable analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr("TOP 25 선정 배지 안내")} onPress={() => { play('selection'); Alert.alert(tr("도시의 TOP 25"), tr("뷰와 풍경, 건축이 매력적인 사진 명소를 도시별 최대 25곳 골랐어요. 숫자는 인기 순위가 아니에요.")); }} style={styles.info}><SymbolView name={{ ios: 'info.circle', android: 'info', web: 'info' }} size={18} tintColor={theme.textSecondary} /><ThemedText type="small" themeColor="textSecondary">{tr("TOP 25 선정 배지 안내")}</ThemedText></Pressable>
-            {Object.hasOwn(EVENT_CITIES, city.id) && <>
+            <Pressable analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr("TOP 50 선정 배지 안내")} onPress={() => { play('selection'); Alert.alert(tr("도시의 TOP 50"), tr("사진 명소와 들러 볼 만한 식당을 도시별 최대 50곳 골랐어요. 장소별 선정 출처도 확인할 수 있어요.")); }} style={styles.info}><SymbolView name={{ ios: 'info.circle', android: 'info', web: 'info' }} size={18} tintColor={theme.textSecondary} /><ThemedText type="small" themeColor="textSecondary">{tr("TOP 50 선정 배지 안내")}</ThemedText></Pressable>
+            {Object.hasOwn(EVENT_CITIES, city.id) && eventCategory && <>
               <ThemedText type="smallBold">{tr("행사 날짜")}</ThemedText>
               <View style={styles.dates}>{([{ id: 'all', label: tr("전체 날짜") }, { id: 'today', label: tr("오늘") }, { id: 'week', label: tr('다가오는 7일') }, { id: 'weekend', label: tr("이번 주말") }, { id: 'date', label: tr("날짜 지정") }] as const).map(value => <Pressable key={value.id} analyticsId="discovery.date" accessibilityRole="button" accessibilityState={{ selected: value.id === 'date' ? dateOpen || dateFilter === 'date' : !dateOpen && dateFilter === value.id }} onPress={() => chooseDate(value.id)} style={[styles.date, { borderColor: theme.line, backgroundColor: (value.id === 'date' ? dateOpen || dateFilter === 'date' : !dateOpen && dateFilter === value.id) ? theme.backgroundSelected : theme.backgroundElement }]}><ThemedText type="small">{value.id === 'date' && dateFilter === 'date' && !dateOpen ? date.slice(5).replace('-', '/') : value.label}</ThemedText></Pressable>)}</View>
               {dateFilter === 'date' && !dateOpen && <ThemedText type="small" themeColor="textSecondary">{date}</ThemedText>}
@@ -297,22 +320,22 @@ function DiscoveryCard({ item, viewerScope, onOpen, translationVisible = true, e
   const housing = item.source === 'post' && item.post?.kind === 'listing' && item.category === 'housing';
   const headline = housing ? price || tr('가격 미등록') : displayTitle;
   const address = housing && item.post ? postPublicAddress(item.post.body) ?? tr('상세주소 미등록') : item.label;
-  return <View><Pressable analyticsId="discovery.card" accessibilityRole={externalInfo ? 'link' : 'button'} accessibilityLabel={`${hasAdLabel(item.post?.hashtags) ? tr("광고") + ", " : ""}${item.top25 ? tr("TOP 25 선정 장소, ") : ''}${tr(category.label)}, ${headline}, ${housing ? `${displayTitle}, ` : ''}${address}, ${externalInfo ? tr('공개 정보, 외부 페이지 열기') : item.source === 'place' && !item.post && !item.place ? tr("선정 출처 열기") : tr("상세 보기")}`} onPress={onOpen} style={styles.cardBody}>
-    <View style={[styles.thumbnail, { backgroundColor: theme.backgroundElement }]}>{image ? <Image source={image} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} /> : <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={26} tintColor={category.color} />}</View>
-    <View style={styles.cardText}><View style={styles.badge}><PostAdLabel hashtags={item.post?.hashtags} /><View style={[styles.dot, { backgroundColor: category.color }]} /><ThemedText type="small" themeColor="textSecondary">{tr(category.label)}{!located(item) ? tr(" · 위치 확인 전") : ''}</ThemedText>{item.top25 && <View style={styles.top25Badge}><ThemedText style={styles.top25BadgeText}>✦ TOP 25</ThemedText></View>}</View><ThemedText type="smallBold" numberOfLines={2} style={housing ? styles.housingPrice : undefined}>{headline}</ThemedText>{housing && <ThemedText type="small" numberOfLines={2}>{displayTitle}</ThemedText>}<ThemedText type="small" themeColor="textSecondary" numberOfLines={housing ? 2 : 1}>{address}</ThemedText>{item.event && <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{eventTime(item.event, appLocale)}</ThemedText>}{!housing && !!price && <ThemedText type="smallBold" themeColor="accent">{price}</ThemedText>}</View>
+  return <View><Pressable analyticsId="discovery.card" accessibilityRole={externalInfo ? 'link' : 'button'} accessibilityLabel={`${hasAdLabel(item.post?.hashtags) ? tr("광고") + ", " : ""}${item.top25 ? tr("TOP 50 선정 장소, ") : ''}${tr(category.label)}, ${headline}, ${housing ? `${displayTitle}, ` : ''}${address}, ${externalInfo ? tr('공개 정보, 외부 페이지 열기') : item.source === 'place' && !item.post && !item.place ? tr("선정 출처 열기") : tr("상세 보기")}`} onPress={onOpen} style={styles.cardBody}>
+    <View style={[styles.thumbnail, { backgroundColor: theme.backgroundElement }]}>{!item.post && item.place?.photo ? <CityPlacePhoto place={item.place} style={StyleSheet.absoluteFill} /> : image ? <Image source={image} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} /> : <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={26} tintColor={category.color} />}</View>
+    <View style={styles.cardText}><View style={styles.badge}><PostAdLabel hashtags={item.post?.hashtags} /><View style={[styles.dot, { backgroundColor: category.color }]} /><ThemedText type="small" themeColor="textSecondary">{tr(category.label)}{!located(item) ? tr(" · 위치 확인 전") : ''}</ThemedText>{item.top25 && <View style={styles.top25Badge}><ThemedText style={styles.top25BadgeText}>✦ TOP 50</ThemedText></View>}</View><ThemedText type="smallBold" numberOfLines={2} style={housing ? styles.housingPrice : undefined}>{headline}</ThemedText>{housing && <ThemedText type="small" numberOfLines={2}>{displayTitle}</ThemedText>}<ThemedText type="small" themeColor="textSecondary" numberOfLines={housing ? 2 : 1}>{address}</ThemedText>{item.event && <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{eventTime(item.event, appLocale)}</ThemedText>}{!housing && !!price && <ThemedText type="smallBold" themeColor="accent">{price}</ThemedText>}</View>
     <ThemedText type={externalInfo ? 'small' : 'default'} themeColor="textSecondary">{externalInfo ? tr('공개 정보 ↗') : '›'}</ThemedText>
   </Pressable>{translatable && <TranslationControl translation={translation} />}</View>;
 }
 function Top25Note({ item }: { item: DiscoveryItem }) {
   const theme = useTheme(), { play } = useInteractionFeedback();
   const top25Ink = theme === Colors.light ? '#68543A' : TOP25_GOLD;
-  const { tr, locale } = useLanguage();
+  const { tr, language } = useLanguage();
   if (!item.top25) return null;
   return <View style={[styles.top25Note, { borderTopColor: theme.line }]}>
-    <ThemedText type="smallBold" style={{ color: top25Ink }}>{tr("TOP 25 선정 이유")}</ThemedText>
-    <ThemedText type="small" themeColor="textSecondary">{locale === 'en' ? item.top25.reasonEn ?? item.top25.reason : item.top25.reason}</ThemedText>
+    <ThemedText type="smallBold" style={{ color: top25Ink }}>{tr("TOP 50 선정 이유")}</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary">{language === 'en' ? item.top25.reasonEn ?? item.top25.reason : item.top25.reason}</ThemedText>
     {!!item.post && <ThemedText type="small" themeColor="textSecondary">{tr("글링 추천 글에서도 소개한 장소예요.")}</ThemedText>}
-    <Pressable analyticsId="discovery.card" accessibilityRole="link" accessibilityLabel={tr('{0} TOP 25 선정 출처 열기, 외부 사이트', item.title)} onPress={() => { play('selection'); void Linking.openURL(item.top25!.sourceUrl).catch(() => { play('warning'); Alert.alert(tr("선정 출처를 열지 못했어요"), tr("인터넷 연결을 확인하고 다시 시도해 주세요.")); }); }} style={styles.top25Source}><ThemedText type="small" style={{ color: top25Ink }}>{tr("선정 출처 보기 ↗")}</ThemedText></Pressable>
+    <Pressable analyticsId="discovery.card" accessibilityRole="link" accessibilityLabel={tr('{0} TOP 50 선정 출처 열기, 외부 사이트', item.title)} onPress={() => { play('selection'); void Linking.openURL(item.top25!.sourceUrl).catch(() => { play('warning'); Alert.alert(tr("선정 출처를 열지 못했어요"), tr("인터넷 연결을 확인하고 다시 시도해 주세요.")); }); }} style={styles.top25Source}><ThemedText type="small" style={{ color: top25Ink }}>{tr("선정 출처 보기 ↗")}</ThemedText></Pressable>
   </View>;
 }
 function Directions({ item }: { item: DiscoveryItem & PostPin }) {
@@ -333,7 +356,7 @@ const styles = StyleSheet.create({
   filterDot: { width: 6, height: 6, borderRadius: 3, position: 'absolute', right: 6, top: 6 },
   top25Badge: { borderRadius: 5, borderWidth: 1, borderColor: '#68543A', backgroundColor: '#2A2319', paddingHorizontal: 5, paddingVertical: 2 }, top25BadgeText: { color: TOP25_GOLD, fontSize: 10, lineHeight: 14, fontWeight: '800' }, top25Note: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 10, gap: 5 }, top25Source: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
   dates: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' }, date: { minHeight: 44, paddingHorizontal: 12, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  eventDateRow: { flexGrow: 0, flexShrink: 0 }, eventDates: { paddingHorizontal: 16, paddingBottom: 10, gap: 8 }, dateChip: { minHeight: 44, paddingHorizontal: 12, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  eventDateRow: { flexGrow: 0, flexShrink: 0 }, eventDates: { paddingHorizontal: 16, paddingBottom: 10, gap: 8, alignItems: 'center' }, dateChip: { minHeight: 44, paddingHorizontal: 12, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   notice: { marginHorizontal: 16, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10 },
   content: { flex: 1, minHeight: 180 }, mapControls: { position: 'absolute', right: 22, top: 22, gap: 8 }, mapControl: { minWidth: 44, minHeight: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   listLink: { position: 'absolute', alignSelf: 'center', minHeight: 44, paddingHorizontal: 16, borderRadius: 24, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },

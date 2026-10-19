@@ -1,0 +1,59 @@
+{
+  "name": "getCityPlaceBatch",
+  "description": "Public city-list place batch: exact source metadata IDs, ratings, review counts and closure flags. Coordinates join by GoogleplaceID from SAME saved response, no review bodies.",
+  "request": {
+    "method": "GET",
+    "url": "https://wanderlog.com/list/geoCategory/105394/attractions",
+    "headers": {
+      "accept": "text/html"
+    }
+  },
+  "slots": [
+    {
+      "param": "id",
+      "at": [
+        "path:2"
+      ]
+    }
+  ],
+  "volatile": [],
+  "trigger": {
+    "url": "https://wanderlog.com/list/geoCategory/{id}/attractions"
+  },
+  "match": {
+    "method": "GET",
+    "host": "wanderlog.com",
+    "path": "/list/geoCategory/{id}/attractions"
+  },
+  "response": {
+    "format": "embedded",
+    "embedded": {
+      "regex": "window\\.__MOBX_STATE__\\s*=\\s*(\\{)"
+    },
+    "extract": "placesListPage.data.placeMetadata",
+    "pick": [
+      "id",
+      "name",
+      "placeId",
+      "rating",
+      "numRatings",
+      "tripadvisorLocationId",
+      "tripadvisorRating",
+      "tripadvisorNumRatings",
+      "businessStatus",
+      "permanentlyClosed"
+    ]
+  },
+  "params": [
+    {
+      "name": "id",
+      "type": "string",
+      "required": true,
+      "example": "105394",
+      "pattern": "^[1-9][0-9]{0,11}$"
+    }
+  ],
+  "readOnly": true,
+  "minTier": 1,
+  "learnedLoggedIn": false
+}

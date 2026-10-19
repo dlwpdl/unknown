@@ -43,12 +43,13 @@ export async function loadPublicMerchantReviews(client: SupabaseClient, postId: 
 }
 
 function RatingVisual({ kind, scoreTenths, animated = false }: { kind: ReviewKind; scoreTenths: number | null; animated?: boolean }) {
+  const pointsPerUnit = kind === 'usage' ? 2 : 1, unitCount = 10 / pointsPerUnit;
   const shape = kind === 'usage' ? <svg viewBox="0 0 30 32" aria-hidden="true" focusable="false" fill="currentColor"><path d="M15 1 19 11 29 16 19 21 15 31 11 21 1 16 11 11Z" /></svg>
     : <span className="reader-company-rating-segment" />;
   return <span className={`reader-company-rating-visual${animated ? ' playing' : ''}`} data-review-kind={kind} aria-hidden="true">
-    {Array.from({ length: 10 }, (_, index) => {
-      const portion = scoreTenths == null ? 0 : Math.max(0, Math.min(100, (scoreTenths - index * 10) * 10));
-      const color = [239, 229, 255].map((channel, i) => Math.round(channel + ([169, 33, 255][i] - channel) * index / 9));
+    {Array.from({ length: unitCount }, (_, index) => {
+      const portion = scoreTenths == null ? 0 : Math.max(0, Math.min(100, scoreTenths * unitCount - index * 100));
+      const color = [239, 229, 255].map((channel, i) => Math.round(channel + ([169, 33, 255][i] - channel) * ((index + 1) * pointsPerUnit - 1) / 9));
       return <span className="reader-company-rating-unit" data-portion={portion} key={index}>{shape}
         <span className="reader-company-rating-fill" style={{ '--portion': `${portion}%`, '--unit-delay': `${index * 22}ms`, color: `rgb(${color.join(',')})` } as CSSProperties}>{shape}</span></span>;
     })}

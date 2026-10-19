@@ -34,6 +34,12 @@ export type DiscoveryItem = {
   place?: CityPlace;
 };
 
+let placeMapRequestId = 0;
+export function placeMapRoute(place: Pick<CityPlace, 'id' | 'cityId'>) {
+  return { pathname: '/map' as const, params: { cityId: place.cityId, placeId: place.id, category: 'top25',
+    placeRequest: Date.now().toString(36) + '-' + (++placeMapRequestId).toString(36) } };
+}
+
 export function discoveryPlace(place: CityPlace): DiscoveryItem | null {
   if (!Number.isFinite(place.latitude) || Math.abs(place.latitude) > 90 || !Number.isFinite(place.longitude) || Math.abs(place.longitude) > 180) return null;
   const category = place.category === 'food' ? 'dining' : place.category === 'cafe' ? 'cafe' : 'place';
@@ -60,7 +66,7 @@ export function mergeCityTop25(items: DiscoveryItem[], cityId: string, picks: re
       || ids.has(key) || !Array.isArray(pick.postIds) || pick.postIds.some(id => typeof id !== 'string' || !id.trim() || id.length > 180)) throw new Error('INVALID_TOP25_PLACE');
     ids.add(key);
     const count = (counts.get(pick.cityId) ?? 0) + 1;
-    if (count > 25) throw new Error('TOP25_CITY_LIMIT');
+    if (count > 50) throw new Error('TOP25_CITY_LIMIT');
     counts.set(pick.cityId, count);
     for (const postId of pick.postIds) {
       const binding = `${pick.cityId}:${postId}`;
