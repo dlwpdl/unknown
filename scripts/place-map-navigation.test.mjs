@@ -53,14 +53,22 @@ test('Home, full list and detail map controls preserve the canonical city/place 
   }
 });
 
-test('an explicit map target waits for the catalog, focuses once, and permits later pan/GPS use', () => {
+test('each explicit place-map action carries a fresh request while keeping canonical identity', () => {
+  const place = selected[0], first = discovery.placeMapRoute(place), second = discovery.placeMapRoute(place);
+  assert.equal(first.params.cityId, place.cityId); assert.equal(first.params.placeId, place.id);
+  assert.equal(second.params.cityId, first.params.cityId); assert.equal(second.params.placeId, first.params.placeId);
+  assert.equal(typeof first.params.placeRequest, 'string');
+  assert.notEqual(first.params.placeRequest, second.params.placeRequest, 'same-place actions must remain distinct');
+});
+
+test('a consumed map target preserves later filters and pan on Back; a fresh same-place action refocuses', () => {
   const effect = nodes(map, node => ts.isCallExpression(node) && node.expression.getText(map) === 'useEffect'
     && node.arguments[0]?.getText(map).includes('targetFocusRef'))[0];
   assert.ok(effect, 'the actual map applies an explicit canonical target');
   const calls = {}, context = { isFocused: true, targetId: undefined, targetLatitude: undefined, targetLongitude: undefined,
-    targetRecommended: true, targetFocusRef: { current: null }, locationRevision: { current: 7 }, Date,
+    targetRecommended: true, placeRequest: 'first-entry', targetFocusRef: { current: null }, locationRevision: { current: 7 }, Date,
   };
-  for (const name of ['setLocating', 'setLocationError', 'setSelectedFilters', 'setQuery', 'setSearch', 'setMode', 'setSelectedId', 'setCenter']) {
+  for (const name of ['setLocating', 'setLocationError', 'setSelectedFilters', 'setQuery', 'setSearch', 'setMode', 'setSelectedId', 'setCenter', 'setDateFilter', 'setDate']) {
     context[name] = value => { calls[name] = value; };
   }
   const focus = () => evaluate(effect.arguments[0].getText(map), context)();
@@ -74,14 +82,31 @@ test('an explicit map target waits for the catalog, focuses once, and permits la
   assert.equal(calls.setMode, 'map');
   assert.equal(calls.setQuery, ''); assert.equal(calls.setSearch, '');
   assert.equal(context.locationRevision.current, 8, 'old in-flight GPS result cannot override explicit target');
-  calls.setCenter = 'later-user-pan-or-GPS'; focus();
+  Object.assign(calls, { setCenter: 'later-user-pan-or-GPS', setSelectedFilters: ['festival'], setDateFilter: 'weekend',
+    setDate: '2026-10-24', setQuery: 'music', setSearch: 'music', setSelectedId: 'event:selected' });
+  focus();
   assert.equal(calls.setCenter, 'later-user-pan-or-GPS');
   context.isFocused = false; focus();
   context.isFocused = true; focus();
-  assert.equal(calls.setCenter.latitude, 49.28, 'returning to map focuses requested place again');
+  assert.equal(calls.setCenter, 'later-user-pan-or-GPS', 'normal Back must preserve the current map camera');
+  assert.deepEqual(Array.from(calls.setSelectedFilters), ['festival'], 'normal Back must retain the selected category');
+  assert.equal(calls.setDateFilter, 'weekend'); assert.equal(calls.setDate, '2026-10-24');
+  assert.equal(calls.setQuery, 'music'); assert.equal(calls.setSearch, 'music'); assert.equal(calls.setSelectedId, 'event:selected');
+  assert.equal(context.locationRevision.current, 8, 'ordinary focus does not create a fresh location request');
+  context.isFocused = false; context.placeRequest = 'repeat-explicit-entry'; focus();
+  assert.equal(calls.setCenter, 'later-user-pan-or-GPS', 'a hidden map waits for the new request to be focused');
+  context.isFocused = true; focus();
+  assert.equal(calls.setCenter.latitude, 49.28, 'a new same-place action must refocus, including reused map routes');
+  assert.deepEqual(Array.from(calls.setSelectedFilters), ['top25']); assert.equal(calls.setSelectedId, context.targetId);
+  assert.equal(context.locationRevision.current, 9);
+  calls.setCenter = 'later-pan-after-repeat'; focus(); assert.equal(calls.setCenter, 'later-pan-after-repeat');
   Object.assign(context, { targetId: 'place:toronto:osm:node:456', targetLatitude: 43.65, targetLongitude: -79.38, targetRecommended: false });
   focus(); assert.equal(calls.setCenter.latitude, 43.65);
   assert.deepEqual(Array.from(calls.setSelectedFilters), [], 'archived detail identity remains reachable without a Top 50 badge');
+  context.placeRequest = undefined; focus();
+  calls.setCenter = 'legacy-link-later-pan';
+  context.isFocused = false; focus(); context.isFocused = true; focus();
+  assert.equal(calls.setCenter, 'legacy-link-later-pan', 'legacy links without a request are consumed once too');
 });
 
 test('curated canonical pins survive the existing 500-result cap', () => {
