@@ -163,7 +163,7 @@ export function PostCard({
             <View style={styles.authorCopy}>
               <View style={styles.nickRow}>
                 <ThemedText type="smallBold" style={styles.nickname}>{post.business?.name ?? post.author.nickname}</ThemedText>
-                {post.business ? <ThemedText type="small" themeColor="textSecondary">{tr('비즈니스')}</ThemedText> : <TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} />}
+                {post.business ? <ThemedText type="small" themeColor="textSecondary">{tr('비즈니스')}</ThemedText> : post.room ? <ThemedText type="small" themeColor="textSecondary">{tr('모임 호스트')}</ThemedText> : <TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} />}
                 <PostAdLabel hashtags={post.hashtags} />
                 {mine && (
                   <ThemedText type="smallBold" style={{ color: theme.accent }}>

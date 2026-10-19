@@ -74,8 +74,9 @@ test('direct exit has no slot wait for either party and group exit retains its o
 test('group messages and reports identify actual sender; unknown nickname never becomes the group host', () => {
   const { conversationSender } = loadRoom().exports;
   const group = { ...direct, kind: 'group', otherUser: { id: 'host', nickname: '방장', verificationLevel: 3 } };
-  const actual = conversationSender({ sender_id: 'member', sender_nickname: '실제 작성자' }, group);
+  const actual = conversationSender({ sender_id: 'member', sender_nickname: '개인 계정 이름' }, group, t, [{ id: 'member', nickname: '실제 작성자' }]);
   assert.equal(actual.id, 'member'); assert.equal(actual.nickname, '실제 작성자');
+  assert.equal(conversationSender({ sender_id: 'member', sender_nickname: '개인 계정 이름' }, group).nickname, t.chat.member, 'an unavailable meetup roster never falls back to a community nickname');
   assert.equal(conversationSender({ sender_id: 'member', sender_nickname: null }, group).nickname, t.chat.member);
   assert.equal(conversationSender({ sender_id: 'sender', sender_nickname: null }, direct).nickname, direct.otherUser.nickname);
 });

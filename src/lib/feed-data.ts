@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getLocale } from '../i18n/index.ts';
+import { getLocale, tr } from '../i18n/index.ts';
 
 import { thumbPathFor } from './image-upload.ts';
 import { businessMediaUrl } from './business-media.ts';
@@ -196,10 +196,10 @@ export function mapPublicFeed(
     cityId: row.city_id,
     author: {
       id: row.author_id,
-      nickname: row.author_nickname,
-      neighborhood: row.author_neighborhood ?? undefined,
-      verified: row.author_verification_level >= 2,
-      trustLevel: row.author_verification_level === 3 ? 3 : undefined,
+      nickname: row.room_preview ? row.room_preview.hostDisplayName || tr('모임 호스트') : row.author_nickname,
+      neighborhood: row.room_preview ? undefined : row.author_neighborhood ?? undefined,
+      verified: !row.room_preview && row.author_verification_level >= 2,
+      trustLevel: !row.room_preview && row.author_verification_level === 3 ? 3 : undefined,
     },
     tag: { id: row.tag_id, slug: row.tag_slug, label: row.tag_label, kind: row.tag_kind },
     title: row.title,

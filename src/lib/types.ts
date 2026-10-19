@@ -57,6 +57,7 @@ export interface RoomPreview {
   recommendedAgeMin?: number | null;
   recommendedAgeMax?: number | null;
   applicationQuestion?: string | null;
+  hostDisplayName?: string | null;
 }
 
 export interface PostComment {
