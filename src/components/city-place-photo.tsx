@@ -8,6 +8,18 @@ import { useTheme } from '@/hooks/use-theme';
 import type { CityPlace } from '@/lib/city-places';
 
 const bundledPhotos: Record<string, number> = {
+  'a67c6a278b0b45bbd5eea9840624ca2bacedc99bc4a5cf56bfb644b14b400cca': require('../../assets/images/city-places/toronto-osm-way-1105575638.jpg'),
+  'b1f14d7b757367577e458491c5b6faaca84c2b3a1b8c9b9b6f60792abe070e88': require('../../assets/images/city-places/toronto-osm-way-366234297.jpg'),
+  '461466dd20d97b6b00fc1af466be89262943ac35d92592086b03c30dc0a6d8a2': require('../../assets/images/city-places/toronto-osm-way-656128849.jpg'),
+  'c89dcc3b95d4b82d591369666cb1448a2723da5eca177f69d42d3ade75399c98': require('../../assets/images/city-places/toronto-osm-relation-16751345.jpg'),
+  '85371060b21573bf6db81d17635c070d26badc7f02982be035481cff1bda6142': require('../../assets/images/city-places/toronto-osm-way-24590240.jpg'),
+  '415240b55ffd4d457ad1d4d5e4e445e8b6d025f4581217ef24f4380ea7b6772b': require('../../assets/images/city-places/toronto-osm-way-691705308.jpg'),
+  'bed97bce5e6fd415a297578f5e6d91f2a2c4acdd34a957f8587db42e0e7bdbd9': require('../../assets/images/city-places/toronto-osm-node-4616716676.jpg'),
+  '7fa1b6af15fff902d30976ed7579d3648ea1382b5aa136a364c04540b6cbb8bc': require('../../assets/images/city-places/toronto-osm-way-503134102.jpg'),
+  '630ee1047d4a3c27b77f63d359e28cae92a041a20a75726ec0b9b37f8192bf4d': require('../../assets/images/city-places/toronto-osm-relation-11175871.jpg'),
+  '927814ba8c42a43316bbc7ffbade515b30aea87cd3b3b9e8ae7b16a1a719059c': require('../../assets/images/city-places/calgary-osm-way-221143394.jpg'),
+  'a7c328ae01568d5b578b4d2eb5980d3e99e9b64f1755824b0b56cf5d9d533471': require('../../assets/images/city-places/winnipeg-osm-way-97925809.jpg'),
+  'f318c881d06113328926f2e66797d4c0ae3bb89f2843d5b8c9b26dae186ff13d': require('../../assets/images/city-places/halifax-osm-node-475876928.jpg'),
   '745311b63e921f6e807c3988f0ed42ae8cc29f7c422c6179ee48a4c7700f5703': require('../../assets/images/city-places/calgary-osm-way-127289241.jpg'),
   'af45a217ce21785274cb532621b392df0c7cc59e1051b99b208ed70d91bfa044': require('../../assets/images/city-places/calgary-osm-way-10584788.jpg'),
   '78c428d2aa69517624fa41e3ee705c27f5e948c810e634351312414f75fb777a': require('../../assets/images/city-places/calgary-osm-way-171779909.jpg'),

@@ -155,7 +155,7 @@ test('an older daily catalog retains a newly checked restaurant; a later refresh
   const seed = catalog(), id = 'osm:node:6339016833';
   // Model the historical ordering explicitly, independent of the live catalog's dates.
   seed.collectedAt = '2026-10-14T03:11:22Z';
-  for (const city of Object.values(seed.cities)) for (const pick of city.recommendations) pick.verifiedAt = seed.collectedAt;
+  for (const city of Object.values(seed.cities)) for (const pick of [...city.recommendations, ...(city.diningRecommendations ?? [])]) pick.verifiedAt = seed.collectedAt;
   const restaurant = seed.cities.vancouver.recommendations.find(pick => pick.placeId === id)
     ?? { placeId: id, reason: 'Test-reviewed restaurant', sourceUrl: 'https://example.org/reviewed' };
   restaurant.verifiedAt = '2026-10-18T20:00:00Z';

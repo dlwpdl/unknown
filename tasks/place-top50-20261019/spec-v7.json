@@ -46,7 +46,7 @@
   "style": "Existing shapes and attribution; natural concrete descriptions; no new dependency",
   "tests": "Per-city identity/coverage/category/provenance/static-byte invariant plus existing relevant/full checks per completed packet",
   "callPlan": "/Users/ash/Desktop/Git/unknown/output/reviews/gling-cities50-dining-2026-10-19/bounded-plan-v7-proposed.json",
-  "status": "Revision6 actually saved930/159/163/259; next source revision7 adds fully photo/rating-backed Calgary13/Edmonton14/Winnipeg14 plus real CN Tower. DB adoption pending; allcities50 still active.",
+  "status": "Actual revision7 saved/readback953facts/177TopPicks/186photoLinks/307externalProviderRows at2026-10-19T20:46:06.169715Z. Next bounded cohortC:9 newly canonical/photo/count-backed Toronto destinations,3 separately reviewed dining venues,actual owner-attested HANDSON identity/localVisited. Remaining-city50 still active; no550complete claim.",
   "supplementalDining": "Separate reviewed diningRecommendations; preserve top50 order; getCityDiscoveryPlaces union, getCityBrowsePlaces category-specific, trusted local visited registry only",
   "directUserPersistence": {
     "at": "2026-10-19T19:06:14.237363+00:00",
@@ -67,5 +67,20 @@
     "preserveAll930FactObjects": true,
     "closedAndWrongSubjectBindingsRemainPrivate": true,
     "sameCapsHistoryExpiry": true
+  },
+  "cohortC": {
+    "preparedAt": "2026-10-19T21:06:04.438081+00:00",
+    "sourceParent": "ceed2dfecc0a81ef9d00891a0be9906d72a3d43c",
+    "proposedRevision": 8,
+    "preserveEveryExistingFactObject": 953,
+    "preserveEveryExistingPhotoRow": 186,
+    "preserveVancouverTop50OrderReasonsAndProviderRows": true,
+    "handsonCanonical": "osm:node:4976343547",
+    "handsonPublicAttestation": "https://www.instagram.com/reel/DeoQKPNgYLe/",
+    "visitedTrustedLocalOnly": true,
+    "ownerPhotoNotMislicensedOrAddedToCommonsRpc": true,
+    "metadataAndPhotoAuthority": "same v7 unchanged caps/history/23:00 expiry",
+    "osmActual502HoldUntil": "2026-10-19T22:04:45.562Z",
+    "oneSavedReadbackPerAcceptedCohort": true
   }
 }
