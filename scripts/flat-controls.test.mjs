@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { flatControlStyle } from '../src/lib/flat-control.ts';
+import * as designSystem from '../src/constants/design-system.ts';
 
 test('flat controls keep geometry, shape, colors and state without any raised paint', () => {
   for (const style of [
@@ -83,15 +84,18 @@ test('primary buttons retain 44/52-point targets, labels and callbacks without d
     if (name === 'react-native') return { View: 'View', StyleSheet: { create: x => x } };
     if (name === '@/components/analytics-controls') return { Pressable: 'Pressable' };
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };
+    if (name === '@/constants/design-system') return designSystem;
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ accent: '#CBB9FF', accentInk: '#171123' }) };
     throw new Error(name);
   } });
-  const onPress = () => {};
+  let calls = 0;
+  const onPress = () => { calls++; };
   for (const compact of [false, true]) {
     const tree = exports.RaisedActionButton({ analyticsId: 'primary', label: '신청하기', onPress, compact, disabled: true, busy: true });
     assert.equal(flatten(tree.props.style).paddingBottom, 2);
     const touch = tree.props.children.props.children;
-    assert.equal(touch.props.onPress, onPress);
+    touch.props.onPress();
+    assert.equal(calls, 0, 'unavailable primary actions must not invoke their caller');
     assert.equal(touch.props.disabled, true);
     assert.equal(touch.props.accessibilityState.busy, true);
     assert.equal(touch.props.children.props.children, '신청하기');
