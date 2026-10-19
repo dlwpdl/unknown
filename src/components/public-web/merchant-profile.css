@@ -10,10 +10,10 @@
 .reader-company-rating { display: grid; gap: 6px; color: var(--textSecondary); font-size: 12px; }
 .reader-company-rating-number { display: flex; align-items: baseline; gap: 6px; }
 .reader-company-rating-number > strong { color: var(--text); font-size: 24px; line-height: 1.15; font-variant-numeric: tabular-nums; }
-.reader-company-rating-visual { display: grid; grid-template-columns: repeat(10,minmax(0,1fr)); gap: 2px; height: 17px; width: 100%; max-width: 200px; min-width: 0; }
+.reader-company-rating-visual { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 2px; height: 17px; width: 100%; max-width: 100px; min-width: 0; }
 .reader-company-rating-unit { position: relative; min-width: 0; height: 100%; color: #504A5C; }
 .reader-company-rating-unit svg { display: block; width: 100%; height: 100%; }
-.reader-company-rating-visual[data-review-kind="employment"] { gap: 0; height: 4px; border-radius: 2px; overflow: hidden; }
+.reader-company-rating-visual[data-review-kind="employment"] { grid-template-columns: repeat(10,minmax(0,1fr)); gap: 0; height: 4px; max-width: 200px; border-radius: 2px; overflow: hidden; }
 .reader-company-rating-segment { display: block; width: 100%; height: 100%; background: currentColor; }
 .reader-company-rating-fill { position: absolute; inset: 0; clip-path: inset(0 calc(100% - var(--portion)) 0 0); }
 .reader-company-rating-unit[data-portion="0"] .reader-company-rating-fill { visibility: hidden; }
@@ -82,8 +82,8 @@
 .reader-company-verified { color: var(--accent); font-size: 12px; font-weight: 650; }
 .reader-company-review-score { margin-left: auto; font-size: 22px; line-height: 1.2; font-weight: 750; font-variant-numeric: tabular-nums; }
 .reader-company-review-score small { color: var(--textSecondary); font-size: 12px; font-weight: 500; }
-.reader-company-review-toggle > .reader-company-rating-visual { max-width: 144px; height: 15px; margin-top: 11px; }
-.reader-company-review-toggle > .reader-company-rating-visual[data-review-kind="employment"] { height: 4px; }
+.reader-company-review-toggle > .reader-company-rating-visual { max-width: 72px; height: 15px; margin-top: 11px; }
+.reader-company-review-toggle > .reader-company-rating-visual[data-review-kind="employment"] { max-width: 144px; height: 4px; }
 .reader-company-review-preview { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--textSecondary); font-size: 15px; margin-top: 12px; white-space: pre-wrap; }
 .reader-company-review-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--textSecondary); font-size: 12px; margin-top: 12px; }
 .reader-company-review-meta > span { color: var(--accent); }
