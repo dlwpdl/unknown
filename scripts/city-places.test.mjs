@@ -1,6 +1,7 @@
 import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
@@ -402,17 +403,44 @@ test('the selection source opens its actual reviewed article with interaction fe
   assert.deepEqual(ui.feedback, ['selection']);
 });
 
-test('photo load failure shows the neutral fallback and a different image can load afterwards', () => {
+function photoModule(imports = {}) {
   let failed;
   const jsx = (type, props) => ({ type, props });
-  const photo = module('src/components/city-place-photo.tsx', {
+  return module('src/components/city-place-photo.tsx', {
     react: { useState: () => [failed, value => { failed = value; }] },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { StyleSheet: { create: v => v, absoluteFill: {} }, View: 'View' },
     'expo-image': { Image: 'Image' },
     'expo-symbols': { SymbolView: 'SymbolView' },
     '@/hooks/use-theme': { useTheme: () => ({}) },
+    ...imports,
   });
+}
+
+test('verified bundled photo bytes display offline only for their exact recorded image hash', () => {
+  const directory = new URL('assets/images/city-places/', root);
+  const assets = readdirSync(directory).filter(name => name.endsWith('.jpg')).map((name, index) => ({
+    path: '../../assets/images/city-places/' + name, source: index + 1,
+    hash: createHash('sha256').update(readFileSync(new URL(name, directory))).digest('hex'),
+  }));
+  assert.ok(assets.length > 0, 'verified offline photos must be included');
+  const photo = photoModule(Object.fromEntries(assets.map(asset => [asset.path, asset.source])));
+  for (const asset of assets) {
+    const metadata = Object.values(photos().cities).flat().find(row => row.imageSha256 === asset.hash);
+    assert.ok(metadata, asset.path + ' needs its actual source and license');
+    const place = data().getCityPlaces(metadata.cityId).find(row => row.id === metadata.placeId);
+    assert.ok(place);
+    const image = nodes(photo.CityPlacePhoto({ place })).find(node => node.type === 'Image');
+    assert.equal(image?.props.source, asset.source, metadata.cityId + '/' + metadata.placeId);
+    assert.equal(place.photo.uri, metadata.uri, 'bundling must preserve the remote source and attribution');
+    const changed = { ...place, photo: { ...place.photo, imageSha256: '0'.repeat(64) } };
+    const replacement = nodes(photo.CityPlacePhoto({ place: changed })).find(node => node.type === 'Image');
+    assert.equal(replacement?.props.source.uri, metadata.uri, 'a different image must not reuse stale bundled bytes');
+  }
+});
+
+test('photo load failure shows the neutral fallback and a different image can load afterwards', () => {
+  const photo = photoModule();
   assert.equal(typeof photo.CityPlacePhoto, 'function', 'native photo fallback is missing');
   const place = { id: 'one', name: 'One', photo: { uri: 'https://thumb.wikimedia.org/one.jpg' } };
   let tree = photo.CityPlacePhoto({ place });
