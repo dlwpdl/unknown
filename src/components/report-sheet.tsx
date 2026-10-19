@@ -1,7 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
-import { Pressable, ScrollView } from '@/components/analytics-controls';
+import { Pressable } from '@/components/analytics-controls';
 import { useLayoutEffect, useRef, useState } from 'react';
-import { Alert, Animated, Easing, KeyboardAvoidingView, Modal, Platform, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, Animated, Easing, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReducedMotion } from 'react-native-reanimated';
 
@@ -141,7 +141,7 @@ export function ReportSheet({
             </Pressable>
           </View>
 
-          <ScrollView analyticsId="report.form.scroll" style={styles.formScroll} contentContainerStyle={styles.formContent}
+          <ScrollView style={styles.formScroll} contentContainerStyle={styles.formContent}
             keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
           <View style={styles.reasons} accessibilityRole="radiogroup">
             {REASONS.map((item) => {
