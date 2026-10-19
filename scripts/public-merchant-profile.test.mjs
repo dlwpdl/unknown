@@ -279,8 +279,9 @@ test('usage sparkles and the continuous employment bar use the same once-rounded
   assert.equal(visual.props.scoreTenths, 83);
   for (const kind of ['usage', 'employment']) {
     const units = nodes(view.exports.RatingVisual({ kind, scoreTenths: 83 })).filter(node => node.props?.['data-portion'] != null);
-    assert.equal(units.length, 10); assert.equal(units[8].props['data-portion'], 30);
-    assert.equal(units[9].props['data-portion'], 0);
+    assert.equal(units.length, kind === 'usage' ? 5 : 10);
+    assert.equal(units[kind === 'usage' ? 4 : 8].props['data-portion'], kind === 'usage' ? 15 : 30);
+    if (kind === 'employment') assert.equal(units[9].props['data-portion'], 0);
     assert.ok(nodes(view.exports.RatingVisual({ kind, scoreTenths: 83 })).some(node => kind === 'usage' ? node.type === 'path' && node.props.d?.includes('19 11') : node.props?.className === 'reader-company-rating-segment'));
   }
 });
