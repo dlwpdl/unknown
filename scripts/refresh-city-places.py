@@ -73,7 +73,7 @@ def build_catalog(seed, elements, now):
             places.append(p)
         if len({p['id'] for p in places}) != len(places) or not places or len(places) > 200: raise ValueError('INVALID_PLACE_CATALOG')
         picks = city.get('recommendations')
-        if not isinstance(picks, list) or len(picks) > 25: raise ValueError('CITY_RECOMMENDATIONS_NOT_VERIFIED')
+        if not isinstance(picks, list) or len(picks) > 50: raise ValueError('CITY_RECOMMENDATIONS_NOT_VERIFIED')
         reviewed, selected = [], set()
         for pick in picks:
             if pick['placeId'] not in {p['id'] for p in places} or pick['placeId'] in selected or not https(pick['sourceUrl']) or not isinstance(pick['reason'], str) or not 0 < len(pick['reason']) <= 500: raise ValueError('INVALID_PLACE_RECOMMENDATION')
