@@ -23,7 +23,7 @@ export function PlaceReviewSummary({ rating, compact = false }: { rating: Return
   </ThemedText>;
   return <View style={styles.summary}>
     <ThemedText type="smallBold" style={compact ? styles.compactScore : undefined}>
-      <GlingRatingIcon score={rating.score} />{' '}{rating.score.toFixed(1)}<ThemedText type="small" themeColor="textSecondary"> /10</ThemedText>
+      <GlingRatingIcon score={rating.score} />{' '}{rating.score.toFixed(1)}<ThemedText type="small" themeColor="textSecondary" style={compact ? styles.compactScale : undefined}> /10</ThemedText>
     </ThemedText>
     <ThemedText type="small" themeColor="textSecondary" style={compact ? styles.compact : undefined} numberOfLines={2}>
       {rating.source === 'gling' ? tr('글링 {0}개 평가', rating.count!.toLocaleString(locale)) : tr('외부 참고 · 10점 환산')}
@@ -36,6 +36,7 @@ export function PlaceReviewSummary({ rating, compact = false }: { rating: Return
 
 const styles = StyleSheet.create({
   summary: { gap: 2 },
-  compactScore: { fontSize: 16, lineHeight: 22 },
+  compactScore: { fontSize: 13, lineHeight: 20 },
+  compactScale: { fontSize: 11, lineHeight: 20 },
   compact: { fontSize: 11, lineHeight: 15 },
 });
