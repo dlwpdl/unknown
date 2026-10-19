@@ -17,7 +17,7 @@ export type CityPlace = {
 export type PlaceRecommendation = { placeId: string; reason: string; reasonEn?: string; sourceUrl: string; verifiedAt: string };
 
 type PlaceCatalog = {
-  collectedAt: string; recommendationTheme?: 'photo-spots'; cities: Record<string, { coverage: string; places: CityPlace[]; recommendations?: PlaceRecommendation[] }>;
+  collectedAt: string; selectionRevision?: number; recommendationTheme?: 'photo-spots'; cities: Record<string, { coverage: string; places: CityPlace[]; recommendations?: PlaceRecommendation[] }>;
 };
 let catalog = snapshot as PlaceCatalog;
 const photoCatalog = photoSnapshot as { cities: Record<string, PlacePhoto[]> };
@@ -38,6 +38,8 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
   if (!next || !text(next.collectedAt, 80) || !Number.isFinite(Date.parse(next.collectedAt)) || Date.parse(next.collectedAt) > now + 300_000
     || !next.cities || Object.keys(next.cities).length !== CITIES.length || Object.keys(next.cities).some(id => !CITIES.some(c => c.id === id))) invalid();
   if (next.recommendationTheme !== 'photo-spots') return false;
+  const nextSelection = next.selectionRevision ?? 0, currentSelection = catalog.selectionRevision ?? 0;
+  if (!Number.isSafeInteger(nextSelection) || nextSelection < 0) invalid();
   for (const city of CITIES) {
     const data = next.cities[city.id];
     if (!data || !['municipal-boundary', 'city-center'].includes(data.coverage) || !Array.isArray(data.places) || !data.places.length || data.places.length > 200) invalid();
@@ -58,7 +60,7 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
       selected.add(pick.placeId);
     }
   }
-  if (Date.parse(next.collectedAt) <= Date.parse(catalog.collectedAt)) return false;
+  if (nextSelection < currentSelection || (nextSelection === currentSelection && Date.parse(next.collectedAt) <= Date.parse(catalog.collectedAt))) return false;
   catalog = next; CITY_PLACES_COLLECTED_AT = next.collectedAt; revision++;
   listeners.forEach(listener => listener());
   return true;
@@ -67,8 +69,8 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
 function reviewedPicks(cityId: string): PlaceRecommendation[] {
   if (catalog.recommendationTheme !== 'photo-spots') return [];
   const current = catalog.cities[cityId].recommendations ?? [];
-  // An older daily snapshot has not seen newly reviewed bundled additions yet.
-  const additions = ((snapshot as PlaceCatalog).cities[cityId].recommendations ?? [])
+  // Bundled additions belong only to the same editorial selection.
+  const additions = (catalog.selectionRevision === (snapshot as PlaceCatalog).selectionRevision ? (snapshot as PlaceCatalog).cities[cityId].recommendations ?? [] : [])
     .filter(pick => Date.parse(pick.verifiedAt) > Date.parse(catalog.collectedAt) && !current.some(item => item.placeId === pick.placeId));
   return [...current, ...additions].slice(0, 50);
 }

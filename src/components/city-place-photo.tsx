@@ -8,6 +8,9 @@ import { useTheme } from '@/hooks/use-theme';
 import type { CityPlace } from '@/lib/city-places';
 
 const bundledPhotos: Record<string, number> = {
+  '0fb32d52c022465828f0fbede9cb92feeb82d28455aaa24d5759338e63b50ed7': require('../../assets/images/city-places/vancouver-osm-node-12620960872.jpg'),
+  '1460af2a3f295835b78f252a27ebafb5acd4a705f3e0390ce996f4f5ebe86b15': require('../../assets/images/city-places/vancouver-osm-way-37084312.jpg'),
+  '898aeeb771b2c9c70c09c0e834ffb1595210d842d733cda6d6051e6d91dd94f8': require('../../assets/images/city-places/vancouver-osm-way-316008597.jpg'),
   '81f4f45a8ab6a918af113c85a7cfa5312fcbc62ada0a4776b8a94fe551fbe20e': require('../../assets/images/city-places/saint-john-osm-way-827160392.jpg'),
   'ba99ed62513c41ae631272e7f640c9595033f3f8aef44048bb33fb2f93bf9064': require('../../assets/images/city-places/winnipeg-osm-way-1055784750.jpg'),
   '0b64f3ad345109b16a30e174cee5f8be2336c4af0396c197b94cb60a95163f2e': require('../../assets/images/city-places/ottawa-osm-way-639268732.jpg'),
