@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T04:35:03.618465+00:00",
+  "collectedAt": "2026-10-19T05:10:40.333631+00:00",
   "source": "Verified same-place Wikimedia Commons photographs; dated captures, not popularity ranking",
   "cities": {
     "toronto": [
@@ -548,6 +548,16 @@
         "license": "CC BY-SA 4.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
         "imageSha256": "33a8e658a327dccda65d8acf65d6ce797945cd7e795d3eb0c2e05306bbb0ed00"
+      },
+      {
+        "placeId": "osm:way:236508925",
+        "cityId": "regina",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/26/Victoria_Park_Cenotaph%2C_Regina%2C_Saskatchewan%2C_Canada.jpg/960px-Victoria_Park_Cenotaph%2C_Regina%2C_Saskatchewan%2C_Canada.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Victoria_Park_Cenotaph,_Regina,_Saskatchewan,_Canada.jpg",
+        "artist": "Tintaggon",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "0a562ca4b2cf29fad5821241feafecd71af0097bbb812e46b1d94cdd6f4cba4e"
       }
     ],
     "saint-john": [
