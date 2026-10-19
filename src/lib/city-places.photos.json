@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T06:34:58.112931+00:00",
+  "collectedAt": "2026-10-19T06:44:38.627421+00:00",
   "source": "Verified same-place Wikimedia Commons photographs; dated captures, not popularity ranking",
   "cities": {
     "toronto": [
@@ -586,6 +586,16 @@
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
         "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d6/Rideau_Canal.jpg/960px-Rideau_Canal.jpg",
         "imageSha256": "fd03f1a124c02ebeb29f619d08f64b203ab83ccc4fa8bbe974f40ebf9ed03b0e"
+      },
+      {
+        "placeId": "osm:way:639268732",
+        "cityId": "ottawa",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Major_s_Hill_Park_-_08.jpg",
+        "artist": "Jeangagnon",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/98/Major_s_Hill_Park_-_08.jpg/960px-Major_s_Hill_Park_-_08.jpg",
+        "imageSha256": "0b64f3ad345109b16a30e174cee5f8be2336c4af0396c197b94cb60a95163f2e"
       }
     ],
     "regina": [
