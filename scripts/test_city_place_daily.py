@@ -127,4 +127,41 @@ class DailyPlaces(unittest.TestCase):
             self.assertFalse((Path(target)/'attempt.json').exists())
             collect.assert_not_called()
 
+    def test_daily_refresh_retains_verified_dining_photo_and_provider_metadata(self):
+        m = implementation(); seed, osm, now = self.fixture()
+        seed['cities']['vancouver']['diningRecommendations'] = seed['cities']['vancouver']['recommendations']
+        seed['photoCatalog'] = {'cities': {'vancouver': [dict(placeId='osm:node:1', cityId='vancouver', uri='https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Fixture.jpg/960px-Fixture.jpg', sourceUrl='https://commons.wikimedia.org/wiki/File:Fixture.jpg', artist='Fixture photographer', license='CC BY 4.0', licenseUrl='https://creativecommons.org/licenses/by/4.0/', imageSha256='a'*64)]}}
+        seed['externalRatings'] = [dict(cityId='vancouver', placeId='osm:node:1', placeName='Verified Cafe', provider='Google', score=4.7, scale=5, count=120, via='Wanderlog', sourceUrl='https://wanderlog.com/place/details/123', checkedAt='2026-10-17T10:00:00Z')]
+        result = m.build_catalog(seed, osm, now)
+        self.assertEqual(result['cities']['vancouver'].get('diningRecommendations'), seed['cities']['vancouver']['diningRecommendations'])
+        self.assertEqual(result.get('photoCatalog'), seed['photoCatalog'])
+        self.assertEqual(result.get('externalRatings'), seed['externalRatings'])
+        osm[0]['tags']['disused'] = 'yes'
+        self.assertEqual(m.build_catalog(seed, osm, now)['cities']['vancouver']['diningRecommendations'], [])
+
+    def test_non_dining_supplement_and_unknown_photo_or_rating_identity_are_rejected(self):
+        m = implementation()
+        for kind in ['category', 'photo', 'rating']:
+            seed, osm, now = self.fixture()
+            if kind == 'category':
+                seed['cities']['vancouver']['places'][0]['category'] = 'places'
+                seed['cities']['vancouver']['diningRecommendations'] = seed['cities']['vancouver']['recommendations']
+            elif kind == 'photo': seed['photoCatalog'] = {'cities': {'vancouver': [{'cityId':'vancouver','placeId':'osm:node:999'}]}}
+            else: seed['externalRatings'] = [{'cityId':'vancouver','placeId':'osm:node:999'}]
+            with self.assertRaises(ValueError): m.build_catalog(seed, osm, now)
+
+    def test_old_seed_keeps_already_saved_server_photo_rating_and_newer_editorial_revision(self):
+        m = implementation(); seed = json.loads((ROOT/'src/lib/city-places.catalog.json').read_text())
+        previous = json.loads(json.dumps(seed)); previous['collectedAt']='2026-10-18T01:00:00Z'; previous['selectionRevision'] = seed.get('selectionRevision',0) + 1
+        previous['photoCatalog']=json.loads((ROOT/'src/lib/city-places.photos.json').read_text())
+        previous['externalRatings']=json.loads((ROOT/'src/lib/place-external-ratings.json').read_text())
+        osm = [dict(type=p['id'].split(':')[1],id=int(p['id'].split(':')[2]),lat=p['latitude'],lon=p['longitude'],tags={'name':p['name']}) for city in seed['cities'].values() for p in city['places']]
+        with tempfile.TemporaryDirectory() as target:
+            path=Path(target)/'seed.json';path.write_text(json.dumps(seed))
+            with patch.object(sys,'argv',['refresh-city-places.py','--seed',str(path),'--output',target]), patch.object(m,'current_catalog',return_value=previous), patch.object(m,'collect',return_value={'elements':osm}):m.main()
+            result=json.loads(next(Path(target).glob('catalog-*.json')).read_text())
+            self.assertEqual(result.get('selectionRevision'),previous['selectionRevision'])
+            self.assertEqual(result.get('photoCatalog'),previous['photoCatalog'])
+            self.assertEqual(result.get('externalRatings'),previous['externalRatings'])
+
 if __name__ == '__main__': unittest.main()
