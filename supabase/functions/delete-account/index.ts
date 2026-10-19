@@ -59,7 +59,7 @@ Deno.serve(async (request) => {
   if (purge.error) return json({ error: 'ACCOUNT_PURGE_FAILED' }, 500);
 
   // Freeze the account and finish owned-company erasure before classifying shared assets.
-  for (const bucket of ['avatars', 'post-images', 'chat-images', 'merchant-review-receipts', 'merchant-profile-images']) {
+  for (const bucket of ['avatars', 'post-images', 'chat-images', 'merchant-review-receipts', 'merchant-profile-images', 'meetup-profiles']) {
     let retained = 0;
     while (true) {
       const listed = await admin.storage.from(bucket).list(user.id, { limit: 100, offset: retained, sortBy: { column: 'name', order: 'asc' } });
