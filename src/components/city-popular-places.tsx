@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
+import { PlaceRatingSummary } from '@/components/place-external-ratings';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -31,13 +32,14 @@ export function CityPopularPlaces({ cityId }: { cityId: string }) {
         <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={12} tintColor={theme.accent} />
       </Pressable>
     </View>
-    <ThemedText style={styles.subtitle} themeColor="textSecondary">{tr("뷰와 공간이 예쁜 사진 명소를 골랐어요")}</ThemedText>
+    <ThemedText style={styles.subtitle} themeColor="textSecondary">{tr("사진 명소와 들러 볼 만한 식당을 골랐어요")}</ThemedText>
     <View style={styles.cards}>
       {places.slice(0, 3).map(place => <Pressable key={place.id} analyticsId="today.places.place-open" accessibilityRole="button" accessibilityLabel={tr("{0} 장소 정보", (place.name))}
         onPress={() => { play('selection'); router.push({ pathname: '/places/[id]', params: { id: place.id, cityId } }); }}
         style={({ pressed }) => [styles.card, { opacity: pressed ? 0.65 : 1 }]}>
         <CityPlacePhoto place={place} style={styles.photo} />
         <ThemedText numberOfLines={2} style={styles.name}>{place.name}</ThemedText>
+        <PlaceRatingSummary cityId={cityId} placeId={place.id} compact />
         <ThemedText style={styles.category} themeColor="textSecondary">{place.category === 'food' ? tr("맛집") : place.category === 'cafe' ? tr("카페") : tr("가볼 만한 곳")}</ThemedText>
       </Pressable>)}
     </View>

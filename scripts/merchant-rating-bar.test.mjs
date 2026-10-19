@@ -5,8 +5,11 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-function rating({ score, reviewKind = 'usage', reduced = false, label }) {
+function rating({ score, reviewKind = 'usage', reduced = false, label, scheme = 'dark' }) {
   const animations = [], values = [], cleanups = [];
+  const theme = scheme === 'dark'
+    ? { accent: '#CBB9FF', line: '#222', background: '#0B0B12', card: '#171722' }
+    : { accent: '#6E4AA2', line: '#DFDAE9', background: '#F7F7FB', card: '#FFFFFF' };
   class Value {
     constructor(value) { this.value = value; values.push(this); }
     setValue(value) { this.value = value; }
@@ -19,12 +22,13 @@ function rating({ score, reviewKind = 'usage', reduced = false, label }) {
       Animated: { Value, View: 'AnimatedView', timing: (value, config) => { animations.push(config); return { start() {}, stop() {} }; },
         stagger: () => ({ start() {}, stop() {} }) } },
     'react-native-reanimated': { useReducedMotion: () => reduced },
-    '@/hooks/use-theme': { useTheme: () => ({ accent: '#CBB9FF', line: '#222', background: '#0B0B12' }) },
+    '@/hooks/use-theme': { useTheme: () => theme },
+    '@/constants/theme': { Colors: { dark: { background: '#0B0B12' } } },
   };
   const exports = {}, url = new URL('../src/components/merchant-rating-bar.tsx', import.meta.url);
   const source = ts.transpileModule(readFileSync(url, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(source, { exports, require: withLanguageImports(name => imports[name] ?? {}) });
-  return { tree: exports.MerchantRatingBar({ score, reviewKind, label }), animations, values, cleanups };
+  return { tree: exports.MerchantRatingBar({ score, reviewKind, label }), icon: exports.GlingRatingIcon, theme, animations, values, cleanups };
 }
 const nodes = root => !root || typeof root !== 'object' ? [] : [root, ...Object.values(root).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
 
@@ -61,4 +65,25 @@ test('rating motion is finite, stops on unmount, and skips movement with reduced
   normal.cleanups[0]();
   assert.ok(normal.values.every(value => value.value === 1));
   assert.equal(rating({ score: 10, reduced: true }).animations.length, 0);
+});
+
+test('higher ratings glow brighter in both themes while every mark stays visible on its card', () => {
+  const luminance = color => [1, 3, 5].map(start => parseInt(color.slice(start, start + 2), 16) / 255)
+    .map(channel => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4)
+    .reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
+  for (const scheme of ['dark', 'light']) {
+    const { icon, theme } = rating({ score: 8.2, scheme });
+    const marks = Array.from({ length: 10 }, (_, i) => icon({ score: i + 1 }));
+    const colors = marks.map(mark => mark.props.style[1].color);
+    assert.equal(new Set(colors).size, 10);
+    for (let i = 1; i < colors.length; i++) assert.ok(luminance(colors[i]) > luminance(colors[i - 1]), scheme);
+    for (const mark of marks) {
+      assert.equal(mark.props.children, '✦');
+      assert.equal(mark.props.accessible, false);
+      const foreground = luminance(mark.props.style[1].color), background = luminance(theme.card);
+      assert.ok((Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05) >= 3, scheme);
+    }
+    assert.ok(marks.at(-1).props.style[1].textShadowRadius > marks[0].props.style[1].textShadowRadius);
+    for (const score of [null, NaN, Infinity, 0, 11]) assert.equal(icon({ score }).props.style[1].color, theme.line);
+  }
 });

@@ -63,6 +63,7 @@ function view({ language = 'ko', failOpen = false } = {}) {
       Alert: { alert: (...args) => calls.alerts.push(args) } },
     'expo-symbols': { SymbolView: 'SymbolView' },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/themed-text': { ThemedText: 'Text' },
+    '@/components/merchant-rating-bar': { GlingRatingIcon: 'GlingRatingIcon' },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16 } },
     '@/hooks/use-language': { useLanguage: () => ({ tr, locale: language }) },
     '@/hooks/use-theme': { useTheme: () => ({ card: '#fff', line: '#ddd', textSecondary: '#666' }) },
@@ -83,7 +84,7 @@ test('rating cards disclose the intermediary and date; source taps provide feedb
   const ui = view({ failOpen: true }), tree = ui.PlaceExternalRatings(scope);
   assert.match(text(tree), /Google/); assert.match(text(tree), /Tripadvisor/);
   assert.match(text(tree), /Wanderlog/); assert.match(text(tree), /2026/); assert.match(text(tree), /28,661/);
-  const links = nodes(tree).filter(node => node.props?.analyticsId === 'places.rating.source');
+  const links = nodes(tree).filter(node => node.props?.analyticsId === 'places.detail.source');
   assert.equal(links.length, 2);
   assert.equal(links[0].props.accessibilityRole, 'link');
   links[0].props.onPress(); await new Promise(setImmediate);
@@ -99,5 +100,15 @@ test('unmatched places stay empty and English displays ratings without claiming 
   assert.match(text(ui.PlaceExternalRatings(scope)), /Ratings from other sites/);
   assert.match(text(ui.PlaceRatingSummary(scope)), /Google\s+4.5\s*\/5.*28,661 ratings/);
   assert.doesNotMatch(text(ui.PlaceExternalRatings(scope)), /Gling member reviews/);
+  setActiveLanguage('ko');
+});
+
+test('compact city cards keep the provider and score readable in three columns', () => {
+  const ui = view({ language: 'en' }), summary = ui.PlaceRatingSummary({ ...scope, compact: true });
+  assert.match(text(summary), /Google\s+4.5\s*\/5/);
+  assert.doesNotMatch(text(summary), /28,661|ratings/);
+  assert.equal(summary.props.numberOfLines, 1);
+  assert.equal(nodes(summary).find(node => node.type === 'GlingRatingIcon').props.score, 9,
+    'only the icon color uses the existing ten-point palette; the source score stays 4.5/5');
   setActiveLanguage('ko');
 });

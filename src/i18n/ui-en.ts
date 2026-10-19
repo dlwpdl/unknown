@@ -749,6 +749,8 @@ export const uiEnglish: Record<string, string> = {
   "전체 보기": "View all",
   "사진으로 먼저 둘러보세요": "Explore through photos first",
   "뷰와 공간이 예쁜 사진 명소를 골랐어요": "Photo spots chosen for their views and beautiful spaces",
+  "사진 명소와 들러 볼 만한 식당을 골랐어요": "Selected photo spots and restaurants to visit",
+  "사진 명소와 들러 볼 만한 식당을 골랐어요. 인기 순위가 아니에요.": "Photo spots and restaurants to visit, shown in curated order.",
   "이 도시에서 사진 남기기 좋은 곳": "Places worth a photo in this city",
   "풍경과 건축, 공간의 매력으로 골랐어요. 인기 순위가 아니에요.": "Chosen for their scenery, architecture and atmosphere, rather than popularity rankings.",
   "뷰와 풍경, 건축이 매력적인 사진 명소를 도시별 최대 25곳 골랐어요. 숫자는 인기 순위가 아니에요.": "Up to 25 photo spots per city, chosen for their views, scenery and architecture. The number does not indicate a popularity ranking.",
