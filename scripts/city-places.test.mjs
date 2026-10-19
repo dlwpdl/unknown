@@ -316,24 +316,26 @@ test('native list renders real data, expands, filters search and category, then 
   tree = ui.render();
   assert.ok(rows().length > 0 && rows().length <= 50);
 });
-test('the full city list expands to fifty and requests summaries for the last place too', () => {
-  const next = dailyCatalog();
-  next.cities.toronto.recommendations = next.cities.toronto.places.slice(0, 50).map(place => ({
-    placeId: place.id, reason: 'Test-reviewed selection', sourceUrl: 'https://example.org/reviewed', verifiedAt: next.collectedAt,
-  }));
-  const api = data(); api.replaceCityPlacesCatalog(next, fixtureNow);
-  const ui = screen('src/app/places/index.tsx', { cityId: 'toronto' }, true, api);
-  let tree = ui.render();
-  assert.equal(ui.ratingScopes.at(-1).ids.length, 50);
-  assert.equal(nodes(tree).filter(n => n.props?.analyticsId === 'places.open').length, 10);
-  const more = nodes(tree).find(n => n.props?.analyticsId === 'places.view-more');
-  assert.equal(more.props.accessibilityLabel, '50곳까지 보기');
-  more.props.onPress(); tree = ui.render();
-  const rows = nodes(tree).filter(n => n.props?.analyticsId === 'places.open');
-  assert.equal(rows.length, 50);
-  rows[49].props.onPress();
-  assert.equal(ui.routes.at(-1).params.placeId, next.cities.toronto.recommendations[49].placeId);
-  assert.equal(ui.feedback.at(-1), 'selection');
+test('the full city list promises the available count and includes the last place rating and map link', () => {
+  for (const count of [17, 50]) {
+    const next = dailyCatalog();
+    next.cities.toronto.recommendations = next.cities.toronto.places.slice(0, count).map(place => ({
+      placeId: place.id, reason: 'Test-reviewed selection', sourceUrl: 'https://example.org/reviewed', verifiedAt: next.collectedAt,
+    }));
+    const api = data(); api.replaceCityPlacesCatalog(next, fixtureNow);
+    const ui = screen('src/app/places/index.tsx', { cityId: 'toronto' }, true, api);
+    let tree = ui.render();
+    assert.equal(ui.ratingScopes.at(-1).ids.length, count);
+    assert.equal(nodes(tree).filter(n => n.props?.analyticsId === 'places.open').length, 10);
+    const more = nodes(tree).find(n => n.props?.analyticsId === 'places.view-more');
+    assert.equal(more.props.accessibilityLabel, count + '곳 모두 보기');
+    more.props.onPress(); tree = ui.render();
+    const rows = nodes(tree).filter(n => n.props?.analyticsId === 'places.open');
+    assert.equal(rows.length, count);
+    rows[count - 1].props.onPress();
+    assert.equal(ui.routes.at(-1).params.placeId, next.cities.toronto.recommendations[count - 1].placeId);
+    assert.equal(ui.feedback.at(-1), 'selection');
+  }
 });
 test('native detail searches Google maps by name, available address and Canadian city instead of a coordinate pin', () => {
   assert.equal(typeof data().getCityPlaces, 'function');
