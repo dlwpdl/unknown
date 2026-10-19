@@ -1,4 +1,5 @@
 import { withLanguageImports } from './test-language-imports.mjs';
+import { placeMapRoute } from '../src/lib/discovery.ts';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -144,7 +145,7 @@ function screen(file, params = { cityId: 'toronto' }, dev = true, placeData = da
     react: { useRef: current => ({ current }), useEffect() {}, useLayoutEffect() {}, useCallback: fn => fn,
       useState(v) { const i = cursor++; if (!(i in states)) states[i] = v; return [states[i], next => { states[i] = typeof next === 'function' ? next(states[i]) : next; }]; } },
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    'expo-router': { useIsFocused: () => true, useRouter: () => ({ push: p => routes.push(p), canGoBack: () => true, back: () => routes.push('back') }), useLocalSearchParams: () => params },
+    'expo-router': { useIsFocused: () => true, useRouter: () => ({ push: p => routes.push(p), navigate: p => routes.push(p), canGoBack: () => true, back: () => routes.push('back') }), useLocalSearchParams: () => params },
     'react-native': { StyleSheet: { create: v => v }, View: 'View', TextInput: 'TextInput', Linking: { openURL: async value => { opened.push(value); } }, Alert: { alert() {} } },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     '@/lib/mock': { CITIES: cities },
@@ -158,7 +159,7 @@ function screen(file, params = { cityId: 'toronto' }, dev = true, placeData = da
       getPlaceReviewRating: (cityId, placeId) => ({ cityId, placeId, score: null, source: null, count: null, externalScore: null }) },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16, four: 24 }, MaxContentWidth: 920 },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: v => feedback.push(v) }) },
-    '@/lib/city-places': placeData, '@/lib/post-maps': module('src/lib/post-maps.ts'),
+    '@/lib/city-places': placeData, '@/lib/discovery': { placeMapRoute }, '@/lib/post-maps': module('src/lib/post-maps.ts'),
     '@/lib/merchant-source': module('src/lib/merchant-source.ts', {
       '../../supabase/functions/_shared/post-links.ts': { safePostLink: value => value },
     }),
@@ -185,7 +186,7 @@ test('the city places entry gives each preview card its own compact rating scope
   assert.equal(ui.ratingScopes.length, 1, 'home loads one batch, not one request per card');
   assert.equal(ui.ratingScopes[0].ids.length, cards.length);
   cards[0].props.onPress();
-  assert.equal(ui.routes.at(-1).pathname, '/places/[id]');
+  assert.equal(ui.routes.at(-1).pathname, '/map');
   assert.equal(ui.opened.length, 0, 'review entry stays inside Gling');
 });
 test('real OSM data covers every city with canonical IDs, coordinates and extraction provenance', () => {
@@ -247,9 +248,9 @@ test('native list renders real data, expands, filters search and category, then 
   assert.ok(nodes(tree).some(n => n.props?.children === first.name));
   assert.equal(nodes(tree).some(n => n.props?.title === '장소 데이터 연결 전이에요'), false);
   rows()[0].props.onPress();
-  assert.equal(ui.routes.at(-1).pathname, '/places/[id]');
+  assert.equal(ui.routes.at(-1).pathname, '/map');
   assert.equal(ui.routes.at(-1).params.cityId, 'toronto');
-  assert.equal(ui.routes.at(-1).params.id, first.id);
+  assert.equal(ui.routes.at(-1).params.placeId, first.id);
   assert.equal(ui.feedback.at(-1), 'selection');
   const expand = nodes(tree).find(n => n.props?.analyticsId === 'places.view-more');
   assert.equal(!!expand, choices.length > 10);
@@ -283,7 +284,7 @@ test('the full city list expands to fifty and requests summaries for the last pl
   const rows = nodes(tree).filter(n => n.props?.analyticsId === 'places.open');
   assert.equal(rows.length, 50);
   rows[49].props.onPress();
-  assert.equal(ui.routes.at(-1).params.id, next.cities.toronto.recommendations[49].placeId);
+  assert.equal(ui.routes.at(-1).params.placeId, next.cities.toronto.recommendations[49].placeId);
   assert.equal(ui.feedback.at(-1), 'selection');
 });
 test('native detail searches Google maps by name, available address and Canadian city instead of a coordinate pin', () => {
@@ -361,8 +362,8 @@ test('home shows three reviewed place cards and preserves same-place photos or h
       if (picture.props.place.photo) assert.equal(picture.props.place.photo.placeId, picture.props.place.id);
       assert.equal(picture.props.place.cityId, city.id);
       card.props.onPress();
-      assert.equal(ui.routes.at(-1).pathname, '/places/[id]');
-      assert.equal(ui.routes.at(-1).params.id, picture.props.place.id);
+      assert.equal(ui.routes.at(-1).pathname, '/map');
+      assert.equal(ui.routes.at(-1).params.placeId, picture.props.place.id);
       assert.equal(ui.routes.at(-1).params.cityId, city.id);
       assert.equal(ui.feedback.at(-1), 'selection');
     }
@@ -377,7 +378,7 @@ test('list uses each actual place photo and detail retains its credit and named 
     const picture = nodes(row).find(n => n.type === 'CityPlacePhoto');
     assert.ok(picture, 'left photo slot missing');
     row.props.onPress();
-    assert.equal(picture.props.place.id, ui.routes.at(-1).params.id);
+    assert.equal(picture.props.place.id, ui.routes.at(-1).params.placeId);
   }
   const place = data().getCityPlaces('toronto').find(p => p.photo);
   assert.ok(place);

@@ -28,7 +28,8 @@ function mount({ light = false, reduced = false } = {}) {
     'expo-web-browser': {}, '@/lib/merchant-source': {}, '@/lib/public-seo': {},
     '../../supabase/functions/_shared/ticketmaster': {},
     'react-native-reanimated': { useReducedMotion: () => reduced },
-    'expo-router': { useFocusEffect() {}, useLocalSearchParams: () => ({}), useRouter: () => ({}) },
+    'expo-router': { useFocusEffect() {}, useIsFocused: () => true, useLocalSearchParams: () => ({}), useRouter: () => ({}) },
+    '@/lib/mock': { CITIES: [] },
     '@/constants/theme': { Colors: { dark: { ...theme, card: '#171722' }, light: theme } }, '@/hooks/use-language': { useLanguage: () => ({ tr }) },
     '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' },
     '@/components/discovery-map': { DiscoveryMap: 'DiscoveryMap' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
@@ -47,7 +48,7 @@ function mount({ light = false, reduced = false } = {}) {
   const exports = {};
   const code = ts.transpileModule(source + '\nexports.CityMap = CityMap;', { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(code, { exports, Date, setTimeout, clearTimeout, require: name => { if (name.startsWith('@/assets/')) return name; assert.ok(Object.hasOwn(imports, name), name); return imports[name]; } });
-  return { render() { index = 0; return exports.CityMap(); }, feedback, alerts };
+  return { render() { index = 0; return exports.CityMap({ city: imports['@/lib/community-city'].useCommunityCity().city }); }, feedback, alerts };
 }
 
 test('the map keeps one category row and opens dates and all categories in its filter sheet', () => {

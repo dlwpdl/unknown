@@ -1,0 +1,117 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import test from 'node:test';
+import vm from 'node:vm';
+import ts from 'typescript';
+import * as discovery from '../src/lib/discovery.ts';
+
+const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+const parse = path => ts.createSourceFile(path, read(path), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+const nodes = (root, predicate) => {
+  const found = [];
+  const visit = node => { if (predicate(node)) found.push(node); ts.forEachChild(node, visit); };
+  visit(root); return found;
+};
+const evaluate = (expression, context) => vm.runInNewContext(ts.transpileModule(`(${expression})`, {
+  compilerOptions: { module: ts.ModuleKind.CommonJS },
+}).outputText, context);
+const map = parse('src/app/map.tsx');
+const catalog = JSON.parse(read('src/lib/city-places.catalog.json'));
+const selected = Object.values(catalog.cities).flatMap(city => city.recommendations.map(pick => ({
+  ...city.places.find(place => place.id === pick.placeId), recommendation: pick,
+})));
+
+test('Home, full list and detail map controls preserve the canonical city/place identity', () => {
+  assert.equal(typeof discovery.placeMapRoute, 'function');
+  for (const [path, analyticsId] of [
+    ['src/components/city-popular-places.tsx', 'today.places.place-open'],
+    ['src/app/places/index.tsx', 'places.open'],
+    ['src/app/places/[id].tsx', 'places.open'],
+  ]) {
+    const file = parse(path);
+    const control = nodes(file, node => (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node))
+      && node.attributes.properties.some(prop => prop.name?.text === 'analyticsId' && prop.initializer?.text === analyticsId))[0];
+    assert.ok(control, `${path}: map entry exists`);
+    const handler = control.attributes.properties.find(prop => prop.name?.text === 'onPress').initializer.expression;
+    for (const place of selected) {
+      let route, feedback;
+      evaluate(handler.getText(file), { place, cityId: place.cityId, city: { id: place.cityId },
+        placeMapRoute: discovery.placeMapRoute,
+        router: { push: value => { route = value; }, navigate: value => { route = value; } },
+        play: value => { feedback = value; },
+      })();
+      assert.equal(route.pathname, '/map');
+      assert.equal(route.params.cityId, place.cityId);
+      assert.equal(route.params.placeId, place.id);
+      assert.equal(feedback, 'selection');
+      const marker = discovery.mergeCityTop25([discovery.discoveryPlace(place)], route.params.cityId)[0];
+      assert.equal(marker.place.id, route.params.placeId);
+      assert.equal(marker.latitude, place.latitude);
+      assert.equal(marker.longitude, place.longitude);
+      assert.equal(new URL(discovery.directionsUrl(marker, 'google')).searchParams.get('destination'), `${place.latitude},${place.longitude}`);
+    }
+  }
+});
+
+test('an explicit map target waits for the catalog, focuses once, and permits later pan/GPS use', () => {
+  const effect = nodes(map, node => ts.isCallExpression(node) && node.expression.getText(map) === 'useEffect'
+    && node.arguments[0]?.getText(map).includes('targetFocusRef'))[0];
+  assert.ok(effect, 'the actual map applies an explicit canonical target');
+  const calls = {}, context = { isFocused: true, targetId: undefined, targetLatitude: undefined, targetLongitude: undefined,
+    targetRecommended: true, targetFocusRef: { current: null }, locationRevision: { current: 7 }, Date,
+  };
+  for (const name of ['setLocating', 'setLocationError', 'setSelectedFilters', 'setQuery', 'setSearch', 'setMode', 'setSelectedId', 'setCenter']) {
+    context[name] = value => { calls[name] = value; };
+  }
+  const focus = () => evaluate(effect.arguments[0].getText(map), context)();
+  focus(); assert.equal(calls.setCenter, undefined, 'catalog not ready');
+  Object.assign(context, { targetId: 'place:vancouver:osm:way:123', targetLatitude: 49.28, targetLongitude: -123.12 });
+  focus();
+  assert.equal(calls.setSelectedId, context.targetId);
+  assert.deepEqual(Array.from(calls.setSelectedFilters), ['top25']);
+  assert.equal(calls.setCenter.latitude, 49.28);
+  assert.equal(calls.setCenter.longitude, -123.12);
+  assert.equal(calls.setMode, 'map');
+  assert.equal(calls.setQuery, ''); assert.equal(calls.setSearch, '');
+  assert.equal(context.locationRevision.current, 8, 'old in-flight GPS result cannot override explicit target');
+  calls.setCenter = 'later-user-pan-or-GPS'; focus();
+  assert.equal(calls.setCenter, 'later-user-pan-or-GPS');
+  context.isFocused = false; focus();
+  context.isFocused = true; focus();
+  assert.equal(calls.setCenter.latitude, 49.28, 'returning to map focuses requested place again');
+  Object.assign(context, { targetId: 'place:toronto:osm:node:456', targetLatitude: 43.65, targetLongitude: -79.38, targetRecommended: false });
+  focus(); assert.equal(calls.setCenter.latitude, 43.65);
+  assert.deepEqual(Array.from(calls.setSelectedFilters), [], 'archived detail identity remains reachable without a Top 50 badge');
+});
+
+test('curated canonical pins survive the existing 500-result cap', () => {
+  const expression = nodes(map, node => ts.isVariableDeclaration(node) && node.name.getText(map) === 'publicItems')[0].initializer;
+  const place = selected.find(place => place.cityId === 'vancouver');
+  const catalogItems = [discovery.discoveryPlace(place)];
+  const posts = Array.from({ length: 500 }, (_, index) => ({
+    id: `post:${index}`, source: 'post', cityId: 'vancouver', category: 'housing',
+    post: { id: `${index}`, author: { id: 'u' }, kind: 'listing', listingStatus: 'open', expiresAt: '2099-01-01T00:00:00Z' },
+  }));
+  const publicItems = evaluate(expression.getText(map), { current: { items: posts }, catalogItems, hidden: () => false,
+    now: Date.now(), discoveryEvent: discovery.discoveryEvent });
+  const visible = discovery.mergeCityTop25(publicItems, 'vancouver').slice(0, 500);
+  assert.ok(visible.some(item => item.id === catalogItems[0].id));
+});
+
+test('curated reasons use language en with locale en-CA, preserving Korean and missing-English fallback', () => {
+  for (const path of ['src/app/places/index.tsx', 'src/app/places/[id].tsx', 'src/app/map.tsx']) {
+    const file = parse(path);
+    const expression = nodes(file, node => ts.isConditionalExpression(node) && node.getText(file).includes('.reasonEn')).at(-1);
+    assert.ok(expression, path);
+    for (const language of ['ko', 'en']) for (const reasonEn of ['English photo-spot reason', undefined]) {
+      const hook = { language, locale: language === 'ko' ? 'ko-KR' : 'en-CA' }, context = {};
+      for (const binding of nodes(file, node => ts.isVariableDeclaration(node) && ts.isObjectBindingPattern(node.name)
+        && node.initializer?.getText(file) === 'useLanguage()')) {
+        for (const element of binding.name.elements) context[element.name.getText(file)] = hook[element.propertyName?.text ?? element.name.getText(file)];
+      }
+      const reason = { reason: '한국어 사진 명소 설명', reasonEn };
+      Object.assign(context, { place: { recommendation: reason }, item: { top25: reason } });
+      assert.equal(evaluate(expression.getText(file), context), language === 'en' && reasonEn ? reasonEn : reason.reason, `${path}: ${language}`);
+    }
+  }
+});

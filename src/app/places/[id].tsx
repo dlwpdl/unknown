@@ -23,11 +23,12 @@ import { CITIES } from '@/lib/mock';
 import { merchantMapsUrl, safeMerchantSourceUrl } from '@/lib/merchant-source';
 import { useAuth } from '@/lib/auth';
 import { recordProductEvent } from '@/lib/product-analytics';
+import { placeMapRoute } from '@/lib/discovery';
 import { supabase } from '@/lib/supabase';
 
 export default function PlaceDetailScreen() {
   useCityPlacesRevision();
-  const { tr, locale: appLocale } = useLanguage();
+  const { tr, language, locale: appLocale } = useLanguage();
   const [viewport, setViewport] = useState({ y: 0, height: 0 });
   const { cityId, id } = useLocalSearchParams<{ cityId?: string; id?: string }>();
   const { isAuthed, me } = useAuth();
@@ -69,13 +70,17 @@ export default function PlaceDetailScreen() {
         <ThemedText type="small" themeColor="textSecondary">{tr(city.name)}{" " + tr("· 지도 등록 장소")}</ThemedText>
         <ThemedText accessibilityRole="header" style={styles.title}>{place.name}</ThemedText>
         {!!place.recommendation && <>
-          <ThemedText>{appLocale === 'en' ? place.recommendation.reasonEn ?? place.recommendation.reason : place.recommendation.reason}</ThemedText>
+          <ThemedText>{language === 'en' ? place.recommendation.reasonEn ?? place.recommendation.reason : place.recommendation.reason}</ThemedText>
         </>}
         <View style={[styles.facts, { backgroundColor: theme.card }]}>
           <ThemedText type="smallBold" themeColor="accent">{place.category === 'food' ? tr("맛집") : place.category === 'cafe' ? tr("카페") : tr("가볼 만한 곳")}</ThemedText>
           <ThemedText>{place.address || tr("등록된 주소 정보가 없어요. 지도에서 위치를 확인해 주세요.")}</ThemedText>
           {!!place.openingHours && <ThemedText type="small" themeColor="textSecondary">{tr("등록된 운영 시간: {0}", (place.openingHours))}</ThemedText>}
         </View>
+        <Pressable analyticsId="places.open" accessibilityRole="button" accessibilityLabel={`${place.name} · ${tr('지도 보기')}`}
+          onPress={() => { play('selection'); router.navigate(placeMapRoute(place)); }} style={styles.link}>
+          <ThemedText type="smallBold" themeColor="accent">{tr('지도 보기')}</ThemedText>
+        </Pressable>
         <PlaceReviews cityId={city.id} placeId={place.id} viewport={viewport} />
         <PlaceExternalRatings key={`${city.id}:${place.id}`} cityId={city.id} placeId={place.id} />
         {mapsUrl && <PostMapLink url={mapsUrl} label={place.name} onOpened={() => record('place_directions')} />}
