@@ -89,6 +89,18 @@ test('every supported city has source-checked photo selections rather than a pad
     }
   }
 });
+
+test('popular featured places have photographs and real provider counts where three subjects are verified', () => {
+  const ratings = JSON.parse(readFileSync(new URL('src/lib/place-external-ratings.json', root), 'utf8'));
+  for (const city of ['toronto', 'vancouver', 'montreal', 'calgary', 'edmonton', 'winnipeg', 'ottawa', 'regina']) {
+    const featured = data().getCityRecommendations(city).slice(0, 3);
+    assert.equal(featured.length, 3);
+    for (const place of featured) {
+      assert.ok(place.photo?.imageSha256, `${city}/${place.name}: photograph`);
+      assert.ok(ratings.some(row => row.cityId === city && row.placeId === place.id && row.count > 0), `${city}/${place.name}: actual provider count`);
+    }
+  }
+});
 function dailyCatalog() {
   const next = catalog(); next.collectedAt = new Date(fixtureTime).toISOString();
   for (const city of cities) next.cities[city.id].recommendations = next.cities[city.id].places.slice(-3).map(p => ({ placeId: p.id, reason: 'Test-reviewed selection', sourceUrl: 'https://example.org/reviewed', verifiedAt: next.collectedAt }));

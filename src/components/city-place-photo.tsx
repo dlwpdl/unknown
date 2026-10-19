@@ -8,6 +8,20 @@ import { useTheme } from '@/hooks/use-theme';
 import type { CityPlace } from '@/lib/city-places';
 
 const bundledPhotos: Record<string, number> = {
+  '27332220c9acfd9ceaa4d2dca5667e0a77abd27d555897efad1ea9a2d2a10684': require('../../assets/images/city-places/winnipeg-osm-way-14869261.jpg'),
+  'c66c3bdec910fb2910c031a4d55b3d4af7fc57a9c2d85ca3ad21fb596ffc8134': require('../../assets/images/city-places/edmonton-osm-way-23236234.jpg'),
+  '02aa7fd71c7bcd67ab57f7be546feeef7581b21498309de294e5be777d219ea9': require('../../assets/images/city-places/edmonton-osm-way-324786162.jpg'),
+  'c621f0f85571339a7bf55b2248d199a03aad9d9addb8c56393c6157576a6b8ab': require('../../assets/images/city-places/calgary-osm-relation-1715576.jpg'),
+  'dc56c4aacfe8b6d389aa787316989571bd7c3a5ef6900a75c4ccd7efb0253c75': require('../../assets/images/city-places/calgary-osm-way-4637407.jpg'),
+  'c64ab28c34f969e6945b1c1b86f2edbf5292272ab7b86d57d488b205408d8942': require('../../assets/images/city-places/calgary-osm-way-25719793.jpg'),
+  '1504de2aedd11b1a28ce7f9b1679e3794d0904f0338039d57a8d890170b32e07': require('../../assets/images/city-places/montreal-osm-way-22876797.jpg'),
+  'd31fd8bec352b3944624d26d8c4b07ac2c7f1748f084457bec8e965e969bf4f6': require('../../assets/images/city-places/montreal-osm-way-112854784.jpg'),
+  '6f6334441dc8ba81a50c618a6e731e343cf23d3773a9c65f2f48420dc0109307': require('../../assets/images/city-places/toronto-osm-way-656400495.jpg'),
+  '14501ae5351901047ea65852962a571a585546f3825061e56636d66d26ea05f0': require('../../assets/images/city-places/toronto-osm-way-22372216.jpg'),
+  '20c39c9a3d3e9c336bcd01e2e7b571ac152b1763a01e2e72c46abb7d0a448c1c': require('../../assets/images/city-places/toronto-osm-way-379296804.jpg'),
+  '300195097651d0cfb5e3b840e34bbd6756388c543394cfe642fb597b5b528dd5': require('../../assets/images/city-places/toronto-osm-way-198471666.jpg'),
+  '6457f3e418b6f9d24b21e4b66cff86fb34202a97a769d1335703d60a97c74d45': require('../../assets/images/city-places/toronto-osm-way-141693334.jpg'),
+  '5190db834b498bb7f29389e16f3342bcdb957c0b1c62d8afff6909e184cb0748': require('../../assets/images/city-places/toronto-osm-way-197447638.jpg'),
   '0fb32d52c022465828f0fbede9cb92feeb82d28455aaa24d5759338e63b50ed7': require('../../assets/images/city-places/vancouver-osm-node-12620960872.jpg'),
   '1460af2a3f295835b78f252a27ebafb5acd4a705f3e0390ce996f4f5ebe86b15': require('../../assets/images/city-places/vancouver-osm-way-37084312.jpg'),
   '898aeeb771b2c9c70c09c0e834ffb1595210d842d733cda6d6051e6d91dd94f8': require('../../assets/images/city-places/vancouver-osm-way-316008597.jpg'),

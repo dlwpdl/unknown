@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T06:54:14.751405+00:00",
+  "collectedAt": "2026-10-19T09:35:43.822632+00:00",
   "source": "Verified same-place Wikimedia Commons photographs; dated captures, not popularity ranking",
   "cities": {
     "toronto": [
@@ -102,6 +102,76 @@
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
         "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/29/Humber_Bay_Park_East%2C_July_2_2025_%2802%29.jpg/960px-Humber_Bay_Park_East%2C_July_2_2025_%2802%29.jpg",
         "imageSha256": "810a673f3242addd9f39c9117d600f1ad6b6b6af90324051fb51c55af9fb48bd"
+      },
+      {
+        "placeId": "osm:way:197447638",
+        "cityId": "toronto",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Ripley%27s_Aquarium_of_Canada,_Toronto,_Ontario.jpg",
+        "artist": "EuroCarGT",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/47/Ripley%27s_Aquarium_of_Canada%2C_Toronto%2C_Ontario.jpg/960px-Ripley%27s_Aquarium_of_Canada%2C_Toronto%2C_Ontario.jpg",
+        "imageSha256": "5190db834b498bb7f29389e16f3342bcdb957c0b1c62d8afff6909e184cb0748"
+      },
+      {
+        "placeId": "osm:way:141693334",
+        "cityId": "toronto",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Art_Gallery_of_Ontario_2023.jpg",
+        "artist": "Canmenwalker",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/87/Art_Gallery_of_Ontario_2023.jpg/960px-Art_Gallery_of_Ontario_2023.jpg",
+        "imageSha256": "6457f3e418b6f9d24b21e4b66cff86fb34202a97a769d1335703d60a97c74d45"
+      },
+      {
+        "placeId": "osm:way:4942687",
+        "cityId": "toronto",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Royal_Ontario_Museum_in_Fall_2021.jpg",
+        "artist": "Maksim Sokolov (Maxergon)",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/72/Royal_Ontario_Museum_in_Fall_2021.jpg/960px-Royal_Ontario_Museum_in_Fall_2021.jpg",
+        "imageSha256": "3e270ddc51588b0fe78cf1a08ac3b2b633956d41b762b0585c199882c1cee362"
+      },
+      {
+        "placeId": "osm:way:198471666",
+        "cityId": "toronto",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Exterior_of_Casa_Loma,_June_2012.jpg",
+        "artist": "Priscilla Jordão  from São Paulo, Brasil",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/43/Exterior_of_Casa_Loma%2C_June_2012.jpg/960px-Exterior_of_Casa_Loma%2C_June_2012.jpg",
+        "imageSha256": "300195097651d0cfb5e3b840e34bbd6756388c543394cfe642fb597b5b528dd5"
+      },
+      {
+        "placeId": "osm:way:379296804",
+        "cityId": "toronto",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Gooderham.jpg",
+        "artist": "Geo Swan  stitched by  Marku1988         This  image was created with   Hugin  .",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e2/Gooderham.jpg/960px-Gooderham.jpg",
+        "imageSha256": "20c39c9a3d3e9c336bcd01e2e7b571ac152b1763a01e2e72c46abb7d0a448c1c"
+      },
+      {
+        "placeId": "osm:way:22372216",
+        "cityId": "toronto",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Bata_Shoes_Museum_2023.jpg",
+        "artist": "Canmenwalker",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bd/Bata_Shoes_Museum_2023.jpg/960px-Bata_Shoes_Museum_2023.jpg",
+        "imageSha256": "14501ae5351901047ea65852962a571a585546f3825061e56636d66d26ea05f0"
+      },
+      {
+        "placeId": "osm:way:656400495",
+        "cityId": "toronto",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Beryl_Ivey_Knot_Garden_2023.jpg",
+        "artist": "Canmenwalker",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/Beryl_Ivey_Knot_Garden_2023.jpg/960px-Beryl_Ivey_Knot_Garden_2023.jpg",
+        "imageSha256": "6f6334441dc8ba81a50c618a6e731e343cf23d3773a9c65f2f48420dc0109307"
       }
     ],
     "vancouver": [
@@ -296,6 +366,26 @@
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
         "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5a/Sunset_at_Jean-Drapeau.jpg/960px-Sunset_at_Jean-Drapeau.jpg",
         "imageSha256": "6d097e06fcbd03cb0d46aa157de26e45af72889e5368be57e769e96f8416330a"
+      },
+      {
+        "placeId": "osm:way:112854784",
+        "cityId": "montreal",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Basilique_Saint-Patrick_Montreal_63.JPG",
+        "artist": "Jeangagnon",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9f/Basilique_Saint-Patrick_Montreal_63.JPG/960px-Basilique_Saint-Patrick_Montreal_63.JPG",
+        "imageSha256": "d31fd8bec352b3944624d26d8c4b07ac2c7f1748f084457bec8e965e969bf4f6"
+      },
+      {
+        "placeId": "osm:way:22876797",
+        "cityId": "montreal",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:March%C3%A9_Jean-Talon_05-11-2024.jpg",
+        "artist": "Brandon Moore ( Raskuly )",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/53/March%C3%A9_Jean-Talon_05-11-2024.jpg/960px-March%C3%A9_Jean-Talon_05-11-2024.jpg",
+        "imageSha256": "1504de2aedd11b1a28ce7f9b1679e3794d0904f0338039d57a8d890170b32e07"
       }
     ],
     "calgary": [
@@ -348,6 +438,36 @@
         "cityId": "calgary",
         "uri": "https://upload.wikimedia.org/wikipedia/commons/e/e0/The_Peace_Bridge_in_Calgary_an_HDR_photo.jpg",
         "imageSha256": "163bd6013ee50c587b7dd159c3487391b9702b80e45b25540a9b0f6b8d58390a"
+      },
+      {
+        "placeId": "osm:way:25719793",
+        "cityId": "calgary",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Calgary_Tower_(8033515499)_straightened_2012.jpg",
+        "artist": "Tony Hisgett  from Birmingham, UK",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/26/Calgary_Tower_%288033515499%29_straightened_2012.jpg/960px-Calgary_Tower_%288033515499%29_straightened_2012.jpg",
+        "imageSha256": "c64ab28c34f969e6945b1c1b86f2edbf5292272ab7b86d57d488b205408d8942"
+      },
+      {
+        "placeId": "osm:way:4637407",
+        "cityId": "calgary",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Nose_Hill_Park_YYC_01.jpg",
+        "artist": "Oceanflynn",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/50/Nose_Hill_Park_YYC_01.jpg/960px-Nose_Hill_Park_YYC_01.jpg",
+        "imageSha256": "dc56c4aacfe8b6d389aa787316989571bd7c3a5ef6900a75c4ccd7efb0253c75"
+      },
+      {
+        "placeId": "osm:relation:1715576",
+        "cityId": "calgary",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Bow_with_Zoo.JPG",
+        "artist": "Qyd",
+        "license": "CC BY 2.5",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.5",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bf/Bow_with_Zoo.JPG/960px-Bow_with_Zoo.JPG",
+        "imageSha256": "c621f0f85571339a7bf55b2248d199a03aad9d9addb8c56393c6157576a6b8ab"
       }
     ],
     "edmonton": [
@@ -420,6 +540,26 @@
         "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
         "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b6/Alberta_Legislature_Building%2C_June_7%2C_2024.jpg/960px-Alberta_Legislature_Building%2C_June_7%2C_2024.jpg",
         "imageSha256": "73c988bbf041d0757d2ef1497298ee5fe78ffa68823a3e807e1a635a83e36a38"
+      },
+      {
+        "placeId": "osm:way:324786162",
+        "cityId": "edmonton",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:RoyalAlbertaMuseum-_O6A0986-Edit-Full-V2.jpg",
+        "artist": "Johnmbender",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ac/RoyalAlbertaMuseum-_O6A0986-Edit-Full-V2.jpg/960px-RoyalAlbertaMuseum-_O6A0986-Edit-Full-V2.jpg",
+        "imageSha256": "02aa7fd71c7bcd67ab57f7be546feeef7581b21498309de294e5be777d219ea9"
+      },
+      {
+        "placeId": "osm:way:23236234",
+        "cityId": "edmonton",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Hawrelak-Park-Lake-Edmonton-Alberta-Canada-01.jpg",
+        "artist": "WinterforceMedia ( WinterE229  19:13, 13 May 2008 (UTC))",
+        "license": "Public domain",
+        "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6d/Hawrelak-Park-Lake-Edmonton-Alberta-Canada-01.jpg/960px-Hawrelak-Park-Lake-Edmonton-Alberta-Canada-01.jpg",
+        "imageSha256": "c66c3bdec910fb2910c031a4d55b3d4af7fc57a9c2d85ca3ad21fb596ffc8134"
       }
     ],
     "winnipeg": [
@@ -492,6 +632,16 @@
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
         "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/63/The_Leaf_Assiniboine_Park_interior_support_structure_with_plants.jpg/960px-The_Leaf_Assiniboine_Park_interior_support_structure_with_plants.jpg",
         "imageSha256": "ba99ed62513c41ae631272e7f640c9595033f3f8aef44048bb33fb2f93bf9064"
+      },
+      {
+        "placeId": "osm:way:14869261",
+        "cityId": "winnipeg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Assiniboine_Park_Winnipeg_Manitoba_(4).JPG",
+        "artist": "Shahnoor Habib Munmun",
+        "license": "CC BY 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/eb/Assiniboine_Park_Winnipeg_Manitoba_%284%29.JPG/960px-Assiniboine_Park_Winnipeg_Manitoba_%284%29.JPG",
+        "imageSha256": "27332220c9acfd9ceaa4d2dca5667e0a77abd27d555897efad1ea9a2d2a10684"
       }
     ],
     "saskatoon": [
@@ -825,5 +975,5 @@
       }
     ]
   },
-  "photoSelectionsReviewedAt": "2026-10-19T07:40:16.972294+00:00"
+  "photoSelectionsReviewedAt": "2026-10-19T09:35:43.822632+00:00"
 }
