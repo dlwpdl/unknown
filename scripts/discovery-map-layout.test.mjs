@@ -16,10 +16,10 @@ const control = (tree, label) => { const result = nodes(tree).find(node => node.
 
 // Render the actual route and run its handlers; only native/external services are replaced.
 function mount({ light = false, reduced = false } = {}) {
-  const state = [], feedback = [], alerts = [];
+  const state = [], feedback = [], alerts = [], memoValues = [];
   let index = 0;
   const theme = { background: light ? '#fff' : '#0B0B12', card: light ? '#fff' : '#171722', backgroundElement: '#222231', backgroundSelected: '#343443', text: '#F6F3F0', textSecondary: '#B7B4C3', accent: '#CBB9FF', accentInk: '#171123', line: '#343443' };
-  const hooks = { useState(initial) { const slot = index++; if (!(slot in state)) state[slot] = typeof initial === 'function' ? initial() : initial; return [state[slot], next => { state[slot] = typeof next === 'function' ? next(state[slot]) : next; }]; }, useRef: current => ({ current }), useMemo: fn => fn(), useCallback: fn => fn, useEffect() {} };
+  const hooks = { useState(initial) { const slot = index++; if (!(slot in state)) state[slot] = typeof initial === 'function' ? initial() : initial; return [state[slot], next => { state[slot] = typeof next === 'function' ? next(state[slot]) : next; }]; }, useRef: current => ({ current }), useMemo: fn => { const value = fn(); memoValues.push(value); return value; }, useCallback: fn => fn, useEffect() {} };
   const jsx = (type, props, key) => ({ type, props, key });
   const imports = {
     react: hooks, 'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
@@ -48,10 +48,10 @@ function mount({ light = false, reduced = false } = {}) {
   const exports = {};
   const code = ts.transpileModule(source + '\nexports.CityMap = CityMap;', { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(code, { exports, Date, setTimeout, clearTimeout, require: name => { if (name.startsWith('@/assets/')) return name; assert.ok(Object.hasOwn(imports, name), name); return imports[name]; } });
-  return { render() { index = 0; return exports.CityMap({ city: imports['@/lib/community-city'].useCommunityCity().city }); }, feedback, alerts };
+  return { render() { index = 0; memoValues.length = 0; return exports.CityMap({ city: imports['@/lib/community-city'].useCommunityCity().city }); }, get days() { return memoValues[0]; }, feedback, alerts };
 }
 
-test('the map keeps one category row and opens dates and all categories in its filter sheet', () => {
+test('main categories select one option and event dates belong to the festival category', () => {
   const view = mount(); let tree = view.render();
   assert.ok(nodes(tree).some(node => node.type === 'DiscoveryMap'));
   assert.ok(!nodes(tree).some(node => text(node).trim() === '전체 날짜'));
@@ -59,8 +59,11 @@ test('the map keeps one category row and opens dates and all categories in its f
   assert.ok(nodes(tree).some(node => node.type === 'Modal' && node.props.visible));
   control(tree, '나이트라이프').props.onPress(); tree = view.render();
   control(tree, '카페').props.onPress(); tree = view.render();
-  assert.equal(control(tree, '나이트라이프').props.accessibilityState.checked, true);
-  assert.equal(control(tree, '카페').props.accessibilityState.checked, true);
+  assert.equal(control(tree, '나이트라이프').props.accessibilityState.selected, false);
+  assert.equal(control(tree, '카페').props.accessibilityState.selected, true);
+  assert.equal(control(tree, '전체').props.accessibilityState.selected, false);
+  assert.ok(!nodes(tree).some(node => node.props?.analyticsId === 'discovery.date'));
+  control(tree, '페스티벌').props.onPress(); tree = view.render();
   control(tree, '오늘').props.onPress(); tree = view.render();
   control(tree, '지도 보기').props.onPress(); tree = view.render();
   assert.ok(!nodes(tree).some(node => node.type === 'Modal'));
@@ -73,28 +76,40 @@ test('the quick category row preserves the owner-selected restaurant, cafe, fest
   const row = nodes(tree).find(node => node.type === 'ScrollView' && node.props.horizontal);
   assert.deepEqual(children(row).map(node => node.props.accessibilityLabel), ['전체', 'TOP 50', '레스토랑', '카페', '페스티벌', '나이트라이프', '가볼 만한 곳', '부동산', '중고거래']);
 });
-test('visible event dates follow the initial festival choice and preserve a user-selected day across categories', () => {
+test('All has no date restriction, while festival dates stay in its subordinate row', () => {
   const view = mount(); let tree = view.render();
-  assert.equal(control(tree, '행사 · 오늘').props.accessibilityState.selected, true);
+  assert.equal(control(tree, '전체').props.accessibilityState.selected, true);
+  assert.ok(!nodes(tree).some(node => node.props?.analyticsId === 'discovery.date'));
+  assert.deepEqual(Array.from(view.days), []);
   control(tree, '페스티벌').props.onPress(); tree = view.render();
   assert.equal(control(tree, '다가오는 7일').props.accessibilityState.selected, true);
-  control(tree, '행사 · 오늘').props.onPress(); tree = view.render();
+  assert.equal(view.days.length, 7);
+  control(tree, '오늘').props.onPress(); tree = view.render();
+  assert.equal(view.days.length, 1);
   control(tree, '카페').props.onPress(); tree = view.render();
-  assert.equal(control(tree, '행사 · 오늘').props.accessibilityState.selected, true);
-  assert.equal(view.feedback.length, 3);
-});
-test('housing-only views omit automatic event controls while an explicitly chosen date remains visible', () => {
-  const view = mount(); let tree = view.render();
-  control(tree, '부동산').props.onPress(); tree = view.render();
-  assert.equal(nodes(tree).some(node => node.type === 'Pressable' && text(node).trim() === '행사 · 오늘'), false);
+  assert.ok(!nodes(tree).some(node => node.props?.analyticsId === 'discovery.date'));
+  assert.deepEqual(Array.from(view.days), []);
   control(tree, '전체').props.onPress(); tree = view.render();
-  control(tree, '다가오는 7일').props.onPress(); tree = view.render();
-  control(tree, '부동산').props.onPress(); tree = view.render();
+  assert.equal(control(tree, '전체').props.accessibilityState.selected, true);
+  control(tree, '페스티벌').props.onPress(); tree = view.render();
   assert.equal(control(tree, '다가오는 7일').props.accessibilityState.selected, true);
+  assert.equal(view.feedback.length, 5);
+});
+test('an explicit event date is cleared on All and cannot remain active in housing', () => {
+  const view = mount(); let tree = view.render();
+  control(tree, '페스티벌').props.onPress(); tree = view.render();
+  control(tree, '오늘').props.onPress(); tree = view.render();
+  control(tree, '부동산').props.onPress(); tree = view.render();
+  assert.ok(!nodes(tree).some(node => node.props?.analyticsId === 'discovery.date'));
+  assert.deepEqual(Array.from(view.days), []);
+  control(tree, '전체').props.onPress(); tree = view.render();
+  assert.ok(!nodes(tree).some(node => node.props?.analyticsId === 'discovery.date'));
+  assert.equal(control(tree, '부동산').props.accessibilityState.selected, false);
 });
 
 test('custom dates validate before closing and reset clears both category and date choices', () => {
   const view = mount(); let tree = view.render();
+  control(tree, '페스티벌').props.onPress(); tree = view.render();
   control(tree, '분류와 날짜 필터 열기').props.onPress(); tree = view.render();
   control(tree, '날짜 지정').props.onPress(); tree = view.render();
   control(tree, '행사 날짜 연도-월-일').props.onChangeText('2026-02-30'); tree = view.render();
@@ -107,7 +122,9 @@ test('custom dates validate before closing and reset clears both category and da
   assert.ok(!nodes(tree).some(node => node.type === 'Modal'));
   control(tree, '분류와 날짜 필터 열기').props.onPress(); tree = view.render();
   control(tree, '초기화').props.onPress(); tree = view.render();
-  assert.equal(control(tree, '오늘').props.accessibilityState.selected, true);
+  assert.equal(control(tree, '전체').props.accessibilityState.selected, true);
+  assert.deepEqual(Array.from(view.days), []);
+  assert.ok(!nodes(tree).some(node => node.props?.analyticsId === 'discovery.date'));
   assert.ok(!nodes(tree).some(node => node.props?.accessibilityRole === 'alert'));
   assert.ok(!nodes(tree).some(node => node.type === 'TextInput' && node.props.accessibilityLabel === '행사 날짜 연도-월-일'));
 });

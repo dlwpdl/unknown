@@ -73,10 +73,11 @@ function CityMap({ city, placeId, onClose }: { city: (typeof CITIES)[number]; pl
   const [selectedFilters, setSelectedFilters] = useState<DiscoveryFilter[]>(initialCategory !== 'all' && filters.some(value => value.id === initialCategory) ? [initialCategory as DiscoveryFilter] : []);
   const filter: DiscoveryFilter = selectedFilters.length === 1 ? selectedFilters[0] : 'all';
   const top25Only = selectedFilters.length === 1 && selectedFilters[0] === 'top25';
-  const includeEvents = !selectedFilters.length || selectedFilters.some(value => value === 'festival' || value === 'events');
+  const eventCategory = selectedFilters.some(value => value === 'festival' || value === 'events');
+  const includeEvents = !selectedFilters.length || eventCategory;
   const [mode, setMode] = useState<'map' | 'list'>('map'), [query, setQuery] = useState(''), [search, setSearch] = useState('');
   const [chosenDateFilter, setDateFilter] = useState<DiscoveryDate | null>(null), [date, setDate] = useState('');
-  const dateFilter: DiscoveryDate = chosenDateFilter ?? (selectedFilters.includes('festival') ? 'week' : 'today');
+  const dateFilter: DiscoveryDate = eventCategory ? chosenDateFilter ?? (selectedFilters.includes('festival') ? 'week' : 'today') : 'all';
   const [dateOpen, setDateOpen] = useState(false), [dateDraft, setDateDraft] = useState(''), [dateError, setDateError] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null), [center, setCenter] = useState<(PostPin & { requestId: number }) | null>(null);
@@ -222,7 +223,9 @@ function CityMap({ city, placeId, onClose }: { city: (typeof CITIES)[number]; pl
   const changeMode = (value: 'map' | 'list') => { play('selection'); setMode(value); };
   const toggleFilter = (value: DiscoveryFilter) => {
     play('selection');
-    setSelectedFilters(current => value === 'all' ? [] : current.includes(value) ? current.filter(filter => filter !== value) : [...current, value]);
+    if (value !== 'all' && selectedFilters[0] === value) return;
+    setSelectedFilters(value === 'all' ? [] : [value]);
+    setDateFilter(null); setDate(''); setDateOpen(false); setDateError('');
   };
   const chooseDate = (value: DiscoveryDate) => {
     play('selection');
@@ -232,7 +235,7 @@ function CityMap({ city, placeId, onClose }: { city: (typeof CITIES)[number]; pl
   const closeFilters = () => { play('selection'); setFiltersOpen(false); setDateOpen(false); setDateError(''); };
   const filterChip = (value: typeof filters[number]) => {
     const selected = value.id === 'all' ? !selectedFilters.length : selectedFilters.includes(value.id);
-    return <Pressable key={value.id} analyticsId="discovery.filter" accessibilityRole={value.id === 'all' ? 'button' : 'checkbox'} accessibilityLabel={tr(value.label)} accessibilityState={value.id === 'all' ? { selected } : { checked: selected }} onPress={() => toggleFilter(value.id)} style={[styles.chip, { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.accent : theme.backgroundElement }]}>
+    return <Pressable key={value.id} analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr(value.label)} accessibilityState={{ selected }} onPress={() => toggleFilter(value.id)} style={[styles.chip, { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.accent : theme.backgroundElement }]}>
       {selected && value.id !== 'all' ? <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✓</ThemedText> : value.id === 'top25' && <View style={[styles.dot, { backgroundColor: TOP25_GOLD }]} />}
       <ThemedText type="smallBold" style={{ color: selected ? theme.accentInk : value.id === 'top25' ? top25Ink : theme.text }}>{tr(value.label)}</ThemedText>
     </Pressable>;
@@ -256,8 +259,9 @@ function CityMap({ city, placeId, onClose }: { city: (typeof CITIES)[number]; pl
     <ScrollView horizontal analyticsId="discovery.filter" showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filters}>
       {(['all', 'top25', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used'] as const).map(id => filterChip(filters.find(value => value.id === id)!))}
     </ScrollView>
-    {Object.hasOwn(EVENT_CITIES, city.id) && (includeEvents || chosenDateFilter !== null) && <ScrollView horizontal analyticsId="discovery.date" showsHorizontalScrollIndicator={false} style={styles.eventDateRow} contentContainerStyle={styles.eventDates}>
-      {([{ id: 'today', label: tr('행사 · 오늘') }, { id: 'week', label: tr('다가오는 7일') }, { id: 'weekend', label: tr('이번 주말') }] as const).map(value => <Pressable key={value.id} analyticsId="discovery.date" accessibilityRole="button" accessibilityState={{ selected: dateFilter === value.id }} onPress={() => chooseDate(value.id)} style={[styles.dateChip, { borderColor: dateFilter === value.id ? theme.accent : theme.line, backgroundColor: dateFilter === value.id ? theme.accent : theme.backgroundElement }]}><ThemedText type="smallBold" style={{ color: dateFilter === value.id ? theme.accentInk : theme.text }}>{value.label}</ThemedText></Pressable>)}
+    {Object.hasOwn(EVENT_CITIES, city.id) && eventCategory && <ScrollView horizontal analyticsId="discovery.date" showsHorizontalScrollIndicator={false} style={styles.eventDateRow} contentContainerStyle={styles.eventDates}>
+      <ThemedText type="small" themeColor="textSecondary">{tr('행사 날짜')}</ThemedText>
+      {([{ id: 'today', label: tr('오늘') }, { id: 'week', label: tr('다가오는 7일') }, { id: 'weekend', label: tr('이번 주말') }] as const).map(value => <Pressable key={value.id} analyticsId="discovery.date" accessibilityRole="button" accessibilityState={{ selected: dateFilter === value.id }} onPress={() => chooseDate(value.id)} style={[styles.dateChip, { borderColor: dateFilter === value.id ? theme.accent : theme.line, backgroundColor: dateFilter === value.id ? theme.accent : theme.backgroundElement }]}><ThemedText type="smallBold" style={{ color: dateFilter === value.id ? theme.accentInk : theme.text }}>{value.label}</ThemedText></Pressable>)}
       {(dateFilter === 'all' || dateFilter === 'date') && <Pressable analyticsId="discovery.date" accessibilityRole="button" accessibilityLabel={tr('행사 날짜 변경')} onPress={() => { play('selection'); setFiltersOpen(true); }} style={[styles.dateChip, { borderColor: theme.accent, backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" themeColor="accent">{dateFilter === 'all' ? tr('행사 · 전체 날짜') : date}</ThemedText></Pressable>}
     </ScrollView>}
     {!!locationError && <ThemedText accessibilityRole="alert" type="small" style={styles.notice}>{tr(locationError)}</ThemedText>}
@@ -285,10 +289,9 @@ function CityMap({ city, placeId, onClose }: { city: (typeof CITIES)[number]; pl
         <SafeAreaView accessibilityViewIsModal style={[styles.filterSheet, { backgroundColor: theme.card, borderColor: theme.line }]} edges={['bottom', 'left', 'right']}>
           <View style={styles.sheetHeading}><ThemedText accessibilityRole="header" type="smallBold">{tr("분류와 날짜")}</ThemedText><Pressable analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr("필터 닫기")} onPress={closeFilters} style={styles.icon}><ThemedText>×</ThemedText></Pressable></View>
           <ScrollView analyticsId="discovery.filter" keyboardShouldPersistTaps="handled" style={styles.sheetScroll} contentContainerStyle={styles.sheetContent}>
-            <ThemedText type="small" themeColor="textSecondary">{tr("여러 분류를 고르면 함께 보여줘요.")}</ThemedText>
             <View style={styles.categoryGrid}>{filters.map(filterChip)}</View>
             <Pressable analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr("TOP 50 선정 배지 안내")} onPress={() => { play('selection'); Alert.alert(tr("도시의 TOP 50"), tr("사진 명소와 들러 볼 만한 식당을 도시별 최대 50곳 골랐어요. 장소별 선정 출처도 확인할 수 있어요.")); }} style={styles.info}><SymbolView name={{ ios: 'info.circle', android: 'info', web: 'info' }} size={18} tintColor={theme.textSecondary} /><ThemedText type="small" themeColor="textSecondary">{tr("TOP 50 선정 배지 안내")}</ThemedText></Pressable>
-            {Object.hasOwn(EVENT_CITIES, city.id) && <>
+            {Object.hasOwn(EVENT_CITIES, city.id) && eventCategory && <>
               <ThemedText type="smallBold">{tr("행사 날짜")}</ThemedText>
               <View style={styles.dates}>{([{ id: 'all', label: tr("전체 날짜") }, { id: 'today', label: tr("오늘") }, { id: 'week', label: tr('다가오는 7일') }, { id: 'weekend', label: tr("이번 주말") }, { id: 'date', label: tr("날짜 지정") }] as const).map(value => <Pressable key={value.id} analyticsId="discovery.date" accessibilityRole="button" accessibilityState={{ selected: value.id === 'date' ? dateOpen || dateFilter === 'date' : !dateOpen && dateFilter === value.id }} onPress={() => chooseDate(value.id)} style={[styles.date, { borderColor: theme.line, backgroundColor: (value.id === 'date' ? dateOpen || dateFilter === 'date' : !dateOpen && dateFilter === value.id) ? theme.backgroundSelected : theme.backgroundElement }]}><ThemedText type="small">{value.id === 'date' && dateFilter === 'date' && !dateOpen ? date.slice(5).replace('-', '/') : value.label}</ThemedText></Pressable>)}</View>
               {dateFilter === 'date' && !dateOpen && <ThemedText type="small" themeColor="textSecondary">{date}</ThemedText>}
@@ -352,7 +355,7 @@ const styles = StyleSheet.create({
   filterDot: { width: 6, height: 6, borderRadius: 3, position: 'absolute', right: 6, top: 6 },
   top25Badge: { borderRadius: 5, borderWidth: 1, borderColor: '#68543A', backgroundColor: '#2A2319', paddingHorizontal: 5, paddingVertical: 2 }, top25BadgeText: { color: TOP25_GOLD, fontSize: 10, lineHeight: 14, fontWeight: '800' }, top25Note: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 10, gap: 5 }, top25Source: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
   dates: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' }, date: { minHeight: 44, paddingHorizontal: 12, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  eventDateRow: { flexGrow: 0, flexShrink: 0 }, eventDates: { paddingHorizontal: 16, paddingBottom: 10, gap: 8 }, dateChip: { minHeight: 44, paddingHorizontal: 12, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  eventDateRow: { flexGrow: 0, flexShrink: 0 }, eventDates: { paddingHorizontal: 16, paddingBottom: 10, gap: 8, alignItems: 'center' }, dateChip: { minHeight: 44, paddingHorizontal: 12, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   notice: { marginHorizontal: 16, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10 },
   content: { flex: 1, minHeight: 180 }, mapControls: { position: 'absolute', right: 22, top: 22, gap: 8 }, mapControl: { minWidth: 44, minHeight: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   listLink: { position: 'absolute', alignSelf: 'center', minHeight: 44, paddingHorizontal: 16, borderRadius: 24, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },

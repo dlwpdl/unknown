@@ -13,11 +13,12 @@ export function getPlaceReviewRating(cityId: string, placeId: string, summary?: 
   const own = known && known.count > 0 && known.average != null;
   return { cityId, placeId, score: own ? known.average : externalScore,
     source: own ? 'gling' as const : external ? 'external' as const : null,
-    count: known?.count ?? null, externalScore };
+    count: known?.count ?? null, externalScore, externalCount: external?.count ?? null };
 }
 
 export function PlaceReviewSummary({ rating, compact = false }: { rating: ReturnType<typeof getPlaceReviewRating>; compact?: boolean }) {
   const { tr, locale } = useLanguage();
+  const count = rating.source === 'gling' ? rating.count : rating.externalCount;
   if (rating.score == null) return <ThemedText type="small" themeColor="accent" style={compact ? styles.compact : undefined}>
     {tr(rating.count === 0 ? '첫 리뷰 남기기' : '글링 리뷰 보기')}
   </ThemedText>;
@@ -25,8 +26,8 @@ export function PlaceReviewSummary({ rating, compact = false }: { rating: Return
     <ThemedText type="smallBold" style={compact ? styles.compactScore : undefined}>
       <GlingRatingIcon score={rating.score} />{' '}{rating.score.toFixed(1)}<ThemedText type="small" themeColor="textSecondary" style={compact ? styles.compactScale : undefined}> /10</ThemedText>
     </ThemedText>
-    {rating.source === 'gling' && <ThemedText type="small" themeColor="textSecondary" style={compact ? styles.compact : undefined} numberOfLines={2}>
-      {tr('글링 {0}개 평가', rating.count!.toLocaleString(locale))}
+    {count != null && <ThemedText type="small" themeColor="textSecondary" style={compact ? styles.compact : undefined} numberOfLines={2}>
+      {tr(rating.source === 'gling' ? '글링 {0}개 평가' : '{0}개 평가', count.toLocaleString(locale))}
     </ThemedText>}
   </View>;
 }

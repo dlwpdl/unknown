@@ -51,3 +51,21 @@ test('no-score entries invite a first review only when the empty count is known'
   const unknown = api.getPlaceReviewRating(own.cityId, own.placeId);
   assert.doesNotMatch(text(api.PlaceReviewSummary({ rating: unknown })), /첫 리뷰|0\.0/);
 });
+
+test('external fallback exposes its real popularity count in Korean and English without inventing Gling reviews', () => {
+  const api = view();
+  const rating = api.getPlaceReviewRating(own.cityId, own.placeId, { ...own, average: null, count: 0 });
+  assert.equal(rating.externalCount, 28661);
+  assert.equal(rating.count, 0, 'external counts must not become member-review counts');
+  for (const language of ['ko', 'en']) {
+    setActiveLanguage(language);
+    const content = text(api.PlaceReviewSummary({ rating, compact: true }));
+    assert.match(content, /28,661/);
+    assert.match(content, language === 'ko' ? /개 평가/ : /ratings/);
+    assert.doesNotMatch(content, /첫 리뷰|first review|Gling ratings|글링.*평가|외부|환산/i);
+  }
+  const member = api.getPlaceReviewRating(own.cityId, own.placeId, own);
+  assert.equal(member.externalCount, 28661);
+  setActiveLanguage('ko');
+  assert.match(text(api.PlaceReviewSummary({ rating: member })), /글링 12개 평가/);
+});

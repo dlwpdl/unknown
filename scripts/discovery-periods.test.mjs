@@ -14,21 +14,24 @@ test('the seven-day festival window includes today, crosses month/year boundarie
   assert.equal(new Set(discovery.discoveryDays('week', 'vancouver', '', at)).size, 7);
 });
 
-test('the actual map defaults to today, widens festivals to seven days and preserves explicitly chosen dates', () => {
+test('All has no hidden date restriction and festival dates remain category-specific', () => {
   const source = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
   const declaration = source.match(/  const dateFilter: DiscoveryDate = [^\n]+/);
+  const category = source.match(/  const eventCategory = [^\n]+/);
   assert.ok(declaration, 'map must distinguish an explicit date from its category default');
+  assert.ok(category);
   const run = (selectedFilters, chosenDateFilter) => {
     const exports = {};
-    vm.runInNewContext(ts.transpileModule(`${declaration[0]}\nexports.value = dateFilter;`, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText,
+    vm.runInNewContext(ts.transpileModule(`${category[0]}\n${declaration[0]}\nexports.value = dateFilter;`, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText,
       { exports, selectedFilters, chosenDateFilter });
     return exports.value;
   };
-  assert.equal(run([], null), 'today');
+  assert.equal(run([], null), 'all');
   assert.equal(run(['festival'], null), 'week');
-  assert.equal(run(['cafe', 'festival'], null), 'week');
+  assert.equal(run(['events'], null), 'today', 'legacy event routes remain supported');
   for (const chosen of ['today', 'weekend', 'date', 'all']) assert.equal(run(['festival'], chosen), chosen);
-  assert.equal(run(['cafe'], 'week'), 'week');
+  assert.equal(run(['cafe'], 'week'), 'all');
+  assert.equal(run([], 'today'), 'all');
 });
 
 test('provided multi-day events overlap local days, midnight end is exclusive and places remain independent of dates', () => {
