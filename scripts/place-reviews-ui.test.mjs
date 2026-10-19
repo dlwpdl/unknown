@@ -9,13 +9,14 @@ const author = '11111111-1111-4111-8111-111111111111';
 const settle = () => new Promise(setImmediate);
 const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 const nodes = node => !node || typeof node !== 'object' ? [] : [node, ...Object.values(node).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
-const find = (tree, id) => nodes(tree).find(node => (node.props?.analyticsId ?? node.props?.testID) === id);
+const find = (tree, id) => nodes(tree).find(node => node.props?.analyticsId === id || node.props?.testID === id);
 const cards = tree => nodes(tree).filter(node => node.type === 'PostCard');
 const statuses = tree => nodes(tree).filter(node => node.type === 'StateCard');
 const row = id => ({ id, author: { id: 'writer-' + id }, body: '후기', cityId: 'toronto', kind: 'story' });
-function view({ load = async () => ({ posts: [], cursor: null, hasMore: false }), write = async () => ({ id: 'saved' }), guest = false, language = 'ko' } = {}) {
+function view({ load = async () => ({ posts: [], cursor: null, hasMore: false }), write = async () => ({ id: 'saved' }),
+  ratings = async () => ({ average: null, count: 0, scores: {}, myReview: null }), guest = false, language = 'ko' } = {}) {
   const path = new URL('../src/components/place-reviews.tsx', import.meta.url);
-  const calls = { reads: [], writes: [], feedback: [], routes: [], logins: [] };
+  const calls = { reads: [], writes: [], ratingReads: [], feedback: [], routes: [], logins: [] };
   let state = [], index = 0, lastKey, account = guest ? null : author, scope = { cityId: 'toronto', placeId: 'osm:node:1' };
   const cleanup = new Map(), effects = [], hidden = new Set();
   const hooks = {
@@ -32,6 +33,7 @@ function view({ load = async () => ({ posts: [], cursor: null, hasMore: false })
     'expo-router': { useRouter: () => ({ push: route => calls.routes.push(route) }) },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/themed-text': { ThemedText: 'Text' },
     '@/components/post-card': { PostCard: 'PostCard' }, '@/components/state-card': { StateCard: 'StateCard' }, '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' },
+    '@/components/merchant-rating-bar': { MerchantRatingBar: 'MerchantRatingBar', GlingRatingIcon: 'GlingRatingIcon' },
     '@/hooks/use-theme': { useTheme: () => ({ line: '#343443', card: '#171722', text: '#F6F3F0', accent: '#CBB9FF' }) },
     '@/hooks/use-language': { useLanguage: () => ({ language, tr }) }, '@/i18n': { tr },
     '@/hooks/use-content-visibility': { useContentVisibility: () => (_type, id, writer) => hidden.has(id) || hidden.has(writer) },
@@ -39,7 +41,10 @@ function view({ load = async () => ({ posts: [], cursor: null, hasMore: false })
     '@/lib/supabase': { supabase: {} }, '@/lib/feed-data': { appendUniquePosts: (a, b) => [...a, ...b.filter(p => !a.some(x => x.id === p.id))] },
     '@/lib/place-reviews': { PLACE_REVIEW_MAX_LENGTH: 1000,
       loadPlaceReviews: async (...args) => { calls.reads.push(args); return load(...args); },
-      writePlaceReview: async (...args) => { calls.writes.push(args); return write(...args); } },
+      loadPlaceRatingState: async (...args) => { calls.ratingReads.push(args); return ratings(...args); },
+      placeReviewText: value => value,
+      writePlaceReview: async (...args) => { calls.writes.push(args); return write(...args); },
+      writeRatedPlaceReview: async (...args) => { calls.writes.push(args); return write(...args); } },
     '@/lib/community-data': { isContentRejected: () => false },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => calls.feedback.push(kind) }) },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16, four: 24 } },
@@ -61,9 +66,46 @@ function view({ load = async () => ({ posts: [], cursor: null, hasMore: false })
     },
   };
 }
+
+test('a real half-point score must be explicitly selected before publishing a review', async () => {
+  const ui = view(); ui.render(); await settle();
+  find(ui.render(), 'places.reviews.write').props.onPress();
+  find(ui.render(), 'places.reviews.body').props.onChangeText('내가 남기는 경험');
+  let tree = ui.render(); assert.equal(find(tree, 'places.reviews.publish').props.disabled, true);
+  find(tree, 'places.reviews.score.8.5').props.onPress(); tree = ui.render();
+  assert.equal(find(tree, 'places.reviews.score.8.5').props.accessibilityState.checked, true);
+  assert.equal(find(tree, 'places.reviews.score.8.5').props['aria-checked'], true);
+  assert.equal(find(tree, 'places.reviews.score.8').props['aria-checked'], false);
+  assert.equal(find(tree, 'places.reviews.publish').props.disabled, false);
+  find(tree, 'places.reviews.publish').props.onPress(); await settle();
+  assert.equal(ui.calls.writes[0][3], 8.5);
+});
+
+test('editing restores the member score and text while a rating outage preserves readable posts', async () => {
+  const ui = view({ ratings: async () => ({ average: 7.5, count: 1, scores: { mine: 7.5 }, myReview: { id: 'mine', score: 7.5, body: '기존 경험', status: 'published' } }) });
+  ui.render(); await settle(); let tree = ui.render();
+  assert.equal(nodes(tree).find(n => n.type === 'MerchantRatingBar')?.props.score, 7.5);
+  find(tree, 'places.reviews.write').props.onPress(); tree = ui.render();
+  assert.equal(find(tree, 'places.reviews.body').props.value, '기존 경험');
+  assert.equal(find(tree, 'places.reviews.score.7.5').props.accessibilityState.checked, true);
+  const failed = view({ load: async () => ({ posts: [row('readable')], cursor: null, hasMore: false }), ratings: async () => { throw Error('offline'); } });
+  failed.render(); await settle(); tree = failed.render();
+  assert.equal(cards(tree).length, 1); assert.equal(find(tree, 'places.reviews.write').props.disabled, true);
+  assert.ok(nodes(tree).some(n => n.props?.testID === 'places.reviews.rating-error'));
+});
+
+test('place detail starts with three member reviews and expands locally without another request', async () => {
+  const ui = view({ load: async () => ({ posts: ['a', 'b', 'c', 'd', 'e'].map(row), cursor: null, hasMore: false }) });
+  ui.render(); await settle(); let tree = ui.render();
+  assert.equal(cards(tree).length, 3);
+  const reads = ui.calls.reads.length;
+  find(tree, 'places.reviews.more').props.onPress(); tree = ui.render();
+  assert.equal(cards(tree).length, 5); assert.equal(ui.calls.reads.length, reads);
+});
 async function open(ui, text = '초안은 남아 있어야 해요.') {
   ui.render(); await settle(); const tree = ui.render(); find(tree, 'places.reviews.write').props.onPress();
-  const editor = ui.render(); find(editor, 'places.reviews.body').props.onChangeText(text); return ui.render();
+  const editor = ui.render(); find(editor, 'places.reviews.body').props.onChangeText(text);
+  find(editor, 'places.reviews.score.8').props.onPress(); return ui.render();
 }
 
 test('guest gets a login gate without any review-body request; account keys clear old rows and drafts', async () => {

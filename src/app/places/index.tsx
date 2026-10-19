@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
-import { PlaceRatingSummary } from '@/components/place-external-ratings';
+import { getPlaceReviewRating, PlaceReviewSummary } from '@/components/place-review-summary';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -15,6 +15,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useCommunityCity } from '@/lib/community-city';
 import { CITY_PLACES_COLLECTED_AT, getCityRecommendations, getCityPlacesCoverage, type CityPlace, type PlaceCategory } from '@/lib/city-places';
 import { useCityPlacesRevision } from '@/hooks/use-city-places';
+import { usePlaceReviewSummaries } from '@/hooks/use-place-review-summaries';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 
@@ -36,11 +37,15 @@ function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
   ];
   const theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
   const [limit, setLimit] = useState(10), [category, setCategory] = useState<PlaceCategory>('all'), [query, setQuery] = useState('');
-  let places: CityPlace[] = [], error = '';
+  let places: CityPlace[] = [], recommendations: CityPlace[] = [], error = '';
   if (city) {
-    try { places = getCityRecommendations(city.id, category).filter(place => (place.name + ' ' + place.address).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())); }
+    try {
+      recommendations = getCityRecommendations(city.id, category);
+      places = recommendations.filter(place => (place.name + ' ' + place.address).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
+    }
     catch { error = '이 도시의 장소 정보를 불러오지 못했어요.'; }
   }
+  const ratings = usePlaceReviewSummaries(city?.id ?? '', recommendations.slice(0, 25).map(place => place.id));
   return <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
     <View style={[styles.header, { borderBottomColor: theme.line }]}>
       <Pressable analyticsId="places.back" accessibilityRole="button" accessibilityLabel={tr("이전 화면으로 돌아가기")}
@@ -75,19 +80,22 @@ function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
             </Pressable>)}
           </View>
           <View>
-            {places.slice(0, limit).map(place => <Pressable key={place.id} analyticsId="places.open" accessibilityRole="button" accessibilityLabel={tr("{0} 장소 정보", (place.name))}
+            {places.slice(0, limit).map(place => {
+              const rating = getPlaceReviewRating(city.id, place.id, ratings[place.id]);
+              return <Pressable key={place.id} analyticsId="places.open" accessibilityRole="button" accessibilityLabel={tr('{0} 장소 정보와 글링 리뷰', place.name)}
+              accessibilityValue={rating.score == null ? undefined : { text: tr(rating.source === 'gling' ? '글링 평균 {0}점, 10점 만점' : '외부 참고 {0}점, 10점 환산', rating.score.toFixed(1)) }}
               onPress={() => { play('selection'); router.push({ pathname: '/places/[id]', params: { id: place.id, cityId: city.id } }); }}
               style={({ pressed }) => [styles.place, { borderBottomColor: theme.line, opacity: pressed ? 0.65 : 1 }]}>
               <CityPlacePhoto place={place} style={styles.photo} />
               <View style={styles.copy}>
                 <ThemedText style={styles.categoryLabel} themeColor="accent">{categories.find(item => item.id === place.category)?.label}</ThemedText>
                 <ThemedText style={styles.placeName} numberOfLines={2}>{place.name}</ThemedText>
-                <PlaceRatingSummary cityId={city.id} placeId={place.id} />
+                <PlaceReviewSummary rating={rating} />
                 {!!place.recommendation && <ThemedText type="small" themeColor="textSecondary" numberOfLines={3}>{appLocale === 'en' ? place.recommendation.reasonEn ?? place.recommendation.reason : place.recommendation.reason}</ThemedText>}
                 {!!place.address && <ThemedText style={styles.address} themeColor="textSecondary" numberOfLines={2}>{place.address}</ThemedText>}
               </View>
               <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={14} tintColor={theme.textSecondary} />
-            </Pressable>)}
+            </Pressable>; })}
           </View>
           {!places.length && <StateCard kind="empty" title={tr("목록에서 찾지 못했어요")} body={tr("검색어를 바꾸거나 다른 분류를 골라보세요.")} />}
           <ThemedText type="small" themeColor="textSecondary">{tr("© OpenStreetMap contributors · {0} 확인 자료", (new Date(CITY_PLACES_COLLECTED_AT).toLocaleDateString(appLocale)))}</ThemedText>

@@ -55,8 +55,10 @@ test('every bundled rating matches an existing place and keeps its observed sour
 
 function view({ language = 'ko', failOpen = false } = {}) {
   setActiveLanguage(language);
-  const exports = {}, calls = { links: [], feedback: [], alerts: [] };
+  const exports = {}, calls = { links: [], feedback: [], alerts: [] }, state = [];
+  let index = 0;
   const imports = {
+    react: { useState(initial) { const slot = index++; if (!(slot in state)) state[slot] = initial; return [state[slot], value => { state[slot] = value; }]; } },
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'react-native': { View: 'View', StyleSheet: { create: value => value, hairlineWidth: 1 },
       Linking: { openURL: async url => { calls.links.push(url); if (failOpen) throw Error('offline'); } },
@@ -73,7 +75,8 @@ function view({ language = 'ko', failOpen = false } = {}) {
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL('src/components/place-external-ratings.tsx', root), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, { exports, require: name => imports[name], Date });
-  return { ...exports, calls };
+  const render = exports.PlaceExternalRatings;
+  return { ...exports, calls, PlaceExternalRatings: props => { index = 0; return render(props); } };
 }
 const nodes = value => !value || typeof value !== 'object' ? [] : [value, ...Object.values(value).flatMap(v => Array.isArray(v) ? v.flatMap(nodes) : nodes(v))];
 const text = value => typeof value === 'string' || typeof value === 'number' ? String(value) : Array.isArray(value)
@@ -81,7 +84,12 @@ const text = value => typeof value === 'string' || typeof value === 'number' ? S
 const scope = { cityId: 'vancouver', placeId: 'osm:node:703754423' };
 
 test('rating cards disclose the intermediary and date; source taps provide feedback and handle failure', async () => {
-  const ui = view({ failOpen: true }), tree = ui.PlaceExternalRatings(scope);
+  const ui = view({ failOpen: true }); let tree = ui.PlaceExternalRatings(scope);
+  assert.equal(nodes(tree).filter(node => node.props?.accessibilityRole === 'link').length, 0, 'external links start collapsed');
+  const toggle = nodes(tree).find(node => node.props?.analyticsId === 'places.ratings.toggle');
+  assert.equal(toggle.props.accessibilityState.expanded, false);
+  toggle.props.onPress(); tree = ui.PlaceExternalRatings(scope);
+  assert.equal(ui.calls.links.length, 0, 'expanding stays in the app');
   assert.match(text(tree), /Google/); assert.match(text(tree), /Tripadvisor/);
   assert.match(text(tree), /Wanderlog/); assert.match(text(tree), /2026/); assert.match(text(tree), /28,661/);
   const links = nodes(tree).filter(node => node.props?.analyticsId === 'places.detail.source');
@@ -89,26 +97,17 @@ test('rating cards disclose the intermediary and date; source taps provide feedb
   assert.equal(links[0].props.accessibilityRole, 'link');
   links[0].props.onPress(); await new Promise(setImmediate);
   assert.deepEqual(ui.calls.links, ['https://wanderlog.com/place/details/98400']);
-  assert.deepEqual(ui.calls.feedback, ['selection', 'warning']);
+  assert.deepEqual(ui.calls.feedback, ['selection', 'selection', 'warning']);
   assert.equal(ui.calls.alerts.length, 1);
 });
 
 test('unmatched places stay empty and English displays ratings without claiming Gling reviews', () => {
   const ui = view({ language: 'en' });
   assert.equal(ui.PlaceExternalRatings({ ...scope, cityId: 'toronto' }), null);
-  assert.equal(ui.PlaceRatingSummary({ ...scope, placeId: 'missing' }), null);
-  assert.match(text(ui.PlaceExternalRatings(scope)), /Ratings from other sites/);
-  assert.match(text(ui.PlaceRatingSummary(scope)), /Google\s+4.5\s*\/5.*28,661 ratings/);
+  assert.match(text(ui.PlaceExternalRatings(scope)), /External ratings/);
+  nodes(ui.PlaceExternalRatings(scope)).find(node => node.props?.analyticsId === 'places.ratings.toggle').props.onPress();
+  assert.match(text(ui.PlaceExternalRatings(scope)), /Google/);
+  assert.match(text(ui.PlaceExternalRatings(scope)), /4.5.*\/5/);
   assert.doesNotMatch(text(ui.PlaceExternalRatings(scope)), /Gling member reviews/);
-  setActiveLanguage('ko');
-});
-
-test('compact city cards keep the provider and score readable in three columns', () => {
-  const ui = view({ language: 'en' }), summary = ui.PlaceRatingSummary({ ...scope, compact: true });
-  assert.match(text(summary), /Google\s+4.5\s*\/5/);
-  assert.doesNotMatch(text(summary), /28,661|ratings/);
-  assert.equal(summary.props.numberOfLines, 1);
-  assert.equal(nodes(summary).find(node => node.type === 'GlingRatingIcon').props.score, 9,
-    'only the icon color uses the existing ten-point palette; the source score stays 4.5/5');
   setActiveLanguage('ko');
 });
