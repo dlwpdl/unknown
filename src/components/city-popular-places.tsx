@@ -39,7 +39,7 @@ export function CityPopularPlaces({ cityId }: { cityId: string }) {
       {places.slice(0, 3).map(place => {
         const rating = getPlaceReviewRating(cityId, place.id, ratings[place.id]);
         return <Pressable key={place.id} analyticsId="today.places.place-open" accessibilityRole="button" accessibilityLabel={tr('{0} 장소 정보와 글링 리뷰', place.name)}
-        accessibilityValue={rating.score == null ? undefined : { text: tr(rating.source === 'gling' ? '글링 평균 {0}점, 10점 만점' : '외부 참고 {0}점, 10점 환산', rating.score.toFixed(1)) }}
+        accessibilityValue={rating.score == null ? undefined : { text: tr(rating.source === 'gling' ? '글링 평균 {0}점, 10점 만점' : '{0}점, 10점 만점', rating.score.toFixed(1)) }}
         onPress={() => { play('selection'); router.push({ pathname: '/places/[id]', params: { id: place.id, cityId } }); }}
         style={({ pressed }) => [styles.card, { opacity: pressed ? 0.65 : 1 }]}>
         <CityPlacePhoto place={place} style={styles.photo} />
