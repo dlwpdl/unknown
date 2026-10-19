@@ -70,6 +70,7 @@ function MeetupCreateForm() {
   const [pickingCover, setPickingCover] = useState(false);
   const [title, setTitle] = useState(() => sourcePlace ? aiCopy(`${sourcePlace.name.slice(0, 44)} 같이 가요`, `Let's go to ${sourcePlace.name.slice(0, 45)}`) : ''), [body, setBody] = useState(() => sourcePlace ? aiCopy(`${sourcePlace.name}에 함께 가실 분을 찾아요.`, `I'd like to go to ${sourcePlace.name}. Who's in?`) : '');
   const [eventDetails, setEventDetails] = useState(() => destination?.kind === 'place' ? placeMeetupTail(destination) : '');
+  const [seededPlaceId, setSeededPlaceId] = useState(sourcePlace?.id ?? '');
   const [creatingDraft, setCreatingDraft] = useState(false), [aiDraftReady, setAiDraftReady] = useState(false);
   const [topic, setTopic] = useState(''), [aiError, setAiError] = useState('');
   const [aiPreview, setAiPreview] = useState<{ fields: MeetupDraftFields; revision: MeetupDraftRevision } | null>(null);
@@ -98,6 +99,17 @@ function MeetupCreateForm() {
     setDraftEdited(true); setAiDraftReady(false);
   };
   useLayoutEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  // A cold link can become valid after the remote catalog arrives; seed it once.
+  if (destination?.kind === 'place' && seededPlaceId !== destination.place.id) {
+    const place = destination.place;
+    setSeededPlaceId(place.id);
+    setEventDetails(placeMeetupTail(destination));
+    if (!draftEdited) {
+      setTitle(language === 'en' ? `Let's go to ${place.name.slice(0, 45)}` : `${place.name.slice(0, 44)} 같이 가요`);
+      setBody(language === 'en' ? `I'd like to go to ${place.name}. Who's in?` : `${place.name}에 함께 가실 분을 찾아요.`);
+    }
+    setEventReady(true);
+  }
   useEffect(() => {
     if (!ticketmasterEventId || invalidDestination || !isAuthed || loadedEvent.current === ticketmasterEventId) return;
     let active = true; setEventReady(false); setEventError('');
