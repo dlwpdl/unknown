@@ -6,7 +6,7 @@ import test from 'node:test';
 const root = new URL('../', import.meta.url);
 const json = path => JSON.parse(readFileSync(new URL(path, root), 'utf8'));
 
-for (const [cityId, minimum] of [['vancouver', 50], ['toronto', 38], ['montreal', 20], ['calgary', 13], ['edmonton', 14], ['winnipeg', 14]]) {
+for (const [cityId, minimum] of [['vancouver', 50], ['toronto', 38], ['montreal', 21], ['calgary', 14], ['edmonton', 14], ['winnipeg', 15]]) {
 test(`the shipped ${cityId} cohort has distinct destinations with counted ratings and attributed offline photos`, () => {
   const catalog = json('src/lib/city-places.catalog.json');
   const city = catalog.cities[cityId];

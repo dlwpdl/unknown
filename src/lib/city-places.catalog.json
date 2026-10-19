@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T21:07:00.750426+00:00",
+  "collectedAt": "2026-10-19T21:17:51.406634+00:00",
   "source": "OpenStreetMap; source-reviewed Gling photo-spot selections",
   "license": "ODbL-1.0",
   "attribution": "© OpenStreetMap contributors",
@@ -4831,6 +4831,18 @@
           "sourceUrl": "https://www.openstreetmap.org/way/40789099",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:node:1751185097",
+          "cityId": "montreal",
+          "name": "St-Viateur Bagel Shop",
+          "category": "food",
+          "latitude": 45.5226756,
+          "longitude": -73.6019466,
+          "address": "263 R. Saint Viateur Ouest, Montreal, Quebec H2V 1Y1, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/node/1751185097",
+          "website": null,
+          "openingHours": "24/7"
         }
       ],
       "recommendations": [
@@ -4973,6 +4985,13 @@
           "reasonEn": "View the stacked concrete homes from public areas along the river.",
           "sourceUrl": "https://wanderlog.com/list/geoCategory/161162/best-photo-spots-in-montreal",
           "verifiedAt": "2026-10-19T19:04:35.927Z"
+        },
+        {
+          "placeId": "osm:node:1751185097",
+          "reason": "몬트리올 생비아퇴르 거리 263번지의 베이글 가게.",
+          "reasonEn": "Visit the bagel shop at 263 Rue Saint-Viateur Ouest.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105393/top-things-to-do-and-attractions-in-montreal",
+          "verifiedAt": "2026-10-19T04:08:37.219Z"
         }
       ],
       "selectionIdentityEvidence": {
@@ -5077,6 +5096,14 @@
             "reference": "https://wanderlog.com/list/geoCategory/161162/best-photo-spots-in-montreal",
             "sourceGooglePlaceId": "ChIJ9QcF_fAayUwRSq4M44RIh1Q",
             "sourceObservedAt": "2026-10-19T19:04:35.927Z",
+            "osmTimestamp": "2026-10-19T09:20:48Z"
+          },
+          {
+            "placeId": "osm:node:1751185097",
+            "responseSha256": "ad8c949d881eb0c0f74d3cced4386d840c7894e25ad438600cdb8bdcf1ca7ba0",
+            "reference": "https://wanderlog.com/list/geoCategory/105393/top-things-to-do-and-attractions-in-montreal",
+            "sourceGooglePlaceId": "ChIJQ2XG23gZyUwRoCNTC2xte4M",
+            "sourceObservedAt": "2026-10-19T04:08:37.219Z",
             "osmTimestamp": "2026-10-19T09:20:48Z"
           }
         ]
@@ -6121,6 +6148,18 @@
           "sourceUrl": "https://www.openstreetmap.org/way/221143394",
           "website": "https://river-cafe.com/",
           "openingHours": "Mo-Fr 11:00-22:00; Sa-Su 10:00-22:00; Jun-Aug: Mo-Fr 11:00-23:00, Sa-Su 10:00-23:00"
+        },
+        {
+          "id": "osm:way:1272862441",
+          "cityId": "calgary",
+          "name": "The Military Museums",
+          "category": "places",
+          "latitude": 51.0135561,
+          "longitude": -114.1161051,
+          "address": "4520 Crowchild Trl SW, Calgary, AB T2T 6E9, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/1272862441",
+          "website": "https://themilitarymuseums.ca/",
+          "openingHours": "Mo-Su 09:00-17:00; Jan 01,Dec 25,26 off"
         }
       ],
       "recommendations": [
@@ -6214,6 +6253,13 @@
           "reasonEn": "Explore the exhibitions and the building’s rounded roof and concrete curves.",
           "sourceUrl": "https://wanderlog.com/list/geoCategory/105395/top-things-to-do-and-attractions-in-calgary",
           "verifiedAt": "2026-10-19T04:08:48.287Z"
+        },
+        {
+          "placeId": "osm:way:1272862441",
+          "reason": "실내 전시와 야외 군용 차량을 함께 둘러보는 박물관.",
+          "reasonEn": "Explore the museum buildings and outdoor military vehicle displays.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105395/top-things-to-do-and-attractions-in-calgary",
+          "verifiedAt": "2026-10-19T04:08:48.287Z"
         }
       ],
       "selectionIdentityEvidence": {
@@ -6285,6 +6331,14 @@
             "reference": "https://wanderlog.com/list/geoCategory/74967/where-to-eat-best-restaurants-in-calgary",
             "sourceGooglePlaceId": "ChIJ7dqmuPBvcVMRBdUQalfxLFw",
             "sourceObservedAt": "2026-10-19T19:05:16.242Z",
+            "osmTimestamp": "2026-10-19T09:20:48Z"
+          },
+          {
+            "placeId": "osm:way:1272862441",
+            "responseSha256": "267b8883050e5296d665d37e1ada42b7c11d04d105a7eb6fd762d27740275d50",
+            "reference": "https://wanderlog.com/list/geoCategory/105395/top-things-to-do-and-attractions-in-calgary",
+            "sourceGooglePlaceId": "ChIJxRF-UcZxcVMRLHZcX-S80zI",
+            "sourceObservedAt": "2026-10-19T04:08:48.287Z",
             "osmTimestamp": "2026-10-19T09:20:48Z"
           }
         ]
@@ -8646,6 +8700,18 @@
           "sourceUrl": "https://www.openstreetmap.org/way/97925809",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:relation:20044708",
+          "cityId": "winnipeg",
+          "name": "Winnipeg Art Gallery",
+          "category": "places",
+          "latitude": 49.8894877,
+          "longitude": -97.1504587,
+          "address": "300 Memorial Boulevard",
+          "sourceUrl": "https://www.openstreetmap.org/relation/20044708",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
@@ -8746,6 +8812,13 @@
           "reasonEn": "Follow the paths through this preserved urban prairie and look for seasonal grasses and wildflowers.",
           "sourceUrl": "https://wanderlog.com/list/geoCategory/105400/top-things-to-do-and-attractions-in-winnipeg",
           "verifiedAt": "2026-10-19T04:09:11.246Z"
+        },
+        {
+          "placeId": "osm:relation:20044708",
+          "reason": "윈니펙 도심에서 미술 전시와 건축을 함께 둘러볼 수 있어요.",
+          "reasonEn": "Explore art and architecture at this downtown Winnipeg gallery.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161169/best-photo-spots-in-winnipeg",
+          "verifiedAt": "2026-10-19T19:06:06.562Z"
         }
       ],
       "selectionIdentityEvidence": {
@@ -8835,6 +8908,14 @@
             "reference": "https://wanderlog.com/list/geoCategory/74972/where-to-eat-best-restaurants-in-winnipeg",
             "sourceGooglePlaceId": "ChIJ5RC2T1xx6lIRdBI_JXBLrC4",
             "sourceObservedAt": "2026-10-19T19:06:16.628Z",
+            "osmTimestamp": "2026-10-19T09:22:50Z"
+          },
+          {
+            "placeId": "osm:relation:20044708",
+            "responseSha256": "8538bca8113bdfff8e3e0b627eb81ce4389c45cf48e3d1741d209e3c3d391de3",
+            "reference": "https://wanderlog.com/list/geoCategory/161169/best-photo-spots-in-winnipeg",
+            "sourceGooglePlaceId": "ChIJ4zI34Pxz6lIRJuzBouLyBX0",
+            "sourceObservedAt": "2026-10-19T19:06:06.562Z",
             "osmTimestamp": "2026-10-19T09:22:50Z"
           }
         ]
@@ -13681,6 +13762,6 @@
   "pendingCities": [],
   "complete": true,
   "recommendationTheme": "photo-spots",
-  "photoSelectionsReviewedAt": "2026-10-19T21:07:00.750426+00:00",
-  "selectionRevision": 8
+  "photoSelectionsReviewedAt": "2026-10-19T21:17:51.406634+00:00",
+  "selectionRevision": 9
 }
