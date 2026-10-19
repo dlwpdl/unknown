@@ -46,7 +46,7 @@
   "style": "Existing shapes and attribution; natural concrete descriptions; no new dependency",
   "tests": "Per-city identity/coverage/category/provenance/static-byte invariant plus existing relevant/full checks per completed packet",
   "callPlan": "/Users/ash/Desktop/Git/unknown/output/reviews/gling-cities50-dining-2026-10-19/bounded-plan-v7-proposed.json",
-  "status": "Revision8 actuallysaved965/186Top/3dining/198photos/330ratings. NextsourceRevision9 adds3fullyphoto/rating-backed Montreal21/Calgary14/Winnipeg15; DBadoptionpending. Allcities50 stillactive,notcomplete.",
+  "status": "Source revision10 ready:75 new verified photo-optional dining across9 cities including16Vancouver;1001facts/189unchangedmainTop/78dining/209photos/471providerRows. DBadoption pending; old968/201/336objects unchanged. Toronto/newCalgary and remaining photos/cityTop50 remain active, OSM502hold23:15:14.759 after original23Z source expiry.",
   "supplementalDining": "Separate reviewed diningRecommendations; preserve top50 order; getCityDiscoveryPlaces union, getCityBrowsePlaces category-specific, trusted local visited registry only",
   "directUserPersistence": {
     "at": "2026-10-19T19:06:14.237363+00:00",
@@ -93,5 +93,49 @@
     "WinnipegPublicDomainOriginalEvidence": "Original PD-user-w Cayla EnglishWikipedia plus ownupload; original licenseURLempty preserved in evidence, publicdomain mark URL representation",
     "StViateurExactBranch": "263 RueSaintViateurOuest,not158",
     "sameOriginalV7CapsExpiryHolds": true
+  },
+  "bulkDiningPriority": {
+    "recordedAt": "2026-10-19T22:09:33.077789+00:00",
+    "sourceAuthority": [
+      "msg_8f9a23667ef8",
+      "msg_a84030ea38e5",
+      "msg_23a0ada15f20",
+      "msg_7ab1ce92fb90"
+    ],
+    "userMeaning": "Actual restaurants/cafes across every supported city and efficient city-sized cache-first batches; verified data immediately persisted for fast subsequent loads.",
+    "baselineObjectsPreserved": {
+      "facts": 968,
+      "photoLinks": 201,
+      "externalProviderRows": 336
+    },
+    "acceptance": [
+      "Preserve existing canonical IDs/reviews and exact VancouverTop50 order/reasons/photo/provider objects.",
+      "Reuse already verified immutable source/photo hashes; one all-city cache pass and coherent ready batch.",
+      "Each new dining pick needs a real positive external review count and exact physical branch/canonical identity. Photos are optional at admission; existing truthful photo fallback is used. Actual licensed subject photos remain a backfill goal; no generic substitution or fabricated counts.",
+      "Publish accepted coherent source packet and request one Root writer slice for one CAS followed by actual anon/client readback; no hosted writer outside that slice.",
+      "Keep native9938 freeze, sole6ac, production/store/release floors and existing jobs unchanged."
+    ],
+    "collectionAllowance": "Original approved v7: same host identities, history, global>=10s serial,24h cache/dedupe,23Z expiry, upload429hold. Phase13 local slice39 metadata/40 image maximum inside original master, no cap reset.",
+    "allCityCachePass": "unknown/output/reviews/gling-cities50-dining-2026-10-19/bulk-dining-all-city-coverage-v7.json"
+  },
+  "photoAdmissionCorrection": {
+    "at": "2026-10-19T22:21:57.724518+00:00",
+    "supersedes": "Prior photo-before-admission prerequisite",
+    "authority": [
+      "msg_31768ff540f0",
+      "msg_13f46fa7c9f4"
+    ],
+    "behavior": "Admit verified canonical+positive-counted dining in coherent batches, even when photo is null. Backfill licensed photos independently. Existing client contract already supports this; no helper/UI rewrite.",
+    "originalSourceCapsExpiryAndOSM502Upload429HoldsUnchanged": true
+  },
+  "cohortE": {
+    "admittedDining": 75,
+    "photoOptional": true,
+    "sourceReadyDBPending": true,
+    "sourceChoices": "unknown/output/reviews/gling-cities50-dining-2026-10-19/cohort-e-datafirst-source-choices-v7.json",
+    "actualExternalOSMHold": "2026-10-19T23:15:14.759+00:00",
+    "originalV7Expiry": "2026-10-19T23:00:00+00:00",
+    "allOld968FactsPreserved": true,
+    "additionalExactCachedDining": 23
   }
 }
