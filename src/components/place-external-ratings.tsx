@@ -2,6 +2,7 @@ import { SymbolView } from 'expo-symbols';
 import { Alert, Linking, StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
+import { GlingRatingIcon } from '@/components/merchant-rating-bar';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
@@ -11,12 +12,13 @@ import { getPlaceExternalRatings } from '@/lib/place-external-ratings';
 
 type PlaceScope = { cityId: string; placeId: string };
 
-export function PlaceRatingSummary({ cityId, placeId }: PlaceScope) {
+export function PlaceRatingSummary({ cityId, placeId, compact = false }: PlaceScope & { compact?: boolean }) {
   const { tr, locale } = useLanguage();
   const rating = getPlaceExternalRatings(cityId, placeId)[0];
   if (!rating) return null;
-  return <ThemedText type="small" numberOfLines={2}>
-    {rating.provider} {rating.score.toFixed(1)}/5 · {tr('{0}개 평가', rating.count.toLocaleString(locale))}
+  return <ThemedText type="small" style={compact ? styles.compactSummary : undefined} numberOfLines={compact ? 1 : 2}>
+    <GlingRatingIcon score={rating.score * 2} />{' '}
+    {rating.provider} {rating.score.toFixed(1)}/5{!compact && ` · ${tr('{0}개 평가', rating.count.toLocaleString(locale))}`}
   </ThemedText>;
 }
 
@@ -32,7 +34,7 @@ export function PlaceExternalRatings({ cityId, placeId }: PlaceScope) {
   };
   return <View style={styles.section}>
     <ThemedText type="smallBold" accessibilityRole="header">{tr('외부 평점')}</ThemedText>
-    {ratings.map(rating => <Pressable key={rating.provider} analyticsId="places.rating.source" accessibilityRole="link"
+    {ratings.map(rating => <Pressable key={rating.provider} analyticsId="places.detail.source" accessibilityRole="link"
       accessibilityLabel={tr('{0} 평점 {1}/5 · {2}개 평가 · 출처 보기', rating.provider, rating.score.toFixed(1), rating.count.toLocaleString(locale))}
       onPress={() => open(rating.sourceUrl)}
       style={({ pressed }) => [styles.card, { backgroundColor: theme.card, borderColor: theme.line, opacity: pressed ? 0.65 : 1 }]}>
@@ -42,7 +44,7 @@ export function PlaceExternalRatings({ cityId, placeId }: PlaceScope) {
         <ThemedText style={styles.date} themeColor="textSecondary">{tr('{0} 확인', new Date(rating.checkedAt).toLocaleDateString(locale))}</ThemedText>
       </View>
       <View style={styles.score}>
-        <ThemedText style={styles.number}>{rating.score.toFixed(1)}<ThemedText type="small" themeColor="textSecondary"> /5</ThemedText></ThemedText>
+        <ThemedText style={styles.number}><GlingRatingIcon score={rating.score * 2} />{' '}{rating.score.toFixed(1)}<ThemedText type="small" themeColor="textSecondary"> /5</ThemedText></ThemedText>
         <ThemedText type="small" themeColor="textSecondary">{tr('{0}개 평가', rating.count.toLocaleString(locale))}</ThemedText>
       </View>
       <SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} size={15} tintColor={theme.textSecondary} />
@@ -52,6 +54,7 @@ export function PlaceExternalRatings({ cityId, placeId }: PlaceScope) {
 }
 
 const styles = StyleSheet.create({
+  compactSummary: { fontSize: 11, lineHeight: 16 },
   section: { gap: Spacing.two },
   card: { minHeight: 96, borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, padding: Spacing.three,
     flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
