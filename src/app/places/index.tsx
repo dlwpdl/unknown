@@ -83,7 +83,7 @@ function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
             {places.slice(0, limit).map(place => {
               const rating = getPlaceReviewRating(city.id, place.id, ratings[place.id]);
               return <Pressable key={place.id} analyticsId="places.open" accessibilityRole="button" accessibilityLabel={tr('{0} 장소 정보와 글링 리뷰', place.name)}
-              accessibilityValue={rating.score == null ? undefined : { text: tr(rating.source === 'gling' ? '글링 평균 {0}점, 10점 만점' : '외부 참고 {0}점, 10점 환산', rating.score.toFixed(1)) }}
+              accessibilityValue={rating.score == null ? undefined : { text: tr(rating.source === 'gling' ? '글링 평균 {0}점, 10점 만점' : '{0}점, 10점 만점', rating.score.toFixed(1)) }}
               onPress={() => { play('selection'); router.push({ pathname: '/places/[id]', params: { id: place.id, cityId: city.id } }); }}
               style={({ pressed }) => [styles.place, { borderBottomColor: theme.line, opacity: pressed ? 0.65 : 1 }]}>
               <CityPlacePhoto place={place} style={styles.photo} />

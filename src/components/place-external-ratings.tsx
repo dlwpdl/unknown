@@ -28,7 +28,7 @@ export function PlaceExternalRatings({ cityId, placeId }: PlaceScope) {
     <Pressable analyticsId="places.ratings.toggle" accessibilityRole="button" aria-expanded={expanded} accessibilityState={{ expanded }}
       onPress={() => { play('selection'); setExpanded(!expanded); }}
       style={({ pressed }) => [styles.toggle, { borderColor: theme.line, opacity: pressed ? 0.65 : 1 }]}>
-      <ThemedText type="smallBold" themeColor="textSecondary">{tr('외부 평점 참고하기')}</ThemedText>
+      <ThemedText type="smallBold" themeColor="textSecondary">{tr('다른 사이트 평점 보기')}</ThemedText>
       <SymbolView name={{ ios: expanded ? 'chevron.up' : 'chevron.down', android: expanded ? 'expand_less' : 'expand_more', web: expanded ? 'expand_less' : 'expand_more' }} size={15} tintColor={theme.textSecondary} />
     </Pressable>
     {expanded && <>
@@ -47,7 +47,6 @@ export function PlaceExternalRatings({ cityId, placeId }: PlaceScope) {
       </View>
       <SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} size={15} tintColor={theme.textSecondary} />
     </Pressable>)}
-    <ThemedText type="small" themeColor="textSecondary">{tr('외부 점수는 메인에서 10점 기준으로 환산해 보여줘요.')}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary">{tr('평점은 확인한 날짜 기준이에요. 누르면 출처의 후기를 볼 수 있어요.')}</ThemedText>
     </>}
   </View>;
