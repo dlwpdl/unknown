@@ -25,11 +25,8 @@ export function PlaceReviewSummary({ rating, compact = false }: { rating: Return
     <ThemedText type="smallBold" style={compact ? styles.compactScore : undefined}>
       <GlingRatingIcon score={rating.score} />{' '}{rating.score.toFixed(1)}<ThemedText type="small" themeColor="textSecondary" style={compact ? styles.compactScale : undefined}> /10</ThemedText>
     </ThemedText>
-    <ThemedText type="small" themeColor="textSecondary" style={compact ? styles.compact : undefined} numberOfLines={2}>
-      {rating.source === 'gling' ? tr('글링 {0}개 평가', rating.count!.toLocaleString(locale)) : tr('외부 참고 · 10점 환산')}
-    </ThemedText>
-    {rating.source === 'gling' && rating.externalScore != null && <ThemedText type="small" themeColor="textSecondary" style={compact ? styles.compact : undefined} numberOfLines={1}>
-      {tr('외부 참고 {0}/10', rating.externalScore.toFixed(1))}
+    {rating.source === 'gling' && <ThemedText type="small" themeColor="textSecondary" style={compact ? styles.compact : undefined} numberOfLines={2}>
+      {tr('글링 {0}개 평가', rating.count!.toLocaleString(locale))}
     </ThemedText>}
   </View>;
 }
