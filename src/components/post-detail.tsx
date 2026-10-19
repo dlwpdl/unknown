@@ -52,6 +52,9 @@ import { postPublicAddress } from '@/lib/post-maps';
 import { splitPostPhotoCredits } from '@/lib/post-photo-credits';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
 import { splitEventMeetupBody, visibleMeetupBody } from '@/lib/meetup-ai';
+import { splitPlaceMeetupBody } from '@/lib/meetup-destination';
+import { placeMapRoute } from '@/lib/discovery';
+import { ControlStyles, controlPresentation } from '@/constants/design-system';
 import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 import { supabase } from '@/lib/supabase';
 import type { Post, PostComment } from '@/lib/types';
@@ -91,12 +94,14 @@ export function PostDetail(props: PostDetailProps) {
 }
 
 function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCommentCountChange, onViewCountChange, onPostRemoved, onPostChanged, management }: PostDetailProps) {
-  const { tr, t } = useLanguage();
+  const { tr, t, language } = useLanguage();
   const theme = useTheme();
   const hidden = useContentVisibility();
   const [post, setPost] = useState(initialPost);
   const photoCredits = splitPostPhotoCredits(post.body);
-  const linkedEventDetails = post.room && ticketmasterReference(post.body) ? splitEventMeetupBody(post.body).details : '';
+  const linkedPlace = post.room ? splitPlaceMeetupBody(post.body, post.cityId) : null;
+  const linkedEventDetails = post.room && ticketmasterReference(post.body) ? splitEventMeetupBody(post.body).details : linkedPlace?.details ?? '';
+  const placeSourceLabel = linkedPlace ? `${linkedPlace.place.name} · ${tr(CITIES.find(city => city.id === post.cityId)?.name ?? '')} · ${language === 'en' ? 'View map' : '지도 보기'}` : '';
   const onListingChanged = useCallback((next: Partial<Post>) => setPost((current) => ({ ...current, ...next })), []);
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -732,6 +737,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                   <ThemedText type="small" themeColor="textSecondary" selectable>{postPublicAddress(post.body) ?? tr("상세주소 미등록")}</ThemedText>
                 </View>}
                 <MerchantSourceLink postId={post.id} /><MerchantReviews postId={post.id} reviewKind={post.tag.slug === 'jobs' ? 'employment' : 'usage'} onOpenProfile={(id) => { onClose(); router.push({ pathname: '/company/[id]', params: { id, review: post.tag.slug === 'jobs' ? 'employment' : 'usage' } }); }} />{post.room && <TicketmasterSourceLink body={post.body} cityId={post.cityId} onNavigate={onClose} />}
+                {linkedPlace && <Pressable analyticsId="components_post-map-link.pressable.1" accessibilityRole="button" accessibilityLabel={placeSourceLabel} onPress={() => { play('selection'); onClose(); router.navigate(placeMapRoute(linkedPlace.place)); }} style={({ pressed }) => [ControlStyles.action, controlPresentation(theme, { pressed }).container, { borderWidth: 1 }]}><ThemedText type="smallBold" style={controlPresentation(theme).text}>{placeSourceLabel}</ThemedText></Pressable>}
               </>}
               onJoin={onJoin ?? (() => isAuthed ? router.push({ pathname: '/meetup-join', params: { postId: post.id } }) : promptLogin('이 모임에 참여하려면 가입하거나 로그인해 주세요.'))}
               onAuthor={() => {

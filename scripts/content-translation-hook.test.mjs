@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
-import { needsContentTranslation } from '../src/lib/translation-source.ts';
+import { needsContentTranslation } from './test-meetup-source-imports.mjs';
 
 function mount() {
   let hooks = [], index = 0, effects = [], layout = [], language = 'en', viewer = 'viewer-a', visible = true;

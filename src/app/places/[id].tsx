@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
+import { RaisedActionButton } from '@/components/raised-action-button';
 import { PlaceReviews } from '@/components/place-reviews';
 import { PlaceExternalRatings } from '@/components/place-external-ratings';
 import { PostMapLink } from '@/components/post-map-link';
@@ -77,6 +78,9 @@ export default function PlaceDetailScreen() {
           <ThemedText>{place.address || tr("등록된 주소 정보가 없어요. 지도에서 위치를 확인해 주세요.")}</ThemedText>
           {!!place.openingHours && <ThemedText type="small" themeColor="textSecondary">{tr("등록된 운영 시간: {0}", (place.openingHours))}</ThemedText>}
         </View>
+        {/* The legacy analytics target distinguishes this shared action by its screen. */}
+        <RaisedActionButton analyticsId="ticketmaster.meetup.find" label={language === 'en' ? 'Find a meetup here' : '이곳에 갈 모임 보기'} disabled={city.state !== 'open'} onPress={() => { play('selection'); router.push({ pathname: '/(tabs)/meetups', params: { placeId: place.id, placeCityId: city.id } }); }} />
+        {city.state !== 'open' && <ThemedText type="small" themeColor="textSecondary">{language === 'en' ? 'Meetups in this city are coming soon.' : '이 도시의 모임은 준비 중이에요.'}</ThemedText>}
         <Pressable analyticsId="places.open" accessibilityRole="button" accessibilityLabel={`${place.name} · ${tr('지도 보기')}`}
           onPress={() => { play('selection'); router.navigate(placeMapRoute(place)); }} style={styles.link}>
           <ThemedText type="smallBold" themeColor="accent">{tr('지도 보기')}</ThemedText>

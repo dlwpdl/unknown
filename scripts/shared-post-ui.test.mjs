@@ -13,7 +13,7 @@ import { hideContent, subscribeVisibility, visibilityRevision } from '../src/lib
 import { count, t } from '../src/i18n/ko.ts';
 import { uniqueHashtags } from '../src/lib/hashtags.ts';
 import { postMapBody } from '../src/lib/post-maps.ts';
-import { visibleTranslationSource } from '../src/lib/translation-source.ts';
+import { visibleTranslationSource } from './test-meetup-source-imports.mjs';
 import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
 import * as postLinks from '../supabase/functions/_shared/post-links.ts';
 import * as postReactions from '../src/lib/post-reactions.ts';
@@ -244,6 +244,7 @@ test('the exported PostDetail guest wrapper renders only a login gate and never 
     'expo-image-picker': {}, '@/constants/theme': { Depth: {}, Spacing: {} }, '@/i18n/ko': { t: {}, count: () => '' },
     '@/lib/comment-list': {}, '@/lib/comment-threads': { loadCommentThreadPage: () => requests.push('comments'), loadCommentThreadContext: () => requests.push('comment-context') },
     '@/lib/image-upload': {}, '@/lib/post-photo-credits': {}, '@/lib/post-image-picker': {}, '@/lib/meetup-ai': {}, '@/lib/mock': { CITIES: [] }, '@/lib/promotions': {}, '../../supabase/functions/_shared/ticketmaster': {},
+    '@/lib/meetup-destination': { splitPlaceMeetupBody: () => { throw Error('Guest must not parse supplied body'); } }, '@/lib/discovery': {}, '@/constants/design-system': {},
   });
   const harness = mount('../src/components/post-detail.tsx', 'PostDetail', { auth: { isAuthed: false }, imports }, { post: post(), onClose() {} }); context.after(() => harness.unmount()); await harness.settle();
   assert.deepEqual(requests, []); assert.equal(harness.calls.filter(call => call[0] === 'full-post').length, 0);
