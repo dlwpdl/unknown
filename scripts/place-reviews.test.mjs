@@ -24,9 +24,10 @@ const places = module('src/lib/city-places.ts', {
 });
 const place = places.getCityPlaces('toronto')[0];
 const scope = { cityId: place.cityId, placeId: place.id, userId: user };
-function fixture({ feed = async () => [], create = async () => ({ id: saved, post: null }), session = () => user } = {}) {
-  const calls = { reads: [], writes: [], sessions: 0 };
-  const client = { auth: { getSession: async () => { calls.sessions++; const id = session(); return { data: { session: id ? { user: { id } } : null }, error: null }; } } };
+function fixture({ feed = async () => [], create = async () => ({ id: saved, post: null }), session = () => user, rpc = async () => ({ data: null, error: null }) } = {}) {
+  const calls = { reads: [], writes: [], sessions: 0, rpcs: [] };
+  const client = { auth: { getSession: async () => { calls.sessions++; const id = session(); return { data: { session: id ? { user: { id } } : null }, error: null }; } },
+    rpc: async (name, params) => { calls.rpcs.push({ name, params }); return rpc(name, params); } };
   const api = module('src/lib/place-reviews.ts', {
     './city-places.ts': places, './post-maps.ts': maps, './mock.ts': { TAGS },
     './feed-data.ts': { loadPublicFeed: async (...args) => { calls.reads.push(args); return feed(...args); } },
@@ -34,6 +35,69 @@ function fixture({ feed = async () => [], create = async () => ({ id: saved, pos
   });
   return { ...api, calls, client };
 }
+
+test('scored place reviews use the verified catalog, half-point scale and atomic rating RPC', async () => {
+  const api = fixture({ rpc: async () => ({ data: { id: saved, score: 8.5 }, error: null }) });
+  assert.equal(typeof api.writeRatedPlaceReview, 'function');
+  const result = await api.writeRatedPlaceReview(api.client, scope, '해질 때 산책하기 좋아요.', 8.5);
+  assert.equal(result.id, saved);
+  assert.equal(api.calls.writes.length, 0, 'a scored review must not create a second ordinary post');
+  const { name, params } = api.calls.rpcs[0];
+  assert.equal(name, 'write_place_rating'); assert.equal(params.p_score, 8.5);
+  assert.equal(params.p_city_id, scope.cityId); assert.equal(params.p_place_id, scope.placeId);
+  assert.match(params.p_body, /^글링 평점: 8\.5\/10\n\n해질 때/);
+  assert.equal(api.placeReviewReference(params.p_body), place.sourceUrl);
+  assert.equal(api.placeReviewText(params.p_body), '해질 때 산책하기 좋아요.');
+});
+
+test('invalid ratings, guest sessions and stale drafts never reach the rating write RPC', async () => {
+  for (const score of [null, 0, 0.5, 10.5, 8.25, NaN, Infinity, '8.5']) {
+    const api = fixture();
+    await assert.rejects(api.writeRatedPlaceReview(api.client, scope, '후기', score), /INVALID_PLACE_SCORE/);
+    assert.equal(api.calls.rpcs.length, 0);
+  }
+  const guest = fixture({ session: () => null });
+  await assert.rejects(guest.writeRatedPlaceReview(guest.client, scope, '후기', 8), /ACCOUNT_CHANGED/);
+  const stale = fixture();
+  await assert.rejects(stale.writeRatedPlaceReview(stale.client, scope, '후기', 8, () => false), /ACCOUNT_CHANGED/);
+  assert.equal(guest.calls.rpcs.length + stale.calls.rpcs.length, 0);
+});
+
+test('unconfirmed rating saves keep the draft instead of reporting success', async () => {
+  for (const data of [null, { id: 'bad', score: 8 }, { id: saved, score: 9 }]) {
+    const api = fixture({ rpc: async () => ({ data, error: null }) });
+    await assert.rejects(api.writeRatedPlaceReview(api.client, scope, '후기', 8), /SAVE_UNCONFIRMED/);
+  }
+});
+
+test('batched Gling averages distinguish a known empty score from missing or foreign data', async () => {
+  const valid = { cityId: scope.cityId, placeId: scope.placeId, average: 8.6, count: 12 };
+  const api = fixture({ rpc: async () => ({ data: [valid], error: null }) });
+  assert.equal(typeof api.loadPlaceRatingSummaries, 'function');
+  const result = await api.loadPlaceRatingSummaries(api.client, scope.cityId, [scope.placeId, scope.placeId]);
+  assert.equal(result[scope.placeId].average, 8.6); assert.equal(result[scope.placeId].count, 12);
+  assert.equal(api.calls.rpcs[0].params.p_place_ids.length, 1);
+  for (const bad of [[], [{ ...valid, cityId: 'unknown' }], [{ ...valid, average: null }], [{ ...valid, count: 0 }], [{ ...valid, count: -1 }]]) {
+    const invalid = fixture({ rpc: async () => ({ data: bad, error: null }) });
+    await assert.rejects(invalid.loadPlaceRatingSummaries(invalid.client, scope.cityId, [scope.placeId]), /INVALID_PLACE_RATINGS/);
+  }
+  const empty = fixture({ rpc: async () => ({ data: [{ ...valid, average: null, count: 0 }], error: null }) });
+  assert.equal((await empty.loadPlaceRatingSummaries(empty.client, scope.cityId, [scope.placeId]))[scope.placeId].average, null);
+});
+
+test('private rating state verifies the account before and after returning per-review scores', async () => {
+  const payload = { cityId: scope.cityId, placeId: scope.placeId, average: 8, count: 1,
+    scores: { [saved]: 8 }, myReview: { id: saved, score: 8, body: '내 후기', status: 'published' } };
+  const api = fixture({ rpc: async () => ({ data: payload, error: null }) });
+  assert.equal(typeof api.loadPlaceRatingState, 'function');
+  assert.equal((await api.loadPlaceRatingState(api.client, scope, [saved])).scores[saved], 8);
+  const guest = fixture({ session: () => null });
+  await assert.rejects(guest.loadPlaceRatingState(guest.client, scope, [saved]), /ACCOUNT_CHANGED/);
+  assert.equal(guest.calls.rpcs.length, 0);
+  let who = user;
+  const changed = fixture({ session: () => who, rpc: async () => { who = 'another-account'; return { data: payload, error: null }; } });
+  await assert.rejects(changed.loadPlaceRatingState(changed.client, scope, [saved]), /ACCOUNT_CHANGED/);
+});
 function post(id, body, extra = {}) {
   return { id, cityId: place.cityId, kind: 'story', body, createdAt: '2026-10-15T20:00:00Z', sortAt: '2026-10-15T21:00:00Z', author: { id: 'author' }, ...extra };
 }
