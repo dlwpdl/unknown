@@ -3,7 +3,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { PostAdLabel } from '@/components/post-ad-label';
 import { hasAdLabel } from '@/lib/hashtags';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, AppState, KeyboardAvoidingView, Linking, Modal, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -30,7 +30,8 @@ import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
 import { DISCOVERY_CATEGORIES, TOP25_GOLD, discoveryDays, discoveryEvent, discoveryEventOnDays, discoveryMatches, discoveryPlace, directionsUrl, mergeCityTop25, type DiscoveryDate, type DiscoveryFilter, type DiscoveryItem } from '@/lib/discovery';
-import { getCityRecommendations } from '@/lib/city-places';
+import { getCityPlaces, getCityRecommendations } from '@/lib/city-places';
+import { CITIES } from '@/lib/mock';
 import { useCityPlacesRevision } from '@/hooks/use-city-places';
 import { loadDiscoveryPosts } from '@/lib/discovery-data';
 import { getPostImageSource, type FeedCursor } from '@/lib/feed-data';
@@ -54,15 +55,18 @@ type Result = { key: string; page: number; items: DiscoveryItem[]; cursor: FeedC
 const located = (item: DiscoveryItem): item is DiscoveryItem & PostPin => item.latitude !== null && item.longitude !== null;
 
 export default function MapScreen({ onClose }: { onClose?: () => void } = {}) {
-  const { city } = useCommunityCity();
+  const { city: selectedCity } = useCommunityCity();
+  const { cityId, placeId } = useLocalSearchParams<{ cityId?: string; placeId?: string }>();
+  const city = (!onClose && CITIES.find(value => value.id === cityId)) || selectedCity;
   const { isAuthed, me } = useAuth();
-  return <CityMap key={`${city.id}:${isAuthed ? me.id : 'guest'}`} onClose={onClose} />;
+  return <CityMap key={`${city.id}:${isAuthed ? me.id : 'guest'}`} city={city} placeId={onClose ? undefined : placeId} onClose={onClose} />;
 }
-function CityMap({ onClose }: { onClose?: () => void } = {}) {
+function CityMap({ city, placeId, onClose }: { city: (typeof CITIES)[number]; placeId?: string; onClose?: () => void }) {
   const { tr } = useLanguage();
   const theme = useTheme(), router = useRouter(), reduced = useReducedMotion();
   const top25Ink = theme === Colors.light ? '#68543A' : TOP25_GOLD;
-  const { city } = useCommunityCity(), { isAuthed, me, promptLogin } = useAuth(), hidden = useContentVisibility();
+  const { isAuthed, me, promptLogin } = useAuth(), hidden = useContentVisibility();
+  const isFocused = useIsFocused(), targetFocusRef = useRef<string | null>(null);
   const { play } = useInteractionFeedback();
   const { category } = useLocalSearchParams<{ category?: string }>();
   const initialCategory = onClose ? 'all' : category;
@@ -146,8 +150,22 @@ function CityMap({ onClose }: { onClose?: () => void } = {}) {
 
   useCityPlacesRevision();
   const catalogPlaces = getCityRecommendations(city.id);
+  const targetPlace = placeId ? getCityPlaces(city.id).find(place => place.id === placeId) : undefined;
+  const targetItem = targetPlace ? discoveryPlace(targetPlace) : null;
   const catalogItems = catalogPlaces.map(discoveryPlace).filter(item => item !== null);
-  const publicItems = [...(current?.items ?? []), ...catalogItems].filter(item => (item.source !== 'post' || !!item.post && item.post.kind === 'listing' && ['housing', 'used'].includes(item.category))
+  if (targetItem && !catalogItems.some(item => item.id === targetItem.id)) catalogItems.push(targetItem);
+  const targetId = targetItem?.id, targetLatitude = targetItem?.latitude, targetLongitude = targetItem?.longitude, targetRecommended = !!targetItem?.top25;
+  useEffect(() => {
+    if (!isFocused) { targetFocusRef.current = null; return; }
+    if (!targetId || targetLatitude == null || targetLongitude == null || targetFocusRef.current === targetId) return;
+    targetFocusRef.current = targetId;
+    locationRevision.current++; setLocating(false); setLocationError('');
+    setSelectedFilters(targetRecommended ? ['top25'] : []);
+    setQuery(''); setSearch(''); setMode('map');
+    setSelectedId(targetId);
+    setCenter({ latitude: targetLatitude, longitude: targetLongitude, requestId: locationRevision.current });
+  }, [isFocused, targetId, targetLatitude, targetLongitude, targetRecommended]);
+  const publicItems = [...catalogItems, ...(current?.items ?? [])].filter(item => (item.source !== 'post' || !!item.post && item.post.kind === 'listing' && ['housing', 'used'].includes(item.category))
     && (!item.post || (!hidden('post', item.post.id, item.post.author.id) && (item.post.kind !== 'listing' || (['open', 'partial'].includes(item.post.listingStatus ?? '') && Date.parse(item.post.expiresAt ?? '') > now))))
     && (!item.event || discoveryEvent(item.event, item.cityId, now) !== null));
   const cityItems = mergeCityTop25(publicItems, city.id);
@@ -307,11 +325,11 @@ function DiscoveryCard({ item, viewerScope, onOpen, translationVisible = true, e
 function Top25Note({ item }: { item: DiscoveryItem }) {
   const theme = useTheme(), { play } = useInteractionFeedback();
   const top25Ink = theme === Colors.light ? '#68543A' : TOP25_GOLD;
-  const { tr, locale } = useLanguage();
+  const { tr, language } = useLanguage();
   if (!item.top25) return null;
   return <View style={[styles.top25Note, { borderTopColor: theme.line }]}>
     <ThemedText type="smallBold" style={{ color: top25Ink }}>{tr("TOP 50 선정 이유")}</ThemedText>
-    <ThemedText type="small" themeColor="textSecondary">{locale === 'en' ? item.top25.reasonEn ?? item.top25.reason : item.top25.reason}</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary">{language === 'en' ? item.top25.reasonEn ?? item.top25.reason : item.top25.reason}</ThemedText>
     {!!item.post && <ThemedText type="small" themeColor="textSecondary">{tr("글링 추천 글에서도 소개한 장소예요.")}</ThemedText>}
     <Pressable analyticsId="discovery.card" accessibilityRole="link" accessibilityLabel={tr('{0} TOP 50 선정 출처 열기, 외부 사이트', item.title)} onPress={() => { play('selection'); void Linking.openURL(item.top25!.sourceUrl).catch(() => { play('warning'); Alert.alert(tr("선정 출처를 열지 못했어요"), tr("인터넷 연결을 확인하고 다시 시도해 주세요.")); }); }} style={styles.top25Source}><ThemedText type="small" style={{ color: top25Ink }}>{tr("선정 출처 보기 ↗")}</ThemedText></Pressable>
   </View>;

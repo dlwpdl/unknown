@@ -40,7 +40,7 @@ function mount(file, component, imports, globals = {}, props = {}) {
     react, 'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }), Fragment: 'Fragment' },
     'react-native': native, 'react-native-reanimated': { useReducedMotion: () => true },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
-    'expo-router': { Link: 'Link', useFocusEffect: fn => effect(fn, [fn]), useLocalSearchParams: () => ({}), useRouter: () => ({}), usePathname: () => '/' },
+    'expo-router': { Link: 'Link', useIsFocused: () => true, useFocusEffect: fn => effect(fn, [fn]), useLocalSearchParams: () => ({}), useRouter: () => ({}), usePathname: () => '/' },
     'expo-asset': { Asset: { fromModule: () => ({ uri: 'local.png' }) } },
     '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' },
     '@/components/feed-ad': { FeedAd: 'FeedAd' }, '@/lib/content-ad-placement': { contentAdPosition },
@@ -61,7 +61,7 @@ function mount(file, component, imports, globals = {}, props = {}) {
     if (name.endsWith('.css') || /assets\//.test(name)) return {};
     return new Proxy({}, { get: (_target, key) => key });
   }, ...globals });
-  const render = () => { at = 0; dirty = false; tree = exports.TestComponent(props); pending.splice(0).forEach(fn => fn()); return tree; };
+  const render = () => { at = 0; dirty = false; tree = exports.TestComponent({ ...(component === 'CityMap' ? { city } : {}), ...props }); pending.splice(0).forEach(fn => fn()); return tree; };
   return { render, get tree() { return tree; }, async settle() { for (let count = 0; count < 12; count++) { if (dirty) render(); await new Promise(setImmediate); if (!dirty) return; } assert.fail('render loop'); } };
 }
 

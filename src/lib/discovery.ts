@@ -34,6 +34,10 @@ export type DiscoveryItem = {
   place?: CityPlace;
 };
 
+export function placeMapRoute(place: Pick<CityPlace, 'id' | 'cityId'>) {
+  return { pathname: '/map' as const, params: { cityId: place.cityId, placeId: place.id, category: 'top25' } };
+}
+
 export function discoveryPlace(place: CityPlace): DiscoveryItem | null {
   if (!Number.isFinite(place.latitude) || Math.abs(place.latitude) > 90 || !Number.isFinite(place.longitude) || Math.abs(place.longitude) > 180) return null;
   const category = place.category === 'food' ? 'dining' : place.category === 'cafe' ? 'cafe' : 'place';
