@@ -64,8 +64,8 @@ export function CityPicker({ onClose, draft, title }: { onClose: () => void; dra
       </Pressable></View>}
     </View>
     <View style={styles.controls}>
-      <View style={[styles.countriesGlass, { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}><View accessibilityRole="tablist" accessibilityLabel={t.feed.cityCountry} style={styles.countries}>
-        <View accessible accessibilityRole="tab" accessibilityState={{ selected: true }} style={[styles.country, styles.currentCountry, Depth.control, controlPresentation(theme, { tone: 'ghost', selected: true }).container]}>
+      <View style={[styles.countriesGlass, { backgroundColor: theme.backgroundElement }]}><View accessibilityRole="tablist" accessibilityLabel={t.feed.cityCountry} style={styles.countries}>
+        <View accessible accessibilityRole="tab" accessibilityState={{ selected: true }} style={[styles.country, fontScale > 1.2 && styles.currentCountry, Depth.control, controlPresentation(theme, { tone: 'ghost', selected: true }).container]}>
           <ThemedText type="label" style={controlPresentation(theme, { tone: 'ghost', selected: true }).text}>{t.feed.cityCanada}</ThemedText>
         </View>
         <Pressable analyticsId="components_city-picker.pressable.3" disabled accessibilityRole="tab" accessibilityState={{ selected: false, disabled: true }} accessibilityLabel={`${t.feed.cityUnitedStates}, ${t.feed.citySoon}`} style={styles.country}>
@@ -105,12 +105,12 @@ export function CityPicker({ onClose, draft, title }: { onClose: () => void; dra
       ListEmptyComponent={<ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite" style={styles.empty}>{t.feed.cityNoResults}</ThemedText>}
       ListFooterComponent={<ThemedText type="small" themeColor="textSecondary" style={styles.note}>{draft ? t.write.postCityNote : t.feed.cityPickerNote}</ThemedText>}
       renderSectionHeader={({ section }) => <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{section.title}</ThemedText>}
-      renderItem={({ item }) => {
+      renderItem={({ item, index, section }) => {
         const selected = item.id === (draft?.city ?? city).id;
         const open = item.state === 'open';
         const busy = !draft && saving;
         const disabled = busy || !open;
-        return <View style={styles.rowGlass}><Pressable analyticsId="components_city-picker.pressable.6" disabled={disabled} accessibilityRole="button" accessibilityState={{ selected, disabled, busy }}
+        return <View style={[styles.rowGlass, { backgroundColor: theme.card }, index === 0 && styles.firstRow, index === section.data.length - 1 && styles.lastRow]}><Pressable analyticsId="components_city-picker.pressable.6" disabled={disabled} accessibilityRole="button" accessibilityState={{ selected, disabled, busy }}
           accessibilityLabel={[tr(item.name), language === 'ko' && item.englishName, item.province, !open && t.feed.citySoon, selected && t.feed.citySelected].filter(Boolean).join(', ')}
           onPress={async () => {
             if (disabled) return;
@@ -136,13 +136,14 @@ const styles = StyleSheet.create({
   title: { ...Typography.sheetTitle, flex: 1 },
   iconButton: ControlStyles.icon, iconGlass: { borderRadius: ControlMetrics.radius.icon },
   controls: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two, gap: Spacing.two },
-  countriesGlass: { borderRadius: ControlMetrics.radius.pill, borderWidth: StyleSheet.hairlineWidth }, countries: { flexDirection: 'row', padding: Spacing.one, borderRadius: ControlMetrics.radius.pill, gap: Spacing.one },
-  country: { ...ControlStyles.pill, flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'center', gap: Spacing.one, paddingHorizontal: Spacing.two, paddingVertical: Spacing.two },
+  countriesGlass: { borderRadius: ControlMetrics.radius.field }, countries: { flexDirection: 'row', padding: Spacing.one, borderRadius: ControlMetrics.radius.field, gap: Spacing.one },
+  country: { ...ControlStyles.pill, borderRadius: ControlMetrics.radius.action, flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'center', gap: Spacing.one, paddingHorizontal: Spacing.two, paddingVertical: Spacing.two },
   currentCountry: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', alignSelf: 'center' },
   searchGlass: { borderRadius: ControlMetrics.radius.field, borderWidth: StyleSheet.hairlineWidth }, search: { flexDirection: 'row', alignItems: 'center', paddingLeft: Spacing.three, borderRadius: ControlMetrics.radius.field, gap: Spacing.two, minHeight: ControlMetrics.field },
   input: { flex: 1, minWidth: 0, minHeight: ControlMetrics.touch, fontSize: Typography.menu.fontSize, paddingVertical: Spacing.two, paddingRight: Spacing.two },
   list: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.four }, sectionTitle: { paddingHorizontal: Spacing.three, paddingTop: Spacing.four, paddingBottom: Spacing.two },
-  rowGlass: { borderRadius: ControlMetrics.radius.field, marginBottom: Spacing.one, overflow: 'hidden' }, row: { minHeight: 72, borderRadius: ControlMetrics.radius.field, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.three },
+  rowGlass: { overflow: 'hidden' }, firstRow: { borderTopLeftRadius: ControlMetrics.radius.field, borderTopRightRadius: ControlMetrics.radius.field }, lastRow: { borderBottomLeftRadius: ControlMetrics.radius.field, borderBottomRightRadius: ControlMetrics.radius.field },
+  row: { minHeight: 72, borderRadius: ControlMetrics.radius.field, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
   name: { flex: 1, gap: Spacing.one }, rowTitle: Typography.menu,
   note: { marginTop: Spacing.four }, empty: { paddingTop: Spacing.four },
   locationRow: { marginTop: Spacing.two, borderRadius: ControlMetrics.radius.field },
