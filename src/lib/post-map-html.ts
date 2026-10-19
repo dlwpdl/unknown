@@ -62,7 +62,7 @@ window.glingSetInset=n=>{if(Number.isFinite(n)&&n>=0&&n<=1000){const control=doc
 window.addEventListener('message',e=>{if(e.source!==window.parent||!e.data||e.data.type!=='move')return;window.glingSetPin(e.data.pin);window.glingSetInset(e.data.bottomInset)});
 document.addEventListener('click',e=>{const a=e.target.closest?.('#credits a');if(a){e.preventDefault();send({type:'credit',url:a.href})}else if(e.target.closest?.('.maplibregl-ctrl-group button'))send({type:'feedback'})});
 try{
- map=new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/liberty',center:config.center,zoom:config.preview?14.5:15,interactive:!config.preview,attributionControl:false,canvasContextAttributes:{preserveDrawingBuffer:config.preview},pixelRatio:config.preview?1.5:undefined});
+ map=new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/positron',center:config.center,zoom:config.preview?14.5:15,interactive:!config.preview,attributionControl:false,canvasContextAttributes:{preserveDrawingBuffer:config.preview},pixelRatio:config.preview?1.5:undefined});
  window.glingMap=map;
  if(!config.preview)map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
  const timer=setTimeout(fail,15000);
