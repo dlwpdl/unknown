@@ -32,6 +32,15 @@ function rating({ score, reviewKind = 'usage', reduced = false, label, scheme = 
 }
 const nodes = root => !root || typeof root !== 'object' ? [] : [root, ...Object.values(root).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
 
+test('inline rating marks inherit the enclosing numeric line metrics instead of the masked bar height', () => {
+  const { icon, tree } = rating({ score: 9 });
+  const inline = Object.assign({}, ...icon({ score: 9 }).props.style);
+  assert.equal(inline.lineHeight, undefined, 'a fixed 14pt inline paragraph clips the 26pt iOS provider score');
+  assert.equal(inline.width, undefined, 'inline glyphs use their natural text advance');
+  const fill = nodes(tree).find(node => node.props?.testID === 'merchant-rating-fill-0');
+  assert.equal(fill.props.style.height, 14, 'masked bar geometry remains unchanged');
+});
+
 test('member review bars announce the supplied meeting or chat context', () => {
   assert.equal(rating({ score: 8.7, label: '참석 확인된 만남' }).tree.props.accessibilityLabel, '참석 확인된 만남 평균 8.7점, 10점 만점');
   assert.equal(rating({ score: null, label: '대화' }).tree.props.accessibilityLabel, '대화 점수 없음');

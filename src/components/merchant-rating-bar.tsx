@@ -16,7 +16,7 @@ export function GlingRatingIcon({ score }: { score: number | null }) {
   const iris = theme.background === Colors.dark.background ? IRIS.dark : IRIS.light;
   const band = score != null && Number.isFinite(score) && score > 0 && score <= 10 ? Math.ceil(score) - 1 : null;
   const color = band == null ? theme.line : iris[band];
-  return <Text style={[styles.sparkle, { color, textShadowColor: color, textShadowOffset: { width: 0, height: 0 },
+  return <Text style={[styles.inlineSparkle, { color, textShadowColor: color, textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: band == null ? 0 : Math.max(0, band - 6) * 0.7 }]} accessible={false}>✦</Text>;
 }
 
@@ -55,6 +55,7 @@ export function MerchantRatingBar({ score, reviewKind = 'usage', label }: { scor
 const styles = StyleSheet.create({
   bar: { flexDirection: 'row', gap: 2, width: 118, height: 14 },
   unit: { width: 10, height: 14 },
+  inlineSparkle: { fontSize: 14 },
   sparkle: { width: 10, fontSize: 14, lineHeight: 14, textAlign: 'center', includeFontPadding: false },
   employmentBar: { gap: 0, height: 4, borderRadius: 2, overflow: 'hidden' },
   employmentUnit: { width: 11.8, height: 4 },
