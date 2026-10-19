@@ -32,6 +32,7 @@ function mount({ light = false, reduced = false } = {}) {
     '@/constants/theme': { Colors: { dark: { ...theme, card: '#171722' }, light: theme } }, '@/hooks/use-language': { useLanguage: () => ({ tr }) },
     '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' },
     '@/components/discovery-map': { DiscoveryMap: 'DiscoveryMap' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
+    '@/components/city-place-photo': { CityPlacePhoto: 'CityPlacePhoto' },
     '@/components/feed-ad': { FeedAd: 'FeedAd' }, '@/lib/ads': { adsSupported: false }, '@/lib/content-ad-placement': { contentAdPosition },
     '@/components/state-card': { StateCard: 'StateCard' }, '@/components/content-translation': {}, '@/hooks/use-content-translation': {},
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: {} }, '@/lib/translation-source': {},
