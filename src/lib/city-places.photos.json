@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T09:35:43.822632+00:00",
+  "collectedAt": "2026-10-19T11:00:35.268282+00:00",
   "source": "Verified same-place Wikimedia Commons photographs; dated captures, not popularity ranking",
   "cities": {
     "toronto": [
@@ -274,6 +274,416 @@
         "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
         "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/Vancouver_Art_Gallery_%2829787380987%29.jpg/960px-Vancouver_Art_Gallery_%2829787380987%29.jpg",
         "imageSha256": "0fb32d52c022465828f0fbede9cb92feeb82d28455aaa24d5759338e63b50ed7"
+      },
+      {
+        "placeId": "osm:way:37063023",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Vista_de_Vancouver_desde_el_parque_Stanley,_Canad%C3%A1,_2017-08-14,_DD_01.jpg",
+        "artist": "Diego Delso",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/ba/Vista_de_Vancouver_desde_el_parque_Stanley%2C_Canad%C3%A1%2C_2017-08-14%2C_DD_01.jpg/960px-Vista_de_Vancouver_desde_el_parque_Stanley%2C_Canad%C3%A1%2C_2017-08-14%2C_DD_01.jpg",
+        "imageSha256": "464486ddb1febe4b18e60f5e7b2c8257f130125e5f05d16a06f6cfa3a6a0871b"
+      },
+      {
+        "placeId": "osm:way:223635729",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Canada_Place_Landing.jpg",
+        "artist": "Nicolas Untz",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/52/Canada_Place_Landing.jpg/960px-Canada_Place_Landing.jpg",
+        "imageSha256": "3a8fdbd75f50c4899cc00275dba54d3da2495610aac1978bf828cfff74c93734"
+      },
+      {
+        "placeId": "osm:relation:7440597",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Museum_of_Vancouver.jpg",
+        "artist": "Ɱ",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/98/Museum_of_Vancouver.jpg/960px-Museum_of_Vancouver.jpg",
+        "imageSha256": "be89385f52d0d23eb2ca9183559c978ab9cdd62fe97823a1c401dfde02aed840"
+      },
+      {
+        "placeId": "osm:way:86339711",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Kitsilano_Beach_with_the_West_End,_Stanley_Park_and_the_North_Shore_Mountains_in_the_distance.jpg",
+        "artist": "User:Flying Penguin",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a6/Kitsilano_Beach_with_the_West_End%2C_Stanley_Park_and_the_North_Shore_Mountains_in_the_distance.jpg/960px-Kitsilano_Beach_with_the_West_End%2C_Stanley_Park_and_the_North_Shore_Mountains_in_the_distance.jpg",
+        "imageSha256": "71e972b8b35ed7fd663b26a39bd5d000f06b0f9897abba87d835868c15cc4170"
+      },
+      {
+        "placeId": "osm:relation:17511676",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Vanier-Park-2.jpg",
+        "artist": "Xicotencatl",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/31/Vanier-Park-2.jpg/960px-Vanier-Park-2.jpg",
+        "imageSha256": "ad79e3342bff77296cbedd6fc5e5eda21d430bced4eea7ac9dad3788a8565e99"
+      },
+      {
+        "placeId": "osm:way:288494759",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Bill_Reid_Gallery.jpg",
+        "artist": "Anthonystal",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/72/Bill_Reid_Gallery.jpg/960px-Bill_Reid_Gallery.jpg",
+        "imageSha256": "6408b2dcf6fb633b38c49df2560777ab21c988a280e64ce9e1f43559fbd51cec"
+      },
+      {
+        "placeId": "osm:way:174530913",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Vancouver_Maritime_Museum_2026.JPG",
+        "artist": "Canmenwalker",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7c/Vancouver_Maritime_Museum_2026.JPG/960px-Vancouver_Maritime_Museum_2026.JPG",
+        "imageSha256": "4eb5a471a77fc2a874d135cdd1adf535b3f4e8c91d29f88bd07c7483c6237866"
+      },
+      {
+        "placeId": "osm:way:125579375",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Marine_Building_Vancouver_BC.jpg",
+        "artist": "Darren Kirby",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/95/Marine_Building_Vancouver_BC.jpg/960px-Marine_Building_Vancouver_BC.jpg",
+        "imageSha256": "a9a4fc0a53d9ea305eeb33f2ac35efcac1a170f11e5c7114055a3858f55295e5"
+      },
+      {
+        "placeId": "osm:way:310612768",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Roedde_House_01.jpg",
+        "artist": "Torecles",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9f/Roedde_House_01.jpg/960px-Roedde_House_01.jpg",
+        "imageSha256": "565b035f822322ad95118d2f037689bd5aacce26d7af367dc7eb0acbd806b2eb"
+      },
+      {
+        "placeId": "osm:way:341694642",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Spanish_Banks_Vancouver_BC.jpg",
+        "artist": "Jester7777",
+        "license": "Public domain",
+        "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/30/Spanish_Banks_Vancouver_BC.jpg/500px-Spanish_Banks_Vancouver_BC.jpg",
+        "imageSha256": "319680d90b8a1c53534cfdffeba7cbc9a58132a4b15bec4500f8ce821a58fd34"
+      },
+      {
+        "placeId": "osm:way:4755915",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Lion%27s_Gate_Bridge_and_North_Vancouver.jpg",
+        "artist": "Steve Voght  from Seattle, WA, USA",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/42/Lion%27s_Gate_Bridge_and_North_Vancouver.jpg/500px-Lion%27s_Gate_Bridge_and_North_Vancouver.jpg",
+        "imageSha256": "6ccd593b8e4939de449dae4c0a9b552f8a236dc7923959f523bf54195b980376"
+      },
+      {
+        "placeId": "osm:way:58305151",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Vancouver_Aquarium_entrance_(2026).jpg",
+        "artist": "Iiii I I I",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3e/Vancouver_Aquarium_entrance_%282026%29.jpg/500px-Vancouver_Aquarium_entrance_%282026%29.jpg",
+        "imageSha256": "728ad8cc9433235225262ebe80da3c14029333e8b21f06a4c3d02270137e77fc"
+      },
+      {
+        "placeId": "osm:node:889550078",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Harbour_Centre,_Vancouver,_Canad%C3%A1,_2017-08-14,_DD_30.jpg",
+        "artist": "Diego Delso",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/81/Harbour_Centre%2C_Vancouver%2C_Canad%C3%A1%2C_2017-08-14%2C_DD_30.jpg/500px-Harbour_Centre%2C_Vancouver%2C_Canad%C3%A1%2C_2017-08-14%2C_DD_30.jpg",
+        "imageSha256": "bd4026c2d8f30e2c079396d08d2c952b7ed0a90f26414cf06a3c4385e2de52f0"
+      },
+      {
+        "placeId": "osm:way:24705904",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:BC_Place_-_Canada_vs_Qatar.jpg",
+        "artist": "Aeacad",
+        "license": "CC0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/76/BC_Place_-_Canada_vs_Qatar.jpg/500px-BC_Place_-_Canada_vs_Qatar.jpg",
+        "imageSha256": "96611b267b03907a2ecc5116de20c8b184baca29ee258bee3209e9e22c3bf3e1"
+      },
+      {
+        "placeId": "osm:way:24705911",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Rogers_Arena_(Vancouver).jpg",
+        "artist": "Quintin Soloviev",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/35/Rogers_Arena_%28Vancouver%29.jpg/500px-Rogers_Arena_%28Vancouver%29.jpg",
+        "imageSha256": "7513db1d5fb847b8f72c693df743fda934475df23f64bcdc529cb469c241103f"
+      },
+      {
+        "placeId": "osm:way:143683932",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cath%C3%A9drale_Christ_Church_(1).jpg",
+        "artist": "Guerinf",
+        "license": "CC0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f4/Cath%C3%A9drale_Christ_Church_%281%29.jpg/500px-Cath%C3%A9drale_Christ_Church_%281%29.jpg",
+        "imageSha256": "5fe42b0275870580a8837de2ca8560c21c4b8b82d53a4b6fb07ba065783784ee"
+      },
+      {
+        "placeId": "osm:way:86340255",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Second_Beach,_Stanley_Park_(4855868230).jpg",
+        "artist": "mattmangum",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/47/Second_Beach%2C_Stanley_Park_%284855868230%29.jpg/500px-Second_Beach%2C_Stanley_Park_%284855868230%29.jpg",
+        "imageSha256": "2da62f4c76ff65db1921ae0e663521ee95f09230baaff971a1c982b9d06d85cf"
+      },
+      {
+        "placeId": "osm:way:37063035",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:217.5_Arc_x_13,_Sunset_Beach,_Vancouver_BC.JPG",
+        "artist": "PamMcP",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/217.5_Arc_x_13%2C_Sunset_Beach%2C_Vancouver_BC.JPG/500px-217.5_Arc_x_13%2C_Sunset_Beach%2C_Vancouver_BC.JPG",
+        "imageSha256": "f981eb145a4a0f6b12f4ca2ae88a4fc8080a8e9574d23f8567fdd8bbdea3991d"
+      },
+      {
+        "placeId": "osm:way:361089198",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Hastings_Park_aerial_view_202604.jpg",
+        "artist": "Canmenwalker",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5b/Hastings_Park_aerial_view_202604.jpg/500px-Hastings_Park_aerial_view_202604.jpg",
+        "imageSha256": "717ab4e53f5875868287e2ef03eec457a938177e4f60a22c469e17ae1b6b938e"
+      },
+      {
+        "placeId": "osm:way:301875556",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Orpheum_Theatre_Vancouver_View_Of_Stage.jpg",
+        "artist": "MichaelThoeny",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Orpheum_Theatre_Vancouver_View_Of_Stage.jpg/500px-Orpheum_Theatre_Vancouver_View_Of_Stage.jpg",
+        "imageSha256": "27fbf8be979c055a85e549cd82f9ee146f970cffa2357af3ce3d451a09f407c3"
+      },
+      {
+        "placeId": "osm:way:32603955",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Pacific_Central_02.jpg",
+        "artist": "Ɱ",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/47/Pacific_Central_02.jpg/500px-Pacific_Central_02.jpg",
+        "imageSha256": "9419d6fd0d5592ab9f7bb31230b278cd366877f7afba4ceadb8a27b2eafab028"
+      },
+      {
+        "placeId": "osm:way:37055592",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Charleson_Park_Lagoon_(25170789322).jpg",
+        "artist": "BumFluff2009",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/Charleson_Park_Lagoon_%2825170789322%29.jpg/500px-Charleson_Park_Lagoon_%2825170789322%29.jpg",
+        "imageSha256": "781dddcee946432af7bc41e1e8bb3ca56c43689dcbbb40e2b259f5663d3c5241"
+      },
+      {
+        "placeId": "osm:way:37055593",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:George_Wainborn_Park,_Vancouver_(2012)_-_1.JPG",
+        "artist": "Another Believer",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/George_Wainborn_Park%2C_Vancouver_%282012%29_-_1.JPG/500px-George_Wainborn_Park%2C_Vancouver_%282012%29_-_1.JPG",
+        "imageSha256": "36f719fedda0feb964743d481a4ffe126ca4cced4fb8826fef0a89042754d528"
+      },
+      {
+        "placeId": "osm:node:1309734989",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Brockton_Point_Light_and_Vancouver.jpg",
+        "artist": "Andrea Schaffer",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6b/Brockton_Point_Light_and_Vancouver.jpg/500px-Brockton_Point_Light_and_Vancouver.jpg",
+        "imageSha256": "a85699c51697cc8aeeabf1489f681947a4cc3c703609671d5557cabdaf8cf2cc"
+      },
+      {
+        "placeId": "osm:way:163539443",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Hinge_Park,_Hollow_Tube,_March_2017.jpg",
+        "artist": "M477ch4n",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/Hinge_Park%2C_Hollow_Tube%2C_March_2017.jpg/500px-Hinge_Park%2C_Hollow_Tube%2C_March_2017.jpg",
+        "imageSha256": "4ec1cdf69f186fdfef9b7cb02b082157a8dc97ed979f74d0c628d47c6a34809b"
+      },
+      {
+        "placeId": "osm:way:601851234",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Robson_Square_Plaza.jpg",
+        "artist": "UBCRobs",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f4/Robson_Square_Plaza.jpg/500px-Robson_Square_Plaza.jpg",
+        "imageSha256": "1d00fc22bd4a4bd7ca78855831c95f004025f1be2c78b2dc423081ea05b646bd"
+      },
+      {
+        "placeId": "osm:way:86340299",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Vancouver_(BC,_Canada),_English_Bay_Beach_--_2022_--_1941.jpg",
+        "artist": "Dietmar Rabich",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fb/Vancouver_%28BC%2C_Canada%29%2C_English_Bay_Beach_--_2022_--_1941.jpg/960px-Vancouver_%28BC%2C_Canada%29%2C_English_Bay_Beach_--_2022_--_1941.jpg",
+        "imageSha256": "0ad82cf1de195cd0dbc2ab02d8385bfdf02941ddcbd9109205614dc6eacc3d83"
+      },
+      {
+        "placeId": "osm:way:37054340",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Jericho_Beach(June3_2024).jpg",
+        "artist": "BeeboMan",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6e/Jericho_Beach%28June3_2024%29.jpg/960px-Jericho_Beach%28June3_2024%29.jpg",
+        "imageSha256": "089ef81d83dc4b7b34adbd1a5f84b9d80181970458e4e06520cbbe262380e336"
+      },
+      {
+        "placeId": "osm:way:37056025",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Last_Holdouts_(29868955683).jpg",
+        "artist": "Edna Winti",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/76/Last_Holdouts_%2829868955683%29.jpg/960px-Last_Holdouts_%2829868955683%29.jpg",
+        "imageSha256": "eb4660d9007c103e8271428b188ebdd6db7580bf809b8ba337773bfbad00ac01"
+      },
+      {
+        "placeId": "osm:relation:2330465",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Hadden_Park_(7058836471).jpg",
+        "artist": "Francisco Anzola",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Hadden_Park_%287058836471%29.jpg/960px-Hadden_Park_%287058836471%29.jpg",
+        "imageSha256": "395c51b29ffa9738a3f118c429151a2350e1ad94f86a6bfd93e0ef42287281fe"
+      },
+      {
+        "placeId": "osm:way:37058200",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Coopers%27_Park_Playground,_Vancouver_during_coronavirus_pandemic_(49767330666).jpg",
+        "artist": "GoToVan from Vancouver, Canada",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Coopers%27_Park_Playground%2C_Vancouver_during_coronavirus_pandemic_%2849767330666%29.jpg/960px-Coopers%27_Park_Playground%2C_Vancouver_during_coronavirus_pandemic_%2849767330666%29.jpg",
+        "imageSha256": "9729d8c1775e4fdbe97cba283d673912c098e530f42810e07c09f14d1a735e71"
+      },
+      {
+        "placeId": "osm:node:889757499",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Lions_Gate_Bridge_from_Prospect_Point,_Stanley_Park_(2012)_-_1.JPG",
+        "artist": "Another Believer",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/28/Lions_Gate_Bridge_from_Prospect_Point%2C_Stanley_Park_%282012%29_-_1.JPG/960px-Lions_Gate_Bridge_from_Prospect_Point%2C_Stanley_Park_%282012%29_-_1.JPG",
+        "imageSha256": "b8a96d8808e6e2a5245452dff1b2cacb2425016b7e71b341d2dc13a7b08a60aa"
+      },
+      {
+        "placeId": "osm:way:128059875",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sinclair_Centre_(48868006328).jpg",
+        "artist": "GoToVan from Vancouver, Canada",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5d/Sinclair_Centre_%2848868006328%29.jpg/960px-Sinclair_Centre_%2848868006328%29.jpg",
+        "imageSha256": "afadc41712dc51784291fd4172311a09bcbd69101451f9f0e34b8948c063e07a"
+      },
+      {
+        "placeId": "osm:way:71699194",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Granville_Island_water_park_(6093774760).jpg",
+        "artist": "Ruth Hartnup from Vancouver, Canada",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bf/Granville_Island_water_park_%286093774760%29.jpg/960px-Granville_Island_water_park_%286093774760%29.jpg",
+        "imageSha256": "0a2ed109b8b9b8883a5a066137beca299095e1b17ac3f341727c9c84ba23016c"
+      },
+      {
+        "placeId": "osm:relation:7071553",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Granville_Island_Public_Market_2.jpg",
+        "artist": "Ymblanter",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/79/Granville_Island_Public_Market_2.jpg/960px-Granville_Island_Public_Market_2.jpg",
+        "imageSha256": "39889fdbbd3b5778db3cc50f2df9eaa8fa562a5cd32194991c3c4b6308efc83d"
+      },
+      {
+        "placeId": "osm:way:37055742",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:David_Lam_Park_(4287065997).jpg",
+        "artist": "Reg Natarajan from Vancouver, Bogotá",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bf/David_Lam_Park_%284287065997%29.jpg/960px-David_Lam_Park_%284287065997%29.jpg",
+        "imageSha256": "de2255b2a67afdba89fa18799051c24d38eb531d8e3984877b0a89280c0cfeaa"
+      },
+      {
+        "placeId": "osm:way:37057434",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Harbour_Green_Park,_Vancouver,_Canada_(Unsplash).jpg",
+        "artist": "Jay Toor jay_toor",
+        "license": "CC0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/76/Harbour_Green_Park%2C_Vancouver%2C_Canada_%28Unsplash%29.jpg/960px-Harbour_Green_Park%2C_Vancouver%2C_Canada_%28Unsplash%29.jpg",
+        "imageSha256": "0ec3ba2396c38cb6bcd1c813fae02e488903c1daa2b24a3ca87b0bd0c2837082"
+      },
+      {
+        "placeId": "osm:way:37055818",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Emery_Barnes_Park_(33740854002).jpg",
+        "artist": "Jeff Hitchcock from Seattle, WA, USA",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/17/Emery_Barnes_Park_%2833740854002%29.jpg/960px-Emery_Barnes_Park_%2833740854002%29.jpg",
+        "imageSha256": "84c9891f3721c2ad709b9d2c97c11ff3979d9e3db770296978d60d80665cde64"
+      },
+      {
+        "placeId": "osm:way:30637354",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Victory_Square_Park_WLM2012.JPG",
+        "artist": "MRDXII",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3c/Victory_Square_Park_WLM2012.JPG/960px-Victory_Square_Park_WLM2012.JPG",
+        "imageSha256": "f0f0d2f977713d960f275f1ba68d9d7da12de742f72f770f756fc3e77254aa35"
+      },
+      {
+        "placeId": "osm:way:37058199",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:COVID-19_pandemic_in_Vancouver_(49902198811).jpg",
+        "artist": "Paul Krueger from Vancouver, Canada",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/COVID-19_pandemic_in_Vancouver_%2849902198811%29.jpg/960px-COVID-19_pandemic_in_Vancouver_%2849902198811%29.jpg",
+        "imageSha256": "70bfbaada841bf433b1e8b13a5f352d90e5ec4252d16a856145f2b53c4a2b746"
+      },
+      {
+        "placeId": "osm:node:2147184803",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Coroner%27s_Court.jpg",
+        "artist": "Bobanny (attributed by Wikimedia Commons)",
+        "license": "Public domain",
+        "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ea/Coroner%27s_Court.jpg/960px-Coroner%27s_Court.jpg",
+        "imageSha256": "fff46f7177de3656fa0c739a556256404b7634592b9d2d05e851406913c8cb32"
       }
     ],
     "montreal": [
