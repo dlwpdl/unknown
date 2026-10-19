@@ -73,7 +73,7 @@ test('real map chips select one category and All clears category and date state'
   const context = {
     exports, TOP25_GOLD: '#F4CA78', top25Ink: '#68543A',
     styles: {}, theme: { accent: '#CBB9FF', line: '#ccc', backgroundSelected: '#ddd', backgroundElement: '#eee', text: '#222' },
-    ScrollView: 'scroll', Pressable: 'button', View: 'view', ThemedText: 'text', tr: value => value,
+    ScrollView: 'scroll', Pressable: 'button', View: 'view', ThemedText: 'text', GlingVisitedBadge: 'visited-badge', tr: value => value,
     play: value => feedback.push(value), setSelectedFilters: update => { selected = Array.from(typeof update === 'function' ? update(selected) : update); },
     setDateFilter() {}, setDate() {}, setDateOpen() {}, setDateError() {},
     get selectedFilters() { return selected; },
