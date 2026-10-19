@@ -69,7 +69,7 @@ test('the map keeps one category row and opens dates and all categories in its f
 test('the quick category row preserves the owner-selected restaurant, cafe, festival and nightlife order', () => {
   const tree = mount().render();
   const row = nodes(tree).find(node => node.type === 'ScrollView' && node.props.horizontal);
-  assert.deepEqual(children(row).map(node => node.props.accessibilityLabel), ['전체', 'TOP 25', '레스토랑', '카페', '페스티벌', '나이트라이프', '가볼 만한 곳', '부동산', '중고거래']);
+  assert.deepEqual(children(row).map(node => node.props.accessibilityLabel), ['전체', 'TOP 50', '레스토랑', '카페', '페스티벌', '나이트라이프', '가볼 만한 곳', '부동산', '중고거래']);
 });
 test('visible event dates follow the initial festival choice and preserve a user-selected day across categories', () => {
   const view = mount(); let tree = view.render();
