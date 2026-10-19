@@ -3,13 +3,27 @@ import { useEffect, useState } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useTheme } from '@/hooks/use-theme';
+import { Colors } from '@/constants/theme';
 import type { MerchantReviewKind } from '@/lib/merchant-reviews';
 
-const IRIS = ['#EEE7FF', '#E3D6FF', '#D8C4FF', '#CDB0FF', '#BD97FF', '#AD7BFF', '#9F61FF', '#9148FF', '#8538FF', '#7B2CFF'];
+const IRIS = {
+  dark: ['#716180', '#79628F', '#82639F', '#8B64B0', '#9465C1', '#9D66D3', '#A86AE4', '#B470F3', '#BF7BFC', '#CA8CFF'],
+  light: ['#665272', '#6D5182', '#745192', '#7A50A1', '#814FB1', '#884FC0', '#8F4ED0', '#954DE0', '#9C4DEF', '#A34DFF'],
+};
+
+export function GlingRatingIcon({ score }: { score: number | null }) {
+  const theme = useTheme();
+  const iris = theme.background === Colors.dark.background ? IRIS.dark : IRIS.light;
+  const band = score != null && Number.isFinite(score) && score > 0 && score <= 10 ? Math.ceil(score) - 1 : null;
+  const color = band == null ? theme.line : iris[band];
+  return <Text style={[styles.sparkle, { color, textShadowColor: color, textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: band == null ? 0 : Math.max(0, band - 6) * 0.7 }]} accessible={false}>✦</Text>;
+}
 
 export function MerchantRatingBar({ score, reviewKind = 'usage', label }: { score: number | null; reviewKind?: MerchantReviewKind; label?: string }) {
   const { tr } = useLanguage();
   const theme = useTheme(), reducedMotion = useReducedMotion();
+  const iris = theme.background === Colors.dark.background ? IRIS.dark : IRIS.light;
   const [progress] = useState(() => Array.from({ length: 10 }, () => new Animated.Value(1)));
   const rounded = score != null && Number.isFinite(score) && score >= 1 && score <= 10 ? Math.round(score * 10) / 10 : null;
   useEffect(() => {
@@ -31,7 +45,7 @@ export function MerchantRatingBar({ score, reviewKind = 'usage', label }: { scor
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: value.interpolate({ inputRange: [0, 1], outputRange: [0.25, 1] }),
         transform: [{ translateY: value.interpolate({ inputRange: [0, 1], outputRange: [2, 0] }) }] }]}>
         <View testID={`merchant-rating-fill-${index}`} style={{ width: `${rounded == null ? 0 : Math.max(0, Math.min(10, Math.round(rounded * 10) - index * 10)) * 10}%`, overflow: 'hidden', height: employment ? 4 : 14 }}>
-          {shape(IRIS[index])}
+          {shape(iris[index])}
         </View>
       </Animated.View>
     </View>)}

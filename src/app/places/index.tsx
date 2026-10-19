@@ -54,8 +54,8 @@ function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
       {!city ? <StateCard kind="error" title={tr("도시를 확인해 주세요")} body={tr("홈에서 도시를 선택한 뒤 다시 열어 주세요.")} />
         : error ? <StateCard kind="error" title={tr("장소를 불러오지 못했어요")} body={error} /> : <>
           <ThemedText type="small" themeColor="textSecondary">{tr(city.name)} · {tr(getCityPlacesCoverage(city.id))}</ThemedText>
-          <ThemedText accessibilityRole="header" style={styles.title}>{tr("이 도시에서 사진 남기기 좋은 곳")}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">{tr("풍경과 건축, 공간의 매력으로 골랐어요. 인기 순위가 아니에요.")}</ThemedText>
+          <ThemedText accessibilityRole="header" style={styles.title}>{tr("이 도시에서 가볼 만한 곳")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("사진 명소와 들러 볼 만한 식당을 골랐어요. 인기 순위가 아니에요.")}</ThemedText>
           <TextInput accessibilityLabel={tr("장소 검색")} value={query} onChangeText={setQuery} onFocus={() => play('selection')}
             placeholder={tr("목록에서 이름·주소 검색")} placeholderTextColor={theme.textSecondary} returnKeyType="search" autoCorrect={false}
             onSubmitEditing={() => play('selection')} style={[styles.search, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]} />

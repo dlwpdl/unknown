@@ -140,6 +140,19 @@ function screen(file, params = { cityId: 'toronto' }, dev = true) {
   }
   return { routes, feedback, opened, render(props) { cursor = 0; return expand(exports.default ? exports.default() : exports.CityPopularPlaces?.(props)); } };
 }
+test('the city places entry gives each preview card its own compact rating scope', () => {
+  const tree = screen('src/components/city-popular-places.tsx').render({ cityId: 'vancouver' });
+  const cards = nodes(tree).filter(node => node.props?.analyticsId === 'today.places.place-open');
+  const expected = data().getCityRecommendations('vancouver').slice(0, 3);
+  assert.equal(cards.length, expected.length);
+  cards.forEach((card, index) => {
+    const summary = nodes(card).find(node => node.type === 'PlaceRatingSummary');
+    assert.ok(summary, 'entry card rating is missing');
+    assert.equal(summary.props.cityId, 'vancouver');
+    assert.equal(summary.props.placeId, expected[index].id);
+    assert.equal(summary.props.compact, true);
+  });
+});
 test('real OSM data covers every city with canonical IDs, coordinates and extraction provenance', () => {
   assert.equal(typeof data().getCityPlaces, 'function', 'actual data loader is missing');
   const source = catalog();
