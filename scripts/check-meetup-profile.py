@@ -165,10 +165,19 @@ def main():
             if not sql(database, f"select to_regclass('private.{table}');").stdout.strip():
                 sql(database, (ROOT / 'supabase/migrations' / name).read_text())
         business_baseline(database)
+        # Current production already includes 20261012133000's conversational copy.
+        sql(database, (ROOT / 'supabase/tests/fixtures/request_meetup_join_patina.sql').read_text())
         sql(database, "insert into public.cities(id,name,province,timezone,is_open) values('vancouver','Synthetic Vancouver','BC','America/Vancouver',true); insert into public.tags(id,kind,slug,label) values(1,'post','life','일상'),(2,'meetup','meetup','모임'); insert into storage.buckets(id,name,public) values('post-images','post-images',false),('merchant-profile-images','merchant-profile-images',false),('avatars','avatars',false);")
         policies = sql(database, POLICY_STATE).stdout
+        request_before = sql(database, "select pg_get_functiondef('private.request_meetup_join(uuid,text)'::regprocedure);").stdout
+        suffix = '님이 모임 참여를 신청했어요. 한번 확인해 주세요.'
+        notice = '모임 참여 요청이 도착했어요. 한번 확인해 주세요.'
+        identity = "(select nickname::text from public.profiles where id = current_user_id) || '" + suffix + "'"
+        assert request_before.count(identity) == 1, 'notification baseline differs from the reviewed identity contract'
         if '--red' not in sys.argv:
             sql(database, 'begin;\n' + MIGRATION.read_text() + '\ncommit;')
+            request_after = sql(database, "select pg_get_functiondef('private.request_meetup_join(uuid,text)'::regprocedure);").stdout
+            assert request_after == request_before.replace(identity, "'" + notice + "'"), 'request checks, routing or Patina copy changed beyond identity removal'
         if '--host-tools' in sys.argv:
             sql(database, (ROOT / 'supabase/migrations/20261019050100_meetup_host_tools.sql').read_text())
         assert policies == sql(database, POLICY_STATE).stdout, 'membership, approval or relationship lock policy changed'
