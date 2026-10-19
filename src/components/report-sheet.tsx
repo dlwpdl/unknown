@@ -1,7 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
 import { useLayoutEffect, useRef, useState } from 'react';
-import { Alert, Animated, Easing, Modal, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, Animated, Easing, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReducedMotion } from 'react-native-reanimated';
 
@@ -119,7 +119,7 @@ export function ReportSheet({
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={close}
       onShow={() => { sheetOffset.setValue(screenHeight); if (reducedMotion) sheetOffset.setValue(0); else Animated.timing(sheetOffset, { toValue: 0, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); }}>
-      <View style={styles.backdrop}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[styles.backdrop, { paddingTop: insets.top }]}>
         <View style={styles.scrim} />
         <Pressable analyticsId="components_report-sheet.pressable.1"
           style={styles.backdropDismiss}
@@ -141,6 +141,8 @@ export function ReportSheet({
             </Pressable>
           </View>
 
+          <ScrollView style={styles.formScroll} contentContainerStyle={styles.formContent}
+            keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
           <View style={styles.reasons} accessibilityRole="radiogroup">
             {REASONS.map((item) => {
               const selected = reason === item;
@@ -164,6 +166,7 @@ export function ReportSheet({
           <TextInput
             value={details}
             onChangeText={setDetails}
+            onFocus={() => play('selection')}
             maxLength={1000}
             multiline
             placeholder={t.report.details}
@@ -187,6 +190,7 @@ export function ReportSheet({
               </View>
             </Pressable>
           )}
+          </ScrollView>
 
           <Pressable analyticsId="components_report-sheet.pressable.5"
             onPress={() => { play('selection'); void submit(); }}
@@ -199,7 +203,7 @@ export function ReportSheet({
             </ThemedText>
           </Pressable>
         </Animated.View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -208,12 +212,14 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, justifyContent: 'flex-end' },
   scrim: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
   backdropDismiss: { position: 'absolute', inset: 0 },
-  sheet: { paddingHorizontal: Spacing.four, paddingTop: Spacing.four, gap: Spacing.three, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+  sheet: { maxHeight: '100%', paddingHorizontal: Spacing.four, paddingTop: Spacing.four, gap: Spacing.three, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+  formScroll: { flexGrow: 0, flexShrink: 1 },
+  formContent: { gap: Spacing.three },
   header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.three },
   copy: { flex: 1, gap: Spacing.one },
   reasons: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   reason: { minHeight: 42, justifyContent: 'center', paddingHorizontal: Spacing.three, borderWidth: 1, borderRadius: 8 },
-  details: { minHeight: 88, padding: Spacing.three, textAlignVertical: 'top', borderWidth: 1, borderRadius: 8 },
+  details: { minHeight: 88, maxHeight: 160, padding: Spacing.three, textAlignVertical: 'top', borderWidth: 1, borderRadius: 8 },
   blockRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   checkbox: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 6 },
   submit: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },

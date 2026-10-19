@@ -47,7 +47,9 @@ export function googleMapsPin(input: string): PostPin | null {
 }
 
 // shortcut: 한 글에 지도 하나를 본문에 보관, 여러 장소를 검색·관리하게 되면 별도 필드로 확장.
-export function postMapBody(body: string): { body: string; url: string | null; label?: string } {
+type PostMapOptions = { preserveWhitespace?: boolean };
+
+export function postMapBody(body: string, { preserveWhitespace = false }: PostMapOptions = {}): { body: string; url: string | null; label?: string } {
   const attached = splitPostAttachments(body);
   let url: string | null = null;
   let label = '', previousMap = false;
@@ -62,7 +64,8 @@ export function postMapBody(body: string): { body: string; url: string | null; l
     previousMap = true;
     if (lines.at(-1) === '') lines.pop();
   }
-  return { body: url ? withPostAttachments(lines.join('\n').trim(), attached.urls) : body, url, ...(label ? { label } : {}) };
+  const text = lines.join('\n');
+  return { body: url ? withPostAttachments(preserveWhitespace ? text : text.trim(), attached.urls) : body, url, ...(label ? { label } : {}) };
 }
 
 export function postPublicAddress(body: string): string | null {
@@ -79,16 +82,16 @@ export function postPublicAddress(body: string): string | null {
   return null;
 }
 
-export function withPostMap(body: string, input: string, label?: string): string {
+export function withPostMap(body: string, input: string, label?: string, { preserveWhitespace = false }: PostMapOptions = {}): string {
   const url = input.trim() ? googleMapsUrl(input) : null;
   if (input.trim() && !url) throw new Error('INVALID_MAP_LINK');
-  const mapped = postMapBody(body);
+  const mapped = postMapBody(body, { preserveWhitespace });
   const name = label ?? (url === mapped.url ? mapped.label : '') ?? '';
   if (name.length > 100 || /[\u0000-\u001f\u007f]/.test(name)) throw new Error('INVALID_MAP_LABEL');
-  const clean = mapped.body.trim();
+  const clean = preserveWhitespace ? mapped.body : mapped.body.trim();
   const footer = clean.lastIndexOf('\n\n사진 출처·이용 조건\n');
   const position = footer < 0 ? clean.length : footer;
-  const text = url ? `${clean.slice(0, position)}\n\nGoogle 지도: ${url}${name ? `\n위치: ${name}` : ''}${clean.slice(position)}` : body.trim();
+  const text = url ? `${clean.slice(0, position)}\n\nGoogle 지도: ${url}${name ? `\n위치: ${name}` : ''}${clean.slice(position)}` : preserveWhitespace ? body : body.trim();
   if ([...text].length > 4000) throw new Error('POST_BODY_TOO_LONG');
   return text;
 }
