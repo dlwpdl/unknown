@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T20:09:49.766567+00:00",
+  "collectedAt": "2026-10-19T20:36:28.641419+00:00",
   "source": "Verified same-place Wikimedia Commons photographs; dated captures, not popularity ranking",
   "cities": {
     "toronto": [
@@ -332,6 +332,16 @@
         "license": "CC BY-SA 2.5",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
         "imageSha256": "6c3d5e8c98dd5985e52004f327c75dd81b22ed5df10652141cd6a1888a484221"
+      },
+      {
+        "placeId": "osm:way:32742038",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2d/Toronto_-_ON_-_CN_Tower_bei_Nacht2.jpg/960px-Toronto_-_ON_-_CN_Tower_bei_Nacht2.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Toronto_-_ON_-_CN_Tower_bei_Nacht2.jpg",
+        "artist": "Wladyslaw, Correction of perspective distortion: Niabot",
+        "license": "CC BY 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+        "imageSha256": "aa96d44e5fda034ab67a4e0b027840293c07098d9a07fbe09bb5f84de5fd4a16"
       }
     ],
     "vancouver": [
@@ -1148,6 +1158,56 @@
         "licenseUrl": "https://creativecommons.org/licenses/by/2.5",
         "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bf/Bow_with_Zoo.JPG/960px-Bow_with_Zoo.JPG",
         "imageSha256": "c621f0f85571339a7bf55b2248d199a03aad9d9addb8c56393c6157576a6b8ab"
+      },
+      {
+        "placeId": "osm:way:127289241",
+        "cityId": "calgary",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3d/Prince%27sIsland.jpg/960px-Prince%27sIsland.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Prince%27sIsland.jpg",
+        "artist": "No machine-readable author provided. Scott5114 assumed (based on copyright claims).",
+        "license": "Public domain",
+        "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "imageSha256": "745311b63e921f6e807c3988f0ed42ae8cc29f7c422c6179ee48a4c7700f5703"
+      },
+      {
+        "placeId": "osm:way:10584788",
+        "cityId": "calgary",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/37/Bowness_Park_lagoon.jpg/960px-Bowness_Park_lagoon.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Bowness_Park_lagoon.jpg",
+        "artist": "Qyd",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "af45a217ce21785274cb532621b392df0c7cc59e1051b99b208ed70d91bfa044"
+      },
+      {
+        "placeId": "osm:way:171779909",
+        "cityId": "calgary",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3d/TELUS_Spark_%286804355616%29.jpg/960px-TELUS_Spark_%286804355616%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:TELUS_Spark_(6804355616).jpg",
+        "artist": "Mack Male from Edmonton, AB, Canada",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "imageSha256": "78c428d2aa69517624fa41e3ee705c27f5e948c810e634351312414f75fb777a"
+      },
+      {
+        "placeId": "osm:way:4397328",
+        "cityId": "calgary",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0b/2020_Calgary_Saddledome.jpg/960px-2020_Calgary_Saddledome.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:2020_Calgary_Saddledome.jpg",
+        "artist": "AceYYC",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "fe23fbb7db192ed25795c9202e1ff4431b1b72f06c69389b0c6874ddc4b9ac03"
+      },
+      {
+        "placeId": "osm:node:11476843476",
+        "cityId": "calgary",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a2/Contemporary_Calgary_September_2020.png/960px-Contemporary_Calgary_September_2020.png",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Contemporary_Calgary_September_2020.png",
+        "artist": "MapleSoy",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "04b2c38c982fcd12144ef7e28ab92bac760404b6a95bbffdb68b983d5fd42290"
       }
     ],
     "edmonton": [
@@ -1240,6 +1300,86 @@
         "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
         "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6d/Hawrelak-Park-Lake-Edmonton-Alberta-Canada-01.jpg/960px-Hawrelak-Park-Lake-Edmonton-Alberta-Canada-01.jpg",
         "imageSha256": "c66c3bdec910fb2910c031a4d55b3d4af7fc57a9c2d85ca3ad21fb596ffc8134"
+      },
+      {
+        "placeId": "osm:way:23472715",
+        "cityId": "edmonton",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/77/West_Edmonton_Mall%2C_Edmonton%2C_Alberta_%2822094236672%29.jpg/960px-West_Edmonton_Mall%2C_Edmonton%2C_Alberta_%2822094236672%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:West_Edmonton_Mall,_Edmonton,_Alberta_(22094236672).jpg",
+        "artist": "GoToVan from Vancouver, Canada",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "a4cfcfef36a40de181554303e9a3b0f24ab3e8d71be6f4b1473aec1b3d94b58a"
+      },
+      {
+        "placeId": "osm:way:448626254",
+        "cityId": "edmonton",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f8/Rogers_Place%2C_Edmonton%2C_Alberta%2C_2026-09-27_01.jpg/960px-Rogers_Place%2C_Edmonton%2C_Alberta%2C_2026-09-27_01.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Rogers_Place,_Edmonton,_Alberta,_2026-09-27_01.jpg",
+        "artist": "Chris Woodrich",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "6059e9e17cc1abd7047be61a766e4dab592c30aba7d93b063f92ea09c86607c3"
+      },
+      {
+        "placeId": "osm:way:50621140",
+        "cityId": "edmonton",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d4/Valley_Zoo_Entrance.jpg/960px-Valley_Zoo_Entrance.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Valley_Zoo_Entrance.jpg",
+        "artist": "Urban Versis 32",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "a0d3b971f4909fdb4cfe71af9e6f04768681f9531e29159783b235aad2e7a956"
+      },
+      {
+        "placeId": "osm:way:487541454",
+        "cityId": "edmonton",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ce/World_Waterpark_2015.jpg/960px-World_Waterpark_2015.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:World_Waterpark_2015.jpg",
+        "artist": "Rowanswiki",
+        "license": "CC0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+        "imageSha256": "1a306e3e11a0de7ffe4eb02db6cab609171b696571cb139037d9508ea163a436"
+      },
+      {
+        "placeId": "osm:way:1351822252",
+        "cityId": "edmonton",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a2/Commonwealth_Stadium%2C_Edmonton%2C_AB.jpg/960px-Commonwealth_Stadium%2C_Edmonton%2C_AB.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commonwealth_Stadium,_Edmonton,_AB.jpg",
+        "artist": "Quintin Soloviev",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "imageSha256": "13aab5841b512fb6e978e1e2dd240ee69f8ae8ee22f6c184ac84fab0d11800b5"
+      },
+      {
+        "placeId": "osm:way:226322818",
+        "cityId": "edmonton",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4b/Outdoor_office.jpg/960px-Outdoor_office.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Outdoor_office.jpg",
+        "artist": "Brian Dell",
+        "license": "Public domain",
+        "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "imageSha256": "e3af6e765e385e80ffa9b150f0da677e8306a50fcd6254fa4e6973f157693b26"
+      },
+      {
+        "placeId": "osm:way:1373511013",
+        "cityId": "edmonton",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/17/Riverboat_Edmonton_Queen.jpg/960px-Riverboat_Edmonton_Queen.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Riverboat_Edmonton_Queen.jpg",
+        "artist": "Simon Law from Montréal, QC, Canada",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "imageSha256": "13b19811e0963e189893f82a219f17438dd4183d9d971fbbd2659ebf3e02a482"
+      },
+      {
+        "placeId": "osm:way:1018647813",
+        "cityId": "edmonton",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/dd/Canadian_National_Railway_%28CN%29_locomotive_9000_EMD_F3A_at_Alberta_Railway_Museum_02-Aug-2004.jpg/960px-Canadian_National_Railway_%28CN%29_locomotive_9000_EMD_F3A_at_Alberta_Railway_Museum_02-Aug-2004.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Canadian_National_Railway_(CN)_locomotive_9000_EMD_F3A_at_Alberta_Railway_Museum_02-Aug-2004.jpg",
+        "artist": "SoftwareSimian",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "75648af54a957bca176a7526089894c13bc7a270f3cf18022ba35bbf9a9001e8"
       }
     ],
     "winnipeg": [
@@ -1322,6 +1462,96 @@
         "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
         "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/eb/Assiniboine_Park_Winnipeg_Manitoba_%284%29.JPG/960px-Assiniboine_Park_Winnipeg_Manitoba_%284%29.JPG",
         "imageSha256": "27332220c9acfd9ceaa4d2dca5667e0a77abd27d555897efad1ea9a2d2a10684"
+      },
+      {
+        "placeId": "osm:way:97144932",
+        "cityId": "winnipeg",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/20/Assiniboine_Park_Zoo_Entrance.png/960px-Assiniboine_Park_Zoo_Entrance.png",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Assiniboine_Park_Zoo_Entrance.png",
+        "artist": "Jimj wpg",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "c039ddcd5947654f75ebbde9f000a981d89412df63fe36ab38834e26beef6298"
+      },
+      {
+        "placeId": "osm:way:14869890",
+        "cityId": "winnipeg",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0a/MTS_CENTRE_b.jpg/960px-MTS_CENTRE_b.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:MTS_CENTRE_b.jpg",
+        "artist": "Wpg guy",
+        "license": "CC0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+        "imageSha256": "4b0790b9dc412896fdec85cc77b51d0d937911e77f829a51b551e3ccea782095"
+      },
+      {
+        "placeId": "osm:relation:19755567",
+        "cityId": "winnipeg",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/78/Manitoba_Museum_exterior.jpg/960px-Manitoba_Museum_exterior.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Manitoba_Museum_exterior.jpg",
+        "artist": "TMMCommunications",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "8adccbbcd252b45e94ae420767b13ef0801bc54a4e747454aa04e0e8566e0d83"
+      },
+      {
+        "placeId": "osm:way:30876368",
+        "cityId": "winnipeg",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/82/Kildonan_Park_Entrance.jpg/960px-Kildonan_Park_Entrance.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Kildonan_Park_Entrance.jpg",
+        "artist": "Jimj wpg",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "f6689fc7bcb91592c4dfdefc338e011ea3f105eda1513b04c386a67b3a6b2315"
+      },
+      {
+        "placeId": "osm:node:1373420051",
+        "cityId": "winnipeg",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/da/Assiniboia_Downs_mural_%2825239033942%29.jpg/960px-Assiniboia_Downs_mural_%2825239033942%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Assiniboia_Downs_mural_(25239033942).jpg",
+        "artist": "Joanna Poe from Munith, MI, USA",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "imageSha256": "c04b4d551ae2b42029422e870df4b9dbdea6f26175793ae6992f8a8735307e38"
+      },
+      {
+        "placeId": "osm:way:25169742",
+        "cityId": "winnipeg",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1d/Sunset_at_FortWhyte.JPG/960px-Sunset_at_FortWhyte.JPG",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sunset_at_FortWhyte.JPG",
+        "artist": "Teles",
+        "license": "Public domain",
+        "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "imageSha256": "542acd273fd39d68956e21862a70477cac78eb59064754678f3a993cf3257eb2"
+      },
+      {
+        "placeId": "osm:way:14870831",
+        "cityId": "winnipeg",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/13/The_Forks_at_dusk%2C_Winnipeg%2C_Manitoba%2C_Canada.jpg/960px-The_Forks_at_dusk%2C_Winnipeg%2C_Manitoba%2C_Canada.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:The_Forks_at_dusk,_Winnipeg,_Manitoba,_Canada.jpg",
+        "artist": "Ethan Sahagun",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "imageSha256": "a70fb65a24b6e70264b037ba1e04acec1e15a9b6d488c81b28c21abbe4226e21"
+      },
+      {
+        "placeId": "osm:way:26378283",
+        "cityId": "winnipeg",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e0/Manitoba_Legislative_building_exterior_%28J%29_%28cropped%29.jpg/960px-Manitoba_Legislative_building_exterior_%28J%29_%28cropped%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Manitoba_Legislative_building_exterior_(J)_(cropped).jpg",
+        "artist": "ParsonsPhotographyNL",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "ea01d3c035ce55aae71d279446589e30dca90f4de4ea027a28e0c4a17783dbed"
+      },
+      {
+        "placeId": "osm:way:103536967",
+        "cityId": "winnipeg",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/61/Living_Prairie_Museum.png/960px-Living_Prairie_Museum.png",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Living_Prairie_Museum.png",
+        "artist": "Jimj wpg",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "d469366ed0f7d46e5a9cbf2ec3199029b06dd6eeb545eb2f67313677338df4e2"
       }
     ],
     "saskatoon": [
@@ -1655,5 +1885,5 @@
       }
     ]
   },
-  "photoSelectionsReviewedAt": "2026-10-19T20:09:49.766567+00:00"
+  "photoSelectionsReviewedAt": "2026-10-19T20:36:28.641419+00:00"
 }
