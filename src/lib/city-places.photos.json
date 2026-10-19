@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T06:44:38.627421+00:00",
+  "collectedAt": "2026-10-19T06:54:14.751405+00:00",
   "source": "Verified same-place Wikimedia Commons photographs; dated captures, not popularity ranking",
   "cities": {
     "toronto": [
@@ -452,6 +452,16 @@
         "cityId": "winnipeg",
         "uri": "https://upload.wikimedia.org/wikipedia/commons/d/d4/Canadian_Museum_for_Human_Rights_%28Winnipeg%2C_MB%29.jpg",
         "imageSha256": "e35c8294dd1b95e7d713c658e1d1651a8d680d11ba63040b3daf3551922a8570"
+      },
+      {
+        "cityId": "winnipeg",
+        "placeId": "osm:way:1055784750",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:The_Leaf_Assiniboine_Park_interior_support_structure_with_plants.jpg",
+        "artist": "Rock Candy Mtn",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/63/The_Leaf_Assiniboine_Park_interior_support_structure_with_plants.jpg/960px-The_Leaf_Assiniboine_Park_interior_support_structure_with_plants.jpg",
+        "imageSha256": "ba99ed62513c41ae631272e7f640c9595033f3f8aef44048bb33fb2f93bf9064"
       }
     ],
     "saskatoon": [
@@ -710,6 +720,16 @@
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
         "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b1/BANDSTAND.JPG/960px-BANDSTAND.JPG",
         "imageSha256": "74cad06fd74c0d009b25be9295613ff46510a51265bef2e694be556171edcde0"
+      },
+      {
+        "cityId": "saint-john",
+        "placeId": "osm:way:827160392",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Saint_John,_New_Brunswick_street_scape,_Prince_William_St._and_City_Hall.jpg",
+        "artist": "DDD DDD",
+        "license": "Public domain",
+        "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7e/Saint_John%2C_New_Brunswick_street_scape%2C_Prince_William_St._and_City_Hall.jpg/960px-Saint_John%2C_New_Brunswick_street_scape%2C_Prince_William_St._and_City_Hall.jpg",
+        "imageSha256": "81f4f45a8ab6a918af113c85a7cfa5312fcbc62ada0a4776b8a94fe551fbe20e"
       }
     ],
     "halifax": [
