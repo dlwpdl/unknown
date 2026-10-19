@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-14T03:11:22.904790+00:00",
+  "collectedAt": "2026-10-19T07:40:16.972294+00:00",
   "source": "OpenStreetMap; source-reviewed Gling photo-spot selections",
   "license": "ODbL-1.0",
   "attribution": "© OpenStreetMap contributors",
@@ -1974,29 +1974,197 @@
           "sourceUrl": "https://www.openstreetmap.org/node/6339016833",
           "website": "https://www.annalena.ca/",
           "openingHours": "Tu-Su 17:00-21:00"
+        },
+        {
+          "id": "osm:way:316008597",
+          "cityId": "vancouver",
+          "name": "VanDusen Botanical Garden",
+          "category": "places",
+          "latitude": 49.2394983,
+          "longitude": -123.1329018,
+          "address": "5251 Oak Street",
+          "sourceUrl": "https://www.openstreetmap.org/way/316008597",
+          "website": "https://vandusengarden.org/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:37084312",
+          "cityId": "vancouver",
+          "name": "Science World",
+          "category": "places",
+          "latitude": 49.2734536,
+          "longitude": -123.1036623,
+          "address": "1455 Quebec Street",
+          "sourceUrl": "https://www.openstreetmap.org/way/37084312",
+          "website": "https://scienceworld.ca/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:node:12620960872",
+          "cityId": "vancouver",
+          "name": "Vancouver Art Gallery",
+          "category": "places",
+          "latitude": 49.2828495,
+          "longitude": -123.1206248,
+          "address": "750 Hornby Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/12620960872",
+          "website": "https://www.vanartgallery.bc.ca/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:223635729",
+          "cityId": "vancouver",
+          "name": "Canada Place",
+          "category": "places",
+          "latitude": 49.2885373,
+          "longitude": -123.1111425,
+          "address": "999 Canada Place",
+          "sourceUrl": "https://www.openstreetmap.org/way/223635729",
+          "website": "https://www.canadaplace.ca/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:86339711",
+          "cityId": "vancouver",
+          "name": "Kitsilano Beach",
+          "category": "places",
+          "latitude": 49.2756821,
+          "longitude": -123.1542891,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/86339711",
+          "website": "https://vancouver.ca/parks-recreation-culture/kitsilano-beach.aspx",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:86340299",
+          "cityId": "vancouver",
+          "name": "English Bay Beach",
+          "category": "places",
+          "latitude": 49.2864577,
+          "longitude": -123.1438481,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/86340299",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:125579375",
+          "cityId": "vancouver",
+          "name": "Marine Building",
+          "category": "places",
+          "latitude": 49.2875055,
+          "longitude": -123.1170483,
+          "address": "355 Burrard Street",
+          "sourceUrl": "https://www.openstreetmap.org/way/125579375",
+          "website": "https://www.oxfordproperties.com/lease/office/marine-building",
+          "openingHours": null
+        },
+        {
+          "id": "osm:relation:7440597",
+          "cityId": "vancouver",
+          "name": "Museum of Vancouver",
+          "category": "places",
+          "latitude": 49.2763555,
+          "longitude": -123.1444446,
+          "address": "1100 Chestnut Street",
+          "sourceUrl": "https://www.openstreetmap.org/relation/7440597",
+          "website": "https://museumofvancouver.ca/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:601851234",
+          "cityId": "vancouver",
+          "name": "Robson Square",
+          "category": "places",
+          "latitude": 49.282684,
+          "longitude": -123.1207543,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/601851234",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:37063023",
+          "cityId": "vancouver",
+          "name": "Stanley Park",
+          "category": "places",
+          "latitude": 49.3020269,
+          "longitude": -123.1376205,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/37063023",
+          "website": "https://vancouver.ca/parks-recreation-culture/stanley-park.aspx",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:310612768",
+          "cityId": "vancouver",
+          "name": "Roedde House Museum",
+          "category": "places",
+          "latitude": 49.2869083,
+          "longitude": -123.1321516,
+          "address": "1415 Barclay Street",
+          "sourceUrl": "https://www.openstreetmap.org/way/310612768",
+          "website": "https://www.roeddehouse.org/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:174530913",
+          "cityId": "vancouver",
+          "name": "Vancouver Maritime Museum",
+          "category": "places",
+          "latitude": 49.2774924,
+          "longitude": -123.1475655,
+          "address": "1905 Ogden Avenue",
+          "sourceUrl": "https://www.openstreetmap.org/way/174530913",
+          "website": "https://vanmaritime.com/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:288494759",
+          "cityId": "vancouver",
+          "name": "Bill Reid Gallery of Northwest Coast Art",
+          "category": "places",
+          "latitude": 49.2845949,
+          "longitude": -123.1194317,
+          "address": "639 Hornby Street",
+          "sourceUrl": "https://www.openstreetmap.org/way/288494759",
+          "website": "https://www.billreidgallery.ca/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:relation:17511676",
+          "cityId": "vancouver",
+          "name": "Vanier Park",
+          "category": "places",
+          "latitude": 49.2764489,
+          "longitude": -123.1423492,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/relation/17511676",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
         {
-          "placeId": "osm:node:703754423",
-          "reason": "증기시계와 개스타운의 오래된 건물들을 함께 담을 수 있어요.",
-          "reasonEn": "Photograph the steam clock against Gastown’s historic buildings.",
-          "sourceUrl": "https://www.destinationvancouver.com/neighbourhoods/gastown",
-          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+          "placeId": "osm:way:316008597",
+          "reason": "연못과 계절마다 달라지는 정원. 꽃과 나무 사이를 천천히 걸으며 사진을 남기기 좋아요.",
+          "reasonEn": "Ponds and changing garden colours make a scenic setting for a slow walk.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
         },
         {
-          "placeId": "osm:node:648735254",
-          "reason": "성화대 너머로 항구와 산이 보여요. 밴쿠버의 물가 풍경을 남기기 좋아요.",
-          "reasonEn": "Frame the Olympic cauldron with the harbour and mountains.",
-          "sourceUrl": "https://www.destinationvancouver.com/things-to-do/listings/2010-olympic-cauldron-jack-poole-plaza",
-          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+          "placeId": "osm:way:37084312",
+          "reason": "폴스 크리크 수변의 둥근 유리 돔과 물에 비친 풍경을 함께 담아보세요.",
+          "reasonEn": "Photograph the geodesic dome and its reflection from the False Creek waterfront.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
         },
         {
-          "placeId": "osm:node:1856357128",
-          "reason": "바다 위로 솟은 시워시 록과 해안선을 함께 담는 전망 지점이에요.",
-          "reasonEn": "Photograph Siwash Rock rising from the water along Stanley Park’s coastline.",
-          "sourceUrl": "https://vancouver.ca/parks-recreation-culture/landmarks-in-stanley-park.aspx",
-          "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+          "placeId": "osm:node:12620960872",
+          "reason": "돌기둥이 늘어선 미술관 외관과 광장. 건축 사진을 찍고 전시도 둘러보기 좋은 곳이에요.",
+          "reasonEn": "Explore the gallery exhibits and photograph its stone façade and surrounding plaza.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
         },
         {
           "placeId": "osm:way:23393985",
@@ -2013,6 +2181,55 @@
           "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
+          "placeId": "osm:way:223635729",
+          "reason": "배를 닮은 건물의 하얀 지붕이 인상적이에요. 항구 풍경과 함께 사진에 담기 좋아요.",
+          "reasonEn": "The ship-like complex and white sail roof stand out against the harbour.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
+        {
+          "placeId": "osm:way:86340299",
+          "reason": "도심에서 바다를 가까이 만나는 해변. 모래사장을 따라 걸으며 풍경을 담아보세요.",
+          "reasonEn": "Walk the sandy shoreline and capture the seaside setting close to downtown.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
+        {
+          "placeId": "osm:way:86339711",
+          "reason": "모래사장 산책과 바다 풍경을 함께 즐길 수 있는 도심 해변이에요.",
+          "reasonEn": "An urban beach for a sandy shoreline walk and seaside views.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
+        {
+          "placeId": "osm:way:125579375",
+          "reason": "1930년에 문을 연 아르데코 건물이에요. 외관의 장식과 건축 디테일을 눈여겨보세요.",
+          "reasonEn": "Look for the architectural details of this Art Deco building, opened in 1930.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
+        {
+          "placeId": "osm:relation:7440597",
+          "reason": "밴쿠버의 역사와 도시 이야기를 만나는 박물관이에요. 바닷가 공원 산책과 함께 들르기 좋아요.",
+          "reasonEn": "Explore Vancouver history beside the waterfront park.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
+        {
+          "placeId": "osm:way:601851234",
+          "reason": "조경과 건축이 어우러진 도심 광장. 주변을 걸으며 공간의 여러 모습을 담아보세요.",
+          "reasonEn": "A downtown public space where landscaping and architecture meet.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
+        {
+          "placeId": "osm:way:37063023",
+          "reason": "해변과 숲길, 바닷가 산책로가 이어지는 넓은 공원이에요. 자연 풍경을 담으며 걷기 좋아요.",
+          "reasonEn": "Explore beaches, forest trails and the scenic seawall in this large urban park.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
+        {
           "placeId": "osm:way:37111640",
           "reason": "곡선형 외관과 기둥이 눈에 띄는 도서관이에요. 건축을 배경으로 사진을 남겨보세요.",
           "reasonEn": "Use the library’s curved exterior and columns as an architectural backdrop.",
@@ -2020,13 +2237,40 @@
           "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:6339016833",
-          "reason": "키칠라노의 계절 테이스팅 메뉴 식당이에요. 코스 요리를 즐기고 싶은 날에 들러 보세요. 방문 전 예약 조건을 확인해 주세요.",
-          "reasonEn": "A seasonal tasting-menu restaurant in Kitsilano for a sit-down dining stop. Check reservation requirements before visiting.",
-          "sourceUrl": "https://resy.com/cities/vancouver-bc/venues/annalena",
-          "verifiedAt": "2026-10-18T23:42:26.548Z"
+          "placeId": "osm:way:310612768",
+          "reason": "복원한 빅토리아 시대 주택에서 옛 밴쿠버의 건축과 생활을 살펴볼 수 있어요.",
+          "reasonEn": "A restored Victorian house offers a close look at historic Vancouver architecture and domestic life.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
+        {
+          "placeId": "osm:way:174530913",
+          "reason": "태평양과 북극 항해의 역사를 다루는 해양박물관이에요. 전시와 탐험선 이야기를 만나보세요.",
+          "reasonEn": "Discover Pacific and Arctic maritime history through exhibits and an exploration vessel.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
+        {
+          "placeId": "osm:way:288494759",
+          "reason": "빌 리드와 북서해안 작가들의 조각·공예를 만나는 갤러리예요. 작품을 가까이 감상해보세요.",
+          "reasonEn": "View sculptures and carvings by Bill Reid and other Northwest Coast artists.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
+        },
+        {
+          "placeId": "osm:relation:17511676",
+          "reason": "바다 너머 도심 풍경이 펼쳐지는 공원이에요. 해안 산책과 주변 박물관을 함께 둘러보기 좋아요.",
+          "reasonEn": "Waterfront paths and skyline views sit alongside several museums in this park.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
+          "verifiedAt": "2026-10-19T04:04:51.412Z"
         }
-      ]
+      ],
+      "selectionIdentityEvidence": {
+        "responseSha256": "a33a81d5496bb44f3db917953dea185abecc7f9d295ca8e1024ad6f822472443",
+        "osmTimestamp": "2026-10-19T07:29:11Z",
+        "editorialReference": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
+        "observedAt": "2026-10-19T04:04:51.412Z"
+      }
     },
     "montreal": {
       "boundaryId": "osm:relation:1634158",
@@ -10737,5 +10981,6 @@
   "pendingCities": [],
   "complete": true,
   "recommendationTheme": "photo-spots",
-  "photoSelectionsReviewedAt": "2026-10-18T08:32:43.663074+00:00"
+  "photoSelectionsReviewedAt": "2026-10-19T07:40:16.972294+00:00",
+  "selectionRevision": 2
 }

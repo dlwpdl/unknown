@@ -174,6 +174,36 @@
         "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
         "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/Vancouver_Public_Central_Library_%2836907920883%29.jpg/960px-Vancouver_Public_Central_Library_%2836907920883%29.jpg",
         "imageSha256": "8ee0b5a7935af0b02c63db7289af9864ab03e0d891ce0b3fc956cd462391e7c6"
+      },
+      {
+        "placeId": "osm:way:316008597",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:VanDusen_Botanical_Garden_1.jpg",
+        "artist": "Stan Shebs",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3d/VanDusen_Botanical_Garden_1.jpg/960px-VanDusen_Botanical_Garden_1.jpg",
+        "imageSha256": "898aeeb771b2c9c70c09c0e834ffb1595210d842d733cda6d6051e6d91dd94f8"
+      },
+      {
+        "placeId": "osm:way:37084312",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Science_World_at_TELUS_World_of_Science.jpg",
+        "artist": "Differense",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e5/Science_World_at_TELUS_World_of_Science.jpg/960px-Science_World_at_TELUS_World_of_Science.jpg",
+        "imageSha256": "1460af2a3f295835b78f252a27ebafb5acd4a705f3e0390ce996f4f5ebe86b15"
+      },
+      {
+        "placeId": "osm:node:12620960872",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Vancouver_Art_Gallery_(29787380987).jpg",
+        "artist": "dronepicr",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/Vancouver_Art_Gallery_%2829787380987%29.jpg/960px-Vancouver_Art_Gallery_%2829787380987%29.jpg",
+        "imageSha256": "0fb32d52c022465828f0fbede9cb92feeb82d28455aaa24d5759338e63b50ed7"
       }
     ],
     "montreal": [
@@ -795,5 +825,5 @@
       }
     ]
   },
-  "photoSelectionsReviewedAt": "2026-10-18T08:50:21.589404+00:00"
+  "photoSelectionsReviewedAt": "2026-10-19T07:40:16.972294+00:00"
 }

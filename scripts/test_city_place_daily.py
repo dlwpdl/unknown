@@ -34,6 +34,17 @@ class DailyPlaces(unittest.TestCase):
         self.assertEqual(data['collectedAt'], now)
         self.assertEqual(data.get('recommendationTheme'), 'photo-spots')
 
+    def test_daily_refresh_preserves_the_reselected_editorial_revision_and_order(self):
+        m = implementation(); seed, osm, now = self.fixture()
+        seed['selectionRevision'] = 2
+        result = m.build_catalog(seed, osm, now)
+        self.assertEqual(result.get('selectionRevision'), 2)
+        self.assertEqual(result['cities']['vancouver']['recommendations'], seed['cities']['vancouver']['recommendations'])
+        for revision in [-1, 2.5, True]:
+            seed['selectionRevision'] = revision
+            with self.assertRaisesRegex(ValueError, 'INVALID_SELECTION_REVISION'):
+                m.build_catalog(seed, osm, now)
+
     def test_fifty_distinct_reviewed_places_survive_refresh_but_fifty_one_is_rejected(self):
         m = implementation()
         for count in [50, 51]:
