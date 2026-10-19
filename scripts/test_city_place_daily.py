@@ -25,6 +25,12 @@ class DailyPlaces(unittest.TestCase):
         osm = [dict(type='node', id=1, lat=49.28, lon=-123.12, tags=dict(name='Verified Cafe', amenity='cafe', opening_hours='Mo-Su 09:00-17:00'))]
         return seed, osm, now
 
+    def provider_rows(self, seed):
+        place = next(iter(seed['cities'].values()))['places'][0]
+        return [dict(cityId=place['cityId'], placeId=place['id'], placeName=place['name'],
+                     provider='Google', score=4.7, scale=5, count=120, via='Wanderlog',
+                     sourceUrl='https://wanderlog.com/place/details/123', checkedAt='2026-10-17T10:00:00Z')]
+
     def test_refresh_keeps_source_review_date_and_exact_identity(self):
         m = implementation(); seed, osm, now = self.fixture()
         data = m.build_catalog(seed, osm, now)
@@ -154,7 +160,7 @@ class DailyPlaces(unittest.TestCase):
         m = implementation(); seed = json.loads((ROOT/'src/lib/city-places.catalog.json').read_text())
         previous = json.loads(json.dumps(seed)); previous['collectedAt']='2026-10-18T01:00:00Z'; previous['selectionRevision'] = seed.get('selectionRevision',0) + 1
         previous['photoCatalog']=json.loads((ROOT/'src/lib/city-places.photos.json').read_text())
-        previous['externalRatings']=json.loads((ROOT/'src/lib/place-external-ratings.json').read_text())
+        previous['externalRatings']=self.provider_rows(seed)
         osm = [dict(type=p['id'].split(':')[1],id=int(p['id'].split(':')[2]),lat=p['latitude'],lon=p['longitude'],tags={'name':p['name']}) for city in seed['cities'].values() for p in city['places']]
         with tempfile.TemporaryDirectory() as target:
             path=Path(target)/'seed.json';path.write_text(json.dumps(seed))
@@ -167,7 +173,7 @@ class DailyPlaces(unittest.TestCase):
     def test_same_revision_newer_server_enrichment_wins_over_an_older_seed(self):
         m = implementation(); seed = json.loads((ROOT/'src/lib/city-places.catalog.json').read_text())
         seed['collectedAt']='2026-10-16T01:00:00Z'
-        seed['externalRatings']=json.loads((ROOT/'src/lib/place-external-ratings.json').read_text())
+        seed['externalRatings']=self.provider_rows(seed)
         previous = json.loads(json.dumps(seed)); previous['collectedAt']='2026-10-18T01:00:00Z'
         cafe=next(p for p in previous['cities']['toronto']['places'] if p['category']=='cafe')
         previous['cities']['toronto']['diningRecommendations']=[dict(placeId=cafe['id'],reason='Verified fixture cafe',sourceUrl='https://example.org/fixture',verifiedAt='2026-10-17T01:00:00Z')]
