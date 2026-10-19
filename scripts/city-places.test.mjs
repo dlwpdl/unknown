@@ -65,7 +65,7 @@ test('a newer daily payload cannot restore selections from an older editorial re
 
 test('a newer revision-4 server or cached catalog cannot shrink the shipped Vancouver 50 back to 17', () => {
   const snapshot = catalog(), api = data(snapshot);
-  assert.equal(snapshot.selectionRevision, 5);
+  assert.ok(snapshot.selectionRevision >= 5);
   const before = Array.from(api.getCityRecommendations('vancouver'), place => place.id);
   assert.equal(before.length, 50);
   const stale = structuredClone(snapshot);

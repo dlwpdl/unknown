@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T11:00:35.268282+00:00",
+  "collectedAt": "2026-10-19T20:09:49.766567+00:00",
   "source": "Verified same-place Wikimedia Commons photographs; dated captures, not popularity ranking",
   "cities": {
     "toronto": [
@@ -172,6 +172,166 @@
         "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
         "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/Beryl_Ivey_Knot_Garden_2023.jpg/960px-Beryl_Ivey_Knot_Garden_2023.jpg",
         "imageSha256": "6f6334441dc8ba81a50c618a6e731e343cf23d3773a9c65f2f48420dc0109307"
+      },
+      {
+        "placeId": "osm:way:4321312",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/72/Toronto_Eaton_Centre_2025.JPG/960px-Toronto_Eaton_Centre_2025.JPG",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Toronto_Eaton_Centre_2025.JPG",
+        "artist": "Canmenwalker",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "imageSha256": "ea2a2dff31254e6aa3d20296f62884a23f4e0e6ebaa139f24538de92f02e649a"
+      },
+      {
+        "placeId": "osm:way:7969701",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6e/Rogers_Centre_%28500_Level%29_-_Toronto%2C_ON.jpg/960px-Rogers_Centre_%28500_Level%29_-_Toronto%2C_ON.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Rogers_Centre_(500_Level)_-_Toronto,_ON.jpg",
+        "artist": "JFVoll",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "a9eecd62ac56ac6cccb6dbe35b12b7143380e2d2ebb1e020196ae6dbd3e40a51"
+      },
+      {
+        "placeId": "osm:way:229069541",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/TorontoZoo.jpg/960px-TorontoZoo.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:TorontoZoo.jpg",
+        "artist": "Maelwys at English Wikipedia",
+        "license": "Public domain",
+        "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "imageSha256": "e41b3f129ea286723175cd167b4ae0ab311faefbd1b7030a6d44bca073bc6782"
+      },
+      {
+        "placeId": "osm:way:179154092",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0a/Harbourfront-Centre.jpg/960px-Harbourfront-Centre.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Harbourfront-Centre.jpg",
+        "artist": "Mark Bradshaw",
+        "license": "CC BY 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+        "imageSha256": "cd6fcf4bf9cc44839e6f1b5b4a902f34ca6b32cc9de6c148465c162704463c9c"
+      },
+      {
+        "placeId": "osm:way:23297112",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0a/ONTARIO-00679_-_The_Beaches_%2814656727830%29.jpg/960px-ONTARIO-00679_-_The_Beaches_%2814656727830%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:ONTARIO-00679_-_The_Beaches_(14656727830).jpg",
+        "artist": "Dennis G. Jarvis",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "imageSha256": "6324a6f3951f378d2bcab50a4a033e3fc7e8edbf3d4958937d04acf54b3c4165"
+      },
+      {
+        "placeId": "osm:way:61429973",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bc/Princess_of_Wales_Theatre_2023.jpg/960px-Princess_of_Wales_Theatre_2023.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Princess_of_Wales_Theatre_2023.jpg",
+        "artist": "Canmenwalker",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "imageSha256": "81d761e30c7de9bfd40416665881672f3490cb4a6e01f12929f6ec1f2ed454b4"
+      },
+      {
+        "placeId": "osm:way:62255416",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ac/Hockey_Hall_of_Fame_2025-05-24.jpg/960px-Hockey_Hall_of_Fame_2025-05-24.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Hockey_Hall_of_Fame_2025-05-24.jpg",
+        "artist": "JK Liu",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "69aba4a67567cb15f09b64805c7e651292f3debea3fe951d3d7adbf5fca22726"
+      },
+      {
+        "placeId": "osm:way:229680078",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6c/Aga_Khan_Museum_2022.jpg/960px-Aga_Khan_Museum_2022.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Aga_Khan_Museum_2022.jpg",
+        "artist": "Canmenwalker",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "imageSha256": "018519efb7620508aa938b5fe9d2eb86c24dd4d0754d01409fab208d9b132a51"
+      },
+      {
+        "placeId": "osm:node:293534178",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Elgin_and_Winter_Garden_Theatres_2024.jpg/960px-Elgin_and_Winter_Garden_Theatres_2024.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Elgin_and_Winter_Garden_Theatres_2024.jpg",
+        "artist": "Canmenwalker",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "imageSha256": "7992f0a6eab56f6c6574ddb281eca094c2676b53ce84a0ba165f53556258a1f0"
+      },
+      {
+        "placeId": "osm:way:673763722",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/71/In_the_shade_%281247127124%29.jpg/960px-In_the_shade_%281247127124%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:In_the_shade_(1247127124).jpg",
+        "artist": "johnantoni from Toronto, Canada",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "imageSha256": "f080289a593419f5214dbd3c32fe61b56135dafcdd1ac46ba78dc24d27d779e0"
+      },
+      {
+        "placeId": "osm:relation:10705563",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/11/Toronto_Islands_2025-05-08.jpg/960px-Toronto_Islands_2025-05-08.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Toronto_Islands_2025-05-08.jpg",
+        "artist": "JK Liu",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "4d3b0b69aa79d5bf356d0f77bc5cd2fc597f8297209fc8f9170acacfc5943fe5"
+      },
+      {
+        "placeId": "osm:node:3061260243",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/47/Roundhouse_Park_Toronto.jpg/960px-Roundhouse_Park_Toronto.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Roundhouse_Park_Toronto.jpg",
+        "artist": "Michael Mayer",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "f595990bdbbdeca327b33be1fb27ddd8527152da40c84310a3edd1125ebbaaa9"
+      },
+      {
+        "placeId": "osm:node:1138434290",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/49/Spadina_House%2C_Toronto.jpg/960px-Spadina_House%2C_Toronto.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Spadina_House,_Toronto.jpg",
+        "artist": "Maksim Sokolov (Maxergon)",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "24dda6b9edb95658d17e08cf1138a80b2802fc5a952b1110cbf9e1efa2652778"
+      },
+      {
+        "placeId": "osm:relation:11879671",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ef/Kensington_Market_Toronto_August_2017_01.jpg/960px-Kensington_Market_Toronto_August_2017_01.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Kensington_Market_Toronto_August_2017_01.jpg",
+        "artist": "Arild Vågen",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "cfe4eb1f9707ebdb93fb54afed6cd5bd568bfe9b8c6a980360416a06c699b217"
+      },
+      {
+        "placeId": "osm:way:224894996",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/91/Allan_Gardens_seen_from_Jarvis_Street_in_2025.jpg/960px-Allan_Gardens_seen_from_Jarvis_Street_in_2025.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Allan_Gardens_seen_from_Jarvis_Street_in_2025.jpg",
+        "artist": "Rosco1011",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "870c679e3ff7759cc22416d8c363aea9e8baa9f326e0b1e82c0b8a58424e5f00"
+      },
+      {
+        "placeId": "osm:node:364925801",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b1/Old_Mill_Road_bridge%2C_Humber_River.JPG/960px-Old_Mill_Road_bridge%2C_Humber_River.JPG",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Old_Mill_Road_bridge,_Humber_River.JPG",
+        "artist": "The original uploader was Hubert Derus at English Wikipedia.",
+        "license": "CC BY-SA 2.5",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+        "imageSha256": "6c3d5e8c98dd5985e52004f327c75dd81b22ed5df10652141cd6a1888a484221"
       }
     ],
     "vancouver": [
@@ -796,6 +956,116 @@
         "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
         "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/53/March%C3%A9_Jean-Talon_05-11-2024.jpg/960px-March%C3%A9_Jean-Talon_05-11-2024.jpg",
         "imageSha256": "1504de2aedd11b1a28ce7f9b1679e3794d0904f0338039d57a8d890170b32e07"
+      },
+      {
+        "placeId": "osm:way:87382664",
+        "cityId": "montreal",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/be/Botanical_Gardens_H.JPG/960px-Botanical_Gardens_H.JPG",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Botanical_Gardens_H.JPG",
+        "artist": "GarrettRock (talk) (Uploads)",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+        "imageSha256": "1c1049c792690f947ff84b0860ac2770c104fda67336f825c797b84c1acc1c83"
+      },
+      {
+        "placeId": "osm:relation:17646902",
+        "cityId": "montreal",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/74/Le_Plateau-Mont-Royal_-_Mont-Royal.jpg/960px-Le_Plateau-Mont-Royal_-_Mont-Royal.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Le_Plateau-Mont-Royal_-_Mont-Royal.jpg",
+        "artist": "Chicoutimi",
+        "license": "Public domain",
+        "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "imageSha256": "efcf22dbd842f77b1e4e310531599aa3708903b2adad709d3a110dd81d68ed2e"
+      },
+      {
+        "placeId": "osm:node:12518173676",
+        "cityId": "montreal",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/23/Casino_De_Montreal_%28219955723%29.jpeg/960px-Casino_De_Montreal_%28219955723%29.jpeg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Casino_De_Montreal_(219955723).jpeg",
+        "artist": "Igor Galx",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "79660a1899a5d33f3fc2598de04f09d3c5d5a4b2c2f5d97466006797e0356a84"
+      },
+      {
+        "placeId": "osm:node:3152678294",
+        "cityId": "montreal",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Biodome_Montreal.jpg/960px-Biodome_Montreal.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Biodome_Montreal.jpg",
+        "artist": "PtitLutin (photograph); Roger Taillibert (architect)",
+        "license": "CC BY-SA 2.5",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+        "imageSha256": "a6243362826be16d6912732a4421dce9fe802c639b0ff1cc995cc483cf1831c3"
+      },
+      {
+        "placeId": "osm:way:87389029",
+        "cityId": "montreal",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b4/March%C3%A9_Bonsecours_in_Old_Montreal.jpg/960px-March%C3%A9_Bonsecours_in_Old_Montreal.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:March%C3%A9_Bonsecours_in_Old_Montreal.jpg",
+        "artist": "Dpalma01",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "0e14ab2512871dfd0e77a33a91af1e70eab4ddf651472954c9710020226f4688"
+      },
+      {
+        "placeId": "osm:node:13013530644",
+        "cityId": "montreal",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/90/Montreal_science_centre.jpg/960px-Montreal_science_centre.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Montreal_science_centre.jpg",
+        "artist": "Frankie Roberto from Manchester, UK",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "5ee6838a84d3eecfb5b32f72bfc91f5a538757f449f3a1d3c7e512d12ac635b6"
+      },
+      {
+        "placeId": "osm:relation:1607592",
+        "cityId": "montreal",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/Biosph%C3%A8re_Montr%C3%A9al.jpg/960px-Biosph%C3%A8re_Montr%C3%A9al.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Biosph%C3%A8re_Montr%C3%A9al.jpg",
+        "artist": "Cédric Thévenet",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "cff2ea19c96e5a64e733466c6fe948388ecbf5069faf335364669be17a8f11bd"
+      },
+      {
+        "placeId": "osm:way:141017746",
+        "cityId": "montreal",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c3/Musee_McCord_02.jpg/960px-Musee_McCord_02.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Musee_McCord_02.jpg",
+        "artist": "Jeangagnon",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "eeb77254c54f17d20a48b4cef64e16a749c83e8c364cc44f565732aa920080a5"
+      },
+      {
+        "placeId": "osm:way:20168831",
+        "cityId": "montreal",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Redpath_Museum%2C_August_1%2C_2022.jpg/960px-Redpath_Museum%2C_August_1%2C_2022.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Redpath_Museum,_August_1,_2022.jpg",
+        "artist": "D. Benjamin Miller",
+        "license": "Public domain",
+        "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "imageSha256": "7ed47d7e67b68758898e0d35182cce73d45f739df8f945fafccac529c7d7a4ef"
+      },
+      {
+        "placeId": "osm:node:1330276952",
+        "cityId": "montreal",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a0/Montreal_-_QC_-_Gipfelkreuz_Mont_Real.jpg/960px-Montreal_-_QC_-_Gipfelkreuz_Mont_Real.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Montreal_-_QC_-_Gipfelkreuz_Mont_Real.jpg",
+        "artist": "Taxiarchos228",
+        "license": "CC BY 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+        "imageSha256": "fca1d3dd8aaf5615b65297923d62d771e3a1269c14f786575e8fc673ec65bd99"
+      },
+      {
+        "placeId": "osm:way:40789099",
+        "cityId": "montreal",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fe/Habitat_67_2019_dllu_01.jpg/960px-Habitat_67_2019_dllu_01.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Habitat_67_2019_dllu_01.jpg",
+        "artist": "Dllu",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "64618bcb0aca585a34eb38b6fa88cfe011225489dee48217a995c8f9069a7b0d"
       }
     ],
     "calgary": [
@@ -1385,5 +1655,5 @@
       }
     ]
   },
-  "photoSelectionsReviewedAt": "2026-10-19T09:35:43.822632+00:00"
+  "photoSelectionsReviewedAt": "2026-10-19T20:09:49.766567+00:00"
 }

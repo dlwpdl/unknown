@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T11:00:35.268282+00:00",
+  "collectedAt": "2026-10-19T20:09:49.766567+00:00",
   "source": "OpenStreetMap; source-reviewed Gling photo-spot selections",
   "license": "ODbL-1.0",
   "attribution": "© OpenStreetMap contributors",
@@ -1056,6 +1056,186 @@
           "sourceUrl": "https://www.openstreetmap.org/way/656400495",
           "website": null,
           "openingHours": null
+        },
+        {
+          "id": "osm:way:4321312",
+          "cityId": "toronto",
+          "name": "CF Toronto Eaton Centre",
+          "category": "places",
+          "latitude": 43.654199,
+          "longitude": -79.3807996,
+          "address": "220 Yonge St, Toronto, ON M5B 2H1, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/4321312",
+          "website": null,
+          "openingHours": "Mo-Sa 10:00-21:00; Su 11:00-19:00"
+        },
+        {
+          "id": "osm:way:7969701",
+          "cityId": "toronto",
+          "name": "Rogers Centre",
+          "category": "places",
+          "latitude": 43.6416467,
+          "longitude": -79.3892348,
+          "address": "1 Blue Jays Way, Toronto, ON M5V 1J4, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/7969701",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:229069541",
+          "cityId": "toronto",
+          "name": "Toronto Zoo",
+          "category": "places",
+          "latitude": 43.8198517,
+          "longitude": -79.1849372,
+          "address": "2000 Meadowvale Rd, Toronto, ON M1B 5K7, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/229069541",
+          "website": "https://www.torontozoo.com/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:179154092",
+          "cityId": "toronto",
+          "name": "Harbourfront Centre",
+          "category": "places",
+          "latitude": 43.6385905,
+          "longitude": -79.3833246,
+          "address": "235 Queens Quay W, Toronto, ON M5J 2G8, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/179154092",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:23297112",
+          "cityId": "toronto",
+          "name": "Woodbine Beach",
+          "category": "places",
+          "latitude": 43.6617322,
+          "longitude": -79.3068334,
+          "address": "1675 Lake Shore Blvd E, Toronto, ON M4L 3W6, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/23297112",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:61429973",
+          "cityId": "toronto",
+          "name": "Princess of Wales Theatre",
+          "category": "places",
+          "latitude": 43.6470595,
+          "longitude": -79.3892481,
+          "address": "300 King St W, Toronto, ON M5V 1J2, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/61429973",
+          "website": "https://www.mirvish.com/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:62255416",
+          "cityId": "toronto",
+          "name": "Hockey Hall of Fame",
+          "category": "places",
+          "latitude": 43.6469729,
+          "longitude": -79.3773001,
+          "address": "30 Yonge St, Toronto, ON M5E 1X8, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/62255416",
+          "website": "https://www.hhof.com/",
+          "openingHours": "Mo-Su 10:00-17:00; Mar 14-21 10:00-18:00; Jun 26-Sep 07 09:00-17:00; Nov 09 off; Dec 24,25 off"
+        },
+        {
+          "id": "osm:way:229680078",
+          "cityId": "toronto",
+          "name": "Aga Khan Museum",
+          "category": "places",
+          "latitude": 43.7252934,
+          "longitude": -79.3319998,
+          "address": "77 Wynford Drive Toronto",
+          "sourceUrl": "https://www.openstreetmap.org/way/229680078",
+          "website": "https://www.agakhanmuseum.org/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:node:293534178",
+          "cityId": "toronto",
+          "name": "Elgin & Winter Garden Theatres",
+          "category": "places",
+          "latitude": 43.6530313,
+          "longitude": -79.379291,
+          "address": "189 Yonge St, Toronto, ON M5B 1M4, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/node/293534178",
+          "website": "https://www.heritagetrust.on.ca/EWG/Home.aspx",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:673763722",
+          "cityId": "toronto",
+          "name": "The Village at Black Creek",
+          "category": "places",
+          "latitude": 43.7749403,
+          "longitude": -79.5193941,
+          "address": "1000 Murray Ross Pkwy, North York, ON M3J 2P3, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/673763722",
+          "website": "https://blackcreek.ca/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:relation:10705563",
+          "cityId": "toronto",
+          "name": "Toronto Islands",
+          "category": "places",
+          "latitude": 43.622878,
+          "longitude": -79.377178,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/relation/10705563",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:node:3061260243",
+          "cityId": "toronto",
+          "name": "Toronto Railway Museum",
+          "category": "places",
+          "latitude": 43.6406473,
+          "longitude": -79.3859564,
+          "address": "255 Bremner Blvd, Toronto, ON M5V 3M9, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/node/3061260243",
+          "website": "https://torontorailwaymuseum.com",
+          "openingHours": "We-Su 12:00-17:00"
+        },
+        {
+          "id": "osm:node:1138434290",
+          "cityId": "toronto",
+          "name": "Spadina Museum",
+          "category": "places",
+          "latitude": 43.678931,
+          "longitude": -79.408114,
+          "address": "285 Spadina Road Toronto",
+          "sourceUrl": "https://www.openstreetmap.org/node/1138434290",
+          "website": "https://www.toronto.ca/explore-enjoy/history-art-culture/museums/spadina-museum/",
+          "openingHours": "We-Su 11:00-17:00"
+        },
+        {
+          "id": "osm:relation:11879671",
+          "cityId": "toronto",
+          "name": "Kensington Market",
+          "category": "places",
+          "latitude": 43.6548494,
+          "longitude": -79.4029186,
+          "address": "88 Nassau St #66, Toronto, ON M5T 1M5, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/relation/11879671",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:224894996",
+          "cityId": "toronto",
+          "name": "Allan Gardens",
+          "category": "places",
+          "latitude": 43.6619333,
+          "longitude": -79.3744037,
+          "address": "160 Gerrard Street East Toronto",
+          "sourceUrl": "https://www.openstreetmap.org/way/224894996",
+          "website": "https://www.toronto.ca/data/parks/prd/facilities/complex/41/index.html",
+          "openingHours": null
         }
       ],
       "recommendations": [
@@ -1130,24 +1310,10 @@
           "verifiedAt": "2026-10-19T04:08:26.123Z"
         },
         {
-          "placeId": "osm:node:380040879",
-          "reason": "착시와 홀로그램, 소용돌이 터널을 체험하는 작은 박물관이에요. 색다른 사진을 남기기 좋아요.",
-          "reasonEn": "Explore optical illusions, holograms and a vortex tunnel with playful photo opportunities.",
-          "sourceUrl": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
-          "verifiedAt": "2026-10-19T04:08:26.123Z"
-        },
-        {
           "placeId": "osm:node:277039070",
           "reason": "옛 벽돌 공장과 연못·습지가 어우러진 공간. 산업 건축과 자연을 함께 둘러보기 좋아요.",
           "reasonEn": "Explore restored brickworks buildings, ponds and wetlands in the Don Valley.",
           "sourceUrl": "https://en.wikivoyage.org/wiki/Toronto/Midtown",
-          "verifiedAt": "2026-10-19T07:47:13.049433+00:00"
-        },
-        {
-          "placeId": "osm:node:256351459",
-          "reason": "하이 파크 안에 남아 있는 1837년 주택이에요. 오래된 건축과 당시의 생활을 가까이 살펴보세요.",
-          "reasonEn": "Discover an 1837 Regency cottage and historic domestic life inside High Park.",
-          "sourceUrl": "https://en.wikivoyage.org/wiki/Toronto/West_End",
           "verifiedAt": "2026-10-19T07:47:13.049433+00:00"
         },
         {
@@ -1165,18 +1331,109 @@
           "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:364925801",
-          "reason": "험버강 계곡을 따라 걷는 공원이에요. 강변 산책로와 오래된 석조 다리를 함께 둘러보세요.",
-          "reasonEn": "Walk beside the Humber River valley and the historic stone bridge at the park entrance.",
-          "sourceUrl": "https://en.wikivoyage.org/wiki/Toronto/Etobicoke",
-          "verifiedAt": "2026-10-19T07:47:13.049433+00:00"
+          "placeId": "osm:way:4321312",
+          "reason": "몰의 높은 유리 천장과 길게 이어지는 실내 통로를 담아보세요. 영 스트리트 산책 중 실내로 들르기 좋아요.",
+          "reasonEn": "Frame the glass roof and long indoor galleries during a walk along Yonge Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+          "verifiedAt": "2026-10-19T04:08:26.123Z"
         },
         {
-          "placeId": "osm:node:385036734",
-          "reason": "험버강 하구와 아치형 다리, 멀리 CN 타워까지 바라보는 작은 전망 공간이에요.",
-          "reasonEn": "A small lookout over the Humber River mouth, Humber Bay Arch Bridge and CN Tower.",
-          "sourceUrl": "https://en.wikivoyage.org/wiki/Toronto/Etobicoke",
-          "verifiedAt": "2026-10-19T07:47:13.049433+00:00"
+          "placeId": "osm:way:7969701",
+          "reason": "야구장 관중석에서 초록빛 그라운드를 한눈에 볼 수 있어요. 경기나 투어를 예약할 때 내부 관람 가능 여부도 확인해보세요.",
+          "reasonEn": "See the green baseball field from the stands; check access when booking a game or tour.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+          "verifiedAt": "2026-10-19T04:08:26.123Z"
+        },
+        {
+          "placeId": "osm:way:229069541",
+          "reason": "초록색 입구를 지나 넓은 야외 동물원으로 이어져요. 동물 관람과 함께 숲길을 걷는 하루를 계획해보세요.",
+          "reasonEn": "Plan a day of animal exhibits and wooded paths beyond the zoo’s green entrance.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+          "verifiedAt": "2026-10-19T04:08:26.123Z"
+        },
+        {
+          "placeId": "osm:way:179154092",
+          "reason": "물가의 산책로와 선착장, 문화 공간이 나란히 있어요. 온타리오호를 바라보며 걷다가 사진을 남겨보세요.",
+          "reasonEn": "Walk beside Lake Ontario, with docks and cultural spaces along the waterfront.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+          "verifiedAt": "2026-10-19T04:08:26.123Z"
+        },
+        {
+          "placeId": "osm:way:23297112",
+          "reason": "넓은 모래사장 너머로 토론토의 스카이라인이 보여요. 해변과 도시를 한 장에 담기 좋은 곳이에요.",
+          "reasonEn": "Photograph the wide sandy beach with Toronto’s skyline in the distance.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+          "verifiedAt": "2026-10-19T04:08:26.123Z"
+        },
+        {
+          "placeId": "osm:way:61429973",
+          "reason": "극장 간판과 주변의 높은 빌딩이 한 프레임에 들어와요. 킹 스트리트에서 공연 전후로 걸어보세요.",
+          "reasonEn": "Look up at the theatre marquee and surrounding towers on King Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+          "verifiedAt": "2026-10-19T04:08:26.123Z"
+        },
+        {
+          "placeId": "osm:way:62255416",
+          "reason": "돌로 지은 옛 은행 건물에 하키 박물관이 들어서 있어요. 실내 전시뿐 아니라 모퉁이의 고전적인 외관도 살펴보세요.",
+          "reasonEn": "Visit the hockey museum inside a former bank and photograph its historic stone exterior.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+          "verifiedAt": "2026-10-19T04:08:26.123Z"
+        },
+        {
+          "placeId": "osm:way:229680078",
+          "reason": "흰 박물관 건물과 잔잔한 수면이 마주 보고 있어요. 건물의 선과 반영을 함께 담아보세요.",
+          "reasonEn": "Frame the museum’s white walls and their reflections in the water.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+          "verifiedAt": "2026-10-19T18:58:27.976Z"
+        },
+        {
+          "placeId": "osm:node:293534178",
+          "reason": "영 스트리트의 오래된 극장 간판이 눈에 띄어요. 공연 관람이나 투어 일정에 맞춰 들러보세요.",
+          "reasonEn": "Find the historic theatre signs on Yonge Street and check the performance or tour schedule.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+          "verifiedAt": "2026-10-19T04:08:26.123Z"
+        },
+        {
+          "placeId": "osm:way:673763722",
+          "reason": "오래된 목조 건물과 녹음이 어우러진 역사 마을이에요. 건물 사이의 길을 걸으며 풍경을 담아보세요.",
+          "reasonEn": "Walk between historic wooden buildings and photograph the village’s leafy paths.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+          "verifiedAt": "2026-10-19T04:08:26.123Z"
+        },
+        {
+          "placeId": "osm:relation:10705563",
+          "reason": "호수 너머로 도심과 섬의 윤곽이 이어져요. 페리로 건너가 물가와 산책길에서 도시를 바라보세요.",
+          "reasonEn": "Take the ferry to the islands for lakeside walks and views back toward the city.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+          "verifiedAt": "2026-10-19T18:58:27.976Z"
+        },
+        {
+          "placeId": "osm:node:3061260243",
+          "reason": "원형 차고와 철도 전시물이 도심 한가운데 남아 있어요. 라운드하우스 파크를 걸으며 철도의 흔적을 찾아보세요.",
+          "reasonEn": "Explore the roundhouse and railway exhibits in the middle of downtown.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+          "verifiedAt": "2026-10-19T04:08:26.123Z"
+        },
+        {
+          "placeId": "osm:node:1138434290",
+          "reason": "저택의 흰 베란다와 정원이 차분한 분위기를 만들어요. 오래된 주택의 세부와 초록빛 주변을 함께 살펴보세요.",
+          "reasonEn": "Look closely at the house’s white verandas and the garden surrounding it.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+          "verifiedAt": "2026-10-19T18:58:27.976Z"
+        },
+        {
+          "placeId": "osm:relation:11879671",
+          "reason": "낮은 상점과 색색의 간판이 이어지는 동네예요. 골목을 걸으며 식료품점과 거리 풍경을 담아보세요.",
+          "reasonEn": "Explore streets of small shops, colourful signs and neighbourhood food stores.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+          "verifiedAt": "2026-10-19T04:08:26.123Z"
+        },
+        {
+          "placeId": "osm:way:224894996",
+          "reason": "유리 온실이 공원 한가운데 자리 잡고 있어요. 온실의 곡선과 주변 나무를 한 장에 담아보세요.",
+          "reasonEn": "Photograph the glass conservatory and the trees around it in the park.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+          "verifiedAt": "2026-10-19T18:58:27.976Z"
         }
       ],
       "selectionIdentityEvidence": {
@@ -1229,6 +1486,126 @@
             "reference": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
             "sourceGooglePlaceId": "ChIJ6VTP1EHN1IkRJ_ivXl_DSSM",
             "sourceObservedAt": "2026-10-19T04:08:26.123Z"
+          },
+          {
+            "placeId": "osm:way:4321312",
+            "responseSha256": "f8f692cf52caa1f234b5206fe5fdcee82d147a2f17df44487f36737750f775bf",
+            "reference": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+            "sourceGooglePlaceId": "ChIJvUYHUcs0K4gRN8i7jHsUiYs",
+            "sourceObservedAt": "2026-10-19T04:08:26.123Z",
+            "osmTimestamp": "2026-10-19T09:19:51Z"
+          },
+          {
+            "placeId": "osm:way:7969701",
+            "responseSha256": "f8f692cf52caa1f234b5206fe5fdcee82d147a2f17df44487f36737750f775bf",
+            "reference": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+            "sourceGooglePlaceId": "ChIJUUpqttc0K4gRBRQL_vayEOI",
+            "sourceObservedAt": "2026-10-19T04:08:26.123Z",
+            "osmTimestamp": "2026-10-19T09:19:51Z"
+          },
+          {
+            "placeId": "osm:way:229069541",
+            "responseSha256": "f8f692cf52caa1f234b5206fe5fdcee82d147a2f17df44487f36737750f775bf",
+            "reference": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+            "sourceGooglePlaceId": "ChIJzdqWrfHZ1IkR2LWLAmB6GZ4",
+            "sourceObservedAt": "2026-10-19T04:08:26.123Z",
+            "osmTimestamp": "2026-10-19T09:19:51Z"
+          },
+          {
+            "placeId": "osm:way:179154092",
+            "responseSha256": "f8f692cf52caa1f234b5206fe5fdcee82d147a2f17df44487f36737750f775bf",
+            "reference": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+            "sourceGooglePlaceId": "ChIJydISiio1K4gRlUBlxQfjf3Q",
+            "sourceObservedAt": "2026-10-19T04:08:26.123Z",
+            "osmTimestamp": "2026-10-19T09:19:51Z"
+          },
+          {
+            "placeId": "osm:way:23297112",
+            "responseSha256": "f8f692cf52caa1f234b5206fe5fdcee82d147a2f17df44487f36737750f775bf",
+            "reference": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+            "sourceGooglePlaceId": "ChIJfwMDtPHL1IkRKQvpyXpKHH4",
+            "sourceObservedAt": "2026-10-19T04:08:26.123Z",
+            "osmTimestamp": "2026-10-19T09:19:51Z"
+          },
+          {
+            "placeId": "osm:way:61429973",
+            "responseSha256": "f8f692cf52caa1f234b5206fe5fdcee82d147a2f17df44487f36737750f775bf",
+            "reference": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+            "sourceGooglePlaceId": "ChIJc4-p5NA0K4gRcLWKQiJY2PQ",
+            "sourceObservedAt": "2026-10-19T04:08:26.123Z",
+            "osmTimestamp": "2026-10-19T09:19:51Z"
+          },
+          {
+            "placeId": "osm:way:62255416",
+            "responseSha256": "f8f692cf52caa1f234b5206fe5fdcee82d147a2f17df44487f36737750f775bf",
+            "reference": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+            "sourceGooglePlaceId": "ChIJsRjTsS3L1IkRC177bW2To_4",
+            "sourceObservedAt": "2026-10-19T04:08:26.123Z",
+            "osmTimestamp": "2026-10-19T09:19:51Z"
+          },
+          {
+            "placeId": "osm:way:229680078",
+            "responseSha256": "f8f692cf52caa1f234b5206fe5fdcee82d147a2f17df44487f36737750f775bf",
+            "reference": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+            "sourceGooglePlaceId": "ChIJrY4E26DN1IkRzBaz81H3EVw",
+            "sourceObservedAt": "2026-10-19T18:58:27.976Z",
+            "osmTimestamp": "2026-10-19T09:19:51Z"
+          },
+          {
+            "placeId": "osm:node:293534178",
+            "responseSha256": "f8f692cf52caa1f234b5206fe5fdcee82d147a2f17df44487f36737750f775bf",
+            "reference": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+            "sourceGooglePlaceId": "ChIJ2Qy7RDPL1IkRohwFrAYwafs",
+            "sourceObservedAt": "2026-10-19T04:08:26.123Z",
+            "osmTimestamp": "2026-10-19T09:19:51Z"
+          },
+          {
+            "placeId": "osm:way:673763722",
+            "responseSha256": "f8f692cf52caa1f234b5206fe5fdcee82d147a2f17df44487f36737750f775bf",
+            "reference": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+            "sourceGooglePlaceId": "ChIJZz2B_dIvK4gRB5MEKrlNeps",
+            "sourceObservedAt": "2026-10-19T04:08:26.123Z",
+            "osmTimestamp": "2026-10-19T09:19:51Z"
+          },
+          {
+            "placeId": "osm:relation:10705563",
+            "responseSha256": "f8f692cf52caa1f234b5206fe5fdcee82d147a2f17df44487f36737750f775bf",
+            "reference": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+            "sourceGooglePlaceId": "ChIJVYdeYbfK1IkRYKGgz-OTyRc",
+            "sourceObservedAt": "2026-10-19T18:58:27.976Z",
+            "osmTimestamp": "2026-10-19T09:19:51Z"
+          },
+          {
+            "placeId": "osm:node:3061260243",
+            "responseSha256": "f8f692cf52caa1f234b5206fe5fdcee82d147a2f17df44487f36737750f775bf",
+            "reference": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+            "sourceGooglePlaceId": "ChIJd26b4tU0K4gRGUXqB0jvhSc",
+            "sourceObservedAt": "2026-10-19T04:08:26.123Z",
+            "osmTimestamp": "2026-10-19T09:19:51Z"
+          },
+          {
+            "placeId": "osm:node:1138434290",
+            "responseSha256": "f8f692cf52caa1f234b5206fe5fdcee82d147a2f17df44487f36737750f775bf",
+            "reference": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+            "sourceGooglePlaceId": "ChIJkQDc4500K4gReLP2DQUA_Tk",
+            "sourceObservedAt": "2026-10-19T18:58:27.976Z",
+            "osmTimestamp": "2026-10-19T09:19:51Z"
+          },
+          {
+            "placeId": "osm:relation:11879671",
+            "responseSha256": "f8f692cf52caa1f234b5206fe5fdcee82d147a2f17df44487f36737750f775bf",
+            "reference": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+            "sourceGooglePlaceId": "ChIJlZ9vhJI1K4gRc49LICTOU78",
+            "sourceObservedAt": "2026-10-19T04:08:26.123Z",
+            "osmTimestamp": "2026-10-19T09:19:51Z"
+          },
+          {
+            "placeId": "osm:way:224894996",
+            "responseSha256": "f8f692cf52caa1f234b5206fe5fdcee82d147a2f17df44487f36737750f775bf",
+            "reference": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+            "sourceGooglePlaceId": "ChIJqy_n4UvL1IkRJ91CoOzZV-E",
+            "sourceObservedAt": "2026-10-19T18:58:27.976Z",
+            "osmTimestamp": "2026-10-19T09:19:51Z"
           }
         ]
       }
@@ -4032,6 +4409,138 @@
           "sourceUrl": "https://www.openstreetmap.org/way/22876797",
           "website": "https://www.marchespublics-mtl.com/",
           "openingHours": "Mo-We 07:00-18:00; Th-Fr 07:00-20:00; Sa 07:00-18:00; Su 07:00-17:00"
+        },
+        {
+          "id": "osm:way:87382664",
+          "cityId": "montreal",
+          "name": "Montreal Botanical Garden",
+          "category": "places",
+          "latitude": 45.5599001,
+          "longitude": -73.5639661,
+          "address": "4101 Rue Sherbrooke Est Montréal",
+          "sourceUrl": "https://www.openstreetmap.org/way/87382664",
+          "website": "https://espacepourlavie.ca/jardin-botanique",
+          "openingHours": "Su-Th 09:00-21:00; Fr-Sa 09:00-22:00"
+        },
+        {
+          "id": "osm:relation:17646902",
+          "cityId": "montreal",
+          "name": "Mount Royal Park",
+          "category": "places",
+          "latitude": 45.5053882,
+          "longitude": -73.5921665,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/relation/17646902",
+          "website": "https://montreal.ca/lieux/parc-du-mont-royal",
+          "openingHours": null
+        },
+        {
+          "id": "osm:node:12518173676",
+          "cityId": "montreal",
+          "name": "Casino de Montréal",
+          "category": "places",
+          "latitude": 45.5055101,
+          "longitude": -73.5258278,
+          "address": "1 Ave du Casino, Montreal, Quebec H3C 1A9, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/node/12518173676",
+          "website": "https://casinos.lotoquebec.com/fr/montreal/accueil",
+          "openingHours": null
+        },
+        {
+          "id": "osm:node:3152678294",
+          "cityId": "montreal",
+          "name": "Montreal Biodome",
+          "category": "places",
+          "latitude": 45.5596817,
+          "longitude": -73.5495704,
+          "address": "4777 Pierre-de Coubertin Ave, Montreal, Quebec H1V 1B3, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/node/3152678294",
+          "website": "https://espacepourlavie.ca/biodome",
+          "openingHours": "Tu-Su 09:00-17:00"
+        },
+        {
+          "id": "osm:way:87389029",
+          "cityId": "montreal",
+          "name": "Bonsecours Market",
+          "category": "places",
+          "latitude": 45.5089395,
+          "longitude": -73.5515094,
+          "address": "350 Saint Paul Street East",
+          "sourceUrl": "https://www.openstreetmap.org/way/87389029",
+          "website": "https://marchebonsecours.qc.ca/",
+          "openingHours": "Mo-Su 10:00-18:00"
+        },
+        {
+          "id": "osm:node:13013530644",
+          "cityId": "montreal",
+          "name": "Montreal Science Centre",
+          "category": "places",
+          "latitude": 45.5046468,
+          "longitude": -73.5513296,
+          "address": "2 De la Commune St W, Montreal, Quebec H2Y 4B2, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/node/13013530644",
+          "website": "https://www.centredessciencesdemontreal.com/",
+          "openingHours": "Mo-Su 10:00-17:00"
+        },
+        {
+          "id": "osm:relation:1607592",
+          "cityId": "montreal",
+          "name": "Jean-Drapeau Park",
+          "category": "places",
+          "latitude": 45.5085841,
+          "longitude": -73.5291015,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/relation/1607592",
+          "website": "https://www.parcjeandrapeau.com/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:141017746",
+          "cityId": "montreal",
+          "name": "McCord Stewart Museum",
+          "category": "places",
+          "latitude": 45.504311,
+          "longitude": -73.5734315,
+          "address": "690 Sherbrooke St W, Montreal, Quebec H3A 1E9, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/141017746",
+          "website": "https://www.musee-mccord-stewart.ca",
+          "openingHours": "Tu,Th,Fr 10:00-18:00; Sa,Su 10:00-17:00; PH 10:00-18:00; Mo 10:00-18:00"
+        },
+        {
+          "id": "osm:way:20168831",
+          "cityId": "montreal",
+          "name": "Redpath Museum",
+          "category": "places",
+          "latitude": 45.5044738,
+          "longitude": -73.5775173,
+          "address": "859 Sherbrooke St W, Montreal, Quebec H3A 2K6, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/20168831",
+          "website": "https://mcgill.ca/redpath",
+          "openingHours": "Tu-Fr 09:30-16:30"
+        },
+        {
+          "id": "osm:node:1330276952",
+          "cityId": "montreal",
+          "name": "Mount Royal Cross",
+          "category": "places",
+          "latitude": 45.5088387,
+          "longitude": -73.5879016,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/node/1330276952",
+          "website": "https://ville.montreal.qc.ca/siteofficieldumontroyal/patrimoine-artistique-commemoratif/croix-mont-royal",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:40789099",
+          "cityId": "montreal",
+          "name": "Habitat 67",
+          "category": "places",
+          "latitude": 45.4989574,
+          "longitude": -73.5435198,
+          "address": "2600 Avenue Pierre-Dupuy",
+          "sourceUrl": "https://www.openstreetmap.org/way/40789099",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
@@ -4092,18 +4601,88 @@
           "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
         },
         {
-          "placeId": "osm:node:333465990",
-          "reason": "축음기와 소리 기록 기술의 역사를 다루는 박물관이에요. 캐나다 오디오 산업의 이야기를 만나보세요.",
-          "reasonEn": "Explore gramophones, sound recording and the heritage of Canada’s audio industry.",
-          "sourceUrl": "https://en.wikivoyage.org/wiki/Montreal/South_West",
-          "verifiedAt": "2026-10-19T07:47:13.049433+00:00"
-        },
-        {
           "placeId": "osm:way:21258128",
           "reason": "알록달록한 유리 외벽이 빛과 색을 만들어내는 건축 사진 명소예요.",
           "reasonEn": "Capture the colourful glass façade and its changing light.",
           "sourceUrl": "https://www.mtl.org/en/experience/most-instagrammable-spots-montreal-part-1",
           "verifiedAt": "2026-10-18T08:32:43.663074+00:00"
+        },
+        {
+          "placeId": "osm:way:87382664",
+          "reason": "정원 입구의 건물과 꽃밭이 나란히 펼쳐져요. 계절에 따라 달라지는 식물과 정원 길을 천천히 둘러보세요.",
+          "reasonEn": "Explore the garden paths, seasonal plants and flower beds near the entrance.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161162/best-photo-spots-in-montreal",
+          "verifiedAt": "2026-10-19T19:04:35.927Z"
+        },
+        {
+          "placeId": "osm:relation:17646902",
+          "reason": "언덕 아래 기념비와 숲길이 이어지는 넓은 공원이에요. 몽루아얄의 산책로와 나무가 만든 풍경을 담아보세요.",
+          "reasonEn": "Explore Mount Royal Park’s wooded paths and the monument near the foot of the hill.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161162/best-photo-spots-in-montreal",
+          "verifiedAt": "2026-10-19T19:04:35.927Z"
+        },
+        {
+          "placeId": "osm:node:12518173676",
+          "reason": "금빛 조명이 곡선형 외관을 따라 켜져요. 카지노가 있는 섬에서 독특한 건축물을 바라보세요.",
+          "reasonEn": "See the casino’s curved architecture lit in gold on the island.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105393/top-things-to-do-and-attractions-in-montreal",
+          "verifiedAt": "2026-10-19T04:08:37.219Z"
+        },
+        {
+          "placeId": "osm:node:3152678294",
+          "reason": "거대한 곡선 지붕이 특징인 생태 전시관이에요. 올림픽 공원 주변을 걸으며 건물의 형태도 살펴보세요.",
+          "reasonEn": "Notice the Biodome’s sweeping roof while exploring the Olympic Park area.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105393/top-things-to-do-and-attractions-in-montreal",
+          "verifiedAt": "2026-10-19T04:08:37.219Z"
+        },
+        {
+          "placeId": "osm:way:87389029",
+          "reason": "은빛 돔과 길게 이어지는 석조 외관이 구시가지 거리와 맞닿아 있어요. 생폴 거리에서 건물을 바라보세요.",
+          "reasonEn": "View the market’s silver dome and long stone facade from Rue Saint-Paul.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161162/best-photo-spots-in-montreal",
+          "verifiedAt": "2026-10-19T19:04:35.927Z"
+        },
+        {
+          "placeId": "osm:node:13013530644",
+          "reason": "항구 쪽으로 돌출된 전시관 앞에 빨간 조형물이 있어요. 과학 전시 관람과 구항구 산책을 함께 계획해보세요.",
+          "reasonEn": "Combine the science exhibits with a walk around the Old Port and its red outdoor sculpture.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105393/top-things-to-do-and-attractions-in-montreal",
+          "verifiedAt": "2026-10-19T04:08:37.219Z"
+        },
+        {
+          "placeId": "osm:relation:1607592",
+          "reason": "나무와 강 사이로 바이오스피어의 둥근 철골 구조가 보여요. 섬의 산책길에서 몬트리올의 다른 풍경을 만나보세요.",
+          "reasonEn": "Walk the island paths for views of the Biosphere’s steel sphere among trees and water.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161162/best-photo-spots-in-montreal",
+          "verifiedAt": "2026-10-19T19:04:35.927Z"
+        },
+        {
+          "placeId": "osm:way:141017746",
+          "reason": "밝은 석조 외벽과 거리의 조형물이 눈에 들어와요. 셔브룩 거리를 걸으며 박물관의 전시와 외관을 함께 살펴보세요.",
+          "reasonEn": "Explore the museum and its pale stone exterior along Sherbrooke Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105393/top-things-to-do-and-attractions-in-montreal",
+          "verifiedAt": "2026-10-19T04:08:37.219Z"
+        },
+        {
+          "placeId": "osm:way:20168831",
+          "reason": "열주가 있는 오래된 박물관이 맥길 캠퍼스의 초록빛 잔디와 맞닿아 있어요. 건물 정면의 계단에서 올려다보세요.",
+          "reasonEn": "View the museum’s columns and steps against the lawns of McGill’s campus.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105393/top-things-to-do-and-attractions-in-montreal",
+          "verifiedAt": "2026-10-19T04:08:37.219Z"
+        },
+        {
+          "placeId": "osm:node:1330276952",
+          "reason": "언덕 위 철골 십자가가 나무 사이로 솟아 있어요. 몽루아얄 산책 중 가까이서 구조를 올려다보세요.",
+          "reasonEn": "Look up at the steel cross above the trees during a walk on Mount Royal.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161162/best-photo-spots-in-montreal",
+          "verifiedAt": "2026-10-19T19:04:35.927Z"
+        },
+        {
+          "placeId": "osm:way:40789099",
+          "reason": "상자처럼 겹쳐진 콘크리트 주거 건축물이 강변에 자리 잡고 있어요. 공공 공간에서 외관을 바라보며 사진을 남겨보세요.",
+          "reasonEn": "View the stacked concrete homes from public areas along the river.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161162/best-photo-spots-in-montreal",
+          "verifiedAt": "2026-10-19T19:04:35.927Z"
         }
       ],
       "selectionIdentityEvidence": {
@@ -4121,6 +4700,94 @@
             "reference": "https://wanderlog.com/list/geoCategory/105393/top-things-to-do-and-attractions-in-montreal",
             "sourceGooglePlaceId": "ChIJnYQwYRMZyUwRgXnYONiYEFw",
             "sourceObservedAt": "2026-10-19T04:08:37.219Z"
+          },
+          {
+            "placeId": "osm:way:87382664",
+            "responseSha256": "ad8c949d881eb0c0f74d3cced4386d840c7894e25ad438600cdb8bdcf1ca7ba0",
+            "reference": "https://wanderlog.com/list/geoCategory/161162/best-photo-spots-in-montreal",
+            "sourceGooglePlaceId": "ChIJx4O-WgkcyUwRc3W0WQK-oUI",
+            "sourceObservedAt": "2026-10-19T19:04:35.927Z",
+            "osmTimestamp": "2026-10-19T09:20:48Z"
+          },
+          {
+            "placeId": "osm:relation:17646902",
+            "responseSha256": "ad8c949d881eb0c0f74d3cced4386d840c7894e25ad438600cdb8bdcf1ca7ba0",
+            "reference": "https://wanderlog.com/list/geoCategory/161162/best-photo-spots-in-montreal",
+            "sourceGooglePlaceId": "ChIJ4Q7ViTsayUwRmoxxpGPEjUw",
+            "sourceObservedAt": "2026-10-19T19:04:35.927Z",
+            "osmTimestamp": "2026-10-19T09:20:48Z"
+          },
+          {
+            "placeId": "osm:node:12518173676",
+            "responseSha256": "ad8c949d881eb0c0f74d3cced4386d840c7894e25ad438600cdb8bdcf1ca7ba0",
+            "reference": "https://wanderlog.com/list/geoCategory/105393/top-things-to-do-and-attractions-in-montreal",
+            "sourceGooglePlaceId": "ChIJf6fU_uAayUwRQeRy3h2uA7s",
+            "sourceObservedAt": "2026-10-19T04:08:37.219Z",
+            "osmTimestamp": "2026-10-19T09:20:48Z"
+          },
+          {
+            "placeId": "osm:node:3152678294",
+            "responseSha256": "ad8c949d881eb0c0f74d3cced4386d840c7894e25ad438600cdb8bdcf1ca7ba0",
+            "reference": "https://wanderlog.com/list/geoCategory/105393/top-things-to-do-and-attractions-in-montreal",
+            "sourceGooglePlaceId": "ChIJsWfCBA0cyUwRWya-n6x3xhw",
+            "sourceObservedAt": "2026-10-19T04:08:37.219Z",
+            "osmTimestamp": "2026-10-19T09:20:48Z"
+          },
+          {
+            "placeId": "osm:way:87389029",
+            "responseSha256": "ad8c949d881eb0c0f74d3cced4386d840c7894e25ad438600cdb8bdcf1ca7ba0",
+            "reference": "https://wanderlog.com/list/geoCategory/161162/best-photo-spots-in-montreal",
+            "sourceGooglePlaceId": "ChIJH1lQy1UayUwRaUKBtKz7mOg",
+            "sourceObservedAt": "2026-10-19T19:04:35.927Z",
+            "osmTimestamp": "2026-10-19T09:20:48Z"
+          },
+          {
+            "placeId": "osm:node:13013530644",
+            "responseSha256": "ad8c949d881eb0c0f74d3cced4386d840c7894e25ad438600cdb8bdcf1ca7ba0",
+            "reference": "https://wanderlog.com/list/geoCategory/105393/top-things-to-do-and-attractions-in-montreal",
+            "sourceGooglePlaceId": "ChIJKSezr_gayUwREmw0DdGxQfM",
+            "sourceObservedAt": "2026-10-19T04:08:37.219Z",
+            "osmTimestamp": "2026-10-19T09:20:48Z"
+          },
+          {
+            "placeId": "osm:relation:1607592",
+            "responseSha256": "ad8c949d881eb0c0f74d3cced4386d840c7894e25ad438600cdb8bdcf1ca7ba0",
+            "reference": "https://wanderlog.com/list/geoCategory/161162/best-photo-spots-in-montreal",
+            "sourceGooglePlaceId": "ChIJyZI7RwMbyUwRA4PLYnWs50Y",
+            "sourceObservedAt": "2026-10-19T19:04:35.927Z",
+            "osmTimestamp": "2026-10-19T09:20:48Z"
+          },
+          {
+            "placeId": "osm:way:141017746",
+            "responseSha256": "ad8c949d881eb0c0f74d3cced4386d840c7894e25ad438600cdb8bdcf1ca7ba0",
+            "reference": "https://wanderlog.com/list/geoCategory/105393/top-things-to-do-and-attractions-in-montreal",
+            "sourceGooglePlaceId": "ChIJJQj9HLqzt0wRcwdN4Ew7aNE",
+            "sourceObservedAt": "2026-10-19T04:08:37.219Z",
+            "osmTimestamp": "2026-10-19T09:20:48Z"
+          },
+          {
+            "placeId": "osm:way:20168831",
+            "responseSha256": "ad8c949d881eb0c0f74d3cced4386d840c7894e25ad438600cdb8bdcf1ca7ba0",
+            "reference": "https://wanderlog.com/list/geoCategory/105393/top-things-to-do-and-attractions-in-montreal",
+            "sourceGooglePlaceId": "ChIJewCbJ0cayUwRkk-dMZ99ir4",
+            "sourceObservedAt": "2026-10-19T04:08:37.219Z",
+            "osmTimestamp": "2026-10-19T09:20:48Z"
+          },
+          {
+            "placeId": "osm:node:1330276952",
+            "responseSha256": "eca934d0c7b9eb581cb609852178a573d3132caab3198e9eade4e1527fb695c8",
+            "reference": "https://wanderlog.com/list/geoCategory/161162/best-photo-spots-in-montreal",
+            "sourceGooglePlaceId": "ChIJ9UlICDAayUwRKRDmHEt19FU",
+            "sourceObservedAt": "2026-10-19T19:04:35.927Z",
+            "osmTimestamp": "2026-10-14T03:06:56Z"
+          },
+          {
+            "placeId": "osm:way:40789099",
+            "responseSha256": "ad8c949d881eb0c0f74d3cced4386d840c7894e25ad438600cdb8bdcf1ca7ba0",
+            "reference": "https://wanderlog.com/list/geoCategory/161162/best-photo-spots-in-montreal",
+            "sourceGooglePlaceId": "ChIJ9QcF_fAayUwRSq4M44RIh1Q",
+            "sourceObservedAt": "2026-10-19T19:04:35.927Z",
+            "osmTimestamp": "2026-10-19T09:20:48Z"
           }
         ]
       }
@@ -12086,6 +12753,6 @@
   "pendingCities": [],
   "complete": true,
   "recommendationTheme": "photo-spots",
-  "photoSelectionsReviewedAt": "2026-10-19T11:00:35.268282+00:00",
-  "selectionRevision": 5
+  "photoSelectionsReviewedAt": "2026-10-19T20:09:49.766567+00:00",
+  "selectionRevision": 6
 }
