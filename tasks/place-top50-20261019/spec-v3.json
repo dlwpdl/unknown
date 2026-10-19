@@ -1,0 +1,209 @@
+{
+  "version": 3,
+  "recordedAt": "2026-10-19T08:07:23.042167+00:00",
+  "supersedes": "Preserve old60 visible recommendations and only fill photos",
+  "authority": {
+    "userCorrection": "기존장소가아니라 애초에 그 장소들을 바꾸고싶은건데",
+    "mail": "msg_e09699493588",
+    "scopeFileSha256": "01fea1ad0d928367af96d6e8a010ce4402b02d9f9d770fcd7f93607e01bf8dfe",
+    "priorPlanSha256": "02d812cfc68642b34645197e3b295023947c15f68ff540e36c836d7809ee9f87",
+    "approvedCriteria": "User already authorized actual selection/order/featured changes; no new confirmation gate"
+  },
+  "objective": "Actually reselect all11city recommendations/order/maincards from qualified sources; up to50each, no forced minimum or inventedidentity; broader discovery remainsactive and counts explicit.",
+  "assumptions": [
+    "City means municipal city scope; nearby municipalities/UBC/endowment lands are held separately unless explicit regional scope is later accepted.",
+    "Photogenic scenery/architecture/distinctive venues must have an inspected actual reference and exact geometry; business popularity alone is insufficient.",
+    "Old OSM review IDs stay archived; visible picks may be removed/reordered.",
+    "A city remains honestly below50 until50qualified sources/identities are actually verified."
+  ],
+  "baseline": {
+    "toronto": {
+      "facts": 80,
+      "selected": 6,
+      "first3": [
+        "osm:way:198500757",
+        "osm:way:14344414",
+        "osm:way:189780702"
+      ]
+    },
+    "vancouver": {
+      "facts": 79,
+      "selected": 7,
+      "first3": [
+        "osm:node:703754423",
+        "osm:node:648735254",
+        "osm:node:1856357128"
+      ]
+    },
+    "montreal": {
+      "facts": 80,
+      "selected": 6,
+      "first3": [
+        "osm:way:182750657",
+        "osm:way:87415559",
+        "osm:way:21258128"
+      ]
+    },
+    "calgary": {
+      "facts": 77,
+      "selected": 5,
+      "first3": [
+        "osm:node:4365625291",
+        "osm:node:577280929",
+        "osm:node:91101395"
+      ]
+    },
+    "edmonton": {
+      "facts": 79,
+      "selected": 5,
+      "first3": [
+        "osm:node:4263896991",
+        "osm:relation:17644228",
+        "osm:relation:9911642"
+      ]
+    },
+    "winnipeg": {
+      "facts": 79,
+      "selected": 5,
+      "first3": [
+        "osm:node:273549349",
+        "osm:way:306150488",
+        "osm:node:639365682"
+      ]
+    },
+    "saskatoon": {
+      "facts": 79,
+      "selected": 5,
+      "first3": [
+        "osm:node:2828091482",
+        "osm:way:256402002",
+        "osm:way:630123772"
+      ]
+    },
+    "ottawa": {
+      "facts": 77,
+      "selected": 6,
+      "first3": [
+        "osm:node:292324492",
+        "osm:node:955338405",
+        "osm:node:1735093018"
+      ]
+    },
+    "regina": {
+      "facts": 78,
+      "selected": 4,
+      "first3": [
+        "osm:way:71153155",
+        "osm:node:2745408836",
+        "osm:way:285051056"
+      ]
+    },
+    "saint-john": {
+      "facts": 64,
+      "selected": 5,
+      "first3": [
+        "osm:node:1201111529",
+        "osm:node:1748084731",
+        "osm:way:759602407"
+      ]
+    },
+    "halifax": {
+      "facts": 76,
+      "selected": 6,
+      "first3": [
+        "osm:node:26286235",
+        "osm:node:962125376",
+        "osm:node:4422934789"
+      ]
+    }
+  },
+  "firstSlice": {
+    "city": "vancouver",
+    "candidates": [
+      "VanDusen Botanical Garden",
+      "Dr. Sun Yat-Sen Classical Chinese Garden",
+      "Science World",
+      "Granville Island",
+      "English Bay Beach",
+      "Canada Place",
+      "Vancouver Art Gallery",
+      "Vancouver Lookout",
+      "Hollow Tree",
+      "Kitsilano Beach",
+      "Bloedel Conservatory",
+      "Marine Building"
+    ],
+    "target": "At least3real new selectedIDs, changed first3featured cards, verified source-backed order; remove unqualified current picks from visible list without deleting identities. No fabricated50.",
+    "sourcePriority": [
+      "Existing49Wanderlog list candidates and rawJSON/HTML fetched receipts",
+      "Existing DestinationVancouver photo guide cache",
+      "Existing OSM raw identity cache and indexed municipal exact-name Overpass query",
+      "Existing Wikipedia/Commons batch articles/imageinfo ONLY to validate identity and permitted photo bindings"
+    ],
+    "doneWhen": [
+      "NewIDs/order in bundled/catalogseed and all consumers agree",
+      "Older selectionrevision cannot replace new editorial order even with newer collectedAt",
+      "Dailyproducer retains revision and canonical updated seed",
+      "Actual licensed same-place photos for featured cards; rights gaps explicit",
+      "Tests + exactsource manifest, then existing3309/6ac native verification separately"
+    ]
+  },
+  "commands": {
+    "focused": "node --experimental-strip-types --test scripts/city-places.test.mjs scripts/city-place-refresh.test.mjs",
+    "types": "npm run typecheck",
+    "lint": "./node_modules/.bin/eslint src/lib/city-places.ts src/lib/city-place-refresh.ts",
+    "diff": "git diff --check",
+    "producer": "python3 -m unittest scripts/test_city_place_daily.py"
+  },
+  "files": {
+    "catalog": "src/lib/city-places.catalog.json",
+    "consumer": "src/lib/city-places.ts",
+    "cache": "src/lib/city-place-refresh.ts",
+    "dailyProducer": "scripts/refresh-city-places.py",
+    "photos": "src/lib/city-places.photos.json + existing staticbinding/assets only whenneeded",
+    "opsSeed": "Existing ~/Library/Application Support/gling/operations/city-places/verified-seed.json; coordinated sameowner update after sliceverified"
+  },
+  "styleExample": {
+    "placeId": "existing verified osm:type:id only",
+    "reason": "Concrete source-backed visual/venue feature in Korean with reasonEn",
+    "sourceUrl": "actual inspected original reference URL",
+    "verifiedAt": "actual observed source check time"
+  },
+  "testing": [
+    "Fail-first regression for stale server/disk catalog and editorial ordering; archived review identity access retained",
+    "Existing source/photo byte-binding tests, refresh producer and cache dedupe/day retry tests",
+    "City IDs/coords/municipalproof/source/photo ownership and archivedID preservation assertions"
+  ],
+  "boundaries": {
+    "always": [
+      "Same sole data/fetchowner",
+      "Cache-first serial10sec requests and all histories/cooldowns preserved",
+      "Source/native status separately recorded"
+    ],
+    "coordinateBefore": [
+      "Any hosted publishing window or differentowner sourcefile; no schema/SQL/Edge in this task"
+    ],
+    "never": [
+      "New worker, paid backend/provider/account/service/job; canonical PUBLIC origins/recipes allowed for authorized discovery with terms/cache/pacing/rights checks",
+      "Genericchainpadding/fakeranks/reviews/photos/visits",
+      "Destructive oldID/reviewdeletion",
+      "Frozen release/native/GUI/SQL/Edge action by sourceowner"
+    ]
+  },
+  "allCityWork": "Currentcoherent reviewed93slice, stable862facts. Historical848IDs preserved; broader50discovery afterexistinghostcooldown, no aliases/reset/SQL/native. All11FIFTY notcomplete.",
+  "authorityUpdate": "3309 msg_83ab7d71e76b: preserve08:53cooldown, prioritize source-backedarchivedID ALL11coherent slice;50isCAP, do notpad or claim50complete",
+  "interimTargetCounts": {
+    "toronto": 11,
+    "montreal": 8,
+    "calgary": 6,
+    "edmonton": 6,
+    "winnipeg": 7,
+    "saskatoon": 8,
+    "ottawa": 8,
+    "regina": 6,
+    "saint-john": 6,
+    "halifax": 10,
+    "vancouver": 17
+  },
+  "decisionSha256": "baa0bba0650fde65d070830a3837af80707a955592c2e31354e193cfe9602884"
+}
