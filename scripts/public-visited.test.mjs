@@ -9,10 +9,14 @@ const visit = { id: 'osm:node:123', cityId: 'vancouver', name: 'Test café', cat
   address: 'Test public address', sourceUrl: 'https://www.openstreetmap.org/node/123', photo: null,
   glingVisited: { sourceUrl: 'https://www.instagram.com/reel/test/' } };
 
-function app({ query = {}, places = [visit], hydrated = true, catalogError = false } = {}) {
+function app({ query = {}, places = [visit], hydrated = true, catalogError = false, invalidCatalog = false, savedCatalog = null } = {}) {
   const file = new URL('../src/components/public-web/visited.tsx', import.meta.url);
   assert.ok(existsSync(file), 'Public Visited page has not been implemented');
   const state = [], feedback = [], pushes = [], effects = [], reads = [], applied = [];
+  const refresh = {};
+  vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/lib/city-place-refresh.ts', import.meta.url), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS },
+  }).outputText, { exports: refresh });
   let index = 0;
   const hooks = {
     useState(initial) { const n = index++; if (!(n in state)) state[n] = typeof initial === 'function' ? initial() : initial; return [state[n], value => { state[n] = typeof value === 'function' ? value(state[n]) : value; }]; },
@@ -26,9 +30,12 @@ function app({ query = {}, places = [visit], hydrated = true, catalogError = fal
     'expo-asset': { Asset: { fromModule: () => ({ uri: 'local-logo' }) } },
     '@/constants/theme': { WebNightColors: {} }, '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.example' },
     '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver', state: 'open' }, { id: 'toronto', name: '토론토', englishName: 'Toronto', state: 'open' }] },
-    '@/lib/city-places': { cityPlacesRevision: () => 0, subscribeCityPlaces() {}, getCityPlaces: city => places.filter(place => place.cityId === city), replaceCityPlacesCatalog: value => applied.push(value) },
-    '@react-native-async-storage/async-storage': {},
-    '@/lib/city-place-refresh': { refreshCityPlaces: async (_storage, fetchCatalog, apply) => apply(await fetchCatalog()) },
+    '@/lib/city-places': { cityPlacesRevision: () => 0, subscribeCityPlaces() {}, getCityPlaces: city => places.filter(place => place.cityId === city), replaceCityPlacesCatalog: value => {
+      if (value.invalid || (invalidCatalog && value.publicFixture)) throw Error('INVALID_PLACE_CATALOG');
+      applied.push(value);
+    } },
+    '@react-native-async-storage/async-storage': { getItem: async () => savedCatalog ? JSON.stringify({ catalog: savedCatalog }) : null, setItem: async () => {} },
+    '@/lib/city-place-refresh': refresh,
     '@/lib/discovery': { placeMapRoute },
     '@/lib/public-web-client': { publicWebClient: { rpc: name => { reads.push(name); return { abortSignal: async () => ({ data: catalogError ? null : { publicFixture: true }, error: catalogError ? Error('offline') : null }) }; } } },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
@@ -144,5 +151,25 @@ test('a failed catalog read keeps the saved visit and distinguishes failure from
   assert.ok(text(tree).includes(visit.name));
   assert.ok(!text(tree).includes('아직 등록된 방문 장소가 없어요'));
   assert.equal(ui.applied.length, 0);
+  cleanup();
+});
+
+test('an invalid RPC catalog preserves the saved visit and shows the fallback warning after the refresh helper catches validation', async () => {
+  const ui = app({ invalidCatalog: true, savedCatalog: { savedFixture: true } }); ui.render();
+  const cleanup = ui.effects[0]();
+  await new Promise(setImmediate);
+  const tree = ui.render();
+  assert.ok(text(tree).includes('최신 장소 정보를 불러오지 못했어요'));
+  assert.ok(text(tree).includes(visit.name));
+  assert.deepEqual(plain(ui.applied), [{ savedFixture: true }]);
+  cleanup();
+});
+
+test('a valid remote catalog clears a corrupt-cache warning in the same refresh', async () => {
+  const ui = app({ savedCatalog: { invalid: true } }); ui.render();
+  const cleanup = ui.effects[0]();
+  await new Promise(setImmediate);
+  assert.ok(!text(ui.render()).includes('최신 장소 정보를 불러오지 못했어요'));
+  assert.deepEqual(plain(ui.applied), [{ publicFixture: true }]);
   cleanup();
 });
