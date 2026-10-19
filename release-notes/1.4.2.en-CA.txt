@@ -1,4 +1,4 @@
-Explore newly selected local places, with photos and clearly labelled rating sources.
+Explore 50 places in Vancouver with photos, external ratings and review counts.
 Tap a place to find it on the Gling map and get directions.
 See Gling member reviews separately from ratings on other sites.
 We improved line breaks and keyboard behaviour when writing and editing posts and comments.
