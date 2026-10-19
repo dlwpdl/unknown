@@ -30,6 +30,7 @@ function module(file, imports = {}, dev = true) {
   vm.runInNewContext(source, { exports, URL, URLSearchParams, __DEV__: dev,
     require: withLanguageImports(name => name.endsWith('city-places.catalog.json') ? imports['./city-places.catalog.json'] ?? catalog()
       : name.endsWith('city-places.photos.json') ? photos()
+      : name.endsWith('gling-visited.json') ? imports['./gling-visited.json'] ?? []
       : imports[name] ?? new Proxy({}, { get: (_value, key) => key })),
   });
   return exports;
@@ -520,4 +521,56 @@ test('photo load failure shows the neutral fallback and a different image can lo
   image = nodes(tree).find(n => n.type === 'Image');
   assert.equal(image.props.source.uri, 'https://thumb.wikimedia.org/two.jpg');
   assert.equal(nodes(photo.CityPlacePhoto({ place: { ...place, photo: null } })).some(n => n.type === 'Image'), false);
+});
+
+
+test('reviewed dining reaches category browsing without replacing the accepted Top 50', () => {
+  const snapshot = catalog(), city = snapshot.cities.vancouver;
+  const food = city.places.find(place => place.category === 'food' && !city.recommendations.some(pick => pick.placeId === place.id));
+  const cafe = city.places.find(place => place.category === 'cafe');
+  city.diningRecommendations = [food, cafe].map(place => ({ placeId: place.id, reason: 'Reviewed dining fixture', sourceUrl: 'https://example.org/dining', verifiedAt: snapshot.collectedAt }));
+  const api = data(snapshot);
+  assert.equal(typeof api.getCityBrowsePlaces, 'function');
+  assert.equal(typeof api.getCityDiscoveryPlaces, 'function');
+  assert.deepEqual(Array.from(api.getCityBrowsePlaces('vancouver'), place => place.id), city.recommendations.map(pick => pick.placeId));
+  assert.ok(api.getCityBrowsePlaces('vancouver', 'food').some(place => place.id === food.id));
+  assert.ok(api.getCityBrowsePlaces('vancouver', 'cafe').some(place => place.id === cafe.id));
+  assert.equal(api.getCityDiscoveryPlaces('vancouver').length, 52);
+  assert.ok(!api.getCityDiscoveryPlaces('vancouver').some(place => /McDonald|Tim Hortons|Starbucks/i.test(place.name) && !city.diningRecommendations.some(pick => pick.placeId === place.id)));
+});
+
+test('dining validation rejects non-dining, duplicate, invalid and excessive curated picks', () => {
+  for (const kind of ['places', 'duplicate', 'invalid', 'excessive']) {
+    const next = dailyCatalog(), city = next.cities.vancouver;
+    const place = city.places.find(p => p.category === (kind === 'places' ? 'places' : 'cafe'));
+    const pick = { placeId: place.id, reason: 'Reviewed dining fixture', sourceUrl: 'https://example.org/dining', verifiedAt: next.collectedAt };
+    city.diningRecommendations = kind === 'excessive' ? Array(51).fill(pick) : kind === 'duplicate' ? [pick, pick] : [{ ...pick, ...(kind === 'invalid' ? { sourceUrl: 'javascript:alert(1)' } : {}) }];
+    assert.throws(() => data().replaceCityPlacesCatalog(next, fixtureNow), /INVALID_PLACE_CATALOG/, kind);
+  }
+});
+
+test('discovery merges a dining pick once when it also belongs to the Top list', () => {
+  const snapshot = catalog(), city = snapshot.cities.vancouver;
+  const food = city.places.find(p => p.category === 'food');
+  const pick = { placeId: food.id, reason: 'Reviewed dining fixture', sourceUrl: 'https://example.org/dining', verifiedAt: snapshot.collectedAt };
+  if (!city.recommendations.some(p => p.placeId === food.id)) city.recommendations = [...city.recommendations.slice(0, 49), pick];
+  city.diningRecommendations = [pick];
+  const api = data(snapshot);
+  assert.equal(typeof api.getCityDiscoveryPlaces, 'function');
+  assert.equal(api.getCityDiscoveryPlaces('vancouver').filter(p => p.id === food.id).length, 1);
+});
+
+test('only a trusted exact-city place attestation marks a team visit, never remote fields', () => {
+  const snapshot = catalog(), place = snapshot.cities.toronto.places[0];
+  const publicUrl = 'https://www.instagram.com/reel/DeoQKPNgYLe/';
+  const api = module('src/lib/city-places.ts', { '@/lib/mock': { CITIES: cities }, './city-places.catalog.json': snapshot,
+    './gling-visited.json': [{ cityId: 'toronto', placeId: place.id, sourceUrl: publicUrl }] });
+  assert.equal(typeof api.getCityDiscoveryPlaces, 'function');
+  assert.equal(api.getCityDiscoveryPlaces('toronto').find(p => p.id === place.id).glingVisited.sourceUrl, publicUrl);
+  const next = dailyCatalog();
+  next.cities.toronto.places[1].glingVisited = { sourceUrl: 'https://example.org/untrusted' };
+  next.cities.vancouver.places[0].glingVisited = { sourceUrl: publicUrl };
+  assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
+  assert.equal(api.getCityPlaces('toronto').find(p => p.id === next.cities.toronto.places[1].id).glingVisited, undefined);
+  assert.equal(api.getCityPlaces('vancouver')[0].glingVisited, undefined);
 });
