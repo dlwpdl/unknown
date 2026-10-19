@@ -60,6 +60,19 @@ test('a newer daily payload cannot restore selections from an older editorial re
   }
 });
 
+test('a newer revision-4 server or cached catalog cannot shrink the shipped Vancouver 50 back to 17', () => {
+  const snapshot = catalog(), api = data(snapshot);
+  assert.equal(snapshot.selectionRevision, 5);
+  const before = Array.from(api.getCityRecommendations('vancouver'), place => place.id);
+  assert.equal(before.length, 50);
+  const stale = structuredClone(snapshot);
+  stale.selectionRevision = 4;
+  stale.collectedAt = new Date(fixtureTime).toISOString();
+  stale.cities.vancouver.recommendations = stale.cities.vancouver.recommendations.slice(0, 17);
+  assert.equal(api.replaceCityPlacesCatalog(stale, fixtureNow), false);
+  assert.deepEqual(Array.from(api.getCityRecommendations('vancouver'), place => place.id), before);
+});
+
 test('a reviewed replacement revision changes order while old detail and review identities stay reachable', () => {
   const seed = catalog(); seed.selectionRevision = 1;
   const next = dailyCatalog(); next.selectionRevision = 2;
