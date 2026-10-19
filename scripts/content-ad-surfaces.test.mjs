@@ -81,7 +81,7 @@ test('event index adds standalone ads after four organic cards, preserving every
   }
 });
 
-test('map list has one slot after the fourth real result; canvas, selected overlay and TOP25 stay clear', async () => {
+test('map list has one slot after the fourth real result; canvas, selected overlay and TOP50 stay clear', async () => {
   for (const count of [4, 5, 9]) {
     const places = Array.from({ length: count }, (_, index) => ({ id: `osm:node:${index + 1}`, cityId: city.id, name: `Place ${index}`, category: 'cafe', address: 'Vancouver', latitude: 49.28, longitude: -123.12, sourceUrl: 'https://www.openstreetmap.org/' }));
     const view = mount('../src/app/map.tsx', 'CityMap', {
@@ -96,7 +96,7 @@ test('map list has one slot after the fourth real result; canvas, selected overl
     const rows = list.data.map((item, index) => list.renderItem({ item, index }));
     assert.equal(rows.flatMap(ads).length, count >= 5 ? 1 : 0);
     if (count >= 5) assert.equal(ads(rows[3]).length, 1);
-    nodes(view.tree).find(node => node.props?.analyticsId === 'discovery.filter' && node.props.accessibilityLabel === 'TOP 25').props.onPress();
+    nodes(view.tree).find(node => node.props?.analyticsId === 'discovery.filter' && node.props.accessibilityLabel === 'TOP 50').props.onPress();
     await view.settle();
     const ranking = nodes(view.tree).find(node => node.props?.analyticsId === 'discovery.list').props;
     assert.equal(ranking.data.flatMap((item, index) => ads(ranking.renderItem({ item, index }))).length, 0);
