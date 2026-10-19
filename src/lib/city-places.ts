@@ -1,5 +1,6 @@
 import snapshot from './city-places.catalog.json';
 import photoSnapshot from './city-places.photos.json';
+import visitedPlaces from './gling-visited.json';
 import { CITIES } from '@/lib/mock';
 
 export type PlaceCategory = 'all' | 'food' | 'cafe' | 'places';
@@ -13,11 +14,12 @@ export type CityPlace = {
   website?: string | null; openingHours?: string | null;
   photo?: PlacePhoto | null;
   recommendation?: PlaceRecommendation;
+  glingVisited?: { sourceUrl: string };
 };
 export type PlaceRecommendation = { placeId: string; reason: string; reasonEn?: string; sourceUrl: string; verifiedAt: string };
 
 type PlaceCatalog = {
-  collectedAt: string; selectionRevision?: number; recommendationTheme?: 'photo-spots'; cities: Record<string, { coverage: string; places: CityPlace[]; recommendations?: PlaceRecommendation[] }>;
+  collectedAt: string; selectionRevision?: number; recommendationTheme?: 'photo-spots'; cities: Record<string, { coverage: string; places: CityPlace[]; recommendations?: PlaceRecommendation[]; diningRecommendations?: PlaceRecommendation[] }>;
 };
 let catalog = snapshot as PlaceCatalog;
 const photoCatalog = photoSnapshot as { cities: Record<string, PlacePhoto[]> };
@@ -52,12 +54,15 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
         || (p.website != null && !https(p.website)) || (p.openingHours != null && !text(p.openingHours, 1000))) invalid();
       ids.add(p.id);
     }
-    if (!Array.isArray(data.recommendations) || data.recommendations.length > 50) invalid();
-    const selected = new Set<string>();
-    for (const pick of data.recommendations!) {
-      if (!pick || !ids.has(pick.placeId) || selected.has(pick.placeId) || !text(pick.reason, 500) || (pick.reasonEn !== undefined && !text(pick.reasonEn, 500)) || !https(pick.sourceUrl)
-        || !text(pick.verifiedAt, 80) || !Number.isFinite(Date.parse(pick.verifiedAt)) || Date.parse(pick.verifiedAt) > now + 300_000) invalid();
-      selected.add(pick.placeId);
+    for (const [picks, dining] of [[data.recommendations, false], [data.diningRecommendations ?? [], true]] as const) {
+      if (!Array.isArray(picks) || picks.length > 50) invalid();
+      const selected = new Set<string>();
+      for (const pick of picks!) {
+        if (!pick || !ids.has(pick.placeId) || selected.has(pick.placeId) || !text(pick.reason, 500) || (pick.reasonEn !== undefined && !text(pick.reasonEn, 500)) || !https(pick.sourceUrl)
+          || !text(pick.verifiedAt, 80) || !Number.isFinite(Date.parse(pick.verifiedAt)) || Date.parse(pick.verifiedAt) > now + 300_000
+          || (dining && !data.places.some(p => p.id === pick.placeId && ['food', 'cafe'].includes(p.category)))) invalid();
+        selected.add(pick.placeId);
+      }
     }
   }
   if (nextSelection < currentSelection || (nextSelection === currentSelection && Date.parse(next.collectedAt) <= Date.parse(catalog.collectedAt))) return false;
@@ -84,11 +89,15 @@ export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): 
   // shortcut: verified photos cover a subset; add licensed same-place images as they are checked.
   const photos = photoCatalog.cities[cityId] ?? [];
   const photoOrder = new Map(photos.map((photo, index) => [photo.placeId, index]));
-  const reviewed = new Map(reviewedPicks(cityId).map(pick => [pick.placeId, pick]));
+  const reviewed = new Map([...reviewedPicks(cityId), ...(city.diningRecommendations ?? [])].map(pick => [pick.placeId, pick]));
   const currentIds = new Set(city.places.map(place => place.id));
   const archived = (snapshot as PlaceCatalog).cities[cityId]?.places.filter(place => !currentIds.has(place.id)) ?? [];
   return [...city.places, ...archived].filter(place => category === 'all' || place.category === category)
-    .map(place => ({ ...place, photo: photos[photoOrder.get(place.id) ?? -1] ?? null, recommendation: reviewed.get(place.id) }))
+    .map(place => {
+      const visit = (visitedPlaces as { cityId: string; placeId: string; sourceUrl: string }[]).find(row => row.cityId === cityId && row.placeId === place.id);
+      return { ...place, photo: photos[photoOrder.get(place.id) ?? -1] ?? null, recommendation: reviewed.get(place.id),
+        glingVisited: visit ? { sourceUrl: visit.sourceUrl } : undefined };
+    })
     .sort((a, b) => (photoOrder.get(a.id) ?? photos.length) - (photoOrder.get(b.id) ?? photos.length));
 }
 
@@ -99,6 +108,19 @@ export function getCityRecommendations(cityId: string, category: PlaceCategory =
     const place = byId.get(pick.placeId);
     return place ? [{ ...place, recommendation: pick }] : [];
   });
+}
+
+// The Top list stays stable; map discovery also includes separately reviewed dining and attested visits.
+export function getCityDiscoveryPlaces(cityId: string): CityPlace[] {
+  const places = getCityPlaces(cityId), byId = new Map(places.map(place => [place.id, place]));
+  const picks = [...reviewedPicks(cityId), ...(catalog.cities[cityId].diningRecommendations ?? [])];
+  const ids = new Set([...picks.map(pick => pick.placeId), ...places.filter(place => place.glingVisited).map(place => place.id)]);
+  return [...ids].flatMap(id => { const place = byId.get(id); return place ? [place] : []; });
+}
+
+export function getCityBrowsePlaces(cityId: string, category: PlaceCategory = 'all'): CityPlace[] {
+  getCityPlaces(cityId, category);
+  return category === 'all' ? getCityRecommendations(cityId) : getCityDiscoveryPlaces(cityId).filter(place => place.category === category);
 }
 
 export function getCityPlacesCoverage(cityId: string): string {
