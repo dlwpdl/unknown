@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T20:36:28.641419+00:00",
+  "collectedAt": "2026-10-19T21:07:00.750426+00:00",
   "source": "OpenStreetMap; source-reviewed Gling photo-spot selections",
   "license": "ODbL-1.0",
   "attribution": "© OpenStreetMap contributors",
@@ -1248,6 +1248,114 @@
           "sourceUrl": "https://www.openstreetmap.org/way/32742038",
           "website": "https://www.cntower.ca/",
           "openingHours": "Mo-Su 09:00-22:00"
+        },
+        {
+          "id": "osm:way:1105575638",
+          "cityId": "toronto",
+          "name": "Sankofa Square",
+          "category": "places",
+          "latitude": 43.6560331,
+          "longitude": -79.3801552,
+          "address": "1 Dundas Street East Toronto",
+          "sourceUrl": "https://www.openstreetmap.org/way/1105575638",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:366234297",
+          "cityId": "toronto",
+          "name": "Brookfield Place",
+          "category": "places",
+          "latitude": 43.6469666,
+          "longitude": -79.378294,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/366234297",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:656128849",
+          "cityId": "toronto",
+          "name": "Edwards Gardens",
+          "category": "places",
+          "latitude": 43.7314292,
+          "longitude": -79.3587658,
+          "address": "755, 777 Lawrence Avenue East North York",
+          "sourceUrl": "https://www.openstreetmap.org/way/656128849",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:relation:16751345",
+          "cityId": "toronto",
+          "name": "Trinity Bellwoods Park",
+          "category": "places",
+          "latitude": 43.6477187,
+          "longitude": -79.4148225,
+          "address": "1053 Dundas Street West Toronto",
+          "sourceUrl": "https://www.openstreetmap.org/relation/16751345",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:24590240",
+          "cityId": "toronto",
+          "name": "Toronto Music Garden",
+          "category": "places",
+          "latitude": 43.6369686,
+          "longitude": -79.3943627,
+          "address": "475 Queens Quay West Toronto",
+          "sourceUrl": "https://www.openstreetmap.org/way/24590240",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:691705308",
+          "cityId": "toronto",
+          "name": "Humber Bay Arch Bridge",
+          "category": "places",
+          "latitude": 43.6318691,
+          "longitude": -79.4712637,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/691705308",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:node:4616716676",
+          "cityId": "toronto",
+          "name": "Pocket Planet Canada",
+          "category": "places",
+          "latitude": 43.6567118,
+          "longitude": -79.3809062,
+          "address": "10 Dundas St E, Toronto, ON M5B 2G9, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/node/4616716676",
+          "website": "https://pocketplanet.ca/toronto/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:503134102",
+          "cityId": "toronto",
+          "name": "Trillium Park",
+          "category": "places",
+          "latitude": 43.629176,
+          "longitude": -79.4103875,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/way/503134102",
+          "website": null,
+          "openingHours": null
+        },
+        {
+          "id": "osm:relation:11175871",
+          "cityId": "toronto",
+          "name": "Scarborough Bluffs",
+          "category": "places",
+          "latitude": 43.7145928,
+          "longitude": -79.23003,
+          "address": "",
+          "sourceUrl": "https://www.openstreetmap.org/relation/11175871",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
@@ -1453,6 +1561,69 @@
           "reasonEn": "Photograph the glass conservatory and the trees around it in the park.",
           "sourceUrl": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
           "verifiedAt": "2026-10-19T18:58:27.976Z"
+        },
+        {
+          "placeId": "osm:way:1105575638",
+          "reason": "도심의 야외 광장과 주변 거리를 함께 둘러볼 수 있어요.",
+          "reasonEn": "Explore the outdoor square and the surrounding downtown streets.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+          "verifiedAt": "2026-10-19T18:58:27.976Z"
+        },
+        {
+          "placeId": "osm:way:366234297",
+          "reason": "금융가의 건축을 둘러보며 실내외 공간을 함께 걷는 코스.",
+          "reasonEn": "Walk through the indoor and outdoor spaces of this downtown architectural complex.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+          "verifiedAt": "2026-10-19T18:58:27.976Z"
+        },
+        {
+          "placeId": "osm:way:656128849",
+          "reason": "폭포와 정원 풍경을 따라 산책하기 좋은 넓은 공원.",
+          "reasonEn": "A spacious park for a walk among gardens and a small waterfall.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+          "verifiedAt": "2026-10-19T18:58:27.976Z"
+        },
+        {
+          "placeId": "osm:relation:16751345",
+          "reason": "퀸 스트리트의 공원 입구에서 시작하는 도심 산책.",
+          "reasonEn": "Start a city walk at the park gates on Queen Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+          "verifiedAt": "2026-10-19T18:58:27.976Z"
+        },
+        {
+          "placeId": "osm:way:24590240",
+          "reason": "호숫가를 따라 정원과 산책로를 둘러볼 수 있어요.",
+          "reasonEn": "Follow the lakeside paths through the garden.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+          "verifiedAt": "2026-10-19T18:58:27.976Z"
+        },
+        {
+          "placeId": "osm:way:691705308",
+          "reason": "험버강 하구의 아치형 보행교에서 호숫가 풍경을 만나보세요.",
+          "reasonEn": "Take in the waterfront from the arched pedestrian bridge at the mouth of the Humber River.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+          "verifiedAt": "2026-10-19T18:58:27.976Z"
+        },
+        {
+          "placeId": "osm:node:4616716676",
+          "reason": "던다스 이스트의 실내 전시 공간으로, 비 오는 날 들르기에도 좋아요.",
+          "reasonEn": "An indoor attraction on Dundas Street East for a rainy-day stop.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+          "verifiedAt": "2026-10-19T04:08:26.123Z"
+        },
+        {
+          "placeId": "osm:way:503134102",
+          "reason": "온타리오 플레이스 옆 호숫가 산책로와 전망을 즐기는 공원.",
+          "reasonEn": "A waterfront park beside Ontario Place with walking paths and lake views.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+          "verifiedAt": "2026-10-19T18:58:27.976Z"
+        },
+        {
+          "placeId": "osm:relation:11175871",
+          "reason": "호숫가 절벽과 해안 풍경을 감상하는 스카버러의 대표 장소.",
+          "reasonEn": "See the lakeside cliffs and shoreline scenery of Scarborough.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+          "verifiedAt": "2026-10-19T18:58:27.976Z"
         }
       ],
       "selectionIdentityEvidence": {
@@ -1633,6 +1804,78 @@
             "sourceGooglePlaceId": "ChIJmzrzi9Y0K4gRgXUc3sTY7RU",
             "sourceObservedAt": "2026-10-19T18:58:27.976Z",
             "osmTimestamp": "2026-10-19T09:19:51Z"
+          },
+          {
+            "placeId": "osm:way:1105575638",
+            "responseSha256": "1d78a89a2c0efbedbc15e0dc6255d8e95f4f8d565dab4028bcfe200c19052d4e",
+            "reference": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+            "sourceGooglePlaceId": "ChIJ_wU50co0K4gRingYcKzmofs",
+            "sourceObservedAt": "2026-10-19T18:58:27.976Z",
+            "osmTimestamp": "2026-10-19T21:02:51Z"
+          },
+          {
+            "placeId": "osm:way:366234297",
+            "responseSha256": "1d78a89a2c0efbedbc15e0dc6255d8e95f4f8d565dab4028bcfe200c19052d4e",
+            "reference": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+            "sourceGooglePlaceId": "ChIJIea_Gi3L1IkRJBOoRVjEQvg",
+            "sourceObservedAt": "2026-10-19T18:58:27.976Z",
+            "osmTimestamp": "2026-10-19T21:02:51Z"
+          },
+          {
+            "placeId": "osm:way:656128849",
+            "responseSha256": "1d78a89a2c0efbedbc15e0dc6255d8e95f4f8d565dab4028bcfe200c19052d4e",
+            "reference": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+            "sourceGooglePlaceId": "ChIJGXyiWUDN1IkR50ZWv092iYU",
+            "sourceObservedAt": "2026-10-19T18:58:27.976Z",
+            "osmTimestamp": "2026-10-19T21:02:51Z"
+          },
+          {
+            "placeId": "osm:relation:16751345",
+            "responseSha256": "1d78a89a2c0efbedbc15e0dc6255d8e95f4f8d565dab4028bcfe200c19052d4e",
+            "reference": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+            "sourceGooglePlaceId": "ChIJ29zuWfs0K4gRu3X7rsgi-wM",
+            "sourceObservedAt": "2026-10-19T18:58:27.976Z",
+            "osmTimestamp": "2026-10-19T21:02:51Z"
+          },
+          {
+            "placeId": "osm:way:24590240",
+            "responseSha256": "1d78a89a2c0efbedbc15e0dc6255d8e95f4f8d565dab4028bcfe200c19052d4e",
+            "reference": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+            "sourceGooglePlaceId": "ChIJAQAAwCrL1IkR1Egy40ui0d4",
+            "sourceObservedAt": "2026-10-19T18:58:27.976Z",
+            "osmTimestamp": "2026-10-19T21:02:51Z"
+          },
+          {
+            "placeId": "osm:way:691705308",
+            "responseSha256": "1d78a89a2c0efbedbc15e0dc6255d8e95f4f8d565dab4028bcfe200c19052d4e",
+            "reference": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+            "sourceGooglePlaceId": "ChIJI6yXm3U2K4gR5QT5K-D_mjY",
+            "sourceObservedAt": "2026-10-19T18:58:27.976Z",
+            "osmTimestamp": "2026-10-19T21:02:51Z"
+          },
+          {
+            "placeId": "osm:node:4616716676",
+            "responseSha256": "1d78a89a2c0efbedbc15e0dc6255d8e95f4f8d565dab4028bcfe200c19052d4e",
+            "reference": "https://wanderlog.com/list/geoCategory/105392/top-things-to-do-and-attractions-in-toronto",
+            "sourceGooglePlaceId": "ChIJjy6Dvx41K4gR-EnZ_CNE1_E",
+            "sourceObservedAt": "2026-10-19T04:08:26.123Z",
+            "osmTimestamp": "2026-10-19T21:02:51Z"
+          },
+          {
+            "placeId": "osm:way:503134102",
+            "responseSha256": "1d78a89a2c0efbedbc15e0dc6255d8e95f4f8d565dab4028bcfe200c19052d4e",
+            "reference": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+            "sourceGooglePlaceId": "ChIJUVV44iI1K4gRr4vqoZfUrQE",
+            "sourceObservedAt": "2026-10-19T18:58:27.976Z",
+            "osmTimestamp": "2026-10-19T21:02:51Z"
+          },
+          {
+            "placeId": "osm:relation:11175871",
+            "responseSha256": "1d78a89a2c0efbedbc15e0dc6255d8e95f4f8d565dab4028bcfe200c19052d4e",
+            "reference": "https://wanderlog.com/list/geoCategory/161161/best-photo-spots-in-toronto",
+            "sourceGooglePlaceId": "ChIJR9LHEwrP1IkRaBSSqEmUrsg",
+            "sourceObservedAt": "2026-10-19T18:58:27.976Z",
+            "osmTimestamp": "2026-10-19T21:02:51Z"
           }
         ]
       }
@@ -3084,6 +3327,18 @@
           "sourceUrl": "https://www.openstreetmap.org/relation/7071553",
           "website": "https://granvilleisland.com/public-market",
           "openingHours": "Mo-Su 09:00-19:00"
+        },
+        {
+          "id": "osm:node:4976343547",
+          "cityId": "vancouver",
+          "name": "Handson Steak and Frites",
+          "category": "food",
+          "latitude": 49.2909675,
+          "longitude": -123.136495,
+          "address": "847 Denman Street, Vancouver, BC",
+          "sourceUrl": "https://www.openstreetmap.org/node/4976343547",
+          "website": "https://www.handsonyvr.ca",
+          "openingHours": null
         }
       ],
       "recommendations": [
@@ -3442,7 +3697,15 @@
         "responseSha256": "a33a81d5496bb44f3db917953dea185abecc7f9d295ca8e1024ad6f822472443",
         "osmTimestamp": "2026-10-19T07:29:11Z",
         "editorialReference": "https://wanderlog.com/list/geoCategory/105394/top-things-to-do-and-attractions-in-vancouver",
-        "observedAt": "2026-10-19T04:04:51.412Z"
+        "observedAt": "2026-10-19T04:04:51.412Z",
+        "additionalResponses": [
+          {
+            "placeId": "osm:node:4976343547",
+            "responseSha256": "1e8f269acf795ece6021f6e2c2f2a24b1042b71797e49bba5e0476899e7dff94",
+            "reference": "https://www.openstreetmap.org/node/4976343547",
+            "osmTimestamp": "2026-10-19T21:03:50Z"
+          }
+        ]
       }
     },
     "montreal": {
@@ -5846,6 +6109,18 @@
           "sourceUrl": "https://www.openstreetmap.org/node/11476843476",
           "website": "https://www.contemporarycalgary.com/",
           "openingHours": "Mo-Tu off; We-Sa 12:00-19:00; Su 12:00-17:00"
+        },
+        {
+          "id": "osm:way:221143394",
+          "cityId": "calgary",
+          "name": "River Café",
+          "category": "cafe",
+          "latitude": 51.0548638,
+          "longitude": -114.0716221,
+          "address": "25 Prince's Island Park SW",
+          "sourceUrl": "https://www.openstreetmap.org/way/221143394",
+          "website": "https://river-cafe.com/",
+          "openingHours": "Mo-Fr 11:00-22:00; Sa-Su 10:00-22:00; Jun-Aug: Mo-Fr 11:00-23:00, Sa-Su 10:00-23:00"
         }
       ],
       "recommendations": [
@@ -6003,9 +6278,26 @@
             "sourceGooglePlaceId": "ChIJlStFuGZvcVMRnd3-AT74ALE",
             "sourceObservedAt": "2026-10-19T04:08:48.287Z",
             "osmTimestamp": "2026-10-19T09:20:48Z"
+          },
+          {
+            "placeId": "osm:way:221143394",
+            "responseSha256": "267b8883050e5296d665d37e1ada42b7c11d04d105a7eb6fd762d27740275d50",
+            "reference": "https://wanderlog.com/list/geoCategory/74967/where-to-eat-best-restaurants-in-calgary",
+            "sourceGooglePlaceId": "ChIJ7dqmuPBvcVMRBdUQalfxLFw",
+            "sourceObservedAt": "2026-10-19T19:05:16.242Z",
+            "osmTimestamp": "2026-10-19T09:20:48Z"
           }
         ]
-      }
+      },
+      "diningRecommendations": [
+        {
+          "placeId": "osm:way:221143394",
+          "reason": "프린스 아일랜드 파크 안에서 산책과 식사를 함께 즐길 수 있는 곳.",
+          "reasonEn": "Pair a walk through Prince’s Island Park with a meal here.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74967/where-to-eat-best-restaurants-in-calgary",
+          "verifiedAt": "2026-10-19T19:05:16.242Z"
+        }
+      ]
     },
     "edmonton": {
       "boundaryId": "osm:relation:2564500",
@@ -8342,6 +8634,18 @@
           "sourceUrl": "https://www.openstreetmap.org/way/103536967",
           "website": "https://www.winnipeg.ca/publicworks/naturalist/livingprairie/",
           "openingHours": null
+        },
+        {
+          "id": "osm:way:97925809",
+          "cityId": "winnipeg",
+          "name": "King's Head Pub",
+          "category": "food",
+          "latitude": 49.8988085,
+          "longitude": -97.1409612,
+          "address": "120 King Street Winnipeg",
+          "sourceUrl": "https://www.openstreetmap.org/way/97925809",
+          "website": null,
+          "openingHours": null
         }
       ],
       "recommendations": [
@@ -8524,9 +8828,26 @@
             "sourceGooglePlaceId": "ChIJ00iGkr4M6lIRS2tI02n884I",
             "sourceObservedAt": "2026-10-19T04:09:11.246Z",
             "osmTimestamp": "2026-10-19T09:22:50Z"
+          },
+          {
+            "placeId": "osm:way:97925809",
+            "responseSha256": "8538bca8113bdfff8e3e0b627eb81ce4389c45cf48e3d1741d209e3c3d391de3",
+            "reference": "https://wanderlog.com/list/geoCategory/74972/where-to-eat-best-restaurants-in-winnipeg",
+            "sourceGooglePlaceId": "ChIJ5RC2T1xx6lIRdBI_JXBLrC4",
+            "sourceObservedAt": "2026-10-19T19:06:16.628Z",
+            "osmTimestamp": "2026-10-19T09:22:50Z"
           }
         ]
-      }
+      },
+      "diningRecommendations": [
+        {
+          "placeId": "osm:way:97925809",
+          "reason": "킹 스트리트의 오래된 건물에 자리한 펍으로, 익스체인지 디스트릭트 산책과 함께 들르기 좋아요.",
+          "reasonEn": "A pub in a historic King Street building, a stop while exploring the Exchange District.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/74972/where-to-eat-best-restaurants-in-winnipeg",
+          "verifiedAt": "2026-10-19T19:06:16.628Z"
+        }
+      ]
     },
     "saskatoon": {
       "boundaryId": "osm:relation:4189345",
@@ -13333,12 +13654,33 @@
           "sourceUrl": "https://en.wikivoyage.org/wiki/Halifax",
           "verifiedAt": "2026-10-19T07:46:10.967481+00:00"
         }
-      ]
+      ],
+      "diningRecommendations": [
+        {
+          "placeId": "osm:node:475876928",
+          "reason": "모리스 스트리트에서 커피 한 잔과 함께 쉬어갈 수 있는 카페.",
+          "reasonEn": "Take a coffee break on Morris Street.",
+          "sourceUrl": "https://wanderlog.com/list/geoCategory/17857/best-coffee-shops-and-best-cafes-in-halifax",
+          "verifiedAt": "2026-10-19T19:08:17.524Z"
+        }
+      ],
+      "selectionIdentityEvidence": {
+        "additionalResponses": [
+          {
+            "placeId": "osm:node:475876928",
+            "responseSha256": "5af79abf4f145f3c9f60a11a3ded6002090287c360b92311046e7d447dc8479e",
+            "reference": "https://wanderlog.com/list/geoCategory/17857/best-coffee-shops-and-best-cafes-in-halifax",
+            "sourceGooglePlaceId": "ChIJV4TDozUiWksRy0JWrPsKrQc",
+            "sourceObservedAt": "2026-10-19T19:08:17.524Z",
+            "osmTimestamp": "2026-10-14T03:12:03Z"
+          }
+        ]
+      }
     }
   },
   "pendingCities": [],
   "complete": true,
   "recommendationTheme": "photo-spots",
-  "photoSelectionsReviewedAt": "2026-10-19T20:36:28.641419+00:00",
-  "selectionRevision": 7
+  "photoSelectionsReviewedAt": "2026-10-19T21:07:00.750426+00:00",
+  "selectionRevision": 8
 }

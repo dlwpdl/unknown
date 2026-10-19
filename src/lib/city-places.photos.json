@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T20:36:28.641419+00:00",
+  "collectedAt": "2026-10-19T21:07:00.750426+00:00",
   "source": "Verified same-place Wikimedia Commons photographs; dated captures, not popularity ranking",
   "cities": {
     "toronto": [
@@ -342,6 +342,96 @@
         "license": "CC BY 3.0",
         "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
         "imageSha256": "aa96d44e5fda034ab67a4e0b027840293c07098d9a07fbe09bb5f84de5fd4a16"
+      },
+      {
+        "placeId": "osm:way:1105575638",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1a/Sankofa_Square_Toronto%2C_May_30_2026_%2801%29.jpg/960px-Sankofa_Square_Toronto%2C_May_30_2026_%2801%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sankofa_Square_Toronto,_May_30_2026_(01).jpg",
+        "artist": "Dillan Payne",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "a67c6a278b0b45bbd5eea9840624ca2bacedc99bc4a5cf56bfb644b14b400cca"
+      },
+      {
+        "placeId": "osm:way:366234297",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/73/Brookfield_Place_2025-05-24.jpg/960px-Brookfield_Place_2025-05-24.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Brookfield_Place_2025-05-24.jpg",
+        "artist": "JK Liu",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "b1f14d7b757367577e458491c5b6faaca84c2b3a1b8c9b9b6f60792abe070e88"
+      },
+      {
+        "placeId": "osm:way:656128849",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/04/Edward_Gardens_waterfall_2023.jpg/960px-Edward_Gardens_waterfall_2023.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Edward_Gardens_waterfall_2023.jpg",
+        "artist": "Canmenwalker",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "imageSha256": "461466dd20d97b6b00fc1af466be89262943ac35d92592086b03c30dc0a6d8a2"
+      },
+      {
+        "placeId": "osm:relation:16751345",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/13/Trinity_Bellwoods_Gates_on_Queen_Street%2C_July_7_2025.jpg/960px-Trinity_Bellwoods_Gates_on_Queen_Street%2C_July_7_2025.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Trinity_Bellwoods_Gates_on_Queen_Street,_July_7_2025.jpg",
+        "artist": "Dillan Payne",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "c89dcc3b95d4b82d591369666cb1448a2723da5eca177f69d42d3ade75399c98"
+      },
+      {
+        "placeId": "osm:way:24590240",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/53/Toronto_-_ON_-_Toronto_Music_Garden.jpg/960px-Toronto_-_ON_-_Toronto_Music_Garden.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Toronto_-_ON_-_Toronto_Music_Garden.jpg",
+        "artist": "Wladyslaw",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+        "imageSha256": "85371060b21573bf6db81d17635c070d26badc7f02982be035481cff1bda6142"
+      },
+      {
+        "placeId": "osm:way:691705308",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/98/Toronto_-_ON_-_Humber_Bay_und_Humber_Bay_Arch_Bridge.jpg/960px-Toronto_-_ON_-_Humber_Bay_und_Humber_Bay_Arch_Bridge.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Toronto_-_ON_-_Humber_Bay_und_Humber_Bay_Arch_Bridge.jpg",
+        "artist": "Wladyslaw",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+        "imageSha256": "415240b55ffd4d457ad1d4d5e4e445e8b6d025f4581217ef24f4380ea7b6772b"
+      },
+      {
+        "placeId": "osm:node:4616716676",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3d/Little_Canada_Entrance_2025.jpg/960px-Little_Canada_Entrance_2025.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Little_Canada_Entrance_2025.jpg",
+        "artist": "Canmenwalker",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "imageSha256": "bed97bce5e6fd415a297578f5e6d91f2a2c4acdd34a957f8587db42e0e7bdbd9"
+      },
+      {
+        "placeId": "osm:way:503134102",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/15/Trillium_Park%2C_Toronto_-_View_from_The_Summit.jpg/960px-Trillium_Park%2C_Toronto_-_View_from_The_Summit.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Trillium_Park,_Toronto_-_View_from_The_Summit.jpg",
+        "artist": "TheTrolleyPole",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "7fa1b6af15fff902d30976ed7579d3648ea1382b5aa136a364c04540b6cbb8bc"
+      },
+      {
+        "placeId": "osm:relation:11175871",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/66/Scarborough_Bluffs%2C_May_4_2026_%2807%29.jpg/960px-Scarborough_Bluffs%2C_May_4_2026_%2807%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Scarborough_Bluffs,_May_4_2026_(07).jpg",
+        "artist": "Dillan Payne",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "630ee1047d4a3c27b77f63d359e28cae92a041a20a75726ec0b9b37f8192bf4d"
       }
     ],
     "vancouver": [
@@ -1208,6 +1298,16 @@
         "license": "CC BY-SA 4.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
         "imageSha256": "04b2c38c982fcd12144ef7e28ab92bac760404b6a95bbffdb68b983d5fd42290"
+      },
+      {
+        "placeId": "osm:way:221143394",
+        "cityId": "calgary",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/River_Caf%C3%A9%2C_Calgary.jpg/960px-River_Caf%C3%A9%2C_Calgary.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:River_Caf%C3%A9,_Calgary.jpg",
+        "artist": "Silver Dovelet",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "927814ba8c42a43316bbc7ffbade515b30aea87cd3b3b9e8ae7b16a1a719059c"
       }
     ],
     "edmonton": [
@@ -1552,6 +1652,16 @@
         "license": "CC BY-SA 4.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
         "imageSha256": "d469366ed0f7d46e5a9cbf2ec3199029b06dd6eeb545eb2f67313677338df4e2"
+      },
+      {
+        "placeId": "osm:way:97925809",
+        "cityId": "winnipeg",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fa/Winnipeg_%286386713743%29.jpg/960px-Winnipeg_%286386713743%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Winnipeg_(6386713743).jpg",
+        "artist": "Herb Neufeld",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "a7c328ae01568d5b578b4d2eb5980d3e99e9b64f1755824b0b56cf5d9d533471"
       }
     ],
     "saskatoon": [
@@ -1882,8 +1992,18 @@
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
         "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/07/Dingle_Tower_2018.jpg/960px-Dingle_Tower_2018.jpg",
         "imageSha256": "e5c89798d26e51b6176be0b124d5bae80578dedd49edecd19ef9674906f01428"
+      },
+      {
+        "placeId": "osm:node:475876928",
+        "cityId": "halifax",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1a/DSC_0361_%287458198180%29.jpg/960px-DSC_0361_%287458198180%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:DSC_0361_(7458198180).jpg",
+        "artist": "Nicole Bratt from Seattle, WA, USA",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "imageSha256": "f318c881d06113328926f2e66797d4c0ae3bb89f2843d5b8c9b26dae186ff13d"
       }
     ]
   },
-  "photoSelectionsReviewedAt": "2026-10-19T20:36:28.641419+00:00"
+  "photoSelectionsReviewedAt": "2026-10-19T21:07:00.750426+00:00"
 }
