@@ -62,6 +62,6 @@ const styles = StyleSheet.create({
   cards: { flexDirection: 'row', gap: 10 },
   card: { flex: 1, gap: Spacing.one },
   photo: { width: '100%', aspectRatio: 1 / 1.15, borderRadius: 12, marginBottom: Spacing.one },
-  name: { fontSize: 13, lineHeight: 18, minHeight: 36, fontWeight: '600' },
+  name: { fontSize: 13, lineHeight: 18, fontWeight: '600' },
   category: { fontSize: 11, lineHeight: 16 },
 });
