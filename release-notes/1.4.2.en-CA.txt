@@ -1,5 +1,5 @@
-Explore local places with photos and clearly labelled rating sources.
-Browse places and events on the updated map.
+Explore newly selected local places, with photos and clearly labelled rating sources.
+Tap a place to find it on the Gling map and get directions.
 See Gling member reviews separately from ratings on other sites.
 We improved line breaks and keyboard behaviour when writing and editing posts and comments.
 Review ratings keep the 10-point scale, with five Gling icons.
