@@ -17,7 +17,7 @@ import { useCommunityLocation } from '@/lib/location-provider';
 import { CITIES } from '@/lib/mock';
 import type { City } from '@/lib/types';
 
-export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { city: City; onSelect: (city: City) => void } }) {
+export function CityPicker({ onClose, draft, title }: { onClose: () => void; draft?: { city: City; onSelect: (city: City) => void }; title?: string }) {
   const { language, tr, t } = useLanguage();
   const theme = useTheme();
   const { city, selectCity, saving } = useCommunityCity();
@@ -58,7 +58,7 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
       {draft && <View style={styles.iconGlass}><Pressable analyticsId="components_city-picker.pressable.1" accessibilityRole="button" accessibilityLabel={t.write.backToDraft} onPress={() => { play('selection'); onClose(); }} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
         <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={21} tintColor={theme.text} />
       </Pressable></View>}
-      <ThemedText accessibilityRole="header" style={styles.title}>{draft ? t.write.postCity : t.feed.cityPickerTitle}</ThemedText>
+      <ThemedText accessibilityRole="header" style={styles.title}>{title ?? (draft ? t.write.postCity : t.feed.cityPickerTitle)}</ThemedText>
       {!draft && <View style={styles.iconGlass}><Pressable analyticsId="components_city-picker.pressable.2" accessibilityRole="button" accessibilityLabel={t.write.cancel} onPress={() => { play('selection'); onClose(); }} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
         <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={21} tintColor={theme.text} />
       </Pressable></View>}
