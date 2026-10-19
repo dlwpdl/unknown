@@ -6,8 +6,9 @@ import ts from 'typescript';
 import * as aiDraft from '../src/lib/ai-draft.ts';
 import { chillingProfilePreview } from '../src/lib/chilling-data.ts';
 import { meetupAllowed, isFestivalEvent } from '../supabase/functions/_shared/ticketmaster.ts';
+import * as designSystem from '../src/constants/design-system.ts';
 
-import { splitEventMeetupBody, visibleMeetupBody } from '../src/lib/meetup-ai.ts';
+import { splitEventMeetupBody, visibleMeetupBody, meetupDestination } from './test-meetup-source-imports.mjs';
 
 test('AI edits only the invitation while saved event details stay intact', () => {
   const details = '\n\n장소: Fortune Sound Club, Vancouver\n행사 ID: rZ7HnEZ1AfG3e7\n티켓·최신 일정: https://ticketmaster.evyy.net/example';
@@ -58,8 +59,10 @@ function form({ params = {}, sourceEvent } = {}) {
     '@/lib/behavior-analytics': { behavior() {} },
     '@/components/relationship-slot-card': { relationshipSlotData: () => ({ available: 3, active: 0, limit: 3 }) },
     '@/lib/ai-draft': aiDraft, '@/lib/meetup-ai': { splitEventMeetupBody },
-    '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }] },
+    '@/lib/meetup-destination': meetupDestination, '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
+    '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }, { id: 'toronto', name: '토론토', state: 'open' }] },
     '@/constants/theme': { Depth: { control: {} }, Spacing: { two: 8, three: 16, five: 32 } },
+    '@/constants/design-system': designSystem,
   };
   const bridge = ts.createSourceFile('ticketmaster.ts', readFileSync(new URL('../src/lib/ticketmaster.ts', import.meta.url), 'utf8'), ts.ScriptTarget.Latest, true);
   const bridgeExports = {};
@@ -80,6 +83,31 @@ function form({ params = {}, sourceEvent } = {}) {
   };
 }
 const settle = () => new Promise(setImmediate);
+
+test('a place invitation keeps its source city and immutable reference through AI and explicit host consent', async () => {
+  const catalog = JSON.parse(readFileSync(new URL('../src/lib/city-places.catalog.json', import.meta.url), 'utf8'));
+  const place = catalog.cities.toronto.places.find(item => item.category === 'cafe');
+  const destination = meetupDestination.resolveMeetupDestination({ placeId: place.id, placeCityId: place.cityId }).destination;
+  const tail = meetupDestination.placeMeetupTail(destination);
+  const app = form({ params: { placeId: place.id, placeCityId: place.cityId } });
+  const invitation = app.find('모임 소개').props.value;
+  assert.ok(invitation.includes(place.name)); assert.equal(visibleMeetupBody(invitation + tail), invitation);
+  app.generate();
+  assert.equal(app.requests[0].args[1].body.bodyHint, invitation);
+  assert.equal(JSON.stringify(app.requests[0].args).includes(place.sourceUrl), false, 'source metadata stays outside the AI prose');
+  app.requests[0].resolve({ data: { draft: generated } }); await settle(); app.preview().props.onApply();
+  app.find('app_meetup-create.pressable.4').props.onPress(); await settle(); assert.equal(app.writes.length, 0);
+  app.find('meetup-create.host-consent').props.onPress(); app.find('app_meetup-create.pressable.4').props.onPress(); await settle();
+  assert.equal(app.writes.length, 1); assert.equal(app.writes[0].cityId, 'toronto');
+  assert.ok(app.writes[0].body.endsWith(tail)); assert.equal(meetupDestination.splitPlaceMeetupBody(app.writes[0].body, 'toronto').place.id, place.id);
+  assert.equal('placeId' in app.writes[0].event, false, 'the existing SQL event contract is unchanged');
+});
+
+test('an invalid destination cannot silently create a meetup in the preferred city', async () => {
+  const app = form({ params: { placeId: 'osm:node:999999999999999999', placeCityId: 'vancouver' } });
+  const submit = app.find('app_meetup-create.pressable.4'); assert.equal(submit.props.disabled, true);
+  await submit.props.onPress(); assert.equal(app.writes.length, 0); assert.equal(app.requests.length, 0);
+});
 
 test('topic generation renders a preview without publishing or changing form facts', async () => {
   const app = form();

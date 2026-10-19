@@ -48,3 +48,14 @@ Use current canonical city/place identity and exact OSM URL. Save a readable imm
 Order/checkpoints: failing pure identity/tail/matching tests → helper → raw-page search and local-city routing → guarded prefill/source-tail preservation → existing join/detail reuse → source controls using the documented shared design foundation → actual KO/EN dark/light renders → full tests/types/lint and frozen source packet. Existing native installer and release coordinator perform integration/install; this task makes no native deployment claim.
 
 Commands: `node --test scripts/meetup-destination.test.mjs`; affected existing meetup/discovery/AI tests; `npm test`; `npx tsc --noEmit`; ESLint on changed runtime paths. Tests use current code with local fixtures, never production posting or joining. Existing protected source paths outside the granted native slice remain read-only.
+
+
+## Native destination implementation — 2026-10-19
+
+Place detail hands off its exact canonical place/city to meetup discovery. Discovery keeps the public server visibility contract, uses the raw page cursor before exact destination/hidden/kind/date/seat filtering, and distinguishes an incomplete empty page from an exhausted filtered list. The existing create action carries the same source into a city-scoped draft without changing the preferred city. Ticketmaster callers now pass an explicit source city and preserve their existing event body contract.
+
+A verified OSM place uses an immutable human-readable body suffix; AI edits and post editing change only the invitation. Creating a meetup still requires explicit publication and consent to the current host-profile revision. Existing join/request/quota flows remain in PostDetail. Unknown/conflicting source parameters block creation rather than silently choosing the preferred city.
+
+New controls reuse the shared design-system module, existing feedback and registered analytics targets. The legacy find target is distinguished by place-detail/event-detail screen, with no place/event identifiers or draft text in analytics. Existing guest no-parser and on-device translation checks remain intact; a test-only real-source loader resolves their new bundled-catalog dependency without changing Metro imports. All existing English dictionary pairs remain unchanged.
+
+The minimal valid-place caption in the legacy public ReaderContent post branch preserves source meaning; live /post and /share routes continue through SharedPostRoute and its existing guest gate. Authenticated shared post details use the same PostDetail map action. This feature grants no anonymous joining, new public RPC, SQL/schema change, deployment or native installation. It remains a separate complete source increment after the frozen 9938a8a installer.
