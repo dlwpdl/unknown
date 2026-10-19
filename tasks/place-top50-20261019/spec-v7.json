@@ -46,7 +46,7 @@
   "style": "Existing shapes and attribution; natural concrete descriptions; no new dependency",
   "tests": "Per-city identity/coverage/category/provenance/static-byte invariant plus existing relevant/full checks per completed packet",
   "callPlan": "/Users/ash/Desktop/Git/unknown/output/reviews/gling-cities50-dining-2026-10-19/bounded-plan-v7-proposed.json",
-  "status": "DB accepted rev5 saved and actual RPC client-validated; source/client tests green; city/photo collection remains active",
+  "status": "Accepted first incremental Toronto/Montreal source cohort revision6; actual DB adoption/readback pending. Other cities remain active; not all50 complete.",
   "supplementalDining": "Separate reviewed diningRecommendations; preserve top50 order; getCityDiscoveryPlaces union, getCityBrowsePlaces category-specific, trusted local visited registry only",
   "directUserPersistence": {
     "at": "2026-10-19T19:06:14.237363+00:00",
@@ -55,5 +55,10 @@
   },
   "dbReceipt": "/Users/ash/Desktop/Git/unknown/output/reviews/gling-cities50-dining-2026-10-19/db-persistence-receipt-v7.json",
   "dbCachePolicy": "Show saved cache immediately; one background DB check on new launch and at most once/15min on foreground. External provider daily schedule unchanged.",
-  "baselineClarification": "All904factIDs and Van50 fixed; other88old selections may be reselected with facts retained, per msg_6896a4802a29"
+  "baselineClarification": "All904factIDs and Van50 fixed; other88old selections may be reselected with facts retained, per msg_6896a4802a29",
+  "supplementalDiningUserClarification": {
+    "via": "msg_45f6414ed396",
+    "verbatim": "레스토랑도 더 추가해도됨 꼭 50개가 아니어도되고",
+    "policy": "50 destination goal is not a cap on separately reviewed dining; no franchise padding or unverified places."
+  }
 }
