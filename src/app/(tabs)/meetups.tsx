@@ -94,10 +94,10 @@ function MeetupDiscovery({ eventId }: { eventId: string }) {
   }, [fetchPage]));
   // 호스트가 처리할 승인 대기만 헤더에 알린다. 승인·거절은 대화 탭 요청함에서 한다.
   useFocusEffect(useCallback(() => {
-    if (!isAuthed) { setPendingCount(0); return; }
+    if (!isAuthed || !me.id) { setPendingCount(0); return; }
     let active = true;
     const load = async () => {
-      try { const requests = await loadPendingMeetupRequests(supabase, me.id); if (active) setPendingCount(requests.length); }
+      try { const requests = await loadPendingMeetupRequests(supabase); if (active) setPendingCount(requests.length); }
       catch { if (active) setPendingCount(0); }
     };
     void load();
@@ -189,9 +189,9 @@ function MeetupDiscovery({ eventId }: { eventId: string }) {
           <ThemedText type="smallBold">{tr("함께 가고 싶은 공연·행사")}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{tr("{0}에서 찾고, 같이 갈 모임을 열어요 ›", tr(city.name))}</ThemedText>
         </Pressable>
-        {pendingCount > 0 && <Pressable analyticsId="app_tabs_meetups.pressable.7" accessibilityRole="button" accessibilityLabel={tr("참여 신청 {0}건 처리하기", (pendingCount))}
+        {pendingCount > 0 && <Pressable analyticsId="app_tabs_meetups.pressable.7" accessibilityRole="button" accessibilityLabel={tr("참여 신청 {0}건 처리하기", pendingCount === 50 ? '50+' : pendingCount)}
           onPress={() => { play('selection'); router.push({ pathname: '/chat', params: { view: 'requests' } }); }} style={({ pressed }) => [styles.pending, Depth.card, { borderColor: theme.accent, backgroundColor: theme.card, opacity: pressed ? 0.9 : 1, }]}>
-          <ThemedText type="smallBold" themeColor="accent">{tr("참여 신청 {0}건", pendingCount)}</ThemedText>
+          <ThemedText type="smallBold" themeColor="accent">{tr("참여 신청 {0}건", pendingCount === 50 ? '50+' : pendingCount)}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{tr("프로필을 검토하고 승인·거절해요 ›")}</ThemedText>
         </Pressable>}
         <View style={styles.filterRow}>

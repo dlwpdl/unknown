@@ -215,6 +215,13 @@ export default function ProfileScreen() {
           ))}
         </View>
         <View style={[styles.accountMenu, { backgroundColor: theme.card, borderColor: theme.line }]}>
+          <Pressable analyticsId="profile.meetup-profile" accessibilityRole="button" accessibilityLabel={tr('모임 프로필 관리')}
+            onPress={() => { play('selection'); router.push('/meetup-profile'); }}
+            style={({ pressed }) => [styles.accountRow, { backgroundColor: pressed ? theme.backgroundSelected : theme.card }]}>
+            <View style={[styles.accountIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'person.crop.rectangle', android: 'badge', web: 'badge' }} size={22} tintColor={theme.navy} /></View>
+            <View style={styles.accountText}><ThemedText type="smallBold">{tr('모임 프로필 관리')}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('모임 사진·소개·공개 범위를 따로 설정해요')}</ThemedText></View>
+            <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
+          </Pressable>
           <Pressable analyticsId="profile.meetup-reviews" accessibilityRole="button" accessibilityLabel={tr('모임 후기와 내 매너 평가 관리')}
             onPress={() => { play('selection'); router.push('/profile/meetup-reviews'); }}
             style={({ pressed }) => [styles.accountRow, { backgroundColor: pressed ? theme.backgroundSelected : theme.card }]}>

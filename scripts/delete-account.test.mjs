@@ -100,6 +100,7 @@ test('탈퇴는 본인 공급자 연결 해제를 확인한 뒤에만 파일과 
     assert.equal(calls[4], 'POST /storage/v1/object/list/avatars');
     assert.ok(calls.includes('POST /storage/v1/object/list/merchant-review-receipts'), 'account deletion removes private review receipts too');
     assert.ok(calls.includes('POST /storage/v1/object/list/merchant-profile-images'), 'account deletion removes company logos and banners too');
+    assert.ok(calls.includes('POST /storage/v1/object/list/meetup-profiles'), 'account deletion cleans up separate private meetup photos too');
     assert.ok(calls.indexOf('POST /rest/v1/rpc/delete_my_account') < calls.indexOf('POST /rest/v1/rpc/account_image_cleanup_paths'), 'freeze account before classifying shared images');
     assert.equal(calls.at(-1), `DELETE /auth/v1/admin/users/${user().id}`);
   }
@@ -107,7 +108,7 @@ test('탈퇴는 본인 공급자 연결 해제를 확인한 뒤에만 파일과 
   assert.equal((await run()).status, 200, 'company photos survive account deletion');
   assert.ok(removedPaths.length > 0);
   assert.ok(removedPaths.every(path => path.endsWith('/photo.jpg')));
-  assert.deepEqual(listOffsets, [0,1,0,1,0,1,0,1,0,1], 'retained objects cannot trap cleanup on the first page');
+  assert.deepEqual(listOffsets, [0,1,0,1,0,1,0,1,0,1,0,1], 'retained objects cannot trap cleanup on the first page');
   keepCompanyFiles = false; referenceFails = true;
   assert.equal((await run()).status, 500, 'unknown company references fail closed before deleting files');
   assert.equal(removedPaths.length, 0);

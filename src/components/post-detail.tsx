@@ -736,6 +736,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               onJoin={onJoin ?? (() => isAuthed ? router.push({ pathname: '/meetup-join', params: { postId: post.id } }) : promptLogin('이 모임에 참여하려면 가입하거나 로그인해 주세요.'))}
               onAuthor={() => {
                 if (post.business) { onClose(); router.push({ pathname: '/company/[id]', params: { id: post.business.id } }); return; }
+                if (post.room) { onClose(); router.push({ pathname: '/meetup-profile', params: { postId: post.id } }); return; }
                 setSheetUser({
                   id: post.author.id,
                   nickname: post.author.nickname,
@@ -750,7 +751,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
             />}
             {!postDraft && post.kind === 'story' && !post.room && <PostPoll postId={post.id} />}
             {!postDraft && post.room && <ChillingHostProfile post={post} onJoin={onJoin} onBeforeNavigate={onJoin ? onClose : undefined} />}
-            {!postDraft && post.room && <MeetupReviews postId={post.id} kind={post.room.eventKind ?? 'group'} />}
+            {!postDraft && post.room && <MeetupReviews postId={post.id} kind={post.room.eventKind ?? 'group'} onBeforeNavigate={onClose} />}
             {canManagePost && (post.kind === 'listing' || (post.tag.kind === 'post' && !post.room)) && <ListingControls post={post} onChanged={onListingChanged} />}
             {PROMOTIONS_PREVIEW_ENABLED && Platform.OS !== 'web' && isAuthed && post.author.id === me.id && <Pressable analyticsId="components_post-detail.pressable.16"
               accessibilityRole="button"

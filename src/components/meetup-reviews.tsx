@@ -1,9 +1,11 @@
 import { FlatPressable as Pressable } from '@/components/flat-pressable';
+import { useRouter } from 'expo-router';
 import { useLanguage } from '@/hooks/use-language';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, StyleSheet, TextInput, View } from 'react-native';
 import { ChillingDateInput } from '@/components/chilling-date-input';
 import { MannerReviewButton } from '@/components/manner-review';
+import { MeetupHostTools } from '@/components/meetup-host-tools';
 import { ReportSheet } from '@/components/report-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
@@ -13,14 +15,15 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { checkInMeetup, claimMeetupAttendance, confirmMeetupAttendance, createMeetupSession, loadMeetupReviews, loadMeetupSessions, writeMeetupReview, type MeetupReviewPage, type MeetupSessions, type MeetupSession } from '@/lib/meetup-reviews';
 import { supabase } from '@/lib/supabase';
 
-export function MeetupReviews(props: { postId: string; kind: 'once' | 'group'; attendanceOnly?: boolean }) {
+export function MeetupReviews(props: { postId: string; kind: 'once' | 'group'; attendanceOnly?: boolean; onBeforeNavigate?: () => void }) {
 
   const { isAuthed, me } = useAuth();
   return <Reviews key={`${isAuthed ? me.id : 'guest'}:${props.postId}`} {...props} />;
 }
-function Reviews({ postId, kind, attendanceOnly = false }: { postId: string; kind: 'once' | 'group'; attendanceOnly?: boolean }) {
+function Reviews({ postId, kind, attendanceOnly = false, onBeforeNavigate }: { postId: string; kind: 'once' | 'group'; attendanceOnly?: boolean; onBeforeNavigate?: () => void }) {
   const { tr, locale: appLocale } = useLanguage();
   const theme = useTheme(), { isAuthed, me } = useAuth(), { play } = useInteractionFeedback();
+  const router = useRouter();
   const hidden = useContentVisibility();
   const [page, setPage] = useState<MeetupReviewPage | null>(null), [sessions, setSessions] = useState<MeetupSessions | null>(null);
   const [error, setError] = useState(''), [retry, setRetry] = useState(0), [busy, setBusy] = useState(false), pending = useRef(false);
@@ -59,12 +62,13 @@ function Reviews({ postId, kind, attendanceOnly = false }: { postId: string; kin
   }
   const button = [styles.button, { borderColor: theme.line, backgroundColor: theme.backgroundElement }];
   return <View style={styles.container}>
+    {isAuthed && <MeetupHostTools postId={postId} onChanged={() => setRetry(value => value + 1)} />}
     {kind === 'group' && !attendanceOnly && <>
       <ThemedText type="subtitle">{tr("참석자가 남긴 모임 후기")}</ThemedText>
       <ThemedText type="small">{page?.participants ? tr("{0}/10 · 서로 다른 {1}명", (page.score), (page.participants)) : tr("참석 확인된 후기를 기다리고 있어요.")}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{tr("회차별 후기는 모임에 쌓이고, 같은 사람의 반복 참여는 평점을 여러 번 올리지 않아요.")}</ThemedText>
       {page?.reviews.filter(review => !hidden('meetup_review', review.id, review.authorId)).map(review => <View key={review.id} style={[styles.review, { borderColor: theme.line }]}>
-        <ThemedText type="smallBold">{review.nickname} · {review.score}/10</ThemedText>
+        <Pressable accessibilityRole="button" accessibilityLabel={tr("{0} 모임 프로필", review.nickname)} disabled={!isAuthed} style={button} onPress={() => { play('selection'); onBeforeNavigate?.(); router.push({ pathname: '/meetup-profile', params: { postId, userId: review.authorId } }); }}><ThemedText type="smallBold">{review.nickname} · {review.score}/10</ThemedText></Pressable>
         <ThemedText type="small" themeColor="textSecondary">{new Date(review.sessionDate).toLocaleDateString(appLocale)}{" " + tr("참석 후기")}</ThemedText>
         {!!review.body && <ThemedText type="small">{review.body}</ThemedText>}
         {isAuthed && review.authorId !== me.id && <Pressable accessibilityRole="button" onPress={() => { play('selection'); setReport(review); }} style={button}><ThemedText type="small">{tr("후기 신고")}</ThemedText></Pressable>}

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import * as meetupContract from '../supabase/functions/draft-post/meetup-draft.ts';
 
 test('photo draft keeps author hints outside trusted writing instructions and disables storage', async () => {
   let handler, sent;
@@ -92,14 +93,14 @@ test('event meetup request creates an invitation from the seeded festival instea
   vm.runInNewContext(source, {
     exports: {}, Request, Response, console,
     Deno: { serve: fn => { handler = fn; }, env: { get: () => 'test-value' } },
-    require: () => ({ createClient: () => ({
+    require: name => name.includes('meetup-draft') ? meetupContract : ({ createClient: () => ({
       auth: { getUser: async () => ({ data: { user: { id: 'member' } } }) },
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { ai_safety_consent_at: '2026-09-11' } }) }) }) }),
       rpc: async () => ({}),
     }) }),
     fetch: async (_url, options) => {
       sent = JSON.parse(options.body);
-      return Response.json({ output: [{ content: [{ type: 'output_text', text: JSON.stringify({ categorySlug: 'meetup', title: '함께 가요', body: '페스티벌 함께 가실 분을 찾아요.', hashtags: [] }) }] }] });
+      return Response.json({ output: [{ content: [{ type: 'output_text', text: JSON.stringify({ categorySlug: 'meetup', title: '함께 가요', body: '페스티벌 함께 가실 분을 찾아요.', hashtags: [], purpose: '공연을 함께 즐겨요.', activities: ['관심 있는 무대를 이야기해요.'], fit: '이 행사에 관심 있는 분', preparation: [], applicationQuestion: '어떤 무대가 기대되세요?' }) }] }] });
     },
   });
   const input = { cityName: '밴쿠버', selectedCategory: 'meetup', intent: 'event_meetup', titleHint: 'PLUM VALLEY 같이 가요', bodyHint: 'PLUM VALLEY, 함께 가실 분을 찾아요.' };
@@ -107,6 +108,7 @@ test('event meetup request creates an invitation from the seeded festival instea
   assert.equal(response.status, 200);
   assert.equal(JSON.parse(sent.input[0].content[0].text).mode, 'create_event_meetup');
   assert.ok(sent.instructions.includes('새 모임 초안'), '행사 모임 전용 지시가 있어야 한다');
+  assert.ok(sent.instructions.includes('행사 ID·출처·티켓 링크·장소·일정은 앱이 따로 보존'));
 });
 
 test('초안 본문은 쓰레드 말투로 고정되고, 작성자 원고 다듬기는 말투를 바꾸지 않는다', async () => {

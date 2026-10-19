@@ -28,7 +28,7 @@ function meetupLabel() {
 
 test('meetup action labels translate fixed Chilling and Meetup terms in both modes', () => {
   const label = meetupLabel();
-  const scope = { saving: false, pickingCover: false, ticketmasterEventId: '' };
+  const scope = { saving: false, pickingCover: false, ticketmasterEventId: '', hostConsent: true };
   for (const [language, once, group] of [['en', 'Open Chilling', 'Open Meetup'], ['ko', '칠링 열기', '모임 열기']]) {
     assert.equal(evaluate(label, language, { ...scope, event: { kind: 'once' } }), once);
     assert.equal(evaluate(label, language, { ...scope, event: { kind: 'group' } }), group);
