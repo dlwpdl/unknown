@@ -14,10 +14,14 @@ import Head from 'expo-router/head';
 import { Fragment, useEffect, useState, useSyncExternalStore, type CSSProperties } from 'react';
 
 import { WebNightColors } from '@/constants/theme';
+import { ControlMetrics } from '@/constants/design-system';
+import { useLanguage } from '@/hooks/use-language';
 import { chillingSchedule, recommendedAgeLabel } from '@/lib/chilling';
 import { appendUniquePosts, loadPublicFeed, loadPublicPost, type FeedCursor } from '@/lib/feed-data';
 import { CITIES, TAGS } from '@/lib/mock';
 import { visibleMeetupBody } from '@/lib/meetup-ai';
+import { splitPlaceMeetupBody } from '@/lib/meetup-destination';
+import { placeMapRoute } from '@/lib/discovery';
 import { googleMapsUrl, postMapBody } from '@/lib/post-maps';
 import { t } from '@/i18n/ko';
 import { hasAdLabel } from '@/lib/hashtags';
@@ -56,6 +60,16 @@ function MapAction({ url, label }: { url: string; label?: string }) {
   return <div className="reader-actions"><a data-analytics="components_post-map-link.pressable.1" className="reader-secondary"
     href={target} target="_blank" rel="noopener noreferrer" aria-label={`${label ? `${label} · ` : ''}${t.map.openLabel}`}
     onClick={() => play('selection')}>{label ? `${label} · ` : ''}{t.map.open} ↗</a></div>;
+}
+
+function PlaceSourceAction({ post }: { post: Post }) {
+  const { play } = useInteractionFeedback(), { tr, language } = useLanguage();
+  const place = post.room ? splitPlaceMeetupBody(post.body, post.cityId)?.place : null;
+  if (!place) return null;
+  const target = () => `gling://map?${new URLSearchParams(placeMapRoute(place).params)}`;
+  const label = `${place.name} · ${tr(CITIES.find(city => city.id === place.cityId)?.name ?? '')} · ${language === 'en' ? 'View in app map' : '앱 지도에서 보기'}`;
+  return <div className="reader-actions"><a data-analytics="components_post-map-link.pressable.1" className="reader-secondary" href={target()} aria-label={label} style={{ minHeight: ControlMetrics.action }}
+    onClick={event => { play('selection'); event.currentTarget.href = target(); }}>{label}</a></div>;
 }
 
 function PostAuthor({ post }: { post: Post }) {
@@ -254,6 +268,7 @@ function ReaderContent() {
             <PublicMerchantProfileLink postId={post.id} />
             {post.imageUris?.map((uri, index) => uri && <img className="reader-photo" key={uri} src={uri} alt={`${post.title} 사진 ${index + 1}`} loading="lazy" />)}
             <BodyLinks body={post.room ? visibleMeetupBody(mappedPost!.body) : mappedPost!.body} /><MeetupInfo post={post} />
+            <PlaceSourceAction post={post} />
             {mappedPost?.url && <MapAction url={mappedPost.url} label={mappedPost.label} />}
             <MerchantSourceAction postId={post.id} />
             <div className="reader-actions"><a data-analytics="web_control_13" className="reader-primary" href={target}>{post.room ? post.room.closed ? '앱에서 모임 보기' : '앱에서 모임 보기 · 참여하기' : '앱에서 대화하기'} ↗</a><button data-analytics="web_control_14" onClick={() => void share()}>링크 공유</button></div>

@@ -17,7 +17,6 @@ import { Depth } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { eventVideo } from '@/lib/event-videos';
-import { useCommunityCity } from '@/lib/community-city';
 import { useAuth } from '@/lib/auth';
 import { recordProductEvent } from '@/lib/product-analytics';
 import { supabase } from '@/lib/supabase';
@@ -28,7 +27,6 @@ export default function EventDetailScreen() {
   const { tr, locale: appLocale } = useLanguage();
   const { id, cityId } = useLocalSearchParams<{ id: string; cityId: string }>();
   const theme = useTheme(), router = useRouter();
-  const { setCity } = useCommunityCity();
   const { isAuthed, me, promptLogin } = useAuth();
   const userId = isAuthed ? me.id : null;
   const identity = useRef(userId);
@@ -77,15 +75,13 @@ export default function EventDetailScreen() {
     const city = CITIES.find(item => item.id === cityId && item.state === 'open');
     if (!city || !event || !meetupAllowed(event)) return;
     if (!isAuthed) return promptLogin('이 행사에 갈 모임을 만들려면 가입하거나 로그인해 주세요.');
-    setCity(city);
     router.push({ pathname: '/meetup-create', params: { ticketmasterEventId: event.id, ticketmasterCityId: cityId } });
   };
   const findMeetups = () => {
     play('selection');
     const city = CITIES.find(item => item.id === cityId && item.state === 'open');
     if (!city || !event || !meetupAllowed(event)) return;
-    setCity(city);
-    router.push({ pathname: '/(tabs)/meetups', params: { ticketmasterEventId: event.id } });
+    router.push({ pathname: '/(tabs)/meetups', params: { ticketmasterEventId: event.id, ticketmasterCityId: cityId } });
   };
   return <Link.AppleZoomTarget><SafeAreaView style={[styles.root, { backgroundColor: theme.background }]}>
     <View style={[styles.header, { backgroundColor: theme.background }]}><Pressable analyticsId="ticketmaster.detail.back" accessibilityRole="button" accessibilityLabel={tr("뒤로가기")} onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace('/events'); }} style={({ pressed }) => [styles.back, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} /></Pressable><ThemedText accessibilityRole="header" style={styles.headerTitle}>{tr("행사 정보")}</ThemedText><View style={styles.back} /></View>
