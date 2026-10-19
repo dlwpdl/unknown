@@ -182,7 +182,10 @@ def main():
     if args.publish and (out/'attempt.json').exists(): raise ValueError('PLACE_PUBLICATION_NEEDS_READBACK')
     seed = json.loads(args.seed.read_text())
     if seed.get('recommendationTheme') != 'photo-spots': raise ValueError('PHOTO_SELECTION_REQUIRED')
-    if previous and previous.get('selectionRevision', 0) > seed.get('selectionRevision', 0): seed = deepcopy(previous)
+    if previous and (previous.get('selectionRevision', 0) > seed.get('selectionRevision', 0)
+                     or (previous.get('selectionRevision', 0) == seed.get('selectionRevision', 0)
+                         and instant(previous['collectedAt']) > instant(seed['collectedAt']))):
+        seed = deepcopy(previous)
     baseline = json.loads((ROOT/'src/lib/city-places.catalog.json').read_text())
     if set(seed['cities']) != set(baseline['cities']): raise ValueError('INVALID_PLACE_CITIES')
     # Retain older identities that already have detail/review links.
