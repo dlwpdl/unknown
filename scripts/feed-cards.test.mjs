@@ -70,7 +70,11 @@ test('choosing a post city changes only the draft and keeps upcoming cities unav
     '@/lib/community-city': { useCommunityCity: () => ({ city: CITIES[0], saving: false, selectCity: () => assert.fail('post city must not save profile preferences') }) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
   });
-  const render = () => CityPicker({ onClose: () => { closed++; }, draft: { city: selected, onSelect: city => { selected = city; } } });
+  const heading = tree => text(nodes(tree).find(node => node.props?.accessibilityRole === 'header'));
+  assert.equal(heading(CityPicker({ onClose() {} })), '지역 선택');
+  assert.equal(heading(CityPicker({ onClose() {}, draft: { city: selected, onSelect() {} } })), '게시 지역');
+  const render = () => CityPicker({ title: '활동 도시', onClose: () => { closed++; }, draft: { city: selected, onSelect: city => { selected = city; } } });
+  assert.equal(heading(render()), '활동 도시', 'an activity-city caller can name the sheet without changing draft selection behavior');
   const list = () => nodes(render()).find(node => node.type === 'SectionList').props;
   const toronto = CITIES.find(city => city.id === 'toronto');
   await cityRow(list().renderItem({ item: toronto })).props.onPress();
