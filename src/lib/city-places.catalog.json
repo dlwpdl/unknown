@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T22:26:42.300410+00:00",
+  "collectedAt": "2026-10-20T00:28:48.553328+00:00",
   "source": "OpenStreetMap; source-reviewed Gling photo-spot selections",
   "license": "ODbL-1.0",
   "attribution": "© OpenStreetMap contributors",
@@ -3495,6 +3495,414 @@
           "sourceUrl": "https://www.openstreetmap.org/node/5827984711",
           "website": null,
           "openingHours": "Mo-Fr 06:30-22:00; Sa-Su 07:00-22:00"
+        },
+        {
+          "id": "osm:node:12629692193",
+          "cityId": "vancouver",
+          "name": "Northern Cafe",
+          "category": "food",
+          "latitude": 49.2085178,
+          "longitude": -123.0724216,
+          "address": "1640 East Kent Avenue South",
+          "sourceUrl": "https://www.openstreetmap.org/node/12629692193",
+          "website": "https://northerncafeandgrill.com/",
+          "openingHours": "Mo-Fr 07:00-15:00; Sa 08:00-14:30"
+        },
+        {
+          "id": "osm:node:3690929433",
+          "cityId": "vancouver",
+          "name": "Joe Fortes",
+          "category": "food",
+          "latitude": 49.2849273,
+          "longitude": -123.124611,
+          "address": "777 Thurlow Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/3690929433",
+          "website": "https://www.joefortes.ca/",
+          "openingHours": "Mo-Su 11:00-23:00"
+        },
+        {
+          "id": "osm:node:4898455721",
+          "cityId": "vancouver",
+          "name": "Miku",
+          "category": "food",
+          "latitude": 49.2870647,
+          "longitude": -123.112828,
+          "address": "200 Granville Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/4898455721",
+          "website": "https://mikurestaurant.com/",
+          "openingHours": "Mo-Fr 11:30-22:00; Sa-Su 12:00-22:00"
+        },
+        {
+          "id": "osm:way:147224794",
+          "cityId": "vancouver",
+          "name": "Phnom Penh Restaurant",
+          "category": "food",
+          "latitude": 49.2783172,
+          "longitude": -123.0982035,
+          "address": "244 East Georgia Street",
+          "sourceUrl": "https://www.openstreetmap.org/way/147224794",
+          "website": "https://phnompenhrestaurant.ca/",
+          "openingHours": "Mo-Su 11:00-21:00"
+        },
+        {
+          "id": "osm:node:3235438890",
+          "cityId": "vancouver",
+          "name": "Chambar",
+          "category": "food",
+          "latitude": 49.2801513,
+          "longitude": -123.109872,
+          "address": "568 Beatty Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/3235438890",
+          "website": "https://www.chambar.com/",
+          "openingHours": "We-Fr 15:00-22:00; Sa,Su 09:00-22:00"
+        },
+        {
+          "id": "osm:node:7431099009",
+          "cityId": "vancouver",
+          "name": "Downlow Chicken Shack",
+          "category": "food",
+          "latitude": 49.2763128,
+          "longitude": -123.0697102,
+          "address": "905 Commercial Drive",
+          "sourceUrl": "https://www.openstreetmap.org/node/7431099009",
+          "website": "https://www.dlchickenshack.ca",
+          "openingHours": "Tu-Sa 11:00-21:00; Su 11:00-16:30"
+        },
+        {
+          "id": "osm:node:5862689185",
+          "cityId": "vancouver",
+          "name": "Nightingale",
+          "category": "food",
+          "latitude": 49.2874308,
+          "longitude": -123.117594,
+          "address": "1017 West Hastings Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/5862689185",
+          "website": "https://www.hawknightingale.com/",
+          "openingHours": "Su-We 11:30-23:00; Th-Sa 11:30-23:30"
+        },
+        {
+          "id": "osm:node:1219255827",
+          "cityId": "vancouver",
+          "name": "Blue Water Cafe + raw bar",
+          "category": "food",
+          "latitude": 49.2760962,
+          "longitude": -123.121114,
+          "address": "1095 Hamilton St, Vancouver, BC V6B 2W9, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/node/1219255827",
+          "website": "https://bluewatercafe.net/",
+          "openingHours": "Mo-Su 16:30+"
+        },
+        {
+          "id": "osm:way:293135157",
+          "cityId": "vancouver",
+          "name": "Osteria Savio Volpe",
+          "category": "food",
+          "latitude": 49.2574683,
+          "longitude": -123.0909467,
+          "address": "615 Kingsway",
+          "sourceUrl": "https://www.openstreetmap.org/way/293135157",
+          "website": "https://www.saviovolpe.com/",
+          "openingHours": "17:00-22:30"
+        },
+        {
+          "id": "osm:node:6758046639",
+          "cityId": "vancouver",
+          "name": "Elisa",
+          "category": "food",
+          "latitude": 49.2759188,
+          "longitude": -123.121377,
+          "address": "1109 Hamilton Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/6758046639",
+          "website": "https://www.elisasteak.com",
+          "openingHours": "16:30+"
+        },
+        {
+          "id": "osm:node:4844724670",
+          "cityId": "vancouver",
+          "name": "Vij's",
+          "category": "food",
+          "latitude": 49.2575621,
+          "longitude": -123.114845,
+          "address": "3106 Cambie Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/4844724670",
+          "website": "https://vijs.ca/vijs-restaurant/",
+          "openingHours": "Su-Th 17:30-21:30; Fr-Sa 17:30-22:00"
+        },
+        {
+          "id": "osm:node:4006318249",
+          "cityId": "vancouver",
+          "name": "Tom Sushi",
+          "category": "food",
+          "latitude": 49.2815405,
+          "longitude": -123.132811,
+          "address": "1175 Davie Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/4006318249",
+          "website": "https://tomsushi.ca/",
+          "openingHours": "We-Mo 12:00-21:30; Tu off"
+        },
+        {
+          "id": "osm:way:368714590",
+          "cityId": "vancouver",
+          "name": "HY's Steakhouse",
+          "category": "food",
+          "latitude": 49.2846519,
+          "longitude": -123.1193062,
+          "address": "637 Hornby Street",
+          "sourceUrl": "https://www.openstreetmap.org/way/368714590",
+          "website": "https://hyssteakhouse.com/",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:320168328",
+          "cityId": "vancouver",
+          "name": "Via Tevere",
+          "category": "food",
+          "latitude": 49.2738877,
+          "longitude": -123.0654348,
+          "address": "1190 Victoria Drive",
+          "sourceUrl": "https://www.openstreetmap.org/way/320168328",
+          "website": "https://viateverepizzeria.com",
+          "openingHours": "Su-Th 16:00-21:30; Fr,Sa 16:00-22:30; PH open \"hours may vary\""
+        },
+        {
+          "id": "osm:node:6556577632",
+          "cityId": "vancouver",
+          "name": "Maruhachi Ra-men",
+          "category": "food",
+          "latitude": 49.2785491,
+          "longitude": -123.115763,
+          "address": "270 Robson Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/6556577632",
+          "website": "https://marutama.ca",
+          "openingHours": "Mo-Su 11:00-22:00"
+        },
+        {
+          "id": "osm:node:5866981376",
+          "cityId": "vancouver",
+          "name": "Dynasty Seafood Restaurant",
+          "category": "food",
+          "latitude": 49.2637006,
+          "longitude": -123.1214739,
+          "address": "777 West Broadway",
+          "sourceUrl": "https://www.openstreetmap.org/node/5866981376",
+          "website": null,
+          "openingHours": "Mo-Su 10:00-15:00,17:30-22:30"
+        },
+        {
+          "id": "osm:node:5965217085",
+          "cityId": "vancouver",
+          "name": "Hawksworth Restaurant",
+          "category": "food",
+          "latitude": 49.2834872,
+          "longitude": -123.1193331,
+          "address": "801 West Georgia Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/5965217085",
+          "website": "https://hawksworthrestaurant.com/",
+          "openingHours": "Mo-Fr 11:30-15:00,16:00+; Sa-Su 16:00+"
+        },
+        {
+          "id": "osm:node:2911718436",
+          "cityId": "vancouver",
+          "name": "Breka Bakery & Café",
+          "category": "cafe",
+          "latitude": 49.278414,
+          "longitude": -123.1278962,
+          "address": "855 Davie Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/2911718436",
+          "website": "https://www.breka.ca/",
+          "openingHours": "24/7"
+        },
+        {
+          "id": "osm:node:5788272506",
+          "cityId": "vancouver",
+          "name": "49th Parallel Café & Lucky's Doughnuts",
+          "category": "cafe",
+          "latitude": 49.2860362,
+          "longitude": -123.1230296,
+          "address": "689 Thurlow Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/5788272506",
+          "website": null,
+          "openingHours": "Mo-Sa 07:00-18:00; Su 08:00-18:00"
+        },
+        {
+          "id": "osm:node:4232965023",
+          "cityId": "vancouver",
+          "name": "Trees Organic Coffee",
+          "category": "cafe",
+          "latitude": 49.2848589,
+          "longitude": -123.1143085,
+          "address": "450 Granville Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/4232965023",
+          "website": "https://treescoffee.com/",
+          "openingHours": "Mo-Fr 07:00-22:00; Sa-Su,PH 08:00-22:00"
+        },
+        {
+          "id": "osm:node:3706108136",
+          "cityId": "vancouver",
+          "name": "Small Victory",
+          "category": "cafe",
+          "latitude": 49.2736552,
+          "longitude": -123.1184594,
+          "address": "1089 Marinaside Crescent",
+          "sourceUrl": "https://www.openstreetmap.org/node/3706108136",
+          "website": "https://www.smallvictory.ca/",
+          "openingHours": "08:00-17:00"
+        },
+        {
+          "id": "osm:node:3938037053",
+          "cityId": "vancouver",
+          "name": "Greenhorn Cafe",
+          "category": "cafe",
+          "latitude": 49.2866176,
+          "longitude": -123.134001,
+          "address": "994 Nicola Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/3938037053",
+          "website": "https://www.greenhorncafe.com/",
+          "openingHours": "Mo-Su 07:00-16:00"
+        },
+        {
+          "id": "osm:node:9657558868",
+          "cityId": "vancouver",
+          "name": "Cafe Portrait",
+          "category": "cafe",
+          "latitude": 49.288022,
+          "longitude": -123.1404396,
+          "address": "1120 Denman Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/9657558868",
+          "website": "https://www.cafeportrait.com",
+          "openingHours": "Mo-Th 09:00-16:00; Fr-Su 09:00-21:00"
+        },
+        {
+          "id": "osm:node:4005181996",
+          "cityId": "vancouver",
+          "name": "Le Marché St. George",
+          "category": "cafe",
+          "latitude": 49.2457153,
+          "longitude": -123.094297,
+          "address": "4393 St George Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/4005181996",
+          "website": "https://atelierstgeorge.com/",
+          "openingHours": "Tu-Su 08:00-17:00; Mo off"
+        },
+        {
+          "id": "osm:node:5357068721",
+          "cityId": "vancouver",
+          "name": "Milano Cafe",
+          "category": "cafe",
+          "latitude": 49.2637142,
+          "longitude": -123.1087033,
+          "address": "156 West 8th Avenue",
+          "sourceUrl": "https://www.openstreetmap.org/node/5357068721",
+          "website": "https://www.milanocoffee.ca/",
+          "openingHours": "Mo-Su 07:00-18:00"
+        },
+        {
+          "id": "osm:node:4211034001",
+          "cityId": "vancouver",
+          "name": "Nelson the Seagull",
+          "category": "cafe",
+          "latitude": 49.2821626,
+          "longitude": -123.1045058,
+          "address": "315 Carrall Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/4211034001",
+          "website": "https://www.nelsontheseagull.com/",
+          "openingHours": "08:00-16:00"
+        },
+        {
+          "id": "osm:node:3898779121",
+          "cityId": "vancouver",
+          "name": "Timbertrain Coffee Roasters",
+          "category": "cafe",
+          "latitude": 49.2839055,
+          "longitude": -123.1094962,
+          "address": "311 West Cordova Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/3898779121",
+          "website": "https://timbertrain.ca/",
+          "openingHours": "Mo-Fr 08:00-16:00; Sa, Su 09:00-17:00"
+        },
+        {
+          "id": "osm:node:1357164783",
+          "cityId": "vancouver",
+          "name": "Aperture Coffee Bar",
+          "category": "cafe",
+          "latitude": 49.2484265,
+          "longitude": -123.1008036,
+          "address": "4124 Main Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/1357164783",
+          "website": "https://www.aperturecoffeebar.com/",
+          "openingHours": "Mo-Su 08:00-22:00"
+        },
+        {
+          "id": "osm:node:9453576759",
+          "cityId": "vancouver",
+          "name": "Marché Mon Pitou",
+          "category": "cafe",
+          "latitude": 49.2654201,
+          "longitude": -123.135727,
+          "address": "1387 West 7th Avenue",
+          "sourceUrl": "https://www.openstreetmap.org/node/9453576759",
+          "website": "https://www.marchemonpitou.ca",
+          "openingHours": "Mo-Fr 07:30-21:00; Sa,Su 08:00-21:00"
+        },
+        {
+          "id": "osm:node:6139663128",
+          "cityId": "vancouver",
+          "name": "Elysian Coffee Roasters",
+          "category": "cafe",
+          "latitude": 49.2645304,
+          "longitude": -123.1050298,
+          "address": "2301 Ontario Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/6139663128",
+          "website": null,
+          "openingHours": "Mo-Fr 07:00-18:00; Sa,Su 08:00-18:00"
+        },
+        {
+          "id": "osm:node:3892521307",
+          "cityId": "vancouver",
+          "name": "Rocanini",
+          "category": "cafe",
+          "latitude": 49.2770169,
+          "longitude": -123.115107,
+          "address": "863 Beatty Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/3892521307",
+          "website": null,
+          "openingHours": "Mo-Fr 07:00-17:00; Su 08:00-15:00; Sa 08:00-17:00"
+        },
+        {
+          "id": "osm:node:6738071638",
+          "cityId": "vancouver",
+          "name": "Prototype Coffee",
+          "category": "cafe",
+          "latitude": 49.2813068,
+          "longitude": -123.0852617,
+          "address": "883 East Hastings Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/6738071638",
+          "website": "https://www.prototypecoffee.ca/",
+          "openingHours": "Mo-Fr 08:00-16:00; Sa 09:00-17:00; Su 09:00-16:00"
+        },
+        {
+          "id": "osm:node:2711740615",
+          "cityId": "vancouver",
+          "name": "Turk's",
+          "category": "cafe",
+          "latitude": 49.2732532,
+          "longitude": -123.0693829,
+          "address": "1276 Commercial Drive",
+          "sourceUrl": "https://www.openstreetmap.org/node/2711740615",
+          "website": "https://www.milanocoffee.ca/",
+          "openingHours": "Mo-Th 07:00-18:00; Fr-Su 07:00-18:00; PH 09:00-17:00"
+        },
+        {
+          "id": "osm:node:4632854698",
+          "cityId": "vancouver",
+          "name": "The Federal Store",
+          "category": "cafe",
+          "latitude": 49.2619429,
+          "longitude": -123.103196,
+          "address": "2601 Quebec Street",
+          "sourceUrl": "https://www.openstreetmap.org/node/4632854698",
+          "website": null,
+          "openingHours": "08:00-18:00"
         }
       ],
       "recommendations": [
@@ -4079,6 +4487,244 @@
           "reasonEn": "A restaurant inside the Fairmont Pacific Rim hotel.",
           "sourceUrl": "https://wanderlog.com/list/geoCategory/74966/where-to-eat-best-restaurants-in-vancouver",
           "verifiedAt": "2026-10-19T19:04:25.744Z"
+        },
+        {
+          "placeId": "osm:node:12629692193",
+          "reason": "East Kent Avenue South의 식당. Google 4.9점·리뷰 10,391개.",
+          "reasonEn": "A restaurant on East Kent Avenue South, rated 4.9/5 on Google from 10,391 reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/1532184",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:3690929433",
+          "reason": "Google 리뷰 8,831개에서 평점 4.5점을 받은 식당.",
+          "reasonEn": "Rated 4.5/5 from 8,831 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/414289",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:4898455721",
+          "reason": "Granville Street에서 찾은 Miku. Google 4.6점, 리뷰 8,464개.",
+          "reasonEn": "Miku on Granville Street; 4.6/5 from 8,464 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/119086",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:way:147224794",
+          "reason": "East Georgia Street의 식당. Google 4.4점·리뷰 5,293개.",
+          "reasonEn": "A restaurant on East Georgia Street, rated 4.4/5 on Google from 5,293 reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/99656",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:3235438890",
+          "reason": "Google 리뷰 4,445개에서 평점 4.5점을 받은 식당.",
+          "reasonEn": "Rated 4.5/5 from 4,445 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/380016",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:7431099009",
+          "reason": "Commercial Drive에서 찾은 Downlow Chicken Shack. Google 4.6점, 리뷰 4,158개.",
+          "reasonEn": "Downlow Chicken Shack on Commercial Drive; 4.6/5 from 4,158 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/379580",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:5862689185",
+          "reason": "West Hastings Street의 식당. Google 4.5점·리뷰 4,088개.",
+          "reasonEn": "A restaurant on West Hastings Street, rated 4.5/5 on Google from 4,088 reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/98435",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:1219255827",
+          "reason": "Google 리뷰 3,927개에서 평점 4.7점을 받은 식당.",
+          "reasonEn": "Rated 4.7/5 from 3,927 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/435770",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:way:293135157",
+          "reason": "Kingsway에서 찾은 Osteria Savio Volpe. Google 4.6점, 리뷰 3,694개.",
+          "reasonEn": "Osteria Savio Volpe on Kingsway; 4.6/5 from 3,694 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/98662",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:6758046639",
+          "reason": "Hamilton Street의 식당. Google 4.6점·리뷰 3,339개.",
+          "reasonEn": "A restaurant on Hamilton Street, rated 4.6/5 on Google from 3,339 reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/808243",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:4844724670",
+          "reason": "Google 리뷰 3,170개에서 평점 4.3점을 받은 식당.",
+          "reasonEn": "Rated 4.3/5 from 3,170 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/380048",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:4006318249",
+          "reason": "Davie Street에서 찾은 Tom Sushi. Google 4.7점, 리뷰 2,836개.",
+          "reasonEn": "Tom Sushi on Davie Street; 4.7/5 from 2,836 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/508128",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:way:368714590",
+          "reason": "Hornby Street의 식당. Google 4.5점·리뷰 2,736개.",
+          "reasonEn": "A restaurant on Hornby Street, rated 4.5/5 on Google from 2,736 reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/432447",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:way:320168328",
+          "reason": "Google 리뷰 2,634개에서 평점 4.6점을 받은 식당.",
+          "reasonEn": "Rated 4.6/5 from 2,634 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/441978",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:6556577632",
+          "reason": "Robson Street에서 찾은 Maruhachi Ra-men. Google 4.4점, 리뷰 2,339개.",
+          "reasonEn": "Maruhachi Ra-men on Robson Street; 4.4/5 from 2,339 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/380115",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:5866981376",
+          "reason": "West Broadway의 식당. Google 4.2점·리뷰 2,302개.",
+          "reasonEn": "A restaurant on West Broadway, rated 4.2/5 on Google from 2,302 reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/371104",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:5965217085",
+          "reason": "Google 리뷰 2,079개에서 평점 4.3점을 받은 식당.",
+          "reasonEn": "Rated 4.3/5 from 2,079 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/380044",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:2911718436",
+          "reason": "Davie Street에서 찾은 Breka Bakery & Café. Google 4.4점, 리뷰 4,500개.",
+          "reasonEn": "Breka Bakery & Café on Davie Street; 4.4/5 from 4,500 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/853723",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:5788272506",
+          "reason": "Thurlow Street의 카페. Google 4.4점·리뷰 2,449개.",
+          "reasonEn": "A cafe on Thurlow Street, rated 4.4/5 on Google from 2,449 reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/894961",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:4232965023",
+          "reason": "Google 리뷰 1,896개에서 평점 4.3점을 받은 카페.",
+          "reasonEn": "Rated 4.3/5 from 1,896 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/99597",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:3706108136",
+          "reason": "Marinaside Crescent에서 찾은 Small Victory. Google 4.4점, 리뷰 1,842개.",
+          "reasonEn": "Small Victory on Marinaside Crescent; 4.4/5 from 1,842 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/425428",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:3938037053",
+          "reason": "Nicola Street의 카페. Google 4.5점·리뷰 1,600개.",
+          "reasonEn": "A cafe on Nicola Street, rated 4.5/5 on Google from 1,600 reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/499301",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:9657558868",
+          "reason": "Google 리뷰 1,531개에서 평점 4.6점을 받은 카페.",
+          "reasonEn": "Rated 4.6/5 from 1,531 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/1096679",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:4005181996",
+          "reason": "St George Street에서 찾은 Le Marché St. George. Google 4.6점, 리뷰 1,263개.",
+          "reasonEn": "Le Marché St. George on St George Street; 4.6/5 from 1,263 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/380033",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:5357068721",
+          "reason": "West 8th Avenue의 카페. Google 4.5점·리뷰 1,227개.",
+          "reasonEn": "A cafe on West 8th Avenue, rated 4.5/5 on Google from 1,227 reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/1511376",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:4211034001",
+          "reason": "Google 리뷰 1,209개에서 평점 4.5점을 받은 카페.",
+          "reasonEn": "Rated 4.5/5 from 1,209 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/471586",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:3898779121",
+          "reason": "West Cordova Street에서 찾은 Timbertrain Coffee Roasters. Google 4.5점, 리뷰 1,142개.",
+          "reasonEn": "Timbertrain Coffee Roasters on West Cordova Street; 4.5/5 from 1,142 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/767326",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:1357164783",
+          "reason": "Main Street의 카페. Google 4.5점·리뷰 843개.",
+          "reasonEn": "A cafe on Main Street, rated 4.5/5 on Google from 843 reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/2435368",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:9453576759",
+          "reason": "Google 리뷰 822개에서 평점 4.3점을 받은 카페.",
+          "reasonEn": "Rated 4.3/5 from 822 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/1050536",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:6139663128",
+          "reason": "Ontario Street에서 찾은 Elysian Coffee Roasters. Google 4.5점, 리뷰 813개.",
+          "reasonEn": "Elysian Coffee Roasters on Ontario Street; 4.5/5 from 813 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/380031",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:3892521307",
+          "reason": "Beatty Street의 카페. Google 4.6점·리뷰 757개.",
+          "reasonEn": "A cafe on Beatty Street, rated 4.6/5 on Google from 757 reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/1430658",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:6738071638",
+          "reason": "Google 리뷰 691개에서 평점 4.7점을 받은 카페.",
+          "reasonEn": "Rated 4.7/5 from 691 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/1430659",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:2711740615",
+          "reason": "Commercial Drive에서 찾은 Turk's. Google 4.5점, 리뷰 674개.",
+          "reasonEn": "Turk's on Commercial Drive; 4.5/5 from 674 Google reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/1511385",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
+        },
+        {
+          "placeId": "osm:node:4632854698",
+          "reason": "Quebec Street의 카페. Google 4.5점·리뷰 669개.",
+          "reasonEn": "A cafe on Quebec Street, rated 4.5/5 on Google from 669 reviews.",
+          "sourceUrl": "https://wanderlog.com/place/details/433307",
+          "verifiedAt": "2026-10-20T00:14:24.370730+00:00"
         }
       ]
     },
@@ -14973,6 +15619,6 @@
   "pendingCities": [],
   "complete": true,
   "recommendationTheme": "photo-spots",
-  "photoSelectionsReviewedAt": "2026-10-19T22:26:42.300410+00:00",
-  "selectionRevision": 10
+  "photoSelectionsReviewedAt": "2026-10-20T00:28:48.553328+00:00",
+  "selectionRevision": 12
 }

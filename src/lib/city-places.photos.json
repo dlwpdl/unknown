@@ -1014,6 +1014,46 @@
         "license": "CC BY 2.0",
         "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
         "imageSha256": "5f77c770cfbac160e7edd9b8bc3fd86128e7efc2a06df9cd3d26b4326fa4396d"
+      },
+      {
+        "placeId": "osm:node:4682097803",
+        "cityId": "vancouver",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d2/Moja_Coffee%2C_Commercial_Drive_%2839488482074%29.jpg/960px-Moja_Coffee%2C_Commercial_Drive_%2839488482074%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Moja_Coffee,_Commercial_Drive_(39488482074).jpg",
+        "artist": "GoToVan from Vancouver, Canada",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "96badde350f5ba4a47b06826569f284a82d2511a147717cadbc1d9ba015cb8ed"
+      },
+      {
+        "placeId": "osm:node:2168314490",
+        "cityId": "vancouver",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e2/Revolver_%2826337605948%29.jpg/960px-Revolver_%2826337605948%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Revolver_(26337605948).jpg",
+        "artist": "GoToVan from Vancouver, Canada",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "11188eda0fbc92aea96ee298d1b04ba306369095a2dcbb6cfbc30dccbf8c9adf"
+      },
+      {
+        "placeId": "osm:node:5965217085",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Hawksworth_Restaurant_exterior.jpg",
+        "artist": "Mx. Granger",
+        "license": "CC0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/63/Hawksworth_Restaurant_exterior.jpg/960px-Hawksworth_Restaurant_exterior.jpg",
+        "imageSha256": "15c94dbec8192d1d78e643a584168357960cdbcbce5b01117f8c10ffe49d9eca"
+      },
+      {
+        "placeId": "osm:node:5788272506",
+        "cityId": "vancouver",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:49th_Parallel_Coffee_Roasters_in_Downtown_(36476569873).jpg",
+        "artist": "GoToVan from Vancouver, Canada",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d1/49th_Parallel_Coffee_Roasters_in_Downtown_%2836476569873%29.jpg/960px-49th_Parallel_Coffee_Roasters_in_Downtown_%2836476569873%29.jpg",
+        "imageSha256": "3411872bbe6024cc41b25029ec628ff09cd9863e9280dc0ee37df28d9f06e3db"
       }
     ],
     "montreal": [
