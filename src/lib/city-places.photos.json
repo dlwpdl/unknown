@@ -1094,6 +1094,26 @@
         "license": "CC BY 2.0",
         "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
         "imageSha256": "6028cfbf77d7e335fa679a290052dc1a4bac44116f89e0a65f2af2d5b7262f45"
+      },
+      {
+        "placeId": "osm:node:652956529",
+        "cityId": "vancouver",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2a/Wagyu_Beef_Carpaccio_and_Taglierini_at_Lupo.jpg/960px-Wagyu_Beef_Carpaccio_and_Taglierini_at_Lupo.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Wagyu_Beef_Carpaccio_and_Taglierini_at_Lupo.jpg",
+        "artist": "StoppedTime",
+        "license": "CC0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "imageSha256": "dcdacb83e6ab16d52649a531de2c673bfded028d251d265ce23d90261d9c54fe"
+      },
+      {
+        "placeId": "osm:node:7083406173",
+        "cityId": "vancouver",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7d/Published_on_Main.jpg/960px-Published_on_Main.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Published_on_Main.jpg",
+        "artist": "Mx. Granger",
+        "license": "CC0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "imageSha256": "81ba431b692a356af15ad010f8939e3b31e8fa6902c3f7a6f47633482cccf0f3"
       }
     ],
     "montreal": [
@@ -1478,6 +1498,16 @@
         "license": "CC BY 2.5",
         "licenseUrl": "https://creativecommons.org/licenses/by/2.5",
         "imageSha256": "5cd3939f93b592115719474da944647f256edd50d9a7fa5af038ca42383d4ac2"
+      },
+      {
+        "placeId": "osm:way:495092863",
+        "cityId": "calgary",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/40/Deane_House_1.jpg/960px-Deane_House_1.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Deane_House_1.jpg",
+        "artist": "User:Thivierr",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+        "imageSha256": "6346f6351b2e5e9e26f71684adfacea0d4b7d0dbe85512b71e9c8e4c3fcafaa4"
       }
     ],
     "edmonton": [
