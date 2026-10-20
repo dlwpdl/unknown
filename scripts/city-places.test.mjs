@@ -21,6 +21,9 @@ const photos = () => {
   const path = new URL('src/lib/city-places.photos.json', root);
   return existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : { cities: {} };
 };
+const photoRows = (bank, cityId) => [
+  ...(bank.cities[cityId] ?? []), ...(bank.additionalCatalog?.cities[cityId] ?? []), ...(bank.flickrCatalog?.cities[cityId] ?? []),
+];
 function module(file, imports = {}, dev = true) {
   const path = new URL(file, root), exports = {};
   if (!existsSync(path)) return exports;
@@ -121,7 +124,7 @@ test('featured places show exact scoped provider counts or an honest unrated sta
     const featured = data().getCityRecommendations(city).slice(0, 3);
     assert.equal(featured.length, 3);
     for (const place of featured) {
-      if (place.photo) assert.deepEqual(place.photo, photos().cities[city].find(photo => photo.placeId === place.id));
+      if (place.photo) assert.deepEqual(place.photo, photoRows(photos(), city).find(photo => photo.placeId === place.id));
       else assert.equal(place.photo, null);
       const expected = ratings.find(row => row.cityId === city && row.placeId === place.id);
       const rating = ui.getPlaceReviewRating(city, place.id);
@@ -433,7 +436,7 @@ test('unknown city and a place belonging to another city are explicit errors', (
 test('every city has at least three licensed same-place photos and missing photos stay empty', () => {
   const bank = photos();
   for (const city of cities) {
-    const accepted = [...bank.cities[city.id], ...(bank.additionalCatalog?.cities[city.id] ?? []), ...(bank.flickrCatalog?.cities[city.id] ?? [])];
+    const accepted = photoRows(bank, city.id);
     const rows = data().getCityPlaces(city.id), pictured = rows.filter(p => p.photo);
     assert.ok(pictured.length >= 3, city.id + ' needs three verified place photos');
     for (const p of pictured) {
@@ -578,7 +581,7 @@ test('photo load failure shows the neutral fallback and a different image can lo
 test('reviewed photo-less dining mixes with sights in all eleven cities without inventing photographs', () => {
   for (const { id: cityId } of cities) {
     const snapshot = dailyCatalog(), city = snapshot.cities[cityId];
-    const photographed = new Set(photos().cities[cityId].map(photo => photo.placeId));
+    const photographed = new Set(photoRows(photos(), cityId).map(photo => photo.placeId));
     const food = city.places.find(place => place.category === 'food' && !photographed.has(place.id));
     const cafe = city.places.find(place => place.category === 'cafe' && !photographed.has(place.id));
     city.diningRecommendations = [food, cafe].map(place => ({ placeId: place.id, reason: 'Reviewed dining fixture', sourceUrl: 'https://example.org/dining', verifiedAt: snapshot.collectedAt }));
@@ -602,7 +605,7 @@ test('reviewed photo-less dining mixes with sights in all eleven cities without 
 
 test('Top recommendations mix reviewed categories in editorial order and share one badge selection', () => {
   const snapshot = catalog(), city = snapshot.cities.vancouver;
-  const photographed = new Set(photos().cities.vancouver.map(photo => photo.placeId));
+  const photographed = new Set(photoRows(photos(), 'vancouver').map(photo => photo.placeId));
   const byId = new Map(city.places.map(place => [place.id, place]));
   const landmarks = city.recommendations.filter(pick => byId.get(pick.placeId).category === 'places').slice(0, 2);
   const dining = city.diningRecommendations.filter(pick => photographed.has(pick.placeId));
@@ -683,7 +686,7 @@ test('mixed shipped Top lists stay capped and preserve every admitted discovery 
     const admitted = new Set([...city.recommendations, ...(city.diningRecommendations ?? [])].map(pick => pick.placeId));
     assert.deepEqual(new Set(discovery.map(place => place.id)), admitted, `${cityId}: all prior map identities remain`);
     assert.deepEqual(new Set(discovery.filter(place => place.recommendation).map(place => place.id)), new Set(selected.map(place => place.id)), `${cityId}: Top badges agree`);
-    const photographed = new Set([...bank.cities[cityId], ...(bank.additionalCatalog?.cities[cityId] ?? []), ...(bank.flickrCatalog?.cities[cityId] ?? [])].map(photo => photo.placeId));
+    const photographed = new Set(photoRows(bank, cityId).map(photo => photo.placeId));
     const reviewed = [...city.recommendations, ...(city.diningRecommendations ?? [])];
     const byId = new Map(city.places.map(place => [place.id, place]));
     const available = ['places', 'food', 'cafe'].filter(category => reviewed.some(pick => byId.get(pick.placeId).category === category));
