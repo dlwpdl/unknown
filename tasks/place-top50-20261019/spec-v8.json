@@ -1,0 +1,83 @@
+{
+  "version": 8,
+  "recordedAt": "2026-10-20T00:13:31.750383+00:00",
+  "extends": "spec-v7.json",
+  "parentSourceCommit": "79fabece0ebd68a3c5ba728447da215d75324501",
+  "authority": "msg_8e6074e45dc5",
+  "objective": "Vancouver-first balanced real dining/map expansion within current installed catalog validators; remaining cityTop50/photos remain active.",
+  "sourceScopeExpiresAt": "2026-10-20T00:35:00Z",
+  "status": "Source revision11 ready and currentbedffa4 consumer validated; DB adoption awaits independent admission and fresh CAS",
+  "baseline": {
+    "selectionRevision": 10,
+    "facts": 1001,
+    "main": 189,
+    "dining": 78,
+    "photos": 209,
+    "providerRows": 471,
+    "vancouverFacts": 134,
+    "vancouverMain": 50,
+    "vancouverDining": 16,
+    "foodBrowse": 9,
+    "cafeBrowse": 9
+  },
+  "target": {
+    "maxNewDining": 34,
+    "food": 17,
+    "cafe": 17,
+    "combinedVancouverDining": 50,
+    "vancouverFacts": 168,
+    "selectionRevision": 11
+  },
+  "preserve": [
+    "All1001originalfactobjects",
+    "All189mainrecommendations/order/reasons",
+    "All78olddiningobjects",
+    "All209licensedphotorows/staticbindings/assets",
+    "All471originalproviderobjects",
+    "Allothercityobjects",
+    "HANDSONvisited/sourceReel",
+    "Private1638rawinventory",
+    "Noappcode/validator/GUI/native/job/SQL/providerbudgetchanges"
+  ],
+  "acceptance": [
+    "CurrentOSMactualname/address/domain/phone/sourcecoordinates verified with exactsourceURLs/hashes",
+    "Positive actualGoogle/Tripadvisorcount; prefer100+withoutchangingfloor",
+    "No proximity-onlybusinessbinding/closed/ambiguous/knownchainfiller",
+    "PhotoNULLallowed",
+    "Exactcurrentbedffa4consumerVMacceptsrevision11 fromactualsavedrevision10",
+    "All34newbrowseandmapmembersplusoldobjects verified",
+    "FreshreviewedCASrequired aftersourcepacket"
+  ],
+  "evidenceRoot": "/Users/ash/Desktop/Git/unknown/output/reviews/gling-vancouver-dining-admission-2026-10-19",
+  "HTTPExecuted": {
+    "overpassRequests": 1,
+    "status": 200,
+    "entities": 560,
+    "responseSHA256": "138106b0399f47e117eaa1b59760afbaa856ef090425b4cf09eaa8f5a493a816",
+    "otherProviders": 0
+  },
+  "allCities50OrPhotoCompletionClaim": false,
+  "validatedCounts": {
+    "facts": 1035,
+    "main": 189,
+    "dining": 112,
+    "photos": 209,
+    "providers": 532,
+    "vancouverFacts": 168,
+    "vancouverMain": 50,
+    "vancouverDining": 50,
+    "vancouverFood": 26,
+    "vancouverCafe": 26,
+    "vancouverMap": 101
+  },
+  "checks": {
+    "appPass": 1559,
+    "appFail": 0,
+    "existingSkip": 1,
+    "typeErrors": 0,
+    "lintErrors": 0,
+    "currentBedConsumerVM": "passed",
+    "allOldObjectsPreserved": true
+  },
+  "photoFollowup": "New34 are truthfully photoNULL; owner photo request remains active separately. No image HTTP, no private F2 photos applied in this data-only packet."
+}
