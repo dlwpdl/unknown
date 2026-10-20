@@ -6,7 +6,7 @@
   "authority": "msg_8e6074e45dc5",
   "objective": "Vancouver-first balanced real dining/map expansion within current installed catalog validators; remaining cityTop50/photos remain active.",
   "sourceScopeExpiresAt": "2026-10-20T00:35:00Z",
-  "status": "Source revision11 ready and currentbedffa4 consumer validated; DB adoption awaits independent admission and fresh CAS",
+  "status": "Source revision11 Van34 plus two Root-approved cached licensed photos ready; fresh DB CAS and actual native display pending",
   "baseline": {
     "selectionRevision": 10,
     "facts": 1001,
@@ -61,14 +61,15 @@
     "facts": 1035,
     "main": 189,
     "dining": 112,
-    "photos": 209,
+    "photos": 211,
     "providers": 532,
     "vancouverFacts": 168,
     "vancouverMain": 50,
     "vancouverDining": 50,
     "vancouverFood": 26,
     "vancouverCafe": 26,
-    "vancouverMap": 101
+    "vancouverMap": 101,
+    "vancouverPhotos": 60
   },
   "checks": {
     "appPass": 1559,
@@ -79,5 +80,18 @@
     "currentBedConsumerVM": "passed",
     "allOldObjectsPreserved": true
   },
-  "photoFollowup": "New34 are truthfully photoNULL; owner photo request remains active separately. No image HTTP, no private F2 photos applied in this data-only packet."
+  "photoFollowup": {
+    "authority": "msg_550bcf27b7f4",
+    "cachedApprovedPhotos": 2,
+    "places": [
+      "osm:node:4682097803",
+      "osm:node:2168314490"
+    ],
+    "originalPhotoObjectsPreserved": 209,
+    "new34DiningStillPhotoNull": 34,
+    "newImageHTTP": 0,
+    "renderer": "Current frozen native remoteURI fallback; no .tsx/staticrequire/assetcopy changes",
+    "actualNativeDisplay": "UNVERIFIED",
+    "furtherNew34PhotoSearches": "Separate bounded photoV2 only afterimmutablefirstunion handedoff"
+  }
 }
