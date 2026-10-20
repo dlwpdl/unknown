@@ -110,26 +110,33 @@ export async function handleSharePreview(request: Request, env: SharePreviewEnv,
     const label = text(preview.label);
     const schedule = scheduleLabel(preview.schedule);
     const closed = kind === 'meetup' && preview.closed;
-    const description = [kinds[kind], city, schedule, closed ? '모집 마감' : '', '로그인한 뒤 자세한 내용을 볼 수 있어요.'].filter(Boolean).join(' · ');
+    const teaser = kind !== 'meetup' && typeof preview.teaser === 'string'
+      ? Array.from(preview.teaser.replace(/\s+/gu, ' ').trim()).slice(0, 120).join('') : '';
+    const cardTitle = kind === 'meetup' ? `${closed ? '모집 마감' : '글링 모임 초대'} · ${title}` : title;
+    const description = kind === 'meetup'
+      ? [closed ? '모집이 마감된 모임이에요.' : '함께할 모임에 초대됐어요!', city, schedule].filter(Boolean).join(' · ')
+      : teaser || [kinds[kind], city, schedule, '로그인한 뒤 자세한 내용을 볼 수 있어요.'].filter(Boolean).join(' · ');
     const canonical = `${share}/${route[1]}/${route[1] === 's' ? route[2] : id}`;
     const destination = `${app}/post?id=${id}&shared=1${kind === 'meetup' ? '&invite=1' : ''}`;
     const image = await coverUrl(preview.imagePath, kind, app, supabase, auth, fetcher);
     const safeTitle = escapeHtml(title);
+    const safeCardTitle = escapeHtml(cardTitle);
     const safeDescription = escapeHtml(description);
     const safeImage = escapeHtml(image);
     const cta = closed ? '로그인하고 모임 보기' : kind === 'meetup' ? '로그인하고 초대 확인' : kind === 'festival' ? '로그인하고 같이 가기' : '로그인하고 글 읽기';
     const html = `<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${safeTitle} · 글링</title><meta name="description" content="${safeDescription}"><link rel="canonical" href="${canonical}">
+<title>${safeCardTitle} · 글링</title><meta name="description" content="${safeDescription}"><link rel="canonical" href="${canonical}">
 <meta property="og:type" content="website"><meta property="og:site_name" content="글링"><meta property="og:locale" content="ko_KR">
-<meta property="og:url" content="${canonical}"><meta property="og:title" content="${safeTitle}"><meta property="og:description" content="${safeDescription}">
+<meta property="og:url" content="${canonical}"><meta property="og:title" content="${safeCardTitle}"><meta property="og:description" content="${safeDescription}">
 <meta property="og:image" content="${safeImage}"><meta property="og:image:alt" content="${escapeHtml(kinds[kind])} 미리보기">
-<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${safeTitle}"><meta name="twitter:description" content="${safeDescription}"><meta name="twitter:image" content="${safeImage}">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${safeCardTitle}"><meta name="twitter:description" content="${safeDescription}"><meta name="twitter:image" content="${safeImage}">
 <style>
 :root{color-scheme:dark;font:100%/1.5 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",system-ui,sans-serif;background:#0B0B12;color:#F6F3F0}*{box-sizing:border-box}body{margin:0}main{width:min(100%,36rem);margin:auto;padding:2rem 1.25rem 3rem}.brand{color:#CBB9FF;font-size:1.5rem;font-weight:800;letter-spacing:-.04em}.intro{margin:1.75rem 0 .75rem;color:#B7B4C3;font-size:.875rem}article{overflow:hidden;border:1px solid #343443;border-radius:1.5rem;background:#171722}.hero{position:relative;aspect-ratio:16/10;overflow:hidden;background:#222231}.hero img{width:100%;height:100%;object-fit:cover}.hero:after{content:"";position:absolute;inset:50% 0 0;background:linear-gradient(transparent,#171722)}.details{position:relative;padding:1.5rem}.kind{display:inline-block;color:#CBB9FF;font-size:.8125rem;font-weight:700}h1{font-size:clamp(1.75rem,5vw,2.25rem);line-height:1.25;letter-spacing:-.025em;margin:.625rem 0 1rem;overflow-wrap:anywhere}.meta{margin:.35rem 0;color:#B7B4C3;font-size:.9375rem;overflow-wrap:anywhere}.closed{color:#CBB9FF;font-weight:700}.login{margin:1.5rem 0 .875rem;color:#B7B4C3;font-size:.875rem}.cta{display:flex;align-items:center;justify-content:center;min-height:3.25rem;padding:.875rem 1rem;background:#CBB9FF;color:#171123;border-radius:1rem;font-weight:750;text-decoration:none;text-align:center;transition:opacity .15s,transform .15s}.cta:hover{opacity:.9}.cta:active{transform:scale(.98);opacity:.75}.cta:focus-visible{outline:3px solid #F6F3F0;outline-offset:4px}.privacy{text-align:center;color:#B7B4C3;font-size:.75rem;margin:1rem 0 0}@media(prefers-reduced-motion:reduce){.cta{transition:none}.cta:active{transform:none}}
 </style></head><body><main><div class="brand" aria-label="글링">gling</div>
-<p class="intro">${kind === 'meetup' ? '함께할 모임이 도착했어요' : kind === 'festival' ? '같이 즐길 페스티벌을 만나보세요' : '글링에서 나누고 싶은 이야기'}</p>
+<p class="intro">${kind === 'meetup' ? closed ? '모집이 마감된 모임이에요.' : '함께할 모임이 도착했어요' : kind === 'festival' ? '같이 즐길 페스티벌을 만나보세요' : '글링에서 나누고 싶은 이야기'}</p>
 <article><div class="hero"><img src="${safeImage}" alt="${escapeHtml(kinds[kind])} 표지"></div><div class="details"><span class="kind">${escapeHtml(label || kinds[kind])}</span><h1>${safeTitle}</h1>
+${teaser ? `<p class="meta teaser">${escapeHtml(teaser)}</p>` : ''}
 ${city ? `<p class="meta">${escapeHtml(city)}</p>` : ''}${schedule ? `<p class="meta">${escapeHtml(schedule)}</p>` : ''}${closed ? '<p class="meta closed">모집 마감</p>' : ''}
 <p class="login">Google 또는 소셜 계정으로 로그인하면 자세한 내용을 확인할 수 있어요.</p><a id="share-primary-cta" class="cta" href="${escapeHtml(destination)}">${cta}</a></div></article>
 <p class="privacy">이야기와 대화는 로그인한 글링 멤버에게만 보여요.</p></main><script src="${app}/share-redirect.js" defer></script></body></html>`;
