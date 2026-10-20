@@ -70,6 +70,37 @@ class DailyPlaces(unittest.TestCase):
                 self.assertEqual([p['id'] for p in result['places']], [p['id'] for p in city['places']])
                 self.assertEqual(result['recommendations'], city['recommendations'])
 
+    def test_dining_bank_preserves_51_to_200_reviewed_branches_without_truncation(self):
+        m = implementation()
+        for count in [51, 200]:
+            with self.subTest(count=count):
+                seed, _, now = self.fixture()
+                city = seed['cities']['vancouver']
+                place, pick = city['places'][0], city['recommendations'][0]
+                city['places'] = [dict(place, id=f'osm:node:{i}', name=f'Verified branch {i}',
+                                      category='cafe' if i % 2 else 'food',
+                                      sourceUrl=f'https://www.openstreetmap.org/node/{i}') for i in range(1, count + 1)]
+                city['recommendations'] = [dict(pick, placeId=p['id']) for p in city['places'][:50]]
+                city['diningRecommendations'] = [dict(pick, placeId=p['id']) for p in city['places']]
+                seed['externalRatings'] = self.provider_rows(seed)
+                osm = [dict(type='node', id=i, lat=49.28, lon=-123.12,
+                            tags={'name': f'Verified branch {i}', 'amenity': 'cafe' if i % 2 else 'restaurant'}) for i in range(1, count + 1)]
+                try:
+                    result = m.build_catalog(seed, osm, now)
+                except ValueError as error:
+                    self.fail(f'Valid {count}-branch dining bank was rejected: {error}')
+                self.assertEqual(result['cities']['vancouver']['diningRecommendations'], city['diningRecommendations'])
+                self.assertEqual(result['cities']['vancouver']['recommendations'], city['recommendations'])
+                self.assertEqual(result['externalRatings'], seed['externalRatings'])
+                self.assertEqual([p['id'] for p in result['cities']['vancouver']['places']], [p['id'] for p in city['places']])
+                osm[0]['tags']['disused'] = 'yes'
+                refreshed = m.build_catalog(seed, osm, now)['cities']['vancouver']
+                self.assertEqual(refreshed['diningRecommendations'], city['diningRecommendations'][1:])
+                self.assertEqual(len(refreshed['places']), count)
+                city['diningRecommendations'] += [dict(pick, placeId=city['places'][0]['id'])] * (201 - count)
+                with self.assertRaisesRegex(ValueError, 'CITY_RECOMMENDATIONS_NOT_VERIFIED'):
+                    m.build_catalog(seed, osm, now)
+
     def test_general_business_seed_cannot_publish_as_photo_recommendations(self):
         m = implementation(); seed, osm, now = self.fixture()
         seed.pop('recommendationTheme')

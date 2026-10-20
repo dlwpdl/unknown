@@ -77,7 +77,7 @@ def build_catalog(seed, elements, now):
         result['cities'][city_id] = dict(coverage=city['coverage'], places=places)
         for field in ['recommendations', *(['diningRecommendations'] if 'diningRecommendations' in city else [])]:
             picks = city.get(field, [])
-            if not isinstance(picks, list) or len(picks) > 50: raise ValueError('CITY_RECOMMENDATIONS_NOT_VERIFIED')
+            if not isinstance(picks, list) or len(picks) > (200 if field == 'diningRecommendations' else 50): raise ValueError('CITY_RECOMMENDATIONS_NOT_VERIFIED')
             reviewed, selected = [], set()
             for pick in picks:
                 if field == 'diningRecommendations' and not any(p['id'] == pick.get('placeId') and p['category'] in ['food', 'cafe'] for p in places): raise ValueError('INVALID_DINING_RECOMMENDATION')
