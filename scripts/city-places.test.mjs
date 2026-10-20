@@ -431,23 +431,35 @@ test('unknown city and a place belonging to another city are explicit errors', (
 });
 
 test('every city has at least three licensed same-place photos and missing photos stay empty', () => {
+  const bank = photos();
   for (const city of cities) {
+    const accepted = [...bank.cities[city.id], ...(bank.additionalCatalog?.cities[city.id] ?? [])];
     const rows = data().getCityPlaces(city.id), pictured = rows.filter(p => p.photo);
     assert.ok(pictured.length >= 3, city.id + ' needs three verified place photos');
     for (const p of pictured) {
       assert.equal(p.photo.cityId, city.id);
       assert.equal(p.photo.placeId, p.id);
-      assert.ok(photos().cities[city.id].some(photo => photo.placeId === p.id && photo.uri === p.photo.uri));
+      const bound = accepted.find(photo => photo.placeId === p.id);
+      assert.ok(bound);
+      for (const key of ['uri', 'sourceUrl', 'artist', 'license', 'licenseUrl', 'imageSha256']) assert.equal(p.photo[key], bound[key]);
       const image = new URL(p.photo.uri), source = new URL(p.photo.sourceUrl), license = new URL(p.photo.licenseUrl);
       assert.equal(image.protocol, 'https:');
-      assert.ok(['upload.wikimedia.org', 'thumb.wikimedia.org'].includes(image.hostname));
-      assert.equal(source.hostname, 'commons.wikimedia.org');
-      assert.ok(source.pathname.startsWith('/wiki/File:'));
+      if (bound.discoveredVia === 'Openverse') {
+        assert.equal(image.hostname, 'live.staticflickr.com');
+        assert.equal(source.hostname, 'www.flickr.com');
+        const imageId = /^\/\d+\/([1-9]\d*)_/.exec(image.pathname)?.[1];
+        assert.ok(imageId);
+        assert.equal(/^\/photos\/[^/]+\/([1-9]\d*)\/?$/.exec(source.pathname)?.[1], imageId);
+      } else {
+        assert.ok(['upload.wikimedia.org', 'thumb.wikimedia.org'].includes(image.hostname));
+        assert.equal(source.hostname, 'commons.wikimedia.org');
+        assert.ok(source.pathname.startsWith('/wiki/File:'));
+      }
       assert.equal(license.hostname, 'creativecommons.org');
       assert.ok(p.photo.artist.trim().length > 0 && p.photo.license.trim().length > 0);
       assert.match(p.photo.imageSha256, /^[a-f0-9]{64}$/);
     }
-    const unpictured = rows.find(p => !photos().cities[city.id].some(photo => photo.placeId === p.id));
+    const unpictured = rows.find(p => !accepted.some(photo => photo.placeId === p.id));
     assert.ok(unpictured);
     assert.equal(unpictured.photo, null);
   }
@@ -662,7 +674,7 @@ test('a 201st distinct dining pick or fact cannot replace the last valid catalog
 });
 
 test('mixed shipped Top lists stay capped and preserve every admitted discovery identity', () => {
-  const snapshot = catalog(), api = data();
+  const snapshot = catalog(), api = data(), bank = photos();
   for (const [cityId, city] of Object.entries(snapshot.cities)) {
     const selected = Array.from(api.getCityRecommendations(cityId));
     assert.ok(selected.length >= city.recommendations.length && selected.length <= 50, cityId);
@@ -671,7 +683,7 @@ test('mixed shipped Top lists stay capped and preserve every admitted discovery 
     const admitted = new Set([...city.recommendations, ...(city.diningRecommendations ?? [])].map(pick => pick.placeId));
     assert.deepEqual(new Set(discovery.map(place => place.id)), admitted, `${cityId}: all prior map identities remain`);
     assert.deepEqual(new Set(discovery.filter(place => place.recommendation).map(place => place.id)), new Set(selected.map(place => place.id)), `${cityId}: Top badges agree`);
-    const photographed = new Set(photos().cities[cityId].map(photo => photo.placeId));
+    const photographed = new Set([...bank.cities[cityId], ...(bank.additionalCatalog?.cities[cityId] ?? [])].map(photo => photo.placeId));
     const reviewed = [...city.recommendations, ...(city.diningRecommendations ?? [])];
     const byId = new Map(city.places.map(place => [place.id, place]));
     const available = ['places', 'food', 'cafe'].filter(category => reviewed.some(pick => byId.get(pick.placeId).category === category));
