@@ -39,13 +39,56 @@ test('HTML carries escaped Korean OG metadata and invitation CTA without private
   assert.equal(response.headers.get('cache-control'), 'no-store');
   assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
   assert.ok(response.headers.get('content-security-policy').includes('script-src https://gling.example;'));
-  assert.ok(html.includes('<meta property="og:title" content="서울에서 &lt;함께&gt; &amp; &quot;가요&quot;">'));
+  assert.ok(html.includes('<meta property="og:title" content="글링 모임 초대 · 서울에서 &lt;함께&gt; &amp; &quot;가요&quot;">'));
   assert.ok(html.includes('<meta name="twitter:card" content="summary_large_image">'));
   assert.ok(html.includes('https://gling.example/share-covers/meetup.png'));
   assert.ok(html.includes('https://gling.example/post?id=' + id + '&amp;shared=1&amp;invite=1'));
   assert.ok(html.includes('로그인'));
   assert.ok(html.includes('2026'));
   assert.doesNotMatch(html, /PRIVATE-|evil\.example|invite=999|서울에서 <함께>/);
+});
+
+test('Today and business cards use the authored title and only the bounded server teaser', async () => {
+  for (const label of ['오늘', '비즈니스']) {
+    const response = await handleSharePreview(request(), env, async () => json({
+      ...preview, kind: 'post', label, title: '우리 동네 작은 카페',
+      teaser: '  직접 볶은 원두와\n  따뜻한 빵을 만나요.  ',
+      body: 'PRIVATE-FULL-BODY', comments: ['PRIVATE-COMMENT'], author: 'PRIVATE-ACCOUNT',
+    }));
+    const html = await response.text();
+    assert.ok(html.includes('<meta property="og:title" content="우리 동네 작은 카페">'));
+    assert.ok(html.includes('<meta property="og:description" content="직접 볶은 원두와 따뜻한 빵을 만나요.">'));
+    assert.ok(html.includes('<meta name="twitter:description" content="직접 볶은 원두와 따뜻한 빵을 만나요.">'));
+    assert.ok(html.includes('<p class="meta teaser">직접 볶은 원두와 따뜻한 빵을 만나요.</p>'));
+    assert.ok(html.includes(`post?id=${id}&amp;shared=1`));
+    assert.doesNotMatch(html, /PRIVATE-|&amp;invite=1/);
+  }
+});
+
+test('teasers are Unicode bounded and HTML escaped, with backward-compatible empty fallback', async () => {
+  const emoji = '💜'.repeat(150);
+  let html = await (await handleSharePreview(request(), env, async () => json({ ...preview, kind: 'post', teaser: emoji }))).text();
+  assert.ok(html.includes(`<meta property="og:description" content="${'💜'.repeat(120)}">`));
+  assert.doesNotMatch(html, /�/);
+  html = await (await handleSharePreview(request(), env, async () => json({ ...preview, kind: 'post', teaser: '<script>"x"</script> & 커피' }))).text();
+  assert.ok(html.includes('content="&lt;script&gt;&quot;x&quot;&lt;/script&gt; &amp; 커피"'));
+  assert.equal((html.match(/<script\b/g) || []).length, 1);
+  for (const teaser of [undefined, null, '', ' \n ', 5, { body: 'PRIVATE-BODY' }]) {
+    html = await (await handleSharePreview(request(), env, async () => json({ ...preview, kind: 'post', teaser }))).text();
+    assert.ok(html.includes('로그인한 뒤 자세한 내용을 볼 수 있어요.'));
+    assert.doesNotMatch(html, /PRIVATE-|class="meta teaser"/);
+  }
+});
+
+test('meetup cards never consume a body teaser and closed invitations remain honest', async () => {
+  for (const closed of [false, true]) {
+    const html = await (await handleSharePreview(request(), env, async () => json({ ...preview, closed, teaser: 'PRIVATE-MEETUP-TEASER', body: 'PRIVATE-MEETUP-BODY' }))).text();
+    assert.ok(html.includes(`<meta property="og:title" content="${closed ? '모집 마감' : '글링 모임 초대'} · 서울에서 &lt;함께&gt; &amp; &quot;가요&quot;">`));
+    assert.ok(html.includes(closed ? '모집이 마감된 모임이에요.' : '함께할 모임에 초대됐어요!'));
+    assert.equal(html.includes('함께할 모임에 초대됐어요!'), !closed);
+    assert.ok(html.includes('&amp;invite=1'));
+    assert.doesNotMatch(html, /PRIVATE-/);
+  }
 });
 
 test('gateway immediately continues through one fixed same-origin script and retains raw OG metadata', async () => {

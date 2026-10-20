@@ -28,7 +28,7 @@ select is(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000001')
 select is(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000002')->>'kind','festival','a festival post has a festival preview');
 select is(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000003')->>'kind','meetup','a hosted event has a meetup invitation preview');
 select is((select array_agg(k order by k) from jsonb_object_keys(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000003'))k),
- array['city','closed','id','imagePath','kind','label','schedule','title']::text[],'preview excludes bodies, comments, identities and raw room details');
+  array['city','closed','id','imagePath','kind','label','schedule','teaser','title']::text[],'preview excludes bodies, comments, identities and raw room details');
 select is((select array_agg(k order by k) from jsonb_object_keys(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000003')->'schedule')k),
  array['cadence','endsAt','eventKind','startsAt','timezone']::text[],'only public schedule fields appear in an invitation');
 select is(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000001')->>'imagePath','9d000000-0000-4000-8000-000000000001/cover.webp','preview returns the first approved cover only');
@@ -36,6 +36,36 @@ select ok(public.is_public_post_image(public.get_shared_link_preview('9d100000-0
 select ok(position('private ' in public.get_shared_link_preview('9d100000-0000-4000-8000-000000000003')::text)=0,'private venue, question and body do not leak');
 select is(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000001')->'schedule','null'::jsonb,'regular posts have no invented schedule');
 select is(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000099'),null::jsonb,'missing post has no preview');
+reset role;
+
+insert into public.posts(id,author_id,city_id,tag_id,title,body,posted_on) values
+ ('9d100000-0000-4000-8000-000000000004','9d000000-0000-4000-8000-000000000001','vancouver',1,'카페 소개',E'  직접 볶은 원두와\t따뜻한 빵을 만나요.  \nPRIVATE-REMAINDER',current_date),
+ ('9d100000-0000-4000-8000-000000000005','9d000000-0000-4000-8000-000000000001','vancouver',1,'긴 소개',repeat('💜',150)||E'\nPRIVATE-REMAINDER',current_date),
+ ('9d100000-0000-4000-8000-000000000006','9d000000-0000-4000-8000-000000000001','vancouver',1,'안전한 소개',E'<script>\nPRIVATE-SCRIPT\n</script>\ncontact@example.invalid\n전화: +1 (604) 555-1234\n49.2827, -123.1207\nhttps://example.invalid/private\n편하게 쉬어 가는 동네 공간이에요.\n<script>PRIVATE-LATER-SCRIPT</script>\nNOT-FIRST-INTRO\n\n첨부 링크\nPRIVATE-ATTACHMENT',current_date),
+ ('9d100000-0000-4000-8000-000000000007','9d000000-0000-4000-8000-000000000001','vancouver',1,'지도만 있는 글',E'Google 지도: https://maps.google.com/private\nPRIVATE-MAP-FOOTER',current_date),
+ ('9d100000-0000-4000-8000-000000000008','9d000000-0000-4000-8000-000000000001','vancouver',(select id from public.tags where kind='meetup' limit 1),'이전 모임 글','PRIVATE-LEGACY-MEETUP',current_date),
+ ('9d100000-0000-4000-8000-000000000009','9d000000-0000-4000-8000-000000000001','vancouver',1,'잘못된 마크업',E'<script>PRIVATE-UNCLOSED\nPRIVATE-SCRIPT-CONTENT',current_date),
+ ('9d100000-0000-4000-8000-000000000010','9d000000-0000-4000-8000-000000000001','vancouver',1,'끝나지 않은 여는 태그',E'<script\nHIDDEN-PAYLOAD',current_date),
+ ('9d100000-0000-4000-8000-000000000011','9d000000-0000-4000-8000-000000000001','vancouver',1,'끝나지 않은 스타일 태그',E'<style\nHIDDEN-PAYLOAD',current_date),
+ ('9d100000-0000-4000-8000-000000000012','9d000000-0000-4000-8000-000000000001','vancouver',1,'다른 단어는 보존',E'<scripture\n평범한 소개 문장이에요.',current_date),
+ ('9d100000-0000-4000-8000-000000000013','9d000000-0000-4000-8000-000000000001','vancouver',1,'다른 스타일 단어는 보존',E'<stylesheet\n평범한 소개 문장이에요.',current_date),
+ ('9d100000-0000-4000-8000-000000000014','9d000000-0000-4000-8000-000000000001','vancouver',1,'닫힌 스타일 뒤 소개',E'<style>HIDDEN-STYLE</style>\n평범한 소개 문장이에요.',current_date),
+ ('9d100000-0000-4000-8000-000000000015','9d000000-0000-4000-8000-000000000001','vancouver',1,'앞에 쓴 소개는 보존',E'평범한 소개 문장이에요.\n<script\nHIDDEN-PAYLOAD',current_date);
+set local role anon;
+select is(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000004')->>'teaser','직접 볶은 원두와 따뜻한 빵을 만나요.','one normalized suitable introduction line is public');
+select ok(position('PRIVATE-' in public.get_shared_link_preview('9d100000-0000-4000-8000-000000000004')::text)=0,'remaining body and comments stay private');
+select is(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000005')->>'teaser',repeat('💜',119)||'…','teaser is bounded to 120 Unicode characters including ellipsis');
+select is(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000006')->>'teaser','편하게 쉬어 가는 동네 공간이에요.','scripts, links, contacts, coordinates and attachment footer are excluded');
+select is(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000007')->>'teaser',null,'a structural footer is not a fabricated introduction');
+select is(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000003')->>'teaser',null,'meetup private body never becomes a teaser');
+select is(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000008')->>'teaser',null,'legacy meetup tags without room metadata still keep their body private');
+select is(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000009')->>'teaser',null,'unclosed script content never becomes introduction copy');
+select is(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000010')->>'teaser',null,'an incomplete script opener never exposes its following payload');
+select is(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000011')->>'teaser',null,'an incomplete style opener never exposes its following payload');
+select is(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000012')->>'teaser','평범한 소개 문장이에요.','scripture is not mistaken for a script opener');
+select is(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000013')->>'teaser','평범한 소개 문장이에요.','stylesheet is not mistaken for a style opener');
+select is(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000014')->>'teaser','평범한 소개 문장이에요.','a properly closed style block preserves subsequent introduction copy');
+select is(public.get_shared_link_preview('9d100000-0000-4000-8000-000000000015')->>'teaser','평범한 소개 문장이에요.','a safe introduction before an incomplete opener is retained');
 reset role;
 
 update public.posts set image_paths=array['9d000000-0000-4000-8000-000000000002/not-owned.webp','9d000000-0000-4000-8000-000000000001/private.webp']
