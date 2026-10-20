@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-20T00:28:48.553328+00:00",
+  "collectedAt": "2026-10-20T01:58:02.753427Z",
   "source": "OpenStreetMap; source-reviewed Gling photo-spot selections",
   "license": "ODbL-1.0",
   "attribution": "© OpenStreetMap contributors",
@@ -15619,6 +15619,6 @@
   "pendingCities": [],
   "complete": true,
   "recommendationTheme": "photo-spots",
-  "photoSelectionsReviewedAt": "2026-10-20T00:28:48.553328+00:00",
-  "selectionRevision": 12
+  "photoSelectionsReviewedAt": "2026-10-20T01:58:02.753427Z",
+  "selectionRevision": 13
 }
