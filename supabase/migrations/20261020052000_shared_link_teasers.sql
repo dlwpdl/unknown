@@ -15,8 +15,8 @@ declare
             regexp_replace(
               split_part(split_part(split_part(split_part(coalesce(p.body,''),
                 '첨부 링크',1),'사진 출처·이용 조건',1),'Google 지도:',1),'<!--',1),
-              '<(script|style)\M[^>]*$','','gis'),
-            '<(script|style)\M[^>]*>.*?(</\1[[:space:]]*>|$)','','gis'),
+              '(?:<(script|style)\M[^>]*>.*?</\1[[:space:]]*>){1,1}?','','gis'),
+            '<(script|style)\M.*$','','gis'),
           E'[\r\n\u2028\u2029]+') with ordinality as lines(raw_line,ordinal)
       ) as candidate
       where line<>'' and line<>p.title
