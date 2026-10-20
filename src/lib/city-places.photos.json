@@ -2419,6 +2419,18 @@
           "imageSha256": "31f60fa633b3a4a68759d75bdf14f076a761cd0bb0fe4d45e29375c6068a4e82",
           "title": "Calgary Sushi Boat Japanese Cuisine",
           "discoveredVia": "Flickr"
+        },
+        {
+          "cityId": "calgary",
+          "placeId": "osm:node:9270916233",
+          "uri": "https://live.staticflickr.com/4729/25247666278_545755e9a0_k.jpg",
+          "sourceUrl": "https://www.flickr.com/photos/eileenmak/25247666278/",
+          "artist": "eileenmak",
+          "license": "CC BY 2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+          "imageSha256": "0d815dd71c7abb70695b483f22c713aeaa030da4a11e1d892a9b71a577780ce3",
+          "title": "Watching Feathers",
+          "discoveredVia": "Flickr"
         }
       ],
       "vancouver": [
@@ -2432,6 +2444,46 @@
           "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
           "imageSha256": "68a63174edc635f5c6ab800302d3b42e306fb85e78767c712fb915ff58c4a4e2",
           "title": "Propaganda Coffee",
+          "discoveredVia": "Flickr"
+        },
+        {
+          "cityId": "vancouver",
+          "placeId": "osm:node:5827984711",
+          "uri": "https://live.staticflickr.com/65535/53189199449_c68b74fc79_k.jpg",
+          "sourceUrl": "https://www.flickr.com/photos/dnevill/53189199449/",
+          "artist": "lamblukas",
+          "license": "CC BY 2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+          "imageSha256": "87d21323f935ad34d200b3b0f88a0335ded327b9ea0dc1865ffb441a9e04c953",
+          "title": "Botanist, Vancouver",
+          "discoveredVia": "Flickr"
+        }
+      ],
+      "montreal": [
+        {
+          "cityId": "montreal",
+          "placeId": "osm:node:942874457",
+          "uri": "https://live.staticflickr.com/5584/14774563447_6095f38c68_k.jpg",
+          "sourceUrl": "https://www.flickr.com/photos/redtuna/14774563447/",
+          "artist": "françois lafontaine",
+          "license": "CC BY 2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+          "imageSha256": "1086fd063409855eefcc3cfb89496e837a2d425b6c8fd2e44f964206dec4333c",
+          "title": "atomic café",
+          "discoveredVia": "Flickr"
+        }
+      ],
+      "winnipeg": [
+        {
+          "cityId": "winnipeg",
+          "placeId": "osm:node:3581705767",
+          "uri": "https://live.staticflickr.com/855/42903464195_1cfd86d68f_k.jpg",
+          "sourceUrl": "https://www.flickr.com/photos/105563777@N06/42903464195/",
+          "artist": "Jonathan Geiger",
+          "license": "CC BY 2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+          "imageSha256": "103906e463cc69e83a6c45d063e24c1d5a35619ed2cc3f9f06365b2ecf3f1f5c",
+          "title": "Bronuts Donuts. In the exchange district of Winnipeg.",
           "discoveredVia": "Flickr"
         }
       ]
