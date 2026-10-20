@@ -157,14 +157,15 @@ test('a blocked-author visibility revision immediately drops a card without requ
   refreshed.resolve(null); await harness.settle(); assert.equal(harness.render(), null);
 });
 
-test('guest post routes load only previews and automatically request login once after authentication finishes loading', async context => {
+test('guest post routes keep the preview visible and request login only on an explicit press', async context => {
   const harness = mount('../src/app/post/[id].tsx', 'default', { auth: { isAuthed: false, isAuthLoading: true }, params: { id } }); context.after(() => harness.unmount());
   await harness.settle();
   assert.equal(harness.calls.filter(call => call[0] === 'preview').length, 1); assert.equal(harness.calls.filter(call => call[0] === 'full-post').length, 0);
   assert.equal(harness.calls.filter(call => call[0] === 'login').length, 0); assert.ok(!harness.nodes().some(node => node.type === 'PostDetail'));
   harness.auth.isAuthLoading = false; await harness.settle(); await harness.settle();
-  assert.equal(harness.calls.filter(call => call[0] === 'login').length, 1, 'auth and preview rerenders do not repeatedly reopen login');
-  control(harness, 'shared.post.login').props.onPress(); assert.equal(harness.calls.filter(call => call[0] === 'login').length, 2, 'explicit login control remains available');
+  assert.equal(harness.calls.filter(call => call[0] === 'login').length, 0, 'auth and preview rerenders leave the guest preview unobstructed');
+  assert.ok(harness.nodes().some(node => node.type === 'SharedPreviewContent'));
+  control(harness, 'shared.post.login').props.onPress(); assert.equal(harness.calls.filter(call => call[0] === 'login').length, 1, 'the explicit login control opens login');
 });
 
 test('unavailable guest previews never load full content or prompt login', async context => {
@@ -191,10 +192,13 @@ test('signout discards a late full-post response without exposing its body', asy
   assert.ok(!harness.nodes().some(node => node.type === 'PostDetail')); assert.ok(!JSON.stringify(harness.render()).includes('private-body-and-venue-sentinel'));
 });
 
-test('legacy post and share browser paths resolve a preview and preserve the validated invitation return', async context => {
-  for (const path of [`/share/${id}`, `/post/${id}`]) {
-    const harness = mount('../src/app/post/[id].tsx', 'default', { os: 'web', href: `https://gling.ej-entertainment.com${path}`, auth: { isAuthed: false } }); context.after(() => harness.unmount()); await harness.settle();
+test('post and share browser paths preserve the invitation return when the guest chooses login', async context => {
+  for (const path of [`/share/${id}`, `/post/${id}`, `/post?id=${id}`]) {
+    const harness = mount('../src/app/post/[id].tsx', 'default', { os: 'web', href: `https://gling.ej-entertainment.com${path}`, params: path.includes('?') ? { id } : {}, auth: { isAuthed: false } }); context.after(() => harness.unmount()); await harness.settle();
     assert.equal(harness.calls.find(call => call[0] === 'preview')?.[1], id); assert.equal(harness.calls.filter(call => call[0] === 'full-post').length, 0);
+    assert.equal(harness.calls.filter(call => call[0] === 'login').length, 0);
+    assert.equal(harness.browser.sessionStorage.getItem(sharing.SHARED_POST_RETURN_KEY), null);
+    control(harness, 'shared.post.login').props.onPress();
     assert.equal(harness.browser.sessionStorage.getItem(sharing.SHARED_POST_RETURN_KEY), `/post?id=${id}&invite=1`);
     assert.equal(harness.calls.filter(call => call[0] === 'login').length, 1);
   }

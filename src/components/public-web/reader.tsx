@@ -22,6 +22,7 @@ import { googleMapsUrl, postMapBody } from '@/lib/post-maps';
 import { t } from '@/i18n/ko';
 import { hasAdLabel } from '@/lib/hashtags';
 import { publicMerchantId, publicWebTarget } from '@/lib/public-web';
+import { buildSharedPostUrl } from '@/lib/sharing';
 import { publicWebClient } from '@/lib/public-web-client';
 import { jsonLd, postSeo, PUBLIC_SITE } from '@/lib/public-seo';
 import { InteractionFeedbackProvider, useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -177,7 +178,7 @@ function ReaderContent() {
 
   async function share() {
     if (!postId) return;
-    const url = `${window.location.origin}/post?id=${encodeURIComponent(postId)}`;
+    const url = buildSharedPostUrl(postId);
     try {
       if (navigator.share) await navigator.share({ title: post?.title, url });
       else { await navigator.clipboard.writeText(url); setShareMessage('링크를 복사했어요.'); }
