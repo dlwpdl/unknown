@@ -781,6 +781,7 @@ test('a verified optional Flickr catalog fills only missing photos and preserves
     sourceUrl: 'https://www.flickr.com/photos/fixture/12345678901',
     artist: 'Fixture creator', title: 'Fixture venue detail', discoveredVia: 'Openverse', license: 'CC0', licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
     imageSha256: 'a'.repeat(64) };
+  next.photoCatalog.cities.toronto = next.photoCatalog.cities.toronto.filter(photo => photo.placeId !== supplementary.placeId);
   const original = next.photoCatalog.cities.toronto[0];
   next.photoCatalog.additionalCatalog = { cities: { toronto: [supplementary, { ...supplementary, placeId: original.placeId }] } };
   const api = data();
@@ -817,6 +818,7 @@ test('invalid optional photos cannot discard valid Commons or replace missing ph
   ]) {
     const next = dailyCatalog(), row = { ...valid }; change(row);
     next.photoCatalog = structuredClone(photos());
+    next.photoCatalog.cities.toronto = next.photoCatalog.cities.toronto.filter(photo => photo.placeId !== valid.placeId);
     next.photoCatalog.additionalCatalog = { cities: { toronto: [row] } };
     const api = data(), original = next.photoCatalog.cities.toronto[0];
     assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
@@ -832,6 +834,7 @@ test('duplicate or unknown-city optional groups are ignored without losing the c
     licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/', imageSha256: 'a'.repeat(64) };
   for (const cities of [{ toronto: [row, row] }, { toronto: [row], unknown: [] }, []]) {
     const api = data(), next = dailyCatalog(); next.photoCatalog = structuredClone(photos());
+    next.photoCatalog.cities.toronto = next.photoCatalog.cities.toronto.filter(photo => photo.placeId !== row.placeId);
     next.photoCatalog.additionalCatalog = { cities };
     assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
     assert.equal(api.getCityPlaces('toronto').find(p => p.id === row.placeId).photo, null);
