@@ -1060,6 +1060,16 @@
         "sourceUrl": "https://commons.wikimedia.org/wiki/File:Duchess_Bake_Shop_(15246497133).jpg",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
         "imageSha256": "8bc48119661c5db5351a76fb3c5f571e1cb444db04f2956c29c8baf782bf1d40"
+      },
+      {
+        "cityId": "edmonton",
+        "placeId": "osm:node:651254318",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/88th_Avenue_at_109th_St%2C_in_Edmonton_in_September_2026.jpg/1920px-88th_Avenue_at_109th_St%2C_in_Edmonton_in_September_2026.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:88th_Avenue_at_109th_St,_in_Edmonton_in_September_2026.jpg",
+        "artist": "Aude",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "imageSha256": "35b975c9bbe3db5f20c381b723c3e2ff093b9dc39b856a5ebce4e0e1d92281bb"
       }
     ],
     "montreal": [
@@ -1576,6 +1586,16 @@
         "sourceUrl": "https://commons.wikimedia.org/wiki/File:TheBowl-UofS.jpg",
         "licenseUrl": "https://creativecommons.org/licenses/by/2.5",
         "imageSha256": "62acda4444a055640329aa98c998e8074caf1bc64e8551910dc063a03fb81c86"
+      },
+      {
+        "cityId": "saskatoon",
+        "placeId": "osm:node:4550086489",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/34/D%27Lish_by_Tish_%2835950660395%29.jpg/1920px-D%27Lish_by_Tish_%2835950660395%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:D%27Lish_by_Tish_(35950660395).jpg",
+        "artist": "daryl_mitchell",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/",
+        "imageSha256": "ec63513678491239750b00d3f4a13971fffbe2131c46efff5cdae11d318e9982"
       }
     ],
     "vancouver": [
