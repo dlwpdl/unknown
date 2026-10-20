@@ -104,6 +104,27 @@ function reviewedPicks(cityId: string): PlaceRecommendation[] {
   return [...current, ...additions].slice(0, 50);
 }
 
+function displayedPicks(cityId: string): PlaceRecommendation[] {
+  if (catalog.recommendationTheme !== 'photo-spots') return [];
+  const city = catalog.cities[cityId];
+  const places = new Map([...(snapshot as PlaceCatalog).cities[cityId].places, ...city.places].map(place => [place.id, place]));
+  const photographed = new Set((photoCatalog.cities[cityId] ?? []).map(photo => photo.placeId));
+  const main = reviewedPicks(cityId);
+  const picks = [...main, ...(city.diningRecommendations ?? []).filter(pick => photographed.has(pick.placeId))];
+  const seen = new Set<string>();
+  const groups = (['places', 'food', 'cafe'] as const).map(category => picks.filter(pick => {
+    if (!photographed.has(pick.placeId) || places.get(pick.placeId)?.category !== category || seen.has(pick.placeId)) return false;
+    seen.add(pick.placeId);
+    return true;
+  }));
+  const selected: PlaceRecommendation[] = [];
+  for (let index = 0; groups.some(group => group[index]); index++) {
+    for (const group of groups) if (group[index]) selected.push(group[index]);
+  }
+  const fallback = main.filter(pick => !photographed.has(pick.placeId));
+  return [...selected.slice(0, 50 - fallback.length), ...fallback];
+}
+
 // Keep unselected OSM identities available to existing detail and review links.
 export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): CityPlace[] {
   if (!CITIES.some(city => city.id === cityId)) throw new Error('INVALID_PLACE_CITY');
@@ -113,7 +134,7 @@ export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): 
   // shortcut: verified photos cover a subset; add licensed same-place images as they are checked.
   const photos = photoCatalog.cities[cityId] ?? [];
   const photoOrder = new Map(photos.map((photo, index) => [photo.placeId, index]));
-  const reviewed = new Map(reviewedPicks(cityId).map(pick => [pick.placeId, pick]));
+  const reviewed = new Map(displayedPicks(cityId).map(pick => [pick.placeId, pick]));
   const dining = new Map((city.diningRecommendations ?? []).map(pick => [pick.placeId, pick]));
   const currentIds = new Set(city.places.map(place => place.id));
   const archived = (snapshot as PlaceCatalog).cities[cityId]?.places.filter(place => !currentIds.has(place.id)) ?? [];
@@ -127,7 +148,7 @@ export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): 
 }
 
 export function getCityRecommendations(cityId: string, category: PlaceCategory = 'all'): CityPlace[] {
-  const places = getCityPlaces(cityId, category), picks = reviewedPicks(cityId);
+  const places = getCityPlaces(cityId, category), picks = displayedPicks(cityId);
   const byId = new Map(places.map(place => [place.id, place]));
   return picks.flatMap(pick => {
     const place = byId.get(pick.placeId);
@@ -135,7 +156,7 @@ export function getCityRecommendations(cityId: string, category: PlaceCategory =
   });
 }
 
-// The Top list stays stable; map discovery also includes separately reviewed dining and attested visits.
+// Keep all admitted map destinations even when the displayed Top list is capped.
 export function getCityDiscoveryPlaces(cityId: string): CityPlace[] {
   const places = getCityPlaces(cityId), byId = new Map(places.map(place => [place.id, place]));
   const picks = [...reviewedPicks(cityId), ...(catalog.cities[cityId].diningRecommendations ?? [])];
