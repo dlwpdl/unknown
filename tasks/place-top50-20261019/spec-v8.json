@@ -6,7 +6,7 @@
   "authority": "msg_8e6074e45dc5",
   "objective": "Vancouver-first balanced real dining/map expansion within current installed catalog validators; remaining cityTop50/photos remain active.",
   "sourceScopeExpiresAt": "2026-10-20T00:35:00Z",
-  "status": "Source revision11 Van34 plus two Root-approved cached licensed photos ready; fresh DB CAS and actual native display pending",
+  "status": "Source revision12 photo-only followup ready; actualpublic11 saved, freshphotoCAS pending aftercurrentnativeQA",
   "baseline": {
     "selectionRevision": 10,
     "facts": 1001,
@@ -26,7 +26,7 @@
     "cafe": 17,
     "combinedVancouverDining": 50,
     "vancouverFacts": 168,
-    "selectionRevision": 11
+    "selectionRevision": 12
   },
   "preserve": [
     "All1001originalfactobjects",
@@ -61,7 +61,7 @@
     "facts": 1035,
     "main": 189,
     "dining": 112,
-    "photos": 211,
+    "photos": 213,
     "providers": 532,
     "vancouverFacts": 168,
     "vancouverMain": 50,
@@ -69,7 +69,7 @@
     "vancouverFood": 26,
     "vancouverCafe": 26,
     "vancouverMap": 101,
-    "vancouverPhotos": 60
+    "vancouverPhotos": 62
   },
   "checks": {
     "appPass": 1559,
@@ -92,6 +92,25 @@
     "newImageHTTP": 0,
     "renderer": "Current frozen native remoteURI fallback; no .tsx/staticrequire/assetcopy changes",
     "actualNativeDisplay": "UNVERIFIED",
-    "furtherNew34PhotoSearches": "Separate bounded photoV2 only afterimmutablefirstunion handedoff"
+    "furtherNew34PhotoSearches": "Separate bounded photoV2 only afterimmutablefirstunion handedoff",
+    "additionalNew34Photos": {
+      "count": 2,
+      "placeIds": [
+        "osm:node:5965217085",
+        "osm:node:5788272506"
+      ],
+      "remainingNew34PhotoNull": 32,
+      "privateDelta": "source40-photo2-followup-frozen-delta-v2.json",
+      "currentPublicRevision": 11,
+      "proposedRevision": 12,
+      "newHTTPUsage": {
+        "Commons": 1,
+        "thumb": 3
+      },
+      "TreesCupHeld": true,
+      "actualNativeNewPhotoDisplay": "UNVERIFIED",
+      "rootSourceAdmission": "msg_bc3a4037032e",
+      "DBSaved": false
+    }
   }
 }
