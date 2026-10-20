@@ -75,7 +75,7 @@ test('the real map marker and explicit map entry identify team visits without ch
   const visited = discoveryPlace({ ...place, glingVisited: visit });
   const markers = run(expression.getText(map), { pins: [visited, discoveryPlace({ ...place, id: 'osm:node:101' })], DISCOVERY_CATEGORIES,
     tr: value => value, hasAdLabel: () => false });
-  assert.equal(markers[0].label, 'Gling VISITED');
+  assert.equal(markers[0].label, 'gling Visited');
   assert.equal(markers[0].color, '#CBB9FF');
   assert.equal(markers[0].latitude, place.latitude);
   assert.equal(markers[0].longitude, place.longitude);

@@ -1,4 +1,5 @@
 import { Colors } from '@/constants/theme';
+import { ControlStyles, IconSize, Typography } from '@/constants/design-system';
 import { useLanguage } from '@/hooks/use-language';
 import { PostAdLabel } from '@/components/post-ad-label';
 import { hasAdLabel } from '@/lib/hashtags';
@@ -46,7 +47,7 @@ import { EVENT_CITIES, eventPriceLabel, eventTime, loadTicketmasterEvents, type 
 const filters: { id: DiscoveryFilter; label: string; color?: string }[] = [
   { id: 'all', label: '전체' }, { id: 'top25', label: 'TOP 50', color: TOP25_GOLD },
   { id: 'dining', label: '레스토랑', color: '#D79681' }, { id: 'cafe', label: '카페', color: '#D7BD92' },
-  { id: 'visited', label: 'Gling Visited', color: '#CBB9FF' },
+  { id: 'visited', label: 'gling Visited', color: '#CBB9FF' },
   { id: 'festival', label: '페스티벌', color: '#CBB9FF' }, { id: 'nightlife', label: '나이트라이프', color: '#DD737F' },
   { id: 'places', label: '가볼 만한 곳', color: '#A8C39B' },
   { id: 'housing', label: '부동산', color: '#70BFAF' }, { id: 'used', label: '중고거래', color: '#E9B86C' },
@@ -183,7 +184,7 @@ function CityMap({ city, placeId, onClose }: { city: (typeof CITIES)[number]; pl
   const markers = pins.map(item => {
     const category = DISCOVERY_CATEGORIES.find(value => value.id === item.category)!;
     return { id: item.id, latitude: item.latitude, longitude: item.longitude, color: item.glingVisited ? '#CBB9FF' : category.color,
-      label: `${hasAdLabel(item.post?.hashtags) ? 'AD · ' : ''}${item.glingVisited ? 'Gling VISITED' : ['housing', 'used'].includes(item.category) && item.price !== null ? item.price === 0 ? tr('나눔') : `$${item.price.toLocaleString('en-CA')}` : tr(category.short)}`, ...(item.top25 ? { top25: true } : {}) };
+      label: `${hasAdLabel(item.post?.hashtags) ? 'AD · ' : ''}${item.glingVisited ? 'gling Visited' : ['housing', 'used'].includes(item.category) && item.price !== null ? item.price === 0 ? tr('나눔') : `$${item.price.toLocaleString('en-CA')}` : tr(category.short)}`, ...(item.top25 ? { top25: true } : {}) };
   });
   const more = current && !limited && (!top25Only || top25Ready) && (current.postMore || current.eventMore);
   const open = (item: DiscoveryItem) => {
@@ -239,8 +240,8 @@ function CityMap({ city, placeId, onClose }: { city: (typeof CITIES)[number]; pl
   const closeFilters = () => { play('selection'); setFiltersOpen(false); setDateOpen(false); setDateError(''); };
   const filterChip = (value: typeof filters[number]) => {
     const selected = value.id === 'all' ? !selectedFilters.length : selectedFilters.includes(value.id);
-    return <Pressable key={value.id} analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr(value.label)} accessibilityState={{ selected }} onPress={() => toggleFilter(value.id)} style={[styles.chip, value.id === 'visited' && styles.visitedChip, { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected && value.id !== 'visited' ? theme.accent : theme.backgroundElement }]}>
-      {value.id === 'visited' ? <><GlingVisitedBadge /><View accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.visitedSelection, { backgroundColor: theme.accent, opacity: selected ? 1 : 0 }]}><ThemedText style={[styles.visitedSelectionText, { color: theme.accentInk }]}>✓</ThemedText></View></> : <>
+    return <Pressable key={value.id} analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr(value.label)} accessibilityState={{ selected }} onPress={() => toggleFilter(value.id)} style={[styles.chip, value.id === 'visited' && styles.visitedChip, { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.accent : theme.backgroundElement }]}>
+      {value.id === 'visited' ? <><GlingVisitedBadge selected={selected} /><View accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.visitedSelection, { opacity: selected ? 1 : 0 }]}><SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={IconSize.inline} tintColor={theme.accentInk} /></View></> : <>
       {selected && value.id !== 'all' ? <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✓</ThemedText> : value.id === 'top25' && <View style={[styles.dot, { backgroundColor: TOP25_GOLD }]} />}
       <ThemedText type="smallBold" style={{ color: selected ? theme.accentInk : value.id === 'top25' ? top25Ink : theme.text }}>{tr(value.label)}</ThemedText>
       </>}
@@ -331,10 +332,12 @@ function DiscoveryCard({ item, viewerScope, onOpen, translationVisible = true, e
     <ThemedText type={externalInfo ? 'small' : 'default'} themeColor="textSecondary">{externalInfo ? tr('공개 정보 ↗') : '›'}</ThemedText>
   </Pressable>{translatable && <TranslationControl translation={translation} />}</View>;
 }
-function GlingVisitedBadge() {
-  return <View accessible={false} style={styles.visitedBadge}>
-    <Image source={require('@/assets/brand/gling-night-wordmark-light.png')} contentFit="contain" style={styles.visitedLogo} accessible={false} />
-    <ThemedText style={styles.visitedText}>VISITED</ThemedText>
+function GlingVisitedBadge({ selected }: { selected?: boolean }) {
+  const theme = useTheme(), filter = selected !== undefined;
+  const lightLogo = filter && (selected ? theme !== Colors.dark : theme === Colors.dark);
+  return <View accessible={false} style={[styles.visitedBadge, filter && styles.visitedInline]}>
+    <Image source={lightLogo ? require('@/assets/brand/gling-night-wordmark.png') : require('@/assets/brand/gling-night-wordmark-light.png')} contentFit="contain" style={styles.visitedLogo} accessible={false} />
+    <ThemedText style={[styles.visitedText, filter && styles.visitedFilterText, filter && { color: selected ? theme.accentInk : theme.text }]}>Visited</ThemedText>
   </View>;
 }
 function GlingVisitNote({ item }: { item: DiscoveryItem }) {
@@ -377,7 +380,7 @@ const styles = StyleSheet.create({
   filterRow: { flexGrow: 0, flexShrink: 0, maxHeight: 58 }, filters: { paddingHorizontal: 16, gap: 8, paddingBottom: 8 }, chip: { minHeight: 44, paddingHorizontal: 13, borderRadius: 24, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 7 }, dot: { width: 8, height: 8, borderRadius: 4 },
   filterDot: { width: 6, height: 6, borderRadius: 3, position: 'absolute', right: 6, top: 6 },
   visitedBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#CBB9FF', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 3 }, visitedLogo: { width: 35, height: 16 }, visitedText: { color: '#171123', fontSize: 9, lineHeight: 14, fontWeight: '800', letterSpacing: 0.8 },
-  visitedChip: { borderWidth: 2, paddingHorizontal: 10, gap: 8 }, visitedSelection: { width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' }, visitedSelectionText: { fontSize: 12, lineHeight: 18, fontWeight: '800' },
+  visitedChip: { ...ControlStyles.pill, paddingHorizontal: 10, gap: 8 }, visitedInline: { backgroundColor: 'transparent', paddingHorizontal: 0, paddingVertical: 0, gap: 8 }, visitedFilterText: { ...Typography.label }, visitedSelection: { width: IconSize.inline, height: IconSize.inline, alignItems: 'center', justifyContent: 'center' },
   top25Badge: { borderRadius: 5, borderWidth: 1, borderColor: '#68543A', backgroundColor: '#2A2319', paddingHorizontal: 5, paddingVertical: 2 }, top25BadgeText: { color: TOP25_GOLD, fontSize: 10, lineHeight: 14, fontWeight: '800' }, top25Note: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 10, gap: 5 }, top25Source: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
   dates: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' }, date: { minHeight: 44, paddingHorizontal: 12, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   eventDateRow: { flexGrow: 0, flexShrink: 0 }, eventDates: { paddingHorizontal: 16, paddingBottom: 10, gap: 8, alignItems: 'center' }, dateChip: { minHeight: 44, paddingHorizontal: 12, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },

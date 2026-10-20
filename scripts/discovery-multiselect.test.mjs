@@ -3,6 +3,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { IconSize } from '../src/constants/design-system.ts';
 import { discoveryMatches, mergeCityTop25, discoveryEvent, discoveryEventOnDays } from '../src/lib/discovery.ts';
 
 // Legacy programmatic union compatibility; the map UI now selects one category.
@@ -73,7 +74,7 @@ test('real map chips select one category and All clears category and date state'
   const context = {
     exports, TOP25_GOLD: '#F4CA78', top25Ink: '#68543A',
     styles: {}, theme: { accent: '#CBB9FF', line: '#ccc', backgroundSelected: '#ddd', backgroundElement: '#eee', text: '#222' },
-    ScrollView: 'scroll', Pressable: 'button', View: 'view', ThemedText: 'text', GlingVisitedBadge: 'visited-badge', tr: value => value,
+    ScrollView: 'scroll', Pressable: 'button', View: 'view', ThemedText: 'text', GlingVisitedBadge: 'visited-badge', SymbolView: 'symbol', IconSize, tr: value => value,
     play: value => feedback.push(value), setSelectedFilters: update => { selected = Array.from(typeof update === 'function' ? update(selected) : update); },
     setDateFilter() {}, setDate() {}, setDateOpen() {}, setDateError() {},
     get selectedFilters() { return selected; },
@@ -98,7 +99,7 @@ test('real map chips select one category and All clears category and date state'
   assert.equal(button('cafe').props.accessibilityState.selected, false);
   button('visited').props.onPress();
   assert.deepEqual(selected, ['visited']);
-  assert.equal(button('visited').props.accessibilityLabel, 'Gling Visited');
+  assert.equal(button('visited').props.accessibilityLabel, 'gling Visited');
   assert.equal(button('top25').props.accessibilityState.selected, false);
   button('all').props.onPress();
   assert.deepEqual(selected, []);
