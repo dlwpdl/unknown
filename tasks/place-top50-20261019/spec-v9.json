@@ -117,5 +117,362 @@
     "sourceRecomposedExactlyEqualsActualRPC13": true,
     "all3PhotoRowsReachBrowseAndMap": true,
     "nativeDisplay": "UNVERIFIED"
+  },
+  "allCityDiningRevision14": {
+    "recordedAt": "2026-10-20T04:18:50.431598+00:00",
+    "authority": [
+      "msg_cbe4034ede58",
+      "msg_d28103c3440f",
+      "msg_68ce730fdb96",
+      "msg_342909774cdc",
+      "msg_98621bcf980e"
+    ],
+    "status": "LOCAL_SOURCE_PREPARED_AND_VERIFIED_NOT_PUBLIC_DB_SAVED",
+    "baselinePublic13": {
+      "facts": 1035,
+      "main": 189,
+      "dining": 112,
+      "photos": 216,
+      "providerRows": 532,
+      "canonicalSHA256": "022fef191c3d23fdc82deb7e0dd48890f14dc663fd1fd83d778deaac07fb205d"
+    },
+    "candidateRevision": 14,
+    "counts": {
+      "facts": 1240,
+      "main": 189,
+      "dining": 376,
+      "photos": 216,
+      "ratings": 750
+    },
+    "candidateCanonicalSHA256": "ce945af41cde678f919a49f9ace06cc5efba50492f3335627176d5a4793654fe",
+    "candidateFileSHA256": "4552c82051cc739863f9810ca7857391329f791f3552a83591615286e6b6ca1e",
+    "oldExactObjectsOrderAndIdentityEvidenceRetained": true,
+    "sourceReviewedUnratedOSMOnly": 142,
+    "positiveGuideStaticAccepted": 105,
+    "positiveGuideCachedAccepted": 19,
+    "negativeOrMunicipalityHeld": [
+      "Lucy’s Hydrostone Cafe: samebranch source permanentlyclosed",
+      "Flores & Pine: outerBearspaw municipality unresolved"
+    ],
+    "all11FoodCafeAndMixedFirst3ActualConsumerPass": true,
+    "consumerCommit": "f8c07f2e64ab3e603c6c5c987ac9dc89d1348f10",
+    "actualConsumerCounts": [
+      {
+        "cityId": "toronto",
+        "food": 26,
+        "cafe": 19,
+        "main": 50,
+        "map": 83,
+        "visited": [],
+        "first3": [
+          {
+            "id": "osm:way:32742038",
+            "name": "CN Tower",
+            "category": "places"
+          },
+          {
+            "id": "osm:node:249295975",
+            "name": "Drom Taberna",
+            "category": "food"
+          },
+          {
+            "id": "osm:node:276474692",
+            "name": "Mofer Coffee Front St",
+            "category": "cafe"
+          }
+        ]
+      },
+      {
+        "cityId": "vancouver",
+        "food": 58,
+        "cafe": 50,
+        "main": 50,
+        "map": 157,
+        "visited": [
+          {
+            "id": "osm:node:4976343547",
+            "name": "Handson Steak and Frites"
+          }
+        ],
+        "first3": [
+          {
+            "id": "osm:way:37063023",
+            "name": "Stanley Park",
+            "category": "places"
+          },
+          {
+            "id": "osm:relation:7071553",
+            "name": "Granville Island Public Market",
+            "category": "food"
+          },
+          {
+            "id": "osm:node:2168314490",
+            "name": "Revolver",
+            "category": "cafe"
+          }
+        ]
+      },
+      {
+        "cityId": "montreal",
+        "food": 11,
+        "cafe": 8,
+        "main": 38,
+        "map": 38,
+        "visited": [],
+        "first3": [
+          {
+            "id": "osm:way:22876797",
+            "name": "Jean Talon Market",
+            "category": "places"
+          },
+          {
+            "id": "osm:node:343490371",
+            "name": "Schwartz's",
+            "category": "food"
+          },
+          {
+            "id": "osm:node:237589460",
+            "name": "La Croissanterie Figaro",
+            "category": "cafe"
+          }
+        ]
+      },
+      {
+        "cityId": "calgary",
+        "food": 25,
+        "cafe": 21,
+        "main": 50,
+        "map": 60,
+        "visited": [],
+        "first3": [
+          {
+            "id": "osm:relation:1715576",
+            "name": "Calgary Zoo",
+            "category": "places"
+          },
+          {
+            "id": "osm:node:196651505",
+            "name": "Sushi Boat",
+            "category": "food"
+          },
+          {
+            "id": "osm:way:221143394",
+            "name": "River Café",
+            "category": "cafe"
+          }
+        ]
+      },
+      {
+        "cityId": "edmonton",
+        "food": 3,
+        "cafe": 4,
+        "main": 20,
+        "map": 20,
+        "visited": [],
+        "first3": [
+          {
+            "id": "osm:way:324786162",
+            "name": "Royal Alberta Museum",
+            "category": "places"
+          },
+          {
+            "id": "osm:way:1373511013",
+            "name": "Edmonton Riverboat",
+            "category": "food"
+          },
+          {
+            "id": "osm:way:158738659",
+            "name": "Duchess Bake Shop",
+            "category": "cafe"
+          }
+        ]
+      },
+      {
+        "cityId": "winnipeg",
+        "food": 8,
+        "cafe": 11,
+        "main": 34,
+        "map": 34,
+        "visited": [],
+        "first3": [
+          {
+            "id": "osm:way:131229325",
+            "name": "Canadian Museum for Human Rights",
+            "category": "places"
+          },
+          {
+            "id": "osm:way:97925809",
+            "name": "King's Head Pub",
+            "category": "food"
+          },
+          {
+            "id": "osm:node:638868123",
+            "name": "Fools & Horses",
+            "category": "cafe"
+          }
+        ]
+      },
+      {
+        "cityId": "saskatoon",
+        "food": 12,
+        "cafe": 10,
+        "main": 30,
+        "map": 30,
+        "visited": [],
+        "first3": [
+          {
+            "id": "osm:way:298718480",
+            "name": "Remai Modern",
+            "category": "places"
+          },
+          {
+            "id": "osm:node:2725563231",
+            "name": "Konga Cafe",
+            "category": "food"
+          },
+          {
+            "id": "osm:node:2748206723",
+            "name": "City Perks",
+            "category": "cafe"
+          }
+        ]
+      },
+      {
+        "cityId": "ottawa",
+        "food": 35,
+        "cafe": 24,
+        "main": 50,
+        "map": 66,
+        "visited": [],
+        "first3": [
+          {
+            "id": "osm:node:292324492",
+            "name": "Parliament Hill",
+            "category": "places"
+          },
+          {
+            "id": "osm:node:560750193",
+            "name": "The Cross Bar Restaurant",
+            "category": "food"
+          },
+          {
+            "id": "osm:node:588145957",
+            "name": "Ideal Coffee",
+            "category": "cafe"
+          }
+        ]
+      },
+      {
+        "cityId": "regina",
+        "food": 4,
+        "cafe": 11,
+        "main": 19,
+        "map": 19,
+        "visited": [],
+        "first3": [
+          {
+            "id": "osm:way:236508925",
+            "name": "Victoria Park",
+            "category": "places"
+          },
+          {
+            "id": "osm:node:439897601",
+            "name": "Crave Kitchen + Wine Bar",
+            "category": "food"
+          },
+          {
+            "id": "osm:node:3192427272",
+            "name": "Brewed Awakening",
+            "category": "cafe"
+          }
+        ]
+      },
+      {
+        "cityId": "saint-john",
+        "food": 7,
+        "cafe": 1,
+        "main": 12,
+        "map": 12,
+        "visited": [],
+        "first3": [
+          {
+            "id": "osm:relation:19244398",
+            "name": "Irving Nature Park",
+            "category": "places"
+          },
+          {
+            "id": "osm:node:1869399088",
+            "name": "Lily's",
+            "category": "food"
+          },
+          {
+            "id": "osm:node:1961419476",
+            "name": "Java Moose",
+            "category": "cafe"
+          }
+        ]
+      },
+      {
+        "cityId": "halifax",
+        "food": 18,
+        "cafe": 17,
+        "main": 43,
+        "map": 43,
+        "visited": [],
+        "first3": [
+          {
+            "id": "osm:node:4422934789",
+            "name": "Halifax Public Gardens",
+            "category": "places"
+          },
+          {
+            "id": "osm:node:33117708",
+            "name": "Heartwood Bakery and Cafe",
+            "category": "food"
+          },
+          {
+            "id": "osm:node:475876928",
+            "name": "Wired Monk",
+            "category": "cafe"
+          }
+        ]
+      }
+    ],
+    "dailyProducerOperationalCommit": "078e402df5bb0f3b377a0275ae2fac29661c63df",
+    "dailyProducerTests16Pass": true,
+    "dailySeedAndNativeJobPromptScheduleChanged": false,
+    "actualNewPublicCAS": false,
+    "actualNewNativeInstall": false,
+    "allCities50OrAllPhotosComplete": false,
+    "sourcePhotos216Unchanged": true,
+    "providerWindowClosed": {
+      "staticGETs": 6,
+      "hostHistory": 13,
+      "gzipBytes": 435222073,
+      "CRCChecksumsAll3Verified": true,
+      "localCPUSecondsConservative": 258.749724,
+      "decodedBytesConservative": 11466743834,
+      "active": 0,
+      "uncertain": 0
+    },
+    "evidenceRoot": "/Users/ash/Desktop/Git/unknown/output/reviews/gling-city-expansion-2026-10-19/source40-allcity-v1",
+    "preparedSQLRequest": {
+      "status": "PREPARED_ONLY_NOT_AUTHORITY_NOT_SENT",
+      "projectRef": "wjvahbdwmctzpkndqaxa",
+      "method": "POST",
+      "endpoint": "https://api.supabase.com/v1/projects/wjvahbdwmctzpkndqaxa/database/query",
+      "sqlFile": "/Users/ash/Desktop/Git/unknown/output/reviews/gling-city-expansion-2026-10-19/source40-allcity-v1/prepared-all11-single-cas-v1.sql",
+      "sqlSHA256": "0c8f861a09be0e55f5752183d98b14f5a70923e534895dab891efba7e1900dee",
+      "sqlBytes": 1922216,
+      "serializedRequestFile": "/Users/ash/Desktop/Git/unknown/output/reviews/gling-city-expansion-2026-10-19/source40-allcity-v1/prepared-all11-single-cas-v1.request.json",
+      "serializedRequestSHA256": "2c2d01f841a33ec2eb4f07260c89298f9d8583e66b5860cc0716474f68770d23",
+      "serializedRequestBytes": 2098635,
+      "newPayloadCanonicalSHA256": "ce945af41cde678f919a49f9ace06cc5efba50492f3335627176d5a4793654fe",
+      "oldExactPayload13Required": true,
+      "oldUpdatedAtMD5AndRevision13Required": true,
+      "maxMutationStartsProposed": 1,
+      "retriesProposed": 0,
+      "actualHTTP": 0
+    }
   }
 }
