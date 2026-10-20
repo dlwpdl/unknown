@@ -334,6 +334,16 @@
         "license": "CC BY-SA 2.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/",
         "imageSha256": "cdda3ec2c002e2543429ec686a3980a4953932b1ffd0de3f8b59733b81c41f7b"
+      },
+      {
+        "cityId": "calgary",
+        "placeId": "osm:node:1601954480",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/07/Beano_%282371845078%29.jpg/960px-Beano_%282371845078%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Beano_(2371845078).jpg",
+        "artist": "John Johnston",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+        "imageSha256": "7d985eef54f99500871ff2862de8c4187670c50cf7e55e0be0396d49cd86883b"
       }
     ],
     "halifax": [
@@ -858,6 +868,16 @@
         "sourceUrl": "https://commons.wikimedia.org/wiki/File:Mofer_Coffee,_Toronto,_Ontario,_2025-08-25.jpg",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
         "imageSha256": "7e3c7334e4ac9c52a047aa868672b9acd19bbb1263ac860b14ccb841b5d6370d"
+      },
+      {
+        "cityId": "toronto",
+        "placeId": "osm:node:249295975",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/88/Queen_Street_West_at_Augusta_Avenue_in_Toronto%2C_August_26_2026.jpg/960px-Queen_Street_West_at_Augusta_Avenue_in_Toronto%2C_August_26_2026.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Queen_Street_West_at_Augusta_Avenue_in_Toronto,_August_26_2026.jpg",
+        "artist": "Dillan Payne",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "imageSha256": "f2be8ccb965fb469b4f6efe9d1320ca25cfba50fdff89d3a077ec5dd27a2581c"
       }
     ],
     "edmonton": [
@@ -1272,6 +1292,16 @@
         "sourceUrl": "https://commons.wikimedia.org/wiki/File:St-Viateur_Bagel_-_263_Saint-Viateur_Ouest.jpg",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
         "imageSha256": "1708b0a573932b1f6da5af43794d3ae1d74b354907a7791e7b6f5d487708830a"
+      },
+      {
+        "cityId": "montreal",
+        "placeId": "osm:node:237589460",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/Caf%C3%A9%40Huchison%C3%97FairmountW.jpg/960px-Caf%C3%A9%40Huchison%C3%97FairmountW.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Caf%C3%A9@Huchison%C3%97FairmountW.jpg",
+        "artist": "Bonnie Meisels",
+        "license": "CC0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "imageSha256": "19c0716028bf373dde19281f897b2461364106980240cec1da63fd0131278dcb"
       }
     ],
     "winnipeg": [
