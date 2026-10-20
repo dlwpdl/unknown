@@ -105,16 +105,48 @@ test('every supported city has source-checked selections rather than a padded bu
   }
 });
 
-test('popular featured places retain real provider counts and honest optional photographs', () => {
+test('featured places show exact scoped provider counts or an honest unrated state', () => {
   const ratings = JSON.parse(readFileSync(new URL('src/lib/place-external-ratings.json', root), 'utf8'));
-  for (const city of ['toronto', 'vancouver', 'montreal', 'calgary', 'edmonton', 'winnipeg', 'ottawa', 'regina']) {
+  const ratingsApi = externalRatings(), jsx = (type, props) => ({ type, props });
+  const ui = module('src/components/place-review-summary.tsx', {
+    'react/jsx-runtime': { jsx, jsxs: jsx },
+    'react-native': { StyleSheet: { create: value => value }, View: 'View' },
+    '@/components/themed-text': { ThemedText: 'ThemedText' },
+    '@/components/merchant-rating-bar': { GlingRatingIcon: 'GlingRatingIcon' },
+    '@/lib/place-external-ratings': ratingsApi,
+  });
+  const text = tree => nodes(tree).flatMap(node => [node.props?.children].flat().filter(value => typeof value === 'string')).join('');
+  let rated = 0;
+  for (const { id: city } of cities) {
     const featured = data().getCityRecommendations(city).slice(0, 3);
     assert.equal(featured.length, 3);
     for (const place of featured) {
-      if (place.photo) assert.equal(place.photo.placeId, place.id, `${city}/${place.name}: same-place photograph`);
-      assert.ok(ratings.some(row => row.cityId === city && row.placeId === place.id && row.count > 0), `${city}/${place.name}: actual provider count`);
+      if (place.photo) assert.deepEqual(place.photo, photos().cities[city].find(photo => photo.placeId === place.id));
+      else assert.equal(place.photo, null);
+      const expected = ratings.find(row => row.cityId === city && row.placeId === place.id);
+      const rating = ui.getPlaceReviewRating(city, place.id);
+      assert.equal(rating.count, null, 'unknown Gling review counts remain unknown');
+      assert.equal(rating.externalCount, expected?.count ?? null, `${city}/${place.name}: exact provider count`);
+      assert.equal(rating.externalScore, expected ? expected.score * 2 : null);
+      assert.equal(rating.score, rating.externalScore);
+      assert.equal(rating.source, expected ? 'external' : null);
+      const tree = ui.PlaceReviewSummary({ rating, compact: true });
+      if (expected) {
+        rated++;
+        assert.ok(expected.count > 0);
+        assert.ok(text(tree).includes(`${expected.count.toLocaleString('ko-KR')}개 평가`));
+        assert.ok(nodes(tree).some(node => node.type === 'GlingRatingIcon' && node.props.score === expected.score * 2));
+      } else {
+        assert.equal(text(tree), '글링 리뷰 보기');
+        assert.equal(nodes(tree).some(node => node.type === 'GlingRatingIcon'), false);
+      }
     }
   }
+  assert.ok(rated > 0, 'actual rated places are exercised');
+  assert.equal(ratingsApi.replaceExternalPlaceRatings([]), true);
+  const place = data().getCityRecommendations('toronto')[0], unrated = ui.getPlaceReviewRating('toronto', place.id);
+  assert.deepEqual([unrated.score, unrated.source, unrated.count, unrated.externalScore, unrated.externalCount], [null, null, null, null, null]);
+  assert.equal(text(ui.PlaceReviewSummary({ rating: unrated, compact: true })), '글링 리뷰 보기');
 });
 function dailyCatalog() {
   const next = catalog(); next.collectedAt = new Date(fixtureTime).toISOString();
@@ -330,7 +362,8 @@ test('native list renders real data, expands, filters search and category, then 
   tree = ui.render();
   nodes(tree).find(n => n.props?.analyticsId === 'places.category.food').props.onPress();
   tree = ui.render();
-  assert.equal(rows().length, choices.filter(place => place.category === 'food').length);
+  const food = data().getCityBrowsePlaces('toronto', 'food').slice(0, 50);
+  assert.deepEqual(rows().map(row => nodes(row).find(node => node.type === 'CityPlacePhoto').props.place.id), Array.from(food, place => place.id));
   assert.equal(nodes(tree).find(n => n.props?.analyticsId === 'places.category.food').props.accessibilityState.selected, true);
   nodes(tree).find(n => n.props?.analyticsId === 'places.category.places').props.onPress();
   tree = ui.render();
@@ -642,6 +675,7 @@ test('mixed shipped Top lists stay capped and preserve every admitted discovery 
     const reviewed = [...city.recommendations, ...(city.diningRecommendations ?? [])];
     const byId = new Map(city.places.map(place => [place.id, place]));
     const available = ['places', 'food', 'cafe'].filter(category => reviewed.some(pick => byId.get(pick.placeId).category === category));
+    assert.deepEqual(available, ['places', 'food', 'cafe'], `${cityId}: bundled admission includes every category`);
     assert.deepEqual(selected.slice(0, available.length).map(place => place.category), available, `${cityId}: available categories lead the list`);
     for (const category of available) {
       const ids = [...new Set(reviewed.filter(pick => byId.get(pick.placeId).category === category).map(pick => pick.placeId))];
