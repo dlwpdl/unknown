@@ -15,6 +15,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { mount, themes, nodes, text } from './meetup-host-tools-ui.test.mjs';
 import * as dateHelpers from '../src/lib/chilling-date.ts';
 import * as flatHelpers from '../src/lib/flat-control.ts';
+import * as designSystem from '../src/constants/design-system.ts';
 
 test('actual source renders at 320/1024 in light/dark KO/EN with usable controls', async () => {
   const require = createRequire(import.meta.url), native = require('react-native-web');
@@ -32,7 +33,7 @@ test('actual source renders at 320/1024 in light/dark KO/EN with usable controls
       nodes(picker.tree).find(node => node.type === 'Pressable' && text(node).includes('질문 모음')).props.onPress();
       await picker.flush();
       const imports = { react: React, 'react/jsx-runtime': jsx, 'react-native': native,
-        '@/constants/theme': { Fonts: { mono: 'monospace' } }, '@/hooks/use-theme': { useTheme: () => theme },
+        '@/constants/theme': { Fonts: { mono: 'monospace' } }, '@/constants/design-system': designSystem, '@/hooks/use-theme': { useTheme: () => theme },
         '@/hooks/use-language': { useLanguage: () => ({ language, locale: language === 'ko' ? 'ko-KR' : 'en-CA', tr: value => value }) },
         '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) }, '@/lib/chilling-date': dateHelpers,
         '@/lib/flat-control': flatHelpers, '@/lib/behavior-analytics': { behavior() {}, behaviorView() { return ''; }, scrollThresholds() { return []; } },
