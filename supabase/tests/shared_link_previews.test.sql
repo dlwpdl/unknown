@@ -41,7 +41,7 @@ reset role;
 insert into public.posts(id,author_id,city_id,tag_id,title,body,posted_on) values
  ('9d100000-0000-4000-8000-000000000004','9d000000-0000-4000-8000-000000000001','vancouver',1,'카페 소개',E'  직접 볶은 원두와\t따뜻한 빵을 만나요.  \nPRIVATE-REMAINDER',current_date),
  ('9d100000-0000-4000-8000-000000000005','9d000000-0000-4000-8000-000000000001','vancouver',1,'긴 소개',repeat('💜',150)||E'\nPRIVATE-REMAINDER',current_date),
- ('9d100000-0000-4000-8000-000000000006','9d000000-0000-4000-8000-000000000001','vancouver',1,'안전한 소개',E'<script>\nPRIVATE-SCRIPT\n</script>\ncontact@example.invalid\n전화: +1 (604) 555-1234\n49.2827, -123.1207\nhttps://example.invalid/private\n편하게 쉬어 가는 동네 공간이에요.\n\n첨부 링크\nPRIVATE-ATTACHMENT',current_date),
+ ('9d100000-0000-4000-8000-000000000006','9d000000-0000-4000-8000-000000000001','vancouver',1,'안전한 소개',E'<script>\nPRIVATE-SCRIPT\n</script>\ncontact@example.invalid\n전화: +1 (604) 555-1234\n49.2827, -123.1207\nhttps://example.invalid/private\n편하게 쉬어 가는 동네 공간이에요.\n<script>PRIVATE-LATER-SCRIPT</script>\nNOT-FIRST-INTRO\n\n첨부 링크\nPRIVATE-ATTACHMENT',current_date),
  ('9d100000-0000-4000-8000-000000000007','9d000000-0000-4000-8000-000000000001','vancouver',1,'지도만 있는 글',E'Google 지도: https://maps.google.com/private\nPRIVATE-MAP-FOOTER',current_date),
  ('9d100000-0000-4000-8000-000000000008','9d000000-0000-4000-8000-000000000001','vancouver',(select id from public.tags where kind='meetup' limit 1),'이전 모임 글','PRIVATE-LEGACY-MEETUP',current_date),
  ('9d100000-0000-4000-8000-000000000009','9d000000-0000-4000-8000-000000000001','vancouver',1,'잘못된 마크업',E'<script>PRIVATE-UNCLOSED\nPRIVATE-SCRIPT-CONTENT',current_date),
