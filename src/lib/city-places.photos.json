@@ -432,6 +432,16 @@
         "license": "CC BY-SA 4.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
         "imageSha256": "630ee1047d4a3c27b77f63d359e28cae92a041a20a75726ec0b9b37f8192bf4d"
+      },
+      {
+        "placeId": "osm:node:276474692",
+        "cityId": "toronto",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5e/Mofer_Coffee%2C_Toronto%2C_Ontario%2C_2025-08-25.jpg/960px-Mofer_Coffee%2C_Toronto%2C_Ontario%2C_2025-08-25.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Mofer_Coffee,_Toronto,_Ontario,_2025-08-25.jpg",
+        "artist": "Chris Woodrich",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "7e3c7334e4ac9c52a047aa868672b9acd19bbb1263ac860b14ccb841b5d6370d"
       }
     ],
     "vancouver": [
