@@ -80,6 +80,16 @@
         "license": "Public domain",
         "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
         "imageSha256": "6d6bcd100886318d371475629321400132ed3ebb213bef21d517edcf22e068ea"
+      },
+      {
+        "cityId": "ottawa",
+        "placeId": "osm:node:1020907559",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8a/French_Hill_School_House.jpg/960px-French_Hill_School_House.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:French_Hill_School_House.jpg",
+        "artist": "Fdesjardins",
+        "license": "CC BY 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+        "imageSha256": "bfbaf247ef825b2cda907ce573d936bfb01bce6eb40ddfa07aca29ed6e4b1ba5"
       }
     ],
     "regina": [
@@ -344,6 +354,16 @@
         "license": "CC BY 2.0",
         "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
         "imageSha256": "7d985eef54f99500871ff2862de8c4187670c50cf7e55e0be0396d49cd86883b"
+      },
+      {
+        "cityId": "calgary",
+        "placeId": "osm:way:147576628",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/26/William_Roper_Hull_Ranche_House.jpg/1920px-William_Roper_Hull_Ranche_House.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:William_Roper_Hull_Ranche_House.jpg",
+        "artist": "Angela Boyko",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "365139cc6c6c8647f9fba84616f638a4dea7edde92ba765b25508910af55584f"
       }
     ],
     "halifax": [
