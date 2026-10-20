@@ -1,8 +1,33 @@
 import assert from 'node:assert/strict';
 import { Buffer } from 'node:buffer';
+import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
+import ts from 'typescript';
 import { decodeSharedUuid, encodeSharedUuid } from '../src/lib/shared-uuid.ts';
 import test from 'node:test';
 import { buildSharedPostUrl, sharedLinkTarget, sharedLinkInMessage, sharedPostMessage, sharedPostReturnPath } from '../src/lib/sharing.ts';
+
+test('public web sharing and clipboard fallback use the existing short post URL', async () => {
+  const id = 'b20b2f28-5902-461d-8ffc-ffef3f23b2c0';
+  const source = readFileSync(new URL('../src/components/public-web/reader.tsx', import.meta.url), 'utf8');
+  const start = source.indexOf('  async function share()'), end = source.indexOf('\n\n  return <div', start);
+  assert.ok(start > 0 && end > start);
+  for (const nativeShare of [true, false]) {
+    const calls = [], exports = {};
+    vm.runInNewContext(ts.transpileModule(source.slice(start, end) + '\nexports.share = share;', {
+      compilerOptions: { module: ts.ModuleKind.CommonJS },
+    }).outputText, { exports, postId: id, post: { title: 'Shared title', body: 'private-body-sentinel' }, buildSharedPostUrl,
+      window: { location: { origin: 'https://gling.ej-entertainment.com' } },
+      navigator: { share: nativeShare ? async payload => { calls.push(['share', payload]); } : undefined,
+        clipboard: { writeText: async url => { calls.push(['copy', url]); } } },
+      setShareMessage: message => calls.push(['message', message]),
+    });
+    await exports.share();
+    const shared = calls.find(call => call[0] === (nativeShare ? 'share' : 'copy'));
+    assert.equal(nativeShare ? shared[1].url : shared[1], buildSharedPostUrl(id));
+    assert.equal(JSON.stringify(calls).includes('private-body-sentinel'), false);
+  }
+});
 
 test('별도 웹 주소는 유지하고 글링 공유는 미리보기 경로로 연결한다', () => {
   assert.equal(buildSharedPostUrl('post 1', 'https://gling.example/'), 'https://gling.example/post?id=post%201');
