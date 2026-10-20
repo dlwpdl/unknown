@@ -2202,6 +2202,16 @@
         "license": "CC BY-SA 2.0",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
         "imageSha256": "f318c881d06113328926f2e66797d4c0ae3bb89f2843d5b8c9b26dae186ff13d"
+      },
+      {
+        "placeId": "osm:node:4839118321",
+        "cityId": "halifax",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/53/Discovery_Centre.jpg/960px-Discovery_Centre.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Discovery_Centre.jpg",
+        "artist": "Ben MacLeod",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "imageSha256": "a319dd60498b07d728400d883142200bb0d8f926eadd273a2ffc2332f7ec1f7b"
       }
     ]
   },
