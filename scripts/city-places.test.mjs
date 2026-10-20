@@ -42,7 +42,7 @@ test('an unreviewed catalog never fills city recommendations with ordinary busin
   const snapshot = catalog();
   for (const city of Object.values(snapshot.cities)) { delete city.recommendations; delete city.diningRecommendations; }
   const api = data(snapshot);
-  assert.equal(api.getCityRecommendations('toronto').length, 0);
+  for (const city of cities) assert.equal(api.getCityRecommendations(city.id).length, 0, city.id);
   assert.ok(api.getCityPlaces('toronto').some(place => /McDonald/i.test(place.name)), 'old detail/review identities must remain available');
 });
 
@@ -90,7 +90,7 @@ test('a reviewed replacement revision changes order while old detail and review 
   assert.throws(() => api.replaceCityPlacesCatalog(invalid, fixtureNow), /INVALID_PLACE_CATALOG/);
 });
 
-test('every supported city has source-checked photo selections rather than a padded business directory', () => {
+test('every supported city has source-checked selections rather than a padded business directory', () => {
   const snapshot = catalog();
   assert.equal(snapshot.recommendationTheme, 'photo-spots');
   for (const city of cities) {
@@ -105,13 +105,13 @@ test('every supported city has source-checked photo selections rather than a pad
   }
 });
 
-test('popular featured places have photographs and real provider counts where three subjects are verified', () => {
+test('popular featured places retain real provider counts and honest optional photographs', () => {
   const ratings = JSON.parse(readFileSync(new URL('src/lib/place-external-ratings.json', root), 'utf8'));
   for (const city of ['toronto', 'vancouver', 'montreal', 'calgary', 'edmonton', 'winnipeg', 'ottawa', 'regina']) {
     const featured = data().getCityRecommendations(city).slice(0, 3);
     assert.equal(featured.length, 3);
     for (const place of featured) {
-      assert.ok(place.photo?.imageSha256, `${city}/${place.name}: photograph`);
+      if (place.photo) assert.equal(place.photo.placeId, place.id, `${city}/${place.name}: same-place photograph`);
       assert.ok(ratings.some(row => row.cityId === city && row.placeId === place.id && row.count > 0), `${city}/${place.name}: actual provider count`);
     }
   }
@@ -530,24 +530,29 @@ test('photo load failure shows the neutral fallback and a different image can lo
 });
 
 
-test('reviewed dining without a verified photo stays in category browsing and discovery', () => {
-  const snapshot = catalog(), city = snapshot.cities.vancouver;
-  const photographed = new Set(photos().cities.vancouver.map(photo => photo.placeId));
-  const food = city.places.find(place => place.category === 'food' && !photographed.has(place.id) && !city.recommendations.some(pick => pick.placeId === place.id));
-  const cafe = city.places.find(place => place.category === 'cafe' && !photographed.has(place.id));
-  city.diningRecommendations = [];
-  const before = Array.from(data(snapshot).getCityRecommendations('vancouver'), place => place.id);
-  city.diningRecommendations = [food, cafe].map(place => ({ placeId: place.id, reason: 'Reviewed dining fixture', sourceUrl: 'https://example.org/dining', verifiedAt: snapshot.collectedAt }));
-  const api = data(snapshot);
-  assert.equal(typeof api.getCityBrowsePlaces, 'function');
-  assert.equal(typeof api.getCityDiscoveryPlaces, 'function');
-  assert.deepEqual(Array.from(api.getCityBrowsePlaces('vancouver'), place => place.id), before);
-  assert.ok(api.getCityBrowsePlaces('vancouver', 'food').some(place => place.id === food.id));
-  assert.ok(api.getCityBrowsePlaces('vancouver', 'cafe').some(place => place.id === cafe.id));
-  assert.equal(api.getCityBrowsePlaces('vancouver', 'cafe').find(place => place.id === cafe.id).recommendation, undefined);
-  assert.equal(api.getCityBrowsePlaces('vancouver', 'cafe').find(place => place.id === cafe.id).diningRecommendation.placeId, cafe.id);
-  assert.equal(api.getCityDiscoveryPlaces('vancouver').length, 52);
-  assert.ok(!api.getCityDiscoveryPlaces('vancouver').some(place => /McDonald|Tim Hortons|Starbucks/i.test(place.name) && !city.diningRecommendations.some(pick => pick.placeId === place.id)));
+test('reviewed photo-less dining mixes with sights in all eleven cities without inventing photographs', () => {
+  for (const { id: cityId } of cities) {
+    const snapshot = dailyCatalog(), city = snapshot.cities[cityId];
+    const photographed = new Set(photos().cities[cityId].map(photo => photo.placeId));
+    const food = city.places.find(place => place.category === 'food' && !photographed.has(place.id));
+    const cafe = city.places.find(place => place.category === 'cafe' && !photographed.has(place.id));
+    city.diningRecommendations = [food, cafe].map(place => ({ placeId: place.id, reason: 'Reviewed dining fixture', sourceUrl: 'https://example.org/dining', verifiedAt: snapshot.collectedAt }));
+    const api = data();
+    assert.equal(api.replaceCityPlacesCatalog(snapshot, fixtureNow), true);
+    const selected = Array.from(api.getCityRecommendations(cityId));
+    assert.deepEqual(selected.slice(0, 3).map(place => place.category), ['places', 'food', 'cafe'], cityId);
+    for (const place of [food, cafe]) {
+      const chosen = selected.find(row => row.id === place.id);
+      assert.ok(chosen, `${cityId}: reviewed dining is included`);
+      assert.equal(chosen.photo, null);
+      assert.equal(chosen.recommendation.placeId, place.id);
+      assert.ok(api.getCityBrowsePlaces(cityId, place.category).some(row => row.id === place.id));
+      assert.ok(api.getCityDiscoveryPlaces(cityId).find(row => row.id === place.id).recommendation);
+    }
+    const ui = screen('src/components/city-popular-places.tsx', {}, false, api);
+    const cards = nodes(ui.render({ cityId })).filter(node => node.props?.analyticsId === 'today.places.place-open');
+    assert.deepEqual(cards.map(card => nodes(card).find(node => node.type === 'CityPlacePhoto').props.place.id), selected.slice(0, 3).map(place => place.id));
+  }
 });
 
 test('Top recommendations mix reviewed categories in editorial order and share one badge selection', () => {
@@ -558,9 +563,11 @@ test('Top recommendations mix reviewed categories in editorial order and share o
   const dining = city.diningRecommendations.filter(pick => photographed.has(pick.placeId));
   const food = dining.filter(pick => byId.get(pick.placeId).category === 'food').slice(0, 2);
   const cafes = dining.filter(pick => byId.get(pick.placeId).category === 'cafe').slice(0, 2);
-  city.recommendations = [landmarks[0], food[0], landmarks[1]];
-  city.diningRecommendations = [food[0], food[1], ...cafes];
-  const expected = [landmarks[0], food[0], cafes[0], landmarks[1], food[1], cafes[1]];
+  const withoutPhotos = ['food', 'cafe'].map(category => city.places.find(place => place.category === category && !photographed.has(place.id)))
+    .map(place => ({ placeId: place.id, reason: 'Reviewed photo-less fixture', sourceUrl: 'https://example.org/dining', verifiedAt: snapshot.collectedAt }));
+  city.recommendations = [landmarks[0], withoutPhotos[0], landmarks[1]];
+  city.diningRecommendations = [withoutPhotos[0], withoutPhotos[1], ...food, ...cafes];
+  const expected = [landmarks[0], food[0], cafes[0], landmarks[1], food[1], cafes[1], ...withoutPhotos];
   const api = data(snapshot), selected = api.getCityRecommendations('vancouver');
   assert.deepEqual(Array.from(selected, place => place.id), expected.map(pick => pick.placeId));
   assert.deepEqual(Array.from(api.getCityBrowsePlaces('vancouver'), place => place.id), expected.map(pick => pick.placeId));
@@ -574,6 +581,53 @@ test('Top recommendations mix reviewed categories in editorial order and share o
   assert.deepEqual(cards.map(card => nodes(card).find(node => node.type === 'CityPlacePhoto').props.place.id), expected.slice(0, 3).map(pick => pick.placeId));
 });
 
+test('fifty photo-less main picks cannot crowd reviewed restaurants and cafes out of the preview', () => {
+  const snapshot = dailyCatalog(), city = snapshot.cities.toronto, original = city.places[0];
+  city.places = Array.from({ length: 52 }, (_, index) => ({ ...original, id: `osm:node:${90_000_000_000 + index}`,
+    sourceUrl: `https://www.openstreetmap.org/node/${90_000_000_000 + index}`, category: index === 50 ? 'food' : index === 51 ? 'cafe' : 'places' }));
+  const picks = city.places.map(place => ({ placeId: place.id, reason: 'Reviewed fixture', sourceUrl: 'https://example.org/dining', verifiedAt: snapshot.collectedAt }));
+  city.recommendations = picks.slice(0, 50); city.diningRecommendations = picks.slice(50);
+  const api = data(); assert.equal(api.replaceCityPlacesCatalog(snapshot, fixtureNow), true);
+  const selected = Array.from(api.getCityRecommendations('toronto'));
+  assert.equal(selected.length, 50);
+  assert.deepEqual(selected.slice(0, 3).map(place => place.category), ['places', 'food', 'cafe']);
+  assert.equal(api.getCityDiscoveryPlaces('toronto').length, 52);
+  assert.ok(api.getCityPlaces('toronto').some(place => place.id === original.id), 'archived detail identity remains available');
+});
+
+function diningCatalog(count) {
+  const next = dailyCatalog(), city = next.cities.toronto, original = city.places[0];
+  city.places = Array.from({ length: count }, (_, index) => ({ ...original, id: `osm:node:${91_000_000_000 + index}`,
+    sourceUrl: `https://www.openstreetmap.org/node/${91_000_000_000 + index}`, name: `Reviewed dining fixture ${index}`, category: index % 2 ? 'food' : 'cafe' }));
+  city.recommendations = [];
+  city.diningRecommendations = city.places.map(place => ({ placeId: place.id, reason: 'Reviewed dining fixture', sourceUrl: 'https://example.org/dining', verifiedAt: next.collectedAt }));
+  return next;
+}
+
+for (const count of [51, 61, 200]) test(`${count} distinct reviewed dining picks survive refresh while the displayed Top list stays at fifty`, () => {
+  const api = data(), next = diningCatalog(count);
+  assert.equal(new Set(next.cities.toronto.diningRecommendations.map(pick => pick.placeId)).size, count);
+  assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
+  assert.equal(api.getCityDiscoveryPlaces('toronto').length, count);
+  const selected = Array.from(api.getCityRecommendations('toronto'));
+  assert.equal(selected.length, 50);
+  assert.equal(new Set(selected.map(place => place.id)).size, 50);
+  assert.ok(selected.every(place => place.photo === null && place.recommendation));
+});
+
+test('a 201st distinct dining pick or fact cannot replace the last valid catalog', () => {
+  const api = data(), next = diningCatalog(200);
+  assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
+  const before = JSON.stringify(api.getCityPlaces('toronto'));
+  const tooMany = diningCatalog(201);
+  tooMany.collectedAt = new Date(fixtureTime + 3_600_000).toISOString();
+  const picksOnly = structuredClone(tooMany); picksOnly.cities.toronto.places.pop();
+  for (const invalid of [picksOnly, tooMany]) {
+    assert.throws(() => api.replaceCityPlacesCatalog(invalid, fixtureNow), /INVALID_PLACE_CATALOG/);
+    assert.equal(JSON.stringify(api.getCityPlaces('toronto')), before);
+  }
+});
+
 test('mixed shipped Top lists stay capped and preserve every admitted discovery identity', () => {
   const snapshot = catalog(), api = data();
   for (const [cityId, city] of Object.entries(snapshot.cities)) {
@@ -585,19 +639,16 @@ test('mixed shipped Top lists stay capped and preserve every admitted discovery 
     assert.deepEqual(new Set(discovery.map(place => place.id)), admitted, `${cityId}: all prior map identities remain`);
     assert.deepEqual(new Set(discovery.filter(place => place.recommendation).map(place => place.id)), new Set(selected.map(place => place.id)), `${cityId}: Top badges agree`);
     const photographed = new Set(photos().cities[cityId].map(photo => photo.placeId));
-    const reviewed = [...city.recommendations, ...(city.diningRecommendations ?? [])].filter(pick => photographed.has(pick.placeId));
+    const reviewed = [...city.recommendations, ...(city.diningRecommendations ?? [])];
     const byId = new Map(city.places.map(place => [place.id, place]));
     const available = ['places', 'food', 'cafe'].filter(category => reviewed.some(pick => byId.get(pick.placeId).category === category));
     assert.deepEqual(selected.slice(0, available.length).map(place => place.category), available, `${cityId}: available categories lead the list`);
     for (const category of available) {
-      const ordered = [...new Set(reviewed.filter(pick => byId.get(pick.placeId).category === category).map(pick => pick.placeId))];
-      const actual = selected.filter(place => place.category === category && place.photo).map(place => place.id);
+      const ids = [...new Set(reviewed.filter(pick => byId.get(pick.placeId).category === category).map(pick => pick.placeId))];
+      const ordered = [...ids.filter(id => photographed.has(id)), ...ids.filter(id => !photographed.has(id))];
+      const actual = selected.filter(place => place.category === category).map(place => place.id);
       assert.deepEqual(actual, ordered.slice(0, actual.length), `${cityId}/${category}: editorial order`);
     }
-    const fallback = city.recommendations.filter(pick => !photographed.has(pick.placeId)).map(pick => pick.placeId);
-    const actualFallback = selected.filter(place => !place.photo).map(place => place.id);
-    assert.deepEqual(actualFallback, fallback.slice(0, actualFallback.length), `${cityId}: existing photo-less picks retain their order`);
-    if (actualFallback.length) assert.deepEqual(selected.slice(-actualFallback.length).map(place => place.id), actualFallback, `${cityId}: verified photographs lead the list`);
   }
   const top = Array.from(api.getCityRecommendations('vancouver'));
   assert.equal(top.length, 50);
@@ -606,12 +657,12 @@ test('mixed shipped Top lists stay capped and preserve every admitted discovery 
   assert.ok(snapshot.cities.vancouver.recommendations.some(pick => !selected.has(pick.placeId)), 'displaced landmarks still remain on the map');
 });
 
-test('dining validation rejects non-dining, duplicate, invalid and excessive curated picks', () => {
-  for (const kind of ['places', 'duplicate', 'invalid', 'excessive']) {
+test('dining validation rejects non-dining, duplicate and invalid curated picks', () => {
+  for (const kind of ['places', 'duplicate', 'invalid']) {
     const next = dailyCatalog(), city = next.cities.vancouver;
     const place = city.places.find(p => p.category === (kind === 'places' ? 'places' : 'cafe'));
     const pick = { placeId: place.id, reason: 'Reviewed dining fixture', sourceUrl: 'https://example.org/dining', verifiedAt: next.collectedAt };
-    city.diningRecommendations = kind === 'excessive' ? Array(51).fill(pick) : kind === 'duplicate' ? [pick, pick] : [{ ...pick, ...(kind === 'invalid' ? { sourceUrl: 'javascript:alert(1)' } : {}) }];
+    city.diningRecommendations = kind === 'duplicate' ? [pick, pick] : [{ ...pick, ...(kind === 'invalid' ? { sourceUrl: 'javascript:alert(1)' } : {}) }];
     assert.throws(() => data().replaceCityPlacesCatalog(next, fixtureNow), /INVALID_PLACE_CATALOG/, kind);
   }
 });

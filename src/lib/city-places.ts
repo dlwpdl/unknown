@@ -73,7 +73,7 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
       }
     }
     for (const [picks, dining] of [[data.recommendations, false], [data.diningRecommendations ?? [], true]] as const) {
-      if (!Array.isArray(picks) || picks.length > 50) invalid();
+      if (!Array.isArray(picks) || picks.length > (dining ? 200 : 50)) invalid();
       const selected = new Set<string>();
       for (const pick of picks!) {
         if (!pick || !ids.has(pick.placeId) || selected.has(pick.placeId) || !text(pick.reason, 500) || (pick.reasonEn !== undefined && !text(pick.reasonEn, 500)) || !https(pick.sourceUrl)
@@ -109,20 +109,18 @@ function displayedPicks(cityId: string): PlaceRecommendation[] {
   const city = catalog.cities[cityId];
   const places = new Map([...(snapshot as PlaceCatalog).cities[cityId].places, ...city.places].map(place => [place.id, place]));
   const photographed = new Set((photoCatalog.cities[cityId] ?? []).map(photo => photo.placeId));
-  const main = reviewedPicks(cityId);
-  const picks = [...main, ...(city.diningRecommendations ?? []).filter(pick => photographed.has(pick.placeId))];
+  const picks = [...reviewedPicks(cityId), ...(city.diningRecommendations ?? [])];
   const seen = new Set<string>();
   const groups = (['places', 'food', 'cafe'] as const).map(category => picks.filter(pick => {
-    if (!photographed.has(pick.placeId) || places.get(pick.placeId)?.category !== category || seen.has(pick.placeId)) return false;
+    if (places.get(pick.placeId)?.category !== category || seen.has(pick.placeId)) return false;
     seen.add(pick.placeId);
     return true;
-  }));
+  }).sort((a, b) => Number(photographed.has(b.placeId)) - Number(photographed.has(a.placeId))));
   const selected: PlaceRecommendation[] = [];
   for (let index = 0; groups.some(group => group[index]); index++) {
     for (const group of groups) if (group[index]) selected.push(group[index]);
   }
-  const fallback = main.filter(pick => !photographed.has(pick.placeId));
-  return [...selected.slice(0, 50 - fallback.length), ...fallback];
+  return selected.slice(0, 50);
 }
 
 // Keep unselected OSM identities available to existing detail and review links.

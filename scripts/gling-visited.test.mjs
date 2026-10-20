@@ -35,7 +35,7 @@ test('the exact canonical visited place and its public visit link survive TOP 50
   assert.equal(mergeCityTop25([visited], 'toronto', []).length, 0);
 });
 
-test('the real dining helper adds a cafe to discovery without awarding it TOP 50 or exposing unreviewed cafes', () => {
+test('the real dining helper mixes a reviewed cafe into TOP 50 without exposing unreviewed cafes or inventing visits', () => {
   const seed = JSON.parse(readFileSync(new URL('../src/lib/city-places.catalog.json', import.meta.url)));
   const chosen = new Set(seed.cities.toronto.recommendations.map(pick => pick.placeId));
   const cafe = seed.cities.toronto.places.find(place => place.category === 'cafe' && !chosen.has(place.id));
@@ -51,11 +51,13 @@ test('the real dining helper adds a cafe to discovery without awarding it TOP 50
   const item = mapped.find(item => item.sourceId === cafe.id);
   assert.ok(item);
   assert.equal(discoveryMatches(item, 'cafe', ''), true);
-  assert.equal(discoveryMatches(item, 'top25', ''), false);
-  assert.equal(item.top25, undefined);
+  assert.equal(discoveryMatches(item, 'top25', ''), true);
+  assert.equal(item.top25.id, cafe.id);
+  assert.equal(item.glingVisited, undefined);
+  assert.equal(item.place.photo, null);
   assert.equal(mapped.some(item => item.sourceId === ordinary.id), false);
   assert.equal(exports.getCityBrowsePlaces('toronto', 'cafe').length, 1);
-  assert.equal(exports.getCityBrowsePlaces('toronto', 'all').length, chosen.size);
+  assert.equal(exports.getCityBrowsePlaces('toronto', 'all').length, Math.min(50, chosen.size + 1));
 });
 
 const map = ts.createSourceFile('map.tsx', readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
