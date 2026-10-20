@@ -2268,6 +2268,16 @@
         "license": "CC0",
         "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
         "imageSha256": "81ba431b692a356af15ad010f8939e3b31e8fa6902c3f7a6f47633482cccf0f3"
+      },
+      {
+        "cityId": "vancouver",
+        "placeId": "osm:node:567142934",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/Elysian_Coffee%2C_West_Broadway_%2840199783531%29.jpg/1920px-Elysian_Coffee%2C_West_Broadway_%2840199783531%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Elysian_Coffee,_West_Broadway_(40199783531).jpg",
+        "artist": "GoToVan from Vancouver, Canada",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "c852beaf5b8b5eb382528158ad7a63f834db0dbb662a1e9da597250aa68985dc"
       }
     ],
     "saint-john": [
