@@ -446,6 +446,16 @@
         "sourceUrl": "https://commons.wikimedia.org/wiki/File:Discovery_Centre.jpg",
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
         "imageSha256": "a319dd60498b07d728400d883142200bb0d8f926eadd273a2ffc2332f7ec1f7b"
+      },
+      {
+        "cityId": "halifax",
+        "placeId": "osm:node:773014435",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ec/Halifax_Farmer%27s_Market%2C_Autumn_2009-29_%284180103563%29.jpg/1920px-Halifax_Farmer%27s_Market%2C_Autumn_2009-29_%284180103563%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Halifax_Farmer%27s_Market,_Autumn_2009-29_(4180103563).jpg",
+        "artist": "Lisa Paul",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "464022397219de915c545beb86a439e2117e6a76375268131ae332af777df57c"
       }
     ],
     "toronto": [
