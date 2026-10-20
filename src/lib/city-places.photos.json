@@ -90,6 +90,17 @@
         "license": "CC BY 3.0",
         "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
         "imageSha256": "bfbaf247ef825b2cda907ce573d936bfb01bce6eb40ddfa07aca29ed6e4b1ba5"
+      },
+      {
+        "cityId": "ottawa",
+        "placeId": "osm:node:600127269",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/dc/Ch%C3%A2teau_Laurier_vue_de_face.jpg/960px-Ch%C3%A2teau_Laurier_vue_de_face.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Ch%C3%A2teau_Laurier_vue_de_face.jpg",
+        "artist": "PG Ouellette",
+        "license": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+        "imageSha256": "c215b13a8a43d555f1d58b35b5abde5901e9bd6934a0fe819f8bb906bdef565c",
+        "title": "Château Laurier vue de face"
       }
     ],
     "regina": [
@@ -2390,6 +2401,38 @@
           "imageSha256": "3f81ed9f19b5ea8a9cc76da82e5d13af69807824d2fd7895f9d1307ed4363e6c",
           "title": "The world is a better place because of your pasta! Thank-you Ask for Luigi!",
           "discoveredVia": "Openverse"
+        }
+      ]
+    }
+  },
+  "flickrCatalog": {
+    "cities": {
+      "calgary": [
+        {
+          "cityId": "calgary",
+          "placeId": "osm:node:196651505",
+          "uri": "https://live.staticflickr.com/4138/4874093763_0e6d68b253_o.jpg",
+          "sourceUrl": "https://www.flickr.com/photos/calgaryreviews/4874093763/",
+          "artist": "Calgary Reviews",
+          "license": "CC BY 2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+          "imageSha256": "31f60fa633b3a4a68759d75bdf14f076a761cd0bb0fe4d45e29375c6068a4e82",
+          "title": "Calgary Sushi Boat Japanese Cuisine",
+          "discoveredVia": "Flickr"
+        }
+      ],
+      "vancouver": [
+        {
+          "cityId": "vancouver",
+          "placeId": "osm:node:4005041520",
+          "uri": "https://live.staticflickr.com/7814/47399631472_0ae40f8e66_k.jpg",
+          "sourceUrl": "https://www.flickr.com/photos/pasa/47399631472/",
+          "artist": "Paul Sableman",
+          "license": "CC BY 2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+          "imageSha256": "68a63174edc635f5c6ab800302d3b42e306fb85e78767c712fb915ff58c4a4e2",
+          "title": "Propaganda Coffee",
+          "discoveredVia": "Flickr"
         }
       ]
     }
