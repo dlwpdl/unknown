@@ -1986,6 +1986,16 @@
         "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
         "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/98/Major_s_Hill_Park_-_08.jpg/960px-Major_s_Hill_Park_-_08.jpg",
         "imageSha256": "0b64f3ad345109b16a30e174cee5f8be2336c4af0396c197b94cb60a95163f2e"
+      },
+      {
+        "placeId": "osm:way:460440197",
+        "cityId": "ottawa",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bc/Shades_of_blue_%2846770408985%29.jpg/960px-Shades_of_blue_%2846770408985%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Shades_of_blue_(46770408985).jpg",
+        "artist": "joanne clifford",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "efcd711d2c0edc9de89d0ac25b204893b3249a9864aec0641b97ac7ec3ba8295"
       }
     ],
     "regina": [
