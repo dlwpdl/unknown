@@ -105,6 +105,29 @@ def build_catalog(seed, elements, now):
                 image, source, license = (urlsplit(row[k]) for k in ['uri', 'sourceUrl', 'licenseUrl'])
                 if image.hostname not in ['thumb.wikimedia.org', 'upload.wikimedia.org'] or not image.path.startswith('/wikipedia/commons/') or source.hostname != 'commons.wikimedia.org' or not source.path.startswith('/wiki/File:') or license.hostname != 'creativecommons.org' or not re.match(r'^/(licenses|publicdomain)/', license.path): raise ValueError('INVALID_PLACE_PHOTOS')
                 seen.add(row['placeId'])
+        if 'additionalCatalog' in metadata:
+            extra = metadata['additionalCatalog']
+            if not isinstance(extra, dict) or not isinstance(extra.get('cities'), dict): raise ValueError('INVALID_ADDITIONAL_PHOTOS')
+            for city_id, rows in extra['cities'].items():
+                if city_id not in seed['cities'] or not isinstance(rows, list) or len(rows) > 200: raise ValueError('INVALID_ADDITIONAL_PHOTOS')
+                ids, seen = {p['id'] for p in seed['cities'][city_id]['places']}, set()
+                for row in rows:
+                    fields = ['cityId', 'placeId', 'artist', 'title', 'discoveredVia', 'imageSha256', 'license', 'uri', 'sourceUrl', 'licenseUrl']
+                    if not isinstance(row, dict) or not all(isinstance(row.get(k), str) for k in fields): raise ValueError('INVALID_ADDITIONAL_PHOTOS')
+                    if row['cityId'] != city_id or row['placeId'] not in ids or row['placeId'] in seen or row['discoveredVia'] != 'Openverse': raise ValueError('INVALID_ADDITIONAL_PHOTOS')
+                    if any(not row[k].strip() or len(row[k]) > 1000 or re.search(r'[\x00-\x1f\x7f]', row[k]) for k in ['artist', 'title']) or not re.fullmatch('[a-f0-9]{64}', row['imageSha256']): raise ValueError('INVALID_ADDITIONAL_PHOTOS')
+                    try:
+                        if any(not https(row[k]) or re.search(r'[\x00-\x1f\x7f]', row[k]) for k in ['uri', 'sourceUrl', 'licenseUrl']): raise ValueError('INVALID_ADDITIONAL_PHOTOS')
+                        image, source, license = (urlsplit(row[k]) for k in ['uri', 'sourceUrl', 'licenseUrl'])
+                        if any(u.port not in [None, 443] or u.query or u.fragment for u in [image, source, license]): raise ValueError('INVALID_ADDITIONAL_PHOTOS')
+                    except ValueError:
+                        raise ValueError('INVALID_ADDITIONAL_PHOTOS') from None
+                    image_id = re.fullmatch(r'/\d+/([1-9]\d*)_[a-f0-9]+(?:_[a-z0-9]+)?\.(?:jpe?g|png)', image.path, re.I)
+                    source_id = re.fullmatch(r'/photos/[^/]+/([1-9]\d*)/?', source.path)
+                    cc = re.fullmatch(r'CC BY(-SA)? ([234]\.0|2\.5)', row['license'])
+                    license_path = '/publicdomain/zero/1.0' if row['license'] == 'CC0' else '/publicdomain/mark/1.0' if row['license'] == 'Public domain' else f'/licenses/by{"-sa" if cc[1] else ""}/{cc[2]}' if cc else None
+                    if image.hostname != 'live.staticflickr.com' or source.hostname != 'www.flickr.com' or not image_id or not source_id or image_id[1] != source_id[1] or license.hostname != 'creativecommons.org' or not license_path or license.path.removesuffix('/') != license_path: raise ValueError('INVALID_ADDITIONAL_PHOTOS')
+                    seen.add(row['placeId'])
         result['photoCatalog'] = deepcopy(metadata)
     if 'externalRatings' in seed:
         rows, seen = seed['externalRatings'], set()

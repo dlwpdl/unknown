@@ -217,4 +217,46 @@ class DailyPlaces(unittest.TestCase):
             self.assertEqual(actual['cities']['toronto'].get('diningRecommendations'),previous['cities']['toronto']['diningRecommendations'])
             self.assertEqual(actual['externalRatings'][0]['count'],previous['externalRatings'][0]['count'])
 
+
+    def optional_photo(self):
+        return dict(cityId='vancouver', placeId='osm:node:1',
+                    uri='https://live.staticflickr.com/65535/12345678901_0123456789_b.jpg',
+                    sourceUrl='https://www.flickr.com/photos/fixture/12345678901',
+                    artist='Fixture creator', title='Fixture venue detail', discoveredVia='Openverse',
+                    license='CC0', licenseUrl='https://creativecommons.org/publicdomain/zero/1.0/', imageSha256='a'*64)
+
+    def test_optional_flickr_metadata_is_validated_before_daily_publish(self):
+        for field, bad in [('uri', 'https://evil.example/photo.jpg'),
+                           ('sourceUrl', 'https://www.flickr.com/photos/fixture/99999999999'),
+                           ('licenseUrl', 'https://creativecommons.org/licenses/by/2.0/'),
+                           ('cityId', 'unknown'), ('placeId', 'osm:node:999'),
+                           ('title', ''), ('discoveredVia', 'Unverified'), ('imageSha256', 'not-a-hash'),
+                           ('uri', 'https://live.staticflickr.com/\n65535/12345678901_0123456789_b.jpg'),
+                           ('sourceUrl', 'https://www.flickr.com:444/photos/fixture/12345678901'),
+                           ('sourceUrl', 'https://user@www.flickr.com/photos/fixture/12345678901'),
+                           ('license', 'CC BY-NC 2.0'), ('imageSha256', None)]:
+            with self.subTest(field=field):
+                m = implementation(); seed, osm, now = self.fixture(); row = self.optional_photo(); row[field] = bad
+                seed['photoCatalog'] = dict(cities={'vancouver': []}, additionalCatalog=dict(cities={'vancouver': [row]}))
+                with self.assertRaisesRegex(ValueError, 'INVALID_ADDITIONAL_PHOTOS'): m.build_catalog(seed, osm, now)
+
+    def test_valid_nested_photos_survive_daily_build_and_previous_server_seed_fallback(self):
+        m = implementation(); seed, osm, now = self.fixture()
+        metadata = dict(cities={'vancouver': []}, additionalCatalog=dict(cities={'vancouver': [self.optional_photo()]}))
+        seed['photoCatalog'] = metadata
+        result = m.build_catalog(seed, osm, now)
+        self.assertEqual(result['photoCatalog'], metadata)
+        self.assertIsNot(result['photoCatalog']['additionalCatalog'], metadata['additionalCatalog'])
+        seed = json.loads((ROOT/'src/lib/city-places.catalog.json').read_text())
+        metadata = dict(cities={city: [] for city in seed['cities']}, additionalCatalog=dict(cities={'vancouver': [dict(self.optional_photo(), placeId=seed['cities']['vancouver']['places'][0]['id'])]}))
+        previous = json.loads(json.dumps(seed)); previous['photoCatalog'] = metadata
+        previous['collectedAt'] = now; previous['selectionRevision'] = seed.get('selectionRevision', 0) + 1
+        seed['collectedAt'] = '2026-10-15T01:00:00Z'
+        osm = [dict(type=p['id'].split(':')[1], id=int(p['id'].split(':')[2]), lat=p['latitude'], lon=p['longitude'], tags={'name':p['name']}) for city in seed['cities'].values() for p in city['places']]
+        with tempfile.TemporaryDirectory() as target:
+            path = Path(target)/'seed.json'; path.write_text(json.dumps(seed))
+            with patch.object(sys, 'argv', ['refresh-city-places.py', '--seed', str(path), '--output', target]), patch.object(m, 'current_catalog', return_value=previous), patch.object(m, 'collect', return_value={'elements': osm}): m.main()
+            saved = json.loads(next(Path(target).glob('catalog-*.json')).read_text())
+            self.assertEqual(saved['photoCatalog'], metadata)
+
 if __name__ == '__main__': unittest.main()
