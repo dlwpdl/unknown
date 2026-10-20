@@ -240,15 +240,31 @@ class DailyPlaces(unittest.TestCase):
                 seed['photoCatalog'] = dict(cities={'vancouver': []}, additionalCatalog=dict(cities={'vancouver': [row]}))
                 with self.assertRaisesRegex(ValueError, 'INVALID_ADDITIONAL_PHOTOS'): m.build_catalog(seed, osm, now)
 
+    def test_direct_flickr_group_rejects_bad_paths_and_wrong_discovery(self):
+        for field, bad in [('uri', 'https://evil.example/photo.jpg'),
+                           ('sourceUrl', 'https://www.flickr.com/photos/fixture/99999999999'),
+                           ('discoveredVia', 'Openverse')]:
+            with self.subTest(field=field):
+                m = implementation(); seed, osm, now = self.fixture()
+                row = dict(self.optional_photo(), discoveredVia='Flickr'); row[field] = bad
+                seed['photoCatalog'] = dict(cities={'vancouver': []},
+                                           additionalCatalog=dict(cities={'vancouver': [self.optional_photo()]}),
+                                           flickrCatalog=dict(cities={'vancouver': [row]}))
+                with self.assertRaisesRegex(ValueError, 'INVALID_ADDITIONAL_PHOTOS'): m.build_catalog(seed, osm, now)
+
     def test_valid_nested_photos_survive_daily_build_and_previous_server_seed_fallback(self):
         m = implementation(); seed, osm, now = self.fixture()
-        metadata = dict(cities={'vancouver': []}, additionalCatalog=dict(cities={'vancouver': [self.optional_photo()]}))
+        metadata = dict(cities={'vancouver': []}, additionalCatalog=dict(cities={'vancouver': [self.optional_photo()]}),
+                        flickrCatalog=dict(cities={'vancouver': [dict(self.optional_photo(), discoveredVia='Flickr')]}))
         seed['photoCatalog'] = metadata
         result = m.build_catalog(seed, osm, now)
         self.assertEqual(result['photoCatalog'], metadata)
         self.assertIsNot(result['photoCatalog']['additionalCatalog'], metadata['additionalCatalog'])
+        self.assertIsNot(result['photoCatalog']['flickrCatalog'], metadata['flickrCatalog'])
         seed = json.loads((ROOT/'src/lib/city-places.catalog.json').read_text())
-        metadata = dict(cities={city: [] for city in seed['cities']}, additionalCatalog=dict(cities={'vancouver': [dict(self.optional_photo(), placeId=seed['cities']['vancouver']['places'][0]['id'])]}))
+        row = dict(self.optional_photo(), placeId=seed['cities']['vancouver']['places'][0]['id'])
+        metadata = dict(cities={city: [] for city in seed['cities']}, additionalCatalog=dict(cities={'vancouver': [row]}),
+                        flickrCatalog=dict(cities={'vancouver': [dict(row, discoveredVia='Flickr')]}))
         previous = json.loads(json.dumps(seed)); previous['photoCatalog'] = metadata
         previous['collectedAt'] = now; previous['selectionRevision'] = seed.get('selectionRevision', 0) + 1
         seed['collectedAt'] = '2026-10-15T01:00:00Z'

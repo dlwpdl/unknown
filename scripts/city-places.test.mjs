@@ -433,7 +433,7 @@ test('unknown city and a place belonging to another city are explicit errors', (
 test('every city has at least three licensed same-place photos and missing photos stay empty', () => {
   const bank = photos();
   for (const city of cities) {
-    const accepted = [...bank.cities[city.id], ...(bank.additionalCatalog?.cities[city.id] ?? [])];
+    const accepted = [...bank.cities[city.id], ...(bank.additionalCatalog?.cities[city.id] ?? []), ...(bank.flickrCatalog?.cities[city.id] ?? [])];
     const rows = data().getCityPlaces(city.id), pictured = rows.filter(p => p.photo);
     assert.ok(pictured.length >= 3, city.id + ' needs three verified place photos');
     for (const p of pictured) {
@@ -444,7 +444,7 @@ test('every city has at least three licensed same-place photos and missing photo
       for (const key of ['uri', 'sourceUrl', 'artist', 'license', 'licenseUrl', 'imageSha256']) assert.equal(p.photo[key], bound[key]);
       const image = new URL(p.photo.uri), source = new URL(p.photo.sourceUrl), license = new URL(p.photo.licenseUrl);
       assert.equal(image.protocol, 'https:');
-      if (bound.discoveredVia === 'Openverse') {
+      if (['Openverse', 'Flickr'].includes(bound.discoveredVia)) {
         assert.equal(image.hostname, 'live.staticflickr.com');
         assert.equal(source.hostname, 'www.flickr.com');
         const imageId = /^\/\d+\/([1-9]\d*)_/.exec(image.pathname)?.[1];
@@ -683,7 +683,7 @@ test('mixed shipped Top lists stay capped and preserve every admitted discovery 
     const admitted = new Set([...city.recommendations, ...(city.diningRecommendations ?? [])].map(pick => pick.placeId));
     assert.deepEqual(new Set(discovery.map(place => place.id)), admitted, `${cityId}: all prior map identities remain`);
     assert.deepEqual(new Set(discovery.filter(place => place.recommendation).map(place => place.id)), new Set(selected.map(place => place.id)), `${cityId}: Top badges agree`);
-    const photographed = new Set([...bank.cities[cityId], ...(bank.additionalCatalog?.cities[cityId] ?? [])].map(photo => photo.placeId));
+    const photographed = new Set([...bank.cities[cityId], ...(bank.additionalCatalog?.cities[cityId] ?? []), ...(bank.flickrCatalog?.cities[cityId] ?? [])].map(photo => photo.placeId));
     const reviewed = [...city.recommendations, ...(city.diningRecommendations ?? [])];
     const byId = new Map(city.places.map(place => [place.id, place]));
     const available = ['places', 'food', 'cafe'].filter(category => reviewed.some(pick => byId.get(pick.placeId).category === category));
@@ -794,6 +794,52 @@ test('a verified optional Flickr catalog fills only missing photos and preserves
     && node.props.children.includes('Openverse로 찾은 사진') && node.props.children.includes('인증하거나 보증하지 않아요')));
 });
 
+
+test('direct Flickr photos keep their provenance and preserve both legacy photo sources', () => {
+  const next = dailyCatalog(); next.photoCatalog = structuredClone(photos());
+  const direct = { cityId: 'toronto', placeId: 'osm:node:249295975',
+    uri: 'https://live.staticflickr.com/65535/12345678901_0123456789_b.jpg',
+    sourceUrl: 'https://www.flickr.com/photos/fixture/12345678901',
+    artist: 'Fixture creator', title: 'Direct Flickr fixture', discoveredVia: 'Flickr',
+    license: 'CC0', licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/', imageSha256: 'a'.repeat(64) };
+  const original = next.photoCatalog.cities.toronto.find(photo => photo.placeId !== direct.placeId);
+  const other = next.cities.toronto.places.find(place => ![direct.placeId, original.placeId].includes(place.id));
+  const openverse = { ...direct, placeId: other.id, discoveredVia: 'Openverse', title: 'Openverse fixture',
+    uri: 'https://live.staticflickr.com/65535/23456789012_0123456789_b.jpg',
+    sourceUrl: 'https://www.flickr.com/photos/fixture/23456789012' };
+  next.photoCatalog.cities.toronto = next.photoCatalog.cities.toronto.filter(photo => ![direct.placeId, other.id].includes(photo.placeId));
+  next.photoCatalog.additionalCatalog = { cities: { ...next.photoCatalog.additionalCatalog?.cities, toronto: [openverse] } };
+  next.photoCatalog.flickrCatalog = { cities: { toronto: [direct, { ...direct, placeId: other.id }, { ...direct, placeId: original.placeId }] } };
+  const api = data();
+  assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
+  const places = api.getCityPlaces('toronto');
+  assert.equal(places.find(place => place.id === direct.placeId).photo?.uri, direct.uri);
+  assert.equal(places.find(place => place.id === other.id).photo?.uri, openverse.uri);
+  assert.equal(places.find(place => place.id === original.placeId).photo?.uri, original.uri);
+  const detail = nodes(screen('src/app/places/[id].tsx', { cityId: 'toronto', id: direct.placeId }, false, api).render());
+  const credits = detail.find(node => node.type === 'PostPhotoCredits').props.credits;
+  for (const value of [direct.title, direct.artist, direct.sourceUrl, direct.licenseUrl, '사진은 촬영 시점의 모습']) assert.ok(credits.includes(value));
+  assert.equal(detail.some(node => node.type === 'ThemedText' && typeof node.props.children === 'string'
+    && node.props.children.includes('Openverse로 찾은 사진')), false);
+});
+
+test('an invalid direct Flickr group cannot discard a valid Openverse photo', () => {
+  for (const change of [photo => { photo.discoveredVia = 'Openverse'; }, photo => { photo.uri = 'https://evil.example/photo.jpg'; }]) {
+    const next = dailyCatalog(); next.photoCatalog = structuredClone(photos());
+    const openverse = { cityId: 'toronto', placeId: 'osm:node:249295975',
+      uri: 'https://live.staticflickr.com/65535/12345678901_0123456789_b.jpg',
+      sourceUrl: 'https://www.flickr.com/photos/fixture/12345678901',
+      artist: 'Fixture creator', title: 'Openverse fixture', discoveredVia: 'Openverse',
+      license: 'CC0', licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/', imageSha256: 'a'.repeat(64) };
+    const invalid = { ...openverse, discoveredVia: 'Flickr' }; change(invalid);
+    next.photoCatalog.cities.toronto = next.photoCatalog.cities.toronto.filter(photo => photo.placeId !== openverse.placeId);
+    next.photoCatalog.additionalCatalog = { cities: { toronto: [openverse] } };
+    next.photoCatalog.flickrCatalog = { cities: { toronto: [invalid] } };
+    const api = data();
+    assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
+    assert.equal(api.getCityPlaces('toronto').find(place => place.id === openverse.placeId).photo?.discoveredVia, 'Openverse');
+  }
+});
 
 test('invalid optional photos cannot discard valid Commons or replace missing photos', () => {
   const valid = { cityId: 'toronto', placeId: 'osm:node:249295975',
