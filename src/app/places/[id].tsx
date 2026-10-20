@@ -67,7 +67,14 @@ export default function PlaceDetailScreen() {
       onScroll={({ nativeEvent }) => setViewport({ y: nativeEvent.contentOffset.y, height: nativeEvent.layoutMeasurement.height })}>
       {!place || !city ? <StateCard kind="error" title={tr("장소를 찾지 못했어요")} body={tr("선택한 도시의 장소 목록에서 다시 열어 주세요.")} /> : <>
         <CityPlacePhoto place={place} style={styles.photo} />
-        {!!place.photo && <PostPhotoCredits credits={`사진: ${place.photo.artist}\n${place.photo.sourceUrl}\n${place.photo.license}\n${place.photo.licenseUrl}\n사진은 촬영 시점의 모습이며 현재와 다를 수 있어요.`} />}
+        {!!place.photo && <PostPhotoCredits credits={[
+          place.photo.title, `${language === 'en' ? 'Photo' : '사진'}: ${place.photo.artist}`, place.photo.sourceUrl,
+          place.photo.license, place.photo.licenseUrl,
+          language === 'en' ? 'This photo shows the place when it was taken and may differ from its current appearance.' : '사진은 촬영 시점의 모습이며 현재와 다를 수 있어요.',
+        ].filter(Boolean).join('\n')} />}
+        {place.photo?.discoveredVia === 'Openverse' && <ThemedText type="small" themeColor="textSecondary">{language === 'en'
+          ? 'Photos found with Openverse. This service is not endorsed or certified by Openverse.'
+          : 'Openverse로 찾은 사진 · Openverse는 이 서비스를 인증하거나 보증하지 않아요.'}</ThemedText>}
         <ThemedText type="small" themeColor="textSecondary">{tr(city.name)}{" " + tr("· 지도 등록 장소")}</ThemedText>
         <ThemedText accessibilityRole="header" style={styles.title}>{place.name}</ThemedText>
         {!!place.recommendation && <>

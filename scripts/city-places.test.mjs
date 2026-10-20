@@ -759,3 +759,69 @@ test('unsafe DB photo paths, wrong identities and invalid ratings leave the whol
     assert.equal(ratingsApi.getPlaceExternalRatings(rating.cityId, rating.placeId)[0].count, count);
   }
 });
+
+
+test('a verified optional Flickr catalog fills only missing photos and preserves Commons priority', () => {
+  const next = dailyCatalog();
+  next.photoCatalog = structuredClone(photos());
+  const supplementary = { cityId: 'toronto', placeId: 'osm:node:249295975',
+    uri: 'https://live.staticflickr.com/65535/12345678901_0123456789_b.jpg',
+    sourceUrl: 'https://www.flickr.com/photos/fixture/12345678901',
+    artist: 'Fixture creator', title: 'Fixture venue detail', discoveredVia: 'Openverse', license: 'CC0', licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+    imageSha256: 'a'.repeat(64) };
+  const original = next.photoCatalog.cities.toronto[0];
+  next.photoCatalog.additionalCatalog = { cities: { toronto: [supplementary, { ...supplementary, placeId: original.placeId }] } };
+  const api = data();
+  assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
+  assert.equal(api.getCityPlaces('toronto').find(p => p.id === supplementary.placeId).photo?.uri, supplementary.uri);
+  assert.equal(api.getCityPlaces('toronto').find(p => p.id === original.placeId).photo.uri, original.uri);
+  const detail = nodes(screen('src/app/places/[id].tsx', { cityId: 'toronto', id: supplementary.placeId }, false, api).render());
+  assert.ok(detail.find(node => node.type === 'PostPhotoCredits').props.credits.includes(supplementary.title));
+  assert.ok(detail.some(node => node.type === 'ThemedText' && typeof node.props.children === 'string'
+    && node.props.children.includes('Openverse로 찾은 사진') && node.props.children.includes('인증하거나 보증하지 않아요')));
+});
+
+
+test('invalid optional photos cannot discard valid Commons or replace missing photos', () => {
+  const valid = { cityId: 'toronto', placeId: 'osm:node:249295975',
+    uri: 'https://live.staticflickr.com/65535/12345678901_0123456789_b.jpg',
+    sourceUrl: 'https://www.flickr.com/photos/fixture/12345678901',
+    artist: 'Fixture creator', title: 'Fixture venue detail', discoveredVia: 'Openverse',
+    license: 'CC0', licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/', imageSha256: 'a'.repeat(64) };
+  for (const change of [
+    p => { p.uri = 'https://evil.example/65535/12345678901_0123456789_b.jpg'; },
+    p => { p.sourceUrl = 'https://www.flickr.com.evil.example/photos/fixture/12345678901'; },
+    p => { p.uri = 'https://live.staticflickr.com/65535/99999999999_0123456789_b.jpg'; },
+    p => { p.sourceUrl = 'https://user@www.flickr.com/photos/fixture/12345678901'; },
+    p => { p.sourceUrl = 'https://www.flickr.com:444/photos/fixture/12345678901'; },
+    p => { p.uri += '?proxy=1'; },
+    p => { p.placeId = 'osm:node:1'; },
+    p => { p.cityId = 'vancouver'; },
+    p => { p.licenseUrl = 'https://creativecommons.org/licenses/by/2.0/'; },
+    p => { p.artist += '\u0000'; },
+    p => { delete p.title; },
+    p => { p.discoveredVia = 'Unverified'; },
+    p => { p.imageSha256 = 'not-a-hash'; },
+  ]) {
+    const next = dailyCatalog(), row = { ...valid }; change(row);
+    next.photoCatalog = structuredClone(photos());
+    next.photoCatalog.additionalCatalog = { cities: { toronto: [row] } };
+    const api = data(), original = next.photoCatalog.cities.toronto[0];
+    assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
+    assert.equal(api.getCityPlaces('toronto').find(p => p.id === valid.placeId).photo, null);
+    assert.equal(api.getCityPlaces('toronto').find(p => p.id === original.placeId).photo.uri, original.uri);
+  }
+});
+
+test('duplicate or unknown-city optional groups are ignored without losing the core snapshot', () => {
+  const row = { cityId: 'toronto', placeId: 'osm:node:249295975',
+    uri: 'https://live.staticflickr.com/65535/12345678901_0123456789_b.jpg', sourceUrl: 'https://www.flickr.com/photos/fixture/12345678901',
+    artist: 'Fixture creator', title: 'Fixture venue detail', discoveredVia: 'Openverse', license: 'CC0',
+    licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/', imageSha256: 'a'.repeat(64) };
+  for (const cities of [{ toronto: [row, row] }, { toronto: [row], unknown: [] }, []]) {
+    const api = data(), next = dailyCatalog(); next.photoCatalog = structuredClone(photos());
+    next.photoCatalog.additionalCatalog = { cities };
+    assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
+    assert.equal(api.getCityPlaces('toronto').find(p => p.id === row.placeId).photo, null);
+  }
+});
