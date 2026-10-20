@@ -1,0 +1,121 @@
+{
+  "version": 9,
+  "recordedAt": "2026-10-20T02:12:22.157227+00:00",
+  "extends": "spec-v8.json",
+  "parentSourceCommit": "f649f0a867f15b945a9902bbcdf3d09ed90f14dc",
+  "authority": "msg_8ea893d20d39",
+  "objective": "Persist three individually reviewed licensed photographs for existing Vancouver dining venues, preserving all place identities/order/ratings and existing photos.",
+  "status": "ACTUAL_DB_REVISION13_SAVED_AND_ANONYMOUS_RPC_EXACT_READBACK_VERIFIED",
+  "baseline": {
+    "selectionRevision": 12,
+    "facts": 1035,
+    "main": 189,
+    "dining": 112,
+    "photos": 213,
+    "providerRows": 532,
+    "vancouverFacts": 168,
+    "vancouverMain": 50,
+    "vancouverDining": 50,
+    "vancouverPhotos": 62,
+    "foodBrowse": 26,
+    "cafeBrowse": 26,
+    "mapDiscovery": 101,
+    "displayedDiningPhotos": 12,
+    "displayedDiningPhotoGaps": 40
+  },
+  "actualSaved": {
+    "selectionRevision": 13,
+    "updatedAt": "2026-10-20 02:11:26.822826+00",
+    "DBPayloadMD5": "59b897ea753d3ab82d7f734344d0d68d",
+    "anonymousRPCCanonicalSHA256": "022fef191c3d23fdc82deb7e0dd48890f14dc663fd1fd83d778deaac07fb205d",
+    "photos": 216,
+    "vancouverPhotos": 65,
+    "displayedDiningPhotos": 15,
+    "remainingDisplayedDiningPhotoGaps": 37,
+    "otherCountsAndObjectsUnchanged": true
+  },
+  "addedPhotos": [
+    {
+      "placeId": "osm:node:4005181996",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Le_March%C3%A9_St._George_(24440488479).jpg",
+      "artist": "Rod Raglin from Vancouver",
+      "license": "CC BY-SA 2.0",
+      "imageSha256": "7aee92dff2927f69c5eea9f7640c76a275c0b4a96847dec9cb68bf188430be0a"
+    },
+    {
+      "placeId": "osm:way:147224794",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Phnom_Penh_Deep_Fried_Chicken_Wings_(4461157903).jpg",
+      "artist": "Geoff Peters from Vancouver, BC, Canada",
+      "license": "CC BY 2.0",
+      "imageSha256": "a539a3744174c2820924f989a2545a8945ed72236a2c18c301f4e4d1d3cb8e72"
+    },
+    {
+      "placeId": "osm:node:4232965023",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Trees_Organic_Coffee_%26_Roasting_House_(30341093726).jpg",
+      "artist": "GoToVan from Vancouver, Canada",
+      "license": "CC BY 2.0",
+      "imageSha256": "6028cfbf77d7e335fa679a290052dc1a4bac44116f89e0a65f2af2d5b7262f45"
+    }
+  ],
+  "evidenceRoot": "/Users/ash/Desktop/Git/unknown/output/reviews/gling-vancouver-dining-admission-2026-10-19",
+  "frozenAcceptedPhotoPacketSHA256": "def85cc87bb1cb0238f1032952f61bcb5d65e28d1de81b048d8b50b180ea9e7a",
+  "DBReceiptSHA256": "54d8363208cfbe0fed04bc6bd19b9d37e9b33394da1a00c1f4718e66079a6ab8",
+  "preserve": [
+    "All1035placeobjects,189mainand112diningobjects/order",
+    "All532providerreviewobjects",
+    "All213existingphotoobjects/orderandothercities",
+    "HANDSONidentity/visit/sourceReel",
+    "Private1638inventory/count/digest/ACL/RLS",
+    "ExistingrendererandremoteURIstaticfallbackcontract",
+    "Functions/migrations/14cronandfreshreleaseprotection"
+  ],
+  "execution": {
+    "databaseMutatingRequests": 1,
+    "automaticRetries": 0,
+    "hostedReadOnlyRequests": 6,
+    "anonymousRPCReads": 2,
+    "providerHTTPThisDBContinuation": 0,
+    "providerPhotoPhaseClosed": {
+      "CommonsMetadata": 55,
+      "thumbImageDownloads": 11,
+      "unusedReleased": true
+    },
+    "nativeGUIBuildStoreActions": 0,
+    "newWorkersJobsServicesPaidCalls": 0,
+    "activeSQL": 0,
+    "uncertainSQL": 0
+  },
+  "releasePolicyObservation": {
+    "actualFreshBeforeAndAfter": {
+      "android": 64,
+      "ios": 71
+    },
+    "previousHistoricalIos": 70,
+    "externalDriftPredatesThisRun": true,
+    "Source40ReleasePolicyWrites": 0,
+    "independentIncidentOwner": "Root3309/F5; photoCAS did not approve raising iOS floor"
+  },
+  "photoEvidenceRules": [
+    "Originalcapture2010/2016 remainhistorical, no currentmenu/facadehours/Glingvisit claim",
+    "Trees exactbranch resolved by actualgeolocatedarchitectural/adjacentstorefront comparison; no proximity-only binding",
+    "TreeoriginalGPS/visible450absent and conflictingMontrealreferencecategoryretained/excluded fromidentity",
+    "GenericTrees cups, wrongbranches/countries and unrelatedGPSnearby subjects remainheld"
+  ],
+  "allCitiesTop50OrAllPhotosComplete": false,
+  "actualNativeImageDisplay": "UNVERIFIED",
+  "sourceScope": "Only city-places.catalog.json, city-places.photos.json and this spec; no appTS/TSX/assets/dependencies or job changes.",
+  "verification": {
+    "appTests": {
+      "pass": 1559,
+      "fail": 0,
+      "existingSkip": 1,
+      "logSHA256": "b8c7761d83ffb946b58ad713d3b86edb5b035c2a1296e2d23b8a11a4f61e8e7a"
+    },
+    "typecheckExit": 0,
+    "lintExit": 0,
+    "actualSavedSourceColdConsumer": "source40-photo3-actual-saved-client-proof.json",
+    "sourceRecomposedExactlyEqualsActualRPC13": true,
+    "all3PhotoRowsReachBrowseAndMap": true,
+    "nativeDisplay": "UNVERIFIED"
+  }
+}

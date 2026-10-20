@@ -1,5 +1,5 @@
 {
-  "collectedAt": "2026-10-19T22:26:42.300410+00:00",
+  "collectedAt": "2026-10-20T01:58:02.753427Z",
   "source": "Verified same-place Wikimedia Commons photographs; dated captures, not popularity ranking",
   "cities": {
     "toronto": [
@@ -1054,6 +1054,36 @@
         "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
         "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d1/49th_Parallel_Coffee_Roasters_in_Downtown_%2836476569873%29.jpg/960px-49th_Parallel_Coffee_Roasters_in_Downtown_%2836476569873%29.jpg",
         "imageSha256": "3411872bbe6024cc41b25029ec628ff09cd9863e9280dc0ee37df28d9f06e3db"
+      },
+      {
+        "placeId": "osm:node:4005181996",
+        "cityId": "vancouver",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/be/Le_March%C3%A9_St._George_%2824440488479%29.jpg/960px-Le_March%C3%A9_St._George_%2824440488479%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Le_March%C3%A9_St._George_(24440488479).jpg",
+        "artist": "Rod Raglin from Vancouver",
+        "license": "CC BY-SA 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+        "imageSha256": "7aee92dff2927f69c5eea9f7640c76a275c0b4a96847dec9cb68bf188430be0a"
+      },
+      {
+        "placeId": "osm:way:147224794",
+        "cityId": "vancouver",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/79/Phnom_Penh_Deep_Fried_Chicken_Wings_%284461157903%29.jpg/960px-Phnom_Penh_Deep_Fried_Chicken_Wings_%284461157903%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Phnom_Penh_Deep_Fried_Chicken_Wings_(4461157903).jpg",
+        "artist": "Geoff Peters from Vancouver, BC, Canada",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "a539a3744174c2820924f989a2545a8945ed72236a2c18c301f4e4d1d3cb8e72"
+      },
+      {
+        "placeId": "osm:node:4232965023",
+        "cityId": "vancouver",
+        "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6e/Trees_Organic_Coffee_%26_Roasting_House_%2830341093726%29.jpg/960px-Trees_Organic_Coffee_%26_Roasting_House_%2830341093726%29.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Trees_Organic_Coffee_%26_Roasting_House_(30341093726).jpg",
+        "artist": "GoToVan from Vancouver, Canada",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "imageSha256": "6028cfbf77d7e335fa679a290052dc1a4bac44116f89e0a65f2af2d5b7262f45"
       }
     ],
     "montreal": [
@@ -2155,5 +2185,5 @@
       }
     ]
   },
-  "photoSelectionsReviewedAt": "2026-10-19T22:26:42.300410+00:00"
+  "photoSelectionsReviewedAt": "2026-10-20T01:58:02.753427Z"
 }
