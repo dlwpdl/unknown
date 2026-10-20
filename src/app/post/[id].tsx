@@ -3,7 +3,7 @@ import { GlingLoader } from '@/components/gling-loader';
 import { Pressable } from '@/components/analytics-controls';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Head from 'expo-router/head';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -34,7 +34,6 @@ export default function SharedPostRoute() {
   const theme = useTheme();
   const [result, setResult] = useState<{ id: string; post: Post | null; failed: boolean } | null>(null);
   const [preview, setPreview] = useState<{ key: string; value: SharedLinkPreview | null; failed: boolean } | null>(null);
-  const loginRequested = useRef('');
   const current = result?.id === requestKey ? result : null;
   const loading = isAuthed && Boolean(postId) && !current;
   const goBack = () => { play('selection'); if (router.canGoBack()) router.back(); else router.replace('/'); };
@@ -55,13 +54,6 @@ export default function SharedPostRoute() {
       .catch(() => { if (active) setPreview({ key: requestKey, value: null, failed: true }); });
     return () => { active = false; };
   }, [postId, requestKey, isAuthed]);
-  useEffect(() => {
-    if (!isAuthed && !isAuthLoading && preview?.key === requestKey && preview.value && loginRequested.current !== requestKey) {
-      loginRequested.current = requestKey;
-      if (Platform.OS === 'web') try { window.sessionStorage.setItem(SHARED_POST_RETURN_KEY, `/post?id=${postId}${preview.value.kind === 'meetup' ? '&invite=1' : ''}`); } catch {}
-      promptLogin('로그인하면 공유받은 내용과 모임을 바로 확인할 수 있어요.');
-    }
-  }, [isAuthed, isAuthLoading, preview, requestKey, postId, promptLogin]);
 
   return (
     <ThemedView style={styles.container}>
@@ -91,7 +83,11 @@ export default function SharedPostRoute() {
                 <SharedPreviewContent preview={preview.value} />
                 <ThemedText type="small" themeColor="textSecondary">{tr("로그인 후 전체 내용을 확인해요. 모임 초대는 기존 참여 신청과 모임장 승인을 거쳐요.")}</ThemedText>
                 <Pressable analyticsId="shared.post.login" accessibilityRole="button" accessibilityLabel={tr("로그인하고 공유 내용 보기")}
-                  onPress={() => { play('selection'); promptLogin('공유받은 내용을 확인해요.'); }} style={[styles.login, { backgroundColor: theme.accent }]}>
+                  onPress={() => {
+                    play('selection');
+                    if (Platform.OS === 'web') try { window.sessionStorage.setItem(SHARED_POST_RETURN_KEY, `/post?id=${postId}${preview.value?.kind === 'meetup' ? '&invite=1' : ''}`); } catch {}
+                    promptLogin('공유받은 내용을 확인해요.');
+                  }} style={[styles.login, { backgroundColor: theme.accent }]}>
                   <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr("로그인하고 내용 보기")}</ThemedText>
                 </Pressable>
               </View> : loading || isAuthLoading || (!isAuthed && postId && preview?.key !== requestKey) ? (
