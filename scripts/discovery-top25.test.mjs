@@ -33,14 +33,15 @@ test('city scoping and listing/event separation prevent false merges', () => {
   assert.equal(merge([post('p1', { cityId: 'toronto' })], 'vancouver', [pick]).length, 1);
   assert.equal(merge([post('p1')], 'toronto', [pick]).length, 0);
 });
-test('Top 25 filter intersects category and search; hashtags cannot award membership', () => {
+test('Top 25 unions categories while search still applies; hashtags cannot award membership', () => {
   const [item] = merge([], 'vancouver', [pick]);
-  assert.equal(discovery.discoveryMatches(item, 'places', 'café', true), true);
-  assert.equal(discovery.discoveryMatches(item, 'housing', '', true), false);
-  assert.equal(discovery.discoveryMatches(post('unverified', { hashtags: ['카페', 'TOP25'] }), 'places', '', true), false);
-  assert.equal(discovery.discoveryMatches(post('unverified'), 'places', '', false), true);
-  assert.equal(discovery.discoveryMatches({ ...item, category: 'exhibition' }, 'places', '', true), true);
-  assert.equal(discovery.discoveryMatches({ ...item, category: 'exhibition' }, 'events', '', true), false);
+  assert.equal(discovery.discoveryMatches(item, ['top25', 'places'], 'café'), true);
+  assert.equal(discovery.discoveryMatches(item, ['top25', 'housing'], ''), true);
+  assert.equal(discovery.discoveryMatches(item, ['top25', 'housing'], 'unmatched'), false);
+  assert.equal(discovery.discoveryMatches(post('unverified', { hashtags: ['카페', 'TOP25'] }), ['top25'], ''), false);
+  assert.equal(discovery.discoveryMatches(post('unverified'), ['places'], ''), true);
+  assert.equal(discovery.discoveryMatches({ ...item, category: 'exhibition' }, ['places'], ''), true);
+  assert.equal(discovery.discoveryMatches({ ...item, category: 'exhibition' }, ['events'], ''), false);
 });
 test('invalid public source, coordinates, duplicate bindings and over-25 collections fail closed', () => {
   for (const patch of [{ id: 'x'.repeat(81) }, { cityId: 'x'.repeat(65) }, { id: 'bad\u0000id' }, { sourceUrl: 'javascript:alert(1)' }, { sourceUrl: 'http://example.org' }, { sourceUrl: 'https://user:password@example.org' }, { latitude: NaN }, { longitude: 181 }, { reason: '' }, { category: 'housing' }]) assert.throws(() => merge([], 'vancouver', [{ ...pick, ...patch }]));

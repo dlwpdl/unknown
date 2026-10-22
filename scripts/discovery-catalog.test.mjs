@@ -49,7 +49,7 @@ test('the combined screen includes its current-city catalog while backend rows a
   const start = mapSource.indexOf('  const publicItems = '), end = mapSource.indexOf('  const pins = ', start);
   const exports = {};
   vm.runInNewContext(compile(`exports.run = () => { ${mapSource.slice(start, end)} return items; };`), {
-    exports, current: null, catalogItems: [discovery.discoveryPlace(place)], city: { id: place.cityId }, now: Date.now(), filter: 'places', query: '', top25Only: false, days: [],
+    exports, current: null, catalogItems: [discovery.discoveryPlace(place)], city: { id: place.cityId }, now: Date.now(), selectedFilters: ['places'], query: '', days: [],
     hidden: () => false, discoveryEvent: () => null, mergeCityTop25: discovery.mergeCityTop25, discoveryMatches: discovery.discoveryMatches,
   });
   assert.equal(exports.run().length, 1);
