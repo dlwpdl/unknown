@@ -1,3 +1,7 @@
+# Gling terminology — owner correction 2026-10-19
+
+Use **비즈니스** in Gling's user-facing replies, new UI, prototypes and documentation, even when the user says “업체”. Preserve database, route and API identifiers; this is a display-language rule, not a schema migration.
+
 # Expo HAS CHANGED
 
 Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing any code.

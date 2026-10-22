@@ -123,7 +123,7 @@ test('company tabs keep registered profile fields, separate signed banner/logo a
   assert.deepEqual(images.map(node => node.props.src), ['signed-banner', 'signed-avatar']);
   button(root, '소개').props.onClick(); root = view.render('ProfilePage', { merchantId });
   assert.ok(text(root).includes('등록된 업체 소개') && text(root).includes('123 Main St'));
-  button(root, '리뷰').props.onClick(); root = view.render('ProfilePage', { merchantId });
+  button(root, '후기').props.onClick(); root = view.render('ProfilePage', { merchantId });
   assert.ok(nodes(root).some(node => typeof node.type === 'function' && node.type.name === 'PublicReviews' && node.props.postId === postId));
   assert.ok(!nodes(root).some(node => ['input', 'textarea', 'form'].includes(node.type)));
 });
@@ -328,16 +328,18 @@ test('an unfinished usage page cannot block employment pagination or merge into 
   assert.ok(!text(root).includes('WRONG_LATE_USAGE_BODY'));
 });
 
-test('approved four tabs start with posts and show only confirmed counts; hiring opens jobs', async () => {
+test('business profile opens its introduction and the four tabs show only confirmed counts; hiring opens jobs', async () => {
   const view = app(); view.render('ProfilePage', { merchantId }); await settle();
   let root = view.render('ProfilePage', { merchantId });
-  assert.deepEqual(tabs(root).map(node => text(node)), ['게시글', '채용', '리뷰', '소개']);
-  assert.equal(tabs(root).find(node => node.props['aria-selected']).props['data-tab'], 'posts');
+  assert.deepEqual(tabs(root).map(node => text(node)), ['소개', '소식', '채용', '후기']);
+  assert.equal(tabs(root).find(node => node.props['aria-selected']).props['data-tab'], 'about');
+  assert.ok(text(root).includes(profile.services));
+  button(root, '소식').props.onClick(); root = view.render('ProfilePage', { merchantId });
   assert.ok(component(root, 'PublicProfilePosts') && !component(root, 'PublicReviews'));
-  assert.ok(!text(root).includes(profile.address));
+  assert.ok(text(root).includes(profile.address));
   component(root, 'PublicProfilePosts').props.onRead({ merchantId, postCount: 7, jobCount: 2 });
   root = view.render('ProfilePage', { merchantId });
-  assert.deepEqual(tabs(root).map(node => text(node)), ['게시글 7', '채용 2', '리뷰', '소개']);
+  assert.deepEqual(tabs(root).map(node => text(node)), ['소개', '소식 7', '채용 2', '후기']);
   assert.ok(text(button(root, '채용 중')).includes('2건') && text(button(root, '채용 중')).includes('›'));
   button(root, '채용 중').props.onClick(); root = view.render('ProfilePage', { merchantId });
   assert.equal(tabs(root).find(node => node.props['aria-selected']).props['data-tab'], 'jobs');
@@ -350,7 +352,7 @@ test('confirmed review tab count sums both kinds and disappears when either read
   let root = view.render('ProfilePage', { merchantId });
   component(root, 'ProfileRatings').props.onRead({ key: `${merchantId}:${postId}`, usage: 4, employment: 3 });
   root = view.render('ProfilePage', { merchantId });
-  assert.equal(text(tabs(root).find(node => node.props['data-tab'] === 'reviews')), '리뷰 7');
+  assert.equal(text(tabs(root).find(node => node.props['data-tab'] === 'reviews')), '후기 7');
   component(root, 'ProfileRatings').props.onSelect('employment'); root = view.render('ProfilePage', { merchantId });
   assert.equal(tabs(root).find(node => node.props['aria-selected']).props['data-tab'], 'reviews');
   assert.equal(component(root, 'PublicReviews').props.kind, 'employment');
@@ -358,7 +360,7 @@ test('confirmed review tab count sums both kinds and disappears when either read
   assert.equal(component(root, 'PublicReviews').props.kind, 'usage');
   component(root, 'ProfileRatings').props.onRead({ key: `${merchantId}:${postId}`, usage: 4, employment: null });
   root = view.render('ProfilePage', { merchantId });
-  assert.equal(text(tabs(root).find(node => node.props['data-tab'] === 'reviews')), '리뷰');
+  assert.equal(text(tabs(root).find(node => node.props['data-tab'] === 'reviews')), '후기');
   const reads = [], metrics = app(undefined, { rpc: async (_name, args) => args.p_review_kind ? { error: new Error('WORK_FAILED') } : { data: page } });
   const props = { merchantId, postId, selectedKind: null, onSelect() {}, onRead: counts => reads.push(counts) };
   metrics.render('ProfileRatings', props); await settle();
@@ -369,7 +371,7 @@ test('profile tabs support roving Arrow/Home/End focus and about shows only regi
   const view = app(); view.render('ProfilePage', { merchantId }); await settle();
   let root = view.render('ProfilePage', { merchantId });
   const focused = [];
-  for (const [key, expected] of [['ArrowRight', 'jobs'], ['End', 'about'], ['Home', 'posts'], ['ArrowLeft', 'about']]) {
+  for (const [key, expected] of [['ArrowRight', 'posts'], ['End', 'reviews'], ['Home', 'about'], ['ArrowLeft', 'reviews']]) {
     let prevented = false;
     tabs(root).find(node => node.props['aria-selected']).props.onKeyDown({ key, preventDefault() { prevented = true; }, currentTarget: { parentElement: { querySelector(selector) { return { focus() { focused.push(selector); } }; } } } });
     root = view.render('ProfilePage', { merchantId });
