@@ -111,3 +111,23 @@ test('the real visit action opens only its supplied public visit link and gives 
   assert.deepEqual(feedback, ['selection', 'selection', 'warning']);
   assert.equal(alerts.length, 1);
 });
+
+test('a visited place falls back to its own business photo when the licence catalogue has none', () => {
+  const seed = JSON.parse(readFileSync(new URL('../src/lib/city-places.catalog.json', import.meta.url)));
+  const place = seed.cities.toronto.places.find(p => p.category === 'food');
+  const venuePhoto = { artist: 'Fixture venue', title: 'Fixture plate', license: 'Business-provided photo',
+    uri: 'https://example.org/venue.jpg', sourceUrl: 'https://example.org', licenseUrl: 'https://example.org',
+    imageSha256: '0'.repeat(64) };
+  const exports = {};
+  vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/lib/city-places.ts', import.meta.url), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true },
+  }).outputText, { exports, URL, require: name => name.endsWith('city-places.catalog.json') ? seed
+    : name.endsWith('city-places.photos.json') ? { cities: {} }
+      : name.endsWith('gling-visited.json') ? [{ cityId: 'toronto', placeId: place.id, sourceUrl: 'https://www.instagram.com/reel/fixture/', photo: venuePhoto }]
+        : { CITIES: Object.keys(seed.cities).map(id => ({ id })) } });
+  const mapped = Array.from(exports.getCityDiscoveryPlaces('toronto'), discoveryPlace);
+  const item = mapped.find(item => item.sourceId === place.id);
+  assert.equal(item.place.photo.uri, venuePhoto.uri);
+  assert.equal(item.place.photo.license, 'Business-provided photo');
+  assert.equal(item.glingVisited.sourceUrl, 'https://www.instagram.com/reel/fixture/');
+});
