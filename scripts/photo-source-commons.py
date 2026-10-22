@@ -36,7 +36,9 @@ def resolve(title, width=1400):
             # Commons sometimes hands back http or a /deed.en page; the catalogue needs https.
             'licenseUrl': meta('LicenseUrl').strip().replace('http://', 'https://', 1).replace('/deed.en', ''),
             'uri': ii['thumburl'],
-            'sourceUrl': 'https://commons.wikimedia.org/wiki/' + urllib.parse.quote(p['title'].replace(' ','_')),
+            # Keep ':' and ',' readable; the app validator expects /wiki/File:<name>.
+            'sourceUrl': 'https://commons.wikimedia.org/wiki/'
+                         + urllib.parse.quote(p['title'].replace(' ', '_'), safe=':/(),!$\'&+=@~'),
         }
     return None
 

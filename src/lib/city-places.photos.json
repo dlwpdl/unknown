@@ -3219,6 +3219,54 @@
     "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f8/Victory_Square_Cenotaph_-_Vancouver%2C_Canada_-_DSC09776.JPG/1920px-Victory_Square_Cenotaph_-_Vancouver%2C_Canada_-_DSC09776.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Victory_Square_Cenotaph_-_Vancouver,_Canada_-_DSC09776.JPG",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en"
+   },
+   {
+    "cityId": "vancouver",
+    "placeId": "osm:node:638861831",
+    "artist": "Joe Mabel",
+    "title": "File:Vancouver - Il Giardino di Umberto 01.jpg",
+    "discoveredVia": "Wikimedia Commons",
+    "imageSha256": "9386bf65125d1f3fd9ab4954a8b72bf633cc841622269b70c4fa0b967f7d18dd",
+    "license": "CC BY-SA 3.0",
+    "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fa/Vancouver_-_Il_Giardino_di_Umberto_01.jpg/1920px-Vancouver_-_Il_Giardino_di_Umberto_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Vancouver_-_Il_Giardino_di_Umberto_01.jpg",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0"
+   },
+   {
+    "cityId": "vancouver",
+    "placeId": "osm:node:729122817",
+    "artist": "Kyle Pearce from Vancouver, Canada",
+    "title": "File:Lumiere, Vancouver.jpg",
+    "discoveredVia": "Wikimedia Commons",
+    "imageSha256": "d891ca8e8553e2f6aa37e119b89bb379ce786ff684df0c262a6551fdfdaf7f1f",
+    "license": "CC BY-SA 2.0",
+    "uri": "https://upload.wikimedia.org/wikipedia/commons/8/80/Lumiere%2C_Vancouver.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Lumiere,_Vancouver.jpg",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0"
+   },
+   {
+    "cityId": "vancouver",
+    "placeId": "osm:node:878192099",
+    "artist": "Marcin Chady",
+    "title": "File:Stanley Park Miniature Train October 23, 2011.jpg",
+    "discoveredVia": "Wikimedia Commons",
+    "imageSha256": "57e1b13e78e2e83f063ec89b047a2899a33c9288a2a0d1519cff485deb6c1abe",
+    "license": "CC BY 2.0",
+    "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3e/Stanley_Park_Miniature_Train_October_23%2C_2011.jpg/1920px-Stanley_Park_Miniature_Train_October_23%2C_2011.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Stanley_Park_Miniature_Train_October_23,_2011.jpg",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0"
+   },
+   {
+    "cityId": "vancouver",
+    "placeId": "osm:node:582801947",
+    "artist": "Geoff Peters from Vancouver, BC, Canada",
+    "title": "File:Nikkyu japanese restaurant (3031753372).jpg",
+    "discoveredVia": "Wikimedia Commons",
+    "imageSha256": "931360adb9a7a64a04ef17388cd384bec565b0a435072a7a91e150b423002a09",
+    "license": "CC BY 2.0",
+    "uri": "https://upload.wikimedia.org/wikipedia/commons/0/0e/Nikkyu_japanese_restaurant_%283031753372%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Nikkyu_japanese_restaurant_(3031753372).jpg",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0"
    }
   ],
   "saint-john": [
