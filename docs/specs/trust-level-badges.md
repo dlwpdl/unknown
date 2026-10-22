@@ -5,14 +5,14 @@
 닉네임 옆 배지로 높은 인증 범위를 한눈에 알린다.
 
 - L1: 소셜 계정 확인, 배지 없음
-- L2: 전화번호 확인, 빨간 링과 회색 점
-- L3: 신분증과 얼굴 대조 완료, Gling 앱 마크
+- L2: 전화번호 확인, 현재 테마의 강조색 체크마크
+- L3: 신분증과 얼굴 대조 완료, 인증 완료 심볼
 
 ## Tech Stack / Structure
 
-- Expo SDK 57, React Native, 기존 `expo-image`와 테마 토큰만 사용한다.
+- Expo SDK 57, React Native, 기존 `expo-symbols`와 테마 토큰만 사용한다.
 - 배지 UI는 `src/components/trust-badge.tsx`, 레벨 정규화는 `src/lib/trust.ts`에 둔다.
-- L3는 기존 `assets/brand/gling-app-icon.png`를 재사용한다.
+- L3는 시스템 `checkmark.seal.fill` 심볼을 사용한다.
 
 ## Commands
 

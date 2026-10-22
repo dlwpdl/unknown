@@ -31,6 +31,8 @@ Gling is a North American Korean community app. The owner prioritizes early dete
 
 Full authorized visibility does not mean casual access. The admin dashboard must require an admin session, record reads, protect secrets server-side, and expose irreversible actions through audited server functions. Model output is untrusted input and cannot directly execute database or external actions.
 
+2026-10-07 owner requirement: every administrator login requires a second factor. The shared `private.is_admin()` boundary now requires AAL2, a live elevated Supabase session, the user's current admin role, and an active profile. The private dashboard uses Supabase TOTP enrollment/challenge; AI merchant tools use the same protected RPCs through an owner-authorized Keychain connection. No service-role key, password, OTP secret, or refresh token is given to the AI. Existing server-owned safety monitoring and retention jobs keep their original scope and schedules.
+
 Public community rules explain what behavior is limited and how a user can appeal. Detection thresholds may remain private when disclosure would make evasion materially easier.
 
 ## Consequences

@@ -1,0 +1,54 @@
+{
+  "date": "2026-10-08",
+  "product": "gling",
+  "status": "gling_only_scope_confirmed_pricing_and_repost_counts_unconfirmed",
+  "source": "사용자 직접 지시: 사업자 멤버십 별도 문의, 게시물 관리·홍보 운영에 청구, 재업 횟수에 따라 가격 차등; 최신 정정: 글링내에서만을 얘기하는거임",
+  "ownerDirection": {
+    "businessMembership": "별도 문의 후 운영 범위와 견적 협의",
+    "services": ["게시물 관리", "홍보 운영"],
+    "scope": "글링 내 게시물 관리·홍보·재업만",
+    "priceDifferentiator": "약정 재업 횟수",
+    "basicAppAccess": "기존 무료 기본 이용 유지",
+    "membershipPlacement": "기존 멤버십 화면에 일반 / 비지니스 탭; 각 탭을 누르면 해당 멤버십 구성·가격·혜택·행동을 표시",
+    "membershipTabLabels": ["일반", "비지니스"],
+    "businessPlanNames": ["베이직", "플러스", "프리미엄"],
+    "premiumManagement": "프리미엄을 운영대행으로 구성하는 사용자 방향"
+  },
+  "latestOwnerQuestion": "일반 / 비지니스로 나누고 각각 누르면 그 멤버십 디자인에 맞게 표시한다는 최신 사용자 확인; 앞선 신규4편·자동재업8회 가격·제공량은 여전히 검토안",
+  "proposalNotApproved": {
+    "quoteFormula": "글링 내 셀프 관리 월 이용료 + 운영대행 선택 시 사람의 관리비; 약정 게시·재업 횟수 추가는 별도 견적",
+    "packageExamples": [
+      { "name": "베이직", "management": "직접 관리", "newBusinessPostsPerMonth": 2, "automaticRepostsPerMonth": 0, "monthlyPriceCAD": 0 },
+      { "name": "플러스", "management": "셀프 관리", "newBusinessPostsPerMonth": 4, "automaticRepostsPerMonth": 8, "monthlyPriceCAD": 19 },
+      { "name": "프리미엄", "management": "운영 대행", "newBusinessPostsPerMonth": 4, "automaticRepostsPerMonth": 8, "monthlyPriceCADFrom": 99 }
+    ],
+    "proposalStatus": "모든 가격과 한도는 미승인 검토안; 시장표준으로 확정하지 않음",
+    "managementDifference": "유료 셀프와 대행의 기본 게시 한도는 동일; 대행은 소유자의 원고 작성·수정·일정 관리 비용을 추가",
+    "quotaRationale": "신규4편·재업8회는 에이전트가 주1회 신규글·주2회 재업을 출발 기준으로 제안한 수치이며, 품질 때문에 정해진 실제 제한이나 검증된 최적 빈도가 아님",
+    "contentProductionScope": "프리미엄 CAD99부터 제안은 업체 제공 사진·정보를 활용한 홍보 원고 작성·수정·일정 관리 기준; 신규 촬영·영상 제작은 별도 협의. 실제 작업시간과 지불 의향 미측정",
+    "quotaScope": "업체 단위 신규 business 홍보글과 실제 재업을 구분; 일반 커뮤니티 글·비공개 초안·같은 글 수정에는 신규 business 글 한도를 적용하지 않음",
+    "unitDefinition": "글링 내 합의한 게시물의 재업 또는 허용된 끌어올리기를 실제 완료한 1회; 초안·예약·실패·같은 제출의 재시도는 완료 횟수에 합산하지 않음",
+    "newPostsAndReposts": "신규 원고 제작·첫 게시와 재업을 견적에서 구분",
+    "channelScope": "글링 내로 확정; 이 멤버십 견적에는 외부 채널을 포함하지 않음",
+    "contentRule": "업체가 허락하고 검토한 원고만 게시하며 글링의 홍보·중복·간격 규칙을 준수",
+    "outcomeRule": "서비스 횟수와 실측 조회·클릭·문의·매출을 구분; 노출이나 매출을 보장하지 않음"
+  },
+  "pricingResearch": "output/pricing-research-2026-10-08/recommendation.json",
+  "ownerMarketObservation": {
+    "source": "2026-10-08 사용자 직접 경험: 캐스모 배너 하나의 광고 단가가 높았다고 보고",
+    "verification": "정확한 금액·통화·게시 기간·위치·노출량 미확인; 현재 캐스모 공식 요금표를 확인한 근거가 아님",
+    "pricingImplication": "매체의 노출 가치와 사람의 제작·운영 범위를 함께 비교하되 글링의 실제 도달·작업시간·지불 의향을 측정; 기존 CAD19/99 가격 제안을 확정하거나 자동 변경하지 않음"
+  },
+  "designPrototype": "output/design/gling-business-membership-2026-10-08.html",
+  "designVerification": "output/design/gling-business-membership-2026-10-08.verification.json",
+  "designStatus": "일반 회원/사업자 탭과 세 사업자 플랜 HTML 검토안만 제작; 실제 앱 UI·결제·한도·재업 구현 또는 적용은 하지 않음",
+  "existingImplementation": {
+    "quoteStorage": ["proposal_period", "proposal_amount", "next_step", "tax_note"],
+    "quoteContract": "docs/specs/merchant-admin-api.md",
+    "quoteCode": "src/lib/admin-merchants.ts",
+    "newAutomaticRepostingImplemented": false,
+    "newInvoicingOrCollectionImplemented": false
+  },
+  "execution": { "newPublication": 0, "customerMessage": 0, "invoiceOrCharge": 0, "newPaidService": 0 },
+  "unconfirmed": ["실제 금액과 단가", "확정된 재업 횟수", "기간 및 업체·게시물 범위", "고객 동의·계약", "실제 유료 수요·매출"]
+}

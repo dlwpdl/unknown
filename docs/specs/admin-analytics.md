@@ -36,4 +36,4 @@ Expo SDK 57 / React Native Web / Supabase Postgres RPC. `src/components/admin/`�
 
 ## 디자인 근거
 
-[Dub](https://mobbin.com/screens/a4640352-9741-4e45-bcea-5c1247d821c3), [Customer.io](https://mobbin.com/screens/94e68021-6e22-4d15-a104-f04b8b28517c), [Mixpanel](https://mobbin.com/screens/10d76bb3-6f65-4805-ad42-30ee24ec78e2)의 필터 → 지표 → 차트 → 상세 표 순서를 참고한다. Pinterest 자료도 확인했다. BrandKit은 Gling이 아닌 초기 템플릿이므로 저장소의 종이색·먹색·인주색을 유지한다. Kroma는 API 키가 없어 조회하지 못했다.
+[Dub](https://mobbin.com/screens/a4640352-9741-4e45-bcea-5c1247d821c3), [Customer.io](https://mobbin.com/screens/94e68021-6e22-4d15-a104-f04b8b28517c), [Mixpanel](https://mobbin.com/screens/10d76bb3-6f65-4805-ad42-30ee24ec78e2)의 필터 → 지표 → 차트 → 상세 표 순서를 참고한다. Pinterest 자료도 확인했다. 2026-09-29 사용자 정정에 따라 공개 글링 화면은 나이트 팔레트, 관리자 전용 화면은 `Colors.light`를 따른다. Kroma는 API 키가 없어 조회하지 못했다.

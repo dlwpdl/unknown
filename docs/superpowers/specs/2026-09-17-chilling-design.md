@@ -67,7 +67,7 @@
 
 ## 디자인 참고 확인
 
-2026-09-17 BrandKit의 글링 브랜드 확인: 종이/잉크/절제된 붉은 강조와 기존 타이포그래피를 유지한다. Luma의 화면을 복제하거나 글링을 외부 서비스로 이전하지 않는다.
+2026-09-29 사용자 정정: 글링의 현재 공개 화면은 `src/constants/theme.ts`의 나이트 팔레트와 `assets/brand/gling-night-*` 자산을 따른다. 9월 17일 당시 BrandKit 응답은 현재 시각 기준이 아니다. Luma의 화면을 복제하거나 글링을 외부 서비스로 이전하지 않는다.
 
 - [Luma 신청 질문](https://help.luma.com/p/collect-registration-questions): 질문형 신청과 호스트 검토 구조 참고.
 - [Luma 참여자 관리](https://help.luma.com/p/managing-your-guest-list): 승인 상태별 관리 참고.
