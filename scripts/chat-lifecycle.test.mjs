@@ -740,7 +740,9 @@ test('keyboard submit sends in direct and group rooms through the same guarded s
     let bottomScrolls = 0;
     const list = harness.nodes().find(node => node.type === 'FlatList');
     list.props.ref.current = { scrollToEnd: () => { bottomScrolls++; } };
-    assert.equal(list.props.ListFooterComponent.props.style.height, 24, 'last message time has room above the composer');
+    const footer = list.props.ListFooterComponent;
+    const footerParts = Array.isArray(footer.props.children) ? footer.props.children : [footer];
+    assert.ok(footerParts.some(node => node?.props?.style?.height === 24), 'last message time has room above the composer');
     const input = harness.nodes().find(node => node.type === 'TextInput' && node.props.accessibilityLabel === t.chat.messagePlaceholder);
     assert.equal(input.props.returnKeyType, 'send');
     assert.equal(input.props.submitBehavior, 'submit');

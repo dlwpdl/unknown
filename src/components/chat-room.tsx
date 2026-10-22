@@ -12,7 +12,7 @@ import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
 import { AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Linking, Modal, Platform, ScrollView, StyleSheet, TextInput, UIManager, View, type FlatList as NativeFlatList, type NativeScrollEvent, type NativeSyntheticEvent, type ViewToken, useWindowDimensions } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ReportSheet } from '@/components/report-sheet';
 import MapScreen from '@/app/map';
@@ -115,6 +115,8 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const access = { read: capabilities.read, write: capabilities.write && (!business || businessReady) };
   const [allMessages, setMessages] = useState<ChatMessageRecord[]>([]);
   const [groupMembers, setGroupMembers] = useState<ChatMember[] | null>(null);
+  const [joinNotices, setJoinNotices] = useState<ChatMember[]>([]);
+  const knownMembers = useRef<Set<string> | null>(null);
   const latestMessages = useRef(allMessages);
   useLayoutEffect(() => { latestMessages.current = allMessages; }, [allMessages]);
   const messages = useMemo(() => allMessages.filter((message) => !hidden('message', message.id, message.sender_id)), [allMessages, hidden]);
@@ -190,6 +192,17 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const reactions = useMemo(() => business
     ? new Map(messages.map(message => [message.id, reactionChanges.get(message.id) ?? { message_id: message.id, hearts: message.hearts ?? 0, mine: message.mine_reacted === true }]))
     : reactionChanges, [business, messages, reactionChanges]);
+  // 참여 승인은 시스템 메시지로 남지 않으므로 멤버 목록의 변화를 채팅창에 알린다.
+  useEffect(() => { knownMembers.current = null; setJoinNotices([]); }, [conversation.id]);
+  useEffect(() => {
+    if (!groupMembers) return;
+    if (!knownMembers.current) { knownMembers.current = new Set(groupMembers.map(member => member.id)); return; }
+    const known = knownMembers.current;
+    const added = groupMembers.filter(member => !known.has(member.id) && member.id !== currentUserId);
+    if (!added.length) return;
+    for (const member of added) known.add(member.id);
+    setJoinNotices(current => [...current, ...added].slice(-3));
+  }, [groupMembers, currentUserId]);
   useEffect(() => {
     if (business) return;
     let active = true;
@@ -676,7 +689,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           setTimeout(() => { if (!discoveryVisible.current) messageList.current?.scrollToIndex({ index, viewPosition: 0.12, animated: false }); }, 120);
         }}
         ListEmptyComponent={<ThemedText type="small" themeColor="textSecondary" style={styles.empty}>{access.write ? t.chat.newConversation : t.chat.endedBody}</ThemedText>}
-        ListFooterComponent={<View style={{ height: Spacing.four }} />}
+        ListFooterComponent={<>{joinNotices.map(member => <ThemedText key={member.id} type="small" themeColor="textSecondary" accessibilityLiveRegion="polite" style={styles.joinNotice}>{tr("{0}님이 모임에 참여했어요", member.nickname)}</ThemedText>)}<View style={{ height: Spacing.four }} /></>}
         ListHeaderComponent={<>{hasOlder && messages.length > 0 && <RoomAction label={loadingOlder ? t.feed.loadingMore : t.chat.loadOlder} onPress={() => void loadOlder()} disabled={loadingOlder} />}{verificationNotice}</>}
         renderItem={({ item: message, index }) => {
           const author = conversationSender(message, conversation, t, groupMembers);
@@ -799,7 +812,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     </KeyboardAvoidingView>
     {locationOpen && auth.isAuthed && auth.me.id === currentUserId && access.write && <ChatLocationPicker sending={sending} onSend={sendLocation} onClose={() => setLocationOpen(false)} />}
     {discoveryOpen && auth.isAuthed && auth.me.id === currentUserId && scopeMatches && <Modal visible presentationStyle="fullScreen" animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={closeDiscovery}>
-      <MapScreen onClose={closeDiscovery} />
+      <SafeAreaProvider style={{ flex: 1 }}><MapScreen onClose={closeDiscovery} /></SafeAreaProvider>
     </Modal>}
     {messageMenu && menuFrame && !deleteConfirm && !hidden('message', messageMenu.id, messageMenu.sender_id) && auth.isAuthed && auth.me.id === currentUserId && access.write && <Modal visible transparent statusBarTranslucent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => { play('selection'); closeMessageMenu(); }}>
       <View style={{ flex: 1 }} accessibilityViewIsModal>
@@ -888,7 +901,8 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   messageList: { flex: 1 },
   unreadDivider: { alignItems: 'center', borderTopWidth: 1, paddingTop: Spacing.two, marginTop: Spacing.two },
-  jumpLatest: { position: 'absolute', right: Spacing.three, bottom: Spacing.two, minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.three, borderRadius: 22, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
+  joinNotice: { textAlign: 'center', paddingVertical: Spacing.one },
+  jumpLatest: { position: 'absolute', alignSelf: 'center', bottom: Spacing.two, minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.three, borderRadius: 22, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
   scroll: { padding: Spacing.three, gap: Spacing.three },
   messageGroup: { gap: Spacing.one },
   date: { textAlign: 'center', paddingVertical: Spacing.two },
