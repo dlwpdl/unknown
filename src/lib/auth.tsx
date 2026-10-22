@@ -16,13 +16,15 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
 import { isAdminRole } from '@/lib/admin';
+import { registerSecurityDevice } from '@/lib/account-security-device';
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { canUseDevPasswordLogin, getKakaoAuthSessionUrl, getOAuthCallbackPath, getOAuthCode } from '@/lib/kakao-auth';
 import { CONTACT_EMAIL } from '@/lib/legal-documents';
 import { CommunityLocationProvider } from '@/lib/location-provider';
 import { CITIES } from '@/lib/mock';
 import { AUTH_EXPIRED_EVENT, signInAdminAccount, signInReviewAccount, supabase } from '@/lib/supabase';
 import { unregisterPushDevice } from '@/lib/push-notifications';
-import type { TrustLevel } from '@/lib/trust';
+import { shouldCelebrateVerificationUpgrade, type TrustLevel } from '@/lib/trust';
 
 type Level = 0 | 1;
 type OAuthProvider = 'kakao' | 'google';
@@ -77,6 +79,7 @@ export function useAuth(): AuthValue {
 }
 
 export function AuthProvider({ children, publicPage = false }: { children: ReactNode; publicPage?: boolean }) {
+  const { play } = useInteractionFeedback();
   const [session, setSession] = useState<Session | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
   const [loginKey, setLoginKey] = useState<string | null>(null);
@@ -89,30 +92,39 @@ export function AuthProvider({ children, publicPage = false }: { children: React
   const [profilePhotoUri, setProfilePhotoUri] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileRecord | null>(null);
   const [missingProfileUserId, setMissingProfileUserId] = useState<string | null>(null);
+  const [profileCheckedUserId, setProfileCheckedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     if (!session) return;
-    void supabase.from('profiles')
-      .select('id,nickname,city_id,avatar_path,verification_level,account_status,account_status_note,ai_safety_consent_at')
-      .eq('id', session.user.id)
-      .maybeSingle()
-      .then(async ({ data, error }) => {
-        if (!active || error) return;
-        setProfile(data);
-        setMissingProfileUserId(
-          data == null
-            || data.account_status === 'reactivation_pending'
-            || (data.account_status === 'active' && !data.ai_safety_consent_at)
-            ? session.user.id
-            : null,
-        );
-        if (data?.avatar_path) {
-          const signed = await supabase.storage.from('avatars').createSignedUrl(data.avatar_path, 3600);
-          if (active && signed.data?.signedUrl) setProfilePhotoUri(signed.data.signedUrl);
-        }
-      });
-    return () => { active = false; };
+    const refreshProfile = () => {
+      void Promise.resolve(supabase.from('profiles')
+        .select('id,nickname,city_id,avatar_path,verification_level,account_status,account_status_note,ai_safety_consent_at')
+        .eq('id', session.user.id)
+        .maybeSingle())
+        .then(async ({ data, error }) => {
+          if (!active) return;
+          setProfileCheckedUserId(session.user.id);
+          if (error) { setAuthError(t.auth.loginError); return; }
+          setProfile(data);
+          setMissingProfileUserId(
+            data == null
+              || data.account_status === 'reactivation_pending'
+              || (data.account_status === 'active' && !data.ai_safety_consent_at)
+              ? session.user.id
+              : null,
+          );
+          if (data?.avatar_path) {
+            const signed = await supabase.storage.from('avatars').createSignedUrl(data.avatar_path, 3600);
+            if (active && signed.data?.signedUrl) setProfilePhotoUri(signed.data.signedUrl);
+          }
+        }).catch(() => {
+          if (active) { setProfileCheckedUserId(session.user.id); setAuthError(t.auth.loginError); }
+        });
+    };
+    refreshProfile();
+    const appState = AppState.addEventListener('change', (state) => { if (state === 'active') refreshProfile(); });
+    return () => { active = false; appState.remove(); };
   }, [session]);
 
   useEffect(() => {
@@ -144,7 +156,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       if (!active) return;
       const nextLogin = nextSession?.user.last_sign_in_at ?? null;
       if (event === 'SIGNED_IN' && nextLogin && nextLogin !== observedLogin.current) setLoginKey(nextLogin);
-      if (!nextSession) setLoginKey(null);
+      if (!nextSession) { setLoginKey(null); setProfileCheckedUserId(null); }
       observedLogin.current = nextLogin;
       setSession(nextSession);
       setSessionReady(true);
@@ -318,11 +330,21 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     setProfilePhotoUri(null);
     setProfile(null);
     setMissingProfileUserId(null);
+    setProfileCheckedUserId(null);
   }, []);
   const signInAdmin = useCallback(async (email: string, password: string) => {
     if (!beginSignIn()) return;
     try { await signInAdminAccount(email, password); setVisible(false); }
-    catch { setAuthError('관리자 계정 정보와 접근 권한을 확인해주세요.'); }
+    catch (error) {
+      // 현장(휴대폰)에서 원인을 구분할 수 있도록 실패 종류를 나눠 보여준다.
+      const code = error instanceof Error ? error.message : '';
+      setAuthError(
+        code === 'ADMIN_ACCESS_DENIED' ? '이 계정에는 관리자 권한이 없습니다.'
+          : code.startsWith('SESSION_SAVE_FAILED') ? '브라우저가 로그인 정보를 저장하지 못했습니다. 시크릿 모드나 쿠키 차단 설정을 끄고 다시 시도해주세요.'
+          : /invalid|credential/i.test(code) ? '이메일 또는 비밀번호가 맞지 않습니다.'
+          : `로그인에 실패했습니다 (${code.slice(0, 80) || 'unknown'}).`,
+      );
+    }
     finally { signInInFlight.current = false; setSigningIn(false); }
   }, [beginSignIn]);
   const setProfilePhoto = useCallback(async (uri: string | null, base64?: string) => {
@@ -381,6 +403,31 @@ export function AuthProvider({ children, publicPage = false }: { children: React
   const trustLevel: TrustLevel = activeProfile?.verification_level ?? 1;
   const level: Level = session && !signingIn && activeProfile?.account_status === 'active' && activeProfile.ai_safety_consent_at ? 1 : 0;
 
+  const securityLogin = level === 1 && session ? `${session.user.id}:${session.user.last_sign_in_at ?? ''}` : null;
+  const registeredSecurityLogin = useRef<string | null>(null);
+  useEffect(() => {
+    if (!securityLogin || !activeProfile?.id || registeredSecurityLogin.current === securityLogin) return;
+    registeredSecurityLogin.current = securityLogin;
+    // Registration must not prevent login; the existing worker handles unregistered sessions.
+    void registerSecurityDevice(supabase, activeProfile.id, AsyncStorage).catch(() => {
+      if (registeredSecurityLogin.current === securityLogin) registeredSecurityLogin.current = null;
+    });
+  }, [activeProfile?.id, securityLogin]);
+
+  useEffect(() => {
+    if (!activeProfile?.id || level === 0) return;
+    let active = true;
+    const key = `gling.verification-level.${activeProfile.id}`;
+    void AsyncStorage.getItem(key).then(async (previous) => {
+      if (!active) return;
+      await AsyncStorage.setItem(key, String(trustLevel));
+      if (active && shouldCelebrateVerificationUpgrade(previous, trustLevel)) {
+        play(trustLevel === 3 ? 'verification3' : 'verification2');
+      }
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [activeProfile?.id, level, play, trustLevel]);
+
   const value = useMemo<AuthValue>(
     () => ({
       level,
@@ -389,7 +436,9 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       isVerified: trustLevel >= 2,
       trustLevel,
       isAdmin,
-      isAuthLoading: !sessionReady || signingIn,
+      isAuthLoading: !sessionReady || signingIn || (session != null && (
+        (!activeProfile && profileCheckedUserId !== session.user.id) || missingProfileUserId === session.user.id
+      )),
       authError,
       signInApple,
       prepareAppleAccountDeletion,
@@ -406,12 +455,14 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     [
       level,
       trustLevel,
-      session?.user,
+      session,
       activeProfile,
       socialNickname,
       socialPhoto,
       profilePhotoUri,
       sessionReady,
+      profileCheckedUserId,
+      missingProfileUserId,
       signingIn,
       authError,
       isAdmin,

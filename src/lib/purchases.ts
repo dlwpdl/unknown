@@ -23,6 +23,8 @@ export function withPurchases<T>(userId: string, operation: (sdk: typeof import(
     const { default: Purchases } = await import('react-native-purchases');
     if (!await Purchases.isConfigured()) Purchases.configure({ apiKey: apiKey!, appUserID: userId });
     else if (await Purchases.getAppUserID() !== userId) await Purchases.logIn(userId);
+    const current = await supabase.auth.getSession();
+    if (current.data.session?.user.id !== userId) throw new Error('ACCOUNT_CHANGED');
     return operation(Purchases);
   });
   queue = next.then(() => undefined, () => undefined);

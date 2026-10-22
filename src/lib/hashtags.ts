@@ -2,14 +2,18 @@ import type { Post, Tag, TagSlug } from '@/lib/types';
 
 export const DEFAULT_HASHTAGS: Record<TagSlug, readonly string[]> = {
   life: ['일상', '질문', '정보'],
+  festival: ['페스티벌', '공연', '동행'],
   food: ['맛집', '카페', '가성비'],
   travel: ['여행', '나들이', '동행'],
   shopping: ['핫딜', '중고', '쇼핑'],
   settlement: ['이민', '유학', '워홀'],
   transport: ['차량', '교통', '운전'],
-  housing: ['부동산', '렌트', '룸메'],
+  housing: ['상업용', '주거용', '렌트', '룸메', '매매'],
   education: ['학교', '학원', '어학'],
+  business: ['업체소개', '창업', '사업정보'],
   meetup: ['모임', '취미', '운동'],
+  jobs: ['구인', '구직', '채용'],
+  used: ['중고거래', '판매', '나눔'],
 };
 
 const DEFAULT_TRENDING = ['일상', '맛집', '여행', '핫딜', '워홀', '교통', '렌트', '어학', '모임'];
@@ -60,6 +64,7 @@ export function getSuggestedHashtags(
   posts: HashtagPost[],
   category?: Pick<Tag, 'id' | 'slug'> | null,
   limit = 10,
+  trendingTags: readonly string[] = [],
 ) {
   const counts = new Map<string, { value: string; count: number; order: number }>();
   let order = 0;
@@ -75,12 +80,13 @@ export function getSuggestedHashtags(
     }
   }
 
-  const popular = [...counts.values()]
+  const popular = trendingTags.length ? trendingTags : [...counts.values()]
     .sort((a, b) => b.count - a.count || a.order - b.order)
     .map(({ value }) => value);
-  const defaults = category ? DEFAULT_HASHTAGS[category.slug] : DEFAULT_TRENDING;
+  const defaults = trendingTags.length ? [] : category ? DEFAULT_HASHTAGS[category.slug] : DEFAULT_TRENDING;
 
-  return [...new Map([...popular, ...defaults].map((value) => [value.toLocaleLowerCase(), value])).values()].slice(0, limit);
+  const propertyTypes = category?.slug === 'housing' ? DEFAULT_HASHTAGS.housing.slice(0, 2) : [];
+  return [...new Map([...propertyTypes, ...popular, ...defaults].map((value) => [value.toLocaleLowerCase(), value])).values()].slice(0, limit);
 }
 
 export function addHashtag(input: string, hashtag: string) {

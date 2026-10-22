@@ -59,10 +59,13 @@ async function signInRestrictedAccount(email: string, password: string, kind: 'r
     await restrictedAuth.signOut({ scope: 'local' });
     throw new Error(kind === 'admin' ? 'ADMIN_ACCESS_DENIED' : 'REVIEW_ACCESS_DENIED');
   }
-  const result = await supabase.auth.setSession(data.session);
-  if (result.error) {
+  // 저장 실패(시크릿 모드·쿠키 차단·용량 부족)는 자격 증명 오류와 구분해야 현장에서 원인을 알 수 있다.
+  try {
+    const result = await supabase.auth.setSession(data.session);
+    if (result.error) throw result.error;
+  } catch (cause) {
     await restrictedAuth.signOut({ scope: 'local' });
-    throw result.error;
+    throw new Error(`SESSION_SAVE_FAILED:${cause instanceof Error ? cause.message : 'unknown'}`);
   }
 }
 

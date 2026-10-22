@@ -8,6 +8,13 @@ export const count = (value: number) =>
 export const t = {
   appName: '글링',
 
+  language: {
+    title: '앱 언어', system: '기기 설정 따름', korean: '한국어', english: 'English',
+    note: '앱에서만 적용돼요. 기기의 언어 설정은 바뀌지 않아요.',
+    saving: '언어 설정 저장 중', saveError: '언어 설정을 저장하지 못했어요. 다시 선택해 주세요.',
+  },
+
+
   trust: {
     accessibilityLabel: (level: 1 | 2 | 3) =>
       `Lv${level} 인증 · ${level === 1 ? '소셜 계정 확인' : level === 2 ? '전화번호 확인 완료' : '신분증과 본인 촬영 대조 완료'}`,
@@ -29,6 +36,9 @@ export const t = {
     loading: '알림 불러오는 중',
     empty: '아직 새 알림이 없어요.',
     loadError: '알림을 불러오지 못했어요.',
+    emptyBody: '댓글·신청·모임 소식이 생기면 여기에서 알려드릴게요.',
+    loadErrorBody: '연결이 잠시 끊겼어요. 다시 시도해 주세요.',
+    retry: '다시 시도',
     close: '닫기',
     new: '새 알림',
   },
@@ -61,11 +71,6 @@ export const t = {
     soonTitle: (name: string) => `${name}, 곧 열려요`,
     soonBody: '지금 열려 있는 도시의 이야기를 먼저 둘러보세요.',
     soonCta: '다른 도시 둘러보기',
-    // 앱 언어: 단위는 '한 편'(브랜드), 동사는 자연어 '올리다'
-    remaining: (used: number, max: number) => {
-      const left = max - used;
-      return `${Math.max(0, left)}/${max}`;
-    },
     filterAll: '전체',
     popularHashtags: '요즘 뜨는 해시태그',
     filterEmpty: (h: string) => `#${h} 글이 아직 없어요`,
@@ -83,22 +88,37 @@ export const t = {
     actionErrorBody: '연결을 확인하고 다시 시도해주세요.',
     linkCopied: '링크를 복사했어요',
     write: '한 편 올리기',
-    capReachedTitle: '오늘 작성할 수 있는 글을 모두 올렸어요',
-    capReachedBody: '내일 다시 올릴 수 있어요. 오늘은 이웃의 글에 공감을 남겨보세요.',
     refreshErrorTitle: '새 글을 불러오지 못했어요',
     refreshErrorBody: '연결을 확인하고 아래로 당겨 다시 시도해주세요.',
     loadingMore: '이전 글 불러오는 중…',
   },
 
+  map: {
+    open: 'Google 지도 열기',
+    openLabel: 'Google 지도에서 보기, 외부 지도 열기',
+    errorTitle: '지도를 열지 못했어요',
+    errorBody: '연결을 확인하고 다시 눌러주세요.',
+  },
+
   write: {
-    title: '오늘의 한 편',
+    title: '글쓰기',
     postCity: '게시 지역',
     backToDraft: '글쓰기로 돌아가기',
     postCityNote: '이 글을 나눌 도시를 골라주세요. 프로필의 선호 지역은 그대로 유지돼요.',
     category: '카테고리',
     bodyLabel: '본문',
+    placeAdd: '위치 공유',
+    placeChange: '위치 변경',
+    placeRemove: '위치 삭제',
+    placePlaceholder: '장소명·주소 또는 Google Maps 링크',
+    placeNote: '이 장소가 글과 함께 공유돼요. 추가하기 전에 지도에서 위치를 확인해 주세요.',
+    placeInvalid: '장소명이나 주소를 적거나, Google Maps에서 복사한 공유 링크를 넣어주세요.',
+    mapPlaceholder: 'Google 지도 공유 링크 (선택)',
+    mapInvalid: 'Google 지도에서 장소의 공유 링크를 복사해 붙여넣어 주세요.',
+    bodyTooLong: '지도 링크를 포함한 본문은 4,000자까지 올릴 수 있어요. 내용을 조금 줄여주세요.',
     hashtags: '해시태그',
-    remaining: (used: number, max: number) => `오늘 ${Math.max(0, max - used)}편 남음`,
+    meetupLimitNote: '모임 자리는 멤버십 한도에 따라 사용해요',
+    listingLimitNote: '살아있는 구해요·팔아요 글 수에 한도가 있어요',
     pickTag: '어떤 이야기인가요?',
     titlePlaceholder: '제목',
     hashtagPlaceholder: '해시태그 최대 5개 (예: 워홀 핫딜)',
@@ -137,13 +157,14 @@ export const t = {
     kindStory: '이야기',
     kindListing: '구해요·팔아요',
     kindStoryHint: '후기, 질문, 정보 공유',
-    kindListingHint: '렌트, 룸메, 중고, 차량',
-    pricePlaceholder: '가격 (선택, CAD)',
-    listingNote: '구해요·팔아요 글은 오늘 작성 한도를 쓰지 않아요. 14일 뒤 자동 마감되고, 하루에 한 번 끌어올릴 수 있어요.',
+    kindListingHint: '구인구직, 렌트·룸메, 중고거래, 차량',
+    pricePlaceholder: '금액 (선택, CAD)',
+    listingNote: '구해요·팔아요 글은 살아있는 글 수에 따라 제한돼요. 14일 뒤 자동 마감되고, 베이직은 48시간·플러스는 36시간·프로는 30시간·프리미엄은 24시간 간격으로 끌어올릴 수 있어요. 계정과 같은 글에 함께 적용돼요. 기존 구독 혜택은 유지돼요.',
     listingRemaining: (used: number, max: number) => `살아있는 글 ${used} / ${max}`,
-    listingBodyPlaceholder: '무엇을 구하거나 파나요? 상태, 거래 동네, 원하는 연락 방법을 적어주세요',
+    listingBodyPlaceholder: '무엇을 구하거나 제안하나요? 구인·구직 조건이나 물건 상태, 지역을 적어주세요',
     bodyPlaceholder: {
       life: '오늘의 일상이나 궁금한 이야기를 나눠보세요',
+      festival: '가보고 싶은 페스티벌이나 공연 이야기를 나눠보세요',
       food: '숨겨둔 맛집을 소개해주세요',
       travel: '여행지나 나들이 경험을 나눠주세요',
       shopping: '쇼핑 정보나 핫딜, 중고 이야기를 나눠주세요',
@@ -151,7 +172,10 @@ export const t = {
       transport: '차량·운전·대중교통 정보를 나눠주세요',
       housing: '부동산·렌트·룸메 이야기를 나눠주세요',
       education: '학교·학원·어학 정보를 나눠주세요',
+      business: '업체 소개나 창업·사업 정보를 나눠주세요',
       meetup: '어떤 모임인지, 몇 명이 좋을지 알려주세요',
+      jobs: '모집 조건·근무 지역·급여나 찾는 일을 적어주세요',
+      used: '물건 상태·금액·거래 지역을 적어주세요',
     } as Record<string, string>,
   },
 
@@ -162,6 +186,8 @@ export const t = {
     host: '내가 연 모임',
     approved: '참여 중',
     pending: '신청 대기',
+    rejected: '신청 거절',
+    cancelled: '신청·참여 취소',
     closed: '종료된 모임',
     end: '모임 종료',
     leave: '나가기',
@@ -176,6 +202,15 @@ export const t = {
     changeError: '모임을 변경하지 못했어요. 잠시 후 다시 시도해 주세요.',
     openChat: '모임 대화',
     pendingNote: '승인 전에는 모임 자리를 사용하지 않아요.',
+  },
+
+  membership: {
+    listingBenefits: {
+      free: '살아있는 구해요·팔아요 글 5개 · 끌어올리기 48시간 간격',
+      plus: '살아있는 구해요·팔아요 글 10개 · 끌어올리기 36시간 간격',
+      pro: '살아있는 구해요·팔아요 글 20개 · 끌어올리기 30시간 간격',
+      premium: '살아있는 구해요·팔아요 글 20개 · 끌어올리기 24시간 간격',
+    },
   },
 
   actionErrors: {
@@ -193,10 +228,14 @@ export const t = {
     REQUEST_EXPIRED: { title: '대화 요청이 만료됐어요', body: '7일 동안 수락되지 않아 요청이 종료됐어요. 대화 자리는 사용하지 않았어요.', membership: false },
     REQUEST_COOLDOWN: { title: '이 사람에게는 나중에 다시 요청해 주세요', body: '거절되거나 취소된 요청은 24시간 뒤 같은 상대에게 다시 보낼 수 있어요. 반복 요청 방지이며, 대화 자리가 잠기는 것은 아니에요.', membership: false },
     PENDING_REQUEST_LIMIT: { title: '답변을 기다리는 요청이 많아요', body: '보낸 요청은 최대 20개까지 대기할 수 있어요. 기존 요청을 확인해 주세요. 대기 중에는 대화 자리를 사용하지 않아요.', membership: false },
-    RATE_LIMITED: { title: '요청을 잠시 쉬어 주세요', body: '짧은 시간에 요청이 반복되어 잠시 제한됐어요. 잠시 후 다시 시도해 주세요. 대화 슬롯의 24시간 잠금과는 별개예요.', membership: false },
+    RATE_LIMITED: { title: '잠시 쉬었다가 다시 해 주세요', body: '짧은 시간에 같은 활동이 많이 반복됐어요. 잠시 후 다시 시도해 주세요.', membership: false },
     LISTING_LIMIT_REACHED: { title: '살아있는 구해요·팔아요 글이 가득 찼어요', body: '거래가 끝난 글을 마감하면 자리가 돌아와요. 멤버십에 따라 5·10·20개까지 동시에 올릴 수 있어요.', membership: true },
     DUPLICATE_LISTING: { title: '같은 글이 이미 있어요', body: '같은 제목의 글을 30일 안에 다시 올릴 수 없어요. 기존 글을 끌어올리거나 다시 열어 주세요.', membership: false },
-    BUMP_COOLDOWN: { title: '조금 뒤에 끌어올릴 수 있어요', body: '끌어올림은 하루에 한 번이에요. 멤버십에 따라 18시간·12시간마다 가능해요.', membership: true },
+    DUPLICATE_POST: { title: '같은 이야기가 이미 올라갔어요', body: '같은 내용을 반복해서 올리지 말고 기존 글을 확인해 주세요.', membership: false },
+    BUMP_COOLDOWN: { title: '조금 뒤에 끌어올릴 수 있어요', body: '베이직은 48시간·플러스는 36시간·프로는 30시간·프리미엄은 24시간 간격으로 끌어올릴 수 있어요. 계정과 같은 글에 함께 적용돼요. 기존 구독 혜택은 유지돼요.', membership: true },
+    BUSINESS_BUMP_COOLDOWN: { title: '비즈니스 끌어올리기를 기다려 주세요', body: '같은 글은 플러스 72시간·프로 60시간·프리미엄 48시간 간격이에요. 비즈니스 전체는 24시간 간격이에요. 계정이나 AI 도구를 바꿔도 같아요.', membership: false },
+    BUSINESS_MONTHLY_LIMIT_REACHED: { title: '이번 달 업체 사용량을 모두 썼어요', body: '신규 글과 끌어올리기 사용량을 확인해 주세요. 운영대행분은 전체 한도에 포함돼요.', membership: true },
+    DUPLICATE_PROMOTION: { title: '같은 홍보글이 이미 있어요', body: '기존 글을 수정하거나 끌어올려 주세요. 제목·사진 순서만 바꿔 새 글로 다시 올릴 수 없어요.', membership: false },
     LISTING_NOT_OPEN: { title: '마감된 글이에요', body: '다시 열면 살아있는 글 자리를 하나 사용해요.', membership: false },
   },
 
@@ -207,7 +246,8 @@ export const t = {
     loadError: '대화를 불러오지 못했어요. 잠시 후 다시 시도해주세요.',
     loadMessagesError: '메시지를 불러오지 못했어요.',
     loadOlder: '이전 메시지 더 보기',
-    empty: '아직 대화가 없어요. 피드에서 마음에 드는 글부터 찾아보세요.',
+    emptyTitle: '아직 대화가 없어요',
+    emptyBody: '피드에서 마음에 드는 글을 찾거나 모임에 참여하면 모임 대화가 여기에 열려요.',
     newConversation: '아직 메시지가 없어요. 먼저 인사해보세요.',
     unverifiedNotice: '상대방은 아직 실명 인증을 완료하지 않았어요.',
     unverifiedSafety: '처음 만날 때는 공개된 장소를 이용하고, 개인정보나 금전 요청에 주의하세요.',
@@ -236,7 +276,7 @@ export const t = {
     all: '전체',
     groups: '모임',
     direct: '1:1 대화',
-    requestTab: '요청',
+    requestTab: '모임 신청',
     receivedRequest: '받은 대화 요청',
     sentRequest: '보낸 대화 요청',
     pendingBody: '수락 전에는 메시지를 주고받을 수 없어요. 대기·거절·취소는 자리를 사용하지 않아요. 요청은 7일 뒤 만료돼요.',
@@ -251,9 +291,9 @@ export const t = {
     keepConversation: '대화 계속하기',
     ended: '종료된 대화',
     endedBody: '대화가 종료되어 새 메시지를 보낼 수 없어요.',
-    endRequester: '내 대화 자리 1개가 24시간 동안 잠겨요. 상대의 자리는 바로 돌아와요.',
-    endRecipient: '내 자리는 바로 돌아와요. 처음 요청한 상대의 대화 자리 1개는 24시간 동안 잠겨요.',
-    endLegacy: '이전 방식으로 시작한 대화예요. 종료하면 양쪽 자리가 쿨타임 없이 돌아와요.',
+    endRequester: '대화를 종료해도 기록은 남아요. 자리 잠금 없이 상대의 프로필에서 다시 대화를 시작할 수 있어요.',
+    endRecipient: '대화를 종료해도 기록은 남아요. 자리 잠금 없이 상대의 프로필에서 다시 대화를 시작할 수 있어요.',
+    endLegacy: '대화를 종료해도 기록은 남아요. 자리 잠금 없이 상대의 프로필에서 다시 대화를 시작할 수 있어요.',
     endError: '대화를 종료하지 못했어요. 연결 상태를 확인해 주세요.',
     block: '차단',
     blockDone: '차단했어요. 기존 대화 기록은 보관돼요.',
@@ -405,7 +445,7 @@ export const t = {
 
   // 댓글·글 작성자 탭 → 미니 프로필 (대화 요청 진입점)
   profileSheet: {
-    chatRequest: '대화 요청 보내기',
+    chatRequest: '대화하기',
     pending: '요청 중 — 탭하면 취소할 수 있어요',
     pendingCancelTitle: '대화 요청을 취소할까요?',
     pendingCancelBody: '수락 전에는 자리를 사용하지 않아 잠기는 자리도 없어요.',
@@ -433,10 +473,10 @@ export const t = {
   },
 
   profile: {
-    saved: '저장한 글',
-    savedEmpty: '아직 저장한 글이 없어요. 카드 하단의 저장을 눌러 모아두세요.',
-    savedLoading: '저장한 글 불러오는 중',
-    savedError: '저장한 글을 불러오지 못했어요.',
+    saved: '저장함',
+    savedEmpty: '아직 저장한 글이나 모임이 없어요.',
+    savedLoading: '저장함 불러오는 중',
+    savedError: '저장함을 불러오지 못했어요.',
     verifyBadge: '인증됨',
     location: (city: string, neighborhood: string | null | undefined) =>
       [city, neighborhood].filter(Boolean).join(' · ') || '지역 미설정',
@@ -446,6 +486,14 @@ export const t = {
     stats: (posts: number, likes: number, rooms: number) =>
       `쓴 글 ${count(posts)} · 받은 공감 ${count(likes)} · 모임 ${count(rooms)}`,
     settings: '설정',
+    appearance: '화면 모드',
+    darkMode: '다크 모드',
+    lightMode: '라이트 모드',
+    appearancePreview: '편한 화면으로 바꿔보세요',
+    darkModeNote: '켜면 다크, 끄면 라이트.',
+    darkModeHint: '켜면 다크 모드, 끄면 라이트 모드로 바뀝니다',
+    appearanceSaveErrorTitle: '화면 설정을 저장하지 못했어요',
+    appearanceSaveErrorBody: '현재 화면에는 적용했어요. 다시 선택해 저장해 주세요.',
     guidelines: '커뮤니티 가이드라인',
     guidelinesTitle: '글이 만남으로 이어지도록',
     guidelinesIntro: '서로의 하루를 안전하고 편안하게 나누기 위한 최소한의 약속이에요.',
@@ -488,3 +536,9 @@ export const t = {
     version: 'gling 1.0.0',
   },
 } as const;
+
+export type Translated<T> = T extends string ? string
+  : T extends (...args: infer A) => infer R ? (...args: A) => Translated<R>
+  : T extends readonly (infer I)[] ? readonly Translated<I>[]
+  : T extends object ? { [K in keyof T]: Translated<T[K]> } : T;
+export type Translations = Translated<typeof t>;

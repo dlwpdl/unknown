@@ -3,6 +3,7 @@ import type { TagSlug } from './types';
 
 const CATEGORY_SLUGS = new Set<TagSlug>([
   'life',
+  'festival',
   'food',
   'travel',
   'shopping',
@@ -10,7 +11,10 @@ const CATEGORY_SLUGS = new Set<TagSlug>([
   'transport',
   'housing',
   'education',
+  'business',
   'meetup',
+  'jobs',
+  'used',
 ]);
 
 export type AiDraft = {

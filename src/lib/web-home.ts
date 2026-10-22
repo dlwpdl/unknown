@@ -23,9 +23,9 @@ const CITY_COPY: Record<string, Pick<WebHomeCitySummary, 'headline' | 'blurb' | 
     launchNote: '출시 준비 중',
   },
   montreal: {
-    headline: '몬트리올은 앞으로 함께할 후보 도시예요.',
-    blurb: '한국어로 나누는 몬트리올의 일상. 확장 일정은 아직 정해지지 않았어요.',
-    launchNote: '추후 검토',
+    headline: '몽루아얄 산책부터, 동네 시장에서 만난 한 끼까지.',
+    blurb: '플라토, 마일엔드, 다운타운. 한국어로 몬트리올의 생활 정보와 일상을 나눠요.',
+    launchNote: '출시 준비 중',
   },
   calgary: {
     headline: '캘거리의 이야기도 기다리고 있어요.',
@@ -45,8 +45,8 @@ const CITY_COPY: Record<string, Pick<WebHomeCitySummary, 'headline' | 'blurb' | 
 };
 
 export const WEB_HERO_METRICS = [
-  { label: '먼저 만날 도시', value: '밴쿠버 · 토론토' },
-  { label: '함께 나눌 주제', value: '9개의 카테고리' },
+  { label: '먼저 만날 도시', value: '밴쿠버 · 토론토 · 몬트리올 · 에드먼튼' },
+  { label: '함께 나눌 주제', value: '10개의 카테고리' },
   { label: '출시 준비 중', value: 'iOS · Android' },
 ] as const;
 
@@ -74,7 +74,7 @@ export const WEB_STORY_BLOCKS = [
     kicker: '01 · 이웃의 이야기',
     title: '작은 질문도,\n반가운 이야기가 되도록.',
     body: '오늘 발견한 맛집, 처음이라 낯선 정착 질문, 취향이 닮은 모임. 글과 댓글에서 시작한 대화를 이웃과 이어가세요.',
-    points: ['도시별 피드와 9개의 생활 주제', '글과 댓글로 나누는 동네 이야기', 'DM과 모임으로 이어지는 대화'],
+    points: ['도시별 피드와 10개의 생활 주제', '글과 댓글로 나누는 동네 이야기', 'DM과 모임으로 이어지는 대화'],
     image: 'feed' as const,
   },
   {
@@ -82,7 +82,7 @@ export const WEB_STORY_BLOCKS = [
     kicker: '02 · 가까운 동네부터',
     title: '어느 동네로\n갈까요?',
     body: '내가 사는 도시도, 다음에 가보고 싶은 도시도. 직접 동네를 골라 그곳의 이야기를 펼쳐보세요.',
-    points: ['밴쿠버 · 토론토에서 시작', '기기 위치 권한 없이 직접 도시 선택', '다음 도시의 일정은 추후 안내'],
+    points: ['밴쿠버 · 토론토 · 몬트리올 · 에드먼튼에서 시작', '기기 위치 권한 없이 직접 도시 선택', '다음 도시의 일정은 추후 안내'],
     image: 'cities' as const,
   },
 ] as const;

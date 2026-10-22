@@ -10,11 +10,20 @@ export type ActivityKind = keyof typeof ACTIVITY_KINDS;
 export type AdminDirectoryProfile = AdminProfile & {
   email: string | null; login_name: string | null; email_confirmed_at: string | null;
   full_name: string | null; date_of_birth: string | null; age: number | null; personal_info_updated_at: string | null;
+  gender: string | null;
   session_ip: string | null; session_created_at: string | null; session_updated_at: string | null;
   last_sign_in_at: string | null; auth_role: string; providers: string[];
   account_type: 'example' | 'admin' | 'review' | 'member';
 };
 export const ACCOUNT_TYPES = { example: '예시 계정', admin: '관리자', review: '심사 계정', member: '회원' };
+export const ADMIN_GENDERS: Record<string, string> = { male: '남성', female: '여성', other: '기타' };
+export const ACCOUNT_FILTERS = { all: '전체', example: '직접 만든 계정', member: '실제 가입자' } as const;
+export type AccountFilter = keyof typeof ACCOUNT_FILTERS;
+export type AdminDirectoryFilters = {
+  account_types: string[]; cities: string[]; statuses: string[]; providers: string[]; ages: string[]; genders: string[];
+  joined_days: string; sort: string;
+};
+export const EMPTY_DIRECTORY_FILTERS: AdminDirectoryFilters = { account_types: [], cities: [], statuses: [], providers: [], ages: [], genders: [], joined_days: 'all', sort: 'newest' };
 export type AdminUserDirectory = {
   rows: AdminDirectoryProfile[]; total: number; viewer: { id: string; email: string | null; role: string };
 };
@@ -55,8 +64,9 @@ export function mergeActivityRows<T extends { event_key: string }>(current: T[],
   return [...new Map([...current, ...next].map((row) => [row.event_key, row])).values()];
 }
 
-export async function searchAdminUsers(client: SupabaseClient, query = '', offset = 0): Promise<AdminUserDirectory> {
-  const { data, error } = await client.rpc('search_admin_users', { p_query: query.trim(), p_offset: offset });
+export async function searchAdminUsers(client: SupabaseClient, query = '', offset = 0, filters: AccountFilter | AdminDirectoryFilters = 'all'): Promise<AdminUserDirectory> {
+  const { data, error } = await client.rpc('search_admin_users', { p_query: query.trim(), p_offset: offset,
+    ...(typeof filters === 'string' ? { p_account_type: filters } : { p_filters: filters }) });
   if (error || !data) throw new Error(error?.message ?? 'ADMIN_DATA_MISSING');
   return data;
 }

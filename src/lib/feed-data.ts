@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { thumbPathFor } from './image-upload.ts';
 import type { ListingStatus, Post, PostComment, PostKind, RoomPreview, TagSlug } from './types.ts';
 
 export type PublicFeedRow = {
@@ -32,6 +33,8 @@ export type PublicFeedRow = {
   expires_at?: string | null;
   bumped_at?: string | null;
   sort_at?: string;
+  popularity_score?: number;
+  ranking_as_of?: string;
 };
 
 export type PublicCommentRow = {
@@ -46,7 +49,8 @@ export type PublicCommentRow = {
   author_verification_level: number;
 };
 
-export type FeedCursor = { createdAt: string; id: string; sortAt?: string };
+export type FeedSort = 'latest' | 'popular';
+export type FeedCursor = { createdAt: string; id: string; sortAt?: string; popularityScore?: number; rankingAsOf?: string };
 
 type SignedImage = { url: string; expiresAt: number };
 const signedImagesByClient = new WeakMap<object, Map<string, SignedImage>>();
@@ -63,14 +67,18 @@ export function appendUniquePosts<T extends { id: string }>(current: readonly T[
 }
 
 export function getPostImageSource(
-  post: Pick<Post, 'id' | 'imagePaths' | 'imageUris'>,
+  post: Pick<Post, 'id' | 'imagePaths' | 'imageUris' | 'imageThumbs'>,
   viewerScope: string,
+  variant: 'feed' | 'full' = 'feed',
+  position = 0,
 ) {
-  const uri = post.imageUris?.[0];
+  const path = post.imagePaths?.[position];
+  const uri = variant === 'feed' ? post.imageThumbs?.[position] || post.imageUris?.[position] : post.imageUris?.[position];
   if (!uri) return undefined;
   const allowedViewers = viewersBySignedUrl.get(uri);
   if (allowedViewers && !allowedViewers.has(viewerScope)) return undefined;
-  return { uri, cacheKey: `post-image:${viewerScope}:${post.imagePaths?.[0] ?? uri}` };
+  const keyPath = variant === 'feed' && post.imageThumbs?.[position] ? thumbPathFor(path ?? '') : path;
+  return { uri, cacheKey: `post-image:${viewerScope}:${keyPath ?? uri}` };
 }
 
 export function groupJournalPosts(posts: readonly Post[]) {
@@ -89,10 +97,18 @@ export async function loadPublicFeed(
   tagId: number | null = null,
   query: string | null = null,
   cursor: FeedCursor | null = null,
-  options?: { viewerScope?: string; signal?: AbortSignal },
+  options?: { viewerScope?: string; signal?: AbortSignal; sort?: FeedSort },
 ): Promise<Post[]> {
   // v2 orders by sort_at (bumped listings float) and hides closed/expired listings.
-  const request = client.rpc('get_public_feed_page_v2', {
+  const request = options?.sort === 'popular' ? client.rpc('get_public_popular_feed_page', {
+    p_city_id: cityId,
+    p_tag_id: tagId,
+    p_before_score: cursor?.popularityScore ?? null,
+    p_before_created: cursor?.createdAt ?? null,
+    p_before_id: cursor?.id ?? null,
+    p_as_of: cursor?.rankingAsOf ?? null,
+    p_limit: 30,
+  }) : client.rpc('get_public_feed_page_v2', {
     p_city_id: cityId,
     p_tag_id: tagId,
     p_query: query,
@@ -103,6 +119,25 @@ export async function loadPublicFeed(
   const feed = await (options?.signal ? request.abortSignal(options.signal) : request);
   if (feed.error) throw feed.error;
   const rows = (feed.data ?? []) as PublicFeedRow[];
+  return attachSignedPostImages(client, mapPublicFeed(rows, []), options?.viewerScope);
+}
+
+// 프로필에서 여는 "이 사람이 쓴 글". 피드와 같은 행 형식이라 카드 매핑을 그대로 쓴다.
+export async function loadAuthorPosts(
+  client: SupabaseClient,
+  authorId: string,
+  cursor: FeedCursor | null = null,
+  options?: { viewerScope?: string; signal?: AbortSignal },
+): Promise<Post[]> {
+  const request = client.rpc('get_public_author_posts', {
+    p_author_id: authorId,
+    p_before_created: cursor?.createdAt ?? null,
+    p_before_id: cursor?.id ?? null,
+    p_limit: 30,
+  });
+  const result = await (options?.signal ? request.abortSignal(options.signal) : request);
+  if (result.error) throw result.error;
+  const rows = (result.data ?? []) as PublicFeedRow[];
   return attachSignedPostImages(client, mapPublicFeed(rows, []), options?.viewerScope);
 }
 
@@ -176,11 +211,14 @@ export function mapPublicFeed(
     expiresAt: row.expires_at ?? null,
     bumpedAt: row.bumped_at ?? null,
     sortAt: row.sort_at ?? row.created_at,
+    popularityScore: row.popularity_score,
+    rankingAsOf: row.ranking_as_of,
   }));
 }
 
 export async function attachSignedPostImages(client: SupabaseClient, posts: Post[], viewerScope?: string) {
-  const paths = [...new Set(posts.flatMap(({ imagePaths }) => imagePaths ?? []))];
+  // 썸네일과 원본을 한 번에 서명한다. 목록은 썸네일, 상세는 원본을 쓴다.
+  const paths = [...new Set(posts.flatMap(({ imagePaths }) => (imagePaths ?? []).flatMap((path) => [path, thumbPathFor(path)])))];
   if (paths.length === 0) return posts;
   const scope = viewerScope ?? await client.auth.getSession()
     .then(({ data }) => data.session?.user.id ?? 'guest')
@@ -220,7 +258,8 @@ export async function attachSignedPostImages(client: SupabaseClient, posts: Post
   }
   return posts.map((post) => ({
     ...post,
-    imageUris: post.imagePaths?.flatMap((path) => urls.get(path) ?? []),
+    imageUris: post.imagePaths?.map((path) => urls.get(path) ?? ''),
+    imageThumbs: post.imagePaths?.map((path) => urls.get(thumbPathFor(path)) ?? ''),
   }));
 }
 
