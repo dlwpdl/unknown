@@ -8,7 +8,7 @@ import { getPostImageSource } from '../src/lib/feed-data.ts';
 import { uniqueHashtags } from '../src/lib/hashtags.ts';
 import { count, t } from '../src/i18n/ko.ts';
 import { googleMapsPin, googleMapsUrl, postMapBody } from '../src/lib/post-maps.ts';
-import { visibleTranslationSource } from '../src/lib/translation-source.ts';
+import { visibleTranslationSource } from './test-meetup-source-imports.mjs';
 import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
 import * as postLinks from '../supabase/functions/_shared/post-links.ts';
 import * as product from '../src/lib/product-analytics.ts';

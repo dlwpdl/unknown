@@ -1,4 +1,5 @@
 import { ticketmasterReference } from '../../supabase/functions/_shared/ticketmaster.ts';
+import { splitPlaceMeetupBody } from './meetup-destination.ts';
 
 export function splitEventMeetupBody(body: string) {
   const legacyDetailsAt = body.indexOf('\n\n장소:');
@@ -9,5 +10,5 @@ export function splitEventMeetupBody(body: string) {
 }
 
 export function visibleMeetupBody(body: string) {
-  return ticketmasterReference(body) ? splitEventMeetupBody(body).intro : body;
+  return ticketmasterReference(body) ? splitEventMeetupBody(body).intro : splitPlaceMeetupBody(body)?.intro ?? body;
 }

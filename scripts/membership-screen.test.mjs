@@ -55,6 +55,10 @@ test('membership keeps stories and direct chat free while preserving meetup and 
   const planOrder = tree => nodes(tree).filter(node => node.props?.analyticsId === 'app_profile_membership.pressable.4').map(node => text(node).match(/^(플러스|프로|프리미엄)/)[0]);
   let tree = render();
   assert.deepEqual(planOrder(tree), ['플러스', '프로', '프리미엄'], 'general plans follow Basic, Plus, Pro, Premium');
+  for (const [name, benefit] of [['플러스', '모임 템플릿 · 질문 재사용'], ['프로', '템플릿 · 반복 회차 · 대기 명단 · 공동 호스트'], ['프리미엄', 'Pro 모임 도구 · 신청·참석 통계']]) {
+    const card = nodes(tree).find(node => node.props?.analyticsId === 'app_profile_membership.pressable.4' && text(node).startsWith(name));
+    assert.ok(text(card).includes(benefit), `${name} explains its meetup tools`);
+  }
   assert.ok(button(tree,'일반'));
   assert.ok(button(tree,'비즈니스'));
   assert.equal(nodes(tree).filter(node => node.type === 'RelationshipSlotCard').length, 1);

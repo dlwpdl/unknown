@@ -48,7 +48,7 @@ test('application identity is loaded only after the server permits the private s
   client.rpc = async () => ({ data: { postId: 'post', requesterId: 'viewer', profile, answer: '함께하고 싶어요', question: '기대하는 것은?', consentVersion: 'chilling-v1', consentedAt: '2026-10-05T12:00:00Z' }, error: null });
   const application = await data.loadChillingApplication(client, 'request', 'viewer');
   assert.equal(application.request.status, 'pending');
-  assert.equal(application.request.requester.nickname, '산책친구');
+  assert.equal(application.request.requester.nickname, '모임 멤버', 'legacy applications never borrow the community identity');
   assert.equal(application.answer, '함께하고 싶어요');
 });
 
@@ -74,10 +74,10 @@ test('profile save validates bounds and sends only normalized sharing fields', a
 });
 test('sharing requires explicit consent, trims answer, and never uploads a client snapshot', async () => {
   const calls=[];const client={rpc:async(name,args)=>{calls.push([name,args]);return {data:'request-id',error:null};}};
-  await assert.rejects(data.requestChillingJoin(client,'post','hello',false), /CHILLING_CONSENT_REQUIRED/);
+  await assert.rejects(data.requestChillingJoin(client,'post','hello',false,'revision'), /CHILLING_CONSENT_REQUIRED/);
   assert.equal(calls.length,0);
-  assert.equal(await data.requestChillingJoin(client,'post',' hi ',true),'request-id');
-  assert.deepEqual(calls,[['request_chilling_join',{p_post_id:'post',p_answer:'hi',p_consent_version:'chilling-v1'}]]);
+  assert.equal(await data.requestChillingJoin(client,'post',' hi ',true,'revision'),'request-id');
+  assert.deepEqual(calls,[['request_chilling_join_v2',{p_post_id:'post',p_answer:'hi',p_consent_version:'chilling-v2',p_profile_revision:'revision'}]]);
 });
 test('create uses one atomic RPC; invalid event cannot publish a partial legacy post', async () => {
   const calls=[];const client={rpc:async(name,args)=>{calls.push([name,args]);return {data:'post-id',error:null};}};

@@ -1,5 +1,30 @@
 import { parseHashtags } from './hashtags.ts';
 import type { TagSlug } from './types';
+import { parseMeetupDraft, type MeetupAiDraft } from '../../supabase/functions/draft-post/meetup-draft.ts';
+
+export type { MeetupAiDraft };
+export const MEETUP_DRAFT_FIELDS = ['title', 'body', 'question'] as const;
+export type MeetupDraftField = typeof MEETUP_DRAFT_FIELDS[number];
+export type MeetupDraftFields = Record<MeetupDraftField, string>;
+export type MeetupDraftRevision = Record<MeetupDraftField, number>;
+
+export function parseMeetupAiDraftResponse(value: unknown): MeetupAiDraft {
+  const draft = parseMeetupDraft(isRecord(value) ? value.draft : null);
+  return { ...draft, hashtags: parseHashtags(draft.hashtags.join(' ')) };
+}
+
+export function meetupAiDraftFields(draft: MeetupAiDraft, language: 'ko' | 'en'): MeetupDraftFields {
+  const labels = language === 'en' ? ['Purpose', 'Activities', 'Who it suits', 'Preparation'] : ['모임 목적', '함께할 활동', '이런 분과 맞아요', '준비할 것'];
+  const sections = [draft.body, `${labels[0]}\n${draft.purpose}`, `${labels[1]}\n${draft.activities.map((activity, i) => `${i + 1}. ${activity}`).join('\n')}`, `${labels[2]}\n${draft.fit}`];
+  if (draft.preparation.length) sections.push(`${labels[3]}\n${draft.preparation.map(item => `• ${item}`).join('\n')}`);
+  return { title: draft.title, body: sections.join('\n\n'), question: draft.applicationQuestion };
+}
+
+export function meetupAiDraftChanges(fields: MeetupDraftFields, selected: Partial<Record<MeetupDraftField, boolean>>, baseline: MeetupDraftRevision, current: MeetupDraftRevision): Partial<MeetupDraftFields> {
+  const changes: Partial<MeetupDraftFields> = {};
+  for (const field of MEETUP_DRAFT_FIELDS) if (selected[field] && baseline[field] === current[field]) changes[field] = fields[field];
+  return changes;
+}
 
 const CATEGORY_SLUGS = new Set<TagSlug>([
   'life',

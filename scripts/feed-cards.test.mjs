@@ -9,6 +9,10 @@ import { CITIES } from '../src/lib/mock.ts';
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 const text = tree => typeof tree === 'string' ? tree : tree && typeof tree === 'object' ? [tree.props?.children].flat(Infinity).map(text).join('') : '';
 const cityRow = tree => nodes(tree).find(node => node.type === 'Pressable');
+const renderCityRow = (list, item) => {
+  const section = list.sections.find(section => section.data.includes(item));
+  return list.renderItem({ item, section, index: section.data.indexOf(item) });
+};
 
 test('weekly ranking groups its expanded heading inside the card, away from the journal title', () => {
   for (const [total, expanded] of [[2, false], [5, true], [5, false], [0, false]]) {
@@ -70,16 +74,20 @@ test('choosing a post city changes only the draft and keeps upcoming cities unav
     '@/lib/community-city': { useCommunityCity: () => ({ city: CITIES[0], saving: false, selectCity: () => assert.fail('post city must not save profile preferences') }) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
   });
-  const render = () => CityPicker({ onClose: () => { closed++; }, draft: { city: selected, onSelect: city => { selected = city; } } });
+  const heading = tree => text(nodes(tree).find(node => node.props?.accessibilityRole === 'header'));
+  assert.equal(heading(CityPicker({ onClose() {} })), '지역 선택');
+  assert.equal(heading(CityPicker({ onClose() {}, draft: { city: selected, onSelect() {} } })), '게시 지역');
+  const render = () => CityPicker({ title: '활동 도시', onClose: () => { closed++; }, draft: { city: selected, onSelect: city => { selected = city; } } });
+  assert.equal(heading(render()), '활동 도시', 'an activity-city caller can name the sheet without changing draft selection behavior');
   const list = () => nodes(render()).find(node => node.type === 'SectionList').props;
   const toronto = CITIES.find(city => city.id === 'toronto');
-  await cityRow(list().renderItem({ item: toronto })).props.onPress();
+  await cityRow(renderCityRow(list(), toronto)).props.onPress();
   assert.equal(selected.id, 'toronto');
   assert.equal(closed, 1);
-  assert.equal(cityRow(list().renderItem({ item: toronto })).props.accessibilityState.selected, true);
+  assert.equal(cityRow(renderCityRow(list(), toronto)).props.accessibilityState.selected, true);
   assert.match(text(list().ListFooterComponent), /이 글/);
   assert.doesNotMatch(text(list().ListFooterComponent), /프로필에 저장/);
-  await cityRow(list().renderItem({ item: CITIES.find(city => city.state === 'soon') })).props.onPress();
+  await cityRow(renderCityRow(list(), CITIES.find(city => city.state === 'soon'))).props.onPress();
   assert.equal(selected.id, 'toronto');
   assert.equal(closed, 1);
 });
@@ -149,7 +157,7 @@ test('city picker searches Canadian cities and keeps upcoming cities and the US 
     const city = CITIES.find(city => city.id === id);
     assert.equal(city.province, province);
     assert.equal(city.state, 'soon');
-    const row = cityRow(list().renderItem({ item: city }));
+    const row = cityRow(renderCityRow(list(), city));
     assert.equal(row.props.disabled, true);
     assert.equal(row.props.accessibilityState.disabled, true);
     await row.props.onPress();
@@ -166,8 +174,8 @@ test('city picker searches Canadian cities and keeps upcoming cities and the US 
   assert.equal(text(list().ListEmptyComponent), '일치하는 도시가 없어요.');
   nodes(render()).find(node => node.props?.accessibilityLabel === '도시 검색 지우기').props.onPress();
   assert.equal(query, '');
-  assert.equal(cityRow(list().renderItem({ item: CITIES[0] })).props.accessibilityState.selected, true);
-  await cityRow(list().renderItem({ item: CITIES[1] })).props.onPress();
+  assert.equal(cityRow(renderCityRow(list(), CITIES[0])).props.accessibilityState.selected, true);
+  await cityRow(renderCityRow(list(), CITIES[1])).props.onPress();
   assert.equal(selected, 'toronto');
   assert.equal(closed, 1);
 });
@@ -250,7 +258,7 @@ test('city picker location row discloses before collecting and hides in the post
   assert.equal(text(row()).startsWith('동의하고 찾기'), true);
   await row().props.onPress();
   assert.equal(captures, 1);
-  const toronto = list({ onClose() {} }).renderItem({ item: CITIES.find(city => city.id === 'toronto') });
+  const toronto = renderCityRow(list({ onClose() {} }), CITIES.find(city => city.id === 'toronto'));
   assert.match(text(toronto), /가까움/);
   location.enabled = true; open = false;
   assert.equal(text(row()).startsWith('위치 다시 확인'), true);

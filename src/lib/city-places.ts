@@ -1,11 +1,14 @@
 import snapshot from './city-places.catalog.json';
 import photoSnapshot from './city-places.photos.json';
+import visitedPlaces from './gling-visited.json';
+import { replaceExternalPlaceRatings } from './place-external-ratings';
 import { CITIES } from '@/lib/mock';
 
 export type PlaceCategory = 'all' | 'food' | 'cafe' | 'places';
 export type PlacePhoto = {
   placeId: string; cityId: string; uri: string; sourceUrl: string;
   artist: string; license: string; licenseUrl: string; imageSha256: string;
+  title?: string; discoveredVia?: 'Openverse' | 'Flickr';
 };
 export type CityPlace = {
   id: string; cityId: string; name: string; category: Exclude<PlaceCategory, 'all'>;
@@ -13,19 +16,39 @@ export type CityPlace = {
   website?: string | null; openingHours?: string | null;
   photo?: PlacePhoto | null;
   recommendation?: PlaceRecommendation;
+  diningRecommendation?: PlaceRecommendation;
+  glingVisited?: { sourceUrl: string };
 };
 export type PlaceRecommendation = { placeId: string; reason: string; reasonEn?: string; sourceUrl: string; verifiedAt: string };
 
+type PhotoCatalog = {
+  cities: Record<string, PlacePhoto[]>;
+  additionalCatalog?: { cities: Record<string, PlacePhoto[]> };
+  flickrCatalog?: { cities: Record<string, PlacePhoto[]> };
+};
 type PlaceCatalog = {
-  collectedAt: string; selectionRevision?: number; recommendationTheme?: 'photo-spots'; cities: Record<string, { coverage: string; places: CityPlace[]; recommendations?: PlaceRecommendation[] }>;
+  photoCatalog?: PhotoCatalog; externalRatings?: unknown;
+  collectedAt: string; selectionRevision?: number; recommendationTheme?: 'photo-spots'; cities: Record<string, { coverage: string; places: CityPlace[]; recommendations?: PlaceRecommendation[]; diningRecommendations?: PlaceRecommendation[] }>;
 };
 let catalog = snapshot as PlaceCatalog;
-const photoCatalog = photoSnapshot as { cities: Record<string, PlacePhoto[]> };
+let photoCatalog = photoSnapshot as PhotoCatalog;
 export let CITY_PLACES_COLLECTED_AT = catalog.collectedAt;
 let revision = 0;
 const listeners = new Set<() => void>();
 export const cityPlacesRevision = () => revision;
 export function subscribeCityPlaces(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
+
+function photosForCity(cityId: string): PlacePhoto[] {
+  const photos = [...(photoCatalog.cities[cityId] ?? [])], ids = new Set(photos.map(photo => photo.placeId));
+  for (const group of [photoCatalog.additionalCatalog, photoCatalog.flickrCatalog]) {
+    for (const photo of group?.cities[cityId] ?? []) {
+      if (ids.has(photo.placeId)) continue;
+      ids.add(photo.placeId);
+      photos.push(photo);
+    }
+  }
+  return photos;
+}
 
 export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): boolean {
   const next = value as PlaceCatalog;
@@ -42,6 +65,7 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
   if (!Number.isSafeInteger(nextSelection) || nextSelection < 0) invalid();
   for (const city of CITIES) {
     const data = next.cities[city.id];
+    if (next.photoCatalog && (!next.photoCatalog.cities || Object.keys(next.photoCatalog.cities).length !== CITIES.length)) invalid();
     if (!data || !['municipal-boundary', 'city-center'].includes(data.coverage) || !Array.isArray(data.places) || !data.places.length || data.places.length > 200) invalid();
     const ids = new Set<string>();
     for (const p of data.places) {
@@ -52,15 +76,67 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
         || (p.website != null && !https(p.website)) || (p.openingHours != null && !text(p.openingHours, 1000))) invalid();
       ids.add(p.id);
     }
-    if (!Array.isArray(data.recommendations) || data.recommendations.length > 50) invalid();
-    const selected = new Set<string>();
-    for (const pick of data.recommendations!) {
-      if (!pick || !ids.has(pick.placeId) || selected.has(pick.placeId) || !text(pick.reason, 500) || (pick.reasonEn !== undefined && !text(pick.reasonEn, 500)) || !https(pick.sourceUrl)
-        || !text(pick.verifiedAt, 80) || !Number.isFinite(Date.parse(pick.verifiedAt)) || Date.parse(pick.verifiedAt) > now + 300_000) invalid();
-      selected.add(pick.placeId);
+    if (next.photoCatalog) {
+      const photos = next.photoCatalog.cities[city.id], seenPhotos = new Set<string>();
+      if (!Array.isArray(photos) || photos.length > 200) invalid();
+      for (const photo of photos) {
+        if (!photo || photo.cityId !== city.id || !ids.has(photo.placeId) || seenPhotos.has(photo.placeId)
+          || typeof photo.artist !== 'string' || !photo.artist.trim() || photo.artist.length > 1000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(photo.artist) || !/^[a-f0-9]{64}$/.test(photo.imageSha256) || !/^(CC BY(?:-SA)? [234]\.0|CC BY(?:-SA)? 2\.5|CC0|Public domain)$/.test(photo.license)
+          || !https(photo.uri) || !https(photo.sourceUrl) || !https(photo.licenseUrl)) invalid();
+        const image = new URL(photo.uri), source = new URL(photo.sourceUrl), license = new URL(photo.licenseUrl);
+        if (!['thumb.wikimedia.org', 'upload.wikimedia.org'].includes(image.hostname) || !image.pathname.startsWith('/wikipedia/commons/')
+          || source.hostname !== 'commons.wikimedia.org' || !source.pathname.startsWith('/wiki/File:')
+          || license.hostname !== 'creativecommons.org' || !/^\/(licenses|publicdomain)\//.test(license.pathname)) invalid();
+        seenPhotos.add(photo.placeId);
+      }
+    }
+    for (const [picks, dining] of [[data.recommendations, false], [data.diningRecommendations ?? [], true]] as const) {
+      if (!Array.isArray(picks) || picks.length > (dining ? 200 : 50)) invalid();
+      const selected = new Set<string>();
+      for (const pick of picks!) {
+        if (!pick || !ids.has(pick.placeId) || selected.has(pick.placeId) || !text(pick.reason, 500) || (pick.reasonEn !== undefined && !text(pick.reasonEn, 500)) || !https(pick.sourceUrl)
+          || !text(pick.verifiedAt, 80) || !Number.isFinite(Date.parse(pick.verifiedAt)) || Date.parse(pick.verifiedAt) > now + 300_000
+          || (dining && !data.places.some(p => p.id === pick.placeId && ['food', 'cafe'].includes(p.category)))) invalid();
+        selected.add(pick.placeId);
+      }
     }
   }
+  const optional: Pick<PhotoCatalog, 'additionalCatalog' | 'flickrCatalog'> = {};
+  for (const [field, discoveredVia] of [['additionalCatalog', 'Openverse'], ['flickrCatalog', 'Flickr']] as const) {
+    if (next.photoCatalog?.[field] === undefined) continue;
+    try {
+      const extra = next.photoCatalog[field];
+      if (!extra || !extra.cities || typeof extra.cities !== 'object' || Array.isArray(extra.cities)) invalid();
+      for (const [cityId, rows] of Object.entries(extra.cities)) {
+        if (!CITIES.some(city => city.id === cityId) || !Array.isArray(rows) || rows.length > 200) invalid();
+        const ids = new Set(next.cities[cityId].places.map(place => place.id)), seen = new Set<string>();
+        for (const photo of rows) {
+          if (!photo || photo.cityId !== cityId || !ids.has(photo.placeId) || seen.has(photo.placeId)
+            || !text(photo.artist, 1000) || !text(photo.title, 1000) || photo.discoveredVia !== discoveredVia
+            || !/^[a-f0-9]{64}$/.test(photo.imageSha256) || !https(photo.uri) || !https(photo.sourceUrl) || !https(photo.licenseUrl)) invalid();
+          const image = new URL(photo.uri), source = new URL(photo.sourceUrl), license = new URL(photo.licenseUrl);
+          const imageId = /^\/\d+\/([1-9]\d*)_[a-f0-9]+(?:_[a-z0-9]+)?\.(?:jpe?g|png)$/i.exec(image.pathname)?.[1];
+          const sourceId = /^\/photos\/[^/]+\/([1-9]\d*)\/?$/.exec(source.pathname)?.[1];
+          const cc = /^CC BY(-SA)? ([234]\.0|2\.5)$/.exec(photo.license);
+          const licensePath = photo.license === 'CC0' ? '/publicdomain/zero/1.0' : photo.license === 'Public domain' ? '/publicdomain/mark/1.0'
+            : cc ? `/licenses/by${cc[1] ? '-sa' : ''}/${cc[2]}` : null;
+          if (image.hostname !== 'live.staticflickr.com' || source.hostname !== 'www.flickr.com' || !sourceId || imageId !== sourceId
+            || image.port || image.search || image.hash || source.port || source.search || source.hash
+            || license.hostname !== 'creativecommons.org' || license.port || license.search || license.hash
+            || !licensePath || license.pathname.replace(/\/$/, '') !== licensePath) invalid();
+          seen.add(photo.placeId);
+        }
+      }
+      optional[field] = extra;
+    } catch { /* An invalid optional group must not discard the compatible Commons catalog. */ }
+  }
   if (nextSelection < currentSelection || (nextSelection === currentSelection && Date.parse(next.collectedAt) <= Date.parse(catalog.collectedAt))) return false;
+  if (next.externalRatings !== undefined) {
+    if (!Array.isArray(next.externalRatings) || next.externalRatings.some(row => !row || typeof row !== 'object'
+      || !next.cities[row.cityId]?.places.some(place => place.id === row.placeId && place.name === row.placeName))
+      || !replaceExternalPlaceRatings(next.externalRatings)) invalid();
+  }
+  if (next.photoCatalog) photoCatalog = { ...next.photoCatalog, additionalCatalog: optional.additionalCatalog, flickrCatalog: optional.flickrCatalog };
   catalog = next; CITY_PLACES_COLLECTED_AT = next.collectedAt; revision++;
   listeners.forEach(listener => listener());
   return true;
@@ -75,6 +151,25 @@ function reviewedPicks(cityId: string): PlaceRecommendation[] {
   return [...current, ...additions].slice(0, 50);
 }
 
+function displayedPicks(cityId: string): PlaceRecommendation[] {
+  if (catalog.recommendationTheme !== 'photo-spots') return [];
+  const city = catalog.cities[cityId];
+  const places = new Map([...(snapshot as PlaceCatalog).cities[cityId].places, ...city.places].map(place => [place.id, place]));
+  const photographed = new Set(photosForCity(cityId).map(photo => photo.placeId));
+  const picks = [...reviewedPicks(cityId), ...(city.diningRecommendations ?? [])];
+  const seen = new Set<string>();
+  const groups = (['places', 'food', 'cafe'] as const).map(category => picks.filter(pick => {
+    if (places.get(pick.placeId)?.category !== category || seen.has(pick.placeId)) return false;
+    seen.add(pick.placeId);
+    return true;
+  }).sort((a, b) => Number(photographed.has(b.placeId)) - Number(photographed.has(a.placeId))));
+  const selected: PlaceRecommendation[] = [];
+  for (let index = 0; groups.some(group => group[index]); index++) {
+    for (const group of groups) if (group[index]) selected.push(group[index]);
+  }
+  return selected.slice(0, 50);
+}
+
 // Keep unselected OSM identities available to existing detail and review links.
 export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): CityPlace[] {
   if (!CITIES.some(city => city.id === cityId)) throw new Error('INVALID_PLACE_CITY');
@@ -82,23 +177,41 @@ export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): 
   const city = catalog.cities[cityId];
   if (!city) throw new Error('PLACE_CATALOG_MISSING');
   // shortcut: verified photos cover a subset; add licensed same-place images as they are checked.
-  const photos = photoCatalog.cities[cityId] ?? [];
+  const photos = photosForCity(cityId);
   const photoOrder = new Map(photos.map((photo, index) => [photo.placeId, index]));
-  const reviewed = new Map(reviewedPicks(cityId).map(pick => [pick.placeId, pick]));
+  const reviewed = new Map(displayedPicks(cityId).map(pick => [pick.placeId, pick]));
+  const dining = new Map((city.diningRecommendations ?? []).map(pick => [pick.placeId, pick]));
   const currentIds = new Set(city.places.map(place => place.id));
   const archived = (snapshot as PlaceCatalog).cities[cityId]?.places.filter(place => !currentIds.has(place.id)) ?? [];
   return [...city.places, ...archived].filter(place => category === 'all' || place.category === category)
-    .map(place => ({ ...place, photo: photos[photoOrder.get(place.id) ?? -1] ?? null, recommendation: reviewed.get(place.id) }))
+    .map(place => {
+      const visit = (visitedPlaces as { cityId: string; placeId: string; sourceUrl: string }[]).find(row => row.cityId === cityId && row.placeId === place.id);
+      return { ...place, photo: photos[photoOrder.get(place.id) ?? -1] ?? null, recommendation: reviewed.get(place.id), diningRecommendation: dining.get(place.id),
+        glingVisited: visit ? { sourceUrl: visit.sourceUrl } : undefined };
+    })
     .sort((a, b) => (photoOrder.get(a.id) ?? photos.length) - (photoOrder.get(b.id) ?? photos.length));
 }
 
 export function getCityRecommendations(cityId: string, category: PlaceCategory = 'all'): CityPlace[] {
-  const places = getCityPlaces(cityId, category), picks = reviewedPicks(cityId);
+  const places = getCityPlaces(cityId, category), picks = displayedPicks(cityId);
   const byId = new Map(places.map(place => [place.id, place]));
   return picks.flatMap(pick => {
     const place = byId.get(pick.placeId);
     return place ? [{ ...place, recommendation: pick }] : [];
   });
+}
+
+// Keep all admitted map destinations even when the displayed Top list is capped.
+export function getCityDiscoveryPlaces(cityId: string): CityPlace[] {
+  const places = getCityPlaces(cityId), byId = new Map(places.map(place => [place.id, place]));
+  const picks = [...reviewedPicks(cityId), ...(catalog.cities[cityId].diningRecommendations ?? [])];
+  const ids = new Set([...picks.map(pick => pick.placeId), ...places.filter(place => place.glingVisited).map(place => place.id)]);
+  return [...ids].flatMap(id => { const place = byId.get(id); return place ? [place] : []; });
+}
+
+export function getCityBrowsePlaces(cityId: string, category: PlaceCategory = 'all'): CityPlace[] {
+  getCityPlaces(cityId, category);
+  return category === 'all' ? getCityRecommendations(cityId) : getCityDiscoveryPlaces(cityId).filter(place => place.category === category);
 }
 
 export function getCityPlacesCoverage(cityId: string): string {
