@@ -15,7 +15,7 @@ export function TabContent({ style, ...props }: ViewProps) {
     if (Platform.OS === 'web' || reducedMotion) return;
     progress.setValue(0);
     const animation = Animated.timing(progress, {
-      toValue: 1, duration: 200, easing: Easing.out(Easing.quad), useNativeDriver: true,
+      toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true,
     });
     animation.start();
     return () => { animation.stop(); progress.setValue(1); };
@@ -24,8 +24,8 @@ export function TabContent({ style, ...props }: ViewProps) {
   return <Animated.View {...props} style={[
     { backgroundColor: theme.background }, style,
     {
-      opacity: progress.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }),
-      transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [4, 0] }) }],
+      opacity: progress.interpolate({ inputRange: [0, 1], outputRange: [0.72, 1] }),
+      transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
     },
   ]} />;
 }

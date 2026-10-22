@@ -1,10 +1,12 @@
-import { useRef, type ComponentProps } from 'react';
+import { useRef, type ComponentProps, type Ref } from 'react';
 import { Switch as NativeSwitch, SectionList as NativeSectionList, type SectionListProps, type DefaultSectionT, Pressable as NativePressable, ScrollView as NativeScrollView, FlatList as NativeFlatList, type FlatListProps, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewProps } from 'react-native';
 import { behavior, behaviorView, scrollThresholds } from '@/lib/behavior-analytics';
 
 type Tracking = { analyticsId: string };
-export function Pressable({ analyticsId, onPress, ...props }: ComponentProps<typeof NativePressable> & Tracking) {
-  return <NativePressable {...props} onPress={onPress ? (event) => { behavior('press', analyticsId); onPress(event); } : undefined} />;
+export function Pressable({ analyticsId, onPress, style, ...props }: ComponentProps<typeof NativePressable> & Tracking) {
+  return <NativePressable {...props}
+    style={typeof style === 'function' ? style : ({ pressed }) => [style, pressed && { opacity: 0.65 }]}
+    onPress={onPress ? (event) => { behavior('press', analyticsId); onPress(event); } : undefined} />;
 }
 function useScroll(id: string, horizontal?: boolean | null, original?: ScrollViewProps['onScroll']) {
   const reached = useRef(0);
@@ -20,9 +22,9 @@ function useScroll(id: string, horizontal?: boolean | null, original?: ScrollVie
     }
   };
 }
-export function ScrollView({ analyticsId, onScroll, ...props }: ComponentProps<typeof NativeScrollView> & Tracking) {
+export function ScrollView({ analyticsId, onScroll, ref, ...props }: ComponentProps<typeof NativeScrollView> & Tracking & { ref?: Ref<NativeScrollView> }) {
   const record = useScroll(analyticsId, props.horizontal, onScroll);
-  return <NativeScrollView {...props} onScroll={record} scrollEventThrottle={props.scrollEventThrottle ?? 250} />;
+  return <NativeScrollView {...props} ref={ref} onScroll={record} scrollEventThrottle={props.scrollEventThrottle ?? 250} />;
 }
 export function FlatList<T>({ analyticsId, onScroll, ...props }: FlatListProps<T> & Tracking & { ref?: React.Ref<NativeFlatList<T>> }) {
   const record = useScroll(analyticsId, props.horizontal, onScroll);

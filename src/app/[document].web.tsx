@@ -44,6 +44,8 @@ export default function LegalDocumentPage() {
       '--line': WebNightColors.line,
       '--line-strong': WebNightColors.backgroundSelected,
       '--accent': WebNightColors.accent,
+      '--accent-fill': WebNightColors.accentFill,
+      '--accent-ink': WebNightColors.accentInk,
       '--accent-soft': WebNightColors.backgroundElement,
       '--navy': WebNightColors.navy,
     } as CSSProperties}>
