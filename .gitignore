@@ -7,6 +7,7 @@ node_modules/
 .expo/
 dist/
 .admin-dist/
+.merchant-dist/
 web-build/
 expo-env.d.ts
 
@@ -21,6 +22,12 @@ expo-env.d.ts
 
 # App Store Connect CLI local credentials and review artifacts
 /.asc/
+/credentials.json
+/.release/
+output/qa/**/.env*
+output/qa/**/push-credentials.json
+__pycache__/
+*.pyc
 
 # Metro
 .metro-health-check*
@@ -37,8 +44,8 @@ yarn-error.*
 # local env files
 .env
 .env.*
-!.env.example
-!.env.production
+!/.env.example
+!/.env.production
 
 # typescript
 *.tsbuildinfo
