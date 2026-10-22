@@ -79,7 +79,7 @@ async function confirm(title: string, body: string) {
 function CafeAction({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) {
 
   const theme = useTheme(), { play } = useInteractionFeedback();
-  return <Pressable analyticsId="merchant.naver.action" accessibilityRole="button" accessibilityLabel={label}
+  return <Pressable lens analyticsId="merchant.naver.action" accessibilityRole="button" accessibilityLabel={label}
     accessibilityState={{ disabled }} disabled={disabled} onPress={() => { play('selection'); onPress(); }}
     style={[styles.button, { borderColor: theme.line, backgroundColor: theme.backgroundElement, opacity: disabled ? 0.45 : 1 }]}><ThemedText type="smallBold">{label}</ThemedText></Pressable>;
 }

@@ -30,7 +30,7 @@ export function StateCard({ kind = 'empty', title, body, actionLabel, onAction }
     </View>
     <ThemedText type="smallBold" style={styles.title}>{title}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary" style={styles.body}>{body}</ThemedText>
-    {actionLabel && onAction && <Pressable analyticsId="components_state-card.pressable.1" accessibilityRole="button" accessibilityLabel={actionLabel}
+    {actionLabel && onAction && <Pressable lens analyticsId="components_state-card.pressable.1" accessibilityRole="button" accessibilityLabel={actionLabel}
       onPress={() => { play(kind === 'error' ? 'warning' : 'selection'); onAction(); }}
       style={({ pressed }) => [styles.action, { backgroundColor: theme.accent, opacity: pressed ? 0.8 : 1 }]}>
       <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{actionLabel}</ThemedText>

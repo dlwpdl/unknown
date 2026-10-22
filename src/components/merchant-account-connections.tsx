@@ -20,7 +20,7 @@ import { selectChatBusiness } from '@/lib/chat-identity';
 function AccountAction({ label, onPress, disabled, primary = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean }) {
 
   const theme = useTheme(), { play } = useInteractionFeedback();
-  return <Pressable analyticsId="merchant.connection.action" accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!disabled }}
+  return <Pressable lens analyticsId="merchant.connection.action" accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!disabled }}
     disabled={disabled} onPress={() => { play('selection'); onPress(); }}
     style={({ pressed }) => [styles.action, { borderColor: theme.line, backgroundColor: primary ? theme.accent : theme.backgroundElement, opacity: disabled ? 0.45 : pressed ? 0.7 : 1 }]}>
     <ThemedText type="smallBold" style={primary ? { color: theme.background } : undefined}>{label}</ThemedText>
