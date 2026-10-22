@@ -19,6 +19,8 @@ values
   ('61111111-1111-1111-1111-111111111111', '모임호스트', 'vancouver', 2),
   ('62222222-2222-2222-2222-222222222222', '모임신청자', 'vancouver', 2),
   ('6aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '모임관리자', 'vancouver', 3);
+insert into auth.sessions(id,user_id,aal,created_at)
+values('6aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','6aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','aal2',now());
 
 create temporary table meetup_state (post_id uuid, request_id uuid, conversation_id uuid, report_id uuid);
 grant select, insert, update on meetup_state to authenticated;
@@ -117,7 +119,7 @@ update meetup_state
 set report_id = public.create_report('post', post_id, 'other', '관리자 조치 테스트');
 
 reset role;
-select set_config('request.jwt.claims', '{"sub":"6aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","role":"authenticated","app_metadata":{"role":"admin"}}', true);
+select set_config('request.jwt.claims', '{"sub":"6aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","role":"authenticated","aal":"aal2","session_id":"6aaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","app_metadata":{"role":"admin"}}', true);
 set local role authenticated;
 select lives_ok(
   $$select public.moderate_report((select report_id from meetup_state), 'warned', '커뮤니티 가이드를 확인해주세요.')$$,

@@ -1,53 +1,79 @@
 // @ts-nocheck
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { postSeo, jsonLd, PUBLIC_SITE, PUBLIC_SOURCE } from '../../../src/lib/public-seo.ts';
 
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
 Deno.serve(async (request) => {
-  if (request.method !== 'GET') return new Response('Method not allowed', { status: 405 });
-
-  const id = new URL(request.url).searchParams.get('id') ?? '';
-  if (!UUID.test(id)) return page('글을 찾을 수 없어요', '올바르지 않은 공유 주소예요.', '', 400);
-
+  if (request.method !== 'GET') return unavailable(405);
+  const params = new URL(request.url).searchParams;
+  const format = params.get('format');
+  if (format && !['markdown', 'sitemap'].includes(format)) return unavailable(400);
+  const id = params.get('id') ?? '';
+  const catalog = format === 'sitemap' || (format === 'markdown' && !params.has('id'));
+  if (!catalog && !UUID.test(id)) return unavailable(400);
+  const city = params.get('city') ?? 'vancouver';
+  const before = params.get('before_sort'), beforeId = params.get('before_id');
+  if (catalog && (!/^[a-z]+(?:-[a-z]+)*$/.test(city) || city.length > 40
+      || params.has('before_sort') !== params.has('before_id')
+      || (params.has('before_sort') && (!before || !beforeId || !Number.isFinite(Date.parse(before)) || !UUID.test(beforeId))))) return unavailable(400);
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
     { auth: { persistSession: false } },
   );
-  const result = await supabase.rpc('get_public_post', { p_post_id: id });
-  const post = result.data?.[0];
-  if (result.error || !post) return page('글을 찾을 수 없어요', '삭제되었거나 공개되지 않은 글이에요.', '', 404);
+  try {
+    if (catalog) {
+      let sort = before, cursor = beforeId;
+      const ids = new Set<string>(), entries: string[] = [];
+      while (true) {
+        const result = await supabase.rpc('get_public_feed_page_v2', { p_city_id: city, p_tag_id: null, p_query: null, p_before_sort: sort, p_before_id: cursor, p_limit: 30 });
+        if (result.error) return unavailable(503);
+        const rows = result.data ?? [];
+        for (const row of rows) {
+          if (ids.has(row.id) || !UUID.test(row.id) || ids.size === 50000) return unavailable(503);
+          ids.add(row.id);
+          entries.push(format === 'sitemap' ? `<url><loc>${PUBLIC_SITE}/post?id=${row.id}</loc></url>`
+            : `- [${String(row.title).replace(/[\\[\]\n\r]/g, ' ')}](${PUBLIC_SOURCE}?format=markdown&id=${row.id})`);
+        }
+        const last = rows.at(-1);
+        if (format === 'markdown') {
+          if (rows.length === 30 && last) entries.push(`\n[다음 페이지](${PUBLIC_SOURCE}?${new URLSearchParams({ format: 'markdown', city, before_sort: last.sort_at ?? last.created_at, before_id: last.id })})`);
+          return new Response(`# 글링 · ${city} 공개 글\n\n${entries.join('\n')}\n`, { headers: { 'Content-Type': 'text/markdown; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, follow', 'X-Content-Type-Options': 'nosniff' } });
+        }
+        if (rows.length < 30) break;
+        sort = last.sort_at ?? last.created_at; cursor = last.id;
+      }
+      return new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${entries.join('')}</urlset>`, { headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=60', 'X-Content-Type-Options': 'nosniff' } });
+    }
+    const result = await supabase.rpc('get_shared_link_preview', { p_post_id: id });
+    const preview = result.data;
+    if (result.error) return unavailable(503);
+    if (!preview) return unavailable(404);
+    const metadata = postSeo({ id, title: preview.title, body: '', author: { nickname: '' }, tag: { label: preview.label ?? '글링' } }, preview.city ?? '');
+    if (format === 'markdown') return new Response(`# ${preview.title.replace(/[\r\n]/g, ' ')}\n\n원문: ${metadata.canonical}\n도시: ${preview.city ?? ''}\n주제: ${preview.label ?? ''}\n\n전체 내용은 글링에서 로그인 후 확인해주세요.\n`, { headers: { 'Content-Type': 'text/markdown; charset=utf-8', 'Cache-Control': 'no-store', 'Link': `<${metadata.canonical}>; rel="canonical"`, 'X-Robots-Tag': 'noindex, follow', 'X-Content-Type-Options': 'nosniff' } });
+    let imageUrl = '';
+    if (preview.imagePath) {
+      const signed = await supabase.storage.from('post-images').createSignedUrl(preview.imagePath, 3600);
+      imageUrl = signed.data?.signedUrl ?? '';
+    }
+    return page(preview.title, 200, id, imageUrl, metadata);
 
-  let imageUrl = '';
-  const imagePath = post.image_paths?.[0];
-  if (imagePath) {
-    const signed = await supabase.storage.from('post-images').createSignedUrl(imagePath, 3600);
-    imageUrl = signed.data?.signedUrl ?? '';
-  }
-
-  return page(post.title, post.body, post.author_nickname, 200, id, imageUrl);
+  } catch { return unavailable(503); }
 });
 
-function page(title: string, body: string, author: string, status: number, id = '', imageUrl = '') {
-  const safeTitle = escapeHtml(title);
-  const safeBody = escapeHtml(body);
-  const safeAuthor = escapeHtml(author);
-  const deepLink = id ? `gling://post/${encodeURIComponent(id)}` : 'gling://';
-  const imageMeta = imageUrl ? `<meta property="og:image" content="${escapeHtml(imageUrl)}">` : '';
-  const image = imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="게시글 사진">` : '';
-  return new Response(`<!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${safeTitle} · gling</title><meta name="description" content="${escapeHtml(body.slice(0, 160))}">
-<meta property="og:type" content="article"><meta property="og:site_name" content="gling"><meta property="og:title" content="${safeTitle}"><meta property="og:description" content="${escapeHtml(body.slice(0, 160))}">${imageMeta}
-<style>body{margin:0;background:#f7f5ef;color:#17233f;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}main{max-width:680px;margin:0 auto;padding:32px 20px 72px}.logo{font-weight:800;color:#ef5b45;font-size:24px}article{margin-top:28px;background:#fff;border:1px solid #e3dfd5;border-radius:18px;padding:24px}h1{font-size:26px;line-height:1.3;margin:10px 0 14px}p{font-size:16px;line-height:1.7;white-space:pre-wrap}.author{color:#687085;font-size:14px}img{width:100%;max-height:520px;object-fit:cover;border-radius:12px;margin:14px 0}a{display:block;margin-top:24px;text-align:center;background:#ef5b45;color:#fff;text-decoration:none;padding:15px;border-radius:999px;font-weight:700}</style>
-</head><body><main><div class="logo">gling</div><article><div class="author">${safeAuthor}</div><h1>${safeTitle}</h1>${image}<p>${safeBody}</p><a href="${deepLink}">앱에서 대화·참여하기</a><a href="https://gling.ej-entertainment.com/post?id=${encodeURIComponent(id)}">웹에서 이야기와 모임 둘러보기</a></article></main></body></html>`, {
-    status,
-    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=60' },
-  });
+function unavailable(status: number) {
+  return new Response(status === 503 ? '잠시 후 다시 시도해 주세요.' : '공개 글을 찾을 수 없어요.', { status, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow', 'X-Content-Type-Options': 'nosniff', ...(status === 405 ? { Allow: 'GET' } : {}) } });
 }
 
+function page(title: string, status: number, id: string, imageUrl: string, metadata: ReturnType<typeof postSeo>) {
+  const safeTitle = escapeHtml(title), destination = `${PUBLIC_SITE}/post?id=${id}`;
+  return new Response(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${safeTitle} · 글링</title><meta name="description" content="${escapeHtml(metadata.description)}"><link rel="canonical" href="${destination}">
+<meta property="og:type" content="website"><meta property="og:site_name" content="글링"><meta property="og:title" content="${safeTitle}"><meta property="og:description" content="${escapeHtml(metadata.description)}"><meta property="og:url" content="${destination}">
+${imageUrl ? `<meta property="og:image" content="${escapeHtml(imageUrl)}">` : ''}<script type="application/ld+json">${jsonLd(metadata.schema)}</script>
+<style>body{margin:0;background:#0B0B12;color:#F6F3F0;font:16px/1.5 system-ui,sans-serif}main{max-width:600px;margin:40px auto;padding:20px}article{border:1px solid #343443;border-radius:16px;background:#171722;padding:20px}img{width:100%;border-radius:12px}a{display:flex;min-height:44px;align-items:center;justify-content:center;border-radius:12px;background:#CBB9FF;color:#171123;text-decoration:none;padding:12px}p{color:#B7B4C3}</style></head><body><main><article><h1>${safeTitle}</h1>${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="대표 이미지">` : ''}<p>${escapeHtml(metadata.description)}</p><a href="${destination}">로그인하고 전체 내용 보기</a></article></main></body></html>`, { status, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; img-src https:; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'" } });
+}
 function escapeHtml(value: string) {
-  return String(value).replace(/[&<>"']/g, (character) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  })[character]!);
+  return String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]!));
 }

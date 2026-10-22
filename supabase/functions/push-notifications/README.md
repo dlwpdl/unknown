@@ -1,5 +1,9 @@
 # Gling push delivery
 
+2026-10-12: migration `20261012133000_conversational_notifications.sql` updates generated inbox/push text to conversational Korean without changing recipients, preferences, schedules or notification history. Preserve direct-message preview opt-in and administrator MFA. Weekly ranking alerts now open their winning `/post/UUID`; `/profile/meetup-reviews` is allowed by both the worker and the app router. The worker change is live in version 13; the app router change needs the next authorized app build. Verification and the complete copy comparison are in `output/qa/notification-conversation-2026-10-12/`.
+
+2026-10-12 owner correction: migration `20261012151500_popular_notification_titles.sql` makes popular post, rising place post, weekly ranking and popular meetup alerts show only the actual post title. Existing title limits, eligibility, quiet hours, delivery spacing and target routes remain. A post that is both fresh and rising follows the title-only rule. Live SQL verification is in `output/qa/notification-title-first-2026-10-12/`; no app or worker deployment is required.
+
 Apply migrations through `0041`, configure the native EAS project and FCM/APNs credentials, then deploy `push-notifications`. Nothing in the migration creates a network scheduler or sends a test alert.
 
 The worker requires `PUSH_NOTIFICATIONS_SECRET` (a random server-only secret). Supabase provides `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. Set optional `EXPO_ACCESS_TOKEN` when enhanced push security is enabled in EAS. Never put these secrets in Expo public environment variables or commit them.

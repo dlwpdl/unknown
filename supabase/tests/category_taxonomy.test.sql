@@ -4,13 +4,13 @@ select plan(7);
 
 select results_eq(
   $$select slug from public.tags order by sort_order$$,
-  array['life', 'food', 'travel', 'shopping', 'settlement', 'transport', 'housing', 'education', 'meetup'],
-  'nine broad categories exist in display order'
+  array['life', 'festival', 'food', 'travel', 'shopping', 'settlement', 'transport', 'housing', 'education', 'business', 'meetup', 'jobs', 'used'],
+  'jobs and used are the final categories'
 );
 
 select results_eq(
   $$select label from public.tags order by sort_order$$,
-  array['라이프', '맛집', '여행', '쇼핑', '정착', '이동', '주거', '교육', '모임'],
+  array['라이프', '페스티벌', '맛집', '여행', '쇼핑', '정착', '이동', '주거', '교육', '비즈니스', '모임', '구인구직', '중고거래'],
   'category labels match the app'
 );
 
@@ -21,7 +21,7 @@ select results_eq(
 );
 
 select results_eq(
-  $$select count(*)::integer from public.tags where slug in ('daily', 'question', 'info', 'roommate', 'used', 'rent_offer', 'rent_seek')$$,
+  $$select count(*)::integer from public.tags where slug in ('daily', 'question', 'info', 'roommate', 'rent_offer', 'rent_seek')$$,
   array[0],
   'legacy tags are removed'
 );

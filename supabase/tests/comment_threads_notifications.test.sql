@@ -18,6 +18,8 @@ insert into public.profiles (id,nickname,city_id) values
   ('40333333-3333-3333-3333-333333333333','스레드답글','vancouver'),
   ('40444444-4444-4444-4444-444444444444','스레드다른도시','toronto'),
   ('40aaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','스레드관리자','vancouver');
+insert into auth.sessions(id,user_id,aal,created_at)
+values('40aaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','40aaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','aal2',now());
 insert into public.posts (id,author_id,city_id,tag_id,title,body) values
   ('40555555-5555-5555-5555-555555555555','40111111-1111-1111-1111-111111111111','vancouver',1,'스레드 테스트','공개 글입니다.'),
   ('40666666-6666-6666-6666-666666666666','40444444-4444-4444-4444-444444444444','toronto',1,'다른 글','다른 도시입니다.');
@@ -28,8 +30,8 @@ grant select,update on thread_state to authenticated;
 select set_config('request.jwt.claims','{"sub":"40222222-2222-2222-2222-222222222222","role":"authenticated"}',true);
 set local role authenticated;
 select is(public.get_notification_preferences(),
-  '{"post_likes":true,"comment_likes":true,"replies":true,"direct_requests":true,"messages":true,"meetups":true,"interests":false,"nearby":false,"push_enabled":false,"interest_tag_ids":[],"interest_hashtags":[]}'::jsonb,
-  'missing preferences enable activity only and require opt-in for discovery and push');
+  '{"post_likes":true,"comment_likes":true,"replies":true,"direct_requests":true,"messages":true,"meetups":true,"interests":false,"nearby":false,"push_enabled":false,"message_preview":false,"trending":true,"city_food":true,"city_places":true,"merchant_reviews":true,"merchant_updates":true,"merchant_operations":true,"account_security":true,"interest_tag_ids":[],"interest_hashtags":[]}'::jsonb,
+  'missing preferences retain every current category default while interests, nearby, push and message previews require opt-in');
 select throws_ok($$select public.update_notification_preferences('{"user_id":"40111111-1111-1111-1111-111111111111"}')$$,
   'P0001','INVALID_PREFERENCES','cannot patch another account or an unknown preference');
 select throws_ok($$select public.update_notification_preferences('{"replies":"false"}')$$,
@@ -108,13 +110,20 @@ insert into public.comments(id,post_id,author_id,body,created_at)
 update thread_state set second_root='40777777-7777-7777-7777-777777777777';
 select set_config('request.jwt.claims','{"role":"anon"}',true);
 set local role anon;
+select throws_ok($$select * from public.get_comment_thread_page('40555555-5555-5555-5555-555555555555')$$,
+  '42501',null,'guests cannot read thread bodies');
+select throws_ok($$select * from public.get_comment_thread_context('40555555-5555-5555-5555-555555555555','40777777-7777-7777-7777-777777777777')$$,
+  '42501',null,'guests cannot resolve thread content before login');
+select throws_ok($$select public.get_notification_preferences()$$,'42501',null,'guests cannot access preference RPCs');
+reset role;
+select set_config('request.jwt.claims','{"sub":"40111111-1111-1111-1111-111111111111","role":"authenticated"}',true);
+set local role authenticated;
 select results_eq($$select id from public.get_comment_thread_page('40555555-5555-5555-5555-555555555555',null,null,null,1)$$,
-  array['40777777-7777-7777-7777-777777777777'::uuid],'guest root pagination orders newest first');
+  array['40777777-7777-7777-7777-777777777777'::uuid],'signed in root pagination orders newest first');
 select is((select count(*)::integer from public.get_comment_thread_page('40555555-5555-5555-5555-555555555555',null,'2030-01-02','40777777-7777-7777-7777-777777777777',31)),1,
   'root cursor returns the next root without including replies');
 select results_eq($$select id from public.get_comment_thread_context('40555555-5555-5555-5555-555555555555','40777777-7777-7777-7777-777777777777')$$,
-  array['40777777-7777-7777-7777-777777777777'::uuid],'guests may resolve visible notification targets');
-select throws_ok($$select public.get_notification_preferences()$$,'42501',null,'guests cannot access preference RPCs');
+  array['40777777-7777-7777-7777-777777777777'::uuid],'signed in recipients may resolve visible notification targets');
 reset role;
 select set_config('request.jwt.claims','{"sub":"40111111-1111-1111-1111-111111111111","role":"authenticated"}',true);
 set local role authenticated;
@@ -252,7 +261,7 @@ select throws_ok($$select private.create_notification('40222222-2222-2222-2222-2
 reset role;
 select private.create_notification('40aaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','message','40222222-2222-2222-2222-222222222222',
   'user','40222222-2222-2222-2222-222222222222','관리자 개인 대화 요청','/chat?view=requests');
-select set_config('request.jwt.claims','{"sub":"40aaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","role":"authenticated","app_metadata":{"role":"admin"}}',true);
+select set_config('request.jwt.claims','{"sub":"40aaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","role":"authenticated","aal":"aal2","session_id":"40aaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","app_metadata":{"role":"admin"}}',true);
 set local role authenticated;
 select is((select count(*)::integer from public.comments where id=(select reply_id from thread_state)),1,
   'authorized admin access still includes inactive author content');

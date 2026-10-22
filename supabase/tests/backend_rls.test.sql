@@ -23,7 +23,7 @@ values
   ('11111111-1111-1111-1111-111111111111', '사용자일', 'vancouver'),
   ('22222222-2222-2222-2222-222222222222', '사용자이', 'vancouver'),
   ('33333333-3333-3333-3333-333333333333', '외부사용자', 'vancouver'),
-  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '관리자', 'vancouver');
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'RLS검증관리자', 'vancouver');
 
 set local role anon;
 select throws_ok(
@@ -63,19 +63,17 @@ select lives_ok(
     )$$,
   'users create their own daily post'
 );
-select throws_ok(
+select lives_ok(
   $$select public.create_post(
       'vancouver',
       (select id from public.tags where slug = 'life'),
       '두 번째 글',
-      '같은 날에는 허용되지 않는다',
+      '같은 날에도 이야기를 더 나눌 수 있다',
       array[]::text[],
       array[]::text[],
       null
     )$$,
-  'P0001',
-  'DAILY_POST_LIMIT_REACHED',
-  'daily post limit is enforced by the database'
+  'another daily story is allowed by the database'
 );
 
 create temporary table test_state (

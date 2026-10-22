@@ -2,7 +2,8 @@ begin;
 
 select plan(20);
 
-select has_function('public', 'create_post', array['text', 'smallint', 'text', 'text', 'text[]', 'text[]', 'jsonb'], 'post creation is server controlled');
+-- 0046 added p_kind and p_price; the older seven-argument shape no longer exists as its own function.
+select has_function('public', 'create_post', array['text', 'smallint', 'text', 'text', 'text[]', 'text[]', 'jsonb', 'text', 'numeric'], 'post creation is server controlled');
 select has_function('public', 'get_post_quota', array[]::text[], 'daily quota is server calculated');
 select has_function('public', 'get_public_post', array['uuid'], 'single public post lookup exists');
 select has_function('public', 'record_post_share', array['uuid'], 'share count is server controlled');
@@ -53,19 +54,17 @@ select results_eq(
   array['1/1'],
   'quota reflects the persisted post'
 );
-select throws_ok(
+select lives_ok(
   $$select public.create_post(
       'vancouver',
       (select id from public.tags where slug = 'life'),
       '두 번째 글',
-      '기본 플랜은 하루 한 편입니다.',
+      '기본 플랜도 오늘 글을 더 올릴 수 있습니다.',
       array[]::text[],
       array[]::text[],
       null
     )$$,
-  'P0001',
-  'DAILY_POST_LIMIT_REACHED',
-  'daily post limit is enforced atomically'
+  'free members can publish another Today story'
 );
 
 insert into public.post_reactions (post_id, user_id, kind)

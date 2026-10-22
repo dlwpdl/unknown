@@ -1,6 +1,6 @@
 begin;
 
-select plan(6);
+select plan(8);
 
 select has_function(
   'public',
@@ -30,13 +30,22 @@ select results_eq(
   array[20],
   'the Vancouver seed feed is visible'
 );
+select ok(not exists(select 1 from public.get_public_feed(null,100) where body<>''),
+  'anonymous feed discovery contains metadata without post bodies');
+select throws_ok($$select * from public.get_public_comments(array(select id from public.get_public_feed(null,100)))$$,
+  '42501',null,'anonymous discovery does not grant comment content');
+
+reset role;
+select set_config('request.jwt.claims','{"sub":"10000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+set local role authenticated;
 select results_eq(
   $$select count(*)::integer from public.get_public_comments(
       array(select id from public.get_public_feed(null, 100))
     )$$,
   array[62],
-  'seed comments are visible through the public function'
+  'signed in readers retain comments through the existing function'
 );
 
+reset role;
 select * from finish();
 rollback;
