@@ -633,7 +633,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     <TabContent style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={[styles.headRow, { backgroundColor: theme.background }]}>
-          <Image source={theme === Colors.light ? require('@/assets/brand/gling-night-wordmark-light.png') : require('@/assets/brand/gling-night-wordmark.png')} style={styles.wordmark} contentFit="contain" accessibilityLabel={t.appName} />
+          <Pressable analyticsId="feed.home" accessibilityRole="button" accessibilityLabel={`${t.appName}, ${t.tabs.today}`}
+            onPress={() => { play('selection'); router.navigate('/'); }} style={styles.homeButton}>
+            <Image source={theme === Colors.light ? require('@/assets/brand/gling-night-wordmark-light.png') : require('@/assets/brand/gling-night-wordmark.png')} style={styles.wordmark} contentFit="contain" accessible={false} />
+          </Pressable>
           <GlassSurface tone="control" interactive style={styles.cityGlass}><Pressable analyticsId="components_feed-screen.pressable.1"
             onPress={() => { play('reaction'); setCityPicker(true); }} accessibilityRole="button"
             accessibilityLabel={`${tr(city.name)}, ${t.feed.cityPickerTitle}`}
@@ -1175,6 +1178,7 @@ const styles = StyleSheet.create({
   categoryLoading: { minHeight: 280, alignItems: 'center', justifyContent: 'center' },
   headRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, paddingHorizontal: Spacing.three, paddingTop: Spacing.one, paddingBottom: Spacing.two },
   wordmark: { width: 64, height: 36 },
+  homeButton: { minHeight: 44, justifyContent: 'center' },
   cityGlass: { marginLeft: 'auto', borderRadius: 12, flexShrink: 1 },
   iconGlass: { borderRadius: 22 },
   cityButton: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, minHeight: 44, borderRadius: 12, flexShrink: 1, paddingHorizontal: Spacing.two },
