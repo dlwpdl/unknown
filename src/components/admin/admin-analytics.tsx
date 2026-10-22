@@ -1,10 +1,10 @@
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Switch, useWindowDimensions, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import { adminOptionKeys } from '@/lib/admin';
-import { shortId } from '@/lib/admin-labels';
 import { isCompactAdminWidth } from '@/lib/admin-layout';
 import { loadAdminAnalytics, type AdminAnalytics, type AnalyticsFilters, type Breakdown } from '@/lib/admin-analytics';
 import { ADMIN_PAGE_SIZE } from '@/lib/admin-data';
@@ -13,12 +13,13 @@ import { supabase } from '@/lib/supabase';
 import { AdminFilterBar } from './admin-table-controls';
 
 const TABS = { overview: '요약', members: '회원', traffic: '트래픽', behavior: '행동 분석', revenue: '결제·홍보', logs: '운영 로그' } as const;
-const TIERS = { all: '전체 등급', free: '무료', plus: '플러스', premium: '프리미엄' } as const;
+const TIERS = { all: '전체 등급', free: '무료', plus: '플러스', pro:'프로', premium: '프리미엄' } as const;
 const INITIAL_FILTERS: AnalyticsFilters = { days: 30, city: null, tier: 'all', includeInternal: false, offset: 0 };
 
 export function AdminAnalyticsView({ localPreview, onUser, refreshSignal = 0 }: {
   localPreview: boolean; onUser: (id: string) => void; refreshSignal?: number;
 }) {
+  const { play } = useInteractionFeedback();
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [tab, setTab] = useState<keyof typeof TABS>('overview');
   const [retry, setRetry] = useState(0);
@@ -52,11 +53,11 @@ export function AdminAnalyticsView({ localPreview, onUser, refreshSignal = 0 }: 
           <Choices label="조회 기간" values={[7, 30, 90].map((days) => ({ key: String(days), label: `${days}일` }))} selected={String(filters.days)} onSelect={(value) => filter({ days: Number(value) as AnalyticsFilters['days'] })} />
           <Choices label="선호 지역" values={[{ key: '', label: '전체 도시' }, ...CITIES.map((city) => ({ key: city.id, label: city.name }))]} selected={filters.city ?? ''} onSelect={(city) => filter({ city: city || null })} />
           <Choices label="현재 멤버십" values={Object.entries(TIERS).map(([key, label]) => ({ key, label }))} selected={filters.tier} onSelect={(tier) => filter({ tier: tier as AnalyticsFilters['tier'] })} />
-          <View style={styles.switchRow}><Switch value={filters.includeInternal} onValueChange={(includeInternal) => filter({ includeInternal })} accessibilityLabel="목·심사·관리자 계정 포함" trackColor={{ true: Colors.light.accent }} /><ThemedText type="small">목·심사·관리자 계정 포함</ThemedText></View>
+          <View style={styles.switchRow}><Switch value={filters.includeInternal} onValueChange={(includeInternal) => { play('selection'); return filter({ includeInternal }); }} accessibilityLabel="목·심사·관리자 계정 포함" trackColor={{ true: Colors.admin.accent }} /><ThemedText type="small">목·심사·관리자 계정 포함</ThemedText></View>
         </View>
       </AdminFilterBar>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs} accessibilityRole="tablist" accessibilityLabel="분석 메뉴">
-        {Object.entries(TABS).map(([key, label]) => <Pressable key={key} accessibilityRole="tab" aria-selected={key === tab} tabIndex={key === tab ? 0 : -1} {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})} onPress={() => setTab(key as keyof typeof TABS)} style={({ pressed }) => [styles.tab, key === tab && styles.selectedTab, pressed && styles.pressed]}><ThemedText type="smallBold" style={key === tab ? styles.accent : styles.muted}>{label}</ThemedText></Pressable>)}
+        {Object.entries(TABS).map(([key, label]) => <Pressable key={key} accessibilityRole="tab" aria-selected={key === tab} tabIndex={key === tab ? 0 : -1} {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})} onPress={() => { play('selection'); return setTab(key as keyof typeof TABS); }} style={({ pressed }) => [styles.tab, key === tab && styles.selectedTab, pressed && styles.pressed]}><ThemedText type="smallBold" style={key === tab ? styles.accent : styles.muted}>{label}</ThemedText></Pressable>)}
       </ScrollView>
       {localPreview && <Notice title="운영 데이터 미연결" text="로컬 미리보기입니다. 실제 회원·접속·매출 수치는 관리자 로그인 후 표시됩니다." />}
       {loading && <View accessibilityRole="progressbar" accessibilityLabel="분석 데이터 불러오는 중" style={styles.notice}><ThemedText style={styles.muted}>선택한 조건으로 분석하고 있어요.</ThemedText></View>}
@@ -148,17 +149,23 @@ function Traffic({ data, onUser }: { data: AdminAnalytics | null; onUser: (id: s
 }
 
 function Behavior({ data }: { data: AdminAnalytics | null }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const rows = data?.behavior;
+  const stepNames: Record<string, string> = { signup_complete: '회원가입 완료', consent_complete: '필수 동의 완료', meetup_request_complete: '모임 신청 완료', 'post.poll.vote': '투표 참여', 'ticketmaster.meetup.created': '행사 모임 등록' };
   return <>
     <Notice title="버튼 · 화면 · 읽기 깊이" text="고정된 UI 식별자만 기록합니다. 입력값·대화 내용은 수집하지 않습니다. 익명 방문은 메모리 세션 기준이며 도시·등급 필터를 적용하면 제외됩니다. 단계 발생 수는 순서 기반 전환율이 아닙니다. 기존 빌드의 미수집 활동은 복원되지 않습니다." />
     <SectionTitle title="화면별 활동" note="체류는 앱 활성·웹 표시 상태에서 측정한 합계입니다. 앱 강제 종료·오프라인 상황에서는 일부 누락될 수 있습니다." />
     <DataTable headers={['플랫폼 / 화면', '조회', '세션', '활성 체류 (분)', '버튼 클릭', '끝까지 스크롤']} rows={(rows?.screens ?? []).map((r) => ({ key: `${r.platform}:${r.screen}`, cells: [`${r.platform} / ${r.screen}`, number(r.views), number(r.sessions), (r.dwellMs / 60000).toFixed(1), number(r.presses), number(r.bottoms)] }))} />
-    <SectionTitle title="가입 · 모임 신청 완료" note="서버에서 성공한 작업을 클라이언트가 보고한 횟수입니다. 버튼 클릭과 구분하며, 결제·회원 원장 대용이 아닙니다." />
-    <DataTable headers={['단계', '플랫폼', '횟수', '세션']} rows={(rows?.steps ?? []).map((r) => ({ key: `${r.platform}:${r.screen}:${r.target}`, cells: [r.target, r.platform, number(r.count), number(r.sessions)] }))} />
+    <SectionTitle title="완료한 작업" note="서버에서 성공한 작업을 클라이언트가 보고한 횟수입니다. 버튼 클릭과 구분하며, 결제·회원 원장 대용이 아닙니다." />
+    <DataTable headers={['작업', '플랫폼', '횟수', '세션']} rows={(rows?.steps ?? []).map((r) => ({ key: `${r.platform}:${r.screen}:${r.target}`, cells: [stepNames[r.target] ?? '기타 완료 기록', r.platform, number(r.count), number(r.sessions)] }))} />
+    <Action label={detailsOpen ? '세부 분석 기록 닫기' : '세부 분석 기록'} expanded={detailsOpen} onPress={() => setDetailsOpen(value => !value)} />
+    {detailsOpen && <><SectionTitle title="완료한 작업 원본 기록" />
+    <DataTable headers={['단계 식별자', '플랫폼', '횟수', '세션']} rows={(rows?.steps ?? []).map((r) => ({ key: `${r.platform}:${r.screen}:${r.target}`, cells: [r.target, r.platform, number(r.count), number(r.sessions)] }))} />
     <SectionTitle title="버튼 · 스크롤 상세" note="고정 식별자는 코드의 analyticsId와 대응합니다. 25/50/75/100은 읽기 깊이입니다. 상위 300개 집계." />
     <DataTable headers={['화면 / 플랫폼', '종류', 'UI 식별자', '깊이', '횟수', '세션']} rows={(rows?.actions ?? []).filter((r) => r.kind !== 'success').map((r) => ({ key: `${r.platform}:${r.screen}:${r.kind}:${r.target}:${r.value}`, cells: [`${r.screen} / ${r.platform}`, r.kind, r.target, r.kind === 'scroll' ? `${r.value}%` : '—', number(r.count), number(r.sessions)] }))} />
     <SectionTitle title="최근 행동 순서" note="최근 100개. 같은 세션의 순번으로 행동 순서를 확인합니다. 시각은 서버 수신 시각입니다." />
     <DataTable headers={['수신 시각', '세션 / 순번', '화면', '행동', 'UI 식별자', '값']} rows={(rows?.recent ?? []).map((r) => ({ key: `${r.sessionId}:${r.seq}`, cells: [date(r.createdAt), `${r.sessionId} / ${r.seq}${r.anonymous ? ' (익명)' : ''}`, `${r.platform} / ${r.screen}`, r.kind, r.target, String(r.value)] }))} />
+    </>}
   </>;
 }
 
@@ -176,12 +183,19 @@ function Revenue({ data, onUser }: { data: AdminAnalytics | null; onUser: (id: s
 }
 
 function Logs({ data }: { data: AdminAnalytics | null }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
   return <>
     <SectionTitle title="관리자 접근 기록" note="선택 기간의 전체 운영 감사 기록입니다. 도시·회원 멤버십 필터는 적용하지 않습니다." />
     <View style={styles.metrics}>{data?.auditSummary.length ? data.auditSummary.map((row) => <Metric key={row.key} label={scopeLabel(row.key)} value={row.count} detail="선택 기간 열람·작업 기록" />) : <Empty />}</View>
-    <DataTable headers={['시각 (UTC)', '운영자 ID', '작업']} rows={(data?.audit ?? []).map((entry) => ({ key: String(entry.id), cells: [date(entry.createdAt), entry.actorId, scopeLabel(entry.scope)] }))} />
+    <DataTable headers={['시각 (UTC)', '작업']} rows={(data?.audit ?? []).map((entry) => ({ key: String(entry.id), cells: [date(entry.createdAt), scopeLabel(entry.scope)] }))} />
     <SectionTitle title="안전 분석 오류" note={`전체 운영 · 최근 실패 ${data ? `${data.errors.length}건` : '미확인'} (최대 50개) · 콘텐츠 원문과 내부 오류 상세는 표시하지 않습니다.`} />
-    <DataTable headers={['기록 ID', '상태', '시도 횟수', '생성 시각 (UTC)']} rows={(data?.errors ?? []).map((entry) => ({ key: String(entry.id), cells: [String(entry.id), entry.status === 'failed' ? '실패' : entry.status, `${entry.attempts}회`, date(entry.createdAt)] }))} />
+    <DataTable headers={['상태', '생성 시각 (UTC)']} rows={(data?.errors ?? []).map((entry) => ({ key: String(entry.id), cells: [entry.status === 'failed' ? '실패' : entry.status, date(entry.createdAt)] }))} />
+    <Action label={detailsOpen ? '문제 추적 정보 닫기' : '문제 추적 정보'} expanded={detailsOpen} onPress={() => setDetailsOpen(value => !value)} />
+    {detailsOpen && <><SectionTitle title="관리자 접근 원본 기록" />
+      <DataTable headers={['시각 (UTC)', '운영자 ID', '작업']} rows={(data?.audit ?? []).map((entry) => ({ key: String(entry.id), cells: [date(entry.createdAt), entry.actorId, scopeLabel(entry.scope)] }))} />
+      <SectionTitle title="안전 분석 오류 원본 기록" />
+      <DataTable headers={['기록 ID', '상태', '시도 횟수', '생성 시각 (UTC)']} rows={(data?.errors ?? []).map((entry) => ({ key: String(entry.id), cells: [String(entry.id), entry.status === 'failed' ? '실패' : entry.status, `${entry.attempts}회`, date(entry.createdAt)] }))} />
+    </>}
   </>;
 }
 
@@ -196,11 +210,14 @@ function DataTable({ headers, rows }: { headers: string[]; rows: { key: string; 
 }
 
 function UserLink({ id, nickname, onUser }: { id: string; nickname: string; onUser: (id: string) => void }) {
-  return <Pressable accessibilityRole="button" accessibilityLabel={`${nickname} 회원 상세 보기`} onPress={() => onUser(id)} style={({ pressed }) => [styles.userLink, pressed && styles.pressed]}><ThemedText type="smallBold" style={styles.accent}>{nickname}</ThemedText><ThemedText type="small" style={styles.muted}>{shortId(id)}</ThemedText></Pressable>;
+  const { play } = useInteractionFeedback();
+  const name = nickname.trim() || '회원';
+  return <Pressable accessibilityRole="button" accessibilityLabel={`${name} 회원 상세 보기`} onPress={() => { play('selection'); return onUser(id); }} style={({ pressed }) => [styles.userLink, pressed && styles.pressed]}><ThemedText type="smallBold" style={styles.accent}>{name}</ThemedText></Pressable>;
 }
 
 function Choices({ label, values, selected, onSelect }: { label: string; values: { key: string; label: string }[]; selected: string; onSelect: (value: string) => void }) {
-  return <View style={styles.choiceGroup}><ThemedText type="small" style={styles.muted}>{label}</ThemedText><View style={styles.choices} accessibilityRole="radiogroup" accessibilityLabel={label}>{values.map((item) => <Pressable key={item.key} accessibilityRole="radio" aria-checked={selected === item.key} tabIndex={selected === item.key ? 0 : -1} {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})} onPress={() => onSelect(item.key)} style={({ pressed }) => [styles.choice, selected === item.key && styles.choiceSelected, pressed && styles.pressed]}><ThemedText type="smallBold" style={selected === item.key ? styles.accent : styles.muted}>{item.label}</ThemedText></Pressable>)}</View></View>;
+  const { play } = useInteractionFeedback();
+  return <View style={styles.choiceGroup}><ThemedText type="small" style={styles.muted}>{label}</ThemedText><View style={styles.choices} accessibilityRole="radiogroup" accessibilityLabel={label}>{values.map((item) => <Pressable key={item.key} accessibilityRole="radio" aria-checked={selected === item.key} tabIndex={selected === item.key ? 0 : -1} {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})} onPress={() => { play('selection'); return onSelect(item.key); }} style={({ pressed }) => [styles.choice, selected === item.key && styles.choiceSelected, pressed && styles.pressed]}><ThemedText type="smallBold" style={selected === item.key ? styles.accent : styles.muted}>{item.label}</ThemedText></Pressable>)}</View></View>;
 }
 
 function Metric({ label, value, detail }: { label: string; value?: number; detail: string }) {
@@ -221,12 +238,15 @@ function Notice({ title, text }: { title: string; text: string }) {
 }
 
 function Empty({ text = '표시할 기록이 없습니다.' }: { text?: string }) { return <ThemedText type="small" style={styles.empty}>{text}</ThemedText>; }
-function Action({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) {
-  return <Pressable accessibilityRole="button" aria-disabled={disabled} disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.action, disabled && styles.disabled, pressed && styles.pressed]}><ThemedText type="smallBold">{label}</ThemedText></Pressable>;
+function Action({ label, onPress, disabled = false, expanded }: { label: string; onPress: () => void; disabled?: boolean; expanded?: boolean }) {
+  const { play } = useInteractionFeedback();
+  return <Pressable accessibilityRole="button" aria-disabled={disabled} accessibilityState={{ disabled, expanded }} disabled={disabled} onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.action, disabled && styles.disabled, pressed && styles.pressed]}><ThemedText type="smallBold">{label}</ThemedText></Pressable>;
 }
 
-function number(value: number) { return new Intl.NumberFormat('ko-KR').format(value); }
-function date(value: string | null) { return value ? new Intl.DateTimeFormat('ko-KR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'UTC' }).format(new Date(value)) : '기록 없음'; }
+const numberFormatter = new Intl.NumberFormat('ko-KR');
+const dateFormatter = new Intl.DateTimeFormat('ko-KR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'UTC' });
+function number(value: number) { return numberFormatter.format(value); }
+function date(value: string | null) { return value ? dateFormatter.format(new Date(value)) : '기록 없음'; }
 function tierLabel(key: string) { return TIERS[key as keyof typeof TIERS] ?? key; }
 function cityLabel(key: string | null) { return CITIES.find((city) => city.id === key)?.name ?? (key && key !== 'unknown' ? key : '미확인'); }
 function ageLabel(key: string) { return key === 'unknown' ? '미확인' : key; }
@@ -236,54 +256,54 @@ function paymentLabel(key: string) { return ({ INITIAL_PURCHASE: '첫 결제', R
 function money(amount: number, currency: string) { return new Intl.NumberFormat('ko-KR', { style: 'currency', currency, currencyDisplay: 'code' }).format(amount); }
 
 const styles = StyleSheet.create({
-  section: { gap: Spacing.four },
+  section: { gap: 20 },
   heading: { gap: Spacing.one, flexShrink: 1 },
   headingRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.three },
-  title: { fontSize: 30, lineHeight: 38, fontWeight: 600, letterSpacing: -0.6 },
+  title: { fontSize: 28, lineHeight: 36, fontWeight: 600, letterSpacing: -0.6 },
   sectionTitle: { fontSize: 17, lineHeight: 24, fontWeight: 600 },
-  accent: { color: Colors.light.accent },
-  muted: { color: Colors.light.textSecondary },
-  filters: { padding: Spacing.three, gap: Spacing.three, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 10, backgroundColor: Colors.light.card },
+  accent: { color: Colors.admin.accent },
+  muted: { color: Colors.admin.textSecondary },
+  filters: { padding: Spacing.three, gap: Spacing.three, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 10, backgroundColor: Colors.admin.card },
   choiceGroup: { gap: Spacing.two, maxWidth: '100%' },
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
-  choice: { minHeight: 44, paddingHorizontal: Spacing.three, justifyContent: 'center', borderRadius: 8, borderWidth: 1, borderColor: 'transparent', backgroundColor: Colors.light.backgroundElement },
-  choiceSelected: { backgroundColor: Colors.light.card, borderColor: Colors.light.accent },
+  choice: { minHeight: 44, paddingHorizontal: Spacing.three, justifyContent: 'center', borderRadius: 8, borderWidth: 1, borderColor: 'transparent', backgroundColor: Colors.admin.backgroundElement },
+  choiceSelected: { backgroundColor: Colors.admin.card, borderColor: Colors.admin.accent },
   switchRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, flexWrap: 'wrap' },
-  tabs: { gap: Spacing.three, borderBottomWidth: 1, borderBottomColor: Colors.light.line },
+  tabs: { gap: Spacing.three, borderBottomWidth: 1, borderBottomColor: Colors.admin.line },
   tab: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.two, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  selectedTab: { borderBottomColor: Colors.light.accent },
+  selectedTab: { borderBottomColor: Colors.admin.accent },
   metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.three },
-  metric: { flexBasis: 150, flexGrow: 1, minWidth: 0, gap: Spacing.two, padding: Spacing.three, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 10, backgroundColor: Colors.light.card },
+  metric: { flexBasis: 150, flexGrow: 1, minWidth: 0, gap: Spacing.two, padding: 20, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 12, backgroundColor: Colors.admin.card },
   metricValue: { fontSize: 30, lineHeight: 36, fontWeight: 600, letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
   breakdowns: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.three },
-  distribution: { flexBasis: 240, flexGrow: 1, minWidth: 0, gap: Spacing.three, padding: Spacing.three, backgroundColor: Colors.light.card, borderRadius: 8, borderWidth: 1, borderColor: Colors.light.line },
+  distribution: { flexBasis: 240, flexGrow: 1, minWidth: 0, gap: Spacing.three, padding: 20, backgroundColor: Colors.admin.card, borderRadius: 12, borderWidth: 1, borderColor: Colors.admin.line },
   distributionRow: { gap: Spacing.two },
   rowBetween: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: Spacing.two },
-  track: { height: 5, borderRadius: 3, backgroundColor: Colors.light.backgroundElement },
-  fill: { height: 5, borderRadius: 3, backgroundColor: Colors.light.navy },
-  notice: { width: '100%', flexShrink: 1, gap: Spacing.two, padding: Spacing.three, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.backgroundElement },
-  empty: { paddingVertical: Spacing.four, color: Colors.light.textSecondary },
-  panel: { gap: Spacing.three, padding: Spacing.three, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
+  track: { height: 5, borderRadius: 3, backgroundColor: Colors.admin.backgroundElement },
+  fill: { height: 5, borderRadius: 3, backgroundColor: Colors.admin.navy },
+  notice: { width: '100%', flexShrink: 1, gap: Spacing.two, padding: Spacing.three, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.backgroundElement },
+  empty: { paddingVertical: Spacing.four, color: Colors.admin.textSecondary },
+  panel: { gap: Spacing.three, padding: Spacing.three, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.card },
   chart: { flexGrow: 1, minWidth: '100%', gap: Spacing.one, paddingTop: Spacing.two },
   chartRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.one },
   axis: { width: 30, height: 110, paddingTop: Spacing.two, justifyContent: 'space-between' },
-  axisLabel: { fontSize: 10, color: Colors.light.textSecondary, textAlign: 'right', fontVariant: ['tabular-nums'] },
+  axisLabel: { fontSize: 10, color: Colors.admin.textSecondary, textAlign: 'right', fontVariant: ['tabular-nums'] },
   barColumn: { flexGrow: 1, minWidth: 30, gap: Spacing.two },
   barColumnCompact: { minWidth: 14 },
-  barTrack: { height: 110, justifyContent: 'flex-end', borderBottomWidth: 1, borderBottomColor: Colors.light.line, position: 'relative' },
-  gridLine: { position: 'absolute', left: 0, right: 0, top: 0, borderTopWidth: 1, borderTopColor: Colors.light.line, borderStyle: 'dashed' },
+  barTrack: { height: 110, justifyContent: 'flex-end', borderBottomWidth: 1, borderBottomColor: Colors.admin.line, position: 'relative' },
+  gridLine: { position: 'absolute', left: 0, right: 0, top: 0, borderTopWidth: 1, borderTopColor: Colors.admin.line, borderStyle: 'dashed' },
   gridLineMiddle: { top: '50%' },
-  bar: { backgroundColor: Colors.light.accent, borderTopLeftRadius: 2, borderTopRightRadius: 2, marginHorizontal: 5 },
-  barLabel: { fontSize: 10, textAlign: 'center', color: Colors.light.textSecondary },
-  tableScroll: { borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8 },
-  table: { flex: 1, backgroundColor: Colors.light.card },
-  tableHeader: { flexDirection: 'row', backgroundColor: Colors.light.backgroundElement },
-  tableRow: { minHeight: 44, flexDirection: 'row', borderTopWidth: 1, borderTopColor: Colors.light.line },
-  tableRowAlternate: { backgroundColor: Colors.light.background },
+  bar: { backgroundColor: Colors.admin.accent, borderTopLeftRadius: 2, borderTopRightRadius: 2, marginHorizontal: 5 },
+  barLabel: { fontSize: 10, textAlign: 'center', color: Colors.admin.textSecondary },
+  tableScroll: { borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8 },
+  table: { flex: 1, backgroundColor: Colors.admin.card },
+  tableHeader: { flexDirection: 'row', backgroundColor: Colors.admin.backgroundElement },
+  tableRow: { minHeight: 44, flexDirection: 'row', borderTopWidth: 1, borderTopColor: Colors.admin.line },
+  tableRowAlternate: { backgroundColor: Colors.admin.background },
   tableValue: { fontVariant: ['tabular-nums'] },
   cell: { flex: 1, minWidth: 142, paddingHorizontal: 12, paddingVertical: Spacing.one, justifyContent: 'center' },
   userLink: { minHeight: 44, justifyContent: 'center' },
-  action: { alignSelf: 'flex-start', minHeight: 44, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.card },
+  action: { alignSelf: 'flex-start', minHeight: 44, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.card },
   disabled: { opacity: 0.45 },
   pressed: { opacity: 0.7 },
 });

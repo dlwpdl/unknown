@@ -1,3 +1,4 @@
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
@@ -26,20 +27,20 @@ export function AdminCommandPalette({
   onSection: (section: AdminSection) => void;
   onUser: (userId: string) => void;
 }) {
+  const { play } = useInteractionFeedback();
   const [query, setQuery] = useState('');
   const [members, setMembers] = useState<AdminDirectoryProfile[]>([]);
   const [searching, setSearching] = useState(false);
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<TextInput>(null);
 
-  useEffect(() => { if (visible) { setQuery(''); setMembers([]); setCursor(0); } }, [visible]);
   useEffect(() => {
     if (!visible || localPreview) return;
     const needle = query.trim();
-    if (needle.length < 2) { setMembers([]); return; }
+    if (needle.length < 2) return;
     let active = true;
-    setSearching(true);
     const timer = setTimeout(() => {
+      setSearching(true);
       void searchAdminUsers(supabase, needle, 0, EMPTY_DIRECTORY_FILTERS)
         .then((result) => { if (active) setMembers(result.rows.slice(0, 6)); })
         .catch(() => { if (active) setMembers([]); })
@@ -57,7 +58,7 @@ export function AdminCommandPalette({
       label: section.label,
       hint: ADMIN_NAV_GROUPS.find((group) => group.sections.includes(section.id))?.label ?? '이동',
     }));
-  const memberItems: Item[] = members.map((member) => ({
+  const memberItems: Item[] = (needle.length >= 2 ? members : []).map((member) => ({
     kind: 'member' as const,
     id: member.id,
     label: displayName(member, member.id),
@@ -75,7 +76,7 @@ export function AdminCommandPalette({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable accessibilityRole="button" accessibilityLabel="검색 닫기" style={[StyleSheet.absoluteFill, styles.backdrop]} onPress={onClose} />
+      <Pressable accessibilityRole="button" accessibilityLabel="검색 닫기" style={[StyleSheet.absoluteFill, styles.backdrop]} onPress={() => { play('selection'); onClose(); }} />
       <View style={styles.sheet} accessibilityViewIsModal accessibilityLabel="화면·회원 검색">
         <TextInput
           ref={inputRef}
@@ -89,18 +90,18 @@ export function AdminCommandPalette({
             if (key === 'ArrowUp') { event.preventDefault?.(); setCursor((value) => Math.max(0, value - 1)); }
           }}
           placeholder="화면 이름 또는 회원(닉네임·이메일) 검색"
-          placeholderTextColor={Colors.light.textSecondary}
+          placeholderTextColor={Colors.admin.textSecondary}
           accessibilityLabel="화면 또는 회원 검색"
           returnKeyType="go"
           style={styles.input}
         />
         <View style={styles.list}>
-          {items.length === 0 && <ThemedText type="small" style={styles.muted}>{searching ? '검색 중…' : query.trim().length === 1 ? '두 글자부터 회원을 찾습니다.' : '결과가 없습니다.'}</ThemedText>}
+          {items.length === 0 && <ThemedText type="small" style={styles.muted}>{searching && needle.length >= 2 ? '검색 중…' : query.trim().length === 1 ? '두 글자부터 회원을 찾습니다.' : '결과가 없습니다.'}</ThemedText>}
           {items.map((item, index) => (
             <Pressable
               key={`${item.kind}:${item.id}`}
               accessibilityRole="menuitem"
-              onPress={() => run(item)}
+              onPress={() => { play('selection'); return run(item); }}
               onHoverIn={() => setCursor(index)}
               style={({ pressed }) => [styles.row, index === active && styles.rowActive, pressed && styles.pressed]}>
               <ThemedText type="smallBold">{item.label}</ThemedText>
@@ -110,7 +111,7 @@ export function AdminCommandPalette({
         </View>
         <View style={styles.footer}>
           <ThemedText type="small" style={styles.muted}>↑↓ 이동 · Enter 열기 · Esc 닫기{localPreview ? ' · 미리보기에서는 회원 검색을 쓰지 않습니다' : ''}</ThemedText>
-          <Pressable accessibilityRole="button" onPress={onClose} style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
+          <Pressable accessibilityRole="button" onPress={() => { play('selection'); onClose(); }} style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
             <ThemedText type="smallBold">닫기</ThemedText>
           </Pressable>
         </View>
@@ -120,14 +121,14 @@ export function AdminCommandPalette({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { backgroundColor: '#1A1C1FCC' },
-  sheet: { width: 560, maxWidth: '92%', maxHeight: '80%', alignSelf: 'center', marginTop: '12%', padding: Spacing.three, gap: Spacing.two, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 12, backgroundColor: Colors.light.card },
-  input: { minHeight: 48, paddingHorizontal: Spacing.three, color: Colors.light.text, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.background },
+  backdrop: { backgroundColor: '#25263166' },
+  sheet: { width: 560, maxWidth: '92%', maxHeight: '80%', alignSelf: 'center', marginTop: '12%', padding: Spacing.three, gap: Spacing.two, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 12, backgroundColor: Colors.admin.card },
+  input: { minHeight: 48, paddingHorizontal: Spacing.three, color: Colors.admin.text, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.background },
   list: { gap: Spacing.one },
   row: { minHeight: 48, justifyContent: 'center', gap: 2, paddingHorizontal: Spacing.three, borderRadius: 8 },
-  rowActive: { backgroundColor: Colors.light.backgroundElement },
+  rowActive: { backgroundColor: Colors.admin.backgroundElement },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
-  close: { minHeight: 44, paddingHorizontal: Spacing.three, justifyContent: 'center', borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8 },
-  muted: { color: Colors.light.textSecondary },
+  close: { minHeight: 44, paddingHorizontal: Spacing.three, justifyContent: 'center', borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8 },
+  muted: { color: Colors.admin.textSecondary },
   pressed: { opacity: 0.7 },
 });

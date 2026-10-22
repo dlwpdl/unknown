@@ -1,17 +1,23 @@
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { AdminAnalyticsView } from '@/components/admin/admin-analytics';
+import { AdminTicketmasterView } from '@/components/admin/admin-ticketmaster';
+import { AdminMerchantsView } from '@/components/admin/admin-merchants';
+import { AdminMeetupsView } from '@/components/admin/admin-meetups';
 import { AdminCommandPalette } from '@/components/admin/admin-command-palette';
 import { AdminSectionView } from '@/components/admin/admin-section';
 import { AdminShell } from '@/components/admin/admin-shell';
+import { AdminSignupAlerts } from '@/components/admin/admin-signup-alerts';
 import { AdminUserDetail } from '@/components/admin/admin-user-detail';
 import { LoginPanel } from '@/components/login-panel';
 import { ThemedText } from '@/components/themed-text';
+import { ThemeOverrideProvider } from '@/hooks/use-theme';
 import { Colors, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
-import { canUseLocalAdminPreview, type AdminSection } from '@/lib/admin';
+import { initialAdminSection, type AdminSection } from '@/lib/admin';
 import {
   ADMIN_PAGE_SIZE,
   getLocalAdminDashboard,
@@ -28,8 +34,8 @@ import { supabase } from '@/lib/supabase';
 
 export function AdminScreen() {
   const { safety, alert, section: requestedSection } = useLocalSearchParams<{ safety?: string; alert?: string; section?: string }>();
-  const { isAuthed, isAdmin, isAuthLoading, authError, signInAdmin, signInGoogle, signOut } = useAuth();
-  const [section, setSection] = useState<AdminSection>(requestedSection === 'reports' ? 'reports' : alert ? 'alerts' : safety ? 'safety' : 'analytics');
+  const { isAuthed, isAdmin, isAuthLoading, authError, signInAdmin, signInGoogle, signOut, me } = useAuth();
+  const [section, setSection] = useState<AdminSection>(initialAdminSection(requestedSection, alert, safety));
   const [analyticsRefresh, setAnalyticsRefresh] = useState(0);
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,13 +48,9 @@ export function AdminScreen() {
   const [exhausted, setExhausted] = useState<Set<AdminSection>>(new Set());
   const [lastLoadedAt, setLastLoadedAt] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [localPreview, setLocalPreview] = useState(false);
-  const localPreviewAllowed = canUseLocalAdminPreview(
-    __DEV__,
-    typeof location === 'undefined' ? '' : location.hostname,
-  );
+  const localPreview = false;
   const hasAdminAccess = isAdmin || localPreview;
-  const needsOperations = section !== 'analytics';
+  const needsOperations = section !== 'analytics' && section !== 'ticketmaster' && section !== 'merchants' && section !== 'meetups';
 
   const refresh = useCallback(async () => {
     if (!hasAdminAccess) return;
@@ -128,7 +130,7 @@ export function AdminScreen() {
       return;
     }
     // 뜨는 글 알림 패널은 자체 RPC로 불러오므로 더 보기 대상이 아니다.
-    if (!data || section === 'overview' || section === 'analytics' || section === 'trending' || section === 'errors' || exhausted.has(section)) return;
+    if (!data || section === 'overview' || section === 'analytics' || section === 'ticketmaster' || section === 'merchants' || section === 'meetups' || section === 'trending' || section === 'errors' || exhausted.has(section)) return;
     const offset = section === 'reports'
       ? data.reports.length
       : section === 'safety'
@@ -139,7 +141,7 @@ export function AdminScreen() {
         ? data.profiles.length
         : section === 'posts'
           ? data.posts.length
-          : data.messages.length;
+          : data.conversations.length;
     setLoadingMore(true);
     setError(null);
     try {
@@ -153,7 +155,10 @@ export function AdminScreen() {
         if (page.section === 'reports') return { ...current, profiles, reports: [...current.reports, ...page.rows] };
         if (page.section === 'users') return { ...current, profiles: [...profiles, ...page.rows.filter((profile) => !known.has(profile.id))] };
         if (page.section === 'posts') return { ...current, profiles, posts: [...current.posts, ...page.rows] };
-        return { ...current, profiles, messages: [...current.messages, ...page.rows] };
+        const knownRooms = new Set(current.conversations.map(row => row.id));
+        const knownPosts = new Set((current.contextPosts ?? []).map(row => row.id));
+        return { ...current, profiles, conversations: [...current.conversations, ...page.rows.filter(row => !knownRooms.has(row.id))],
+          contextPosts: [...(current.contextPosts ?? []), ...page.contextPosts.filter(row => !knownPosts.has(row.id))] };
       });
       if (page.rows.length < ADMIN_PAGE_SIZE) setExhausted((current) => new Set(current).add(section));
     } catch {
@@ -174,9 +179,9 @@ export function AdminScreen() {
     return () => window.removeEventListener('keydown', onKey);
   }, [hasAdminAccess]);
 
-  if (isAuthLoading) return <CenteredState title="관리자 세션을 확인하는 중입니다." />;
+  if (isAuthLoading && isAuthed) return <CenteredState title="관리자 세션을 확인하는 중입니다." />;
   if (!isAuthed && !localPreview) {
-    return <LoginPanel reason={localPreviewAllowed ? '로컬 관리자 미리보기입니다. 버튼을 누르면 바로 열립니다.' : '관리자 계정으로 로그인해주세요.'} onKakao={localPreviewAllowed ? () => setLocalPreview(true) : undefined} onGoogle={localPreviewAllowed ? undefined : signInGoogle} onAdminLogin={signInAdmin} loading={isAuthLoading} error={authError} />;
+    return <LoginPanel reason="관리자 계정으로 로그인해주세요." onGoogle={signInGoogle} onAdminLogin={signInAdmin} loading={isAuthLoading} error={authError} />;
   }
   if (!isAdmin && !localPreview) {
     return <CenteredState title="관리자 권한이 없습니다." body="현재 계정에는 admin 역할이 지정되지 않았습니다." action="다른 계정으로 로그인" onAction={() => void signOut()} />;
@@ -186,11 +191,12 @@ export function AdminScreen() {
   }
 
   return (
-    <AdminShell activeSection={section} counts={data?.counts ?? { alertsOpen: 0, reports: 0, openReports: 0, profiles: 0, posts: 0, messages: 0, safetyPending: 0, safetyHigh: 0 }} busy={needsOperations && loading} lastUpdated={lastLoadedAt} onSearch={() => setPaletteOpen(true)} onSection={(next) => { if (!needsOperations && next !== 'analytics') { setLoading(true); setError(null); } setSection(next); }} onRefresh={() => void refresh()} onSignOut={localPreview ? () => { setLocalPreview(false); setData(null); } : () => void signOut()}>
+    <AdminShell activeSection={section} counts={data?.counts ?? { alertsOpen: 0, reports: 0, openReports: 0, profiles: 0, posts: 0, messages: 0, safetyPending: 0, safetyHigh: 0 }} busy={needsOperations && loading} lastUpdated={needsOperations ? lastLoadedAt : null} onSearch={() => setPaletteOpen(true)} onSection={(next) => { if (!needsOperations && next !== 'analytics') { setLoading(true); setError(null); } setSection(next); }} onRefresh={() => void refresh()} onSignOut={() => void signOut()}>
+      {isAdmin && <AdminSignupAlerts key={me.id} userId={me.id} onUser={setSelectedUserId} />}
       {localPreview && <View accessibilityRole="alert" style={styles.preview}><ThemedText type="smallBold">로컬 미리보기 · 실제 운영 데이터와 권한은 변경되지 않습니다.</ThemedText></View>}
       {!!moderationResult && needsOperations && <View accessibilityLiveRegion="polite" style={styles.preview}><ThemedText>{moderationResult}</ThemedText></View>}
       {!!error && needsOperations && <View accessibilityRole="alert" style={styles.error}><ThemedText style={styles.errorText}>{error}</ThemedText></View>}
-      {section === 'analytics' ? <AdminAnalyticsView localPreview={localPreview} onUser={setSelectedUserId} refreshSignal={analyticsRefresh} /> : data && <AdminSectionView
+      {section === 'analytics' ? <AdminAnalyticsView localPreview={localPreview} onUser={setSelectedUserId} refreshSignal={analyticsRefresh} /> : section === 'ticketmaster' ? <AdminTicketmasterView localPreview={localPreview} refreshSignal={analyticsRefresh} /> : section === 'merchants' ? <AdminMerchantsView refreshSignal={analyticsRefresh} onUser={setSelectedUserId} localPreview={localPreview} /> : section === 'meetups' ? <AdminMeetupsView refreshSignal={analyticsRefresh} onUser={setSelectedUserId} localPreview={localPreview} /> : data && <AdminSectionView
         key={section}
         section={section}
         data={data}
@@ -201,6 +207,7 @@ export function AdminScreen() {
         onUser={setSelectedUserId}
         onResolve={confirmResolve}
         onLoadMore={() => void loadMore()}
+        onSection={setSection}
       />}
       <AdminUserDetail
         userId={selectedUserId}
@@ -216,13 +223,13 @@ export function AdminScreen() {
         }}
         onClose={() => setSelectedUserId(null)}
       />
-      <AdminCommandPalette
+      {paletteOpen && <AdminCommandPalette
         visible={paletteOpen}
         localPreview={localPreview}
         onClose={() => setPaletteOpen(false)}
         onSection={(next) => { if (!needsOperations && next !== 'analytics') { setLoading(true); setError(null); } setSection(next); }}
         onUser={(userId) => setSelectedUserId(userId)}
-      />
+      />}
     </AdminShell>
   );
 }
@@ -238,24 +245,25 @@ function CenteredState({
   action?: string;
   onAction?: () => void;
 }) {
+  const { play } = useInteractionFeedback();
   return (
-    <View style={styles.center}>
+    <ThemeOverrideProvider scheme="admin"><View style={styles.center}>
       <View style={styles.stateCard}>
         <ThemedText type="subtitle">{title}</ThemedText>
         {!!body && <ThemedText style={styles.muted}>{body}</ThemedText>}
-        {!!action && !!onAction && <Pressable onPress={onAction} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold" style={styles.buttonText}>{action}</ThemedText></Pressable>}
+        {!!action && !!onAction && <Pressable onPress={() => { play('selection'); onAction(); }} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold" style={styles.buttonText}>{action}</ThemedText></Pressable>}
       </View>
-    </View>
+    </View></ThemeOverrideProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, minHeight: '100%', alignItems: 'center', justifyContent: 'center', padding: Spacing.four, backgroundColor: Colors.light.background },
-  stateCard: { width: 440, maxWidth: '100%', padding: Spacing.five, alignItems: 'center', gap: Spacing.three, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 10, backgroundColor: Colors.light.card },
-  muted: { textAlign: 'center', color: Colors.light.textSecondary },
-  button: { minHeight: 44, paddingHorizontal: Spacing.four, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: Colors.light.accent },
-  buttonText: { color: Colors.light.accentInk },
-  error: { marginBottom: Spacing.three, padding: Spacing.three, borderWidth: 1, borderColor: '#E8B8AE', borderRadius: 8, backgroundColor: '#F9ECE9' },
-  errorText: { color: Colors.light.accent },
-  preview: { marginBottom: Spacing.three, padding: Spacing.three, borderWidth: 1, borderColor: Colors.light.line, borderRadius: 8, backgroundColor: Colors.light.backgroundElement },
+  center: { flex: 1, minHeight: '100%', alignItems: 'center', justifyContent: 'center', padding: Spacing.four, backgroundColor: Colors.admin.background },
+  stateCard: { width: 440, maxWidth: '100%', padding: Spacing.five, alignItems: 'center', gap: Spacing.three, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 10, backgroundColor: Colors.admin.card },
+  muted: { textAlign: 'center', color: Colors.admin.textSecondary },
+  button: { minHeight: 44, paddingHorizontal: Spacing.four, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: Colors.admin.accent },
+  buttonText: { color: Colors.admin.accentInk },
+  error: { marginBottom: Spacing.three, padding: Spacing.three, borderWidth: 1, borderColor: '#EED3D9', borderRadius: 8, backgroundColor: Colors.admin.dangerBackground },
+  errorText: { color: Colors.admin.danger },
+  preview: { marginBottom: Spacing.three, padding: Spacing.three, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 8, backgroundColor: Colors.admin.backgroundElement },
 });

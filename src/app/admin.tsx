@@ -1,6 +1,6 @@
-import { AdminScreen } from '@/components/admin/admin-screen';
+import { Redirect } from 'expo-router';
 
-// 관리자 알림을 탭하면 이 화면이 열린다. 권한 확인은 AdminScreen 안에서 한다.
+// 관리자 화면은 Mac의 비공개 웹 대시보드에서만 연다.
 export default function AdminRoute() {
-  return <AdminScreen />;
+  return <Redirect href="/notifications" />;
 }
