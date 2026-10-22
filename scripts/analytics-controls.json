@@ -139,6 +139,7 @@
   "components_chat-members.flatlist.1": "src/components/chat-members.tsx",
   "components_feed-sort-control.order": "src/components/feed-sort-control.tsx",
   "components_feed-screen.flatlist.1": "src/components/feed-screen.tsx",
+  "feed.home": "src/components/feed-screen.tsx",
   "components_feed-screen.pressable.1": "src/components/feed-screen.tsx",
   "components_feed-screen.pressable.2": "src/components/feed-screen.tsx",
   "components_feed-screen.scrollview.1": "src/components/feed-screen.tsx",
