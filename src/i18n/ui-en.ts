@@ -768,6 +768,7 @@ export const uiEnglish: Record<string, string> = {
   "공유한 위치 지도에서 열기": "Open shared location in Maps",
   "메시지에 하트 (두 번 탭)": "Heart this message (double tap)",
   "최근 메시지로 내려가기": "Go to latest messages",
+  "{0}님이 모임에 참여했어요": "{0} joined the meetup",
   "↓ 최근 메시지": "↓ Latest messages",
   "처리되거나 취소된 요청이에요. 대화 목록에서 새로 확인해 주세요.": "This request was handled or cancelled. Check your chat list again.",
   "답장": "Reply",
