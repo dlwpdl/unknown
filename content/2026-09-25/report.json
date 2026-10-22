@@ -1,0 +1,1039 @@
+{
+  "date": "2026-09-25",
+  "checked_at": "2026-09-25T10:03:04.491584-07:00",
+  "status": "draft_ready_registration_blocked",
+  "draft_file": "draft/posts.json",
+  "canonical_posts_json_written": false,
+  "canonical_path_withheld_reason": "The active launchd script reads content/<date>/posts.json before falling back to the staged payload. Creating that file could indirectly trigger the paid safety monitor.",
+  "draft_sha256": "12bdc1d80ca09a32a7b8c266a28cb3615b6736a4bc7b7d2c7e2cb27997620c02",
+  "city_counts": [
+    {
+      "city_id": "vancouver",
+      "drafts": 5,
+      "registered": 0
+    },
+    {
+      "city_id": "toronto",
+      "drafts": 5,
+      "registered": 0
+    },
+    {
+      "city_id": "montreal",
+      "drafts": 5,
+      "registered": 0
+    },
+    {
+      "city_id": "edmonton",
+      "drafts": 5,
+      "registered": 0
+    },
+    {
+      "city_id": "calgary",
+      "drafts": 5,
+      "registered": 0
+    }
+  ],
+  "registration_time_range": null,
+  "top_level_comments_created": 0,
+  "author_replies_created": 0,
+  "actions": {
+    "source_http_reads": true,
+    "production_database_reads": true,
+    "dry_run_sql_generation": true,
+    "stage": false,
+    "grow": false,
+    "database_writes": false,
+    "comment_writes": false,
+    "sns_actions": false,
+    "automation_changes": false,
+    "paid_calls_initiated": false
+  },
+  "blockers": [
+    {
+      "code": "PAID_SAFETY_MONITOR",
+      "evidence": [
+        "Production posts_safety_review trigger calls private.enqueue_safety_review for new posts.",
+        "Production cron gling-safety-monitor-every-minute is active.",
+        "Read-only download of deployed safety-monitor bundle contains https://api.openai.com/v1/responses and gpt-5-mini."
+      ],
+      "deployed_bundle_checks": {
+        "status": 200,
+        "content_type": "application/octet-stream",
+        "bytes": 7931703,
+        "calls_paid_openai_responses": true,
+        "model_gpt5mini": true,
+        "seed_domain_exemption_text": false
+      }
+    },
+    {
+      "code": "NO_SCRIPT_COMMENT_GENERATION",
+      "evidence": "Operational document and current SQL dry run both show no automatic comment/reply insertion. User prohibited writing comments directly or changing automations."
+    },
+    {
+      "code": "DATE_ROLLOVER",
+      "evidence": "Read-only preview at verification time predicts 15 of 25 posts on September 24 in their city timezone, and 10 on September 25. Existing script rolls future author time windows back one day."
+    }
+  ],
+  "verification": {
+    "local_total_25": true,
+    "local_5_per_city": true,
+    "unique_ordinals": true,
+    "first_words_unique_across_all_posts": true,
+    "author_city_status_seed_valid": true,
+    "body_has_no_source_links_or_threads_salutation": true,
+    "title_max_80_chars": true,
+    "body_line_count_matches_persona_verbosity": true,
+    "question_endings_max_2_per_city": true,
+    "check_guidance_max_1_per_city": true,
+    "no_matching_city_titles_in_production_any_status": true,
+    "distinct_projected_timestamps": 25,
+    "registered_count_check": "not_run_no_inserts",
+    "registered_timestamp_check": "not_run_no_inserts",
+    "top_comments_at_least_3_per_post": "not_run_no_inserts",
+    "author_replies_at_least_1_per_post": "not_run_no_inserts",
+    "comment_count_matches_actual": "not_run_no_inserts"
+  },
+  "author_history": {
+    "reviewed_profiles": 25,
+    "profiles_with_existing_posts": 7,
+    "profiles_without_existing_posts": 18,
+    "note": "Recent posts/comments were reviewed where present. Eighteen authors have no published history; publishing one draft each would still leave those profiles below the operations document’s two-post profile check.",
+    "personas": [
+      {
+        "persona": {
+          "nickname": "게스타운커피",
+          "city_id": "vancouver",
+          "archetype": 4,
+          "gender": "남",
+          "age": 24,
+          "initiative": 0,
+          "directness": 1,
+          "verbosity": 2,
+          "focus": 1,
+          "humor": 0,
+          "social": 1,
+          "post_window": 1,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 0
+      },
+      {
+        "persona": {
+          "nickname": "로히드환승",
+          "city_id": "vancouver",
+          "archetype": 1,
+          "gender": "여",
+          "age": 19,
+          "initiative": 2,
+          "directness": 2,
+          "verbosity": 0,
+          "focus": 0,
+          "humor": 1,
+          "social": 2,
+          "post_window": 3,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 0
+      },
+      {
+        "persona": {
+          "nickname": "코퀴틀람터줏대감",
+          "city_id": "vancouver",
+          "archetype": 6,
+          "gender": "여",
+          "age": 35,
+          "initiative": 2,
+          "directness": 2,
+          "verbosity": 1,
+          "focus": 0,
+          "humor": 2,
+          "social": 2,
+          "post_window": 2,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 0
+      },
+      {
+        "persona": {
+          "nickname": "도서관단골",
+          "city_id": "vancouver",
+          "archetype": 6,
+          "gender": "남",
+          "age": 29,
+          "initiative": 0,
+          "directness": 1,
+          "verbosity": 2,
+          "focus": 0,
+          "humor": 0,
+          "social": 1,
+          "post_window": 3,
+          "main_tag": "education"
+        },
+        "existing_published_post_count": 4
+      },
+      {
+        "persona": {
+          "nickname": "시장바구니",
+          "city_id": "vancouver",
+          "archetype": 5,
+          "gender": "여",
+          "age": 35,
+          "initiative": 2,
+          "directness": 0,
+          "verbosity": 1,
+          "focus": 0,
+          "humor": 0,
+          "social": 0,
+          "post_window": 1,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 0
+      },
+      {
+        "persona": {
+          "nickname": "노스욕산책러",
+          "city_id": "toronto",
+          "archetype": 8,
+          "gender": "남",
+          "age": 29,
+          "initiative": 1,
+          "directness": 0,
+          "verbosity": 1,
+          "focus": 2,
+          "humor": 0,
+          "social": 2,
+          "post_window": 0,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 0
+      },
+      {
+        "persona": {
+          "nickname": "레슬리빌커피",
+          "city_id": "toronto",
+          "archetype": 2,
+          "gender": "여",
+          "age": 35,
+          "initiative": 1,
+          "directness": 1,
+          "verbosity": 2,
+          "focus": 0,
+          "humor": 0,
+          "social": 2,
+          "post_window": 0,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 0
+      },
+      {
+        "persona": {
+          "nickname": "본시티산책",
+          "city_id": "toronto",
+          "archetype": 7,
+          "gender": "여",
+          "age": 35,
+          "initiative": 0,
+          "directness": 1,
+          "verbosity": 0,
+          "focus": 1,
+          "humor": 2,
+          "social": 1,
+          "post_window": 1,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 0
+      },
+      {
+        "persona": {
+          "nickname": "브램턴출근",
+          "city_id": "toronto",
+          "archetype": 7,
+          "gender": "남",
+          "age": 29,
+          "initiative": 2,
+          "directness": 1,
+          "verbosity": 1,
+          "focus": 1,
+          "humor": 1,
+          "social": 1,
+          "post_window": 1,
+          "main_tag": "education"
+        },
+        "existing_published_post_count": 4
+      },
+      {
+        "persona": {
+          "nickname": "환승하는수달",
+          "city_id": "toronto",
+          "archetype": 7,
+          "gender": "여",
+          "age": 24,
+          "initiative": 1,
+          "directness": 0,
+          "verbosity": 2,
+          "focus": 1,
+          "humor": 0,
+          "social": 0,
+          "post_window": 1,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 0
+      },
+      {
+        "persona": {
+          "nickname": "장탈롱바구니",
+          "city_id": "montreal",
+          "archetype": 6,
+          "gender": "여",
+          "age": 19,
+          "initiative": 2,
+          "directness": 0,
+          "verbosity": 0,
+          "focus": 1,
+          "humor": 0,
+          "social": 2,
+          "post_window": 0,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 5
+      },
+      {
+        "persona": {
+          "nickname": "정원그림자",
+          "city_id": "montreal",
+          "archetype": 3,
+          "gender": "여",
+          "age": 19,
+          "initiative": 2,
+          "directness": 1,
+          "verbosity": 1,
+          "focus": 0,
+          "humor": 0,
+          "social": 0,
+          "post_window": 1,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 0
+      },
+      {
+        "persona": {
+          "nickname": "몽루아얄잎새",
+          "city_id": "montreal",
+          "archetype": 5,
+          "gender": "여",
+          "age": 29,
+          "initiative": 2,
+          "directness": 2,
+          "verbosity": 2,
+          "focus": 0,
+          "humor": 0,
+          "social": 0,
+          "post_window": 3,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 5
+      },
+      {
+        "persona": {
+          "nickname": "메트로한칸",
+          "city_id": "montreal",
+          "archetype": 8,
+          "gender": "남",
+          "age": 24,
+          "initiative": 0,
+          "directness": 0,
+          "verbosity": 2,
+          "focus": 0,
+          "humor": 0,
+          "social": 1,
+          "post_window": 2,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 0
+      },
+      {
+        "persona": {
+          "nickname": "올드포트바람",
+          "city_id": "montreal",
+          "archetype": 6,
+          "gender": "여",
+          "age": 19,
+          "initiative": 2,
+          "directness": 0,
+          "verbosity": 1,
+          "focus": 0,
+          "humor": 1,
+          "social": 0,
+          "post_window": 1,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 5
+      },
+      {
+        "persona": {
+          "nickname": "블래치포드",
+          "city_id": "edmonton",
+          "archetype": 8,
+          "gender": "여",
+          "age": 24,
+          "initiative": 2,
+          "directness": 1,
+          "verbosity": 1,
+          "focus": 0,
+          "humor": 2,
+          "social": 0,
+          "post_window": 0,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 0
+      },
+      {
+        "persona": {
+          "nickname": "화이트애비뉴",
+          "city_id": "edmonton",
+          "archetype": 4,
+          "gender": "여",
+          "age": 29,
+          "initiative": 2,
+          "directness": 2,
+          "verbosity": 2,
+          "focus": 0,
+          "humor": 2,
+          "social": 2,
+          "post_window": 0,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 0
+      },
+      {
+        "persona": {
+          "nickname": "U오브A도서관",
+          "city_id": "edmonton",
+          "archetype": 2,
+          "gender": "남",
+          "age": 35,
+          "initiative": 0,
+          "directness": 1,
+          "verbosity": 2,
+          "focus": 2,
+          "humor": 0,
+          "social": 0,
+          "post_window": 1,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 0
+      },
+      {
+        "persona": {
+          "nickname": "K데이즈",
+          "city_id": "edmonton",
+          "archetype": 5,
+          "gender": "여",
+          "age": 24,
+          "initiative": 1,
+          "directness": 1,
+          "verbosity": 1,
+          "focus": 2,
+          "humor": 2,
+          "social": 0,
+          "post_window": 0,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 0
+      },
+      {
+        "persona": {
+          "nickname": "리버밸리러너",
+          "city_id": "edmonton",
+          "archetype": 7,
+          "gender": "여",
+          "age": 29,
+          "initiative": 1,
+          "directness": 1,
+          "verbosity": 0,
+          "focus": 1,
+          "humor": 1,
+          "social": 1,
+          "post_window": 3,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 0
+      },
+      {
+        "persona": {
+          "nickname": "17에비뉴커피",
+          "city_id": "calgary",
+          "archetype": 7,
+          "gender": "남",
+          "age": 19,
+          "initiative": 2,
+          "directness": 1,
+          "verbosity": 2,
+          "focus": 0,
+          "humor": 1,
+          "social": 0,
+          "post_window": 2,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 0
+      },
+      {
+        "persona": {
+          "nickname": "보우강변산책",
+          "city_id": "calgary",
+          "archetype": 6,
+          "gender": "여",
+          "age": 19,
+          "initiative": 2,
+          "directness": 2,
+          "verbosity": 2,
+          "focus": 0,
+          "humor": 2,
+          "social": 0,
+          "post_window": 1,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 3
+      },
+      {
+        "persona": {
+          "nickname": "글렌모어공원",
+          "city_id": "calgary",
+          "archetype": 7,
+          "gender": "남",
+          "age": 29,
+          "initiative": 0,
+          "directness": 1,
+          "verbosity": 1,
+          "focus": 2,
+          "humor": 1,
+          "social": 2,
+          "post_window": 1,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 0
+      },
+      {
+        "persona": {
+          "nickname": "피쉬크릭주말",
+          "city_id": "calgary",
+          "archetype": 8,
+          "gender": "남",
+          "age": 24,
+          "initiative": 0,
+          "directness": 2,
+          "verbosity": 0,
+          "focus": 2,
+          "humor": 2,
+          "social": 2,
+          "post_window": 0,
+          "main_tag": "life"
+        },
+        "existing_published_post_count": 0
+      },
+      {
+        "persona": {
+          "nickname": "C트레인통근",
+          "city_id": "calgary",
+          "archetype": 5,
+          "gender": "여",
+          "age": 29,
+          "initiative": 0,
+          "directness": 0,
+          "verbosity": 1,
+          "focus": 0,
+          "humor": 1,
+          "social": 0,
+          "post_window": 2,
+          "main_tag": "transport"
+        },
+        "existing_published_post_count": 4
+      }
+    ]
+  },
+  "sources": [
+    {
+      "ord": 1,
+      "city_id": "vancouver",
+      "title": "MOA에서 로브 작품 전시가 열리고 있네",
+      "url": "https://moa.ubc.ca/visit/",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:54:11.997294-07:00",
+      "verified_fact": "MOA lists I Use My Haida Eyes: The History Robes of Jut-ke-Nay–Hazel Wilson, May 14–October 12, 2026."
+    },
+    {
+      "ord": 2,
+      "city_id": "vancouver",
+      "title": "비티 박물관, 전시랑 연구가 같이 있는 곳임",
+      "url": "https://beatymuseum.ubc.ca/visit/",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:54:12.072903-07:00",
+      "verified_fact": "Beaty is a natural history museum and active research collection; an audio tour is available."
+    },
+    {
+      "ord": 3,
+      "city_id": "vancouver",
+      "title": "UBC 식물원이랑 니토베 정원은 다른 공간이네",
+      "url": "https://botanicalgarden.ubc.ca/visit/",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:54:12.093443-07:00",
+      "verified_fact": "UBC Botanical Garden and Nitobe Memorial Garden are separately listed garden destinations."
+    },
+    {
+      "ord": 4,
+      "city_id": "vancouver",
+      "title": "Iced In은 북극에서 살아온 지식을 다루는 전시네",
+      "url": "https://vanmaritime.com/explore/exhibits/iced-in/",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:57:01.762966-07:00",
+      "verified_fact": "Iced In is currently on show; objects and archival materials explore Arctic life, travel and Inuit knowledge."
+    },
+    {
+      "ord": 5,
+      "city_id": "vancouver",
+      "title": "버스에서 큰 가방은 어디에 두는 게 편해?",
+      "url": "https://www.translink.ca/rider-guide/etiquette-on-transit",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:54:12.234699-07:00",
+      "verified_fact": "TransLink says seats are for people and belongings must not block aisles or doorways."
+    },
+    {
+      "ord": 6,
+      "city_id": "toronto",
+      "title": "강아지 산책도 뛰는 공간이 따로 있구나",
+      "url": "https://www.toronto.ca/community-people/animals-pets/pets-in-the-city/dogs-in-the-city/",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:53:18.795381-07:00",
+      "verified_fact": "Toronto provides designated dog off-leash areas for socializing and running."
+    },
+    {
+      "ord": 7,
+      "city_id": "toronto",
+      "title": "토론토 공공미술 지도에 조각이랑 벽화가 같이 있네",
+      "url": "https://www.toronto.ca/explore-enjoy/history-art-culture/public-art/",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:53:17.899752-07:00",
+      "verified_fact": "Toronto lists three public-art programs and an interactive public-art map."
+    },
+    {
+      "ord": 8,
+      "city_id": "toronto",
+      "title": "앨런가든 온실, 유리 지붕부터 눈이 가네",
+      "url": "https://www.toronto.ca/explore-enjoy/parks-recreation/places-spaces/beaches-gardens-attractions/gardens-and-horticulture/conservatories/",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:54:12.380434-07:00",
+      "verified_fact": "Allan Gardens Conservatory has a historic glass-domed Palm House."
+    },
+    {
+      "ord": 9,
+      "city_id": "toronto",
+      "title": "리버데일 팜도 시내 나들이 후보에 넣었어",
+      "url": "https://www.toronto.ca/explore-enjoy/parks-recreation/places-spaces/beaches-gardens-attractions/zoos-farms/",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:54:12.469669-07:00",
+      "verified_fact": "Riverdale Farm is a city-listed farm attraction where visitors experience animals."
+    },
+    {
+      "ord": 10,
+      "city_id": "toronto",
+      "title": "지금 사는 동네의 옛 사진을 찾아보고 싶어",
+      "url": "https://www.toronto.ca/city-government/accountability-operations-customer-service/access-city-information-or-records/city-of-toronto-archives/whats-in-the-archives/photographs/",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:54:11.654874-07:00",
+      "verified_fact": "Toronto Archives photographs are viewable online; aerial photographs are included."
+    },
+    {
+      "ord": 11,
+      "city_id": "montreal",
+      "title": "라퐁텐 공원의 긴 풀에도 이유가 있었네",
+      "url": "https://montreal.ca/en/places/parc-la-fontaine",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:53:18.716175-07:00",
+      "verified_fact": "Parc La Fontaine has areas under adaptive management with longer grass to support biodiversity."
+    },
+    {
+      "ord": 12,
+      "city_id": "montreal",
+      "title": "테니스 처음 배우는 쪽도 찾아보는 중",
+      "url": "https://montreal.ca/en/topics/tennis",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:53:18.770700-07:00",
+      "verified_fact": "Montréal offers beginner tennis classes and has some indoor courts in municipal parks and sports centres."
+    },
+    {
+      "ord": 13,
+      "city_id": "montreal",
+      "title": "몬트리올 소음 규정은 구마다 다르네",
+      "url": "https://montreal.ca/en/topics/noise",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:56:18.445304-07:00",
+      "verified_fact": "Montréal noise bylaws are under borough jurisdiction and include renovation, landscaping and equipment noise."
+    },
+    {
+      "ord": 14,
+      "city_id": "montreal",
+      "title": "프레데릭백 공원, 매립지였던 땅이래",
+      "url": "https://montreal.ca/en/places/parc-frederic-back",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:57:40.877032-07:00",
+      "verified_fact": "Parc Frédéric-Back was a quarry and then a landfill; it is now a park with walking, running and biking activities and iconic white spheres."
+    },
+    {
+      "ord": 15,
+      "city_id": "montreal",
+      "title": "래그위드랑 포이즌아이비를 같은 풀로 생각했음",
+      "url": "https://montreal.ca/en/eliminating-ragweed",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:56:18.240355-07:00",
+      "verified_fact": "The city distinguishes ragweed from poison ivy and identifies ragweed pollen as an allergen."
+    },
+    {
+      "ord": 16,
+      "city_id": "edmonton",
+      "title": "퀸엘리자베스 공원 안에 원주민 미술 공간이 있네",
+      "url": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/queen-elizabeth-park",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:53:21.561509-07:00",
+      "verified_fact": "Queen Elizabeth Park includes ÎNÎW River Lot 11∞ with works by Indigenous artists."
+    },
+    {
+      "ord": 17,
+      "city_id": "edmonton",
+      "title": "EPL에서 클래식 음악도 들을 수 있었음",
+      "url": "https://www.epl.ca/resources/",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:53:21.384161-07:00",
+      "verified_fact": "EPL offers Naxos Music Library with classical and opera music and learning resources."
+    },
+    {
+      "ord": 18,
+      "city_id": "edmonton",
+      "title": "남는 공예 재료, Reuse Centre 품목부터 봄",
+      "url": "https://www.edmonton.ca/programs_services/garbage_waste/reuse-centre",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:54:11.941954-07:00",
+      "verified_fact": "Edmonton Reuse Centre accepts specified reusable craft, office/school and packaging items; donations must be in good, clean condition."
+    },
+    {
+      "ord": 19,
+      "city_id": "edmonton",
+      "title": "테니스 코트에선 기다리는 사람도 신경 쓰이겠네",
+      "url": "https://www.edmonton.ca/activities_parks_recreation/tennis-courts",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:55:19.297221-07:00",
+      "verified_fact": "Edmonton municipal tennis guidelines limit play when others wait."
+    },
+    {
+      "ord": 20,
+      "city_id": "edmonton",
+      "title": "런들 공원은 실내 공간도 같이 있네",
+      "url": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/rundle-park",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:55:17.915816-07:00",
+      "verified_fact": "Rundle Park includes ACT Aquatic and Recreation Centre with indoor swimming and fitness facilities."
+    },
+    {
+      "ord": 21,
+      "city_id": "calgary",
+      "title": "쇼핑센터 안 정원이라니 아직 신기함",
+      "url": "https://www.calgary.ca/parks/devonian-gardens.html",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:53:19.687007-07:00",
+      "verified_fact": "Devonian Gardens is inside CORE Shopping Centre and includes fountains, fish ponds and a playground."
+    },
+    {
+      "ord": 22,
+      "city_id": "calgary",
+      "title": "잉글우드 보호구역은 철새가 쉬는 곳이네",
+      "url": "https://www.calgary.ca/parks/inglewood-bird-sanctuary.html",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:53:19.732160-07:00",
+      "verified_fact": "Inglewood Bird Sanctuary provides a resting place for migratory birds; a completed reconnection project improves lagoon water quality and wildlife habitat."
+    },
+    {
+      "ord": 23,
+      "city_id": "calgary",
+      "title": "반려동물 입양, 시 보호소도 있구나",
+      "url": "https://www.calgary.ca/pets/adoption.html",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:54:12.905100-07:00",
+      "verified_fact": "Calgary Animal Services Centre provides cat and dog adoptions, alongside partner agencies."
+    },
+    {
+      "ord": 24,
+      "city_id": "calgary",
+      "title": "비상계획에 반려동물도 같이 들어가네",
+      "url": "https://www.calgary.ca/emergencies/preparedness.html",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:54:12.980505-07:00",
+      "verified_fact": "Calgary emergency-preparedness guidance includes advice for people with pets."
+    },
+    {
+      "ord": 25,
+      "city_id": "calgary",
+      "title": "캘거리 교통카메라는 녹화 영상이 아니네",
+      "url": "https://www.calgary.ca/roads/conditions/traffic-cameras.html",
+      "http_status": 200,
+      "checked_at": "2026-09-25T09:54:12.983311-07:00",
+      "verified_fact": "Calgary traffic-camera images show road conditions; the city says traffic-camera footage is not recorded."
+    }
+  ],
+  "read_only_preview": [
+    {
+      "ord": 1,
+      "city_id": "vancouver",
+      "title": "MOA에서 로브 작품 전시가 열리고 있네",
+      "timezone": "America/Vancouver",
+      "proposed_created_at": "2026-09-24 20:50:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 2,
+      "city_id": "vancouver",
+      "title": "비티 박물관, 전시랑 연구가 같이 있는 곳임",
+      "timezone": "America/Vancouver",
+      "proposed_created_at": "2026-09-25 05:03:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 3,
+      "city_id": "vancouver",
+      "title": "UBC 식물원이랑 니토베 정원은 다른 공간이네",
+      "timezone": "America/Vancouver",
+      "proposed_created_at": "2026-09-25 01:28:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 4,
+      "city_id": "vancouver",
+      "title": "Iced In은 북극에서 살아온 지식을 다루는 전시네",
+      "timezone": "America/Vancouver",
+      "proposed_created_at": "2026-09-25 05:50:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 5,
+      "city_id": "vancouver",
+      "title": "버스에서 큰 가방은 어디에 두는 게 편해?",
+      "timezone": "America/Vancouver",
+      "proposed_created_at": "2026-09-24 19:21:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 6,
+      "city_id": "toronto",
+      "title": "강아지 산책도 뛰는 공간이 따로 있구나",
+      "timezone": "America/Toronto",
+      "proposed_created_at": "2026-09-25 11:05:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 7,
+      "city_id": "toronto",
+      "title": "토론토 공공미술 지도에 조각이랑 벽화가 같이 있네",
+      "timezone": "America/Toronto",
+      "proposed_created_at": "2026-09-25 12:51:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 8,
+      "city_id": "toronto",
+      "title": "앨런가든 온실, 유리 지붕부터 눈이 가네",
+      "timezone": "America/Toronto",
+      "proposed_created_at": "2026-09-25 16:11:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 9,
+      "city_id": "toronto",
+      "title": "리버데일 팜도 시내 나들이 후보에 넣었어",
+      "timezone": "America/Toronto",
+      "proposed_created_at": "2026-09-24 17:35:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 10,
+      "city_id": "toronto",
+      "title": "지금 사는 동네의 옛 사진을 찾아보고 싶어",
+      "timezone": "America/Toronto",
+      "proposed_created_at": "2026-09-24 17:54:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 11,
+      "city_id": "montreal",
+      "title": "라퐁텐 공원의 긴 풀에도 이유가 있었네",
+      "timezone": "America/Toronto",
+      "proposed_created_at": "2026-09-25 11:22:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 12,
+      "city_id": "montreal",
+      "title": "테니스 처음 배우는 쪽도 찾아보는 중",
+      "timezone": "America/Toronto",
+      "proposed_created_at": "2026-09-25 16:38:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 13,
+      "city_id": "montreal",
+      "title": "몬트리올 소음 규정은 구마다 다르네",
+      "timezone": "America/Toronto",
+      "proposed_created_at": "2026-09-25 03:32:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 14,
+      "city_id": "montreal",
+      "title": "프레데릭백 공원, 매립지였던 땅이래",
+      "timezone": "America/Toronto",
+      "proposed_created_at": "2026-09-24 22:39:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 15,
+      "city_id": "montreal",
+      "title": "래그위드랑 포이즌아이비를 같은 풀로 생각했음",
+      "timezone": "America/Toronto",
+      "proposed_created_at": "2026-09-25 16:37:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 16,
+      "city_id": "edmonton",
+      "title": "퀸엘리자베스 공원 안에 원주민 미술 공간이 있네",
+      "timezone": "America/Edmonton",
+      "proposed_created_at": "2026-09-25 13:01:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 17,
+      "city_id": "edmonton",
+      "title": "EPL에서 클래식 음악도 들을 수 있었음",
+      "timezone": "America/Edmonton",
+      "proposed_created_at": "2026-09-25 14:32:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 18,
+      "city_id": "edmonton",
+      "title": "남는 공예 재료, Reuse Centre 품목부터 봄",
+      "timezone": "America/Edmonton",
+      "proposed_created_at": "2026-09-24 18:27:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 19,
+      "city_id": "edmonton",
+      "title": "테니스 코트에선 기다리는 사람도 신경 쓰이겠네",
+      "timezone": "America/Edmonton",
+      "proposed_created_at": "2026-09-25 14:55:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 20,
+      "city_id": "edmonton",
+      "title": "런들 공원은 실내 공간도 같이 있네",
+      "timezone": "America/Edmonton",
+      "proposed_created_at": "2026-09-25 05:54:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 21,
+      "city_id": "calgary",
+      "title": "쇼핑센터 안 정원이라니 아직 신기함",
+      "timezone": "America/Edmonton",
+      "proposed_created_at": "2026-09-25 00:12:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 22,
+      "city_id": "calgary",
+      "title": "잉글우드 보호구역은 철새가 쉬는 곳이네",
+      "timezone": "America/Edmonton",
+      "proposed_created_at": "2026-09-24 18:20:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 23,
+      "city_id": "calgary",
+      "title": "반려동물 입양, 시 보호소도 있구나",
+      "timezone": "America/Edmonton",
+      "proposed_created_at": "2026-09-24 18:08:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 24,
+      "city_id": "calgary",
+      "title": "비상계획에 반려동물도 같이 들어가네",
+      "timezone": "America/Edmonton",
+      "proposed_created_at": "2026-09-25 14:29:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    },
+    {
+      "ord": 25,
+      "city_id": "calgary",
+      "title": "캘거리 교통카메라는 녹화 영상이 아니네",
+      "timezone": "America/Edmonton",
+      "proposed_created_at": "2026-09-25 00:34:00+00",
+      "matching_posts_any_status": 0,
+      "matching_top_comments": 0,
+      "matching_author_replies": 0
+    }
+  ],
+  "limitations": [
+    "Evergreen official pages and current exhibitions were checked; no same-day event or venue-opening claims were invented.",
+    "Prices, fixed times, required documents and unverified personal visit experiences are omitted from the draft.",
+    "Deployment bundle inspection proves the paid-call path exists; no safety endpoint was invoked and no safety controls were disabled.",
+    "Publish/stage commands were intentionally not run under the no-cost constraint."
+  ]
+}

@@ -1,0 +1,138 @@
+{
+  "verified_at": "2026-10-18T09:32:44.429059+00:00",
+  "day": "2026-10-18",
+  "native_run_id": "2a22035b-7ef8-47f6-9271-8e7f418a8030",
+  "queue_version": 2,
+  "staged_regular": 25,
+  "staged_stories": 5,
+  "queue_path": "/Users/ash/Library/Application Support/gling/city-posts/payload/2026-10-18.json",
+  "queue_sha256": "3acd0884b77c8b1d318e3eb5576afc3ebb51e4169af0cbef7df86b96d8646e05",
+  "queue_source_sha256": "79c9b99e2e697e6f54a2caef37d540bc2eb8f8a8f5b4c930c68bc54bbd22c03d",
+  "manuscript_path": "/Users/ash/Desktop/Git/unknown/mobile/content/2026-10-18/posts.json",
+  "manuscript_file_sha256": "929e67ae7674fd3539dd6469011a80970eb94d5dea4cfe76a0c8a8b39adfdc5f",
+  "queue_matches_existing_prepare": true,
+  "schedule": {
+    "vancouver": {
+      "regular": 5,
+      "stories": 1,
+      "timezone": "America/Vancouver",
+      "planned_local_times": [
+        "10:15",
+        "12:34",
+        "14:41",
+        "15:59",
+        "17:43",
+        "19:27"
+      ],
+      "local_range": "10:15–19:27"
+    },
+    "toronto": {
+      "regular": 5,
+      "stories": 1,
+      "timezone": "America/Toronto",
+      "planned_local_times": [
+        "10:31",
+        "12:20",
+        "14:49",
+        "15:01",
+        "18:42",
+        "19:28"
+      ],
+      "local_range": "10:31–19:28"
+    },
+    "montreal": {
+      "regular": 5,
+      "stories": 1,
+      "timezone": "America/Toronto",
+      "planned_local_times": [
+        "09:50",
+        "11:28",
+        "14:28",
+        "15:57",
+        "17:29",
+        "19:46"
+      ],
+      "local_range": "09:50–19:46"
+    },
+    "edmonton": {
+      "regular": 5,
+      "stories": 1,
+      "timezone": "America/Edmonton",
+      "planned_local_times": [
+        "09:59",
+        "11:50",
+        "14:36",
+        "16:11",
+        "18:22",
+        "19:03"
+      ],
+      "local_range": "09:59–19:03"
+    },
+    "calgary": {
+      "regular": 5,
+      "stories": 1,
+      "timezone": "America/Edmonton",
+      "planned_local_times": [
+        "10:47",
+        "12:18",
+        "14:26",
+        "16:31",
+        "18:12",
+        "19:52"
+      ],
+      "local_range": "10:47–19:52"
+    }
+  },
+  "minimum_global_gap_minutes": 10.0,
+  "all_times_future": true,
+  "maps_verified": 17,
+  "map_purpose_and_visible_name_verified": true,
+  "author_live_binding_verified": 30,
+  "same_city_title_duplicates": 0,
+  "receipts_read_by": "existing read_receipts: daily JSON + per-post .d",
+  "confirmed": 0,
+  "attempted_unknown": 0,
+  "future_waiting": 30,
+  "missed": 0,
+  "publisher_read_exit_code": 0,
+  "publisher_status_lines": [
+    "path = /Users/ash/Library/LaunchAgents/com.gling.city-posts.plist",
+    "state = not running",
+    "program = /bin/bash",
+    "stdout path = /Users/ash/Library/Application Support/gling/city-posts/launchd.log",
+    "stderr path = /Users/ash/Library/Application Support/gling/city-posts/launchd.log",
+    "runs = 1770",
+    "last exit code = 0",
+    "state = active",
+    "state = active",
+    "run interval = 300 seconds"
+  ],
+  "installed_repo_script_hashes_match": true,
+  "script_sha256": {
+    "seed.sh": "cc8b5b6117ffe4dccb97c0dd43046a1c050ad4f11fd12fb84a4b0cc68773edd8",
+    "city-post-schedule.py": "a52d2851851b0926648b31e5ebbcbc98754825c438f388a2c2e354bd97fd1d1c"
+  },
+  "preparation_calls": {
+    "stage": 1,
+    "immediate": 0,
+    "GROW": 0,
+    "DUE": 0,
+    "SNS_publish_or_schedule": 0,
+    "paid": 0,
+    "automation_edit_or_create": 0,
+    "new_worker": 0
+  },
+  "comments": {
+    "scope": "today G6 planned queue only",
+    "observed": 0,
+    "author_replies": 0,
+    "matching_published_targets": 0,
+    "comment_count_comparison": "0 published targets, 0 stored count sum, 0 actual rows; no per-post comparison target exists",
+    "target_met": false,
+    "db_readback_file": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/poststage-db-readback.json"
+  },
+  "poststage_actual_db_published": 0,
+  "poststage_db_verified_at": "2026-10-18T09:33:10.077624+00:00",
+  "display_verification_file": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/display-verification.json",
+  "final_hash_rechecked_at": "2026-10-18T09:42:55.143830+00:00"
+}

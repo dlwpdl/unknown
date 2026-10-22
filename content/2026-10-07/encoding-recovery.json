@@ -1,0 +1,10 @@
+{
+  "root_cause": "Initial temporary encoder read only stdin; unchanged seed script passes the SQL filename as an argument.",
+  "initial_file_input_reproduced_empty": true,
+  "fixed_checks": {
+    "file": "EXACT_ROUNDTRIP",
+    "stdin": "EXACT_ROUNDTRIP"
+  },
+  "script_unchanged": true,
+  "wrapper": "jq() {\n  if [ \"$1\" = \"-Rs\" ] && [ \"$2\" = \"{query: .}\" ]; then\n    /usr/bin/python3 -c 'import json,sys; print(json.dumps({\"query\":open(sys.argv[1], encoding=\"utf-8\").read() if len(sys.argv)>1 else sys.stdin.read()}))' \"${@:3}\"\n  else\n    /usr/bin/jq \"$@\"\n  fi\n}\nexport -f jq\n"
+}

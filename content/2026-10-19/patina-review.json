@@ -1,0 +1,2069 @@
+{
+  "reviewer": "same G6 writing agent",
+  "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+  "profile": "social",
+  "tone": "casual",
+  "method": "read selected full personas and all available recent3, draft, structure and phrase edit, source/meaning/family comparison, blinded batch review",
+  "items": [
+    {
+      "ord": 1,
+      "city_id": "vancouver",
+      "author_id": "10000000-0000-0000-0000-000000000005",
+      "author_nickname": "비오는날세차",
+      "source_url": "https://www.thesoapdispensary.com/pages/tsd-about",
+      "source_body_sha256": "28743ea73967a9a99d9aea0364acbcb9dfe70c64368f426c00634cc590a61be4",
+      "draft_body_sha256": "f759ccec96531c505e004863bffdb72a6c00f9a112be568b0aa50df20df7cdb0",
+      "final_body_sha256": "f759ccec96531c505e004863bffdb72a6c00f9a112be568b0aa50df20df7cdb0",
+      "before_body": "The Soap Dispensary가 리필숍이라 용기 들고 가는 건 알겠는데, 유리병 여러 개면 장바구니가 무거워질 것 같아. 밴쿠버에서 버스나 자전거로 리필 장보기 하는 사람은 어떤 용기가 제일 안 새고 편했어?",
+      "final_body": "The Soap Dispensary가 리필숍이라 용기 들고 가는 건 알겠는데, 유리병 여러 개면 장바구니가 무거워질 것 같아. 밴쿠버에서 버스나 자전거로 리필 장보기 하는 사람은 어떤 용기가 제일 안 새고 편했어?",
+      "changed": false,
+      "pattern_findings_and_edit": "같은 작성자가 구조·번역투·반복·어조를 검토했다. 추가 교정 없이 해당 작성자의 짧고 긴 호흡과 구체 질문을 유지한다.",
+      "persona_basis": {
+        "living": {
+          "spending": "시간과 편의에 지출",
+          "household": "룸메이트와 거주",
+          "transport": "자전거와 대중교통",
+          "occupation": "프리랜서",
+          "residency_years": 8
+        },
+        "primary_interests": [
+          "동네 산책",
+          "장보기",
+          "중고 물건"
+        ],
+        "occasional_interests": [
+          "카페",
+          "사진"
+        ],
+        "six_axes": {
+          "initiative": 2,
+          "directness": 2,
+          "verbosity": 0,
+          "focus": 0,
+          "humor": 0,
+          "social": 1
+        },
+        "place_name_language": "en"
+      },
+      "recent_posts_available": 0,
+      "recent_posts_compared": [],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.671145+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 2,
+      "city_id": "vancouver",
+      "author_id": "10000000-0000-0000-0000-000000000041",
+      "author_nickname": "모델3출근러",
+      "source_url": "https://www.fabcycle.shop/pages/about",
+      "source_body_sha256": "bc9b05d36713d01c81e31c68fd477ff35bf8c8ef2a70442470f5ff847294c4ff",
+      "draft_body_sha256": "902f391b3de8b077f26dba6326b2a0e4b5026c7c8b6f29955154e62281506668",
+      "final_body_sha256": "69fea7023c7356c6ba0b5e929082c5ab6989276e52411231d0d400e98a9ae4a2",
+      "before_body": "충전선 담을 작은 파우치 정도면 바느질 처음 연습하기 괜찮을까. FABCYCLE 소개를 보니 공장에서 남은 자투리 천이랑 재고 원단을 다시 쓰는 곳이더라. 밴쿠버에서 바느질 배워본 사람, 파우치는 직선 박기만 익혀도 혼자 해볼 만했어?",
+      "final_body": "FABCYCLE 자투리 천으로 충전선 담을 작은 파우치를 만들어보고 싶어. 지퍼 달기까지 가면 갑자기 어려워질 것 같아서 끈으로 묶는 모양을 생각 중이야. 밴쿠버에서 바느질 처음 배울 때 어떤 걸 만들어야 혼자 끝내기 괜찮았어?",
+      "changed": true,
+      "pattern_findings_and_edit": "첫 문장과 끝의 이중 질문을 하나로 줄이고, 반복하던 재료 구입 고민 대신 파우치 모양을 고르는 생각으로 풀었다.",
+      "persona_basis": {
+        "living": {
+          "spending": "시간과 편의에 지출",
+          "household": "룸메이트와 거주",
+          "transport": "대중교통과 도보",
+          "occupation": "직업 과정 학생",
+          "residency_years": 1
+        },
+        "primary_interests": [
+          "언어 공부",
+          "독서",
+          "취미 수업"
+        ],
+        "occasional_interests": [
+          "중고 물건",
+          "지역 행사"
+        ],
+        "six_axes": {
+          "initiative": 1,
+          "directness": 2,
+          "verbosity": 2,
+          "focus": 2,
+          "humor": 0,
+          "social": 1
+        },
+        "place_name_language": "en"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "145fcf4f-1f5d-4004-a038-54365d18c653",
+          "title": "종이도 뭘 만들 건지 정하고 골라야겠다"
+        },
+        {
+          "id": "09d26025-1fdf-56ed-afae-b4198b7f19b1",
+          "title": "다운타운에서 도서관 찾을 때 Central Library"
+        },
+        {
+          "id": "20000000-0000-0000-0000-000000000054",
+          "title": "이런 날엔 콜하버 한 바퀴"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.671785+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 3,
+      "city_id": "vancouver",
+      "author_id": "10000000-0000-0000-0000-000000000025",
+      "author_nickname": "도서관단골",
+      "source_url": "https://www.assemblyoftext.com/pages/letter-writing-club",
+      "source_body_sha256": "1a7b5249c5a157869ef6f4969791ac5d34ad2d6f057e46e395d6f94465affbad",
+      "draft_body_sha256": "f11bb6ebc23032178bcc0de96a607f775862af8a84a28c95b2cfd88d47ac8cfd",
+      "final_body_sha256": "d0642da6786b3eb6604f19330ad5612e48d796fa36e2e73d9d04c412d489e894",
+      "before_body": "The Regional Assembly of Text의 Letter Writing Club에는 타자기도 준비돼 있대. 편지를 쓰러 모인다는 건 좋은데, 처음 보는 사람들 앞에서 글 쓰는 자리는 조금 쑥스러울 것 같아. 밴쿠버에서 이 모임 가본 사람, 각자 조용히 쓰는 편이야 아니면 이야기하면서 쓰는 편이야?",
+      "final_body": "편지 쓰러 모여서 각자 조용히 있어도 괜찮은 자리면 좀 끌려. The Regional Assembly of Text의 Letter Writing Club엔 타자기도 준비돼 있대. 밴쿠버에서 이 모임 가본 사람, 글 쓰는 시간과 서로 얘기하는 시간 중 어느 쪽이 더 많았어?",
+      "changed": true,
+      "pattern_findings_and_edit": "The로 시작하는 같은 도시 도입 중복을 없애고, 혼자 쉬는 시간과 작은 모임 사이의 화자 성향을 앞에 놓았다.",
+      "persona_basis": {
+        "living": {
+          "spending": "취미에는 선택적으로 지출",
+          "household": "파트너와 거주",
+          "transport": "자전거와 대중교통",
+          "occupation": "기술직",
+          "residency_years": 12
+        },
+        "primary_interests": [
+          "도서관",
+          "언어 공부",
+          "취미 수업"
+        ],
+        "occasional_interests": [
+          "동네 산책",
+          "집밥"
+        ],
+        "six_axes": {
+          "initiative": 0,
+          "directness": 1,
+          "verbosity": 2,
+          "focus": 0,
+          "humor": 0,
+          "social": 1
+        },
+        "place_name_language": "en"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "10bdacfb-aeed-4a75-b05f-1aca57a3b609",
+          "title": "이미 고른 책 말고, 서점에서 처음 만날 책"
+        },
+        {
+          "id": "ec0c3955-2eda-4d93-9757-683e89332bc1",
+          "title": "MOA 자료실은 책을 빌려오는 도서관과는 다르네"
+        },
+        {
+          "id": "874c87de-9844-471e-b5ca-657cbec6fb93",
+          "title": "Museum of Vancouver에서 식물 이름의 발음을 듣는 길"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.672220+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 4,
+      "city_id": "vancouver",
+      "author_id": "10000000-0000-0000-0000-000000000043",
+      "author_nickname": "게스타운커피",
+      "source_url": "https://flourist.com/collections/bread",
+      "source_body_sha256": "b830955a6ac42cac107224dc249503f91bc71f4ac73974d39f7c8545dd88fc6f",
+      "draft_body_sha256": "c75865417eb55df459965b70fa2d0d9e49255d1dd8536cb855f84a73022de31e",
+      "final_body_sha256": "579b6eeb7a24585c5949c73471bb6a7518cab2861e95ec85303dde8e6c4180cf",
+      "before_body": "Flourist 빵 목록에 Sourdough Batard랑 Pan Loaf가 같이 있네. 샌드위치도 만들고 수프 옆에도 놓을 빵 하나만 고르려면 어떤 쪽이 더 무난해? 직접 먹어본 사람의 얘기가 궁금해.",
+      "final_body": "Flourist 빵 목록에 Sourdough Batard랑 Pan Loaf가 같이 있네. 샌드위치도 만들고 수프 옆에도 놓을 빵 하나만 고르려면 어떤 쪽이 더 무난해?",
+      "changed": true,
+      "pattern_findings_and_edit": "질문 뒤에 붙은 의미가 겹치는 궁금하다는 문장을 덜었다. 제품명과 한 가지 빵을 여러 식사에 쓰려는 기준은 유지했다.",
+      "persona_basis": {
+        "living": {
+          "spending": "취미에는 선택적으로 지출",
+          "household": "룸메이트와 거주",
+          "transport": "자전거와 대중교통",
+          "occupation": "개발자",
+          "residency_years": 1
+        },
+        "primary_interests": [
+          "카페",
+          "집밥",
+          "장보기"
+        ],
+        "occasional_interests": [
+          "집 구하기",
+          "언어 공부"
+        ],
+        "six_axes": {
+          "initiative": 0,
+          "directness": 1,
+          "verbosity": 2,
+          "focus": 1,
+          "humor": 0,
+          "social": 1
+        },
+        "place_name_language": "en"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "aaf0e64c-a0ab-4a59-ad00-3d4ebc2607d7",
+          "title": "원두 이름보다 추출 방식부터 궁금해졌어"
+        },
+        {
+          "id": "74ba8b25-dfc2-4365-a9c3-ba1a94dc989f",
+          "title": "HandyCard와 HandyDART는 이용 범위가 달라"
+        },
+        {
+          "id": "e0e4bead-23bb-4063-ae81-8e4bdc647e99",
+          "title": "MOA Multiversity Galleries의 분류엔 공동체가 참여했어"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.672479+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 5,
+      "city_id": "vancouver",
+      "author_id": "10000000-0000-0000-0000-000000000038",
+      "author_nickname": "T&T장보기",
+      "source_url": "https://www.cineworks.ca/aboutus",
+      "source_body_sha256": "cfdea7de0cf99a381979a2d7de1fac2728d500bdad37eb253a46e1d88647bbaf",
+      "draft_body_sha256": "fdbdd7c13926e0935e8f95d10eba0b4376760269fcee76440ab9c752589aa2a0",
+      "final_body_sha256": "fdbdd7c13926e0935e8f95d10eba0b4376760269fcee76440ab9c752589aa2a0",
+      "before_body": "시네웍스 소개에서 독립영화 상영이랑 공개 워크숍 얘기를 읽었어. 영화를 만드는 사람이 장면 하나를 어떻게 보는지 들어보는 것도 재밌을 듯. 밴쿠버에서 영화 지식 없어도 덜 어색했던 모임이나 워크숍 있으면 알려줘. 감상문 발표부터 해야 하는 자리는 아직 자신 없음 ㅋㅋ",
+      "final_body": "시네웍스 소개에서 독립영화 상영이랑 공개 워크숍 얘기를 읽었어. 영화를 만드는 사람이 장면 하나를 어떻게 보는지 들어보는 것도 재밌을 듯. 밴쿠버에서 영화 지식 없어도 덜 어색했던 모임이나 워크숍 있으면 알려줘. 감상문 발표부터 해야 하는 자리는 아직 자신 없음 ㅋㅋ",
+      "changed": false,
+      "pattern_findings_and_edit": "같은 작성자가 구조·번역투·반복·어조를 검토했다. 추가 교정 없이 해당 작성자의 짧고 긴 호흡과 구체 질문을 유지한다.",
+      "persona_basis": {
+        "living": {
+          "spending": "실속 위주",
+          "household": "룸메이트와 거주",
+          "transport": "대중교통과 도보",
+          "occupation": "서비스직",
+          "residency_years": 3
+        },
+        "primary_interests": [
+          "카페",
+          "주말 문화생활",
+          "중고 물건"
+        ],
+        "occasional_interests": [
+          "도서관",
+          "집밥"
+        ],
+        "six_axes": {
+          "initiative": 0,
+          "directness": 1,
+          "verbosity": 2,
+          "focus": 1,
+          "humor": 2,
+          "social": 1
+        },
+        "place_name_language": "ko"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "85ab1ae7-8f42-4963-aabc-5d634297a8a4",
+          "title": "스탠리파크에서 이름 모르는 생물 하나 알아오기"
+        },
+        {
+          "id": "eede462b-df81-4922-a279-2614490819fb",
+          "title": "막차 뒤 귀가 동선엔 나이트버스도 있어"
+        },
+        {
+          "id": "a0c413ff-11fc-4d66-aa39-96df3968b846",
+          "title": "사이언스월드 Tinkering Space에선 나무 조각으로 만들어"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.672688+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 6,
+      "city_id": "toronto",
+      "author_id": "10000000-0000-0000-0000-000000000034",
+      "author_nickname": "나이아가라평일",
+      "source_url": "https://torontotoollibrary.com/search_tools/",
+      "source_body_sha256": "35beef4c19c394bd24716050b83c70cb8decfe5875b8d579cea27179d489dbf9",
+      "draft_body_sha256": "74585713905596dbf5efbb981f5ece1eba412c40a3e77e7718db1b91ea926b0b",
+      "final_body_sha256": "74585713905596dbf5efbb981f5ece1eba412c40a3e77e7718db1b91ea926b0b",
+      "before_body": "토론토툴라이브러리는 재봉틀도 빌릴 수 있대. 바지 길이 줄이는 정도부터 해보고 싶은데, 재봉틀 처음 배울 땐 수업 먼저 듣는 게 덜 헤맸어?",
+      "final_body": "토론토툴라이브러리는 재봉틀도 빌릴 수 있대. 바지 길이 줄이는 정도부터 해보고 싶은데, 재봉틀 처음 배울 땐 수업 먼저 듣는 게 덜 헤맸어?",
+      "changed": false,
+      "pattern_findings_and_edit": "같은 작성자가 구조·번역투·반복·어조를 검토했다. 추가 교정 없이 해당 작성자의 짧고 긴 호흡과 구체 질문을 유지한다.",
+      "persona_basis": {
+        "living": {
+          "spending": "취미에는 선택적으로 지출",
+          "household": "혼자 거주",
+          "transport": "대중교통과 도보",
+          "occupation": "기술직",
+          "residency_years": 0.25
+        },
+        "primary_interests": [
+          "도서관",
+          "주말 문화생활",
+          "중고 물건"
+        ],
+        "occasional_interests": [
+          "카페",
+          "집 구하기"
+        ],
+        "six_axes": {
+          "initiative": 1,
+          "directness": 0,
+          "verbosity": 0,
+          "focus": 2,
+          "humor": 1,
+          "social": 2
+        },
+        "place_name_language": "ko"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "43298390-1b99-4a11-9fe4-d338c4294954",
+          "title": "책 소리만 들어 있는 기계가 오히려 편할 듯"
+        },
+        {
+          "id": "92c7848c-7775-4864-bd24-18d34e034820",
+          "title": "토론토도서관에서 스캔해 내 메일로 보낼 수 있어"
+        },
+        {
+          "id": "6b09f714-7966-46cc-bc47-a8e8af8ccd8a",
+          "title": "평일에도 토론토에서 나이아가라 가는 GO가 있음"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.673020+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 7,
+      "city_id": "toronto",
+      "author_id": "10000000-0000-0000-0000-000000000068",
+      "author_nickname": "노스욕센터",
+      "source_url": "https://houseofanansi.com/pages/visit-the-anansi-bookshop",
+      "source_body_sha256": "8737595216ab4f53cf5cd421b5f1ddbb57758a79d49ca9580c37e1b5f0e0483d",
+      "draft_body_sha256": "d191f6aac836ccbd31d2b5ea9ce075c62c7ba2e17dbf9a02a1fe8030cbede8d9",
+      "final_body_sha256": "94a29508320d63fa019ccfdf5a1f718baed1028d3ff29dafe5857a9c930ef486",
+      "before_body": "아난시서점은 직원에게 개인 추천을 받는 예약도 있대. 책 두께에 기죽지 않고 끝까지 읽어볼 만한 영어 소설, 토론토에서 읽은 것 중 한 권만 추천해줄래? ㅋㅋ",
+      "final_body": "아난시서점은 직원 추천을 받는 예약도 있대. 영어 소설 입문으로 끝까지 읽기 부담 덜했던 책 한 권만 골라줘, 두께에 기죽는 건 빼고 ㅋㅋ",
+      "changed": true,
+      "pattern_findings_and_edit": "따로 떨어진 웃음과 똑같은 추천해줄래 종결을 화자의 짧은 농담 안으로 합쳤다. 예약 추천 서비스와 한 권 요청은 보존했다.",
+      "persona_basis": {
+        "living": {
+          "spending": "시간과 편의에 지출",
+          "household": "룸메이트와 거주",
+          "transport": "자전거와 대중교통",
+          "occupation": "소규모 자영업자",
+          "residency_years": 5
+        },
+        "primary_interests": [
+          "공부 공간",
+          "언어 공부",
+          "독서"
+        ],
+        "occasional_interests": [
+          "장보기",
+          "주말 문화생활"
+        ],
+        "six_axes": {
+          "initiative": 1,
+          "directness": 0,
+          "verbosity": 0,
+          "focus": 0,
+          "humor": 2,
+          "social": 0
+        },
+        "place_name_language": "ko"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "51c97406-f342-4da2-9942-a616bc6402f3",
+          "title": "도서관 전자만화는 대기줄 없는 서비스도 있네"
+        },
+        {
+          "id": "ebced0ec-8044-4c13-8911-ef55b5a6e634",
+          "title": "토론토식물원의 시험 정원은 다음 식물을 고르는 자리였네"
+        },
+        {
+          "id": "c4223edc-9c36-44a6-8706-412964605f7e",
+          "title": "토론토 섬유박물관은 온라인으로도 소장품을 보여주네"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.673773+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 8,
+      "city_id": "toronto",
+      "author_id": "10000000-0000-0000-0000-000000000090",
+      "author_nickname": "댄포스그릭",
+      "source_url": "https://thespicetrader.ca/collections/herbs-spices-1",
+      "source_body_sha256": "ff9442f94c2b32aa11c5ff6729cf5e5ee91c5a198ac0fb0341592e7142c81fdb",
+      "draft_body_sha256": "ac7fb884a9e7df9dddc861b6db914c1487a2e9267bccac6c6713ba81a14057df",
+      "final_body_sha256": "18f05c9a7fb7435df694bed3294c2bed819e68e0a62d07c0f89d3d7c9a503988",
+      "before_body": "감자 구울 때 제일 자주 쓰는 향신료 조합 있어? 스파이스트레이더 목록을 보다 보니, 토론토에서 쉽게 구해서 집밥에 계속 쓰는 조합이 궁금해졌어.",
+      "final_body": "감자 구울 때 제일 자주 쓰는 향신료 조합 있어? 토론토에서 구하기 쉬운 걸로 알려주면 집밥 메뉴에 넣어보고 싶어.",
+      "changed": true,
+      "pattern_findings_and_edit": "다시 목록을 읽다가 궁금해졌다는 도입을 덜고 바로 요리 질문으로 시작했다. 특정 가게를 소개하는 글이 아니어서 장소·지도 필드도 제거한다.",
+      "persona_basis": {
+        "living": {
+          "spending": "시간과 편의에 지출",
+          "household": "파트너와 거주",
+          "transport": "대중교통과 도보",
+          "occupation": "서비스직",
+          "residency_years": 7
+        },
+        "primary_interests": [
+          "카페",
+          "새로운 음식",
+          "외식 비용"
+        ],
+        "occasional_interests": [
+          "집밥",
+          "언어 공부"
+        ],
+        "six_axes": {
+          "initiative": 2,
+          "directness": 0,
+          "verbosity": 0,
+          "focus": 2,
+          "humor": 0,
+          "social": 2
+        },
+        "place_name_language": "ko"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "fcf6ac68-9151-47b1-a937-12448cbeca34",
+          "title": "세인트로렌스마켓 토요일 장은 새벽 5시에 시작"
+        },
+        {
+          "id": "808d8ef7-24ba-4bb3-9e97-728294365ab2",
+          "title": "큰 물건은 수거 규칙이 따로 있음"
+        },
+        {
+          "id": "4fd63441-5677-5e2a-9b8f-f456022a9102",
+          "title": "공항 가는 TTC 정보는 공식 안내부터"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.674050+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 9,
+      "city_id": "toronto",
+      "author_id": "10000000-0000-0000-0000-000000000069",
+      "author_nickname": "CN타워야경",
+      "source_url": "https://www.snakesandlattes.com/college",
+      "source_body_sha256": "c943f369f2d43e0b10c00fd33bf335214ddbe7f8b012e41fd6ea9c9a87399f4d",
+      "draft_body_sha256": "a8d6699bcbfe08c87562208308c52cb8ae27676c5e0a64fbef6923b111a1857c",
+      "final_body_sha256": "a2ba960c8e64bcedf5bdf9ca709d9c43bee9c62d968fd190f29f4e5d5f12dc84",
+      "before_body": "Snakes & Lattes College는 게임 고르는 것도 도와준다고 하네. 둘이 가면 룰 읽다가 저녁 다 쓰는 게임보단 설명 짧고 바로 시작할 수 있는 게 좋겠어. 토론토에서 보드게임 카페 가는 사람들, 두 명이 처음 하기 좋은 게임 하나만 골라줘.",
+      "final_body": "Snakes & Lattes College에서 둘이 한 게임만 제대로 해보고 싶어. 보드게임 카페 자주 가는 사람들, 규칙 설명 짧고 바로 시작할 수 있는 2인 게임 추천해줘. 이름이라도 알고 가면 고르는 시간은 줄겠지.",
+      "changed": true,
+      "pattern_findings_and_edit": "정보를 요약하고 반응하는 구조를 둘이 할 활동 선택으로 바꿨다. 방문·예약·플레이 경험은 만들지 않고 게임 선정 기준은 유지했다.",
+      "persona_basis": {
+        "living": {
+          "spending": "취미에는 선택적으로 지출",
+          "household": "룸메이트와 거주",
+          "transport": "자전거와 대중교통",
+          "occupation": "직업 과정 학생",
+          "residency_years": 5
+        },
+        "primary_interests": [
+          "집밥",
+          "카페",
+          "주말 문화생활"
+        ],
+        "occasional_interests": [
+          "동네 산책",
+          "반려동물"
+        ],
+        "six_axes": {
+          "initiative": 2,
+          "directness": 2,
+          "verbosity": 2,
+          "focus": 2,
+          "humor": 1,
+          "social": 0
+        },
+        "place_name_language": "en"
+      },
+      "recent_posts_available": 2,
+      "recent_posts_compared": [
+        {
+          "id": "b264b46d-0e6a-41af-a5f8-e22bb0bb6062",
+          "title": "수거통 사이 간격, Toronto는 0.5m를 안내해"
+        },
+        {
+          "id": "f476d9c8-03b3-462b-bcaa-97c4b80ae196",
+          "title": "TTC 지하철역 자전거 주차도 같이 생각해볼 만함"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.674295+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 10,
+      "city_id": "toronto",
+      "author_id": "10000000-0000-0000-0000-000000000083",
+      "author_nickname": "고트레인출근",
+      "source_url": "https://www.evergreen.ca/evergreen-brick-works/visitor-info/plan-your-visit/",
+      "source_body_sha256": "730485d1a0469906ce7309be47222cb523ea1d6c0593b8962b8a04b77910f798",
+      "draft_body_sha256": "a05f75036680aa658265799fa753fa81ea1b8c62a4d86d1d72cf91e51f149e5b",
+      "final_body_sha256": "a05f75036680aa658265799fa753fa81ea1b8c62a4d86d1d72cf91e51f149e5b",
+      "before_body": "Evergreen Brick Works는 옛 벽돌공장 구경이랑 산책을 같이 할 수 있겠네. 처음 가서 한 시간쯤 천천히 둘러본다면 어디까지 돌아보는 게 좋을까?",
+      "final_body": "Evergreen Brick Works는 옛 벽돌공장 구경이랑 산책을 같이 할 수 있겠네. 처음 가서 한 시간쯤 천천히 둘러본다면 어디까지 돌아보는 게 좋을까?",
+      "changed": false,
+      "pattern_findings_and_edit": "같은 작성자가 구조·번역투·반복·어조를 검토했다. 추가 교정 없이 해당 작성자의 짧고 긴 호흡과 구체 질문을 유지한다.",
+      "persona_basis": {
+        "living": {
+          "spending": "실속 위주",
+          "household": "파트너와 거주",
+          "transport": "대중교통과 도보",
+          "occupation": "기술직",
+          "residency_years": 2
+        },
+        "primary_interests": [
+          "장보기",
+          "도서관",
+          "주말 문화생활"
+        ],
+        "occasional_interests": [
+          "사진",
+          "카페"
+        ],
+        "six_axes": {
+          "initiative": 0,
+          "directness": 0,
+          "verbosity": 0,
+          "focus": 2,
+          "humor": 0,
+          "social": 2
+        },
+        "place_name_language": "en"
+      },
+      "recent_posts_available": 1,
+      "recent_posts_compared": [
+        {
+          "id": "04d16ab5-dc9e-4dee-af32-b692a543e2be",
+          "title": "가로수 가지치기도 Toronto 시에 요청할 수 있어"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.674884+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 11,
+      "city_id": "montreal",
+      "author_id": "49392196-fb82-5ea3-bced-4b7bb76dcec0",
+      "author_nickname": "메트로한칸",
+      "source_url": "https://laremise.ca/les-ateliers/atelier-couture/",
+      "source_body_sha256": "e38710c36ab87922c2e52039f9148ff471b6153fc213be17a938dbcd14c84378",
+      "draft_body_sha256": "e4864778ad070d6ff5dabe96417441a3ad6509a5a909d78facb7e991a78415c6",
+      "final_body_sha256": "19d37a1e8b24521d52a9e64e32fe6ee70463ae2d10c049290ab3c336efebdad3",
+      "before_body": "옷을 버리기 전에 간단한 수선부터 배워보고 싶어. 라르미즈의 빌르레 재봉실에는 재봉틀과 실, 단추 같은 재료를 쓸 수 있다고 나와 있네. 기계 처음 잡는 사람도 도움받으며 작은 수선을 해볼 수 있는 분위기였어?",
+      "final_body": "옷을 버리기 전에 간단한 수선부터 배워보고 싶어. 라르미즈 재봉실에는 재봉틀과 실, 단추 같은 재료를 쓸 수 있다고 나와 있네. 기계 처음 잡는 사람도 도움받으며 작은 수선을 해볼 수 있는 분위기였어?",
+      "changed": true,
+      "pattern_findings_and_edit": "검증하지 않은 동네 한국어 음역을 덜었다. 지도는 실제 Villeray 지점의 공식 이름과 확인한 주소를 그대로 사용한다.",
+      "persona_basis": {
+        "living": {
+          "spending": "실속 위주",
+          "household": "가족과 거주",
+          "transport": "대중교통과 도보",
+          "occupation": "대학원생",
+          "residency_years": 5
+        },
+        "primary_interests": [
+          "반려동물",
+          "동네 산책",
+          "중고 물건"
+        ],
+        "occasional_interests": [
+          "집밥",
+          "언어 공부"
+        ],
+        "six_axes": {
+          "initiative": 0,
+          "directness": 0,
+          "verbosity": 2,
+          "focus": 0,
+          "humor": 0,
+          "social": 1
+        },
+        "place_name_language": "ko"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "ffed6c44-f28b-4a5e-8b12-7d691d9239ce",
+          "title": "고양이 카페의 겨울 신발 안내가 눈에 남았어"
+        },
+        {
+          "id": "cf14e144-462a-44e7-b642-90fb538a1f65",
+          "title": "부아드리에스 공원, 구앵길 북쪽 산책로는 공사 중"
+        },
+        {
+          "id": "9b8f57d5-2512-4518-b871-a3680f954680",
+          "title": "Parc Jarry 산책로와 농구장은 정비 안내가 있어"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.675088+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 12,
+      "city_id": "montreal",
+      "author_id": "2212d766-7329-5611-847e-ee0f59c8eb0e",
+      "author_nickname": "아트워터오후",
+      "source_url": "https://www.les-affutes.ca/ateliers/cuisine/dresser-comme-un-chef/",
+      "source_body_sha256": "f9b0c13abc585fdab412de0913a2a15445ae4246d8f0fd3d77ca378dcf87537d",
+      "draft_body_sha256": "4a295423896d038d84277e2e0dbd54b8e9c0dc858dbdeb675b9a84a1eb63374f",
+      "final_body_sha256": "d106da7096415c70dbd169de6dce1c1c3ec0661776bfc3807ee2dde900b5a1c6",
+      "before_body": "집밥을 접시에 담는 것만 바꿔도 얼마나 달라지는지 궁금해서, 레자퓌테 빌라주 지점의 플레이팅 수업 소개까지 읽었어. 새 그릇 안 사고 당장 해볼 만한 팁 하나만 알려줄 수 있어? 괜히 집에 있는 접시 크기부터 다시 보게 되네.",
+      "final_body": "집밥도 담는 모양을 바꾸면 어떻게 달라질지 궁금해. 레자퓌테 빌라주 수업 소개에는 색이랑 높이, 접시 안 비율도 다룬다고 하네. 새 그릇 안 사고 해볼 만한 팁 하나만 알려줄래?",
+      "changed": true,
+      "pattern_findings_and_edit": "실제로 집의 접시를 다시 봤다는 듯한 장면을 없애고, 디자이너 화자의 모양·배움 관심을 구체화했다. 공식 수업의 색·볼륨·접시 비율 항목과 일치한다.",
+      "persona_basis": {
+        "living": {
+          "spending": "취미에는 선택적으로 지출",
+          "household": "파트너와 거주",
+          "transport": "차량과 도보",
+          "occupation": "디자이너",
+          "residency_years": 8
+        },
+        "primary_interests": [
+          "동네 산책",
+          "집밥",
+          "카페"
+        ],
+        "occasional_interests": [
+          "언어 공부",
+          "사진"
+        ],
+        "six_axes": {
+          "initiative": 0,
+          "directness": 0,
+          "verbosity": 2,
+          "focus": 2,
+          "humor": 1,
+          "social": 1
+        },
+        "place_name_language": "ko"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "2d704eea-e42a-474b-82e4-aa1fb5b35c28",
+          "title": "같이 밥을 만드는 일이 동네를 아는 방법일 수도"
+        },
+        {
+          "id": "8cf76dbc-f1f3-417b-92da-6bca1868f3c8",
+          "title": "베이글만 살 때랑 앉아서 먹을 때는 고르는 지점도 다르네"
+        },
+        {
+          "id": "3dcbe837-44b5-4042-9cae-4097402ba9d7",
+          "title": "프롬나드벨리브 공원은 강을 따라 길게 이어져"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.675510+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 13,
+      "city_id": "montreal",
+      "author_id": "6aa367e6-70a0-5702-a758-af383ce1503c",
+      "author_nickname": "올드포트바람",
+      "source_url": "https://cinemacinema.ca/fr/cinema-beaubien",
+      "source_body_sha256": "652177f7d35ab7834197523d4f3f0e7900273d2159cf8a92ecf7225715f7d91f",
+      "draft_body_sha256": "e5c72ce08a8093b1c74c9886e43dc677504be490a231bcdcbe949192cd700acb",
+      "final_body_sha256": "6c026750f6133dab0e52896a13a81959090ed4316a83397c3127b012fda01bc4",
+      "before_body": "보비앙 상영표 보는 중인데 프랑스어 영화 하나 골라보고 싶어. 몬트리올에서 본 것 중 대사가 조금 놓쳐져도 줄거리를 따라가기 편했던 영화 추천해줄래?",
+      "final_body": "보비앙 상영표 보는 중인데 프랑스어 영화 하나 골라보고 싶어. 몬트리올에서 본 것 중 대사 좀 놓쳐도 줄거리 따라가기 편했던 영화 추천해줄래?",
+      "changed": true,
+      "pattern_findings_and_edit": "대사가 놓쳐져도라는 어색한 수동 표현을 구어로 고쳤다. 상영표 관측과 새 영화 선택 질문은 그대로다.",
+      "persona_basis": {
+        "living": {
+          "spending": "시간과 편의에 지출",
+          "household": "룸메이트와 거주",
+          "transport": "자전거와 대중교통",
+          "occupation": "직업 과정 학생",
+          "residency_years": 5
+        },
+        "primary_interests": [
+          "동네 산책",
+          "장보기",
+          "주말 문화생활"
+        ],
+        "occasional_interests": [
+          "도서관",
+          "집밥"
+        ],
+        "six_axes": {
+          "initiative": 2,
+          "directness": 0,
+          "verbosity": 1,
+          "focus": 0,
+          "humor": 1,
+          "social": 0
+        },
+        "place_name_language": "ko"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "bf97891f-aecd-40d7-a737-e79f06ad7e11",
+          "title": "몬트리올의 옛 생활은 어떤 물건으로 남았을까"
+        },
+        {
+          "id": "5f66add7-fa06-4696-8b5f-907d3a221063",
+          "title": "혼자 본 영화는 끝나고 잠깐 더 머물고 싶어"
+        },
+        {
+          "id": "53dfbe15-4a8a-4fc4-b751-625b854fb7f6",
+          "title": "캐나다건축센터 10월 일반 관람은 목~일요일이야"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.676361+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 14,
+      "city_id": "montreal",
+      "author_id": "58ccb286-f809-5c83-91f5-0b249eb68fa0",
+      "author_nickname": "장탈롱바구니",
+      "source_url": "https://guillau.me/collections/les-traditions",
+      "source_body_sha256": "b3cedf4753cb9e64f60ce56d724b8df7d5a9f3291e3bd574a417ad767952051b",
+      "draft_body_sha256": "95b3ccb570420b11a21a70ab83aa9626a7e4775c9b712070e49945fc59bbca19",
+      "final_body_sha256": "dfd3b7dc707841dcb7de266edd2e46f9c330c5f1bab82695e403a381716f315b",
+      "before_body": "귀욤 빵 목록에 바게트랑 작은 파베가 따로 있네. 저녁에 수프 곁들여 둘이 먹을 거면 어느 쪽을 얼마나 사야 덜 남을까?",
+      "final_body": "귀욤에서 둘이 먹을 저녁 빵 고르면 바게트 하나로 충분할까? 수프랑 곁들일 생각인데 작은 파베를 각자 하나씩 사는 게 나을지도 고민돼.",
+      "changed": true,
+      "pattern_findings_and_edit": "카탈로그 설명을 앞세우는 대신 두 사람의 한 끼 양을 묻는 질문으로 시작했다. 아직 구매하지 않은 선택이며 실제 상품 종류만 사용했다.",
+      "persona_basis": {
+        "living": {
+          "spending": "시간과 편의에 지출",
+          "household": "파트너와 거주",
+          "transport": "차량과 도보",
+          "occupation": "카페 파트타이머",
+          "residency_years": 8
+        },
+        "primary_interests": [
+          "집밥",
+          "장보기",
+          "반려동물"
+        ],
+        "occasional_interests": [
+          "언어 공부",
+          "지역 행사"
+        ],
+        "six_axes": {
+          "initiative": 2,
+          "directness": 0,
+          "verbosity": 0,
+          "focus": 1,
+          "humor": 0,
+          "social": 2
+        },
+        "place_name_language": "ko"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "dc17052c-fe19-45dc-8cde-a03bd89ccbe9",
+          "title": "치즈 구경부터 하면 저녁 메뉴가 자꾸 커질 것 같아"
+        },
+        {
+          "id": "3544e3fc-d806-4388-9e2d-eb917be1f86c",
+          "title": "장탈롱시장은 추수감사절 연휴에도 열어"
+        },
+        {
+          "id": "cfb1ce47-c125-4621-bd8f-11c8a0016fa6",
+          "title": "메종뇌브시장은 이웃들의 노력으로 다시 문을 연 시장이네"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.676828+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 15,
+      "city_id": "montreal",
+      "author_id": "3af69d3c-ebe8-5e33-9f8c-e62a1abc7e24",
+      "author_nickname": "우편번호수첩",
+      "source_url": "https://insertech.ca/en/digital-sustainability/how-to-extend-the-life-of-your-computer/",
+      "source_body_sha256": "5ab22dbb07fa77f1d6d384a46e0822f47bf88c85524212fccc8111fee738ab51",
+      "draft_body_sha256": "9dc826162470eb02c709c25526fdbf6dbaada24f90c52a7e22df1afcb64295a5",
+      "final_body_sha256": "9dc826162470eb02c709c25526fdbf6dbaada24f90c52a7e22df1afcb64295a5",
+      "before_body": "Insertech가 컴퓨터 오래 쓰는 법으로 청소랑 소프트웨어 정리부터 안내하네. 몬트리올에서 노트북 수리 맡겨본 사람, 견적의 어느 부분을 보고 수리할지 바꿀지 결정했어?",
+      "final_body": "Insertech가 컴퓨터 오래 쓰는 법으로 청소랑 소프트웨어 정리부터 안내하네. 몬트리올에서 노트북 수리 맡겨본 사람, 견적의 어느 부분을 보고 수리할지 바꿀지 결정했어?",
+      "changed": false,
+      "pattern_findings_and_edit": "같은 작성자가 구조·번역투·반복·어조를 검토했다. 추가 교정 없이 해당 작성자의 짧고 긴 호흡과 구체 질문을 유지한다.",
+      "persona_basis": {
+        "living": {
+          "spending": "취미에는 선택적으로 지출",
+          "household": "파트너와 거주",
+          "transport": "대중교통과 도보",
+          "occupation": "개발자",
+          "residency_years": 5
+        },
+        "primary_interests": [
+          "장보기",
+          "반려동물",
+          "도서관"
+        ],
+        "occasional_interests": [
+          "주말 문화생활",
+          "동네 산책"
+        ],
+        "six_axes": {
+          "initiative": 2,
+          "directness": 1,
+          "verbosity": 0,
+          "focus": 1,
+          "humor": 2,
+          "social": 0
+        },
+        "place_name_language": "ko"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "c41705a5-bac0-497c-9250-035637b8ae7e",
+          "title": "장탈롱시장은 겨울에도 이어지는 장보기 자리네"
+        },
+        {
+          "id": "bc78304f-b505-4ba3-89fb-6ac71af35c6e",
+          "title": "일드라비지타시옹 공원엔 옛 제분소 흔적도 있네"
+        },
+        {
+          "id": "ad8c3568-67d9-4c5f-80b1-1c970bae90d6",
+          "title": "메종뇌브공원 여름 잔디 관리엔 양도 한몫하네"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.677121+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 16,
+      "city_id": "edmonton",
+      "author_id": "10000000-0000-0000-0000-000000000113",
+      "author_nickname": "헨데이하이웨이",
+      "source_url": "https://paintspot.ca/the-paint-spot-about-us/",
+      "source_body_sha256": "7b4d16d3e8c6f3e59d29bff6f1eb2775a9f0b3efb781f12f7936aea29b48b8c1",
+      "draft_body_sha256": "28e357d4260669925da6dc9e9ec2275cfccbbf7dc6d7050d80c247019836f68a",
+      "final_body_sha256": "44a5ca5f99b1d12b0926b2af28894fa97a8acfb948a5a6f6aa4e9286fc62a7df",
+      "before_body": "The Paint Spot 소개를 보니 작가인 직원들이 재료 상담도 해준대. 전시 구경하는 쪽에서 한 장 그려보는 쪽으로도 넘어가 보고 싶은데, 재료 세트부터 펼치면 고르는 데만 하루 쓸 것 같아 ㅋㅋ 에드먼튼에서 처음 동네 스케치 할 때 펜 하나만 고른다면 뭘 추천해?",
+      "final_body": "동네 풍경 한 장 그려보고 싶어. The Paint Spot은 작가인 직원들이 재료 상담도 해준다는데, 가기 전에 펜부터 어느 정도 감을 잡고 싶네. 에드먼튼에서 스케치 시작할 때 손에 편했던 펜 하나 추천해줘. 내 그림 실력보다 장비가 먼저 늘어나는 건 조심할 예정 ㅋㅋ",
+      "changed": true,
+      "pattern_findings_and_edit": "공지 같은 첫 줄을 전시 관심에서 직접 그려보고 싶은 마음으로 바꿨다. 직원 상담 사실을 보존하고 긴 문장 뒤 짧은 자기 농담으로 호흡을 달리했다.",
+      "persona_basis": {
+        "living": {
+          "spending": "시간과 편의에 지출",
+          "household": "혼자 거주",
+          "transport": "대중교통과 도보",
+          "occupation": "프리랜서",
+          "residency_years": 0.25
+        },
+        "primary_interests": [
+          "문화 행사",
+          "전시",
+          "주말 근교 이동"
+        ],
+        "occasional_interests": [
+          "장보기",
+          "언어 공부"
+        ],
+        "six_axes": {
+          "initiative": 2,
+          "directness": 1,
+          "verbosity": 2,
+          "focus": 2,
+          "humor": 2,
+          "social": 2
+        },
+        "place_name_language": "en"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "e21edfcc-0f3b-43a1-855d-19ffbcd1391b",
+          "title": "비행기박물관에서 큰 브릭 프로젝트도 하네"
+        },
+        {
+          "id": "93a7c7cf-e951-4dea-932b-da6600417576",
+          "title": "영화관에서 포스터 만드는 봉사도 하는구나"
+        },
+        {
+          "id": "b284806a-f390-467b-813a-3937b6bc31ad",
+          "title": "Royal Alberta Museum은 사람·자연·살아 있는 벌레까지"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.677361+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 17,
+      "city_id": "edmonton",
+      "author_id": "10000000-0000-0000-0000-000000000101",
+      "author_nickname": "U오브A도서관",
+      "source_url": "https://duchessatelier.com/",
+      "source_body_sha256": "a565198bd4e20ef6d99f79af41b3eeec7a6caeebe10014d6bd5db3d65a3a51db",
+      "draft_body_sha256": "a985e1bd25f46d962682240368ea7de7b16622e4608a7104a0cb37d7b8ae3c3a",
+      "final_body_sha256": "a985e1bd25f46d962682240368ea7de7b16622e4608a7104a0cb37d7b8ae3c3a",
+      "before_body": "Duchess Atelier가 베이크숍 옆 새 공간에서 수업을 연다고 하네. 수업에서 만들고 끝나는 것보다 집에서도 다시 해먹을 수 있는 메뉴를 배우고 싶어. 에드먼튼에서 베이킹 입문 수업 들어본 사람, 어떤 메뉴가 집에서 복습하기 편했어?",
+      "final_body": "Duchess Atelier가 베이크숍 옆 새 공간에서 수업을 연다고 하네. 수업에서 만들고 끝나는 것보다 집에서도 다시 해먹을 수 있는 메뉴를 배우고 싶어. 에드먼튼에서 베이킹 입문 수업 들어본 사람, 어떤 메뉴가 집에서 복습하기 편했어?",
+      "changed": false,
+      "pattern_findings_and_edit": "같은 작성자가 구조·번역투·반복·어조를 검토했다. 추가 교정 없이 해당 작성자의 짧고 긴 호흡과 구체 질문을 유지한다.",
+      "persona_basis": {
+        "living": {
+          "spending": "취미에는 선택적으로 지출",
+          "household": "룸메이트와 거주",
+          "transport": "차량과 도보",
+          "occupation": "프리랜서",
+          "residency_years": 7
+        },
+        "primary_interests": [
+          "집밥",
+          "중고 물건",
+          "동네 산책"
+        ],
+        "occasional_interests": [
+          "장보기",
+          "도서관"
+        ],
+        "six_axes": {
+          "initiative": 0,
+          "directness": 1,
+          "verbosity": 2,
+          "focus": 2,
+          "humor": 0,
+          "social": 0
+        },
+        "place_name_language": "en"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "08648f4f-e6a3-46d9-a87a-14f512a2016c",
+          "title": "공짜 재료라도 집에 둘 자리는 생각해야지"
+        },
+        {
+          "id": "4c642b39-2927-4ffc-8169-430974cdcb77",
+          "title": "시장 좌판 아래가 버스 정비 자리였다니"
+        },
+        {
+          "id": "7b6474df-d677-40cc-aefb-7efcc3fa2b43",
+          "title": "Jackie Parker Park 호수는 수영하는 곳이 아니야"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.677597+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 18,
+      "city_id": "edmonton",
+      "author_id": "10000000-0000-0000-0000-000000000125",
+      "author_nickname": "올드스트라스코나",
+      "source_url": "https://yardbirdsuite.com/shows/tuesday-jam-hosted-by-nate-downey/",
+      "source_body_sha256": "672c773165dffe3c1e1ecea934294cb7595181319786cf52dbbe683ed8e71377",
+      "draft_body_sha256": "6f835402b72ff1c22aad5f353a900b2f087a701ef460011cf18130a3289fd5bd",
+      "final_body_sha256": "6f835402b72ff1c22aad5f353a900b2f087a701ef460011cf18130a3289fd5bd",
+      "before_body": "Yardbird Suite의 20일 화요일 잼 공연이 눈에 들어왔어. 연주에 참여하기보단 듣는 쪽으로 가보고 싶은데, 혼자 가본 사람들은 합석 자리에서도 음악 듣기 편했어?",
+      "final_body": "Yardbird Suite의 20일 화요일 잼 공연이 눈에 들어왔어. 연주에 참여하기보단 듣는 쪽으로 가보고 싶은데, 혼자 가본 사람들은 합석 자리에서도 음악 듣기 편했어?",
+      "changed": false,
+      "pattern_findings_and_edit": "같은 작성자가 구조·번역투·반복·어조를 검토했다. 추가 교정 없이 해당 작성자의 짧고 긴 호흡과 구체 질문을 유지한다.",
+      "persona_basis": {
+        "living": {
+          "spending": "실속 위주",
+          "household": "파트너와 거주",
+          "transport": "대중교통과 도보",
+          "occupation": "카페 파트타이머",
+          "residency_years": 0.5
+        },
+        "primary_interests": [
+          "카페",
+          "도서관",
+          "주말 문화생활"
+        ],
+        "occasional_interests": [
+          "집 구하기",
+          "장보기"
+        ],
+        "six_axes": {
+          "initiative": 0,
+          "directness": 1,
+          "verbosity": 1,
+          "focus": 0,
+          "humor": 0,
+          "social": 1
+        },
+        "place_name_language": "en"
+      },
+      "recent_posts_available": 0,
+      "recent_posts_compared": [],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.677840+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 19,
+      "city_id": "edmonton",
+      "author_id": "10000000-0000-0000-0000-000000000110",
+      "author_nickname": "제스퍼애비뉴",
+      "source_url": "https://hfh.org/restore/donations-hub/",
+      "source_body_sha256": "c8dd371d9ad2350e051ea3aafc7770ff5e522c8d49fa693cdbfdc48da753e287",
+      "draft_body_sha256": "55953be6a42ccdf9439c6f0b06369bad50641dc875418108187800abb8ce1e32",
+      "final_body_sha256": "55953be6a42ccdf9439c6f0b06369bad50641dc875418108187800abb8ce1e32",
+      "before_body": "리스토어 기부 픽업은 집 안에 들어오거나 지하실에서 물건을 옮겨주진 않는다고 안내해. 큰 물건을 내놓으려면 밖으로 옮기는 방법부터 생각해야겠네. 에드먼튼에서 큰 가구 기부해본 사람, 그 부분은 어떻게 해결했어?",
+      "final_body": "리스토어 기부 픽업은 집 안에 들어오거나 지하실에서 물건을 옮겨주진 않는다고 안내해. 큰 물건을 내놓으려면 밖으로 옮기는 방법부터 생각해야겠네. 에드먼튼에서 큰 가구 기부해본 사람, 그 부분은 어떻게 해결했어?",
+      "changed": false,
+      "pattern_findings_and_edit": "같은 작성자가 구조·번역투·반복·어조를 검토했다. 추가 교정 없이 해당 작성자의 짧고 긴 호흡과 구체 질문을 유지한다.",
+      "persona_basis": {
+        "living": {
+          "spending": "시간과 편의에 지출",
+          "household": "룸메이트와 거주",
+          "transport": "차량과 도보",
+          "occupation": "직업 과정 학생",
+          "residency_years": 7
+        },
+        "primary_interests": [
+          "반려동물",
+          "집밥",
+          "중고 물건"
+        ],
+        "occasional_interests": [
+          "주말 문화생활",
+          "사진"
+        ],
+        "six_axes": {
+          "initiative": 0,
+          "directness": 1,
+          "verbosity": 1,
+          "focus": 2,
+          "humor": 0,
+          "social": 0
+        },
+        "place_name_language": "ko"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "76091159-d45e-429b-89e7-4e839f081a7c",
+          "title": "실내 전시 보고 연못 옆 길까지 이어서"
+        },
+        {
+          "id": "3e23661d-1f65-42d3-9a64-1badae2421c0",
+          "title": "EPL 작가 프로그램은 책 읽는 사람과 쓰는 사람을 이어주네"
+        },
+        {
+          "id": "9973f61f-ce44-4ae5-a68e-7e04adec5291",
+          "title": "알버타미술관은 그림 전시 말고 영화와 투어도 다루네"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.678459+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 20,
+      "city_id": "edmonton",
+      "author_id": "10000000-0000-0000-0000-000000000106",
+      "author_nickname": "노스사스카츄완강",
+      "source_url": "https://acquiredtastetea.com/collections/herbal",
+      "source_body_sha256": "b44754c6c37607d920cffd131f7416086c782c538ee20f57d08ea7f62e137bb4",
+      "draft_body_sha256": "37d5c4d70a0c92f328c294ad91988e647bca65dc0a503399389e753997f6b4a0",
+      "final_body_sha256": "37d5c4d70a0c92f328c294ad91988e647bca65dc0a503399389e753997f6b4a0",
+      "before_body": "Acquired Taste 허브티 종류를 보는데 이름만으로는 맛이 잘 안 그려지네. 에드먼튼에서 마셔본 것 중 향 너무 세지 않고 저녁에 편하게 마시기 좋았던 거 있어?",
+      "final_body": "Acquired Taste 허브티 종류를 보는데 이름만으로는 맛이 잘 안 그려지네. 에드먼튼에서 마셔본 것 중 향 너무 세지 않고 저녁에 편하게 마시기 좋았던 거 있어?",
+      "changed": false,
+      "pattern_findings_and_edit": "같은 작성자가 구조·번역투·반복·어조를 검토했다. 추가 교정 없이 해당 작성자의 짧고 긴 호흡과 구체 질문을 유지한다.",
+      "persona_basis": {
+        "living": {
+          "spending": "시간과 편의에 지출",
+          "household": "혼자 거주",
+          "transport": "차량과 도보",
+          "occupation": "사무직",
+          "residency_years": 0.25
+        },
+        "primary_interests": [
+          "도서관",
+          "주말 문화생활",
+          "집밥"
+        ],
+        "occasional_interests": [
+          "집 구하기",
+          "카페"
+        ],
+        "six_axes": {
+          "initiative": 2,
+          "directness": 1,
+          "verbosity": 0,
+          "focus": 1,
+          "humor": 1,
+          "social": 1
+        },
+        "place_name_language": "ko"
+      },
+      "recent_posts_available": 2,
+      "recent_posts_compared": [
+        {
+          "id": "fb68a7e2-96b3-492a-bbf6-bf92af0ffa46",
+          "title": "코로네이션공원 화장실은 임시 위치를 봐야겠어"
+        },
+        {
+          "id": "5b49ba43-539a-4df0-8911-ce9c9aff0cb3",
+          "title": "알버타미술관 What Shapes Us는 반복되는 모양을 보는 전시"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.678627+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 21,
+      "city_id": "calgary",
+      "author_id": "10000000-0000-0000-0000-000000000141",
+      "author_nickname": "컨페더레이션공원",
+      "source_url": "https://plantshop.ca/products/diy-terrarium-workshop-1",
+      "source_body_sha256": "53128bd7ffca28fb2eb04005f1b2bbc21e0d80d9cdbd8be6fd2cf364f7ff5419",
+      "draft_body_sha256": "bf7a1feaa502c2a8f30b6bb00aa46131208aca7e3c8ba9bf6d7ffca82cee2a5d",
+      "final_body_sha256": "bf7a1feaa502c2a8f30b6bb00aa46131208aca7e3c8ba9bf6d7ffca82cee2a5d",
+      "before_body": "PLANT 테라리움 수업은 유리 용기랑 식물, 만드는 재료를 같이 준대. 캘거리 집 안에서 작은 테라리움 키워본 사람은 어떤 식물이 관리하기 덜 까다로웠어? 예쁜 걸 만드는 것보다 그다음이 더 궁금함 ㅋㅋ",
+      "final_body": "PLANT 테라리움 수업은 유리 용기랑 식물, 만드는 재료를 같이 준대. 캘거리 집 안에서 작은 테라리움 키워본 사람은 어떤 식물이 관리하기 덜 까다로웠어? 예쁜 걸 만드는 것보다 그다음이 더 궁금함 ㅋㅋ",
+      "changed": false,
+      "pattern_findings_and_edit": "같은 작성자가 구조·번역투·반복·어조를 검토했다. 추가 교정 없이 해당 작성자의 짧고 긴 호흡과 구체 질문을 유지한다.",
+      "persona_basis": {
+        "living": {
+          "spending": "실속 위주",
+          "household": "가족과 거주",
+          "transport": "차량과 도보",
+          "occupation": "사무직",
+          "residency_years": 3
+        },
+        "primary_interests": [
+          "반려동물",
+          "중고 물건",
+          "카페"
+        ],
+        "occasional_interests": [
+          "사진",
+          "도서관"
+        ],
+        "six_axes": {
+          "initiative": 2,
+          "directness": 0,
+          "verbosity": 1,
+          "focus": 1,
+          "humor": 2,
+          "social": 2
+        },
+        "place_name_language": "en"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "3db289ce-c414-4177-a1f6-198478798e10",
+          "title": "큰 전시 일정 못 잡아도 복도에서 작품 볼 수 있네"
+        },
+        {
+          "id": "593b115c-2262-416a-be54-902e4bf2e6c5",
+          "title": "커피 한 잔 뒤에 있는 기계가 더 궁금해짐"
+        },
+        {
+          "id": "314ebd1d-8c66-4227-a192-046a6cdbac3c",
+          "title": "스탠리공원 안 작은 공원 이름엔 캘거리에서 산 사람 이야기가 있네"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.678818+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 22,
+      "city_id": "calgary",
+      "author_id": "10000000-0000-0000-0000-000000000133",
+      "author_nickname": "글렌모어공원",
+      "source_url": "https://calgaryphil.com/concerts/plan-your-visit/faq/",
+      "source_body_sha256": "29abec4040fff94ec0c6fb1ba81ed384401529861dc257bb96f58678997d7a3d",
+      "draft_body_sha256": "84888b7b6437ba57813f4372c7de28749d7cb547f03c74aeb801b638b219f6a5",
+      "final_body_sha256": "84888b7b6437ba57813f4372c7de28749d7cb547f03c74aeb801b638b219f6a5",
+      "before_body": "Calgary Philharmonic 안내에 정장 필수는 아니라고 써 있어서 복장 걱정은 하나 덜었음. 첫 공연이라면 곡을 미리 들어보고 가는 쪽이 더 재밌었어, 아예 모르고 가는 쪽이 좋았어?",
+      "final_body": "Calgary Philharmonic 안내에 정장 필수는 아니라고 써 있어서 복장 걱정은 하나 덜었음. 첫 공연이라면 곡을 미리 들어보고 가는 쪽이 더 재밌었어, 아예 모르고 가는 쪽이 좋았어?",
+      "changed": false,
+      "pattern_findings_and_edit": "같은 작성자가 구조·번역투·반복·어조를 검토했다. 추가 교정 없이 해당 작성자의 짧고 긴 호흡과 구체 질문을 유지한다.",
+      "persona_basis": {
+        "living": {
+          "spending": "실속 위주",
+          "household": "파트너와 거주",
+          "transport": "대중교통과 도보",
+          "occupation": "개발자",
+          "residency_years": 0.5
+        },
+        "primary_interests": [
+          "카페",
+          "집밥",
+          "주말 문화생활"
+        ],
+        "occasional_interests": [
+          "언어 공부",
+          "동네 산책"
+        ],
+        "six_axes": {
+          "initiative": 0,
+          "directness": 1,
+          "verbosity": 1,
+          "focus": 2,
+          "humor": 1,
+          "social": 2
+        },
+        "place_name_language": "en"
+      },
+      "recent_posts_available": 2,
+      "recent_posts_compared": [
+        {
+          "id": "921a8f23-dbe8-4dc2-9cf8-0a312f7fd689",
+          "title": "Cypress Resume는 이력서 첫 틀 잡는 자료네"
+        },
+        {
+          "id": "92d68b07-59fe-4e55-a486-9dd54e0f9e36",
+          "title": "Gasoline Alley Museum에 그림책에서 나온 체험 전시가 있어"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.679209+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 23,
+      "city_id": "calgary",
+      "author_id": "10000000-0000-0000-0000-000000000130",
+      "author_nickname": "C트레인통근",
+      "source_url": "https://www.calgaryclimbing.com/how-to-get-started/",
+      "source_body_sha256": "d484bef2622adb41e897fc1a3d8429454dd1b36eac9e6aaf9685c4f86b60427e",
+      "draft_body_sha256": "3c55c32dbddd168ac63b27038ddd6264a7448e0d13cd0989639a939aa96a6b1b",
+      "final_body_sha256": "3c55c32dbddd168ac63b27038ddd6264a7448e0d13cd0989639a939aa96a6b1b",
+      "before_body": "캘거리클라이밍센터 안내 보니 혼자 시작하는 방식도 있네. 평소 걷는 쪽이 편한데 실내 운동도 하나 찾아보고 싶어. 처음엔 볼더링 체험이랑 기초 수업 중 어느 쪽이 덜 막막했어?",
+      "final_body": "캘거리클라이밍센터 안내 보니 혼자 시작하는 방식도 있네. 평소 걷는 쪽이 편한데 실내 운동도 하나 찾아보고 싶어. 처음엔 볼더링 체험이랑 기초 수업 중 어느 쪽이 덜 막막했어?",
+      "changed": false,
+      "pattern_findings_and_edit": "같은 작성자가 구조·번역투·반복·어조를 검토했다. 추가 교정 없이 해당 작성자의 짧고 긴 호흡과 구체 질문을 유지한다.",
+      "persona_basis": {
+        "living": {
+          "spending": "취미에는 선택적으로 지출",
+          "household": "룸메이트와 거주",
+          "transport": "대중교통과 도보",
+          "occupation": "프리랜서",
+          "residency_years": 2
+        },
+        "primary_interests": [
+          "통근 동선",
+          "자전거",
+          "동네 산책"
+        ],
+        "occasional_interests": [
+          "카페",
+          "장보기"
+        ],
+        "six_axes": {
+          "initiative": 0,
+          "directness": 0,
+          "verbosity": 1,
+          "focus": 0,
+          "humor": 1,
+          "social": 0
+        },
+        "place_name_language": "ko"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "cd71d789-9f9b-4586-b4c4-e8b9b76a4024",
+          "title": "내 자전거길은 빠른 길보다 덜 겁나는 길이면 좋겠어"
+        },
+        {
+          "id": "a13a69bb-2477-46b2-b3b2-1968dac87410",
+          "title": "새 이름 찾을 땐 캘거리도서관 소리 자료도 있네"
+        },
+        {
+          "id": "721c43a9-bc7f-46db-8906-77773842cb92",
+          "title": "캘거리트랜짓 분실물은 센터스트리트 쪽에서 찾아"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.680061+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 24,
+      "city_id": "calgary",
+      "author_id": "10000000-0000-0000-0000-000000000129",
+      "author_nickname": "17에비뉴커피",
+      "source_url": "https://www.villageicecream.com/flavours",
+      "source_body_sha256": "2388d7272477cae2ead3e28201ada43a246992cb2c51fe3db15b3f97d7a68c81",
+      "draft_body_sha256": "4cfe891a522b0c95f7e99088dc36898f12636f4383117cb5162e7f1190afc411",
+      "final_body_sha256": "e9ab0dff186c54742b117835b114d28e3a6ac5ea9d6dae733ea84dff40478bdf",
+      "before_body": "Village Ice Cream Bridgeland 쪽으로 알아보는 중인데 메뉴에 Phil & Sebastian Coffee랑 Two Hills Earl Grey가 같이 있네. 이름만으론 커피랑 차 향이 얼마나 진할지 모르겠어. 캘거리에서 둘 다 먹어본 사람, 단맛이 덜 앞서는 쪽은 어느 쪽이었어?",
+      "final_body": "Village Ice Cream Bridgeland 알아보다가 메뉴의 Phil & Sebastian Coffee랑 Two Hills Earl Grey에서 멈췄음. 커피 맛을 고르면 차 맛도 계속 신경 쓰일 것 같아. 둘 다 먹어본 사람은 어느 쪽이 향이 진하고 덜 달게 느껴졌어?",
+      "changed": true,
+      "pattern_findings_and_edit": "허브티 글과 겹치던 이름만으로는 맛이 안 그려진다는 문장을 없앴다. 커피·카페 관심과 두 메뉴 사이의 선택을 유지하고 맛을 직접 평가하지 않았다.",
+      "persona_basis": {
+        "living": {
+          "spending": "취미에는 선택적으로 지출",
+          "household": "룸메이트와 거주",
+          "transport": "자전거와 대중교통",
+          "occupation": "카페 파트타이머",
+          "residency_years": 0.5
+        },
+        "primary_interests": [
+          "반려동물",
+          "집밥",
+          "동네 산책"
+        ],
+        "occasional_interests": [
+          "카페",
+          "지역 행사"
+        ],
+        "six_axes": {
+          "initiative": 2,
+          "directness": 1,
+          "verbosity": 2,
+          "focus": 0,
+          "humor": 1,
+          "social": 0
+        },
+        "place_name_language": "en"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "611a43d3-90a5-45f4-8848-d66682495f1e",
+          "title": "시장 가는 날엔 일주일 치 욕심부터 줄이고 싶어"
+        },
+        {
+          "id": "6c7fba49-e5bb-42ed-b1ec-829255215511",
+          "title": "National Geographic Kids는 옛 잡지도 읽을 수 있어"
+        },
+        {
+          "id": "eccc43f1-d68d-4a0e-b832-8f4a25aa13ed",
+          "title": "Calgary Public Library 메뉴에 음악도 있었네"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.680448+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 25,
+      "city_id": "calgary",
+      "author_id": "10000000-0000-0000-0000-000000000128",
+      "author_nickname": "보우강변산책",
+      "source_url": "https://www.winsyyc.ca/donate-goods",
+      "source_body_sha256": "edae63685ee800f0fb6f9fb4b0a4f69229457bc097655af7c8c3750363e0d96f",
+      "draft_body_sha256": "b40a9b04e7c7d30be37763bdea80ccad6b40f6a0777448a3d5bd0394bf9aa92b",
+      "final_body_sha256": "a6607a166517b7dac80dd555f339d2f88cda1615b328f684c93026635057ae69",
+      "before_body": "윈즈는 새 옷이나 깨끗하고 상태 좋은 중고 옷을 받는다고 해. 안 입는다고 전부 기부 봉투에 넣으면 받는 쪽에 정리할 일만 넘길 수도 있겠네. 캘거리에서 옷 기부해본 사람, 옷 상태를 어디까지 손보고 가져갔어? 보풀 정리 정도면 되는지부터 궁금해.",
+      "final_body": "윈즈에 옷 기부해본 사람, 보풀 있는 니트는 어디까지 손질해서 가져갔어? 안내엔 깨끗하고 상태 좋은 옷을 받는다고 돼 있는데, 그 상태 좋음이 글로만 봐선 좀 애매해. 받는 사람한테 보풀 제거하는 일까지 넘기고 싶진 않음.",
+      "changed": true,
+      "pattern_findings_and_edit": "일반 교훈을 정리하는 마지막 대신 실제로 답할 수 있는 손질 기준을 먼저 물었다. 기부했다고 말하지 않고 공식 조건과 화자의 판단을 구분했다.",
+      "persona_basis": {
+        "living": {
+          "spending": "취미에는 선택적으로 지출",
+          "household": "혼자 거주",
+          "transport": "대중교통과 도보",
+          "occupation": "대학생",
+          "residency_years": 5
+        },
+        "primary_interests": [
+          "반려동물",
+          "카페",
+          "중고 물건"
+        ],
+        "occasional_interests": [
+          "언어 공부",
+          "지역 행사"
+        ],
+        "six_axes": {
+          "initiative": 2,
+          "directness": 2,
+          "verbosity": 2,
+          "focus": 0,
+          "humor": 2,
+          "social": 0
+        },
+        "place_name_language": "ko"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "7e9db247-c6c6-48ed-986d-88d4a8f200eb",
+          "title": "새 보러 가는 길에는 강아지와 자전거를 빼야 해"
+        },
+        {
+          "id": "06c9edd3-7384-44af-99fb-34b5bcd06885",
+          "title": "보우니스공원의 겨울 소개엔 얼음 자전거도 나와"
+        },
+        {
+          "id": "8e2de1a4-d5e2-47f0-890b-0af6c28677ad",
+          "title": "텔러스스파크 Open Studio는 직접 만드는 공간이야"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": null,
+      "reviewed_at": "2026-10-19T09:26:59.681034+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 26,
+      "city_id": "vancouver",
+      "author_id": "bfe21c78-da18-5a49-908f-3d3afae8144d",
+      "author_nickname": "비오는지도",
+      "source_url": "https://www.teamblind.com/kr/post/%EC%98%81%EC%9C%A0-%EB%B3%B4%EB%82%B4%EA%B3%A0%EC%8B%B6%EC%9D%80%EB%8D%B0-%EC%99%80%EC%9D%B4%ED%94%84%EB%B0%98%EB%8C%80-c5zskk7w",
+      "source_body_sha256": "4802ef40935195b8cf08ae58539cc60c86505cff9fe88dae57467b1de9c541f7",
+      "draft_body_sha256": "944d62c0fa7b2fefa9fd656dbe0ac8d33956a749626fe060574b52b7184345fc",
+      "final_body_sha256": "c86d65ba9200aad145ea7692f98df2d9e34e5e156146ea32361d06035d118175",
+      "before_body": "밴쿠버 오기 전, 큰애 영어수업 문제로 아내랑 의견이 갈렸어. 나는 내가 영어 때문에 불편했던 게 커서 일찍 배워두게 하고 싶었고, 아내는 아직 한국말도 익숙하지 않은데 영어부터 들이밀지 말자고 했어. 비용을 못 낼 형편은 아니었는데 그게 핵심은 아니더라.\n결국 영어 활동 비중이 있는 유치원으로 합의했어. 큰애가 책 읽기를 좋아하고 차분하다 보니 잘 따라갈 거라는 기대도 컸고.\n지금 밴쿠버에서 한국말과 영어를 같이 지키려니, 내가 못해서 생긴 불안을 아이에게 넘기는 건 아닌가 싶어. 두 언어 쓰는 집에선 배우자랑 어떤 기준부터 맞췄어?",
+      "final_body": "밴쿠버 오기 전, 큰애 영어수업 문제로 아내랑 의견이 갈렸어. 나는 영어에 자신이 없어서 아이는 일찍 배워두게 하고 싶었고, 아내는 아직 한글도 잘 모르는데 영어부터 들이밀지 말자고 했어. 비용을 못 낼 형편은 아니었는데 그게 핵심은 아니더라.\n결국 영어 활동 비중이 있는 유치원으로 합의했어. 큰애가 책 읽기를 좋아하고 차분하다 보니 잘 따라갈 거라는 기대도 컸고.\n지금 밴쿠버에서 한국말과 영어를 같이 지키려니, 내 불안을 아이에게 넘기는 건 아닌가 싶어. 두 언어 쓰는 집에선 배우자랑 어떤 기준부터 맞췄어?",
+      "changed": true,
+      "pattern_findings_and_edit": "원문의 한글 읽기 문제를 한국어 말하기 미숙으로 넓혔던 부분을 바로잡았다. 영어 불편 경험을 구체 사건처럼 만들지 않고 자신의 자신감 문제로 남겼다. 유치원 합의와 아이 성향은 보존했다.",
+      "persona_basis": {
+        "living": {
+          "spending": "시간과 편의에 지출",
+          "household": "가족과 거주",
+          "transport": "자전거와 대중교통",
+          "occupation": "프리랜서",
+          "residency_years": 0.5
+        },
+        "primary_interests": [
+          "공부 공간",
+          "직무 공부",
+          "언어 공부"
+        ],
+        "occasional_interests": [
+          "사진",
+          "주말 문화생활"
+        ],
+        "six_axes": {
+          "initiative": 1,
+          "directness": 2,
+          "verbosity": 1,
+          "focus": 1,
+          "humor": 2,
+          "social": 2
+        },
+        "place_name_language": "en"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "4297654c-c22d-46c9-a8a1-d378d57eb996",
+          "title": "Bloedel Conservatory에서는 바닥의 작은 새도 조심"
+        },
+        {
+          "id": "beb18f59-4a2f-47db-bf36-d18c453faea4",
+          "title": "밴쿠버 경찰박물관엔 손으로 해보는 과학수사 교육도 있네"
+        },
+        {
+          "id": "2a75e901-f38e-4de8-b20e-f93d8da270e7",
+          "title": "어른도 다시 기초 과목 배우는 길이 있네"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": {
+        "access": "public_full_body_read",
+        "original_conflict": "다섯 살을 앞둔 아이의 영어 조기교육을 원하는 아버지와 한국어가 먼저라는 아내가 대립했으나, 영어 강화 사립유치원으로 합의한 상태. 아버지는 자신의 영어 부족과 아이의 독서 성향을 근거로 기대함.",
+        "fictional_changes": [
+          "가족은 고정된 35세 남성·기혼6년·5세/2세 두 자녀로 유지",
+          "한국 유치원 선택 장면은 Vancouver 입국 전으로 명시해 거주6개월과 양립",
+          "한국의 특정 학제·사립유치원을 현지 제도로 주장하지 않음",
+          "현지 두 언어 생활에 대한 질문과 화자의 자기 의심을 각색해 추가; 성과·아이의 후속 적응은 만들지 않음"
+        ]
+      },
+      "reviewed_at": "2026-10-19T09:26:59.681297+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 27,
+      "city_id": "toronto",
+      "author_id": "10000000-0000-0000-0000-000000000070",
+      "author_nickname": "스카보로블러프",
+      "source_url": "https://www.teamblind.com/kr/post/%EC%A7%80%EB%B0%A9%EC%9D%B4%EC%A0%84-%EA%B3%B5%EA%B3%B5%EA%B8%B0%EA%B4%80-%EB%8B%A4%EB%8B%88%EB%8A%94-%EB%B0%B0%EC%9A%B0%EC%9E%90-%EC%9E%88%EB%8A%94-%EC%82%AC%EB%9E%8C%EB%93%A4-%EC%9E%88%EC%96%B4-055upci2",
+      "source_body_sha256": "b43d0ef0a7cac3bae34420be045db776509441cdcef6cdca0f4bc537c38f42a8",
+      "draft_body_sha256": "ed86fb4e9e26c2a3cd02a40bf35897e3a752a25ac1d7a826a5126afabf0de869",
+      "final_body_sha256": "25663196c59c36cb2c4476b603106f942eaf257bddf401ba27a6649e4dd9a472",
+      "before_body": "아내 직장이 먼 곳으로 옮겨진다고 해서 이사 얘기부터 나왔어. 나는 토론토에서 하는 일을 당장 옮기기 어렵고, 세 살 아이를 대신 봐줄 사람도 따로 없어. 출퇴근 시간이 길어지면 등하원부터 어떻게 나눠야 할지 막막해.\n회사 쪽 통근 지원도 없어서 아내도 나도 답답해하고 있어. 그만두라는 말은 하고 싶지 않은데, 일단 버티자고만 하면 부담을 아내한테 미루는 것 같고.\n배우자 직장이 멀어졌을 때 한 사람의 이직이랑 가족 이사를 어떤 순서로 비교했어?",
+      "final_body": "아내 직장이 먼 곳으로 옮겨졌는데 나는 토론토에서 하는 일을 당장 옮기기 어려워. 세 살 아이를 대신 봐줄 사람도 따로 없어서 출퇴근 시간이 길어지면 등하원부터 어떻게 나눠야 할지 막막해.\n회사 쪽 통근 지원도 없어서 아내도 나도 답답해하고 있어. 그만두라는 말은 하고 싶지 않은데 일단 버티자고만 하면 부담을 아내한테 미루는 것 같고.\n배우자 직장이 멀어졌을 때 한 사람의 이직이랑 가족 이사를 어떤 순서로 비교했어?",
+      "changed": true,
+      "pattern_findings_and_edit": "원문의 이미 이전된 직장을 미래 예정으로 바꾸지 않도록 시제를 고쳤다. 원문에 없는 이사 대화 장면을 덜고 부부가 함께 막막하다는 맥락은 유지했다.",
+      "persona_basis": {
+        "living": {
+          "spending": "시간과 편의에 지출",
+          "household": "가족과 거주",
+          "transport": "차량과 도보",
+          "occupation": "디자이너",
+          "residency_years": 5
+        },
+        "primary_interests": [
+          "빵과 디저트",
+          "새로운 음식",
+          "외식 비용"
+        ],
+        "occasional_interests": [
+          "동네 산책",
+          "집 구하기"
+        ],
+        "six_axes": {
+          "initiative": 0,
+          "directness": 0,
+          "verbosity": 1,
+          "focus": 0,
+          "humor": 1,
+          "social": 2
+        },
+        "place_name_language": "ko"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "9f987963-4854-5def-8080-612a2ca267e9",
+          "title": "장인어른과 친해져서 좋았는데 아내는 주말이 힘들었대"
+        },
+        {
+          "id": "5fd97a1f-1ef4-5c26-90b8-3f51f9672b3f",
+          "title": "부모님 한 달 방문, 왜 준비는 배우자 한 사람 몫이 될까"
+        },
+        {
+          "id": "f22e6571-6e98-43b8-bb24-af16a3ea8f4a",
+          "title": "세인트로렌스마켓 사우스마켓은 오늘 월요일 휴무"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": {
+        "access": "public_full_body_read",
+        "original_conflict": "배우자 직장의 강제 이전, 본인 직장 때문에 이사하기 어려운 점, 어린 아이와 돌봄 인력 부재, 통근버스 지원 부재 때문에 부부가 함께 막막해함. 해결 결말 없음.",
+        "fictional_changes": [
+          "서울·공공기관의 구체 정보는 제거하고 Toronto의 가상 직장 이전 상황으로 옮김; 실제 현지 회사·정책 사례가 아님",
+          "복수의 어린 아이는 고정 가족 설정의3세 자녀1명으로 조정",
+          "화자는 고정된35세 남성 디자이너·기혼6년을 유지하고 배우자의 직업은 단정하지 않음",
+          "이직을 권한 댓글을 해결된 결말로 옮기지 않고 아직 비교 중인 선택으로 남김"
+        ]
+      },
+      "reviewed_at": "2026-10-19T09:26:59.681470+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 28,
+      "city_id": "montreal",
+      "author_id": "04528f50-f69f-5ecf-a9d5-cc9b092f2ba2",
+      "author_nickname": "운하옆돌멩이",
+      "source_url": "https://www.teamblind.com/kr/post/%EC%B2%98%EA%B0%80%EC%A7%91%EC%97%90%EC%84%9C-%EA%B2%BD%EC%A0%9C%EC%A0%81-%EB%8F%84%EC%9B%80%EC%9D%80-%EC%97%86%EB%8A%94%EB%8D%B0-wx22nl7q",
+      "source_body_sha256": "479d63f18b9153a32852b2ad64526bcbc731258505cf1bb3673398c249331b66",
+      "draft_body_sha256": "2e7c25ae0ed1bafd2ad585d6622d5d3fab28e0f44bb48845599e1cfc9aef4887",
+      "final_body_sha256": "2e7c25ae0ed1bafd2ad585d6622d5d3fab28e0f44bb48845599e1cfc9aef4887",
+      "before_body": "장인장모님이 예의를 지키라고 하실 때, 처가에서 우리한테 보태준 건 없다는 말이 먼저 나와버렸어. 생활에 소소하게 보태주는 건 우리 부모님이고, 장인장모님은 넉넉하지 않은 살림에도 처남 쪽을 도와주는 게 쌓였던 것 같아.\n아내는 내가 부모님한테 대들었다고 화를 냈고 처가에서도 반응이 안 좋았어. 서운함은 남아 있는데 돈을 얼마나 보탰는지로 예의를 따진 말은 다시 생각하게 돼.\n부부 돈 얘기에 양가가 끼어들면, 지원받는 문제랑 가족 사이의 선을 어떻게 나눠서 얘기해?",
+      "final_body": "장인장모님이 예의를 지키라고 하실 때, 처가에서 우리한테 보태준 건 없다는 말이 먼저 나와버렸어. 생활에 소소하게 보태주는 건 우리 부모님이고, 장인장모님은 넉넉하지 않은 살림에도 처남 쪽을 도와주는 게 쌓였던 것 같아.\n아내는 내가 부모님한테 대들었다고 화를 냈고 처가에서도 반응이 안 좋았어. 서운함은 남아 있는데 돈을 얼마나 보탰는지로 예의를 따진 말은 다시 생각하게 돼.\n부부 돈 얘기에 양가가 끼어들면, 지원받는 문제랑 가족 사이의 선을 어떻게 나눠서 얘기해?",
+      "changed": false,
+      "pattern_findings_and_edit": "같은 작성자가 구조·번역투·반복·어조를 검토했다. 추가 교정 없이 해당 작성자의 짧고 긴 호흡과 구체 질문을 유지한다.",
+      "persona_basis": {
+        "living": {
+          "spending": "취미에는 선택적으로 지출",
+          "household": "파트너와 거주",
+          "transport": "대중교통과 도보",
+          "occupation": "프리랜서",
+          "residency_years": 7
+        },
+        "primary_interests": [
+          "카페",
+          "주말 문화생활",
+          "반려동물"
+        ],
+        "occasional_interests": [
+          "집 구하기",
+          "도서관"
+        ],
+        "six_axes": {
+          "initiative": 2,
+          "directness": 1,
+          "verbosity": 1,
+          "focus": 2,
+          "humor": 2,
+          "social": 2
+        },
+        "place_name_language": "ko"
+      },
+      "recent_posts_available": 1,
+      "recent_posts_compared": [
+        {
+          "id": "3318a87f-8440-5ff9-be6f-53d3bd18c17d",
+          "title": "정착 좀 도와달랬는데, 거절하니 배우자 못 믿냐는 말이 돌아옴"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": {
+        "access": "public_full_body_read",
+        "original_conflict": "처가의 경제적 도움 없이 예절 요구를 받는다고 느낀 남편이 장인장모에게 대들었고 아내와 처가가 화를 냈다는 단문. 본인 부모의 소소한 지원, 처남 쪽 지원과의 비교가 근거이며 화해 결말은 없음.",
+        "fictional_changes": [
+          "고정35세 남성·기혼4년·자녀 없음·프리랜서 설정을 유지",
+          "장소는 고정 Montréal 화자의 관점으로 옮기되 실제 캐나다 가족 사건으로 검증됐다는 주장을 하지 않음",
+          "사적인 직장·원문 욕설·가족에 대한 비방은 재현하지 않음",
+          "남편의 돈과 예의 연결 논리를 그대로 남기고 자기 점검과 질문을 각색; 화해나 새 사건은 추가하지 않음"
+        ]
+      },
+      "reviewed_at": "2026-10-19T09:26:59.681676+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 29,
+      "city_id": "edmonton",
+      "author_id": "037e2821-46ca-5d82-8241-f001f477bcdc",
+      "author_nickname": "주말운동화",
+      "source_url": "https://www.teamblind.com/kr/post/%EB%91%98%EC%A7%B8-%EB%82%B3%EA%B3%A0-%EB%82%A8%ED%8E%B8%EC%9D%B4%EB%9E%91-%EC%82%AC%EC%9D%B4%EA%B0%80-%EC%99%84%EC%A0%84-%ED%8C%8C%EA%B5%AD%EC%9D%B4%EB%8B%A4-gsy5zlkv",
+      "source_body_sha256": "056fbfb44f5817654ddc5bee72a7e0a5fdba4558afa01dc5ad235c05a88d5488",
+      "draft_body_sha256": "f41e4b2ee8e01af206129c994e41315c17ac5855a8eb677079ffc3dfce5f8796",
+      "final_body_sha256": "882aeb2faabf57121612393d9c587ffd272c8be7d3643fc2acee78308be8ad22",
+      "before_body": "둘째 백일 무렵엔 첫째 등하원과 밥, 집안일과 돈 관리까지 내가 챙겼어. 아내는 퇴근 후 아이를 씻기고 젖병도 닦았지만, 물건이 안 보일 때마다 나를 불렀어.\n한번은 같이 쓰던 제품이 다 떨어진 걸 말 안 해서 내가 쓰려고 보니 없더라. 물건 하나보다 주문할 때까지 전부 내 몫인 게 힘들었어. 크게 화내고 나서야 좀 움직였고.\n에드먼튼에서 둘이 육아하는 집은 챙기고 지시하는 일까지 한쪽 몫이 안 되게 어떻게 나눠?",
+      "final_body": "둘째 백일 무렵엔 첫째 등하원과 밥, 집안일과 돈 관리까지 내가 챙겼어. 아내는 퇴근 후 아이를 씻기고 젖병도 닦았지만 물건이 안 보일 때마다 나를 불렀어.\n한번은 내 화장품을 같이 쓰다 다 쓴 걸 말 안 해서 내가 쓰려고 보니 없더라. 물건 하나보다 주문할 때까지 전부 내 몫인 게 힘들었어. 크게 화내고 나서야 좀 움직였고.\n에드먼튼에서 둘이 육아하는 집은 챙기고 지시하는 일까지 한쪽 몫이 안 되게 어떻게 나눠?",
+      "changed": true,
+      "pattern_findings_and_edit": "원문의 화자 화장품을 배우자가 쓰고 고갈을 알리지 않았다는 구체 맥락을 보존했다. 남성 화자가 화장품을 쓰는 것은 설정 충돌이 아니며 출산·수유 경험은 옮기지 않았다. 짧은 문장과 과거 시점은 유지했다.",
+      "persona_basis": {
+        "living": {
+          "spending": "시간과 편의에 지출",
+          "household": "가족과 거주",
+          "transport": "자전거와 대중교통",
+          "occupation": "디자이너",
+          "residency_years": 1
+        },
+        "primary_interests": [
+          "반려동물",
+          "카페",
+          "집밥"
+        ],
+        "occasional_interests": [
+          "장보기",
+          "동네 산책"
+        ],
+        "six_axes": {
+          "initiative": 1,
+          "directness": 2,
+          "verbosity": 0,
+          "focus": 1,
+          "humor": 0,
+          "social": 2
+        },
+        "place_name_language": "ko"
+      },
+      "recent_posts_available": 0,
+      "recent_posts_compared": [],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": {
+        "access": "public_full_body_read",
+        "original_conflict": "첫째3세·둘째100일인 맞벌이 공무원 부부에서 아내가 돈관리·등하원·식사·살림을 주도함. 남편도 아이 목욕·젖병·설거지를 하지만 물건 찾기와 소모품 고갈 알림까지 아내가 챙겨야 해서 폭발했고, 화낸 뒤에야 움직였다는 미해결 갈등.",
+        "fictional_changes": [
+          "가족 역할을 남성 주양육자 화자와 아내로 바꾸고 모유수유·임신·출산 경험을 남성에게 부여하지 않음",
+          "공무원 부부 정보는 고정 디자이너 화자와 미상 배우자로 조정",
+          "현재5세/2세 자녀는 유지하며 둘째100일 무렵의 과거 장면으로 명시; 당시 첫째3세와 양립",
+          "현재 Edmonton 거주1년보다 오래된 장면이므로 과거 발생 도시를 Edmonton으로 단정하지 않음",
+          "배우자가 해온 목욕·젖병 일도 보존하고, 댓글의 강압·비하 표현이나 해결 결말을 추가하지 않음"
+        ]
+      },
+      "reviewed_at": "2026-10-19T09:26:59.682125+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    },
+    {
+      "ord": 30,
+      "city_id": "calgary",
+      "author_id": "10000000-0000-0000-0000-000000000132",
+      "author_nickname": "프린스아일랜드",
+      "source_url": "https://www.teamblind.com/kr/post/%EC%8B%9C%EB%8C%81-%EC%8B%9D%EA%B5%AC%EB%93%A4%EC%9D%B4-%EC%9D%80%EA%B7%BC%ED%9E%88-%EB%82%B4%EA%B2%8C%EB%A7%8C-%EC%9D%BC%EC%9D%84-%EC%8B%9C%ED%82%A4%EB%8A%94%EB%8D%B0-fp8twpx1",
+      "source_body_sha256": "b7e9e87a2320d03590ac79a0c36b68e3fe471c9b731ad48b9b8ba73511dfecb8",
+      "draft_body_sha256": "b41ba582126fa8390863441817ab2309c635b10d56da04f73d0547f571b60644",
+      "final_body_sha256": "b41ba582126fa8390863441817ab2309c635b10d56da04f73d0547f571b60644",
+      "before_body": "우리 집에서 시댁 모임을 하면 뒷정리는 자연스럽게 내 차지가 돼. 얼마 전엔 저녁에 백숙 한다고 했더니 시댁에 오신 손님 것도 같이 대접해줄 수 있냐고 하셨어.\n평소 나한테 못해주시는 건 아니야. 그래도 다른 가족도 있는데 이런 부탁은 내 쪽으로만 오는 게 쌓여. 집안일은 남편도 하기 시작했는데 모임 일은 또 내가 말해야 나뉘는 건가 싶고.\n양가 모임 때 초대한 사람이 준비와 뒷정리부터 나누자고 하면 너무 계산적으로 보일까?",
+      "final_body": "우리 집에서 시댁 모임을 하면 뒷정리는 자연스럽게 내 차지가 돼. 얼마 전엔 저녁에 백숙 한다고 했더니 시댁에 오신 손님 것도 같이 대접해줄 수 있냐고 하셨어.\n평소 나한테 못해주시는 건 아니야. 그래도 다른 가족도 있는데 이런 부탁은 내 쪽으로만 오는 게 쌓여. 집안일은 남편도 하기 시작했는데 모임 일은 또 내가 말해야 나뉘는 건가 싶고.\n양가 모임 때 초대한 사람이 준비와 뒷정리부터 나누자고 하면 너무 계산적으로 보일까?",
+      "changed": false,
+      "pattern_findings_and_edit": "같은 작성자가 구조·번역투·반복·어조를 검토했다. 추가 교정 없이 해당 작성자의 짧고 긴 호흡과 구체 질문을 유지한다.",
+      "persona_basis": {
+        "living": {
+          "spending": "실속 위주",
+          "household": "파트너와 거주",
+          "transport": "차량과 도보",
+          "occupation": "서비스직",
+          "residency_years": 3
+        },
+        "primary_interests": [
+          "취미 수업",
+          "공부 공간",
+          "도서관"
+        ],
+        "occasional_interests": [
+          "주말 문화생활",
+          "지역 행사"
+        ],
+        "six_axes": {
+          "initiative": 0,
+          "directness": 2,
+          "verbosity": 0,
+          "focus": 0,
+          "humor": 2,
+          "social": 1
+        },
+        "place_name_language": "ko"
+      },
+      "recent_posts_available": 3,
+      "recent_posts_compared": [
+        {
+          "id": "c3f85fd5-94eb-4e29-9f30-970b26ef94cb",
+          "title": "작가 얘기 듣고 나서 읽을 책 골라도 되겠지"
+        },
+        {
+          "id": "ce21ccf2-ac49-504e-84b2-123e3b88c423",
+          "title": "말해야 집안일 하던 남편, 내 것만 챙겨봤어"
+        },
+        {
+          "id": "20caaa50-aef5-44e3-9ad1-fa70dabf3dc2",
+          "title": "만드는 사람 뒤에서 도구를 고치는 사람들"
+        }
+      ],
+      "meaning_fact_polarity_check": "source names and factual anchors checked; questions and opinions remain questions/opinions; no new visit, purchase, job or family experience claimed in regular posts",
+      "continuity_check": "fixed identity/city/household/occupation preserved; all available recent posts compared, fewer than3 explicitly recorded",
+      "story_check": {
+        "access": "public_full_body_read",
+        "original_conflict": "집에서 모임을 하면 뒷정리가 화자에게 돌아가고 백숙을 만든다는 말에 시댁 손님 접대까지 부탁받음. 평소 가족이 못되게 하는 것은 아니지만 부탁이 본인에게만 쏠리고 본인은 대접받지 못해 지침. 남편이 막내라는 댓글 응답이 있으나 이를 정당한 이유로 인정하지는 않음.",
+        "fictional_changes": [
+          "고정29세 여성·기혼4년·자녀 없음·서비스직 설정을 유지",
+          "남편이 집안일을 하기 시작했다는 부분은 같은 profile의 실제2026-10-18 공개글 연속성에서 연결",
+          "원문의 막내 서열을 이 화자의 신규 고정 신상으로 만들지 않음",
+          "원문 반대 맥락인 평소 나쁘게 대하는 가족은 아니라는 진술 보존",
+          "손님 접대·뒷정리 갈등만 활용하며 캐나다의 관행·새 거절·가족 반응·해결 결말은 만들지 않음"
+        ]
+      },
+      "reviewed_at": "2026-10-19T09:26:59.682888+00:00",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "앱 반말 지시",
+        "고정 persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "public_audit_footer": false,
+      "same_writing_agent": true
+    }
+  ],
+  "batch_review": {
+    "same_city_first_word_duplicates": 0,
+    "regular_post_visit_or_purchase_claims_added": 0,
+    "same_city_repeated_titles": 0,
+    "source_intro_repetition": "첫 정보 문장을 줄이거나 질문·선택으로 옮겼고, 반복되는 맛 묘사·이중 질문·궁금하다는 끝맺음도 교정했다.",
+    "dropped_legacy_question_cap": "2026-10-18 concrete neighbour-question direction supersedes older max2 endings",
+    "optional_peer_reply_drafts": 0,
+    "actual_comments_executed": 0,
+    "remaining_limitation": "8 selected profiles have fewer than3 actual recent posts; comparison uses actual available records only"
+  }
+}

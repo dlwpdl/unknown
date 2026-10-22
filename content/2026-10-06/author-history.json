@@ -1,0 +1,240 @@
+[
+  {
+    "nickname": "17에비뉴커피",
+    "city_id": "calgary",
+    "recent_posts": [],
+    "recent_comments": []
+  },
+  {
+    "nickname": "C트레인통근",
+    "city_id": "calgary",
+    "recent_posts": [
+      {
+        "tag": "transport",
+        "body": "센트럴도서관 건물 아래로 C트레인이 지난다길래 구조가 궁금해졌어\n운행 중인 LRT 노선을 감싸고 그 위에 건물을 올렸다는 설명이 있네\n안에서 열차 지나가는 느낌이 드는지는 모르겠는데, 가본 사람은 어땠어?",
+        "title": "센트럴도서관 아래로 지나가는 C트레인, 안에선 어때?",
+        "created_at": "2026-10-05T00:20:00+00:00"
+      },
+      {
+        "tag": "transport",
+        "body": "C트레인에 자전거 싣는 시간 제한이 없다는 안내를 봤어.\n그래도 출퇴근 시간엔 자리 때문에 망설여지는데, 실제로 같이 타본 사람은 공간이 어땠어?",
+        "title": "C트레인 자전거, 시간대 제한이 없네",
+        "created_at": "2026-09-24T00:12:01+00:00"
+      }
+    ],
+    "recent_comments": []
+  },
+  {
+    "nickname": "글렌모어공원",
+    "city_id": "calgary",
+    "recent_posts": [],
+    "recent_comments": []
+  },
+  {
+    "nickname": "보우강변산책",
+    "city_id": "calgary",
+    "recent_posts": [
+      {
+        "tag": "life",
+        "body": "잉글우드 조류보호구역은 새 이름만 공부할 곳인 줄 알았음\n내가 따로 기억해둘 건 숲을 천천히 느끼는 산책길이랑 자연센터 전시야\n이곳의 Forest Bathing Trail은 캘거리 첫 숲 감각 산책길이고, 센터엔 지역 야생동물·공원 설명이 있음\n옛날엔 새 이름만 외우면 자연을 좀 안다고 생각했는데, 읽을 게 자꾸 늘어남 ㅋㅋ",
+        "title": "잉글우드 조류보호구역엔 숲 감각 산책길도 있음",
+        "created_at": "2026-10-04T19:50:00+00:00"
+      },
+      {
+        "tag": "life",
+        "body": "리더록가든은 이름만 보면 돌 많은 공원 정도로 생각하기 쉬움\n원래는 캘거리 공원 책임자 윌리엄 리더 가족이 살던 집과 정원이었어\n집 옆 언덕을 가꾸면서 이 기후에 어떤 식물이 자라는지도 시험하던 곳이래\n예쁜 배경으로만 볼 뻔했네 ㅋㅋ 다음엔 식물이 놓인 자리부터 볼 거야",
+        "title": "리더록가든은 가족 정원이자 식물 시험장이었네",
+        "created_at": "2026-10-04T19:37:00+00:00"
+      }
+    ],
+    "recent_comments": []
+  },
+  {
+    "nickname": "피쉬크릭주말",
+    "city_id": "calgary",
+    "recent_posts": [],
+    "recent_comments": []
+  },
+  {
+    "nickname": "K데이즈",
+    "city_id": "edmonton",
+    "recent_posts": [],
+    "recent_comments": []
+  },
+  {
+    "nickname": "백번가구름",
+    "city_id": "edmonton",
+    "recent_posts": [],
+    "recent_comments": []
+  },
+  {
+    "nickname": "블래치포드",
+    "city_id": "edmonton",
+    "recent_posts": [],
+    "recent_comments": []
+  },
+  {
+    "nickname": "윈더미어산책",
+    "city_id": "edmonton",
+    "recent_posts": [],
+    "recent_comments": []
+  },
+  {
+    "nickname": "화이트애비뉴",
+    "city_id": "edmonton",
+    "recent_posts": [],
+    "recent_comments": []
+  },
+  {
+    "nickname": "두바퀴메이플",
+    "city_id": "montreal",
+    "recent_posts": [],
+    "recent_comments": []
+  },
+  {
+    "nickname": "메트로한칸",
+    "city_id": "montreal",
+    "recent_posts": [],
+    "recent_comments": [
+      {
+        "body": "우리 동네도 어느 날부터 골목에 화분이 늘었더라. 이런 프로젝트였는지 궁금해졌어",
+        "created_at": "2026-09-24T23:42:18.518965+00:00"
+      }
+    ]
+  },
+  {
+    "nickname": "불어책갈피",
+    "city_id": "montreal",
+    "recent_posts": [
+      {
+        "tag": "transport",
+        "body": "노선도만 외우면 메트로를 좀 알게 될 줄 알았는데, 미술 앞에선 다시 초보네\nPlace-des-Arts역엔 프레데리크 백의 스테인드글라스 작품이 있음\nSTM은 역별로 작품과 작가를 따로 정리해놨더라\n미술 용어 나오니까 머리가 바로 환승을 거부함 ㅋㅋ\n난 일단 저 역 작품 하나부터 기억할까 하는 중",
+        "title": "Place-des-Arts역엔 프레데리크 백 작품이 있네",
+        "created_at": "2026-10-05T11:54:00+00:00"
+      },
+      {
+        "tag": "transport",
+        "body": "버스 전용 차선 표지만 보고 자전거는 못 들어가는 줄 알고 돌아갈 뻔 ㅋㅋ\n몬트리올엔 자전거를 허용하는 차선도 있고, 자전거 그림 표지를 봐야 한대. 다이아몬드만 보고 결론 낸 내가 문제였다.\n표지 규칙은 바뀔 수 있으니 확인해야겠어",
+        "title": "버스 전용 차선, 자전거는 다 금지인 줄",
+        "created_at": "2026-09-24T11:28:00+00:00"
+      }
+    ],
+    "recent_comments": []
+  },
+  {
+    "nickname": "올드포트바람",
+    "city_id": "montreal",
+    "recent_posts": [
+      {
+        "tag": "life",
+        "body": "오래된 책만 모아놓는 곳으로 도서관을 생각하기 쉬운데\n몬트리올 일부 도서관엔 토종 식물·허브·채소 씨앗 컬렉션도 있네\n다음에 키울 식물은 화분 크기부터 작게 생각해보려고, 아직은 욕심내면 안 될 듯",
+        "title": "몬트리올 도서관엔 씨앗 컬렉션도 있네",
+        "created_at": "2026-10-05T16:12:00+00:00"
+      },
+      {
+        "tag": "life",
+        "body": "어릴 때부터 지나던 길가 조형물, 이제야 공공미술로 보임.\n몬트리올 공공미술은 광장·공원뿐 아니라 건물에도 있다네. 다음 산책 땐 하나씩 찾아봐야겠다",
+        "title": "길가 조형물도 몬트리올 공공미술이네",
+        "created_at": "2026-09-24T16:16:00+00:00"
+      }
+    ],
+    "recent_comments": []
+  },
+  {
+    "nickname": "장탈롱바구니",
+    "city_id": "montreal",
+    "recent_posts": [
+      {
+        "tag": "life",
+        "body": "어릴 때 생각하던 도시 동물은 비둘기랑 다람쥐쯤이었는데, 몬트리올엔 야생 칠면조랑 박쥐도 산대\n괜히 신기해서 동네에 어떤 동물이 사는지 같이 이름부터 알아보고 싶다",
+        "title": "몬트리올 도시 동물엔 야생 칠면조도 있네",
+        "created_at": "2026-10-05T11:36:00+00:00"
+      },
+      {
+        "tag": "life",
+        "body": "어릴 땐 골목에 화분 하나 늘어도 누가 놓았나 했는데, 몬트리올엔 이웃이 함께 만드는 녹색 골목 프로젝트가 있네.\n우리 동네에서도 해보고 싶다",
+        "title": "녹색 골목은 이웃끼리 만드는 거였네",
+        "created_at": "2026-09-24T11:03:00+00:00"
+      }
+    ],
+    "recent_comments": []
+  },
+  {
+    "nickname": "노스욕산책러",
+    "city_id": "toronto",
+    "recent_posts": [],
+    "recent_comments": []
+  },
+  {
+    "nickname": "노스욕센터",
+    "city_id": "toronto",
+    "recent_posts": [
+      {
+        "tag": "education",
+        "body": "사진 구경할 때 자꾸 먼 데부터 떠올리는 중 ㅋㅋ\nTPL 디지털아카이브엔 사진뿐 아니라 지도랑 오래된 책도 있어서 동네부터 봐도 될 듯",
+        "title": "토론토 옛 사진은 TPL 디지털아카이브에도 있네",
+        "created_at": "2026-10-05T12:58:00+00:00"
+      },
+      {
+        "tag": "education",
+        "body": "박물관 가려다 일정부터 못 잡고 포기했는데, 토론토 시립박물관 가상 전시가 있네.\n이건 핑계 댈 수가 없군 ㅋㅋ",
+        "title": "시립박물관 가상 전시부터 볼 걸",
+        "created_at": "2026-09-24T11:12:00+00:00"
+      }
+    ],
+    "recent_comments": [
+      {
+        "body": "반가워ㅋㅋ 노스욕 쪽이구나! 토론토 온 지는 오래됐어?",
+        "created_at": "2026-09-25T00:00:01.111096+00:00"
+      }
+    ]
+  },
+  {
+    "nickname": "레슬리빌커피",
+    "city_id": "toronto",
+    "recent_posts": [],
+    "recent_comments": []
+  },
+  {
+    "nickname": "마캄만두집",
+    "city_id": "toronto",
+    "recent_posts": [],
+    "recent_comments": []
+  },
+  {
+    "nickname": "분리수거메모",
+    "city_id": "toronto",
+    "recent_posts": [],
+    "recent_comments": []
+  },
+  {
+    "nickname": "공항가는참새",
+    "city_id": "vancouver",
+    "recent_posts": [],
+    "recent_comments": []
+  },
+  {
+    "nickname": "다운타운야근",
+    "city_id": "vancouver",
+    "recent_posts": [],
+    "recent_comments": []
+  },
+  {
+    "nickname": "동쪽창가",
+    "city_id": "vancouver",
+    "recent_posts": [],
+    "recent_comments": []
+  },
+  {
+    "nickname": "리치몬드딤섬",
+    "city_id": "vancouver",
+    "recent_posts": [],
+    "recent_comments": []
+  },
+  {
+    "nickname": "써리감자탕",
+    "city_id": "vancouver",
+    "recent_posts": [],
+    "recent_comments": []
+  }
+]

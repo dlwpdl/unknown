@@ -1,0 +1,104 @@
+{
+  "verified_at": "2026-10-17T09:20:01.924680+00:00",
+  "queue_version": 1,
+  "staged_regular": 25,
+  "staged_stories": 0,
+  "queue_path": "/Users/ash/Library/Application Support/gling/city-posts/payload/2026-10-17.json",
+  "queue_sha256": "c187fede598c6c489ab0a73ca54a5b910a9a66738436bec31e26a99e8c81f46b",
+  "queue_source_sha256": "bfb9cb8f5d05569916de3d960ce987ec0e191125988a6cdb41b10626bf4049ae",
+  "manuscript_file_sha256": "044afa392a5d220bc8759f8536d3915b5c6cb7eb9a812bfc9c96a2734e266bbd",
+  "queue_matches_existing_prepare": true,
+  "schedule": {
+    "vancouver": {
+      "regular": 5,
+      "stories": 0,
+      "timezone": "America/Vancouver",
+      "planned_local_times": [
+        "10:00",
+        "12:42",
+        "15:28",
+        "17:00",
+        "19:59"
+      ],
+      "local_range": "10:00–19:59"
+    },
+    "toronto": {
+      "regular": 5,
+      "stories": 0,
+      "timezone": "America/Toronto",
+      "planned_local_times": [
+        "10:24",
+        "13:40",
+        "16:10",
+        "16:34",
+        "20:11"
+      ],
+      "local_range": "10:24–20:11"
+    },
+    "montreal": {
+      "regular": 5,
+      "stories": 0,
+      "timezone": "America/Toronto",
+      "planned_local_times": [
+        "10:54",
+        "12:14",
+        "14:35",
+        "16:22",
+        "19:04"
+      ],
+      "local_range": "10:54–19:04"
+    },
+    "edmonton": {
+      "regular": 5,
+      "stories": 0,
+      "timezone": "America/Edmonton",
+      "planned_local_times": [
+        "11:20",
+        "11:59",
+        "14:56",
+        "17:49",
+        "19:25"
+      ],
+      "local_range": "11:20–19:25"
+    },
+    "calgary": {
+      "regular": 5,
+      "stories": 0,
+      "timezone": "America/Edmonton",
+      "planned_local_times": [
+        "09:33",
+        "13:23",
+        "16:04",
+        "16:47",
+        "18:50"
+      ],
+      "local_range": "09:33–18:50"
+    }
+  },
+  "minimum_global_gap_minutes": 11.0,
+  "all_times_future": true,
+  "maps_verified": 21,
+  "map_purpose_and_visible_name_verified": true,
+  "author_live_binding_verified": 25,
+  "same_city_title_duplicates": 0,
+  "receipts_read_by": "existing read_receipts: daily JSON + per-post .d",
+  "confirmed": 0,
+  "attempted_unknown": 0,
+  "future_waiting": 25,
+  "missed": 0,
+  "publisher_read_exit_code": 0,
+  "publisher_status_lines": [
+    "path = /Users/ash/Library/LaunchAgents/com.gling.city-posts.plist",
+    "state = not running",
+    "program = /bin/bash",
+    "stdout path = /Users/ash/Library/Application Support/gling/city-posts/launchd.log",
+    "stderr path = /Users/ash/Library/Application Support/gling/city-posts/launchd.log",
+    "runs = 1481",
+    "last exit code = 0",
+    "state = active",
+    "state = active",
+    "run interval = 300 seconds"
+  ],
+  "immediate_seed_due_grow_called": false,
+  "script_or_automation_changed": false
+}

@@ -8,23 +8,24 @@
 set -uo pipefail
 
 # launchd 는 최소한의 PATH 로 실행한다. node 를 못 찾으면 조용히 실패하므로 여기서 박아둔다.
-export PATH="/Users/ash/.nvm/versions/node/v22.23.1/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+export PATH="/Applications/Docker.app/Contents/Resources/bin:/Users/ash/.nvm/versions/node/v22.23.1/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
-REPO="$HOME/Desktop/Git/unknown/mobile"
+PROJECT_REF="wjvahbdwmctzpkndqaxa"
 OUT="$HOME/Library/Application Support/gling/backups"
 KEEP=8  # 최근 8회분만 남긴다
 STAMP="$(date +%Y-%m-%d-%H%M)"
 DIR="$OUT/$STAMP"
 
-cd "$REPO" || exit 1
-mkdir -p "$DIR"
+# launchd는 보호된 Desktop 대신 기존 백업 폴더에서 실행한다.
+mkdir -p "$DIR" || exit 1
+cd "$OUT" || exit 1
 LOG="$DIR/backup.log"
 exec >>"$LOG" 2>&1
 echo "=== $(date) 백업 시작"
 
 dump() {
   local label="$1" file="$2"; shift 2
-  if npx --no-install supabase db dump --linked "$@" -f "$DIR/$file" < /dev/null; then
+  if npx --offline --no-install supabase@2.120.0 db dump --project-ref "$PROJECT_REF" "$@" -f "$DIR/$file" < /dev/null; then
     gzip -f "$DIR/$file"
     echo "OK $label $(wc -c < "$DIR/$file.gz") bytes"
   else

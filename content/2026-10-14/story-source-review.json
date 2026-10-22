@@ -1,0 +1,285 @@
+{
+  "same_writer": true,
+  "reviews": [
+    {
+      "ord": 26,
+      "source_case_key": "pann:352213800",
+      "source_url": "https://pann.nate.com/talk/352213800",
+      "post_date": "2020.06.10 05:51",
+      "read_at": "2026-10-14T09:06:22.528222+00:00",
+      "access": "public_full_body_read",
+      "original_body_and_visible_reactions_read": true,
+      "event_truth_verified": false,
+      "canadian_event_verified": false,
+      "original_conflict": [
+        "어른끼리 여행 동의 후 날짜 결정",
+        "숙소 예약 전에 아이 둘 동행으로 변경",
+        "원문 화자 부부는 자녀 없고 아이와 여행 선호하지 않음",
+        "차·숙소·식사 계획 바뀜",
+        "취소·재합의 결과 없음"
+      ],
+      "fictional_changes": [
+        "남해 지명을 삭제하고 현재 도시 운영 부부의 여행 준비 장면으로 배정",
+        "화자는 기존 29세 남성·기혼4년·자녀없음 그대로; 원문 화자 성별 미상",
+        "아이들과 여행을 선호하지 않는 입장 및 예약 전 시점은 유지; 관계가 어색해질 걱정은 화자의 추정으로만 표현"
+      ],
+      "confirmed_follow_up": "none in read original; do not invent cancellation/eviction/reconciliation/financial outcome",
+      "author_profile_id": "10000000-0000-0000-0000-000000000065",
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000065",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "집 대출과 개인 취미 예산을 함께 조정한다",
+          "relationship_status": "married"
+        },
+        "topic": "결혼 전후 관계"
+      },
+      "planned_post_id": "8a78d3b1-8708-5e9b-b496-e67aad1ace7b",
+      "source_html_sha256": "3605e66b6e83f38ee9de001aba4f7ce9154447832a27e9638e4126e5c31aaf43",
+      "source_text_sha256": "34d98c1c5732c41869031554e5ef26eadf9db8c9b6222d5f92bdf5a00994348f",
+      "source_snapshot": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/c4c19cf8-d960-413c-8373-8538ee12a177/sources/STORY-352213800.txt",
+      "final_body_sha256": "7c27b7eba4d94848115e44cde0e1a903ff18d9e433cce7d29599b382c62687c8"
+    },
+    {
+      "ord": 27,
+      "source_case_key": "pann:374375166",
+      "source_url": "https://pann.nate.com/talk/374375166",
+      "post_date": "2025.05.20 23:31",
+      "read_at": "2026-10-14T09:06:22.653050+00:00",
+      "access": "public_full_body_read",
+      "original_body_and_visible_reactions_read": true,
+      "event_truth_verified": false,
+      "canadian_event_verified": false,
+      "original_conflict": [
+        "배우자가 글 보여준 뒤 의견 충돌",
+        "타인의 괴롭힘 과거 공개에 대한 반대",
+        "아내의 사전 동의 가능성·익명성 의견",
+        "실제 동의 여부 미확인",
+        "화자가 실망 표현; 아내는 왜 화내는지 반문; 미해결"
+      ],
+      "fictional_changes": [
+        "원문의 산후조리비는 출산 뒤 필요한 비용으로 일반화; 특정 제도·통화·학교·작성자 신상 제거",
+        "기존 남성 기혼4년 자녀없는 작성자의 아내와 대화로 배정; 출산 당사자는 화자가 아님",
+        "배우자의 반대 맥락·동의 미확인과 다툼을 유지; 화해 결말 추가하지 않음"
+      ],
+      "confirmed_follow_up": "none in read original; do not invent cancellation/eviction/reconciliation/financial outcome",
+      "author_profile_id": "10000000-0000-0000-0000-000000000080",
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000080",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "공동 생활비와 개인 지출을 구분해 관리한다",
+          "relationship_status": "married"
+        },
+        "topic": "결혼 전후 관계"
+      },
+      "planned_post_id": "d374b036-50fc-5d77-9124-26c9037c332d",
+      "source_html_sha256": "546388166b8d3323c3e95afcd002c952cb8689d370c2cc0daf3163b0703dd59d",
+      "source_text_sha256": "e12b6efc844b71f80148ea586e7c0aa1751b4bc8bc01e59876717b3ec7f455ab",
+      "source_snapshot": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/c4c19cf8-d960-413c-8373-8538ee12a177/sources/STORY-374375166.txt",
+      "final_body_sha256": "9e57484d337a25057db5556eefe607ed3fb87c38948c26f2f0321e5e8d9e6d66"
+    },
+    {
+      "ord": 28,
+      "source_case_key": "pann:374725656",
+      "source_url": "https://pann.nate.com/talk/374725656",
+      "post_date": "2025.08.24 21:08",
+      "read_at": "2026-10-14T09:09:40.490134+00:00",
+      "access": "public_full_body_read",
+      "original_body_and_visible_reactions_read": true,
+      "event_truth_verified": false,
+      "canadian_event_verified": false,
+      "original_conflict": [
+        "부모 둘이 자녀 상담에 참석",
+        "친구가 유난·타인 평가를 주장",
+        "화자가 직접 반박",
+        "상담기관의 부정적 반응은 관측되지 않음"
+      ],
+      "fictional_changes": [
+        "원문의 자녀 나이는 미상; 기존 화자의 고정3세 자녀 상담 장면으로 구체화",
+        "어린이집 중간입소는 특정 국가 제도를 단정하지 않는 돌봄 자리 상담으로 변경",
+        "기존29세 여성·기혼6년·대학원생 유지; 교사/다른 부모가 비난했다는 사실을 만들지 않음"
+      ],
+      "confirmed_follow_up": "none in read original; do not invent cancellation/eviction/reconciliation/financial outcome",
+      "author_profile_id": "cc3ea647-6ac1-5ffc-ba83-8d4724d2e0f1",
+      "story_fit": {
+        "profile_id": "cc3ea647-6ac1-5ffc-ba83-8d4724d2e0f1",
+        "family": {
+          "children_ages": [
+            3
+          ],
+          "marriage_years": 6,
+          "household_finances": "육아비와 주거비를 함께 계획한다",
+          "relationship_status": "married"
+        },
+        "topic": "육아 분담"
+      },
+      "planned_post_id": "51d2212a-f5d2-564c-9459-1350de24d008",
+      "source_html_sha256": "73348e018b06e2b3b545aa842274c109c79de6ef64b03934b0a5cf2e06f97b2a",
+      "source_text_sha256": "8ebdffe567ac495310041b80a2f1a79e2674ae41825bba9c61281a623f086cfe",
+      "source_snapshot": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/c4c19cf8-d960-413c-8373-8538ee12a177/sources/STORY-374725656.txt",
+      "final_body_sha256": "e988fb093ffc65fc950ee255b2d729aeb170e274df2aab318362b15b1d9b9722"
+    },
+    {
+      "ord": 29,
+      "source_case_key": "pann:374959863",
+      "source_url": "https://pann.nate.com/talk/374959863",
+      "post_date": "2025.11.05 15:15",
+      "read_at": "2026-10-14T09:06:22.392169+00:00",
+      "access": "public_full_body_read",
+      "original_body_and_visible_reactions_read": true,
+      "event_truth_verified": false,
+      "canadian_event_verified": false,
+      "original_conflict": [
+        "방 제공 동의와 가사 기대의 불일치",
+        "반찬 준비해도 어머니에게 불만 연락",
+        "독립 비용 절반 정도 제안",
+        "남편은 즉시 내보내는 데 반대하고 스스로 하게 말하겠다고 함",
+        "실제 퇴거·분담 개선은 미확인"
+      ],
+      "fictional_changes": [
+        "20대 신혼1년·병원 교대근무를 기존29세 여성·기혼4년·자영업 생활로 변경; 병원·나이트 근무 삭제",
+        "주거 방 수와 동생의 정확 나이/학교 신상 삭제; 성인 동생의 학교 때문에 머무는 상황 유지",
+        "식사·빨래·정리 불일치, 독립 비용 절반 제안, 남편의 반대와 약속 유지; 퇴거 결말 없음"
+      ],
+      "confirmed_follow_up": "none in read original; do not invent cancellation/eviction/reconciliation/financial outcome",
+      "author_profile_id": "10000000-0000-0000-0000-000000000118",
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000118",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "공동 생활비와 개인 지출을 구분해 관리한다",
+          "relationship_status": "married"
+        },
+        "topic": "결혼 전후 관계"
+      },
+      "planned_post_id": "ba4a6657-e0db-5aba-afbc-f3b7a2fe64b8",
+      "source_html_sha256": "0051196da3dd07b61a19afe1e508a1c3afe3b40acd7d58219ef2fc0586581c1f",
+      "source_text_sha256": "9f6f99ad71dc45a6417cf1aad141bcc52b492b36a64c7f52286b173e84a7824c",
+      "source_snapshot": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/c4c19cf8-d960-413c-8373-8538ee12a177/sources/STORY-374959863.txt",
+      "final_body_sha256": "4929781b144328a859ad78d2bd94581a048651da7a48f31972f1fb4efc7c5b17"
+    },
+    {
+      "ord": 30,
+      "source_case_key": "pann:375439131",
+      "source_url": "https://pann.nate.com/talk/375439131",
+      "post_date": "2026.06.01 03:29",
+      "read_at": "2026-10-14T09:09:40.309161+00:00",
+      "access": "public_full_body_read",
+      "original_body_and_visible_reactions_read": true,
+      "event_truth_verified": false,
+      "canadian_event_verified": false,
+      "original_conflict": [
+        "주말 일로 번 별도 수입이라는 남편 설명",
+        "건강 문제 부모 지원 목돈",
+        "수입·지원 모두 사후 인지",
+        "아이 지출 우선과 별도 수입 결정권의 대립",
+        "별도 수입 진위·금액·해결 결과는 확정하지 않음"
+      ],
+      "fictional_changes": [
+        "40대·결혼10년·전업·외벌이 대기업 설정과 원화 금액을 삭제; 기존35세 디자이너·기혼6년·고정자녀6/3/1세 유지",
+        "부모 건강 문제·주말 부수입과 사후인지 갈등만 활용; 현재 캐나다 임금·법·의료비로 대체하지 않음",
+        "별도 수입의 결정권이라는 반대 맥락과 화자의 미리 상의 요구를 함께 유지; 성찰 문장은 추가한 캐릭터 반응이며 실제 원문 후속 결말 아님"
+      ],
+      "confirmed_follow_up": "none in read original; do not invent cancellation/eviction/reconciliation/financial outcome",
+      "author_profile_id": "10000000-0000-0000-0000-000000000137",
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000137",
+        "family": {
+          "children_ages": [
+            6,
+            3,
+            1
+          ],
+          "marriage_years": 6,
+          "household_finances": "육아비와 주거비를 함께 계획한다",
+          "relationship_status": "married"
+        },
+        "topic": "배우자와 가족 갈등"
+      },
+      "planned_post_id": "0c54c394-fc76-52fe-a928-bd883b60f839",
+      "source_html_sha256": "9bc7b8d36d167243c2dcfd00592ca6572070f49ae82b042841f1f2095c8d63db",
+      "source_text_sha256": "0667ca84dba52d400a52b6a133cb9c23f06be732b2c0de2263f979718d4cb858",
+      "source_snapshot": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/c4c19cf8-d960-413c-8373-8538ee12a177/sources/STORY-375439131.txt",
+      "final_body_sha256": "fc3d45b45efa3d9a69e10ef8e32ec54a98f5ab36ff05e9393cd6851d24f2c6ca"
+    }
+  ],
+  "unavailable_sources": [
+    {
+      "url": "https://cafe.daum.net/skc67",
+      "status": "only page shell (7 characters); original unavailable and excluded"
+    }
+  ],
+  "held_sources_excluded": true,
+  "personal_pipeline_reserved_cases_excluded": [
+    "blind:2ehNWPQE",
+    "blind:2ph2m4xu",
+    "blind:34hriu8z",
+    "blind:3a7j3qbh",
+    "blind:3lvj6bh1",
+    "blind:3m1goiup",
+    "blind:4DjsmmDT",
+    "blind:4qpxmtjs",
+    "blind:5OByj35v",
+    "blind:6e5ds8sl",
+    "blind:6kk61vxs",
+    "blind:7mzbdpyk",
+    "blind:7t3tsl0w",
+    "blind:85dyj017",
+    "blind:A7MvU7Hn",
+    "blind:BnnPBCvj",
+    "blind:Eu8W1C0y",
+    "blind:Hqd8C2XD",
+    "blind:JUQB7bVV",
+    "blind:Jk0knNuL",
+    "blind:La120oUR",
+    "blind:LjHu6Wks",
+    "blind:MwWWJ6S5",
+    "blind:NpUVTM6h",
+    "blind:O7tPV1Ao",
+    "blind:RPbzXtsx",
+    "blind:RbrTBYWo",
+    "blind:RorhLJni",
+    "blind:RuKTRFxX",
+    "blind:Sbc2DYs8",
+    "blind:VOzJ153Y",
+    "blind:WkE6ORJT",
+    "blind:XQeOje3c",
+    "blind:aewq48l2",
+    "blind:afgv4vjl",
+    "blind:axxu12ht",
+    "blind:bE60gFae",
+    "blind:bHhkHOqS",
+    "blind:cexuknxj",
+    "blind:cywlhop0",
+    "blind:d3xy7tkt",
+    "blind:e4opc434",
+    "blind:eDaE3xKR",
+    "blind:fme2pz2g",
+    "blind:gahz50dr",
+    "blind:gcf4nkzs",
+    "blind:gck3sppz",
+    "blind:h8iXqnAF",
+    "blind:iADOfF0D",
+    "blind:jRnideNu",
+    "blind:k6E8wBJW",
+    "blind:lxkjpu5d",
+    "blind:nGSQEyJk",
+    "blind:os5zzw4f",
+    "blind:p8vmyf2c",
+    "blind:pw1fdlw4",
+    "blind:pzlbbsxb",
+    "blind:q1O7gMVV",
+    "blind:rGf3YuKK",
+    "blind:rZzrutLB",
+    "blind:wdc6nuhv",
+    "blind:xd2ufncv",
+    "blind:xhex1y0x",
+    "blind:xsBemrHs",
+    "blind:zEOghPzs"
+  ],
+  "disclosure_policy": "Latest 2026-10-13 owner correction: no reconstruction label in public body; provenance and fiction review remain internal."
+}

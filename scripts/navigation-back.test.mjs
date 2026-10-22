@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { SHARED_POST_RETURN_KEY, buildSharedPostUrl } from '../src/lib/sharing.ts';
+import { loadSharedLinkPreview } from '../src/lib/shared-link-preview.ts';
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 const text = tree => typeof tree === 'string' ? tree : tree && typeof tree === 'object' ? [tree.props?.children].flat(Infinity).map(text).join('') : '';
@@ -17,7 +19,7 @@ function screen(path, imports) {
   vm.runInNewContext(source, { exports, require(name) {
     if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
     if (name === 'react/jsx-runtime') return { Fragment: 'Fragment', jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if ((name === 'react-native' || name === '@/components/analytics-controls')) return { ActivityIndicator: 'ActivityIndicator', View: 'View', Pressable: 'Pressable', StyleSheet: { create: value => value } };
+    if ((name === 'react-native' || name === '@/components/analytics-controls')) return { ActivityIndicator: 'ActivityIndicator', View: 'View', Pressable: 'Pressable', Platform: { OS: 'ios' }, StyleSheet: { create: value => value } };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ background: '#fff', text: '#123', accent: '#b34' }) };
     if (name in imports) return imports[name];
     throw new Error(`Unexpected import: ${name}`);
@@ -34,10 +36,11 @@ test('every profile header can go back or leave a direct entry, with accessible 
     }) },
     'expo-symbols': { SymbolView: 'SymbolView' },
     'react-native-reanimated': { useReducedMotion: () => reducedMotion },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => actions.push(kind) }) },
     '@/i18n/ko': { t: { tabs: { profile: '나' }, profile: { guidelines: '이용 수칙', settings: '설정' }, notifications: { title: '알림' } } },
     '@/lib/promotions': { PROMOTIONS_PREVIEW_ENABLED: false },
   });
-  for (const name of ['index', 'membership', 'settings', 'guidelines', 'promotions']) {
+  for (const name of ['index', 'membership', 'trust', 'inbox', 'saved', 'settings', 'guidelines', 'promotions']) {
     const options = ProfileLayout().props.screenOptions({ route: { name } });
     const button = options.headerLeft();
     assert.equal(button.props.accessibilityLabel, '뒤로가기');
@@ -52,6 +55,7 @@ test('every profile header can go back or leave a direct entry, with accessible 
     hasHistory = true;
     button.props.onPress();
     assert.equal(actions.at(-1), 'back');
+    assert.equal(actions.at(-2), 'selection');
   }
   reducedMotion = true;
   assert.equal(ProfileLayout().props.screenOptions({ route: { name: 'membership' } }).animation, 'none');
@@ -59,35 +63,45 @@ test('every profile header can go back or leave a direct entry, with accessible 
 });
 
 test('shared posts remain escapable during loading, failure and absence, and never show an old ID response', async () => {
-  let id = 'first', commentId, hasHistory = false, cursor = 0, effect, cleanup, effectId, accountId = 'first-account';
-  const states = [], requests = new Map(), actions = [];
+  let id = 'first', commentId, hasHistory = false, cursor = 0, accountId = 'first-account';
+  const states = [], requests = new Map(), actions = [], effects = new Map(), pending = new Map();
   const SharedPostRoute = screen('../src/app/post/[id].tsx', {
     'expo-router': { useLocalSearchParams: () => ({ id, commentId }), useRouter: () => ({
       canGoBack: () => hasHistory, back: () => actions.push('back'), replace: path => actions.push(path),
     }) },
+    'expo-router/head': { default: 'Head' },
     react: {
       useState(initial) {
         const index = cursor++;
         if (!(index in states)) states[index] = initial;
         return [states[index], next => { states[index] = next; }];
       },
+      useRef(initial) { const index = cursor++; return states[index] ??= { current: initial }; },
       useEffect(run, dependencies) {
-        const nextId = dependencies.join(':');
-        if (nextId !== effectId) effect = () => { cleanup?.(); cleanup = run(); effectId = nextId; };
+        const index = cursor++, previous = effects.get(index);
+        if (!previous || dependencies.some((value, i) => !Object.is(value, previous.dependencies[i]))) {
+          pending.set(index, () => { previous?.cleanup?.(); effects.set(index, { dependencies, cleanup: run() }); });
+        }
       },
     },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
+    'expo-symbols': { SymbolView: 'SymbolView' },
     '@/components/post-detail': { PostDetail: 'PostDetail' },
+    '@/components/shared-link-card': { SharedPreviewContent: 'SharedPreviewContent' },
+    '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
     '@/components/themed-text': { ThemedText: 'Text' },
     '@/components/themed-view': { ThemedView: 'View' },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: accountId } }) },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => actions.push(kind) }) },
     '@/lib/supabase': { supabase: {} },
+    '@/lib/shared-link-preview': { loadSharedLinkPreview },
+    '@/lib/sharing': { SHARED_POST_RETURN_KEY, buildSharedPostUrl },
     '@/lib/feed-data': { loadPublicPost(_, postId) {
       return new Promise((resolve, reject) => requests.set(postId, { resolve, reject }));
     } },
   });
   const render = () => { cursor = 0; return SharedPostRoute(); };
-  const commit = () => { const next = effect; effect = undefined; next?.(); };
+  const commit = () => { const next = [...pending.values()]; pending.clear(); next.forEach(run => run()); };
   const detail = tree => nodes(tree).find(node => node.type === 'PostDetail');
   const back = tree => {
     const safe = nodes(tree).find(node => node.type === 'SafeAreaView');
@@ -101,7 +115,7 @@ test('shared posts remain escapable during loading, failure and absence, and nev
   let tree = render();
   back(tree).props.onPress();
   assert.equal(actions.at(-1), '/');
-  assert.ok(nodes(tree).some(node => node.type === 'ActivityIndicator'));
+  assert.ok(nodes(tree).some(node => node.type === 'GlingLoader'));
   commit();
   requests.get('first').resolve({ id: 'first' });
   await flush();
@@ -148,7 +162,7 @@ test('shared posts remain escapable during loading, failure and absence, and nev
   render(); commit();
   requests.get('stale-error').reject(new Error('old request failed'));
   await flush();
-  assert.ok(nodes(render()).some(node => node.type === 'ActivityIndicator'));
+  assert.ok(nodes(render()).some(node => node.type === 'GlingLoader'));
   requests.get('error').reject(new Error('offline'));
   await flush();
   tree = render();
@@ -168,6 +182,6 @@ test('shared posts remain escapable during loading, failure and absence, and nev
   tree = render(); commit();
   back(tree);
   assert.equal(requests.has(''), false, 'missing route IDs do not issue invalid requests');
-  assert.equal(nodes(tree).some(node => node.type === 'ActivityIndicator'), false);
-  cleanup?.();
+  assert.equal(nodes(tree).some(node => node.type === 'GlingLoader'), false);
+  effects.forEach(effect => effect.cleanup?.());
 });

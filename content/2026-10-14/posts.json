@@ -1,0 +1,484 @@
+{
+  "posts": [
+    {
+      "city_id": "vancouver",
+      "author_nickname": "도서관단골",
+      "tag_slug": "education",
+      "place_name": "Museum of Anthropology",
+      "place_address": "6393 NW Marine Drive",
+      "title": "MOA 자료실은 책을 빌려오는 도서관과는 다르네",
+      "body": "박물관 소장품 설명을 더 찾아보고 싶을 때 들여다볼 자료실도 있네\nMOA의 Audrey and Harry Hawthorn Library and Archives는 고고학, 도자기, 직물 같은 연구 자료를 모아둔 곳이야\n이곳 자료는 밖으로 빌려갈 수 없고, 온라인에서 볼 수 있는 기록도 있다고 해\n전시 설명 뒤에 어떤 연구가 있는지 자료 목록도 보고 싶어\n방문 열람은 예약제로 안내돼 있어서, 이용 방식은 바뀔 수 있으니 미리 확인하려고",
+      "ord": 1,
+      "source": "https://moa.ubc.ca/library-archives/",
+      "place_display_name": "MOA"
+    },
+    {
+      "city_id": "vancouver",
+      "author_nickname": "스카이트레인통근",
+      "tag_slug": "transport",
+      "title": "트랜스링크 우선 좌석, 겉으로 안 보이는 장애도 있어",
+      "body": "사람 겉모습만 보고 자리 필요한지 판단하면 안 되겠어\n트랜스링크 우선 좌석 안내에도 모든 장애가 눈에 보이는 건 아니라고 나와\n자리를 부탁하는 사람이 있으면 그 말을 믿고 양보하라는 내용이야\n누가 더 힘들어 보이는지 따지는 것보다, 부탁을 들었을 때 움직이는 게 낫겠다",
+      "ord": 2,
+      "source": "https://www.translink.ca/rider-guide/etiquette-on-transit"
+    },
+    {
+      "city_id": "vancouver",
+      "author_nickname": "뉴웨스트강변",
+      "tag_slug": "education",
+      "place_name": "Science World",
+      "place_address": "",
+      "place_display_name": "사이언스월드",
+      "title": "사이언스월드의 T 퍼즐은 조각 네 개로 풀어야 해",
+      "body": "조각 네 개로 T 하나 만드는 건 쉬울 줄 알았는데, 사이언스월드가 꽤 어려운 퍼즐로 소개하네\n그 작은 조각들 앞에서 얼마나 버틸지 나도 궁금해",
+      "ord": 3,
+      "source": "https://www.scienceworld.ca/exhibition/puzzles-and-illusions/"
+    },
+    {
+      "city_id": "vancouver",
+      "author_nickname": "T&T장보기",
+      "tag_slug": "education",
+      "place_name": "Science World",
+      "place_address": "",
+      "place_display_name": "사이언스월드",
+      "title": "사이언스월드 Tinkering Space에선 나무 조각으로 만들어",
+      "body": "직접 만들어보는 활동을 찾다가 나무 조각 쌓는 공간을 봤어\n사이언스월드 Tinkering Space에는 KEVA 나무 조각을 쌓아 구조물을 만드는 활동이 있어\n안전하게 도구 쓰는 방법과 실험하면서 배우는 과정도 다루고\n나는 멋진 결과물보다 왜 자꾸 무너지는지 알아보는 쪽이 더 끌림\n다만 정원이 제한돼 있다고 해",
+      "ord": 4,
+      "source": "https://www.scienceworld.ca/exhibition/tinkering-space/"
+    },
+    {
+      "city_id": "vancouver",
+      "author_nickname": "게스타운커피",
+      "tag_slug": "travel",
+      "place_name": "Museum of Anthropology",
+      "place_address": "6393 NW Marine Drive",
+      "title": "MOA Multiversity Galleries의 분류엔 공동체가 참여했어",
+      "body": "소장품 이름만 찾으면 끝인 줄 알았던 나\nMOA의 Multiversity Galleries는 그 물건을 만든 사람들의 후손과 공동체가 분류 방식에도 참여했대\n전시장에서 어떤 기준으로 묶어두는지도 그 사람들의 관점이 들어간 거지\n디지털 화면에선 소장품 이미지와 음성, 영상도 볼 수 있다고 해\n어떤 것끼리 묶었는지부터 보면 내가 놓친 이야기도 있겠어",
+      "ord": 5,
+      "source": "https://moa.ubc.ca/multiversity-galleries/",
+      "place_display_name": "MOA"
+    },
+    {
+      "city_id": "toronto",
+      "author_nickname": "토론토도서관",
+      "tag_slug": "education",
+      "title": "토론토공공도서관 영상 목록엔 무대 뒤 이야기도 있어",
+      "body": "영상 목록에서 Broadway on Demand라는 이름을 봤어\n토론토공공도서관이 소개하는 뮤지컬, 연극, 무용 공연 영상 서비스야\n무대 뒤 이야기와 다큐멘터리, 마스터클래스도 함께 다룬대\n공연 한 편을 바로 고르기는 어렵지만 만드는 과정부터 보면 조금 편해질 것 같아\n배우 움직임이랑 무대 준비 중 어느 쪽 얘기가 더 궁금해?",
+      "ord": 6,
+      "source": "https://tpl.ca/books-video-music/video/"
+    },
+    {
+      "city_id": "toronto",
+      "author_nickname": "핀치역통근",
+      "tag_slug": "transport",
+      "place_name": "Bay subway station",
+      "place_address": "",
+      "place_display_name": "베이역",
+      "title": "TTC 분실물 사무실과 전화 문의 시간은 달라",
+      "body": "잃어버린 물건 찾을 때 전화랑 방문 시간이 같다고 생각하면 헷갈리겠네\nTTC 베이역 분실물 사무실은 평일 8시부터 4시 45분, 전화는 정오부터 5시까지래. 공휴일은 제외고\n운영 안내는 바뀔 수 있으니 움직이기 전에 다시 확인해야겠어",
+      "ord": 7,
+      "source": "https://www.ttc.ca/customer-service/lost-articles"
+    },
+    {
+      "city_id": "toronto",
+      "author_nickname": "서가사이달",
+      "tag_slug": "travel",
+      "place_name": "Bata Shoe Museum",
+      "place_address": "327 Bloor St W",
+      "place_display_name": "바타슈뮤지엄",
+      "title": "바타슈뮤지엄의 지금 전시에 로마 시대 신발이 있어",
+      "body": "신발박물관이라길래 구두부터 떠올렸는데, 바타슈뮤지엄은 로마제국 변방의 빈돌란다 신발 전시도 소개하네\n발에 신는 물건 하나로 얼마나 옛날까지 갈 수 있는 건지 궁금함",
+      "ord": 8,
+      "source": "https://batashoemuseum.ca/exhibitions/"
+    },
+    {
+      "city_id": "toronto",
+      "author_nickname": "노스욕산책러",
+      "tag_slug": "travel",
+      "place_name": "Allan Gardens Conservatory",
+      "place_address": "",
+      "place_display_name": "앨런가든스",
+      "title": "앨런가든스의 중앙 온실은 화재 뒤 다시 지은 건물이야",
+      "body": "앨런가든스 소개를 읽다가 중앙 온실의 이전 이야기도 봤어\n예전 건물이 1902년 화재로 사라지고, 지금 중앙에 있는 팜하우스는 1910년에 문을 열었대\n식물 사진 옆에 건물 얘기도 따로 적어두고 싶어졌음",
+      "ord": 9,
+      "source": "https://www.toronto.ca/explore-enjoy/parks-recreation/places-spaces/beaches-gardens-attractions/gardens-and-horticulture/conservatories/allan-gardens-conservatory/"
+    },
+    {
+      "city_id": "toronto",
+      "author_nickname": "레슬리빌커피",
+      "tag_slug": "travel",
+      "place_name": "Gardiner Museum",
+      "place_address": "111 Queen's Park",
+      "title": "Gardiner Museum의 After the Island는 향도 쓰는 전시야",
+      "body": "도자기 전시 설명에 향이 나온다는 게 눈에 들어왔어\nGardiner Museum의 After the Island는 카리브해에 뿌리를 둔 캐나다 작가 네 명의 작업을 소개해\n향으로 기억을 떠올리게 하는 공간과 조각, 회화, 몰입형 설치를 함께 다뤄\n2026년 10월 9일부터 2027년 4월 25일까지인 전시야\n냄새에 민감한 사람을 위한 안내도 있으니 전시 선택할 때 그 부분도 알아두면 좋겠어",
+      "ord": 10,
+      "source": "https://www.gardinermuseum.on.ca/event/after-the-island-caribbean-canadian-ceramics/"
+    },
+    {
+      "city_id": "montreal",
+      "author_nickname": "불어책갈피",
+      "tag_slug": "education",
+      "place_name": "Grande Bibliothèque",
+      "place_address": "475, boulevard De Maisonneuve Est",
+      "place_display_name": "그랑드비블리오테크",
+      "title": "BAnQ Le Square 안내에 오디오 장비 역할이 나뉘어 있어",
+      "body": "녹음 장비라면 마이크 하나부터 떠올린 나 ㅋㅋ\n그랑드비블리오테크 안 Le Square 안내엔 마이크, 오디오 인터페이스, MIDI 컨트롤러가 따로 나와\n마이크는 소리를 받고, 인터페이스는 컴퓨터와 소리를 주고받고, MIDI 컨트롤러는 소리를 내거나 조절하는 신호를 보내는 장비래\n이름만 늘어놓을 땐 복잡했는데 역할로 나누니까 조금 알겠어\n마이크부터 고르기 전에 이 구분은 알아둬야겠음",
+      "ord": 11,
+      "source": "https://square.banq.qc.ca/appareils/audio"
+    },
+    {
+      "city_id": "montreal",
+      "author_nickname": "정원그림자",
+      "tag_slug": "travel",
+      "place_name": "Redpath Museum",
+      "place_address": "859 Sherbrooke Street West",
+      "place_display_name": "레드패스박물관",
+      "title": "레드패스박물관은 전시층까지 계단으로 올라가야 해",
+      "body": "레드패스박물관은 지금 경사로와 엘리베이터가 없다고 안내해\n전시실 세 층과 지하 화장실을 이용하려면 중앙 계단을 지나야 하는 구조래\n같이 갈 사람의 이동이 편할지부터 생각해봐야겠어",
+      "ord": 12,
+      "source": "https://www.mcgill.ca/redpath/"
+    },
+    {
+      "city_id": "montreal",
+      "author_nickname": "두바퀴메이플",
+      "tag_slug": "life",
+      "place_name": "Parc des Rapides",
+      "place_address": "7770, boulevard LaSalle",
+      "place_display_name": "라피드 공원",
+      "title": "라피드 공원은 급류랑 새를 함께 바라보는 자리네",
+      "body": "라피드 공원 소개엔 라신 급류와 강, 새 관찰 이야기가 같이 있어\n산책과 자전거길을 따라가며 자연을 살펴보는 곳으로 안내하네\n지도에서 강의 모양만 보던 데서 조금 더 알아보고 싶어졌어 ㅋㅋ",
+      "ord": 13,
+      "source": "https://montreal.ca/lieux/parc-des-rapides"
+    },
+    {
+      "city_id": "montreal",
+      "author_nickname": "아트워터오후",
+      "tag_slug": "travel",
+      "place_name": "Pointe-à-Callière",
+      "place_address": "350 Place Royale",
+      "place_display_name": "푸앵트아칼리에르",
+      "title": "푸앵트아칼리에르에선 유리 바닥 아래 옛 유적을 봐",
+      "body": "땅 아래 남은 흔적을 어떻게 전시하나 싶었는데\n푸앵트아칼리에르의 Where Montréal Began은 유리 바닥 아래 발굴 유적을 보여준대\n옛 요새의 흔적과 우물, 도시가 세워지기 전 원주민의 화덕 흔적도 포함돼 있어\n같은 자리에서 서로 다른 시기의 생활이 겹쳐 보이는 구조인 것 같아\n나는 큰 연표보다 어떤 흔적이 남았는지부터 찬찬히 보고 싶어",
+      "ord": 14,
+      "source": "https://pacmusee.qc.ca/en/exhibitions/detail/where-montreal-began/"
+    },
+    {
+      "city_id": "montreal",
+      "author_nickname": "메트로한칸",
+      "tag_slug": "life",
+      "place_name": "Parc Jarry",
+      "place_address": "205, rue Gary-Carter",
+      "place_display_name": "Parc Jarry",
+      "title": "Parc Jarry 산책로와 농구장은 정비 안내가 있어",
+      "body": "Parc Jarry 소개를 읽는데 정비 안내가 먼저 붙어 있어\n산책로를 다시 정비하고 농구장을 보수하는 공사래\n공원 소개에 시설이 나온다고 해서 지금 전부 평소처럼 쓰는 건 아닐 수 있겠네\n평소 길이 익숙한 사람도 이번엔 공사 구역을 따로 살펴야 할 것 같아",
+      "ord": 15,
+      "source": "https://montreal.ca/lieux/parc-jarry"
+    },
+    {
+      "city_id": "edmonton",
+      "author_nickname": "U오브A도서관",
+      "tag_slug": "food",
+      "place_name": "Stanley A. Milner Library",
+      "place_address": "7 Sir Winston Churchill Square NW",
+      "title": "EPL The Kitchen에서는 칼 쓰는 방법도 배울 수 있어",
+      "body": "집밥 메뉴를 찾아보다 도서관 요리 공간까지 들어왔어\nStanley A. Milner Library의 The Kitchen은 기초·중급 요리와 식사 준비, 영양, 칼 쓰는 방법을 다루는 수업을 소개해\n집에서 쓰는 기기와 상업용 기기가 함께 있는 공간이래\n나는 새 메뉴를 늘리기 전에 재료 손질부터 익히는 쪽이 더 실용적일 것 같아\n어느 회차를 들을지는 메뉴를 좀 더 보고 고르려고",
+      "ord": 16,
+      "source": "https://www.epl.ca/the-kitchen/"
+    },
+    {
+      "city_id": "edmonton",
+      "author_nickname": "동물그림수첩",
+      "tag_slug": "education",
+      "place_name": "Royal Alberta Museum",
+      "place_address": "9810 103a Avenue NW",
+      "place_display_name": "로열알버타박물관",
+      "title": "로열알버타박물관의 위장한 곤충, 눈앞에 있어도 찾을까",
+      "body": "벌레 전시라길래 표본만 떠올렸는데 로열알버타박물관 Bug Gallery는 살아 있는 곤충과 거미 같은 무척추동물을 다뤄\n주변에 섞여 숨은 곤충을 찾거나 말벌 집의 생활을 살펴보는 전시도 있대, 내 관찰력이 버틸까 ㅋㅋ",
+      "ord": 17,
+      "source": "https://www.royalalbertamuseum.ca/visit/galleries/bug-gallery"
+    },
+    {
+      "city_id": "edmonton",
+      "author_nickname": "사우스게이트점심",
+      "tag_slug": "education",
+      "title": "EPL 가계도 자료는 집에서 볼 수 있는 것부터 구분",
+      "body": "가계도 자료도 접속 장소가 다르네. EPL의 Ancestry Library는 분관 안에서 쓰는 자료고\nHeritageQuest Online은 집에서 볼 수 있는 별도 자료로 안내돼 있음",
+      "ord": 18,
+      "source": "https://www.epl.ca/resources/genealogy/"
+    },
+    {
+      "city_id": "edmonton",
+      "author_nickname": "무타트온실",
+      "tag_slug": "education",
+      "title": "EPL Kanopy 목록엔 짧은 영화도 있네",
+      "body": "주말에 뭘 볼지 고르다 또 목록만 늘리는 중 ㅋㅋ EPL의 Kanopy에는 장편영화, 다큐멘터리와 단편, TV 시리즈가 있어\n이번엔 긴 영화 하나 고르느라 미루기보다 단편 목록부터 볼까 함",
+      "ord": 19,
+      "source": "https://www.epl.ca/resource/kanopy/"
+    },
+    {
+      "city_id": "edmonton",
+      "author_nickname": "백번가구름",
+      "tag_slug": "education",
+      "place_name": "Stanley A. Milner Library",
+      "place_address": "7 Sir Winston Churchill Square NW",
+      "title": "EPL 3D 프린팅 재료는 식기용 인증을 받은 게 아니야",
+      "body": "3D 프린터로 뭘 만들지 생각하다가 재료 설명에서 멈춤\nEPL의 Stanley A. Milner Library에서 쓰는 PLA는 처음 모형을 만들어보기 좋은 재료라고 해\n대신 자외선이나 물을 견뎌야 하는 용도로는 권하지 않고, 식품용 인증도 없다고 안내돼 있어\n출력할 수 있는 모양과 실제로 써도 되는 용도는 따로 생각해야겠네\n재료와 이용 조건은 바뀔 수 있으니 신청 전 다시 확인할 거야",
+      "ord": 20,
+      "source": "https://www.epl.ca/makerspace/3d-printing/"
+    },
+    {
+      "city_id": "calgary",
+      "author_nickname": "프린스아일랜드",
+      "tag_slug": "education",
+      "title": "캘거리도서관 언어 자료는 듣기와 말하기도 다뤄",
+      "body": "외운 단어가 말할 때도 바로 나오면 좋겠는데 ㅋㅋ 캘거리도서관 Transparent Language Online은 어휘랑 듣기·말하기·읽기·쓰기를 연습하는 자료야\n나는 읽는 것만 고르지 말고 소리 내는 연습도 좀 섞어볼까 함",
+      "ord": 21,
+      "source": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/transparent-language-online"
+    },
+    {
+      "city_id": "calgary",
+      "author_nickname": "C트레인통근",
+      "tag_slug": "transport",
+      "place_name": "Centre Street Platform",
+      "place_address": "125 - 7 Avenue S.E.",
+      "place_display_name": "센터스트리트 플랫폼",
+      "title": "캘거리트랜짓 분실물은 센터스트리트 쪽에서 찾아",
+      "body": "캘거리트랜짓 분실물 찾는 곳은 센터스트리트 플랫폼, 주소는 125 - 7 Avenue S.E.로 나와 있어\n평일 오전 10시부터 오후 5시 30분까지고 주말과 공휴일엔 닫는대\n운영 안내는 바뀔 수 있으니 찾으러 가기 전에 다시 확인하려고",
+      "ord": 22,
+      "source": "https://www.calgarytransit.com/contact-us.html"
+    },
+    {
+      "city_id": "calgary",
+      "author_nickname": "보우강변산책",
+      "tag_slug": "life",
+      "place_name": "Bowness Park",
+      "place_address": "",
+      "place_display_name": "보우니스공원",
+      "title": "보우니스공원의 겨울 소개엔 얼음 자전거도 나와",
+      "body": "보우니스공원 안내에서 겨울에 할 수 있는 것들을 보는데 얼음 자전거가 눈에 들어왔어\n라군 스케이트와 크로스컨트리 스키, 아이스바이크 같은 활동을 소개해\n지금 10월에 다 운영한다는 뜻은 아니야\n날 추워지면 집에 있을 생각부터 했는데 겨울 후보 하나 생김\n자전거도 얼음 위까지 가네 ㅋㅋ",
+      "ord": 23,
+      "source": "https://www.calgary.ca/parks/bowness-park.html"
+    },
+    {
+      "city_id": "calgary",
+      "author_nickname": "스탬피드준비",
+      "tag_slug": "education",
+      "place_name": "TELUS Spark",
+      "place_address": "220 St. George's Drive NE",
+      "place_display_name": "텔러스스파크",
+      "title": "텔러스스파크 Being Human은 기억과 감정도 다뤄",
+      "body": "몸을 다루는 전시면 장기 모형부터 생각했는데, 텔러스스파크 Being Human은 감정과 기억이 작동하는 방식도 소개해\n같은 인간이어도 느끼는 건 다르다는 얘기가 조금 궁금해짐\n일부 체험 전시는 닫혀 있을 수 있다고 안내돼 있어서 모든 걸 해볼 수 있다고 기대하진 않으려고",
+      "ord": 24,
+      "source": "https://www.sparkscience.ca/being-human"
+    },
+    {
+      "city_id": "calgary",
+      "author_nickname": "브라이들우드도서관",
+      "tag_slug": "education",
+      "title": "캘거리도서관 Fiero Code엔 직접 만드는 과제가 있어",
+      "body": "코딩 공부하면 설명 읽다가 지칠까 싶었는데, 캘거리도서관 Fiero Code는 단계별 수업에 직접 만드는 프로젝트와 과제를 섞어둔 자료네\nHTML, CSS, JavaScript, Python 같은 언어를 다루니 나는 작은 과제부터 살펴보고 싶어",
+      "ord": 25,
+      "source": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/fiero-code"
+    },
+    {
+      "city_id": "vancouver",
+      "author_nickname": "커머셜드라이브",
+      "tag_slug": "life",
+      "source_case_key": "pann:352213800",
+      "title": "어른끼리 가자던 여행, 날짜 잡고 나니 아이들도 온대",
+      "body": "친구 부부가 아이들은 부모님께 맡기고 우리끼리 여행하자길래 나도 날짜를 맞췄는데, 숙소를 잡으려니 어린아이 둘도 데려온대. 우리 부부는 자녀가 없고, 둘 다 아이들과 함께하는 여행을 선호하지 않아.\n친구는 아이들끼리 잘 노니까 신경 쓸 필요 없다고 하는데, 차 한 대로 가려던 계획부터 두 대로 바뀌고 숙소와 식사도 다시 생각해야 하잖아.\n아직 숙소를 예약한 건 아니라 지금 빠질까 고민돼. 아이들이 싫어서 그러냐는 얘기로 흐를까 조심스럽지만, 처음 같이 가자고 했던 조건이 달라진 건 맞는 것 같아.",
+      "poll": {
+        "question": "함께할 사람이 달라진 여행, 지금 빠져도 괜찮을까?",
+        "options": [
+          "조건이 달라졌으니 빠져도 됨",
+          "친구와 새 조건부터 얘기해봄",
+          "이미 날짜 맞췄으니 함께 감"
+        ]
+      },
+      "ord": 26,
+      "source": "https://pann.nate.com/talk/352213800",
+      "content_kind": "community_story",
+      "post_id": "8a78d3b1-8708-5e9b-b496-e67aad1ace7b",
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000065",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "집 대출과 개인 취미 예산을 함께 조정한다",
+          "relationship_status": "married"
+        },
+        "topic": "결혼 전후 관계"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "어른끼리 여행 동의 후 날짜 결정 / 숙소 예약 전에 아이 둘 동행으로 변경 / 원문 화자 부부는 자녀 없고 아이와 여행 선호하지 않음 / 차·숙소·식사 계획 바뀜 / 취소·재합의 결과 없음",
+        "fictional_changes": [
+          "남해 지명을 삭제하고 현재 도시 운영 부부의 여행 준비 장면으로 배정",
+          "화자는 기존 29세 남성·기혼4년·자녀없음 그대로; 원문 화자 성별 미상",
+          "아이들과 여행을 선호하지 않는 입장 및 예약 전 시점은 유지; 관계가 어색해질 걱정은 화자의 추정으로만 표현"
+        ]
+      }
+    },
+    {
+      "city_id": "toronto",
+      "author_nickname": "베이뷰빌리지",
+      "tag_slug": "life",
+      "source_case_key": "pann:374375166",
+      "title": "친구의 아픈 과거, 익명 글에 쓰는 건 괜찮다는 아내",
+      "body": "아내가 친구에게 출산 뒤 필요한 비용을 도와주겠다는 글을 보여줬어. 그런데 그 글엔 도움받는 친구가 학창 시절 괴롭힘을 겪었고 그 친구를 그때 도와줬다는 이야기까지 있었어.\n나는 친한 친구면 그 사람의 아픈 과거를 왜 공개된 곳에 쓰냐고 했어. 아내는 친구에게 미리 물어봤을 수도 있고, 익명이라 그 친구가 못 볼 수도 있지 않냐고 했고.\n실제로 당사자 허락을 받았는지는 우리도 몰라. 그런데 나는 그런 생각을 하는 게 실망스럽다고까지 말했고, 아내는 글 하나 보여줬다고 왜 화를 내냐고 했어.\n나는 도움주는 마음과 그 사람의 과거를 공개하는 건 따로 봐야 한다고 생각해. 아내는 자신이 잘못 생각한 건 없다는 입장이야. 이 얘기를 어디서부터 다시 해야 할지 모르겠음.",
+      "poll": {
+        "question": "친구의 힘든 과거를 익명 글에 넣을 때 기준은?",
+        "options": [
+          "당사자 동의를 먼저 받아야 함",
+          "특정할 수 없다면 괜찮음",
+          "도움을 설명하는 데 꼭 필요한지 봄"
+        ]
+      },
+      "ord": 27,
+      "source": "https://pann.nate.com/talk/374375166",
+      "content_kind": "community_story",
+      "post_id": "d374b036-50fc-5d77-9124-26c9037c332d",
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000080",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "공동 생활비와 개인 지출을 구분해 관리한다",
+          "relationship_status": "married"
+        },
+        "topic": "결혼 전후 관계"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "배우자가 글 보여준 뒤 의견 충돌 / 타인의 괴롭힘 과거 공개에 대한 반대 / 아내의 사전 동의 가능성·익명성 의견 / 실제 동의 여부 미확인 / 화자가 실망 표현; 아내는 왜 화내는지 반문; 미해결",
+        "fictional_changes": [
+          "원문의 산후조리비는 출산 뒤 필요한 비용으로 일반화; 특정 제도·통화·학교·작성자 신상 제거",
+          "기존 남성 기혼4년 자녀없는 작성자의 아내와 대화로 배정; 출산 당사자는 화자가 아님",
+          "배우자의 반대 맥락·동의 미확인과 다툼을 유지; 화해 결말 추가하지 않음"
+        ]
+      }
+    },
+    {
+      "city_id": "montreal",
+      "author_nickname": "몽루아얄잎새",
+      "tag_slug": "life",
+      "source_case_key": "pann:374725656",
+      "title": "아이 상담에 남편이랑 갔다고 친구가 유난이래",
+      "body": "세 살 아이 맡길 곳을 알아보다 자리가 나서 남편이랑 같이 상담을 갔어. 내가 보는 부분과 남편이 보는 부분이 다를 테니 같이 보고 얘기해보려던 거였고.\n친구한테 그 얘기를 했더니 그런 상담은 엄마 혼자 가는 거라며 유난 떤다고 하더라. 다른 사람들도 까탈스러운 엄마로 볼 거라고까지 했어.\n그래서 나도 아이 아빠인데 같이 보고 느끼는 게 왜 이상하냐고 했지. 친구는 그래도 남들이 그렇게 볼 거라며 같은 말을 했고.\n남편이 같이 가준 걸 대단한 일이라고 자랑한 것도 아니야. 우리 아이 일이라 둘이 간 건데, 그게 남들 눈치 봐야 할 일이 된 게 기분 나빠.\n같이 간 게 누구한테 어떤 불편을 줬다는 건지는 아직 모르겠어.",
+      "poll": {
+        "question": "아이 상담에 부모 둘이 참석하는 건 어떻게 생각해?",
+        "options": [
+          "같이 가는 게 자연스러움",
+          "각자 일정에 맞춰 한 명만 가도 됨",
+          "두 사람 참석이 가능한지 먼저 문의"
+        ]
+      },
+      "ord": 28,
+      "source": "https://pann.nate.com/talk/374725656",
+      "content_kind": "community_story",
+      "post_id": "51d2212a-f5d2-564c-9459-1350de24d008",
+      "story_fit": {
+        "profile_id": "cc3ea647-6ac1-5ffc-ba83-8d4724d2e0f1",
+        "family": {
+          "children_ages": [
+            3
+          ],
+          "marriage_years": 6,
+          "household_finances": "육아비와 주거비를 함께 계획한다",
+          "relationship_status": "married"
+        },
+        "topic": "육아 분담"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "부모 둘이 자녀 상담에 참석 / 친구가 유난·타인 평가를 주장 / 화자가 직접 반박 / 상담기관의 부정적 반응은 관측되지 않음",
+        "fictional_changes": [
+          "원문의 자녀 나이는 미상; 기존 화자의 고정3세 자녀 상담 장면으로 구체화",
+          "어린이집 중간입소는 특정 국가 제도를 단정하지 않는 돌봄 자리 상담으로 변경",
+          "기존29세 여성·기혼6년·대학원생 유지; 교사/다른 부모가 비난했다는 사실을 만들지 않음"
+        ]
+      }
+    },
+    {
+      "city_id": "edmonton",
+      "author_nickname": "에드먼튼겨울",
+      "tag_slug": "life",
+      "source_case_key": "pann:374959863",
+      "title": "남편 동생에게 방 내줬는데 밥과 빨래도 내 몫이래",
+      "body": "남편 동생이 학교 때문에 우리 집 남는 방에서 지내게 됐어. 부모님 형편도 생각해서 방을 내주는 건 괜찮다고 했는데, 밥까지 챙겨줘야 한다는 뜻인 줄은 몰랐어.\n나도 내 일을 하느라 정해진 시간마다 식사를 차리기 어려워. 쉬는 날 남편이랑 반찬을 만들어뒀는데도 시어머니한테 밥을 안 챙겨준다고 연락이 갔어. 빨래랑 방 정리도 내가 해주지 않으면 서운하다는 얘기가 나오고.\n따로 방을 구하면 비용 절반 정도를 보태겠다고 했더니, 나한텐 생각해보겠다고 하고 남편에겐 내가 나가라고 했다는 말만 전했더라. 남편은 동생이 철없는 건 맞지만 내보내는 건 좀 그렇다며 자기가 혼자 하도록 얘기하겠대.\n그렇게 해본 뒤 달라질지 봐야겠지만, 방을 내준 약속에 어디까지 들어가는지부터 서로 다르게 생각했던 것 같아.",
+      "poll": {
+        "question": "성인 가족을 함께 살게 할 때 식사·집안일은?",
+        "options": [
+          "본인이 자기 몫을 해야 함",
+          "함께 살기 전 분담부터 합의",
+          "받아준 부부가 생활까지 챙김"
+        ]
+      },
+      "ord": 29,
+      "source": "https://pann.nate.com/talk/374959863",
+      "content_kind": "community_story",
+      "post_id": "ba4a6657-e0db-5aba-afbc-f3b7a2fe64b8",
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000118",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "공동 생활비와 개인 지출을 구분해 관리한다",
+          "relationship_status": "married"
+        },
+        "topic": "결혼 전후 관계"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "방 제공 동의와 가사 기대의 불일치 / 반찬 준비해도 어머니에게 불만 연락 / 독립 비용 절반 정도 제안 / 남편은 즉시 내보내는 데 반대하고 스스로 하게 말하겠다고 함 / 실제 퇴거·분담 개선은 미확인",
+        "fictional_changes": [
+          "20대 신혼1년·병원 교대근무를 기존29세 여성·기혼4년·자영업 생활로 변경; 병원·나이트 근무 삭제",
+          "주거 방 수와 동생의 정확 나이/학교 신상 삭제; 성인 동생의 학교 때문에 머무는 상황 유지",
+          "식사·빨래·정리 불일치, 독립 비용 절반 제안, 남편의 반대와 약속 유지; 퇴거 결말 없음"
+        ]
+      }
+    },
+    {
+      "city_id": "calgary",
+      "author_nickname": "메이랜드저녁",
+      "tag_slug": "life",
+      "source_case_key": "pann:375439131",
+      "title": "남편이 주말에 번 돈을 부모님께 드렸는데 난 몰랐어",
+      "body": "아이 셋 생활비를 맞춰보던 중에 남편이 부모님께 목돈을 드렸다는 걸 알았어. 건강이 안 좋아지셔서 보태드렸대. 나는 어디서 난 돈인지부터 물었고.\n남편은 앞으로 할 일을 생각하면서 주말마다 친구 일을 돕고 따로 모은 돈이라고 했어. 남편 설명으론 주말에 별도로 번 돈이었고, 부모님 도와드릴 마음도 이해해.\n그런데 그 수입이 생긴 것도, 목돈을 드린 것도 나는 나중에 알았잖아. 아이들한테 들어갈 돈도 많은데 부부끼리 먼저 말은 해줄 수 있는 거 아닌가 싶어.\n남편이 따로 번 돈까지 전부 공동돈으로 봐야 하냐는 쪽도 이해는 돼. 내가 걸리는 게 돈을 드린 일인지, 미리 몰랐던 일인지부터 정리해보려고.",
+      "poll": {
+        "question": "배우자의 주말 부수입으로 부모님을 도울 때는?",
+        "options": [
+          "목돈이면 미리 상의해야 함",
+          "별도 수입은 각자 결정 가능",
+          "생활비·돌봄 분담까지 함께 봄"
+        ]
+      },
+      "ord": 30,
+      "source": "https://pann.nate.com/talk/375439131",
+      "content_kind": "community_story",
+      "post_id": "0c54c394-fc76-52fe-a928-bd883b60f839",
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000137",
+        "family": {
+          "children_ages": [
+            6,
+            3,
+            1
+          ],
+          "marriage_years": 6,
+          "household_finances": "육아비와 주거비를 함께 계획한다",
+          "relationship_status": "married"
+        },
+        "topic": "배우자와 가족 갈등"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "주말 일로 번 별도 수입이라는 남편 설명 / 건강 문제 부모 지원 목돈 / 수입·지원 모두 사후 인지 / 아이 지출 우선과 별도 수입 결정권의 대립 / 별도 수입 진위·금액·해결 결과는 확정하지 않음",
+        "fictional_changes": [
+          "40대·결혼10년·전업·외벌이 대기업 설정과 원화 금액을 삭제; 기존35세 디자이너·기혼6년·고정자녀6/3/1세 유지",
+          "부모 건강 문제·주말 부수입과 사후인지 갈등만 활용; 현재 캐나다 임금·법·의료비로 대체하지 않음",
+          "별도 수입의 결정권이라는 반대 맥락과 화자의 미리 상의 요구를 함께 유지; 성찰 문장은 추가한 캐릭터 반응이며 실제 원문 후속 결말 아님"
+        ]
+      }
+    }
+  ]
+}

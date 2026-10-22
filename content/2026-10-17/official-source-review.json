@@ -1,0 +1,513 @@
+{
+  "checked_at": "2026-10-17T09:18:55.058899+00:00",
+  "image_generation_or_editing": "not_applicable; text-only",
+  "posts": [
+    {
+      "ord": 1,
+      "city_id": "vancouver",
+      "title": "공구를 사는 값보다 보관할 자리가 걸려",
+      "original_url": "https://vancouvertoollibrary.com/",
+      "read_at": "2026-10-17T09:03:22.499837+00:00",
+      "html_sha256": "c954225ff5d9470279404cca5fa2dc90214fd1d44bd20170c6d8bee62df682b2",
+      "verified_facts": [
+        "회원 대상 집수리·정원·자전거 정비 도구 대여"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [],
+      "place_name": "Vancouver Tool Library",
+      "place_address": "3448 Commercial Street",
+      "place_display_name": "밴쿠버공구도서관",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 2,
+      "city_id": "vancouver",
+      "title": "Bâtard는 빵을 매장에서 만든다길래",
+      "original_url": "https://batardbakery.com/",
+      "read_at": "2026-10-17T09:03:21.797284+00:00",
+      "html_sha256": "da7598a280377b5e52acf9b2d9d324ba90ab9ccae217c1313a10b45b2252358e",
+      "verified_facts": [
+        "Vancouver Fraser Street, 빵과 페이스트리 매장 제조"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [
+        {
+          "key": "van-bread-contact",
+          "original_url": "https://batardbakery.com/contactus",
+          "final_url": "https://batardbakery.com/contactus",
+          "observed_at": "2026-10-17T09:05:07.704971+00:00",
+          "sha256": "85aec65ce7a2924ff6383a5d763c51eeb03345b1c65fe443b0e40d7b17efef9e",
+          "text_chars": 650,
+          "links": []
+        }
+      ],
+      "place_name": "Bâtard",
+      "place_address": "3958 Fraser Street",
+      "place_display_name": "Bâtard",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 3,
+      "city_id": "vancouver",
+      "title": "조용한 영화관이 편한데 싱어롱은 궁금해",
+      "original_url": "https://riotheatre.ca/about/",
+      "read_at": "2026-10-17T09:03:22.262557+00:00",
+      "html_sha256": "d53856923758be24de30ca6460864c084b0209684433d8cb22202c70404d71a8",
+      "verified_facts": [
+        "Rio 싱어롱·분장·독립영화와 라이브 프로그램 소개; 특정 오늘 상영은 발표하지 않음"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [],
+      "place_name": "Rio Theatre",
+      "place_address": "1660 East Broadway",
+      "place_display_name": "리오극장",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 4,
+      "city_id": "vancouver",
+      "title": "원두 이름보다 추출 방식부터 궁금해졌어",
+      "original_url": "https://www.propagandacoffee.ca/",
+      "read_at": "2026-10-17T09:03:22.859065+00:00",
+      "html_sha256": "5eaf6128ae3272df76703c0c1eb146594ed893deda78018924f86e900edfc074",
+      "verified_facts": [
+        "캐나다 여러 로스터 순환, 배치브루·푸어오버 제공"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [
+        {
+          "key": "van-coffee-location",
+          "original_url": "https://www.propagandacoffee.ca/location",
+          "final_url": "https://www.propagandacoffee.ca/location",
+          "observed_at": "2026-10-17T09:06:59.354779+00:00",
+          "sha256": "c101dda47270338e731cfe865e897b7709fc98cecb6e8ec8ed3e12da208707cd",
+          "text_chars": 323
+        }
+      ],
+      "place_name": "Propaganda Coffee",
+      "place_address": "209 Pender street East",
+      "place_display_name": "Propaganda Coffee",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 5,
+      "city_id": "vancouver",
+      "title": "코옵 목록에 있다고 빈집이 있다는 건 아니네",
+      "original_url": "https://www.chf.bc.ca/find-a-co-op/",
+      "read_at": "2026-10-17T09:07:23.266784+00:00",
+      "html_sha256": "8c114ffb649a91018514d50ea4c01594d683cb7d6c23578c74c325b448db484d",
+      "verified_facts": [
+        "공식 지도 범례 homes available, accepting applications, applications paused 구분"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [],
+      "place_name": null,
+      "place_address": null,
+      "place_display_name": null,
+      "place_note": "단일 실제 장소를 소개하는 글이 아니라 지도 없음"
+    },
+    {
+      "ord": 6,
+      "city_id": "toronto",
+      "title": "식재료만 사고 포장은 덜 가져오고 싶어",
+      "original_url": "https://www.evergreen.ca/evergreen-brick-work/activities/saturday-farmers-market/",
+      "read_at": "2026-10-17T09:03:24.612597+00:00",
+      "html_sha256": "ff1e4ba8ac95db205fbe4713251337a86fdfb52bd33e8076e2fce5f22cd20857",
+      "verified_facts": [
+        "깨끗한 개인 용기 지참 가능, 일부 판매자가 병·달걀판 등 포장 반환·재사용"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [],
+      "place_name": "Evergreen Brick Works",
+      "place_address": "550 Bayview Ave",
+      "place_display_name": "Evergreen Brick Works",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 7,
+      "city_id": "toronto",
+      "title": "영화관에서 남의 휴대폰 화면까지 보고 싶진 않음",
+      "original_url": "https://revuecinema.ca/about/",
+      "read_at": "2026-10-17T09:03:21.213267+00:00",
+      "html_sha256": "93b28ce457c3cfb8bf03448a2e7df7fc3fc3741d0ee57db4e738f9f3299efdc1",
+      "verified_facts": [
+        "과한 대화·방해되는 휴대폰 사용 규정 명시"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [],
+      "place_name": "Revue Cinema",
+      "place_address": "400 Roncesvalles Avenue",
+      "place_display_name": "리뷰시네마",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 8,
+      "city_id": "toronto",
+      "title": "고장 난 물건, 버리기 전에 배울 게 있을까",
+      "original_url": "https://repaircafetoronto.ca/",
+      "read_at": "2026-10-17T09:03:22.402624+00:00",
+      "html_sha256": "65c3c91229309a2cd911e6ea123131bb9cb3c87bc836de3f93e2c32bb41f7003",
+      "verified_facts": [
+        "작은 가전·옷 등 생활 물건을 함께 수리하고 방법을 배우는 모임"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [],
+      "place_name": null,
+      "place_address": null,
+      "place_display_name": null,
+      "place_note": "단일 실제 장소를 소개하는 글이 아니라 지도 없음"
+    },
+    {
+      "ord": 9,
+      "city_id": "toronto",
+      "title": "초콜릿 가게에서 만드는 과정까지 보이는 게 궁금해",
+      "original_url": "https://www.somachocolate.com/pages/distillery-district-location",
+      "read_at": "2026-10-17T09:06:59.524761+00:00",
+      "html_sha256": "9831338596c502b8bbfcd170fb0230c2d8220baa9bc39a67af5e852b0810c5dc",
+      "verified_facts": [
+        "2007년에 옛 위스키 숙성 tankhouse로 옮긴 지점, 공개형 제조 공간과 카카오 조각에서 초콜릿으로의 과정"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [],
+      "place_name": "SOMA chocolatemaker",
+      "place_address": "32 Tank House Lane",
+      "place_display_name": "소마 초콜릿 디스틸러리점",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 10,
+      "city_id": "toronto",
+      "title": "새 취미 시작할 때 재료부터 잔뜩 사야 하나",
+      "original_url": "https://shop.thepaperplace.ca/",
+      "read_at": "2026-10-17T09:07:46.541831+00:00",
+      "html_sha256": "b15d0244aebcd0d05427b2342748f39481103ff8642cc79e19a383f68287f107",
+      "verified_facts": [
+        "치요가미·마블링·크레이프 종이 분류,887 Queen St. West Toronto 지점"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [
+        {
+          "key": "tor-paper-location",
+          "original_url": "https://thepaperplace.ca/pages/location-hours",
+          "final_url": "https://shop.thepaperplace.ca/pages/location-hours",
+          "observed_at": "2026-10-17T09:15:27.878713+00:00",
+          "sha256": "ad44684ae2800aa04f05f7344a75d21fd7457b652c762938953d7c4752141fd9",
+          "text_chars": 617
+        }
+      ],
+      "place_name": "The Paper Place",
+      "place_address": "887 Queen St. West",
+      "place_display_name": "The Paper Place",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 11,
+      "city_id": "montreal",
+      "title": "아이스크림 만드는 기계도 빌려 쓸 수 있네",
+      "original_url": "https://laremise.ca/",
+      "read_at": "2026-10-17T09:03:23.303138+00:00",
+      "html_sha256": "945f1a46eee295c7cb1f0ffbe572d1cdbcfbd8c7ad4186ace8c7dd013bf47c71",
+      "verified_facts": [
+        "회원 대여,에어프라이어·sorbetière 목록; 현재 재고나 예약 가능 보장 없음"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [
+        {
+          "key": "mtl-remise-contact",
+          "original_url": "https://laremise.ca/adresses-et-horaires/",
+          "final_url": "https://laremise.ca/adresses-et-horaires/",
+          "status": 200,
+          "observed_at": "2026-10-17T09:04:17.955105+00:00",
+          "sha256": "a575d4ef78e172e0beafad661af686356aef7853979e4368f346e187686fb7f0",
+          "text_chars": 1499,
+          "text_path": "/Users/ash/Library/Application Support/gling/operations/city-posts/96ddb7dc-88e3-4b37-ba90-254082f22353/sources/mtl-remise-contact.txt"
+        }
+      ],
+      "place_name": "La Remise Villeray",
+      "place_address": "8280 Saint-Laurent, local 411",
+      "place_display_name": "La Remise",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 12,
+      "city_id": "montreal",
+      "title": "고양이 카페의 겨울 신발 안내가 눈에 남았어",
+      "original_url": "https://cafechatlheureux.com/",
+      "read_at": "2026-10-17T09:03:23.953239+00:00",
+      "html_sha256": "458eb5fb50cd0be9ee31d11dc1ad4e8efd2e1cdef91fd75a90e9ace1b1cbcf69",
+      "verified_facts": [
+        "겨울 신발 벗기 요청·제설용 소금 이유,신중한 입양을 알리는 목적"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [],
+      "place_name": "Café Chat L’Heureux",
+      "place_address": "172 Av Duluth Est",
+      "place_display_name": "Café Chat L’Heureux",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 13,
+      "city_id": "montreal",
+      "title": "치즈 구경부터 하면 저녁 메뉴가 자꾸 커질 것 같아",
+      "original_url": "https://www.marchespublics-mtl.com/en/markets/atwater-market",
+      "read_at": "2026-10-17T09:03:23.953212+00:00",
+      "html_sha256": "90b202d8efa3c26711ccb243e4bcebecd3b895c3f20cb2be36b5bc6b44eb54e7",
+      "verified_facts": [
+        "같은 시장에 치즈·정육·생선 가게"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [],
+      "place_name": "Atwater Market",
+      "place_address": "155, Greene ave",
+      "place_display_name": "아트워터시장",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 14,
+      "city_id": "montreal",
+      "title": "혼자 본 영화는 끝나고 잠깐 더 머물고 싶어",
+      "original_url": "https://www.cinemamoderne.com/en/about/",
+      "read_at": "2026-10-17T09:03:26.164976+00:00",
+      "html_sha256": "bd504dbf51c4b8f8eebcd92f968bc35057303d4f13d988ab7e82691987df7478",
+      "verified_facts": [
+        "Mile End의 독립영화관 및 카페바"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [
+        {
+          "key": "mtl-movie-contact",
+          "original_url": "https://www.cinemamoderne.com/en/contact/",
+          "final_url": "https://www.cinemamoderne.com/en/location/",
+          "observed_at": "2026-10-17T09:07:03.255054+00:00",
+          "sha256": "899155c4ba96bcb98addb017aa3b710e624dc365d1506db9f1b5efa691526fb0",
+          "text_chars": 671
+        }
+      ],
+      "place_name": "Cinéma Moderne",
+      "place_address": "5150 St-Laurent Blvd.",
+      "place_display_name": "시네마모데른",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 15,
+      "city_id": "montreal",
+      "title": "베이글만 살 때랑 앉아서 먹을 때는 고르는 지점도 다르네",
+      "original_url": "https://stviateurbagel.com/",
+      "read_at": "2026-10-17T09:03:23.736590+00:00",
+      "html_sha256": "af15de9a7b09948785f0fa2a979c5089b9da1d0b8f7aa34cca4ba20743f8df23",
+      "verified_facts": [
+        "베이커리와 카페 지점 구분,1127 ave. Mont-Royal E.의 샌드위치·카페 안내"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [],
+      "place_name": "St-Viateur Bagel & Café",
+      "place_address": "1127, ave. Mont-Royal E.",
+      "place_display_name": "생비아퇴르 베이글",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 16,
+      "city_id": "edmonton",
+      "title": "중고 가구는 싸다는 말보다 상태랑 크기부터",
+      "original_url": "https://hfh.org/qualityforless/",
+      "read_at": "2026-10-17T09:03:28.027122+00:00",
+      "html_sha256": "bee27925c1f4858d6aaca402693ac81b4ad3c22795758c0148f663081ba2813e",
+      "verified_facts": [
+        "기증받은 가구·가전·건축자재 판매,재고는 수시 변경"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [],
+      "place_name": "ReStore North",
+      "place_address": "8210 Yellowhead Trail NW",
+      "place_display_name": "ReStore",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 17,
+      "city_id": "edmonton",
+      "title": "영화관에서 포스터 만드는 봉사도 하는구나",
+      "original_url": "https://metrocinema.org/about-metro-cinema/",
+      "read_at": "2026-10-17T09:05:09.053337+00:00",
+      "html_sha256": "8e50f4f1b54c5c675ac771a616b53fcac0916c799c20d2c72011b0c02197bb24",
+      "verified_facts": [
+        "포스터·홍보물 제작·상영 준비·매점 봉사 역할; 현재 공석 주장 없음"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [],
+      "place_name": "Metro Cinema",
+      "place_address": "8712 109 Street",
+      "place_display_name": "Metro Cinema",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 18,
+      "city_id": "edmonton",
+      "title": "시장 좌판 아래가 버스 정비 자리였다니",
+      "original_url": "https://osfm.ca/news-events/introducing-the-bus-barn-cafe",
+      "read_at": "2026-10-17T09:16:41.528295+00:00",
+      "html_sha256": "1861405b3d0427ab573232f7485b87e4cf51ce6306bd854f34ee7c222572842d",
+      "verified_facts": [
+        "2026-10-16 실제 게시 원문: Bus Barn Café로 이름 변경;1908전차차고 시작,1951트롤리버스차고;상인 좌판은 과거 정비 공간 위에 배치"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [
+        {
+          "key": "edm-market",
+          "original_url": "https://osfm.ca/",
+          "final_url": "https://osfm.ca/",
+          "status": 200,
+          "observed_at": "2026-10-17T09:03:28.828840+00:00",
+          "sha256": "042e38fe0d06e93ddbeda1fe71572df3388c8cc3486ca1ba7ad1f71ddf3040a5",
+          "text_chars": 3696,
+          "text_path": "/Users/ash/Library/Application Support/gling/operations/city-posts/96ddb7dc-88e3-4b37-ba90-254082f22353/sources/edm-market.txt"
+        }
+      ],
+      "place_name": "Old Strathcona Farmers’ Market",
+      "place_address": "10310 83 Avenue NW",
+      "place_display_name": "Old Strathcona Farmers’ Market",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 19,
+      "city_id": "edmonton",
+      "title": "빵 예약은 오늘 생각해서 오늘 받는 게 아니었네",
+      "original_url": "https://duchessbakeshop.com/",
+      "read_at": "2026-10-17T09:03:24.399402+00:00",
+      "html_sha256": "b0c3f3fdc0791d90f53a35f834dcee1b981d343769f8f3b3d13ac9870164c70f",
+      "verified_facts": [
+        "사전 주문 최소48시간,124스트리트점에서만 픽업"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [
+        {
+          "key": "edm-bread-contact",
+          "original_url": "https://duchessbakeshop.com/pages/contact",
+          "final_url": "https://duchessbakeshop.com/pages/contact",
+          "status": 200,
+          "observed_at": "2026-10-17T09:04:17.890746+00:00",
+          "sha256": "d5e7785f7ae6b10bd716beadaa770454e2f8044dd2258aa68a00f708042192c8",
+          "text_chars": 1040,
+          "text_path": "/Users/ash/Library/Application Support/gling/operations/city-posts/96ddb7dc-88e3-4b37-ba90-254082f22353/sources/edm-bread-contact.txt"
+        }
+      ],
+      "place_name": "Duchess Bake Shop",
+      "place_address": "10718 124 Street",
+      "place_display_name": "더치스베이크숍",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 20,
+      "city_id": "edmonton",
+      "title": "고장 난 자전거, 무슨 부품이 필요한지부터 알고 싶어",
+      "original_url": "https://bikeedmonton.ca/",
+      "read_at": "2026-10-17T09:04:17.309760+00:00",
+      "html_sha256": "d43fff4b6d9a5acf4edb3ef5f2b5481a0bc4f57d38eb7aaa8c9d1c41abfdd479",
+      "verified_facts": [
+        "자전거 수리 배우기·새 부품과 중고 부품 제공"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [],
+      "place_name": null,
+      "place_address": null,
+      "place_display_name": null,
+      "place_note": "단일 실제 장소를 소개하는 글이 아니라 지도 없음"
+    },
+    {
+      "ord": 21,
+      "city_id": "calgary",
+      "title": "Crossroads Market은 늦잠 자고 나가도 되겠네",
+      "original_url": "https://www.crossroadsmarket.ca/",
+      "read_at": "2026-10-17T09:03:25.519050+00:00",
+      "html_sha256": "28db402e03eb99859bece20070c7cdd06229b3961524364c0093019bd68ef002",
+      "verified_facts": [
+        "통상 금·토·일09–17;오늘 실시간영업·재고 보장 없음"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [],
+      "place_name": "Crossroads Market",
+      "place_address": "1235 26 Avenue SE",
+      "place_display_name": "Crossroads Market",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 22,
+      "city_id": "calgary",
+      "title": "영화표 없이도 극장 팝콘을 살 수 있다니",
+      "original_url": "https://www.theplaza.ca/",
+      "read_at": "2026-10-17T09:03:26.496437+00:00",
+      "html_sha256": "9459eacaaa01200a0a2246e9b3311cb45edcd6aac2aa1b9c777079f9626c1ddf",
+      "verified_facts": [
+        "영화표 없이 매점 팝콘 구매 가능"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [],
+      "place_name": "The Plaza Theatre",
+      "place_address": "1133 Kensington Road NW",
+      "place_display_name": "The Plaza",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 23,
+      "city_id": "calgary",
+      "title": "만드는 사람 뒤에서 도구를 고치는 사람들",
+      "original_url": "https://www.albertacraft.ab.ca/calgary-gallery",
+      "read_at": "2026-10-17T09:05:08.282029+00:00",
+      "html_sha256": "7f12b2378521d9791f4bfdb8901261d3b3f83df16f8ff3346fb86f0f51428a06",
+      "verified_facts": [
+        "FIX FIRE FORGE는 AUArts/Red Deer Polytechnic 기술자의 작업을 소개;공식 기간2026-09-05~10-31"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [
+        {
+          "key": "cal-craft",
+          "original_url": "https://www.albertacraft.ab.ca/",
+          "final_url": "https://www.albertacraft.ab.ca/",
+          "status": 200,
+          "observed_at": "2026-10-17T09:04:17.439981+00:00",
+          "sha256": "50b754fef42d715c0b3741bb75bdf0efe173090de090b044b459256d78c04b3b",
+          "text_chars": 1941,
+          "text_path": "/Users/ash/Library/Application Support/gling/operations/city-posts/96ddb7dc-88e3-4b37-ba90-254082f22353/sources/cal-craft.txt"
+        }
+      ],
+      "place_name": "Alberta Craft Gallery + Shop - Calgary",
+      "place_address": "cSPACE Marda Loop 1721 - 29 Avenue SW, Suite #280",
+      "place_display_name": "알버타크래프트 갤러리",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    },
+    {
+      "ord": 24,
+      "city_id": "calgary",
+      "title": "내 자전거길은 빠른 길보다 덜 겁나는 길이면 좋겠어",
+      "original_url": "https://bikecalgary.org/maps-routes-pathways/",
+      "read_at": "2026-10-17T09:06:59.504059+00:00",
+      "html_sha256": "5c7a1a9be8564d0845e6392f73447933957681b8c37756b368b7f49bb2fde918",
+      "verified_facts": [
+        "시 자전거·공용 산책로 지도·통제 구간 안내 연결"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [],
+      "place_name": null,
+      "place_address": null,
+      "place_display_name": null,
+      "place_note": "단일 실제 장소를 소개하는 글이 아니라 지도 없음"
+    },
+    {
+      "ord": 25,
+      "city_id": "calgary",
+      "title": "커피 한 잔 뒤에 있는 기계가 더 궁금해짐",
+      "original_url": "https://philsebastian.com/pages/locations/simmons",
+      "read_at": "2026-10-17T09:07:23.267181+00:00",
+      "html_sha256": "59b541a8bb6de82c6b3ecd605c86f792f08b076a508980b640c62df95b821e98",
+      "verified_facts": [
+        "Simmons공개로스팅;1961Probat G45 몸체·드럼·냉각판을 바탕으로 직접 재설계한 로스터"
+      ],
+      "author_opinion": "body의 선호·궁금증·판단은 운영 캐릭터의 의견;방문·구매·제작·게시 성과 근거가 아님",
+      "additional_sources": [],
+      "place_name": "Phil & Sebastian Coffee Roasters",
+      "place_address": "618 Confluence Way SE",
+      "place_display_name": "Phil & Sebastian",
+      "place_note": "공식 영문/로마자+검증 주소로 지도 검색. 미확인 주소는 빈 값;좌표·PlaceID 생성 없음"
+    }
+  ],
+  "excluded_sources": "sources/fetch-index*.json retains actual404/403/certificate/DNS/empty-body results. Unread pages were not used. the workroom had moved its physical operations; excluded instead of calling it a Toronto storefront."
+}

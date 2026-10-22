@@ -1,0 +1,78 @@
+[
+  {
+    "city_id": "edmonton",
+    "key": "electric",
+    "requested_url": "https://www.edmonton.ca/ets/electric-buses",
+    "checked_at": "2026-10-08T16:58:30.910277+00:00",
+    "error": "HTTP Error 404: Not Found"
+  },
+  {
+    "city_id": "calgary",
+    "key": "max",
+    "requested_url": "https://www.calgarytransit.com/max.html",
+    "checked_at": "2026-10-08T16:58:30.911075+00:00",
+    "error": "HTTP Error 404: Not Found"
+  },
+  {
+    "city_id": "montreal",
+    "key": "insect-last",
+    "requested_url": "https://www.mtl.org/en/what-to-do/culture-arts-heritage/insectarium-de-montreal",
+    "checked_at": "2026-10-08T16:58:30.911302+00:00",
+    "http_status": 200,
+    "url": "https://www.mtl.org/en/what-to-do/culture-arts-heritage",
+    "text_path": "content/2026-10-08/local-run-0950/sources/montreal-insect-last.txt",
+    "links": [
+      "#content-main",
+      "/en",
+      "/en/Accommodations",
+      "/en/our-picks",
+      "https://meet.mtl.org/en",
+      "/fr/quoi-faire/culture-arts-patrimoine",
+      "https://www.mtl.org/en/architecture-montreal",
+      "https://www.mtl.org/en/montreal-multicultural-city",
+      "/en/experience/unesco-city-design",
+      "/en/experience/museums-exhibitions-montreal",
+      "/en/experience/revolutionary-montreal-icon-habitat-67",
+      "https://www.facebook.com/Montreal",
+      "https://www.instagram.com/montreal/",
+      "https://twitter.com/montreal",
+      "https://www.youtube.com/user/TourismeMontreal",
+      "https://ca.linkedin.com/company/tourisme-montreal",
+      "https://www.pinterest.com/visitmontreal/",
+      "https://www.tiktok.com/@bonjourmontreal",
+      "https://apropos.mtl.org/en",
+      "/en/contact-us",
+      "/en/our-partners",
+      "/en/legal-notice",
+      "/en/terms-of-service",
+      "https://toolkit.mtl.org/en/towards-more-sustainable-tourism",
+      "https://apropos.mtl.org/en/territorial-acknowledgement",
+      "javascript:Didomi.preferences.show()",
+      "https://industrie.mtl.org/en",
+      "https://meet.mtl.org/en",
+      "https://mtlatable.mtl.org/en",
+      "/en/press-room",
+      "https://experience.mtl.org/en/media",
+      "https://experience.mtl.org/en/travel-professionnals",
+      "https://experience.mtl.org/en/cruises",
+      "https://visita.mtl.org/es",
+      "https://china.mtl.org/",
+      "/en/privacy-policy"
+    ],
+    "length": 1506
+  },
+  {
+    "city_id": "toronto",
+    "key": "cox",
+    "requested_url": "https://tpl.ca/collections/special-collections/black-and-caribbean-heritage/",
+    "checked_at": "2026-10-08T16:58:30.911446+00:00",
+    "error": "HTTP Error 404: Not Found"
+  },
+  {
+    "city_id": "toronto",
+    "key": "cox-alt",
+    "requested_url": "https://tpl.ca/using-the-library/featured-collections/black-and-caribbean-heritage-collection/",
+    "checked_at": "2026-10-08T16:58:30.911617+00:00",
+    "error": "HTTP Error 404: Not Found"
+  }
+]

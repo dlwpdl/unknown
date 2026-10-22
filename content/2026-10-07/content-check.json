@@ -1,0 +1,111 @@
+{
+  "checked_at_utc": "2026-10-07T17:09:26.813356+00:00",
+  "cities": {
+    "vancouver": {
+      "count": 5,
+      "lines": [
+        2,
+        3,
+        3,
+        5,
+        5
+      ],
+      "question_endings": 0,
+      "change_reminders": 0,
+      "first_words": [
+        "예전엔",
+        "길가에서",
+        "숲",
+        "책을",
+        "걷는"
+      ]
+    },
+    "toronto": {
+      "count": 5,
+      "lines": [
+        2,
+        3,
+        3,
+        5,
+        5
+      ],
+      "question_endings": 1,
+      "change_reminders": 1,
+      "first_words": [
+        "오래된",
+        "밤에",
+        "토론토",
+        "영어",
+        "녹음"
+      ]
+    },
+    "montreal": {
+      "count": 5,
+      "lines": [
+        2,
+        2,
+        3,
+        5,
+        5
+      ],
+      "question_endings": 1,
+      "change_reminders": 1,
+      "first_words": [
+        "동물",
+        "도시",
+        "농장이라고",
+        "열차는",
+        "우주"
+      ]
+    },
+    "edmonton": {
+      "count": 5,
+      "lines": [
+        2,
+        2,
+        3,
+        3,
+        5
+      ],
+      "question_endings": 0,
+      "change_reminders": 1,
+      "first_words": [
+        "1)",
+        "강변",
+        "회의실을",
+        "버스에",
+        "처음엔"
+      ]
+    },
+    "calgary": {
+      "count": 5,
+      "lines": [
+        2,
+        2,
+        3,
+        3,
+        5
+      ],
+      "question_endings": 2,
+      "change_reminders": 1,
+      "first_words": [
+        "스플릿록이란",
+        "전엔",
+        "기다리는",
+        "그림책을",
+        "물고기가"
+      ]
+    }
+  },
+  "authors_match_personas": true,
+  "25_distinct_seed_authors": true,
+  "existing_titles_checked": 329,
+  "no_duplicate_city_title": true,
+  "no_source_links_or_threads_greetings_or_encoding_corruption": true,
+  "dry_run_sql_matches_payload": true,
+  "actual_jq_query_roundtrip": false,
+  "replacement_count": 5,
+  "script_sha256": "1e3c6d188cf93e3ea8e96ba87160631907bb1ded05e358bd74d3f8e43c9f1868",
+  "payload_sha256": "b8e33f5abe54c6be48e3058dd9d3029f92647ee9e68cb38b559d2437828c8da6",
+  "comment_insert_supported": false
+}

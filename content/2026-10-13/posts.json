@@ -1,0 +1,504 @@
+{
+  "posts": [
+    {
+      "ord": 1,
+      "city_id": "vancouver",
+      "author_nickname": "SFU언덕",
+      "author_id": "10000000-0000-0000-0000-000000000039",
+      "tag_slug": "education",
+      "title": "BodyWorks에서 뼈 맞추기, 시간 제한까지 있네",
+      "body": "사람 몸 전시 설명 읽다가 뼈 맞추기에서 멈춤\nScience World의 BodyWorks에는 버저가 울리기 전에 골격을 조립하는 체험이 있어\n음식이 몸속을 지나가는 과정도 보고, Lab Zone에서는 DNA와 유전도 다룬대\n이름만 외우는 공부보다는 손으로 맞추는 쪽이 나을 것 같긴 한데\n시간 재기 시작하면 아는 뼈도 까먹을 듯 ㅋㅋ",
+      "source": "https://www.scienceworld.ca/exhibition/bodyworks-gallery/",
+      "place_name": "Science World",
+      "place_address": ""
+    },
+    {
+      "ord": 2,
+      "city_id": "vancouver",
+      "author_nickname": "T&T장보기",
+      "author_id": "10000000-0000-0000-0000-000000000038",
+      "tag_slug": "education",
+      "title": "밴쿠버아트갤러리에서 케이블로 짠 작품을 보여줘",
+      "body": "천처럼 보이는데 재료는 전선이랑 데이터 케이블이래\n밴쿠버아트갤러리의 Emily Hermant 전시 얘기야\n가까이 다가가면 짜인 선과 케이블 구조가 드러나는 작업들을 소개해\n버릴지 말지 고민할 만한 재료가 작품이 되니까 괜히 더 궁금함\n전시는 11월 22일까지라, 어느 날 갈지는 좀 더 골라보려고",
+      "source": "https://www.vanartgallery.bc.ca/exhibitions/vancouver-now-emily-hermant/",
+      "place_name": "Vancouver Art Gallery",
+      "place_address": "",
+      "place_display_name": "밴쿠버아트갤러리"
+    },
+    {
+      "ord": 3,
+      "city_id": "vancouver",
+      "author_nickname": "갓랜디드",
+      "author_id": "10000000-0000-0000-0000-000000000011",
+      "tag_slug": "transport",
+      "title": "SeaBus, 물 건너는 시간은 약 12분",
+      "body": "SeaBus가 Burrard Inlet을 건너는 데 걸리는 시간은 약 12분이래\nVancouver 쪽은 Waterfront Station, 건너편은 Lonsdale Quay로 이어져\n이동 자체가 물 위에서 잠깐 쉬는 시간이 될 것 같아서 이 동선은 기억해둘래",
+      "source": "https://www.translink.ca/schedules-and-maps/seabus",
+      "place_name": "Waterfront Station",
+      "place_address": ""
+    },
+    {
+      "ord": 4,
+      "city_id": "vancouver",
+      "author_nickname": "게스타운커피",
+      "author_id": "10000000-0000-0000-0000-000000000043",
+      "tag_slug": "transport",
+      "title": "버스 앞 자전거 거치대, 미리 연습할 곳이 있었음",
+      "body": "버스 앞에서 거치대 처음 만지는 건 좀 부담스럽겠다 싶었는데\nTransLink에 실제로 싣는 걸 연습하는 Rack and Ride 데모 장소가 있어\nMain Street–Science World Station도 그 목록에 들어가고\n한 번도 안 만져본 장치를 바로 사람들 앞에서 쓰는 것보다 마음이 편할 듯\n이용 안내는 바뀔 수 있으니 연습하러 갈 땐 최신 내용을 다시 볼 생각이야",
+      "source": "https://www.translink.ca/rider-guide/bike-and-ride-on-transit/bikes-on-transit",
+      "place_name": "Main Street–Science World Station",
+      "place_address": ""
+    },
+    {
+      "ord": 5,
+      "city_id": "vancouver",
+      "author_nickname": "뉴웨스트강변",
+      "author_id": "10000000-0000-0000-0000-000000000042",
+      "tag_slug": "education",
+      "title": "밴쿠버해양박물관 St. Roch 전시는 새단장 중",
+      "body": "밴쿠버해양박물관이 St. Roch 전시를 새로 정비하고 있고, 새로 꾸민 전시는 2026~2027년 겨울에 연다고 해\n배 전시가 제일 궁금해서, 새로 열리는 소식부터 기다려볼까 해",
+      "source": "https://vanmaritime.com/",
+      "place_name": "Vancouver Maritime Museum",
+      "place_address": "",
+      "place_display_name": "밴쿠버해양박물관"
+    },
+    {
+      "ord": 6,
+      "city_id": "toronto",
+      "author_nickname": "CN타워야경",
+      "author_id": "10000000-0000-0000-0000-000000000069",
+      "tag_slug": "transport",
+      "title": "TTC 지하철역 자전거 주차도 같이 생각해볼 만함",
+      "body": "자전거를 끝까지 타고 갈 필요는 없잖아\nTTC는 거의 모든 지하철역 안이나 가까운 곳에 자전거 거치대가 있다고 안내해\n역까지 타고 가서 세워두는 이동도 가능한 거지\n차량에 싣는 자리부터 고민했는데, 역에 두고 가는 방법도 있었네\n나는 목적지보다 역 주변 동선부터 같이 봐두려고",
+      "source": "https://www.ttc.ca/riding-the-ttc/Bike-and-ride"
+    },
+    {
+      "ord": 7,
+      "city_id": "toronto",
+      "author_nickname": "고트레인창가",
+      "author_id": "10000000-0000-0000-0000-000000000029",
+      "tag_slug": "education",
+      "title": "Textile Museum의 이번 자수 전시가 눈에 들어왔어",
+      "body": "옷의 무늬를 장식으로만 보면 놓치는 게 꽤 있나 봐\nTextile Museum of Canada의 Retracing Tatreez는 팔레스타인 자수와 고향의 관계를 다루고 있어\n오늘 화요일은 휴관이라 바로 갈 수는 없고, 전시 소개부터 조금 더 읽어보려고",
+      "source": "https://textilemuseum.ca/",
+      "place_name": "Textile Museum of Canada",
+      "place_address": "55 Centre Avenue"
+    },
+    {
+      "ord": 8,
+      "city_id": "toronto",
+      "author_nickname": "노스욕산책러",
+      "author_id": "10000000-0000-0000-0000-000000000008",
+      "tag_slug": "education",
+      "title": "토론토동물원은 박쥐 소리로도 조사를 하네",
+      "body": "어두운 곳에서 동물을 찾는 데 꼭 눈만 쓰는 건 아니었네\n토론토동물원 박쥐 연구는 사람이 듣지 못하는 초음파를 기록해서 어떤 종이 있었을지 분석한대\n직접 잡거나 만지는 활동으로 오해하면 안 될 듯. 이 시민 조사 참여는 현재 초대 방식으로만 받는다고 나와 있어",
+      "source": "https://www.torontozoo.com/bats"
+    },
+    {
+      "ord": 9,
+      "city_id": "toronto",
+      "author_nickname": "노스욕센터",
+      "author_id": "10000000-0000-0000-0000-000000000068",
+      "tag_slug": "education",
+      "title": "도서관 전자만화는 대기줄 없는 서비스도 있네",
+      "body": "책 기다리기 싫어서 만화 쪽을 봤더니 토론토공공도서관의 Hoopla 만화는 대기 목록이 없대\nLibby도 같이 안내돼 있는데, 오늘은 줄 안 서는 쪽이 좀 끌림 ㅋㅋ",
+      "source": "https://tpl.ca/downloads-ebooks/comics/"
+    },
+    {
+      "ord": 10,
+      "city_id": "toronto",
+      "author_nickname": "더퍼린볶음밥",
+      "author_id": "10000000-0000-0000-0000-000000000014",
+      "tag_slug": "settlement",
+      "title": "토론토공공도서관 구직 자료, 이력서 책만 있는 게 아니야",
+      "body": "혼자 구직 자료 찾을 때 검색 결과만 끝없이 늘어나면 막막하잖아\n토론토공공도서관은 이력서·면접 책 외에 Career Cruising 같은 진로 자료도 모아놨어\nBook a Librarian으로 구직 조사 도움을 받는 서비스도 안내하고\n이력서를 고칠지 직종부터 알아볼지, 내가 막힌 대목부터 좁혀볼래\n신청 방식은 바뀔 수 있으니 실제 이용할 땐 최신 안내를 확인하는 게 좋고",
+      "source": "https://tpl.ca/using-the-library/services/job-career-help/"
+    },
+    {
+      "ord": 11,
+      "city_id": "montreal",
+      "author_nickname": "두바퀴메이플",
+      "author_id": "75513359-f87a-5b69-9bde-8261e0854bb6",
+      "tag_slug": "education",
+      "title": "BAnQ 대출 목록에 게임도 들어가 있네",
+      "body": "BAnQ에서 빌릴 수 있는 걸 보니까 책, 잡지, 영화 옆에 비디오게임도 있네\n그랑드비블리오테크 대출 안내에 같이 묶여 있어\n도서관 갈 때 책 제목만 적는 습관부터 좀 바뀔 듯 ㅋㅋ",
+      "source": "https://www.banq.qc.ca/services/abonnement/",
+      "place_name": "Grande Bibliothèque",
+      "place_address": "",
+      "place_display_name": "그랑드비블리오테크"
+    },
+    {
+      "ord": 12,
+      "city_id": "montreal",
+      "author_nickname": "메트로한칸",
+      "author_id": "49392196-fb82-5ea3-bced-4b7bb76dcec0",
+      "tag_slug": "life",
+      "title": "르네 레베크 공원에 새 나무 구역을 만든 이유",
+      "body": "공원에서 울타리 친 나무 구역을 보면 그냥 못 들어가는 자리로 넘길 때가 있잖아\n르네 레베크 공원은 해충 피해를 입은 나무를 대체하려고 2025년 가을에 나무를 새로 심었대\n어린 나무가 잘 자라는지 살펴보려고 그 구역에 임시 울타리도 뒀다고 해\n지금 안내에 남아 있는 설명을 읽으니, 닫힌 공간에도 이유가 있구나 싶음",
+      "source": "https://montreal.ca/lieux/parc-rene-levesque",
+      "place_name": "Parc René-Lévesque",
+      "place_address": "398, chemin du Canal",
+      "place_display_name": "르네 레베크 공원"
+    },
+    {
+      "ord": 13,
+      "city_id": "montreal",
+      "author_nickname": "불어책갈피",
+      "author_id": "81c6d246-f1fb-5956-8092-4d437caeae8e",
+      "tag_slug": "life",
+      "title": "앙그리뇽 공원 옛 농장 정보는 현재와 달라",
+      "body": "공원 소개에 농장이라는 단어가 보여서 잠깐 솔깃했는데\n앙그리뇽 공원에 예전에 있던 작은 농장과 어린이 놀이 성은 지금 닫혀 있다고 해\n옛 사진이나 소개만 보고 동물 보러 가는 일정 잡으면 안 되겠더라\n나도 옛날 얘기와 지금 이용할 수 있는 시설을 자꾸 한 덩어리로 읽게 됨 ㅋㅋ",
+      "source": "https://montreal.ca/lieux/parc-angrignon",
+      "place_name": "Parc Angrignon",
+      "place_address": "3400, boulevard des Trinitaires",
+      "place_display_name": "앙그리뇽 공원"
+    },
+    {
+      "ord": 14,
+      "city_id": "montreal",
+      "author_nickname": "아트워터오후",
+      "author_id": "2212d766-7329-5611-847e-ee0f59c8eb0e",
+      "tag_slug": "food",
+      "title": "아트워터시장은 추워지면 벽을 세운대",
+      "body": "아트워터시장은 여름에도 겨울에도 문을 여는 시장인데\n첫서리 무렵엔 시장 둘레에 벽을 세워서 추위를 막는대\n날이 풀리면 그 벽을 다시 걷어서 야외 시장으로 바꾸고\n장보는 장소가 계절에 맞춰 옷을 갈아입는 셈이라 재밌어\n올해 정확히 언제 바꾸는지까지는 안내에 없어서 날짜는 모르겠음",
+      "source": "https://www.marchespublics-mtl.com/fr/marches/marche-atwater",
+      "place_name": "Marché Atwater",
+      "place_address": "155, avenue Greene",
+      "place_display_name": "아트워터시장"
+    },
+    {
+      "ord": 15,
+      "city_id": "montreal",
+      "author_nickname": "올드포트바람",
+      "author_id": "6aa367e6-70a0-5702-a758-af383ce1503c",
+      "tag_slug": "education",
+      "title": "캐나다건축센터 10월 일반 관람은 목~일요일이야",
+      "body": "캐나다건축센터는 10월~5월에 전시장과 책방을 목~일요일에 열어\n수요일엔 책방만 예약해서 갈 수 있고, 오늘 화요일은 정기 휴관이라 방문을 미뤄두려고\n예약 안내는 바뀔 수 있으니 책방만 따로 갈 땐 최신 내용을 다시 봐야겠네",
+      "source": "https://www.cca.qc.ca/en/visit-us",
+      "place_name": "Canadian Centre for Architecture",
+      "place_address": "1920, rue Baile",
+      "place_display_name": "캐나다건축센터"
+    },
+    {
+      "ord": 16,
+      "city_id": "edmonton",
+      "author_nickname": "K데이즈",
+      "author_id": "10000000-0000-0000-0000-000000000102",
+      "tag_slug": "education",
+      "title": "EPL에서 내 글을 종이책으로 묶는 수업도 해",
+      "body": "글 파일이 종이책으로 나온다고 생각하니 좀 다르네\nEPL 제본 서비스는 디지털 원고를 소량의 소프트커버 책으로 만드는 방식이고 대면 수업도 거쳐\n참여 절차는 바뀔 수 있으니 최신 안내를 보고 결정하려고. 표지 고르다 하루 다 쓰는 건 아닐지 ㅋㅋ",
+      "source": "https://www.epl.ca/makerspace/bookbinding/"
+    },
+    {
+      "ord": 17,
+      "city_id": "edmonton",
+      "author_nickname": "U오브A도서관",
+      "author_id": "10000000-0000-0000-0000-000000000101",
+      "tag_slug": "education",
+      "title": "오래된 VHS를 파일로 옮기는 데도 원래 재생 시간이 필요해",
+      "body": "Edmonton Public Library에 VHS와 사진 필름을 디지털로 옮기는 장비가 있어\n설명을 보니 비디오테이프는 실제 재생 시간만큼 녹화해야 하더라고\n파일로 바뀐다고 긴 영상이 순식간에 복사되는 건 아니었어\n저장하는 데 걸리는 시간도 따로 생각해야 하고\n양이 많다면 한 번에 끝낼 계획은 좀 줄이는 편이 낫겠음",
+      "source": "https://www.epl.ca/makerspace/digital-conversion-stations/"
+    },
+    {
+      "ord": 18,
+      "city_id": "edmonton",
+      "author_nickname": "강변자작나무",
+      "author_id": "9693606b-6fb3-50dc-ad2e-a6c23514c907",
+      "tag_slug": "education",
+      "title": "Royal Alberta Museum의 Big Machine은 함께 돌리는 장치",
+      "body": "Royal Alberta Museum 어린이 전시의 Big Machine은 여러 작은 기계가 연결돼 플라스틱 알갱이를 옮기는 구조래\n6세 이하를 위한 공간에 이런 협동 장치가 있다는 게 재밌음. 어른인 나는 원리 설명부터 궁금 ㅋㅋ",
+      "source": "https://www.royalalbertamuseum.ca/visit/galleries/childrens-gallery",
+      "place_name": "Royal Alberta Museum",
+      "place_address": ""
+    },
+    {
+      "ord": 19,
+      "city_id": "edmonton",
+      "author_nickname": "글레노라산책",
+      "author_id": "10000000-0000-0000-0000-000000000119",
+      "tag_slug": "travel",
+      "title": "Fort Edmonton Park의 DARK, 올해 새 캠프 테마도 있어",
+      "body": "Fort Edmonton Park의 올해 DARK 소개에 Camp Ski’ 83이라는 새 공포 체험이 있네\n10월 2~31일 행사로 안내돼 있지만 매일 문 연다는 뜻은 아니니, 갈 날짜는 아직 안 골랐어",
+      "source": "https://www.fortedmontonpark.ca/",
+      "place_name": "Fort Edmonton Park",
+      "place_address": ""
+    },
+    {
+      "ord": 20,
+      "city_id": "edmonton",
+      "author_nickname": "노스사스카츄완강",
+      "author_id": "10000000-0000-0000-0000-000000000106",
+      "tag_slug": "education",
+      "title": "알버타미술관 What Shapes Us는 반복되는 모양을 보는 전시",
+      "body": "알버타미술관의 What Shapes Us는 직물·구슬 작업·조각 같은 여러 재료로 원주민 추상미술을 다뤄\n정답 하나를 찾기보다 반복되는 형태를 천천히 보라는 소개가 좋아서, 낯선 작품 앞에서도 조금 덜 긴장될 것 같아",
+      "source": "https://www.youraga.ca/whats-on/current-exhibitions/what-shapes-us",
+      "place_name": "Art Gallery of Alberta",
+      "place_address": "",
+      "place_display_name": "알버타미술관"
+    },
+    {
+      "ord": 21,
+      "city_id": "calgary",
+      "author_nickname": "17에비뉴커피",
+      "author_id": "10000000-0000-0000-0000-000000000129",
+      "tag_slug": "life",
+      "title": "Calgary Public Library 메뉴에 음악도 있었네",
+      "body": "도서관 자료 메뉴를 조금씩 넓혀서 보는 중인데\nCalgary Public Library의 Freegal Music은 음악을 스트리밍으로 들을 수 있어\n이미 만들어진 플레이리스트를 듣거나 내 목록을 만들 수도 있고\n아직 익숙한 곡부터 찾게 되겠지만, 새로운 음악 골라볼 자리 하나 생긴 느낌\n장르를 딱 정해놓지 않고 둘러봐도 괜찮겠어",
+      "source": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/freegal-music"
+    },
+    {
+      "ord": 22,
+      "city_id": "calgary",
+      "author_nickname": "C트레인통근",
+      "author_id": "10000000-0000-0000-0000-000000000130",
+      "tag_slug": "transport",
+      "title": "CTrain이랑 버스는 자전거 놓는 방식이 다르네",
+      "body": "캘거리트랜짓 안내를 보니 CTrain에 싣는 것과 버스 앞 거치대를 쓰는 건 따로 봐야겠어\n버스 거치대가 꽉 차면 일반 자전거를 차 안에 들이는 대신 다음 차를 기다리라고 나와 있네\n이용 규칙은 바뀔 수 있으니 출발 전 다시 확인하려고. 자전거랑 대중교통 섞는 동선은 다들 여유를 얼마나 둬?",
+      "source": "https://www.calgarytransit.com/rider-information/cycling.html"
+    },
+    {
+      "ord": 23,
+      "city_id": "calgary",
+      "author_nickname": "글렌모어공원",
+      "author_id": "10000000-0000-0000-0000-000000000133",
+      "tag_slug": "education",
+      "title": "Gasoline Alley Museum에 그림책에서 나온 체험 전시가 있어",
+      "body": "The Questioneers라는 그림책 시리즈를 전시로 옮겨놨대\nHeritage Park의 Gasoline Alley Museum에서 건축가·과학자 같은 등장인물의 탐구를 놀이로 풀어낸다고 해\n전시는 2027년 1월 10일까지라 지금 막 날짜를 정하기보단 내용부터 더 살펴볼까 해",
+      "source": "https://heritagepark.ca/exhibits/the-questioneers/",
+      "place_name": "Gasoline Alley Museum",
+      "place_address": "1900 Heritage DR. S.W."
+    },
+    {
+      "ord": 24,
+      "city_id": "calgary",
+      "author_nickname": "노스힐장보기",
+      "author_id": "10000000-0000-0000-0000-000000000131",
+      "tag_slug": "education",
+      "title": "도서관에서 차 정비 자료까지 찾을 수 있음",
+      "body": "Calgary Public Library의 Auto Repair Source에 차종별 정비 자료랑 전기 배선도, 리콜 관련 정보도 있네\n차를 직접 고치겠다는 얘기는 아니고, 정비 용어가 낯설 때 무슨 뜻인지 찾아볼 자료로 기억해두려 해",
+      "source": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/auto-repair-source"
+    },
+    {
+      "ord": 25,
+      "city_id": "calgary",
+      "author_nickname": "보우강변산책",
+      "author_id": "10000000-0000-0000-0000-000000000128",
+      "tag_slug": "education",
+      "title": "텔러스스파크 Open Studio는 직접 만드는 공간이야",
+      "body": "전시 설명만 읽고 나오는 날보다 손으로 뭘 해보는 쪽이 더 기억날 것 같아\n텔러스스파크 2층 Open Studio는 실제 도구와 일상 재료로 설계하고 만드는 공간이래\n워크숍 공간은 Steven’s Lab으로 바뀌어서 실험도 다룬다고 해\n잘 만들 자신은 별로 없는데, 완성품보다 해보는 과정이 궁금함\n일단 손재주 없다는 핑계는 잠깐 넣어둘래 ㅋㅋ",
+      "source": "https://www.sparkscience.ca/open-studio",
+      "place_name": "TELUS Spark",
+      "place_address": "",
+      "place_display_name": "텔러스스파크"
+    },
+    {
+      "ord": 26,
+      "city_id": "vancouver",
+      "author_nickname": "커머셜드라이브",
+      "author_id": "10000000-0000-0000-0000-000000000065",
+      "tag_slug": "life",
+      "title": "집세는 내가 내겠다고 했는데, 생활비와 집안일도 내 몫일까",
+      "body": "Vancouver의 자녀 없는 부부 상황으로 각색한 사연이야. 한쪽이 더 나은 집으로 이사하자며 집세를 맡겠다고 했어.\n이사 후엔 장보기와 집안일까지 그 사람 몫이 됐고, 상대는 상의 없이 다른 지인에게 돈을 빌렸대.\n부담을 나누자니까 처음부터 돈 없다고 말하지 않았냐고 했고. 집세를 내겠다는 약속에 어디까지 들어가는 건지, 난 그 부분이 걸림.\n\n해외생활 사연을 참고해 재구성한 이야기예요.",
+      "content_kind": "community_story",
+      "source": "https://www.teamblind.com/kr/post/02sMPie4",
+      "source_case_key": "blind:02sMPie4",
+      "post_id": "0dcb11c6-f299-5f21-a3b3-8c8f8579b236",
+      "poll": {
+        "question": "집세를 맡겠다는 약속, 생활비와 집안일도 포함됐다고 볼까?",
+        "options": [
+          "집세만 약속한 거라고 봐",
+          "생활 전체를 다시 합의해야 해",
+          "처음 대화를 더 알아야겠어"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000065",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "집 대출과 개인 취미 예산을 함께 조정한다",
+          "relationship_status": "married"
+        },
+        "topic": "부부 돈 관리"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "형편이 어려운 남자친구에게 제안한 이사 비용 부담이 생활비·가사 전담으로 번지고, 추가 차입과 최초 약속 해석을 두고 결별한다.",
+        "fictional_changes": [
+          "원문의 연인 동거 관계를 Vancouver의 자녀 없는 익명 부부로 변경했다. 작성자 자신의 경험으로 쓰지 않았다.",
+          "원문의 직업·11억 빚·수입·이자·월세 액수·가구 회수 날짜를 삭제했다.",
+          "결별 결론 대신 집세 약속의 범위를 다시 논의하는 지점에서 멈췄다."
+        ]
+      }
+    },
+    {
+      "ord": 27,
+      "city_id": "toronto",
+      "author_nickname": "스카보로블러프",
+      "author_id": "10000000-0000-0000-0000-000000000070",
+      "tag_slug": "life",
+      "title": "부모님 한 달 방문, 왜 준비는 배우자 한 사람 몫이 될까",
+      "body": "부모님이 해외에서 오면 같이 지내고 싶은 마음은 이해돼. 그래도 누가 그 한 달을 챙길지는 다른 얘기 같음.\n읽은 사연을 토론토에서 세 살 아이를 키우는 부부로 바꿔봤어. 남편은 어머니를 집에 모시고 싶어 하고, 아내는 귀국일도 정하지 않은 채 식사와 이동까지 맡게 될까 걱정해.\n가까운 숙소를 구하자는 말에 남편은 가족을 멀리한다고 서운해했대. 초대한 사람이 일정과 돌봄을 맡겠다고 먼저 말하면 달라질지, 한집에서 오래 지내는 것 자체가 부담일지 고민되네.\n\n해외생활 사연을 참고해 재구성한 이야기예요.",
+      "content_kind": "community_story",
+      "source": "https://pann.nate.com/talk/346262270",
+      "source_case_key": "pann:346262270",
+      "post_id": "5fd97a1f-1ef4-5c26-90b8-3f51f9672b3f",
+      "poll": {
+        "question": "장기 가족 방문 전에 무엇부터 합의해야 할까?",
+        "options": [
+          "숙박 기간과 귀국일",
+          "식사·이동을 맡을 사람",
+          "함께 살지 별도 숙소를 쓸지"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000070",
+        "family": {
+          "children_ages": [
+            3
+          ],
+          "marriage_years": 6,
+          "household_finances": "육아비와 주거비를 함께 계획한다",
+          "relationship_status": "married"
+        },
+        "topic": "배우자와 가족 갈등"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "해외 거주 예비 시어머니의 예측하기 어려운 장기 방문과 동거·돌봄 부담을, 남자친구가 연간 체류 일수만으로 정당화한다.",
+        "fictional_changes": [
+          "결혼 전 커플을 토론토의 기혼 부부와 세 살 아이가 있는 가정으로 바꿨다. 작성자의 고정 가족과 사건 화자를 구분했다.",
+          "원문 인물의 나이·종교·형제와 거주국·프로포즈 날짜를 제외했다.",
+          "원문의 연간 두 차례·60일 논쟁을 한 달 방문의 종료일과 가사·이동 분담 문제로 좁혔다."
+        ]
+      }
+    },
+    {
+      "ord": 28,
+      "city_id": "montreal",
+      "author_nickname": "운하옆돌멩이",
+      "author_id": "04528f50-f69f-5ecf-a9d5-cc9b092f2ba2",
+      "tag_slug": "life",
+      "title": "정착 좀 도와달랬는데, 거절하니 배우자 못 믿냐는 말이 돌아옴",
+      "body": "도움 부탁을 거절했는데 갑자기 부부 신뢰 시험이 되는 얘기가 있더라. 몬트리올의 자녀 없는 부부 상황으로 옮겨 쓴 거야.\n친구가 이사 준비를 하면서 아내가 자리를 비운 동안 남편에게 집 구하는 일과 이동을 부탁하고 싶다고 했어. 남편은 계속 시간을 내긴 어렵다고 했고.\n그러자 친구는 아내가 남편을 못 믿어서 막는 거 아니냐고 받아쳤대. 도울 사람이 부담스럽다는데 왜 부부 사이를 해명하게 되는지, 이 대목은 좀 답답함. 정보만 나눠주겠다는 선이면 충분하지 않을까?\n\n해외생활 사연을 참고해 재구성한 이야기예요.",
+      "content_kind": "community_story",
+      "source": "https://pann.nate.com/talk/346173307",
+      "source_case_key": "pann:346173307",
+      "post_id": "3318a87f-8440-5ff9-be6f-53d3bd18c17d",
+      "poll": {
+        "question": "정착 도움을 부탁받았을 때 어디까지가 적당할까?",
+        "options": [
+          "정보와 기관 안내까지만",
+          "가능한 일과 시간을 먼저 합의",
+          "도울 사람이 어렵다면 거절"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "04528f50-f69f-5ecf-a9d5-cc9b092f2ba2",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "공동 생활비와 개인 지출을 구분해 관리한다",
+          "relationship_status": "married"
+        },
+        "topic": "재구성 사연 투표"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "어학연수를 가는 친구에게 해외 거주 남자친구의 도움을 연결할지 갈등하고, 거절을 질투·불신으로 몰아가면서 우정이 틀어진다.",
+        "fictional_changes": [
+          "미국 장거리 연애를 몬트리올의 기혼·자녀 없는 부부와 이사하는 친구 상황으로 변경했다.",
+          "대학원·포닥·직장·외모·친구의 과거 연애와 사적 신상을 삭제했다.",
+          "학원 탐색을 집 구하기와 이동 도움으로 변경하고, 외도 발생은 원문에서도 확인되지 않아 쓰지 않았다.",
+          "실제 작성자가 자리를 비우거나 누군가를 도운 일로 표현하지 않았다."
+        ]
+      }
+    },
+    {
+      "ord": 29,
+      "city_id": "edmonton",
+      "author_nickname": "에드먼튼겨울",
+      "author_id": "10000000-0000-0000-0000-000000000118",
+      "tag_slug": "life",
+      "title": "연인의 수상한 연락을 알려준 친구, 다시 만나면 배신일까",
+      "body": "에드먼튼에서 결혼 전 함께 사는 커플로 각색해봤어. 내 결혼 얘기는 아님.\n한 사람이 연인의 다정한 사적 연락을 보고 다퉜고, 공통 지인은 상대가 다른 관계로 옮겨가려 했다고 전했대. 두 사람은 결국 다시 만났지만 그 말이 사실이었는지는 풀리지 않았어.\n나중에 연인이 그 지인과 다시 만나고, 집을 나올 돈도 빌려주겠다는 얘기까지 전해왔대. 화자는 지인이 사이를 갈라놓는다고 느끼고. 난 지인을 끊으라는 말보다 연인이 실제로 뭘 했는지부터 짚어야 할 것 같음.\n\n해외생활 사연을 참고해 재구성한 이야기예요.",
+      "content_kind": "community_story",
+      "source": "https://pann.nate.com/talk/374365703",
+      "source_case_key": "pann:374365703",
+      "post_id": "a811dbb1-37af-5153-99d4-f8782d6249ad",
+      "poll": {
+        "question": "이 상황에서 무엇부터 풀어야 할까?",
+        "options": [
+          "연인의 행동과 설명을 확인",
+          "지인에게 전해진 말부터 확인",
+          "함께 살며 정할 경계부터 합의"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000118",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "공동 생활비와 개인 지출을 구분해 관리한다",
+          "relationship_status": "married"
+        },
+        "topic": "결혼 전후 관계"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "연인의 외도 의심과 동거 비용 갈등을 알린 지인을 이간질한 사람으로 여기는 화자가, 연인과 그 지인의 재접촉 및 독립자금 제안에 분노한다.",
+        "fictional_changes": [
+          "배경을 에드먼튼의 익명 결혼 전 동거 커플로 옮겼고 작성자의 현재 기혼 상태를 명시적으로 구분했다.",
+          "원문의 업종·고객 신상·인물 기호와 정확한 재회 기간을 삭제했다.",
+          "특정 임대 보증금 관행이나 액수를 단정하지 않도록 독립자금으로 바꿨다.",
+          "지인이 전한 외도·대출 제안을 확인된 사건으로 격상하지 않고 전달된 주장으로 남겼다."
+        ]
+      }
+    },
+    {
+      "ord": 30,
+      "city_id": "calgary",
+      "author_nickname": "메이랜드저녁",
+      "author_id": "10000000-0000-0000-0000-000000000137",
+      "tag_slug": "life",
+      "title": "입원해서 결혼식 못 갔는데, 축하만 보내면 끝이냐는 친구",
+      "body": "Calgary에서 한국 친구 결혼식에 가려던 사람이 다쳐서 입원한 상황으로 바꾼 사연이야. 내 얘기와는 별개야.\n비행기를 못 타게 돼서 사정을 알리고, 다른 친구 편으로 축의금과 선물을 보냈대. 자기 결혼식에 와줬던 친구라 마음도 쓰였고.\n그런데 친구는 돈만 보내면 다냐며 이제 연락하지 말라고 했어. 서운할 수는 있어도 입원한 사람에게 참석을 따지는 건 난 이해가 안 됨. 당장 관계를 정리할지, 결혼식 지나고 한 번 더 얘기해볼지가 남는 것 같아.\n\n해외생활 사연을 참고해 재구성한 이야기예요.",
+      "content_kind": "community_story",
+      "source": "https://pann.nate.com/talk/374614782",
+      "source_case_key": "pann:374614782",
+      "post_id": "b71b9222-beb3-541f-8f39-2a2d3caeec0e",
+      "poll": {
+        "question": "참석할 수 없는 사정을 알렸는데 절교하자는 친구, 어떻게 할까?",
+        "options": [
+          "나도 관계를 정리할래",
+          "식이 끝난 뒤 한 번 더 대화",
+          "사정이 제대로 전달됐는지 확인"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000137",
+        "family": {
+          "children_ages": [
+            6,
+            3,
+            1
+          ],
+          "marriage_years": 6,
+          "household_finances": "육아비와 주거비를 함께 계획한다",
+          "relationship_status": "married"
+        },
+        "topic": "재구성 사연 투표"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "교통사고로 입원해 결혼식에 참석하지 못한 사람이 축의금과 선물을 보냈지만, 친구가 불참을 이유로 관계 단절을 통보한다.",
+        "fictional_changes": [
+          "국내 이동을 Calgary에서 한국 결혼식에 가려는 해외 거주 상황으로 변경했다.",
+          "축의금 액수·원문의 결혼 연차·이동 거리·메신저 상품을 삭제했다.",
+          "정확한 부상·치료·비행 취소 규정이나 보상액은 추가하지 않았다.",
+          "작성자의 배우자·세 자녀는 변경하지 않고 별개 인물의 재구성 사연임을 명시했다."
+        ]
+      }
+    }
+  ]
+}

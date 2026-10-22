@@ -1,0 +1,229 @@
+{
+  "posts": [
+    {
+      "ord": 1,
+      "city_id": "vancouver",
+      "author_nickname": "브로드웨이우산",
+      "tag_slug": "food",
+      "title": "UBC팜은 채소만 키우는 곳인 줄 알았음",
+      "body": "대학 농장이면 실험용 밭만 있는 줄 알았음 (내 머릿속 농장 너무 작았네 ㅋㅋ)\nUBC팜에선 제철 채소뿐 아니라 과일·허브·꽃·씨앗도 다루네",
+      "source": "https://ubcfarm.ubc.ca/markets/"
+    },
+    {
+      "ord": 2,
+      "city_id": "vancouver",
+      "author_nickname": "버나비호수",
+      "tag_slug": "life",
+      "title": "니토베정원은 연못과 찻집을 함께 생각한 공간이네",
+      "body": "정원 하나 알아두면 머릿속이 좀 조용해질 듯해서 두 가지만 적어둠, 식물 이름은 아직 시험 범위 밖임 ㅋㅋ\n1) UBC 니토베기념정원은 전통 일본식 산책 정원이고 찻집도 함께 있어\n2) 잉어 연못을 건너는 다리와 돌길도 있어서, 이번엔 꽃 이름보다 공간이 이어지는 모양부터 봐볼까 해",
+      "source": "https://botanicalgarden.ubc.ca/attractions-gardens/nitobe-memorial-garden/"
+    },
+    {
+      "ord": 3,
+      "city_id": "vancouver",
+      "author_nickname": "예일타운런치",
+      "tag_slug": "life",
+      "title": "사이언스월드 유레카는 손으로 시험해보는 전시야",
+      "body": "전시 앞에서 직접 움직여보는 쪽이 궁금해서 사이언스월드 유레카 처음 알아봄\n빛·소리·물·움직임을 다루는 체험 전시고, 투명한 관 사이로 공을 쏘아 올리는 장치도 있어\n이번엔 설명만 읽고 끝내지 말고 내가 예상한 움직임이 맞는지 시험해볼 거야",
+      "source": "https://www.scienceworld.ca/exhibition/eureka/"
+    },
+    {
+      "ord": 4,
+      "city_id": "vancouver",
+      "author_nickname": "도서관단골",
+      "tag_slug": "education",
+      "title": "밴쿠버 옛 네온간판, 반가움만 있었던 건 아니네",
+      "body": "예전 도시 모습은 낮에 찍은 거리 사진부터 떠올리곤 했는데\n밴쿠버박물관 온라인 전시엔 옛 네온간판을 둘러보는 가상 투어도 있네\n누군가는 그 불빛을 도시의 활기로 봤고\n누군가는 자연 풍경을 해치는 모습으로 여겼다는 이야기가 같이 있어\n나는 간판 모양부터 볼지 그때 사람들이 나눈 논쟁부터 읽을지 조금 더 생각해보려 해",
+      "source": "https://museumofvancouver.ca/virtual-exhibitions"
+    },
+    {
+      "ord": 5,
+      "city_id": "vancouver",
+      "author_nickname": "스카이트레인통근",
+      "tag_slug": "transport",
+      "title": "아쿠아버스도 자전거를 실을 수 있는 배가 따로 있어",
+      "body": "자전거·유모차·휠체어로 움직이는 사람은 작은 배 탈 때도 보는 게 다르네\n아쿠아버스는 모든 배가 같은 구조인 건 아니고\n자전거를 실을 수 있는 건 플랫폼형 배야\n휠체어 접근 가능한 배는 앞쪽 표시로 구분하고, 탑승 조건은 바뀔 수 있으니 가기 전에 다시 확인해\n난 물 위 노선에도 어떤 배인지까지 같이 적어둘 거야",
+      "source": "https://theaquabus.com/faq/"
+    },
+    {
+      "ord": 6,
+      "city_id": "toronto",
+      "author_nickname": "노스욕센터",
+      "tag_slug": "education",
+      "title": "ROM 화석 자료는 돌 모양에서 끝나는 게 아니네",
+      "body": "화석 공부라면 돌 사진만 오래 들여다볼 줄 알았던 나 머쓱 ㅋㅋ\nROM의 버지스셰일 온라인 전시는 실제 화석 이미지랑 디지털 복원 모습을 같이 보여줘서, 옛 생물 모습을 상상하는 데 도움이 될 듯",
+      "source": "https://www.rom.on.ca/whats-on/exhibitions/burgess-shale-virtual-museum-canada"
+    },
+    {
+      "ord": 7,
+      "city_id": "toronto",
+      "author_nickname": "브램턴출근",
+      "tag_slug": "education",
+      "title": "바타신발박물관은 신발을 만들던 재료까지 다루네",
+      "body": "신발을 전시한다는 말부터 낯설어서 바타신발박물관 알아봤는데\n올어바웃슈즈는 신발 모양뿐 아니라 만드는 재료·방식이랑 시대별 의미까지 다루는 전시네\n처음엔 운동화 종류만 생각했는데, 이제는 누가 어떤 이유로 그 신발을 신었는지도 같이 알아볼 거야",
+      "source": "https://batashoemuseum.ca/allaboutshoes/"
+    },
+    {
+      "ord": 8,
+      "city_id": "toronto",
+      "author_nickname": "서비스온타리오",
+      "tag_slug": "life",
+      "title": "네이선필립스광장 아치 밑에는 베를린장벽 조각도 있네",
+      "body": "광장에서 사진 찍는 사람들 보면 토론토 글자만 떠올린 내가 너무 좁게 봤나 싶음\n네이선필립스광장 가운데 프리덤아치 밑에는 베를린장벽 조각이 놓여 있네\n나중에 같이 광장 얘기하게 되면 그 작은 조각에 남은 이야기부터 알아볼까 해",
+      "source": "https://www.toronto.ca/services-payments/venues-facilities-bookings/booking-city-facilities/city-squares/nathan-phillips-square/whats-there-at-nathan-phillips-square/"
+    },
+    {
+      "ord": 9,
+      "city_id": "toronto",
+      "author_nickname": "벽돌골목빛",
+      "tag_slug": "life",
+      "title": "아가칸박물관 벨러리브룸은 옛 거실을 다시 만든 공간이네",
+      "body": "박물관 방 하나에도 사람의 생활이 남아 있다는 게 좀 반가워서 적어봄\n1) 아가칸박물관 벨러리브룸은 스위스의 한 저택에 있던 살롱을 다시 만든 공간이야\n2) 그곳에 놓였던 컬렉션의 도자기를 보여주고\n3) 작품은 시대와 제작 기법별로 묶여 있어\n나는 처음부터 전부 외우기보다 편하게 눈에 들어오는 그릇 하나부터 골라보려 해",
+      "source": "https://agakhanmuseum.org/belleriveroom/"
+    },
+    {
+      "ord": 10,
+      "city_id": "toronto",
+      "author_nickname": "토론토도서관",
+      "tag_slug": "education",
+      "title": "토론토동물원에선 먹이 연구도 동물 돌봄의 일부네",
+      "body": "동물 먹이는 종류별로 정해두면 끝일 것 같았는데 더 세밀한 일이네\n토론토동물원 야생동물건강·과학센터는 진료와 번식 보전뿐 아니라 영양 연구도 해\n먹이는 종·계절·생애 단계에 맞춰 구성하고\n나는 동물 이름부터 외우기보다 어떻게 돌보는지 천천히 알아보고 싶은데\n동물 얘기 읽을 때 먹이랑 서식 환경 중 어느 쪽이 더 궁금해?",
+      "source": "https://www.torontozoo.com/whsc"
+    },
+    {
+      "ord": 11,
+      "city_id": "montreal",
+      "author_nickname": "우편번호수첩",
+      "tag_slug": "life",
+      "title": "라신박물관은 건물 밖 조각도 컬렉션에 들어가네",
+      "body": "야외 조각을 보는 사람도 박물관 관람객이겠네, 라신박물관엔 르베르르모인 옛집이랑 조각 정원도 있네\n나도 작품은 실내에만 모여 있을 거라고 생각했음 ㅋㅋ 이번엔 바깥 공간까지 같이 기억할래",
+      "source": "https://montreal.ca/lieux/musee-de-lachine"
+    },
+    {
+      "ord": 12,
+      "city_id": "montreal",
+      "author_nickname": "장탈롱바구니",
+      "tag_slug": "life",
+      "title": "베르됭 니바르집은 집 아래의 오래된 흔적까지 품고 있네",
+      "body": "오래된 집이라면 예전엔 벽이랑 지붕부터 생각했는데, 베르됭의 메종니바르드생디지에는 원주민이 머물던 고고학 유적 위에 서 있네\n집보다 먼저 그 자리에 남은 삶이 있다는 게 좀 뭉클해서, 다음엔 같이 땅에 남은 이야기부터 알아보고 싶어",
+      "source": "https://montreal.ca/en/places/maison-nivard-de-saint-dizier-museum-and-archeological-site"
+    },
+    {
+      "ord": 13,
+      "city_id": "montreal",
+      "author_nickname": "올드포트바람",
+      "tag_slug": "life",
+      "title": "샤토라므제 정원은 채소밭과 과수원도 함께 복원했네",
+      "body": "정원이라면 예전부터 꽃밭 쪽만 먼저 생각했는데\n샤토라므제의 총독정원은 옛 프랑스식 도시 정원을 재현해서 채소밭·과수원·관상 정원으로 나눠뒀네\n이제는 장식만 보는 데서 끝내지 않고 집에서 먹을 것을 기르던 자리도 같이 기억해둘래",
+      "source": "https://www.chateauramezay.qc.ca/en/exhibitions/garden/"
+    },
+    {
+      "ord": 14,
+      "city_id": "montreal",
+      "author_nickname": "불어책갈피",
+      "tag_slug": "transport",
+      "title": "스퀘어빅토리아역 입구, 파리 느낌만 낸 게 아니었네",
+      "body": "메트로 입구가 파리 닮았다는 말만 보고 장식 비슷하게 만든 줄 알았음\n스퀘어빅토리아OACI역 생탕투안 입구는 엑토르기마르의 아르누보 양식 구조물이네\n파리 교통공사 RATP가 기증한 거고\n몬트리올 메트로 건설에 파리 기술자들이 참여했던 인연도 담겼대, 내 입구 공부가 갑자기 국경 넘음 ㅋㅋ\n아직 이름을 다 외울 자신은 없어서 이 입구 하나부터 기억해볼까 해",
+      "source": "https://www.stm.info/fr/a-propos/decouvrez-la-STM-et-son-histoire/art-dans-le-reseau/liste-des-oeuvres/square-victoria-oaci"
+    },
+    {
+      "ord": 15,
+      "city_id": "montreal",
+      "author_nickname": "몽루아얄잎새",
+      "tag_slug": "life",
+      "title": "몬트리올미술관 아트하이브는 직접 만드는 작업 공간이야",
+      "body": "그림을 보는 것 말고 내가 만들어보는 시간도 궁금해서 알아봤어\n몬트리올미술관 아트하이브는 미술 재료를 제공하는 공동 창작 공간이야\n미술치료사와 미술관 진행자가 함께하고, 여러 도구와 재활용 재료도 있어\n참여 방식은 바뀔 수 있으니 실제 갈 때는 다시 확인해\n처음 이런 공간에 가면 그림이랑 재료로 모양 만드는 것 중 어느 쪽부터 해보고 싶어?",
+      "source": "https://www.mbam.qc.ca/en/education/the-art-hive/"
+    },
+    {
+      "ord": 16,
+      "city_id": "edmonton",
+      "author_nickname": "엘크아일랜드",
+      "tag_slug": "life",
+      "title": "로열알버타박물관 버그갤러리는 살아 있는 곤충도 보여주네",
+      "body": "곤충 전시면 표본 상자만 떠올린 내 머리 또 멀리 돌아감 ㅋㅋ\n로열알버타박물관 버그갤러리는 살아 있는 곤충·거미 같은 무척추동물과 그 생태도 다뤄서, 작은 생물 쪽부터 좀 알아볼까 해",
+      "source": "https://www.royalalbertamuseum.ca/visit/galleries/bug-gallery"
+    },
+    {
+      "ord": 17,
+      "city_id": "edmonton",
+      "author_nickname": "동물그림수첩",
+      "tag_slug": "life",
+      "title": "보든파크는 꽃밭과 작품 구경을 같이 생각할 수 있네",
+      "body": "공원 걷는 사람 옆에 작품 보는 사람도 있겠네, 보든파크엔 정형식 꽃 정원과 여러 미술 설치물이 있어\n예전엔 공원 지도에 나무랑 길만 넣었는데 내 상상 속 범례가 또 늘어남 ㅋㅋ",
+      "source": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/borden-park"
+    },
+    {
+      "ord": 18,
+      "city_id": "edmonton",
+      "author_nickname": "에드먼튼겨울",
+      "tag_slug": "life",
+      "title": "테르윌리거 레크센터, 로비와 시설 이용 조건은 다름",
+      "body": "테르윌리거의 부스터주스 레크센터는 이용객에게 MoveLearnPlay 계정을 요구하고\n로비 같은 공용 공간은 그대로 누구나 들어갈 수 있음\n이용 절차는 바뀔 수 있으니 갈 때 다시 확인하려고",
+      "source": "https://www.edmonton.ca/activities_parks_recreation/terwillegar"
+    },
+    {
+      "ord": 19,
+      "city_id": "edmonton",
+      "author_nickname": "제스퍼애비뉴",
+      "tag_slug": "life",
+      "title": "러더퍼드하우스는 붉은 벽돌집과 정원을 함께 복원한 곳이네",
+      "body": "옛집을 구경하는 사람은 건물 안만 볼 줄 알았던 내 생각이 좀 좁았음\n에드먼턴 러더퍼드하우스는 붉은 벽돌 저택과 주변 정원을 옛 모습으로 복원한 역사 유적이네\n나는 방 안의 디테일부터 볼지 집 둘레부터 알아볼지는 아직 못 정했어",
+      "source": "https://www.rutherfordhouse.ca/"
+    },
+    {
+      "ord": 20,
+      "city_id": "edmonton",
+      "author_nickname": "헨데이하이웨이",
+      "tag_slug": "travel",
+      "title": "에드먼턴 과학관엔 아폴로가 가져온 달 조각도 있네",
+      "body": "우주 전시 보는 사람은 별 사진만 보게 될 줄 알았는데 실제 돌도 있네\n텔러스월드오브사이언스의 스페이스갤러리 처음 알아보니\n아폴로 우주비행사들이 가져온 달 조각을 볼 수 있고\n운석을 들어보고 만지는 체험과 달 착륙선을 조종하는 체험도 있어\n다음에 같이 우주 얘기하면 내가 아는 게 별 이름 하나에서 좀 늘어나겠군, 우주 공부에 팔 힘까지 필요할 줄이야 ㅋㅋ",
+      "source": "https://telusworldofscienceedmonton.ca/explore/experiences/space-gallery/"
+    },
+    {
+      "ord": 21,
+      "city_id": "calgary",
+      "author_nickname": "노스힐장보기",
+      "tag_slug": "life",
+      "title": "캘거리도서관엔 마음 건강 지원을 연결하는 데스크도 있네",
+      "body": "도서관에서 책 말고 뭘 만날 수 있는지 아직 낯설어서 알아보는 중인데\n캘거리도서관 웰니스데스크는 마음 건강·회복 지원이랑 건강 정보, 다른 서비스 연결도 다루네, 주변에 얘기할 땐 어디부터 설명할지 좀 더 생각해보려 해",
+      "source": "https://www.calgarylibrary.ca/your-library/free-services/wellness-desk"
+    },
+    {
+      "ord": 22,
+      "city_id": "calgary",
+      "author_nickname": "프린스아일랜드",
+      "tag_slug": "education",
+      "title": "텔러스스파크 돔은 영화와 천문관 이야기를 같이 보여주네",
+      "body": "전엔 돔 상영이면 별자리 화면만 떠올렸는데, 텔러스스파크 인피니티돔은 영화와 라이브 천문관 상영을 함께 다뤄\n내 머릿속 돔은 계속 밤하늘만 틀었네 ㅋㅋ 어떤 이야기를 먼저 볼지는 아직 못 골랐어",
+      "source": "https://www.sparkscience.ca/admission"
+    },
+    {
+      "ord": 23,
+      "city_id": "calgary",
+      "author_nickname": "C트레인통근",
+      "tag_slug": "transport",
+      "title": "피스브리지는 강물 속에 교각을 세우지 않은 다리네",
+      "body": "강 건너는 길을 볼 때 다리 모양까지 알아두면 덜 낯설 것 같아서\n캘거리 피스브리지는 물속 교각 없이 만든 보행·자전거 다리이고, 두 이동 공간을 나눠뒀네\n난 길 하나씩 알아가는 중인데 다리 건널 땐 강 풍경이랑 다리 구조 중 뭐가 먼저 눈에 들어와?",
+      "source": "https://www.calgary.ca/planning/teacher-guide.html"
+    },
+    {
+      "ord": 24,
+      "city_id": "calgary",
+      "author_nickname": "컨페더레이션공원",
+      "tag_slug": "life",
+      "title": "포트캘거리의 새 이름은 두 강이 만나는 자리를 담았네",
+      "body": "이름만 익숙하면 그 장소를 아는 줄 알았음, 내 동네 공부 또 겉핥기였네 ㅋㅋ\n포트캘거리는 더컨플루언스로 이름을 바꿨고, 보우강과 엘보강이 만나는 땅의 원주민 역사와 여러 목소리를 함께 다루는 곳이네\n같이 동네 이야기 하나 알아보고 싶은데 장소를 기억할 땐 이름이랑 그 자리에 있던 사람 이야기 중 뭐가 더 오래 남아?",
+      "source": "https://www.theconfluence.ca/about-the-confluence"
+    },
+    {
+      "ord": 25,
+      "city_id": "calgary",
+      "author_nickname": "보우강변산책",
+      "tag_slug": "life",
+      "title": "스튜디오벨 플레이랩은 직접 소리를 만들어보는 공간이야",
+      "body": "음악 전시는 예전엔 악기 이름이랑 가수 이야기 읽는 곳부터 생각했는데\n스튜디오벨 플레이랩은 직접 소리를 탐색하고 실험하는 체험 공간이야\n여러 나이의 사람들이 자기 방식으로 음악을 만들어보는 쪽이고\n이번엔 어떤 소리를 좋아하는지만큼 어떻게 만들어지는지도 알아볼 거야\n내 음악 공부를 눈으로만 끝낼 순 없잖아, 귀도 출석시켜야지 ㅋㅋ",
+      "source": "https://www.studiobell.ca/feature-exhibitions"
+    }
+  ]
+}

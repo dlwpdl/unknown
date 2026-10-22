@@ -1,0 +1,6 @@
+{
+  "jq": "/usr/bin/jq",
+  "identical": false,
+  "replacement_count": 2,
+  "sql_sha256": "8326da13063bf221f75a48963a4afc13f144b84ca2b8b6ed7d932931eb2d5706"
+}

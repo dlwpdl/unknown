@@ -1,1 +1,3 @@
 @AGENTS.md
+
+@../AUTOMATION_HANDOFF.md

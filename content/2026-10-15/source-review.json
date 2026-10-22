@@ -1,0 +1,633 @@
+{
+  "same_writer": true,
+  "official_pages_actually_read": 25,
+  "reviews": [
+    {
+      "ord": 1,
+      "source_url": "https://www.translink.ca/rider-guide/etiquette-on-transit",
+      "fetched_at_utc": "2026-10-15T09:11:27.315316+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://www.translink.ca/rider-guide/etiquette-on-transit",
+      "title": [
+        "Etiquette on Transit | TransLink"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "일반 반려동물 완전 밀폐 소형 이동장",
+        " 반려동물 유모차 불가",
+        " 혼잡도에 따라 승차 거절 가능",
+        " 안내견 별도"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/v1.raw",
+      "raw_sha256": "4f1d9dcd39562142d9a2dc4d805b489fe030bbf8e700dd3f3c40b8f4096755ec",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/v1.txt",
+      "text_sha256": "048e3fa9af919ec38eacb716583254369a102dd4afaa9a25f094b8ca33d11f72",
+      "source_body_sha256": "4f1d9dcd39562142d9a2dc4d805b489fe030bbf8e700dd3f3c40b8f4096755ec",
+      "pre_patina_body_sha256": "fbde3dc331f897a17519354324c9a8b9e057feba1be052d15905f2a824f60ca7",
+      "final_body_sha256": "fbde3dc331f897a17519354324c9a8b9e057feba1be052d15905f2a824f60ca7",
+      "author_id": "10000000-0000-0000-0000-000000000039"
+    },
+    {
+      "ord": 2,
+      "source_url": "https://www.translink.ca/schedules-and-maps/nightbus",
+      "fetched_at_utc": "2026-10-15T09:13:12.369382+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://www.translink.ca/schedules-and-maps/nightbus",
+      "title": [
+        "NightBus | TransLink"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "NightBus seven nights",
+        "20–30minutes",
+        "around1:30a.m departure Howe/Dunsmuir or Seymour/Granville"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/v9.raw",
+      "raw_sha256": "2d7966f3ec1faddd9b09d6c7cc8539c55a22ed3f748c98d9c31a2071a36f6c54",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/v9.txt",
+      "text_sha256": "f02d7cbb76f2e71dca668a383efc6d1b964774f99c83d33511b20b142c365e44",
+      "source_body_sha256": "2d7966f3ec1faddd9b09d6c7cc8539c55a22ed3f748c98d9c31a2071a36f6c54",
+      "pre_patina_body_sha256": "f190c4f1eeaf4a8fa52a7a414083ae68004db2db9e8d285ea449bf70f5e891fb",
+      "final_body_sha256": "b57e74eb44eb1888f6efda5ddee8463b7d2cc14f7c4e5f07ba4dd167bc8bd663",
+      "author_id": "10000000-0000-0000-0000-000000000038"
+    },
+    {
+      "ord": 3,
+      "source_url": "https://www.translink.ca/rider-guide/safety-and-security",
+      "fetched_at_utc": "2026-10-15T09:13:12.347259+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://www.translink.ca/rider-guide/safety-and-security",
+      "title": [
+        "Safety and Security | TransLink"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "SkyTrain yellow silent alarm above windows",
+        "intercom near doors",
+        "emergency911"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/v10.raw",
+      "raw_sha256": "19f32e671c5cee418b26f45790f92962bba1ba0adc41c7251725251bd372e785",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/v10.txt",
+      "text_sha256": "206dcf5ac05f53f64dfa65b28044b6901f1f0525ddf17255e1ff1db294a01c28",
+      "source_body_sha256": "19f32e671c5cee418b26f45790f92962bba1ba0adc41c7251725251bd372e785",
+      "pre_patina_body_sha256": "e51850cf45e14f04137748adece6b47b668446dfff6870ae797df0861e98b3c4",
+      "final_body_sha256": "d14ff496578e86a75871db94832e1078510f029f295fdf50239345f8409e4907",
+      "author_id": "10000000-0000-0000-0000-000000000011"
+    },
+    {
+      "ord": 4,
+      "source_url": "https://www.translink.ca/rider-guide/transit-accessibility/how-to-use-accessible-transit",
+      "fetched_at_utc": "2026-10-15T09:12:10.394238+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://www.translink.ca/rider-guide/transit-accessibility/how-to-use-accessible-transit",
+      "title": [
+        "How to Use Accessible Transit | TransLink"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "HandyCard eligibility",
+        "concession on regular transit",
+        "attendant free",
+        "not usable on HandyDART"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/v7.raw",
+      "raw_sha256": "bc3cf95f25290bf299bc4b5cd75205f74e0d7aae14b21b8a0949c2309597bf56",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/v7.txt",
+      "text_sha256": "aa1f080d9c91ed2d4b7aab7d21cf49122d8f7e6ba3a45fefedb89636037a9af0",
+      "source_body_sha256": "bc3cf95f25290bf299bc4b5cd75205f74e0d7aae14b21b8a0949c2309597bf56",
+      "pre_patina_body_sha256": "9d9eceaa0c4942554665457b192098b2e7fb9036aae170aeba261c3380707256",
+      "final_body_sha256": "e3d0100d4fcdc9b36b04d67b7c743ee103b6c52fd859a6ab445cefbdc06335b9",
+      "author_id": "10000000-0000-0000-0000-000000000043"
+    },
+    {
+      "ord": 5,
+      "source_url": "https://www.translink.ca/rider-guide/transit-accessibility",
+      "fetched_at_utc": "2026-10-15T09:12:10.316657+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://www.translink.ca/rider-guide/transit-accessibility",
+      "title": [
+        "Transit Accessibility | TransLink"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "Accessibility barriers contact Customer Information",
+        "accessible transit newsletter available",
+        "no remediation deadline claimed"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/v6.raw",
+      "raw_sha256": "77bd4ed23c7bd93c5f1446c9ea0edf4d908005606df6519c4cc557e3f5ccd8c9",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/v6.txt",
+      "text_sha256": "6e9f4cd09dda17150ebd3fb1b0242314a4f68604f014634682937d81b6155374",
+      "source_body_sha256": "77bd4ed23c7bd93c5f1446c9ea0edf4d908005606df6519c4cc557e3f5ccd8c9",
+      "pre_patina_body_sha256": "31fd2b898498b6e134e486de57ec8262e1aae2f595d51f9add7528f2d73509a1",
+      "final_body_sha256": "786ffc78ecf37fbb6b6fe79180a1e325bcf3acbd738d21928f282ea7b2fa5c6c",
+      "author_id": "10000000-0000-0000-0000-000000000017"
+    },
+    {
+      "ord": 6,
+      "source_url": "https://www.toronto.ca/services-payments/recycling-organics-garbage/houses/set-out-tips/",
+      "fetched_at_utc": "2026-10-15T09:13:11.589348+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://www.toronto.ca/services-payments/recycling-organics-garbage/houses/set-out-tips/",
+      "title": [
+        "Proper Waste Set Out &#8211; City of Toronto"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "daytime single-family curbside before7am noearlier8pm prior",
+        "0.5m spacing",
+        "not behind/on snowbanks"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/t4.raw",
+      "raw_sha256": "7f21ba178c5b4ed6f5f2ffa86ca446c4a95c0a1383369e69a385041b6fe1fde6",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/t4.txt",
+      "text_sha256": "a79ac1d13044d2a803bccb3198af75f373c85c8f852e75feabb27e7d57b7e022",
+      "source_body_sha256": "7f21ba178c5b4ed6f5f2ffa86ca446c4a95c0a1383369e69a385041b6fe1fde6",
+      "pre_patina_body_sha256": "ca1c997bbd57b3ddde2af226d47977c772c8d6d0bf1d443ea52ccaad5fa8f301",
+      "final_body_sha256": "88b76239d0ed1288048a67b907b129b8192a6e21ef371e162659ce6a4916fa91",
+      "author_id": "10000000-0000-0000-0000-000000000069"
+    },
+    {
+      "ord": 7,
+      "source_url": "https://www.toronto.ca/services-payments/recycling-organics-garbage/houses/what-goes-in-my-green-bin/",
+      "fetched_at_utc": "2026-10-15T09:14:29.760659+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://www.toronto.ca/services-payments/recycling-organics-garbage/houses/what-goes-in-my-green-bin/",
+      "title": [
+        "What Goes in the Green Bin (Organic Waste) &#8211; City of Toronto"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "compostable plastic/plastic-lined containers cups cutlery garbage",
+        "food separate from packaging"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/t7.raw",
+      "raw_sha256": "00b971b83da9ca47a8aba013102d2b7780e6cb6185f765af65a1a0c3d6bfa0ab",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/t7.txt",
+      "text_sha256": "a4e18bef0afa3ba59f685472825e2fabc818f6abd00f9b6dc07a9502f6ce2d23",
+      "source_body_sha256": "00b971b83da9ca47a8aba013102d2b7780e6cb6185f765af65a1a0c3d6bfa0ab",
+      "pre_patina_body_sha256": "c413c9944e2d9bcddd021af32202a184af0b62fd2008a838a9733493b631193a",
+      "final_body_sha256": "1cd6c9701a6bb50170960cd413f8dacb9e2c7b11c95598bac98f6667206bca2e",
+      "author_id": "10000000-0000-0000-0000-000000000029"
+    },
+    {
+      "ord": 8,
+      "source_url": "https://www.toronto.ca/services-payments/water-environment/trees/",
+      "fetched_at_utc": "2026-10-15T09:13:11.377325+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://www.toronto.ca/services-payments/water-environment/trees/",
+      "title": [
+        "Trees in Toronto &#8211; City of Toronto"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "city-tree planting pruning removal service request",
+        "city/private distinction no private entitlement claimed"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/t2.raw",
+      "raw_sha256": "09ae26373f02eb7999980e277ea28a79e8a643636cee1fe7cf70c934a7d5a4d3",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/t2.txt",
+      "text_sha256": "4b8bdb547fb784e5ba3915235b8e7ba9e01f7da39c88dc0715cfdc3a1a5839fc",
+      "source_body_sha256": "09ae26373f02eb7999980e277ea28a79e8a643636cee1fe7cf70c934a7d5a4d3",
+      "pre_patina_body_sha256": "7d50e547edafc7d7f9872a2126e6782e6c76f6c8bd41ce886ae18e648491ec9b",
+      "final_body_sha256": "383e6c3fe1333fda92183e638f000b0340542127df1ca6989bcfa05788d547db",
+      "author_id": "10000000-0000-0000-0000-000000000083"
+    },
+    {
+      "ord": 9,
+      "source_url": "https://tpl.ca/using-the-library/computer-services/printing-and-photocopying/",
+      "fetched_at_utc": "2026-10-15T09:26:29.539737+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://tpl.ca/using-the-library/computer-services/printing-and-photocopying/",
+      "title": [
+        "Printing and Photocopying | Toronto Public Library",
+        "Back to top"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "printercopier scansdocument/photoemailsyourself",
+        "scanningfree"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/t8.raw",
+      "raw_sha256": "12dada1e14b126f152ab9000995d26eecd1b2fd2c121c25bb3b2181623adbb7a",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/t8.txt",
+      "text_sha256": "5427e58f44db6b605bbdc7698a0c9f3aee5ae809d9658867dafe59e3b4fcbae2",
+      "source_body_sha256": "12dada1e14b126f152ab9000995d26eecd1b2fd2c121c25bb3b2181623adbb7a",
+      "pre_patina_body_sha256": "8f805cb955741689100116ec61a3549b8633a532895725b6b09477a563401303",
+      "final_body_sha256": "4933e644d94b840570dceb662bfaa987af6d54e739cc89e7e08bb1d99c773d55",
+      "author_id": "10000000-0000-0000-0000-000000000034"
+    },
+    {
+      "ord": 10,
+      "source_url": "https://www.toronto.ca/explore-enjoy/parks-recreation/places-spaces/dogs-off-leash/",
+      "fetched_at_utc": "2026-10-15T09:13:11.829952+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://www.toronto.ca/city-government/public-notices-bylaws/bylaw-enforcement/dogs-off-leash/",
+      "title": [
+        "Dogs Off-Leash &#8211; City of Toronto"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "designatedoffleash no unattended dog",
+        "recall/relaxed interaction",
+        "leash elsewhere parks/beaches"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/t3.raw",
+      "raw_sha256": "3343271cb8bf7b178d7d41203250ff28c2a4834f1a22da85f31efafd487273cb",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/t3.txt",
+      "text_sha256": "0453ddff81689755429ea2bdb9fbce6c6680723a761be47a846f513af8761d2e",
+      "source_body_sha256": "3343271cb8bf7b178d7d41203250ff28c2a4834f1a22da85f31efafd487273cb",
+      "pre_patina_body_sha256": "1d3d81e7c02a1fd13bb301927c93003fc5db4ee92538bbaf33f44b9348847bfd",
+      "final_body_sha256": "3970c9ce6b2e0d5e4f841725df35ad81005d296d10c7dd3e23c38cf08ce7b40d",
+      "author_id": "10000000-0000-0000-0000-000000000008"
+    },
+    {
+      "ord": 11,
+      "source_url": "https://montreal.ca/en/services/mtlwifi-internet-access-free-charge",
+      "fetched_at_utc": "2026-10-15T09:13:11.262842+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://montreal.ca/en/services/mtlwifi-internet-access-free-charge",
+      "title": [
+        "MTLWiFi, Internet access free of charge | Ville de Montréal",
+        "Ville de Montréal",
+        "Ville de Montréal"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "MTLWiFi free multiple municipal sites",
+        "SSID",
+        "no password",
+        "open unencrypted network"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/m1.raw",
+      "raw_sha256": "b7926c1a9ce3e0b84027e838d5361abfd5cf4c3a76dadae33412556c75384fd4",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/m1.txt",
+      "text_sha256": "bd1c7fb567cd66d65e7f4b0528a7fb85c6d0ad66b95da0105797ccca9dc2602b",
+      "source_body_sha256": "b7926c1a9ce3e0b84027e838d5361abfd5cf4c3a76dadae33412556c75384fd4",
+      "pre_patina_body_sha256": "06769d31cb6043d6df197662a11a83c34cb38e40492c3d667f276435f1ba09c1",
+      "final_body_sha256": "234f42e2c35bfb657392d44b9d65b06a6b6bbf9fe87566d13ed9b53775b93852",
+      "author_id": "75513359-f87a-5b69-9bde-8261e0854bb6"
+    },
+    {
+      "ord": 12,
+      "source_url": "https://montreal.ca/lieux/parc-nature-du-bois-de-liesse",
+      "fetched_at_utc": "2026-10-15T09:14:30.286416+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://montreal.ca/lieux/parc-nature-du-bois-de-liesse",
+      "title": [
+        "Parc-nature du Bois-de-Liesse | Ville de Montréal",
+        "Ville de Montréal",
+        "Ville de Montréal"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "forest observation stations/oldtreesblackmaple",
+        "peninsula northGouinOuest closeduntilOct20",
+        "Oakridgepicnic open"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/m7.raw",
+      "raw_sha256": "943b3b5337cbea95beabb1aca12f7e790d243f93dd884959e9afb2de1d40b15f",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/m7.txt",
+      "text_sha256": "1685b9c7ebe05bfb6f9d4d83fb82d82e4eadd59c3c24fdc40a19f097480fa5a8",
+      "source_body_sha256": "943b3b5337cbea95beabb1aca12f7e790d243f93dd884959e9afb2de1d40b15f",
+      "pre_patina_body_sha256": "eb7ecedf77f568574f34af5166b35fca552a0291171e1ceb87661ee774359c63",
+      "final_body_sha256": "eb7ecedf77f568574f34af5166b35fca552a0291171e1ceb87661ee774359c63",
+      "author_id": "49392196-fb82-5ea3-bced-4b7bb76dcec0"
+    },
+    {
+      "ord": 13,
+      "source_url": "https://montreal.ca/lieux/parc-nature-de-la-pointe-aux-prairies",
+      "fetched_at_utc": "2026-10-15T09:14:30.234539+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://montreal.ca/lieux/parc-nature-de-la-pointe-aux-prairies",
+      "title": [
+        "Parc-nature de la Pointe-aux-Prairies | Ville de Montréal",
+        "Ville de Montréal",
+        "Ville de Montréal"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "261hectares easternisland",
+        "3sectors",
+        "2chalets",
+        "white-tailed deer habitat no sightingpromise"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/m8.raw",
+      "raw_sha256": "6a43798ee63f596d28d752cd81ef4c784fb1e39c64f7a7b8094d5a7364055c6f",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/m8.txt",
+      "text_sha256": "e1b58185678b09122f9e87b932a6ab6829680b9ff4b07d1dbdd11063a29c8a03",
+      "source_body_sha256": "6a43798ee63f596d28d752cd81ef4c784fb1e39c64f7a7b8094d5a7364055c6f",
+      "pre_patina_body_sha256": "c2a2bcbd5cfd90ced2d0041ba8f379b7a7d754f5ab1c11d75234965b47914190",
+      "final_body_sha256": "4d4b6213817ceb39b62af90c1da9122fa91e6535ae09b5e5c1d7b333a83805a3",
+      "author_id": "cc3ea647-6ac1-5ffc-ba83-8d4724d2e0f1"
+    },
+    {
+      "ord": 14,
+      "source_url": "https://montreal.ca/lieux/parc-nature-du-bois-de-saraguay",
+      "fetched_at_utc": "2026-10-15T09:14:30.419047+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://montreal.ca/lieux/parc-nature-du-bois-de-saraguay",
+      "title": [
+        "Parc-nature du Bois-de-Saraguay | Ville de Montréal",
+        "Ville de Montréal",
+        "Ville de Montréal"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "96hectares",
+        "MaryDorothyMolsonhouse/chauffeurhouse",
+        "leashrequired",
+        "nointerioraccessclaim"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/m9.raw",
+      "raw_sha256": "27d10c03b24bc1e70d7cfccc13fbe2d63cc32145be659f9a68f8d9aa58873aa4",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/m9.txt",
+      "text_sha256": "fbfc14bcc637b3ab4df687a2fa4ca6e09b09d45695afe2982a4324dc33716c23",
+      "source_body_sha256": "27d10c03b24bc1e70d7cfccc13fbe2d63cc32145be659f9a68f8d9aa58873aa4",
+      "pre_patina_body_sha256": "f7013bdfdfb5a278aff4888b058985000cfec1f5910310a98b17f65c39b57814",
+      "final_body_sha256": "ea744cc44a968355da3fb5bbe298101f0dba00697f6710edd84ceefbf1ee6b51",
+      "author_id": "81c6d246-f1fb-5956-8092-4d437caeae8e"
+    },
+    {
+      "ord": 15,
+      "source_url": "https://montreal.ca/lieux/parc-de-la-promenade-bellerive",
+      "fetched_at_utc": "2026-10-15T09:14:30.480138+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://montreal.ca/lieux/parc-de-la-promenade-bellerive",
+      "title": [
+        "Parc de la Promenade-Bellerive | Ville de Montréal",
+        "Ville de Montréal",
+        "Ville de Montréal"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "linearparkabout2.2kmSaintLawrence",
+        "commercialshipsview",
+        "summerferry not currentoperationclaim"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/m10.raw",
+      "raw_sha256": "c069111b43776f97ffee944b8a2d645e028ab9104d2882a1deeb7f3c79517959",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/m10.txt",
+      "text_sha256": "d469d209b951860082e03af75ba4f342e57aca8ab303bfbed90ef34e77023143",
+      "source_body_sha256": "c069111b43776f97ffee944b8a2d645e028ab9104d2882a1deeb7f3c79517959",
+      "pre_patina_body_sha256": "1652410beed5440617cddf436c8da8f135b936b4246accfcf10d915fce4a607c",
+      "final_body_sha256": "7a2b25631fc0e2257acc84aea8b07d03b5ebb3fd788e8b43ee0d1629c2354622",
+      "author_id": "2212d766-7329-5611-847e-ee0f59c8eb0e"
+    },
+    {
+      "ord": 16,
+      "source_url": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/dawson-park",
+      "fetched_at_utc": "2026-10-15T09:13:13.661735+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/dawson-park",
+      "title": [
+        "Dawson Park | City of Edmonton"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "lowvisiongravelloop raisedwoodedges whitecane",
+        "7Braillesigns"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/e6.raw",
+      "raw_sha256": "ce038b0f42b737a5edb78cc15e6deb95ee1f93d35b22285930a80f1db92222aa",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/e6.txt",
+      "text_sha256": "95e4553aaa48cae7b3804655301430eb78bdfe04f717ebed5abb85c5386e101b",
+      "source_body_sha256": "ce038b0f42b737a5edb78cc15e6deb95ee1f93d35b22285930a80f1db92222aa",
+      "pre_patina_body_sha256": "9bed0ac79357558200e4740234ecfe8b1a1bcf18db7d01468a48de109f039ccc",
+      "final_body_sha256": "9bed0ac79357558200e4740234ecfe8b1a1bcf18db7d01468a48de109f039ccc",
+      "author_id": "10000000-0000-0000-0000-000000000102"
+    },
+    {
+      "ord": 17,
+      "source_url": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/jackie-parker-park",
+      "fetched_at_utc": "2026-10-15T09:13:13.649494+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/jackie-parker-park",
+      "title": [
+        "Jackie Parker Park | City of Edmonton"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "smalllake looptrail",
+        "noswimmingorboating",
+        "sprayparklisted nocurrentoperationclaim"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/e7.raw",
+      "raw_sha256": "3079f38402559e451ad9a4e82fc6f47409f3921d06cf9f5654054b2aa4406bf2",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/e7.txt",
+      "text_sha256": "c6904e6ca2e894bb36dd02ffd95b8833525ffcc2001a49a2e89fd6e407d37ab0",
+      "source_body_sha256": "3079f38402559e451ad9a4e82fc6f47409f3921d06cf9f5654054b2aa4406bf2",
+      "pre_patina_body_sha256": "c44edb12b661fae5ad607d56adb4aff99b030e85a2399b093e8ea706f2cfb191",
+      "final_body_sha256": "85e9e38dee4afea1240b41ed319a1e823b87423284ef527c7efbae14304f8451",
+      "author_id": "10000000-0000-0000-0000-000000000101"
+    },
+    {
+      "ord": 18,
+      "source_url": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/buena-vista-park",
+      "fetched_at_utc": "2026-10-15T09:13:11.045204+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/buena-vista-park",
+      "title": [
+        "Buena Vista Park | City of Edmonton"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "northbank",
+        "largeoffleasharea",
+        "multiusetrails",
+        "donotextendoffleashtoalltrails"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/e9.raw",
+      "raw_sha256": "67d0fd4a3a2c2c2411d2cf40b1b8cc1d85c54a5a1aef49f75249564ce3c52ae7",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/e9.txt",
+      "text_sha256": "9529141fba7f98fedbbae8e4077edfb67299067d8385e26484e8ecf0746a0c5e",
+      "source_body_sha256": "67d0fd4a3a2c2c2411d2cf40b1b8cc1d85c54a5a1aef49f75249564ce3c52ae7",
+      "pre_patina_body_sha256": "e68831a910aaed7da444a389188cbe2a2153d26730137c91c3622f95f1e961f4",
+      "final_body_sha256": "7511c91ba0ad7cd2cc8c38bf3afbc409b6902d6f8e59f2e2f92f3bfadfe78d74",
+      "author_id": "9693606b-6fb3-50dc-ad2e-a6c23514c907"
+    },
+    {
+      "ord": 19,
+      "source_url": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/sir-wilfrid-laurier-park",
+      "fetched_at_utc": "2026-10-15T09:13:15.946939+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/sir-wilfrid-laurier-park",
+      "title": [
+        "Sir Wilfrid Laurier Park | City of Edmonton"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "playgroundcoyotemodel",
+        "noanimalencounterorvisitclaim"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/e8.raw",
+      "raw_sha256": "5645ba0fd15b34b2290a0bbbadb7589004bb84cef4cc68d85a0d6eb0fc70299b",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/e8.txt",
+      "text_sha256": "3b13c5d97df814d145d75facb63c167925d1b74068f29d7dbab75a8dcf705ccf",
+      "source_body_sha256": "5645ba0fd15b34b2290a0bbbadb7589004bb84cef4cc68d85a0d6eb0fc70299b",
+      "pre_patina_body_sha256": "a1025d15ad3172d959d7e9a9cd4d8e7bc9041d4038e6119875e31cc03609b124",
+      "final_body_sha256": "9f1579d3db4e0b838af83b07fc71ccee7f0bb50734ed1cde6528aa683a1ada7b",
+      "author_id": "10000000-0000-0000-0000-000000000119"
+    },
+    {
+      "ord": 20,
+      "source_url": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/coronation-park",
+      "fetched_at_utc": "2026-10-15T09:13:11.033676+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/coronation-park",
+      "title": [
+        "Coronation Park | City of Edmonton"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "canopypicnicsitesgrass",
+        "planetariumwashroomsclosed",
+        "portablewashroomsnorthatWoodcroftplayground"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/e10.raw",
+      "raw_sha256": "602499aadd22eff7f71c37ee8876456d56811332bbd2a9c0457caf355c93055e",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/e10.txt",
+      "text_sha256": "bf92afc106d40194be9cd4c7ae852ce8a26706cb810aa42fbd2e6a8d190d1b18",
+      "source_body_sha256": "602499aadd22eff7f71c37ee8876456d56811332bbd2a9c0457caf355c93055e",
+      "pre_patina_body_sha256": "ad5d6e54d6b3cf104c5c38ead63b59d412c9795ab4cb138ede544e6ba06f7770",
+      "final_body_sha256": "ad5d6e54d6b3cf104c5c38ead63b59d412c9795ab4cb138ede544e6ba06f7770",
+      "author_id": "10000000-0000-0000-0000-000000000106"
+    },
+    {
+      "ord": 21,
+      "source_url": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/national-geographic-kids",
+      "fetched_at_utc": "2026-10-15T09:11:31.758433+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/national-geographic-kids",
+      "title": [
+        "National Geographic Kids | Calgary Public Library"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "ebooks",
+        "science/nature/culture/archaeology/space",
+        "magazine2009present",
+        "archivesnotcurrentnews"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/c5.raw",
+      "raw_sha256": "bf1b85c19a56a3d7f5fc825a4b1e4758c15923df8cba9588c841f365dd508f5e",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/c5.txt",
+      "text_sha256": "ae7b438c0f225bafdd6580cb4775eafb150147fd8fe82ff2e36f801377f5b54b",
+      "source_body_sha256": "bf1b85c19a56a3d7f5fc825a4b1e4758c15923df8cba9588c841f365dd508f5e",
+      "pre_patina_body_sha256": "f9c8ba0117f6cef57b806e06364cc6803122c03cd039a238bf2816289f808851",
+      "final_body_sha256": "f18eff21134b3928171b207a9a8bb09f8f1e6eb1ca0cd321e63f2c58f0f807ed",
+      "author_id": "10000000-0000-0000-0000-000000000129"
+    },
+    {
+      "ord": 22,
+      "source_url": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/birds-of-the-world",
+      "fetched_at_utc": "2026-10-15T09:11:27.608466+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/birds-of-the-world",
+      "title": [
+        "Birds of the World | Calgary Public Library"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "CornellLabdatabase",
+        "imagesvideoaudio",
+        "habitat/behaviour",
+        "noactualsighting"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/c3.raw",
+      "raw_sha256": "1900f120b506de453f156a884675c20ac91f033d5e07c9a33d4188353d2ce139",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/c3.txt",
+      "text_sha256": "413ed4263831dbf8b027218961a7bb783d3b8f01b53579f4421a62748a95001c",
+      "source_body_sha256": "1900f120b506de453f156a884675c20ac91f033d5e07c9a33d4188353d2ce139",
+      "pre_patina_body_sha256": "8bb36eead50aee0145664c090ec646e1d458ffe6165e405b3961f30dc25efeab",
+      "final_body_sha256": "36a2dc29a6901ef297fd94b9938e6f64d243d60f5ef26f5efc960051a2cc96d8",
+      "author_id": "10000000-0000-0000-0000-000000000130"
+    },
+    {
+      "ord": 23,
+      "source_url": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/cypress-resume",
+      "fetched_at_utc": "2026-10-15T09:11:29.578444+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/cypress-resume",
+      "title": [
+        "Cypress Resume | Calgary Public Library"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "online resumebuilder3steps",
+        "startingpoint",
+        "nojoboutcomepromise"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/c4.raw",
+      "raw_sha256": "4b1b3f8a8ff90f2caad99dfb70cef0bba552a16f64930a7b2660cc5cf106c122",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/c4.txt",
+      "text_sha256": "10193cba4a73d7be66992423d65a1069489d70bdbe2d30ef92aca17ba83e9858",
+      "source_body_sha256": "4b1b3f8a8ff90f2caad99dfb70cef0bba552a16f64930a7b2660cc5cf106c122",
+      "pre_patina_body_sha256": "bb39adee489c31c1cf607493381d14115e33e4b0d9be2e88511066a65c8ab719",
+      "final_body_sha256": "ca3a180740299f7568f7234b8c1697eaa4f59ee031e2bb9fb3f8399d68491eea",
+      "author_id": "10000000-0000-0000-0000-000000000133"
+    },
+    {
+      "ord": 24,
+      "source_url": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/consumerreports-org-cars-best-deals",
+      "fetched_at_utc": "2026-10-15T09:11:29.580201+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/consumerreports-org-cars-best-deals",
+      "title": [
+        "ConsumerReports.Org + Cars Best Deals | Calgary Public Library"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "productreviewsrecommendations electronicsappliancescarsbabykids",
+        "noinventedtestresults"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/c2.raw",
+      "raw_sha256": "38a32ac5f1b7687fd93b68d97aae268ee596bf4b1e7a2a5b293db1ed81ec3690",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/c2.txt",
+      "text_sha256": "24f09f2d525ac6e25c530feae8993107fc5df60ccd9971210341824f1ba11976",
+      "source_body_sha256": "38a32ac5f1b7687fd93b68d97aae268ee596bf4b1e7a2a5b293db1ed81ec3690",
+      "pre_patina_body_sha256": "2dd02c8999dbca24a5fc7989a752c2f760fb98eaaf74fbda103959f6690f407d",
+      "final_body_sha256": "52262c1b5a008047662d1fca03c89488763651b2bcdb0c643c290d78b2915f61",
+      "author_id": "10000000-0000-0000-0000-000000000131"
+    },
+    {
+      "ord": 25,
+      "source_url": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/brainfuse-helpnow",
+      "fetched_at_utc": "2026-10-15T09:11:27.644907+00:00",
+      "read_at_utc": "2026-10-15T09:30:34.384347+00:00",
+      "final_url": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/brainfuse-helpnow",
+      "title": [
+        "brainfuse HelpNow | Calgary Public Library",
+        "icon_ipad-adjusted",
+        "icon_iphone",
+        "icon-android"
+      ],
+      "access": "public_official_page_read",
+      "supported_facts": [
+        "AlbertaK12livetutors2pm11pmdaily",
+        "24hourwritinglab",
+        "adultresumecoverletter"
+      ],
+      "raw_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/c1.raw",
+      "raw_sha256": "63854ed37e7b1b24fa3180ce5cda79e776e3a59ed05bf91de10b801c80154bd4",
+      "text_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/c1.txt",
+      "text_sha256": "8ef02460e3f6b7bf0d3dd87e95d4a5203c8395b159c1fe63ad7a2e09af55b7d2",
+      "source_body_sha256": "63854ed37e7b1b24fa3180ce5cda79e776e3a59ed05bf91de10b801c80154bd4",
+      "pre_patina_body_sha256": "bb77498750daac2f8dda9879b1ccbff64a71e4412abb802e9c46a692f27f0d33",
+      "final_body_sha256": "0cf9326b4d304c91dd87c8c2b638f9d0ea75ed08a263162fe8163ca268110c96",
+      "author_id": "10000000-0000-0000-0000-000000000137"
+    }
+  ],
+  "limitations": [
+    "공식 공개 안내의 본문을 읽었으며 로그인 후 실제 이용이나 현지 방문은 하지 않음",
+    "지도 주소는 공식 안내에서 읽은 문자열이고 실제 Maps 검색 목적지 동작 검증은 감독자에게 남김"
+  ],
+  "excluded_regular_candidates": [
+    {
+      "source_url": "https://tpl.ca/using-the-library/services/dial-a-story/",
+      "reason": "기존 content/2026-10-06/posts.json의 TPL 전화 동화와 동일 주제라 실제 스캔·이메일 안내로 교체",
+      "evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/t6.txt"
+    }
+  ]
+}

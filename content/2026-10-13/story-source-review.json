@@ -1,0 +1,135 @@
+{
+  "same_writer": true,
+  "reviews": [
+    {
+      "ord": 26,
+      "city_id": "vancouver",
+      "author_id": "10000000-0000-0000-0000-000000000065",
+      "source_case_key": "blind:02sMPie4",
+      "source_url": "https://www.teamblind.com/kr/post/02sMPie4",
+      "posted_date": "2025-01-21",
+      "read_at": "2026-10-13T07:35:54.370781+00:00",
+      "access": "public_full_body_read",
+      "original_body_sha256": "d09858c78a6977d6da1c8f0b18d35b2b7ab0d80e4ff03824fe94bfbce34870a3",
+      "original_body_local_path": "/Users/ash/Library/Application Support/gling/operations/city-posts/29655078-fb89-4671-b486-6ae3381830c0/sources/02sMPie4.original-body.txt",
+      "original_conflict": "형편이 어려운 남자친구에게 제안한 이사 비용 부담이 생활비·가사 전담으로 번지고, 추가 차입과 최초 약속 해석을 두고 결별한다.",
+      "fictional_changes": [
+        "원문의 연인 동거 관계를 Vancouver의 자녀 없는 익명 부부로 변경했다. 작성자 자신의 경험으로 쓰지 않았다.",
+        "원문의 직업·11억 빚·수입·이자·월세 액수·가구 회수 날짜를 삭제했다.",
+        "결별 결론 대신 집세 약속의 범위를 다시 논의하는 지점에서 멈췄다."
+      ],
+      "visible_reactions_read": "공개 댓글 4개가 표시됐고 관계 정리를 지지하는 의견이 보였다. 사건 진위의 증거로 쓰지 않았다.",
+      "event_truth_verified": false,
+      "family_and_role_match": "selected live v4 metadata, third-person adaptation; no new personal history",
+      "source_owned_by_personal_pipeline": false,
+      "planned_id_is_public_receipt": false
+    },
+    {
+      "ord": 27,
+      "city_id": "toronto",
+      "author_id": "10000000-0000-0000-0000-000000000070",
+      "source_case_key": "pann:346262270",
+      "source_url": "https://pann.nate.com/talk/346262270",
+      "posted_date": "2019-04-26",
+      "read_at": "2026-10-13T07:35:54.371645+00:00",
+      "access": "public_full_body_read",
+      "original_body_sha256": "1cf2693b737b5b26a7b220a748a44ea3fa0647ade9f4d8a774a8f92f4c5d94fd",
+      "original_body_local_path": "/Users/ash/Library/Application Support/gling/operations/city-posts/29655078-fb89-4671-b486-6ae3381830c0/sources/346262270.original-body.txt",
+      "original_conflict": "해외 거주 예비 시어머니의 예측하기 어려운 장기 방문과 동거·돌봄 부담을, 남자친구가 연간 체류 일수만으로 정당화한다.",
+      "fictional_changes": [
+        "결혼 전 커플을 토론토의 기혼 부부와 세 살 아이가 있는 가정으로 바꿨다. 작성자의 고정 가족과 사건 화자를 구분했다.",
+        "원문 인물의 나이·종교·형제와 거주국·프로포즈 날짜를 제외했다.",
+        "원문의 연간 두 차례·60일 논쟁을 한 달 방문의 종료일과 가사·이동 분담 문제로 좁혔다."
+      ],
+      "visible_reactions_read": "공개 댓글 45개 표시와 베스트 댓글을 읽었다. 방문 기간 확대와 동거 부담을 걱정하는 반응이 보였으며 그 추측을 사실로 옮기지 않았다.",
+      "event_truth_verified": false,
+      "family_and_role_match": "selected live v4 metadata, third-person adaptation; no new personal history",
+      "source_owned_by_personal_pipeline": false,
+      "planned_id_is_public_receipt": false
+    },
+    {
+      "ord": 28,
+      "city_id": "montreal",
+      "author_id": "04528f50-f69f-5ecf-a9d5-cc9b092f2ba2",
+      "source_case_key": "pann:346173307",
+      "source_url": "https://pann.nate.com/talk/346173307",
+      "posted_date": "2019-04-17",
+      "read_at": "2026-10-13T07:35:54.371773+00:00",
+      "access": "public_full_body_read",
+      "original_body_sha256": "505b5316781ebc4e2bbd4eda88a17695bb71c2998d67999f4f96e03ba58128e0",
+      "original_body_local_path": "/Users/ash/Library/Application Support/gling/operations/city-posts/29655078-fb89-4671-b486-6ae3381830c0/sources/346173307.original-body.txt",
+      "original_conflict": "어학연수를 가는 친구에게 해외 거주 남자친구의 도움을 연결할지 갈등하고, 거절을 질투·불신으로 몰아가면서 우정이 틀어진다.",
+      "fictional_changes": [
+        "미국 장거리 연애를 몬트리올의 기혼·자녀 없는 부부와 이사하는 친구 상황으로 변경했다.",
+        "대학원·포닥·직장·외모·친구의 과거 연애와 사적 신상을 삭제했다.",
+        "학원 탐색을 집 구하기와 이동 도움으로 변경하고, 외도 발생은 원문에서도 확인되지 않아 쓰지 않았다.",
+        "실제 작성자가 자리를 비우거나 누군가를 도운 일로 표현하지 않았다."
+      ],
+      "visible_reactions_read": "공개 댓글 266개 표시와 상단 반응을 읽었다. 도와줄 당사자의 부담을 먼저 고려해야 한다는 의견이 있었으며 외도 추측은 재구성 사실에서 제외했다.",
+      "event_truth_verified": false,
+      "family_and_role_match": "selected live v4 metadata, third-person adaptation; no new personal history",
+      "source_owned_by_personal_pipeline": false,
+      "planned_id_is_public_receipt": false
+    },
+    {
+      "ord": 29,
+      "city_id": "edmonton",
+      "author_id": "10000000-0000-0000-0000-000000000118",
+      "source_case_key": "pann:374365703",
+      "source_url": "https://pann.nate.com/talk/374365703",
+      "posted_date": "2025-05-18",
+      "read_at": "2026-10-13T07:35:54.371902+00:00",
+      "access": "public_full_body_read",
+      "original_body_sha256": "9e59ad842ccd531b602aa05c06119a32c1ab5a2cad5abad640760309174ebf05",
+      "original_body_local_path": "/Users/ash/Library/Application Support/gling/operations/city-posts/29655078-fb89-4671-b486-6ae3381830c0/sources/374365703.original-body.txt",
+      "original_conflict": "연인의 외도 의심과 동거 비용 갈등을 알린 지인을 이간질한 사람으로 여기는 화자가, 연인과 그 지인의 재접촉 및 독립자금 제안에 분노한다.",
+      "fictional_changes": [
+        "배경을 에드먼튼의 익명 결혼 전 동거 커플로 옮겼고 작성자의 현재 기혼 상태를 명시적으로 구분했다.",
+        "원문의 업종·고객 신상·인물 기호와 정확한 재회 기간을 삭제했다.",
+        "특정 임대 보증금 관행이나 액수를 단정하지 않도록 독립자금으로 바꿨다.",
+        "지인이 전한 외도·대출 제안을 확인된 사건으로 격상하지 않고 전달된 주장으로 남겼다."
+      ],
+      "visible_reactions_read": "공개 댓글 24개 표시와 베스트 댓글을 읽었다. 연인의 행동을 봐야 한다는 반응, 전달된 돈 이야기 자체가 꾸며졌을 가능성을 제기한 반응이 있었다. 추측을 확정하지 않았다.",
+      "event_truth_verified": false,
+      "family_and_role_match": "selected live v4 metadata, third-person adaptation; no new personal history",
+      "source_owned_by_personal_pipeline": false,
+      "planned_id_is_public_receipt": false
+    },
+    {
+      "ord": 30,
+      "city_id": "calgary",
+      "author_id": "10000000-0000-0000-0000-000000000137",
+      "source_case_key": "pann:374614782",
+      "source_url": "https://pann.nate.com/talk/374614782",
+      "posted_date": "2025-07-27",
+      "read_at": "2026-10-13T07:35:54.372078+00:00",
+      "access": "public_full_body_read",
+      "original_body_sha256": "83d90299bb6e10ffb9332b7f48c3e7c725ec37243a0436bf15540398cde8db37",
+      "original_body_local_path": "/Users/ash/Library/Application Support/gling/operations/city-posts/29655078-fb89-4671-b486-6ae3381830c0/sources/374614782.original-body.txt",
+      "original_conflict": "교통사고로 입원해 결혼식에 참석하지 못한 사람이 축의금과 선물을 보냈지만, 친구가 불참을 이유로 관계 단절을 통보한다.",
+      "fictional_changes": [
+        "국내 이동을 Calgary에서 한국 결혼식에 가려는 해외 거주 상황으로 변경했다.",
+        "축의금 액수·원문의 결혼 연차·이동 거리·메신저 상품을 삭제했다.",
+        "정확한 부상·치료·비행 취소 규정이나 보상액은 추가하지 않았다.",
+        "작성자의 배우자·세 자녀는 변경하지 않고 별개 인물의 재구성 사연임을 명시했다."
+      ],
+      "visible_reactions_read": "공개 댓글 99개 표시와 상단 반응을 읽었다. 입원 사유를 친구에게 알렸는지 확인하자는 반응과 원문 진위를 의심하는 댓글도 있었다. 사건이 검증됐다고 쓰지 않았다.",
+      "event_truth_verified": false,
+      "family_and_role_match": "selected live v4 metadata, third-person adaptation; no new personal history",
+      "source_owned_by_personal_pipeline": false,
+      "planned_id_is_public_receipt": false
+    }
+  ],
+  "unavailable_sources": [
+    {
+      "url": "https://cafe.daum.net/skc67",
+      "result": "HTTP 200 shell, 7 visible characters; no original story body available; not used"
+    }
+  ],
+  "held_sources_excluded": [
+    "blind:fyLDriYb",
+    "held Lua prototype",
+    "blind:7ic6zonq rejected mild lodging prototype"
+  ],
+  "personal_pipeline_reserved_cases_excluded": true
+}

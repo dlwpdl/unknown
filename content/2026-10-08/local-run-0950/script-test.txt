@@ -1,0 +1,35 @@
+TAP version 13
+# FAIL 각 글에 author_nickname을 지정해야 한다.
+# Subtest: 도시 게시글 SQL은 원고를 그대로 싣고 프로필·시각·조회수 규칙을 포함한다
+ok 1 - 도시 게시글 SQL은 원고를 그대로 싣고 프로필·시각·조회수 규칙을 포함한다
+  ---
+  duration_ms: 86.911542
+  type: 'test'
+  ...
+# Subtest: 원고 파일이 없으면 아무것도 하지 않고 정상 종료한다
+ok 2 - 원고 파일이 없으면 아무것도 하지 않고 정상 종료한다
+  ---
+  duration_ms: 41.201916
+  type: 'test'
+  ...
+# Subtest: 조회수는 0에서 시작하고 GROW=1일 때만 나이 기준으로 오르며 당일도 반영된다
+ok 3 - 조회수는 0에서 시작하고 GROW=1일 때만 나이 기준으로 오르며 당일도 반영된다
+  ---
+  duration_ms: 189.727958
+  type: 'test'
+  ...
+# Subtest: 작성자를 고르지 않은 원고는 등록하지 않는다
+ok 4 - 작성자를 고르지 않은 원고는 등록하지 않는다
+  ---
+  duration_ms: 29.440625
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 417.280917

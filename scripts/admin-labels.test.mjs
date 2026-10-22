@@ -13,22 +13,22 @@ const profile = (overrides = {}) => ({
 
 test('이름이 있으면 닉네임을, 없으면 사람이 읽을 수 있는 대체 문구를 쓴다', () => {
   assert.equal(displayName(profile(), 'cb270ce5-1111-2222-3333-444455556666'), '글링심사');
-  assert.equal(displayName(profile({ deleted_at: '2026-09-01T00:00:00Z' }), 'cb270ce5-1111-2222-3333-444455556666'), '탈퇴한 회원 · cb270ce5');
-  assert.equal(displayName(profile({ account_status: 'deleted' }), 'cb270ce5-1111-2222-3333-444455556666'), '탈퇴한 회원 · cb270ce5');
-  assert.equal(displayName(profile({ nickname: '   ' }), 'cb270ce5-1111-2222-3333-444455556666'), '이름 없음 · cb270ce5');
-  assert.equal(displayName(undefined, '3bc29aee-1111-2222-3333-444455556666'), '이름 미확인 · 3bc29aee');
+  assert.equal(displayName(profile({ deleted_at: '2026-09-01T00:00:00Z' }), 'cb270ce5-1111-2222-3333-444455556666'), '탈퇴한 회원');
+  assert.equal(displayName(profile({ account_status: 'deleted' }), 'cb270ce5-1111-2222-3333-444455556666'), '탈퇴한 회원');
+  assert.equal(displayName(profile({ nickname: '   ' }), 'cb270ce5-1111-2222-3333-444455556666'), '이름 없음');
+  assert.equal(displayName(undefined, '3bc29aee-1111-2222-3333-444455556666'), '이름 미확인');
   assert.equal(displayName(undefined, null), '—');
   assert.equal(shortId('cb270ce5-1111-2222-3333-444455556666'), 'cb270ce5');
 });
 
-test('대화방은 참여자 이름이나 모임 글로 표시하고 ID는 보조로만 남긴다', () => {
+test('대화방은 참여자 이름이나 모임 글로 표시하고 기본 라벨에 기술 ID를 노출하지 않는다', () => {
   const profiles = new Map([
     ['low', profile({ id: 'low', nickname: '글링심사' })],
     ['high', profile({ id: 'high', nickname: '포근한수달' })],
   ]);
   const direct = conversationLabel({ id: 'fc3a511c-1111-2222-3333-444455556666', user_low_id: 'low', user_high_id: 'high', group_post_id: null }, profiles);
   assert.equal(direct.primary, '글링심사 ↔ 포근한수달');
-  assert.equal(direct.secondary, '1:1 · fc3a511c');
+  assert.equal(direct.secondary, '1:1 대화');
 
   const group = conversationLabel(
     { id: '8ead0252-1111-2222-3333-444455556666', user_low_id: null, user_high_id: null, group_post_id: 'post-1' },
@@ -36,9 +36,10 @@ test('대화방은 참여자 이름이나 모임 글로 표시하고 ID는 보�
     [{ id: 'post-1', title: '주말 등산 같이 가실 분' }],
   );
   assert.equal(group.primary, '모임 · 주말 등산 같이 가실 분');
+  assert.equal(group.secondary, '모임 대화');
 
   const unknown = conversationLabel({ id: 'aaaaaaaa-1111-2222-3333-444455556666', user_low_id: null, user_high_id: null, group_post_id: null }, profiles);
-  assert.equal(unknown.primary, '대화 aaaaaaaa');
+  assert.equal(unknown.primary, '참여자 미확인 대화');
   assert.equal(unknown.secondary, '참여자 기록 없음');
 
   const half = conversationLabel({ id: 'bbbbbbbb-1111-2222-3333-444455556666', user_low_id: 'low', user_high_id: null, group_post_id: null }, profiles);

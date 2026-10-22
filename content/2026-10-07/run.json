@@ -1,0 +1,19 @@
+{
+  "run_id": "city-posts-2026-10-07-local-165232",
+  "date": "2026-10-07",
+  "started_at_utc": "2026-10-07T16:52:32.241601+00:00",
+  "original_deadline": null,
+  "deadline_reason": "City-post operational document sets no original five-minute deadline; GUI is not required.",
+  "gui": {
+    "status": "NOT_REQUIRED_NOT_USED",
+    "queue_events": []
+  },
+  "no_paid_actions": true,
+  "no_sns_actions": true,
+  "script_sha256": "1e3c6d188cf93e3ea8e96ba87160631907bb1ded05e358bd74d3f8e43c9f1868",
+  "comment_limitation": "Current seed script has no comment inserts; direct comment writing and automation edits are prohibited.",
+  "status": "POSTS_REGISTERED_COMMENT_REQUIREMENTS_NOT_MET",
+  "payload_sha256": "b8e33f5abe54c6be48e3058dd9d3029f92647ee9e68cb38b559d2437828c8da6",
+  "finished_at_utc": "2026-10-07T17:21:28.243078+00:00",
+  "report_file": "content/2026-10-07/verification.json"
+}

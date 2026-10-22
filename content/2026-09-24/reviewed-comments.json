@@ -1,0 +1,34 @@
+{
+  "comments": [
+    {
+      "city_id": "vancouver",
+      "post_title": "렌트집 수리, 다 내 몫인 줄",
+      "author_nickname": "렌트체크",
+      "body": "고장 사진은 일단 남겨둬야겠네. 말로만 전하면 나중에 헷갈림"
+    },
+    {
+      "city_id": "toronto",
+      "post_title": "토론토 식당 위생 정보도 따로 공개됨",
+      "author_nickname": "댄포스그릭",
+      "body": "DineSafe 결과는 가게 앞에서만 보는 거야, 온라인에서도 볼 수 있어?"
+    },
+    {
+      "city_id": "montreal",
+      "post_title": "녹색 골목은 이웃끼리 만드는 거였네",
+      "author_nickname": "메트로한칸",
+      "body": "우리 동네도 어느 날부터 골목에 화분이 늘었더라. 이런 프로젝트였는지 궁금해졌어"
+    },
+    {
+      "city_id": "edmonton",
+      "post_title": "온디맨드 버스는 운행 동네가 정해져 있네",
+      "author_nickname": "U오브A도서관",
+      "body": "1) 운행 구역부터 보고 2) 일반 노선이랑 비교해야겠네. 지도 없이 정류장만 찾을 뻔했어"
+    },
+    {
+      "city_id": "calgary",
+      "post_title": "C트레인 자전거, 시간대 제한이 없네",
+      "author_nickname": "어클랜드겨울",
+      "body": "예전엔 탈 수 있는 시간부터 따졌는데, 이제는 열차 안 공간이 더 변수겠네. 붐비는 칸은 피해야겠어"
+    }
+  ]
+}

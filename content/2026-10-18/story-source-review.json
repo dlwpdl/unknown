@@ -1,0 +1,137 @@
+{
+  "observed_at": "2026-10-18T09:25:22.034941+00:00",
+  "target_stories": 5,
+  "completed_stories": 5,
+  "sources": [
+    {
+      "ord": 26,
+      "city_id": "vancouver",
+      "profile_id": "10000000-0000-0000-0000-000000000065",
+      "source_case_key": "pann:375675499",
+      "post_id": "e0218fb0-951a-5168-8c22-d5f291f79594",
+      "original_url": "https://pann.nate.com/talk/375675499",
+      "read_at": "2026-10-18T09:08:12.552857+00:00",
+      "original_title": "장모님 생활비를 매달 보내자고 하네요 | 네이트 판",
+      "original_body_sha256": "ad98e4808243b39be1f5cbc9ecc6e5f62196d5f331ea6c4e8444aaed61c060d2",
+      "raw_sha256": "b43357dc56cb296f2da288c17eb9a69c6821fcf55210ff41cf3708c469537250",
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "장인 퇴직·장모 건강·정기 지원 요청과 아내의 눈물·이미 동의한 뒤 예산 부족이라는 순서를 보존.",
+        "fictional_changes": [
+          "marriage_years 3 → 고정4년, 자녀 없음 유지; 물류센터 야간 직업은 이식하지 않고 대학원생 설정 보존; 전세 이자/이사 자금은 고정 집 대출 상황으로 맞춤.",
+          "원화 지원액/연봉/이자는 현지 가격으로 바꾸지 않고 생략했다. 이사의 실제 예약·지원 송금은 만들지 않았다."
+        ]
+      },
+      "visible_reactions_read": true,
+      "reactions_observation": "원화 지원액/연봉/이자는 현지 가격으로 바꾸지 않고 생략했다. 이사의 실제 예약·지원 송금은 만들지 않았다.",
+      "event_truth_verified": false,
+      "canadian_event_verified": false,
+      "public_reconstruction_notice": "omitted by latest owner 2026-10-13 correction; existing operated-character bio retained",
+      "persona_unchanged": true
+    },
+    {
+      "ord": 27,
+      "city_id": "toronto",
+      "profile_id": "10000000-0000-0000-0000-000000000070",
+      "source_case_key": "pann:375675454",
+      "post_id": "9f987963-4854-5def-8080-612a2ca267e9",
+      "original_url": "https://pann.nate.com/talk/375675454",
+      "read_at": "2026-10-18T09:08:12.523716+00:00",
+      "original_title": "장인어른이랑 너무 친해져서 아내가 서운하답니다 | 네이트 판",
+      "original_body_sha256": "a4babf07fe4baa439a525ccff391788439084f024e40cf090d7a5963780ed8cd",
+      "raw_sha256": "6dbb35bf3cbee5b35ab08dcc60e16815a50966a37df0de8139bd80756cfcd9a9",
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "장인과 친밀해진 기쁨/아내의 소외감/그 시간 혼자 아이를 본 부담과 화자의 인정 유지.",
+        "fictional_changes": [
+          "marriage_years 5 → 고정6년, 자녀는 고정3세 1명. 거제 바다 지명을 삭제하고 캐나다 특정 장소·어종·면허 사실을 덧붙이지 않음.",
+          "낚시 경험은 운영 캐릭터의 각색 서사이며 사용자의 실제 방문 경험이나 캐나다 발생 검증이 아니다."
+        ]
+      },
+      "visible_reactions_read": true,
+      "reactions_observation": "낚시 경험은 운영 캐릭터의 각색 서사이며 사용자의 실제 방문 경험이나 캐나다 발생 검증이 아니다.",
+      "event_truth_verified": false,
+      "canadian_event_verified": false,
+      "public_reconstruction_notice": "omitted by latest owner 2026-10-13 correction; existing operated-character bio retained",
+      "persona_unchanged": true
+    },
+    {
+      "ord": 28,
+      "city_id": "montreal",
+      "profile_id": "cc3ea647-6ac1-5ffc-ba83-8d4724d2e0f1",
+      "source_case_key": "pann:375675251",
+      "post_id": "14d6eb30-81ef-57b1-b527-acd4e0012bb4",
+      "original_url": "https://pann.nate.com/talk/375675251",
+      "read_at": "2026-10-18T09:06:04.511886+00:00",
+      "original_title": "아기 잠 시간에 집착하는 남편 | 네이트 판",
+      "original_body_sha256": "d051a41f5879ee4eb1714750a316f41e20cb6a126e802c2a7320deab2eb1ddc4",
+      "raw_sha256": "cb11f3821d73b80f5d91153ac8a231119ce711155cfc8a2da80bb6214d20dc20",
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "처음 주 양육 부담, 나중 남편의 목욕·밤 돌봄 증가, 평소7~8시 취침/7:30귀가 요구,9시 귀가 갈등, 화자의 가끔 늦을 수 있다는 입장 보존.",
+        "fictional_changes": [
+          "원문19개월 → 고정3세 1명에 맞춤. 원문12kg/97% 정밀 수치는 생략하고 안아 달래는 부담과 주 양육 설명만 사용. 배우자의 위험 직종은 고정 정보가 없어 이식하지 않음.",
+          "보이는 댓글 대부분이 아빠의 수면 루틴 입장을 지지했다. 이 반대 맥락을 확인하고 아빠를 무조건 통제적인 악역으로 만들지 않았다. 의학적 진단이나 해결 결말을 만들지 않음."
+        ]
+      },
+      "visible_reactions_read": true,
+      "reactions_observation": "보이는 댓글 대부분이 아빠의 수면 루틴 입장을 지지했다. 이 반대 맥락을 확인하고 아빠를 무조건 통제적인 악역으로 만들지 않았다. 의학적 진단이나 해결 결말을 만들지 않음.",
+      "event_truth_verified": false,
+      "canadian_event_verified": false,
+      "public_reconstruction_notice": "omitted by latest owner 2026-10-13 correction; existing operated-character bio retained",
+      "persona_unchanged": true
+    },
+    {
+      "ord": 29,
+      "city_id": "edmonton",
+      "profile_id": "10000000-0000-0000-0000-000000000118",
+      "source_case_key": "pann:375675276",
+      "post_id": "a98b3fbb-28c2-5e44-8e8d-d47ccf2cb388",
+      "original_url": "https://pann.nate.com/talk/375675276",
+      "read_at": "2026-10-18T09:06:04.171776+00:00",
+      "original_title": "주식으로 100만원 날려먹은 남편 | 네이트 판",
+      "original_body_sha256": "ac01869edc1bdd50f5c845a6c3c0b2eaec6ba5afda92fb1efeb9775bb28f9523",
+      "raw_sha256": "902caeda663a2c615c7ae7499e9035d2036cce0bddc1535cc9d5580b8723f51d",
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "개인 돈 투자/손실/뒤늦은 공유/남편의 사과와 억울함/화자의 실질 이혼 의사 없음과 사과를 받아내려던 의도 보존.",
+        "fictional_changes": [
+          "고정29세/기혼4년/자녀 없음/자영업/공동생활비와 개인돈 구분 유지. 원문 직장 연봉 수치는 생략하고 수입 차이만 유지.",
+          "원문은 사전 합의 여부와 자녀를 확정하지 않는다. 그 단정과 일부 댓글의 엄마/자녀 추측을 가져오지 않음. 원화 금액을 CAD로 환산·발명하지 않음."
+        ]
+      },
+      "visible_reactions_read": true,
+      "reactions_observation": "원문은 사전 합의 여부와 자녀를 확정하지 않는다. 그 단정과 일부 댓글의 엄마/자녀 추측을 가져오지 않음. 원화 금액을 CAD로 환산·발명하지 않음.",
+      "event_truth_verified": false,
+      "canadian_event_verified": false,
+      "public_reconstruction_notice": "omitted by latest owner 2026-10-13 correction; existing operated-character bio retained",
+      "persona_unchanged": true
+    },
+    {
+      "ord": 30,
+      "city_id": "calgary",
+      "profile_id": "10000000-0000-0000-0000-000000000132",
+      "source_case_key": "pann:375675188",
+      "post_id": "ce21ccf2-ac49-504e-84b2-123e3b88c423",
+      "original_url": "https://pann.nate.com/talk/375675188",
+      "read_at": "2026-10-18T09:06:05.416484+00:00",
+      "original_title": "남편 버릇 한 달 만에 고친 썰 | 네이트 판",
+      "original_body_sha256": "d8b0e1886c51fbcf2dcfa24c97ae4f5aac47edc2dca9ba6800ae01b6e5aafd05",
+      "raw_sha256": "d69c9b94954f93c341ba2239685eef94463beaab8e8e0b12881ade63e36c640d",
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "말해야 하던 집안일, 자기 빨래·밥·그릇만 처리,1주 후 셔츠,세탁기 질문,분리수거 변화,시어머니 발언 보존.",
+        "fictional_changes": [
+          "원문결혼2년 → 고정기혼4년/자녀 없음/서비스직에 맞춤. 맞벌이 가사 갈등은 유지하고 임신·육아 경험을 넣지 않음.",
+          "개인 신원·회사·지역·캐나다 실화/검증 결말/추가 댓글을 만들지 않음."
+        ]
+      },
+      "visible_reactions_read": true,
+      "reactions_observation": "개인 신원·회사·지역·캐나다 실화/검증 결말/추가 댓글을 만들지 않음.",
+      "event_truth_verified": false,
+      "canadian_event_verified": false,
+      "public_reconstruction_notice": "omitted by latest owner 2026-10-13 correction; existing operated-character bio retained",
+      "persona_unchanged": true
+    }
+  ]
+}

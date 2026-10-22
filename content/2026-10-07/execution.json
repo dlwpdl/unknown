@@ -1,0 +1,52 @@
+{
+  "run_id": "city-posts-2026-10-07-local-165232",
+  "submission_attempted": true,
+  "script_sha256": "1e3c6d188cf93e3ea8e96ba87160631907bb1ded05e358bd74d3f8e43c9f1868",
+  "payload_sha256": "b8e33f5abe54c6be48e3058dd9d3029f92647ee9e68cb38b559d2437828c8da6",
+  "serialization": "Transient exported jq function uses Python stdlib for the raw query JSON only; no script or automation edits.",
+  "serialization_roundtrip_verified": true,
+  "log_offset": 225,
+  "stage_returncode": 0,
+  "stage_stdout": "STAGED /Users/ash/Library/Application Support/gling/city-posts/payload/2026-10-07.json\n",
+  "stage_stderr": "",
+  "attempted_at_utc": "2026-10-07T17:13:26.490226+00:00",
+  "grow_returncode": 0,
+  "grow_stdout": "",
+  "grow_stderr": "",
+  "completed_at_utc": "2026-10-07T17:15:54.795861+00:00",
+  "script_unchanged": true,
+  "log_segment": "=== Wed Oct  7 10:15:53 PDT 2026 도시 게시글 등록 시작 (2026-10-07)\nOK 25건 처리 []\n",
+  "attempts": [
+    {
+      "run_id": "city-posts-2026-10-07-local-165232",
+      "submission_attempted": true,
+      "script_sha256": "1e3c6d188cf93e3ea8e96ba87160631907bb1ded05e358bd74d3f8e43c9f1868",
+      "payload_sha256": "b8e33f5abe54c6be48e3058dd9d3029f92647ee9e68cb38b559d2437828c8da6",
+      "serialization": "Transient exported jq function uses Python stdlib for the raw query JSON only; no script or automation edits.",
+      "serialization_roundtrip_verified": true,
+      "log_offset": 225,
+      "stage_returncode": 0,
+      "stage_stdout": "STAGED /Users/ash/Library/Application Support/gling/city-posts/payload/2026-10-07.json\n",
+      "stage_stderr": "",
+      "attempted_at_utc": "2026-10-07T17:13:26.490226+00:00",
+      "grow_returncode": 1,
+      "grow_stdout": "",
+      "grow_stderr": "",
+      "completed_at_utc": "2026-10-07T17:13:26.816459+00:00",
+      "script_unchanged": true,
+      "log_segment": "=== Wed Oct  7 10:13:26 PDT 2026 도시 게시글 등록 시작 (2026-10-07)\nFAIL {\"message\":\"query: Too small: expected string to have >=1 characters\"}\n"
+    },
+    {
+      "attempted_at_utc": "2026-10-07T17:15:53.745572+00:00",
+      "log_offset": 378,
+      "raw_file_query_encoding_verified": true,
+      "retry_reason": "Definitive empty-query API validation rejection; read-only DB confirmed no expected rows. No uncertain submission was retried.",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "",
+      "completed_at_utc": "2026-10-07T17:15:54.795861+00:00",
+      "log_segment": "=== Wed Oct  7 10:15:53 PDT 2026 도시 게시글 등록 시작 (2026-10-07)\nOK 25건 처리 []\n"
+    }
+  ],
+  "status": "SEED_RETURNED"
+}

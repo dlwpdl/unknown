@@ -1,0 +1,114 @@
+=== Wed Oct  7 10:09:26 PDT 2026 도시 게시글 등록 시작 (2026-10-07)
+begin;
+create temporary table gling_today (
+  ord integer, city_id text, author_nickname text, tag_slug text, title text, body text, source text
+) on commit drop;
+insert into gling_today (ord, city_id, author_nickname, tag_slug, title, body, source)
+select item.ord, item.city_id, item.author_nickname, item.tag_slug, item.title, item.body, item.source
+from jsonb_to_recordset(
+$GLING$[{"ord":1,"city_id":"vancouver","author_nickname":"퀸엘리자베스공원","tag_slug":"life","title":"길가 파클릿은 주차칸을 쉬는 자리로 바꾼 공간이네","body":"예전엔 길가에 튀어나온 자리를 가게 테라스쯤으로 생각했는데, 파클릿은 주차칸 위에 공용 의자랑 식물을 놓은 공간임\n걷다가 잠깐 앉는 자리도 거리의 한 부분이라니 마음이 좀 느긋해짐, 어디서 쉬어볼지는 아직 생각 중","source":"https://vancouver.ca/streets-transportation/parklets.aspx"},{"ord":2,"city_id":"vancouver","author_nickname":"예일타운런치","tag_slug":"life","title":"밴쿠버 길가 작품도 이름과 작가가 따로 있네","body":"길가에서 작품 보는 사람들처럼 나도 이름부터 알아보고 싶어서 공공미술 목록 처음 살펴봄\n밴쿠버 공공미술 목록엔 작품 이름·작가·위치가 같이 있고, 시가 의뢰한 작품 말고 문화·역사적으로 중요한 것들도 들어 있어\n이제는 그냥 조형물이라고 뭉뚱그리지 않고 익숙한 길의 작품 하나부터 기억할 거야","source":"https://covapp.vancouver.ca/PublicArtRegistry/"},{"ord":3,"city_id":"vancouver","author_nickname":"버나비호수","tag_slug":"life","title":"밴쿠버 도시숲엔 길가 나무랑 사유지 나무도 들어가네","body":"숲 얘기 나오면 멀리 갈 생각부터 했는데 내 상상만 장거리였네 ㅋㅋ 두 가지만 적어둠\n1) 밴쿠버 도시숲은 공원·가로수·사유지에 있는 나무까지 포함하는 말이야\n2) 그 나무들이 그늘이랑 동물 서식지도 만들어주니, 이번엔 가까운 길가 나무부터 눈여겨보려고","source":"https://vancouver.ca/parks-recreation-culture/urban-forest-strategy.aspx"},{"ord":4,"city_id":"vancouver","author_nickname":"도서관단골","tag_slug":"education","title":"VPL 큰글자책이랑 음성해설 영상도 알아두는 중","body":"책을 읽는 방식은 종이책 한 권이면 된다고 생각하던 때가 있었는데\nVPL에는 큰글자책도 따로 있고\n오디오북도 CD·MP3 CD·다운로드 같은 형식으로 나뉘어 있네\n영화나 TV 프로그램은 음성해설이 있는 DVD·블루레이 자료도 있어\n나는 뭘 읽을지만큼 어떤 방식이 편한지도 좀 더 생각해보려는 중","source":"https://www.vpl.ca/borrowing/collections/accessible"},{"ord":5,"city_id":"vancouver","author_nickname":"스카이트레인통근","tag_slug":"transport","title":"밴쿠버 그린웨이는 자전거만 타는 길이 아니네","body":"걷는 사람, 자전거 타는 사람, 휠체어로 움직이는 사람은 같은 동네에서도 필요한 길이 다름\n밴쿠버 그린웨이는 걷기·자전거·바퀴 이동을 위한 교통 연결망이야\n차 통행을 줄이거나 차가 없는 구간으로 공공 공간과 자연 공간을 이어\n물가 산책길뿐 아니라 동네 거리나 자연 산책로도 여기에 들어가고\n난 환승역만 찍던 지도에 걸어서 이어갈 길도 같이 넣을 거야","source":"https://vancouver.ca/streets-transportation/greenways-for-walking-and-cycling.aspx"},{"ord":6,"city_id":"toronto","author_nickname":"토론토학부모","tag_slug":"life","title":"길드파크엔 옛 건물의 조각들도 모여 있네","body":"오래된 건물은 통째로 남아야 볼 수 있는 줄 알았는데, 길드파크앤가든스엔 공공미술이랑 건축 조각들이 함께 있음\n스카보로 블러프 위 숲과 정원에 이런 흔적도 남아 있다니, 산책 후보에 넣을 거야 (내 역사 공부도 다리로 좀 해야겠네 ㅋㅋ)","source":"https://www.toronto.ca/explore-enjoy/parks-recreation/places-spaces/beaches-gardens-attractions/gardens-and-horticulture/public-gardens/feature-garden-parks/"},{"ord":7,"city_id":"toronto","author_nickname":"서비스온타리오","tag_slug":"transport","title":"밤 TTC 버스에선 정류장 사이 하차를 요청할 수도 있네","body":"밤에 혼자 버스에서 내리는 사람은 내려서 걷는 길도 신경 쓰겠네, 난 노선만 생각했음\nTTC는 밤 9시부터 새벽 5시까지 혼자 버스를 타며 불안을 느끼는 승객이 정류장 사이 하차를 요청할 수 있어, 기사가 안전하게 설 수 있어야 하고 전차엔 적용 안 됨\n이용 절차는 바뀔 수 있으니 다시 확인하려고, 같이 귀가할 땐 내려서 걷는 길 얘기도 해볼까 해","source":"https://www.ttc.ca/accessibility/Easier-access-on-the-TTC/Riding-the-Bus"},{"ord":8,"city_id":"toronto","author_nickname":"의견있는사람","tag_slug":"life","title":"토론토 뮤직가든은 바흐 음악을 정원으로 옮긴 거네","body":"토론토 뮤직가든 처음 알아보는데 이름만 보고 음악 틀어놓는 공원인 줄 혼자 상상함 ㅋㅋ\n여긴 첼리스트 요요마에게서 영감을 받아 바흐 모음곡을 식물과 정원 요소로 표현한 공간이야\n음악을 듣는 것 말고 풍경으로 풀어낸다는 게 신기해서, 동네 이름 외우는 재미가 하나 늘었음","source":"https://www.toronto.ca/explore-enjoy/parks-recreation/places-spaces/beaches-gardens-attractions/gardens-and-horticulture/public-gardens/"},{"ord":9,"city_id":"toronto","author_nickname":"토론토도서관","tag_slug":"education","title":"TPL 언어학습 목록엔 망고랭귀지도 있네","body":"영어 공부 다시 생각하면 어디서부터 해야 할지 좀 막막함\nTPL 언어학습 자료 목록에 망고랭귀지도 있네\n새 언어를 배우거나 영어를 익히는 데 쓰는 온라인 자료야\n당장 계획을 크게 잡기보단 내가 편하게 볼 수 있는 방식인지부터 생각해보려는 중\n언어 공부 다시 시작할 때는 익숙한 표현부터 보는 게 덜 부담스러웠어?","source":"https://tpl.ca/resources/language-learning/"},{"ord":10,"city_id":"toronto","author_nickname":"벽돌골목빛","tag_slug":"life","title":"TPL 녹음 공간엔 카메라랑 그린스크린도 있네","body":"녹음 하나 해볼까 생각하면 장비부터 알아봐야 할 것 같아서 좀 부담스러웠음\nTPL 오디오비주얼 스튜디오에서 다루는 것들을 적어둠\n1) 마이크·오디오 인터페이스 같은 소리 장비\n2) 영상 카메라·조명·그린스크린 같은 영상 장비\n분관마다 장비가 달라서, 나는 뭘 만들어보고 싶은지부터 작게 골라볼 거야","source":"https://tpl.ca/using-the-library/computer-services/digital-innovation-services/recording-studios/"},{"ord":11,"city_id":"montreal","author_nickname":"우편번호수첩","tag_slug":"life","title":"바이오돔은 동물과 서식 환경을 같이 보는 공간이네","body":"동물 보러 가는 사람도 그 동물이 사는 환경까지 같이 만나겠네, 바이오돔엔 아메리카 생태계 다섯 곳이 한 지붕 아래 있어\n난 동물 이름 외우는 데서 끝내지 말고 사는 풍경도 같이 기억할래 (머릿속엔 자꾸 동물 얼굴만 남음 ㅋㅋ)","source":"https://www.mtl.org/en/what-to-do/activities/biodome-de-montreal"},{"ord":12,"city_id":"montreal","author_nickname":"장탈롱바구니","tag_slug":"life","title":"푸앵타칼리에 박물관은 도시가 시작된 터 위에 있네","body":"도시 역사는 예전부터 오래된 건물 쪽만 생각했는데, 푸앵타칼리에 고고학·역사 박물관은 몬트리올이 시작된 터 위에 있네\n그 자리의 옛 흔적을 남겨 보여주는 곳이라니 좀 설렘, 다음엔 같이 도시의 땅속 이야기부터 알아보면 좋을 듯","source":"https://montreal.ca/en/articles/archaeological-sites-21773"},{"ord":13,"city_id":"montreal","author_nickname":"올드포트바람","tag_slug":"life","title":"캡생자크 농장, 지금은 동물 없이 산책길이 남아 있네","body":"농장이라고 하면 예전부터 동물 구경부터 떠올렸는데, 캡생자크 생태농장엔 지금 동물이 없네\n농장 주변 야외 공간이랑 산책길은 남아 있고, 헛간 안은 들어갈 수 없는 상태래\n운영 안내는 바뀔 수 있으니 나들이 전에 다시 확인하려고, 난 동물 구경보다 그 주변 길 알아보는 쪽으로 생각할래","source":"https://montreal.ca/en/places/cap-saint-jacques-ecological-farm-and-general-store"},{"ord":14,"city_id":"montreal","author_nickname":"불어책갈피","tag_slug":"transport","title":"아쥐르 메트로는 객차 사이가 쭉 이어지는 구조네","body":"열차는 칸마다 따로 떨어져 있다고만 생각한 내가 너무 단순했나 봄\n몬트리올 아쥐르 열차는 객차 사이가 이어져서 한쪽 끝부터 다른 끝까지 이동할 수 있어\n손잡이 위치랑 색 대비도 접근성을 생각해서 설계한 거고\n노선도만 외우면 메트로를 다 알 줄 알았는데 이번엔 손잡이 공부까지 늘어남 ㅋㅋ\n난 당장 다 기억하긴 어렵고 내부 구조 하나부터 익혀볼까 하는 중","source":"https://www.stm.info/fr/node/635"},{"ord":15,"city_id":"montreal","author_nickname":"몽루아얄잎새","tag_slug":"life","title":"몬트리올 플라네타리움은 돔 영상으로 우주를 보는 곳이네","body":"우주 얘기는 궁금한데 멀리 있는 천체를 머릿속으로 그리기는 어려워서 알아보는 중\n몬트리올 플라네타리움은 돔을 쓰는 몰입형 영상 공간이야\n우주를 다루는 상영과 전시로 천문학을 알리는 곳이고\n나는 우주 전체를 한꺼번에 외우기보다 관심 가는 천체 하나부터 볼 거야\n이런 영상 볼 때는 별자리랑 행성 중 어느 쪽이 더 궁금해?","source":"https://www.mtl.org/en/what-to-do/culture-arts-heritage/planetarium-de-montreal"},{"ord":16,"city_id":"edmonton","author_nickname":"사우스게이트점심","tag_slug":"transport","title":"ETS 버스 입구는 낮아지는 기능도 있네","body":"1) ETS 버스엔 앞쪽 입구를 낮추는 니링 기능이 있음\n2) 경사로와 우선 좌석도 갖춘 구조라, 난 타는 문 주변부터 좀 더 눈여겨보려는 중","source":"https://www.edmonton.ca/ets/accessibility"},{"ord":17,"city_id":"edmonton","author_nickname":"동물그림수첩","tag_slug":"life","title":"루이스매키니 강변공원엔 중국식 정자도 있네","body":"강변 걷는 사람 곁에 쉬는 모양도 여러 가지네, 루이스매키니 리버프런트 공원엔 중국식 정원과 정자가 있어\n예전엔 강변은 길 하나 길게 이어진 모습만 떠올렸는데 내 상상력이 너무 직선이었군 ㅋㅋ","source":"https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/louise-mckinney-riverfront-park"},{"ord":18,"city_id":"edmonton","author_nickname":"제스퍼애비뉴","tag_slug":"life","title":"알버타 의회 회의장엔 스테인드글라스 천장도 있네","body":"회의실을 그냥 책상 모인 방으로 생각한 내가 너무 단순했나 봄\n알버타 의회 회의장에는 스테인드글라스를 넣은 격자 천장, 대리석 장식, 마호가니 목재 벽이 있어\n사람들이 토론하는 공간도 건물 디테일이 이렇게 많다니, 난 어디부터 눈여겨볼지는 아직 못 고르겠어","source":"https://www.assembly.ab.ca/learn/the-legislative-assembly/chamber"},{"ord":19,"city_id":"edmonton","author_nickname":"에드먼튼겨울","tag_slug":"life","title":"ETS 분실물 문의할 땐 물건 모양도 꽤 자세히 적네","body":"버스에 물건 두고 내리면 잃어버린 장소만 떠올릴 것 같은데\nETS 분실물 문의는 버스·LRT 같은 교통편 종류랑 노선·역 위치, 물건 색·재질·내용물도 적는 방식임\n접수 절차는 바뀔 수 있으니 실제 문의 전엔 다시 확인하려고","source":"https://www.edmonton.ca/ets/lost-and-found"},{"ord":20,"city_id":"edmonton","author_nickname":"헨데이하이웨이","tag_slug":"life","title":"밀너도서관엔 원주민 의례와 모임을 위한 공간도 있네","body":"처음엔 도서관에서 사람들이 모이는 공간이면 그냥 회의실을 떠올렸음\n밀너도서관의 선더버드하우스는 원주민 의례와 모임을 위해 만든 전용 공간이네\n크리 원로와 공동체가 설계에 함께했고, 바닥·벽·천장에도 포플러 나무를 썼대\n원주민과 비원주민 모두 배우고 함께할 수 있는 공간으로 운영되는 거야\n동네 알아가는 김에 이런 곳도 기억해둘래, 같이 도서관 얘기할 때 내 설명이 책장 하나에서 좀 벗어나겠네 ㅋㅋ","source":"https://www.epl.ca/milner-library/thunderbird-house/"},{"ord":21,"city_id":"calgary","author_nickname":"노스힐장보기","tag_slug":"life","title":"웨스트노즈크리크 스플릿록은 빙하가 남긴 바위네","body":"스플릿록이란 이름 처음 알아보는데 웨스트노즈크리크 공원에 있는 빙하 유래의 바위네\n공원에 오래된 채석장 흔적도 있다니 같이 걸으며 볼 게 더 있겠는데, 언제 갈지는 아직 못 정했음","source":"https://www.calgary.ca/parks/west-nose-creek-park.html"},{"ord":22,"city_id":"calgary","author_nickname":"프린스아일랜드","tag_slug":"education","title":"보네스파크 라군은 여름과 겨울 쓰임이 다르네","body":"전엔 공원 물가면 보트 풍경만 떠올렸는데, 보네스파크의 얕은 라군은 여름 보트와 겨울 스케이트 공간으로 쓰임\n지금이 두 계절 사이라는 걸 내 상상만 자꾸 건너뜀 ㅋㅋ 어느 때 가볼지는 아직 못 골랐어","source":"https://www.calgary.ca/parks/bowness-park-features.html"},{"ord":23,"city_id":"calgary","author_nickname":"C트레인통근","tag_slug":"transport","title":"캘거리 Transit 앱은 경로 계획이랑 이동 추적을 같이 하네","body":"기다리는 버스가 어디쯤인지 알면 시간표 숫자만 보는 것보다 덜 막막할 듯\n캘거리 Transit 앱은 실시간 경로 계획이랑 타려는 교통편 추적을 같이 다루네\n이용 안내는 바뀔 수 있으니 쓰기 전에 다시 확인하려고, 이런 앱 볼 때 도착 예상이랑 경로 중 뭘 먼저 봐?","source":"https://www.calgarytransit.com/rider-information/rider-tools.html"},{"ord":24,"city_id":"calgary","author_nickname":"컨페더레이션공원","tag_slug":"life","title":"캘거리 도서관 그림책은 여러 언어로 듣는 자료도 있네","body":"그림책을 소리 내 읽으려니 내가 먼저 발음 연습부터 해야 할 것 같음 ㅋㅋ\n캘거리 도서관 LOTE4Kids는 영어·프랑스어·스페인어 같은 여러 언어의 그림책을 읽고 듣는 자료네\n같이 들을 이야기를 하나 골라보고 싶은데, 그림책은 익숙한 언어랑 배우는 언어 중 뭘로 들으면 더 재밌을까?","source":"https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/lote4kids"},{"ord":25,"city_id":"calgary","author_nickname":"보우강변산책","tag_slug":"life","title":"샘리빙스턴 양어장은 송어가 호수로 가기 전 자라는 곳이네","body":"물고기가 호수에 사는 모습만 생각했는데 자라는 길도 따로 있네\n보우해비타트스테이션의 샘리빙스턴 양어장은 송어를 알에서 어린 물고기까지 기르는 곳이야\n그 물고기들은 알버타의 호수와 연못에 풀어주는 사업으로 이어져\n예전엔 물고기 이름만 외웠는데 이번엔 물가에 오기 전 과정부터 기억할 거야\n내 생태 공부가 수조 앞에서 끝날 순 없잖아 ㅋㅋ","source":"https://bowhabitat.alberta.ca/visit/fish-hatchery.aspx"}]$GLING$::jsonb) as item(ord int, city_id text, author_nickname text, tag_slug text, title text, body text, source text);
+create temporary table gling_today_author on commit drop as
+select slot.city_id, slot.author_nickname,
+       (select pr.id
+        from public.profiles pr
+        join auth.users u on u.id = pr.id
+        where pr.city_id = slot.city_id
+          and pr.nickname = slot.author_nickname
+          and pr.account_status = 'active'
+          and u.email like '%@seed.gling.invalid') as author_id
+from (select distinct city_id, author_nickname from gling_today) slot;
+do $$ begin
+  if exists (select 1 from gling_today_author where author_id is null) then
+    raise exception 'SEED_AUTHOR_NOT_FOUND';
+  end if;
+end $$;
+insert into public.posts (author_id, city_id, tag_id, title, body, status, view_count, created_at)
+select a.author_id, seed.city_id, tag.id, seed.title,
+       seed.body,
+       'published',
+       0,
+       (case when window_slot.local_time <= city_now.local_now
+             then window_slot.local_time
+             else window_slot.local_time - interval '1 day' end) at time zone city.timezone
+from gling_today seed
+join gling_today_author a on a.city_id = seed.city_id and a.author_nickname = seed.author_nickname
+join public.tags tag on tag.slug = seed.tag_slug
+join public.cities city on city.id = seed.city_id
+cross join lateral (select now() at time zone city.timezone as local_now) city_now
+cross join lateral (
+  select date_trunc('day', city_now.local_now)
+         + make_interval(hours => case (abs(hashtext(a.author_id::text || '-w')::bigint) % 4)
+                                     when 0 then 7 when 1 then 12 when 2 then 18 else 22 end)
+         + make_interval(mins => ((abs(hashtext(seed.title || '-m')::bigint) % 110) + seed.ord * 7)::int % 120)
+         as local_time
+) window_slot
+where not exists (
+  select 1 from public.posts existing
+  where existing.city_id = seed.city_id and existing.title = seed.title and existing.status = 'published');
+
+-- 작성자 성향에 맞춘 시간대는 어제가 될 수도 있다. posted_on을 그 현지 날짜로 맞춘다.
+update public.posts post
+set posted_on = (post.created_at at time zone city.timezone)::date
+from public.cities city, gling_today seed, gling_today_author author
+where city.id = post.city_id
+  and seed.city_id = post.city_id
+  and seed.title = post.title
+  and author.city_id = seed.city_id
+  and author.author_nickname = seed.author_nickname
+  and post.author_id = author.author_id
+  and post.posted_on <> (post.created_at at time zone city.timezone)::date;
+
+-- 조회수는 올린 날부터 30일 동안 오른다. 1~14일차는 하루 1~30, 15~30일차는 하루 1~8. 30일이 지나면 멈춘다.
+-- 올린 당일은 하루치를 경과 시간 비율로 반영한다. 나이로 목표값을 계산하므로 다시 돌려도 값이 같다.
+update public.posts post
+set view_count = target.views
+from (
+  select base.id,
+         round(
+           coalesce((
+             select sum(1 + (abs(hashtext(base.id::text || '-' || day.i)::bigint)
+                             % (case when day.i <= 13 then 30 else 8 end))::int)
+             from generate_series(0, least(30, base.elapsed) - 1) as day(i)
+           ), 0)
+           + case when base.elapsed < 30 then
+               (1 + (abs(hashtext(base.id::text || '-' || least(30, base.elapsed))::bigint)
+                     % (case when base.elapsed <= 13 then 30 else 8 end))::int)
+               * ((base.age_seconds - least(30, base.elapsed) * 86400) / 86400.0)
+             else 0 end
+         )::int as views
+  from (
+    select p.id,
+           floor(extract(epoch from (now() - p.created_at)) / 86400)::int as elapsed,
+           extract(epoch from (now() - p.created_at)) as age_seconds
+    from public.posts p
+    where p.status = 'published'
+      and p.city_id in (select distinct city_id from gling_today)
+      and p.created_at <= now()
+  ) base
+) target
+where post.id = target.id and post.view_count < target.views;
+
+update private.post_view_pulse pulse
+set views = greatest(0, post.view_count - (select count(*) from public.post_views v where v.post_id = post.id))
+from public.posts post
+where pulse.post_id = post.id
+  and post.city_id in (select distinct city_id from gling_today);
+
+-- 조회 기록이 아예 없는 옛 글은 주간 랭킹에서 0으로 잡힌다. 조회수와 맞는 기록을 채운다.
+insert into private.post_view_pulse (post_id, bucket, views)
+select post.id, date_bin(interval '10 minutes', post.created_at, '2000-01-01'::timestamptz),
+       greatest(0, post.view_count - (select count(*) from public.post_views v where v.post_id = post.id))
+from public.posts post
+where post.status = 'published'
+  and post.city_id in (select distinct city_id from gling_today)
+  and not exists (select 1 from private.post_view_pulse x where x.post_id = post.id)
+  and greatest(0, post.view_count - (select count(*) from public.post_views v where v.post_id = post.id)) > 0;
+insert into private.post_view_pulse (post_id, bucket, views)
+select p.id, date_bin(interval '10 minutes', p.created_at, '2000-01-01'::timestamptz), p.view_count
+from public.posts p
+join gling_today seed on seed.title = p.title and seed.city_id = p.city_id
+join gling_today_author author on author.city_id = seed.city_id
+  and author.author_nickname = seed.author_nickname and author.author_id = p.author_id
+where p.status = 'published'
+  and not exists (select 1 from private.post_view_pulse x where x.post_id = p.id);
+commit;

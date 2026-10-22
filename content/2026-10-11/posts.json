@@ -1,0 +1,229 @@
+{
+  "posts": [
+    {
+      "ord": 1,
+      "city_id": "vancouver",
+      "author_nickname": "브로드웨이우산",
+      "tag_slug": "food",
+      "title": "밴쿠버 파머스마켓, 일요일엔 마운트플레전트랑 킷츠가 있네",
+      "body": "장바구니만 챙기면 되는 줄 알았는데 요일부터 골라야 했음 ㅋㅋ\n밴쿠버 파머스마켓은 마운트플레전트랑 킷츠일라노가 일요일 시장으로 나와 있어, 주말 장보기에도 성격이 있네",
+      "source": "https://eatlocal.org/"
+    },
+    {
+      "ord": 2,
+      "city_id": "vancouver",
+      "author_nickname": "비오는지도",
+      "tag_slug": "education",
+      "title": "밴쿠버 경찰박물관엔 손으로 해보는 과학수사 교육도 있네",
+      "body": "처음 경찰박물관 이름을 봤을 땐 사건 설명만 읽는 곳으로 생각했어\n학생 교육 프로그램에는 직접 해보는 과학수사 활동이랑 밴쿠버 역사 이야기도 있어\n영어로 사건 이름 외우기 전에 관찰부터 배워야겠군, 내 탐정 능력은 아직 잃어버린 양말 찾기 수준 ㅋㅋ",
+      "source": "https://www.vancouverpolicemuseum.ca/"
+    },
+    {
+      "ord": 3,
+      "city_id": "vancouver",
+      "author_nickname": "예일타운런치",
+      "tag_slug": "life",
+      "title": "빌리드갤러리는 지금 활동하는 북서해안 작가도 소개해",
+      "body": "빌 리드 작품을 보는 사람은 옛 조각만 구경할 줄 알았는데 처음 알아보니 지금의 작업도 있네\n빌리드갤러리는 빌 리드 소장품과 함께 현재 활동하는 북서해안 원주민 작가들의 전시와 교육을 다뤄\n이번엔 오래된 양식으로만 보지 않고 지금 누가 어떤 이야기를 만드는지도 알아볼 거야",
+      "source": "https://www.billreidgallery.ca/"
+    },
+    {
+      "ord": 4,
+      "city_id": "vancouver",
+      "author_nickname": "도서관단골",
+      "tag_slug": "education",
+      "title": "오르페움은 천장 벽화와 샹들리에까지 공연장 풍경이네",
+      "body": "예전엔 공연장 이름을 들으면 무대 크기부터 궁금했는데\n밴쿠버 오르페움은 돔 모양 객석 천장에 벽화와 커다란 크리스털 샹들리에가 있어\n옛 장식과 넓게 이어지는 계단도 건물의 특징이고\n밴쿠버심포니오케스트라가 주로 공연하는 장소이기도 하네\n나는 음악 얘기부터 읽을지 그 음악을 담는 건물부터 알아볼지 조금 더 생각해보려 해",
+      "source": "https://vancouvercivictheatres.com/venues/orpheum/"
+    },
+    {
+      "ord": 5,
+      "city_id": "vancouver",
+      "author_nickname": "코스트코카트",
+      "tag_slug": "transport",
+      "title": "역 자전거 보관소는 장기 보관함이 아니라 당일 이용 공간이네",
+      "body": "자전거를 역에 두는 방법도 처음부터 좀 나눠서 알아볼 걸\n트랜스링크에는 실내 공동 보관소, 개별 보관함, 야외 거치대가 있어\n실내 바이크파케이드는 당일 보관용이라 밤새 두는 공간으로 생각하면 안 되네\n등록 방식은 바뀔 수 있으니 이용 전 다시 확인해\n출근길에 자전거까지 챙기려면 집에서 역까지 말고 돌아올 때 가져오는 것까지 계획해둘래",
+      "source": "https://www.translink.ca/rider-guide/bike-and-ride-on-transit/bike-parking"
+    },
+    {
+      "ord": 6,
+      "city_id": "toronto",
+      "author_nickname": "노스욕센터",
+      "tag_slug": "education",
+      "title": "토론토식물원의 시험 정원은 다음 식물을 고르는 자리였네",
+      "body": "정원을 전부 완성된 꽃밭으로만 본 나 식물 공부 너무 성급했음 ㅋㅋ\n토론토식물원에는 새 식물들을 살펴보는 시험 정원도 있고 방문객 의견을 다음 식물 선택에 참고하는 안내도 있네",
+      "source": "https://torontobotanicalgarden.ca/explore/"
+    },
+    {
+      "ord": 7,
+      "city_id": "toronto",
+      "author_nickname": "브램턴출근",
+      "tag_slug": "education",
+      "title": "블랙크리크 마을은 옛 건물 말고 동물과 놀이도 다루네",
+      "body": "블랙크리크라는 옛 마을을 처음 알아보니 건물 사진만 보는 곳은 아니네\n더빌리지앳블랙크리크는 농장 동물, 놀이와 활동, 워크숍, 여러 사람의 옛 이야기를 함께 소개해\n낯선 역사도 생활하는 모습부터 알아보면 좀 덜 멀게 느껴질 것 같아서 그쪽부터 볼래",
+      "source": "https://blackcreek.ca/"
+    },
+    {
+      "ord": 8,
+      "city_id": "toronto",
+      "author_nickname": "서비스온타리오",
+      "tag_slug": "life",
+      "title": "트릴리움공원 입구 돌벽엔 모카신 문양이 남아 있네",
+      "body": "호숫가에서 풍경 보는 사람들만 떠올렸는데 입구에 담긴 이야기를 내가 놓쳤나 봄\n트릴리움공원의 돌벽에는 미시소거스오브더크레딧퍼스트네이션과 함께 만든 모카신 문양이 새겨져 있어\n같이 산책 얘기하게 되면 전망뿐 아니라 그 문양을 넣은 뜻도 천천히 알아보고 싶어",
+      "source": "https://ontarioplace.com/en/trillium-park/"
+    },
+    {
+      "ord": 9,
+      "city_id": "toronto",
+      "author_nickname": "벽돌골목빛",
+      "tag_slug": "transport",
+      "title": "TTC 저상 트램의 경사로는 두 번째 문에 있어",
+      "body": "트램은 바닥이 낮으면 타는 일이 전부 같을 줄 알았는데 문 위치도 알아두면 마음이 덜 급하겠네\n1) TTC 저상 트램의 접근성 출입구와 경사로는 두 번째 문에 있어\n2) 경사로 이용이 도움이 되는 사람은 누구나 작동을 요청할 수 있어\n3) 정류장마다 접근성이 같지는 않아서 내릴 곳도 함께 살펴보려 해\n이용 절차는 바뀔 수 있으니 실제 이동 전 최신 안내를 확인해",
+      "source": "https://www.ttc.ca/accessibility/Easier-access-on-the-TTC/Riding-the-streetcar"
+    },
+    {
+      "ord": 10,
+      "city_id": "toronto",
+      "author_nickname": "토론토도서관",
+      "tag_slug": "education",
+      "title": "MOCA엔 작가끼리 작업 얘기 나누는 영상도 있네",
+      "body": "작품 설명을 읽다가 내가 이해한 게 맞는지 늘 조금 망설이게 되는데\n토론토 MOCA에는 작가끼리 대화하는 Artist x Artist 영상도 올라와 있어\n전시장 작품 목록 말고 이런 대화로 만나는 길도 있네\n나는 작품부터 보고 얘기를 들을지 얘기부터 듣고 볼지 아직 못 정했어\n그림 볼 때 작가가 작업하는 이유를 알면 더 편해지는 편이야?",
+      "source": "https://moca.ca/"
+    },
+    {
+      "ord": 11,
+      "city_id": "montreal",
+      "author_nickname": "우편번호수첩",
+      "tag_slug": "life",
+      "title": "일드라비지타시옹 공원엔 옛 제분소 흔적도 있네",
+      "body": "강변 전망 보는 사람 뒤로 옛 제분소 흔적도 남아 있는 일드라비지타시옹 자연공원이라니\n내 산책 관심사에 물소리만 있었는데 사람 살던 이야기까지 추가함 ㅋㅋ",
+      "source": "https://montreal.ca/lieux/parc-nature-de-lile-de-la-visitation"
+    },
+    {
+      "ord": 12,
+      "city_id": "montreal",
+      "author_nickname": "장탈롱바구니",
+      "tag_slug": "food",
+      "title": "메종뇌브시장은 이웃들의 노력으로 다시 문을 연 시장이네",
+      "body": "장탈롱만 익숙했던 내 시장 지도에 메종뇌브도 넣어두려 해, 한때 닫혔다가 주민들의 노력으로 다시 살아난 시장이네\n지금은 옛 석조 건물 가까이에 새 시장 건물이 있다니 장보는 자리에도 동네 애정이 쌓인 느낌이야, 다음엔 같이 이쪽 이야기도 알아보고 싶어",
+      "source": "https://www.marchespublics-mtl.com/en/markets/maisonneuve-market/"
+    },
+    {
+      "ord": 13,
+      "city_id": "montreal",
+      "author_nickname": "올드포트바람",
+      "tag_slug": "education",
+      "title": "캐나다건축센터 책방은 건물뿐 아니라 도시와 정원도 다루네",
+      "body": "건축 책이라면 전에는 도면이랑 멋진 건물 사진부터 생각했는데\n캐나다건축센터 책방은 도시계획, 정원 역사, 사진, 역사 보존 책도 함께 다루네\n집 한 채만 보는 데서 조금 넓혀서 그 주변이 어떻게 만들어졌는지도 알아볼까 해",
+      "source": "https://www.cca.qc.ca/en/visit-us"
+    },
+    {
+      "ord": 14,
+      "city_id": "montreal",
+      "author_nickname": "불어책갈피",
+      "tag_slug": "transport",
+      "title": "엑스포레일은 철도 차량 말고 조종실 뒤의 일도 보여주네",
+      "body": "기차 박물관이면 커다란 기관차만 늘어선 줄 알았던 나 ㅋㅋ\n엑스포레일의 From everywhere to you 전시는 철도 차량기지와 교통 관제실 이야기를 다뤄\n철도 안전 전시랑 모형 기차 전시도 따로 있고\n내 기차 상식이 문 열리고 출발하는 데서 끝났다는 걸 또 들킴\n어떤 전시부터 볼지는 아직 못 골랐지만 움직이기 전 뒤에서 하는 일부터 조금 알아볼까 해",
+      "source": "https://exporail.org/en/"
+    },
+    {
+      "ord": 15,
+      "city_id": "montreal",
+      "author_nickname": "몽루아얄잎새",
+      "tag_slug": "education",
+      "title": "MUMAQ의 생활 물건은 퀘벡 공예 역사를 보여주는 자료야",
+      "body": "그릇이나 천을 박물관에서 보는 이유가 궁금해서 MUMAQ를 알아봤어\n이곳의 소장품은 퀘벡 사회와 공예가들의 기술이 변해온 모습을 보여줘\n옛 누벨프랑스 시기부터 오늘까지의 물건을 다루고\n퀘벡 공예의 역사를 다루는 상설전도 있어\n생활 물건을 보면 만든 사람의 손기술이랑 그걸 쓰던 일상 중 뭐가 더 궁금해?",
+      "source": "https://www.mumaq.com/"
+    },
+    {
+      "ord": 16,
+      "city_id": "edmonton",
+      "author_nickname": "엘크아일랜드",
+      "tag_slug": "life",
+      "title": "하울락공원은 호수 주변 길도 쉬는 자리를 생각했네",
+      "body": "호수만 크게 그려놓고 산책 준비 끝낼 뻔한 나 또 지도 헛공부함 ㅋㅋ\n윌리엄하울락공원 안쪽 포장길은 비교적 평평하고 중간에 쉬는 자리도 있다니, 어디까지 걸을지는 길부터 조금 더 알아볼까 해",
+      "source": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/william-hawrelak-park"
+    },
+    {
+      "ord": 17,
+      "city_id": "edmonton",
+      "author_nickname": "동물그림수첩",
+      "tag_slug": "life",
+      "title": "스트래스코나사이언스공원은 박물관 건물 대신 자연길이 남았네",
+      "body": "전에는 사이언스공원이면 전시실부터 찾는 사람이 나였는데, 스트래스코나사이언스공원의 옛 해설센터 건물들은 지금 남아 있지 않네\n현재는 자연길이 있는 공원이고 일부 길은 통제 중이래, 내 머릿속 실내 과학관은 일단 지도에서 지움 ㅋㅋ",
+      "source": "https://www.albertaparks.ca/parks/central/strathcona-science-pp/"
+    },
+    {
+      "ord": 18,
+      "city_id": "edmonton",
+      "author_nickname": "에드먼튼겨울",
+      "tag_slug": "life",
+      "title": "존잰즌 자연센터는 지금 입장 예약이 닫혀 있음",
+      "body": "존 잰즌 자연센터는 도시 속 자연을 배우는 전시와 프로그램을 다루는 곳인데\n현재 시설 휴관으로 입장 예약이 안 된다고 나와 있음\n전시 소개가 남아 있는 것과 오늘 들어갈 수 있는 건 따로 기억해두려 함",
+      "source": "https://www.edmonton.ca/attractions_events/john-janzen-nature-centre"
+    },
+    {
+      "ord": 19,
+      "city_id": "edmonton",
+      "author_nickname": "제스퍼애비뉴",
+      "tag_slug": "education",
+      "title": "EPL 작가 프로그램은 책 읽는 사람과 쓰는 사람을 이어주네",
+      "body": "글 쓰는 사람은 혼자 책상 앞에만 앉는 줄 알았던 내 생각이 좀 좁았음\nEPL 상주 작가 프로그램은 원고 상담, 낭독과 강연, 출판 이야기와 작가들 교류도 다뤄\n지금 알렉시스의 올해 개인 상담은 다 찼다고 해서 나는 일단 어떤 공개 이야기가 있는지 천천히 읽어볼까 해",
+      "source": "https://www.epl.ca/writer-in-residence/"
+    },
+    {
+      "ord": 20,
+      "city_id": "edmonton",
+      "author_nickname": "헨데이하이웨이",
+      "tag_slug": "travel",
+      "title": "하이레벨브리지 전차 길엔 옛 철도 터널도 들어가네",
+      "body": "화이트애비뉴에서 전차 타는 사람은 다리 전망만 볼 줄 알았는데 길 자체에도 이야기가 있네\n하이레벨브리지 전차를 처음 알아보니 옛 CPR 철길을 따라가고\n알버타의 CPR 본선에 지어진 유일한 터널도 지나 다운타운으로 이어져\n올해 운행 안내는 10월 12일까지라 늦가을 내내 다닌다고 생각하면 안 되겠어\n다음에 같이 이동 얘기할 땐 다리뿐 아니라 터널도 꺼내볼래, 내 동네 지도에 지하 한 칸 추가 ㅋㅋ",
+      "source": "https://www.edmonton-radial-railway.ab.ca/highlevelbridge/"
+    },
+    {
+      "ord": 21,
+      "city_id": "calgary",
+      "author_nickname": "노스힐장보기",
+      "tag_slug": "education",
+      "title": "루히드하우스는 옛집과 정원이 함께 남은 박물관이네",
+      "body": "루히드하우스는 이름부터 처음 알아보는 중인데, 캘거리 도심의 오래된 집을 박물관으로 쓰고 정원도 함께 남겨둔 곳이네\n집 안 전시랑 바깥 정원 중 어디부터 알아볼지는 좀 더 생각해보려 해",
+      "source": "https://lougheedhouse.com/"
+    },
+    {
+      "ord": 22,
+      "city_id": "calgary",
+      "author_nickname": "C트레인통근",
+      "tag_slug": "food",
+      "title": "캘거리파머스마켓은 사우스와 웨스트 두 곳이네",
+      "body": "시장 이름 하나만 적어두면 길 찾기 준비가 끝난 줄 알았는데 아직 헷갈리네\n캘거리파머스마켓은 사우스와 웨스트가 따로 있고 둘 다 농산물뿐 아니라 고기, 생선, 빵과 먹거리를 다뤄\n처음 가볼 쪽을 못 골랐는데 장보기랑 한 끼 먹기 중 뭘 먼저 생각하고 가는 편이야?",
+      "source": "https://calgaryfarmersmarket.ca/"
+    },
+    {
+      "ord": 23,
+      "city_id": "calgary",
+      "author_nickname": "컨페더레이션공원",
+      "tag_slug": "life",
+      "title": "스탠리공원 안 작은 공원 이름엔 캘거리에서 산 사람 이야기가 있네",
+      "body": "캘거리 스탠리공원 이름만 알아두면 동네 공부 끝인 줄 알았음, 내 기억력 또 큰 간판만 수집함 ㅋㅋ\n공원 안에는 프린세스오볼렌스키공원이라는 작은 공간도 있고 캐나다로 이주해 캘거리에서 가게를 운영했던 사람을 기리는 이름이래\n같이 동네 산책 얘기하고 싶은데 공원 이름의 사연을 알면 그 자리가 좀 다르게 기억되는 편이야?",
+      "source": "https://www.calgary.ca/parks/stanley-park.html"
+    },
+    {
+      "ord": 24,
+      "city_id": "calgary",
+      "author_nickname": "17에비뉴커피",
+      "tag_slug": "settlement",
+      "title": "캘거리도서관 뉴커머스데스크는 정착 기관으로 연결해주네",
+      "body": "도서관이 낯설어서 책 빌리는 메뉴만 보고 있었는데 정착 지원도 있네\n뉴커머스데스크에서는 정착 지원 기관 직원과 필요한 도움을 이야기할 수 있어\n언어 교육, 취업, 교육과 지역 연결 같은 분야를 다루고\n기관이나 필요한 서비스로 이어주는 역할이야\n처음부터 모든 일을 혼자 알아내려 하지 말고 무슨 도움이 필요한지부터 적어볼래",
+      "source": "https://www.calgarylibrary.ca/connect/new-to-canada/"
+    },
+    {
+      "ord": 25,
+      "city_id": "calgary",
+      "author_nickname": "보우강변산책",
+      "tag_slug": "life",
+      "title": "베이커공원 카라가나 제거는 토종 나무 주변 생태를 위한 일이네",
+      "body": "꽃밭 관리라면 예전엔 뭘 더 심는 일부터 생각했는데\n보우강변 베이커공원은 카라가나를 제거하는 작업도 해\n기존 토종 나무가 있는 구역의 생물다양성을 늘리려는 거야\n공원 가꾸는 일이 식물을 무조건 더 많이 남기는 것과 같진 않네\n이제는 심는 것만큼 어떤 식물이 함께 자라는지도 알아볼 거야, 내 식물 공부가 드디어 빼기까지 감 ㅋㅋ",
+      "source": "https://www.calgary.ca/parks/baker-park.html"
+    }
+  ]
+}

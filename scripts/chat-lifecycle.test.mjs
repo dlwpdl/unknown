@@ -4,14 +4,16 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-import { mergeChatMessages } from '../src/lib/community-data.ts';
+import { mergeChatMessages, isContentRejected } from '../src/lib/community-data.ts';
 import * as chatDetails from '../src/lib/chat-details.ts';
-import { hideContent, isContentHidden, subscribeVisibility } from '../src/lib/content-visibility.ts';
+import * as chatSuggestions from '../src/lib/chat-suggestions.ts';
+import { sharedLinkInMessage } from '../src/lib/sharing.ts';
+import { hideContent, isContentHidden, subscribeVisibility, visibilityRevision } from '../src/lib/content-visibility.ts';
 import { count, t } from '../src/i18n/ko.ts';
 
 // Exercise the component's hooks, effects and event handlers, as in comment-threads.test.mjs.
 function mount(file, exportName, data, props = {}, params = {}) {
-  const hooks = [], appListeners = new Set(), channels = new Set(), timers = new Map();
+  const hooks = [], appListeners = new Set(), channels = new Set(), timers = new Map(), animations = [];
   let index = 0, effects = [], dirty = true, tree, timerId = 0;
   const auth = { isAuthed: true, me: { id: 'me', nickname: '나' } };
   const refreshMembership = async () => {};
@@ -38,6 +40,11 @@ function mount(file, exportName, data, props = {}, params = {}) {
       if (!previous || !deps.every((value, i) => Object.is(value, previous.deps[i]))) hooks[slot] = { fn, deps };
       return hooks[slot].fn;
     },
+    useMemo(fn, deps) {
+      const slot = index++, previous = hooks[slot];
+      if (!previous || !deps.every((value, i) => Object.is(value, previous.deps[i]))) hooks[slot] = { value: fn(), deps };
+      return hooks[slot].value;
+    },
     useEffect: effect, useLayoutEffect: effect,
   };
   const supabase = {
@@ -54,6 +61,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
   }).outputText;
   vm.runInNewContext(source, {
     exports,
+    requestAnimationFrame(fn) { fn(); return 1; },
     setTimeout(fn) { const id = ++timerId; timers.set(id, fn); return id; },
     clearTimeout(id) { timers.delete(id); },
     require(name) {
@@ -61,11 +69,12 @@ function mount(file, exportName, data, props = {}, params = {}) {
       if (name === 'react') return react;
       if (name === 'react-native') return new Proxy({
         StyleSheet: { create: value => value }, Platform: { OS: 'ios' },
+        LayoutAnimation: { configureNext: config => animations.push(config), Presets: { easeInEaseOut: {} }, Types: { easeOut: 'easeOut' }, Properties: { opacity: 'opacity' } },
         AppState: { addEventListener(_name, callback) { appListeners.add(callback); return { remove: () => appListeners.delete(callback) }; } },
         DeviceEventEmitter: { addListener: () => ({ remove() {} }) },
       }, { get: (target, key) => target[key] ?? key });
       if (name === 'expo-router') return { useFocusEffect: fn => effect(fn, [fn]), useLocalSearchParams: () => params, useRouter: () => ({ setParams() {} }) };
-      if (name === 'react-native-reanimated') return { useReducedMotion: () => false };
+      if (name === 'react-native-reanimated') return { useReducedMotion: () => data.reducedMotion ?? false };
       if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ bottom: 0 }) };
       if (name === '@/lib/auth') return { useAuth: () => auth };
       if (name === '@/lib/membership-provider') return { useMembership: () => ({ refresh: refreshMembership }) };
@@ -73,14 +82,20 @@ function mount(file, exportName, data, props = {}, params = {}) {
       if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
       if (name === '@/hooks/use-content-visibility') return { useContentVisibility: () => {
         effect(() => subscribeVisibility(() => { dirty = true; }), []);
-        return (type, id, authorId) => isContentHidden(auth.me.id, type, id, authorId);
+        return react.useCallback((type, id, authorId) => isContentHidden(auth.me.id, type, id, authorId), [auth.me.id, visibilityRevision()]);
       } };
-      if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16 } };
+      if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, four: 24 }, Depth: { card: {}, control: {} } };
       if (name === '@/i18n/ko') return { t, count };
       if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
-      if (name === '@/lib/community-data') return { mergeChatMessages, ...data };
+      // 하트 리액션 기본값: 테스트가 필요하면 data 로 덮어쓴다.
+      if (name === '@/lib/community-data') return { mergeChatMessages, isContentRejected, loadMessageReactions: async () => new Map(), setMessageReaction: async () => 1,
+        loadChatReadPosition: async () => null, markChatRead: async () => {}, ...data };
       if (name === '@/lib/chat-details') return { ...chatDetails, ...(data.loadChatMembers ? { loadChatMembers: data.loadChatMembers } : {}) };
+      if (name === '@/lib/chat-suggestions') return { ...chatSuggestions, loadChatSuggestionContext: async () => data.chatContext ?? null,
+        sendSuggestedMessage: data.sendSuggestedMessage ?? (async () => 'suggested-message') };
+      if (name === '@/lib/merchant-source') return { merchantEventId: () => 'aa000000-0000-4000-8000-000000000001' };
       if (name === '@/lib/supabase') return { supabase };
+      if (name === '@/lib/sharing') return { sharedLinkInMessage };
       return new Proxy({}, { get: (_target, key) => key });
     },
   });
@@ -98,6 +113,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
     async settle() { for (let i = 0; i < 5; i++) { render(); await new Promise(resolve => setImmediate(resolve)); } render(); },
     nodes: () => nodes(tree),
     messages: () => nodes(tree).find(node => node.type === 'FlatList')?.props.data ?? [],
+    animations,
     foreground() { for (const callback of appListeners) callback('active'); },
     message(message) { for (const channel of channels) for (const { filter, callback } of channel.handlers) if (filter.table === 'messages') callback({ new: message }); },
     async timers() { const pending = [...timers.values()]; timers.clear(); pending.forEach(fn => fn()); await harness.settle(); },
@@ -113,6 +129,77 @@ const conversation = { id: 'room', kind: 'group', status: 'active', title: '모�
 const roomProps = { conversation, currentUserId: 'me', onClose() {}, onChanged: async () => {} };
 const room = data => mount('../src/components/chat-room.tsx', 'ChatRoom', data, roomProps);
 const olderButton = harness => harness.nodes().find(node => node.props?.label === t.chat.loadOlder);
+
+test('추천 말풍선은 한 번 눌러 한 번 전송하고 작성 중인 일반 메시지는 보존한다', async () => {
+  const sends = [], direct = { ...conversation, kind: 'direct', groupPostId: null };
+  const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', {
+    loadConversationMessages: async () => [], loadListingReviewState: async () => ({ canWrite: false }),
+    chatContext: { category: 'used', postId: 'post', title: '책상', authorId: 'host', listingStatus: 'open' },
+    sendSuggestedMessage: async (...args) => { sends.push(args); return 'quick-id'; },
+  }, { ...roomProps, conversation: direct });
+  await harness.settle();
+  harness.nodes().find(node => node.type === 'TextInput' && node.props.accessibilityLabel === t.chat.messagePlaceholder).props.onChangeText('제가 작성하던 다른 질문');
+  await harness.settle();
+  const chip = harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.suggestion');
+  assert.ok(chip, 'opening has clickable suggestion');
+  chip.props.onPress(); chip.props.onPress();
+  await harness.settle();
+  assert.equal(sends.length, 1, 'double tap has one send');
+  assert.match(sends[0][2], /상품에 관심/);
+  assert.equal(sends[0][3], 'aa000000-0000-4000-8000-000000000001');
+  assert.equal(harness.messages()[0].body, sends[0][2]);
+  assert.equal(harness.nodes().find(node => node.type === 'TextInput' && node.props.accessibilityLabel === t.chat.messagePlaceholder).props.value, '제가 작성하던 다른 질문');
+  assert.ok(!harness.nodes().some(node => node.props?.analyticsId === 'components_chat-room.suggestion'), 'opening prompts leave after sending');
+  harness.cleanup();
+});
+
+test('받는 사람은 답변 추천을 받고 전송 결과가 불확실하면 같은 ID로만 재시도한다', async () => {
+  const sends = [], direct = { ...conversation, kind: 'direct', groupPostId: null };
+  const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', {
+    loadConversationMessages: async () => [message(1)], loadListingReviewState: async () => ({ canWrite: false }),
+    chatContext: { category: 'used', postId: 'post', title: '책상', authorId: 'me', listingStatus: 'open' },
+    sendSuggestedMessage: async (...args) => { sends.push(args); if (sends.length === 1) throw new Error('network response lost'); return 'quick-id'; },
+  }, { ...roomProps, conversation: direct });
+  await harness.settle();
+  let chip = harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.suggestion');
+  assert.match(chip.props.accessibilityLabel, /아직 판매 중/);
+  chip.props.onPress(); await harness.settle();
+  chip = harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.suggestion' && !node.props.disabled);
+  chip.props.onPress(); await harness.settle();
+  assert.equal(sends.length, 2);
+  assert.equal(sends[0][3], sends[1][3]);
+  assert.equal(sends[0][2], sends[1][2]);
+  assert.equal(harness.messages().filter(item => item.id === 'quick-id').length, 1);
+  harness.cleanup();
+});
+
+test('attachment plus expands two inline actions beneath the composer and closes again', async (context) => {
+  const harness = room({ loadConversationMessages: async () => [] });
+  context.after(() => harness.cleanup());
+  await harness.settle();
+  const plus = () => harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.add-attachment');
+  assert.equal(plus().props.accessibilityState.expanded, false);
+  assert.equal(harness.nodes().some(node => node.props?.accessibilityLabel === '현재 위치 공유'), false);
+  plus().props.onPress(); await harness.settle();
+  assert.equal(plus().props.accessibilityState.expanded, true);
+  assert.ok(harness.nodes().some(node => node.props?.accessibilityLabel === '사진 보내기'));
+  assert.ok(harness.nodes().some(node => node.props?.accessibilityLabel === '현재 위치 공유'));
+  plus().props.onPress(); await harness.settle();
+  assert.equal(plus().props.accessibilityState.expanded, false);
+});
+
+test('only newly arriving chat messages animate, not the opened history', async (context) => {
+  const harness = room({
+    loadConversationMessages: async () => [message(0)],
+    loadConversationMessagesByIds: async () => [message(1)],
+  });
+  context.after(() => harness.cleanup());
+  await harness.settle();
+  assert.equal(harness.animations.length, 0);
+  harness.message(message(1)); await harness.timers();
+  assert.equal(harness.messages().length, 2);
+  assert.equal(harness.animations.length, 1);
+});
 
 test('rendered messages retain report controls and show time only at the end of a sender-minute group', async (context) => {
   const rows = [message(1), message(2), { ...message(3), sender_id: 'me' }];
@@ -130,6 +217,54 @@ test('rendered messages retain report controls and show time only at the end of 
   assert.equal(contains(mine, chatDetails.chatMessageTime(rows[2].created_at)), true);
 });
 
+test('keyboard submit sends in direct and group rooms through the same guarded send path', async (context) => {
+  for (const kind of ['direct', 'group']) {
+    const sent = [];
+    const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', {
+      loadConversationMessages: async () => [],
+      sendDirectMessage: async (_client, roomId, body) => { sent.push([roomId, body]); return 'sent-id'; },
+    }, { ...roomProps, conversation: { ...conversation, kind } });
+    context.after(() => harness.cleanup());
+    await harness.settle();
+    let bottomScrolls = 0;
+    const list = harness.nodes().find(node => node.type === 'FlatList');
+    list.props.ref.current = { scrollToEnd: () => { bottomScrolls++; } };
+    assert.equal(list.props.ListFooterComponent.props.style.height, 24, 'last message time has room above the composer');
+    const input = harness.nodes().find(node => node.type === 'TextInput' && node.props.accessibilityLabel === t.chat.messagePlaceholder);
+    assert.equal(input.props.returnKeyType, 'send');
+    assert.equal(input.props.submitBehavior, 'submit');
+    input.props.onChangeText('  안녕  ');
+    await harness.settle();
+    harness.nodes().find(node => node.type === 'TextInput' && node.props.accessibilityLabel === t.chat.messagePlaceholder).props.onSubmitEditing();
+    await harness.settle();
+    assert.deepEqual(sent, [['room', '안녕']]);
+    assert.ok(bottomScrolls > 0, 'sending scrolls through the message time after layout');
+  }
+});
+
+test('a room opens at the first unread message and offers a deliberate jump to the latest', async (context) => {
+  const marked = [], scrolls = [];
+  const rows = [message(0), message(1), message(2)];
+  const harness = room({ loadConversationMessages: async () => rows,
+    loadChatReadPosition: async () => rows[0].created_at,
+    markChatRead: async (_client, _room, id) => { marked.push(id); } });
+  context.after(() => harness.cleanup());
+  await harness.settle();
+  const list = harness.nodes().find(node => node.type === 'FlatList');
+  list.props.ref.current = { scrollToIndex: ({ index }) => scrolls.push(['unread', index]), scrollToEnd: () => scrolls.push(['latest']) };
+  await harness.timers();
+  assert.deepEqual(scrolls, [['unread', 1]]);
+  const unreadRow = list.props.renderItem({ item: rows[1], index: 1 });
+  assert.match(JSON.stringify(unreadRow), /여기부터 안 읽은 메시지/);
+  const jump = harness.nodes().find(node => node.props?.accessibilityLabel === '최근 메시지로 내려가기');
+  assert.ok(jump);
+  jump.props.onPress();
+  assert.deepEqual(scrolls.at(-1), ['latest']);
+  list.props.onViewableItemsChanged({ viewableItems: [{ item: rows[2] }] });
+  await harness.settle();
+  assert.deepEqual(marked, [rows[2].id]);
+});
+
 test('member sheet refreshes on open and removes previously loaded identities on access failure', async (context) => {
   let allowed = true;
   const harness = mount('../src/components/chat-members.tsx', 'ChatMembers', {
@@ -138,11 +273,24 @@ test('member sheet refreshes on open and removes previously loaded identities on
   context.after(() => harness.cleanup());
   await harness.settle();
   assert.equal(harness.nodes().find(node => node.type === 'FlatList').props.data.length, 1);
+  const roster = harness.nodes().find(node => node.props.accessibilityLabel === '대화 멤버 목록');
+  assert.ok(harness.nodes().some(node => node.props.accessibilityLabel === '호스트 프로필'), 'roster shows a participant portrait beside the count');
+  assert.ok(roster, 'portrait and count still open the full member sheet');
   allowed = false;
   harness.nodes().find(node => node.props.accessibilityLabel === '대화 멤버 목록').props.onPress();
   await harness.settle();
   assert.equal(harness.nodes().some(node => node.type === 'FlatList'), false);
   assert.ok(harness.nodes().some(node => node.props?.accessibilityRole === 'alert'));
+});
+
+test('member sheet keeps its slide unless Reduce Motion is enabled', (context) => {
+  for (const reducedMotion of [false, true]) {
+    const harness = mount('../src/components/chat-members.tsx', 'ChatMembers', { reducedMotion },
+      { conversationId: 'room', groupPostId: 'post', currentUserId: 'me' });
+    context.after(() => harness.cleanup());
+    const modal = harness.nodes().find(node => node.type === 'Modal');
+    assert.equal(modal.props.animationType, reducedMotion ? 'none' : 'slide');
+  }
 });
 
 test('report and block remove rendered messages immediately and reject late snapshots', async (context) => {
@@ -182,6 +330,27 @@ test('request route preference does not override later All, Group or Direct tab 
     assert.equal(harness.nodes().filter(node => node.props?.accessibilityRole === 'tab')[index].props.accessibilityState.selected, true, `${filter} remains selected`);
     assert.equal(filters.at(-1), filter);
   }
+});
+
+test('direct profile route selects the free direct inbox without taking over later tab choices', async (context) => {
+  const filters = [];
+  const harness = mount('../src/app/(tabs)/chat.tsx', 'default', {
+    async loadConversations(_client, _user, filter) {
+      filters.push(filter);
+      return { conversations: [], selectedConversation: null, pendingCount: 0, cursor: null };
+    },
+    loadPendingMeetupRequests: async () => [],
+  }, {}, { view: 'direct' });
+  context.after(() => harness.cleanup());
+  await harness.settle();
+  assert.equal(filters.at(-1), 'direct');
+  const tabs = () => harness.nodes().filter(node => node.props?.accessibilityRole === 'tab');
+  assert.equal(tabs()[2].props.accessibilityState.selected, true);
+  assert.ok(JSON.stringify(tabs()[2]).includes('1:1 대화'));
+  assert.doesNotMatch(JSON.stringify(tabs()[2]), /무료/);
+  tabs()[0].props.onPress();
+  await harness.settle();
+  assert.equal(filters.at(-1), 'all');
 });
 
 test('foreground after 60 missed messages resets the window and can page through the entire gap', async (context) => {

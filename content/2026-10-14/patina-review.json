@@ -1,0 +1,1114 @@
+{
+  "same_writer": true,
+  "method": "inline current G6 writer; no external backend, score or worker",
+  "reviews": [
+    {
+      "ord": 1,
+      "city_id": "vancouver",
+      "author_id": "10000000-0000-0000-0000-000000000025",
+      "source_body_sha256": "2b9a59dc19fd381d4210ecb92cc2a8abb4e066f4436a5bc7009be0be86637f94",
+      "final_body_sha256": "5c6fb41433828bcd783c671efaa8dc0c062f1cee4e5fca6c3e423da488e8df5c",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [
+        {
+          "before": "박물관에서 본 물건을 더 알고 싶을 때 찾아볼 자료실도 있네",
+          "after": "박물관 소장품 설명을 더 찾아보고 싶을 때 들여다볼 자료실도 있네"
+        },
+        {
+          "before": "예전엔 전시 설명만 읽고 끝낼 생각이었는데 이제는 자료 목록까지 궁금해져",
+          "after": "전시 설명 뒤에 어떤 연구가 있는지 자료 목록도 보고 싶어"
+        }
+      ],
+      "review_decision": "edited",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.462663+00:00"
+    },
+    {
+      "ord": 2,
+      "city_id": "vancouver",
+      "author_id": "10000000-0000-0000-0000-000000000066",
+      "source_body_sha256": "22b539fcba15d4a86512373004a83bfe55821ffc34fbf03e7597c26160d378c8",
+      "final_body_sha256": "22b539fcba15d4a86512373004a83bfe55821ffc34fbf03e7597c26160d378c8",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [],
+      "review_decision": "retained_after_inline_review",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463100+00:00"
+    },
+    {
+      "ord": 3,
+      "city_id": "vancouver",
+      "author_id": "10000000-0000-0000-0000-000000000042",
+      "source_body_sha256": "a1846bb023f1d918f48657da3d5b7a3cc4293c9f0d53883984105f70497dfcd8",
+      "final_body_sha256": "a1846bb023f1d918f48657da3d5b7a3cc4293c9f0d53883984105f70497dfcd8",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [],
+      "review_decision": "retained_after_inline_review",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463110+00:00"
+    },
+    {
+      "ord": 4,
+      "city_id": "vancouver",
+      "author_id": "10000000-0000-0000-0000-000000000038",
+      "source_body_sha256": "09f3ea605aeba75c6be43b82096bf1b3b5f76d57f759b653ebd0fa88b1fd4c4b",
+      "final_body_sha256": "152a4f6849a8968dd2227100222e64f1b523913a3f9733de97668043f660e334",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [
+        {
+          "before": "완성된 전시만 보는 일정이 부담스러우면 직접 만드는 쪽도 있네",
+          "after": "직접 만들어보는 활동을 찾다가 나무 조각 쌓는 공간을 봤어"
+        },
+        {
+          "before": "자리 수가 제한된 공간이라 그 점은 같이 기억해둘래",
+          "after": "다만 정원이 제한돼 있다고 해"
+        }
+      ],
+      "review_decision": "edited",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463123+00:00"
+    },
+    {
+      "ord": 5,
+      "city_id": "vancouver",
+      "author_id": "10000000-0000-0000-0000-000000000043",
+      "source_body_sha256": "5aad2c9f87107767874460a53009e477030d9e10c3b6a72f5f82cefcfd850e16",
+      "final_body_sha256": "4ca0f8fe50f8889382ba36632cc800a3b9479e2838197cac7218767ddfcc420f",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [
+        {
+          "before": "물건을 보면 이름표만 읽고 넘어갈 생각부터 하던 나",
+          "after": "소장품 이름만 찾으면 끝인 줄 알았던 나"
+        },
+        {
+          "before": "이번엔 물건 모양만 생각하지 말고 옆에 놓인 것과의 관계도 알아보고 싶어",
+          "after": "어떤 것끼리 묶었는지부터 보면 내가 놓친 이야기도 있겠어"
+        }
+      ],
+      "review_decision": "edited",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463134+00:00"
+    },
+    {
+      "ord": 6,
+      "city_id": "toronto",
+      "author_id": "10000000-0000-0000-0000-000000000036",
+      "source_body_sha256": "162e45bcf2f29b208c2396941456f87edf48f7685ad5e872617009d592d50023",
+      "final_body_sha256": "162e45bcf2f29b208c2396941456f87edf48f7685ad5e872617009d592d50023",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [],
+      "review_decision": "retained_after_inline_review",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463141+00:00"
+    },
+    {
+      "ord": 7,
+      "city_id": "toronto",
+      "author_id": "10000000-0000-0000-0000-000000000094",
+      "source_body_sha256": "6e3ce326ed6eaf377a4dcbfdb2d6eb39b0bc9b9f893e7eb354b9a6a832ddee96",
+      "final_body_sha256": "6e3ce326ed6eaf377a4dcbfdb2d6eb39b0bc9b9f893e7eb354b9a6a832ddee96",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [],
+      "review_decision": "retained_after_inline_review",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463148+00:00"
+    },
+    {
+      "ord": 8,
+      "city_id": "toronto",
+      "author_id": "47653465-5e1b-5812-a4e4-b27fd01fc8e2",
+      "source_body_sha256": "638e12e69cf8b73134d401acd8c8102c252342684370332305056ead3365a86d",
+      "final_body_sha256": "638e12e69cf8b73134d401acd8c8102c252342684370332305056ead3365a86d",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [],
+      "review_decision": "retained_after_inline_review",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463155+00:00"
+    },
+    {
+      "ord": 9,
+      "city_id": "toronto",
+      "author_id": "10000000-0000-0000-0000-000000000008",
+      "source_body_sha256": "31d74e00ae81ecebfe9300c1155534e6d9dd7c95ef43103041d46658f0f12a1b",
+      "final_body_sha256": "be3f02476d411f555c65e4318e01ec7872bb69c17d840b536ca8400822be714a",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [
+        {
+          "before": "앨런가든스 중앙 온실 사진을 보다가 건물의 이전 이야기도 읽었어",
+          "after": "앨런가든스 소개를 읽다가 중앙 온실의 이전 이야기도 봤어"
+        }
+      ],
+      "review_decision": "edited",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463162+00:00"
+    },
+    {
+      "ord": 10,
+      "city_id": "toronto",
+      "author_id": "10000000-0000-0000-0000-000000000093",
+      "source_body_sha256": "dcc848e8e65343ee61764d94e287de8466a463495aa50989d0b6ad7c6c69bdbc",
+      "final_body_sha256": "dcc848e8e65343ee61764d94e287de8466a463495aa50989d0b6ad7c6c69bdbc",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [],
+      "review_decision": "retained_after_inline_review",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463169+00:00"
+    },
+    {
+      "ord": 11,
+      "city_id": "montreal",
+      "author_id": "81c6d246-f1fb-5956-8092-4d437caeae8e",
+      "source_body_sha256": "73d1d3dbb1b315314de3531e07abcde8a3a9d0bd4b1dc1b404e512bf24e2fd48",
+      "final_body_sha256": "32ac33b6d74175f645e77afbef3e360609ad5b53157e89363c29400b3ec6a07f",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [
+        {
+          "before": "BAnQ 르스퀘르의 오디오 장비, 마이크만 있는 건 아니네",
+          "after": "BAnQ Le Square 안내에 오디오 장비 역할이 나뉘어 있어"
+        },
+        {
+          "before": "그랑드비블리오테크의 르스퀘르 안내엔",
+          "after": "그랑드비블리오테크 안 Le Square 안내엔"
+        },
+        {
+          "before": "당장 녹음하겠다는 계획보다 장비 구분부터 배우는 중",
+          "after": "마이크부터 고르기 전에 이 구분은 알아둬야겠음"
+        }
+      ],
+      "review_decision": "edited",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463185+00:00"
+    },
+    {
+      "ord": 12,
+      "city_id": "montreal",
+      "author_id": "21e4d27b-49b2-5587-a3ec-9639beaa589a",
+      "source_body_sha256": "0dbb77b1126ce2fc482d5a92888171f7f98b11b82f99f891265f1c7f4da854e1",
+      "final_body_sha256": "0dbb77b1126ce2fc482d5a92888171f7f98b11b82f99f891265f1c7f4da854e1",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [],
+      "review_decision": "retained_after_inline_review",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463191+00:00"
+    },
+    {
+      "ord": 13,
+      "city_id": "montreal",
+      "author_id": "75513359-f87a-5b69-9bde-8261e0854bb6",
+      "source_body_sha256": "57137f56cba8436bd7ac5366d06e92a863193ba8504b13a73cf5e1ff1dd4ac4e",
+      "final_body_sha256": "57137f56cba8436bd7ac5366d06e92a863193ba8504b13a73cf5e1ff1dd4ac4e",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [],
+      "review_decision": "retained_after_inline_review",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463197+00:00"
+    },
+    {
+      "ord": 14,
+      "city_id": "montreal",
+      "author_id": "2212d766-7329-5611-847e-ee0f59c8eb0e",
+      "source_body_sha256": "abf7e16155365e1af9f9a9cdabf3d90bd99203f3ee3ffe350fd43261f8b79634",
+      "final_body_sha256": "abf7e16155365e1af9f9a9cdabf3d90bd99203f3ee3ffe350fd43261f8b79634",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [],
+      "review_decision": "retained_after_inline_review",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463204+00:00"
+    },
+    {
+      "ord": 15,
+      "city_id": "montreal",
+      "author_id": "49392196-fb82-5ea3-bced-4b7bb76dcec0",
+      "source_body_sha256": "25f521ab7f9b64d7b8cc3653c02d700602ae8f289312130b31d9defa996b6f8a",
+      "final_body_sha256": "0d0d2807d5a6b00b36c7f07e256e3650565866dc015aa383c9fcaab4438b23e6",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [
+        {
+          "before": "자리 공원",
+          "after": "Parc Jarry"
+        },
+        {
+          "before": "어느 구역을 지날지 정하기 전에 현재 공사 범위부터 알아보려고",
+          "after": "평소 길이 익숙한 사람도 이번엔 공사 구역을 따로 살펴야 할 것 같아"
+        }
+      ],
+      "review_decision": "edited",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463214+00:00"
+    },
+    {
+      "ord": 16,
+      "city_id": "edmonton",
+      "author_id": "10000000-0000-0000-0000-000000000101",
+      "source_body_sha256": "f32fd56de7532e2f7df5c391b43593308d37a8c038765b8b7a3cd5011db8fb0f",
+      "final_body_sha256": "22e1bd54e58e15a006454e6c8e704feee7211cabee09238215d865164b4312fd",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [
+        {
+          "before": "이건 수업 분야를 본 거고, 아직 어느 회차에 갈지는 안 골랐어",
+          "after": "어느 회차를 들을지는 메뉴를 좀 더 보고 고르려고"
+        }
+      ],
+      "review_decision": "edited",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463223+00:00"
+    },
+    {
+      "ord": 17,
+      "city_id": "edmonton",
+      "author_id": "e64f591a-676e-5778-8a10-fc892105f91c",
+      "source_body_sha256": "9285f7d6d79d328ec8f19471051ef8bf508bf41b4cc1ad9e92c89dd265462be4",
+      "final_body_sha256": "9285f7d6d79d328ec8f19471051ef8bf508bf41b4cc1ad9e92c89dd265462be4",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [
+        {
+          "before": "로열알버타박물관에선 숨은 곤충 찾는 관찰도 해",
+          "after": "로열알버타박물관의 위장한 곤충, 눈앞에 있어도 찾을까"
+        }
+      ],
+      "review_decision": "edited",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463230+00:00"
+    },
+    {
+      "ord": 18,
+      "city_id": "edmonton",
+      "author_id": "10000000-0000-0000-0000-000000000111",
+      "source_body_sha256": "227db8da9848fb8eb921470f96da4ebfee922f9886d6e2b40eb23f3396b7cdea",
+      "final_body_sha256": "227db8da9848fb8eb921470f96da4ebfee922f9886d6e2b40eb23f3396b7cdea",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [],
+      "review_decision": "retained_after_inline_review",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463236+00:00"
+    },
+    {
+      "ord": 19,
+      "city_id": "edmonton",
+      "author_id": "10000000-0000-0000-0000-000000000127",
+      "source_body_sha256": "6f13b07ba465c86ce88cb4e7be3666ff8aa27789c66e00381f76f9a0d3229233",
+      "final_body_sha256": "6f13b07ba465c86ce88cb4e7be3666ff8aa27789c66e00381f76f9a0d3229233",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [],
+      "review_decision": "retained_after_inline_review",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463242+00:00"
+    },
+    {
+      "ord": 20,
+      "city_id": "edmonton",
+      "author_id": "a1effdc4-5fae-5cbc-8c3f-fc1473a9042d",
+      "source_body_sha256": "a1d301d8b96fddb5cbf5defbb48e9fbc7dec294201160e905ccbd9dfd99ced09",
+      "final_body_sha256": "c61dfb08067b6bd8ba5ee62c3818e1f34c47a5f232f5bdbbd5740a136431f0f0",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [
+        {
+          "before": "EPL이 제공하는 PLA는 처음 모형을 만들어보기 좋은 재료라고 해",
+          "after": "EPL의 Stanley A. Milner Library에서 쓰는 PLA는 처음 모형을 만들어보기 좋은 재료라고 해"
+        }
+      ],
+      "review_decision": "edited",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added; verified physical library named so map destination is visible",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463248+00:00"
+    },
+    {
+      "ord": 21,
+      "city_id": "calgary",
+      "author_id": "10000000-0000-0000-0000-000000000132",
+      "source_body_sha256": "7028361e584e2998855ab2d0ec6f5e3e157b54ff3431aee90e9d2f880a9d8167",
+      "final_body_sha256": "7028361e584e2998855ab2d0ec6f5e3e157b54ff3431aee90e9d2f880a9d8167",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [],
+      "review_decision": "retained_after_inline_review",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463256+00:00"
+    },
+    {
+      "ord": 22,
+      "city_id": "calgary",
+      "author_id": "10000000-0000-0000-0000-000000000130",
+      "source_body_sha256": "c11e07ef2984524f884858cf98afbf43dd91f76453967006bc2aa713c7485b80",
+      "final_body_sha256": "c11e07ef2984524f884858cf98afbf43dd91f76453967006bc2aa713c7485b80",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [],
+      "review_decision": "retained_after_inline_review",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463262+00:00"
+    },
+    {
+      "ord": 23,
+      "city_id": "calgary",
+      "author_id": "10000000-0000-0000-0000-000000000128",
+      "source_body_sha256": "98b7a08c0f03b9cf9a364853710b00168901b081ebd33c26d5dfdc33b50d0f86",
+      "final_body_sha256": "98b7a08c0f03b9cf9a364853710b00168901b081ebd33c26d5dfdc33b50d0f86",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [],
+      "review_decision": "retained_after_inline_review",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463269+00:00"
+    },
+    {
+      "ord": 24,
+      "city_id": "calgary",
+      "author_id": "10000000-0000-0000-0000-000000000134",
+      "source_body_sha256": "b62c8a0dbce71e19ba35a60ea890f5168ecd95e41762a7b47939b35891370b31",
+      "final_body_sha256": "b62c8a0dbce71e19ba35a60ea890f5168ecd95e41762a7b47939b35891370b31",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [],
+      "review_decision": "retained_after_inline_review",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463275+00:00"
+    },
+    {
+      "ord": 25,
+      "city_id": "calgary",
+      "author_id": "10000000-0000-0000-0000-000000000138",
+      "source_body_sha256": "12edd83a8aa690d1413f200a1ee036815638766b31892b6ec3a5d4c36ab64b18",
+      "final_body_sha256": "12edd83a8aa690d1413f200a1ee036815638766b31892b6ec3a5d4c36ab64b18",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [],
+      "review_decision": "retained_after_inline_review",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463284+00:00"
+    },
+    {
+      "ord": 26,
+      "city_id": "vancouver",
+      "author_id": "10000000-0000-0000-0000-000000000065",
+      "source_body_sha256": "66a340350f8ac3c149e0686a261937bfe545ed2d52ed2f203cd36ab4d48b5e81",
+      "final_body_sha256": "7c27b7eba4d94848115e44cde0e1a903ff18d9e433cce7d29599b382c62687c8",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [
+        {
+          "before": "우리 부부는 자녀가 없고 아이들까지 함께하는 여행은 생각 안 했어.",
+          "after": "우리 부부는 자녀가 없고, 둘 다 아이들과 함께하는 여행을 선호하지 않아."
+        }
+      ],
+      "review_decision": "edited",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [
+        "어른끼리 여행 동의 후 날짜 결정",
+        "숙소 예약 전에 아이 둘 동행으로 변경",
+        "원문 화자 부부는 자녀 없고 아이와 여행 선호하지 않음",
+        "차·숙소·식사 계획 바뀜",
+        "취소·재합의 결과 없음"
+      ],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463294+00:00"
+    },
+    {
+      "ord": 27,
+      "city_id": "toronto",
+      "author_id": "10000000-0000-0000-0000-000000000080",
+      "source_body_sha256": "89fca43e8a5e75d219f667b70ffd10f3c6fb05960e05101cf0a22252f53fe530",
+      "final_body_sha256": "9e57484d337a25057db5556eefe607ed3fb87c38948c26f2f0321e5e8d9e6d66",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [
+        {
+          "before": "글쓴이가 그때 막아줬다는 이야기까지 있었어.",
+          "after": "그 친구를 그때 도와줬다는 이야기까지 있었어."
+        }
+      ],
+      "review_decision": "edited",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [
+        "배우자가 글 보여준 뒤 의견 충돌",
+        "타인의 괴롭힘 과거 공개에 대한 반대",
+        "아내의 사전 동의 가능성·익명성 의견",
+        "실제 동의 여부 미확인",
+        "화자가 실망 표현; 아내는 왜 화내는지 반문; 미해결"
+      ],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463687+00:00"
+    },
+    {
+      "ord": 28,
+      "city_id": "montreal",
+      "author_id": "cc3ea647-6ac1-5ffc-ba83-8d4724d2e0f1",
+      "source_body_sha256": "e988fb093ffc65fc950ee255b2d729aeb170e274df2aab318362b15b1d9b9722",
+      "final_body_sha256": "e988fb093ffc65fc950ee255b2d729aeb170e274df2aab318362b15b1d9b9722",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [],
+      "review_decision": "retained_after_inline_review",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [
+        "부모 둘이 자녀 상담에 참석",
+        "친구가 유난·타인 평가를 주장",
+        "화자가 직접 반박",
+        "상담기관의 부정적 반응은 관측되지 않음"
+      ],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.463841+00:00"
+    },
+    {
+      "ord": 29,
+      "city_id": "edmonton",
+      "author_id": "10000000-0000-0000-0000-000000000118",
+      "source_body_sha256": "9d9285731b0c6b6ea31ec725ec6862c76208613b58ff446aa93f1eec91c6b593",
+      "final_body_sha256": "4929781b144328a859ad78d2bd94581a048651da7a48f31972f1fb4efc7c5b17",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [
+        {
+          "before": "비용 일부를 보태겠다고",
+          "after": "비용 절반 정도를 보태겠다고"
+        }
+      ],
+      "review_decision": "edited",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [
+        "방 제공 동의와 가사 기대의 불일치",
+        "반찬 준비해도 어머니에게 불만 연락",
+        "독립 비용 절반 정도 제안",
+        "남편은 즉시 내보내는 데 반대하고 스스로 하게 말하겠다고 함",
+        "실제 퇴거·분담 개선은 미확인"
+      ],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.464018+00:00"
+    },
+    {
+      "ord": 30,
+      "city_id": "calgary",
+      "author_id": "10000000-0000-0000-0000-000000000137",
+      "source_body_sha256": "d26951b5ec1ab34707b76af134385ca5fd246e82ffb150dcac258f571bf151b9",
+      "final_body_sha256": "fc3d45b45efa3d9a69e10ef8e32ec54a98f5ab36ff05e9393cd6851d24f2c6ca",
+      "same_writer": true,
+      "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+      "profile": "social",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "existing marketing/patina-social.yaml",
+        "saved persona 편한 한국어 반말"
+      ],
+      "tone_confidence": "high",
+      "patterns_reviewed": [
+        "ko-structure",
+        "ko-language",
+        "ko-content",
+        "ko-style",
+        "ko-communication",
+        "ko-filler",
+        "ko-viral-hook"
+      ],
+      "corrections": [
+        {
+          "before": "생활비에서 뺀 돈이라는 얘기는 아니었고, 부모님 도와드릴 마음도 이해해.",
+          "after": "남편 설명으론 주말에 별도로 번 돈이었고, 부모님 도와드릴 마음도 이해해."
+        }
+      ],
+      "review_decision": "edited",
+      "meaning_decision": "source claims/negation/conditions/names/numbers compared; no unsupported visit/purchase/actual Canadian event claim added",
+      "persona_decision": "same live profile ID/age/gender/city/occupation/family/recent posts retained",
+      "anchors": [
+        "주말 일로 번 별도 수입이라는 남편 설명",
+        "건강 문제 부모 지원 목돈",
+        "수입·지원 모두 사후 인지",
+        "아이 지출 우선과 별도 수입 결정권의 대립",
+        "별도 수입 진위·금액·해결 결과는 확정하지 않음"
+      ],
+      "score": null,
+      "reviewed_at": "2026-10-14T09:25:34.464231+00:00"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+[
+  {
+    "city_id": "montreal",
+    "key": "fashion",
+    "requested_url": "https://www.musee-mccord-stewart.ca/en/collections/dress-fashion-textiles/",
+    "checked_at": "2026-10-08T17:02:56.385460+00:00",
+    "error": "HTTP Error 403: Forbidden"
+  }
+]

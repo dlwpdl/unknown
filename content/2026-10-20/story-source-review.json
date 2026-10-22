@@ -1,0 +1,204 @@
+{
+  "reviewer": "same native G6 writer",
+  "items": [
+    {
+      "ord": 26,
+      "source_case_key": "blind:UmZWWutw",
+      "original_url": "https://www.teamblind.com/kr/post/친구-어머니가-암-수술때문에-돈-빌려달라고하면-UmZWWutw",
+      "observed_at": "2026-10-20T09:11:55.181414+00:00",
+      "observation_note": "saved HTTP fetch timestamp when available; fsksjoeq exact clock missing, use raw_saved_at upper bound rather than invent one",
+      "raw_saved_at_utc": "2026-10-20T09:11:56.556651+00:00",
+      "original_posted_at": "2023-12-04T08:00:00.000Z",
+      "access": "public_full_body_read",
+      "body_sha256": "96c72474a390b6aec765b6842e1fd50fd5589150b5e6d9a64c115425507a94f3",
+      "raw_sha256": "c2ff0e6476d839ff9336b17fd14e9a579233dfd8e3e840e3ce11fcb8cde5c3f6",
+      "body_file": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2f110c8c-6e57-40d4-9929-e0b53f8e45fd/source/blind-UmZWWutw.structured.json",
+      "visible_reactions_observed": 5,
+      "original_conflict": "배우자 친구 어머니 수술비300만원 대여 요청; 화자에게는 집 대출이 있어 추가 차입 부담. 배우자의 이전 대여 정황은 추정이고 결말은 없음.",
+      "fictional_changes": [
+        "Vancouver의 고정29세 남성 대학원생 커머셜드라이브·무자녀 기혼4년과 아내로 각색. 원문의 관계·집 대출·대여 요청은 유지.",
+        "대학원생에게 고정 월급을 만들지 않도록 원문 댓글의 양쪽 월급·소득 수준은 생략.",
+        "300만원은 원문 그대로이며 CAD 환율이나 캐나다 의료비로 바꾸지 않음. 원사건의 진위·발생 지역은 미확인.",
+        "이전 대여는 추정으로 유지하고 수술·대여·상환·싸움 결말은 만들지 않음."
+      ],
+      "confirmed_followup": "해결 결말 미확인; 생성하지 않음",
+      "persona_binding": {
+        "profile_id": "10000000-0000-0000-0000-000000000065",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "집 대출과 개인 취미 예산을 함께 조정한다",
+          "relationship_status": "married"
+        },
+        "topic": "부부 돈 관리"
+      },
+      "source_event_truth_verified": false,
+      "source_location_verified": false,
+      "first_person_adaptation": true,
+      "profile_disclosure": "글링 운영 캐릭터 visible live bio; latest2026-10-13 owner direction means no reconstruction footer in public body",
+      "reactions_note": "actually read source body and visible reactions; author golf clarification also in saved web-observations.json; comments are not copied dialogue or Gling organic-user metrics"
+    },
+    {
+      "ord": 27,
+      "source_case_key": "blind:LdfeeN8h",
+      "original_url": "https://www.teamblind.com/kr/post/부부-돈-관리-문제-LdfeeN8h",
+      "observed_at": "2026-10-20T09:11:55.014065+00:00",
+      "observation_note": "saved HTTP fetch timestamp when available; fsksjoeq exact clock missing, use raw_saved_at upper bound rather than invent one",
+      "raw_saved_at_utc": "2026-10-20T09:11:57.264564+00:00",
+      "original_posted_at": "2021-10-09T22:00:00.000Z",
+      "access": "public_full_body_read",
+      "body_sha256": "84d9567c42aee75bd5b8762739de09d8f76d77c60edb9ebfc51c2250698ce893",
+      "raw_sha256": "8f27666700de48ae32d74656d16b33715998f268020d277947391b47759ffe7c",
+      "body_file": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2f110c8c-6e57-40d4-9929-e0b53f8e45fd/source/blind-LdfeeN8h.structured.json",
+      "visible_reactions_observed": 5,
+      "original_conflict": "육아휴직 중인 아내의 가방·여가 지출과 남편의 저축 목표가 충돌. 생활비 각출 후 각자 관리 제안과 남편 취미도 반대받는다는 작성자 답변, 돌봄·소득 감소의 반대 맥락을 함께 읽음. 해결 결말 없음.",
+      "fictional_changes": [
+        "Toronto35세 남성 디자이너 스카보로블러프·결혼6년·현재3세 자녀를 유지. 원문18개월 장면은 같은 자녀의 돌 이후 과거로 명시.",
+        "원문의 공기업·교사 직업과 복귀 연도는 옮기지 않음.",
+        "100만원대 중반 가방·개인 지출 제안/거절과 돌봄의 반대 맥락을 남기고 실제 구매나 해결은 만들지 않음."
+      ],
+      "confirmed_followup": "해결 결말 미확인; 생성하지 않음",
+      "persona_binding": {
+        "profile_id": "10000000-0000-0000-0000-000000000070",
+        "family": {
+          "children_ages": [
+            3
+          ],
+          "marriage_years": 6,
+          "household_finances": "육아비와 주거비를 함께 계획한다",
+          "relationship_status": "married"
+        },
+        "topic": "배우자와 가족 갈등"
+      },
+      "source_event_truth_verified": false,
+      "source_location_verified": false,
+      "first_person_adaptation": true,
+      "profile_disclosure": "글링 운영 캐릭터 visible live bio; latest2026-10-13 owner direction means no reconstruction footer in public body",
+      "reactions_note": "actually read source body and visible reactions; author golf clarification also in saved web-observations.json; comments are not copied dialogue or Gling organic-user metrics"
+    },
+    {
+      "ord": 28,
+      "source_case_key": "blind:fsksjoeq",
+      "original_url": "https://www.teamblind.com/kr/post/시댁-스트레스-fsksjoeq",
+      "observed_at": null,
+      "observation_note": "saved HTTP fetch timestamp when available; fsksjoeq exact clock missing, use raw_saved_at upper bound rather than invent one",
+      "raw_saved_at_utc": "2026-10-20T09:11:22.627484+00:00",
+      "original_posted_at": "2026-06-18T19:00:00.000Z",
+      "access": "public_full_body_read",
+      "body_sha256": "07076e4bfd8ec0555d24871df895775daf28eef955aae74df02d66db94f94a52",
+      "raw_sha256": "1689b34a3cbb44c75d1d1422d80e66762de0514fb30365bd80ac1c6343740f15",
+      "body_file": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2f110c8c-6e57-40d4-9929-e0b53f8e45fd/source/blind-fsksjoeq.structured.json",
+      "visible_reactions_observed": 5,
+      "original_conflict": "원래 가까웠던 시어머니의 양육 지적과 사진·통화 간섭, 흘려들으라는 남편 반응. 후속에서 반찬 중단은 약속했지만 육아 갈등 해소는 미확인.",
+      "fictional_changes": [
+        "Montréal29세 여성 대학원생 몽루아얄잎새·결혼6년·현재3세 자녀 유지. 원문 결혼4년·1세 시점은 자녀 돌 무렵 과거로 각색.",
+        "반찬을 그만 보내기로 한 작성자 실제 후속은 보존. 나머지 갈등 해결·연락 단절은 만들지 않음.",
+        "회사·댓글 신상·위생 비난의 세부를 덜고 부모의 정성·화자의 경계·남편 반응을 유지."
+      ],
+      "confirmed_followup": "반찬 중단 약속 확인; 다른 육아 갈등 해소 미확인",
+      "persona_binding": {
+        "profile_id": "cc3ea647-6ac1-5ffc-ba83-8d4724d2e0f1",
+        "family": {
+          "children_ages": [
+            3
+          ],
+          "marriage_years": 6,
+          "household_finances": "육아비와 주거비를 함께 계획한다",
+          "relationship_status": "married"
+        },
+        "topic": "부모 도움과 사생활"
+      },
+      "source_event_truth_verified": false,
+      "source_location_verified": false,
+      "first_person_adaptation": true,
+      "profile_disclosure": "글링 운영 캐릭터 visible live bio; latest2026-10-13 owner direction means no reconstruction footer in public body",
+      "reactions_note": "actually read source body and visible reactions; author golf clarification also in saved web-observations.json; comments are not copied dialogue or Gling organic-user metrics"
+    },
+    {
+      "ord": 29,
+      "source_case_key": "blind:8svtdndz",
+      "original_url": "https://www.teamblind.com/kr/post/결혼자금-빌려달라는-친구-8svtdndz",
+      "observed_at": "2026-10-20T09:11:55.413091+00:00",
+      "observation_note": "saved HTTP fetch timestamp when available; fsksjoeq exact clock missing, use raw_saved_at upper bound rather than invent one",
+      "raw_saved_at_utc": "2026-10-20T09:11:56.964073+00:00",
+      "original_posted_at": "2020-01-04T07:00:00.000Z",
+      "access": "public_full_body_read",
+      "body_sha256": "92721dfbd648ce9564fe7cec771618ad02fa2e655523968422721fa79cac2dae",
+      "raw_sha256": "943db284c35b8c5c43b7cb86e83dc261bbd7a55955769a4f31c4c079e28ae0ac",
+      "body_file": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2f110c8c-6e57-40d4-9929-e0b53f8e45fd/source/blind-8svtdndz.structured.json",
+      "visible_reactions_observed": 5,
+      "original_conflict": "임신으로 결혼을 서두르는 친구가500만원 대여 요청. 예비 남편에게 숨기는 것처럼 보이는 점과 상환 계획 부재가 걱정. 숨김은 추정이고 미상환·파혼 결말 없음.",
+      "fictional_changes": [
+        "Edmonton29세 여성 소규모 자영업자 에드먼튼겨울·결혼4년·무자녀를 유지. 결혼/임신하는 사람은 친구다.",
+        "500만원·임신으로 급한 결혼 준비·상환 계획 부재·예비 남편에게 비밀인 듯한 추정을 보존.",
+        "친구 실명·직장·미래 퇴사·미상환과 작성자의 재산 수치는 새로 확정하지 않음."
+      ],
+      "confirmed_followup": "해결 결말 미확인; 생성하지 않음",
+      "persona_binding": {
+        "profile_id": "10000000-0000-0000-0000-000000000118",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "공동 생활비와 개인 지출을 구분해 관리한다",
+          "relationship_status": "married"
+        },
+        "topic": "결혼 전후 관계"
+      },
+      "source_event_truth_verified": false,
+      "source_location_verified": false,
+      "first_person_adaptation": true,
+      "profile_disclosure": "글링 운영 캐릭터 visible live bio; latest2026-10-13 owner direction means no reconstruction footer in public body",
+      "reactions_note": "actually read source body and visible reactions; author golf clarification also in saved web-observations.json; comments are not copied dialogue or Gling organic-user metrics"
+    },
+    {
+      "ord": 30,
+      "source_case_key": "blind:R1ojhDGh",
+      "original_url": "https://www.teamblind.com/kr/post/몰래-신혼집-오시는-시어머니-제가-이상한가요-R1ojhDGh",
+      "observed_at": "2026-10-20T09:24:48.501621+00:00",
+      "observation_note": "saved HTTP fetch timestamp when available; fsksjoeq exact clock missing, use raw_saved_at upper bound rather than invent one",
+      "raw_saved_at_utc": "2026-10-20T09:24:48.494444+00:00",
+      "original_posted_at": "2020-03-02T07:00:00.000Z",
+      "access": "public_full_body_read",
+      "body_sha256": "70c0fa5a1816ed1de63589d3fb2f35bc012d595d60a09a6912931bebbff10a09",
+      "raw_sha256": "b0ea833d383bb50837deeccadff51fb980f585d150bf174602932d354f31e820",
+      "body_file": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2f110c8c-6e57-40d4-9929-e0b53f8e45fd/source/blind-R1ojhDGh.structured.json",
+      "visible_reactions_observed": 5,
+      "original_conflict": "신혼 부부를 챙기려는 시부모가 아무도 없을 때 사전 연락 없이 와 비밀번호를 물음. 화자는 다음엔 문 앞에 두고 가시게 할지 고민. 실제 무단 출입·비밀번호 제공·남편과의 다툼은 확인되지 않음.",
+      "fictional_changes": [
+        "Calgary29세 여성 서비스직 프린스아일랜드·기혼4년·무자녀 설정 유지. 신혼 장면은 살림을 막 합친 과거로 명시.",
+        "시부모가 챙기려는 마음도 남기고 비밀번호를 물은 일을 실제 무단 출입으로 강화하지 않음.",
+        "남편의 반응·자녀·비밀번호 제공 여부·확정 결말·범죄는 넣지 않음. Calgary 독자에게 묻되 원사건이 Calgary에서 검증됐다고 하지 않음."
+      ],
+      "confirmed_followup": "해결 결말 미확인; 생성하지 않음",
+      "persona_binding": {
+        "profile_id": "10000000-0000-0000-0000-000000000132",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "공동 생활비와 개인 지출을 구분해 관리한다",
+          "relationship_status": "married"
+        },
+        "topic": "결혼 전후 관계"
+      },
+      "source_event_truth_verified": false,
+      "source_location_verified": false,
+      "first_person_adaptation": true,
+      "profile_disclosure": "글링 운영 캐릭터 visible live bio; latest2026-10-13 owner direction means no reconstruction footer in public body",
+      "reactions_note": "actually read source body and visible reactions; author golf clarification also in saved web-observations.json; comments are not copied dialogue or Gling organic-user metrics"
+    }
+  ],
+  "excluded": [
+    {
+      "source_case_key": "blind:FWvMngC1",
+      "reason": "선택한 무자녀 화자에 맞춰 원문의100일·돌 모임을 없애면 반대 맥락이 달라져 미동결 초안에서 제외."
+    },
+    {
+      "source_case_key": "blind:ibbommoo",
+      "reason": "본문·반응 열람 후 반복된 어그로 지적 등 품질 우려로 제외; 실화 검증으로 보지 않음."
+    },
+    {
+      "source_case_key": "blind:wGG4PyiR",
+      "reason": "가정형 단문 질문으로 구체적 갈등·상대 반응·후속 부족."
+    }
+  ]
+}

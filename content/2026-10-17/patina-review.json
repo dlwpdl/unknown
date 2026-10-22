@@ -1,0 +1,908 @@
+{
+  "reviewed_at": "2026-10-17T09:13:59.885867+00:00",
+  "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+  "profile": "default",
+  "tone": "casual",
+  "tone_source": "user",
+  "same_writer": true,
+  "backend_paid_calls": 0,
+  "posts": [
+    {
+      "ord": 1,
+      "author_id": "10000000-0000-0000-0000-000000000004",
+      "author_nickname": "요란한고요",
+      "source_body_sha256": "46ebe0e9545dc60c585cfdd1aeb923fdcbaf916604c90d6e7607c2ce2be8ad96",
+      "final_body_sha256": "ceb9ac45f3a711018b78183ab2e15e6a0abb73ba17d53ad500ef7d0656812cf0",
+      "source_key": "van-tools",
+      "original_url": "https://vancouvertoollibrary.com/",
+      "source_observed_at": "2026-10-17T09:03:22.499837+00:00",
+      "source_document_sha256": "c954225ff5d9470279404cca5fa2dc90214fd1d44bd20170c6d8bee62df682b2",
+      "persona_reason": "중고 물건·실속 지출·기술직 관심에서 소유와 보관 부담을 비교한다.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "20000000-0000-0000-0000-000000000055",
+          "title": "ICBC는 기본만, 나머지는 BCAA로: 자동차 보험 1년에 800불 아낀 이야기",
+          "body_sha256": "5ca7d07c940d7c8f3d39f15e4e1bbe09c6d05ee167a570e653a58c7128af20ed"
+        },
+        {
+          "id": "dfdd10df-87e5-454a-a078-17c2829050ea",
+          "title": "미니 트럭 스타일 어린이 전동차 전시장 풍경 (밴쿠버)",
+          "body_sha256": "6ae702f2b9939342984f0a08addd15aa9405dfc71d247817b86c2ec6a5bdd704"
+        },
+        {
+          "id": "20000000-0000-0000-0000-000000000044",
+          "title": "부담 없는 첫 모임이라면 어떤 형식이 좋을까요?",
+          "body_sha256": "79c800a1d7992536871567178b9eb3ee343fc14655c421ad3d16c39afda5bf6d"
+        }
+      ],
+      "review_decision": "소유·대여 비교가 다른 도시 공구 글과 반복돼, 보관과 반환에 대한 직설적인 의견으로 초점을 좁혔다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "c441a0c1a5ca1031e5666344b0316e09cfedd35593544416bc4c311ae4492c65"
+    },
+    {
+      "ord": 2,
+      "author_id": "10000000-0000-0000-0000-000000000019",
+      "author_nickname": "뉴웨스트빵순이",
+      "source_body_sha256": "c87c4ad1beb8bd104fad4d073afeff106ad252d117379bb5c408aacda2f8b866",
+      "final_body_sha256": "e86f45573335ce146ef309997e6fafd81b94a71b5f1b19654dbac1a60c6ef9ea",
+      "source_key": "van-bread",
+      "original_url": "https://batardbakery.com/",
+      "source_observed_at": "2026-10-17T09:03:21.797284+00:00",
+      "source_document_sha256": "da7598a280377b5e52acf9b2d9d324ba90ab9ccae217c1313a10b45b2252358e",
+      "persona_reason": "새 정착·새로운 음식·실속 성향에 맞춰 작은 선택을 말한다.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "1d0aa3b3-d34e-4315-a25e-890624d79db3",
+          "title": "Granville Island Public Market, 오늘도 장볼 수 있네",
+          "body_sha256": "302413a5fd7511ae4234c1a7e3a0e63bdec340a5183a212359ff0038678edd4e"
+        },
+        {
+          "id": "620d8da4-7a51-4a57-84b5-4bb1e9b4185f",
+          "title": "뉴웨스트 리버마켓은 먹거리만 있는 줄",
+          "body_sha256": "32a41ea474a6cc8c4a18208f0e3e1d1c95f06ec46d538b734da79496edfc4a11"
+        },
+        {
+          "id": "612a2be7-f3aa-5b36-a19a-006637bdee83",
+          "title": "비 오는 날 후보로 적어둘 블로델 온실",
+          "body_sha256": "b9e639c701e713c4be4ed5e2e391d3b8732f80ab36383ad130b55c12ca2301b7"
+        }
+      ],
+      "review_decision": "사실 뒤 다음 구매 계획을 붙이던 구조를 식사용 빵을 고르는 기준부터 말하는 두 문장으로 바꿨다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "712da914b2b1f483be6d7c8029505cbd3134a19d867b90187ec493b2ec98381d"
+    },
+    {
+      "ord": 3,
+      "author_id": "c09404bf-88a7-51fd-a4f0-1759650607f2",
+      "author_nickname": "물결한모금",
+      "source_body_sha256": "2c8fa4ec9d7794bb2ffae8e67617c9a1b228bc27d906707cc663f411a3ef36ad",
+      "final_body_sha256": "2c8fa4ec9d7794bb2ffae8e67617c9a1b228bc27d906707cc663f411a3ef36ad",
+      "source_key": "van-movie",
+      "original_url": "https://riotheatre.ca/about/",
+      "source_observed_at": "2026-10-17T09:03:22.262557+00:00",
+      "source_document_sha256": "d53856923758be24de30ca6460864c084b0209684433d8cb22202c70404d71a8",
+      "persona_reason": "혼자 사는 대학원생·문화생활 관심·조심스러운 비교와 질문.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "21451115-bc0f-44c5-abbe-0836d808c16f",
+          "title": "렌트 보증금, 집주인 마음대로 가져가는 건 아니네",
+          "body_sha256": "fa4c13828d40e968f1d02d47757b87eb07517cafd1ad892c54db9193196e9541"
+        },
+        {
+          "id": "a9f737b4-af5c-4f23-9639-55b337b222df",
+          "title": "눈 오는 날 시가 어느 길부터 치우는지 알아두면 편함",
+          "body_sha256": "90d49d3de0c1ae7ad349a9ed88beef00f3e22ea506304b09030f1307cf78ca13"
+        },
+        {
+          "id": "20000000-0000-0000-0000-000000000073",
+          "title": "룸메이트 구할 때 꼭 물어보는 것",
+          "body_sha256": "e1eac16f348ea77d77265e9e1b306cfa7388c8571073066b419474ab93fb098d"
+        }
+      ],
+      "review_decision": "조심스러운 성격과 혼자 참가할 때의 구체적 질문이 맞아 유지. 실제 싱어롱 일정·참가 경험은 주장하지 않는다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": false,
+      "final_title_sha256": "90fb350b89fcfe45f368a2648107a5c35a5c17ac443c8182ab43843ae5f749b8"
+    },
+    {
+      "ord": 4,
+      "author_id": "10000000-0000-0000-0000-000000000043",
+      "author_nickname": "게스타운커피",
+      "source_body_sha256": "d64c4277849213e216a0264afc294c117f38fca661b9128fe56ee57b6742bd51",
+      "final_body_sha256": "edfd9b9bd6e8cc3435aa21751c95ec14cac968331fa93221a06b5cd777deb5fd",
+      "source_key": "tor-coffee",
+      "original_url": "https://www.propagandacoffee.ca/",
+      "source_observed_at": "2026-10-17T09:03:22.859065+00:00",
+      "source_document_sha256": "5eaf6128ae3272df76703c0c1eb146594ed893deda78018924f86e900edfc074",
+      "persona_reason": "카페·집밥 관심과 배경을 길게 설명하는 말투. 방문·시음 경험 없음.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "74ba8b25-dfc2-4365-a9c3-ba1a94dc989f",
+          "title": "HandyCard와 HandyDART는 이용 범위가 달라",
+          "body_sha256": "e3d0100d4fcdc9b36b04d67b7c743ee103b6c52fd859a6ab445cefbdc06335b9"
+        },
+        {
+          "id": "e0e4bead-23bb-4063-ae81-8e4bdc647e99",
+          "title": "MOA Multiversity Galleries의 분류엔 공동체가 참여했어",
+          "body_sha256": "26afb2168f9741085bc37f55b24baf0e6e65d6eb7e5afb4e7a6ab95d011c2f69"
+        },
+        {
+          "id": "9e859043-9413-4dbb-85aa-16c8aadfd87f",
+          "title": "버스 앞 자전거 거치대, 미리 연습할 곳이 있었음",
+          "body_sha256": "113fce3e1c9d2e57676f01ed1f7092211953e5344ca01c1ecdc96e17f4bac60c"
+        }
+      ],
+      "review_decision": "원두 지식 나열을 줄이고 취향을 설명하기 어렵다는 구체적 고민과 집 커피 선택의 연결을 유지했다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "18f593b7fd70676fbbdc835de8149af86a4c220e88d3077ec9c563352715576b"
+    },
+    {
+      "ord": 5,
+      "author_id": "10000000-0000-0000-0000-000000000058",
+      "author_nickname": "버나비호수",
+      "source_body_sha256": "0974f6bf4946bbad604bd4a32bcc2a5c006a8029cd392d909db2f8a03e7a63f8",
+      "final_body_sha256": "7248743832e644b08d5ee44fa90c4249561e628a25de4f96555247b6b1be5f6e",
+      "source_key": "van-coop-info",
+      "original_url": "https://www.chf.bc.ca/find-a-co-op/",
+      "source_observed_at": "2026-10-17T09:07:23.266784+00:00",
+      "source_document_sha256": "8c114ffb649a91018514d50ea4c01594d683cb7d6c23578c74c325b448db484d",
+      "persona_reason": "집 구하기 관심·이주 1년·조심스러운 말투와 작은 유머. 지원·입주 경험 발명 없음.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "6d216239-58a0-4c62-97f8-715c8a69c8d4",
+          "title": "밴듀슨 가을 행사는 러닝가든과 미로 주변에 모였네",
+          "body_sha256": "00f1bf81b34792f880e8bfa17fff60e97f6dd3765c02480e4cd77a578e43d66a"
+        },
+        {
+          "id": "5d6acf47-323d-47b7-bcc5-6f599096a63d",
+          "title": "니토베정원은 연못과 찻집을 함께 생각한 공간이네",
+          "body_sha256": "b8bd1f9cd6e2f42972295aa8711cd4eb7e474f53f819629d8e6d1ec97d993a7d"
+        },
+        {
+          "id": "6c236a06-ff09-40c8-8d1a-8f3523076d15",
+          "title": "차이나타운 중국정원이랑 옆 공원은 다른 공간임",
+          "body_sha256": "e93ce055ecfcc15bc639028c230949dadbbf905089cd2394e6c41a2426e1d3ac"
+        }
+      ],
+      "review_decision": "반복된 확인 문구 없이 지도 상태의 차이에 대한 새 정착자의 반응으로 끝냈다. 입주 자격·빈집 수는 추정하지 않았다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "2d18c6e6565f58d70884f2ede585e2b3e2c786919fedc314c2cd0ca2198720a7"
+    },
+    {
+      "ord": 6,
+      "author_id": "10000000-0000-0000-0000-000000000029",
+      "author_nickname": "고트레인창가",
+      "source_body_sha256": "a173b1ff58306205aa47a210feb6a0c3a873d9d82168cd77d0ff2cdf9b2e0b6a",
+      "final_body_sha256": "6a54a8699e3da2b526f4d6a44577c77f36cd914c164f3ca1e2faee95e52694c0",
+      "source_key": "tor-market",
+      "original_url": "https://www.evergreen.ca/evergreen-brick-work/activities/saturday-farmers-market/",
+      "source_observed_at": "2026-10-17T09:03:24.612597+00:00",
+      "source_document_sha256": "ff1e4ba8ac95db205fbe4713251337a86fdfb52bd33e8076e2fce5f22cd20857",
+      "persona_reason": "실속·간단한 집밥·외식비 고민, 조심스러운 중간 길이.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "e5977931-1142-404d-8d08-1dbd2c4fd8e2",
+          "title": "Toronto 음식물통에 생분해 컵까지 넣는 건 아니래",
+          "body_sha256": "1cd6c9701a6bb50170960cd413f8dacb9e2c7b11c95598bac98f6667206bca2e"
+        },
+        {
+          "id": "17e95780-ae66-45bf-8264-a5fec3c33014",
+          "title": "Textile Museum의 이번 자수 전시가 눈에 들어왔어",
+          "body_sha256": "aefdceb3e3ca9802f0cdce27d0a3cb54ad2e10bb47a27f4fb7dd2bdec60e1555"
+        },
+        {
+          "id": "a7b1587f-9d84-5a3c-9f8d-fdf7038cc3e7",
+          "title": "하이파크 산책, 공식 지도로 코스 골라보기",
+          "body_sha256": "e75b8303f1caacdef9bfeb1595c6fa454a841abd98a1d2900c1453d9e38e3064"
+        }
+      ],
+      "review_decision": "다른 도시 시장 글과 식비·장보기 순서가 겹쳐, 실제 최근 Green Bin 글을 이어 포장 재사용에 대한 판단으로 원고 전체를 다시 썼다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "063df03436d083e1b58cff03f1e95985100e83e2d976089b203c2a4449ad9088"
+    },
+    {
+      "ord": 7,
+      "author_id": "10000000-0000-0000-0000-000000000032",
+      "author_nickname": "퀸웨스트필름",
+      "source_body_sha256": "190d59620f70732cca7a4290f4dc918bb99e75c21292a953ec16b0ae429c0ab2",
+      "final_body_sha256": "4fbb125582424dadeb0960643b100ed3d5e3e5f1866a5ed12a533af1eea35737",
+      "source_key": "tor-movie",
+      "original_url": "https://revuecinema.ca/about/",
+      "source_observed_at": "2026-10-17T09:03:21.213267+00:00",
+      "source_document_sha256": "93b28ce457c3cfb8bf03448a2e7df7fc3fc3741d0ee57db4e738f9f3299efdc1",
+      "persona_reason": "문화생활·직설적인 디자이너의 관람 환경에 관한 의견. 실제 방해 사건 주장 없음.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "56d56971-2b19-51ad-9871-789992938f07",
+          "title": "TTC 출발 전에 Service advisories 확인",
+          "body_sha256": "f23d9604bf6dab50b4712e85069d818a4edb3bcd2de61ba662d2a33fe7ce92d4"
+        },
+        {
+          "id": "20000000-0000-0000-0000-000000000085",
+          "title": "토론토 이사 후 주소 변경 체크리스트",
+          "body_sha256": "a83f22fb4c033c81ae85a1af0ad019a5864082151131da2fdd53c6af7f9f8b9e"
+        },
+        {
+          "id": "20000000-0000-0000-0000-000000000088",
+          "title": "요크데일 세일 시즌 언제 시작하나요",
+          "body_sha256": "a1eaf724d351a3d7f047274cd3517e4fe80c703929ca7c6274d7be966a7a0c0c"
+        }
+      ],
+      "review_decision": "영화 보러 갔는데라는 실제 방문처럼 읽힐 수 있는 도입을 가정 상황으로 바꾸고, 직설적인 관람 환경 의견을 살렸다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "6e12e91b080486392173889ccdae075b9e330f2581b2356a9d133a106730220e"
+    },
+    {
+      "ord": 8,
+      "author_id": "10000000-0000-0000-0000-000000000035",
+      "author_nickname": "콘도체크리스트",
+      "source_body_sha256": "dc174e1b9f27d715ae34f5574bef619847228162cf86e4080649a5c1bab18fcc",
+      "final_body_sha256": "dc174e1b9f27d715ae34f5574bef619847228162cf86e4080649a5c1bab18fcc",
+      "source_key": "tor-repair",
+      "original_url": "https://repaircafetoronto.ca/",
+      "source_observed_at": "2026-10-17T09:03:22.402624+00:00",
+      "source_document_sha256": "65c3c91229309a2cd911e6ea123131bb9cb3c87bc836de3f93e2c32bb41f7003",
+      "persona_reason": "중고 물건·가격·새 장소 사전 이해를 중시하는 학생의 짧은 호흡.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "fe4b47e6-3c83-56f0-8fef-ac0c2eb776b5",
+          "title": "책 고를 때 TPL 온라인 목록도 활용해요",
+          "body_sha256": "15eeb93f09946f7a30702facb9c8cd46c106c8972a5bac17a6af66fa6d0b5c61"
+        },
+        {
+          "id": "20000000-0000-0000-0000-000000000049",
+          "title": "새 동네에 익숙해졌다고 느끼는 순간",
+          "body_sha256": "5fa2f0c38bff259a69b00c4ca488b76a7ec9a07ceb8ab24165ddc084a063d6ba"
+        },
+        {
+          "id": "20000000-0000-0000-0000-000000000077",
+          "title": "토론토 겨울 처음인데 뭐 준비해야 해요",
+          "body_sha256": "531b26efe70478b10f69cc12513c7dfda4ebe16e0d5f553689c0ba0b6b6c8f06"
+        }
+      ],
+      "review_decision": "짧은 문장 두 개가 학습 관심을 드러내므로 유지. 모든 물건 수리 가능·성공을 보장하지 않는다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": false,
+      "final_title_sha256": "9381909be83dbd856db5c78f7634cd66a1c3550e05342a1bae88a66267dc05ce"
+    },
+    {
+      "ord": 9,
+      "author_id": "10000000-0000-0000-0000-000000000028",
+      "author_nickname": "스카보로만두",
+      "source_body_sha256": "f166410e6d3ab55f184738d488f4668bf602c84a58eee7e180dd1f6a15529b17",
+      "final_body_sha256": "017ed7e21770b53417fde0982c7c6b8235c24e992f40e4c8ce15c15e7f6f6a14",
+      "source_key": "tor-choc-distillery",
+      "original_url": "https://www.somachocolate.com/pages/distillery-district-location",
+      "source_observed_at": "2026-10-17T09:06:59.524761+00:00",
+      "source_document_sha256": "9831338596c502b8bbfcd170fb0230c2d8220baa9bc39a67af5e852b0810c5dc",
+      "persona_reason": "카페 파트타이머·디저트·새 배움 관심. 시식이나 제조 경험을 만들지 않는다.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "b7b7067b-daa2-4f1b-9ae0-b464599372c3",
+          "title": "톰슨 공원 안 옛집들, 스카보로 뮤지엄이었음",
+          "body_sha256": "b48a05385e648f27f4dc2dd7589af14e2433b1bebd5e96129b7668078691e22f"
+        },
+        {
+          "id": "20000000-0000-0000-0000-000000000081",
+          "title": "세인트로렌스 마켓 피미얼 베이컨 샌드위치",
+          "body_sha256": "84b2320d95b73fde1bc0039000093764aa70c99e9691e52da3830ab17e889e6b"
+        },
+        {
+          "id": "20000000-0000-0000-0000-000000000051",
+          "title": "룸메이트와 같이 살기 전 이야기해두고 싶은 것",
+          "body_sha256": "1680aca121b01bda0c708d5042443354df24cb1e8dde6dfb024274da38055367"
+        }
+      ],
+      "review_decision": "기존 디저트 방문처럼 읽힐 도입을 호기심으로 바꾸고, 실제 고정 직업인 카페 파트타이머의 제조 관심을 중심으로 정리했다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "35353d7c7bed43cbc4459455e9a140b2a09958c05cd92cc3a92f1a3bf0b85042"
+    },
+    {
+      "ord": 10,
+      "author_id": "10000000-0000-0000-0000-000000000089",
+      "author_nickname": "브램턴출근",
+      "source_body_sha256": "8f1c8bb36485dc351f156063465f781d25c524d50a6b264c7dee57ff62a35061",
+      "final_body_sha256": "28c098c243a6b1c861a643719c8291587e45738331d980a0e9776bca29af7910",
+      "source_key": "tor-paper",
+      "original_url": "https://shop.thepaperplace.ca/",
+      "source_observed_at": "2026-10-17T09:07:46.541831+00:00",
+      "source_document_sha256": "b15d0244aebcd0d05427b2342748f39481103ff8642cc79e19a383f68287f107",
+      "persona_reason": "취미 수업·실속 지출 성향과 정착 초기의 선택. 구매나 제작 경험 없음.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "d8cf40eb-9ed1-4107-b050-79b069117667",
+          "title": "ROM은 오늘 추수감사절에도 오후 5시 30분까지 열어",
+          "body_sha256": "ff1a07924d0b0a84783eb91b54b3b287ae2af76de3067883777150043aae06a2"
+        },
+        {
+          "id": "e02b93a4-b030-41b1-9bca-25f33ae8238f",
+          "title": "블랙크리크 마을은 옛 건물 말고 동물과 놀이도 다루네",
+          "body_sha256": "8e8bfbf1d1f842a910890f79d79456eb50c77ff96fc361d51f75b88622d165fa"
+        },
+        {
+          "id": "56227bce-023a-44b0-8c31-0a47fd10d1e6",
+          "title": "가디너박물관은 흙을 보는 일과 만드는 일을 같이 다루네",
+          "body_sha256": "e4d3b017d70b778a0a80eeb2ce70fdc98d6a85e40a813d655fd1d39ba99409c2"
+        }
+      ],
+      "review_decision": "공식 품목 안내 뒤 구매 계획으로 끝나던 틀을 없애고, 작은 취미를 시작할 구체적인 질문으로 마쳤다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "3542ceb547d5cbee6251eb61cf9082801486ac2b493abf46a6d066348957b861"
+    },
+    {
+      "ord": 11,
+      "author_id": "75513359-f87a-5b69-9bde-8261e0854bb6",
+      "author_nickname": "두바퀴메이플",
+      "source_body_sha256": "f7bceeeed3e18758b2cce73905cbaeacd9b3c4fcdad5c252ab94d70ef62e49e1",
+      "final_body_sha256": "00896445ace283fca15225b66555c431acac6f362fba6530f3f4d8d184dba3ed",
+      "source_key": "mtl-remise",
+      "original_url": "https://laremise.ca/",
+      "source_observed_at": "2026-10-17T09:03:23.303138+00:00",
+      "source_document_sha256": "945f1a46eee295c7cb1f0ffbe572d1cdbcfbd8c7ad4186ace8c7dd013bf47c71",
+      "persona_reason": "중고 물건·실속·새 취미에 선택적으로 지출하는 디자이너의 작은 모순.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "51f121ac-a248-4b56-8d70-f3cc1680a357",
+          "title": "몬트리올 공공 와이파이는 암호 없는 공개망이야",
+          "body_sha256": "234f42e2c35bfb657392d44b9d65b06a6b6bbf9fe87566d13ed9b53775b93852"
+        },
+        {
+          "id": "85492f06-a601-4e05-932a-121bc0f80d22",
+          "title": "라피드 공원은 급류랑 새를 함께 바라보는 자리네",
+          "body_sha256": "c02198d3e6c71b4bd364524ce9a1534fc718720e5fe00061e4b711289a05fd63"
+        },
+        {
+          "id": "01f21c4b-cafd-4ee5-8b1b-51537836de09",
+          "title": "BAnQ 대출 목록에 게임도 들어가 있네",
+          "body_sha256": "1dc637433a60c739e703d4895bc4a6b278fdb276901a22e8032c8ce667f355db"
+        }
+      ],
+      "review_decision": "밴쿠버 공구 보관 글과 논점이 같아 요리 도구를 먼저 시험해보고 싶은 소비 판단으로 전면 수정했다. 비공식 한글 상호 대신 실제 브랜드를 보존했다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "2a90b42d1afdee84309a5b4ba3ce5ebf637e095b0e8e56c604cd0fe332e48d68"
+    },
+    {
+      "ord": 12,
+      "author_id": "49392196-fb82-5ea3-bced-4b7bb76dcec0",
+      "author_nickname": "메트로한칸",
+      "source_body_sha256": "8b3537d4e37bb5e15a6983f5d0d53d14a167c293b1ee23a72ba1d58f931f28fd",
+      "final_body_sha256": "8e0730dda3bb3827d87abed170c8c65629a3e3fbdfb70c79e52f184c351ddb5c",
+      "source_key": "mtl-cat",
+      "original_url": "https://cafechatlheureux.com/",
+      "source_observed_at": "2026-10-17T09:03:23.953239+00:00",
+      "source_document_sha256": "458eb5fb50cd0be9ee31d11dc1ad4e8efd2e1cdef91fd75a90e9ace1b1cbcf69",
+      "persona_reason": "반려동물·안정·조심스러운 관찰, 고양이 소유나 방문 경험 없음.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "cf14e144-462a-44e7-b642-90fb538a1f65",
+          "title": "부아드리에스 공원, 구앵길 북쪽 산책로는 공사 중",
+          "body_sha256": "6cc9ad9b453a50d1fde1ee29eb3433530498b4465d4d265738a1b4c5f58f36d7"
+        },
+        {
+          "id": "9b8f57d5-2512-4518-b871-a3680f954680",
+          "title": "Parc Jarry 산책로와 농구장은 정비 안내가 있어",
+          "body_sha256": "44ff8302667a3870de621d19efab2e86cb6daa3119b3922cef2adbffae3453b6"
+        },
+        {
+          "id": "e807be7d-a8a7-4e25-9ab3-6dfa4964948f",
+          "title": "르네 레베크 공원에 새 나무 구역을 만든 이유",
+          "body_sha256": "07ebb4bc52149755c15cc2fe00827a736110ec5275e7f52a5871955adc838c45"
+        }
+      ],
+      "review_decision": "미검증 한국어 상호 표기를 공식 브랜드로 고쳤다. 겨울 신발 조건·소금 이유와 신중한 입양 취지를 보존하고 방문담을 만들지 않았다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "0071c0c96aeafb698158cc05ff7a6be67098f7ad78020277b8e4e4a1fad01779"
+    },
+    {
+      "ord": 13,
+      "author_id": "58ccb286-f809-5c83-91f5-0b249eb68fa0",
+      "author_nickname": "장탈롱바구니",
+      "source_body_sha256": "e0d10b8287b05f4647527cb7b31c8f791bc5e9069c9cbe0e66457d1b2b50612d",
+      "final_body_sha256": "122346eaf5043252c6c99646c5fce1f2085f3d97d8f395990048dc49b9219b3e",
+      "source_key": "mtl-market",
+      "original_url": "https://www.marchespublics-mtl.com/en/markets/atwater-market",
+      "source_observed_at": "2026-10-17T09:03:23.953212+00:00",
+      "source_document_sha256": "90b202d8efa3c26711ccb243e4bcebecd3b895c3f20cb2be36b5bc6b44eb54e7",
+      "persona_reason": "집밥·장보기·안정 성향, 짧은 조심스러운 판단.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "3544e3fc-d806-4388-9e2d-eb917be1f86c",
+          "title": "장탈롱시장은 추수감사절 연휴에도 열어",
+          "body_sha256": "beb54c153321f1e642613c4be7970848dcc1e9f961013d2a00cb573cab6b830e"
+        },
+        {
+          "id": "cfb1ce47-c125-4621-bd8f-11c8a0016fa6",
+          "title": "메종뇌브시장은 이웃들의 노력으로 다시 문을 연 시장이네",
+          "body_sha256": "87e396953695b6ca558904d239751217d61d19761437500d4a4b68fb6804935e"
+        },
+        {
+          "id": "d29d05bd-5c2f-49c1-b396-3326fe7236c4",
+          "title": "라퐁텐공원엔 자전거 교통 규칙을 배우는 자리도 있네",
+          "body_sha256": "7c6d32468991851a3fa30383436b77a11ed3914ae8e3f54c6734a3d50fadac5d"
+        }
+      ],
+      "review_decision": "일반 정보 문장을 줄이고 집밥 메뉴가 커지는 것에 대한 조심스러운 취향을 앞세운 짧은 글로 바꿨다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "ba09bec1d2b963005f5d166c093bbe2323e2a59d0acc28b2ace15d6481252544"
+    },
+    {
+      "ord": 14,
+      "author_id": "6aa367e6-70a0-5702-a758-af383ce1503c",
+      "author_nickname": "올드포트바람",
+      "source_body_sha256": "18301d336223a97cb998a19887b32609d77f518a2b5e728efb6e97bc3f865d03",
+      "final_body_sha256": "d6031ae80fdc89a192779c8636f97dd3d40a2a343086487e8270b3287594b2c3",
+      "source_key": "mtl-movie",
+      "original_url": "https://www.cinemamoderne.com/en/about/",
+      "source_observed_at": "2026-10-17T09:03:26.164976+00:00",
+      "source_document_sha256": "bd504dbf51c4b8f8eebcd92f968bc35057303d4f13d988ab7e82691987df7478",
+      "persona_reason": "혼자 쉬는 시간·문화생활·분위기를 선호하는 학생, 실제 상영 관람 없음.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "53dfbe15-4a8a-4fc4-b751-625b854fb7f6",
+          "title": "캐나다건축센터 10월 일반 관람은 목~일요일이야",
+          "body_sha256": "dde85c478ad83487ab74f3be93229ca1815fb679af659f2f3a0edb8492b0e1e4"
+        },
+        {
+          "id": "e8e0f7cb-f705-441e-a10f-83ca83249b70",
+          "title": "캐나다건축센터 책방은 건물뿐 아니라 도시와 정원도 다루네",
+          "body_sha256": "5e21213c61bbf2273c6ce5bf96300dfc3c936f2253628952da68d856360dfbac"
+        },
+        {
+          "id": "e05b6db2-b1e6-44c7-b1ab-bdc9326f78d2",
+          "title": "자리공원은 테니스 경기장 바깥에도 운동할 자리가 있네",
+          "body_sha256": "a56a00da1cc2ee9e8bc229a1dddb2fb449cac69655181c5b5b05000f3b3ff04b"
+        }
+      ],
+      "review_decision": "다른 도시 영화 글과 다른 동기인 관람 후 혼자 쉬는 시간을 유지했다. 실제 방문·좌석·커피 맛 평가는 없다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "bc484ec960614ec0abae0b8b1d7cf252a49b50b4c4e94b0aa913ba6d7747db51"
+    },
+    {
+      "ord": 15,
+      "author_id": "2212d766-7329-5611-847e-ee0f59c8eb0e",
+      "author_nickname": "아트워터오후",
+      "source_body_sha256": "dc7dde8dac802f7cb9b2dd613a5e4312ba6a858b9a7e1c2bebdd267e4e441eb8",
+      "final_body_sha256": "ee895a17da78ec4bb92a19b76848b8c6dbb7ff51d25df6053c20edf3ea7430c6",
+      "source_key": "mtl-bread",
+      "original_url": "https://stviateurbagel.com/",
+      "source_observed_at": "2026-10-17T09:03:23.736590+00:00",
+      "source_document_sha256": "af15de9a7b09948785f0fa2a979c5089b9da1d0b8f7aa34cca4ba20743f8df23",
+      "persona_reason": "집밥·카페·산책·공간에 관심 있는 디자이너의 긴 호흡. 지점별 기능 사실만 사용.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "3dcbe837-44b5-4042-9cae-4097402ba9d7",
+          "title": "프롬나드벨리브 공원은 강을 따라 길게 이어져",
+          "body_sha256": "20509efffdf342a7ab0fa1e0f2ab8adfae5af60f02eb45e4bccb8df954feae81"
+        },
+        {
+          "id": "de9843ec-21f3-4374-8f2a-90454a02bffc",
+          "title": "푸앵트아칼리에르에선 유리 바닥 아래 옛 유적을 봐",
+          "body_sha256": "fcb8b6f40d4efb87596e6a474fdfdce1158a19d7a14a8461e3e596b2e874a2b3"
+        },
+        {
+          "id": "a739f530-8db0-4a65-ac7a-42a3743d7257",
+          "title": "아트워터시장은 추워지면 벽을 세운대",
+          "body_sha256": "a97348d6d09c00ae711ed2179897d99a6ff04ff7004f988a48e787ec78ea68be"
+        }
+      ],
+      "review_decision": "베이커리와 카페 지점의 차이를 보존하고 확인하라는 결말 대신 산책과 한 끼의 다른 호흡을 풀었다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "99692533dc2f83c3037658960be53a2f3853c1e2f907c21e2b1768b06443e92b"
+    },
+    {
+      "ord": 16,
+      "author_id": "1b8858a7-d4f4-5e73-b589-72e1a666cb4f",
+      "author_nickname": "피라미드새싹",
+      "source_body_sha256": "0c2b6e9ad8a81e71b40bbf2acb9dbeaa50c46b1514bb1b838192a6924ffa0483",
+      "final_body_sha256": "17670429e1e88dce57b7f67c208ea8ba3aa03abac510e3c2826adf788a79708e",
+      "source_key": "edm-restore",
+      "original_url": "https://hfh.org/qualityforless/",
+      "source_observed_at": "2026-10-17T09:03:28.027122+00:00",
+      "source_document_sha256": "bee27925c1f4858d6aaca402693ac81b4ad3c22795758c0148f663081ba2813e",
+      "persona_reason": "중고 물건·실속·직설 성향. 실제 구매나 재고 품목 보장 없음.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "d318c47e-89bc-4012-8aba-cb208fb7ff0f",
+          "title": "단기임대, 집 한 채만 빌리는 건 아님",
+          "body_sha256": "b302a2be2124205a310349567792d62b3ac958b3ea9336db05b669eb80323250"
+        },
+        {
+          "id": "0fae46fd-4f1f-42fb-8448-6c33ed272f6d",
+          "title": "에드먼튼은 Arc 카드로 버스와 LRT를 같이 탐",
+          "body_sha256": "eeef10e0a4ac81a38b4beb1038ba0ffc46d50f679be5bda61a2852c8038f2579"
+        },
+        {
+          "id": "e7e9876a-13c2-5c4a-ab80-03f11b41799a",
+          "title": "에드먼튼 이사 후엔 WasteWise 확인",
+          "body_sha256": "039e6af840f5d1dd9424e58209829e64925beedf82312cac98fdc61d614bb570"
+        }
+      ],
+      "review_decision": "중고 가구의 할인보다 치수를 중시하는 짧고 단정적인 화자로 압축했다. 가격·재고·구매 경험을 추가하지 않았다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "1af5e8a590287c49da8340ea548abff7b76eabe09b2d001210f69218503ec372"
+    },
+    {
+      "ord": 17,
+      "author_id": "10000000-0000-0000-0000-000000000113",
+      "author_nickname": "헨데이하이웨이",
+      "source_body_sha256": "87e0ca5be5feca0aaf220ddb48abb9afb5cebf2dea9b5c8af8db49fda95500f0",
+      "final_body_sha256": "487a953baf957822d179bca053837868b91213396a4d759af224cf200add5625",
+      "source_key": "edm-movie-about",
+      "original_url": "https://metrocinema.org/about-metro-cinema/",
+      "source_observed_at": "2026-10-17T09:05:09.053337+00:00",
+      "source_document_sha256": "8e50f4f1b54c5c675ac771a616b53fcac0916c799c20d2c72011b0c02197bb24",
+      "persona_reason": "정착 3개월·문화행사·새 배움·사회적 성향. 봉사 신청·직무 경력 주장 없음.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "b284806a-f390-467b-813a-3937b6bc31ad",
+          "title": "Royal Alberta Museum은 사람·자연·살아 있는 벌레까지",
+          "body_sha256": "9eacdcab41baa4b569bbf00c4ab9a4d7550140c0ed42e8e6a71b7eea26b55d61"
+        },
+        {
+          "id": "9a3f0fb5-8813-4481-a55a-6e975ca72277",
+          "title": "하이레벨브리지 전차 길엔 옛 철도 터널도 들어가네",
+          "body_sha256": "b5be6b301aeb3e3b8de7b0cee056fb98b6a63ccdf44b45686a3110d163aed46e"
+        },
+        {
+          "id": "a4a9a6f5-b29f-46bb-90ee-f2bef32a6ad7",
+          "title": "골드바공원 이름에는 강에서 금 찾던 이야기가 남아 있네",
+          "body_sha256": "dedcf063692dd945eb935cfdf24f7acd67f0e242c34d2ea495df5cdb980c9fbc"
+        }
+      ],
+      "review_decision": "영화관 봉사 사실 나열을 새 동네에서 할 일을 함께 하는 방식에 대한 관심으로 재구성했다. 봉사 공석·접수·제작 능력은 단정하지 않는다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "18a3b6300b6114d242c994aab0229fe1ca0a6aff2a96d464a28f3ef16aedf34d"
+    },
+    {
+      "ord": 18,
+      "author_id": "10000000-0000-0000-0000-000000000101",
+      "author_nickname": "U오브A도서관",
+      "source_body_sha256": "4b96330f66ae8d4f7353811276d19b8126745dedaa14327e165bf03e95d38b78",
+      "final_body_sha256": "51ab1efb21aa6ab60b764ba3ffe29d4afb706a1d010948cec52f60e9f3e50490",
+      "source_key": "edm-market-cafe",
+      "original_url": "https://osfm.ca/news-events/introducing-the-bus-barn-cafe",
+      "source_observed_at": "2026-10-17T09:16:41.528295+00:00",
+      "source_document_sha256": "1861405b3d0427ab573232f7485b87e4cf51ce6306bd854f34ee7c222572842d",
+      "persona_reason": "집밥·장보기 관심과 혼자 쉴 시간을 중시하는 프리랜서. 실제 방문·식사 없음.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "7b6474df-d677-40cc-aefb-7efcc3fa2b43",
+          "title": "Jackie Parker Park 호수는 수영하는 곳이 아니야",
+          "body_sha256": "1582b2525a301609eb3de2ab020fc3d426fe3f8bc30e12489de06f098ad93e8a"
+        },
+        {
+          "id": "3cb764a5-3599-433e-bf6a-b4ac85893173",
+          "title": "EPL The Kitchen에서는 칼 쓰는 방법도 배울 수 있어",
+          "body_sha256": "e5949a999f442d4b5fa988905d65ee1b8d2a657ac1840440f97e16c8f9b7f779"
+        },
+        {
+          "id": "eabab94b-cb0e-4c7a-b843-9d26a24457fd",
+          "title": "오래된 VHS를 파일로 옮기는 데도 원래 재생 시간이 필요해",
+          "body_sha256": "d773e299947985299e2cc5206fd1166e0373e273122c5ffb6e27955910a68b50"
+        }
+      ],
+      "review_decision": "원고 전체를 다시 읽다 새 카페 개점과 이름 변경을 혼동한 점을 발견했다. 실제10월16일 원문을 추가로 읽어 이름 변경으로 바로잡고,1951년 트롤리버스 차고와 정비 공간 위 좌판이라는 확인된 지역사로 재작성했다. 방문·눈으로 본 옛 시설은 주장하지 않는다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "a17917a803709b453b033a71439b0a330523d84faae2a9d8678a739361e01a4e"
+    },
+    {
+      "ord": 19,
+      "author_id": "10000000-0000-0000-0000-000000000118",
+      "author_nickname": "에드먼튼겨울",
+      "source_body_sha256": "ee35a05c83d44ce99cbf5183cca0f363d322a736c8736e3e00f6c8dab645f2df",
+      "final_body_sha256": "36eac009b54058106adf615cc113763614082017faab676ca1cc6cde93091267",
+      "source_key": "edm-bread",
+      "original_url": "https://duchessbakeshop.com/",
+      "source_observed_at": "2026-10-17T09:03:24.399402+00:00",
+      "source_document_sha256": "b0c3f3fdc0791d90f53a35f834dcee1b981d343769f8f3b3d13ac9870164c70f",
+      "persona_reason": "장보기·편의·조심스러운 선택을 중시하는 자영업자. 주문·선물 사건 없음.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "ad65546b-3dae-5e0c-ab49-7a7345cefff7",
+          "title": "남편 쪽 축하금과 우리 쪽 축하금, 왜 기준이 달라",
+          "body_sha256": "36b6bcae0b581bd10f2a6feb349f4a05f086ac48c27f04a5e1e8c8038938f6a9"
+        },
+        {
+          "id": "ba4a6657-e0db-5aba-afbc-f3b7a2fe64b8",
+          "title": "남편 동생에게 방 내줬는데 밥과 빨래도 내 몫이래",
+          "body_sha256": "4929781b144328a859ad78d2bd94581a048651da7a48f31972f1fb4efc7c5b17"
+        },
+        {
+          "id": "a811dbb1-37af-5153-99d4-f8782d6249ad",
+          "title": "연인의 수상한 연락을 알려준 친구, 다시 만나면 배신일까",
+          "body_sha256": "20bf1824dde635f5214bbc8f0647ebbd78c70ea3b44bf898649002a40d48d898"
+        }
+      ],
+      "review_decision": "실제 간식 주문 사건처럼 읽힐 여지를 가정으로 바꾸고 사전 주문 48시간·124번가 픽업 조건은 그대로 보존했다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "646ffa18c357f454d478d2a3185240e586bfac996ec66c4a2c0a29b63ecc7da4"
+    },
+    {
+      "ord": 20,
+      "author_id": "10000000-0000-0000-0000-000000000111",
+      "author_nickname": "사우스게이트점심",
+      "source_body_sha256": "063d214a2d08eb234c0387819d21ee1b22e471ef84b5934387b0864a9ba0277d",
+      "final_body_sha256": "e2b839bc1d9575f847c3c8600f75a3d2edf91ebf05f0b52b19b9ef2bd875660d",
+      "source_key": "edm-bike",
+      "original_url": "https://bikeedmonton.ca/",
+      "source_observed_at": "2026-10-17T09:04:17.309760+00:00",
+      "source_document_sha256": "d43fff4b6d9a5acf4edb3ef5f2b5481a0bc4f57d38eb7aaa8c9d1c41abfdd479",
+      "persona_reason": "자전거·중고 물건·실속·짧고 담백한 말투. 실제 정비 경험이나 안전 능력 주장 없음.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "f2178a8b-a269-461a-9a45-6faea94e71a8",
+          "title": "EPL 가계도 자료는 집에서 볼 수 있는 것부터 구분",
+          "body_sha256": "227db8da9848fb8eb921470f96da4ebfee922f9886d6e2b40eb23f3396b7cdea"
+        },
+        {
+          "id": "04745bdb-ff5c-481f-b1ef-ddb3508beee5",
+          "title": "오늘 ETS 버스와 LRT는 일요일 시간표",
+          "body_sha256": "305d793d044ea7493efd375155a1c45bad2288ff5ff544cc809f2aeebbd982d4"
+        },
+        {
+          "id": "a7048d96-69c5-4bb4-b4f9-2bbc1d21ed25",
+          "title": "에드먼턴 LRT역은 버스 환승 공간과도 이어지네",
+          "body_sha256": "21619e510cfecd940a597d442d33fd4de7a23045e255baa0ede28d9ac54cb533"
+        }
+      ],
+      "review_decision": "추상적인 중간 방법 설명을 부품의 이유부터 이해하고 싶다는 짧은 관심으로 고쳤다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "9314995472c45f574b2521728d1e4a45eab0a3b806cfc19654e1d5a85fafd79f"
+    },
+    {
+      "ord": 21,
+      "author_id": "10000000-0000-0000-0000-000000000131",
+      "author_nickname": "노스힐장보기",
+      "source_body_sha256": "08f879b8ac7a44cb858189535e9d6fb66360761e0792ce72d984d1a71bb5f7cb",
+      "final_body_sha256": "8c82622043f81690b84371e87091eacc45038aa2a4a32337c85db248561d6230",
+      "source_key": "cal-market",
+      "original_url": "https://www.crossroadsmarket.ca/",
+      "source_observed_at": "2026-10-17T09:03:25.519050+00:00",
+      "source_document_sha256": "28db402e03eb99859bece20070c7cdd06229b3961524364c0093019bd68ef002",
+      "persona_reason": "정착 6개월·장보기·편리함·짧은 호흡. 방문 계획 확정이나 구매 경험 없음.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "404517c1-6648-4c18-b44e-e79b379cce6d",
+          "title": "물건 사기 전에 Consumer Reports도 볼 수 있네",
+          "body_sha256": "52262c1b5a008047662d1fca03c89488763651b2bcdb0c643c290d78b2915f61"
+        },
+        {
+          "id": "8b8d9976-625f-4d54-84f3-018d86913391",
+          "title": "도서관에서 차 정비 자료까지 찾을 수 있음",
+          "body_sha256": "4544931d598a6fc84fac7086187d7a050a49f9f5f40bc1e198003d1b7ce366af"
+        },
+        {
+          "id": "6429a00c-29a1-4850-8103-45e38ed2be17",
+          "title": "캘거리 Green Cart에는 고기와 뼈도 넣는구나",
+          "body_sha256": "85107e461fa2972dec800dd57e670a9e5d5f83c4e7168cfcd3d5635dd08b6488"
+        }
+      ],
+      "review_decision": "정착 6개월·장보기 관심을 유지했다. 오늘 영업 중이라는 표현 없이 통상 금·토·일 운영시간만 말한다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "53cc0e9d3c7bb5da23dfddeb60beeab0f7fb0bbad3c3c3c642661510ce4817ed"
+    },
+    {
+      "ord": 22,
+      "author_id": "10000000-0000-0000-0000-000000000137",
+      "author_nickname": "메이랜드저녁",
+      "source_body_sha256": "ceafa02c2605c87392ac8fbf6a67f7ad53f786a08b96754d2face0989862e2dc",
+      "final_body_sha256": "9032203ec39c72cf65200cd539679233df515663d9e52048c3ce203f00c18761",
+      "source_key": "cal-movie",
+      "original_url": "https://www.theplaza.ca/",
+      "source_observed_at": "2026-10-17T09:03:26.496437+00:00",
+      "source_document_sha256": "9459eacaaa01200a0a2246e9b3311cb45edcd6aac2aa1b9c777079f9626c1ddf",
+      "persona_reason": "고정 6·3·1세 세 자녀·개인 시간·지역 관심. 실제 아이 동반 방문 없음.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "458cfa3c-72e2-537a-9ac0-69024d997306",
+          "title": "첫돌 잔치 비용 내주신다더니 양가가 반씩 채우래",
+          "body_sha256": "d7cc880fbe2006680164b999919ffb7c511be9a3318002876c3cc7e68b674e5d"
+        },
+        {
+          "id": "c38eb4e1-89fa-4603-8b13-995019f638dd",
+          "title": "HelpNow는 아이 숙제 말고 어른 글쓰기도 도와줘",
+          "body_sha256": "0cf9326b4d304c91dd87c8c2b638f9d0ea75ed08a263162fe8163ca268110c96"
+        },
+        {
+          "id": "0c54c394-fc76-52fe-a928-bd883b60f839",
+          "title": "남편이 주말에 번 돈을 부모님께 드렸는데 난 몰랐어",
+          "body_sha256": "fc3d45b45efa3d9a69e10ef8e32ec54a98f5ab36ff05e9393cd6851d24f2c6ca"
+        }
+      ],
+      "review_decision": "자녀 수를 유지하고 관람·구매가 일어났다는 문장을 넣지 않았다. 짧은 외출도 괜찮다는 화자의 판단으로 끝냈다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "c84210ff245553c1f63bd8dc1a00e81a11685e5ff61c6fb12dfbff21dd3ddcf2"
+    },
+    {
+      "ord": 23,
+      "author_id": "10000000-0000-0000-0000-000000000132",
+      "author_nickname": "프린스아일랜드",
+      "source_body_sha256": "d94da1ab3993e584843e3a5dd5161550e5789c7edcec1cbd31515dca97799427",
+      "final_body_sha256": "42d552148dee63f4deba00caea6ada07b118fca4f521935c9dfeb88a707aa2ed",
+      "source_key": "cal-craft-gallery",
+      "original_url": "https://www.albertacraft.ab.ca/calgary-gallery",
+      "source_observed_at": "2026-10-17T09:05:08.282029+00:00",
+      "source_document_sha256": "7f12b2378521d9791f4bfdb8901261d3b3f83df16f8ff3346fb86f0f51428a06",
+      "persona_reason": "취미 수업·새 배움·짧고 직설적 성향. 전시 관람·제작 경험 없음.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "e90a62dd-f17a-467b-9980-68643dfb0b6d",
+          "title": "캘거리도서관 언어 자료는 듣기와 말하기도 다뤄",
+          "body_sha256": "7028361e584e2998855ab2d0ec6f5e3e157b54ff3431aee90e9d2f880a9d8167"
+        },
+        {
+          "id": "68545a8f-acff-44c0-b002-4f8527c7bcc2",
+          "title": "캘거리공공도서관 새 프로그램 접수는 10월 14일",
+          "body_sha256": "00d88448fba71ccb7839674cbd2dbd84ac1c177143985e47e132f69a4affdeb7"
+        },
+        {
+          "id": "906d291e-e593-49e5-b666-9a161ccaa4d2",
+          "title": "텔러스스파크 돔은 영화와 천문관 이야기를 같이 보여주네",
+          "body_sha256": "849221d94eea897301bb7583122aa12e01e77649a8d40c5ddc2368fa8f7bc2a4"
+        }
+      ],
+      "review_decision": "만들 수 있게 해주는 손이라는 추상적 비유를 도구를 고치는 기술자의 자기 작품에 관한 구체적 궁금증으로 풀었다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "d0d0bad3f0ec909e8123af5841a5677c4a6946d3a508cda044db9c0d32e76e1a"
+    },
+    {
+      "ord": 24,
+      "author_id": "10000000-0000-0000-0000-000000000130",
+      "author_nickname": "C트레인통근",
+      "source_body_sha256": "d8e51a5417f7385f49df81157742299229109388267bf9c6b2fa763970ddc43c",
+      "final_body_sha256": "95cbe7f70d4a8854e27e0fa16fc4c147a7716e086d8906ba38a67af977025f3b",
+      "source_key": "cal-bike-map",
+      "original_url": "https://bikecalgary.org/maps-routes-pathways/",
+      "source_observed_at": "2026-10-17T09:06:59.504059+00:00",
+      "source_document_sha256": "5c7a1a9be8564d0845e6392f73447933957681b8c37756b368b7f49bb2fde918",
+      "persona_reason": "자전거 관심·실제 이동 수단은 대중교통·도보·조심스러운 새 선택. 타지 않은 코스 후기 없음.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "a13a69bb-2477-46b2-b3b2-1968dac87410",
+          "title": "새 이름 찾을 땐 캘거리도서관 소리 자료도 있네",
+          "body_sha256": "36a2dc29a6901ef297fd94b9938e6f64d243d60f5ef26f5efc960051a2cc96d8"
+        },
+        {
+          "id": "721c43a9-bc7f-46db-8906-77773842cb92",
+          "title": "캘거리트랜짓 분실물은 센터스트리트 쪽에서 찾아",
+          "body_sha256": "0bcbeb5411c8d334634a2bc9f53b19443eacab0b18621afc2e9b4af3865726e4"
+        },
+        {
+          "id": "b77eb52a-1c87-4508-a462-ae9718112f12",
+          "title": "CTrain이랑 버스는 자전거 놓는 방식이 다르네",
+          "body_sha256": "0948c5e2f6695733f4a837b732a67cf76cbacfad7b5c3dbd7983b4029bf2c078"
+        }
+      ],
+      "review_decision": "확인해봐 형식을 쓰지 않고 이동 수단을 바꾸며 느끼는 불안과 선호를 보존했다. 특정 코스가 안전하다고 보장하지 않는다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "f3e6c8a2546b38483ce01e82e7e36b33dd2f0cbfe35e88da8671c9e10576b190"
+    },
+    {
+      "ord": 25,
+      "author_id": "10000000-0000-0000-0000-000000000141",
+      "author_nickname": "컨페더레이션공원",
+      "source_body_sha256": "8879051c0c7297cebc97fb790b200c9adf8e8297792ab2d9d430b38679df8b11",
+      "final_body_sha256": "14a96ef2f7d2e81e537a967b2e77d7ab704422158e92075af421e9c562643da8",
+      "source_key": "cal-coffee-simmons",
+      "original_url": "https://philsebastian.com/pages/locations/simmons",
+      "source_observed_at": "2026-10-17T09:07:23.267181+00:00",
+      "source_document_sha256": "59b541a8bb6de82c6b3ecd605c86f792f08b076a508980b640c62df95b821e98",
+      "persona_reason": "카페·새 배움·실속·가벼운 유머. 방문·수업 신청·시음 없음.",
+      "persona_version": 4,
+      "same_id_live_sync_report": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261017T090159239445Z/result.json",
+      "recent_posts_compared": [
+        {
+          "id": "314ebd1d-8c66-4227-a192-046a6cdbac3c",
+          "title": "스탠리공원 안 작은 공원 이름엔 캘거리에서 산 사람 이야기가 있네",
+          "body_sha256": "8b479a9f664222f90235c170882dfc013594e4293486c40a3f7606b4f6204800"
+        },
+        {
+          "id": "ebc2dbe4-aafa-45d1-b184-8ef3e0490712",
+          "title": "캘거리 남서쪽 크로스보호구역은 야생동물의 공간을 남기는 곳이네",
+          "body_sha256": "7d90c582c1440442a5b77c0d3b2f0dd48448dbe688288650b1f7e39c95f31719"
+        },
+        {
+          "id": "1cbac806-ef39-424f-8ef9-f2618e332e72",
+          "title": "포트캘거리의 새 이름은 두 강이 만나는 자리를 담았네",
+          "body_sha256": "5709be553b00be2e05ea3d07f73e8d0c69a0b8e8818be24f339f972dfb63e183"
+        }
+      ],
+      "review_decision": "밴쿠버 커피 글과 맛 공부라는 동일한 끝맺음을 피하려고, 실제 원문의 로스터 제작 이야기와 소소한 유머로 재구성했다.",
+      "meaning_facts_persona_verdict": "pass_manual_same_writer; facts rechecked against saved live source; no specific new visit/purchase/work/family event asserted",
+      "changed": true,
+      "final_title_sha256": "2467ca7c7638c15c24f75e1aed900dd65c2ad489f3e81217230062cd72c9a8c7"
+    }
+  ],
+  "batch_review": {
+    "performed_at": "2026-10-17T09:18:01.298159+00:00",
+    "method": "Final25 bodies read together without nicknames, then cross-checked against persona; sources and original drafts read back in same writer. No external backend or automated score substituted for review.",
+    "changes": [
+      "Toronto 시장 글을 예산·장보기 순서에서 포장 재사용으로 재기획",
+      "Montréal 대여 글은 Vancouver 공구 보관과 겹치지 않게 요리 도구 시험 사용으로 전환",
+      "Calgary 커피 글은 맛 공부 대신1961년 로스터 제작 이야기로 전환",
+      "Edmonton 시장 글은 음식·계획 반복을 없애고 실제 카페 이름 변경과 차고 건물 역사로 전환",
+      "방문처럼 읽힐 도입·미확인 식사 분담을 제거",
+      "본문 변경 후 제목6·11·18·20을 실제 내용에 맞춤"
+    ],
+    "topic_mix": "식재료·디저트·커피뿐 아니라 주거·수선·재사용·개인 취미·관람 환경·지역 참여·동물의 환경·육아 외출·이동 불안을 섞음",
+    "movie_pieces": "5/25; motives are sing-along participation, phone etiquette, quiet time afterward, volunteering, and short family outing; no repeated synopsis or same chain",
+    "per_city_question_ending_max": 1,
+    "repeated_first_word_within_city": 0,
+    "mandatory_check_phrases": 0,
+    "fixed_opening_or_ending_template": false,
+    "specific_new_visit_purchase_work_or_family_event_claims": 0,
+    "persona_continuity_note": "Some historical posts use formal language or generic templates; preserve current v4 traits and owner casual voice correction, without reproducing old boilerplate. Historical contradictions are not turned into new facts.",
+    "meaning_score": null,
+    "meaning_score_note": "Manual facts/negation/conditions/voice review. The same author rewrote their own unapproved drafts within the brief; source-fact changes for editorial variety are recorded, not falsely called verbatim meaning preservation."
+  }
+}

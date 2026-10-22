@@ -1,0 +1,461 @@
+{
+  "posts": [
+    {
+      "ord": 1,
+      "city_id": "vancouver",
+      "author_nickname": "SFU언덕",
+      "tag_slug": "transport",
+      "title": "반려동물과 버스 탈 땐 이동장 모양도 봐야 해",
+      "body": "반려동물 동반 안내를 보니 목줄만 채워서 버스를 탈 수 있는 건 아니네. TransLink는 일반 반려동물을 무릎에 올릴 수 있는 작은 이동장에 넣고, 몸이 밖으로 나오지 않게 하라고 안내해.\n\n반려동물용 유모차도 안 된대. 공간이 부족하면 승차를 거절할 수 있어서, 같이 이동할 계획이라면 한산한 시간부터 찾아보는 게 좋겠어. 안내견·보조견은 별도 규정이야.",
+      "source": "https://www.translink.ca/rider-guide/etiquette-on-transit"
+    },
+    {
+      "ord": 2,
+      "city_id": "vancouver",
+      "author_nickname": "T&T장보기",
+      "tag_slug": "transport",
+      "title": "막차 뒤 귀가 동선엔 나이트버스도 있어",
+      "body": "늦게 끝나는 일정은 가는 길보다 돌아오는 길이 더 신경 쓰여. 트랜스링크 나이트버스는 일주일 내내 운행하고, 안내상 배차 간격은 20~30분이야.\n새벽 1시 30분쯤부터는 다운타운의 하우·던스미어 쪽과 시모어·그랜빌 일대에 있는 노선별 출발 지점에서 출발한다고 해.\n내가 탈 노선의 출발 정류장까지 같이 저장해야겠음.",
+      "source": "https://www.translink.ca/schedules-and-maps/nightbus"
+    },
+    {
+      "ord": 3,
+      "city_id": "vancouver",
+      "author_nickname": "갓랜디드",
+      "tag_slug": "transport",
+      "title": "SkyTrain 창문 위 노란 띠는 조용히 도움을 불러",
+      "body": "SkyTrain 창문 위의 노란 띠는 누르면 직원에게 상황을 알리는 비상 장치야. 차 안 문 근처에는 관제 직원과 이야기할 수 있는 스피커폰도 있고.\n이름만 읽고 넘기지 말고 타면 위치를 한 번 봐둬야겠음. 긴급 상황이면 911에 연락해야 해.",
+      "source": "https://www.translink.ca/rider-guide/safety-and-security"
+    },
+    {
+      "ord": 4,
+      "city_id": "vancouver",
+      "author_nickname": "게스타운커피",
+      "tag_slug": "transport",
+      "title": "HandyCard와 HandyDART는 이용 범위가 달라",
+      "body": "도움 없이 일반 대중교통을 이용하기 어려운 사람을 위한 사진 신분 카드가 HandyCard야. TransLink 안내에 버스·SkyTrain·SeaBus·West Coast Express에서 할인 요금과 동행 보조자의 무료 승차에 쓰인다고 나와 있어.\n\n이 카드는 HandyDART에선 쓸 수 없어. 이름이 비슷해서 같은 서비스로 묶어 생각하기 쉬운데 이용 범위가 다르네.",
+      "source": "https://www.translink.ca/rider-guide/transit-accessibility/how-to-use-accessible-transit"
+    },
+    {
+      "ord": 5,
+      "city_id": "vancouver",
+      "author_nickname": "고요한밤",
+      "tag_slug": "life",
+      "title": "교통 접근성 문제를 전달하는 창구도 따로 있네",
+      "body": "이동 중 겪은 접근성 문제를 전하고 싶을 때 TransLink의 Customer Information 팀에 연락할 수 있어. 서비스와 프로그램에 관한 접근성 소식지도 따로 받을 수 있고.\n\n시설이 설치돼 있어도 실제로 쓰면서 막히는 부분이 있을 수 있잖아. 불편한 점을 어디에 얘기할지 찾는 사람에겐 이 창구를 알아두는 게 도움이 되겠어.",
+      "source": "https://www.translink.ca/rider-guide/transit-accessibility"
+    },
+    {
+      "ord": 6,
+      "city_id": "toronto",
+      "author_nickname": "CN타워야경",
+      "tag_slug": "life",
+      "title": "수거통 사이 간격, Toronto는 0.5m를 안내해",
+      "body": "Toronto 주택가 낮 수거 안내를 보니 통을 길가에 내놓는 시간부터 정해져 있어. 수거일 오전 7시 전까지, 전날엔 오후 8시보다 일찍 내놓지 않는 거야.\n\n통끼리는 최소 0.5m 떨어뜨려야 수거차의 집게가 잡을 수 있대. 눈더미 위나 뒤에도 두지 말라고 하고. 집 앞 공간이 좁아도 통 사이 틈은 남겨야겠네.",
+      "source": "https://www.toronto.ca/services-payments/recycling-organics-garbage/houses/set-out-tips/"
+    },
+    {
+      "ord": 7,
+      "city_id": "toronto",
+      "author_nickname": "고트레인창가",
+      "tag_slug": "life",
+      "title": "Toronto 음식물통에 생분해 컵까지 넣는 건 아니래",
+      "body": "포장에 생분해라고 적혀 있으면 음식물통에 넣어도 될 것 같잖아. Toronto 분류표는 생분해 플라스틱 컵·용기·수저를 Green Bin에 넣지 말고 일반 쓰레기로 버리라고 해.\n음식물과 그걸 담은 용기는 따로 봐야 하는 거네. 집밥 뒤에 나오는 작은 포장도 재질부터 살펴볼까 해.",
+      "source": "https://www.toronto.ca/services-payments/recycling-organics-garbage/houses/what-goes-in-my-green-bin/"
+    },
+    {
+      "ord": 8,
+      "city_id": "toronto",
+      "author_nickname": "고트레인출근",
+      "tag_slug": "life",
+      "title": "가로수 가지치기도 Toronto 시에 요청할 수 있어",
+      "body": "길가의 시 소유 나무도 심기·가지치기·제거 요청을 넣을 수 있어. Toronto 시 안내에서 311 서비스로 연결해줘. 사유지 나무와는 처리 기준이 다르니 먼저 어느 나무인지 구분해야겠어.\n나무 관리도 요청 항목이 따로 있었네.",
+      "source": "https://www.toronto.ca/services-payments/water-environment/trees/"
+    },
+    {
+      "ord": 9,
+      "city_id": "toronto",
+      "author_nickname": "나이아가라평일",
+      "tag_slug": "life",
+      "title": "토론토도서관에서 스캔해 내 메일로 보낼 수 있어",
+      "body": "종이 문서나 사진을 파일로 옮겨야 한다면 토론토공공도서관 기기로 스캔해 내 이메일로 보낼 수 있어. 스캔은 무료야.\n서류 때문에 갈 땐 이용 안내를 다시 보고 가려고.",
+      "source": "https://tpl.ca/using-the-library/computer-services/printing-and-photocopying/"
+    },
+    {
+      "ord": 10,
+      "city_id": "toronto",
+      "author_nickname": "노스욕산책러",
+      "tag_slug": "life",
+      "title": "목줄 자유 구역에서도 개를 혼자 두면 안 돼",
+      "body": "지정된 반려견 자유 구역에서도 개를 혼자 남겨두면 안 된대. 토론토 시는 부르면 돌아오도록 하고 다른 개가 달려오는 걸 싫어할 수 있다는 점도 살피라고 안내해.\n\n같이 놀고 있으면 다 괜찮다고 보기보단 양쪽 개가 편한지 보는 게 먼저겠어. 일반 공원이나 해변에서는 지정 구역 밖에 나가면 다시 목줄을 해야 하고.",
+      "source": "https://www.toronto.ca/explore-enjoy/parks-recreation/places-spaces/dogs-off-leash/"
+    },
+    {
+      "ord": 11,
+      "city_id": "montreal",
+      "author_nickname": "두바퀴메이플",
+      "tag_slug": "life",
+      "title": "몬트리올 공공 와이파이는 암호 없는 공개망이야",
+      "body": "몬트리올 MTLWiFi는 도서관·공원·일부 상업 거리에서 무료로 연결할 수 있어. 접속 이름도 MTLWiFi고 암호는 없어.\n\n시 안내에는 암호화되지 않은 공개망이라고 적혀 있더라. 밖에서 지도나 시 서비스를 급하게 찾아야 할 때 기억해둘 만해. 민감한 정보를 보내야 한다면 연결 방식부터 따로 살펴보고.",
+      "source": "https://montreal.ca/en/services/mtlwifi-internet-access-free-charge"
+    },
+    {
+      "ord": 12,
+      "city_id": "montreal",
+      "author_nickname": "메트로한칸",
+      "tag_slug": "travel",
+      "title": "부아드리에스 공원, 구앵길 북쪽 산책로는 공사 중",
+      "body": "부아드리에스 자연공원은 숲길 중간에 동식물을 살펴보는 관찰 지점들이 있고, 오래된 나무와 검은단풍나무도 소개하고 있어.\n다만 현재 안내에는 구앵 웨스트 대로 북쪽 반도 구역 산책로가 10월 20일까지 닫힌다고 나와. 오크리지 애비뉴에서 이어지는 피크닉 구역은 열린다고 해.\n숲 구경할 생각으로 길을 고르더라도 이번엔 그 구역을 빼고 동선을 잡아야겠어.",
+      "source": "https://montreal.ca/lieux/parc-nature-du-bois-de-liesse",
+      "place_name": "Parc-nature du Bois-de-Liesse",
+      "place_address": "9432, boulevard Gouin Ouest, Montréal, Québec H8Y 1T4",
+      "place_display_name": "부아드리에스 자연공원"
+    },
+    {
+      "ord": 13,
+      "city_id": "montreal",
+      "author_nickname": "몽루아얄잎새",
+      "tag_slug": "travel",
+      "title": "Pointe-aux-Prairies는 입구부터 골라야겠어",
+      "body": "Parc-nature de la Pointe-aux-Prairies는 섬 동쪽에 있는 261헥타르 공원이야. 습지·Rivière-des-Prairies 구역, Bois-de-l’Héritage 구역, 강 쪽 구역으로 나뉘어 있어.\n아이랑 갈 길을 고른다면 어느 구역을 걸을지부터 정하는 게 좋겠어. 방문자용 샬레도 두 곳이라 출발점을 다르게 잡을 수 있더라. 나는 짧게 걸을 길과 가까운 입구부터 지도에서 맞춰볼래.",
+      "source": "https://montreal.ca/lieux/parc-nature-de-la-pointe-aux-prairies",
+      "place_name": "Parc-nature de la Pointe-aux-Prairies",
+      "place_address": "14905, rue Sherbrooke Est, Montréal, Québec H1A 4G4",
+      "place_display_name": "Parc-nature de la Pointe-aux-Prairies"
+    },
+    {
+      "ord": 14,
+      "city_id": "montreal",
+      "author_nickname": "불어책갈피",
+      "tag_slug": "travel",
+      "title": "부아드사라게 숲에는 옛집도 남아 있어",
+      "body": "부아드사라게 자연공원은 96헥타르 숲 안에 습지와 물길, 오래된 건물 두 채가 함께 있는 곳이래. 메리도로시몰슨 하우스와 옛 오길비 저택의 운전기사 집이 남아 있다고 해.\n나무 이름만 잔뜩 읽게 될 줄 알았는데 건물의 옛 주인 얘기도 있네 ㅋㅋ 숲길 옆에 남은 집은 어떤 모습일지 궁금함. 개는 목줄을 해야 한대.",
+      "source": "https://montreal.ca/lieux/parc-nature-du-bois-de-saraguay",
+      "place_name": "Parc-nature du Bois-de-Saraguay",
+      "place_address": "12200, avenue Joseph-Saucier, Montréal, Québec H4K 1C2",
+      "place_display_name": "부아드사라게 자연공원"
+    },
+    {
+      "ord": 15,
+      "city_id": "montreal",
+      "author_nickname": "아트워터오후",
+      "tag_slug": "travel",
+      "title": "프롬나드벨리브 공원은 강을 따라 길게 이어져",
+      "body": "프롬나드벨리브 공원은 세인트로렌스강을 따라 약 2.2km 이어지는 길쭉한 공원이야. 시 안내에는 항구로 향하는 상선들을 바라볼 수 있는 곳이라고 나와 있어.\n\n한 바퀴를 채우는 코스보다 강 옆으로 천천히 걷고 싶은 날에 생각날 것 같아. 같은 자리에 잠깐 앉아 있어도 배가 지나가면 풍경이 달라지겠네.",
+      "source": "https://montreal.ca/lieux/parc-de-la-promenade-bellerive",
+      "place_name": "Parc de la Promenade-Bellerive",
+      "place_address": "8300, rue Bellerive, Montréal, Québec",
+      "place_display_name": "프롬나드벨리브 공원"
+    },
+    {
+      "ord": 16,
+      "city_id": "edmonton",
+      "author_nickname": "K데이즈",
+      "tag_slug": "travel",
+      "title": "도슨공원 자갈길엔 흰지팡이로 짚을 경계가 있어",
+      "body": "도슨공원 안내를 보니 시력이 낮거나 시야가 제한된 방문자를 생각한 자갈길이 있어. 가장자리에 높인 나무 경계를 두고 흰지팡이로 짚을 수 있게 했대. 점자 안내판도 7개고.\n산책길 소개에서 풍경 말고 길의 경계 얘기가 눈에 들어왔어. 다 같은 자갈길로 보면 놓칠 부분이네.",
+      "source": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/dawson-park",
+      "place_name": "Dawson Park",
+      "place_address": "10298 89 Street, Edmonton, Alberta",
+      "place_display_name": "도슨공원"
+    },
+    {
+      "ord": 17,
+      "city_id": "edmonton",
+      "author_nickname": "U오브A도서관",
+      "tag_slug": "travel",
+      "title": "Jackie Parker Park 호수는 수영하는 곳이 아니야",
+      "body": "Jackie Parker Park에는 작은 호수를 도는 산책길과 피크닉 공간이 있어. 다만 시에서 호수 안 수영과 보트 이용은 하지 말라고 안내하고 있어.\n\n이곳에선 물가를 따라 걷는 쪽으로 일정을 생각해볼 수 있겠어. 오래 걷는 날보다 호수 한 곳을 천천히 둘러보고 싶은 날에 끌리는 구성이고.",
+      "source": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/jackie-parker-park",
+      "place_name": "Jackie Parker Park",
+      "place_address": "4540 50 Street, Edmonton, Alberta",
+      "place_display_name": "Jackie Parker Park"
+    },
+    {
+      "ord": 18,
+      "city_id": "edmonton",
+      "author_nickname": "강변자작나무",
+      "tag_slug": "life",
+      "title": "Buena Vista Park엔 큰 반려견 자유 구역이 있어",
+      "body": "Buena Vista Park는 강 북쪽에 있고 큰 반려견 자유 구역과 여러 산책·자전거 겸용 길이 있어.\n같은 공원에 있어도 겸용 길 전체에서 개를 풀어놓을 수 있다는 뜻은 아니네. 개와 함께 가는 사람도, 그냥 걷는 사람도 지정 구역 경계를 보고 움직여야겠음.",
+      "source": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/buena-vista-park",
+      "place_name": "Buena Vista Park",
+      "place_address": "13210 Buena Vista Road, Edmonton, Alberta",
+      "place_display_name": "Buena Vista Park"
+    },
+    {
+      "ord": 19,
+      "city_id": "edmonton",
+      "author_nickname": "글레노라산책",
+      "tag_slug": "travel",
+      "title": "Laurier Park 놀이터엔 코요테 모양 구조물이 있네",
+      "body": "Sir Wilfrid Laurier Park 놀이터에 코요테 모양 놀이 구조물이 있대. 리버밸리에서 사는 동물의 모습을 놀이 공간에도 옮긴 거야.\n놀이기구 이름보다 어떤 모양인지 먼저 궁금해짐 ㅋㅋ 산책길에 이 구조물도 찾아보고 싶네.",
+      "source": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/sir-wilfrid-laurier-park",
+      "place_name": "Sir Wilfrid Laurier Park",
+      "place_address": "13221 Buena Vista Road, Edmonton, Alberta",
+      "place_display_name": "Sir Wilfrid Laurier Park"
+    },
+    {
+      "ord": 20,
+      "city_id": "edmonton",
+      "author_nickname": "노스사스카츄완강",
+      "tag_slug": "travel",
+      "title": "코로네이션공원 화장실은 임시 위치를 봐야겠어",
+      "body": "코로네이션공원은 그늘막 있는 피크닉 자리와 넓은 잔디밭이 있어. 과학관과 스포츠·레크리에이션 센터도 걸어갈 거리에 있고.\n지금은 퀸엘리자베스 플라네타리움 화장실이 임시 폐쇄래. 안내에 나온 이동식 화장실은 건물 북쪽 우드크로프트 놀이터 쪽이야. 머무를 자리 고르기 전에 위치부터 봐둘래.",
+      "source": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/coronation-park",
+      "place_name": "Coronation Park",
+      "place_address": "11425 - 142 Street, Edmonton, Alberta",
+      "place_display_name": "코로네이션공원"
+    },
+    {
+      "ord": 21,
+      "city_id": "calgary",
+      "author_nickname": "17에비뉴커피",
+      "tag_slug": "education",
+      "title": "National Geographic Kids는 옛 잡지도 읽을 수 있어",
+      "body": "과학·자연·우주 이야기를 골라 읽을 수 있는 National Geographic Kids 자료가 Calgary Public Library에도 있어. 전자책과 잡지를 볼 수 있고, 잡지는 2009년부터의 자료가 들어가.\n\n그달 호만 고르는 대신 관심 있는 동물이 실린 옛 호를 찾아봐도 되겠어. 나는 사진 보다가 이름부터 찾아보게 될 듯. 어떤 동물인지를 알아야 다음 것도 검색하니까.",
+      "source": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/national-geographic-kids"
+    },
+    {
+      "ord": 22,
+      "city_id": "calgary",
+      "author_nickname": "C트레인통근",
+      "tag_slug": "life",
+      "title": "새 이름 찾을 땐 캘거리도서관 소리 자료도 있네",
+      "body": "사진만으로 새를 찾기 어려울 때 캘거리도서관의 Birds of the World에서 새소리 녹음도 들어볼 수 있어. 코넬 조류연구소 자료이고, 영상과 서식 환경·행동 설명도 제공해.\n새소리가 궁금할 때 모양에 소리까지 같이 맞춰볼 수 있겠어. 이름을 몰라도 찾아볼 단서가 하나 더 생긴 셈이네.",
+      "source": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/birds-of-the-world"
+    },
+    {
+      "ord": 23,
+      "city_id": "calgary",
+      "author_nickname": "글렌모어공원",
+      "tag_slug": "settlement",
+      "title": "Cypress Resume는 이력서 첫 틀 잡는 자료네",
+      "body": "이력서 첫 틀을 잡아보고 싶다면 Calgary Public Library의 Cypress Resume를 살펴볼 수 있어. 온라인 이력서 작성 도구이고, 안내에는 세 단계로 만드는 방식이라고 나와 있어.\n\n빈 문서 앞에서 어디부터 적을지 막힐 때 써볼 만하겠어. 틀을 만든 다음엔 지원할 일에 맞춰 내용을 고치고.",
+      "source": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/cypress-resume"
+    },
+    {
+      "ord": 24,
+      "city_id": "calgary",
+      "author_nickname": "노스힐장보기",
+      "tag_slug": "life",
+      "title": "물건 사기 전에 Consumer Reports도 볼 수 있네",
+      "body": "가전제품이나 전자기기를 비교할 자료가 필요하면 Calgary Public Library에서 Consumer Reports 리뷰를 볼 수 있어. 자동차와 아기용품도 다룬대.\n장보기 목록에 오래 쓸 물건이 있으면 이런 비교 자료도 펼쳐볼까 해. 같은 가격이어도 내가 자주 쓸 기능이 뭔지부터 골라보고 싶어.",
+      "source": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/consumerreports-org-cars-best-deals"
+    },
+    {
+      "ord": 25,
+      "city_id": "calgary",
+      "author_nickname": "메이랜드저녁",
+      "tag_slug": "education",
+      "title": "HelpNow는 아이 숙제 말고 어른 글쓰기도 도와줘",
+      "body": "아이 숙제 도움을 찾는다면 Calgary Public Library의 brainfuse HelpNow도 살펴볼 수 있어. 알버타 K~12 교육과정 과목을 실시간 튜터와 공부하는 자료야. 안내 시간은 매일 오후 2시부터 밤 11시까지고.\n\n아이들 자료 찾다가 어른용 이력서·커버레터 도움과 글쓰기 피드백도 봤어. 실시간 튜터 시간과 24시간 글쓰기 랩은 구분해야겠네. 우리 집 여섯 살 아이에게 맞는 내용은 과목부터 살펴보려고.",
+      "source": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/brainfuse-helpnow"
+    },
+    {
+      "ord": 26,
+      "city_id": "vancouver",
+      "author_nickname": "커머셜드라이브",
+      "tag_slug": "life",
+      "title": "집 살 때 보탠 돈 대신 생활비는 안 내기로 했었는데",
+      "body": "결혼 전 부모님 집에 살던 때 일이야. 집 마련에 내가 모은 돈을 보탰어. 나중에 이자를 더해 돌려주시고, 그동안 생활비는 안 내도 된다는 약속이었고.\n그런데 시간이 지나니 이제 다 컸으니까 생활비를 보태라고 하셨어. 같이 사는 비용을 나눌 수는 있어도 나는 그 전에 모아둔 돈을 이미 드렸잖아. 생활비를 안 내는 것도 그때 정한 조건이었어.\n얼마를 드릴지부터 얘기하기 전에 그 돈은 언제 돌려받는지, 처음 약속은 어떻게 되는지 묻고 싶어. 부모님을 돕기 싫다는 말로 들릴까 봐 조심스러워.",
+      "source": "https://pann.nate.com/talk/375669613",
+      "content_kind": "community_story",
+      "source_case_key": "pann:375669613",
+      "post_id": "377966a5-762b-5774-872f-897d995a22d5",
+      "poll": {
+        "question": "처음 약속과 달라진 생활비 요구, 무엇부터 정할까?",
+        "options": [
+          "빌려드린 돈과 기존 약속부터 확인",
+          "앞으로 생활비 분담부터 협의",
+          "두 문제를 함께 다시 정하기"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000065",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "집 대출과 개인 취미 예산을 함께 조정한다",
+          "relationship_status": "married"
+        },
+        "topic": "재구성 사연 투표"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "27세 여성이 부모와 거주하며 집 마련에 청년도약계좌2천만원을 해지해 보탬 / 부모가 이자를 더해 반환하고 생활비는 받지 않기로 약속 / 1년 뒤 성인이니 생활비를 보태라고 요구;반환·합의 결말 없음",
+        "fictional_changes": [
+          "남성29세·기혼4년·현재 대학원생이라는 고정 설정을 유지하고 결혼 전 부모와 살던 시점으로 명시",
+          "원문 나이27세·월급180만원·청년도약계좌·2천만원·이사1년은 삭제;캐나다 금융상품·금액으로 치환하지 않음",
+          "지급액을 먼저 고민하는 원문을 기존 대여금과 약속을 먼저 이야기하려는 고민으로 확장;대화·상환·화해 완료를 만들지 않음"
+        ]
+      }
+    },
+    {
+      "ord": 27,
+      "city_id": "toronto",
+      "author_nickname": "베이뷰빌리지",
+      "tag_slug": "life",
+      "title": "성과급으로 처제 도와주자는 아내, 나는 대출이 먼저야",
+      "body": "아내가 내 성과급이 들어오면 처제 신혼집 구하는 돈을 보태주기로 약속했어. 나는 우리 대출부터 갚아야 한다고 했고.\n처제 입장에서는 언니 말을 믿고 기다린 건데, 내가 약속을 안 지키는 사람이 됐어. 아내가 동생을 돕고 싶은 마음은 이해해. 그래도 대출이 남아 있는데 성과급이 들어온다고 전부 여윳돈은 아니잖아.\n처제에게는 이미 한 약속이고 나는 대출 상환이 먼저야. 아내와 얼마까지 도울 수 있는지 얘기하고 싶은데, 갚을 돈을 미뤄두고 약속부터 지키라는 건 받아들이기 어려워.",
+      "source": "https://pann.nate.com/talk/375667644",
+      "content_kind": "community_story",
+      "source_case_key": "pann:375667644",
+      "post_id": "a4089606-cc5a-556c-a1d7-a625bd68d203",
+      "poll": {
+        "question": "한 배우자가 먼저 한 가족 지원 약속, 어떻게 해야 할까?",
+        "options": [
+          "부부 합의 전 약속은 철회",
+          "감당할 범위의 지원을 다시 협의",
+          "이미 한 약속은 우선 지키기"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000080",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "공동 생활비와 개인 지출을 구분해 관리한다",
+          "relationship_status": "married"
+        },
+        "topic": "부부 돈 관리"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "원문 화자의 언니가 형부 성과급에서 신혼집 전세자금을 보태기로 약속 / 형부는 자기들 대출상환이 우선이라며 지원하지 않음 / 원문 화자가 약속을 지키지 않는 이유와 사기인지 질문;당사자 합의·송금 결과 없음",
+        "fictional_changes": [
+          "원문 관찰자인 처제 시점에서 지원을 거절한 기존 남성29세 기술직·기혼4년·무자녀 남편 시점으로 각색",
+          "3억원 성과급과 한국 전세제도를 삭제하고 금액 없는 성과급·집 마련 비용으로 일반화",
+          "남편의 사전 동의 여부는 원문에 없어 비동의·몰래 약속·나중에 알았다는 단정은 제거. 아내의 도움 동기 이해와 남편의 고민은 각색 해석이며 대출 우선이라는 실제 반응은 유지",
+          "첫person 실제캐나다 사건으로 검증한 것이 아니며,현재 설정은고정운영캐릭터.새로운송금·부부합의·법적판단없음"
+        ]
+      }
+    },
+    {
+      "ord": 28,
+      "city_id": "montreal",
+      "author_nickname": "몽루아얄잎새",
+      "tag_slug": "life",
+      "title": "아이가 외할머니 집을 찾으면 내가 뭘 가르친 거래",
+      "body": "세 살 아이가 시댁에서 자려다가 외할머니 집에 가고 싶다고 했어. 시부모님은 내가 집에서 무슨 말을 하길래 아이가 그러냐고 하셨고.\n나는 아이 앞에서 시댁 흉을 본 적이 없어. 남편도 그건 알아. 아이에게 물어보니 외할머니 집에서는 우리 가족이 같이 자고 침구도 푹신해서 좋대.\n다만 아이가 할아버지께 먼저 씻으라며 무례하게 말한 적도 있어. 집에서 쓰던 말을 따라 한 거지만 어른에게 그렇게 말하면 안 된다고 따로 일렀어. 그 부분은 내가 바로잡아야 한다고 생각해.\n그런데 내가 주방에 가려는 걸 보고 아이가 엄마는 일하지 말라고 했을 때도 내 탓이라는 말을 들었어. 그건 친정엄마가 나에게 쉬라고 하실 때 하는 말이야. 아이 말버릇을 가르치는 것과, 아이가 어디서 편했는지까지 내 잘못으로 돌리는 건 다른 얘기잖아.",
+      "source": "https://pann.nate.com/talk/375668941",
+      "content_kind": "community_story",
+      "source_case_key": "pann:375668941",
+      "post_id": "ba47c7c8-0125-5fc9-ad90-bfb24e48fa9b",
+      "poll": {
+        "question": "아이의 조부모 선호를 두고 갈등이 생기면?",
+        "options": [
+          "부모가 함께 아이의 이유를 설명",
+          "어른에게 말하는 예절부터 가르치기",
+          "편 가르지 않고 방문 환경을 조정"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "cc3ea647-6ac1-5ffc-ba83-8d4724d2e0f1",
+        "family": {
+          "children_ages": [
+            3
+          ],
+          "marriage_years": 6,
+          "household_finances": "육아비와 주거비를 함께 계획한다",
+          "relationship_status": "married"
+        },
+        "topic": "배우자와 가족 갈등"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "원문은4·6세자녀둘의엄마;첫째가친정에서자기를선호 / 가족이함께자고푹신한침구가좋다는아이설명;시댁은엄마가부추긴탓이라주장 / 아이가외할머니의소중한딸쉬라는말을따라엄마주방일을말림;시부모가다시탓함 / 원문배우자는아내가시댁뒷담화하지않는점을인정;해결결말없음 / 아이가할아버지에게씻으라며무례하게말했고엄마는따로타일렀음;시댁의불만을수면선호만으로단순화하면안됨",
+        "fictional_changes": [
+          "기존29세여대학원생·기혼6년·세살아이한명의설정유지;원문의두아이4·6세를세살한아이로변경",
+          "농사·체취·아이성별별잠자리배치는삭제;함께자기·침구선호와아이의무례한씻기요구·엄마의실제교정은보존",
+          "직장단축근로는고정대학원생과맞지않아삭제;아이의말투를원문그대로복사하지않음",
+          "공감해석과예절을가르치려는의견추가;방문중단·화해·배우자의새행동없음"
+        ]
+      }
+    },
+    {
+      "ord": 29,
+      "city_id": "edmonton",
+      "author_nickname": "에드먼튼겨울",
+      "tag_slug": "life",
+      "title": "남편 쪽 축하금과 우리 쪽 축하금, 왜 기준이 달라",
+      "body": "남편 쪽 친척 결혼식에 보낼 돈을 얘기하다가 또 말이 막혔어. 남편은 우리가 맏이라 체면이 있으니 더 해야 한대. 그런데 전에 우리 쪽 가까운 친척 결혼식 때는 적게 해도 충분하다고 했거든. 그 말을 꺼냈더니 기억이 안 난다고 했어.\n\n어느 집이든 같은 관계면 같은 기준을 정하자고 했는데, 남편은 시댁과 친정이 같냐고 하다가 더 얘기하지 않았어. 형편이나 필요한 도움이 다르면 금액도 달라질 수는 있지. 다만 지금은 그걸 같이 따져보는 게 아니라 남편 쪽은 당연하고 우리 쪽은 내가 설명해야 하는 느낌이야.\n돈을 똑같이 나누자는 건지, 서로 납득할 기준이 필요한 건지 나도 말을 정리해보는 중이야. 적어도 내 가족 얘기를 꺼냈다는 이유로 대화가 끝나지는 않았으면 해.",
+      "source": "https://pann.nate.com/talk/375669954",
+      "content_kind": "community_story",
+      "source_case_key": "pann:375669954",
+      "post_id": "ad65546b-3dae-5e0c-ab49-7a7345cefff7",
+      "poll": {
+        "question": "양가 경조사비 기준은 어떻게 정할까?",
+        "options": [
+          "같은 관계면 같은 금액",
+          "각 집의 형편과 필요에 따라 합의",
+          "공동 예산 한도 안에서 각자 결정"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000118",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "공동 생활비와 개인 지출을 구분해 관리한다",
+          "relationship_status": "married"
+        },
+        "topic": "부부 돈 관리"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "원문기혼19년맞벌이자녀2명;남편은시댁사촌축의금30만원요구하고친정조카는10만원주장 / 장남체면을이유로들고과거말은기억못한다함;양가기준을맞추자는요구에시댁과친정이다르다며침묵 / 부모용돈·칠순여행에도차이를제시;후속합의없음",
+        "fictional_changes": [
+          "기존29세여자영업자·기혼4년·무자녀의가족설정유지;원문19년·중고생두아이·회사출근·경리업무설정삭제",
+          "원화30/10및20만원·부모월용돈·칠순여행은삭제;국가제도·새CAD금액을만들지않음",
+          "원문조카결혼을기혼4년·29세화자에자연스러운가까운친척결혼으로일반화",
+          "양가필요가다를수있다는화자의고민은새해석;남편이실제로제시한맥락인맏이체면과대화중단은보존"
+        ]
+      }
+    },
+    {
+      "ord": 30,
+      "city_id": "calgary",
+      "author_nickname": "메이랜드저녁",
+      "tag_slug": "life",
+      "title": "첫돌 잔치 비용 내주신다더니 양가가 반씩 채우래",
+      "body": "막내 첫돌은 양가 가족끼리 밥만 먹으려고 했어. 그런데 시부모님이 비용을 내줄 테니 크게 하자고 하셔서 남편이 장소를 알아보기로 했고.\n예약금을 부탁드리니 돈은 안 보내주시더니, 나중에는 직접 장소를 알아봤다며 우리 쪽 친척 명단을 달라고 하셨어. 절반은 시댁에서 부르고 나머지는 우리 부부와 친정에서 채워서 식사비도 나눠 내자는 거였어.\n멀리 있는 친척들을 아이 생일 때문에 전부 오라고 하기는 어렵다고 했는데, 일단 초대부터 해보라고 하시더라. 남편도 옆에서 듣다가 처음 말과 다르다며 큰 잔치는 하지 않겠다고 했어.\n손주 생일을 챙겨주고 싶으신 건 알겠어. 그래도 손님 수와 비용이 달라졌으면 우리한테 먼저 물어보셔야지. 아이 셋 챙기면서 원치 않는 잔치 손님까지 채우고 싶지는 않아.",
+      "source": "https://pann.nate.com/talk/375667663",
+      "content_kind": "community_story",
+      "source_case_key": "pann:375667663",
+      "post_id": "458cfa3c-72e2-537a-9ac0-69024d997306",
+      "poll": {
+        "question": "비용 약속이 달라진 아이 생일 잔치는?",
+        "options": [
+          "원래 원한 가족 식사로 진행",
+          "규모와 분담금을 다시 합의",
+          "비용을 지원하는 쪽의 규모에 맞춤"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000137",
+        "family": {
+          "children_ages": [
+            6,
+            3,
+            1
+          ],
+          "marriage_years": 6,
+          "household_finances": "육아비와 주거비를 함께 계획한다",
+          "relationship_status": "married"
+        },
+        "topic": "배우자와 가족 갈등"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "원문은첫아이첫돌가족식사계획;시댁이돈내준다며큰잔치요구 / 예약금요청에도돈미지급후시댁이장소선정·친정명단요구 / 300명절반을부부친정이채우고식대나눠내라는요구로변경 / 남편이이전결혼식비용약속변경도언급하며큰잔치거부;후속전화는받지않음;최종행사결과없음",
+        "fictional_changes": [
+          "기존35세여디자이너·기혼6년·6/3/1세아이셋을유지;첫아이대신현재한살막내첫돌계획시점으로각색",
+          "과도한300/900명및원화식대·돌반지관행·친척질병등신상은삭제;절반초대와비용분담변경은보존",
+          "확정된취소·행사완료가아니라남편의거부와화자의작은식사의향으로끝냄",
+          "캐나다생일행사관행이나검증된현지사건을주장하지않음"
+        ]
+      }
+    }
+  ]
+}

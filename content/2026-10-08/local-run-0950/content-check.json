@@ -1,0 +1,73 @@
+{
+  "all_passed": true,
+  "checks": {
+    "vancouver": {
+      "count": 5,
+      "question_endings": 0,
+      "check_reminders": 1,
+      "line_counts": [
+        2,
+        3,
+        3,
+        5,
+        5
+      ],
+      "unique_first_words": true
+    },
+    "toronto": {
+      "count": 5,
+      "question_endings": 1,
+      "check_reminders": 0,
+      "line_counts": [
+        2,
+        3,
+        3,
+        5,
+        5
+      ],
+      "unique_first_words": true
+    },
+    "montreal": {
+      "count": 5,
+      "question_endings": 1,
+      "check_reminders": 0,
+      "line_counts": [
+        2,
+        2,
+        3,
+        5,
+        5
+      ],
+      "unique_first_words": true
+    },
+    "edmonton": {
+      "count": 5,
+      "question_endings": 0,
+      "check_reminders": 0,
+      "line_counts": [
+        2,
+        2,
+        3,
+        3,
+        5
+      ],
+      "unique_first_words": true
+    },
+    "calgary": {
+      "count": 5,
+      "question_endings": 2,
+      "check_reminders": 0,
+      "line_counts": [
+        2,
+        2,
+        3,
+        3,
+        5
+      ],
+      "unique_first_words": true
+    }
+  },
+  "no_existing_city_title_matches": true,
+  "no_body_source_links_or_threads_greetings": true,
+  "personas_checked_against_recent_seed_history": true
+}

@@ -93,6 +93,7 @@ test('auth saves only the signed-in profile and publishes the city only after a 
     if (name === 'expo-web-browser') return { maybeCompleteAuthSession() {} };
     if (name === '@/lib/mock') return { CITIES: [{ id: 'vancouver' }, { id: 'toronto' }] };
     if (name === '@/lib/admin') return { isAdminRole: () => false };
+    if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
     if (name === '@/constants/theme') return { Spacing: {} };
     if (name === '@/lib/supabase') return { supabase: { from(table) {

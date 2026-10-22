@@ -1,0 +1,27 @@
+{
+  "checked_at_utc": "2026-10-06T16:58:22.401Z",
+  "method": "search_service_web_run.open",
+  "note": "Direct local HTTP returned 403 for these four pages. Server web reader successfully retrieved page contents; no GUI was used.",
+  "pages": [
+    {
+      "ord": 1,
+      "url": "https://vancouver.ca/home-property-development/water-fountains.aspx",
+      "excerpt": "L29: The goal of our Access to Water Program is to provide reliable, equitable access to clean, safe drinking water in the public realm, achieved by:\nL34: Access to Water is supported through both temporary and permanent drinking fountains, handwashing and misting stations across the city.\nL40: Vancouver has hundreds of permanent drinking fountains, the majority of which operate seasonally.\nL41: To ensure year-round equitable access to drinking water, all new fountains are installing freeze-proof models that remain functional year-round and we are updating older, seasonal, or inaccessible fountains with new freeze-proof models through our capital renewal plan. This infrastructure promotes health and wellness across our various communities while also supporting sustainability efforts by reducing waste across the city.\nL42:  All new drinking fountains, handwashing stations and misting stations are equipped with bottle fillers.\nL55: The map below shows where you can find all locations for public access to drinking water."
+    },
+    {
+      "ord": 2,
+      "url": "https://vancouver.ca/parks-recreation-culture/skateboard-parks.aspx",
+      "excerpt": "L31: Vancouver skateboard parks are located around the city and bring bowls, ramps, hipboxes and street-style layouts for all levels.\nL33: Skateboard parks are open to everyone.\nL83: Coopers' Skateboard Spot is located at North False Creek under the Cambie Street Bridge. Learn more about the features of the park.\nL97: The Leeside Tunnel Skateboard Park is located under the Cassiar St Connector. Learn more about the park, and its features."
+    },
+    {
+      "ord": 3,
+      "url": "https://vancouver.ca/home-property-development/vancouver-heritage-register-vhr.aspx",
+      "excerpt": "L30: The Vancouver Heritage Register (VHR) is a list of buildings and structures that are formally recognized by Council for their heritage value.\nL32: As a land use planning tool, the VHR helps guide staff and Council in making informed decisions, making sure our diverse heritage is integrated into future planning and development.\nL53: VHR listings are organized by street address in a table. Numbered avenues are followed by streets, listed in alphabetical order.\nL55: If a building has an historic name or association, it may be listed in the building name/specifics column. Any formal recognition or legal protection is indicated by the notations shown in this table."
+    },
+    {
+      "ord": 4,
+      "url": "https://www.vpl.ca/facilities/inspiration-labs",
+      "excerpt": "L28: They are digital-media creation spaces at VPL's Central Library downtown and nə́c̓aʔmat ct Strathcona Branch in East Van.\nL30: Inspiration Labs are free-to-use places that combine traditional, digital and new media in custom-built spaces dedicated to digital creativity, collaboration and storytelling.\nL33: Inspiration Labs are places to create and preserve stories through video, photos, sound, and self-publishing.\nL37:   * recording studios\nL38:   * creation and digitization stations\nL39:   * collaboration and program spaces\nL67: Attempting to digitize delicate, deteriorating or poor condition material may further damage it. Vancouver Public Library is not responsible for any damage to media such as photos, negatives, disks, tape or film that may be caused by the use of our equipment."
+    }
+  ]
+}

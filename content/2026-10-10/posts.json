@@ -1,0 +1,229 @@
+{
+  "posts": [
+    {
+      "ord": 1,
+      "city_id": "vancouver",
+      "author_nickname": "브로드웨이우산",
+      "tag_slug": "life",
+      "title": "버나비박물관엔 음식으로 동네 역사를 보는 전시도 있네",
+      "body": "먹거리 전시면 메뉴 구경부터 떠올린 나 너무 단순했음 ㅋㅋ\n버나비빌리지박물관의 delecTABLE은 버나비 음식 문화가 어떻게 달라졌는지 다루는 전시래",
+      "source": "https://www.burnabyvillagemuseum.ca/"
+    },
+    {
+      "ord": 2,
+      "city_id": "vancouver",
+      "author_nickname": "버나비호수",
+      "tag_slug": "life",
+      "title": "밴듀슨 가을 행사는 러닝가든과 미로 주변에 모였네",
+      "body": "가을 정원에서 뭘 할지 두 가지로 나눠두니 덜 막막할 듯\n1) 밴듀슨 하비스트데이는 러닝가든과 미로 주변에서 진행돼\n2) 음악·만들기·잔디 게임도 있어서 식물 이름 몰라도 관심 가는 걸 골라볼래, 내 식물 상식은 아직 새싹임 ㅋㅋ",
+      "source": "https://vandusengarden.org/"
+    },
+    {
+      "ord": 3,
+      "city_id": "vancouver",
+      "author_nickname": "예일타운런치",
+      "tag_slug": "transport",
+      "title": "핸디다트는 정류장 사이만 오가는 교통편이 아니네",
+      "body": "처음엔 작은 버스면 다 비슷한 노선인 줄 알았는데 핸디다트는 다르네\n장애 때문에 일반 대중교통을 도움 없이 이용하기 어려운 사람을 위한 문 앞에서 문 앞까지의 합승 이동 서비스야\n도시 교통 알아볼 때 노선도만 보던 습관부터 바꿔야겠어",
+      "source": "https://www.translink.ca/rider-guide/transit-accessibility/handydart"
+    },
+    {
+      "ord": 4,
+      "city_id": "vancouver",
+      "author_nickname": "도서관단골",
+      "tag_slug": "education",
+      "title": "뢰드하우스엔 밴쿠버 제본가 가족의 생활이 남아 있네",
+      "body": "예전엔 책의 역사를 읽을 때 책 만든 사람의 집까지는 생각 안 했는데\n뢰드하우스는 밴쿠버 첫 제본가의 가족이 살던 집을 복원한 박물관이네\n가구와 생활 물건으로 당시 가족의 일상을 보여주고\n집에서 볼 수 있는 가상 투어와 사진 투어도 있어\n나는 물건 하나부터 살펴볼지 방 배치부터 볼지 조금 더 생각해보려 해",
+      "source": "https://www.roeddehouse.org/"
+    },
+    {
+      "ord": 5,
+      "city_id": "vancouver",
+      "author_nickname": "스카이트레인통근",
+      "tag_slug": "life",
+      "title": "린캐니언 생태센터는 숲속 생물을 알아보는 출발점이네",
+      "body": "숲길 걷는 사람도 새 소리부터 듣는 쪽이 있고 나무부터 보는 쪽이 있겠네\n노스밴 린캐니언 생태센터는 온대우림의 자연사와 환경 문제를 다뤄\n직접 살펴보는 자연 전시와 워크숍이 있고\n공원 자연해설가에게 지역 동식물 얘기도 들을 수 있어\n난 다리 사진만 생각하던 데서 나아가 숲에 사는 것부터 알아볼 거야",
+      "source": "https://ecologycentre.ca/"
+    },
+    {
+      "ord": 6,
+      "city_id": "toronto",
+      "author_nickname": "노스욕센터",
+      "tag_slug": "education",
+      "title": "토론토 섬유박물관은 온라인으로도 소장품을 보여주네",
+      "body": "천 전시면 무늬만 보는 줄 알았던 나 조금 머쓱 ㅋㅋ\n캐나다섬유박물관은 전시장에 다 놓지 못하는 소장품도 온라인 컬렉션으로 볼 수 있게 해뒀네, 집에서 하나씩 살펴보기 괜찮을 듯",
+      "source": "https://textilemuseum.ca/"
+    },
+    {
+      "ord": 7,
+      "city_id": "toronto",
+      "author_nickname": "브램턴출근",
+      "tag_slug": "education",
+      "title": "가디너박물관은 흙을 보는 일과 만드는 일을 같이 다루네",
+      "body": "도자기를 보는 것과 직접 만드는 걸 따로 생각했는데 처음 알아보니 한곳에 있네\n가디너박물관은 흙으로 만든 작품을 전시하고 손으로 빚기·물레·유약 수업도 다뤄\n아직 흙 만지는 게 낯설지만 작품을 볼 때 만드는 손의 움직임까지 생각해볼래",
+      "source": "https://www.gardinermuseum.on.ca/"
+    },
+    {
+      "ord": 8,
+      "city_id": "toronto",
+      "author_nickname": "서비스온타리오",
+      "tag_slug": "education",
+      "title": "스파다이나박물관은 집주인과 그 집에서 일한 사람을 함께 보여주네",
+      "body": "큰 저택 보는 사람은 가구만 구경할 줄 알았던 내 생각이 좀 좁았나 봄\n스파다이나박물관은 오스틴 가족뿐 아니라 그 집에서 일한 사람들의 시선으로도 옛 토론토 생활을 다뤄\n다음에 같이 집 이야기하게 되면 방이 예쁘다는 말보다 누가 어떤 하루를 보냈는지 먼저 얘기해볼까 해",
+      "source": "https://www.toronto.ca/explore-enjoy/history-art-culture/museums/spadina-museum/"
+    },
+    {
+      "ord": 9,
+      "city_id": "toronto",
+      "author_nickname": "벽돌골목빛",
+      "tag_slug": "transport",
+      "title": "토론토 철도박물관 건물도 철도 유산이네",
+      "body": "열차가 놓인 장소부터 알면 이동의 역사가 좀 가까워질 것 같아서 적어둠\n1) 토론토철도박물관은 존스트리트 라운드하우스 국가사적지 안에 있어\n2) 도시의 철도와 대중교통 경험을 다루고\n3) 집에서 볼 수 있는 가상 투어도 마련돼 있어\n나는 열차 이름보다 그 열차가 드나들던 공간부터 살펴볼래",
+      "source": "https://torontorailwaymuseum.com/"
+    },
+    {
+      "ord": 10,
+      "city_id": "toronto",
+      "author_nickname": "토론토도서관",
+      "tag_slug": "education",
+      "title": "포트요크는 건물 사이를 걸으며 보는 유적지네",
+      "body": "박물관이라면 실내 방을 차례로 보는 모습부터 떠올랐는데\n포트요크는 주로 야외에서 건물 사이를 이동하며 살펴보는 유적지네\n옛 요크를 지켰던 사람들의 이야기를 다루고\n나는 전투 이름부터 외우기보단 그곳에서 지낸 삶부터 천천히 알고 싶은데\n역사 장소를 볼 때 건물이랑 사람 이야기 중 뭐가 더 오래 남아?",
+      "source": "https://www.toronto.ca/explore-enjoy/history-art-culture/museums/fort-york-national-historic-site/"
+    },
+    {
+      "ord": 11,
+      "city_id": "montreal",
+      "author_nickname": "우편번호수첩",
+      "tag_slug": "life",
+      "title": "메종뇌브공원 여름 잔디 관리엔 양도 한몫하네",
+      "body": "넓은 잔디에서 쉬는 사람 뒤로 양이 풀 뜯는 여름 풍경도 있는 메종뇌브공원이라니\n잔디 관리하면 기계 소리만 떠올렸던 내 머리에도 양 한 마리 추가함 ㅋㅋ",
+      "source": "https://montreal.ca/lieux/parc-maisonneuve"
+    },
+    {
+      "ord": 12,
+      "city_id": "montreal",
+      "author_nickname": "장탈롱바구니",
+      "tag_slug": "transport",
+      "title": "라퐁텐공원엔 자전거 교통 규칙을 배우는 자리도 있네",
+      "body": "예전엔 공원 자전거길을 그냥 달리는 곳으로 생각했는데 라퐁텐공원엔 초보 자전거 이용자가 도로 규칙을 배우는 공간도 있네\n처음부터 차 옆을 달리는 건 무서울 수 있으니까, 이런 연습 자리도 같이 알아두고 싶어",
+      "source": "https://montreal.ca/lieux/parc-la-fontaine"
+    },
+    {
+      "ord": 13,
+      "city_id": "montreal",
+      "author_nickname": "올드포트바람",
+      "tag_slug": "life",
+      "title": "자리공원은 테니스 경기장 바깥에도 운동할 자리가 있네",
+      "body": "전에는 자리공원 하면 테니스 경기장 이름부터 생각했는데\n공원에는 탁구대랑 농구·배구·페탕크를 하는 자리도 있네\n내 머릿속 공원 지도에 관람석만 두지 말고 직접 움직이는 자리도 넣어둘래",
+      "source": "https://montreal.ca/lieux/parc-jarry"
+    },
+    {
+      "ord": 14,
+      "city_id": "montreal",
+      "author_nickname": "불어책갈피",
+      "tag_slug": "life",
+      "title": "에코뮤지엄동물원은 퀘벡 야생동물을 가까이 다루네",
+      "body": "동물원 이름에 뮤지엄이 붙어서 표본 전시부터 생각한 나 ㅋㅋ\n몬트리올섬의 에코뮤지엄동물원은 퀘벡 야생동물을 자연적인 환경에서 보여주는 곳이네\n전시만 하는 게 아니라\n퀘벡의 위협받는 종과 서식지를 보호하는 활동도 해\n아직 동물 이름도 낯설어서 가까운 지역에 사는 종부터 조금씩 알아볼까 해",
+      "source": "https://zooecomuseum.ca/en/"
+    },
+    {
+      "ord": 15,
+      "city_id": "montreal",
+      "author_nickname": "몽루아얄잎새",
+      "tag_slug": "life",
+      "title": "오늘 몬트리올엔 가위손을 콘서트로 만나는 공연이 있네",
+      "body": "영화 음악을 공연장에서 듣는 방식이 궁금해서 오늘 프로그램을 골라봤어\n플라스데자르에 10월 10일 에드워드 시저핸즈 인 콘서트가 올라와 있어\n장소는 살 윌프리드펠티에고 영화음악 공연으로 소개돼\n상영 장면을 떠올리며 듣는 음악이랑 음악만 듣는 건 느낌이 다를 것 같은데\n영화에서 장면보다 먼저 기억나는 곡 있어?",
+      "source": "https://www.placedesarts.com/en"
+    },
+    {
+      "ord": 16,
+      "city_id": "edmonton",
+      "author_nickname": "엘크아일랜드",
+      "tag_slug": "life",
+      "title": "에밀리머피공원은 킨스먼공원과 숲길로 이어지네",
+      "body": "공원 이름을 각각 외우기만 하던 나 또 지도 공부 헛돌았음 ㅋㅋ\n에밀리머피공원과 킨스먼공원을 포레스트캐피털트레일이 이어준다니 따로 보기보다 연결해서 생각해볼까 해",
+      "source": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/emily-murphy-park"
+    },
+    {
+      "ord": 17,
+      "city_id": "edmonton",
+      "author_nickname": "동물그림수첩",
+      "tag_slug": "life",
+      "title": "허미티지공원 연못엔 송어를 해마다 방류하네",
+      "body": "예전엔 물가에서 낚시하는 사람만 생각했는데 허미티지공원 연못엔 무지개송어와 브라운송어를 해마다 넣어주네\n내 머릿속 연못은 그냥 물만 차 있었는데 관리 이야기가 또 붙음 ㅋㅋ",
+      "source": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/hermitage-park"
+    },
+    {
+      "ord": 18,
+      "city_id": "edmonton",
+      "author_nickname": "에드먼튼겨울",
+      "tag_slug": "life",
+      "title": "빅토리아공원은 겨울에 옆 골프장과 스키길로 이어짐",
+      "body": "빅토리아공원은 옆 골프장과 연결돼 있고\n눈 오는 계절엔 그쪽에 정비된 크로스컨트리 스키길도 생긴다니\n같은 자리가 계절 따라 달리 쓰이는 곳으로 기억해두려 함",
+      "source": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/victoria-park"
+    },
+    {
+      "ord": 19,
+      "city_id": "edmonton",
+      "author_nickname": "제스퍼애비뉴",
+      "tag_slug": "education",
+      "title": "알버타미술관은 그림 전시 말고 영화와 투어도 다루네",
+      "body": "미술관 가는 사람은 그림 앞에만 서 있을 줄 알았던 내 생각이 좁았음\n알버타미술관은 전시와 함께 창작 프로그램·영화·투어도 다루네\n나는 혼자 작품부터 볼지 다른 설명을 들으며 볼지 아직 못 정했어",
+      "source": "https://www.youraga.ca/"
+    },
+    {
+      "ord": 20,
+      "city_id": "edmonton",
+      "author_nickname": "헨데이하이웨이",
+      "tag_slug": "life",
+      "title": "골드바공원 이름에는 강에서 금 찾던 이야기가 남아 있네",
+      "body": "강변 걷는 사람들 뒤로 옛날엔 금을 찾는 사람도 있었겠네\n골드바공원 이름의 유래를 처음 알아봤어\n옆 동네 이름에서 왔고, 그 동네 이름은 강으로 뻗은 자갈톱에서 금을 찾던 데서 나왔대\n지금 공원은 산책과 피크닉, 겨울 크로스컨트리 스키로도 쓰이고\n다음에 같이 강 얘기하면 이름에 남은 일부터 꺼내볼래, 내 금광은 일단 이야기 수집임 ㅋㅋ",
+      "source": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/gold-bar-park"
+    },
+    {
+      "ord": 21,
+      "city_id": "calgary",
+      "author_nickname": "노스힐장보기",
+      "tag_slug": "education",
+      "title": "캘거리 군사박물관 안에는 미술관과 기록 자료도 있네",
+      "body": "군사박물관이면 장비만 모인 곳일 줄 알았는데 아직 모르는 게 많네\n캘거리 밀리터리뮤지엄스에는 육해공군 관련 박물관뿐 아니라 캘거리대 파운더스갤러리와 도서관·기록보관소도 있다니 어디부터 볼지는 좀 더 생각해보려 해",
+      "source": "https://themilitarymuseums.ca/"
+    },
+    {
+      "ord": 22,
+      "city_id": "calgary",
+      "author_nickname": "17에비뉴커피",
+      "tag_slug": "life",
+      "title": "피쉬크릭은 열려 있지만 일부 산책길은 공사 중이야",
+      "body": "처음 공원 이름만 알아두면 준비 끝인 줄 알았는데 아니네\n피쉬크릭은 공원 전체가 닫힌 건 아니야\n지금 보우리버와 아카디아 산책길 구간은 보수 공사로 임시 통제가 생길 수 있어\n통제 구간은 바뀔 수 있으니 출발 전 최신 안내를 확인해\n난 지도에 길이 있다는 것과 오늘 그 길을 쓸 수 있다는 걸 나눠서 볼래",
+      "source": "https://www.albertaparks.ca/parks/kananaskis/fish-creek-pp/"
+    },
+    {
+      "ord": 23,
+      "city_id": "calgary",
+      "author_nickname": "C트레인통근",
+      "tag_slug": "life",
+      "title": "피어스에스테이트 습지의 오래된 나무엔 새가 쓸 구멍도 있네",
+      "body": "물가 산책할 땐 강물만 보게 될 것 같았는데 나무도 눈여겨볼까 해\n피어스에스테이트공원의 오래된 포플러에는 구멍이 많아서 나무 구멍에 둥지 트는 새들이 찾아온대\n새를 찾을 땐 물가랑 나무 줄기 중 어디부터 보면 눈에 잘 들어올까?",
+      "source": "https://www.calgary.ca/parks/pearce-estate-park.html"
+    },
+    {
+      "ord": 24,
+      "city_id": "calgary",
+      "author_nickname": "컨페더레이션공원",
+      "tag_slug": "life",
+      "title": "캘거리 남서쪽 크로스보호구역은 야생동물의 공간을 남기는 곳이네",
+      "body": "산책 계획부터 꽉 채우려다 동물 자리도 좀 남겨야겠다는 생각이 들었음 ㅋㅋ\n캘거리 남서쪽 앤앤샌디크로스보호구역은 토종 야생동물의 서식지를 보호하고 보전 교육도 하는 곳이네\n같이 자연 얘기할 때 멋진 전망이랑 그곳에 사는 동물 중 뭐가 먼저 떠올라?",
+      "source": "https://www.crossconservation.org/"
+    },
+    {
+      "ord": 25,
+      "city_id": "calgary",
+      "author_nickname": "보우강변산책",
+      "tag_slug": "life",
+      "title": "에드워디공원엔 더글러스퍼트레일과 옛 정원 구역이 함께 있어",
+      "body": "예전엔 에드워디공원을 강변 피크닉 자리로만 생각했는데\n더글러스퍼트레일과 로리가든스라는 자연 구역도 포함돼\n한 공원 안에서도 숲길과 정원 자리가 함께 있는 거야\n이번엔 강만 가운데 둔 지도를 벗어나 그 옆 공간까지 알아볼래\n내 공원 공부가 드디어 돗자리 바깥으로 나감 ㅋㅋ",
+      "source": "https://www.calgary.ca/parks/edworthy-park.html"
+    }
+  ]
+}

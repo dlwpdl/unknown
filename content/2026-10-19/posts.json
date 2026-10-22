@@ -1,0 +1,560 @@
+{
+  "day": "2026-10-19",
+  "posts": [
+    {
+      "ord": 1,
+      "city_id": "vancouver",
+      "author_nickname": "비오는날세차",
+      "author_id": "10000000-0000-0000-0000-000000000005",
+      "tag_slug": "life",
+      "title": "리필 장보기, 유리병 말고 어떤 용기가 편해?",
+      "body": "The Soap Dispensary가 리필숍이라 용기 들고 가는 건 알겠는데, 유리병 여러 개면 장바구니가 무거워질 것 같아. 밴쿠버에서 버스나 자전거로 리필 장보기 하는 사람은 어떤 용기가 제일 안 새고 편했어?",
+      "source": "https://www.thesoapdispensary.com/pages/tsd-about",
+      "source_id": "van-soap-about",
+      "place_name": "The Soap Dispensary + Kitchen Staples",
+      "place_address": "3718 Main Street",
+      "place_display_name": "The Soap Dispensary"
+    },
+    {
+      "ord": 2,
+      "city_id": "vancouver",
+      "author_nickname": "모델3출근러",
+      "author_id": "10000000-0000-0000-0000-000000000041",
+      "tag_slug": "education",
+      "title": "바느질 첫 작품으로 파우치 괜찮을까",
+      "body": "FABCYCLE 자투리 천으로 충전선 담을 작은 파우치를 만들어보고 싶어. 지퍼 달기까지 가면 갑자기 어려워질 것 같아서 끈으로 묶는 모양을 생각 중이야. 밴쿠버에서 바느질 처음 배울 때 어떤 걸 만들어야 혼자 끝내기 괜찮았어?",
+      "source": "https://www.fabcycle.shop/pages/about",
+      "source_id": "van-fab-about",
+      "place_name": "FABCYCLE ReUSE Centre",
+      "place_address": "268 Keefer Street, 4th floor",
+      "place_display_name": "FABCYCLE"
+    },
+    {
+      "ord": 3,
+      "city_id": "vancouver",
+      "author_nickname": "도서관단골",
+      "author_id": "10000000-0000-0000-0000-000000000025",
+      "tag_slug": "education",
+      "title": "편지 모임, 각자 조용히 쓰는 분위기야?",
+      "body": "편지 쓰러 모여서 각자 조용히 있어도 괜찮은 자리면 좀 끌려. The Regional Assembly of Text의 Letter Writing Club엔 타자기도 준비돼 있대. 밴쿠버에서 이 모임 가본 사람, 글 쓰는 시간과 서로 얘기하는 시간 중 어느 쪽이 더 많았어?",
+      "source": "https://www.assemblyoftext.com/pages/letter-writing-club",
+      "source_id": "van-letter",
+      "place_name": "The Regional Assembly of Text",
+      "place_address": "3934 Main Street",
+      "place_display_name": "The Regional Assembly of Text"
+    },
+    {
+      "ord": 4,
+      "city_id": "vancouver",
+      "author_nickname": "게스타운커피",
+      "author_id": "10000000-0000-0000-0000-000000000043",
+      "tag_slug": "food",
+      "title": "식사용 사워도우 하나만 고르면 어떤 모양?",
+      "body": "Flourist 빵 목록에 Sourdough Batard랑 Pan Loaf가 같이 있네. 샌드위치도 만들고 수프 옆에도 놓을 빵 하나만 고르려면 어떤 쪽이 더 무난해?",
+      "source": "https://flourist.com/collections/bread",
+      "source_id": "van-bread",
+      "place_name": "Flourist Mill + Bakery",
+      "place_address": "3433 Commercial Street",
+      "place_display_name": "Flourist"
+    },
+    {
+      "ord": 5,
+      "city_id": "vancouver",
+      "author_nickname": "T&T장보기",
+      "author_id": "10000000-0000-0000-0000-000000000038",
+      "tag_slug": "life",
+      "title": "영화 잘 몰라도 가기 편한 이야기 모임 있어?",
+      "body": "시네웍스 소개에서 독립영화 상영이랑 공개 워크숍 얘기를 읽었어. 영화를 만드는 사람이 장면 하나를 어떻게 보는지 들어보는 것도 재밌을 듯. 밴쿠버에서 영화 지식 없어도 덜 어색했던 모임이나 워크숍 있으면 알려줘. 감상문 발표부터 해야 하는 자리는 아직 자신 없음 ㅋㅋ",
+      "source": "https://www.cineworks.ca/aboutus",
+      "source_id": "van-cine-about",
+      "place_name": "Cineworks",
+      "place_address": "",
+      "place_display_name": "시네웍스"
+    },
+    {
+      "ord": 6,
+      "city_id": "toronto",
+      "author_nickname": "나이아가라평일",
+      "author_id": "10000000-0000-0000-0000-000000000034",
+      "tag_slug": "education",
+      "title": "빌린 재봉틀, 수업부터 들어보는 게 나을까",
+      "body": "토론토툴라이브러리는 재봉틀도 빌릴 수 있대. 바지 길이 줄이는 정도부터 해보고 싶은데, 재봉틀 처음 배울 땐 수업 먼저 듣는 게 덜 헤맸어?",
+      "source": "https://torontotoollibrary.com/search_tools/",
+      "source_id": "yyz-tool-borrow",
+      "place_name": "Toronto Tool Library",
+      "place_address": "",
+      "place_display_name": "토론토툴라이브러리"
+    },
+    {
+      "ord": 7,
+      "city_id": "toronto",
+      "author_nickname": "노스욕센터",
+      "author_id": "10000000-0000-0000-0000-000000000068",
+      "tag_slug": "education",
+      "title": "끝까지 읽기 부담 덜한 영어 소설 한 권만",
+      "body": "아난시서점은 직원 추천을 받는 예약도 있대. 영어 소설 입문으로 끝까지 읽기 부담 덜했던 책 한 권만 골라줘, 두께에 기죽는 건 빼고 ㅋㅋ",
+      "source": "https://houseofanansi.com/pages/visit-the-anansi-bookshop",
+      "source_id": "yyz-anansi-visit",
+      "place_name": "Anansi Bookshop",
+      "place_address": "128 Sterling Road, Lower Level",
+      "place_display_name": "아난시서점"
+    },
+    {
+      "ord": 8,
+      "city_id": "toronto",
+      "author_nickname": "댄포스그릭",
+      "author_id": "10000000-0000-0000-0000-000000000090",
+      "tag_slug": "food",
+      "title": "집에서 감자 구울 때 쓰는 향신료 조합",
+      "body": "감자 구울 때 제일 자주 쓰는 향신료 조합 있어? 토론토에서 구하기 쉬운 걸로 알려주면 집밥 메뉴에 넣어보고 싶어.",
+      "source": "https://thespicetrader.ca/collections/herbs-spices-1",
+      "source_id": "yyz-spices"
+    },
+    {
+      "ord": 9,
+      "city_id": "toronto",
+      "author_nickname": "CN타워야경",
+      "author_id": "10000000-0000-0000-0000-000000000069",
+      "tag_slug": "life",
+      "title": "둘이 가는 보드게임 카페, 첫 게임 뭐가 좋아?",
+      "body": "Snakes & Lattes College에서 둘이 한 게임만 제대로 해보고 싶어. 보드게임 카페 자주 가는 사람들, 규칙 설명 짧고 바로 시작할 수 있는 2인 게임 추천해줘. 이름이라도 알고 가면 고르는 시간은 줄겠지.",
+      "source": "https://www.snakesandlattes.com/college",
+      "source_id": "yyz-snakes",
+      "place_name": "Snakes & Lattes College",
+      "place_address": "",
+      "place_display_name": "Snakes & Lattes College"
+    },
+    {
+      "ord": 10,
+      "city_id": "toronto",
+      "author_nickname": "고트레인출근",
+      "author_id": "10000000-0000-0000-0000-000000000083",
+      "tag_slug": "travel",
+      "title": "브릭웍스 처음 가면 어디까지 돌아보면 좋을까",
+      "body": "Evergreen Brick Works는 옛 벽돌공장 구경이랑 산책을 같이 할 수 있겠네. 처음 가서 한 시간쯤 천천히 둘러본다면 어디까지 돌아보는 게 좋을까?",
+      "source": "https://www.evergreen.ca/evergreen-brick-works/visitor-info/plan-your-visit/",
+      "source_id": "yyz-evergreen-visit",
+      "place_name": "Evergreen Brick Works",
+      "place_address": "550 Bayview Avenue",
+      "place_display_name": "Evergreen Brick Works"
+    },
+    {
+      "ord": 11,
+      "city_id": "montreal",
+      "author_nickname": "메트로한칸",
+      "author_id": "49392196-fb82-5ea3-bced-4b7bb76dcec0",
+      "tag_slug": "education",
+      "title": "라르미즈 재봉실, 처음 가도 도움 받을 수 있어?",
+      "body": "옷을 버리기 전에 간단한 수선부터 배워보고 싶어. 라르미즈 재봉실에는 재봉틀과 실, 단추 같은 재료를 쓸 수 있다고 나와 있네. 기계 처음 잡는 사람도 도움받으며 작은 수선을 해볼 수 있는 분위기였어?",
+      "source": "https://laremise.ca/les-ateliers/atelier-couture/",
+      "source_id": "yul-remise-sew",
+      "place_name": "La Remise Villeray",
+      "place_address": "8280 boulevard Saint-Laurent, local 411",
+      "place_display_name": "라르미즈"
+    },
+    {
+      "ord": 12,
+      "city_id": "montreal",
+      "author_nickname": "아트워터오후",
+      "author_id": "2212d766-7329-5611-847e-ee0f59c8eb0e",
+      "tag_slug": "food",
+      "title": "새 그릇 없이 집밥 예쁘게 담는 방법",
+      "body": "집밥도 담는 모양을 바꾸면 어떻게 달라질지 궁금해. 레자퓌테 빌라주 수업 소개에는 색이랑 높이, 접시 안 비율도 다룬다고 하네. 새 그릇 안 사고 해볼 만한 팁 하나만 알려줄래?",
+      "source": "https://www.les-affutes.ca/ateliers/cuisine/dresser-comme-un-chef/",
+      "source_id": "yul-plating",
+      "place_name": "Les Affûtés - Village",
+      "place_address": "1385 Rue Ontario E",
+      "place_display_name": "레자퓌테 빌라주"
+    },
+    {
+      "ord": 13,
+      "city_id": "montreal",
+      "author_nickname": "올드포트바람",
+      "author_id": "6aa367e6-70a0-5702-a758-af383ce1503c",
+      "tag_slug": "life",
+      "title": "불어 영화 한 편, 줄거리 따라가기 편했던 걸로",
+      "body": "보비앙 상영표 보는 중인데 프랑스어 영화 하나 골라보고 싶어. 몬트리올에서 본 것 중 대사 좀 놓쳐도 줄거리 따라가기 편했던 영화 추천해줄래?",
+      "source": "https://cinemacinema.ca/fr/cinema-beaubien",
+      "source_id": "yul-beaubien",
+      "place_name": "Cinéma Beaubien",
+      "place_address": "",
+      "place_display_name": "보비앙"
+    },
+    {
+      "ord": 14,
+      "city_id": "montreal",
+      "author_nickname": "장탈롱바구니",
+      "author_id": "58ccb286-f809-5c83-91f5-0b249eb68fa0",
+      "tag_slug": "food",
+      "title": "바게트랑 작은 파베, 둘이 한 끼에 얼마나 먹어?",
+      "body": "귀욤에서 둘이 먹을 저녁 빵 고르면 바게트 하나로 충분할까? 수프랑 곁들일 생각인데 작은 파베를 각자 하나씩 사는 게 나을지도 고민돼.",
+      "source": "https://guillau.me/collections/les-traditions",
+      "source_id": "yul-traditions",
+      "place_name": "Boulangerie Guillaume",
+      "place_address": "5170 St Laurent Blvd",
+      "place_display_name": "귀욤"
+    },
+    {
+      "ord": 15,
+      "city_id": "montreal",
+      "author_nickname": "우편번호수첩",
+      "author_id": "3af69d3c-ebe8-5e33-9f8c-e62a1abc7e24",
+      "tag_slug": "life",
+      "title": "노트북 수리랑 교체, 견적에서 뭘 봤어?",
+      "body": "Insertech가 컴퓨터 오래 쓰는 법으로 청소랑 소프트웨어 정리부터 안내하네. 몬트리올에서 노트북 수리 맡겨본 사람, 견적의 어느 부분을 보고 수리할지 바꿀지 결정했어?",
+      "source": "https://insertech.ca/en/digital-sustainability/how-to-extend-the-life-of-your-computer/",
+      "source_id": "yul-computer-life"
+    },
+    {
+      "ord": 16,
+      "city_id": "edmonton",
+      "author_nickname": "헨데이하이웨이",
+      "author_id": "10000000-0000-0000-0000-000000000113",
+      "tag_slug": "life",
+      "title": "동네 스케치 시작할 때 펜 하나만 고른다면",
+      "body": "동네 풍경 한 장 그려보고 싶어. The Paint Spot은 작가인 직원들이 재료 상담도 해준다는데, 가기 전에 펜부터 어느 정도 감을 잡고 싶네. 에드먼튼에서 스케치 시작할 때 손에 편했던 펜 하나 추천해줘. 내 그림 실력보다 장비가 먼저 늘어나는 건 조심할 예정 ㅋㅋ",
+      "source": "https://paintspot.ca/the-paint-spot-about-us/",
+      "source_id": "yeg-paint-about",
+      "place_name": "The Paint Spot",
+      "place_address": "",
+      "place_display_name": "The Paint Spot"
+    },
+    {
+      "ord": 17,
+      "city_id": "edmonton",
+      "author_nickname": "U오브A도서관",
+      "author_id": "10000000-0000-0000-0000-000000000101",
+      "tag_slug": "food",
+      "title": "베이킹 수업 뒤 집에서도 다시 만든 메뉴 있어?",
+      "body": "Duchess Atelier가 베이크숍 옆 새 공간에서 수업을 연다고 하네. 수업에서 만들고 끝나는 것보다 집에서도 다시 해먹을 수 있는 메뉴를 배우고 싶어. 에드먼튼에서 베이킹 입문 수업 들어본 사람, 어떤 메뉴가 집에서 복습하기 편했어?",
+      "source": "https://duchessatelier.com/",
+      "source_id": "yeg-duchess-classes",
+      "place_name": "Duchess Atelier",
+      "place_address": "10718 124 Street",
+      "place_display_name": "Duchess Atelier"
+    },
+    {
+      "ord": 18,
+      "city_id": "edmonton",
+      "author_nickname": "올드스트라스코나",
+      "author_id": "10000000-0000-0000-0000-000000000125",
+      "tag_slug": "life",
+      "title": "화요일 잼 공연, 혼자 가도 합석 자리 편할까",
+      "body": "Yardbird Suite의 20일 화요일 잼 공연이 눈에 들어왔어. 연주에 참여하기보단 듣는 쪽으로 가보고 싶은데, 혼자 가본 사람들은 합석 자리에서도 음악 듣기 편했어?",
+      "source": "https://yardbirdsuite.com/shows/tuesday-jam-hosted-by-nate-downey/",
+      "source_id": "yeg-jam",
+      "place_name": "Yardbird Suite",
+      "place_address": "11 Tommy Banks Way",
+      "place_display_name": "Yardbird Suite"
+    },
+    {
+      "ord": 19,
+      "city_id": "edmonton",
+      "author_nickname": "제스퍼애비뉴",
+      "author_id": "10000000-0000-0000-0000-000000000110",
+      "tag_slug": "life",
+      "title": "큰 가구 기부할 때 집 밖까지 어떻게 옮겼어?",
+      "body": "리스토어 기부 픽업은 집 안에 들어오거나 지하실에서 물건을 옮겨주진 않는다고 안내해. 큰 물건을 내놓으려면 밖으로 옮기는 방법부터 생각해야겠네. 에드먼튼에서 큰 가구 기부해본 사람, 그 부분은 어떻게 해결했어?",
+      "source": "https://hfh.org/restore/donations-hub/",
+      "source_id": "yeg-donate"
+    },
+    {
+      "ord": 20,
+      "city_id": "edmonton",
+      "author_nickname": "노스사스카츄완강",
+      "author_id": "10000000-0000-0000-0000-000000000106",
+      "tag_slug": "food",
+      "title": "향 너무 세지 않은 허브티 찾고 있어",
+      "body": "Acquired Taste 허브티 종류를 보는데 이름만으로는 맛이 잘 안 그려지네. 에드먼튼에서 마셔본 것 중 향 너무 세지 않고 저녁에 편하게 마시기 좋았던 거 있어?",
+      "source": "https://acquiredtastetea.com/collections/herbal",
+      "source_id": "yeg-tea-herbal",
+      "place_name": "Acquired Taste Tea Company",
+      "place_address": "",
+      "place_display_name": "Acquired Taste"
+    },
+    {
+      "ord": 21,
+      "city_id": "calgary",
+      "author_nickname": "컨페더레이션공원",
+      "author_id": "10000000-0000-0000-0000-000000000141",
+      "tag_slug": "education",
+      "title": "작은 테라리움, 어떤 식물이 덜 까다로웠어?",
+      "body": "PLANT 테라리움 수업은 유리 용기랑 식물, 만드는 재료를 같이 준대. 캘거리 집 안에서 작은 테라리움 키워본 사람은 어떤 식물이 관리하기 덜 까다로웠어? 예쁜 걸 만드는 것보다 그다음이 더 궁금함 ㅋㅋ",
+      "source": "https://plantshop.ca/products/diy-terrarium-workshop-1",
+      "source_id": "yyc-terrarium",
+      "place_name": "Plant",
+      "place_address": "1327 9 Avenue SE",
+      "place_display_name": "PLANT"
+    },
+    {
+      "ord": 22,
+      "city_id": "calgary",
+      "author_nickname": "글렌모어공원",
+      "author_id": "10000000-0000-0000-0000-000000000133",
+      "tag_slug": "life",
+      "title": "첫 교향악 공연, 곡은 미리 듣고 갈까",
+      "body": "Calgary Philharmonic 안내에 정장 필수는 아니라고 써 있어서 복장 걱정은 하나 덜었음. 첫 공연이라면 곡을 미리 들어보고 가는 쪽이 더 재밌었어, 아예 모르고 가는 쪽이 좋았어?",
+      "source": "https://calgaryphil.com/concerts/plan-your-visit/faq/",
+      "source_id": "yyc-phil-faq"
+    },
+    {
+      "ord": 23,
+      "city_id": "calgary",
+      "author_nickname": "C트레인통근",
+      "author_id": "10000000-0000-0000-0000-000000000130",
+      "tag_slug": "life",
+      "title": "클라이밍 처음이면 체험이랑 수업 중 뭐부터?",
+      "body": "캘거리클라이밍센터 안내 보니 혼자 시작하는 방식도 있네. 평소 걷는 쪽이 편한데 실내 운동도 하나 찾아보고 싶어. 처음엔 볼더링 체험이랑 기초 수업 중 어느 쪽이 덜 막막했어?",
+      "source": "https://www.calgaryclimbing.com/how-to-get-started/",
+      "source_id": "yyc-climb-start",
+      "place_name": "Calgary Climbing Centre",
+      "place_address": "",
+      "place_display_name": "캘거리클라이밍센터"
+    },
+    {
+      "ord": 24,
+      "city_id": "calgary",
+      "author_nickname": "17에비뉴커피",
+      "author_id": "10000000-0000-0000-0000-000000000129",
+      "tag_slug": "food",
+      "title": "커피맛이랑 얼그레이맛 아이스크림 중 덜 단 쪽?",
+      "body": "Village Ice Cream Bridgeland 알아보다가 메뉴의 Phil & Sebastian Coffee랑 Two Hills Earl Grey에서 멈췄음. 커피 맛을 고르면 차 맛도 계속 신경 쓰일 것 같아. 둘 다 먹어본 사람은 어느 쪽이 향이 진하고 덜 달게 느껴졌어?",
+      "source": "https://www.villageicecream.com/flavours",
+      "source_id": "yyc-ice-flavours",
+      "place_name": "Village Ice Cream - Bridgeland",
+      "place_address": "69 7A Street NE",
+      "place_display_name": "Village Ice Cream Bridgeland"
+    },
+    {
+      "ord": 25,
+      "city_id": "calgary",
+      "author_nickname": "보우강변산책",
+      "author_id": "10000000-0000-0000-0000-000000000128",
+      "tag_slug": "life",
+      "title": "옷 기부할 때 안 입는 것과 못 입는 것부터 나누기",
+      "body": "윈즈에 옷 기부해본 사람, 보풀 있는 니트는 어디까지 손질해서 가져갔어? 안내엔 깨끗하고 상태 좋은 옷을 받는다고 돼 있는데, 그 상태 좋음이 글로만 봐선 좀 애매해. 받는 사람한테 보풀 제거하는 일까지 넘기고 싶진 않음.",
+      "source": "https://www.winsyyc.ca/donate-goods",
+      "source_id": "yyc-wins-donate"
+    },
+    {
+      "ord": 26,
+      "city_id": "vancouver",
+      "author_nickname": "비오는지도",
+      "author_id": "bfe21c78-da18-5a49-908f-3d3afae8144d",
+      "tag_slug": "life",
+      "content_kind": "community_story",
+      "title": "아이 영어교육, 내 불안이 먼저였던 걸까",
+      "body": "밴쿠버 오기 전, 큰애 영어수업 문제로 아내랑 의견이 갈렸어. 나는 영어에 자신이 없어서 아이는 일찍 배워두게 하고 싶었고, 아내는 아직 한글도 잘 모르는데 영어부터 들이밀지 말자고 했어. 비용을 못 낼 형편은 아니었는데 그게 핵심은 아니더라.\n결국 영어 활동 비중이 있는 유치원으로 합의했어. 큰애가 책 읽기를 좋아하고 차분하다 보니 잘 따라갈 거라는 기대도 컸고.\n지금 밴쿠버에서 한국말과 영어를 같이 지키려니, 내 불안을 아이에게 넘기는 건 아닌가 싶어. 두 언어 쓰는 집에선 배우자랑 어떤 기준부터 맞췄어?",
+      "source": "https://www.teamblind.com/kr/post/%EC%98%81%EC%9C%A0-%EB%B3%B4%EB%82%B4%EA%B3%A0%EC%8B%B6%EC%9D%80%EB%8D%B0-%EC%99%80%EC%9D%B4%ED%94%84%EB%B0%98%EB%8C%80-c5zskk7w",
+      "source_id": "blind:c5zskk7w",
+      "source_case_key": "blind:c5zskk7w",
+      "post_id": "eed1f821-4722-564f-b6eb-e30115e88fac",
+      "poll": {
+        "question": "부부의 언어교육 의견이 다를 때 무엇부터 맞출까?",
+        "options": [
+          "아이 반응과 적응부터",
+          "집과 기관의 역할부터",
+          "교육비와 시간부터"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "bfe21c78-da18-5a49-908f-3d3afae8144d",
+        "family": {
+          "children_ages": [
+            5,
+            2
+          ],
+          "marriage_years": 6,
+          "household_finances": "육아비와 주거비를 함께 계획한다",
+          "relationship_status": "married"
+        },
+        "topic": "배우자와 가족 갈등"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "다섯 살을 앞둔 아이의 영어 조기교육을 원하는 아버지와 한국어가 먼저라는 아내가 대립했으나, 영어 강화 사립유치원으로 합의한 상태. 아버지는 자신의 영어 부족과 아이의 독서 성향을 근거로 기대함.",
+        "fictional_changes": [
+          "가족은 고정된 35세 남성·기혼6년·5세/2세 두 자녀로 유지",
+          "한국 유치원 선택 장면은 Vancouver 입국 전으로 명시해 거주6개월과 양립",
+          "한국의 특정 학제·사립유치원을 현지 제도로 주장하지 않음",
+          "현지 두 언어 생활에 대한 질문과 화자의 자기 의심을 각색해 추가; 성과·아이의 후속 적응은 만들지 않음"
+        ]
+      }
+    },
+    {
+      "ord": 27,
+      "city_id": "toronto",
+      "author_nickname": "스카보로블러프",
+      "author_id": "10000000-0000-0000-0000-000000000070",
+      "tag_slug": "life",
+      "content_kind": "community_story",
+      "title": "배우자 직장이 멀어지면 누구 일부터 바꿔야 할까",
+      "body": "아내 직장이 먼 곳으로 옮겨졌는데 나는 토론토에서 하는 일을 당장 옮기기 어려워. 세 살 아이를 대신 봐줄 사람도 따로 없어서 출퇴근 시간이 길어지면 등하원부터 어떻게 나눠야 할지 막막해.\n회사 쪽 통근 지원도 없어서 아내도 나도 답답해하고 있어. 그만두라는 말은 하고 싶지 않은데 일단 버티자고만 하면 부담을 아내한테 미루는 것 같고.\n배우자 직장이 멀어졌을 때 한 사람의 이직이랑 가족 이사를 어떤 순서로 비교했어?",
+      "source": "https://www.teamblind.com/kr/post/%EC%A7%80%EB%B0%A9%EC%9D%B4%EC%A0%84-%EA%B3%B5%EA%B3%B5%EA%B8%B0%EA%B4%80-%EB%8B%A4%EB%8B%88%EB%8A%94-%EB%B0%B0%EC%9A%B0%EC%9E%90-%EC%9E%88%EB%8A%94-%EC%82%AC%EB%9E%8C%EB%93%A4-%EC%9E%88%EC%96%B4-055upci2",
+      "source_id": "blind:055upci2",
+      "source_case_key": "blind:055upci2",
+      "post_id": "2ce2f632-b493-5183-af49-b27e15f82dfd",
+      "poll": {
+        "question": "직장 이전과 돌봄이 겹치면 먼저 무엇을 검토할까?",
+        "options": [
+          "각자 이직 가능성",
+          "가족 이사와 통근",
+          "외부 돌봄과 역할 조정"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000070",
+        "family": {
+          "children_ages": [
+            3
+          ],
+          "marriage_years": 6,
+          "household_finances": "육아비와 주거비를 함께 계획한다",
+          "relationship_status": "married"
+        },
+        "topic": "육아 분담"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "배우자 직장의 강제 이전, 본인 직장 때문에 이사하기 어려운 점, 어린 아이와 돌봄 인력 부재, 통근버스 지원 부재 때문에 부부가 함께 막막해함. 해결 결말 없음.",
+        "fictional_changes": [
+          "서울·공공기관의 구체 정보는 제거하고 Toronto의 가상 직장 이전 상황으로 옮김; 실제 현지 회사·정책 사례가 아님",
+          "복수의 어린 아이는 고정 가족 설정의3세 자녀1명으로 조정",
+          "화자는 고정된35세 남성 디자이너·기혼6년을 유지하고 배우자의 직업은 단정하지 않음",
+          "이직을 권한 댓글을 해결된 결말로 옮기지 않고 아직 비교 중인 선택으로 남김"
+        ]
+      }
+    },
+    {
+      "ord": 28,
+      "city_id": "montreal",
+      "author_nickname": "운하옆돌멩이",
+      "author_id": "04528f50-f69f-5ecf-a9d5-cc9b092f2ba2",
+      "tag_slug": "life",
+      "content_kind": "community_story",
+      "title": "처가에 서운한 얘기하다 돈 얘기부터 꺼내버렸어",
+      "body": "장인장모님이 예의를 지키라고 하실 때, 처가에서 우리한테 보태준 건 없다는 말이 먼저 나와버렸어. 생활에 소소하게 보태주는 건 우리 부모님이고, 장인장모님은 넉넉하지 않은 살림에도 처남 쪽을 도와주는 게 쌓였던 것 같아.\n아내는 내가 부모님한테 대들었다고 화를 냈고 처가에서도 반응이 안 좋았어. 서운함은 남아 있는데 돈을 얼마나 보탰는지로 예의를 따진 말은 다시 생각하게 돼.\n부부 돈 얘기에 양가가 끼어들면, 지원받는 문제랑 가족 사이의 선을 어떻게 나눠서 얘기해?",
+      "source": "https://www.teamblind.com/kr/post/%EC%B2%98%EA%B0%80%EC%A7%91%EC%97%90%EC%84%9C-%EA%B2%BD%EC%A0%9C%EC%A0%81-%EB%8F%84%EC%9B%80%EC%9D%80-%EC%97%86%EB%8A%94%EB%8D%B0-wx22nl7q",
+      "source_id": "blind:wx22nl7q",
+      "source_case_key": "blind:wx22nl7q",
+      "post_id": "7b23002e-42f7-5c35-a961-201b146de50d",
+      "poll": {
+        "question": "양가 지원과 가족 사이 예의는 어떻게 얘기할까?",
+        "options": [
+          "지원과 예의를 나눠 얘기",
+          "지원 차이와 서운함부터",
+          "부부가 먼저 기준 정하기"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "04528f50-f69f-5ecf-a9d5-cc9b092f2ba2",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "공동 생활비와 개인 지출을 구분해 관리한다",
+          "relationship_status": "married"
+        },
+        "topic": "결혼 전후 관계"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "처가의 경제적 도움 없이 예절 요구를 받는다고 느낀 남편이 장인장모에게 대들었고 아내와 처가가 화를 냈다는 단문. 본인 부모의 소소한 지원, 처남 쪽 지원과의 비교가 근거이며 화해 결말은 없음.",
+        "fictional_changes": [
+          "고정35세 남성·기혼4년·자녀 없음·프리랜서 설정을 유지",
+          "장소는 고정 Montréal 화자의 관점으로 옮기되 실제 캐나다 가족 사건으로 검증됐다는 주장을 하지 않음",
+          "사적인 직장·원문 욕설·가족에 대한 비방은 재현하지 않음",
+          "남편의 돈과 예의 연결 논리를 그대로 남기고 자기 점검과 질문을 각색; 화해나 새 사건은 추가하지 않음"
+        ]
+      }
+    },
+    {
+      "ord": 29,
+      "city_id": "edmonton",
+      "author_nickname": "주말운동화",
+      "author_id": "037e2821-46ca-5d82-8241-f001f477bcdc",
+      "tag_slug": "life",
+      "content_kind": "community_story",
+      "title": "육아를 나누는데 챙기고 시키는 일은 한 사람 몫",
+      "body": "둘째 백일 무렵엔 첫째 등하원과 밥, 집안일과 돈 관리까지 내가 챙겼어. 아내는 퇴근 후 아이를 씻기고 젖병도 닦았지만 물건이 안 보일 때마다 나를 불렀어.\n한번은 내 화장품을 같이 쓰다 다 쓴 걸 말 안 해서 내가 쓰려고 보니 없더라. 물건 하나보다 주문할 때까지 전부 내 몫인 게 힘들었어. 크게 화내고 나서야 좀 움직였고.\n에드먼튼에서 둘이 육아하는 집은 챙기고 지시하는 일까지 한쪽 몫이 안 되게 어떻게 나눠?",
+      "source": "https://www.teamblind.com/kr/post/%EB%91%98%EC%A7%B8-%EB%82%B3%EA%B3%A0-%EB%82%A8%ED%8E%B8%EC%9D%B4%EB%9E%91-%EC%82%AC%EC%9D%B4%EA%B0%80-%EC%99%84%EC%A0%84-%ED%8C%8C%EA%B5%AD%EC%9D%B4%EB%8B%A4-gsy5zlkv",
+      "source_id": "blind:gsy5zlkv",
+      "source_case_key": "blind:gsy5zlkv",
+      "post_id": "54857d16-c00d-5ce1-a453-416095bede26",
+      "poll": {
+        "question": "육아와 집안일의 계획·확인은 어떻게 나눌까?",
+        "options": [
+          "영역별 계획까지 각자 책임",
+          "함께 목록을 만들고 조정",
+          "필요할 때 구체적으로 요청"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "037e2821-46ca-5d82-8241-f001f477bcdc",
+        "family": {
+          "children_ages": [
+            5,
+            2
+          ],
+          "marriage_years": 6,
+          "household_finances": "육아비와 주거비를 함께 계획한다",
+          "relationship_status": "married"
+        },
+        "topic": "육아 분담"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "첫째3세·둘째100일인 맞벌이 공무원 부부에서 아내가 돈관리·등하원·식사·살림을 주도함. 남편도 아이 목욕·젖병·설거지를 하지만 물건 찾기와 소모품 고갈 알림까지 아내가 챙겨야 해서 폭발했고, 화낸 뒤에야 움직였다는 미해결 갈등.",
+        "fictional_changes": [
+          "가족 역할을 남성 주양육자 화자와 아내로 바꾸고 모유수유·임신·출산 경험을 남성에게 부여하지 않음",
+          "공무원 부부 정보는 고정 디자이너 화자와 미상 배우자로 조정",
+          "현재5세/2세 자녀는 유지하며 둘째100일 무렵의 과거 장면으로 명시; 당시 첫째3세와 양립",
+          "현재 Edmonton 거주1년보다 오래된 장면이므로 과거 발생 도시를 Edmonton으로 단정하지 않음",
+          "배우자가 해온 목욕·젖병 일도 보존하고, 댓글의 강압·비하 표현이나 해결 결말을 추가하지 않음"
+        ]
+      }
+    },
+    {
+      "ord": 30,
+      "city_id": "calgary",
+      "author_nickname": "프린스아일랜드",
+      "author_id": "10000000-0000-0000-0000-000000000132",
+      "tag_slug": "life",
+      "content_kind": "community_story",
+      "title": "시댁 모임의 준비랑 뒷정리도 미리 나누고 싶어",
+      "body": "우리 집에서 시댁 모임을 하면 뒷정리는 자연스럽게 내 차지가 돼. 얼마 전엔 저녁에 백숙 한다고 했더니 시댁에 오신 손님 것도 같이 대접해줄 수 있냐고 하셨어.\n평소 나한테 못해주시는 건 아니야. 그래도 다른 가족도 있는데 이런 부탁은 내 쪽으로만 오는 게 쌓여. 집안일은 남편도 하기 시작했는데 모임 일은 또 내가 말해야 나뉘는 건가 싶고.\n양가 모임 때 초대한 사람이 준비와 뒷정리부터 나누자고 하면 너무 계산적으로 보일까?",
+      "source": "https://www.teamblind.com/kr/post/%EC%8B%9C%EB%8C%81-%EC%8B%9D%EA%B5%AC%EB%93%A4%EC%9D%B4-%EC%9D%80%EA%B7%BC%ED%9E%88-%EB%82%B4%EA%B2%8C%EB%A7%8C-%EC%9D%BC%EC%9D%84-%EC%8B%9C%ED%82%A4%EB%8A%94%EB%8D%B0-fp8twpx1",
+      "source_id": "blind:fp8twpx1",
+      "source_case_key": "blind:fp8twpx1",
+      "post_id": "eacb89a0-240e-5b14-9d6d-7bde3af98e31",
+      "poll": {
+        "question": "가족 모임의 준비와 뒷정리는 어떻게 나눌까?",
+        "options": [
+          "초대한 사람이 먼저 분담",
+          "부부가 자기 가족 일을 조정",
+          "그때 가능한 사람이 맡기"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000132",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "공동 생활비와 개인 지출을 구분해 관리한다",
+          "relationship_status": "married"
+        },
+        "topic": "결혼 전후 관계"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "집에서 모임을 하면 뒷정리가 화자에게 돌아가고 백숙을 만든다는 말에 시댁 손님 접대까지 부탁받음. 평소 가족이 못되게 하는 것은 아니지만 부탁이 본인에게만 쏠리고 본인은 대접받지 못해 지침. 남편이 막내라는 댓글 응답이 있으나 이를 정당한 이유로 인정하지는 않음.",
+        "fictional_changes": [
+          "고정29세 여성·기혼4년·자녀 없음·서비스직 설정을 유지",
+          "남편이 집안일을 하기 시작했다는 부분은 같은 profile의 실제2026-10-18 공개글 연속성에서 연결",
+          "원문의 막내 서열을 이 화자의 신규 고정 신상으로 만들지 않음",
+          "원문 반대 맥락인 평소 나쁘게 대하는 가족은 아니라는 진술 보존",
+          "손님 접대·뒷정리 갈등만 활용하며 캐나다의 관행·새 거절·가족 반응·해결 결말은 만들지 않음"
+        ]
+      }
+    }
+  ]
+}

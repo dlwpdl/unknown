@@ -1,0 +1,2271 @@
+{
+  "reviewer": "same native G6 writer 2f110c8c-6e57-40d4-9929-e0b53f8e45fd",
+  "reviewed_at": "2026-10-20T09:30:10.876263+00:00",
+  "skill": "/Users/ash/.agents/skills/patina/SKILL.md",
+  "profile": "default",
+  "config": "/Users/ash/.agents/skills/patina/.patina.default.yaml",
+  "method": "manual source/persona-grounded structure pass, sentence pass, and meaning/voice self-review in the same writer; no new LLM backend or paid API",
+  "items": [
+    {
+      "ord": 1,
+      "city_id": "vancouver",
+      "author_id": "10000000-0000-0000-0000-000000000054",
+      "author_unchanged": true,
+      "source_body_sha256": "791f10213ef13c307fc07ef0a99eb3563518f0caf074e9bb703e3aabf3631fca",
+      "final_body_sha256": "584f87f1871d54706a03375b37fd8eace7b02b7bb09b40252b86913adc03d862",
+      "changed": true,
+      "review_decision": "질문을 먼저 꺼내고 운반 고민으로 끝내, 안내문→질문 순서를 풀었다. 현금·데빗과 이동 방식은 유지.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "동네 산책",
+            "중고 물건",
+            "도서관"
+          ],
+          "occasional": [
+            "사진",
+            "집 구하기"
+          ]
+        },
+        "occupation": "서비스직",
+        "voice": {
+          "emoji": "필요할 때 하나",
+          "humor": 2,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 1,
+          "sentence_length": "구체적인 배경을 풀어 설명함",
+          "place_name_language": "ko"
+        },
+        "traits": {
+          "initiative": 0,
+          "directness": 1,
+          "verbosity": 2,
+          "focus": 1,
+          "humor": 2,
+          "social": 1
+        }
+      },
+      "recent_posts_read": [],
+      "actual_recent_posts_available": 0,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 2,
+      "city_id": "vancouver",
+      "author_id": "10000000-0000-0000-0000-000000000019",
+      "author_unchanged": true,
+      "source_body_sha256": "ec636171cbd53679d078770aff786bdf6a599fb7ed2798ea838df32428f61b9f",
+      "final_body_sha256": "ec636171cbd53679d078770aff786bdf6a599fb7ed2798ea838df32428f61b9f",
+      "changed": false,
+      "review_decision": "짧은 음식 취향 질문이 화자의 발화량·최근 식사용 빵 관심과 맞아 문장은 유지. 실제 방문·맛 평가로 바꾸지 않음.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "장보기",
+            "새로운 음식",
+            "외식 비용"
+          ],
+          "occasional": [
+            "동네 산책",
+            "집밥"
+          ]
+        },
+        "occupation": "개발자",
+        "voice": {
+          "emoji": "필요할 때 하나",
+          "humor": 1,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 1,
+          "sentence_length": "짧은 문장 중심",
+          "place_name_language": "en"
+        },
+        "traits": {
+          "initiative": 0,
+          "directness": 1,
+          "verbosity": 0,
+          "focus": 2,
+          "humor": 1,
+          "social": 2
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "c0c45fdb-937e-4393-892c-8a8c2fafff29",
+          "title": "요리 수업, 보는 쪽이랑 직접 하는 쪽이 있네",
+          "body_sha256": "0f33d5119d78cfb3c1a98d05ffb4217285867beda0e3f0da40a197264da25ed6"
+        },
+        {
+          "id": "4a3627cc-0a0e-4433-91a8-1d495310f03f",
+          "title": "Bâtard는 빵을 매장에서 만든다길래",
+          "body_sha256": "62a16f9e93877f46fa5ae683830b44f8987363092d682edbed9d7626e656a7f3"
+        },
+        {
+          "id": "1d0aa3b3-d34e-4315-a25e-890624d79db3",
+          "title": "Granville Island Public Market, 오늘도 장볼 수 있네",
+          "body_sha256": "302413a5fd7511ae4234c1a7e3a0e63bdec340a5183a212359ff0038678edd4e"
+        }
+      ],
+      "actual_recent_posts_available": 3,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 3,
+      "city_id": "vancouver",
+      "author_id": "c09404bf-88a7-51fd-a4f0-1759650607f2",
+      "author_unchanged": true,
+      "source_body_sha256": "277d2b01841dfb84922b383dced96467c89ab62fcb1f49592cde23c9339baf84",
+      "final_body_sha256": "4262a00f0fbe3a7e1baee97216123687c712c6ea4e95d97dade46f54fe9bdace",
+      "changed": true,
+      "review_decision": "한 사람이 만든다는 불필요한 일반화를 빼고, 책을 고르는 구체적 궁금증으로 마무리.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "주말 문화생활",
+            "도서관",
+            "카페"
+          ],
+          "occasional": [
+            "언어 공부",
+            "집 구하기"
+          ]
+        },
+        "occupation": "대학원생",
+        "voice": {
+          "emoji": "거의 없음",
+          "humor": 1,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 0,
+          "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+          "place_name_language": "ko"
+        },
+        "traits": {
+          "initiative": 0,
+          "directness": 0,
+          "verbosity": 1,
+          "focus": 2,
+          "humor": 1,
+          "social": 2
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "f46fab94-b6bb-4183-bc62-4fef20347f70",
+          "title": "조용한 영화관이 편한데 싱어롱은 궁금해",
+          "body_sha256": "530a872ca7a43722ef8fee7728e005a6f7c2f68613afa8cd0e60fda3eab9ea3c"
+        },
+        {
+          "id": "21451115-bc0f-44c5-abbe-0836d808c16f",
+          "title": "렌트 보증금, 집주인 마음대로 가져가는 건 아니네",
+          "body_sha256": "fa4c13828d40e968f1d02d47757b87eb07517cafd1ad892c54db9193196e9541"
+        },
+        {
+          "id": "a9f737b4-af5c-4f23-9639-55b337b222df",
+          "title": "눈 오는 날 시가 어느 길부터 치우는지 알아두면 편함",
+          "body_sha256": "90d49d3de0c1ae7ad349a9ed88beef00f3e22ea506304b09030f1307cf78ca13"
+        }
+      ],
+      "actual_recent_posts_available": 3,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 4,
+      "city_id": "vancouver",
+      "author_id": "10000000-0000-0000-0000-000000000017",
+      "author_unchanged": true,
+      "source_body_sha256": "fc5337d0397d19f73797c31bbc3f15bcc52af652a0222780608c6d6f682f7cce",
+      "final_body_sha256": "2eadabf1d5bded5da20e77b376c20f5a1da7a88a957adeb2404dd11452f20650",
+      "changed": true,
+      "review_decision": "water resistant를 방수로 강화한 표현을 바로잡고, 두 번 나온 비교와 궁금해의 리듬을 정리.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "동네 산책",
+            "반려동물",
+            "중고 물건"
+          ],
+          "occasional": [
+            "주말 문화생활",
+            "도서관"
+          ]
+        },
+        "occupation": "개발자",
+        "voice": {
+          "emoji": "필요할 때 하나",
+          "humor": 1,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 1,
+          "sentence_length": "구체적인 배경을 풀어 설명함",
+          "place_name_language": "en"
+        },
+        "traits": {
+          "initiative": 0,
+          "directness": 1,
+          "verbosity": 2,
+          "focus": 0,
+          "humor": 1,
+          "social": 1
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "226a9c3e-76e2-46dd-9086-60d81dee51e1",
+          "title": "교통 접근성 문제를 전달하는 창구도 따로 있네",
+          "body_sha256": "786ffc78ecf37fbb6b6fe79180a1e325bcf3acbd738d21928f282ea7b2fa5c6c"
+        }
+      ],
+      "actual_recent_posts_available": 1,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 5,
+      "city_id": "vancouver",
+      "author_id": "10000000-0000-0000-0000-000000000066",
+      "author_unchanged": true,
+      "source_body_sha256": "f40029562a5d14ff0e6e226edb7281456918f87b315f07f675fc5e37e9d6b69d",
+      "final_body_sha256": "7ce8b1563b6efe8ea2c7467f0e9b3b79d77b2c1b73313fd65a22de2d1bfe31cb",
+      "changed": true,
+      "review_decision": "대중교통 화자의 구체적 조건을 살리고 마지막 평가문을 실제 질문 앞으로 옮김. 보조견 예외·전 구간 이동장 조건 보존.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "도보 이동",
+            "자전거",
+            "동네 산책"
+          ],
+          "occasional": [
+            "사진",
+            "주말 문화생활"
+          ]
+        },
+        "occupation": "직업 과정 학생",
+        "voice": {
+          "emoji": "거의 없음",
+          "humor": 0,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 2,
+          "sentence_length": "구체적인 배경을 풀어 설명함",
+          "place_name_language": "ko"
+        },
+        "traits": {
+          "initiative": 2,
+          "directness": 2,
+          "verbosity": 2,
+          "focus": 2,
+          "humor": 0,
+          "social": 1
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "211b3e51-fcc2-4337-9608-a23760bd3ca6",
+          "title": "트랜스링크 우선 좌석, 겉으로 안 보이는 장애도 있어",
+          "body_sha256": "22b539fcba15d4a86512373004a83bfe55821ffc34fbf03e7597c26160d378c8"
+        },
+        {
+          "id": "46e51807-0808-40d4-afbc-43b74292949f",
+          "title": "린캐니언 생태센터는 숲속 생물을 알아보는 출발점이네",
+          "body_sha256": "152123e94b51fc1f8eafa0301a2742cf6524abbebad37523760ef742de95fe03"
+        },
+        {
+          "id": "688be2f5-4bca-4899-8597-877b3bf85b12",
+          "title": "아쿠아버스도 자전거를 실을 수 있는 배가 따로 있어",
+          "body_sha256": "9d49c81151e3c10bb2e045c8a6df786ad29b15fd83bb2c46ac248a9f2f9ec38e"
+        }
+      ],
+      "actual_recent_posts_available": 3,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 6,
+      "city_id": "toronto",
+      "author_id": "10000000-0000-0000-0000-000000000078",
+      "author_unchanged": true,
+      "source_body_sha256": "19a23660d5b2f66eecddb6f4b71086af0513d8688c4bebd97976e5d257f4445c",
+      "final_body_sha256": "19a23660d5b2f66eecddb6f4b71086af0513d8688c4bebd97976e5d257f4445c",
+      "changed": false,
+      "review_decision": "두 문장의 조심스러운 입문 질문을 유지. 파트너 불필요와 수업 중 짝 교체는 실제 운영 안내로 확인.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "주말 문화생활",
+            "중고 물건",
+            "도서관"
+          ],
+          "occasional": [
+            "반려동물",
+            "사진"
+          ]
+        },
+        "occupation": "대학생",
+        "voice": {
+          "emoji": "필요할 때 하나",
+          "humor": 0,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 0,
+          "sentence_length": "짧은 문장 중심",
+          "place_name_language": "ko"
+        },
+        "traits": {
+          "initiative": 0,
+          "directness": 0,
+          "verbosity": 0,
+          "focus": 2,
+          "humor": 0,
+          "social": 1
+        }
+      },
+      "recent_posts_read": [],
+      "actual_recent_posts_available": 0,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 7,
+      "city_id": "toronto",
+      "author_id": "10000000-0000-0000-0000-000000000029",
+      "author_unchanged": true,
+      "source_body_sha256": "18b01e4f2e125f71e2077057cd1abc314b9ed16bc135eadd6a65c22c255f5b3a",
+      "final_body_sha256": "a07d9852fcd53fb9e5e90dfa520fb5919da5c8991c9d9d27178536f9927f11d8",
+      "changed": true,
+      "review_decision": "조심스러운 화자의 궁금증을 첫 문장으로. 같은 질문을 두 번 던지지 않고 마지막은 구체적 경험 요청.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "간단한 집밥",
+            "외식 비용",
+            "카페"
+          ],
+          "occasional": [
+            "사진",
+            "집밥"
+          ]
+        },
+        "occupation": "서비스직",
+        "voice": {
+          "emoji": "거의 없음",
+          "humor": 0,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 0,
+          "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+          "place_name_language": "en"
+        },
+        "traits": {
+          "initiative": 0,
+          "directness": 0,
+          "verbosity": 1,
+          "focus": 2,
+          "humor": 0,
+          "social": 0
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "3eea4875-30a3-41c2-ae7d-fbb4d92df6bf",
+          "title": "식재료만 사고 포장은 덜 가져오고 싶어",
+          "body_sha256": "7fef68da300846780cf0be5cb0bdc9e770ed9825e7d63fecba4909987af540a9"
+        },
+        {
+          "id": "e5977931-1142-404d-8d08-1dbd2c4fd8e2",
+          "title": "Toronto 음식물통에 생분해 컵까지 넣는 건 아니래",
+          "body_sha256": "1cd6c9701a6bb50170960cd413f8dacb9e2c7b11c95598bac98f6667206bca2e"
+        },
+        {
+          "id": "17e95780-ae66-45bf-8264-a5fec3c33014",
+          "title": "Textile Museum의 이번 자수 전시가 눈에 들어왔어",
+          "body_sha256": "aefdceb3e3ca9802f0cdce27d0a3cb54ad2e10bb47a27f4fb7dd2bdec60e1555"
+        }
+      ],
+      "actual_recent_posts_available": 3,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 8,
+      "city_id": "toronto",
+      "author_id": "10000000-0000-0000-0000-000000000032",
+      "author_unchanged": true,
+      "source_body_sha256": "8e6944f4eda268db880ffa5520b20acee7b6046f5630dd29ab99659478dc803d",
+      "final_body_sha256": "b85914f7307ae0637038e6c3498df55836470ae81b3afc8a40582b8ea4565a94",
+      "changed": true,
+      "review_decision": "모든 질문 끝에 도시 이름을 붙이는 묶음 반복을 줄임. 사진 보관·작은 인화의 구체적 용도 유지.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "주말 문화생활",
+            "중고 물건",
+            "집밥"
+          ],
+          "occasional": [
+            "사진",
+            "장보기"
+          ]
+        },
+        "occupation": "디자이너",
+        "voice": {
+          "emoji": "거의 없음",
+          "humor": 0,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 2,
+          "sentence_length": "구체적인 배경을 풀어 설명함",
+          "place_name_language": "ko"
+        },
+        "traits": {
+          "initiative": 2,
+          "directness": 2,
+          "verbosity": 2,
+          "focus": 2,
+          "humor": 0,
+          "social": 0
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "c6e39ff7-b806-4964-a387-645ce9d48129",
+          "title": "옷의 무늬를 볼 때 만든 사람 얘기도 궁금해",
+          "body_sha256": "978ae51765d7dd1ecff6155ff1915ade165f3ad8e097a6308cab7c6d4add62e2"
+        },
+        {
+          "id": "d09f651c-aa09-4e92-93ef-ed372cfdfe6f",
+          "title": "영화관에서 남의 휴대폰 화면까지 보고 싶진 않음",
+          "body_sha256": "aedf015aea82bc9839b82cd0d643f5cfe84de626f18b8bfc7c193d3213688d47"
+        },
+        {
+          "id": "56d56971-2b19-51ad-9871-789992938f07",
+          "title": "TTC 출발 전에 Service advisories 확인",
+          "body_sha256": "f23d9604bf6dab50b4712e85069d818a4edb3bcd2de61ba662d2a33fe7ce92d4"
+        }
+      ],
+      "actual_recent_posts_available": 3,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 9,
+      "city_id": "toronto",
+      "author_id": "10000000-0000-0000-0000-000000000071",
+      "author_unchanged": true,
+      "source_body_sha256": "33fa5da0c26ff5daab95bbb63b80b17c1c54097ea2fd2fa56d09f0a0753dc3c7",
+      "final_body_sha256": "2bac6873b4d19c8e9f2a7695fa302664a6325d6e1d2188062fc5935328300eb1",
+      "changed": true,
+      "review_decision": "귀여워하는 마음만으론 부족하다는 훈계형 도입을 학생 본인의 시간 고민으로 변경. 지원 범위·이동 책임 보존.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "반려동물",
+            "주말 문화생활",
+            "장보기"
+          ],
+          "occasional": [
+            "사진",
+            "카페"
+          ]
+        },
+        "occupation": "직업 과정 학생",
+        "voice": {
+          "emoji": "필요할 때 하나",
+          "humor": 0,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 0,
+          "sentence_length": "구체적인 배경을 풀어 설명함",
+          "place_name_language": "en"
+        },
+        "traits": {
+          "initiative": 0,
+          "directness": 0,
+          "verbosity": 2,
+          "focus": 1,
+          "humor": 0,
+          "social": 0
+        }
+      },
+      "recent_posts_read": [],
+      "actual_recent_posts_available": 0,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 10,
+      "city_id": "toronto",
+      "author_id": "08db325f-9c20-537a-8e88-4418cecf447b",
+      "author_unchanged": true,
+      "source_body_sha256": "aceae662f65e548860d04d85c6a50961c2e61f6c1cf4f2e477c32c3209302815",
+      "final_body_sha256": "3ef4a4c5154edcd65f25e863d74462322ac2099a8e8e3036dc6433cb716db655",
+      "changed": true,
+      "review_decision": "과한 일단/무조건 대비와 질문 뒤의 같은 뜻 반복을 삭제. 강설 뒤 경로 계획·조건부 표현 보존.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "동네 산책",
+            "자전거",
+            "주말 근교 이동"
+          ],
+          "occasional": [
+            "카페",
+            "장보기"
+          ]
+        },
+        "occupation": "서비스직",
+        "voice": {
+          "emoji": "거의 없음",
+          "humor": 0,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 0,
+          "sentence_length": "구체적인 배경을 풀어 설명함",
+          "place_name_language": "en"
+        },
+        "traits": {
+          "initiative": 2,
+          "directness": 0,
+          "verbosity": 2,
+          "focus": 1,
+          "humor": 0,
+          "social": 1
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "6a91ebaf-d26c-46fb-b318-f8e1e01aa8d4",
+          "title": "새 이름을 몰라도 가을 하늘은 좀 궁금해",
+          "body_sha256": "0ea6693a4ce9f6b236dec37df200844b02daea9bb434853c3a0d88d4418e1d4f"
+        },
+        {
+          "id": "fc44efb4-a328-4aaf-a34e-296dd072a9a8",
+          "title": "오늘 TTC Line 2, St George–Broadview 구간 안내가 있어",
+          "body_sha256": "e86ac646ed7c772a5941d55af820029b4995df021def736a7219e3cc20eed5fb"
+        },
+        {
+          "id": "74b921b4-e9e8-4433-b273-50bc8aef767c",
+          "title": "TTC 저상 트램의 경사로는 두 번째 문에 있어",
+          "body_sha256": "3e77fdddad80c2855ffa305894251833720a06d915fbffed0d29f3708502b7c3"
+        }
+      ],
+      "actual_recent_posts_available": 3,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 11,
+      "city_id": "montreal",
+      "author_id": "21e4d27b-49b2-5587-a3ec-9639beaa589a",
+      "author_unchanged": true,
+      "source_body_sha256": "2eac8bde175ccc0d83d037dc88dd01fe8eba7cacc9cc2fc60ecb254eddd6f546",
+      "final_body_sha256": "04781628c997639e9fd603e735dab6f00eee28ccefce404c79eaf54e2c5bd5c0",
+      "changed": true,
+      "review_decision": "완성품과 공구를 길게 대비하던 도입을 중고 물건 관심으로 바꿈. 수리 경험이나 가구 소유는 새로 주장하지 않음.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "주말 문화생활",
+            "중고 물건",
+            "장보기"
+          ],
+          "occasional": [
+            "동네 산책",
+            "집밥"
+          ]
+        },
+        "occupation": "직업 과정 학생",
+        "voice": {
+          "emoji": "필요할 때 하나",
+          "humor": 0,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 1,
+          "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+          "place_name_language": "ko"
+        },
+        "traits": {
+          "initiative": 2,
+          "directness": 1,
+          "verbosity": 1,
+          "focus": 0,
+          "humor": 0,
+          "social": 0
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "45fde316-0845-45ff-a817-a6e5788e9a92",
+          "title": "레드패스박물관은 전시층까지 계단으로 올라가야 해",
+          "body_sha256": "d364f9a47fa08bed3ef39180bff0d9f4259c94bdd85b1a944196b537255f334e"
+        },
+        {
+          "id": "45ddf5c2-735d-411e-b555-b2058f445f50",
+          "title": "Pointe-à-Callière는 오늘 특별 개관 안내가 있네",
+          "body_sha256": "5e7cfb9396f00430455102f3d8f678dc4b9a6a670fae90c91fbbc4cef099150d"
+        }
+      ],
+      "actual_recent_posts_available": 2,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 12,
+      "city_id": "montreal",
+      "author_id": "58ccb286-f809-5c83-91f5-0b249eb68fa0",
+      "author_unchanged": true,
+      "source_body_sha256": "ce24ac9e4d8fd56e5a4d4084b3c7701e4d03e75f2f7fdbf0b8c4e5ecb35e14fe",
+      "final_body_sha256": "ce24ac9e4d8fd56e5a4d4084b3c7701e4d03e75f2f7fdbf0b8c4e5ecb35e14fe",
+      "changed": false,
+      "review_decision": "둘이 먹을 양을 고민한 최근 빵 글과 연결되는 짧은 장보기 질문을 유지. 기존 용기 소유·방문은 주장하지 않음.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "집밥",
+            "장보기",
+            "반려동물"
+          ],
+          "occasional": [
+            "언어 공부",
+            "지역 행사"
+          ]
+        },
+        "occupation": "카페 파트타이머",
+        "voice": {
+          "emoji": "필요할 때 하나",
+          "humor": 0,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 0,
+          "sentence_length": "짧은 문장 중심",
+          "place_name_language": "ko"
+        },
+        "traits": {
+          "initiative": 2,
+          "directness": 0,
+          "verbosity": 0,
+          "focus": 1,
+          "humor": 0,
+          "social": 2
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "9fe74eb3-dca6-40c0-b798-68ed67e2a9f5",
+          "title": "바게트랑 작은 파베, 둘이 한 끼에 얼마나 먹어?",
+          "body_sha256": "13b600ac49d5f02345d5a909cfc94b48eb36932d5fbf7a3d1ed0295f07300549"
+        },
+        {
+          "id": "dc17052c-fe19-45dc-8cde-a03bd89ccbe9",
+          "title": "치즈 구경부터 하면 저녁 메뉴가 자꾸 커질 것 같아",
+          "body_sha256": "7982a29915ce9a607c4a20308ef283a2f7c45a22c729dd116a48e0898df1938f"
+        },
+        {
+          "id": "3544e3fc-d806-4388-9e2d-eb917be1f86c",
+          "title": "장탈롱시장은 추수감사절 연휴에도 열어",
+          "body_sha256": "beb54c153321f1e642613c4be7970848dcc1e9f961013d2a00cb573cab6b830e"
+        }
+      ],
+      "actual_recent_posts_available": 3,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 13,
+      "city_id": "montreal",
+      "author_id": "04528f50-f69f-5ecf-a9d5-cc9b092f2ba2",
+      "author_unchanged": true,
+      "source_body_sha256": "eb6a95df11f3a91e4683c75f475ee9068192e5fb622e6313efb6578d06eee150",
+      "final_body_sha256": "24bc7a84016e371425da747fdb15ec2cda8683ad71fffcd978bcd3069f668928",
+      "changed": true,
+      "review_decision": "반복된 안내→취향→도시 질문 순서를 취향→구체적 요청의 짧은 호흡으로. 실제 방문·직원 언어는 주장하지 않음.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "카페",
+            "주말 문화생활",
+            "반려동물"
+          ],
+          "occasional": [
+            "집 구하기",
+            "도서관"
+          ]
+        },
+        "occupation": "프리랜서",
+        "voice": {
+          "emoji": "필요할 때 하나",
+          "humor": 2,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 1,
+          "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+          "place_name_language": "ko"
+        },
+        "traits": {
+          "initiative": 2,
+          "directness": 1,
+          "verbosity": 1,
+          "focus": 2,
+          "humor": 2,
+          "social": 2
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "7b23002e-42f7-5c35-a961-201b146de50d",
+          "title": "처가에 서운한 얘기하다 돈 얘기부터 꺼내버렸어",
+          "body_sha256": "2e7c25ae0ed1bafd2ad585d6622d5d3fab28e0f44bb48845599e1cfc9aef4887"
+        },
+        {
+          "id": "3318a87f-8440-5ff9-be6f-53d3bd18c17d",
+          "title": "정착 좀 도와달랬는데, 거절하니 배우자 못 믿냐는 말이 돌아옴",
+          "body_sha256": "8c9d07a82d56af1e0ca64428deb9a59167ecfdd72c870c8e62f9b0e20b0a4747"
+        }
+      ],
+      "actual_recent_posts_available": 2,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 14,
+      "city_id": "montreal",
+      "author_id": "75513359-f87a-5b69-9bde-8261e0854bb6",
+      "author_unchanged": true,
+      "source_body_sha256": "d226bb3b8befe66da176a482b54ad48d0fbb21eebc996f3b58afed2cf98f17b8",
+      "final_body_sha256": "b767db861504dc241ee8ddd4e61348f6769ac870be9106f4e1cd5adfdac2d5e4",
+      "changed": true,
+      "review_decision": "질문부터 시작해 도입 순서를 달리함. 12년 거주자가 초급 불어 학습자라는 신상은 만들지 않음.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "주말 문화생활",
+            "도서관",
+            "장보기"
+          ],
+          "occasional": [
+            "중고 물건",
+            "동네 산책"
+          ]
+        },
+        "occupation": "디자이너",
+        "voice": {
+          "emoji": "필요할 때 하나",
+          "humor": 2,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 1,
+          "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+          "place_name_language": "ko"
+        },
+        "traits": {
+          "initiative": 1,
+          "directness": 1,
+          "verbosity": 1,
+          "focus": 2,
+          "humor": 2,
+          "social": 0
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "f9fa9c5c-6e74-4c14-becf-010cd7f19500",
+          "title": "마일엔드에서 시작한 출판사 목록을 구경하다가",
+          "body_sha256": "e2f24bb00ea579c05ee1c89401fe1a131938e76589269870a25dc8e06ce5a59b"
+        },
+        {
+          "id": "aea05abe-7326-4ef5-8e46-675c5419fb83",
+          "title": "아이스크림 만드는 기계도 빌려 쓸 수 있네",
+          "body_sha256": "c58eff1b1cd9d4f3097fd509d82fc0316335097c9038841acfc6cc036f4cd833"
+        },
+        {
+          "id": "51f121ac-a248-4b56-8d70-f3cc1680a357",
+          "title": "몬트리올 공공 와이파이는 암호 없는 공개망이야",
+          "body_sha256": "234f42e2c35bfb657392d44b9d65b06a6b6bbf9fe87566d13ed9b53775b93852"
+        }
+      ],
+      "actual_recent_posts_available": 3,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 15,
+      "city_id": "montreal",
+      "author_id": "2212d766-7329-5611-847e-ee0f59c8eb0e",
+      "author_unchanged": true,
+      "source_body_sha256": "ee52a4ae79f0ae442c94c0bf06cdd4e5a6abcf80d72cde1c063a4afa9545bf4a",
+      "final_body_sha256": "39ced617fafe54095b03a5a0272b0760c334bcccf75180d17447826ab799d42f",
+      "changed": true,
+      "review_decision": "도시 이름·나는/싶어/사람은이 되풀이되던 질문을 줄임. 1.4km·혼합 노면·입구 사실 보존; 전 구간 포장이라고 하지 않음.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "동네 산책",
+            "집밥",
+            "카페"
+          ],
+          "occasional": [
+            "언어 공부",
+            "사진"
+          ]
+        },
+        "occupation": "디자이너",
+        "voice": {
+          "emoji": "필요할 때 하나",
+          "humor": 1,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 0,
+          "sentence_length": "구체적인 배경을 풀어 설명함",
+          "place_name_language": "ko"
+        },
+        "traits": {
+          "initiative": 0,
+          "directness": 0,
+          "verbosity": 2,
+          "focus": 2,
+          "humor": 1,
+          "social": 1
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "0d7181f7-63dc-4501-8ee3-044e6df1edfc",
+          "title": "새 그릇 없이 집밥 예쁘게 담는 방법",
+          "body_sha256": "c7800d0bb1039d804e574671d1971e787ba7b3f861b8899e356468c5a81e7413"
+        },
+        {
+          "id": "2d704eea-e42a-474b-82e4-aa1fb5b35c28",
+          "title": "같이 밥을 만드는 일이 동네를 아는 방법일 수도",
+          "body_sha256": "0eaaece640423284a47de7ae1c3a0f1a018884f65c3ae9ed4a361ec7c605537a"
+        },
+        {
+          "id": "8cf76dbc-f1f3-417b-92da-6bca1868f3c8",
+          "title": "베이글만 살 때랑 앉아서 먹을 때는 고르는 지점도 다르네",
+          "body_sha256": "d86cf24fde1379091717b8f0f295b81eb435c9725b6564dbcef98721d7edb78f"
+        }
+      ],
+      "actual_recent_posts_available": 3,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 16,
+      "city_id": "edmonton",
+      "author_id": "10000000-0000-0000-0000-000000000113",
+      "author_unchanged": true,
+      "source_body_sha256": "4dd83486786193bc54c273888fe423aabf40c2cb1c30e1c747e8c3c72d2d5d90",
+      "final_body_sha256": "adef5ce32a7c2295402ec00e5c74012f80f0706ad1cb679b98f735a54fa1ff8b",
+      "changed": true,
+      "review_decision": "화면과 사람 모임의 상투적 대비를 덜어냄. 클럽 존재만 확인했으며 초보 강습·시간·요금이 확인됐다는 뜻으로 바꾸지 않음.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "문화 행사",
+            "전시",
+            "주말 근교 이동"
+          ],
+          "occasional": [
+            "장보기",
+            "언어 공부"
+          ]
+        },
+        "occupation": "프리랜서",
+        "voice": {
+          "emoji": "필요할 때 하나",
+          "humor": 2,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 1,
+          "sentence_length": "구체적인 배경을 풀어 설명함",
+          "place_name_language": "en"
+        },
+        "traits": {
+          "initiative": 2,
+          "directness": 1,
+          "verbosity": 2,
+          "focus": 2,
+          "humor": 2,
+          "social": 2
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "a0f4903a-6907-426c-9818-e17f43a2dfe8",
+          "title": "동네 스케치 시작할 때 펜 하나만 고른다면",
+          "body_sha256": "54cff0f8c971eb236a70051e95a1650de5fa0156a67da35bc281b40f0df2b806"
+        },
+        {
+          "id": "e21edfcc-0f3b-43a1-855d-19ffbcd1391b",
+          "title": "비행기박물관에서 큰 브릭 프로젝트도 하네",
+          "body_sha256": "f1c0a452d9ec31da83d070aeed5d4dc30898ef9501664ce5f51dc69fadc4409c"
+        },
+        {
+          "id": "93a7c7cf-e951-4dea-932b-da6600417576",
+          "title": "영화관에서 포스터 만드는 봉사도 하는구나",
+          "body_sha256": "c6ee15c45690e63580bd95aafc94f55a3d87fad22e9074558d8a840e2095de9b"
+        }
+      ],
+      "actual_recent_posts_available": 3,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 17,
+      "city_id": "edmonton",
+      "author_id": "10000000-0000-0000-0000-000000000102",
+      "author_unchanged": true,
+      "source_body_sha256": "d7006472a576d835d6da4bb6e5e5950a8a31cfc14e68ecbca3637dadb9a22a29",
+      "final_body_sha256": "d7006472a576d835d6da4bb6e5e5950a8a31cfc14e68ecbca3637dadb9a22a29",
+      "changed": false,
+      "review_decision": "짧은 커피 취향과 드립 경험 요청 유지. NO.OO 제품 표기를 그대로 두고 카페인 0이나 맛을 보증하지 않음.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "카페",
+            "중고 물건",
+            "장보기"
+          ],
+          "occasional": [
+            "도서관",
+            "사진"
+          ]
+        },
+        "occupation": "사무직",
+        "voice": {
+          "emoji": "거의 없음",
+          "humor": 2,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 1,
+          "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+          "place_name_language": "ko"
+        },
+        "traits": {
+          "initiative": 1,
+          "directness": 1,
+          "verbosity": 1,
+          "focus": 2,
+          "humor": 2,
+          "social": 0
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "dd288ba3-fafa-45a0-a02a-93d1b76e7698",
+          "title": "도슨공원 자갈길엔 흰지팡이로 짚을 경계가 있어",
+          "body_sha256": "3591cb1e759ed3fab63205101ee4316021aa21d3f89a9c53fad48e56b8b154d9"
+        },
+        {
+          "id": "4fe925ab-4acf-4ab9-a3da-0352725e1b53",
+          "title": "EPL에서 내 글을 종이책으로 묶는 수업도 해",
+          "body_sha256": "5344c910068928fd45e9a8cffe58c499df4d167250599ea3528cf93868e795b7"
+        }
+      ],
+      "actual_recent_posts_available": 2,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 18,
+      "city_id": "edmonton",
+      "author_id": "6f8fc36b-529b-50db-af21-acb4fa66b520",
+      "author_unchanged": true,
+      "source_body_sha256": "302ddc3852ad9aaaf49bb20d2b009101cf0df3500a3469ef07b65f9b0ba8c05f",
+      "final_body_sha256": "68c505be5b9405853c5307acdbecba1eece5825d0b5f6b8b9a5286c237b28da0",
+      "changed": true,
+      "review_decision": "질문 뒤 작은 규모로 알아가고 싶다는 일반적 다짐을 삭제. 지역 맞춤 혼합종 예외 유지.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "동네 산책",
+            "중고 물건",
+            "반려동물"
+          ],
+          "occasional": [
+            "주말 문화생활",
+            "장보기"
+          ]
+        },
+        "occupation": "서비스직",
+        "voice": {
+          "emoji": "필요할 때 하나",
+          "humor": 0,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 2,
+          "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+          "place_name_language": "ko"
+        },
+        "traits": {
+          "initiative": 2,
+          "directness": 2,
+          "verbosity": 1,
+          "focus": 0,
+          "humor": 0,
+          "social": 2
+        }
+      },
+      "recent_posts_read": [],
+      "actual_recent_posts_available": 0,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 19,
+      "city_id": "edmonton",
+      "author_id": "10000000-0000-0000-0000-000000000099",
+      "author_unchanged": true,
+      "source_body_sha256": "9010c02392219a05137d50c757a2d1fc664675750386df1ae520d02511304252",
+      "final_body_sha256": "6ccdc487b0feb6ad16f9a712e785d7bce517db1a1ae015b4750bc0b3bb02b14b",
+      "changed": true,
+      "review_decision": "후자는 등 안내문 표현을 풀고 도시 호명을 삭제. 실제 센터의 프로그램별 현재 시간·종목·자리·입장료는 새로 단정하지 않음.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "주말 문화생활",
+            "동네 산책",
+            "반려동물"
+          ],
+          "occasional": [
+            "집 구하기",
+            "집밥"
+          ]
+        },
+        "occupation": "디자이너",
+        "voice": {
+          "emoji": "필요할 때 하나",
+          "humor": 2,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 2,
+          "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+          "place_name_language": "en"
+        },
+        "traits": {
+          "initiative": 2,
+          "directness": 2,
+          "verbosity": 1,
+          "focus": 0,
+          "humor": 2,
+          "social": 2
+        }
+      },
+      "recent_posts_read": [],
+      "actual_recent_posts_available": 0,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 20,
+      "city_id": "edmonton",
+      "author_id": "10000000-0000-0000-0000-000000000107",
+      "author_unchanged": true,
+      "source_body_sha256": "a1dce8ee5d6532147b8947414f633fc43d61a957001de595a09db4dc108d5dfe",
+      "final_body_sha256": "a66e914110aa18a56d73f99a3b5641b31741d16b71effa4cf6035f2746ddc3b2",
+      "changed": true,
+      "review_decision": "가구와 액자 대비를 줄이고 구체적 상태 확인 질문을 앞으로. 직접 구매했다는 과거 경험으로 만들지 않음.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "중고 물건",
+            "동네 산책",
+            "도서관"
+          ],
+          "occasional": [
+            "지역 행사",
+            "카페"
+          ]
+        },
+        "occupation": "카페 파트타이머",
+        "voice": {
+          "emoji": "필요할 때 하나",
+          "humor": 2,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 1,
+          "sentence_length": "구체적인 배경을 풀어 설명함",
+          "place_name_language": "en"
+        },
+        "traits": {
+          "initiative": 0,
+          "directness": 1,
+          "verbosity": 2,
+          "focus": 2,
+          "humor": 2,
+          "social": 1
+        }
+      },
+      "recent_posts_read": [],
+      "actual_recent_posts_available": 0,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 21,
+      "city_id": "calgary",
+      "author_id": "10000000-0000-0000-0000-000000000135",
+      "author_unchanged": true,
+      "source_body_sha256": "36074a6aae7553e9804368da10397a2ee4564a5383217baed0a0e68c20a9ae62",
+      "final_body_sha256": "c6c3c62506e754e5e946d325d8069545f4e28c08372e2cacf423d2394c6bfa82",
+      "changed": true,
+      "review_decision": "실제 경험 질문을 먼저 배치하고 공식 준비물의 따뜻하고 편한 옷을 빠뜨리지 않도록 보완. 입문 과정에만 해당하는 장비 제공 범위 유지.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "반려동물",
+            "주말 문화생활",
+            "장보기"
+          ],
+          "occasional": [
+            "사진",
+            "지역 행사"
+          ]
+        },
+        "occupation": "소규모 자영업자",
+        "voice": {
+          "emoji": "필요할 때 하나",
+          "humor": 2,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 2,
+          "sentence_length": "짧은 문장 중심",
+          "place_name_language": "en"
+        },
+        "traits": {
+          "initiative": 0,
+          "directness": 2,
+          "verbosity": 0,
+          "focus": 2,
+          "humor": 2,
+          "social": 2
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "be45561b-03af-4cb7-858e-9d27403d4efb",
+          "title": "Calgary Zoo, 10월 23일까지 흑곰 관람 영향 안내",
+          "body_sha256": "9e5bf7e476757b17e0b0dd17b1c960b4918e74318bc549c6923509cf0e60850f"
+        }
+      ],
+      "actual_recent_posts_available": 1,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 22,
+      "city_id": "calgary",
+      "author_id": "10000000-0000-0000-0000-000000000140",
+      "author_unchanged": true,
+      "source_body_sha256": "393b42931888d29a74e9d6b0d73b9deeb4610626ab3f2f13e07cee09d5fc16e4",
+      "final_body_sha256": "d71bc6ec9cffd0124f25b06a297733c1577d1bf22dc00bba379d48b68a3fadd1",
+      "changed": true,
+      "review_decision": "새 병 사면 이상하다는 만들어진 대조 대신 실속 성향을 담담하게 표현. 위생·건조·뚜껑 조건 유지.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "카페",
+            "중고 물건",
+            "장보기"
+          ],
+          "occasional": [
+            "주말 문화생활",
+            "사진"
+          ]
+        },
+        "occupation": "프리랜서",
+        "voice": {
+          "emoji": "거의 없음",
+          "humor": 2,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 1,
+          "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+          "place_name_language": "ko"
+        },
+        "traits": {
+          "initiative": 1,
+          "directness": 1,
+          "verbosity": 1,
+          "focus": 0,
+          "humor": 2,
+          "social": 2
+        }
+      },
+      "recent_posts_read": [],
+      "actual_recent_posts_available": 0,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 23,
+      "city_id": "calgary",
+      "author_id": "10000000-0000-0000-0000-000000000141",
+      "author_unchanged": true,
+      "source_body_sha256": "3cd8532d1f95aa13d40bf0d8b802e3c9de03204e11c0b86419d8a3e2a44e47a5",
+      "final_body_sha256": "3081011ca76cb541f8ba8e14c51d7b84058fc0e84b5f5c39bfdf7deff0ba6757",
+      "changed": true,
+      "review_decision": "일반 이용자와 동선을 나누는 실제 질문으로 압축. 특정 공원 전용·완전 분리 여부는 주장하지 않음.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "반려동물",
+            "중고 물건",
+            "카페"
+          ],
+          "occasional": [
+            "사진",
+            "도서관"
+          ]
+        },
+        "occupation": "사무직",
+        "voice": {
+          "emoji": "필요할 때 하나",
+          "humor": 2,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 0,
+          "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+          "place_name_language": "en"
+        },
+        "traits": {
+          "initiative": 2,
+          "directness": 0,
+          "verbosity": 1,
+          "focus": 1,
+          "humor": 2,
+          "social": 2
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "c926b142-7f0d-44b5-b5d5-4461270e5eb5",
+          "title": "작은 테라리움, 어떤 식물이 덜 까다로웠어?",
+          "body_sha256": "235917f4b60136280c4598a166335da03bff3bb4159165c7aef8a603876f8546"
+        },
+        {
+          "id": "3db289ce-c414-4177-a1f6-198478798e10",
+          "title": "큰 전시 일정 못 잡아도 복도에서 작품 볼 수 있네",
+          "body_sha256": "b7410cf892d31ac79fb52538b855dac8822b9c20a5118b8cf9a60485c337f93f"
+        },
+        {
+          "id": "593b115c-2262-416a-be54-902e4bf2e6c5",
+          "title": "커피 한 잔 뒤에 있는 기계가 더 궁금해짐",
+          "body_sha256": "3cc38878042d9bfbf685bc07cea653226f4c1916a5252a1a508592b71c95206e"
+        }
+      ],
+      "actual_recent_posts_available": 3,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 24,
+      "city_id": "calgary",
+      "author_id": "10000000-0000-0000-0000-000000000138",
+      "author_unchanged": true,
+      "source_body_sha256": "1799154f784cf25d5d8f4ed208224aa50cd2be51c13bd9986279c45946ab576f",
+      "final_body_sha256": "0e02f14cae38e2fd8d20ff5944fba12bdcead1ae8c229b1d904ef3fdec81f3f1",
+      "changed": true,
+      "review_decision": "또 하나의 해본 사람 있어를 구체적 질문으로 바꿈. 종이 질감·필기감은 확인된 효과가 아닌 궁금증으로 유지.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "도서관",
+            "중고 물건",
+            "집밥"
+          ],
+          "occasional": [
+            "집 구하기",
+            "장보기"
+          ]
+        },
+        "occupation": "대학원생",
+        "voice": {
+          "emoji": "필요할 때 하나",
+          "humor": 1,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 0,
+          "sentence_length": "짧은 문장 중심",
+          "place_name_language": "ko"
+        },
+        "traits": {
+          "initiative": 1,
+          "directness": 0,
+          "verbosity": 0,
+          "focus": 2,
+          "humor": 1,
+          "social": 0
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "1357916d-2eea-433a-89e8-912b71351ada",
+          "title": "캘거리도서관 Fiero Code엔 직접 만드는 과제가 있어",
+          "body_sha256": "12edd83a8aa690d1413f200a1ee036815638766b31892b6ec3a5d4c36ab64b18"
+        }
+      ],
+      "actual_recent_posts_available": 1,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 25,
+      "city_id": "calgary",
+      "author_id": "10000000-0000-0000-0000-000000000133",
+      "author_unchanged": true,
+      "source_body_sha256": "e041c7c95735c155fb8cca14f76d2cd9131503312893238477f5d581a10198a1",
+      "final_body_sha256": "4e299106cbc56c2da0cd65d9b0aee1f040a8e9843683e0c3788919176f6804ee",
+      "changed": true,
+      "review_decision": "안내문 도입·도시 이름 재호명을 덜고 식사와 공연 타이밍을 묻는 화자의 관심으로 시작.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "카페",
+            "집밥",
+            "주말 문화생활"
+          ],
+          "occasional": [
+            "언어 공부",
+            "동네 산책"
+          ]
+        },
+        "occupation": "개발자",
+        "voice": {
+          "emoji": "거의 없음",
+          "humor": 1,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 1,
+          "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+          "place_name_language": "en"
+        },
+        "traits": {
+          "initiative": 0,
+          "directness": 1,
+          "verbosity": 1,
+          "focus": 2,
+          "humor": 1,
+          "social": 2
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "bb196919-b1d3-4ad6-a74b-6f48ce816f4e",
+          "title": "첫 교향악 공연, 곡은 미리 듣고 갈까",
+          "body_sha256": "84888b7b6437ba57813f4372c7de28749d7cb547f03c74aeb801b638b219f6a5"
+        },
+        {
+          "id": "921a8f23-dbe8-4dc2-9cf8-0a312f7fd689",
+          "title": "Cypress Resume는 이력서 첫 틀 잡는 자료네",
+          "body_sha256": "ca3a180740299f7568f7234b8c1697eaa4f59ee031e2bb9fb3f8399d68491eea"
+        },
+        {
+          "id": "92d68b07-59fe-4e55-a486-9dd54e0f9e36",
+          "title": "Gasoline Alley Museum에 그림책에서 나온 체험 전시가 있어",
+          "body_sha256": "adc8bd94402375a648df0d0eaacd72c12612cf9ee946daf895f85904c7a34bbb"
+        }
+      ],
+      "actual_recent_posts_available": 3,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": true,
+        "story_adaptation_separate_from_verified_event_truth": false,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 26,
+      "city_id": "vancouver",
+      "author_id": "10000000-0000-0000-0000-000000000065",
+      "author_unchanged": true,
+      "source_body_sha256": "04e685eb23f9d457b6fc458a6791988ab9482147bff74756c7f8581f29a3eeed",
+      "final_body_sha256": "017ca56908dfedaf6683351edb8ad0a60677bca30e8ecc4d0c6cbd25adb78295",
+      "changed": true,
+      "review_decision": "직설적인 체크리스트처럼 보이던 끝을 조심스러운 화자의 실제 선택 질문으로. 이전 대여는 확정이 아닌 원문의 추정 유지.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "반려동물",
+            "동네 산책",
+            "장보기"
+          ],
+          "occasional": [
+            "도서관",
+            "언어 공부"
+          ]
+        },
+        "occupation": "대학원생",
+        "voice": {
+          "emoji": "필요할 때 하나",
+          "humor": 0,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 0,
+          "sentence_length": "짧은 문장 중심",
+          "place_name_language": "en"
+        },
+        "traits": {
+          "initiative": 0,
+          "directness": 0,
+          "verbosity": 0,
+          "focus": 0,
+          "humor": 0,
+          "social": 0
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "e0218fb0-951a-5168-8c22-d5f291f79594",
+          "title": "장모님 생활비 보내드리기로 했는데 숫자가 안 맞아",
+          "body_sha256": "151257101268945bbb15d842f976ad7338eca100f469d106f0a89dd91b51d736"
+        },
+        {
+          "id": "377966a5-762b-5774-872f-897d995a22d5",
+          "title": "집 살 때 보탠 돈 대신 생활비는 안 내기로 했었는데",
+          "body_sha256": "ac57b2614f36d27c81770a3a56a2a337ed8f8de8e7756ab34d20403888c828da"
+        },
+        {
+          "id": "8a78d3b1-8708-5e9b-b496-e67aad1ace7b",
+          "title": "어른끼리 가자던 여행, 날짜 잡고 나니 아이들도 온대",
+          "body_sha256": "7c27b7eba4d94848115e44cde0e1a903ff18d9e433cce7d29599b382c62687c8"
+        }
+      ],
+      "actual_recent_posts_available": 3,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": "not_applicable_authorized_story_adaptation; see exact fictional changes",
+        "story_adaptation_separate_from_verified_event_truth": true,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 27,
+      "city_id": "toronto",
+      "author_id": "10000000-0000-0000-0000-000000000070",
+      "author_unchanged": true,
+      "source_body_sha256": "846969b59fdb1287a8932d76b34e26aa9f39f1f36f013b591c9d4ebc4d2bb758",
+      "final_body_sha256": "e07e81b6944951d57244fb06fe6a9d350c935730f1bcccc4ed8a053d9ec6dab6",
+      "changed": true,
+      "review_decision": "아내 발언에서 돈을 벌어다줘도라는 모호한 인용을 풀고 소득·돌봄의 반대 맥락을 유지. 현재 3세 아이를 18개월로 바꾸지 않고 과거 장면으로 명시.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "빵과 디저트",
+            "새로운 음식",
+            "외식 비용"
+          ],
+          "occasional": [
+            "동네 산책",
+            "집 구하기"
+          ]
+        },
+        "occupation": "디자이너",
+        "voice": {
+          "emoji": "필요할 때 하나",
+          "humor": 1,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 0,
+          "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+          "place_name_language": "ko"
+        },
+        "traits": {
+          "initiative": 0,
+          "directness": 0,
+          "verbosity": 1,
+          "focus": 0,
+          "humor": 1,
+          "social": 2
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "2ce2f632-b493-5183-af49-b27e15f82dfd",
+          "title": "배우자 직장이 멀어지면 누구 일부터 바꿔야 할까",
+          "body_sha256": "25663196c59c36cb2c4476b603106f942eaf257bddf401ba27a6649e4dd9a472"
+        },
+        {
+          "id": "9f987963-4854-5def-8080-612a2ca267e9",
+          "title": "장인어른과 친해져서 좋았는데 아내는 주말이 힘들었대",
+          "body_sha256": "896de1af6c2e39769ea11e783d46ecf5b4ebb2c6dfc085ba462f6fea20116bfd"
+        },
+        {
+          "id": "5fd97a1f-1ef4-5c26-90b8-3f51f9672b3f",
+          "title": "부모님 한 달 방문, 왜 준비는 배우자 한 사람 몫이 될까",
+          "body_sha256": "b8321502d7422b8ef3fb5d2b3c816d89c31a1a5c155e281cc186c529b5047275"
+        }
+      ],
+      "actual_recent_posts_available": 3,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": "not_applicable_authorized_story_adaptation; see exact fictional changes",
+        "story_adaptation_separate_from_verified_event_truth": true,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 28,
+      "city_id": "montreal",
+      "author_id": "cc3ea647-6ac1-5ffc-ba83-8d4724d2e0f1",
+      "author_unchanged": true,
+      "source_body_sha256": "cf7fa41c9b29cb7aae1dc91b3fce1f3641c1a8f1394b36272b429b3a65e9c4aa",
+      "final_body_sha256": "277d013487933c9d60a10d15303de90b0e9e25494235b557461f9bb2a2530ee9",
+      "changed": true,
+      "review_decision": "현재 3세 자녀와 충돌하지 않게 과거를 명시하고 이번→그때로 정리. 반찬 중단 약속이라는 실제 후속을 남기고 일반적인 교훈 문장은 구체적 미해결 지점으로 바꿈.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "장보기",
+            "반려동물",
+            "주말 문화생활"
+          ],
+          "occasional": [
+            "언어 공부",
+            "중고 물건"
+          ]
+        },
+        "occupation": "대학원생",
+        "voice": {
+          "emoji": "거의 없음",
+          "humor": 0,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 2,
+          "sentence_length": "구체적인 배경을 풀어 설명함",
+          "place_name_language": "en"
+        },
+        "traits": {
+          "initiative": 2,
+          "directness": 2,
+          "verbosity": 2,
+          "focus": 0,
+          "humor": 0,
+          "social": 0
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "14d6eb30-81ef-57b1-b527-acd4e0012bb4",
+          "title": "외출만 하면 아이 재울 시간 때문에 싸우게 돼",
+          "body_sha256": "523c62930ac1e04697f605b9e4e12b2aa9f1eb2c84261bdd32e4e0d83d79664f"
+        },
+        {
+          "id": "ba47c7c8-0125-5fc9-ad90-bfb24e48fa9b",
+          "title": "아이가 외할머니 집을 찾으면 내가 뭘 가르친 거래",
+          "body_sha256": "72d027b7511b2c882b1fca875262edfab570019f27fec3da811c1647b461b5f6"
+        },
+        {
+          "id": "3f428673-75d0-4c78-8e57-6d10c4f9d3f5",
+          "title": "Pointe-aux-Prairies는 입구부터 골라야겠어",
+          "body_sha256": "6043e247835eda99bc2b80e9546b1f9bb20ef1801f452afa34f88e9cd08a8e9b"
+        }
+      ],
+      "actual_recent_posts_available": 3,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": "not_applicable_authorized_story_adaptation; see exact fictional changes",
+        "story_adaptation_separate_from_verified_event_truth": true,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 29,
+      "city_id": "edmonton",
+      "author_id": "10000000-0000-0000-0000-000000000118",
+      "author_unchanged": true,
+      "source_body_sha256": "d45160d948abdcc75cf2e0a3072c05889b88462ef126a610205758c928826df9",
+      "final_body_sha256": "43c69c59db06550c50dcffcb582e96909857f00280eb491684dcb041ec3de0c5",
+      "changed": true,
+      "review_decision": "전 도시 이름+기혼자 호명을 덜고 원문의 급한 준비 배경인 친구 임신을 복원. 작성자 본인이 임신한 것으로 바꾸지 않고 예비 남편 비밀은 추정으로 남김.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "장보기",
+            "도서관",
+            "카페"
+          ],
+          "occasional": [
+            "주말 문화생활",
+            "집밥"
+          ]
+        },
+        "occupation": "소규모 자영업자",
+        "voice": {
+          "emoji": "거의 없음",
+          "humor": 0,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 0,
+          "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+          "place_name_language": "ko"
+        },
+        "traits": {
+          "initiative": 1,
+          "directness": 0,
+          "verbosity": 1,
+          "focus": 0,
+          "humor": 0,
+          "social": 1
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "a98b3fbb-28c2-5e44-8e8d-d47ccf2cb388",
+          "title": "남편 투자 손실 얘기하다 내가 이혼까지 꺼냈어",
+          "body_sha256": "93111bee4412c1636c2b9415705bf10beed7b9374cbc4c65997612c367451053"
+        },
+        {
+          "id": "532a2510-0c84-4bff-a10b-fcdc81563089",
+          "title": "빵 예약은 오늘 생각해서 오늘 받는 게 아니었네",
+          "body_sha256": "3dc5f26079de8648d9de8c3a9899ce97aff87da1f5bc194b1ad6cb69a9a62523"
+        },
+        {
+          "id": "ad65546b-3dae-5e0c-ab49-7a7345cefff7",
+          "title": "남편 쪽 축하금과 우리 쪽 축하금, 왜 기준이 달라",
+          "body_sha256": "36b6bcae0b581bd10f2a6feb349f4a05f086ac48c27f04a5e1e8c8038938f6a9"
+        }
+      ],
+      "actual_recent_posts_available": 3,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": "not_applicable_authorized_story_adaptation; see exact fictional changes",
+        "story_adaptation_separate_from_verified_event_truth": true,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    },
+    {
+      "ord": 30,
+      "city_id": "calgary",
+      "author_id": "10000000-0000-0000-0000-000000000132",
+      "author_unchanged": true,
+      "source_body_sha256": "707ca418f8ed1c7279d3a36e7f156f6360838b281797f6d07ea9d35ffa16a66d",
+      "final_body_sha256": "707ca418f8ed1c7279d3a36e7f156f6360838b281797f6d07ea9d35ffa16a66d",
+      "changed": false,
+      "review_decision": "현재 4년 기혼의 신혼 당시 장면 유지. 원문이 비밀번호를 물은 상황까지이므로 무단 출입·남편 반응·범죄·결말은 만들지 않음.",
+      "persona_basis": {
+        "interests": {
+          "primary": [
+            "취미 수업",
+            "공부 공간",
+            "도서관"
+          ],
+          "occasional": [
+            "주말 문화생활",
+            "지역 행사"
+          ]
+        },
+        "occupation": "서비스직",
+        "voice": {
+          "emoji": "거의 없음",
+          "humor": 2,
+          "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+          "register": "편한 한국어 반말",
+          "directness": 2,
+          "sentence_length": "짧은 문장 중심",
+          "place_name_language": "ko"
+        },
+        "traits": {
+          "initiative": 0,
+          "directness": 2,
+          "verbosity": 0,
+          "focus": 0,
+          "humor": 2,
+          "social": 1
+        }
+      },
+      "recent_posts_read": [
+        {
+          "id": "eacb89a0-240e-5b14-9d6d-7bde3af98e31",
+          "title": "시댁 모임의 준비랑 뒷정리도 미리 나누고 싶어",
+          "body_sha256": "b41ba582126fa8390863441817ab2309c635b10d56da04f73d0547f571b60644"
+        },
+        {
+          "id": "c3f85fd5-94eb-4e29-9f30-970b26ef94cb",
+          "title": "작가 얘기 듣고 나서 읽을 책 골라도 되겠지",
+          "body_sha256": "bfb586ff235e50b3af0f4fd8644aeedae03015b483f9861ac3e7687605bc0fb8"
+        },
+        {
+          "id": "ce21ccf2-ac49-504e-84b2-123e3b88c423",
+          "title": "말해야 집안일 하던 남편, 내 것만 챙겨봤어",
+          "body_sha256": "87ac5ebbdb20945e09713bbd310c6155e3ebdccc198d5c9cd09fa2f88bb8fc41"
+        }
+      ],
+      "actual_recent_posts_available": 3,
+      "recent_posts_note": "read actual available up to3; zero or fewer are retained as observed, not invented",
+      "checks": {
+        "same_city_and_fixed_identity": true,
+        "no_invented_regular_visit_purchase_or_work_family_event": "not_applicable_authorized_story_adaptation; see exact fictional changes",
+        "story_adaptation_separate_from_verified_event_truth": true,
+        "proper_name_and_number_meaning_reviewed": true,
+        "one_concrete_answerable_topic": true,
+        "source_links_and_audit_metadata_outside_public_body": true
+      },
+      "tone": "casual",
+      "tone_source": "owner_direction",
+      "pattern_stages": [
+        "ko-structure:25/26/27/28/30",
+        "ko-language:7/8/9/10/11/12/32/33",
+        "ko-style:13/14/15/16/17/18",
+        "ko-filler:22/23/24/31",
+        "ko-content:1-6",
+        "ko-communication:19/20/21/29",
+        "ko-viral-hook:1-9"
+      ],
+      "meaning_result": "pass after source and persona comparison; no numeric detection score asserted"
+    }
+  ],
+  "batch_review": {
+    "nickname_masked_review": "varied question-first, preference-first and brief-context openings; brief79–100char and longer reflective bodies; factual provider clauses kept only when they serve the question",
+    "removed_patterns": [
+      "city name in almost every question",
+      "repeated question followed by same-meaning explanation",
+      "universal source→plan→question ordering",
+      "generic moral or conclusion sentence"
+    ],
+    "questions": "real recommendations/experience requests; not rhetorical leads; newest2026-10-18 owner direction supersedes old max2 questions per city",
+    "no_forced_emojis_or_shared_ending": true,
+    "counts": {
+      "reviewed": 30,
+      "changed": 25,
+      "retained_after_review": 5
+    },
+    "source_fit_correction": "FWvMngC1 held: child-birthday context unsuitable for selected childless character; ibbommoo excluded after visible trolling/quality concerns; final Calgary source R1ojhDGh read fully and fits childless married persona",
+    "peer_replies": "0 drafted/0 executed; optional direction is not a quota; real-user inbox guard unchanged"
+  }
+}

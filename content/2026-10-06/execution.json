@@ -1,0 +1,19 @@
+{
+  "run_id": "city-posts-2026-10-06-local-1650",
+  "stage": "STAGED",
+  "submission_attempted": true,
+  "log_offset": 0,
+  "script_sha256": "1e3c6d188cf93e3ea8e96ba87160631907bb1ded05e358bd74d3f8e43c9f1868",
+  "payload_sha256": "d1953ee12bd35503b9169fa4dad23f11284497b3ccefc58fa075a90685cf22dc",
+  "local_serialization": "Transient exported jq function uses Python stdlib only for raw JSON query encoding; no persisted script/automation edits.",
+  "stage_returncode": 0,
+  "stage_stdout": "STAGED /Users/ash/Library/Application Support/gling/city-posts/payload/2026-10-06.json\n",
+  "stage_stderr": "",
+  "attempted_at_utc": "2026-10-06T17:06:07.617766+00:00",
+  "grow_returncode": 0,
+  "grow_stdout": "",
+  "grow_stderr": "",
+  "completed_at_utc": "2026-10-06T17:06:08.825664+00:00",
+  "script_unchanged": true,
+  "log_segment": "=== Tue Oct  6 10:06:07 PDT 2026 도시 게시글 등록 시작 (2026-10-06)\nOK 25건 처리 []\n"
+}

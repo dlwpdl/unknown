@@ -1,0 +1,282 @@
+{
+  "verified_date": "2026-10-07",
+  "selected_official_pages": 25,
+  "notes": "Local HTTP failures and replacements are retained separately. No paid APIs, social account reads or GUI actions.",
+  "sources": [
+    {
+      "ord": 1,
+      "city_id": "vancouver",
+      "title": "길가 파클릿은 주차칸을 쉬는 자리로 바꾼 공간이네",
+      "url": "https://vancouver.ca/streets-transportation/parklets.aspx",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_web_tool",
+      "web_ref": "turn467312view1",
+      "evidence_file": "source-final-checks.json",
+      "verified_facts": "파클릿은 주차 공간 위의 공용 좌석·조경·자전거 주차 공간."
+    },
+    {
+      "ord": 2,
+      "city_id": "vancouver",
+      "title": "밴쿠버 길가 작품도 이름과 작가가 따로 있네",
+      "url": "https://covapp.vancouver.ca/PublicArtRegistry/",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_web_tool",
+      "web_ref": "turn802895view0",
+      "evidence_file": "source-web-verification.json",
+      "verified_facts": "밴쿠버 공공미술 목록은 작품명·작가·위치를 제공하며 일부 문화·역사 자산도 포함."
+    },
+    {
+      "ord": 3,
+      "city_id": "vancouver",
+      "title": "밴쿠버 도시숲엔 길가 나무랑 사유지 나무도 들어가네",
+      "url": "https://vancouver.ca/parks-recreation-culture/urban-forest-strategy.aspx",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_web_tool",
+      "web_ref": "turn802895view1",
+      "evidence_file": "source-web-verification.json",
+      "verified_facts": "도시숲은 가로수·공원 나무·사유지 나무를 포함하고 그늘·서식지를 제공."
+    },
+    {
+      "ord": 4,
+      "city_id": "vancouver",
+      "title": "VPL 큰글자책이랑 음성해설 영상도 알아두는 중",
+      "url": "https://www.vpl.ca/borrowing/collections/accessible",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_web_tool",
+      "web_ref": "turn917437view0",
+      "evidence_file": "source-web-verification.json",
+      "verified_facts": "VPL 큰글자책, CD·MP3 CD·다운로드 오디오북, 음성해설 영상 컬렉션."
+    },
+    {
+      "ord": 5,
+      "city_id": "vancouver",
+      "title": "밴쿠버 그린웨이는 자전거만 타는 길이 아니네",
+      "url": "https://vancouver.ca/streets-transportation/greenways-for-walking-and-cycling.aspx",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_web_tool",
+      "web_ref": "turn802895view3",
+      "evidence_file": "source-web-verification.json",
+      "verified_facts": "그린웨이는 걷기·자전거·바퀴 이동을 위한 연결망이며 동네 거리·자연 산책로도 포함."
+    },
+    {
+      "ord": 6,
+      "city_id": "toronto",
+      "title": "길드파크엔 옛 건물의 조각들도 모여 있네",
+      "url": "https://www.toronto.ca/explore-enjoy/parks-recreation/places-spaces/beaches-gardens-attractions/gardens-and-horticulture/public-gardens/feature-garden-parks/",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_local_curl",
+      "web_ref": null,
+      "evidence_file": "sources/06.txt",
+      "verified_facts": "길드파크앤가든스는 스카보로 블러프 위 숲·정원·공공미술·건축 조각을 포함."
+    },
+    {
+      "ord": 7,
+      "city_id": "toronto",
+      "title": "밤 TTC 버스에선 정류장 사이 하차를 요청할 수도 있네",
+      "url": "https://www.ttc.ca/accessibility/Easier-access-on-the-TTC/Riding-the-Bus",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_local_curl",
+      "web_ref": null,
+      "evidence_file": "sources/07.txt",
+      "verified_facts": "TTC Request Stop: 혼자 타는 버스 승객, 불안을 느끼는 경우 21:00~05:00, 안전한 정차 조건, 전차 제외."
+    },
+    {
+      "ord": 8,
+      "city_id": "toronto",
+      "title": "토론토 뮤직가든은 바흐 음악을 정원으로 옮긴 거네",
+      "url": "https://www.toronto.ca/explore-enjoy/parks-recreation/places-spaces/beaches-gardens-attractions/gardens-and-horticulture/public-gardens/",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_local_curl",
+      "web_ref": null,
+      "evidence_file": "sources/08.txt",
+      "verified_facts": "뮤직가든은 요요마의 영감과 바흐 모음곡을 정원 요소로 표현."
+    },
+    {
+      "ord": 9,
+      "city_id": "toronto",
+      "title": "TPL 언어학습 목록엔 망고랭귀지도 있네",
+      "url": "https://tpl.ca/resources/language-learning/",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_local_curl",
+      "web_ref": null,
+      "evidence_file": "sources/09.txt",
+      "verified_facts": "TPL Mango Languages는 새 언어·영어 학습 온라인 자료."
+    },
+    {
+      "ord": 10,
+      "city_id": "toronto",
+      "title": "TPL 녹음 공간엔 카메라랑 그린스크린도 있네",
+      "url": "https://tpl.ca/using-the-library/computer-services/digital-innovation-services/recording-studios/",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_local_curl",
+      "web_ref": null,
+      "evidence_file": "sources/10.txt",
+      "verified_facts": "TPL 오디오비주얼 스튜디오: 마이크·오디오 인터페이스·카메라·조명·그린스크린; 장비는 분관별 상이."
+    },
+    {
+      "ord": 11,
+      "city_id": "montreal",
+      "title": "바이오돔은 동물과 서식 환경을 같이 보는 공간이네",
+      "url": "https://www.mtl.org/en/what-to-do/activities/biodome-de-montreal",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_web_tool",
+      "web_ref": "turn393595view0",
+      "evidence_file": "source-final-checks.json",
+      "verified_facts": "바이오돔은 아메리카 생태계 다섯 곳을 한 지붕 아래 재현."
+    },
+    {
+      "ord": 12,
+      "city_id": "montreal",
+      "title": "푸앵타칼리에 박물관은 도시가 시작된 터 위에 있네",
+      "url": "https://montreal.ca/en/articles/archaeological-sites-21773",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_local_curl",
+      "web_ref": null,
+      "evidence_file": "sources/12.txt",
+      "verified_facts": "푸앵타칼리에 고고학·역사 박물관은 몬트리올 창립 터에서 초기 거주 흔적을 현장 보존 전시."
+    },
+    {
+      "ord": 13,
+      "city_id": "montreal",
+      "title": "캡생자크 농장, 지금은 동물 없이 산책길이 남아 있네",
+      "url": "https://montreal.ca/en/places/cap-saint-jacques-ecological-farm-and-general-store",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_local_curl",
+      "web_ref": null,
+      "evidence_file": "sources/13.txt",
+      "verified_facts": "캡생자크 생태농장은 현재 동물이 없으며 외부 산책길은 이용 가능, 헛간 내부 접근 불가."
+    },
+    {
+      "ord": 14,
+      "city_id": "montreal",
+      "title": "아쥐르 메트로는 객차 사이가 쭉 이어지는 구조네",
+      "url": "https://www.stm.info/fr/node/635",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_web_tool",
+      "web_ref": "turn392371view0",
+      "evidence_file": "source-web-verification.json",
+      "verified_facts": "AZUR 객차는 내부로 이어지며 손잡이 위치·색 대비에 접근성 고려."
+    },
+    {
+      "ord": 15,
+      "city_id": "montreal",
+      "title": "몬트리올 플라네타리움은 돔 영상으로 우주를 보는 곳이네",
+      "url": "https://www.mtl.org/en/what-to-do/culture-arts-heritage/planetarium-de-montreal",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_web_tool",
+      "web_ref": "turn393595view1",
+      "evidence_file": "source-final-checks.json",
+      "verified_facts": "플라네타리움은 돔 영상·우주 상영·전시로 천문학을 소개."
+    },
+    {
+      "ord": 16,
+      "city_id": "edmonton",
+      "title": "ETS 버스 입구는 낮아지는 기능도 있네",
+      "url": "https://www.edmonton.ca/ets/accessibility",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_local_curl",
+      "web_ref": null,
+      "evidence_file": "sources/16-accessibility.txt",
+      "verified_facts": "ETS 버스는 낮아지는 앞 입구·경사로·우선 좌석을 포함."
+    },
+    {
+      "ord": 17,
+      "city_id": "edmonton",
+      "title": "루이스매키니 강변공원엔 중국식 정자도 있네",
+      "url": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/louise-mckinney-riverfront-park",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_local_curl",
+      "web_ref": null,
+      "evidence_file": "sources/17.txt",
+      "verified_facts": "루이스매키니 강변공원에는 중국식 정원·정자(팅)가 있음."
+    },
+    {
+      "ord": 18,
+      "city_id": "edmonton",
+      "title": "알버타 의회 회의장엔 스테인드글라스 천장도 있네",
+      "url": "https://www.assembly.ab.ca/learn/the-legislative-assembly/chamber",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_local_curl",
+      "web_ref": null,
+      "evidence_file": "sources/18.txt",
+      "verified_facts": "알버타 의회 회의장의 스테인드글라스 격자 천장·대리석 장식·마호가니 벽."
+    },
+    {
+      "ord": 19,
+      "city_id": "edmonton",
+      "title": "ETS 분실물 문의할 땐 물건 모양도 꽤 자세히 적네",
+      "url": "https://www.edmonton.ca/ets/lost-and-found",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_local_curl",
+      "web_ref": null,
+      "evidence_file": "sources/19.txt",
+      "verified_facts": "ETS 분실물 문의: 교통편 종류·노선/역 위치·물건의 색·재질·내용물."
+    },
+    {
+      "ord": 20,
+      "city_id": "edmonton",
+      "title": "밀너도서관엔 원주민 의례와 모임을 위한 공간도 있네",
+      "url": "https://www.epl.ca/milner-library/thunderbird-house/",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_local_curl",
+      "web_ref": null,
+      "evidence_file": "sources/20.txt",
+      "verified_facts": "밀너 선더버드하우스는 원주민 의례·모임 공간, 크리 원로와 설계, 포플러 나무, 모두 참여 가능."
+    },
+    {
+      "ord": 21,
+      "city_id": "calgary",
+      "title": "웨스트노즈크리크 스플릿록은 빙하가 남긴 바위네",
+      "url": "https://www.calgary.ca/parks/west-nose-creek-park.html",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_local_curl",
+      "web_ref": null,
+      "evidence_file": "sources/21.txt",
+      "verified_facts": "웨스트노즈크리크 공원의 스플릿록은 빙하 유래 바위이며 역사적인 채석장 흔적도 있음."
+    },
+    {
+      "ord": 22,
+      "city_id": "calgary",
+      "title": "보네스파크 라군은 여름과 겨울 쓰임이 다르네",
+      "url": "https://www.calgary.ca/parks/bowness-park-features.html",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_local_curl",
+      "web_ref": null,
+      "evidence_file": "sources/22.txt",
+      "verified_facts": "보네스파크 라군은 여름 보트·겨울 스케이트 장소. 현재 기차·여름 대여가 닫혀 있어 이용 권유를 제외."
+    },
+    {
+      "ord": 23,
+      "city_id": "calgary",
+      "title": "캘거리 Transit 앱은 경로 계획이랑 이동 추적을 같이 하네",
+      "url": "https://www.calgarytransit.com/rider-information/rider-tools.html",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_local_curl",
+      "web_ref": null,
+      "evidence_file": "sources/23.txt",
+      "verified_facts": "Transit 앱은 실시간 경로 계획 및 이동 추적 기능을 제공. Next Ride와 GPS 단정은 제외."
+    },
+    {
+      "ord": 24,
+      "city_id": "calgary",
+      "title": "캘거리 도서관 그림책은 여러 언어로 듣는 자료도 있네",
+      "url": "https://www.calgarylibrary.ca/read-learn-and-explore/digital-library/lote4kids",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_local_curl",
+      "web_ref": null,
+      "evidence_file": "sources/24.txt",
+      "verified_facts": "CPL LOTE4Kids는 영어·프랑스어·스페인어 등 여러 언어의 그림책 읽기·듣기 자료."
+    },
+    {
+      "ord": 25,
+      "city_id": "calgary",
+      "title": "샘리빙스턴 양어장은 송어가 호수로 가기 전 자라는 곳이네",
+      "url": "https://bowhabitat.alberta.ca/visit/fish-hatchery.aspx",
+      "verified_at_utc": "2026-10-07 17:12:00 UTC",
+      "method": "official_page_read_via_local_curl",
+      "web_ref": null,
+      "evidence_file": "sources/25.txt",
+      "verified_facts": "샘리빙스턴 양어장은 송어를 알부터 치어까지 길러 알버타 호수·연못 방류 사업에 연결."
+    }
+  ]
+}

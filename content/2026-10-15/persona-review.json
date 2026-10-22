@@ -1,0 +1,1906 @@
+{
+  "same_writer": true,
+  "profile_sync_reused_not_rerun": true,
+  "reviews": [
+    {
+      "ord": 1,
+      "author_id": "10000000-0000-0000-0000-000000000039",
+      "author_nickname": "SFU언덕",
+      "city_id": "vancouver",
+      "age": 19,
+      "gender": "남",
+      "living": {
+        "spending": "취미에는 선택적으로 지출",
+        "household": "룸메이트와 거주",
+        "transport": "차량과 도보",
+        "occupation": "직업 과정 학생",
+        "residency_years": 7
+      },
+      "family": null,
+      "voice": {
+        "emoji": "거의 없음",
+        "humor": 2,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 0,
+        "sentence_length": "구체적인 배경을 풀어 설명함",
+        "place_name_language": "en"
+      },
+      "personality": {
+        "stance": "조심스럽게 말을 꺼냄",
+        "small_contradiction": "계획을 세우지만 마음에 드는 발견에는 계획을 바꿈"
+      },
+      "personality_axes": {
+        "focus": 2,
+        "humor": 2,
+        "social": 2,
+        "verbosity": 2,
+        "directness": 0,
+        "initiative": 0
+      },
+      "recent_posts_read": [
+        {
+          "id": "6711e8f1-31c6-45db-9db9-25987fb67965",
+          "title": "BodyWorks에서 뼈 맞추기, 시간 제한까지 있네",
+          "body_sha256": "9d8c9755d6ea14ca52955e450c4dbb2eb4101e360d487b9399f9b4ce92c5b190"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "en",
+      "final_body_sha256": "fbde3dc331f897a17519354324c9a8b9e057feba1be052d15905f2a824f60ca7",
+      "place_name_decision": {
+        "preference": "en",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 2,
+      "author_id": "10000000-0000-0000-0000-000000000038",
+      "author_nickname": "T&T장보기",
+      "city_id": "vancouver",
+      "age": 29,
+      "gender": "여",
+      "living": {
+        "spending": "실속 위주",
+        "household": "룸메이트와 거주",
+        "transport": "대중교통과 도보",
+        "occupation": "서비스직",
+        "residency_years": 3
+      },
+      "family": null,
+      "voice": {
+        "emoji": "거의 없음",
+        "humor": 2,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 1,
+        "sentence_length": "구체적인 배경을 풀어 설명함",
+        "place_name_language": "ko"
+      },
+      "personality": {
+        "stance": "담백하게 의견을 냄",
+        "small_contradiction": "새로운 곳은 궁금하지만 준비 없이 움직이는 것은 부담스러움"
+      },
+      "personality_axes": {
+        "focus": 1,
+        "humor": 2,
+        "social": 1,
+        "verbosity": 2,
+        "directness": 1,
+        "initiative": 0
+      },
+      "recent_posts_read": [
+        {
+          "id": "a0c413ff-11fc-4d66-aa39-96df3968b846",
+          "title": "사이언스월드 Tinkering Space에선 나무 조각으로 만들어",
+          "body_sha256": "242215404b7141b3e30d3f89c9f14e8bb5ac4e4674bb0de01efea3a22da627f5"
+        },
+        {
+          "id": "7d4b8439-ef4f-44c2-8cf6-7a2ff3d24dcb",
+          "title": "밴쿠버아트갤러리에서 케이블로 짠 작품을 보여줘",
+          "body_sha256": "67ebd67807285383897c27bbdd7e37d6351e78b351192a47231b31151ca78a90"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "ko",
+      "final_body_sha256": "b57e74eb44eb1888f6efda5ddee8463b7d2cc14f7c4e5f07ba4dd167bc8bd663",
+      "place_name_decision": {
+        "preference": "ko",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 3,
+      "author_id": "10000000-0000-0000-0000-000000000011",
+      "author_nickname": "갓랜디드",
+      "city_id": "vancouver",
+      "age": 19,
+      "gender": "남",
+      "living": {
+        "spending": "취미에는 선택적으로 지출",
+        "household": "룸메이트와 거주",
+        "transport": "차량과 도보",
+        "occupation": "직업 과정 학생",
+        "residency_years": 2
+      },
+      "family": null,
+      "voice": {
+        "emoji": "필요할 때 하나",
+        "humor": 2,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 2,
+        "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+        "place_name_language": "en"
+      },
+      "personality": {
+        "stance": "불편한 점을 구체적으로 말함",
+        "small_contradiction": "혼자 쉬는 것을 좋아하지만 좋은 모임은 찾아봄"
+      },
+      "personality_axes": {
+        "focus": 2,
+        "humor": 2,
+        "social": 1,
+        "verbosity": 1,
+        "directness": 2,
+        "initiative": 2
+      },
+      "recent_posts_read": [
+        {
+          "id": "fa257e08-0b4f-4b88-994c-f60a41f0b298",
+          "title": "SeaBus, 물 건너는 시간은 약 12분",
+          "body_sha256": "cc7ae2be8d73698993254385fadcc7db2ad13ba1b67e01dfc210d59bb377f99a"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "en",
+      "final_body_sha256": "d14ff496578e86a75871db94832e1078510f029f295fdf50239345f8409e4907",
+      "place_name_decision": {
+        "preference": "en",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 4,
+      "author_id": "10000000-0000-0000-0000-000000000043",
+      "author_nickname": "게스타운커피",
+      "city_id": "vancouver",
+      "age": 24,
+      "gender": "남",
+      "living": {
+        "spending": "취미에는 선택적으로 지출",
+        "household": "룸메이트와 거주",
+        "transport": "자전거와 대중교통",
+        "occupation": "개발자",
+        "residency_years": 1
+      },
+      "family": null,
+      "voice": {
+        "emoji": "거의 없음",
+        "humor": 0,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 1,
+        "sentence_length": "구체적인 배경을 풀어 설명함",
+        "place_name_language": "en"
+      },
+      "personality": {
+        "stance": "담백하게 의견을 냄",
+        "small_contradiction": "계획을 세우지만 마음에 드는 발견에는 계획을 바꿈"
+      },
+      "personality_axes": {
+        "focus": 1,
+        "humor": 0,
+        "social": 1,
+        "verbosity": 2,
+        "directness": 1,
+        "initiative": 0
+      },
+      "recent_posts_read": [
+        {
+          "id": "e0e4bead-23bb-4063-ae81-8e4bdc647e99",
+          "title": "MOA Multiversity Galleries의 분류엔 공동체가 참여했어",
+          "body_sha256": "26afb2168f9741085bc37f55b24baf0e6e65d6eb7e5afb4e7a6ab95d011c2f69"
+        },
+        {
+          "id": "9e859043-9413-4dbb-85aa-16c8aadfd87f",
+          "title": "버스 앞 자전거 거치대, 미리 연습할 곳이 있었음",
+          "body_sha256": "113fce3e1c9d2e57676f01ed1f7092211953e5344ca01c1ecdc96e17f4bac60c"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "en",
+      "final_body_sha256": "e3d0100d4fcdc9b36b04d67b7c743ee103b6c52fd859a6ab445cefbdc06335b9",
+      "place_name_decision": {
+        "preference": "en",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 5,
+      "author_id": "10000000-0000-0000-0000-000000000017",
+      "author_nickname": "고요한밤",
+      "city_id": "vancouver",
+      "age": 29,
+      "gender": "여",
+      "living": {
+        "spending": "실속 위주",
+        "household": "가족과 거주",
+        "transport": "대중교통과 도보",
+        "occupation": "개발자",
+        "residency_years": 2
+      },
+      "family": null,
+      "voice": {
+        "emoji": "필요할 때 하나",
+        "humor": 1,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 1,
+        "sentence_length": "구체적인 배경을 풀어 설명함",
+        "place_name_language": "en"
+      },
+      "personality": {
+        "stance": "담백하게 의견을 냄",
+        "small_contradiction": "혼자 쉬는 것을 좋아하지만 좋은 모임은 찾아봄"
+      },
+      "personality_axes": {
+        "focus": 0,
+        "humor": 1,
+        "social": 1,
+        "verbosity": 2,
+        "directness": 1,
+        "initiative": 0
+      },
+      "recent_posts_read": [],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "en",
+      "final_body_sha256": "786ffc78ecf37fbb6b6fe79180a1e325bcf3acbd738d21928f282ea7b2fa5c6c",
+      "place_name_decision": {
+        "preference": "en",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 6,
+      "author_id": "10000000-0000-0000-0000-000000000069",
+      "author_nickname": "CN타워야경",
+      "city_id": "toronto",
+      "age": 19,
+      "gender": "여",
+      "living": {
+        "spending": "취미에는 선택적으로 지출",
+        "household": "룸메이트와 거주",
+        "transport": "자전거와 대중교통",
+        "occupation": "직업 과정 학생",
+        "residency_years": 5
+      },
+      "family": null,
+      "voice": {
+        "emoji": "필요할 때 하나",
+        "humor": 1,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 2,
+        "sentence_length": "구체적인 배경을 풀어 설명함",
+        "place_name_language": "en"
+      },
+      "personality": {
+        "stance": "불편한 점을 구체적으로 말함",
+        "small_contradiction": "혼자 쉬는 것을 좋아하지만 좋은 모임은 찾아봄"
+      },
+      "personality_axes": {
+        "focus": 2,
+        "humor": 1,
+        "social": 0,
+        "verbosity": 2,
+        "directness": 2,
+        "initiative": 2
+      },
+      "recent_posts_read": [
+        {
+          "id": "f476d9c8-03b3-462b-bcaa-97c4b80ae196",
+          "title": "TTC 지하철역 자전거 주차도 같이 생각해볼 만함",
+          "body_sha256": "cfc9cb35c8fd3072eacb9ec01178756a70e7c6e0e0d6fdbca3c676c5c30ebf6d"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "en",
+      "final_body_sha256": "88b76239d0ed1288048a67b907b129b8192a6e21ef371e162659ce6a4916fa91",
+      "place_name_decision": {
+        "preference": "en",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 7,
+      "author_id": "10000000-0000-0000-0000-000000000029",
+      "author_nickname": "고트레인창가",
+      "city_id": "toronto",
+      "age": 24,
+      "gender": "여",
+      "living": {
+        "spending": "실속 위주",
+        "household": "파트너와 거주",
+        "transport": "대중교통과 도보",
+        "occupation": "서비스직",
+        "residency_years": 2
+      },
+      "family": null,
+      "voice": {
+        "emoji": "거의 없음",
+        "humor": 0,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 0,
+        "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+        "place_name_language": "en"
+      },
+      "personality": {
+        "stance": "조심스럽게 말을 꺼냄",
+        "small_contradiction": "혼자 쉬는 것을 좋아하지만 좋은 모임은 찾아봄"
+      },
+      "personality_axes": {
+        "focus": 2,
+        "humor": 0,
+        "social": 0,
+        "verbosity": 1,
+        "directness": 0,
+        "initiative": 0
+      },
+      "recent_posts_read": [
+        {
+          "id": "17e95780-ae66-45bf-8264-a5fec3c33014",
+          "title": "Textile Museum의 이번 자수 전시가 눈에 들어왔어",
+          "body_sha256": "aefdceb3e3ca9802f0cdce27d0a3cb54ad2e10bb47a27f4fb7dd2bdec60e1555"
+        },
+        {
+          "id": "a7b1587f-9d84-5a3c-9f8d-fdf7038cc3e7",
+          "title": "하이파크 산책, 공식 지도로 코스 골라보기",
+          "body_sha256": "e75b8303f1caacdef9bfeb1595c6fa454a841abd98a1d2900c1453d9e38e3064"
+        },
+        {
+          "id": "20000000-0000-0000-0000-000000000046",
+          "title": "친구에게 소개할 한 끼, 메뉴부터 고른다면",
+          "body_sha256": "a2322c9c9fd1fea5912a30dce06f337a3b4a2aec506ee88cf94bc7052db65f54"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "en",
+      "final_body_sha256": "1cd6c9701a6bb50170960cd413f8dacb9e2c7b11c95598bac98f6667206bca2e",
+      "place_name_decision": {
+        "preference": "en",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 8,
+      "author_id": "10000000-0000-0000-0000-000000000083",
+      "author_nickname": "고트레인출근",
+      "city_id": "toronto",
+      "age": 35,
+      "gender": "여",
+      "living": {
+        "spending": "실속 위주",
+        "household": "파트너와 거주",
+        "transport": "대중교통과 도보",
+        "occupation": "기술직",
+        "residency_years": 2
+      },
+      "family": null,
+      "voice": {
+        "emoji": "거의 없음",
+        "humor": 0,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 0,
+        "sentence_length": "짧은 문장 중심",
+        "place_name_language": "en"
+      },
+      "personality": {
+        "stance": "조심스럽게 말을 꺼냄",
+        "small_contradiction": "계획을 세우지만 마음에 드는 발견에는 계획을 바꿈"
+      },
+      "personality_axes": {
+        "focus": 2,
+        "humor": 0,
+        "social": 2,
+        "verbosity": 0,
+        "directness": 0,
+        "initiative": 0
+      },
+      "recent_posts_read": [],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "en",
+      "final_body_sha256": "383e6c3fe1333fda92183e638f000b0340542127df1ca6989bcfa05788d547db",
+      "place_name_decision": {
+        "preference": "en",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 9,
+      "author_id": "10000000-0000-0000-0000-000000000034",
+      "author_nickname": "나이아가라평일",
+      "city_id": "toronto",
+      "age": 35,
+      "gender": "여",
+      "living": {
+        "spending": "취미에는 선택적으로 지출",
+        "household": "혼자 거주",
+        "transport": "대중교통과 도보",
+        "occupation": "기술직",
+        "residency_years": 0.25
+      },
+      "family": null,
+      "voice": {
+        "emoji": "필요할 때 하나",
+        "humor": 1,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 0,
+        "sentence_length": "짧은 문장 중심",
+        "place_name_language": "ko"
+      },
+      "personality": {
+        "stance": "조심스럽게 말을 꺼냄",
+        "small_contradiction": "혼자 쉬는 것을 좋아하지만 좋은 모임은 찾아봄"
+      },
+      "personality_axes": {
+        "focus": 2,
+        "humor": 1,
+        "social": 2,
+        "verbosity": 0,
+        "directness": 0,
+        "initiative": 1
+      },
+      "recent_posts_read": [
+        {
+          "id": "6b09f714-7966-46cc-bc47-a8e8af8ccd8a",
+          "title": "평일에도 토론토에서 나이아가라 가는 GO가 있음",
+          "body_sha256": "4f8c550146322c29ec32300e679ca3238329fc5b2cda529f3506199711bed510"
+        },
+        {
+          "id": "20000000-0000-0000-0000-000000000091",
+          "title": "미시사가에서 다운타운 출근, 차 vs 고트레인",
+          "body_sha256": "c5edd424d7748225086713143903006cc39808fb1cf2e219864f62452dc17549"
+        },
+        {
+          "id": "20000000-0000-0000-0000-000000000076",
+          "title": "하이파크 아침 산책 루틴 공유",
+          "body_sha256": "fe55d1b737f115284f746848fd175209298ebfb1187c5cb3ce870d80992d7f0a"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "ko",
+      "final_body_sha256": "4933e644d94b840570dceb662bfaa987af6d54e739cc89e7e08bb1d99c773d55",
+      "place_name_decision": {
+        "preference": "ko",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 10,
+      "author_id": "10000000-0000-0000-0000-000000000008",
+      "author_nickname": "노스욕산책러",
+      "city_id": "toronto",
+      "age": 29,
+      "gender": "남",
+      "living": {
+        "spending": "시간과 편의에 지출",
+        "household": "혼자 거주",
+        "transport": "자전거와 대중교통",
+        "occupation": "서비스직",
+        "residency_years": 3
+      },
+      "family": null,
+      "voice": {
+        "emoji": "필요할 때 하나",
+        "humor": 0,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 0,
+        "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+        "place_name_language": "ko"
+      },
+      "personality": {
+        "stance": "조심스럽게 말을 꺼냄",
+        "small_contradiction": "혼자 쉬는 것을 좋아하지만 좋은 모임은 찾아봄"
+      },
+      "personality_axes": {
+        "focus": 2,
+        "humor": 0,
+        "social": 2,
+        "verbosity": 1,
+        "directness": 0,
+        "initiative": 1
+      },
+      "recent_posts_read": [
+        {
+          "id": "4a2d5b53-b571-4bc9-9cfb-a54c2cc22134",
+          "title": "앨런가든스의 중앙 온실은 화재 뒤 다시 지은 건물이야",
+          "body_sha256": "4191024705fb0bfd59f69880fc64c8c8078a1573d3aa1790e649d9ca8d4b9958"
+        },
+        {
+          "id": "602ff3bd-7ab7-4d0a-b53e-c4b7e1a3d61f",
+          "title": "토론토동물원은 박쥐 소리로도 조사를 하네",
+          "body_sha256": "cf87f1561eeca4fe06eca7a293f378604b6e5516338776158e40e498545dac88"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "ko",
+      "final_body_sha256": "3970c9ce6b2e0d5e4f841725df35ad81005d296d10c7dd3e23c38cf08ce7b40d",
+      "place_name_decision": {
+        "preference": "ko",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 11,
+      "author_id": "75513359-f87a-5b69-9bde-8261e0854bb6",
+      "author_nickname": "두바퀴메이플",
+      "city_id": "montreal",
+      "age": 35,
+      "gender": "남",
+      "living": {
+        "spending": "실속 위주",
+        "household": "파트너와 거주",
+        "transport": "자전거와 대중교통",
+        "occupation": "디자이너",
+        "residency_years": 12
+      },
+      "family": null,
+      "voice": {
+        "emoji": "필요할 때 하나",
+        "humor": 2,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 1,
+        "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+        "place_name_language": "ko"
+      },
+      "personality": {
+        "stance": "담백하게 의견을 냄",
+        "small_contradiction": "지출에는 꼼꼼하지만 좋아하는 취미에는 느슨함"
+      },
+      "personality_axes": {
+        "focus": 2,
+        "humor": 2,
+        "social": 0,
+        "verbosity": 1,
+        "directness": 1,
+        "initiative": 1
+      },
+      "recent_posts_read": [
+        {
+          "id": "85492f06-a601-4e05-932a-121bc0f80d22",
+          "title": "라피드 공원은 급류랑 새를 함께 바라보는 자리네",
+          "body_sha256": "c02198d3e6c71b4bd364524ce9a1534fc718720e5fe00061e4b711289a05fd63"
+        },
+        {
+          "id": "01f21c4b-cafd-4ee5-8b1b-51537836de09",
+          "title": "BAnQ 대출 목록에 게임도 들어가 있네",
+          "body_sha256": "1dc637433a60c739e703d4895bc4a6b278fdb276901a22e8032c8ce667f355db"
+        },
+        {
+          "id": "3af1a392-2620-452d-b412-6165e155e5d6",
+          "title": "BAnQ는 오늘 10월 12일 전 지점 휴관",
+          "body_sha256": "371b0cf676dfeae87cf092e55f049699f21feffbcbaa4fe65eba7f598bdbb255"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "ko",
+      "final_body_sha256": "234f42e2c35bfb657392d44b9d65b06a6b6bbf9fe87566d13ed9b53775b93852",
+      "place_name_decision": {
+        "preference": "ko",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 12,
+      "author_id": "49392196-fb82-5ea3-bced-4b7bb76dcec0",
+      "author_nickname": "메트로한칸",
+      "city_id": "montreal",
+      "age": 24,
+      "gender": "남",
+      "living": {
+        "spending": "실속 위주",
+        "household": "가족과 거주",
+        "transport": "대중교통과 도보",
+        "occupation": "대학원생",
+        "residency_years": 5
+      },
+      "family": null,
+      "voice": {
+        "emoji": "거의 없음",
+        "humor": 0,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 0,
+        "sentence_length": "구체적인 배경을 풀어 설명함",
+        "place_name_language": "ko"
+      },
+      "personality": {
+        "stance": "조심스럽게 말을 꺼냄",
+        "small_contradiction": "새로운 곳은 궁금하지만 준비 없이 움직이는 것은 부담스러움"
+      },
+      "personality_axes": {
+        "focus": 0,
+        "humor": 0,
+        "social": 1,
+        "verbosity": 2,
+        "directness": 0,
+        "initiative": 0
+      },
+      "recent_posts_read": [
+        {
+          "id": "9b8f57d5-2512-4518-b871-a3680f954680",
+          "title": "Parc Jarry 산책로와 농구장은 정비 안내가 있어",
+          "body_sha256": "44ff8302667a3870de621d19efab2e86cb6daa3119b3922cef2adbffae3453b6"
+        },
+        {
+          "id": "e807be7d-a8a7-4e25-9ab3-6dfa4964948f",
+          "title": "르네 레베크 공원에 새 나무 구역을 만든 이유",
+          "body_sha256": "07ebb4bc52149755c15cc2fe00827a736110ec5275e7f52a5871955adc838c45"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "ko",
+      "final_body_sha256": "eb7ecedf77f568574f34af5166b35fca552a0291171e1ceb87661ee774359c63",
+      "place_name_decision": {
+        "preference": "ko",
+        "canonical_map_name": "Parc-nature du Bois-de-Liesse",
+        "canonical_map_address": "9432, boulevard Gouin Ouest, Montréal, Québec H8Y 1T4",
+        "exact_public_map_label": "부아드리에스 자연공원",
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 13,
+      "author_id": "cc3ea647-6ac1-5ffc-ba83-8d4724d2e0f1",
+      "author_nickname": "몽루아얄잎새",
+      "city_id": "montreal",
+      "age": 29,
+      "gender": "여",
+      "living": {
+        "spending": "시간과 편의에 지출",
+        "household": "가족과 거주",
+        "transport": "차량과 도보",
+        "occupation": "대학원생",
+        "residency_years": 7
+      },
+      "family": {
+        "children_ages": [
+          3
+        ],
+        "marriage_years": 6,
+        "household_finances": "육아비와 주거비를 함께 계획한다",
+        "relationship_status": "married"
+      },
+      "voice": {
+        "emoji": "거의 없음",
+        "humor": 0,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 2,
+        "sentence_length": "구체적인 배경을 풀어 설명함",
+        "place_name_language": "en"
+      },
+      "personality": {
+        "stance": "불편한 점을 구체적으로 말함",
+        "small_contradiction": "혼자 쉬는 것을 좋아하지만 좋은 모임은 찾아봄"
+      },
+      "personality_axes": {
+        "focus": 0,
+        "humor": 0,
+        "social": 0,
+        "verbosity": 2,
+        "directness": 2,
+        "initiative": 2
+      },
+      "recent_posts_read": [
+        {
+          "id": "51d2212a-f5d2-564c-9459-1350de24d008",
+          "title": "아이 상담에 남편이랑 갔다고 친구가 유난이래",
+          "body_sha256": "e988fb093ffc65fc950ee255b2d729aeb170e274df2aab318362b15b1d9b9722"
+        },
+        {
+          "id": "adbaa1c2-c14b-4e07-940b-a0d9529d3cf4",
+          "title": "Parc du Mont-Royal 150주년 프로그램은 내년 봄까지",
+          "body_sha256": "91d0f51f4dbf2c8682cf51531c9e955da76bb6ee242f7382c3d0134a0d2c8d8a"
+        },
+        {
+          "id": "4734217a-5b06-4b45-acc2-eef4ee496a12",
+          "title": "MUMAQ의 생활 물건은 퀘벡 공예 역사를 보여주는 자료야",
+          "body_sha256": "6bdd027690092f42cc63e1b4506c4ababdae753212a48d66a160c0d3e4dc126f"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "en",
+      "final_body_sha256": "4d4b6213817ceb39b62af90c1da9122fa91e6535ae09b5e5c1d7b333a83805a3",
+      "place_name_decision": {
+        "preference": "en",
+        "canonical_map_name": "Parc-nature de la Pointe-aux-Prairies",
+        "canonical_map_address": "14905, rue Sherbrooke Est, Montréal, Québec H1A 4G4",
+        "exact_public_map_label": "Parc-nature de la Pointe-aux-Prairies",
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 14,
+      "author_id": "81c6d246-f1fb-5956-8092-4d437caeae8e",
+      "author_nickname": "불어책갈피",
+      "city_id": "montreal",
+      "age": 19,
+      "gender": "여",
+      "living": {
+        "spending": "취미에는 선택적으로 지출",
+        "household": "가족과 거주",
+        "transport": "자전거와 대중교통",
+        "occupation": "카페 파트타이머",
+        "residency_years": 1
+      },
+      "family": null,
+      "voice": {
+        "emoji": "거의 없음",
+        "humor": 2,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 1,
+        "sentence_length": "구체적인 배경을 풀어 설명함",
+        "place_name_language": "ko"
+      },
+      "personality": {
+        "stance": "담백하게 의견을 냄",
+        "small_contradiction": "혼자 쉬는 것을 좋아하지만 좋은 모임은 찾아봄"
+      },
+      "personality_axes": {
+        "focus": 0,
+        "humor": 2,
+        "social": 1,
+        "verbosity": 2,
+        "directness": 1,
+        "initiative": 0
+      },
+      "recent_posts_read": [
+        {
+          "id": "0c85a3fa-f132-4f31-b59b-0753a7c52c22",
+          "title": "BAnQ Le Square 안내에 오디오 장비 역할이 나뉘어 있어",
+          "body_sha256": "d135320639394cf85f36e4beaae9942a13985ed82f7c8f27158bb97d12bc526b"
+        },
+        {
+          "id": "20158cab-164e-4d3c-8dfb-6b1e5a985fef",
+          "title": "앙그리뇽 공원 옛 농장 정보는 현재와 달라",
+          "body_sha256": "354d85eb0c0fb96d498a43b2c00e3f64f663fc685899c5dfb100fe74312ce299"
+        },
+        {
+          "id": "aeac4c18-301e-4a0e-93c5-1d20b9489495",
+          "title": "몬트리올 메트로 노선 번호는 1·2·4·5네",
+          "body_sha256": "52ebcb8c4e454536966a4f1385e18216e63817721973bb3b9c13565a0064f719"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "ko",
+      "final_body_sha256": "ea744cc44a968355da3fb5bbe298101f0dba00697f6710edd84ceefbf1ee6b51",
+      "place_name_decision": {
+        "preference": "ko",
+        "canonical_map_name": "Parc-nature du Bois-de-Saraguay",
+        "canonical_map_address": "12200, avenue Joseph-Saucier, Montréal, Québec H4K 1C2",
+        "exact_public_map_label": "부아드사라게 자연공원",
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 15,
+      "author_id": "2212d766-7329-5611-847e-ee0f59c8eb0e",
+      "author_nickname": "아트워터오후",
+      "city_id": "montreal",
+      "age": 24,
+      "gender": "여",
+      "living": {
+        "spending": "취미에는 선택적으로 지출",
+        "household": "파트너와 거주",
+        "transport": "차량과 도보",
+        "occupation": "디자이너",
+        "residency_years": 8
+      },
+      "family": null,
+      "voice": {
+        "emoji": "필요할 때 하나",
+        "humor": 1,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 0,
+        "sentence_length": "구체적인 배경을 풀어 설명함",
+        "place_name_language": "ko"
+      },
+      "personality": {
+        "stance": "조심스럽게 말을 꺼냄",
+        "small_contradiction": "혼자 쉬는 것을 좋아하지만 좋은 모임은 찾아봄"
+      },
+      "personality_axes": {
+        "focus": 2,
+        "humor": 1,
+        "social": 1,
+        "verbosity": 2,
+        "directness": 0,
+        "initiative": 0
+      },
+      "recent_posts_read": [
+        {
+          "id": "de9843ec-21f3-4374-8f2a-90454a02bffc",
+          "title": "푸앵트아칼리에르에선 유리 바닥 아래 옛 유적을 봐",
+          "body_sha256": "fcb8b6f40d4efb87596e6a474fdfdce1158a19d7a14a8461e3e596b2e874a2b3"
+        },
+        {
+          "id": "a739f530-8db0-4a65-ac7a-42a3743d7257",
+          "title": "아트워터시장은 추워지면 벽을 세운대",
+          "body_sha256": "a97348d6d09c00ae711ed2179897d99a6ff04ff7004f988a48e787ec78ea68be"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "ko",
+      "final_body_sha256": "7a2b25631fc0e2257acc84aea8b07d03b5ebb3fd788e8b43ee0d1629c2354622",
+      "place_name_decision": {
+        "preference": "ko",
+        "canonical_map_name": "Parc de la Promenade-Bellerive",
+        "canonical_map_address": "8300, rue Bellerive, Montréal, Québec",
+        "exact_public_map_label": "프롬나드벨리브 공원",
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 16,
+      "author_id": "10000000-0000-0000-0000-000000000102",
+      "author_nickname": "K데이즈",
+      "city_id": "edmonton",
+      "age": 24,
+      "gender": "여",
+      "living": {
+        "spending": "시간과 편의에 지출",
+        "household": "가족과 거주",
+        "transport": "자전거와 대중교통",
+        "occupation": "사무직",
+        "residency_years": 3
+      },
+      "family": null,
+      "voice": {
+        "emoji": "거의 없음",
+        "humor": 2,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 1,
+        "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+        "place_name_language": "ko"
+      },
+      "personality": {
+        "stance": "담백하게 의견을 냄",
+        "small_contradiction": "계획을 세우지만 마음에 드는 발견에는 계획을 바꿈"
+      },
+      "personality_axes": {
+        "focus": 2,
+        "humor": 2,
+        "social": 0,
+        "verbosity": 1,
+        "directness": 1,
+        "initiative": 1
+      },
+      "recent_posts_read": [
+        {
+          "id": "4fe925ab-4acf-4ab9-a3da-0352725e1b53",
+          "title": "EPL에서 내 글을 종이책으로 묶는 수업도 해",
+          "body_sha256": "5344c910068928fd45e9a8cffe58c499df4d167250599ea3528cf93868e795b7"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "ko",
+      "final_body_sha256": "9bed0ac79357558200e4740234ecfe8b1a1bcf18db7d01468a48de109f039ccc",
+      "place_name_decision": {
+        "preference": "ko",
+        "canonical_map_name": "Dawson Park",
+        "canonical_map_address": "10298 89 Street, Edmonton, Alberta",
+        "exact_public_map_label": "도슨공원",
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 17,
+      "author_id": "10000000-0000-0000-0000-000000000101",
+      "author_nickname": "U오브A도서관",
+      "city_id": "edmonton",
+      "age": 35,
+      "gender": "남",
+      "living": {
+        "spending": "취미에는 선택적으로 지출",
+        "household": "룸메이트와 거주",
+        "transport": "차량과 도보",
+        "occupation": "프리랜서",
+        "residency_years": 7
+      },
+      "family": null,
+      "voice": {
+        "emoji": "거의 없음",
+        "humor": 0,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 1,
+        "sentence_length": "구체적인 배경을 풀어 설명함",
+        "place_name_language": "en"
+      },
+      "personality": {
+        "stance": "담백하게 의견을 냄",
+        "small_contradiction": "지출에는 꼼꼼하지만 좋아하는 취미에는 느슨함"
+      },
+      "personality_axes": {
+        "focus": 2,
+        "humor": 0,
+        "social": 0,
+        "verbosity": 2,
+        "directness": 1,
+        "initiative": 0
+      },
+      "recent_posts_read": [
+        {
+          "id": "3cb764a5-3599-433e-bf6a-b4ac85893173",
+          "title": "EPL The Kitchen에서는 칼 쓰는 방법도 배울 수 있어",
+          "body_sha256": "e5949a999f442d4b5fa988905d65ee1b8d2a657ac1840440f97e16c8f9b7f779"
+        },
+        {
+          "id": "eabab94b-cb0e-4c7a-b843-9d26a24457fd",
+          "title": "오래된 VHS를 파일로 옮기는 데도 원래 재생 시간이 필요해",
+          "body_sha256": "d773e299947985299e2cc5206fd1166e0373e273122c5ffb6e27955910a68b50"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "en",
+      "final_body_sha256": "85e9e38dee4afea1240b41ed319a1e823b87423284ef527c7efbae14304f8451",
+      "place_name_decision": {
+        "preference": "en",
+        "canonical_map_name": "Jackie Parker Park",
+        "canonical_map_address": "4540 50 Street, Edmonton, Alberta",
+        "exact_public_map_label": "Jackie Parker Park",
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 18,
+      "author_id": "9693606b-6fb3-50dc-ad2e-a6c23514c907",
+      "author_nickname": "강변자작나무",
+      "city_id": "edmonton",
+      "age": 24,
+      "gender": "여",
+      "living": {
+        "spending": "실속 위주",
+        "household": "룸메이트와 거주",
+        "transport": "대중교통과 도보",
+        "occupation": "프리랜서",
+        "residency_years": 7
+      },
+      "family": null,
+      "voice": {
+        "emoji": "거의 없음",
+        "humor": 2,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 2,
+        "sentence_length": "짧은 문장 중심",
+        "place_name_language": "en"
+      },
+      "personality": {
+        "stance": "불편한 점을 구체적으로 말함",
+        "small_contradiction": "지출에는 꼼꼼하지만 좋아하는 취미에는 느슨함"
+      },
+      "personality_axes": {
+        "focus": 0,
+        "humor": 2,
+        "social": 0,
+        "verbosity": 0,
+        "directness": 2,
+        "initiative": 2
+      },
+      "recent_posts_read": [
+        {
+          "id": "11fa1ca9-a421-4c7e-b003-f93079e98556",
+          "title": "Royal Alberta Museum의 Big Machine은 함께 돌리는 장치",
+          "body_sha256": "fd2f2c6a6dfb9e50dba3e632ee40b9463d793cb7bf86404f48d35b4e2fada2ab"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "en",
+      "final_body_sha256": "7511c91ba0ad7cd2cc8c38bf3afbc409b6902d6f8e59f2e2f92f3bfadfe78d74",
+      "place_name_decision": {
+        "preference": "en",
+        "canonical_map_name": "Buena Vista Park",
+        "canonical_map_address": "13210 Buena Vista Road, Edmonton, Alberta",
+        "exact_public_map_label": "Buena Vista Park",
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 19,
+      "author_id": "10000000-0000-0000-0000-000000000119",
+      "author_nickname": "글레노라산책",
+      "city_id": "edmonton",
+      "age": 24,
+      "gender": "여",
+      "living": {
+        "spending": "취미에는 선택적으로 지출",
+        "household": "파트너와 거주",
+        "transport": "차량과 도보",
+        "occupation": "기술직",
+        "residency_years": 0.5
+      },
+      "family": null,
+      "voice": {
+        "emoji": "거의 없음",
+        "humor": 2,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 1,
+        "sentence_length": "짧은 문장 중심",
+        "place_name_language": "en"
+      },
+      "personality": {
+        "stance": "담백하게 의견을 냄",
+        "small_contradiction": "혼자 쉬는 것을 좋아하지만 좋은 모임은 찾아봄"
+      },
+      "personality_axes": {
+        "focus": 0,
+        "humor": 2,
+        "social": 1,
+        "verbosity": 0,
+        "directness": 1,
+        "initiative": 2
+      },
+      "recent_posts_read": [
+        {
+          "id": "1bdee449-21ff-41c9-8fa4-bf4d6f2b16cb",
+          "title": "Fort Edmonton Park의 DARK, 올해 새 캠프 테마도 있어",
+          "body_sha256": "95172abb6d803523a33848171c5f61244468b85dca45539e2a02b3ce817c95db"
+        },
+        {
+          "id": "ebd3b931-d6b8-4da8-a595-38e6b49ece49",
+          "title": "개 데리고 뛸 곳, 첫 달엔 어디 있는지 몰랐음",
+          "body_sha256": "19972f0a327af3e39196e70e6dd3b42149191e720c9003ecb3cbac54bae48af2"
+        },
+        {
+          "id": "9092a077-402f-59b3-80b8-e7b0f6343e0e",
+          "title": "EPL 프로그램에서 영어와 독서 모임 찾기",
+          "body_sha256": "41a6686675eb9835374b0f41381cb4a2f76a4ea6894b08376962e9b53c14b47e"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "en",
+      "final_body_sha256": "9f1579d3db4e0b838af83b07fc71ccee7f0bb50734ed1cde6528aa683a1ada7b",
+      "place_name_decision": {
+        "preference": "en",
+        "canonical_map_name": "Sir Wilfrid Laurier Park",
+        "canonical_map_address": "13221 Buena Vista Road, Edmonton, Alberta",
+        "exact_public_map_label": "Sir Wilfrid Laurier Park",
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 20,
+      "author_id": "10000000-0000-0000-0000-000000000106",
+      "author_nickname": "노스사스카츄완강",
+      "city_id": "edmonton",
+      "age": 35,
+      "gender": "여",
+      "living": {
+        "spending": "시간과 편의에 지출",
+        "household": "혼자 거주",
+        "transport": "차량과 도보",
+        "occupation": "사무직",
+        "residency_years": 0.25
+      },
+      "family": null,
+      "voice": {
+        "emoji": "거의 없음",
+        "humor": 1,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 1,
+        "sentence_length": "짧은 문장 중심",
+        "place_name_language": "ko"
+      },
+      "personality": {
+        "stance": "담백하게 의견을 냄",
+        "small_contradiction": "지출에는 꼼꼼하지만 좋아하는 취미에는 느슨함"
+      },
+      "personality_axes": {
+        "focus": 1,
+        "humor": 1,
+        "social": 1,
+        "verbosity": 0,
+        "directness": 1,
+        "initiative": 2
+      },
+      "recent_posts_read": [
+        {
+          "id": "5b49ba43-539a-4df0-8911-ce9c9aff0cb3",
+          "title": "알버타미술관 What Shapes Us는 반복되는 모양을 보는 전시",
+          "body_sha256": "bd4b261e8b2b7b525118a315c981b6c15bdf8df963904a906e94cdf906d31be5"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "ko",
+      "final_body_sha256": "ad5d6e54d6b3cf104c5c38ead63b59d412c9795ab4cb138ede544e6ba06f7770",
+      "place_name_decision": {
+        "preference": "ko",
+        "canonical_map_name": "Coronation Park",
+        "canonical_map_address": "11425 - 142 Street, Edmonton, Alberta",
+        "exact_public_map_label": "코로네이션공원",
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 21,
+      "author_id": "10000000-0000-0000-0000-000000000129",
+      "author_nickname": "17에비뉴커피",
+      "city_id": "calgary",
+      "age": 19,
+      "gender": "남",
+      "living": {
+        "spending": "취미에는 선택적으로 지출",
+        "household": "룸메이트와 거주",
+        "transport": "자전거와 대중교통",
+        "occupation": "카페 파트타이머",
+        "residency_years": 0.5
+      },
+      "family": null,
+      "voice": {
+        "emoji": "필요할 때 하나",
+        "humor": 1,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 1,
+        "sentence_length": "구체적인 배경을 풀어 설명함",
+        "place_name_language": "en"
+      },
+      "personality": {
+        "stance": "담백하게 의견을 냄",
+        "small_contradiction": "지출에는 꼼꼼하지만 좋아하는 취미에는 느슨함"
+      },
+      "personality_axes": {
+        "focus": 0,
+        "humor": 1,
+        "social": 0,
+        "verbosity": 2,
+        "directness": 1,
+        "initiative": 2
+      },
+      "recent_posts_read": [
+        {
+          "id": "eccc43f1-d68d-4a0e-b832-8f4a25aa13ed",
+          "title": "Calgary Public Library 메뉴에 음악도 있었네",
+          "body_sha256": "0855f12450b6b765aceabdb510df119c1950d23ea1d1d7b062a0d3470449d703"
+        },
+        {
+          "id": "07594c31-a431-43f7-b5f5-02fd5c813fe3",
+          "title": "캘거리도서관 뉴커머스데스크는 정착 기관으로 연결해주네",
+          "body_sha256": "16f0c162aa3f3d8538012f8a929a8204d9ff837eada116261cbdea6172420c06"
+        },
+        {
+          "id": "7e621158-c539-47d3-a4bd-2e8b023b503a",
+          "title": "피쉬크릭은 열려 있지만 일부 산책길은 공사 중이야",
+          "body_sha256": "28be4820b6d65195dcb65f616859b7d0be4202abe736583a70359c7c25dae6be"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "en",
+      "final_body_sha256": "f18eff21134b3928171b207a9a8bb09f8f1e6eb1ca0cd321e63f2c58f0f807ed",
+      "place_name_decision": {
+        "preference": "en",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 22,
+      "author_id": "10000000-0000-0000-0000-000000000130",
+      "author_nickname": "C트레인통근",
+      "city_id": "calgary",
+      "age": 29,
+      "gender": "여",
+      "living": {
+        "spending": "취미에는 선택적으로 지출",
+        "household": "룸메이트와 거주",
+        "transport": "대중교통과 도보",
+        "occupation": "프리랜서",
+        "residency_years": 2
+      },
+      "family": null,
+      "voice": {
+        "emoji": "거의 없음",
+        "humor": 1,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 0,
+        "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+        "place_name_language": "ko"
+      },
+      "personality": {
+        "stance": "조심스럽게 말을 꺼냄",
+        "small_contradiction": "새로운 곳은 궁금하지만 준비 없이 움직이는 것은 부담스러움"
+      },
+      "personality_axes": {
+        "focus": 0,
+        "humor": 1,
+        "social": 0,
+        "verbosity": 1,
+        "directness": 0,
+        "initiative": 0
+      },
+      "recent_posts_read": [
+        {
+          "id": "721c43a9-bc7f-46db-8906-77773842cb92",
+          "title": "캘거리트랜짓 분실물은 센터스트리트 쪽에서 찾아",
+          "body_sha256": "0bcbeb5411c8d334634a2bc9f53b19443eacab0b18621afc2e9b4af3865726e4"
+        },
+        {
+          "id": "b77eb52a-1c87-4508-a462-ae9718112f12",
+          "title": "CTrain이랑 버스는 자전거 놓는 방식이 다르네",
+          "body_sha256": "0948c5e2f6695733f4a837b732a67cf76cbacfad7b5c3dbd7983b4029bf2c078"
+        },
+        {
+          "id": "cf5ca5e2-dcc9-433b-95fa-07066a954ed1",
+          "title": "오늘 캘거리트랜짓은 일요일 운행, 레드라인 공사도 있어",
+          "body_sha256": "08794479368757b8ca59e8430d7ec6cfd23b60afeb6fa2e52b0654d2a47717d1"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "ko",
+      "final_body_sha256": "36a2dc29a6901ef297fd94b9938e6f64d243d60f5ef26f5efc960051a2cc96d8",
+      "place_name_decision": {
+        "preference": "ko",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 23,
+      "author_id": "10000000-0000-0000-0000-000000000133",
+      "author_nickname": "글렌모어공원",
+      "city_id": "calgary",
+      "age": 29,
+      "gender": "남",
+      "living": {
+        "spending": "실속 위주",
+        "household": "파트너와 거주",
+        "transport": "대중교통과 도보",
+        "occupation": "개발자",
+        "residency_years": 0.5
+      },
+      "family": null,
+      "voice": {
+        "emoji": "거의 없음",
+        "humor": 1,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 1,
+        "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+        "place_name_language": "en"
+      },
+      "personality": {
+        "stance": "담백하게 의견을 냄",
+        "small_contradiction": "새로운 곳은 궁금하지만 준비 없이 움직이는 것은 부담스러움"
+      },
+      "personality_axes": {
+        "focus": 2,
+        "humor": 1,
+        "social": 2,
+        "verbosity": 1,
+        "directness": 1,
+        "initiative": 0
+      },
+      "recent_posts_read": [
+        {
+          "id": "92d68b07-59fe-4e55-a486-9dd54e0f9e36",
+          "title": "Gasoline Alley Museum에 그림책에서 나온 체험 전시가 있어",
+          "body_sha256": "adc8bd94402375a648df0d0eaacd72c12612cf9ee946daf895f85904c7a34bbb"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "en",
+      "final_body_sha256": "ca3a180740299f7568f7234b8c1697eaa4f59ee031e2bb9fb3f8399d68491eea",
+      "place_name_decision": {
+        "preference": "en",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 24,
+      "author_id": "10000000-0000-0000-0000-000000000131",
+      "author_nickname": "노스힐장보기",
+      "city_id": "calgary",
+      "age": 19,
+      "gender": "남",
+      "living": {
+        "spending": "취미에는 선택적으로 지출",
+        "household": "혼자 거주",
+        "transport": "자전거와 대중교통",
+        "occupation": "직업 과정 학생",
+        "residency_years": 0.5
+      },
+      "family": null,
+      "voice": {
+        "emoji": "필요할 때 하나",
+        "humor": 1,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 1,
+        "sentence_length": "짧은 문장 중심",
+        "place_name_language": "en"
+      },
+      "personality": {
+        "stance": "담백하게 의견을 냄",
+        "small_contradiction": "계획을 세우지만 마음에 드는 발견에는 계획을 바꿈"
+      },
+      "personality_axes": {
+        "focus": 0,
+        "humor": 1,
+        "social": 2,
+        "verbosity": 0,
+        "directness": 1,
+        "initiative": 0
+      },
+      "recent_posts_read": [
+        {
+          "id": "8b8d9976-625f-4d54-84f3-018d86913391",
+          "title": "도서관에서 차 정비 자료까지 찾을 수 있음",
+          "body_sha256": "4544931d598a6fc84fac7086187d7a050a49f9f5f40bc1e198003d1b7ce366af"
+        },
+        {
+          "id": "6429a00c-29a1-4850-8103-45e38ed2be17",
+          "title": "캘거리 Green Cart에는 고기와 뼈도 넣는구나",
+          "body_sha256": "85107e461fa2972dec800dd57e670a9e5d5f83c4e7168cfcd3d5635dd08b6488"
+        },
+        {
+          "id": "3d7ba7d9-29cc-459f-9043-a7744dc3d2c0",
+          "title": "루히드하우스는 옛집과 정원이 함께 남은 박물관이네",
+          "body_sha256": "6606645531179463fac888711e934e5d61d0e0baa49240b76789d83686c77ecd"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "en",
+      "final_body_sha256": "52262c1b5a008047662d1fca03c89488763651b2bcdb0c643c290d78b2915f61",
+      "place_name_decision": {
+        "preference": "en",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 25,
+      "author_id": "10000000-0000-0000-0000-000000000137",
+      "author_nickname": "메이랜드저녁",
+      "city_id": "calgary",
+      "age": 35,
+      "gender": "여",
+      "living": {
+        "spending": "취미에는 선택적으로 지출",
+        "household": "가족과 거주",
+        "transport": "자전거와 대중교통",
+        "occupation": "디자이너",
+        "residency_years": 1
+      },
+      "family": {
+        "children_ages": [
+          6,
+          3,
+          1
+        ],
+        "marriage_years": 6,
+        "household_finances": "육아비와 주거비를 함께 계획한다",
+        "relationship_status": "married"
+      },
+      "voice": {
+        "emoji": "필요할 때 하나",
+        "humor": 1,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 2,
+        "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+        "place_name_language": "en"
+      },
+      "personality": {
+        "stance": "불편한 점을 구체적으로 말함",
+        "small_contradiction": "새로운 곳은 궁금하지만 준비 없이 움직이는 것은 부담스러움"
+      },
+      "personality_axes": {
+        "focus": 1,
+        "humor": 1,
+        "social": 1,
+        "verbosity": 1,
+        "directness": 2,
+        "initiative": 1
+      },
+      "recent_posts_read": [
+        {
+          "id": "0c54c394-fc76-52fe-a928-bd883b60f839",
+          "title": "남편이 주말에 번 돈을 부모님께 드렸는데 난 몰랐어",
+          "body_sha256": "fc3d45b45efa3d9a69e10ef8e32ec54a98f5ab36ff05e9393cd6851d24f2c6ca"
+        },
+        {
+          "id": "b71b9222-beb3-541f-8f39-2a2d3caeec0e",
+          "title": "입원해서 결혼식 못 갔는데, 축하만 보내면 끝이냐는 친구",
+          "body_sha256": "0845e512f6dc3f27b4ade614c4f1135a990c670b894651078064ce58be2cab54"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "확인한 정보와 의견·방문 계획만 작성;미확인 경험이나 구매·방문 완료 없음",
+      "place_name_language": "en",
+      "final_body_sha256": "0cf9326b4d304c91dd87c8c2b638f9d0ea75ed08a263162fe8163ca268110c96",
+      "place_name_decision": {
+        "preference": "en",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 26,
+      "author_id": "10000000-0000-0000-0000-000000000065",
+      "author_nickname": "커머셜드라이브",
+      "city_id": "vancouver",
+      "age": 29,
+      "gender": "남",
+      "living": {
+        "spending": "취미에는 선택적으로 지출",
+        "household": "파트너와 거주",
+        "transport": "자전거와 대중교통",
+        "occupation": "대학원생",
+        "residency_years": 7
+      },
+      "family": {
+        "children_ages": [],
+        "marriage_years": 4,
+        "household_finances": "집 대출과 개인 취미 예산을 함께 조정한다",
+        "relationship_status": "married"
+      },
+      "voice": {
+        "emoji": "필요할 때 하나",
+        "humor": 0,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 0,
+        "sentence_length": "짧은 문장 중심",
+        "place_name_language": "en"
+      },
+      "personality": {
+        "stance": "조심스럽게 말을 꺼냄",
+        "small_contradiction": "새로운 곳은 궁금하지만 준비 없이 움직이는 것은 부담스러움"
+      },
+      "personality_axes": {
+        "focus": 0,
+        "humor": 0,
+        "social": 0,
+        "verbosity": 0,
+        "directness": 0,
+        "initiative": 0
+      },
+      "recent_posts_read": [
+        {
+          "id": "8a78d3b1-8708-5e9b-b496-e67aad1ace7b",
+          "title": "어른끼리 가자던 여행, 날짜 잡고 나니 아이들도 온대",
+          "body_sha256": "7c27b7eba4d94848115e44cde0e1a903ff18d9e433cce7d29599b382c62687c8"
+        },
+        {
+          "id": "0dcb11c6-f299-5f21-a3b3-8c8f8579b236",
+          "title": "집세는 내가 내겠다고 했는데, 생활비와 집안일도 내 몫일까",
+          "body_sha256": "96e72b7b782abfbedbe81194cf52b036a427f537633f9eebdf026e58ea335abd"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "고정 가족과 현재 직업을 유지;사연은 별도 fictional_changes에 시점/원문 변경 기록",
+      "place_name_language": "en",
+      "final_body_sha256": "ac57b2614f36d27c81770a3a56a2a337ed8f8de8e7756ab34d20403888c828da",
+      "place_name_decision": {
+        "preference": "en",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 27,
+      "author_id": "10000000-0000-0000-0000-000000000080",
+      "author_nickname": "베이뷰빌리지",
+      "city_id": "toronto",
+      "age": 29,
+      "gender": "남",
+      "living": {
+        "spending": "실속 위주",
+        "household": "파트너와 거주",
+        "transport": "차량과 도보",
+        "occupation": "기술직",
+        "residency_years": 2
+      },
+      "family": {
+        "children_ages": [],
+        "marriage_years": 4,
+        "household_finances": "공동 생활비와 개인 지출을 구분해 관리한다",
+        "relationship_status": "married"
+      },
+      "voice": {
+        "emoji": "필요할 때 하나",
+        "humor": 2,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 2,
+        "sentence_length": "구체적인 배경을 풀어 설명함",
+        "place_name_language": "ko"
+      },
+      "personality": {
+        "stance": "불편한 점을 구체적으로 말함",
+        "small_contradiction": "계획을 세우지만 마음에 드는 발견에는 계획을 바꿈"
+      },
+      "personality_axes": {
+        "focus": 1,
+        "humor": 2,
+        "social": 0,
+        "verbosity": 2,
+        "directness": 2,
+        "initiative": 1
+      },
+      "recent_posts_read": [
+        {
+          "id": "d374b036-50fc-5d77-9124-26c9037c332d",
+          "title": "친구의 아픈 과거, 익명 글에 쓰는 건 괜찮다는 아내",
+          "body_sha256": "9e57484d337a25057db5556eefe607ed3fb87c38948c26f2f0321e5e8d9e6d66"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "고정 가족과 현재 직업을 유지;사연은 별도 fictional_changes에 시점/원문 변경 기록",
+      "place_name_language": "ko",
+      "final_body_sha256": "7d8fda3726826189897efd81f00ecc82333b22b22c9c536b61ebf2b923b14aa5",
+      "place_name_decision": {
+        "preference": "ko",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 28,
+      "author_id": "cc3ea647-6ac1-5ffc-ba83-8d4724d2e0f1",
+      "author_nickname": "몽루아얄잎새",
+      "city_id": "montreal",
+      "age": 29,
+      "gender": "여",
+      "living": {
+        "spending": "시간과 편의에 지출",
+        "household": "가족과 거주",
+        "transport": "차량과 도보",
+        "occupation": "대학원생",
+        "residency_years": 7
+      },
+      "family": {
+        "children_ages": [
+          3
+        ],
+        "marriage_years": 6,
+        "household_finances": "육아비와 주거비를 함께 계획한다",
+        "relationship_status": "married"
+      },
+      "voice": {
+        "emoji": "거의 없음",
+        "humor": 0,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 2,
+        "sentence_length": "구체적인 배경을 풀어 설명함",
+        "place_name_language": "en"
+      },
+      "personality": {
+        "stance": "불편한 점을 구체적으로 말함",
+        "small_contradiction": "혼자 쉬는 것을 좋아하지만 좋은 모임은 찾아봄"
+      },
+      "personality_axes": {
+        "focus": 0,
+        "humor": 0,
+        "social": 0,
+        "verbosity": 2,
+        "directness": 2,
+        "initiative": 2
+      },
+      "recent_posts_read": [
+        {
+          "id": "51d2212a-f5d2-564c-9459-1350de24d008",
+          "title": "아이 상담에 남편이랑 갔다고 친구가 유난이래",
+          "body_sha256": "e988fb093ffc65fc950ee255b2d729aeb170e274df2aab318362b15b1d9b9722"
+        },
+        {
+          "id": "adbaa1c2-c14b-4e07-940b-a0d9529d3cf4",
+          "title": "Parc du Mont-Royal 150주년 프로그램은 내년 봄까지",
+          "body_sha256": "91d0f51f4dbf2c8682cf51531c9e955da76bb6ee242f7382c3d0134a0d2c8d8a"
+        },
+        {
+          "id": "4734217a-5b06-4b45-acc2-eef4ee496a12",
+          "title": "MUMAQ의 생활 물건은 퀘벡 공예 역사를 보여주는 자료야",
+          "body_sha256": "6bdd027690092f42cc63e1b4506c4ababdae753212a48d66a160c0d3e4dc126f"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "고정 가족과 현재 직업을 유지;사연은 별도 fictional_changes에 시점/원문 변경 기록",
+      "place_name_language": "en",
+      "final_body_sha256": "72d027b7511b2c882b1fca875262edfab570019f27fec3da811c1647b461b5f6",
+      "place_name_decision": {
+        "preference": "en",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 29,
+      "author_id": "10000000-0000-0000-0000-000000000118",
+      "author_nickname": "에드먼튼겨울",
+      "city_id": "edmonton",
+      "age": 29,
+      "gender": "여",
+      "living": {
+        "spending": "시간과 편의에 지출",
+        "household": "파트너와 거주",
+        "transport": "자전거와 대중교통",
+        "occupation": "소규모 자영업자",
+        "residency_years": 2
+      },
+      "family": {
+        "children_ages": [],
+        "marriage_years": 4,
+        "household_finances": "공동 생활비와 개인 지출을 구분해 관리한다",
+        "relationship_status": "married"
+      },
+      "voice": {
+        "emoji": "거의 없음",
+        "humor": 0,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 0,
+        "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+        "place_name_language": "ko"
+      },
+      "personality": {
+        "stance": "조심스럽게 말을 꺼냄",
+        "small_contradiction": "새로운 곳은 궁금하지만 준비 없이 움직이는 것은 부담스러움"
+      },
+      "personality_axes": {
+        "focus": 0,
+        "humor": 0,
+        "social": 1,
+        "verbosity": 1,
+        "directness": 0,
+        "initiative": 1
+      },
+      "recent_posts_read": [
+        {
+          "id": "ba4a6657-e0db-5aba-afbc-f3b7a2fe64b8",
+          "title": "남편 동생에게 방 내줬는데 밥과 빨래도 내 몫이래",
+          "body_sha256": "4929781b144328a859ad78d2bd94581a048651da7a48f31972f1fb4efc7c5b17"
+        },
+        {
+          "id": "a811dbb1-37af-5153-99d4-f8782d6249ad",
+          "title": "연인의 수상한 연락을 알려준 친구, 다시 만나면 배신일까",
+          "body_sha256": "20bf1824dde635f5214bbc8f0647ebbd78c70ea3b44bf898649002a40d48d898"
+        },
+        {
+          "id": "0b9bff12-9b11-449b-a801-6c741132d32e",
+          "title": "존잰즌 자연센터는 지금 입장 예약이 닫혀 있음",
+          "body_sha256": "72f05c37ff9c44e8a9f5b31b930be0eade9389f8c0897eec240d585226528639"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "고정 가족과 현재 직업을 유지;사연은 별도 fictional_changes에 시점/원문 변경 기록",
+      "place_name_language": "ko",
+      "final_body_sha256": "36b6bcae0b581bd10f2a6feb349f4a05f086ac48c27f04a5e1e8c8038938f6a9",
+      "place_name_decision": {
+        "preference": "ko",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    },
+    {
+      "ord": 30,
+      "author_id": "10000000-0000-0000-0000-000000000137",
+      "author_nickname": "메이랜드저녁",
+      "city_id": "calgary",
+      "age": 35,
+      "gender": "여",
+      "living": {
+        "spending": "취미에는 선택적으로 지출",
+        "household": "가족과 거주",
+        "transport": "자전거와 대중교통",
+        "occupation": "디자이너",
+        "residency_years": 1
+      },
+      "family": {
+        "children_ages": [
+          6,
+          3,
+          1
+        ],
+        "marriage_years": 6,
+        "household_finances": "육아비와 주거비를 함께 계획한다",
+        "relationship_status": "married"
+      },
+      "voice": {
+        "emoji": "필요할 때 하나",
+        "humor": 1,
+        "ending": "내용에 따라 감상·질문·의견을 달리하고 고정 첫 문장이나 끝맺음을 반복하지 않음",
+        "register": "편한 한국어 반말",
+        "directness": 2,
+        "sentence_length": "짧고 긴 문장을 자연스럽게 섞음",
+        "place_name_language": "en"
+      },
+      "personality": {
+        "stance": "불편한 점을 구체적으로 말함",
+        "small_contradiction": "새로운 곳은 궁금하지만 준비 없이 움직이는 것은 부담스러움"
+      },
+      "personality_axes": {
+        "focus": 1,
+        "humor": 1,
+        "social": 1,
+        "verbosity": 1,
+        "directness": 2,
+        "initiative": 1
+      },
+      "recent_posts_read": [
+        {
+          "id": "0c54c394-fc76-52fe-a928-bd883b60f839",
+          "title": "남편이 주말에 번 돈을 부모님께 드렸는데 난 몰랐어",
+          "body_sha256": "fc3d45b45efa3d9a69e10ef8e32ec54a98f5ab36ff05e9393cd6851d24f2c6ca"
+        },
+        {
+          "id": "b71b9222-beb3-541f-8f39-2a2d3caeec0e",
+          "title": "입원해서 결혼식 못 갔는데, 축하만 보내면 끝이냐는 친구",
+          "body_sha256": "0845e512f6dc3f27b4ade614c4f1135a990c670b894651078064ce58be2cab54"
+        }
+      ],
+      "selected_snapshot_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/selected-personas.json",
+      "saved_server_metadata_compared": true,
+      "server_evidence_path": "/Users/ash/Library/Application Support/gling/operations/profile-personas/20261015T090402258496Z/before.json",
+      "decisions": "고정 가족과 현재 직업을 유지;사연은 별도 fictional_changes에 시점/원문 변경 기록",
+      "place_name_language": "en",
+      "final_body_sha256": "d7cc880fbe2006680164b999919ffb7c511be9a3318002876c3cc7e68b674e5d",
+      "place_name_decision": {
+        "preference": "en",
+        "canonical_map_name": null,
+        "canonical_map_address": null,
+        "exact_public_map_label": null,
+        "rule_applied": "기관·도시·공원은 고정 언어 성향에 맞추고 제품·카드·자료의 공식 브랜드 철자는 유지.한글 공원 표기는 원문 이름을 읽은 음역이며 별도의 공식 한국어 명칭이라고 주장하지 않음.임의 번역주소·좌표 없음"
+      }
+    }
+  ]
+}

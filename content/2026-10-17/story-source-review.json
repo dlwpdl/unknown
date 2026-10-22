@@ -1,0 +1,115 @@
+{
+  "observed_at": "2026-10-17T09:17:10.727653+00:00",
+  "target_stories": 5,
+  "completed_stories": 0,
+  "unmet_by_city": {
+    "vancouver": 1,
+    "toronto": 1,
+    "montreal": 1,
+    "edmonton": 1,
+    "calgary": 1
+  },
+  "decision": "verified_regular25_fallback; no partial26-29 and no forced persona changes",
+  "sources": [
+    {
+      "source_case_key": "blind:8p7yzf2i",
+      "original_url": "https://www.teamblind.com/kr/post/%EB%A3%B8%EB%A9%94%EC%9D%B4%ED%8A%B8-%EB%B0%A9-%EB%B9%BC%EB%A9%B4%EC%84%9C-8p7yzf2i",
+      "read_at": "2026-10-17T09:05:54.314680+00:00",
+      "original_body_and_visible_reactions_read": true,
+      "source_html_sha256": "fccf8f84fa5323b1b96895f20764835032a84f47a44e9a0169d76df59c8f9ea4",
+      "personal_pipeline_reserved_at_check": false,
+      "event_truth_verified": false,
+      "adaptation_created": false,
+      "eligible_for_daily_stage": false,
+      "decision": "원문은 퇴거 후 쓰레기를 남겼다는 두 문장뿐이다. 사연을 길게 만들 행동·반응·반대 맥락이 부족해 임의로 확장하지 않는다."
+    },
+    {
+      "source_case_key": "blind:WPJuvfYR",
+      "original_url": "https://www.teamblind.com/kr/post/%EA%B0%99%EC%9D%B4-%EC%82%AC%EB%8A%94-%EB%A3%B8%EB%A9%94%EC%9D%B4%ED%8A%B8-%EB%82%A8%EC%B9%9C%EC%9D%B4-%EC%9C%A0%EB%9F%BD%EC%97%90%EC%84%9C-%EC%99%94%EB%8A%94%EB%8D%B0-WPJuvfYR",
+      "read_at": "2026-10-17T09:05:54.117417+00:00",
+      "original_body_and_visible_reactions_read": true,
+      "source_html_sha256": "4601945dd1da02df1f52cc0fcfefc21960c8b464d16bf11af6155296c950d459",
+      "personal_pipeline_reserved_at_check": false,
+      "event_truth_verified": false,
+      "adaptation_created": false,
+      "eligible_for_daily_stage": false,
+      "decision": "룸메이트 연애를 옆에서 본 관찰자 시점이고 이별통보 목적도 추정이다. 현재 고정 기혼 화자 자신의 사건으로 바꾸면 관점·시점·미확인 원인을 크게 만들어야 한다."
+    },
+    {
+      "source_case_key": "blind:k3qbcqms",
+      "original_url": "https://www.teamblind.com/kr/post/%EA%B2%B0%ED%98%BC%EC%A0%84%EC%97%94-%EC%95%84%EB%B9%A0%EA%B0%80-%EB%A7%A4%EC%9D%BC-%EC%B6%9C%EA%B7%BC%EC%8B%9C%EC%BC%9C-%EC%A4%AC%EB%8A%94%EB%8D%B0-%EA%B2%B0%ED%98%BC%ED%95%98%EA%B3%A0-%EB%82%98%EB%8B%88-%EB%82%A8%ED%8E%B8%EC%9D%80-%EB%B2%84%EC%8A%A4%ED%83%80%EA%B3%A0-%EA%B0%80%EB%9E%98-k3qbcqms",
+      "read_at": "2026-10-17T09:05:54.314814+00:00",
+      "original_body_and_visible_reactions_read": true,
+      "source_html_sha256": "07b7982649233ab3e94abca1fa381940715a8b45ed51ddc80f1777b0366220dc",
+      "personal_pipeline_reserved_at_check": false,
+      "event_truth_verified": false,
+      "adaptation_created": false,
+      "eligible_for_daily_stage": false,
+      "decision": "반응에서 실제 사연인지 의심이 강하고 고정 작성자의 직업·출퇴근 배경과도 다르다. 자극을 높이거나 새 직장 경험을 추가하지 않는다."
+    },
+    {
+      "source_case_key": "blind:nk1ravy8",
+      "original_url": "https://www.teamblind.com/kr/post/%EA%B2%B0%ED%98%BC-%ED%9B%84-%EB%B6%80%EB%AA%A8%EB%8B%98-%EC%83%9D%ED%99%9C%EB%B9%84-%EC%A7%80%EC%9B%90-nk1ravy8",
+      "read_at": "2026-10-17T09:05:54.315778+00:00",
+      "original_body_and_visible_reactions_read": true,
+      "source_html_sha256": "4e954272025d60afcdf00cd6963a518aa460ebd7962359cca8d9050dde23e3a4",
+      "personal_pipeline_reserved_at_check": false,
+      "event_truth_verified": false,
+      "adaptation_created": false,
+      "eligible_for_daily_stage": false,
+      "decision": "미혼 화자가 미래 배우자의 부모 부양과 부채를 걱정하는 단계다. 기혼4년 화자의 현재 사건으로 옮기거나 확인되지 않은 결혼 이후 결말을 만들지 않는다."
+    },
+    {
+      "source_case_key": "blind:r851mla7",
+      "original_url": "https://www.teamblind.com/kr/post/%EC%99%80%EC%9D%B4%ED%94%84%EA%B0%80-%EB%8F%88%EC%9D%84-%EB%84%88%EB%AC%B4-%EB%A7%8E%EC%9D%B4-%EB%B9%BC%EA%B0%90-r851mla7",
+      "read_at": "2026-10-17T09:05:53.970661+00:00",
+      "original_body_and_visible_reactions_read": true,
+      "source_html_sha256": "956af029189e10f5bda6f31d453d9e49c294b896a73111088d0e73a5f217effa",
+      "personal_pipeline_reserved_at_check": false,
+      "event_truth_verified": false,
+      "adaptation_created": false,
+      "eligible_for_daily_stage": false,
+      "decision": "본문과 작성자 답글까지 읽었다. 원문 직업은 의사이며 현금 생활비와 내역 공유가 갈등이다. 직업을 제거한 새 각색·가족 설정·최근 글 대조가 끝난 완성 원고는 아직 없다."
+    },
+    {
+      "source_case_key": "blind:431x7zqq",
+      "original_url": "https://www.teamblind.com/kr/post/%EC%95%84%EA%B8%B0%EB%9E%91-%EC%99%B8%EC%B6%9C%ED%95%A0-%EB%95%8C-%ED%97%88%EB%9D%BD%EB%B0%9B%EA%B3%A0-%EB%8B%A4%EB%8B%88%EC%8B%9C%EB%8A%94%EB%B6%84-431x7zqq",
+      "read_at": "2026-10-17T09:05:55.700406+00:00",
+      "original_body_and_visible_reactions_read": true,
+      "source_html_sha256": "e509a4492ab62e6738c84f31ac157e8fa7d1b4c846166eb05d1480b5a2b4df3f",
+      "personal_pipeline_reserved_at_check": false,
+      "event_truth_verified": false,
+      "adaptation_created": false,
+      "eligible_for_daily_stage": false,
+      "decision": "원문 첫머리의 남편 사과·외출 통보로 합의한 후속 결말까지 읽었다. 현재3세 아이를 영아로 바꾸지 않으려면 명시적 과거 시점 각색이 필요하다. 의료·면역 댓글은 사실 자료로 쓰지 않는다. 완성 원고 없음."
+    },
+    {
+      "source_case_key": "blind:knr5csh0",
+      "original_url": "https://www.teamblind.com/kr/post/%EC%8B%9C%EB%B6%80%EB%AA%A8%EB%8B%98-%EB%8B%B9%EC%9D%BC%ED%86%B5%EB%B3%B4-%EB%B0%A9%EB%AC%B8-knr5csh0",
+      "read_at": "2026-10-17T09:05:55.605382+00:00",
+      "original_body_and_visible_reactions_read": true,
+      "source_html_sha256": "9c3f217755723212c72672783419060c31c18fbca5409aeb867c71e993231d43",
+      "personal_pipeline_reserved_at_check": false,
+      "event_truth_verified": false,
+      "adaptation_created": false,
+      "eligible_for_daily_stage": false,
+      "decision": "원문은 암수술 병력·초등학생 아이들·당일 방문·배우자의 중재 부재가 얽힌 사연이다. 기존 고정 페르소나에 없는 병력을 추가하거나 3세 아이를 초등학생으로 바꾸지 않는다. 결말은 미해결이며 해결됐다고 만들지 않는다."
+    },
+    {
+      "source_case_key": "blind:rugxmliv",
+      "original_url": "https://www.teamblind.com/kr/post/%EC%86%90%EC%97%90-%EC%A7%91%ED%9E%88%EB%8A%94%EA%B1%B0-%EA%B0%96%EA%B3%A0-%EB%B0%A9%EB%AC%B8%ED%95%98%EC%8B%9C%EB%8A%94-%EC%8B%9C%EB%B6%80%EB%AA%A8%EB%8B%98-rugxmliv",
+      "read_at": "2026-10-17T09:05:55.891910+00:00",
+      "original_body_and_visible_reactions_read": true,
+      "source_html_sha256": "4e53469e9176027c40f446855c0753350e3834e9d39e907fc99d3a5a362b5967",
+      "personal_pipeline_reserved_at_check": false,
+      "event_truth_verified": false,
+      "adaptation_created": false,
+      "eligible_for_daily_stage": false,
+      "decision": "실제 선물·음식 폐기와 부담, 원치 않는 선물을 분명히 요청했는지에 대한 반대 반응까지 읽었다. 다섯 도시의 서로 다른 갈등과 현재 가족 연속성 검수가 끝난 묶음은 아니다. 분량 채우기용 원고로 넣지 않는다."
+    }
+  ],
+  "casmo": "현재 GET은 본문 없는 페이지 셸(텍스트7자)이라 원문 읽기 실패로 제외",
+  "pann": "현재 GET 추출 본문0자라 제외",
+  "disclosure_policy": "No new story public body created; latest2026-10-13 public-body rule takes precedence over older mandatory disclosure. Existing profile operated-character label preserved.",
+  "no_public_rewrite": true
+}

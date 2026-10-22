@@ -1,0 +1,508 @@
+{
+  "day": "2026-10-20",
+  "posts": [
+    {
+      "ord": 1,
+      "city_id": "vancouver",
+      "author_nickname": "시셸비치",
+      "tag_slug": "life",
+      "title": "큰 이불 빨래, 차 없으면 어떻게 옮겨?",
+      "body": "이불 빨래하러 갈 땐 다들 뭘로 옮겨? 이스트밴론드리에 큰 세탁기가 있고 현금이나 데빗으로도 쓸 수 있던데, 이불을 들고 가는 게 먼저 고민이네.\n자전거랑 대중교통으로 움직일 때도 큰 가방 하나로 들 만했어? 빨래보다 운반이 큰일일 듯.",
+      "source": "https://www.eastvanlaundry.com/self-serve",
+      "source_evidence_id": "van-laundry",
+      "place_name": "East Van Laundry",
+      "place_address": "183 East 16th Ave",
+      "place_display_name": "이스트밴론드리"
+    },
+    {
+      "ord": 2,
+      "city_id": "vancouver",
+      "author_nickname": "뉴웨스트빵순이",
+      "tag_slug": "food",
+      "title": "고기 없는 쌀국수, 국물 맛은 어떤 쪽이야?",
+      "body": "Do Chay의 VEGAN PHO에는 연근이랑 버섯도 들어가네. 밴쿠버에서 먹어본 사람은 국물이 깔끔한 편이었어, 진한 편이었어? 면보다 국물 때문에 고르는 거라 궁금함.",
+      "source": "https://dochay.ca/kingsway",
+      "source_evidence_id": "van-dochay",
+      "place_name": "Do Chay",
+      "place_address": "1392 Kingsway",
+      "place_display_name": "Do Chay"
+    },
+    {
+      "ord": 3,
+      "city_id": "vancouver",
+      "author_nickname": "물결한모금",
+      "tag_slug": "education",
+      "title": "짧은 만화나 생활 에세이 진, 어디서 골라?",
+      "body": "짧은 만화나 생활 에세이 같은 진을 한 권 골라보고 싶어. 밴쿠버 아트갤러리의 진 가이드에는 동네 서점과 도서관 컬렉션이 같이 나오더라.\n직접 넘겨보며 고르기 좋았던 곳 있어? 작은 독립 잡지라 표지만 보고는 안에 어떤 이야기가 들었는지 감이 잘 안 와.",
+      "source": "https://www.vanartgallery.bc.ca/vancouver-zine-guide/",
+      "source_evidence_id": "van-zine"
+    },
+    {
+      "ord": 4,
+      "city_id": "vancouver",
+      "author_nickname": "고요한밤",
+      "tag_slug": "life",
+      "title": "강아지 우비는 다리까지 덮는 쪽이 편했어?",
+      "body": "강아지 우비를 고른다면 두꺼운 옷보다는 가볍게 비를 막아주는 쪽이 끌려. BC SPCA 숍에는 얇은 원단에 리드줄을 꺼낼 구멍이 있는 제품도 있네.\n입혀본 사람은 다리까지 덮는 형태가 편했어, 몸통만 가리는 게 편했어? 잘 움직이는지, 벗긴 뒤 말리기는 어떤지가 궁금해.",
+      "source": "https://shop.spca.bc.ca/products/dog-rain-jacket",
+      "source_evidence_id": "van-raincoat"
+    },
+    {
+      "ord": 5,
+      "city_id": "vancouver",
+      "author_nickname": "스카이트레인통근",
+      "tag_slug": "transport",
+      "title": "큰 강아지랑 차 없이 이동할 때는 뭘 써?",
+      "body": "반려동물 동반 가능이라는 말만 보고 차를 고르긴 어렵겠네. 모도는 보조견을 제외한 동물을 이동 내내 고정한 이동장 안에 두는 게 조건이야.\n평소 대중교통을 쓰는 입장에선 큰 강아지와 먼 곳을 오가는 방법이 궁금해. 차 없이 병원 다니는 사람들은 어떤 교통수단을 주로 써?",
+      "source": "https://www.modo.coop/faqs/can-i-bring-a-pet-in-my-modo",
+      "source_evidence_id": "van-modo"
+    },
+    {
+      "ord": 6,
+      "city_id": "toronto",
+      "author_nickname": "미시사가스퀘어원",
+      "tag_slug": "life",
+      "title": "혼자 가는 살사 입문, 첫날은 덜 어색했어?",
+      "body": "스텝스 댄스 스튜디오는 파트너 없이 입문 수업에 가도 된대. 토론토에서 혼자 살사 배우기 시작한 사람은 첫날 짝 바꾸는 시간이 많이 어색했어?",
+      "source": "https://www.stepsdancestudio.com/getting-started",
+      "source_evidence_id": "tor-dance",
+      "place_name": "Steps Dance Studio",
+      "place_address": "",
+      "place_display_name": "스텝스 댄스 스튜디오"
+    },
+    {
+      "ord": 7,
+      "city_id": "toronto",
+      "author_nickname": "고트레인창가",
+      "tag_slug": "food",
+      "title": "식칼 무뎌지면 새로 사기 전에 연마 맡겨?",
+      "body": "평범한 집밥용 식칼도 연마 맡기면 차이가 많이 나? Tosho Knife Arts는 연마를 하지만 톱니날이랑 세라믹 칼은 안 받네.\n새 칼 고르기 전에 지금 쓰는 걸 손볼 수 있는지도 알아보고 싶어. 비싼 칼이 아니어도 맡겨볼 만했는지 알려줘.",
+      "source": "https://www.toshoknifearts.com/pages/services",
+      "source_evidence_id": "tor-knife",
+      "place_name": "Tosho Knife Arts",
+      "place_address": "913 Bathurst Street",
+      "place_display_name": "Tosho Knife Arts"
+    },
+    {
+      "ord": 8,
+      "city_id": "toronto",
+      "author_nickname": "퀸웨스트필름",
+      "tag_slug": "life",
+      "title": "필름 스캔, 휴대폰으로 볼 거면 어느 정도면 돼?",
+      "body": "사진을 크게 뽑을 계획은 없어서 스캔 옵션부터 높게 고를 필요는 없을 것 같아. 다운타운 카메라는 필름 현상에 스캔이나 인화를 묶는 선택지도 있더라.\n휴대폰으로 보고 가끔 작은 사진 뽑는 정도면 어느 해상도로 골랐어? 원본 필름은 따로 챙겨두고 싶고.",
+      "source": "https://downtowncamera.com/photofinishing-services/film-developing",
+      "source_evidence_id": "tor-film",
+      "place_name": "Downtown Camera",
+      "place_address": "89 Queen Street East",
+      "place_display_name": "다운타운 카메라"
+    },
+    {
+      "ord": 9,
+      "city_id": "toronto",
+      "author_nickname": "유니언역환승",
+      "tag_slug": "life",
+      "title": "임시보호, 수업 있는 날은 시간을 어떻게 나눴어?",
+      "body": "임시보호를 생각하면 수업 있는 날 집을 비우는 시간부터 걸려. Toronto Humane Society가 사료와 필요한 진료 등을 지원해도, 돌볼 시간과 안정적인 이동수단은 내가 마련해야 하니까.\n처음 임시보호했을 때 어떤 돌봄 일정이 가장 버거웠어? 수업 밖 시간만 내면 될지부터 가늠해보고 싶어.",
+      "source": "https://www.torontohumanesociety.com/support-us/become-a-foster/",
+      "source_evidence_id": "tor-foster"
+    },
+    {
+      "ord": 10,
+      "city_id": "toronto",
+      "author_nickname": "벽돌골목빛",
+      "tag_slug": "transport",
+      "title": "겨울 자전거, 옷보다 돌아올 길이 걱정돼",
+      "body": "겨울에도 자전거를 탄다면 옷보다 돌아오는 길부터 생각해야 할 것 같아. 토론토 시 안내도 눈을 치우는 데 여러 차례 작업이 필요할 수 있으니 다른 경로를 준비하라고 하네.\n갈 때는 괜찮아도 저녁엔 길 상태가 달라질 수 있잖아. 여기서 겨울을 자전거로 보내본 사람들은 어느 정도 날씨부터 대중교통으로 바꿨어?",
+      "source": "https://www.toronto.ca/services-payments/streets-parking-transportation/cycling-in-toronto/cycling-safety-education-theft-prevention/winter-cycling/",
+      "source_evidence_id": "tor-wintercycle"
+    },
+    {
+      "ord": 11,
+      "city_id": "montreal",
+      "author_nickname": "정원그림자",
+      "tag_slug": "life",
+      "title": "완성품 만드는 수업보다 공구부터 배울까",
+      "body": "중고 가구를 조금씩 손보는 건 배우고 싶어. 레자퓌테 빌라주에는 기본 공구를 안전하게 다뤄보는 입문 수업도 있네.\n목공 처음 배울 땐 정해진 물건 하나를 만드는 쪽이 도움 됐어, 공구 사용부터 익히는 쪽이 좋았어?",
+      "source": "https://www.les-affutes.ca/en/classes/woodworking-classes-in-montreal/",
+      "source_evidence_id": "mtl-wood",
+      "place_name": "Les Affûtés - Village",
+      "place_address": "",
+      "place_display_name": "레자퓌테 빌라주"
+    },
+    {
+      "ord": 12,
+      "city_id": "montreal",
+      "author_nickname": "장탈롱바구니",
+      "tag_slug": "food",
+      "title": "벌크 장보기, 처음엔 뭘 조금씩 사봤어?",
+      "body": "로코는 가져간 빈 용기 무게를 재서 벌크 식재료를 살 수 있네. 둘이 먹을 집밥용으로 처음 사본다면 어떤 재료가 쓰기 편했어? 큰 봉지 하나 사놓고 남기는 건 피하고 싶어서.",
+      "source": "https://www.epicerieloco.ca/",
+      "source_evidence_id": "mtl-loco",
+      "place_name": "Épicerie LOCO",
+      "place_address": "422 Jarry Est",
+      "place_display_name": "로코"
+    },
+    {
+      "ord": 13,
+      "city_id": "montreal",
+      "author_nickname": "운하옆돌멩이",
+      "tag_slug": "life",
+      "title": "둘이 하는 보드게임, 규칙 짧은 걸로 뭐가 좋아?",
+      "body": "둘이 할 게임은 설명이 짧고 판에 놓인 걸 보면서 생각하는 쪽이 끌려. 랑돌프 로즈몽은 게임을 골라주고 규칙도 설명해준다는데, 이런 취향이면 뭐가 재밌었어?",
+      "source": "https://www.randolph.ca/en/pub-ludique/rosemont/",
+      "source_evidence_id": "mtl-randolph",
+      "place_name": "Randolph Pub Ludique Rosemont",
+      "place_address": "6505 Des Écores St.",
+      "place_display_name": "랑돌프 로즈몽"
+    },
+    {
+      "ord": 14,
+      "city_id": "montreal",
+      "author_nickname": "두바퀴메이플",
+      "tag_slug": "education",
+      "title": "언어교환 첫 만남엔 무슨 얘기가 덜 막혔어?",
+      "body": "언어교환 첫날엔 무슨 얘기가 덜 막혔어? 문도링고 몬트리올 게시판에 불어랑 영어를 서로 연습할 사람을 찾는 글들이 있네.\n나는 읽는 책이나 동네에서 자주 가는 곳 얘기 정도는 미리 생각해갈까 싶어. 언어 공부 얘기만 하다 둘 다 할 말이 없어지면 좀 어색할 듯.",
+      "source": "https://mundolingo.org/montreal",
+      "source_evidence_id": "mtl-language-lower"
+    },
+    {
+      "ord": 15,
+      "city_id": "montreal",
+      "author_nickname": "아트워터오후",
+      "tag_slug": "travel",
+      "title": "프레데리크백공원, 짧게 걸을 땐 어디서 돌아와?",
+      "body": "프레데리크백공원의 1.4km 접근 가능 코스는 포장길이랑 석분길이 섞여 있네. 파피노 쪽 입구에서 시작하고 중간에 쉼터가 있는 길도 지나가고.\n길게 한 바퀴 돌기보다 잠깐 걷고 쉬고 싶을 땐 어디쯤에서 돌아오면 좋았어? 걸어본 사람들의 짧은 코스가 궁금해.",
+      "source": "https://montreal.ca/en/places/parc-frederic-back-universally-accessible-itineraries",
+      "source_evidence_id": "mtl-path",
+      "place_name": "Parc Frédéric-Back",
+      "place_address": "8931 Avenue Papineau",
+      "place_display_name": "프레데리크백공원"
+    },
+    {
+      "ord": 16,
+      "city_id": "edmonton",
+      "author_nickname": "헨데이하이웨이",
+      "tag_slug": "life",
+      "title": "온라인 체스랑 모임에서 두는 체스는 많이 달라?",
+      "body": "Edmonton Chess Club이 캐나다 체스연맹 목록에도 있네. 한 판 끝나고 어디서 잘못 뒀는지 같이 얘기하는 모임이면 재밌을 것 같아.\n체스 모임 가본 사람은 어느 정도 익힌 뒤 가는 게 덜 긴장됐어? 내 차례에 시계 누르는 것부터 버벅일까 싶은데 ㅋㅋ",
+      "source": "https://www.chess.ca/en/clubs/list/",
+      "source_evidence_id": "edm-clublist",
+      "place_name": "Edmonton Chess Club",
+      "place_address": "",
+      "place_display_name": "Edmonton Chess Club"
+    },
+    {
+      "ord": 17,
+      "city_id": "edmonton",
+      "author_nickname": "K데이즈",
+      "tag_slug": "food",
+      "title": "디카페인 원두, 드립으로도 괜찮았던 거 있어?",
+      "body": "저녁엔 카페인보다 커피 향 쪽이 더 끌림. 에이스 원두 목록에 NO.OO 디카페인이 있던데 드립으로 내려본 사람 있어? 에드먼튼에서 구하기 쉬운 다른 원두도 괜찮아. 너무 시큼하지 않은 쪽이면 좋겠음.",
+      "source": "https://acecoffeeroasters.com/collections/espresso",
+      "source_evidence_id": "edm-decaf"
+    },
+    {
+      "ord": 18,
+      "city_id": "edmonton",
+      "author_nickname": "수거요일노트",
+      "tag_slug": "life",
+      "title": "야생화 씨앗, 섞인 봉지보다 한 종류부터 고를까",
+      "body": "야생화라고 적힌 씨앗 봉지면 여기서 잘 자라는 것만 든 줄 알기 쉽겠어. 에드먼튼 시는 지역에 맞게 따로 구성한 게 아니라면 혼합 야생화 씨앗을 피하라고 하네.\n토종 식물 한 종류부터 키워본 사람은 뭘 골랐어?",
+      "source": "https://www.edmonton.ca/residential_neighbourhoods/gardens_lawns_trees/natural-yards",
+      "source_evidence_id": "edm-native-curl"
+    },
+    {
+      "ord": 19,
+      "city_id": "edmonton",
+      "author_nickname": "세인트앨버트농장",
+      "tag_slug": "life",
+      "title": "수영장 입장권이랑 강사 프로그램은 따로네",
+      "body": "추워지기 전에 실내에서도 할 운동을 찾고 싶어. Confederation Leisure Centre는 일반 Value 입장과 강사 프로그램을 구분하고, 강사 프로그램에는 Benefits Plus 입장이 필요하네.\n수영장 운동을 처음 시작할 땐 혼자 자유수영 하는 것보다 강사 따라가는 쪽이 덜 막막했어? 뭘 해야 할지 몰라 물에만 서 있을까 봐 ㅋㅋ",
+      "source": "https://www.edmonton.ca/activities_parks_recreation/confederation",
+      "source_evidence_id": "edm-swim-curl",
+      "place_name": "Confederation Leisure Centre",
+      "place_address": "11204 43 Avenue",
+      "place_display_name": "Confederation Leisure Centre"
+    },
+    {
+      "ord": 20,
+      "city_id": "edmonton",
+      "author_nickname": "레덕공항픽업",
+      "tag_slug": "life",
+      "title": "빈티지 액자 살 때는 어디부터 봐야 해?",
+      "body": "Old Strathcona Antique Mall에선 여러 판매자의 오래된 물건을 한곳에서 볼 수 있네. 작은 액자부터 구경하고 싶은데, 빈티지 액자 사본 사람은 유리랑 뒷판 상태를 어떻게 확인했어?\n모양만 보고 골랐다가 손볼 일이 더 많아지는 건 피하고 싶음.",
+      "source": "https://www.oldstrathconamall.com/about-us/",
+      "source_evidence_id": "edm-antique",
+      "place_name": "Old Strathcona Antique Mall",
+      "place_address": "10323 78 Avenue NW",
+      "place_display_name": "Old Strathcona Antique Mall"
+    },
+    {
+      "ord": 21,
+      "city_id": "calgary",
+      "author_nickname": "피쉬크릭주말",
+      "tag_slug": "life",
+      "title": "컬링 입문, 처음엔 미끄러지는 게 제일 어려워?",
+      "body": "컬링 처음 배운 사람은 돌 보내는 것보다 얼음 위에서 움직이는 게 더 어려웠어? Calgary Curling Club 입문 수업은 장비를 제공하고, 깨끗한 실내 운동화랑 따뜻하고 편한 옷을 준비하면 된대. 장비부터 사고 시작하고 싶진 않아서.",
+      "source": "https://www.calgarycurlingclub.com/adult-learn-to-curl/",
+      "source_evidence_id": "cal-curling",
+      "place_name": "Calgary Curling Club",
+      "place_address": "",
+      "place_display_name": "Calgary Curling Club"
+    },
+    {
+      "ord": 22,
+      "city_id": "calgary",
+      "author_nickname": "어클랜드겨울",
+      "tag_slug": "life",
+      "title": "리필용 병은 예쁜 것보다 입구 넓은 게 낫겠지",
+      "body": "리필용 병은 지금 있는 것부터 써보고 싶어. 어포세커리 인 잉글우드는 깨끗하고 완전히 마른 뚜껑 있는 용기를 받고, 내용물을 넣고 빼기 편한지도 보라고 하네.\n액체 제품 리필해본 사람은 어떤 모양이 오래 쓰기 편했어? 펌프 달린 병이 편할지, 씻기 쉬운 넓은 입구가 나을지 고민돼.",
+      "source": "https://the-apothecary.ca/pages/in-store-refills",
+      "source_evidence_id": "cal-refill",
+      "place_name": "The Apothecary in Inglewood",
+      "place_address": "",
+      "place_display_name": "어포세커리 인 잉글우드"
+    },
+    {
+      "ord": 23,
+      "city_id": "calgary",
+      "author_nickname": "컨페더레이션공원",
+      "tag_slug": "life",
+      "title": "반려견 자유구역, 산책길과 덜 겹치는 곳 있어?",
+      "body": "캘거리 공공 반려견 자유구역도 다른 활동과 함께 쓰는 공원이네. 사람 걷는 길과 좀 떨어져 있고 시야가 넓어서 편했던 곳 있어?\n강아지 데리고 다른 이용자 동선까지 신경 쓰기엔 길이 복잡하지 않은 곳이 좋을 것 같아.",
+      "source": "https://www.calgary.ca/bylaws/off-leash-faqs.html",
+      "source_evidence_id": "cal-dog"
+    },
+    {
+      "ord": 24,
+      "city_id": "calgary",
+      "author_nickname": "브라이들우드도서관",
+      "tag_slug": "education",
+      "title": "직접 뜬 종이에 글씨도 써봤어?",
+      "body": "알버타 프린트메이커스에 종이를 직접 뜨는 입문 수업이 있네. 직접 만든 종이에 편지나 짧은 글을 써봤다면 펜이 잘 나갔어? 울퉁불퉁한 느낌이 예쁠지, 자꾸 걸릴지 궁금해.",
+      "source": "https://albertaprintmakers.com/about/studio/education/",
+      "source_evidence_id": "cal-print",
+      "place_name": "Alberta Printmakers",
+      "place_address": "460 42 Avenue SE",
+      "place_display_name": "알버타 프린트메이커스"
+    },
+    {
+      "ord": 25,
+      "city_id": "calgary",
+      "author_nickname": "글렌모어공원",
+      "tag_slug": "food",
+      "title": "라이브 공연 보면서 저녁 먹으면 주문은 언제 해?",
+      "body": "공연 중에 주문 얘기를 길게 하긴 좀 그럴 것 같아. Ironwood Stage & Grill처럼 라이브 무대가 있는 식당에 가면 공연 전에 주문을 마치는 편이야?\n음악 들으면서 저녁 먹는 건 좋은데 포크 내려놓는 소리가 더 크게 나면 민망할 듯.",
+      "source": "https://ironwoodstage.ca/",
+      "source_evidence_id": "cal-music",
+      "place_name": "Ironwood Stage & Grill",
+      "place_address": "",
+      "place_display_name": "Ironwood Stage & Grill"
+    },
+    {
+      "ord": 26,
+      "city_id": "vancouver",
+      "author_nickname": "커머셜드라이브",
+      "tag_slug": "life",
+      "title": "도와주고 싶은데, 우리도 빚내서 빌려줘야 해",
+      "body": "아내 친구가 어머니 수술비로 돈을 빌려달랬어. 아내는 300만원을 생각하고 있고.\n나도 돕고 싶지만 우리도 집 대출이 있어. 빌려주려면 우리 쪽 빚이 늘어나는 상황인데, 얘기하다 보니 아내가 예전에도 그 친구에게 빌려준 적이 있는 것 같더라. 아직 그 내역은 잘 몰라.\n나는 돌려받지 못해도 감당할 만큼만 돕는 쪽을 생각했어. 이런 부탁이 오면 금액을 정하기 전에 부부가 어디까지 확인하는 게 좋을까?",
+      "content_kind": "community_story",
+      "source": "https://www.teamblind.com/kr/post/친구-어머니가-암-수술때문에-돈-빌려달라고하면-UmZWWutw",
+      "source_case_key": "blind:UmZWWutw",
+      "post_id": "7b54a409-0602-5079-ad90-d0bd1eefc787",
+      "source_evidence_id": "blind-UmZWWutw",
+      "poll": {
+        "question": "친구에게 돈을 빌려주기 전, 무엇부터 합의할까?",
+        "options": [
+          "이전 거래와 우리 형편부터 확인",
+          "감당할 금액만 주는 셈 치기",
+          "이번에는 빌려주지 않기"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000065",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "집 대출과 개인 취미 예산을 함께 조정한다",
+          "relationship_status": "married"
+        },
+        "topic": "부부 돈 관리"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "배우자 친구 어머니 수술비300만원 대여 요청; 화자에게는 집 대출이 있어 추가 차입 부담. 배우자의 이전 대여 정황은 추정이고 결말은 없음.",
+        "fictional_changes": [
+          "Vancouver의 고정29세 남성 대학원생 커머셜드라이브·무자녀 기혼4년과 아내로 각색. 원문의 관계·집 대출·대여 요청은 유지.",
+          "대학원생에게 고정 월급을 만들지 않도록 원문 댓글의 양쪽 월급·소득 수준은 생략.",
+          "300만원은 원문 그대로이며 CAD 환율이나 캐나다 의료비로 바꾸지 않음. 원사건의 진위·발생 지역은 미확인.",
+          "이전 대여는 추정으로 유지하고 수술·대여·상환·싸움 결말은 만들지 않음."
+        ]
+      }
+    },
+    {
+      "ord": 27,
+      "city_id": "toronto",
+      "author_nickname": "스카보로블러프",
+      "tag_slug": "life",
+      "title": "아내 소비가 부담돼 각자 쓰자고 했는데",
+      "body": "아이가 돌을 조금 지났을 때 일이야. 아내는 육아 때문에 일을 쉬고 있었고, 나는 더 넓은 집으로 갈 돈도 모으고 싶었어.\n아내가 100만원대 중반 가방을 사고 싶다고 해서 안 된다고 했더니, 쓰고 싶은 것도 못 쓰게 한다며 서운해했어. 나는 생활비를 각자 내고 남은 돈은 알아서 쓰자고 했는데 그 방식도 싫대. 나도 취미에 좀 써보고 싶다고 했을 때는 또 안 된다는 말을 들었고.\n아내가 평소 사치만 하는 사람은 아니야. 육아하느라 줄어든 자기 시간을 생각하면 내 말이 너무 쉽게 나간 건가 싶어. 그렇다고 한 사람만 계속 허락을 구하는 것도 편하진 않고.\n육아로 한 사람 수입이 줄었을 때, 개인 지출 기준은 어떻게 다시 정했어?",
+      "content_kind": "community_story",
+      "source": "https://www.teamblind.com/kr/post/부부-돈-관리-문제-LdfeeN8h",
+      "source_case_key": "blind:LdfeeN8h",
+      "post_id": "cd4924b8-c646-59c3-bf78-fe9fd1ef8793",
+      "source_evidence_id": "blind-LdfeeN8h",
+      "poll": {
+        "question": "육아로 한쪽 수입이 줄면 개인 지출은 어떻게 정할까?",
+        "options": [
+          "돌봄까지 반영해 쓸 돈을 함께 정하기",
+          "수입 비율로 생활비를 내고 나머지는 각자",
+          "공동 저축 목표부터 다시 조정하기"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000070",
+        "family": {
+          "children_ages": [
+            3
+          ],
+          "marriage_years": 6,
+          "household_finances": "육아비와 주거비를 함께 계획한다",
+          "relationship_status": "married"
+        },
+        "topic": "배우자와 가족 갈등"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "육아휴직 중인 아내의 가방·여가 지출과 남편의 저축 목표가 충돌. 생활비 각출 후 각자 관리 제안과 남편 취미도 반대받는다는 작성자 답변, 돌봄·소득 감소의 반대 맥락을 함께 읽음. 해결 결말 없음.",
+        "fictional_changes": [
+          "Toronto35세 남성 디자이너 스카보로블러프·결혼6년·현재3세 자녀를 유지. 원문18개월 장면은 같은 자녀의 돌 이후 과거로 명시.",
+          "원문의 공기업·교사 직업과 복귀 연도는 옮기지 않음.",
+          "100만원대 중반 가방·개인 지출 제안/거절과 돌봄의 반대 맥락을 남기고 실제 구매나 해결은 만들지 않음."
+        ]
+      }
+    },
+    {
+      "ord": 28,
+      "city_id": "montreal",
+      "author_nickname": "몽루아얄잎새",
+      "tag_slug": "life",
+      "title": "반찬은 그만 보내주신댔는데 육아 간섭은 남았어",
+      "body": "아이가 돌 무렵이던 때 일이야. 원래 시어머니와 따로 연락도 자주 하던 사이였는데 이유식부터 재우는 시간까지 내가 하는 방식마다 한마디씩 붙으니, 내가 아이를 모르는 사람처럼 느껴졌어.\n한번은 어른들 앞에서 아이가 혼자 장난감을 갖고 노는 걸 보고 엄마가 잘 안 놀아줘서 그런가 보다고 하셨어. 사진도 내가 손이 비는 순간에 찍어 보내는 건데 그 장면만 보고 하루를 판단하시는 것 같아 그 말이 오래 남았어. 남편은 그냥 흘려들으래.\n정성이 있다는 건 알아. 그래도 다 먹지 못할 반찬까지 계속 오는 건 힘들어서 그때는 상해서 못 먹으니 보내지 말아달라고 분명히 말했어. 그건 알겠다고 하셨고.\n사진이나 영상통화에 붙는 육아 조언은 어떤 말로 선을 그었어? 반찬처럼 구체적으로 말할 수 있는 것과, 내 판단을 믿어달라는 말은 또 다르게 느껴졌어.",
+      "content_kind": "community_story",
+      "source": "https://www.teamblind.com/kr/post/시댁-스트레스-fsksjoeq",
+      "source_case_key": "blind:fsksjoeq",
+      "post_id": "7d6894e7-1696-5155-9d2d-3f590bfc9cf1",
+      "source_evidence_id": "blind-fsksjoeq",
+      "poll": {
+        "question": "가족의 육아 조언이 부담스러울 때 어떤 선이 좋을까?",
+        "options": [
+          "내가 원하는 도움을 구체적으로 말하기",
+          "배우자가 함께 기준을 설명하기",
+          "사진과 통화 빈도를 줄여보기"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "cc3ea647-6ac1-5ffc-ba83-8d4724d2e0f1",
+        "family": {
+          "children_ages": [
+            3
+          ],
+          "marriage_years": 6,
+          "household_finances": "육아비와 주거비를 함께 계획한다",
+          "relationship_status": "married"
+        },
+        "topic": "부모 도움과 사생활"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "원래 가까웠던 시어머니의 양육 지적과 사진·통화 간섭, 흘려들으라는 남편 반응. 후속에서 반찬 중단은 약속했지만 육아 갈등 해소는 미확인.",
+        "fictional_changes": [
+          "Montréal29세 여성 대학원생 몽루아얄잎새·결혼6년·현재3세 자녀 유지. 원문 결혼4년·1세 시점은 자녀 돌 무렵 과거로 각색.",
+          "반찬을 그만 보내기로 한 작성자 실제 후속은 보존. 나머지 갈등 해결·연락 단절은 만들지 않음.",
+          "회사·댓글 신상·위생 비난의 세부를 덜고 부모의 정성·화자의 경계·남편 반응을 유지."
+        ]
+      }
+    },
+    {
+      "ord": 29,
+      "city_id": "edmonton",
+      "author_nickname": "에드먼튼겨울",
+      "tag_slug": "life",
+      "title": "결혼자금 빌려달라는 친구, 예비 남편은 모르는 듯해",
+      "body": "오래된 친구가 곧 결혼하는데 준비할 돈이 모자라다며 500만원을 빌려줄 수 있냐고 했어. 임신해서 결혼 준비를 서두르는 사정은 이해해.\n돈을 아예 못 빌려줄 형편은 아니야. 다만 예비 남편에게는 말하지 않고 빌리려는 것 같아서 걸려. 내가 짐작하는 거라 그 사람도 모른다고 단정할 수는 없고, 언제 어떻게 갚을지도 아직 뚜렷하지 않아.\n친구가 서운할까 봐 금액 얘기부터 하게 되는데, 사실 나는 갚는 계획부터 듣고 싶어. 이런 부탁을 받을 때 어디까지 확인하고 결정했어?",
+      "content_kind": "community_story",
+      "source": "https://www.teamblind.com/kr/post/결혼자금-빌려달라는-친구-8svtdndz",
+      "source_case_key": "blind:8svtdndz",
+      "post_id": "57645256-48cf-5bda-8fe7-1425d1f5a393",
+      "source_evidence_id": "blind-8svtdndz",
+      "poll": {
+        "question": "친구의 결혼자금 대여 부탁, 어떻게 답할까?",
+        "options": [
+          "상환 계획과 상황부터 확인하기",
+          "축하로 줄 수 있는 만큼만 돕기",
+          "친구 사이 대여는 거절하기"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000118",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "공동 생활비와 개인 지출을 구분해 관리한다",
+          "relationship_status": "married"
+        },
+        "topic": "결혼 전후 관계"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "임신으로 결혼을 서두르는 친구가500만원 대여 요청. 예비 남편에게 숨기는 것처럼 보이는 점과 상환 계획 부재가 걱정. 숨김은 추정이고 미상환·파혼 결말 없음.",
+        "fictional_changes": [
+          "Edmonton29세 여성 소규모 자영업자 에드먼튼겨울·결혼4년·무자녀를 유지. 결혼/임신하는 사람은 친구다.",
+          "500만원·임신으로 급한 결혼 준비·상환 계획 부재·예비 남편에게 비밀인 듯한 추정을 보존.",
+          "친구 실명·직장·미래 퇴사·미상환과 작성자의 재산 수치는 새로 확정하지 않음."
+        ]
+      }
+    },
+    {
+      "ord": 30,
+      "city_id": "calgary",
+      "author_nickname": "프린스아일랜드",
+      "tag_slug": "life",
+      "title": "집에 없을 때 비밀번호를 물으신 시부모님",
+      "body": "살림을 막 합쳤을 때 시부모님이 잘 챙겨주시려 했어. 고마운 마음과 별개로, 아무도 없는 시간에 미리 연락 없이 집에 오셔서 비밀번호를 물으셨을 땐 당황했어.\n다음에 같은 일이 생기면 현관에 두고 가시라고 할까 생각했는데, 도와주려는 마음을 밀어내는 것처럼 보일까 싶더라. 그래도 내 집에 누가 들어오는지는 미리 알고 싶어.\n캘거리에서 양가 부모님과 집 비밀번호를 공유하는 사람들은 방문 전에 연락하는 기준도 같이 정했어?",
+      "content_kind": "community_story",
+      "source": "https://www.teamblind.com/kr/post/몰래-신혼집-오시는-시어머니-제가-이상한가요-R1ojhDGh",
+      "source_case_key": "blind:R1ojhDGh",
+      "post_id": "8b6ebbd3-5447-500d-af19-f6c9eccc948b",
+      "source_evidence_id": "blind-R1ojhDGh",
+      "poll": {
+        "question": "양가 부모님과 집 비밀번호를 공유한다면?",
+        "options": [
+          "공유하되 방문 전에 연락하기",
+          "공유하지 않고 있을 때 방문 부탁하기",
+          "집 비울 땐 현관에 두고 가시게 하기"
+        ]
+      },
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000132",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "공동 생활비와 개인 지출을 구분해 관리한다",
+          "relationship_status": "married"
+        },
+        "topic": "결혼 전후 관계"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "신혼 부부를 챙기려는 시부모가 아무도 없을 때 사전 연락 없이 와 비밀번호를 물음. 화자는 다음엔 문 앞에 두고 가시게 할지 고민. 실제 무단 출입·비밀번호 제공·남편과의 다툼은 확인되지 않음.",
+        "fictional_changes": [
+          "Calgary29세 여성 서비스직 프린스아일랜드·기혼4년·무자녀 설정 유지. 신혼 장면은 살림을 막 합친 과거로 명시.",
+          "시부모가 챙기려는 마음도 남기고 비밀번호를 물은 일을 실제 무단 출입으로 강화하지 않음.",
+          "남편의 반응·자녀·비밀번호 제공 여부·확정 결말·범죄는 넣지 않음. Calgary 독자에게 묻되 원사건이 Calgary에서 검증됐다고 하지 않음."
+        ]
+      }
+    }
+  ]
+}

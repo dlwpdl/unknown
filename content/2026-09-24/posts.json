@@ -1,0 +1,204 @@
+{
+  "posts": [
+    {
+      "ord": 1,
+      "city_id": "vancouver",
+      "tag_slug": "settlement",
+      "title": "렌트집 수리, 다 내 몫인 줄",
+      "body": "예전엔 렌트집 고장 나면 그냥 내 몫인가 했는데\nBC 안내 보니까 큰 수리는 집주인 책임이고 세입자는 기본 관리랑 고장 알리기가 몫임",
+      "source": "https://www2.gov.bc.ca/gov/content/housing-tenancy/residential-tenancies/during-a-tenancy/repairs-and-maintenance"
+    },
+    {
+      "ord": 2,
+      "city_id": "vancouver",
+      "tag_slug": "food",
+      "title": "뉴웨스트 리버마켓은 먹거리만 있는 줄",
+      "body": "뉴웨스트 리버마켓은 밥 먹는 곳만 있는 줄 알았음\n관광 안내 보니 꽃이랑 선물 가게도 있네, 같이 구경할 사람?",
+      "source": "https://tourismnewwestminster.com/river-market/"
+    },
+    {
+      "ord": 3,
+      "city_id": "vancouver",
+      "tag_slug": "settlement",
+      "title": "렌트 보증금, 집주인 마음대로 가져가는 건 아니네",
+      "body": "보증금 얘기 나오면 다들 한참 멈칫하더라\nBC 안내엔 집주인이 보증금을 그냥 가질 수는 없다고 돼 있음\n반환 규정은 바뀔 수 있으니 확인해, 다들 이 부분 먼저 보나?",
+      "source": "https://www2.gov.bc.ca/gov/content/housing-tenancy/residential-tenancies/starting-a-tenancy/deposits-fees"
+    },
+    {
+      "ord": 4,
+      "city_id": "vancouver",
+      "tag_slug": "education",
+      "title": "어른도 다시 기초 과목 배우는 길이 있네",
+      "body": "성인 학업 보충 과정이 따로 있는 줄 처음 알았음\nBC 안내엔 성인 기초교육이랑 영어 학습 과정이 나뉘어 있더라\n학교 끝나면 공부도 끝인 줄 알았지 ㅋㅋ",
+      "source": "https://www2.gov.bc.ca/gov/content/education-training/adult-education/adult-upgrading"
+    },
+    {
+      "ord": 5,
+      "city_id": "vancouver",
+      "tag_slug": "settlement",
+      "title": "사진 BC 서비스 카드, 운전면허는 아님",
+      "body": "사진 있는 BC 서비스 카드, 운전면허랑 섞어 생각했음\n1) 사진 신분증으로 쓸 수 있음\n2) 운전면허 자체는 아님, 이 구분은 기억해두자 ㅋㅋ",
+      "source": "https://www2.gov.bc.ca/gov/content/governments/government-id/bc-services-card/types-of-cards/photo"
+    },
+    {
+      "ord": 6,
+      "city_id": "toronto",
+      "tag_slug": "transport",
+      "title": "UP Express 역부터 보니 공항길이 덜 복잡해 보임",
+      "body": "공항 갈 때 교통편 정리하다 괜히 복잡하게 생각함\n1) UP Express는 유니언역과 피어슨공항을 잇고\n2) 중간에 블루어·웨스턴·마운트데니스에 섬\n3) 피어슨역은 터미널 1에 있음\n역 이름부터 골라두면 덜 조급하겠음",
+      "source": "https://www.upexpress.com/en/up-express-stations"
+    },
+    {
+      "ord": 7,
+      "city_id": "toronto",
+      "tag_slug": "food",
+      "title": "토론토 식당 위생 정보도 따로 공개됨",
+      "body": "식당 고를 때 메뉴만 보다 DineSafe를 놓쳤네\n토론토는 음식점 위생 검사 내용을 공개함\n먹을 거만 열심히 봤음 ㅋㅋ",
+      "source": "https://www.toronto.ca/community-people/health-wellness-care/health-programs-advice/food-safety/dinesafe/about-dinesafe/"
+    },
+    {
+      "ord": 8,
+      "city_id": "toronto",
+      "tag_slug": "education",
+      "title": "시립박물관 가상 전시부터 볼 걸",
+      "body": "박물관 가려면 일단 일정부터 잡아야 하는 줄 알았는데\n토론토 시립박물관 가상 전시도 있네 (나만 늦게 앎) ㅋㅋ",
+      "source": "https://www.toronto.ca/explore-enjoy/history-art-culture/museums/virtual-exhibits/"
+    },
+    {
+      "ord": 9,
+      "city_id": "toronto",
+      "tag_slug": "food",
+      "title": "공원 속 텃밭, 혼자 쓰는 밭만은 아님",
+      "body": "텃밭 가꾸는 사람들 보이면 다 개인 밭인 줄\n토론토 커뮤니티가든은 공원에서 음식이랑 꽃, 토종 식물을 함께 키우는 공간이네\n수확물을 지역 식품 단체에 나누는 곳도 있다던데, 이런 텃밭 동네에도 있나?",
+      "source": "https://www.toronto.ca/explore-enjoy/parks-recreation/places-spaces/beaches-gardens-attractions/gardens-and-horticulture/community-gardens/"
+    },
+    {
+      "ord": 10,
+      "city_id": "toronto",
+      "tag_slug": "education",
+      "title": "학교 앞 교통지도, 아이만 보는 일이 아니네",
+      "body": "등굣길 교통지도 분들, 예전엔 아이들 길만 봐주는 줄\n시 안내 보니 운전자랑 자전거 타는 사람한테도 보행자를 알리는 역할임, 내 눈이 더 교육 필요했네 ㅋㅋ",
+      "source": "https://www.toronto.ca/services-payments/streets-parking-transportation/road-safety/vision-zero/safety-initiatives/school-crossing-guard-program/"
+    },
+    {
+      "ord": 11,
+      "city_id": "montreal",
+      "tag_slug": "life",
+      "title": "르 플라토 실내 수영장, 자유 수영 시간도 따로 있네",
+      "body": "실내 수영장 찾다가 이름만 보고 넘기려다 멈춤\nCentre du Plateau 수영장은 르 플라토 몽루아얄에 있고\n자유 수영 시간이 따로 잡혀 있더라\n수영 수업 안내도 별도로 올라와 있음\n내가 가려는 날엔 어느 쪽 시간이 맞을까?",
+      "source": "https://montreal.ca/en/places/pool-centre-du-plateau"
+    },
+    {
+      "ord": 12,
+      "city_id": "montreal",
+      "tag_slug": "transport",
+      "title": "버스 전용 차선, 자전거는 다 금지인 줄",
+      "body": "버스 전용 차선이면 자전거는 무조건 안 되는 줄 알았음\n몬트리올 시 안내엔 자전거도 허용되는 차선이 따로 있네\n다이아몬드 표지만 보고 판단할 뻔했고\n허용되는 곳엔 자전거 그림 표지가 따로 붙어 있음\n표지 규칙은 바뀔 수 있으니 확인해, 또 앞만 보고 갈 뻔 ㅋㅋ",
+      "source": "https://montreal.ca/en/articles/cycling-reserved-bus-and-taxi-lanes-18535"
+    },
+    {
+      "ord": 13,
+      "city_id": "montreal",
+      "tag_slug": "life",
+      "title": "녹색 골목은 이웃끼리 만드는 거였네",
+      "body": "골목에 풀 좀 심으면 끝인 줄 알았는데\n몬트리올엔 이웃이 같이 만드는 녹색 골목 프로젝트도 있네, 같이 해보면 재밌을 듯",
+      "source": "https://montreal.ca/en/how-to/submit-green-alleyway-project"
+    },
+    {
+      "ord": 14,
+      "city_id": "montreal",
+      "tag_slug": "life",
+      "title": "반려견 공원, 문 밖에선 목줄 그대로",
+      "body": "강아지 공원에서 바로 목줄 푸는 사람 보면 나도 따라 할 뻔\n시 안내엔 안으로 들어가기 전까지 목줄을 하라고 돼 있네, 내 급한 마음부터 묶어야겠음 ㅋㅋ",
+      "source": "https://montreal.ca/en/articles/guidelines-to-follow-dog-park-46379"
+    },
+    {
+      "ord": 15,
+      "city_id": "montreal",
+      "tag_slug": "life",
+      "title": "길가 조형물도 몬트리올 공공미술이네",
+      "body": "오랫동안 보면 길가 조형물도 그냥 배경이 되더라\n몬트리올 시 안내 보니 공공미술이 광장·공원뿐 아니라 건물에도 있대\n다음엔 지나치지 말고 한 번 더 봐야겠음",
+      "source": "https://montreal.ca/en/topics/public-art"
+    },
+    {
+      "ord": 16,
+      "city_id": "edmonton",
+      "tag_slug": "transport",
+      "title": "온디맨드 버스는 운행 동네가 정해져 있네",
+      "body": "온디맨드 메모 1) ETS 서비스는 일부 동네·시니어 주거지·명소에서 운행\n2) 모든 동네를 다니는 일반 노선은 아님, 나는 범위부터 더 알아봐야겠음",
+      "source": "https://www.edmonton.ca/ets/on-demand-transit"
+    },
+    {
+      "ord": 17,
+      "city_id": "edmonton",
+      "tag_slug": "settlement",
+      "title": "단기임대, 집 한 채만 빌리는 건 아님",
+      "body": "단기임대 하면 집 전체만 떠올리는 사람 봤는데\n에드먼턴 시 기준엔 집주인이 사는 집의 방을 빌려주는 형태도 포함됨",
+      "source": "https://www.edmonton.ca/residential_neighbourhoods/short-term-home-rentals"
+    },
+    {
+      "ord": 18,
+      "city_id": "edmonton",
+      "tag_slug": "life",
+      "title": "에드먼턴 커뮤니티가든은 공동 작업이네",
+      "body": "씨앗부터 혼자 사서 시작해야 하는 줄\n에드먼턴 커뮤니티가든은 이웃이 땅이랑 물을 함께 쓰며 가꾸는 공간이네 (나만 늦게 앎)",
+      "source": "https://www.edmonton.ca/residential_neighbourhoods/gardens_lawns_trees/community-gardens"
+    },
+    {
+      "ord": 19,
+      "city_id": "edmonton",
+      "tag_slug": "education",
+      "title": "아트센터 공사 중에도 수업이 완전히 멈춘 건 아님",
+      "body": "아트센터 수업은 건물 닫으면 다 끝난 줄 알았음\n공사 중이라 일부 프로그램이 다른 시 시설로 옮겨졌네, 나는 종료로 읽었음",
+      "source": "https://www.edmonton.ca/activities_parks_recreation/city-arts-centre"
+    },
+    {
+      "ord": 20,
+      "city_id": "edmonton",
+      "tag_slug": "education",
+      "title": "존 월터 박물관, 옛집 세 채가 자료",
+      "body": "존 월터 이름은 오래 들었는데 집까지 남은 줄은 몰랐음\n시 박물관엔 그 가족의 원래 집 세 채가 있네, 집 자체가 역사 수업임 ㅋㅋ",
+      "source": "https://www.edmonton.ca/attractions_events/john-walter-museum"
+    },
+    {
+      "ord": 21,
+      "city_id": "calgary",
+      "tag_slug": "life",
+      "title": "캘거리 수영장, 물만 있는 곳은 아니네",
+      "body": "수영장 찾다 보니 운동 기구 있는 시설도 같이 뜨네\n시 실내 수영장 목록엔 헬스 공간이나 사우나가 딸린 곳도 있더라\n물에만 들어갈 생각이었는데, 다들 어느 쪽이 편해?",
+      "source": "https://www.calgary.ca/rec-locations/pools.html"
+    },
+    {
+      "ord": 22,
+      "city_id": "calgary",
+      "tag_slug": "education",
+      "title": "캘거리 공공미술, 설치 뒤 관리도 따로 있네",
+      "body": "캘거리 공공미술, 예전엔 설치하고 끝인 줄 알았음\n시 안내 보니 새 작품 의뢰는 예술개발기관이 맡고 소장품 관리는 시가 함, 나만 그냥 지나쳤네 ㅋㅋ",
+      "source": "https://www.calgary.ca/arts-culture/public-art.html"
+    },
+    {
+      "ord": 23,
+      "city_id": "calgary",
+      "tag_slug": "life",
+      "title": "동네 텃밭은 시가 지원하는 공간이네",
+      "body": "처음엔 커뮤니티가든이 개인 농장인 줄 알았음\n캘거리 시는 공공 땅의 이웃 텃밭을 지원하네, 같이 하면 덜 어색하겠음",
+      "source": "https://www.calgary.ca/communities/community-gardens.html"
+    },
+    {
+      "ord": 24,
+      "city_id": "calgary",
+      "tag_slug": "life",
+      "title": "캘거리 공원 봉사, 역할이 생각보다 넓네",
+      "body": "공원 봉사라길래 쓰레기만 줍는 줄 알았음\n캘거리 시 안내엔 나무랑 산책길 돌보는 일도 있고\n방문자한테 식물·동물 얘기 알려주는 역할도 있네\n이 정도면 할 일을 골라볼 수 있겠음\n나는 새 이름부터 외워야겠다 ㅋㅋ",
+      "source": "https://www.calgary.ca/volunteer/parks.html"
+    },
+    {
+      "ord": 25,
+      "city_id": "calgary",
+      "tag_slug": "transport",
+      "title": "C트레인 자전거, 시간대 제한이 없네",
+      "body": "C트레인 자전거 얘기, 출퇴근 시간엔 안 되는 줄 알았음\n공식 안내엔 시간대 상관없이 탈 수 있다고 돼 있네\n규정은 바뀔 수 있으니 확인해, 실제로 같이 타면 공간은 어떨까?",
+      "source": "https://www.calgarytransit.com/rider-information/cycling/ctrain-bike-pilot.html"
+    }
+  ]
+}

@@ -22,9 +22,11 @@ function onboarding(existingProfile = null) {
         return [state[i], value => { state[i] = typeof value === 'function' ? value(state[i]) : value; }]; },
     };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
+    if (name === 'react-native-reanimated') return { useReducedMotion: () => false };
     if ((name === 'react-native' || name === '@/components/analytics-controls')) return { Platform: { OS: 'web' }, StyleSheet: { create: x => x }, ...Object.fromEntries(['View','Pressable','TextInput','Modal','ScrollView'].map(x => [x,x])) };
     if (name === 'expo-linking') return { openURL: async url => { opened.push(url); } };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
+if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
     if (name === '@/constants/theme') return { Spacing: {} };
     if (name === '@/i18n/ko') return { t };
     if (name === '@/lib/nickname') return { generateNickname: () => '새회원' };
@@ -37,7 +39,8 @@ function onboarding(existingProfile = null) {
   const render = () => { cursor = refCursor = 0; return exports.ProfileOnboarding({ visible: true, userId: 'member', socialPhoto: null, existingProfile, onComplete: x => completed.push(x) }); };
   const boxes = () => nodes(render()).filter(n => n.props?.accessibilityRole === 'checkbox');
   const save = async () => { nodes(render()).find(n => n.props?.accessibilityState?.busy !== undefined).props.onPress(); for (let i = 0; i < 10; i++) await Promise.resolve(); };
-  return { render, boxes, save, calls, opened, completed, setFail: value => { fail = value; } };
+  const finishWelcome = () => nodes(render()).find(n => n.props?.onContinue)?.props.onContinue();
+  return { render, boxes, save, finishWelcome, calls, opened, completed, setFail: value => { fail = value; } };
 }
 
 test('signup requires each mandatory agreement; select all is optional and reversible', async () => {
@@ -53,12 +56,15 @@ test('signup requires each mandatory agreement; select all is optional and rever
     ui.boxes()[i].props.onPress(); await ui.save(); assert.equal(ui.calls.length, 0);
     ui.boxes()[i].props.onPress();
   }
+  ui.boxes()[0].props.onPress(); ui.boxes()[0].props.onPress();
+  assert.ok(ui.boxes().every(n => n.props.accessibilityState.checked === false));
+  for (let i = 1; i <= 3; i++) ui.boxes()[i].props.onPress();
   await ui.save();
   assert.equal(ui.calls[0][0], 'create_profile_with_personal_info');
   assert.equal(ui.calls[0][1].p_personal_info_version, null);
+  assert.equal(ui.completed.length, 0, 'signup waits for welcome acknowledgement');
+  ui.finishWelcome();
   assert.equal(ui.completed.length, 1, 'required only can finish signup');
-  ui.boxes()[0].props.onPress(); ui.boxes()[0].props.onPress();
-  assert.ok(ui.boxes().every(n => n.props.accessibilityState.checked === false));
 });
 
 test('details never check consent, optional information needs its own consent, failed persistence cannot finish', async () => {
@@ -75,6 +81,7 @@ test('details never check consent, optional information needs its own consent, f
   await ui.save(); assert.equal(ui.completed.length, 0);
   ui.setFail(false); await ui.save();
   assert.equal(ui.calls.at(-1)[1].p_personal_info_version, personalInfo.PERSONAL_INFO_VERSION);
+  ui.finishWelcome();
   assert.equal(ui.completed.length, 1);
   const existing = onboarding({ nickname: '기존회원', city_id: 'vancouver', avatar_path: null, photoUri: null });
   assert.equal(existing.boxes().length, 4);
@@ -94,6 +101,7 @@ test('declining optional consent discards even partial or invalid personal infor
     nodes(ui.render()).find(n => n.type === 'PersonalInfoFields').props.onChange({ ...draft, accepted: true });
     ui.boxes()[4].props.onPress();
     await ui.save();
+    ui.finishWelcome();
     assert.equal(ui.completed.length, 1);
     assert.equal(ui.calls[0][1].p_full_name, null);
     assert.equal(ui.calls[0][1].p_date_of_birth, null);

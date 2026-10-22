@@ -1,0 +1,32 @@
+[
+  {
+    "city_id": "edmonton",
+    "key": "lrt-stations",
+    "requested_url": "https://www.edmonton.ca/ets/lrt-station-locations",
+    "checked_at": "2026-10-08T17:01:30.831591+00:00",
+    "http_status": 200,
+    "url": "https://www.edmonton.ca/ets/lrt-station-locations",
+    "text_path": "content/2026-10-08/local-run-0950/sources/edmonton-lrt-stations.txt",
+    "length": 3658
+  },
+  {
+    "city_id": "edmonton",
+    "key": "valley-line",
+    "requested_url": "https://www.edmonton.ca/projects_plans/transit/valley-line-southeast",
+    "checked_at": "2026-10-08T17:01:30.832240+00:00",
+    "http_status": 200,
+    "url": "https://www.edmonton.ca/projects_plans/transit/valley-line-southeast",
+    "text_path": "content/2026-10-08/local-run-0950/sources/edmonton-valley-line.txt",
+    "length": 18301
+  },
+  {
+    "city_id": "edmonton",
+    "key": "zoo-conservation",
+    "requested_url": "https://www.edmonton.ca/attractions_events/edmonton_valley_zoo/conservation",
+    "checked_at": "2026-10-08T17:01:30.832400+00:00",
+    "http_status": 200,
+    "url": "https://www.edmonton.ca/attractions_events/edmonton_valley_zoo/conservation",
+    "text_path": "content/2026-10-08/local-run-0950/sources/edmonton-zoo-conservation.txt",
+    "length": 11118
+  }
+]

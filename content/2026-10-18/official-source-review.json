@@ -1,0 +1,758 @@
+{
+  "observed_at": "2026-10-18T09:25:22.034941+00:00",
+  "posts": [
+    {
+      "ord": 1,
+      "title": "이미 고른 책 말고, 서점에서 처음 만날 책",
+      "source": "https://www.massybooks.com/",
+      "evidence": [
+        {
+          "key": "v1",
+          "url": "https://www.massybooks.com/",
+          "final_url": "https://www.massybooks.com/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:04:51.500832+00:00",
+          "title": [
+            "Massy Books &#8211; Buy Books From Massy Books"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/v1.raw",
+          "raw_sha256": "100ca230a9ffe36e7198aa2e6751e29d7c776be5ae01d62681b37bef7325b6d6",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/v1.txt",
+          "text_sha256": "f1abb8da1b9dba93a5f798c9f9ef4f8858fba282a021460bdd32912a45909ac5"
+        },
+        {
+          "key": "v1d",
+          "url": "https://www.massybooks.com/contact-us/",
+          "final_url": "https://www.massybooks.com/contact-us/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:16:47.398766+00:00",
+          "title": [
+            "CONTACT US &#8211; Massy Books"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/v1d.raw",
+          "raw_sha256": "908950a39cea1af2388366b8d51ff6d7318d1635cd41edcbfd5f81d9056c6430",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/v1d.txt",
+          "text_sha256": "2b44b495ebb25245ba345e695070c6b3e7d7175d2d50840b00b22ee1067af820"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 2,
+      "title": "요리 수업, 보는 쪽이랑 직접 하는 쪽이 있네",
+      "source": "https://gourmetwarehouse.ca/cooking-classes-1/",
+      "evidence": [
+        {
+          "key": "v2d",
+          "url": "https://gourmetwarehouse.ca/cooking-classes-1/",
+          "final_url": "https://gourmetwarehouse.ca/cooking-classes-1/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:08:13.160800+00:00",
+          "title": [
+            "Cooking Classes - The Gourmet Warehouse"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/v2d.raw",
+          "raw_sha256": "d6cc4619dd3dd13f79772353e41116765a043fbe831d36de631c8275a4f0907e",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/v2d.txt",
+          "text_sha256": "a2bca1d02f845aa4dec3297454127ceb35774c8a80925dd7051b40c2fd782a2a"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 3,
+      "title": "스탠리파크에서 이름 모르는 생물 하나 알아오기",
+      "source": "https://stanleyparkecology.ca/education/public/",
+      "evidence": [
+        {
+          "key": "v3e",
+          "url": "https://stanleyparkecology.ca/education/public/",
+          "final_url": "https://stanleyparkecology.ca/education/public/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:12:31.393318+00:00",
+          "title": [
+            "Public Education - Stanley Park Ecology (SPE)"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/v3e.raw",
+          "raw_sha256": "aff39fefb1b500f64df007888dd146199467425c66086fb83a14a3651ee8e13c",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/v3e.txt",
+          "text_sha256": "c3527fd1a69fe04ee8d0717bfac58c4a22fd60cab5f38f8987e20db0f7f72e06"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 4,
+      "title": "종이도 뭘 만들 건지 정하고 골라야겠다",
+      "source": "https://www.paper-ya.com/our-papers",
+      "evidence": [
+        {
+          "key": "v4d",
+          "url": "https://www.paper-ya.com/our-papers",
+          "final_url": "https://paper-ya.com/our-papers",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:16:46.262090+00:00",
+          "title": [
+            "Our Papers &mdash; Paper-Ya On Granville Island"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/v4d.raw",
+          "raw_sha256": "e4450ed7c87097355cda7c26c9c85870a9d9995dd70fd62f812d75849c75dd91",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/v4d.txt",
+          "text_sha256": "79700d536e8a42f5f1f40eeb323ef6f2b8c9b31fb94d670e1a9475b3c7267511"
+        },
+        {
+          "key": "v4c",
+          "url": "https://www.paper-ya.com/",
+          "final_url": "https://paper-ya.com/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:11:05.852603+00:00",
+          "title": [
+            "Paper-Ya On Granville Island"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/v4c.raw",
+          "raw_sha256": "c3edc75d8799766dbd982f9772084d520937e7edd1d68a832da8853b340a14b8",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/v4c.txt",
+          "text_sha256": "ee1aa14390ddd67f522af49d63015eaff1766f2df47235f145711fedd9f20a07"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 5,
+      "title": "자전거 타는 법 다음에 배울 것도 있네",
+      "source": "https://bikehub.ca/education/adults",
+      "evidence": [
+        {
+          "key": "v5e",
+          "url": "https://bikehub.ca/education/adults",
+          "final_url": "https://hubcycling.ca/education/adults",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:12:30.265318+00:00",
+          "title": [
+            "Bike Education for Adults | HUB Cycling: Bike Events, Education, Action in Metro Vancouver"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/v5e.raw",
+          "raw_sha256": "f73a08b69fe90654055c0fb77f4a84885665473c2cc22d7d1c0e0aa2a293e8d3",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/v5e.txt",
+          "text_sha256": "78184b11b5944b7f76384e47995eb214ca2ef164d8dd32dd1e251dbbc0eb62e2"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 6,
+      "title": "새 이름을 몰라도 가을 하늘은 좀 궁금해",
+      "source": "https://highparknature.org/",
+      "evidence": [
+        {
+          "key": "t1a",
+          "url": "https://highparknature.org/",
+          "final_url": "https://highparknature.org/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:06:01.991323+00:00",
+          "title": [
+            "Discover the natural wonders of High Park - High Park Nature",
+            "Discover the natural wonders of High Park - High Park Nature"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/t1a.raw",
+          "raw_sha256": "043ecd8f10d342f885d4d9b72c1a024081d55079bc9fb9af18a350f9446a4d86",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/t1a.txt",
+          "text_sha256": "e4467ad21225ffd3910b6690154efad17cdfc5499caa14ba1cde24514c18218a"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 7,
+      "title": "옷의 무늬를 볼 때 만든 사람 얘기도 궁금해",
+      "source": "https://textilemuseum.ca/",
+      "evidence": [
+        {
+          "key": "t2",
+          "url": "https://textilemuseum.ca/",
+          "final_url": "https://textilemuseum.ca/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:04:52.732246+00:00",
+          "title": [
+            "Textile Museum of Canada - Textile Museum of Canada"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/t2.raw",
+          "raw_sha256": "f2d40c34e28b57438523e39de50e30f44a97ec9b64325f1a9552d7a3c4144611",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/t2.txt",
+          "text_sha256": "b63b1a61c051e39147faa46e207d981c225c3eb6f25a7ffddc45a93d5bf00ae3"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 8,
+      "title": "시장 레시피에서 저녁 소스 하나 골라봄",
+      "source": "https://stlawrencemarket.com/food/ginger-scallion-relish/",
+      "evidence": [
+        {
+          "key": "t3e",
+          "url": "https://stlawrencemarket.com/food/ginger-scallion-relish/",
+          "final_url": "https://stlawrencemarket.com/food/ginger-scallion-relish/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:29:31.929427+00:00",
+          "title": [
+            "GINGER SCALLION RELISH | St. Lawrence Market"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/t3e.raw",
+          "raw_sha256": "eb144ac4dc769b78fcbe33d10bd63d856586d3983a2b875a7f99637a0b12c8f1",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/t3e.txt",
+          "text_sha256": "6e40a10cc3021afe19a4cc79f2b58a10a8652ee084eef27c4b481356b7ee736c"
+        },
+        {
+          "key": "t3d",
+          "url": "https://stlawrencemarket.com/food",
+          "final_url": "https://stlawrencemarket.com/food/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:27:35.753366+00:00",
+          "title": [
+            "St. Lawrence Market | Food Blog"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/t3d.raw",
+          "raw_sha256": "9133d2383d6f155e9d6835d458335ab20afbcd9609ec6d530724cb9d72e0c756",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/t3d.txt",
+          "text_sha256": "d30e00cc12042360ffde351b524753ec212796f511b4f833837cab4f4af0dc72"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:30:19.038668+00:00"
+    },
+    {
+      "ord": 9,
+      "title": "고양이를 돕는 봉사에 이동 담당도 있네",
+      "source": "https://torontocatrescue.ca/volunteer-drivers/",
+      "evidence": [
+        {
+          "key": "t4d",
+          "url": "https://torontocatrescue.ca/volunteer-drivers/",
+          "final_url": "https://torontocatrescue.ca/volunteer-drivers/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:08:13.186582+00:00",
+          "title": [
+            "Volunteer Drivers &#8211; Toronto Cat Rescue"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/t4d.raw",
+          "raw_sha256": "1f43dcc299453cb8568e9cdab84ab874e2132dbc790eee67520ddd796b9d1ede",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/t4d.txt",
+          "text_sha256": "f606710f157b6333c28fcd6ba30dd20116a6db5e93d25f1a77171da88cddfb3f"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 10,
+      "title": "책 소리만 들어 있는 기계가 오히려 편할 듯",
+      "source": "https://tpl.ca/books-video-music/books/audio-books/",
+      "evidence": [
+        {
+          "key": "t5h",
+          "url": "https://tpl.ca/books-video-music/books/audio-books/",
+          "final_url": "https://tpl.ca/books-video-music/books/audio-books/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:15:46.520590+00:00",
+          "title": [
+            "Audio Books | Toronto Public Library",
+            "Back to top"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/t5h.raw",
+          "raw_sha256": "a5be7c5255641aa7c50618d777e0fa3cb838e1d72385ca8673cf39ef71114e05",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/t5h.txt",
+          "text_sha256": "2e0c696d8169fb15be656ee9f1a20f2f7795cbd4b952da6936b1d7458f628550"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 11,
+      "title": "몬트리올의 옛 생활은 어떤 물건으로 남았을까",
+      "source": "https://www.musee-mccord-stewart.ca/en/",
+      "evidence": [
+        {
+          "key": "m1",
+          "url": "https://www.musee-mccord-stewart.ca/en/",
+          "final_url": "https://www.musee-mccord-stewart.ca/en/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:04:50.210273+00:00",
+          "title": [
+            "McCord Stewart Museum - Montreal Social History Museum"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/m1.raw",
+          "raw_sha256": "16856d73a12fede7ed7d376ca80af56c3cc81602c88ec21ca2448efd625d9ba1",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/m1.txt",
+          "text_sha256": "1ea85d3d5ce47372b0b02ce8f56051668f9fceec750f221449bf15928571e550"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 12,
+      "title": "같이 밥을 만드는 일이 동네를 아는 방법일 수도",
+      "source": "https://santropolroulant.org/en/what-is-the-roulant/",
+      "evidence": [
+        {
+          "key": "m2",
+          "url": "https://santropolroulant.org/en/what-is-the-roulant/",
+          "final_url": "https://santropolroulant.org/en/what-is-the-roulant/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:04:51.048886+00:00",
+          "title": [
+            "What is the Roulant? | Santropol Roulant"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/m2.raw",
+          "raw_sha256": "a4d7d6dd485f142a0188faf3a1d2b6c1b66bb59ebe898256d091b5fe47a7849a",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/m2.txt",
+          "text_sha256": "d389f307fac1615119db8cf1c2ad85366c90ec54c568af902672f9fde5f076f8"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 13,
+      "title": "마일엔드에서 시작한 출판사 목록을 구경하다가",
+      "source": "https://drawnandquarterly.com/about/",
+      "evidence": [
+        {
+          "key": "m3d",
+          "url": "https://drawnandquarterly.com/about/",
+          "final_url": "https://drawnandquarterly.com/about/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:08:14.958939+00:00",
+          "title": [
+            "A Brief History of Drawn &#038; Quarterly &#8211; Drawn &amp; Quarterly"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/m3d.raw",
+          "raw_sha256": "a6770695ad5da4f5535ca3e5d0b09436b8b7a16b92caead9186383309a57e41e",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/m3d.txt",
+          "text_sha256": "f53ba8d52977d1f55972f6473b6192c64dfb57819e527cb4a6a30baf483d6282"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 14,
+      "title": "컵 모양부터 만들 필요는 없는 취미네",
+      "source": "https://leccs.com/location/montreal/",
+      "evidence": [
+        {
+          "key": "m4",
+          "url": "https://leccs.com/",
+          "final_url": "https://leccs.com/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:04:51.280520+00:00",
+          "title": [
+            "Céramic Café - Peinture sur Céramique"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/m4.raw",
+          "raw_sha256": "120bc8c7cbdfc8d86200a716cf2c5e0af9c97b60253fd651e147746adaf383d2",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/m4.txt",
+          "text_sha256": "544cf306af068d911da35aab3b1ff7687adf54859c4079dfbc463ed141e43659"
+        },
+        {
+          "key": "m4d",
+          "url": "https://leccs.com/location/montreal/",
+          "final_url": "https://leccs.com/location/montreal/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:08:15.517223+00:00",
+          "title": [
+            "Céramic Café - Montréal"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/m4d.raw",
+          "raw_sha256": "8d9153666d3da0a7ed90893c4a5a9094ce858137cf6a2cbee8d3bb7bf32b736e",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/m4d.txt",
+          "text_sha256": "01f17ddaa00c534475b93112d6f0c6f6d2c0b61845fd70d7316ab301eb3cb9d9"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 15,
+      "title": "장탈롱시장은 겨울에도 이어지는 장보기 자리네",
+      "source": "https://www.marchespublics-mtl.com/en/markets/jean-talon-market",
+      "evidence": [
+        {
+          "key": "m5",
+          "url": "https://www.marchespublics-mtl.com/en/markets/jean-talon-market",
+          "final_url": "https://www.marchespublics-mtl.com/en/markets/jean-talon-market",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:04:50.788350+00:00",
+          "title": [
+            "Jean-Talon Market | Marchés publics de Montréal"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/m5.raw",
+          "raw_sha256": "296781ffc4badc5896fc8f18d97e09783d114a8097695645b62304d804f10a17",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/m5.txt",
+          "text_sha256": "be53c2f5f699c4b1ee16d054379a087e6dbd3176065584b6733edea3fc0ddd56"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 16,
+      "title": "실내 전시 보고 연못 옆 길까지 이어서",
+      "source": "https://www.edmonton.ca/attractions_events/john-janzen-nature-centre",
+      "evidence": [
+        {
+          "key": "e1",
+          "url": "https://www.edmonton.ca/attractions_events/john-janzen-nature-centre",
+          "final_url": "https://www.edmonton.ca/attractions_events/john-janzen-nature-centre",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:04:50.609100+00:00",
+          "title": [
+            "John Janzen Nature Centre | City of Edmonton"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/e1.raw",
+          "raw_sha256": "ceb2caa642e36ed5cfb3c442990461ab219398b8dff53d715eb81082f9e38941",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/e1.txt",
+          "text_sha256": "33a9a91ab10d0312d2078f6e9b3a24e43f4edc07c30856720abd567cc24ebc9a"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 17,
+      "title": "비행기박물관에서 큰 브릭 프로젝트도 하네",
+      "source": "https://albertaaviationmuseum.com/",
+      "evidence": [
+        {
+          "key": "e2a",
+          "url": "https://albertaaviationmuseum.com/",
+          "final_url": "https://albertaaviationmuseum.com/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:06:02.613575+00:00",
+          "title": [
+            "Alberta Aviation Museum | Explore Aviation History in Edmonton"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/e2a.raw",
+          "raw_sha256": "b2a23470b4b116c4f761e731e01ba66e8bdb57495c73e7a56518545ec311aa2a",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/e2a.txt",
+          "text_sha256": "299b1e8fc257be69bdcc66b6ae710268da6ea52b6126851ae5fa607761ebce6d"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:30:19.038668+00:00"
+    },
+    {
+      "ord": 18,
+      "title": "그림 모임도 설명 듣는 수업이랑은 다르구나",
+      "source": "https://harcourthouse.ab.ca/classes-workshops/drop-in-sessions/",
+      "evidence": [
+        {
+          "key": "e3d",
+          "url": "https://harcourthouse.ab.ca/classes-workshops/drop-in-sessions/",
+          "final_url": "https://harcourthouse.ab.ca/classes-workshops/drop-in-sessions/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:08:13.435486+00:00",
+          "title": [
+            "Drop- in Life Drawing",
+            "Facebook",
+            "Instagram",
+            "Threads",
+            "YouTube"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/e3d.raw",
+          "raw_sha256": "c2182d2d5f477da98db21ef543b874651974edb0c28202739dba8f8c1c033865",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/e3d.txt",
+          "text_sha256": "6806868e65c7cc766c8591ff64894ff948b7739e363f9d10b00dcd3fc6555f0a"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 19,
+      "title": "공짜 재료라도 집에 둘 자리는 생각해야지",
+      "source": "https://www.edmonton.ca/programs_services/garbage_waste/reuse-centre",
+      "evidence": [
+        {
+          "key": "e4",
+          "url": "https://www.edmonton.ca/programs_services/garbage_waste/reuse-centre",
+          "final_url": "https://www.edmonton.ca/programs_services/garbage_waste/reuse-centre",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:04:50.696107+00:00",
+          "title": [
+            "Reuse Centre | City of Edmonton"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/e4.raw",
+          "raw_sha256": "c7c46f6fc5577108549bcb68946302468dc9324055741aabf1b141cf50e33ce9",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/e4.txt",
+          "text_sha256": "bfc430a311e1b244de86868acd4ab88c4010f7ffcfa823c1570af7ba70223da3"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 20,
+      "title": "빵집에서 저녁 재료까지 같이 고를 수 있네",
+      "source": "https://www.italianbakeryedm.com/",
+      "evidence": [
+        {
+          "key": "e5e",
+          "url": "https://www.italianbakeryedm.com/",
+          "final_url": "https://italianbakeryedm.com/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:11:05.625318+00:00",
+          "title": [
+            "Home - Italian Bakery"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/e5e.raw",
+          "raw_sha256": "1867fa28405159ef7b360506fb7e9cff67115e7da70cbc3b428f2695f36cbf3b",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/e5e.txt",
+          "text_sha256": "04d815577b782135ab3c49a7075d459c6714082d1c292793a3c5f3aeb4cb8903"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 21,
+      "title": "큰 전시 일정 못 잡아도 복도에서 작품 볼 수 있네",
+      "source": "https://werklundcentre.ca/visit/galleries/plus15-galleries",
+      "evidence": [
+        {
+          "key": "c1d",
+          "url": "https://werklundcentre.ca/visit/galleries/plus15-galleries",
+          "final_url": "https://werklundcentre.ca/visit/galleries/plus15-galleries",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:16:45.917594+00:00",
+          "title": [
+            "+15 Galleries | Visual &amp; Media Arts in Calgary"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/c1d.raw",
+          "raw_sha256": "bbdba74efe3bc09300066ad16d9a9278a1efd1c5ce573cd4c8da254ab7c53efa",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/c1d.txt",
+          "text_sha256": "ba82b2f3942bfa0d20f58b90856990e10f4f1c08c6025808cfd09c9f8e7f35c5"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 22,
+      "title": "새 보러 가는 길에는 강아지와 자전거를 빼야 해",
+      "source": "https://www.calgary.ca/parks/inglewood-bird-sanctuary.html",
+      "evidence": [
+        {
+          "key": "c2",
+          "url": "https://www.calgary.ca/parks/inglewood-bird-sanctuary.html",
+          "final_url": "https://www.calgary.ca/parks/inglewood-bird-sanctuary.html",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:04:51.503315+00:00",
+          "title": [
+            "Inglewood Bird Sanctuary and Nature Centre"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/c2.raw",
+          "raw_sha256": "7951e95be5dd9b743a1bcd82540f4022caf64454aa45be465fa15771f038f15b",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/c2.txt",
+          "text_sha256": "dabca62faa44b11b37ed79002f2a5c1f0a77159e66519224650a73cfc3ee5cf5"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 23,
+      "title": "가족 외출 예산에 이런 선택지도 있네",
+      "source": "https://www.studiobell.ca/",
+      "evidence": [
+        {
+          "key": "c3",
+          "url": "https://www.studiobell.ca/",
+          "final_url": "https://www.studiobell.ca/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:04:51.648936+00:00",
+          "title": [
+            "Home of the National Music Centre | Studio Bell"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/c3.raw",
+          "raw_sha256": "e0c2cf442db2817af7863ce4c9dd6232192609562f6dd50bc613cda7d3049de6",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/c3.txt",
+          "text_sha256": "38a30f8fe7d8bbca1ad47461c73a60e4aa95419a7253b304b18fe03a741d817e"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 24,
+      "title": "시장 가는 날엔 일주일 치 욕심부터 줄이고 싶어",
+      "source": "https://calgaryfarmersmarket.ca/cfm-west/",
+      "evidence": [
+        {
+          "key": "c4d",
+          "url": "https://calgaryfarmersmarket.ca/cfm-west/",
+          "final_url": "https://calgaryfarmersmarket.ca/cfm-west/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:08:13.218726+00:00",
+          "title": [
+            "West Location - Calgary Farmers&#039; Market"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/c4d.raw",
+          "raw_sha256": "c1739acec3ee0ca374b57beaead2f30573f9463d15f29f38b2866e1a1a30a1a5",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/c4d.txt",
+          "text_sha256": "f256015b72d60efac9448aada0aa475435a39aeb4cb1c991eedcea6ea2f0fd96"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 25,
+      "title": "작가 얘기 듣고 나서 읽을 책 골라도 되겠지",
+      "source": "https://wordfest.com/",
+      "evidence": [
+        {
+          "key": "c5a",
+          "url": "https://wordfest.com/",
+          "final_url": "https://wordfest.com/",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:06:03.469664+00:00",
+          "title": [
+            "Wordfest - Wordfest",
+            "Bluesky"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/c5a.raw",
+          "raw_sha256": "5448c80aa4dd4505280659f0878cd76605284965a6b4c899b81a25791614e43f",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/c5a.txt",
+          "text_sha256": "b14abb8b92218248e7997c0d5f5f33a65a7a19bd3d016fc2dda8e14d5e0c5d52"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 26,
+      "title": "장모님 생활비 보내드리기로 했는데 숫자가 안 맞아",
+      "source": "https://pann.nate.com/talk/375675499",
+      "evidence": [
+        {
+          "key": "s375675499",
+          "url": "https://pann.nate.com/talk/375675499",
+          "final_url": "https://pann.nate.com/talk/375675499",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:08:12.552857+00:00",
+          "title": [
+            "장모님 생활비를 매달 보내자고 하네요 | 네이트 판"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/s375675499.raw",
+          "raw_sha256": "b43357dc56cb296f2da288c17eb9a69c6821fcf55210ff41cf3708c469537250",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/s375675499.txt",
+          "text_sha256": "dfe54de0e698ec485761ed46dd9d7250b2013afcfac2380939feeae226223b42"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 27,
+      "title": "장인어른과 친해져서 좋았는데 아내는 주말이 힘들었대",
+      "source": "https://pann.nate.com/talk/375675454",
+      "evidence": [
+        {
+          "key": "s375675454",
+          "url": "https://pann.nate.com/talk/375675454",
+          "final_url": "https://pann.nate.com/talk/375675454",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:08:12.523716+00:00",
+          "title": [
+            "장인어른이랑 너무 친해져서 아내가 서운하답니다 | 네이트 판"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/s375675454.raw",
+          "raw_sha256": "6dbb35bf3cbee5b35ab08dcc60e16815a50966a37df0de8139bd80756cfcd9a9",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/s375675454.txt",
+          "text_sha256": "7d02268eb66b6197dcb8f798816c6c130fdb4c3eeafe38833b038746f6b041ff"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 28,
+      "title": "외출만 하면 아이 재울 시간 때문에 싸우게 돼",
+      "source": "https://pann.nate.com/talk/375675251",
+      "evidence": [
+        {
+          "key": "s375675251",
+          "url": "https://pann.nate.com/talk/375675251",
+          "final_url": "https://pann.nate.com/talk/375675251",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:06:04.511886+00:00",
+          "title": [
+            "아기 잠 시간에 집착하는 남편 | 네이트 판"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/s375675251.raw",
+          "raw_sha256": "cb11f3821d73b80f5d91153ac8a231119ce711155cfc8a2da80bb6214d20dc20",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/s375675251.txt",
+          "text_sha256": "f3f142779cbcf6c325b4816c65ba8ba7d3ee1dd641b5d50ed44977e01594a126"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 29,
+      "title": "남편 투자 손실 얘기하다 내가 이혼까지 꺼냈어",
+      "source": "https://pann.nate.com/talk/375675276",
+      "evidence": [
+        {
+          "key": "s375675276",
+          "url": "https://pann.nate.com/talk/375675276",
+          "final_url": "https://pann.nate.com/talk/375675276",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:06:04.171776+00:00",
+          "title": [
+            "주식으로 100만원 날려먹은 남편 | 네이트 판"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/s375675276.raw",
+          "raw_sha256": "902caeda663a2c615c7ae7499e9035d2036cce0bddc1535cc9d5580b8723f51d",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/s375675276.txt",
+          "text_sha256": "1a2ebbe9a90750358b416324e2d9f4dce6d69cbdece89f5f15f5cf4f2515598a"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    },
+    {
+      "ord": 30,
+      "title": "말해야 집안일 하던 남편, 내 것만 챙겨봤어",
+      "source": "https://pann.nate.com/talk/375675188",
+      "evidence": [
+        {
+          "key": "s375675188",
+          "url": "https://pann.nate.com/talk/375675188",
+          "final_url": "https://pann.nate.com/talk/375675188",
+          "status": 200,
+          "fetched_at": "2026-10-18T09:06:05.416484+00:00",
+          "title": [
+            "남편 버릇 한 달 만에 고친 썰 | 네이트 판"
+          ],
+          "raw_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/s375675188.raw",
+          "raw_sha256": "d69c9b94954f93c341ba2239685eef94463beaab8e8e0b12881ade63e36c640d",
+          "text_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/2a22035b-7ef8-47f6-9271-8e7f418a8030/source/s375675188.txt",
+          "text_sha256": "0fafd4f49b4e9df0c5154d558e075a912a34ac5f8d3f628b68438539c454fa22"
+        }
+      ],
+      "read_scope": "actual complete saved original body; no search snippet used",
+      "verified_at": "2026-10-18T09:25:22.034941+00:00"
+    }
+  ]
+}

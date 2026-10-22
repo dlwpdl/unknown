@@ -1,0 +1,74 @@
+{
+  "scope": "exact newly registered seed IDs",
+  "time_rows": 21,
+  "body_rows": 1,
+  "state": "verified",
+  "attempted_at_utc": "2026-10-08T17:15:01.269988+00:00",
+  "response": [
+    {
+      "id": "1c616521-2088-4b7d-9d8e-716822eee91b"
+    },
+    {
+      "id": "6c236a06-ff09-40c8-8d1a-8f3523076d15"
+    },
+    {
+      "id": "db0305f8-a88b-417f-b857-acc86c9fdec5"
+    },
+    {
+      "id": "18b006c4-b198-4eb6-82a7-371b3f2620cd"
+    },
+    {
+      "id": "4c2290ea-607d-468d-ba8d-b0a3140a11a2"
+    },
+    {
+      "id": "cc6533d7-3fae-4922-9a74-c71d2d703a9d"
+    },
+    {
+      "id": "52ad14cd-2c75-43b6-93b9-02176ae8d155"
+    },
+    {
+      "id": "3351042a-7ca7-41ff-8412-389deb84b8fb"
+    },
+    {
+      "id": "5007adfb-05b1-4c55-a839-5c4c72a058c2"
+    },
+    {
+      "id": "5c0d4bc4-fb02-47eb-93ab-451d7043d187"
+    },
+    {
+      "id": "dbc9465b-46f3-4732-9211-2f6009b7295f"
+    },
+    {
+      "id": "a7048d96-69c5-4bb4-b4f9-2bbc1d21ed25"
+    },
+    {
+      "id": "9fee67e4-c912-4500-aad9-7d0349e956fa"
+    },
+    {
+      "id": "0c56677e-6ff7-4a18-a643-acc0dd326713"
+    },
+    {
+      "id": "801ea09f-e574-498c-b0b3-1eb7f06218ab"
+    },
+    {
+      "id": "0bef929d-7946-4d9a-9f1a-4fb0c640639f"
+    },
+    {
+      "id": "e34f9781-47da-40a3-b907-bd5e59190e83"
+    },
+    {
+      "id": "cf982b94-e03e-46ad-9008-37418cfa7a99"
+    },
+    {
+      "id": "0d9cd5b6-bd5a-49dd-be00-deaee29005a3"
+    },
+    {
+      "id": "44d14752-85b8-4262-a707-ba1edf36070e"
+    },
+    {
+      "id": "d7610eee-5922-4822-affe-76ca006ecaf0"
+    }
+  ],
+  "completed_at_utc": "2026-10-08T17:15:02.053139+00:00",
+  "verified_at_utc": "2026-10-08 17:16:02.242524+00"
+}

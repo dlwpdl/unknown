@@ -1,0 +1,283 @@
+{
+  "status": "POSTS_REGISTERED_COMMENT_REQUIREMENTS_NOT_MET",
+  "report_created_at_utc": "2026-10-06T17:09:17.787961+00:00",
+  "run_id": "city-posts-2026-10-06-local-1650",
+  "payload_date": "2026-10-06",
+  "execution": {
+    "run_id": "city-posts-2026-10-06-local-1650",
+    "stage": "STAGED",
+    "submission_attempted": true,
+    "log_offset": 0,
+    "script_sha256": "1e3c6d188cf93e3ea8e96ba87160631907bb1ded05e358bd74d3f8e43c9f1868",
+    "payload_sha256": "d1953ee12bd35503b9169fa4dad23f11284497b3ccefc58fa075a90685cf22dc",
+    "local_serialization": "Transient exported jq function uses Python stdlib only for raw JSON query encoding; no persisted script/automation edits.",
+    "stage_returncode": 0,
+    "stage_stdout": "STAGED /Users/ash/Library/Application Support/gling/city-posts/payload/2026-10-06.json\n",
+    "stage_stderr": "",
+    "attempted_at_utc": "2026-10-06T17:06:07.617766+00:00",
+    "grow_returncode": 0,
+    "grow_stdout": "",
+    "grow_stderr": "",
+    "completed_at_utc": "2026-10-06T17:06:08.825664+00:00",
+    "script_unchanged": true,
+    "log_segment": "=== Tue Oct  6 10:06:07 PDT 2026 도시 게시글 등록 시작 (2026-10-06)\nOK 25건 처리 []\n"
+  },
+  "gui": {
+    "status": "NOT_REQUIRED_NOT_USED",
+    "queue_events": []
+  },
+  "original_deadline": null,
+  "deadline_reason": "This city-post run has no original five-minute limit; GUI is not required.",
+  "counts_by_city": {
+    "vancouver": 5,
+    "toronto": 5,
+    "montreal": 5,
+    "edmonton": 5,
+    "calgary": 5
+  },
+  "created_at_range_vancouver": [
+    "2026-10-06 04:40:00",
+    "2026-10-06 09:39:00"
+  ],
+  "created_at_range_utc": [
+    "2026-10-06 11:40:00+00",
+    "2026-10-06 16:39:00+00"
+  ],
+  "actual_posted_on_counts": {
+    "2026-10-06": 25
+  },
+  "one_time_date_correction": {
+    "rows": 19,
+    "status": "VERIFIED",
+    "scope": "Only exact new batch IDs with optimistic checks; matching initial synthetic view buckets shifted, counts preserved.",
+    "evidence": "date-adjustment.json"
+  },
+  "verification": {
+    "25_posts_5_per_city": true,
+    "all_city_local_dates_today": true,
+    "25_unique_registration_times": true,
+    "body_author_tag_match_payload": true,
+    "author_city_matches_post_city": true,
+    "seed_accounts_only": true,
+    "bodies_have_no_source_link_threads_greeting_or_encoding_corruption": true,
+    "same_city_title_duplicates_absent": true,
+    "all_author_profiles_have_at_least_two_posts": true,
+    "comment_count_matches_actual": true,
+    "every_post_has_at_least_three_top_comments": false,
+    "every_post_has_at_least_one_author_reply": false
+  },
+  "comments": {
+    "top_level": 0,
+    "replies": 0,
+    "author_replies": 0,
+    "posts_below_three_top_comments": 25,
+    "posts_without_author_reply": 25,
+    "reason": "The current seed script intentionally contains no comment inserts. User prohibits direct comment writing and automation edits."
+  },
+  "sources": [
+    {
+      "ord": 1,
+      "city_id": "vancouver",
+      "topic": "밴쿠버 새 음수대엔 물병 채우는 곳도 붙네",
+      "url": "https://vancouver.ca/home-property-development/water-fountains.aspx"
+    },
+    {
+      "ord": 2,
+      "city_id": "vancouver",
+      "topic": "보드 타는 자리도 볼과 스트리트형이 다르네",
+      "url": "https://vancouver.ca/parks-recreation-culture/skateboard-parks.aspx"
+    },
+    {
+      "ord": 3,
+      "city_id": "vancouver",
+      "topic": "오래된 건물 주소로 보는 밴쿠버 유산 목록",
+      "url": "https://vancouver.ca/home-property-development/vancouver-heritage-register-vhr.aspx"
+    },
+    {
+      "ord": 4,
+      "city_id": "vancouver",
+      "topic": "VPL엔 소리 녹음하고 옛 사진 옮기는 공간도 있네",
+      "url": "https://www.vpl.ca/facilities/inspiration-labs"
+    },
+    {
+      "ord": 5,
+      "city_id": "vancouver",
+      "topic": "스카이트레인 엘리베이터, 있는 것과 운행 중인 건 다름",
+      "url": "https://www.translink.ca/opengates"
+    },
+    {
+      "ord": 6,
+      "city_id": "toronto",
+      "topic": "TPL 전화 동화에 한국어 이야기도 있네",
+      "url": "https://tpl.ca/using-the-library/services/dial-a-story/"
+    },
+    {
+      "ord": 7,
+      "city_id": "toronto",
+      "topic": "PATH는 지하철 이름이 아니라 걷는 길이네",
+      "url": "https://www.toronto.ca/explore-enjoy/visitor-toronto/getting-around-the-city/"
+    },
+    {
+      "ord": 8,
+      "city_id": "toronto",
+      "topic": "하이파크 동물 전시, 10월 13일부터 휴장 예정이네",
+      "url": "https://www.toronto.ca/explore-enjoy/parks-recreation/places-spaces/beaches-gardens-attractions/zoos-farms/high-park-animal-display/"
+    },
+    {
+      "ord": 9,
+      "city_id": "toronto",
+      "topic": "토론토 공원 운동기구, 산책이랑 묶어볼 만하네",
+      "url": "https://www.toronto.ca/explore-enjoy/parks-recreation/program-activities/fitness/outdoor-fitness-equipment/"
+    },
+    {
+      "ord": 10,
+      "city_id": "toronto",
+      "topic": "TPL 악기 대여는 어느 분관인지도 봐야겠네",
+      "url": "https://tpl.ca/using-the-library/services/borrow-a-musical-instrument/"
+    },
+    {
+      "ord": 11,
+      "city_id": "montreal",
+      "topic": "앙그리뇽 공원은 숲이랑 호수가 같이 있네",
+      "url": "https://montreal.ca/en/places/parc-angrignon"
+    },
+    {
+      "ord": 12,
+      "city_id": "montreal",
+      "topic": "몬트리올 도서관 악기 목록엔 타악기도 있네",
+      "url": "https://montreal.ca/en/services/musical-instrument-loans"
+    },
+    {
+      "ord": 13,
+      "city_id": "montreal",
+      "topic": "프레데리크백 공원의 흰 구체, 가스 모으는 시설 덮개래",
+      "url": "https://montreal.ca/en/articles/parc-frederic-back-unique-metamorphosis-18997"
+    },
+    {
+      "ord": 14,
+      "city_id": "montreal",
+      "topic": "REV는 몬트리올 자전거길들을 잇는 큰 줄기네",
+      "url": "https://montreal.ca/en/topics/cycling-and-bike-paths"
+    },
+    {
+      "ord": 15,
+      "city_id": "montreal",
+      "topic": "몬트리올 지하도시 RÉSO, 역과 쇼핑 공간이 이어지네",
+      "url": "https://www.mtl.org/en/experience/guide-underground-city-shopping"
+    },
+    {
+      "ord": 16,
+      "city_id": "edmonton",
+      "topic": "에드먼턴 야외 운동기구, 놀이터 가까운 자리도 있네",
+      "url": "https://www.edmonton.ca/activities_parks_recreation/fitness-parks"
+    },
+    {
+      "ord": 17,
+      "city_id": "edmonton",
+      "topic": "옛 가게 네온사인이 에드먼턴 야외 박물관에 남음",
+      "url": "https://www.edmonton.ca/city_government/edmonton_archives/neon-sign-museum"
+    },
+    {
+      "ord": 18,
+      "city_id": "edmonton",
+      "topic": "런들 공원에 원반 던지는 디스크골프 코스도 있네",
+      "url": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/rundle-park"
+    },
+    {
+      "ord": 19,
+      "city_id": "edmonton",
+      "topic": "퀸엘리자베스 공원 안 원주민 예술공원도 알아가는 중",
+      "url": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/queen-elizabeth-park"
+    },
+    {
+      "ord": 20,
+      "city_id": "edmonton",
+      "topic": "밀너도서관 더키친은 요리를 배우는 공간이네",
+      "url": "https://www.epl.ca/the-kitchen/"
+    },
+    {
+      "ord": 21,
+      "city_id": "calgary",
+      "topic": "데보니안가든은 건물 안에서 걷는 식물 공간이네",
+      "url": "https://www.calgary.ca/parks/devonian-gardens/features.html"
+    },
+    {
+      "ord": 22,
+      "city_id": "calgary",
+      "topic": "플러스15, 캘거리 건물 사이를 실내로 걷는 길이네",
+      "url": "https://www.calgary.ca/bike-walk-roll/plus-15-network.html"
+    },
+    {
+      "ord": 23,
+      "city_id": "calgary",
+      "topic": "벨트라인 로이스자보커먼스엔 야외 탁구대가 있네",
+      "url": "https://www.calgary.ca/parks/lois-szabo-commons.html"
+    },
+    {
+      "ord": 24,
+      "city_id": "calgary",
+      "topic": "메모리얼파크도서관엔 악기 대여랑 연습실도 있네",
+      "url": "https://www.calgarylibrary.ca/events-and-programs/arts-and-culture/borrow-a-musical-instrument"
+    },
+    {
+      "ord": 25,
+      "city_id": "calgary",
+      "topic": "랄프클라인공원 습지는 빗물을 처리하는 곳이기도 함",
+      "url": "https://www.calgary.ca/parks/ralph-klein-park-activities.html"
+    }
+  ],
+  "source_verification": {
+    "count": 25,
+    "verified_on": "2026-10-06",
+    "direct_http_success": 21,
+    "server_web_reader_success_after_http_403": 4,
+    "rejected": "STM page returned access challenge, replaced with verified Montreal cycling page.",
+    "browser_used": false
+  },
+  "content_checks": "content-check.json",
+  "script_tests": {
+    "passed": 4,
+    "failed": 0
+  },
+  "serialization": {
+    "system_jq_unicode_roundtrip_failed": true,
+    "local_python_roundtrip_passed": true,
+    "published_bodies_match_exactly": true,
+    "persistent_changes": false
+  },
+  "limits": {
+    "automation_changed": false,
+    "sns_publications": 0,
+    "sns_schedules": 0,
+    "paid_actions": 0,
+    "manual_comment_writes": 0,
+    "new_automations": 0
+  },
+  "post_ids": [
+    "1c2453e3-944d-435f-9304-bce43e674ff3",
+    "01e8e741-bb7d-4a87-b92c-54b30a9c249f",
+    "438bdcd8-fe96-456a-846e-f6900ee2b6e5",
+    "be3354dd-3833-412b-a1c4-93eb617f49e0",
+    "50c89cd7-caca-43b2-8288-4c6f74212351",
+    "13895e9d-19c6-44b0-9e56-f226b006d93f",
+    "da0a8dfd-579e-4efc-b98a-5ef17f931460",
+    "d1726bd5-4c12-44b0-8222-d6f4d2bfae47",
+    "0105b63f-00bf-4664-b2a9-67209f8b3b9b",
+    "beb87e91-93c0-46bd-bcf6-b2329b7902b5",
+    "62a5a747-e77b-431c-9127-1d0e604b7c4a",
+    "598ddbae-b747-4588-9b22-2afd4539de16",
+    "edc55b2d-4b49-4a42-8d55-c7cd8a9a35b5",
+    "d3f4d0d7-d9f7-411e-9a3f-d7c308ed9eab",
+    "3cd352fa-a23b-458f-b219-9af37bca6be0",
+    "138b1e16-06f4-43be-a9c6-4cf6f43aadd6",
+    "d1181319-c719-4161-a5b1-5a57c9013eb8",
+    "814c3c1b-0d76-4c7a-95aa-acf0e1fe9845",
+    "08676e1a-b826-4a30-9879-954289835ac1",
+    "456e394f-9612-4a91-b1c9-eebfca25d67a",
+    "6e9c285f-fdf9-4936-9dd5-f5366afbfd3f",
+    "ed98fa54-c7b1-4ca0-817a-916ba4b3156e",
+    "591e437e-24d3-4b8f-902e-8daf1abf6a9c",
+    "505fdc8a-f282-4d05-b8e1-2e85331a298f",
+    "3533eb91-f780-4bc8-b33b-f9a0979fa675"
+  ]
+}

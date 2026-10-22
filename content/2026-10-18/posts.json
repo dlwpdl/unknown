@@ -1,0 +1,464 @@
+{
+  "posts": [
+    {
+      "ord": 1,
+      "city_id": "vancouver",
+      "author_nickname": "도서관단골",
+      "tag_slug": "education",
+      "title": "이미 고른 책 말고, 서점에서 처음 만날 책",
+      "body": "읽을 책 목록을 길게 만들어두면 서점에서도 그 제목만 찾게 될 것 같아. 그러면 굳이 책 사이를 돌아다니는 재미가 줄겠지.\nMassy Books는 새 책과 베스트셀러뿐 아니라 절판본이나 흔히 보기 어려운 책도 다룬대. 원주민이 소유하고 운영하는 독립서점이라는 소개도 읽었어.\n꼭 사야 할 책 한 권 없이 들어가서, 전혀 모르던 작가 이름 하나쯤 알아오는 외출도 괜찮겠다.",
+      "source": "https://www.massybooks.com/",
+      "place_name": "Massy Books",
+      "place_address": "229 E. Georgia St"
+    },
+    {
+      "ord": 2,
+      "city_id": "vancouver",
+      "author_nickname": "뉴웨스트빵순이",
+      "tag_slug": "food",
+      "title": "요리 수업, 보는 쪽이랑 직접 하는 쪽이 있네",
+      "body": "The Gourmet Warehouse 요리 수업은 시연을 보는 방식과 직접 만드는 방식이 나뉘네. 난 식사용 빵이면 직접 반죽해보는 쪽이 더 끌림.",
+      "source": "https://gourmetwarehouse.ca/cooking-classes-1/",
+      "place_name": "The Gourmet Warehouse",
+      "place_address": ""
+    },
+    {
+      "ord": 3,
+      "city_id": "vancouver",
+      "author_nickname": "T&T장보기",
+      "tag_slug": "travel",
+      "title": "스탠리파크에서 이름 모르는 생물 하나 알아오기",
+      "body": "나무 이름부터 외워야 하는 자연 공부면 좀 부담스러운데, 그냥 걷다가 궁금해진 것 하나 물어볼 수 있으면 좋겠어.\n스탠리파크 네이처하우스에는 공원에 사는 동물의 박제 표본이 있고, 안내하는 사람에게 생태 얘기도 물어볼 수 있대. 스탠리파크 에콜로지는 해설 산책과 워크숍도 운영하고.\n이름 모르는 새가 하나 줄어드는 정도면 나한텐 꽤 알찬 산책일 듯 ㅋㅋ",
+      "source": "https://stanleyparkecology.ca/education/public/",
+      "place_name": "Stanley Park Nature House",
+      "place_display_name": "스탠리파크 네이처하우스",
+      "place_address": ""
+    },
+    {
+      "ord": 4,
+      "city_id": "vancouver",
+      "author_nickname": "모델3출근러",
+      "tag_slug": "life",
+      "title": "종이도 뭘 만들 건지 정하고 골라야겠다",
+      "body": "예쁜 종이라고 일단 한 장 들이고 싶어도 뭘 만들지 모르면 계속 모셔두기만 할 것 같아.\nGranville Island의 Paper-Ya 종이 소개를 보니 장식용 종이, 일본 종이, 종이접기용, 초대장용까지 나눠놨네. 수작업으로 만든 종이도 다루고 재고는 계속 달라진다고 해.\n난 작은 카드부터 만들어보려 해. 재료부터 잔뜩 늘리면 완성할 것보다 정리할 게 많아지겠음.",
+      "source": "https://www.paper-ya.com/our-papers",
+      "place_name": "Paper-Ya",
+      "place_address": ""
+    },
+    {
+      "ord": 5,
+      "city_id": "vancouver",
+      "author_nickname": "코스트코카트",
+      "tag_slug": "transport",
+      "title": "자전거 타는 법 다음에 배울 것도 있네",
+      "body": "자전거로 출퇴근할 길을 고를 땐 거리 말고도 걸리는 게 많아. 차 옆에서 도는 구간이나 교차로처럼, 지도만 봐서는 감이 잘 안 오는 부분들.\n허브사이클링 성인 교육은 처음 타기, 도로 주행, 기본 정비를 따로 나눠서 안내해. 온라인 성인 과정도 있고.\n나는 내 동선에서 제일 겁나는 구간부터 떠올려보려고. 그걸 배울 수 있는 과정이면 좋겠어. 오래 탔다고 도로에서까지 저절로 편해지는 건 아닐 테니까.",
+      "source": "https://bikehub.ca/education/adults"
+    },
+    {
+      "ord": 6,
+      "city_id": "toronto",
+      "author_nickname": "벽돌골목빛",
+      "tag_slug": "travel",
+      "title": "새 이름을 몰라도 가을 하늘은 좀 궁금해",
+      "body": "High Park 산책을 알아보다 Hawk Watch라는 활동을 봤어. 가을에 이동하는 맹금류를 관찰하는 거고, 안내에는 11월 30일까지 이어진다고 적혀 있네.\n새를 잘 아는 사람 옆에서 보면 나는 그냥 지나칠 움직임도 눈에 들어올까 궁금해. 멀리 보이는 점 하나를 보고 종을 알아맞힐 자신은 없는데, 어느 방향으로 날아가는지부터 따라가보는 건 해볼 만할 것 같아.\n산책할 때 자꾸 발밑 길만 보게 되니 하늘 볼 이유가 하나 생겼음.",
+      "source": "https://highparknature.org/",
+      "place_name": "High Park",
+      "place_address": ""
+    },
+    {
+      "ord": 7,
+      "city_id": "toronto",
+      "author_nickname": "퀸웨스트필름",
+      "tag_slug": "education",
+      "title": "옷의 무늬를 볼 때 만든 사람 얘기도 궁금해",
+      "body": "옷이나 천 사진은 색이 먼저 눈에 들어와. 누가 어떤 생활 속에서 만든 건지까지 알면 같은 무늬도 좀 다르게 보일까 궁금해.\n텍스타일뮤지엄은 온라인 컬렉션으로 소장품을 볼 수 있게 해놨어. 전시장에 한 번에 꺼낼 수 있는 건 일부라 온라인에서는 더 넓게 찾아볼 수 있고.\n전시 갈 날짜를 못 잡아도 볼 게 있다는 게 좋음. 나는 작품 사진 잔뜩 넘기는 것보다 하나 골라 설명까지 읽는 쪽이 더 재밌어.",
+      "source": "https://textilemuseum.ca/"
+    },
+    {
+      "ord": 8,
+      "city_id": "toronto",
+      "author_nickname": "하버프론트산책",
+      "tag_slug": "food",
+      "title": "시장 레시피에서 저녁 소스 하나 골라봄",
+      "body": "세인트로렌스마켓 레시피에서 파랑 생강이 들어가는 소스를 봤어. 닭고기나 생선에 곁들이는 걸로 소개하는데, 이런 소스 하나 정해두면 저녁 메뉴도 빨리 고를 듯.",
+      "source": "https://stlawrencemarket.com/food/ginger-scallion-relish/"
+    },
+    {
+      "ord": 9,
+      "city_id": "toronto",
+      "author_nickname": "노스욕산책러",
+      "tag_slug": "life",
+      "title": "고양이를 돕는 봉사에 이동 담당도 있네",
+      "body": "토론토캣레스큐 봉사 소개를 읽다가 고양이를 병원이나 임시보호 가정으로 옮기는 운전 역할을 봤어. 차량과 유효한 면허가 필요하고, 최소 6개월은 함께할 수 있는 사람을 찾는대.\n정해진 날에 이동을 맡아야 하니 가능한 시간을 먼저 따져봐야겠네. 고양이를 좋아해서 시작했어도 못 가는 날이 자꾸 생기면 곤란할 테니까. 이런 봉사를 해본 사람은 이동 중에 고양이가 많이 불안해하는지도 궁금해.",
+      "source": "https://torontocatrescue.ca/volunteer-drivers/"
+    },
+    {
+      "ord": 10,
+      "city_id": "toronto",
+      "author_nickname": "나이아가라평일",
+      "tag_slug": "education",
+      "title": "책 소리만 들어 있는 기계가 오히려 편할 듯",
+      "body": "폰으로 책 들으면 자꾸 다른 앱도 열 것 같은데, 토론토도서관에는 오디오북이 미리 담긴 휴대용 플레이어 Playaway도 있네. 딱 책만 듣는 기계라니 오히려 편할 듯.",
+      "source": "https://tpl.ca/books-video-music/books/audio-books/"
+    },
+    {
+      "ord": 11,
+      "city_id": "montreal",
+      "author_nickname": "올드포트바람",
+      "tag_slug": "travel",
+      "title": "몬트리올의 옛 생활은 어떤 물건으로 남았을까",
+      "body": "도시 역사는 연도 순서로 읽으면 금방 잊을 것 같은데, 누가 쓰던 물건이나 사진이 나오면 조금 더 궁금해져.\n맥코드스튜어트박물관은 몬트리올의 사회사와 여러 공동체의 이야기를 다루는 곳이래. 지금은 입구를 빅토리아스트리트 2175번지 쪽으로 임시 변경했다는 안내도 있어.\n오래전 이 동네 사람의 평범한 하루는 어떤 모습이었을까. 큰 사건보다 그런 쪽에 먼저 눈이 갈 것 같아.",
+      "source": "https://www.musee-mccord-stewart.ca/en/",
+      "place_name": "McCord Stewart Museum",
+      "place_display_name": "맥코드스튜어트박물관",
+      "place_address": "2175 Victoria Street"
+    },
+    {
+      "ord": 12,
+      "city_id": "montreal",
+      "author_nickname": "아트워터오후",
+      "tag_slug": "life",
+      "title": "같이 밥을 만드는 일이 동네를 아는 방법일 수도",
+      "body": "한 끼를 만들 때 장보고 손질하고 설거지하는 일까지 나누려면 같이 할 일이 꽤 많겠지. 동네 사람을 만나는 자리도 그런 식이면 조금 덜 어색할 것 같아.\n상트로폴룰랑은 먹거리를 기르고, 조리하고, 혼자 식사를 준비하기 어려운 사람에게 배달하는 일을 연결해놨네. 여러 세대가 자원봉사나 워크숍으로 만나는 방식도 있고.\n무슨 얘기부터 꺼낼지 고민하는 모임보다 같이 밥 만드는 쪽이 나한테는 편할 듯. 집밥 얘기라면 나도 할 말이 조금은 있으니까.",
+      "source": "https://santropolroulant.org/en/what-is-the-roulant/"
+    },
+    {
+      "ord": 13,
+      "city_id": "montreal",
+      "author_nickname": "두바퀴메이플",
+      "tag_slug": "education",
+      "title": "마일엔드에서 시작한 출판사 목록을 구경하다가",
+      "body": "책 고를 때 내용만큼 표지랑 판형에도 눈이 가는 편인데, Drawn & Quarterly 소개를 읽다가 몬트리올 마일엔드에서 시작한 출판사라는 걸 알았어. 지금도 같은 동네에서 서점을 운영하고, 김금숙 같은 한국 작가의 책도 내고 있대.\n동네 책을 찾는다고 꼭 그 동네가 배경인 이야기만 고를 필요는 없겠네. 여기서 골라 세상에 내놓은 책은 뭔지도 궁금함.",
+      "source": "https://drawnandquarterly.com/about/"
+    },
+    {
+      "ord": 14,
+      "city_id": "montreal",
+      "author_nickname": "불어책갈피",
+      "tag_slug": "life",
+      "title": "컵 모양부터 만들 필요는 없는 취미네",
+      "body": "손으로 뭘 만들어보고 싶어도 재료랑 도구부터 마련하는 건 좀 부담스러워. 세라믹카페는 모양이 있는 컵이나 접시를 골라 직접 색칠하는 방식이래.\n생드니스트리트의 몬트리올점은 도자기 값과 작업실에서 쓰는 시간을 따로 계산하고, 색칠한 물건은 굽는 과정도 거쳐. 컵 하나 값만 보고 예산을 잡으면 모자랄 수 있겠네.\n선 몇 개만 그린 컵도 괜찮을 것 같아. 컵 하나 꾸미겠다고 미술 도구 한 상자를 집에 들이는 일은 없겠음 ㅋㅋ",
+      "source": "https://leccs.com/location/montreal/",
+      "place_name": "Céramic Café Studio Montréal",
+      "place_display_name": "세라믹카페",
+      "place_address": "4338 Saint-Denis"
+    },
+    {
+      "ord": 15,
+      "city_id": "montreal",
+      "author_nickname": "우편번호수첩",
+      "tag_slug": "food",
+      "title": "장탈롱시장은 겨울에도 이어지는 장보기 자리네",
+      "body": "장탈롱시장은 10월에 벽을 세워 실내 장보기로 넘어가고 겨울에도 운영한대. 추워지면 시장 구경도 끝이라고 생각할 필요는 없겠네 ㅋㅋ",
+      "source": "https://www.marchespublics-mtl.com/en/markets/jean-talon-market",
+      "place_name": "Jean-Talon Market",
+      "place_display_name": "장탈롱시장",
+      "place_address": "7070 Henri-Julien"
+    },
+    {
+      "ord": 16,
+      "city_id": "edmonton",
+      "author_nickname": "제스퍼애비뉴",
+      "tag_slug": "travel",
+      "title": "실내 전시 보고 연못 옆 길까지 이어서",
+      "body": "존잔젠자연센터 안내에서 전시실의 동물과 연못 주변 길을 같이 소개한 게 눈에 들어왔어. 실내에서 알아본 다음 밖에서 천천히 찾아보는 식으로 시간을 써도 괜찮겠네.\n뭘 많이 보고 왔는지보다 한 곳에서 조금 오래 살펴보는 외출이 끌려. 혼자 가면 멈춰 있는 시간도 내 마음대로 정할 수 있고.",
+      "source": "https://www.edmonton.ca/attractions_events/john-janzen-nature-centre",
+      "place_name": "John Janzen Nature Centre",
+      "place_display_name": "존잔젠자연센터",
+      "place_address": "7000 143 Street"
+    },
+    {
+      "ord": 17,
+      "city_id": "edmonton",
+      "author_nickname": "헨데이하이웨이",
+      "tag_slug": "travel",
+      "title": "비행기박물관에서 큰 브릭 프로젝트도 하네",
+      "body": "Alberta Aviation Museum 소개에서 대형 항공 테마 브릭 프로젝트를 만들고 있다는 얘기를 봤어. 작업 과정을 별도 사이트로 공유한다는 안내도 있고.\n박물관이 작게 쌓아 올리는 재료로 항공 이야기를 어떻게 표현할지 궁금해. 공식 소개에는 레고그룹과 관계없이 박물관이 독립적으로 진행하는 작업이라고 적혀 있어.\n만드는 중간 과정까지 남겨두면 완성된 뒤엔 잘 안 보일 시행착오도 볼 수 있겠지. 그런 얘기도 같이 듣는 게 재밌을 것 같아 ㅋㅋ",
+      "source": "https://albertaaviationmuseum.com/",
+      "place_name": "Alberta Aviation Museum",
+      "place_address": ""
+    },
+    {
+      "ord": 18,
+      "city_id": "edmonton",
+      "author_nickname": "글레노라산책",
+      "tag_slug": "education",
+      "title": "그림 모임도 설명 듣는 수업이랑은 다르구나",
+      "body": "난 기초 설명부터 듣고 싶은데, Harcourt House 인체 드로잉은 강사 없이 모델을 보고 그리는 모임이래. 같은 그림 활동이어도 지금 내게 맞는 방식은 따로 골라야겠네.",
+      "source": "https://harcourthouse.ab.ca/classes-workshops/drop-in-sessions/",
+      "place_name": "Harcourt House Artist Run Centre",
+      "place_display_name": "Harcourt House",
+      "place_address": "10211 112 Street"
+    },
+    {
+      "ord": 19,
+      "city_id": "edmonton",
+      "author_nickname": "U오브A도서관",
+      "tag_slug": "life",
+      "title": "공짜 재료라도 집에 둘 자리는 생각해야지",
+      "body": "멀쩡한 천 조각이나 단추를 버릴 때는 아깝고, 쓰지도 않는 걸 계속 쌓아두기도 싫어. Reuse Centre 목록을 보니 실과 단추, 공예 재료 같은 걸 받아서 Edmonton 주민이 무료로 가져갈 수 있게 해놨네.\n기부할 물건은 깨끗하고 상태가 좋아야 하고, 모든 종류의 중고품을 받는 건 아니라 목록이 따로 있어.\n가져올 때도 뭘 만들 건지부터 정해야겠어. 공짜라고 챙겼다가 룸메이트랑 쓰는 공간만 더 좁아지면, 결국 보관할 물건 하나 늘어난 셈이니까.",
+      "source": "https://www.edmonton.ca/programs_services/garbage_waste/reuse-centre",
+      "place_name": "Reuse Centre",
+      "place_address": ""
+    },
+    {
+      "ord": 20,
+      "city_id": "edmonton",
+      "author_nickname": "엘크아일랜드",
+      "tag_slug": "food",
+      "title": "빵집에서 저녁 재료까지 같이 고를 수 있네",
+      "body": "Italian Bakery Beverly는 빵뿐 아니라 델리와 카페도 같이 운영하네. 집에서 먹을 빵을 고를 때 같이 곁들일 것까지 한자리에서 볼 수 있으면 동선이 짧아지겠음.",
+      "source": "https://www.italianbakeryedm.com/",
+      "place_name": "Italian Bakery Beverly",
+      "place_address": "4118 118 Ave"
+    },
+    {
+      "ord": 21,
+      "city_id": "calgary",
+      "author_nickname": "컨페더레이션공원",
+      "tag_slug": "travel",
+      "title": "큰 전시 일정 못 잡아도 복도에서 작품 볼 수 있네",
+      "body": "전시 하나 보겠다고 시간을 길게 비워야 할 것 같으면 자꾸 다음으로 미루게 될 것 같아. Werklund Centre의 +15 Galleries는 City Hall과 Glenbow Museum 사이 문화 통로에 있는 전시 공간이래.\n지금 소개하는 전시는 퀴어 작가들이 자기 삶과 공공장소에서의 경험을 다룬 설치 작업이고, 무료로 볼 수 있다고 해.\n잠깐 들른 자리에서 작품 하나가 마음에 남아도 괜찮겠지. 얼마나 오래 봐야 제대로 본 건지까지 숙제로 만들고 싶지는 않음 ㅋㅋ",
+      "source": "https://werklundcentre.ca/visit/galleries/plus15-galleries",
+      "place_name": "Werklund Centre",
+      "place_address": ""
+    },
+    {
+      "ord": 22,
+      "city_id": "calgary",
+      "author_nickname": "보우강변산책",
+      "tag_slug": "travel",
+      "title": "새 보러 가는 길에는 강아지와 자전거를 빼야 해",
+      "body": "잉글우드조류보호구역은 무료로 들어갈 수 있지만 개와 자전거는 들어갈 수 없대. 보조견은 예외고.\n반려견이랑 걷는 코스를 찾는 사람은 이곳을 따로 구분해야겠어. 새들이 쉬는 곳이니 사람 쪽 산책 계획도 거기에 맞추는 거겠지.\n산책길이면 다 비슷하게 이용할 수 있을 줄 알았는데 이런 차이는 먼저 알아두는 게 낫겠다. 새 보러 가놓고 새부터 놀라게 하면 좀 민망하잖아 ㅋㅋ",
+      "source": "https://www.calgary.ca/parks/inglewood-bird-sanctuary.html",
+      "place_name": "Inglewood Bird Sanctuary",
+      "place_display_name": "잉글우드조류보호구역",
+      "place_address": "2425 Ninth Ave. S.E."
+    },
+    {
+      "ord": 23,
+      "city_id": "calgary",
+      "author_nickname": "메이랜드저녁",
+      "tag_slug": "life",
+      "title": "가족 외출 예산에 이런 선택지도 있네",
+      "body": "아이 셋 데리고 나갈 곳을 고르면 입장료부터 합쳐보게 돼. Studio Bell은 정해진 관람료가 예산에 부담되면 형편에 맞는 금액을 선택하는 pay-what-you-can 방식도 안내하네.\n이런 정보를 입장료 표랑 함께 적어두는 게 좋다. 어디 갈지 알아보는 단계에서부터 우리 집이 감당할 수 있는 선택인지 판단할 수 있으니까.",
+      "source": "https://www.studiobell.ca/",
+      "place_name": "Studio Bell",
+      "place_address": ""
+    },
+    {
+      "ord": 24,
+      "city_id": "calgary",
+      "author_nickname": "17에비뉴커피",
+      "tag_slug": "food",
+      "title": "시장 가는 날엔 일주일 치 욕심부터 줄이고 싶어",
+      "body": "룸메이트랑 산다고 식재료까지 전부 같이 쓰는 건 아니니까, 시장에 가도 내가 먹을 양부터 생각해야겠어. 여러 가지를 구경하는 재미에 한 번씩만 담아도 봉투는 금방 커질 것 같거든.\nCalgary Farmers’ Market West는 신선한 식재료 가게와 바로 먹을 음식, 커피를 같이 둘러볼 수 있대. 위치는 Greenbriar Drive 쪽이고.\n일단 한 끼 해먹을 재료부터 고르고 싶어. 구경은 실컷 하되 먹을 생각 없는 것까지 들고 나오지는 않기로.",
+      "source": "https://calgaryfarmersmarket.ca/cfm-west/",
+      "place_name": "Calgary Farmers’ Market West",
+      "place_address": "25 Greenbriar Dr NW"
+    },
+    {
+      "ord": 25,
+      "city_id": "calgary",
+      "author_nickname": "프린스아일랜드",
+      "tag_slug": "education",
+      "title": "작가 얘기 듣고 나서 읽을 책 골라도 되겠지",
+      "body": "워드페스트는 가을 축제 말고도 일 년 내내 작가 만남을 연대. 책부터 읽고 얘기 듣는 쪽이야, 얘기 듣고 읽을 책 고르는 쪽이야? 난 후자도 괜찮을 것 같음.",
+      "source": "https://wordfest.com/"
+    },
+    {
+      "ord": 26,
+      "city_id": "vancouver",
+      "author_nickname": "커머셜드라이브",
+      "tag_slug": "life",
+      "content_kind": "community_story",
+      "title": "장모님 생활비 보내드리기로 했는데 숫자가 안 맞아",
+      "body": "아내가 장모님께 매달 생활비를 보내드리자고 했어. 장인어른은 퇴직하셨고, 혼자 일하시는 장모님은 허리가 안 좋으시대.\n나도 돕고 싶어. 다만 우리도 대출을 갚으며 돈을 모으는 중이라 그만큼 매달 나가면 생각하던 이사는 미뤄야 할 것 같았어.\n그 얘기를 하니 아내가 그럼 엄마는 어떻게 하냐며 울었어. 우리 부모님은 아직 일하시고 따로 드리는 돈이 없다는 것도 마음에 걸리는 듯했고. 결국 보내드리자고 했어.\n그런데 다시 계산해도 빠듯해. 이미 알겠다고 해놓고 금액이나 기간을 다시 얘기하면, 장모님 돕기 싫다는 말로 들릴까 조심스러워.",
+      "source": "https://pann.nate.com/talk/375675499",
+      "source_case_key": "pann:375675499",
+      "poll": {
+        "question": "이 상황에서 먼저 다시 얘기할 건 뭘까?",
+        "options": [
+          "우리 부부가 감당할 금액과 기간",
+          "장인·장모님의 다른 지원 방법",
+          "약속했으니 우선 보내보기"
+        ]
+      },
+      "post_id": "e0218fb0-951a-5168-8c22-d5f291f79594",
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000065",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "집 대출과 개인 취미 예산을 함께 조정한다",
+          "relationship_status": "married"
+        },
+        "topic": "부부 돈 관리"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "장인 퇴직·장모 건강·정기 지원 요청과 아내의 눈물·이미 동의한 뒤 예산 부족이라는 순서를 보존.",
+        "fictional_changes": [
+          "marriage_years 3 → 고정4년, 자녀 없음 유지; 물류센터 야간 직업은 이식하지 않고 대학원생 설정 보존; 전세 이자/이사 자금은 고정 집 대출 상황으로 맞춤.",
+          "원화 지원액/연봉/이자는 현지 가격으로 바꾸지 않고 생략했다. 이사의 실제 예약·지원 송금은 만들지 않았다."
+        ]
+      }
+    },
+    {
+      "ord": 27,
+      "city_id": "toronto",
+      "author_nickname": "스카보로블러프",
+      "tag_slug": "life",
+      "content_kind": "community_story",
+      "title": "장인어른과 친해져서 좋았는데 아내는 주말이 힘들었대",
+      "body": "결혼 초엔 장인어른이랑 둘이 있으면 무슨 말을 해야 할지 몰랐어. 낚시 얘기를 꺼낸 뒤로 통하는 게 생겨서 요즘은 주말마다 같이 나가고 있어.\n나는 장인어른이 편해진 게 좋았는데 아내가 둘이 무슨 얘기를 그렇게 하냐며 서운해하더라. 아버지의 옛 연애 얘기도 나한테 먼저 들었다고 했고.\n그런데 아내가 그 시간에 혼자 아이를 보느라 힘들었다는 말도 했어. 새벽에 나가 점심 무렵 들어오니 아내 주말은 그만큼 빠진 거잖아. 그건 내가 할 말이 없더라.\n가족이랑 가까워졌다고 뿌듯해하기만 했는데, 내가 나가 있는 동안 집에 남은 사람은 어떻게 보내는지 빼놓고 생각한 것 같아.",
+      "source": "https://pann.nate.com/talk/375675454",
+      "source_case_key": "pann:375675454",
+      "poll": {
+        "question": "다음 주말부터 뭘 먼저 바꾸면 좋을까?",
+        "options": [
+          "낚시 횟수를 줄이고 돌봄 시간 나누기",
+          "나가는 날 아내의 쉬는 시간도 정하기",
+          "함께할 수 있는 다른 활동 찾기"
+        ]
+      },
+      "post_id": "9f987963-4854-5def-8080-612a2ca267e9",
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000070",
+        "family": {
+          "children_ages": [
+            3
+          ],
+          "marriage_years": 6,
+          "household_finances": "육아비와 주거비를 함께 계획한다",
+          "relationship_status": "married"
+        },
+        "topic": "육아 분담"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "장인과 친밀해진 기쁨/아내의 소외감/그 시간 혼자 아이를 본 부담과 화자의 인정 유지.",
+        "fictional_changes": [
+          "marriage_years 5 → 고정6년, 자녀는 고정3세 1명. 거제 바다 지명을 삭제하고 캐나다 특정 장소·어종·면허 사실을 덧붙이지 않음.",
+          "낚시 경험은 운영 캐릭터의 각색 서사이며 사용자의 실제 방문 경험이나 캐나다 발생 검증이 아니다."
+        ]
+      }
+    },
+    {
+      "ord": 28,
+      "city_id": "montreal",
+      "author_nickname": "몽루아얄잎새",
+      "tag_slug": "life",
+      "content_kind": "community_story",
+      "title": "외출만 하면 아이 재울 시간 때문에 싸우게 돼",
+      "body": "세 살 아이랑 나가면 남편은 집에 일곱 시 반까지 돌아오는 걸 기준으로 잡아. 평소 일곱 시에서 여덟 시 사이에 재우니까 그 시간을 지키려는 거야.\n아이 돌보는 건 주로 내 몫이었는데, 남편도 함께하는 시간이 늘면서 씻기고 밤에 깨면 들어가주기 시작했어. 덕분에 저녁 준비할 여유가 생긴 건 고마워. 그런데 밖에 나가면 아이 잘 시간에 너무 예민해져.\n나는 가끔 가족이나 친구를 만나는 날은 조금 늦을 수도 있다고 봐. 남편은 일곱 시 반을 넘기면 집으로 가든 밖에서 재우든 해야 한대. 밖에서는 아이가 내 품을 찾아서 내가 안고 달래는 때도 있고.\n한 번은 아홉 시에 돌아왔는데 오는 내내 재촉을 받으니 나도 화가 났어. 아이 생활 리듬을 지키자는 말은 맞아. 그래도 매번 나갈 때마다 싸우니, 외출 전에 귀가 시간과 밖에서 누가 재울지까지 같이 정해야 할 것 같아.",
+      "source": "https://pann.nate.com/talk/375675251",
+      "source_case_key": "pann:375675251",
+      "poll": {
+        "question": "외출할 때 아이 취침 시간은 어떻게 맞출까?",
+        "options": [
+          "평소 취침 시간에 맞춰 일찍 귀가",
+          "가끔 늦는 건 허용하고 돌봄도 나누기",
+          "나가기 전에 귀가 시간과 역할 합의"
+        ]
+      },
+      "post_id": "14d6eb30-81ef-57b1-b527-acd4e0012bb4",
+      "story_fit": {
+        "profile_id": "cc3ea647-6ac1-5ffc-ba83-8d4724d2e0f1",
+        "family": {
+          "children_ages": [
+            3
+          ],
+          "marriage_years": 6,
+          "household_finances": "육아비와 주거비를 함께 계획한다",
+          "relationship_status": "married"
+        },
+        "topic": "육아 분담"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "처음 주 양육 부담, 나중 남편의 목욕·밤 돌봄 증가, 평소7~8시 취침/7:30귀가 요구,9시 귀가 갈등, 화자의 가끔 늦을 수 있다는 입장 보존.",
+        "fictional_changes": [
+          "원문19개월 → 고정3세 1명에 맞춤. 원문12kg/97% 정밀 수치는 생략하고 안아 달래는 부담과 주 양육 설명만 사용. 배우자의 위험 직종은 고정 정보가 없어 이식하지 않음.",
+          "보이는 댓글 대부분이 아빠의 수면 루틴 입장을 지지했다. 이 반대 맥락을 확인하고 아빠를 무조건 통제적인 악역으로 만들지 않았다. 의학적 진단이나 해결 결말을 만들지 않음."
+        ]
+      }
+    },
+    {
+      "ord": 29,
+      "city_id": "edmonton",
+      "author_nickname": "에드먼튼겨울",
+      "tag_slug": "life",
+      "content_kind": "community_story",
+      "title": "남편 투자 손실 얘기하다 내가 이혼까지 꺼냈어",
+      "body": "남편이 자기 돈으로 주식에 투자했다가 손실을 봤다는 얘기를 뒤늦게 했어. 큰돈이면 미리 상의해야 하는 거 아니냐고 했더니, 미안하긴 한데 자기가 번 돈을 쓴 걸로 이렇게 혼나야 하냐고 하더라.\n우리는 공동 생활비와 각자 쓰는 돈을 나눠서 관리해. 남편 수입이 나보다 많은 것도 알아. 그래도 투자 금액이 더 컸다면 어쩔 거냐고 하다가 내가 이혼 얘기까지 꺼냈어.\n실제로 헤어질 생각이 있어서 한 말은 아니었어. 남편이 제대로 사과하고 좀 빌었으면 했던 거야. 남편은 사과하면서도 억울하대.\n나는 아직 큰돈이면 먼저 얘기했어야 한다고 생각해. 다만 정말 헤어질 생각도 없이 그 말을 꺼냈다는 것도 사실이야.",
+      "source": "https://pann.nate.com/talk/375675276",
+      "source_case_key": "pann:375675276",
+      "poll": {
+        "question": "이 부부가 먼저 짚어야 할 건 뭘까?",
+        "options": [
+          "개인 돈으로 투자할 수 있는 범위",
+          "함께 상의해야 하는 금액 기준",
+          "사과를 받으려고 이혼을 꺼낸 말"
+        ]
+      },
+      "post_id": "a98b3fbb-28c2-5e44-8e8d-d47ccf2cb388",
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000118",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "공동 생활비와 개인 지출을 구분해 관리한다",
+          "relationship_status": "married"
+        },
+        "topic": "부부 돈 관리"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "개인 돈 투자/손실/뒤늦은 공유/남편의 사과와 억울함/화자의 실질 이혼 의사 없음과 사과를 받아내려던 의도 보존.",
+        "fictional_changes": [
+          "고정29세/기혼4년/자녀 없음/자영업/공동생활비와 개인돈 구분 유지. 원문 직장 연봉 수치는 생략하고 수입 차이만 유지.",
+          "원문은 사전 합의 여부와 자녀를 확정하지 않는다. 그 단정과 일부 댓글의 엄마/자녀 추측을 가져오지 않음. 원화 금액을 CAD로 환산·발명하지 않음."
+        ]
+      }
+    },
+    {
+      "ord": 30,
+      "city_id": "calgary",
+      "author_nickname": "프린스아일랜드",
+      "tag_slug": "life",
+      "content_kind": "community_story",
+      "title": "말해야 집안일 하던 남편, 내 것만 챙겨봤어",
+      "body": "결혼하고 집안일은 내가 먼저 하게 됐어. 남편은 말하면 하긴 하는데, 빨래통이 넘쳐도 자기가 마신 컵이 있어도 내가 말하기 전엔 그대로였고.\n지난달부터 내 빨래와 그릇, 밥만 챙겼어. 일주일쯤 지나 남편이 출근할 셔츠를 찾길래 어디 있는지 내가 어떻게 아냐고 했지. 그날 저녁에 세탁기 쓰는 법을 물어보더라. 지금은 분리수거도 알아서 해.\n속은 시원해. 그런데 꼭 자기 옷이 없어져야 움직였다는 건 아직 좀 걸림. 시어머니는 남편이 왜 말랐냐고 하셨는데, 다시 내가 밥부터 챙겨야 하나 싶진 않아.",
+      "source": "https://pann.nate.com/talk/375675188",
+      "source_case_key": "pann:375675188",
+      "poll": {
+        "question": "집안일 분담, 어떻게 이어가면 좋을까?",
+        "options": [
+          "각자 책임질 일을 분명히 정하기",
+          "당분간 자기 몫은 각자 챙기기",
+          "함께할 시간을 정해 같이 하기"
+        ]
+      },
+      "post_id": "ce21ccf2-ac49-504e-84b2-123e3b88c423",
+      "story_fit": {
+        "profile_id": "10000000-0000-0000-0000-000000000132",
+        "family": {
+          "children_ages": [],
+          "marriage_years": 4,
+          "household_finances": "공동 생활비와 개인 지출을 구분해 관리한다",
+          "relationship_status": "married"
+        },
+        "topic": "결혼 전후 관계"
+      },
+      "source_review": {
+        "access": "public_full_body_read",
+        "original_conflict": "말해야 하던 집안일, 자기 빨래·밥·그릇만 처리,1주 후 셔츠,세탁기 질문,분리수거 변화,시어머니 발언 보존.",
+        "fictional_changes": [
+          "원문결혼2년 → 고정기혼4년/자녀 없음/서비스직에 맞춤. 맞벌이 가사 갈등은 유지하고 임신·육아 경험을 넣지 않음.",
+          "개인 신원·회사·지역·캐나다 실화/검증 결말/추가 댓글을 만들지 않음."
+        ]
+      }
+    }
+  ]
+}

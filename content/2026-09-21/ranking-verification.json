@@ -1,0 +1,62 @@
+[
+  {
+    "city": "vancouver",
+    "week": "2026-09-21",
+    "count": 10,
+    "top": {
+      "rank": 1,
+      "likes": 0,
+      "title": "노스밴 갈 때 씨버스도 교통편이에요",
+      "views": 214,
+      "postId": "3266eeeb-e6ac-510c-8356-a18321a05c01",
+      "authorId": "c09404bf-88a7-51fd-a4f0-1759650607f2",
+      "comments": 0,
+      "nickname": "물결한모금"
+    }
+  },
+  {
+    "city": "toronto",
+    "week": "2026-09-21",
+    "count": 10,
+    "top": {
+      "rank": 1,
+      "likes": 0,
+      "title": "디스틸러리 디스트릭트, 행사 날짜는 따로 확인",
+      "views": 300,
+      "postId": "fb98318b-914d-5fe8-92f0-528855a7dbde",
+      "authorId": "08db325f-9c20-537a-8e88-4418cecf447b",
+      "comments": 0,
+      "nickname": "벽돌골목빛"
+    }
+  },
+  {
+    "city": "montreal",
+    "week": "2026-09-21",
+    "count": 10,
+    "top": {
+      "rank": 1,
+      "likes": 0,
+      "title": "몬트리올 쓰레기 수거일은 우편번호로 확인",
+      "views": 294,
+      "postId": "ba806ab4-ab3d-5853-b5b8-3f20ae39c6ad",
+      "authorId": "3af69d3c-ebe8-5e33-9f8c-e62a1abc7e24",
+      "comments": 0,
+      "nickname": "우편번호수첩"
+    }
+  },
+  {
+    "city": "edmonton",
+    "week": "2026-09-21",
+    "count": 10,
+    "top": {
+      "rank": 1,
+      "likes": 0,
+      "title": "Fort Edmonton Park는 방문 일정부터 확인",
+      "views": 291,
+      "postId": "b42e7b24-1dce-5c8a-8e2c-bab9c8e88d5c",
+      "authorId": "cc10d780-bb2e-5c0e-8bde-76030655ef1a",
+      "comments": 0,
+      "nickname": "오래된전차길"
+    }
+  }
+]

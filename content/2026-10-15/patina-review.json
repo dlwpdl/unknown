@@ -1,0 +1,957 @@
+{
+  "same_writer": true,
+  "skill_path": "/Users/ash/.agents/skills/patina/SKILL.md",
+  "resources": [
+    ".patina.default.yaml",
+    "patterns/ko-structure.md",
+    "patterns/ko-content.md",
+    "patterns/ko-language.md",
+    "patterns/ko-style.md",
+    "patterns/ko-communication.md",
+    "patterns/ko-filler.md",
+    "patterns/ko-viral-hook.md",
+    "profiles/default.md",
+    "core/voice.md",
+    "lexicon/ai-ko.md"
+  ],
+  "automatic_scores_claimed": false,
+  "reviews": [
+    {
+      "ord": 1,
+      "author_id": "10000000-0000-0000-0000-000000000039",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "fbde3dc331f897a17519354324c9a8b9e057feba1be052d15905f2a824f60ca7",
+      "final_body_sha256": "fbde3dc331f897a17519354324c9a8b9e057feba1be052d15905f2a824f60ca7",
+      "source_body_sha256": "4f1d9dcd39562142d9a2dc4d805b489fe030bbf8e700dd3f3c40b8f4096755ec",
+      "changed": false,
+      "corrections_or_unchanged_rationale": "반려동물 이동장의 규격·유모차 제한과 안내견 예외를 보존;문장 길이가 섞여 있고 광고성 권유·과장 없는 조심스러운 반말이어서 유지",
+      "meaning_check": {
+        "supported_facts": [
+          "일반 반려동물 완전 밀폐 소형 이동장",
+          " 반려동물 유모차 불가",
+          " 혼잡도에 따라 승차 거절 가능",
+          " 안내견 별도"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 2,
+      "author_id": "10000000-0000-0000-0000-000000000038",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "f190c4f1eeaf4a8fa52a7a414083ae68004db2db9e8d285ea449bf70f5e891fb",
+      "final_body_sha256": "b57e74eb44eb1888f6efda5ddee8463b7d2cc14f7c4e5f07ba4dd167bc8bd663",
+      "source_body_sha256": "2d7966f3ec1faddd9b09d6c7cc8539c55a22ed3f748c98d9c31a2071a36f6c54",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "교차로로오독할수있는지점표현을수정하고추상적인귀가준비마무리를구체적인정류장저장으로축약",
+      "meaning_check": {
+        "supported_facts": [
+          "NightBus seven nights",
+          "20–30minutes",
+          "around1:30a.m departure Howe/Dunsmuir or Seymour/Granville"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 3,
+      "author_id": "10000000-0000-0000-0000-000000000011",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "e51850cf45e14f04137748adece6b47b668446dfff6870ae797df0861e98b3c4",
+      "final_body_sha256": "d14ff496578e86a75871db94832e1078510f029f295fdf50239345f8409e4907",
+      "source_body_sha256": "19f32e671c5cee418b26f45790f92962bba1ba0adc41c7251725251bd372e785",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "앎과행동의추상적대조를줄여직설적인화자목소리로수정;911과장치위치는유지",
+      "meaning_check": {
+        "supported_facts": [
+          "SkyTrain yellow silent alarm above windows",
+          "intercom near doors",
+          "emergency911"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 4,
+      "author_id": "10000000-0000-0000-0000-000000000043",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "9d9eceaa0c4942554665457b192098b2e7fb9036aae170aeba261c3380707256",
+      "final_body_sha256": "e3d0100d4fcdc9b36b04d67b7c743ee103b6c52fd859a6ab445cefbdc06335b9",
+      "source_body_sha256": "bc3cf95f25290bf299bc4b5cd75205f74e0d7aae14b21b8a0949c2309597bf56",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "필요한지원을찾을때나눠보겠다는반복적의향마무리를삭제;실제로중요한HandyDART사용불가와대상혜택은보존;같은도시첫단어반복을피하도록이용목적부터시작",
+      "meaning_check": {
+        "supported_facts": [
+          "HandyCard eligibility",
+          "concession on regular transit",
+          "attendant free",
+          "not usable on HandyDART"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 5,
+      "author_id": "10000000-0000-0000-0000-000000000017",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "31fd2b898498b6e134e486de57ec8262e1aae2f595d51f9add7528f2d73509a1",
+      "final_body_sha256": "786ffc78ecf37fbb6b6fe79180a1e325bcf3acbd738d21928f282ea7b2fa5c6c",
+      "source_body_sha256": "77bd4ed23c7bd93c5f1446c9ea0edf4d908005606df6519c4cc557e3f5ccd8c9",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "주장하지않은개선완료약속을미리부정하는문장을제거;신고창구와소식지정보를보존;같은도시첫단어반복을피하도록이용목적부터시작",
+      "meaning_check": {
+        "supported_facts": [
+          "Accessibility barriers contact Customer Information",
+          "accessible transit newsletter available",
+          "no remediation deadline claimed"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 6,
+      "author_id": "10000000-0000-0000-0000-000000000069",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "ca1c997bbd57b3ddde2af226d47977c772c8d6d0bf1d443ea52ccaad5fa8f301",
+      "final_body_sha256": "88b76239d0ed1288048a67b907b129b8192a6e21ef371e162659ce6a4916fa91",
+      "source_body_sha256": "7f21ba178c5b4ed6f5f2ffa86ca446c4a95c0a1383369e69a385041b6fe1fde6",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "그냥꺼내면끝인줄이라는가짜실수암시대신공간조건에대한의견으로변경;7시8시0.5m제한보존;고정영문지명성향에맞춰도시표기를Toronto로통일",
+      "meaning_check": {
+        "supported_facts": [
+          "daytime single-family curbside before7am noearlier8pm prior",
+          "0.5m spacing",
+          "not behind/on snowbanks"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 7,
+      "author_id": "10000000-0000-0000-0000-000000000029",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "c413c9944e2d9bcddd021af32202a184af0b62fd2008a838a9733493b631193a",
+      "final_body_sha256": "1cd6c9701a6bb50170960cd413f8dacb9e2c7b11c95598bac98f6667206bca2e",
+      "source_body_sha256": "00b971b83da9ca47a8aba013102d2b7780e6cb6185f765af65a1a0c3d6bfa0ab",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "영문지명성향화자의Toronto표기를제목본문에맞춤;사실·숫자·의견보존;고정영문지명성향에맞춰도시표기를Toronto로통일",
+      "meaning_check": {
+        "supported_facts": [
+          "compostable plastic/plastic-lined containers cups cutlery garbage",
+          "food separate from packaging"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 8,
+      "author_id": "10000000-0000-0000-0000-000000000083",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "7d50e547edafc7d7f9872a2126e6782e6c76f6c8bd41ce886ae18e648491ec9b",
+      "final_body_sha256": "383e6c3fe1333fda92183e638f000b0340542127df1ca6989bcfa05788d547db",
+      "source_body_sha256": "09ae26373f02eb7999980e277ea28a79e8a643636cee1fe7cf70c934a7d5a4d3",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "과거산책관찰을새로만들지않고실제로읽은서비스항목에대한반응으로마무리;같은도시첫단어반복을피하도록이용목적부터시작;고정영문지명성향에맞춰도시표기를Toronto로통일",
+      "meaning_check": {
+        "supported_facts": [
+          "city-tree planting pruning removal service request",
+          "city/private distinction no private entitlement claimed"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 9,
+      "author_id": "10000000-0000-0000-0000-000000000034",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "8f805cb955741689100116ec61a3549b8633a532895725b6b09477a563401303",
+      "final_body_sha256": "4933e644d94b840570dceb662bfaa987af6d54e739cc89e7e08bb1d99c773d55",
+      "source_body_sha256": "12dada1e14b126f152ab9000995d26eecd1b2fd2c121c25bb3b2181623adbb7a",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "기기를인쇄용으로만알았다는관념적도입을줄이고짧은문장형화자의실제용도·의견으로교정;무료스캔·문서사진·이메일기능유지.전화동화소재는기존공개글과겹쳐제외;같은도시첫단어반복을피하도록이용목적부터시작",
+      "meaning_check": {
+        "supported_facts": [
+          "printercopier scansdocument/photoemailsyourself",
+          "scanningfree"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 10,
+      "author_id": "10000000-0000-0000-0000-000000000008",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "1d3d81e7c02a1fd13bb301927c93003fc5db4ee92538bbaf33f44b9348847bfd",
+      "final_body_sha256": "3970c9ce6b2e0d5e4f841725df35ad81005d296d10c7dd3e23c38cf08ce7b40d",
+      "source_body_sha256": "3343271cb8bf7b178d7d41203250ff28c2a4834f1a22da85f31efafd487273cb",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "같은도시다섯원고의기관명첫단어반복을덜고고정화자의관심과실제이용목적부터시작;핵심사실·시간·숫자·이용범위보존",
+      "meaning_check": {
+        "supported_facts": [
+          "designatedoffleash no unattended dog",
+          "recall/relaxed interaction",
+          "leash elsewhere parks/beaches"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 11,
+      "author_id": "75513359-f87a-5b69-9bde-8261e0854bb6",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "06769d31cb6043d6df197662a11a83c34cb38e40492c3d667f276435f1ba09c1",
+      "final_body_sha256": "234f42e2c35bfb657392d44b9d65b06a6b6bbf9fe87566d13ed9b53775b93852",
+      "source_body_sha256": "b7926c1a9ce3e0b84027e838d5361abfd5cf4c3a76dadae33412556c75384fd4",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "무료라고다같지않다는정형적부정대조를걷어내고실제사용상황과암호화제한을직접연결",
+      "meaning_check": {
+        "supported_facts": [
+          "MTLWiFi free multiple municipal sites",
+          "SSID",
+          "no password",
+          "open unencrypted network"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 12,
+      "author_id": "49392196-fb82-5ea3-bced-4b7bb76dcec0",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "eb7ecedf77f568574f34af5166b35fca552a0291171e1ceb87661ee774359c63",
+      "final_body_sha256": "eb7ecedf77f568574f34af5166b35fca552a0291171e1ceb87661ee774359c63",
+      "source_body_sha256": "943b3b5337cbea95beabb1aca12f7e790d243f93dd884959e9afb2de1d40b15f",
+      "changed": false,
+      "corrections_or_unchanged_rationale": "현재 산책로 폐쇄 구역·10월20일·열린 피크닉 구역을 정확히 구분;계획적인 긴 설명형 화자의 실제 필요한 주의로 유지",
+      "meaning_check": {
+        "supported_facts": [
+          "forest observation stations/oldtreesblackmaple",
+          "peninsula northGouinOuest closeduntilOct20",
+          "Oakridgepicnic open"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 13,
+      "author_id": "cc3ea647-6ac1-5ffc-ba83-8d4724d2e0f1",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "c2a2bcbd5cfd90ced2d0041ba8f379b7a7d754f5ab1c11d75234965b47914190",
+      "final_body_sha256": "4d4b6213817ceb39b62af90c1da9122fa91e6535ae09b5e5c1d7b333a83805a3",
+      "source_body_sha256": "6a43798ee63f596d28d752cd81ef4c784fb1e39c64f7a7b8094d5a7364055c6f",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "실제주장하지않은사슴만남보장부정삭제;3구역·261ha·샬레2곳을살리고아이동반계획을구체화",
+      "meaning_check": {
+        "supported_facts": [
+          "261hectares easternisland",
+          "3sectors",
+          "2chalets",
+          "white-tailed deer habitat no sightingpromise"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 14,
+      "author_id": "81c6d246-f1fb-5956-8092-4d437caeae8e",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "f7013bdfdfb5a278aff4888b058985000cfec1f5910310a98b17f65c39b57814",
+      "final_body_sha256": "ea744cc44a968355da3fb5bbe298101f0dba00697f6710edd84ceefbf1ee6b51",
+      "source_body_sha256": "27d10c03b24bc1e70d7cfccc13fbe2d63cc32145be659f9a68f8d9aa58873aa4",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "건물내부관람을주장하지않은본문의방어적부정문삭제;미방문상태의궁금증과실제목줄규칙보존",
+      "meaning_check": {
+        "supported_facts": [
+          "96hectares",
+          "MaryDorothyMolsonhouse/chauffeurhouse",
+          "leashrequired",
+          "nointerioraccessclaim"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 15,
+      "author_id": "2212d766-7329-5611-847e-ee0f59c8eb0e",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "1652410beed5440617cddf436c8da8f135b936b4246accfcf10d915fce4a607c",
+      "final_body_sha256": "7a2b25631fc0e2257acc84aea8b07d03b5ebb3fd788e8b43ee0d1629c2354622",
+      "source_body_sha256": "c069111b43776f97ffee944b8a2d645e028ab9104d2882a1deeb7f3c79517959",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "불필요한여름셔틀현재운항면책삭제;확인된강변길과상선풍경에서자연스러운화자의상상으로연결",
+      "meaning_check": {
+        "supported_facts": [
+          "linearparkabout2.2kmSaintLawrence",
+          "commercialshipsview",
+          "summerferry not currentoperationclaim"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 16,
+      "author_id": "10000000-0000-0000-0000-000000000102",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "9bed0ac79357558200e4740234ecfe8b1a1bcf18db7d01468a48de109f039ccc",
+      "final_body_sha256": "9bed0ac79357558200e4740234ecfe8b1a1bcf18db7d01468a48de109f039ccc",
+      "source_body_sha256": "ce038b0f42b737a5edb78cc15e6deb95ee1f93d35b22285930a80f1db92222aa",
+      "changed": false,
+      "corrections_or_unchanged_rationale": "흰지팡이 경계와 점자7개라는 구체적인 새 관찰을 전달;방문을 주장하지 않고 단문과 설명문 길이가 달라 유지",
+      "meaning_check": {
+        "supported_facts": [
+          "lowvisiongravelloop raisedwoodedges whitecane",
+          "7Braillesigns"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 17,
+      "author_id": "10000000-0000-0000-0000-000000000101",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "c44edb12b661fae5ad607d56adb4aff99b030e85a2399b093e8ea706f2cfb191",
+      "final_body_sha256": "85e9e38dee4afea1240b41ed319a1e823b87423284ef527c7efbae14304f8451",
+      "source_body_sha256": "3079f38402559e451ad9a4e82fc6f47409f3921d06cf9f5654054b2aa4406bf2",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "봤다고확인되지않은시설사진경험과분수운영면책삭제;호수수영·보트금지는필수안전조건으로보존",
+      "meaning_check": {
+        "supported_facts": [
+          "smalllake looptrail",
+          "noswimmingorboating",
+          "sprayparklisted nocurrentoperationclaim"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 18,
+      "author_id": "9693606b-6fb3-50dc-ad2e-a6c23514c907",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "e68831a910aaed7da444a389188cbe2a2153d26730137c91c3622f95f1e961f4",
+      "final_body_sha256": "7511c91ba0ad7cd2cc8c38bf3afbc409b6902d6f8e59f2e2f92f3bfadfe78d74",
+      "source_body_sha256": "67d0fd4a3a2c2c2411d2cf40b1b8cc1d85c54a5a1aef49f75249564ce3c52ae7",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "저장된반려견관심사를반려견소유·실제산책조사로확대하지않음;모든산책로가자유구역이라는오독은계속막음",
+      "meaning_check": {
+        "supported_facts": [
+          "northbank",
+          "largeoffleasharea",
+          "multiusetrails",
+          "donotextendoffleashtoalltrails"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 19,
+      "author_id": "10000000-0000-0000-0000-000000000119",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "a1025d15ad3172d959d7e9a9cd4d8e7bc9041d4038e6119875e31cc03609b124",
+      "final_body_sha256": "9f1579d3db4e0b838af83b07fc71ccee7f0bb50734ed1cde6528aa683a1ada7b",
+      "source_body_sha256": "5645ba0fd15b34b2290a0bbbadb7589004bb84cef4cc68d85a0d6eb0fc70299b",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "보지않은공원사진을봤다는암시와읽다가오해했다는경험묘사를제거;실제로읽은구조물설명에대한가벼운관심으로수정",
+      "meaning_check": {
+        "supported_facts": [
+          "playgroundcoyotemodel",
+          "noanimalencounterorvisitclaim"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 20,
+      "author_id": "10000000-0000-0000-0000-000000000106",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "ad5d6e54d6b3cf104c5c38ead63b59d412c9795ab4cb138ede544e6ba06f7770",
+      "final_body_sha256": "ad5d6e54d6b3cf104c5c38ead63b59d412c9795ab4cb138ede544e6ba06f7770",
+      "source_body_sha256": "602499aadd22eff7f71c37ee8876456d56811332bbd2a9c0457caf355c93055e",
+      "changed": false,
+      "corrections_or_unchanged_rationale": "임시 화장실 폐쇄와 대체 위치가 실제 방문 판단에 필요한 정보라 삭제하지 않음;짧은 문장형 화자의 위치부터 보겠다는 의견 유지",
+      "meaning_check": {
+        "supported_facts": [
+          "canopypicnicsitesgrass",
+          "planetariumwashroomsclosed",
+          "portablewashroomsnorthatWoodcroftplayground"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 21,
+      "author_id": "10000000-0000-0000-0000-000000000129",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "f9c8ba0117f6cef57b806e06364cc6803122c03cd039a238bf2816289f808851",
+      "final_body_sha256": "f18eff21134b3928171b207a9a8bb09f8f1e6eb1ca0cd321e63f2c58f0f807ed",
+      "source_body_sha256": "bf1b85c19a56a3d7f5fc825a4b1e4758c15923df8cba9588c841f365dd508f5e",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "옛기사를현재소식으로읽지않겠다는면책삭제;2009년기록범위와반려동물관심화자의읽기선호유지;같은도시첫단어반복을피하도록이용목적부터시작",
+      "meaning_check": {
+        "supported_facts": [
+          "ebooks",
+          "science/nature/culture/archaeology/space",
+          "magazine2009present",
+          "archivesnotcurrentnews"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 22,
+      "author_id": "10000000-0000-0000-0000-000000000130",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "8bb36eead50aee0145664c090ec646e1d458ffe6165e405b3961f30dc25efeab",
+      "final_body_sha256": "36a2dc29a6901ef297fd94b9938e6f64d243d60f5ef26f5efc960051a2cc96d8",
+      "source_body_sha256": "1900f120b506de453f156a884675c20ac91f033d5e07c9a33d4188353d2ce139",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "실제새소리를들었다는경험암시와반복의향마무리를제거;확인된사진영상음성·서식자료보존;같은도시첫단어반복을피하도록이용목적부터시작;기관명은한글로유지하고자료제품명은공식Birds of the World철자로표기",
+      "meaning_check": {
+        "supported_facts": [
+          "CornellLabdatabase",
+          "imagesvideoaudio",
+          "habitat/behaviour",
+          "noactualsighting"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 23,
+      "author_id": "10000000-0000-0000-0000-000000000133",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "bb39adee489c31c1cf607493381d14115e33e4b0d9be2e88511066a65c8ab719",
+      "final_body_sha256": "ca3a180740299f7568f7234b8c1697eaa4f59ee031e2bb9fb3f8399d68491eea",
+      "source_body_sha256": "4b1b3f8a8ff90f2caad99dfb70cef0bba552a16f64930a7b2660cc5cf106c122",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "취업보장을주장하지않은원고에붙은형식적부정문제거;도구의실제용도와지원별내용수정의견연결;같은도시첫단어반복을피하도록이용목적부터시작",
+      "meaning_check": {
+        "supported_facts": [
+          "online resumebuilder3steps",
+          "startingpoint",
+          "nojoboutcomepromise"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 24,
+      "author_id": "10000000-0000-0000-0000-000000000131",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "2dd02c8999dbca24a5fc7989a752c2f760fb98eaaf74fbda103959f6690f407d",
+      "final_body_sha256": "52262c1b5a008047662d1fca03c89488763651b2bcdb0c643c290d78b2915f61",
+      "source_body_sha256": "38a32ac5f1b7687fd93b68d97aae268ee596bf4b1e7a2a5b293db1ed81ec3690",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "리뷰가필요한물건을정해주지않는다는당연한면책제거;짧은문장형화자의실속있는구매판단의견으로마무리;같은도시첫단어반복을피하도록이용목적부터시작",
+      "meaning_check": {
+        "supported_facts": [
+          "productreviewsrecommendations electronicsappliancescarsbabykids",
+          "noinventedtestresults"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 25,
+      "author_id": "10000000-0000-0000-0000-000000000137",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "bb77498750daac2f8dda9879b1ccbff64a71e4412abb802e9c46a692f27f0d33",
+      "final_body_sha256": "0cf9326b4d304c91dd87c8c2b638f9d0ea75ed08a263162fe8163ca268110c96",
+      "source_body_sha256": "63854ed37e7b1b24fa3180ce5cda79e776e3a59ed05bf91de10b801c80154bd4",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "같은도시다섯원고의기관명첫단어반복을덜고고정화자의관심과실제이용목적부터시작;핵심사실·시간·숫자·이용범위보존",
+      "meaning_check": {
+        "supported_facts": [
+          "AlbertaK12livetutors2pm11pmdaily",
+          "24hourwritinglab",
+          "adultresumecoverletter"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 26,
+      "author_id": "10000000-0000-0000-0000-000000000065",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "f46fe3c60fe590634b572b4be443f07af3b7bac28dadbbf42ad4b7c42f166d53",
+      "final_body_sha256": "ac57b2614f36d27c81770a3a56a2a337ed8f8de8e7756ab34d20403888c828da",
+      "source_body_sha256": "be9c7aecdab7c5db5394efd278303fb2804e416eaa146e61a1723760be221f28",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "짧은문장중심·조심스러운고정화자에맞춰긴첫단락분리;부모대여금·이자·생활비면제·조건변경·미해결보존",
+      "meaning_check": {
+        "supported_facts": [
+          "27세 여성이 부모와 거주하며 집 마련에 청년도약계좌2천만원을 해지해 보탬",
+          "부모가 이자를 더해 반환하고 생활비는 받지 않기로 약속",
+          "1년 뒤 성인이니 생활비를 보태라고 요구;반환·합의 결말 없음"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 27,
+      "author_id": "10000000-0000-0000-0000-000000000080",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "5323e041e1d449b7e761fc4a07fe6e7636afb26078b94c6d68cea969ea03799e",
+      "final_body_sha256": "7d8fda3726826189897efd81f00ecc82333b22b22c9c536b61ebf2b923b14aa5",
+      "source_body_sha256": "67be969840bce038775e76a0c00b5c81be8d304daa977cfb26991314e687fcd4",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "중복대출우선설명·돌려말하기를줄여직설적화자에맞춤;원문없는몰래약속·사전동의부재는단정하지않음",
+      "meaning_check": {
+        "supported_facts": [
+          "원문 화자의 언니가 형부 성과급에서 신혼집 전세자금을 보태기로 약속",
+          "형부는 자기들 대출상환이 우선이라며 지원하지 않음",
+          "원문 화자가 약속을 지키지 않는 이유와 사기인지 질문;당사자 합의·송금 결과 없음"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 28,
+      "author_id": "cc3ea647-6ac1-5ffc-ba83-8d4724d2e0f1",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "15156b759f9a969de24db54ab3f75e7109c65e6e553cdad2670dac957f0b1d43",
+      "final_body_sha256": "72d027b7511b2c882b1fca875262edfab570019f27fec3da811c1647b461b5f6",
+      "source_body_sha256": "f282a7d99f61739227a5327e69e650d0b375a4f3bc1c9b0a98484c2b5acd8f00",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "어른의편가르기대조를아이의구체적잠자리이유로바꾸고마지막문장을덜정돈된감정으로교정;아동가족배경·부부인정·부모따라말하기맥락보존;원문의아이무례발언과엄마가이미따로교정했다는반대맥락복원;부모편가르기로만단순화하지않음",
+      "meaning_check": {
+        "supported_facts": [
+          "원문은4·6세자녀둘의엄마;첫째가친정에서자기를선호",
+          "가족이함께자고푹신한침구가좋다는아이설명;시댁은엄마가부추긴탓이라주장",
+          "아이가외할머니의소중한딸쉬라는말을따라엄마주방일을말림;시부모가다시탓함",
+          "원문배우자는아내가시댁뒷담화하지않는점을인정;해결결말없음",
+          "아이가할아버지에게씻으라며무례하게말했고엄마는따로타일렀음;시댁의불만을수면선호만으로단순화하면안됨"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 29,
+      "author_id": "10000000-0000-0000-0000-000000000118",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "fcfa5cada3218c87f092395cf8731bf5f734205d5abdf46225f495dad78345a9",
+      "final_body_sha256": "36b6bcae0b581bd10f2a6feb349f4a05f086ac48c27f04a5e1e8c8038938f6a9",
+      "source_body_sha256": "08302466af9c391c4b6f05a0abfb1e4292120152a238ae7f3c594a1809917490",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "비슷한길이4문단을대화흐름에맞춘3문단으로조정;양가맥락·맏이체면·기억부인·침묵·미해결·신중한말투유지",
+      "meaning_check": {
+        "supported_facts": [
+          "원문기혼19년맞벌이자녀2명;남편은시댁사촌축의금30만원요구하고친정조카는10만원주장",
+          "장남체면을이유로들고과거말은기억못한다함;양가기준을맞추자는요구에시댁과친정이다르다며침묵",
+          "부모용돈·칠순여행에도차이를제시;후속합의없음"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    },
+    {
+      "ord": 30,
+      "author_id": "10000000-0000-0000-0000-000000000137",
+      "same_author_before_after": true,
+      "same_writer": true,
+      "method": "manual_same_agent_skill_review",
+      "language": "ko",
+      "profile": "default",
+      "tone": "casual",
+      "tone_source": "user",
+      "tone_evidence": [
+        "편한 한국어 반말 명시"
+      ],
+      "tone_confidence": "high",
+      "pre_patina_body_sha256": "ca6eb9b91319675cc4118a40f2e3dfaa3492dcdb0d71be38e3d2e74f554a5534",
+      "final_body_sha256": "d7cc880fbe2006680164b999919ffb7c511be9a3318002876c3cc7e68b674e5d",
+      "source_body_sha256": "8ea80f82ae1e55ae5fa45e064f7b66013db8b93b5c783abff19a27ddab380103",
+      "changed": true,
+      "corrections_or_unchanged_rationale": "공식적인재합의당위문을불편함을구체적으로말하는화자의직접반응으로수정;지원약속변경·남편거부·아이셋설정·행사결말미확인보존",
+      "meaning_check": {
+        "supported_facts": [
+          "원문은첫아이첫돌가족식사계획;시댁이돈내준다며큰잔치요구",
+          "예약금요청에도돈미지급후시댁이장소선정·친정명단요구",
+          "300명절반을부부친정이채우고식대나눠내라는요구로변경",
+          "남편이이전결혼식비용약속변경도언급하며큰잔치거부;후속전화는받지않음;최종행사결과없음"
+        ],
+        "names_numbers_negation": "최종본문과 원자료를 대조;수치·장소·금지·예외 유지, 삭제한 비필수 정보는 교정 기록에 명시",
+        "family_voice": "같은 저장 author_id·직업·가족·말투 유지;새 방문·구매·반려동물 소유 주장 없음",
+        "result": "manual_review_complete"
+      },
+      "automated_score": null
+    }
+  ],
+  "stylometry_evidence_path": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/f16ec99d-7bff-4dad-bc4f-a49b5be932a0/writer/patina-stylometry-advisory.json",
+  "stylometry_interpretation": "짧은 문단은 CV가 낮게 나오므로 자동 저자 판정에 사용하지 않음. 실제 문장과 같은 도시 묶음을 읽어 첫 단어·끝맺음 반복을 교정했고 고정 화자의 짧은 문장이나 필요한 사실 설명은 보존. 수치 점수·자동 Patina 성공은 주장하지 않음."
+}

@@ -1,0 +1,9 @@
+{
+  "ord": 16,
+  "url": "https://www.edmonton.ca/ets/accessibility",
+  "http_status": "200",
+  "verified_at_utc": "2026-10-07T17:08:08.566406+00:00",
+  "sha256": "0c06afa7272e99fba459d17b59b2cdc22081c99116632e8c35d670c55cf933ed",
+  "text_file": "sources/16-accessibility.txt",
+  "reason": "Keep topic aligned with the assigned author’s existing transport posts."
+}

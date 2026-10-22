@@ -1,0 +1,23 @@
+{
+  "payload_and_staged_exact": true,
+  "query_comparison": [
+    {
+      "ascii_envelope": false,
+      "rows": 25,
+      "matched_ids": 25,
+      "matched_bodies": 24
+    },
+    {
+      "ascii_envelope": true,
+      "rows": 25,
+      "matched_ids": 25,
+      "matched_bodies": 24
+    }
+  ],
+  "confirmed_body_corruption": {
+    "ord": 20,
+    "expected": "줄",
+    "actual": "���"
+  },
+  "repair_method": "ASCII JSON request envelope; exact ID/author/title/body/time guards"
+}

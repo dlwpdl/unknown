@@ -1,0 +1,229 @@
+{
+  "posts": [
+    {
+      "ord": 1,
+      "city_id": "vancouver",
+      "author_nickname": "게스타운커피",
+      "tag_slug": "life",
+      "title": "MOA에서 로브 작품 전시가 열리고 있네",
+      "body": "박물관을 옛 물건 모아둔 곳으로만 생각했음\nMOA에선 헤이즐 윌슨의 로브 작품을 다루는 I Use My Haida Eyes가 열리고 있네\n(전시 이름도 안 보고 취향 아닐 거라 넘길 뻔함)\n사진보다 작품 앞에서 보고 싶은데, 아직 갈 날은 못 정했어",
+      "source": "https://moa.ubc.ca/visit/"
+    },
+    {
+      "ord": 2,
+      "city_id": "vancouver",
+      "author_nickname": "로히드환승",
+      "tag_slug": "education",
+      "title": "비티 박물관, 전시랑 연구가 같이 있는 곳임",
+      "body": "비티는 자연사 박물관이면서 실제 연구용 표본을 보관하는 곳임\n오디오 투어도 있으니 표본 구경 좋아하면 얘기해 줘, 난 여기부터 볼래",
+      "source": "https://beatymuseum.ubc.ca/visit/"
+    },
+    {
+      "ord": 3,
+      "city_id": "vancouver",
+      "author_nickname": "코퀴틀람터줏대감",
+      "tag_slug": "life",
+      "title": "UBC 식물원이랑 니토베 정원은 다른 공간이네",
+      "body": "꽃구경만 떠올리던 때랑 달리 요즘은 정원 생김새부터 보게 됨\nUBC 식물원이랑 니토베 기념정원은 따로 있는 공간이야\n이름부터 한 덩어리로 외운 내 머리만 합동 운영 중이었네 ㅋㅋ 다음엔 하나씩 보자",
+      "source": "https://botanicalgarden.ubc.ca/visit/"
+    },
+    {
+      "ord": 4,
+      "city_id": "vancouver",
+      "author_nickname": "도서관단골",
+      "tag_slug": "education",
+      "title": "Iced In은 북극에서 살아온 지식을 다루는 전시네",
+      "body": "해양박물관이면 예전엔 배 모형부터 떠올렸는데\n지금 열리는 Iced In에는 북극의 생활과 이동을 담은 물건과 기록이 모여 있음\n사냥이나 길 찾기에 쓰던 도구를 이누이트의 지식과 함께 다룬대\n배 얘기보다 그 도구부터 보고 싶긴 한데, 어느 쪽을 먼저 볼지는 좀 더 생각 중",
+      "source": "https://vanmaritime.com/explore/exhibits/iced-in/"
+    },
+    {
+      "ord": 5,
+      "city_id": "vancouver",
+      "author_nickname": "시장바구니",
+      "tag_slug": "life",
+      "title": "버스에서 큰 가방은 어디에 두는 게 편해?",
+      "body": "장바구니를 들고 버스 탈 때 가방 자리부터 생각하게 됨\n좌석은 짐보다 사람이 우선이고 통로나 출입문을 막지 않는 게 기본이더라\n큰 가방 있는 날엔 무릎 위랑 발 앞 중 어디가 덜 불편했어?",
+      "source": "https://www.translink.ca/rider-guide/etiquette-on-transit"
+    },
+    {
+      "ord": 6,
+      "city_id": "toronto",
+      "author_nickname": "노스욕산책러",
+      "tag_slug": "life",
+      "title": "강아지 산책도 뛰는 공간이 따로 있구나",
+      "body": "강아지랑 걷는 사람 입장에선 길이 넓은지만 보는 게 아닐 것 같아\n토론토엔 목줄 없이 뛰고 다른 개와 어울릴 수 있는 지정 공간이 따로 있네\n같이 걷는 동네 얘기할 때 이런 공간도 묶어서 보면 좋을 듯",
+      "source": "https://www.toronto.ca/community-people/animals-pets/pets-in-the-city/dogs-in-the-city/"
+    },
+    {
+      "ord": 7,
+      "city_id": "toronto",
+      "author_nickname": "레슬리빌커피",
+      "tag_slug": "life",
+      "title": "토론토 공공미술 지도에 조각이랑 벽화가 같이 있네",
+      "body": "거리 미술 찾아볼 때 나눠서 보니 덜 헷갈림\n1) 시가 관리하는 공공미술과 기념물\n2) StreetARToronto의 거리 미술\n3) 민간 소유지만 공공을 위해 놓인 작품\n공공미술 지도에 위치가 모여 있으니 동네별로 하나씩 이야기하기 좋겠어",
+      "source": "https://www.toronto.ca/explore-enjoy/history-art-culture/public-art/"
+    },
+    {
+      "ord": 8,
+      "city_id": "toronto",
+      "author_nickname": "본시티산책",
+      "tag_slug": "life",
+      "title": "앨런가든 온실, 유리 지붕부터 눈이 가네",
+      "body": "이사 와서 식물 보는 곳부터 낯선데 앨런가든엔 유리 돔 팜하우스가 있네\n추위 생각만 하다 온실을 빼먹음 ㅋㅋ 일단 마음 가는 곳으로 적어둘까 싶어",
+      "source": "https://www.toronto.ca/explore-enjoy/parks-recreation/places-spaces/beaches-gardens-attractions/gardens-and-horticulture/conservatories/"
+    },
+    {
+      "ord": 9,
+      "city_id": "toronto",
+      "author_nickname": "브램턴출근",
+      "tag_slug": "travel",
+      "title": "리버데일 팜도 시내 나들이 후보에 넣었어",
+      "body": "리버데일 팜을 처음 알았는데 동물을 볼 수 있는 농장이네\n새 동네 나들이는 늘 쇼핑몰부터 생각해서 조금 아쉬웠거든\n이번엔 농장 쪽도 후보에 넣었어, 목적지가 바뀌니까 좀 설렌다",
+      "source": "https://www.toronto.ca/explore-enjoy/parks-recreation/places-spaces/beaches-gardens-attractions/zoos-farms/"
+    },
+    {
+      "ord": 10,
+      "city_id": "toronto",
+      "author_nickname": "환승하는수달",
+      "tag_slug": "life",
+      "title": "지금 사는 동네의 옛 사진을 찾아보고 싶어",
+      "body": "동네를 아직 길 이름으로만 외우는 중인데\n토론토 기록보관소에 온라인으로 볼 수 있는 옛 사진이 있네\n항공사진도 있어서 지금 지도랑 겹쳐 생각해보면 조금 덜 낯설 것 같아\n어디부터 봐야 할지 몰라서 우선 집 근처 이름만 적어뒀어",
+      "source": "https://www.toronto.ca/city-government/accountability-operations-customer-service/access-city-information-or-records/city-of-toronto-archives/whats-in-the-archives/photographs/"
+    },
+    {
+      "ord": 11,
+      "city_id": "montreal",
+      "author_nickname": "장탈롱바구니",
+      "tag_slug": "life",
+      "title": "라퐁텐 공원의 긴 풀에도 이유가 있었네",
+      "body": "어릴 땐 공원 풀이 짧아야 잘 돌보는 건 줄 알았는데 라퐁텐엔 생물다양성을 위해 길게 두는 구역도 있대\n이유 알고 보니 좀 다르게 느껴짐, 다음 산책엔 같이 풀 쪽도 보자",
+      "source": "https://montreal.ca/en/places/parc-la-fontaine"
+    },
+    {
+      "ord": 12,
+      "city_id": "montreal",
+      "author_nickname": "정원그림자",
+      "tag_slug": "life",
+      "title": "테니스 처음 배우는 쪽도 찾아보는 중",
+      "body": "테니스는 이미 치는 사람만 코트에 가는 줄 알았는데 입문 수업도 있네\n추운 계절엔 일부 시립 공원과 스포츠센터에 실내 코트도 있대\n나는 기초부터 배우는 게 맞을 듯한데, 처음엔 어떤 동작이 제일 어려웠어?",
+      "source": "https://montreal.ca/en/topics/tennis"
+    },
+    {
+      "ord": 13,
+      "city_id": "montreal",
+      "author_nickname": "몽루아얄잎새",
+      "tag_slug": "life",
+      "title": "몬트리올 소음 규정은 구마다 다르네",
+      "body": "소음 규정은 몬트리올 전체가 똑같은 게 아니네\n공사나 조경 작업, 히트펌프 같은 설비 소음도 구에서 정하는 규정에 들어감\n어느 동네인지 빼고 시간만 비교하면 얘기가 어긋나겠어\n내가 궁금한 건 생활 소음 쪽이야, 너희 동네는 어떤 소리가 제일 신경 쓰여?",
+      "source": "https://montreal.ca/en/topics/noise"
+    },
+    {
+      "ord": 14,
+      "city_id": "montreal",
+      "author_nickname": "메트로한칸",
+      "tag_slug": "life",
+      "title": "프레데릭백 공원, 매립지였던 땅이래",
+      "body": "공원 사진 속 하얀 구들이 눈에 남아서 찾아봤어\n프레데릭백 공원은 채석장이었다가 매립지로 쓰였던 땅이래\n지금은 산책이나 달리기, 자전거를 타는 공원으로 바뀌었고\n풍경만 보고는 전혀 몰랐을 것 같음, 직접 걸을지는 아직 생각 중이야",
+      "source": "https://montreal.ca/en/places/parc-frederic-back"
+    },
+    {
+      "ord": 15,
+      "city_id": "montreal",
+      "author_nickname": "올드포트바람",
+      "tag_slug": "life",
+      "title": "래그위드랑 포이즌아이비를 같은 풀로 생각했음",
+      "body": "풀은 예전엔 이름도 모르고 지나쳤는데 래그위드랑 포이즌아이비는 구별해야 하는 식물이네\n래그위드는 꽃가루가 알레르기를 일으킬 수 있대\n이름부터 섞어 외운 것 같아서 이번엔 생김새를 따로 익혀보려고",
+      "source": "https://montreal.ca/en/eliminating-ragweed"
+    },
+    {
+      "ord": 16,
+      "city_id": "edmonton",
+      "author_nickname": "블래치포드",
+      "tag_slug": "life",
+      "title": "퀸엘리자베스 공원 안에 원주민 미술 공간이 있네",
+      "body": "산책 코스 사진에 조각이 보여서 눈이 갔음\n퀸엘리자베스 공원의 ÎNÎW River Lot 11∞에는 원주민 작가들의 작품이 모여 있네\n공원 이름만 외우고 다 안다고 생각한 나부터 정정함 ㅋㅋ 다음엔 작품도 볼래",
+      "source": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/queen-elizabeth-park"
+    },
+    {
+      "ord": 17,
+      "city_id": "edmonton",
+      "author_nickname": "화이트애비뉴",
+      "tag_slug": "life",
+      "title": "EPL에서 클래식 음악도 들을 수 있었음",
+      "body": "클래식은 제목 못 외워서 맨날 아는 곡만 돌려 듣는 중 ㅋㅋ\nEPL 온라인 자료에 Naxos Music Library가 있네\n클래식이랑 오페라 음악뿐 아니라 학습 자료도 같이 있음\n이번엔 곡 설명까지 읽어볼래, 입문할 때 좋았던 곡 있으면 하나씩 던져줘",
+      "source": "https://www.epl.ca/resources/"
+    },
+    {
+      "ord": 18,
+      "city_id": "edmonton",
+      "author_nickname": "U오브A도서관",
+      "tag_slug": "life",
+      "title": "남는 공예 재료, Reuse Centre 품목부터 봄",
+      "body": "재료를 나눠 쓰는 사람들은 남는 단추도 따로 모을 것 같아서 목록을 봤어\n1) Reuse Centre는 재사용할 물건을 주고받는 곳\n2) 공예 재료뿐 아니라 문구류와 포장재도 품목에 들어 있음\n접수 품목과 조건은 바뀔 수 있으니 가져가기 전에 다시 확인해야 해\n나는 어떤 재료부터 모을지 아직 정하지 못했어",
+      "source": "https://www.edmonton.ca/programs_services/garbage_waste/reuse-centre"
+    },
+    {
+      "ord": 19,
+      "city_id": "edmonton",
+      "author_nickname": "K데이즈",
+      "tag_slug": "life",
+      "title": "테니스 코트에선 기다리는 사람도 신경 쓰이겠네",
+      "body": "라켓 잡은 사람보다 밖에서 기다리는 사람이 먼저 눈에 들어올 것 같음\n시립 테니스 코트는 다른 사람이 기다리면 경기 시간을 제한하는 규칙이 있네\n공 주우러 다니다 시간 다 쓸 것 같은데 ㅋㅋ 초보 둘이 치면 랠리가 좀 이어져?",
+      "source": "https://www.edmonton.ca/activities_parks_recreation/tennis-courts"
+    },
+    {
+      "ord": 20,
+      "city_id": "edmonton",
+      "author_nickname": "리버밸리러너",
+      "tag_slug": "life",
+      "title": "런들 공원은 실내 공간도 같이 있네",
+      "body": "런들 공원은 아직 낯선데 안에 ACT 수영·레크리에이션 센터도 있네\n밖에서 걷는 곳만 있는 줄 알았어서 실내 운동 공간까지 있다는 게 반갑다",
+      "source": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/rundle-park"
+    },
+    {
+      "ord": 21,
+      "city_id": "calgary",
+      "author_nickname": "17에비뉴커피",
+      "tag_slug": "life",
+      "title": "쇼핑센터 안 정원이라니 아직 신기함",
+      "body": "캘거리 지리를 처음 익히는 중인데 데보니언 가든은 CORE 쇼핑센터 안에 있네\n식물만 있는 게 아니라 분수랑 물고기 연못, 놀이터도 있음\n살 것 없이 쇼핑센터 가는 건 좀 어색할 줄 알았는데\n여긴 정원 자체를 보러 가면 되겠어, 다음 나들이 후보로 적어둠",
+      "source": "https://www.calgary.ca/parks/devonian-gardens.html"
+    },
+    {
+      "ord": 22,
+      "city_id": "calgary",
+      "author_nickname": "보우강변산책",
+      "tag_slug": "life",
+      "title": "잉글우드 보호구역은 철새가 쉬는 곳이네",
+      "body": "한때는 새 보러 가는 곳이면 그냥 큰 공원인 줄 알았음\n잉글우드 버드 생추어리는 철새가 쉬어가는 보호구역이야\n연못 수질이랑 야생동물 서식 환경을 개선하는 복원 사업도 했고\n이제 산책 배경으로만 보진 않을래, 새 이름 암기장은 아직 첫 장임 ㅋㅋ",
+      "source": "https://www.calgary.ca/parks/inglewood-bird-sanctuary.html"
+    },
+    {
+      "ord": 23,
+      "city_id": "calgary",
+      "author_nickname": "글렌모어공원",
+      "tag_slug": "life",
+      "title": "반려동물 입양, 시 보호소도 있구나",
+      "body": "입양 알아보는 사람은 어느 보호소부터 보는지 궁금해졌어\n여긴 처음이라 몰랐는데 시 Animal Services Centre도 고양이랑 개 입양을 맡고 있네\n관심 있는 사람끼리 얘기해보고 싶긴 한데, 나는 아직 돌볼 준비부터 생각 중이야",
+      "source": "https://www.calgary.ca/pets/adoption.html"
+    },
+    {
+      "ord": 24,
+      "city_id": "calgary",
+      "author_nickname": "피쉬크릭주말",
+      "tag_slug": "life",
+      "title": "비상계획에 반려동물도 같이 들어가네",
+      "body": "비상가방 얘기에서 사람 짐만 떠올리기 쉬운데 캘거리 비상대비 항목엔 반려동물도 들어감\n가방보다 생각의 빈칸이 더 큰 듯 ㅋㅋ 다들 준비한 얘기 좀 듣고 내 쪽도 정리해볼까 함",
+      "source": "https://www.calgary.ca/emergencies/preparedness.html"
+    },
+    {
+      "ord": 25,
+      "city_id": "calgary",
+      "author_nickname": "C트레인통근",
+      "tag_slug": "transport",
+      "title": "캘거리 교통카메라는 녹화 영상이 아니네",
+      "body": "교차로 카메라면 나중에 영상도 볼 수 있는 건 줄 알았어\n캘거리 교통상황 카메라는 현재 도로 모습을 보여주지만 영상을 녹화하진 않는대\n차로 나가는 날엔 이런 화면이 도움이 될 것 같기도 한데, 자주 보는 사람 있어?",
+      "source": "https://www.calgary.ca/roads/conditions/traffic-cameras.html"
+    }
+  ]
+}

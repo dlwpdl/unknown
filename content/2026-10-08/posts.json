@@ -1,0 +1,229 @@
+{
+  "posts": [
+    {
+      "ord": 1,
+      "city_id": "vancouver",
+      "author_nickname": "퀸엘리자베스공원",
+      "tag_slug": "life",
+      "title": "북서항로를 건넌 배가 밴쿠버 박물관에 남아 있네",
+      "body": "예전엔 해양박물관이면 배 모형부터 떠올렸는데, 밴쿠버엔 실제 북서항로를 건넌 세인트로크호가 남아 있음\n배 안의 선실까지 볼 수 있는 곳이라니 좀 끌리긴 하는데, 어느 공간부터 들여다볼지는 아직 생각 중",
+      "source": "https://vanmaritime.com/explore/exhibits/st-roch-national-historic-site/"
+    },
+    {
+      "ord": 2,
+      "city_id": "vancouver",
+      "author_nickname": "버나비호수",
+      "tag_slug": "life",
+      "title": "차이나타운 중국정원이랑 옆 공원은 다른 공간임",
+      "body": "차이나타운 정원 이름이 비슷해서 내 머릿속에선 하나로 합쳐놨음 ㅋㅋ 두 가지 적어둠\n1) 닥터쑨얏센 중국정원은 명나라 양식의 정원형 박물관이야\n2) 옆의 닥터쑨얏센 공원은 시 공원위원회가 관리하는 별도 공간이라, 이번엔 구분해서 기억해두면 덜 헷갈릴 듯",
+      "source": "https://vancouverchinesegarden.com/about/"
+    },
+    {
+      "ord": 3,
+      "city_id": "vancouver",
+      "author_nickname": "예일타운런치",
+      "tag_slug": "life",
+      "title": "MOA 그레이트홀엔 커다란 기둥 조각도 있네",
+      "body": "조각 앞에서 오래 멈추는 사람 마음이 조금은 이해될 것 같아서 MOA 그레이트홀 처음 알아봄\n큰 기둥 조각과 집 기둥, 조각상이 있고 현대 작가의 작품도 함께 놓여 있네\n난 작품 이름만 외우기보다 같은 공간에 놓인 옛 작업과 지금 작업부터 나란히 볼 거야",
+      "source": "https://moa.ubc.ca/permanent-exhibitions/"
+    },
+    {
+      "ord": 4,
+      "city_id": "vancouver",
+      "author_nickname": "도서관단골",
+      "tag_slug": "education",
+      "title": "UBC 흰수염고래 뼈, 다른 해안에서 온 표본이었네",
+      "body": "책에서는 고래를 그림으로 먼저 보곤 했는데\nUBC 비티생물다양성박물관엔 흰수염고래 골격이 전시돼 있네\n프린스에드워드아일랜드 해안에서 발견된 고래가 밴쿠버까지 온 거야\n표본을 옮기고 전시하기까지의 과정을 담은 다큐멘터리도 있고\n나는 동물 이름보다 이 표본이 여기 남게 된 이야기부터 천천히 알아볼까 해",
+      "source": "https://beatymuseum.ubc.ca/exhibitions/permanent-exhibitions/blue-whale-display/blue-whale-project/"
+    },
+    {
+      "ord": 5,
+      "city_id": "vancouver",
+      "author_nickname": "스카이트레인통근",
+      "tag_slug": "transport",
+      "title": "웨스트코스트익스프레스는 아침과 저녁 방향이 다름",
+      "body": "출근하는 사람들 동선은 같은 열차라도 시간대 따라 방향이 완전히 다르네\n웨스트코스트익스프레스는 밴쿠버 다운타운과 미션시티를 잇는 통근열차야\n평일 아침엔 밴쿠버 쪽, 오후·저녁엔 미션 쪽으로만 가는 구조고\n운행 안내는 바뀔 수 있으니 실제 타기 전엔 다시 확인해\n난 지도에 선 하나 긋는 데서 끝내지 않고 방향까지 같이 넣을 거야",
+      "source": "https://www.translink.ca/schedules-and-maps/west-coast-express"
+    },
+    {
+      "ord": 6,
+      "city_id": "toronto",
+      "author_nickname": "토론토학부모",
+      "tag_slug": "education",
+      "title": "리버데일농장 외양간은 언덕을 이용해 지은 건물이래",
+      "body": "외양간도 그냥 평지에 세운 건물인 줄 알았는데, 리버데일농장의 프랜시반은 언덕을 이용한 구조야\n아래층은 동물 공간이고 위층은 건초 저장 공간인데 둘 다 땅에서 드나들 수 있음, 내 건물 상상력이 너무 납작했네 ㅋㅋ",
+      "source": "https://riverdalefarmtoronto.ca/explore-the-farm/"
+    },
+    {
+      "ord": 7,
+      "city_id": "toronto",
+      "author_nickname": "서비스온타리오",
+      "tag_slug": "life",
+      "title": "슈가비치 분홍 파라솔 자리, 원래는 주차장이었대",
+      "body": "물가에서 쉬는 사람들 사진 보면 모래는 원래 있던 줄 알았음\n토론토 슈가비치는 옛 산업 지역의 지상 주차장을 바꾼 공간이고, 분홍 파라솔이 특징이네\n이름만 보고 수영장처럼 생각한 내 상상은 잠깐 접고, 같이 걷게 되면 그 자리의 옛 모습부터 얘기해볼까 해",
+      "source": "https://www.waterfrontoronto.ca/our-projects/canadas-sugar-beach"
+    },
+    {
+      "ord": 8,
+      "city_id": "toronto",
+      "author_nickname": "브램턴출근",
+      "tag_slug": "life",
+      "title": "토미톰슨파크, 도시의 잔해가 쌓인 땅에서 숲이 됐네",
+      "body": "흙이랑 나무가 있는 곳이면 원래부터 자연 땅인 줄 알았는데 동네 알아갈수록 좀 놀람\n토미톰슨파크는 건설 현장의 벽돌·콘크리트 잔해와 준설한 모래로 만든 땅에서 시작됐네\n그 뒤 식물과 동물의 서식지가 자리 잡았다는 게 신기해서, 이번엔 풍경이 만들어진 과정도 같이 기억하려고",
+      "source": "https://tommythompsonpark.ca/about/"
+    },
+    {
+      "ord": 9,
+      "city_id": "toronto",
+      "author_nickname": "토론토도서관",
+      "tag_slug": "education",
+      "title": "TPL 오즈번 컬렉션은 어린이책의 흔적까지 모아두네",
+      "body": "어린이책을 다시 펼치면 내용보다 그때의 기분이 먼저 떠오를 것 같아\nTPL 오즈번 컬렉션은 오래되고 특별한 어린이책을 모아둔 연구 컬렉션이네\n책뿐 아니라 관련 그림·장난감·게임과 기록물도 함께 다루고\n나는 읽을 책부터 정하기보단 어떤 흔적이 남아 있는지 천천히 알아보고 싶은데\n어릴 때 읽던 책은 줄거리랑 그림 중 뭐가 먼저 생각나?",
+      "source": "https://tpl.ca/downloads-ebooks/specialized-collections/osborne/"
+    },
+    {
+      "ord": 10,
+      "city_id": "toronto",
+      "author_nickname": "벽돌골목빛",
+      "tag_slug": "life",
+      "title": "코크타운커먼은 홍수 막는 지형 위에 놓인 공원이네",
+      "body": "공원도 쉬는 장소 말고 하는 일이 더 있다는 게 좀 든든해서 적어봄\n1) 코크타운커먼은 홍수를 막는 지형 위에 만든 공원이야\n2) 안의 습지는 빗물 관리에 쓰이면서 새·곤충·개구리의 서식지가 되고\n3) 잔디 공간이랑 산책길도 이 지형에 맞춰 설계된 거네\n난 처음부터 코스를 크게 잡기보다 이런 역할이 보이는 자리 하나부터 골라볼 거야",
+      "source": "https://www.waterfrontoronto.ca/our-projects/corktown-common"
+    },
+    {
+      "ord": 11,
+      "city_id": "montreal",
+      "author_nickname": "우편번호수첩",
+      "tag_slug": "life",
+      "title": "레드패스박물관은 암석이랑 동물 표본을 같이 모아두네",
+      "body": "자연사 구경하는 사람은 큰 동물 뼈만 볼 줄 알았는데, 맥길 레드패스박물관 컬렉션엔 고생물·암석·광물·동물 자료가 나뉘어 있네\n돌멩이 앞에서도 할 얘기가 이렇게 많다니 좀 신남, 내가 그냥 돌이라고 부른 것들한테 미안해질 듯 ㅋㅋ",
+      "source": "https://www.mcgill.ca/redpath/collections"
+    },
+    {
+      "ord": 12,
+      "city_id": "montreal",
+      "author_nickname": "장탈롱바구니",
+      "tag_slug": "life",
+      "title": "메종생가브리엘엔 옛 농가와 정착의 기억이 남아 있네",
+      "body": "오래된 집을 보면 예전엔 건물 모양부터 생각했는데, 메종생가브리엘은 농가이자 왕의 딸들이 머물던 역사를 간직한 곳이네\n마르그리트부르주아가 땅을 농장으로 키워 공동체를 뒷받침했다니 좀 뭉클함, 다음엔 같이 건물에 남은 사람 이야기부터 알아보고 싶어",
+      "source": "https://maisonsaintgabriel.ca/en/about-the-museum/from-farm-to-museum/"
+    },
+    {
+      "ord": 13,
+      "city_id": "montreal",
+      "author_nickname": "올드포트바람",
+      "tag_slug": "life",
+      "title": "과학센터 파브리크는 틀린 시도도 재료가 되는 곳이네",
+      "body": "만들기 체험은 예전부터 정해진 모양을 따라 하는 것부터 떠올렸는데\n몬트리올 과학센터 파브리크는 도구와 재료로 기술 문제의 해결책을 직접 만드는 공간이네\n완성품보다 실험하는 과정과 실수에서 배우는 걸 앞에 두는 방식이라, 난 정답 찾기보다 시도하는 쪽부터 기억할래",
+      "source": "https://www.montrealsciencecentre.com/permanent-exhibition/fabrik2-creative-challenges"
+    },
+    {
+      "ord": 14,
+      "city_id": "montreal",
+      "author_nickname": "불어책갈피",
+      "tag_slug": "transport",
+      "title": "REM은 운전자가 직접 모는 열차인 줄 알았음",
+      "body": "운전석부터 떠올린 내가 열차 상상을 너무 똑같이 했나 봄\n몬트리올 REM은 자동으로 운행하는 경전철 시스템이네\n브로사르·되몽타뉴·앙스아로름을 잇는 역들이 현재 운영 중이고\n메트로 노선 하나 외웠다고 끝날 일이 아니었음, 내 머릿속 지도는 아직 공사 중 ㅋㅋ\n나는 당장 전체를 외우기보다 익숙한 지명 하나부터 붙여볼까 해",
+      "source": "https://rem.info/en"
+    },
+    {
+      "ord": 15,
+      "city_id": "montreal",
+      "author_nickname": "몽루아얄잎새",
+      "tag_slug": "life",
+      "title": "몬트리올 과학센터 휴먼은 몸의 변화를 직접 살펴보는 전시야",
+      "body": "박물관에서 몸을 배우는 건 그림 설명 읽는 일만은 아니네\n몬트리올 과학센터 휴먼은 삶의 단계마다 몸이 어떻게 변하는지 다루는 전시야\n움직이고 만지고 자전거를 타는 활동이나 다른 골격과 비교하는 활동이 있고\n로봇 팔과 사람·기계의 연결을 살펴보는 쪽도 같이 놓여 있어\n몸을 배우는 체험이라면 움직임이랑 골격 중 어느 쪽이 더 궁금해?",
+      "source": "https://www.montrealsciencecentre.com/permanent-exhibition/human"
+    },
+    {
+      "ord": 16,
+      "city_id": "edmonton",
+      "author_nickname": "사우스게이트점심",
+      "tag_slug": "transport",
+      "title": "에드먼턴 LRT역은 버스 환승 공간과도 이어지네",
+      "body": "노선만 보는 것보다 역 주변 연결도 같이 알아두는 중임, 1) 에드먼턴 LRT 정류장·역은 시 안 여러 곳에 있고\n2) 여러 역이 트랜짓센터와 이어져 버스로 갈아탈 수 있으니, 나는 가까운 역 하나부터 살펴볼까 함",
+      "source": "https://www.edmonton.ca/ets/lrt-station-locations"
+    },
+    {
+      "ord": 17,
+      "city_id": "edmonton",
+      "author_nickname": "동물그림수첩",
+      "tag_slug": "life",
+      "title": "화이트머드파크엔 말이 다니는 지정 길도 있네",
+      "body": "강변 걷는 사람과 자전거 타는 사람만 떠올렸는데, 화이트머드파크엔 승마용으로 지정한 길도 있네\n예전엔 공원 길은 다 같은 줄 알았음, 내 산책 지도에 말 그림도 들어가야겠군 ㅋㅋ",
+      "source": "https://www.edmonton.ca/activities_parks_recreation/parks_rivervalley/whitemud-park"
+    },
+    {
+      "ord": 18,
+      "city_id": "edmonton",
+      "author_nickname": "제스퍼애비뉴",
+      "tag_slug": "life",
+      "title": "알버타항공박물관엔 비행기 복원 공간도 있어",
+      "body": "비행기 구경하는 사람은 완성된 기체만 보는 줄 알았던 내 생각이 좀 좁았음\n알버타항공박물관은 옛 전쟁 시기 격납고에 항공기를 전시하고 복원 공간도 두고 있네\n나는 기종 이름부터 외울지, 고쳐서 남기는 과정부터 알아볼지는 아직 못 골랐어",
+      "source": "https://albertaaviationmuseum.com/collection/aircraft-collection-restoration-area/"
+    },
+    {
+      "ord": 19,
+      "city_id": "edmonton",
+      "author_nickname": "에드먼튼겨울",
+      "tag_slug": "life",
+      "title": "EPL 링크드인러닝은 업무랑 창작을 배우는 영상 자료네",
+      "body": "배우고 싶은 건 있는데 뭘 먼저 볼지는 잘 안 잡히는 편임\nEPL의 링크드인러닝은 비즈니스·소프트웨어·기술·창작을 배우는 영상 자료라\n일에 쓸 거랑 취미로 볼 거 중 어디부터 시작할지는 좀 더 생각해보려 함",
+      "source": "https://www.epl.ca/resource/linkedin-learning/"
+    },
+    {
+      "ord": 20,
+      "city_id": "edmonton",
+      "author_nickname": "헨데이하이웨이",
+      "tag_slug": "travel",
+      "title": "밸리동물원 동물이 안 보이는 데도 이유가 있네",
+      "body": "동물원 구경하는 사람 쪽만 생각했는데 동물의 선택도 있네\n밸리동물원 안내를 처음 보니 동물이 실내와 바깥에서 머무는 시간을 스스로 고르게 해둔대\n따뜻한 날에도 추운 곳에 익숙한 동물은 시원한 실내를 더 좋아할 수 있고\n밖에서 눈에 안 들어온다고 빈 공간이라고 단정할 일은 아니었네\n다음에 같이 동물 얘기하면 보이는 모습만 말하진 않을래, 내 구경 욕심부터 조금 줄여야겠군 ㅋㅋ",
+      "source": "https://www.edmonton.ca/attractions_events/edmonton_valley_zoo/animals-at-the-zoo"
+    },
+    {
+      "ord": 21,
+      "city_id": "calgary",
+      "author_nickname": "노스힐장보기",
+      "tag_slug": "life",
+      "title": "카번파크 연못은 사람이 만든 물가였네",
+      "body": "카번파크 처음 알아보는데 보우강 옆에 사람이 만든 연못이 있고 새랑 야생동물의 서식지도 남겨둔 곳이네\n강과 연못을 나란히 보며 같이 걸으면 재밌을 듯한데, 어느 길부터 갈지는 아직 못 정했음",
+      "source": "https://www.calgary.ca/parks/carburn-park.html"
+    },
+    {
+      "ord": 22,
+      "city_id": "calgary",
+      "author_nickname": "프린스아일랜드",
+      "tag_slug": "education",
+      "title": "가솔린앨리박물관은 옛 주유기까지 전시함",
+      "body": "자동차 박물관이면 예전엔 차체만 떠올렸는데, 헤리티지파크 가솔린앨리엔 옛 차량뿐 아니라 주유기와 석유회사 간판도 있음\n차는 못 고르면서 박물관 후보만 자꾸 고르는 중 ㅋㅋ 나는 기계 모양부터 볼지 그 시절 이야기부터 볼지는 아직 못 정했어",
+      "source": "https://heritagepark.ca/exhibits/gasoline-alley-museum/"
+    },
+    {
+      "ord": 23,
+      "city_id": "calgary",
+      "author_nickname": "C트레인통근",
+      "tag_slug": "transport",
+      "title": "캘거리 역 안내도는 노선 전체 지도랑 따로 있네",
+      "body": "환승할 때 도시 전체 그림보다 역 하나가 어떻게 생겼는지 먼저 알고 싶은데\n캘거리트랜짓엔 LRT역·버스터미널·전체 노선 지도가 따로 모여 있네\n한 번에 다 보긴 복잡할 듯해서 아직 고르는 중인데, 처음 가는 역은 전체 노선도랑 역 안내도 중 뭘 먼저 봐?",
+      "source": "https://www.calgarytransit.com/rider-information/lrt-and-bus-station-maps.html"
+    },
+    {
+      "ord": 24,
+      "city_id": "calgary",
+      "author_nickname": "컨페더레이션공원",
+      "tag_slug": "life",
+      "title": "캘거리 도서관엔 지명과 집의 역사를 찾는 자료도 있네",
+      "body": "지명이 맨날 입에 붙어도 무슨 이야기인지는 모르겠음, 내 길 찾기 실력은 이름 외우기였나 봄 ㅋㅋ\n캘거리 도서관 캘거리의이야기 컬렉션엔 집의 역사와 지명의 유래 같은 지역 기록이 모여 있네\n같이 동네 이야기 하나부터 알아보고 싶은데, 살고 있는 집이랑 자주 다니는 길 중 어느 쪽 과거가 더 궁금해?",
+      "source": "https://www.calgarylibrary.ca/connect/calgary-story"
+    },
+    {
+      "ord": 25,
+      "city_id": "calgary",
+      "author_nickname": "보우강변산책",
+      "tag_slug": "life",
+      "title": "브레이니지엄은 움직이면서 생각하는 야외 공간이네",
+      "body": "놀이터를 보면 예전엔 그냥 에너지 쓰는 곳부터 떠올렸는데\n텔러스스파크 브레이니지엄은 몸을 움직이며 노는 야외 공간이야\n뛰고 오르고 돌면서 문제 해결·공간 감각·협력을 익히는 쪽으로 소개돼 있네\n앉아서 읽는 것만 공부라고 생각하면 여기선 내 설명이 너무 좁아짐\n이번엔 몸으로 배우는 것도 기억해둘 거야, 내 머리만 출석시키면 안 되잖아 ㅋㅋ",
+      "source": "https://www.sparkscience.ca/for-kids/the-brainasium"
+    }
+  ]
+}

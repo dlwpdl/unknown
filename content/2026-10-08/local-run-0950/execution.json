@@ -1,0 +1,18 @@
+{
+  "run_id": "city-posts-2026-10-08-local-0950",
+  "mode": "local_seed",
+  "started_at_utc": "2026-10-08T17:09:59.550075+00:00",
+  "payload_sha256": "bee358f535f129a089d4160ce105b40cf9e9090a76b7e2b988cec9566d65be8c",
+  "gui_status": "NOT_NEEDED",
+  "direct_comments": "NOT_AUTHORIZED",
+  "stage": {
+    "exit_code": 0,
+    "output": "STAGED /Users/ash/Library/Application Support/gling/city-posts/payload/2026-10-08.json",
+    "at_utc": "2026-10-08T17:09:59.563468+00:00"
+  },
+  "grow": {
+    "exit_code": 0,
+    "log": "=== Thu Oct  8 10:09:59 PDT 2026 도시 게시글 등록 시작 (2026-10-08)\nOK 25건 처리 []\n",
+    "completed_at_utc": "2026-10-08T17:10:01.315194+00:00"
+  }
+}
