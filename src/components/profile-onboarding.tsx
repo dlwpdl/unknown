@@ -1,17 +1,21 @@
+import { GlingLoader } from '@/components/gling-loader';
 import { behavior, flushBehavior } from '@/lib/behavior-analytics';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Platform, StyleSheet, TextInput, View } from 'react-native';
+import { Modal, Platform, StyleSheet, TextInput, View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { PersonalInfoFields, type PersonalInfoDraft } from '@/components/personal-info-fields';
-import { Spacing } from '@/constants/theme';
+import { WelcomeMoment } from '@/components/welcome-moment';
+import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n/ko';
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 import { generateNickname } from '@/lib/nickname';
 import { PERSONAL_INFO_NOTICE, PERSONAL_INFO_VERSION, validatePersonalInfo } from '@/lib/personal-info';
@@ -46,6 +50,8 @@ export function ProfileOnboarding({
   onComplete: (profile: CompletedProfile) => void;
 }) {
   const theme = useTheme();
+  const { play } = useInteractionFeedback();
+  const reducedMotion = useReducedMotion();
   const initialNickname = existingProfile?.nickname ?? normalizedNickname(socialNickname) ?? generateNickname('ko');
   const [nickname, setNickname] = useState(initialNickname);
   const [cityId, setCityId] = useState(existingProfile?.city_id ?? 'vancouver');
@@ -56,6 +62,7 @@ export function ProfileOnboarding({
   const [aiAccepted, setAiAccepted] = useState(false);
   const [expandedConsent, setExpandedConsent] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [welcomeProfile, setWelcomeProfile] = useState<CompletedProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [personalInfo, setPersonalInfo] = useState<PersonalInfoDraft>({ fullName: '', dateOfBirth: '', accepted: false, gender: '' });
   const active = useRef(true);
@@ -69,6 +76,7 @@ export function ProfileOnboarding({
   const allChecked = allAccepted ? true : someAccepted ? 'mixed' : false;
   const toggleAll = () => {
     if (saving) return;
+    play('selection');
     const checked = !allAccepted;
     setTermsAccepted(checked);
     setPrivacyAccepted(checked);
@@ -87,6 +95,7 @@ export function ProfileOnboarding({
   ];
 
   const pickPhoto = async () => {
+    play('selection');
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -108,6 +117,7 @@ export function ProfileOnboarding({
   };
 
   const useSocialProfile = () => {
+    play('selection');
     setNickname(normalizedNickname(socialNickname) ?? nickname);
     setPhotoUri(socialPhoto);
     setPhotoBase64(null);
@@ -165,16 +175,19 @@ export function ProfileOnboarding({
         setError(created.error.code === '23505' ? t.onboarding.errorDuplicate : t.onboarding.errorGeneric);
         return;
       }
+      play('success');
       behavior('success', consentOnly ? 'consent_complete' : 'signup_complete');
       void flushBehavior();
-      onComplete({
+      const completed = {
         id: userId,
         nickname: cleanNickname,
         city_id: cityId,
         avatar_path: avatarPath,
         photoUri,
         ai_safety_consent_at: new Date().toISOString(),
-      });
+      };
+      if (consentOnly) onComplete(completed);
+      else setWelcomeProfile(completed);
     } catch {
       if (active.current) setError(t.onboarding.errorGeneric);
     } finally {
@@ -184,8 +197,9 @@ export function ProfileOnboarding({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={() => {}}>
+    <Modal visible={visible} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => {}}>
       <SafeAreaProvider style={[styles.screen, { backgroundColor: theme.background }]}>
+      {welcomeProfile ? <WelcomeMoment nickname={welcomeProfile.nickname} onContinue={() => onComplete(welcomeProfile)} /> : <>
         <SafeAreaView style={styles.safeArea}>
           <ScrollView analyticsId="components_profile-onboarding.scrollview.1" contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <ThemedText type="smallBold" style={{ color: theme.accent }}>{t.onboarding.step}</ThemedText>
@@ -203,15 +217,15 @@ export function ProfileOnboarding({
                 )}
               </View>
               <View style={styles.photoActions}>
-                <Pressable analyticsId="components_profile-onboarding.pressable.1" onPress={() => void pickPhoto()} accessibilityRole="button" style={[styles.smallButton, { borderColor: theme.line }]}>
+                <Pressable analyticsId="components_profile-onboarding.pressable.1" onPress={() => void pickPhoto()} accessibilityRole="button" style={({ pressed }) => [styles.smallButton, Depth.control, { borderColor: theme.line, backgroundColor: theme.card, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
                   <ThemedText type="smallBold">{t.onboarding.choosePhoto}</ThemedText>
                 </Pressable>
                 {(socialNickname || socialPhoto) && (
-                  <Pressable analyticsId="components_profile-onboarding.pressable.2" onPress={useSocialProfile} accessibilityRole="button" style={[styles.smallButton, { borderColor: theme.line }]}>
+                  <Pressable analyticsId="components_profile-onboarding.pressable.2" onPress={useSocialProfile} accessibilityRole="button" style={({ pressed }) => [styles.smallButton, Depth.control, { borderColor: theme.line, backgroundColor: theme.card, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
                     <ThemedText type="smallBold">{t.onboarding.useSocial}</ThemedText>
                   </Pressable>
                 )}
-                <Pressable analyticsId="components_profile-onboarding.pressable.3" onPress={() => { setPhotoUri(null); setPhotoBase64(null); }} accessibilityRole="button">
+                <Pressable analyticsId="components_profile-onboarding.pressable.3" onPress={() => { play('selection'); setPhotoUri(null); setPhotoBase64(null); }} accessibilityRole="button">
                   <ThemedText type="small" themeColor="textSecondary">{t.onboarding.removePhoto}</ThemedText>
                 </Pressable>
               </View>
@@ -229,10 +243,10 @@ export function ProfileOnboarding({
                 style={[styles.nicknameInput, { color: theme.text, borderColor: theme.line, backgroundColor: theme.card }]}
               />
               <View style={styles.randomActions}>
-                <Pressable analyticsId="components_profile-onboarding.pressable.4" onPress={() => setNickname(generateNickname('ko'))} accessibilityRole="button" style={[styles.pill, { backgroundColor: theme.backgroundElement }]}>
+                <Pressable analyticsId="components_profile-onboarding.pressable.4" onPress={() => { play('selection'); setNickname(generateNickname('ko')); }} accessibilityRole="button" style={({ pressed }) => [styles.pill, Depth.control, { backgroundColor: theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
                   <ThemedText type="smallBold">{t.onboarding.koreanRandom}</ThemedText>
                 </Pressable>
-                <Pressable analyticsId="components_profile-onboarding.pressable.5" onPress={() => setNickname(generateNickname('en'))} accessibilityRole="button" style={[styles.pill, { backgroundColor: theme.backgroundElement }]}>
+                <Pressable analyticsId="components_profile-onboarding.pressable.5" onPress={() => { play('selection'); setNickname(generateNickname('en')); }} accessibilityRole="button" style={({ pressed }) => [styles.pill, Depth.control, { backgroundColor: theme.backgroundElement, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
                   <ThemedText type="smallBold">{t.onboarding.englishRandom}</ThemedText>
                 </Pressable>
               </View>
@@ -246,10 +260,10 @@ export function ProfileOnboarding({
                   return (
                     <Pressable analyticsId="components_profile-onboarding.pressable.6"
                       key={city.id}
-                      onPress={() => setCityId(city.id)}
+                      onPress={() => { play('selection'); setCityId(city.id); }}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
-                      style={[styles.cityButton, { backgroundColor: selected ? theme.accent : theme.backgroundElement }]}>
+                      style={({ pressed }) => [styles.cityButton, Depth.control, { backgroundColor: selected ? theme.accent : theme.backgroundElement, borderBottomColor: selected ? theme.accentDepth : theme.line, borderBottomWidth: 3, transform: [{ translateY: pressed ? 2 : 0 }] }]}>
                       <ThemedText type="smallBold" style={{ color: selected ? theme.accentInk : theme.text }}>{city.name}</ThemedText>
                     </Pressable>
                   );
@@ -271,7 +285,7 @@ export function ProfileOnboarding({
                 <ThemedText type="smallBold" style={styles.consentText}>모두 동의{!consentOnly && <ThemedText type="small" themeColor="textSecondary"> (선택 포함)</ThemedText>}</ThemedText>
               </Pressable>
               {consentItems.map((item) => {
-                const toggle = () => { if (!saving) { item.change(!item.checked); setError(null); } };
+                const toggle = () => { if (!saving) { play('selection'); item.change(!item.checked); setError(null); } };
                 const expanded = expandedConsent === item.id;
                 return <View key={item.id}>
                   <View style={styles.consentRow}>
@@ -285,11 +299,11 @@ export function ProfileOnboarding({
                       <ThemedText type="small" style={styles.consentText}>{item.label}</ThemedText>
                     </Pressable>
                     {'url' in item ? <Pressable analyticsId="components_profile-onboarding.pressable.9" accessibilityRole="link" accessibilityLabel={`${item.label} 자세히 보기`}
-                      onPress={() => { if (item.url) void Linking.openURL(item.url); }} style={styles.detailButton}>
+                      onPress={() => { play('selection'); if (item.url) void Linking.openURL(item.url); }} style={styles.detailButton}>
                       <ThemedText type="small" themeColor="textSecondary">보기 ↗</ThemedText>
                     </Pressable> : <Pressable analyticsId="components_profile-onboarding.pressable.10" accessibilityRole="button" accessibilityLabel={`${item.label} 자세히 ${expanded ? '접기' : '보기'}`}
                       accessibilityState={{ expanded }} aria-expanded={expanded}
-                      onPress={() => setExpandedConsent(expanded ? null : item.id)} style={styles.detailButton}>
+                      onPress={() => { play('selection'); setExpandedConsent(expanded ? null : item.id); }} style={styles.detailButton}>
                       <ThemedText type="small" themeColor="textSecondary">{expanded ? '접기 ∧' : '보기 ∨'}</ThemedText>
                     </Pressable>}
                   </View>
@@ -304,18 +318,19 @@ export function ProfileOnboarding({
 
           <View style={[styles.footer, { borderTopColor: theme.line, backgroundColor: theme.background }]}>
             <Pressable analyticsId="components_profile-onboarding.pressable.11"
-              onPress={() => void save()}
+              onPress={() => { play('selection'); void save(); }}
               disabled={saving || !requiredAccepted}
               accessibilityRole="button"
               accessibilityState={{ disabled: saving || !requiredAccepted, busy: saving }}
-              style={[styles.submit, { backgroundColor: theme.accent, opacity: saving || !requiredAccepted ? 0.5 : 1 }]}>
-              {saving && <ActivityIndicator color={theme.accentInk} />}
+              style={({ pressed }) => [styles.submit, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: saving || !requiredAccepted ? 0.5 : 1, transform: [{ translateY: pressed && !reducedMotion ? 2 : 0 }] }]}>
+              {saving && <GlingLoader color={theme.accentInk} />}
               <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
                 {saving ? t.onboarding.saving : consentOnly ? t.onboarding.consentSubmit : t.onboarding.submit}
               </ThemedText>
             </Pressable>
           </View>
         </SafeAreaView>
+      </>}
       </SafeAreaProvider>
     </Modal>
   );
@@ -341,11 +356,11 @@ const styles = StyleSheet.create({
   avatar: { width: 88, height: 88, borderRadius: 44, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   avatarImage: { width: '100%', height: '100%' },
   photoActions: { flex: 1, alignItems: 'flex-start', gap: Spacing.two },
-  smallButton: { minHeight: 40, justifyContent: 'center', paddingHorizontal: Spacing.three, borderWidth: 1, borderRadius: 8 },
+  smallButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.three, borderWidth: 1, borderRadius: 8 },
   field: { gap: Spacing.two },
   nicknameInput: { minHeight: 60, paddingHorizontal: Spacing.three, borderWidth: 1, borderRadius: 10, fontSize: 22, fontWeight: 700 },
   randomActions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  pill: { minHeight: 40, justifyContent: 'center', paddingHorizontal: Spacing.three, borderRadius: 999 },
+  pill: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.three, borderRadius: 999 },
   cityRow: { flexDirection: 'row', gap: Spacing.two },
   cityButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.four, borderRadius: 8 },
   consents: { borderWidth: 1, borderRadius: 12, paddingHorizontal: Spacing.three },
