@@ -175,9 +175,9 @@ test('public discovery opens above the current room and returns with the same dr
     input().props.onChangeText('unfinished private draft'); await harness.settle();
     const before = harness.messages(), list = harness.nodes().find(node => node.type === 'FlatList');
     const readPosition = list.props.initialScrollIndex, initialReads = reads;
-    const action = harness.nodes().find(node => node.props?.label === '장소 찾기 ↗');
+    const action = harness.nodes().find(node => node.props?.analyticsId === 'chat.open-map');
     assert.ok(action, 'conversation header must offer the approved public discovery action');
-    action.type(action.props).props.onPress(); await harness.settle();
+    action.props.onPress(); await harness.settle();
     const map = harness.nodes().find(node => node.type === 'MapScreen');
     assert.ok(map); assert.deepEqual(Object.keys(map.props), ['onClose']);
     assert.equal(harness.nodes().filter(node => node.type === 'MapScreen').length, 1);
@@ -204,7 +204,7 @@ test('messages still arrive under discovery without hidden read receipts or auto
   await harness.timers(); scrolls.length = 0;
   const input = () => harness.nodes().find(node => node.type === 'TextInput' && node.props.placeholder === t.chat.messagePlaceholder);
   input().props.onChangeText('private unfinished draft'); await harness.settle();
-  const action = harness.nodes().find(node => node.props?.label === '장소 찾기 ↗'); action.type(action.props).props.onPress(); await harness.settle();
+  const action = harness.nodes().find(node => node.props?.analyticsId === 'chat.open-map'); action.props.onPress(); await harness.settle();
   harness.message(incoming); await harness.timers();
   assert.ok(harness.messages().some(row => row.id === incoming.id), 'realtime updates and safety visibility remain active');
   list().props.onViewableItemsChanged({ viewableItems: [{ item: incoming }] });
@@ -228,7 +228,7 @@ test('initial unread positioning waits for discovery to close, including a cover
       loadChatReadPosition: async () => rows[0].created_at,
       markChatRead: async (_client, _room, id) => marked.push(id) });
     context.after(() => harness.cleanup()); await harness.settle();
-    const action = harness.nodes().find(node => node.props?.label === '장소 찾기 ↗'); action.type(action.props).props.onPress(); await harness.settle();
+    const action = harness.nodes().find(node => node.props?.analyticsId === 'chat.open-map'); action.props.onPress(); await harness.settle();
     if (stage === 'loading') { finish(rows); await harness.settle(); }
     const list = () => harness.nodes().find(node => node.type === 'FlatList');
     list().props.ref.current = { scrollToIndex: ({ index }) => scrolls.push(index), scrollToEnd: () => scrolls.push('end') };
@@ -1099,4 +1099,20 @@ test('a queued composer submit cannot send under an identity changed before Reac
   input = harness.nodes().find(node => node.type === 'TextInput');
   data.businessIdentity = null; input.props.onSubmitEditing(); await harness.settle();
   assert.equal(sends, 0);
+});
+
+test('conversation search narrows the loaded messages and clears back to all of them', async context => {
+  const rows = [message(1), message(2), message(3)];
+  const harness = room({ loadConversationMessages: async () => rows });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const list = () => harness.nodes().find(node => node.type === 'FlatList');
+  assert.equal(list().props.data.length, 3);
+  harness.nodes().find(node => node.props?.analyticsId === 'chat.search-toggle').props.onPress(); await harness.settle();
+  const field = () => harness.nodes().find(node => node.type === 'TextInput' && node.props.accessibilityLabel === '대화 내용 검색');
+  field().props.onChangeText('message 2'); await harness.settle();
+  assert.deepEqual(list().props.data.map(row => row.id), ['m002']);
+  field().props.onChangeText(''); await harness.settle();
+  assert.equal(list().props.data.length, 3, 'an empty query shows the room again');
+  harness.nodes().find(node => node.props?.analyticsId === 'chat.search-close').props.onPress(); await harness.settle();
+  assert.equal(harness.nodes().some(node => node.type === 'TextInput' && node.props?.accessibilityLabel === '대화 내용 검색'), false, 'closing hides the field');
 });
