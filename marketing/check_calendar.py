@@ -21,7 +21,7 @@ def check(rows):
         def require(condition, message):
             if not condition:
                 errors.append(f"{ident or '(missing ID)'}: {message}")
-        require(re.fullmatch(r'GL-P\d{3,}', ident) and ident not in seen_ids, 'missing/duplicate content_id')
+        require(re.fullmatch(r'GL-(?:P|BT)\d{3,}', ident) and ident not in seen_ids, 'missing/duplicate content_id')
         seen_ids.add(ident)
         platform = row.get('platform', '')
         require(platform in {'instagram', 'threads'}, 'unsupported platform')
@@ -42,10 +42,13 @@ def check(rows):
                 continue
             query = parse_qs(parts.query, keep_blank_values=True)
             content = 'profile' if placement == 'profile' else ident.lower().replace('-', '_')
+            story_link = (platform == 'threads' and row.get('account_handle') == 'chalkakandupload'
+                          and placement == 'body' and not parts.fragment
+                          and re.fullmatch(r'/share/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}', parts.path, re.I))
             require(parts.scheme == 'https' and parts.netloc == 'gling.ej-entertainment.com'
-                    and parts.path in {'', '/'}, 'wrong Gling destination')
-            require(query == {'utm_source': [platform], 'utm_medium': ['organic_social'],
-                              'utm_campaign': ['prelaunch'], 'utm_content': [content]},
+                    and (parts.path in {'', '/'} or story_link), 'wrong Gling destination')
+            require(query == ({} if story_link else {'utm_source': [platform], 'utm_medium': ['organic_social'],
+                                                    'utm_campaign': ['prelaunch'], 'utm_content': [content]}),
                     'UTM mismatch or unknown query field')
         status = row.get('status', '')
         require(status in {'draft', 'ready', 'scheduled', 'published', 'blocked', 'cancelled'}, 'unknown status')
@@ -85,6 +88,10 @@ def self_test():
                link="https://gling.ej-entertainment.com/?utm_source=threads&"
                     "utm_medium=organic_social&utm_campaign=prelaunch&utm_content=gl_p002")
     assert check([row]) == []
+    brand = dict(row, content_id='GL-BT045', link_placement='none', link='')
+    assert not check([brand]), 'official Threads IDs keep their original namespace'
+    assert check([brand, brand]), 'official Threads IDs must stay unique'
+    assert check([dict(brand, content_id='GL-BX045')]), 'unknown ID namespace'
     cases = [
         ("duplicate id", [row, row]),
         ("duplicate copy", [row, dict(row, content_id="GL-P003", link=row['link'].replace('gl_p002', 'gl_p003'))]),
@@ -107,6 +114,16 @@ def self_test():
     assert check([dict(measured, observed_at="2026-09-09T14:00:00")]), "timezone missing"
     assert check([dict(row, link=row['link']+'&email=private@example.com')]), "unknown query field"
     assert check([]), "empty queue is not success"
+    story = dict(row, account_handle='chalkakandupload',
+                 link='https://gling.ej-entertainment.com/share/12345678-1234-1234-1234-123456789abc')
+    assert not check([story]), 'personal Threads accepts the existing post share URL'
+    for invalid in [dict(story, account_handle='gling.app'), dict(story, platform='instagram'),
+                    dict(story, link_placement='profile'), dict(story, link=story['link']+'?next=https://evil.test'),
+                    dict(story, link=story['link']+'#private'), dict(story, link=story['link']+'/private'),
+                    dict(story, link=story['link'].replace('12345678-', 'invalid-')),
+                    dict(story, link=story['link'].replace('https:', 'http:')),
+                    dict(story, link=story['link'].replace('gling.ej-entertainment.com', 'gling.ej-entertainment.com.evil.test'))]:
+        assert check([invalid]), 'reject unsafe or unrelated post links'
     print("PASS: calendar validation self-test (synthetic data; no network or publication)")
 
 

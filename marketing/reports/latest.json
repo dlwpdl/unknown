@@ -1,533 +1,2856 @@
 {
-  "run_id": "cafe-import-140513",
-  "run_type": "user_requested_cafe_research_and_app_content_preparation",
-  "started_at": "2026-09-11T14:05:13.399526-07:00",
-  "completed_at": "2026-09-11T14:21:08.897954-07:00",
-  "timezone": "America/Vancouver",
-  "status": "drafts_complete_app_publication_pending_paid_confirmation",
-  "canonical_root": "/Users/ash/Desktop/Git/unknown/mobile",
-  "parent_worktree": "folder:e88d505b-f6bb-47d6-ba41-904ef2a72a8b",
-  "browser_profile": "08a4dd8b-db5a-4255-b587-9da0b94df934",
-  "sns_author_verified": "gling.app",
-  "scope": "후속 콘텐츠 수집·검증·앱 원고 준비. 오전 일일 수신함/지표 재검사 아님.",
-  "summary": {
-    "cafe_articles_read": 3,
-    "crawl4ai_processed": 3,
-    "local_app_drafts": 3,
-    "assigned_existing_profiles": 3,
-    "app_posts_created": 0,
-    "sns_uploaded": 0,
-    "sns_scheduled": 0,
-    "sns_published": 0,
-    "outbound_messages_sent": 0,
-    "paid_actions": 0,
-    "new_dependencies": 0,
-    "new_automations": 0,
-    "photo_candidates": 3,
-    "photos_attached": 0,
-    "sns_local_drafts_preserved": 12
+  "run_id": "threads-daily-draft-200505",
+  "date": "2026-10-03",
+  "started_at": "2026-10-03T20:05:05.675027-07:00",
+  "observed_at": "2026-10-03T20:23:08.053748-07:00",
+  "status": "completed_with_source_gaps_personal_drafting_blocked",
+  "canonical_checkout": "/Users/ash/Desktop/Git/unknown/mobile",
+  "period": {
+    "start": "2026-10-02T00:00:00-07:00",
+    "end_exclusive": "2026-10-03T00:00:00-07:00",
+    "timezone": "America/Vancouver",
+    "current_evening_observations_separate": true,
+    "daily_delta": null
   },
-  "sources": [
-    {
-      "id": "CAFE-PHNOM",
-      "name": "헬로! 밴쿠버 · Phnom Penh 맛집 후기",
-      "url": "https://cafe.naver.com/yoehang/724617",
-      "published_at": "2026-09-08T11:13:00",
-      "time_zone": null,
-      "observed_at": "2026-09-11T14:07:10.792259-07:00",
-      "scope": "로그인 후 본문 5개 비어 있지 않은 문단; 전체 추출 문단 5개",
-      "used_for": "식당 주제 발견만. 맛·대기·주차·방문 경험은 미전재",
-      "access": "readable"
-    },
-    {
-      "id": "CAFE-DEER",
-      "name": "헬로! 밴쿠버 · 락사 맛집 추천! Deer Garden",
-      "url": "https://cafe.naver.com/yoehang/724605",
-      "published_at": "2026-09-08T08:33:00",
-      "time_zone": null,
-      "observed_at": "2026-09-11T14:07:12.802500-07:00",
-      "scope": "로그인 후 본문 7개 문단",
-      "used_for": "메뉴 선택 방식 발견 후 공식 메뉴로 검증. 회원 주문·평가는 미전재",
-      "access": "readable"
-    },
-    {
-      "id": "CAFE-BODO",
-      "name": "헬로! 밴쿠버 · Bodo Japanese Rojiura Ramen",
-      "url": "https://cafe.naver.com/yoehang/724231",
-      "published_at": "2026-09-05T08:40:00",
-      "time_zone": null,
-      "observed_at": "2026-09-11T14:07:15.649285-07:00",
-      "scope": "로그인 후 본문 6개 문단",
-      "used_for": "식당 주제 발견. 방문·맛·응대 경험과 기간성 프로모션 미전재",
-      "access": "readable"
-    },
-    {
-      "id": "OFF-PHNOM",
-      "name": "Phnom Penh Restaurant 공식 Instagram",
-      "url": "https://www.instagram.com/phnompenh.restaurant/",
-      "observed_at": "2026-09-11T14:15:24.378149-07:00",
-      "scope": "공식 프로필 소개",
-      "facts": [
-        "식당 주소 244 E. Georgia St.",
-        "1 East Broadway는 공식 DoorDash satellite kitchen으로 별도 안내"
-      ],
-      "reuse_permission": null
-    },
-    {
-      "id": "MICHELIN-PHNOM",
-      "name": "MICHELIN Guide · Phnom Penh",
-      "url": "https://guide.michelin.com/ca/en/british-columbia/ca-vancouver/restaurant/phnom-penh",
-      "observed_at": "2026-09-11T14:16:13.238333-07:00",
-      "scope": "무료로 보이는 식당 기본 정보만",
-      "facts": [
-        "244 E. Georgia St., Vancouver, V6A 1Z7",
-        "Vietnamese, Cambodian 분류"
-      ],
-      "excluded": "접근되지 않은 전체 리뷰·별점/수상 등급은 원고에 사용하지 않음"
-    },
-    {
-      "id": "OFF-DEER-MENU",
-      "name": "Deer Garden 공식 Signature 메뉴",
-      "url": "https://www.deergarden.ca/signature",
-      "observed_at": "2026-09-11T14:12:23.936128-07:00",
-      "scope": "공식 메뉴 이미지의 Orca 시각 확인",
-      "facts": [
-        "Soup base + toppings + noodles + drink 선택 구조",
-        "Malay laksa soup 표기",
-        "토핑 두 가지 또는 seafood combo 선택",
-        "굵은 쌀국수 및 우동 선택지"
-      ],
-      "excluded": "메뉴 이미지에 보이는 $18.25는 적용 지점·갱신일 미확인으로 원고에서 제외"
-    },
-    {
-      "id": "OFF-DEER-LOC",
-      "name": "Deer Garden 공식 홈페이지",
-      "url": "https://www.deergarden.ca/",
-      "observed_at": "2026-09-11T14:10:44.941872-07:00",
-      "scope": "현재 위치 카드",
-      "facts": [
-        "8580 Alexandra Rd #2015, Richmond",
-        "6200 River Rd, Richmond",
-        "6270 Fraser St, Vancouver"
-      ],
-      "excluded": "장식 헤더의 옛 지점 이름은 사용하지 않음"
-    },
-    {
-      "id": "OFF-BODO",
-      "name": "Bodo Ramen 공식 소개 게시물",
-      "url": "https://www.instagram.com/p/DcoXOu2FLTK/",
-      "published_date_display": "8월 29일",
-      "observed_at": "2026-09-11T14:15:46.726814-07:00",
-      "scope": "bodoramen.coquitlam 자체 작성 소개 캡션; 댓글·협찬 크리에이터 후기 제외",
-      "facts": [
-        "501 North Road, Coquitlam, BC V3J 1N7",
-        "Tonkotsu Ramen, Prawn Ramen, Teriyaki Chicken, Japanese Curry 소개"
-      ],
-      "reuse_permission": null
+  "automation": {
+    "settings_changed": false,
+    "new_automations": 0,
+    "agents_created": 0,
+    "weekly_review": {
+      "due": false,
+      "reason": "Saturday",
+      "previous": "../../2026-09-28/daily-weekly-draft-200151.html",
+      "next": "2026-10-05"
     }
-  ],
+  },
+  "authorization": {
+    "mode": "local_draft_only",
+    "personal_content_account": "@chalkakandupload",
+    "brand_threads_content_forbidden": true,
+    "festival_production_excluded": true,
+    "outbound_replies_authorized": false,
+    "paid_actions_authorized": false,
+    "publishing_resumption_inferred": false
+  },
+  "summary": {
+    "calendar_rows": 67,
+    "local_status_counts": {
+      "cancelled": 6,
+      "draft": 21,
+      "published": 11,
+      "ready": 5,
+      "scheduled": 24
+    },
+    "pending_personal": 6,
+    "pending_promotion": 2,
+    "approved_personal_queued": 4,
+    "approved_promotion_queued": 1,
+    "fresh_personal_insights": false,
+    "personal_drafts_created": 0,
+    "personal_drafts_revised": 0,
+    "approval_requests": 0,
+    "brand_content_created_or_adapted": 0,
+    "festival_content_produced": 0,
+    "external_uploads": 0,
+    "scheduled_or_rescheduled": 0,
+    "published_by_this_run": 0,
+    "enqueued": 0,
+    "external_replies_sent": 0,
+    "paid_actions": 0,
+    "this_run_calendar_writes": 0,
+    "this_run_approval_ledger_writes": 0
+  },
+  "personal_insights_precheck": {
+    "observed_at": "2026-10-03T20:06:27.273437-07:00",
+    "status": "blocked",
+    "reason": "SKIPPED_RIGHT_PANE_UNAVAILABLE",
+    "page_id": "4e9b0ccf-3140-449e-b766-cb7d894909a7",
+    "worktree_verified": "folder:e88d505b-f6bb-47d6-ba41-904ef2a72a8b",
+    "profile_verified": "default",
+    "current_visible_workspace": "tubebench/main",
+    "right_pane_verified": false,
+    "current_ui_screenshot_inspected": true,
+    "shared_lock_present_at_readonly_preflight": false,
+    "lock_acquired": false,
+    "lock_reason": "Different workspace visible; stop before personal browser control",
+    "personal_page_commands": [],
+    "personal_navigation": false,
+    "fresh_insights": false,
+    "drafting_allowed": false,
+    "recovery_attempted": false,
+    "screenshot_retained": false,
+    "screenshot_exclusion": "Unrelated active task content excluded",
+    "gate_not_retried_after_brand_reporting": true
+  },
+  "personal_audience_evidence": {
+    "observed_at": null,
+    "period": null,
+    "viewer_countries": null,
+    "follower_countries": null,
+    "recent_post_metrics": null,
+    "self_disclosed_organizer_conversations": null,
+    "audience_fit": null,
+    "adjustment_to_eligible_copy": null,
+    "unverified_content_hypothesis": null,
+    "reason": "Blocked live precheck; no current audience decision. Country does not establish nationality or overseas residence.",
+    "separate_foreground_insights": "../personal-originals/audience-decision.json",
+    "foreground_observed_at": "2026-10-03T19:29:07.279445-07:00",
+    "foreground_not_reused_as_daily_fresh_gate": true
+  },
+  "personal_queue": {
+    "snapshot_at": "2026-10-03T20:23:08.053748-07:00",
+    "pending": [
+      {
+        "content_id": "GL-P016",
+        "category": "personal",
+        "actual_status": "draft",
+        "proposed_topic": "해외생활",
+        "first_comment": null,
+        "copy_sha256": "0768e746476588c0a61c3b046a0dcf3d426cd22a6a25144e1d607b67261ee58c",
+        "approval_requested_this_run": false,
+        "final_patina_verified_this_run": false
+      },
+      {
+        "content_id": "GL-P017",
+        "category": "personal",
+        "actual_status": "draft",
+        "proposed_topic": "해외생활",
+        "first_comment": null,
+        "copy_sha256": "6bdbef2397cf049a1774b03bee852b385d99df9fe1327afcd764669314ec21c9",
+        "approval_requested_this_run": false,
+        "final_patina_verified_this_run": false
+      },
+      {
+        "content_id": "GL-P022",
+        "category": "personal",
+        "actual_status": "draft",
+        "proposed_topic": "캐나다",
+        "first_comment": null,
+        "copy_sha256": "b92578972a58f87ae83d7b2ca8c0b27b8963955b9137dda5a9af86f78483c0e4",
+        "approval_requested_this_run": false,
+        "final_patina_verified_this_run": false
+      },
+      {
+        "content_id": "GL-P024",
+        "category": "personal",
+        "actual_status": "draft",
+        "proposed_topic": "해외생활",
+        "first_comment": null,
+        "copy_sha256": "a6bec7f032822f1c3232024e12f5a464c202981c54b1da98e7a9a0b9bbb13e65",
+        "approval_requested_this_run": false,
+        "final_patina_verified_this_run": false
+      },
+      {
+        "content_id": "GL-P025",
+        "category": "personal",
+        "actual_status": "draft",
+        "proposed_topic": "해외생활",
+        "first_comment": null,
+        "copy_sha256": "2819f88bf5084c5cf76ac1bb9f5c21f260a74acbde5f34b8ff56ca9e45c9e71a",
+        "approval_requested_this_run": false,
+        "final_patina_verified_this_run": false
+      },
+      {
+        "content_id": "GL-P026",
+        "category": "personal",
+        "actual_status": "draft",
+        "proposed_topic": "해외생활",
+        "first_comment": null,
+        "copy_sha256": "0f7706dfc761fa97d4e53eecf4bac6b45fca0827dc1a33700836481f0bd40e40",
+        "approval_requested_this_run": false,
+        "final_patina_verified_this_run": false
+      },
+      {
+        "content_id": "GL-P018",
+        "category": "promotion",
+        "actual_status": "draft",
+        "proposed_topic": "해외생활",
+        "first_comment": null,
+        "copy_sha256": "afa588f2c3194608fc356200470f2de080d2f47fcc8ec904dba6d4eecc46a519",
+        "approval_requested_this_run": false,
+        "final_patina_verified_this_run": false
+      },
+      {
+        "content_id": "GL-P019",
+        "category": "promotion",
+        "actual_status": "draft",
+        "proposed_topic": "해외생활",
+        "first_comment": null,
+        "copy_sha256": "9d9a758d01bb3d488f2e65c85921dbe4a602156e6ac35b736e6a160f80026260",
+        "approval_requested_this_run": false,
+        "final_patina_verified_this_run": false
+      }
+    ],
+    "approved_queued": [
+      {
+        "content_id": "GL-P021",
+        "category": "personal",
+        "topic": "캐나다",
+        "first_comment": "",
+        "status": "queued",
+        "csv_copy_exact_match": true
+      },
+      {
+        "content_id": "GL-P023",
+        "category": "personal",
+        "topic": "해외생활",
+        "first_comment": "",
+        "status": "queued",
+        "csv_copy_exact_match": true
+      },
+      {
+        "content_id": "GL-P027",
+        "category": "personal",
+        "topic": "해외생활",
+        "first_comment": "",
+        "status": "queued",
+        "csv_copy_exact_match": true
+      },
+      {
+        "content_id": "GL-P028",
+        "category": "personal",
+        "topic": "해외생활",
+        "first_comment": "",
+        "status": "queued",
+        "csv_copy_exact_match": true
+      },
+      {
+        "content_id": "GL-P029",
+        "category": "promotion",
+        "topic": "해외생활",
+        "first_comment": "",
+        "status": "queued",
+        "csv_copy_exact_match": true
+      }
+    ],
+    "save_only_hold": "GL-P020",
+    "approval_ledger_unchanged": true,
+    "no_copy_reproduction_or_approval_presentation_this_run": true,
+    "separate_foreground_revision": "../personal-overseas-life/verification.json",
+    "external_concurrent_changes": [
+      {
+        "path": "marketing/social-calendar.csv",
+        "initial_sha256": "c7ee34e57eff91e8a965963e2c86bf81d45314f760821f4facea39ef0c3bb417",
+        "current_sha256": "2f48428e3e00d7ce44ffd7b33bd0e5fdaf9f258fcfa0e31a8d20d799bf32577d",
+        "unchanged": false
+      },
+      {
+        "path": "marketing/chalkakandupload-queue.md",
+        "initial_sha256": "b1b20b67efd062ff3982b9c651015173a017f4f71c805c74c3d37f96edbd3667",
+        "current_sha256": "cd600a4210caeb4c8c6e06e0509c0a442021615e2de61c289b2c674bea1add37",
+        "unchanged": false
+      },
+      {
+        "path": "marketing/voice.md",
+        "initial_sha256": "78608406939fb748a4c305a921caabbd862f563e8afa7ba4fe22bbfa883a28c4",
+        "current_sha256": "5d915e875363fb6adc28ac1209e44fde131c8bebfdfdeac618e16f1dad401eff",
+        "unchanged": false
+      }
+    ],
+    "further_concurrent_copy_changes_after_snapshot": [
+      "GL-P024"
+    ],
+    "final_stock_confirmed_at": "2026-10-03T20:34:46.918004-07:00",
+    "external_changes_final": [
+      "marketing/social-calendar.csv",
+      "marketing/chalkakandupload-queue.md",
+      "marketing/chalkakandupload-replies.md",
+      "marketing/voice.md"
+    ]
+  },
+  "seven_day_queue_plan": {
+    "from": "2026-10-04",
+    "through": "2026-10-10",
+    "account": "@chalkakandupload",
+    "target_daily": {
+      "personal": 6,
+      "promotion": 2
+    },
+    "fixed_slots": [
+      {
+        "time": "08:00",
+        "category": "personal"
+      },
+      {
+        "time": "09:00",
+        "category": "personal"
+      },
+      {
+        "time": "10:00",
+        "category": "personal"
+      },
+      {
+        "time": "11:00",
+        "category": "promotion"
+      },
+      {
+        "time": "13:00",
+        "category": "personal"
+      },
+      {
+        "time": "15:00",
+        "category": "personal"
+      },
+      {
+        "time": "17:00",
+        "category": "personal"
+      },
+      {
+        "time": "19:00",
+        "category": "promotion"
+      }
+    ],
+    "local_pending_shortage": {
+      "personal": 0,
+      "promotion": 0
+    },
+    "approved_one_day_category_gap": {
+      "personal": 2,
+      "promotion": 1
+    },
+    "days": [
+      {
+        "date": "2026-10-04",
+        "status": "existing_schedule_preserved_no_new_assignments"
+      },
+      {
+        "date": "2026-10-05",
+        "status": "existing_schedule_preserved_no_new_assignments"
+      },
+      {
+        "date": "2026-10-06",
+        "status": "existing_schedule_preserved_no_new_assignments"
+      },
+      {
+        "date": "2026-10-07",
+        "status": "existing_schedule_preserved_no_new_assignments"
+      },
+      {
+        "date": "2026-10-08",
+        "status": "existing_schedule_preserved_no_new_assignments"
+      },
+      {
+        "date": "2026-10-09",
+        "status": "existing_schedule_preserved_no_new_assignments"
+      },
+      {
+        "date": "2026-10-10",
+        "status": "existing_schedule_preserved_no_new_assignments"
+      }
+    ],
+    "rule": "Matching individually approved category only; empty category SKIP, no substitute or auto-refill. This report creates no reservations or authorizations.",
+    "brand_threads_plan": null,
+    "legacy_three_per_week_brand_production_not_restarted": true
+  },
+  "native_queue_precheck": {
+    "observed_at": "2026-10-03T20:09:06.243934-07:00",
+    "source_page": "3ebec753-51dc-4276-8ea2-9c5c558f3e85",
+    "source_account": "@gling.app",
+    "currently_rendered_rows": 24,
+    "source": "existing native scheduled grid snapshot",
+    "exhaustive_count": false,
+    "reservation_ids_verified": false,
+    "timezone_verified": false,
+    "writes": 0,
+    "rows": [
+      {
+        "caption_prefix": "노스밴쿠버의 Canyon Lights가 열립니다. 2026년 11월 20일부터 2027년 1월 10일까지 Capilano Suspension Bridge Park에서 열리는 겨울 ",
+        "date_label": "Sat Oct 10, 5:00pm"
+      },
+      {
+        "caption_prefix": "에드먼턴 Muttart Classic Christmas 전시가 열립니다. 전시 기간은 2026-11-21–2027-01-03이며, 장소는 Muttart Conservatory(96",
+        "date_label": "Sat Oct 10, 12:00pm"
+      },
+      {
+        "caption_prefix": "몬트리올 Grand Marché de Noël이 2026년 11월 13일부터 2027년 1월 3일까지 열립니다. Quartier des spectacles · 1499 Jeanne",
+        "date_label": "Sat Oct 10, 8:00am"
+      },
+      {
+        "caption_prefix": "토론토의 The Distillery Winter Village가 열립니다. 2026년 11월 12일부터 2027년 1월 3일까지 Distillery Historic District",
+        "date_label": "Fri Oct 9, 7:00pm"
+      },
+      {
+        "caption_prefix": "몬트리올 Pierrefonds Library에서 무료 Family Cinema가 열립니다. 10월 10일~12월 29일 중 총 6회 · 14:00~15:30 Pierrefonds ",
+        "date_label": "Fri Oct 9, 5:00pm"
+      },
+      {
+        "caption_prefix": "몬트리올 Atwater 크리스마스 빌리지가 2026년 11월 26일부터 12월 24일까지 열립니다. Place du Marché Atwater Saint-Ambroise·Atwat",
+        "date_label": "Fri Oct 9, 12:00pm"
+      },
+      {
+        "caption_prefix": "Vancouver Christmas Market이 11월 16일부터 12월 24일까지 열립니다. 장소는 Jack Poole Plaza입니다. 올해 안내에는 새 프로그램도 포함됐습니",
+        "date_label": "Fri Oct 9, 8:00am"
+      },
+      {
+        "caption_prefix": "퀘벡 공예 박람회 Salon des métiers d’art가 2026년 12월 15–20일 몬트리올 Grand Quai에서 열립니다. 70주년 행사 · 200 rue de la ",
+        "date_label": "Thu Oct 8, 7:00pm"
+      },
+      {
+        "caption_prefix": "캘거리 Market Collective의 2026 홀리데이 시리즈가 12월 두 주말에 열립니다. 12/4–6·12/11–13 · BMO Centre Hall D 금 16–21시 ·",
+        "date_label": "Thu Oct 8, 5:00pm"
+      },
+      {
+        "caption_prefix": "어린이 크리스마스 요리 워크숍이 2026년 12월 12일 몬트리올에서 열립니다. 14:00–15:30 · Pierrefonds Library 입장 무료 · 사전 신청 필요 6–10",
+        "date_label": "Thu Oct 8, 12:00pm"
+      },
+      {
+        "caption_prefix": "Festival Bach Montréal의 20주년 시즌이 2026년 11월 4일–12월 9일 진행됩니다. 공연마다 날짜와 장소, 요금이 다릅니다. 11/4 19:30 · Théâ",
+        "date_label": "Thu Oct 8, 8:00am"
+      },
+      {
+        "caption_prefix": "토론토 One Of A Kind 크리스마스 쇼가 열립니다. 2026년 11월 27일~12월 6일 Enercare Centre, Exhibition Place 11월 27일 전 얼리",
+        "date_label": "Wed Oct 7, 7:00pm"
+      },
+      {
+        "caption_prefix": "캘거리 Spruce Meadows 크리스마스 마켓이 2026년 네 차례의 주말에 열립니다. 11/13–15·20–22·27–29·12/4–6 18011 Spruce Meadows ",
+        "date_label": "Wed Oct 7, 5:00pm"
+      },
+      {
+        "caption_prefix": "에드먼턴 Festival of Trees는 2026년에 세 개의 특별행사로 열립니다. 일정은 11/26 17:30 Gala, 11/27 19:00 Silver Bell Soirée",
+        "date_label": "Wed Oct 7, 12:00pm"
+      },
+      {
+        "caption_prefix": "RIDM 몬트리올 국제 다큐멘터리 영화제가 2026년 11월 19–29일 열립니다. 개막작 To Hold a Mountain · 11/19 Salle Pierre-Mercure 폐",
+        "date_label": "Wed Oct 7, 8:00am"
+      },
+      {
+        "caption_prefix": "밴쿠버 Eastside Culture Crawl이 열립니다. 올해 30회를 맞는 시각예술·디자인·공예 축제로, 이스트사이드 작가들의 작업실을 직접 방문하는 행사이며 별도의 입장료 ",
+        "date_label": "Tue Oct 6, 7:00pm"
+      },
+      {
+        "caption_prefix": "캘거리 다큐멘터리 영화제 CUFF.Docs가 열립니다. 올해로 14회를 맞습니다. 영화제는 Globe Cinema에서 5일간 열립니다. 11월 18~22일 Globe Cinema ",
+        "date_label": "Tue Oct 6, 5:00pm"
+      },
+      {
+        "caption_prefix": "2026년 11월 21일, 몬트리올에서 성인 파이·타르트 만들기 워크숍이 열립니다. 14:00–16:00 · Pierrefonds Library 입장 무료 · 사전 신청 필요 성인",
+        "date_label": "Tue Oct 6, 12:00pm"
+      },
+      {
+        "caption_prefix": "에드먼턴 Muttart Fall Harvest 가을 전시가 열립니다. 전시 기간은 2026-09-19–2026-11-15이며, 장소는 Muttart Conservatory(9626",
+        "date_label": "Tue Oct 6, 8:00am"
+      },
+      {
+        "caption_prefix": "캘거리 Festival of Crafts가 2026년 10월 29일–11월 1일 BMO Centre Hall F에서 열리며, 운영 시간은 목·금 10–21시, 토 10–18시, 일",
+        "date_label": "Mon Oct 5, 7:00pm"
+      },
+      {
+        "caption_prefix": "캘거리 할로윈 행사 ScreamFest가 열립니다. 운영 기간은 10월 9~31일이며, 아래 날짜에만 총 11일간 열립니다. 매일 운영하지 않습니다. 10월 9·10·16·17·2",
+        "date_label": "Mon Oct 5, 5:00pm"
+      },
+      {
+        "caption_prefix": "몬트리올에서 2026년 10월 29일 장갑으로 할로윈 몬스터 만들기 행사가 열립니다. 18:00–20:00 · William-G.-Boll Library 입장 무료 · 사전 신청 ",
+        "date_label": "Mon Oct 5, 12:00pm"
+      },
+      {
+        "caption_prefix": "밴쿠버 작가 축제 Vancouver Writers Fest가 열립니다. 150명 이상의 작가와 90개 이상의 행사가 예정되어 있으며, 행사는 Granville Island를 비롯해",
+        "date_label": "Mon Oct 5, 8:00am"
+      },
+      {
+        "caption_prefix": "2026년 10월 24일 몬트리올에서 할로윈 자연 탐험 행사가 열립니다. 14:00–16:00 · Pierrefonds Library 입장 무료 · 사전 신청 필요 5세 이상 · ",
+        "date_label": "Sun Oct 4, 7:00pm"
+      }
+    ],
+    "local_csv_scheduled_rows": 24,
+    "count_match_does_not_verify_items": true,
+    "separate_festival_workflow": true
+  },
   "posts": [
     {
-      "content_id": "GL-A002",
-      "title": "프놈펜 약속 잡았다면, 주소 두 개부터 구분해요",
-      "assigned_profile_id": "10000000-0000-0000-0000-000000000018",
-      "assigned_nickname": "브로드웨이우산",
-      "source_ids": [
-        "CAFE-PHNOM",
-        "OFF-PHNOM",
-        "MICHELIN-PHNOM"
-      ],
-      "body": "차이나타운 프놈펜에서 만나기로 했다면 주소를 한 번 맞춰두세요. 식당 공식 계정에 주소가 두 개 나오지만, 같은 용도로 안내하는 곳은 아니에요.\n\n식당 주소는 244 E. Georgia St., Vancouver예요. 미쉐린 가이드에도 같은 주소가 실려 있고, 베트남·캄보디아 음식점으로 분류돼 있어요.\n\n함께 보이는 1 East Broadway는 공식 DoorDash 배달 주방으로 소개돼 있어요. 식당에서 만나는 약속이라면 이 주소와 헷갈리지 않도록 확인해두면 좋겠어요.\n\n영업시간과 당일 운영 여부는 가기 전에 식당에 다시 확인해 주세요.\n\n공식 계정·미쉐린 기본 정보를 확인해 정리했어요. 확인일: 2026년 9월 11일.\n\n#밴쿠버맛집 #차이나타운 #프놈펜",
-      "improvement": "회원의 맛·대기·주차 후기를 옮기지 않고 공식 계정에서 확인한 식당/배달 주방 주소 구분으로 새 정보글 작성",
-      "unknown": [
-        "당일 영업시간",
-        "현재 메뉴·가격",
-        "실제 맛·대기 시간",
-        "사진 사용 허용 범위"
-      ],
-      "asset_brief": "사진 없는 본문으로 게시 가능. 공식 홈페이지 후보는 주차 도메인이므로 제외. 공식 Instagram의 식당 자체 게시 사진은 사용 범위를 확인한 뒤 첨부 후보로 검토. 회원 사진·지도 리뷰 사진·협업 크리에이터 사진은 가져오지 않음.",
-      "status": "local_draft_pending_paid_action_confirmation",
-      "city_id": "vancouver",
-      "category": "맛집",
-      "app_post_id": null,
-      "app_url": null,
+      "content_id": "GL-P001",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "소개",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
       "published_at": null,
-      "scheduled_at": null,
-      "photos": [],
-      "internal_origin": "operator_seed_editorial",
-      "visible_admin_label_change": false,
-      "security_role_change": false,
-      "original_content": true,
-      "visit_claim": false,
-      "metrics": null,
-      "observation_windows": {
-        "24h": null,
-        "72h": null,
-        "7d": null
-      },
-      "body_sha256": "4dad942bf0e14c2ca99ad992e85cf83bb9d4b2153eaeb2458a68ebfbe88d37d1"
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Historical brand Instagram draft; production not revived.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
     },
     {
-      "content_id": "GL-A003",
-      "title": "디어가든에서 락사 고를 때, 메뉴판은 이 순서로",
-      "assigned_profile_id": "10000000-0000-0000-0000-000000000002",
-      "assigned_nickname": "면라이더",
-      "source_ids": [
-        "CAFE-DEER",
-        "OFF-DEER-MENU",
-        "OFF-DEER-LOC"
-      ],
-      "body": "디어가든 메뉴판은 국물 → 토핑 → 면 → 음료 순서로 보면 돼요. 공식 메뉴에 이 네 가지를 고르는 누들 콤보가 안내돼 있어요.\n\n락사를 찾는다면 국물 목록에서 Malay laksa soup를 확인해보세요. 토핑은 두 가지를 고르거나 해산물 콤보를 선택하는 방식이에요.\n\n면도 하나로 정해져 있지 않아요. 굵은 쌀국수와 우동 등이 선택지에 있으니, 국물을 고른 뒤 원하는 면을 골라보면 좋겠어요.\n\n지점 주소도 같이 적어둘게요.\n· 리치먼드 Alexandra: 8580 Alexandra Rd #2015\n· 리치먼드 River Road: 6200 River Rd\n· 밴쿠버 Fraser: 6270 Fraser St\n\n가격과 당일 선택 가능한 메뉴는 방문할 지점에서 확인해 주세요.\n\n디어가든 공식 메뉴·위치 안내를 정리했어요. 확인일: 2026년 9월 11일.\n\n#디어가든 #락사 #밴쿠버맛집 #리치먼드맛집",
-      "improvement": "카페에서 발견한 메뉴 조합 주제를 공식 메뉴 이미지와 대조해 선택 순서·지점 주소 안내로 독립 작성",
-      "unknown": [
-        "지점별 현재 가격·품절",
-        "음식의 실제 맛·양",
-        "공식 메뉴 사진의 재사용 허용 범위"
-      ],
-      "asset_brief": "공식 Signature 페이지 음식 사진이 포함된 메뉴 이미지 1개를 후보로 확인. 현재는 출처 URL만 보관하고 앱 첨부 없음. 사용 범위 확인 후 원본 사진이 제공되면 음식명이 확인되는 사진 사용. 확인되지 않은 가격이 담긴 전체 메뉴판은 대표 사진으로 사용하지 않음.",
-      "status": "local_draft_pending_paid_action_confirmation",
-      "city_id": "vancouver",
-      "category": "맛집",
-      "app_post_id": null,
-      "app_url": null,
+      "content_id": "GL-P002",
+      "account": "@gling.app",
+      "platform": "threads",
+      "category": "소개",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
       "published_at": null,
-      "scheduled_at": null,
-      "photos": [],
-      "internal_origin": "operator_seed_editorial",
-      "visible_admin_label_change": false,
-      "security_role_change": false,
-      "original_content": true,
-      "visit_claim": false,
-      "metrics": null,
-      "observation_windows": {
-        "24h": null,
-        "72h": null,
-        "7d": null
-      },
-      "body_sha256": "97220cc44100cead39c6715233edcff201882b8f225cb20d9fd1863a031b2e5f"
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Legacy record only; owner prohibits brand Threads content production, adaptation, storage and planning.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
     },
     {
-      "content_id": "GL-A004",
-      "title": "코퀴틀람 Bodo, 라멘 말고 카레도 있어요",
-      "assigned_profile_id": "10000000-0000-0000-0000-000000000020",
-      "assigned_nickname": "컴패스잔액",
-      "source_ids": [
-        "CAFE-BODO",
-        "OFF-BODO"
-      ],
-      "body": "코퀴틀람에서 라멘 먹을 곳을 찾는다면 Bodo도 살펴보세요. 라멘과 함께 카레·데리야키 치킨을 소개하는 곳이에요.\n\nBodo Japanese Ramen 공식 소개에는 돈코츠 라멘과 프론 라멘, 데리야키 치킨과 일본식 카레가 나와 있어요. 라멘 외 메뉴도 함께 확인할 수 있는 곳이에요.\n\n주소는 501 North Road, Coquitlam, BC V3J 1N7이에요. 약속 장소를 보낼 때는 Bodo 이름과 이 주소를 함께 적어두세요.\n\n현재 가격과 영업시간, 주문 가능한 메뉴는 방문 전에 매장 최신 안내를 확인해 주세요.\n\nBodo 공식 계정의 메뉴·주소 안내를 정리했어요. 확인일: 2026년 9월 11일.\n\n#코퀴틀람맛집 #보도라멘 #라멘",
-      "improvement": "카페의 방문 후기·기간성 할인 대신 식당 자체 게시물의 메뉴 범위와 주소로 작성; 크리에이터 협찬 평가는 배제",
-      "unknown": [
-        "현재 영업시간·가격",
-        "실제 맛·양·응대",
-        "공식 사진의 재사용 허용 범위"
-      ],
-      "asset_brief": "공식 계정의 8월 29일 자체 소개 게시물을 이미지 후보 페이지로 지정. 협업 후기 릴스나 회원 사진은 제외. 촬영 주체·재사용 범위를 확인한 매장 실사진이 있을 때 첨부하며, 현재 파일 다운로드·앱 첨부 없음.",
-      "status": "local_draft_pending_paid_action_confirmation",
-      "city_id": "vancouver",
-      "category": "맛집",
-      "app_post_id": null,
-      "app_url": null,
+      "content_id": "GL-P003",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "대화",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
       "published_at": null,
-      "scheduled_at": null,
-      "photos": [],
-      "internal_origin": "operator_seed_editorial",
-      "visible_admin_label_change": false,
-      "security_role_change": false,
-      "original_content": true,
-      "visit_claim": false,
-      "metrics": null,
-      "observation_windows": {
-        "24h": null,
-        "72h": null,
-        "7d": null
-      },
-      "body_sha256": "b06a80cda27c594d0287aec9c06485bb8d92d8a9b8bf429b00606644a1d97303"
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Historical brand Instagram draft; production not revived.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P004",
+      "account": "@gling.app",
+      "platform": "threads",
+      "category": "대화",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Legacy record only; owner prohibits brand Threads content production, adaptation, storage and planning.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P005",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "만드는과정",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Historical brand Instagram draft; production not revived.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P006",
+      "account": "@gling.app",
+      "platform": "threads",
+      "category": "만드는과정",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Legacy record only; owner prohibits brand Threads content production, adaptation, storage and planning.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P007",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "생활주제",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Historical brand Instagram draft; production not revived.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P008",
+      "account": "@gling.app",
+      "platform": "threads",
+      "category": "생활주제",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Legacy record only; owner prohibits brand Threads content production, adaptation, storage and planning.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P009",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "대화",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Historical brand Instagram draft; production not revived.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P010",
+      "account": "@gling.app",
+      "platform": "threads",
+      "category": "대화",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Legacy record only; owner prohibits brand Threads content production, adaptation, storage and planning.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P011",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "만드는과정",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Historical brand Instagram draft; production not revived.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P012",
+      "account": "@gling.app",
+      "platform": "threads",
+      "category": "만드는과정",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Legacy record only; owner prohibits brand Threads content production, adaptation, storage and planning.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P013",
+      "account": "@chalkakandupload",
+      "platform": "threads",
+      "category": "personal",
+      "actual_local_status": "published",
+      "scheduled_at_receipt": null,
+      "published_at": "2026-09-27T10:05:59.294337-07:00",
+      "published_at_basis": "preserved CSV receipt, not freshly reconciled",
+      "publish_ref_receipt": "https://www.threads.com/@chalkakandupload/post/DdzGsYtGqLK",
+      "age_hours_at_report": 154.286,
+      "observation_windows": [
+        {
+          "window": "24h",
+          "due_at": "2026-09-28T10:05:59.294337-07:00",
+          "due_at_run": true,
+          "exact_window_observation": null,
+          "status": "due_snapshot_unavailable",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "72h",
+          "due_at": "2026-09-30T10:05:59.294337-07:00",
+          "due_at_run": true,
+          "exact_window_observation": null,
+          "status": "due_snapshot_unavailable",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "7d",
+          "due_at": "2026-10-04T10:05:59.294337-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        }
+      ],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Existing personal publication receipt; current native Insights unavailable.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P014",
+      "account": "@chalkakandupload",
+      "platform": "threads",
+      "category": "promotion",
+      "actual_local_status": "published",
+      "scheduled_at_receipt": null,
+      "published_at": "2026-09-26T12:06:22.009840-07:00",
+      "published_at_basis": "preserved CSV receipt, not freshly reconciled",
+      "publish_ref_receipt": "https://www.threads.com/@chalkakandupload/post/DdwviovD7Ek",
+      "age_hours_at_report": 176.279,
+      "observation_windows": [
+        {
+          "window": "24h",
+          "due_at": "2026-09-27T12:06:22.009840-07:00",
+          "due_at_run": true,
+          "exact_window_observation": null,
+          "status": "due_snapshot_unavailable",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "72h",
+          "due_at": "2026-09-29T12:06:22.009840-07:00",
+          "due_at_run": true,
+          "exact_window_observation": null,
+          "status": "due_snapshot_unavailable",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "7d",
+          "due_at": "2026-10-03T12:06:22.009840-07:00",
+          "due_at_run": true,
+          "exact_window_observation": null,
+          "status": "due_snapshot_unavailable",
+          "current_read_does_not_backfill_exact_window": true
+        }
+      ],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Existing personal publication receipt; current native Insights unavailable.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P015",
+      "account": "@chalkakandupload",
+      "platform": "threads",
+      "category": "promotion",
+      "actual_local_status": "published",
+      "scheduled_at_receipt": null,
+      "published_at": "2026-09-27T11:04:59.783803-07:00",
+      "published_at_basis": "preserved CSV receipt, not freshly reconciled",
+      "publish_ref_receipt": "https://www.threads.com/@chalkakandupload/post/DdzNdQLjyKh",
+      "age_hours_at_report": 153.302,
+      "observation_windows": [
+        {
+          "window": "24h",
+          "due_at": "2026-09-28T11:04:59.783803-07:00",
+          "due_at_run": true,
+          "exact_window_observation": null,
+          "status": "due_snapshot_unavailable",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "72h",
+          "due_at": "2026-09-30T11:04:59.783803-07:00",
+          "due_at_run": true,
+          "exact_window_observation": null,
+          "status": "due_snapshot_unavailable",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "7d",
+          "due_at": "2026-10-04T11:04:59.783803-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        }
+      ],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Existing personal publication receipt; current native Insights unavailable.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P016",
+      "account": "@chalkakandupload",
+      "platform": "threads",
+      "category": "personal",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Fresh personal Insights gate blocked; no revision or approval request. Existing draft may be edited independently by foreground owner task.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P017",
+      "account": "@chalkakandupload",
+      "platform": "threads",
+      "category": "personal",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Fresh personal Insights gate blocked; no revision or approval request. Existing draft may be edited independently by foreground owner task.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P018",
+      "account": "@chalkakandupload",
+      "platform": "threads",
+      "category": "promotion",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Fresh personal Insights gate blocked; no revision or approval request. Existing draft may be edited independently by foreground owner task.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P019",
+      "account": "@chalkakandupload",
+      "platform": "threads",
+      "category": "promotion",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Fresh personal Insights gate blocked; no revision or approval request. Existing draft may be edited independently by foreground owner task.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P020",
+      "account": "@chalkakandupload",
+      "platform": "threads",
+      "category": "promotion",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Owner save-only hold; body approval does not approve topic/comment, enqueue or publication.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P021",
+      "account": "@chalkakandupload",
+      "platform": "threads",
+      "category": "personal",
+      "actual_local_status": "ready",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Individually approved immutable copy/topic/comment; no action by daily draft run.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P022",
+      "account": "@chalkakandupload",
+      "platform": "threads",
+      "category": "personal",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Fresh personal Insights gate blocked; no revision or approval request. Existing draft may be edited independently by foreground owner task.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P023",
+      "account": "@chalkakandupload",
+      "platform": "threads",
+      "category": "personal",
+      "actual_local_status": "ready",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Individually approved immutable copy/topic/comment; no action by daily draft run.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P024",
+      "account": "@chalkakandupload",
+      "platform": "threads",
+      "category": "personal",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Fresh personal Insights gate blocked; no revision or approval request. Existing draft may be edited independently by foreground owner task.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P025",
+      "account": "@chalkakandupload",
+      "platform": "threads",
+      "category": "personal",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Fresh personal Insights gate blocked; no revision or approval request. Existing draft may be edited independently by foreground owner task.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P026",
+      "account": "@chalkakandupload",
+      "platform": "threads",
+      "category": "personal",
+      "actual_local_status": "draft",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Fresh personal Insights gate blocked; no revision or approval request. Existing draft may be edited independently by foreground owner task.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P027",
+      "account": "@chalkakandupload",
+      "platform": "threads",
+      "category": "personal",
+      "actual_local_status": "ready",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Individually approved immutable copy/topic/comment; no action by daily draft run.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P028",
+      "account": "@chalkakandupload",
+      "platform": "threads",
+      "category": "personal",
+      "actual_local_status": "ready",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Individually approved immutable copy/topic/comment; no action by daily draft run.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P029",
+      "account": "@chalkakandupload",
+      "platform": "threads",
+      "category": "promotion",
+      "actual_local_status": "ready",
+      "scheduled_at_receipt": null,
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": null,
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Individually approved immutable copy/topic/comment; no action by daily draft run.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P030",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "published",
+      "scheduled_at_receipt": null,
+      "published_at": "2026-10-01T07:26:03.000Z",
+      "published_at_basis": "preserved CSV receipt, not freshly reconciled",
+      "publish_ref_receipt": "https://www.instagram.com/p/Dd8XmjiPzZj/",
+      "age_hours_at_report": 67.951,
+      "observation_windows": [
+        {
+          "window": "24h",
+          "due_at": "2026-10-02T00:26:03-07:00",
+          "due_at_run": true,
+          "exact_window_observation": null,
+          "status": "due_snapshot_unavailable",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "72h",
+          "due_at": "2026-10-04T00:26:03-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "7d",
+          "due_at": "2026-10-08T00:26:03-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        }
+      ],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P031",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "published",
+      "scheduled_at_receipt": "2026-10-02T08:00:00-07:00",
+      "published_at": "2026-10-02T15:00:57.000Z",
+      "published_at_basis": "preserved CSV receipt, not freshly reconciled",
+      "publish_ref_receipt": "https://www.instagram.com/gling.app/p/Dd_wfC-DgdJ/",
+      "age_hours_at_report": 36.37,
+      "observation_windows": [
+        {
+          "window": "24h",
+          "due_at": "2026-10-03T08:00:57-07:00",
+          "due_at_run": true,
+          "exact_window_observation": null,
+          "status": "due_snapshot_unavailable",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "72h",
+          "due_at": "2026-10-05T08:00:57-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "7d",
+          "due_at": "2026-10-09T08:00:57-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        }
+      ],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P032",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "published",
+      "scheduled_at_receipt": "2026-10-01T19:00:00-07:00",
+      "published_at": "2026-10-02T02:00:41.000Z",
+      "published_at_basis": "preserved CSV receipt, not freshly reconciled",
+      "publish_ref_receipt": "18110719583144189",
+      "age_hours_at_report": 49.374,
+      "observation_windows": [
+        {
+          "window": "24h",
+          "due_at": "2026-10-02T19:00:41-07:00",
+          "due_at_run": true,
+          "exact_window_observation": null,
+          "status": "due_snapshot_unavailable",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "72h",
+          "due_at": "2026-10-04T19:00:41-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "7d",
+          "due_at": "2026-10-08T19:00:41-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        }
+      ],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P033",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "published",
+      "scheduled_at_receipt": "2026-10-03T12:00:00-07:00",
+      "published_at": "2026-10-03T19:01:14.000Z",
+      "published_at_basis": "native original datetime verified on existing loaded page",
+      "publish_ref_receipt": "https://www.instagram.com/reel/DeCwuvTICVB/",
+      "age_hours_at_report": 8.365,
+      "observation_windows": [
+        {
+          "window": "24h",
+          "due_at": "2026-10-04T12:01:14-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "72h",
+          "due_at": "2026-10-06T12:01:14-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "7d",
+          "due_at": "2026-10-10T12:01:14-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        }
+      ],
+      "this_run_action": "observed_existing_rendered_public_post",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": true
+    },
+    {
+      "content_id": "GL-P034",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-05T17:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1105437635466048",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P035",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-09T17:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1819782232369519",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P036",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "cancelled",
+      "scheduled_at_receipt": "2026-10-04T08:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "2206623463247819",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P037",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-05T08:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1900898714213293",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P038",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-06T17:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1003055755831961",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P039",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-05T19:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1051293257730993",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P040",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-07T17:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "2230062890899933",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P041",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-08T17:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1072985765540663",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P042",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-06T08:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "2059346798046912",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P043",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "cancelled",
+      "scheduled_at_receipt": "2026-10-04T12:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1565589938163022",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P044",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-10T12:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1070325205611201",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P045",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-07T12:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1106010761981359",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P046",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "published",
+      "scheduled_at_receipt": "2026-10-02T12:00:00-07:00",
+      "published_at": "2026-10-02T19:00:30.000Z",
+      "published_at_basis": "preserved CSV receipt, not freshly reconciled",
+      "publish_ref_receipt": "https://www.instagram.com/p/DeAL5nuDVu9/",
+      "age_hours_at_report": 32.377,
+      "observation_windows": [
+        {
+          "window": "24h",
+          "due_at": "2026-10-03T12:00:30-07:00",
+          "due_at_run": true,
+          "exact_window_observation": null,
+          "status": "due_snapshot_unavailable",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "72h",
+          "due_at": "2026-10-05T12:00:30-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "7d",
+          "due_at": "2026-10-09T12:00:30-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        }
+      ],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P047",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "cancelled",
+      "scheduled_at_receipt": "2026-10-03T17:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1769821277562025",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P048",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "published",
+      "scheduled_at_receipt": "2026-10-02T17:00:00-07:00",
+      "published_at": "2026-10-03T00:00:30.000Z",
+      "published_at_basis": "preserved CSV receipt, not freshly reconciled",
+      "publish_ref_receipt": "https://www.instagram.com/p/DeAuO0ojHZT/",
+      "age_hours_at_report": 27.377,
+      "observation_windows": [
+        {
+          "window": "24h",
+          "due_at": "2026-10-03T17:00:30-07:00",
+          "due_at_run": true,
+          "exact_window_observation": null,
+          "status": "due_snapshot_unavailable",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "72h",
+          "due_at": "2026-10-05T17:00:30-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "7d",
+          "due_at": "2026-10-09T17:00:30-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        }
+      ],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P049",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "cancelled",
+      "scheduled_at_receipt": "2026-10-02T19:00:00-07:00",
+      "published_at": "2026-10-03T02:01:16.000Z",
+      "published_at_basis": "preserved CSV receipt, not freshly reconciled",
+      "publish_ref_receipt": "https://www.instagram.com/p/DeA8DUEiLtO/",
+      "age_hours_at_report": 25.364,
+      "observation_windows": [
+        {
+          "window": "24h",
+          "due_at": "2026-10-03T19:01:16-07:00",
+          "due_at_run": true,
+          "exact_window_observation": null,
+          "status": "due_snapshot_unavailable",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "72h",
+          "due_at": "2026-10-05T19:01:16-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "7d",
+          "due_at": "2026-10-09T19:01:16-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        }
+      ],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P050",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "published",
+      "scheduled_at_receipt": "2026-10-03T08:00:00-07:00",
+      "published_at": "2026-10-03T15:01Z",
+      "published_at_basis": "preserved CSV receipt, not freshly reconciled",
+      "publish_ref_receipt": "https://www.instagram.com/reel/DeCVVeWid6V/",
+      "age_hours_at_report": 12.369,
+      "observation_windows": [
+        {
+          "window": "24h",
+          "due_at": "2026-10-04T08:01:00-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "72h",
+          "due_at": "2026-10-06T08:01:00-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "7d",
+          "due_at": "2026-10-10T08:01:00-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        }
+      ],
+      "this_run_action": "observed_existing_rendered_public_post",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": true
+    },
+    {
+      "content_id": "GL-P051",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "cancelled",
+      "scheduled_at_receipt": "2026-10-03T19:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1632042351783961",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P052",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "cancelled",
+      "scheduled_at_receipt": "2026-10-04T17:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1558333572760577",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P053",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-04T19:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1416661023166734",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P054",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-05T12:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1407687577527516",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P055",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-08T08:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1818213469333847",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P056",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-10T08:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1087310477251664",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P057",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-07T08:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1801465480989771",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P058",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-06T12:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1077617308397274",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P059",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-09T12:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1634878414936541",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P060",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-08T12:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "29526703330249853",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P061",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-08T19:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "2093495371272842",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P062",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-09T19:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1925417441766519",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P063",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-07T19:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "956914766875882",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P064",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-10T17:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "2720534545048124",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P065",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-09T08:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "983634601430631",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P066",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "published",
+      "scheduled_at_receipt": null,
+      "published_at": "2026-10-01T17:01:17.000Z",
+      "published_at_basis": "preserved CSV receipt, not freshly reconciled",
+      "publish_ref_receipt": "https://www.instagram.com/p/Dd9Zdh1mrri/",
+      "age_hours_at_report": 58.364,
+      "observation_windows": [
+        {
+          "window": "24h",
+          "due_at": "2026-10-02T10:01:17-07:00",
+          "due_at_run": true,
+          "exact_window_observation": null,
+          "status": "due_snapshot_unavailable",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "72h",
+          "due_at": "2026-10-04T10:01:17-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        },
+        {
+          "window": "7d",
+          "due_at": "2026-10-08T10:01:17-07:00",
+          "due_at_run": false,
+          "exact_window_observation": null,
+          "status": "not_due",
+          "current_read_does_not_backfill_exact_window": true
+        }
+      ],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
+    },
+    {
+      "content_id": "GL-P067",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "category": "festival_information",
+      "actual_local_status": "scheduled",
+      "scheduled_at_receipt": "2026-10-06T19:00:00-07:00",
+      "published_at": null,
+      "published_at_basis": null,
+      "publish_ref_receipt": "1408878340668730",
+      "age_hours_at_report": null,
+      "observation_windows": [],
+      "this_run_action": "preserved_without_edit",
+      "this_run_copy_change": false,
+      "this_run_asset_change": false,
+      "improvement_or_skip_reason": "Separate festival workflow; read-only reporting only, no production or queue writes.",
+      "fresh_native_insights": null,
+      "current_rendered_observation_available": false
     }
   ],
-  "asset_candidates": [
+  "metric_observations": [
     {
-      "content_id": "GL-A002",
-      "source_page": "https://www.instagram.com/p/DElPpkMy_P3/",
-      "type": "official_restaurant_post",
-      "status": "candidate_only",
-      "permission": null,
-      "downloaded_for_reuse": false,
-      "attached": false,
-      "notes": "2025-01-08 식당 자체 게시물; 현재 메뉴 증거로 쓰지 않음. 홈페이지 후보는 주차 도메인."
+      "content_id": "GL-P033",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "url": "https://www.instagram.com/gling.app/reel/DeCwuvTICVB/",
+      "observed_at": "2026-10-03T20:11:20.497797-07:00",
+      "source": "instagram-film-snapshot.json",
+      "source_scope": "existing loaded original post, public rendered values; native Insights not opened",
+      "data_refreshed_at": null,
+      "server_freshness_verified": false,
+      "published_at": "2026-10-03T19:01:14.000Z",
+      "published_at_basis": "native original time datetime",
+      "age_hours_at_read": 8.168,
+      "metrics": {
+        "views": null,
+        "unique_viewers": null,
+        "likes": 1,
+        "comments": 0,
+        "saves": null,
+        "shares": null,
+        "reach": null,
+        "profile_visits": null,
+        "link_clicks": null,
+        "installs": null,
+        "signups": null,
+        "meetups_created": null,
+        "repeat_hosting": null
+      },
+      "limitations": [
+        "No reload or navigation of another active task tab; server freshness unknown",
+        "Public values are not native views/reach/conversions",
+        "Blank counters remain null, not zero"
+      ],
+      "evidence": "Like count1 adjacent to like button; explicit no-comments state"
     },
     {
-      "content_id": "GL-A003",
-      "source_page": "https://www.deergarden.ca/signature",
-      "asset_url": "https://static.wixstatic.com/media/49edba_9777202b830845f69625d47031d676b9~mv2.jpg",
-      "type": "official_menu_image_with_food_photo",
-      "status": "candidate_only",
-      "permission": null,
-      "downloaded_for_reuse": false,
-      "attached": false,
-      "notes": "Orca 화면으로 주문 구조 확인. 시각 확인용 화면은 비공개 연구 디렉터리만 보관."
-    },
-    {
-      "content_id": "GL-A004",
-      "source_page": "https://www.instagram.com/p/DcoXOu2FLTK/",
-      "type": "official_restaurant_intro_carousel",
-      "status": "candidate_only",
-      "permission": null,
-      "downloaded_for_reuse": false,
-      "attached": false,
-      "notes": "공식 자체 소개 게시물 후보. 협업 크리에이터 릴스는 제외."
+      "content_id": "GL-P050",
+      "account": "@gling.app",
+      "platform": "instagram",
+      "url": "https://www.instagram.com/reels/DeCVVeWid6V/",
+      "observed_at": "2026-10-03T20:11:21.234557-07:00",
+      "source": "instagram-pumpkin-snapshot.json",
+      "source_scope": "existing loaded original post, public rendered values; native Insights not opened",
+      "data_refreshed_at": null,
+      "server_freshness_verified": false,
+      "published_at": "2026-10-03T15:01Z",
+      "published_at_basis": "CSV receipt; not newly verified natively",
+      "age_hours_at_read": 12.173,
+      "metrics": {
+        "views": null,
+        "unique_viewers": null,
+        "likes": null,
+        "comments": null,
+        "saves": null,
+        "shares": null,
+        "reach": null,
+        "profile_visits": null,
+        "link_clicks": null,
+        "installs": null,
+        "signups": null,
+        "meetups_created": null,
+        "repeat_hosting": null
+      },
+      "limitations": [
+        "No reload or navigation of another active task tab; server freshness unknown",
+        "Public values are not native views/reach/conversions",
+        "Blank counters remain null, not zero"
+      ],
+      "evidence": "No clearly attributed count in first own reel; recommendations excluded"
     }
   ],
-  "paid_action_confirmation": {
-    "action": "기존 글링 프로젝트에 GL-A002·003·004 세 글 등록 시 기존 자동 안전검사 실행",
-    "status": "not_authorized",
-    "paid_calls_initiated_by_run": 0,
-    "provider": "OpenAI",
-    "model": "gpt-5-mini",
-    "currency": "USD",
-    "input_per_million_tokens": 0.25,
-    "cached_input_per_million_tokens": 0.025,
-    "output_per_million_tokens": 2.0,
-    "total_charge": null,
-    "terms": "실제 입력·출력 토큰 종량제. 현재 설정상 글당 실패 재시도 포함 최대 5회, 세 글 최대 15회. 요청 출력 토큰 제한 미설정으로 고정 총액 보장 없음. 기존 전체 안전 모니터링 유지.",
-    "price_source": "https://developers.openai.com/api/docs/models/gpt-5-mini",
-    "observed_at": "2026-09-11T14:11:18.052774-07:00",
-    "evidence": [
-      "app-preflight-combined.json",
-      "supabase/functions/safety-monitor/index.ts:124",
-      "supabase/migrations/0010_abuse_controls.sql:546"
-    ],
-    "confirmation_reason": "사용자의 모든 유료 행동 사전 금액·조건 확인 지시. 기존 게시 위임만으로 과금 승인 추정 불가."
+  "historical_metric_observations": [
+    {
+      "content_id": "GL-P031",
+      "platform": "instagram",
+      "account": "@gling.app",
+      "source": "native per-post Insights",
+      "source_url": "https://www.instagram.com/gling.app/p/Dd_wfC-DgdJ/",
+      "observed_at": "2026-10-02T20:08:28.966211-07:00",
+      "period": "cumulative since publication",
+      "published_at_native": "2026-10-02T15:00:57.000Z",
+      "age_hours": 12.126,
+      "metrics": {
+        "views": 8,
+        "unique_viewers": 1,
+        "reactions": 1,
+        "likes": 1,
+        "comments": 0,
+        "saves": 0,
+        "shares": 0,
+        "engaged_accounts": 1,
+        "profile_activity": 0,
+        "profile_visits": 0,
+        "external_link_taps": 0,
+        "business_address_taps": 0,
+        "follows": 0,
+        "installs": null,
+        "signups": null,
+        "verified_meetup_creation": null,
+        "repeat_hosting": null
+      },
+      "audience": {
+        "follower_view_percent": 100,
+        "nonfollower_view_percent": 0,
+        "viewer_countries": null,
+        "follower_countries": null
+      },
+      "discovery": {
+        "home": 7,
+        "profile": 1
+      },
+      "limitations": [
+        "single unique viewer; no causal effect, identity, nationality or residence inferred",
+        "not a 24h snapshot; cumulative about 12h",
+        "native UI did not show country or platform install outcome"
+      ],
+      "evidence": "instagram-existing-post-insights-2.json",
+      "historical_only": true,
+      "source_report": "../../2026-10-02/threads-daily-draft-200431/report.json",
+      "not_refreshed_this_run": true
+    },
+    {
+      "content_id": "GL-P066",
+      "platform": "instagram",
+      "account": "@gling.app",
+      "source": "native per-post Insights",
+      "source_url": "https://www.instagram.com/p/Dd9Zdh1mrri/",
+      "observed_at": "2026-10-02T20:11:37.813768-07:00",
+      "period": "cumulative since publication",
+      "published_at_native": "2026-10-01T17:01:17.000Z",
+      "age_hours": 34.172,
+      "metrics": {
+        "views": null,
+        "unique_viewers": null,
+        "reactions": null,
+        "likes": 0,
+        "comments": 0,
+        "saves": 0,
+        "shares": 0,
+        "engaged_accounts": null,
+        "profile_activity": 0,
+        "profile_visits": 0,
+        "external_link_taps": 0,
+        "business_address_taps": 0,
+        "follows": 0,
+        "installs": null,
+        "signups": null,
+        "verified_meetup_creation": null,
+        "repeat_hosting": null
+      },
+      "audience": {
+        "viewer_countries": null,
+        "follower_countries": null
+      },
+      "limitations": [
+        "native views/unique viewers/reactions/engaged accounts are--",
+        "current about34h cumulative value, not exact24h; no historical backfill"
+      ],
+      "evidence": "instagram-GL-P066-insights-2.json",
+      "historical_only": true,
+      "source_report": "../../2026-10-02/threads-daily-draft-200431/report.json",
+      "not_refreshed_this_run": true
+    },
+    {
+      "content_id": "GL-P032",
+      "platform": "instagram",
+      "account": "@gling.app",
+      "source": "native per-post Insights",
+      "source_url": "https://www.instagram.com/p/Dd-XMN7iO9a/",
+      "observed_at": "2026-10-02T20:14:02.498389-07:00",
+      "period": "cumulative since publication",
+      "published_at_native": "2026-10-02T02:00:41.000Z",
+      "age_hours": 25.223,
+      "metrics": {
+        "views": null,
+        "unique_viewers": null,
+        "reactions": null,
+        "likes": 0,
+        "comments": 0,
+        "saves": 0,
+        "shares": 0,
+        "engaged_accounts": null,
+        "profile_activity": 0,
+        "profile_visits": 0,
+        "external_link_taps": 0,
+        "follows": 0,
+        "installs": null,
+        "signups": null,
+        "verified_meetup_creation": null,
+        "repeat_hosting": null
+      },
+      "audience": {
+        "viewer_countries": null,
+        "follower_countries": null
+      },
+      "limitations": [
+        "native views/unique viewers/reactions/engaged accounts are--",
+        "current about25h cumulative value; no historical backfill"
+      ],
+      "evidence": "instagram-GL-P032-insights-2.json",
+      "historical_only": true,
+      "source_report": "../../2026-10-02/threads-daily-draft-200431/report.json",
+      "not_refreshed_this_run": true
+    },
+    {
+      "content_id": "GL-P046",
+      "platform": "instagram",
+      "account": "@gling.app",
+      "source": "native per-post Insights",
+      "source_url": "https://www.instagram.com/p/DeAL5nuDVu9/",
+      "observed_at": "2026-10-02T20:16:46.334072-07:00",
+      "period": "cumulative since publication",
+      "published_at_native": "2026-10-02T19:00:30.000Z",
+      "age_hours": 8.271,
+      "metrics": {
+        "views": 2,
+        "unique_viewers": 1,
+        "reactions": null,
+        "likes": 0,
+        "comments": 0,
+        "saves": 0,
+        "shares": 0,
+        "engaged_accounts": null,
+        "profile_activity": 0,
+        "profile_visits": 0,
+        "external_link_taps": 0,
+        "follows": 0,
+        "installs": null,
+        "signups": null,
+        "verified_meetup_creation": null,
+        "repeat_hosting": null
+      },
+      "audience": {
+        "viewer_countries": null,
+        "follower_countries": null,
+        "follower_view_percent": 100.0,
+        "nonfollower_view_percent": 0.0
+      },
+      "limitations": [
+        "current cumulative value; no historical backfill",
+        "country/identity/install/organizer outcomes unavailable"
+      ],
+      "evidence": "instagram-GL-P046-insights.json",
+      "discovery": {
+        "profile": 2
+      },
+      "historical_only": true,
+      "source_report": "../../2026-10-02/threads-daily-draft-200431/report.json",
+      "not_refreshed_this_run": true
+    },
+    {
+      "content_id": "GL-P048",
+      "platform": "instagram",
+      "account": "@gling.app",
+      "source": "native per-post Insights",
+      "source_url": "https://www.instagram.com/p/DeAuO0ojHZT/",
+      "observed_at": "2026-10-02T20:17:25.223182-07:00",
+      "period": "cumulative since publication",
+      "published_at_native": "2026-10-03T00:00:30.000Z",
+      "age_hours": 3.282,
+      "metrics": {
+        "views": 2,
+        "unique_viewers": 1,
+        "reactions": null,
+        "likes": 0,
+        "comments": 0,
+        "saves": 0,
+        "shares": 0,
+        "engaged_accounts": null,
+        "profile_activity": 0,
+        "profile_visits": 0,
+        "external_link_taps": 0,
+        "follows": 0,
+        "installs": null,
+        "signups": null,
+        "verified_meetup_creation": null,
+        "repeat_hosting": null
+      },
+      "audience": {
+        "viewer_countries": null,
+        "follower_countries": null,
+        "follower_view_percent": 100.0,
+        "nonfollower_view_percent": 0.0
+      },
+      "limitations": [
+        "current cumulative value; no historical backfill",
+        "country/identity/install/organizer outcomes unavailable"
+      ],
+      "evidence": "instagram-GL-P048-insights.json",
+      "discovery": {
+        "profile": 2
+      },
+      "historical_only": true,
+      "source_report": "../../2026-10-02/threads-daily-draft-200431/report.json",
+      "not_refreshed_this_run": true
+    },
+    {
+      "content_id": "GL-P049",
+      "platform": "instagram",
+      "account": "@gling.app",
+      "source": "native per-post Insights",
+      "source_url": "https://www.instagram.com/p/DeA8DUEiLtO/",
+      "observed_at": "2026-10-02T20:17:29.727937-07:00",
+      "period": "cumulative since publication",
+      "published_at_native": "2026-10-03T02:01:16.000Z",
+      "age_hours": 1.27,
+      "metrics": {
+        "views": null,
+        "unique_viewers": null,
+        "reactions": null,
+        "likes": 0,
+        "comments": 0,
+        "saves": 0,
+        "shares": 0,
+        "engaged_accounts": null,
+        "profile_activity": 0,
+        "profile_visits": 0,
+        "external_link_taps": 0,
+        "follows": 0,
+        "installs": null,
+        "signups": null,
+        "verified_meetup_creation": null,
+        "repeat_hosting": null
+      },
+      "audience": {
+        "viewer_countries": null,
+        "follower_countries": null,
+        "follower_view_percent": null,
+        "nonfollower_view_percent": null
+      },
+      "limitations": [
+        "current cumulative value; no historical backfill",
+        "country/identity/install/organizer outcomes unavailable"
+      ],
+      "evidence": "instagram-GL-P049-insights.json",
+      "historical_only": true,
+      "source_report": "../../2026-10-02/threads-daily-draft-200431/report.json",
+      "not_refreshed_this_run": true
+    },
+    {
+      "content_id": "GL-P030",
+      "platform": "instagram",
+      "account": "@gling.app",
+      "source_url": "https://www.instagram.com/p/Dd8XmjiPzZj/",
+      "observed_at": "2026-10-02T20:17:31.850543-07:00",
+      "status": "unavailable",
+      "metrics": {
+        "views": null,
+        "unique_viewers": null,
+        "reactions": null,
+        "likes": null,
+        "comments": null,
+        "saves": null,
+        "shares": null,
+        "engaged_accounts": null,
+        "profile_activity": null,
+        "profile_visits": null,
+        "external_link_taps": null,
+        "follows": null,
+        "installs": null,
+        "signups": null,
+        "verified_meetup_creation": null,
+        "repeat_hosting": null
+      },
+      "reason": "죄송합니다. 페이지를 사용할 수 없습니다.",
+      "evidence": "instagram-GL-P030-before.json",
+      "source": "native post unavailable; publication time from preserved CSV receipt",
+      "period": null,
+      "published_at_receipt": "2026-10-01T07:26:03.000Z",
+      "age_hours_receipt": 43.858,
+      "historical_only": true,
+      "source_report": "../../2026-10-02/threads-daily-draft-200431/report.json",
+      "not_refreshed_this_run": true
+    }
+  ],
+  "account_metric_observations": {
+    "current_native_insights": null,
+    "viewer_countries": null,
+    "follower_countries": null,
+    "previous_account_metrics_not_reused_as_current": true
   },
-  "inbox_checks": [],
-  "inbox_scope_note": "이번 후속 작업에서는 수신함 재조회 안 함. 마지막 일일 원본은 daily-draft-093112, 해당 시각·범위 그대로 참조.",
-  "metric_observations": [],
-  "metrics_scope_note": "신규 앱 글은 미등록. 성과·발행시각·24h/72h/7d 만기 null. 식당/Cafe 수치를 글링 수요로 집계하지 않음.",
-  "learning_basis": [
+  "inbox_checks": [
     {
-      "id": "GL-L008",
-      "basis": "공식 정보로 상세 글 준비 후 실제 등록을 확인한 뒤 SNS 요약",
-      "type": "previous_editorial_hypothesis"
+      "source": "Gmail alias search",
+      "account": "eunsense0308@gmail.com",
+      "required_profile": "Default",
+      "worktree_id": "folder:e88d505b-f6bb-47d6-ba41-904ef2a72a8b",
+      "planned_query_not_executed": "in:anywhere \"gling@ej-entertainment.com\" after:2026/10/01",
+      "observed_at": null,
+      "status": "unavailable",
+      "displayed_threads": null,
+      "customer_inquiries_in_scope": null,
+      "new_daily_customer_inquiries": null,
+      "new_unique_threads": null,
+      "message_bodies_opened": 0,
+      "reason": "No existing scoped Gmail tab; Gling-folder new-tab routing failed within bounded source attempts. No unrelated mail or alternative profile accessed.",
+      "last_successful_check_at": "2026-10-02T20:23:45.629928-07:00",
+      "last_successful_report": "../../2026-10-02/threads-daily-draft-200431/report.json"
     },
     {
-      "id": "GL-L009",
-      "basis": "사용자 로그인 후 카페 3건 실제 열람·Crawl4AI 0.9.3 추출·식당 공식 사실 교차 확인",
-      "type": "operational_observation",
-      "growth_effect": null
+      "source": "Gmail product subject search",
+      "account": "eunsense0308@gmail.com",
+      "required_profile": "Default",
+      "worktree_id": "folder:e88d505b-f6bb-47d6-ba41-904ef2a72a8b",
+      "planned_query_not_executed": "in:anywhere subject:글링 after:2026/10/01",
+      "observed_at": null,
+      "status": "unavailable",
+      "displayed_threads": null,
+      "customer_inquiries_in_scope": null,
+      "new_daily_customer_inquiries": null,
+      "new_unique_threads": null,
+      "message_bodies_opened": 0,
+      "reason": "No existing scoped Gmail tab; Gling-folder new-tab routing failed within bounded source attempts. No unrelated mail or alternative profile accessed.",
+      "last_successful_check_at": "2026-10-02T20:25:20.570928-07:00",
+      "last_successful_report": "../../2026-10-02/threads-daily-draft-200431/report.json"
+    },
+    {
+      "source": "Instagram primary",
+      "account": "@gling.app",
+      "required_profile": "08a4dd8b-db5a-4255-b587-9da0b94df934",
+      "observed_at": null,
+      "status": "unavailable",
+      "displayed_threads": null,
+      "customer_inquiries_in_scope": null,
+      "new_daily_customer_inquiries": null,
+      "reason": "Task-owned Gling inbox tab creation did not verify target folder; existing other-task post/Meta tabs were not navigated to inbox.",
+      "last_successful_check_at": "2026-10-02T20:09:43.920375-07:00",
+      "last_successful_report": "../../2026-10-02/threads-daily-draft-200431/report.json"
+    },
+    {
+      "source": "Instagram general",
+      "account": "@gling.app",
+      "required_profile": "08a4dd8b-db5a-4255-b587-9da0b94df934",
+      "observed_at": null,
+      "status": "unavailable",
+      "displayed_threads": null,
+      "customer_inquiries_in_scope": null,
+      "new_daily_customer_inquiries": null,
+      "reason": "Task-owned Gling inbox tab creation did not verify target folder; existing other-task post/Meta tabs were not navigated to inbox.",
+      "last_successful_check_at": "2026-10-02T20:09:45.472238-07:00",
+      "last_successful_report": "../../2026-10-02/threads-daily-draft-200431/report.json"
+    },
+    {
+      "source": "Instagram requests",
+      "account": "@gling.app",
+      "required_profile": "08a4dd8b-db5a-4255-b587-9da0b94df934",
+      "observed_at": null,
+      "status": "unavailable",
+      "displayed_threads": null,
+      "customer_inquiries_in_scope": null,
+      "new_daily_customer_inquiries": null,
+      "reason": "Task-owned Gling inbox tab creation did not verify target folder; existing other-task post/Meta tabs were not navigated to inbox.",
+      "last_successful_check_at": "2026-10-02T20:09:46.990095-07:00",
+      "last_successful_report": "../../2026-10-02/threads-daily-draft-200431/report.json"
+    },
+    {
+      "source": "Instagram hidden",
+      "account": "@gling.app",
+      "required_profile": "08a4dd8b-db5a-4255-b587-9da0b94df934",
+      "observed_at": null,
+      "status": "unavailable",
+      "displayed_threads": null,
+      "customer_inquiries_in_scope": null,
+      "new_daily_customer_inquiries": null,
+      "reason": "Task-owned Gling inbox tab creation did not verify target folder; existing other-task post/Meta tabs were not navigated to inbox.",
+      "last_successful_check_at": "2026-10-02T20:10:14.991151-07:00",
+      "last_successful_report": "../../2026-10-02/threads-daily-draft-200431/report.json"
+    },
+    {
+      "source": "Instagram activity",
+      "account": "@gling.app",
+      "required_profile": "08a4dd8b-db5a-4255-b587-9da0b94df934",
+      "observed_at": null,
+      "status": "unavailable",
+      "displayed_threads": null,
+      "customer_inquiries_in_scope": null,
+      "new_daily_customer_inquiries": null,
+      "reason": "Task-owned Gling inbox tab creation did not verify target folder; existing other-task post/Meta tabs were not navigated to inbox.",
+      "last_successful_check_at": "2026-10-02T20:10:31.891579-07:00",
+      "last_successful_report": "../../2026-10-02/threads-daily-draft-200431/report.json"
+    },
+    {
+      "source": "Threads brand inbox/activity/Insights",
+      "account": "@gling.app",
+      "observed_at": null,
+      "status": "unavailable",
+      "displayed_threads": null,
+      "customer_inquiries_in_scope": null,
+      "new_daily_customer_inquiries": null,
+      "reason": "No existing Gling-profile Threads page in required folder; no personal fallback, logout or new Threads tab."
+    },
+    {
+      "source": "Threads personal inbox/Insights",
+      "account": "@chalkakandupload",
+      "observed_at": null,
+      "precheck_at": "2026-10-03T20:06:27.273437-07:00",
+      "status": "blocked",
+      "displayed_threads": null,
+      "customer_inquiries_in_scope": null,
+      "new_daily_customer_inquiries": null,
+      "reason": "SKIPPED_RIGHT_PANE_UNAVAILABLE"
     }
   ],
   "experiments": [
     {
-      "id": "GL-L009",
-      "status": "exploratory_local_app_drafts",
-      "primary_improvement": "후기 말투 변환 대신 공식 자료로 메뉴 선택·주소 구분 등 독자가 쓸 수 있는 정보 제공",
-      "content_ids": [
-        "GL-A002",
-        "GL-A003",
-        "GL-A004"
-      ],
-      "expected_behavior": "필요한 메뉴·위치 정보를 확인하고 실제 앱 글을 읽음",
-      "measured_effect": null,
-      "next_observation": "비용 승인·실제 등록·원문 저장 대조 후 게시 시각에 기반한 24h/72h/7d 관측. SNS는 별도 명시적 재개 필요."
+      "id": "GL-L001",
+      "status": "preserved_historical_follow_up_unknown",
+      "fresh_customer_or_growth_result": null
+    },
+    {
+      "id": "GL-L004",
+      "status": "current_scoped_inbox_sources_unavailable",
+      "current_customer_inquiries": null,
+      "new_unique_messages": null
+    },
+    {
+      "id": "GL-L023",
+      "status": "operational_follow_up_applied",
+      "causal_experiment_run": false,
+      "content_effect": null,
+      "basis": "Original publication timestamp vs existing rendered relative age; read time does not prove metric refresh time."
     }
   ],
+  "learning_basis": {
+    "register": "../../../learning-2026-09-09-nick-saraev.md",
+    "preserved_original": "GL-L001",
+    "follow_up": "GL-L023",
+    "primary_improvement": "Separate UI read timestamp, original publication time and unknown data-refresh timestamp. Preserve older metrics only as dated history.",
+    "applied_to": "dated HTML/JSON reporting only",
+    "eligible_future_content_changes": 0,
+    "copy_change_blocked_by_personal_fresh_insights_gate": true,
+    "shared_playbook_updated": true,
+    "new_customer_or_growth_lesson": null
+  },
   "content_actions": [
     {
-      "content_id": "GL-A002",
-      "action": "saved_local_app_draft",
-      "improvement": "회원의 맛·대기·주차 후기를 옮기지 않고 공식 계정에서 확인한 식당/배달 주방 주소 구분으로 새 정보글 작성",
-      "body_sha256": "4dad942bf0e14c2ca99ad992e85cf83bb9d4b2153eaeb2458a68ebfbe88d37d1",
-      "saved_body_readback": true,
-      "external_write": false
+      "scope": "personal draft inventory",
+      "account": "@chalkakandupload",
+      "content_ids": [
+        "GL-P016",
+        "GL-P017",
+        "GL-P022",
+        "GL-P024",
+        "GL-P025",
+        "GL-P026",
+        "GL-P018",
+        "GL-P019"
+      ],
+      "action": "preserved_without_revision_or_approval_request",
+      "reason": "SKIPPED_RIGHT_PANE_UNAVAILABLE; no safe current audience decision",
+      "new_copy": 0
     },
     {
-      "content_id": "GL-A003",
-      "action": "saved_local_app_draft",
-      "improvement": "카페에서 발견한 메뉴 조합 주제를 공식 메뉴 이미지와 대조해 선택 순서·지점 주소 안내로 독립 작성",
-      "body_sha256": "97220cc44100cead39c6715233edcff201882b8f225cb20d9fd1863a031b2e5f",
-      "saved_body_readback": true,
-      "external_write": false
+      "scope": "approved queue and save-only hold",
+      "action": "preserved_exact_content_topic_comment_and_ledger",
+      "content_ids": [
+        "GL-P021",
+        "GL-P023",
+        "GL-P027",
+        "GL-P028",
+        "GL-P029",
+        "GL-P020"
+      ]
     },
     {
-      "content_id": "GL-A004",
-      "action": "saved_local_app_draft",
-      "improvement": "카페의 방문 후기·기간성 할인 대신 식당 자체 게시물의 메뉴 범위와 주소로 작성; 크리에이터 협찬 평가는 배제",
-      "body_sha256": "b06a80cda27c594d0287aec9c06485bb8d92d8a9b8bf429b00606644a1d97303",
-      "saved_body_readback": true,
-      "external_write": false
+      "scope": "brand Threads and historical brand Instagram",
+      "action": "excluded_from_content_production",
+      "changes": 0
+    },
+    {
+      "scope": "separate festival production/native storage/template",
+      "action": "excluded_from_execution",
+      "changes": 0
+    },
+    {
+      "scope": "dated reports and cumulative learning",
+      "action": "record_source_freshness_and_access_gaps",
+      "copy_change": false
     }
   ],
+  "patina": {
+    "this_run_cli_runs": 0,
+    "reason": "No new or edited SNS copy in this cycle.",
+    "historical_passes_not_claimed_for_current_foreground_revisions": true,
+    "separate_foreground_local_analysis_is_not_final_backend_verify": true,
+    "current_drafts_need_required_final_verification_when_eligible": true,
+    "saved_body_readback": "Current CSV copy hashes captured; approved copies exactly match ledger."
+  },
+  "benchmark": {
+    "queue_file": "../../../benchmark-links.md",
+    "pending_urls": 0,
+    "status": "skipped_empty_pending",
+    "analysis_cards_created": 0,
+    "feed_discovery": false,
+    "benchmark_inbox_changed": false
+  },
   "source_gaps": [
     {
-      "source": "phnompenhrestaurant.ca",
-      "reason": "직접 연 공개 홈페이지 후보가 GoDaddy 주차 페이지로 리디렉션. 식당 공식 정보·사진으로 사용 안 함.",
-      "fallback": "식당 공식 Instagram과 MICHELIN 기본 정보"
+      "source": "Personal Threads Insights/inbox",
+      "reason": "SKIPPED_RIGHT_PANE_UNAVAILABLE",
+      "current_data": null
     },
     {
-      "source": "Official photo reuse",
-      "reason": "공식 페이지에서 사진 후보는 찾았지만 명시 재사용 범위 미확인. 사진 첨부 없이 게시 가능한 본문 준비.",
-      "value": null
+      "source": "Brand inbox/detail Insights new tabs",
+      "reason": "Two exact --worktree all Gling-profile creates returned TubeBench folder; immediately closed without page commands. Third explicit-folder selector failed. Source retry limit reached.",
+      "attempts": 3,
+      "current_data": null
     },
     {
-      "source": "Browser tabs",
-      "reason": "일부 task-owned 탭이 후속 조회에서 browser_tab_not_found. 원인 미확정. 목록 재탐색 후 공식 대체 경로만 사용했으며 출처 사이트 접근 불가로 일반화하지 않음."
+      "source": "Gmail product-scoped inbox",
+      "reason": "No verified Gling-folder task tab; query/account not freshly checked. Previous results remain historical.",
+      "current_data": null
     },
     {
-      "source": "App mutation",
-      "reason": "기존 유료 GPT-5-mini 안전검사 자동 실행. 금액·조건 승인 전 등록 중단.",
-      "value": null
+      "source": "Brand Threads",
+      "reason": "No existing correct-profile tab; no personal fallback, logout or extra Threads tab.",
+      "current_data": null
+    },
+    {
+      "source": "Instagram detailed/account Insights and audience country",
+      "reason": "Other active task tabs not navigated; existing public rendered values only, refresh time unknown.",
+      "current_data": null
+    },
+    {
+      "source": "Exact24h/72h/7d snapshots",
+      "reason": "Current readings do not reconstruct missed observation windows. GL-P0147d due today, unavailable.",
+      "current_data": null
+    },
+    {
+      "source": "Installs/signups/organizer conversations/meetup creation/repeat hosting",
+      "reason": "No verified outcome evidence; views or country cannot prove these.",
+      "current_data": null
+    },
+    {
+      "source": "Native scheduled queue reconciliation",
+      "reason": "24 rendered rows only; reservation IDs/timezone/exhaustive identity mapping unknown.",
+      "current_data": null
+    }
+  ],
+  "blockers": [
+    {
+      "code": "SKIPPED_RIGHT_PANE_UNAVAILABLE",
+      "effect": "Personal draft creation/revision/approval presentation paused for this cycle."
+    },
+    {
+      "code": "NEW_TAB_FOLDER_ROUTING_FAILED",
+      "effect": "Fresh Gmail/Instagram inbox and detailed Insights unavailable."
     }
   ],
   "highlights": {
     "learned": [
-      "카페 3건 본문 접근·무료 로컬 Crawl4AI 추출 실제 완료",
-      "디어가든 메뉴 선택 구조와 Bodo 자체 메뉴·주소 확인",
-      "검색 결과의 공식 사이트 후보도 주차 도메인일 수 있음",
-      "글 등록이 기존 유료 안전검사를 유발하는 실제 경로 확인"
+      "Gling terminal selection or successful create response alone does not verify actual workspace/page routing.",
+      "The same original post can show an outdated relative-age label in an existing loaded tab."
     ],
     "applying": [
-      "원문 사진·방문 경험·개인 평가 제외",
-      "공식 근거 기반 독립 원고 3개와 기존 프로필 배정 저장",
-      "SNS 12개 로컬 초안과 cadence 보존",
-      "내부 seed 구분·권한·안전 모니터링 유지"
+      "Assert tab worktree/profile before page commands; immediately close misrouted task tabs.",
+      "Report observation time, original post time and unknown refresh time separately.",
+      "Preserve independent owner foreground edits; daily blocked gate cannot reuse their Insights."
     ],
     "unknown": [
-      "새 글의 조회·유입·고객 반응",
-      "사진 재사용 허용 범위",
-      "등록 시 총 안전검사 비용",
-      "실제 맛·대기·당일 영업 상태"
+      "Current personal audience fit and organizer needs",
+      "Current inbox inquiries and Instagram full Insights",
+      "Metric freshness, installs and verified repeat hosting"
     ]
   },
-  "daily_baseline_report": "daily-draft-093112.html",
-  "previous_content_report": "content-policy-134111.html",
-  "weekly_review": "not_due_Friday",
-  "calendar_changed": false,
-  "calendar_sha256": "c8e411f12cd1a92bdac5d11e3f8237d4e1c891bfe22d2c4d8667e34cfecda7c3",
-  "patina": "SNS copy unchanged; current app-only drafts do not claim a Patina run",
-  "validation": {
-    "json_parse": "passed",
-    "calendar_check": "PASS: 12 calendar rows; local consistency only, publication not verified",
-    "draft_check": "PASS: 3 sourced drafts, saved bodies, profiles, no app writes/photos; SNS CSV unchanged",
-    "saved_body_readback": "passed",
-    "orca_html_view": "passed; 3 exact bodies and screenshot visually reviewed",
-    "checker_repair": "Initial check helper used wrong relative parent for CSV; corrected and reran successfully. App code unchanged."
-  },
-  "tab_cleanup": {
-    "observed_at": "2026-09-11T14:20:42.221598-07:00",
-    "results": [
+  "verification": {
+    "calendar_check": "calendar-check.log",
+    "json_and_preservation": "verification.json",
+    "browser": "browser-verification.json",
+    "protected_files": [
       {
-        "name": "cafe-phnom-penh",
-        "page_id": "74162469-5a9f-4f03-94a5-77f5964c1daf",
-        "status": "already_absent",
-        "reason": "not in current parent tab list; disappearance cause unknown"
+        "path": "marketing/social-calendar.csv",
+        "initial_sha256": "c7ee34e57eff91e8a965963e2c86bf81d45314f760821f4facea39ef0c3bb417",
+        "current_sha256": "2f48428e3e00d7ce44ffd7b33bd0e5fdaf9f258fcfa0e31a8d20d799bf32577d",
+        "unchanged": false
       },
       {
-        "name": "cafe-deer-garden",
-        "page_id": "cb27862a-f7a1-4fca-809a-89578bcff05f",
-        "status": "already_absent",
-        "reason": "not in current parent tab list; disappearance cause unknown"
+        "path": "marketing/chalkakandupload-approvals.json",
+        "initial_sha256": "122a6c92a55bfe9a0f8729ebb02d6fb8ae059635261afb1a75015717e32c1634",
+        "current_sha256": "122a6c92a55bfe9a0f8729ebb02d6fb8ae059635261afb1a75015717e32c1634",
+        "unchanged": true
       },
       {
-        "name": "cafe-bodo",
-        "page_id": "91f5f38f-1885-4317-8b97-de13c4763b25",
-        "status": "already_absent",
-        "reason": "not in current parent tab list; disappearance cause unknown"
+        "path": "marketing/chalkakandupload-automation.json",
+        "initial_sha256": "e25b8c4ad62ad885cb23bda04ef1c3a07b391dd8d0d371a34d803f8b1a3f0d2e",
+        "current_sha256": "e25b8c4ad62ad885cb23bda04ef1c3a07b391dd8d0d371a34d803f8b1a3f0d2e",
+        "unchanged": true
       },
       {
-        "name": "official-phnom-penh",
-        "page_id": "cd7333d6-88e0-482f-b95d-53a0f2626c24",
-        "status": "already_absent",
-        "reason": "not in current parent tab list; disappearance cause unknown"
+        "path": "marketing/chalkakandupload-queue.md",
+        "initial_sha256": "b1b20b67efd062ff3982b9c651015173a017f4f71c805c74c3d37f96edbd3667",
+        "current_sha256": "cd600a4210caeb4c8c6e06e0509c0a442021615e2de61c289b2c674bea1add37",
+        "unchanged": false
       },
       {
-        "name": "official-deer-garden",
-        "page_id": "f5d5dfa5-aa3e-45fb-a3ef-90ca5f262013",
-        "status": "closed",
-        "ok": true
+        "path": "marketing/chalkakandupload-replies.md",
+        "initial_sha256": "d67cc4ea49d86ef9d2216255ca54178a8768570dfba9c4d1d65b222942c6936d",
+        "current_sha256": "d67cc4ea49d86ef9d2216255ca54178a8768570dfba9c4d1d65b222942c6936d",
+        "unchanged": true
       },
       {
-        "name": "bodo-official-search",
-        "page_id": "726f23d8-efb4-476b-9467-ae008e739a33",
-        "status": "already_absent",
-        "reason": "not in current parent tab list; disappearance cause unknown"
+        "path": "marketing/voice.md",
+        "initial_sha256": "78608406939fb748a4c305a921caabbd862f563e8afa7ba4fe22bbfa883a28c4",
+        "current_sha256": "5d915e875363fb6adc28ac1209e44fde131c8bebfdfdeac618e16f1dad401eff",
+        "unchanged": false
       },
       {
-        "name": "phnom-official-search",
-        "page_id": "bce7a5c7-fe5e-426e-9cf2-98757309e235",
-        "status": "closed",
-        "ok": true
+        "path": "marketing/festival-template.json",
+        "initial_sha256": "e1640f84ed10e701812f8429a799871d97f953d33c9fa402253257866d1040b6",
+        "current_sha256": "e1640f84ed10e701812f8429a799871d97f953d33c9fa402253257866d1040b6",
+        "unchanged": true
       },
       {
-        "name": "openai-safety-price",
-        "page_id": "4244c5a5-14ad-4bda-a140-d85193974891",
-        "status": "closed",
-        "ok": true
+        "path": "marketing/festival-automation.json",
+        "initial_sha256": "2c57715261178ffbb7d042d42f63ddf5fea15f842d81f91be8adb3e7875ab27c",
+        "current_sha256": "2c57715261178ffbb7d042d42f63ddf5fea15f842d81f91be8adb3e7875ab27c",
+        "unchanged": true
       },
       {
-        "name": "bodo-search-retry",
-        "page_id": "851a63e8-bd9a-442e-9547-76963998d805",
-        "status": "closed",
-        "ok": true
+        "path": "marketing/festival-content-ledger.json",
+        "initial_sha256": "c473bca1386f2c35f04241b8c22d27b3c1ec7c34f758597fee79bf0960152cd1",
+        "current_sha256": "c473bca1386f2c35f04241b8c22d27b3c1ec7c34f758597fee79bf0960152cd1",
+        "unchanged": true
       },
       {
-        "name": "official-deer-signature",
-        "page_id": "f60c7ff0-3775-4002-9a6c-8cfccf432497",
-        "status": "closed",
-        "ok": true
+        "path": "marketing/festival-daily-automation.md",
+        "initial_sha256": "296956bdb7356ebd5d3d401c395b94ab3b4180e3d3369c453adb655c9725c930",
+        "current_sha256": "296956bdb7356ebd5d3d401c395b94ab3b4180e3d3369c453adb655c9725c930",
+        "unchanged": true
       },
       {
-        "name": "official-bodo-instagram",
-        "page_id": "b9aab06c-adad-48a4-9848-de1cd68657f4",
-        "status": "closed",
-        "ok": true
-      },
-      {
-        "name": "official-phnom-http",
-        "page_id": "92387447-4fff-4b6a-9f9c-67d455ae4032",
-        "status": "closed",
-        "ok": true
-      },
-      {
-        "name": "official-phnom-instagram",
-        "page_id": "40ae4ad5-bc21-4975-8758-51af4d8ccf6e",
-        "status": "closed",
-        "ok": true
-      },
-      {
-        "name": "phnom-michelin",
-        "page_id": "8e08e5c9-7914-4c20-bfd6-623da83d5fe7",
-        "status": "closed",
-        "ok": true
+        "path": "marketing/benchmark-links.md",
+        "initial_sha256": "28ff810c4842fd5e5bffbca171275af814c0f5106f10b6547a4cf341d54a43e2",
+        "current_sha256": "28ff810c4842fd5e5bffbca171275af814c0f5106f10b6547a4cf341d54a43e2",
+        "unchanged": true
       }
     ],
-    "preserved_user_naver_tab": "d47dd04d-135a-4ebf-a5cd-87349e3abe64",
-    "review_tab": "13982e5a-f021-47c9-9a91-8cbe7f51e195",
-    "remaining_parent_tabs": [
+    "concurrent_external_changes_preserved": true,
+    "protected_files_final": [
       {
-        "page_id": "007cb0b2-390d-4805-94b7-628fad64cd5a",
-        "profile": "Gling",
-        "title": "프로필 편집 • Instagram"
+        "path": "marketing/social-calendar.csv",
+        "initial_sha256": "c7ee34e57eff91e8a965963e2c86bf81d45314f760821f4facea39ef0c3bb417",
+        "final_sha256": "3a772456b89598811465a5f38dba8690282368379d5b20cf4ea7357f10df53c4",
+        "unchanged": false,
+        "this_run_writes": 0
       },
       {
-        "page_id": "6f11e5e4-031a-420f-a84d-67bd6302c6f7",
-        "profile": "Default",
-        "title": "127.0.0.1:8181/?build=10-final"
+        "path": "marketing/chalkakandupload-approvals.json",
+        "initial_sha256": "122a6c92a55bfe9a0f8729ebb02d6fb8ae059635261afb1a75015717e32c1634",
+        "final_sha256": "122a6c92a55bfe9a0f8729ebb02d6fb8ae059635261afb1a75015717e32c1634",
+        "unchanged": true,
+        "this_run_writes": 0
       },
       {
-        "page_id": "02e76f34-365b-4fa5-ae77-71e82298e26b",
-        "profile": "Default",
-        "title": "App Store Connect"
+        "path": "marketing/chalkakandupload-automation.json",
+        "initial_sha256": "e25b8c4ad62ad885cb23bda04ef1c3a07b391dd8d0d371a34d803f8b1a3f0d2e",
+        "final_sha256": "e25b8c4ad62ad885cb23bda04ef1c3a07b391dd8d0d371a34d803f8b1a3f0d2e",
+        "unchanged": true,
+        "this_run_writes": 0
       },
       {
-        "page_id": "d47dd04d-135a-4ebf-a5cd-87349e3abe64",
-        "profile": "Gling",
-        "title": "즐거운 캐나다 라이프 ~ 헬로! 밴쿠버 : 네이버 카페"
+        "path": "marketing/chalkakandupload-queue.md",
+        "initial_sha256": "b1b20b67efd062ff3982b9c651015173a017f4f71c805c74c3d37f96edbd3667",
+        "final_sha256": "785c17d4b6326515fdace85c6881cc5a367a2183ae28d57cd31dabd5d235bf5b",
+        "unchanged": false,
+        "this_run_writes": 0
       },
       {
-        "page_id": "13982e5a-f021-47c9-9a91-8cbe7f51e195",
-        "profile": "Gling",
-        "title": "글링 · 카페 조사와 맛집 원고 3편"
+        "path": "marketing/chalkakandupload-replies.md",
+        "initial_sha256": "d67cc4ea49d86ef9d2216255ca54178a8768570dfba9c4d1d65b222942c6936d",
+        "final_sha256": "91dd69e6fddf8a215d1d6867d4c9815fefdc194742652e3cc3ccb1be77e2addd",
+        "unchanged": false,
+        "this_run_writes": 0
+      },
+      {
+        "path": "marketing/voice.md",
+        "initial_sha256": "78608406939fb748a4c305a921caabbd862f563e8afa7ba4fe22bbfa883a28c4",
+        "final_sha256": "adb2f9e6f50529ce196b66aff3c3638a338ab1a5841d7f65998d15ef399d377a",
+        "unchanged": false,
+        "this_run_writes": 0
+      },
+      {
+        "path": "marketing/festival-template.json",
+        "initial_sha256": "e1640f84ed10e701812f8429a799871d97f953d33c9fa402253257866d1040b6",
+        "final_sha256": "e1640f84ed10e701812f8429a799871d97f953d33c9fa402253257866d1040b6",
+        "unchanged": true,
+        "this_run_writes": 0
+      },
+      {
+        "path": "marketing/festival-automation.json",
+        "initial_sha256": "2c57715261178ffbb7d042d42f63ddf5fea15f842d81f91be8adb3e7875ab27c",
+        "final_sha256": "2c57715261178ffbb7d042d42f63ddf5fea15f842d81f91be8adb3e7875ab27c",
+        "unchanged": true,
+        "this_run_writes": 0
+      },
+      {
+        "path": "marketing/festival-content-ledger.json",
+        "initial_sha256": "c473bca1386f2c35f04241b8c22d27b3c1ec7c34f758597fee79bf0960152cd1",
+        "final_sha256": "c473bca1386f2c35f04241b8c22d27b3c1ec7c34f758597fee79bf0960152cd1",
+        "unchanged": true,
+        "this_run_writes": 0
+      },
+      {
+        "path": "marketing/festival-daily-automation.md",
+        "initial_sha256": "296956bdb7356ebd5d3d401c395b94ab3b4180e3d3369c453adb655c9725c930",
+        "final_sha256": "296956bdb7356ebd5d3d401c395b94ab3b4180e3d3369c453adb655c9725c930",
+        "unchanged": true,
+        "this_run_writes": 0
+      },
+      {
+        "path": "marketing/benchmark-links.md",
+        "initial_sha256": "28ff810c4842fd5e5bffbca171275af814c0f5106f10b6547a4cf341d54a43e2",
+        "final_sha256": "28ff810c4842fd5e5bffbca171275af814c0f5106f10b6547a4cf341d54a43e2",
+        "unchanged": true,
+        "this_run_writes": 0
       }
-    ]
-  }
+    ],
+    "calendar_check_result": "PASS: 67 calendar rows; local consistency only, publication not verified",
+    "json_validation": "passed",
+    "actual_orca_html_view": "verified; task-owned tabs closed"
+  },
+  "previous_daily_report": "../../2026-10-02/threads-daily-draft-200431/index.html",
+  "completed_at": "2026-10-03T20:34:46.918004-07:00"
 }
