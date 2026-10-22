@@ -1,0 +1,322 @@
+TAP version 13
+# (node:91871) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/Orca/workspace/mobile/gling-map-union-local-20261015/src/lib/discovery.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/Orca/workspace/mobile/gling-map-union-local-20261015/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: existing catalog places retain their public coordinates, category and exact detail identity in discovery
+ok 1 - existing catalog places retain their public coordinates, category and exact detail identity in discovery
+  ---
+  duration_ms: 4.044083
+  type: 'test'
+  ...
+# Subtest: a Top 25 pick merges the same canonical catalog ID without awarding other branches a badge
+ok 2 - a Top 25 pick merges the same canonical catalog ID without awarding other branches a badge
+  ---
+  duration_ms: 0.442458
+  type: 'test'
+  ...
+# Subtest: the combined screen includes its current-city catalog while backend rows are still loading
+ok 3 - the combined screen includes its current-city catalog while backend rows are still loading
+  ---
+  duration_ms: 30.176958
+  type: 'test'
+  ...
+# Subtest: opening a catalog map card uses the existing place detail route and leaves editorial-only source links intact
+ok 4 - opening a catalog map card uses the existing place detail route and leaves editorial-only source links intact
+  ---
+  duration_ms: 13.267375
+  type: 'test'
+  ...
+# Subtest: missing map RPC reuses the authorized feed and advances the unfiltered page cursor
+ok 5 - missing map RPC reuses the authorized feed and advances the unfiltered page cursor
+  ---
+  duration_ms: 42.444417
+  type: 'test'
+  ...
+# Subtest: empty compatibility pages finish; permission and network errors never trigger a fallback
+ok 6 - empty compatibility pages finish; permission and network errors never trigger a fallback
+  ---
+  duration_ms: 42.061583
+  type: 'test'
+  ...
+# (node:91873) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/Orca/workspace/mobile/gling-map-union-local-20261015/src/lib/discovery-map-html.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/Orca/workspace/mobile/gling-map-union-local-20261015/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: validates marker bounds, coordinates, unique identifiers and CSS colors
+ok 7 - validates marker bounds, coordinates, unique identifiers and CSS colors
+  ---
+  duration_ms: 1.80025
+  type: 'test'
+  ...
+# Subtest: escapes dynamic JSON in HTML and injected scripts without forwarding extra data
+ok 8 - escapes dynamic JSON in HTML and injected scripts without forwarding extra data
+  ---
+  duration_ms: 2.344875
+  type: 'test'
+  ...
+# Subtest: only accepts current session messages, known selection IDs and exact credit URLs
+ok 9 - only accepts current session messages, known selection IDs and exact credit URLs
+  ---
+  duration_ms: 0.358166
+  type: 'test'
+  ...
+# Subtest: unchanged inset does not interrupt camera motion, and resized cards finish recentering the current target
+ok 10 - unchanged inset does not interrupt camera motion, and resized cards finish recentering the current target
+  ---
+  duration_ms: 5.287625
+  type: 'test'
+  ...
+# Subtest: only a typed Top 25 flag crosses the embedded map boundary
+ok 11 - only a typed Top 25 flag crosses the embedded map boundary
+  ---
+  duration_ms: 2.664792
+  type: 'test'
+  ...
+# Subtest: Top 25 uses A flags on individual pins, selected pins and clusters without changing category color or counts
+ok 12 - Top 25 uses A flags on individual pins, selected pins and clusters without changing category color or counts
+  ---
+  duration_ms: 6.926375
+  type: 'test'
+  ...
+# Subtest: clusters GeoJSON with counts and 44px targets; preserves camera for result updates
+ok 13 - clusters GeoJSON with counts and 44px targets; preserves camera for result updates
+  ---
+  duration_ms: 3.673792
+  type: 'test'
+  ...
+# Subtest: embedded updates require the parent source, exact origin, type and session
+ok 14 - embedded updates require the parent source, exact origin, type and session
+  ---
+  duration_ms: 4.139916
+  type: 'test'
+  ...
+# Subtest: credits and zoom controls send feedback but never open arbitrary links through the bridge
+ok 15 - credits and zoom controls send feedback but never open arbitrary links through the bridge
+  ---
+  duration_ms: 2.151625
+  type: 'test'
+  ...
+# Subtest: keeps bundled CSP and attribution, and rejects invalid explicit centers
+ok 16 - keeps bundled CSP and attribution, and rejects invalid explicit centers
+  ---
+  duration_ms: 6.352375
+  type: 'test'
+  ...
+# Subtest: unclustered and selected pins show tappable labels with the live style glyph font
+ok 17 - unclustered and selected pins show tappable labels with the live style glyph font
+  ---
+  duration_ms: 4.723167
+  type: 'test'
+  ...
+# Subtest: reserves visible map space above the detail card without resetting selection
+ok 18 - reserves visible map space above the detail card without resetting selection
+  ---
+  duration_ms: 9.532917
+  type: 'test'
+  ...
+# Subtest: embedded map labels follow the selected interface language
+ok 19 - embedded map labels follow the selected interface language
+  ---
+  duration_ms: 2.125417
+  type: 'test'
+  ...
+# (node:91874) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/Orca/workspace/mobile/gling-map-union-local-20261015/src/i18n/index.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/Orca/workspace/mobile/gling-map-union-local-20261015/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Top 25 merges only visible recommendations before filtering and keeps the 500-row bound
+ok 20 - Top 25 merges only visible recommendations before filtering and keeps the 500-row bound
+  ---
+  duration_ms: 43.934833
+  type: 'test'
+  ...
+# Subtest: changing accounts remounts the map and clears the previous private GPS camera state
+ok 21 - changing accounts remounts the map and clears the previous private GPS camera state
+  ---
+  duration_ms: 11.430375
+  type: 'test'
+  ...
+# Subtest: focus entry starts at page zero and cancels the request on blur
+ok 22 - focus entry starts at page zero and cancels the request on blur
+  ---
+  duration_ms: 4.571542
+  type: 'test'
+  ...
+# Subtest: a refresh replaces cached pages without advancing the old cursor
+ok 23 - a refresh replaces cached pages without advancing the old cursor
+  ---
+  duration_ms: 16.92125
+  type: 'test'
+  ...
+# Subtest: an explicit More request continues from the previous cursor
+ok 24 - an explicit More request continues from the previous cursor
+  ---
+  duration_ms: 8.166167
+  type: 'test'
+  ...
+# Subtest: late pagination responses cannot restore stale pins after a refresh
+ok 25 - late pagination responses cannot restore stale pins after a refresh
+  ---
+  duration_ms: 10.233792
+  type: 'test'
+  ...
+# Subtest: selecting a pin cancels a pending GPS recenter request
+ok 26 - selecting a pin cancels a pending GPS recenter request
+  ---
+  duration_ms: 3.771333
+  type: 'test'
+  ...
+# Subtest: a failed festival supplement keeps available results and reports the partial failure
+ok 27 - a failed festival supplement keeps available results and reports the partial failure
+  ---
+  duration_ms: 10.368375
+  type: 'test'
+  ...
+# Subtest: pagination retains a source warning until a full refresh retries it
+ok 28 - pagination retains a source warning until a full refresh retries it
+  ---
+  duration_ms: 11.832042
+  type: 'test'
+  ...
+# (node:91875) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/Orca/workspace/mobile/gling-map-union-local-20261015/src/lib/discovery.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/Orca/workspace/mobile/gling-map-union-local-20261015/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: verified Top 25 and matching recommendations share one canonical place
+ok 29 - verified Top 25 and matching recommendations share one canonical place
+  ---
+  duration_ms: 13.888459
+  type: 'test'
+  ...
+# Subtest: same name and coordinates alone do not merge different places or branches
+ok 30 - same name and coordinates alone do not merge different places or branches
+  ---
+  duration_ms: 0.283375
+  type: 'test'
+  ...
+# Subtest: curated public place survives without exposing a hidden recommendation or private coordinates
+ok 31 - curated public place survives without exposing a hidden recommendation or private coordinates
+  ---
+  duration_ms: 0.08425
+  type: 'test'
+  ...
+# Subtest: city scoping and listing/event separation prevent false merges
+ok 32 - city scoping and listing/event separation prevent false merges
+  ---
+  duration_ms: 0.368083
+  type: 'test'
+  ...
+# Subtest: Top 25 unions categories while search still applies; hashtags cannot award membership
+ok 33 - Top 25 unions categories while search still applies; hashtags cannot award membership
+  ---
+  duration_ms: 0.288708
+  type: 'test'
+  ...
+# Subtest: invalid public source, coordinates, duplicate bindings and over-25 collections fail closed
+ok 34 - invalid public source, coordinates, duplicate bindings and over-25 collections fail closed
+  ---
+  duration_ms: 0.523167
+  type: 'test'
+  ...
+# (node:91876) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/Orca/workspace/mobile/gling-map-union-local-20261015/src/lib/discovery.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/Orca/workspace/mobile/gling-map-union-local-20261015/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: TOP25 plus Cafés includes every pick and ordinary cafés, with overlap shown once
+ok 35 - TOP25 plus Cafés includes every pick and ordinary cafés, with overlap shown once
+  ---
+  duration_ms: 0.812166
+  type: 'test'
+  ...
+# Subtest: deselecting either option retains only the remaining selection
+ok 36 - deselecting either option retains only the remaining selection
+  ---
+  duration_ms: 0.104875
+  type: 'test'
+  ...
+# Subtest: query remains an AND constraint around the union, and cities stay scoped
+ok 37 - query remains an AND constraint around the union, and cities stay scoped
+  ---
+  duration_ms: 0.671375
+  type: 'test'
+  ...
+# Subtest: an empty real Top25 collection never hides ordinary cafés in a mixed selection
+ok 38 - an empty real Top25 collection never hides ordinary cafés in a mixed selection
+  ---
+  duration_ms: 0.129333
+  type: 'test'
+  ...
+# Subtest: flat map chips retain the approved order and defaults preserve legacy deep links
+ok 39 - flat map chips retain the approved order and defaults preserve legacy deep links
+  ---
+  duration_ms: 40.224208
+  type: 'test'
+  ...
+# Subtest: the actual chip handler independently toggles each selection and All resets it
+ok 40 - the actual chip handler independently toggles each selection and All resets it
+  ---
+  duration_ms: 11.152666
+  type: 'test'
+  ...
+# Subtest: specific content chips use actual categories; Festivals does not include ordinary concerts
+ok 41 - specific content chips use actual categories; Festivals does not include ordinary concerts
+  ---
+  duration_ms: 0.85175
+  type: 'test'
+  ...
+# Subtest: the actual screen applies city, privacy, listing expiry, date and query around the union
+ok 42 - the actual screen applies city, privacy, listing expiry, date and query around the union
+  ---
+  duration_ms: 5.571583
+  type: 'test'
+  ...
+# (node:91877) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/ash/Desktop/Git/Orca/workspace/mobile/gling-map-union-local-20261015/src/lib/discovery.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/ash/Desktop/Git/Orca/workspace/mobile/gling-map-union-local-20261015/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 지도에는 공개 첨부 핀만 쓰며 거래 종료·만료 위치는 제외한다
+ok 43 - 지도에는 공개 첨부 핀만 쓰며 거래 종료·만료 위치는 제외한다
+  ---
+  duration_ms: 1.163041
+  type: 'test'
+  ...
+# Subtest: 릴스 카테고리 색을 바꾸지 않고 장소 유형을 구분한다
+ok 44 - 릴스 카테고리 색을 바꾸지 않고 장소 유형을 구분한다
+  ---
+  duration_ms: 0.794708
+  type: 'test'
+  ...
+# Subtest: 본문과 해시태그로 찾은 장소·리스팅을 다시 숨기지 않는다
+ok 45 - 본문과 해시태그로 찾은 장소·리스팅을 다시 숨기지 않는다
+  ---
+  duration_ms: 0.190167
+  type: 'test'
+  ...
+# Subtest: 길찾기는 검증한 좌표만 전달하고 출발지나 별도 API 키는 보내지 않는다
+ok 46 - 길찾기는 검증한 좌표만 전달하고 출발지나 별도 API 키는 보내지 않는다
+  ---
+  duration_ms: 0.206708
+  type: 'test'
+  ...
+# Subtest: 도시 시간대의 오늘·이번 주말 날짜를 계산한다
+ok 47 - 도시 시간대의 오늘·이번 주말 날짜를 계산한다
+  ---
+  duration_ms: 19.437
+  type: 'test'
+  ...
+# Subtest: 행사 좌표를 만들어내지 않고 취소·종료 일정은 숨긴다
+ok 48 - 행사 좌표를 만들어내지 않고 취소·종료 일정은 숨긴다
+  ---
+  duration_ms: 0.513708
+  type: 'test'
+  ...
+1..48
+# tests 48
+# suites 0
+# pass 48
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 536.855125

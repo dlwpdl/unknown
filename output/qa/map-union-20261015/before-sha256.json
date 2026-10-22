@@ -1,0 +1,8 @@
+{
+  "src/app/map.tsx": "23ebc8007796628c77064d8418d125b5d0d59819889835dacdedfad8aa143ec5",
+  "src/lib/discovery.ts": "d2ead01be96aae0585cc42b1bcbae4d625d7bd30e99007de9ed5c74c0277aa63",
+  "scripts/discovery-top25.test.mjs": "0dec30ab1c1db70987b8b5b8cfa4c1d7c9107fa4eac460874342d8810cd08124",
+  "scripts/discovery-screen.test.mjs": "bc01fdd174e8c65dd52f6693b2d8a9b212a61814c88983726de666e9f4c6de72",
+  "scripts/discovery-catalog.test.mjs": "288079cd5bb9b9d1367118113107e5c4cf77faf7a124b1a781c11021a93b7f7e",
+  "docs/specs/unified-discovery-map-top25-2026-10-15.md": "7a23c8a32f2b71f31e946f487d1a56b66f1d94a71e78180f08f4a8b8a04d349d"
+}

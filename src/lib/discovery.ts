@@ -23,7 +23,7 @@ export const DISCOVERY_CATEGORIES = [
   { id: 'place', label: '장소', short: '장소', color: '#B6B9CC' },
 ] as const;
 export type DiscoveryCategory = typeof DISCOVERY_CATEGORIES[number]['id'];
-export type DiscoveryFilter = 'all' | 'housing' | 'used' | 'places' | 'events';
+export type DiscoveryFilter = 'all' | 'places' | 'events' | 'top25' | DiscoveryCategory;
 export type DiscoveryDate = 'all' | 'today' | 'weekend' | 'date';
 export type DiscoveryItem = {
   id: string; source: 'post' | 'event' | 'place'; sourceId: string; cityId: string; title: string;
@@ -132,9 +132,11 @@ export function discoveryDays(filter: DiscoveryDate, cityId: string, date = '', 
   day.setUTCDate(day.getUTCDate() + 1);
   return [saturday, day.toISOString().slice(0, 10)];
 }
-export function discoveryMatches(item: DiscoveryItem, filter: DiscoveryFilter, query: string, top25Only = false) {
+export function discoveryMatches(item: DiscoveryItem, filter: DiscoveryFilter | readonly DiscoveryFilter[], query: string) {
   const category = item.category;
-  return (!top25Only || !!item.top25) && (filter === 'all' || (filter === 'events' ? item.source !== 'place' && ['festival', 'exhibition', 'event'].includes(category)
-    : filter === 'places' ? item.source === 'place' || !['housing', 'used', 'festival', 'exhibition', 'event'].includes(category) : category === filter))
+  const filters = typeof filter === 'string' ? [filter] : filter;
+  return (!filters.length || filters.some(value => value === 'all' || (value === 'top25' ? !!item.top25
+    : value === 'events' ? item.source !== 'place' && ['festival', 'exhibition', 'event'].includes(category)
+      : value === 'places' ? item.source === 'place' || !['housing', 'used', 'festival', 'exhibition', 'event'].includes(category) : category === value)))
     && `${item.title} ${item.label} ${item.top25?.reason ?? ''} ${item.post?.body ?? ''} ${(item.post?.hashtags ?? []).join(' ')} ${DISCOVERY_CATEGORIES.find(value => value.id === category)?.label}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
 }

@@ -32,9 +32,12 @@ import { supabase } from '@/lib/supabase';
 import { EVENT_CITIES, eventPriceLabel, eventTime, loadTicketmasterEvents, type EventCity } from '@/lib/ticketmaster';
 
 const filters: { id: DiscoveryFilter; label: string; color?: string }[] = [
-  { id: 'all', label: '전체' }, { id: 'housing', label: '부동산', color: '#70BFAF' },
-  { id: 'used', label: '중고거래', color: '#E9B86C' }, { id: 'places', label: '가볼 만한 곳', color: '#A8C39B' },
+  { id: 'top25', label: '✦ TOP 25' }, { id: 'nightlife', label: '나이트라이프', color: '#DD737F' },
+  { id: 'festival', label: '페스티벌', color: '#CBB9FF' }, { id: 'cafe', label: '카페', color: '#D7BD92' },
+  { id: 'dining', label: '맛집', color: '#D79681' }, { id: 'places', label: '가볼 만한 곳', color: '#A8C39B' },
+  { id: 'housing', label: '부동산', color: '#70BFAF' }, { id: 'used', label: '중고거래', color: '#E9B86C' },
   { id: 'events', label: '페스티벌·행사', color: '#CBB9FF' },
+  { id: 'all', label: '전체' },
 ];
 type Result = { key: string; page: number; items: DiscoveryItem[]; cursor: FeedCursor | null; postMore: boolean; eventMore: boolean; errors: string[]; limited: boolean };
 const located = (item: DiscoveryItem): item is DiscoveryItem & PostPin => item.latitude !== null && item.longitude !== null;
@@ -51,9 +54,10 @@ function CityMap() {
   const { city } = useCommunityCity(), { isAuthed, me, promptLogin } = useAuth(), hidden = useContentVisibility();
   const { play } = useInteractionFeedback();
   const { category: initialCategory } = useLocalSearchParams<{ category?: string }>();
-  const [filter, setFilter] = useState<DiscoveryFilter>(filters.some(value => value.id === initialCategory) ? initialCategory as DiscoveryFilter : 'all');
+  const [selectedFilters, setSelectedFilters] = useState<DiscoveryFilter[]>(initialCategory !== 'all' && filters.some(value => value.id === initialCategory) ? [initialCategory as DiscoveryFilter] : []);
+  const filter: DiscoveryFilter = selectedFilters.length === 1 && ['housing', 'used'].includes(selectedFilters[0]) ? selectedFilters[0] : 'all';
   const [mode, setMode] = useState<'map' | 'list'>('map'), [query, setQuery] = useState(''), [search, setSearch] = useState('');
-  const [top25Only, setTop25Only] = useState(false);
+  const top25Only = selectedFilters.length === 1 && selectedFilters[0] === 'top25';
   const [dateFilter, setDateFilter] = useState<DiscoveryDate>('all'), [date, setDate] = useState('');
   const [dateOpen, setDateOpen] = useState(false), [dateDraft, setDateDraft] = useState(''), [dateError, setDateError] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null), [center, setCenter] = useState<PostPin | null>(null);
@@ -124,7 +128,7 @@ function CityMap() {
     && (!item.event || discoveryEvent(item.event, item.cityId, now) !== null));
   const cityItems = mergeCityTop25(publicItems, city.id);
   const top25Ready = cityItems.some(item => item.top25);
-  const matches = cityItems.filter(item => discoveryMatches(item, filter, query, top25Only)
+  const matches = cityItems.filter(item => discoveryMatches(item, selectedFilters, query)
     && (!days.length || item.source === 'place' || !['festival', 'event', 'exhibition'].includes(item.category) || !!item.localDate && days.includes(item.localDate)));
   const limited = !!current?.limited || matches.length > 500;
   const items = matches.slice(0, 500);
@@ -183,12 +187,12 @@ function CityMap() {
       {!!query && <Pressable analyticsId="discovery.search" accessibilityRole="button" accessibilityLabel={tr("검색어 지우기")} onPress={() => { play('selection'); setQuery(''); }} style={styles.icon}><ThemedText>×</ThemedText></Pressable>}
     </View>
     <ScrollView horizontal analyticsId="discovery.filter" showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filters}>
-      {filters.map(value => <Pressable key={value.id} analyticsId="discovery.filter" accessibilityRole="button" accessibilityState={{ selected: filter === value.id }} onPress={() => { play('selection'); setFilter(value.id); }} style={[styles.chip, { borderColor: filter === value.id ? theme.accent : theme.line, backgroundColor: filter === value.id ? theme.backgroundSelected : theme.backgroundElement }]}>{value.color && <View style={[styles.dot, { backgroundColor: value.color }]} />}<ThemedText type="smallBold" style={{ color: filter === value.id ? theme.accent : theme.text }}>{tr(value.label)}</ThemedText></Pressable>)}
-    </ScrollView>
-    <View style={styles.collectionRow}>
-      <Pressable analyticsId="discovery.filter" accessibilityRole="checkbox" accessibilityState={{ checked: top25Only }} accessibilityLabel={tr("TOP 25 선정 장소만 보기")} onPress={() => { play('selection'); setTop25Only(value => !value); }} style={[styles.collectionToggle, { borderColor: top25Only ? theme.accent : '#68543A', backgroundColor: top25Only ? theme.backgroundSelected : theme.card }]}><View style={[styles.collectionCheck, { borderColor: top25Only ? theme.accent : '#A78B59', backgroundColor: top25Only ? theme.accent : 'transparent' }]}>{top25Only && <ThemedText style={{ color: theme.accentInk, fontSize: 11, lineHeight: 14 }}>✓</ThemedText>}</View><ThemedText type="smallBold" style={{ color: top25Ink }}>{tr("✦ TOP 25만 보기")}</ThemedText></Pressable>
+      {filters.filter(value => value.id !== 'events' || selectedFilters.includes('events')).map(value => {
+        const active = value.id === 'all' ? !selectedFilters.length : selectedFilters.includes(value.id);
+        return <Pressable key={value.id} analyticsId="discovery.filter" accessibilityRole={value.id === 'all' ? 'button' : 'checkbox'} accessibilityState={value.id === 'all' ? { selected: active } : { checked: active }} onPress={() => { play('selection'); setSelectedFilters(selected => value.id === 'all' ? [] : selected.includes(value.id) ? selected.filter(id => id !== value.id) : [...selected, value.id]); }} style={[styles.chip, { borderColor: active ? theme.accent : theme.line, backgroundColor: active ? theme.backgroundSelected : theme.backgroundElement }]}>{value.color && <View style={[styles.dot, { backgroundColor: value.color }]} />}<ThemedText type="smallBold" style={{ color: active ? theme.accent : value.id === 'top25' ? top25Ink : theme.text }}>{tr(value.label)}</ThemedText></Pressable>;
+      })}
       <Pressable analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr("TOP 25 선정 배지 안내")} onPress={() => { play('selection'); Alert.alert(tr("도시의 TOP 25"), tr("카페·맛집·공원 등 도시별로 선정한 장소예요. 같은 장소의 추천글은 하나로 모아 보여줘요. 방문 수나 인기 순위를 뜻하지 않아요.")); }} style={styles.icon}><SymbolView name={{ ios: 'info.circle', android: 'info', web: 'info' }} size={18} tintColor={theme.textSecondary} /></Pressable>
-    </View>
+    </ScrollView>
     {filter !== 'housing' && filter !== 'used' && Object.hasOwn(EVENT_CITIES, city.id) && <View style={styles.dates}><ThemedText type="small" themeColor="textSecondary">{tr("행사")}</ThemedText>{([{ id: 'all', label: tr("전체 날짜") }, { id: 'today', label: tr("오늘") }, { id: 'weekend', label: tr("이번 주말") }, { id: 'date', label: dateFilter === 'date' ? date.slice(5).replace('-', '/') : tr("날짜 지정") }] as const).map(value => <Pressable key={value.id} analyticsId="discovery.date" accessibilityRole="button" accessibilityState={{ selected: dateFilter === value.id }} onPress={() => chooseDate(value.id)} style={[styles.date, dateFilter === value.id && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]}><ThemedText type="small" style={{ color: dateFilter === value.id ? theme.accent : theme.textSecondary }}>{tr(value.label)}</ThemedText></Pressable>)}</View>}
     {!isAuthed && <Pressable analyticsId="discovery.login" accessibilityRole="button" onPress={() => { play('selection'); promptLogin(tr("로그인하면 이 도시의 공개 거래 위치와 장소를 함께 볼 수 있어요.")); }} style={[styles.notice, { backgroundColor: theme.backgroundElement }]}><ThemedText type="small" themeColor="accent">{tr("로그인하고 매물·거래 위치도 함께 보기 ›")}</ThemedText></Pressable>}
     {!!locationError && <ThemedText accessibilityRole="alert" type="small" style={styles.notice}>{locationError}</ThemedText>}
@@ -256,7 +260,6 @@ const styles = StyleSheet.create({
   switch: { flexDirection: 'row', padding: 3, borderRadius: 15 }, mode: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
   search: { marginHorizontal: 16, marginBottom: 10, borderWidth: StyleSheet.hairlineWidth, borderRadius: 14, flexDirection: 'row', alignItems: 'center', paddingLeft: 14, paddingRight: 4 }, input: { minHeight: 46, flex: 1, minWidth: 0, paddingHorizontal: 10, fontSize: 14 },
   filterRow: { flexGrow: 0, flexShrink: 0, maxHeight: 58 }, filters: { paddingHorizontal: 16, gap: 8, paddingBottom: 8 }, chip: { minHeight: 44, paddingHorizontal: 13, borderRadius: 24, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 7 }, dot: { width: 8, height: 8, borderRadius: 4 },
-  collectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 4, gap: 8 }, collectionToggle: { minHeight: 44, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }, collectionCheck: { width: 16, height: 16, borderWidth: 1, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
   top25Badge: { borderRadius: 5, borderWidth: 1, borderColor: '#68543A', backgroundColor: '#2A2319', paddingHorizontal: 5, paddingVertical: 2 }, top25BadgeText: { color: TOP25_GOLD, fontSize: 10, lineHeight: 14, fontWeight: '800' }, top25Note: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 10, gap: 5 }, top25Source: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
   dates: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 6, flexWrap: 'wrap' }, date: { minHeight: 44, paddingHorizontal: 9, justifyContent: 'center', alignItems: 'center' },
   notice: { marginHorizontal: 16, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10 }, summary: { minHeight: 44, paddingLeft: 16, paddingRight: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
