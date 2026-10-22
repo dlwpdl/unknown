@@ -1,0 +1,1436 @@
+{
+  "version": "gling-cinematic-v14-seven-content-approaches-2026-10-18",
+  "saved_at": "2026-10-15T18:38:15.768945+00:00",
+  "status": "owner-approved-six-to-ten-cards;fixed-last-Gling-introduction;Gling-max-ten",
+  "source_template": "output/design/gling-viff-mixed-carousel-2026-09-30/frames.html",
+  "source_sha256": "18bf9317d86b65aae6633b22aa87f57d97e73f60a913cca292d623836005ef73",
+  "renderer": "HyperFrames editable project; existing installed CLI final render",
+  "identity": {
+    "background": "#0B0B12",
+    "text": "#F6F3F0",
+    "cover_font": "Bodoni Moda; accepted per-title layout",
+    "korean_font": "Pretendard; accepted hierarchy",
+    "category_point": "Use exact primary labels and the single current_production.category_point_colors registry. Every distinct category has its own distinct line color; no reuse. Festival only #CBB9FF+페스티벌. Museum/art exhibition #E7A5C0+전시. Other actual special/community events #5F7CF3+이벤트, never reclassify an exhibition/festival merely to use this label. Preserve A geometry, white label/title/photo grade and whole30s natural voice. Reject unknown category, mismatched line color or generic purple fallback; no app/DB slug creation.",
+    "city_position": "Next production: fixed bottom-right city/date at x=994 right edge, top=1468 on1080x1920; text-align:right. Category line+exact category remain top-left x86/top313. Verify9:16 and centered3:4 profile crop; no view-count overlap.",
+    "photo_tone": "Next cover only: retain previous approved Rec709 curve/vibrance0.14/saturation0.025 and add log2(1.10)=0.13750352375EV exposure once to original photograph, roughly10% brighter. Text/line/body/logo unaffected; check final white-title contrast and highlight detail per photograph, never legacy p75 clamp or double grade.",
+    "cover_name_language_policy": "몬트리올·퀘벡 지역의 커버 행사명은 공식 자료로 확인한 불어 원문으로 쓴다. 악센트와 철자를 유지하고 한글 번역명으로 대체하거나 중복 표기하지 않는다. 긴 이름은 공식 약칭을 확인해 쓰거나 단어 경계에서 나누며 임의의 약칭·불어 번역을 만들지 않는다. 설명·본문·캡션은 한국어로 유지한다. 다음 제작부터 적용하며 기존 제출·예약·공개본을 이 지시만으로 교체하지 않는다."
+  },
+  "instagram": {
+    "dimensions": [
+      1080,
+      1920
+    ],
+    "aspect": "9:16",
+    "selection": "Existing direct Meta API creates one encoded9:16 REELS master with music and explicit cover_url; no new SNS GUI publishing",
+    "slides": [
+      {
+        "order": 1,
+        "type": "video/mp4",
+        "duration_seconds": 1.4,
+        "content": "unique festival photo; subtle photo motion; fixed large festival name and small city"
+      },
+      {
+        "order": 2,
+        "type": "image/jpeg",
+        "content": "photo only; 02/06"
+      },
+      {
+        "order": 3,
+        "type": "image/jpeg",
+        "content": "photo only; 03/06"
+      },
+      {
+        "order": 4,
+        "type": "image/jpeg",
+        "content": "photo only; 04/06"
+      },
+      {
+        "order": 5,
+        "type": "image/jpeg",
+        "content": "verified festival period and essential venue"
+      },
+      {
+        "order": 6,
+        "type": "image/jpeg",
+        "content": "fixed Gling introduction; exact instagram.fixed_introduction copy; last in every count"
+      }
+    ],
+    "single_concatenated_file_forbidden": false,
+    "native_crop_status": "Current production: fixed30s/900frames/9:16 REELS,6–10 purposeful scenes, complete long narration and accepted A cover. Historical receipts remain read-only.",
+    "native_crop_receipt": "marketing/reports/2026-10-01/carousel-correction/native-six-mixed-crop-receipt.json",
+    "native_saved": false,
+    "native_preview_checks": [
+      "actual native Reel format and 9:16 full frame",
+      "actual selected 6–10 scenes in cover/photos/information-penultimate/fixed-Gling-last order; exact manifest files/hashes/count",
+      "title/city/verified date and every subject fully visible",
+      "audible non-muted actual selected music, approved genre/tempo and recent-track variety",
+      "first cover explicitly selected as thumbnail; saved preview and published profile grid checked",
+      "exact caption/newlines/attribution and correct brand account/native ID"
+    ],
+    "six_separate_video_alternative": {
+      "status": "also-native-crop-held-not-viable-in-current-web-editor",
+      "receipt": "marketing/reports/2026-10-01/carousel-correction/native-six-video-original-crop.json"
+    },
+    "alternative_4x5_preview": "output/design/gling-festival-autumn-winter-2026-10-01/viff-first-4x5/index.html",
+    "accepted_still_formats": [
+      "image/jpeg",
+      "image/png"
+    ],
+    "cover_motion": {
+      "seconds": 6,
+      "reel_visible_seconds": 1.4,
+      "template_rotation": [
+        "slow-push",
+        "pull-back",
+        "diagonal-drift",
+        "side-pan"
+      ],
+      "renderer_selection": "select_cover_motion(event_id,out) before overwriting manifest",
+      "renderer_graph": "cover_motion_graph(height,motion,180) for source or frames42 for final1.4s",
+      "persistence": [
+        "coverMotionTemplate",
+        "coverMotion"
+      ],
+      "fixed_overlay": [
+        "festival title",
+        "city",
+        "verified date"
+      ],
+      "scene": "licensed source photo; no invented event action",
+      "legacy_loop": {
+        "seconds": 6,
+        "zoom_percent": [
+          104,
+          114,
+          104
+        ],
+        "curve": "smooth cosine loop",
+        "horizontal_pan": "center ±18% of available cropped margin",
+        "vertical_pan": "center ±10% of available cropped margin",
+        "fixed_overlay": [
+          "festival title",
+          "city",
+          "verified date"
+        ],
+        "scene": "licensed source photo; no invented event action",
+        "reel_visible_seconds": 1.4
+      },
+      "future_only": true,
+      "owner_date": "2026-10-08",
+      "comparison": "output/design/gling-cover-motion-2026-10-08/index.html"
+    },
+    "owner_approved_first_post": {
+      "event_id": "05",
+      "aspect": "4:5",
+      "dimensions": [
+        1080,
+        1350
+      ],
+      "media_manifest": "output/design/gling-festival-autumn-winter-2026-10-01/viff-first-4x5/manifest.json",
+      "preview": "output/design/gling-festival-autumn-winter-2026-10-01/viff-first-4x5/index.html",
+      "approval": "2026-10-01 user: 엉 좋다 이대로 가자; reply to firstVIFFsix-item4:5format-choice question",
+      "scope": "firstVIFFpublication; other9:16drafts retain native-crop hold"
+    },
+    "standard_approval": "Current owner-approved A visual style and fixed30s long-explanation template only. Short pacing retired; individual final masters still require actual quality acceptance.",
+    "native_publication_receipt": "marketing/reports/2026-10-01/six-photo-first-post/instagram-carousel-publication-receipt.json",
+    "current_caption_receipt": "marketing/reports/2026-10-01/source-caption-review/viff-caption-edit-receipt.json",
+    "previous_format_standard": {
+      "version": "v5",
+      "aspect": "4:5",
+      "format": "six-item mixed carousel",
+      "superseded_by": "2026-10-03 owner wants music and Reels as the default"
+    },
+    "format": "reel",
+    "thumbnail": {
+      "source": "scene01 existing 9:16 poster or a verified frame within the opening cover",
+      "automatic_mid_video_frame_allowed": false,
+      "verify": [
+        "explicit accepted source cover_url/hash in frozen once-only intent",
+        "actual published API media_product_type/thumbnail readback and visual9:16/3:4 check",
+        "existing native reservations only through original authorized owner/scope; do not infer native media update from source files"
+      ],
+      "reason": "2026-10-03 Film Club public DeCwuvTICVB auto-thumbnail selected scene02 while the source first scene correctly has title/city/date",
+      "evidence": "marketing/reports/2026-10-03/reel-cover-debug/profile-before.png"
+    },
+    "source_slide_exports": "Renderer exports 6–10 source cards and exact ordered manifest; original photographs4–8 plus information and fixed introduction. Gling keeps those separate4:3 images.",
+    "historical_native_saved": true,
+    "native_saved_scope": "v6 policy saved; no claim that every native reservation satisfies new music/explicit-cover gates",
+    "content_card_count_range": [
+      5,
+      9
+    ],
+    "slide_count_range": [
+      6,
+      10
+    ],
+    "source_photo_count_range": [
+      4,
+      8
+    ],
+    "slides_note": "Minimum six-card example below; repeat photo-only cards before the penultimate information card, then exactly one fixed Gling intro. Number every card against the actual total.",
+    "fixed_introduction": {
+      "eyebrow": "GLING",
+      "headline_lines": [
+        "같이 갈 사람은",
+        "글링에서"
+      ],
+      "copy": "정보·동행 모임은 글링에서",
+      "app_kind": "한인 모임·커뮤니티 앱",
+      "download": "App Store 다운로드",
+      "position": "last; exactly once"
+    }
+  },
+  "caption": {
+    "voice": "short multi-reader event information",
+    "opening": "accurate event announcement",
+    "order": [
+      "event description",
+      "date/place/qualified price",
+      "essential conditions",
+      "real added detail and neutral profile-link CTA",
+      "official festival information sources with verified URLs",
+      "photo context and required license credits",
+      "maximum5hashtags including #글링"
+    ],
+    "forbidden": [
+      "questions",
+      "rhetorical hooks",
+      "one-to-one conversation",
+      "personal Threads voice",
+      "fabricated attendance",
+      "claiming Gling article exists before registration"
+    ],
+    "reference_receipt": "marketing/reports/2026-10-01/carousel-correction/information-caption-references.json",
+    "patina_gate": "actual CLI pass, then final fact/voice review and exact copy readback",
+    "license_style": {
+      "ordinary_unsplash_and_cc0": "optional numbered photographer line only; no mandatory license paragraph",
+      "cc_by_2_and_3": "retain supplied author/title/source/license and editing credit; group repeated license and eliminate duplicate author list",
+      "cc_by_4": "retain supplied author/attribution/copyright notices/source/license/change; title only if designated or otherwise needed",
+      "cc_by_sa": "preserve original photo license and compatible adaptation/video license",
+      "public_credits_link": "only if actually public, accessible without app download/login and reviewed for applicable license; never fabricate a credits destination",
+      "official_evidence": "marketing/reports/2026-10-01/license-and-cover/"
+    },
+    "emoji": "none by default; owner requests minimal emoji",
+    "official_information_sources": "short official organizer/municipal/ticket page attribution with actual URLs immediately above photo context/credits/license",
+    "photo_reference_note": "one short final sentence when reference photos are used; retain required rights credits"
+  },
+  "gling": {
+    "export_dimensions": [
+      1080,
+      810
+    ],
+    "photo_count": 6,
+    "display": "intrinsic aspect ratio and contain in Today and detail; full festival name and city",
+    "existing_viff_images": "normal native same-ID photo edit verified six; source-caption-review/gling-native-receipts/05.json",
+    "extra_information": "officially verified practical detail beyond SNS caption",
+    "registration_gate": "normal authenticated native registration; reopen ID/city/title/full body/destination before SNS",
+    "deployment_status": "development app fix; AppStore release not changed",
+    "current_upload_limit": 10,
+    "upload_limit_source": "src/lib/image-upload.ts:MAX_POST_IMAGES",
+    "photo_count_reason": "cover+3–7unique photos+information+fixed introduction; six-to-ten4:3images",
+    "cover_motion": "static photo in app; Instagram moving cover exported separately",
+    "information_card_fonts": {
+      "period_event": "BodoniModa50032px",
+      "period_date": "Pretendard60030px",
+      "app_headline": "Pretendard50026px",
+      "scope": "fixed4:3information-card layout; cover font sizes unchanged"
+    },
+    "server_upload_limit": 10,
+    "server_migration": "supabase/migrations/0134_post_media_ten_images.sql",
+    "server_applied_receipt": "marketing/reports/2026-10-08/photo-count-range/database-applied.json",
+    "native_six_registration_receipt": "marketing/reports/2026-10-01/source-caption-review/gling-native-receipts/01.json",
+    "existing_viff_edit_receipt": "marketing/reports/2026-10-01/source-caption-review/gling-native-receipts/05.json",
+    "photo_count_range": [
+      6,
+      10
+    ]
+  },
+  "youtube_tiktok": {
+    "dimensions": [
+      1080,
+      1920
+    ],
+    "file": "separate21second six-scene video per platform",
+    "instagram_use_forbidden": false,
+    "music_required": true,
+    "platform_music_rule": "Select separately permitted music; six-scene visuals may be shared at9:16, native library music permissions are per platform."
+  },
+  "editorial_gates": {
+    "horizon": "2026-12-31",
+    "cities": [
+      "toronto",
+      "vancouver",
+      "montreal",
+      "calgary",
+      "edmonton"
+    ],
+    "triple_checks": [
+      "current-year organizer date/venue",
+      "official ticket/venue/access conditions",
+      "latest changes and exact final-copy consistency"
+    ],
+    "uncertain_claims": "held, never infer2026dates from2025",
+    "cover_uniqueness": "original SHA256 and canonical source URL across events",
+    "photos": "four distinct licensed photographs per event; all photographic slots1–4 must use new original SHA256 and canonical source identity across the active content ledger; changing crop/tone/text is not a new photograph; honestly disclosed reference photos allowed",
+    "cc_by": "source/creator/license/modification attribution on SNS and Gling",
+    "slots_vancouver": [
+      "08:00",
+      "10:00",
+      "12:00",
+      "14:00",
+      "16:00",
+      "17:00",
+      "19:00",
+      "21:00"
+    ],
+    "daily_limit": 8,
+    "no_approved_ready_item": "skip slot",
+    "personal_threads": "separate existing automation and individual approval unchanged",
+    "native_gling_sources": "Normal native Photos import uses byte-identical fresh transport copies in01–06date order. Compare all6 actual picker thumbnails before selection; wait for6 selected; complete only the same unsaved picker. Then reopen saved post and compare actual1/6–6/6 source images and body. Count/body/firstcover alone is insufficient. Require passed actual_gallery_verification and gling_gallery_verified before SNS.",
+    "native_instagram_replacement": "For own future unpublished conversion, prepare and verify facts/music/9:16 six-scene Reel plus explicit cover first. Prefer normal native edit if it persists format/media/audio/cover; otherwise withdraw only the exact authorized future old reservation through normal UI and verify absent before replacement at the same original slot. Reopen new native ID/caption/six scenes/audio/selected thumbnail/time; resolve uncertain saves before retry. Never delete/repost due or published correct posts/comments to repair a cover. Gling remains six separate4:3 images.",
+    "slot_ownership": "Existing native scheduled/published ID consumes its originalslot and daily8limit. Observe result and research; never add a secondSNSpost or reschedule retired archives in that slot.",
+    "historical_native_instagram_replacement": "Existing schedule edits did not persist photos; Move to Drafts left a failed-publish item without a draft. For this owned future unpublished replacement only, preserve original six files/caption/exact native details, withdraw exact oldID through normal Delete UI, verify absentScheduled, then create six separate replacement files at the SAME original slot. Never delete due/published posts. Reopen newID/fullcaption/6mediaorder/date/time; resolve pending save before retry. Preserve correct published posts/comments.",
+    "photo_relevance": "Prefer licensed actual event photos; references must directly match the event type/program/subject, not just its mood. Verify an actual venue before presenting it as the venue. Reject unrelated filler; disclosure alone cannot pass relevance.",
+    "photo_visual_diversity": "Inspect original and rendered photos1–4 alongside active posts/reservations/prepared items: no duplicate original hash/canonical source and no conspicuously similar same-scene/subject/composition/angle. Crop/tone/text changes do not count. Vary suitable wide/action/detail scenes; hold if four suitable distinct photos unavailable.",
+    "photo_sourcing": "Use official licensed event resources and free alternatives including Unsplash, Pexels, Pixabay, Wikimedia Commons, Openverse and Flickr Commons. Follow each original source and verify actual author/license/promotional use/edit/attribution terms; free discovery or public press kit is not a license.",
+    "photo_review_evidence": "Record per-photo original source/creator/license, direct relevance reason, original-identity duplicate check and actual visual similarity review in existing manifest/receipt. Check native saved media before publication.",
+    "latest_daily_target_authority": {
+      "owner_quote": "글링 스레드도 하루8개 작성목표로하고 글링 인스타 릴스도 하루 8개로 목표하고 막 서칭해야해",
+      "configured_at": "2026-10-11T02:10:26.224247+00:00",
+      "daily_reels_target": 8,
+      "previous_daily_limit": 4,
+      "original_slots_preserved": [
+        "08:00",
+        "12:00",
+        "17:00",
+        "19:00"
+      ],
+      "new_slots": [
+        "10:00",
+        "14:00",
+        "16:00",
+        "21:00"
+      ],
+      "configuration_is_not_actual_publication": true
+    }
+  },
+  "latest_review_report": "marketing/reports/2026-10-01/festival-corrections-and-winter-drafts.html",
+  "current_cover_preview": "output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/subtitle-semantic-units-2026-10-12/reel-review.html",
+  "latest_owner_instruction": "2026-10-12 top priority: repair subtitles changing pages in the middle of phrases. Apply shared semantic subtitle policy, preserve whole voice, then finish prior event/cafe correction and approved next8 production/nightlife discovery. Previous: 2026-10-12 latest: contrasting event/cafe lines, 이벤트 #5F7CF3 cobalt and 카페 #D7BD92 warm cream; classify by actual experience. Preserve previous: 2026-10-11 latest: fixed30-second long-explanation template only; no short narration/template fallback. Entire natural1x narration must be inside the actual video. Latest music correction2026-10-12: specifically refresh Instagram Trending audio menu for each theme-matched new selection; preserve subtitle-first priority.",
+  "music": {
+    "required": true,
+    "choice_owner": "agent selects per actual event genre/programme and mood",
+    "priority": "For every new Reel, first inspect the current Instagram Trending audio menu and choose a currently usable music track fitting the actual topic and posting mood. Verify dated account-specific trend evidence, the actual passage, applicable rights and API delivery; never silently reuse a fixed playlist or label recommendations as trends.",
+    "moods": {
+      "film_art_exhibition": "rhythmic cinematic/indie/electronic/soft alternative R&B, calm but fresh with an audible pulse; avoid sleepy beatless ambience as the automatic default",
+      "seasonal_market_food_craft": "bright relaxed indie-pop/nu-disco/funk/acoustic groove, fresh and lightly uplifting",
+      "live_concert_dj_music_festival": "match the actual artist/programme style, rhythmic live/house/electronic/etc where suitable and permitted; do not force every festival into EDM",
+      "family_hobby_workshop": "light warm/playful indie or acoustic groove with a usable pulse, suitable for the actual cultural programme"
+    },
+    "tempo": "Decide by programme and mood; the owner withdrew a blanket faster-tempo rule. BPM is a cue, not a mandatory band or proof of suitability. Never invent BPM or claim a song is trending without an actual dated native indicator.",
+    "rotation": [
+      "Never use the same recording in consecutive new posts",
+      "Avoid reuse in the same day; prefer less recently used suitable cleared tracks",
+      "Before selecting read actual event manifests/native receipts; record title/artist/platform-track ID or source hash, use date, native availability and permission scope",
+      "Same song at another excerpt is still the same song; avoid repetitive single-song or single-small-pool production",
+      "Do not substitute a mute upload for missing suitable cleared music"
+    ],
+    "platform_scope": "Instagram-native music is selected/verified natively for that account and permission scope. Never download another creator audio or assume Instagram availability clears promotional use, paid ads, YouTube or TikTok. Native trend/library songs are not baked into off-platform exports. Use separate permitted native/catalogue or cleared music on each platform.",
+    "rights": "Record actual applicable source/license/attribution and any modifications. Keep CC music credits only when that track is used. Do not leave Chill Wave credit on a different native song. No paid license/action without owner consent.",
+    "verification": [
+      "listen/review actual excerpt where tools support audio",
+      "verify rendered/native audio is present and not muted",
+      "reopen exact saved post and compare selected track + cover",
+      "retain evidence and disclose any auditory/rights blockers"
+    ],
+    "selection_process": [
+      "First eligibility: actual brand-account/platform availability and applicable promotional-use permission. Check separately for Instagram, YouTube and TikTok; preserve required credits.",
+      "Programme fit: select the actual event genre and emotional energy, keeping the owner preference calm/fresh/slightly grooving where appropriate; avoid a flat or overly sleepy default.",
+      "Trend preference: among suitable permitted candidates prefer current dated trend evidence. Native For you/recommendation is evidence of recommendation only, not proof of trend. Record observation date/source; refresh at production, never treat an old list as current.",
+      "Excerpt fit: audition the actual selected passage, with an immediate audible pulse/usable accents for the approved fast photographic section; avoid spending most of the narration on an intro or mismatching dense/aggressive vocals.",
+      "Variety: no same recording in consecutive new posts, avoid same-day reuse, review recent10 actual new posts and prefer a less-recently-used different recording/artist/sound. Another passage of the same recording is still reuse; never invent a catalogue candidate to fill the pool.",
+      "Final review: record actual title/artist/native trackID or licensed file hash, excerpt start/end, selection rationale, dated trend/recommendation classification, permission scope and real use history; verify rendered and reopened saved audio."
+    ],
+    "beat_sync": {
+      "required_for_new_edit_plan": true,
+      "timing_rule": "Fit actual BGM accents to natural near30sec narration; retain information>=5s and intro>=2.5s; no music pitch/speed change or forced numeric BPM proof.",
+      "evidence": "Use the actual selected excerpt and its audible accents/beat timestamps; BPM alone does not establish beat phase, beat strength or exact cuts. Listen/review and verify actual cuts versus the actual rendered/native audio; preserve any uncertainty.",
+      "receipt": "In the existing media manifest/receipt record selected recording + excerpt offset, measured/confirmed beat timestamps and actual photographic cut timestamps; distinguish planned alignment from verified render/native alignment.",
+      "native_audio": "If music is added natively, match its actual chosen excerpt/offset with the cut plan and verify after saving. Native catalogue presence is not permission to download another creator audio or bake it into cross-platform exports.",
+      "information_cards": "Keep date/Gling reading holds. Where a boundary cannot fit the music without breaking approved pace/readability, preserve it and use a natural musical phrase or ending; do not claim every cut is beat-aligned."
+    },
+    "trend_source": {
+      "owner_direction_date": "2026-10-12",
+      "owner_quote": "아 그리고, 릴스에 쓰이는 bgm 셀렉트할때, 이 인스타그램에서 트렌딩 오디오라는 메뉴에서 어울리는 테마에맞게 곡 골라서 써 제일 유명한 릴스 곡들이 순환되거든",
+      "primary": "Actual current Instagram Trending audio menu of the correct @gling.app account; refresh for every new selection because the list rotates. Do not replace it with a fixed playlist or generic recommended songs.",
+      "selection_order": [
+        "Current account-available music from Trending audio, with actual dated menu/audio-ID evidence",
+        "Fit to the actual category, subject, emotional arc and planned posting time",
+        "Audition the actual passage; distinguish music from spoken Original audio and keep narration intelligible",
+        "Verify applicable use rights and API attachment capability before committing the recording",
+        "Bind recording/artist/audio-ID or cleared file hash, excerpt offset, actual accents/cut timestamps and recent-use history in the existing project manifest"
+      ],
+      "evidence": [
+        "Observation time and exact account/platform",
+        "Track title/artist/audio-ID or exact audio-page URL",
+        "Native trend indicator/list position if actually observed; Reel usage count is not views or performance",
+        "Actual topic/posting-mood rationale, excerpt and audition status",
+        "Account/API availability and permission evidence, separately from menu visibility"
+      ],
+      "screenshot_receipt": "/Users/ash/Desktop/Git/unknown/mobile/output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/trending-audio-selection-2026-10-12/owner-trending-audio-direction-and-screen-observation.json",
+      "screenshot_alone": "Owner-provided example of the requested menu, not proof of the current account, exact track availability, licensing, listening or a currently suitable song.",
+      "unverified_behavior": "Keep unsupported/unavailable/unheard fields null or pending; do not call a generic recommendation or repeated stock song a verified trending selection.",
+      "scope": "Selection/read-only evidence under existing maximum55s GUI guard where needed. No phone use, new login/OAuth or SNS browser posting fallback. Preserve existing API-only publication, budgets, deadlines and uncertain attempts."
+    }
+  },
+  "historical_cover_preview": "output/design/gling-festival-autumn-winter-2026-10-01/viff-first-4x5/index.html",
+  "photo_activity_selection": {
+    "owner_update": "2026-10-05",
+    "primary_test": "Final crop must visibly convey event subject or core activity; generic attendees/tools do not suffice",
+    "comic_examples": [
+      "comic pages/characters",
+      "hands drawing comics",
+      "inking/storyboard detail"
+    ],
+    "dj_examples": [
+      "DJ stage",
+      "lighting and dancing atmosphere"
+    ],
+    "review_order": [
+      "read official programme",
+      "assign visual roles",
+      "licensed actual event preferred",
+      "licensed same-activity reference fallback",
+      "view original and final crop",
+      "rights/uniqueness/context verification"
+    ],
+    "whole_reel_reject": "All frames centered on attendees with weak programme evidence",
+    "native_previous_receipts": "Changed source/output hashes invalidate previous photo semantic review"
+  },
+  "voice_subtitle_test": {
+    "state": "owner-approved-forward-rollout",
+    "cover": "event/city/date only; no narration or subtitles",
+    "voice_subtitle_start": "first photo cut after cover; currently 1.4 seconds",
+    "look": "Pretendard52px/425, cream restrained shadow, raised bottom1408 on1080x1920; phrase-timed within continuous speech",
+    "overall_rollout": "authorized by owner; verify native save per event",
+    "voice_rate": 1.0,
+    "pitch_preserved": true,
+    "rollout_approval": {
+      "date": "2026-10-05",
+      "quote": "ㅇㅋ 이대로 쭉 올리자",
+      "scope": "new eligible event reels",
+      "native_status": "separate per-event receipts"
+    },
+    "script_policy": {
+      "revision": "2026-10-07-review-based-editorial-narration",
+      "owner_direction": "Explain the event and its atmosphere through actually researched visitor accounts; lead with strengths, turn drawbacks into useful pre-visit advice, finish with finding companions on Gling.",
+      "flow": [
+        "A clear current event/activity introduction",
+        "One concrete experiential strength supported by an actual attendance review",
+        "A useful pre-visit condition when relevant, phrased as 알아두면 좋은 점",
+        "A brief truthful Gling companion-finding invitation"
+      ],
+      "voice": "Natural Korean 해요체 with varied sentence rhythm and concrete scenes. Avoid repetitive 개최됩니다/열립니다 and bureaucratic lists. Vivid descriptions are allowed; fictional first-person attendance is not.",
+      "review_evidence": "Before drafting experiential claims, read the full original first-hand visitor/critic account. Store URL, author or handle, publication date, attended edition, exact supporting passage, claim mapping, sponsorship/organizer relationship when visible, and current-programme compatibility in the existing fact receipt. Search snippets/ratings/organizer promotion are not actual attendance reviews.",
+      "review_scope": "Distinguish opinion from current facts. Attribute an individual opinion briefly and honestly; label earlier-year experiences in spoken text or visible synchronized subtitle, as well as in full source notes. Never turn one review into consensus or carry last-year artists, location, price, free food or programme into this year without official verification.",
+      "no_review": "If no credible relevant visit account can be verified, record that scoped research result and describe only confirmed current programme features. Do not invent reviews or atmosphere to fill the structure. Withhold unsupported experiential claims, not independently verified event information.",
+      "strengths_and_tips": "Lead with supported strengths. Reframe drawbacks as concrete advice, e.g. queues→arrival planning only if supported; state ticket/registration/age/location/accessibility/cancellation constraints explicitly. Positive emphasis must not hide material limits or turn a paid/registration-required event into a free walk-in.",
+      "companion_cta": "Use a concise varied ending such as 함께 갈 사람은 글링에서 찾아보세요. A hypothetical companion question is permitted in narration by the latest owner direction; retain existing non-question informational Instagram captions. Never claim companions or a registered meetup already exist. Official tickets/registration remain separate.",
+      "fit": "New near30sec naturally connected narration; not the historical11.1sec cap. Facts and whole-video listening remain required.",
+      "ending": "The final Gling invitation may continue during the existing final brand card only if it does not hide its text. No extra subtitle overlay on cover or over brand lettering.",
+      "release": "New/pending-unsaved masters must satisfy this script policy before SNS storage, with exact new script/audio/subtitle/video hashes and revalidated claims. Updating a policy is not new media/native-save proof. Preserve existing public posts and previously saved reservations; no blanket replacement or replay of completed deletion scripts.",
+      "success_measure": "Track actual watch retention, saves and Gling visits when available; review-based narration is an owner preference and an unproven engagement hypothesis."
+    },
+    "voice_profile": "Approved Korean Younha; exact current channel-owned reference audio/transcript/model hashes",
+    "current_production_policy": "current_production.narration_rule",
+    "historical_approved_reference": {
+      "date": "2026-10-05",
+      "source": "user feedback in this conversation",
+      "quote": "이제 좀 맞다",
+      "scope": "narration pace reference",
+      "preview": "output/design/gling-ella-voice-test-2026-10-05/gling-ella-fast-preview.mp4",
+      "preview_sha256": "8b3435326747bd1a52561536193552428dd50403cf0fc1a97b9d7e9de8bf33b5"
+    }
+  },
+  "place_variant": {
+    "id": "gling-place-six-scenes-v1",
+    "owner_date": "2026-10-07",
+    "owner_scope": "Places alongside events in the existing Instagram automation; eight daily publication targets",
+    "parent": "Same current_production as events, primary topic point and exact-branch facts vary;6–10 cards and fixed last intro",
+    "renderer": "HyperFrames editable project; existing installed CLI final render",
+    "content_kind": "place",
+    "required_place_fields": [
+      "name",
+      "place_type",
+      "place_address",
+      "place_verified_on",
+      "place_operating_status"
+    ],
+    "operating_status": "open",
+    "identifier": "Existing event_id field is the stable content/file ID, not a fabricated provider event",
+    "event_dates": "Omit year/start_date/end_date; renderer suppresses cover event dates",
+    "cover": "Actual place name and city",
+    "information_card": {
+      "order": "penultimate",
+      "label": "방문 정보",
+      "period_lines": "One or two verified essential visit-condition/price/hour lines",
+      "venue_lines": "One or two exact branch/address lines; full address/conditions in real Gling body",
+      "minimum_hold_seconds": 5
+    },
+    "photo_context": "Every selected source photo must show the actual featured branch;4–8unique originals; no unrelated venue substitution",
+    "facts": "Current branch/address/operation/hours/closure/menu-price/booking/age/access rules, official-source dates and actual visitor passages; same final-input triple-check/hash gates",
+    "gling_routing": {
+      "food": [
+        "cafe",
+        "restaurant",
+        "bar"
+      ],
+      "life": [
+        "library",
+        "architecture",
+        "scenic_walk",
+        "viewpoint",
+        "gallery",
+        "night_culture_spot"
+      ]
+    },
+    "caption": "For new drafts/requested revisions use current_production.feed_caption_policy: concise venue/verified mention, address, current hours, supported parking/access, public business contact and official site; add useful verified booking/price/conditions only. Do not paste narration or require intro prose; retain credits and existing frozen captions.",
+    "narration": "Actual place/activity → source-supported strength/atmosphere → useful visit condition → truthful Gling companion ending; same timing/voice policy",
+    "native_release": "Actual correct-city/category Gling ID/body/all selected6–10images readback before existing authorized channels and genuinely vacant future slots",
+    "validation": "Renderer --self-check and scripts/festival-content-inventory.test.mjs; actual each-media/native preview remains required",
+    "new_place_posts_or_native_saves_claimed": 0,
+    "owner_production_policy": {
+      "source": "2026-10-07 Crew approval + 2026-10-08 Nemesis owner approval",
+      "receipt": "/Users/ash/Desktop/Git/unknown/mobile/marketing/reports/2026-10-07/crew-35s-publish/owner-approved-jev-basis.json",
+      "cafe_duration": "Fixed30s long-explanation template, same as every newly authorized topic; enough useful content at natural1x.",
+      "photo_pacing": "Match the narration and split long static holds; the accepted second photo is5.5s versus11s before",
+      "actual_media": "Actual exact branch atmosphere, drinks and food; current cinematic identity and full approved Younha natural1x voice after cover.",
+      "on_screen_metadata": "For newly produced videos omit photo-year/recent-review/review-year badges. Retain source/written/visit/photo dates and licensing evidence internally. Preserve factual event dates, essential access conditions and truthful individual-review wording. Do not alter already approved/published/reserved masters for this change.",
+      "approved_example_id": "owner-approved-nemesis-younha-cinematic-20261008",
+      "measured_effect": null,
+      "latest_receipt": "/Users/ash/Desktop/Git/unknown/mobile/marketing/reports/2026-10-08/nemesis-approved-publish/owner-approved-jev-basis.json",
+      "cafe_voice": "Full useful natural Korean paragraph using the existing Gling-approved Younha exact audio/transcript reference and one continuous take at1.0x. Keep all words, facts and natural breaths; no old comparison-speed target, atempo or short-script fallback. Match story/photo cuts and caption timing to the actual full voice inside the fixed30-second video. Current Ghouls voice/script remain the pacing reference; critical pronunciation and listening acceptance are separate.",
+      "cafe_photo_tone": "Current approved Nemesis brightness.75/saturation.9/contrast1.15/grain.035 applied once to originals. Preserve existing event identity and approved/reserved masters.",
+      "cover_motion": "Future new covers rotate slow-push/pull-back/diagonal-drift/side-pan via shared select_cover_motion and cover_motion_graph; text fixed, full normalized motion in final1.4s. Reuse stored motion for same event+out. Sequential cover selection/completion; inspect each new subject crop.",
+      "gling_first": "Save and re-read actual same-city food-category detail with additional verified information and six real images before SNS submission."
+    }
+  },
+  "final_editor": "hyperframes",
+  "current_production": {
+    "feed_caption_policy": {
+      "owner_direction_date": "2026-10-18",
+      "scope": "new drafts and owner-requested caption revisions for both curation and firsthand_ugc; preserve exact approved/published/queued captions and schedules",
+      "purpose": "Concise practical visit information; never paste or paraphrase the narration into the feed body; no mandatory introductory paragraph",
+      "structure": [
+        "exact venue name and verified public business Instagram @mention",
+        "exact branch address and city",
+        "current verified business hours and closure days",
+        "source-supported parking/access information when available",
+        "public business contact when provided",
+        "official website",
+        "optional genuinely useful verified booking, price, seasonal/age, transit or accessibility details",
+        "required source/photo/license credits and at most5relevant hashtags"
+      ],
+      "parking_rule": "Check dedicated/street/paid parking, relevant restrictions and approach only when useful. Parking difficulty requires the owner's actual experience or clearly attributed reliable recent evidence. Never infer no parking, easy/difficult parking, free parking, price, walking time or waiting time from missing information. Omit unverified claims from public prose; keep gaps in the internal facts record.",
+      "event_facts": "For event Reels also preserve verified dates, times, ticket terms and entry conditions; choose facts for the content rather than forcing restaurant fields.",
+      "voice_rule": "Short readable Korean information lines, natural brand voice and Patina. An introduction is optional only when it adds useful context; no narration transcript or expanded scene-by-scene description.",
+      "approval_rule": "Draft and verify exact facts, mention, caption hash and platform metadata before the existing release review. This rule does not authorize retroactive edits, new publication or changing approved reservations.",
+      "missing_information": "Omit unknown fields from public copy, retaining actual URLs/observation dates and gaps internally. Do not fill parking/contact/booking fields with guesses; respect an official no-phone or no-reservations policy."
+    },
+    "scope": "All existing owner-approved @gling.app Reels topics; role/account/permission boundaries unchanged",
+    "policy": "marketing/instagram-editorial-system.md (first section)",
+    "cover_standard": "marketing/gling-reel-cover-standard-2026-10-09.md",
+    "actual_visual_reference": "output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/subtitle-semantic-units-2026-10-12/reel-review.html",
+    "actual_current_full_projects": [
+      "output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/category-corrections/CAL-GHOULS/hyperframes",
+      "output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/category-corrections/EDM-SKETCH/hyperframes",
+      "output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/category-corrections/MTL-KATZ/hyperframes",
+      "output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/category-corrections/MTL-SHIOTA/hyperframes",
+      "output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/category-corrections/TOR-AGO/hyperframes",
+      "output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/category-corrections/TOR-ROYAL/hyperframes",
+      "output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/category-corrections/VAN-APPLE/hyperframes",
+      "output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/category-corrections/VAN-DIWALI/hyperframes",
+      "output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/remaining-scheduled/confirmed-30s-2026-10-12/CAL-WINTER-MARKET-2026/hyperframes",
+      "output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/remaining-scheduled/confirmed-30s-2026-10-12/MTL-MAMMA-MIA-CINE-CREATION-2026/hyperframes",
+      "output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/remaining-scheduled/confirmed-30s-2026-10-12/VAN-HEART-CITY-2026/hyperframes",
+      "output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/remaining-scheduled/confirmed-30s-2026-10-12/boxcar/hyperframes",
+      "output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/remaining-scheduled/confirmed-30s-2026-10-12/nemesis/hyperframes"
+    ],
+    "uniform": [
+      "Use exact primary labels and the single current_production.category_point_colors registry. Every distinct category has its own distinct line color; no reuse. Festival only #CBB9FF+페스티벌. Museum/art exhibition #E7A5C0+전시. Other actual special/community events #5F7CF3+이벤트, never reclassify an exhibition/festival merely to use this label. Preserve A geometry, white label/title/photo grade and complete natural1.2x voice and measured variable duration. Reject unknown category, mismatched line color or generic purple fallback; no app/DB slug creation.",
+      "Next cover: category line+label fixed top-left, city/date bottom-right; photograph approximately10% brighter using one native exposure delta; final white text/crop/photo QA",
+      "Bodoni Moda/Pretendard approved typography",
+      "final cinematic per-photo grade; no legacy p75 ceiling or double grade",
+      "raised52px/425 captions, bottom1408px on1080x1920; actual crop/layout verification",
+      "penultimate verified event/visit information >=5s",
+      "one fixed last Gling introduction >=2.5s",
+      "HyperFrames save/reopen/source-manifest hash/final render and actual QA"
+    ],
+    "variable": [
+      "owner-approved primary topic and category point",
+      "city/exact branch/current facts",
+      "4–8 distinct relevant cleared original photographs",
+      "connected polite Korean narration",
+      "theme/rights/usage-based actual BGM recording and excerpt",
+      "speech/actual-sound-accent-based photo holds within6–10 total scenes"
+    ],
+    "timing_rule": "Variable duration from complete measured narration and natural sentence breaths; 30fps. Keep1.4s cover, information card>=5s and final Gling card>=2.5s; retime scenes/captions/end together. Never cut words/phonemes/tails, overlap successive spoken sentences, compress breaths or slow to fit30s. Entire original voice once atempo=1.2; HyperFrames playback1x. Preserve music pitch/rate.",
+    "narration_rule": "Verified useful story/directed scenes -> same-writer Patina -> approved Younha full voice -> one pitch-preserving1.2x -> inspect every sentence ending/next onset and complete final syllable -> synchronize variable-length HyperFrames, captions and scenes -> saved/reopened project/source hash/render and actual full audio/visual review. ASR/hash/render alone cannot pass listening.",
+    "photo_rule": "Owner2026-10-17 latest: professional-photography-level real image quality is mandatory for every newly selected/added/replaced photo: inspect focus, fine detail, light/exposure, composition, compression and actual final1080x1920 crop at100percent. Prefer genuine exact-venue professional/press/architecture-editorial originals. If insufficient, hold that shot rather than pad with an enlarged weak frame or artificial blur. No retrospective re-render/repost of frozen14 or live/scheduled assets. Owner2026-10-17 likes g9-20261017T1320Z gallery high-resolution quality: always retain that genuine same-branch sharp original/crop standard. Exclude visible dining/drinking patron photos; replace with related empty room/architecture/exterior/food detail, not AI erasure, face blur or unrelated branches. Owner2026-10-16 high-resolution requirement: inspect genuine same-place original AND actual final1080x1920 portrait crop at100% for effective resolution, compression, focus and excessive enlargement. Recover sharp high-resolution original first; compare optional already-installed/free local upscale against original/replacement at identical crop/display size. A larger raster or sharpening is not recovered detail or native4K/AI. Reject worsening halos, waxy texture or altered architecture/signage/faces; never stretch or add artificial blur filler. Preserve exact branch, provenance/creator marks, people/media rights and current holds. New paid/generative calls, models or installations need existing explicit authority; this quality correction does not grant them. Keep existing approved/public masters and reservations immutable; Crew gets a private source/upscale comparison before any replacement.",
+    "music_rule": "Latest owner default for authorized new discovered-place Reels: reuse exact Dorsia A bgm.m4a SHA256 b2f3ebfb49063a966d195751634e8ac735db08aa89c94e6bc070299bbaa05b86 at original speed1/gain0.65 until owner changes it; first strong beat113/30s subject-light reveal. No random replacement track or paid sourcing; publication pause/final confirmation retained.",
+    "discovery_rule": "Actual @gling.app personalized Instagram Explore place Reels PLUS official/OpenTable/local fact research. Reuse observed original URLs/evidence without duplicate browsing; cached15 is not new Explore reading, thumbnails are not full timecoded/audio analysis. Fresh read-only Explore uses existing55s guard/account+user-input+publication-priority checks. Owner-authorized overnight discovery may produce private proposals and drafts before morning selection; exact final publication still needs owner confirmation.",
+    "current_native_consumers": {
+      "research": "daf1c667-8e1d-423e-abe8-70b5c2b7db31",
+      "review": "faeb4eb1-bfcf-4495-9f3b-63a125f3a90c",
+      "production": "978b9d5b-77f6-4839-bb85-23caeff3e0ea",
+      "performance": "c7e5e6cf-af28-47da-8fd5-170464aeee28"
+    },
+    "publication": "Existing same-city Gling-first readback, actual final acceptance/holds, exact official Meta API identity and once-only receipt/public readback; owner-authorized rolling12/day with2-hour future slots; existing public IDs and original task deadlines preserved; user owns old-post deletion; no new job/rerun/phone/paid call/native media fallback.",
+    "historical_keys": "Retired short production is read-only historical evidence outside active template defaults.",
+    "posting_context": "Owner2026-10-11: music must fit the subject AND posting mood. Prefer fresh/lively cafe-brunch with bright music for new vacant weekend-morning slots; actual authorized nightlife/DJ/club/dance-party with programme-appropriate energetic club-style music for evening slots. Keep topic fit mandatory, verify target-city local time/current opening or programme/cutoffs alongside existing Vancouver slot. Record topic/slot/city-local-time/music-mood/rationale in existing manifest; no fixed quota, expired morning catch-up, existing reservation replacement or unaccepted inventory.",
+    "narration_pacing_reference": {
+      "owner_feedback_date": "2026-10-13",
+      "case_id": "MTL-MAMMA-MIA-CINE-CREATION-2026",
+      "public_id": "18129707275774494",
+      "public_url": "https://www.instagram.com/reel/DealjT_CYU3/",
+      "voice_seconds": 25.316375,
+      "voice_sha256": "3908269962a38ace5384e87ce96c7c51173fbb019a043ae34d6b6384f70a9080",
+      "actual_atempo_factor": 1.0,
+      "scope": "Mamma Mia is the owner-selected cadence reference; the latest explicit instruction speeds whole source narration up1.2x while preserving pitch. Original Mamma media remains unchanged.",
+      "requested_new_delivery_factor": 1.2,
+      "owner_final_acceptance_quote": "맘마미아 1.2배속 좋음 이대로 가자"
+    },
+    "reel_duration_seconds": null,
+    "fps": 30,
+    "rendered_frame_count": null,
+    "short_narration_fallback": false,
+    "minimum_useful_narration_seconds": 26.6,
+    "retired_short_template_history": "/Users/ash/Desktop/Git/unknown/mobile/output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/retired-short-template-history/historical-short-production.json",
+    "latest_owner_quote": "맘마미아 1.2배속 좋음 이대로 가자 / 아 당연히 내용을 채워야지 그만큼",
+    "category_point_colors": {
+      "페스티벌": "#CBB9FF",
+      "전시": "#E7A5C0",
+      "이벤트": "#5F7CF3",
+      "자연": "#A8C39B",
+      "카페": "#D7BD92",
+      "다이닝": "#D79681",
+      "쇼핑": "#92C4C7",
+      "근교 여행": "#9BAED1",
+      "액티비티": "#82ADF0",
+      "나이트라이프": "#DD737F",
+      "도서관": "#B8A270"
+    },
+    "category_color_uniqueness_required": true,
+    "unknown_category_or_purple_fallback_allowed": false,
+    "category_color_validation_command": "python3 scripts/check-gling-cover-category.py [new-or-edited-HyperFrames-index.html ...]",
+    "cover_layout": {
+      "revision": "right-city-cover-photo-plus10-r1-2026-10-12",
+      "scope": "next produced/uploaded Reels, including current own private replacements; historical public media not changed by configuration",
+      "category_line_and_label": "fixed top-left, x86/top313 on1080x1920; exact unique palette",
+      "title_and_description": "original upper-left layout/typography; content-aware word wrapping",
+      "city_and_date": "Original right86 anchor; bottom570; source left78/right96/top1380 below city. Owner selected option4 Cinzel for city only.",
+      "cover_photo_relative_brightness": 1.1,
+      "native_exposure_delta_ev": 0.13750352374993502,
+      "grading": "HyperFrames data-color-grading.adjust.exposure; current source exposure+delta once; only selected cover img/video, not text/line/body/placeholder",
+      "random_position_or_color": false,
+      "owner_quote": "아 그리고 커버페이지에 살짝 랜덤한 변화를 주고싶은데, 지금 우리 커버에 왼쪽위에 선색상(카테고리에 따른) 카테고리 장소나 페스티벌이름(왼쪽상단)+설명 그리고 왼쪽아래 도시 이렇게 구성되어있잖아? 다음 영상부터는 도시 이름을 우측아래로바꾸고(조회수랑 겹쳐짐) 선색상이랑 카테고리도 왼쪽위로 고정하고. 그 너무 톤다운 시킨걸 조금 다시 올리자 사진이 하나도안보이네. 한10% 올리는걸로",
+      "request_receipt": "/Users/ash/Desktop/Git/unknown/mobile/output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/cover-layout-brightness-2026-10-12/owner-next-cover-direction.json",
+      "safe_area_override": "Latest owner-source-below-city-original-x-2026-10-15 CSS; source1060/right240 rejected. No new city font selected.",
+      "city_font_selection": "Owner selected option4 Cinzel; city only. Original title/date font retained. New editable derivatives only; approved/public/queued originals unchanged.",
+      "category_line_height_px": 18,
+      "category_line_thickness_owner20261019": "18px at1080 width, actual approved HANDSON v02 category:before; future covers only; width/position/color retained"
+    },
+    "previous_cover_visual_reference": "output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/cover-layout-brightness-2026-10-12/reel-review.html",
+    "historical_full_project_references": [
+      "output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/VAN-COMIC-MAKER-MEETUP-2026/hyperframes",
+      "output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/art-cafe/hyperframes"
+    ],
+    "actual_current_project_quality": "Thirteen editable native30s private previews: semantic captions110, actual boundary/midpoint330frames, all13 original whole AAC audio identical, native line colors and non-caption body pixels verified, actual desktop/mobile13movie+13rawvoice playback passed. Existing source photo/license/critical-word real-listening/full-master holds are separate; no claim of publication or quality acceptance from a render alone.",
+    "category_semantics": {
+      "페스티벌": "A themed festival combining multiple participating experiences/programmes. Actual official structure matters; the word event and number of days alone do not select this label.",
+      "이벤트": "A discrete special programme/session such as a film-and-creative afternoon or community workshop, after excluding more specific exhibition/activity/nightlife/festival categories.",
+      "도서관": "A visit focused on a library, its architecture or reading spaces. A specifically announced exhibition keeps 전시 when that exhibition is the primary subject. Applies to new or adopted unpublished covers, not historical public media.",
+      "precedence": "Use the actual primary visitor experience: art viewing stays 전시, exercise/sport stays 액티비티, DJ/club/dance-party stays 나이트라이프, and cafe/dining/shopping/nature/travel keep their own categories. Never use 이벤트 as an unknown-category fallback.",
+      "not_classification_factors": [
+        "free versus paid",
+        "one day versus many days",
+        "the broad source word event or 행사 alone"
+      ]
+    },
+    "event_cafe_separation": {
+      "owner_correction_date": "2026-10-12",
+      "event_color": "#5F7CF3",
+      "cafe_color": "#D7BD92",
+      "direction": "Cool saturated cobalt versus warm cream, with exact category text beside the line. Other categories/colors, photos/grade/whole1x voice/30s timing unchanged.",
+      "actual_receipt": "/Users/ash/Desktop/Git/unknown/mobile/output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/subtitle-semantic-units-2026-10-12/MTL-MAMMA-MIA-CINE-CREATION-2026/actual-semantic-revision-QA.json",
+      "actual_new_render_pending": false,
+      "actual_native_line_RGB": [
+        94.0,
+        123.0,
+        240.0
+      ],
+      "actual_comparison": "/Users/ash/Desktop/Git/unknown/mobile/output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/event-cafe-color-separation-2026-10-12/index.html"
+    },
+    "subtitle_policy": {
+      "owner_priority_date": "2026-10-12",
+      "segmentation": "The existing writer supplies complete sentences/clauses before any line or second budget. Never split a predicate/auxiliary, date/time/price/name between cue pages; do not append the start of the next sentence to fill space.",
+      "author_plan": "Each current HyperFrames project has subtitle-semantic-plan.json with exact original source words, semantic_units and protected_phrases/line_protected_phrases. No new LLM worker/backend/paid call is authorized.",
+      "layout": "Pretendard425/52px,840px width; normally1–2 lines. Rare complete units may use3 lines at top1216 so their ink still ends at1408. No font shrink, ellipsis, cropping or hidden overflow.",
+      "timing": "Independent actual ASR word anchors of exactly the bound voice; whole phrases remain until the next phrase, at least1s and at most6.5s per authored cue, max16 characters/s. Failure requires author regrouping, never voice trimming/speed/padding.",
+      "whole_voice": "Entire source once at1.2x, all words and natural sentence gaps preserved; variable-duration composition/captions/scenes follow the actual bound complete voice.",
+      "shared_helper": "scripts/gling-caption-plan.py",
+      "regression_check": "python3 scripts/test-gling-caption-plan.py",
+      "actual_owned13_author_plans": "/Users/ash/Desktop/Git/unknown/mobile/output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/subtitle-semantic-units-2026-10-12/thirteen-author-reviewed-semantic-plans.json",
+      "actual_native_render_pending": false,
+      "authoring_order": [
+        "Patina/fact/meaning-preserved script",
+        "same existing writer semantic subtitle units",
+        "actual whole1.2x delivery voice and independent ASR",
+        "shared font/units/time validation",
+        "actual HyperFrames render and boundary frame QA"
+      ],
+      "actual_native_render_receipt": "/Users/ash/Desktop/Git/unknown/mobile/output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/subtitle-semantic-units-2026-10-12/thirteen-semantic-native-render-readback.json",
+      "actual_native_video_QA": "/Users/ash/Desktop/Git/unknown/mobile/output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/subtitle-semantic-units-2026-10-12/thirteen-actual-semantic-render-QA.json",
+      "actual_mobile_desktop_review_QA": "/Users/ash/Desktop/Git/unknown/mobile/output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/subtitle-semantic-units-2026-10-12/thirteen-private-review-headless-UI-QA.json",
+      "actual_complete_semantic_cues": 110,
+      "actual_boundary_and_midpoint_frames": 330,
+      "whole_existing_voice_and_music_AAC_identical_for_all13": true
+    },
+    "voice_quality_correction": {
+      "date": "2026-10-13",
+      "owner_rejected_approved_eight": true,
+      "owner_rejected_five_morning_drafts": true,
+      "receipt": "/Users/ash/Desktop/Git/unknown/mobile/marketing/reports/2026-10-13/g9-0720-c843a8ed/voice-correction-20261013/owner-voice-rejection.json",
+      "duration_filled_by": "Useful content at the accepted1.2x cadence; length may exceed30s; preserve every sentence and natural breath.",
+      "time_stretch_allowed": true,
+      "pitch_change_allowed": false,
+      "speed_parameter_is_quality_evidence": false,
+      "ASR_or_hash_is_naturalness_evidence": false,
+      "required": "Keep accepted Mamma Mia1.2x; no truncation or overlapping next sentence; measured variable duration; remaining rights/listening/publication holds apply.",
+      "unknown_listening": "hold, never pass",
+      "current_qwen_base_speed_parameter_support": "not directly supported; actual installed contract read",
+      "latest_receipt": "/Users/ash/Desktop/Git/unknown/output/reviews/reels-content-fill-120-2026-10-13/owner-request.json",
+      "selected_reference_public_id": "18129707275774494",
+      "selected_reference_voice_sha256": "3908269962a38ace5384e87ce96c7c51173fbb019a043ae34d6b6384f70a9080",
+      "selected_reference_voice_seconds": 25.316375,
+      "current_two_revision_owner": "term_e190e8ba-e7e9-4b10-a0be-8ea941ef19a2",
+      "latest_direct_repost_scope": [
+        "CAL-WINTER-MARKET-2026",
+        "nemesis"
+      ],
+      "nemesis_is_naturalness_baseline": false,
+      "other_six_approval_restored": false,
+      "historical_rejection_reason_superseded_by_owner_EQ_clarification": true,
+      "current_source_voice_defect_confirmed": false,
+      "allowed_atempo_factors": [
+        1.2
+      ],
+      "slowdown_allowed": false,
+      "latest_speed_scope": "unapproved drafts, future Reels and the five still scheduled today; published masters unchanged"
+    },
+    "voice_delivery_speed": 1.2,
+    "korean_city_name_policy": {
+      "Montreal": "몬트리올",
+      "owner_quote": "몽트리올 아니고 몬트리올로 해야 더 한국인같음",
+      "applies_to": [
+        "title",
+        "body",
+        "caption",
+        "narration"
+      ],
+      "date": "2026-10-13"
+    },
+    "minimum_useful_narration_scope": "Current owner-requested content-filled revisions and future newly authored delivery. Prior speed-only same-script rule is superseded.",
+    "narration_pacing_reference_history": [
+      {
+        "owner_feedback_date": "2026-10-11",
+        "case_id": "CAL-GHOULS",
+        "scope": "User accepts this script and approximately30s pacing only; no blanket final-master/photo/rights/other-case acceptance.",
+        "reviewed_video_seconds": 28.633333,
+        "reviewed_video_sha256": "a2b10bc92cc82e6fcb20ebadafcb4e1d8c00158d16e305c58dcc1332ef21e657",
+        "voice_seconds": 24.713625,
+        "voice_sha256": "242b0ee003b64a4ec456cb4612ab5dd3beff410a6ad0483f6a4a708a745fae52",
+        "actual_atempo_factor": 1.0,
+        "preserve_script_and_voice": true
+      }
+    ],
+    "complete_narration_duration_policy": {
+      "owner_date": "2026-10-14",
+      "owner_quote": "꼭30초에 안맞춰도됨 시간이늘어나도되니까 말하는걸 자르면 안됨",
+      "fixed_video_duration_seconds": null,
+      "render_fps": 30,
+      "final_sentence_tail_preserved": true,
+      "natural_sentence_breaths_preserved": true,
+      "owner_request_record": "/Users/ash/Desktop/Git/unknown/output/reviews/overnight-drafts-2026-10-14/owner-start-and-duration.json",
+      "shared_sentence_boundary_helper": "/Users/ash/Desktop/Git/unknown/mobile/marketing/qwen_voice_boundary.py::insert_sentence_breaths",
+      "safe_quiet_gap_minimum_seconds": 0.36,
+      "unresolved_boundary_action": "Hold the unaltered take. Deliver full offending sentences separately with EOS below token limit; apply atempo1.2 once per raw complete take, sequence whole clips with natural breath; no waveform cutting through speech, crossfade, overlap or token-limit truncation.",
+      "technical_checks_do_not_replace_full_listening": true
+    },
+    "safe_area_geometry": {
+      "revision": "owner-credit-above-handle-badge-below-icon-2026-10-18",
+      "canvas": {
+        "width": 1080,
+        "height": 1920,
+        "aspect": "9:16",
+        "fps": 30
+      },
+      "reels_reference_reserved_pixels": {
+        "top": 250,
+        "bottom": 350
+      },
+      "readable_y_min": 250,
+      "readable_y_max": 1570,
+      "house_right_ui_reserve_pixels": 86,
+      "house_right_reserve_is_platform_guarantee": false,
+      "caption": {
+        "left": 100,
+        "width": 840,
+        "font_px": 52,
+        "weight": 425,
+        "ink_bottom_max": 1408,
+        "translate_y": -64,
+        "line_wrapping": "Preserve original authored line breaks and font."
+      },
+      "cover": {
+        "category_left": 86,
+        "category_top": 313,
+        "title_top": 507,
+        "place_title_font": {
+          "family": "Cinzel",
+          "weight": 400,
+          "asset": "assets/Cinzel-Regular.ttf",
+          "font_sha256": "4a0d00aab504f885b98ee59493d8917a58dd1915a8db9eff830afcd85aca9149",
+          "license": "SIL OFL1.1",
+          "owner_direction": "2026-10-18: keep CINZEL for venue/place names on covers; preserve title copy, size, position and existing city font. Other event-title typography remains content-specific."
+        },
+        "right": 86,
+        "city_date_bottom": 570,
+        "city_date_alignment": "right",
+        "city_font": {
+          "family": "Cinzel",
+          "weight": 400,
+          "size_px": 60,
+          "line_height_px": 72,
+          "letter_spacing_px": 0.5,
+          "file": "/Users/ash/Desktop/Git/unknown/output/reviews/reels-text-safe-area-2026-10-15/city-font-five/assets/Cinzel-Regular.ttf",
+          "font_sha256": "4a0d00aab504f885b98ee59493d8917a58dd1915a8db9eff830afcd85aca9149",
+          "license": "SIL OFL1.1",
+          "owner_selected_option": 4,
+          "owner_quote": "4번시안이 좋다"
+        },
+        "firsthand_visited_badge": {
+          "top": 824,
+          "right": 0,
+          "width": 390,
+          "height": 104,
+          "leading_accent": {
+            "color": "#CBB9FF",
+            "width_px": 6,
+            "source": "Colors.dark.accent; owner2026-10-18 purple instead of yellow, slightly thicker"
+          },
+          "scope": "firsthand_ugc only; HANDSON reference one104px badge-height below its preceding top720 preview. For other photos check subtitle/photo anchors; preserve selected logo size, plate and all other cover elements"
+        }
+      },
+      "stylesheet": "marketing/gling-reel-safe-area.css",
+      "stylesheet_sha256": "c1692a63f80cf9f4390d37663e494d1c7bee85d22d23d0e7f66ce251a9de823e",
+      "instruction": "Owner2026-10-18: no cover credit; body photo credit left78/right96/top1660/line32 above the visible Gling handle; keep x/font/wording. Latest HANDSON firsthand VISITED plate top824/right0/390x104 is exactly one104px badge-height below the preceding top720 preview; this supersedes earlier vertical placements. Other covers must use their actual subtitle/photo anchors and clear the profile-grid Reel icon. Critical text keeps y250–1570; lower secondary credit is the owner-requested exception and must be checked against actual account/caption UI, not claimed universally safe. Preserve1080x1920/30fps, cover/title/city, bilingual captions, whole1.2x voice and variable duration. Old public/queued masters remain immutable; corrected HANDSON is private until accepted.",
+      "reference_url": "https://www.instagram.com/p/Deen47Nkt9K/?img_index=2",
+      "reference_type": "owner-supplied creator infographic recommendation; not an independently verified universal Meta UI guarantee",
+      "actual_reference_evidence": "/Users/ash/Desktop/Git/unknown/output/reviews/live-operations-2026-10-15/g7/owner-template-reference",
+      "instagram_carousel_separate_canvas": {
+        "width": 1080,
+        "height": 1440,
+        "aspect": "3:4",
+        "applies_to": "future selected carousel stills only; not Reel video or Gling app4:3 photos"
+      },
+      "scope": "new private production and future exact accepted releases; do not alter existing18 frozen/queued/public assets or approved publication times",
+      "context_label_top": {
+        "cover": 1460,
+        "other_scenes": 1460,
+        "brand_card": 1460
+      },
+      "reference_other_surface_facts": {
+        "story": {
+          "width": 1080,
+          "height": 1920,
+          "top_reserved": 250,
+          "bottom_reserved": 250,
+          "source_slide": 4
+        },
+        "creator_profile_grid_claim": {
+          "aspect": "4:5",
+          "source_slide": 5,
+          "Meta_official_or_all_accounts_verified": false
+        },
+        "crop_QA": [
+          "9:16 whole",
+          "centered3:4 simulation",
+          "centered4:5 simulation"
+        ],
+        "unverified": [
+          "exact current device UI/crop",
+          "numeric right inset in source"
+        ]
+      },
+      "source_credit": {
+        "left": 78,
+        "right": 96,
+        "top": 1660,
+        "bottom": "auto",
+        "font_px": 25,
+        "line_height_px": 32,
+        "show_on_cover": false,
+        "start": "first body photograph after the cover",
+        "per_photo_attribution": true,
+        "one_line_bottom": 1692,
+        "placement": "Above the actual visible Gling account handle; x unchanged; verify caption expansion and device UI."
+      },
+      "context_label_margin": 0
+    },
+    "cross_platform_distribution": {
+      "owner_quote": "시안 확정되면 릴스만 올리는데, 유튜브쇼츠, 틱톡도 다 올리자",
+      "targets": [
+        "instagram_reels",
+        "youtube_shorts",
+        "tiktok"
+      ],
+      "master": "1080x1920/30fps HyperFrames final; complete approved Younha1.2x exactly once; variable duration",
+      "approval_flow": "Two separate owner approvals: exact reference/place selection authorizes private production only; exact finished-video approval then authorizes the confirmed destination metadata and supported platform upload/queue. Target Instagram Reels and Gling YouTube Shorts; TikTok remains held until API review and account authorization pass. A selection, technical QA pass or hypothetical workflow question is not final publication approval. Reuse one content ID with independent per-platform identity/attempt/publish receipts; never copy IG success into another platform as an execution claim.",
+      "youtube": {
+        "method": "YouTube Data API v3 videos.insert + OAuth youtube.upload",
+        "schedule": "Existing G9 local scheduled_for; public videos.insert only during its original0..300s window after current holds/approval checks; no remote publishAt schedule or expired-slot backfill",
+        "shorts": "square or vertical up to180s; no separate Shorts-upload endpoint",
+        "channel_id": "UCPr7LdLmf9g0BqyPYrdh1dg",
+        "channel_url": "https://www.youtube.com/channel/UCPr7LdLmf9g0BqyPYrdh1dg",
+        "observed_handle": "@gling-m3ltt",
+        "browser_owner_management_verified": true,
+        "api_upload_oauth_verified": true,
+        "oauth_connection_evidence": "/Users/ash/Desktop/Git/unknown/output/reviews/youtube-gling-connection-2026-10-15/final-verification.json",
+        "actual_video_upload_verified": true,
+        "publishing_pipeline_wired": true,
+        "publisher": {
+          "entrypoint": "marketing/youtube_api.py",
+          "native_automation_id": "978b9d5b-77f6-4839-bb85-23caeff3e0ea",
+          "native_precheck": "python3 marketing/social_precheck.py instagram",
+          "native_precheck_timeout_seconds": 55,
+          "combined_api_budget_seconds": 50,
+          "preparation_command": "python3 marketing/youtube_api.py plan --approval <exact-final-approval.json>",
+          "source_queue": "marketing/festival-content-ledger.json events[].channels.youtube.api_intent",
+          "private_receipts": "~/Library/Application Support/gling/operations/youtube/publishing/",
+          "required_youtube_review_fields": [
+            "youtube_rights_verified=true",
+            "final_review_sha256"
+          ],
+          "exact_approval_bindings": [
+            "platform",
+            "account",
+            "content_id",
+            "scheduled_for",
+            "source_record",
+            "video_sha256",
+            "source_manifest_sha256",
+            "gling_post_id",
+            "metadata_sha256",
+            "final_review_sha256"
+          ],
+          "unknown_send": "preserve once attempted/uncertain receipt; never automatically reinsert",
+          "limit": "one bounded multipart upload up to256MiB; larger accepted Shorts held for resumable support, no quality reduction",
+          "submission": "private local plan/approval until original slot; one public insert; recheck wall-clock/source immediately before once and POST",
+          "remote_scheduling": "disabled: existing upload+readonly grants cannot clear native publishAt; actual native schedules0",
+          "failure_isolation": "terminal failures retained and skipped; pending readbacks ordered by last observation"
+        },
+        "download": {
+          "ios_url": "https://apps.apple.com/ca/app/id6809273242",
+          "website": "https://gling.ej-entertainment.com/",
+          "shorts_description_cta": "📱 글링 다운로드는 채널 첫 번째 링크에서",
+          "shorts_external_url_clickable": false,
+          "profile_link_public_saved_verified": true,
+          "android_public_store_url_verified": false,
+          "public_profile_evidence": "output/reviews/gling-youtube-publishing-2026-10-17/channel-links-verification.json"
+        },
+        "integration_verification": "output/reviews/gling-youtube-publishing-2026-10-17/verification.json",
+        "copy_policy_owner20261018": {
+          "title_template": "장소명 | 캐나다 도시명에서 가야 하는 장소유형!",
+          "verified_city_and_category_required": true,
+          "external_urls_in_description": false,
+          "download_cta": "글링 다운로드는 채널 프로필의 첫 번째 링크에서 확인해 주세요.",
+          "reference_links_location": "internal review only; retain original URLs and rights evidence",
+          "scope": "YouTube only; separate from Instagram body",
+          "evidence": "/Users/ash/Desktop/Git/unknown/output/reviews/youtube-shorts-reset-2026-10-18/queue-application-verification.json"
+        },
+        "thumbnail_policy_owner20261018": {
+          "intent_policy": "first_cover_api",
+          "method": "thumbnails.set",
+          "image": "exact approved encoded-first-frame cover_file + cover_sha256",
+          "api_frame_timestamp_selection": false,
+          "api_acceptance_is_not_surface_display_verification": true,
+          "official_evidence": "/Users/ash/Desktop/Git/unknown/output/reviews/youtube-shorts-reset-2026-10-18/thumbnail-official-evidence.json",
+          "existing_oauth_scope_sufficient": "youtube.upload"
+        },
+        "actual_video_upload_observation": {
+          "evidence": "/Users/ash/Desktop/Git/unknown/output/reviews/youtube-shorts-reset-2026-10-18/live-second-observation.json",
+          "note": "own-channel live read; does not prove reach restriction or future upload/thumbnail success"
+        }
+      },
+      "tiktok": {
+        "method": "Content Posting API Direct Post video.publish",
+        "public_upload": "audited approved client + creator authorization/UI consent/creator-info checks; own-team-only utility restricted by guidelines",
+        "schedule": "no publish_at field documented in inspected Direct Post schema; existing authorized local queue would submit at due time after supported account connection",
+        "current_connection": "owner reports API review pending on 2026-10-16; approval and publishing-account authorization unverified; no upload attempted"
+      },
+      "preserve_existing_queues_and_source_rights": true,
+      "no_new_job_or_service_created": true,
+      "api_evidence": "/Users/ash/Desktop/Git/unknown/output/reviews/live-operations-2026-10-15/platform-api/sources.json"
+    },
+    "ffmpeg_support": {
+      "skill": "/Users/ash/.agents/skills/ffmpeg-skill/SKILL.md",
+      "role": "input/output probe, format/loudness/true-peak QC and viewed contact sheets; asset preparation only where authorized; HyperFrames remains editable editor and final renderer",
+      "excluded_defaults": [
+        "duration-fit speed/trim",
+        "silence/breath removal",
+        "caption auto-shrink or word-splitting",
+        "preset crop that discards subject",
+        "reapplying1.2x to delivered audio"
+      ],
+      "platform_presets_are_not_api_uploaders": true,
+      "fixed_platform_duration_limits_require_current_official_verification": true
+    },
+    "publication_cadence": {
+      "platform": "instagram",
+      "account": "gling.app",
+      "schedule_policy": "rolling_twelve_per_day",
+      "interval_hours": 2,
+      "per_rolling_24_hours": 12,
+      "continuous_overnight": true,
+      "minimum_two_day_finished_drafts": 24,
+      "requires_exact_owner_approval": true,
+      "current_saved_plan": "/Users/ash/Desktop/Git/unknown/output/reviews/live-operations-2026-10-15/daytime-pacing/saved-twelve-plan.json",
+      "current_policy": "/Users/ash/Desktop/Git/unknown/output/reviews/live-operations-2026-10-15/daytime-pacing/current-policy.txt"
+    },
+    "latest_owner_visual_correction": {
+      "date": "2026-10-17",
+      "record": "/Users/ash/Desktop/Git/unknown/output/reviews/reels-photo-credit-refinement-2026-10-17/owner-direction.json",
+      "private_revisions_only": true,
+      "publication_inferred": false
+    },
+    "factual_verification_owner20261018": {
+      "owner_quote": "그래 그런 사실체크여부도 워크플로우에잇는게 좋아",
+      "recorded_at": "2026-10-18T20:23:43.612979+00:00",
+      "checkpoints": [
+        "discovery",
+        "before_private_production",
+        "before_publication"
+      ],
+      "verify": [
+        "exact_city_and_branch",
+        "current_operation_or_closure_or_relocation",
+        "season_and_event_dates",
+        "menu_and_price_if_claimed"
+      ],
+      "evidence_fields": [
+        "actual_source_url",
+        "observed_at_utc",
+        "exact_claim_and_branch",
+        "access_result",
+        "conflicting_sources_and_resolution"
+      ],
+      "stale_official_hours_alone_sufficient": false,
+      "uncertain_fact_action": "omit unsupported wording or hold affected candidate using existing hold path",
+      "legacy_approval_rule": "No blanket hold/reschedule/reproduction solely because this new evidence field is absent; reconcile concrete material new conflicts.",
+      "current_factual_hold": {
+        "candidate_id": "MTL-HARRICANA-95-JEAN-TALON-W",
+        "source": "https://www.themain.com/articles/brasserie-harricana-closes-little-italy",
+        "reported_closed": "2026-01-09",
+        "status": "hold_until_exact_branch_reopening_verified"
+      },
+      "workflow_diagram": "/Users/ash/Desktop/Git/unknown/output/reviews/gling-workflow-map-2026-10-18/index.html",
+      "new_job_or_permission": false,
+      "configuration_is_execution_proof": false
+    },
+    "discovery_media_owner20261018": {
+      "sources": [
+        "Instagram Reels",
+        "existing 10 approved spatial publications",
+        "Resy",
+        "OpenTable"
+      ],
+      "OpenTable_url": "https://www.opentable.com/",
+      "asset_types": [
+        "professional-grade real HQ photos",
+        "authorized real HQ video clips"
+      ],
+      "body_clip_seconds": [
+        3,
+        4
+      ],
+      "qa": "Exact venue, original media/creator/rights/source in-out, actual final portrait100% quality, scene-to-line alignment, full narration preserved",
+      "approved_masters_and_current_queue_immutable": true,
+      "native_prefix_reference": "output/reviews/gling-discovery-media-policy-2026-10-18/native-prefix.txt"
+    },
+    "reference_outcome_bindings_owner20261018": {
+      "scope": "Future newly authored production only; do not alter historical/frozen/current approved queues",
+      "venue_and_structure_references_separate": true,
+      "structure_fields": [
+        "reference_id",
+        "observation_id",
+        "decision_id",
+        "source_and_analysis_sha256",
+        "broad_timecoded_beats",
+        "script_scene_bindings",
+        "encoded_application_review"
+      ],
+      "template_provenance": {
+        "template_id": "gling-cinematic",
+        "template_version": "actual top-level version from consumed byte-exact snapshot",
+        "snapshot_before_new_source_creation": true,
+        "fields": [
+          "snapshot_path",
+          "snapshot_sha256",
+          "captured_at",
+          "source_manifest_sha256"
+        ]
+      },
+      "growth_fields": [
+        "exact_master_video_sha256",
+        "platform_account_native_publication_id",
+        "publication_receipt",
+        "actual_capture_at",
+        "actual_elapsed_age"
+      ],
+      "historical_unknown_template": "Keep original observation and mark strict import incomplete; never substitute current version; no new publication gate"
+    },
+    "workflow_adoption_owner20261018": {
+      "source": "owner approved useful Hypit ideas and repeated cinematic photo motion2026-10-18",
+      "scope": "future nonfrozen production and explicitly requested current private photo-motion-r5 only",
+      "reference_analysis": {
+        "roles_separate": [
+          "venue",
+          "structure"
+        ],
+        "structure_fields": [
+          "actual_original_url",
+          "source_hash",
+          "observed_at",
+          "views_precision",
+          "post_age",
+          "account_scale",
+          "actual_full_coverage",
+          "hook",
+          "progression",
+          "payoff",
+          "picture_speech_sound_relations"
+        ],
+        "partial_view_is_not_full_playback": true,
+        "unknown_is_null": true
+      },
+      "hooks": {
+        "variants": 2,
+        "artifact": "text_only_in_existing_material_review",
+        "same_facts_mode_assets_body": true,
+        "one_selected_production": true,
+        "selected_by_and_approval_scope_recorded": true,
+        "no_extra_approval_gate": true
+      },
+      "narration_scene_timing": {
+        "helper": "scripts/gling-caption-plan.py",
+        "basis": "actual final1.2x narration/caption complete phrase and occurrence",
+        "photo_video_cut_seconds": [
+          3,
+          4
+        ],
+        "narration_continuous": true,
+        "no_audio_trim_overlap_or_speed_change": true,
+        "missing_or_ambiguous_anchor": "explicit hold, never guess"
+      },
+      "photo_motion": {
+        "editor": "HyperFrames",
+        "runtime": "seek_safe_paused_registered_GSAP",
+        "subject": "inner_photo_only",
+        "typical_scale_change_percent": [
+          4,
+          6
+        ],
+        "pan": "small source-safe pan if composition supports it",
+        "derive_from_actual_source": true,
+        "overlays_static": true,
+        "no_black_edges_blur_stretch_or_crop_jump": true,
+        "zoom_reset_is_not_a_new_photo": true,
+        "proof": "actual encoded early/mid/late photo-only movement plus source100percent crop and stable overlays"
+      },
+      "review": "source/script/scene/encoded application; timecoded notes bound to exact video and manifest hashes",
+      "existing_editor_provider_jobs_and_publication_authority_preserved": true,
+      "hypit_install_or_code_copy": false,
+      "new_paid_generation": false,
+      "unchanged_holds": [
+        "Barbarella_repeated_photo",
+        "Harricana_closed",
+        "photo_and_music_rights",
+        "final_owner_publication_approval"
+      ]
+    },
+    "content_groups_owner20261018": {
+      "policy": "OWNER_REELS_SEVEN_CONTENT_GROUPS_CONNECTED_20261018",
+      "canonical_policy": "marketing/reels-editorial-modes.md#2026-10-18--seven-content-approaches-connected",
+      "scope": "next_eligible_unapproved_concepts_only",
+      "field": "content_group",
+      "storage": "existing per-case editorial-mode.json",
+      "values": {
+        "educational": "교육형",
+        "emotional": "감정·공감형",
+        "deep_dive": "심층 분석형",
+        "reflection": "회고·교훈형",
+        "vulnerable": "솔직한 경험 공유형",
+        "edutainment": "재미＋교육형",
+        "lists": "리스트형"
+      },
+      "selection": "One primary approach per video; independent of venue/category and curation/firsthand_ugc evidence mode. No quotas or mandatory variants.",
+      "preferred_when_suitable": [
+        "educational",
+        "emotional",
+        "deep_dive"
+      ],
+      "owners": {
+        "G7": "recommend approach and viewer question with actual sources",
+        "G9": "choose one approach and bind actual story/progression/payoff, same-body hook A/B and one production",
+        "G8": "check selected promise against actual rendered video and speaker evidence",
+        "G10": "join exact published revision and existing 48h/7d observations; missing legacy group stays unknown"
+      },
+      "experience_rule": "Reflection/vulnerable/firsthand statements require actual authorized speaker evidence; documented curation lessons do not establish a visit.",
+      "measurement": "Valid saves/reach and shares/reach only; zero or missing reach has no ratio. Compare mode, topic/city, duration, post age and paid exposure. Existing one-primary-test-per-account applies; ten comparable observations is exploratory.",
+      "preserve": "Existing approved/queued/public media and templates consumed by them, two approvals, HyperFrames, providers, budgets, accounts, schedules, sole owners and individual holds.",
+      "reviewed_proposal": "/Users/ash/Desktop/Git/unknown/output/reviews/gling-reels-seven-formats-2026-10-18/review.html",
+      "original_source_sha256": "7384b2d912af668929df9aafd045554c9a5a7465c7b42fcfc5ae57e2b21817f7"
+    },
+    "structure_reference_minimum_owner20261019": {
+      "owner_quote": "15만도 썩 높은건아니라서.. 한 50만이상으로 맞추자",
+      "recorded_at": "2026-10-19T07:45:10.927003+00:00",
+      "minimum_observed_views": 500000,
+      "applies_to": "newly selected structure benchmarks, separate from venue evidence",
+      "missing_views_eligible": false,
+      "likes_as_views_allowed": false,
+      "original_url_and_dated_metric_evidence_required": true,
+      "rounded_values_labeled": true,
+      "whole_observed_source_timecoded_analysis_required": true,
+      "same_body_two_text_hooks_one_production": true,
+      "actual_script_scene_encoded_bindings_required": true,
+      "current_approved_seven": "preserve exact masters and compare read-only against a qualified new reference",
+      "existing_frozen_history_unchanged": true,
+      "existing_jobs_owners_budgets_permissions_preserved": true,
+      "new_approval_stage": false,
+      "new_jobs": 0,
+      "latest_owner_quote": "ㅇㅋ 50만 구조로 분석해서 다음편부터는 50만+ 영상을 레퍼런스로삼아서 구조분석 후 만들어봐",
+      "applies_from": "next newly authored production only; current approved seven remain unchanged",
+      "qualified_analysis_handoff": "/Users/ash/Desktop/Git/unknown/output/reviews/gling-structure-reference-500k-2026-10-19/selected-structure-reference.json",
+      "qualified_analysis_handoff_sha256": "86b6e2a35dbd73f4afca5f59a5312b6588e65af44cf83c2431e1f4de89191464",
+      "actual_verified_analysis_references": 1
+    },
+    "reference_diversity_owner20261019": {
+      "recorded_at": "2026-10-19T09:25:49.912945+00:00",
+      "owner_quotes": [
+        "지금 템플릿을 유지하다가 나중에 터지는 릴스가 나오면 그 템플릿으로 여러번 시험",
+        "레퍼런스 삼을 50만이상 영상을 다양하게",
+        "아직 우리꺼에서는 하지말자.",
+        "내가 조회수 티는게 나오면 말해줄테니까 지금은 계속해서 50만이상 영상들을 참고하는게 맞아"
+      ],
+      "state": "research_and_reference_now_keep_current_template_no_own_published_experiment",
+      "minimum_observed_views": 500000,
+      "diversity_dimensions": [
+        "editing_method",
+        "cut_transition",
+        "narration_and_dialogue",
+        "music_and_sound_relationship",
+        "progression_pacing"
+      ],
+      "observed_timecodes_required": true,
+      "actual_original_url_and_dated_views_required": true,
+      "one_viral_reference_is_not_a_diverse_library": true,
+      "pick_compatible_insights_for_current_template": true,
+      "unverified_music_or_audio_observation_remains_unknown": true,
+      "preserve_current_template_and_approved_masters": true,
+      "own_public_experiment_active": false,
+      "automatic_breakout_detection_or_winner_promotion_authorized": false,
+      "future_repeat_test_trigger": "Owner identifies one of Gling own Reels with standout actual views, then supervisor records exact video/version/metrics and owner-directed repeat tests. No current variant batch, cadence change or speculative test posts.",
+      "internal_text_hook_comparison": "Existing draft-only two-hook planning can continue; not a public A/B experiment or causal result.",
+      "new_jobs": 0,
+      "actual_new_varied_reference_count": null,
+      "research_minimum_observed_views": 500000,
+      "production_structure_minimum_observed_views": 1500000,
+      "latest_owner_quote": "결국 릴스구조는150만이상 조회수가나온 성공한릴을따라야함",
+      "structure_precedes_optional_items": true,
+      "private_single_prototype_authorized": true,
+      "public_experiment_authorized": false
+    },
+    "photo_story_owner20261019": {
+      "recorded_at": "2026-10-19T09:25:49.912945+00:00",
+      "policy_id": "OWNER_PHOTO_STORY_MIN5_20261019",
+      "owner_quotes": [
+        "사진 갯수는 제일중요한거임",
+        "최소 릴스에 우리 5장~6장쓰기로햇엇는데",
+        "커버 보여주고 대사 들어가면 바로 다른사진으로 여러장 보여줘야지",
+        "커버사진에서 대사 한마디 치고 바로 전환해야지 지금 3마디 나올때동안 사진 하나도 안바뀜"
+      ],
+      "applies_to": "Next newly authored/edited unapproved Reels; do not silently rewrite/delete/repost frozen approved/public masters. Explicit HANDSON cover revision is allowed and already has varied approved body.",
+      "minimum_distinct_body_source_photos": 5,
+      "preferred_minimum_distinct_body_source_photos": 6,
+      "importance": "highest visual acceptance priority",
+      "cover_does_not_increase_body_unique_count": true,
+      "first_body_photo_must_differ_from_cover_source": true,
+      "same_original_crop_zoom_pan_or_reencode_counts_as_one": true,
+      "cover_timing": "One brief opening hook phrase only; at its end switch immediately to a DIFFERENT source photo. Do not hold cover through multi-clause introduction; picture transition never cuts narration.",
+      "body_timing": "Existing3–4s body photo cadence and gentle motion; use more genuinely distinct photos for longer narration instead of looping the same few. Cover is a short opening exception.",
+      "shot_progression": [
+        "exterior_or_interior_wide_establishing_view",
+        "interior_wide_or_medium_showing_spatial_relationships",
+        "medium_context_view",
+        "close_up_details_food_materials",
+        "optional_wide_return_for_context_payoff"
+      ],
+      "avoid_closeups_only": true,
+      "wide_establishing_view_required_for_space_curation": true,
+      "source_quality": "Professional high resolution actual same venue/branch; no blurred filler/unrelated substitute; preserve no-dining-people rule.",
+      "short_real_video_cuts": "Existing permitted professional footage can supplement; do not use duplicate clips to inflate photo minimum.",
+      "missing_required_assets": "Hold for better assets; not ready/pass.",
+      "proof_required": [
+        "exact_source_photo_hashes_and_dimensions",
+        "cover_and_first_body_source_binding",
+        "ordered_shot_scale_and_timestamps",
+        "actual_encoded_first_transition_and_unique_photo_application"
+      ],
+      "existing_public_master_review": "Audit Botanic/Botanist and Arbutus/Marbutus examples as READONLY; no current deletion/repost authorization.",
+      "validation_command": "python3 marketing/photo_story.py PROJECT --video EXACT_MASTER --review G8_REVIEW.json",
+      "acceptance": "exit0 AND passed=true; missing evidence or fewer5body originals is hold",
+      "review_contract": "/Users/ash/Desktop/Git/unknown/output/reviews/gling-reference-diversity-2026-10-19/photo-review/command-contract.json",
+      "maximum_contiguous_same_original_seconds": 4,
+      "applies_to_cover_and_body": true,
+      "exceptions_allowed": false,
+      "next_frame_over_4s_is_failure": true,
+      "adjacent_crops_do_not_reset_timer": true,
+      "latest_owner_quote": "사진컷 전환은 무조건4초안에는...예외 따윈없으니 무조건지켜야함"
+    },
+    "architecture_voice_owner20261019": {
+      "recorded_at": "2026-10-19T09:25:49.912945+00:00",
+      "owner_quotes": [
+        "너의 지식이면 충분히 이게 어떤 양식처럼 보이는데 저의 방구석 건축지식으로 뭔가 설명해보자면",
+        "글링 나레이션으로 글링의 지식같지만결국엔 뭐 너의 지식을 이용해서 설명해볼 수 있지 이런 해석은 그냥 재미로 봐달라고 하면서100% 정확하다고 볼수없는거지"
+      ],
+      "editorial_goal": "Beautiful photogenic space plus one or two interesting observations/knowledge points viewers would not learn from generic coffee amenities.",
+      "voice": "Gling narration playfully interprets visible architecture/interiors using general knowledge, e.g. 방구석 건축지식/건축덕후 시선.",
+      "interpretation_allowed": true,
+      "visible_observation_and_subjective_interpretation": "Explain visible arches/proportions/symmetry/light/sight lines/material appearance; style resemblance may be presented as a tentative interpretation, not an authoritative classification.",
+      "confidence_framing": "Brief natural subjective framing appropriate to inference, e.g. 글링 눈에는/이런 양식이 떠오르는데/재미로 보자면. Do not recite one fixed disclaimer in every video or sentence; not claimed100% accurate.",
+      "verified_facts": "Named architect, date, former building use, restoration history, official style, exact material and intended design reasons need actual supporting sources. No invented facts or firsthand visit.",
+      "story_use": "One or two concise insights tied to actual wide/medium/detail photographs and a visual payoff, not a lecture or generic there-is-coffee list.",
+      "template_redesign_or_published_experiment": false,
+      "latest_owner_direction": "성공한150만+영상의 구조가 먼저이고 해설 아이템은 필요에 따라 선택/분배/생략한다.",
+      "research_before_narration_required": true,
+      "interpretive_lens": [
+        "proportion",
+        "circulation",
+        "light",
+        "materials",
+        "interior/exterior",
+        "contrast",
+        "possible_style_or_trends"
+      ],
+      "imaginative_deduction_allowed": "Model knowledge may playfully infer architect intent, contrasts and possible venue-name meanings from visible cues, framed as opinion/question (같아/아닐까/글링눈에는), not an official fact/quote or100% certainty.",
+      "expert_perspective": "Analyze like a seasoned architectural designer; do not claim a real licence/career/visit.",
+      "menu": "Verified actual menu/signature item only if useful to source structure; no invented taste/signature status.",
+      "fixed_narration_order": false,
+      "omit_unhelpful_material_freely": true,
+      "humour": "Toronto갈데없다면서요? is an optional brief hook, not mandatory or a long introduction."
+    },
+    "production_structure_minimum_owner20261019": {
+      "minimum_observed_views": 1500000,
+      "broad_research_minimum": 500000,
+      "structure_precedes_optional_items": true,
+      "current1549192_source_qualifies": true,
+      "approved_frozen_masters_unchanged": true
+    },
+    "music_and_spoken_voice_owner20261019": {
+      "source": "Paper Route owner rejected downbeat music on a bright café and artificial narration",
+      "music": "Match image brightness and narrative energy; bright/airy cafés should audition light rhythmic tracks rather than default slow dream pop. Exact track remains case-specific review.",
+      "spoken_voice": "Write concrete photo-led spoken observations and one coherent question/payoff; remove abstract architectural translationese and disconnected fact lists; Patina must preserve verified meaning.",
+      "reference_application": "Compare actual timed source functions with finished shots/narration; generic hook-tour-reveal labels alone are not evidence. Mark unavailable process/price/visit functions omitted or adapted.",
+      "not_authorized": "New public A/B experiments, automatic winner promotion, provider/voice/budget changes, publication without existing approval",
+      "photo_max_seconds": 4.0,
+      "photo_max_exceptions": false
+    },
+    "daily_instagram_target_owner20261019": {
+      "owner_quote": "1캐러셀 (사진+ 텍스트), 1 릴스 이런식으로 일단 최소한으로 목표잡아봐야겟네 하루에",
+      "recorded_at": "2026-10-20T06:33:00.343763+00:00",
+      "account": "gling.app",
+      "platform": "instagram",
+      "timezone": "America/Vancouver",
+      "per_day": {
+        "photo_text_carousel": 1,
+        "reel": 1
+      },
+      "target_type": "quality_first_daily_baseline",
+      "publication": "Exact finished version owner approval and explicit per-case release; quantity-based unattended production/publication remains paused.",
+      "carousel": "Photo + text post; select a fitting design/reference per case. No new slide count or visual template assumed.",
+      "reel": "Bespoke production based closely on owner-selected actual reference, with current photo/voice/caption/HyperFrames quality rules.",
+      "new_schedules_or_auto_resume": false,
+      "backlog_catchup": false
+    },
+    "dorsia_private_batch_owner20261019": {
+      "recorded_at": "2026-10-20T06:57:59.532154+00:00",
+      "owner_quote": "그리고 지금 발굴해놓은거 다 도르시아 템플릿으로 편집하는데, 비트시작될떄 시네마틱 라이트효과를 피사체에 딱 주면서 시작되게끔 다음 소재부터는 그렇게 진행해 지금 가지고있는 소재 몇개있는데? 노래도 이거로 계속 동일하게 쓸거라서",
+      "scope": "forward default for newly authorized Gling discovered place-curation productions and current retained private batch; owner may change template/music; existing approved/public masters retained",
+      "template": "/Users/ash/Desktop/Git/unknown/output/reviews/reels-editing-tool-comparison-2026-10-19/final-a/hyperframes",
+      "template_source_sha256": "75449a0fd921a22fb14b8a20111e09851359ff2ac6fad3bbeb82cdaf40a57869",
+      "music": {
+        "path": "/Users/ash/Desktop/Git/unknown/output/reviews/reels-editing-tool-comparison-2026-10-19/final-a/hyperframes/assets/bgm.m4a",
+        "sha256": "b2f3ebfb49063a966d195751634e8ac735db08aa89c94e6bc070299bbaa05b86",
+        "speed": 1,
+        "gain": 0.65,
+        "strong_events_seconds": [
+          3.762,
+          4.83,
+          5.851,
+          7.872,
+          8.893
+        ],
+        "first_reveal_frame_30fps": 113
+      },
+      "direction": {
+        "cover": "standard Gling cover, CINZEL venue; unchanged source photo during quiet intro, maximum4s",
+        "first_strong_beat": "actual photographed subject receives visibly directional cinematic light on first reveal; retain source identity/detail; subject-specific feather mask covers whole subject; no ceiling-bulb/tiny unrelated hotspot",
+        "light_method": "real media exposure via validated HyperFrames canonical grading on isolated/masked same-photo layer; seek-safe finite timeline; verify before/onset/after encoded pixels",
+        "montage": "same music-led Dorsia A editorial framing and cuts; distinct actual professional originals; minimum6 total inclcover+5differentbody; everyphoto run<=4s; cover not reused as first body",
+        "rights": "retain all existing source/rights unknowns; source possession/private draft is not publication clearance",
+        "real_graded_image_timing": "Declare data-start and data-duration on each actual graded img, including isolated subject layer, not only parent clip; otherwise hidden-shot canonical grading was absent in initial encode. Verified native fix without callback or warmup workaround.",
+        "photo_credit": "First body photograph after cover: left78/top1660/right96/line32; actual photographer/source; no cover credit, no invented photographer."
+      },
+      "cover_category_line": {
+        "height_px_at_1080": 18,
+        "historical_approved_reference": "/Users/ash/Desktop/Git/unknown/output/reviews/handson-five-mixes-2026-10-19/motion-rebuild/editorial-refinement/variants/v02/index.html",
+        "published_dorsia_height_px": 6,
+        "future_only": true,
+        "width_and_position": "retain existing selected template width/placement; only restore previous thickness"
+      },
+      "posting": {
+        "new_publication_authorized": false,
+        "G9_enabled": false,
+        "G8_enabled": false,
+        "G7_enabled": true,
+        "daily_baseline": "1 photo-text carousel +1 Reel; exact final owner confirmation before new publishing"
+      },
+      "new_paid_media_or_services_authorized": false,
+      "current_private_materials": {
+        "photo_sets_verified": 7,
+        "original_files_rehashed": 45,
+        "venues": [
+          "Buno Coffee · Queen West",
+          "Coffee by JOY",
+          "Sweet Loretta",
+          "DaNico",
+          "Lulu Bar",
+          "Shinji",
+          "Dovetail"
+        ]
+      }
+    },
+    "music_rule_before_dorsia_owner20261019": "Select from the current Instagram Trending audio menu for each new Reel; keep topic and posting-time mood first among actually usable tracks. Christmas/carol, Halloween actual horror or family mood, film, dogs playful, cafe/morning fresh and nightlife/evening club energy. Bind actual recording/ID/hash, passage, dated native trend evidence, account/API/rights, recent-use history and actual beat/cut review; no same song default or unverified famous recordings."
+  }
+}

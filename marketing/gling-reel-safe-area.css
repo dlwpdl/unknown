@@ -1,0 +1,27 @@
+/* 1080×1920, owner2026-10-18: credit above the visible Gling handle; badge below the grid Reel icon.
+   Critical content retains the bottom350px reserve. Secondary credit is lower by owner request;
+   verify actual account/caption overlays per surface instead of claiming universal UI clearance. */
+.cover-safe { right: 86px; }
+.cover-header { right: 86px; top: auto; bottom: 570px; }
+.caption { left: 100px; width: 840px; transform: translateY(-64px); }
+.info-card { padding: 280px 180px 350px 86px; }
+.source-credit { left: 78px; right: 96px; top: 1660px; bottom: auto; line-height: 32px; }
+.clip[data-start="0"] .source-credit { display: none; }
+.context-label { left: 78px; right: 96px; top: 1460px; margin: 0; }
+.cover-safe ~ .context-label { top: 1460px; }
+.brand-card ~ .context-label { top: 1460px; }
+.brand-card { padding: 280px 180px 350px 86px; }
+.brand-eyebrow { margin-bottom: 70px; }
+.brand-card h2 { margin-bottom: 56px; }
+.brand-wordmark { margin-bottom: 48px; }
+.brand-copy { margin-bottom: 24px; }
+.private-label { left: 86px; right: 180px; top: 250px; bottom: auto; }
+
+/* Owner selected option4 Cinzel on2026-10-15; city only, title/date stay original. */
+@font-face { font-family: GlingCityCinzel; src: url(assets/Cinzel-Regular.ttf); font-weight: 400; font-style: normal; font-display: block; }
+.cover-header { font-family: GlingCityCinzel, serif; font-size: 60px; line-height: 72px; font-weight: 400; font-style: normal; letter-spacing: .5px; }
+.cover-header span { font-family: Pretendard, sans-serif; }
+
+/* HANDSON VISITED plate: owner requested one full104px label-height lower than top720. */
+.cover .badge.plate { top: 824px; }
+.cover .badge.plate::before { background: #CBB9FF; width: 6px; }

@@ -1,0 +1,78 @@
+{
+  "automation_id": "a4bbe3d1-eb0e-42d5-9f62-12aa666c3824",
+  "id": "a4bbe3d1-eb0e-42d5-9f62-12aa666c3824",
+  "name": "개인 스레드 · 사연 시안 / 승인 후 API",
+  "prompt": "2026-10-13 최신 사용자 개인 Threads 형식 정정: 앱 본문과 개인 글에 «재구성한 이야기예요»·«각색한 사연» 같은 안내 문구를 넣지 않는다. 개인 글은 «이런 글을 봤는데,» → 글링 본문의 짧은 인용 → «캐나다에서도 이런 일이 있어? 이거 진짜야?» → «이 글 읽고 스친들은 어떻게 생각해?» → 실제 글링 글 링크 순서로 쓴다. 미게시 시안에는 [글링 글 링크]만 표시하고, 실제 저장·조회한 링크로 바인딩한 정확본을 승인 후 예약한다. 원문 URL·각색 내역·반대 맥락과 확인 상태는 내부 기록에 보존한다. 캐나다에서도 있는지 묻되 확인하지 않은 발생 지역을 사실로 단정하지 않는다.\n\n2026-10-13 사용자 표기 정정: 캐나다 Montreal의 한국어는 반드시 «몬트리올»로 쓴다. 새 제목·본문·자막·나레이션 원고 모두 적용하고 «몽트리올»을 쓰지 않는다. 공식 불어 고유명사와 몽루아얄은 다른 이름이므로 임의 변경하지 않는다. 기존 게시·승인본은 보존한다.\n개인 Threads 원래47개+추가6개 모두 재검토 완료. 현재 /Users/ash/Desktop/Git/unknown/output/reviews/threads-editorial-reset-2026-10-13/personal-current-drafts.json에서 awaiting_owner30개만 검토하며 excluded_from_current_batch23개는 새 승인 묶음에 넣지 않는다. source_case_key/UUID5/작성자/이력은 유지. 아직 앱 게시0·실제링크0·승인0이며 글링 저장·조회 후 실제 공유 링크를 붙인 정확본으로만 승인/예약을 진행한다.\n\n2026-10-13 최신 사용자 정정: 두 Threads 계정의 역할\n\n공식 @gling.app은 캐나다의 자영업자·사업자에게 넓게 말을 건다. 어떤 일을 하는지, 글링 무료 소개·홍보에 관심 있는지를 쉽게 답할 수 있게 묻는다. 온라인 제품 판매, 매장, 프리랜서·서비스, 리얼터, 구인·구직을 포함한다. 반품 절차·집 주소 공개·손님 유입경로·빈 예약시간·아이 수업 대기 보호자 등 지나치게 좁은 상황을 새 모집 글의 주제로 삼지 않는다. 글마다 도입·업종·질문은 바꾸되 캐나다에서 필요한 일과 사람을 알리고 연결한다는 맥락은 유지한다. 실제 인사이트와 소개 요청·등록을 계속 분석하되 효과를 추정하지 않는다. 기존 승인/공개/예약/불확실 제출은 보존한다. 최신 86개 검토본은 그대로 재사용하지 말고 이 정정에 맞는 검토본을 먼저 사용한다.\n\n개인 @chalkakandupload은 캐나다에서도 자연스러운 갈등·사연을 새 문장으로 각색하고, 글링 상세 글과 투표를 먼저 준비한 뒤 짧은 반응·구체적 논쟁거리·그 글의 실제 공유 링크·스친들의 의견 질문으로 이어간다. 개인 Threads에 사연 전체나 결말을 모두 옮기지 않는다. 공개 본문에 한국 커뮤니티/블라인드 출처 설명은 넣지 않고, 실제 원문 URL·관측일·바꾼 설정·반대 맥락은 내부에 보존한다. 원화·전세·청약·한국 회사/학제/법규를 캐나다 제도로 이름만 바꾸지 않는다. 맞지 않는 소재와 비슷한 부부·육아 사연의 반복은 제외한다. 앱 본문과 개인 Threads에는 재구성·각색·출처 국가 안내 문구를 넣지 않으며 실제 캐나다 사건·본인 경험·빈도·피해 제보라고 덧붙이지 않는다. ‘캐나다에서도 이런 상황이면?’처럼 독자의 경험을 묻는 것은 가능하다. 소재의 자극은 확인한 갈등에서 얻고 범죄·불륜·피해·결말을 지어내지 않는다.\n\n기존 47개(GL-P275~321)와 추가6개(GL-P322~327) 전체는 이 대화에서 재검토한다. 최종 검토본과 제외 사유는 /Users/ash/Desktop/Git/unknown/output/reviews/threads-editorial-reset-2026-10-13/에서 관리하고 기존 ID·고정 페르소나·UUID5를 재사용한다. 과거 원본은 보존한다. 실제 글링 저장/제목/본문/투표/읽기 링크 확인 전에는 공유 링크를 만들거나 ‘글링에서 봤다’고 공개하지 않는다. 시안은 승인 대기, 예약 시각 없음이며 이 편집 지시 자체는 새 SNS 53건의 공개 승인이 아니다. 미리 정한 가짜 공유 링크·앱 홈/설치 링크로 대체하지 않는다. 같은 작성자에서 Patina를 적용한다. 다른 계정·릴스·기존 예약·개별 hold·비용·원래 기한과 공용55초 GUI guard는 보존한다.\n\nEND LATEST DIRECT OWNER CORRECTION\n\nLATEST OWNER PRIORITY — 2026-10-13 글링 릴스 최우선\n사용자 직접 지시: “글링 릴스의 우선순위가 더높으니까 그렇게 알고잇어”. 네 줄기 콘텐츠 작업에서 글링 Instagram 릴스의 실제 제작·보완·완성본 검수를 1순위로 둔다. 재량 작업 시간과 다음 공용 화면 묶음이 경합하면 릴스의 현재 제작 병목을 먼저 해결한다. 기존 process-owned55초 guard·사용자 입력·살아 있는 소유자는 보존하며 진행 중 묶음을 강제로 끊지 않는다. 이미 승인된 게시의 원래 시각·미확인 제출 재조회·개별 비용/hold/최종 승인 조건은 유지한다.\nG9는 현재 미완성 5편부터 최신 파일·담당·hash와 남은 음악/권리·전체 청취·발음·레퍼런스 적용을 확인하고, 완성 가능성이 높은 한 편씩 실제 검수 가능한 버전으로 끝낸다. 새 초안 수를 늘리느라 미완성 릴스의 필수 보완을 미루지 않는다. G7은 현재 제작에 부족한 실제 근거/자료를 먼저 공급하고, G8은 동결된 준비본의 자기 검수 영수증만 작성한다. 중앙은 릴스의 미완료 원인·현재 담당·이번에 진전한 검증 단계를 먼저 확인/보고한다.\n공식 Threads·개인 Threads·앱은 독립적으로 계속하되 릴스와 자원/화면이 겹치는 재량 작업은 양보한다. 다른 채널을 전체 중지하거나 새 worker/job/락/daemon을 만들지 않는다. 원래 일정과 절대 마감, 기존 정확본 승인/예약은 유지하며 새 시안은 사용자 컨펌 전 예약·container·게시하지 않는다. 이 지시는 우선순위 변경이며 릴스 품질 완료/사용자 콘텐츠 승인/새 유료·게시 권한의 증거가 아니다. 충돌하는 과거 일반 작업 우선순위보다 이 최신 지시를 따른다.\nEND LATEST OWNER PRIORITY\n\nCURRENT FOUR INDEPENDENT FLOWS + OWNER-RELATIVE RELEASE — 2026-10-13\n사용자 직접 지시: 글링 앱·릴스·공식 Threads·개인 Threads는 독립 실행. 새벽02–08 후보 수 상한 없이 기존 시간/품질/예산 안에서 업로드 직전 완성 시안을 준비한다. 새 SNS는 컨펌 전에 예약시각·container·공개 글을 만들지 않는다. 사용자가08시 또는 이후 실제 승인한 정확본 최대8개만 그 승인 시각부터 약하루 동안 고르게 분산한다. 새 예약 시간은 컨펌 후에만 정하며 기존 공개/예약/시도/hold는 보존한다.\n\nFIRST read /Users/ash/Desktop/Git/unknown/mobile/marketing/automation-current.md의 「공통 운영」, 「새벽 준비와 컨펌 후 예약 — 2026-10-13 최신 사용자 지시」 및 아래 자기 역할. 해당 문서가 옛 시간표/정해진 후보수/선예약/옛 개인3작업 지시보다 우선한다. G7/G9/G8은 「인스타 공통 제작·품질 기준」과 최신 festival-template.json.current_production·festival-daily-automation.md·instagram-editorial-system.md·event-prepublication-check.md도 읽는다. HyperFrames/direct API/기존 정확 음성·사진·품질/예산/개별 허가·보류는 유지한다. 공식 Threads는 업체를 돕는 주력 안에서 실제 인사이트를 반영한다. Patina는 같은 작성자에서 적용한다.\n\n시작 전 현재 native/run/manual owner, 원래 deadline·미완료 제출을 읽는다. 다른 줄기의 완료를 기다리지 않는다. 같은 파일/원문/콘텐츠를 두 작성자가 수정하지 않고 해시를 재확인한다. 모든 화면 조작은 /Users/ash/Desktop/Git/automation-coordination.md의 기존 process-owned gui_bundle/orca 55초 이내, 획득 뒤 계정/Gling folder/사용자 입력 재확인. API·로컬 렌더에는 GUI guard를 잡지 않는다. 새 worker/job/lock/daemon/유료 범위/OAuth 우회·사용 중인 터미널 종료는 없다.\n\nSNS 현재 발행은 기존 native precheck만 맡는다. AI/중앙은 due/publish/retry를 중복 호출하지 않는다. 5분 단위 native 확인은 빈 시각에 AI를 시작하지 않는다. 새 시안은 승인대기/예약시각 없음, 시안 검수 accepted는 사용자 승인 아님. 컨펌을 받은 기존 대화의 담당자가 meta_api.py plan의 계획→자기 채널 원장 저장→정확본 앱 저장/링크/최종검수→기존 prepare로 이어간다. 실제 원고별 승인 영수증 없는 새 시안은 게시하지 않는다. 설정·검토본·로컬 예약표·API 처리·실제 공개·성과를 구분한다.\n\n## P — 개인 Threads 단일 흐름\n\nID `a4bbe3d1-eb0e-42d5-9f62-12aa666c3824`. native precheck는5분마다 `python3 marketing/social_precheck.py personal`. AI 준비는02:10–07:10의매시10분과10:10/14:10/18:10/22:10, 각 시작+20분/마지막30초 저장이다. **이 한 작업**에서 새벽 완성 묶음과 낮/밤의 다음 묶음 원문 수집을 이어간다. 구 G1/G2/G3는 삭제 이력이다.\n\n1. 기존 개인 approvals/CSV, `community-story-sources.json.personal_threads_cases`, `profile-personas.md`, `docs/operations/daily-city-posts.md`, `voice.md`의 실제 개인 말투를 읽는다. 전용 개인 API 신원과 실제 Insights를 사용하고 공식 토큰/수치를 대신 쓰지 않는다.\n2. 실제 읽은 Blind 원문 중 의견이 갈리는 결혼/육아/돈/관계 소재를 가능한 만큼 수집하고 글링에 맞게 각색한다. 새벽에는 앱 본문·투표·개인 소개문까지 완성해08시 묶음으로 제시한다. 낮/밤에는 다음 묶음을 준비하며 이미 보여준 버전을 덮어쓰지 않는다. Patina·출처/의미/허구 변경·가족/말투를 검수한다. 나라가 덜 드러나는 갈등은 허용하지만 한국 사연을 캐나다 실화로 주장하거나 반대 맥락을 지우지 않는다. 기존 GL-P118..125는 검토 대기이며 자동 승인되지 않는다. 거절 사연·별도 Lua·GL-P020 hold는 유지한다.\n3. 기존 도시별2명/총10명의 고정 persona와 실제 최근 글·live metadata에 맞춘다. 혼인/자녀/시점이 맞지 않으면 다른 작성자·명시적 과거/사연 소개로 처리하거나 보류한다. 계정·가족 설정을 새로 만들거나 G6의 정상 profile sync를 경쟁 실행하지 않는다.\n4. 정확히 승인된 app 본문·투표·개인 소개문만 기존 단일 원고 경로로 처리한다. `source_case_key`→기존 UUID5 planned post ID, 기존 app attempt/실제 저장을 대조한다. 개인에게 배정된 같은 원문은 G6가 별도로 만들지 않는다. `seed-city-posts.sh`의 격리된 단일 case 입력과 기존 city-post-schedule attempt/confirm을 사용하며 G6 일일 큐에 stage/due하지 않는다.\n5. 실제 Gling 글 ID/도시/작성자/전체 본문/투표와 `/share/<ID>`·로그인 후 목적지까지 확인한다. 가짜 링크·앱 홈·설치 주소로 대체하지 않는다. 정확한 최종 소개문/링크/주제/첫 댓글 승인과 같은 source_record를 기존 `chalkakandupload-approvals.json`에 연결한 뒤 api_ready다.\n6. native 개인 precheck가 현재 슬롯을 한 번 발행한다. AI는 현재 due/publish를 다시 호출하지 않고 미래 승인 사례의 app 준비·원장 대조만 한다. 미래 준비는 기존23시간 container 범위다. 미승인·불확실·빈칸·지난 시각은 보충 게시하지 않는다.\n7. 원문/각색/승인대기/글링·투표 저장/링크/개인 공개/성과를 분리해 보고한다. 개인 댓글·DM·자동 응답은 이 작업에 추가하지 않는다.\n",
+  "precheck": {
+    "command": "python3 marketing/social_precheck.py personal",
+    "timeoutSeconds": 55
+  },
+  "agentId": "codex",
+  "runContext": {
+    "kind": "workspace-run",
+    "projectId": "github:dlwpdl/gling",
+    "hostId": "local",
+    "projectHostSetupId": "878ad3b2-cb0a-413d-be4c-f9cadc061571",
+    "repoId": "878ad3b2-cb0a-413d-be4c-f9cadc061571",
+    "path": "/Users/ash/Desktop/Git/unknown/mobile"
+  },
+  "sourceContext": {
+    "kind": "task-source",
+    "provider": "github",
+    "projectId": "github:dlwpdl/gling",
+    "hostId": "local",
+    "projectHostSetupId": "878ad3b2-cb0a-413d-be4c-f9cadc061571",
+    "repoId": "878ad3b2-cb0a-413d-be4c-f9cadc061571",
+    "providerIdentity": {
+      "provider": "github",
+      "owner": "dlwpdl",
+      "repo": "gling"
+    },
+    "accountLabel": null
+  },
+  "projectId": "878ad3b2-cb0a-413d-be4c-f9cadc061571",
+  "executionTargetType": "local",
+  "executionTargetId": "local",
+  "schedulerOwner": "local_host_service",
+  "workspaceMode": "existing",
+  "workspaceId": "878ad3b2-cb0a-413d-be4c-f9cadc061571::/Users/ash/Desktop/Git/unknown/mobile",
+  "baseBranch": null,
+  "reuseSession": false,
+  "timezone": "America/Vancouver",
+  "rrule": "*/5 * * * *",
+  "dtstart": 1791875975251,
+  "enabled": true,
+  "nextRunAt": 1791882300000,
+  "missedRunPolicy": "run_once_within_grace",
+  "missedRunGraceMinutes": 1,
+  "createdAt": 1791875975263,
+  "updatedAt": 1791876925882,
+  "runbook": "marketing/chalkakandupload-queue.md",
+  "current_contract": "marketing/automation-current.md",
+  "native_readback": "/Users/ash/Desktop/Git/unknown/output/reviews/threads-editorial-reset-2026-10-13/a4bbe3d1-eb0e-42d5-9f62-12aa666c3824.latest-public-format-native.json",
+  "actual_readback_at": "2026-10-13T22:41:37.057497+00:00",
+  "prompt_sha256": "5f0af0ee5266d1a89e8e3259ff7a82c7e7c3cd3fb980813b62f881a1b102aa9f",
+  "three_channel_cleanup": {
+    "evidence_directory": "/Users/ash/Library/Application Support/gling/operations/automation-manager/three-channel-cleanup-20261013T072247Z",
+    "configuration_verified": true,
+    "scheduled_execution_verified": false,
+    "publication_verified_by_cleanup": false,
+    "previous_configuration_backup": "/Users/ash/Library/Application Support/gling/operations/automation-manager/three-channel-cleanup-20261013T072247Z/backup-latest/Users/ash/Desktop/Git/unknown/mobile/marketing/chalkakandupload-automation.json",
+    "verified_at": "2026-10-13T07:42:30.165601+00:00"
+  },
+  "four_independent_flows": {
+    "configured": true,
+    "schedule_mode": "approval_relative",
+    "drafting_window": "02:00–08:00 America/Vancouver",
+    "candidate_limit": null,
+    "approved_batch_max_per_account": 8,
+    "first_full_cycle_verified": false,
+    "publication_verified": false
+  },
+  "editorial_correction": {
+    "report": "/Users/ash/Desktop/Git/unknown/output/reviews/threads-editorial-reset-2026-10-13",
+    "user_direction_saved": true,
+    "actual_next_execution_verified": false
+  },
+  "current_public_format_revision_at": "2026-10-14T00:06:44.163851+00:00"
+}

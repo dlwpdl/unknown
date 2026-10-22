@@ -1,0 +1,107 @@
+{
+  "automation_id": "c7e5e6cf-af28-47da-8fd5-170464aeee28",
+  "enabled": true,
+  "timezone": "America/Vancouver",
+  "rrule": "FREQ=DAILY;BYHOUR=21;BYMINUTE=35",
+  "next_run_at": 1791952500000,
+  "workspace": "/Users/ash/Desktop/Git/unknown/mobile",
+  "provider": "codex",
+  "fresh_session": true,
+  "existing_jobs_checked": 11,
+  "existing_configuration_changes": [
+    {
+      "id": "978b9d5b-77f6-4839-bb85-23caeff3e0ea",
+      "fields": [
+        "prompt"
+      ]
+    }
+  ],
+  "first_scheduled_run_observed": false,
+  "native_readback": "/Users/ash/Library/Application Support/gling/operations/automation-manager/three-channel-cleanup-20261013T072247Z/merchant-focus-20261013T080213Z/c7e5e6cf-af28-47da-8fd5-170464aeee28-after.json",
+  "runbook": "/Users/ash/Desktop/Git/unknown/mobile/marketing/social-performance-automation.md",
+  "existing_jobs_schedules_preserved": true,
+  "concurrent_other_job_change": "Existing festival job prompt gained a separate owner narration update while this setup ran; left intact. This task did not edit it.",
+  "first_report": "/Users/ash/Desktop/Git/unknown/mobile/marketing/reports/2026-10-07/social-performance/setup-verified-093415/report.html",
+  "api_migration": {
+    "workflow": "marketing/social-api-automation.md",
+    "client": "marketing/meta_api.py",
+    "verified_at": "2026-10-10T23:20:01.756407+00:00",
+    "native_readback": "/Users/ash/Library/Application Support/gling/operations/social-api-migration-2026-10-10/native-verification.json",
+    "scheduled_execution_verified": false,
+    "publication_times_preserved": true,
+    "native_reservations_preserved": true,
+    "final_native_prompt_sha256": "818a024e64859c675a036fc2b426f235ef75754531a4ec7ba9ae9fb45237cb39",
+    "api_only_transport_observed": true
+  },
+  "prompt": "OWNER APPROVED GENERAL/PROMOTION MIX — 2026-10-17\n사용자가 일반글1~2개 다음에 무료 소개 홍보글1개를 두자는 구체적 제안에 “ㅇㅋ 좋아 진행해”라고 승인했다. 제안 원문 맥락: 일반글 1~2개 → 무료 소개 홍보글 1개로 섞는다. 일반글은 그 자체로 대화가 되게 두고 매번 홍보로 끝내지 않는다. 캐나다에서 하는 일·동네·사람 등 독자와 관련 있는 주제를 쓰고, 홍보글은 가게나 작은 사업을 넓게 부르며 기존 무료 소개 혜택을 분명히 안내한다. 업종별로 쪼개 반복하지 않는다.\n현재 공식 @gling.app 편성은 위 혼합 방식이다. 일반글을 막던 과거 업체지원 모집 한정 문구보다 이 최신 허가가 우선한다. 기존 좁은 정기 운영 허가를 이 기록의 일반글+홍보글 범위로 확장한다: /Users/ash/Library/Application Support/gling/operations/brand-threads-automation/mixed-posts-20261017/owner-mix-authority.json . 다른 채널·별도 캠페인·지원금/유료·개별 개인정보/자료·기존 승인/예약/hold/불확실 제출은 여전히 원래 권한을 따른다. 이전 미승인11개·대안6개 전체를 그대로 승인한 것이 아니다.\nG4는 다음 준비에서 일반글2개→홍보글1개로 시작하고, 이후에도 일반1~2개 뒤 홍보1개를 배치한다. 원장 새 행에 editorial_kind=general 또는 promotion을 적어 마지막 공개와 대기 순서를 함께 확인한다. 총 하루8개 기존 목표 안에서 섞는 것이며 홍보8개 외에 일반글을 더하는 것이 아니다. 비슷한 원고로 수량을 채우거나 빈 이틀을 몰아 게시하지 않는다.\n일반글은 캐나다 생활·일·동네·사람처럼 글링 독자와 관련 있는 대화로 독립적으로 끝낸다. 모든 글에 글링/앱/무료 소개/설치/링크를 붙이거나 마지막 문장을 광고로 꺾지 않는다. 원문에 없는 내 경험·고객 반응·실제 모임·성과를 만들지 않는다. 홍보글은 업종 구분 없이 가게나 작은 사업 하는 사람을 부르고, 기존 가게 소개·구인·이벤트 무료 소개의 쓰임과 도시/하는 일 질문을 분명히 안내한다. 업종이나 도시 이름만 바꾼 반복 모집은 하지 않는다. 모든 글은 실제 개인 원문에서 확인된 자연스러운 반말과 같은 작성자 Patina로 검수한다.\n이 범위의 정기 글은 매번 사용자 재컨펌을 기다리며 멈추지 않는다. 사용자가 보지 않은 미래 정확 문장을 직접 컨펌했다고 기록하지도 않는다. 기존 morning_batch 형식의 각 릴리스 영수증에 approval_basis=scoped_recurring_owner_authorization, 위 사용자 문구·승인 맥락·authority 경로/hash·기록시각, 실제 batch 검토/릴리스 시각 및 exact_copy_owner_seen=false를 보존한다. 최종 본문/hash·단일 관측 주제·원래 미래 시각·source_record를 고정하고 기존 plan/prepare/native 발행의 계정·기한·원본·once·hold 검증을 모두 통과한다. G4 한 명만 원고/큐를 쓰고, 실제 공개는 같은5분 native precheck 하나만 처리한다. 원래 새벽 준비/회차기한·일정·workspace·agent·예산을 유지하고 새 job/daemon/서비스·게시용 GUI를 만들지 않는다.\nG10은 general/promotion을 구분해 조회·외부 댓글/참여자·고유 소개 요청·자료 수신·등록을 따로 본다. 비교할 때 실제 게시 나이를 표시한다. 24/48시간에 가까운 기존 회차 관측을 쓰되 정확 관측이 없으면 그렇게 밝히고 새 주기를 만들지 않는다. 2026-10-17 19:29에 실제 본 작은 사업 원문 https://www.threads.com/@gling.app/post/DeNplBNkS3t 은3104조회/242h, 새 모집 https://www.threads.com/@gling.app/post/DenRlG-D_mW 은340조회/3.15h였다. 기간이 다른 누적치를 같은 조건의 효과나 실패로 단정하지 않는다. 이 비율은 사용자가 허가한 시험 편성이며 검증된 최적 비율이 아니다. 기존 보고에서 원고 준비·로컬계획·컨테이너·공개·성과를 구분한다.\nEND OWNER APPROVED GENERAL/PROMOTION MIX\n\n[OWNER_EDITORIAL_MODES_2026_10_17]\nOwner-approved Gling Reel editorial split: curation for unvisited/unknown visits, firsthand_ugc only for an attested speaker visit. These are two planning skills sharing one existing production/publishing workflow.\nRead /Users/ash/Desktop/Git/unknown/mobile/marketing/reels-editorial-modes.md. For planning, writing or creative review, read the matching SKILL.md under /Users/ash/Library/Application Support/orca/codex-accounts/59c02c80-3633-4c6a-a81a-fc144d00210f/home/skills/gling-reels-curation/ or gling-reels-firsthand-ugc/.\nG10: Read case editorial mode and compare observed curation and firsthand performance separately; do not count synthetic/admin app counters as organic growth or invent unavailable metrics.\nThe actual unchanged Gling logo + VISITED is for verified firsthand work only. Preserve cinematic photography. Owner selected the reduced plate01, logo artwork vertically centered on the category rule; label surface reaches the right edge. Read the current cover record linked by the shared workflow; do not apply it retroactively to approved/held/published masters.\nHandson current private revision is root-owned at /Users/ash/Desktop/Git/unknown/output/reviews/handson-yvr-owner-photos-2026-10-17/revisions/ugc-root. Check its actual handoff and current review status; no duplicate voice generation, rendering, approval or publication. Earlier failed unstarted workers are not running owners or completion evidence.\nPreserve this job's original schedule, workspace/account/provider, precheck, deadlines, costs, exact approvals, rights/quality holds, publication slots and uncertain submissions. No new recurring job, service, installation, paid call or outreach permission is granted. Existing TubeBench brief preparation is not evidence that a reference was watched or a benchmark database was loaded. Saved configuration is not execution or outcome evidence.\n[/OWNER_EDITORIAL_MODES_2026_10_17]\n\nOWNER AUTHORIZED RECURRING OFFICIAL BUSINESS INVITATIONS — 2026-10-17\n사용자 원문: “엉 이런식으로 주기적으로 계속올리고 홍보해주자. 이거 글 지금당장올려 2일동안 암것도 안올라갓으니”. 사용자는 바로 앞의 업종 구분 없는 무료 소개 모집 시안을 승인하고 즉시 게시와 같은 방식의 주기적인 홍보 운영을 지시했다. 정확 시안 GL-BT057은 기존 G4 발행기로 공개됐고 실제 본문·계정·URL을 확인했다: https://www.threads.com/@gling.app/post/DenRlG-D_mW .\n이 최신 지시는 공식 @gling.app의 일반 사업·자기 일 소개 참여글에 한정된 정기 게시 허가다. 이 범위에 맞는 새 일반 홍보글은 매번 사용자 재컨펌을 기다리며 중단하지 않는다. “이번 피드백은 게시 승인이 아니다”라는 앞선 2026-10-17 편집 지시는 당시 상태이며, 지금의 정확본 즉시 승인과 좁은 정기 운영 허가를 막지 않는다. 기존 미승인 11개·대안 6개 전체를 그대로 승인한 것은 아니다. 업종별 시리즈를 다시 발행하지 말고 현행 넓은 참여 방향에 맞는 최종 원고만 사용한다.\n한정 허가 기록은 /Users/ash/Library/Application Support/gling/operations/brand-threads-automation/owner-wide-20261017/scoped-recurring-authority.json 이다. G4는 회차마다 그 기록과 현재 사용자 정정, 실제 공개/예약/불확실 시도·동일/유사 본문을 읽는다. 업종을 가리지 않고 캐나다에서 하는 일·도시를 편하게 댓글로 받으며 기존 무료 소개 제안을 잇는다. 같은 질문을 복사하거나 업종/도시만 바꿔 하루 목표를 채우지 않는다. 확인된 제작자 관점과 자연스러운 반말을 쓰고 같은 작성자 Patina로 사실·의미·반복을 검수한다.\n기존 G4 하나가 원고와 발행 원장을 맡고 기존 5분 native precheck 하나만 공개 호출한다. 기존 새벽 준비/원래 회차 기한·하루8개 목표를 유지하고 실제 공개와 남은 계획을 함께 보아 과다 편성하지 않는다. 이전 빈 이틀을 몰아 메우지 않는다. 새 job/worker/서비스·원래 일정 변경·유료 호출은 없다.\n허용 범위의 최종 검토본은 건별 실제 본문·copy hash·원래 미래 시각·source_record·단일 관측 주제를 고정하고 기존 meta_api.py plan/prepare 및 native 발행 경로를 사용한다. 기존 morning_batch는 기계 검증 형식명으로만 재사용한다. 건별 영수증에 approval_basis=scoped_recurring_owner_authorization, 위 원본 owner_quote와 authority 경로/hash·기록시각, batch 검토/릴리스 시각과 exact_copy_owner_seen=false를 명시하여 사용자가 보지 않은 미래 문장을 직접 컨펌했다고 꾸미지 않는다. approved_at은 이번 위임 아래 실제 batch 릴리스 검토가 끝난 시각이고 원래 사용자 허가 기록시각은 별도 보존한다. 기존 exact content/time/hash·계정·기한·once·source/hold 검증은 그대로 통과해야 하며 과거 슬롯을 미루거나 legacy 경로로 우회하지 않는다.\n새 캠페인·지원금/견적/유료 약속·참여 자격 변경·개별 고객/업체 자료·기존 hold·다른 채널은 이 정기 허가의 범위가 아니다. 원래 정확본 허가와 필요한 사실/자료 권한을 따른다. G10은 이 일반 참여글의 실제 공개/외부 반응·고유 요청·자료 수신·등록을 구분해 보고하며 정기 운영 허가를 미승인 일반 시안 전체의 승인으로 넓히지 않는다. 실제 미래 회차·반응은 관측 후에만 완료로 기록한다.\nEND OWNER AUTHORIZED RECURRING OFFICIAL BUSINESS INVITATIONS\n\nLATEST OFFICIAL THREADS DIRECTION — 2026-10-17\n사용자 원문: “보통 뭐 사업하거나 하는사람잇냐하니까 다 모이더라고 이렇게 해서 그냥 모든사람들이 다 달게하는게 낫더라 종류별로 세분화해서 글 계속올리지말고”.\n공식 @gling.app의 일반 사업·무료 소개 모집은 업종을 가리지 않는 넓은 참여 질문을 기본으로 한다. “캐나다에서 사업하거나 자기 일 하는 사람 있어?”처럼 여러 분야의 사람이 한 글에 자기 일을 댓글로 소개할 수 있게 연다. 활동 도시와 하는 일을 편하게 묻고, 무료 소개 제안을 자연스럽게 잇는다. 글링 제작자 시점과 실제 개인 원글의 자연스러운 반말을 유지한다.\n리얼터·카페·온라인 판매·프리랜서 등은 모두 참여할 수 있는 범위다. 이들을 별도 타깃으로 쪼개 같은 모집 제안을 연속 게시하지 않는다. 업종이나 도시 이름만 바꾼 복제 원고, 같은 넓은 질문의 문장만 바꾼 반복으로 수량을 채우지 않는다. 실제 확인된 사례와 서로 다른 이야기·도입은 쓸 수 있지만 모집 대상을 좁히는 편성으로 되돌아가지 않는다.\n기존 미승인 11개와 별도 대안 6개 원본·ID·해시는 이력으로 보존한다. 기존8개/11개/6개를 그대로 재사용하라는 과거 지시보다 이 정정이 우선한다. 다음 G4 준비에서는 업종별 모집 시안을 이 방향으로 통합·재검토하고 새 정확본을 보여준다. 이번 피드백은 새 정확본의 게시 승인이 아니다.\n넓은 질문에 여러 사람이 모였다는 것은 사용자의 직접 운영 관측이다. 독립적인 인과효과나 모든 사람의 참여를 입증한 수치로 쓰지 않는다. 실제 글별 조회·외부 참여자/댓글·고유 소개 요청·자료 수신·등록을 구분해 확인하며 미관측은 null로 둔다. G10은 업종별 세분화를 반복 게시 전략으로 다시 권하지 않는다.\nG4는 원고, G10은 읽기·성과 보고라는 기존 책임을 유지한다. 기존 계정·일정·precheck·원래 기한·승인/보류·공개/예약/불확실 제출과 지모코 등 별도 캠페인 조건은 유지한다. 새 worker/job/서비스·유료 호출·SNS 게시/예약은 만들지 않는다. Patina는 같은 작성자에서 적용한다.\nEND LATEST OFFICIAL THREADS DIRECTION\n\nOWNER GLING REVIEW DISPLAY CONTEXT — 2026-10-17\n사용자: “모바일앱 프로젝트 아래띄우지말고항상 이 글링 프로젝트아래에 띄워 다시 여기띄워”. 글링 시안·보고서는 Orca Git → gling, 실제 context folder:e88d505b-f6bb-47d6-ba41-904ef2a72a8b에 표시한다. 코드 실행 workspace/mobile-app과 표시 소속은 구분한다. 저장은 기존 /Users/ash/Desktop/Git/unknown/output/reviews/ 아래에 유지하고 절대파일 Markdown링크를 전달한다.\n기존 공용 process-owned55초 GUI queue와 사용자 입력·게시 우선권 안에서 tab list --worktree all로 정확한 URL·위 worktreeId 탭을 찾아 재사용한다. 대상 탭이 없을 때는 subprocess cwd를 반드시 /Users/ash/Desktop/Git/unknown으로 명시하고 `orca tab create --url <정확한 file URI> --json`을 실행한다. browser_preflight.orca를 쓰면 해당 GUI 묶음 안에서 os.chdir('/Users/ash/Desktop/Git/unknown')를 먼저 한다. 무지정 shell cwd를 믿지 않는다. 실제 반환 browserPageId의 worktreeId가 위 folder인지 재조회한 뒤 `orca tab switch --worktree all --page <정확page> --focus --json`로 표시하고 실제 화면을 확인한다.\nshortcut: Orca1.4.191의 명시적 folder --worktree 생성 selector는 selector_not_found이므로 새 탭 생성에는 붙이지 않는다. 위 명시 cwd+무selector native 생성은 2026-10-17 직접 생성·소속 재조회·화면 표시로 확인했다. native folder selector 지원이 고쳐지면 재평가한다. 기존 page의 정확 선택/열람은 --worktree all과 --page를 함께 쓴다. 새 profile/서비스를 만들거나 기존 원본 탭·로그인을 이동하지 않는다. folder 확인/GUI/기한/열기 실패 때는 파일 링크와 미표시 상태를 알리고 모바일앱 쪽으로 대신 열지 않는다.\n이 지시는 기존 자동화 ID·실행workspace·일정·계정·담당·마감·개별 승인/hold를 바꾸거나 새 job/worker/유료/게시·자동 컨펌을 허용하지 않는다. 설정과 실제 미래 회차 표시 성공은 구분한다. 실제 방법 근거: /Users/ash/Desktop/Git/unknown/output/reviews/automation-daily/2026-10-17/source/gling-direct-create-and-visible-proof.json.\nEND OWNER GLING REVIEW DISPLAY CONTEXT\n\n2026-10-15 최신 사용자 정정 — 글링 Instagram @gling.app은 24시간 연속 2시간에1편, rolling24시간12편이다. 오전4·오후4 또는 약3시간 rolling8은 이 정정 이전 이력이다. 컨펌된 정확본에만 컨펌 시점 이후 미래 시각을 배정하며 새 시안은 승인을 기다린다. 최소 이틀치 완성 시안24편을 준비하고 발굴 목표60/상한없음과 실제 원문·릴스 링크/중복 검사는 유지한다. 과거 공개본/미승인/uncertain은 보충·재업로드하지 않는다.\n현재 승인18편 중 실제4공개는 보존했고 미게시14편을 Vancouver2026-10-15 12:20부터 정확히2시간 간격으로 재계획했다. 현재 실제 저장표/정확승인/컨테이너 증거는 /Users/ash/Desktop/Git/unknown/output/reviews/live-operations-2026-10-15/daytime-pacing/saved-twelve-plan.json, exact-twelve-release-approval.json, container-current.json이다. 과거 distribution-plan.json 및 exact-release-approval.json의 rolling8시각을 현재 큐에 복원하지 않는다. approved_at/콘텐츠/해시/앱ID는 그대로이며 새 승인 영수증은 이번 명시적 시간 재승인과 이전 승인을 함께 보존한다.\n새 IG 승인 batch는 schedule_policy=rolling_twelve_per_day로 plan한다. 기존 prepare/publish create영수증을 덮지 않는다. 준비된7개 원래 create는 그대로 두고 같은 경로의 .create.reschedule.json에 원래create SHA256/명시적owner_quote/새exact intent를 묶어 기존container를 재사용한다. publication_intent가 해당 재계획을 검증한다. 현재 추가 준비가 끝난 항목은 container-current.json에서 읽고 prepare를 다시 보내지 않는다. 마지막2개(VAN-SPIREA-GOLDEN-EARS/EDM-AGA-CLOUD-LIGHT-FANTASTIC)는 기존2026-10-16 02:20 Vancouver G9정상회차에서 각각 미래슬롯23시간안에 준비한다. 이미준비/attempted/uncertain이면 원래영수증으로조회하며 재전송하지 않는다. 미래준비23시간·실제수명·원래voice1.2/fullnarration·권리/품질hold·HyperFrames·앱먼저·55초GUIguard는 유지한다. 실제공개는 기존매5분G9 nativeprecheck 하나만 맡고 root/AI는due/publish를 중복호출하지 않는다. 새job/worker/서비스/daemon/유료호출은 없다.\n\nLATEST OWNER PRIORITY — 2026-10-13 글링 릴스 최우선\n사용자 직접 지시: “글링 릴스의 우선순위가 더높으니까 그렇게 알고잇어”. 네 줄기 콘텐츠 작업에서 글링 Instagram 릴스의 실제 제작·보완·완성본 검수를 1순위로 둔다. 재량 작업 시간과 다음 공용 화면 묶음이 경합하면 릴스의 현재 제작 병목을 먼저 해결한다. 기존 process-owned55초 guard·사용자 입력·살아 있는 소유자는 보존하며 진행 중 묶음을 강제로 끊지 않는다. 이미 승인된 게시의 원래 시각·미확인 제출 재조회·개별 비용/hold/최종 승인 조건은 유지한다.\nG9는 현재 미완성 5편부터 최신 파일·담당·hash와 남은 음악/권리·전체 청취·발음·레퍼런스 적용을 확인하고, 완성 가능성이 높은 한 편씩 실제 검수 가능한 버전으로 끝낸다. 새 초안 수를 늘리느라 미완성 릴스의 필수 보완을 미루지 않는다. G7은 현재 제작에 부족한 실제 근거/자료를 먼저 공급하고, G8은 동결된 준비본의 자기 검수 영수증만 작성한다. 중앙은 릴스의 미완료 원인·현재 담당·이번에 진전한 검증 단계를 먼저 확인/보고한다.\n공식 Threads·개인 Threads·앱은 독립적으로 계속하되 릴스와 자원/화면이 겹치는 재량 작업은 양보한다. 다른 채널을 전체 중지하거나 새 worker/job/락/daemon을 만들지 않는다. 원래 일정과 절대 마감, 기존 정확본 승인/예약은 유지하며 새 시안은 사용자 컨펌 전 예약·container·게시하지 않는다. 이 지시는 우선순위 변경이며 릴스 품질 완료/사용자 콘텐츠 승인/새 유료·게시 권한의 증거가 아니다. 충돌하는 과거 일반 작업 우선순위보다 이 최신 지시를 따른다.\nEND LATEST OWNER PRIORITY\n\nCURRENT THREE-ACCOUNT AUTOMATION CONTRACT — 2026-10-13\n사용자가 계정별 흐름·단일 콘텐츠 작성자·완성본 검수·기존 API 정시 발행 정리를 승인했다. 기존 native ID/계정/workspace/일정/기한/승인·보류·미완료 제출은 유지한다.\n\n매 회차 FIRST /Users/ash/Desktop/Git/unknown/mobile/marketing/automation-current.md의 「공통 운영」과 「G10 — 세 계정 성과 보고」를 읽고 실행한다. G7/G8/G9는 「인스타 공통 제작·품질 기준」 및 최신 festival-template.json.current_production/instagram-editorial-system.md/event-prepublication-check.md/gling-reel-cover-standard-2026-10-09.md도 자기 단계에 적용한다. G10은 같은 기준의 실제 적용 결과를 읽기만 한다. 역할/인계는 automation-current.md, 콘텐츠의 더 최신 직접 사용자 정정·정확본 승인/hold는 원래 파일과 영수증을 따른다. 아래 과거 문서를 통째로 새 실행 지시로 복사하지 않는다. 원본과 과거 영수증은 증거로 보존한다.\n\n시작 전 실제 native 상태/현재 수동·예약 소유자/원래 기한과 미완료 시도를 대조한다. 화면은 automation-coordination.md의 기존 process-owned gui_bundle/orca 하나를55초 이하로 사용하고 실제 계정/작업공간/사용자 입력을 획득 후 재확인한다. 로컬/API 준비는 밖에서 한다. 공용 잠금이나 live/unknown owner를 강탈하지 않는다. 현재 슬롯 발행은 계정별 기존 native precheck만 수행하며 AI·중앙의 중복 due/publish, 지난 슬롯 보충·불확실 재전송·새 worker/job/lock/유료 범위/임의 hold 해제는 없다. 실제 API 지원 범위·개별 승인과 최신 명시적 GUI 예외를 지킨다. 사람에게 보이는 새 문장은 같은 작성자에서 Patina/의미 검수한다.\n\n\n\n\n## G10 — 세 계정 성과 보고\n\nID `c7e5e6cf-af28-47da-8fd5-170464aeee28`. 기존21:35, 원래 시작+20분/마지막2분 보고 렌더·검증.\n\n`social-performance-automation.md`의 지표/관측창 정의와 기존 보고 template·실제 측정 원본을 읽는다. 아래 현재 역할을 적용하고 과거 개인 전체중지 지시로 현재 단일 P의 측정을 제외하지 않는다.\n\n공식 Threads의 개선 가설은 업체를 돕는 주력 방향 안에서 고른다. 조회·댓글 반응과 고유 업체 소개 요청·자료 수신·실제 글링 등록을 단계별로 따로 확인한다. 실제 글/업체와 연결되지 않은 지표는 그 글의 성과로 귀속하지 않고, 미관측은 null로 남긴다. 높은 조회수만으로 무관한 주제로 바꾸거나 문의를 등록·설치·매출로 보고하지 않는다.\n\n1. 공식 Threads 우선으로 공식 Instagram·개인 Threads 각각의 실제 API 게시물/글별 Insights·원래 공개 ID/hash·관측시각/게시 나이를 읽는다. 개인은 연결된 전용 계정을 사용하되 endpoint 미지원은 null이다. 원글/답글·합계/개별·초기/48h/7d·늦은 관측을 구분하고 누락을0으로 채우지 않는다.\n2. 기존 `social_performance_report.py`와 template로 고유 회차 `data.json/report.html`을 만든다. 기존 `social-performance-latest.json`과 전용 최신 HTML만 더 새로운 pointer를 덮어쓰지 않는 조건으로 갱신한다. 차이는 동일 content·비교 가능한 두 실제 관측만 계산한다.\n3. 계정마다 준비/검수/승인대기/발행/막힘과 실제 성과를 나눠 보여준다. 릴스는 적용한 reference/trial·source/video/template hash와 실제 결과를 연결하고 다음 **한 개선 가설**을 제안한다. 기존 승인본·가설·비교본·원자료를 다시 쓰지 않는다.\n4. Bella/RP는 원래 담당의 기존 측정 파일만 재사용한다. G10이 그 채널의 GUI·제작·게시·원장을 맡지 않는다. 현재 세 계정의 보고가 다른 채널 허가를 확대하지 않는다.\n5. 이 작업은 읽기·분석·자기 보고서 작성만 한다. 콘텐츠/승인/발행 원장·예약·응대·제작을 수정하거나 다른 job을 실행하지 않는다. 부분/차단 상태여도 원래 마감 안에 정직한 HTML 보고서를 남긴다.\n\n개인 P의 현재8개 GL-P118..125는 승인대기이며 기존/public/attempted/uncertain/GL-P020·거절된 사연은 보존한다. 고정10명과 G6/P의 같은 source 소유권은 현재 원장을 따른다. 전체 자동화 감사는 `/Users/ash/Library/Application Support/gling/operations/automation-manager/full-collision-audit-20261013T063517Z/`, 개인 흐름·persona 근거는 `/Users/ash/Library/Application Support/gling/operations/community-story-personas/20261013T062544Z/`를 재사용한다. 스냅샷 capturedAt을 완료시각으로 읽거나 같은 분 시작을 실제 충돌/중복 게시로 단정하지 않는다. 실제 run/attempt/public 영수증과 관측으로 보고하고, 프로세스 시작 실패 원인과 원격 Vercel 범위가 미확인이라면 그대로 구분한다.\n",
+  "actual_readback_at": "2026-10-18T02:39:16.880688+00:00",
+  "common_reel_contract_native_receipt": "output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/native-prompt-verification.json",
+  "personal_performance_status": "single_personal_pipeline_active_review_pending",
+  "category_label_native_receipt": "/Users/ash/Desktop/Git/unknown/mobile/output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/c7e5e6cf-af28-47da-8fd5-170464aeee28-category-native-after.json",
+  "exhibition_category_native_receipt": "/Users/ash/Desktop/Git/unknown/mobile/output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/c7e5e6cf-af28-47da-8fd5-170464aeee28-exhibition-after.json",
+  "fixed30_native_readback": "/Users/ash/Desktop/Git/unknown/mobile/output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/c7e5e6cf-af28-47da-8fd5-170464aeee28-fixed30-after.json",
+  "fixed30_prompt_sha256": "ab2af24e67cd57dd4eca90d853d04f67761eeff201b1c10ae4a6a6ac87100b93",
+  "category_color_native_readback": "/Users/ash/Desktop/Git/unknown/mobile/output/design/gling-cover-color-2026-10-09/priority-corrections-2026-10-11/automation-audit/category-color-distinction-2026-10-11/c7e5e6cf-af28-47da-8fd5-170464aeee28-after.json",
+  "personal_content_reset_native_receipt": "/Users/ash/Library/Application Support/gling/operations/automation-manager/personal-threads-content-reset-20261013T052231Z/native-verification.json",
+  "personal_pipeline_id": "a4bbe3d1-eb0e-42d5-9f62-12aa666c3824",
+  "name": "SNS 3계정 · 성과 보고",
+  "precheck": null,
+  "reuseSession": false,
+  "missedRunPolicy": "run_once_within_grace",
+  "missedRunGraceMinutes": 1,
+  "current_contract": "/Users/ash/Desktop/Git/unknown/mobile/marketing/automation-current.md",
+  "prompt_sha256": "a055ba318821d8121b174c21ed0d643430d5a979f145d83c05bd479909c8a75b",
+  "three_channel_cleanup": {
+    "evidence_directory": "/Users/ash/Library/Application Support/gling/operations/automation-manager/three-channel-cleanup-20261013T072247Z",
+    "configuration_verified": true,
+    "scheduled_execution_verified": false,
+    "publication_verified_by_cleanup": false,
+    "previous_configuration_backup": "/Users/ash/Library/Application Support/gling/operations/automation-manager/three-channel-cleanup-20261013T072247Z/backup-latest/Users/ash/Desktop/Git/unknown/mobile/marketing/social-performance-automation.json",
+    "verified_at": "2026-10-13T07:44:34.708704+00:00"
+  },
+  "merchant_focus_correction": {
+    "verified_at": "2026-10-13T08:03:35.656465+00:00",
+    "native_readback_verified": true,
+    "direction": "merchant_help_primary_insights_refine_within_scope",
+    "actual_content_or_outcomes_verified": false
+  },
+  "broad_participation_correction": {
+    "owner_quote": "보통 뭐 사업하거나 하는사람잇냐하니까 다 모이더라고 이렇게 해서 그냥 모든사람들이 다 달게하는게 낫더라 종류별로 세분화해서 글 계속올리지말고",
+    "direction": "broad_inclusive_business_participation_no_sector_recruitment_series",
+    "native_readback_verified": true,
+    "source": "/Users/ash/Desktop/Git/unknown/output/reviews/official-threads-wide-invitation-2026-10-17/owner-direction.json",
+    "native_readback": "/Users/ash/Desktop/Git/unknown/output/reviews/official-threads-wide-invitation-2026-10-17/g10-after.json",
+    "future_execution_verified": false,
+    "performance_effect_verified": false,
+    "publication_by_this_change": false
+  },
+  "recurring_business_invitation_authority": {
+    "authority_receipt": "/Users/ash/Library/Application Support/gling/operations/brand-threads-automation/owner-wide-20261017/scoped-recurring-authority.json",
+    "authority_sha256": "874d5276739d955c1e67bdc0cc7faca5a1225915d9674c8f59691379c9c01616",
+    "owner_quote": "엉 이런식으로 주기적으로 계속올리고 홍보해주자. 이거 글 지금당장올려 2일동안 암것도 안올라갓으니",
+    "scope": "broad sector-inclusive general business invitations on official Threads only",
+    "same_existing_automation": true,
+    "native_prompt_readback_verified": true,
+    "exact_initial_post": "https://www.threads.com/@gling.app/post/DenRlG-D_mW",
+    "initial_post_verified": true,
+    "future_recurring_execution_verified": false,
+    "other_content_approval_unchanged": true
+  },
+  "owner_approved_content_mix": {
+    "authority_receipt": "/Users/ash/Library/Application Support/gling/operations/brand-threads-automation/mixed-posts-20261017/owner-mix-authority.json",
+    "authority_sha256": "6b8ae9033fcfd11301d606c625fea8424b0ff672bc43e1e038fb33bde7f76d8f",
+    "owner_quote": "ㅇㅋ 좋아 진행해",
+    "sequence": [
+      "general",
+      "general",
+      "promotion"
+    ],
+    "permitted_general_between_promotions": [
+      1,
+      2
+    ],
+    "native_readback_verified": true,
+    "future_execution_verified": false,
+    "effect_verified": false
+  }
+}
