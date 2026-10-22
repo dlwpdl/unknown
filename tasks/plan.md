@@ -1,11 +1,5 @@
 # Implementation Plan: 글링 Supabase 백엔드 v1
 
-## B안 동네 저널 리디자인 — 2026-09-07
-
-승인된 B 시안과 A의 읽기 편한 텍스트 구성을 `journal-redesign-spec.md` 기준으로 실제 앱에 반영한다.
-기존 피드 순서에서 첫 사진과 모임을 중복 없이 묶는 회귀 검사를 먼저 만들고, 오늘 피드/도시 시트와 공유 PostCard를 독립적으로 수정한다.
-작성 횟수는 작성 화면으로 옮기고 네이티브 탭·권한·안전 동작을 보존한다. 전체 검사와 iOS/Android 번들·실제 시뮬레이터 화면을 검증한다.
-
 ## Release preparation — 2026-09-06
 
 Use only `dlwpdl/gling` (`mobile-app`). Follow ROTTERY's existing release deliverables: store metadata, native screenshots, a verified iOS build, and an evidence-based submission checklist. Reuse Gling's Expo configuration, public policy pages and Supabase backend.
@@ -307,7 +301,7 @@ Reuse the existing Eunsense Studio Play Console account and `dlwpdl/gling`. Chec
 [확정 정책](relationship-slots-and-promotion-2026-09-10.md)을 기존 conversations/messages와 모임 신청 테이블에 적용한다. 신규 서버·의존성은 추가하지 않는다. 대기/수락/종료 상태, 두 슬롯 풀, 서버 잠금 시각, 모임 공용 대화방만 추가한다.
 
 1. 수락 전 메시지 금지와 양쪽 동시 슬롯 점검 → 최초 요청자만 24시간 잠금 → 모임 공용 대화 및 가입/나가기 → 기존 신고/차단/관리자/삭제 경로 검증.
-2. 기존 B 컨셉 화면에 요청함·그룹/개인 필터·사용/잠금/가용 자리와 가까운 해제 시각을 표시. 개발용 홍보 진입점은 Release에서 비활성 유지.
+2. 현재 나이트 테마 화면에 요청함·그룹/개인 필터·사용/잠금/가용 자리와 가까운 해제 시각을 표시. 개발용 홍보 진입점은 Release에서 비활성 유지.
 3. DB 및 실제 두 연결 경쟁 검사, 단위/타입/lint, 브라우저와 네이티브 새 빌드 확인. 지원 기기에서 동작을 검증한 후 양 스토어 테스트 빌드 교체 및 iOS 재심사 제출.
 
 완료 기준: 수락 전 접근 불가, 양쪽 중 한쪽 마지막 자리 경쟁에서 한 요청만 성공, 어느 쪽이 나가도 요청자만 잠금, 그룹 탈퇴자는 그룹 자리만 잠금, 승인된 그룹에서만 메시지/알림/신고 가능. 기존 직접 대화 기록은 보존하며 과거 미기록 요청자는 추정하지 않는다.

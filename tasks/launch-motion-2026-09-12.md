@@ -3,7 +3,7 @@
 The user selected the revised Link concept: the ring becomes the last g, `glin` joins it, and the complete wordmark enters the home header.
 
 - Reuse the unchanged wordmark PNG with native clipping, tint, and transforms. The g and dot remain the same mounted elements throughout. Existing Reanimated/Worklets handle the 950 ms timeline; no dependency added.
-- Native launch background matches light/dark app paper. Reduced motion uses only a 120 ms fade. Tapping, backgrounding, or navigating dismisses the introduction. Local image errors and a 3-second watchdog cannot strand startup.
+- Native launch background matches the configured app appearance. Reduced motion uses only a 120 ms fade. Tapping, backgrounding, or navigating dismisses the introduction. Local image errors and a 3-second watchdog cannot strand startup.
 - Home target follows FeedScreen's 64 × 36 logo, safe area, maximum content width, and text-size-dependent header row. Deep links fade in place. No login, location, notification, or account preference changes.
 - Preserve the notification observer and other changes from `562faba`. The public web keeps its existing no-overlay component.
 

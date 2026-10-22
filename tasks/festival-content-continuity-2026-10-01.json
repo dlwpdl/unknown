@@ -1,0 +1,51 @@
+{
+  "objective": "Keep a verified festival content supply for every currently open Gling city; incorporate reference analysis into content planning without changing publication permissions.",
+  "approved_direction": "Owner approved browsing → verified view counts → reference classification/analysis → branded planning, then asked to integrate while keeping festival content continuous.",
+  "scope": "Bounded extension of the existing four-daily automation through the runbook it already reads. No new scheduler, dependency, server, DB/UI change, reservation or publication in this terminal.",
+  "assumptions": [
+    "Current daily output target remains four distinct event bundles across all open cities, not four per city.",
+    "A seven-day target of 28 newly prepared event bundles is an inventory planning floor, not permission to publish or fabricate missing items.",
+    "Research runs on a rolling 90-day window and still covers at least 2026-12-31 under prior owner instruction.",
+    "Paid Jev calls require separate cost authorization and account configuration."
+  ],
+  "commands": [
+    "node --experimental-strip-types --test scripts/festival-content-inventory.test.mjs",
+    "node --experimental-strip-types scripts/festival-content-inventory.mjs > marketing/reports/2026-10-01/festival-continuity/inventory.json"
+  ],
+  "files": [
+    "scripts/festival-content-inventory.mjs",
+    "scripts/festival-content-inventory.test.mjs",
+    "marketing/festival-content-continuity.json",
+    "marketing/festival-daily-automation.md"
+  ],
+  "style": "Use existing CITIES and EVENT_TIMEZONES; standard Node modules only; read-only inventory and fail-closed publication/account evidence.",
+  "tests": "One small real-behavior test for inventory: closed cities, expired/future events, duplicates, preparation vs registration vs per-platform publication, and empty supply must remain distinct.",
+  "boundaries": {
+    "always": [
+      "Respect latest fixed brand/template, verified current-year facts, licensing and Gling-first proof.",
+      "Keep discovery, prepared inventory, live registration and per-channel publication separate.",
+      "Missing evidence is unknown/held, never ready."
+    ],
+    "requires_separate_authorization": [
+      "Any paid Jev/other API call or new charging service."
+    ],
+    "never": [
+      "Reserve, publish, run a publishing automation or change schedule/account permissions in this terminal.",
+      "Overwrite other active marketing work or existing publication receipts.",
+      "Use AI scores to bypass fact/license gates."
+    ]
+  },
+  "success_criteria": [
+    "One command reports cities from the actual open-city configuration, per-city stage counts and refill priorities.",
+    "Existing automation runbook contains rolling discovery, minimum inventory and reference-analysis integration instructions.",
+    "Offline Jev boundary and real cached reference evidence are discoverable by that runbook.",
+    "A current inventory audit is generated without network writes or paid calls."
+  ],
+  "status": "local-continuity-integration-verified; paid Jev activation pending",
+  "verified_result": {
+    "test": "One inventory behavior test passed; excludes closed/past/far-future/duplicate/unconfirmed items and distinguishes prepared/registered/scheduled/published.",
+    "inventory": "marketing/reports/2026-10-01/festival-continuity/inventory.json",
+    "jev_requests": "3 typed request bodies prepared offline, no requests sent.",
+    "runbook": "Existing automation already reads the amended runbook; no scheduling/publishing action was performed here."
+  }
+}

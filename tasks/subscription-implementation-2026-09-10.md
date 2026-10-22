@@ -10,7 +10,7 @@
 | 현재 운영·참여 중인 모임 합계 | 3개 | 5개 | 10개 |
 | 하루 새로 시작하는 1:1 상대 | 3명 | 5명 | 10명 |
 
-- 무료 이용 유지. 프로필의 멤버십 화면, 현재 사용량, 프리미엄 우선 선택, 구매·복원·스토어 관리 경로를 추가했다. 기존 종이색·인주색과 다크 테마를 사용한다.
+- 무료 이용 유지. 프로필의 멤버십 화면, 현재 사용량, 프리미엄 우선 선택, 구매·복원·스토어 관리 경로를 추가했다. 현재 공개 앱 디자인은 나이트 테마를 따른다.
 - 글과 새 대화는 도시 현지 날짜 기준이다. 기존 대화와 답장은 새 대화 한도에 포함하지 않는다. 이 집계 방식은 사용자 답변 전 안내한 구현 가정이며, 확정된 숫자와 구분한다.
 - 모임 신청 대기는 자리를 점유하지 않는다. 승인할 때 한도를 다시 검사한다. 내 모임에서 나가기·신청 취소·운영 모임 종료를 제공한다. 종료된 글과 대화 이력은 보존한다.
 - 권한과 한도는 서버에서 강제한다. 앱에서 등급을 보내거나 화면만 조작해 한도를 늘릴 수 없다. 동시 요청, 만료·해지·환불, 늦게 도착한 상태, 잘못된 공급자 응답을 처리한다.
@@ -71,4 +71,4 @@ RevenueCat 현재 Offering은 `ofrng7b1ce64fd2`(`default`). Android 앱 `app6090
 - 설치 바이너리: `/tmp/gling-subscription-device/Build/Products/Release-iphoneos/app.app`.
 - Android `:app:bundleRelease` 성공. JDK 17·기존 Android SDK·업로드 키로 RevenueCat SDK와 Android 공개 키를 포함해 빌드했다. AAB: `android/app/build/outputs/bundle/release/app-release.aab`(76 MB). 병합 매니페스트의 `versionCode=7`, `com.android.vending.BILLING` 확인. `jarsigner -verify` 통과, 업로드 인증서 SHA-256 `413e75957cf604fd225a37527cce90b7379f3226b572f2b589c77396dcbfefbd` 일치. 새 prebuild에서 이전 APK 산출물은 정리됐다.
 
-디자인 조사 근거: [구독 디자인 메모](subscription-design-2026-09-09.md).
+당시 화면 구성 근거: [구독 화면 메모](subscription-design-2026-09-09.md). 시각 기준은 현재 나이트 테마로 갱신했다.
