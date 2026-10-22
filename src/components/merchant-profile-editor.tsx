@@ -21,7 +21,7 @@ const savedPhotos = (profile: MyMerchantProfile): Photos => ({ avatar: { path: p
 function ProfileAction({ label, onPress, disabled = false, primary = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean }) {
 
   const theme = useTheme(), { play } = useInteractionFeedback();
-  return <Pressable analyticsId="merchant.profile.action" accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }}
+  return <Pressable lens analyticsId="merchant.profile.action" accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }}
     disabled={disabled} onPress={() => { play('selection'); onPress(); }}
     style={[styles.button, { borderColor: theme.line, backgroundColor: primary ? theme.accent : 'transparent', opacity: disabled ? 0.45 : 1 }]}>
     <ThemedText type="smallBold" style={{ color: primary ? theme.accentInk : theme.accent }}>{label}</ThemedText>
