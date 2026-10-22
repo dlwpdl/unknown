@@ -60,6 +60,8 @@ const text = root => nodes(root).flatMap(node => [node.props?.children].flat().f
 
 test('company tabs show real counts, select hiring and open a real post detail', async () => {
   const view = screen(); view.render(); await settle(); view.render(); await settle();
+  assert.equal(control(view.render(), 'company.tab.about').props.accessibilityState.selected, true);
+  control(view.render(), 'company.tab.posts').props.onPress(); view.render(); await settle(); view.render(); await settle();
   let root = view.render();
   assert.equal(control(root, 'company.tab.posts')?.props.accessibilityState.selected, true);
   assert.match(text(control(root, 'company.tab.posts')), /3/);
@@ -80,6 +82,8 @@ test('company tabs show real counts, select hiring and open a real post detail',
 test('real zero counts keep all tabs and the no-jobs state removes the hiring badge', async () => {
   const view = screen({ loadPosts: async (_, __, kind) => ({ ...content, kind, post_count: 0, job_count: 0, posts: [], nextOffset: 0 }) });
   view.render(); await settle(); view.render(); await settle();
+  assert.equal(control(view.render(), 'company.tab.about').props.accessibilityState.selected, true);
+  control(view.render(), 'company.tab.posts').props.onPress(); view.render(); await settle(); view.render(); await settle();
   let root = view.render();
   assert.equal(control(root, 'company.hiring'), undefined);
   assert.match(text(root), /아직 게시글이 없어요/);
@@ -92,6 +96,8 @@ test('late company list responses from the previous account cannot restore its p
   const pending = [];
   const view = screen({ loadPosts: () => new Promise(resolve => pending.push(resolve)) });
   view.render(); await settle(); view.render(); await settle();
+  assert.equal(control(view.render(), 'company.tab.about').props.accessibilityState.selected, true);
+  control(view.render(), 'company.tab.posts').props.onPress(); view.render(); await settle(); view.render(); await settle();
   view.setAccount('another'); view.render(); await settle(); view.render(); await settle();
   pending[0](content); await settle();
   assert.ok(!text(view.render()).includes(post.title));
@@ -107,6 +113,8 @@ test('visible retry resumes the failed page and preserves earlier pages without 
     count++; return new Promise((done, fail) => { resolve = done; reject = fail; });
   } });
   view.render(); await settle(); view.render(); await settle();
+  assert.equal(control(view.render(), 'company.tab.about').props.accessibilityState.selected, true);
+  control(view.render(), 'company.tab.posts').props.onPress(); view.render(); await settle(); view.render(); await settle();
   let root = view.render(), more = control(root, 'company.posts.more');
   assert.ok(more);
   more.props.onPress(); more.props.onPress(); assert.equal(count, 1);

@@ -17,11 +17,6 @@ export function MerchantProfileHeader({ profile, ratings, onReviewPress }: Props
   const [linkError, setLinkError] = useState('');
   const [failedImage, setFailedImage] = useState<{ avatar?: string; banner?: string }>({});
   return <View style={styles.profile}>
-    <View style={[styles.banner, { backgroundColor: theme.card }]}>
-      {profile.bannerUri && failedImage.banner !== profile.bannerUri ? <Image source={{ uri: profile.bannerUri }} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={tr("{0} 배너", (profile.name))}
-        onError={() => setFailedImage(value => ({ ...value, banner: profile.bannerUri! }))} />
-        : <ThemedText style={[styles.bannerG, { color: theme.accent }]} accessible={false}>gling.</ThemedText>}
-    </View>
     <View style={styles.identity}>
       <View style={[styles.avatar, { backgroundColor: theme.accent }]}>
         {profile.avatarUri && failedImage.avatar !== profile.avatarUri ? <Image source={{ uri: profile.avatarUri }} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={tr("{0} 로고", (profile.name))}
@@ -29,7 +24,7 @@ export function MerchantProfileHeader({ profile, ratings, onReviewPress }: Props
           : <ThemedText type="title" style={{ color: theme.accentInk }} accessible={false}>{profile.name.slice(0, 1)}</ThemedText>}
       </View>
       <View style={styles.name}>
-        <ThemedText type="subtitle">{profile.name}</ThemedText>
+        <ThemedText type="subtitle" style={styles.businessName}>{profile.name}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">{[profile.city_name, profile.industry].filter(Boolean).join(' · ')}</ThemedText>
       </View>
       {onReviewPress && <View style={styles.ratings}>{(['usage', 'employment'] as const).map(kind => {
@@ -49,6 +44,11 @@ export function MerchantProfileHeader({ profile, ratings, onReviewPress }: Props
         </Pressable>;
       })}</View>}
     </View>
+    <View style={[styles.banner, { backgroundColor: theme.card }]}>
+      {profile.bannerUri && failedImage.banner !== profile.bannerUri ? <Image source={{ uri: profile.bannerUri }} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={tr("{0} 배너", (profile.name))}
+        onError={() => setFailedImage(value => ({ ...value, banner: profile.bannerUri! }))} />
+        : <ThemedText style={[styles.bannerG, { color: theme.accent }]} accessible={false}>gling.</ThemedText>}
+    </View>
     {!!profile.services && <ThemedText>{profile.services}</ThemedText>}
     {!!profile.address && <ThemedText type="small" themeColor="textSecondary">{profile.address}</ThemedText>}
     {!!profile.links?.length && <View style={styles.links}>{profile.links.map(link => <Pressable key={link.url}
@@ -62,15 +62,16 @@ export function MerchantProfileHeader({ profile, ratings, onReviewPress }: Props
 }
 
 const styles = StyleSheet.create({
-  profile: { gap: 16 },
+  profile: { gap: 22 },
   links: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   link: { minHeight: 44, maxWidth: '100%', justifyContent: 'center', paddingHorizontal: 14, borderWidth: 1, borderRadius: 12 },
-  banner: { width: '100%', aspectRatio: 3.2, borderRadius: 14, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
+  banner: { width: '100%', aspectRatio: 1.18, maxHeight: 360, borderRadius: 14, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
   bannerG: { fontSize: 38, lineHeight: 44, fontWeight: '800', opacity: 0.35 },
   identity: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'center' },
-  avatar: { width: 54, height: 54, borderRadius: 27, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  name: { flexGrow: 1, flexShrink: 1, flexBasis: 60, gap: 4 },
-  ratings: { flexDirection: 'row', maxWidth: '100%', marginLeft: 'auto', gap: 2 },
+  avatar: { width: 46, height: 46, borderRadius: 10, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  name: { flexGrow: 1, flexShrink: 1, flexBasis: 160, gap: 9 },
+  businessName: { fontSize: 34, lineHeight: 43, letterSpacing: -1.6, fontWeight: '600' },
+  ratings: { flexDirection: 'row', width: '100%', gap: 14 },
   rating: { flexDirection: 'row', minWidth: 44, minHeight: 44, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center', gap: 4 },
   spark: { width: 16, fontSize: 16, lineHeight: 18, textAlign: 'center' },
   briefcase: { width: 16, height: 16 },
