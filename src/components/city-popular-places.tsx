@@ -35,7 +35,7 @@ export function CityPopularPlaces({ cityId }: { cityId: string }) {
         <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={12} tintColor={theme.accent} />
       </Pressable>
     </View>
-    <ThemedText style={styles.subtitle} themeColor="textSecondary">{tr("사진 명소와 들러 볼 만한 식당을 골랐어요")}</ThemedText>
+    <ThemedText style={styles.subtitle} themeColor="textSecondary">{tr("가볼 만한 곳과 레스토랑·카페를 골랐어요")}</ThemedText>
     <View style={styles.cards}>
       {places.slice(0, 3).map(place => {
         const rating = getPlaceReviewRating(cityId, place.id, ratings[place.id]);
@@ -62,6 +62,6 @@ const styles = StyleSheet.create({
   cards: { flexDirection: 'row', gap: 10 },
   card: { flex: 1, gap: Spacing.one },
   photo: { width: '100%', aspectRatio: 1 / 1.15, borderRadius: 12, marginBottom: Spacing.one },
-  name: { fontSize: 13, lineHeight: 18, minHeight: 36, fontWeight: '600' },
+  name: { fontSize: 13, lineHeight: 18, fontWeight: '600' },
   category: { fontSize: 11, lineHeight: 16 },
 });
