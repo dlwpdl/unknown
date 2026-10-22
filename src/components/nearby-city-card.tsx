@@ -3,10 +3,11 @@ import { StyleSheet, View } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { type LocationFix } from '@/lib/location';
 import { useCommunityLocation } from '@/lib/location-provider';
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 
 export function NearbyCityCard({ onSelect, onChooseCity, onFix, settings = false }: {
@@ -16,13 +17,14 @@ export function NearbyCityCard({ onSelect, onChooseCity, onFix, settings = false
   settings?: boolean;
 }) {
   const theme = useTheme();
+  const { play } = useInteractionFeedback();
   const location = useCommunityLocation();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const active = useRef(true);
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   const recommended = CITIES.find((city) => city.id === location.cityId);
   const disabled = location.busy || !location.ready;
-  return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={[styles.card, Depth.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
     <View style={styles.heading}>
       <SymbolView name={{ ios: 'location', android: 'near_me', web: 'near_me' }} size={24} tintColor={theme.accent} />
       <View style={styles.copy}>
@@ -30,7 +32,7 @@ export function NearbyCityCard({ onSelect, onChooseCity, onFix, settings = false
         <ThemedText type="small" themeColor="textSecondary">GPS로 가까운 도시와 주변 동네를 찾아요.</ThemedText>
       </View>
       <Pressable analyticsId="components_nearby-city-card.pressable.1" accessibilityRole="button" accessibilityLabel="위치 이용 안내" accessibilityState={{ expanded: detailsOpen }} aria-expanded={detailsOpen}
-        onPress={() => setDetailsOpen(value => !value)} style={({ pressed }) => [styles.disclosure, pressed && styles.pressed]}>
+        onPress={() => { play('selection'); setDetailsOpen(value => !value); }} style={({ pressed }) => [styles.disclosure, pressed && styles.pressed]}>
         <SymbolView name={{ ios: detailsOpen ? 'chevron.up' : 'info.circle', android: detailsOpen ? 'expand_less' : 'info', web: detailsOpen ? 'expand_less' : 'info' }} size={20} tintColor={theme.textSecondary} />
       </Pressable>
     </View>
@@ -40,23 +42,24 @@ export function NearbyCityCard({ onSelect, onChooseCity, onFix, settings = false
       <ThemedText type="small" themeColor="textSecondary">좌표·정확도·측정 시각은 안전 운영을 위해 30일 보관하며 권한 있는 관리자만 조회해요. 설정에서 공유를 끄고 기록을 삭제할 수 있어요.</ThemedText>
     </View>}
     {!!location.message && <ThemedText type="small" accessibilityLiveRegion="polite">{location.message}</ThemedText>}
-    {recommended && onSelect && <Pressable analyticsId="components_nearby-city-card.pressable.2" accessibilityRole="button" onPress={() => onSelect(recommended.id)} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
+    {recommended && onSelect && <Pressable analyticsId="components_nearby-city-card.pressable.2" accessibilityRole="button" onPress={() => { play('selection'); onSelect(recommended.id); }} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
       <ThemedText type="smallBold" style={{ color: theme.accent }}>{recommended.name} 소식 보기</ThemedText>
     </Pressable>}
     <View style={styles.actions}>
       <Pressable analyticsId="components_nearby-city-card.pressable.3" accessibilityRole="button" disabled={disabled} accessibilityState={{ disabled, busy: location.busy }}
         onPress={() => {
+          play('selection');
           if (!location.enabled && !detailsOpen) { setDetailsOpen(true); return; }
           void location.capture(true).then((fix) => { if (active.current) onFix?.(fix); });
         }}
         style={({ pressed }) => [styles.primary, { backgroundColor: theme.backgroundElement, opacity: disabled ? 0.5 : 1 }, pressed && styles.pressed]}>
         <ThemedText type="smallBold" style={{ color: theme.accent }}>{location.busy ? '위치 확인 중…' : location.enabled ? '위치 다시 확인' : detailsOpen ? '동의하고 찾기' : '내 위치로 찾기'}</ThemedText>
       </Pressable>
-      {onChooseCity && <Pressable analyticsId="components_nearby-city-card.pressable.4" accessibilityRole="button" onPress={onChooseCity} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
+      {onChooseCity && <Pressable analyticsId="components_nearby-city-card.pressable.4" accessibilityRole="button" onPress={() => { play('selection'); onChooseCity(); }} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
         <ThemedText type="smallBold" themeColor="textSecondary">직접 선택</ThemedText>
       </Pressable>}
     </View>
-    {settings && location.enabled && <Pressable analyticsId="components_nearby-city-card.pressable.5" accessibilityRole="button" disabled={location.busy} onPress={() => void location.disable()} style={styles.button}>
+    {settings && location.enabled && <Pressable analyticsId="components_nearby-city-card.pressable.5" accessibilityRole="button" disabled={location.busy} onPress={() => { play('selection'); void location.disable(); }} style={styles.button}>
       <ThemedText type="smallBold">위치 공유 끄고 기록 삭제</ThemedText>
     </Pressable>}
   </View>;

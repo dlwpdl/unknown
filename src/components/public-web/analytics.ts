@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { behavior, behaviorScreen, configureBehavior, flushBehavior, scrollThresholds } from '@/lib/behavior-analytics';
 
-export function useReaderAnalytics(screen: string, viewKey: string) {
+export function useReaderAnalytics(screen: string, viewKey: string, ready = true) {
   useEffect(() => {
     configureBehavior(async ({ session, events }) => {
       // Dedicated telemetry transport; public content client remains read-only.
@@ -15,6 +15,7 @@ export function useReaderAnalytics(screen: string, viewKey: string) {
     return () => { void flushBehavior(); configureBehavior(null); };
   }, []);
   useEffect(() => {
+    if (!ready) return;
     behaviorScreen(screen);
     let reached = 0;
     let started = document.hidden ? 0 : Date.now();
@@ -43,5 +44,5 @@ export function useReaderAnalytics(screen: string, viewKey: string) {
       document.removeEventListener('visibilitychange', visibility); document.removeEventListener('click', click);
       window.removeEventListener('scroll', scroll); window.removeEventListener('pagehide', leave);
     };
-  }, [screen, viewKey]);
+  }, [screen, viewKey, ready]);
 }
