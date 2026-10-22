@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import * as React from 'react';
 import * as jsx from 'react/jsx-runtime';
 import ts from 'typescript';
+import * as designSystem from '../src/constants/design-system.ts';
 
 function render(platform, props) {
   const source = readFileSync(new URL('../src/components/themed-text.tsx', import.meta.url), 'utf8');
@@ -15,6 +16,7 @@ function render(platform, props) {
     if (name === 'react/jsx-runtime') return jsx;
     if (name === 'react-native') return { Text: 'Text', StyleSheet: { create: value => value }, Platform: { OS: platform, select: values => values[platform] ?? values.default } };
     if (name === '@/constants/theme') return { Fonts: { mono: 'monospace' } };
+    if (name === '@/constants/design-system') return designSystem;
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ text: '#fff' }) };
     throw new Error(`Unexpected import: ${name}`);
   } });

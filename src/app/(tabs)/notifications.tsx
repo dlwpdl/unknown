@@ -72,7 +72,7 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
       knownRows.current = { userId: me.id, cityId: me.cityId, ids: new Set(next.map((item) => item.id)) };
       setResult({ userId: me.id, cityId: me.cityId, rows: next });
       // 댓글·답글을 남긴 사람의 사진을 목록에 함께 보여준다(사진이 없으면 첫 글자).
-      void loadNotificationActors(supabase, next.map((item) => item.actor_id ?? ''))
+      void loadNotificationActors(supabase, next.filter(item => item.category !== 'meetups' && !item.kind.startsWith('meetup_')).map((item) => item.actor_id ?? ''))
         .then((people) => { if (request === version.current) setActors(people); })
         .catch(() => undefined);
       const unread = next.filter((item) => item.read_at == null).map(({ id }) => id);
@@ -135,7 +135,7 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
                   body={tr(filter === 'all' ? t.notifications.emptyBody : '새 알림이 오면 여기에서 볼 수 있어요.')} />}
             renderItem={({ item, index }) => {
               const admin = isAdminNotificationKind(item.kind);
-              const actor = item.actor_id && !admin ? actors.get(item.actor_id) : undefined;
+              const actor = item.actor_id && !admin && item.category !== 'meetups' && !item.kind.startsWith('meetup_') ? actors.get(item.actor_id) : undefined;
               return <View>
                 {(index === 0 || index === newRows.length) && <ThemedText type="smallBold" style={[styles.groupTitle, { color: theme.textSecondary }]}>{index === 0 && newRows.length > 0 ? tr("새 소식") : newRows.length > 0 ? tr("이전 소식") : tr("모든 알림")}</ThemedText>}
                 <Pressable analyticsId="app_tabs_notifications.pressable.2"
@@ -153,7 +153,7 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
                   router.push((route?.startsWith('/admin') ? '/notifications' : route ?? '/notifications') as never);
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={tr("{0}, {1}{2}", (admin ? tr('관리자 알림') : tr('내 소식')), (item.title ? `${item.title}, ` : ''), (item.body))}
+                accessibilityLabel={tr("{0}, {1}{2}", (admin ? tr('관리자 알림') : tr('내 소식')), (item.title ? `${item.title}, ` : ''), tr(item.body))}
                 style={({ pressed }) => [
                   styles.row,
                   item.read_at == null && Depth.card,
@@ -175,7 +175,7 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
                       <ThemedText type="small" themeColor="textSecondary">{relativeTime(item.created_at, undefined, appLocale)}</ThemedText>
                     </View>
                     {item.title && <ThemedText type="smallBold">{item.title}</ThemedText>}
-                    <ThemedText>{item.body}</ThemedText>
+                    <ThemedText>{tr(item.body)}</ThemedText>
                   </View>
                 </View>
                 </Pressable>

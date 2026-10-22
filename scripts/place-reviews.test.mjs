@@ -19,6 +19,7 @@ function module(path, imports) {
 }
 const places = module('src/lib/city-places.ts', {
   './city-places.catalog.json': JSON.parse(readFileSync(new URL('src/lib/city-places.catalog.json', root))),
+  './gling-visited.json': JSON.parse(readFileSync(new URL('src/lib/gling-visited.json', root))),
   './city-places.photos.json': JSON.parse(readFileSync(new URL('src/lib/city-places.photos.json', root))),
   '@/lib/mock': { CITIES },
 });

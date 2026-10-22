@@ -235,6 +235,7 @@ export default function MembershipScreen() {
                   <ThemedText style={styles.price}>{offer ? `${offer.price} / ${periodNames[offer.period]}` : offersLoading ? tr("가격 확인 중") : tr("준비 중")}</ThemedText>
                 </View>
                 {kind === 'general' ? <><ThemedText type="small" themeColor="textSecondary">{tr('오늘 글 무제한 · 동시 모임 {0}개', limits.meetups)}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">{tr(plan.tier === 'plus' ? '모임 템플릿 · 질문 재사용' : plan.tier === 'pro' ? '템플릿 · 반복 회차 · 대기 명단 · 공동 호스트' : 'Pro 모임 도구 · 신청·참석 통계')}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">{t.membership.listingBenefits[plan.tier]}</ThemedText></> : <>
                   <ThemedText type="small" themeColor="textSecondary">{tr("월 신규") + " "}{BUSINESS_LIMITS[plan.tier].posts}{tr("편 · 끌어올리기") + " "}{BUSINESS_LIMITS[plan.tier].bumps}{tr("회")}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">{tr("같은 글은") + " "}{BUSINESS_LIMITS[plan.tier].bumpCooldownHours}{tr("시간 간격")}</ThemedText>

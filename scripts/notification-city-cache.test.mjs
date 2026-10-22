@@ -12,7 +12,7 @@ function cityCache(file) {
   let cursor = 0, refCursor = 0, pendingEffect, focus, cleanup, previousDeps, offline = false;
   const me = { id: 'member', cityId: 'vancouver' };
   let rows = [{ id: 'vancouver-notice', kind: 'trending_post', category: 'trending', body: 'Vancouver discovery', actor_id: null, read_at: '2026-10-13', created_at: '2026-10-13' }];
-  const requests = [];
+  const requests = [], actorReads = [];
   const channel = { on: () => channel, subscribe: () => channel };
   const exports = {};
   const source = ts.transpileModule(readFileSync(new URL(`../src/${file}`, import.meta.url), 'utf8'), {
@@ -33,7 +33,7 @@ function cityCache(file) {
     if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: true, isAuthLoading: false, isAdmin: false, me }) };
     if (name === '@/lib/community-data') return {
       loadNotifications: async () => { if (offline) throw new Error('OFFLINE'); return [...rows]; },
-      loadNotificationActors: async () => new Map(), markNotificationsRead: async () => {},
+      loadNotificationActors: async (_client, ids) => { actorReads.push([...ids]); return new Map(); }, markNotificationsRead: async () => {},
       loadUnreadNotificationCount: () => new Promise(resolve => requests.push(resolve)),
     };
     if (name === '@/lib/supabase') return { supabase: { channel: () => channel, removeChannel: async () => {} } };
@@ -46,7 +46,7 @@ function cityCache(file) {
     return new Proxy({}, { get: (_target, key) => String(key) });
   }) });
   return {
-    me, requests,
+    me, requests, actorReads,
     render(scope) { cursor = refCursor = 0; return file.startsWith('hooks/') ? exports.useUnreadCount(scope) : exports.default(); },
     async focus() { cleanup?.(); cleanup = focus(); await settle(); },
     commit() {
@@ -58,6 +58,15 @@ function cityCache(file) {
     dispose() { cleanup?.(); effects.pop()?.(); },
   };
 }
+
+test('meetup notifications do not look up the linked community name or avatar', async () => {
+  const ui = cityCache('app/(tabs)/notifications.tsx');
+  ui.rows([{ id: 'meetup-notice', kind: 'meetup_request', category: 'meetups', body: '모임 신청', actor_id: 'private-account', read_at: '2026-10-13', created_at: '2026-10-13' }]);
+  ui.render(); await ui.focus();
+  assert.ok(ui.actorReads.length > 0);
+  assert.equal(ui.actorReads.flat().includes('private-account'), false);
+  ui.dispose();
+});
 
 test('city changes hide a cached discovery immediately and an offline refresh cannot restore it', async () => {
   const ui = cityCache('app/(tabs)/notifications.tsx');
