@@ -185,8 +185,8 @@ export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): 
   const archived = (snapshot as PlaceCatalog).cities[cityId]?.places.filter(place => !currentIds.has(place.id)) ?? [];
   return [...city.places, ...archived].filter(place => category === 'all' || place.category === category)
     .map(place => {
-      const visit = (visitedPlaces as { cityId: string; placeId: string; sourceUrl: string }[]).find(row => row.cityId === cityId && row.placeId === place.id);
-      return { ...place, photo: photos[photoOrder.get(place.id) ?? -1] ?? null, recommendation: reviewed.get(place.id), diningRecommendation: dining.get(place.id),
+      const visit = (visitedPlaces as { cityId: string; placeId: string; sourceUrl: string; photo?: (typeof photos)[number] }[]).find(row => row.cityId === cityId && row.placeId === place.id);
+      return { ...place, photo: photos[photoOrder.get(place.id) ?? -1] ?? visit?.photo ?? null, recommendation: reviewed.get(place.id), diningRecommendation: dining.get(place.id),
         glingVisited: visit ? { sourceUrl: visit.sourceUrl } : undefined };
     })
     .sort((a, b) => (photoOrder.get(a.id) ?? photos.length) - (photoOrder.get(b.id) ?? photos.length));
