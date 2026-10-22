@@ -1116,3 +1116,24 @@ test('conversation search narrows the loaded messages and clears back to all of 
   harness.nodes().find(node => node.props?.analyticsId === 'chat.search-close').props.onPress(); await harness.settle();
   assert.equal(harness.nodes().some(node => node.type === 'TextInput' && node.props?.accessibilityLabel === '대화 내용 검색'), false, 'closing hides the field');
 });
+
+test('a group room shows the meetup summary and only the host gets the manage sheet', async context => {
+  const post = { id: 'post-1', title: '한강 노을 러닝', room: { id: 'room-1', title: '한강 노을 러닝', memberCount: 5, capacity: 8, verifiedOnly: false, eventKind: 'once', startsAt: '2026-10-24T09:30:00Z', timezone: 'Asia/Seoul' } };
+  for (const isGroupHost of [true, false]) {
+    const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', {
+      loadConversationMessages: async () => [message(1)],
+      '@/lib/feed-data': { loadPublicPost: async () => post },
+    }, { ...roomProps, conversation: { ...conversation, kind: 'group', groupPostId: 'post-1', isGroupHost } });
+    context.after(() => harness.cleanup()); await harness.settle();
+    const summary = harness.nodes().find(node => node.type === 'MeetupRoomSummary');
+    assert.ok(summary, 'the meetup summary sits above the messages');
+    const manage = harness.nodes().find(node => node.props?.analyticsId === 'chat.meetup-manage');
+    assert.equal(Boolean(manage), isGroupHost, isGroupHost ? 'the host can open the manage sheet' : 'members cannot');
+    if (!isGroupHost) continue;
+    manage.props.onPress(); await harness.settle();
+    const sheet = harness.nodes().find(node => node.type === 'MeetupManageSheet');
+    assert.ok(sheet?.props.visible, 'pressing manage opens the sheet');
+    const actions = sheet.props.actions.map(action => action.key);
+    assert.equal(actions.join(','), 'location,requests,share,end');
+  }
+});
