@@ -100,10 +100,12 @@ def build_catalog(seed, elements, now):
             ids, seen = {p['id'] for p in seed['cities'][city_id]['places']}, set()
             for row in rows:
                 if not isinstance(row, dict) or row.get('cityId') != city_id or row.get('placeId') not in ids or row['placeId'] in seen: raise ValueError('INVALID_PLACE_PHOTOS')
-                if not isinstance(row.get('artist'), str) or not row['artist'].strip() or len(row['artist']) > 1000 or not re.fullmatch('[a-f0-9]{64}', row.get('imageSha256', '')) or not re.fullmatch(r'(CC BY(?:-SA)? (?:[234]\.0|2\.5)|CC0|Public domain)', row.get('license', '')): raise ValueError('INVALID_PLACE_PHOTOS')
+                if not isinstance(row.get('artist'), str) or not row['artist'].strip() or len(row['artist']) > 1000 or not re.fullmatch('[a-f0-9]{64}', row.get('imageSha256', '')): raise ValueError('INVALID_PLACE_PHOTOS')
                 if not all(https(row.get(k)) for k in ['uri', 'sourceUrl', 'licenseUrl']): raise ValueError('INVALID_PLACE_PHOTOS')
                 image, source, license = (urlsplit(row[k]) for k in ['uri', 'sourceUrl', 'licenseUrl'])
-                if image.hostname not in ['thumb.wikimedia.org', 'upload.wikimedia.org'] or not image.path.startswith('/wikipedia/commons/') or source.hostname != 'commons.wikimedia.org' or not source.path.startswith('/wiki/File:') or license.hostname != 'creativecommons.org' or not re.match(r'^/(licenses|publicdomain)/', license.path): raise ValueError('INVALID_PLACE_PHOTOS')
+                if row.get('discoveredVia') == 'Business site':
+                    if row.get('license') != 'Business-provided photo' or row['licenseUrl'] != row['sourceUrl']: raise ValueError('INVALID_PLACE_PHOTOS')
+                elif not re.fullmatch(r'(CC BY(?:-SA)? (?:[234]\.0|2\.5)|CC0|Public domain)', row.get('license', '')) or image.hostname not in ['thumb.wikimedia.org', 'upload.wikimedia.org'] or not image.path.startswith('/wikipedia/commons/') or source.hostname != 'commons.wikimedia.org' or not source.path.startswith('/wiki/File:') or license.hostname != 'creativecommons.org' or not re.match(r'^/(licenses|publicdomain)/', license.path): raise ValueError('INVALID_PLACE_PHOTOS')
                 seen.add(row['placeId'])
         for field, discovery in [('additionalCatalog', 'Openverse'), ('flickrCatalog', 'Flickr')]:
             if field in metadata:

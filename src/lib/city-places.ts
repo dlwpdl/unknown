@@ -8,7 +8,7 @@ export type PlaceCategory = 'all' | 'food' | 'cafe' | 'places';
 export type PlacePhoto = {
   placeId: string; cityId: string; uri: string; sourceUrl: string;
   artist: string; license: string; licenseUrl: string; imageSha256: string;
-  title?: string; discoveredVia?: 'Openverse' | 'Flickr';
+  title?: string; discoveredVia?: 'Openverse' | 'Flickr' | 'Business site';
 };
 export type CityPlace = {
   id: string; cityId: string; name: string; category: Exclude<PlaceCategory, 'all'>;
@@ -81,10 +81,13 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
       if (!Array.isArray(photos) || photos.length > 200) invalid();
       for (const photo of photos) {
         if (!photo || photo.cityId !== city.id || !ids.has(photo.placeId) || seenPhotos.has(photo.placeId)
-          || typeof photo.artist !== 'string' || !photo.artist.trim() || photo.artist.length > 1000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(photo.artist) || !/^[a-f0-9]{64}$/.test(photo.imageSha256) || !/^(CC BY(?:-SA)? [234]\.0|CC BY(?:-SA)? 2\.5|CC0|Public domain)$/.test(photo.license)
-          || !https(photo.uri) || !https(photo.sourceUrl) || !https(photo.licenseUrl)) invalid();
+          || typeof photo.artist !== 'string' || !photo.artist.trim() || photo.artist.length > 1000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(photo.artist) || !/^[a-f0-9]{64}$/.test(photo.imageSha256) || !https(photo.uri) || !https(photo.sourceUrl) || !https(photo.licenseUrl)) invalid();
         const image = new URL(photo.uri), source = new URL(photo.sourceUrl), license = new URL(photo.licenseUrl);
-        if (!['thumb.wikimedia.org', 'upload.wikimedia.org'].includes(image.hostname) || !image.pathname.startsWith('/wikipedia/commons/')
+        if (photo.discoveredVia === 'Business site') {
+          // Venue-provided photo: the business page is both image credit and licence reference.
+          if (photo.license !== 'Business-provided photo' || photo.licenseUrl !== photo.sourceUrl) invalid();
+        } else if (!/^(CC BY(?:-SA)? [234]\.0|CC BY(?:-SA)? 2\.5|CC0|Public domain)$/.test(photo.license)
+          || !['thumb.wikimedia.org', 'upload.wikimedia.org'].includes(image.hostname) || !image.pathname.startsWith('/wikipedia/commons/')
           || source.hostname !== 'commons.wikimedia.org' || !source.pathname.startsWith('/wiki/File:')
           || license.hostname !== 'creativecommons.org' || !/^\/(licenses|publicdomain)\//.test(license.pathname)) invalid();
         seenPhotos.add(photo.placeId);

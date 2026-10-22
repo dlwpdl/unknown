@@ -453,12 +453,16 @@ test('every city has at least three licensed same-place photos and missing photo
         const imageId = /^\/\d+\/([1-9]\d*)_/.exec(image.pathname)?.[1];
         assert.ok(imageId);
         assert.equal(/^\/photos\/[^/]+\/([1-9]\d*)\/?$/.exec(source.pathname)?.[1], imageId);
+      } else if (bound.discoveredVia === 'Business site') {
+        assert.equal(bound.license, 'Business-provided photo');
+        assert.equal(bound.licenseUrl, bound.sourceUrl);
+        assert.equal(image.protocol, 'https:');
       } else {
         assert.ok(['upload.wikimedia.org', 'thumb.wikimedia.org'].includes(image.hostname));
         assert.equal(source.hostname, 'commons.wikimedia.org');
         assert.ok(source.pathname.startsWith('/wiki/File:'));
       }
-      assert.equal(license.hostname, 'creativecommons.org');
+      if (bound.discoveredVia !== 'Business site') assert.equal(license.hostname, 'creativecommons.org');
       assert.ok(p.photo.artist.trim().length > 0 && p.photo.license.trim().length > 0);
       assert.match(p.photo.imageSha256, /^[a-f0-9]{64}$/);
     }
