@@ -43,7 +43,7 @@
 
 ### 앱 버전과 스토어 제출
 
-앱 코드를 `mobile-app`에 반영한 뒤 `app.json`의 `expo.version`, `package.json`, `package-lock.json`의 버전을 맞춥니다. `release-notes/X.Y.Z.ko.txt`를 작성하고 함께 커밋합니다. 이미 심사 중이거나 출시된 버전은 재제출하지 않습니다.
+앱 코드를 `mobile-app`에 반영한 뒤 `app.json`의 `expo.version`, `package.json`, `package-lock.json`의 버전을 맞춥니다. `release-notes/X.Y.Z.ko.txt`와 `release-notes/X.Y.Z.en-CA.txt`를 작성하고 함께 커밋합니다. 두 언어의 안내문을 빌드 전에 검사하며, App Store에 등록한 모든 언어에 업데이트 내용을 채운 뒤 제출합니다. 이미 심사 중이거나 출시된 버전은 재제출하지 않습니다.
 
 ```sh
 git push origin mobile-app

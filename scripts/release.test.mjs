@@ -162,6 +162,7 @@ with tempfile.TemporaryDirectory() as directory:
     Path('app.json').write_text(json.dumps({'expo': {'version': '1.2.0'}}))
     Path('release-notes').mkdir()
     Path('release-notes/1.2.0.ko.txt').write_text('투표와 모임 후기를 추가했어요.')
+    Path('release-notes/1.2.0.en-CA.txt').write_text('Added polls and meetup reviews.')
     r.OUT.mkdir(); (r.OUT / 'app.aab').write_bytes(b'verified-bundle')
     r.google_token = lambda *args: 'test-publisher'
     r.summary = lambda *args: None
@@ -221,6 +222,7 @@ with tempfile.TemporaryDirectory() as directory:
     os.chdir(directory)
     Path('app.json').write_text(json.dumps({'expo': {'version': '1.3.1'}}))
     Path('release-notes').mkdir(); Path('release-notes/1.3.1.ko.txt').write_text('광고 추적 권한을 먼저 확인해요.')
+    Path('release-notes/1.3.1.en-CA.txt').write_text('Check ad tracking permission first.')
     r.apple_versions = lambda env: ('test-apple', [
         {'id': 'current', 'attributes': {'versionString': '1.3.1', 'appStoreState': 'PREPARE_FOR_SUBMISSION'}},
         {'id': 'previous', 'attributes': {'versionString': '1.2.3', 'appStoreState': 'READY_FOR_SALE'}}])
@@ -229,16 +231,19 @@ with tempfile.TemporaryDirectory() as directory:
         (None, 'Older review instructions', 'old-test-password'),
         ({'notes': 'ATT: Home or Settings before any ads', 'demoAccountPassword': 'new-test-password'}, 'ATT: Home or Settings before any ads', 'new-test-password'),
         ({'notes': 'ATT: Home or Settings before any ads', 'contactEmail': None}, 'ATT: Home or Settings before any ads', 'old-test-password')]:
-        writes = []
+        writes = []; localized = {}
         def request(url, token=None, data=None, method='GET'):
             assert token == 'test-apple'
-            if url.endswith('/appStoreVersionLocalizations'): return {'data': []}
+            if url.endswith('/appStoreVersionLocalizations'): return {'data': [{'id': 'ko', 'attributes': {'locale': 'ko'}}, {'id': 'en-CA', 'attributes': {'locale': 'en-CA'}}]}
+            if '/appStoreVersionLocalizations/' in url:
+                assert method == 'PATCH'; localized[url.rsplit('/', 1)[1]] = data['data']['attributes']['whatsNew']; return {}
             if url.endswith('/previous/appStoreReviewDetail'): return {'data': {'attributes': prior}}
             if url.endswith('/current/appStoreReviewDetail'): return {'data': {'id': 'current-review', 'attributes': current} if current is not None else None}
             assert method in ['POST', 'PATCH'] and '/appStoreReviewDetails' in url
             writes.append(data['data']['attributes']); return {}
         def run(args, capture=False, env=None):
             assert args[:3] == ['asc', 'publish', 'appstore']
+            assert localized == {'ko': '광고 추적 권한을 먼저 확인해요.', 'en-CA': 'Check ad tracking permission first.'}, 'all existing localized notes must be set before upload'
             raise PublishCaptured()
         r.request = request; r.run = run; r.summary = lambda *args: None
         try: r.submit('ios', {}, {}, Path(directory))
@@ -300,6 +305,86 @@ assert policy == {'ios': 64, 'android': 64} and writes == [], 'approval alone is
 public['version'] = '1.2.3'
 r.sync_policy(env, {}, None, False)
 assert policy == {'ios': 65, 'android': 64} and writes == [('ios', 65)]
+`], { cwd: new URL('../', import.meta.url), encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+});
+
+test('missing, blank or oversized en-CA notes stop prepare and iOS submit before any store action', () => {
+  const result = spawnSync('python3', ['-c', `
+import importlib.util, json, os, tempfile
+from pathlib import Path
+spec = importlib.util.spec_from_file_location('release', 'scripts/release.py')
+r = importlib.util.module_from_spec(spec); spec.loader.exec_module(r)
+with tempfile.TemporaryDirectory() as directory:
+    os.chdir(directory)
+    Path('app.json').write_text(json.dumps({'expo': {'version': '1.4.99'}}))
+    Path('package.json').write_text(json.dumps({'version': '1.4.99'}))
+    Path('release-notes').mkdir(); Path('release-notes/1.4.99.ko.txt').write_text('가격 비교를 개선했어요.')
+    actions = []
+    def unexpected(*args, **kwargs):
+        actions.append('store'); raise AssertionError('store action happened before release-note validation')
+    r.run = unexpected; r.apple_versions = unexpected; r.google_token = unexpected; r.request = unexpected
+    english = Path('release-notes/1.4.99.en-CA.txt')
+    for value in [None, '   ', 'x' * 4001]:
+        if english.exists(): english.unlink()
+        if value is not None: english.write_text(value)
+        for stage in ['prepare', 'submit']:
+            try:
+                if stage == 'prepare': r.prepare({}, {}, Path(directory), 'v1.4.99')
+                else: r.submit('ios', {}, {}, Path(directory))
+            except ValueError as error: assert 'en-CA' in str(error)
+            else: raise AssertionError('missing English metadata was accepted')
+    assert actions == []
+`], { cwd: new URL('../', import.meta.url), encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+});
+
+test('captured App Store failures identify known missing release-note fields without exposing raw stderr', () => {
+  const result = spawnSync('python3', ['-c', `
+import importlib.util
+from types import SimpleNamespace
+spec = importlib.util.spec_from_file_location('release', 'scripts/release.py')
+r = importlib.util.module_from_spec(spec); spec.loader.exec_module(r)
+r.subprocess.run = lambda *args, **kwargs: SimpleNamespace(returncode=1, stdout='PRIVATE_OUTPUT', stderr='PRIVATE_TOKEN en-CA: whatsNew PRIVATE_PASSWORD ko: whatsNew')
+try: r.run(['asc', 'publish', 'appstore', '--ipa', 'test.ipa'], True)
+except RuntimeError as error:
+    message = str(error)
+    assert 'en-CA: whatsNew' in message and 'ko: whatsNew' in message
+    assert 'PRIVATE_' not in message and len(message) < 300
+else: raise AssertionError('failed publish did not stop')
+try: r.run(['security', 'find-generic-password'], True)
+except RuntimeError as error: assert 'whatsNew' not in str(error) and 'PRIVATE_' not in str(error)
+else: raise AssertionError('failed secret command did not stop')
+`], { cwd: new URL('../', import.meta.url), encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+});
+
+test('an unsupported existing App Store locale stops before any metadata patch or IPA upload', () => {
+  const result = spawnSync('python3', ['-c', `
+import importlib.util, json, os, tempfile
+from pathlib import Path
+spec = importlib.util.spec_from_file_location('release', 'scripts/release.py')
+r = importlib.util.module_from_spec(spec); spec.loader.exec_module(r)
+with tempfile.TemporaryDirectory() as directory:
+    os.chdir(directory)
+    Path('app.json').write_text(json.dumps({'expo': {'version': '1.4.99'}}))
+    Path('release-notes').mkdir()
+    Path('release-notes/1.4.99.ko.txt').write_text('가격 비교를 개선했어요.')
+    Path('release-notes/1.4.99.en-CA.txt').write_text('Improved price comparisons.')
+    r.apple_versions = lambda env: ('test-apple', [
+        {'id': 'current', 'attributes': {'versionString': '1.4.99', 'appStoreState': 'PREPARE_FOR_SUBMISSION'}},
+        {'id': 'previous', 'attributes': {'versionString': '1.4.98', 'appStoreState': 'READY_FOR_SALE'}}])
+    actions = []
+    def request(url, token=None, data=None, method='GET'):
+        assert method == 'GET' and url.endswith('/appStoreVersionLocalizations')
+        actions.append('read-locales')
+        return {'data': [{'id': locale, 'attributes': {'locale': locale}} for locale in ['ko', 'en-CA', 'fr-CA']]}
+    def run(*args, **kwargs): raise AssertionError('must not upload or create another version')
+    r.request = request; r.run = run
+    try: r.submit('ios', {}, {}, Path(directory))
+    except ValueError as error: assert 'fr-CA' in str(error)
+    else: raise AssertionError('missing localized release notes were accepted')
+    assert actions == ['read-locales']
 `], { cwd: new URL('../', import.meta.url), encoding: 'utf8' });
   assert.equal(result.status, 0, result.stdout + result.stderr);
 });

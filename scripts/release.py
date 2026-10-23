@@ -46,8 +46,21 @@ def check_store_state(versions, version):
 def run(args, capture=False, env=None):
     result = subprocess.run(args, env=env, text=True, capture_output=capture)
     if result.returncode:
-        raise RuntimeError(f"{args[0]} failed; submission stopped. Check the preceding build output.")
+        missing = sorted(set(re.findall(r"\b(ko|en-CA):\s*whatsNew\b", result.stderr or ""))) if args[:3] == ["asc", "publish", "appstore"] else []
+        detail = " Required metadata: " + ", ".join(f"{locale}: whatsNew" for locale in missing) + "." if missing else ""
+        raise RuntimeError(f"{args[0]} failed; submission stopped. Check the preceding build output.{detail}")
     return result.stdout if capture else None
+
+
+def release_notes(version):
+    notes = {}
+    for locale in ("ko", "en-CA"):
+        path = Path(f"release-notes/{version}.{locale}.txt")
+        text = path.read_text(encoding="utf-8").strip() if path.is_file() else ""
+        if not text or len(text) > 4000:
+            raise ValueError(f"{locale} release notes must contain 1–4000 characters before building or uploading.")
+        notes[locale] = text
+    return notes
 
 
 def request(url, token=None, data=None, method="GET", content_type="application/json", api_key=None):
@@ -203,8 +216,7 @@ def sync_policy(env, google, directory, local):
 def prepare(env, google, directory, tag):
     app = json.loads(Path("app.json").read_text())
     version = release_version(tag, app["expo"]["version"], json.loads(Path("package.json").read_text())["version"])
-    if not Path(f"release-notes/{version}.ko.txt").read_text().strip():
-        raise ValueError("Release notes must be committed before a release build.")
+    release_notes(version)
     if env.get("RELEASE_REF_TYPE") == "tag":
         check_store_state(apple_versions(env)[1], version)
     apple = json.loads(run(["asc", "builds", "next-build-number", "--app", APP, "--output", "json"], True, env))
@@ -317,15 +329,13 @@ def summary(message):
 
 def submit(platform, env, google, directory):
     version = json.loads(Path("app.json").read_text())["expo"]["version"]
-    notes = Path(f"release-notes/{version}.ko.txt").read_text().strip()
-    if not notes:
-        raise ValueError("Korean release notes are required before submission.")
+    notes = release_notes(version)
     if platform == "android":
         token = google_token(google, directory)
         edit = play(token, "/edits", {}, "POST")["id"]
         try:
             bundle = request(f"https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/{PACKAGE}/edits/{edit}/bundles?uploadType=media", token, (OUT / "app.aab").read_bytes(), "POST", "application/octet-stream")
-            release = {"name": f'{version} ({bundle["versionCode"]})', "versionCodes": [str(bundle["versionCode"])], "status": "completed", "releaseNotes": [{"language": "ko-KR", "text": notes}]}
+            release = {"name": f'{version} ({bundle["versionCode"]})', "versionCodes": [str(bundle["versionCode"])], "status": "completed", "releaseNotes": [{"language": "ko-KR", "text": notes["ko"]}]}
             play(token, f"/edits/{edit}/tracks/alpha", {"track": "alpha", "releases": [release]}, "PUT")
             play(token, f"/edits/{edit}:validate", {}, "POST")
             summary(f'Android submission started: edit {edit}, build {bundle["versionCode"]}. Check store state before retrying an interrupted submission.')
@@ -347,9 +357,11 @@ def submit(platform, env, google, directory):
             current = json.loads(run(["asc", "versions", "create", "--app", APP, "--version", version, "--copy-metadata-from", previous["attributes"]["versionString"], "--exclude-fields", "whatsNew", "--copyright", previous["attributes"]["copyright"], "--release-type", "AFTER_APPROVAL", "--output", "json"], True, env))
         version_id = current["id"]
         localizations = request(f"{api}/appStoreVersions/{version_id}/appStoreVersionLocalizations", token)["data"]
+        missing = sorted({item["attributes"]["locale"] for item in localizations} - notes.keys())
+        if missing:
+            raise ValueError(f"Release notes are unavailable for App Store locales: {', '.join(missing)}. Upload stopped.")
         for item in localizations:
-            if item["attributes"]["locale"] == "ko":
-                request(f'{api}/appStoreVersionLocalizations/{item["id"]}', token, {"data": {"type": "appStoreVersionLocalizations", "id": item["id"], "attributes": {"whatsNew": notes}}}, "PATCH")
+            request(f'{api}/appStoreVersionLocalizations/{item["id"]}', token, {"data": {"type": "appStoreVersionLocalizations", "id": item["id"], "attributes": {"whatsNew": notes[item["attributes"]["locale"]]}}}, "PATCH")
         review = request(f'{api}/appStoreVersions/{previous["id"]}/appStoreReviewDetail', token)["data"]
         existing = request(f"{api}/appStoreVersions/{version_id}/appStoreReviewDetail", token).get("data")
         review_attributes = review["attributes"].copy()
