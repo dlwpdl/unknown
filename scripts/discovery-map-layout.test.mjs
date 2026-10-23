@@ -19,8 +19,8 @@ const text = node => node == null || typeof node === 'boolean' ? '' : typeof nod
 const control = (tree, label) => { const result = nodes(tree).find(node => node.props?.accessibilityLabel === label || node.type === 'Pressable' && text(node).trim() === label); assert.ok(result, `Missing control: ${label}`); return result; };
 
 // Render the actual route and run its handlers; only native/external services are replaced.
-function mount({ light = false, reduced = false, places = [], business = {}, origin = { latitude: 49.25, longitude: -122.86 }, registryReady = true, loadWebshops = async () => [] } = {}) {
-  const state = [], feedback = [], alerts = [], memoValues = [], effects = [], focusEffects = [];
+function mount({ light = false, reduced = false, places = [], business = {}, origin = { latitude: 49.25, longitude: -122.86 }, registryReady = true, onClose, loadWebshops = async () => [] } = {}) {
+  const routes = [], state = [], feedback = [], alerts = [], memoValues = [], effects = [], focusEffects = [];
   let index = 0;
   const theme = { background: light ? '#fff' : '#0B0B12', card: light ? '#fff' : '#171722', backgroundElement: '#222231', backgroundSelected: '#343443', text: '#F6F3F0', textSecondary: '#B7B4C3', accent: '#CBB9FF', accentInk: '#171123', line: '#343443' };
   const hooks = { useState(initial) { const slot = index++; if (!(slot in state)) { const value = typeof initial === 'function' ? initial() : initial; state[slot] = value && typeof value === 'object' && 'ready' in value && 'shops' in value ? { ...value, ready: registryReady } : value; } return [state[slot], next => { state[slot] = typeof next === 'function' ? next(state[slot]) : next; }]; }, useRef: current => ({ current }), useMemo: fn => { const value = fn(); memoValues.push(value); return value; }, useCallback: fn => fn, useEffect: (fn, deps) => effects.push({ fn, deps }) };
@@ -32,7 +32,7 @@ function mount({ light = false, reduced = false, places = [], business = {}, ori
     'expo-web-browser': {}, '@/lib/merchant-source': {}, '@/lib/public-seo': {},
     '../../supabase/functions/_shared/ticketmaster': {},
     'react-native-reanimated': { useReducedMotion: () => reduced },
-    'expo-router': { useFocusEffect: fn => focusEffects.push(fn), useIsFocused: () => true, useLocalSearchParams: () => ({}), useRouter: () => ({}) },
+    'expo-router': { useFocusEffect: fn => focusEffects.push(fn), useIsFocused: () => true, useLocalSearchParams: () => ({}), useRouter: () => ({ push: route => routes.push(route) }) },
     '@/lib/mock': { CITIES: [] },
     '@/constants/theme': { Colors: { dark: { ...theme, card: '#171722' }, light: theme } }, '@/constants/design-system': designSystem, '@/hooks/use-language': { useLanguage: () => ({ tr }) },
     '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' },
@@ -55,7 +55,7 @@ function mount({ light = false, reduced = false, places = [], business = {}, ori
   const exports = {};
   const code = ts.transpileModule(source + '\nexports.CityMap = CityMap; exports.DiscoveryCard = DiscoveryCard; exports.GlingVisitedBadge = GlingVisitedBadge;', { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(code, { exports, Date, AbortController, setTimeout, clearTimeout, require: name => { if (name.startsWith('@/assets/')) return name; assert.ok(Object.hasOwn(imports, name), name); return imports[name]; } });
-  return { render() { index = 0; memoValues.length = 0; effects.length = 0; focusEffects.length = 0; return exports.CityMap({ city: imports['@/lib/community-city'].useCommunityCity().city }); }, renderCard(item, distance) { index = 0; return exports.DiscoveryCard({ item, distance, viewerScope: 'guest', onOpen() {} }); }, renderBadge(selected) { index = 0; return exports.GlingVisitedBadge({ selected }); }, get days() { return memoValues[0]; }, get registryDependencies() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).deps; }, readRegistry() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).fn(); }, readResults() { return focusEffects.find(fn => String(fn).includes('loadPage(null)'))(); }, feedback, alerts };
+  return { render() { index = 0; memoValues.length = 0; effects.length = 0; focusEffects.length = 0; return exports.CityMap({ city: imports['@/lib/community-city'].useCommunityCity().city, onClose }); }, renderCard(item, distance) { index = 0; return exports.DiscoveryCard({ item, distance, viewerScope: 'guest', onOpen() {} }); }, renderBadge(selected) { index = 0; return exports.GlingVisitedBadge({ selected }); }, get days() { return memoValues[0]; }, get registryDependencies() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).deps; }, readRegistry() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).fn(); }, readResults() { return focusEffects.find(fn => String(fn).includes('loadPage(null)'))(); }, feedback, alerts, routes };
 }
 
 test('main categories toggle independently and event dates belong to the festival category', () => {
@@ -339,4 +339,15 @@ test('delivery registry pending, failure and retry are distinct from a successfu
   assert.ok(!nodes(tree).some(node => node.type === 'StateCard' && node.props.kind === 'error'));
   assert.ok(nodes(tree).some(node => node.type === 'StateCard' && node.props.title === '아직 배달 할인 가게가 없어요'), 'only a successful zero-row read shows an empty list');
   stopRead(); stopRetry(); finishResults(); finishRetryResults();
+});
+
+
+test('main Map opens common search while embedded Map retains its local input and dismissal context', () => {
+  const main=mount();let tree=main.render();
+  const entry=nodes(tree).find(node=>node.props?.analyticsId==='search.entry.map');assert.ok(entry);entry.props.onPress();
+  assert.equal(main.routes[0].pathname,'/search');assert.equal(main.routes[0].params.cityId,'vancouver');assert.ok(main.feedback.includes('selection'));
+  let closed=0;const embedded=mount({onClose:()=>{closed++;}});tree=embedded.render();
+  assert.equal(nodes(tree).some(node=>node.props?.analyticsId==='search.entry.map'),false);
+  const input=nodes(tree).find(node=>node.type==='TextInput'&&typeof node.props.onChangeText==='function');assert.ok(input);input.props.onChangeText('지모코');tree=embedded.render();
+  assert.equal(nodes(tree).find(node=>node.type==='TextInput').props.value,'지모코');assert.equal(embedded.routes.length,0);assert.equal(closed,0);
 });

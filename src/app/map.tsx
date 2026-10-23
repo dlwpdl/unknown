@@ -69,7 +69,8 @@ export default function MapScreen({ onClose, initialFilter }: { onClose?: () => 
   return <CityMap key={`${city.id}:${isAuthed ? me.id : 'guest'}`} city={city} placeId={onClose ? undefined : placeId} onClose={onClose} initialFilter={initialFilter} />;
 }
 function CityMap({ city, placeId, onClose, initialFilter }: { city: (typeof CITIES)[number]; placeId?: string; onClose?: () => void; initialFilter?: DiscoveryFilter }) {
-  const { tr } = useLanguage();
+  const { tr, language } = useLanguage();
+  const searchLabel = language === 'en' ? 'Search businesses, places and people' : '비즈니스·장소·사람·이야기 검색';
   const theme = useTheme(), router = useRouter(), reduced = useReducedMotion();
   const top25Ink = theme === Colors.light ? '#68543A' : TOP25_GOLD;
   const { isAuthed, me, promptLogin } = useAuth(), hidden = useContentVisibility();
@@ -299,8 +300,12 @@ function CityMap({ city, placeId, onClose, initialFilter }: { city: (typeof CITI
       <Pressable analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={mode === 'map' ? tr("리스트 보기") : tr("지도 보기")} onPress={() => changeMode(mode === 'map' ? 'list' : 'map')} style={styles.icon}><SymbolView name={mode === 'map' ? { ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' } : { ios: 'map', android: 'map', web: 'map' }} size={21} tintColor={theme.text} /></Pressable>
     </View>
     <View style={[styles.search, { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}>
+      {onClose ? <>
       <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={18} tintColor={theme.textSecondary} />
       <TextInput value={query} onChangeText={setQuery} onFocus={() => play('selection')} placeholder={tr("등록된 장소·매물·행사 검색")} accessibilityLabel={tr("등록된 장소 매물 행사 검색")} placeholderTextColor={theme.textSecondary} maxLength={100} returnKeyType="search" style={[styles.input, { color: theme.text }]} />
+      </> : <Pressable analyticsId="search.entry.map" accessibilityRole="button" accessibilityLabel={searchLabel} onPress={() => { play('selection'); router.push({ pathname: '/search', params: { cityId: city.id, ...(query ? { query } : {}) } }); }} style={({ pressed }) => [styles.unifiedSearch, { opacity: pressed ? 0.82 : 1 }]}>
+        <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={18} tintColor={theme.textSecondary} /><ThemedText style={styles.unifiedSearchText} themeColor={query ? 'text' : 'textSecondary'}>{query || searchLabel}</ThemedText>
+      </Pressable>}
       {!!query && <Pressable analyticsId="discovery.search" accessibilityRole="button" accessibilityLabel={tr("검색어 지우기")} onPress={() => { play('selection'); setQuery(''); }} style={styles.icon}><ThemedText>×</ThemedText></Pressable>}
       <Pressable analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr("분류와 날짜 필터 열기")} accessibilityState={{ expanded: filtersOpen }} onPress={() => { play('selection'); setFiltersOpen(true); }} style={styles.icon}>
         <SymbolView name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }} size={21} tintColor={selectedFilters.length || dateFilter !== 'all' ? theme.accent : theme.text} />
@@ -435,6 +440,7 @@ function Directions({ item }: { item: DiscoveryItem & PostPin }) {
 const styles = StyleSheet.create({
   screen: { flex: 1 }, header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 8 },
   icon: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }, heading: { flex: 1, gap: 2 }, title: { fontSize: 20, lineHeight: 28, fontWeight: '800', letterSpacing: -0.5 },
+  unifiedSearch: { flex: 1, minWidth: 0, minHeight: 46, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10 }, unifiedSearchText: { flex: 1, minWidth: 0 },
   search: { marginHorizontal: 16, marginBottom: 10, borderWidth: StyleSheet.hairlineWidth, borderRadius: 14, flexDirection: 'row', alignItems: 'center', paddingLeft: 14, paddingRight: 4 }, input: { minHeight: 46, flex: 1, minWidth: 0, paddingHorizontal: 10, fontSize: 14 },
   mapFilters: { position: 'absolute', top: 0, left: 0, right: 0, paddingTop: 12, zIndex: 1 },
   mapDateLabel: { borderRadius: 12, paddingHorizontal: 8, paddingVertical: 6, overflow: 'hidden' },
