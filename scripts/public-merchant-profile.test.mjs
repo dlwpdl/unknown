@@ -38,7 +38,7 @@ function app(file = '../src/components/public-web/merchant-profile.tsx', { rpc =
     '@/lib/merchant-source': { merchantPhoneUrl, merchantMapsUrl },
     '@/constants/theme': { WebNightColors: {} }, '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }], TAGS: [] },
     '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.example' }, '@/i18n/ko': { t: {} },
-    '@/app/post/[id]': { __esModule: true, default: 'SharedPostRoute' }, './analytics': { useReaderAnalytics() {} }, './merchant-profile': { PublicMerchantProfile: 'CompanyProfile', PublicMerchantProfileLink: 'CompanyLink' },
+    './shared-post-landing': { __esModule: true, default: 'SharedPostLanding' }, './analytics': { useReaderAnalytics() {} }, './merchant-profile': { PublicMerchantProfile: 'CompanyProfile', PublicMerchantProfileLink: 'CompanyLink' },
   };
   const exports = {}, source = ts.transpileModule(readFileSync(new URL(file, import.meta.url), 'utf8') + (file.endsWith('/merchant-profile.tsx') ? '\nexports.ProfilePage=ProfilePage;exports.PublicReviews=PublicReviews;exports.ProfileRatings=typeof ProfileRatings===\"function\"?ProfileRatings:null;exports.RatingVisual=typeof RatingVisual===\"function\"?RatingVisual:null;exports.PublicProfilePosts=typeof PublicProfilePosts===\"function\"?PublicProfilePosts:null;' : ''), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
@@ -458,9 +458,9 @@ test('late company/tab reads cannot restore old rows and inaccessible is distinc
 });
 
 
-test('public legacy detail aliases dispatch to the protected post route instead of the anonymous full reader', () => {
+test('public legacy detail aliases dispatch to the app-only preview landing without a full-post read', () => {
   for (const path of ['/post', `/post/${postId}`, `/share/${postId}`]) {
     const view = app('../src/components/public-web/reader.tsx', { path, query: { id: postId } });
-    const tree = view.render('default'); assert.equal(tree.type, 'SharedPostRoute'); assert.equal(view.calls.length, 0);
+    const tree = view.render('default'); assert.equal(tree.type, 'SharedPostLanding'); assert.equal(view.calls.length, 0);
   }
 });

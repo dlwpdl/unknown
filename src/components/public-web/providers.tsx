@@ -1,4 +1,4 @@
-import { DarkTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, ThemeProvider, usePathname } from 'expo-router';
 import type { ReactNode } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeOverrideProvider } from '@/hooks/use-theme';
@@ -8,7 +8,9 @@ import { InteractionFeedbackProvider } from '@/lib/interaction-feedback';
 import { MembershipProvider } from '@/lib/membership-provider';
 
 export function PublicWebProviders({ children }: { children: ReactNode }) {
-  return <ThemeProvider value={DarkTheme}><ThemeOverrideProvider scheme="dark"><SafeAreaProvider><InteractionFeedbackProvider><AuthProvider>
+  const path = usePathname();
+  const sharedPost = /^\/(?:post|share)(?:\/|$)/.test(path);
+  return <ThemeProvider value={DarkTheme}><ThemeOverrideProvider scheme="dark"><SafeAreaProvider><InteractionFeedbackProvider><AuthProvider publicPage={sharedPost}>
     <CommunityCityProvider><MembershipProvider>{children}</MembershipProvider></CommunityCityProvider>
   </AuthProvider></InteractionFeedbackProvider></SafeAreaProvider></ThemeOverrideProvider></ThemeProvider>;
 }

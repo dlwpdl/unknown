@@ -1,5 +1,5 @@
 import './reader.css';
-import SharedPostRoute from '@/app/post/[id]';
+import SharedPostLanding from './shared-post-landing';
 import { PublicFestivals } from './festivals';
 import { useReaderAnalytics } from './analytics';
 import { PublicMerchantProfile, PublicMerchantProfileLink } from './merchant-profile';
@@ -122,10 +122,13 @@ function subscribeLocation(onChange: () => void) {
   return () => window.removeEventListener('popstate', onChange);
 }
 
+// Legacy path URLs are served the same static 404 document before hydration.
+const staticReaderPath = (path: string) => /^\/(?:post|share)\//.test(path) ? '/+not-found' : path;
+
 export default function PublicReader() {
   const routerPath = usePathname();
-  const path = useSyncExternalStore(subscribeLocation, () => window.location.pathname, () => routerPath);
-  return /^\/(?:post|share)(?:\/|$)/.test(path) ? <SharedPostRoute /> : <ReaderContent />;
+  const path = useSyncExternalStore(subscribeLocation, () => window.location.pathname, () => staticReaderPath(routerPath));
+  return /^\/(?:post|share)(?:\/|$)/.test(path) ? <SharedPostLanding /> : <ReaderContent />;
 }
 
 function ReaderContent() {
@@ -133,7 +136,7 @@ function ReaderContent() {
   const params = useLocalSearchParams<{ id?: string; city?: string; tag?: string }>();
   const routerPath = usePathname();
   // Static hosts serve 404.html for old /post/:id links; retain the actual URL.
-  const pathname = useSyncExternalStore(subscribeLocation, () => window.location.pathname, () => routerPath);
+  const pathname = useSyncExternalStore(subscribeLocation, () => window.location.pathname, () => staticReaderPath(routerPath));
   const hydrated = useSyncExternalStore(subscribeLocation, () => true, () => false);
   const readyParams = hydrated ? params : {};
   const path = pathname.replace(/\/$/, '') || '/';

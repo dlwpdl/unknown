@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ChillingSchedule } from './chilling.ts';
 
 export type SharedLinkPreview = {
-  id: string; title: string; kind: 'post' | 'festival' | 'meetup'; city: string; label: string;
+  id: string; title: string; teaser?: string | null; kind: 'post' | 'festival' | 'meetup'; city: string; label: string;
   schedule: ChillingSchedule | null; imagePath: string | null; imageUrl?: string; closed: boolean;
 };
 export async function loadSharedLinkPreview(client: SupabaseClient, postId: string): Promise<SharedLinkPreview | null> {

@@ -1,9 +1,10 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable } from '@/components/analytics-controls';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import Head from 'expo-router/head';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,24 +20,62 @@ import { loadPublicPost } from '@/lib/feed-data';
 import { supabase } from '@/lib/supabase';
 import { loadSharedLinkPreview, type SharedLinkPreview } from '@/lib/shared-link-preview';
 import { SHARED_POST_RETURN_KEY, buildSharedPostUrl } from '@/lib/sharing';
+import { clearSharedPostReturn, rememberSharedPostReturn } from '@/lib/shared-post-return';
 import type { Post } from '@/lib/types';
 
 export default function SharedPostRoute() {
-  const { tr } = useLanguage();
-  const { id, commentId } = useLocalSearchParams<{ id: string; commentId?: string }>();
+  const { tr, language } = useLanguage();
+  const { id, commentId, invite } = useLocalSearchParams<{ id: string; commentId?: string; invite?: string }>();
   const postId = typeof id === 'string' ? id : Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.pathname.match(/^\/(?:post|share)\/([0-9a-f-]+)\/?$/i)?.[1] ?? '' : '';
   const targetCommentId = typeof commentId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(commentId) ? commentId.toLowerCase() : undefined;
   const { isAuthed, me, isAuthLoading, promptLogin } = useAuth();
-  const owner = isAuthed ? me.id : 'guest';
+  const viewer = me.id;
+  const owner = isAuthed ? viewer : 'guest';
   const requestKey = `${postId}:${owner}`;
   const router = useRouter();
+  const focused = useIsFocused();
   const { play } = useInteractionFeedback();
   const theme = useTheme();
   const [result, setResult] = useState<{ id: string; post: Post | null; failed: boolean } | null>(null);
   const [preview, setPreview] = useState<{ key: string; value: SharedLinkPreview | null; failed: boolean } | null>(null);
+  const [savingReturn, setSavingReturn] = useState(false);
+  const [returnError, setReturnError] = useState<string | null>(null);
+  const loginScope = useRef({ active: false, key: requestKey, path: '', viewer });
+  const loginWrite = useRef(false);
   const current = result?.id === requestKey ? result : null;
+  const returnPath = `/post?id=${postId}${invite === '1' || (preview?.key === requestKey && preview.value?.kind === 'meetup') || current?.post?.room ? '&invite=1' : ''}`;
   const loading = isAuthed && Boolean(postId) && !current;
   const goBack = () => { play('selection'); if (router.canGoBack()) router.back(); else router.replace('/'); };
+
+  useLayoutEffect(() => {
+    const scope = { active: focused && !isAuthLoading, key: requestKey, path: returnPath, viewer };
+    loginScope.current = scope;
+    return () => { scope.active = false; };
+  }, [focused, requestKey, returnPath, viewer, isAuthLoading]);
+
+  async function beginLogin() {
+    const scope = loginScope.current;
+    if (!scope.active || scope.key !== requestKey || scope.path !== returnPath || scope.viewer !== viewer || loginWrite.current || isAuthLoading) return;
+    play('selection'); setReturnError(null);
+    if (Platform.OS === 'web') {
+      try { window.sessionStorage.setItem(SHARED_POST_RETURN_KEY, returnPath); } catch {}
+      promptLogin('공유받은 내용을 확인해요.');
+      return;
+    }
+    loginWrite.current = true; setSavingReturn(true);
+    try {
+      await rememberSharedPostReturn(AsyncStorage, returnPath);
+      if (scope.active) promptLogin('공유받은 내용을 확인해요.');
+    } catch {
+      if (scope.active) setReturnError(requestKey);
+    } finally { loginWrite.current = false; setSavingReturn(false); }
+  }
+
+  useEffect(() => {
+    if (Platform.OS === 'web' || !focused || !isAuthed || isAuthLoading || !current?.post) return;
+    // Google can finish in place; its original destination has already been reached.
+    void clearSharedPostReturn(AsyncStorage, returnPath).catch(() => {});
+  }, [focused, isAuthed, isAuthLoading, current?.post, returnPath]);
 
   useEffect(() => {
     if (!postId || !isAuthed) return;
@@ -83,13 +122,11 @@ export default function SharedPostRoute() {
                 <SharedPreviewContent preview={preview.value} />
                 <ThemedText type="small" themeColor="textSecondary">{tr("로그인 후 전체 내용을 확인해요. 모임 초대는 기존 참여 신청과 모임장 승인을 거쳐요.")}</ThemedText>
                 <Pressable analyticsId="shared.post.login" accessibilityRole="button" accessibilityLabel={tr("로그인하고 공유 내용 보기")}
-                  onPress={() => {
-                    play('selection');
-                    if (Platform.OS === 'web') try { window.sessionStorage.setItem(SHARED_POST_RETURN_KEY, `/post?id=${postId}${preview.value?.kind === 'meetup' ? '&invite=1' : ''}`); } catch {}
-                    promptLogin('공유받은 내용을 확인해요.');
-                  }} style={[styles.login, { backgroundColor: theme.accent }]}>
-                  <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr("로그인하고 내용 보기")}</ThemedText>
+                  disabled={savingReturn || isAuthLoading} accessibilityState={{ disabled: savingReturn || isAuthLoading, busy: savingReturn }}
+                  onPress={() => void beginLogin()} style={[styles.login, { backgroundColor: theme.accent, opacity: savingReturn || isAuthLoading ? 0.45 : 1 }]}>
+                  <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{savingReturn ? language === 'ko' ? '로그인 준비 중…' : 'Preparing sign-in…' : tr("로그인하고 내용 보기")}</ThemedText>
                 </Pressable>
+                {returnError === requestKey && <ThemedText type="small" accessibilityRole="alert">{language === 'ko' ? '로그인을 준비하지 못했어요. 다시 시도해 주세요.' : 'Could not prepare sign-in. Please try again.'}</ThemedText>}
               </View> : loading || isAuthLoading || (!isAuthed && postId && preview?.key !== requestKey) ? (
                 <GlingLoader color={theme.accent} accessibilityLabel={tr("공유 글 불러오는 중")} />
               ) : (
