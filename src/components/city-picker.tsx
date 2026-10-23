@@ -8,6 +8,7 @@ import { SymbolView } from 'expo-symbols';
 import { GlassSurface } from '@/components/glass-surface';
 import { ThemedText } from '@/components/themed-text';
 import { Depth, Spacing } from '@/constants/theme';
+import { ControlMetrics, ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
@@ -16,7 +17,7 @@ import { useCommunityLocation } from '@/lib/location-provider';
 import { CITIES } from '@/lib/mock';
 import type { City } from '@/lib/types';
 
-export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { city: City; onSelect: (city: City) => void } }) {
+export function CityPicker({ onClose, draft, title }: { onClose: () => void; draft?: { city: City; onSelect: (city: City) => void }; title?: string }) {
   const { language, tr, t } = useLanguage();
   const theme = useTheme();
   const { city, selectCity, saving } = useCommunityCity();
@@ -54,46 +55,46 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
   // Recreate native text layout when Dynamic Type changes while the sheet is open.
   return <KeyboardAvoidingView key={fontScale} style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <View style={styles.head}>
-      {draft && <GlassSurface tone="control" interactive style={styles.iconGlass}><Pressable analyticsId="components_city-picker.pressable.1" accessibilityRole="button" accessibilityLabel={t.write.backToDraft} onPress={() => { play('selection'); onClose(); }} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
-        <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={21} tintColor={theme.text} />
-      </Pressable></GlassSurface>}
-      <ThemedText accessibilityRole="header" style={styles.title}>{draft ? t.write.postCity : t.feed.cityPickerTitle}</ThemedText>
-      {!draft && <GlassSurface tone="control" interactive style={styles.iconGlass}><Pressable analyticsId="components_city-picker.pressable.2" accessibilityRole="button" accessibilityLabel={t.write.cancel} onPress={() => { play('selection'); onClose(); }} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
-        <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={21} tintColor={theme.text} />
-      </Pressable></GlassSurface>}
+      {draft && <View style={styles.iconGlass}><Pressable analyticsId="components_city-picker.pressable.1" accessibilityRole="button" accessibilityLabel={t.write.backToDraft} onPress={() => { play('selection'); onClose(); }} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
+        <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={IconSize.toolbar} tintColor={theme.text} />
+      </Pressable></View>}
+      <ThemedText accessibilityRole="header" style={styles.title}>{title ?? (draft ? t.write.postCity : t.feed.cityPickerTitle)}</ThemedText>
+      {!draft && <View style={styles.iconGlass}><Pressable analyticsId="components_city-picker.pressable.2" accessibilityRole="button" accessibilityLabel={t.write.cancel} onPress={() => { play('selection'); onClose(); }} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
+        <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={IconSize.toolbar} tintColor={theme.text} />
+      </Pressable></View>}
     </View>
     <View style={styles.controls}>
-      <GlassSurface tone="control" style={styles.countriesGlass}><View accessibilityRole="tablist" accessibilityLabel={t.feed.cityCountry} style={styles.countries}>
-        <View accessible accessibilityRole="tab" accessibilityState={{ selected: true }} style={[styles.country, Depth.control, { backgroundColor: theme.card }]}>
-          <ThemedText type="smallBold" themeColor="accent">{t.feed.cityCanada}</ThemedText>
+      <View style={[styles.countriesGlass, { backgroundColor: theme.backgroundElement }]}><View accessibilityRole="tablist" accessibilityLabel={t.feed.cityCountry} style={styles.countries}>
+        <View accessible accessibilityRole="tab" accessibilityState={{ selected: true }} style={[styles.country, fontScale > 1.2 && styles.currentCountry, Depth.control, controlPresentation(theme, { tone: 'ghost', selected: true }).container]}>
+          <ThemedText type="label" style={controlPresentation(theme, { tone: 'ghost', selected: true }).text}>{t.feed.cityCanada}</ThemedText>
         </View>
         <Pressable analyticsId="components_city-picker.pressable.3" disabled accessibilityRole="tab" accessibilityState={{ selected: false, disabled: true }} accessibilityLabel={`${t.feed.cityUnitedStates}, ${t.feed.citySoon}`} style={styles.country}>
           <ThemedText type="smallBold" themeColor="textSecondary">{t.feed.cityUnitedStates}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{t.feed.citySoon}</ThemedText>
         </Pressable>
-      </View></GlassSurface>
-      <GlassSurface tone="control" style={styles.searchGlass}><View style={styles.search}>
-        <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={19} tintColor={theme.textSecondary} />
+      </View></View>
+      <View style={[styles.searchGlass, { backgroundColor: theme.card, borderColor: theme.line }]}><View style={styles.search}>
+        <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
         <TextInput accessibilityLabel={t.feed.citySearch} placeholder={t.feed.citySearch} placeholderTextColor={theme.textSecondary}
           value={query} onChangeText={setQuery} autoCapitalize="none" autoCorrect={false} returnKeyType="search"
           style={[styles.input, { color: theme.text }]} />
         {!!query && <Pressable analyticsId="components_city-picker.pressable.4" accessibilityRole="button" accessibilityLabel={t.feed.citySearchClear} onPress={() => { play('selection'); setQuery(''); }} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
-          <SymbolView name={{ ios: 'xmark.circle.fill', android: 'cancel', web: 'cancel' }} size={19} tintColor={theme.textSecondary} />
+          <SymbolView name={{ ios: 'xmark.circle.fill', android: 'cancel', web: 'cancel' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
         </Pressable>}
-      </View></GlassSurface>
+      </View></View>
     </View>
     <SectionList analyticsId="components_city-picker.sectionlist.1" sections={sections} keyExtractor={item => item.id} stickySectionHeadersEnabled={false}
       keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.list}
-      ListHeaderComponent={draft || !isAuthed ? null : <GlassSurface tone="control" interactive style={styles.locationRow}>
+      ListHeaderComponent={draft || !isAuthed ? null : <GlassSurface tone="control" interactive style={[styles.locationRow, controlPresentation(theme, { tone: 'ghost' }).container]}>
         <Pressable analyticsId="components_city-picker.pressable.5" accessibilityRole="button" disabled={locationBusy} accessibilityState={{ disabled: locationBusy, busy: location.busy, expanded: locationOpen }}
           accessibilityLabel={tr("내 위치로 찾기")} onPress={onLocation}
-          style={({ pressed }) => [styles.locationMain, pressed && { backgroundColor: theme.backgroundSelected }, locationBusy && styles.disabled]}>
-          <SymbolView name={{ ios: 'location', android: 'near_me', web: 'near_me' }} size={22} tintColor={theme.accent} />
+          style={({ pressed }) => [styles.locationMain, controlPresentation(theme, { tone: 'ghost', pressed, disabled: locationBusy, busy: location.busy }).container]}>
+          <SymbolView name={{ ios: 'location', android: 'near_me', web: 'near_me' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
           <View style={styles.name}>
-            <ThemedText style={[styles.rowTitle, { color: theme.accent }]}>{location.busy ? tr("위치 확인 중…") : location.enabled ? tr("위치 다시 확인") : locationOpen ? tr("동의하고 찾기") : tr("내 위치로 찾기")}</ThemedText>
+            <ThemedText type="label">{location.busy ? tr("위치 확인 중…") : location.enabled ? tr("위치 다시 확인") : locationOpen ? tr("동의하고 찾기") : tr("내 위치로 찾기")}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{location.message || (locationOpen && !location.enabled ? tr("아래 내용에 동의하면 위치를 한 번 확인해요") : tr("GPS로 가까운 도시를 한 번만 확인해요"))}</ThemedText>
           </View>
-          {!location.enabled && <SymbolView name={{ ios: locationOpen ? 'chevron.up' : 'chevron.down', android: locationOpen ? 'expand_less' : 'expand_more', web: locationOpen ? 'expand_less' : 'expand_more' }} size={18} tintColor={theme.textSecondary} />}
+          {!location.enabled && <SymbolView name={{ ios: locationOpen ? 'chevron.up' : 'chevron.down', android: locationOpen ? 'expand_less' : 'expand_more', web: locationOpen ? 'expand_less' : 'expand_more' }} size={IconSize.inline} tintColor={theme.textSecondary} />}
         </Pressable>
         {locationOpen && !location.enabled && <View style={[styles.locationDetails, { borderColor: theme.line }]}>
           <ThemedText type="small" themeColor="textSecondary">{tr("직접 선택해 저장한 선호 지역이 우선 적용돼요. 동의하지 않아도 아래에서 도시를 고를 수 있어요.")}</ThemedText>
@@ -104,12 +105,12 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
       ListEmptyComponent={<ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite" style={styles.empty}>{t.feed.cityNoResults}</ThemedText>}
       ListFooterComponent={<ThemedText type="small" themeColor="textSecondary" style={styles.note}>{draft ? t.write.postCityNote : t.feed.cityPickerNote}</ThemedText>}
       renderSectionHeader={({ section }) => <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{section.title}</ThemedText>}
-      renderItem={({ item }) => {
+      renderItem={({ item, index, section }) => {
         const selected = item.id === (draft?.city ?? city).id;
         const open = item.state === 'open';
         const busy = !draft && saving;
         const disabled = busy || !open;
-        return <View style={[styles.rowGlass, { backgroundColor: theme.card, borderColor: selected ? theme.accent : theme.line }]}><Pressable analyticsId="components_city-picker.pressable.6" disabled={disabled} accessibilityRole="button" accessibilityState={{ selected, disabled, busy }}
+        return <View style={[styles.rowGlass, { backgroundColor: theme.card }, index === 0 && styles.firstRow, index === section.data.length - 1 && styles.lastRow]}><Pressable analyticsId="components_city-picker.pressable.6" disabled={disabled} accessibilityRole="button" accessibilityState={{ selected, disabled, busy }}
           accessibilityLabel={[tr(item.name), language === 'ko' && item.englishName, item.province, !open && t.feed.citySoon, selected && t.feed.citySelected].filter(Boolean).join(', ')}
           onPress={async () => {
             if (disabled) return;
@@ -117,14 +118,14 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
             if (draft) { draft.onSelect(item); onClose(); }
             else if (await selectCity(item)) onClose();
           }}
-          style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+          style={({ pressed }) => [styles.row, controlPresentation(theme, { tone: 'ghost', selected, pressed, disabled, busy, reducedMotion }).container]}>
           <View style={styles.name}>
             <ThemedText style={[styles.rowTitle, { color: selected ? theme.accent : open ? theme.text : theme.textSecondary }]}>{tr(item.name)}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{language === 'ko' ? `${item.englishName} · ${item.province}` : item.province}</ThemedText>
           </View>
           {!draft && item.id === location.cityId && !selected && <ThemedText type="small" style={[styles.near, { backgroundColor: theme.backgroundElement, color: theme.accent }]}>{tr("가까움")}</ThemedText>}
           {!open && <ThemedText type="small" themeColor="textSecondary">{t.feed.citySoon}</ThemedText>}
-          {selected && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={21} tintColor={theme.accent} />}
+          {selected && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={IconSize.toolbar} tintColor={theme.accent} />}
         </Pressable></View>;
       }} />
   </KeyboardAvoidingView>;
@@ -132,19 +133,21 @@ export function CityPicker({ onClose, draft }: { onClose: () => void; draft?: { 
 
 const styles = StyleSheet.create({
   container: { flex: 1 }, head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.four, paddingTop: Spacing.three, gap: Spacing.two },
-  title: { flex: 1, fontSize: 24, lineHeight: 32, fontWeight: '700', letterSpacing: -0.5 },
-  iconButton: { minWidth: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }, iconGlass: { borderRadius: 22 }, pressed: { backgroundColor: 'rgba(255,255,255,0.12)' },
-  controls: { paddingHorizontal: Spacing.four, paddingTop: Spacing.three, gap: Spacing.three },
-  countriesGlass: { borderRadius: 16 }, countries: { flexDirection: 'row', padding: 4, borderRadius: 16, gap: 4 },
-  country: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one, alignItems: 'center', justifyContent: 'center', minHeight: 44, padding: Spacing.two, borderRadius: 9 },
-  searchGlass: { borderRadius: 16 }, search: { flexDirection: 'row', alignItems: 'center', paddingLeft: Spacing.three, borderRadius: 16, gap: Spacing.two, minHeight: 48 },
-  input: { flex: 1, minWidth: 0, minHeight: 44, fontSize: 16, paddingVertical: Spacing.two, paddingRight: Spacing.two },
-  list: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.four }, sectionTitle: { paddingTop: Spacing.four, paddingBottom: Spacing.two },
-  rowGlass: { borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, marginTop: 8, overflow: 'hidden' }, row: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: 12, borderRadius: 16 },
-  name: { flex: 1, gap: Spacing.one }, rowTitle: { fontSize: 17, lineHeight: 24, fontWeight: '600' },
+  title: { ...Typography.sheetTitle, flex: 1 },
+  iconButton: ControlStyles.icon, iconGlass: { borderRadius: ControlMetrics.radius.icon },
+  controls: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two, gap: Spacing.two },
+  countriesGlass: { borderRadius: ControlMetrics.radius.field }, countries: { flexDirection: 'row', padding: Spacing.one, borderRadius: ControlMetrics.radius.field, gap: Spacing.one },
+  country: { ...ControlStyles.pill, borderRadius: ControlMetrics.radius.action, flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'center', gap: Spacing.one, paddingHorizontal: Spacing.two, paddingVertical: Spacing.two },
+  currentCountry: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', alignSelf: 'center' },
+  searchGlass: { borderRadius: ControlMetrics.radius.field, borderWidth: StyleSheet.hairlineWidth }, search: { flexDirection: 'row', alignItems: 'center', paddingLeft: Spacing.three, borderRadius: ControlMetrics.radius.field, gap: Spacing.two, minHeight: ControlMetrics.field },
+  input: { flex: 1, minWidth: 0, minHeight: ControlMetrics.touch, fontSize: Typography.menu.fontSize, paddingVertical: Spacing.two, paddingRight: Spacing.two },
+  list: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.four }, sectionTitle: { paddingHorizontal: Spacing.three, paddingTop: Spacing.four, paddingBottom: Spacing.two },
+  rowGlass: { overflow: 'hidden' }, firstRow: { borderTopLeftRadius: ControlMetrics.radius.field, borderTopRightRadius: ControlMetrics.radius.field }, lastRow: { borderBottomLeftRadius: ControlMetrics.radius.field, borderBottomRightRadius: ControlMetrics.radius.field },
+  row: { minHeight: 72, borderRadius: ControlMetrics.radius.field, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
+  name: { flex: 1, gap: Spacing.one }, rowTitle: Typography.menu,
   note: { marginTop: Spacing.four }, empty: { paddingTop: Spacing.four },
-  locationRow: { marginTop: Spacing.three, borderRadius: 16 },
-  locationMain: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: 12 },
+  locationRow: { marginTop: Spacing.two, borderRadius: ControlMetrics.radius.field },
+  locationMain: { minHeight: ControlMetrics.field, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
   locationDetails: { borderTopWidth: StyleSheet.hairlineWidth, padding: Spacing.three, gap: Spacing.two },
-  near: { paddingHorizontal: Spacing.two, paddingVertical: 2, borderRadius: 999, fontWeight: '700' }, disabled: { opacity: 0.5 },
+  near: { paddingHorizontal: Spacing.two, paddingVertical: 2, borderRadius: 999, fontWeight: '700' },
 });

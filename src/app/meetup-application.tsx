@@ -108,7 +108,7 @@ function Application({ requestId }: { requestId: string }) {
       : visible ? <>
       {application.request?.post && <ThemedText type="small" themeColor="textSecondary">{application.request.post.title}{" " + tr("· 참여 신청")}</ThemedText>}
       <View style={styles.identity}>
-        {identity?.photoUri ? <Image source={{ uri: identity.photoUri }} style={styles.avatar} contentFit="cover" accessibilityLabel={tr("{0} 프로필 사진", (identity.nickname))} />
+        {identity?.photoUri ? <Image source={{ uri: identity.photoUri }} cachePolicy="none" style={styles.avatar} contentFit="cover" accessibilityLabel={tr("{0} 모임 사진", identity.nickname)} />
           : <View style={[styles.avatar, styles.initial, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle">{(identity?.nickname ?? tr("신청자")).slice(0, 1)}</ThemedText></View>}
         <View style={styles.identityBody}><ThemedText style={styles.name}>{identity?.nickname ?? tr("신청자")}</ThemedText>
           {!!identity?.city_id && <ThemedText type="small" themeColor="textSecondary">{CITIES.find(city => city.id === identity.city_id)?.name ?? identity.city_id}</ThemedText>}
@@ -118,7 +118,7 @@ function Application({ requestId }: { requestId: string }) {
       <View style={[styles.answerCard, { backgroundColor: theme.card }]}><ThemedText type="smallBold" themeColor="accent">{tr("모임장 질문에 대한 답변")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{application.question}</ThemedText><ThemedText style={styles.answer}>{application.answer}</ThemedText></View>
       <ThemedText type="smallBold">{tr("함께할 사람의 모임 프로필")}</ThemedText>
       <ChillingProfileCard profile={application.profile} />
-      <ThemedText type="small" themeColor="textSecondary">{tr("소개와 답변은 신청할 때 공유한 내용이에요. 닉네임·사진·활동 지역은 현재 계정 프로필을 보여요.")}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{tr("이름·사진·소개·답변은 신청 당시 공유한 모임 프로필이에요. 이후 프로필을 수정해도 이 신청은 바뀌지 않아요.")}</ThemedText>
       {canRespond && <>
         <ThemedText type="small" themeColor="textSecondary">{tr("승인하면 이 모임의 멤버가 되고 모임 대화에 참여해요. 정원이 찼거나 참여 가능한 모임 수를 넘으면 승인할 수 없어요.")}</ThemedText>
       </>}

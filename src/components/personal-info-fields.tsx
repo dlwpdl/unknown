@@ -46,7 +46,7 @@ export function PersonalInfoFields({ value, onChange, disabled = false, showCons
       <View accessibilityRole="radiogroup" accessibilityLabel={tr("성별")} style={styles.genderRow}>
         {GENDER_OPTIONS.map((option) => {
           const selected = value.gender === option.value;
-          return <Pressable key={option.value || 'none'} analyticsId={`components_personal-info-fields.pressable.gender-${option.value || 'none'}`}
+          return <Pressable lens key={option.value || 'none'} analyticsId={`components_personal-info-fields.pressable.gender-${option.value || 'none'}`}
             disabled={disabled} onPress={() => { play('selection'); onChange({ ...value, gender: option.value }); }} accessibilityRole="radio" aria-checked={selected}
             accessibilityState={{ checked: selected, disabled }}
             style={({ pressed }) => [styles.genderOption, { borderColor: selected ? theme.accent : theme.line, backgroundColor: theme.card, opacity: disabled ? 0.55 : pressed ? 0.7 : 1 }]}>

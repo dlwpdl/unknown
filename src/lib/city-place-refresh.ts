@@ -3,6 +3,7 @@ const CACHE_KEY = 'gling.city-places.v1';
 const RETRY_DELAY = 15 * 60 * 1000;
 const vancouverDay = (time: number) => new Date(time).toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' });
 let pending: Promise<void> | null = null, hydrated = false, checkedOn = '', retryAfter = 0, catalog: unknown = null;
+let checkedThisSession = false, lastCheckedAt = 0;
 
 export function refreshCityPlaces(storage: CatalogStorage, fetchCatalog: () => Promise<unknown>, applyCatalog: (value: unknown) => boolean | void, now = Date.now()): Promise<void> {
   if (pending) return pending;
@@ -30,7 +31,10 @@ export function refreshCityPlaces(storage: CatalogStorage, fetchCatalog: () => P
         }
       } catch { /* Corrupt or unavailable storage leaves the bundled catalog usable. */ }
     }
-    if (checkedOn === day || now < retryAfter) return;
+    // Hydrate immediately, then read our saved DB snapshot on a new launch or after 15 minutes.
+    // External place providers still refresh only in the existing daily producer.
+    if ((checkedThisSession && checkedOn === day && now - lastCheckedAt < RETRY_DELAY) || now < retryAfter) return;
+    checkedThisSession = true; lastCheckedAt = now;
     retryAfter = now + RETRY_DELAY;
     try {
       const next = await fetchCatalog();

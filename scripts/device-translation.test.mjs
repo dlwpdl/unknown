@@ -4,6 +4,7 @@ import path from 'node:path';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { translationSource } from './test-meetup-source-imports.mjs';
 
 function client(native, OS = 'ios') {
   const modules = new Map();
@@ -16,6 +17,7 @@ function client(native, OS = 'ios') {
     vm.runInNewContext(source, { exports, AbortController, setTimeout, clearTimeout, fetch() { throw new Error('Remote translation is forbidden'); }, require(name) {
       if (name === 'react-native') return { Platform: { OS } };
       if (name === 'expo-modules-core') return { requireOptionalNativeModule(id) { assert.equal(id, 'GlingTranslation'); return native; } };
+      if (name === './translation-source.ts') return translationSource;
       if (name.startsWith('.')) return load(path.resolve(path.dirname(file), name.replace(/\.ts$/, '') + '.ts'));
       throw new Error(`Unexpected dependency ${name}`);
     } });

@@ -2,6 +2,20 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { configureBehavior, behaviorScreen, behavior, flushBehavior, scrollThresholds } from '../src/lib/behavior-analytics.ts';
+import { analyticsScreen } from '../src/lib/analytics.ts';
+
+test('the shared find-destination target keeps place and event screens distinguishable without source metadata', async () => {
+  const batches = [];
+  configureBehavior(async batch => { batches.push(structuredClone(batch)); return true; });
+  for (const path of ['/places/[id]', '/events/[id]']) {
+    behaviorScreen(analyticsScreen(path)); behavior('press', 'ticketmaster.meetup.find');
+  }
+  await flushBehavior();
+  const events = batches.flatMap(batch => batch.events).filter(event => event.target === 'ticketmaster.meetup.find');
+  assert.deepEqual(events.map(event => event.screen), ['place-detail', 'event-detail']);
+  for (const event of events) assert.deepEqual(Object.keys(event), ['seq', 'screen', 'kind', 'target', 'value']);
+  configureBehavior(null);
+});
 
 test('bounded retry batches preserve identity and order, reset on identity change, omit all content', async () => {
   const batches = [];

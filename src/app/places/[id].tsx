@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
+import { RaisedActionButton } from '@/components/raised-action-button';
 import { PlaceReviews } from '@/components/place-reviews';
 import { PlaceExternalRatings } from '@/components/place-external-ratings';
 import { PostMapLink } from '@/components/post-map-link';
@@ -17,6 +18,8 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useCommunityCity } from '@/lib/community-city';
 import { CITY_PLACES_COLLECTED_AT, getCityPlaces, type CityPlace } from '@/lib/city-places';
+import { deliveryPartnerPlace } from '@/lib/delivery-partners';
+import { loadCityBusinessLinks } from '@/lib/webshops';
 import { useCityPlacesRevision } from '@/hooks/use-city-places';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
@@ -39,9 +42,17 @@ export default function PlaceDetailScreen() {
   const city = CITIES.find(item => item.id === (cityId ?? selected.id));
   const theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
   let found: CityPlace | undefined;
-  try { if (city) found = getCityPlaces(city.id).find(item => item.id === id); } catch { /* Invalid/missing catalog stays an explicit missing-place state. */ }
+  try { if (city) found = getCityPlaces(city.id).find(item => item.id === id) ?? (typeof id === 'string' ? deliveryPartnerPlace(city.id, id) : undefined); } catch { /* Invalid/missing catalog stays an explicit missing-place state. */ }
   const place = found, website = place?.website ? safeMerchantSourceUrl(place.website) : null;
   const targetId = place?.id, loadedCityId = place?.cityId;
+  useEffect(() => {
+    if (!isFocused || !targetId || !loadedCityId) return;
+    const controller = new AbortController();
+    void loadCityBusinessLinks(supabase, loadedCityId, controller.signal).then(links => {
+      if (!controller.signal.aborted && links[targetId]) router.replace({ pathname: '/company/[id]', params: { id: links[targetId] } });
+    }).catch(() => {});
+    return () => controller.abort();
+  }, [isFocused, targetId, loadedCityId, router]);
   const record = useCallback((kind: 'place_view' | 'place_directions' | 'place_website') => {
     if (userId && identity.current === userId && targetId && loadedCityId) {
       void recordProductEvent(supabase, { kind, targetId, cityId: loadedCityId, platform: Platform.OS }).catch(() => {});
@@ -66,7 +77,14 @@ export default function PlaceDetailScreen() {
       onScroll={({ nativeEvent }) => setViewport({ y: nativeEvent.contentOffset.y, height: nativeEvent.layoutMeasurement.height })}>
       {!place || !city ? <StateCard kind="error" title={tr("장소를 찾지 못했어요")} body={tr("선택한 도시의 장소 목록에서 다시 열어 주세요.")} /> : <>
         <CityPlacePhoto place={place} style={styles.photo} />
-        {!!place.photo && <PostPhotoCredits credits={`사진: ${place.photo.artist}\n${place.photo.sourceUrl}\n${place.photo.license}\n${place.photo.licenseUrl}\n사진은 촬영 시점의 모습이며 현재와 다를 수 있어요.`} />}
+        {!!place.photo && <PostPhotoCredits credits={[
+          place.photo.title, `${language === 'en' ? 'Photo' : '사진'}: ${place.photo.artist}`, place.photo.sourceUrl,
+          place.photo.license, place.photo.licenseUrl,
+          language === 'en' ? 'This photo shows the place when it was taken and may differ from its current appearance.' : '사진은 촬영 시점의 모습이며 현재와 다를 수 있어요.',
+        ].filter(Boolean).join('\n')} />}
+        {place.photo?.discoveredVia === 'Openverse' && <ThemedText type="small" themeColor="textSecondary">{language === 'en'
+          ? 'Photos found with Openverse. This service is not endorsed or certified by Openverse.'
+          : 'Openverse로 찾은 사진 · Openverse는 이 서비스를 인증하거나 보증하지 않아요.'}</ThemedText>}
         <ThemedText type="small" themeColor="textSecondary">{tr(city.name)}{" " + tr("· 지도 등록 장소")}</ThemedText>
         <ThemedText accessibilityRole="header" style={styles.title}>{place.name}</ThemedText>
         {!!place.recommendation && <>
@@ -77,12 +95,15 @@ export default function PlaceDetailScreen() {
           <ThemedText>{place.address || tr("등록된 주소 정보가 없어요. 지도에서 위치를 확인해 주세요.")}</ThemedText>
           {!!place.openingHours && <ThemedText type="small" themeColor="textSecondary">{tr("등록된 운영 시간: {0}", (place.openingHours))}</ThemedText>}
         </View>
+        {/* The legacy analytics target distinguishes this shared action by its screen. */}
+        {place.id.startsWith('osm:') && <RaisedActionButton analyticsId="ticketmaster.meetup.find" label={language === 'en' ? 'Find a meetup here' : '이곳에 갈 모임 보기'} disabled={city.state !== 'open'} onPress={() => { play('selection'); router.push({ pathname: '/(tabs)/meetups', params: { placeId: place.id, placeCityId: city.id } }); }} />}
+        {city.state !== 'open' && <ThemedText type="small" themeColor="textSecondary">{language === 'en' ? 'Meetups in this city are coming soon.' : '이 도시의 모임은 준비 중이에요.'}</ThemedText>}
         <Pressable analyticsId="places.open" accessibilityRole="button" accessibilityLabel={`${place.name} · ${tr('지도 보기')}`}
           onPress={() => { play('selection'); router.navigate(placeMapRoute(place)); }} style={styles.link}>
           <ThemedText type="smallBold" themeColor="accent">{tr('지도 보기')}</ThemedText>
         </Pressable>
-        <PlaceReviews cityId={city.id} placeId={place.id} viewport={viewport} />
-        <PlaceExternalRatings key={`${city.id}:${place.id}`} cityId={city.id} placeId={place.id} />
+        {place.id.startsWith('osm:') && <PlaceReviews cityId={city.id} placeId={place.id} viewport={viewport} />}
+        {place.id.startsWith('osm:') && <PlaceExternalRatings key={`${city.id}:${place.id}`} cityId={city.id} placeId={place.id} />}
         {mapsUrl && <PostMapLink url={mapsUrl} label={place.name} onOpened={() => record('place_directions')} />}
         {!!place.recommendation && <Pressable analyticsId="places.detail.source" accessibilityRole="link" accessibilityLabel={tr("사진 명소 선정 출처 보기")} onPress={() => openSource(place.recommendation!.sourceUrl)} style={styles.link}>
           <ThemedText type="smallBold" themeColor="accent">{tr("사진 명소 선정 출처 보기")}</ThemedText>

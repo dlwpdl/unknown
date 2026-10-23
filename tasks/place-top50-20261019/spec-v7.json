@@ -1,0 +1,141 @@
+{
+  "version": 7,
+  "recordedAt": "2026-10-19T18:53:59.208956+00:00",
+  "parent": "b7534d7cfc9e00fb6195d520dee5f4da5bba0f00",
+  "humanScopeVia": "msg_ba66fffad625",
+  "objective": "Real50 photo/rating-backed selections in ten remaining cities, Toronto first, including independent cafes/restaurants; preserve completed Vancouver50 and stable fact/review identities.",
+  "boundaries": {
+    "ours": [
+      "city-places.catalog.json",
+      "city-places.photos.json",
+      "place-external-ratings.json",
+      "CityPlacePhoto static require map only",
+      "assets/city-places",
+      "data tests",
+      "this versioned spec",
+      "place-external-ratings.ts",
+      "refresh-city-places.py source/tests"
+    ],
+    "F5": [
+      "Map/UI",
+      "ui-en.ts",
+      "Gling Visited semantics"
+    ],
+    "excluded": [
+      "native/GUI/build",
+      "SQL/Edge",
+      "job72/schedule",
+      "canonical seed until accepted union",
+      "paid/new providers/workers"
+    ]
+  },
+  "acceptance": [
+    "50 distinct destinations per completed city; exact venue/branch identity inside supported boundary",
+    "Each selected place has visually accepted same-place licensed actual photo bytes and real external score with positive review count",
+    "No invented visits, franchise padding, unrelated stock, fabricated reviews, duplicate place aliases or aggregate ratings",
+    "Keep all904 baseline facts and old IDs, completed Vancouver50; maintain truthful partial coverage until city packet meets acceptance",
+    "Cache24h, one serial >=10sec pump, preserve historical ledgers and actual upload429; absolute bounded allowances recorded before requests"
+  ],
+  "commands": [
+    "npm test",
+    "npx tsc --noEmit",
+    "npm run lint",
+    "git diff --check"
+  ],
+  "structure": "Existing catalog/photo/rating JSON and static require pattern; operational evidence outside source in existing review tree",
+  "style": "Existing shapes and attribution; natural concrete descriptions; no new dependency",
+  "tests": "Per-city identity/coverage/category/provenance/static-byte invariant plus existing relevant/full checks per completed packet",
+  "callPlan": "/Users/ash/Desktop/Git/unknown/output/reviews/gling-cities50-dining-2026-10-19/bounded-plan-v7-proposed.json",
+  "status": "Source revision10 ready:75 new verified photo-optional dining across9 cities including16Vancouver;1001facts/189unchangedmainTop/78dining/209photos/471providerRows. DBadoption pending; old968/201/336objects unchanged. Toronto/newCalgary and remaining photos/cityTop50 remain active, OSM502hold23:15:14.759 after original23Z source expiry.",
+  "supplementalDining": "Separate reviewed diningRecommendations; preserve top50 order; getCityDiscoveryPlaces union, getCityBrowsePlaces category-specific, trusted local visited registry only",
+  "directUserPersistence": {
+    "at": "2026-10-19T19:06:14.237363+00:00",
+    "verbatim": "바로바로 넣어 그래야 다음에 로딩할떄 빠르지",
+    "scope": "Immediately persist verified packets via existing backend owner; additive photoCatalog/externalRatings in existing RPC; atomic client validation/cache apply and daily producer preservation, no job rerun/shift"
+  },
+  "dbReceipt": "/Users/ash/Desktop/Git/unknown/output/reviews/gling-cities50-dining-2026-10-19/db-persistence-receipt-cohort-a-v7.json",
+  "dbCachePolicy": "Show saved cache immediately; one background DB check on new launch and at most once/15min on foreground. External provider daily schedule unchanged.",
+  "baselineClarification": "All904factIDs and Van50 fixed; other88old selections may be reselected with facts retained, per msg_6896a4802a29",
+  "supplementalDiningUserClarification": {
+    "via": "msg_45f6414ed396",
+    "verbatim": "레스토랑도 더 추가해도됨 꼭 50개가 아니어도되고",
+    "policy": "50 destination goal is not a cap on separately reviewed dining; no franchise padding or unverified places."
+  },
+  "nextSourceCohort": {
+    "parent": "9e8ff7062f4423557870952bc3508cf0afab7e91",
+    "decisions": "/Users/ash/Desktop/Git/unknown/output/reviews/gling-cities50-dining-2026-10-19/cohort-b-source-decisions-v7.json",
+    "preserveAll930FactObjects": true,
+    "closedAndWrongSubjectBindingsRemainPrivate": true,
+    "sameCapsHistoryExpiry": true
+  },
+  "cohortC": {
+    "preparedAt": "2026-10-19T21:06:04.438081+00:00",
+    "sourceParent": "ceed2dfecc0a81ef9d00891a0be9906d72a3d43c",
+    "proposedRevision": 8,
+    "preserveEveryExistingFactObject": 953,
+    "preserveEveryExistingPhotoRow": 186,
+    "preserveVancouverTop50OrderReasonsAndProviderRows": true,
+    "handsonCanonical": "osm:node:4976343547",
+    "handsonPublicAttestation": "https://www.instagram.com/reel/DeoQKPNgYLe/",
+    "visitedTrustedLocalOnly": true,
+    "ownerPhotoNotMislicensedOrAddedToCommonsRpc": true,
+    "metadataAndPhotoAuthority": "same v7 unchanged caps/history/23:00 expiry",
+    "osmActual502HoldUntil": "2026-10-19T22:04:45.562Z",
+    "oneSavedReadbackPerAcceptedCohort": true
+  },
+  "cohortD": {
+    "preparedAt": "2026-10-19T21:17:32.205269+00:00",
+    "sourceParent": "87f68018cc5bd700ceb614e52715ec120f89efda",
+    "nextRevision": 9,
+    "old965Facts198Photos330ProviderRowsExact": true,
+    "Van50AndHANDSONTrustedLocalEntryUnchanged": true,
+    "actualCCAuthorForMilitaryMuseums": "Chuck Szmurlo via originalCommonsrevision caption",
+    "WinnipegPublicDomainOriginalEvidence": "Original PD-user-w Cayla EnglishWikipedia plus ownupload; original licenseURLempty preserved in evidence, publicdomain mark URL representation",
+    "StViateurExactBranch": "263 RueSaintViateurOuest,not158",
+    "sameOriginalV7CapsExpiryHolds": true
+  },
+  "bulkDiningPriority": {
+    "recordedAt": "2026-10-19T22:09:33.077789+00:00",
+    "sourceAuthority": [
+      "msg_8f9a23667ef8",
+      "msg_a84030ea38e5",
+      "msg_23a0ada15f20",
+      "msg_7ab1ce92fb90"
+    ],
+    "userMeaning": "Actual restaurants/cafes across every supported city and efficient city-sized cache-first batches; verified data immediately persisted for fast subsequent loads.",
+    "baselineObjectsPreserved": {
+      "facts": 968,
+      "photoLinks": 201,
+      "externalProviderRows": 336
+    },
+    "acceptance": [
+      "Preserve existing canonical IDs/reviews and exact VancouverTop50 order/reasons/photo/provider objects.",
+      "Reuse already verified immutable source/photo hashes; one all-city cache pass and coherent ready batch.",
+      "Each new dining pick needs a real positive external review count and exact physical branch/canonical identity. Photos are optional at admission; existing truthful photo fallback is used. Actual licensed subject photos remain a backfill goal; no generic substitution or fabricated counts.",
+      "Publish accepted coherent source packet and request one Root writer slice for one CAS followed by actual anon/client readback; no hosted writer outside that slice.",
+      "Keep native9938 freeze, sole6ac, production/store/release floors and existing jobs unchanged."
+    ],
+    "collectionAllowance": "Original approved v7: same host identities, history, global>=10s serial,24h cache/dedupe,23Z expiry, upload429hold. Phase13 local slice39 metadata/40 image maximum inside original master, no cap reset.",
+    "allCityCachePass": "unknown/output/reviews/gling-cities50-dining-2026-10-19/bulk-dining-all-city-coverage-v7.json"
+  },
+  "photoAdmissionCorrection": {
+    "at": "2026-10-19T22:21:57.724518+00:00",
+    "supersedes": "Prior photo-before-admission prerequisite",
+    "authority": [
+      "msg_31768ff540f0",
+      "msg_13f46fa7c9f4"
+    ],
+    "behavior": "Admit verified canonical+positive-counted dining in coherent batches, even when photo is null. Backfill licensed photos independently. Existing client contract already supports this; no helper/UI rewrite.",
+    "originalSourceCapsExpiryAndOSM502Upload429HoldsUnchanged": true
+  },
+  "cohortE": {
+    "admittedDining": 75,
+    "photoOptional": true,
+    "sourceReadyDBPending": true,
+    "sourceChoices": "unknown/output/reviews/gling-cities50-dining-2026-10-19/cohort-e-datafirst-source-choices-v7.json",
+    "actualExternalOSMHold": "2026-10-19T23:15:14.759+00:00",
+    "originalV7Expiry": "2026-10-19T23:00:00+00:00",
+    "allOld968FactsPreserved": true,
+    "additionalExactCachedDining": 23
+  }
+}

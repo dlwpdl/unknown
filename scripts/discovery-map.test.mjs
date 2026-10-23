@@ -110,6 +110,7 @@ test('only accepts current session messages, known selection IDs and exact credi
 
 function canvas(markers = [marker]) {
   const messages = [], listeners = {}, cameras = [], sources = {}, layers = [], images = {}, paddingCalls = [], userMarkers = [], labels = [];
+  const container = { clientHeight: 400, style: { setProperty(name, value) { this[name] = value; }, getPropertyValue(name) { return this[name] ?? ''; } } };
   let map;
   class Map {
     constructor(config) { this.config = config; this.zoom = 11; map = this; }
@@ -126,7 +127,7 @@ function canvas(markers = [marker]) {
     getCanvas() { return { style: {} }; }
     queryRenderedFeatures(_point, options) { this.queryOptions = options; return this.hits ?? []; }
     isStyleLoaded() { return true; }
-    getContainer() { return { clientHeight: 400 }; }
+    getContainer() { return container; }
     setPadding(padding) { this.padding = padding; paddingCalls.push(padding); }
   }
   const window = { parent: { postMessage: message => messages.push(JSON.parse(message)) }, addEventListener: (type, callback) => { listeners['window:' + type] = callback; }, matchMedia: () => ({ matches: true }) };
@@ -340,4 +341,44 @@ test('embedded map labels follow the selected interface language', () => {
   assert.ok(html.includes('<html lang="en">'));
   assert.ok(html.includes('City discovery map. Places are also available in the list.'));
   assert.throws(() => discoveryMapHtml({ ...options, language: 'bad\" onload=alert(1)' }));
+});
+
+
+test('floating filter inset moves zoom controls and camera padding below the chips', () => {
+  const c = canvas();
+  const state = { markers: [marker], selectedId: marker.id, topInset: 68, bottomInset: 220 };
+  c.window.glingDiscoveryUpdate(sessionId, state);
+  assert.equal(c.paddingCalls.at(-1).top, 68);
+  assert.equal(c.paddingCalls.at(-1).bottom, 220);
+  assert.equal(c.map.getContainer().style.getPropertyValue('--map-top-inset'), '68px');
+  const count = c.paddingCalls.length;
+  c.window.glingDiscoveryUpdate(sessionId, state);
+  assert.equal(c.paddingCalls.length, count);
+  for (const topInset of [-1, 1001, NaN, Infinity, '68']) {
+    assert.throws(() => discoveryMapScript({ ...state, topInset }, sessionId));
+    c.window.glingDiscoveryUpdate(sessionId, { ...state, topInset });
+    assert.equal(c.paddingCalls.length, count);
+  }
+});
+
+test('verified webshop discounts get a separate mint badge while the restaurant pin keeps its category color', () => {
+  const discounted = { ...marker, discount: 20.8 };
+  assert.equal(discoveryMarkers([discounted])[0].discount, 20.8);
+  for (const discount of [NaN, Infinity, -1, 0, 100.1, '20.8']) {
+    assert.throws(() => discoveryMarkers([{ ...marker, discount }]), /INVALID_DISCOVERY_MARKER/);
+  }
+  const c = canvas([discounted]);
+  assert.ok(c.images['discount-20.8']);
+  assert.equal(c.images['discount-20.8'].options.pixelRatio, 2);
+  assert.ok(c.labels.includes('최대 20.8%'));
+  assert.equal(c.sources.discovery.data.features[0].properties.color, marker.color);
+  assert.equal(c.sources.discovery.data.features[0].properties.discount, 20.8);
+  assert.equal(c.layers.find(layer => layer.id === 'discovery-discount').source, 'discovery');
+  assert.equal(c.layers.find(layer => layer.id === 'discovery-selected-discount').source, 'discovery-selection');
+  c.window.glingDiscoveryUpdate(sessionId, { markers: [discounted], selectedId: marker.id });
+  assert.equal(c.sources['discovery-selection'].data.features[0].properties.discount, 20.8);
+  assert.equal(c.sources['discovery-selection'].data.features[0].properties.color, marker.color);
+  const previous = c.sources.discovery.data;
+  c.window.glingDiscoveryUpdate(sessionId, { markers: [{ ...marker, discount: '100%' }], selectedId: marker.id });
+  assert.equal(c.sources.discovery.data, previous, 'untrusted embedded updates cannot turn invalid data into a saving claim');
 });
