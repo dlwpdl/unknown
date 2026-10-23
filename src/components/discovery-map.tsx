@@ -23,7 +23,7 @@ export function DiscoveryMap(props: Props) {
 function Canvas({ markers, cityName, selectedId = null, center = null, userLocation = null, topInset = 0, bottomInset = 0, onSelect }: Props) {
   const { language, tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
-  const native = useRef<WebView>(null), web = useRef<HTMLIFrameElement>(null), id = useId();
+  const native = useRef<WebView<unknown>>(null), web = useRef<HTMLIFrameElement>(null), id = useId();
   const [seed] = useState({ markers, cityName, selectedId, center, userLocation, topInset, bottomInset });
   const [failed, setFailed] = useState(false), [retry, setRetry] = useState(0);
   const [readySession, setReadySession] = useState<string | null>(null);
@@ -76,7 +76,7 @@ function Canvas({ markers, cityName, selectedId = null, center = null, userLocat
     {html && (Platform.OS === 'web'
       ? <iframe key={sessionId} ref={web} srcDoc={html} title={tr("도시 탐색 지도")} sandbox="allow-scripts allow-same-origin" onLoad={sync}
         style={{ border: 0, width: '100%', height: '100%', minHeight: 140, flex: 1 }} />
-      : <WebView key={sessionId} ref={native} source={source} originWhitelist={['*']} applicationNameForUserAgent="GlingDiscoveryMap/1.0"
+      : <WebView<unknown> key={sessionId} ref={native} source={source} originWhitelist={['*']} applicationNameForUserAgent="GlingDiscoveryMap/1.0"
         style={styles.map} scrollEnabled={false} sharedCookiesEnabled={false} thirdPartyCookiesEnabled={false} cacheEnabled={false} incognito
         allowFileAccess={false} allowFileAccessFromFileURLs={false} allowUniversalAccessFromFileURLs={false} mixedContentMode="never"
         onShouldStartLoadWithRequest={request => request.url === 'about:blank'} setSupportMultipleWindows={false}

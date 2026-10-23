@@ -18,7 +18,7 @@ export function PostPinMap({ pin, cityName = '', preview = false, bottomInset = 
   onSelect?: (pin: PostPin, label?: string) => void; onReadyChange?: (ready: boolean) => void;
 }) {
   const { tr } = useLanguage();
-  const theme = useTheme(), { play } = useInteractionFeedback(), native = useRef<WebView>(null), web = useRef<HTMLIFrameElement>(null);
+  const theme = useTheme(), { play } = useInteractionFeedback(), native = useRef<WebView<unknown>>(null), web = useRef<HTMLIFrameElement>(null);
   const { isAuthed, me } = useAuth(), userId = isAuthed ? me.id : null;
   const identity = useRef(userId);
   useLayoutEffect(() => { identity.current = userId; return () => { identity.current = null; }; }, [userId]);
@@ -60,7 +60,7 @@ export function PostPinMap({ pin, cityName = '', preview = false, bottomInset = 
     {Platform.OS === 'web' ? <iframe key={retry} ref={web} srcDoc={html} title={tr("지도에서 위치 선택")} sandbox="allow-scripts allow-same-origin"
       onLoad={() => { setFailed(false); web.current?.contentWindow?.postMessage({ type: 'move', pin, bottomInset }, '*'); }}
       style={{ border: 0, width: '100%', height: '100%', minHeight: preview ? 0 : 140, flex: 1 }} />
-      : <WebView key={retry} ref={native} source={{ html }} originWhitelist={['*']} applicationNameForUserAgent="GlingMap/1.0"
+      : <WebView<unknown> key={retry} ref={native} source={{ html }} originWhitelist={['*']} applicationNameForUserAgent="GlingMap/1.0"
         style={mapStyle} scrollEnabled={false} sharedCookiesEnabled={false} thirdPartyCookiesEnabled={false}
         onShouldStartLoadWithRequest={request => request.url === 'about:blank'} setSupportMultipleWindows={false}
         onLoadStart={() => { setFailed(false); onReadyChange?.(false); }} onLoadEnd={() => { if (!preview) native.current?.injectJavaScript(mapPinScript(pin, bottomInset)); }} onError={fail}

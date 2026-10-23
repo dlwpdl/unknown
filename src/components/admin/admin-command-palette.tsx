@@ -1,6 +1,6 @@
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useEffect, useRef, useState } from 'react';
-import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, TextInput, View, type TextInputInstance } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
@@ -32,7 +32,7 @@ export function AdminCommandPalette({
   const [members, setMembers] = useState<AdminDirectoryProfile[]>([]);
   const [searching, setSearching] = useState(false);
   const [cursor, setCursor] = useState(0);
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<TextInputInstance>(null);
 
   useEffect(() => {
     if (!visible || localPreview) return;

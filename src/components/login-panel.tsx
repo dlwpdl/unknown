@@ -5,7 +5,7 @@ import { useFonts } from 'expo-font';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import { useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View, type TextInputInstance } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -49,7 +49,7 @@ export function LoginPanel({
   const [googleFontLoaded] = useFonts({ GoogleSansMedium: require('@/assets/fonts/GoogleSans-Medium.ttf') });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const adminPasswordInput = useRef<TextInput>(null);
+  const adminPasswordInput = useRef<TextInputInstance>(null);
   const [adminFocusedField, setAdminFocusedField] = useState<'email' | 'password' | null>(null);
   const disabled = loading;
   const showWelcome = !onAdminLogin && !onReviewLogin;

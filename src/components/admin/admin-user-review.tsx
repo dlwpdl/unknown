@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import { adminOptionKeys } from '@/lib/admin';
@@ -42,7 +42,7 @@ export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevel
   const [tab, setTab] = useState('activity');
   const [showActivityHelp, setShowActivityHelp] = useState(false);
   const [showConnectionHelp, setShowConnectionHelp] = useState(false);
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
   const showConnection = tab === 'connection';
   useEffect(() => { scroll.current?.scrollTo({ y: 0, animated: false }); }, [tab]);
   const [showFilters, setShowFilters] = useState(false);

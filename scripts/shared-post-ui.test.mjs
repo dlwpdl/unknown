@@ -68,6 +68,7 @@ function mount(file, name, data = {}, props = {}) {
     'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'SymbolView' }, 'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ bottom: 0 }) },
     'expo-router': { useLocalSearchParams: () => data.params ?? {}, useRouter: () => ({ canGoBack: () => false, back: () => calls.push(['back']), push: path => calls.push(['navigate', path]), replace: path => calls.push(['navigate', path]) }) },
     'expo-router/head': { default: 'Head' },
+    '@/components/public-web/metadata': { generatePrivateMetadata: () => ({ robots: 'noindex, nofollow' }) },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' }, '@/components/themed-text': { ThemedText: 'Text' },
     '@/components/themed-view': { ThemedView: 'View' }, '@/components/gling-loader': { GlingLoader: 'Loader' }, '@/components/state-card': { StateCard: 'StateCard' },
     '@/components/post-body': { PostBody: 'PostBody' },

@@ -2,7 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { useReducedMotion } from 'react-native-reanimated';
-import { Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, TextInput, View, type TextInputProps, type TextInputInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { PostAttachmentLink } from '@/components/post-attachment-link';
@@ -22,7 +22,7 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
   const reducedMotion = useReducedMotion();
   const [stage, setStage] = useState<'choices' | 'sns' | 'instagram' | 'url' | 'location' | null>(null);
   const [input, setInput] = useState('');
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<TextInputInstance>(null);
   const mapped = postMapBody(value, { preserveWhitespace: true });
   const initialPin = useMemo(() => googleMapsPin(mapped.url ?? ''), [mapped.url]);
   const attached = splitPostAttachments(mapped.body);
