@@ -13,6 +13,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 import { AdminSelect } from './admin-table-controls';
 import './admin-partnerships.css';
+import './admin-webshops.css';
 
 const TITLE_STYLE = { ...Typography.screenTitle, lineHeight: `${Typography.screenTitle.lineHeight}px` };
 const SECTION_STYLE = { ...Typography.section, lineHeight: `${Typography.section.lineHeight}px` };
@@ -23,13 +24,15 @@ const date = (value: string | null) => value ? `${new Date(value).toLocaleString
 const STATUS = { completed: '완료', cancelled: '취소', refunded: '전액 환불', partial_refund: '일부 환불' };
 const ATTRIBUTION = { provider_report: '공급자 기여 보고', promo_code: '코드 확인', unattributed: '기여 미확인' };
 
-export function AdminWebshopsView({ localPreview, refreshSignal = 0, onStateChange, initialMerchantId = '' }: {
-  localPreview: boolean; refreshSignal?: number; initialMerchantId?: string; onStateChange?: (state: { dirty: boolean; busy: boolean }) => void;
+export function AdminWebshopsView({ localPreview, refreshSignal = 0, onStateChange, initialMerchantId = '', onBusinesses }: {
+  localPreview: boolean; refreshSignal?: number; initialMerchantId?: string; onBusinesses?: () => void; onStateChange?: (state: { dirty: boolean; busy: boolean }) => void;
 }) {
   const { play } = useInteractionFeedback();
   const [days, setDays] = useState(30), [merchantId, setMerchantId] = useState(initialMerchantId), [retry, setRetry] = useState(0);
   const [result, setResult] = useState<{ key: string; data: AdminWebshops | null; error: string } | null>(null);
   const [stores, setStores] = useState<AdminWebshop[]>([]);
+  const [tab, setTab] = useState<'performance' | 'connections' | 'reports'>('performance');
+  const [restaurantConfirmed, setRestaurantConfirmed] = useState(false);
   const editorHeading = useRef<HTMLHeadingElement>(null), editorTrigger = useRef<HTMLButtonElement | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null), [dirty, setDirty] = useState(false), [busy, setBusy] = useState(false), [notice, setNotice] = useState('');
   const requestKey = JSON.stringify([days, merchantId, retry, refreshSignal, localPreview]);
@@ -43,7 +46,8 @@ export function AdminWebshopsView({ localPreview, refreshSignal = 0, onStateChan
     void loadAdminWebshops(supabase, days, merchantId || null).then(next => {
       if (!active) return;
       setResult({ key: requestKey, data: next, error: '' });
-      setStores(previous => merchantId ? [...previous.filter(store => !next.stores.some(nextStore => nextStore.merchantId === store.merchantId)), ...next.stores] : next.stores);
+      const connected = next.stores.filter(store => store.updatedAt && store.url && store.provider === 'uber');
+      setStores(previous => merchantId ? [...previous.filter(store => !connected.some(nextStore => nextStore.merchantId === store.merchantId)), ...connected] : connected);
     }).catch(error => { if (active) setResult({ key: requestKey, data: null, error: webshopError(error) }); });
     return () => { active = false; };
   }, [days, merchantId, requestKey, localPreview]);
@@ -67,40 +71,62 @@ export function AdminWebshopsView({ localPreview, refreshSignal = 0, onStateChan
   }
   function saved(message: string) { setEditor(null); setDirty(false); setNotice(message); setRetry(value => value + 1); }
 
+  const connected = data?.stores.filter(store => store.updatedAt && store.url && store.provider === 'uber') ?? [];
+  const candidate = initialMerchantId ? data?.stores.find(store => store.merchantId === initialMerchantId && (!store.updatedAt || !store.url)) : null;
+  const reportStore = connected.find(store => store.merchantId === merchantId) ?? (connected.length === 1 ? connected[0] : null);
+
   if (Platform.OS !== 'web') return <View><ThemedText>웹샵 성과는 기존 비공개 웹 관리자에서 확인해주세요.</ThemedText></View>;
-  return <section className="partnership-admin" aria-label="웹샵 성과" style={{ display: 'flex', flexDirection: 'column', gap: Spacing.four, minWidth: 0 }}>
-    <header className="partnership-heading" style={{ marginBottom: 0 }}><div><h1 style={TITLE_STYLE}>웹샵 성과</h1><p className="partnership-muted">비교표 조회와 웹샵 이동, 확인된 주문을 구분해 확인합니다.</p></div>
+  return <section className="partnership-admin webshop-admin" aria-label="웹샵 성과">
+    <header className="webshop-heading"><div><span className="webshop-eyebrow">UBER 웹샵</span><h1 style={TITLE_STYLE}>웹샵 성과</h1><p className="partnership-muted">연결한 음식점의 방문과 확인된 주문을 한눈에 봅니다.</p></div>
       <button type="button" disabled={loading || localPreview || busy || dirty} onClick={() => { play('selection'); setRetry(value => value + 1); }}>새로고침</button>
     </header>
-    <fieldset className="admin-toolbar" disabled={busy || !!editor} style={{ margin: 0 }}><legend className="admin-sr-only">웹샵 성과 필터</legend>
-      <AdminSelect label="조회 기간" value={String(days)} options={[7, 30, 90].map(value => ({ value: String(value), label: `최근 ${value}일` }))} onChange={value => setDays(Number(value))} />
-      <AdminSelect label="비즈니스" value={merchantId} options={[{ value: '', label: '전체 비즈니스' }, ...stores.map(store => ({ value: store.merchantId, label: `${store.name} · ${store.cityId}` }))]} onChange={setMerchantId} />
-      <span className="admin-muted">UTC 기준 · 내부 계정 제외 · 보고서가 덮는 구간만 주문 집계</span>
+    <fieldset className="webshop-toolbar" disabled={busy || !!editor}><legend className="admin-sr-only">웹샵 성과 필터</legend>
+      <AdminSelect label="조회 기간" value={String(days)} options={[7, 30, 90].map(value => ({ value: String(value), label: `최근 ${value}일` }))} onChange={value => { play('selection'); setDays(Number(value)); }} />
+      <AdminSelect label="비즈니스" value={merchantId} options={[{ value: '', label: '연결한 음식점 전체' }, ...stores.map(store => ({ value: store.merchantId, label: store.name })), ...(candidate ? [{ value: candidate.merchantId, label: `${candidate.name} · 연결 전` }] : [])]} onChange={value => { play('selection'); setMerchantId(value); }} />
+      <span className="webshop-updated">{data ? `갱신 ${date(data.generatedAt)}` : 'UTC 기준'}</span>
     </fieldset>
-    {notice && <p role="status">{notice}</p>}
-    <div className="admin-summary-strip" role="note">클릭·브라우저 닫기는 주문이 아닙니다. 주문·매출은 공급자 또는 비즈니스 보고서에서 확인하며, 미수신은 0건으로 표시하지 않습니다.</div>
+    {notice && <p role="status" className="webshop-notice">{notice}</p>}
     {localPreview ? <p role="status">실제 운영 데이터는 관리자 로그인과 MFA 인증 후 표시됩니다.</p>
       : loading ? <p role="status" aria-busy="true">웹샵 성과를 불러오는 중입니다.</p>
-        : current?.error ? <div role="alert"><p>{current.error} 조회 실패를 0건으로 표시하지 않습니다.</p><button type="button" onClick={() => { play('selection'); setRetry(value => value + 1); }}>다시 시도</button></div>
+        : current?.error ? <div role="alert" className="webshop-panel"><p>{current.error} 조회 실패를 0건으로 표시하지 않습니다.</p><button type="button" onClick={() => { play('selection'); setRetry(value => value + 1); }}>다시 시도</button></div>
           : data && <>
-            <p className="admin-muted">갱신 {date(data.generatedAt)} · 음식 소계에서 환불 차감 · 취소 주문 제외 · 보고서가 없는 구간은 주문 미확인입니다. 수수료는 예상액이며 지급·정산액이 아닙니다.</p>
-            <div className="admin-summary-strip">
-              {[['비교표 조회', count(data.totals.sheetViews)], ['웹샵 이동', count(data.totals.clicks)], ['이동 세션', count(data.totals.sessions)], ['확인된 주문', count(data.totals.verifiedOrders)], ['전체 보고 순매출', webshopMoney(data.totals.netRevenueCents, data.totals.currency)], ['기여 확인 주문', count(data.totals.attributedVerifiedOrders)], ['기여 확인 순매출', webshopMoney(data.totals.attributedNetRevenueCents, data.totals.currency)], ['예상 수수료', webshopMoney(data.totals.estimatedCommissionCents, data.totals.currency)]].map(([label, value]) => <span key={label}>{label}<strong>{value}</strong></span>)}
+            <div className="webshop-metrics" aria-label="핵심 성과">
+              {[
+                ['비교표 조회', count(data.totals.sheetViews), '메뉴 가격을 확인한 횟수'],
+                ['웹샵 방문', count(data.totals.clicks), '주문 페이지로 이동한 횟수'],
+                ['확인된 주문', data.totals.verifiedOrders == null ? '보고서 대기' : count(data.totals.verifiedOrders), '실제 주문 보고서 기준'],
+                ['확인된 순매출', data.totals.netRevenueCents == null ? '보고서 대기' : webshopMoney(data.totals.netRevenueCents, data.totals.currency), '음식 소계에서 환불 차감'],
+              ].map(([label, value, note]) => <article className="webshop-metric" key={label}><h2>{label}</h2><strong className={value === '보고서 대기' ? 'webshop-pending' : undefined}>{value}</strong><p>{note}</p></article>)}
             </div>
-            {!data.totals.orderDataAvailable && <p className="partnership-muted">선택 기간의 검증된 주문 보고서가 없습니다. 주문·매출·예상 수수료는 확인 불가입니다.</p>}
-            <h2 style={SECTION_STYLE}>비즈니스별 성과</h2>
-            <Table caption="비즈니스별 웹샵 성과" headers={['비즈니스', '비교표 조회', '이동 / 세션', '확인 주문 / 기여 확인', '전체 순매출 / 기여 확인', '예상 수수료']} rows={data.breakdown.map(row => ({ key: row.merchantId, cells: [row.name, count(row.sheetViews), `${count(row.clicks)} / ${count(row.sessions)}`, `${count(row.verifiedOrders)} / ${count(row.attributedVerifiedOrders)}`, `${webshopMoney(row.netRevenueCents, row.currency)} / ${webshopMoney(row.attributedNetRevenueCents, row.currency)}`, webshopMoney(row.estimatedCommissionCents, row.currency)] }))} empty="등록된 비즈니스가 없습니다." />
-            <h2 style={SECTION_STYLE}>일별 성과</h2>
-            <Table caption="일별 웹샵 성과" headers={['날짜 (UTC)', '비교표 조회', '웹샵 이동', '확인된 주문', '순매출 (CAD)']} rows={data.daily.map(row => ({ key: row.day, cells: [row.day, count(row.sheetViews), count(row.clicks), count(row.verifiedOrders), webshopMoney(row.netRevenueCents)] }))} empty="선택 기간의 일별 기록이 없습니다." />
-            <h2 style={SECTION_STYLE}>웹샵·지점 연결</h2>
-            <p className="partnership-muted">기존 비즈니스의 정확한 지점 키를 명시합니다. 웹샵이 없어도 장소 연결을 유지할 수 있습니다.</p>
-            <Table mobileRows caption="웹샵과 지점 설정" headers={['비즈니스 / 도시', '상태 / URL', '장소 키', '가격 관측', '수수료 조건', '관리']} rows={data.stores.map(store => ({ key: store.merchantId, cells: [<>{store.name}<small>{store.cityId}</small></>, <>{store.enabled && store.url ? '활성' : '주문 비활성'}<small>{store.url ?? '웹샵 미등록'}</small></>, store.placeKeys.join(', ') || '연결 없음', <>{store.comparisons.length}개 메뉴<small>{date(store.verifiedAt)}</small><small>{store.checkoutComparison ? '전체 결제 견적 확인' : '메뉴 소계만 · 추가 요금 미확인'}</small></>, <>{store.commissionBps / 100}%<small>{store.commissionScope === 'attributed' ? '기여 확인 주문' : store.commissionScope === 'all_webshop' ? '전체 웹샵 주문' : '적용 범위 미확인'}</small><small>{store.commissionBasisConfirmed ? '음식 순소계 기준 확인' : '정산 기준 미확인'}</small></>, <div key="actions" className="admin-filter-row"><button type="button" disabled={busy} onClick={event => openEditor({ kind: 'config', store }, event.currentTarget)}>설정</button><button type="button" disabled={busy || !store.updatedAt} title={store.updatedAt ? undefined : '웹샵 설정을 먼저 저장해주세요.'} onClick={event => openEditor({ kind: 'report', store }, event.currentTarget)}>보고서 가져오기</button></div>] }))} empty="기존 비즈니스를 등록한 뒤 웹샵과 연결할 수 있습니다." />
-            <h2 style={SECTION_STYLE}>확인된 주문</h2>
-            <p className="partnership-muted">기여 미확인 매출은 글링 전환으로 계산하지 않습니다. 금액은 CAD 정수 센트 원본을 기준으로 표시합니다.</p>
-            <Table mobileRows caption="검증된 주문 보고서 행" headers={['비즈니스', '외부 주문 / 보고서 ID', '주문 시각', '통화', '음식 소계', '환불액', '상태 / 기여', '근거']} rows={data.orders.map(row => ({ key: `${row.merchantId}:${row.externalOrderId}`, cells: [stores.find(store => store.merchantId === row.merchantId)?.name ?? row.merchantId, <>{row.externalOrderId}<small>{row.reportId}</small></>, date(row.orderedAt), row.currency, webshopMoney(row.foodSubtotalCents, row.currency), webshopMoney(row.refundCents, row.currency), <>{STATUS[row.status] ?? row.status}<small>{ATTRIBUTION[row.attribution] ?? row.attribution}</small></>, row.evidence] }))} empty="선택 기간에 가져온 실제 주문이 없습니다. 클릭 기록으로 주문을 만들지 않습니다." />
+            <div className="webshop-tabs" role="tablist" aria-label="웹샵 성과 보기" onKeyDown={event => {
+              if (busy || editor) return;
+              const tabs = ['performance', 'connections', 'reports'] as const, index = tabs.indexOf(tab);
+              const next = event.key === 'ArrowRight' ? (index + 1) % 3 : event.key === 'ArrowLeft' ? (index + 2) % 3 : event.key === 'Home' ? 0 : event.key === 'End' ? 2 : null;
+              if (next === null) return;
+              event.preventDefault(); play('selection'); setTab(tabs[next]);
+              event.currentTarget.querySelector<HTMLButtonElement>(`#webshop-tab-${tabs[next]}`)?.focus();
+            }}>
+              {([['performance', '성과 요약'], ['connections', '연결·가격'], ['reports', '주문 보고서']] as const).map(([value, label]) => <button key={value} type="button" role="tab" id={`webshop-tab-${value}`} aria-selected={tab === value} tabIndex={tab === value ? 0 : -1} aria-controls="webshop-panel" disabled={busy || !!editor} onClick={() => { play('selection'); setTab(value); }}>{label}</button>)}
+            </div>
+            <div id="webshop-panel" role="tabpanel" aria-labelledby={`webshop-tab-${tab}`}>
+              {tab === 'performance' && <div className="webshop-overview">
+                <section className="webshop-panel"><div className="webshop-section-title"><div><h2 style={SECTION_STYLE}>연결한 음식점 <span>{connected.length}</span></h2><p className="partnership-muted">Uber 주문이 가능한 음식점만 직접 연결합니다.</p></div>{onBusinesses && <button type="button" disabled={busy || dirty} onClick={() => { play('selection'); onBusinesses(); }}>비즈니스 프로필에서 선택</button>}</div>
+                  {connected.length ? connected.map(store => <div className="webshop-restaurant" key={store.merchantId}><span className="webshop-monogram" aria-hidden="true">{store.name.slice(0, 1)}</span><div className="webshop-restaurant-info"><h3>{store.name}</h3><p>{store.cityId} · {store.enabled ? 'Uber 웹샵 연결됨' : '주문 일시 중지'}</p><small>대표 메뉴 {store.comparisons.length}개 · 가격 확인 {date(store.verifiedAt)}</small></div><button type="button" disabled={busy} onClick={event => { setTab('connections'); openEditor({ kind: 'config', store }, event.currentTarget); }}>연결 관리</button></div>) : <p className="partnership-muted">연결한 음식점이 없습니다. 다른 비즈니스가 자동으로 추가되지는 않습니다.</p>}
+                </section>
+                <section className="webshop-panel webshop-report-status"><span className="webshop-eyebrow">주문 데이터</span><h2 style={SECTION_STYLE}>{data.totals.orderDataAvailable ? '주문 보고서가 연결됐어요' : '주문 보고서를 기다리고 있어요'}</h2><p className="partnership-muted">웹샵 방문은 주문 완료가 아닙니다. 공급자 또는 음식점 보고서를 가져오면 주문과 매출이 표시됩니다.</p><button type="button" className="partnership-primary" disabled={busy || !reportStore} onClick={event => { if (reportStore) openEditor({ kind: 'report', store: reportStore }, event.currentTarget); }}>보고서 가져오기</button>{!reportStore && connected.length > 1 && <small>음식점을 선택한 뒤 가져와주세요.</small>}</section>
+                <details className="webshop-panel webshop-wide" onToggle={event => { if (event.isTrusted) play('selection'); }}><summary>일별 방문 기록 <span>비교표 조회 · 웹샵 이동</span></summary><Table caption="일별 웹샵 성과" headers={['날짜 (UTC)', '비교표 조회', '웹샵 방문', '확인된 주문', '순매출 (CAD)']} rows={data.daily.map(row => ({ key: row.day, cells: [row.day, count(row.sheetViews), count(row.clicks), count(row.verifiedOrders), webshopMoney(row.netRevenueCents)] }))} empty="선택 기간의 일별 기록이 없습니다." /></details>
+              </div>}
+              {tab === 'connections' && <section className="webshop-panel"><div className="webshop-section-title"><div><h2 style={SECTION_STYLE}>웹샵·메뉴 가격</h2><p className="partnership-muted">연결하지 않은 비즈니스는 이 목록에 포함하지 않습니다.</p></div>{onBusinesses && <button type="button" disabled={busy || dirty} onClick={() => { play('selection'); onBusinesses(); }}>프로필에서 선택</button>}</div>
+                {connected.map(store => <article className="webshop-connection" key={store.merchantId}><div className="webshop-section-title"><div><h3>{store.name}</h3><p className="partnership-muted">{store.enabled ? '주문 활성' : '주문 일시 중지'} · {store.cityId}</p></div><button type="button" disabled={busy} onClick={event => openEditor({ kind: 'config', store }, event.currentTarget)}>설정</button></div><p className="webshop-url">{store.url}</p><Table caption={`${store.name} 메뉴 가격 비교`} headers={['확인한 대표 메뉴', 'Uber Eats', '웹샵', '메뉴 가격 차이']} rows={store.comparisons.map(menu => ({ key: menu.id, cells: [menu.name, webshopMoney(menu.uberCents), webshopMoney(menu.webCents), webshopMoney(menu.uberCents - menu.webCents)] }))} empty="아직 비교할 메뉴가 없습니다." /><p className="partnership-muted">메뉴 가격만 비교합니다. 배달비·세금·수수료·팁은 포함하지 않습니다.</p><details onToggle={event => { if (event.isTrusted) play('selection'); }}><summary>지점 연결과 수수료 기준</summary><p>장소 연결: {store.placeKeys.join(', ') || '연결 없음'}</p><p>예상 수수료 {store.commissionBps / 100}% · {store.commissionBasisConfirmed ? '음식 순소계 기준 확인' : '정산 기준 미확인'} · {store.commissionScope === 'attributed' ? '기여 확인 주문' : store.commissionScope === 'all_webshop' ? '전체 웹샵 주문' : '적용 범위 미확인'}</p></details></article>)}
+                {!connected.length && !candidate && <p className="partnership-muted">연결한 음식점이 없습니다.</p>}
+              </section>}
+              {candidate && <section className="webshop-panel webshop-candidate"><h2 style={SECTION_STYLE}>선택한 비즈니스 프로필</h2><h3>{candidate.name}</h3><p>아직 웹샵에 연결되지 않았습니다. Uber 주문이 가능한 음식점인지 확인한 뒤 정확한 지점의 웹샵을 등록해주세요.</p><label><input type="checkbox" checked={restaurantConfirmed} onChange={event => { play('selection'); setRestaurantConfirmed(event.target.checked); }} /> 음식점이며 Uber 주문이 가능한 것을 확인했어요.</label><button type="button" disabled={!restaurantConfirmed || busy} onClick={event => openEditor({ kind: 'config', store: candidate }, event.currentTarget)}>이 음식점 웹샵 연결</button></section>}
+              {tab === 'reports' && <section className="webshop-panel"><div className="webshop-section-title"><div><h2 style={SECTION_STYLE}>주문 보고서</h2><p className="partnership-muted">글링 기여가 확인된 주문과 전체 보고 주문을 구분합니다.</p></div><button type="button" disabled={busy || !reportStore} onClick={event => { if (reportStore) openEditor({ kind: 'report', store: reportStore }, event.currentTarget); }}>보고서 가져오기</button></div><Table mobileRows caption="검증된 주문 보고서 행" headers={['음식점', '외부 주문 / 보고서 ID', '주문 시각', '통화', '음식 소계', '환불액', '상태 / 기여', '근거']} rows={data.orders.map(row => ({ key: `${row.merchantId}:${row.externalOrderId}`, cells: [stores.find(store => store.merchantId === row.merchantId)?.name ?? row.merchantId, <>{row.externalOrderId}<small>{row.reportId}</small></>, date(row.orderedAt), row.currency, webshopMoney(row.foodSubtotalCents, row.currency), webshopMoney(row.refundCents, row.currency), <>{STATUS[row.status] ?? row.status}<small>{ATTRIBUTION[row.attribution] ?? row.attribution}</small></>, row.evidence] }))} empty="선택 기간에 가져온 주문 보고서가 없습니다. 방문 기록으로 주문을 만들지 않습니다." /><p className="partnership-muted">보고서가 없는 구간은 주문 미확인입니다. 수수료는 예상액이며 지급·정산액이 아닙니다.</p></section>}
+            </div>
+            <details className="webshop-panel" onToggle={event => { if (event.isTrusted) play('selection'); }}><summary>상세 성과와 집계 기준</summary><Table caption="음식점별 상세 웹샵 성과" headers={['음식점', '비교표 조회', '웹샵 방문 / 세션', '확인 주문 / 기여 확인', '전체 순매출 / 기여 확인', '예상 수수료']} rows={data.breakdown.filter(row => connected.some(store => store.merchantId === row.merchantId)).map(row => ({ key: row.merchantId, cells: [row.name, count(row.sheetViews), `${count(row.clicks)} / ${count(row.sessions)}`, `${count(row.verifiedOrders)} / ${count(row.attributedVerifiedOrders)}`, `${webshopMoney(row.netRevenueCents, row.currency)} / ${webshopMoney(row.attributedNetRevenueCents, row.currency)}`, webshopMoney(row.estimatedCommissionCents, row.currency)] }))} empty="연결한 음식점의 집계가 없습니다." /><p className="partnership-muted">UTC 기준 · 내부 계정 제외 · 음식 소계에서 환불 차감 · 취소 주문 제외 · 보고서가 덮는 구간만 주문 집계 · 주문 미수신은 0건이 아닙니다.</p></details>
           </>}
-    {editor && <section aria-label={`${editor.store.name} ${editor.kind === 'config' ? '웹샵 설정' : '보고서 가져오기'}`} style={{ borderTop: '1px solid var(--admin-line)', paddingTop: Spacing.four }}>
-      <div className="partnership-section-heading"><h2 ref={editorHeading} tabIndex={-1} style={SECTION_STYLE}>{editor.store.name} · {editor.kind === 'config' ? '웹샵 설정' : '보고서 가져오기'}</h2><button type="button" disabled={busy} onClick={closeEditor}>닫기</button></div>
+    {editor && <section className="webshop-panel webshop-editor" aria-label={`${editor.store.name} ${editor.kind === 'config' ? '웹샵 설정' : '보고서 가져오기'}`}>
+      <div className="webshop-section-title"><h2 ref={editorHeading} tabIndex={-1} style={SECTION_STYLE}>{editor.store.name} · {editor.kind === 'config' ? '웹샵 설정' : '보고서 가져오기'}</h2><button type="button" disabled={busy} onClick={closeEditor}>닫기</button></div>
       {editor.kind === 'config' ? <ConfigEditor key={`config:${editor.store.merchantId}`} store={editor.store} onDirty={setDirty} onBusy={setBusy} onSaved={() => saved('서버가 저장한 설정과 수정 버전을 확인했습니다.')} />
         : <ReportEditor key={`report:${editor.store.merchantId}`} store={editor.store} onDirty={setDirty} onBusy={setBusy} onSaved={saved} />}
     </section>}

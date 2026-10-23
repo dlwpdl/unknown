@@ -110,7 +110,7 @@ test('mounted panel separates real traffic from unavailable financials and hides
   const view = webshopView(async () => fixtureData());
   assert.match(treeText(view.render()), /불러오는 중/);
   await tick(); const tree = view.render();
-  assert.match(treeText(tree), /확인 불가/);
+  assert.match(treeText(tree), /보고서 대기/);
   assert.doesNotMatch(treeText(tree), /CA\$0\.00/);
   assert.ok(treeNodes(tree).some(node => node.type === 'strong' && node.props.children === '3'));
   const failed = webshopView(async () => { throw new Error('private schema credential failure'); });
@@ -128,7 +128,7 @@ test('a slower previous business response cannot replace the current filter', as
   pending[0].resolve(fixtureData()); await tick();
   assert.match(treeText(view.render()), /불러오는 중/);
   pending[1].resolve(fixtureData()); await tick();
-  assert.match(treeText(view.render()), /확인 불가/);
+  assert.match(treeText(view.render()), /보고서 대기/);
   assert.equal(pending[1].selected, merchantId);
 });
 
@@ -137,8 +137,7 @@ test('config form saves the exact branch revision and preserves absent checkout 
   const view = webshopView(async () => fixtureData(), { saveAdminWebshop: async (_client, id, config) => { writes.push({ id, config }); return { ...fixtureStore, ...config, updatedAt: '2026-10-23T01:00:00Z' }; } });
   view.render(); await tick();
   let tree = view.render();
-  const registry = treeNodes(tree).find(node => typeof node.type === 'function' && node.props?.caption === '웹샵과 지점 설정');
-  const edit = treeNodes(registry.props.rows).find(node => node.type === 'button' && treeText(node) === '설정');
+  const edit = treeNodes(tree).find(node => node.type === 'button' && treeText(node) === '연결 관리');
   edit.props.onClick({ currentTarget: { focus() {} } }); tree = view.render();
   const editor = treeNodes(tree).find(node => typeof node.type === 'function' && node.type.name === 'ConfigEditor');
   const child = view.mount(editor);
@@ -155,8 +154,7 @@ test('report form requires preflight and explicit evidence confirmation and keep
   const view = webshopView(async () => fixtureData(), { importAdminWebshopOrders: async (_client, id, input) => { writes.push({ id, input }); throw new Error('temporary private database failure'); } });
   view.render(); await tick();
   let tree = view.render();
-  const registry = treeNodes(tree).find(node => typeof node.type === 'function' && node.props?.caption === '웹샵과 지점 설정');
-  treeNodes(registry.props.rows).find(node => node.type === 'button' && treeText(node) === '보고서 가져오기').props.onClick({ currentTarget: { focus() {} } });
+  treeNodes(tree).find(node => node.type === 'button' && treeText(node) === '보고서 가져오기').props.onClick({ currentTarget: { focus() {} } });
   tree = view.render();
   const editor = treeNodes(tree).find(node => typeof node.type === 'function' && node.type.name === 'ReportEditor');
   const child = view.mount(editor);
@@ -185,4 +183,50 @@ test('business-detail entry opens the shared dashboard filtered to that business
   assert.match(merchant, /play\('selection'\); onWebshop\(selected\)/);
   assert.match(screen, /onWebshop={\(merchantId\) => \{ chooseSection\('webshops'\); setWebshopMerchantId\(merchantId\); \}\}/);
   assert.match(screen, /initialMerchantId={webshopMerchantId}/);
+});
+
+
+test('unconnected business profiles never appear as enrolled restaurants or filter options', async () => {
+  const unconnected = { ...fixtureStore, merchantId: '70000000-0000-4000-8000-000000000003', name: '꽃집 프로필', updatedAt: null, url: null, enabled: false };
+  const view = webshopView(async () => ({ ...fixtureData(), stores: [fixtureStore, unconnected] }));
+  view.render(); await tick(); const tree = view.render();
+  assert.ok(treeText(tree).includes(fixtureStore.name));
+  assert.ok(!treeText(tree).includes(unconnected.name));
+  const select = treeNodes(tree).find(node => node.type === 'AdminSelect' && node.props.label === '비즈니스');
+  assert.deepEqual(Array.from(select.props.options, option => option.value), ['', merchantId]);
+  assert.equal(treeNodes(tree).filter(node => node.type === 'article' && node.props.className === 'webshop-metric').length, 4);
+});
+
+test('performance, connection prices and reports are separate views with retained explicit controls', async () => {
+  const view = webshopView(async () => fixtureData()); view.render(); await tick(); let tree = view.render();
+  const choose = label => { treeNodes(tree).find(node => node.type === 'button' && node.props?.role === 'tab' && treeText(node) === label).props.onClick(); tree = view.render(); };
+  assert.ok(!treeNodes(tree).some(node => node.props?.caption === '검증된 주문 보고서 행'));
+  choose('연결·가격');
+  assert.ok(treeNodes(tree).some(node => node.props?.caption === `${fixtureStore.name} 메뉴 가격 비교`));
+  assert.ok(!treeNodes(tree).some(node => node.props?.caption === '검증된 주문 보고서 행'));
+  choose('주문 보고서');
+  assert.ok(treeNodes(tree).some(node => node.props?.caption === '검증된 주문 보고서 행'));
+  assert.ok(!treeNodes(tree).some(node => node.props?.caption === `${fixtureStore.name} 메뉴 가격 비교`));
+});
+
+test('an explicitly selected unconnected profile requires restaurant/Uber confirmation and never auto-saves', async () => {
+  const writes=[]; const candidate={ ...fixtureStore, updatedAt:null, enabled:false, url:null, comparisons:[] };
+  const view=webshopView(async()=>({...fixtureData(),stores:[candidate]}),{saveAdminWebshop:async(...args)=>writes.push(args)});
+  view.props.initialMerchantId=merchantId; view.render(); await tick(); let tree=view.render();
+  let connect=treeNodes(tree).find(node=>node.type==='button'&&treeText(node)==='이 음식점 웹샵 연결');
+  assert.equal(connect.props.disabled,true); assert.equal(writes.length,0);
+  treeNodes(tree).find(node=>node.type==='input'&&node.props.type==='checkbox').props.onChange({target:{checked:true}}); tree=view.render();
+  connect=treeNodes(tree).find(node=>node.type==='button'&&treeText(node)==='이 음식점 웹샵 연결'); assert.equal(connect.props.disabled,false);
+  connect.props.onClick({currentTarget:{focus(){}}}); tree=view.render();
+  assert.ok(treeNodes(tree).some(node=>typeof node.type==='function'&&node.type.name==='ConfigEditor')); assert.equal(writes.length,0);
+});
+
+
+test('tab controls support arrow navigation and retain one keyboard entry point', async () => {
+  const view=webshopView(async()=>fixtureData()); view.render(); await tick(); let tree=view.render(); const calls=[];
+  treeNodes(tree).find(node=>node.props?.role==='tablist').props.onKeyDown({key:'ArrowRight',preventDefault(){calls.push('prevent')},currentTarget:{querySelector:selector=>({focus(){calls.push(selector)}})}});
+  tree=view.render(); const tabs=treeNodes(tree).filter(node=>node.props?.role==='tab');
+  assert.equal(tabs.filter(node=>node.props.tabIndex===0).length,1);
+  assert.equal(tabs.find(node=>node.props['aria-selected']).props.children,'연결·가격');
+  assert.deepEqual(calls,['prevent','#webshop-tab-connections']);
 });

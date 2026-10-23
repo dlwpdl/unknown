@@ -118,7 +118,7 @@ try:
     behavior=''
     if not sql(database,"select to_regclass('private.behavior_targets');").stdout.strip():
         behavior=(ROOT/'supabase/migrations/0073_behavior_analytics.sql').read_text().split('insert into private.behavior_targets',1)[0]
-    source=behavior+'\n'+(ROOT/'supabase/migrations/0118_admin_mfa.sql').read_text()+'\n'+namespace['source']+'\n'+(ROOT/'supabase/migrations/20261015190000_admin_partnerships.sql').read_text()+'\n'+(ROOT/'supabase/migrations/20261023180000_webshops.sql').read_text()
+    source=behavior+'\n'+(ROOT/'supabase/migrations/0118_admin_mfa.sql').read_text()+'\n'+namespace['source']+'\n'+(ROOT/'supabase/migrations/20261015190000_admin_partnerships.sql').read_text()+'\n'+(ROOT/'supabase/migrations/20261023180000_webshops.sql').read_text()+'\n'+(ROOT/'supabase/migrations/20261023213000_webshops_connected_scope.sql').read_text()
     sql(database,'begin;\n'+source+'\ncommit;')
     fixture=(ROOT/'supabase/tests/webshops.check.sql').read_text()
     result=sql(database,fixture,False)
