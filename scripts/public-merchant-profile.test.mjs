@@ -28,6 +28,7 @@ function app(file = '../src/components/public-web/merchant-profile.tsx', { rpc =
     useSyncExternalStore(_subscribe, snapshot) { return snapshot(); },
   };
   const imports = {
+    '@/components/business-webshop': { usePublicWebshop: () => ({ shop: null, failed: false, retry() {} }), WebshopBanner: 'WebshopBanner', WebshopOrderButton: 'WebshopOrderButton', WebshopComparisonSheet: 'WebshopComparisonSheet' },
     react: hooks, 'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }) },
     'expo-router/head': { __esModule: true, default: 'Head' }, 'expo-router': { useLocalSearchParams: () => query, usePathname: () => path },
     'expo-asset': { Asset: { fromModule: () => ({ uri: 'local-logo' }) } },

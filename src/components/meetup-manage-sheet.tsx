@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Pressable } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
-import { IconSize } from '@/constants/design-system';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';

@@ -35,7 +35,7 @@ async function confirmConnection(message: string) {
 
 export function MerchantAccountEntry() {
   const { tr } = useLanguage();
-  const { me, isAuthed } = useAuth(), theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
+  const { me, isAuthed, isAdmin } = useAuth(), theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
   const [response, setResponse] = useState<MyMerchantConnections | null>(null), [busy, setBusy] = useState(false);
   const current = useRef(me.id), serial = useRef(0), opening = useRef(false);
   useLayoutEffect(() => { current.current = me.id; return () => { current.current = ''; }; }, [me.id]);
@@ -46,12 +46,12 @@ export function MerchantAccountEntry() {
       try { const next = await loadMyMerchantConnections(supabase, me.id); if (active && request === serial.current) setResponse(next); }
       catch { if (active && request === serial.current) setResponse(null); }
     };
-    if (isAuthed) void check();
-    const listener = AppState.addEventListener('change', state => { if (state === 'active' && isAuthed) void check(); });
+    if (isAuthed && !isAdmin) void check();
+    const listener = AppState.addEventListener('change', state => { if (state === 'active' && isAuthed && !isAdmin) void check(); });
     return () => { active = false; serial.current++; listener.remove(); };
-  }, [isAuthed, me.id]));
+  }, [isAuthed, isAdmin, me.id]));
   const data = response?.user_id === me.id ? response : null;
-  if (!isAuthed || (!data?.merchants.length && !data?.invitations.length)) return null;
+  if (!isAuthed || isAdmin || (!data?.merchants.length && !data?.invitations.length)) return null;
   async function open() {
     if (opening.current) return;
     opening.current = true; setBusy(true); play('selection');

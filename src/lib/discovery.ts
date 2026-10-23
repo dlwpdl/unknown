@@ -23,7 +23,7 @@ export const DISCOVERY_CATEGORIES = [
   { id: 'place', label: '장소', short: '장소', color: '#B6B9CC' },
 ] as const;
 export type DiscoveryCategory = typeof DISCOVERY_CATEGORIES[number]['id'];
-export type DiscoveryFilter = 'all' | 'top25' | 'visited' | 'nightlife' | 'festival' | 'cafe' | 'dining' | 'places' | 'events' | 'housing' | 'used';
+export type DiscoveryFilter = 'all' | 'top25' | 'visited' | 'delivery' | 'nightlife' | 'festival' | 'cafe' | 'dining' | 'places' | 'events' | 'housing' | 'used';
 export type DiscoveryDate = 'all' | 'today' | 'week' | 'weekend' | 'date';
 export type DiscoveryItem = {
   id: string; source: 'post' | 'event' | 'place'; sourceId: string; cityId: string; title: string;
@@ -33,6 +33,9 @@ export type DiscoveryItem = {
   top25?: CityTop25Place;
   place?: CityPlace;
   glingVisited?: { sourceUrl: string };
+  delivery?: boolean;
+  merchantId?: string;
+  webshopDiscount?: number;
 };
 
 let placeMapRequestId = 0;
@@ -161,11 +164,12 @@ export function discoveryEventOnDays(item: DiscoveryItem, days: readonly string[
   const end = Number.isFinite(endTime) ? festivalLocalDay(item.cityId as EventCity, endTime - 1) : start;
   return days.some(day => day >= start && day <= end);
 }
+// 배달 할인은 참여 가게 데이터가 붙기 전까지 항상 비어 있다(필터는 미리 노출).
 export function discoveryMatches(item: DiscoveryItem, filters: DiscoveryFilter | readonly DiscoveryFilter[], query: string, top25Only = false) {
   const category = item.category;
   const selected = typeof filters === 'string' ? [filters] : filters;
   return (!top25Only || !!item.top25) && (!selected.length || selected.some(filter => filter === 'all'
-    || (filter === 'top25' ? !!item.top25 : filter === 'visited' ? !!item.glingVisited : filter === 'events' ? item.source !== 'place' && ['festival', 'exhibition', 'event'].includes(category)
+    || (filter === 'top25' ? !!item.top25 : filter === 'visited' ? !!item.glingVisited : filter === 'delivery' ? !!item.delivery : filter === 'events' ? item.source !== 'place' && ['festival', 'exhibition', 'event'].includes(category)
       : filter === 'places' ? !['housing', 'used', 'festival', 'event', 'nightlife', 'cafe', 'dining'].includes(category) : category === filter)))
     && `${item.title} ${item.label} ${item.top25?.reason ?? ''} ${item.post?.business?.name ?? ''} ${item.post?.body ?? ''} ${(item.post?.hashtags ?? []).join(' ')} ${DISCOVERY_CATEGORIES.find(value => value.id === category)?.label}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
 }

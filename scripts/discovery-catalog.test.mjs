@@ -1,3 +1,6 @@
+import { DELIVERY_PARTNERS, deliveryPartnerPlace } from '../src/lib/delivery-partners.ts';
+import { sortDiscoveryItems } from '../src/lib/discovery-sort.ts';
+import { bindBusinessPlaces } from '../src/lib/webshops.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -62,7 +65,7 @@ test('the combined screen includes its current-city catalog while backend rows a
   const start = mapSource.indexOf('  const publicItems = '), end = mapSource.indexOf('  const pins = ', start);
   const exports = {};
   vm.runInNewContext(compile(`exports.run = () => { ${mapSource.slice(start, end)} return items; };`), {
-    exports, current: null, catalogItems: [discovery.discoveryPlace(place)], city: { id: place.cityId }, now: Date.now(), selectedFilters: [], query: '', days: [],
+    exports, bindBusinessPlaces, sortDiscoveryItems, deliveryOnly: false, registry: { links: {}, shops: [] }, sortBy: 'near', userLocation: null, current: null, catalogItems: [discovery.discoveryPlace(place)], city: { id: place.cityId }, now: Date.now(), selectedFilters: [], query: '', days: [],
     hidden: () => false, discoveryEvent: () => null, discoveryEventOnDays: discovery.discoveryEventOnDays, mergeCityTop25: discovery.mergeCityTop25, discoveryMatches: discovery.discoveryMatches,
   });
   assert.equal(exports.run().length, 1);
@@ -103,4 +106,50 @@ test('embedded discovery permits public HTTPS information and rejects invalid po
   await new Promise(setImmediate);
   assert.deepEqual(opened, [`https://gling.ej-entertainment.com/post?id=${id}`, 'https://www.ticketmaster.ca/event/example']);
   assert.deepEqual(routes, []);
+});
+
+test('every overlapping map filter opens the same explicitly linked business; embedded maps keep the public browser handoff', async () => {
+  const merchantId = '11111111-1111-4111-8111-111111111111';
+  const item = discovery.discoveryPlace({ ...place, category: 'food', glingVisited: { sourceUrl: 'https://www.instagram.com/reel/fixture/' } });
+  const shop = { merchantId, cityId: place.cityId, comparisons: [{ id: 'fixture', name: 'Fixture menu', uberCents: 2000, webCents: 1600 }] };
+  const linked = bindBusinessPlaces([item], { [place.id]: merchantId }, [shop])[0];
+  const start = mapSource.indexOf('  const open = (item: DiscoveryItem) => {'), end = mapSource.indexOf('  const selectPin = ', start);
+  const exports = {}, routes = [], opened = [], context = {
+    exports, onClose: undefined, city: { id: place.cityId }, router: { push: route => routes.push(route) }, play() {},
+    PUBLIC_SITE: 'https://gling.ej-entertainment.com', safeMerchantSourceUrl, safeTicketUrl,
+    openBrowserAsync: async url => opened.push(url), Linking: { openURL: async url => opened.push(url) }, tr: value => value, Alert: { alert() {} },
+  };
+  vm.runInNewContext(compile(mapSource.slice(start, end) + '\nexports.open = open;'), context);
+  for (const filters of [['delivery'], ['visited'], ['dining'], ['visited', 'delivery', 'dining'], ['dining', 'delivery', 'visited']]) {
+    assert.equal(discovery.discoveryMatches(linked, filters, ''), true);
+    exports.open(linked);
+    assert.equal(routes.at(-1).pathname, '/company/[id]');
+    assert.equal(routes.at(-1).params.id, merchantId);
+  }
+  assert.equal(opened.length, 0);
+  context.onClose = () => {};
+  exports.open(linked); await new Promise(setImmediate);
+  assert.equal(routes.length, 5, 'embedded discovery cannot navigate the underlying chat route');
+  assert.deepEqual(opened, [`https://gling.ej-entertainment.com/company?id=${merchantId}`]);
+});
+
+test('a partner detail map target and its curated marker use the same normalized discovery identity once', () => {
+  const partner = deliveryPartnerPlace('vancouver', 'partner:jimoco-coquitlam');
+  const expected = discovery.discoveryPlace(partner);
+  const route = discovery.placeMapRoute(partner);
+  const start = mapSource.indexOf('  const catalogPlaces = '), end = mapSource.indexOf('  useEffect(() => {', start);
+  assert.ok(start > 0 && end > start);
+  const exports = {}, context = { exports, city: { id: route.params.cityId }, placeId: route.params.placeId,
+    getCityDiscoveryPlaces: () => [], getCityPlaces: () => [], discoveryPlace: discovery.discoveryPlace, DELIVERY_PARTNERS, deliveryPartnerPlace };
+  vm.runInNewContext(compile(`exports.run = () => { ${mapSource.slice(start, end)} return { targetId, targetItem, catalogItems }; };`), context);
+  const result = exports.run();
+  assert.equal(result.targetId, expected.id);
+  assert.equal(result.targetItem.place.id, partner.id);
+  assert.equal(result.catalogItems.filter(item => item.id === result.targetId).length, 1);
+  assert.equal(result.catalogItems.filter(item => item.place?.id === partner.id).length, 1, 'one physical partner cannot acquire two marker IDs');
+  assert.equal(result.catalogItems.find(item => item.id === result.targetId).place.id, partner.id);
+  context.city = { id: 'toronto' };
+  assert.equal(exports.run().targetId, undefined);
+  context.city = { id: partner.cityId }; context.placeId = 'partner:unknown';
+  assert.equal(exports.run().targetId, undefined);
 });

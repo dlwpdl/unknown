@@ -66,5 +66,14 @@ test('the attested HANDSON visit binds to the actual847Denman venue without inve
   const place = catalog.cities.vancouver.places.find(item => item.id === 'osm:node:4976343547');
   assert.ok(place?.address.includes('847 Denman'));
   assert.equal(place.website, 'https://www.handsonyvr.ca');
-  assert.deepEqual(visits.find(item => item.placeId === place.id), {cityId: 'vancouver', placeId: place.id, sourceUrl: 'https://www.instagram.com/reel/DeoQKPNgYLe/'});
+  const visit = visits.find(item => item.placeId === place.id);
+  assert.deepEqual({ cityId: visit.cityId, placeId: visit.placeId, sourceUrl: visit.sourceUrl },
+    { cityId: 'vancouver', placeId: place.id, sourceUrl: 'https://www.instagram.com/reel/DeoQKPNgYLe/' });
+  assert.equal(visit.visitedAt, undefined, 'attestation does not invent a visit date');
+  assert.equal(visit.photo.artist, 'HANDSON Steak & Frites');
+  assert.equal(visit.photo.license, 'Business-provided photo');
+  assert.equal(visit.photo.sourceUrl, place.website);
+  assert.equal(visit.photo.licenseUrl, place.website);
+  assert.equal(visit.photo.uri, 'https://static.wixstatic.com/media/948858_69a5a669d22f4899bcc75a73d1fdf1f3~mv2.jpg');
+  assert.equal(visit.photo.imageSha256, 'ab97597dc75451b08525c8142688cb1649d8f375e9a40fe25f8ad6203a3e3d8a');
 });

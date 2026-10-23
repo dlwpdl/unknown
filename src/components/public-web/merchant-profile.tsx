@@ -2,6 +2,7 @@ import './merchant-profile.css';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import Head from 'expo-router/head';
+import { usePublicWebshop, WebshopBanner, WebshopComparisonSheet, WebshopOrderButton } from '@/components/business-webshop';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -282,6 +283,8 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
   }, [merchantId, retry]);
   const current = result?.key === merchantId ? result : null;
   const profile = current?.profile;
+  const webshop = usePublicWebshop(publicWebClient, profile?.id, retry);
+  const [orderOpen, setOrderOpen] = useState(false);
   const busy = !current || current.attempt !== retry;
   const phone = merchantPhoneUrl(profile?.public_phone ?? ''), directions = merchantMapsUrl(profile?.address ?? '');
   const unavailable = current && !current.failed && !profile;
@@ -319,11 +322,14 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
       {!!profile.links?.length && <nav className="reader-company-sources" aria-label="비즈니스 외부 페이지">{profile.links.map(link =>
         <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" aria-label={`${profile.name} ${link.label}, 새 창 열기`}
           onClick={() => play('selection')}>{link.label} <span aria-hidden="true">↗</span></a>)}</nav>}
+      {webshop.shop && <div style={{ display: 'grid', gap: 16, paddingTop: 16 }}><WebshopBanner shop={webshop.shop} onPress={() => setOrderOpen(true)} /><WebshopOrderButton onPress={() => setOrderOpen(true)} /></div>}
+      {webshop.failed && <button type="button" onClick={() => { play('selection'); webshop.retry(); }}>웹샵 정보를 다시 확인해주세요</button>}
       <div className="reader-company-hero-actions"><a className="reader-company-app-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>{profile.can_message ? '앱에서 문의하기' : '앱에서 비즈니스 보기'} <span aria-hidden="true">↗</span></a>
         <a className="reader-company-save-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>앱에서 저장 <span aria-hidden="true">↗</span></a></div>
       {(profile.imageLoadFailed || broken.banner || broken.avatar) && <div className="reader-company-image-notice" role="status">
         <p>일부 프로필 사진을 불러오지 못했어요.</p><button disabled={busy} onClick={() => { play('selection'); setRetry((value) => value + 1); }}>사진 다시 불러오기</button></div>}
       </div>
+      {webshop.shop && <WebshopComparisonSheet client={publicWebClient} shop={webshop.shop} name={profile.name} visible={orderOpen} onClose={() => setOrderOpen(false)} />}
       <div className="reader-company-details"><div className="reader-company-main-panel">
       <div className="reader-company-tabs" role="tablist" aria-label="비즈니스 프로필 내용">{tabs.map((item, index) => <button type="button" role="tab" key={item.id} data-tab={item.id}
         id={`company-tab-${merchantId}-${item.id}`} aria-controls={panelId(item.id)} aria-selected={tab === item.id} tabIndex={tab === item.id ? 0 : -1}

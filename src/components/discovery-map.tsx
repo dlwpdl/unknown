@@ -13,18 +13,18 @@ type Props = {
   markers: DiscoveryMarker[]; cityName: string; selectedId?: string | null;
   center?: { latitude: number; longitude: number; requestId?: number } | null; onSelect: (id: string) => void;
   userLocation?: { latitude: number; longitude: number } | null;
-  bottomInset?: number;
+  topInset?: number; bottomInset?: number;
 };
 
 export function DiscoveryMap(props: Props) {
   return <Canvas key={props.cityName} {...props} />;
 }
 
-function Canvas({ markers, cityName, selectedId = null, center = null, userLocation = null, bottomInset = 0, onSelect }: Props) {
+function Canvas({ markers, cityName, selectedId = null, center = null, userLocation = null, topInset = 0, bottomInset = 0, onSelect }: Props) {
   const { language, tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const native = useRef<WebView>(null), web = useRef<HTMLIFrameElement>(null), id = useId();
-  const [seed] = useState({ markers, cityName, selectedId, center, userLocation, bottomInset });
+  const [seed] = useState({ markers, cityName, selectedId, center, userLocation, topInset, bottomInset });
   const [failed, setFailed] = useState(false), [retry, setRetry] = useState(0);
   const [readySession, setReadySession] = useState<string | null>(null);
   const sessionId = `${id}.${retry}`;
@@ -36,10 +36,10 @@ function Canvas({ markers, cityName, selectedId = null, center = null, userLocat
   const source = useMemo(() => ({ html: html ?? '' }), [html]);
   const update = useMemo(() => {
     try {
-      const state = { markers: discoveryMarkers(markers), selectedId, center, userLocation, bottomInset };
+      const state = { markers: discoveryMarkers(markers), selectedId, center, userLocation, topInset, bottomInset };
       return { state, script: discoveryMapScript(state, sessionId) };
     } catch { return null; }
-  }, [markers, selectedId, center, userLocation, bottomInset, sessionId]);
+  }, [markers, selectedId, center, userLocation, topInset, bottomInset, sessionId]);
   const sync = useCallback(() => {
     if (!update) return;
     if (Platform.OS === 'web') web.current?.contentWindow?.postMessage({ type: 'discovery.update', sessionId, state: update.state }, parentOrigin === 'null' ? '*' : parentOrigin);

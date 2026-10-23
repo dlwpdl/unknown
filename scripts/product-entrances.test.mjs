@@ -1,3 +1,5 @@
+import { deliveryPartnerPlace } from '../src/lib/delivery-partners.ts';
+import { placeMapRoute } from '../src/lib/discovery.ts';
 import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -27,7 +29,7 @@ const nodes = value => !value || typeof value !== 'object' ? [] : [...(value.typ
 
 // Native/network boundaries are replaced; the real components, hooks and collector run.
 function mount(file, exportName = 'default', props = {}, options = {}) {
-  const hooks = [], effects = [], calls = [], order = [], alerts = [], opened = [], read = [], listeners = new Map(), windows = new Map();
+  const hooks = [], effects = [], calls = [], order = [], alerts = [], opened = [], read = [], navigated = [], listeners = new Map(), windows = new Map();
   let cursor = 0, dirty = true, tree, transport;
   const ctx = { auth: { isAuthed: true, isAdmin: false, isAuthLoading: false, me: { id: 'member', cityId: 'vancouver' } },
     params: { id: event.id, cityId: 'vancouver' }, rows: [notification], focused: true, platform: 'ios', event,
@@ -52,7 +54,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
     calls.push([name, plain(args)]); order.push(name);
     return ctx.rpc?.(name, args) ?? Promise.resolve({ data: true, error: null });
   } };
-  const router = { navigate: route => order.push(`navigate:${route}`), push: route => order.push(`push:${route}`), back() {} };
+  const router = { navigate: route => { order.push(`navigate:${route}`); navigated.push(plain(route)); }, push: route => order.push(`push:${route}`), back() {} };
   const Linking = { openURL: url => { opened.push(url); return ctx.openURL?.(url) ?? Promise.resolve(); },
     getInitialURL: () => ctx.getInitialURL?.() ?? Promise.resolve(ctx.entryUrl), addEventListener: (_name, listener) => subscription('url', listener) };
   const native = new Proxy({ StyleSheet: { create: value => value, hairlineWidth: 1 }, Platform: { OS: ctx.platform }, Linking,
@@ -79,6 +81,9 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
     '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
     '@/lib/city-places': { getCityRecommendations: id => catalog.cities[id]?.places ?? [], CITY_PLACES_COLLECTED_AT: catalog.collectedAt, getCityPlaces: id => { if (ctx.catalogError) throw new Error('missing'); return catalog.cities[id]?.places ?? []; } },
     '@/lib/community-city': { useCommunityCity: () => ({ city, setCity() {} }) }, '@/lib/mock': { CITIES: [city] },
+    '@/lib/discovery': { placeMapRoute },
+    '@/lib/delivery-partners': { deliveryPartnerPlace },
+    '@/lib/webshops': { loadCityBusinessLinks: async () => ({}) },
     '@/lib/merchant-source': { merchantMapsUrl, safeMerchantSourceUrl }, '@/lib/post-maps': maps,
     '@/lib/post-map-html': { mapMessage, mapHtml: () => '<html/>', mapPinScript: () => '', mapPreviews: new Map(), rememberMapPreview() {} },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) }, '@/hooks/use-theme': { useTheme: () => ({}) },
@@ -90,7 +95,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
     const exports = {}, source = ts.transpileModule(readFileSync(new URL(`../src/${file}`, import.meta.url), 'utf8'), {
       compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 },
     }).outputText;
-    vm.runInNewContext(source, { exports, URL, setInterval: () => 1, clearInterval() {},
+    vm.runInNewContext(source, { exports, URL, AbortController, setInterval: () => 1, clearInterval() {},
       window: { location: { href: ctx.entryUrl, origin: 'https://gling.ej-entertainment.com', protocol: 'https:' }, addEventListener: (name, fn) => windows.set(name, fn), removeEventListener: name => windows.delete(name) },
       require: withLanguageImports(name => imports[name] ?? new Proxy({}, { get: (_target, key) => key })),
     });
@@ -104,7 +109,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
       tree = exports[exportName](props); for (const run of effects) run(); }
     return tree;
   };
-  const ui = { ctx, calls, order, alerts, opened, read, listeners, windows, render,
+  const ui = { ctx, calls, order, alerts, opened, read, navigated, listeners, windows, render,
     nodes: () => nodes(tree), product: () => calls.filter(([name]) => name === 'record_product_event').map(([, args]) => args),
     async settle() { for (let i = 0; i < 5; i++) { await new Promise(resolve => setImmediate(resolve)); render(); } },
     behavior: () => transport({ session: 'fixed-session', events: [{ seq: 1, screen: 'events', kind: 'view', target: 'screen', value: 1 }] }),
@@ -303,4 +308,27 @@ test('native OAuth return URLs preserve the entry code without recording the pri
   const ui = mount('components/app-activity.tsx', 'AppActivity', {}, { auth: { isAuthed: false, isAdmin: false, me: { id: 'me' } } }); t.after(ui.cleanup);
   await ui.settle(); ui.listeners.get('url')({ url: 'gling://auth/callback?code=private-code' }); await ui.behavior();
   assert.equal(ui.calls.at(-1)[1].p_source, 'instagram'); assert.ok(!JSON.stringify(ui.calls).includes('private-code'));
+});
+
+test('curated partner detail keeps its exact map route and hides unsupported actions while canonical places retain them', async t => {
+  const partner = deliveryPartnerPlace('vancouver', 'partner:jimoco-coquitlam');
+  const ui = mount('app/places/[id].tsx', 'default', {}, { params: { id: partner.id, cityId: partner.cityId } });
+  t.after(ui.cleanup);
+  assert.ok(ui.nodes().some(node => node.props?.children === partner.name));
+  assert.ok(ui.nodes().some(node => node.type === 'PostMapLink'), 'registered location and directions remain available');
+  for (const type of ['PlaceReviews', 'PlaceExternalRatings']) assert.ok(!ui.nodes().some(node => node.type === type));
+  assert.ok(!ui.nodes().some(node => node.props?.analyticsId === 'ticketmaster.meetup.find'));
+  ui.nodes().find(node => node.props?.analyticsId === 'places.open').props.onPress();
+  const route = ui.navigated.at(-1);
+  assert.equal(route.pathname, '/map');
+  assert.equal(route.params.cityId, partner.cityId);
+  assert.equal(route.params.placeId, partner.id);
+  assert.equal(route.params.category, 'visited');
+  const canonical = mount('app/places/[id].tsx', 'default', {}, { params: { id: 'osm:node:652955238', cityId: 'vancouver' } });
+  t.after(canonical.cleanup);
+  for (const type of ['PlaceReviews', 'PlaceExternalRatings']) assert.ok(canonical.nodes().some(node => node.type === type));
+  assert.ok(canonical.nodes().some(node => node.props?.analyticsId === 'ticketmaster.meetup.find'));
+  const wrongCity = mount('app/places/[id].tsx', 'default', {}, { params: { id: partner.id, cityId: 'toronto' } });
+  t.after(wrongCity.cleanup);
+  assert.ok(!wrongCity.nodes().some(node => node.props?.analyticsId === 'places.open'), 'a partner ID cannot resolve into a different city');
 });

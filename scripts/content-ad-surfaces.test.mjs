@@ -1,8 +1,10 @@
+import * as discoverySort from '../src/lib/discovery-sort.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { bindBusinessPlaces } from '../src/lib/webshops.ts';
 import * as discovery from '../src/lib/discovery.ts';
 import { contentAdPosition } from '../src/lib/content-ad-placement.ts';
 import { appendUniquePosts } from '../src/lib/feed-data.ts';
@@ -42,6 +44,10 @@ function mount(file, component, imports, globals = {}, props = {}) {
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     'expo-router': { Link: 'Link', useIsFocused: () => true, useFocusEffect: fn => effect(fn, [fn]), useLocalSearchParams: () => ({}), useRouter: () => ({}), usePathname: () => '/' },
     'expo-asset': { Asset: { fromModule: () => ({ uri: 'local.png' }) } },
+    '@/lib/discovery-sort': discoverySort,
+    '@/lib/delivery-partners': { DELIVERY_PARTNERS: [], deliveryPartnerPlace: () => undefined },
+    '@/lib/webshops': { bindBusinessPlaces, loadCityBusinessLinks: async () => ({}), loadCityWebshops: async () => [] },
+    '@/components/selection-chip': { SelectionChip: 'Pressable' },
     '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' },
     '@/components/feed-ad': { FeedAd: 'FeedAd' }, '@/lib/content-ad-placement': { contentAdPosition },
     '@/lib/ads': { adsSupported: true },

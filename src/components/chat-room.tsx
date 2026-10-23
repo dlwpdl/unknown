@@ -120,7 +120,8 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const access = { read: capabilities.read, write: capabilities.write && (!business || businessReady) };
   const [allMessages, setMessages] = useState<ChatMessageRecord[]>([]);
   const [groupMembers, setGroupMembers] = useState<ChatMember[] | null>(null);
-  const [joinNotices, setJoinNotices] = useState<ChatMember[]>([]);
+  const [joinResult, setJoinNotices] = useState<{ conversationId: string; members: ChatMember[] } | null>(null);
+  const joinNotices = joinResult?.conversationId === conversation.id ? joinResult.members : [];
   const [searchOpen, setSearchOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [sharePost, setSharePost] = useState<Post | null>(null);
@@ -202,7 +203,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     ? new Map(messages.map(message => [message.id, reactionChanges.get(message.id) ?? { message_id: message.id, hearts: message.hearts ?? 0, mine: message.mine_reacted === true }]))
     : reactionChanges, [business, messages, reactionChanges]);
   // 참여 승인은 시스템 메시지로 남지 않으므로 멤버 목록의 변화를 채팅창에 알린다.
-  useEffect(() => { knownMembers.current = null; setJoinNotices([]); }, [conversation.id]);
+  useEffect(() => { knownMembers.current = null; }, [conversation.id]);
   useEffect(() => {
     if (!groupMembers) return;
     if (!knownMembers.current) { knownMembers.current = new Set(groupMembers.map(member => member.id)); return; }
@@ -210,8 +211,8 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     const added = groupMembers.filter(member => !known.has(member.id) && member.id !== currentUserId);
     if (!added.length) return;
     for (const member of added) known.add(member.id);
-    setJoinNotices(current => [...current, ...added].slice(-3));
-  }, [groupMembers, currentUserId]);
+    setJoinNotices(current => ({ conversationId: conversation.id, members: [...(current?.conversationId === conversation.id ? current.members : []), ...added].slice(-3) }));
+  }, [groupMembers, currentUserId, conversation.id]);
   useEffect(() => {
     if (business) return;
     let active = true;

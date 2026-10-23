@@ -363,7 +363,7 @@ export async function loadAdminDashboard(client: SupabaseClient): Promise<AdminD
 
 export async function loadMoreAdminData(
   client: SupabaseClient,
-  section: Exclude<AdminSection, 'overview' | 'analytics' | 'ticketmaster' | 'merchants' | 'creators' | 'campaigns' | 'benefits' | 'meetups' | 'trending' | 'errors'>,
+  section: Exclude<AdminSection, 'overview' | 'analytics' | 'webshops' | 'ticketmaster' | 'merchants' | 'creators' | 'campaigns' | 'benefits' | 'meetups' | 'trending' | 'errors'>,
   offset: number,
 ): Promise<AdminSectionPage> {
   await logAdminAccess(client, section);
