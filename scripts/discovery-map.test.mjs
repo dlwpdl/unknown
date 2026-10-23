@@ -131,7 +131,7 @@ function canvas(markers = [marker]) {
     setPadding(padding) { this.padding = padding; paddingCalls.push(padding); }
   }
   const window = { parent: { postMessage: message => messages.push(JSON.parse(message)) }, addEventListener: (type, callback) => { listeners['window:' + type] = callback; }, matchMedia: () => ({ matches: true }) };
-  const drawing = { scale() {}, fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, arcTo() {}, closePath() {}, fill() {}, stroke() {}, fillText(text) { labels.push(text); }, getImageData: (_x, _y, width, height) => ({ width, height, data: new Uint8Array(width * height * 4) }) };
+  const drawing = { scale() {}, fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, arcTo() {}, closePath() {}, fill() {}, stroke() {}, measureText: text => ({ width: text.length * 6 }), fillText(text) { labels.push(text); }, getImageData: (_x, _y, width, height) => ({ width, height, data: new Uint8Array(width * height * 4) }) };
   class Marker {
     constructor({ element }) { this.element = element; userMarkers.push(this); }
     setLngLat(point) { this.point = Array.from(point); return this; }
@@ -370,7 +370,10 @@ test('verified webshop discounts get a separate mint badge while the restaurant 
   const c = canvas([discounted]);
   assert.ok(c.images['discount-20.8']);
   assert.equal(c.images['discount-20.8'].options.pixelRatio, 2);
-  assert.ok(c.labels.includes('최대 20.8%'));
+  assert.ok(c.labels.includes('20.8%'));
+  assert.ok(!c.labels.some(label => /최대|Up to/.test(label)), 'map artwork shows only the current numeric percentage');
+  assert.ok(c.images['discount-20.8'].image.width <= 120, 'numeric badge stays at most 60 CSS pixels wide');
+  assert.equal(c.images['discount-20.8'].image.height, 40);
   assert.equal(c.sources.discovery.data.features[0].properties.color, marker.color);
   assert.equal(c.sources.discovery.data.features[0].properties.discount, 20.8);
   assert.equal(c.layers.find(layer => layer.id === 'discovery-discount').source, 'discovery');
@@ -381,4 +384,39 @@ test('verified webshop discounts get a separate mint badge while the restaurant 
   const previous = c.sources.discovery.data;
   c.window.glingDiscoveryUpdate(sessionId, { markers: [{ ...marker, discount: '100%' }], selectedId: marker.id });
   assert.equal(c.sources.discovery.data, previous, 'untrusted embedded updates cannot turn invalid data into a saving claim');
+});
+
+test('discount dots stay compact below neighborhood zoom and percentages reuse label collision and selection policy', () => {
+  const discounted = { ...marker, discount: 20.8, top25: true };
+  const c = canvas([discounted]);
+  for (const [id, source, selected] of [['discovery-discount', 'discovery', false], ['discovery-selected-discount', 'discovery-selection', true]]) {
+    const dot = c.layers.find(layer => layer.id === id + '-dot');
+    const number = c.layers.find(layer => layer.id === id);
+    assert.equal(dot.type, 'circle'); assert.equal(dot.source, source);
+    assert.equal(dot.paint['circle-radius'], 4); assert.equal(dot.paint['circle-color'], '#8FD9C4');
+    assert.equal(dot.paint['circle-translate-anchor'], 'viewport', 'dot stays next to the upright number when the map rotates');
+    assert.deepEqual(Array.from(dot.paint['circle-translate']), [-12, 10]);
+    assert.equal(dot.minzoom, undefined, 'mint signal stays available at the initial city zoom');
+    assert.equal(number.minzoom, 14, 'number starts at the existing cluster-expansion neighborhood zoom');
+    assert.equal(number.layout['icon-allow-overlap'], selected);
+    assert.equal(number.layout['icon-ignore-placement'], selected);
+    assert.equal(number.layout['icon-anchor'], 'right');
+    assert.deepEqual(Array.from(number.layout['icon-offset']), [-20, 10], 'percentage stays opposite the right-anchored place name, outside its collision box');
+    assert.equal(c.map.config.zoom < number.minzoom, true, 'initial city view shows the dot without a percentage');
+  }
+  c.window.glingDiscoveryUpdate(sessionId, { markers: [discounted], selectedId: marker.id });
+  for (const id of ['discovery-discount', 'discovery-discount-dot']) {
+    assert.ok(JSON.stringify(c.layers.find(layer => layer.id === id).filter).includes(marker.id), 'selected point is excluded from ordinary badges');
+  }
+  assert.equal(c.sources['discovery-selection'].data.features.length, 1);
+  assert.equal(c.layers.find(layer => layer.id === 'discovery-pins').paint['circle-color'][1], 'color');
+  assert.equal(c.layers.find(layer => layer.id === 'discovery-selected-pin').paint['circle-color'][1], 'color');
+  assert.equal(c.sources.discovery.clusterMaxZoom, 16); assert.equal(c.sources.discovery.clusterRadius, 44);
+  c.map.hits = [{ properties: { id: marker.id } }];
+  c.listeners.click({ point: { x: 1, y: 2 } });
+  assert.ok(c.map.queryOptions.layers.includes('discovery-discount-dot'));
+  assert.ok(c.map.queryOptions.layers.includes('discovery-selected-discount-dot'));
+  assert.equal(c.messages.at(-1).type, 'select'); assert.equal(c.messages.at(-1).id, marker.id);
+  assert.match(c.html, /민트색 점.*대표 메뉴 최대 할인율/);
+  assert.match(discoveryMapHtml({ ...options, language: 'en', markers: [discounted] }), /Mint dots.*maximum verified representative-menu saving/);
 });
