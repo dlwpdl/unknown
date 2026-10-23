@@ -153,3 +153,36 @@ test('a partner detail map target and its curated marker use the same normalized
   context.city = { id: partner.cityId }; context.placeId = 'partner:unknown';
   assert.equal(exports.run().targetId, undefined);
 });
+
+test('only the exact Jimoco Austin partner carries the reviewed official food photograph and honest attribution', () => {
+  const jimoco = deliveryPartnerPlace('vancouver', 'partner:jimoco-coquitlam');
+  assert.equal(jimoco.photo?.uri, 'https://jimoco.kmon.ca/images/hero-bg.webp');
+  assert.equal(jimoco.photo?.placeId, jimoco.id);
+  assert.equal(jimoco.photo?.cityId, jimoco.cityId);
+  assert.equal(jimoco.photo?.sourceUrl, 'https://www.jimoco.ca/');
+  assert.equal(jimoco.photo?.imageSha256, '0050025d96ef87d0659155beb37add78e2579f916a6359b7b844dfb9e73c6d93');
+  assert.equal(jimoco.photo?.title, 'Jimoco Café & Pasta · 공식 웹사이트 음식 이미지');
+  assert.equal(jimoco.photo?.artist, 'Jimoco Café & Pasta 공식 웹사이트');
+  assert.equal(jimoco.photo?.discoveredVia, 'Business site');
+  assert.equal(jimoco.photo?.license, '');
+  assert.equal(jimoco.photo?.licenseUrl, '');
+  assert.equal(deliveryPartnerPlace('vancouver', 'partner:on-and-off-coquitlam').photo, undefined);
+  assert.equal(deliveryPartnerPlace('toronto', 'partner:jimoco-coquitlam'), undefined);
+});
+
+test('merchant binding and profile branding changes never overwrite the independent partner map photograph', () => {
+  const place = deliveryPartnerPlace('vancouver', 'partner:jimoco-coquitlam');
+  const merchantId = 'f97cd7ad-c80b-4f21-aaf5-b422e1bbab45';
+  const shop = { merchantId, cityId: 'vancouver', currency: 'CAD', comparisons: [], checkoutComparison: null,
+    avatar_path: 'profile-logo-before', banner_path: 'profile-banner-before' };
+  const bind = () => bindBusinessPlaces([discovery.discoveryPlace(place)], { [place.id]: merchantId }, [shop])[0];
+  assert.equal(bind().merchantId, merchantId);
+  assert.equal(bind().place.photo, place.photo);
+  shop.avatar_path = 'profile-logo-after'; shop.banner_path = 'profile-banner-after';
+  const updated = bind();
+  assert.equal(updated.place.photo, place.photo);
+  assert.equal(updated.place.photo.uri, 'https://jimoco.kmon.ca/images/hero-bg.webp');
+  assert.equal('avatar_path' in updated.place, false);
+  assert.equal('banner_path' in updated.place, false);
+  assert.equal(deliveryPartnerPlace('vancouver', place.id).photo, place.photo);
+});

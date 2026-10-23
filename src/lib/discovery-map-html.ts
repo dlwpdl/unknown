@@ -59,7 +59,7 @@ export function discoveryMapHtml({ markers, cityName, sessionId, selectedId = nu
   return `<!doctype html><html lang="${language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-gling-map' blob:; style-src 'unsafe-inline'; worker-src blob:; connect-src https://tiles.openfreemap.org; img-src data: blob: https://tiles.openfreemap.org; base-uri 'none'; form-action 'none'; object-src 'none'"><style>${assets.css}
 html,body,#map{margin:0;width:100%;height:100%;overflow:hidden;background:#efeee9}.maplibregl-ctrl-top-left{top:calc(var(--map-top-inset,0px) + 12px);left:12px}.maplibregl-ctrl-group{border-radius:14px;overflow:hidden;box-shadow:0 2px 12px #3020471a}.maplibregl-ctrl-group button{width:44px;height:44px}.maplibregl-ctrl-group button:active{background:#ebe5f6}.maplibregl-ctrl-group button:focus-visible,#credits a:focus-visible{outline:3px solid ${accent};outline-offset:-3px}#credits{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:flex-end;flex-wrap:wrap;font:10px/1.3 system-ui;background:#fffffff0;color:#333;z-index:4}#credits a{color:#333;min-height:44px;display:inline-flex;align-items:center;padding:0 6px;box-sizing:border-box}#credits a:active{background:#ebe5f6}
 .user-location-marker{width:16px;height:16px;background:#007aff;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 7px #007aff29,0 1px 5px #0004;pointer-events:none}
-</style></head><body><div id="map" aria-label="${language === 'en' ? 'City discovery map. Places are also available in the list.' : '도시 탐색 지도. 장소 목록에서도 선택할 수 있어요.'}"></div><div id="credits"><a href="https://openfreemap.org/">OpenFreeMap</a><a href="https://www.openmaptiles.org/">© OpenMapTiles</a><a href="https://www.openstreetmap.org/copyright">© OpenStreetMap</a></div><script nonce="gling-map">${assets.javascript}</script><script nonce="gling-map">
+</style></head><body><div id="map" aria-label="${language === 'en' ? 'City discovery map. Places are also available in the list. Mint dots mark webshop savings; percentages show the maximum verified representative-menu saving.' : '도시 탐색 지도. 장소 목록에서도 선택할 수 있어요. 민트색 점은 웹샵 할인, 숫자는 확인한 대표 메뉴 최대 할인율이에요.'}"></div><div id="credits"><a href="https://openfreemap.org/">OpenFreeMap</a><a href="https://www.openmaptiles.org/">© OpenMapTiles</a><a href="https://www.openstreetmap.org/copyright">© OpenStreetMap</a></div><script nonce="gling-map">${assets.javascript}</script><script nonce="gling-map">
 const config=${config};let map,userMarker,loaded=false,failed=false,current=config,previousSelection=null,previousCenter=null,previousPadding=null,revision=0;
 const send=payload=>{const message=JSON.stringify({...payload,sessionId:config.sessionId});if(window.ReactNativeWebView)window.ReactNativeWebView.postMessage(message);else window.parent.postMessage(message,config.parentOrigin==='null'?'*':config.parentOrigin)};
 const fail=()=>{if(!failed){failed=true;send({type:'error'})}};
@@ -68,15 +68,16 @@ const validText=(s,max)=>typeof s==='string'&&s.length>0&&s.length<=max&&!/[\\u0
 const validState=s=>{if(!s||!Array.isArray(s.markers)||s.markers.length>500||(s.center!=null&&!validPoint(s.center))||(s.userLocation!=null&&!validPoint(s.userLocation))||(s.selectedId!=null&&!validText(s.selectedId,180))||(s.topInset!=null&&(!Number.isFinite(s.topInset)||s.topInset<0||s.topInset>1000))||(s.bottomInset!=null&&(!Number.isFinite(s.bottomInset)||s.bottomInset<0||s.bottomInset>1000)))return false;const ids=new Set();return s.markers.every(m=>{if(!m||!validText(m.id,180)||ids.has(m.id)||typeof m.label!=='string'||m.label.length>80||!validPoint(m)||typeof m.color!=='string'||!/^#[a-f\\d]{6}$/i.test(m.color)||(m.top25!==undefined&&typeof m.top25!=='boolean')||(m.discount!==undefined&&(!Number.isFinite(m.discount)||m.discount<=0||m.discount>100)))return false;ids.add(m.id);return true})};
 const geojson=(selection=false)=>({type:'FeatureCollection',features:current.markers.filter(m=>!selection||m.id===current.selectedId).map(m=>({type:'Feature',geometry:{type:'Point',coordinates:[m.longitude,m.latitude]},properties:{id:m.id,label:m.label,color:m.color,top25:m.top25===true,discount:m.discount||0}}))});
 const move=camera=>map.easeTo({...camera,duration:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?0:300});
-const hitLayers=['discovery-selected-discount','discovery-discount','discovery-selected-top25','discovery-selected-hit','discovery-selected-label','discovery-top25','discovery-clusters','discovery-hit','discovery-labels'];
+const hitLayers=['discovery-selected-discount','discovery-selected-discount-dot','discovery-discount','discovery-discount-dot','discovery-selected-top25','discovery-selected-hit','discovery-selected-label','discovery-top25','discovery-clusters','discovery-hit','discovery-labels'];
 const top25Filter=()=>['all',['!',['has','point_count']],['==',['get','top25'],true],['!=',['get','id'],current.selectedId??'']];
 const ensureBadges=()=>{
  for(const value of new Set(current.markers.map(m=>m.discount).filter(v=>v>0))){
   const key='discount-'+value;if(map.hasImage(key))continue;
-  const canvas=document.createElement('canvas');canvas.width=208;canvas.height=48;
-  const ctx=canvas.getContext('2d');if(!ctx)throw Error('DISCOUNT_CANVAS');ctx.scale(2,2);
-  ctx.beginPath();ctx.moveTo(12,0);ctx.arcTo(104,0,104,24,12);ctx.arcTo(104,24,0,24,12);ctx.arcTo(0,24,0,0,12);ctx.arcTo(0,0,104,0,12);ctx.closePath();ctx.fillStyle='#8FD9C4';ctx.fill();
-  ctx.fillStyle='#173F34';ctx.font='700 11px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('${language === 'en' ? 'Up to ' : '최대 '}'+value+'%',52,12);
+  const canvas=document.createElement('canvas');
+  const ctx=canvas.getContext('2d');if(!ctx)throw Error('DISCOUNT_CANVAS');ctx.font='700 11px system-ui';
+  const label=value+'%',width=Math.ceil(ctx.measureText(label).width)+12;canvas.width=width*2;canvas.height=40;ctx.scale(2,2);
+  ctx.beginPath();ctx.moveTo(10,0);ctx.arcTo(width,0,width,20,10);ctx.arcTo(width,20,0,20,10);ctx.arcTo(0,20,0,0,10);ctx.arcTo(0,0,width,0,10);ctx.closePath();ctx.fillStyle='#8FD9C4';ctx.fill();
+  ctx.fillStyle='#173F34';ctx.font='700 11px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label,width/2,10);
   map.addImage(key,ctx.getImageData(0,0,canvas.width,canvas.height),{pixelRatio:2});
  }
 
@@ -91,7 +92,7 @@ const ensureBadges=()=>{
 const apply=()=>{if(!loaded)return;map.getSource('discovery').setData(geojson());map.getSource('discovery-selection').setData(geojson(true));
  const p=current.userLocation;
  if(p){if(!userMarker){const el=document.createElement('div');el.className='user-location-marker';el.setAttribute('role','img');el.setAttribute('aria-label','${language === 'en' ? 'Your location' : '내 위치'}');userMarker=new maplibregl.Marker({element:el}).setLngLat([p.longitude,p.latitude]).addTo(map)}else userMarker.setLngLat([p.longitude,p.latitude])}else if(userMarker){userMarker.remove();userMarker=null}
- ensureBadges();map.setFilter('discovery-top25',top25Filter());map.setFilter('discovery-discount',['all',['>', ['get','discount'],0],['!=',['get','id'],current.selectedId??'']]);
+ ensureBadges();map.setFilter('discovery-top25',top25Filter());for(const id of ['discovery-discount','discovery-discount-dot'])map.setFilter(id,['all',['>', ['get','discount'],0],['!=',['get','id'],current.selectedId??'']]);
  const height=map.getContainer().clientHeight,top=Math.min(current.topInset||0,Math.max(0,height-44)),bottom=Math.min(current.bottomInset||0,Math.max(0,height-top-44)),padding=top+':'+bottom,paddingChanged=padding!==previousPadding;
  map.getContainer().style.setProperty('--map-top-inset',top+'px');
  if(paddingChanged){map.setPadding({top,right:0,left:0,bottom});previousPadding=padding}
@@ -124,7 +125,10 @@ try{
   map.addLayer({id:'discovery-selected-label',type:'symbol',source:'discovery-selection',layout:{'text-field':['get','label'],'text-font':['Noto Sans Regular'],'text-size':12,'text-anchor':'left','text-offset':[2,0],'text-max-width':14,'text-allow-overlap':true},paint:{'text-color':'#302047','text-halo-color':'#ffffff','text-halo-width':2}});
   map.addLayer({id:'discovery-selected-hit',type:'circle',source:'discovery-selection',paint:{'circle-radius':22,'circle-opacity':0}});
   map.addLayer({id:'discovery-selected-top25',type:'symbol',source:'discovery-selection',filter:['==',['get','top25'],true],layout:{'icon-image':'top25-full','icon-anchor':'left','icon-offset':[21,-24],'icon-allow-overlap':true,'icon-ignore-placement':true}});
-  for(const [id,source] of [['discovery-discount','discovery'],['discovery-selected-discount','discovery-selection']])map.addLayer({id,type:'symbol',source,filter:['>', ['get','discount'],0],layout:{'icon-image':['concat','discount-',['to-string',['get','discount']]],'icon-anchor':'left','icon-offset':[21,18],'icon-allow-overlap':true,'icon-ignore-placement':true}});
+  for(const [id,source] of [['discovery-discount','discovery'],['discovery-selected-discount','discovery-selection']]){
+   map.addLayer({id:id+'-dot',type:'circle',source,filter:['>', ['get','discount'],0],paint:{'circle-radius':4,'circle-color':'#8FD9C4','circle-stroke-color':'#ffffff','circle-stroke-width':1.5,'circle-translate':[-12,10],'circle-translate-anchor':'viewport'}});
+   map.addLayer({id,type:'symbol',source,minzoom:14,filter:['>', ['get','discount'],0],layout:{'icon-image':['concat','discount-',['to-string',['get','discount']]],'icon-anchor':'right','icon-offset':[-20,10],'icon-allow-overlap':source==='discovery-selection','icon-ignore-placement':source==='discovery-selection'}});
+  }
   clearTimeout(timer);loaded=true;failed=false;
   apply();send({type:'ready'});
  }catch{fail()}});

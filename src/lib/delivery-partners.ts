@@ -6,6 +6,7 @@ export type DeliveryPartner = {
   id: string; name: string; cityId: string; label: string;
   latitude: number; longitude: number; webShopUrl: string | null; promoCode?: string; discountLabel?: string;
   delivery: boolean; visited: boolean; category: 'dining' | 'cafe'; visitedSourceUrl?: string;
+  photo?: CityPlace['photo'];
 };
 
 export const DELIVERY_PARTNERS: DeliveryPartner[] = [
@@ -19,6 +20,10 @@ export const DELIVERY_PARTNERS: DeliveryPartner[] = [
     webShopUrl: null,
     discountLabel: '',
     delivery: true, visited: true, category: 'dining',
+    // shortcut: The official image may change; pin a stored place image when map-photo uploads are supported.
+    photo: { placeId: 'partner:jimoco-coquitlam', cityId: 'vancouver', uri: 'https://jimoco.kmon.ca/images/hero-bg.webp',
+      sourceUrl: 'https://www.jimoco.ca/', title: 'Jimoco Café & Pasta · 공식 웹사이트 음식 이미지', artist: 'Jimoco Café & Pasta 공식 웹사이트',
+      discoveredVia: 'Business site', license: '', licenseUrl: '', imageSha256: '0050025d96ef87d0659155beb37add78e2579f916a6359b7b844dfb9e73c6d93' },
   },
   {
     id: 'on-and-off-coquitlam',
@@ -38,5 +43,6 @@ export function deliveryPartnerPlace(cityId: string, id: string): CityPlace | un
   return partner ? { id, cityId, name: partner.name, category: partner.category === 'dining' ? 'food' : 'cafe',
     latitude: partner.latitude, longitude: partner.longitude, address: partner.label,
     sourceUrl: `https://www.openstreetmap.org/?mlat=${partner.latitude}&mlon=${partner.longitude}#map=18/${partner.latitude}/${partner.longitude}`,
+    ...(partner.photo ? { photo: partner.photo } : {}),
     ...(partner.visited ? { glingVisited: { sourceUrl: partner.visitedSourceUrl ?? '' } } : {}) } : undefined;
 }
