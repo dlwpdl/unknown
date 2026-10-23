@@ -6,7 +6,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
 import { useEffect, useRef, useState } from 'react';
-import { Modal, Platform, StyleSheet, TextInput, View } from 'react-native';
+import { Modal, Platform, StyleSheet, TextInput, View, type KeyDownEvent } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
@@ -278,7 +278,7 @@ export function ProfileOnboarding({
               <Pressable analyticsId="components_profile-onboarding.pressable.7" onPress={toggleAll} disabled={saving} accessibilityRole="checkbox"
                 accessibilityLabel={consentOnly ? tr("모두 동의") : tr("모두 동의, 선택 항목 포함")} aria-checked={allChecked}
                 accessibilityState={{ checked: allChecked, disabled: saving }}
-                {...(Platform.OS === 'web' ? { onKeyDown: (event: { key: string; preventDefault: () => void }) => { if (event.key === ' ') { event.preventDefault(); toggleAll(); } } } : {})}
+                {...(Platform.OS === 'web' ? { onKeyDown: (event: KeyDownEvent) => { if (event.nativeEvent.key === ' ') { event.preventDefault(); toggleAll(); } } } : {})}
                 style={[styles.consent, styles.allConsent, { borderBottomColor: theme.line }]}>
                 <View aria-hidden accessibilityElementsHidden style={[styles.checkbox, { backgroundColor: someAccepted ? theme.accent : 'transparent', borderColor: someAccepted ? theme.accent : theme.line }]}>
                   {someAccepted && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{allAccepted ? '✓' : '−'}</ThemedText>}
@@ -292,7 +292,7 @@ export function ProfileOnboarding({
                   <View style={styles.consentRow}>
                     <Pressable analyticsId="components_profile-onboarding.pressable.8" onPress={toggle} disabled={saving} accessibilityRole="checkbox" accessibilityLabel={tr(item.label)}
                       aria-checked={item.checked} accessibilityState={{ checked: item.checked, disabled: saving }}
-                      {...(Platform.OS === 'web' ? { onKeyDown: (event: { key: string; preventDefault: () => void }) => { if (event.key === ' ') { event.preventDefault(); toggle(); } } } : {})}
+                      {...(Platform.OS === 'web' ? { onKeyDown: (event: KeyDownEvent) => { if (event.nativeEvent.key === ' ') { event.preventDefault(); toggle(); } } } : {})}
                       style={styles.consent}>
                       <View aria-hidden accessibilityElementsHidden style={[styles.checkbox, { backgroundColor: item.checked ? theme.accent : 'transparent', borderColor: item.checked ? theme.accent : theme.line }]}>
                         {item.checked && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✓</ThemedText>}

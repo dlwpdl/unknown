@@ -1,7 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
-import { type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollView as NativeScrollView, Modal, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance, Modal, Platform, StyleSheet, useWindowDimensions, View, type ViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { runOnJS, useAnimatedStyle, useReducedMotion, useSharedValue } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -43,11 +43,11 @@ export function PostPhotoGallery({ post }: { post: Post }) {
   const [zoomed, setZoomed] = useState(false);
   const [thumbnailPage, setThumbnailPage] = useState<{ key: string; index: number } | null>(null);
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
-  const carousel = useRef<NativeScrollView>(null), thumbnails = useRef<NativeScrollView>(null);
+  const carousel = useRef<ScrollViewInstance>(null), thumbnails = useRef<ScrollViewInstance>(null);
   const alignedLayout = useRef('');
   const x = useSharedValue(0), y = useSharedValue(0), scale = useSharedValue(1), pinchStart = useSharedValue(1);
   const pinchAnchor = useSharedValue<{ x: number; y: number } | null>(null);
-  const viewportRef = useRef<View>(null), viewportOrigin = useSharedValue({ x: 0, y: 0 });
+  const viewportRef = useRef<ViewInstance>(null), viewportOrigin = useSharedValue({ x: 0, y: 0 });
   const fullIndex = viewer?.key === galleryKey ? viewer.index : null;
   const resetZoom = () => { setZoomed(false); scale.set(1); x.set(0); y.set(0); };
   const close = () => { play('selection'); setViewer(null); resetZoom(); };
