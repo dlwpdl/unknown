@@ -690,7 +690,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           keyExtractor={(p, index) => p?.id ?? (index === 0 ? 'journal-intro' : 'feed-sort')}
           contentContainerStyle={[styles.listContent, { paddingBottom: bottomClear + Spacing.three }]}
           ItemSeparatorComponent={({ leadingItem }) => leadingItem == null ? null : <View style={{ height: Spacing.four }} />}
-          ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText> : feedState ?? undefined}
+          ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText> : feedState}
           renderItem={({ item, index }) => item == null && index === 1 && showFeedSort ? (
             <FeedSortControl sort={activeSort} title={selectedFilterTag ? tr("{0} 글", (selectedFilterTag.label)) : tr("오늘 글")} onChange={changeFeedSort} />
           ) : item == null ? (

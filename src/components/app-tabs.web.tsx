@@ -11,7 +11,7 @@ import {
 import { SymbolView } from 'expo-symbols';
 import { usePathname } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { View, StyleSheet, type ViewInstance } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
@@ -53,7 +53,7 @@ export default function AppTabs() {
 
 function AnimatedTabSlot() {
   const pathname = usePathname();
-  const contentRef = useRef<ViewInstance>(null);
+  const contentRef = useRef<View>(null);
   const mounted = useRef(false);
 
   useEffect(() => {
@@ -80,7 +80,7 @@ function AnimatedTabSlot() {
   );
 }
 
-export function TabButton({ children, icon, badge = 0, isFocused, onPress, ...props }: Omit<TabTriggerSlotProps, 'ref'> & { ref?: React.Ref<ViewInstance>; icon: 'today' | 'groups' | 'edit_square' | 'forum' | 'notifications'; badge?: number }) {
+export function TabButton({ children, icon, badge = 0, isFocused, onPress, ...props }: TabTriggerSlotProps & { icon: 'today' | 'groups' | 'edit_square' | 'forum' | 'notifications'; badge?: number }) {
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   return (

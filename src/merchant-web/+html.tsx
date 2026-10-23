@@ -1,11 +1,10 @@
-import { ScrollViewStyleReset, useServerDocumentContext } from 'expo-router/html';
+import { ScrollViewStyleReset } from 'expo-router/html';
 import type { PropsWithChildren } from 'react';
 
 import { Colors } from '@/constants/theme';
 
 export default function MerchantHtml({ children }: PropsWithChildren) {
-  const { htmlAttributes, bodyAttributes, headNodes, bodyNodes } = useServerDocumentContext();
-  return <html {...htmlAttributes} lang="ko" style={{ ...htmlAttributes?.style, backgroundColor: Colors.dark.background, colorScheme: 'dark' }}>
+  return <html lang="ko" style={{ backgroundColor: Colors.dark.background, colorScheme: 'dark' }}>
     <head>
       <meta charSet="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -13,8 +12,7 @@ export default function MerchantHtml({ children }: PropsWithChildren) {
       <meta name="robots" content="noindex,nofollow" />
       <meta name="referrer" content="no-referrer" />
       <ScrollViewStyleReset />
-      {headNodes}
     </head>
-    <body {...bodyAttributes} style={{ ...bodyAttributes?.style, backgroundColor: Colors.dark.background }}>{children}{bodyNodes}</body>
+    <body style={{ backgroundColor: Colors.dark.background }}>{children}</body>
   </html>;
 }
