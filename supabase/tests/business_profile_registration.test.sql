@@ -24,6 +24,26 @@ select is(public.get_merchant_profile('b1810000-0000-4000-8000-000000000001')->>
 select is(public.get_merchant_profile('b1810000-0000-4000-8000-000000000003')->>'name','기존공개비즈니스','existing consented curated profile stays available without changing ownership');
 reset role;
 
+update public.posts set created_at=now()-interval '3 hours' where id='b1820000-0000-4000-8000-000000000006';
+insert into public.posts(id,author_id,city_id,tag_id,title,body,created_at,business_author_id) values
+ ('b1820000-0000-4000-8000-000000000007','b1800000-0000-4000-8000-000000000003','vancouver',1,'같은 시각 첫 안내','합성 지점 조회 검사',now()-interval '1 hour','b1810000-0000-4000-8000-000000000003'),
+ ('b1820000-0000-4000-8000-000000000008','b1800000-0000-4000-8000-000000000003','vancouver',1,'같은 시각 다음 안내','합성 지점 조회 검사',now()-interval '1 hour','b1810000-0000-4000-8000-000000000003');
+insert into private.merchant_posts(post_id,merchant_id,creation_request_id) values
+ ('b1820000-0000-4000-8000-000000000007','b1810000-0000-4000-8000-000000000003','b1830000-0000-4000-8000-000000000007'),
+ ('b1820000-0000-4000-8000-000000000008','b1810000-0000-4000-8000-000000000003','b1830000-0000-4000-8000-000000000008');
+set local role anon;
+select is(public.get_merchant_profile('b1810000-0000-4000-8000-000000000003')->>'review_post_id','b1820000-0000-4000-8000-000000000008','overlapping legacy and business paths retain the latest UUID tie-break');
+select is(public.get_merchant_profile_posts('b1810000-0000-4000-8000-000000000003')->>'post_count','2','overlapping lookup paths do not duplicate official posts');
+reset role;
+update public.posts set status='removed' where id='b1820000-0000-4000-8000-000000000008';
+set local role anon;
+select is(public.get_merchant_profile('b1810000-0000-4000-8000-000000000003')->>'review_post_id','b1820000-0000-4000-8000-000000000007','hidden latest post falls back to the next visible post');
+reset role;
+update public.posts set status='removed' where id='b1820000-0000-4000-8000-000000000007';
+set local role anon;
+select is(public.get_merchant_profile('b1810000-0000-4000-8000-000000000003')->>'review_post_id','b1820000-0000-4000-8000-000000000006','legacy-only visible posts remain eligible after official posts are hidden');
+reset role;
+
 update private.merchants set owner_verified_at=null where id='b1810000-0000-4000-8000-000000000002';
 set local role anon;
 select is(public.get_merchant_profile('b1810000-0000-4000-8000-000000000002'),null::jsonb,'unverified owner cannot expose a new profile');
