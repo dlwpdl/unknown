@@ -707,7 +707,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           messageList.current?.scrollToOffset({ offset: Math.max(0, averageItemLength * index), animated: false });
           setTimeout(() => { if (!discoveryVisible.current) messageList.current?.scrollToIndex({ index, viewPosition: 0.12, animated: false }); }, 120);
         }}
-        ListEmptyComponent={<ThemedText type="small" themeColor="textSecondary" style={styles.empty}>{access.write ? t.chat.newConversation : t.chat.endedBody}</ThemedText>}
+        ListEmptyComponent={<ThemedText type="small" themeColor="textSecondary" style={styles.empty}>{searchOpen && trimmedSearch ? t.search.none(searchQuery.trim()) : access.write ? t.chat.newConversation : t.chat.endedBody}</ThemedText>}
         ListFooterComponent={<>{joinNotices.map(member => <ThemedText key={member.id} type="small" themeColor="textSecondary" accessibilityLiveRegion="polite" style={styles.joinNotice}>{tr("{0}님이 모임에 참여했어요", member.nickname)}</ThemedText>)}<View style={{ height: Spacing.four }} /></>}
         ListHeaderComponent={<>{hasOlder && messages.length > 0 && <RoomAction label={loadingOlder ? t.feed.loadingMore : t.chat.loadOlder} onPress={() => void loadOlder()} disabled={loadingOlder} />}{verificationNotice}</>}
         renderItem={({ item: message, index }) => {
