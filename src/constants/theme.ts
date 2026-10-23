@@ -109,7 +109,15 @@ export const Spacing = {
 // 카드는 층을 구분하고, 컨트롤은 평면으로 유지한다.
 export const Depth = {
   card: { shadowColor: '#000000', shadowOffset: { width: 0, height: 7 }, shadowOpacity: 0.22, shadowRadius: 14, elevation: 5 },
-  control: { shadowOpacity: 0, elevation: 0 },
+  // Lens material: replace the old raised edge with an inset glass edge.
+  control: {
+    shadowOpacity: 0, elevation: 0,
+    boxShadow: [
+      { inset: true, offsetX: 0, offsetY: 2, blurRadius: 0, color: 'rgba(255,255,255,0.14)' },
+      { inset: true, offsetX: 0, offsetY: -3, blurRadius: 4, color: 'rgba(0,0,0,0.20)' },
+      { offsetX: 0, offsetY: 3, blurRadius: 8, color: 'rgba(0,0,0,0.12)' },
+    ],
+  },
 } as const;
 
 // 네이티브 탭바 자체 높이 (세이프에어리어 제외). 실제 하단 점유 = TabBarHeight + insets.bottom

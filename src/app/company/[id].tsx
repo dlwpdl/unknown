@@ -1,3 +1,4 @@
+import { ControlStyles } from '@/constants/design-system';
 import { useLanguage } from '@/hooks/use-language';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -8,6 +9,7 @@ import { StyleSheet, View, type ScrollView as NativeScrollView } from 'react-nat
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
+import { usePublicWebshop, WebshopBanner, WebshopComparisonSheet, WebshopOrderButton } from '@/components/business-webshop';
 import { MerchantProfileHeader } from '@/components/merchant-profile-header';
 import { MerchantReviews } from '@/components/merchant-reviews';
 import { ThemedText } from '@/components/themed-text';
@@ -25,7 +27,7 @@ import { merchantMapsUrl, merchantPhoneUrl, setSavedMerchant, setSavedMerchantNo
 import { safeMerchantSourceUrl } from '@/lib/merchant-source';
 import { supabase } from '@/lib/supabase';
 
-const tabs = [{ id: 'posts', label: '게시글' }, { id: 'jobs', label: '채용' }, { id: 'reviews', label: '리뷰' }, { id: 'about', label: '소개' }] as const;
+const tabs = [{ id: 'about', label: '소개' }, { id: 'posts', label: '소식' }, { id: 'jobs', label: '채용' }, { id: 'reviews', label: '후기' }] as const;
 type ProfileTab = typeof tabs[number]['id'];
 
 export default function CompanyProfileRoute() {
@@ -41,7 +43,7 @@ export default function CompanyProfileRoute() {
   const [selected, setSelected] = useState<{ merchantId: string; kind: MerchantReviewKind } | null>(null), [reviewRevision, setReviewRevision] = useState(0);
   const [ratingResult, setRatingResult] = useState<{ key: string; ratings: Record<MerchantReviewKind, Pick<MerchantReviewPage, 'rating_average' | 'review_count'> | null> } | null>(null);
   const [tabResult, setTabResult] = useState<{ merchantId: string; tab: ProfileTab } | null>(null);
-  const tab = tabResult?.merchantId === merchantId ? tabResult.tab : review ? 'reviews' : 'posts';
+  const tab = tabResult?.merchantId === merchantId ? tabResult.tab : review ? 'reviews' : 'about';
   const postKind = tab === 'jobs' ? 'jobs' : 'posts', listKey = `${key}:${postKind}`;
   const [postResult, setPostResult] = useState<{ key: string; page: MerchantProfilePostPage | null; failed: boolean; attempt: number } | null>(null);
   const [countsResult, setCountsResult] = useState<{ key: string; value: Pick<MerchantProfilePostPage, 'post_count' | 'job_count'> | null } | null>(null);
@@ -54,6 +56,9 @@ export default function CompanyProfileRoute() {
   const reviewKind = selected?.merchantId === merchantId ? selected.kind : review === 'employment' ? 'employment' : 'usage';
   const current = result?.key === key ? result : null;
   const profile = current?.profile;
+  const webshop = usePublicWebshop(supabase, profile?.id, `${key}:${revision}`);
+  const [orderMerchant, setOrderMerchant] = useState<string | null>(null);
+  const orderOpen = orderMerchant === merchantId;
   const busy = actionBusy?.operation.key === key && actionBusy.operation.visibility === hidden && actionBusy.operation.active, canMessage = profile?.can_message && unavailableRecipient !== key;
   const phoneUrl = merchantPhoneUrl(profile?.public_phone ?? ''), mapsUrl = merchantMapsUrl(profile?.address ?? '');
   const publicLinks = profile?.links?.flatMap(link => { const url = safeMerchantSourceUrl(link.url); return url ? [{ ...link, url }] : []; }) ?? [];
@@ -186,22 +191,23 @@ export default function CompanyProfileRoute() {
     <View style={[styles.header, { borderBottomColor: theme.line }]}>
       <Pressable analyticsId="company.back" accessibilityRole="button" accessibilityLabel={tr("뒤로 가기")} style={styles.button}
         onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace('/'); }}><ThemedText type="subtitle">‹</ThemedText></Pressable>
-      <ThemedText type="subtitle" numberOfLines={1} style={styles.heading}>{profile?.name ?? tr("비즈니스 프로필")}</ThemedText>
+      <ThemedText type="subtitle" numberOfLines={1} style={styles.heading}>{tr("비즈니스 프로필")}</ThemedText>
+      {profile && <>
+          <Pressable analyticsId="company.save" accessibilityRole="button" accessibilityLabel={profile.saved ? tr("비즈니스 저장 취소") : tr("비즈니스 저장")}
+            accessibilityState={{ selected: profile.saved, disabled: busy, busy: busy && actionBusy?.kind === 'save' }} disabled={busy}
+            style={({ pressed }) => [ControlStyles.icon, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent', opacity: busy ? 0.45 : 1 }]}
+            onPress={() => void toggleSaved()}><SymbolView name={{ ios: profile.saved ? 'bookmark.fill' : 'bookmark', android: profile.saved ? 'bookmark' : 'bookmark_border', web: profile.saved ? 'bookmark' : 'bookmark_border' }} size={17} tintColor={theme.accent} />
+            </Pressable>
+      </>}
     </View>
     <ScrollView ref={scroll} analyticsId="company.profile" contentContainerStyle={styles.content}>
       {profile ? <>
         <MerchantProfileHeader profile={{ ...profile, services: '', address: '' }} ratings={ratings}
           onReviewPress={profile.review_post_id ? openReviews : undefined} />
+        {webshop.shop && <WebshopBanner shop={webshop.shop} onPress={() => setOrderMerchant(merchantId)} />}
+        {webshop.failed && <Pressable analyticsId="webshop.retry" accessibilityRole="button" style={styles.button} onPress={() => { play('selection'); webshop.retry(); }}><ThemedText type="small" themeColor="accent">{tr("웹샵 정보를 다시 확인해주세요")}</ThemedText></Pressable>}
         <View style={styles.actions}>
-          {!!canMessage && business?.id !== merchantId && <Pressable analyticsId="company.inquiry" accessibilityRole="button" accessibilityLabel={tr("비즈니스 담당자에게 문의")}
-            accessibilityState={{ disabled: busy, busy: busy && actionBusy?.kind === 'message' }} disabled={busy}
-            style={({ pressed }) => [styles.inquiry, { backgroundColor: theme.accent, opacity: busy || pressed ? 0.65 : 1 }]}
-            onPress={() => void requestInquiry()}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{busy && actionBusy?.kind === 'message' ? tr("연결 중…") : tr("문의하기")}</ThemedText></Pressable>}
-          <Pressable analyticsId="company.save" accessibilityRole="button" accessibilityLabel={profile.saved ? tr("비즈니스 저장 취소") : tr("비즈니스 저장")}
-            accessibilityState={{ selected: profile.saved, disabled: busy, busy: busy && actionBusy?.kind === 'save' }} disabled={busy}
-            style={({ pressed }) => [styles.secondaryAction, { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : theme.card, opacity: busy ? 0.65 : 1 }]}
-            onPress={() => void toggleSaved()}><SymbolView name={{ ios: profile.saved ? 'bookmark.fill' : 'bookmark', android: profile.saved ? 'bookmark' : 'bookmark_border', web: profile.saved ? 'bookmark' : 'bookmark_border' }} size={17} tintColor={theme.accent} />
-            <ThemedText type="smallBold" themeColor="accent">{busy && actionBusy?.kind === 'save' ? tr("저장 중…") : profile.saved ? tr("저장됨") : tr("저장")}</ThemedText></Pressable>
+
           {isAuthed && profile.saved && <Pressable analyticsId="company.notifications" accessibilityRole="button" accessibilityLabel={tr("새 소식 받기")}
             accessibilityState={{ selected: profile.notifications_enabled, disabled: busy, busy: busy && actionBusy?.kind === 'notifications' }} disabled={busy}
             style={({ pressed }) => [styles.secondaryAction, { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : theme.card, opacity: busy ? 0.65 : 1 }]}
@@ -293,6 +299,17 @@ export default function CompanyProfileRoute() {
           onPress={() => { play('selection'); setRevision((value) => value + 1); }}><ThemedText themeColor="accent">{tr("다시 불러오기")}</ThemedText></Pressable>}
       </View>}
     </ScrollView>
+    {profile && (webshop.shop || canMessage && business?.id !== merchantId || mapsUrl) && <SafeAreaView edges={['bottom']} style={[styles.inquiryBar, { borderTopColor: theme.line, backgroundColor: theme.background }]}>
+      {webshop.shop && <WebshopOrderButton onPress={() => setOrderMerchant(merchantId)} />}
+      <View style={styles.footerActions}>
+        {!!canMessage && business?.id !== merchantId && <Pressable analyticsId="company.inquiry" accessibilityRole="button" accessibilityLabel={tr("비즈니스 담당자에게 문의")}
+          accessibilityState={{ disabled: busy, busy: busy && actionBusy?.kind === 'message' }} disabled={busy}
+          style={({ pressed }) => [styles.inquiry, { flex: 1, borderColor: theme.line, backgroundColor: webshop.shop ? theme.card : theme.accent, opacity: busy ? 0.45 : pressed ? 0.82 : 1 }]}
+          onPress={() => void requestInquiry()}><ThemedText type="smallBold" style={{ color: webshop.shop ? theme.text : theme.accentInk }}>{busy && actionBusy?.kind === 'message' ? tr("연결 중…") : tr("문의하기")}</ThemedText></Pressable>}
+        {!!mapsUrl && <Pressable analyticsId="company.location" accessibilityRole="link" style={({ pressed }) => [styles.inquiry, { flex: 1, backgroundColor: theme.card, borderColor: theme.line, opacity: pressed ? 0.82 : 1 }]} onPress={() => void openContact(mapsUrl)}><ThemedText type="smallBold">{tr("위치 보기")}</ThemedText></Pressable>}
+      </View>
+    </SafeAreaView>}
+    {profile && webshop.shop && <WebshopComparisonSheet key={merchantId} client={supabase} shop={webshop.shop} name={profile.name} visible={orderOpen} onClose={() => setOrderMerchant(null)} />}
   </SafeAreaView></ThemedView>;
 }
 const styles = StyleSheet.create({
@@ -301,16 +318,18 @@ const styles = StyleSheet.create({
   heading: { flex: 1 },
   button: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12 },
   actions: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  inquiry: { flexGrow: 1, minHeight: 44, minWidth: 44, borderRadius: 10, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
+  inquiryBar: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8, borderTopWidth: 1, gap: 10 },
+  footerActions: { flexDirection: 'row', gap: 8 },
+  inquiry: { minHeight: 48, minWidth: 44, borderWidth: 1, borderRadius: 14, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
   secondaryAction: { flexDirection: 'row', gap: 8, minHeight: 44, minWidth: 44, borderWidth: 1, borderRadius: 10, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
-  content: { padding: 20, paddingBottom: 48, gap: 16 },
+  content: { padding: 22, paddingBottom: 48, gap: 22 },
   state: { minHeight: 240, justifyContent: 'center', alignItems: 'center', gap: 16 },
   statePhoto: { gap: 8 },
   hiring: { alignSelf: 'flex-start', minHeight: 44, minWidth: 44, justifyContent: 'center', paddingHorizontal: 4 },
   tabs: { flexDirection: 'row', borderBottomWidth: 1 },
   tab: { flex: 1, minHeight: 48, minWidth: 44, flexDirection: 'row', gap: 4, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 2 },
   tabCount: { fontSize: 12, lineHeight: 18 },
-  panel: { gap: 16 },
+  panel: { gap: 20 },
   panelTitle: { flexDirection: 'row', gap: 12, justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' },
   post: { flexDirection: 'row', gap: 12, alignItems: 'center', borderBottomWidth: 1, paddingVertical: 20, minHeight: 80 },
   postText: { flex: 1, gap: 6 },

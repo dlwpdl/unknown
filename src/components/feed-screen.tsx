@@ -48,6 +48,7 @@ import { TabContent } from '@/components/tab-content';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
+import { ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useAuth } from '@/lib/auth';
@@ -84,7 +85,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const theme = useTheme();
   const hidden = useContentVisibility();
   const reducedMotion = useReducedMotion();
-  const { fontScale } = useWindowDimensions();
+  const { fontScale, width: viewportWidth } = useWindowDimensions();
   const router = useRouter();
   const { compose, hashtag } = useLocalSearchParams<{ compose?: string; hashtag?: string }>();
   const { isAuthed, promptLogin, me, isAdmin } = useAuth();
@@ -126,6 +127,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   // 카드의 작성자를 누르면 글을 열지 않고 바로 미니 프로필로 간다.
   const openAuthor = (post: Post) => {
     if (post.business) { router.push({ pathname: '/company/[id]', params: { id: post.business.id } }); return; }
+    if (post.room) { router.push({ pathname: '/meetup-profile', params: { postId: post.id } }); return; }
     setSheetUser({ id: post.author.id, nickname: post.author.nickname, neighborhood: post.author.neighborhood, verified: post.author.verified, trustLevel: post.author.trustLevel, mine: post.author.id === me.id });
   };
   const [pendingPost, setPendingPost] = useState<Post | null>(null); // 로그인 후 이어서 열 글
@@ -642,28 +644,28 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   return (
     <TabContent style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={[styles.headRow, { backgroundColor: theme.background }]}>
+        <View style={[styles.headRow, fontScale > 1.2 && styles.headRowLarge, { backgroundColor: theme.background }]}>
           <Pressable analyticsId="feed.home" accessibilityRole="button" accessibilityLabel={`${t.appName}, ${t.tabs.today}`}
-            onPress={() => { play('selection'); router.navigate('/'); }} style={styles.homeButton}>
-            <Image source={theme === Colors.light ? require('@/assets/brand/gling-night-wordmark-light.png') : require('@/assets/brand/gling-night-wordmark.png')} style={styles.wordmark} contentFit="contain" accessible={false} />
+            onPress={() => { play('selection'); router.navigate('/'); }} style={[styles.homeButton, fontScale > 1.2 && styles.homeButtonLarge]}>
+            <Image source={theme === Colors.light ? require('@/assets/brand/gling-night-wordmark-light.png') : require('@/assets/brand/gling-night-wordmark.png')} style={[styles.wordmark, (viewportWidth < 380 || fontScale > 1.2) && styles.wordmarkCompact]} contentFit="contain" accessible={false} />
           </Pressable>
-          <GlassSurface tone="control" interactive style={styles.cityGlass}><Pressable analyticsId="components_feed-screen.pressable.1"
+          <GlassSurface tone="control" interactive style={[styles.cityGlass, fontScale > 1.2 && styles.cityGlassLarge]}><Pressable analyticsId="components_feed-screen.pressable.1"
             onPress={() => { play('reaction'); setCityPicker(true); }} accessibilityRole="button"
             accessibilityLabel={`${tr(city.name)}, ${t.feed.cityPickerTitle}`}
-            style={({ pressed }) => [styles.cityButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
+            style={({ pressed }) => [styles.cityButton, controlPresentation(theme, { pressed, reducedMotion }).container]}>
             <ThemedText type="smallBold" numberOfLines={1} style={styles.city}>{tr(city.name)}</ThemedText>
             <SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={14} tintColor={theme.text} />
           </Pressable></GlassSurface>
-          <GlassSurface tone="control" interactive style={styles.iconGlass}><Pressable analyticsId="components_feed-screen.pressable.2"
+          <View style={styles.iconGlass}><Pressable analyticsId="components_feed-screen.pressable.2"
             onPress={() => { play('reaction'); openSearch(); }} accessibilityRole="button" accessibilityLabel={t.search.placeholder}
-            style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
-            <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={21} tintColor={theme.text} />
-          </Pressable></GlassSurface>
-          {!meetupsOnly && <GlassSurface tone="control" interactive style={styles.iconGlass}><Pressable analyticsId="discovery.open"
+            style={({ pressed }) => [styles.iconButton, controlPresentation(theme, { tone: 'ghost', pressed, reducedMotion }).container]}>
+            <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={IconSize.toolbar} tintColor={theme.text} />
+          </Pressable></View>
+          {!meetupsOnly && <View style={styles.iconGlass}><Pressable analyticsId="discovery.open"
             onPress={() => { play('reaction'); router.push('/map'); }} accessibilityRole="button" accessibilityLabel={tr('부동산·중고거래·장소·행사 통합 지도')}
-            style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
-            <SymbolView name={{ ios: 'map', android: 'map', web: 'map' }} size={21} tintColor={theme.text} />
-          </Pressable></GlassSurface>}
+            style={({ pressed }) => [styles.iconButton, controlPresentation(theme, { tone: 'ghost', pressed, reducedMotion }).container]}>
+            <SymbolView name={{ ios: 'map', android: 'map', web: 'map' }} size={IconSize.toolbar} tintColor={theme.text} />
+          </Pressable></View>}
           <ProfileAvatarButton />
         </View>
         <FlatList analyticsId="components_feed-screen.flatlist.1" ref={feedListRef}
@@ -1207,13 +1209,17 @@ const styles = StyleSheet.create({
   header: { paddingTop: Spacing.two, paddingBottom: Spacing.four },
   categoryLoading: { minHeight: 280, alignItems: 'center', justifyContent: 'center' },
   headRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, paddingHorizontal: Spacing.three, paddingTop: Spacing.one, paddingBottom: Spacing.two },
-  wordmark: { width: 64, height: 36 },
+  headRowLarge: { flexWrap: 'wrap' },
+  wordmark: { width: 88, height: 38 },
+  wordmarkCompact: { width: 64, height: 36 },
   homeButton: { minHeight: 44, justifyContent: 'center' },
-  cityGlass: { marginLeft: 'auto', borderRadius: 12, flexShrink: 1 },
-  iconGlass: { borderRadius: 22 },
-  cityButton: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, minHeight: 44, borderRadius: 12, flexShrink: 1, paddingHorizontal: Spacing.two },
-  city: { fontSize: 14, lineHeight: 20, flexShrink: 1 },
-  iconButton: { width: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  homeButtonLarge: { width: '100%', alignItems: 'flex-start' },
+  cityGlass: { marginLeft: 'auto', borderRadius: ControlStyles.pill.borderRadius, flexShrink: 1 },
+  cityGlassLarge: { marginLeft: 0, flex: 1, minWidth: 0 },
+  iconGlass: { borderRadius: ControlStyles.icon.borderRadius },
+  cityButton: { ...ControlStyles.pill, flexDirection: 'row', gap: Spacing.one, flexShrink: 1, paddingHorizontal: 12 },
+  city: { ...Typography.label, flexShrink: 1 },
+  iconButton: ControlStyles.icon,
   unreadBadge: { position: 'absolute', top: 0, right: 0, minWidth: 18, borderRadius: 9, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
   unreadText: { fontSize: 10, lineHeight: 14, fontVariant: ['tabular-nums'] },
   journalIntro: { paddingTop: Spacing.three, gap: Spacing.one },

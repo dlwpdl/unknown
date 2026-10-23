@@ -64,11 +64,14 @@ test('date separators use local calendar dates, including year and midnight boun
   assert.equal(chatDateLabel('invalid', undefined, now), null);
 });
 
-test('members keep identities when optional avatar signing fails, and RPC failures propagate', async () => {
-  const client = { rpc: async () => ({ data: [{ id: 'one', nickname: '이웃', avatar_path: 'one/a.jpg', is_host: true }], error: null }),
-    storage: { from: () => ({ createSignedUrls: async () => ({ data: null, error: new Error('offline') }) }) } };
-  const rows = await loadChatMembers(client, 'room');
-  assert.equal(rows[0].nickname, '이웃');
+test('group members use the scoped meetup roster and keep identity if a private photo download fails', async () => {
+  const path = '00000000-0000-4000-8000-000000000001/one.webp';
+  const client = { rpc: async (name, args) => { assert.equal(name, 'get_chilling_roster'); assert.deepEqual(args, { p_post_id: 'post' }); return { data: [{ userId: 'one', displayName: '산책친구', photoPaths: [path], isHost: true }], error: null }; },
+    storage: { from: bucket => { assert.equal(bucket, 'meetup-profiles'); return { download: async () => ({ data: null, error: new Error('offline') }), createSignedUrls() { assert.fail('private photos must not receive bearer URLs'); } }; } } };
+  const rows = await loadChatMembers(client, 'post');
+  assert.equal(rows[0].nickname, '산책친구');
+  assert.equal(rows[0].id, 'one');
+  assert.equal(rows[0].is_host, true);
   assert.equal(rows[0].avatarUrl, undefined);
   await assert.rejects(loadChatMembers({ rpc: async () => ({ error: new Error('FORBIDDEN') }) }, 'room'), /FORBIDDEN/);
 });

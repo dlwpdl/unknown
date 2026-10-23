@@ -66,7 +66,7 @@ test('a consumed map target preserves later filters and pan on Back; a fresh sam
     && node.arguments[0]?.getText(map).includes('targetFocusRef'))[0];
   assert.ok(effect, 'the actual map applies an explicit canonical target');
   const calls = {}, context = { isFocused: true, targetId: undefined, targetLatitude: undefined, targetLongitude: undefined,
-    targetRecommended: true, placeRequest: 'first-entry', targetFocusRef: { current: null }, locationRevision: { current: 7 }, Date,
+    targetRecommended: true, targetVisited: false, placeRequest: 'first-entry', targetFocusRef: { current: null }, locationRevision: { current: 7 }, Date,
   };
   for (const name of ['setLocating', 'setLocationError', 'setSelectedFilters', 'setQuery', 'setSearch', 'setMode', 'setSelectedId', 'setCenter', 'setDateFilter', 'setDate']) {
     context[name] = value => { calls[name] = value; };
@@ -107,6 +107,13 @@ test('a consumed map target preserves later filters and pan on Back; a fresh sam
   calls.setCenter = 'legacy-link-later-pan';
   context.isFocused = false; focus(); context.isFocused = true; focus();
   assert.equal(calls.setCenter, 'legacy-link-later-pan', 'legacy links without a request are consumed once too');
+  Object.assign(context, { targetVisited: true, placeRequest: 'explicit-team-visited-place' });
+  focus();
+  assert.deepEqual(Array.from(calls.setSelectedFilters), ['visited']);
+  assert.equal(calls.setSelectedId, context.targetId);
+  calls.setCenter = 'later-pan-after-visited';
+  context.isFocused = false; focus(); context.isFocused = true; focus();
+  assert.equal(calls.setCenter, 'later-pan-after-visited', 'Back from an attested visit must preserve the current map');
 });
 
 test('curated canonical pins survive the existing 500-result cap', () => {

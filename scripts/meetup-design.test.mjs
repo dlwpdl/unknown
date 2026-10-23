@@ -28,7 +28,8 @@ test('모임 프로필은 사진·작성 예시·관심사 태그·미리보기�
   assert.ok(profile.includes('app_meetup-profile.pressable.5'), '사진 선택 컨트롤');
   assert.ok(profile.includes('app_meetup-profile.pressable.4'), '작성 예시를 눌러 채우는 프롬프트 칩');
   assert.ok(profile.includes('app_meetup-profile.pressable.6') && profile.includes('app_meetup-profile.pressable.7'), '관심사 태그 추가·삭제');
-  assert.ok(profile.includes('<ChillingProfileCard profile={{ ...profile, interests: tags }} identity={me} />'), '계정 정보와 모임용 내용을 함께 미리 보여준다');
+  assert.ok(profile.includes('chillingProfilePreview(draftProfile, audience)'), '대상별 모임 프로필 미리보기');
+  assert.ok(!profile.includes('setProfilePhoto'), '모임 사진을 바꿔도 일반 계정 사진은 변경하지 않는다');
   assert.ok(profile.includes('필수 항목'), '저장에 필요한 항목의 작성 상태 표시');
 });
 

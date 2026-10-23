@@ -13,7 +13,7 @@ import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useCommunityCity } from '@/lib/community-city';
-import { CITY_PLACES_COLLECTED_AT, getCityRecommendations, getCityPlacesCoverage, type CityPlace, type PlaceCategory } from '@/lib/city-places';
+import { CITY_PLACES_COLLECTED_AT, getCityBrowsePlaces, getCityPlacesCoverage, type CityPlace, type PlaceCategory } from '@/lib/city-places';
 import { useCityPlacesRevision } from '@/hooks/use-city-places';
 import { usePlaceReviewSummaries } from '@/hooks/use-place-review-summaries';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -34,14 +34,14 @@ export default function PlacesScreen() {
 function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
   const { tr, language, locale: appLocale } = useLanguage();
   const categories: { id: PlaceCategory; label: string }[] = [
-    { id: 'all', get label() { return tr("전체"); } }, { id: 'food', get label() { return tr("맛집"); } }, { id: 'cafe', get label() { return tr("카페"); } }, { id: 'places', get label() { return tr("가볼 만한 곳"); } },
+    { id: 'all', get label() { return tr("TOP 50"); } }, { id: 'food', get label() { return tr("레스토랑"); } }, { id: 'cafe', get label() { return tr("카페"); } }, { id: 'places', get label() { return tr("가볼 만한 곳"); } },
   ];
   const theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
   const [limit, setLimit] = useState(10), [category, setCategory] = useState<PlaceCategory>('all'), [query, setQuery] = useState('');
   let places: CityPlace[] = [], recommendations: CityPlace[] = [], error = '';
   if (city) {
     try {
-      recommendations = getCityRecommendations(city.id, category);
+      recommendations = getCityBrowsePlaces(city.id, category);
       places = recommendations.filter(place => (place.name + ' ' + place.address).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
     }
     catch { error = '이 도시의 장소 정보를 불러오지 못했어요.'; }
@@ -61,7 +61,7 @@ function PlacesList({ city }: { city?: (typeof CITIES)[number] }) {
         : error ? <StateCard kind="error" title={tr("장소를 불러오지 못했어요")} body={error} /> : <>
           <ThemedText type="small" themeColor="textSecondary">{tr(city.name)} · {tr(getCityPlacesCoverage(city.id))}</ThemedText>
           <ThemedText accessibilityRole="header" style={styles.title}>{tr("이 도시에서 가볼 만한 곳")}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">{tr("사진 명소와 들러 볼 만한 식당을 골랐어요")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("가볼 만한 곳과 레스토랑·카페를 골랐어요")}</ThemedText>
           <TextInput accessibilityLabel={tr("장소 검색")} value={query} onChangeText={setQuery} onFocus={() => play('selection')}
             placeholder={tr("목록에서 이름·주소 검색")} placeholderTextColor={theme.textSecondary} returnKeyType="search" autoCorrect={false}
             onSubmitEditing={() => play('selection')} style={[styles.search, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]} />

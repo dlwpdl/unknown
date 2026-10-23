@@ -7,7 +7,7 @@ import { DISCOVERY_CATEGORIES, discoveryPlace, mergeCityTop25 } from '../src/lib
 import * as maps from '../src/lib/post-maps.ts';
 
 const source = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
-const start = source.indexOf('function DiscoveryCard('), end = source.indexOf('function Top25Note(', start);
+const start = source.indexOf('function DiscoveryCard('), end = source.indexOf('function GlingVisitedBadge(', start);
 const jsx = (type, props) => ({ type, props });
 const nodes = value => !value || typeof value !== 'object' ? [] : [value, ...Object.values(value).flatMap(nodes)];
 function render(item) {

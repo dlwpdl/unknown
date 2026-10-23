@@ -62,3 +62,18 @@ test('company profile transport permits anonymous public getters and only saved 
   assert.equal(calls.length, 4);
   assert.ok(calls.every(({ init }) => new Headers(init.headers).get('Authorization') === 'Bearer public-key' && init.credentials === 'omit'));
 });
+
+test('public city catalog permits only the exact anonymous read and retains transport boundaries', async () => {
+  const calls = [];
+  const request = publicWebFetch('https://example.supabase.co', 'public-key', async (url, init) => { calls.push({ url, init }); return new Response('{}'); });
+  await request('https://example.supabase.co/rest/v1/rpc/get_city_place_catalog', { method: 'POST', body: '{}', credentials: 'include', headers: { Authorization: 'Bearer private-user' } });
+  assert.equal(calls.length, 1);
+  assert.equal(new Headers(calls[0].init.headers).get('Authorization'), 'Bearer public-key');
+  assert.equal(calls[0].init.credentials, 'omit');
+  for (const path of ['/rest/v1/rpc/get_city_place_catalog_private', '/rest/v1/rpc/save_city_place_catalog', '/rest/v1/city_place_catalog']) {
+    await assert.rejects(request(`https://example.supabase.co${path}`, { method: 'POST', body: '{}' }), /PUBLIC_WEB_READ_ONLY/);
+  }
+  await assert.rejects(request('https://example.supabase.co/rest/v1/rpc/get_city_place_catalog', { method: 'GET' }), /PUBLIC_WEB_READ_ONLY/);
+  await assert.rejects(request('https://other.example/rest/v1/rpc/get_city_place_catalog', { method: 'POST', body: '{}' }), /PUBLIC_WEB_READ_ONLY/);
+  assert.equal(calls.length, 1);
+});

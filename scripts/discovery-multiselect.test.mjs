@@ -1,8 +1,11 @@
+import { sortDiscoveryItems } from '../src/lib/discovery-sort.ts';
+import { bindBusinessPlaces } from '../src/lib/webshops.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { IconSize } from '../src/constants/design-system.ts';
 import { discoveryMatches, mergeCityTop25, discoveryEvent, discoveryEventOnDays } from '../src/lib/discovery.ts';
 
 // Legacy programmatic union compatibility; the map UI now selects one category.
@@ -60,46 +63,52 @@ test('specific discovery categories stay separate while legacy All Events remain
   assert.equal(discoveryMatches(base, 'all', ''), true);
 });
 
-test('real map chips select one category and All clears category and date state', () => {
+test('real map chips toggle a union and All clears category and date state', () => {
   const source = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
   const start = source.indexOf('  const toggleFilter = '), end = source.indexOf('  const chooseDate = ', start);
   assert.ok(start > 0 && end > start, 'map needs an independent filter-toggle handler');
   const filterStart = source.indexOf('const filters:'), filterEnd = source.indexOf('type Result = ', filterStart);
   const jsxStart = source.indexOf('<ScrollView horizontal analyticsId="discovery.filter"');
   const jsxEnd = source.indexOf('</ScrollView>', jsxStart) + '</ScrollView>'.length;
-  let selected = [];
+  let selected = [], sort = 'discount';
   const feedback = [], exports = {};
   const element = (type, props, key) => ({ type, props, key });
   const context = {
     exports, TOP25_GOLD: '#F4CA78', top25Ink: '#68543A',
     styles: {}, theme: { accent: '#CBB9FF', line: '#ccc', backgroundSelected: '#ddd', backgroundElement: '#eee', text: '#222' },
-    ScrollView: 'scroll', Pressable: 'button', View: 'view', ThemedText: 'text', tr: value => value,
+    ScrollView: 'scroll', Pressable: 'button', SelectionChip: 'button', chipBackground: '#eee', View: 'view', ThemedText: 'text', GlingVisitedBadge: 'visited-badge', SymbolView: 'symbol', IconSize, tr: value => value,
     play: value => feedback.push(value), setSelectedFilters: update => { selected = Array.from(typeof update === 'function' ? update(selected) : update); },
-    setDateFilter() {}, setDate() {}, setDateOpen() {}, setDateError() {},
+    setDateFilter() {}, setDate() {}, setDateOpen() {}, setDateError() {}, setSortBy: value => { sort = value; },
     get selectedFilters() { return selected; },
     require: () => ({ jsx: element, jsxs: element }),
   };
-  const chipStart = source.indexOf('  const filterChip = '), chipEnd = source.indexOf('  return <SafeAreaView', chipStart);
+  const chipStart = source.indexOf('  const filterChip = '), chipEnd = source.indexOf('  const quickFilters', chipStart);
   const code = `${source.slice(filterStart, filterEnd)}\n${source.slice(start, end)}\n${source.slice(chipStart, chipEnd)}\nexports.render = () => (${source.slice(jsxStart, jsxEnd)});`;
   vm.runInNewContext(ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, context);
   const buttons = () => [exports.render().props.children].flat(Infinity);
   const button = id => buttons().find(node => node.key === id);
-  assert.deepEqual(buttons().map(node => node.key), ['all', 'top25', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used']);
+  assert.deepEqual(buttons().map(node => node.key), ['all', 'visited', 'top25', 'delivery', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used']);
   button('top25').props.onPress();
   button('cafe').props.onPress();
-  assert.deepEqual(selected, ['cafe']);
+  assert.deepEqual(selected, ['top25', 'cafe']);
   assert.equal(button('top25').props.accessibilityRole, 'button');
-  assert.equal(button('top25').props.accessibilityState.selected, false);
+  assert.equal(button('top25').props.accessibilityState.selected, true);
   assert.equal(button('cafe').props.accessibilityState.selected, true);
   assert.equal(button('cafe').props.accessibilityLabel, '카페');
   button('top25').props.onPress();
-  assert.deepEqual(selected, ['top25']);
-  assert.equal(button('top25').props.accessibilityState.selected, true);
-  assert.equal(button('cafe').props.accessibilityState.selected, false);
+  assert.deepEqual(selected, ['cafe']);
+  assert.equal(button('top25').props.accessibilityState.selected, false);
+  assert.equal(button('cafe').props.accessibilityState.selected, true);
+  button('visited').props.onPress();
+  assert.deepEqual(selected, ['cafe', 'visited']);
+  assert.equal(button('visited').props.accessibilityLabel, 'gling Visited');
+  assert.equal(button('top25').props.accessibilityState.selected, false);
+  sort = 'discount';
   button('all').props.onPress();
   assert.deepEqual(selected, []);
+  assert.equal(sort, 'near');
   assert.equal(button('all').props.accessibilityState.selected, true);
-  assert.deepEqual(feedback, ['selection', 'selection', 'selection', 'selection']);
+  assert.deepEqual(feedback, ['selection', 'selection', 'selection', 'selection', 'selection']);
 });
 
 test('the real result pipeline applies city, hidden author, listing expiry and event dates around the union', () => {
@@ -112,6 +121,7 @@ test('the real result pipeline applies city, hidden author, listing expiry and e
   const blocked = { ...cafe('blocked'), source: 'post', post: { id: 'blocked', kind: 'story', author: { id: 'blocked-author' } } };
   const expired = { ...cafe('expired'), source: 'post', category: 'used', post: { id: 'expired', kind: 'listing', listingStatus: 'closed', expiresAt: '2027-01-01', author: { id: 'visible' } } };
   const exports = {}, context = {
+    bindBusinessPlaces, sortDiscoveryItems, deliveryOnly: false, registry: { links: {}, shops: [] }, sortBy: 'near', userLocation: null,
     exports, catalogItems: [], current: { items: [cafe('ordinary'), blocked, expired, { ...cafe('foreign'), cityId: 'toronto' }, event('2026-10-17'), event('2026-10-18')] },
     city: { id: cityId }, now: Date.parse('2026-10-15T12:00:00Z'), selectedFilters: ['top25', 'cafe', 'used', 'festival'], query: '', days: ['2026-10-17'],
     hidden: (_type, _id, author) => author === 'blocked-author', discoveryEvent, discoveryEventOnDays, discoveryMatches,

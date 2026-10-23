@@ -1,3 +1,5 @@
+import { sortDiscoveryItems } from '../src/lib/discovery-sort.ts';
+import { bindBusinessPlaces } from '../src/lib/webshops.ts';
 import { tr } from '../src/i18n/index.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -31,7 +33,9 @@ function gps({ granted = true, fix, defer = false } = {}) {
   const changes = { center: null, userLocation: null }, calls = [], locationRevision = { current: 0 }, AppState = { currentState: 'active' }, exports = {};
   let finish;
   const value = fix ?? { coords: { latitude: 49.28, longitude: -123.12, accuracy: 10 }, timestamp: Date.now() };
-  vm.runInNewContext(compile(source.slice(start, end) + '\nexports.locate = locate;'), {
+  const fixCheck = ts.createSourceFile('map.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX).statements.find(statement =>
+    ts.isVariableStatement(statement) && statement.declarationList.declarations.some(item => item.name.getText() === 'freshMapFix'))?.getText() ?? '';
+  vm.runInNewContext(compile(fixCheck + '\n' + source.slice(start, end) + '\nexports.locate = locate;'), {
     exports, locating: false, locationRevision, AppState, isFreshLocation, Date,
     Location: { Accuracy: { Balanced: 3 }, requestForegroundPermissionsAsync: async () => { calls.push('permission'); return { granted }; },
       getCurrentPositionAsync: async () => { calls.push('gps'); return defer ? new Promise(resolve => { finish = resolve; }) : value; } },
@@ -86,7 +90,7 @@ test('Top 25 merges only visible recommendations before filtering and keeps the 
   const pick = { id: 'park', cityId: 'vancouver', title: '공원', label: '공개 장소', category: 'nature', latitude: 49.28, longitude: -123.12, reason: '선정 이유', sourceUrl: 'https://example.org/park', postIds: ['hidden-post'] };
   const exports = {};
   const item = { id: 'post:hidden-post', source: 'post', sourceId: 'hidden-post', cityId: 'vancouver', title: '비공개 제목', category: 'nature', label: '공개 위치', latitude: 49.28, longitude: -123.12, price: null, imageUri: 'private-image', post: { id: 'hidden-post', kind: 'story', author: { id: 'blocked-author' } } };
-  const context = { exports, catalogItems: [], current: { items: [item], limited: false }, city: { id: 'vancouver' }, now: Date.now(), selectedFilters: ['top25'], query: '', days: [], hidden: () => true,
+  const context = { exports, bindBusinessPlaces, sortDiscoveryItems, deliveryOnly: false, registry: { links: {}, shops: [] }, sortBy: 'near', userLocation: null, catalogItems: [], current: { items: [item], limited: false }, city: { id: 'vancouver' }, now: Date.now(), selectedFilters: ['top25'], query: '', days: [], hidden: () => true,
     discoveryEventOnDays, discoveryMatches, mergeCityTop25: (items, city) => mergeCityTop25(items, city, [pick]), discoveryEvent: () => null };
   vm.runInNewContext(compile(`export function run() { ${source.slice(start, end)} return { items, limited }; }`), context);
   const result = exports.run();
@@ -115,7 +119,7 @@ test('map pins, list and count exclude community stories but retain actual place
   const event = { ...story, id: 'event:festival', sourceId: 'festival', source: 'event', title: '실제 행사', category: 'festival', post: undefined };
   const exports = {};
   vm.runInNewContext(compile(`exports.run = () => { ${source.slice(start, end)} return items; };`), {
-    exports, current: { items: [story, { ...story, id: 'post:legacy', post: { ...story.post, kind: undefined } }, listing('used'), listing('housing'), listing('dining'), { ...story, id: 'post:missing', post: undefined }, event] },
+    exports, bindBusinessPlaces, sortDiscoveryItems, deliveryOnly: false, registry: { links: {}, shops: [] }, sortBy: 'near', userLocation: null, current: { items: [story, { ...story, id: 'post:legacy', post: { ...story.post, kind: undefined } }, listing('used'), listing('housing'), listing('dining'), { ...story, id: 'post:missing', post: undefined }, event] },
     catalogItems: [place], city: { id: 'vancouver' }, now: Date.now(), selectedFilters: [], query: '', days: [], hidden: () => false,
     discoveryEventOnDays, discoveryMatches, mergeCityTop25, discoveryEvent: () => null,
   });
@@ -168,7 +172,7 @@ function requests({ deferFirst = false, filter = 'used', includeEvents = filter 
 }
 test('focus entry starts at page zero and cancels the request on blur', () => {
   const marker = '  useFocusEffect(useCallback(() => {';
-  const start = source.indexOf(marker), end = source.indexOf('  }, [loadPage]));', start);
+  const end = source.indexOf('  }, [loadPage]));'), start = source.lastIndexOf(marker, end);
   assert.ok(start > 0 && end > start);
   const calls = [], exports = {}, request = { current: new AbortController() }, locationRevision = { current: 0 };
   const signal = request.current.signal;

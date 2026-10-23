@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import type { FeedSort } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { lensControlStyle } from '@/lib/lens-control';
 
 export function FeedSortControl({ sort, title, onChange }: { sort: FeedSort; title: string; onChange: (sort: FeedSort) => void }) {
   const { tr } = useLanguage();
@@ -14,14 +15,14 @@ export function FeedSortControl({ sort, title, onChange }: { sort: FeedSort; tit
   return <View style={[styles.container, { backgroundColor: theme.background, borderBottomColor: theme.line }]}>
     <View style={styles.row}>
       <ThemedText accessibilityRole="header" style={styles.title}>{title}</ThemedText>
-      <View style={[styles.options, { backgroundColor: theme.backgroundElement }]}>
+      <View style={styles.options}>
         {(['latest', 'popular'] as const).map(option => {
           const selected = sort === option;
           const label = tr(option === 'latest' ? '최신순' : '인기순');
           return <Pressable key={option} analyticsId="components_feed-sort-control.order"
             accessibilityRole="button" accessibilityLabel={tr("{0}으로 정렬", (label))} accessibilityState={{ selected }} aria-pressed={selected}
             onPress={() => { play('selection'); onChange(option); }}
-            style={({ pressed }) => [styles.option, { backgroundColor: selected ? theme.backgroundSelected : 'transparent', borderColor: selected ? theme.accent : 'transparent', opacity: pressed ? 0.65 : 1 }]}>
+            style={({ pressed }) => [styles.option, { backgroundColor: selected ? theme.backgroundSelected : 'transparent', opacity: pressed ? 0.65 : 1 }, lensControlStyle({ borderColor: selected ? theme.accent : 'transparent' }, pressed)]}>
             <ThemedText type="smallBold" style={{ color: selected ? theme.accent : theme.textSecondary }}>{label}</ThemedText>
           </Pressable>;
         })}

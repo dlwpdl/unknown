@@ -712,13 +712,8 @@ export async function leaveMeetup(client: SupabaseClient, postId: string) {
   if (result.error) throw result.error;
 }
 
-export async function loadPendingMeetupRequests(client: SupabaseClient, hostId: string) {
-  const result = await client
-    .from('meetup_requests')
-    .select('id,post_id,requester_id,message,status,created_at,requester:profiles!meetup_requests_requester_id_fkey(nickname,verification_level),post:posts!meetup_requests_post_id_fkey(title,room:room_preview)')
-    .eq('host_id', hostId)
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false });
+export async function loadPendingMeetupRequests(client: SupabaseClient, before?: FeedCursor) {
+  const result = await client.rpc('get_pending_chilling_requests', before ? { p_before_created: before.createdAt, p_before_id: before.id } : undefined);
   if (result.error) throw result.error;
   return (result.data ?? []) as unknown as MeetupRequest[];
 }

@@ -1,8 +1,10 @@
+import * as discoverySort from '../src/lib/discovery-sort.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { bindBusinessPlaces } from '../src/lib/webshops.ts';
 import * as discovery from '../src/lib/discovery.ts';
 import { contentAdPosition } from '../src/lib/content-ad-placement.ts';
 import { appendUniquePosts } from '../src/lib/feed-data.ts';
@@ -42,6 +44,10 @@ function mount(file, component, imports, globals = {}, props = {}) {
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     'expo-router': { Link: 'Link', useIsFocused: () => true, useFocusEffect: fn => effect(fn, [fn]), useLocalSearchParams: () => ({}), useRouter: () => ({}), usePathname: () => '/' },
     'expo-asset': { Asset: { fromModule: () => ({ uri: 'local.png' }) } },
+    '@/lib/discovery-sort': discoverySort,
+    '@/lib/delivery-partners': { DELIVERY_PARTNERS: [], deliveryPartnerPlace: () => undefined },
+    '@/lib/webshops': { bindBusinessPlaces, loadCityBusinessLinks: async () => ({}), loadCityWebshops: async () => [] },
+    '@/components/selection-chip': { SelectionChip: 'Pressable' },
     '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' },
     '@/components/feed-ad': { FeedAd: 'FeedAd' }, '@/lib/content-ad-placement': { contentAdPosition },
     '@/lib/ads': { adsSupported: true },
@@ -85,7 +91,7 @@ test('map list has one slot after the fourth real result; canvas, selected overl
   for (const count of [4, 5, 9]) {
     const places = Array.from({ length: count }, (_, index) => ({ id: `osm:node:${index + 1}`, cityId: city.id, name: `Place ${index}`, category: 'cafe', address: 'Vancouver', latitude: 49.28, longitude: -123.12, sourceUrl: 'https://www.openstreetmap.org/' }));
     const view = mount('../src/app/map.tsx', 'CityMap', {
-      '@/lib/discovery': discovery, '@/lib/city-places': { getCityRecommendations: () => places }, '@/hooks/use-city-places': { useCityPlacesRevision() {} },
+      '@/lib/discovery': discovery, '@/lib/city-places': { getCityDiscoveryPlaces: () => places }, '@/hooks/use-city-places': { useCityPlacesRevision() {} },
       '@/lib/ticketmaster': { EVENT_CITIES: { vancouver: {} }, loadTicketmasterEvents: async () => ({ events: [] }) },
     });
     await view.settle();
@@ -133,7 +139,7 @@ test('the independent public reader counts across appended pages without replaci
 test('embedded public map back closes only its own presentation', async () => {
   let closed = 0;
   const view = mount('../src/app/map.tsx', 'CityMap', {
-    '@/lib/discovery': discovery, '@/lib/city-places': { getCityRecommendations: () => [] }, '@/hooks/use-city-places': { useCityPlacesRevision() {} },
+    '@/lib/discovery': discovery, '@/lib/city-places': { getCityDiscoveryPlaces: () => [] }, '@/hooks/use-city-places': { useCityPlacesRevision() {} },
     '@/lib/ticketmaster': { EVENT_CITIES: { vancouver: {} }, loadTicketmasterEvents: async () => ({ events: [] }) },
   }, {}, { onClose: () => closed++ });
   await view.settle();
@@ -145,7 +151,7 @@ test('embedded discovery opens validated public place info above chat without hi
   const opened = [], place = { id: 'osm:node:1', cityId: city.id, name: 'Place', category: 'cafe', address: 'Vancouver', latitude: 49.28, longitude: -123.12, sourceUrl: 'https://www.openstreetmap.org/node/1' };
   let closes = 0;
   const view = mount('../src/app/map.tsx', 'CityMap', {
-    '@/lib/discovery': discovery, '@/lib/city-places': { getCityRecommendations: () => [place] }, '@/hooks/use-city-places': { useCityPlacesRevision() {} },
+    '@/lib/discovery': discovery, '@/lib/city-places': { getCityDiscoveryPlaces: () => [place] }, '@/hooks/use-city-places': { useCityPlacesRevision() {} },
     '@/lib/ticketmaster': { EVENT_CITIES: { vancouver: {} }, loadTicketmasterEvents: async () => ({ events: [] }) },
     'expo-web-browser': { openBrowserAsync: async url => { opened.push(url); return { type: 'dismiss' }; } },
   }, {}, { onClose: () => closes++ });

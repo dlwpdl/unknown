@@ -138,3 +138,15 @@ test('unmatched places stay empty and English displays ratings without claiming 
   assert.doesNotMatch(text(ui.PlaceExternalRatings(scope)), /Gling member reviews/);
   setActiveLanguage('ko');
 });
+
+
+test('a verified server rating snapshot replaces bundled counts and rejects an invalid replacement atomically', () => {
+  const api = load(), original = snapshot()[0], updated = { ...original, count: original.count + 7 };
+  assert.equal(typeof api.replaceExternalPlaceRatings, 'function');
+  assert.equal(api.replaceExternalPlaceRatings([updated]), true);
+  assert.equal(api.getPlaceExternalRatings(updated.cityId, updated.placeId)[0].count, updated.count);
+  for (const rows of [[{ ...updated, count: -1 }], [{ ...updated, checkedAt: 1 }], [{ ...updated, placeName: null }], [updated, updated], null, Array(4001).fill(updated)]) {
+    assert.equal(api.replaceExternalPlaceRatings(rows), false);
+    assert.equal(api.getPlaceExternalRatings(updated.cityId, updated.placeId)[0].count, updated.count);
+  }
+});

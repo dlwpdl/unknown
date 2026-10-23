@@ -2,6 +2,7 @@ import './merchant-profile.css';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import Head from 'expo-router/head';
+import { usePublicWebshop, WebshopBanner, WebshopComparisonSheet, WebshopOrderButton } from '@/components/business-webshop';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -264,7 +265,7 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
   const [retry, setRetry] = useState(0);
   const [broken, setBroken] = useState({ banner: false, avatar: false });
   const [reviewKind, setReviewKind] = useState<ReviewKind>('usage');
-  const [tab, setTab] = useState<ProfileTab>('posts');
+  const [tab, setTab] = useState<ProfileTab>('about');
   const [postCounts, setPostCounts] = useState<PostCounts | null>(null);
   const [reviewCounts, setReviewCounts] = useState<ReviewCounts | null>(null);
   function selectKind(kind: ReviewKind) {
@@ -282,6 +283,8 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
   }, [merchantId, retry]);
   const current = result?.key === merchantId ? result : null;
   const profile = current?.profile;
+  const webshop = usePublicWebshop(publicWebClient, profile?.id, retry);
+  const [orderOpen, setOrderOpen] = useState(false);
   const busy = !current || current.attempt !== retry;
   const phone = merchantPhoneUrl(profile?.public_phone ?? ''), directions = merchantMapsUrl(profile?.address ?? '');
   const unavailable = current && !current.failed && !profile;
@@ -289,12 +292,12 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
   const reviews = reviewCounts?.key === `${merchantId}:${profile?.review_post_id}` ? reviewCounts : null;
   const totalReviews = reviews?.usage != null && reviews.employment != null ? reviews.usage + reviews.employment : null;
   const tabs: { id: ProfileTab; label: string; count?: number | null }[] = [
-    { id: 'posts', label: '게시글', count: counts?.postCount }, { id: 'jobs', label: '채용', count: counts?.jobCount },
-    { id: 'reviews', label: '리뷰', count: totalReviews }, { id: 'about', label: '소개' },
+    { id: 'about', label: '소개' }, { id: 'posts', label: '소식', count: counts?.postCount },
+    { id: 'jobs', label: '채용', count: counts?.jobCount }, { id: 'reviews', label: '후기', count: totalReviews },
   ];
   const panelId = (id: ProfileTab) => `company-panel-${merchantId}-${id}`;
   return <article className="reader-company" aria-busy={busy}>
-    <Head>{profile && <><title>{profile.name} | 글링 비즈니스 프로필</title><meta name="description" content={`${profile.city_name} · ${profile.industry}. ${profile.services.slice(0, 150)}`} /></>}
+    <Head>{profile && <><title>{`${profile.name} | 글링 비즈니스 프로필`}</title><meta name="description" content={`${profile.city_name} · ${profile.industry}. ${profile.services.slice(0, 150)}`} /></>}
       <link rel="canonical" href={`${PUBLIC_SITE}/company?id=${merchantId}`} />
       {unavailable && <meta name="robots" content="noindex, nofollow" />}</Head>
     <a className="reader-back" href="/" onClick={() => play('selection')}>← 동네 이야기로</a>
@@ -303,13 +306,14 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
       <button disabled={busy} onClick={() => { play('selection'); setRetry((value) => value + 1); }}>다시 시도</button></div>}
     {unavailable && <div className="reader-notice"><h1>비즈니스 프로필을 찾을 수 없어요</h1><p>현재 공개된 비즈니스 프로필이 아니에요.</p></div>}
     {profile && <>
+      <div className="reader-company-hero">
       <div className="reader-company-banner">{profile.bannerUri && !broken.banner
         ? <img src={profile.bannerUri} alt={`${profile.name} 배너`} onError={() => setBroken((previous) => ({ ...previous, banner: true }))} />
         : <span aria-hidden="true">{profile.name}</span>}</div>
       <header className="reader-company-identity"><div className="reader-company-business"><div className="reader-company-avatar">{profile.avatarUri && !broken.avatar
         ? <img src={profile.avatarUri} alt={`${profile.name} 로고`} onError={() => setBroken((previous) => ({ ...previous, avatar: true }))} />
         : <span aria-hidden="true">{profile.name.slice(0, 1)}</span>}</div>
-        <div><h1>{profile.name}</h1><p className="reader-kicker">{profile.city_name} · {profile.industry}</p></div></div>
+        <div><p className="reader-kicker">{[profile.industry, profile.city_name].filter(Boolean).join(' · ')}</p><h1>{profile.name}</h1></div></div>
         {profile.review_post_id && <ProfileRatings key={`${merchantId}:${profile.review_post_id}`} merchantId={merchantId} postId={profile.review_post_id}
           selectedKind={tab === 'reviews' ? reviewKind : null} onSelect={selectKind} onRead={setReviewCounts} controls={panelId('reviews')} />}</header>
       <div className="reader-company-blurb">{profile.services && <p>{profile.services}</p>}
@@ -318,9 +322,15 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
       {!!profile.links?.length && <nav className="reader-company-sources" aria-label="비즈니스 외부 페이지">{profile.links.map(link =>
         <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" aria-label={`${profile.name} ${link.label}, 새 창 열기`}
           onClick={() => play('selection')}>{link.label} <span aria-hidden="true">↗</span></a>)}</nav>}
-      <a className="reader-company-app-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>앱에서 비즈니스 보기 <span aria-hidden="true">↗</span></a>
+      {webshop.shop && <div style={{ display: 'grid', gap: 16, paddingTop: 16 }}><WebshopBanner shop={webshop.shop} onPress={() => setOrderOpen(true)} /><WebshopOrderButton onPress={() => setOrderOpen(true)} /></div>}
+      {webshop.failed && <button type="button" onClick={() => { play('selection'); webshop.retry(); }}>웹샵 정보를 다시 확인해주세요</button>}
+      <div className="reader-company-hero-actions"><a className="reader-company-app-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>{profile.can_message ? '앱에서 문의하기' : '앱에서 비즈니스 보기'} <span aria-hidden="true">↗</span></a>
+        <a className="reader-company-save-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>앱에서 저장 <span aria-hidden="true">↗</span></a></div>
       {(profile.imageLoadFailed || broken.banner || broken.avatar) && <div className="reader-company-image-notice" role="status">
         <p>일부 프로필 사진을 불러오지 못했어요.</p><button disabled={busy} onClick={() => { play('selection'); setRetry((value) => value + 1); }}>사진 다시 불러오기</button></div>}
+      </div>
+      {webshop.shop && <WebshopComparisonSheet client={publicWebClient} shop={webshop.shop} name={profile.name} visible={orderOpen} onClose={() => setOrderOpen(false)} />}
+      <div className="reader-company-details"><div className="reader-company-main-panel">
       <div className="reader-company-tabs" role="tablist" aria-label="비즈니스 프로필 내용">{tabs.map((item, index) => <button type="button" role="tab" key={item.id} data-tab={item.id}
         id={`company-tab-${merchantId}-${item.id}`} aria-controls={panelId(item.id)} aria-selected={tab === item.id} tabIndex={tab === item.id ? 0 : -1}
         onClick={() => { play('selection'); setTab(item.id); }} onKeyDown={(event) => {
@@ -346,6 +356,15 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
                 {profile.address && <><dt>주소</dt><dd>{profile.address}{directions && <a className="reader-company-directions" href={directions} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>길찾기 ↗</a>}</dd></>}
               </dl></div>)}
       </section>)}
+      </div><aside className="reader-company-visit" aria-label="방문 정보"><h2>들르기 전에</h2>
+        {profile.city_name && <p className="reader-company-visit-city">{profile.city_name}</p>}
+        {profile.address && <div><h3>주소</h3><p>{profile.address}</p>{directions && <a href={directions} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>길찾기 ↗</a>}</div>}
+        {profile.business_hours && <div><h3>영업시간</h3><p className="reader-company-hours">{profile.business_hours}</p></div>}
+        {phone && <div><h3>공개 전화</h3><a href={phone} onClick={() => play('selection')}>{profile.public_phone}</a></div>}
+        {!profile.address && !profile.business_hours && !phone && <p>아직 등록된 방문 정보가 없어요.</p>}
+        <p className="reader-company-visit-note">비즈니스가 공개한 정보만 표시돼요.</p>
+      </aside></div>
+      <a className="reader-company-mobile-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>{profile.can_message ? '앱에서 문의하기' : '앱에서 비즈니스 보기'} <span aria-hidden="true">↗</span></a>
     </>}
   </article>;
 }
