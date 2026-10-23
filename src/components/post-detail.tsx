@@ -1,4 +1,5 @@
 import { useLanguage } from '@/hooks/use-language';
+import type { FlatList as NativeFlatList } from 'react-native';
 import { Pressable, FlatList } from '@/components/analytics-controls';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
@@ -10,11 +11,8 @@ import {
   Platform,
   Modal,
   StyleSheet,
-  UIManager,
   TextInput,
   View,
-  type FlatList as NativeFlatList,
-  type TextInputInstance,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -141,7 +139,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const likeBusy = useRef(false);
   const pageRequests = useRef(new Set<string>());
   const loadedPages = useRef(new Set<string>());
-  const inputRef = useRef<TextInputInstance>(null);
+  const inputRef = useRef<TextInput>(null);
   const scrollRef = useRef<NativeFlatList<CommentListRow>>(null);
   const createdCommentToReveal = useRef<string | null>(null);
   const listHeaderHeight = useRef(0);
@@ -624,11 +622,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   return (
     <ThemedView style={{ flex: 1, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' }}
       onLayout={event => {
-        if (Platform.OS === 'ios') {
-          const target = event.currentTarget;
-          if (typeof target === 'number') UIManager.measureInWindow(target, (_x, y) => setKeyboardOffset(y));
-          else target.measureInWindow((_x, y) => setKeyboardOffset(y));
-        }
+        if (Platform.OS === 'ios') event.currentTarget.measureInWindow((_x, y) => setKeyboardOffset(y));
       }}>
       <Modal visible={postMenuOpen || deletePostOpen} transparent animationType="fade" onRequestClose={() => { if (!savingPost) { play('selection'); setPostMenuOpen(false); setDeletePostOpen(false); } }}>
         <View style={styles.menuOverlay}>

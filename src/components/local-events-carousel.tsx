@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useFocusEffect, useIsFocused, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
-import { AccessibilityInfo, Animated, AppState, Easing, type ScrollViewInstance, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { AccessibilityInfo, Animated, AppState, Easing, ScrollView as NativeScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
@@ -30,7 +30,7 @@ export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityRea
   const [attempt, setAttempt] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [screenReader, setScreenReader] = useState(false);
-  const carousel = useRef<ScrollViewInstance>(null);
+  const carousel = useRef<NativeScrollView>(null);
   const activeIndexRef = useRef(0);
   const selection = useRef({ cityId: '', eventId: '' });
   const userPauseUntil = useRef(0);

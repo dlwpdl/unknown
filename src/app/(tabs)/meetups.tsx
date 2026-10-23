@@ -3,7 +3,7 @@ import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, FlatList, Switch } from '@/components/analytics-controls';
 import { useCallback, useRef, useState, useSyncExternalStore } from 'react';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { Animated, DeviceEventEmitter, Easing, Keyboard, LayoutAnimation, Modal, Platform, StyleSheet, TextInput, UIManager, useWindowDimensions, View, type TextInputInstance } from 'react-native';
+import { Animated, DeviceEventEmitter, Easing, Keyboard, LayoutAnimation, Modal, Platform, StyleSheet, TextInput, UIManager, useWindowDimensions, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Reanimated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
@@ -80,7 +80,7 @@ function MeetupDiscovery({ destination, sourceInvalid }: { destination: MeetupDe
   const [listOpacity] = useState(() => new Animated.Value(1));
   const [searchMotion] = useState(() => new Animated.Value(0));
   const [sheetOffset] = useState(() => new Animated.Value(screenHeight));
-  const searchInput = useRef<TextInputInstance>(null);
+  const searchInput = useRef<TextInput>(null);
   const version = useRef(0), busy = useRef(false);
   const failedCursor = useRef<FeedCursor | null>(null);
   const scope = isAuthed ? me.id : 'guest';
@@ -206,7 +206,7 @@ function MeetupDiscovery({ destination, sourceInvalid }: { destination: MeetupDe
     <FlatList analyticsId="app_tabs_meetups.flatlist.1" data={visible} keyExtractor={p => p.id} keyboardShouldPersistTaps="handled" refreshing={loading && posts.length > 0} onRefresh={() => void fetchPage()}
       // 하단 고정 '모임 만들기' 버튼이 마지막 카드를 가리지 않도록 그만큼 비워 둔다.
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + TabBarHeight + 84, flexGrow: initialLoading ? 1 : undefined, justifyContent: initialLoading ? 'center' : undefined }]}
-      ListHeaderComponent={initialLoading ? undefined : <>
+      ListHeaderComponent={initialLoading ? null : <>
         {destination && <View style={[styles.pending, { borderColor: theme.line, backgroundColor: theme.card, flexDirection: 'row', alignItems: 'center', gap: Spacing.two }]}>
           <View style={{ flex: 1, minWidth: 0 }}><ThemedText type="small" themeColor="textSecondary">{tr(city.name)} · {destination.kind === 'place' ? copy('이 장소에 갈 모임', 'Meetups for this place') : copy('이 행사에 갈 모임', 'Meetups for this event')}</ThemedText><ThemedText style={Typography.section}>{sourceLabel || copy('행사 정보를 확인하고 있어요.', 'Checking event details…')}</ThemedText></View>
           <Pressable analyticsId="app_tabs_meetups.pressable.16" accessibilityRole="button" accessibilityLabel={copy('장소·행사 조건 해제', 'Clear place or event filter')} onPress={clearDestination} style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={IconSize.toolbar} tintColor={theme.text} /></Pressable>
@@ -248,8 +248,8 @@ function MeetupDiscovery({ destination, sourceInvalid }: { destination: MeetupDe
         : cursor ? <StateCard title={copy('아직 모든 모임을 확인하지 않았어요', 'More meetups to check')} body={copy('현재 페이지에는 조건에 맞는 모임이 없어요. 아래에서 더 확인해 보세요.', 'No matches on this page. Load more to keep looking.')} />
           : destination ? <StateCard title={copy('선택한 조건에 맞는 모임이 아직 없어요', 'No meetups match these filters yet')} body={copy('모임 종류·검색어·필터를 바꾸거나, 이곳에 갈 모임을 직접 열어보세요.', 'Try another meetup type or filter, or start a meetup here.')} />
           : narrowed ? <StateCard title={tr("조건에 맞는 만남이 없어요")} body={tr("검색어나 필터를 바꾸면 더 찾을 수 있어요.")} actionLabel={tr("필터 초기화")} onAction={() => { setSearch(''); setQuery(''); clearFilters(); }} />
-            : <StateCard title={tr("아직 등록된 만남이 없어요")} body={tr("가까운 동네에서 첫 모임을 열어보세요. 한 명이 신청하면 바로 알려드려요.")} />}</Animated.View> : undefined}
-      ListFooterComponent={initialLoading ? undefined : <View style={{ gap: 16, paddingTop: Spacing.four }}>{loading && <GlingLoader color={theme.accent} accessibilityLabel={tr("만남 더 불러오는 중")} />}
+            : <StateCard title={tr("아직 등록된 만남이 없어요")} body={tr("가까운 동네에서 첫 모임을 열어보세요. 한 명이 신청하면 바로 알려드려요.")} />}</Animated.View> : null}
+      ListFooterComponent={initialLoading ? null : <View style={{ gap: 16, paddingTop: Spacing.four }}>{loading && <GlingLoader color={theme.accent} accessibilityLabel={tr("만남 더 불러오는 중")} />}
         {error && <StateCard kind="error" title={tr("만남을 불러오지 못했어요")} body={sourceError ? copy(sourceError, 'Couldn’t verify the event or load meetups. Check the event details or try again.') : tr("연결이 잠시 끊겼어요. 다시 시도해 주세요.")} actionLabel={tr("다시 시도")} onAction={() => { play('selection'); void fetchPage(failedCursor.current); }} />}
         {!loading && !error && cursor && <Pressable analyticsId="app_tabs_meetups.pressable.6" accessibilityRole="button" onPress={() => { play('selection'); void fetchPage(cursor); }} style={styles.more}><ThemedText themeColor="accent">{tr("만남 더 보기")}</ThemedText></Pressable>}
         <MyMeetups onOpen={open} showLoadingIndicator={false} /></View>} />
