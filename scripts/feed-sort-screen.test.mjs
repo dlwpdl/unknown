@@ -22,7 +22,7 @@ function screen({ createdPost, deferPublish = false, os = 'web' } = {}) {
     react: { useState: initial => { const i = slot(initial); return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; }, useRef: initial => slots[slot(() => ({ current: initial }))], useMemo: fn => fn(), useCallback: fn => fn, useEffect: fn => effects.push(fn) },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { Platform: { OS: os }, useWindowDimensions: () => ({ width: 390, fontScale: 1 }), View: 'View', KeyboardAvoidingView: 'KeyboardAvoidingView', TextInput: 'TextInput', Modal: 'Modal', StyleSheet: { create: x => x, hairlineWidth: 1 }, Animated: { Value, View: 'AnimatedView', timing: () => ({ start() {} }), spring: () => ({ start() {} }) }, Alert: { alert() {} }, Keyboard: { dismiss() {} }, DeviceEventEmitter: {}, Easing: { out: x => x, quad: 0 } },
-    'expo-router': { useLocalSearchParams: () => params, useRouter: () => ({ push() {}, navigate: path => routes.push(path), setParams: next => Object.assign(params, next) }), useScrollToTop() {} },
+    'expo-router': { useLocalSearchParams: () => params, useRouter: () => ({ push: path => routes.push(path), navigate: path => routes.push(path), setParams: next => Object.assign(params, next) }), useScrollToTop() {} },
     'react-native-reanimated': { default: { View: 'ReanimatedView' }, useReducedMotion: () => true },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', SafeAreaProvider: 'SafeAreaProvider', useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) },
     '@/hooks/use-theme': { useTheme: () => theme }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
@@ -255,5 +255,14 @@ test('header logo retains its existing Today navigation and selection feedback',
   assert.equal(home.props.accessibilityRole, 'button');
   home.props.onPress();
   assert.deepEqual(app.routes, ['/']);
+  assert.ok(app.feedback.includes('selection'));
+});
+
+
+test('Home magnifier opens the common search route without clearing the current feed', () => {
+  const app=screen(),tree=app.render();
+  nodes(tree).find(node=>node.props?.analyticsId==='components_feed-screen.pressable.2').props.onPress();
+  assert.equal(app.routes[0]?.pathname,'/search');
+  assert.equal(nodes(app.render()).some(node=>node.type==='Modal'&&node.props.visible),false,'Ordinary search no longer opens the old post-only modal');
   assert.ok(app.feedback.includes('selection'));
 });

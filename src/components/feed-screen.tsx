@@ -270,9 +270,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
 
 
   const openSearch = (initial?: string) => {
-    setQuery(initial ?? '');
-    setSearchResults([]);
-    setSearching(true);
+    router.push({ pathname: '/search', params: { ...(initial ? { query: initial } : {}), ...(meetupsOnly ? { kind: 'meetup' } : {}) } });
   };
 
   useEffect(() => {
@@ -657,7 +655,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             <SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={14} tintColor={theme.text} />
           </Pressable></GlassSurface>
           <View style={styles.iconGlass}><Pressable analyticsId="components_feed-screen.pressable.2"
-            onPress={() => { play('reaction'); openSearch(); }} accessibilityRole="button" accessibilityLabel={t.search.placeholder}
+            onPress={() => { play('selection'); openSearch(); }} accessibilityRole="button" accessibilityLabel={appLocale === 'en-CA' ? 'Search Gling' : '통합검색'}
             style={({ pressed }) => [styles.iconButton, controlPresentation(theme, { tone: 'ghost', pressed, reducedMotion }).container]}>
             <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={IconSize.toolbar} tintColor={theme.text} />
           </Pressable></View>
