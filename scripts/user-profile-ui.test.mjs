@@ -37,6 +37,7 @@ function mount(file, name, data, props = {}, params = {}) {
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/gling-loader': { GlingLoader: 'Loader' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' },
     '@/components/post-card': { PostCard: 'PostCard' }, '@/components/post-detail': { PostDetail: 'PostDetail' },
+    '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: (target, visible) => { calls.push(['savedEntry', target, visible]); return { state: null, error: '', loading: false, busy: false, visible, onPress() {} }; } },
     '@/components/manner-summary': { MannerSummary: 'MannerSummary' }, '@/components/report-sheet': { ReportSheet: 'ReportSheet' },
     '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/constants/theme': { Spacing: {}, Depth: { control: {} } }, '@/hooks/use-theme': { useTheme: () => ({}) },
@@ -171,10 +172,14 @@ test('reported posts and authors disappear immediately from cached public histor
     hidden: (kind, id, author) => hidden.has(`${kind}:${id}`) || hidden.has(`user:${author}`),
   }, {}, { id: 'author' });
   context.after(() => harness.cleanup()); await harness.settle();
+  assert.equal(harness.nodes().filter(node => node.type === 'SavedEntryButton').length, 1);
+  assert.equal(harness.calls.at(-1)[0], 'savedEntry');
   hidden.add('post:reported'); harness.render();
   assert.deepEqual(Array.from(list(harness).props.data, item => item.id), ['visible']);
   hidden.add('user:author'); harness.render();
   assert.equal(list(harness).props.data.length, 0); assert.equal(list(harness).props.ListHeaderComponent, null);
+  assert.equal(harness.nodes().some(node => node.type === 'SavedEntryButton'), false);
+  assert.equal(harness.calls.at(-1)[2], false, 'a hidden profile cannot enable the private person save');
 });
 
 test('older history keeps its cursor and rejects an in-flight response after changing tabs', async context => {

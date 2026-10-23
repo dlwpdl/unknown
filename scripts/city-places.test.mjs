@@ -242,6 +242,7 @@ test('foreign-city IDs, unsafe sources and malformed daily payloads cannot repla
 });
 function screen(file, params = { cityId: 'toronto' }, dev = true, placeData = data()) {
   const states = [], routes = [], feedback = [], opened = [], ratingScopes = [];
+  const hidden = () => false;
   let cursor = 0;
   const jsx = (type, props) => ({ type, props });
   const exports = module(file, {
@@ -256,6 +257,8 @@ function screen(file, params = { cityId: 'toronto' }, dev = true, placeData = da
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'anonymous' } }) },
     '@/lib/product-analytics': product,
     '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
+    '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) },
     '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
     '@/hooks/use-place-review-summaries': { usePlaceReviewSummaries: (cityId, ids) => { ratingScopes.push({ cityId, ids }); return {}; } },
     '@/components/place-review-summary': { PlaceReviewSummary: 'PlaceReviewSummary',
