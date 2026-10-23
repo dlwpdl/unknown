@@ -31,6 +31,7 @@ export function getOAuthCode(callbackUrl: string, expectedRedirectUrl: string) {
     throw new Error('OAUTH_CALLBACK_ERROR');
   }
 
+  if (callback.searchParams.getAll('code').length > 1) throw new Error('OAUTH_CODE_AMBIGUOUS');
   const code = callback.searchParams.get('code');
   if (!code) throw new Error('OAUTH_CODE_MISSING');
   return code;

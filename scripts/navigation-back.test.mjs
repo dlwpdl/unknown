@@ -113,10 +113,12 @@ test('shared posts remain escapable during loading, failure and absence, and nev
   let id = 'first', commentId, hasHistory = false, cursor = 0, accountId = 'first-account';
   const states = [], effectHooks = [], effects = [], requests = new Map(), actions = [];
   const SharedPostRoute = screen('../src/app/post/[id].tsx', {
-    'expo-router': { useLocalSearchParams: () => ({ id, commentId }), useRouter: () => ({
+    'expo-router': { useLocalSearchParams: () => ({ id, commentId }), useIsFocused: () => true, useFocusEffect() {}, useRouter: () => ({
       canGoBack: () => hasHistory, back: () => actions.push('back'), replace: path => actions.push(path),
     }) },
     react: {
+      useCallback: callback => callback,
+      useLayoutEffect() {},
       useState(initial) {
         const index = cursor++;
         if (!(index in states)) states[index] = initial;
@@ -130,6 +132,8 @@ test('shared posts remain escapable during loading, failure and absence, and nev
       },
     },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
+    '@react-native-async-storage/async-storage': { __esModule: true, default: {} },
+    '@/lib/shared-post-return': { clearSharedPostReturn: async () => {}, rememberSharedPostReturn: async () => {} },
     'expo-symbols': { SymbolView: 'SymbolView' },
     '@/components/post-detail': { PostDetail: 'PostDetail' },
     '@/components/shared-link-card': { SharedPreviewContent: 'SharedPreviewContent' },
