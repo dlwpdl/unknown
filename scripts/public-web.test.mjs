@@ -8,6 +8,8 @@ import * as jsxRuntime from 'react/jsx-runtime';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { toQR } from 'toqr';
 import { sharedLinkTarget } from '../src/lib/sharing.ts';
+import { publicSiteName } from '../src/lib/public-seo.ts';
+import { instagramPostLink, splitPostAttachments, splitPostLinks } from '../supabase/functions/_shared/post-links.ts';
 import { publicWebTarget, publicWebFetch, publicMerchantId } from '../src/lib/public-web.ts';
 
 const id = '12345678-1234-1234-1234-123456789abc';
@@ -98,7 +100,7 @@ test('shared preview permits the exact anonymous getter while retaining the publ
 
 // renderToStaticMarkup uses the same getServerSnapshot contract as initial hydration.
 // The mounted pass supplies browser snapshots; actual browser hydration is verified separately.
-function readerMarkup(path, { mounted = false, search = '', directPost = false } = {}) {
+function readerMarkup(path, { mounted = false, search = '', directPost = false, articlePost = null, language = 'ko' } = {}) {
   const dark = {}, window = { location: { pathname: path, search } };
   const hooks = mounted ? { ...React, useSyncExternalStore: (_subscribe, snapshot) => snapshot() } : React;
   const modules = {
@@ -108,13 +110,19 @@ function readerMarkup(path, { mounted = false, search = '', directPost = false }
     'expo-asset': { Asset: { fromModule: () => ({ uri: 'local-wordmark' }) } }, toqr: { toQR },
     '@/constants/theme': { WebNightColors: {}, Colors: { dark }, Spacing: { three: 12, four: 16 } },
     '@/constants/design-system': { ControlMetrics: { touch: 44, action: 48 }, Typography: { sheetTitle: { fontSize: 22 }, menu: { fontSize: 16 } } },
-    '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: value => value }) },
+    '@/hooks/use-language': { useLanguage: () => ({ language, tr: value => value }) },
     '@/hooks/use-theme': { useTheme: () => dark },
+    '@/lib/auth': { useAuth: () => ({ isAuthed: false, isAuthLoading: false, me: { id: 'guest' } }) },
+    '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
+    '../../../supabase/functions/_shared/post-links': { instagramPostLink, splitPostAttachments, splitPostLinks },
+    '@/components/post-attachment-link': { PostAttachmentLink: () => null },
+    '@/lib/post-maps': { postMapBody: body => ({ body }) },
+    '@/lib/chilling': { chillingSchedule: () => '공개 일정' },
     '@/lib/interaction-feedback': { InteractionFeedbackProvider: React.Fragment, useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }], TAGS: [] },
     '@/lib/public-web': { publicMerchantId, publicWebTarget },
     '@/lib/sharing': { sharedLinkTarget },
-    '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.ej-entertainment.com', jsonLd: JSON.stringify },
+    '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.ej-entertainment.com', jsonLd: JSON.stringify, publicSiteName },
     '@/lib/public-web-client': { publicWebClient: {} },
     './analytics': { useReaderAnalytics() {} },
   };
@@ -126,10 +134,12 @@ function readerMarkup(path, { mounted = false, search = '', directPost = false }
     vm.runInNewContext(code, { exports, window, URLSearchParams, require: name => modules[name] ?? {} });
     return exports;
   }
+  const article = load('../src/components/public-web/shared-post-article.tsx');
+  modules['./shared-post-article'] = article;
   const landing = load('../src/components/public-web/shared-post-landing.tsx');
   modules['./shared-post-landing'] = { __esModule: true, default: landing.default };
-  const component = directPost ? landing.default : load('../src/components/public-web/reader.tsx').default;
-  return renderToStaticMarkup(React.createElement(component));
+  const component = articlePost ? article.SharedPostArticle : directPost ? landing.default : load('../src/components/public-web/reader.tsx').default;
+  return renderToStaticMarkup(React.createElement(component, articlePost ? { post: articlePost } : undefined));
 }
 
 test('legacy static 404 and initial client render agree before the exact post handoff mounts', () => {
@@ -152,4 +162,26 @@ test('canonical post document retains its direct landing SSR and mounted post de
   assert.match(readerMarkup('/post', options), /class="shared-post-landing"/);
   assert.ok(readerMarkup('/post', { ...options, mounted: true }).includes(`href="gling://post/${id}"`));
   assert.match(readerMarkup('/'), /큰 페스티벌부터/);
+});
+
+
+test('authorized shared article renders read-only text and only the first attachment, without private interaction fields', () => {
+  const post={id,cityId:'vancouver',title:'전체 공개 글',body:'읽을 수 있는 전체 본문',tag:{label:'이야기'},author:{id:'author',nickname:'이웃'},createdAtLabel:'지금',
+    imageUris:['https://example.test/first-photo','PRIVATE_SECOND_PHOTO'],imagePaths:['PRIVATE_ACTOR_PATH','PRIVATE_SECOND_PATH'],commentList:[{body:'PRIVATE_COMMENT'}]};
+  const markup=readerMarkup('/post',{articlePost:post});
+  assert.match(markup,/읽을 수 있는 전체 본문/);assert.equal((markup.match(/<img /g)||[]).length,1);assert.match(markup,/first-photo/);
+  assert.doesNotMatch(markup,/PRIVATE_|<button|<textarea|<input/);
+  const meetup=readerMarkup('/post',{articlePost:{...post,body:'PRIVATE_ROOM_BODY',room:{cadence:'PUBLIC_SCHEDULE',destination:'PRIVATE_DESTINATION',hostContact:'PRIVATE_CONTACT'}}});
+  assert.match(meetup,/공개 일정/);assert.doesNotMatch(meetup,/PRIVATE_|읽을 수 있는 전체 본문/);
+});
+
+
+test('reader title, metadata and language follow KO/EN while authored post text stays original', () => {
+  const ko=readerMarkup('/',{language:'ko'}),en=readerMarkup('/',{language:'en'});
+  assert.match(ko,/<title>글링 \| 캐나다 모임 커뮤니티<\/title>/);
+  assert.match(en,/<title>Gling \| Canada Meetup Community<\/title>/);
+  assert.match(en,/property="og:site_name" content="Gling \| Canada Meetup Community"/);
+  assert.match(en,/class="reader"[^>]+lang="en"/);assert.match(en,/"inLanguage":"en-CA"/);
+  const post={id,cityId:'vancouver',title:'작성한 제목은 원문 그대로',body:'회원이 쓴 원문 본문',tag:{label:'원문 분류'},author:{id:'author',nickname:'원문 닉네임'}};
+  const article=readerMarkup('/post',{language:'en',articlePost:post});assert.match(article,/작성한 제목은 원문 그대로/);assert.match(article,/회원이 쓴 원문 본문/);
 });

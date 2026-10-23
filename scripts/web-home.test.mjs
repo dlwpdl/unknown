@@ -49,3 +49,28 @@ test('legal pages expose the required public documents and safety disclosures', 
   assert.match(LEGAL_DOCUMENTS.privacy.summary, /관리자/);
   assert.match(LEGAL_DOCUMENTS['account-deletion'].summary, /앱을 사용할 수 없어도/);
 });
+
+test('web home title and lang use the resolved saved/device language without translating user or legal content', async () => {
+  const { readFileSync } = await import('node:fs');
+  const vm = await import('node:vm');
+  const { default: ts } = await import('typescript');
+  const webHome = await import('../src/lib/web-home.ts');
+  const publicSeo = await import('../src/lib/public-seo.ts');
+  const { parseLanguagePreference, resolveLanguage } = await import('../src/i18n/language.ts');
+  let language = 'ko';
+  const jsx = (type, props) => ({ type, props });
+  const modules = { '../index.web.css': {}, 'expo-asset': { Asset: { fromModule: () => ({ uri: 'local-asset' }) } },
+    'expo-router/head': { default: 'Head' }, react: { useState: value => [value, () => {}] }, 'react/jsx-runtime': { jsx, jsxs: jsx },
+    '@/constants/theme': { WebNightColors: {} }, '@/hooks/use-language': { useLanguage: () => ({ language }) },
+    '@/lib/web-home': webHome, '@/lib/public-seo': publicSeo };
+  const code = ts.transpileModule(readFileSync(new URL('../src/app/(tabs)/index.web.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
+  const exported = {};
+  vm.runInNewContext(code, { exports: exported, require: name => name.includes('assets/') || name.includes('release/app-store/') ? 'local-asset' : modules[name] ?? {} });
+  const nodes = root => !root || typeof root !== 'object' ? [] : [root, ...[root.props?.children].flat(Infinity).flatMap(nodes)];
+  for (const [saved, devices, expectedLanguage] of [['system', ['ko-KR'], 'ko'], ['system', ['en-CA'], 'en'], ['en', ['ko-KR'], 'en'], ['ko', ['en-CA'], 'ko']]) {
+    language = resolveLanguage(parseLanguagePreference(saved), devices);
+    const tree = exported.default();
+    assert.equal(tree.props.lang, expectedLanguage);
+    assert.equal(nodes(tree).find(node => node.type === 'title').props.children, language === 'ko' ? '글링 | 캐나다 모임 커뮤니티' : 'Gling | Canada Meetup Community');
+  }
+});

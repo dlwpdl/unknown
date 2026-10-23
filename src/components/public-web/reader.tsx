@@ -1,5 +1,6 @@
 import './reader.css';
 import SharedPostLanding from './shared-post-landing';
+import { PublicPostBody } from './shared-post-article';
 import { PublicFestivals } from './festivals';
 import { useReaderAnalytics } from './analytics';
 import { PublicMerchantProfile, PublicMerchantProfileLink } from './merchant-profile';
@@ -7,7 +8,7 @@ import { FeedAd } from '@/components/feed-ad';
 import { contentAdPosition } from '@/lib/content-ad-placement';
 
 import { Asset } from 'expo-asset';
-import { instagramPostLink, splitPostAttachments, splitPostLinks } from '../../../supabase/functions/_shared/post-links';
+import { splitPostAttachments } from '../../../supabase/functions/_shared/post-links';
 import { PostAttachmentLink } from '@/components/post-attachment-link';
 import { useLocalSearchParams, usePathname } from 'expo-router';
 import Head from 'expo-router/head';
@@ -28,7 +29,7 @@ import { hasAdLabel } from '@/lib/hashtags';
 import { publicMerchantId, publicWebTarget } from '@/lib/public-web';
 import { buildSharedPostUrl } from '@/lib/sharing';
 import { publicWebClient } from '@/lib/public-web-client';
-import { jsonLd, postSeo, PUBLIC_SITE } from '@/lib/public-seo';
+import { jsonLd, postSeo, publicSiteName, PUBLIC_SITE } from '@/lib/public-seo';
 import { InteractionFeedbackProvider, useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadMerchantSource, merchantSourceActionLabel, trackPublicMerchantSourceClick, type MerchantSource } from '@/lib/merchant-source';
 import type { Post } from '@/lib/types';
@@ -84,17 +85,6 @@ function PostAuthor({ post }: { post: Post }) {
     {post.business.name} · 비즈니스</a> : <>{post.author.nickname}</>;
 }
 
-function BodyLinks({ body }: { body: string }) {
-  const { play } = useInteractionFeedback();
-  const attached = splitPostAttachments(body);
-  return <><p className="reader-body">{splitPostLinks(attached.body).map((part, index) => part.url
-    ? <a key={index} href={part.url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" onClick={event => {
-        play('selection');
-        if (!instagramPostLink(part.url!) && !window.confirm(`${part.url}\n\n악성 여부를 아직 확인하지 못한 외부 링크예요. 이동할까요?`)) event.preventDefault();
-      }}>{part.text}</a>
-    : part.text)}</p>{attached.urls.map((url, index) => <PostAttachmentLink key={`${url}-${index}`} url={url} />)}</>;
-}
-
 function AppInvitation({ target, label = '앱에서 대화하기' }: { target: string; label?: string }) {
   return <section className="reader-invitation" aria-label="앱에서 이어가기">
     <h2>마음에 드는 이야기를<br />찾았다면, 이제 앱에서.</h2>
@@ -133,6 +123,7 @@ export default function PublicReader() {
 
 function ReaderContent() {
   const { play } = useInteractionFeedback();
+  const { language, tr } = useLanguage(), ko = language === 'ko';
   const params = useLocalSearchParams<{ id?: string; city?: string; tag?: string }>();
   const routerPath = usePathname();
   // Static hosts serve 404.html for old /post/:id links; retain the actual URL.
@@ -156,16 +147,18 @@ function ReaderContent() {
   const current = result?.key === key ? result : null;
   const post = detail ? current?.posts[0] : undefined;
   const mappedPost = post ? postMapBody(post.body) : null;
-  const metadata = post ? postSeo(post, CITIES.find((item) => item.id === post.cityId)?.name) : null;
+  const metadata = post ? postSeo(post, tr(CITIES.find((item) => item.id === post.cityId)?.name ?? ''), language) : null;
   const filters = new URLSearchParams();
   if (cities.some((item) => item.id === readyParams.city)) filters.set('city', city.id);
   if (tag) filters.set('tag', tag.slug);
   const canonical = metadata?.canonical ?? (browse ? `${PUBLIC_SITE}/${filters.size ? `?${filters}` : ''}` : postId ? `${PUBLIC_SITE}/post?id=${postId}` : merchantId ? `${PUBLIC_SITE}/company?id=${merchantId}` : null);
-  const pageTitle = metadata?.title ?? (browse ? `${filters.size ? `${city.name} · ${tag?.label ?? '동네 이야기'} | ` : ''}글링 | 캐나다 한인 커뮤니티` : detail ? '글링 공개 글' : company ? '글링 비즈니스 프로필' : '글링 | 앱에서 이어가기');
-  const description = metadata?.description ?? `${browse && filters.size ? `${city.name}의 ` : '캐나다 한인 커뮤니티 글링에서 '}동네 이야기, 맛집, 비즈니스와 모임을 둘러보세요. 공유 미리보기를 둘러보고, 소셜 로그인 후 전체 내용과 모임을 확인해요.`;
+  const pageTitle = metadata?.title ?? (browse ? `${filters.size ? `${tr(city.name)} · ${tr(tag?.label ?? '동네 이야기')} | ` : ''}${publicSiteName(language)}`
+    : detail ? ko ? '글링 공개 글' : 'Public post | Gling' : company ? ko ? '글링 비즈니스 프로필' : 'Business profile | Gling' : ko ? '글링 | 앱에서 이어가기' : 'Gling | Continue in the app');
+  const description = metadata?.description ?? (ko ? '캐나다 모임 커뮤니티 글링에서 동네 이야기, 비즈니스와 모임을 둘러보세요. 로그인하면 공개 글의 전체 본문을 웹에서 읽을 수 있어요.'
+    : 'Explore neighborhood stories, businesses and meetups on Gling, Canada’s meetup community. Sign in to read the full public post on the web.');
   // Static /post.html has no query parameters yet; let Google render before marking a missing post.
   const noindex = (!browse && !detail && !company) || (detail && hydrated && (!postId || (current && !post))) || (company && hydrated && !merchantId);
-  const schema = metadata?.schema ?? (browse ? { '@context': 'https://schema.org', '@type': filters.size ? 'CollectionPage' : 'WebSite', name: '글링', url: canonical, description, inLanguage: 'ko' } : null);
+  const schema = metadata?.schema ?? (browse ? { '@context': 'https://schema.org', '@type': filters.size ? 'CollectionPage' : 'WebSite', name: publicSiteName(language), url: canonical, description, inLanguage: ko ? 'ko-KR' : 'en-CA' } : null);
   const loading = (browse || Boolean(postId)) && !current;
   const target = publicWebTarget(path, (company ? merchantId : postId) ?? undefined);
   useReaderAnalytics(detail ? 'post' : browse ? 'feed' : 'app-invitation', key, hydrated);
@@ -205,14 +198,14 @@ function ReaderContent() {
     }
   }
 
-  return <div className="reader" style={palette} lang="ko">
-    <Head><title>{detail && noindex ? '글을 찾을 수 없어요 | 글링' : pageTitle}</title>
+  return <div className="reader" style={palette} lang={language}>
+    <Head><title>{detail && noindex ? ko ? '글을 찾을 수 없어요 | 글링' : 'Post unavailable | Gling' : pageTitle}</title>
       <meta name="description" content={description} />
       <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
       {canonical && <link rel="canonical" href={canonical} />}
       {metadata && <link rel="alternate" type="text/markdown" href={metadata.source} />}
       <meta property="og:type" content={metadata ? 'article' : 'website'} />
-      <meta property="og:site_name" content="글링" /><meta property="og:title" content={pageTitle} />
+      <meta property="og:site_name" content={publicSiteName(language)} /><meta property="og:locale" content={ko ? 'ko_KR' : 'en_CA'} /><meta property="og:title" content={pageTitle} />
       <meta property="og:description" content={description} />
       {canonical && <meta property="og:url" content={canonical} />}
       <meta name="twitter:card" content={post?.imageUris?.some(Boolean) ? 'summary_large_image' : 'summary'} />
@@ -271,7 +264,7 @@ function ReaderContent() {
             <h1>{post.title}</h1><p className="reader-meta">{hasAdLabel(post.hashtags) && <span aria-label="광고">AD · </span>}<PostAuthor post={post} /> · <time dateTime={metadata?.published}>{post.createdAtLabel}</time></p>
             <PublicMerchantProfileLink postId={post.id} />
             {post.imageUris?.map((uri, index) => uri && <img className="reader-photo" key={uri} src={uri} alt={`${post.title} 사진 ${index + 1}`} loading="lazy" />)}
-            <BodyLinks body={post.room ? visibleMeetupBody(mappedPost!.body) : mappedPost!.body} /><MeetupInfo post={post} />
+            <PublicPostBody body={post.room ? visibleMeetupBody(mappedPost!.body) : mappedPost!.body} /><MeetupInfo post={post} />
             <PlaceSourceAction post={post} />
             {mappedPost?.url && <MapAction url={mappedPost.url} label={mappedPost.label} />}
             <MerchantSourceAction postId={post.id} />

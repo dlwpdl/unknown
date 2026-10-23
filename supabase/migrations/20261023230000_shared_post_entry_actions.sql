@@ -2,6 +2,7 @@
 insert into private.behavior_targets(id) values
  ('shared.web.home'), ('shared.web.open_app'), ('shared.web.ios_store'),
  ('shared.web.copy_link'), ('shared.web.retry'), ('shared.web.same_post'),
+ ('shared.web.login'), ('shared.web.store.ios'), ('shared.web.store.android'), ('shared.web.android_store'),
  ('shared.auth.retry')
 on conflict (id) do nothing;
 notify pgrst, 'reload schema';

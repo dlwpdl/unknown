@@ -9,6 +9,7 @@ import * as discovery from '../src/lib/discovery.ts';
 import { contentAdPosition } from '../src/lib/content-ad-placement.ts';
 import { appendUniquePosts } from '../src/lib/feed-data.ts';
 import { safeMerchantSourceUrl } from '../src/lib/merchant-source.ts';
+import * as publicSeo from '../src/lib/public-seo.ts';
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 const city = { id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver', state: 'open' };
@@ -51,7 +52,7 @@ function mount(file, component, imports, globals = {}, props = {}) {
     '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' },
     '@/components/feed-ad': { FeedAd: 'FeedAd' }, '@/lib/content-ad-placement': { contentAdPosition },
     '@/lib/ads': { adsSupported: true },
-    '@/hooks/use-language': { useLanguage: () => ({ tr: value => value, locale: 'ko-KR' }) },
+    '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: value => value, locale: 'ko-KR' }) },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/constants/theme': { Colors: {}, WebNightColors: {} },
     '@/lib/community-city': { useCommunityCity: () => ({ city }) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'guest' } }) }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
@@ -116,7 +117,7 @@ test('the independent public reader counts across appended pages without replaci
     '@/lib/feed-data': { appendUniquePosts, loadPublicFeed: async () => { if (++calls === 2) throw new Error('append failed'); return calls === 1 ? posts.slice(0, 30) : posts.slice(30); } },
     '@/lib/mock': { CITIES: [city], TAGS: [] }, '@/lib/post-maps': { postMapBody: body => ({ body }) },
     '../../../supabase/functions/_shared/post-links': { splitPostAttachments: body => ({ body, urls: [] }) },
-    '@/lib/public-web': { publicMerchantId: () => null, publicWebTarget: () => 'gling://' }, '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.example', jsonLd: JSON.stringify },
+    '@/lib/public-web': { publicMerchantId: () => null, publicWebTarget: () => 'gling://' }, '@/lib/public-seo': { ...publicSeo, PUBLIC_SITE: 'https://gling.example', jsonLd: JSON.stringify },
     './analytics': { useReaderAnalytics() {} },
   }, { window: { location: { pathname: '/' } } });
   await view.settle();

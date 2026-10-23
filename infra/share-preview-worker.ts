@@ -1,4 +1,5 @@
 import { decodeSharedUuid } from '../src/lib/shared-uuid.ts';
+import { previewImageCover } from '../supabase/functions/_shared/preview-image.ts';
 
 export type SharePreviewEnv = {
   APP_URL: string;
@@ -59,19 +60,8 @@ function unavailable(status: number, head = false): Response {
   return new Response(head ? null : message, { status, headers: { ...headers(), 'Content-Type': 'text/plain; charset=utf-8', ...(status === 405 ? { Allow: 'GET, HEAD' } : {}) } });
 }
 
-async function coverUrl(path: unknown, kind: Kind, app: string, supabase: string, auth: Record<string, string>, fetcher: typeof fetch): Promise<string> {
-  const fallback = `${app}/share-covers/${kind}.png`;
-  if (typeof path !== 'string' || path.length > 1024 || !path.split('/').every(part => /^[a-zA-Z0-9_.-]+$/.test(part) && part !== '.' && part !== '..')) return fallback;
-  try {
-    const route = `/storage/v1/object/sign/post-images/${path.split('/').map(encodeURIComponent).join('/')}`;
-    const response = await fetcher(`${supabase}${route}`, { method: 'POST', headers: auth, body: JSON.stringify({ expiresIn: 86400 }), redirect: 'error', signal: AbortSignal.timeout(5000) });
-    if (!response.ok) return fallback;
-    const signed = await response.json() as { signedURL?: unknown };
-    if (typeof signed.signedURL !== 'string') return fallback;
-    const url = new URL(signed.signedURL.startsWith('/object/') ? `${supabase}/storage/v1${signed.signedURL}` : signed.signedURL, `${supabase}/storage/v1/`);
-    if (url.origin === supabase && !url.username && !url.password && url.pathname === route && !url.hash) return url.href;
-  } catch { /* A missing cover must not prevent opening the invitation. */ }
-  return fallback;
+function coverUrl(path: unknown, id: string, kind: Kind, app: string, supabase: string): string {
+  return previewImageCover(path, id) ? `${supabase}/functions/v1/public-post?format=preview-image&id=${id}` : `${app}/share-covers/${kind}.png`;
 }
 
 export async function handleSharePreview(request: Request, env: SharePreviewEnv, fetcher: typeof fetch = fetch): Promise<Response> {
@@ -118,7 +108,7 @@ export async function handleSharePreview(request: Request, env: SharePreviewEnv,
       : teaser || [kinds[kind], city, schedule, '로그인한 뒤 자세한 내용을 볼 수 있어요.'].filter(Boolean).join(' · ');
     const canonical = `${share}/${route[1]}/${route[1] === 's' ? route[2] : id}`;
     const destination = `${app}/post?id=${id}&shared=1${kind === 'meetup' ? '&invite=1' : ''}`;
-    const image = await coverUrl(preview.imagePath, kind, app, supabase, auth, fetcher);
+    const image = coverUrl(preview.imagePath, id, kind, app, supabase);
     const safeTitle = escapeHtml(title);
     const safeCardTitle = escapeHtml(cardTitle);
     const safeDescription = escapeHtml(description);
