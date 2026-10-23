@@ -230,3 +230,19 @@ test('tab controls support arrow navigation and retain one keyboard entry point'
   assert.equal(tabs.find(node=>node.props['aria-selected']).props.children,'연결·가격');
   assert.deepEqual(calls,['prevent','#webshop-tab-connections']);
 });
+
+
+test('additional enrolled restaurants remain independently selectable and never become a hardcoded Jimoco view', async () => {
+  const second={...fixtureStore,merchantId:'70000000-0000-4000-8000-000000000004',name:'두 번째 음식점'};const requests=[];
+  const view=webshopView(async(_days,selected)=>{requests.push(selected);return {...fixtureData(),stores:selected?[second]:[fixtureStore,second]}});
+  view.render();await tick();let tree=view.render();
+  assert.ok(treeText(tree).includes(fixtureStore.name));assert.ok(treeText(tree).includes(second.name));
+  let select=treeNodes(tree).find(node=>node.type==='AdminSelect'&&node.props.label==='비즈니스');
+  assert.deepEqual(Array.from(select.props.options,option=>option.value),['',merchantId,second.merchantId]);
+  assert.equal(treeNodes(tree).find(node=>node.type==='button'&&treeText(node)==='보고서 가져오기').props.disabled,true);
+  select.props.onChange(second.merchantId);view.render();await tick();tree=view.render();
+  assert.equal(requests.at(-1),second.merchantId);
+  const report=treeNodes(tree).find(node=>node.type==='button'&&treeText(node)==='보고서 가져오기');assert.equal(report.props.disabled,false);
+  report.props.onClick({currentTarget:{focus(){}}});tree=view.render();
+  const editor=treeNodes(tree).find(node=>typeof node.type==='function'&&node.type.name==='ReportEditor');assert.equal(editor.props.store.merchantId,second.merchantId);
+});

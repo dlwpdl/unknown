@@ -51,7 +51,7 @@
   },
   "scripts": {
     "postinstall": "node scripts/fix-uri-decoder.mjs",
-    "admin": "GLING_LOCAL_ADMIN=1 expo export --platform web --output-dir .admin-dist && python3 scripts/serve-admin.py",
+    "admin": "GLING_LOCAL_ADMIN=1 expo export --clear --platform web --output-dir .admin-dist && python3 scripts/serve-admin.py",
     "check:public-web": "node scripts/check-public-web.mjs",
     "storage:usage": "python3 scripts/storage-usage.py",
     "test": "node --experimental-strip-types --test scripts/*.test.mjs",
