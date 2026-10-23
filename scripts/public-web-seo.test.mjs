@@ -33,5 +33,11 @@ test('기존 export는 공개 도시별 라이브 sitemap/AI 탐색과 보호 �
     assert.ok(!sitemap.includes('/admin'));
     assert.ok(sitemap.includes(`${PUBLIC_SITE}/privacy`));
     assert.ok(!llms.includes('sb_publishable_'));
+    assert.ok(llms.startsWith('# 글링 | 캐나다 모임 커뮤니티'));
+    assert.ok(llms.includes('Gling | Canada Meetup Community'));
+    assert.match(llms, /대표 이미지 한 장.*짧은 소개/);
+    assert.match(llms, /로그인하거나 정상 가입.*전체 본문을 웹에서/);
+    assert.match(llms, /댓글 작성·대화·모임 참여는 앱에서/);
+    assert.doesNotMatch(llms, /전체 본문.*앱에서만|원문의 링크는 글링 로그인 화면/);
   } finally { rmSync(directory, { recursive: true }); }
 });

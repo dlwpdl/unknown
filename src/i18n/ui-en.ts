@@ -1,4 +1,5 @@
 export const uiEnglish: Record<string, string> = {
+  "글링 | 캐나다 모임 커뮤니티": "Gling | Canada Meetup Community",
   "웹샵 할인 정보를 불러오지 못했어요": "Could not load webshop savings",
   "연결을 확인하고 다시 시도해주세요. 가게의 기존 정보는 계속 볼 수 있어요.": "Check your connection and try again. Existing place information is still available.",
   "아직 할인율을 확인한 가게가 없어요": "No verified menu discounts yet.",
