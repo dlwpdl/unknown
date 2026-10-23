@@ -244,7 +244,7 @@ export default function CompanyProfileRoute() {
           {tabs.map(item => {
             const count = item.id === 'posts' ? displayCount(counts?.post_count, !!currentPosts?.failed || countsResult?.key === key)
               : item.id === 'jobs' ? displayCount(counts?.job_count, !!currentPosts?.failed || countsResult?.key === key)
-              : item.id === 'reviews' ? displayCount(reviewCount, ratingResult?.key === key) : null;
+              : item.id === 'reviews' && profile.review_post_id ? displayCount(reviewCount, ratingResult?.key === key) : null;
             return <Pressable key={item.id} analyticsId={`company.tab.${item.id}`} accessibilityRole="tab" accessibilityState={{ selected: tab === item.id }}
               accessibilityLabel={tr("{0}{1}", (tr(item.label)), (count == null ? '' : tr(" {0}건", count)))} style={[styles.tab, { borderBottomColor: tab === item.id ? theme.accent : 'transparent' }]}
               onPress={() => selectTab(item.id)}>
@@ -288,6 +288,10 @@ export default function CompanyProfileRoute() {
             {!!mapsUrl && <Pressable analyticsId="company.about.maps" accessibilityRole="link" accessibilityLabel={tr("등록된 주소를 Google 지도에서 보기")} style={styles.button} onPress={() => void openContact(mapsUrl)}><ThemedText themeColor="accent">{tr("길찾기")}</ThemedText></Pressable>}
             {publicLinks.map((link, index) => <Pressable key={link.url} analyticsId={`company.about.source.${index}`} accessibilityRole="link" accessibilityLabel={tr("{0} 공개 링크 열기", (link.label))} style={styles.button} onPress={() => void openContact(link.url)}><ThemedText themeColor="accent">{link.label} ›</ThemedText></Pressable>)}
           </View>
+        </View>}
+        {tab === 'reviews' && !profile.review_post_id && <View style={styles.panel}>
+          <ThemedText type="smallBold">{tr("아직 표시할 후기가 없어요")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("공개된 후기는 이곳에서 확인할 수 있어요.")}</ThemedText>
         </View>}
         {(tab === 'reviews' || reviewVisited === key) && profile.review_post_id && <View
           style={[styles.panel, tab !== 'reviews' && { display: 'none' }]} accessibilityElementsHidden={tab !== 'reviews'}

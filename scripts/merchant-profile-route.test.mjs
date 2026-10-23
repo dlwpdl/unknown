@@ -102,6 +102,19 @@ test('real zero counts keep all tabs and the no-jobs state removes the hiring ba
   assert.equal(nodes(root).filter(node => node.props?.accessibilityRole === 'tab').length, 4);
 });
 
+test('a profile without a review source shows a settled empty state instead of an endless review count', async () => {
+  const view = screen({ loadProfile: async () => ({ ...profile, review_post_id: null }) });
+  view.render(); await settle(); view.render(); await settle();
+  let root = view.render();
+  assert.equal(control(root, 'company.tab.reviews').props.accessibilityLabel, '후기');
+  assert.doesNotMatch(text(control(root, 'company.tab.reviews')), /…|0/);
+  assert.equal(view.calls.length, 0, 'No review request without a linked source');
+  control(root, 'company.tab.reviews').props.onPress(); root = view.render();
+  assert.equal(control(root, 'company.tab.reviews').props.accessibilityState.selected, true);
+  assert.match(text(root), /아직 표시할 후기가 없어요/);
+  assert.equal(nodes(root).filter(node => node.type === 'Reviews').length, 0);
+});
+
 test('late company list responses from the previous account cannot restore its posts or counts', async () => {
   const pending = [];
   const view = screen({ loadPosts: () => new Promise(resolve => pending.push(resolve)) });
