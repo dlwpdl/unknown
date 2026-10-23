@@ -1,7 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Image } from 'expo-image';
-import { AppState, Platform, StyleSheet, View } from 'react-native';
+import { AppState, Platform, StyleSheet, View, type KeyDownEvent } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
@@ -40,8 +40,8 @@ function Choice({ title, detail, checked, onPress, disabled = false }: { title: 
 
   const theme = useTheme(), { play } = useInteractionFeedback();
   // The installed web Pressable handles Space for buttons, but not checkbox roles.
-  const keyboard = Platform.OS === 'web' ? { onKeyDown: (event: KeyboardEvent) => {
-    if (event.key === ' ') { event.preventDefault(); if (!disabled && !event.repeat) { play('selection'); onPress(); } }
+  const keyboard = Platform.OS === 'web' ? { onKeyDown: (event: KeyDownEvent) => {
+    if (event.nativeEvent.key === ' ') { event.preventDefault(); if (!disabled && !event.nativeEvent.repeat) { play('selection'); onPress(); } }
   } } : {};
   return <Pressable lens {...keyboard} analyticsId="merchant.ai.permission" accessibilityRole="checkbox" accessibilityLabel={`${title}. ${detail}`} accessibilityState={{ checked, disabled }} aria-checked={checked} aria-disabled={disabled} disabled={disabled}
     onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.choice, { borderColor: checked ? theme.accent : theme.line, opacity: disabled || pressed ? 0.65 : 1 }]}>

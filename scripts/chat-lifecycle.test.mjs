@@ -1117,6 +1117,49 @@ test('conversation search narrows the loaded messages and clears back to all of 
   assert.equal(harness.nodes().some(node => node.type === 'TextInput' && node.props?.accessibilityLabel === '대화 내용 검색'), false, 'closing hides the field');
 });
 
+test('conversation search no matches shows result copy while preserving loaded direct messages', async context => {
+  for (const status of ['active', 'ended']) {
+    const rows = [message(1)];
+    const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', {
+      loadConversationMessages: async () => rows,
+    }, { ...roomProps, conversation: { ...conversation, kind: 'direct', status } });
+    context.after(() => harness.cleanup()); await harness.settle();
+    const list = () => harness.nodes().find(node => node.type === 'FlatList');
+    assert.deepEqual(list().props.data.map(row => row.id), ['m001']);
+    harness.nodes().find(node => node.props?.analyticsId === 'chat.search-toggle').props.onPress(); await harness.settle();
+    const field = () => harness.nodes().find(node => node.type === 'TextInput' && node.props.accessibilityLabel === '대화 내용 검색');
+    const query = '  GLING_QA_NO_MATCH_20261023  ';
+    field().props.onChangeText(query); await harness.settle();
+    assert.equal(list().props.data.length, 0);
+    assert.equal(list().props.ListEmptyComponent.props.children, t.search.none(query.trim()), `${status}: an unmatched search is not an empty or ended room`);
+    assert.equal(field().props.value, query, 'displaying the result does not rewrite the input');
+    field().props.onChangeText(''); await harness.settle();
+    assert.deepEqual(list().props.data.map(row => row.id), ['m001'], 'clearing search restores the loaded message');
+    harness.nodes().find(node => node.props?.analyticsId === 'chat.search-close').props.onPress(); await harness.settle();
+    assert.deepEqual(list().props.data.map(row => row.id), ['m001']);
+  }
+});
+
+test('empty conversations retain active and ended guidance without a search query', async context => {
+  for (const status of ['active', 'ended']) {
+    const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', {
+      loadConversationMessages: async () => [],
+    }, { ...roomProps, conversation: { ...conversation, kind: 'direct', status } });
+    context.after(() => harness.cleanup()); await harness.settle();
+    const list = () => harness.nodes().find(node => node.type === 'FlatList');
+    const expected = status === 'active' ? t.chat.newConversation : t.chat.endedBody;
+    assert.equal(list().props.data.length, 0);
+    assert.equal(list().props.ListEmptyComponent.props.children, expected);
+    harness.nodes().find(node => node.props?.analyticsId === 'chat.search-toggle').props.onPress(); await harness.settle();
+    const field = harness.nodes().find(node => node.type === 'TextInput' && node.props.accessibilityLabel === '대화 내용 검색');
+    field.props.onChangeText('   '); await harness.settle();
+    assert.equal(list().props.data.length, 0);
+    assert.equal(list().props.ListEmptyComponent.props.children, expected, `${status}: whitespace is not an actual search`);
+    harness.nodes().find(node => node.props?.analyticsId === 'chat.search-close').props.onPress(); await harness.settle();
+    assert.equal(list().props.ListEmptyComponent.props.children, expected);
+  }
+});
+
 test('a group room shows the meetup summary and only the host gets the manage sheet', async context => {
   const post = { id: 'post-1', title: '한강 노을 러닝', room: { id: 'room-1', title: '한강 노을 러닝', memberCount: 5, capacity: 8, verifiedOnly: false, eventKind: 'once', startsAt: '2026-10-24T09:30:00Z', timezone: 'Asia/Seoul' } };
   for (const isGroupHost of [true, false]) {

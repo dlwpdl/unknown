@@ -146,7 +146,7 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
       },
       useEffect: effect, useLayoutEffect: effect,
     };
-    if (name === 'react-native') return new Proxy({ StyleSheet: { create: x => x }, Platform: { get OS() { return platform; } }, Alert: { alert: (...args) => alerts.push(args) } }, { get: (target, key) => target[key] ?? key });
+    if (name === 'react-native') return new Proxy({ StyleSheet: { create: x => x }, Platform: { get OS() { return platform; } }, UIManager: { measureInWindow: (target, callback) => { assert.equal(target, 51); callback(0, 96, 430, 840); } }, Alert: { alert: (...args) => alerts.push(args) } }, { get: (target, key) => target[key] ?? key });
     if (name === 'expo-router') return { useRouter: () => ({ push() {} }) };
     if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ bottom: 0 }) };
     if (name === '@/lib/auth') return { useAuth: () => ({ ...auth, promptLogin() {} }) };
@@ -335,4 +335,7 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
   tree.props.onLayout?.({ currentTarget: { measureInWindow: callback => callback(0, 84, 430, 840) } });
   render();
   assert.equal(nodes(tree).find(node => node.type === 'KeyboardAvoidingView').props.keyboardVerticalOffset, 84, 'page-sheet keyboard avoidance uses the measured window origin');
+  tree.props.onLayout?.({ currentTarget: 51 });
+  render();
+  assert.equal(nodes(tree).find(node => node.type === 'KeyboardAvoidingView').props.keyboardVerticalOffset, 96, 'legacy numeric layout targets retain the measured keyboard offset');
 });
