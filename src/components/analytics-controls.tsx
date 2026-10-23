@@ -1,5 +1,5 @@
-import { useRef, type ComponentProps, type Ref } from 'react';
-import { Switch as NativeSwitch, SectionList as NativeSectionList, type SectionListProps, type DefaultSectionT, Pressable as NativePressable, ScrollView as NativeScrollView, FlatList as NativeFlatList, type FlatListProps, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewProps } from 'react-native';
+import { useRef, type ComponentProps } from 'react';
+import { Switch as NativeSwitch, SectionList as NativeSectionList, type SectionListProps, Pressable as NativePressable, ScrollView as NativeScrollView, FlatList as NativeFlatList, type FlatListProps, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewProps } from 'react-native';
 import { behavior, behaviorView, scrollThresholds } from '@/lib/behavior-analytics';
 import { FlatPressable } from '@/components/flat-pressable';
 
@@ -23,7 +23,7 @@ function useScroll(id: string, horizontal?: boolean | null, original?: ScrollVie
     }
   };
 }
-export function ScrollView({ analyticsId, onScroll, ref, ...props }: ComponentProps<typeof NativeScrollView> & Tracking & { ref?: Ref<NativeScrollView> }) {
+export function ScrollView({ analyticsId, onScroll, ref, ...props }: ComponentProps<typeof NativeScrollView> & Tracking) {
   const record = useScroll(analyticsId, props.horizontal, onScroll);
   return <NativeScrollView {...props} ref={ref} onScroll={record} scrollEventThrottle={props.scrollEventThrottle ?? 250} />;
 }
@@ -35,7 +35,7 @@ export function FlatList<T>({ analyticsId, onScroll, ...props }: FlatListProps<T
 export function Switch({ analyticsId, onValueChange, ...props }: ComponentProps<typeof NativeSwitch> & Tracking) {
   return <NativeSwitch {...props} onValueChange={(value) => { behavior('press', `${analyticsId}.${value ? 'on' : 'off'}`); onValueChange?.(value); }} />;
 }
-export function SectionList<T, S = DefaultSectionT>({ analyticsId, onScroll, ...props }: SectionListProps<T, S> & Tracking) {
+export function SectionList<T, S>({ analyticsId, onScroll, ...props }: SectionListProps<T, S> & Tracking) {
   const record = useScroll(analyticsId, props.horizontal, onScroll);
   return <NativeSectionList {...props} onScroll={record} scrollEventThrottle={props.scrollEventThrottle ?? 250} />;
 }

@@ -10,7 +10,7 @@ import { loadBusinessChatMessages, sendBusinessChatMessage, editBusinessChatMess
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
-import { AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Linking, Modal, Platform, ScrollView, StyleSheet, TextInput, UIManager, View, type FlatList as NativeFlatList, type NativeScrollEvent, type NativeSyntheticEvent, type ViewToken, useWindowDimensions } from 'react-native';
+import { AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Linking, Modal, Platform, ScrollView, StyleSheet, TextInput, UIManager, View, type FlatList as NativeFlatList, type NativeScrollEvent, type NativeSyntheticEvent, useWindowDimensions, type ScrollViewInstance, type ViewInstance, type KeyDownEvent } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -64,9 +64,9 @@ export function conversationSender(message: Pick<ChatMessageRecord, 'sender_id' 
 type ReportSelection = { targetType: ReportTarget; targetId: string; reportedUserId?: string; reportedBusinessId?: string; reportedNickname: string };
 type ChatPhoto = string | ImageSource | undefined;
 const photoSource = (photo: ChatPhoto) => typeof photo === 'string' ? { uri: photo } : photo;
-function BubblePressable({ message, onMenu, ...props }: ComponentProps<typeof Pressable> & { message: ChatMessageRecord; onMenu: (message: ChatMessageRecord, bubble: View) => void }) {
+function BubblePressable({ message, onMenu, ...props }: ComponentProps<typeof Pressable> & { message: ChatMessageRecord; onMenu: (message: ChatMessageRecord, bubble: ViewInstance) => void }) {
   const { tr } = useLanguage();
-  const bubble = useRef<View>(null), style = props.style;
+  const bubble = useRef<ViewInstance>(null), style = props.style;
   const open = () => {
     if (!props.disabled && bubble.current) onMenu(message, bubble.current);
   };
@@ -75,7 +75,7 @@ function BubblePressable({ message, onMenu, ...props }: ComponentProps<typeof Pr
     onAccessibilityAction={event => { if (event.nativeEvent.actionName === 'longpress') open(); }}
     {...(Platform.OS === 'web' ? {
       onContextMenu: (event: { preventDefault: () => void }) => { event.preventDefault(); open(); },
-      onKeyDown: (event: { key: string; shiftKey: boolean; preventDefault: () => void }) => { if (event.key === 'ContextMenu' || event.key === 'F10' && event.shiftKey) { event.preventDefault(); open(); } },
+      onKeyDown: (event: KeyDownEvent) => { if (event.nativeEvent.key === 'ContextMenu' || event.nativeEvent.key === 'F10' && event.nativeEvent.shiftKey) { event.preventDefault(); open(); } },
     } : {})} />;
 }
 function messagePreview(message: Pick<ChatMessageRecord, 'body' | 'kind' | 'deleted_at'>, translate = tr) {
@@ -140,7 +140,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const [messageMenu, setMessageMenu] = useState<ChatMessageRecord | null>(null);
   const [menuFrame, setMenuFrame] = useState<{ anchor: ChatRect; bounds: ChatRect } | null>(null);
   const [menuSize, setMenuSize] = useState({ width: 0, height: 0 });
-  const menuRequest = useRef(0), listRegion = useRef<View>(null);
+  const menuRequest = useRef(0), listRegion = useRef<ViewInstance>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [editingMessage, setEditingMessage] = useState<ChatMessageRecord | null>(null);
   const [messageEditDraft, setMessageEditDraft] = useState('');
@@ -159,7 +159,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const discoveryLastMessage = useRef<string | undefined>(undefined);
   const [photoViewer, setPhotoOpen] = useState<{ photos: ChatPhoto[]; index: number; initialIndex: number; messageId?: string } | null>(null);
   const photoOpen = photoViewer && (!photoViewer.messageId || messages.some(message => message.id === photoViewer.messageId && !message.deleted_at)) ? photoViewer : null;
-  const photoPages = useRef<ScrollView>(null);
+  const photoPages = useRef<ScrollViewInstance>(null);
   const openPhotos = (photos: ChatPhoto[], index: number, messageId?: string) => { play('selection'); setPhotoOpen({ photos, index, initialIndex: index, messageId }); };
   const changePhoto = (index: number) => {
     if (!photoOpen || index < 0 || index >= photoOpen.photos.length) return;
@@ -255,7 +255,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     return () => { clearTimeout(timer); if (!positioned) initialScroll.current = false; };
   }, [messages, publicSelfId, loading, readAt, discoveryOpen]);
 
-  const trackVisibleMessages = useCallback(({ viewableItems }: { viewableItems: ViewToken<ChatMessageRecord>[] }) => {
+  const trackVisibleMessages = useCallback(({ viewableItems }: { viewableItems: { item: ChatMessageRecord }[] }) => {
     if (discoveryVisible.current || !readReady.current || !valid()) return;
     const newest = viewableItems.map(({ item }) => item).filter((item): item is ChatMessageRecord => !!item)
       .reduce<ChatMessageRecord | null>((latest, item) => !latest || Date.parse(item.created_at) > Date.parse(latest.created_at) ? item : latest, null);
@@ -331,7 +331,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     if (previous && previous.id === messageId && at - previous.at < 320) { lastTap.current = null; void toggleHeart(messageId); }
   };
   const closeMessageMenu = useCallback(() => { menuRequest.current += 1; setMessageMenu(null); setMenuFrame(null); }, []);
-  const openMessageMenu = (message: ChatMessageRecord, bubble: View) => {
+  const openMessageMenu = (message: ChatMessageRecord, bubble: ViewInstance) => {
     if (!access.write || sending || !valid() || message.deleted_at) return;
     const request = ++menuRequest.current;
     lastTap.current = null; play('selection');

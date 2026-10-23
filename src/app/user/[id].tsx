@@ -113,7 +113,7 @@ export default function AuthorPostsRoute() {
             data={posts}
             keyExtractor={(post) => post.id}
             contentContainerStyle={styles.list}
-            ListHeaderComponent={publicProfile && <View style={styles.profile}>
+            ListHeaderComponent={publicProfile ? <View style={styles.profile}>
               <View style={styles.identity}>
                 <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle" style={{ color: theme.accent }}>{publicProfile.nickname[0]}</ThemedText></View>
                 <View style={{ flex: 1, minWidth: 0, gap: 4 }}><View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}><ThemedText type="subtitle" style={{ flexShrink: 1 }}>{publicProfile.nickname}</ThemedText><TrustBadge verified={publicProfile.verificationLevel >= 2} trustLevel={publicProfile.verificationLevel === 3 ? 3 : publicProfile.verificationLevel === 2 ? 2 : undefined} /></View><ThemedText type="small" themeColor="textSecondary">{publicProfile.neighborhood ?? tr(CITIES.find(city => city.id === publicProfile.cityId)?.name ?? publicProfile.cityId)}{" " + tr("· 가입") + " "}{new Date(publicProfile.memberSince).toLocaleDateString(appLocale)}</ThemedText></View>
@@ -129,7 +129,7 @@ export default function AuthorPostsRoute() {
             <ThemedText type="smallBold">{value === 'story' ? tr("오늘") : tr("구해요·팔아요")}</ThemedText>
           </Pressable>)}
         </View>
-            </View>}
+            </View> : undefined}
 
             renderItem={({ item }) => (
               <PostCard post={item} translationVisible={visiblePostIds.has(item.id) && !detail} onPress={() => setDetail({ key: requestKey, post: item })} />

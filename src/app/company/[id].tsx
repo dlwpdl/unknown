@@ -5,7 +5,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { SymbolView } from 'expo-symbols';
-import { StyleSheet, View, type ScrollView as NativeScrollView } from 'react-native';
+import { StyleSheet, View, type ScrollViewInstance } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
@@ -33,7 +33,7 @@ type ProfileTab = typeof tabs[number]['id'];
 export default function CompanyProfileRoute() {
   const { tr, locale: appLocale } = useLanguage();
   const { id, review } = useLocalSearchParams<{ id: string; review?: string }>(), router = useRouter(), theme = useTheme(), { play } = useInteractionFeedback();
-  const reducedMotion = useReducedMotion(), scroll = useRef<NativeScrollView>(null), tabsTop = useRef(0);
+  const reducedMotion = useReducedMotion(), scroll = useRef<ScrollViewInstance>(null), tabsTop = useRef(0);
   const { me, isAuthed, isAuthLoading, promptLogin } = useAuth(), hidden = useContentVisibility();
   const business = useChatIdentity();
   const merchantId = typeof id === 'string' && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id) ? id.toLowerCase() : '';

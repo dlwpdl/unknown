@@ -256,7 +256,7 @@ export default function ChatScreen() {
     <ChatIdentitySwitcher onChanged={() => { setSelection(null); setModalConversation(undefined); router.setParams({ conversationId: undefined, businessId: undefined }); setFilter('direct'); }} />
     <FlatList analyticsId="app_tabs_chat.flatlist.1" data={displayed} keyExtractor={(item) => item.id} contentContainerStyle={[styles.list, initialLoading && styles.loadingList]}
       onEndReached={() => void loadMore()} onEndReachedThreshold={0.4}
-      ListFooterComponent={!initialLoading && loadingMore ? <GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} /> : null}
+      ListFooterComponent={!initialLoading && loadingMore ? <GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} /> : undefined}
       refreshing={pullRefreshing} onRefresh={() => void pullRefresh()}
       ListHeaderComponent={<View style={styles.header}>
         {!asBusinessId && <View style={[styles.safety, { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}><ThemedText type="smallBold" themeColor="accent">{t.safety.meetTitle}</ThemedText><ThemedText type="small" themeColor="textSecondary">{t.safety.meetBody}</ThemedText></View>}
@@ -285,8 +285,8 @@ export default function ChatScreen() {
         {error?.userId === scopeKey && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{tr(error.text)}</ThemedText>}
       </View>}
       ListEmptyComponent={initialLoading ? <GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} />
-        : loading ? null
-        : filter === 'requests' ? (requests.length ? null : <StateCard title={tr("대기 중인 모임 신청이 없어요")} body={tr("모임에 신청이 들어오면 여기서 수락하거나 거절할 수 있어요.")} />)
+        : loading ? undefined
+        : filter === 'requests' ? (requests.length ? undefined : <StateCard title={tr("대기 중인 모임 신청이 없어요")} body={tr("모임에 신청이 들어오면 여기서 수락하거나 거절할 수 있어요.")} />)
           : <StateCard title={t.chat.emptyTitle} body={t.chat.emptyBody} />}
       renderItem={({ item, index }) => <Pressable analyticsId="app_tabs_chat.pressable.7" onPress={() => { play('selection'); setModalConversation(item); setSelection({ userId: scopeKey!, id: item.id }); }} accessibilityRole="button" style={({ pressed }) => [styles.room, { borderBottomColor: theme.line, backgroundColor: pressed ? theme.backgroundElement : 'transparent', transform: [{ scale: pressed && !reducedMotion ? 0.985 : 1 }] }]}>
         <ChatAvatar kind={item.kind} title={item.title} meetupCategory={item.meetupCategory} initial={item.kind !== 'group' ? item.otherUser.nickname[0] : ''} avatarUri={item.otherIdentity?.avatarUri} active={focused && !shownConversation && index < 8} delay={index * 260} />

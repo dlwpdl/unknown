@@ -143,7 +143,7 @@ test('existing hidden and closed filters still apply to exact destination refere
 
 test('an event response for another identity never starts a destination feed read or shows a final empty result', async () => {
   const ui = discovery({ pages: [], eventResult: { id: 'EV_10', name: 'Other event' } }); await ui.fetch();
-  assert.equal(ui.calls.length, 0); assert.equal(ui.snapshot().error, true); assert.equal(ui.snapshot().empty, null);
+  assert.equal(ui.calls.length, 0); assert.equal(ui.snapshot().error, true); assert.equal(ui.snapshot().empty, undefined);
 });
 
 test('a late event prefill keeps actual manual draft edits while still attaching its verified source', async () => {
