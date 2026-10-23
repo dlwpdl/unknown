@@ -1,6 +1,6 @@
 export type ReportStatus = 'open' | 'actioned' | 'dismissed';
 export type ReportFilter = 'all' | ReportStatus;
-export type AdminSection = 'analytics' | 'ticketmaster' | 'merchants' | 'creators' | 'campaigns' | 'benefits' | 'meetups' | 'overview' | 'safety' | 'alerts' | 'trending' | 'errors' | 'reports' | 'users' | 'posts' | 'conversations';
+export type AdminSection = 'analytics' | 'webshops' | 'ticketmaster' | 'merchants' | 'creators' | 'campaigns' | 'benefits' | 'meetups' | 'overview' | 'safety' | 'alerts' | 'trending' | 'errors' | 'reports' | 'users' | 'posts' | 'conversations';
 
 const REPORT_REASON_LABELS: Record<string, string> = {
   spam: '스팸',
@@ -25,6 +25,7 @@ const REPORT_TARGET_LABELS: Record<string, string> = {
 
 export const ADMIN_SECTIONS: { id: AdminSection; label: string }[] = [
   { id: 'analytics', label: '분석' },
+  { id: 'webshops', label: '웹샵 성과' },
   { id: 'ticketmaster', label: 'Ticketmaster 수익' },
   { id: 'merchants', label: '비즈니스 관리' },
   { id: 'creators', label: '크리에이터' },
@@ -55,7 +56,7 @@ export const ADMIN_NAV_GROUPS: { label: string; sections: AdminSection[] }[] = [
   { label: '안전 검토', sections: ['reports', 'safety', 'alerts', 'errors'] },
   { label: '콘텐츠·회원', sections: ['users', 'posts', 'meetups', 'conversations', 'trending'] },
   { label: '제휴 운영', sections: ['merchants', 'creators', 'campaigns', 'benefits'] },
-  { label: '수익', sections: ['ticketmaster'] },
+  { label: '수익', sections: ['webshops', 'ticketmaster'] },
 ];
 
 // 0건이어도 표시해 "확인했다"는 신호를 주는 항목.

@@ -1,7 +1,7 @@
 import './reader.css';
 import './visited.css';
 import { Asset } from 'expo-asset';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import Head from 'expo-router/head';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState, useSyncExternalStore, type CSSProperties } from 'react';
@@ -53,7 +53,8 @@ export default function PublicVisited() {
   const select = (placeId: string) => {
     if (!places.some(place => place.id === placeId)) return;
     play('selection'); setMode('map');
-    router.push({ pathname: '/visited', params: { city: city.id, placeId } });
+    // This route belongs to the public export, whose routes differ from the native app.
+    router.push(route(placeId) as Href);
   };
   const appMap = selected ? `gling://map?${new URLSearchParams({ cityId: city.id, placeId: selected.id, category: 'visited' })}` : null;
   const title = `${city.name} Gling Visited | 글링`;

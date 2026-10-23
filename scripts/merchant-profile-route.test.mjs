@@ -16,10 +16,11 @@ const profile = { id: company, name: '회사', services: '등록된 소개', add
 const settle = () => new Promise(setImmediate);
 const nodes = root => !root || typeof root !== 'object' ? [] : [root, ...Object.values(root).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
 
-function screen({ business = null, loadReviews = async (_, __, ___, kind) => ({ review_kind: kind, rating_average: kind === 'usage' ? 8.833333333 : 7, review_count: 3 }), loadPosts = async (_, __, kind) => ({ ...content, kind }), loadProfile = async () => profile, rpc = async () => ({ data: true }), openURL = async () => {} } = {}) {
+function screen({ business = null, webshop = null, loadReviews = async (_, __, ___, kind) => ({ review_kind: kind, rating_average: kind === 'usage' ? 8.833333333 : 7, review_count: 3 }), loadPosts = async (_, __, kind) => ({ ...content, kind }), loadProfile = async () => profile, rpc = async () => ({ data: true }), openURL = async () => {} } = {}) {
   const state = [], cleanup = new Map(), calls = [], postCalls = [], routes = [], feedback = [], rpcCalls = [], login = [], links = [];
   let index = 0, account = 'author', hidden = () => false, focused = true;
   const imports = {
+    '@/components/business-webshop': { usePublicWebshop: () => ({ shop: webshop, failed: false, retry() {} }), WebshopBanner: 'WebshopBanner', WebshopOrderButton: 'WebshopOrderButton', WebshopComparisonSheet: 'WebshopComparisonSheet' },
     react: {
       useState(initial) { const slot = index++; if (!(slot in state)) state[slot] = initial; return [state[slot], value => { state[slot] = typeof value === 'function' ? value(state[slot]) : value; }]; },
       useRef(initial) { const slot = index++; return state[slot] ??= { current: initial }; },
@@ -316,3 +317,52 @@ test('an inquiry completed after leaving this profile cannot navigate; returning
   failure = false; control(view.render(), 'company.save').props.onPress(); await settle();
   assert.equal(control(view.render(), 'company.notifications'), undefined);
  });
+
+test('webshop offer and main action open the same comparison while existing tabs and the sole bookmark remain', async () => {
+  const webshop = { merchantId: company };
+  const view = screen({ webshop }); view.render(); await settle(); view.render(); await settle();
+  let root = view.render();
+  const component = name => nodes(root).find(node => node.type === name);
+  assert.ok(component('WebshopBanner'));
+  assert.ok(component('WebshopOrderButton'));
+  assert.equal(component('WebshopComparisonSheet').props.visible, false);
+  assert.equal(nodes(root).filter(node => node.props?.analyticsId === 'company.save').length, 1);
+  assert.equal(nodes(root).filter(node => node.props?.accessibilityRole === 'tab').length, 4);
+  component('WebshopBanner').props.onPress(); root = view.render();
+  assert.equal(component('WebshopComparisonSheet').props.visible, true);
+  component('WebshopComparisonSheet').props.onClose(); root = view.render();
+  assert.equal(component('WebshopComparisonSheet').props.visible, false);
+  component('WebshopOrderButton').props.onPress(); root = view.render();
+  assert.equal(component('WebshopComparisonSheet').props.visible, true);
+  assert.equal(component('WebshopComparisonSheet').props.shop, webshop);
+  assert.deepEqual(view.routes, [], 'opening price comparison never navigates away or claims an order');
+});
+
+test('a business without a webshop keeps its inquiry and location without an order offer', async () => {
+  const view = screen(); view.render(); await settle(); view.render(); await settle();
+  const root = view.render();
+  assert.equal(nodes(root).some(node => ['WebshopBanner', 'WebshopOrderButton', 'WebshopComparisonSheet'].includes(node.type)), false);
+  assert.ok(control(root, 'company.inquiry'));
+  assert.ok(control(root, 'company.location'));
+});
+
+test('comparison labels menu observations and checkout quotes with their own dates in both languages', () => {
+  const file = ts.createSourceFile('business-webshop.tsx', readFileSync(new URL('../src/components/business-webshop.tsx', import.meta.url), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const dates = [];
+  const visit = node => { if (ts.isJsxExpression(node) && node.expression && /Menu prices checked|Checkout quotes checked/.test(node.expression.getText(file))) dates.push(node.expression.getText(file)); ts.forEachChild(node, visit); };
+  visit(file);
+  assert.equal(dates.length, 2, 'menu and final checkout observations need separate visible labels');
+  for (const [ko, locale] of [[true, 'ko-KR'], [false, 'en-CA']]) {
+    const shop = { verifiedAt: '2026-10-21T20:00:00Z' }, quote = { verifiedAt: '2026-10-22T20:00:00Z' };
+    const context = { ko, locale, shop, quote };
+    const evaluate = expression => vm.runInNewContext(ts.transpileModule(`(${expression})`, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, context);
+    const menu = dates.find(expression => expression.includes('Menu prices checked'));
+    const checkout = dates.find(expression => expression.includes('Checkout quotes checked'));
+    assert.equal(evaluate(menu), `\n${ko ? '메뉴 가격 확인' : 'Menu prices checked'} ${new Date(shop.verifiedAt).toLocaleDateString(locale)}`);
+    assert.equal(evaluate(checkout), `\n${ko ? '결제 견적 확인' : 'Checkout quotes checked'} ${new Date(quote.verifiedAt).toLocaleDateString(locale)}`);
+    context.quote = null;
+    assert.equal(evaluate(checkout), '');
+    context.shop = { verifiedAt: null };
+    assert.equal(evaluate(menu), '');
+  }
+});

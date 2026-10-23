@@ -96,3 +96,7 @@ verify_jwt = false
 
 [functions.merchant-mcp]
 verify_jwt = false
+
+# Public registry redirect; only the function's service client may record outbound clicks.
+[functions.webshop-redirect]
+verify_jwt = false

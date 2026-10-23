@@ -75,12 +75,12 @@ test('the real map marker and explicit map entry identify team visits without ch
   const visited = discoveryPlace({ ...place, glingVisited: visit });
   const markers = run(expression.getText(map), { pins: [visited, discoveryPlace({ ...place, id: 'osm:node:101' })], DISCOVERY_CATEGORIES,
     tr: value => value, hasAdLabel: () => false });
-  assert.equal(markers[0].label, 'gling Visited');
-  assert.equal(markers[0].color, '#CBB9FF');
+  assert.equal(markers[0].label, place.name);
+  assert.equal(markers[0].color, DISCOVERY_CATEGORIES.find(value => value.id === 'dining').color);
   assert.equal(markers[0].latitude, place.latitude);
   assert.equal(markers[0].longitude, place.longitude);
-  assert.equal(markers[1].label, '맛집');
-  assert.notEqual(markers[1].color, markers[0].color);
+  assert.equal(markers[1].label, place.name);
+  assert.equal(markers[1].color, markers[0].color, 'both places retain the restaurant category color');
   const route = placeMapRoute({ ...place, glingVisited: visit });
   assert.equal(route.params.category, 'visited');
   assert.equal(route.params.cityId, place.cityId);

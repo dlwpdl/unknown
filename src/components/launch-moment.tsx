@@ -8,8 +8,11 @@ export function LaunchMoment({ ready, onComplete }: { ready: boolean; onComplete
   const { tr } = useLanguage();
   const reducedMotion = useReducedMotion();
   const [entered, setEntered] = useState(false);
-  const started = useRef(false);
-  const ending = useRef(false);
+  const [laidOut, setLaidOut] = useState(false);
+  const [nativeHidden, setNativeHidden] = useState(false);
+  const [assetsReady, setAssetsReady] = useState(0);
+  const completed = useRef(false), complete = useRef(onComplete);
+  const prepared = nativeHidden && !!(assetsReady & 1) && (reducedMotion || !!(assetsReady & 2));
   const [opacity] = useState(() => new Animated.Value(1));
   const [wordmarkOpacity] = useState(() => new Animated.Value(0));
   const [wordmarkY] = useState(() => new Animated.Value(0));
@@ -17,13 +20,27 @@ export function LaunchMoment({ ready, onComplete }: { ready: boolean; onComplete
   const [glowOpacity] = useState(() => new Animated.Value(0));
   const [glowScale] = useState(() => new Animated.Value(0.85));
 
+  useEffect(() => { complete.current = onComplete; }, [onComplete]);
+
   useEffect(() => {
-    if (!ready || !entered || ending.current) return;
-    ending.current = true;
-    if (reducedMotion) { onComplete(); return; }
-    Animated.timing(opacity, { toValue: 0, duration: 340, easing: Easing.in(Easing.cubic), useNativeDriver: true })
-      .start(() => onComplete());
-  }, [entered, onComplete, opacity, ready, reducedMotion]);
+    if (!laidOut) return;
+    let active = true;
+    const hidden = () => { if (active) setNativeHidden(true); };
+    // Native/image callbacks can fail; never leave startup waiting indefinitely.
+    const fallback = setTimeout(() => { if (active) { setNativeHidden(true); setAssetsReady(3); } }, 2000);
+    try { void SplashScreen.hideAsync().then(hidden, hidden); } catch { hidden(); }
+    return () => { active = false; clearTimeout(fallback); };
+  }, [laidOut]);
+
+  useEffect(() => {
+    if (!ready || !entered || completed.current) return;
+    let active = true;
+    const finish = () => { if (active && !completed.current) { completed.current = true; complete.current(); } };
+    if (reducedMotion) { finish(); return; }
+    const exit = Animated.timing(opacity, { toValue: 0, duration: 340, easing: Easing.in(Easing.cubic), useNativeDriver: true });
+    exit.start(({ finished }) => { if (finished) finish(); });
+    return () => { active = false; exit.stop(); };
+  }, [entered, opacity, ready, reducedMotion]);
 
   useEffect(() => {
     if (!entered || ready || reducedMotion) return;
@@ -35,33 +52,41 @@ export function LaunchMoment({ ready, onComplete }: { ready: boolean; onComplete
     return () => pulse.stop();
   }, [entered, ready, reducedMotion, wordmarkOpacity]);
 
+  useEffect(() => {
+    if (!prepared || entered) return;
+    let active = true;
+    let hold: ReturnType<typeof setTimeout>;
+    const settle = () => { if (active) setEntered(true); };
+    if (reducedMotion) {
+      hold = setTimeout(settle, 2000);
+      return () => { active = false; clearTimeout(hold); };
+    }
+    const entry = Animated.parallel([
+      Animated.timing(wordmarkOpacity, { toValue: 1, duration: 920, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+      Animated.timing(glowScale, { toValue: 1.25, duration: 920, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(glowOpacity, { toValue: 0.85, duration: 620, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.sequence([
+        Animated.timing(wordmarkY, { toValue: -10, duration: 460, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(wordmarkY, { toValue: 0, duration: 460, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      ]),
+      Animated.sequence([
+        Animated.timing(wordmarkScale, { toValue: 1.045, duration: 460, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(wordmarkScale, { toValue: 1, duration: 460, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      ]),
+    ]);
+    entry.start(({ finished }) => { if (active && finished) hold = setTimeout(settle, 740); });
+    return () => { active = false; clearTimeout(hold); entry.stop(); };
+  }, [entered, glowOpacity, glowScale, prepared, reducedMotion, wordmarkOpacity, wordmarkScale, wordmarkY]);
+
   return <Animated.View
     accessible accessibilityLabel={tr("글링을 여는 중")}
-    onLayout={() => {
-      if (started.current) return;
-      started.current = true;
-      void SplashScreen.hideAsync().catch(() => {});
-      if (reducedMotion) { setEntered(true); return; }
-      Animated.parallel([
-        Animated.timing(wordmarkOpacity, { toValue: 1, duration: 920, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        Animated.timing(glowScale, { toValue: 1.25, duration: 920, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-        Animated.timing(glowOpacity, { toValue: 0.85, duration: 620, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-        Animated.sequence([
-          Animated.timing(wordmarkY, { toValue: -10, duration: 460, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-          Animated.timing(wordmarkY, { toValue: 0, duration: 460, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-        ]),
-        Animated.sequence([
-          Animated.timing(wordmarkScale, { toValue: 1.045, duration: 460, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-          Animated.timing(wordmarkScale, { toValue: 1, duration: 460, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-        ]),
-      ]).start(() => setEntered(true));
-    }}
+    onLayout={() => setLaidOut(true)}
     style={[styles.screen, { opacity }]}>
     {!reducedMotion && <>
-      <Animated.Image source={require('@/assets/brand/gling-night-splash-light.png')} resizeMode="cover" style={[styles.light, { opacity: glowOpacity, transform: [{ scale: glowScale }] }]} />
+      <Animated.Image source={require('@/assets/brand/gling-night-splash-light.png')} resizeMode="cover" onLoad={() => setAssetsReady(value => value | 2)} onError={() => setAssetsReady(value => value | 2)} style={[styles.light, { opacity: glowOpacity, transform: [{ scale: glowScale }] }]} />
     </>}
     <Animated.View style={[styles.wordmark, { opacity: reducedMotion ? 1 : wordmarkOpacity, transform: [{ translateY: wordmarkY }, { scale: wordmarkScale }] }]}>
-      <Image source={require('@/assets/brand/gling-night-wordmark.png')} resizeMode="contain" style={styles.wordmarkImage} />
+      <Image source={require('@/assets/brand/gling-night-wordmark.png')} resizeMode="contain" onLoad={() => setAssetsReady(value => value | 1)} onError={() => setAssetsReady(value => value | 1)} style={styles.wordmarkImage} />
     </Animated.View>
   </Animated.View>;
 }

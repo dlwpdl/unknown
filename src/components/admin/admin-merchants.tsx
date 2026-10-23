@@ -48,7 +48,7 @@ const contactLinks = (value: string, onClick: () => void) => merchantContactLink
   ? <a key={index} className="merchant-contact-link" href={part.href} target="_blank" rel="noopener noreferrer" aria-label={`${part.text} 열기 (새 탭)`} onClick={onClick}>{part.text} <span aria-hidden="true">↗</span></a>
   : part.text);
 
-export function AdminMerchantsView({ refreshSignal, onUser, localPreview = false }: { refreshSignal: number; onUser: (id: string) => void; localPreview?: boolean }) {
+export function AdminMerchantsView({ refreshSignal, onUser, onWebshop, localPreview = false }: { refreshSignal: number; onUser: (id: string) => void; onWebshop?: (merchantId: string) => void; localPreview?: boolean }) {
   const { play } = useInteractionFeedback();
   const [input, setInput] = useState(''), [query, setQuery] = useState(''), [page, setPage] = useState(0);
   const [revision, setRevision] = useState(0), [selected, setSelected] = useState<string | null>(null);
@@ -154,6 +154,11 @@ export function AdminMerchantsView({ refreshSignal, onUser, localPreview = false
   function closePanel() {
     if (busyRef.current || creatorDirty && !window.confirm('저장하지 않은 크리에이터 연결 내용을 닫을까요?')) return;
     play('selection'); setPanelOpen(false); setCreatorDirty(false);
+  }
+  function openWebshop() {
+    if (busyRef.current || !selected || !onWebshop) return;
+    if ((hasUnsavedChanges() || connectionDirty) && !window.confirm('저장하지 않은 내용을 버리고 웹샵 성과로 이동할까요?')) return;
+    play('selection'); onWebshop(selected);
   }
   function detailPage(tab: DetailTab) {
     if (busyRef.current) return;
@@ -274,6 +279,7 @@ export function AdminMerchantsView({ refreshSignal, onUser, localPreview = false
           {detail.merchant.record_kind !== 'source' && <section className="merchant-detail-section"><h3>주요 관리</h3><div className="merchant-detail-rows">
             <div className="merchant-detail-row"><span className="merchant-detail-icon" aria-hidden="true">▣</span><div><strong>공개 비즈니스 프로필</strong><p>로고·배너와 공개 정보를 확인합니다.</p></div><button type="button" disabled={busy} onClick={() => detailPage('profile')}>프로필 관리</button></div>
             <div className="merchant-detail-row"><span className="merchant-detail-icon" aria-hidden="true">♧</span><div><strong>{detail.merchant.owner_id ? '계정 연결됨' : '계정 미연결'}</strong><p>소유자와 운영 담당자의 권한을 관리합니다.</p></div><button type="button" disabled={busy} onClick={() => detailPage('accounts')}>계정 관리</button></div>
+            {onWebshop && <div className="merchant-detail-row"><span className="merchant-detail-icon" aria-hidden="true">↗</span><div><strong>웹샵 성과</strong><p>이 비즈니스의 주문 링크·가격 비교·확인된 주문을 관리합니다.</p></div><button type="button" disabled={busy} onClick={openWebshop}>웹샵 성과</button></div>}
             <div className="merchant-detail-row"><span className="merchant-detail-icon" aria-hidden="true">↔</span><div><strong>크리에이터 협업 이력</strong><p>약속한 날짜·비용·콘텐츠를 확인합니다.</p></div><button type="button" disabled={busy} onClick={() => detailPage('creators')}>이력 보기</button></div>
           </div></section>}
           <section className="merchant-detail-section"><header><h3>등록 정보</h3><button type="button" className="merchant-detail-text-action" disabled={busy} onClick={() => detailPage('profile')}>정보 수정 →</button></header><dl className="merchant-detail-facts"><dt>업종</dt><dd>{detail.merchant.industry || '미등록'}</dd><dt>소재지</dt><dd>{detail.merchant.address || '주소 미확인'}</dd><dt>게시 지역</dt><dd>{detail.merchant.city_name}</dd><dt>등록일</dt><dd>{merchantRegisteredDate(detail.merchant)}</dd><dt>게시 허락</dt><dd>{CONSENT[detail.merchant.consent]}</dd></dl></section>

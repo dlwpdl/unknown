@@ -70,7 +70,12 @@ test('card and pin open the same city-scoped canonical destination with feedback
   map.props.onSelect(visit.id);
   map.props.onSelect('osm:node:999');
   assert.equal(ui.pushes.length, 2);
-  for (const target of ui.pushes) assert.deepEqual(plain(target), { pathname: '/visited', params: { city: 'vancouver', placeId: visit.id } });
+  for (const target of ui.pushes) {
+    const url = new URL(target, 'https://gling.app');
+    assert.equal(url.pathname, '/visited');
+    assert.equal(url.searchParams.get('city'), 'vancouver');
+    assert.equal(url.searchParams.get('placeId'), visit.id);
+  }
   assert.deepEqual(ui.feedback, ['selection', 'selection']);
 });
 

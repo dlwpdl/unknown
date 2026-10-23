@@ -1,3 +1,4 @@
+import { lensControlStyle } from '../src/lib/lens-control.ts';
 import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -16,6 +17,7 @@ function control(sort) {
     if (name === '@/components/analytics-controls') return { Pressable: 'Pressable' };
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ background: 'background', backgroundElement: 'element', backgroundSelected: 'selected', accent: 'accent', textSecondary: 'sub', line: 'line' }) };
+    if (name === '@/lib/lens-control') return { lensControlStyle };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: kind => events.push(kind) }) };
     throw new Error(`Unexpected import: ${name}`);
   }) });
