@@ -14,8 +14,10 @@ import { PostMapLink } from '@/components/post-map-link';
 import { PostPhotoCredits } from '@/components/post-photo-credits';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
+import { SavedEntryButton, useSavedEntry } from '@/components/saved-entry';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useCommunityCity } from '@/lib/community-city';
 import { CITY_PLACES_COLLECTED_AT, getCityPlaces, type CityPlace } from '@/lib/city-places';
 import { deliveryPartnerPlace } from '@/lib/delivery-partners';
@@ -34,7 +36,8 @@ export default function PlaceDetailScreen() {
   const { tr, language, locale: appLocale } = useLanguage();
   const [viewport, setViewport] = useState({ y: 0, height: 0 });
   const { cityId, id } = useLocalSearchParams<{ cityId?: string; id?: string }>();
-  const { isAuthed, me } = useAuth();
+  const { isAuthed, isAuthLoading, me } = useAuth();
+  const hidden = useContentVisibility();
   const isFocused = useIsFocused(), userId = isAuthed ? me.id : null;
   const identity = useRef(userId);
   useLayoutEffect(() => { identity.current = userId; return () => { identity.current = null; }; }, [userId]);
@@ -45,14 +48,21 @@ export default function PlaceDetailScreen() {
   try { if (city) found = getCityPlaces(city.id).find(item => item.id === id) ?? (typeof id === 'string' ? deliveryPartnerPlace(city.id, id) : undefined); } catch { /* Invalid/missing catalog stays an explicit missing-place state. */ }
   const place = found, website = place?.website ? safeMerchantSourceUrl(place.website) : null;
   const targetId = place?.id, loadedCityId = place?.cityId;
+  const saved = useSavedEntry(place ? { kind: 'place', id: place.id, cityId: place.cityId } : null, !!place && !!city);
+  const linkScope = useRef<object | null>(null);
+  useLayoutEffect(() => {
+    linkScope.current = {};
+    return () => { linkScope.current = null; };
+  }, [targetId, loadedCityId, userId, isAuthLoading, hidden, isFocused]);
   useEffect(() => {
-    if (!isFocused || !targetId || !loadedCityId) return;
+    if (!isFocused || isAuthLoading || !targetId || !loadedCityId) return;
+    const scope = linkScope.current;
     const controller = new AbortController();
     void loadCityBusinessLinks(supabase, loadedCityId, controller.signal).then(links => {
-      if (!controller.signal.aborted && links[targetId]) router.replace({ pathname: '/company/[id]', params: { id: links[targetId] } });
+      if (!controller.signal.aborted && linkScope.current === scope && links[targetId]) router.replace({ pathname: '/company/[id]', params: { id: links[targetId] } });
     }).catch(() => {});
     return () => controller.abort();
-  }, [isFocused, targetId, loadedCityId, router]);
+  }, [isFocused, isAuthLoading, targetId, loadedCityId, router, userId, hidden]);
   const record = useCallback((kind: 'place_view' | 'place_directions' | 'place_website') => {
     if (userId && identity.current === userId && targetId && loadedCityId) {
       void recordProductEvent(supabase, { kind, targetId, cityId: loadedCityId, platform: Platform.OS }).catch(() => {});
@@ -71,7 +81,9 @@ export default function PlaceDetailScreen() {
         <SymbolView name={{ ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }} size={19} tintColor={theme.text} />
         <ThemedText type="smallBold">{tr("돌아가기")}</ThemedText>
       </Pressable>
+      {place && <SavedEntryButton entry={saved} kind="place" analyticsId="save.place" />}
     </View>
+    {!!saved.error && <ThemedText type="small" accessibilityRole="alert" style={styles.saveError}>{saved.error}</ThemedText>}
     <ScrollView analyticsId="places.detail.scroll" contentContainerStyle={styles.content} scrollEventThrottle={100}
       onLayout={({ nativeEvent: { layout: { height } } }) => setViewport(previous => previous.height === height ? previous : { ...previous, height })}
       onScroll={({ nativeEvent }) => setViewport({ y: nativeEvent.contentOffset.y, height: nativeEvent.layoutMeasurement.height })}>
@@ -125,7 +137,8 @@ export default function PlaceDetailScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  header: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', paddingHorizontal: Spacing.three, paddingVertical: Spacing.one, borderBottomWidth: StyleSheet.hairlineWidth },
+  header: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', paddingHorizontal: Spacing.three, paddingVertical: Spacing.one, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  saveError: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', paddingHorizontal: Spacing.three },
   content: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', padding: Spacing.three, gap: Spacing.three },
   back: { minHeight: 44, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   photo: { width: '100%', aspectRatio: 4 / 3, borderRadius: 16 },
