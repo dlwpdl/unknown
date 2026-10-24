@@ -40,3 +40,5 @@ export default function SharedAuthCallback() {
   </View>;
 }
 const styles = StyleSheet.create({ page: { flex: 1, minHeight: '100%', alignItems: 'center', justifyContent: 'center', padding: 24, gap: 16 }, button: { minHeight: 44, minWidth: 44, padding: 12, justifyContent: 'center' } });
+
+export { generatePrivateMetadata as generateMetadata } from '@/components/public-web/metadata';

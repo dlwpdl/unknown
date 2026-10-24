@@ -8,6 +8,7 @@ export function checkMerchantWeb(directory, base = '/merchant') {
     assert.ok(existsSync(join(directory, file)), `Merchant web route missing: ${file}`);
   }
   const index = readFileSync(join(directory, 'index.html'), 'utf8');
+  assert.match(index, /<script\b[^>]*src=[^>]*_expo\/[^>]*\.js/, 'Merchant web hydration scripts are missing');
   assert.ok(index.includes('noindex,nofollow'), 'Merchant web must use noindex');
   assert.ok(index.includes('no-referrer'), 'Merchant web must protect callback referrers');
   for (const file of readdirSync(directory, { recursive: true })) {

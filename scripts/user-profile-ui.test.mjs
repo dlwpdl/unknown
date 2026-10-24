@@ -177,7 +177,7 @@ test('reported posts and authors disappear immediately from cached public histor
   hidden.add('post:reported'); harness.render();
   assert.deepEqual(Array.from(list(harness).props.data, item => item.id), ['visible']);
   hidden.add('user:author'); harness.render();
-  assert.equal(list(harness).props.data.length, 0); assert.equal(list(harness).props.ListHeaderComponent, null);
+  assert.equal(list(harness).props.data.length, 0); assert.equal(list(harness).props.ListHeaderComponent, undefined);
   assert.equal(harness.nodes().some(node => node.type === 'SavedEntryButton'), false);
   assert.equal(harness.calls.at(-1)[2], false, 'a hidden profile cannot enable the private person save');
 });

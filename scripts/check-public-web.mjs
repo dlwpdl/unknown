@@ -17,6 +17,7 @@ const robots = readFileSync(join(directory, 'robots.txt'), 'utf8');
 assert.ok(robots.includes('Sitemap: https://gling.ej-entertainment.com/sitemap.xml') && robots.includes('format=sitemap&city='), 'Static and live public-post sitemaps are missing');
 assert.ok(robots.includes('Disallow: /merchant/') && robots.includes('Disallow: /admin'), 'Private surfaces must remain outside public discovery');
 assert.ok(readFileSync(join(directory, 'index.html'), 'utf8').includes('application/ld+json'), 'Public home structured data is missing');
+assert.match(readFileSync(join(directory, 'index.html'), 'utf8'), /<script\b[^>]*src=[^>]*_expo\/[^>]*\.js/, 'Public web hydration scripts are missing');
 assert.ok(/name="robots"[^>]*content="noindex/.test(readFileSync(join(directory, 'post.html'), 'utf8')), 'Login-protected detail route must not index private content');
 assert.ok(existsSync(join(directory, 'company.html')), 'Public company reader route is missing');
 const childSafety = readFileSync(join(directory, 'child-safety.html'), 'utf8');
