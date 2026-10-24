@@ -18,6 +18,7 @@ import { googlePinUrl, postPublicAddress } from '../src/lib/post-maps.ts';
 import { chillingSchedule } from '../src/lib/chilling.ts';
 import * as product from '../src/lib/product-analytics.ts';
 import { translateUi, translationsFor } from '../src/i18n/index.ts';
+import { subscribeBusinessChat } from '../src/lib/business-chat.ts';
 
 function languageImports(resolve, data) {
   const imports = withLanguageImports(resolve);
@@ -31,7 +32,7 @@ function languageImports(resolve, data) {
 function mount(file, exportName, data, props = {}, params = {}) {
   const hooks = [], setters = [], appListeners = new Set(), channels = new Set(), timers = new Map(), animations = [];
   let index = 0, effects = [], dirty = true, tree, timerId = 0;
-  const auth = { isAuthed: true, me: { id: 'me', nickname: '나' } };
+  const auth = { isAuthed: true, me: { id: 'me', nickname: '나' }, ...data.auth };
   const refreshMembership = async () => {};
   const jsx = (type, props, key) => ({ type, props, key });
   const effect = (fn, deps) => {
@@ -66,12 +67,13 @@ function mount(file, exportName, data, props = {}, params = {}) {
   const supabase = {
     rpc: async (name, args) => { data.productEvents?.push([name, JSON.parse(JSON.stringify(args))]); return { error: data.telemetryError ?? null }; },
     storage: { from: () => ({ remove: async paths => { data.removed?.push(...paths); return { error: null }; } }) },
-    channel() {
-      const channel = { handlers: [], on(_kind, filter, callback) { this.handlers.push({ filter, callback }); return this; }, subscribe() { return this; } };
+    channel(name) {
+      data.subscriptionEvents?.push(['subscribe', name]);
+      const channel = { handlers: [], on(_kind, filter, callback) { this.handlers.push({ filter, callback }); return this; }, subscribe(callback) { this.status = callback; callback?.('SUBSCRIBED'); return this; } };
       channels.add(channel);
       return channel;
     },
-    removeChannel(channel) { channels.delete(channel); },
+    removeChannel(channel) { data.subscriptionEvents?.push(['remove']); channels.delete(channel); return Promise.resolve('ok'); },
   };
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL(file, import.meta.url), 'utf8'), {
@@ -161,6 +163,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
     messages: () => nodes(tree).find(node => node.type === 'FlatList')?.props.data ?? [],
     animations,
     foreground() { for (const callback of appListeners) callback('active'); },
+    reconnect() { for (const channel of channels) channel.status?.('SUBSCRIBED'); },
     message(message) { for (const channel of channels) for (const { filter, callback } of channel.handlers) if (filter.table === 'messages') callback({ new: message }); },
     async timers() { const pending = [...timers.values()]; timers.clear(); for (const { fn, delay } of pending) { if (data.clock) data.clock.now += delay; fn(); } await harness.settle(); },
     cleanup() { for (const hook of hooks) hook?.cleanup?.(); timers.clear(); },
@@ -1719,4 +1722,75 @@ test('long personal and business header titles keep their full accessible name w
     assert.equal(heading.props.numberOfLines, 2); assert.equal(heading.props.ellipsizeMode, 'tail');
     if (businessPeer) assert.ok(harness.nodes().find(node => node.props?.analyticsId === 'chat.peer-profile').props.accessibilityLabel.includes(title));
   }
+});
+
+test('preview and callback object refreshes preserve a 100-message personal window and its subscription', async context => {
+  let snapshots = 0; const subscriptionEvents = [], props = { ...roomProps, conversation: { ...conversation, kind: 'direct' } };
+  const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { subscriptionEvents,
+    loadConversationMessages: async (_client, _id, before) => { if (!before) snapshots++; return Array.from({ length: 50 }, (_, i) => message((before ? 1 : 51) + i)); },
+  }, props);
+  context.after(() => harness.cleanup()); await harness.settle();
+  await olderButton(harness).props.onPress(); await harness.settle(); assert.equal(harness.messages().length, 100);
+  props.conversation = { ...props.conversation, latestBody: 'new preview', latestAt: '2026-10-24T00:00:00Z', otherUser: { ...props.conversation.otherUser, nickname: 'Updated name' } };
+  props.onChanged = async () => {};
+  harness.rerender(); await harness.settle();
+  assert.equal(snapshots, 1); assert.equal(harness.messages().length, 100);
+  assert.equal(subscriptionEvents.filter(([kind]) => kind === 'subscribe').length, 1);
+  assert.equal(subscriptionEvents.filter(([kind]) => kind === 'remove').length, 0);
+  harness.reconnect(); await harness.settle();
+  assert.equal(snapshots, 2, 'real reconnect still revalidates the contiguous server-visible window');
+});
+
+test('business preview snapshots preserve paged history but a real revocation still clears it', async context => {
+  let snapshots = 0, allowed = true;
+  const props = { ...roomProps, conversation: { ...businessRoom } };
+  const data = { businessIdentity: { id: businessId, name: 'Public business' }, businessChat: {
+    loadBusinessChatMessages: async (_client, pinned, options = {}) => {
+      if (!allowed) throw Error('BUSINESS_CHAT_REVOKED');
+      if (!options.before) snapshots++;
+      return { conversation: pinned, messages: Array.from({ length: 50 }, (_, i) => ({ ...message((options.before ? 1 : 51) + i), sender_kind: 'user', is_mine: false })), cursor: options.before ? null : { id: 'm051', createdAt: message(51).created_at }, readAt: null };
+    },
+  } };
+  const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', data, props);
+  context.after(() => harness.cleanup()); await harness.settle();
+  await olderButton(harness).props.onPress(); await harness.settle(); assert.equal(harness.messages().length, 100);
+  props.conversation = { ...props.conversation, latestBody: 'Updated business preview', selfIdentity: { ...props.conversation.selfIdentity, name: 'Updated public business' } };
+  props.onChanged = async () => {}; harness.rerender(); await harness.settle();
+  assert.equal(snapshots, 1); assert.equal(harness.messages().length, 100);
+  allowed = false; harness.foreground(); await harness.settle();
+  assert.equal(harness.messages().length, 0, 'actual access revalidation still discards revoked business history');
+});
+
+test('the actual shared private channel revalidates business history on reconnect and discards revoked history', async context => {
+  const userId = 'b1900000-0000-4000-8000-000000000001', businessId = 'b1910000-0000-4000-8000-000000000001';
+  const current = { ...businessRoom, id: 'b1920000-0000-4000-8000-000000000001', selfIdentity: { ...businessRoom.selfIdentity, id: businessId } };
+  let snapshots = 0, allowed = true, changes = 0;
+  const props = { conversation: current, currentUserId: userId, onClose() {}, onChanged: async () => { changes++; } };
+  const h = mount('../src/components/chat-room.tsx', 'ChatRoom', {
+    auth: { isAuthed: true, me: { id: userId, nickname: 'Synthetic viewer' } }, businessIdentity: { id: businessId, name: 'Business' },
+    businessChat: { subscribeBusinessChat, loadBusinessChatMessages: async (_client, pinned, options) => {
+      if (!options?.before) snapshots++;
+      if (!allowed) throw Error('BUSINESS_CHAT_REVOKED');
+      return { conversation: pinned, messages: Array.from({ length: 50 }, (_, i) => message((options?.before ? 1 : 51) + i)), cursor: options?.before ? null : { id: 'oldest', createdAt: message(51).created_at }, readAt: null };
+    } },
+  }, props);
+  context.after(h.cleanup); await h.settle(); await olderButton(h).props.onPress(); await h.settle();
+  props.conversation = { ...current, latestBody: 'Updated preview' }; h.rerender(); await h.settle();
+  assert.equal(h.messages().length, 100); assert.equal(snapshots, 1);
+  h.reconnect(); await h.settle(); assert.equal(snapshots, 2); assert.equal(changes, 1);
+  allowed = false; h.reconnect(); await h.settle(); assert.equal(snapshots, 3); assert.equal(h.messages().length, 0);
+  h.auth.isAuthed = false; h.rerender(); h.reconnect(); await h.settle(); assert.equal(snapshots, 3); assert.equal(changes, 2);
+});
+
+test('the actual private inbox channel refreshes on reconnect without a broadcast or foreground transition', async context => {
+  const userId = 'b1900000-0000-4000-8000-000000000001', businessId = 'b1910000-0000-4000-8000-000000000001';
+  const reads = [];
+  const h = mount('../src/app/(tabs)/chat.tsx', 'default', {
+    auth: { isAuthed: true, me: { id: userId, nickname: 'Synthetic viewer' } }, businessIdentity: { id: businessId, name: 'Business' },
+    businessChat: { subscribeBusinessChat }, loadConversations: async (_client, owner, _filter, _cursor, _selected, asBusinessId) => {
+      reads.push([owner, asBusinessId]); return { conversations: [], pendingCount: 0, cursor: null, selectedConversation: null };
+    },
+  });
+  context.after(h.cleanup); await h.settle(); assert.equal(reads.length, 1);
+  h.reconnect(); await h.timers(); assert.deepEqual(reads, [[userId, businessId], [userId, businessId]]);
 });

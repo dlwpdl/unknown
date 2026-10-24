@@ -104,6 +104,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
     });
     return exports;
   };
+  imports['@/lib/notification-refresh'] = load('lib/notification-refresh.ts');
   imports['@/lib/error-reporting'] = load('lib/error-reporting.ts');
   const exports = load(file);
   const render = () => {
