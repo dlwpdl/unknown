@@ -5,6 +5,7 @@ import test from 'node:test';
 
 const root = new URL('../', import.meta.url);
 const json = path => JSON.parse(readFileSync(new URL(path, root), 'utf8'));
+const displays = new Map(json('assets/images/city-places-display/manifest.json').images.map(row => [row.original.sha256, row]));
 
 for (const [cityId, minimum] of [['vancouver', 50], ['toronto', 38], ['montreal', 21], ['calgary', 14], ['edmonton', 14], ['winnipeg', 15]]) {
 test(`the shipped ${cityId} cohort has distinct destinations with counted ratings and attributed offline photos`, () => {
@@ -30,7 +31,10 @@ test(`the shipped ${cityId} cohort has distinct destinations with counted rating
     assert.ok(photo?.artist && photo.license && photo.licenseUrl && photo.sourceUrl, `${id}: photo attribution`);
     const filename = assets.get(photo.imageSha256);
     assert.ok(filename, `${id}: actual matching photo bytes`);
-    assert.ok(bindings.includes(`'${photo.imageSha256}': require('../../assets/images/city-places/${filename}')`), `${id}: static native binding`);
+    const display = displays.get(photo.imageSha256);
+    assert.equal(display?.original.path, `assets/images/city-places/${filename}`, `${id}: derivative retains exact original`);
+    assert.ok(bindings.includes(`'${photo.imageSha256}': require('../../${display.display.path}')`), `${id}: static display binding`);
+    assert.equal(createHash('sha256').update(readFileSync(new URL(display.display.path, root))).digest('hex'), display.display.sha256, `${id}: actual display bytes`);
   }
   assert.equal(new Set(ids.map(id => photos.find(row => row.placeId === id)?.imageSha256)).size, ids.length, 'different place aliases must not pad the list with the same cover');
   if (cityId === 'vancouver') for (const id of ['osm:way:37063023', 'osm:way:223635729', 'osm:way:86340299']) {
@@ -54,7 +58,9 @@ test('reviewed dining supplements have counted venue sources and the exact attri
     const image = photos.cities[cityId].find(photo => photo.placeId === placeId);
     assert.ok(image?.artist && image.licenseUrl && image.sourceUrl);
     const file = assets.get(image.imageSha256);
-    assert.ok(file && component.includes(`'${image.imageSha256}': require('../../assets/images/city-places/${file}')`));
+    const display = displays.get(image.imageSha256);
+    assert.ok(file && display?.original.path === `assets/images/city-places/${file}`);
+    assert.ok(component.includes(`'${image.imageSha256}': require('../../${display.display.path}')`));
     assert.ok(ratings.some(row => row.cityId === cityId && row.placeId === placeId && row.count > 0 && row.score > 0));
   }
   assert.equal(catalog.cities.vancouver.recommendations.length, 50);

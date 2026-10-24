@@ -546,11 +546,10 @@ function photoModule(imports = {}) {
   });
 }
 
-test('verified bundled photo bytes display offline only for their exact recorded image hash', () => {
-  const directory = new URL('assets/images/city-places/', root);
-  const assets = readdirSync(directory).filter(name => name.endsWith('.jpg')).map((name, index) => ({
-    path: '../../assets/images/city-places/' + name, source: index + 1,
-    hash: createHash('sha256').update(readFileSync(new URL(name, directory))).digest('hex'),
+test('bundled display derivatives load offline only for their exact verified original hash', () => {
+  const manifest = JSON.parse(readFileSync(new URL('assets/images/city-places-display/manifest.json', root), 'utf8'));
+  const assets = manifest.images.map((row, index) => ({
+    path: '../../' + row.display.path, source: index + 1, hash: row.original.sha256,
   }));
   assert.ok(assets.length > 0, 'verified offline photos must be included');
   const photo = photoModule(Object.fromEntries(assets.map(asset => [asset.path, asset.source])));
