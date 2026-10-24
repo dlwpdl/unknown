@@ -88,7 +88,7 @@ export default function PlaceDetailScreen() {
       onLayout={({ nativeEvent: { layout: { height } } }) => setViewport(previous => previous.height === height ? previous : { ...previous, height })}
       onScroll={({ nativeEvent }) => setViewport({ y: nativeEvent.contentOffset.y, height: nativeEvent.layoutMeasurement.height })}>
       {!place || !city ? <StateCard kind="error" title={tr("장소를 찾지 못했어요")} body={tr("선택한 도시의 장소 목록에서 다시 열어 주세요.")} /> : <>
-        <CityPlacePhoto place={place} style={styles.photo} />
+        <CityPlacePhoto place={place} style={styles.photo} contentFit="contain" />
         {!!place.photo && <PostPhotoCredits credits={[
           place.photo.title, `${language === 'en' ? 'Photo' : '사진'}: ${place.photo.artist}`, place.photo.sourceUrl,
           place.photo.license, place.photo.licenseUrl,
