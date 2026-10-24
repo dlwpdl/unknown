@@ -2,7 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
 import { type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance, Modal, Platform, StyleSheet, useWindowDimensions, View, type ViewInstance } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { runOnJS, useAnimatedStyle, useReducedMotion, useSharedValue } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -27,7 +27,7 @@ export function PostPhotoGallery({ post }: { post: Post }) {
   const theme = useTheme();
   const { isAuthed, me } = useAuth();
   const { play } = useInteractionFeedback();
-  const insets = useSafeAreaInsets(), screen = useWindowDimensions(), reducedMotion = useReducedMotion();
+  const screen = useWindowDimensions(), reducedMotion = useReducedMotion();
   const viewerScope = isAuthed ? me.id : 'guest';
   const pictures = (post.imageUris ?? []).flatMap((_, position) => {
     const source = getPostImageSource(post, viewerScope, 'full', position);
@@ -153,8 +153,8 @@ export function PostPhotoGallery({ post }: { post: Post }) {
       </Pressable>; })}
     </ScrollView>}
     {fullIndex !== null && <Modal visible transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={close}>
-      <View accessibilityViewIsModal style={[styles.viewer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-        <View style={styles.toolbar}>
+      <SafeAreaProvider accessibilityViewIsModal style={styles.viewer}>
+        <SafeAreaView edges={['top', 'left', 'right']} style={styles.toolbar}>
           <ThemedText style={styles.viewerText}>{fullIndex + 1}/{photos.length}</ThemedText>
           <Pressable analyticsId="post.photo.zoom" accessibilityRole="button" accessibilityLabel={zoomed ? tr("사진 축소") : tr("사진 확대")} accessibilityState={{ expanded: zoomed }}
             onPress={() => { play('selection'); const enlarged = !zoomed; scale.set(enlarged ? 2 : 1); x.set(0); y.set(0); setZoomed(enlarged); }} style={styles.control}>
@@ -163,7 +163,7 @@ export function PostPhotoGallery({ post }: { post: Post }) {
           <Pressable analyticsId="post.photo.close" accessibilityRole="button" accessibilityLabel={tr("사진 닫기")} onPress={close} style={styles.control}>
             <ThemedText style={styles.viewerText}>{tr("닫기 ✕")}</ThemedText>
           </Pressable>
-        </View>
+        </SafeAreaView>
         <GestureHandlerRootView style={{ flex: 1 }}><GestureDetector gesture={gestures}><View ref={viewportRef} testID="post-photo-viewport" style={styles.fullContent} collapsable={false}
           onLayout={({ nativeEvent: { layout: { width, height } } }) => {
             setViewport(previous => previous.width === width && previous.height === height ? previous : { width, height });
@@ -181,14 +181,14 @@ export function PostPhotoGallery({ post }: { post: Post }) {
           analyticsId="post.photo.pan" accessibilityRole="button" accessibilityLabel={direction.label} style={styles.control} onPress={() => moveDirection(direction.name)}>
           <ThemedText style={styles.viewerText}>{direction.arrow}</ThemedText>
         </Pressable>)}</View>}
-        {photos.length > 1 && <View style={styles.toolbar}>
+        {photos.length > 1 && <SafeAreaView edges={['bottom', 'left', 'right']} style={styles.toolbar}>
           {([-1, 1] as const).map(direction => <Pressable key={direction} analyticsId="post.photo.page" accessibilityRole="button"
             accessibilityLabel={direction < 0 ? tr("이전 사진") : tr("다음 사진")} disabled={fullIndex + direction < 0 || fullIndex + direction >= photos.length}
             style={styles.control} onPress={() => { selectPhoto(fullIndex + direction); resetZoom(); setViewer({ key: galleryKey, index: fullIndex + direction }); }}>
             <ThemedText style={[styles.viewerText, { opacity: fullIndex + direction < 0 || fullIndex + direction >= photos.length ? 0.35 : 1 }]}>{direction < 0 ? tr("← 이전") : tr("다음 →")}</ThemedText>
           </Pressable>)}
-        </View>}
-      </View>
+        </SafeAreaView>}
+      </SafeAreaProvider>
     </Modal>}
   </View>;
 }

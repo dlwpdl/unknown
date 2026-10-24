@@ -983,10 +983,10 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       void refreshMessages();
     }} />}
     {photoOpen && <Modal visible transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => setPhotoOpen(null)}>
-      <View accessibilityViewIsModal style={[styles.photoBackdrop, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-        <View style={styles.photoToolbar}><ThemedText type="smallBold" style={{ color: '#fff' }}>{`${photoOpen.index + 1}/${photoOpen.photos.length}`}</ThemedText>
+      <SafeAreaProvider accessibilityViewIsModal style={styles.photoBackdrop}>
+        <SafeAreaView edges={['top', 'left', 'right']} style={styles.photoToolbar}><ThemedText type="smallBold" style={{ color: '#fff' }}>{`${photoOpen.index + 1}/${photoOpen.photos.length}`}</ThemedText>
           <Pressable analyticsId="components_chat-room.photo-close" accessibilityRole="button" accessibilityLabel={tr("사진 닫기")} onPress={() => { play('selection'); setPhotoOpen(null); }} style={styles.photoClose}><ThemedText style={{ color: '#fff' }}>{tr("닫기 ✕")}</ThemedText></Pressable>
-        </View>
+        </SafeAreaView>
         <ScrollView ref={photoPages} key={`${photoOpen.messageId ?? 'draft'}:${screen.width}`} testID="chat-photo-pages" horizontal pagingEnabled showsHorizontalScrollIndicator={false}
           contentOffset={{ x: photoOpen.initialIndex * screen.width, y: 0 }} style={{ flex: 1 }}
           onLayout={() => photoPages.current?.scrollTo({ x: photoOpen.index * screen.width, animated: false })}
@@ -996,12 +996,12 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
               : <ThemedText style={{ color: '#fff' }}>{tr("사진을 불러오지 못했어요")}</ThemedText>}
           </View>)}
         </ScrollView>
-        {photoOpen.photos.length > 1 && <View style={styles.photoToolbar}>{([-1, 1] as const).map(direction => <Pressable key={direction} analyticsId={direction < 0 ? 'chat.photo.previous' : 'chat.photo.next'}
+        {photoOpen.photos.length > 1 && <SafeAreaView edges={['bottom', 'left', 'right']} style={styles.photoToolbar}>{([-1, 1] as const).map(direction => <Pressable key={direction} analyticsId={direction < 0 ? 'chat.photo.previous' : 'chat.photo.next'}
           accessibilityRole="button" accessibilityLabel={tr(direction < 0 ? tr("이전 사진") : tr("다음 사진"))} disabled={photoOpen.index + direction < 0 || photoOpen.index + direction >= photoOpen.photos.length}
           accessibilityState={{ disabled: photoOpen.index + direction < 0 || photoOpen.index + direction >= photoOpen.photos.length }} onPress={() => changePhoto(photoOpen.index + direction)} style={styles.photoClose}>
           <ThemedText style={{ color: '#fff', opacity: photoOpen.index + direction < 0 || photoOpen.index + direction >= photoOpen.photos.length ? 0.4 : 1 }}>{tr(direction < 0 ? tr("← 이전") : tr("다음 →"))}</ThemedText>
-        </Pressable>)}</View>}
-      </View>
+        </Pressable>)}</SafeAreaView>}
+      </SafeAreaProvider>
     </Modal>}
   </SafeAreaView></ThemedView>;
 }

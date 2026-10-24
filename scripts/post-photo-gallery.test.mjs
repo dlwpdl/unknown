@@ -33,7 +33,7 @@ function loadGallery(page = null, width = 390, platform = 'ios') {
     };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
 
-    if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ top: 44, bottom: 34 }) };
+    if (name === 'react-native-safe-area-context') return { SafeAreaProvider: 'SafeAreaProvider', SafeAreaView: 'SafeAreaView' };
     if (name === 'react-native-reanimated') return {
       __esModule: true, default: { View: 'AnimatedView' }, useReducedMotion: () => true, runOnJS: (fn) => fn,
       useSharedValue: (initial) => refs[refCall++] ??= { value: initial, get() { return this.value; }, set(value) { this.value = value; } },
