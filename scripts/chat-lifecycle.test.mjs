@@ -1703,3 +1703,20 @@ test('retained close and safety actions cannot act on a later settings presentat
   oldClose(); oldBlock(); await harness.settle();
   assert.equal(modal().props.visible, true); assert.equal(blocks, 0);
 });
+
+test('long personal and business header titles keep their full accessible name when visually truncated', async context => {
+  for (const businessPeer of [false, true]) {
+    const title = businessPeer ? 'LongUnbrokenBusinessNameForContainment' : 'LongNeighbourName123';
+    const pinned = businessPeer ? { ...conversation, kind: 'business', title,
+      selfIdentity: { kind: 'user', id: 'me', name: 'Me' }, otherIdentity: { kind: 'business', id: businessId, name: title },
+      otherUser: { id: businessId, nickname: title, verificationLevel: 0 } }
+      : { ...conversation, kind: 'direct', otherUser: { ...conversation.otherUser, nickname: title } };
+    const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { loadConversationMessages: async () => [],
+      businessChat: { loadBusinessChatMessages: async () => ({ conversation: pinned, messages: [], cursor: null, readAt: null }) } }, { ...roomProps, conversation: pinned });
+    context.after(() => harness.cleanup()); await harness.settle();
+    const heading = harness.nodes().find(node => node.type === 'ThemedText' && node.props?.children === title);
+    assert.ok(heading); assert.equal(heading.props.accessibilityLabel, title);
+    assert.equal(heading.props.numberOfLines, 2); assert.equal(heading.props.ellipsizeMode, 'tail');
+    if (businessPeer) assert.ok(harness.nodes().find(node => node.props?.analyticsId === 'chat.peer-profile').props.accessibilityLabel.includes(title));
+  }
+});
