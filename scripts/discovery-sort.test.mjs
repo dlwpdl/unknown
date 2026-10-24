@@ -26,3 +26,14 @@ test('discount order uses the verified numeric field, then distance, and keeps u
   assert.deepEqual(sortDiscoveryItems(items, origin, 'discount').map(x => x.id), ['max-near', 'max-far', 'small', 'unknown', 'invalid']);
   assert.equal(items[0].webshopDiscount, undefined);
 });
+
+test('nearby place ordering uses the full input, stable ties and real user coordinates without mutating catalog order',async()=>{
+  const {rankPlacesByDistance,formatNearbyDistance}=await import('../src/lib/discovery-sort.ts');assert.equal(typeof rankPlacesByDistance,'function');
+  const now=Date.now(),fix={...origin,accuracy:20,measuredAt:now,mocked:false};
+  const places=[place('far',49.5),place('invalid',NaN),place('near',49.251),place('tie',49.251)];
+  const ranked=rankPlacesByDistance(places,fix,now);assert.deepEqual(ranked.map(row=>row.place.id),['near','tie','far','invalid']);assert.equal(ranked.at(-1).distance,null);
+  assert.deepEqual(places.map(row=>row.id),['far','invalid','near','tie']);
+  for(const bad of [null,{...fix,accuracy:1000},{...fix,measuredAt:now-120001},{...fix,latitude:91}]){const fallback=rankPlacesByDistance(places,bad,now);assert.deepEqual(fallback.map(row=>row.place.id),places.map(row=>row.id));assert.ok(fallback.every(row=>row.distance===null));}
+  const tr=(message,...values)=>message.replace(/\{(\d+)\}/g,(_,index)=>values[index]);
+  assert.equal(formatNearbyDistance(1.234,tr),'약 1.2km');assert.equal(formatNearbyDistance(.02,tr),'100m 이내');assert.equal(formatNearbyDistance(null,tr),null);assert.equal(formatNearbyDistance(Infinity,tr),null);
+});
