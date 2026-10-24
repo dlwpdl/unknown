@@ -43,21 +43,21 @@ export function MerchantAccountEntry() {
     let active = true;
     const check = async () => {
       const request = ++serial.current;
-      try { const next = await loadMyMerchantConnections(supabase, me.id); if (active && request === serial.current) setResponse(next); }
+      try { const next = await loadMyMerchantConnections(supabase, me.id, isAdmin); if (active && request === serial.current) setResponse(next); }
       catch { if (active && request === serial.current) setResponse(null); }
     };
-    if (isAuthed && !isAdmin) void check();
-    const listener = AppState.addEventListener('change', state => { if (state === 'active' && isAuthed && !isAdmin) void check(); });
+    if (isAuthed) void check();
+    const listener = AppState.addEventListener('change', state => { if (state === 'active' && isAuthed) void check(); });
     return () => { active = false; serial.current++; listener.remove(); };
   }, [isAuthed, isAdmin, me.id]));
   const data = response?.user_id === me.id ? response : null;
-  if (!isAuthed || isAdmin || (!data?.merchants.length && !data?.invitations.length)) return null;
+  if (!isAuthed || (!data?.merchants.length && !data?.invitations.length)) return null;
   async function open() {
     if (opening.current) return;
     opening.current = true; setBusy(true); play('selection');
     const request = ++serial.current;
     try {
-      const next = await loadMyMerchantConnections(supabase, me.id);
+      const next = await loadMyMerchantConnections(supabase, me.id, isAdmin);
       if (current.current !== me.id || serial.current !== request) return;
       setResponse(next);
       if (next.merchants.length === 1 && next.merchants[0].role !== 'admin') {
