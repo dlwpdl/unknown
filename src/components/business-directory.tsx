@@ -120,7 +120,7 @@ export function BusinessDirectoryView({ cityName, query, industry, page, loading
 }) {
   const theme = useTheme(), { tr } = useLanguage(), { play } = useInteractionFeedback();
   const items = page?.items ?? [];
-  return <SafeAreaView edges={['top', 'bottom']} style={[styles.screen, { backgroundColor: theme.background }]}>
+  return <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.screen, { backgroundColor: theme.background }]}>
     <View style={styles.header}>
       <Pressable analyticsId="business.directory.back" accessibilityRole="button" accessibilityLabel={tr('새 소식으로 돌아가기')}
         onPress={() => { play('selection'); onBack(); }} style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
