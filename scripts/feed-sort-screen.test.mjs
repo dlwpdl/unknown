@@ -61,6 +61,22 @@ function screen({ createdPost, deferPublish = false, os = 'web' } = {}) {
 }
 const post = (id, extra = {}) => ({ id, cityId: 'vancouver', author: { id: 'author' }, tag: TAGS[0], createdAt: '2026-10-12T10:00:00Z', title: id, ...extra });
 
+test('business remains a news board; only its explicit directory action opens business profiles exploration', async () => {
+  const app = screen(); app.list(); app.refresh();
+  app.calls[0].resolve([post('ordinary')]); await new Promise(setImmediate);
+  assert.equal(nodes(app.list().renderItem({ item: post('ordinary'), index: 2 })).find(n => n.type === 'PostCard')?.props.post.id, 'ordinary');
+  const header = app.list().renderItem({ item: null, index: 0 });
+  const business = nodes(header).find(n => n.props?.analyticsId === 'components_feed-screen.pressable.3' && nodes(n).some(child => child.props?.children === '비즈니스'));
+  assert.ok(business); business.props.onPress();
+  assert.equal(app.sort().title, '새 소식');
+  assert.equal(app.routes.length, 0, 'choosing the category itself does not navigate to the directory');
+  const card = nodes(app.list().renderItem({ item: post('business-news', { tag: TAGS.find(t => t.slug === 'business') }), index: 2 })).find(n => n.type === 'BusinessNewsCard');
+  assert.equal(card.props.post.id, 'business-news');
+  assert.ok(card.props.onPress && card.props.onAuthor, 'existing detail and profile navigation remain available');
+  app.sort().action.props.onPress();
+  assert.equal(app.routes.at(-1), '/businesses');
+});
+
 test('a topic notification opens today search and consumes its parameter so closing stays closed', () => {
   const app = screen();
   app.params.hashtag = '밴쿠버'; app.openTopic();
