@@ -13,6 +13,7 @@ import { TrustBadge } from '@/components/trust-badge';
 import { PostDetail } from '@/components/post-detail';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { SavedEntryButton, useSavedEntry } from '@/components/saved-entry';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { count } from '@/i18n';
@@ -78,6 +79,7 @@ export default function AuthorPostsRoute() {
 
   const posts = (current?.posts ?? []).filter(post => !hidden('post', post.id, post.author.id));
   const publicProfile = profile?.key === requestKey && !hidden('user', authorId) ? profile.value : null;
+  const saved = useSavedEntry({ kind: 'user', id: authorId }, !!publicProfile);
   const shownDetail = detail?.key === requestKey && !hidden('post', detail.post.id, detail.post.author.id) ? detail.post : null;
 
   return (
@@ -99,7 +101,9 @@ export default function AuthorPostsRoute() {
               </ThemedText>
             )}
           </View>
+          {publicProfile && <SavedEntryButton entry={saved} kind="user" analyticsId="save.user" />}
         </View>
+        {!!saved.error && <ThemedText type="small" accessibilityRole="alert" style={styles.saveError}>{saved.error}</ThemedText>}
 
 
         {loading ? (
@@ -175,6 +179,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 16, paddingBottom: 8, gap: 8, flexDirection: 'row', alignItems: 'center' },
   backButton: { alignSelf: 'flex-start', minWidth: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   heading: { flex: 1, minWidth: 0, gap: 2, paddingBottom: 4 },
+  saveError: { paddingHorizontal: 16, paddingBottom: 8 },
   list: { paddingHorizontal: 16, paddingBottom: 32, gap: 12 },
   profile: { gap: 16, marginBottom: 16 },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 14 },

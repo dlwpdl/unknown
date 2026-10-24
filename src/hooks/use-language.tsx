@@ -28,9 +28,9 @@ function deviceLanguages(): string[] {
   return [Intl.DateTimeFormat().resolvedOptions().locale];
 }
 
-export function LanguagePreferenceProvider({ children }: PropsWithChildren) {
-  const [selection, setSelection] = useState<{ preference: LanguagePreference; language: AppLanguage }>({ preference: 'system', language: 'en' });
-  const [ready, setReady] = useState(false);
+export function LanguagePreferenceProvider({ children, initialLanguage }: PropsWithChildren<{ initialLanguage?: AppLanguage }>) {
+  const [selection, setSelection] = useState<{ preference: LanguagePreference; language: AppLanguage }>({ preference: 'system', language: initialLanguage ?? 'en' });
+  const [ready, setReady] = useState(initialLanguage !== undefined);
   const [isSaving, setSaving] = useState(false);
   const preference = useRef<LanguagePreference>('system');
   const inFlight = useRef(false);

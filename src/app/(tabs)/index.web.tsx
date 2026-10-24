@@ -5,6 +5,8 @@ import Head from 'expo-router/head';
 import { useState, type CSSProperties } from 'react';
 
 import { WebNightColors } from '@/constants/theme';
+import { useLanguage } from '@/hooks/use-language';
+import { publicSiteName } from '@/lib/public-seo';
 import {
   WEB_CATEGORY_LABELS,
   WEB_FEATURES,
@@ -53,15 +55,16 @@ function LaunchNotice({ city }: { city: WebHomeCitySummary }) {
 }
 
 export default function WebHome() {
+  const { language } = useLanguage();
   const cities = listWebHomeCities();
   const [cityId, setCityId] = useState(cities[0].id);
   const activeCity = getWebHomeCitySummary(cityId);
   const feedScreenshotSrc = activeCity.id === 'toronto' ? torontoScreenshotSrc : vancouverScreenshotSrc;
 
   return (
-    <div className="site-page" style={siteColors} lang="ko">
+    <div className="site-page" style={siteColors} lang={language}>
       <Head>
-        <title>글링 | 우리 동네의 오늘을 펼치다</title>
+        <title>{publicSiteName(language)}</title>
         <link rel="icon" type="image/png" href={appIconSrc} />
         <meta name="description" content="밴쿠버·토론토의 일상과 동네 정보를 한국어로 나누는 커뮤니티, 글링. 가까운 이웃의 이야기와 모임을 만날 준비를 하고 있어요." />
       </Head>

@@ -24,6 +24,7 @@ function Canvas({ markers, cityName, selectedId = null, center = null, userLocat
   const { language, tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const native = useRef<WebView<unknown>>(null), web = useRef<HTMLIFrameElement>(null), id = useId();
+  const sentMarkers = useRef<{ sessionId: string; key: string } | null>(null);
   const [seed] = useState({ markers, cityName, selectedId, center, userLocation, topInset, bottomInset });
   const [failed, setFailed] = useState(false), [retry, setRetry] = useState(0);
   const [readySession, setReadySession] = useState<string | null>(null);
@@ -34,27 +35,41 @@ function Canvas({ markers, cityName, selectedId = null, center = null, userLocat
     catch { return null; }
   }, [seed, language, sessionId, parentOrigin]);
   const source = useMemo(() => ({ html: html ?? '' }), [html]);
+  const markerData = useMemo(() => {
+    try { const safe = discoveryMarkers(markers); return { markers: safe, key: JSON.stringify(safe) }; }
+    catch { return null; }
+  }, [markers]);
   const update = useMemo(() => {
     try {
-      const state = { markers: discoveryMarkers(markers), selectedId, center, userLocation, topInset, bottomInset };
+      const state = { selectedId, center: center && { latitude: center.latitude, longitude: center.longitude, ...(center.requestId !== undefined ? { requestId: center.requestId } : {}) },
+        userLocation: userLocation && { latitude: userLocation.latitude, longitude: userLocation.longitude }, topInset, bottomInset };
       return { state, script: discoveryMapScript(state, sessionId) };
     } catch { return null; }
-  }, [markers, selectedId, center, userLocation, topInset, bottomInset, sessionId]);
-  const sync = useCallback(() => {
-    if (!update) return;
-    if (Platform.OS === 'web') web.current?.contentWindow?.postMessage({ type: 'discovery.update', sessionId, state: update.state }, parentOrigin === 'null' ? '*' : parentOrigin);
-    else native.current?.injectJavaScript(update.script);
-  }, [update, sessionId, parentOrigin]);
+  }, [selectedId, center, userLocation, topInset, bottomInset, sessionId]);
+  const sync = useCallback((forceMarkers = false) => {
+    if (!update || !markerData) return;
+    const includeMarkers = forceMarkers || sentMarkers.current?.sessionId !== sessionId || sentMarkers.current.key !== markerData.key;
+    const state = includeMarkers ? { ...update.state, markers: markerData.markers } : update.state;
+    if (Platform.OS === 'web') {
+      const target = web.current?.contentWindow;
+      if (!target) return;
+      target.postMessage({ type: 'discovery.update', sessionId, state }, parentOrigin === 'null' ? '*' : parentOrigin);
+    } else {
+      if (!native.current) return;
+      native.current.injectJavaScript(includeMarkers ? discoveryMapScript(state, sessionId) : update.script);
+    }
+    sentMarkers.current = { sessionId, key: markerData.key };
+  }, [update, markerData, sessionId, parentOrigin]);
   const receive = useCallback((raw: string) => {
-    if (!update) return;
-    const message = discoveryMapMessage(raw, sessionId, update.state.markers);
+    if (!update || !markerData) return;
+    const message = discoveryMapMessage(raw, sessionId, markerData.markers);
     if (!message) return;
-    if (message.type === 'ready') { setReadySession(sessionId); setFailed(false); sync(); }
+    if (message.type === 'ready') { setReadySession(sessionId); setFailed(false); sync(true); }
     else if (message.type === 'error') setFailed(true);
     else if (message.type === 'select') onSelect(message.id);
     else if (message.type === 'feedback') play('selection');
     else if (message.type === 'credits') void Linking.openURL(message.url).catch(() => play('warning'));
-  }, [sessionId, update, sync, onSelect, play]);
+  }, [sessionId, update, markerData, sync, onSelect, play]);
   useEffect(() => { sync(); }, [sync]);
   useEffect(() => {
     if (!html || readySession === sessionId) return;
@@ -74,14 +89,14 @@ function Canvas({ markers, cityName, selectedId = null, center = null, userLocat
 
   return <View style={styles.map}>
     {html && (Platform.OS === 'web'
-      ? <iframe key={sessionId} ref={web} srcDoc={html} title={tr("도시 탐색 지도")} sandbox="allow-scripts allow-same-origin" onLoad={sync}
+      ? <iframe key={sessionId} ref={web} srcDoc={html} title={tr("도시 탐색 지도")} sandbox="allow-scripts allow-same-origin" onLoad={() => sync(true)}
         style={{ border: 0, width: '100%', height: '100%', minHeight: 140, flex: 1 }} />
       : <WebView<unknown> key={sessionId} ref={native} source={source} originWhitelist={['*']} applicationNameForUserAgent="GlingDiscoveryMap/1.0"
         style={styles.map} scrollEnabled={false} sharedCookiesEnabled={false} thirdPartyCookiesEnabled={false} cacheEnabled={false} incognito
         allowFileAccess={false} allowFileAccessFromFileURLs={false} allowUniversalAccessFromFileURLs={false} mixedContentMode="never"
         onShouldStartLoadWithRequest={request => request.url === 'about:blank'} setSupportMultipleWindows={false}
-        onLoadEnd={sync} onError={() => setFailed(true)} onHttpError={() => setFailed(true)} onMessage={event => receive(event.nativeEvent.data)} />)}
-    {(failed || !html || !update) && <View style={[styles.error, { backgroundColor: theme.card }]} accessibilityLiveRegion="polite">
+        onLoadEnd={() => sync(true)} onError={() => setFailed(true)} onHttpError={() => setFailed(true)} onMessage={event => receive(event.nativeEvent.data)} />)}
+    {(failed || !html || !update || !markerData) && <View style={[styles.error, { backgroundColor: theme.card }]} accessibilityLiveRegion="polite">
       <ThemedText type="small">{tr("지도를 불러오지 못했어요. 목록에서 계속 둘러볼 수 있어요.")}</ThemedText>
       <Pressable analyticsId="discovery.map.retry" accessibilityRole="button" accessibilityLabel={tr("지도 다시 불러오기")}
         onPress={() => { play('selection'); setFailed(false); setRetry(value => value + 1); }} style={styles.retry}>

@@ -1,5 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
+import ts from 'typescript';
+import * as React from 'react';
+import * as jsxRuntime from 'react/jsx-runtime';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { toQR } from 'toqr';
+import { sharedLinkTarget } from '../src/lib/sharing.ts';
+import { publicSiteName } from '../src/lib/public-seo.ts';
+import { instagramPostLink, splitPostAttachments, splitPostLinks } from '../supabase/functions/_shared/post-links.ts';
 import { publicWebTarget, publicWebFetch, publicMerchantId } from '../src/lib/public-web.ts';
 
 const id = '12345678-1234-1234-1234-123456789abc';
@@ -76,4 +86,102 @@ test('public city catalog permits only the exact anonymous read and retains tran
   await assert.rejects(request('https://example.supabase.co/rest/v1/rpc/get_city_place_catalog', { method: 'GET' }), /PUBLIC_WEB_READ_ONLY/);
   await assert.rejects(request('https://other.example/rest/v1/rpc/get_city_place_catalog', { method: 'POST', body: '{}' }), /PUBLIC_WEB_READ_ONLY/);
   assert.equal(calls.length, 1);
+});
+
+test('shared preview permits the exact anonymous getter while retaining the public transport boundary', async () => {
+  const calls=[];const request=publicWebFetch('https://example.supabase.co','public-key',async(url,init)=>{calls.push({url,init});return new Response('{}');});
+  await request('https://example.supabase.co/rest/v1/rpc/get_shared_link_preview',{method:'POST',credentials:'include',headers:{Authorization:'Bearer private-user'},body:'{}'});
+  assert.equal(calls.length,1);assert.equal(calls[0].init.credentials,'omit');assert.equal(new Headers(calls[0].init.headers).get('Authorization'),'Bearer public-key');
+  for(const name of ['get_shared_link_preview_private','get_shared_link_preview/extra','set_shared_link_preview'])await assert.rejects(request(`https://example.supabase.co/rest/v1/rpc/${name}`,{method:'POST'}),/PUBLIC_WEB_READ_ONLY/);
+  await assert.rejects(request('https://other.example/rest/v1/rpc/get_shared_link_preview',{method:'POST'}),/PUBLIC_WEB_READ_ONLY/);
+  await assert.rejects(request('https://example.supabase.co/rest/v1/rpc/get_shared_link_preview',{method:'GET'}),/PUBLIC_WEB_READ_ONLY/);
+});
+
+
+// renderToStaticMarkup uses the same getServerSnapshot contract as initial hydration.
+// The mounted pass supplies browser snapshots; actual browser hydration is verified separately.
+function readerMarkup(path, { mounted = false, search = '', directPost = false, articlePost = null, language = 'ko' } = {}) {
+  const dark = {}, window = { location: { pathname: path, search } };
+  const hooks = mounted ? { ...React, useSyncExternalStore: (_subscribe, snapshot) => snapshot() } : React;
+  const modules = {
+    react: hooks, 'react/jsx-runtime': jsxRuntime,
+    'expo-router': { usePathname: () => path, useLocalSearchParams: () => Object.fromEntries(new URLSearchParams(search)) },
+    'expo-router/head': { __esModule: true, default: React.Fragment },
+    'expo-asset': { Asset: { fromModule: () => ({ uri: 'local-wordmark' }) } }, toqr: { toQR },
+    '@/constants/theme': { WebNightColors: {}, Colors: { dark }, Spacing: { three: 12, four: 16 } },
+    '@/constants/design-system': { ControlMetrics: { touch: 44, action: 48 }, Typography: { sheetTitle: { fontSize: 22 }, menu: { fontSize: 16 } } },
+    '@/hooks/use-language': { useLanguage: () => ({ language, tr: value => value }) },
+    '@/hooks/use-theme': { useTheme: () => dark },
+    '@/lib/auth': { useAuth: () => ({ isAuthed: false, isAuthLoading: false, me: { id: 'guest' } }) },
+    '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
+    '../../../supabase/functions/_shared/post-links': { instagramPostLink, splitPostAttachments, splitPostLinks },
+    '@/components/post-attachment-link': { PostAttachmentLink: () => null },
+    '@/lib/post-maps': { postMapBody: body => ({ body }) },
+    '@/lib/chilling': { chillingSchedule: () => '공개 일정' },
+    '@/lib/interaction-feedback': { InteractionFeedbackProvider: React.Fragment, useInteractionFeedback: () => ({ play() {} }) },
+    '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }], TAGS: [] },
+    '@/lib/public-web': { publicMerchantId, publicWebTarget },
+    '@/lib/sharing': { sharedLinkTarget },
+    '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.ej-entertainment.com', jsonLd: JSON.stringify, publicSiteName },
+    '@/lib/public-web-client': { publicWebClient: {} },
+    './analytics': { useReaderAnalytics() {} },
+  };
+  function load(file) {
+    const exports = {};
+    const code = ts.transpileModule(readFileSync(new URL(file, import.meta.url), 'utf8'), {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
+    }).outputText;
+    vm.runInNewContext(code, { exports, window, URLSearchParams, require: name => modules[name] ?? {} });
+    return exports;
+  }
+  const article = load('../src/components/public-web/shared-post-article.tsx');
+  modules['./shared-post-article'] = article;
+  const landing = load('../src/components/public-web/shared-post-landing.tsx');
+  modules['./shared-post-landing'] = { __esModule: true, default: landing.default };
+  const component = articlePost ? article.SharedPostArticle : directPost ? landing.default : load('../src/components/public-web/reader.tsx').default;
+  return renderToStaticMarkup(React.createElement(component, articlePost ? { post: articlePost } : undefined));
+}
+
+test('legacy static 404 and initial client render agree before the exact post handoff mounts', () => {
+  const fallback = readerMarkup('/+not-found');
+  assert.match(fallback, /앱에서 이어가세요/);
+  for (const path of [`/share/${id}`, `/post/${id}`]) {
+    const initialClient = readerMarkup(path);
+    assert.ok(initialClient === fallback, `${path} must hydrate the static 404 markup before selecting its shared landing`);
+    const mounted = readerMarkup(path, { mounted: true });
+    assert.match(mounted, /class="shared-post-landing"/);
+    assert.ok(mounted.includes(`href="gling://post/${id}"`), 'Mounted legacy route preserves the original native post destination');
+    assert.ok(mounted.includes(`https://gling.ej-entertainment.com/post?id=${id}`), 'QR/copy canonical destination preserves that same post');
+    assert.doesNotMatch(mounted, /Google로 로그인|카카오 로그인/);
+  }
+});
+
+test('canonical post document retains its direct landing SSR and mounted post destination', () => {
+  const options = { search: `?id=${id}` };
+  assert.equal(readerMarkup('/post', options), readerMarkup('/post', { ...options, directPost: true }));
+  assert.match(readerMarkup('/post', options), /class="shared-post-landing"/);
+  assert.ok(readerMarkup('/post', { ...options, mounted: true }).includes(`href="gling://post/${id}"`));
+  assert.match(readerMarkup('/'), /큰 페스티벌부터/);
+});
+
+
+test('authorized shared article renders read-only text and only the first attachment, without private interaction fields', () => {
+  const post={id,cityId:'vancouver',title:'전체 공개 글',body:'읽을 수 있는 전체 본문',tag:{label:'이야기'},author:{id:'author',nickname:'이웃'},createdAtLabel:'지금',
+    imageUris:['https://example.test/first-photo','PRIVATE_SECOND_PHOTO'],imagePaths:['PRIVATE_ACTOR_PATH','PRIVATE_SECOND_PATH'],commentList:[{body:'PRIVATE_COMMENT'}]};
+  const markup=readerMarkup('/post',{articlePost:post});
+  assert.match(markup,/읽을 수 있는 전체 본문/);assert.equal((markup.match(/<img /g)||[]).length,1);assert.match(markup,/first-photo/);
+  assert.doesNotMatch(markup,/PRIVATE_|<button|<textarea|<input/);
+  const meetup=readerMarkup('/post',{articlePost:{...post,body:'PRIVATE_ROOM_BODY',room:{cadence:'PUBLIC_SCHEDULE',destination:'PRIVATE_DESTINATION',hostContact:'PRIVATE_CONTACT'}}});
+  assert.match(meetup,/공개 일정/);assert.doesNotMatch(meetup,/PRIVATE_|읽을 수 있는 전체 본문/);
+});
+
+
+test('reader title, metadata and language follow KO/EN while authored post text stays original', () => {
+  const ko=readerMarkup('/',{language:'ko'}),en=readerMarkup('/',{language:'en'});
+  assert.match(ko,/<title>글링 \| 캐나다 모임 커뮤니티<\/title>/);
+  assert.match(en,/<title>Gling \| Canada Meetup Community<\/title>/);
+  assert.match(en,/property="og:site_name" content="Gling \| Canada Meetup Community"/);
+  assert.match(en,/class="reader"[^>]+lang="en"/);assert.match(en,/"inLanguage":"en-CA"/);
+  const post={id,cityId:'vancouver',title:'작성한 제목은 원문 그대로',body:'회원이 쓴 원문 본문',tag:{label:'원문 분류'},author:{id:'author',nickname:'원문 닉네임'}};
+  const article=readerMarkup('/post',{language:'en',articlePost:post});assert.match(article,/작성한 제목은 원문 그대로/);assert.match(article,/회원이 쓴 원문 본문/);
 });

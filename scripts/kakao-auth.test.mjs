@@ -66,6 +66,10 @@ test('등록한 카카오 콜백의 인증 코드만 반환한다', () => {
   assert.equal(getOAuthCode('gling://auth/callback?code=one-time-code', 'gling://auth/callback'), 'one-time-code');
 });
 
+test('duplicate OAuth code parameters cannot select an ambiguous code', () => {
+  assert.throws(() => getOAuthCode('gling://auth/callback?code=first&code=second', 'gling://auth/callback'), /OAUTH_CODE_AMBIGUOUS/);
+});
+
 test('등록하지 않은 콜백 출처는 거부한다', () => {
   assert.throws(
     () => getOAuthCode('https://example.com/auth/callback?code=stolen', 'gling://auth/callback'),

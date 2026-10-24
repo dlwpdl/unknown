@@ -1,4 +1,5 @@
 import type { DiscoveryItem } from './discovery.ts';
+import { isFreshNearbyLocation, type LocationFix } from './location.ts';
 import type { PostPin } from './post-maps.ts';
 
 export function discoveryDistanceKm(item: Pick<DiscoveryItem, 'latitude' | 'longitude'>, origin: PostPin | null): number | null {
@@ -18,4 +19,16 @@ export function sortDiscoveryItems(items: readonly DiscoveryItem[], origin: Post
       if (order === 'discount' && a.discount !== b.discount) return b.discount-a.discount;
       return a.distance === b.distance ? 0 : a.distance-b.distance;
     }).map(row => row.item);
+}
+
+
+export function rankPlacesByDistance<T extends { latitude: number | null; longitude: number | null }>(places: readonly T[], fix: LocationFix | null, now = Date.now()) {
+  const origin = fix && isFreshNearbyLocation(fix, now) ? fix : null;
+  return places.map((place, index) => ({ place, index, distance: discoveryDistanceKm(place, origin) }))
+    .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity) || a.index - b.index);
+}
+
+export function formatNearbyDistance(distance: number | null, tr: (text: string, ...values: unknown[]) => string) {
+  return distance !== null && Number.isFinite(distance) && distance >= 0
+    ? distance < .1 ? tr('100m 이내') : tr('약 {0}km', distance.toFixed(1)) : null;
 }

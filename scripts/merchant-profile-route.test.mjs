@@ -6,6 +6,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { appendUniquePosts, getPostImageSource } from '../src/lib/feed-data.ts';
 import * as conveniences from '../src/lib/merchant-conveniences.ts';
+import * as savedItems from '../src/lib/saved-items.ts';
 import { safeMerchantSourceUrl } from '../src/lib/merchant-source.ts';
 
 const company = '11111111-1111-4111-8111-111111111111';
@@ -16,9 +17,11 @@ const profile = { id: company, name: '회사', services: '등록된 소개', add
 const settle = () => new Promise(setImmediate);
 const nodes = root => !root || typeof root !== 'object' ? [] : [root, ...Object.values(root).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
 
-function screen({ business = null, webshop = null, loadReviews = async (_, __, ___, kind) => ({ review_kind: kind, rating_average: kind === 'usage' ? 8.833333333 : 7, review_count: 3 }), loadPosts = async (_, __, kind) => ({ ...content, kind }), loadProfile = async () => profile, rpc = async () => ({ data: true }), openURL = async () => {} } = {}) {
+function screen({ business = null, webshop = null, loadReviews = async (_, __, ___, kind) => ({ review_kind: kind, rating_average: kind === 'usage' ? 8.833333333 : 7, review_count: 3 }), loadPosts = async (_, __, kind) => ({ ...content, kind }), loadProfile = async () => profile, loadSavedState, rpc = async () => ({ data: true }), openURL = async () => {} } = {}) {
   const state = [], cleanup = new Map(), calls = [], postCalls = [], routes = [], feedback = [], rpcCalls = [], login = [], links = [];
-  let index = 0, account = 'author', hidden = () => false, focused = true;
+  let index = 0, account = 'author', hidden = () => false, focused = true, lastProfile = profile;
+  const savedReads = [];
+  const savedState = (saved) => ({ target: { kind: 'merchant', id: company }, saved, available: !!lastProfile, savedAt: saved ? '2026-10-23T12:00:00Z' : null, folderIds: [] });
   const imports = {
     '@/components/business-webshop': { usePublicWebshop: () => ({ shop: webshop, failed: false, retry() {} }), WebshopBanner: 'WebshopBanner', WebshopOrderButton: 'WebshopOrderButton', WebshopComparisonSheet: 'WebshopComparisonSheet' },
     react: {
@@ -44,16 +47,22 @@ function screen({ business = null, webshop = null, loadReviews = async (_, __, _
     '@/lib/chat-identity': { chatBusinessIdentity: () => business },
     '@/lib/auth': { useAuth: () => ({ isAuthed: !!account, isAuthLoading: false, me: { id: account ?? 'guest' }, promptLogin: reason => login.push(reason) }) },
     '@/lib/merchant-conveniences': conveniences,
+    '@/lib/saved-items': savedItems,
     '@/lib/merchant-source': { safeMerchantSourceUrl },
-    '@/lib/merchant-profile': { loadMerchantProfile: loadProfile,
+    '@/lib/merchant-profile': { loadMerchantProfile: async (...args) => { lastProfile = await loadProfile(...args); return lastProfile; },
       loadMerchantProfilePosts: async (...args) => { postCalls.push(args); return loadPosts(...args); } },
     '@/lib/feed-data': { getPostImageSource, appendUniquePosts },
     '@/lib/merchant-reviews': { loadMerchantReviews: async (...args) => { calls.push(args); return loadReviews(...args); } },
-    '@/lib/supabase': { supabase: { rpc: async (name, args) => { rpcCalls.push([name, args]); return rpc(name, args); } } },
+    '@/lib/supabase': { supabase: { rpc: async (name, args) => {
+      if (name === 'get_saved_item_state') { savedReads.push(args); return { data: loadSavedState ? await loadSavedState(args) : savedState(lastProfile?.saved === true) }; }
+      rpcCalls.push([name, args]);
+      const result = await rpc(name, args);
+      return name === 'set_saved_item' && typeof result.data === 'boolean' ? { ...result, data: savedState(result.data) } : result;
+    } } },
   };
   const exports = {}, source = ts.transpileModule(readFileSync(new URL('../src/app/company/[id].tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(source, { exports, Error, require: withLanguageImports(name => imports[name] ?? {}) });
-  return { calls, postCalls, routes, feedback, rpcCalls, login, links, hidePost(id) { hidden = (type, target, author) => type === 'post' && (target === id || author === 'blocked-writer'); }, setAccount(value) { account = value; }, setFocus(value) { focused = value; }, unmount() { for (const fn of cleanup.values()) fn(); }, render() { index = 0; return exports.default(); } };
+  return { calls, postCalls, routes, feedback, rpcCalls, savedReads, login, links, hidePost(id) { hidden = (type, target, author) => type === 'post' && (target === id || author === 'blocked-writer'); }, setAccount(value) { account = value; }, setFocus(value) { focused = value; }, unmount() { for (const fn of cleanup.values()) fn(); }, render() { index = 0; return exports.default(); } };
 }
 
 const control = (root, id) => nodes(root).find(node => node.props?.analyticsId === id);
@@ -91,6 +100,19 @@ test('real zero counts keep all tabs and the no-jobs state removes the hiring ba
   control(root, 'company.tab.jobs').props.onPress(); view.render(); await settle(); root = view.render();
   assert.match(text(root), /현재 모집 중인 공고가 없어요/);
   assert.equal(nodes(root).filter(node => node.props?.accessibilityRole === 'tab').length, 4);
+});
+
+test('a profile without a review source shows a settled empty state instead of an endless review count', async () => {
+  const view = screen({ loadProfile: async () => ({ ...profile, review_post_id: null }) });
+  view.render(); await settle(); view.render(); await settle();
+  let root = view.render();
+  assert.equal(control(root, 'company.tab.reviews').props.accessibilityLabel, '후기');
+  assert.doesNotMatch(text(control(root, 'company.tab.reviews')), /…|0/);
+  assert.equal(view.calls.length, 0, 'No review request without a linked source');
+  control(root, 'company.tab.reviews').props.onPress(); root = view.render();
+  assert.equal(control(root, 'company.tab.reviews').props.accessibilityState.selected, true);
+  assert.match(text(root), /아직 표시할 후기가 없어요/);
+  assert.equal(nodes(root).filter(node => node.type === 'Reviews').length, 0);
 });
 
 test('late company list responses from the previous account cannot restore its posts or counts', async () => {
@@ -226,6 +248,28 @@ test('guest inquiry and save prompt for login without making a mutation', async 
   control(root, 'company.inquiry').props.onPress();
   control(root, 'company.save').props.onPress(); await settle();
   assert.equal(view.login.length, 2); assert.equal(view.rpcCalls.length, 0); assert.equal(view.routes.length, 0);
+  assert.equal(view.savedReads.length, 0);
+});
+
+test('the sole company bookmark reads the canonical save without enabling news notifications', async () => {
+  const view = screen({ loadProfile: async () => ({ ...profile, notifications_enabled: false }),
+    loadSavedState: async () => ({ target: { kind: 'merchant', id: company }, saved: true, available: true, savedAt: '2026-10-23T12:00:00Z', folderIds: [] }) });
+  view.render(); await settle(); const root = view.render();
+  assert.equal(nodes(root).filter(node => node.props?.analyticsId === 'company.save').length, 1);
+  assert.equal(control(root, 'company.save').props.accessibilityState.selected, true);
+  assert.equal(control(root, 'company.notifications').props.accessibilityState.selected, false);
+  assert.deepEqual(view.savedReads[0], { p_kind: 'merchant', p_id: company, p_city_id: null });
+  assert.equal(view.rpcCalls.length, 0);
+});
+
+test('a late canonical company saved read cannot overwrite another viewer', async () => {
+  const pending = [];
+  const view = screen({ loadSavedState: () => new Promise(resolve => pending.push(resolve)) });
+  view.render(); await settle(); view.setAccount('another'); view.render(); await settle();
+  pending[0]({ target: { kind: 'merchant', id: company }, saved: true, available: true, savedAt: '2026-10-23T12:00:00Z', folderIds: [] });
+  await settle(); assert.equal(control(view.render(), 'company.save').props.accessibilityState.selected, false);
+  pending[1]({ target: { kind: 'merchant', id: company }, saved: false, available: true, savedAt: null, folderIds: [] });
+  await settle(); assert.equal(control(view.render(), 'company.save').props.accessibilityState.selected, false);
 });
 
 test('saving waits for the server, suppresses duplicate taps and a rejected unsave retains the saved state', async () => {

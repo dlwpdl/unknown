@@ -1,12 +1,13 @@
 import type { Metadata } from 'expo-router/server';
+import { publicSiteName } from '@/lib/public-seo';
 
-export { default } from '@/app/post/[id]';
+export { default } from '@/components/public-web/shared-post-landing';
 
 export function generateMetadata(): Metadata {
-  const title = '글링 공유 | 글링';
-  const description = 'Google·소셜 로그인 후 전체 내용과 모임을 확인해요.';
+  const title = `글링 공유 | ${publicSiteName()}`;
+  const description = 'Google·소셜 로그인 후 전체 내용을 읽고, 앱에서 대화와 모임을 이어가세요.';
   return {
     title, description, robots: 'noindex, follow',
-    openGraph: { siteName: '글링', title: '글링 공유', description },
+    openGraph: { siteName: publicSiteName(), title: '글링 공유', description },
   };
 }

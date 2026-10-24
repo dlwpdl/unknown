@@ -31,7 +31,7 @@ const imports = {
   react: React, 'react/jsx-runtime': jsxRuntime, 'expo-router': {},
   '@/components/public-web/metadata': metadata, '@/lib/public-seo': seo, '@/lib/mock': mock, '@/lib/legal-documents': legal,
   '@/components/public-web/reader': { default: () => null }, '@/components/public-web/visited': { default: () => null },
-  '@/app/post/[id]': { default: () => null }, '../app/[document].web': { default: () => null },
+  '@/components/public-web/shared-post-landing': { default: () => null }, '../app/[document].web': { default: () => null },
 };
 
 function renderDocument(pathname, schema = metadata.publicHomeSchema, headNodes = serializeMetadataToReact({ description: 'Generated route metadata' })) {
@@ -77,7 +77,7 @@ test('public root escapes JSON-LD script boundaries and omits the home schema on
 
 test('public home, company and Visited routes export initial title, canonical and preview metadata', () => {
   for (const [file, title, canonical] of [
-    ['index', '글링 | 캐나다 한인 커뮤니티', 'https://gling.ej-entertainment.com/'],
+    ['index', seo.publicSiteName(), 'https://gling.ej-entertainment.com/'],
     ['company', '글링 비즈니스 프로필', 'https://gling.ej-entertainment.com/company'],
     ['visited', '밴쿠버 Gling Visited | 글링', 'https://gling.ej-entertainment.com/visited?city=vancouver'],
   ]) {
@@ -111,7 +111,7 @@ test('legal metadata follows the matched policy while malformed and unknown docu
 test('login-protected shared posts and unknown pages remain noindex in their initial metadata', () => {
   const post = load('web/post.tsx', imports).generateMetadata();
   assert.equal(post.robots, 'noindex, follow');
-  assert.equal(post.title, '글링 공유 | 글링');
+  assert.equal(post.title, `글링 공유 | ${seo.publicSiteName()}`);
   assert.match(post.openGraph.description, /로그인 후 전체 내용/);
   assert.equal(load('web/+not-found.tsx', imports).generateMetadata().robots, 'noindex, nofollow');
 });

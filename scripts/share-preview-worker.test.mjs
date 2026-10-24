@@ -191,20 +191,16 @@ test('every kind gets its own cover and fixed same-origin destination', async ()
   }
 });
 
-test('only the returned post-images cover can be signed on the configured Supabase origin', async () => {
+test('a valid first cover uses the bounded id-only preview image egress without storage signing', async () => {
   let count = 0;
-  const response = await handleSharePreview(request(), env, async (url, init) => {
-    if (count++ === 0) return json({ ...preview, imagePath: 'owner/cover.jpg' });
-    assert.equal(String(url), 'https://project.supabase.co/storage/v1/object/sign/post-images/owner/cover.jpg');
-    assert.equal(init.method, 'POST');
-    assert.equal(init.redirect, 'error');
-    assert.equal(init.headers.apikey, env.SUPABASE_PUBLISHABLE_KEY);
-    assert.deepEqual(JSON.parse(init.body), { expiresIn: 86400 });
-    return json({ signedURL: '/object/sign/post-images/owner/cover.jpg?token=signed' });
+  const response = await handleSharePreview(request(), env, async (url) => {
+    count++; assert.equal(String(url), 'https://project.supabase.co/rest/v1/rpc/get_shared_link_preview');
+    return json({ ...preview, imagePath: 'PRIVATE-UPLOADER/cover.jpg' });
   });
   const html = await response.text();
-  assert.equal(count, 2);
-  assert.ok(html.includes('https://project.supabase.co/storage/v1/object/sign/post-images/owner/cover.jpg?token=signed'));
+  assert.equal(count, 1);
+  assert.ok(html.includes(`https://project.supabase.co/functions/v1/public-post?format=preview-image&amp;id=${id}`));
+  assert.doesNotMatch(html, /PRIVATE-UPLOADER|storage\/v1|token=/);
 });
 
 test('invalid cover paths never trigger a second request', async () => {
@@ -219,18 +215,16 @@ test('invalid cover paths never trigger a second request', async () => {
   }
 });
 
-test('external or wrong signed paths and signing failure fall back to the source-owned cover', async () => {
-  for (const signed of [json({ signedURL: 'https://evil.example/photo.jpg' }), json({ signedURL: '/object/sign/post-images/another/private.jpg?token=x' }), json({}, 403), new Error('offline')]) {
+test('only the same business post index-zero cover can select the preview-image URL', async () => {
+  for (const imagePath of [`business-post/${id}/0/${'a'.repeat(32)}`, `business-post/${id}/1/${'a'.repeat(32)}`, `business-post/123e4567-e89b-42d3-a456-426614174999/0/${'a'.repeat(32)}`]) {
     let count = 0;
     const response = await handleSharePreview(request(), env, async () => {
-      if (count++ === 0) return json({ ...preview, imagePath: 'owner/cover.jpg' });
-      if (signed instanceof Error) throw signed;
-      return signed;
+      count++; return json({ ...preview, imagePath });
     });
     const html = await response.text();
-    assert.equal(response.status, 200);
-    assert.ok(html.includes('/share-covers/meetup.png'));
-    assert.doesNotMatch(html, /evil\.example|another\/private/);
+    assert.equal(response.status, 200); assert.equal(count, 1);
+    assert.equal(html.includes('format=preview-image'), imagePath === `business-post/${id}/0/${'a'.repeat(32)}`);
+    assert.doesNotMatch(html, /business-post\//);
   }
 });
 

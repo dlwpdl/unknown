@@ -30,6 +30,7 @@ const nodes = value => !value || typeof value !== 'object' ? [] : [...(value.typ
 // Native/network boundaries are replaced; the real components, hooks and collector run.
 function mount(file, exportName = 'default', props = {}, options = {}) {
   const hooks = [], effects = [], calls = [], order = [], alerts = [], opened = [], read = [], navigated = [], listeners = new Map(), windows = new Map();
+  const hidden = () => false;
   let cursor = 0, dirty = true, tree, transport;
   const ctx = { auth: { isAuthed: true, isAdmin: false, isAuthLoading: false, me: { id: 'member', cityId: 'vancouver' } },
     params: { id: event.id, cityId: 'vancouver' }, rows: [notification], focused: true, platform: 'ios', event,
@@ -79,6 +80,8 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
     '@/lib/ticketmaster': { loadTicketmasterEvent: async () => { if (ctx.eventError) throw new Error('offline'); return { event: ctx.event }; },
       recordTicketmasterEventClick: async (cityId, id) => order.push(`recommendation:${cityId}:${id}`), eventNotice: () => '', eventTime: () => '', eventPriceLabel: () => '', meetupAllowed: () => true },
     '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
+    '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
+    '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) },
     '@/lib/city-places': { getCityRecommendations: id => catalog.cities[id]?.places ?? [], CITY_PLACES_COLLECTED_AT: catalog.collectedAt, getCityPlaces: id => { if (ctx.catalogError) throw new Error('missing'); return catalog.cities[id]?.places ?? []; } },
     '@/lib/community-city': { useCommunityCity: () => ({ city, setCity() {} }) }, '@/lib/mock': { CITIES: [city] },
     '@/lib/discovery': { placeMapRoute },
@@ -101,6 +104,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
     });
     return exports;
   };
+  imports['@/lib/notification-refresh'] = load('lib/notification-refresh.ts');
   imports['@/lib/error-reporting'] = load('lib/error-reporting.ts');
   const exports = load(file);
   const render = () => {

@@ -246,6 +246,7 @@ test('F1: paginated rows start unmeasured, then enter/leave independently withou
 
 function detailViewport() {
   const exports = {}, states = [], jsx = (type, props, key) => ({ type, props, key });
+  const hidden = () => false;
   let index = 0;
   const imports = {
     react: { useRef: current => ({ current }), useEffect() {}, useLayoutEffect() {}, useCallback: fn => fn,
@@ -258,6 +259,8 @@ function detailViewport() {
     '@/components/place-reviews': { PlaceReviews: 'PlaceReviews' },
     '@/hooks/use-language': { useLanguage: () => ({ tr, locale: 'en-CA' }) }, '@/i18n': { tr, getLocale: () => 'en-CA' },
     '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
+    '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) },
     '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'toronto' } }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'guest' } }) },

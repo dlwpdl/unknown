@@ -24,12 +24,12 @@ test('the actual inbox row shows event name and description, reads both and reta
   const items = [{ id: 'event', kind: 'trending_post', category: 'trending', title: 'Jazz in the Park',
     body: '두 그룹의 공연과 공개 잼 세션이 열려요. 같이 갈 사람!?', route: '/events/real-fest?cityId=vancouver', read_at: null, created_at: '2026-10-13T18:00:00Z' },
   { id: 'ordinary', kind: 'post_like', category: 'post_likes', body: '내 글에 공감했어요.', route: '/notifications', read_at: null, created_at: '2026-10-13T18:00:00Z' }];
-  let state = 0; const routes = [], feedback = [], exports = {};
+  let state = 0, token; const routes = [], feedback = [], exports = {};
   const jsx = (type, props) => ({ type, props });
   const imports = {
-    react: { useLayoutEffect: fn => fn(), useState: value => [state++ === 0 ? { userId: 'member', rows: items } : typeof value === 'boolean' ? false : value, () => {}], useRef: current => ({ current }), useCallback: fn => fn },
+    react: { useLayoutEffect: fn => fn(), useEffect() {}, useMemo: fn => (token = fn()), useState: value => [state++ === 0 ? { token, rows: items } : typeof value === 'boolean' ? false : value, () => {}], useRef: current => ({ current }), useCallback: fn => fn },
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    'expo-router': { useFocusEffect() {}, useRouter: () => ({ push: route => routes.push(route) }) },
+    'expo-router': { useIsFocused: () => true, useRouter: () => ({ push: route => routes.push(route) }) },
     'react-native': new Proxy({ StyleSheet: { create: value => value }, Platform: { OS: 'ios' } }, { get: (value, key) => value[key] ?? key }),
     'react-native-reanimated': { useReducedMotion: () => true },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },

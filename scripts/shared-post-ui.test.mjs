@@ -8,6 +8,7 @@ import { translateUi, translationsFor } from '../src/i18n/index.ts';
 import { appendUniquePosts, getPostImageSource } from '../src/lib/feed-data.ts';
 import { chillingSchedule } from '../src/lib/chilling.ts';
 import * as sharing from '../src/lib/sharing.ts';
+import * as sharedPostReturn from '../src/lib/shared-post-return.ts';
 import { getOAuthCode } from '../src/lib/kakao-auth.ts';
 import { hideContent, subscribeVisibility, visibilityRevision } from '../src/lib/content-visibility.ts';
 import { count, t } from '../src/i18n/ko.ts';
@@ -36,12 +37,18 @@ const preview = (title = '공유 카드') => ({ id, title, kind: 'meetup', city:
 
 // Execute the real hooks and handlers; a keyed single-child wrapper follows normal React remount cleanup.
 function mount(file, name, data = {}, props = {}) {
-  let state = [], index = 0, effects = [], tree, childKey, childType, disposed = false;
+  let state = [], index = 0, effects = [], layouts = [], pendingPassive = [], tree, childKey, childType, disposed = false;
   const calls = [], auth = { isAuthed: true, isAuthLoading: false, me: { id: 'viewer' }, ...data.auth };
   auth.promptLogin = reason => calls.push(['login', reason]);
   const client = { auth: { exchangeCodeForSession: code => { calls.push(['exchange', code]); return data.exchange?.(code) ?? Promise.resolve({ error: null }); } },
     rpc: async (...args) => { calls.push(['rpc', ...args]); return { data: null }; } };
   const stored = new Map(); if (data.returnPath != null) stored.set(sharing.SHARED_POST_RETURN_KEY, data.returnPath);
+  const nativeStored = new Map();
+  const nativeStorage = {
+    getItem: async key => nativeStored.get(key) ?? null,
+    setItem: async (key, value) => { calls.push(['native-return-write', key]); await data.nativeSet?.(key, value); nativeStored.set(key, value); },
+    removeItem: async key => { nativeStored.delete(key); },
+  };
   const location = new URL(data.href ?? 'https://gling.ej-entertainment.com/auth/callback?code=test-oauth-code');
   const browser = { location, opener: data.opener ?? null, sessionStorage: {
     getItem: key => stored.get(key) ?? null, setItem: (key, value) => stored.set(key, value), removeItem: key => stored.delete(key),
@@ -58,7 +65,12 @@ function mount(file, name, data = {}, props = {}) {
     useCallback(fn, deps) { return react.useMemo(() => fn, deps); },
     useSyncExternalStore(_subscribe, snapshot) { index++; return snapshot(); },
   };
-  react.useLayoutEffect = react.useEffect;
+  react.useLayoutEffect = (fn, deps) => {
+    const frame = state, slot = index++, previous = frame[slot];
+    if (previous && deps && deps.length === previous.deps?.length && deps.every((value, i) => Object.is(value, previous.deps[i]))) return;
+    frame[slot] = { deps, cleanup: previous?.cleanup };
+    layouts.push(() => { frame[slot].cleanup?.(); frame[slot].cleanup = fn(); });
+  };
   const jsx = (type, props, key) => ({ type, props, key });
   const imports = {
     react, 'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
@@ -66,7 +78,9 @@ function mount(file, name, data = {}, props = {}) {
       Share: { sharedAction: 'sharedAction', dismissedAction: 'dismissedAction', share: payload => { calls.push(['share', payload]); return data.share?.(payload) ?? Promise.resolve({ action: 'sharedAction' }); } } },
     'react-native-reanimated': { useReducedMotion: () => true },
     'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'SymbolView' }, 'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ bottom: 0 }) },
-    'expo-router': { useLocalSearchParams: () => data.params ?? {}, useRouter: () => ({ canGoBack: () => false, back: () => calls.push(['back']), push: path => calls.push(['navigate', path]), replace: path => calls.push(['navigate', path]) }) },
+    'expo-router': { useLocalSearchParams: () => data.params ?? {}, useIsFocused: () => data.focused !== false, useFocusEffect: fn => react.useEffect(() => data.focused === false ? undefined : fn(), [fn, data.focused]), useRouter: () => ({ canGoBack: () => false, back: () => calls.push(['back']), push: path => calls.push(['navigate', path]), replace: path => calls.push(['navigate', path]) }) },
+    '@react-native-async-storage/async-storage': { __esModule: true, default: nativeStorage },
+    '@/lib/shared-post-return': sharedPostReturn,
     'expo-router/head': { default: 'Head' },
     '@/components/public-web/metadata': { generatePrivateMetadata: () => ({ robots: 'noindex, nofollow' }) },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' }, '@/components/themed-text': { ThemedText: 'Text' },
@@ -107,20 +121,67 @@ function mount(file, name, data = {}, props = {}) {
   const resolve = withLanguageImports(key => { assert.ok(key in imports, `Known import: ${key}`); return imports[key]; });
   vm.runInNewContext(source, { exports, Date, Intl, Error, URL, window: browser, require: key => data.language && key === '@/hooks/use-language' ? { useLanguage: () => ({ t: translationsFor(data.language()), tr: (text, ...args) => translateUi(data.language(), text, ...args), locale: data.language() === 'en' ? 'en-CA' : 'ko-KR' }) } : resolve(key),
     navigator: { share: payload => { calls.push(['share', payload]); return data.share?.(payload) ?? Promise.resolve(); }, clipboard: { writeText: value => { calls.push(['copy', value]); return Promise.resolve(); } } } });
-  const render = () => {
-    assert.equal(disposed, false); index = 0; effects = []; tree = exports[name](props);
+  const render = (deferPassive = false) => {
+    if (!deferPassive) { const pending = pendingPassive; pendingPassive = []; pending.forEach(fn => fn()); }
+    assert.equal(disposed, false); index = 0; effects = []; layouts = []; tree = exports[name](props);
     if (typeof tree?.type === 'function') {
       if (tree.type !== childType || tree.key !== childKey) { clean(); state = []; childType = tree.type; childKey = tree.key; }
-      index = 0; effects = []; tree = tree.type(tree.props);
+      index = 0; effects = []; layouts = []; tree = tree.type(tree.props);
     }
-    effects.forEach(fn => fn()); return tree;
+    layouts.forEach(fn => fn());
+    if (deferPassive) pendingPassive.push(...effects); else effects.forEach(fn => fn());
+    return tree;
   };
   render();
-  return { auth, calls, props, browser, render, nodes: () => nodes(tree), async settle() { for (let i = 0; i < 3; i++) { await tick(); render(); } },
+  return { auth, calls, props, browser, nativeStored, focus(value) { data.focused = value; }, render, renderWithoutPassive: () => render(true), nodes: () => nodes(tree), async settle() { for (let i = 0; i < 3; i++) { await tick(); render(); } },
     unmount() { if (!disposed) { clean(); disposed = true; } } };
 }
 const unhidden = () => false;
 const control = (harness, analyticsId) => { const found = harness.nodes().find(node => node.props?.analyticsId === analyticsId); assert.ok(found, `Missing control: ${analyticsId}`); return found; };
+test('native shared-post login persists the same destination before opening login and clears it after completion', async context => {
+  const ui = mount('../src/app/post/[id].tsx', 'default', { params: { id }, auth: { isAuthed: false } }); context.after(() => ui.unmount()); await ui.settle();
+  await control(ui, 'shared.post.login').props.onPress(); await ui.settle();
+  const key = sharing.SHARED_POST_RETURN_KEY + '.native';
+  assert.equal(JSON.parse(ui.nativeStored.get(key)).path, `/post?id=${id}&invite=1`);
+  assert(ui.calls.findIndex(row => row[0] === 'native-return-write') < ui.calls.findIndex(row => row[0] === 'login'));
+  ui.focus(false); ui.auth.isAuthed = true; await ui.settle();
+  assert.equal(ui.nativeStored.has(key), true, 'a post hidden behind OAuth must not clear the callback destination');
+  ui.focus(true); await ui.settle(); assert.equal(ui.nativeStored.has(key), false);
+});
+test('native login keeps its original post and reports a failed destination write without opening a dead-end login', async context => {
+  const ui = mount('../src/app/post/[id].tsx', 'default', { params: { id }, auth: { isAuthed: false }, nativeSet: async () => { throw Error('PRIVATE storage detail'); } }); context.after(() => ui.unmount()); await ui.settle();
+  await control(ui, 'shared.post.login').props.onPress(); await ui.settle();
+  assert.equal(ui.calls.filter(row => row[0] === 'login').length, 0);
+  assert.match(text(ui.render()), /다시 시도/); assert.doesNotMatch(text(ui.render()), /PRIVATE/);
+});
+test('leaving the native shared post while its destination is being stored does not open login on another screen', async context => {
+  const pending = deferred();
+  const ui = mount('../src/app/post/[id].tsx', 'default', { params: { id }, auth: { isAuthed: false }, nativeSet: () => pending.promise }); context.after(() => ui.unmount()); await ui.settle();
+  const write = control(ui, 'shared.post.login').props.onPress(); await tick(); ui.focus(false); ui.render(); pending.resolve(); await write; await ui.settle();
+  assert.equal(ui.calls.filter(row => row[0] === 'login').length, 0);
+});
+test('native shared login is single-flight while the destination is being saved', async context => {
+  const pending = deferred();
+  const ui = mount('../src/app/post/[id].tsx', 'default', { params: { id }, auth: { isAuthed: false }, nativeSet: () => pending.promise }); context.after(() => ui.unmount()); await ui.settle();
+  control(ui, 'shared.post.login').props.onPress(); control(ui, 'shared.post.login').props.onPress(); await tick();
+  assert.equal(ui.calls.filter(row => row[0] === 'native-return-write').length, 1);
+  pending.resolve(); await ui.settle(); assert.equal(ui.calls.filter(row => row[0] === 'login').length, 1);
+});
+test('a completed account switch during native destination storage never reopens the old login prompt', async context => {
+  const pending = deferred();
+  const ui = mount('../src/app/post/[id].tsx', 'default', { params: { id }, auth: { isAuthed: false }, nativeSet: () => pending.promise }); context.after(() => ui.unmount()); await ui.settle();
+  control(ui, 'shared.post.login').props.onPress(); await tick(); ui.auth.isAuthed = true; await ui.settle();
+  pending.resolve(); await ui.settle(); assert.equal(ui.calls.filter(row => row[0] === 'login').length, 0);
+  assert(ui.nodes().some(node => node.type === 'PostDetail'));
+});
+test('a retained guest login handler cannot dispatch after the new account commits before passive cleanup', async context => {
+  const ui = mount('../src/app/post/[id].tsx', 'default', { params: { id }, auth: { isAuthed: false } }); context.after(() => ui.unmount()); await ui.settle();
+  const retained = control(ui, 'shared.post.login').props.onPress;
+  ui.auth.isAuthed = true; ui.auth.me = { id: 'new-account' }; ui.renderWithoutPassive();
+  retained(); await tick(); await tick();
+  assert.equal(ui.calls.filter(row => row[0] === 'native-return-write').length, 0);
+  assert.equal(ui.calls.filter(row => row[0] === 'login').length, 0);
+});
 test('external and forged hosts cannot trigger an internal card lookup or navigation', async context => {
   for (const url of [`https://evil.test/share/${id}`, `https://gling.ej-entertainment.com.evil.test/share/${id}`, `https://gling.ej-entertainment.com@evil.test/share/${id}`,
     `https://evil.test@gling.ej-entertainment.com/share/${id}`, `http://gling.ej-entertainment.com/share/${id}`, `https://gling.ej-entertainment.com/post?id=${id}&id=${otherId}`]) {
@@ -166,7 +227,7 @@ test('guest post routes keep the preview visible and request login only on an ex
   harness.auth.isAuthLoading = false; await harness.settle(); await harness.settle();
   assert.equal(harness.calls.filter(call => call[0] === 'login').length, 0, 'auth and preview rerenders leave the guest preview unobstructed');
   assert.ok(harness.nodes().some(node => node.type === 'SharedPreviewContent'));
-  control(harness, 'shared.post.login').props.onPress(); assert.equal(harness.calls.filter(call => call[0] === 'login').length, 1, 'the explicit login control opens login');
+  control(harness, 'shared.post.login').props.onPress(); await harness.settle(); assert.equal(harness.calls.filter(call => call[0] === 'login').length, 1, 'the explicit login control opens login after retaining its destination');
 });
 
 test('unavailable guest previews never load full content or prompt login', async context => {

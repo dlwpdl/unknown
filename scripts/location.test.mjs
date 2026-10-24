@@ -18,3 +18,11 @@ test('only fresh, usable fixes recommend an open nearby community', () => {
   assert.equal(nearbyCommunity(recorded, now), null, 'yesterday is not a live recommendation');
   assert.equal(nearbyCommunity(recorded, recorded.measuredAt), 'vancouver', 'admin can label a historical snapshot at its recorded time');
 });
+
+test('nearby distance uses the existing Map-quality freshness and accuracy boundary without changing community matching',async()=>{
+  const {isFreshNearbyLocation}=await import('../src/lib/location.ts');assert.equal(typeof isFreshNearbyLocation,'function');
+  const now=Date.now(),fix={latitude:49.25,longitude:-122.86,accuracy:250,measuredAt:now-120000,mocked:false};
+  assert.equal(isFreshNearbyLocation(fix,now),true);
+  for(const change of [{accuracy:251},{measuredAt:now-120001},{mocked:true},{latitude:NaN},{longitude:181}])assert.equal(isFreshNearbyLocation({...fix,...change},now),false);
+  assert.equal(isFreshLocation({...fix,accuracy:1000},now),true,'Existing broad community consent logic is unchanged');
+});

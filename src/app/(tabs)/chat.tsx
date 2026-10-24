@@ -6,7 +6,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import { Alert, Animated, AppState, DeviceEventEmitter, LayoutAnimation, Modal, Platform, StyleSheet, UIManager, View } from 'react-native';
+import { Alert, Animated, AppState, DeviceEventEmitter, Keyboard, LayoutAnimation, Modal, Platform, StyleSheet, UIManager, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -54,7 +54,6 @@ export default function ChatScreen() {
   const theme = useTheme();
   const router = useRouter();
   const [focused, setFocused] = useState(false);
-  useFocusEffect(useCallback(() => { setFocused(true); return () => setFocused(false); }, []));
   const reducedMotion = useReducedMotion();
   const { conversationId, businessId, view } = useLocalSearchParams<{ conversationId?: string; businessId?: string; view?: string }>();
   const auth = useAuth();
@@ -89,8 +88,36 @@ export default function ChatScreen() {
   const moreRequests = routeMatches && inbox?.userId === scopeKey && inbox.moreRequests === true;
   const openConversation = selection?.userId === scopeKey ? conversations.find((item) => item.id === selection.id)
     ?? (inbox?.userId === scopeKey && inbox.selectedConversation?.id === selection.id ? inbox.selectedConversation : undefined) : undefined;
-  const [modalConversation, setModalConversation] = useState<typeof openConversation>(undefined);
-  const shownConversation = selection?.userId === scopeKey && routeMatches ? openConversation ?? modalConversation : undefined;
+  const presentationSequence = useRef(0);
+  const [modalConversation, setModalConversation] = useState<{ userId: string; conversation: NonNullable<typeof openConversation>; key: number }>();
+  const [presentationOwner, setPresentationOwner] = useState(scopeKey);
+  if (presentationOwner !== scopeKey) {
+    setPresentationOwner(scopeKey); setSelection(null); setModalConversation(undefined);
+  }
+  const presentation = useRef(modalConversation);
+  useFocusEffect(useCallback(() => {
+    setFocused(true);
+    return () => { setFocused(false); presentation.current = undefined; setModalConversation(undefined); setSelection(null); };
+  }, []));
+  const presentConversation = useCallback((conversation: NonNullable<typeof openConversation>) => {
+    const next = { userId: scopeKey!, conversation, key: ++presentationSequence.current };
+    presentation.current = next;
+    setModalConversation(next); setSelection({ userId: scopeKey!, id: conversation.id });
+  }, [scopeKey]);
+  useLayoutEffect(() => {
+    if (!focused || modalConversation?.userId !== scopeKey) {
+      presentation.current = undefined;
+    }
+  }, [focused, scopeKey, modalConversation]);
+  // Keep the same room mounted until UIKit finishes dismissing its sheet.
+  const shownConversation = focused && modalConversation?.userId === scopeKey && routeMatches ? openConversation ?? modalConversation.conversation : undefined;
+  const closeConversation = () => {
+    if (!modalConversation || presentation.current !== modalConversation || currentUser.current !== scopeKey || selectionId.current !== modalConversation.conversation.id) return;
+    selectionId.current = null;
+    if (conversationId) version.current += 1;
+    Keyboard.dismiss();
+    setSelection(null); router.setParams({ conversationId: undefined, businessId: undefined });
+  };
   const animateList = useCallback(() => {
     if (reducedMotion) return;
     if (Platform.OS === 'android') UIManager?.setLayoutAnimationEnabledExperimental?.(true);
@@ -115,7 +142,7 @@ export default function ChatScreen() {
         if (currentUser.current !== scopeKey || version.current !== request) return;
         animateList();
         setInbox({ ...next, userId: scopeKey!, filter, requests: nextRequests, moreRequests: nextRequests.length === 50 });
-        if (conversationId && next.selectedConversation) { setSelection({ userId: scopeKey!, id: next.selectedConversation.id }); setModalConversation(next.selectedConversation); }
+        if (conversationId && next.selectedConversation && (presentation.current?.userId !== scopeKey || presentation.current.conversation.id !== next.selectedConversation.id)) presentConversation(next.selectedConversation);
       } catch { if (currentUser.current === scopeKey && version.current === request) { if (asBusinessId) setInbox(null); setError({ userId: scopeKey!, text: sourceCopy.chat.loadError }); } }
       finally {
         if (currentUser.current === scopeKey && version.current === request) setLoading(false);
@@ -124,7 +151,7 @@ export default function ChatScreen() {
     })();
     inFlight.current = { key, request, promise };
     return promise;
-  }, [animateList, conversationId, filter, userId, scopeKey, asBusinessId, routeMatches]);
+  }, [animateList, conversationId, filter, userId, scopeKey, asBusinessId, routeMatches, presentConversation]);
   useEffect(() => {
     if (!userId || !conversationId) return;
     let active = true;
@@ -151,16 +178,17 @@ export default function ChatScreen() {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let revision = 0;
     const schedule = () => {
+      if (!active || currentUser.current !== scopeKey || activeFilter.current !== filter) return;
       const next = ++revision;
       clearTimeout(timer);
       timer = setTimeout(() => {
         void (async () => {
           await inFlight.current?.promise;
-          if (active && revision === next) await changed();
+          if (active && currentUser.current === scopeKey && activeFilter.current === filter && revision === next) await changed();
         })();
       }, 150);
     };
-    const stopBusiness = subscribeBusinessChat(supabase, userId, event => { if ((event.businessId ?? null) === asBusinessId) schedule(); });
+    const stopBusiness = subscribeBusinessChat(supabase, userId, event => { if ((event.businessId ?? null) === asBusinessId) schedule(); }, schedule);
     const channel = asBusinessId ? null : supabase.channel(`inbox:${userId}:${channelId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, schedule)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, ({ new: message }) => {
@@ -183,7 +211,7 @@ export default function ChatScreen() {
     const listener = DeviceEventEmitter.addListener(MEETUPS_CHANGED_EVENT, schedule);
     const appState = AppState.addEventListener('change', (next) => { if (next === 'active') schedule(); });
     return () => { active = false; clearTimeout(timer); listener.remove(); appState.remove(); stopBusiness(); if (channel) void supabase.removeChannel(channel); };
-  }, [changed, userId, channelId, asBusinessId, scopeKey]);
+  }, [changed, userId, channelId, asBusinessId, scopeKey, filter]);
 
   const loadMore = async () => {
     if (!userId || pageBusy.current || loading || !inbox?.cursor || inbox.userId !== scopeKey || inbox.filter !== filter) return;
@@ -288,14 +316,18 @@ export default function ChatScreen() {
         : loading ? undefined
         : filter === 'requests' ? (requests.length ? undefined : <StateCard title={tr("대기 중인 모임 신청이 없어요")} body={tr("모임에 신청이 들어오면 여기서 수락하거나 거절할 수 있어요.")} />)
           : <StateCard title={t.chat.emptyTitle} body={t.chat.emptyBody} />}
-      renderItem={({ item, index }) => <Pressable analyticsId="app_tabs_chat.pressable.7" onPress={() => { play('selection'); setModalConversation(item); setSelection({ userId: scopeKey!, id: item.id }); }} accessibilityRole="button" style={({ pressed }) => [styles.room, { borderBottomColor: theme.line, backgroundColor: pressed ? theme.backgroundElement : 'transparent', transform: [{ scale: pressed && !reducedMotion ? 0.985 : 1 }] }]}>
+      renderItem={({ item, index }) => <Pressable analyticsId="app_tabs_chat.pressable.7" onPress={() => { play('selection'); presentConversation(item); }} accessibilityRole="button" style={({ pressed }) => [styles.room, { borderBottomColor: theme.line, backgroundColor: pressed ? theme.backgroundElement : 'transparent', transform: [{ scale: pressed && !reducedMotion ? 0.985 : 1 }] }]}>
         <ChatAvatar kind={item.kind} title={item.title} meetupCategory={item.meetupCategory} initial={item.kind !== 'group' ? item.otherUser.nickname[0] : ''} avatarUri={item.otherIdentity?.avatarUri} active={focused && !shownConversation && index < 8} delay={index * 260} />
         <View style={styles.roomBody}><View style={styles.nickRow}><ThemedText style={[styles.flex, styles.roomName]} numberOfLines={1}>{item.kind === 'group' ? item.title : item.otherUser.nickname}</ThemedText>{item.kind === 'business' && <ThemedText type="small" themeColor="accent">{tr('비즈니스')}</ThemedText>}{item.kind === 'direct' && <TrustBadge verified={item.otherUser.verificationLevel >= 2} trustLevel={item.otherUser.verificationLevel === 3 ? 3 : item.otherUser.verificationLevel === 2 ? 2 : undefined} />}</View>
           <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{item.status === 'pending' ? tr("대화 상태 확인 중") : item.status === 'ended' ? t.chat.ended : item.latestBody ?? t.chat.newConversation}</ThemedText></View>
         <View style={styles.roomTime}><ThemedText type="small" themeColor="textSecondary">{chatListTime(item.latestAt, undefined, appLocale)}</ThemedText></View>
       </Pressable>} />
-  </SafeAreaView><Modal visible={!!openConversation && routeMatches} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" allowSwipeDismissal onRequestClose={() => { setSelection(null); router.setParams({ conversationId: undefined, businessId: undefined }); }} onDismiss={() => setModalConversation(undefined)}>
-    {shownConversation && <ChatRoom key={`${scopeKey}:${shownConversation.id}`} conversation={shownConversation} currentUserId={auth.me.id} onChanged={changed} onClose={() => { setSelection(null); router.setParams({ conversationId: undefined, businessId: undefined }); void changed(); }} />}
+  </SafeAreaView><Modal key={modalConversation?.key ?? 'closed'} visible={focused && !!modalConversation && !!openConversation && routeMatches} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" allowSwipeDismissal onRequestClose={closeConversation} onDismiss={() => {
+    if (presentation.current !== modalConversation) return;
+    presentation.current = undefined;
+    setModalConversation(undefined);
+  }}>
+    {shownConversation && <ChatRoom key={`${scopeKey}:${shownConversation.id}`} conversation={shownConversation} currentUserId={auth.me.id} onChanged={changed} onClose={closeConversation} />}
   </Modal></TabContent>;
 }
 

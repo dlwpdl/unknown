@@ -108,7 +108,7 @@ test('only accepts current session messages, known selection IDs and exact credi
   for (const raw of ['oops', 'null', '[]', '{}', 'x'.repeat(2049)]) assert.equal(discoveryMapMessage(raw, sessionId, [marker]), null);
 });
 
-function canvas(markers = [marker]) {
+function canvas(markers = [marker], providedHtml) {
   const messages = [], listeners = {}, cameras = [], sources = {}, layers = [], images = {}, paddingCalls = [], userMarkers = [], labels = [];
   const container = { clientHeight: 400, style: { setProperty(name, value) { this[name] = value; }, getPropertyValue(name) { return this[name] ?? ''; } } };
   let map;
@@ -131,7 +131,7 @@ function canvas(markers = [marker]) {
     setPadding(padding) { this.padding = padding; paddingCalls.push(padding); }
   }
   const window = { parent: { postMessage: message => messages.push(JSON.parse(message)) }, addEventListener: (type, callback) => { listeners['window:' + type] = callback; }, matchMedia: () => ({ matches: true }) };
-  const drawing = { scale() {}, fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, arcTo() {}, closePath() {}, fill() {}, stroke() {}, fillText(text) { labels.push(text); }, getImageData: (_x, _y, width, height) => ({ width, height, data: new Uint8Array(width * height * 4) }) };
+  const drawing = { scale() {}, fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, arcTo() {}, closePath() {}, fill() {}, stroke() {}, measureText: text => ({ width: text.length * 6 }), fillText(text) { labels.push(text); }, getImageData: (_x, _y, width, height) => ({ width, height, data: new Uint8Array(width * height * 4) }) };
   class Marker {
     constructor({ element }) { this.element = element; userMarkers.push(this); }
     setLngLat(point) { this.point = Array.from(point); return this; }
@@ -139,7 +139,7 @@ function canvas(markers = [marker]) {
     remove() { this.removed = true; }
   }
   const context = { window, document: { createElement: () => ({ getContext: () => drawing, setAttribute(name, value) { this[name] = value; } }), addEventListener: (type, callback) => { listeners['document:' + type] = callback; } }, maplibregl: { Map, Marker, NavigationControl: class {} }, setTimeout: () => 1, clearTimeout() {}, console };
-  const html = discoveryMapHtml({ ...options, markers });
+  const html = providedHtml ?? discoveryMapHtml({ ...options, markers });
   const script = [...html.matchAll(/<script nonce="gling-map">([\s\S]*?)<\/script>/g)].at(-1)[1];
   vm.runInNewContext(script, context);
   listeners.load();
@@ -370,7 +370,10 @@ test('verified webshop discounts get a separate mint badge while the restaurant 
   const c = canvas([discounted]);
   assert.ok(c.images['discount-20.8']);
   assert.equal(c.images['discount-20.8'].options.pixelRatio, 2);
-  assert.ok(c.labels.includes('최대 20.8%'));
+  assert.ok(c.labels.includes('20.8%'));
+  assert.ok(!c.labels.some(label => /최대|Up to/.test(label)), 'map artwork shows only the current numeric percentage');
+  assert.ok(c.images['discount-20.8'].image.width <= 120, 'numeric badge stays at most 60 CSS pixels wide');
+  assert.equal(c.images['discount-20.8'].image.height, 40);
   assert.equal(c.sources.discovery.data.features[0].properties.color, marker.color);
   assert.equal(c.sources.discovery.data.features[0].properties.discount, 20.8);
   assert.equal(c.layers.find(layer => layer.id === 'discovery-discount').source, 'discovery');
@@ -381,4 +384,196 @@ test('verified webshop discounts get a separate mint badge while the restaurant 
   const previous = c.sources.discovery.data;
   c.window.glingDiscoveryUpdate(sessionId, { markers: [{ ...marker, discount: '100%' }], selectedId: marker.id });
   assert.equal(c.sources.discovery.data, previous, 'untrusted embedded updates cannot turn invalid data into a saving claim');
+});
+
+test('discount dots stay compact below neighborhood zoom and percentages reuse label collision and selection policy', () => {
+  const discounted = { ...marker, discount: 20.8, top25: true };
+  const c = canvas([discounted]);
+  for (const [id, source, selected] of [['discovery-discount', 'discovery', false], ['discovery-selected-discount', 'discovery-selection', true]]) {
+    const dot = c.layers.find(layer => layer.id === id + '-dot');
+    const number = c.layers.find(layer => layer.id === id);
+    assert.equal(dot.type, 'circle'); assert.equal(dot.source, source);
+    assert.equal(dot.paint['circle-radius'], 4); assert.equal(dot.paint['circle-color'], '#8FD9C4');
+    assert.equal(dot.paint['circle-translate-anchor'], 'viewport', 'dot stays next to the upright number when the map rotates');
+    assert.deepEqual(Array.from(dot.paint['circle-translate']), [-12, 10]);
+    assert.equal(dot.minzoom, undefined, 'mint signal stays available at the initial city zoom');
+    assert.equal(number.minzoom, 14, 'number starts at the existing cluster-expansion neighborhood zoom');
+    assert.equal(number.layout['icon-allow-overlap'], selected);
+    assert.equal(number.layout['icon-ignore-placement'], selected);
+    assert.equal(number.layout['icon-anchor'], 'right');
+    assert.deepEqual(Array.from(number.layout['icon-offset']), [-20, 10], 'percentage stays opposite the right-anchored place name, outside its collision box');
+    assert.equal(c.map.config.zoom < number.minzoom, true, 'initial city view shows the dot without a percentage');
+  }
+  c.window.glingDiscoveryUpdate(sessionId, { markers: [discounted], selectedId: marker.id });
+  for (const id of ['discovery-discount', 'discovery-discount-dot']) {
+    assert.ok(JSON.stringify(c.layers.find(layer => layer.id === id).filter).includes(marker.id), 'selected point is excluded from ordinary badges');
+  }
+  assert.equal(c.sources['discovery-selection'].data.features.length, 1);
+  assert.equal(c.layers.find(layer => layer.id === 'discovery-pins').paint['circle-color'][1], 'color');
+  assert.equal(c.layers.find(layer => layer.id === 'discovery-selected-pin').paint['circle-color'][1], 'color');
+  assert.equal(c.sources.discovery.clusterMaxZoom, 16); assert.equal(c.sources.discovery.clusterRadius, 44);
+  c.map.hits = [{ properties: { id: marker.id } }];
+  c.listeners.click({ point: { x: 1, y: 2 } });
+  assert.ok(c.map.queryOptions.layers.includes('discovery-discount-dot'));
+  assert.ok(c.map.queryOptions.layers.includes('discovery-selected-discount-dot'));
+  assert.equal(c.messages.at(-1).type, 'select'); assert.equal(c.messages.at(-1).id, marker.id);
+  assert.match(c.html, /민트색 점.*대표 메뉴 최대 할인율/);
+  assert.match(discoveryMapHtml({ ...options, language: 'en', markers: [discounted] }), /Mint dots.*maximum verified representative-menu saving/);
+});
+
+function trackSourceWrites(c) {
+  const writes = [];
+  for (const [id, source] of Object.entries(c.sources)) {
+    const original = source.setData;
+    source.setData = function(data) { writes.push({ source: id, features: data.features.length }); return original.call(this, data); };
+  }
+  return writes;
+}
+
+test('500 markers are not reclustered for ten selection/padding changes, including equivalent full updates', t => {
+  const markers = Array.from({ length: 500 }, (_, i) => ({ ...marker, id: `place:${i}`, longitude: marker.longitude + i / 10000 }));
+  const c = canvas(markers), writes = trackSourceWrites(c);
+  for (let i = 0; i < 10; i++) {
+    c.window.glingDiscoveryUpdate(sessionId, { markers: markers.map(pin => ({ ...pin })), selectedId: markers[i].id, bottomInset: 100 + i });
+    assert.equal(c.sources['discovery-selection'].data.features[0].properties.id, markers[i].id);
+    assert.equal(c.map.padding.bottom, 100 + i);
+  }
+  const clusterWrites = writes.filter(row => row.source === 'discovery');
+  t.diagnostic(JSON.stringify({ markers: 500, updates: 10, fullClusterSourceWrites: clusterWrites.length, fullSourceFeaturesResubmitted: clusterWrites.reduce((n, row) => n + row.features, 0), selectionSourceWrites: writes.filter(row => row.source === 'discovery-selection').length }));
+  assert.equal(clusterWrites.length, 0, 'selection and padding do not change cluster input');
+  assert.equal(writes.filter(row => row.source === 'discovery-selection').length, 10);
+  const selectedWrites = writes.length;
+  vm.runInNewContext(discoveryMapScript({ selectedId: markers[9].id, bottomInset: 120, topInset: 40, userLocation: { latitude: 49.3, longitude: -123.1 } }, sessionId), { window: c.window });
+  assert.equal(writes.length, selectedWrites, 'location and padding do not rewrite selection data either');
+  assert.equal(c.userMarkers.length, 1);
+  assert.equal(c.map.padding.top, 40);
+});
+
+test('marker changes refresh clusters and selected details while transient updates retain current data and boundary guards', () => {
+  const c = canvas(), writes = trackSourceWrites(c);
+  const update = state => vm.runInNewContext(discoveryMapScript(state, sessionId), { window: c.window });
+  update({ selectedId: marker.id });
+  const changed = { ...marker, latitude: 49.3, color: '#654321', label: 'Changed place', top25: true, discount: 20.8 };
+  update({ markers: [changed], selectedId: marker.id });
+  assert.equal(writes.filter(row => row.source === 'discovery').length, 1);
+  for (const source of ['discovery', 'discovery-selection']) {
+    const feature = c.sources[source].data.features[0];
+    assert.equal(feature.properties.label, changed.label); assert.equal(feature.properties.color, changed.color);
+    assert.equal(feature.properties.top25, true); assert.equal(feature.properties.discount, 20.8);
+    assert.deepEqual(Array.from(feature.geometry.coordinates), [changed.longitude, changed.latitude]);
+  }
+  assert.ok(c.images['discount-20.8']); assert.ok(c.images['top25-full']);
+  update({ selectedId: null });
+  assert.equal(c.sources['discovery-selection'].data.features.length, 0);
+  assert.equal(c.sources.discovery.data.features.length, 1);
+  update({ markers: [], selectedId: marker.id });
+  assert.equal(c.sources.discovery.data.features.length, 0);
+  assert.equal(c.sources['discovery-selection'].data.features.length, 0, 'removed/hidden pins cannot remain selected');
+  const before = writes.length;
+  for (const state of [{ markers: null }, { markers: [changed], topInset: NaN }, { markers: [changed], selectedId: 'bad\u0000id' }]) c.window.glingDiscoveryUpdate(sessionId, state);
+  c.window.glingDiscoveryUpdate('stale-city', { markers: [changed], selectedId: changed.id });
+  assert.equal(writes.length, before, 'malformed and stale updates are rejected atomically');
+  assert.throws(() => discoveryMapScript({ userLocation: { latitude: 91, longitude: 0 } }, sessionId));
+  assert.throws(() => discoveryMapHtml({ ...options, markers: undefined }));
+});
+
+test('each rendered marker field changes cluster input, while optional false and unrelated fields do not', () => {
+  const c = canvas(), writes = trackSourceWrites(c);
+  let pin = { ...marker };
+  for (const patch of [{ color: '#123456' }, { label: 'New name' }, { latitude: 49.3 }, { longitude: -123.1 }, { top25: true }, { discount: 10 }, { discount: 20.8 }, { top25: false }]) {
+    const before = writes.filter(row => row.source === 'discovery').length;
+    pin = { ...pin, ...patch };
+    c.window.glingDiscoveryUpdate(sessionId, { markers: [pin], selectedId: pin.id });
+    assert.equal(writes.filter(row => row.source === 'discovery').length, before + 1, JSON.stringify(patch));
+    assert.equal(c.sources['discovery-selection'].data.features[0].properties.color, pin.color);
+  }
+  const before = writes.length;
+  const { top25, ...samePin } = pin;
+  c.window.glingDiscoveryUpdate(sessionId, { markers: [{ ...samePin, ignored: 'not rendered' }], selectedId: pin.id });
+  assert.equal(writes.length, before, 'semantic equality is limited to validated rendered marker fields');
+});
+
+function mountedBridge(props, platform) {
+  const slots = [], calls = [], listeners = {}, timers = new Map();
+  let index = 0, effects = [], nextTimer = 0, embedded;
+  const memo = (factory, deps) => { const at = index++, prior = slots[at]; if (prior && deps.every((v, i) => Object.is(v, prior.deps[i]))) return prior.value; const value = factory(); slots[at] = { deps, value }; return value; };
+  const react = {
+    useId: () => 'mounted-canvas', useMemo: memo, useCallback: (fn, deps) => memo(() => fn, deps),
+    useRef(value) { const at = index++; return slots[at] ??= { current: value }; },
+    useState(initial) { const at = index++; if (!(at in slots)) slots[at] = initial; return [slots[at], value => { slots[at] = typeof value === 'function' ? value(slots[at]) : value; }]; },
+    useEffect(fn, deps) { const at = index++, prior = slots[at]; if (prior && deps.every((v, i) => Object.is(v, prior.deps[i]))) return; effects.push(() => { prior?.cleanup?.(); slots[at] = { deps, cleanup: fn() }; }); },
+  };
+  const jsx = (type, props) => ({ type, props });
+  const imports = {
+    react, 'react/jsx-runtime': { jsx, jsxs: jsx },
+    'react-native': { Platform: { OS: platform }, View: 'View', StyleSheet: { create: value => value }, Linking: { openURL() {} } },
+    'react-native-webview': { __esModule: true, default: 'WebView' },
+    '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: value => value }) },
+    '@/hooks/use-theme': { useTheme: () => ({}) }, '@/components/analytics-controls': { Pressable: 'Pressable' },
+    '@/components/themed-text': { ThemedText: 'Text' }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+    '@/lib/discovery-map-html': { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers },
+  };
+  const exports = {}, host = { location: { protocol: 'https:', origin: options.parentOrigin }, addEventListener(type, fn) { listeners[type] = fn; }, removeEventListener(type, fn) { if (listeners[type] === fn) delete listeners[type]; } };
+  vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/components/discovery-map.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
+    exports, window: host, require(name) { assert.ok(name in imports, name); return imports[name]; },
+    setTimeout(fn) { const id = ++nextTimer; timers.set(id, fn); return id; }, clearTimeout: id => timers.delete(id),
+  });
+  const Canvas = exports.DiscoveryMap(props).type;
+  const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
+  function render() {
+    index = 0; effects = []; const tree = nodes(Canvas(props));
+    const node = tree.find(n => n.type === (platform === 'web' ? 'iframe' : 'WebView'));
+    const html = platform === 'web' ? node.props.srcDoc : node.props.source.html;
+    if (!embedded || embedded.html !== html) embedded = canvas(props.markers, html);
+    const nativeTarget = { injectJavaScript(script) { calls.push({ bytes: Buffer.byteLength(script), script }); vm.runInNewContext(script, { window: embedded.window }); } };
+    const contentWindow = { postMessage(message, origin) { assert.equal(origin, options.parentOrigin); calls.push({ bytes: Buffer.byteLength(JSON.stringify(message)), state: message.state }); embedded.listeners['window:message']({ source: embedded.window.parent, origin, data: message }); } };
+    node.props.ref.current = platform === 'web' ? { contentWindow } : nativeTarget;
+    effects.forEach(fn => fn());
+    return { node, tree, contentWindow };
+  }
+  function notify(rendered, type = 'ready', extra = {}) {
+    const data = JSON.stringify({ ...embedded.messages.find(m => m.type === 'ready'), type, ...extra });
+    if (platform === 'web') listeners.message({ source: rendered.contentWindow, origin: options.parentOrigin, data });
+    else rendered.node.props.onMessage({ nativeEvent: { data } });
+  }
+  return { render, ready: rendered => notify(rendered), notify, calls, reload() { embedded = canvas(props.markers, embedded.html); }, get embedded() { return embedded; } };
+}
+
+for (const platform of ['ios', 'web']) test(`${platform} bridge sends marker data only when changed, including equivalent rebuilt props and reload recovery`, t => {
+  const pins = Array.from({ length: 500 }, (_, i) => ({ ...marker, id: `place:${i}`, longitude: marker.longitude + i / 10000 }));
+  const selections = [], props = { markers: pins, cityName: 'Vancouver', onSelect: id => selections.push(id) };
+  const app = mountedBridge(props, platform); let rendered = app.render(); app.ready(rendered); app.render();
+  const c = app.embedded, writes = trackSourceWrites(c), start = app.calls.length;
+  for (let i = 0; i < 10; i++) { props.markers = pins.map(pin => ({ ...pin })); props.selectedId = pins[i].id; props.bottomInset = 100 + i; rendered = app.render(); }
+  const updates = app.calls.slice(start), full = updates.filter(call => call.state ? Object.hasOwn(call.state, 'markers') : call.script.includes('"markers"'));
+  const baselineBytes = Buffer.byteLength(platform === 'web' ? JSON.stringify({ type: 'discovery.update', sessionId: 'mounted-canvas.0', state: { markers: discoveryMarkers(pins), selectedId: pins[0].id, center: null, userLocation: null, topInset: 0, bottomInset: 100 } }) : discoveryMapScript({ markers: pins, selectedId: pins[0].id, bottomInset: 100 }, 'mounted-canvas.0'));
+  t.diagnostic(JSON.stringify({ platform, selectionUpdates: updates.length, fullMarkerMessages: full.length, baselineOneUpdateBytes: baselineBytes, largestTransientUpdateBytes: Math.max(...updates.map(call => call.bytes)), totalTransientBytes: updates.reduce((n, call) => n + call.bytes, 0), clusterSourceWrites: writes.filter(w => w.source === 'discovery').length }));
+  assert.equal(updates.length, 10); assert.equal(full.length, 0, 'pin selection never resends full marker data');
+  assert.ok(updates.every(call => call.bytes < 600)); assert.equal(writes.filter(w => w.source === 'discovery').length, 0);
+  const writesBeforeGPS = writes.length;
+  props.userLocation = { latitude: 49.29, longitude: -123.14, privateText: 'not-a-map-field' };
+  props.center = { latitude: 49.29, longitude: -123.14, requestId: 1, privateText: 'not-a-map-field' };
+  props.topInset = 50; app.render();
+  assert.equal(writes.length, writesBeforeGPS, 'GPS, camera and padding remain separate from marker sources');
+  assert.deepEqual(c.userMarkers[0].point, [-123.14, 49.29]); assert.deepEqual(Array.from(c.cameras.at(-1).center), [-123.14, 49.29]);
+  assert.ok(!JSON.stringify(app.calls.at(-1)).includes('not-a-map-field'), 'both transports only project public map coordinates');
+  props.markers = [{ ...pins[0], label: 'Updated', color: '#123456', discount: 20.8 }]; app.render();
+  assert.equal(c.sources.discovery.data.features.length, 1); assert.equal(c.sources.discovery.data.features[0].properties.discount, 20.8);
+  assert.equal(writes.filter(w => w.source === 'discovery').length, 1);
+  props.markers = []; props.selectedId = null; rendered = app.render();
+  assert.equal(c.sources.discovery.data.features.length, 0, 'hidden/filtered data is removed rather than kept from prior payload');
+  app.notify(rendered, 'select', { id: pins[0].id });
+  assert.deepEqual(selections, [], 'selection callbacks validate against current filters, never last-sent markers');
+  const receive = c.window.glingDiscoveryUpdate; c.window.glingDiscoveryUpdate = () => {};
+  props.markers = [pins[0]]; rendered = app.render(); c.window.glingDiscoveryUpdate = receive;
+  assert.equal(c.sources.discovery.data.features.length, 0, 'simulate a send before embedded JavaScript is ready');
+  app.ready(rendered); assert.equal(c.sources.discovery.data.features.length, 1, 'ready resends current markers after a lost pre-ready message');
+  props.markers = []; rendered = app.render(); app.reload(); app.ready(rendered);
+  assert.equal(app.embedded.sources.discovery.data.features.length, 0, 'same-session document reload cannot resurrect original seed data');
+  app.notify(rendered, 'error'); rendered = app.render();
+  rendered.tree.find(node => node.props?.analyticsId === 'discovery.map.retry').props.onPress();
+  rendered = app.render(); app.ready(rendered);
+  assert.equal(app.embedded.sources.discovery.data.features.length, 0, 'retry under a new session restores current data');
+  app.notify(rendered, 'select', { id: pins[0].id, sessionId: 'mounted-canvas.0' });
+  assert.deepEqual(selections, []);
 });

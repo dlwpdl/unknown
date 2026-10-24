@@ -273,3 +273,12 @@ test('header logo retains its existing Today navigation and selection feedback',
   assert.deepEqual(app.routes, ['/']);
   assert.ok(app.feedback.includes('selection'));
 });
+
+
+test('Home magnifier opens the common search route without clearing the current feed', () => {
+  const app=screen(),tree=app.render();
+  nodes(tree).find(node=>node.props?.analyticsId==='components_feed-screen.pressable.2').props.onPress();
+  assert.equal(app.routes[0]?.pathname,'/search');
+  assert.equal(nodes(app.render()).some(node=>node.type==='Modal'&&node.props.visible),false,'Ordinary search no longer opens the old post-only modal');
+  assert.ok(app.feedback.includes('selection'));
+});

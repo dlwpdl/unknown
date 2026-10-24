@@ -5,6 +5,8 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { safePostLink, splitPostLinks, postLinksHtml } from '../supabase/functions/_shared/post-links.ts';
 import * as publicSeo from '../src/lib/public-seo.ts';
+import * as previewMedia from '../supabase/functions/_shared/preview-image.ts';
+import * as businessMedia from '../supabase/functions/_shared/business-media.ts';
 
 test('본문 링크는 실제 HTTPS 목적지만 활성화한다', () => {
   assert.equal(safePostLink('https://www.instagram.com/ofyoft.official/?igsh=abc'), 'https://www.instagram.com/ofyoft.official/?igsh=abc');
@@ -30,6 +32,8 @@ test('the public share page reads metadata only and retains protection headers',
     require(name) {
       if (name === '../_shared/post-links.ts') return { postLinksHtml };
       if (name.endsWith('public-seo.ts')) return publicSeo;
+      if (name === '../_shared/preview-image.ts') return previewMedia;
+      if (name === '../_shared/business-media.ts') return businessMedia;
       return { createClient: () => ({ rpc: async (name, args) => {
         assert.equal(name, 'get_shared_link_preview'); assert.equal(args.p_post_id, id);
         return { data: { id, title: '<제목>', body: '웹사이트: https://shop.ca/\n<script>bad()</script> https://instagram.com.evil.ca/', city: '밴쿠버', label: '비즈니스', imagePath: null } };

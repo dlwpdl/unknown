@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { postSeo, jsonLd, PUBLIC_SITE, PUBLIC_SOURCE } from '../src/lib/public-seo.ts';
+import * as publicSeo from '../src/lib/public-seo.ts';
+import { parseLanguagePreference, resolveLanguage } from '../src/i18n/language.ts';
+import { translateUi } from '../src/i18n/index.ts';
 
 const post = { id: '682af685-1df0-404d-a245-12086221efb9', title: '동네 가게 소식', body: '  직접 만든 메뉴를 소개합니다.\n문의는 공개 계정으로 주세요.\n\nGoogle 지도: https://maps.google.com/?q=Vancouver', author: { nickname: '운영자', id: 'private-user-id' }, tag: { label: '비즈니스' }, createdAt: '2026-10-08T10:30:00Z', imageUris: ['https://example.com/photo.jpg'] };
 
@@ -8,7 +11,7 @@ test('public SEO contains discovery metadata, never the login-protected body or 
   const seo = postSeo(post, '밴쿠버');
   assert.equal(seo.canonical, `${PUBLIC_SITE}/post?id=${post.id}`);
   assert.equal(seo.source, `${PUBLIC_SOURCE}?format=markdown&id=${post.id}`);
-  assert.ok(seo.description.startsWith('밴쿠버 · 비즈니스 · 로그인 후'));
+  assert.ok(seo.description.startsWith('밴쿠버 · 비즈니스 · 로그인하면'));
   const main = seo.schema.mainEntity;
   assert.equal(main['@type'], 'WebPage');
   assert.ok(!('author' in main));
@@ -34,4 +37,40 @@ test('JSON-LD를 탈출하는 글도 사용자 원문을 바꾸지 않고 안전
 test('사진 서명 실패 자리의 빈 URL은 공개 검색 메타데이터에 넣지 않는다', () => {
   assert.deepEqual(postSeo({ ...post, imageUris: ['', post.imageUris[0], ''] }).schema.mainEntity.image, post.imageUris);
   assert.ok(!('image' in postSeo({ ...post, imageUris: ['', ''] }).schema.mainEntity));
+});
+
+test('the exact Korean and English web names follow the existing saved/device language priority', () => {
+  assert.equal(typeof publicSeo.publicSiteName, 'function');
+  for (const [saved, device, expected] of [
+    ['system', ['ko-KR'], '글링 | 캐나다 모임 커뮤니티'],
+    ['system', ['en-CA'], 'Gling | Canada Meetup Community'],
+    ['en', ['ko-KR'], 'Gling | Canada Meetup Community'],
+    ['ko', ['en-CA'], '글링 | 캐나다 모임 커뮤니티'],
+    [null, ['fr-CA'], 'Gling | Canada Meetup Community'],
+    ['invalid', ['ja-JP', 'ko_KR'], '글링 | 캐나다 모임 커뮤니티'],
+  ]) {
+    const language = resolveLanguage(parseLanguagePreference(saved), device);
+    assert.equal(publicSeo.publicSiteName(language), expected);
+    assert.equal(translateUi(language, '글링 | 캐나다 모임 커뮤니티'), expected);
+  }
+  assert.equal(publicSeo.publicSiteName(), '글링 | 캐나다 모임 커뮤니티');
+});
+
+test('localized post metadata keeps original post content and existing call compatibility without exposing the body', () => {
+  const original = JSON.stringify(post);
+  for (const language of ['ko', 'en']) {
+    const seo = postSeo(post, '밴쿠버', language);
+    const site = language === 'ko' ? '글링 | 캐나다 모임 커뮤니티' : 'Gling | Canada Meetup Community';
+    assert.equal(seo.title, `${post.title} | ${site}`);
+    assert.equal(seo.schema.inLanguage, language);
+    assert.equal(seo.schema.mainEntity.inLanguage, language);
+    assert.equal(seo.schema.mainEntity.headline, post.title);
+    assert.equal(seo.schema.breadcrumb.itemListElement[0].name, site);
+    assert.match(seo.description, language === 'ko' ? /전체 본문을 웹에서/ : /full public post on the web/);
+    assert.ok(!JSON.stringify(seo).includes('직접 만든 메뉴'));
+    assert.ok(!JSON.stringify(seo).includes('private-user-id'));
+    assert.equal(seo.canonical, `${PUBLIC_SITE}/post?id=${post.id}`);
+  }
+  assert.equal(postSeo(post).schema.inLanguage, 'ko');
+  assert.equal(JSON.stringify(post), original);
 });

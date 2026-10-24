@@ -147,3 +147,45 @@ test('curated reasons use language en with locale en-CA, preserving Korean and m
     }
   }
 });
+
+test('place saving passes the raw canonical identity and city without a client business alias', () => {
+  const file = parse('src/app/places/[id].tsx');
+  const expression = nodes(file, node => ts.isCallExpression(node) && node.expression.getText(file) === 'useSavedEntry')[0];
+  const place = { id: 'osm:way:37063023', cityId: 'vancouver', name: 'Stanley Park' };
+  const result = evaluate(expression.getText(file), { place, city: { id: 'vancouver' }, useSavedEntry: (target, visible) => ({ target, visible }) });
+  assert.deepEqual(JSON.parse(JSON.stringify(result)), { target: { kind: 'place', id: place.id, cityId: place.cityId }, visible: true });
+});
+
+test('late place-to-business links cannot redirect a new viewer, target, city, visibility or focus scope', async () => {
+  const file = parse('src/app/places/[id].tsx');
+  const layout = nodes(file, node => ts.isCallExpression(node) && node.expression.getText(file) === 'useLayoutEffect' && node.getText(file).includes('linkScope'))[0];
+  const lookup = nodes(file, node => ts.isCallExpression(node) && node.expression.getText(file) === 'useEffect' && node.getText(file).includes('loadCityBusinessLinks'))[0];
+  for (const boundary of ['viewer', 'target', 'city', 'visibility', 'focus', 'auth-loading']) {
+    const pending = [], routes = [], effects = [], dependencies = [], cleanup = [];
+    let index = 0;
+    const register = immediate => (fn, deps) => {
+      const slot = index++;
+      if (dependencies[slot] && deps.every((value, i) => Object.is(value, dependencies[slot][i]))) return;
+      dependencies[slot] = deps;
+      const apply = () => { cleanup[slot]?.(); cleanup[slot] = fn(); };
+      if (immediate) apply(); else effects.push(apply);
+    };
+    const context = { targetId: 'osm:node:42', loadedCityId: 'vancouver', userId: 'viewer', isFocused: true, isAuthLoading: false,
+      hidden: () => false, linkScope: { current: null }, supabase: {}, AbortController,
+      router: { replace: route => routes.push(route) }, loadCityBusinessLinks: () => new Promise(resolve => pending.push(resolve)),
+      useLayoutEffect: register(true), useEffect: register(false) };
+    vm.runInNewContext(ts.transpileModule(`globalThis.render=()=>{${layout.getText(file)};${lookup.getText(file)};}`, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, context);
+    context.render(); effects.splice(0).forEach(fn => fn());
+    if (boundary === 'viewer') context.userId = 'another';
+    if (boundary === 'target') context.targetId = 'osm:node:43';
+    if (boundary === 'city') context.loadedCityId = 'toronto';
+    if (boundary === 'visibility') context.hidden = () => true;
+    if (boundary === 'focus') context.isFocused = false;
+    if (boundary === 'auth-loading') context.isAuthLoading = true;
+    index = 0; context.render();
+    // Resolve between layout and passive cleanup, before the old AbortController is cancelled.
+    pending[0]({ 'osm:node:42': 'old-business' }); await new Promise(setImmediate);
+    assert.equal(routes.length, 0, boundary);
+    effects.splice(0).forEach(fn => fn()); cleanup.forEach(fn => fn?.());
+  }
+});
