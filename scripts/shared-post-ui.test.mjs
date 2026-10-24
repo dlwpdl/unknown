@@ -82,6 +82,7 @@ function mount(file, name, data = {}, props = {}) {
     '@react-native-async-storage/async-storage': { __esModule: true, default: nativeStorage },
     '@/lib/shared-post-return': sharedPostReturn,
     'expo-router/head': { default: 'Head' },
+    '@/components/public-web/metadata': { generatePrivateMetadata: () => ({ robots: 'noindex, nofollow' }) },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' }, '@/components/themed-text': { ThemedText: 'Text' },
     '@/components/themed-view': { ThemedView: 'View' }, '@/components/gling-loader': { GlingLoader: 'Loader' }, '@/components/state-card': { StateCard: 'StateCard' },
     '@/components/post-body': { PostBody: 'PostBody' },

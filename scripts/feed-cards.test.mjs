@@ -245,9 +245,9 @@ test('city picker location row discloses before collecting and hides in the post
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
   });
   const list = props => nodes(CityPicker(props)).find(node => node.type === 'SectionList').props;
-  assert.equal(list({ onClose() {}, draft: { city: CITIES[0], onSelect() {} } }).ListHeaderComponent, null, 'the post-city sheet must not offer GPS lookup');
+  assert.equal(list({ onClose() {}, draft: { city: CITIES[0], onSelect() {} } }).ListHeaderComponent, undefined, 'the post-city sheet must not offer GPS lookup');
   auth.isAuthed = false;
-  assert.equal(list({ onClose() {} }).ListHeaderComponent, null, 'signed-out members see no GPS row');
+  assert.equal(list({ onClose() {} }).ListHeaderComponent, undefined, 'signed-out members see no GPS row');
   auth.isAuthed = true;
   const row = () => nodes(list({ onClose() {} }).ListHeaderComponent).find(node => node.props?.accessibilityLabel === '내 위치로 찾기');
   assert.equal(text(row()), '내 위치로 찾기GPS로 가까운 도시를 한 번만 확인해요');

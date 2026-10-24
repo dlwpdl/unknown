@@ -1,0 +1,3 @@
+Search places, businesses, posts and meetups in your city in one place.
+Discover nearby recommendations with approximate distances.
+We improved Saved and shared posts, and reduced unnecessary work in chats, notifications, maps and photo loading.

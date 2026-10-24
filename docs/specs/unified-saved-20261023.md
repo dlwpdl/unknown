@@ -51,3 +51,7 @@ Meaningful tests cover: retaining old saves, save/remove/reload, unauthenticated
 ## Boundaries
 
 Always validate inputs, permissions and current target visibility; keep user and production data intact; verify before committing. Technical choices inside the approved feature use existing patterns and supervisor review. Never change auth roles, forge sessions, send messages, create customer content, add dependencies, apply production migrations or submit another store build for this task. No AI/photo generation is involved.
+
+## Release authorization update — 2026-10-23
+
+The owner authorized completion of all four audited performance fixes followed by Apple and Google submission as 1.4.4. This supersedes the earlier release hold in this document. The Saved migration was applied and independently checked; final integrated SDK58 verification and actual store receipts remain release requirements. Existing public-version availability gates stay unchanged.
