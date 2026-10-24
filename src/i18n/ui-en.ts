@@ -142,6 +142,7 @@ export const uiEnglish: Record<string, string> = {
   "{0} 장소 정보와 글링 리뷰": "{0} place details and Gling reviews",
   "글링 평균 {0}점, 10점 만점": "Gling average {0} out of 10",
   "도시 경계 안의 장소": "Places within the city",
+  "도시와 인근 지역의 장소": "Places in the city and nearby areas",
   "도심 주변의 장소": "Places around the city centre",
   "대화 프로필 선택: {0}": "Choose messaging profile: {0}",
   "비즈니스 대화함": "Business inbox",

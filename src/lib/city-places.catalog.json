@@ -7253,6 +7253,214 @@
           "sourceUrl": "https://www.openstreetmap.org/node/1128724571",
           "verifiedAt": "2026-10-14T03:06:56Z"
         }
+      ],
+      "regionalPlaces": [
+        {
+          "id": "osm:way:41745659",
+          "cityId": "vancouver",
+          "name": "Town Centre Park",
+          "category": "places",
+          "latitude": 49.2893385,
+          "longitude": -122.7863256,
+          "address": "1299 Pinetree Way, Coquitlam, BC, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/41745659",
+          "website": "https://www.coquitlam.ca/Facilities/Facility/Details/Town-Centre-Park-84",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:41843304",
+          "cityId": "vancouver",
+          "name": "Como Lake Park",
+          "category": "places",
+          "latitude": 49.2600489,
+          "longitude": -122.8585922,
+          "address": "700 Gatensbury Street, Coquitlam, BC, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/41843304",
+          "website": "https://www.coquitlam.ca/Facilities/Facility/Details/Como-Lake-Park-26",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:41841917",
+          "cityId": "vancouver",
+          "name": "Blue Mountain Park",
+          "category": "places",
+          "latitude": 49.2527042,
+          "longitude": -122.8662128,
+          "address": "975 King Albert Avenue, Coquitlam, BC, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/41841917",
+          "website": "https://www.coquitlam.ca/Facilities/Facility/Details/Blue-Mountain-Park-18",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:1004996176",
+          "cityId": "vancouver",
+          "name": "Mundy Park",
+          "category": "places",
+          "latitude": 49.2565484,
+          "longitude": -122.8256655,
+          "address": "641 Hillcrest Street, Coquitlam, BC, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/1004996176",
+          "website": "https://www.coquitlam.ca/Facilities/Facility/Details/Mundy-Park-59",
+          "openingHours": null
+        },
+        {
+          "id": "osm:relation:21109172",
+          "cityId": "vancouver",
+          "name": "Minnekhada Regional Park",
+          "category": "places",
+          "latitude": 49.3075209,
+          "longitude": -122.7003748,
+          "address": "Quarry Road entrance, Coquitlam, BC, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/relation/21109172",
+          "website": "https://metrovancouver.org/services/regional-parks/park/minnekhada-regional-park",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:42472552",
+          "cityId": "vancouver",
+          "name": "Gates Park",
+          "category": "places",
+          "latitude": 49.2559605,
+          "longitude": -122.7933997,
+          "address": "2300 Reeve Street, Port Coquitlam, BC, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/42472552",
+          "website": "https://www.portcoquitlam.ca/recreation-parks/parks-trails/parks-directory/gates-park",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:212904864",
+          "cityId": "vancouver",
+          "name": "Lions Park",
+          "category": "places",
+          "latitude": 49.2669084,
+          "longitude": -122.7794333,
+          "address": "2300 Lions Way, Port Coquitlam, BC, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/212904864",
+          "website": "https://www.portcoquitlam.ca/recreation-parks/parks-trails/parks-directory/lions-park",
+          "openingHours": null
+        },
+        {
+          "id": "osm:relation:1304120",
+          "cityId": "vancouver",
+          "name": "Queen's Park",
+          "category": "places",
+          "latitude": 49.2150864,
+          "longitude": -122.9064433,
+          "address": "Queen's Park, New Westminster, BC, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/relation/1304120",
+          "website": "https://www.newwestcity.ca/parks-and-recreation/parks/community-parks/articles/5437.php",
+          "openingHours": null
+        },
+        {
+          "id": "osm:way:170530924",
+          "cityId": "vancouver",
+          "name": "Westminster Pier Park",
+          "category": "places",
+          "latitude": 49.2032338,
+          "longitude": -122.9055747,
+          "address": "Westminster Pier Park, Fourth Street / Sixth Street overpass access, New Westminster, BC, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/way/170530924",
+          "website": "https://www.newwestcity.ca/parks-and-recreation/parks/community-parks/articles/5429.php",
+          "openingHours": null
+        },
+        {
+          "id": "osm:node:9381204484",
+          "cityId": "vancouver",
+          "name": "Port Coquitlam Cenotaph",
+          "category": "places",
+          "latitude": 49.2623815,
+          "longitude": -122.7809581,
+          "address": "Veterans Park, 2580 Shaughnessy Street, Port Coquitlam, BC, Canada",
+          "sourceUrl": "https://www.openstreetmap.org/node/9381204484",
+          "website": "https://www.portcoquitlam.ca/recreation-parks/parks-trails/parks-directory/veterans-park",
+          "openingHours": null
+        }
+      ],
+      "regionalPhotos": [
+        {
+          "cityId": "vancouver",
+          "placeId": "osm:way:41745659",
+          "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/Lafarge_Lake_in_the_fall.jpg/1920px-Lafarge_Lake_in_the_fall.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Lafarge_Lake_in_the_fall.jpg",
+          "title": "Lafarge Lake in the fall.jpg",
+          "artist": "Rajivkozhikode",
+          "discoveredVia": "Wikimedia Commons",
+          "license": "CC BY-SA 4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "imageSha256": "9e13d555504906163121994288fb18e2947f4cfe8e6520a563ce913a9f8453f8"
+        },
+        {
+          "cityId": "vancouver",
+          "placeId": "osm:way:41843304",
+          "uri": "https://upload.wikimedia.org/wikipedia/commons/3/39/Como_Lake_in_Coquitlam.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Como_Lake_in_Coquitlam.jpg",
+          "title": "Como Lake in Coquitlam.jpg",
+          "artist": "P Guildfordsry",
+          "discoveredVia": "Wikimedia Commons",
+          "license": "CC BY-SA 4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "imageSha256": "039e2fb8d5fa14e89db582b10d4ff69eeb37b36a4d6edebe375575cec8dd9863"
+        },
+        {
+          "cityId": "vancouver",
+          "placeId": "osm:way:41841917",
+          "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/01/View_of_Blue_Mountain_Park_to_the_East_-_panoramio.jpg/1920px-View_of_Blue_Mountain_Park_to_the_East_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:View_of_Blue_Mountain_Park_to_the_East_-_panoramio.jpg",
+          "title": "View of Blue Mountain Park to the East - panoramio.jpg",
+          "artist": "ChrisStubbs",
+          "discoveredVia": "Wikimedia Commons",
+          "license": "CC BY-SA 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+          "imageSha256": "50654e5cf579da90c08c9d1ad24173cbd0a7b6125be69c17daf0218d152f5453"
+        },
+        {
+          "cityId": "vancouver",
+          "placeId": "osm:relation:21109172",
+          "uri": "https://upload.wikimedia.org/wikipedia/commons/3/36/Minnekhada_Regional_Park.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Minnekhada_Regional_Park.jpg",
+          "title": "Minnekhada Regional Park.jpg",
+          "artist": "Greg Salter",
+          "discoveredVia": "Wikimedia Commons",
+          "license": "CC BY-SA 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+          "imageSha256": "9a42eafbd7a53cb750206823dccec400188595911c52ba864cbb4dfdc776883e"
+        },
+        {
+          "cityId": "vancouver",
+          "placeId": "osm:relation:1304120",
+          "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/44/Queens_Park_Rose_Garden%2C_New_Westminster_-_panoramio.jpg/1920px-Queens_Park_Rose_Garden%2C_New_Westminster_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Queens_Park_Rose_Garden,_New_Westminster_-_panoramio.jpg",
+          "title": "Queens Park Rose Garden, New Westminster - panoramio.jpg",
+          "artist": "Weixi Zeng",
+          "discoveredVia": "Wikimedia Commons",
+          "license": "CC BY-SA 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+          "imageSha256": "a2149e1b6771c6e6c82d8186e375738874390f874d97e7ded8b1e038df951c4c"
+        },
+        {
+          "cityId": "vancouver",
+          "placeId": "osm:way:170530924",
+          "uri": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d4/Westminster_Pier_Park%2C_June_2020.jpg/1920px-Westminster_Pier_Park%2C_June_2020.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Westminster_Pier_Park,_June_2020.jpg",
+          "title": "Westminster Pier Park, June 2020.jpg (archival photo)",
+          "artist": "Dennis Sylvester Hurd",
+          "discoveredVia": "Wikimedia Commons",
+          "license": "CC BY 2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+          "imageSha256": "f46a8eea4084236f70743646e7619e2a9dedff17cbf7832af7f2681db1b56526"
+        },
+        {
+          "cityId": "vancouver",
+          "placeId": "osm:node:9381204484",
+          "uri": "https://live.staticflickr.com/5488/9577330885_201ecb9d5a_b.jpg",
+          "sourceUrl": "https://www.flickr.com/photos/38601566@N00/9577330885",
+          "title": "Port Coquitlam Cenotaph",
+          "artist": "Niall Williams",
+          "discoveredVia": "Openverse",
+          "license": "CC BY-SA 2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/",
+          "imageSha256": "00490722e63200677042197971b2a2773c5390c1451003eb59366326faf7efb6"
+        }
       ]
     },
     "montreal": {

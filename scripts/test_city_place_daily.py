@@ -18,6 +18,85 @@ def implementation():
     return module
 
 class DailyPlaces(unittest.TestCase):
+    def test_regional_openverse_photos_keep_existing_flickr_identity_and_licence_guards(self):
+        m = implementation(); seed, osm, now = self.fixture()
+        seed['cities']['vancouver']['regionalPlaces'] = []
+        row = dict(cityId='vancouver',placeId='osm:node:1',title='Fixture photo',artist='Fixture artist',discoveredVia='Openverse',license='CC BY-SA 2.0',licenseUrl='https://creativecommons.org/licenses/by-sa/2.0/',uri='https://live.staticflickr.com/5488/9577330885_201ecb9d5a_b.jpg',sourceUrl='https://www.flickr.com/photos/38601566@N00/9577330885',imageSha256='a'*64)
+        seed['cities']['vancouver']['regionalPhotos'] = [row]
+        self.assertEqual(m.build_catalog(seed,osm,now)['cities']['vancouver']['regionalPhotos'],[row])
+        for key,value in [('uri','https://live.staticflickr.com/5488/9577330886_201ecb9d5a_b.jpg'),('licenseUrl','https://creativecommons.org/licenses/by/2.0/'),('sourceUrl','https://example.org/photos/38601566@N00/9577330885'),('uri',row['uri']+'?untrusted=1')]:
+            bad = json.loads(json.dumps(seed)); bad['cities']['vancouver']['regionalPhotos'][0][key] = value
+            with self.assertRaises(ValueError): m.build_catalog(bad,osm,now)
+
+    def test_today_guard_stops_before_seed_credentials_collection_or_publication(self):
+        m = implementation()
+        with tempfile.TemporaryDirectory() as target:
+            with patch.object(sys, 'argv', ['refresh-city-places.py','--publish','--seed',str(Path(target)/'not-read.json'),'--output',target]), patch.object(m, 'current_catalog', return_value={'collectedAt':m.datetime.now(m.timezone.utc).isoformat()}), patch.object(m, 'operations_token') as credential, patch.object(m, 'collect') as collect, patch.object(m, 'publish') as publish:
+                m.main()
+            credential.assert_not_called(); collect.assert_not_called(); publish.assert_not_called()
+            self.assertFalse((Path(target)/'attempt.json').exists())
+
+    def test_timed_out_publication_is_read_back_once_and_never_retried(self):
+        m = implementation(); seed = json.loads((ROOT/'src/lib/city-places.catalog.json').read_text()); written = {}
+        facts = {p['id']:p for city in seed['cities'].values() for p in [*city['places'], *city.get('regionalPlaces', [])]}
+        osm = [dict(type=p['id'].split(':')[1],id=int(p['id'].split(':')[2]),center={'lat':p['latitude'],'lon':p['longitude']},tags={'name':p['name']}) for p in facts.values()]
+        def timed_out(payload, token):
+            self.assertEqual(token, 'fixture-token'); written['payload'] = payload
+            raise TimeoutError('fixture response lost after write')
+        with tempfile.TemporaryDirectory() as target:
+            path = Path(target)/'seed.json'; path.write_text(json.dumps(seed))
+            with patch.object(sys, 'argv', ['refresh-city-places.py','--publish','--seed',str(path),'--output',target]), patch.object(m, 'current_catalog', side_effect=lambda:written.get('payload',seed)) as readback, patch.object(m, 'operations_token', return_value='fixture-token'), patch.object(m, 'collect', return_value={'elements':osm}), patch.object(m, 'publish', side_effect=timed_out) as publish:
+                m.main()
+            self.assertEqual(publish.call_count, 1); self.assertEqual(readback.call_count, 2)
+            self.assertTrue((Path(target)/'attempt.json').exists())
+            self.assertEqual(len(written['payload']['cities']['vancouver']['places']),200)
+
+    def test_newer_seed_omission_preserves_prior_regional_fields_without_enlarging_legacy_arrays(self):
+        m = implementation(); previous = json.loads((ROOT/'src/lib/city-places.catalog.json').read_text())
+        previous['collectedAt'] = '2026-10-21T00:00:00Z'
+        seed = json.loads(json.dumps(previous)); seed['selectionRevision'] += 1
+        del seed['cities']['vancouver']['regionalPlaces']; del seed['cities']['vancouver']['regionalPhotos']
+        facts = {p['id']:p for city in previous['cities'].values() for p in [*city['places'], *city.get('regionalPlaces', [])]}
+        osm = [dict(type=p['id'].split(':')[1], id=int(p['id'].split(':')[2]), center={'lat':p['latitude'],'lon':p['longitude']}, tags={'name':p['name']}) for p in facts.values()]
+        with tempfile.TemporaryDirectory() as target:
+            path = Path(target)/'seed.json'; path.write_text(json.dumps(seed))
+            with patch.object(sys, 'argv', ['refresh-city-places.py','--seed',str(path),'--output',target]), patch.object(m, 'current_catalog', return_value=previous), patch.object(m, 'collect', return_value={'elements':osm}) as collect:
+                m.main()
+            admitted = collect.call_args.args[0]['cities']['vancouver']
+            self.assertEqual(admitted['regionalPlaces'], previous['cities']['vancouver']['regionalPlaces'])
+            payload = json.loads(next(Path(target).glob('catalog-*.json')).read_text())
+            self.assertEqual(len(payload['cities']['vancouver']['places']), 200)
+            self.assertEqual(len(payload['cities']['vancouver']['regionalPlaces']), len(previous['cities']['vancouver']['regionalPlaces']))
+            self.assertEqual(payload['cities']['vancouver']['regionalPhotos'], previous['cities']['vancouver']['regionalPhotos'])
+        seed['cities']['vancouver']['regionalPlaces'] = []
+        seed['cities']['vancouver']['regionalPhotos'] = []
+        self.assertEqual(m.build_catalog(seed, [row for row in osm if f"osm:{row['type']}:{row['id']}" not in {p['id'] for p in previous['cities']['vancouver']['regionalPlaces']}], '2026-10-24T00:00:00Z')['cities']['vancouver']['regionalPlaces'], [])
+
+    def test_regional_extension_is_collected_validated_and_preserves_real_municipality(self):
+        m = implementation(); seed, osm, now = self.fixture()
+        regional = dict(seed['cities']['vancouver']['places'][0], id='osm:node:2', name='Regional Park', address='123 Real Street, Coquitlam, BC, Canada', sourceUrl='https://www.openstreetmap.org/node/2')
+        city = seed['cities']['vancouver']; city['regionalPlaces'] = [regional]
+        city['regionalPhotos'] = [dict(cityId='vancouver', placeId=regional['id'], artist='Fixture artist', imageSha256='a'*64, license='CC BY-SA 4.0', uri='https://upload.wikimedia.org/wikipedia/commons/a/ab/Fixture.jpg', sourceUrl='https://commons.wikimedia.org/wiki/File:Fixture.jpg', licenseUrl='https://creativecommons.org/licenses/by-sa/4.0/')]
+        osm += [dict(type='node', id=2, lat=49.3, lon=-122.8, tags={'name':'Regional Park','addr:street':'Real Street','addr:housenumber':'123'})]
+        with patch.object(m, 'http', return_value={'elements':osm}) as request:
+            m.collect(seed)
+            self.assertIn('node%28id%3A1%2C2%29', request.call_args.args[1].decode())
+        result = m.build_catalog(seed, osm, now)['cities']['vancouver']
+        self.assertEqual(len(result['places']), 1)
+        self.assertEqual(result['regionalPlaces'][0]['address'], regional['address'])
+        self.assertEqual(result['regionalPlaces'][0]['latitude'], 49.3)
+        self.assertEqual(result['regionalPhotos'], city['regionalPhotos'])
+        self.assertEqual(city['places'][0]['id'], 'osm:node:1')
+        for field, value in [('cityId', 'toronto'), ('latitude', float('nan')), ('sourceUrl', 'https://example.org/forged')]:
+            bad = json.loads(json.dumps(seed)); bad['cities']['vancouver']['regionalPlaces'][0][field] = value
+            with self.assertRaises(ValueError): m.build_catalog(bad, osm, now)
+        bad = json.loads(json.dumps(seed)); bad['cities']['vancouver']['regionalPhotos'][0]['license'] = 'Unverified'
+        with self.assertRaises(ValueError): m.build_catalog(bad, osm, now)
+        closed = json.loads(json.dumps(osm)); closed[-1]['tags']['closed'] = 'yes'
+        removed = m.build_catalog(seed, closed, now)['cities']['vancouver']
+        self.assertEqual(removed['regionalPlaces'], [])
+        self.assertEqual(removed['regionalPhotos'], [])
+
     def fixture(self):
         now = '2026-10-18T01:00:00+00:00'
         place = dict(id='osm:node:1', cityId='vancouver', name='Verified Cafe', category='cafe', latitude=49.28, longitude=-123.12, address='Address', sourceUrl='https://www.openstreetmap.org/node/1')

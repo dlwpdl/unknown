@@ -27,12 +27,48 @@ def instant(value):
 def day(value):
     return instant(value).astimezone(ZoneInfo('America/Vancouver')).date().isoformat()
 
+def validate_flickr_photo(row, city_id, ids, discovery):
+    fields = ['cityId', 'placeId', 'artist', 'title', 'discoveredVia', 'imageSha256', 'license', 'uri', 'sourceUrl', 'licenseUrl']
+    if not isinstance(row, dict) or not all(isinstance(row.get(k), str) for k in fields): raise ValueError('INVALID_ADDITIONAL_PHOTOS')
+    if row['cityId'] != city_id or row['placeId'] not in ids or row['discoveredVia'] != discovery: raise ValueError('INVALID_ADDITIONAL_PHOTOS')
+    if any(not row[k].strip() or len(row[k]) > 1000 or re.search(r'[\x00-\x1f\x7f]', row[k]) for k in ['artist', 'title']) or not re.fullmatch('[a-f0-9]{64}', row['imageSha256']): raise ValueError('INVALID_ADDITIONAL_PHOTOS')
+    try:
+        if any(not https(row[k]) or re.search(r'[\x00-\x1f\x7f]', row[k]) for k in ['uri', 'sourceUrl', 'licenseUrl']): raise ValueError('INVALID_ADDITIONAL_PHOTOS')
+        image, source, license = (urlsplit(row[k]) for k in ['uri', 'sourceUrl', 'licenseUrl'])
+        if any(u.port not in [None, 443] or u.query or u.fragment for u in [image, source, license]): raise ValueError('INVALID_ADDITIONAL_PHOTOS')
+    except ValueError:
+        raise ValueError('INVALID_ADDITIONAL_PHOTOS') from None
+    image_id = re.fullmatch(r'/\d+/([1-9]\d*)_[a-f0-9]+(?:_[a-z0-9]+)?\.(?:jpe?g|png)', image.path, re.I)
+    source_id = re.fullmatch(r'/photos/[^/]+/([1-9]\d*)/?', source.path)
+    cc = re.fullmatch(r'CC BY(-SA)? ([234]\.0|2\.5)', row['license'])
+    license_path = '/publicdomain/zero/1.0' if row['license'] == 'CC0' else '/publicdomain/mark/1.0' if row['license'] == 'Public domain' else f'/licenses/by{"-sa" if cc[1] else ""}/{cc[2]}' if cc else None
+    if image.hostname != 'live.staticflickr.com' or source.hostname != 'www.flickr.com' or not image_id or not source_id or image_id[1] != source_id[1] or license.hostname != 'creativecommons.org' or not license_path or license.path.removesuffix('/') != license_path: raise ValueError('INVALID_ADDITIONAL_PHOTOS')
+
+def validate_photos(rows, city_id, ids, allow_flickr=False):
+    if not isinstance(rows, list) or len(rows) > 200: raise ValueError('INVALID_PLACE_PHOTOS')
+    seen = set()
+    for row in rows:
+        if not isinstance(row, dict) or row.get('cityId') != city_id or row.get('placeId') not in ids or row['placeId'] in seen: raise ValueError('INVALID_PLACE_PHOTOS')
+        if allow_flickr and row.get('discoveredVia') in ['Openverse', 'Flickr']:
+            validate_flickr_photo(row, city_id, ids, row['discoveredVia'])
+            seen.add(row['placeId']); continue
+        if not isinstance(row.get('artist'), str) or not row['artist'].strip() or len(row['artist']) > 1000 or not re.fullmatch('[a-f0-9]{64}', row.get('imageSha256', '')): raise ValueError('INVALID_PLACE_PHOTOS')
+        if not all(https(row.get(k)) for k in ['uri', 'sourceUrl', 'licenseUrl']): raise ValueError('INVALID_PLACE_PHOTOS')
+        image, source, license = (urlsplit(row[k]) for k in ['uri', 'sourceUrl', 'licenseUrl'])
+        if row.get('discoveredVia') == 'Business site':
+            if row.get('license') != 'Business-provided photo' or row['licenseUrl'] != row['sourceUrl']: raise ValueError('INVALID_PLACE_PHOTOS')
+        elif not re.fullmatch(r'(CC BY(?:-SA)? (?:[234]\.0|2\.5)|CC0|Public domain)', row.get('license', '')) or image.hostname not in ['thumb.wikimedia.org', 'upload.wikimedia.org'] or not image.path.startswith('/wikipedia/commons/') or source.hostname != 'commons.wikimedia.org' or not source.path.startswith('/wiki/File:') or license.hostname != 'creativecommons.org' or not re.match(r'^/(licenses|publicdomain)/', license.path): raise ValueError('INVALID_PLACE_PHOTOS')
+        seen.add(row['placeId'])
+
 def build_catalog(seed, elements, now):
     if seed.get('recommendationTheme') != 'photo-spots': raise ValueError('PHOTO_SELECTION_REQUIRED')
     selection_revision = seed.get('selectionRevision', 0)
     if type(selection_revision) is not int or not 0 <= selection_revision <= 9007199254740991: raise ValueError('INVALID_SELECTION_REVISION')
     if not elements: raise ValueError('EMPTY_OSM_RESPONSE')
-    expected = {p['id'] for city in seed['cities'].values() for p in city['places']}
+    for city in seed['cities'].values():
+        rows = city.get('regionalPlaces', [])
+        if not isinstance(rows, list) or len(rows) > 200 or any(not isinstance(p, dict) or not isinstance(p.get('id'), str) for p in rows): raise ValueError('INVALID_PLACE_CATALOG')
+    expected = {p['id'] for city in seed['cities'].values() for p in [*city['places'], *city.get('regionalPlaces', [])]}
     indexed = {}
     for element in elements:
         if not isinstance(element, dict): raise ValueError('INVALID_OSM_RESPONSE')
@@ -44,8 +80,11 @@ def build_catalog(seed, elements, now):
     result = dict(collectedAt=now, selectionRevision=selection_revision, recommendationTheme='photo-spots', source='OpenStreetMap; source-reviewed Gling photo spots', license='ODbL-1.0',
                   attribution='© OpenStreetMap contributors', attributionUrl='https://www.openstreetmap.org/copyright', cities={})
     for city_id, city in seed['cities'].items():
-        places, eligible = [], set()
-        for original in city['places']:
+        places, regional_places, eligible = [], [], set()
+        regional = city.get('regionalPlaces', [])
+        if not isinstance(regional, list) or len(regional) > 200 or len({p['id'] for p in regional}) != len(regional): raise ValueError('INVALID_PLACE_CATALOG')
+        base_ids = {p['id'] for p in city['places']}
+        for is_regional, original in [(False, p) for p in city['places']] + [(True, p) for p in regional]:
             ident = original['id']
             if not re.fullmatch(r'osm:(node|way|relation):[1-9]\d*', ident) or original['cityId'] != city_id: raise ValueError('INVALID_PLACE_IDENTITY')
             p = {k: original.get(k) for k in ['id','cityId','name','category','latitude','longitude','address','sourceUrl','website','openingHours']}
@@ -65,16 +104,20 @@ def build_catalog(seed, elements, now):
                 website = tags.get('website', tags.get('contact:website'))
                 if https(website): p['website'] = website
                 street, number = tags.get('addr:street'), tags.get('addr:housenumber')
-                if all(isinstance(v, str) and 0 < len(v) <= 300 and not re.search(r'[\x00-\x1f\x7f]', v) for v in [street, number]):
+                if ident in base_ids and all(isinstance(v, str) and 0 < len(v) <= 300 and not re.search(r'[\x00-\x1f\x7f]', v) for v in [street, number]):
                     p['address'] = (number+' '+street)[:1000]
                 closed = any(tags.get(k) == 'yes' for k in ['disused','abandoned','demolished','closed']) or any(k in tags for k in ['disused:amenity','abandoned:amenity','demolished:amenity'])
                 names = [tags.get(k) for k in ['name','name:en','name:fr','official_name','brand']]
                 if tags.get('bridge') == 'yes': names.append(tags.get('bridge:name'))
                 renamed = p['name'].casefold() not in [v.casefold() for v in names if isinstance(v, str)]
                 if not closed and not renamed and tags.get('access') not in ['private','no'] and hours not in ['closed','off']: eligible.add(ident)
-            places.append(p)
+            if not is_regional: places.append(p)
+            elif ident not in base_ids and ident in eligible:
+                # Keep the reviewed municipality suffix; regional facts are not city-boundary claims.
+                regional_places.append(p)
         if len({p['id'] for p in places}) != len(places) or not places or len(places) > 200: raise ValueError('INVALID_PLACE_CATALOG')
         result['cities'][city_id] = dict(coverage=city['coverage'], places=places)
+        if 'regionalPlaces' in city: result['cities'][city_id]['regionalPlaces'] = regional_places
         for field in ['recommendations', *(['diningRecommendations'] if 'diningRecommendations' in city else [])]:
             picks = city.get(field, [])
             if not isinstance(picks, list) or len(picks) > (200 if field == 'diningRecommendations' else 50): raise ValueError('CITY_RECOMMENDATIONS_NOT_VERIFIED')
@@ -92,21 +135,17 @@ def build_catalog(seed, elements, now):
                         selected_pick['reasonEn'] = pick['reasonEn']
                     reviewed.append(selected_pick)
             result['cities'][city_id][field] = reviewed
+    for city_id, city in seed['cities'].items():
+        if 'regionalPhotos' in city:
+            rows = city['regionalPhotos']
+            validate_photos(rows, city_id, {p['id'] for p in city.get('regionalPlaces', [])} | {p['id'] for p in city['places']}, allow_flickr=True)
+            current = {p['id'] for p in result['cities'][city_id].get('regionalPlaces', [])} | {p['id'] for p in result['cities'][city_id]['places']}
+            result['cities'][city_id]['regionalPhotos'] = deepcopy([photo for photo in rows if photo['placeId'] in current])
     if 'photoCatalog' in seed:
         metadata = seed['photoCatalog']
         if not isinstance(metadata, dict) or not isinstance(metadata.get('cities'), dict) or set(metadata['cities']) != set(seed['cities']): raise ValueError('INVALID_PLACE_PHOTOS')
         for city_id, rows in metadata['cities'].items():
-            if not isinstance(rows, list) or len(rows) > 200: raise ValueError('INVALID_PLACE_PHOTOS')
-            ids, seen = {p['id'] for p in seed['cities'][city_id]['places']}, set()
-            for row in rows:
-                if not isinstance(row, dict) or row.get('cityId') != city_id or row.get('placeId') not in ids or row['placeId'] in seen: raise ValueError('INVALID_PLACE_PHOTOS')
-                if not isinstance(row.get('artist'), str) or not row['artist'].strip() or len(row['artist']) > 1000 or not re.fullmatch('[a-f0-9]{64}', row.get('imageSha256', '')): raise ValueError('INVALID_PLACE_PHOTOS')
-                if not all(https(row.get(k)) for k in ['uri', 'sourceUrl', 'licenseUrl']): raise ValueError('INVALID_PLACE_PHOTOS')
-                image, source, license = (urlsplit(row[k]) for k in ['uri', 'sourceUrl', 'licenseUrl'])
-                if row.get('discoveredVia') == 'Business site':
-                    if row.get('license') != 'Business-provided photo' or row['licenseUrl'] != row['sourceUrl']: raise ValueError('INVALID_PLACE_PHOTOS')
-                elif not re.fullmatch(r'(CC BY(?:-SA)? (?:[234]\.0|2\.5)|CC0|Public domain)', row.get('license', '')) or image.hostname not in ['thumb.wikimedia.org', 'upload.wikimedia.org'] or not image.path.startswith('/wikipedia/commons/') or source.hostname != 'commons.wikimedia.org' or not source.path.startswith('/wiki/File:') or license.hostname != 'creativecommons.org' or not re.match(r'^/(licenses|publicdomain)/', license.path): raise ValueError('INVALID_PLACE_PHOTOS')
-                seen.add(row['placeId'])
+            validate_photos(rows, city_id, {p['id'] for p in seed['cities'][city_id]['places']})
         for field, discovery in [('additionalCatalog', 'Openverse'), ('flickrCatalog', 'Flickr')]:
             if field in metadata:
                 extra = metadata[field]
@@ -115,21 +154,8 @@ def build_catalog(seed, elements, now):
                     if city_id not in seed['cities'] or not isinstance(rows, list) or len(rows) > 200: raise ValueError('INVALID_ADDITIONAL_PHOTOS')
                     ids, seen = {p['id'] for p in seed['cities'][city_id]['places']}, set()
                     for row in rows:
-                        fields = ['cityId', 'placeId', 'artist', 'title', 'discoveredVia', 'imageSha256', 'license', 'uri', 'sourceUrl', 'licenseUrl']
-                        if not isinstance(row, dict) or not all(isinstance(row.get(k), str) for k in fields): raise ValueError('INVALID_ADDITIONAL_PHOTOS')
-                        if row['cityId'] != city_id or row['placeId'] not in ids or row['placeId'] in seen or row['discoveredVia'] != discovery: raise ValueError('INVALID_ADDITIONAL_PHOTOS')
-                        if any(not row[k].strip() or len(row[k]) > 1000 or re.search(r'[\x00-\x1f\x7f]', row[k]) for k in ['artist', 'title']) or not re.fullmatch('[a-f0-9]{64}', row['imageSha256']): raise ValueError('INVALID_ADDITIONAL_PHOTOS')
-                        try:
-                            if any(not https(row[k]) or re.search(r'[\x00-\x1f\x7f]', row[k]) for k in ['uri', 'sourceUrl', 'licenseUrl']): raise ValueError('INVALID_ADDITIONAL_PHOTOS')
-                            image, source, license = (urlsplit(row[k]) for k in ['uri', 'sourceUrl', 'licenseUrl'])
-                            if any(u.port not in [None, 443] or u.query or u.fragment for u in [image, source, license]): raise ValueError('INVALID_ADDITIONAL_PHOTOS')
-                        except ValueError:
-                            raise ValueError('INVALID_ADDITIONAL_PHOTOS') from None
-                        image_id = re.fullmatch(r'/\d+/([1-9]\d*)_[a-f0-9]+(?:_[a-z0-9]+)?\.(?:jpe?g|png)', image.path, re.I)
-                        source_id = re.fullmatch(r'/photos/[^/]+/([1-9]\d*)/?', source.path)
-                        cc = re.fullmatch(r'CC BY(-SA)? ([234]\.0|2\.5)', row['license'])
-                        license_path = '/publicdomain/zero/1.0' if row['license'] == 'CC0' else '/publicdomain/mark/1.0' if row['license'] == 'Public domain' else f'/licenses/by{"-sa" if cc[1] else ""}/{cc[2]}' if cc else None
-                        if image.hostname != 'live.staticflickr.com' or source.hostname != 'www.flickr.com' or not image_id or not source_id or image_id[1] != source_id[1] or license.hostname != 'creativecommons.org' or not license_path or license.path.removesuffix('/') != license_path: raise ValueError('INVALID_ADDITIONAL_PHOTOS')
+                        validate_flickr_photo(row, city_id, ids, discovery)
+                        if row['placeId'] in seen: raise ValueError('INVALID_ADDITIONAL_PHOTOS')
                         seen.add(row['placeId'])
         result['photoCatalog'] = deepcopy(metadata)
     if 'externalRatings' in seed:
@@ -164,10 +190,10 @@ def current_catalog():
 def collect(seed):
     grouped = {kind:[] for kind in ['node','way','relation']}
     for city in seed['cities'].values():
-        for p in city['places']:
+        for p in [*city['places'], *city.get('regionalPlaces', [])]:
             match = re.fullmatch(r'osm:(node|way|relation):([1-9]\d*)', p['id'])
             if not match: raise ValueError('INVALID_PLACE_IDENTITY')
-            grouped[match[1]].append(match[2])
+            if match[2] not in grouped[match[1]]: grouped[match[1]].append(match[2])
     query = '[out:json][timeout:45][maxsize:16777216];(' + ''.join(kind+'(id:'+','.join(ids)+');' for kind, ids in grouped.items() if ids) + ');out body center;'
     response = http('https://overpass-api.de/api/interpreter', urlencode({'data':query}).encode(), {'User-Agent':'Gling-place-catalog/1.0','Content-Type':'application/x-www-form-urlencoded'})
     if response.get('remark') or not isinstance(response.get('elements'), list): raise ValueError('INVALID_OSM_RESPONSE')
@@ -220,6 +246,8 @@ def main():
         for field in ['photoCatalog', 'externalRatings']:
             if field not in seed and field in previous: seed[field] = deepcopy(previous[field])
         for city_id, city in seed['cities'].items():
+            for field in ['regionalPlaces', 'regionalPhotos']:
+                if field not in city and field in previous['cities'][city_id]: city[field] = deepcopy(previous['cities'][city_id][field])
             known = {p['id'] for p in city['places']}
             city['places'] += [p for p in previous['cities'][city_id]['places'] if p['id'] not in known]
     token = operations_token() if args.publish else None
