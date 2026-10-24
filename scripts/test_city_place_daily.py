@@ -37,9 +37,7 @@ class DailyPlaces(unittest.TestCase):
             self.assertFalse((Path(target)/'attempt.json').exists())
 
     def test_timed_out_publication_is_read_back_once_and_never_retried(self):
-        m = implementation(); seed = json.loads((ROOT/'src/lib/city-places.catalog.json').read_text()); written = {}
-        facts = {p['id']:p for city in seed['cities'].values() for p in [*city['places'], *city.get('regionalPlaces', [])]}
-        osm = [dict(type=p['id'].split(':')[1],id=int(p['id'].split(':')[2]),center={'lat':p['latitude'],'lon':p['longitude']},tags={'name':p['name']}) for p in facts.values()]
+        m = implementation(); seed, osm = self.publication_fixture(); written = {}
         def timed_out(payload, token):
             self.assertEqual(token, 'fixture-token'); written['payload'] = payload
             raise TimeoutError('fixture response lost after write')
@@ -52,12 +50,9 @@ class DailyPlaces(unittest.TestCase):
             self.assertEqual(len(written['payload']['cities']['vancouver']['places']),200)
 
     def test_newer_seed_omission_preserves_prior_regional_fields_without_enlarging_legacy_arrays(self):
-        m = implementation(); previous = json.loads((ROOT/'src/lib/city-places.catalog.json').read_text())
-        previous['collectedAt'] = '2026-10-21T00:00:00Z'
+        m = implementation(); previous, osm = self.publication_fixture()
         seed = json.loads(json.dumps(previous)); seed['selectionRevision'] += 1
         del seed['cities']['vancouver']['regionalPlaces']; del seed['cities']['vancouver']['regionalPhotos']
-        facts = {p['id']:p for city in previous['cities'].values() for p in [*city['places'], *city.get('regionalPlaces', [])]}
-        osm = [dict(type=p['id'].split(':')[1], id=int(p['id'].split(':')[2]), center={'lat':p['latitude'],'lon':p['longitude']}, tags={'name':p['name']}) for p in facts.values()]
         with tempfile.TemporaryDirectory() as target:
             path = Path(target)/'seed.json'; path.write_text(json.dumps(seed))
             with patch.object(sys, 'argv', ['refresh-city-places.py','--seed',str(path),'--output',target]), patch.object(m, 'current_catalog', return_value=previous), patch.object(m, 'collect', return_value={'elements':osm}) as collect:
@@ -71,6 +66,23 @@ class DailyPlaces(unittest.TestCase):
         seed['cities']['vancouver']['regionalPlaces'] = []
         seed['cities']['vancouver']['regionalPhotos'] = []
         self.assertEqual(m.build_catalog(seed, [row for row in osm if f"osm:{row['type']}:{row['id']}" not in {p['id'] for p in previous['cities']['vancouver']['regionalPlaces']}], '2026-10-24T00:00:00Z')['cities']['vancouver']['regionalPlaces'], [])
+
+    def publication_fixture(self):
+        seed, _, _ = self.fixture()
+        seed.update(selectionRevision=25, collectedAt='2026-10-21T00:00:00Z')
+        city = seed['cities']['vancouver']; place = city['places'][0]
+        city['places'] = [dict(place, id=f'osm:node:{i}', name=f'Fixture place {i}',
+                              sourceUrl=f'https://www.openstreetmap.org/node/{i}') for i in range(1, 201)]
+        regional = dict(place, id='osm:node:201', name='Fixture regional park',
+                        address='Real Street, Coquitlam, BC, Canada', sourceUrl='https://www.openstreetmap.org/node/201')
+        city['regionalPlaces'] = [regional]
+        city['regionalPhotos'] = [dict(self.optional_photo(), placeId=regional['id'])]
+        # Retain the supported-city contract without depending on bundled Vancouver size/revision.
+        seed['cities'] = {**json.loads((ROOT/'src/lib/city-places.catalog.json').read_text())['cities'], 'vancouver':city}
+        facts = {p['id']:p for data in seed['cities'].values() for p in [*data['places'], *data.get('regionalPlaces', [])]}
+        osm = [dict(type=p['id'].split(':')[1], id=int(p['id'].split(':')[2]),
+                    center={'lat':p['latitude'],'lon':p['longitude']}, tags={'name':p['name']}) for p in facts.values()]
+        return seed, osm
 
     def test_regional_extension_is_collected_validated_and_preserves_real_municipality(self):
         m = implementation(); seed, osm, now = self.fixture()
