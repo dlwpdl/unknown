@@ -174,7 +174,7 @@ test('reported posts and authors disappear immediately from cached public histor
   hidden.add('post:reported'); harness.render();
   assert.deepEqual(Array.from(list(harness).props.data, item => item.id), ['visible']);
   hidden.add('user:author'); harness.render();
-  assert.equal(list(harness).props.data.length, 0); assert.equal(list(harness).props.ListHeaderComponent, undefined);
+  assert.equal(list(harness).props.data.length, 0); assert.equal(list(harness).props.ListHeaderComponent, null);
 });
 
 test('older history keeps its cursor and rejects an in-flight response after changing tabs', async context => {

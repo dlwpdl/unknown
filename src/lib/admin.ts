@@ -1,5 +1,3 @@
-import type { KeyDownEvent } from 'react-native';
-
 export type ReportStatus = 'open' | 'actioned' | 'dismissed';
 export type ReportFilter = 'all' | ReportStatus;
 export type AdminSection = 'analytics' | 'webshops' | 'ticketmaster' | 'merchants' | 'creators' | 'campaigns' | 'benefits' | 'meetups' | 'overview' | 'safety' | 'alerts' | 'trending' | 'errors' | 'reports' | 'users' | 'posts' | 'conversations';
@@ -69,16 +67,14 @@ export function canUseLocalAdminPreview(dev: boolean, hostname: string) {
 }
 
 // React Native Web exposes these groups as divs, so provide their native keyboard behavior.
-export function adminOptionKeys(event: KeyDownEvent | { key: string; currentTarget: HTMLElement; preventDefault: () => void }) {
-  const key = 'key' in event ? event.key : event.nativeEvent.key;
-  const target = event.currentTarget as HTMLElement;
-  if (key === ' ') { event.preventDefault(); target.click(); return; }
-  if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(key)) return;
-  const options = Array.from(target.closest('[role="tablist"], [role="radiogroup"]')?.querySelectorAll<HTMLElement>('[role="tab"], [role="radio"]') ?? []);
+export function adminOptionKeys(event: { key: string; currentTarget: HTMLElement; preventDefault: () => void }) {
+  if (event.key === ' ') { event.preventDefault(); event.currentTarget.click(); return; }
+  if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+  const options = Array.from(event.currentTarget.closest('[role="tablist"], [role="radiogroup"]')?.querySelectorAll<HTMLElement>('[role="tab"], [role="radio"]') ?? []);
   if (!options.length) return;
   event.preventDefault();
-  const index = options.indexOf(target);
-  const next = key === 'Home' ? 0 : key === 'End' ? options.length - 1 : (index + (['ArrowLeft', 'ArrowUp'].includes(key) ? -1 : 1) + options.length) % options.length;
+  const index = options.indexOf(event.currentTarget);
+  const next = event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1 : (index + (['ArrowLeft', 'ArrowUp'].includes(event.key) ? -1 : 1) + options.length) % options.length;
   options[next].focus();
   options[next].click();
 }

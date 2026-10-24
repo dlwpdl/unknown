@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Image, type ImageSource } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
-import { FlatList, Platform, Pressable, ScrollView, Text, TextInput, View, type TextInputInstance } from 'react-native';
+import { FlatList, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 import {
@@ -139,7 +139,7 @@ export function ConversationThread({ detail, loading, error, loadingMessages, na
         list.current?.scrollToOffset({ offset: index * averageItemLength, animated: false });
         setTimeout(() => { if (scrollTarget.current === index) list.current?.scrollToIndex({ index, animated: false, viewPosition: 0.4 }); }, 100);
       }}
-      ListHeaderComponent={detail.nextCursor ? <ConversationButton testID="conversation-earlier" label={loadingMessages ? '메시지를 불러오는 중…' : '이전 메시지 더 보기'} disabled={loadingMessages} busy={loadingMessages} onPress={() => { scrollEnd.current = false; onEarlier(); }} /> : undefined}
+      ListHeaderComponent={detail.nextCursor ? <ConversationButton testID="conversation-earlier" label={loadingMessages ? '메시지를 불러오는 중…' : '이전 메시지 더 보기'} disabled={loadingMessages} busy={loadingMessages} onPress={() => { scrollEnd.current = false; onEarlier(); }} /> : null}
       ListEmptyComponent={<ConversationState title="보존된 원문 메시지가 없어요." body="감지 당시의 문구는 조사 기록에서 확인하세요." />}
       renderItem={({ item: message, index }) => {
         const sender = participant.get(message.sender_id);
@@ -187,7 +187,7 @@ export function ConversationReviewPanel({ detail, draft, saving, saveError, noti
   onSignal: (id: string) => void; onUser: (id: string) => void; loadingMessages: boolean;
 }) {
   const { play } = useInteractionFeedback();
-  const noteInput = useRef<TextInputInstance>(null);
+  const noteInput = useRef<TextInput>(null);
   const [validation, setValidation] = useState(false);
   const room = detail.conversation;
   return <View testID="conversation-inspector" accessibilityLabel="대화 조사 기록" style={[styles.review, inModal && styles.reviewInModal]}>

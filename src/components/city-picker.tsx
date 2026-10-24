@@ -85,7 +85,7 @@ export function CityPicker({ onClose, draft, title }: { onClose: () => void; dra
     </View>
     <SectionList analyticsId="components_city-picker.sectionlist.1" sections={sections} keyExtractor={item => item.id} stickySectionHeadersEnabled={false}
       keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.list}
-      ListHeaderComponent={draft || !isAuthed ? undefined : <GlassSurface tone="control" interactive style={[styles.locationRow, controlPresentation(theme, { tone: 'ghost' }).container]}>
+      ListHeaderComponent={draft || !isAuthed ? null : <GlassSurface tone="control" interactive style={[styles.locationRow, controlPresentation(theme, { tone: 'ghost' }).container]}>
         <Pressable analyticsId="components_city-picker.pressable.5" accessibilityRole="button" disabled={locationBusy} accessibilityState={{ disabled: locationBusy, busy: location.busy, expanded: locationOpen }}
           accessibilityLabel={tr("내 위치로 찾기")} onPress={onLocation}
           style={({ pressed }) => [styles.locationMain, controlPresentation(theme, { tone: 'ghost', pressed, disabled: locationBusy, busy: location.busy }).container]}>

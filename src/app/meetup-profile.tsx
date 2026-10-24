@@ -6,7 +6,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from 'expo-symbols';
-import { Alert, AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Modal, Platform, type ScrollViewInstance, StyleSheet, TextInput, UIManager, View } from 'react-native';
+import { Alert, AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Modal, Platform, ScrollView as NativeScrollView, StyleSheet, TextInput, UIManager, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
@@ -46,7 +46,7 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
   const [audience, setAudience] = useState<'host' | 'members' | 'public'>('host');
   const [tags, setTags] = useState<string[]>([]);
   const [step, setStep] = useState(0);
-  const scroll = useRef<ScrollViewInstance>(null);
+  const scroll = useRef<NativeScrollView>(null);
   const [tagDraft, setTagDraft] = useState('');
   const [tagOpen, setTagOpen] = useState(false);
   const [customOpen, setCustomOpen] = useState<'intro' | 'promptOne' | 'promptTwo' | null>(null);

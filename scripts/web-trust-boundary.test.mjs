@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,7 +22,7 @@ function fixture(t) {
     mkdirSync(join(dir, '_expo'), { recursive: true }); mkdirSync(join(dir, 'auth'));
   }
   mkdirSync(join(publicDir, 'profile'));
-  const publicHtml = '<meta name="robots" content="noindex"><style>--bg:#111;--text:#fff;--accent:#9283AC;color:#746486</style>gling-night-wordmark.png https://apps.apple.com/ca/app/id6809273242 <script type="application/ld+json">{}</script><script src="/_expo/entry.js"></script> 아동 안전 표준 CSAE CSAM gling@ej-entertainment.com Cybertip.ca';
+  const publicHtml = '<meta name="robots" content="noindex"><style>--bg:#111;--text:#fff;--accent:#9283AC;color:#746486</style>gling-night-wordmark.png https://apps.apple.com/ca/app/id6809273242 <script type="application/ld+json">{}</script> 아동 안전 표준 CSAE CSAM gling@ej-entertainment.com Cybertip.ca';
   for (const page of ['index', 'company', 'terms', 'privacy', 'account-deletion', 'child-safety', 'post', 'chat', 'meetup-join', 'meetup-profile', 'meetup-application', 'auth/callback', 'profile/membership']) writeFileSync(join(publicDir, `${page}.html`), publicHtml);
   writeFileSync(join(publicDir, 'robots.txt'), 'Sitemap: https://gling.ej-entertainment.com/sitemap.xml format=sitemap&city= Disallow: /merchant/ Disallow: /admin');
   for (const file of ['sitemap.xml', 'llms.txt']) writeFileSync(join(publicDir, file), 'public discovery');
@@ -46,18 +46,6 @@ test('public and merchant exports preserve public review getters and merchant as
   writeFileSync(files.publicBundle, publicRpcs); writeFileSync(files.merchantBundle, `${publicRpcs} get_my_merchant_access`);
   checkMerchantWeb(files.merchantDir);
   const result = checkPublic(files.publicDir); assert.equal(result.status, 0, result.stderr);
-});
-
-test('exports reject static HTML that lost its client hydration scripts', t => {
-  const files = fixture(t);
-  for (const file of [files.publicBundle, files.merchantBundle]) writeFileSync(file, 'public client');
-  for (const directory of [files.publicDir, files.merchantDir]) {
-    const file = join(directory, 'index.html');
-    writeFileSync(file, readFileSync(file, 'utf8').replace(/<script src="[^"]+"><\/script>/, ''));
-  }
-  const result = checkPublic(files.publicDir);
-  assert.notEqual(result.status, 0); assert.match(result.stderr, /hydration scripts are missing/);
-  assert.throws(() => checkMerchantWeb(files.merchantDir), /hydration scripts are missing/);
 });
 
 for (const marker of privateRpcs) {

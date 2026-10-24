@@ -3,7 +3,7 @@ import { tr } from '@/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Alert, Platform, Share, StyleSheet, TextInput, View, type KeyDownEvent } from 'react-native';
+import { Alert, Platform, Share, StyleSheet, TextInput, View } from 'react-native';
 
 import { Pressable, Switch } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
@@ -517,7 +517,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
         <View style={styles.actions}><Action label={tr(showArchived ? tr("작성 중인 원고 보기") : tr("보관한 원고 보기"))} disabled={busy} onPress={() => { setShowArchived(!showArchived); setSelection([]); }} /></View>
         {data.drafts.filter((d) => !!d.archived_at === showArchived).map((d) => <View key={d.id} style={styles.draftRow}>
           <Pressable analyticsId="merchant.select_draft" accessibilityRole="checkbox" accessibilityLabel={tr("{0} 선택", (d.title))} accessibilityState={{ checked: selection.includes(d.id), disabled: busy }} aria-checked={selection.includes(d.id)} disabled={busy} onPress={() => toggleDraft(d.id)}
-            {...(Platform.OS === 'web' ? { onKeyDown: (event: KeyDownEvent) => { if (event.nativeEvent.key === ' ') { event.preventDefault(); toggleDraft(d.id); } } } : {})}
+            {...(Platform.OS === 'web' ? { onKeyDown: (event: { key: string; preventDefault: () => void }) => { if (event.key === ' ') { event.preventDefault(); toggleDraft(d.id); } } } : {})}
             style={styles.checkbox}><ThemedText>{selection.includes(d.id) ? '☑' : '□'}</ThemedText></Pressable>
           <Pressable analyticsId="merchant.open_draft" accessibilityRole="button" accessibilityLabel={`${d.title}, ${MERCHANT_CHANNELS[d.channel]}`} disabled={busy} onPress={() => { play('selection'); void openDraft(d); }} style={styles.draftTitle}><ThemedText type="smallBold">{d.title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{MERCHANT_CHANNELS[d.channel]} · {tr(d.published_at ? tr("글링 게시됨") : d.external_url ? tr("카페 URL 기록됨") : d.approved_at ? tr("승인됨") : tr("초안"))}</ThemedText></Pressable>
         </View>)}
