@@ -191,3 +191,30 @@ test('일부 원본·썸네일 서명이 실패해도 경로와 사진 위치를
   assert.deepEqual(getPostImageSource(post, 'viewer', 'full', 3), { uri: 'signed:owner/four.webp', cacheKey: 'post-image:viewer:owner/four.webp' });
   assert.equal(getPostImageSource(post, 'other-viewer', 'feed', 1), undefined);
 });
+
+test('meetup context reads the existing public projection once without comments, business or image hydration', async () => {
+  const api = await import('../src/lib/feed-data.ts');
+  assert.equal(typeof api.loadPublicMeetupContext, 'function');
+  const calls = [], room = { id: 'room', title: 'Meetup', memberCount: 2, verifiedOnly: false, eventKind: 'group' };
+  const row = { id: 'post', city_id: 'vancouver', title: 'Meetup', body: 'Authorized introduction', room_preview: room,
+    author_id: 'canonical-public-identity', author_nickname: 'Public display name', image_paths: ['PRIVATE_UPLOAD_PATH'], owner_id: 'PRIVATE_ACTOR' };
+  const client = { rpc: async (name, params) => {
+    calls.push({ name, params });
+    if (name !== 'get_public_post') throw new Error('Unused comments or hydration must not run');
+    return { data: [row], error: null };
+  }, auth: { getSession() { throw new Error('No image/session hydration'); } }, storage: { from() { throw new Error('No image signing'); } } };
+  assert.deepEqual(await api.loadPublicMeetupContext(client, 'post'), { id: 'post', cityId: 'vancouver', title: 'Meetup', body: 'Authorized introduction', room, authorId: 'canonical-public-identity' });
+  assert.deepEqual(calls, [{ name: 'get_public_post', params: { p_post_id: 'post' } }]);
+  assert.equal(JSON.stringify(await api.loadPublicMeetupContext(client, 'post')).includes('PRIVATE_'), false);
+});
+
+test('meetup context preserves denied, non-meetup and error results without any fallback or cached identity', async () => {
+  const api = await import('../src/lib/feed-data.ts');
+  assert.equal(typeof api.loadPublicMeetupContext, 'function');
+  for (const data of [[], [{ id: 'story', room_preview: null }]]) {
+    assert.equal(await api.loadPublicMeetupContext({ rpc: async () => ({ data, error: null }) }, 'post'), null);
+  }
+  await assert.rejects(api.loadPublicMeetupContext({ rpc: async () => ({ data: [{ id: 'different', room_preview: { id: 'room' } }], error: null }) }, 'post'), /INVALID_PUBLIC_MEETUP_CONTEXT/);
+  const unavailable = Error('POST_NOT_VISIBLE');
+  await assert.rejects(api.loadPublicMeetupContext({ rpc: async () => ({ data: null, error: unavailable }) }, 'post'), error => error === unavailable);
+});

@@ -169,6 +169,17 @@ export async function loadPublicPost(client: SupabaseClient, postId: string): Pr
   return post ?? null;
 }
 
+export type PublicMeetupContext = Pick<Post, 'id' | 'cityId' | 'title' | 'body'> & { room: RoomPreview; authorId: string };
+export async function loadPublicMeetupContext(client: SupabaseClient, postId: string): Promise<PublicMeetupContext | null> {
+  const result = await client.rpc('get_public_post', { p_post_id: postId });
+  if (result.error) throw result.error;
+  const rows = (result.data ?? []) as PublicFeedRow[], row = rows[0];
+  if (!row?.room_preview) return null;
+  if (rows.length !== 1 || row.id !== postId) throw new Error('INVALID_PUBLIC_MEETUP_CONTEXT');
+  // The public RPC already masks business actors; this view needs no comments or media hydration.
+  return { id: row.id, cityId: row.city_id, title: row.title, body: row.body, room: row.room_preview, authorId: row.author_id };
+}
+
 export function mapPublicFeed(
   rows: PublicFeedRow[],
   comments: PublicCommentRow[],
