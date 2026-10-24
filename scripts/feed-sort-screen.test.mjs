@@ -22,7 +22,7 @@ function screen({ createdPost, deferPublish = false, os = 'web' } = {}) {
     react: { useState: initial => { const i = slot(initial); return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; }, useRef: initial => slots[slot(() => ({ current: initial }))], useMemo: fn => fn(), useCallback: fn => fn, useEffect: fn => effects.push(fn) },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { Platform: { OS: os }, useWindowDimensions: () => ({ width: 390, fontScale: 1 }), View: 'View', KeyboardAvoidingView: 'KeyboardAvoidingView', TextInput: 'TextInput', Modal: 'Modal', StyleSheet: { create: x => x, hairlineWidth: 1 }, Animated: { Value, View: 'AnimatedView', timing: () => ({ start() {} }), spring: () => ({ start() {} }) }, Alert: { alert() {} }, Keyboard: { dismiss() {} }, DeviceEventEmitter: {}, Easing: { out: x => x, quad: 0 } },
-    'expo-router': { useLocalSearchParams: () => params, useRouter: () => ({ push() {}, navigate: path => routes.push(path), setParams: next => Object.assign(params, next) }), useScrollToTop() {} },
+    'expo-router': { useLocalSearchParams: () => params, useRouter: () => ({ push: path => routes.push(path), navigate: path => routes.push(path), setParams: next => Object.assign(params, next) }), useScrollToTop() {} },
     'react-native-reanimated': { default: { View: 'ReanimatedView' }, useReducedMotion: () => true },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', SafeAreaProvider: 'SafeAreaProvider', useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) },
     '@/hooks/use-theme': { useTheme: () => theme }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
@@ -60,6 +60,22 @@ function screen({ createdPost, deferPublish = false, os = 'web' } = {}) {
   };
 }
 const post = (id, extra = {}) => ({ id, cityId: 'vancouver', author: { id: 'author' }, tag: TAGS[0], createdAt: '2026-10-12T10:00:00Z', title: id, ...extra });
+
+test('business remains a news board; only its explicit directory action opens business profiles exploration', async () => {
+  const app = screen(); app.list(); app.refresh();
+  app.calls[0].resolve([post('ordinary')]); await new Promise(setImmediate);
+  assert.equal(nodes(app.list().renderItem({ item: post('ordinary'), index: 2 })).find(n => n.type === 'PostCard')?.props.post.id, 'ordinary');
+  const header = app.list().renderItem({ item: null, index: 0 });
+  const business = nodes(header).find(n => n.props?.analyticsId === 'components_feed-screen.pressable.3' && nodes(n).some(child => child.props?.children === '비즈니스'));
+  assert.ok(business); business.props.onPress();
+  assert.equal(app.sort().title, '새 소식');
+  assert.equal(app.routes.length, 0, 'choosing the category itself does not navigate to the directory');
+  const card = nodes(app.list().renderItem({ item: post('business-news', { tag: TAGS.find(t => t.slug === 'business') }), index: 2 })).find(n => n.type === 'BusinessNewsCard');
+  assert.equal(card.props.post.id, 'business-news');
+  assert.ok(card.props.onPress && card.props.onAuthor, 'existing detail and profile navigation remain available');
+  app.sort().action.props.onPress();
+  assert.equal(app.routes.at(-1), '/businesses');
+});
 
 test('a topic notification opens today search and consumes its parameter so closing stays closed', () => {
   const app = screen();
