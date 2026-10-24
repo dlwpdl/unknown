@@ -25,6 +25,7 @@ async function rpc<T>(client: SupabaseClient, name: string, args: Record<string,
   return result.data as T;
 }
 export const loadMeetupSessions = (client: SupabaseClient, postId: string) => rpc<MeetupSessions>(client, 'get_meetup_sessions', { p_post_id: postId });
+export const loadMeetupUpcomingSessions = (client: SupabaseClient, postId: string) => rpc<MeetupSessions>(client, 'get_meetup_upcoming_sessions', { p_post_id: postId });
 export const loadMeetupReviews = (client: SupabaseClient, postId: string, offset = 0) => rpc<MeetupReviewPage>(client, 'get_meetup_reviews', { p_post_id: postId, p_offset: offset });
 export const loadMyMeetupReviewInbox = (client: SupabaseClient) => rpc<{ postId: string; title: string; kind: 'once' | 'group' }[]>(client, 'get_my_meetup_review_inbox');
 export const createMeetupSession = (client: SupabaseClient, postId: string, startsAt?: string, endsAt?: string) => rpc<string>(client, 'create_meetup_session', { p_post_id: postId, p_starts_at: startsAt ?? null, p_ends_at: endsAt ?? null });
