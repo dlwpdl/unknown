@@ -643,7 +643,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
 
   return (
     <TabContent style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <View style={[styles.headRow, fontScale > 1.2 && styles.headRowLarge, { backgroundColor: theme.background }]}>
           <Pressable analyticsId="feed.home" accessibilityRole="button" accessibilityLabel={`${t.appName}, ${t.tabs.today}`}
             onPress={() => { play('selection'); router.navigate('/'); }} style={[styles.homeButton, fontScale > 1.2 && styles.homeButtonLarge]}>
