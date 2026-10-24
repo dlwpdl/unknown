@@ -1,4 +1,4 @@
-import { ControlStyles } from '@/constants/design-system';
+import { ControlStyles, IconSize, controlPresentation } from '@/constants/design-system';
 import { useLanguage } from '@/hooks/use-language';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -23,7 +23,8 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { appendUniquePosts, getPostImageSource } from '@/lib/feed-data';
 import { loadMerchantProfile, loadMerchantProfilePosts, type MerchantProfile, type MerchantProfilePostPage } from '@/lib/merchant-profile';
 import { loadMerchantReviews, type MerchantReviewKind, type MerchantReviewPage } from '@/lib/merchant-reviews';
-import { merchantMapsUrl, merchantPhoneUrl, setSavedMerchant, setSavedMerchantNotifications, startMerchantConversation } from '@/lib/merchant-conveniences';
+import { merchantMapsUrl, merchantPhoneUrl, setSavedMerchantNotifications, startMerchantConversation } from '@/lib/merchant-conveniences';
+import { loadSavedItemState, setSavedItem } from '@/lib/saved-items';
 import { safeMerchantSourceUrl } from '@/lib/merchant-source';
 import { supabase } from '@/lib/supabase';
 
@@ -31,7 +32,7 @@ const tabs = [{ id: 'about', label: '소개' }, { id: 'posts', label: '소식' }
 type ProfileTab = typeof tabs[number]['id'];
 
 export default function CompanyProfileRoute() {
-  const { tr, locale: appLocale } = useLanguage();
+  const { tr, language, locale: appLocale } = useLanguage();
   const { id, review } = useLocalSearchParams<{ id: string; review?: string }>(), router = useRouter(), theme = useTheme(), { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion(), scroll = useRef<ScrollViewInstance>(null), tabsTop = useRef(0);
   const { me, isAuthed, isAuthLoading, promptLogin } = useAuth(), hidden = useContentVisibility();
@@ -51,7 +52,7 @@ export default function CompanyProfileRoute() {
   const postRequest = useRef({ active: false, reading: false });
   const profileRead = useRef(0), actionRequest = useRef({ key, visibility: hidden, active: false, busy: false });
   const [actionBusy, setActionBusy] = useState<{ operation: typeof actionRequest.current; kind: 'save' | 'message' | 'notifications' } | null>(null);
-  const [actionError, setActionError] = useState<{ key: string; message: string } | null>(null);
+  const [actionError, setActionError] = useState<{ key: string; message: string; savedRead?: boolean } | null>(null);
   const [unavailableRecipient, setUnavailableRecipient] = useState<string | null>(null);
   const reviewKind = selected?.merchantId === merchantId ? selected.kind : review === 'employment' ? 'employment' : 'usage';
   const current = result?.key === key ? result : null;
@@ -81,6 +82,13 @@ export default function CompanyProfileRoute() {
       if (!active || request !== profileRead.current) return;
       setResult({ key, profile: next, failed: false });
       if (next?.can_message) setUnavailableRecipient(null);
+      if (next && isAuthed) void loadSavedItemState(supabase, { kind: 'merchant', id: merchantId }).then(saved => {
+        if (!active || request !== profileRead.current) return;
+        setResult(previous => previous?.key === key && previous.profile ? { ...previous, profile: { ...previous.profile,
+          saved: saved.saved, notifications_enabled: saved.saved && previous.profile.notifications_enabled } } : previous);
+      }).catch(() => {
+        if (active && request === profileRead.current) setActionError({ key, message: '저장 상태를 확인하지 못했어요. 다시 시도해주세요.', savedRead: true });
+      });
     })
       .catch(() => { if (active && request === profileRead.current) setResult((previous) => ({ key, profile: previous?.key === key ? previous.profile : null, failed: true })); });
     return () => { active = false; };
@@ -138,11 +146,11 @@ export default function CompanyProfileRoute() {
     play('selection');
     if (!isAuthed) return promptLogin('비즈니스를 저장하려면 로그인해 주세요.');
     const operation = actionRequest.current;
-    if (!profile || operation.busy || !operation.active) return;
+    if (!profile || operation.key !== key || operation.visibility !== hidden || operation.busy || !operation.active) return;
     operation.busy = true; setActionBusy({ operation, kind: 'save' }); setActionError(null);
     try {
-      const saved = await setSavedMerchant(supabase, merchantId, !profile.saved);
-      if (!operation.active) return;
+      const { saved } = await setSavedItem(supabase, { kind: 'merchant', id: merchantId }, !profile.saved);
+      if (!operation.active || operation.key !== key || operation.visibility !== hidden) return;
       profileRead.current++;
       setResult(previous => previous?.key === key && previous.profile ? { ...previous, profile: { ...previous.profile, saved, notifications_enabled: saved && previous.profile.notifications_enabled } } : previous);
       setRevision(value => value + 1); play('success');
@@ -195,8 +203,8 @@ export default function CompanyProfileRoute() {
       {profile && <>
           <Pressable analyticsId="company.save" accessibilityRole="button" accessibilityLabel={profile.saved ? tr("비즈니스 저장 취소") : tr("비즈니스 저장")}
             accessibilityState={{ selected: profile.saved, disabled: busy, busy: busy && actionBusy?.kind === 'save' }} disabled={busy}
-            style={({ pressed }) => [ControlStyles.icon, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent', opacity: busy ? 0.45 : 1 }]}
-            onPress={() => void toggleSaved()}><SymbolView name={{ ios: profile.saved ? 'bookmark.fill' : 'bookmark', android: profile.saved ? 'bookmark' : 'bookmark_border', web: profile.saved ? 'bookmark' : 'bookmark_border' }} size={17} tintColor={theme.accent} />
+            style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', selected: profile.saved, pressed, busy }).container]}
+            onPress={() => void toggleSaved()}><SymbolView name={{ ios: profile.saved ? 'bookmark.fill' : 'bookmark', android: profile.saved ? 'bookmark' : 'bookmark_border', web: profile.saved ? 'bookmark' : 'bookmark_border' }} size={IconSize.toolbar} tintColor={theme.accent} />
             </Pressable>
       </>}
     </View>
@@ -221,7 +229,7 @@ export default function CompanyProfileRoute() {
             {publicLinks.map((link, index) => <Pressable key={link.url} analyticsId={`company.contact.source.${index}`} accessibilityRole="link" accessibilityLabel={tr("{0} 공개 링크 열기", (link.label))} style={styles.button} onPress={() => void openContact(link.url)}><ThemedText themeColor="accent">{link.label} ›</ThemedText></Pressable>)}
           </View>
         </View>}
-        {actionError?.key === key && <ThemedText type="small" accessibilityRole="alert" accessibilityLiveRegion="polite">{actionError.message}</ThemedText>}
+        {actionError?.key === key && <ThemedText type="small" accessibilityRole="alert" accessibilityLiveRegion="polite">{actionError.savedRead && language !== 'ko' ? 'Could not check saved status. Please try again.' : actionError.message}</ThemedText>}
         {(profile.imageLoadFailed || current?.failed) && <View style={styles.statePhoto}>
           <ThemedText type="small" themeColor="textSecondary">{tr("사진을 다시 불러오지 못했어요. 비즈니스 정보와 저장된 사진은 유지돼요.")}</ThemedText>
           <Pressable analyticsId="company.photo.retry" accessibilityRole="button" style={styles.button}
@@ -236,7 +244,7 @@ export default function CompanyProfileRoute() {
           {tabs.map(item => {
             const count = item.id === 'posts' ? displayCount(counts?.post_count, !!currentPosts?.failed || countsResult?.key === key)
               : item.id === 'jobs' ? displayCount(counts?.job_count, !!currentPosts?.failed || countsResult?.key === key)
-              : item.id === 'reviews' ? displayCount(reviewCount, ratingResult?.key === key) : null;
+              : item.id === 'reviews' && profile.review_post_id ? displayCount(reviewCount, ratingResult?.key === key) : null;
             return <Pressable key={item.id} analyticsId={`company.tab.${item.id}`} accessibilityRole="tab" accessibilityState={{ selected: tab === item.id }}
               accessibilityLabel={tr("{0}{1}", (tr(item.label)), (count == null ? '' : tr(" {0}건", count)))} style={[styles.tab, { borderBottomColor: tab === item.id ? theme.accent : 'transparent' }]}
               onPress={() => selectTab(item.id)}>
@@ -280,6 +288,10 @@ export default function CompanyProfileRoute() {
             {!!mapsUrl && <Pressable analyticsId="company.about.maps" accessibilityRole="link" accessibilityLabel={tr("등록된 주소를 Google 지도에서 보기")} style={styles.button} onPress={() => void openContact(mapsUrl)}><ThemedText themeColor="accent">{tr("길찾기")}</ThemedText></Pressable>}
             {publicLinks.map((link, index) => <Pressable key={link.url} analyticsId={`company.about.source.${index}`} accessibilityRole="link" accessibilityLabel={tr("{0} 공개 링크 열기", (link.label))} style={styles.button} onPress={() => void openContact(link.url)}><ThemedText themeColor="accent">{link.label} ›</ThemedText></Pressable>)}
           </View>
+        </View>}
+        {tab === 'reviews' && !profile.review_post_id && <View style={styles.panel}>
+          <ThemedText type="smallBold">{tr("아직 표시할 후기가 없어요")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("공개된 후기는 이곳에서 확인할 수 있어요.")}</ThemedText>
         </View>}
         {(tab === 'reviews' || reviewVisited === key) && profile.review_post_id && <View
           style={[styles.panel, tab !== 'reviews' && { display: 'none' }]} accessibilityElementsHidden={tab !== 'reviews'}

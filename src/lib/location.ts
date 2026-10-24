@@ -10,6 +10,11 @@ export function isFreshLocation(fix: LocationFix, now = Date.now()) {
     && Number.isFinite(fix.measuredAt) && now - fix.measuredAt <= 300000 && fix.measuredAt - now <= 30000;
 }
 
+// Same foreground fix quality already required by the app map.
+export function isFreshNearbyLocation(fix: LocationFix, now = Date.now()) {
+  return isFreshLocation(fix, now) && fix.accuracy! <= 250 && now - fix.measuredAt <= 120000;
+}
+
 export function nearbyCommunity(fix: LocationFix, now = Date.now()): string | null {
   if (!isFreshLocation(fix, now)) return null;
   // ponytail: approximate community catchments, not municipal boundaries; add centers as cities open.

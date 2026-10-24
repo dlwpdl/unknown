@@ -2,12 +2,12 @@ import { useLanguage } from '@/hooks/use-language';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Pressable } from '@/components/analytics-controls';
+import { SelectionChip } from '@/components/selection-chip';
 import { ThemedText } from '@/components/themed-text';
+import { ControlStyles } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import type { FeedSort } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { lensControlStyle } from '@/lib/lens-control';
 
 export function FeedSortControl({ sort, title, onChange, action }: { sort: FeedSort; title: string; onChange: (sort: FeedSort) => void; action?: ReactNode }) {
   const { tr } = useLanguage();
@@ -20,12 +20,12 @@ export function FeedSortControl({ sort, title, onChange, action }: { sort: FeedS
         {(['latest', 'popular'] as const).map(option => {
           const selected = sort === option;
           const label = tr(option === 'latest' ? '최신순' : '인기순');
-          return <Pressable key={option} analyticsId="components_feed-sort-control.order"
+          return <SelectionChip key={option} selected={selected} analyticsId="components_feed-sort-control.order"
             accessibilityRole="button" accessibilityLabel={tr("{0}으로 정렬", (label))} accessibilityState={{ selected }} aria-pressed={selected}
             onPress={() => { play('selection'); onChange(option); }}
-            style={({ pressed }) => [styles.option, { backgroundColor: selected ? theme.backgroundSelected : 'transparent', opacity: pressed ? 0.65 : 1 }, lensControlStyle({ borderColor: selected ? theme.accent : 'transparent' }, pressed)]}>
-            <ThemedText type="smallBold" style={{ color: selected ? theme.accent : theme.textSecondary }}>{label}</ThemedText>
-          </Pressable>;
+            style={styles.option}>
+            <ThemedText type="smallBold" style={{ color: selected ? theme.accentInk : theme.textSecondary }}>{label}</ThemedText>
+          </SelectionChip>;
         })}
       </View>
     </View>
@@ -39,8 +39,8 @@ const styles = StyleSheet.create({
   container: { paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 },
   title: { fontSize: 16, lineHeight: 24, fontWeight: '700' },
-  options: { flexDirection: 'row', gap: 8, padding: 4, borderRadius: 12 },
-  option: { minHeight: 44, minWidth: 44, paddingHorizontal: 12, paddingVertical: 6, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderRadius: 8 },
+  options: { flexDirection: 'row', gap: 8 },
+  option: { ...ControlStyles.pill, minWidth: 44, paddingVertical: 8 },
   descriptionRow: { marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between' },
   description: { flexShrink: 1 },
 });

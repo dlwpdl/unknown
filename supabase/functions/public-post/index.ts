@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { postSeo, jsonLd, PUBLIC_SITE, PUBLIC_SOURCE } from '../../../src/lib/public-seo.ts';
-import { businessMediaUrl } from '../../../src/lib/business-media.ts';
 import { serveBusinessMedia } from '../_shared/business-media.ts';
+import { previewImageCover, servePreviewImage } from '../_shared/preview-image.ts';
 
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
@@ -12,9 +12,14 @@ Deno.serve(async (request) => {
   if (format === 'business-image') return serveBusinessMedia(request, createClient(
     Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } },
   ));
+  if (format === 'preview-image') return servePreviewImage(request, createClient(
+    Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } },
+  ), createClient(
+    Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } },
+  ));
   if (request.method !== 'GET') return unavailable(405);
   if (format && !['markdown', 'sitemap'].includes(format)) return unavailable(400);
-  const id = params.get('id') ?? '';
+  const id = (params.get('id') ?? '').toLowerCase();
   const catalog = format === 'sitemap' || (format === 'markdown' && !params.has('id'));
   if (!catalog && !UUID.test(id)) return unavailable(400);
   const city = params.get('city') ?? 'vancouver';
@@ -54,17 +59,10 @@ Deno.serve(async (request) => {
     const result = await supabase.rpc('get_shared_link_preview', { p_post_id: id });
     const preview = result.data;
     if (result.error) return unavailable(503);
-    if (!preview) return unavailable(404);
+    if (!preview || preview.id !== id) return unavailable(404);
     const metadata = postSeo({ id, title: preview.title, body: '', author: { nickname: '' }, tag: { label: preview.label ?? '글링' } }, preview.city ?? '');
     if (format === 'markdown') return new Response(`# ${preview.title.replace(/[\r\n]/g, ' ')}\n\n원문: ${metadata.canonical}\n도시: ${preview.city ?? ''}\n주제: ${preview.label ?? ''}\n\n전체 내용은 글링에서 로그인 후 확인해주세요.\n`, { headers: { 'Content-Type': 'text/markdown; charset=utf-8', 'Cache-Control': 'no-store', 'Link': `<${metadata.canonical}>; rel="canonical"`, 'X-Robots-Tag': 'noindex, follow', 'X-Content-Type-Options': 'nosniff' } });
-    let imageUrl = '';
-    if (preview.imagePath) {
-      imageUrl = businessMediaUrl(preview.imagePath) ?? '';
-      if (!imageUrl) {
-        const signed = await supabase.storage.from('post-images').createSignedUrl(preview.imagePath, 3600);
-        imageUrl = signed.data?.signedUrl ?? '';
-      }
-    }
+    const imageUrl = previewImageCover(preview.imagePath, id) ? `${PUBLIC_SOURCE}?format=preview-image&id=${id}` : '';
     return page(preview.title, 200, id, imageUrl, metadata);
 
   } catch { return unavailable(503); }

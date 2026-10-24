@@ -272,9 +272,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
 
 
   const openSearch = (initial?: string) => {
-    setQuery(initial ?? '');
-    setSearchResults([]);
-    setSearching(true);
+    router.push({ pathname: '/search', params: { ...(initial ? { query: initial } : {}), ...(meetupsOnly ? { kind: 'meetup' } : {}) } });
   };
 
   useEffect(() => {
@@ -659,7 +657,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             <SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={14} tintColor={theme.text} />
           </Pressable></GlassSurface>
           <View style={styles.iconGlass}><Pressable analyticsId="components_feed-screen.pressable.2"
-            onPress={() => { play('reaction'); openSearch(); }} accessibilityRole="button" accessibilityLabel={t.search.placeholder}
+            onPress={() => { play('selection'); openSearch(); }} accessibilityRole="button" accessibilityLabel={appLocale === 'en-CA' ? 'Search Gling' : '통합검색'}
             style={({ pressed }) => [styles.iconButton, controlPresentation(theme, { tone: 'ghost', pressed, reducedMotion }).container]}>
             <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={IconSize.toolbar} tintColor={theme.text} />
           </Pressable></View>
@@ -975,7 +973,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 renderLayout={({ input, actions, attachments }) => <View style={styles.writer}>
               <ScrollView analyticsId="components_feed-screen.scrollview.2" keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.writerScroll}>
                 <View style={styles.writerContext}>
-                  <Pressable analyticsId="components_feed-screen.writer-options" accessibilityRole="button" accessibilityLabel={tr("게시 설정 변경, {0}, {1}, {2}", (tr(draftCity.name)), (tr(tag.label)), (postKind === 'listing' ? t.write.kindListing : t.write.kindStory))} accessibilityState={{ expanded: writerOptionsOpen }} onPress={() => { play('selection'); Keyboard.dismiss(); animateLayout(); setWriterOptionsOpen(open => !open); setWriterPanel(null); }} style={({ pressed }) => [styles.writerContextSummary, Depth.control, { backgroundColor: theme.card, }]}>
+                  <Pressable analyticsId="components_feed-screen.writer-options" accessibilityRole="button" accessibilityLabel={tr("게시 설정 변경, {0}, {1}, {2}", (tr(draftCity.name)), (tr(tag.label)), (postKind === 'listing' ? t.write.kindListing : t.write.kindStory))} accessibilityState={{ expanded: writerOptionsOpen }} onPress={() => { play('reaction'); Keyboard.dismiss(); animateLayout(); setWriterOptionsOpen(open => !open); setWriterPanel(null); }} style={({ pressed }) => [styles.writerContextSummary, Depth.control, { backgroundColor: theme.card, }]}>
                     <ThemedText type="smallBold" numberOfLines={1} style={styles.writerContextValue}>{tr(draftCity.name)} · {tr(tag.label)}{tag.kind !== 'meetup' ? ` · ${postKind === 'listing' ? t.write.kindListing : t.write.kindStory}` : ''}</ThemedText>
                     <ThemedText type="smallBold" themeColor="accent">{tr("변경")}</ThemedText>
                     <SymbolView name={{ ios: writerOptionsOpen ? 'chevron.up' : 'chevron.right', android: writerOptionsOpen ? 'expand_less' : 'chevron_right', web: writerOptionsOpen ? 'expand_less' : 'chevron_right' }} size={14} tintColor={theme.accent} />

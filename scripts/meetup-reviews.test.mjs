@@ -52,3 +52,15 @@ test('public activity uses category history and propagates hidden/blocked respon
   assert.equal(call[1].p_before_created, null);
   await assert.rejects(loadPublicUserActivity(client, subject, 'private', null, 'guest'), /INVALID_POST_KIND/);
 });
+
+test('the chat upcoming read uses its own ordered RPC while attendance history keeps the existing RPC', async () => {
+  const api = await import('../src/lib/meetup-reviews.ts');
+  assert.equal(typeof api.loadMeetupUpcomingSessions, 'function');
+  const calls = [], payload = { isHost: false, member: true, kind: 'group', sessions: [] };
+  const client = { rpc: async (name, args) => { calls.push([name, args]); return { data: payload, error: null }; } };
+  assert.equal(await api.loadMeetupUpcomingSessions(client, session), payload);
+  assert.equal(await api.loadMeetupSessions(client, session), payload);
+  assert.deepEqual(calls, [['get_meetup_upcoming_sessions', { p_post_id: session }], ['get_meetup_sessions', { p_post_id: session }]]);
+  client.rpc = async () => ({ data: null, error: { message: 'MEETUP_ACCESS_REQUIRED' } });
+  await assert.rejects(api.loadMeetupUpcomingSessions(client, session), /MEETUP_ACCESS_REQUIRED/);
+});

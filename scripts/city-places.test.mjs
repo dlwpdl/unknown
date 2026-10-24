@@ -5,8 +5,10 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
+import { createRequire } from 'node:module';
 import ts from 'typescript';
 import * as product from '../src/lib/product-analytics.ts';
+import * as distance from '../src/lib/discovery-sort.ts';
 
 const root = new URL('../', import.meta.url);
 const citySource = readFileSync(new URL('src/lib/mock.ts', root), 'utf8').split('export const TAGS')[0];
@@ -113,7 +115,7 @@ test('featured places show exact scoped provider counts or an honest unrated sta
   const ratingsApi = externalRatings(), jsx = (type, props) => ({ type, props });
   const ui = module('src/components/place-review-summary.tsx', {
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    'react-native': { StyleSheet: { create: value => value }, View: 'View' },
+    'react-native': { useWindowDimensions: () => ({ width: 390, fontScale: 1 }), StyleSheet: { create: value => value }, View: 'View' },
     '@/components/themed-text': { ThemedText: 'ThemedText' },
     '@/components/merchant-rating-bar': { GlingRatingIcon: 'GlingRatingIcon' },
     '@/lib/place-external-ratings': ratingsApi,
@@ -240,8 +242,9 @@ test('foreign-city IDs, unsafe sources and malformed daily payloads cannot repla
     assert.equal(JSON.stringify(api.getCityPlaces('toronto')), original);
   }
 });
-function screen(file, params = { cityId: 'toronto' }, dev = true, placeData = data()) {
+function screen(file, params = { cityId: 'toronto' }, dev = true, placeData = data(), currentLocation = { fix: null, status: 'permission', busy: false, canAskAgain: true, request: async () => {} }) {
   const states = [], routes = [], feedback = [], opened = [], ratingScopes = [];
+  const hidden = () => false;
   let cursor = 0;
   const jsx = (type, props) => ({ type, props });
   const exports = module(file, {
@@ -249,13 +252,16 @@ function screen(file, params = { cityId: 'toronto' }, dev = true, placeData = da
       useState(v) { const i = cursor++; if (!(i in states)) states[i] = v; return [states[i], next => { states[i] = typeof next === 'function' ? next(states[i]) : next; }]; } },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'expo-router': { useIsFocused: () => true, useRouter: () => ({ push: p => routes.push(p), navigate: p => routes.push(p), canGoBack: () => true, back: () => routes.push('back') }), useLocalSearchParams: () => params },
-    'react-native': { StyleSheet: { create: v => v }, View: 'View', TextInput: 'TextInput', Linking: { openURL: async value => { opened.push(value); } }, Alert: { alert() {} } },
+    'react-native': { useWindowDimensions: () => ({ width: 390, fontScale: 1 }), StyleSheet: { create: v => v }, View: 'View', TextInput: 'TextInput', Linking: { openURL: async value => { opened.push(value); } }, Alert: { alert() {} } },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     '@/lib/mock': { CITIES: cities },
     '@/lib/community-city': { useCommunityCity: () => ({ city: cities[0] }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'anonymous' } }) },
     '@/lib/product-analytics': product,
     '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
+    '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) },
+    '@/hooks/use-current-location': { useCurrentLocation: () => currentLocation }, '@/lib/discovery-sort': distance, '@/constants/design-system': { ControlStyles: { pill: {} } }, '@/components/city-popular-places': { NearbyPlacesLocation: 'NearbyPlacesLocation' },
     '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
     '@/hooks/use-place-review-summaries': { usePlaceReviewSummaries: (cityId, ids) => { ratingScopes.push({ cityId, ids }); return {}; } },
     '@/components/place-review-summary': { PlaceReviewSummary: 'PlaceReviewSummary',
@@ -277,7 +283,7 @@ function screen(file, params = { cityId: 'toronto' }, dev = true, placeData = da
 test('the city places entry gives each preview card its own compact rating scope', () => {
   const ui = screen('src/components/city-popular-places.tsx'), tree = ui.render({ cityId: 'vancouver' });
   const cards = nodes(tree).filter(node => node.props?.analyticsId === 'today.places.place-open');
-  const expected = data().getCityRecommendations('vancouver').slice(0, 3);
+  const expected = data().getCityDiscoveryPlaces('vancouver').slice(0, 3);
   assert.equal(cards.length, expected.length);
   cards.forEach((card, index) => {
     const summary = nodes(card).find(node => node.type === 'PlaceReviewSummary');
@@ -532,7 +538,7 @@ function photoModule(imports = {}) {
   return module('src/components/city-place-photo.tsx', {
     react: { useState: () => [failed, value => { failed = value; }] },
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    'react-native': { StyleSheet: { create: v => v, absoluteFill: {} }, View: 'View' },
+    'react-native': { useWindowDimensions: () => ({ width: 390, fontScale: 1 }), StyleSheet: { create: v => v, absoluteFill: {} }, View: 'View' },
     'expo-image': { Image: 'Image' },
     'expo-symbols': { SymbolView: 'SymbolView' },
     '@/hooks/use-theme': { useTheme: () => ({}) },
@@ -540,11 +546,10 @@ function photoModule(imports = {}) {
   });
 }
 
-test('verified bundled photo bytes display offline only for their exact recorded image hash', () => {
-  const directory = new URL('assets/images/city-places/', root);
-  const assets = readdirSync(directory).filter(name => name.endsWith('.jpg')).map((name, index) => ({
-    path: '../../assets/images/city-places/' + name, source: index + 1,
-    hash: createHash('sha256').update(readFileSync(new URL(name, directory))).digest('hex'),
+test('bundled display derivatives load offline only for their exact verified original hash', () => {
+  const manifest = JSON.parse(readFileSync(new URL('assets/images/city-places-display/manifest.json', root), 'utf8'));
+  const assets = manifest.images.map((row, index) => ({
+    path: '../../' + row.display.path, source: index + 1, hash: row.original.sha256,
   }));
   assert.ok(assets.length > 0, 'verified offline photos must be included');
   const photo = photoModule(Object.fromEntries(assets.map(asset => [asset.path, asset.source])));
@@ -603,7 +608,7 @@ test('reviewed photo-less dining mixes with sights in all eleven cities without 
     }
     const ui = screen('src/components/city-popular-places.tsx', {}, false, api);
     const cards = nodes(ui.render({ cityId })).filter(node => node.props?.analyticsId === 'today.places.place-open');
-    assert.deepEqual(cards.map(card => nodes(card).find(node => node.type === 'CityPlacePhoto').props.place.id), selected.slice(0, 3).map(place => place.id));
+    assert.deepEqual(cards.map(card => nodes(card).find(node => node.type === 'CityPlacePhoto').props.place.id), Array.from(api.getCityDiscoveryPlaces(cityId)).slice(0, 3).map(place => place.id));
   }
 });
 
@@ -630,7 +635,7 @@ test('Top recommendations mix reviewed categories in editorial order and share o
   assert.deepEqual(new Set(mapped.filter(place => place.top25).map(place => place.sourceId)), new Set(expected.map(pick => pick.placeId)));
   const ui = screen('src/components/city-popular-places.tsx', {}, false, api);
   const cards = nodes(ui.render({ cityId: 'vancouver' })).filter(node => node.props?.analyticsId === 'today.places.place-open');
-  assert.deepEqual(cards.map(card => nodes(card).find(node => node.type === 'CityPlacePhoto').props.place.id), expected.slice(0, 3).map(pick => pick.placeId));
+  assert.deepEqual(cards.map(card => nodes(card).find(node => node.type === 'CityPlacePhoto').props.place.id), Array.from(api.getCityDiscoveryPlaces('vancouver')).slice(0, 3).map(place => place.id));
 });
 
 test('fifty photo-less main picks cannot crowd reviewed restaurants and cafes out of the preview', () => {
@@ -892,4 +897,81 @@ test('duplicate or unknown-city optional groups are ignored without losing the c
     assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
     assert.equal(api.getCityPlaces('toronto').find(p => p.id === row.placeId).photo, null);
   }
+});
+
+
+test('home nearest three come from the complete selected-city catalog and load ratings only for those cards',()=>{
+  const api=data(),base=api.getCityDiscoveryPlaces('vancouver')[0],fix={latitude:49.25,longitude:-122.86,accuracy:20,measuredAt:Date.now(),mocked:false};
+  const far={...base,id:'far',name:'Old first place',latitude:49.5,longitude:-122.86};
+  const candidates=[far,...[1,2,3].map((n)=>({...base,id:`near-${n}`,name:`Near ${n}`,latitude:49.25+n*.001,longitude:-122.86})),{...base,id:'invalid',latitude:NaN}];
+  const custom={...api,getCityRecommendations:()=>[far],getCityDiscoveryPlaces:()=>candidates};
+  const ui=screen('src/components/city-popular-places.tsx',{},true,custom,{fix,status:'ready',busy:false,canAskAgain:true,request:async()=>{}}),tree=ui.render({cityId:'vancouver'});
+  const cards=nodes(tree).filter(node=>node.props?.analyticsId==='today.places.place-open');assert.deepEqual(cards.map(card=>nodes(card).find(node=>node.type==='CityPlacePhoto').props.place.id),['near-1','near-2','near-3']);
+  assert.deepEqual(ui.ratingScopes[0].ids,['near-1','near-2','near-3']);assert.ok(JSON.stringify(tree).includes('km'));
+  nodes(tree).find(node=>node.props?.analyticsId==='today.places.open').props.onPress();assert.deepEqual(JSON.parse(JSON.stringify(ui.routes.at(-1).params)),{cityId:'vancouver',nearby:'1'});
+});
+
+test('nearby All preserves selected city, uses the full catalog and leaves default TOP50 browsing intact',()=>{
+  const api=data(),base=api.getCityDiscoveryPlaces('vancouver')[0],fix={latitude:49.25,longitude:-122.86,accuracy:20,measuredAt:Date.now(),mocked:false};
+  const far={...base,id:'far',name:'Far',latitude:49.5,longitude:-122.86};
+  const near={...base,id:'near',name:'Near outside old curated picks',latitude:49.251,longitude:-122.86};
+  const custom={...api,getCityBrowsePlaces:()=>[far],getCityDiscoveryPlaces:()=>[far,near]};
+  const local=screen('src/app/places/index.tsx',{cityId:'vancouver',nearby:'1'},true,custom,{fix,status:'ready',busy:false,canAskAgain:true,request:async()=>{}}),tree=local.render();
+  const rows=nodes(tree).filter(node=>node.props?.analyticsId==='places.open');assert.equal(rows.length,2);assert.ok(JSON.stringify(rows[0]).includes('Near outside old curated picks'));
+  const old=screen('src/app/places/index.tsx',{cityId:'vancouver'},true,custom);assert.equal(nodes(old.render()).filter(node=>node.props?.analyticsId==='places.open').length,1);
+});
+
+
+test('nearby permission fallback shows no invented distance and its CTA keeps the city unchanged',()=>{
+  let requests=0;const ui=screen('src/components/city-popular-places.tsx',{},true,data(),{fix:null,status:'unavailable',busy:false,canAskAgain:true,request:async()=>{requests++;}}),tree=ui.render({cityId:'vancouver'});
+  const cards=nodes(tree).filter(node=>node.props?.analyticsId==='today.places.place-open');assert.equal(cards.length,3);assert.ok(cards.every(card=>!card.props.accessibilityLabel.includes('km')));
+  nodes(tree).find(node=>node.props?.analyticsId==='today.places.locate').props.onPress();assert.equal(requests,1);assert.ok(ui.feedback.includes('selection'));assert.equal(ui.routes.length,0);
+});
+
+test('nearby All exposes the full catalog through bounded More without changing the TOP50 route',()=>{
+  const api=data(),base=api.getCityDiscoveryPlaces('vancouver')[0];
+  const candidates=Array.from({length:62},(_,index)=>({...base,id:`osm:node:${90000000000+index}`,name:`Fixture ${index}`,latitude:49.25+index*.001,longitude:-122.86}));
+  const custom={...api,getCityDiscoveryPlaces:()=>candidates};const ui=screen('src/app/places/index.tsx',{cityId:'vancouver',nearby:'1'},true,custom);let tree=ui.render();
+  const rows=()=>nodes(tree).filter(node=>node.props?.analyticsId==='places.open');assert.equal(rows().length,10);
+  nodes(tree).find(node=>node.props?.analyticsId==='places.view-more').props.onPress();tree=ui.render();assert.equal(rows().length,60);
+  nodes(tree).find(node=>node.props?.analyticsId==='places.view-more').props.onPress();tree=ui.render();assert.equal(rows().length,62);assert.equal(nodes(tree).some(node=>node.props?.analyticsId==='places.view-more'),false);
+});
+
+test('actual Expo production compiled PlacesList updates on a catalog-only revision',()=>{
+ const require=createRequire(new URL('../package.json',import.meta.url)),babel=require('@babel/core');
+ const filename=new URL('../src/app/places/index.tsx',import.meta.url).pathname;
+ const {code}=babel.transformSync(readFileSync(filename,'utf8'),{filename,configFile:false,babelrc:false,caller:{name:'metro',bundler:'metro',platform:'ios',engine:'hermes',isDev:false,supportsReactCompiler:true,supportsStaticESM:false,isServer:false},presets:[[require.resolve('babel-preset-expo'),{}]]});
+ const city={id:'vancouver',name:'Vancouver'},params={cityId:'vancouver',nearby:'1'},router={},theme={},ratings={};
+ const place=id=>({id,cityId:city.id,name:id,category:'cafe',address:'',latitude:49.25,longitude:-123});
+ let catalog=[place('initial')],revision=0,current,cursor=0,childElement,tree;
+ const memo=new Map(),states=new Map(),subscribers=new Set();
+ const jsx=(type,props,key)=>({type,props,key});
+ const modules={
+  'react/compiler-runtime':{c(size){if(!memo.has(current))memo.set(current,Array(size).fill(Symbol.for('react.memo_cache_sentinel')));return memo.get(current);}},
+  react:{useState(initial){let values=states.get(current);if(!values)states.set(current,values=[]);const i=cursor++;if(!(i in values))values[i]=initial;return[values[i],value=>{values[i]=typeof value==='function'?value(values[i]):value;}];}},
+  'react/jsx-runtime':{jsx,jsxs:jsx},
+  'expo-router':{useLocalSearchParams:()=>params,useRouter:()=>router},
+  'react-native':{View:'View',TextInput:'TextInput',StyleSheet:{create:v=>v}},
+  '@/hooks/use-language':{useLanguage:()=>({tr:(s,...v)=>s.replace(/\{(\d+)\}/g,(_,i)=>v[i]),language:'en',locale:'en-CA'})},
+  '@/hooks/use-theme':{useTheme:()=>theme},
+  '@/hooks/use-city-places':{useCityPlacesRevision(){subscribers.add(current);return revision;}},
+  '@/lib/community-city':{useCommunityCity:()=>({city})},'@/lib/mock':{CITIES:[city]},
+  '@/hooks/use-current-location':{useCurrentLocation:()=>({fix:null,status:'permission',busy:false,canAskAgain:true,request:async()=>{}})},
+  '@/lib/discovery-sort':distance,
+  '@/lib/city-places':{getCityDiscoveryPlaces:()=>catalog,getCityBrowsePlaces:()=>catalog,getCityPlacesCoverage:()=>'',CITY_PLACES_COLLECTED_AT:'2026-10-23'},
+  '@/hooks/use-place-review-summaries':{usePlaceReviewSummaries:()=>ratings},
+  '@/components/place-review-summary':{getPlaceReviewRating:()=>({score:null}),PlaceReviewSummary:'PlaceReviewSummary'},
+  '@/lib/interaction-feedback':{useInteractionFeedback:()=>({play(){}})},
+  '@/constants/theme':{Spacing:{one:4,two:8,three:16},MaxContentWidth:920},
+ };
+ const exports={};vm.runInNewContext(code,{exports,require:name=>modules[name]??(name.startsWith('@babel/')?require(name):new Proxy({},{get:(_,key)=>key}))});
+ const render=(fn,props)=>{current=fn;cursor=0;return fn(props);};
+ const rootRender=()=>{const next=render(exports.default,{});if(next!==childElement){childElement=next;tree=render(next.type,next.props);}};
+ const nodes=v=>!v||typeof v!=='object'?[]:[...(v.type?[v]:[]),...Object.values(v).flatMap(nodes)];
+ const ids=()=>nodes(tree).filter(n=>n.type==='CityPlacePhoto').map(n=>n.props.place.id);
+ rootRender();assert.deepEqual(ids(),['initial']);
+ catalog=[place('replacement-first'),place('newly-added')];revision++;
+ // Match React's cached-element bailout, while external-store subscribers update independently.
+ for(const fn of [...subscribers]){if(fn===exports.default)rootRender();else if(fn===childElement.type)tree=render(fn,childElement.props);}
+ assert.deepEqual(ids(),['replacement-first','newly-added'],'catalog-only refresh must reach rows without city, fix, query or category changes');
 });

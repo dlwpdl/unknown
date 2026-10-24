@@ -1,35 +1,39 @@
 import { usePathname } from 'expo-router';
-import { useEffect, useId, useState } from 'react';
-import { AppState, DeviceEventEmitter } from 'react-native';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { useAuth } from '@/lib/auth';
-import { loadUnreadNotificationCount } from '@/lib/community-data';
-import { NOTIFICATION_PREFERENCES_CHANGED } from '@/lib/notification-preferences';
+import { refreshUnreadCount, subscribeUnreadCount } from '@/lib/notification-refresh';
 import { supabase } from '@/lib/supabase';
 
+type Token = readonly unknown[];
+type Lifetime = { token: Token; active: boolean; pathname: string; stop: () => void };
 export function useUnreadCount(scope: 'chat' | 'other' | 'all' = 'all') {
-  const { isAuthed, me } = useAuth();
-  const pathname = usePathname();
-  const cityId = scope === 'chat' ? null : me.cityId;
-  const [result, setResult] = useState<{ userId: string; cityId?: string | null; count: number } | null>(null);
-  // Several tabs mount this hook at once; Supabase refuses a second subscription on the same channel name.
-  const channelId = useId();
+  const { isAuthed, isAuthLoading, me } = useAuth(), pathname = usePathname();
+  const cityId = scope === 'chat' ? null : me.cityId ?? null;
+  const latestPath = useRef(pathname);
+  useLayoutEffect(() => { latestPath.current = pathname; }, [pathname]);
+  const token = useMemo(() => [isAuthed, isAuthLoading, me.id, cityId, scope] as const, [isAuthed, isAuthLoading, me.id, cityId, scope]);
+  const live = useRef<Lifetime | null>(null);
+  const [result, setResult] = useState<{ token: Token; count: number } | null>(null);
+  useLayoutEffect(() => {
+    const lifetime = { token, active: isAuthed && !isAuthLoading, pathname: latestPath.current, stop: () => {} };
+    live.current = lifetime;
+    return () => { lifetime.active = false; lifetime.stop(); };
+  }, [token, isAuthed, isAuthLoading]);
   useEffect(() => {
-    if (!isAuthed) return;
-    let active = true;
-    let version = 0;
-    const refresh = () => {
-      const request = ++version;
-      void loadUnreadNotificationCount(supabase, me.id, scope)
-        .then((count) => { if (active && version === request) setResult({ userId: me.id, cityId, count }); }).catch(() => {});
-    };
-    refresh();
-    const channel = supabase.channel(`navigation-notifications:${me.id}:${scope}:${channelId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${me.id}` }, refresh)
-      .subscribe();
-    const settings = DeviceEventEmitter.addListener(NOTIFICATION_PREFERENCES_CHANGED, refresh);
-    const foreground = AppState.addEventListener('change', state => { if (state === 'active') refresh(); });
-    return () => { active = false; settings.remove(); foreground.remove(); void supabase.removeChannel(channel); };
-  }, [isAuthed, me.id, cityId, pathname, scope, channelId]);
-  return isAuthed && result?.userId === me.id && result.cityId === cityId ? result.count : 0;
+    const lifetime = live.current;
+    if (!lifetime?.active || lifetime.token !== token) return;
+    const stop = subscribeUnreadCount(supabase, { userId: me.id, cityId, scope }, count => {
+      if (lifetime.active && live.current === lifetime) setResult({ token, count });
+    });
+    lifetime.stop = stop;
+    return stop;
+  }, [token, me.id, cityId, scope]);
+  useEffect(() => {
+    const lifetime = live.current;
+    if (!lifetime?.active || lifetime.token !== token || lifetime.pathname === pathname) return;
+    lifetime.pathname = pathname;
+    refreshUnreadCount(supabase, { userId: me.id, cityId, scope });
+  }, [pathname, token, me.id, cityId, scope]);
+  return isAuthed && !isAuthLoading && result?.token === token ? result.count : 0;
 }

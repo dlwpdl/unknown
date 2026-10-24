@@ -109,3 +109,40 @@ test('render formatters accept an explicit locale while preserving stored cadenc
     assert.equal(relativeTime(new Date(now - 5 * 60000).toISOString(), now, 'ko-KR'), '5분 전');
   } finally { setActiveLanguage('ko'); }
 });
+
+test('public SSR language seed renders immediately, then restores saved or device language without changing native defaults', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { default: vm } = await import('node:vm');
+  const { default: ts } = await import('typescript');
+  const { resolveLanguage, parseLanguagePreference } = await import('../src/i18n/language.ts');
+  const code = ts.transpileModule(readFileSync(new URL('../src/hooks/use-language.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
+  function mount(stored, props = {}) {
+    const slots = [], effects = [], writes = [];
+    let index = 0;
+    const hooks = {
+      createContext: () => ({ Provider: 'LanguageProvider' }),
+      useState(initial) { const slot = index++; if (!(slot in slots)) slots[slot] = typeof initial === 'function' ? initial() : initial; return [slots[slot], value => { slots[slot] = typeof value === 'function' ? value(slots[slot]) : value; }]; },
+      useRef(initial) { const slot = index++; return slots[slot] ??= { current: initial }; },
+      useCallback(fn, deps) { const slot = index++; if (!slots[slot] || deps.some((value, at) => value !== slots[slot].deps[at])) slots[slot] = { fn, deps }; return slots[slot].fn; },
+      useEffect(fn, deps) { const slot = index++; if (!slots[slot] || deps.some((value, at) => value !== slots[slot][at])) { slots[slot] = deps; effects.push(fn); } },
+    };
+    const exports = {}, modules = {
+      react: hooks, 'react/jsx-runtime': { jsx: (type, props) => ({ type, props }) },
+      '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async key => { assert.equal(key, 'gling.language'); return stored; }, setItem: async (...args) => { writes.push(args); } } },
+      'react-native': { Platform: { OS: 'web' }, AppState: { addEventListener: () => ({ remove() {} }) } },
+      '@/i18n': { setActiveLanguage() {} }, '@/i18n/language': { resolveLanguage, parseLanguagePreference },
+    };
+    vm.runInNewContext(code, { exports, Intl, navigator: { languages: ['en-CA'] }, require: name => modules[name] ?? {} });
+    return { writes, render() { index = 0; return exports.LanguagePreferenceProvider({ children: 'SSR_CONTENT', ...props }); }, async flush() { effects.splice(0).forEach(effect => effect()); await new Promise(setImmediate); } };
+  }
+  const native = mount(null);
+  assert.equal(native.render().props.children, null, 'Unseeded existing callers retain their loading gate');
+  const seeded = mount(null, { initialLanguage: 'ko' });
+  let tree = seeded.render();
+  assert.equal(tree.props.children, 'SSR_CONTENT', 'Public SSR and first hydration cannot be blank');
+  assert.equal(tree.props.value.language, 'ko');
+  await seeded.flush();tree = seeded.render();assert.equal(tree.props.value.language, 'en', 'Device language applies through the existing restore effect');
+  const saved = mount('ko', { initialLanguage: 'ko' });saved.render();await saved.flush();
+  assert.equal(saved.render().props.value.language, 'ko', 'Saved choice continues to outrank device language');
+  assert.deepEqual(seeded.writes, []);assert.deepEqual(saved.writes, [], 'Restoring language never overwrites the saved preference');
+});

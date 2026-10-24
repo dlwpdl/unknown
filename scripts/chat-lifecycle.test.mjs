@@ -14,14 +14,25 @@ import { sharedLinkInMessage } from '../src/lib/sharing.ts';
 import { hideContent, isContentHidden, subscribeVisibility, visibilityRevision } from '../src/lib/content-visibility.ts';
 import { count, t } from '../src/i18n/ko.ts';
 import { isFreshLocation } from '../src/lib/location.ts';
-import { googlePinUrl } from '../src/lib/post-maps.ts';
+import { googlePinUrl, postPublicAddress } from '../src/lib/post-maps.ts';
+import { chillingSchedule } from '../src/lib/chilling.ts';
 import * as product from '../src/lib/product-analytics.ts';
+import { translateUi, translationsFor } from '../src/i18n/index.ts';
+import { subscribeBusinessChat } from '../src/lib/business-chat.ts';
+
+function languageImports(resolve, data) {
+  const imports = withLanguageImports(resolve);
+  return name => name === '@/hooks/use-language' && data.language ? { useLanguage: () => ({
+    language: data.language, locale: data.language === 'en' ? 'en-CA' : 'ko-KR', t: translationsFor(data.language),
+    tr: (text, ...values) => translateUi(data.language, text, ...values),
+  }) } : imports(name);
+}
 
 // Exercise the component's hooks, effects and event handlers, as in comment-threads.test.mjs.
 function mount(file, exportName, data, props = {}, params = {}) {
   const hooks = [], setters = [], appListeners = new Set(), channels = new Set(), timers = new Map(), animations = [];
   let index = 0, effects = [], dirty = true, tree, timerId = 0;
-  const auth = { isAuthed: true, me: { id: 'me', nickname: '나' } };
+  const auth = { isAuthed: true, me: { id: 'me', nickname: '나' }, ...data.auth };
   const refreshMembership = async () => {};
   const jsx = (type, props, key) => ({ type, props, key });
   const effect = (fn, deps) => {
@@ -56,12 +67,13 @@ function mount(file, exportName, data, props = {}, params = {}) {
   const supabase = {
     rpc: async (name, args) => { data.productEvents?.push([name, JSON.parse(JSON.stringify(args))]); return { error: data.telemetryError ?? null }; },
     storage: { from: () => ({ remove: async paths => { data.removed?.push(...paths); return { error: null }; } }) },
-    channel() {
-      const channel = { handlers: [], on(_kind, filter, callback) { this.handlers.push({ filter, callback }); return this; }, subscribe() { return this; } };
+    channel(name) {
+      data.subscriptionEvents?.push(['subscribe', name]);
+      const channel = { handlers: [], on(_kind, filter, callback) { this.handlers.push({ filter, callback }); return this; }, subscribe(callback) { this.status = callback; callback?.('SUBSCRIBED'); return this; } };
       channels.add(channel);
       return channel;
     },
-    removeChannel(channel) { channels.delete(channel); },
+    removeChannel(channel) { data.subscriptionEvents?.push(['remove']); channels.delete(channel); return Promise.resolve('ok'); },
   };
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL(file, import.meta.url), 'utf8'), {
@@ -74,7 +86,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
     requestAnimationFrame(fn) { fn(); return 1; },
     setTimeout(fn, delay = 0) { const id = ++timerId; timers.set(id, { fn, delay }); return id; },
     clearTimeout(id) { timers.delete(id); },
-    require: withLanguageImports((name) => {
+    require: languageImports((name) => {
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (name === 'react') return react;
       if (name === 'react-native') return new Proxy({
@@ -85,7 +97,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
         DeviceEventEmitter: { addListener: () => ({ remove() {} }) },
         ...data.native,
       }, { get: (target, key) => target[key] ?? key });
-      if (name === 'expo-router') return { useFocusEffect: fn => effect(fn, [fn]), useLocalSearchParams: () => params, useRouter: () => ({ setParams(value) { Object.assign(params, value); }, push(value) { data.routes?.push(value); } }) };
+      if (name === 'expo-router') return { useFocusEffect: fn => effect(() => data.focused === false ? undefined : fn(), [fn, data.focused]), useLocalSearchParams: () => params, useRouter: () => ({ setParams(value) { Object.assign(params, value); }, push(value) { data.routes?.push(value); } }) };
       if (name === '@/app/map') return { __esModule: true, default: 'MapScreen' };
       if (name === 'react-native-reanimated') return { useReducedMotion: () => data.reducedMotion ?? false };
       if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ bottom: 0 }) };
@@ -97,7 +109,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
       if (name === '@/lib/auth') return { useAuth: () => auth };
       if (name === '@/lib/membership-provider') return { useMembership: () => ({ refresh: refreshMembership }) };
       if (name === '@/components/relationship-slot-card') return { relationshipSlotData: () => null };
-      if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
+      if (name === '@/hooks/use-theme') return { useTheme: () => data.theme ?? ({}) };
       if (name === '@/hooks/use-content-visibility') return { useContentVisibility: () => {
         effect(() => subscribeVisibility(() => { dirty = true; }), []);
         return react.useCallback((type, id, authorId) => isContentHidden(auth.me.id, type, id, authorId), [auth.me.id, visibilityRevision()]);
@@ -111,9 +123,14 @@ function mount(file, exportName, data, props = {}, params = {}) {
       if (name === '@/lib/sharing') return { sharedLinkInMessage };
       if (name === '@/components/shared-link-card') return { SharedLinkCard: 'SharedLinkCard' };
       if (name === '@/lib/chat-details') return { ...chatDetails, ...(data.loadChatMembers ? { loadChatMembers: data.loadChatMembers } : {}) };
+      if (name === '@/lib/chilling') return { chillingSchedule };
       if (name === '@/lib/chat-location') return chatLocation;
       if (name === '@/lib/location') return { isFreshLocation };
-      if (name === '@/lib/post-maps') return { googlePinUrl };
+      if (name === '@/lib/post-maps') return { googlePinUrl, postPublicAddress };
+      if (name === '@/lib/meetup-destination') return { splitPlaceMeetupBody: () => null };
+      if (name === '@/lib/meetup-ai') return { visibleMeetupBody: body => body };
+      if (name === '@/lib/feed-data') return { loadPublicPost: data.loadPublicPost ?? (async () => null), loadPublicMeetupContext: data.loadPublicMeetupContext ?? (async () => null) };
+      if (name === '@/lib/meetup-reviews') return { loadMeetupUpcomingSessions: data.loadMeetupSessions };
       if (name === '@/lib/image-upload') return { MAX_POST_IMAGES: 20 };
       if (name === '@/lib/post-image-picker') return { isSupportedImage: mime => ['image/jpeg', 'image/png', 'image/webp'].includes(mime), preparePostImage: data.preparePostImage };
       if (name === 'expo-image-picker') return { UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' }, ...data.imagePicker };
@@ -123,7 +140,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
       if (name === '@/lib/supabase') return { supabase };
       if (name === '@/lib/product-analytics') return product;
       return new Proxy({}, { get: (_target, key) => key });
-    }),
+    }, data),
   });
   const render = () => {
     for (let count = 0; dirty; count++) {
@@ -146,6 +163,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
     messages: () => nodes(tree).find(node => node.type === 'FlatList')?.props.data ?? [],
     animations,
     foreground() { for (const callback of appListeners) callback('active'); },
+    reconnect() { for (const channel of channels) channel.status?.('SUBSCRIBED'); },
     message(message) { for (const channel of channels) for (const { filter, callback } of channel.handlers) if (filter.table === 'messages') callback({ new: message }); },
     async timers() { const pending = [...timers.values()]; timers.clear(); for (const { fn, delay } of pending) { if (data.clock) data.clock.now += delay; fn(); } await harness.settle(); },
     cleanup() { for (const hook of hooks) hook?.cleanup?.(); timers.clear(); },
@@ -219,23 +237,25 @@ test('messages still arrive under discovery without hidden read receipts or auto
   assert.deepEqual(marked, [incoming.id], 'a genuinely visible message can be marked after returning');
 });
 
-test('initial unread positioning waits for discovery to close, including a covered pending scroll timer', async context => {
-  for (const stage of ['loading', 'timer-pending']) {
+test('initial unread positioning waits for the covering map or meetup sheet, including a pending scroll timer', async context => {
+  for (const panel of ['map', 'overview']) for (const stage of ['loading', 'timer-pending']) {
     const rows = [message(1), message(2), message(3)], scrolls = [], marked = [];
     let finish;
     const pending = new Promise(resolve => { finish = resolve; });
-    const harness = room({ loadConversationMessages: () => stage === 'loading' ? pending : Promise.resolve(rows),
+    const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { loadConversationMessages: () => stage === 'loading' ? pending : Promise.resolve(rows),
       loadChatReadPosition: async () => rows[0].created_at,
-      markChatRead: async (_client, _room, id) => marked.push(id) });
+      markChatRead: async (_client, _room, id) => marked.push(id) }, { ...roomProps, conversation: { ...conversation, groupPostId: 'post-1' } });
     context.after(() => harness.cleanup()); await harness.settle();
-    const action = harness.nodes().find(node => node.props?.analyticsId === 'chat.open-map'); action.props.onPress(); await harness.settle();
+    if (panel === 'map') harness.nodes().find(node => node.props?.analyticsId === 'chat.open-map').props.onPress();
+    else harness.nodes().find(node => node.type === 'MeetupRoomSummary').props.onOpen();
+    await harness.settle();
     if (stage === 'loading') { finish(rows); await harness.settle(); }
     const list = () => harness.nodes().find(node => node.type === 'FlatList');
     list().props.ref.current = { scrollToIndex: ({ index }) => scrolls.push(index), scrollToEnd: () => scrolls.push('end') };
     await harness.timers();
     list().props.onViewableItemsChanged({ viewableItems: [{ item: rows[2] }] });
     assert.deepEqual(scrolls, []); assert.deepEqual(marked, []);
-    harness.nodes().find(node => node.type === 'MapScreen').props.onClose(); await harness.settle(); await harness.timers();
+    harness.nodes().find(node => node.type === (panel === 'map' ? 'MapScreen' : 'MeetupChatOverview')).props.onClose(); await harness.settle(); await harness.timers();
     assert.deepEqual(scrolls, [1], stage);
     harness.rerender(); await harness.timers(); assert.deepEqual(scrolls, [1], 'initial unread positioning runs once');
   }
@@ -1170,13 +1190,607 @@ test('a group room shows the meetup summary and only the host gets the manage sh
     context.after(() => harness.cleanup()); await harness.settle();
     const summary = harness.nodes().find(node => node.type === 'MeetupRoomSummary');
     assert.ok(summary, 'the meetup summary sits above the messages');
-    const manage = harness.nodes().find(node => node.props?.analyticsId === 'chat.meetup-manage');
-    assert.equal(Boolean(manage), isGroupHost, isGroupHost ? 'the host can open the manage sheet' : 'members cannot');
+    const manage = summary.props.onManage;
+    assert.equal(typeof manage === 'function', isGroupHost, isGroupHost ? 'the host can open management from the meetup card' : 'members cannot');
     if (!isGroupHost) continue;
-    manage.props.onPress(); await harness.settle();
+    manage(); await harness.settle();
     const sheet = harness.nodes().find(node => node.type === 'MeetupManageSheet');
     assert.ok(sheet?.props.visible, 'pressing manage opens the sheet');
     const actions = sheet.props.actions.map(action => action.key);
     assert.equal(actions.join(','), 'location,requests,share,end');
   }
+});
+
+const inboxModal = harness => harness.nodes().find(node => node.type === 'Modal');
+const inboxRoom = harness => harness.nodes().find(node => node.type === 'ChatRoom');
+const openInboxRoom = (harness, item) => harness.nodes().find(node => node.type === 'FlatList').props.renderItem({ item, index: 0 }).props.onPress();
+function closableInbox(extra = {}, params = {}) {
+  const rows = [conversation, { ...conversation, id: 'second', title: '다른 모임' }];
+  const data = { loadPendingMeetupRequests: async () => [], loadConversations: async () => ({ conversations: rows, selectedConversation: null, pendingCount: 0, cursor: null }), ...extra };
+  return { harness: mount('../src/app/(tabs)/chat.tsx', 'default', data, {}, params), data, rows };
+}
+
+test('closing a chat keeps its content through native dismissal without a second transition', async context => {
+  for (const reducedMotion of [false, true]) {
+    let keyboardDismisses = 0;
+    const { harness, rows } = closableInbox({ reducedMotion, native: { Keyboard: { dismiss() { keyboardDismisses++; } } } });
+    context.after(() => harness.cleanup()); await harness.settle();
+    openInboxRoom(harness, rows[0]); await harness.settle();
+    const child = inboxRoom(harness), close = child.props.onClose;
+    close(); close(); await harness.settle();
+    assert.equal(inboxModal(harness).props.visible, false);
+    assert.equal(inboxModal(harness).props.animationType, reducedMotion ? 'none' : 'slide');
+    assert.equal(inboxRoom(harness)?.key, child.key, 'keep the same room instance while the native sheet exits');
+    assert.equal(keyboardDismisses, 1, 'rapid repeated close dismisses the keyboard once');
+    inboxModal(harness).props.onDismiss(); await harness.settle();
+    assert.equal(inboxRoom(harness), undefined, 'release content after native dismissal');
+  }
+});
+
+test('a late close or dismissal from the previous presentation cannot close a newly opened chat', async context => {
+  const { harness, rows } = closableInbox(); context.after(() => harness.cleanup()); await harness.settle();
+  openInboxRoom(harness, rows[0]); await harness.settle();
+  const oldClose = inboxRoom(harness).props.onClose;
+  oldClose(); await harness.settle();
+  const oldDismiss = inboxModal(harness).props.onDismiss;
+  openInboxRoom(harness, rows[1]); await harness.settle();
+  oldClose(); oldDismiss(); await harness.settle();
+  assert.equal(inboxModal(harness).props.visible, true);
+  assert.equal(inboxRoom(harness)?.props.conversation.id, 'second');
+  inboxRoom(harness).props.onClose(); await harness.settle();
+  inboxModal(harness).props.onDismiss(); await harness.settle();
+  assert.equal(inboxRoom(harness), undefined);
+});
+
+test('retained closing content cannot cross an account, business identity or focus boundary', async context => {
+  for (const boundary of ['account', 'identity', 'blur']) {
+    const { harness, data, rows } = closableInbox(); context.after(() => harness.cleanup()); await harness.settle();
+    openInboxRoom(harness, rows[0]); await harness.settle();
+    inboxRoom(harness).props.onClose(); await harness.settle();
+    if (boundary === 'account') harness.auth.me.id = 'other';
+    if (boundary === 'identity') data.businessIdentity = { id: 'business', name: '비즈니스' };
+    if (boundary === 'blur') data.focused = false;
+    harness.rerender(); await harness.settle();
+    assert.equal(inboxModal(harness).props.visible, false, boundary);
+    assert.equal(inboxRoom(harness), undefined, boundary);
+  }
+});
+
+test('meetup summary opens a nested overview and closing it restores the same draft and messages', async context => {
+  let closes = 0, reads = 0; const routes = [], rows = [message(1)];
+  const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { routes, loadConversationMessages: async () => { reads++; return rows; } },
+    { ...roomProps, conversation: { ...conversation, groupPostId: 'post-1' }, onClose: () => closes++ });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const input = () => harness.nodes().find(node => node.type === 'TextInput' && node.props.placeholder === t.chat.messagePlaceholder);
+  input().props.onChangeText('보내지 않은 메모'); await harness.settle();
+  const before = harness.messages(), beforeReads = reads;
+  harness.nodes().find(node => node.type === 'MeetupRoomSummary').props.onOpen(); await harness.settle();
+  const overview = harness.nodes().find(node => node.type === 'MeetupChatOverview');
+  assert.ok(overview, 'open the in-chat status sheet, not the public post route');
+  assert.equal(closes, 0); assert.deepEqual(routes, []);
+  overview.props.onClose(); await harness.settle();
+  assert.equal(input().props.value, '보내지 않은 메모');
+  assert.deepEqual(harness.messages(), before); assert.equal(reads, beforeReads);
+  assert.equal(harness.nodes().some(node => node.type === 'MeetupChatOverview'), false);
+});
+
+test('shared location preview uses the exact original coordinates and never asks for GPS permission', async context => {
+  const calls = [];
+  const harness = mount('../src/components/chat-room.tsx', 'ChatLocationMessage', {
+    location: { reverseGeocodeAsync: async pin => { calls.push(pin); return [{ street: 'Austin Avenue', city: 'Coquitlam', region: 'BC' }]; },
+      requestForegroundPermissionsAsync: async () => { throw new Error('must not request location access'); } },
+  }, { latitude: 49.24991, longitude: -122.86145, label: '현재 위치' });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const map = harness.nodes().find(node => node.type === 'PostPinMap');
+  assert.equal(map?.props.preview, true);
+  assert.equal(map?.props.pin.latitude, 49.24991); assert.equal(map?.props.pin.longitude, -122.86145);
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [{ latitude: 49.24991, longitude: -122.86145 }]);
+  assert.ok(harness.nodes().some(node => node.props?.children === 'Austin Avenue, Coquitlam, BC'));
+});
+
+const overviewPost = { id: 'post-1', cityId: 'vancouver', title: '맛집 탐방', body: '기존 멤버만 보는 모임 소개', authorId: 'host', room: { eventKind: 'group', memberCount: 5 } };
+const overviewData = extra => ({ clock: { now: Date.parse('2026-10-23T12:00:00Z') }, loadPublicMeetupContext: async () => overviewPost,
+  loadMeetupSessions: async () => ({ member: true, isHost: false, kind: 'group', sessions: [] }), ...extra });
+const overviewProps = { postId: 'post-1', currentUserId: 'me', onClose() {} };
+const session = (id, day) => ({ id, startsAt: `2026-10-${day}T14:00:00Z`, endsAt: `2026-10-${day}T16:00:00Z`, checkedIn: false, verified: false, claimStatus: 'none', members: [] });
+const hasText = (harness, text) => harness.nodes().some(node => node.props?.children === text);
+
+test('meetup overview sorts real upcoming sessions and separates introduction from existing attendance controls', async context => {
+  let closes = 0;
+  const harness = mount('../src/components/meetup-chat-overview.tsx', 'MeetupChatOverview', overviewData({
+    loadMeetupSessions: async () => ({ member: true, isHost: false, kind: 'group', sessions: [session('later', '28'), session('past', '20'), session('next', '24')] }),
+  }), { ...overviewProps, onClose() { closes++; } });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const cards = harness.nodes().filter(node => node.props?.testID === 'meetup-upcoming-session');
+  assert.deepEqual(cards.map(node => node.key), ['next', 'later']);
+  assert.equal(hasText(harness, overviewPost.body), false, 'introduction is secondary');
+  const intro = harness.nodes().find(node => node.props?.accessibilityLabel === '모임 소개');
+  intro.props.onPress(); await harness.settle();
+  assert.ok(harness.nodes().some(node => node.type === 'PostBody' && node.props.body === overviewPost.body));
+  harness.nodes().find(node => node.props?.accessibilityLabel === '모임 현황으로 돌아가기').props.onPress(); await harness.settle();
+  assert.equal(closes, 0);
+  harness.nodes().find(node => node.props?.accessibilityLabel === '참석 확인').props.onPress(); await harness.settle();
+  assert.equal(harness.nodes().find(node => node.type === 'MeetupReviews')?.props.attendanceOnly, true);
+  harness.nodes().find(node => node.props?.accessibilityLabel === '모임 현황 닫기').props.onPress();
+  await harness.settle();
+  assert.equal(closes, 0, 'keep nested content through the native dismiss transition');
+  harness.nodes().find(node => node.type === 'Modal').props.onDismiss();
+  harness.nodes().find(node => node.type === 'Modal').props.onDismiss();
+  assert.equal(closes, 1, 'native dismissal completes exactly once');
+});
+
+test('empty recurring schedules stay empty while the existing host scheduling action remains available', async context => {
+  for (const isHost of [false, true]) {
+    const harness = mount('../src/components/meetup-chat-overview.tsx', 'MeetupChatOverview', overviewData({
+      loadMeetupSessions: async () => ({ member: true, isHost, kind: 'group', sessions: [] }),
+    }), overviewProps);
+    context.after(() => harness.cleanup()); await harness.settle();
+    assert.ok(hasText(harness, '등록된 예정 일정이 없어요.'));
+    assert.equal(harness.nodes().filter(node => node.props?.testID === 'meetup-upcoming-session').length, 0);
+    assert.ok(harness.nodes().some(node => node.props?.accessibilityLabel === (isHost ? '일정·참석 관리' : '참석 확인')));
+    assert.equal(harness.nodes().some(node => node.props?.children === '0명 참가 예정'), false);
+  }
+});
+
+test('a late meetup overview response and retained introduction cannot cross an account or visibility boundary', async context => {
+  for (const boundary of ['account', 'hidden']) {
+    let finish;
+    const harness = mount('../src/components/meetup-chat-overview.tsx', 'MeetupChatOverview', overviewData({ loadPublicMeetupContext: async () => ({ ...overviewPost, id: 'private-post' }), loadMeetupSessions: () => new Promise(resolve => { finish = resolve; }) }), { ...overviewProps, postId: 'private-post' });
+    context.after(() => harness.cleanup()); await harness.settle();
+    if (boundary === 'account') harness.auth.me.id = 'other';
+    else hideContent('me', 'post', 'private-post');
+    harness.rerender(); await harness.settle();
+    finish({ member: true, isHost: true, kind: 'group', sessions: [session('private', '24')] }); await harness.settle();
+    assert.equal(harness.nodes().some(node => node.props?.testID === 'meetup-upcoming-session'), false, boundary);
+    assert.equal(harness.nodes().some(node => node.type === 'MeetupReviews' || node.type === 'PostBody'), false, boundary);
+  }
+});
+
+test('switching away and back never restores a dismissed account presentation', async context => {
+  const { harness, rows } = closableInbox(); context.after(() => harness.cleanup()); await harness.settle();
+  openInboxRoom(harness, rows[0]); await harness.settle();
+  harness.auth.me.id = 'other'; harness.rerender(); await harness.settle();
+  harness.auth.me.id = 'me'; harness.rerender(); await harness.settle();
+  assert.equal(inboxModal(harness).props.visible, false);
+  assert.equal(inboxRoom(harness), undefined);
+});
+
+test('an old dismissal after a rapid second close cannot remove a later presentation of the same conversation', async context => {
+  const { harness, rows } = closableInbox(); context.after(() => harness.cleanup()); await harness.settle();
+  openInboxRoom(harness, rows[0]); await harness.settle();
+  const firstDismiss = inboxModal(harness).props.onDismiss;
+  inboxRoom(harness).props.onClose(); await harness.settle();
+  openInboxRoom(harness, rows[0]); await harness.settle();
+  inboxRoom(harness).props.onClose(); await harness.settle();
+  const secondDismiss = inboxModal(harness).props.onDismiss;
+  firstDismiss(); await harness.settle();
+  assert.ok(inboxRoom(harness), 'an earlier native sheet must not unmount the current closing sheet');
+  secondDismiss(); await harness.settle(); assert.equal(inboxRoom(harness), undefined);
+});
+
+test('a missing upcoming read shows a retry without inventing an empty schedule and keeps authorized introduction navigation', async context => {
+  const harness = mount('../src/components/meetup-chat-overview.tsx', 'MeetupChatOverview', overviewData({
+    loadMeetupSessions: async () => { throw new Error('PGRST202'); },
+  }), overviewProps);
+  context.after(() => harness.cleanup()); await harness.settle();
+  assert.ok(hasText(harness, '일정을 불러오지 못했어요.'));
+  assert.equal(hasText(harness, '등록된 예정 일정이 없어요.'), false);
+  assert.equal(harness.nodes().some(node => node.props?.accessibilityLabel === '참석 확인' || node.props?.accessibilityLabel === '일정·참석 관리'), false);
+  const intro = harness.nodes().find(node => node.props?.accessibilityLabel === '모임 소개');
+  assert.ok(intro, 'existing authorized post projection is independent from the new schedule read');
+  intro.props.onPress(); await harness.settle();
+  assert.ok(harness.nodes().some(node => node.type === 'PostBody' && node.props.body === overviewPost.body));
+});
+
+test('unavailable addresses retain the original label and coordinates without sending a location', async context => {
+  for (const platform of ['ios', 'android', 'web']) {
+    let reverseReads = 0;
+    const harness = mount('../src/components/chat-room.tsx', 'ChatLocationMessage', { platform, location: {
+      getForegroundPermissionsAsync: async () => ({ granted: false }),
+      reverseGeocodeAsync: async () => { reverseReads++; throw new Error('offline'); },
+      requestForegroundPermissionsAsync: () => { throw new Error('unexpected permission prompt'); },
+    } }, { latitude: 49.24991, longitude: -122.86145, label: 'Jimoco Café & Pasta' });
+    context.after(() => harness.cleanup()); await harness.settle();
+    assert.ok(hasText(harness, 'Jimoco Café & Pasta'));
+    assert.ok(hasText(harness, '49.2499, -122.8615'));
+    assert.equal(reverseReads, platform === 'ios' ? 1 : 0);
+    assert.ok(harness.nodes().some(node => node.type === 'PostPinMap' && node.props.pin.latitude === 49.24991));
+  }
+});
+
+test('invalid location coordinates never render a map or open a reversed or unsafe destination', async context => {
+  for (const latitude of [NaN, Infinity, -122.86145, 91]) {
+    let geocodes = 0;
+    const bubble = mount('../src/components/chat-room.tsx', 'ChatLocationMessage', { location: { reverseGeocodeAsync: async () => { geocodes++; return []; } } },
+      { latitude, longitude: 49.24991, label: '현재 위치' });
+    context.after(() => bubble.cleanup()); await bubble.settle();
+    assert.equal(bubble.nodes().some(node => node.type === 'PostPinMap'), false); assert.equal(geocodes, 0);
+  }
+  const opened = [], shared = { ...message(1), kind: 'location', latitude: 49.24991, longitude: -122.86145 };
+  const harness = room({ native: { Linking: { openURL: async url => opened.push(url) } }, loadConversationMessages: async () => [shared] });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const renderBubble = item => harness.nodes().find(node => node.type === 'FlatList').props.renderItem({ item, index: 0 });
+  const nodes = value => !value || typeof value !== 'object' ? [] : [...(value.type ? [value] : []), ...Object.values(value).flatMap(nodes)];
+  nodes(renderBubble(shared)).find(node => node.props?.analyticsId === 'components_chat-room.pressable.heart').props.onPress({ nativeEvent: { timestamp: 1000 } });
+  const destination = new URL(opened[0]); assert.equal(destination.searchParams.get('query'), '49.24991,-122.86145');
+  nodes(renderBubble({ ...shared, latitude: 91 })).find(node => node.props?.analyticsId === 'components_chat-room.pressable.heart').props.onPress({ nativeEvent: { timestamp: 2000 } });
+  assert.equal(opened.length, 1);
+});
+
+test('late reverse-geocoding cannot place an old account address in a new account or after unmount', async context => {
+  for (const change of ['account', 'unmount']) {
+    let finish;
+    const harness = mount('../src/components/chat-room.tsx', 'ChatLocationMessage', { location: {
+      reverseGeocodeAsync: () => new Promise(resolve => { finish = resolve; }),
+    } }, { latitude: 49.24991, longitude: -122.86145, label: '현재 위치' });
+    await harness.settle(); const old = finish;
+    if (change === 'unmount') harness.cleanup();
+    else { harness.auth.me.id = 'other'; harness.rerender(); await harness.settle(); }
+    old([{ street: 'Old account address', city: 'Coquitlam' }]); await harness.settle();
+    assert.equal(hasText(harness, 'Old account address, Coquitlam'), false, change);
+    harness.cleanup();
+  }
+});
+
+test('a one-time meetup uses its original real schedule without inventing attendance records', async context => {
+  const harness = mount('../src/components/meetup-chat-overview.tsx', 'MeetupChatOverview', overviewData({
+    loadPublicMeetupContext: async () => ({ ...overviewPost, room: { ...overviewPost.room, eventKind: 'once', startsAt: '2026-10-24T14:00:00Z', endsAt: '2026-10-24T16:00:00Z' } }),
+    loadMeetupSessions: async () => ({ member: true, isHost: false, kind: 'once', sessions: [] }),
+  }), overviewProps);
+  context.after(() => harness.cleanup()); await harness.settle();
+  assert.ok(harness.nodes().some(node => node.props?.testID === 'meetup-once-schedule'));
+  assert.equal(harness.nodes().some(node => node.props?.testID === 'meetup-upcoming-session'), false);
+  assert.equal(hasText(harness, '등록된 예정 일정이 없어요.'), false);
+});
+
+test('overview and location recovery copy follow Korean or English without translating stored content', async context => {
+  for (const language of ['ko', 'en']) {
+    const harness = mount('../src/components/meetup-chat-overview.tsx', 'MeetupChatOverview', overviewData({ language }), overviewProps);
+    context.after(() => harness.cleanup()); await harness.settle();
+    assert.ok(hasText(harness, overviewPost.title));
+    assert.ok(hasText(harness, language === 'en' ? 'No upcoming sessions are registered.' : '등록된 예정 일정이 없어요.'));
+    harness.nodes().find(node => node.props?.accessibilityLabel === (language === 'en' ? 'About this meetup' : '모임 소개')).props.onPress(); await harness.settle();
+    assert.ok(harness.nodes().some(node => node.type === 'PostBody' && node.props.body === overviewPost.body));
+  }
+});
+
+test('null or malformed schedule responses remain unavailable rather than fabricated zero schedules', async context => {
+  for (const response of [null, {}, { member: true, isHost: true, kind: 'group', sessions: null }]) {
+    const harness = mount('../src/components/meetup-chat-overview.tsx', 'MeetupChatOverview', overviewData({ loadMeetupSessions: async () => response }), overviewProps);
+    context.after(() => harness.cleanup()); await harness.settle();
+    assert.ok(hasText(harness, '일정을 불러오지 못했어요.'));
+    assert.equal(hasText(harness, '등록된 예정 일정이 없어요.'), false);
+  }
+});
+
+test('denied membership never renders introduction or attendance controls even with an authorized post projection', async context => {
+  const harness = mount('../src/components/meetup-chat-overview.tsx', 'MeetupChatOverview', overviewData({
+    loadMeetupSessions: async () => ({ member: false, isHost: false, kind: 'group', sessions: [] }),
+  }), overviewProps);
+  context.after(() => harness.cleanup()); await harness.settle();
+  assert.equal(harness.nodes().some(node => ['PostBody', 'MeetupReviews'].includes(node.type) || node.props?.accessibilityLabel === '모임 소개'), false);
+});
+
+test('native back and Reduce Motion keep nested navigation local and finish dismissal once', async context => {
+  for (const platform of ['ios', 'android']) for (const reducedMotion of [true, false]) {
+    let closes = 0;
+    const harness = mount('../src/components/meetup-chat-overview.tsx', 'MeetupChatOverview', overviewData({ platform, reducedMotion }), { ...overviewProps, onClose() { closes++; } });
+    context.after(() => harness.cleanup()); await harness.settle();
+    const modal = () => harness.nodes().find(node => node.type === 'Modal');
+    assert.equal(modal().props.animationType, reducedMotion ? 'none' : 'slide');
+    harness.nodes().find(node => node.props?.accessibilityLabel === '모임 소개').props.onPress(); await harness.settle();
+    modal().props.onRequestClose(); await harness.settle();
+    if (platform === 'android') {
+      assert.equal(closes, 0); assert.equal(modal().props.visible, true);
+      assert.equal(harness.nodes().some(node => node.type === 'PostBody'), false);
+      modal().props.onRequestClose(); await harness.settle();
+    } else assert.equal(closes, 0, 'iOS retains its content through the native animation');
+    modal().props.onDismiss(); modal().props.onDismiss();
+    assert.equal(closes, 1);
+  }
+});
+
+test('summary and overview execute only their narrow context read even when unused comment and media services fail', async context => {
+  const { loadPublicMeetupContext } = await import('../src/lib/feed-data.ts');
+  const calls = []; let participationReads = 0;
+  const row = { id: 'post-1', city_id: 'vancouver', title: 'Synthetic public meetup', body: 'Authorized original introduction',
+    author_id: 'canonical-public-host', room_preview: { ...overviewPost.room, title: 'Synthetic public meetup', verifiedOnly: false }, image_paths: ['PRIVATE_UPLOAD_PATH'] };
+  const client = { rpc: async (name, params) => {
+    calls.push({ name, params });
+    if (name !== 'get_public_post') throw Error('unused comments or business media unavailable');
+    return { data: [row], error: null };
+  } };
+  const read = (_unused, postId) => loadPublicMeetupContext(client, postId);
+  const summary = mount('../src/components/meetup-room-summary.tsx', 'MeetupRoomSummary', { loadPublicMeetupContext: read }, { postId: 'post-1', onOpen() {} });
+  context.after(() => summary.cleanup()); await summary.settle();
+  assert.ok(hasText(summary, row.title)); assert.equal(calls.length, 1);
+  const overview = mount('../src/components/meetup-chat-overview.tsx', 'MeetupChatOverview', overviewData({ loadPublicMeetupContext: read,
+    loadMeetupSessions: async () => { participationReads++; return { member: true, isHost: false, kind: 'group', sessions: [] }; },
+  }), overviewProps);
+  context.after(() => overview.cleanup()); await overview.settle();
+  assert.ok(hasText(overview, row.title)); assert.equal(calls.length, 2, 'each surface does one scoped public read; no global cache');
+  assert.equal(participationReads, 1, 'overview independently checks participant permissions');
+  assert.deepEqual(calls.map(call => call.name), ['get_public_post', 'get_public_post']);
+  overview.nodes().find(node => node.props?.accessibilityLabel === '모임 소개').props.onPress(); await overview.settle();
+  assert.ok(overview.nodes().some(node => node.type === 'PostBody' && node.props.body === row.body));
+  assert.equal(calls.length, 2, 'the authorized projection already contains the original introduction');
+  assert.equal(JSON.stringify(overview.nodes()).includes('PRIVATE_UPLOAD_PATH'), false);
+});
+
+test('a summary unmounted before its deferred read starts makes no request', async () => {
+  let reads = 0;
+  const harness = mount('../src/components/meetup-room-summary.tsx', 'MeetupRoomSummary', { loadPublicMeetupContext: async () => { reads++; return overviewPost; } }, { postId: 'post-1', onOpen() {} });
+  harness.cleanup(); await new Promise(setImmediate);
+  assert.equal(reads, 0);
+});
+
+const settingsSheet = harness => harness.nodes().find(node => node.props?.testID === 'chat-room-settings');
+const settingsActions = harness => {
+  const walk = value => !value || typeof value !== 'object' ? [] : [...(value.type ? [value] : []), ...Object.values(value).flatMap(walk)];
+  return walk(settingsSheet(harness)).filter(node => node.props?.label);
+};
+
+test('the neutral header close only dismisses; end, report and block are nested in room settings', async context => {
+  let closes = 0, ends = 0, blocks = 0;
+  const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', {
+    loadConversationMessages: async () => [], endConversation: async () => { ends++; }, blockUser: async () => { blocks++; },
+  }, { ...roomProps, conversation: { ...conversation, kind: 'direct' }, onClose() { closes++; } });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const close = harness.nodes().find(node => node.props?.accessibilityLabel === t.detail.close || node.props?.label === t.detail.close);
+  close.props.onPress(); assert.equal(closes, 1); assert.equal(ends, 0); assert.equal(blocks, 0);
+  const gear = harness.nodes().find(node => node.props?.analyticsId === 'chat.settings.open');
+  assert.ok(gear); assert.equal(gear.props.accessibilityLabel, '대화 설정');
+  assert.equal(harness.nodes().find(node => node.props?.testID === 'chat-room-settings-modal').props.visible, false);
+  gear.props.onPress(); await harness.settle();
+  assert.equal(harness.nodes().find(node => node.props?.testID === 'chat-room-settings-modal').props.visible, true);
+  const actions = settingsActions(harness);
+  assert.ok(actions.some(node => node.props.label === t.chat.end));
+  assert.ok(actions.some(node => node.props.label === t.report.short));
+  assert.ok(actions.some(node => node.props.label === t.chat.block));
+  for (const label of [t.chat.end, t.report.short, t.chat.block]) {
+    assert.equal(harness.nodes().filter(node => node.props?.label === label).length, actions.filter(node => node.props.label === label).length, 'room-level actions exist only inside settings');
+  }
+  assert.equal(ends, 0); assert.equal(blocks, 0);
+  actions.find(node => node.props.label === t.chat.end).props.onPress(); await harness.settle();
+  assert.equal(ends, 0, 'choosing end still requires the existing confirmation');
+  const confirmation = harness.nodes().find(node => node.props?.label === t.chat.end && node.props.primary);
+  assert.ok(confirmation); assert.equal(confirmation.props.danger, true);
+  harness.nodes().find(node => node.props?.label === t.profile.cancel).props.onPress(); await harness.settle();
+  assert.equal(ends, 0); assert.equal(closes, 1);
+});
+
+test('room settings preserve ended and pending capabilities, report targets, and guarded final end', async context => {
+  for (const status of ['active', 'ended', 'pending']) {
+    let ends = 0;
+    const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { loadConversationMessages: async () => [], endConversation: async () => { ends++; } },
+      { ...roomProps, conversation: { ...conversation, kind: 'direct', status } });
+    context.after(() => harness.cleanup()); await harness.settle();
+    harness.nodes().find(node => node.props?.analyticsId === 'chat.settings.open').props.onPress(); await harness.settle();
+    const actions = settingsActions(harness), end = actions.find(node => node.props.label === t.chat.end);
+    assert.equal(Boolean(end), status === 'active');
+    actions.find(node => node.props.label === t.report.short).props.onPress(); await harness.settle();
+    assert.equal(harness.nodes().some(node => node.type === 'ReportSheet'), false, 'iOS opens the report only after settings dismissal');
+    harness.nodes().find(node => node.props?.testID === 'chat-room-settings-modal').props.onDismiss(); await harness.settle();
+    const report = harness.nodes().find(node => node.type === 'ReportSheet');
+    assert.equal(report.props.targetType, 'user'); assert.equal(report.props.targetId, conversation.otherUser.id);
+    assert.equal(ends, 0);
+    report.props.onClose(); await harness.settle();
+    if (!end) continue;
+    harness.nodes().find(node => node.props?.analyticsId === 'chat.settings.open').props.onPress(); await harness.settle();
+    settingsActions(harness).find(node => node.props.label === t.chat.end).props.onPress(); await harness.settle();
+    const confirm = harness.nodes().find(node => node.props?.label === t.chat.end && node.props.primary);
+    confirm.props.onPress(); confirm.props.onPress(); await harness.settle();
+    assert.equal(ends, 1, 'only the confirmed action ends; repeat taps are single-flight');
+  }
+});
+
+test('destructive confirmation uses the actual theme danger color with readable contrast and disabled feedback', async context => {
+  const constants = {};
+  vm.runInNewContext(ts.transpileModule(fs.readFileSync(new URL('../src/constants/theme.ts', import.meta.url), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS },
+  }).outputText, { exports: constants, require: () => ({ Platform: { OS: 'ios', select: values => values.default } }) });
+  const luminance = color => {
+    const rgb = color.slice(1).match(/../g).map(value => parseInt(value, 16) / 255).map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+    return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+  };
+  for (const theme of [constants.Colors.light, constants.Colors.dark]) {
+    let finish, ends = 0;
+    const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { theme, loadConversationMessages: async () => [], endConversation: () => { ends++; return new Promise(resolve => { finish = resolve; }); } },
+      { ...roomProps, conversation: { ...conversation, kind: 'direct' } });
+    context.after(() => harness.cleanup()); await harness.settle();
+    const close = harness.nodes().find(node => node.props?.accessibilityLabel === t.detail.close);
+    assert.equal(close.props.children.props.tintColor, theme.textSecondary, 'close stays neutral');
+    harness.nodes().find(node => node.props?.analyticsId === 'chat.settings.open').props.onPress(); await harness.settle();
+    const destructive = settingsActions(harness).find(node => node.props.label === t.chat.end);
+    assert.equal(destructive.props.danger, true);
+    destructive.props.onPress(); await harness.settle();
+    const confirmation = () => harness.nodes().find(node => node.props?.label === t.chat.end && node.props.primary);
+    const rendered = confirmation().type(confirmation().props);
+    const style = Object.assign({}, ...rendered.props.style({ pressed: false }).flat(Infinity).filter(value => value && typeof value === 'object'));
+    assert.equal(style.borderColor, theme.danger); assert.ok(style.minHeight >= 44);
+    assert.equal(rendered.props.accessibilityLabel, t.chat.end);
+    const icon = rendered.props.children.find(node => node?.type === 'SymbolView');
+    const label = rendered.props.children.find(node => node?.type === 'ThemedText');
+    assert.equal(icon.props.tintColor, theme.danger); assert.equal(label.props.style.color, theme.danger);
+    const a = luminance(label.props.style.color), b = luminance(style.backgroundColor);
+    assert.ok((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) >= 4.5, 'destructive text contrast remains readable');
+    confirmation().props.onPress(); await harness.settle();
+    const disabled = confirmation().type(confirmation().props);
+    assert.equal(disabled.props.disabled, true); assert.equal(disabled.props.accessibilityState.disabled, true);
+    disabled.props.onPress(); assert.equal(ends, 1);
+    finish(); await harness.settle();
+  }
+});
+
+test('group and business room settings retain their existing role and safety action boundaries', async context => {
+  for (const isGroupHost of [false, true]) {
+    const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { loadConversationMessages: async () => [] },
+      { ...roomProps, conversation: { ...conversation, groupPostId: 'post-1', isGroupHost } });
+    context.after(() => harness.cleanup()); await harness.settle();
+    assert.equal(Boolean(harness.nodes().find(node => node.type === 'MeetupRoomSummary').props.onManage), isGroupHost);
+    harness.nodes().find(node => node.props?.analyticsId === 'chat.settings.open').props.onPress(); await harness.settle();
+    const labels = settingsActions(harness).map(node => node.props.label);
+    assert.ok(labels.includes(isGroupHost ? t.meetup.end : t.meetup.leave));
+    assert.equal(labels.includes(t.report.short) || labels.includes(t.chat.block), false, 'message-specific group safety controls keep their own context');
+  }
+  const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { businessIdentity: { id: businessId, name: 'Public business' },
+    businessChat: { loadBusinessChatMessages: async () => businessPage([]) } }, { ...roomProps, conversation: businessRoom });
+  context.after(() => harness.cleanup()); await harness.settle();
+  harness.nodes().find(node => node.props?.analyticsId === 'chat.settings.open').props.onPress(); await harness.settle();
+  const labels = settingsActions(harness).map(node => node.props.label);
+  assert.ok(labels.includes(t.chat.end)); assert.ok(labels.includes(t.chat.block));
+  assert.equal(labels.includes(t.report.short), false, 'business chat never uses a raw personal-user report target');
+});
+
+test('retained room settings cannot block or hand off a report after an account change', async context => {
+  let blocks = 0;
+  const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { loadConversationMessages: async () => [], blockUser: async () => { blocks++; } },
+    { ...roomProps, conversation: { ...conversation, kind: 'direct' } });
+  context.after(() => harness.cleanup()); await harness.settle();
+  harness.nodes().find(node => node.props?.analyticsId === 'chat.settings.open').props.onPress(); await harness.settle();
+  const block = settingsActions(harness).find(node => node.props.label === t.chat.block).props.onPress;
+  settingsActions(harness).find(node => node.props.label === t.report.short).props.onPress(); await harness.settle();
+  const dismissed = harness.nodes().find(node => node.props?.testID === 'chat-room-settings-modal').props.onDismiss;
+  harness.auth.me.id = 'other-account'; harness.rerender(); await harness.settle();
+  block(); dismissed(); await harness.settle();
+  assert.equal(blocks, 0); assert.equal(harness.nodes().some(node => node.type === 'ReportSheet'), false);
+});
+
+test('room settings labels, neutral dismissal and Reduce Motion work in Korean and English', async context => {
+  for (const language of ['ko', 'en']) for (const reducedMotion of [false, true]) {
+    const copy = translationsFor(language), feedback = [];
+    const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { language, reducedMotion, feedback, loadConversationMessages: async () => [] },
+      { ...roomProps, conversation: { ...conversation, kind: 'direct' } });
+    context.after(() => harness.cleanup()); await harness.settle();
+    const gear = harness.nodes().find(node => node.props?.analyticsId === 'chat.settings.open');
+    assert.equal(gear.props.accessibilityLabel, language === 'en' ? 'Room settings' : '대화 설정');
+    assert.equal(harness.nodes().find(node => node.props?.accessibilityLabel === copy.detail.close).props.accessibilityRole, 'button');
+    gear.props.onPress(); await harness.settle();
+    const modal = () => harness.nodes().find(node => node.props?.testID === 'chat-room-settings-modal');
+    assert.equal(modal().props.animationType, reducedMotion ? 'none' : 'slide');
+    assert.ok(settingsActions(harness).some(node => node.props.label === copy.chat.end));
+    harness.nodes().find(node => node.props?.analyticsId === 'chat.settings.dismiss').props.onPress(); await harness.settle();
+    assert.equal(modal().props.visible, false); assert.ok(feedback.includes('selection'));
+  }
+});
+
+test('an earlier settings dismissal cannot consume a reopened presentation report', async context => {
+  const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { loadConversationMessages: async () => [] }, { ...roomProps, conversation: { ...conversation, kind: 'direct' } });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const modal = () => harness.nodes().find(node => node.props?.testID === 'chat-room-settings-modal');
+  const open = () => harness.nodes().find(node => node.props?.analyticsId === 'chat.settings.open').props.onPress();
+  open(); await harness.settle();
+  const oldDismiss = modal().props.onDismiss;
+  settingsActions(harness).find(node => node.props.label === t.report.short).props.onPress(); await harness.settle();
+  open(); await harness.settle();
+  const currentDismiss = modal().props.onDismiss;
+  settingsActions(harness).find(node => node.props.label === t.report.short).props.onPress(); await harness.settle();
+  oldDismiss(); await harness.settle();
+  assert.equal(harness.nodes().some(node => node.type === 'ReportSheet'), false, 'the first native dismissal does not consume the second handoff');
+  currentDismiss(); await harness.settle();
+  assert.equal(harness.nodes().find(node => node.type === 'ReportSheet').props.targetId, conversation.otherUser.id);
+  harness.nodes().find(node => node.type === 'ReportSheet').props.onClose(); await harness.settle();
+  oldDismiss(); currentDismiss(); await harness.settle();
+  assert.equal(harness.nodes().some(node => node.type === 'ReportSheet'), false, 'each presentation hands off at most once');
+});
+
+test('retained close and safety actions cannot act on a later settings presentation', async context => {
+  let blocks = 0;
+  const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { loadConversationMessages: async () => [], blockUser: async () => { blocks++; } }, { ...roomProps, conversation: { ...conversation, kind: 'direct' } });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const modal = () => harness.nodes().find(node => node.props?.testID === 'chat-room-settings-modal');
+  const open = () => harness.nodes().find(node => node.props?.analyticsId === 'chat.settings.open').props.onPress();
+  open(); await harness.settle();
+  const oldClose = modal().props.onRequestClose, oldBlock = settingsActions(harness).find(node => node.props.label === t.chat.block).props.onPress;
+  oldClose(); await harness.settle(); open(); await harness.settle();
+  oldClose(); oldBlock(); await harness.settle();
+  assert.equal(modal().props.visible, true); assert.equal(blocks, 0);
+});
+
+test('long personal and business header titles keep their full accessible name when visually truncated', async context => {
+  for (const businessPeer of [false, true]) {
+    const title = businessPeer ? 'LongUnbrokenBusinessNameForContainment' : 'LongNeighbourName123';
+    const pinned = businessPeer ? { ...conversation, kind: 'business', title,
+      selfIdentity: { kind: 'user', id: 'me', name: 'Me' }, otherIdentity: { kind: 'business', id: businessId, name: title },
+      otherUser: { id: businessId, nickname: title, verificationLevel: 0 } }
+      : { ...conversation, kind: 'direct', otherUser: { ...conversation.otherUser, nickname: title } };
+    const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { loadConversationMessages: async () => [],
+      businessChat: { loadBusinessChatMessages: async () => ({ conversation: pinned, messages: [], cursor: null, readAt: null }) } }, { ...roomProps, conversation: pinned });
+    context.after(() => harness.cleanup()); await harness.settle();
+    const heading = harness.nodes().find(node => node.type === 'ThemedText' && node.props?.children === title);
+    assert.ok(heading); assert.equal(heading.props.accessibilityLabel, title);
+    assert.equal(heading.props.numberOfLines, 2); assert.equal(heading.props.ellipsizeMode, 'tail');
+    if (businessPeer) assert.ok(harness.nodes().find(node => node.props?.analyticsId === 'chat.peer-profile').props.accessibilityLabel.includes(title));
+  }
+});
+
+test('preview and callback object refreshes preserve a 100-message personal window and its subscription', async context => {
+  let snapshots = 0; const subscriptionEvents = [], props = { ...roomProps, conversation: { ...conversation, kind: 'direct' } };
+  const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { subscriptionEvents,
+    loadConversationMessages: async (_client, _id, before) => { if (!before) snapshots++; return Array.from({ length: 50 }, (_, i) => message((before ? 1 : 51) + i)); },
+  }, props);
+  context.after(() => harness.cleanup()); await harness.settle();
+  await olderButton(harness).props.onPress(); await harness.settle(); assert.equal(harness.messages().length, 100);
+  props.conversation = { ...props.conversation, latestBody: 'new preview', latestAt: '2026-10-24T00:00:00Z', otherUser: { ...props.conversation.otherUser, nickname: 'Updated name' } };
+  props.onChanged = async () => {};
+  harness.rerender(); await harness.settle();
+  assert.equal(snapshots, 1); assert.equal(harness.messages().length, 100);
+  assert.equal(subscriptionEvents.filter(([kind]) => kind === 'subscribe').length, 1);
+  assert.equal(subscriptionEvents.filter(([kind]) => kind === 'remove').length, 0);
+  harness.reconnect(); await harness.settle();
+  assert.equal(snapshots, 2, 'real reconnect still revalidates the contiguous server-visible window');
+});
+
+test('business preview snapshots preserve paged history but a real revocation still clears it', async context => {
+  let snapshots = 0, allowed = true;
+  const props = { ...roomProps, conversation: { ...businessRoom } };
+  const data = { businessIdentity: { id: businessId, name: 'Public business' }, businessChat: {
+    loadBusinessChatMessages: async (_client, pinned, options = {}) => {
+      if (!allowed) throw Error('BUSINESS_CHAT_REVOKED');
+      if (!options.before) snapshots++;
+      return { conversation: pinned, messages: Array.from({ length: 50 }, (_, i) => ({ ...message((options.before ? 1 : 51) + i), sender_kind: 'user', is_mine: false })), cursor: options.before ? null : { id: 'm051', createdAt: message(51).created_at }, readAt: null };
+    },
+  } };
+  const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', data, props);
+  context.after(() => harness.cleanup()); await harness.settle();
+  await olderButton(harness).props.onPress(); await harness.settle(); assert.equal(harness.messages().length, 100);
+  props.conversation = { ...props.conversation, latestBody: 'Updated business preview', selfIdentity: { ...props.conversation.selfIdentity, name: 'Updated public business' } };
+  props.onChanged = async () => {}; harness.rerender(); await harness.settle();
+  assert.equal(snapshots, 1); assert.equal(harness.messages().length, 100);
+  allowed = false; harness.foreground(); await harness.settle();
+  assert.equal(harness.messages().length, 0, 'actual access revalidation still discards revoked business history');
+});
+
+test('the actual shared private channel revalidates business history on reconnect and discards revoked history', async context => {
+  const userId = 'b1900000-0000-4000-8000-000000000001', businessId = 'b1910000-0000-4000-8000-000000000001';
+  const current = { ...businessRoom, id: 'b1920000-0000-4000-8000-000000000001', selfIdentity: { ...businessRoom.selfIdentity, id: businessId } };
+  let snapshots = 0, allowed = true, changes = 0;
+  const props = { conversation: current, currentUserId: userId, onClose() {}, onChanged: async () => { changes++; } };
+  const h = mount('../src/components/chat-room.tsx', 'ChatRoom', {
+    auth: { isAuthed: true, me: { id: userId, nickname: 'Synthetic viewer' } }, businessIdentity: { id: businessId, name: 'Business' },
+    businessChat: { subscribeBusinessChat, loadBusinessChatMessages: async (_client, pinned, options) => {
+      if (!options?.before) snapshots++;
+      if (!allowed) throw Error('BUSINESS_CHAT_REVOKED');
+      return { conversation: pinned, messages: Array.from({ length: 50 }, (_, i) => message((options?.before ? 1 : 51) + i)), cursor: options?.before ? null : { id: 'oldest', createdAt: message(51).created_at }, readAt: null };
+    } },
+  }, props);
+  context.after(h.cleanup); await h.settle(); await olderButton(h).props.onPress(); await h.settle();
+  props.conversation = { ...current, latestBody: 'Updated preview' }; h.rerender(); await h.settle();
+  assert.equal(h.messages().length, 100); assert.equal(snapshots, 1);
+  h.reconnect(); await h.settle(); assert.equal(snapshots, 2); assert.equal(changes, 1);
+  allowed = false; h.reconnect(); await h.settle(); assert.equal(snapshots, 3); assert.equal(h.messages().length, 0);
+  h.auth.isAuthed = false; h.rerender(); h.reconnect(); await h.settle(); assert.equal(snapshots, 3); assert.equal(changes, 2);
+});
+
+test('the actual private inbox channel refreshes on reconnect without a broadcast or foreground transition', async context => {
+  const userId = 'b1900000-0000-4000-8000-000000000001', businessId = 'b1910000-0000-4000-8000-000000000001';
+  const reads = [];
+  const h = mount('../src/app/(tabs)/chat.tsx', 'default', {
+    auth: { isAuthed: true, me: { id: userId, nickname: 'Synthetic viewer' } }, businessIdentity: { id: businessId, name: 'Business' },
+    businessChat: { subscribeBusinessChat }, loadConversations: async (_client, owner, _filter, _cursor, _selected, asBusinessId) => {
+      reads.push([owner, asBusinessId]); return { conversations: [], pendingCount: 0, cursor: null, selectedConversation: null };
+    },
+  });
+  context.after(h.cleanup); await h.settle(); assert.equal(reads.length, 1);
+  h.reconnect(); await h.timers(); assert.deepEqual(reads, [[userId, businessId], [userId, businessId]]);
 });

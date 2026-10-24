@@ -1,4 +1,5 @@
 export const uiEnglish: Record<string, string> = {
+  "글링 | 캐나다 모임 커뮤니티": "Gling | Canada Meetup Community",
   "비즈니스 찾기": "Find businesses",
   "새 소식으로 돌아가기": "Back to updates",
   "이름, 업종으로 검색": "Search by name or industry",
@@ -1864,6 +1865,8 @@ export const uiEnglish: Record<string, string> = {
   "현재 공개된 글을 볼 수 없어요": "Public posts are currently unavailable",
   "아직 게시글이 없어요": "No posts yet",
   "현재 모집 중인 공고가 없어요": "No current job openings",
+  "아직 표시할 후기가 없어요": "No reviews to show yet",
+  "공개된 후기는 이곳에서 확인할 수 있어요.": "You can view public reviews here when they’re available.",
   "새 글이 등록되면 여기에서 볼 수 있어요.": "New posts will appear here.",
   "비즈니스 소개 보기": "View business introduction",
   "더 보기": "Show more",

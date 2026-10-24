@@ -10,13 +10,24 @@ import * as product from '../src/lib/product-analytics.ts';
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
 test('unread badges refresh after settings and foreground changes without leaking old account counts', async () => {
-  let state = null, effect, cleanup, settingsChanged, foreground;
+  let cursor = 0, settingsChanged, foreground;
   let userId = 'first';
-  const reads = [];
+  const reads = [], slots = [];
   const subscription = { remove() {} };
   const channel = { on() { return this; }, subscribe() { return this; } };
-  const { useUnreadCount } = load('../src/hooks/use-unread-count.ts', {
-    react: { useId: () => 'test-id', useState: () => [state, value => { state = value; }], useEffect: callback => { effect = callback; } },
+  const effect = (callback, deps) => {
+    const i = cursor++, previous = slots[i];
+    if (previous && deps.every((value, index) => Object.is(value, previous.deps[index]))) return;
+    previous?.cleanup?.(); slots[i] = { deps, cleanup: callback() };
+  };
+  const memo = (callback, deps) => {
+    const i = cursor++, previous = slots[i];
+    if (!previous || deps.some((value, index) => !Object.is(value, previous.deps[index]))) slots[i] = { deps, value: callback() };
+    return slots[i].value;
+  };
+  const imports = {
+    react: { useState: initial => { const i = cursor++; if (!(i in slots)) slots[i] = { value: initial }; return [slots[i].value, value => { slots[i].value = value; }]; },
+      useRef: current => slots[cursor++] ??= { current }, useEffect: effect, useLayoutEffect: effect, useMemo: memo },
     'expo-router': { usePathname: () => '/notifications' },
     'react-native': {
       DeviceEventEmitter: { addListener: (_, callback) => { settingsChanged = callback; return subscription; } },
@@ -26,18 +37,21 @@ test('unread badges refresh after settings and foreground changes without leakin
     '@/lib/community-data': { loadUnreadNotificationCount: (_, owner) => new Promise(resolve => reads.push({ owner, resolve })) },
     '@/lib/notification-preferences': preferences,
     '@/lib/supabase': { supabase: { channel: () => channel, removeChannel() {} } },
-  });
-  assert.equal(useUnreadCount(), 0); cleanup = effect();
-  settingsChanged();
-  reads[1].resolve(2); await flush();
-  reads[0].resolve(9); await flush();
-  assert.equal(useUnreadCount(), 2, 'older requests cannot overwrite the current unread count');
-  foreground('active'); reads[2].resolve(3); await flush();
-  assert.equal(useUnreadCount(), 3);
-  cleanup(); userId = 'second';
-  assert.equal(useUnreadCount(), 0, 'account switching hides the previous count immediately');
-  cleanup = effect(); reads[3].resolve(4); await flush();
-  assert.equal(useUnreadCount(), 4); cleanup();
+  };
+  imports['@/lib/notification-refresh'] = load('../src/lib/notification-refresh.ts', imports);
+  const { useUnreadCount } = load('../src/hooks/use-unread-count.ts', imports);
+  const render = () => { cursor = 0; return useUnreadCount(); };
+  assert.equal(render(), 0); await flush(); settingsChanged();
+  assert.equal(reads.length, 1, 'settings queue one refresh behind the unresolved read');
+  reads[0].resolve(9); await flush(); reads[1].resolve(2); await flush();
+  assert.equal(render(), 2);
+  foreground('active'); await flush(); reads[2].resolve(3); await flush();
+  assert.equal(render(), 3);
+  foreground('active'); await flush(); userId = 'second';
+  assert.equal(render(), 0, 'account switching hides the previous count immediately'); await flush();
+  reads[3].resolve(99); await flush(); assert.equal(render(), 0, 'the previous account response is discarded');
+  reads[4].resolve(4); await flush(); assert.equal(render(), 4);
+  for (const slot of slots) slot?.cleanup?.();
 });
 
 function load(path, imports, globals = {}) {
