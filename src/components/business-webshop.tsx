@@ -107,8 +107,8 @@ export function WebshopComparisonSheet({ client, shop, name, visible, onClose }:
     {!visible && !!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
     <Modal visible={visible} transparent animationType={reduced ? 'none' : 'slide'} onRequestClose={close}
       onDismiss={() => { const url = pending.current; pending.current = null; if (url && active.current) void launch(url); }}>
-      <SafeAreaProvider style={styles.backdrop}><Pressable analyticsId="webshop.close-backdrop" accessibilityRole="button" accessibilityLabel={ko ? '가격 비교 닫기' : 'Close price comparison'} onPress={close} style={StyleSheet.absoluteFill} />
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.sheet, { backgroundColor: theme.background }]} accessibilityViewIsModal>
+      <SafeAreaProvider><SafeAreaView edges={['top', 'left', 'right']} style={styles.backdrop}><Pressable analyticsId="webshop.close-backdrop" accessibilityRole="button" accessibilityLabel={ko ? '가격 비교 닫기' : 'Close price comparison'} onPress={close} style={StyleSheet.absoluteFill} />
+        <SafeAreaView edges={['bottom']} style={[styles.sheet, { backgroundColor: theme.background }]} accessibilityViewIsModal>
           <View style={styles.handle} accessible={false} />
           <View style={styles.heading}><View style={styles.grow}><ThemedText type="small" themeColor="textSecondary">{name}</ThemedText>
             <ThemedText type="sheetTitle" accessibilityRole="header">{summary.savingCents > 0 ? ko ? `${money(summary.savingCents)} 아낄 수 있어요` : `Save ${money(summary.savingCents)}` : ko ? '웹샵 가격을 확인해보세요' : 'Check webshop prices'}</ThemedText></View>
@@ -138,7 +138,7 @@ export function WebshopComparisonSheet({ client, shop, name, visible, onClose }:
           <View style={styles.offer}><Pressable analyticsId="webshop.order" accessibilityRole="button" disabled={busy} accessibilityState={{ busy, disabled: busy }} onPress={order}
             style={({ pressed }) => [ControlStyles.action, { backgroundColor: theme.accent, opacity: busy ? 0.45 : pressed ? 0.82 : 1 }]}><ThemedText type="menu" style={{ color: theme.accentInk }}>{busy ? ko ? '여는 중…' : 'Opening…' : ko ? maximumPercent > 0 ? '할인받고 주문하러 가기 ↗' : '웹샵에서 주문하러 가기 ↗' : 'Order from webshop ↗'}</ThemedText></Pressable><UberOrderNotice /></View>
         </SafeAreaView>
-      </SafeAreaProvider>
+      </SafeAreaView></SafeAreaProvider>
     </Modal>
   </>;
 }

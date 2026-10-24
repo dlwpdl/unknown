@@ -643,7 +643,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
 
   return (
     <TabContent style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}><View style={styles.safeArea}>
         <View style={[styles.headRow, fontScale > 1.2 && styles.headRowLarge, { backgroundColor: theme.background }]}>
           <Pressable analyticsId="feed.home" accessibilityRole="button" accessibilityLabel={`${t.appName}, ${t.tabs.today}`}
             onPress={() => { play('selection'); router.navigate('/'); }} style={[styles.homeButton, fontScale > 1.2 && styles.homeButtonLarge]}>
@@ -756,7 +756,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           )}
         />
 
-      </SafeAreaView>
+      </View></SafeAreaView>
 
       {/* 검색: 제목·내용·해시태그. 입력 전엔 인기 해시태그 칩 (당근 검색 패턴) */}
       <Modal visible={searching} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setSearching(false)}
@@ -1210,6 +1210,8 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+    width: '100%',
+    alignSelf: 'center',
     maxWidth: MaxContentWidth,
   },
   listContent: {
