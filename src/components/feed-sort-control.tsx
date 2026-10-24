@@ -1,4 +1,5 @@
 import { useLanguage } from '@/hooks/use-language';
+import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
@@ -8,7 +9,7 @@ import type { FeedSort } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { lensControlStyle } from '@/lib/lens-control';
 
-export function FeedSortControl({ sort, title, onChange }: { sort: FeedSort; title: string; onChange: (sort: FeedSort) => void }) {
+export function FeedSortControl({ sort, title, onChange, action }: { sort: FeedSort; title: string; onChange: (sort: FeedSort) => void; action?: ReactNode }) {
   const { tr } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
@@ -28,9 +29,9 @@ export function FeedSortControl({ sort, title, onChange }: { sort: FeedSort; tit
         })}
       </View>
     </View>
-    <ThemedText type="small" themeColor="textSecondary" style={styles.description}>
+    <View style={styles.descriptionRow}><ThemedText type="small" themeColor="textSecondary" style={styles.description}>
       {sort === 'latest' ? tr("새로 올라온 글부터") : tr("최근 7일 · 반응이 많은 글부터")}
-    </ThemedText>
+    </ThemedText>{action}</View>
   </View>;
 }
 
@@ -40,5 +41,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 16, lineHeight: 24, fontWeight: '700' },
   options: { flexDirection: 'row', gap: 8, padding: 4, borderRadius: 12 },
   option: { minHeight: 44, minWidth: 44, paddingHorizontal: 12, paddingVertical: 6, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderRadius: 8 },
-  description: { marginTop: 8 },
+  descriptionRow: { marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between' },
+  description: { flexShrink: 1 },
 });
