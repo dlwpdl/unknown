@@ -256,7 +256,7 @@ function MeetupDiscovery({ destination, sourceInvalid }: { destination: MeetupDe
     {/* 화면에서 가장 중요한 행동. 스크롤 위치와 무관하게 항상 보이도록 하단에 고정한다. */}
     <Pressable analyticsId="app_tabs_meetups.pressable.3" accessibilityRole="button" accessibilityLabel={destination ? copy('이곳에 갈 모임 만들기', 'Start a meetup here') : tr("모임 만들기")} accessibilityState={{ disabled: createDisabled }} disabled={createDisabled}
       onPress={() => { play('selection'); action('/meetup-create'); }}
-      style={({ pressed }) => [styles.fab, ControlStyles.action, controlPresentation(theme, { tone: 'primary', pressed, disabled: createDisabled }).container, { shadowOpacity: 0, elevation: 0, bottom: insets.bottom + TabBarHeight + Spacing.three }]}>
+      style={({ pressed }) => [styles.fab, ControlStyles.action, controlPresentation(theme, { tone: 'primary', pressed, disabled: createDisabled }).container, { shadowOpacity: 0, elevation: 0, right: 22 + insets.right, bottom: insets.bottom + TabBarHeight + Spacing.three }]}>
       <ThemedText style={{ fontSize: 18, color: theme.accentInk }}>＋</ThemedText>
       <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{destination ? copy('이곳에 갈 모임 만들기', 'Start a meetup here') : tr("모임 만들기")}</ThemedText>
     </Pressable>
