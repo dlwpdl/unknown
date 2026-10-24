@@ -11,10 +11,11 @@ allprojects { p ->
             releaseBuild.signingConfig = p.android.signingConfigs.glingUpload
             releaseBuild.minifyEnabled = true
             releaseBuild.shrinkResources = true
-            // Expo's default rules disable optimization; retain the other keep rules.
-            def defaultRules = p.android.getDefaultProguardFile('proguard-android.txt')
+            // AGP 9 rejects resolving the legacy profile; preserve project keep rules.
+            def optimizedRules = p.android.getDefaultProguardFile('proguard-android-optimize.txt')
+            def defaultRules = new File(optimizedRules.parentFile, optimizedRules.name.replace('proguard-android-optimize.txt', 'proguard-android.txt'))
             releaseBuild.setProguardFiles(releaseBuild.proguardFiles.collect { rules ->
-                rules == defaultRules ? p.android.getDefaultProguardFile('proguard-android-optimize.txt') : rules
+                rules == defaultRules ? optimizedRules : rules
             })
         }
     }
