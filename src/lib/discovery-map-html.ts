@@ -5,6 +5,7 @@ import { TOP25_GOLD } from './discovery.ts';
 export type DiscoveryMarker = { id: string; latitude: number; longitude: number; color: string; label: string; top25?: boolean; discount?: number };
 type Center = { latitude: number; longitude: number; requestId?: number };
 type MapState = { markers: DiscoveryMarker[]; selectedId?: string | null; center?: Center | null; userLocation?: { latitude: number; longitude: number } | null; bottomInset?: number; topInset?: number };
+type MapUpdate = Omit<MapState, 'markers'> & { markers?: DiscoveryMarker[] };
 type DiscoveryMessage = { type: 'ready' | 'error' | 'feedback' } | { type: 'select'; id: string } | { type: 'credits'; url: string };
 const credits = ['https://openfreemap.org/', 'https://www.openmaptiles.org/', 'https://www.openstreetmap.org/copyright'];
 const text = (value: unknown, length: number): value is string => typeof value === 'string' && value.length > 0 && value.length <= length && !/[\u0000-\u001f\u007f]/.test(value);
@@ -24,13 +25,13 @@ export function discoveryMarkers(markers: DiscoveryMarker[]): DiscoveryMarker[] 
   });
 }
 
-function state({ markers, selectedId = null, center = null, userLocation = null, bottomInset = 0, topInset = 0 }: MapState) {
+function state({ markers, selectedId = null, center = null, userLocation = null, bottomInset = 0, topInset = 0 }: MapUpdate) {
   if (selectedId !== null && !text(selectedId, 180)) throw new Error('INVALID_DISCOVERY_SELECTION');
   if (center !== null && !coordinate(center)) throw new Error('INVALID_DISCOVERY_CENTER');
   if (userLocation !== null && !coordinate(userLocation)) throw new Error('INVALID_DISCOVERY_LOCATION');
   if (!Number.isFinite(topInset) || topInset < 0 || topInset > 1000) throw new Error('INVALID_DISCOVERY_INSET');
   if (!Number.isFinite(bottomInset) || bottomInset < 0 || bottomInset > 1000) throw new Error('INVALID_DISCOVERY_INSET');
-  return { markers: discoveryMarkers(markers), selectedId, center: center && { latitude: center.latitude, longitude: center.longitude, ...(center.requestId !== undefined ? { requestId: center.requestId } : {}) }, userLocation: userLocation && { latitude: userLocation.latitude, longitude: userLocation.longitude }, bottomInset, topInset };
+  return { ...(markers !== undefined ? { markers: discoveryMarkers(markers) } : {}), selectedId, center: center && { latitude: center.latitude, longitude: center.longitude, ...(center.requestId !== undefined ? { requestId: center.requestId } : {}) }, userLocation: userLocation && { latitude: userLocation.latitude, longitude: userLocation.longitude }, bottomInset, topInset };
 }
 
 export function discoveryMapMessage(raw: string, sessionId: string, markers: DiscoveryMarker[]): DiscoveryMessage | null {
@@ -45,7 +46,7 @@ export function discoveryMapMessage(raw: string, sessionId: string, markers: Dis
   return null;
 }
 
-export function discoveryMapScript(update: MapState, sessionId: string) {
+export function discoveryMapScript(update: MapUpdate, sessionId: string) {
   if (!text(sessionId, 180)) throw new Error('INVALID_DISCOVERY_SESSION');
   return `window.glingDiscoveryUpdate?.(${json(sessionId)},${json(state(update))});true;`;
 }
@@ -54,6 +55,7 @@ export function discoveryMapHtml({ markers, cityName, sessionId, selectedId = nu
   cityName: string; sessionId: string; accent?: string; parentOrigin?: string; language?: 'ko' | 'en';
 }) {
   if (!text(sessionId, 180) || !['ko', 'en'].includes(language) || !/^#[a-f\d]{6}$/i.test(accent)) throw new Error('INVALID_DISCOVERY_CONFIG');
+  if (markers === undefined) throw new Error('INVALID_DISCOVERY_MARKERS');
   if (parentOrigin !== 'null' && (!/^https?:\/\//.test(parentOrigin) || new URL(parentOrigin).origin !== parentOrigin)) throw new Error('INVALID_DISCOVERY_ORIGIN');
   const config = json({ ...state({ markers, selectedId, center, userLocation, bottomInset, topInset }), cityCenter: mapCityCenter(cityName), sessionId, parentOrigin, credits });
   return `<!doctype html><html lang="${language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-gling-map' blob:; style-src 'unsafe-inline'; worker-src blob:; connect-src https://tiles.openfreemap.org; img-src data: blob: https://tiles.openfreemap.org; base-uri 'none'; form-action 'none'; object-src 'none'"><style>${assets.css}
@@ -65,7 +67,8 @@ const send=payload=>{const message=JSON.stringify({...payload,sessionId:config.s
 const fail=()=>{if(!failed){failed=true;send({type:'error'})}};
 const validPoint=p=>p&&Number.isFinite(p.latitude)&&Math.abs(p.latitude)<=90&&Number.isFinite(p.longitude)&&Math.abs(p.longitude)<=180&&(p.requestId===undefined||Number.isSafeInteger(p.requestId)&&p.requestId>=0);
 const validText=(s,max)=>typeof s==='string'&&s.length>0&&s.length<=max&&!/[\\u0000-\\u001f\\u007f]/.test(s);
-const validState=s=>{if(!s||!Array.isArray(s.markers)||s.markers.length>500||(s.center!=null&&!validPoint(s.center))||(s.userLocation!=null&&!validPoint(s.userLocation))||(s.selectedId!=null&&!validText(s.selectedId,180))||(s.topInset!=null&&(!Number.isFinite(s.topInset)||s.topInset<0||s.topInset>1000))||(s.bottomInset!=null&&(!Number.isFinite(s.bottomInset)||s.bottomInset<0||s.bottomInset>1000)))return false;const ids=new Set();return s.markers.every(m=>{if(!m||!validText(m.id,180)||ids.has(m.id)||typeof m.label!=='string'||m.label.length>80||!validPoint(m)||typeof m.color!=='string'||!/^#[a-f\\d]{6}$/i.test(m.color)||(m.top25!==undefined&&typeof m.top25!=='boolean')||(m.discount!==undefined&&(!Number.isFinite(m.discount)||m.discount<=0||m.discount>100)))return false;ids.add(m.id);return true})};
+const validState=s=>{if(!s||typeof s!=='object'||Array.isArray(s)||(s.markers!==undefined&&(!Array.isArray(s.markers)||s.markers.length>500))||(s.center!=null&&!validPoint(s.center))||(s.userLocation!=null&&!validPoint(s.userLocation))||(s.selectedId!=null&&!validText(s.selectedId,180))||(s.topInset!=null&&(!Number.isFinite(s.topInset)||s.topInset<0||s.topInset>1000))||(s.bottomInset!=null&&(!Number.isFinite(s.bottomInset)||s.bottomInset<0||s.bottomInset>1000)))return false;const ids=new Set();return s.markers===undefined||s.markers.every(m=>{if(!m||!validText(m.id,180)||ids.has(m.id)||typeof m.label!=='string'||m.label.length>80||!validPoint(m)||typeof m.color!=='string'||!/^#[a-f\\d]{6}$/i.test(m.color)||(m.top25!==undefined&&typeof m.top25!=='boolean')||(m.discount!==undefined&&(!Number.isFinite(m.discount)||m.discount<=0||m.discount>100)))return false;ids.add(m.id);return true})};
+const sameMarkers=(a,b)=>a.length===b.length&&a.every((m,i)=>{const p=b[i];return m.id===p.id&&m.latitude===p.latitude&&m.longitude===p.longitude&&m.color===p.color&&m.label===p.label&&(m.top25===true)===(p.top25===true)&&(m.discount||0)===(p.discount||0)});
 const geojson=(selection=false)=>({type:'FeatureCollection',features:current.markers.filter(m=>!selection||m.id===current.selectedId).map(m=>({type:'Feature',geometry:{type:'Point',coordinates:[m.longitude,m.latitude]},properties:{id:m.id,label:m.label,color:m.color,top25:m.top25===true,discount:m.discount||0}}))});
 const move=camera=>map.easeTo({...camera,duration:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?0:300});
 const hitLayers=['discovery-selected-discount','discovery-selected-discount-dot','discovery-discount','discovery-discount-dot','discovery-selected-top25','discovery-selected-hit','discovery-selected-label','discovery-top25','discovery-clusters','discovery-hit','discovery-labels'];
@@ -89,10 +92,10 @@ const ensureBadges=()=>{
  ctx.fillStyle='#6F5129';ctx.font='700 11px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('TOP 50',34,12);
  map.addImage('top25-full',ctx.getImageData(0,0,canvas.width,canvas.height),{pixelRatio:2});
 };
-const apply=()=>{if(!loaded)return;map.getSource('discovery').setData(geojson());map.getSource('discovery-selection').setData(geojson(true));
+const apply=(markersChanged=false,selectionChanged=false)=>{if(!loaded)return;if(markersChanged)map.getSource('discovery').setData(geojson());if(selectionChanged)map.getSource('discovery-selection').setData(geojson(true));
  const p=current.userLocation;
  if(p){if(!userMarker){const el=document.createElement('div');el.className='user-location-marker';el.setAttribute('role','img');el.setAttribute('aria-label','${language === 'en' ? 'Your location' : '내 위치'}');userMarker=new maplibregl.Marker({element:el}).setLngLat([p.longitude,p.latitude]).addTo(map)}else userMarker.setLngLat([p.longitude,p.latitude])}else if(userMarker){userMarker.remove();userMarker=null}
- ensureBadges();map.setFilter('discovery-top25',top25Filter());for(const id of ['discovery-discount','discovery-discount-dot'])map.setFilter(id,['all',['>', ['get','discount'],0],['!=',['get','id'],current.selectedId??'']]);
+ if(markersChanged)ensureBadges();map.setFilter('discovery-top25',top25Filter());for(const id of ['discovery-discount','discovery-discount-dot'])map.setFilter(id,['all',['>', ['get','discount'],0],['!=',['get','id'],current.selectedId??'']]);
  const height=map.getContainer().clientHeight,top=Math.min(current.topInset||0,Math.max(0,height-44)),bottom=Math.min(current.bottomInset||0,Math.max(0,height-top-44)),padding=top+':'+bottom,paddingChanged=padding!==previousPadding;
  map.getContainer().style.setProperty('--map-top-inset',top+'px');
  if(paddingChanged){map.setPadding({top,right:0,left:0,bottom});previousPadding=padding}
@@ -102,7 +105,7 @@ const apply=()=>{if(!loaded)return;map.getSource('discovery').setData(geojson())
  if(c&&(changedCenter||paddingChanged))move({center:[c.longitude,c.latitude]});else if(selected&&(current.selectedId!==previousSelection||paddingChanged))move({center:[selected.longitude,selected.latitude]});
  previousSelection=current.selectedId;previousCenter=c&&{latitude:c.latitude,longitude:c.longitude,requestId:c.requestId};
 };
-window.glingDiscoveryUpdate=(sessionId,update)=>{if(sessionId!==config.sessionId||!validState(update))return;current=update;revision++;apply()};
+window.glingDiscoveryUpdate=(sessionId,update)=>{if(sessionId!==config.sessionId||!validState(update))return;const markersChanged=update.markers!==undefined&&!sameMarkers(update.markers,current.markers),selectionChanged=markersChanged||(update.selectedId??null)!==(current.selectedId??null);current={...update,markers:markersChanged?update.markers:current.markers};revision++;apply(markersChanged,selectionChanged)};
 window.addEventListener('message',e=>{if(e.source!==window.parent||e.origin!==config.parentOrigin||!e.data||e.data.type!=='discovery.update'||e.data.sessionId!==config.sessionId)return;window.glingDiscoveryUpdate(e.data.sessionId,e.data.state)});
 document.addEventListener('click',e=>{const a=e.target.closest?.('#credits a');if(a){e.preventDefault();if(config.credits.includes(a.href)){send({type:'feedback'});send({type:'credits',url:a.href})}}else if(e.target.closest?.('.maplibregl-ctrl-group button'))send({type:'feedback'})});
 try{
