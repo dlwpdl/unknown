@@ -36,6 +36,7 @@ import { CityPopularPlaces } from '@/components/city-popular-places';
 import { adsSupported, feedAdPosition } from '@/lib/ads';
 import { MyMeetups } from '@/components/my-meetups';
 import { PostCard } from '@/components/post-card';
+import { BusinessNewsCard } from '@/components/business-news-card';
 import { PostBodyEditor } from '@/components/post-body-editor';
 import { PollDraftFields } from '@/components/poll-draft-fields';
 import { ProfileAvatarButton } from '@/components/profile-avatar-button';
@@ -238,6 +239,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const q = query.replace(/#/g, '').trim().toLowerCase();
   const canonicalQuery = canonicalizeHashtag(q).toLocaleLowerCase();
   const selectedFilterTag = tagFilter == null ? null : TAGS.find((item) => item.id === tagFilter);
+  const businessCategory = !meetupsOnly && selectedFilterTag?.slug === 'business';
   const popularTags = useMemo(
     () => getSuggestedHashtags(cityPosts, selectedFilterTag, 10, trendingTags),
     [cityPosts, selectedFilterTag, trendingTags],
@@ -689,10 +691,17 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           }}
           keyExtractor={(p, index) => p?.id ?? (index === 0 ? 'journal-intro' : 'feed-sort')}
           contentContainerStyle={[styles.listContent, { paddingBottom: bottomClear + Spacing.three }]}
-          ItemSeparatorComponent={({ leadingItem }) => leadingItem == null ? null : <View style={{ height: Spacing.four }} />}
+          ItemSeparatorComponent={({ leadingItem }) => leadingItem == null ? null : <View style={{ height: businessCategory ? 0 : Spacing.four }} />}
           ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText> : feedState ?? undefined}
           renderItem={({ item, index }) => item == null && index === 1 && showFeedSort ? (
-            <FeedSortControl sort={activeSort} title={selectedFilterTag ? tr("{0} 글", (selectedFilterTag.label)) : tr("오늘 글")} onChange={changeFeedSort} />
+            <FeedSortControl sort={activeSort} title={businessCategory ? tr('새 소식') : selectedFilterTag ? tr("{0} 글", (selectedFilterTag.label)) : tr("오늘 글")} onChange={changeFeedSort}
+              action={businessCategory ? <Pressable analyticsId="business.directory.open" accessibilityRole="button" accessibilityLabel={tr('비즈니스 찾기')}
+                onPress={() => { play('selection'); router.push('/businesses'); }}
+                style={({ pressed }) => [ControlStyles.pill, { flexDirection: 'row', gap: Spacing.two }, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
+                <SymbolView name={{ ios: 'storefront', android: 'storefront', web: 'storefront' }} size={IconSize.inline} tintColor={theme.accent} />
+                <ThemedText type="smallBold" themeColor="accent">{tr('비즈니스 찾기')}</ThemedText>
+                <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={IconSize.chevron} tintColor={theme.accent} />
+              </Pressable> : undefined} />
           ) : item == null ? (
             <View style={styles.header} onLayout={event => { feedIntroHeight.current = event.nativeEvent.layout.height; }}>
               <View style={styles.journalIntro}>
@@ -735,7 +744,9 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               {!feedLoading && weeklyRanking}
             </View>
           ) : (
-            <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 5) * 65).duration(360)}><Animated.View style={{ opacity: feedOpacity }}><PostCard
+            <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 5) * 65).duration(360)}><Animated.View style={{ opacity: feedOpacity }}>{businessCategory ? <BusinessNewsCard
+              post={item} onPress={() => openDetail(item)} onAuthor={() => openAuthor(item)}
+              translationVisible={visibleFeedIds.has(item.id) && !searching && !detailVisible && !writing} /> : <PostCard
               flat
               post={item}
               translationVisible={visibleFeedIds.has(item.id) && !searching && !detailVisible && !writing}
@@ -743,7 +754,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               onJoin={() => void onJoin(item)}
               onHashtag={openSearch}
               onAuthor={() => openAuthor(item)}
-            />{!meetupsOnly && adsSupported && (Platform.OS !== 'web' || (!isAuthed && !feedError && !detailVisible && !writing && !searching)) && feedAdPosition(index - (showFeedSort ? 2 : 1), feedData.length) && <FeedAd key={`ad-after-${item.id}`} />}</Animated.View></Reanimated.View>
+            />}{!meetupsOnly && adsSupported && (Platform.OS !== 'web' || (!isAuthed && !feedError && !detailVisible && !writing && !searching)) && feedAdPosition(index - (showFeedSort ? 2 : 1), feedData.length) && <FeedAd key={`ad-after-${item.id}`} />}</Animated.View></Reanimated.View>
           )}
         />
 
