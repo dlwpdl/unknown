@@ -270,7 +270,7 @@ export default function ChatScreen() {
   };
 
   if (!auth.isAuthed) return <LoginPanel reason={t.auth.reasonChat} onApple={auth.signInApple} onKakao={auth.signInKakao} onGoogle={auth.signInGoogle} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} />;
-  return <TabContent style={styles.container}><SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+  return <TabContent style={styles.container}><SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}><View style={styles.safeArea}>
     {/* 홈·모임과 같게 제목 줄은 고정한다. 필터와 안내는 목록과 함께 스크롤된다. */}
     <View style={[styles.headRow, styles.headFixed, { backgroundColor: theme.background }]}>
       <ThemedText accessibilityRole="header" style={styles.heading}>{t.tabs.chat}</ThemedText>
@@ -322,7 +322,7 @@ export default function ChatScreen() {
           <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{item.status === 'pending' ? tr("대화 상태 확인 중") : item.status === 'ended' ? t.chat.ended : item.latestBody ?? t.chat.newConversation}</ThemedText></View>
         <View style={styles.roomTime}><ThemedText type="small" themeColor="textSecondary">{chatListTime(item.latestAt, undefined, appLocale)}</ThemedText></View>
       </Pressable>} />
-  </SafeAreaView><Modal key={modalConversation?.key ?? 'closed'} visible={focused && !!modalConversation && !!openConversation && routeMatches} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" allowSwipeDismissal onRequestClose={closeConversation} onDismiss={() => {
+  </View></SafeAreaView><Modal key={modalConversation?.key ?? 'closed'} visible={focused && !!modalConversation && !!openConversation && routeMatches} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" allowSwipeDismissal onRequestClose={closeConversation} onDismiss={() => {
     if (presentation.current !== modalConversation) return;
     presentation.current = undefined;
     setModalConversation(undefined);
@@ -367,7 +367,7 @@ function ChatAvatar({ kind, title, meetupCategory, initial, avatarUri, active, d
 
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
-  safeArea: { flex: 1, maxWidth: MaxContentWidth, paddingHorizontal: Spacing.three },
+  safeArea: { flex: 1, width: '100%', alignSelf: 'center', maxWidth: MaxContentWidth, paddingHorizontal: Spacing.three },
   list: { gap: Spacing.two, paddingBottom: TabBarHeight + Spacing.three },
   loadingList: { flexGrow: 1, justifyContent: 'center' },
   slotNote: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 44, borderBottomWidth: StyleSheet.hairlineWidth },

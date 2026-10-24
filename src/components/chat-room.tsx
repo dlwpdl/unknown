@@ -913,9 +913,9 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       </> : status === 'ended' && <ThemedText type="small" themeColor="textSecondary" style={[styles.feedback, { paddingBottom: Math.max(insets.bottom, Spacing.three) }]}>{t.chat.endedBody}</ThemedText>}
     </KeyboardAvoidingView>
     <Modal key={settingsSession} testID="chat-room-settings-modal" visible={settingsOpen} transparent animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={closeSettings} onDismiss={() => { const pending = reportAfterSettings.current; if (pending?.session !== settingsSession || settingsActive.current) return; reportAfterSettings.current = null; if (valid()) setReport(pending.target); }}>
-      <SafeAreaProvider style={styles.settingsBackdrop}>
+      <SafeAreaProvider><SafeAreaView edges={['top', 'left', 'right']} style={styles.settingsBackdrop}>
         <Pressable analyticsId="chat.settings.dismiss" accessibilityRole="button" accessibilityLabel={closeSettingsLabel} onPress={closeSettings} style={StyleSheet.absoluteFill} />
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} testID="chat-room-settings" accessibilityViewIsModal style={[styles.settingsSheet, { backgroundColor: theme.card, borderTopColor: theme.line, paddingBottom: Spacing.three }]}>
+        <SafeAreaView edges={['bottom']} testID="chat-room-settings" accessibilityViewIsModal style={[styles.settingsSheet, { backgroundColor: theme.card, borderTopColor: theme.line, paddingBottom: Spacing.three }]}>
           <View style={styles.settingsHeading}><ThemedText type="section" accessibilityRole="header" style={{ flex: 1 }}>{settingsTitle}</ThemedText>
             <Pressable analyticsId="components_chat-room.pressable.1" accessibilityRole="button" accessibilityLabel={closeSettingsLabel} onPress={closeSettings} style={({ pressed }) => [styles.iconAction, { opacity: pressed ? 0.82 : 1 }]}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={18} tintColor={theme.textSecondary} /></Pressable>
           </View>
@@ -923,7 +923,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           {!group && <>{!business && <RoomAction label={t.report.short} onPress={() => selectRoomSetting(() => { const target: ReportSelection = { targetType: 'user', targetId: conversation.otherUser.id, reportedUserId: conversation.otherUser.id, reportedNickname: conversation.otherUser.nickname }; if (Platform.OS === 'ios') reportAfterSettings.current = { session: settingsSession, target }; else setReport(target); })} />}
             <RoomAction label={t.chat.block} disabled={busy} onPress={() => selectRoomSetting(() => { void block(conversation.otherUser.id); })} /></>}
         </SafeAreaView>
-      </SafeAreaProvider>
+      </SafeAreaView></SafeAreaProvider>
     </Modal>
     {locationOpen && auth.isAuthed && auth.me.id === currentUserId && access.write && <ChatLocationPicker sending={sending} onSend={sendLocation} onClose={() => setLocationOpen(false)} />}
     {discoveryOpen && auth.isAuthed && auth.me.id === currentUserId && scopeMatches && <Modal visible presentationStyle="fullScreen" animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={closeDiscovery}>
@@ -1019,7 +1019,7 @@ const styles = StyleSheet.create({
   groupToolbar: { justifyContent: 'space-between', alignItems: 'center' },
   roomTools: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   settingsBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
-  settingsSheet: { borderTopWidth: 1, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: Spacing.three, paddingTop: Spacing.two, gap: Spacing.two },
+  settingsSheet: { width: '100%', maxWidth: 600, alignSelf: 'center', borderTopWidth: 1, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: Spacing.three, paddingTop: Spacing.two, gap: Spacing.two },
   settingsHeading: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   dangerAction: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },
   suggestions: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: Spacing.one },
