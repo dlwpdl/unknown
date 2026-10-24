@@ -182,6 +182,41 @@ test('a profile/filter remount reuses the live topic and waits for a retiring ch
   next(); await Promise.resolve(); finish('ok'); await new Promise(setImmediate);
 });
 
+test('private reconnect notifies live inbox and room listeners without fabricating a message event', async () => {
+  const channels = [], reconnects = [], events = [];
+  const api = { channel() {
+    const channel = { on(_kind, _filter, callback) { this.broadcast = callback; return this; }, subscribe(callback) { this.status = callback; callback?.('SUBSCRIBED'); return this; } };
+    channels.push(channel); return channel;
+  }, removeChannel: async () => 'ok' };
+  const inbox = chat.subscribeBusinessChat(api, actor, event => events.push(event), () => reconnects.push('inbox'));
+  const roomListener = chat.subscribeBusinessChat(api, actor, event => events.push(event), () => reconnects.push('room'));
+  assert.equal(channels.length, 1); assert.deepEqual(reconnects, []);
+  channels[0].status?.('SUBSCRIBED');
+  assert.deepEqual(reconnects, ['inbox', 'room']); assert.deepEqual(events, []);
+  roomListener(); channels[0].status?.('SUBSCRIBED');
+  assert.deepEqual(reconnects, ['inbox', 'room', 'inbox']);
+  inbox(); await new Promise(setImmediate);
+});
+
+test('a retired private channel cannot deliver reconnects or broadcasts to a replacement or another account', async () => {
+  const channels = [], reconnects = [], events = [], closing = [];
+  const api = { channel() {
+    const channel = { on(_kind, _filter, callback) { this.broadcast = callback; return this; }, subscribe(callback) { this.status = callback; callback?.('SUBSCRIBED'); return this; } };
+    channels.push(channel); return channel;
+  }, removeChannel: () => new Promise(resolve => closing.push(resolve)) };
+  const first = chat.subscribeBusinessChat(api, actor, () => {}, () => reconnects.push('old')); first(); await Promise.resolve();
+  const next = chat.subscribeBusinessChat(api, actor, event => events.push(event), () => reconnects.push('current'));
+  const otherAccount = chat.subscribeBusinessChat(api, user, () => {}, () => reconnects.push('other-account'));
+  channels[0].status?.('SUBSCRIBED'); channels[0].broadcast({ payload: { conversation_id: room } });
+  assert.deepEqual(reconnects, []); assert.deepEqual(events, []);
+  closing[0]('ok'); await new Promise(setImmediate);
+  assert.equal(channels.length, 3);
+  channels[0].status?.('SUBSCRIBED'); channels[0].broadcast({ payload: { conversation_id: room } });
+  assert.deepEqual(reconnects, []); assert.deepEqual(events, []);
+  channels[2].status?.('SUBSCRIBED'); assert.deepEqual(reconnects, ['current']);
+  next(); otherAccount(); await Promise.resolve(); closing.slice(1).forEach(resolve => resolve('ok')); await new Promise(setImmediate);
+});
+
 test('business pages keep timeline order and deleted photo tombstones contain no media or original text', async () => {
   const old = 'c1840000-0000-4000-8000-000000000000';
   const api = client({ conversation: row(), items: [dto(), dto({ id: old, kind: 'image', deleted_at: at, body: 'PRIVATE_OLD_TEXT', image_path: null, image_paths: [], created_at: '2026-10-17T12:00:00Z' })], cursor: null, read_at: null });

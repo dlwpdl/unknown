@@ -163,27 +163,37 @@ export async function blockBusinessConversation(client: SupabaseClient, conversa
 }
 
 type BusinessChatEvent = { conversationId: string; messageId?: string; businessId?: string | null };
-type Subscription = { listeners: Set<(event: BusinessChatEvent) => void>; channel: ReturnType<SupabaseClient['channel']> | null; closing: Promise<unknown> | null };
+type Listener = { changed: (event: BusinessChatEvent) => void; reconnected?: () => void };
+type Subscription = { listeners: Set<Listener>; channel: ReturnType<SupabaseClient['channel']> | null; closing: Promise<unknown> | null; generation: number };
 // Supabase reuses topics: the inbox, room, and filter remount share one channel lifecycle.
 const subscriptions = new WeakMap<SupabaseClient, Map<string, Subscription>>();
-export function subscribeBusinessChat(client: SupabaseClient, userId: string, changed: (event: BusinessChatEvent) => void) {
+export function subscribeBusinessChat(client: SupabaseClient, userId: string, changed: (event: BusinessChatEvent) => void, reconnected?: () => void) {
   if (!uuid(userId)) return fail();
   let users = subscriptions.get(client);
   if (!users) { users = new Map(); subscriptions.set(client, users); }
   let current = users.get(userId);
-  if (!current) { current = { listeners: new Set(), channel: null, closing: null }; users.set(userId, current); }
+  if (!current) { current = { listeners: new Set(), channel: null, closing: null, generation: 0 }; users.set(userId, current); }
   const entry = current;
   const start = () => {
-    entry.channel = client.channel(`business-chat:${userId}`, { config: { private: true } })
+    const generation = ++entry.generation;
+    const channel = client.channel(`business-chat:${userId}`, { config: { private: true } });
+    entry.channel = channel;
+    const active = () => entry.generation === generation && entry.channel === channel;
+    let connected = false;
+    channel
       .on('broadcast', { event: 'business_chat_changed' }, ({ payload }) => {
-        if (payload && uuid(payload.conversation_id) && (payload.message_id == null || uuid(payload.message_id))
+        if (active() && payload && uuid(payload.conversation_id) && (payload.message_id == null || uuid(payload.message_id))
           && (payload.recipient_business_id == null || uuid(payload.recipient_business_id))) {
-          for (const listener of entry.listeners) listener({ conversationId: payload.conversation_id, messageId: payload.message_id ?? undefined,
+          for (const listener of entry.listeners) listener.changed({ conversationId: payload.conversation_id, messageId: payload.message_id ?? undefined,
             businessId: payload.recipient_business_id ?? null });
         }
-      }).subscribe();
+      }).subscribe(state => {
+        if (!active() || state !== 'SUBSCRIBED') return;
+        if (connected) for (const listener of entry.listeners) listener.reconnected?.();
+        connected = true;
+      });
   };
-  const listener = (event: BusinessChatEvent) => changed(event);
+  const listener = { changed, reconnected };
   entry.listeners.add(listener);
   if (!entry.channel && !entry.closing) start();
   return () => {

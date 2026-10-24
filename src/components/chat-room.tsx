@@ -143,7 +143,10 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const publicSelfName = conversation.selfIdentity?.name ?? auth.me.nickname;
   const asBusinessId = conversation.selfIdentity?.kind === 'business' ? conversation.selfIdentity.id : null;
   const scopeMatches = (selectedBusiness?.id ?? null) === asBusinessId;
-  const scopeKey = `${currentUserId}:${asBusinessId ?? 'personal'}`;
+  const scopeKey = JSON.stringify([currentUserId, asBusinessId, conversation.id, conversation.kind,
+    conversation.selfIdentity?.kind, conversation.selfIdentity?.id, conversation.otherIdentity?.kind, conversation.otherIdentity?.id]);
+  const latest = useRef({ conversation, onChanged });
+  useLayoutEffect(() => { latest.current = { conversation, onChanged }; }, [conversation, onChanged]);
   const insets = useSafeAreaInsets();
   const screen = useWindowDimensions();
   const { play } = useInteractionFeedback();
@@ -163,6 +166,11 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const [businessReady, setBusinessReady] = useState(!business);
   const capabilities = conversationCapabilities(status);
   const access = { read: capabilities.read, write: capabilities.write && (!business || businessReady) };
+  const readAllowed = useRef(access.read);
+  useLayoutEffect(() => {
+    readAllowed.current = access.read;
+    if (!access.read) { loadingRequest.current += 1; snapshot.current = null; }
+  }, [access.read]);
   const [allMessages, setMessages] = useState<ChatMessageRecord[]>([]);
   const [groupMembers, setGroupMembers] = useState<ChatMember[] | null>(null);
   const [joinResult, setJoinNotices] = useState<{ conversationId: string; members: ChatMember[] } | null>(null);
@@ -316,13 +324,14 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   }, [messages, publicSelfId, loading, readAt, discoveryOpen, overviewOpen]);
 
   const trackVisibleMessages = useCallback(({ viewableItems }: { viewableItems: ViewToken<ChatMessageRecord>[] }) => {
-    if (discoveryVisible.current || !readReady.current || !valid()) return;
+    if (discoveryVisible.current || !readReady.current || !readAllowed.current || !valid()) return;
     const newest = viewableItems.map(({ item }) => item).filter((item): item is ChatMessageRecord => !!item)
       .reduce<ChatMessageRecord | null>((latest, item) => !latest || Date.parse(item.created_at) > Date.parse(latest.created_at) ? item : latest, null);
     if (!newest || Date.parse(newest.created_at) <= lastReadAt.current) return;
     lastReadAt.current = Date.parse(newest.created_at);
-    void (business ? markBusinessChatRead(supabase, conversation, newest.id) : markChatRead(supabase, conversation.id, newest.id)).catch(() => {});
-  }, [business, conversation, valid]);
+    const current = latest.current.conversation;
+    void (business ? markBusinessChatRead(supabase, current, newest.id) : markChatRead(supabase, current.id, newest.id)).catch(() => {});
+  }, [business, valid]);
   const onMessageScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (discoveryVisible.current) return;
     closeMessageMenu();
@@ -428,19 +437,23 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       <ThemedText type="small" themeColor="textSecondary">{t.chat.unverifiedSafety}</ThemedText>
     </View> : null;
 
-  const readMessagesByIds = useCallback(async (ids: string[]) => business
-    ? (await loadBusinessChatMessages(supabase, conversation, { messageIds: ids })).messages
-    : loadConversationMessagesByIds(supabase, conversation.id, ids), [business, conversation]);
+  const readMessagesByIds = useCallback(async (ids: string[]) => {
+    if (!readAllowed.current || !valid()) return [];
+    const current = latest.current.conversation;
+    return business ? (await loadBusinessChatMessages(supabase, current, { messageIds: ids })).messages
+      : loadConversationMessagesByIds(supabase, current.id, ids);
+  }, [business, valid]);
 
   const refreshMessages = useCallback(() => {
-    if (!access.read || !valid()) return;
+    if (!readAllowed.current || !valid()) return;
     if (snapshot.current) return snapshot.current;
     const request = ++loadingRequest.current;
     setLoading(true);
     const promise = (async () => {
       try {
-        const page = business ? await loadBusinessChatMessages(supabase, conversation) : null;
-        const rows = page?.messages ?? await loadConversationMessages(supabase, conversation.id);
+        const current = latest.current.conversation;
+        const page = business ? await loadBusinessChatMessages(supabase, current) : null;
+        const rows = page?.messages ?? await loadConversationMessages(supabase, current.id);
         if (!valid() || loadingRequest.current !== request) return;
         // Reconnect starts a contiguous window and revalidates message visibility through RLS.
         setMessages(rows.filter((message) => !blockedUsers.current.has(message.sender_id)));
@@ -457,7 +470,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     })();
     snapshot.current = promise;
     return promise;
-  }, [access.read, business, conversation, valid, setError, setPhotoOpen]);
+  }, [business, valid, setError, setPhotoOpen]);
 
   useEffect(() => {
     let active = true;
@@ -500,15 +513,15 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     void Promise.resolve().then(refreshMessages);
     const stopBusiness = business ? subscribeBusinessChat(supabase, currentUserId, event => {
       if (!active || !valid() || event.conversationId !== conversation.id || (event.businessId ?? null) !== asBusinessId) return;
-      if (!event.messageId) { void refreshMessages(); void onChanged(); return; }
+      if (!event.messageId) { void refreshMessages(); void latest.current.onChanged(); return; }
       pending.add(event.messageId); if (!timer && !flushing) timer = setTimeout(() => void flush(), 80);
-    }) : null;
+    }, () => { if (active && valid()) { void refreshMessages(); void latest.current.onChanged(); } }) : null;
     const channel = business ? null : supabase.channel(`room:${currentUserId}:${conversation.id}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations', filter: `id=eq.${conversation.id}` }, ({ new: value }) => {
-        if (!valid()) return;
+        if (!active || !valid()) return;
         const next = value.status as ConversationPreview['status'];
         if (['pending', 'active', 'ended', 'rejected', 'cancelled'].includes(next)) setResolvedStatus(next);
-        void onChanged();
+        void latest.current.onChanged();
       });
     if (access.read && channel) channel.on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversation.id}` }, ({ new: message, old: previous }) => {
       const id = message && 'id' in message ? message.id : previous && 'id' in previous ? previous.id : null;
@@ -516,10 +529,15 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       pending.add(id);
       if (!timer && !flushing) timer = setTimeout(() => void flush(), 80);
     });
-    channel?.subscribe();
-    const appState = AppState.addEventListener('change', (next) => { if (next === 'active' && valid()) { void refreshMessages(); void onChanged(); } });
+    let connected = false;
+    channel?.subscribe(state => {
+      if (state !== 'SUBSCRIBED') return;
+      if (connected && active && valid()) { void refreshMessages(); void latest.current.onChanged(); }
+      connected = true;
+    });
+    const appState = AppState.addEventListener('change', (next) => { if (next === 'active' && valid()) { void refreshMessages(); void latest.current.onChanged(); } });
     return () => { active = false; clearTimeout(timer); pending.clear(); loadingRequest.current += 1; snapshot.current = null; appState.remove(); stopBusiness?.(); if (channel) void supabase.removeChannel(channel); };
-  }, [access.read, animateNewMessage, business, asBusinessId, conversation.id, currentUserId, onChanged, readMessagesByIds, refreshMessages, valid]);
+  }, [access.read, animateNewMessage, business, asBusinessId, conversation.id, currentUserId, readMessagesByIds, refreshMessages, valid]);
 
   const end = async () => {
     if (processing.current || !valid()) return;
@@ -694,7 +712,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   };
   const openAttachments = () => { play('selection'); setAttachmentMenu(!attachmentsOpen); };
   const loadOlder = async () => {
-    if (olderRequest.current || snapshot.current || !hasOlder || !messages[0] || !access.read || !valid()) return;
+    if (olderRequest.current || snapshot.current || !hasOlder || !messages[0] || !readAllowed.current || !valid()) return;
     const request = loadingRequest.current;
     olderRequest.current = true; setLoadingOlder(true);
     try {

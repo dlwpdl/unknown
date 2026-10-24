@@ -178,16 +178,17 @@ export default function ChatScreen() {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let revision = 0;
     const schedule = () => {
+      if (!active || currentUser.current !== scopeKey || activeFilter.current !== filter) return;
       const next = ++revision;
       clearTimeout(timer);
       timer = setTimeout(() => {
         void (async () => {
           await inFlight.current?.promise;
-          if (active && revision === next) await changed();
+          if (active && currentUser.current === scopeKey && activeFilter.current === filter && revision === next) await changed();
         })();
       }, 150);
     };
-    const stopBusiness = subscribeBusinessChat(supabase, userId, event => { if ((event.businessId ?? null) === asBusinessId) schedule(); });
+    const stopBusiness = subscribeBusinessChat(supabase, userId, event => { if ((event.businessId ?? null) === asBusinessId) schedule(); }, schedule);
     const channel = asBusinessId ? null : supabase.channel(`inbox:${userId}:${channelId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, schedule)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, ({ new: message }) => {
@@ -210,7 +211,7 @@ export default function ChatScreen() {
     const listener = DeviceEventEmitter.addListener(MEETUPS_CHANGED_EVENT, schedule);
     const appState = AppState.addEventListener('change', (next) => { if (next === 'active') schedule(); });
     return () => { active = false; clearTimeout(timer); listener.remove(); appState.remove(); stopBusiness(); if (channel) void supabase.removeChannel(channel); };
-  }, [changed, userId, channelId, asBusinessId, scopeKey]);
+  }, [changed, userId, channelId, asBusinessId, scopeKey, filter]);
 
   const loadMore = async () => {
     if (!userId || pageBusy.current || loading || !inbox?.cursor || inbox.userId !== scopeKey || inbox.filter !== filter) return;
