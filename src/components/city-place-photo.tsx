@@ -1,5 +1,5 @@
 import { useLanguage } from '@/hooks/use-language';
-import { Image } from 'expo-image';
+import { Image, type ImageProps } from 'expo-image';
 import { useState } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { StyleSheet, type StyleProp, View, type ViewStyle } from 'react-native';
@@ -218,7 +218,7 @@ const bundledPhotos: Record<string, number> = {
   'd93c1c3a5c84d4c8af32f1920c53def616c8e110ba39cea39a48dec81ae946fb': require('../../assets/images/city-places-display/saskatoon-osm-node-4198123589.webp'),
 };
 
-export function CityPlacePhoto({ place, style }: { place: CityPlace; style?: StyleProp<ViewStyle> }) {
+export function CityPlacePhoto({ place, style, contentFit = 'cover' }: { place: CityPlace; style?: StyleProp<ViewStyle>; contentFit?: ImageProps['contentFit'] }) {
   const { tr } = useLanguage();
   const theme = useTheme(), [failedImage, setFailedImage] = useState<string | null>(null);
   const uri = place.photo?.uri;
@@ -226,7 +226,7 @@ export function CityPlacePhoto({ place, style }: { place: CityPlace; style?: Sty
   const imageKey = localSource ? place.photo?.imageSha256 : uri;
   return <View style={[styles.frame, { backgroundColor: theme.backgroundElement }, style]}>
     {imageKey && failedImage !== imageKey
-      ? <Image source={localSource ?? { uri }} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="memory-disk"
+      ? <Image source={localSource ?? { uri }} style={StyleSheet.absoluteFill} contentFit={contentFit} cachePolicy="memory-disk"
           recyclingKey={imageKey} transition={0} accessibilityLabel={tr("{0} 사진", (place.name))} onError={() => setFailedImage(imageKey)} />
       : <SymbolView name={{ ios: 'photo', android: 'image', web: 'image' }} size={24} tintColor={theme.textSecondary} />}
   </View>;
