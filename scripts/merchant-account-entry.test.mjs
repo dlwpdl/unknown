@@ -60,22 +60,34 @@ const flush = async () => { for (let i = 0; i < 10; i++) await Promise.resolve()
 function nodes(node) { return !node || typeof node !== 'object' ? [] : [node, ...[node.props?.children].flat(Infinity).flatMap(nodes)]; }
 function text(node) { return node == null || typeof node === 'boolean' ? '' : typeof node !== 'object' ? String(node) : [node.props?.children].flat(Infinity).map(text).join(' '); }
 
-test('admin profiles have no business entry or connection requests on focus or foreground', () => {
+test('admin profiles can switch to a connected business after current access is checked', async () => {
+  chatIdentity.resetChatIdentity();
   const view = app(); view.auth({ isAdmin: true });
   assert.equal(view.render(), null);
-  view.foreground();
-  assert.deepEqual(view.calls, []);
-  assert.deepEqual(view.routes, []);
-});
-test('becoming an admin hides cached business entries and cancels an outstanding switch', async () => {
-  const view = app(); view.render(); view.pending.shift()(context()); await flush();
-  view.render().props.onPress();
-  view.auth({ isAdmin: true }); assert.equal(view.render(), null);
+  assert.equal(view.calls.length, 1);
+  assert.equal(view.calls[0].name, 'get_my_business_chat_profiles');
   view.pending.shift()(context()); await flush();
-  assert.equal(view.render(), null);
+  assert.equal(view.render().props.accessibilityLabel, '비즈니스 프로필 전환');
   view.foreground();
   assert.equal(view.calls.length, 2);
+  view.pending.shift()(context()); await flush();
+  view.render().props.onPress();
+  assert.equal(view.calls.length, 3);
+  view.pending.shift()(context()); await flush();
+  assert.deepEqual(JSON.parse(JSON.stringify(view.routes)), [{ pathname: '/profile/merchant', params: { merchant: 'company-a', tab: 'drafts' } }]);
+  assert.deepEqual(chatIdentity.chatBusinessIdentity('user-a'), { id: 'company-a', name: '업체 A' });
+  assert.deepEqual(view.feedback, ['selection']);
+  chatIdentity.resetChatIdentity();
+});
+test('administrator review access alone cannot appear as a connected business profile', async () => {
+  chatIdentity.resetChatIdentity();
+  const view = app(); view.auth({ isAdmin: true }); view.render();
+  assert.equal(view.calls.length, 1);
+  const data = context('user-a', [{ id: 'company-a', name: '업체 A', role: 'admin', city_name: '밴쿠버' }]);
+  view.pending.shift()(data); await flush();
+  assert.equal(view.render(), null);
   assert.deepEqual(view.routes, []);
+  assert.equal(chatIdentity.chatBusinessIdentity('user-a'), null);
 });
 test('connected business owners and operators still switch to their business drafts', async () => {
   for (const role of ['owner', 'operator']) {
