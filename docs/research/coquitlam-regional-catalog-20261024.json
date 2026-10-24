@@ -1,0 +1,212 @@
+{
+  "scopeRevision": 2,
+  "ownerScope": {
+    "ownerInstruction": "코퀴틀람, 포트코퀴틀람, 뉴웨스트민스터 ... 서리까지는너무멀고 요3개에 위치랑사진들추가하라",
+    "allowedMunicipalities": [
+      "Coquitlam",
+      "Port Coquitlam",
+      "New Westminster"
+    ],
+    "excludedMunicipalities": [
+      "Surrey",
+      "Port Moody",
+      "Belcarra",
+      "Anmore"
+    ],
+    "priorScopeArtifactsPreserved": true,
+    "scopeRevision": 2
+  },
+  "placeIds": [
+    "osm:way:41745659",
+    "osm:way:41843304",
+    "osm:way:41841917",
+    "osm:way:1004996176",
+    "osm:relation:21109172",
+    "osm:way:42472552",
+    "osm:way:212904864",
+    "osm:relation:1304120",
+    "osm:way:170530924",
+    "osm:node:9381204484"
+  ],
+  "photoPlaceIds": [
+    "osm:way:41745659",
+    "osm:way:41843304",
+    "osm:way:41841917",
+    "osm:relation:21109172",
+    "osm:relation:1304120",
+    "osm:way:170530924",
+    "osm:node:9381204484"
+  ],
+  "missingPhotoPlaceIds": [
+    "osm:way:1004996176",
+    "osm:way:42472552",
+    "osm:way:212904864"
+  ],
+  "placesByMunicipality": {
+    "Coquitlam": [
+      "osm:way:41745659",
+      "osm:way:41843304",
+      "osm:way:41841917",
+      "osm:way:1004996176",
+      "osm:relation:21109172"
+    ],
+    "Port Coquitlam": [
+      "osm:way:42472552",
+      "osm:way:212904864",
+      "osm:node:9381204484"
+    ],
+    "New Westminster": [
+      "osm:relation:1304120",
+      "osm:way:170530924"
+    ]
+  },
+  "excludedPriorPlaceIds": [
+    "osm:relation:7122236",
+    "osm:relation:5739791",
+    "osm:relation:14558710"
+  ],
+  "sourceEvidence": [
+    {
+      "placeId": "osm:way:41745659",
+      "municipality": "Coquitlam",
+      "officialUrl": "https://www.coquitlam.ca/Facilities/Facility/Details/Town-Centre-Park-84",
+      "sourceFile": "../sources/official-town.html",
+      "sha256": "01e81876a58b55e2f8b9eb022a39cb51880c4afb85363810c686552f20ba55d6",
+      "osmUrl": "https://www.openstreetmap.org/way/41745659",
+      "photoSourceUrl": "https://commons.wikimedia.org/wiki/File:Lafarge_Lake_in_the_fall.jpg",
+      "photoSha256": "9e13d555504906163121994288fb18e2947f4cfe8e6520a563ce913a9f8453f8"
+    },
+    {
+      "placeId": "osm:way:41843304",
+      "municipality": "Coquitlam",
+      "officialUrl": "https://www.coquitlam.ca/Facilities/Facility/Details/Como-Lake-Park-26",
+      "sourceFile": "../sources/official-como.html",
+      "sha256": "ce4d2a863f8d86a2b2ee9d54ff0ad3ec0643c052f144383a4426bca3273718ef",
+      "osmUrl": "https://www.openstreetmap.org/way/41843304",
+      "photoSourceUrl": "https://commons.wikimedia.org/wiki/File:Como_Lake_in_Coquitlam.jpg",
+      "photoSha256": "039e2fb8d5fa14e89db582b10d4ff69eeb37b36a4d6edebe375575cec8dd9863"
+    },
+    {
+      "placeId": "osm:way:41841917",
+      "municipality": "Coquitlam",
+      "officialUrl": "https://www.coquitlam.ca/Facilities/Facility/Details/Blue-Mountain-Park-18",
+      "sourceFile": "../sources/official-blue.html",
+      "sha256": "a51ceaf4da07ee8eeb6747d60c6edece489f3620ff2eb202af7329475dcd0267",
+      "osmUrl": "https://www.openstreetmap.org/way/41841917",
+      "photoSourceUrl": "https://commons.wikimedia.org/wiki/File:View_of_Blue_Mountain_Park_to_the_East_-_panoramio.jpg",
+      "photoSha256": "50654e5cf579da90c08c9d1ad24173cbd0a7b6125be69c17daf0218d152f5453"
+    },
+    {
+      "placeId": "osm:way:1004996176",
+      "municipality": "Coquitlam",
+      "officialUrl": "https://www.coquitlam.ca/Facilities/Facility/Details/Mundy-Park-59",
+      "sourceFile": "../sources/official-mundy-correct.html",
+      "sha256": "aff854a1887a6a559d00e092e38e9c168e522d701380afd10537b186e41f678b",
+      "osmUrl": "https://www.openstreetmap.org/way/1004996176",
+      "photoSourceUrl": null,
+      "photoSha256": null
+    },
+    {
+      "placeId": "osm:relation:21109172",
+      "municipality": "Coquitlam",
+      "officialUrl": "https://metrovancouver.org/services/regional-parks/park/minnekhada-regional-park",
+      "sourceFile": "../sources/official-minnekhada.html",
+      "sha256": "f3bd3e4abe82d8888a8e19312cb527cbb8bcd29e0b26ead3843115c26befd3c3",
+      "osmUrl": "https://www.openstreetmap.org/relation/21109172",
+      "photoSourceUrl": "https://commons.wikimedia.org/wiki/File:Minnekhada_Regional_Park.jpg",
+      "photoSha256": "9a42eafbd7a53cb750206823dccec400188595911c52ba864cbb4dfdc776883e"
+    },
+    {
+      "placeId": "osm:way:42472552",
+      "municipality": "Port Coquitlam",
+      "officialUrl": "https://www.portcoquitlam.ca/recreation-parks/parks-trails/parks-directory/gates-park",
+      "sourceFile": "sources/official-gates.html",
+      "sha256": "86ed1f46b0ae6dcda13b4cb695911e84de38d618e262adc6b3d0b33f96158b92",
+      "osmUrl": "https://www.openstreetmap.org/way/42472552",
+      "photoSourceUrl": null,
+      "photoSha256": null
+    },
+    {
+      "placeId": "osm:way:212904864",
+      "municipality": "Port Coquitlam",
+      "officialUrl": "https://www.portcoquitlam.ca/recreation-parks/parks-trails/parks-directory/lions-park",
+      "sourceFile": "sources/official-lions.html",
+      "sha256": "cacb29bcf819e9317c6cdff5f01e9cd7ae65df9218ac7d574a993ddbcb5752a2",
+      "osmUrl": "https://www.openstreetmap.org/way/212904864",
+      "photoSourceUrl": null,
+      "photoSha256": null
+    },
+    {
+      "placeId": "osm:relation:1304120",
+      "municipality": "New Westminster",
+      "officialUrl": "https://www.newwestcity.ca/parks-and-recreation/parks/community-parks/articles/5437.php",
+      "sourceFile": "sources/official-queens.html",
+      "sha256": "4165624f0bca7597a2d742172aeac8283ff6a5bd9e055f34912a42d270d0e9b3",
+      "osmUrl": "https://www.openstreetmap.org/relation/1304120",
+      "photoSourceUrl": "https://commons.wikimedia.org/wiki/File:Queens_Park_Rose_Garden,_New_Westminster_-_panoramio.jpg",
+      "photoSha256": "a2149e1b6771c6e6c82d8186e375738874390f874d97e7ded8b1e038df951c4c"
+    },
+    {
+      "placeId": "osm:way:170530924",
+      "municipality": "New Westminster",
+      "officialUrl": "https://www.newwestcity.ca/parks-and-recreation/parks/community-parks/articles/5429.php",
+      "sourceFile": "sources/official-pier.html",
+      "sha256": "31f950656b1cf44bc63240d1371bdc563f87faa712c0d88446ccb90931dfdd59",
+      "osmUrl": "https://www.openstreetmap.org/way/170530924",
+      "photoSourceUrl": "https://commons.wikimedia.org/wiki/File:Westminster_Pier_Park,_June_2020.jpg",
+      "photoSha256": "f46a8eea4084236f70743646e7619e2a9dedff17cbf7832af7f2681db1b56526"
+    },
+    {
+      "placeId": "osm:node:9381204484",
+      "municipality": "Port Coquitlam",
+      "officialUrl": "https://www.portcoquitlam.ca/recreation-parks/parks-trails/parks-directory/veterans-park",
+      "sourceFile": "sources/official-veterans-park.html",
+      "sha256": "b1e94f34f12d3d9d22302b82d5e8518e68ca39ca132618526e01014c05f960b5",
+      "osmUrl": "https://www.openstreetmap.org/node/9381204484",
+      "photoSourceUrl": "https://www.flickr.com/photos/38601566@N00/9577330885",
+      "photoSha256": "00490722e63200677042197971b2a2773c5390c1451003eb59366326faf7efb6"
+    }
+  ],
+  "files": {
+    "regional-extension.json": "b13e7bd4f074ca4ecd6a57bf1fbb688f7d9b89203834b269408704d23704fbf0",
+    "additive-candidates.json": "4785a934df8aad6177948d13a51bd243e52e6026c361f0bec3a09b62113a7006",
+    "photos-manifest.json": "0f08735b7eb715efdf6f8747dabdfb36fb7cfb0ee188cfd144153be86d09ef7f",
+    "candidate-osm-elements.json": "d0f2b9ec4d64bbd6aeee5a3d06d77224753ad5c021174b99030b299ca4990539",
+    "staged-verified-seed.json": "57efe6ac8070f916a2b161c027465a26ab077309c87e4cc4c73b2f303d459359",
+    "upstream-replay.json": "af898188ac861810147d12c542a73088dcc81782a13a74489d24ada13f5f7e75"
+  },
+  "registeredByThisTask": 0,
+  "actualVisibleVerified": false,
+  "evidenceRoot": "/Users/ash/Desktop/Git/unknown/output/qa/gling-coquitlam-map-enrichment-20261024/scope-revision-2",
+  "sourceManifestSha256": "24a7bf2b0eac10e432f93ef1ee48c86d35f4d4b2aa9f7eb0c5bc643586aaeb83",
+  "sourceFilePathsResolveAgainst": "evidenceRoot, including ../ references to retained first-cohort evidence",
+  "photoNotes": {
+    "osm:way:41745659": [
+      "Lafarge Lake is inside Town Centre Park; do not also register the nested lake as a duplicate destination."
+    ],
+    "osm:way:41843304": [
+      "Use the park identity, not a second Como Lake water/fishing feature."
+    ],
+    "osm:way:1004996176": [
+      "No accepted same-place cover collected. Keep honest image fallback; rejected sculpture was photographed temporarily at Town Centre Park."
+    ],
+    "osm:relation:21109172": [
+      "Official page currently displays Oliver Road vehicle-access/Quarry Road entrance notices; the street number is not asserted."
+    ],
+    "osm:way:42472552": [
+      "No accepted branch-matched licensed cover collected. Wrong-country/unnamed event photos excluded; retain honest fallback."
+    ],
+    "osm:way:212904864": [
+      "No accepted branch-matched licensed cover collected. Wrong-country/unnamed event photos excluded; retain honest fallback."
+    ],
+    "osm:relation:1304120": [
+      "Rose-garden photograph takenJuly2011; official current page still lists Centennial Lodge/Rose Garden. Outdoor stage closure is noted on current official page; no whole-park closure claim. No unverified house number."
+    ],
+    "osm:way:170530924": [
+      "Photo datedJune2020, BEFORESeptember2020fire and later westward expansion. Date/archivalstatus retained in actualPhotoDTO.title. Shows concrete park area, not a claim of current2026layout. Do not use excluded2015bridge/skyline view as current."
+    ],
+    "osm:node:9381204484": [
+      "Official VeteransPark page explicitly lists Memorialcenotaph at2580ShaughnessySt; mapped memorialpoint and exact Flickrtitle/photo corroborate. This is the memorial identity, not an invented business/profile/Visited claim. Flickrdisplayderivative downloaded; original full-resolution bytes not collected."
+    ]
+  }
+}

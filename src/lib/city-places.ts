@@ -8,7 +8,7 @@ export type PlaceCategory = 'all' | 'food' | 'cafe' | 'places';
 export type PlacePhoto = {
   placeId: string; cityId: string; uri: string; sourceUrl: string;
   artist: string; license: string; licenseUrl: string; imageSha256: string;
-  title?: string; discoveredVia?: 'Openverse' | 'Flickr' | 'Business site';
+  title?: string; discoveredVia?: 'Wikimedia Commons' | 'Openverse' | 'Flickr' | 'Business site';
 };
 export type CityPlace = {
   id: string; cityId: string; name: string; category: Exclude<PlaceCategory, 'all'>;
@@ -28,7 +28,7 @@ type PhotoCatalog = {
 };
 type PlaceCatalog = {
   photoCatalog?: PhotoCatalog; externalRatings?: unknown;
-  collectedAt: string; selectionRevision?: number; recommendationTheme?: 'photo-spots'; cities: Record<string, { coverage: string; places: CityPlace[]; recommendations?: PlaceRecommendation[]; diningRecommendations?: PlaceRecommendation[] }>;
+  collectedAt: string; selectionRevision?: number; recommendationTheme?: 'photo-spots'; cities: Record<string, { coverage: string; places: CityPlace[]; regionalPlaces?: CityPlace[]; regionalPhotos?: PlacePhoto[]; recommendations?: PlaceRecommendation[]; diningRecommendations?: PlaceRecommendation[] }>;
 };
 let catalog = snapshot as PlaceCatalog;
 let photoCatalog = photoSnapshot as PhotoCatalog;
@@ -38,6 +38,10 @@ const listeners = new Set<() => void>();
 export const cityPlacesRevision = () => revision;
 export function subscribeCityPlaces(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
 
+function regionalPlacesForCity(cityId: string): CityPlace[] {
+  return catalog.cities[cityId].regionalPlaces ?? (snapshot as PlaceCatalog).cities[cityId]?.regionalPlaces ?? [];
+}
+
 function photosForCity(cityId: string): PlacePhoto[] {
   const photos = [...(photoCatalog.cities[cityId] ?? [])], ids = new Set(photos.map(photo => photo.placeId));
   for (const group of [photoCatalog.additionalCatalog, photoCatalog.flickrCatalog]) {
@@ -46,6 +50,9 @@ function photosForCity(cityId: string): PlacePhoto[] {
       ids.add(photo.placeId);
       photos.push(photo);
     }
+  }
+  for (const photo of catalog.cities[cityId].regionalPhotos ?? (snapshot as PlaceCatalog).cities[cityId]?.regionalPhotos ?? []) {
+    if (!ids.has(photo.placeId)) { ids.add(photo.placeId); photos.push(photo); }
   }
   return photos;
 }
@@ -58,6 +65,21 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
     try { const u = new URL(v as string); return u.protocol === 'https:' && !u.username && !u.password; } catch { return false; }
   };
   const invalid = () => { throw new Error('INVALID_PLACE_CATALOG'); };
+  const validateFlickrPhoto = (photo: PlacePhoto, cityId: string, ids: Set<string>, discoveredVia: 'Openverse' | 'Flickr') => {
+    if (!photo || photo.cityId !== cityId || !ids.has(photo.placeId)
+      || !text(photo.artist, 1000) || !text(photo.title, 1000) || photo.discoveredVia !== discoveredVia
+      || !/^[a-f0-9]{64}$/.test(photo.imageSha256) || !https(photo.uri) || !https(photo.sourceUrl) || !https(photo.licenseUrl)) invalid();
+    const image = new URL(photo.uri), source = new URL(photo.sourceUrl), license = new URL(photo.licenseUrl);
+    const imageId = /^\/\d+\/([1-9]\d*)_[a-f0-9]+(?:_[a-z0-9]+)?\.(?:jpe?g|png)$/i.exec(image.pathname)?.[1];
+    const sourceId = /^\/photos\/[^/]+\/([1-9]\d*)\/?$/.exec(source.pathname)?.[1];
+    const cc = /^CC BY(-SA)? ([234]\.0|2\.5)$/.exec(photo.license);
+    const licensePath = photo.license === 'CC0' ? '/publicdomain/zero/1.0' : photo.license === 'Public domain' ? '/publicdomain/mark/1.0'
+      : cc ? `/licenses/by${cc[1] ? '-sa' : ''}/${cc[2]}` : null;
+    if (image.hostname !== 'live.staticflickr.com' || source.hostname !== 'www.flickr.com' || !sourceId || imageId !== sourceId
+      || image.port || image.search || image.hash || source.port || source.search || source.hash
+      || license.hostname !== 'creativecommons.org' || license.port || license.search || license.hash
+      || !licensePath || license.pathname.replace(/\/$/, '') !== licensePath) invalid();
+  };
   if (!next || !text(next.collectedAt, 80) || !Number.isFinite(Date.parse(next.collectedAt)) || Date.parse(next.collectedAt) > now + 300_000
     || !next.cities || Object.keys(next.cities).length !== CITIES.length || Object.keys(next.cities).some(id => !CITIES.some(c => c.id === id))) invalid();
   if (next.recommendationTheme !== 'photo-spots') return false;
@@ -68,19 +90,29 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
     if (next.photoCatalog && (!next.photoCatalog.cities || Object.keys(next.photoCatalog.cities).length !== CITIES.length)) invalid();
     if (!data || !['municipal-boundary', 'city-center'].includes(data.coverage) || !Array.isArray(data.places) || !data.places.length || data.places.length > 200) invalid();
     const ids = new Set<string>();
-    for (const p of data.places) {
-      if (!p || !text(p.id, 80) || !/^osm:(node|way|relation):[1-9]\d*$/.test(p.id) || ids.has(p.id) || p.cityId !== city.id || !text(p.name, 300)
-        || !['food', 'cafe', 'places'].includes(p.category) || !Number.isFinite(p.latitude) || p.latitude < 40 || p.latitude > 85
-        || !Number.isFinite(p.longitude) || p.longitude < -142 || p.longitude > -52 || typeof p.address !== 'string' || p.address.length > 1000
-        || p.sourceUrl !== `https://www.openstreetmap.org/${p.id.split(':').slice(1).join('/')}`
-        || (p.website != null && !https(p.website)) || (p.openingHours != null && !text(p.openingHours, 1000))) invalid();
-      ids.add(p.id);
+    if (data.regionalPlaces !== undefined && (!Array.isArray(data.regionalPlaces) || data.regionalPlaces.length > 200)) invalid();
+    for (const rows of [data.places, data.regionalPlaces ?? []]) {
+      const seen = new Set<string>();
+      for (const p of rows) {
+        if (!p || !text(p.id, 80) || !/^osm:(node|way|relation):[1-9]\d*$/.test(p.id) || seen.has(p.id) || p.cityId !== city.id || !text(p.name, 300)
+          || !['food', 'cafe', 'places'].includes(p.category) || !Number.isFinite(p.latitude) || p.latitude < 40 || p.latitude > 85
+          || !Number.isFinite(p.longitude) || p.longitude < -142 || p.longitude > -52 || typeof p.address !== 'string' || p.address.length > 1000
+          || p.sourceUrl !== `https://www.openstreetmap.org/${p.id.split(':').slice(1).join('/')}`
+          || (p.website != null && !https(p.website)) || (p.openingHours != null && !text(p.openingHours, 1000))) invalid();
+        seen.add(p.id); ids.add(p.id);
+      }
     }
-    if (next.photoCatalog) {
-      const photos = next.photoCatalog.cities[city.id], seenPhotos = new Set<string>();
+    const baseIds = new Set(data.places.map(place => place.id));
+    for (const [photos, photoIds, regional] of [...(next.photoCatalog ? [[next.photoCatalog.cities[city.id], baseIds, false] as const] : []), ...(data.regionalPhotos !== undefined ? [[data.regionalPhotos, ids, true] as const] : [])]) {
+      const seenPhotos = new Set<string>();
       if (!Array.isArray(photos) || photos.length > 200) invalid();
       for (const photo of photos) {
-        if (!photo || photo.cityId !== city.id || !ids.has(photo.placeId) || seenPhotos.has(photo.placeId)
+        if (regional && (photo?.discoveredVia === 'Openverse' || photo?.discoveredVia === 'Flickr')) {
+          validateFlickrPhoto(photo, city.id, photoIds, photo.discoveredVia);
+          if (seenPhotos.has(photo.placeId)) invalid();
+          seenPhotos.add(photo.placeId); continue;
+        }
+        if (!photo || photo.cityId !== city.id || !photoIds.has(photo.placeId) || seenPhotos.has(photo.placeId)
           || typeof photo.artist !== 'string' || !photo.artist.trim() || photo.artist.length > 1000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(photo.artist) || !/^[a-f0-9]{64}$/.test(photo.imageSha256) || !https(photo.uri) || !https(photo.sourceUrl) || !https(photo.licenseUrl)) invalid();
         const image = new URL(photo.uri), source = new URL(photo.sourceUrl), license = new URL(photo.licenseUrl);
         if (photo.discoveredVia === 'Business site') {
@@ -97,7 +129,7 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
       if (!Array.isArray(picks) || picks.length > (dining ? 200 : 50)) invalid();
       const selected = new Set<string>();
       for (const pick of picks!) {
-        if (!pick || !ids.has(pick.placeId) || selected.has(pick.placeId) || !text(pick.reason, 500) || (pick.reasonEn !== undefined && !text(pick.reasonEn, 500)) || !https(pick.sourceUrl)
+        if (!pick || !baseIds.has(pick.placeId) || selected.has(pick.placeId) || !text(pick.reason, 500) || (pick.reasonEn !== undefined && !text(pick.reasonEn, 500)) || !https(pick.sourceUrl)
           || !text(pick.verifiedAt, 80) || !Number.isFinite(Date.parse(pick.verifiedAt)) || Date.parse(pick.verifiedAt) > now + 300_000
           || (dining && !data.places.some(p => p.id === pick.placeId && ['food', 'cafe'].includes(p.category)))) invalid();
         selected.add(pick.placeId);
@@ -114,19 +146,8 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
         if (!CITIES.some(city => city.id === cityId) || !Array.isArray(rows) || rows.length > 200) invalid();
         const ids = new Set(next.cities[cityId].places.map(place => place.id)), seen = new Set<string>();
         for (const photo of rows) {
-          if (!photo || photo.cityId !== cityId || !ids.has(photo.placeId) || seen.has(photo.placeId)
-            || !text(photo.artist, 1000) || !text(photo.title, 1000) || photo.discoveredVia !== discoveredVia
-            || !/^[a-f0-9]{64}$/.test(photo.imageSha256) || !https(photo.uri) || !https(photo.sourceUrl) || !https(photo.licenseUrl)) invalid();
-          const image = new URL(photo.uri), source = new URL(photo.sourceUrl), license = new URL(photo.licenseUrl);
-          const imageId = /^\/\d+\/([1-9]\d*)_[a-f0-9]+(?:_[a-z0-9]+)?\.(?:jpe?g|png)$/i.exec(image.pathname)?.[1];
-          const sourceId = /^\/photos\/[^/]+\/([1-9]\d*)\/?$/.exec(source.pathname)?.[1];
-          const cc = /^CC BY(-SA)? ([234]\.0|2\.5)$/.exec(photo.license);
-          const licensePath = photo.license === 'CC0' ? '/publicdomain/zero/1.0' : photo.license === 'Public domain' ? '/publicdomain/mark/1.0'
-            : cc ? `/licenses/by${cc[1] ? '-sa' : ''}/${cc[2]}` : null;
-          if (image.hostname !== 'live.staticflickr.com' || source.hostname !== 'www.flickr.com' || !sourceId || imageId !== sourceId
-            || image.port || image.search || image.hash || source.port || source.search || source.hash
-            || license.hostname !== 'creativecommons.org' || license.port || license.search || license.hash
-            || !licensePath || license.pathname.replace(/\/$/, '') !== licensePath) invalid();
+          validateFlickrPhoto(photo, cityId, ids, discoveredVia);
+          if (seen.has(photo.placeId)) invalid();
           seen.add(photo.placeId);
         }
       }
@@ -157,7 +178,7 @@ function reviewedPicks(cityId: string): PlaceRecommendation[] {
 function displayedPicks(cityId: string): PlaceRecommendation[] {
   if (catalog.recommendationTheme !== 'photo-spots') return [];
   const city = catalog.cities[cityId];
-  const places = new Map([...(snapshot as PlaceCatalog).cities[cityId].places, ...city.places].map(place => [place.id, place]));
+  const places = new Map([...(snapshot as PlaceCatalog).cities[cityId].places, ...regionalPlacesForCity(cityId), ...city.places].map(place => [place.id, place]));
   const photographed = new Set(photosForCity(cityId).map(photo => photo.placeId));
   const picks = [...reviewedPicks(cityId), ...(city.diningRecommendations ?? [])];
   const seen = new Set<string>();
@@ -185,8 +206,10 @@ export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): 
   const reviewed = new Map(displayedPicks(cityId).map(pick => [pick.placeId, pick]));
   const dining = new Map((city.diningRecommendations ?? []).map(pick => [pick.placeId, pick]));
   const currentIds = new Set(city.places.map(place => place.id));
+  const current = [...city.places, ...regionalPlacesForCity(cityId).filter(place => !currentIds.has(place.id))];
+  for (const place of current) currentIds.add(place.id);
   const archived = (snapshot as PlaceCatalog).cities[cityId]?.places.filter(place => !currentIds.has(place.id)) ?? [];
-  return [...city.places, ...archived].filter(place => category === 'all' || place.category === category)
+  return [...current, ...archived].filter(place => category === 'all' || place.category === category)
     .map(place => {
       const visit = (visitedPlaces as { cityId: string; placeId: string; sourceUrl: string; photo?: (typeof photos)[number] }[]).find(row => row.cityId === cityId && row.placeId === place.id);
       return { ...place, photo: photos[photoOrder.get(place.id) ?? -1] ?? visit?.photo ?? null, recommendation: reviewed.get(place.id), diningRecommendation: dining.get(place.id),
@@ -208,7 +231,7 @@ export function getCityRecommendations(cityId: string, category: PlaceCategory =
 export function getCityDiscoveryPlaces(cityId: string): CityPlace[] {
   const places = getCityPlaces(cityId), byId = new Map(places.map(place => [place.id, place]));
   const picks = [...reviewedPicks(cityId), ...(catalog.cities[cityId].diningRecommendations ?? [])];
-  const ids = new Set([...picks.map(pick => pick.placeId), ...places.filter(place => place.glingVisited).map(place => place.id)]);
+  const ids = new Set([...picks.map(pick => pick.placeId), ...regionalPlacesForCity(cityId).map(place => place.id), ...places.filter(place => place.glingVisited).map(place => place.id)]);
   return [...ids].flatMap(id => { const place = byId.get(id); return place ? [place] : []; });
 }
 
@@ -219,5 +242,6 @@ export function getCityBrowsePlaces(cityId: string, category: PlaceCategory = 'a
 
 export function getCityPlacesCoverage(cityId: string): string {
   getCityPlaces(cityId);
+  if (regionalPlacesForCity(cityId).length) return '도시와 인근 지역의 장소';
   return catalog.cities[cityId].coverage === 'municipal-boundary' ? '도시 경계 안의 장소' : '도심 주변의 장소';
 }
