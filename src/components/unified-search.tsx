@@ -121,7 +121,7 @@ export function UnifiedSearchView(props: ViewProps) {
     : props.failed ? <View style={styles.state}><StateCard kind="error" title={ko ? '검색 결과를 불러오지 못했어요' : 'Could not load search results'} body={ko ? '연결을 확인하고 다시 시도해 주세요.' : 'Check your connection and try again.'} actionLabel={ko ? '다시 시도' : 'Try again'} onAction={props.onRetry} /></View>
       : <View style={styles.state}><StateCard kind="empty" title={props.query.trim() ? ko ? '검색 결과가 없어요' : 'No results found' : ko ? '무엇을 찾고 계세요?' : 'What are you looking for?'}
         body={props.query.trim() ? ko ? props.cityId === null ? '검색어나 종류를 바꿔서 다시 찾아보세요.' : '검색어나 종류를 바꾸거나 캐나다 전체에서 찾아보세요.' : props.cityId === null ? 'Try another search term or result type.' : 'Try another search term, result type or the Canada-wide scope.' : ko ? '비즈니스, 장소, 이웃과 게시글·모임을 한 번에 찾아보세요.' : 'Find businesses, places, people, posts and meetups in one search.'} /></View>;
-  return <SafeAreaView edges={['top', 'bottom']} style={[styles.safe, { backgroundColor: theme.background }]}>
+  return <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safe, { backgroundColor: theme.background }]}>
     <View style={styles.content}>
       <View style={styles.header}><Pressable analyticsId="search.back" accessibilityRole="button" accessibilityLabel={ko ? '이전 화면으로' : 'Go back'} onPress={props.onBack} style={ControlStyles.icon}>
         <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={IconSize.toolbar} tintColor={theme.text} /></Pressable><ThemedText type="sheetTitle" accessibilityRole="header" style={styles.heading}>{ko ? '통합검색' : 'Search'}</ThemedText></View>

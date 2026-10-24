@@ -13,7 +13,7 @@ import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
 import { AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Linking, Modal, Platform, ScrollView, StyleSheet, TextInput, UIManager, View, type FlatList as NativeFlatList, type NativeScrollEvent, type NativeSyntheticEvent, useWindowDimensions, type ScrollViewInstance, type ViewInstance, type KeyDownEvent } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ReportSheet } from '@/components/report-sheet';
 import MapScreen from '@/app/map';
@@ -732,7 +732,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     : messages;
 
   if (!auth.isAuthed || auth.me.id !== currentUserId || !scopeMatches) return null;
-  return <ThemedView style={{ flex: 1 }}>
+  return <ThemedView style={{ flex: 1 }}><SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
     <View style={[styles.head, { borderBottomColor: theme.line }]}><View style={styles.titleRow}>{conversation.otherIdentity?.kind === 'business' ? <Pressable analyticsId="chat.peer-profile" accessibilityRole="button" accessibilityLabel={tr('{0} 프로필 보기', title)} onPress={() => { play('selection'); if (conversation.otherIdentity?.kind === 'business') { onClose(); router.push({ pathname: '/company/[id]', params: { id: conversation.otherIdentity.id } }); } }} style={{ minHeight: 44, flex: 1, minWidth: 0, overflow: 'hidden', flexDirection: 'row', gap: 8, alignItems: 'center' }}>{conversation.otherIdentity?.avatarUri && <Image source={{ uri: conversation.otherIdentity.avatarUri }} style={{ width: 32, height: 32, borderRadius: 16 }} />}<ThemedText type="smallBold" numberOfLines={2} ellipsizeMode="tail" accessibilityLabel={title} style={styles.title}>{title}</ThemedText></Pressable> : <ThemedText type="smallBold" numberOfLines={2} ellipsizeMode="tail" accessibilityLabel={title} style={styles.title}>{title}</ThemedText>}{!group && !business && <TrustBadge verified={conversation.otherUser.verificationLevel >= 2} trustLevel={conversation.otherUser.verificationLevel === 3 ? 3 : conversation.otherUser.verificationLevel === 2 ? 2 : undefined} />}</View><Pressable analyticsId="chat.settings.open" accessibilityRole="button" accessibilityLabel={settingsTitle} accessibilityState={{ expanded: settingsOpen }} onPress={() => { if (!valid() || settingsActive.current) return; const session = ++settingsSequence.current; settingsActive.current = session; setSettingsSession(session); reportAfterSettings.current = null; play('selection'); Keyboard.dismiss(); setSettingsOpen(true); }} style={({ pressed }) => [styles.iconAction, { opacity: pressed ? 0.82 : 1 }]}><SymbolView name={{ ios: 'gearshape', android: 'settings', web: 'settings' }} size={21} tintColor={theme.textSecondary} /></Pressable><Pressable analyticsId="components_chat-room.pressable.1" accessibilityRole="button" accessibilityLabel={t.detail.close} onPress={() => { if (!valid()) return; play('selection'); onClose(); }} style={({ pressed }) => [styles.iconAction, { opacity: pressed ? 0.82 : 1 }]}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={21} tintColor={theme.textSecondary} /></Pressable></View>
     {searchOpen && <View style={[styles.searchBar, { borderBottomColor: theme.line }]}><SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={17} tintColor={theme.textSecondary} /><TextInput autoFocus value={searchQuery} onChangeText={setSearchQuery} placeholder={tr('대화 내용 검색')} placeholderTextColor={theme.textSecondary} accessibilityLabel={tr('대화 내용 검색')} returnKeyType="search" style={[styles.searchInput, { color: theme.text }]} /><ThemedText type="small" themeColor="textSecondary">{trimmedSearch ? tr('{0}개', searchMatches.length) : ''}</ThemedText><Pressable analyticsId="chat.search-close" accessibilityRole="button" accessibilityLabel={tr('검색 닫기')} onPress={() => { play('selection'); setSearchQuery(''); setSearchOpen(false); }} style={styles.iconAction}><SymbolView name={{ ios: 'xmark.circle.fill', android: 'cancel', web: 'cancel' }} size={18} tintColor={theme.textSecondary} /></Pressable></View>}
 
@@ -913,17 +913,17 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       </> : status === 'ended' && <ThemedText type="small" themeColor="textSecondary" style={[styles.feedback, { paddingBottom: Math.max(insets.bottom, Spacing.three) }]}>{t.chat.endedBody}</ThemedText>}
     </KeyboardAvoidingView>
     <Modal key={settingsSession} testID="chat-room-settings-modal" visible={settingsOpen} transparent animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={closeSettings} onDismiss={() => { const pending = reportAfterSettings.current; if (pending?.session !== settingsSession || settingsActive.current) return; reportAfterSettings.current = null; if (valid()) setReport(pending.target); }}>
-      <View style={styles.settingsBackdrop}>
+      <SafeAreaProvider style={styles.settingsBackdrop}>
         <Pressable analyticsId="chat.settings.dismiss" accessibilityRole="button" accessibilityLabel={closeSettingsLabel} onPress={closeSettings} style={StyleSheet.absoluteFill} />
-        <View testID="chat-room-settings" accessibilityViewIsModal style={[styles.settingsSheet, { backgroundColor: theme.card, borderTopColor: theme.line, paddingBottom: Math.max(insets.bottom, Spacing.three) }]}>
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} testID="chat-room-settings" accessibilityViewIsModal style={[styles.settingsSheet, { backgroundColor: theme.card, borderTopColor: theme.line, paddingBottom: Spacing.three }]}>
           <View style={styles.settingsHeading}><ThemedText type="section" accessibilityRole="header" style={{ flex: 1 }}>{settingsTitle}</ThemedText>
             <Pressable analyticsId="components_chat-room.pressable.1" accessibilityRole="button" accessibilityLabel={closeSettingsLabel} onPress={closeSettings} style={({ pressed }) => [styles.iconAction, { opacity: pressed ? 0.82 : 1 }]}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={18} tintColor={theme.textSecondary} /></Pressable>
           </View>
           {access.write && <RoomAction label={group ? conversation.isGroupHost ? t.meetup.end : t.meetup.leave : t.chat.end} danger disabled={busy} onPress={() => { if (access.write) selectRoomSetting(() => setConfirmEnd(true)); }} />}
           {!group && <>{!business && <RoomAction label={t.report.short} onPress={() => selectRoomSetting(() => { const target: ReportSelection = { targetType: 'user', targetId: conversation.otherUser.id, reportedUserId: conversation.otherUser.id, reportedNickname: conversation.otherUser.nickname }; if (Platform.OS === 'ios') reportAfterSettings.current = { session: settingsSession, target }; else setReport(target); })} />}
             <RoomAction label={t.chat.block} disabled={busy} onPress={() => selectRoomSetting(() => { void block(conversation.otherUser.id); })} /></>}
-        </View>
-      </View>
+        </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
     {locationOpen && auth.isAuthed && auth.me.id === currentUserId && access.write && <ChatLocationPicker sending={sending} onSend={sendLocation} onClose={() => setLocationOpen(false)} />}
     {discoveryOpen && auth.isAuthed && auth.me.id === currentUserId && scopeMatches && <Modal visible presentationStyle="fullScreen" animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={closeDiscovery}>
@@ -1003,7 +1003,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
         </Pressable>)}</View>}
       </View>
     </Modal>}
-  </ThemedView>;
+  </SafeAreaView></ThemedView>;
 }
 
 const styles = StyleSheet.create({

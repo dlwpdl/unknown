@@ -8,7 +8,7 @@ import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { Alert, Animated, AppState, DeviceEventEmitter, Keyboard, LayoutAnimation, Modal, Platform, StyleSheet, UIManager, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ChatIdentitySwitcher } from '@/components/chat-identity-switcher';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
@@ -270,7 +270,7 @@ export default function ChatScreen() {
   };
 
   if (!auth.isAuthed) return <LoginPanel reason={t.auth.reasonChat} onApple={auth.signInApple} onKakao={auth.signInKakao} onGoogle={auth.signInGoogle} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} />;
-  return <TabContent style={styles.container}><SafeAreaView style={styles.safeArea} edges={['top']}>
+  return <TabContent style={styles.container}><SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
     {/* 홈·모임과 같게 제목 줄은 고정한다. 필터와 안내는 목록과 함께 스크롤된다. */}
     <View style={[styles.headRow, styles.headFixed, { backgroundColor: theme.background }]}>
       <ThemedText accessibilityRole="header" style={styles.heading}>{t.tabs.chat}</ThemedText>
@@ -327,7 +327,7 @@ export default function ChatScreen() {
     presentation.current = undefined;
     setModalConversation(undefined);
   }}>
-    {shownConversation && <ChatRoom key={`${scopeKey}:${shownConversation.id}`} conversation={shownConversation} currentUserId={auth.me.id} onChanged={changed} onClose={closeConversation} />}
+    <SafeAreaProvider style={{ flex: 1 }}>{shownConversation && <ChatRoom key={`${scopeKey}:${shownConversation.id}`} conversation={shownConversation} currentUserId={auth.me.id} onChanged={changed} onClose={closeConversation} />}</SafeAreaProvider>
   </Modal></TabContent>;
 }
 
