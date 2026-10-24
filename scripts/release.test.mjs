@@ -1,8 +1,26 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { parse } from 'yaml';
+
+test('the iOS release toolchain rejects SDKs that cannot enable Duo edge-to-edge', () => {
+  const workflow = parse(readFileSync(new URL('../.github/workflows/mobile-release.yml', import.meta.url), 'utf8'));
+  const selection = workflow.jobs.ios.steps.find(step => step.run?.includes('xcode-select'));
+  const directory = mkdtempSync(join(tmpdir(), 'gling-duo-toolchain-'));
+  try {
+    writeFileSync(join(directory, 'sudo'), '#!/bin/sh\n[ "$1" = xcode-select ] && [ "$2" = -s ] && [ "$3" = /Applications/Xcode_27.1.app ]\n', { mode: 0o700 });
+    writeFileSync(join(directory, 'xcrun'), '#!/bin/sh\n[ "$1" = --sdk ] && [ "$2" = iphoneos ] && [ "$3" = --show-sdk-version ] || exit 1\nprintf "%s\\n" "$GLING_TEST_IOS_SDK"\n', { mode: 0o700 });
+    for (const sdk of ['27.1', '27.0', '26.5', '', 'unavailable']) {
+      const result = spawnSync('/bin/bash', ['-e', '-c', selection.run], {
+        env: { ...process.env, PATH: `${directory}:${process.env.PATH}`, GLING_TEST_IOS_SDK: sdk }, encoding: 'utf8',
+      });
+      assert.equal(result.status === 0, sdk === '27.1', `SDK ${JSON.stringify(sdk)}: ${result.stderr}`);
+    }
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
 
 test('Android release gives R8 four GiB of heap while retaining signing and configuration checks', () => {
   const result = spawnSync('python3', ['-c', `
@@ -46,7 +64,7 @@ test('deployment jobs allocate only free public standard runners and no billed s
     for (const [name, job] of Object.entries(workflow.jobs)) {
       assert.match(job.if, /github\.event\.repository\.private == false/, `${file}:${name} blocks private billing`);
       if (!job['runs-on']) continue;
-      assert.ok(['ubuntu-24.04', 'ubuntu-latest', 'macos-26'].includes(job['runs-on']), `${file}:${name} uses a standard runner`);
+      assert.ok(['ubuntu-24.04', 'ubuntu-latest', 'macos-26', 'xcode-27'].includes(job['runs-on']), `${file}:${name} uses a standard runner`);
       for (const step of job.steps ?? []) {
         assert.doesNotMatch(step.uses ?? '', /^actions\/(cache|upload-artifact)@/, 'no artifact or cache storage charges');
         assert.equal(step.with?.cache, undefined, 'no dependency cache storage');

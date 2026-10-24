@@ -91,7 +91,7 @@ jobs:
   ios:
     if: ${{ github.event.repository.private == false }}
     needs: prepare
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 120
     env:
       CI: '1'
@@ -105,7 +105,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: sudo xcode-select -s /Applications/Xcode_26.5.app
+      - name: Select the iOS 27.1 toolchain for Duo
+        run: |
+          sudo xcode-select -s /Applications/Xcode_27.1.app
+          test "$(xcrun --sdk iphoneos --show-sdk-version)" = 27.1
       - run: npm ci
       - run: bash scripts/install-asc.sh
       - name: Build and verify signed IPA

@@ -9,6 +9,7 @@ import * as ticketmaster from '../supabase/functions/_shared/ticketmaster.ts';
 
 function carousel({ web = false, focused = true, activeCard = true, reducedMotion = false, screenReader = false, eventCount = 8, now = '2026-10-12T06:59:00Z', nextRefreshAt, failRequest } = {}) {
   let hook = 0, dirty = false, time = Date.parse(now), focus = focused, cityId = 'vancouver', tree, language = 'ko';
+  let windowDimensions = { width: 390, height: 844 };
   const formats = [];
   const hooks = [], pending = [], timers = new Map(), listeners = new Map(), requests = [], motion = [], scrolls = [], feedback = [];
   const events = Array.from({ length: eventCount }, (_, index) => ({ id: `f${index}`, name: `f${index} Festival`, startsAt: `2099-01-${String(index + 1).padStart(2, '0')}T20:00:00Z`, localDate: `2099-01-${String(index + 1).padStart(2, '0')}`, status: 'onsale', timeUnconfirmed: false, city: 'Vancouver', country: 'CA', venue: 'Park', image: 'https://example.invalid/image.jpg', ticketUrl: null }));
@@ -38,7 +39,7 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
     react: { useEffect: effect, useState: state, useCallback: memo, useRef: value => { const index = hook++; return hooks[index] ??= { current: value }; } },
     'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }) },
     'expo-router': { Link: Object.assign(() => {}, { AppleZoom: 'Zoom' }), useIsFocused: () => focus, useRouter: () => ({}), useFocusEffect: callback => effect(() => focus ? callback() : undefined, [callback, focus]) },
-    'react-native': { AccessibilityInfo: { isScreenReaderEnabled: async () => screenReader, addEventListener: () => ({ remove() {} }) }, AppState: appState, View: 'View', StyleSheet: { create: value => value, flatten: value => value, absoluteFill: {} }, useWindowDimensions: () => ({ width: 390 }), Easing: { inOut: value => value, sin: () => {} }, Animated: { View: 'AnimatedView', Value: class { interpolate() { return this; } setValue() {} }, timing() {}, sequence() {}, loop: () => ({ start: () => motion.push('start'), stop: () => motion.push('stop') }) } },
+    'react-native': { AccessibilityInfo: { isScreenReaderEnabled: async () => screenReader, addEventListener: () => ({ remove() {} }) }, AppState: appState, View: 'View', StyleSheet: { create: value => value, flatten: value => value, absoluteFill: {} }, useWindowDimensions: () => windowDimensions, Easing: { inOut: value => value, sin: () => {} }, Animated: { View: 'AnimatedView', Value: class { interpolate() { return this; } setValue() {} }, timing() {}, sequence() {}, loop: () => ({ start: () => motion.push('start'), stop: () => motion.push('stop') }) } },
     'react-native-reanimated': { useReducedMotion: () => reducedMotion }, 'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'Symbol' },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
@@ -67,7 +68,7 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
     return tree;
   };
   const ready = () => {};
-  return { requests, motion, scrolls, feedback, formats, language(value) { language = value; }, render, tree: () => tree, remove(id) { events.splice(events.findIndex(event => event.id === id), 1); }, async city(value) { cityId = value; await render(); }, async focus(value) { focus = value; await render(); }, async emit(name, value) { if (name === 'appState') appState.currentState = value; if (name === 'visibilitychange') document.visibilityState = value; for (const callback of [...(listeners.get(name) ?? [])]) callback(value); await render(); }, async tick(delay, advance = 0) { time += advance; for (const timer of [...timers.values()]) if (timer.delay === delay) timer.callback(); await render(); } };
+  return { requests, motion, scrolls, feedback, formats, language(value) { language = value; }, setWindowDimensions(value) { windowDimensions = value; }, render, tree: () => tree, remove(id) { events.splice(events.findIndex(event => event.id === id), 1); }, async city(value) { cityId = value; await render(); }, async focus(value) { focus = value; await render(); }, async emit(name, value) { if (name === 'appState') appState.currentState = value; if (name === 'visibilitychange') document.visibilityState = value; for (const callback of [...(listeners.get(name) ?? [])]) callback(value); await render(); }, async tick(delay, advance = 0) { time += advance; for (const timer of [...timers.values()]) if (timer.delay === delay) timer.callback(); await render(); } };
 }
 
 test('the same featured card supplies its reactive locale to visible and accessible date and price copy', async () => {
@@ -127,6 +128,36 @@ test('foreground refresh preserves the selected event and its visible scroll pos
   assert.equal(ui.scrolls.at(-1).animated, false);
   assert.equal(elements(ui.tree()).find(node => node.props?.event && node.props.active)?.props.event.id, 'f7');
   await ui.tick(6000); assert.equal(ui.scrolls.at(-1).x, 716);
+});
+
+test('native window resizing preserves the active event and realigns its page without restarting the selected city feed', async () => {
+  const ui = carousel({ reducedMotion: true });
+  const layouts = [
+    { window: { width: 466, height: 678 }, cardWidth: 422, offset: 2170 },
+    { window: { width: 951, height: 669 }, cardWidth: 596, offset: 3040 },
+    { window: { width: 669, height: 951 }, cardWidth: 596, offset: 3040 },
+    { window: { width: 466, height: 678 }, cardWidth: 422, offset: 2170 },
+  ];
+  ui.setWindowDimensions(layouts[0].window);
+  await ui.city('toronto');
+  for (let step = 0; step < 5; step++) {
+    elements(ui.tree()).find(node => node.props?.analyticsId === 'today.events.next').props.onPress();
+    await ui.render();
+  }
+  const pages = elements(ui.tree()).find(node => node.props?.analyticsId === 'today.events.carousel').props.children.map(node => node.key);
+  for (const layout of layouts) {
+    ui.setWindowDimensions(layout.window); await ui.render();
+    const active = elements(ui.tree()).filter(node => node.props?.event && node.props.active);
+    assert.equal(active.length, 1);
+    assert.equal(active[0].props.event.id, 'f4');
+    assert.equal(active[0].props.cityId, 'toronto');
+    const scroll = elements(ui.tree()).find(node => node.props?.analyticsId === 'today.events.carousel');
+    assert.deepEqual(scroll.props.children.map(node => node.key), pages, 'The same event pages remain mounted');
+    assert.equal(scroll.props.children[5].props.style.at(-1).width, layout.cardWidth);
+    assert.equal(ui.scrolls.at(-1).x, layout.offset, 'The selected page follows the new width');
+    assert.equal(ui.scrolls.at(-1).animated, false);
+    assert.deepEqual(ui.requests.map(query => query.cityId), ['toronto'], 'Resizing never restarts or changes the city feed');
+  }
 });
 
 for (const web of [false, true]) test(`${web ? 'public' : 'native'} carousel keeps seven large cards without a thumbnail strip and preserves selection for the same city`, async () => {
