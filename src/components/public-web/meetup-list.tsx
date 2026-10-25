@@ -21,7 +21,7 @@ export function PublicMeetupList({ posts, cityName, loading, failed, onRetry }: 
     '--pm-gap': `${Spacing.three}px`, '--pm-padding': `${Spacing.four}px`, '--pm-small-gap': `${Spacing.two}px`,
     '--pm-action': `${ControlMetrics.action}px`, '--pm-radius': `${ControlMetrics.radius.action}px`, '--pm-pressed': ControlMotion.pressedOpacity,
     '--pm-heading': `${Typography.sheetTitle.fontSize / 16}rem`, '--pm-title': `${Typography.section.fontSize / 16}rem`,
-    '--pm-body': `${Typography.menu.fontSize / 16}rem` } as CSSProperties;
+    '--pm-body': `${Typography.menu.fontSize / 16}rem`, '--pm-meta': `${Typography.supporting.fontSize / 16}rem` } as CSSProperties;
   return <section className="public-meetups" style={style} aria-label={ko ? `${cityName} 모임` : `Meetups in ${cityName}`} aria-busy={loading}>
     <header className="public-meetups-heading"><div><h2>{ko ? `${cityName}의 모임` : `Meetups in ${cityName}`}</h2>
       <p>{ko ? '어떤 모임인지 살펴보세요. 참여 신청·모임 만들기·대화는 글링 앱에서 이용해요.' : 'Explore the meetups below. Joining, creating meetups and chatting happen in the Gling app.'}</p></div>
@@ -36,23 +36,25 @@ export function PublicMeetupList({ posts, cityName, loading, failed, onRetry }: 
             const memberCount = Number.isSafeInteger(room.memberCount) && room.memberCount >= 0 ? room.memberCount : null;
             const capacity = Number.isSafeInteger(room.capacity) && room.capacity! > 0 ? room.capacity! : null;
             const availability = chillingAvailability({ ...room, memberCount: memberCount ?? undefined, capacity: capacity ?? undefined });
-            const unavailable = availability !== 'open';
             const state = availability === 'ended' ? ko ? '종료된 모임' : 'Ended' : availability === 'closed' ? ko ? '모집 마감' : 'Closed' : availability === 'full' ? ko ? '정원 마감' : 'Full' : null;
             const image = post.imageThumbs?.[0] || post.imageUris?.[0];
             const photo = image && !failedImages.has(`${post.id}:${image}`) ? image : null;
             const city = tr(CITIES.find(item => item.id === post.cityId)?.name ?? cityName);
-            return <article key={post.id} className={`public-meetup-card${photo ? '' : ' public-meetup-no-photo'}`} aria-label={post.title}>
-              {photo && <img className="public-meetup-photo" src={photo} alt="" width={144} height={144} loading="lazy" referrerPolicy="no-referrer"
-                onError={() => setFailedImages(previous => new Set(previous).add(`${post.id}:${photo}`))} />}
+            const title = post.title || room.title;
+            return <article key={post.id} className="public-meetup-card" aria-label={title}>
+              <a className="public-meetup-link" href={`/post?id=${encodeURIComponent(post.id)}&invite=1`} aria-label={ko ? `${title} 모임 살펴보기` : `View meetup: ${title}`} onClick={() => play('selection')}>
+              <div className="public-meetup-cover">{photo ? <img className="public-meetup-photo" src={photo} alt="" width={640} height={360} loading="lazy" referrerPolicy="no-referrer"
+                onError={() => setFailedImages(previous => new Set(previous).add(`${post.id}:${photo}`))} />
+                : <span>{image ? ko ? '사진을 불러오지 못했어요' : 'Photo unavailable' : ko ? '모임 사진이 없어요' : 'No meetup photo'}</span>}</div>
               <div className="public-meetup-content"><p className="public-meetup-kind">{room.eventKind === 'once' ? ko ? '일회성 모임' : 'One-time meetup' : ko ? '지속 모임' : 'Recurring meetup'}{state && <span className="public-meetup-status">{state}</span>}</p>
-                <h3>{post.title || room.title}</h3>
+                <h3>{title}</h3>
                 <dl className="public-meetup-details"><div><dt>{ko ? '일정' : 'When'}</dt><dd>{chillingSchedule(room, locale)}</dd></div>
                   <div><dt>{ko ? '도시' : 'City'}</dt><dd>{city}</dd></div>
                   <div><dt>{ko ? '참여' : 'Members'}</dt><dd>{memberCount === null ? ko ? '참여 현황 확인 필요' : 'Attendance unavailable' : ko ? `${memberCount.toLocaleString(locale)}명 참여` : `${memberCount.toLocaleString(locale)} members`}
                     {capacity !== null && (ko ? ` · 정원 ${capacity.toLocaleString(locale)}명` : ` · Capacity ${capacity.toLocaleString(locale)}`)}</dd></div></dl>
+                <span className="public-meetup-cue">{ko ? '모임 살펴보기' : 'View meetup'} <span aria-hidden="true">→</span></span>
               </div>
-              <div className="public-meetup-actions"><a className="public-meetup-action" href={`/post?id=${encodeURIComponent(post.id)}`} aria-label={ko ? `${post.title} 소개 읽기` : `Read about ${post.title}`} onClick={() => play('selection')}>{ko ? '소개 읽기' : 'Read the preview'}</a>
-                <a className="public-meetup-action public-meetup-app" href={unavailable ? `gling://post/${encodeURIComponent(post.id)}` : `gling://meetup-join?postId=${encodeURIComponent(post.id)}`} aria-label={ko ? `${post.title} ${unavailable ? '앱에서 보기' : '앱에서 참여하기'}` : `${unavailable ? 'View' : 'Join'} ${post.title} in the app`} onClick={() => play('selection')}>{unavailable ? ko ? '앱에서 모임 보기' : 'View in the app' : ko ? '앱에서 참여하기' : 'Join in the app'} <span aria-hidden="true">↗</span></a></div>
+              </a>
             </article>;
           })}</div>}
   </section>;

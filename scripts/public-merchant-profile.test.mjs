@@ -32,6 +32,7 @@ function app(file = '../src/components/public-web/merchant-profile.tsx', { rpc =
     react: hooks, 'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }) },
     'expo-router/head': { __esModule: true, default: 'Head' }, 'expo-router': { useLocalSearchParams: () => query, usePathname: () => path },
     'expo-asset': { Asset: { fromModule: () => ({ uri: 'local-logo' }) } },
+    '@/lib/auth': { useAuth: () => ({ isAuthed: false }) },
     '@/lib/interaction-feedback': { InteractionFeedbackProvider: 'FeedbackProvider', useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/lib/public-web-client': { publicWebClient: { rpc: async (name, args) => { calls.push([name, JSON.parse(JSON.stringify(args))]); return rpc(name, args); } } },
     '@/lib/merchant-profile': { loadMerchantProfile: loadProfile, loadMerchantProfilePosts: (...args) => { postCalls.push(args.slice(1)); return loadPosts(...args); } }, '@/lib/public-web': { publicMerchantId, publicWebTarget },
