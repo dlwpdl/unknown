@@ -1,5 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { MerchantAccountEntry } from '@/components/merchant-account-connections';
+import { ChatIdentitySwitcher } from '@/components/chat-identity-switcher';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import * as ImagePicker from 'expo-image-picker';
@@ -148,6 +149,7 @@ export default function ProfileScreen() {
     <ThemedView style={styles.container}>
       <Stack.Screen options={{ headerShown: true, title: tr('내 프로필'), headerRight: () => (
         <View style={styles.headerActions}>
+          <ChatIdentitySwitcher target="business" />
           <Pressable analyticsId="app_profile_index.invite" accessibilityRole="button" accessibilityLabel={tr('친구 초대하기')} accessibilityHint={tr('글링 초대 링크를 다른 앱으로 공유합니다')}
             onPress={() => { void shareAppInvite(); }} style={styles.headerButton}>
             <SymbolView name={{ ios: 'square.and.arrow.up', android: 'share', web: 'share' }} size={22} tintColor={theme.text} />

@@ -10,7 +10,7 @@ import * as controls from '../src/constants/design-system.ts';
 import * as media from '../src/lib/business-media.ts';
 
 function app(component = 'MerchantAccountEntry') {
-  const states = [], refs = [], effects = [], calls = [], pending = [], routes = [], feedback = [];
+  const states = [], refs = [], effects = [], calls = [], pending = [], routes = [], navigated = [], feedback = [];
   let stateIndex = 0, refIndex = 0, effectIndex = 0, auth = { me: { id: 'user-a', nickname: '개인 이름' }, isAuthed: true, isAdmin: false }, foreground, focusEffect, focusCleanup;
   const client = { rpc: (name, args) => {
     calls.push({ name, args }); return new Promise(resolve => pending.push(data => resolve({ data, error: null })));
@@ -32,7 +32,7 @@ function app(component = 'MerchantAccountEntry') {
     if (name === 'expo-symbols') return { SymbolView: 'SymbolView' };
     if (name === 'expo-image') return { Image: 'Image' };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if (name === 'expo-router') return { useRouter: () => ({ push: path => routes.push(path) }), useFocusEffect: fn => { focusEffect = fn; recordEffect(() => { focusCleanup = fn(); return focusCleanup; }, fn.deps); } };
+    if (name === 'expo-router') return { useRouter: () => ({ push: path => routes.push(path), navigate: path => { navigated.push(path); routes.push(path); } }), useFocusEffect: fn => { focusEffect = fn; recordEffect(() => { focusCleanup = fn(); return focusCleanup; }, fn.deps); } };
     if (name === 'react-native') return { Platform: { OS: 'web' }, View: 'View', Modal: 'Modal', StyleSheet: { create: value => value }, AppState: { addEventListener(name, fn) { foreground = fn; return { remove() {} }; } } };
     if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView' };
     if (name === '@/components/analytics-controls') return { Pressable: 'Pressable', ScrollView: 'ScrollView' };
@@ -49,7 +49,7 @@ function app(component = 'MerchantAccountEntry') {
     throw new Error('Unexpected import ' + name);
   }) });
   let props = { refreshSignal: 0, onChanged: () => {}, merchantId: 'company-a' };
-  return { calls, pending, routes, feedback,
+  return { calls, pending, routes, navigated, feedback,
     auth(value) { auth = { ...auth, ...value }; }, props(value) { props = { ...props, ...value }; },
     foreground() { foreground('active'); },
     blur() { focusCleanup?.(); }, focus() { focusCleanup = focusEffect?.(); },
@@ -251,6 +251,7 @@ test('Today sheet uses opaque business photos and returns the personal row to th
   assert.ok(nodes(view.render()).some(n => n.type === 'Image' && n.props.source.uri.includes('kind=avatar')));
   nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.personal').props.onPress();
   assert.equal(view.routes[0], '/profile');
+  assert.deepEqual(view.navigated, ['/profile'], 'Personal return reuses the existing profile route instead of pushing another profile screen.');
 });
 
 test('Today foreground checks remove a revoked switch and cannot expose admin review access', async () => {

@@ -71,7 +71,7 @@ export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilit
   async function choose(id: string | null) {
     if (pending.current || user.current !== me.id) return;
     play('selection');
-    if (id === null) { selectChatBusiness(me.id, null); setOpenedFor(null); onChanged?.(); if (target === 'business') router.push('/profile'); return; }
+    if (id === null) { selectChatBusiness(me.id, null); setOpenedFor(null); onChanged?.(); if (target === 'business') router.navigate('/profile'); return; }
     pending.current = true; setBusy(true); setError('');
     const request = ++serial.current;
     try {
