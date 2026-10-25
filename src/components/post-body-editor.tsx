@@ -14,7 +14,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { googleMapsPin, googlePinUrl, postMapBody, withPostMap } from '@/lib/post-maps';
 import { instagramPostLink, postLinkChecks, safePostLink, splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links';
 
-export function PostBodyEditor({ value = '', onChangeText, editable = true, maxLength = 4000, onFocus, cityName = '', allowLocation = true, renderLayout, ...props }: TextInputProps & { cityName?: string; allowLocation?: boolean; renderLayout?: (parts: { input: ReactNode; actions: ReactNode; attachments: ReactNode }) => ReactNode }) {
+export function PostBodyEditor({ value = '', onChangeText, editable = true, maxLength = 1000, onFocus, cityName = '', allowLocation = true, renderLayout, ...props }: TextInputProps & { cityName?: string; allowLocation?: boolean; renderLayout?: (parts: { input: ReactNode; actions: ReactNode; attachments: ReactNode }) => ReactNode }) {
   const { tr, t } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
@@ -26,7 +26,7 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
   const mapped = postMapBody(value, { preserveWhitespace: true });
   const initialPin = useMemo(() => googleMapsPin(mapped.url ?? ''), [mapped.url]);
   const attached = splitPostAttachments(mapped.body);
-  const bodyLimit = mapped.url ? Math.min(maxLength, 4000) : maxLength;
+  const bodyLimit = mapped.url ? Math.min(maxLength, 1000) : maxLength;
   const candidate = stage === 'instagram' ? instagramPostLink(input)?.url : stage === 'url' ? safePostLink(input) : null;
   const duplicate = !!candidate && attached.urls.some(url => (instagramPostLink(url)?.url ?? url) === candidate);
   let next: string | null = null;

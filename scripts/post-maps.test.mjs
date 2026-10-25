@@ -115,9 +115,9 @@ test('지도를 바꾸면 이전 지도 줄을 교체하고 중복을 만들지 
   assert.throws(() => withPostMap('본문', 'https://evil.test/maps'), /INVALID_MAP_LINK/);
 });
 
-test('지도와 본문을 합쳐 DB의 4000자 한도를 지키고 이모지를 두 글자로 세지 않는다', () => {
-  assert.throws(() => withPostMap('가'.repeat(4000), place), /POST_BODY_TOO_LONG/);
-  const body = '😀'.repeat(3900);
+test('지도와 본문을 합쳐 DB의 1000자 한도를 지키고 이모지를 두 글자로 세지 않는다', () => {
+  assert.throws(() => withPostMap('가'.repeat(1000), place), /POST_BODY_TOO_LONG/);
+  const body = '😀'.repeat(900);
   assert.equal(postMapBody(withPostMap(body, place)).body, body);
 });
 
