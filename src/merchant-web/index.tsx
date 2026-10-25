@@ -113,18 +113,18 @@ export default function MerchantWebIndex() {
                 <ThemedText themeColor="textSecondary">{tr('비즈니스 운영 승인은 완료됐어요. 아래에서 받은 초대를 확인하거나 비즈니스를 등록해 주세요. AI 신규 연결은 소유권 확인 후 이용할 수 있어요.')}</ThemedText>
               </View>}
               {callback && <MerchantNaverCallback key={me.id} callback={callback} onConnected={merchantId => { setConnected({ user: me.id, merchantId }); setCallback(null); }} />}
-              <MerchantWorkspace key={`${me.id}:${initialMerchantId ?? ''}`} refreshSignal={revision} initialMerchantId={initialMerchantId} initialTab={initialMerchantId ? 'channels' : undefined} assignedOnly onBusinessesChanged={() => setRevision(value => value + 1)} />
+              <MerchantWorkspace layout="sidebar" key={`${me.id}:${initialMerchantId ?? ''}`} refreshSignal={revision} initialMerchantId={initialMerchantId} initialTab={initialMerchantId ? 'channels' : undefined} assignedOnly onBusinessesChanged={() => setRevision(value => value + 1)} />
             </>}
     </ScrollView>
   </View>;
 }
 const styles = StyleSheet.create({
   page: { flex: 1, minHeight: '100%' }, header: { borderBottomWidth: 1 },
-  headerContent: { width: '100%', maxWidth: 808, alignSelf: 'center', paddingHorizontal: 24, paddingVertical: 12, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  headerContent: { width: '100%', maxWidth: 1228, alignSelf: 'center', paddingHorizontal: 24, paddingVertical: 12, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 12 }, wordmark: { width: 76, height: 30 },
   account: { flexDirection: 'row', gap: 12, alignItems: 'center', maxWidth: '100%', flexShrink: 1 }, nickname: { flexShrink: 1 },
-  content: { width: '100%', maxWidth: 808, alignSelf: 'center', padding: 24, gap: 16, paddingBottom: 64 },
-  state: { gap: 16, padding: 24, borderWidth: 1, borderRadius: 20, alignItems: 'flex-start' },
+  content: { width: '100%', maxWidth: 1228, alignSelf: 'center', padding: 24, gap: 16, paddingBottom: 64 },
+  state: { gap: 16, padding: 24, borderWidth: 1, borderRadius: 20, alignItems: 'flex-start', width: '100%', maxWidth: 760, alignSelf: 'center' },
   storeChoices: { alignSelf: 'stretch' },
   action: { minHeight: 44, minWidth: 44, borderWidth: 1, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, alignItems: 'center', justifyContent: 'center' },
   primary: { minHeight: 48, minWidth: 44, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },

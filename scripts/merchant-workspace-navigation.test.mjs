@@ -37,11 +37,12 @@ function mount(name = 'MerchantTools', options = {}) {
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/auth': { useAuth: () => auth },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/lib/merchant-source': { merchantEventId: () => `draft-${++serial}` },
-    '@/lib/merchant-workspace': { calculateMerchantCost, MERCHANT_CHANNELS, loadMerchantWorkspace: (...args) => api.workspace(...args), loadMyMerchants: (...args) => api.merchants(...args) },
+    '@/lib/merchant-workspace': { calculateMerchantCost, MERCHANT_CHANNELS, loadMerchantWorkspace: (...args) => api.workspace(...args), loadMyMerchants: (...args) => api.merchants(...args), getMyBusinessWorkspaceAccess: async () => ({ enabled: true, merchants: await (api.businessMerchants ?? api.merchants)() }) },
     '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }], TAGS: [] }, '@/lib/image-upload': { MAX_POST_IMAGES: 20 },
     '@/lib/supabase': { supabase: { auth: { getSession: async () => ({ data: { session: { user: auth.me } } }) }, storage: { from: () => ({ createSignedUrls: async paths => ({ data: paths.map(path => ({ path, signedUrl: `signed:${path}` })) }) }) } } },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView', Switch: 'Switch' },
     'expo-symbols': { SymbolView: 'SymbolView' },
+    '@/components/merchant-web-shell': { MerchantHome: 'MerchantHome', MerchantSidebar: 'MerchantSidebar', merchantShellStyles: {}, useMerchantSidebar: () => false },
   };
   const require = path => imports[path] ?? new Proxy({}, { get: (_, key) => key === '__esModule' ? true : String(key) });
   vm.runInNewContext(compiled, { exports, require, Error, Map, Promise, console, window: { confirm: message => { confirmations.push(message); return api.confirm ?? true; } } });
@@ -179,4 +180,58 @@ test('business overview starts a plain business post directly and exposes photo 
 test('photo management opens the same scoped profile editor', async () => {
   const screen = mount(); await screen.settle(); await screen.press('사진 관리');
   assert.ok(visibleNodes(screen.tree).some(n => n.type === 'MerchantProfileEditor' && n.props.merchantId === 'merchant-a'));
+});
+
+
+test('business mode uses the assignment-only reader even for an admin account', async () => {
+  const screen = mount('MerchantWorkspaceContent', { props: { assignedOnly: true }, merchants: async () => { throw Error('Global admin lists must not load in business mode'); }, businessMerchants: async () => [{ ...merchant(), role: 'owner' }] });
+  screen.auth.isAdmin = true; await screen.settle();
+  const tools = nodes(screen.tree).find(n => n.type?.name === 'MerchantTools');
+  assert.equal(tools?.props.id, 'merchant-a'); assert.equal(tools?.props.businessOnly, true);
+});
+
+test('business mode does not promote an admin operator to business owner controls', async () => {
+  const data = fixture(true); data.merchant.owner_id = 'other-owner';
+  const screen = mount('MerchantTools', { props: { businessOnly: true }, workspace: async () => data });
+  screen.auth.isAdmin = true; await screen.settle();
+  for (const title of ['원가 계산', '재고', '성과·멤버십', '계정 관리']) assert.ok(!find(screen.tree, title), title);
+});
+
+test('an admin business owner has the same business inbox entry as an ordinary owner', async () => {
+  const screen = mount('MerchantTools', { props: { businessOnly: true } });
+  screen.auth.isAdmin = true; await screen.settle();
+  assert.ok(find(screen.tree, '비즈니스 대화함'));
+});
+
+
+test('the personal business-profile route stays in business mode without the admin MFA wrapper', () => {
+  const exports = {};
+  const code = ts.transpileModule(readFileSync(new URL('../src/app/profile/merchant.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
+  const imports = {
+    react: { useCallback: fn => fn, useState: value => [value, () => {}] },
+    'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
+    'expo-router': { useFocusEffect() {}, useLocalSearchParams: () => ({}) },
+    'react-native': { KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'ios' } },
+    '@/components/analytics-controls': { ScrollView: 'ScrollView' },
+    '@/components/admin/admin-mfa-gate': { AdminMfaGate: 'AdminMfaGate' },
+    '@/components/merchant-workspace': { MerchantWorkspace: 'MerchantWorkspace' },
+    '@/components/login-panel': { LoginPanel: 'LoginPanel' },
+    '@/lib/auth': { useAuth: () => ({ isAuthed: true, isAdmin: true, me: { id: 'owner' } }) },
+  };
+  vm.runInNewContext(code, { exports, require: name => { assert.ok(imports[name], name); return imports[name]; } });
+  const tree = exports.default();
+  assert.ok(!nodes(tree).some(n => n.type === 'AdminMfaGate'));
+  assert.equal(nodes(tree).find(n => n.type === 'MerchantWorkspace')?.props.assignedOnly, true);
+});
+
+test('the business web sidebar shows the home composer and only the tools the account may use', async () => {
+  const owner = mount('MerchantTools', { props: { layout: 'sidebar' }, workspace: async () => ({ ...fixture(true), merchant: { ...merchant(), owner_id: 'owner', owner_verified_at: '2026-10-01' } }) });
+  await owner.settle();
+  const keys = screen => nodes(screen.tree).find(n => n.type === 'MerchantSidebar')?.props.items.map(item => item.key).join(',');
+  assert.equal(keys(owner), 'overview,posts,drafts,reviews,profile,ai,channels,cost,stock,membership,accounts');
+  assert.ok(nodes(owner.tree).some(n => n.type === 'MerchantHome'));
+  assert.ok(!find(owner.tree, '원가 계산'), 'the old stacked tool list is replaced by the sidebar');
+  const operator = mount('MerchantTools', { props: { layout: 'sidebar', businessOnly: true }, workspace: async () => ({ ...fixture(true), merchant: { ...merchant(), owner_id: 'other-owner', owner_verified_at: '2026-10-01' } }) });
+  await operator.settle();
+  assert.equal(keys(operator), 'overview,posts,drafts,profile');
 });

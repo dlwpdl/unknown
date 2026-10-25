@@ -11,6 +11,7 @@ import { MerchantAccountInvitations, MerchantAccountManagement } from '@/compone
 import { MerchantAccessGate } from '@/components/merchant-access-gate';
 import { MerchantNaverCafe } from '@/components/merchant-naver-cafe';
 import { MerchantWebPosts } from '@/components/merchant-web-posts';
+import { MerchantHome, MerchantSidebar, merchantShellStyles, useMerchantSidebar, type MerchantNavItem, type MerchantRecentItem } from '@/components/merchant-web-shell';
 import { PostPhotoEditor, type EditablePostImage } from '@/components/post-photo-editor';
 import { PostBodyEditor } from '@/components/post-body-editor';
 import { MerchantReviewInbox } from '@/components/merchant-review-inbox';
@@ -31,7 +32,7 @@ import { CITIES, TAGS } from '@/lib/mock';
 import { merchantEventId } from '@/lib/merchant-source';
 import {
   MERCHANT_CHANNELS, adjustMerchantInventory, approveMerchantDrafts, archiveMerchantDrafts,
-  calculateMerchantCost, loadMerchantWorkspace, loadMyMerchants, merchantDraftCopy, merchantReportText,
+  calculateMerchantCost, getMyBusinessWorkspaceAccess, loadMerchantWorkspace, loadMyMerchants, merchantDraftCopy, merchantReportText,
   publishMerchantDraft, recordMerchantExternalPost, registerMyMerchant, saveMerchantItem,
   type BusinessMerchant, type MerchantChannel, type MerchantDraft, type MerchantWorkspace as Workspace,
 } from '@/lib/merchant-workspace';
@@ -136,15 +137,15 @@ function ToolRow({ title, detail, onPress, disabled }: { title: string; detail: 
   </Pressable>;
 }
 
-type WorkspaceProps = { merchantId?: string; refreshSignal?: number; initialMerchantId?: string; initialTab?: MerchantTab; assignedOnly?: boolean; onBusinessesChanged?: () => void };
+type WorkspaceProps = { merchantId?: string; refreshSignal?: number; initialMerchantId?: string; initialTab?: MerchantTab; assignedOnly?: boolean; onBusinessesChanged?: () => void; layout?: 'sidebar' };
 export function MerchantWorkspace(props: WorkspaceProps) {
 
   const [connectionRevision, setConnectionRevision] = useState(0);
   const refreshSignal = (props.refreshSignal ?? 0) + connectionRevision;
   return <>{!props.merchantId && <MerchantAccountInvitations refreshSignal={refreshSignal} onChanged={() => { setConnectionRevision(v => v + 1); props.onBusinessesChanged?.(); }} />}
-    <MerchantAccessGate refreshSignal={refreshSignal}><MerchantWorkspaceContent {...props} refreshSignal={refreshSignal} /></MerchantAccessGate></>;
+    <MerchantAccessGate businessOnly={props.assignedOnly} refreshSignal={refreshSignal}><MerchantWorkspaceContent {...props} refreshSignal={refreshSignal} /></MerchantAccessGate></>;
 }
-function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMerchantId, initialTab, assignedOnly = false, onBusinessesChanged }: WorkspaceProps) {
+function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMerchantId, initialTab, assignedOnly = false, onBusinessesChanged, layout }: WorkspaceProps) {
   const { tr } = useLanguage();
   const { me, isAuthed, isAdmin } = useAuth();
   const [response, setResponse] = useState<{ user: string; rows: BusinessMerchant[]; revision: number; refreshSignal: number } | null>(null);
@@ -159,7 +160,8 @@ function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMercha
   useEffect(() => {
     let active = true;
     if (!isAuthed || merchantId) return;
-    void loadMyMerchants(supabase).then((next) => { if (active) {
+    const businesses = assignedOnly ? getMyBusinessWorkspaceAccess(supabase, me.id).then(access => access.merchants) : loadMyMerchants(supabase);
+    void businesses.then((next) => { if (active) {
       if (assignedOnly) next = next.filter(row => row.role === 'owner' || row.role === 'operator');
       setResponse({ user: me.id, rows: next, revision, refreshSignal }); setError('');
       setSelected(current => next.some(m => m.id === current) ? current : next.length === 1 ? next[0].id : null);
@@ -168,13 +170,13 @@ function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMercha
     return () => { active = false; };
   }, [isAuthed, me.id, merchantId, revision, refreshSignal, assignedOnly]);
   if (!isAuthed) return <ThemedText>{tr("로그인한 뒤 비즈니스 도구를 이용해 주세요.")}</ThemedText>;
-  if (merchantId) return <MerchantTools key={`${me.id}:${merchantId}`} id={merchantId} initialTab={initialTab} refreshSignal={refreshSignal} onDirty={() => {}} />;
+  if (merchantId) return <MerchantTools businessOnly={assignedOnly} layout={layout} key={`${me.id}:${merchantId}`} id={merchantId} initialTab={initialTab} refreshSignal={refreshSignal} onDirty={() => {}} />;
   async function choose(id: string | null) {
     if (busyRef.current) return;
     if (id !== selected && dirty && !await confirmAction('저장하지 않은 초안', '다른 비즈니스를 열면 저장하지 않은 수정 내용이 사라져요.')) return;
     busyRef.current = true; setBusy(true); setError('');
     try {
-      if (id && !isAdmin) {
+      if (id && (!isAdmin || assignedOnly)) {
         const connections = await loadMyMerchantConnections(supabase, me.id);
         const current = connections.merchants.find(item => item.id === id && item.role !== 'admin');
         const session = await supabase.auth.getSession();
@@ -199,7 +201,7 @@ function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMercha
     } catch (e) { setError(errorText(e)); }
     finally { busyRef.current = false; setBusy(false); }
   }
-  return <View style={styles.workspace}>
+  return <View style={layout === 'sidebar' ? merchantShellStyles.content : styles.workspace}>
     {error && <ThemedText accessibilityRole="alert">{tr(error)}</ThemedText>}
     {!checking && !registering && (choosing || !selected) && <Section title={tr("관리할 비즈니스")}>
       {rows?.map((m) => <ToolRow key={m.id} title={m.name} detail={tr(m.city_name)} disabled={busy} onPress={() => { void choose(m.id); }} />)}
@@ -217,12 +219,12 @@ function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMercha
       <Action label={tr("비즈니스 등록 취소")} disabled={busy} onPress={() => { setRegistering(false); setChoosing(true); }} />
     </Section>}
     {!registering && selected && rows?.some(row => row.id === selected) && <View style={{ display: choosing ? 'none' : 'flex' }}>
-      <MerchantTools key={`${me.id}:${selected}`} id={selected} initialTab={initialTab} refreshSignal={refreshSignal + revision} accessChecking={checking} onChoose={() => setChoosing(true)} onDirty={setDirty} onConnectionsChanged={() => setRevision(v => v + 1)} />
+      <MerchantTools businessOnly={assignedOnly} layout={layout} key={`${me.id}:${selected}`} id={selected} initialTab={initialTab} refreshSignal={refreshSignal + revision} accessChecking={checking} onChoose={() => setChoosing(true)} onDirty={setDirty} onConnectionsChanged={() => setRevision(v => v + 1)} />
     </View>}
   </View>;
 }
 
-function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onChoose, accessChecking = false, initialTab = 'overview' }: { id: string; refreshSignal: number; onDirty: (dirty: boolean) => void; onConnectionsChanged?: () => void; onChoose?: () => void; accessChecking?: boolean; initialTab?: MerchantTab }) {
+function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onChoose, accessChecking = false, businessOnly = false, initialTab = 'overview', layout }: { layout?: 'sidebar'; id: string; refreshSignal: number; onDirty: (dirty: boolean) => void; onConnectionsChanged?: () => void; onChoose?: () => void; accessChecking?: boolean; businessOnly?: boolean; initialTab?: MerchantTab }) {
   const { tr, locale: appLocale } = useLanguage();
   const theme = useTheme();
   const { me, isAdmin } = useAuth(); const { play } = useInteractionFeedback(), router = useRouter();
@@ -242,6 +244,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
   const [facts, setFacts] = useState(''), [purpose, setPurpose] = useState<(typeof draftPurposes)[number]>('가게 소식');
   const [aiDraftReady, setAiDraftReady] = useState(false);
   const [draftOptions, setDraftOptions] = useState(false);
+  const sidebar = layout === 'sidebar', wideNav = useMerchantSidebar();
   const [channels, setChannels] = useState({ gling: true, naver: false, daum: false });
   const [preparedChannels, setPreparedChannels] = useState<{ naver: boolean; daum: boolean } | null>(null);
   const [openedDraft, setOpenedDraft] = useState<MerchantDraft | null>(null);
@@ -325,14 +328,16 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
     }, '', false);
   }
   function changeDraft(next: Partial<DraftInput>) { setEditor({ ...editor, ...next }); setDirty(true); setPreparedChannels(null); }
-  async function generateDraft() {
-    const merchant = data?.merchant, bodyHint = facts.trim();
+  // `fresh` comes from the business-web home right after a new empty draft opened, so this render's editor is stale.
+  async function generateDraft(fresh?: { facts: string; purpose: (typeof draftPurposes)[number] }) {
+    const merchant = data?.merchant, bodyHint = (fresh?.facts ?? facts).trim(), draftPurpose = fresh?.purpose ?? purpose;
+    const base = fresh ? emptyDraft() : editor;
     if (!merchant || !bodyHint || busyRef.current) return;
-    if ((editor.title.trim() || editor.body.trim()) && !await confirmAction(tr('작성한 초안을 바꿀까요?'), tr('직접 수정한 내용이 새 AI 초안으로 바뀌어요.'))) { setDraftStep('edit'); return; }
+    if (!fresh && (editor.title.trim() || editor.body.trim()) && !await confirmAction(tr('작성한 초안을 바꿀까요?'), tr('직접 수정한 내용이 새 AI 초안으로 바뀌어요.'))) { setDraftStep('edit'); return; }
     await run(async () => {
       const { data: result, error: failure } = await supabase.functions.invoke('draft-post', { body: {
-        intent: 'merchant_promotion', merchantId: id, purpose, cityName: merchant.city_name,
-        selectedCategory: editor.tag_slug === 'festival' ? 'life' : editor.tag_slug, bodyHint,
+        intent: 'merchant_promotion', merchantId: id, purpose: draftPurpose, cityName: merchant.city_name,
+        selectedCategory: base.tag_slug === 'festival' ? 'life' : base.tag_slug, bodyHint,
       } });
       if (failure) {
         let code = 'DRAFT_FAILED';
@@ -341,7 +346,8 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
       }
       const draft = parseAiDraftResponse(result), session = await supabase.auth.getSession();
       if (!mounted.current || session.data.session?.user.id !== me.id) throw new Error('ACCOUNT_CHANGED');
-      changeDraft({ title: draft.title, body: draft.body, kind: purpose === '구인구직' ? 'listing' : editor.kind });
+      if (fresh) { setEditor(current => ({ ...current, title: draft.title, body: draft.body, kind: draftPurpose === '구인구직' ? 'listing' : current.kind })); setDirty(true); setPreparedChannels(null); }
+      else changeDraft({ title: draft.title, body: draft.body, kind: draftPurpose === '구인구직' ? 'listing' : editor.kind });
       setAiDraftReady(true); setDraftStep('edit');
     }, '', false);
   }
@@ -380,7 +386,8 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
     }, chosen.naver || chosen.daum ? '글링에 게시했어요. 카페는 원고 복사 후 직접 등록해 주세요.' : '글링에 게시했어요.');
   }
   async function openDraft(draft?: MerchantDraft, direct = false) {
-    if (busyRef.current) return;
+    if (busyRef.current) return false;
+    let opened = false;
     busyRef.current = true; setBusy(true);
     try {
       if (dirty && !await confirmAction('저장하지 않은 초안', '다른 원고를 열면 저장하지 않은 수정 내용이 사라져요.')) return;
@@ -400,9 +407,10 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
       setDraftStep(draft || direct ? 'edit' : 'idea'); setFacts(''); setAiDraftReady(false); setDraftOptions(false);
       setChannels({ gling: true, naver: false, daum: false }); setPreparedChannels(null);
       setDirty(false); setExternalUrl(draft?.external_url ?? ''); setError('');
-      setDraftView('composer'); setTab('drafts');
+      setDraftView('composer'); setTab('drafts'); opened = true;
     } catch (error) { if (mounted.current) { play('warning'); setError(errorText(error)); } }
     finally { busyRef.current = false; if (mounted.current) setBusy(false); }
+    return opened;
   }
   function changeDraftPhotos(photos: EditablePostImage[]) {
     setDraftPhotos(photos); changeDraft({ image_paths: photos.flatMap(photo => 'path' in photo ? [photo.path] : []) });
@@ -428,7 +436,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
     play('selection'); setSelection((ids) => ids.includes(draftId) ? ids.filter((x) => x !== draftId) : ids.length < 50 ? [...ids, draftId] : ids);
   }
   if (!data) return <View style={styles.workspace}>{error ? <><ThemedText accessibilityRole="alert">{tr(error)}</ThemedText><Action label={tr("다시 불러오기")} onPress={() => { setError(''); setRevision((v) => v + 1); }} /></> : <GlingLoader accessibilityLabel={tr("비즈니스 도구를 불러오는 중")} />}</View>;
-  const fullAccess = data.can_manage_business ?? data.merchant.owner_id === me.id;
+  const fullAccess = (data.can_manage_business ?? data.merchant.owner_id === me.id) && (!businessOnly || data.merchant.owner_id === me.id);
   const contentTab = ['overview','posts','profile','drafts'].includes(tab);
   const activeTab = fullAccess || contentTab ? tab : 'overview';
   const saved = data.drafts.find((d) => d.id === editor.id);
@@ -437,6 +445,34 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
   const published = !!(saved?.published_at || saved?.external_url);
   const canApprove = selection.length > 0 && (selection.length === 1 || data.merchant.plan !== 'basic');
   const picked = data.drafts.filter((d) => selection.includes(d.id));
+  const aiOwner = fullAccess && data.merchant.owner_id === me.id && !!data.merchant.owner_verified_at;
+  const navItems: MerchantNavItem[] = [
+    { key: 'overview', label: tr('홈'), icon: { ios: 'house', android: 'home', web: 'home' } },
+    { key: 'posts', label: tr('글·사진'), icon: { ios: 'doc.text', android: 'description', web: 'description' } },
+    { key: 'drafts', label: tr('홍보글 관리'), icon: { ios: 'square.and.pencil', android: 'edit_note', web: 'edit_note' } },
+    ...fullAccess ? [{ key: 'reviews', label: tr('이용 후기'), icon: { ios: 'star', android: 'star', web: 'star' } } as const] : [],
+    { key: 'profile', label: tr('프로필'), icon: { ios: 'storefront', android: 'storefront', web: 'storefront' } },
+    ...aiOwner ? [{ key: 'ai', label: tr('AI 연결'), icon: { ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' } } as const] : [],
+    ...fullAccess ? ([
+      ['channels', tr('카페 연결'), 'link', 'link'], ['cost', tr('원가 계산'), 'percent', 'calculate'], ['stock', tr('재고'), 'shippingbox', 'inventory_2'],
+      ['membership', tr('성과·멤버십'), 'chart.bar', 'bar_chart'], ['accounts', tr('계정 관리'), 'person.2', 'group'],
+    ] as const).map(([key, label, ios, web]) => ({ key, label, icon: { ios, android: web, web }, group: 'tools' as const })) : [],
+  ];
+  function selectNav(key: string) {
+    if (key === 'ai') { router.push('/ai'); return; }
+    setNotice(''); if (key === 'drafts') setDraftView('list'); setTab(key as MerchantTab);
+  }
+  async function startHomeDraft(generate: boolean) {
+    const notes = facts, kind = purpose;
+    if (!await openDraft(undefined, !generate) || !generate || !mounted.current) return;
+    setFacts(notes); setPurpose(kind);
+    await generateDraft({ facts: notes, purpose: kind });
+  }
+  const recent: MerchantRecentItem[] = [
+    ...data.drafts.filter(d => !d.archived_at && !d.published_at && !d.external_url).map(d => ({ at: d.updated_at, item: { key: `d:${d.id}`, title: d.title || tr('제목 없음'),
+      detail: `${MERCHANT_CHANNELS[d.channel] ?? d.channel} · ${d.updated_at.slice(0, 10)}`, status: d.approved_at ? 'approved' as const : 'draft' as const, onPress: () => { void openDraft(d); } } })),
+    ...data.posts.map(p => ({ at: p.created_at ?? '', item: { key: `p:${p.post_id}`, title: p.title, detail: tr('조회 {0}회', p.displayed_views), status: 'published' as const, onPress: () => selectNav('posts') } })),
+  ].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 4).map(row => row.item);
   let calculated: ReturnType<typeof calculateMerchantCost> | null = null;
   try { calculated = calculateMerchantCost(Object.fromEntries(Object.entries(cost).map(([k, v]) => [k, amount(v)])) as Parameters<typeof calculateMerchantCost>[0]); } catch { /* Invalid inputs have an inline message. */ }
   const stockChanges = data.items.filter((i) => (changes[i.id] ?? '').trim()).map((i) => ({ item_id: i.id, delta: amount(changes[i.id]), note: stockNote.trim() }));
@@ -480,16 +516,22 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
     } finally { stockOperations.delete(stockKey); release(); }
   }
   return <>{checking && <View style={styles.workspace}>{error ? <><ThemedText accessibilityRole="alert">{tr(error)}</ThemedText><Action label={tr("다시 불러오기")} onPress={() => { setError(''); setRevision(v => v + 1); }} /></> : <GlingLoader accessibilityLabel={tr("현재 비즈니스 권한을 다시 확인하는 중")} />}</View>}
-    <View style={[styles.workspace, checking && { display: 'none', pointerEvents: 'none' }]} accessibilityElementsHidden={checking} importantForAccessibility={checking ? 'no-hide-descendants' : 'auto'} {...(Platform.OS === 'web' ? { inert: checking } : {})}>
-    {activeTab === 'overview' ? <View style={styles.businessHeader}>
+    <View style={[sidebar ? wideNav ? merchantShellStyles.shell : merchantShellStyles.stacked : styles.workspace, checking && { display: 'none', pointerEvents: 'none' }]} accessibilityElementsHidden={checking} importantForAccessibility={checking ? 'no-hide-descendants' : 'auto'} {...(Platform.OS === 'web' ? { inert: checking } : {})}>
+    {sidebar && <MerchantSidebar items={navItems} active={activeTab} onSelect={selectNav} disabled={busy} wide={wideNav} />}
+    <View style={sidebar ? merchantShellStyles.main : merchantShellStyles.plain}>
+    {sidebar ? null : activeTab === 'overview' ? <View style={styles.businessHeader}>
       <View style={styles.toolText}><ThemedText type="title">{data.merchant.name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{data.merchant.city_name} · {tr(data.merchant.owner_verified_at ? tr("비즈니스 소유 확인됨") : tr("비즈니스 소유 확인 대기"))}</ThemedText></View>
       {onChoose && <Action label={tr("비즈니스 변경")} disabled={busy} onPress={onChoose} />}
     </View> : <View style={styles.businessHeader}><Action label={tr("비즈니스 관리")} disabled={busy} onPress={() => { setNotice(''); setTab('overview'); }} /><ThemedText type="small" themeColor="textSecondary" style={styles.toolText}>{data.merchant.name}</ThemedText></View>}
     {error && <><ThemedText accessibilityRole="alert">{tr(error)}</ThemedText><Action label={tr("자료 새로 확인")} disabled={busy} onPress={() => { setError(''); setRevision((v) => v + 1); }} /></>}{notice && <ThemedText accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
-    {activeTab === 'overview' && <>
+    {activeTab === 'overview' && sidebar && <MerchantHome name={data.merchant.name} place={`${tr(data.merchant.city_name)} · ${data.merchant.owner_verified_at ? tr('비즈니스 소유 확인됨') : tr('비즈니스 소유 확인 대기')}`} onChoose={onChoose}
+      purposes={draftPurposes} purpose={purpose} onPurpose={value => setPurpose(value as (typeof draftPurposes)[number])} facts={facts} onFacts={setFacts}
+      onGenerate={() => { void startHomeDraft(true); }} onWrite={() => { void openDraft(undefined, true); }} resume={dirty ? () => { setDraftView('composer'); setTab('drafts'); } : undefined}
+      recent={recent} onAllPosts={() => selectNav('posts')} aiOwner={aiOwner} onOpenAi={() => selectNav('ai')} onOpenReviews={fullAccess ? () => selectNav('reviews') : undefined} busy={busy} />}
+    {activeTab === 'overview' && !sidebar && <>
       <ThemedText type="subtitle">{tr("가게 소식을 전해보세요")}</ThemedText>
       <ThemedText themeColor="textSecondary">{tr("이 비즈니스 이름으로 새 소식을 작성해요.")}</ThemedText>
-      {!isAdmin && data.merchant.owner_verified_at && <Action label={tr('비즈니스 대화함')} disabled={busy} onPress={() => { void openBusinessInbox(); }} />}
+      {(!isAdmin || businessOnly) && data.merchant.owner_verified_at && <Action label={tr('비즈니스 대화함')} disabled={busy} onPress={() => { void openBusinessInbox(); }} />}
       <Action primary label={tr("비즈니스 글쓰기")} disabled={busy} onPress={() => { void openDraft(undefined, true); }} />
       <Action label={tr("사진 관리")} disabled={busy} onPress={() => { setNotice(''); setTab('profile'); }} />
       {dirty && <Action label={tr("작성 중인 초안 이어쓰기")} disabled={busy} onPress={() => { setDraftView('composer'); setTab('drafts'); }} />}
@@ -646,6 +688,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
         {data.reports.map((report) => <Action key={report.id} label={tr("{0} 보고서 공유", (report.period_end))} disabled={busy} onPress={() => { void run(() => shareText(merchantReportText(report)), '저장된 보고서를 준비했어요.', false); }} />)}
       </Section>
     </>}
+    </View>
   </View></>;
 }
 

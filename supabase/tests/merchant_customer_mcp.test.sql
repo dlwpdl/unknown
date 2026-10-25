@@ -19,7 +19,8 @@ insert into private.merchants(id,name,city_id,contact,status,consent,consent_not
 ('14010000-0000-4000-8000-000000000002','MCP타인업체','vancouver','','trial','granted','검사만','14000000-0000-4000-8000-000000000002',now(),'business'),
 ('14010000-0000-4000-8000-000000000003','MCP허용안한업체','vancouver','','trial','granted','검사만','14000000-0000-4000-8000-000000000001',now(),'business');
 insert into auth.oauth_clients(id,client_name,redirect_uris,grant_types,registration_type,client_type,token_endpoint_auth_method) values
-('14030000-0000-4000-8000-000000000001','MCP 검사 도구','http://127.0.0.1/callback','authorization_code,refresh_token','dynamic','public','none');
+('14030000-0000-4000-8000-000000000001','MCP 검사 도구','http://127.0.0.1/callback','authorization_code,refresh_token','dynamic','public','none'),
+('14030000-0000-4000-8000-000000000002','Claude','https://claude.ai.evil.example/api/mcp/auth_callback','authorization_code,refresh_token','dynamic','public','none');
 insert into auth.oauth_consents(id,user_id,client_id,scopes) values
 ('14050000-0000-4000-8000-000000000001','14000000-0000-4000-8000-000000000001','14030000-0000-4000-8000-000000000001','offline_access');
 insert into auth.sessions(id,user_id,oauth_client_id,scopes,created_at,updated_at) values ('14070000-0000-4000-8000-000000000001','14000000-0000-4000-8000-000000000001','14030000-0000-4000-8000-000000000001','offline_access',now(),now());
@@ -28,6 +29,8 @@ select set_config('request.jwt.claims','{"sub":"14000000-0000-4000-8000-00000000
 set local role authenticated;
 select throws_ok($$select public.save_merchant_mcp_connection(p_expected_actor_id=>'14000000-0000-4000-8000-000000000002',p_client_id=>'14030000-0000-4000-8000-000000000001',p_merchant_ids=>array['14010000-0000-4000-8000-000000000001'::uuid],p_allow_drafts=>true,p_allow_publish=>false)$$,'P0001','ACCOUNT_CHANGED','connection creation is bound to the account that reviewed the grant');
 select throws_ok($$select public.save_merchant_mcp_connection('14000000-0000-4000-8000-000000000001','14030000-0000-4000-8000-000000000001',array['14010000-0000-4000-8000-000000000002'::uuid],true,false)$$,'P0001','MERCHANT_ACCESS_REQUIRED','cannot connect somebody else business');
+select throws_ok($$select public.save_merchant_mcp_connection('14000000-0000-4000-8000-000000000001','14030000-0000-4000-8000-000000000002',array['14010000-0000-4000-8000-000000000001'::uuid],true,true)$$,'P0001','MCP_PUBLISH_CLIENT_UNVERIFIED','a client named Claude with a look-alike callback cannot receive publish permission');
+select lives_ok($$select public.save_merchant_mcp_connection('14000000-0000-4000-8000-000000000001','14030000-0000-4000-8000-000000000002',array['14010000-0000-4000-8000-000000000001'::uuid],true,false)$$,'an unverified client can still be connected without publish permission');
 select set_config('test.mcp_connection_id',public.save_merchant_mcp_connection('14000000-0000-4000-8000-000000000001','14030000-0000-4000-8000-000000000001',array['14010000-0000-4000-8000-000000000001'::uuid],true,false)->>'id',true);
 select throws_ok($$select public.dispatch_merchant_mcp('14000000-0000-4000-8000-000000000001','14030000-0000-4000-8000-000000000001',current_setting('test.mcp_connection_id')::uuid,current_setting('test.mcp_session_id')::uuid,'list_my_businesses','{}')$$,'42501',null,'ordinary browser cannot invoke service dispatch');
 reset role;

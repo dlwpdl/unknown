@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getMyMerchantAccess, loadMyMerchants, type BusinessMerchant } from './merchant-workspace.ts';
+import { getMyBusinessWorkspaceAccess, type BusinessMerchant } from './merchant-workspace.ts';
 
 export type MerchantWebAccess = {
   kind: 'member' | 'unassigned' | 'business';
@@ -15,8 +15,9 @@ export async function loadMerchantWebAccess(client: SupabaseClient, userId: stri
   try {
     const initial = await client.auth.getSession();
     if (initial.error || initial.data.session?.user.id !== userId || accountChanged) throw new Error('ACCOUNT_CHANGED');
-    const enabled = await getMyMerchantAccess(client);
-    const rows = enabled ? await loadMyMerchants(client) : [];
+    const access = await getMyBusinessWorkspaceAccess(client, userId);
+    const enabled = access.enabled;
+    const rows = enabled ? access.merchants : [];
     const { data, error } = await client.auth.getSession();
     if (error || data.session?.user.id !== userId || accountChanged) throw new Error('ACCOUNT_CHANGED');
     const merchants = rows.filter(row => row.role === 'owner' || row.role === 'operator');
