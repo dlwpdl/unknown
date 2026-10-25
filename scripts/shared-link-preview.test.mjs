@@ -92,3 +92,10 @@ test('removed, mismatched and invalid post reads fail safely before presentation
   await assert.rejects(invalid.loadSharedLinkPost(invalid.client, '../private'), /SHARED_POST/);
   assert.equal(invalid.calls.length, 0);
 });
+
+test('public cover URL accepts only an exact post ID and exposes no storage path', () => {
+  const api=setup({data:null,error:null});
+  assert.equal(api.previewImage(id.toUpperCase()),expected);
+  for(const value of ['bad',`../${id}`,`${id}&path=private/file.webp`]) assert.throws(()=>api.previewImage(value),/INVALID_SHARED_POST/);
+  assert.deepEqual(api.calls,[]);
+});
