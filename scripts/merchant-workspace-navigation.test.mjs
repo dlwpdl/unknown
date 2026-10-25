@@ -111,6 +111,18 @@ test('sole merchant opens overview, and registration can return to the merchant 
   await screen.press('업체 등록'); await screen.press('업체 등록 취소');
   assert.ok(find(screen.tree, '테스트 가게'));
 });
+test('merchant web selects only assigned businesses even when the account also has admin-wide rows', async () => {
+  const screen = mount('MerchantWorkspaceContent', {
+    props: { assignedOnly: true },
+    merchants: async () => [{ ...merchant('unrelated'), role: 'admin' }, { ...merchant(), role: 'operator' }],
+  });
+  await screen.settle();
+  assert.equal(nodes(screen.tree).find(n => n.type?.name === 'MerchantTools')?.props.id, 'merchant-a');
+  const choose = nodes(screen.tree).find(n => n.type?.name === 'MerchantTools').props.onChoose;
+  choose(); await screen.settle();
+  assert.ok(find(screen.tree, '테스트 가게'));
+  assert.ok(!find(screen.tree, '두 번째 가게'));
+});
 
 test('overview exposes every authorized tool, separates draft list/composer, and resumes dirty editing', async () => {
   const screen = mount(); await screen.settle();
