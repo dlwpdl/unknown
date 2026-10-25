@@ -10,6 +10,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { connectMerchantMcp, denyMerchantMcp, loadMerchantMcpAuthorization, loadMerchantMcpChangePhotos, loadMerchantMcpChanges, loadMerchantMcpConnections,
   revokeMerchantMcp, reviewMerchantMcpChange, type MerchantMcpAuthorization, type MerchantMcpChange, type MerchantMcpConnection, type MerchantMcpPhotoGroup } from '@/lib/merchant-mcp';
+import { MerchantMcpGuide } from '@/components/merchant-mcp-guide';
 import { mcpClientTrust } from '@/lib/mcp-client-trust';
 import { loadMyMerchants, type BusinessMerchant } from '@/lib/merchant-workspace';
 import { supabase } from '@/lib/supabase';
@@ -181,12 +182,7 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
         <ThemedText type="subtitle" accessibilityRole="header">{tr("AI 신규 연결은 비즈니스 오너만 이용할 수 있어요.")}</ThemedText>
         <ThemedText themeColor="textSecondary">{tr("소유권이 확인된 내 비즈니스가 필요해요. 운영 담당자는 웹에서 배정된 비즈니스를 관리할 수 있어요. 이전에 연결한 AI는 아래에서 해제할 수 있어요.")}</ThemedText>
       </View>}
-      {!authorizationId && merchants.length > 0 && <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-        <ThemedText type="subtitle" accessibilityRole="header">{tr("AI 도구에서 글링 연결을 추가해요.")}</ThemedText>
-        <ThemedText themeColor="textSecondary">{tr("연결 주소를 복사해 AI 도구의 MCP 또는 커넥터 설정에 붙여 넣으세요. 로그인하면 이 화면에서 비즈니스와 권한을 고를 수 있어요.")}</ThemedText>
-        <ThemedText type="small" selectable>{endpoint}</ThemedText>
-        <Action label={tr("연결 주소 복사")} disabled={busy} onPress={() => { void run(async () => { if (!navigator.clipboard?.writeText) throw new Error('CLIPBOARD_UNAVAILABLE'); await navigator.clipboard.writeText(endpoint); if (active.current) { setNotice("연결 주소를 복사했어요."); play('success'); } }); }} />
-      </View>}
+      {!authorizationId && merchants.length > 0 && <MerchantMcpGuide endpoint={endpoint} />}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <ThemedText type="subtitle" accessibilityRole="header">{tr("연결된 AI 도구")}</ThemedText>
         {!connected.length && <ThemedText themeColor="textSecondary">{tr("아직 연결된 도구가 없어요.")}</ThemedText>}
