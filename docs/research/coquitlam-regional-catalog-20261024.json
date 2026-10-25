@@ -35,10 +35,10 @@
     "osm:relation:21109172",
     "osm:relation:1304120",
     "osm:way:170530924",
-    "osm:node:9381204484"
+    "osm:node:9381204484",
+    "osm:way:1004996176"
   ],
   "missingPhotoPlaceIds": [
-    "osm:way:1004996176",
     "osm:way:42472552",
     "osm:way:212904864"
   ],
@@ -103,8 +103,8 @@
       "sourceFile": "../sources/official-mundy-correct.html",
       "sha256": "aff854a1887a6a559d00e092e38e9c168e522d701380afd10537b186e41f678b",
       "osmUrl": "https://www.openstreetmap.org/way/1004996176",
-      "photoSourceUrl": null,
-      "photoSha256": null
+      "photoSourceUrl": "https://www.flickr.com/photos/44119174@N06/20507413133",
+      "photoSha256": "6b460af79e4ee8de1b4d4b047b53174f73a30d78d83e940f1f2e4a8ff50aad0d"
     },
     {
       "placeId": "osm:relation:21109172",
@@ -188,7 +188,7 @@
       "Use the park identity, not a second Como Lake water/fishing feature."
     ],
     "osm:way:1004996176": [
-      "No accepted same-place cover collected. Keep honest image fallback; rejected sculpture was photographed temporarily at Town Centre Park."
+      "Accepted lake photo taken August 12, 2015. Original Flickr title and public uploader geotag place it within Mundy Park; not a surveyed camera position. Archival date retained in PhotoDTO.title. Artist, original source and CC BY-SA 2.0 link remain visible through existing photo credits."
     ],
     "osm:relation:21109172": [
       "Official page currently displays Oliver Road vehicle-access/Quarry Road entrance notices; the street number is not asserted."
@@ -208,5 +208,17 @@
     "osm:node:9381204484": [
       "Official VeteransPark page explicitly lists Memorialcenotaph at2580ShaughnessySt; mapped memorialpoint and exact Flickrtitle/photo corroborate. This is the memorial identity, not an invented business/profile/Visited claim. Flickrdisplayderivative downloaded; original full-resolution bytes not collected."
     ]
-  }
+  },
+  "photoFollowups": [
+    {
+      "evidenceRoot": "/Users/ash/Desktop/Git/Orca/workspace/mobile/gling-coquitlam-map-20261024/output/qa/gling-coquitlam-map-enrichment-20261024/photo-followup-20261024",
+      "candidateManifestSha256": "70130de6549fcbbf018ee071f2568dc8e365fc95db5b3a042624bc96a140b0f0",
+      "sourceEvidence": "sources/flickr-mundy-20507413133.html",
+      "sourceEvidenceSha256": "4bdfe0d18de3f6ec5ec502f4d76270c6c34982e7b2f9a8a31ecc4fd0aeeaa9a3",
+      "sourceUrl": "https://www.flickr.com/photos/44119174@N06/20507413133",
+      "displaySha256": "6b460af79e4ee8de1b4d4b047b53174f73a30d78d83e940f1f2e4a8ff50aad0d",
+      "reviewedPlaceId": "osm:way:1004996176",
+      "baselineSourceManifestUnchanged": true
+    }
+  ]
 }
