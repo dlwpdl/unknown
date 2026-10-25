@@ -7,7 +7,8 @@ import { TAGS } from './mock.ts';
 import { googlePinUrl, postMapBody, withPostMap } from './post-maps.ts';
 import type { Post } from './types.ts';
 
-export const PLACE_REVIEW_MAX_LENGTH = 1000;
+// posts.body is capped at 1000 in production; the score, place reference and map lines add up to ~225 more.
+export const PLACE_REVIEW_MAX_LENGTH = 700;
 export type PlaceReviewScope = { cityId: string; placeId: string; userId: string };
 export type PlaceReviewPage = { posts: Post[]; cursor: FeedCursor | null; hasMore: boolean };
 export type PlaceRatingSummary = { cityId: string; placeId: string; average: number | null; count: number };
