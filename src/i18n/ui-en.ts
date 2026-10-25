@@ -1,4 +1,6 @@
 export const uiEnglish: Record<string, string> = {
+  "소유자": "Owner",
+  "운영 담당자": "Operator",
   "프로필 전환": "Switch profile",
   "사진 관리": "Manage photos",
   "비즈니스 글쓰기": "Write a business post",
