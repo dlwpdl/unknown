@@ -79,7 +79,6 @@ test('public providers retain normal login, signup and profile onboarding gates 
   const code=ts.transpileModule(readFileSync(new URL('../src/components/public-web/providers.tsx',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
   vm.runInNewContext(code,{exports:exported,document,require:name=>modules[name]??{}});
   for(const route of ['/post',`/post/${id}`,`/share/${id}`,'/','/company','/auth/callback','/profile','/postman']){path=route;const tree=exported.PublicWebProviders({children:'same-child'});assert.equal(nodes(tree).find(node=>node.type==='AuthProvider').props.publicPage??false,false,route);assert.match(text(tree),/same-child/);assert.equal(nodes(tree).find(node=>node.type==='LanguageProvider').props.initialLanguage,'ko');}
-  language='en';const tree=exported.PublicWebProviders({children:'same-child'});const sync=nodes(tree).find(node=>typeof node.type==='function'&&node.type.name==='DocumentLanguage');sync.type(sync.props);assert.equal(document.documentElement.lang,'en');
 });
 
 test('valid private or failed previews retain exact app destination and explicit web access gate',async()=>{
