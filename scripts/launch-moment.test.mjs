@@ -4,7 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-function launch({ ready = true, reduced = false } = {}) {
+function launch({ ready = true, reduced = false, animationFault = null } = {}) {
   let now = 0, nextTimer = 0, cursor = 0, dirty = false, mounted = true;
   const timers = new Map(), slots = [], pendingEffects = [], animations = [], completed = [];
   const schedule = (fn, delay) => { const id = ++nextTimer; timers.set(id, { at: now + delay, fn }); return id; };
@@ -18,18 +18,18 @@ function launch({ ready = true, reduced = false } = {}) {
   };
   const timing = (value, config) => {
     let timer, callback;
-    return { start(done) { callback = done; animations.push({ at: now, config }); timer = schedule(() => { value.setValue(config.toValue); callback = null; done?.({ finished: true }); }, config.duration); }, stop() { cancel(timer); const done = callback; callback = null; done?.({ finished: false }); } };
+    return { start(done) { callback = done; animations.push({ at: now, config }); timer = schedule(() => { value.setValue(config.toValue); callback = null; if (!(animationFault === 'lost-exit' && value.initial === 1 && config.toValue === 0)) done?.({ finished: true }); }, config.duration); }, stop() { cancel(timer); const done = callback; callback = null; done?.({ finished: false }); } };
   };
   const parallel = children => {
     let callback, left;
-    return { start(done) { callback = done; left = children.length; for (const child of children) child.start(result => { if (!callback) return; if (!result.finished) { const finish = callback; callback = null; finish(result); } else if (!--left) { const finish = callback; callback = null; finish({ finished: true }); } }); }, stop() { for (const child of children) child.stop(); callback = null; } };
+    return { start(done) { if (animationFault === 'interrupted-entry') { done?.({ finished: false }); return; } callback = done; left = children.length; for (const child of children) child.start(result => { if (!callback) return; if (!result.finished) { const finish = callback; callback = null; finish(result); } else if (!--left) { const finish = callback; callback = null; finish({ finished: true }); } }); }, stop() { for (const child of children) child.stop(); callback = null; } };
   };
   const sequence = children => {
     let index = 0, callback;
     const step = result => { if (!callback) return; if (!result.finished || index === children.length) { const done = callback; callback = null; done(result); } else children[index++].start(step); };
     return { start(done) { callback = done; index = 0; step({ finished: true }); }, stop() { const done = callback; callback = null; children[index - 1]?.stop(); done?.({ finished: false }); } };
   };
-  const Animated = { Value: class { constructor(value) { this.value = value; } setValue(value) { this.value = value; } }, timing, parallel, sequence, loop: child => ({ start() {}, stop() { child.stop(); } }), View: 'AnimatedView', Image: 'AnimatedImage' };
+  const Animated = { Value: class { constructor(value) { this.value = value; this.initial = value; } setValue(value) { this.value = value; } }, timing, parallel, sequence, loop: child => ({ start() {}, stop() { child.stop(); } }), View: 'AnimatedView', Image: 'AnimatedImage' };
   const exported = {}, modules = {
     react: hooks, 'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'react-native': { Animated, Easing: { in: value => value, out: value => value, inOut: value => value, cubic: 'cubic', quad: 'quad' }, Image: 'Image', StyleSheet: { create: value => value } },
@@ -95,4 +95,27 @@ test('an interrupted exit never signals completion and a later ready transition 
   const view = launch(); view.layout(); await view.load(); await view.reveal(); await view.advance(1800);
   await view.ready(false); await view.advance(1000); assert.equal(view.completed.length, 0);
   await view.ready(true); await view.advance(1000); assert.equal(view.completed.length, 1);
+});
+
+test('an interrupted entry cannot leave a ready launch waiting forever', async () => {
+  const view = launch({ animationFault: 'interrupted-entry' }); view.layout(); await view.load(); await view.reveal();
+  await view.advance(1999); assert.equal(view.completed.length, 0, 'Recovery must retain the visible brand moment.');
+  await view.advance(5000); assert.equal(view.completed.length, 1);
+  await view.advance(10000); assert.equal(view.completed.length, 1);
+});
+
+test('a lost native exit callback cannot retain a transparent startup gate', async () => {
+  const view = launch({ animationFault: 'lost-exit' }); view.layout(); await view.load(); await view.reveal();
+  await view.advance(5000); assert.equal(view.completed.length, 1);
+  await view.advance(10000); assert.equal(view.completed.length, 1);
+});
+
+test('animation recovery still waits for content readiness and is cancelled on unmount', async () => {
+  for (const animationFault of ['interrupted-entry', 'lost-exit']) {
+    const waiting = launch({ ready: false, animationFault }); waiting.layout(); await waiting.load(); await waiting.reveal();
+    await waiting.advance(10000); assert.equal(waiting.completed.length, 0);
+    await waiting.ready(true); await waiting.advance(5000); assert.equal(waiting.completed.length, 1);
+    const removed = launch({ animationFault }); removed.layout(); await removed.load(); await removed.reveal(); await removed.advance(1800);
+    removed.unmount(); await removed.advance(10000); assert.equal(removed.completed.length, 0); assert.equal(removed.timerCount, 0);
+  }
 });

@@ -6,10 +6,12 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import * as connections from '../src/lib/merchant-connections.ts';
 import * as chatIdentity from '../src/lib/chat-identity.ts';
+import * as controls from '../src/constants/design-system.ts';
+import * as media from '../src/lib/business-media.ts';
 
 function app(component = 'MerchantAccountEntry') {
   const states = [], refs = [], effects = [], calls = [], pending = [], routes = [], feedback = [];
-  let stateIndex = 0, refIndex = 0, effectIndex = 0, auth = { me: { id: 'user-a', nickname: '개인 이름' }, isAuthed: true, isAdmin: false }, foreground;
+  let stateIndex = 0, refIndex = 0, effectIndex = 0, auth = { me: { id: 'user-a', nickname: '개인 이름' }, isAuthed: true, isAdmin: false }, foreground, focusEffect, focusCleanup;
   const client = { rpc: (name, args) => {
     calls.push({ name, args }); return new Promise(resolve => pending.push(data => resolve({ data, error: null })));
   } };
@@ -28,8 +30,9 @@ function app(component = 'MerchantAccountEntry') {
   vm.runInNewContext(source, { exports, window: { confirm: () => true }, Date, require: withLanguageImports((name) => {
     if (name === 'react') return React;
     if (name === 'expo-symbols') return { SymbolView: 'SymbolView' };
+    if (name === 'expo-image') return { Image: 'Image' };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if (name === 'expo-router') return { useRouter: () => ({ push: path => routes.push(path) }), useFocusEffect: fn => recordEffect(fn, fn.deps) };
+    if (name === 'expo-router') return { useRouter: () => ({ push: path => routes.push(path) }), useFocusEffect: fn => { focusEffect = fn; recordEffect(() => { focusCleanup = fn(); return focusCleanup; }, fn.deps); } };
     if (name === 'react-native') return { Platform: { OS: 'web' }, View: 'View', Modal: 'Modal', StyleSheet: { create: value => value }, AppState: { addEventListener(name, fn) { foreground = fn; return { remove() {} }; } } };
     if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView' };
     if (name === '@/components/analytics-controls') return { Pressable: 'Pressable', ScrollView: 'ScrollView' };
@@ -39,6 +42,8 @@ function app(component = 'MerchantAccountEntry') {
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: value => feedback.push(value) }) };
     if (name === '@/lib/merchant-connections') return connections;
     if (name === '@/lib/chat-identity') return chatIdentity;
+    if (name === '@/lib/business-media') return media;
+    if (name === '@/constants/design-system') return controls;
     if (name === '@/hooks/use-chat-identity') return { useChatIdentity: () => chatIdentity.chatBusinessIdentity(auth.isAuthed ? auth.me.id : null) };
     if (name === '@/lib/supabase') return { supabase: client };
     throw new Error('Unexpected import ' + name);
@@ -47,6 +52,7 @@ function app(component = 'MerchantAccountEntry') {
   return { calls, pending, routes, feedback,
     auth(value) { auth = { ...auth, ...value }; }, props(value) { props = { ...props, ...value }; },
     foreground() { foreground('active'); },
+    blur() { focusCleanup?.(); }, focus() { focusCleanup = focusEffect?.(); },
     render() {
       stateIndex = refIndex = effectIndex = 0;
       const node = exports[component](props);
@@ -199,4 +205,101 @@ test('admins can choose their actual connected business without receiving an adm
   assert.ok(nodes(view.render()).some(n => n.props?.accessibilityRole === 'alert'));
   assert.equal(chatIdentity.chatBusinessIdentity('user-a')?.id, 'company-a');
   assert.ok(view.calls.every(call => call.name === 'get_my_business_chat_profiles'));
+});
+
+
+test('Today profile switching is hidden until actual linked business access is known', async () => {
+  const view = app('ChatIdentitySwitcher'); view.props({ target: 'business' });
+  assert.equal(view.render(), null);
+  assert.equal(view.calls[0].name, 'get_my_business_chat_profiles');
+  view.pending.shift()(context('user-a', [])); await flush(); assert.equal(view.render(), null);
+  view.auth({ isAuthed: false }); assert.equal(view.render(), null);
+});
+
+test('Today Instagram sheet opens the selected business workspace after access revalidation', async () => {
+  chatIdentity.resetChatIdentity();
+  const view = app('ChatIdentitySwitcher'); view.props({ target: 'business' }); view.render();
+  assert.equal(view.pending.length, 1); view.pending.shift()(context()); await flush();
+  const trigger = nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.open');
+  assert.ok(trigger); await trigger.props.onPress();
+  assert.equal(view.calls.length, 1, 'Opening the cached sheet must not request each business profile.');
+  const row = nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.business');
+  assert.ok(row); const opening = row.props.onPress();
+  assert.deepEqual(view.routes, []);
+  view.pending.shift()(context()); await opening; await flush();
+  assert.equal(view.routes[0].pathname, '/profile/merchant'); assert.equal(view.routes[0].params.merchant, 'company-a');
+  assert.equal(view.routes[0].params.tab, undefined, 'Land on the business overview with writing and photo actions.');
+  assert.ok(view.feedback.includes('selection')); assert.ok(!view.feedback.includes('success'), 'Profile switching must not play the post-saved celebration.');
+});
+
+test('Today sheet rejects revoked business access and never reuses another user connection', async () => {
+  const view = app('ChatIdentitySwitcher'); view.props({ target: 'business' }); view.render();
+  assert.equal(view.pending.length, 1); view.pending.shift()(context()); await flush();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.open').props.onPress();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.business').props.onPress();
+  view.pending.shift()(context('user-a', [])); await flush();
+  assert.deepEqual(view.routes, []); assert.match(text(view.render()), /연결을 다시 확인/);
+  view.auth({ me: { id: 'user-b', nickname: '다른 이웃' } }); assert.equal(view.render(), null);
+});
+
+
+test('Today sheet uses opaque business photos and returns the personal row to the existing profile', async () => {
+  const id = '11111111-1111-4111-8111-111111111111';
+  const view = app('ChatIdentitySwitcher'); view.props({ target: 'business' }); view.render();
+  view.pending.shift()(context('user-a', [{ id, name: '가게', role: 'owner', city_name: '밴쿠버', avatar_path: `business-profile/${id}/avatar/${'a'.repeat(32)}` }])); await flush();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.open').props.onPress();
+  assert.ok(nodes(view.render()).some(n => n.type === 'Image' && n.props.source.uri.includes('kind=avatar')));
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.personal').props.onPress();
+  assert.equal(view.routes[0], '/profile');
+});
+
+test('Today foreground checks remove a revoked switch and cannot expose admin review access', async () => {
+  const availability = [];
+  const view = app('ChatIdentitySwitcher'); view.props({ target: 'business', onAvailabilityChange: value => availability.push(value) });
+  view.auth({ isAdmin: true }); view.render();
+  view.pending.shift()(context()); await flush(); view.render(); assert.equal(availability.at(-1), true);
+  view.foreground(); view.pending.shift()(context('user-a', [])); await flush(); assert.equal(view.render(), null); assert.equal(availability.at(-1), false);
+  view.foreground(); view.pending.shift()(context('user-a', [{ id: 'review', name: '검토만 가능한 가게', role: 'admin' }])); await flush();
+  assert.equal(view.render(), null); assert.ok(view.calls.every(call => call.name === 'get_my_business_chat_profiles'));
+});
+
+
+test('Today foreground refresh cannot strand an in-flight business selection', async () => {
+  const view = app('ChatIdentitySwitcher'); view.props({ target: 'business' }); view.render();
+  view.pending.shift()(context()); await flush();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.open').props.onPress();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.business').props.onPress();
+  const selected = view.pending.shift(); view.foreground(); selected(context()); await flush();
+  assert.equal(view.routes.length, 1);
+  assert.ok(!nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.business').props.disabled);
+});
+
+test('a new account can select its own business while an old account selection is unresolved', async () => {
+  const view = app('ChatIdentitySwitcher'); view.props({ target: 'business' }); view.render();
+  view.pending.shift()(context()); await flush();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.open').props.onPress();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.business').props.onPress();
+  const old = view.pending.shift(); view.auth({ me: { id: 'user-b', nickname: '다른 이웃' } }); view.render();
+  const next = context('user-b', [{ id: 'company-b', name: '다른 가게', role: 'operator' }]);
+  view.pending.shift()(next); await flush(); old(context()); await flush();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.open').props.onPress();
+  const option = nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.business');
+  assert.equal(option.props.disabled, false); option.props.onPress();
+  assert.equal(view.pending.length, 1); view.pending.shift()(next); await flush();
+  assert.equal(view.routes.length, 1); assert.equal(view.routes[0].params.merchant, 'company-b');
+});
+
+
+test('leaving Today cancels a pending switch and refocus can choose again', async () => {
+  const view = app('ChatIdentitySwitcher'); view.props({ target: 'business' }); view.render();
+  view.pending.shift()(context()); await flush();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.open').props.onPress();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.business').props.onPress();
+  const old = view.pending.shift(); view.blur(); old(context()); await flush();
+  assert.deepEqual(view.routes, []); view.focus(); assert.equal(view.pending.length, 1);
+  view.pending.shift()(context()); await flush();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.open').props.onPress();
+  const row = nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.business');
+  assert.equal(row.props.disabled, false); row.props.onPress();
+  view.pending.shift()(context()); await flush(); assert.equal(view.routes.length, 1);
 });

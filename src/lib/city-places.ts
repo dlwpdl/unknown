@@ -15,6 +15,7 @@ export type CityPlace = {
   latitude: number; longitude: number; address: string; sourceUrl: string;
   website?: string | null; openingHours?: string | null;
   photo?: PlacePhoto | null;
+  mapPhotoUri?: string;
   recommendation?: PlaceRecommendation;
   diningRecommendation?: PlaceRecommendation;
   glingVisited?: { sourceUrl: string };
