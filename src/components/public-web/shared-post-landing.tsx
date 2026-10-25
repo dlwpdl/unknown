@@ -124,7 +124,8 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
       <meta property="og:description" content={description} />{canonical && <link rel="canonical" href={canonical} />}</Head>
     <style>{styles}</style>
     <header><a data-analytics="shared.web.home" href="/" aria-label={ko ? '글링 홈' : 'Gling home'} onClick={() => play('selection')}>
-      <img src={theme === Colors.dark ? wordmark : lightWordmark} alt="gling" width={132} height={55} /></a><span>{ko ? '함께 나눈 이야기' : 'A story shared with you'}</span></header>
+      <img src={theme === Colors.dark ? wordmark : lightWordmark} alt="gling" width={132} height={55} /></a><span>{ko ? '함께 나눈 이야기' : 'A story shared with you'}</span>
+      <a href="/merchant/" onClick={() => play('selection')}>{ko ? '비즈니스 관리' : 'Manage your business'}</a></header>
     <main>
       <div className="shared-story">
         {ready ? authenticated && post ? <SharedPostArticle post={post} /> : <section className="shared-preview" aria-label={ko ? '공개 미리보기' : 'Public preview'}>

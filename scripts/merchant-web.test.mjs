@@ -49,6 +49,7 @@ function component(file, name, { auth, rpc, postLoader, workspaceLoader, callbac
     '@/lib/auth': { useAuth: () => auth },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => calls.push(['feedback', kind]) }) },
     '@/lib/merchant-workspace': { getMyMerchantAccess: async client => rpc(client), loadMerchantWorkspace: workspaceLoader },
+    '@/lib/merchant-web-access': { loadMerchantWebAccess: async client => { const result = await rpc(client); return typeof result === 'boolean' ? { kind: result ? 'business' : 'member', merchants: [], canConnectMcp: result } : result; } },
     '@/lib/merchant-posts': { editMerchantPost: async (...args) => calls.push(['edit', args]), removeMerchantPost: async (...args) => calls.push(['remove', args]) },
     '@/lib/feed-data': { loadPublicPost: postLoader },
     '@/lib/supabase': { supabase: { auth: { getSession: async () => ({ data: { session: { user: { id: auth.me.id } } } }) } } },
@@ -182,7 +183,18 @@ test('OAuth completion waits for current merchant rights and uses only the serve
 test('AI connection management stays reachable when business editing access has been withdrawn', async () => {
   const screen = component('../src/merchant-web/index.tsx', 'default', { auth: authed(), rpc: async () => false });
   screen.render(); await screen.effect();
-  nodes(screen.render()).find(n => n.props?.accessibilityLabel === 'AI 연결').props.onPress();
+  nodes(screen.render()).find(n => n.props?.accessibilityLabel === 'AI 연결 관리').props.onPress();
   assert.ok(screen.calls.some(call => call[0] === 'navigate' && call[1] === '/ai'));
   assert.ok(screen.calls.some(call => call[0] === 'feedback'));
+});
+test('business access shows new AI connections only for verified owners and preserves the member boundary', async () => {
+  for (const [kind, canConnectMcp] of [['member', false], ['unassigned', false], ['business', false], ['business', true]]) {
+    const screen = component('../src/merchant-web/index.tsx', 'default', { auth: authed(), rpc: async () => ({ kind, merchants: [], canConnectMcp }) });
+    screen.render(); await screen.effect(); const tree = screen.render();
+    assert.equal(nodes(tree).some(n => n.props?.accessibilityLabel === 'AI 연결'), canConnectMcp);
+    assert.equal(nodes(tree).some(n => n.type === 'MerchantWorkspace'), kind !== 'member');
+    if (kind === 'unassigned') assert.ok(nodes(tree).some(n => n.props?.children === '관리할 비즈니스를 연결해 주세요'));
+    const workspace = nodes(tree).find(n => n.type === 'MerchantWorkspace');
+    if (workspace) assert.equal(workspace.props.assignedOnly, true);
+  }
 });

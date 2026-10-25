@@ -11,6 +11,7 @@ import { sharedLinkTarget } from '../src/lib/sharing.ts';
 import { publicSiteName } from '../src/lib/public-seo.ts';
 import { instagramPostLink, splitPostAttachments, splitPostLinks } from '../supabase/functions/_shared/post-links.ts';
 import { publicWebTarget, publicWebFetch, publicMerchantId } from '../src/lib/public-web.ts';
+import { ControlMetrics, ControlMotion, Typography } from '../src/constants/design-system.ts';
 
 const id = '12345678-1234-1234-1234-123456789abc';
 test('only public post identifiers survive web to app handoff', () => {
@@ -20,6 +21,16 @@ test('only public post identifiers survive web to app handoff', () => {
   assert.equal(publicWebTarget('/profile/settings'), 'gling://');
   assert.equal(publicWebTarget('/post', 'https://evil.example'), 'gling://');
   assert.equal(publicWebTarget('/meetup-create'), 'gling://meetup-create');
+});
+test('web meetup invitations continue in the app with only a validated post identifier', () => {
+  assert.equal(publicWebTarget('/meetup-join', id), `gling://meetup-join?postId=${id}`);
+  for (const value of [undefined, 'secret', `${id}&action=join`, 'https://evil.example']) {
+    assert.equal(publicWebTarget('/meetup-join', value), 'gling://meetups');
+  }
+  assert.equal(publicWebTarget('/meetup-join', undefined, { postId: id }), `gling://meetup-join?postId=${id}`);
+  assert.equal(publicWebTarget('/meetup-profile', undefined, { postId: id, userId: id, returnPostId: id, email: 'private@example.com' }), `gling://meetup-profile?postId=${id}&userId=${id}&returnPostId=${id}`);
+  assert.equal(publicWebTarget('/meetup-application', undefined, { requestId: id, approve: 'true' }), `gling://meetup-application?requestId=${id}`);
+  assert.equal(publicWebTarget('/meetup-application', undefined, { requestId: 'bad' }), 'gling://chat');
 });
 test('public transport rejects writes and always uses anonymous credentials', async () => {
   const requests = [];
@@ -108,9 +119,9 @@ function readerMarkup(path, { mounted = false, search = '', directPost = false, 
     'expo-router': { usePathname: () => path, useLocalSearchParams: () => Object.fromEntries(new URLSearchParams(search)) },
     'expo-router/head': { __esModule: true, default: React.Fragment },
     'expo-asset': { Asset: { fromModule: () => ({ uri: 'local-wordmark' }) } }, toqr: { toQR },
-    '@/constants/theme': { WebNightColors: {}, Colors: { dark }, Spacing: { three: 12, four: 16 } },
-    '@/constants/design-system': { ControlMetrics: { touch: 44, action: 48 }, Typography: { sheetTitle: { fontSize: 22 }, menu: { fontSize: 16 } } },
-    '@/hooks/use-language': { useLanguage: () => ({ language, tr: value => value }) },
+    '@/constants/theme': { WebNightColors: {}, Colors: { dark }, Spacing: { two: 8, three: 12, four: 16 } },
+    '@/constants/design-system': { ControlMetrics, ControlMotion, Typography },
+    '@/hooks/use-language': { useLanguage: () => ({ language, locale: language === 'ko' ? 'ko-KR' : 'en-CA', tr: value => value }) },
     '@/hooks/use-theme': { useTheme: () => dark },
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, isAuthLoading: false, me: { id: 'guest' } }) },
     '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
@@ -138,6 +149,8 @@ function readerMarkup(path, { mounted = false, search = '', directPost = false, 
   modules['./shared-post-article'] = article;
   const landing = load('../src/components/public-web/shared-post-landing.tsx');
   modules['./shared-post-landing'] = { __esModule: true, default: landing.default };
+  modules['./app-store-choices'] = load('../src/components/public-web/app-store-choices.tsx');
+  modules['./meetup-list'] = load('../src/components/public-web/meetup-list.tsx');
   const component = articlePost ? article.SharedPostArticle : directPost ? landing.default : load('../src/components/public-web/reader.tsx').default;
   return renderToStaticMarkup(React.createElement(component, articlePost ? { post: articlePost } : undefined));
 }
@@ -184,4 +197,13 @@ test('reader title, metadata and language follow KO/EN while authored post text 
   assert.match(en,/class="reader"[^>]+lang="en"/);assert.match(en,/"inLanguage":"en-CA"/);
   const post={id,cityId:'vancouver',title:'작성한 제목은 원문 그대로',body:'회원이 쓴 원문 본문',tag:{label:'원문 분류'},author:{id:'author',nickname:'원문 닉네임'}};
   const article=readerMarkup('/post',{language:'en',articlePost:post});assert.match(article,/작성한 제목은 원문 그대로/);assert.match(article,/회원이 쓴 원문 본문/);
+});
+test('web meetup discovery explains app participation and keeps a visible public reading path', () => {
+  const markup = readerMarkup('/meetups', { language: 'en' });
+  assert.match(markup, /Find people to share your next outing/);
+  assert.match(markup, /Joining, creating meetups and chatting happen in the Gling app/);
+  assert.match(markup, /href="gling:\/\/meetup-create"/);
+  assert.match(markup, /action="\/meetups"/);
+  assert.match(markup, /href="\/merchant\/"/);
+  assert.match(markup, /Choose your phone/);
 });
