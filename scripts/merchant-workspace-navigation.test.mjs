@@ -59,9 +59,9 @@ function mount(name = 'MerchantTools', options = {}) {
 
 async function composer(screen) {
   await screen.settle();
-  if (find(screen.tree, '홍보글 작성')) await screen.press('홍보글 작성');
+  if (find(screen.tree, '비즈니스 글쓰기')) await screen.press('비즈니스 글쓰기');
   else { const drafts = find(screen.tree, '홍보글'); assert.ok(drafts); await drafts.props.onPress(); await screen.settle(); }
-  await screen.press('직접 작성할게요');
+  if (find(screen.tree, '직접 작성할게요')) await screen.press('직접 작성할게요');
 }
 
 test('temporary workspace failures preserve unsaved text, photos and dirty state while hiding stale data', async () => {
@@ -84,8 +84,8 @@ test('actual access loss clears private editor state before a later successful r
     screen.api.workspace = async () => { throw Error(reason); }; screen.render({ refreshSignal: 1 }); await screen.settle();
     assert.ok(!find(screen.tree, '제목'));
     screen.api.workspace = async () => fixture(); await screen.press('다시 불러오기');
-    if (find(screen.tree, '홍보글 작성')) await screen.press('홍보글 작성');
-    if (find(screen.tree, '직접 작성할게요')) await screen.press('직접 작성할게요');
+    if (find(screen.tree, '비즈니스 글쓰기')) await screen.press('비즈니스 글쓰기');
+    if (find(screen.tree, '직접 작성할게요')) if (find(screen.tree, '직접 작성할게요')) await screen.press('직접 작성할게요');
     assert.equal(find(screen.tree, '제목').props.value, '', reason); assert.equal(dirty.at(-1), false, reason);
   }
 });
@@ -114,7 +114,7 @@ test('sole merchant opens overview, and registration can return to the merchant 
 
 test('overview exposes every authorized tool, separates draft list/composer, and resumes dirty editing', async () => {
   const screen = mount(); await screen.settle();
-  assert.ok(find(screen.tree, '홍보글 작성')); assert.ok(!find(screen.tree, '직접 작성할게요'));
+  assert.ok(find(screen.tree, '비즈니스 글쓰기')); assert.ok(!find(screen.tree, '직접 작성할게요'));
   for (const title of ['글·사진', '프로필', '이용 후기', '홍보글 관리', '카페 연결', '원가 계산', '재고', '성과·멤버십', '계정 관리']) assert.ok(find(screen.tree, title), title);
   await composer(screen); screen.edit('제목', '돌아와도 남는 제목'); await screen.settle();
   await screen.press('업체 관리'); await screen.press('홍보글 관리');
@@ -126,7 +126,7 @@ test('overview exposes every authorized tool, separates draft list/composer, and
 
 test('operator overview keeps private business tools unavailable and OAuth initial channels remains supported', async () => {
   const screen = mount('MerchantTools', { workspace: async () => fixture(false) }); await screen.settle();
-  assert.ok(find(screen.tree, '홍보글 작성'));
+  assert.ok(find(screen.tree, '비즈니스 글쓰기'));
   for (const title of ['이용 후기', '카페 연결', '원가 계산', '재고', '성과·멤버십', '계정 관리']) assert.ok(!find(screen.tree, title), title);
   const callback = mount('MerchantTools', { props: { initialTab: 'channels' } }); await callback.settle();
   assert.ok(nodes(callback.tree).some(n => n.type === 'MerchantNaverCafe'));
@@ -153,4 +153,18 @@ test('workspace revalidation retains hidden nested profile and dirty reply edito
   assert.ok(!visibleNodes(screen.tree).some(n => ['MerchantProfileEditor', 'MerchantReviewInbox'].includes(n.type)));
   screen.api.workspace = async () => { throw Error('MERCHANT_ACCESS_REQUIRED'); }; await screen.press('다시 불러오기');
   assert.ok(!nodes(screen.tree).some(n => ['MerchantProfileEditor', 'MerchantReviewInbox'].includes(n.type)));
+});
+
+
+test('business overview starts a plain business post directly and exposes photo management', async () => {
+  const screen = mount(); await screen.settle();
+  assert.ok(find(screen.tree, '사진 관리'));
+  await screen.press('비즈니스 글쓰기');
+  assert.ok(find(screen.tree, '제목')); assert.ok(visibleNodes(screen.tree).some(n => n.type === 'PostBodyEditor'));
+  assert.equal(screen.confirmations.length, 0);
+});
+
+test('photo management opens the same scoped profile editor', async () => {
+  const screen = mount(); await screen.settle(); await screen.press('사진 관리');
+  assert.ok(visibleNodes(screen.tree).some(n => n.type === 'MerchantProfileEditor' && n.props.merchantId === 'merchant-a'));
 });
