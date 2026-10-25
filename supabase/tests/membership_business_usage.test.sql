@@ -13,22 +13,26 @@ insert into public.posts(id,author_id,city_id,tag_id,title,body,posted_on,create
 select ('15920000-0000-0000-0000-'||lpad(n::text,12,'0'))::uuid,'15900000-0000-0000-0000-000000000002','vancouver',1,'새 소식 '||n,'서로 다른 실제 메뉴 안내 '||n,current_date,now()-interval '4 days' from generate_series(1,5)n;
 select set_config('request.jwt.claims','{"sub":"15900000-0000-0000-0000-000000000002","role":"authenticated"}',true);
 insert into private.merchant_posts(post_id,merchant_id,original_url)
-select ('15920000-0000-0000-0000-'||lpad(n::text,12,'0'))::uuid,'15910000-0000-0000-0000-000000000002','https://example.com/usage/'||n from generate_series(1,4)n;
-select is((private.business_membership_details('15910000-0000-0000-0000-000000000002')->>'postsUsed')::int,4,'canonical links consume all four Basic posts');
-select throws_ok($$insert into private.merchant_posts(post_id,merchant_id,original_url) values('15920000-0000-0000-0000-000000000005','15910000-0000-0000-0000-000000000002','https://example.com/usage/5')$$,'P0001','BUSINESS_MONTHLY_LIMIT_REACHED','a fifth distinct new promotion is blocked');
+select ('15920000-0000-0000-0000-'||lpad(n::text,12,'0'))::uuid,'15910000-0000-0000-0000-000000000002','https://example.com/usage/'||n from generate_series(1,1)n;
+select is((private.business_membership_details('15910000-0000-0000-0000-000000000002')->>'postsUsed')::int,1,'a canonical link consumes the one Basic post');
+select throws_ok($$insert into private.merchant_posts(post_id,merchant_id,original_url) values('15920000-0000-0000-0000-000000000005','15910000-0000-0000-0000-000000000002','https://example.com/usage/5')$$,'P0001','BUSINESS_MONTHLY_LIMIT_REACHED','a second distinct new promotion is blocked on Basic');
 set local role authenticated;
-select throws_ok($$select public.bump_post('15920000-0000-0000-0000-000000000001')$$,'P0001','BUSINESS_MONTHLY_LIMIT_REACHED','Basic has zero business bumps even when personal cooldown has elapsed');
+select throws_ok($$select public.bump_post('15920000-0000-0000-0000-000000000001')$$,'P0001','BUSINESS_BUMP_COOLDOWN','Basic business bumps wait five days');
 select throws_ok($$select * from private.merchant_membership_usage$$,'42501',null,'clients cannot change/read raw quota ledger');
 select throws_ok($$select private.consume_business_usage('15910000-0000-0000-0000-000000000002','post',gen_random_uuid(),'fake')$$,'42501',null,'clients cannot call private accounting helper');
 reset role;
 delete from public.posts where id='15920000-0000-0000-0000-000000000001';
-select is((private.business_membership_details('15910000-0000-0000-0000-000000000002')->>'postsUsed')::int,4,'deletion never refunds a spent new-post allowance');
+select is((private.business_membership_details('15910000-0000-0000-0000-000000000002')->>'postsUsed')::int,1,'deletion never refunds a spent new-post allowance');
 insert into public.posts(id,author_id,city_id,tag_id,title,body,posted_on)
 values('15920000-0000-0000-0000-000000000006','15900000-0000-0000-0000-000000000003','vancouver',1,'바꾼 제목','서로 다른 실제 메뉴 안내 1',current_date);
 select throws_ok($$insert into private.merchant_posts(post_id,merchant_id,original_url) values('15920000-0000-0000-0000-000000000006','15910000-0000-0000-0000-000000000002','https://example.com/repeat')$$,'P0001','DUPLICATE_PROMOTION','new title, author and deletion cannot repeat the same promotion');
 select public.apply_membership_snapshot('15900000-0000-0000-0000-000000000002',jsonb_build_array(jsonb_build_object('kind','business','plan_version',2,'tier','plus','expires_at',now()+interval '30 days','product_id','com.dlwpdl.gling.business.plus.monthly.v2','store','app_store','will_renew',true)),now()-interval '10 seconds');
 set local role authenticated;
 select public.bind_business_membership('15910000-0000-0000-0000-000000000002');
+reset role;
+insert into private.merchant_posts(post_id,merchant_id,original_url)
+select ('15920000-0000-0000-0000-'||lpad(n::text,12,'0'))::uuid,'15910000-0000-0000-0000-000000000002','https://example.com/usage/'||n from generate_series(2,4)n;
+set local role authenticated;
 select is((public.get_business_membership('15910000-0000-0000-0000-000000000002')->>'postsUsed')::int,4,'upgrade changes the ceiling without resetting usage');
 select is(public.get_membership()->>'tier','free','business Plus never grants personal Plus');
 select public.bump_post('15920000-0000-0000-0000-000000000002');
@@ -90,8 +94,8 @@ set local role authenticated;
 select is((public.bump_post('15920000-0000-0000-0000-000000000002')->>'nextBumpAt')::timestamptz,now()+interval '48 hours','Premium works exactly at forty-eight hours and returns that wait');
 reset role;
 select public.apply_membership_snapshot('15900000-0000-0000-0000-000000000002','[]',now()+interval '4 seconds');
-select is((private.business_membership_details('15910000-0000-0000-0000-000000000002')->>'bumpLimit')::int,0,'expiry removes business bump grants without resetting usage');
-select is((private.business_membership_details('15910000-0000-0000-0000-000000000002')->>'bumpCooldownHours')::int,72,'expiry cannot retain the Premium shortened cooldown');
+select is((private.business_membership_details('15910000-0000-0000-0000-000000000002')->>'bumpLimit')::int,2,'expiry drops to the two Basic bumps without resetting usage');
+select is((private.business_membership_details('15910000-0000-0000-0000-000000000002')->>'bumpCooldownHours')::int,120,'expiry returns to the five-day Basic cooldown');
 
 -- General stories use the same protected bump entry point and a non-accumulating account turn.
 insert into public.posts(id,author_id,city_id,tag_id,title,body,posted_on,created_at)

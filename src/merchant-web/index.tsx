@@ -7,6 +7,7 @@ import { AppState, Platform, StyleSheet, View } from 'react-native';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
 import { captureMerchantNaverCallback, MerchantNaverCallback } from '@/components/merchant-naver-cafe';
+import { MerchantOperatorAccept } from '@/components/merchant-operator-accept';
 import { MerchantWorkspace } from '@/components/merchant-workspace';
 import { AppStoreChoices } from '@/components/public-web/app-store-choices';
 import { ThemedText } from '@/components/themed-text';
@@ -84,6 +85,7 @@ export default function MerchantWebIndex() {
     </View>
     <ScrollView analyticsId="merchant-web.workspace" contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       {authError && <ThemedText accessibilityRole="alert">{tr(authError)}</ThemedText>}
+      {!isAuthLoading && <MerchantOperatorAccept userId={me.id} isAuthed={isAuthed} onJoined={() => { setAccess(null); setRevision(value => value + 1); }} />}
       {isAuthLoading || isAuthed && !current ? <View style={styles.state}><GlingLoader accessibilityLabel={tr('비즈니스 관리 권한을 확인하는 중')} /><ThemedText themeColor="textSecondary">{tr('계정과 비즈니스를 확인하고 있어요.')}</ThemedText></View>
         : !isAuthed ? <View style={[styles.state, { backgroundColor: theme.card, borderColor: theme.line }]}>
           <ThemedText type="title" accessibilityRole="header">{tr('글링 로그인')}</ThemedText>

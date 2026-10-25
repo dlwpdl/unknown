@@ -42,6 +42,9 @@ Deno.serve(async (request) => {
       const owned = await supabase.rpc('get_merchant_workspace', { p_merchant_id: input.merchantId });
       const row = !owned.error && owned.data?.merchant;
       if (!row) return jsonError('MERCHANT_ACCESS_REQUIRED', '이 업체를 관리할 권한이 필요합니다.', 403);
+      // AI drafts are a paid business feature; free businesses write by hand.
+      const paid = await supabase.rpc('business_paid_features', { p_merchant_id: input.merchantId });
+      if (paid.error || paid.data !== true) return jsonError('BUSINESS_PLAN_REQUIRED', 'AI 초안은 유료 비즈니스 멤버십에서 쓸 수 있어요.', 403);
       merchant = { name: row.name, cityName: row.city_name };
     }
 

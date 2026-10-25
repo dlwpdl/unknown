@@ -55,11 +55,11 @@ export function MerchantSidebar({ items, active, onSelect, disabled, wide }: { i
 
 export type MerchantRecentItem = { key: string; title: string; detail: string; status: 'published' | 'approved' | 'draft'; onPress: () => void };
 
-export function MerchantHome({ name, place, onChoose, purposes, purpose, onPurpose, facts, onFacts, onGenerate, onWrite, resume, recent, onAllPosts, aiOwner, onOpenAi, onOpenReviews, busy }: {
+export function MerchantHome({ name, place, onChoose, purposes, purpose, onPurpose, facts, onFacts, onGenerate, onWrite, resume, recent, onAllPosts, aiEnabled = true, aiOwner, onOpenAi, onOpenReviews, busy }: {
   name: string; place: string; onChoose?: () => void;
   purposes: readonly string[]; purpose: string; onPurpose: (purpose: string) => void; facts: string; onFacts: (facts: string) => void;
   onGenerate: () => void; onWrite: () => void; resume?: () => void;
-  recent: MerchantRecentItem[]; onAllPosts: () => void; aiOwner: boolean; onOpenAi: () => void; onOpenReviews?: () => void; busy: boolean;
+  recent: MerchantRecentItem[]; onAllPosts: () => void; aiEnabled?: boolean; aiOwner: boolean; onOpenAi: () => void; onOpenReviews?: () => void; busy: boolean;
 }) {
   const { tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
@@ -101,8 +101,9 @@ export function MerchantHome({ name, place, onChoose, purposes, purpose, onPurpo
           placeholder={tr('알릴 내용을 한두 줄 적어 주세요. 예: 토·일 오전 알바 1명, 시급 18달러')} placeholderTextColor={theme.textSecondary}
           style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
         <View style={styles.row}>
-          <RaisedActionButton compact analyticsId="merchant.action" label={busy ? tr('초안 만드는 중…') : tr('AI로 초안 만들기')} disabled={busy || !facts.trim()} onPress={() => { play('selection'); onGenerate(); }} />
-          {button(tr('직접 쓰기'), onWrite, 'merchant.action')}
+          {aiEnabled ? <RaisedActionButton compact analyticsId="merchant.action" label={busy ? tr('초안 만드는 중…') : tr('AI로 초안 만들기')} disabled={busy || !facts.trim()} onPress={() => { play('selection'); onGenerate(); }} />
+            : <RaisedActionButton compact analyticsId="merchant.action" label={tr('직접 쓰기')} disabled={busy} onPress={() => { play('selection'); onWrite(); }} />}
+          {aiEnabled && button(tr('직접 쓰기'), onWrite, 'merchant.action')}
         </View>
       </>}
     </View>
@@ -120,7 +121,7 @@ export function MerchantHome({ name, place, onChoose, purposes, purpose, onPurpo
       <View style={styles.side}>
         {aiOwner && <View style={card}>
           <ThemedText type="subtitle" accessibilityRole="header">{tr('AI로 글쓰기')}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">{connected ? tr('연결된 AI {0}개', connected) : tr('Claude·ChatGPT에서 바로 글링 초안을 만들어요.')}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{!aiEnabled ? tr('AI 연결은 유료 비즈니스 멤버십에서 쓸 수 있어요.') : connected ? tr('연결된 AI {0}개', connected) : tr('Claude·ChatGPT에서 바로 글링 초안을 만들어요.')}</ThemedText>
           <View style={styles.row}>{button(connected ? tr('관리') : tr('연결하기'), onOpenAi, 'merchant.action')}</View>
         </View>}
         {onOpenReviews && <View style={card}>

@@ -46,7 +46,7 @@ function component(file, name, { auth, rpc, postLoader, workspaceLoader, callbac
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/gling-loader': { GlingLoader: 'Loader' }, '@/components/merchant-ui': { MerchantHelp: 'MerchantHelp', MerchantBadge: 'MerchantBadge' },
     '@/components/merchant-naver-cafe': { MerchantNaverCallback: 'MerchantNaverCallback', captureMerchantNaverCallback: () => callback },
-    '@/components/merchant-workspace': { MerchantWorkspace: 'MerchantWorkspace' }, '@/components/post-detail': { PostDetail: 'PostDetail' },
+    '@/components/merchant-workspace': { MerchantWorkspace: 'MerchantWorkspace' }, '@/components/merchant-operator-accept': { MerchantOperatorAccept: 'MerchantOperatorAccept' }, '@/components/post-detail': { PostDetail: 'PostDetail' },
     '@/components/public-web/app-store-choices': { AppStoreChoices: 'AppStoreChoices' },
     '@/hooks/use-theme': { useTheme: () => ({ background: '#0B0B12', card: '#171722', line: '#343443', accent: '#CBB9FF' }) },
     '@/lib/auth': { useAuth: () => auth },

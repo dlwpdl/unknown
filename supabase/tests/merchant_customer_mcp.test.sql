@@ -14,10 +14,10 @@ insert into public.profiles(id,nickname,city_id,terms_accepted_at,privacy_accept
 ('14000000-0000-4000-8000-000000000001','MCP업체검사','vancouver',now(),now(),now(),'test'),
 ('14000000-0000-4000-8000-000000000002','MCP타인검사','vancouver',now(),now(),now(),'test'),
 ('14000000-0000-4000-8000-000000000003','MCP권한검사','vancouver',now(),now(),now(),'test');
-insert into private.merchants(id,name,city_id,contact,status,consent,consent_note,owner_id,owner_verified_at,record_kind) values
-('14010000-0000-4000-8000-000000000001','MCP내업체','vancouver','private contact sentinel','trial','granted','검사만','14000000-0000-4000-8000-000000000001',now(),'business'),
-('14010000-0000-4000-8000-000000000002','MCP타인업체','vancouver','','trial','granted','검사만','14000000-0000-4000-8000-000000000002',now(),'business'),
-('14010000-0000-4000-8000-000000000003','MCP허용안한업체','vancouver','','trial','granted','검사만','14000000-0000-4000-8000-000000000001',now(),'business');
+insert into private.merchants(id,name,city_id,contact,status,trial_ends_at,consent,consent_note,owner_id,owner_verified_at,record_kind) values
+('14010000-0000-4000-8000-000000000001','MCP내업체','vancouver','private contact sentinel','trial',current_date+14,'granted','검사만','14000000-0000-4000-8000-000000000001',now(),'business'),
+('14010000-0000-4000-8000-000000000002','MCP타인업체','vancouver','','trial',current_date+14,'granted','검사만','14000000-0000-4000-8000-000000000002',now(),'business'),
+('14010000-0000-4000-8000-000000000003','MCP허용안한업체','vancouver','','trial',current_date+14,'granted','검사만','14000000-0000-4000-8000-000000000001',now(),'business');
 insert into auth.oauth_clients(id,client_name,redirect_uris,grant_types,registration_type,client_type,token_endpoint_auth_method) values
 ('14030000-0000-4000-8000-000000000001','MCP 검사 도구','http://127.0.0.1/callback','authorization_code,refresh_token','dynamic','public','none'),
 ('14030000-0000-4000-8000-000000000002','Claude','https://claude.ai.evil.example/api/mcp/auth_callback','authorization_code,refresh_token','dynamic','public','none');
@@ -193,5 +193,11 @@ set local role authenticated;
 select is((select count(*) from jsonb_array_elements(public.get_my_merchant_mcp_connections())c where c->>'id'=current_setting('test.mcp_connection_id')),1::bigint,'live connection remains visible past 100 revoked reconnects');
 reset role;
 
+reset role;
+update private.merchants set status='lead',trial_ends_at=null where id='14010000-0000-4000-8000-000000000001';
+select set_config('request.jwt.claims',jsonb_build_object('sub','14000000-0000-4000-8000-000000000001','role','authenticated','aal','aal1')::text,true);
+set local role authenticated;
+select throws_ok($$select public.save_merchant_mcp_connection('14000000-0000-4000-8000-000000000001','14030000-0000-4000-8000-000000000001',array['14010000-0000-4000-8000-000000000001'::uuid],true,false)$$,'P0001','MCP_PLAN_REQUIRED','a free business cannot be connected to AI');
+reset role;
 select * from finish();
 rollback;
