@@ -214,6 +214,7 @@ export const t = {
   },
 
   actionErrors: {
+    MEETUP_HOST_CAPACITY_LIMIT: { title: '참가 인원 한도에 도달했어요', body: '호스트가 멤버십과 모임 정원을 확인한 뒤 다시 시도해 주세요.', membership: false },
     MEETUP_LIMIT_REACHED: { title: '참여할 수 있는 모임 자리가 없어요', body: '참여 중인 모임 자리를 확인해 주세요. 종료·퇴장 시 자리는 바로 돌아오지만 반복 퇴장 시에는 새 참여가 잠시 제한돼요.', membership: true },
     MEETUP_JOIN_RESTRICTED: { title: '새 모임 참여가 잠시 제한됐어요', body: '반복 퇴장 제한이 해제되면 다시 참여할 수 있어요. 기존 모임과 신고·차단·나가기는 계속 가능해요.', membership: false },
     MEETUP_HOST_RESTRICTED: { title: '새 행사 개최가 잠시 제한됐어요', body: '반복 조기 해산 제한이 해제되면 다시 개최할 수 있어요. 기존 행사 운영은 계속 가능해요.', membership: false },

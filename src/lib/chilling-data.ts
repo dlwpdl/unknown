@@ -176,7 +176,8 @@ const chillingErrors: Record<string, string> = {
     INVALID_SCHEDULE: '시작·종료 시각과 시간대 오프셋을 확인해 주세요. 종료는 시작 이후여야 해요.',
     INVALID_EVENT_SCHEDULE: '시작·종료 시각을 확인해 주세요. 종료는 시작 이후여야 해요.',
     INVALID_TIMEZONE: '올바른 시간대를 입력해 주세요.', INVALID_EVENT_TIMEZONE: '올바른 시간대를 입력해 주세요.',
-    INVALID_CAPACITY: '정원은 2~50명으로 설정해 주세요.', INVALID_EVENT_CAPACITY: '정원은 2~50명으로 설정해 주세요.',
+    INVALID_CAPACITY: '정원은 2명 이상으로 설정해 주세요. 무료는 최대 50명, 유료 멤버십은 최대 5,000명이에요.',
+    INVALID_EVENT_CAPACITY: '정원은 2명 이상으로 설정해 주세요. 무료는 최대 50명, 유료 멤버십은 최대 5,000명이에요.',
     INVALID_CADENCE: '활동 주기를 1~80자로 입력해 주세요.', INVALID_EVENT_CADENCE: '활동 주기를 1~80자로 입력해 주세요.',
 };
 

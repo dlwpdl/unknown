@@ -83,6 +83,7 @@ export const en: Translations = {
   },
   membership: { listingBenefits: { free: '5 active listings · bump every 48 hours', plus: '10 active listings · bump every 36 hours', pro: '20 active listings · bump every 30 hours', premium: '20 active listings · bump every 24 hours' } },
   actionErrors: {
+    MEETUP_HOST_CAPACITY_LIMIT: { title: 'This meetup is full', body: 'The host’s plan has reached its member limit. Try again once the host makes room.', membership: false },
     MEETUP_LIMIT_REACHED: { title: 'You’re out of meetup slots', body: 'Check the meetups you’re in. Slots come back right away when a meetup ends or you leave, but leaving often can stop you joining new ones for a while.', membership: true },
     MEETUP_JOIN_RESTRICTED: { title: 'You can’t join new meetups right now', body: 'You’ve left too many meetups recently. You can join again once this restriction ends. You can still use your current meetups, and report, block or leave.', membership: false },
     MEETUP_HOST_RESTRICTED: { title: 'You can’t host new events right now', body: 'You’ve ended events early too often. You can host again once this restriction ends. You can still manage your current events.', membership: false },
