@@ -42,7 +42,7 @@ export default function MembershipScreen() {
   useFocusEffect(useCallback(() => {
     if (auth.isAuthed) void refresh();
   }, [auth.isAuthed, refresh]));
-  const [selection, setSelection] = useState<{ tier: MembershipOffer['tier']; period: MembershipOffer['period'] }>({ tier: 'premium', period: 'month' });
+  const [selection, setSelection] = useState<{ tier: MembershipOffer['tier']; period: MembershipOffer['period'] }>({ tier: 'premium', period: 'year' });
   const [kind, setKind] = useState<MembershipKind>('general');
   const [merchants, setMerchants] = useState<{ userId: string; values: BusinessMerchant[] } | null>(null);
   const [merchantId, setMerchantId] = useState<string | null>(null);
@@ -84,15 +84,15 @@ export default function MembershipScreen() {
   const selectPlan = (next: typeof selection) => {
     play('selection');
     animateLayout();
-    if (reducedMotion) periodPosition.setValue(next.period === 'year' ? 1 : 0);
-    else Animated.timing(periodPosition, { toValue: next.period === 'year' ? 1 : 0, duration: 200, useNativeDriver: true }).start();
+    if (reducedMotion) periodPosition.setValue(next.period === 'month' ? 1 : 0);
+    else Animated.timing(periodPosition, { toValue: next.period === 'month' ? 1 : 0, duration: 200, useNativeDriver: true }).start();
     setSelection(next);
   };
   const familyOffers = offers.filter((offer) => offer.kind === kind && offer.planVersion === 2);
   const selectedOffer = familyOffers.find((offer) => offer.tier === selection.tier && offer.period === selection.period)
     ?? familyOffers.find((offer) => offer.tier === selection.tier);
   const period = selectedOffer?.period ?? selection.period;
-  const periods = (['month', 'year'] as const).filter((value) => familyOffers.some((offer) => offer.tier === selection.tier && offer.period === value));
+  const periods = (['year', 'month'] as const).filter((value) => familyOffers.some((offer) => offer.tier === selection.tier && offer.period === value));
   const currentProduct = !!activeMembership && activeMembership.tier !== 'free' && !!selectedOffer && selectedOffer.productId === activeMembership.productId;
   const otherBusiness = kind === 'business' && !!membership?.businessSubscription?.merchantId && membership.businessSubscription.merchantId !== merchantId;
   const purchaseDisabled = busy || loading || offersLoading || !selectedOffer || !membership || membership.billingPolicyVersion !== 2 || !!purchaseUnavailableReason || currentProduct || (kind === 'business' && (!business?.canPurchase || otherBusiness));

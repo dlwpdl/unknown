@@ -9,11 +9,17 @@ import { t } from '../src/i18n/ko.ts';
 import { MEMBERSHIP_LIMITS, GENERAL_BUMP_HOURS, BUSINESS_LIMITS } from '../src/lib/membership.ts';
 
 test('membership keeps stories and direct chat free while preserving meetup and listing plans', () => {
-  let states = [], cursor = 0, restored = 0, purchased = 0, confirmed = 0, feedback = 0, confirmation;
+  let states = [], cursor = 0, restored = 0, confirmed = 0, feedback = 0, confirmation, reducedMotion = false;
+  const purchases = [];
+  class AnimatedValue {
+    constructor(value) { this.value = value; }
+    setValue(value) { this.value = value; }
+    interpolate({ outputRange }) { return outputRange[0] + this.value * (outputRange[1] - outputRange[0]); }
+  }
   const value = { membership: { tier: 'free', billingPolicyVersion:2, postsUsed: 0, postLimit: 1 }, offers: [], loading: false,
     offersLoading: false, busy: false, purchaseUnavailableReason: null,
     pendingApproval: false, confirmPendingCancellation() { confirmed++; },
-    refresh() {}, restore() { restored++; }, manage() {}, purchase() { purchased++; } };
+    refresh() {}, restore() { restored++; }, manage() {}, purchase(offer) { purchases.push(offer); } };
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/app/profile/membership.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
@@ -28,8 +34,8 @@ test('membership keeps stories and direct chat free while preserving meetup and 
     } };
     if (name === 'expo-router') return { useFocusEffect() {}, useRouter: () => ({ canGoBack: () => false, replace() {} }) };
     if (name === 'expo-symbols') return { SymbolView: 'SymbolView' };
-    if (name === 'react-native-reanimated') return { useReducedMotion: () => false };
-    if ((name === 'react-native' || name === '@/components/analytics-controls')) return { View: 'View', ScrollView: 'ScrollView', Pressable: 'Pressable', Alert: { alert: (...args) => { confirmation = args; } }, Animated: { Value: class { setValue() {} interpolate() {} }, View: 'View', timing: () => ({ start() {} }) }, StyleSheet: { create: styles => styles } };
+    if (name === 'react-native-reanimated') return { useReducedMotion: () => reducedMotion };
+    if ((name === 'react-native' || name === '@/components/analytics-controls')) return { View: 'View', ScrollView: 'ScrollView', Pressable: 'Pressable', Alert: { alert: (...args) => { confirmation = args; } }, Animated: { Value: AnimatedValue, View: 'View', timing: (value, options) => ({ start() { value.setValue(options.toValue); } }) }, StyleSheet: { create: styles => styles } };
     if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView' };
     if (name === '@/components/login-panel') return { LoginPanel: 'LoginPanel' };
     if (name === '@/components/gling-loader') return { GlingLoader: 'GlingLoader' };
@@ -119,13 +125,45 @@ test('membership keeps stories and direct chat free while preserving meetup and 
   value.membership = { tier: 'free', billingPolicyVersion:2, postsUsed: 100, postLimit: 1 };
   assert.match(text(render()), /오늘 이야기 글횟수 제한 없음/);
   value.membership = { tier: 'free', billingPolicyVersion:2, postsUsed: 0, postLimit: 1 };
-  value.offers = [{ tier: 'premium', kind:'general', planVersion:2, period: 'month', productId: 'premium_monthly', price: 'CA$19.99' }];
+  const monthly = { tier: 'premium', kind: 'general', planVersion: 2, period: 'month', productId: 'premium_monthly', price: 'CA$19.99' };
+  // Synthetic eligible annual offer tests screen behavior, not a configured or purchasable store SKU.
+  const annual = { id: 'annual-ui-fixture', tier: 'premium', kind: 'general', planVersion: 2, period: 'year', productId: 'annual-ui-fixture', price: 'CA$199.99' };
+  value.offers = [monthly, annual];
+  tree = render();
+  const periodButtons = tree => nodes(tree).filter(node => node.props?.analyticsId === 'app_profile_membership.pressable.5');
+  assert.deepEqual(periodButtons(tree).map(text), ['연 구독', '월 구독']);
+  assert.equal(button(tree, '연 구독').props.accessibilityState.checked, true);
+  assert.equal(button(tree, '월 구독').props.accessibilityState.checked, false);
+  assert.ok(nodes(tree).some(node => node.props?.analyticsId === 'app_profile_membership.pressable.4' && node.props.accessibilityState.checked && text(node).startsWith('프리미엄')), 'The existing default tier stays Premium.');
+  assert.match(text(tree), /프리미엄 · CA\$199\.99 \/ 년/);
+  assert.match(text(tree), /매년 CA\$199\.99이 청구되며 자동 갱신/);
+  nodes(tree).find(node => node.props?.onLayout).props.onLayout({ nativeEvent: { layout: { width: 300 } } });
+  const indicator = tree => nodes(tree).find(node => node.props?.pointerEvents === 'none').props.style[1].transform[0].translateX;
+  assert.equal(indicator(render()), 0, 'The initial highlight sits beneath the first, annual option.');
+  button(render(), '프리미엄 구독하기').props.onPress();
+  assert.equal(purchases.at(-1), annual);
+  button(render(), '월 구독').props.onPress();
+  tree = render();
+  assert.equal(button(tree, '월 구독').props.accessibilityState.checked, true);
+  assert.ok(indicator(tree) > 0, 'Monthly selection moves the highlight to the second option.');
+  assert.match(text(tree), /프리미엄 · CA\$19\.99 \/ 월/);
+  button(tree, '프리미엄 구독하기').props.onPress();
+  assert.equal(purchases.at(-1), monthly);
+  reducedMotion = true;
+  button(render(), '연 구독').props.onPress();
+  assert.equal(indicator(render()), 0, 'Reduced motion still aligns annual selection with its first option.');
+  value.offers = [monthly];
+  tree = render();
+  assert.equal(periodButtons(tree).length, 0, 'No unavailable annual option is offered for a monthly-only store catalog.');
+  assert.match(text(tree), /프리미엄 · CA\$19\.99 \/ 월/);
+  assert.match(text(tree), /매월 CA\$19\.99이 청구되며 자동 갱신/);
   value.purchaseUnavailableReason = '아직 준비 중';
   assert.equal(button(render(), '프리미엄 구독하기').props.disabled, true);
   value.purchaseUnavailableReason = null;
   assert.equal(button(render(), '프리미엄 구독하기').props.disabled, false);
   button(render(), '프리미엄 구독하기').props.onPress();
-  assert.equal(purchased, 1);
+  assert.equal(purchases.length, 3);
+  assert.equal(purchases.at(-1), monthly, 'The annual preference falls back to the exact available monthly product.');
   const cancellationLabel = '스토어에서 대기 구매 취소·거절을 확인했어요';
   assert.equal(button(render(), cancellationLabel), undefined);
   value.pendingApproval = true; value.purchaseUnavailableReason = '승인 대기 중';
@@ -143,7 +181,7 @@ test('membership keeps stories and direct chat free while preserving meetup and 
   cancellation.props.onPress();
   confirmation[2].find(action => action.style !== 'cancel').onPress();
   assert.equal(confirmed, 1);
-  assert.equal(purchased, 1, 'recovery must not invoke purchase');
+  assert.equal(purchases.length, 3, 'recovery must not invoke purchase');
   value.busy = true;
   assert.equal(button(render(), cancellationLabel).props.disabled, true);
   value.busy = false; value.loading = true;
