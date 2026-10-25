@@ -27,6 +27,7 @@ function errorText(error: unknown) {
   if (code.includes('MCP_BUSINESS_ACCOUNT_REQUIRED') || code.includes('MERCHANT_ACCOUNT_REQUIRED')) return '승인된 사업자 계정으로 연결해 주세요.';
   if (code.includes('MERCHANT_POST_CHANGED') || code.includes('MERCHANT_PROFILE_CHANGED')) return '원본이 바뀌었어요. AI에게 최신 원본으로 새 제안을 요청한 뒤 다시 검토해 주세요.';
   if (code.includes('MCP_CONNECTION_REQUIRED') || code.includes('MERCHANT_ACCESS_REQUIRED')) return '비즈니스 권한이나 AI 연결이 변경됐어요. 현재 연결과 비즈니스를 다시 확인해 주세요.';
+  if (code.includes('MCP_PLAN_REQUIRED')) return 'AI 연결은 유료 비즈니스 멤버십에서 쓸 수 있어요. 무료 비즈니스는 선택을 빼고 연결해 주세요.';
   if (code.includes('MCP_PUBLISH_CLIENT_UNVERIFIED')) return '확인되지 않은 AI 도구에는 게시 권한을 줄 수 없어요. 게시 권한을 끄고 연결해 주세요.';
   if (code.includes('MCP_CHANGE_EXPIRED')) return '이 제안은 만료됐어요. AI에게 새 제안을 요청해 주세요.';
   return '처리를 확인하지 못했어요. 연결 상태를 확인한 뒤 다시 시도해 주세요.';
@@ -166,7 +167,7 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
           <ThemedText type="small" themeColor="textSecondary">{canPublish ? tr("이름이 아니라 실제 연결 주소로 확인했어요.") : tr("직접 시작한 연결이 아니면 취소해 주세요. 이 주소에는 게시 권한을 줄 수 없어요.")}</ThemedText>
         </View>
         <ThemedText type="smallBold">{tr("연결할 내 비즈니스")}</ThemedText>
-        {merchants.map(m => <Choice key={m.id} title={m.name} detail={m.city_name || m.city_id} checked={selected.includes(m.id)} disabled={busy}
+        {merchants.map(m => <Choice key={m.id} title={m.name} detail={m.plan === 'basic' ? tr('{0} · 유료 멤버십 필요', m.city_name || m.city_id) : (m.city_name || m.city_id)} checked={selected.includes(m.id)} disabled={busy || m.plan === 'basic'}
           onPress={() => setSelected(ids => ids.includes(m.id) ? ids.filter(id => id !== m.id) : [...ids, m.id])} />)}
         {!merchants.length && <ThemedText>{tr("소유권이 확인된 비즈니스가 필요해요. 비즈니스 연결을 먼저 완료해 주세요.")}</ThemedText>}
         <ThemedText type="smallBold">{tr("허용할 작업")}</ThemedText>
@@ -182,7 +183,11 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
         <ThemedText type="subtitle" accessibilityRole="header">{tr("AI 신규 연결은 비즈니스 오너만 이용할 수 있어요.")}</ThemedText>
         <ThemedText themeColor="textSecondary">{tr("소유권이 확인된 내 비즈니스가 필요해요. 운영 담당자는 웹에서 배정된 비즈니스를 관리할 수 있어요. 이전에 연결한 AI는 아래에서 해제할 수 있어요.")}</ThemedText>
       </View>}
-      {!authorizationId && merchants.length > 0 && <MerchantMcpGuide endpoint={endpoint} />}
+      {!authorizationId && merchants.some(m => m.plan !== 'basic') && <MerchantMcpGuide endpoint={endpoint} />}
+      {merchants.length > 0 && !merchants.some(m => m.plan !== 'basic') && <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+        <ThemedText type="subtitle" accessibilityRole="header">{tr("AI 연결은 유료 비즈니스 멤버십에서 쓸 수 있어요.")}</ThemedText>
+        <ThemedText themeColor="textSecondary">{tr("플러스 이상으로 바꾸면 Claude·ChatGPT에서 바로 글링 초안을 만들 수 있어요. 무료에서는 직접 쓰기를 계속 이용할 수 있어요.")}</ThemedText>
+      </View>}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <ThemedText type="subtitle" accessibilityRole="header">{tr("연결된 AI 도구")}</ThemedText>
         {!connected.length && <ThemedText themeColor="textSecondary">{tr("아직 연결된 도구가 없어요.")}</ThemedText>}

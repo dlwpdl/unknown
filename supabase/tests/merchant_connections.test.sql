@@ -18,11 +18,11 @@ insert into public.profiles(id,nickname,city_id,terms_accepted_at,privacy_accept
 ('14000000-0000-4000-8000-000000000004','연결초대회원','vancouver',now(),now(),now(),'test'),
 ('14000000-0000-4000-8000-000000000005','연결관리자','vancouver',now(),now(),now(),'test');
 insert into auth.sessions(id,user_id,aal) values('14090000-0000-4000-8000-000000000005','14000000-0000-4000-8000-000000000005','aal2');
-insert into private.merchants(id,name,city_id,contact,status,consent,consent_note,address,owner_id,owner_verified_at,record_kind) values
-('14010000-0000-4000-8000-000000000001','연결업체A','vancouver','A 비공개 연락처','paid','granted','테스트 동의','주소 A','14000000-0000-4000-8000-000000000001',now(),'business'),
-('14010000-0000-4000-8000-000000000002','연결업체B','vancouver','B 비공개 연락처','paid','granted','테스트 동의','주소 B','14000000-0000-4000-8000-000000000002',now(),'business'),
-('14010000-0000-4000-8000-000000000003','선등록업체','vancouver','선등록 비공개 연락처','lead','pending','','주소 C',null,null,'business'),
-('14010000-0000-4000-8000-000000000004','초대업체','vancouver','초대 비공개 연락처','lead','pending','','주소 D',null,null,'business');
+insert into private.merchants(id,name,city_id,contact,status,workspace_until,consent,consent_note,address,owner_id,owner_verified_at,record_kind) values
+('14010000-0000-4000-8000-000000000001','연결업체A','vancouver','A 비공개 연락처','paid',current_date+30,'granted','테스트 동의','주소 A','14000000-0000-4000-8000-000000000001',now(),'business'),
+('14010000-0000-4000-8000-000000000002','연결업체B','vancouver','B 비공개 연락처','paid',current_date+30,'granted','테스트 동의','주소 B','14000000-0000-4000-8000-000000000002',now(),'business'),
+('14010000-0000-4000-8000-000000000003','선등록업체','vancouver','선등록 비공개 연락처','lead',null,'pending','','주소 C',null,null,'business'),
+('14010000-0000-4000-8000-000000000004','초대업체','vancouver','초대 비공개 연락처','lead',null,'pending','','주소 D',null,null,'business');
 insert into private.merchant_workspace_drafts(id,merchant_id,channel,title,body,tag_slug,kind,image_paths) values
 ('14040000-0000-4000-8000-000000000001','14010000-0000-4000-8000-000000000001','gling','A 원고','A 비공개 원고','life','story',array['14000000-0000-4000-8000-000000000001/business-a.webp']),
 ('14040000-0000-4000-8000-000000000002','14010000-0000-4000-8000-000000000002','gling','B 원고','B 비공개 원고','life','story',array['14000000-0000-4000-8000-000000000002/business-b.webp']);
