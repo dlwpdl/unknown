@@ -174,7 +174,7 @@ test('canonical post document retains its direct landing SSR and mounted post de
   assert.equal(readerMarkup('/post', options), readerMarkup('/post', { ...options, directPost: true }));
   assert.match(readerMarkup('/post', options), /class="shared-post-landing"/);
   assert.ok(readerMarkup('/post', { ...options, mounted: true }).includes(`href="gling://post/${id}"`));
-  assert.match(readerMarkup('/'), /큰 페스티벌부터/);
+  assert.match(readerMarkup('/'), /<h1 id="stories">오늘<\/h1>/);
 });
 
 
@@ -200,10 +200,23 @@ test('reader title, metadata and language follow KO/EN while authored post text 
 });
 test('web meetup discovery explains app participation and keeps a visible public reading path', () => {
   const markup = readerMarkup('/meetups', { language: 'en' });
-  assert.match(markup, /Find people to share your next outing/);
+  assert.doesNotMatch(markup, /reader-showcase/);
+  assert.match(markup, /<h1 id="stories">Meetups<\/h1>/);
   assert.match(markup, /Joining, creating meetups and chatting happen in the Gling app/);
   assert.match(markup, /href="gling:\/\/meetup-create"/);
   assert.match(markup, /action="\/meetups"/);
   assert.match(markup, /href="\/merchant\/"/);
   assert.match(markup, /Choose your phone/);
+});
+
+
+test('home opens with the Today feed and visible account entry while meetup discovery stays in its own tab', () => {
+  for (const language of ['ko', 'en']) {
+    const markup = readerMarkup('/', { language });
+    assert.doesNotMatch(markup, /reader-showcase|public-meetups-list|public-meetups-heading/);
+    assert.match(markup, /class="reader-header-account" href="\/merchant\/"/);
+    assert.match(markup, language === 'ko' ? />로그인<\/a>/ : />Sign in<\/a>/);
+    assert.match(markup, /href="\/meetups\?city=vancouver"/);
+    assert.match(markup, language === 'ko' ? /<h1 id="stories">오늘<\/h1>/ : /<h1 id="stories">Today<\/h1>/);
+  }
 });

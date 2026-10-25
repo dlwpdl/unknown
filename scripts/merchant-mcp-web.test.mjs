@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { connectMerchantMcp, denyMerchantMcp, loadMerchantMcpChangePhotos, merchantMcpReturnPath, rememberMerchantMcpReturn, safeMerchantMcpRedirect, reviewMerchantMcpChange } from '../src/lib/merchant-mcp.ts';
+import * as merchantMcp from '../src/lib/merchant-mcp.ts';
 
 const user='14000000-0000-4000-8000-000000000001',clientId='14030000-0000-4000-8000-000000000001',merchant='14010000-0000-4000-8000-000000000001';
 const authorization={authorization_id:'native-request-123',client_id:clientId,client_name:'나의 AI 도구',redirect_uri:'http://127.0.0.1:5500/callback',scope:'offline_access',expires_at:'2099-01-01T00:00:00Z'};
@@ -54,6 +55,16 @@ test('opening AI settings without an authorization request returns to those sett
   assert.equal(merchantMcpReturnPath(storage,2000),'/');
   rememberMerchantMcpReturn(storage,undefined,1000);
   assert.equal(merchantMcpReturnPath(storage,602000),'/');
+});
+test('normal portal login can clear an AI return without changing a shared post return or other storage',()=>{
+  const data=new Map([['gling.sharedPostReturn','/post?id=14010000-0000-4000-8000-000000000001&invite=1'],['unrelated','keep']]);
+  const storage={setItem:(k,v)=>data.set(k,v),getItem:k=>data.get(k)??null,removeItem:k=>data.delete(k)};
+  rememberMerchantMcpReturn(storage,'cancelled-request-123');
+  assert.equal(typeof merchantMcp.clearMerchantMcpReturn,'function');
+  merchantMcp.clearMerchantMcpReturn(storage);
+  assert.equal(merchantMcpReturnPath(storage),'/');
+  assert.equal(data.get('gling.sharedPostReturn'),'/post?id=14010000-0000-4000-8000-000000000001&invite=1');
+  assert.equal(data.get('unrelated'),'keep');
 });
 test('cancel never forwards a code even when the native OAuth provider auto-approves an existing consent',async()=>{
   const client=mockClient({redirect:true});const url=new URL(await denyMerchantMcp(client,user,authorization));

@@ -28,6 +28,8 @@ function app({ query = {}, places = [visit], hydrated = true, catalogError = fal
     'expo-router': { useLocalSearchParams: () => query, useRouter: () => ({ push: target => pushes.push(target) }) },
     'expo-router/head': { __esModule: true, default: 'Head' },
     'expo-asset': { Asset: { fromModule: () => ({ uri: 'local-logo' }) } },
+    '@/hooks/use-language': { useLanguage: () => ({ language: 'ko' }) },
+    '@/lib/auth': { useAuth: () => ({ isAuthed: false }) },
     '@/constants/theme': { WebNightColors: {} }, '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.example' },
     '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver', state: 'open' }, { id: 'toronto', name: '토론토', englishName: 'Toronto', state: 'open' }] },
     '@/lib/city-places': { cityPlacesRevision: () => 0, subscribeCityPlaces() {}, getCityPlaces: city => places.filter(place => place.cityId === city), replaceCityPlacesCatalog: value => {

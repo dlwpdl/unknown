@@ -172,3 +172,15 @@ test('retained web login cannot write a return path or prompt after a different 
     app.unmount();
   }
 });
+
+test('a selected meetup invites signup and app participation while ordinary shared posts keep web reading', () => {
+  const app = mount();
+  const props = { postId:id, preview:{...preview,kind:'meetup'}, invite:true, status:'ready', onRetry(){}, onLogin(){} };
+  let tree = app.render('SharedPostLandingContent',props);
+  assert.match(text(tree),/로그인·가입하고 이어가기/);
+  assert.match(text(tree),/모임 참여는 앱/);
+  assert.equal(action(tree,'shared.web.open_app').props.href,`gling://post/${id}?invite=1`);
+  tree = app.render('SharedPostLandingContent',{...props,invite:false,preview});
+  assert.match(text(tree),/로그인·가입하고 읽기/);
+  app.unmount();
+});
