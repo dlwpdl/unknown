@@ -7460,6 +7460,18 @@
           "license": "CC BY-SA 2.0",
           "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/",
           "imageSha256": "00490722e63200677042197971b2a2773c5390c1451003eb59366326faf7efb6"
+        },
+        {
+          "cityId": "vancouver",
+          "placeId": "osm:way:1004996176",
+          "uri": "https://live.staticflickr.com/5758/20507413133_1bf42f177c_b.jpg",
+          "sourceUrl": "https://www.flickr.com/photos/44119174@N06/20507413133",
+          "title": "Mundy Park lake (August 2015; archival photo)",
+          "artist": "BumFluff2009",
+          "discoveredVia": "Openverse",
+          "license": "CC BY-SA 2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/",
+          "imageSha256": "6b460af79e4ee8de1b4d4b047b53174f73a30d78d83e940f1f2e4a8ff50aad0d"
         }
       ]
     },

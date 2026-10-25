@@ -15,7 +15,7 @@ This initial metadata supports new-client saves after the migration is applied, 
 
 Catalog26 still uses the release owner's next normal, day-guarded publication path. Neither this initial save support nor the migration updates the city catalog or bypasses its day guard. The migration has not been applied to production by this task. Local source/fixture results do not establish production availability or native visual QA.
 
-The final cohort contains 10 places: five in Coquitlam, three in Port Coquitlam and two in New Westminster. Seven have source-matched licensed photos; Mundy Park, Gates Park and Lions Park keep the existing no-photo fallback. Westminster Pier Park's photo is explicitly titled as a June 2020 archival image. It does not represent the current 2026 layout. Photo validation reuses the existing Commons and strict Openverse/Flickr rules.
+The final cohort contains 10 places: five in Coquitlam, three in Port Coquitlam and two in New Westminster. Eight have source-matched licensed photos after the Mundy Park follow-up. Gates Park and Lions Park keep the existing no-photo fallback because reusable photo rights remain unconfirmed. The Mundy lake photograph is dated August 2015, and that archival date remains in its displayed photo title. Westminster Pier Park's photo is explicitly titled as a June 2020 archival image. It does not represent the current 2026 layout. Photo validation reuses the existing Commons and strict Openverse/Flickr rules.
 
 Coordinates come from the verified OSM features, including area centers for parks. They are not surveyed entrance coordinates. The Cenotaph photo is a portrait image and still needs the release owner's native card-fit review.
 
