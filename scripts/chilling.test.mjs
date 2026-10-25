@@ -60,7 +60,7 @@ test('switching a draft to a persistent group clears its old one-off schedule', 
 test('invalid schedule and capacity never reach the server; server denial is preserved', async () => {
   let calls = 0;
   const client = { rpc: async () => { calls++; return { error: new Error('NOT_OWNER') }; } };
-  for (const patch of [{ endsAt: once.startsAt }, { timezone: 'not-a-timezone' }, { capacity: 1 }, { capacity: 3.5 }, { capacity: 51 }, { kind: 'group', cadence: '  ' }]) {
+  for (const patch of [{ endsAt: once.startsAt }, { timezone: 'not-a-timezone' }, { capacity: 1 }, { capacity: 3.5 }, { capacity: 5001 }, { kind: 'group', cadence: '  ' }]) {
     await assert.rejects(configureChillingEvent(client, 'post-1', { ...once, ...patch }));
   }
   assert.equal(calls, 0);

@@ -65,7 +65,7 @@ function Application({ requestId }: { requestId: string }) {
   const visible = application && !hidden('post', application.postId, application.requesterId);
   const own = application?.requesterId === me.id || requestStatus?.requester_id === me.id;
   const canRespond = visible && application.request?.host_id === me.id && application.request.status === 'pending' && !own;
-  const approvalBlocked = !!actionCode && ['MEETUP_FULL', 'MEETUP_CLOSED', 'MEETUP_EXPIRED', 'MEETUP_LIMIT_REACHED', 'RELATIONSHIP_LIMIT', 'MEETUP_JOIN_RESTRICTED'].includes(actionCode);
+  const approvalBlocked = !!actionCode && ['MEETUP_FULL', 'MEETUP_HOST_CAPACITY_LIMIT', 'MEETUP_CLOSED', 'MEETUP_EXPIRED', 'MEETUP_LIMIT_REACHED', 'RELATIONSHIP_LIMIT', 'MEETUP_JOIN_RESTRICTED'].includes(actionCode);
   const identity = application?.request?.requester;
   const respond = async (response: 'approved' | 'rejected') => {
     if (busy.current || !canRespond || (response === 'approved' && approvalBlocked)) return;

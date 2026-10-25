@@ -77,10 +77,17 @@ export function recommendedAgeMessage(room: ChillingSchedule, age: number | null
   return `본인 입력 기준 만 ${age}세 · 생년월일 미인증. ${matches ? '권장 연령대에 해당해요.' : '권장 연령대와 달라도 신청할 수 있어요.'}`;
 }
 
-export function normalizeChillingEvent(draft: ChillingEventDraft) {
+// Use the personal get_membership snapshot; business promotion subscriptions are separate.
+export function chillingCapacityLimit(membership: { tier: string; expiresAt: string | null } | null | undefined, now = Date.now()): 50 | 5000 {
+  return membership && ['plus', 'pro', 'premium'].includes(membership.tier)
+    && membership.expiresAt != null && Date.parse(membership.expiresAt) > now ? 5000 : 50;
+}
+
+export function normalizeChillingEvent(draft: ChillingEventDraft, maxCapacity = 5000) {
   if (!['once', 'group'].includes(draft.kind)) throw new Error('INVALID_EVENT');
   if (draft.category && !['casual', 'hobby', 'travel', 'party', 'festival', 'sports'].includes(draft.category)) throw new Error('INVALID_EVENT_CATEGORY');
-  if (!Number.isInteger(draft.capacity) || draft.capacity < 2 || draft.capacity > 50) throw new Error('INVALID_CAPACITY');
+  if (!Number.isInteger(maxCapacity) || maxCapacity < 2 || maxCapacity > 5000
+    || !Number.isInteger(draft.capacity) || draft.capacity < 2 || draft.capacity > maxCapacity) throw new Error('INVALID_CAPACITY');
   const { recommendedAgeMin: min, recommendedAgeMax: max } = draft;
   if ((min != null || max != null) && (!Number.isInteger(min) || !Number.isInteger(max) || min! < 0 || max! > 120 || min! > max!)) throw new Error('INVALID_RECOMMENDED_AGE');
   let startsAt: string | null = null;

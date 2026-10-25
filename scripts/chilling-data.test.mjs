@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import * as data from '../src/lib/chilling-data.ts';
+import { uiEnglish } from '../src/i18n/ui-en.ts';
+import { translationsFor } from '../src/i18n/index.ts';
+import { getCommunityActionError } from '../src/lib/community-data.ts';
 
 const profile = { intro: ' 함께 걸어요 ', interests: [' 산책 ', '커피'], promptOne: '느긋하게', promptTwo: '편한 사람들' };
 test('meetup errors explain the same meetup and admission failure instead of direct conversations', () => {
@@ -8,6 +11,17 @@ test('meetup errors explain the same meetup and admission failure instead of dir
   assert.match(data.getChillingError(new Error('REQUEST_ALREADY_RESOLVED')), /참여 신청.*처리/);
   assert.match(data.getChillingError(new Error('MEETUP_FULL')), /정원/);
   assert.equal(data.getChillingErrorCode(new Error('MEETUP_FULL')), 'MEETUP_FULL');
+  const hostLimit = new Error('MEETUP_HOST_CAPACITY_LIMIT');
+  assert.equal(data.getChillingErrorCode(hostLimit), 'MEETUP_HOST_CAPACITY_LIMIT');
+  assert.match(data.getChillingError(hostLimit), /한도/);
+  assert.equal(getCommunityActionError(hostLimit), 'MEETUP_HOST_CAPACITY_LIMIT');
+  assert.match(translationsFor('en').actionErrors.MEETUP_HOST_CAPACITY_LIMIT.body, /host/);
+  for (const code of ['INVALID_CAPACITY', 'INVALID_EVENT_CAPACITY']) {
+    const message = data.getChillingError(new Error(code));
+    assert.match(message, /멤버십/);
+    assert.doesNotMatch(message, /2~50명/);
+    assert.ok(uiEnglish[message]);
+  }
   assert.equal(data.getChillingErrorCode(new Error('offline')), null);
   assert.doesNotMatch(data.getChillingError(new Error('offline')), /승인|거절/);
 });
@@ -85,7 +99,7 @@ test('create uses one atomic RPC; invalid event cannot publish a partial legacy 
   assert.equal(await data.createChillingEvent(client,draft),'post-id');
   assert.equal(calls.length,1);assert.equal(calls[0][0],'create_chilling_event');
   assert.deepEqual(calls[0][1],{p_city_id:'vancouver',p_title:'산책',p_body:'같이 걸어요',p_question:'기대하는 분위기는?',p_event:{eventKind:'group',startsAt:null,endsAt:null,timezone:null,cadence:'매주 토요일',capacity:8,category:'hobby'}});
-  await assert.rejects(data.createChillingEvent(client,{...draft,event:{...draft.event,capacity:51}}));
+  await assert.rejects(data.createChillingEvent(client,{...draft,event:{...draft.event,capacity:5001}}));
   assert.equal(calls.length,1);
 });
 
@@ -99,6 +113,6 @@ test('cover uploads before atomic creation and removes upload on rejected creati
   // 업로드 실패 시 원본과 함께 만들어 둔 썸네일도 지운다.
   assert.deepEqual(calls[2],['remove',[calls[0][1],calls[0][1].replace(/\.[^.]+$/,'.thumb.webp')]]);
   calls.length=0;
-  await assert.rejects(data.createChillingEvent(client,{...draft,event:{...draft.event,capacity:51}}));
+  await assert.rejects(data.createChillingEvent(client,{...draft,event:{...draft.event,capacity:5001}}));
   assert.equal(calls.length,0,'invalid event never uploads');
 });

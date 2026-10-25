@@ -1,4 +1,5 @@
 export const uiEnglish: Record<string, string> = {
+  "정원은 2명 이상으로 설정해 주세요. 무료는 최대 50명, 유료 멤버십은 최대 5,000명이에요.": "Set a capacity of at least 2. Free memberships allow up to 50 members; paid memberships allow up to 5,000.",
   "소유자": "Owner",
   "운영 담당자": "Operator",
   "프로필 전환": "Switch profile",

@@ -83,6 +83,7 @@ export const en: Translations = {
   },
   membership: { listingBenefits: { free: '5 active listings · bump every 48 hours', plus: '10 active listings · bump every 36 hours', pro: '20 active listings · bump every 30 hours', premium: '20 active listings · bump every 24 hours' } },
   actionErrors: {
+    MEETUP_HOST_CAPACITY_LIMIT: { title: 'The member limit has been reached', body: 'Please try again after the host checks their membership and this meetup’s capacity.', membership: false },
     MEETUP_LIMIT_REACHED: { title: 'No meetup slots available', body: 'Check your active meetup slots. Slots return immediately when a meetup ends or you leave, but repeated departures can temporarily restrict new joining.', membership: true },
     MEETUP_JOIN_RESTRICTED: { title: 'Joining new meetups is temporarily restricted', body: 'You can join again after the repeated-departure restriction ends. Existing meetups, reports, blocking and leaving remain available.', membership: false },
     MEETUP_HOST_RESTRICTED: { title: 'Hosting new events is temporarily restricted', body: 'You can host again after the repeated early-ending restriction ends. You can still manage existing events.', membership: false },
