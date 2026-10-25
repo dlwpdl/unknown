@@ -9,14 +9,14 @@ const owner = {
   trial_ends_at: null, workspace_until: null, today: '2026-10-25', plan: 'basic', role: 'owner',
 };
 
-function syntheticClient({ enabled = true, merchants = [], sessionUserId = userId, rpcErrors = {}, sessionError = null } = {}) {
+function syntheticClient({ enabled = true, merchants = [], sessionUserId = userId, rpcErrors = {}, sessionError = null, accessData } = {}) {
   const calls = [];
   let authObserver;
   const client = {
     rpc: async name => {
       calls.push(name);
-      assert.ok(['get_my_merchant_access', 'get_my_merchants'].includes(name), `Unexpected RPC: ${name}`);
-      return { data: name === 'get_my_merchant_access' ? enabled : merchants, error: rpcErrors[name] ?? null };
+      assert.equal(name, 'get_my_business_workspace_access', `Unexpected RPC: ${name}`);
+      return { data: accessData === undefined ? { actor_id: userId, enabled, merchants } : accessData, error: rpcErrors[name] ?? null };
     },
     auth: {
       getSession: async () => {
@@ -36,7 +36,7 @@ function syntheticClient({ enabled = true, merchants = [], sessionUserId = userI
 test('verified assigned owner can use merchant web and connect business MCP', async () => {
   const { client, calls } = syntheticClient({ merchants: [owner] });
   assert.deepEqual(await loadMerchantWebAccess(client, userId), { kind: 'business', merchants: [owner], canConnectMcp: true });
-  assert.deepEqual(calls.filter(name => name.startsWith('get_my_')), ['get_my_merchant_access', 'get_my_merchants']);
+  assert.deepEqual(calls.filter(name => name.startsWith('get_my_')), ['get_my_business_workspace_access']);
   assert.equal(calls.filter(name => name !== 'unsubscribe').at(-1), 'getSession', 'the current account is verified after reading access');
 });
 
@@ -66,7 +66,7 @@ test('admin-wide rows do not expand merchant web membership or MCP eligibility',
 test('approved accounts without assignments remain distinct from ordinary members', async () => {
   const { client, calls } = syntheticClient();
   assert.deepEqual(await loadMerchantWebAccess(client, userId), { kind: 'unassigned', merchants: [], canConnectMcp: false });
-  assert.ok(calls.includes('get_my_merchants'));
+  assert.ok(calls.includes('get_my_business_workspace_access'));
   assert.equal(calls.filter(name => name !== 'unsubscribe').at(-1), 'getSession');
 });
 
@@ -87,7 +87,7 @@ test('account changes or signout fail closed even when capability is disabled', 
 });
 
 test('RPC and session failures cannot become an allowed or unassigned fallback', async () => {
-  for (const name of ['get_my_merchant_access', 'get_my_merchants']) {
+  for (const name of ['get_my_business_workspace_access']) {
     const { client } = syntheticClient({ merchants: [owner], rpcErrors: { [name]: { message: 'ACCOUNT_LOCKED' } } });
     await assert.rejects(loadMerchantWebAccess(client, userId), /ACCOUNT_LOCKED/);
   }
@@ -101,7 +101,8 @@ test('A -> B -> A during access reads rejects B rows even when session reads ret
   const rpc = client.rpc;
   client.rpc = async name => {
     const result = await rpc(name);
-    emitAuth('SIGNED_IN', { user: { id: name === 'get_my_merchant_access' ? otherUser : userId } });
+    emitAuth('SIGNED_IN', { user: { id: otherUser } });
+    emitAuth('SIGNED_IN', { user: { id: userId } });
     return result;
   };
   await assert.rejects(loadMerchantWebAccess(client, userId), /ACCOUNT_CHANGED/);
@@ -115,7 +116,7 @@ test('auth observer is removed once after successful and failed access reads', a
     assert.equal(calls.filter(name => name === 'onAuthStateChange').length, 1);
     assert.equal(calls.filter(name => name === 'unsubscribe').length, 1);
   }
-  for (const name of ['get_my_merchant_access', 'get_my_merchants']) {
+  for (const name of ['get_my_business_workspace_access']) {
     const { client, calls } = syntheticClient({ rpcErrors: { [name]: { message: 'ACCOUNT_LOCKED' } } });
     await assert.rejects(loadMerchantWebAccess(client, userId), /ACCOUNT_LOCKED/);
     assert.equal(calls.filter(name => name === 'unsubscribe').length, 1, `${name} failure removes its auth observer`);
@@ -129,4 +130,27 @@ test('auth observer is removed once after successful and failed access reads', a
   };
   await assert.rejects(loadMerchantWebAccess(client, userId));
   assert.equal(calls.filter(name => name === 'unsubscribe').length, 1, 'a final session failure removes its auth observer');
+});
+
+
+test('admin identity uses the same assigned business reader without invoking admin MFA', async () => {
+  const { client, calls } = syntheticClient({ merchants: [owner] });
+  const getSession = client.auth.getSession;
+  client.auth.getSession = async () => { const result = await getSession(); result.data.session.user.app_metadata = { role: 'admin' }; return result; };
+  Object.defineProperty(client.auth, 'mfa', { get() { throw new Error('Business access must not invoke admin MFA'); } });
+  const access = await loadMerchantWebAccess(client, userId);
+  assert.equal(access.kind, 'business'); assert.deepEqual(access.merchants, [owner]);
+  assert.deepEqual(calls.filter(name => name.startsWith('get_my_')), ['get_my_business_workspace_access']);
+});
+
+test('invalid business access responses fail closed', async () => {
+  for (const accessData of [null, { enabled: 'yes', merchants: [] }, { enabled: true, merchants: null }]) {
+    const { client } = syntheticClient({ accessData });
+    await assert.rejects(loadMerchantWebAccess(client, userId), /MERCHANT_/);
+  }
+});
+
+test('business rows from a different RPC actor are rejected even when session reads still show this account', async () => {
+  const { client } = syntheticClient({ accessData: { actor_id: '14000000-0000-4000-8000-000000000002', enabled: true, merchants: [owner] } });
+  await assert.rejects(loadMerchantWebAccess(client, userId), /ACCOUNT_CHANGED/);
 });

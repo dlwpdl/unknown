@@ -48,3 +48,18 @@ test('saving before channel selection retains ordered photos and advances only a
   await assert.rejects(handler('saveEditor', { ...state, saveMerchantDraftImages: async () => { throw Error('offline'); } })('channels'), /offline/);
   assert.equal(events.length, 0, 'failed save preserves the editor, photos, dirty state and current step');
 });
+
+test('the business-web home generates from its own notes into the freshly opened draft without asking to replace a stale editor', async () => {
+  const calls = [], edits = [], confirms = [];
+  const state = { data: { merchant: { city_name: '밴쿠버' } }, facts: '', purpose: '가게 소식', busyRef: { current: false },
+    editor: { title: '예전 초안', body: '예전 본문', tag_slug: 'festival', kind: 'story', image_paths: [] }, emptyDraft: () => ({ title: '', body: '', tag_slug: 'life', kind: 'story', image_paths: [] }),
+    id: 'merchant-a', me: { id: 'owner-a' }, mounted: { current: true }, run: async callback => callback(), parseAiDraftResponse,
+    confirmAction: async () => { confirms.push(true); return true; }, changeDraft: () => { throw new Error('stale editor must not be merged'); },
+    setEditor: update => edits.push(update({ id: 'new-draft', title: '', body: '', kind: 'story' })), setDirty() {}, setPreparedChannels() {}, setAiDraftReady() {}, setDraftStep() {},
+    supabase: { functions: { invoke: async (...args) => { calls.push(args); return { data: { draft: { categorySlug: 'jobs', title: '주말 알바', body: '토·일 오전', hashtags: [] } }, error: null }; } }, auth: { getSession: async () => ({ data: { session: { user: { id: 'owner-a' } } } }) } },
+  };
+  await handler('generateDraft', state)({ facts: ' 토·일 오전 알바 1명 ', purpose: '구인구직' });
+  assert.equal(confirms.length, 0);
+  assert.equal(calls[0][1].body.bodyHint, '토·일 오전 알바 1명'); assert.equal(calls[0][1].body.purpose, '구인구직'); assert.equal(calls[0][1].body.selectedCategory, 'life');
+  assert.equal(edits[0].id, 'new-draft'); assert.equal(edits[0].title, '주말 알바'); assert.equal(edits[0].kind, 'listing');
+});

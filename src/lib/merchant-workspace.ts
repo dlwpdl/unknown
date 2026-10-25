@@ -47,6 +47,12 @@ async function call<T>(client: SupabaseClient, name: string, args: Record<string
   return data as T;
 }
 export const loadMyMerchants = (client: SupabaseClient) => call<BusinessMerchant[]>(client, 'get_my_merchants');
+export async function getMyBusinessWorkspaceAccess(client: SupabaseClient, userId: string): Promise<{ actor_id: string; enabled: boolean; merchants: BusinessMerchant[] }> {
+  const data = await call<{ actor_id: string; enabled: boolean; merchants: BusinessMerchant[] }>(client, 'get_my_business_workspace_access');
+  if (typeof data.actor_id !== 'string' || typeof data.enabled !== 'boolean' || !Array.isArray(data.merchants)) throw new Error('MERCHANT_ACCESS_READ_FAILED');
+  if (data.actor_id !== userId) throw new Error('ACCOUNT_CHANGED');
+  return data;
+}
 export async function getMyMerchantAccess(client: SupabaseClient): Promise<boolean> {
   const { data, error } = await client.rpc('get_my_merchant_access');
   if (error) throw new Error(error.message);
