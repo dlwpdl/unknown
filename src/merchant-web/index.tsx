@@ -9,17 +9,19 @@ import { GlingLoader } from '@/components/gling-loader';
 import { captureMerchantNaverCallback, MerchantNaverCallback } from '@/components/merchant-naver-cafe';
 import { MerchantWorkspace } from '@/components/merchant-workspace';
 import { ThemedText } from '@/components/themed-text';
+import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { getMyMerchantAccess } from '@/lib/merchant-workspace';
+import { loadMerchantWebAccess, type MerchantWebAccess } from '@/lib/merchant-web-access';
 import { supabase } from '@/lib/supabase';
 
 export default function MerchantWebIndex() {
+  const { tr } = useLanguage();
   const router = useRouter();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const { me, isAuthed, isAuthLoading, authError, promptLogin, signOut } = useAuth();
-  const [access, setAccess] = useState<{ user: string; enabled: boolean; failed: boolean } | null>(null);
+  const [access, setAccess] = useState<{ user: string; value: MerchantWebAccess | null; failed: boolean } | null>(null);
   const [callback, setCallback] = useState(captureMerchantNaverCallback);
   const [connected, setConnected] = useState<{ user: string; merchantId: string } | null>(null);
   const [revision, setRevision] = useState(0), [signingOut, setSigningOut] = useState(false);
@@ -31,8 +33,8 @@ export default function MerchantWebIndex() {
     let active = true, request = 0;
     const check = () => {
       const latest = ++request;
-      void getMyMerchantAccess(supabase).then(enabled => { if (active && latest === request) setAccess({ user: me.id, enabled, failed: false }); })
-        .catch(() => { if (active && latest === request) setAccess({ user: me.id, enabled: false, failed: true }); });
+      void loadMerchantWebAccess(supabase, me.id).then(value => { if (active && latest === request) setAccess({ user: me.id, value, failed: false }); })
+        .catch(() => { if (active && latest === request) setAccess({ user: me.id, value: null, failed: true }); });
     };
     check();
     const app = AppState.addEventListener('change', state => { if (state === 'active') check(); });
@@ -50,41 +52,47 @@ export default function MerchantWebIndex() {
   }
   const retry = () => { play('selection'); setAccess(null); setRevision(value => value + 1); };
   return <View style={[styles.page, { backgroundColor: theme.background }]}>
-    <Head><title>비즈니스 관리 | gling</title><meta name="robots" content="noindex,nofollow" /></Head>
+    <Head><title>{tr('비즈니스 관리 | gling')}</title><meta name="robots" content="noindex,nofollow" /></Head>
     <View style={[styles.header, { borderColor: theme.line }]}>
       <View style={styles.headerContent}>
-        <View style={styles.brand}><Image source={require('@/assets/brand/gling-night-wordmark.png')} style={styles.wordmark} contentFit="contain" accessibilityLabel="글링" /><ThemedText type="smallBold">비즈니스 관리</ThemedText></View>
+        <View style={styles.brand}><Image source={require('@/assets/brand/gling-night-wordmark.png')} style={styles.wordmark} contentFit="contain" accessibilityLabel={tr('글링')} /><ThemedText type="smallBold">{tr('비즈니스 관리')}</ThemedText></View>
         {isAuthed && <View style={styles.account}>
           <ThemedText type="small" numberOfLines={1} style={styles.nickname}>{me.nickname}</ThemedText>
-          <Pressable analyticsId="merchant-web.ai" accessibilityRole="button" accessibilityLabel="AI 연결" onPress={() => { play('selection'); router.push('/ai'); }}
-            style={({ pressed }) => [styles.action, { borderColor: theme.line, opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold">AI 연결</ThemedText></Pressable>
-          <Pressable analyticsId="merchant-web.signout" accessibilityRole="button" accessibilityLabel="로그아웃" accessibilityState={{ disabled: signingOut }} disabled={signingOut} onPress={() => { void exit(); }}
+          <Pressable analyticsId="merchant-web.ai" accessibilityRole="button" accessibilityLabel={current?.value?.canConnectMcp ? tr('AI 연결') : tr('AI 연결 관리')} onPress={() => { play('selection'); router.push('/ai'); }}
+            style={({ pressed }) => [styles.action, { borderColor: theme.line, opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold">{current?.value?.canConnectMcp ? tr('AI 연결') : tr('AI 연결 관리')}</ThemedText></Pressable>
+          <Pressable analyticsId="merchant-web.signout" accessibilityRole="button" accessibilityLabel={tr('로그아웃')} accessibilityState={{ disabled: signingOut }} disabled={signingOut} onPress={() => { void exit(); }}
             style={({ pressed }) => [styles.action, { borderColor: theme.line, opacity: signingOut || pressed ? 0.65 : 1 }]}>
-            <ThemedText type="smallBold">{signingOut ? '로그아웃 중…' : '로그아웃'}</ThemedText>
+            <ThemedText type="smallBold">{signingOut ? tr('로그아웃 중…') : tr('로그아웃')}</ThemedText>
           </Pressable>
         </View>}
       </View>
     </View>
     <ScrollView analyticsId="merchant-web.workspace" contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      {authError && <ThemedText accessibilityRole="alert">{authError}</ThemedText>}
-      {isAuthLoading || isAuthed && !current ? <View style={styles.state}><GlingLoader accessibilityLabel="비즈니스 관리 권한을 확인하는 중" /><ThemedText themeColor="textSecondary">계정과 비즈니스를 확인하고 있어요.</ThemedText></View>
+      {authError && <ThemedText accessibilityRole="alert">{tr(authError)}</ThemedText>}
+      {isAuthLoading || isAuthed && !current ? <View style={styles.state}><GlingLoader accessibilityLabel={tr('비즈니스 관리 권한을 확인하는 중')} /><ThemedText themeColor="textSecondary">{tr('계정과 비즈니스를 확인하고 있어요.')}</ThemedText></View>
         : !isAuthed ? <View style={[styles.state, { backgroundColor: theme.card, borderColor: theme.line }]}>
-          <ThemedText type="title" accessibilityRole="header">가게 소식을 편하게 관리해요.</ThemedText>
-          <ThemedText themeColor="textSecondary">평소 쓰던 글링 계정으로 로그인하면 웹에서도 내 비즈니스의 글과 사진을 관리할 수 있어요.</ThemedText>
-          <Pressable analyticsId="merchant-web.login" accessibilityRole="button" accessibilityLabel="비즈니스 로그인" onPress={() => { play('selection'); promptLogin('내 비즈니스의 글과 사진을 관리해요.'); }}
+          <ThemedText type="title" accessibilityRole="header">{tr('가게 소식을 편하게 관리해요.')}</ThemedText>
+          <ThemedText themeColor="textSecondary">{tr('평소 쓰던 글링 계정으로 로그인하면 웹에서도 내 비즈니스의 글과 사진을 관리할 수 있어요.')}</ThemedText>
+          <Pressable analyticsId="merchant-web.login" accessibilityRole="button" accessibilityLabel={tr('비즈니스 로그인')} onPress={() => { play('selection'); promptLogin(tr('내 비즈니스의 글과 사진을 관리해요.')); }}
             style={({ pressed }) => [styles.primary, { backgroundColor: theme.accent, opacity: pressed ? 0.8 : 1 }]}>
-            <ThemedText type="smallBold" style={{ color: theme.accentInk }}>비즈니스 로그인</ThemedText>
+            <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr('비즈니스 로그인')}</ThemedText>
           </Pressable>
         </View>
-          : !current?.enabled ? <View style={[styles.state, { backgroundColor: theme.card, borderColor: theme.line }]}>
-            <ThemedText type="subtitle" accessibilityRole="header">{current?.failed ? '권한을 확인하지 못했어요' : '비즈니스 관리 권한이 필요해요'}</ThemedText>
-            <ThemedText themeColor="textSecondary">{current?.failed ? '연결 상태를 확인한 뒤 다시 시도해 주세요.' : '담당자가 이 계정의 비즈니스 관리 권한을 승인하면, 연결된 내 비즈니스를 관리할 수 있어요.'}</ThemedText>
-            <Pressable analyticsId="merchant-web.access.retry" accessibilityRole="button" accessibilityLabel="권한 다시 확인" onPress={retry}
-              style={({ pressed }) => [styles.action, { borderColor: theme.line, opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold">권한 다시 확인</ThemedText></Pressable>
+          : current?.failed || current?.value?.kind === 'member' ? <View style={[styles.state, { backgroundColor: theme.card, borderColor: theme.line }]}>
+            <ThemedText type="subtitle" accessibilityRole="header">{current?.failed ? tr('권한을 확인하지 못했어요') : tr('비즈니스 관리 권한이 필요해요')}</ThemedText>
+            <ThemedText themeColor="textSecondary">{current?.failed ? tr('연결 상태를 확인한 뒤 다시 시도해 주세요.') : tr('지금 로그인한 계정은 일반 회원이에요. 공개 글은 웹에서 읽고, 글쓰기·모임 참여·대화는 앱에서 이용해 주세요. 비즈니스 운영 권한은 담당자의 승인 후 열려요.')}</ThemedText>
+            {!current?.failed && <Pressable analyticsId="merchant-web.member.app" accessibilityRole="button" accessibilityLabel={tr('글링 앱 안내')} onPress={() => { play('selection'); window.location.assign('/#app'); }}
+              style={({ pressed }) => [styles.primary, { backgroundColor: theme.accent, opacity: pressed ? 0.8 : 1 }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr('글링 앱에서 이어가기')}</ThemedText></Pressable>}
+            <Pressable analyticsId="merchant-web.access.retry" accessibilityRole="button" accessibilityLabel={tr('권한 다시 확인')} onPress={retry}
+              style={({ pressed }) => [styles.action, { borderColor: theme.line, opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold">{tr('권한 다시 확인')}</ThemedText></Pressable>
           </View>
             : <>
+              {current?.value?.kind === 'unassigned' && <View style={[styles.state, { backgroundColor: theme.card, borderColor: theme.line }]}>
+                <ThemedText type="subtitle" accessibilityRole="header">{tr('관리할 비즈니스를 연결해 주세요')}</ThemedText>
+                <ThemedText themeColor="textSecondary">{tr('비즈니스 운영 승인은 완료됐어요. 아래에서 받은 초대를 확인하거나 비즈니스를 등록해 주세요. AI 신규 연결은 소유권 확인 후 이용할 수 있어요.')}</ThemedText>
+              </View>}
               {callback && <MerchantNaverCallback key={me.id} callback={callback} onConnected={merchantId => { setConnected({ user: me.id, merchantId }); setCallback(null); }} />}
-              <MerchantWorkspace key={`${me.id}:${initialMerchantId ?? ''}`} refreshSignal={revision} initialMerchantId={initialMerchantId} initialTab={initialMerchantId ? 'channels' : undefined} />
+              <MerchantWorkspace key={`${me.id}:${initialMerchantId ?? ''}`} refreshSignal={revision} initialMerchantId={initialMerchantId} initialTab={initialMerchantId ? 'channels' : undefined} assignedOnly onBusinessesChanged={() => setRevision(value => value + 1)} />
             </>}
     </ScrollView>
   </View>;
