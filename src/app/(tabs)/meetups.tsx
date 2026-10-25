@@ -10,6 +10,7 @@ import Reanimated, { FadeInDown, useReducedMotion } from 'react-native-reanimate
 import { ChillingEvent } from '@/components/chilling-event';
 import { GlassSurface } from '@/components/glass-surface';
 import { MeetupKindSwitch } from '@/components/meetup-kind-switch';
+import { ChatIdentitySwitcher } from '@/components/chat-identity-switcher';
 import { CityPicker } from '@/components/city-picker';
 import { MyMeetups } from '@/components/my-meetups';
 import { relationshipSlotData } from '@/components/relationship-slot-card';
@@ -192,6 +193,7 @@ function MeetupDiscovery({ destination, sourceInvalid }: { destination: MeetupDe
         <SymbolView name={{ ios: 'map', android: 'map', web: 'map' }} size={21} tintColor={theme.text} />
       </Pressable></GlassSurface>
       <GlassSurface tone="control" interactive style={styles.circleGlass}><Pressable analyticsId="app_tabs_meetups.pressable.2" accessibilityRole="button" accessibilityLabel={tr("내 모임 프로필")} onPress={() => { play('selection'); action('/meetup-profile'); }} style={({ pressed }) => [styles.circle, { backgroundColor: pressed ? 'rgba(255,255,255,0.13)' : 'transparent' }]}><ThemedText type="smallBold">{isAuthed ? me.nickname.slice(0, 1) : tr("나")}</ThemedText></Pressable></GlassSurface>
+      <ChatIdentitySwitcher target="business" />
       {/* 만들기는 화면당 하나뿐인 primary — 하단 고정 라벨 버튼이 맡고, 헤더에서는 뺐다. */}
     </View>
     {searchOpen && <Animated.View style={[styles.searchRow, { backgroundColor: theme.background, borderBottomColor: theme.line, opacity: reducedMotion ? 1 : searchMotion, transform: [{ translateY: searchMotion.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }) }, { scale: searchMotion.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1] }) }] }]}>

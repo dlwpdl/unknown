@@ -61,3 +61,39 @@ test('the web avatar remains absent and a native guest keeps its normal profile 
   nodes(tree).find(n => n.type === 'Pressable').props.onPress();
   assert.deepEqual(app.routes, ['/profile']);
 });
+
+test('the actual Meetups own-avatar keeps its meetup-profile action beside the shared profile menu', () => {
+  const source = ts.createSourceFile('meetups.tsx', readFileSync(new URL('../src/app/(tabs)/meetups.tsx', import.meta.url), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let header, action;
+  function visit(node) {
+    if (ts.isJsxElement(node) && node.openingElement.attributes.properties.some(attribute => ts.isJsxAttribute(attribute) && attribute.name.getText(source) === 'style' && attribute.initializer?.getText(source).includes('styles.headFixed'))) header = node;
+    if (ts.isVariableDeclaration(node) && node.name.getText(source) === 'action') action = node;
+    ts.forEachChild(node, visit);
+  }
+  visit(source);
+  assert.ok(header && action, 'Load the existing live Meetups header and its own route handler.');
+  const jsx = (type, props) => ({ type, props });
+  for (const isAuthed of [true, false]) {
+    const exports = {}, routes = [], feedback = [], login = [];
+    vm.runInNewContext(ts.transpileModule(`const ${action.getText(source)}; exports.render = () => (${header.getText(source)});`, {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+    }).outputText, {
+      exports, require: () => ({ jsx, jsxs: jsx }),
+      View: 'View', GlassSurface: 'GlassSurface', Pressable: 'Pressable', ThemedText: 'Text', SymbolView: 'Symbol', ChatIdentitySwitcher: 'ChatIdentitySwitcher',
+      styles: {}, theme: {}, compactHeader: true, searchOpen: false, city: { name: '밴쿠버' }, IconSize: { chevron: 14 },
+      destination: null, sourceInvalid: false, sourceLabel: '', isAuthed, me: { nickname: '개인' }, tr: value => value,
+      router: { push: value => routes.push(value) }, play: value => feedback.push(value), promptLogin: value => login.push(value), toggleSearch() {}, setCityPicker() {},
+    });
+    const children = exports.render().props.children;
+    const ownIndex = children.findIndex(child => nodes(child).some(node => node.props?.analyticsId === 'app_tabs_meetups.pressable.2'));
+    assert.ok(ownIndex >= 0);
+    assert.equal(children[ownIndex + 1]?.type, 'ChatIdentitySwitcher');
+    assert.equal(children[ownIndex + 1].props.target, 'business');
+    const own = nodes(children[ownIndex]).find(node => node.props?.analyticsId === 'app_tabs_meetups.pressable.2');
+    assert.equal(own.props.accessibilityLabel, '내 모임 프로필');
+    own.props.onPress();
+    assert.deepEqual(routes, isAuthed ? ['/meetup-profile'] : []);
+    assert.equal(login.length, isAuthed ? 0 : 1);
+    assert.deepEqual(feedback, ['selection']);
+  }
+});
