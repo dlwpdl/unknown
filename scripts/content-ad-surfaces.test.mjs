@@ -47,7 +47,7 @@ function mount(file, component, imports, globals = {}, props = {}) {
     'expo-asset': { Asset: { fromModule: () => ({ uri: 'local.png' }) } },
     '@/lib/discovery-sort': discoverySort,
     '@/lib/delivery-partners': { DELIVERY_PARTNERS: [], deliveryPartnerPlace: () => undefined },
-    '@/lib/webshops': { bindBusinessPlaces, loadCityBusinessLinks: async () => ({}), loadCityWebshops: async () => [] },
+    '@/lib/webshops': { bindBusinessPlaces, loadCityBusinessLinks: async () => ({}), loadCityBusinessMapPhotos: async () => ({}), loadCityWebshops: async () => [] },
     '@/components/selection-chip': { SelectionChip: 'Pressable' },
     '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' },
     '@/components/feed-ad': { FeedAd: 'FeedAd' }, '@/lib/content-ad-placement': { contentAdPosition },

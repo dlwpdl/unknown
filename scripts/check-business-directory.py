@@ -7,12 +7,17 @@ import subprocess
 import sys
 import time
 import uuid
+import argparse
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = 'supabase_db_gling'
 CONTAINER = 'gling-directory-check-' + uuid.uuid4().hex[:12]
 DATABASE = 'directory_check'
 IMAGE = 'public.ecr.aws/supabase/postgres:17.6.1.165'
+parser = argparse.ArgumentParser()
+parser.add_argument('--map-photo', action='store_true')
+parser.add_argument('--schema', type=Path, help='Existing schema-only SQL snapshot for offline checks')
+options = parser.parse_args()
 
 
 def command(args, source=None, check=True):
@@ -29,10 +34,11 @@ def sql(_database, source, check=True):
 
 try:
     # Read only schema and role names; no user records, credentials or shared DB writes.
-    dump = command(['docker', 'exec', SOURCE, 'pg_dump', '-U', 'supabase_admin', '-d', 'postgres',
+    dump = options.schema.read_text() if options.schema else command(['docker', 'exec', SOURCE, 'pg_dump', '-U', 'supabase_admin', '-d', 'postgres',
                     '--schema-only', '--no-publications', '--no-subscriptions', '--exclude-extension=pg_cron',
                     '--exclude-extension=pg_net', '--exclude-schema=cron', '--exclude-schema=net']).stdout
-    roles = command(['docker', 'exec', SOURCE, 'psql', '-X', '-qAt', '-U', 'supabase_admin', '-d', 'postgres',
+    assert not re.search(r'^-- Data for Name:|^COPY .* FROM stdin;$', dump, re.M), 'Use a schema-only pg_dump snapshot without row data'
+    roles = sorted(set(re.findall(r'\bTO ([a-z_][a-z_0-9]*)(?:;| WITH)', dump))) if options.schema else command(['docker', 'exec', SOURCE, 'psql', '-X', '-qAt', '-U', 'supabase_admin', '-d', 'postgres',
                      '-c', "select rolname from pg_roles where rolname !~ '^pg_';"]).stdout.splitlines()
     command(['docker', 'run', '--pull', 'never', '--rm', '-d', '--name', CONTAINER, '--network', 'none', '-e',
              'POSTGRES_PASSWORD=directory-local-only', IMAGE, 'postgres', '-c', 'config_file=/etc/postgresql/postgresql.conf'])
@@ -46,7 +52,13 @@ try:
         name = role.replace('"', '""')
         literal = role.replace("'", "''")
         sql(DATABASE, f'''do $$ begin if not exists(select 1 from pg_roles where rolname='{literal}') then create role "{name}" nologin; end if; end $$;''')
+    if options.schema:
+        sql(DATABASE, 'create schema if not exists extensions; create extension if not exists pgtap with schema extensions; create extension if not exists citext with schema public; create extension if not exists pg_trgm with schema extensions; create extension if not exists pgcrypto with schema extensions;')
     sql(DATABASE, dump)
+    if options.schema:
+        # The cached no-owner dump predates current postgres-owned capability callers.
+        sql(DATABASE, "do $$ declare p record; begin for p in select oid::regprocedure signature from pg_proc where pronamespace in ('public'::regnamespace,'private'::regnamespace) loop execute format('alter function %s owner to postgres',p.signature); end loop; end $$;")
+        sql(DATABASE, "do $$ declare r record; begin for r in select oid::regclass name,case relkind when 'v' then 'view' when 'm' then 'materialized view' else 'table' end kind from pg_class where relnamespace in ('public'::regnamespace,'private'::regnamespace) and relkind in ('r','p','v','m') loop execute format('alter %s %s owner to postgres',r.kind,r.name); end loop; end $$;")
     # Reuse the existing prerequisite collector, redirected entirely to this container.
     helper = runpy.run_path(str(ROOT / 'scripts/check-admin-partnerships.py'))
     helper['sql'].__globals__['CONTAINER'] = CONTAINER
@@ -84,9 +96,13 @@ try:
         preparation += '\n' + function + conversations.split(function, 1)[1].split('$$;', 1)[0] + '$$;\n'
     sql(DATABASE, 'begin;\n' + preparation + '\ncommit;')
     sql(DATABASE, (migrations / '20261024002000_business_directory.sql').read_text())
-    result = sql(DATABASE, (ROOT / 'supabase/tests/business_directory.test.sql').read_text(), False)
+    if options.map_photo:
+        sql(DATABASE, (migrations / '20261018042000_business_chat_profiles.sql').read_text())
+        sql(DATABASE, (migrations / '20261024030000_merchant_map_photo.sql').read_text())
+    test_file = 'merchant_map_photo.test.sql' if options.map_photo else 'business_directory.test.sql'
+    result = sql(DATABASE, (ROOT / 'supabase/tests' / test_file).read_text(), False)
     output = result.stdout + result.stderr
-    log = Path('/tmp/gling-business-directory-sql-output.txt')
+    log = Path('/tmp/gling-map-photo-sql-output.txt' if options.map_photo else '/tmp/gling-business-directory-sql-output.txt')
     log.write_text(output)
     assert result.returncode == 0, output[-10000:]
     assert not re.search(r'^\s*not ok \d+', output, re.M), output

@@ -377,7 +377,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
       } catch (failure) { if (mounted.current) setRevision((v) => v + 1); throw failure; }
     }, chosen.naver || chosen.daum ? '글링에 게시했어요. 카페는 원고 복사 후 직접 등록해 주세요.' : '글링에 게시했어요.');
   }
-  async function openDraft(draft?: MerchantDraft) {
+  async function openDraft(draft?: MerchantDraft, direct = false) {
     if (busyRef.current) return;
     busyRef.current = true; setBusy(true);
     try {
@@ -395,7 +395,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
       if (!mounted.current) return;
       setEditor(draft ? { ...draft, original_url: draft.original_url ?? '', image_paths: paths } : emptyDraft());
       setDraftPhotos(nextPhotos); setOpenedDraft(draft ?? null); editorReload.current = null;
-      setDraftStep(draft ? 'edit' : 'idea'); setFacts(''); setAiDraftReady(false); setDraftOptions(false);
+      setDraftStep(draft || direct ? 'edit' : 'idea'); setFacts(''); setAiDraftReady(false); setDraftOptions(false);
       setChannels({ gling: true, naver: false, daum: false }); setPreparedChannels(null);
       setDirty(false); setExternalUrl(draft?.external_url ?? ''); setError('');
       setDraftView('composer'); setTab('drafts');
@@ -486,9 +486,10 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
     {error && <><ThemedText accessibilityRole="alert">{tr(error)}</ThemedText><Action label={tr("자료 새로 확인")} disabled={busy} onPress={() => { setError(''); setRevision((v) => v + 1); }} /></>}{notice && <ThemedText accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
     {activeTab === 'overview' && <>
       <ThemedText type="subtitle">{tr("가게 소식을 전해보세요")}</ThemedText>
-      <ThemedText themeColor="textSecondary">{tr("알릴 내용을 적으면 AI가 초안을 도와드려요.")}</ThemedText>
+      <ThemedText themeColor="textSecondary">{tr("이 비즈니스 이름으로 새 소식을 작성해요.")}</ThemedText>
       {!isAdmin && data.merchant.owner_verified_at && <Action label={tr('비즈니스 대화함')} disabled={busy} onPress={() => { void openBusinessInbox(); }} />}
-      <Action primary label={tr("홍보글 작성")} disabled={busy} onPress={() => { void openDraft(); }} />
+      <Action primary label={tr("비즈니스 글쓰기")} disabled={busy} onPress={() => { void openDraft(undefined, true); }} />
+      <Action label={tr("사진 관리")} disabled={busy} onPress={() => { setNotice(''); setTab('profile'); }} />
       {dirty && <Action label={tr("작성 중인 초안 이어쓰기")} disabled={busy} onPress={() => { setDraftView('composer'); setTab('drafts'); }} />}
       <Section title={tr("비즈니스 관리")}>
         {([

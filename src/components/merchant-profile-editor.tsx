@@ -2,6 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useEffect, useRef, useState } from 'react';
 import { Linking, Platform, StyleSheet, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Pressable } from '@/components/analytics-controls';
 import { MerchantProfileHeader } from '@/components/merchant-profile-header';
@@ -9,14 +10,14 @@ import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { loadMyMerchantProfile, saveMyMerchantProfile, uploadMerchantProfileImage, type MyMerchantProfile } from '@/lib/merchant-profile-editor';
+import { loadMyMerchantProfile, saveMyMerchantProfile, saveMyMerchantProfilePhotos, uploadMerchantProfileImage, type MyMerchantProfile } from '@/lib/merchant-profile-editor';
 import { saveMerchantContact } from '@/lib/merchant-conveniences';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
 import { supabase } from '@/lib/supabase';
 
 type Photo = { path: string | null; uri: string | null; image?: PreparedImage };
-type Photos = { avatar: Photo; banner: Photo };
-const savedPhotos = (profile: MyMerchantProfile): Photos => ({ avatar: { path: profile.avatar_path, uri: profile.avatarUri }, banner: { path: profile.banner_path, uri: profile.bannerUri } });
+type Photos = { avatar: Photo; banner: Photo; map: Photo };
+const savedPhotos = (profile: MyMerchantProfile): Photos => ({ avatar: { path: profile.avatar_path, uri: profile.avatarUri }, banner: { path: profile.banner_path, uri: profile.bannerUri }, map: { path: profile.map_photo_path ?? null, uri: profile.mapPhotoUri ?? null } });
 
 function ProfileAction({ label, onPress, disabled = false, primary = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean }) {
 
@@ -44,7 +45,7 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState('');
   const mounted = useRef(true), working = useRef(false), draft = useRef<Photos | null>(null), uploads = useRef(new Set<string>());
   const change = (next: Photos | null) => { draft.current = next; setPhotos(next); setNotice(''); };
-  const photoDirty = !!profile && !!photos && (!!photos.avatar.image || !!photos.banner.image || photos.avatar.path !== profile.avatar_path || photos.banner.path !== profile.banner_path);
+  const photoDirty = !!profile && !!photos && (!!photos.avatar.image || !!photos.banner.image || !!photos.map.image || photos.avatar.path !== profile.avatar_path || photos.banner.path !== profile.banner_path || photos.map.path !== (profile.map_photo_path ?? null));
   const contactDirty = !!profile && !!contact && (contact.phone !== (profile.public_phone ?? '') || contact.hours !== (profile.business_hours ?? ''));
   const dirty = photoDirty || contactDirty;
   const changeContact = (next: { phone: string; hours: string }) => { contactDraft.current = next; setContact(next); setNotice(''); };
@@ -94,7 +95,7 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
       const session = await supabase.auth.getSession();
       if (!mounted.current || session.data.session?.user.id !== me.id) throw new Error('ACCOUNT_CHANGED');
       let next = draft.current;
-      for (const kind of ['avatar', 'banner'] as const) {
+      for (const kind of ['avatar', 'banner', 'map'] as const) {
         const photo = next[kind];
         if (!photo.image) continue;
         const path = await uploadMerchantProfileImage(supabase, me.id, merchantId, photo.image);
@@ -102,10 +103,12 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
         if (!mounted.current) { void supabase.storage.from('merchant-profile-images').remove([path]).catch(() => {}); return; }
         next = { ...next, [kind]: { path, uri: photo.uri } }; change(next);
       }
-      const saved = await saveMyMerchantProfile(supabase, merchantId, { avatarPath: next.avatar.path, bannerPath: next.banner.path, updatedAt: profile.updated_at });
+      const patch = { avatarPath: next.avatar.path, bannerPath: next.banner.path, mapPhotoPath: next.map.path, updatedAt: profile.updated_at };
+      const saved = next.map.path !== (profile.map_photo_path ?? null)
+        ? await saveMyMerchantProfilePhotos(supabase, merchantId, patch) : await saveMyMerchantProfile(supabase, merchantId, patch);
       if (!mounted.current) return;
       setProfile(saved); change(savedPhotos(saved)); setNotice("프로필 사진을 저장했어요. 공개 가능한 비즈니스 프로필에 표시돼요."); play('success');
-      const old = [profile.avatar_path, profile.banner_path, ...uploads.current].filter((path): path is string => !!path);
+      const old = [profile.avatar_path, profile.banner_path, profile.map_photo_path, ...uploads.current].filter((path): path is string => !!path);
       if (old.length) void supabase.storage.from('merchant-profile-images').remove([...new Set(old)]).catch(() => {});
     } catch (failure) {
       if (!mounted.current) return;
@@ -155,13 +158,17 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
         {!profile.can_edit && <ThemedText type="small" themeColor="textSecondary">{tr("비즈니스 계정과 소유 확인이 완료되면 사진을 바꿀 수 있어요.")}</ThemedText>}
         {profile.can_edit && <>
           <ThemedText type="small" themeColor="textSecondary">{tr("배너는 가운데 기준의 가로 화면, 로고는 원형으로 보여요. 저장 전 미리보기에서 확인해 주세요.")}</ThemedText>
-          {(['banner', 'avatar'] as const).map((kind) => <View key={kind} style={styles.row}>
-            <ThemedText type="smallBold">{kind === 'banner' ? tr("채널 배너") : tr("가게 로고")}</ThemedText>
+          {(['banner', 'avatar', 'map'] as const).map((kind) => <View key={kind} style={styles.row}>
+            <ThemedText type="smallBold">{kind === 'banner' ? tr("채널 배너") : kind === 'avatar' ? tr("가게 로고") : tr("지도 대표 사진")}</ThemedText>
+            {kind === 'map' && photos.map.uri && <Image source={{ uri: photos.map.uri }} style={styles.mapPhoto} contentFit="cover" accessibilityLabel={tr("지도 대표 사진 미리보기")}
+              onError={() => { if (!draft.current || draft.current.map.uri !== photos.map.uri) return;
+                setProfile(current => current ? { ...current, imageLoadFailed: true } : current); change({ ...draft.current, map: { ...draft.current.map, uri: null } }); }} />}
             <View style={styles.actions}>
-              <ProfileAction label={tr("{0} {1}", (kind === 'banner' ? tr('배너') : tr('로고')), (photos[kind].uri || photos[kind].path ? tr('교체') : tr('선택')))} onPress={() => { void choose(kind); }} disabled={busy} />
-              {(photos[kind].uri || photos[kind].path) && <ProfileAction label={tr("{0} 제거", (kind === 'banner' ? tr('배너') : tr('로고')))} onPress={() => change({ ...photos, [kind]: { path: null, uri: null } })} disabled={busy} />}
+              <ProfileAction label={tr("{0} {1}", (kind === 'banner' ? tr('배너') : kind === 'avatar' ? tr('로고') : tr('지도 사진')), (photos[kind].uri || photos[kind].path || photos[kind].image ? tr('교체') : tr('선택')))} onPress={() => { void choose(kind); }} disabled={busy} />
+              {(photos[kind].uri || photos[kind].path || photos[kind].image) && <ProfileAction label={tr("{0} 제거", (kind === 'banner' ? tr('배너') : kind === 'avatar' ? tr('로고') : tr('지도 사진')))} onPress={() => change({ ...photos, [kind]: { path: null, uri: null } })} disabled={busy} />}
             </View>
           </View>)}
+          <ThemedText type="small" themeColor="textSecondary">{tr("지도 대표 사진은 연결된 장소 카드에 표시돼요. 사진을 제거하면 기존 장소 사진을 사용해요.")}</ThemedText>
           <View style={styles.actions}>
             <ProfileAction label={busy ? tr("처리 중…") : tr("프로필 사진 저장")} onPress={() => { void save(); }} disabled={busy || !photoDirty} primary={photoDirty} />
             {dirty && <ProfileAction label={tr("수정 취소")} onPress={cancel} disabled={busy} />}
@@ -193,6 +200,7 @@ const styles = StyleSheet.create({
   section: { borderWidth: 1, borderRadius: 14, padding: 16, gap: 16 },
   row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  mapPhoto: { width: 72, height: 72, borderRadius: 10 },
   button: { minHeight: 44, minWidth: 44, paddingHorizontal: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderRadius: 10 },
   contact: { gap: 8, paddingTop: 12 }, input: { minHeight: 48, borderWidth: 1, borderRadius: 8, padding: 12 },
   hours: { minHeight: 100, textAlignVertical: 'top' },
