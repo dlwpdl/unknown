@@ -220,14 +220,15 @@ const bundledPhotos: Record<string, number> = {
 
 export function CityPlacePhoto({ place, style, contentFit = 'cover' }: { place: CityPlace; style?: StyleProp<ViewStyle>; contentFit?: ImageProps['contentFit'] }) {
   const { tr } = useLanguage();
-  const theme = useTheme(), [failedImage, setFailedImage] = useState<string | null>(null);
-  const uri = place.photo?.uri;
-  const localSource = place.photo ? bundledPhotos[place.photo.imageSha256] : undefined;
+  const theme = useTheme(), [failedImages, setFailedImages] = useState<string[]>([]);
+  const mapPhoto = place.mapPhotoUri && !failedImages.includes(place.mapPhotoUri) ? place.mapPhotoUri : undefined;
+  const uri = mapPhoto ?? place.photo?.uri;
+  const localSource = !mapPhoto && place.photo ? bundledPhotos[place.photo.imageSha256] : undefined;
   const imageKey = localSource ? place.photo?.imageSha256 : uri;
   return <View style={[styles.frame, { backgroundColor: theme.backgroundElement }, style]}>
-    {imageKey && failedImage !== imageKey
-      ? <Image source={localSource ?? { uri }} style={StyleSheet.absoluteFill} contentFit={contentFit} cachePolicy="memory-disk"
-          recyclingKey={imageKey} transition={0} accessibilityLabel={tr("{0} 사진", (place.name))} onError={() => setFailedImage(imageKey)} />
+    {imageKey && !failedImages.includes(imageKey)
+      ? <Image source={localSource ?? { uri }} style={StyleSheet.absoluteFill} contentFit={contentFit} cachePolicy={mapPhoto ? 'none' : 'memory-disk'}
+          recyclingKey={imageKey} transition={0} accessibilityLabel={tr("{0} 사진", (place.name))} onError={() => setFailedImages(previous => [...previous, imageKey])} />
       : <SymbolView name={{ ios: 'photo', android: 'image', web: 'image' }} size={24} tintColor={theme.textSecondary} />}
   </View>;
 }

@@ -9,7 +9,7 @@ export type MerchantAccountInvitation = {
 };
 export type MyMerchantConnections = {
   user_id: string;
-  merchants: { id: string; name: string; city_name: string; role: MerchantAccountRole | 'admin' }[];
+  merchants: { id: string; name: string; city_name: string; role: MerchantAccountRole | 'admin'; avatar_path?: string | null }[];
   invitations: MerchantAccountInvitation[];
 };
 export type MerchantAccountConnections = {

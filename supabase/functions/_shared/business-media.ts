@@ -16,7 +16,7 @@ export async function serveBusinessMedia(request: Request, client: MediaClient):
   if (request.method !== 'GET') return fail(405);
   const params = new URL(request.url).searchParams;
   const id = params.get('id') ?? '', kind = params.get('kind'), position = params.get('index') ?? '0', version = params.get('v') ?? '';
-  if (!UUID.test(id) || !['post', 'avatar', 'banner'].includes(kind ?? '') || !/^([0-9]|1[0-9])$/.test(position)
+  if (!UUID.test(id) || !['post', 'avatar', 'banner', 'map'].includes(kind ?? '') || !/^([0-9]|1[0-9])$/.test(position)
     || (kind !== 'post' && position !== '0') || !/^[0-9a-f]{32}$/i.test(version)) return fail(400);
   try {
     let viewer: string | null = null;

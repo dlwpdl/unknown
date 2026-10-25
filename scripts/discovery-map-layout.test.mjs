@@ -19,11 +19,11 @@ const text = node => node == null || typeof node === 'boolean' ? '' : typeof nod
 const control = (tree, label) => { const result = nodes(tree).find(node => node.props?.accessibilityLabel === label || node.type === 'Pressable' && text(node).trim() === label); assert.ok(result, `Missing control: ${label}`); return result; };
 
 // Render the actual route and run its handlers; only native/external services are replaced.
-function mount({ light = false, reduced = false, places = [], business = {}, origin = { latitude: 49.25, longitude: -122.86 }, registryReady = true, onClose, loadWebshops = async () => [] } = {}) {
+function mount({ light = false, reduced = false, places = [], business = {}, origin = { latitude: 49.25, longitude: -122.86 }, registryReady = true, onClose, loadWebshops = async () => [], loadLinks = async () => ({}), loadPhotos = async () => ({}) } = {}) {
   const routes = [], state = [], feedback = [], alerts = [], memoValues = [], effects = [], focusEffects = [];
-  let index = 0;
+  let index = 0, focused = true, viewer = 'guest', city = { id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver' };
   const theme = { background: light ? '#fff' : '#0B0B12', card: light ? '#fff' : '#171722', backgroundElement: '#222231', backgroundSelected: '#343443', text: '#F6F3F0', textSecondary: '#B7B4C3', accent: '#CBB9FF', accentInk: '#171123', line: '#343443' };
-  const hooks = { useState(initial) { const slot = index++; if (!(slot in state)) { const value = typeof initial === 'function' ? initial() : initial; state[slot] = value && typeof value === 'object' && 'ready' in value && 'shops' in value ? { ...value, ready: registryReady } : value; } return [state[slot], next => { state[slot] = typeof next === 'function' ? next(state[slot]) : next; }]; }, useRef: current => ({ current }), useMemo: fn => { const value = fn(); memoValues.push(value); return value; }, useCallback: fn => fn, useEffect: (fn, deps) => effects.push({ fn, deps }) };
+  const hooks = { useState(initial) { const slot = index++; if (!(slot in state)) { const value = typeof initial === 'function' ? initial() : initial; state[slot] = value && typeof value === 'object' && 'ready' in value && 'shops' in value ? { ...value, key: 'vancouver:guest', ready: registryReady } : value; } return [state[slot], next => { state[slot] = typeof next === 'function' ? next(state[slot]) : next; }]; }, useRef: current => ({ current }), useMemo: fn => { const value = fn(); memoValues.push(value); return value; }, useCallback: fn => fn, useEffect: (fn, deps) => effects.push({ fn, deps }) };
   const jsx = (type, props, key) => ({ type, props, key });
   const imports = {
     react: hooks, 'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
@@ -32,13 +32,13 @@ function mount({ light = false, reduced = false, places = [], business = {}, ori
     'expo-web-browser': {}, '@/lib/merchant-source': {}, '@/lib/public-seo': {},
     '../../supabase/functions/_shared/ticketmaster': {},
     'react-native-reanimated': { useReducedMotion: () => reduced },
-    'expo-router': { useFocusEffect: fn => focusEffects.push(fn), useIsFocused: () => true, useLocalSearchParams: () => ({}), useRouter: () => ({ push: route => routes.push(route) }) },
+    'expo-router': { useFocusEffect: fn => focusEffects.push(fn), useIsFocused: () => focused, useLocalSearchParams: () => ({}), useRouter: () => ({ push: route => routes.push(route) }) },
     '@/lib/mock': { CITIES: [] },
     '@/constants/theme': { Colors: { dark: { ...theme, card: '#171722' }, light: theme } }, '@/constants/design-system': designSystem, '@/hooks/use-language': { useLanguage: () => ({ tr }) },
     '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' },
     '@/components/selection-chip': { SelectionChip: 'Pressable' },
     '@/lib/delivery-partners': { DELIVERY_PARTNERS: [], deliveryPartnerPlace: () => undefined },
-    '@/lib/webshops': { bindBusinessPlaces: (...args) => bindBusinessPlaces(...args).map(item => ({ ...item, ...business[item.sourceId] })), loadCityBusinessLinks: async () => ({}), loadCityWebshops: loadWebshops },
+    '@/lib/webshops': { bindBusinessPlaces: (...args) => bindBusinessPlaces(...args).map(item => ({ ...item, ...business[item.sourceId] })), loadCityBusinessLinks: loadLinks, loadCityBusinessMapPhotos: loadPhotos, loadCityWebshops: loadWebshops },
     '@/components/discovery-map': { DiscoveryMap: 'DiscoveryMap' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
     '@/components/city-place-photo': { CityPlacePhoto: 'CityPlacePhoto' },
     '@/components/feed-ad': { FeedAd: 'FeedAd' }, '@/lib/ads': { adsSupported: false }, '@/lib/content-ad-placement': { contentAdPosition },
@@ -46,8 +46,8 @@ function mount({ light = false, reduced = false, places = [], business = {}, ori
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: {} }, '@/lib/translation-source': {},
     '@/components/themed-text': { ThemedText: 'Text' }, '@/hooks/use-theme': { useTheme: () => theme },
     '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
-    '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'guest' }, promptLogin() {} }) },
-    '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver' } }) },
+    '@/lib/auth': { useAuth: () => ({ isAuthed: viewer !== 'guest', me: { id: viewer }, promptLogin() {} }) },
+    '@/lib/community-city': { useCommunityCity: () => ({ city }) },
     '@/lib/discovery': discovery, '@/lib/discovery-sort': discoverySort, '@/lib/post-maps': postMaps, '@/lib/city-places': { getCityDiscoveryPlaces: () => places }, '@/lib/city-top25': { cityTop25Recommendations: () => [] }, '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 }, '@/lib/discovery-data': {}, '@/lib/feed-data': {},
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) }, '@/lib/location': location, '@/lib/supabase': { supabase: {} },
     '@/lib/ticketmaster': { EVENT_CITIES: { vancouver: {} } }, '@/components/post-ad-label': {}, '@/lib/hashtags': { hasAdLabel: () => false },
@@ -55,7 +55,7 @@ function mount({ light = false, reduced = false, places = [], business = {}, ori
   const exports = {};
   const code = ts.transpileModule(source + '\nexports.CityMap = CityMap; exports.DiscoveryCard = DiscoveryCard; exports.GlingVisitedBadge = GlingVisitedBadge;', { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(code, { exports, Date, AbortController, setTimeout, clearTimeout, require: name => { if (name.startsWith('@/assets/')) return name; assert.ok(Object.hasOwn(imports, name), name); return imports[name]; } });
-  return { render() { index = 0; memoValues.length = 0; effects.length = 0; focusEffects.length = 0; return exports.CityMap({ city: imports['@/lib/community-city'].useCommunityCity().city, onClose }); }, renderCard(item, distance) { index = 0; return exports.DiscoveryCard({ item, distance, viewerScope: 'guest', onOpen() {} }); }, renderBadge(selected) { index = 0; return exports.GlingVisitedBadge({ selected }); }, get days() { return memoValues[0]; }, get registryDependencies() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).deps; }, readRegistry() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).fn(); }, readResults() { return focusEffects.find(fn => String(fn).includes('loadPage(null)'))(); }, feedback, alerts, routes };
+  return { render() { index = 0; memoValues.length = 0; effects.length = 0; focusEffects.length = 0; return exports.CityMap({ city: imports['@/lib/community-city'].useCommunityCity().city, onClose }); }, renderCard(item, distance) { index = 0; return exports.DiscoveryCard({ item, distance, viewerScope: 'guest', onOpen() {} }); }, renderBadge(selected) { index = 0; return exports.GlingVisitedBadge({ selected }); }, get days() { return memoValues[0]; }, get registryDependencies() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).deps; }, readRegistry() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).fn(); }, readResults() { return focusEffects.find(fn => String(fn).includes('loadPage(null)'))(); }, setCity: id => { city = { ...city, id }; }, setViewer: id => { viewer = id; }, setFocused: value => { focused = value; }, feedback, alerts, routes };
 }
 
 test('main categories toggle independently and event dates belong to the festival category', () => {
@@ -339,6 +339,44 @@ test('delivery registry pending, failure and retry are distinct from a successfu
   assert.ok(!nodes(tree).some(node => node.type === 'StateCard' && node.props.kind === 'error'));
   assert.ok(nodes(tree).some(node => node.type === 'StateCard' && node.props.title === '아직 배달 할인 가게가 없어요'), 'only a successful zero-row read shows an empty list');
   stopRead(); stopRetry(); finishResults(); finishRetryResults();
+});
+
+test('map photos batch by city, refresh after returning, and clear on removal or failure', async () => {
+  const place = { id: 'osm:node:100', cityId: 'vancouver', name: 'Photo branch', category: 'cafe', address: 'A', latitude: 49.25, longitude: -122.86, sourceUrl: 'https://www.openstreetmap.org/node/100', photo: { uri: 'original' } };
+  const merchantId = 'a3310000-0000-4000-8000-000000000001';
+  let reads = 0, version = 'one';
+  const view = mount({ places: [place], loadLinks: async () => ({ [place.id]: merchantId }), loadPhotos: async (_client, cityId) => {
+    reads++; if (version === 'offline') throw Error('offline');
+    return version === 'removed' ? {} : { [place.id]: { cityId, merchantId, uri: version } };
+  } });
+  const selected = () => { const tree = view.render(); nodes(tree).find(n => n.type === 'DiscoveryMap').props.onSelect(`place:vancouver:${place.id}`); return nodes(view.render()).find(n => n.type?.name === 'DiscoveryCard').props.item; };
+  view.render(); let stop = view.readRegistry(); await new Promise(setImmediate);
+  assert.equal(selected().place.mapPhotoUri, 'one');
+  view.render(); view.render(); assert.equal(reads, 1, 'renders do not fetch per card');
+  stop(); view.setFocused(false); view.render(); view.setFocused(true); view.render(); version = 'two'; stop = view.readRegistry(); await new Promise(setImmediate);
+  assert.equal(selected().place.mapPhotoUri, 'two');
+  view.setViewer('second-viewer'); assert.equal(selected().place.mapPhotoUri, undefined, 'a previously loaded image is hidden before the next account reads');
+  view.setViewer('guest');
+  for (const next of ['removed', 'offline']) {
+    stop(); view.render(); version = next; stop = view.readRegistry(); await new Promise(setImmediate);
+    assert.equal(selected().place.mapPhotoUri, undefined);
+    assert.equal(selected().place.photo.uri, 'original');
+  }
+  stop();
+});
+
+test('late map photo reads cannot attach to another city or viewer', async () => {
+  const place = { id: 'osm:node:100', cityId: 'vancouver', name: 'Photo branch', category: 'cafe', address: 'A', latitude: 49.25, longitude: -122.86, sourceUrl: 'https://www.openstreetmap.org/node/100' };
+  const merchantId = 'a3310000-0000-4000-8000-000000000001', pending = [];
+  const view = mount({ places: [place], loadLinks: async () => ({ [place.id]: merchantId }), loadPhotos: (_client, cityId, signal) => new Promise(resolve => pending.push({ cityId, signal, resolve })) });
+  view.render(); const stop = view.readRegistry();
+  view.setViewer('different-viewer'); view.render(); stop();
+  pending[0].resolve({ [place.id]: { cityId: place.cityId, merchantId, uri: 'private-to-previous-scope' } }); await new Promise(setImmediate);
+  assert.equal(pending[0].signal.aborted, true);
+  let tree = view.render(); nodes(tree).find(n => n.type === 'DiscoveryMap').props.onSelect(`place:vancouver:${place.id}`); tree = view.render();
+  assert.equal(nodes(tree).find(n => n.type?.name === 'DiscoveryCard').props.item.place.mapPhotoUri, undefined);
+  const dependencies = view.registryDependencies;
+  view.setCity('toronto'); view.render(); assert.notDeepEqual(view.registryDependencies, dependencies);
 });
 
 

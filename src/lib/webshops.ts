@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { merchantEventId } from './merchant-source.ts';
 import type { DiscoveryItem } from './discovery.ts';
+import { businessMediaUrl } from './business-media.ts';
 
 export type WebshopItem = { id: string; name: string; uberCents: number; webCents: number };
 export type CheckoutQuote = { itemsCents: number; deliveryCents: number; serviceCents: number; discountCents: number; taxCents: number; tipCents: number; totalCents: number };
@@ -92,6 +93,23 @@ export async function loadCityBusinessLinks(client: SupabaseClient, cityId: stri
   return parseBusinessPlaceLinks(data);
 }
 
+export type BusinessMapPhotos = Record<string, { merchantId: string; cityId: string; uri: string }>;
+export async function loadCityBusinessMapPhotos(client: SupabaseClient, cityId: string, signal?: AbortSignal): Promise<BusinessMapPhotos> {
+  const request = client.rpc('get_city_business_map_photos', { p_city_id: cityId });
+  const { data, error } = await (signal ? request.abortSignal(signal) : request);
+  if (error?.code === 'PGRST202') return {};
+  if (error) throw error;
+  if (!Array.isArray(data) || data.length > 1000) throw new Error('INVALID_BUSINESS_MAP_PHOTOS');
+  const photos: BusinessMapPhotos = {};
+  for (const row of data) {
+    const uri = typeof row?.photoPath === 'string' ? businessMediaUrl(row.photoPath) : null;
+    if (!row || row.cityId !== cityId || !PLACE_KEY.test(row.placeKey) || !UUID.test(row.merchantId)
+      || !uri || !row.photoPath.startsWith(`business-profile/${row.merchantId}/map/`) || photos[row.placeKey]) throw new Error('INVALID_BUSINESS_MAP_PHOTOS');
+    photos[row.placeKey] = { merchantId: row.merchantId, cityId, uri };
+  }
+  return photos;
+}
+
 export async function loadCityWebshops(client: SupabaseClient, cityId: string, signal?: AbortSignal): Promise<Webshop[]> {
   const request = client.rpc('get_city_webshops', { p_city_id: cityId });
   const { data, error } = await (signal ? request.abortSignal(signal) : request);
@@ -101,14 +119,16 @@ export async function loadCityWebshops(client: SupabaseClient, cityId: string, s
   return data.map(value => { const shop = parseWebshop(value); return shop?.cityId === cityId ? shop : invalid(); });
 }
 
-export function bindBusinessPlaces(items: DiscoveryItem[], links: Record<string, string>, shops: Webshop[]): DiscoveryItem[] {
+export function bindBusinessPlaces(items: DiscoveryItem[], links: Record<string, string>, shops: Webshop[], photos: BusinessMapPhotos = {}): DiscoveryItem[] {
   const result: DiscoveryItem[] = [], branches = new Map<string, number>();
   const byMerchant = new Map(shops.map(shop => [shop.merchantId, shop]));
   for (const item of items) {
     const merchantId = item.source === 'place' ? links[item.place?.id ?? (item.id.startsWith('partner:') ? item.id : item.sourceId)] : undefined;
     const shop = merchantId ? byMerchant.get(merchantId) : undefined;
+    const photo = photos[item.place?.id ?? item.id];
     const discount = shop?.cityId === item.cityId ? compareWebshopPrices(shop).maximumPercent : 0;
-    const next = { ...item, ...(merchantId ? { merchantId } : {}), delivery: discount > 0, webshopDiscount: discount };
+    const next = { ...item, ...(merchantId ? { merchantId } : {}), delivery: discount > 0, webshopDiscount: discount,
+      ...(item.place && photo && photo.merchantId === merchantId && photo.cityId === item.cityId ? { place: { ...item.place, mapPhotoUri: photo.uri } } : {}) };
     const branch = merchantId ? `${item.cityId}:${merchantId}` : '', existing = branches.get(branch);
     if (branch && existing !== undefined) {
       if (item.glingVisited) result[existing] = { ...result[existing], glingVisited: item.glingVisited };
