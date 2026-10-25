@@ -217,11 +217,13 @@ test('the personal business-profile route stays in business mode without the adm
     '@/components/merchant-workspace': { MerchantWorkspace: 'MerchantWorkspace' },
     '@/components/login-panel': { LoginPanel: 'LoginPanel' },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, isAdmin: true, me: { id: 'owner' } }) },
+    '@/hooks/use-chat-identity': { useChatIdentity: () => ({ id: 'merchant-b', name: '두 번째 가게' }) },
   };
   vm.runInNewContext(code, { exports, require: name => { assert.ok(imports[name], name); return imports[name]; } });
   const tree = exports.default();
   assert.ok(!nodes(tree).some(n => n.type === 'AdminMfaGate'));
   assert.equal(nodes(tree).find(n => n.type === 'MerchantWorkspace')?.props.assignedOnly, true);
+  assert.equal(nodes(tree).find(n => n.type === 'MerchantWorkspace')?.props.initialMerchantId, 'merchant-b', 'Re-entering the business page reopens the business the member switched to.');
 });
 
 test('the business web sidebar shows the home composer and only the tools the account may use', async () => {

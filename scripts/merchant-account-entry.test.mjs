@@ -233,6 +233,22 @@ test('Today Instagram sheet opens the selected business workspace after access r
   assert.ok(view.feedback.includes('selection')); assert.ok(!view.feedback.includes('success'), 'Profile switching must not play the post-saved celebration.');
 });
 
+test('Today sheet keeps the switched business selected after leaving and returning to Today', async t => {
+  chatIdentity.resetChatIdentity(); t.after(chatIdentity.resetChatIdentity);
+  const view = app('ChatIdentitySwitcher'); view.props({ target: 'business' }); view.render();
+  view.pending.shift()(context()); await flush();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.open').props.onPress();
+  const opening = nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.business').props.onPress();
+  view.pending.shift()(context()); await opening; await flush();
+  view.blur(); view.focus(); view.pending.shift()(context()); await flush();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.open').props.onPress();
+  const tree = view.render();
+  assert.equal(nodes(tree).find(n => n.props?.analyticsId === 'chat.identity.business').props.accessibilityState.selected, true);
+  assert.equal(nodes(tree).find(n => n.props?.analyticsId === 'chat.identity.personal').props.accessibilityState.selected, false, 'Returning from a menu must not show the personal profile as current.');
+  view.auth({ me: { id: 'user-b', nickname: '다른 이웃' } });
+  assert.equal(chatIdentity.chatBusinessIdentity('user-b'), null, 'Another account never inherits the business profile.');
+});
+
 test('Today sheet rejects revoked business access and never reuses another user connection', async () => {
   const view = app('ChatIdentitySwitcher'); view.props({ target: 'business' }); view.render();
   assert.equal(view.pending.length, 1); view.pending.shift()(context()); await flush();
