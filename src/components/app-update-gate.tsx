@@ -60,7 +60,8 @@ export function AppUpdateGate({ children }: { children: ReactNode }) {
     const initial = setTimeout(() => { void check(); }, 0);
     let previous = AppState.currentState;
     const subscription = AppState.addEventListener('change', (next) => {
-      if (previous !== 'active' && next === 'active') { setStatus('checking'); void check(); }
+      // Keep the current screen visible during foreground revalidation.
+      if (previous !== 'active' && next === 'active') void check();
       previous = next;
     });
     return () => { clearTimeout(initial); subscription.remove(); request.current?.abort(); request.current = null; };
