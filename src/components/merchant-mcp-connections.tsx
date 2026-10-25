@@ -10,6 +10,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { connectMerchantMcp, denyMerchantMcp, loadMerchantMcpAuthorization, loadMerchantMcpChangePhotos, loadMerchantMcpChanges, loadMerchantMcpConnections,
   revokeMerchantMcp, reviewMerchantMcpChange, type MerchantMcpAuthorization, type MerchantMcpChange, type MerchantMcpConnection, type MerchantMcpPhotoGroup } from '@/lib/merchant-mcp';
+import { mcpClientTrust } from '@/lib/mcp-client-trust';
 import { loadMyMerchants, type BusinessMerchant } from '@/lib/merchant-workspace';
 import { supabase } from '@/lib/supabase';
 
@@ -25,6 +26,7 @@ function errorText(error: unknown) {
   if (code.includes('MCP_BUSINESS_ACCOUNT_REQUIRED') || code.includes('MERCHANT_ACCOUNT_REQUIRED')) return '승인된 사업자 계정으로 연결해 주세요.';
   if (code.includes('MERCHANT_POST_CHANGED') || code.includes('MERCHANT_PROFILE_CHANGED')) return '원본이 바뀌었어요. AI에게 최신 원본으로 새 제안을 요청한 뒤 다시 검토해 주세요.';
   if (code.includes('MCP_CONNECTION_REQUIRED') || code.includes('MERCHANT_ACCESS_REQUIRED')) return '비즈니스 권한이나 AI 연결이 변경됐어요. 현재 연결과 비즈니스를 다시 확인해 주세요.';
+  if (code.includes('MCP_PUBLISH_CLIENT_UNVERIFIED')) return '확인되지 않은 AI 도구에는 게시 권한을 줄 수 없어요. 게시 권한을 끄고 연결해 주세요.';
   if (code.includes('MCP_CHANGE_EXPIRED')) return '이 제안은 만료됐어요. AI에게 새 제안을 요청해 주세요.';
   return '처리를 확인하지 못했어요. 연결 상태를 확인한 뒤 다시 시도해 주세요.';
 }
@@ -146,6 +148,7 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
   const connected = connections.filter(c => !c.revoked_at && Date.parse(c.expires_at) > checkedAt);
   const currentChanges = changeResponse?.merchantId === reviewMerchant && changeResponse?.revision === revision ? changeResponse : null;
   const changes = currentChanges?.items ?? [], changesLoading = !!reviewMerchant && !currentChanges;
+  const trust = authorization ? mcpClientTrust(authorization.redirect_uri) : null, canPublish = !!trust?.verified;
   return <View style={styles.sections}>
     <View style={styles.hero}><View style={[styles.ai, { backgroundColor: theme.accent }]}><ThemedText type="subtitle" style={{ color: theme.accentInk }}>AI</ThemedText></View>
       <ThemedText type="title" accessibilityRole="header">{tr("평소 쓰는 AI로,")}{`\n`}{tr("내 가게 소식을 만들어요.")}</ThemedText>
@@ -157,7 +160,10 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
       {authorization && <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <ThemedText type="subtitle" accessibilityRole="header">{authorization.client_name}{" " + tr("연결하기")}</ThemedText>
         <ThemedText themeColor="textSecondary">{tr("이 도구에 허용할 비즈니스와 작업을 골라 주세요. 연결은 30일 동안 유지돼요.")}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary" selectable>{tr("돌아갈 주소 ·") + " "}{authorization.redirect_uri}{`\n`}{tr("연결하려는 AI 도구의 주소인지 확인해 주세요.")}</ThemedText>
+        <View style={[styles.included, { borderColor: theme.line }]} accessibilityRole={canPublish ? undefined : 'alert'}>
+          <ThemedText type="smallBold" selectable style={canPublish ? undefined : { color: theme.danger }}>{canPublish ? tr("✓ 확인된 연결 주소 · {0}", trust?.host ?? '') : tr("⚠︎ 확인되지 않은 연결 주소 · {0}", trust?.host ?? '')}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{canPublish ? tr("이름이 아니라 실제 연결 주소로 확인했어요.") : tr("직접 시작한 연결이 아니면 취소해 주세요. 이 주소에는 게시 권한을 줄 수 없어요.")}</ThemedText>
+        </View>
         <ThemedText type="smallBold">{tr("연결할 내 비즈니스")}</ThemedText>
         {merchants.map(m => <Choice key={m.id} title={m.name} detail={m.city_name || m.city_id} checked={selected.includes(m.id)} disabled={busy}
           onPress={() => setSelected(ids => ids.includes(m.id) ? ids.filter(id => id !== m.id) : [...ids, m.id])} />)}
@@ -165,9 +171,10 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
         <ThemedText type="smallBold">{tr("허용할 작업")}</ThemedText>
         <View style={[styles.included, { borderColor: theme.line }]}><ThemedText type="smallBold">{tr("✓ 선택한 비즈니스의 글·초안·공개 프로필 읽기")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("연결하면 기본으로 허용돼요.")}</ThemedText></View>
         <Choice title={tr("초안 저장과 변경 제안")} detail={tr("새 원고를 저장하고 프로필·게시글 수정이나 삭제를 제안해요. 공개 변경은 웹에서 직접 검토해요.")} checked={drafts} disabled={busy} onPress={() => setDrafts(value => !value)} />
-        <Choice title={tr("내가 승인한 원고 게시")} detail={tr("글링 웹에서 검토·승인한 최신 원고만 게시해요. AI가 원고를 승인할 수는 없어요.")} checked={publish} disabled={busy} onPress={() => setPublish(value => !value)} />
+        <Choice title={tr("내가 승인한 원고 게시")} detail={tr("글링 웹에서 검토·승인한 최신 원고만 게시해요. AI가 원고를 승인할 수는 없어요.")} checked={publish && canPublish} disabled={busy || !canPublish} onPress={() => setPublish(value => !value)} />
         <ThemedText type="small" themeColor="textSecondary">{tr("일반 회원 기능과 개인 대화는 이 연결에 포함되지 않아요. 연결 후에도 비즈니스 권한을 매번 확인하며, 언제든 해제할 수 있어요.")}</ThemedText>
-        <View style={styles.row}><Action label={busy ? tr("처리 중…") : tr("선택한 권한으로 연결")} primary disabled={busy || !selected.length} onPress={() => { void run(async () => redirect(await connectMerchantMcp(supabase, userId, authorization, { merchantIds: selected, allowDrafts: drafts, allowPublish: publish }))); }} />
+        <ThemedText type="small" themeColor="textSecondary">{tr("AI에게 보여 준 비즈니스 글과 프로필은 해당 AI 회사의 서버를 거쳐요.")}</ThemedText>
+        <View style={styles.row}><Action label={busy ? tr("처리 중…") : tr("선택한 권한으로 연결")} primary disabled={busy || !selected.length} onPress={() => { void run(async () => redirect(await connectMerchantMcp(supabase, userId, authorization, { merchantIds: selected, allowDrafts: drafts, allowPublish: publish && canPublish }))); }} />
           <Action label={tr("취소")} disabled={busy} onPress={() => { void run(async () => redirect(await denyMerchantMcp(supabase, userId, authorization))); }} /></View>
       </View>}
       {!merchants.length && <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
