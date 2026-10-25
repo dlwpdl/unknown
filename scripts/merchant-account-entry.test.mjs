@@ -219,7 +219,7 @@ test('Today Instagram sheet opens the selected business workspace after access r
   chatIdentity.resetChatIdentity();
   const view = app('ChatIdentitySwitcher'); view.props({ target: 'business' }); view.render();
   assert.equal(view.pending.length, 1); view.pending.shift()(context()); await flush();
-  const trigger = nodes(view.render()).find(n => n.props?.analyticsId === 'profile.identity.open');
+  const trigger = nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.open');
   assert.ok(trigger); await trigger.props.onPress();
   assert.equal(view.calls.length, 1, 'Opening the cached sheet must not request each business profile.');
   const row = nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.business');
@@ -233,7 +233,7 @@ test('Today Instagram sheet opens the selected business workspace after access r
 test('Today sheet rejects revoked business access and never reuses another user connection', async () => {
   const view = app('ChatIdentitySwitcher'); view.props({ target: 'business' }); view.render();
   assert.equal(view.pending.length, 1); view.pending.shift()(context()); await flush();
-  nodes(view.render()).find(n => n.props?.analyticsId === 'profile.identity.open').props.onPress();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.open').props.onPress();
   nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.business').props.onPress();
   view.pending.shift()(context('user-a', [])); await flush();
   assert.deepEqual(view.routes, []); assert.match(text(view.render()), /연결을 다시 확인/);
@@ -245,7 +245,7 @@ test('Today sheet uses opaque business photos and returns the personal row to th
   const id = '11111111-1111-4111-8111-111111111111';
   const view = app('ChatIdentitySwitcher'); view.props({ target: 'business' }); view.render();
   view.pending.shift()(context('user-a', [{ id, name: '가게', role: 'owner', city_name: '밴쿠버', avatar_path: `business-profile/${id}/avatar/${'a'.repeat(32)}` }])); await flush();
-  nodes(view.render()).find(n => n.props?.analyticsId === 'profile.identity.open').props.onPress();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.open').props.onPress();
   assert.ok(nodes(view.render()).some(n => n.type === 'Image' && n.props.source.uri.includes('kind=avatar')));
   nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.personal').props.onPress();
   assert.equal(view.routes[0], '/profile');
@@ -259,4 +259,30 @@ test('Today foreground checks remove a revoked switch and cannot expose admin re
   view.foreground(); view.pending.shift()(context('user-a', [])); await flush(); assert.equal(view.render(), null); assert.equal(availability.at(-1), false);
   view.foreground(); view.pending.shift()(context('user-a', [{ id: 'review', name: '검토만 가능한 가게', role: 'admin' }])); await flush();
   assert.equal(view.render(), null); assert.ok(view.calls.every(call => call.name === 'get_my_business_chat_profiles'));
+});
+
+
+test('Today foreground refresh cannot strand an in-flight business selection', async () => {
+  const view = app('ChatIdentitySwitcher'); view.props({ target: 'business' }); view.render();
+  view.pending.shift()(context()); await flush();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.open').props.onPress();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.business').props.onPress();
+  const selected = view.pending.shift(); view.foreground(); selected(context()); await flush();
+  assert.equal(view.routes.length, 1);
+  assert.ok(!nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.business').props.disabled);
+});
+
+test('a new account can select its own business while an old account selection is unresolved', async () => {
+  const view = app('ChatIdentitySwitcher'); view.props({ target: 'business' }); view.render();
+  view.pending.shift()(context()); await flush();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.open').props.onPress();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.business').props.onPress();
+  const old = view.pending.shift(); view.auth({ me: { id: 'user-b', nickname: '다른 이웃' } }); view.render();
+  const next = context('user-b', [{ id: 'company-b', name: '다른 가게', role: 'operator' }]);
+  view.pending.shift()(next); await flush(); old(context()); await flush();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.open').props.onPress();
+  const option = nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.business');
+  assert.equal(option.props.disabled, false); option.props.onPress();
+  assert.equal(view.pending.length, 1); view.pending.shift()(next); await flush();
+  assert.equal(view.routes.length, 1); assert.equal(view.routes[0].params.merchant, 'company-b');
 });

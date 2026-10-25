@@ -26,12 +26,14 @@ export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilit
   const user = useRef(me.id), serial = useRef(0), pending = useRef(false);
   useLayoutEffect(() => {
     user.current = isAuthed ? me.id : ''; serial.current++; pending.current = false;
+    setBusy(false); setError(''); setOpenedFor(null);
     return () => { user.current = ''; };
   }, [me.id, isAuthed]);
   useFocusEffect(useCallback(() => {
     if (!isAuthed || target !== 'business') return;
     let active = true;
     const refresh = async () => {
+      if (pending.current) return;
       const request = ++serial.current;
       try {
         const next = await loadMyMerchantConnections(supabase, me.id, true);
@@ -93,7 +95,7 @@ export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilit
     {!!uri && <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} />}
   </View>;
   return <>
-    {target === 'business' ? <Pressable analyticsId="profile.identity.open" accessibilityRole="button" accessibilityLabel={tr('프로필 전환')}
+    {target === 'business' ? <Pressable analyticsId="chat.identity.open" accessibilityRole="button" accessibilityLabel={tr('프로필 전환')}
       accessibilityState={{ expanded: openedFor === me.id }} onPress={() => { void open(); }}
       style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
       <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={14} tintColor={theme.textSecondary} />
@@ -106,7 +108,7 @@ export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilit
       <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={14} tintColor={theme.textSecondary} />
     </Pressable>}
     <Modal visible={openedFor === me.id} transparent animationType="fade" onRequestClose={close}>
-      <View style={styles.backdrop}><Pressable analyticsId="chat.identity.dismiss" accessibilityRole="button" accessibilityLabel={tr('프로필 선택 닫기')} onPress={close} style={StyleSheet.absoluteFill} /><SafeAreaView edges={['bottom']} accessibilityViewIsModal onAccessibilityEscape={close} style={[styles.sheet, { backgroundColor: theme.card }]}>
+      <View style={styles.backdrop}><Pressable analyticsId="chat.identity.close" accessibilityRole="button" accessibilityLabel={tr('프로필 선택 닫기')} onPress={close} style={StyleSheet.absoluteFill} /><SafeAreaView edges={['bottom']} accessibilityViewIsModal onAccessibilityEscape={close} style={[styles.sheet, { backgroundColor: theme.card }]}>
         <View style={styles.heading}><ThemedText style={Typography.sheetTitle}>{tr(target === 'business' ? '프로필 전환' : '대화 프로필')}</ThemedText><Pressable analyticsId="chat.identity.close" accessibilityRole="button" accessibilityLabel={tr('프로필 선택 닫기')} onPress={close} style={styles.close}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={18} tintColor={theme.textSecondary} /></Pressable></View>
         <ScrollView analyticsId="chat.identity.options" contentContainerStyle={{ gap: 10 }}>
           <Pressable analyticsId="chat.identity.personal" accessibilityRole="radio" accessibilityState={{ selected: !business, disabled: busy }} disabled={busy} onPress={() => { void choose(null); }} style={optionStyle(!business)}>
