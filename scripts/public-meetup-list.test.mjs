@@ -33,6 +33,7 @@ function mount(file, name, initialProps = {}) {
       if (name === '@/constants/design-system') return { ControlMetrics, ControlMotion, Typography };
       if (name === '@/constants/theme') return { Spacing: { two: 8, three: 16, four: 24 } };
       if (name === '@/lib/chilling') return chilling;
+      if (name === '@/lib/shared-link-preview') return { previewImage: id => `https://preview.example.invalid?format=preview-image&id=${id}` };
       if (name === '@/lib/mock') return { CITIES: [{ id: 'vancouver', name: '밴쿠버' }] };
       if (name === 'toqr') return { toQR: url => { qrCalls.push(url); if (failQr) throw Error('ENCODER_UNAVAILABLE'); return toQR(url); } };
       throw Error(`Unexpected import ${name}`);
@@ -144,4 +145,12 @@ test('static no-script fallback retains both real store links and Android eligib
   assert.match(text(fallback), /private testing/); assert.equal(elements(tree).some(n => n.type === 'svg'), false);
   const list = mount('meetup-list.tsx', 'PublicMeetupList', props()).render();
   assert.equal([...elements(tree), ...elements(list)].some(n => n.props?.['data-analytics']), false, 'unknown behavior targets must not invalidate an otherwise valid event batch');
+});
+
+
+test('a public first-photo preview remains visible when guest storage signing yields no URL', () => {
+  const ui=mount('meetup-list.tsx','PublicMeetupList',props({posts:[meetup({imageThumbs:[],imageUris:[],imagePaths:['PRIVATE_ACTOR/first.webp']})]}));
+  const tree=ui.render(),image=elements(tree).find(n=>n.type==='img');
+  assert.equal(image?.props.src,`https://preview.example.invalid?format=preview-image&id=${id}`);
+  assert.doesNotMatch(JSON.stringify(tree),/PRIVATE_ACTOR/);
 });

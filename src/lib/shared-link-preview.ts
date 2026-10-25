@@ -9,8 +9,8 @@ function sharedPostId(value: string) {
   if (!UUID.test(value)) throw new Error('INVALID_SHARED_POST');
   return value.toLowerCase();
 }
-function previewImage(id: string) {
-  return `${PUBLIC_SOURCE}?${new URLSearchParams({ format: 'preview-image', id })}`;
+export function previewImage(id: string) {
+  return `${PUBLIC_SOURCE}?${new URLSearchParams({ format: 'preview-image', id: sharedPostId(id) })}`;
 }
 
 export type SharedLinkPreview = {
