@@ -668,7 +668,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             style={({ pressed }) => [styles.iconButton, controlPresentation(theme, { tone: 'ghost', pressed, reducedMotion }).container]}>
             <SymbolView name={{ ios: 'map', android: 'map', web: 'map' }} size={IconSize.toolbar} tintColor={theme.text} />
           </Pressable></View>}
-          <ProfileAvatarButton enableBusinessSwitch={!meetupsOnly} onBusinessSwitchAvailabilityChange={setHasBusinessSwitch} />
+          <ProfileAvatarButton onBusinessSwitchAvailabilityChange={setHasBusinessSwitch} />
         </View>
         <FlatList analyticsId="components_feed-screen.flatlist.1" ref={feedListRef}
           onViewableItemsChanged={trackTranslationFeed}

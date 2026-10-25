@@ -20,6 +20,7 @@ function profile() {
     'react-native-reanimated': { __esModule: true, default: { View: 'View' }, useReducedMotion: () => true, FadeIn: { duration() {} }, FadeInDown: { duration() {} } },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/components/merchant-account-connections': { MerchantAccountEntry: 'MerchantAccountEntry' },
+    '@/components/chat-identity-switcher': { ChatIdentitySwitcher: 'ChatIdentitySwitcher' },
     '@/components/gling-loader': { GlingLoader: 'Loader' }, '@/components/login-panel': { LoginPanel: 'LoginPanel' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/constants/theme': { Depth: {}, Spacing: {}, TabBarHeight: 49, MaxContentWidth: 800 },
@@ -38,8 +39,14 @@ function profile() {
   return { render: exports.default, routes, feedback, shares, signOut() { authenticated = false; }, signIn() { authenticated = true; }, setCanGoBack(value) { canGoBack = value; } };
 }
 
-test('profile header keeps invite and settings actions, then clears both on sign-out', async () => {
+test('profile header offers the shared switcher before invite and settings, then clears actions on sign-out', async () => {
   const app = profile(), tree = app.render(), header = nodes(tree).find(n => n.type === 'Screen').props.options.headerRight();
+  const switcher = nodes(header).find(n => n.type === 'ChatIdentitySwitcher');
+  assert.equal(switcher?.props.target, 'business');
+  assert.equal(header.props.children[0], switcher);
+  const photo = nodes(tree).find(n => n.props?.analyticsId === 'app_profile_index.pressable.1');
+  assert.equal(photo.props.accessibilityLabel, '사진 변경', 'The own-photo control remains an editor, separate from profile switching.');
+  assert.equal(typeof photo.props.onPress, 'function');
   nodes(header).find(n => n.props.analyticsId === 'app_profile_index.pressable.8').props.onPress();
   assert.equal(app.routes.at(-1), '/profile/settings');
   assert.equal(app.feedback.at(-1), 'selection');
