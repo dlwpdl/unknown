@@ -21,7 +21,7 @@ import { MerchantProfileEditor } from '@/components/merchant-profile-editor';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
-import { useNavigation, useRouter } from 'expo-router';
+import { usePreventRemove, useRouter } from 'expo-router';
 import { selectChatBusiness } from '@/lib/chat-identity';
 import { loadMyMerchantConnections } from '@/lib/merchant-connections';
 import { useAuth } from '@/lib/auth';
@@ -248,12 +248,8 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
   const [aiDraftReady, setAiDraftReady] = useState(false);
   const [draftOptions, setDraftOptions] = useState(false);
   const sidebar = layout === 'sidebar', wideNav = useMerchantSidebar();
-  const navigation = useNavigation();
   // In the app the tools are tabs inside one screen, so back returns to the business home instead of leaving it.
-  useEffect(() => navigation.addListener('beforeRemove', event => {
-    if (sidebar || tab === 'overview') return;
-    event.preventDefault(); setNotice(''); setTab('overview');
-  }), [navigation, sidebar, tab]);
+  usePreventRemove(!sidebar && tab !== 'overview', () => { setNotice(''); setTab('overview'); });
   const [channels, setChannels] = useState({ gling: true, naver: false, daum: false });
   const [preparedChannels, setPreparedChannels] = useState<{ naver: boolean; daum: boolean } | null>(null);
   const [openedDraft, setOpenedDraft] = useState<MerchantDraft | null>(null);

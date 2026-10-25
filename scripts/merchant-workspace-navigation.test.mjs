@@ -28,7 +28,7 @@ function mount(name = 'MerchantTools', options = {}) {
   };
   const imports = {
     react: hooks, 'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }), Fragment: 'Fragment' },
-    'expo-router': { useNavigation: () => ({ addListener: (name, fn) => { api.listeners?.push([name, fn]); return () => {}; } }), useRouter: () => ({ push: value => api.routes?.push(value) }) },
+    'expo-router': { usePreventRemove: (prevent, callback) => { api.listeners?.push([prevent, callback]); }, useRouter: () => ({ push: value => api.routes?.push(value) }) },
     '@/lib/chat-identity': { selectChatBusiness: (_user, value) => { api.identity = value; } },
     '@/lib/merchant-connections': { loadMyMerchantConnections: async () => ({ user_id: auth.me.id, merchants: await api.merchants() }) },
     'react-native': { View: 'View', TextInput: 'TextInput', Platform: { OS: 'web' }, StyleSheet: { create: v => v }, Alert: {} },
@@ -242,14 +242,10 @@ test('back inside an app business tool returns to the business home instead of l
   const listeners = [];
   const screen = mount('MerchantTools', { listeners });
   await screen.settle();
+  assert.equal(listeners.at(-1)[0], false, 'back leaves normally from the business home');
   await screen.press('원가 계산');
-  let prevented = false;
-  const latest = () => listeners.filter(([name]) => name === 'beforeRemove').at(-1)[1];
-  latest()({ preventDefault: () => { prevented = true; } }); await screen.settle();
-  assert.ok(prevented, 'leaving the screen is cancelled while a tool is open');
+  assert.equal(listeners.at(-1)[0], true, 'leaving the screen is held while a tool is open');
+  listeners.at(-1)[1](); await screen.settle();
   assert.ok(find(screen.tree, '원가 계산'), 'the business home with its tool list is shown again');
-  prevented = false;
-  latest()({ preventDefault: () => { prevented = true; } });
-  assert.ok(!prevented, 'back from the business home leaves normally');
+  assert.equal(listeners.at(-1)[0], false, 'the next back leaves normally');
 });
-
