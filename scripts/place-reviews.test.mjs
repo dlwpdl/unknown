@@ -134,10 +134,11 @@ test('source recognition is exact across URL aliases, escaped suffixes, OSM type
 
 test('blank/oversized/control text and forged reserved metadata cannot become a new review', () => {
   const api = fixture();
-  for (const body of ['', '  \n ', 'x'.repeat(1001), '\u0000text', 'mine\n장소 후기: ' + place.sourceUrl, 'mine\n 장소 후기 : fake']) {
+  for (const body of ['', '  \n ', 'x'.repeat(701), '\u0000text', 'mine\n장소 후기: ' + place.sourceUrl, 'mine\n 장소 후기 : fake']) {
     assert.throws(() => api.placeReviewBody(scope.cityId, scope.placeId, body), /INVALID_PLACE_REVIEW/);
   }
-  assert.ok(api.placeReviewBody(scope.cityId, scope.placeId, '🙂'.repeat(1000)).includes('🙂'));
+  const longest = api.placeReviewBody(scope.cityId, scope.placeId, '🙂'.repeat(700));
+  assert.ok(longest.includes('🙂') && [...`글링 평점: 10.0/10\n\n${longest}`].length <= 1000);
 });
 
 test('guest and switched-account reads never request full review bodies', async () => {

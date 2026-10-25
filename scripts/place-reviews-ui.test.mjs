@@ -39,7 +39,7 @@ function view({ load = async () => ({ posts: [], cursor: null, hasMore: false })
     '@/hooks/use-content-visibility': { useContentVisibility: () => (_type, id, writer) => hidden.has(id) || hidden.has(writer) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: !!account, isAuthLoading: false, me: { id: account ?? 'guest' }, promptLogin: reason => calls.logins.push(reason) }) },
     '@/lib/supabase': { supabase: {} }, '@/lib/feed-data': { appendUniquePosts: (a, b) => [...a, ...b.filter(p => !a.some(x => x.id === p.id))] },
-    '@/lib/place-reviews': { PLACE_REVIEW_MAX_LENGTH: 1000,
+    '@/lib/place-reviews': { PLACE_REVIEW_MAX_LENGTH: 700,
       loadPlaceReviews: async (...args) => { calls.reads.push(args); return load(...args); },
       loadPlaceRatingState: async (...args) => { calls.ratingReads.push(args); return ratings(...args); },
       placeReviewText: value => value,

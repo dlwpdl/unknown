@@ -93,7 +93,7 @@ function ScopedPlaceReviews({ cityId, placeId, userId, viewport }: Props & { use
       if (!isCurrent()) return;
       const message = error instanceof Error ? error.message : '';
       setWriteError(isContentRejected(error) ? '게시 기준을 확인해 주세요. 입력은 남아 있어요.'
-        : message === 'INVALID_PLACE_REVIEW' ? '후기는 1~1000자로 적어 주세요. 장소 정보는 자동으로 연결돼요.'
+        : message === 'INVALID_PLACE_REVIEW' ? '후기는 1~700자로 적어 주세요. 장소 정보는 자동으로 연결돼요.'
         : message === 'INVALID_PLACE_SCORE' || message.includes('INVALID_PLACE_RATING') ? '1~10점에서 0.5점 단위로 선택해 주세요.'
         : message.includes('PLACE_REVIEW_REMOVED') ? '삭제되거나 숨겨진 리뷰는 수정할 수 없어요.'
         : message === 'ACCOUNT_CHANGED' ? '계정이 바뀌었어요. 현재 계정으로 다시 열어주세요.'
@@ -153,7 +153,7 @@ function ScopedPlaceReviews({ cityId, placeId, userId, viewport }: Props & { use
         value={body} onChangeText={setBody} onFocus={() => play('selection')} editable={!saving} maxLength={PLACE_REVIEW_MAX_LENGTH}
         placeholder={tr('직접 겪은 경험을 적어 주세요. 개인 연락처 등 민감한 정보는 쓰지 마세요.')} placeholderTextColor={theme.textSecondary}
         style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
-      <ThemedText type="small" themeColor="textSecondary">{tr('{0}/1000자', [...body].length)}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{tr('{0}/700자', [...body].length)}</ThemedText>
       {!!writeError && <ThemedText type="small" accessibilityRole="alert" themeColor="textSecondary">{tr(writeError)}</ThemedText>}
       <RaisedActionButton analyticsId="places.reviews.publish" label={tr(saving ? '게시 중…' : '후기 게시')}
         disabled={writeDisabled || score == null || !body.trim() || [...body.trim()].length > PLACE_REVIEW_MAX_LENGTH} busy={saving}
