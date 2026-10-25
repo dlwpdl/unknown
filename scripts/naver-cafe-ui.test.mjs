@@ -24,7 +24,7 @@ function fixture(statusName, drafts = [], outcome = null) {
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'react-native': { View: 'View', TextInput: 'Input', Alert: {}, Linking: { openURL: async value => calls.push(['open', value]) }, Platform: { OS: 'web' }, StyleSheet: { create: value => value, hairlineWidth: 1 } },
     'expo-image': { Image: 'Image' }, '@react-native-async-storage/async-storage': { getItem: async key => storage.get(key) ?? null, setItem: async (key, value) => storage.set(key, value), removeItem: async key => { calls.push(['remove', key]); storage.delete(key); } },
-    '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/themed-text': { ThemedText: 'Text' }, '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/merchant-ui': { MerchantBadge: 'Badge', MerchantHelp: 'Help' }, '@/components/themed-text': { ThemedText: 'Text' }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/lib/auth': { useAuth: () => ({ me: { id: 'owner' } }) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: value => calls.push(['feedback', value]) }) },
     '@/lib/merchant-source': { merchantEventId: () => 'new-request' }, '@/lib/supabase': { supabase: {} },
     '@/lib/naver-cafe': { parseCafeBoardUrl,
@@ -77,7 +77,7 @@ test('서버 영수증 저장이 불확실하면 네이버가 반환한 실제 �
   const actualUrl = 'https://cafe.naver.com/test/17';
   const f = fixture('prepared', [currentDraft], { ...receipt('uncertain'), article_url: actualUrl, error_code: 'NAVER_RECEIPT_SAVE_UNCERTAIN' });
   f.render(); await f.settle();
-  find(f, '원고 확인 후 카페에 발행').props.onPress(); await f.settle();
+  find(f, '카페에 발행').props.onPress(); await f.settle();
   assert.equal(JSON.parse(f.storage.get('gling:merchant-naver:owner:merchant')).observedArticleUrl, actualUrl);
   assert.ok(find(f, '반환된 카페 링크 확인'));
   assert.equal(f.calls.filter(([type]) => type === 'publish').length, 1);

@@ -5,6 +5,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Alert, AppState, Platform, StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
+import { MerchantBadge } from '@/components/merchant-ui';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
@@ -124,7 +125,7 @@ export function MerchantAccountInvitations({ refreshSignal = 0, onChanged }: { r
   </View>)}</View>;
 }
 
-export function MerchantAccountManagement({ merchantId, merchantName, refreshSignal, onChanged }: { merchantId: string; merchantName: string; refreshSignal: number; onChanged: () => void }) {
+export function MerchantAccountManagement({ merchantId, merchantName, refreshSignal, onChanged, bare = false }: { merchantId: string; merchantName: string; refreshSignal: number; onChanged: () => void; bare?: boolean }) {
   const { tr } = useLanguage();
   const { me, isAdmin } = useAuth(), theme = useTheme(), { play } = useInteractionFeedback();
   const scope = me.id + ':' + merchantId;
@@ -148,17 +149,27 @@ export function MerchantAccountManagement({ merchantId, merchantName, refreshSig
     catch { if (current.current === scope) { setResponse(null); setError("연결 상태가 바뀌었어요. 다시 확인한 뒤 시도해 주세요."); play('warning'); setRetry(v => v + 1); } }
     finally { pending.current = false; if (current.current === scope) setBusy(false); }
   }
-  return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="subtitle">{tr("비즈니스 계정 연결")}</ThemedText>
+  const avatar = (nickname: string) => <View aria-hidden style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold">{Array.from(nickname.trim())[0]?.toUpperCase() ?? '?'}</ThemedText></View>;
+  return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+    {!bare && <ThemedText type="subtitle" accessibilityRole="header">{tr("계정 관리")}</ThemedText>}
     {error && <ThemedText accessibilityRole="alert">{tr(error)}</ThemedText>}
     {!data ? <AccountAction label={tr("연결 다시 확인")} disabled={busy} onPress={() => setRetry(v => v + 1)} /> : <>
       {[...(data.owner ? [data.owner] : []), ...data.operators].map(connection => <View key={connection.user_id + connection.role} style={styles.row}>
-        <View style={{ flex: 1 }}><ThemedText type="smallBold">{connection.nickname}</ThemedText><ThemedText type="small" themeColor="textSecondary">{MERCHANT_ACCOUNT_ROLES[connection.role]} · ID {connection.user_id.slice(-6)}</ThemedText></View>
+        {avatar(connection.nickname)}
+        <View style={styles.member}><View style={styles.name}><ThemedText type="smallBold" numberOfLines={1} style={styles.shrink}>{connection.nickname}</ThemedText><MerchantBadge label={tr(MERCHANT_ACCOUNT_ROLES[connection.role])} tone={connection.role === 'owner' ? 'accent' : 'neutral'} /></View>
+          <ThemedText type="small" themeColor="textSecondary">ID {connection.user_id.slice(-6)}</ThemedText></View>
         {(connection.role === 'operator' || connection.user_id === me.id || isAdmin) && <AccountAction label={tr("연결 해제")} disabled={busy} onPress={() => { void revoke(
           () => disconnectMerchantAccount(supabase, merchantId, connection, data.updated_at, '비즈니스 소유자가 계정 연결을 해제함'),
           connection.nickname + ' · ' + MERCHANT_ACCOUNT_ROLES[connection.role] + '\n\n' + (connection.role === 'owner' ? '소유자와 운영 담당자 연결, 대기 중인 초대를 모두 해제해요. ' : '') + '비즈니스와 저장한 글은 보존돼요.',
         ); }} />}
       </View>)}
-      {data.invitations.map(invitation => <View key={invitation.id} style={styles.row}><ThemedText style={{ flex: 1 }} type="small">{invitation.nickname} · {MERCHANT_ACCOUNT_ROLES[invitation.role]}{" " + tr("· 수락 대기")}</ThemedText><AccountAction label={tr("초대 취소")} disabled={busy} onPress={() => { void revoke(() => cancelMerchantAccountInvitation(supabase, invitation.id), invitation.nickname + ' 초대를 취소할까요?'); }} /></View>)}
+      {data.invitations.map(invitation => <View key={invitation.id} style={styles.row}>
+        {avatar(invitation.nickname)}
+        <View style={styles.member}><View style={styles.name}><ThemedText type="smallBold" numberOfLines={1} style={styles.shrink}>{invitation.nickname}</ThemedText><MerchantBadge label={tr("수락 대기")} tone="warn" /></View>
+          <ThemedText type="small" themeColor="textSecondary">{tr(MERCHANT_ACCOUNT_ROLES[invitation.role])}</ThemedText></View>
+        <AccountAction label={tr("초대 취소")} disabled={busy} onPress={() => { void revoke(() => cancelMerchantAccountInvitation(supabase, invitation.id), invitation.nickname + ' 초대를 취소할까요?'); }} />
+      </View>)}
+      <ThemedText type="small" themeColor="textSecondary">{tr("연결을 해제해도 비즈니스와 저장한 글은 남아요.")}</ThemedText>
     </>}
   </View>;
 }
@@ -167,5 +178,6 @@ const styles = StyleSheet.create({
   entryIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   list: { gap: 12, marginBottom: 16 }, card: { borderWidth: 1, borderRadius: 16, padding: 16, gap: 12 },
   actions: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' }, action: { minHeight: 44, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, justifyContent: 'center', alignItems: 'center' },
-  row: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 }, member: { flex: 1, minWidth: 0, gap: 2 }, name: { flexDirection: 'row', alignItems: 'center', gap: 8 }, shrink: { flexShrink: 1 },
+  avatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
 });

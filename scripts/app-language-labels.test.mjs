@@ -104,7 +104,8 @@ test('meetup city, capacity and slot copy preserves word spacing and uses slot u
 
 test('profile and business counters use contextual units rather than a shared reviews suffix', () => {
   assert.equal(renderedText('src/app/user/[id].tsx', ['styles.stats', 'publicProfile.storyCount'], { publicProfile: { storyCount: 3, listingCount: 2, completedCount: 1 }, count: String, theme: {} }, 'View'), '3Today2Listings1Marked complete');
-  assert.equal(renderedText('src/components/merchant-workspace.tsx', ['data.metrics.member_clickers'], { data: { metrics: { member_clickers: 2, anonymous_sessions: 4 } } }), 'Signed-in clickers: 2 · Anonymous click sessions: 4');
+  // The business metric now lives in the membership page's help list as one whole-sentence key.
+  assert.equal(translateUi('en', '로그인 클릭 회원 {0}명 · 익명 클릭 세션 {1}개', 2, 4), 'Signed-in clickers: 2 · Anonymous click sessions: 4');
 });
 
 test('both meetup slot summaries show the existing administrator exemption without finite counts', () => {

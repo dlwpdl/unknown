@@ -51,6 +51,7 @@ function screen(file, { save = async () => reply, sessionOwner = owner,
     'react-native': { View: 'View', TextInput: 'TextInput', StyleSheet: { create: value => value } },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/themed-text': { ThemedText: 'Text' }, '@/components/report-sheet': { ReportSheet: 'ReportSheet' },
     '@/components/merchant-reviews': { MerchantReviewCard: 'ReviewCard' },
+    '@/components/merchant-ui': { MerchantStats: 'Stats', MerchantStat: 'Stat', MerchantSegments: 'Segments', MerchantHelp: 'Help' },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: owner } }) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: value => feedback.push(value) }) },
     '@/lib/merchant-reviews': { loadMyMerchantReviews: load, replyToMerchantReview: async (...args) => { calls.push(args.slice(1)); return save(...args); } },
@@ -139,4 +140,23 @@ test('dirty and saving replies prevent paging and reporting from hiding their dr
   }
   assert.deepEqual(observed, ['dirty', 'busy'].map(phase => ({ phase, pagingDisabled: true, reportUnavailable: true,
     pages: [0], retainedAfterPaging: true, retainedAfterReportClose: true })));
+});
+
+test('inbox defaults to reviews needing a reply, keeps the open draft listed, and folds the help copy away', async () => {
+  const waiting = { ...review, id: 'waiting', reply: null, score: 6.5 };
+  const view = screen('../src/components/merchant-review-inbox.tsx', { load: async () => ({ reviews: [review, waiting, { ...review, id: 'employment', review_kind: 'employment', reply: null, score: 2 }], has_more: true }) });
+  view.render('ScopedInbox'); await settle();
+  let root = view.render('ScopedInbox', { bare: true });
+  const ids = () => nodes(root).filter(node => node.type === 'ReviewCard').map(node => node.props.review.id);
+  assert.deepEqual(ids(), ['waiting']);
+  assert.ok(!text(root).includes('받은 후기'));
+  assert.deepEqual(nodes(root).filter(node => node.type === 'Stat').map(({ props }) => [props.label, props.value]),
+    [['불러온 후기', '3개'], ['답글 필요', '1개'], ['불러온 후기 평균', '7.5 / 10']]);
+  assert.ok(nodes(root).find(node => node.type === 'Help').props.items.some(item => item.includes('증빙 원본은 비즈니스에 공개되지 않아요')));
+  control(root, 'merchant.reply.edit.waiting').props.onPress(); root = view.render('ScopedInbox', { bare: true });
+  nodes(root).find(node => node.type === 'TextInput').props.onChangeText('감사합니다'); root = view.render('ScopedInbox', { bare: true });
+  nodes(root).find(node => node.type === 'Segments').props.onChange('all'); root = view.render('ScopedInbox', { bare: true });
+  assert.deepEqual(ids(), [reviewId, 'waiting', 'employment']);
+  assert.equal(nodes(root).find(node => node.type === 'TextInput').props.value, '감사합니다');
+  assert.ok(control(root, 'merchant.reviews.more'));
 });

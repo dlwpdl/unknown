@@ -11,7 +11,8 @@ import { MerchantAccountInvitations, MerchantAccountManagement } from '@/compone
 import { MerchantAccessGate } from '@/components/merchant-access-gate';
 import { MerchantNaverCafe } from '@/components/merchant-naver-cafe';
 import { MerchantWebPosts } from '@/components/merchant-web-posts';
-import { MerchantHome, MerchantSidebar, merchantShellStyles, useMerchantSidebar, type MerchantNavItem, type MerchantRecentItem } from '@/components/merchant-web-shell';
+import { MerchantBadge, MerchantHelp, MerchantMeter, MerchantPageHeader, MerchantSegments, MerchantStat, MerchantStats, MerchantSteps } from '@/components/merchant-ui';
+import { MerchantChannelList, MerchantHome, MerchantSidebar, merchantShellStyles, useMerchantSidebar, type MerchantNavItem, type MerchantRecentItem } from '@/components/merchant-web-shell';
 import { PostPhotoEditor, type EditablePostImage } from '@/components/post-photo-editor';
 import { PostBodyEditor } from '@/components/post-body-editor';
 import { MerchantReviewInbox } from '@/components/merchant-review-inbox';
@@ -250,7 +251,8 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
   const [openedDraft, setOpenedDraft] = useState<MerchantDraft | null>(null);
   const [draftPhotos, setDraftPhotos] = useState<EditablePostImage[]>([]);
   const editorReload = useRef<DraftInput | null>(null);
-  const [showArchived, setShowArchived] = useState(false), [externalUrl, setExternalUrl] = useState('');
+  const [draftFilter, setDraftFilter] = useState<'open' | 'published' | 'archived'>('open'), [externalUrl, setExternalUrl] = useState('');
+  const showArchived = draftFilter === 'archived';
   const [item, setItem] = useState<{ id: string; name: string; unit: string; unit_cost: string; low_stock: string }>(() => ({ id: merchantEventId(), name: '', unit: '개', unit_cost: '0', low_stock: '0' }));
   const [changes, setChanges] = useState<Record<string, string>>({}), [stockNote, setStockNote] = useState('');
   const stockRequest = useRef<StockRequest | null>(null);
@@ -262,7 +264,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
     setResponse(null); setMembership(null); setEditor(emptyDraft()); setOpenedDraft(null); setDraftPhotos([]); editorReload.current = null;
     setSelection([]); setChanges({}); setStockNote(''); setItem({ id: merchantEventId(), name: '', unit: '개', unit_cost: '0', low_stock: '0' });
     setDirty(false); setProfileDirty(false); setReplyDirty(false); setFacts(''); setAiDraftReady(false); setPreparedChannels(null); setExternalUrl('');
-    setDraftStep('idea'); setDraftView('list'); setDraftOptions(false); setShowArchived(false); setPurpose('가게 소식'); setChannels({ gling: true, naver: false, daum: false }); setTab('overview'); setNotice('');
+    setDraftStep('idea'); setDraftView('list'); setDraftOptions(false); setDraftFilter('open'); setPurpose('가게 소식'); setChannels({ gling: true, naver: false, daum: false }); setTab('overview'); setNotice('');
     setCost({ batchCost: '0', yield: '1', packaging: '0', other: '0', price: '0', feePercent: '0' });
     stockRequest.current = null; setStockPending(false); setStockReady(false); setStockRestoreError(true);
   }
@@ -449,12 +451,12 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
   const navItems: MerchantNavItem[] = [
     { key: 'overview', label: tr('홈'), icon: { ios: 'house', android: 'home', web: 'home' } },
     { key: 'posts', label: tr('글·사진'), icon: { ios: 'doc.text', android: 'description', web: 'description' } },
-    { key: 'drafts', label: tr('홍보글 관리'), icon: { ios: 'square.and.pencil', android: 'edit_note', web: 'edit_note' } },
+    { key: 'drafts', label: tr('홍보글'), icon: { ios: 'square.and.pencil', android: 'edit_note', web: 'edit_note' } },
     ...fullAccess ? [{ key: 'reviews', label: tr('이용 후기'), icon: { ios: 'star', android: 'star', web: 'star' } } as const] : [],
     { key: 'profile', label: tr('프로필'), icon: { ios: 'storefront', android: 'storefront', web: 'storefront' } },
     ...aiOwner ? [{ key: 'ai', label: tr('AI 연결'), icon: { ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' } } as const] : [],
     ...fullAccess ? ([
-      ['channels', tr('카페 연결'), 'link', 'link'], ['cost', tr('원가 계산'), 'percent', 'calculate'], ['stock', tr('재고'), 'shippingbox', 'inventory_2'],
+      ['channels', tr('채널 연결'), 'link', 'link'], ['cost', tr('원가 계산'), 'percent', 'calculate'], ['stock', tr('재고'), 'shippingbox', 'inventory_2'],
       ['membership', tr('성과·멤버십'), 'chart.bar', 'bar_chart'], ['accounts', tr('계정 관리'), 'person.2', 'group'],
     ] as const).map(([key, label, ios, web]) => ({ key, label, icon: { ios, android: web, web }, group: 'tools' as const })) : [],
   ];
@@ -462,6 +464,24 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
     if (key === 'ai') { router.push('/ai'); return; }
     setNotice(''); if (key === 'drafts') setDraftView('list'); setTab(key as MerchantTab);
   }
+  const pageCopy: Partial<Record<MerchantTab, [string, string]>> = {
+    posts: [tr('글·사진'), tr('게시한 글을 열어 고치거나 내릴 수 있어요.')],
+    drafts: [tr('홍보글'), tr('초안을 쓰고, 확인한 원고만 게시해요.')],
+    reviews: [tr('이용 후기'), tr('후기에 답글을 달면 비즈니스 프로필에 함께 보여요.')],
+    profile: [tr('프로필'), tr('손님에게 보이는 비즈니스 정보예요.')],
+    channels: [tr('채널 연결'), tr('글링 글을 네이버 카페·SNS에도 함께 올려요.')],
+    cost: [tr('원가 계산'), tr('한 번 만드는 묶음 기준으로 넣어요. 금액은 CAD예요.')],
+    stock: [tr('재고'), tr('품목을 등록하고 들어오고 나간 수량을 기록해요.')],
+    membership: [tr('성과·멤버십'), tr('최근 14일 성과와 이번 달 사용량이에요.')],
+    accounts: [tr('계정 관리'), tr('이 비즈니스를 함께 관리하는 계정이에요.')],
+  };
+  const newLabel = activeTab === 'posts' ? tr('새 글 쓰기') : activeTab === 'drafts' && draftView === 'list' ? tr('새 초안') : '';
+  const draftMatches = (d: MerchantDraft, filter: typeof draftFilter) => filter === 'archived' ? !!d.archived_at
+    : !d.archived_at && (filter === 'published') === !!(d.published_at || d.external_url);
+  const stockStep = (itemId: string, delta: number) => setChanges(current => {
+    const next = Math.round((amount(current[itemId] || '0') + delta) * 1000) / 1000;
+    return { ...current, [itemId]: Number.isFinite(next) && next !== 0 ? String(next) : '' };
+  });
   async function startHomeDraft(generate: boolean) {
     const notes = facts, kind = purpose;
     if (!await openDraft(undefined, !generate) || !generate || !mounted.current) return;
@@ -523,6 +543,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
       <View style={styles.toolText}><ThemedText type="title">{data.merchant.name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{data.merchant.city_name} · {tr(data.merchant.owner_verified_at ? tr("비즈니스 소유 확인됨") : tr("비즈니스 소유 확인 대기"))}</ThemedText></View>
       {onChoose && <Action label={tr("비즈니스 변경")} disabled={busy} onPress={onChoose} />}
     </View> : <View style={styles.businessHeader}><Action label={tr("비즈니스 관리")} disabled={busy} onPress={() => { setNotice(''); setTab('overview'); }} /><ThemedText type="small" themeColor="textSecondary" style={styles.toolText}>{data.merchant.name}</ThemedText></View>}
+    {sidebar && activeTab !== 'overview' && pageCopy[activeTab] && <MerchantPageHeader title={pageCopy[activeTab]![0]} subtitle={pageCopy[activeTab]![1]} action={newLabel ? <RaisedActionButton compact analyticsId="merchant.primary" label={newLabel} disabled={busy} onPress={() => { play('selection'); void openDraft(undefined, activeTab === 'posts'); }} /> : undefined} />}
     {error && <><ThemedText accessibilityRole="alert">{tr(error)}</ThemedText><Action label={tr("자료 새로 확인")} disabled={busy} onPress={() => { setError(''); setRevision((v) => v + 1); }} /></>}{notice && <ThemedText accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
     {activeTab === 'overview' && sidebar && <MerchantHome name={data.merchant.name} place={`${tr(data.merchant.city_name)} · ${data.merchant.owner_verified_at ? tr('비즈니스 소유 확인됨') : tr('비즈니스 소유 확인 대기')}`} onChoose={onChoose}
       purposes={draftPurposes} purpose={purpose} onPurpose={value => setPurpose(value as (typeof draftPurposes)[number])} facts={facts} onFacts={setFacts}
@@ -541,7 +562,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
           ['profile', tr("프로필"), tr("공개 비즈니스 정보와 소개 수정")],
           ['reviews', tr("이용 후기"), tr("이용 후기 확인과 답글")],
           ['drafts', tr("홍보글 관리"), tr("저장한 초안과 게시한 원고")],
-          ['channels', tr("카페 연결"), tr("네이버 계정과 게시판 연결")],
+          ['channels', tr("채널 연결"), tr("네이버 카페·SNS에 함께 올리기")],
           ['cost', tr("원가 계산"), tr("개당 비용과 공헌이익 계산")],
           ['stock', tr("재고"), tr("품목 등록과 입출고 기록")],
           ['membership', tr("성과·멤버십"), tr("최근 활동과 비즈니스 이용 기간")],
@@ -549,24 +570,29 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
         ] as const).filter(([key]) => fullAccess || ['posts','profile','drafts'].includes(key)).map(([key, title, detail]) => <ToolRow key={key} title={title} detail={detail} disabled={busy} onPress={() => { if (key === 'drafts') setDraftView('list'); setTab(key); }} />)}
       </Section>
     </>}
-    {activeTab === 'posts' && <MerchantWebPosts merchantId={id} posts={data.posts} onChanged={() => setRevision(v => v + 1)} />}
-    <View style={{ display: activeTab === 'profile' ? 'flex' : 'none' }}><MerchantProfileEditor merchantId={id} onDirty={setProfileDirty} /></View>
+    {activeTab === 'posts' && <MerchantWebPosts bare={sidebar} merchantId={id} posts={data.posts} onChanged={() => setRevision(v => v + 1)} />}
+    <View style={{ display: activeTab === 'profile' ? 'flex' : 'none' }}><MerchantProfileEditor bare={sidebar} merchantId={id} onDirty={setProfileDirty} /></View>
     {fullAccess && (activeTab === 'reviews' || replyDirty) && <View style={{ display: activeTab === 'reviews' ? 'flex' : 'none' }} accessibilityElementsHidden={activeTab !== 'reviews'} importantForAccessibility={activeTab !== 'reviews' ? 'no-hide-descendants' : 'auto'}>
-      <MerchantReviewInbox merchantId={id} onDirty={setReplyDirty} />
+      <MerchantReviewInbox bare={sidebar} merchantId={id} onDirty={setReplyDirty} />
     </View>}
-    {activeTab === 'channels' && <MerchantNaverCafe merchantId={id} drafts={data.drafts} onChanged={() => setRevision(v => v + 1)} />}
+    {activeTab === 'channels' && <><MerchantChannelList /><MerchantNaverCafe merchantId={id} drafts={data.drafts} onChanged={() => setRevision(v => v + 1)} /></>}
     {activeTab === 'drafts' && <>
       <View style={styles.actions}>{draftView === 'composer' && <Action label={tr("홍보글 목록")} disabled={busy} onPress={() => setDraftView('list')} />}{draftView === 'list' && dirty && <Action label={tr("작성 중인 초안 이어쓰기")} disabled={busy} onPress={() => setDraftView('composer')} />}</View>
-      {draftView === 'list' && <Section title={tr("홍보글 관리")}>
-        <Action primary label={tr("새 초안")} disabled={busy} onPress={() => { void openDraft(); }} />
-        <View style={styles.actions}><Action label={tr(showArchived ? tr("작성 중인 원고 보기") : tr("보관한 원고 보기"))} disabled={busy} onPress={() => { setShowArchived(!showArchived); setSelection([]); }} /></View>
-        {data.drafts.filter((d) => !!d.archived_at === showArchived).map((d) => <View key={d.id} style={styles.draftRow}>
+      {draftView === 'list' && <Section title={sidebar ? tr('원고 목록') : tr("홍보글 관리")}>
+        {!sidebar && <Action primary label={tr("새 초안")} disabled={busy} onPress={() => { void openDraft(); }} />}
+        <MerchantSegments value={draftFilter} disabled={busy} onChange={(filter) => { setDraftFilter(filter); setSelection([]); }} items={[
+          { key: 'open', label: tr('작성 중 {0}', data.drafts.filter(d => draftMatches(d, 'open')).length) },
+          { key: 'published', label: tr('게시됨 {0}', data.drafts.filter(d => draftMatches(d, 'published')).length) },
+          { key: 'archived', label: tr('보관함') },
+        ]} />
+        {data.drafts.filter((d) => draftMatches(d, draftFilter)).map((d) => <View key={d.id} style={styles.draftRow}>
           <Pressable analyticsId="merchant.select_draft" accessibilityRole="checkbox" accessibilityLabel={tr("{0} 선택", (d.title))} accessibilityState={{ checked: selection.includes(d.id), disabled: busy }} aria-checked={selection.includes(d.id)} disabled={busy} onPress={() => toggleDraft(d.id)}
             {...(Platform.OS === 'web' ? { onKeyDown: (event: KeyDownEvent) => { if (event.nativeEvent.key === ' ') { event.preventDefault(); toggleDraft(d.id); } } } : {})}
             style={styles.checkbox}><ThemedText>{selection.includes(d.id) ? '☑' : '□'}</ThemedText></Pressable>
-          <Pressable analyticsId="merchant.open_draft" accessibilityRole="button" accessibilityLabel={`${d.title}, ${MERCHANT_CHANNELS[d.channel]}`} disabled={busy} onPress={() => { play('selection'); void openDraft(d); }} style={styles.draftTitle}><ThemedText type="smallBold">{d.title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{MERCHANT_CHANNELS[d.channel]} · {tr(d.published_at ? tr("글링 게시됨") : d.external_url ? tr("카페 URL 기록됨") : d.approved_at ? tr("승인됨") : tr("초안"))}</ThemedText></Pressable>
+          <Pressable analyticsId="merchant.open_draft" accessibilityRole="button" accessibilityLabel={`${d.title}, ${MERCHANT_CHANNELS[d.channel]}`} disabled={busy} onPress={() => { play('selection'); void openDraft(d); }} style={styles.draftTitle}><ThemedText type="smallBold">{d.title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{MERCHANT_CHANNELS[d.channel]} · {new Date(d.updated_at).toLocaleDateString(appLocale)}</ThemedText></Pressable>
+          <MerchantBadge label={d.published_at ? tr("글링 게시됨") : d.external_url ? tr("카페 URL 기록됨") : d.approved_at ? tr("승인됨") : tr("초안")} tone={d.published_at || d.external_url ? 'ok' : d.approved_at ? 'accent' : 'neutral'} />
         </View>)}
-        {!data.drafts.some((d) => !!d.archived_at === showArchived) && <ThemedText type="small" themeColor="textSecondary">{tr(showArchived ? tr("보관한 원고가 없어요.") : tr("새 초안을 작성해 주세요."))}</ThemedText>}
+        {!data.drafts.some((d) => draftMatches(d, draftFilter)) && <ThemedText type="small" themeColor="textSecondary">{draftFilter === 'archived' ? tr("보관한 원고가 없어요.") : draftFilter === 'published' ? tr('아직 게시한 원고가 없어요.') : tr("새 초안을 작성해 주세요.")}</ThemedText>}
         {selection.length > 0 && <><ThemedText type="small">{selection.length}{tr("개 선택")}</ThemedText><View style={styles.actions}>
           {!showArchived && <Action label={tr("선택 원고 승인")} disabled={busy || !canApprove || (!draftReady && selection.includes(editor.id)) || picked.some((d) => d.published_at || d.external_url)} onPress={() => {
             const expected = Object.fromEntries(picked.map((d) => [d.id, d.updated_at]));
@@ -577,9 +603,9 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
         </View>{!canApprove && selection.length > 1 && <ThemedText type="small" themeColor="textSecondary">{tr("기본 이용에서는 한 건씩 승인할 수 있어요.")}</ThemedText>}</>}
       </Section>}
       {draftView === 'composer' && <Section title={tr(draftStep === 'idea' ? tr("어떤 소식을 알릴까요?") : draftStep === 'channels' ? tr("게시 전 확인") : published ? tr("게시한 원고") : tr("초안을 확인해 주세요"))}>
+        {!published && <MerchantSteps steps={[tr('내용'), tr('원고 확인'), tr('게시할 곳')]} current={draftStep === 'idea' ? 0 : draftStep === 'edit' ? 1 : 2} />}
         {draftChanged && <ThemedText accessibilityRole="alert">{tr(errorText(new Error('MERCHANT_DRAFT_CHANGED')))}</ThemedText>}
         {draftStep === 'idea' ? <>
-          <ThemedText type="small" themeColor="textSecondary">{tr("가게 이름·도시와 이번 소식으로 초안을 만들어요.")}</ThemedText>
           <View style={styles.actions}>{draftPurposes.map((label) => <Action key={label} label={tr(label)} selected={purpose === label} disabled={busy} onPress={() => { setPurpose(label); setDirty(true); }} />)}</View>
           <Field label={tr("이번에 알릴 내용 (필수)")} value={facts} maxLength={1000} multiline disabled={busy} placeholder={tr("예: 새 닭강정 도시락을 소개하고 싶어요.\n12달러이고 토요일부터 판매해요.")} onChange={(value) => { setFacts(value); setDirty(true); }} />
           <ThemedText type="small" themeColor="textSecondary">{tr("입력하지 않은 가격·날짜는 만들어 넣지 않아요. 가게 이름·도시와 입력 내용이 AI에 전달돼요.")}</ThemedText>
@@ -591,7 +617,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
         {editor.channel !== 'gling' && <><ThemedText type="small">{tr("원고 채널")}</ThemedText><View style={styles.actions}>{Object.entries(MERCHANT_CHANNELS).map(([key, label]) => <Action key={key} label={label} selected={editor.channel === key} disabled={busy || published} onPress={() => changeDraft({ channel: key as MerchantChannel })} />)}</View></>}
         <Field label={tr("제목")} value={editor.title} maxLength={100} disabled={busy || published} onChange={(title) => changeDraft({ title })} />
         <View style={styles.field}><ThemedText type="small" themeColor="textSecondary">{tr("게시글 본문")}</ThemedText>
-          <PostBodyEditor accessibilityLabel={tr("게시글 본문")} value={editor.body} cityName={CITIES.find(city => city.id === data.merchant.city_id)?.englishName} allowLocation={editor.channel === 'gling'} maxLength={4700} multiline editable={!busy && !published} onChangeText={(body) => changeDraft({ body })}
+          <PostBodyEditor accessibilityLabel={tr("게시글 본문")} value={editor.body} cityName={CITIES.find(city => city.id === data.merchant.city_id)?.englishName} allowLocation={editor.channel === 'gling'} maxLength={editor.channel === 'gling' ? 1000 : 4700} multiline editable={!busy && !published} onChangeText={(body) => changeDraft({ body })}
             style={[styles.input, styles.multiline, { color: theme.text, borderColor: theme.line, backgroundColor: theme.backgroundElement }]} />
         </View>
         <ThemedText type="smallBold">{tr("사진") + " "}{draftPhotos.length}/{MAX_POST_IMAGES}</ThemedText>
@@ -638,13 +664,17 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
         </>}
       </Section>}
     </>}
-    {activeTab === 'cost' && <Section title={tr("개당 원가 계산")}>
-      <ThemedText type="small" themeColor="textSecondary">{tr("한 번 만드는 묶음 기준으로 입력해요. 금액은 CAD예요.")}</ThemedText>
+    {activeTab === 'cost' && <View style={styles.columns}><View style={styles.column}><Section title={tr("입력")}>
+      {!sidebar && <ThemedText type="small" themeColor="textSecondary">{tr("한 번 만드는 묶음 기준으로 입력해요. 금액은 CAD예요.")}</ThemedText>}
       {([['batchCost', tr("묶음 전체 재료비")], ['yield', tr("판매 가능한 수량")], ['packaging', tr("개당 포장비")], ['other', tr("개당 기타비")], ['price', tr("개당 판매가")], ['feePercent', tr("결제·판매 수수료율 (%)")]] as const).map(([key, label]) => <Field key={key} label={label} value={cost[key]} numeric onChange={(value) => setCost({ ...cost, [key]: value })} />)}
-      {calculated ? <View style={styles.result}><ThemedText type="subtitle">{tr("개당 변동 원가") + " "}{money(calculated.unitCost)}</ThemedText><ThemedText>{tr("개당 공헌이익") + " "}{money(calculated.contribution)}</ThemedText><ThemedText type="small">{tr("원가율") + " "}{calculated.costPercent?.toFixed(1) ?? '—'}{tr("% · 공헌이익률") + " "}{calculated.marginPercent?.toFixed(1) ?? '—'}%</ThemedText></View> : <ThemedText accessibilityRole="alert">{tr(errorText(new Error('INVALID_COST_INPUT')))}</ThemedText>}
-      <ThemedText type="small" themeColor="textSecondary">{tr("공헌이익은 입력한 변동 비용을 뺀 금액이에요. 임대료·인건비·세금 등을 반영하기 전이므로 순이익과 달라요.")}</ThemedText>
+      </Section></View><View style={styles.column}><Section title={tr("결과")}>
+      {calculated ? <View style={styles.result}><ThemedText type="small" themeColor="textSecondary">{tr("개당 공헌이익")}</ThemedText><ThemedText type="title">{money(calculated.contribution)}</ThemedText>
+        {calculated.marginPercent !== null && <MerchantMeter label={tr("공헌이익률")} value={Math.max(0, Math.round(calculated.marginPercent))} max={100} />}
+        <ThemedText type="small" themeColor="textSecondary">{tr("개당 변동 원가 {0} · 원가율 {1}%", money(calculated.unitCost), calculated.costPercent?.toFixed(1) ?? '—')}</ThemedText></View> : <ThemedText accessibilityRole="alert">{tr(errorText(new Error('INVALID_COST_INPUT')))}</ThemedText>}
+      <ThemedText type="small" themeColor="textSecondary">{tr("임대료·인건비·세금 전 금액이라 순이익과 달라요.")}</ThemedText>
+      <MerchantHelp items={[tr("공헌이익은 판매가에서 입력한 변동 비용을 뺀 금액이에요.")]} />
       <Action label={tr("계산 내역 복사·공유")} disabled={!calculated || busy} onPress={() => { if (calculated) void run(() => shareText(`${data.merchant.name} 원가 계산\n전체 재료비 ${money(amount(cost.batchCost))} / 수량 ${cost.yield}\n개당 포장비 ${money(amount(cost.packaging))} · 기타비 ${money(amount(cost.other))}\n판매가 ${money(amount(cost.price))} · 수수료 ${cost.feePercent}%\n개당 변동 원가 ${money(calculated.unitCost)}\n개당 공헌이익 ${money(calculated.contribution)} (고정비·세금 반영 전)`), '계산 내역을 준비했어요.', false); }} />
-    </Section>}
+    </Section></View></View>}
     {activeTab === 'stock' && <>
       <Section title={tr("품목 관리")}>
         <Field label={tr("품목 이름")} value={item.name} disabled={stockLocked} onChange={(name) => setItem({ ...item, name })} /><Field label={tr("단위")} value={item.unit} maxLength={20} disabled={stockLocked} onChange={(unit) => setItem({ ...item, unit })} />
@@ -652,10 +682,12 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
         <Action primary label={tr("품목 저장")} disabled={stockLocked || !item.name.trim() || !item.unit.trim() || !Number.isFinite(amount(item.unit_cost)) || amount(item.unit_cost) < 0 || !Number.isFinite(amount(item.low_stock)) || amount(item.low_stock) < 0} onPress={() => { void run(async () => { await saveMerchantItem(supabase, id, { ...item, unit_cost: amount(item.unit_cost), low_stock: amount(item.low_stock) }); setItem({ id: merchantEventId(), name: '', unit: '개', unit_cost: '0', low_stock: '0' }); }, '품목을 저장했어요. 재고는 아래 입출고로 기록해 주세요.'); }} />
       </Section>
       <Section title={tr("입출고 기록")}>
-        <ThemedText type="small" themeColor="textSecondary">{tr("입고는 양수, 출고는 음수로 입력해요. 소수점은 세 자리까지 지원해요.")}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{tr("입고는 ＋, 출고는 −로 입력해요.")}</ThemedText>
         {!data.items.length && <ThemedText>{tr("품목을 먼저 등록해 주세요.")}</ThemedText>}
-        {data.items.map((i) => <View key={i.id} style={styles.stockRow}><ThemedText type="smallBold">{i.name} · {Number(i.quantity)}{i.unit}{tr(Number(i.quantity) <= Number(i.low_stock) ? tr(" · 재고 부족") : '')}</ThemedText><View style={styles.actions}>
+        {data.items.map((i) => <View key={i.id} style={styles.stockRow}><View style={styles.actions}><ThemedText type="smallBold">{i.name} · {Number(i.quantity)}{i.unit}</ThemedText>{Number(i.quantity) <= Number(i.low_stock) && <MerchantBadge label={tr("재고 부족")} tone="warn" />}</View><View style={styles.actions}>
           <Action label={tr("{0} 수정", (i.name))} disabled={stockLocked} onPress={() => setItem({ ...i, unit_cost: String(i.unit_cost), low_stock: String(i.low_stock) })} />
+          <Action label={tr("{0} 1 빼기", i.name)} disabled={stockLocked} onPress={() => stockStep(i.id, -1)} />
+          <Action label={tr("{0} 1 더하기", i.name)} disabled={stockLocked} onPress={() => stockStep(i.id, 1)} />
         </View><Field label={tr("{0} 입출고 수량", (i.name))} value={changes[i.id] ?? ''} numeric signed disabled={stockLocked} onChange={(value) => setChanges({ ...changes, [i.id]: value })} />
           {!stockPending && (changes[i.id] ?? '').trim() && <ThemedText type="small">{tr("변경 후") + " "}{Number(i.quantity) + amount(changes[i.id])}{i.unit}</ThemedText>}
         </View>)}
@@ -665,29 +697,48 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
         {!stockReady && stockRestoreError && <Action label={tr("입출고 요청 다시 확인")} disabled={busy} onPress={() => { setError(''); setStockRecoveryRevision((v) => v + 1); }} />}
         <Action primary label={tr(stockPending ? tr("같은 입출고 요청 재확인") : tr("입출고 기록"))} disabled={busy || !stockReady || (!stockPending && !stockValid)} onPress={() => { void submitStock(); }} />
         {stockPending && <ThemedText type="small" accessibilityLiveRegion="polite" themeColor="textSecondary">{tr("입출고 요청을 보관했어요. 결과가 확인될 때까지 수량과 사유는 고정돼요. 매장을 바꾸거나 앱을 다시 열어도 같은 요청 재확인 버튼으로 원래 요청의 결과를 확인할 수 있어요.")}</ThemedText>}
+        <MerchantHelp items={[tr("소수점은 세 자리까지 넣을 수 있어요.")]} />
         {data.movements.slice(0, 20).map((m) => <ThemedText key={m.id} type="small" themeColor="textSecondary">{m.item_name} {Number(m.delta) > 0 ? '+' : ''}{m.delta} · {m.note} · {new Date(m.created_at).toLocaleDateString(appLocale)}</ThemedText>)}
       </Section>
     </>}
-    {activeTab === 'accounts' && <MerchantAccountManagement merchantName={data.merchant.name} merchantId={id} refreshSignal={refreshSignal + revision} onChanged={() => { setRevision(v => v + 1); onConnectionsChanged?.(); }} />}
-    {activeTab === 'membership' && data.metrics && <>
-      <Section title={tr("비즈니스 멤버십")}>
-        {businessMembership ? <><ThemedText type="subtitle">{({ free:tr("베이직"),plus:tr("플러스"),pro:tr("프로"),premium:tr("프리미엄") })[businessMembership.tier]}</ThemedText>
-          <ThemedText>{tr("이번 달 신규") + " "}{businessMembership.postsUsed}/{businessMembership.postLimit ?? tr("기존 약정 유지")}{tr("편 · 끌어올리기") + " "}{businessMembership.bumpsUsed}/{businessMembership.bumpLimit}{tr("회")}</ThemedText>
-          {businessMembership.tier === 'premium' && <ThemedText type="small">{tr("전체 30편·24회에 운영대행 신규 4편·끌어올리기 8회·보고서 1회가 포함돼요.")}</ThemedText>}
-          <ThemedText type="small" themeColor="textSecondary">{new Date(businessMembership.resetsAt).toLocaleDateString(appLocale)}{tr("에 사용량이 초기화돼요. 직원과 AI도 같은 비즈니스 한도를 공유해요.")}</ThemedText></> : <ThemedText type="small">{tr("멤버십 사용량을 확인하지 못했어요. 비즈니스 연결 상태를 확인하고 다시 열어 주세요.")}</ThemedText>}
-        <ThemedText type="small" themeColor="textSecondary">{tr("같은 홍보글은 새 글로 다시 올리지 않고 기존 글을 수정하거나 끌어올려 주세요. 앱의 멤버십 → 비즈니스에서 스토어 상품이 준비되면 가입할 수 있어요.")}</ThemedText>
-      </Section>
-      <Section title={tr("비즈니스 이용 상태")}><ThemedText type="subtitle">{({ basic: tr("기본 이용"), trial: tr("비즈니스 체험"), pro: tr("비즈니스 유료 운영") })[data.merchant.plan]}</ThemedText>
-        <ThemedText>{tr(data.merchant.plan === 'trial' ? tr("{0}까지 체험", (data.merchant.trial_ends_at)) : data.merchant.plan === 'pro' ? tr("{0}까지 운영", (data.merchant.workspace_until)) : tr("개별 초안·승인, 원가 계산, 품목별 입출고를 계속 이용할 수 있어요."))}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">{tr("체험·기존 운영 기간 또는 비즈니스 유료 멤버십에서는 여러 건을 한 번에 승인하거나 입출고할 수 있어요. 기간이 끝나도 저장한 자료는 남아요. 개인 멤버십과 비즈니스 구독은 별도로 관리해요.")}</ThemedText>
-      </Section>
-      <Section title={tr("최근 14일 성과")}><ThemedText>{tr("연결 게시글") + " "}{data.metrics.linked_posts}{tr("편 · 새 글") + " "}{data.metrics.new_posts}{tr("편")}</ThemedText>
-        <ThemedText>{tr("로그인 회원 최초 열람 {0}회 · {1}명", data.metrics.first_reads, data.metrics.unique_readers)}</ThemedText><ThemedText>{tr("원문 클릭 {0}회", data.metrics.source_clicks)}</ThemedText>
-        <ThemedText type="small">{tr("로그인 클릭 회원 {0}명 · 익명 클릭 세션 {1}개", data.metrics.member_clickers, data.metrics.anonymous_sessions)}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">{tr("누적 표시 조회") + " "}{data.metrics.displayed_views}{tr("회 · 익명 조회·운영 조정 포함. 실제 열람 인원과 달라요. 원문 클릭은 문의·주문 완료를 뜻하지 않아요. 비즈니스 소유자·작성자·관리자 기록은 측정 성과에서 제외해요.")}</ThemedText>
-        {data.reports.map((report) => <Action key={report.id} label={tr("{0} 보고서 공유", (report.period_end))} disabled={busy} onPress={() => { void run(() => shareText(merchantReportText(report)), '저장된 보고서를 준비했어요.', false); }} />)}
-      </Section>
-    </>}
+    {activeTab === 'accounts' && <MerchantAccountManagement bare={sidebar} merchantName={data.merchant.name} merchantId={id} refreshSignal={refreshSignal + revision} onChanged={() => { setRevision(v => v + 1); onConnectionsChanged?.(); }} />}
+    {activeTab === 'membership' && (data.metrics ? <>
+      <MerchantStats>
+        <MerchantStat label={tr("새 글")} value={tr("{0}편", data.metrics.new_posts)} />
+        <MerchantStat label={tr("처음 읽은 회원")} value={tr("{0}명", data.metrics.unique_readers)} />
+        <MerchantStat label={tr("원문 클릭")} value={tr("{0}회", data.metrics.source_clicks)} />
+        <MerchantStat label={tr("연결된 글")} value={tr("{0}편", data.metrics.linked_posts)} />
+      </MerchantStats>
+      <View style={styles.columns}>
+        <View style={styles.column}><Section title={businessMembership ? ({ free: tr("베이직"), plus: tr("플러스"), pro: tr("프로"), premium: tr("프리미엄") })[businessMembership.tier] : tr("비즈니스 멤버십")}>
+          {businessMembership ? <>
+            {businessMembership.postLimit != null ? <MerchantMeter label={tr("이번 달 새 글")} value={businessMembership.postsUsed} max={businessMembership.postLimit} />
+              : <ThemedText type="small">{tr("이번 달 새 글 {0}편 · 기존 약정 유지", businessMembership.postsUsed)}</ThemedText>}
+            <MerchantMeter label={tr("끌어올리기")} value={businessMembership.bumpsUsed} max={businessMembership.bumpLimit} />
+            <ThemedText type="small" themeColor="textSecondary">{tr("{0}에 초기화돼요. 직원·AI도 같은 한도를 써요.", new Date(businessMembership.resetsAt).toLocaleDateString(appLocale))}</ThemedText>
+            {businessMembership.tier === 'premium' && <ThemedText type="small" themeColor="textSecondary">{tr("전체 30편·24회에 운영대행 신규 4편·끌어올리기 8회·보고서 1회가 포함돼요.")}</ThemedText>}
+          </> : <ThemedText type="small">{tr("멤버십 사용량을 확인하지 못했어요. 비즈니스 연결 상태를 확인하고 다시 열어 주세요.")}</ThemedText>}
+        </Section></View>
+        <View style={styles.column}><Section title={tr("이용 상태")}>
+          <View style={styles.actions}><MerchantBadge label={({ basic: tr("기본 이용"), trial: tr("비즈니스 체험"), pro: tr("비즈니스 유료 운영") })[data.merchant.plan]} tone={data.merchant.plan === 'basic' ? 'neutral' : 'accent'} />
+            {data.merchant.plan !== 'basic' && <ThemedText type="small" themeColor="textSecondary">{data.merchant.plan === 'trial' ? tr("{0}까지 체험", data.merchant.trial_ends_at) : tr("{0}까지 운영", data.merchant.workspace_until)}</ThemedText>}</View>
+          <ThemedText type="small" themeColor="textSecondary">{data.merchant.plan === 'basic' ? tr("개별 초안·승인, 원가 계산, 품목별 입출고를 계속 이용할 수 있어요.") : tr("여러 건을 한 번에 승인하거나 입출고할 수 있어요.")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr("기간이 끝나도 저장한 자료는 남아요.")}</ThemedText>
+        </Section></View>
+      </View>
+      {data.reports.length > 0 && <Section title={tr("성과 보고서")}><View style={styles.actions}>{data.reports.map((report) => <Action key={report.id} label={tr("{0} 보고서 공유", (report.period_end))} disabled={busy} onPress={() => { void run(() => shareText(merchantReportText(report)), '저장된 보고서를 준비했어요.', false); }} />)}</View></Section>}
+      <MerchantHelp label={tr("측정 기준과 이용 규칙")} items={[
+        tr("로그인 회원 최초 열람 {0}회 · {1}명", data.metrics.first_reads, data.metrics.unique_readers),
+        tr("로그인 클릭 회원 {0}명 · 익명 클릭 세션 {1}개", data.metrics.member_clickers, data.metrics.anonymous_sessions),
+        tr("누적 표시 조회 {0}회는 익명 조회·운영 조정을 포함해 실제 열람 인원과 달라요.", data.metrics.displayed_views),
+        tr("원문 클릭은 문의·주문 완료를 뜻하지 않아요."),
+        tr("비즈니스 소유자·작성자·관리자 기록은 측정 성과에서 제외해요."),
+        tr("같은 홍보글은 새 글로 다시 올리지 않고 기존 글을 수정하거나 끌어올려 주세요."),
+        tr("체험·기존 운영 기간 또는 비즈니스 유료 멤버십에서는 여러 건을 한 번에 승인하거나 입출고할 수 있어요."),
+        tr("개인 멤버십과 비즈니스 구독은 별도로 관리해요."),
+        tr("앱의 멤버십 → 비즈니스에서 스토어 상품이 준비되면 가입할 수 있어요."),
+      ]} />
+    </> : <Section title={tr("성과·멤버십")}><ThemedText>{tr("성과 정보를 아직 불러오지 못했어요.")}</ThemedText><Action label={tr("다시 확인")} disabled={busy} onPress={() => { setError(''); setRevision(v => v + 1); }} /></Section>)}
     </View>
   </View></>;
 }
@@ -705,5 +756,6 @@ const styles = StyleSheet.create({
   toolRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
   toolText: { flex: 1, minWidth: 0, gap: 4 },
   stockRow: { gap: 8, paddingVertical: 8 }, result: { gap: 8, paddingVertical: 8 },
+  columns: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, alignItems: 'flex-start' }, column: { flexGrow: 1, flexBasis: 300, minWidth: 0 },
   channelRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56 }, channelText: { flex: 1, minWidth: 0, gap: 4 }, channelSwitch: { width: 52, height: 44 },
 });

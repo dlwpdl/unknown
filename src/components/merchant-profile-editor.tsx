@@ -6,6 +6,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Pressable } from '@/components/analytics-controls';
 import { MerchantProfileHeader } from '@/components/merchant-profile-header';
+import { MerchantHelp } from '@/components/merchant-ui';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
@@ -29,13 +30,14 @@ function ProfileAction({ label, onPress, disabled = false, primary = false }: { 
   </Pressable>;
 }
 
-export function MerchantProfileEditor({ merchantId, onDirty }: { merchantId: string; onDirty: (dirty: boolean) => void }) {
+// bare: the business web renders the page title itself, so only the public-profile link stays on top.
+export function MerchantProfileEditor({ merchantId, onDirty, bare = false }: { merchantId: string; onDirty: (dirty: boolean) => void; bare?: boolean }) {
 
   const { me, isAuthed } = useAuth();
-  return <ScopedProfileEditor key={`${merchantId}:${isAuthed ? me.id : 'guest'}`} merchantId={merchantId} onDirty={onDirty} />;
+  return <ScopedProfileEditor key={`${merchantId}:${isAuthed ? me.id : 'guest'}`} merchantId={merchantId} onDirty={onDirty} bare={bare} />;
 }
 
-function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDirty: (dirty: boolean) => void }) {
+function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId: string; onDirty: (dirty: boolean) => void; bare?: boolean }) {
   const { tr } = useLanguage();
   const theme = useTheme(), router = useRouter(), { me } = useAuth(), { play } = useInteractionFeedback();
   const [profile, setProfile] = useState<MyMerchantProfile | null>(null), [photos, setPhotos] = useState<Photos | null>(null);
@@ -145,63 +147,98 @@ function ScopedProfileEditor({ merchantId, onDirty }: { merchantId: string; onDi
     if (uploads.current.size) void supabase.storage.from('merchant-profile-images').remove([...uploads.current]).catch(() => {});
     contactDraft.current = null; setContact(null); change(null); reload();
   };
-  return <View style={[styles.section, { borderColor: theme.line, backgroundColor: theme.card }]}>
-    <View style={styles.row}><ThemedText type="subtitle">{tr("비즈니스 프로필")}</ThemedText>
+  const name = (kind: keyof Photos) => kind === 'banner' ? tr("채널 배너") : kind === 'avatar' ? tr("가게 로고") : tr("지도 대표 사진");
+  const short = (kind: keyof Photos) => kind === 'banner' ? tr('배너') : kind === 'avatar' ? tr('로고') : tr('지도 사진');
+  const card = [styles.card, { borderColor: theme.line, backgroundColor: theme.card }];
+  return <View style={styles.page}>
+    {(!bare || profile) && <View style={[styles.row, bare && styles.end]}>
+      {!bare && <ThemedText type="subtitle">{tr("비즈니스 프로필")}</ThemedText>}
       {profile && <ProfileAction label={tr("공개 프로필 보기")} onPress={() => {
         if (Platform.OS === 'web') void Linking.openURL(`https://gling.ej-entertainment.com/company?id=${encodeURIComponent(merchantId)}`).catch(() => setError("프로필을 열지 못했어요. 잠시 후 다시 시도해 주세요."));
         else router.push({ pathname: '/company/[id]', params: { id: merchantId } });
       }} disabled={busy} />}
-    </View>
+    </View>}
     {loading ? <ThemedText type="small" accessibilityLiveRegion="polite">{tr("프로필을 불러오는 중…")}</ThemedText>
       : profile && photos && <>
-        <MerchantProfileHeader profile={{ ...profile, avatarUri: photos.avatar.uri, bannerUri: photos.banner.uri }} />
-        {!profile.can_edit && <ThemedText type="small" themeColor="textSecondary">{tr("비즈니스 계정과 소유 확인이 완료되면 사진을 바꿀 수 있어요.")}</ThemedText>}
-        {profile.can_edit && <>
-          <ThemedText type="small" themeColor="textSecondary">{tr("배너는 가운데 기준의 가로 화면, 로고는 원형으로 보여요. 저장 전 미리보기에서 확인해 주세요.")}</ThemedText>
-          {(['banner', 'avatar', 'map'] as const).map((kind) => <View key={kind} style={styles.row}>
-            <ThemedText type="smallBold">{kind === 'banner' ? tr("채널 배너") : kind === 'avatar' ? tr("가게 로고") : tr("지도 대표 사진")}</ThemedText>
-            {kind === 'map' && photos.map.uri && <Image source={{ uri: photos.map.uri }} style={styles.mapPhoto} contentFit="cover" accessibilityLabel={tr("지도 대표 사진 미리보기")}
-              onError={() => { if (!draft.current || draft.current.map.uri !== photos.map.uri) return;
-                setProfile(current => current ? { ...current, imageLoadFailed: true } : current); change({ ...draft.current, map: { ...draft.current.map, uri: null } }); }} />}
-            <View style={styles.actions}>
-              <ProfileAction label={tr("{0} {1}", (kind === 'banner' ? tr('배너') : kind === 'avatar' ? tr('로고') : tr('지도 사진')), (photos[kind].uri || photos[kind].path || photos[kind].image ? tr('교체') : tr('선택')))} onPress={() => { void choose(kind); }} disabled={busy} />
-              {(photos[kind].uri || photos[kind].path || photos[kind].image) && <ProfileAction label={tr("{0} 제거", (kind === 'banner' ? tr('배너') : kind === 'avatar' ? tr('로고') : tr('지도 사진')))} onPress={() => change({ ...photos, [kind]: { path: null, uri: null } })} disabled={busy} />}
+        <View style={card}>
+          <ThemedText type="smallBold">{tr("사진")}</ThemedText>
+          <MerchantProfileHeader profile={{ ...profile, avatarUri: photos.avatar.uri, bannerUri: photos.banner.uri }} />
+          {!profile.can_edit && <ThemedText type="small" themeColor="textSecondary">{tr("비즈니스 계정과 소유 확인이 완료되면 사진을 바꿀 수 있어요.")}</ThemedText>}
+          {profile.can_edit && <>
+            <View style={styles.tiles}>{(['banner', 'avatar', 'map'] as const).map((kind) => {
+              const photo = photos[kind], has = !!(photo.uri || photo.path || photo.image);
+              return <View key={kind} style={styles.tile}>
+                <ThemedText type="smallBold">{name(kind)}</ThemedText>
+                {photo.uri ? <Image source={{ uri: photo.uri }} style={[styles.thumb, { backgroundColor: theme.backgroundElement }, kind === 'avatar' && styles.logo]} contentFit="cover"
+                  accessibilityLabel={kind === 'banner' ? tr("채널 배너 미리보기") : kind === 'avatar' ? tr("가게 로고 미리보기") : tr("지도 대표 사진 미리보기")}
+                  onError={kind !== 'map' ? undefined : () => { if (!draft.current || draft.current.map.uri !== photos.map.uri) return;
+                    setProfile(current => current ? { ...current, imageLoadFailed: true } : current); change({ ...draft.current, map: { ...draft.current.map, uri: null } }); }} />
+                  : <Pressable analyticsId="merchant.profile.action" accessibilityRole="button" accessibilityLabel={tr("{0} {1}", short(kind), has ? tr('교체') : tr('선택'))} accessibilityState={{ disabled: busy }}
+                    disabled={busy} onPress={() => { play('selection'); void choose(kind); }}
+                    style={({ pressed }) => [styles.thumb, styles.empty, { borderColor: theme.line, opacity: busy ? 0.45 : pressed ? 0.7 : 1 }, kind === 'avatar' && styles.logo]}>
+                    <ThemedText type="smallBold" themeColor="accent">{tr("+ 추가")}</ThemedText>
+                  </Pressable>}
+                <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{kind === 'banner' ? tr("가로 · 가운데 기준") : kind === 'avatar' ? tr("원형으로 보여요") : tr("없으면 장소 사진을 써요")}</ThemedText>
+                <View style={styles.actions}>
+                  <ProfileAction label={tr("{0} {1}", short(kind), has ? tr('교체') : tr('선택'))} onPress={() => { void choose(kind); }} disabled={busy} />
+                  {has && <ProfileAction label={tr("{0} 제거", short(kind))} onPress={() => change({ ...photos, [kind]: { path: null, uri: null } })} disabled={busy} />}
+                </View>
+              </View>;
+            })}</View>
+            <View style={[styles.actions, styles.end]}>
+              {dirty && <ProfileAction label={tr("취소")} onPress={cancel} disabled={busy} />}
+              <ProfileAction label={busy ? tr("처리 중…") : tr("프로필 사진 저장")} onPress={() => { void save(); }} disabled={busy || !photoDirty} primary={photoDirty} />
             </View>
-          </View>)}
-          <ThemedText type="small" themeColor="textSecondary">{tr("지도 대표 사진은 연결된 장소 카드에 표시돼요. 사진을 제거하면 기존 장소 사진을 사용해요.")}</ThemedText>
-          <View style={styles.actions}>
-            <ProfileAction label={busy ? tr("처리 중…") : tr("프로필 사진 저장")} onPress={() => { void save(); }} disabled={busy || !photoDirty} primary={photoDirty} />
-            {dirty && <ProfileAction label={tr("수정 취소")} onPress={cancel} disabled={busy} />}
-          </View>
-          {contact && <View style={styles.contact}>
+          </>}
+          {profile.imageLoadFailed && !dirty && <View style={styles.row}><ThemedText type="small" themeColor="textSecondary">{tr("사진 일부를 불러오지 못했어요. 저장된 사진은 유지돼요.")}</ThemedText><ProfileAction label={tr("사진 다시 확인")} onPress={() => { change(null); reload(); }} disabled={busy} /></View>}
+        </View>
+        {profile.can_edit && contact && <View style={card}>
+          <View style={styles.title}>
             <ThemedText type="smallBold">{tr("공개 연락 정보")}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">{tr("방문자가 볼 전화번호와 실제 영업시간을 적어주세요. 내부 담당자 연락처와 별도로 공개돼요.")}</ThemedText>
-            <ThemedText type="smallBold">{tr("전화번호") + " "}<ThemedText type="small" themeColor="textSecondary">{tr("(선택)")}</ThemedText></ThemedText>
-            <TextInput accessibilityLabel={tr("비즈니스 공개 전화번호")} value={contact.phone} editable={!busy} maxLength={40} keyboardType="phone-pad" autoCapitalize="none"
-              placeholder="+1 604 555 0101" placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')} onChangeText={phone => changeContact({ ...contact, phone })}
-              style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
-            <ThemedText type="smallBold">{tr("영업시간") + " "}<ThemedText type="small" themeColor="textSecondary">{tr("(선택)")}</ThemedText></ThemedText>
-            <TextInput accessibilityLabel={tr("비즈니스 영업시간")} value={contact.hours} editable={!busy} maxLength={500} multiline
-              placeholder={tr("월–금 09:00–18:00\n토·일 휴무")} placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')} onChangeText={hours => changeContact({ ...contact, hours })}
-              style={[styles.input, styles.hours, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
             <ThemedText type="small" themeColor="textSecondary">{tr("비워 두면 공개하지 않아요.")}</ThemedText>
+          </View>
+          <View style={styles.fields}>
+            <View style={styles.field}>
+              <ThemedText type="smallBold">{tr("전화번호")}</ThemedText>
+              <TextInput accessibilityLabel={tr("비즈니스 공개 전화번호")} value={contact.phone} editable={!busy} maxLength={40} keyboardType="phone-pad" autoCapitalize="none"
+                placeholder="+1 604 555 0101" placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')} onChangeText={phone => changeContact({ ...contact, phone })}
+                style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
+            </View>
+            <View style={styles.field}>
+              <ThemedText type="smallBold">{tr("영업시간")}</ThemedText>
+              <TextInput accessibilityLabel={tr("비즈니스 영업시간")} value={contact.hours} editable={!busy} maxLength={500} multiline
+                placeholder={tr("월–금 09:00–18:00\n토·일 휴무")} placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')} onChangeText={hours => changeContact({ ...contact, hours })}
+                style={[styles.input, styles.hours, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
+            </View>
+          </View>
+          <ThemedText type="small" themeColor="textSecondary">{tr("손님에게 공개돼요. 내부 담당자 연락처와는 따로예요.")}</ThemedText>
+          <View style={[styles.actions, styles.end]}>
             <ProfileAction label={busy ? tr("연락 정보 처리 중…") : tr("연락 정보 저장")} onPress={() => { void saveContact(); }} disabled={busy || !contactDirty} primary={!photoDirty && contactDirty} />
-          </View>}
-        </>}
-        {profile.imageLoadFailed && !dirty && <View style={styles.row}><ThemedText type="small" themeColor="textSecondary">{tr("사진 일부를 불러오지 못했어요. 저장된 사진은 유지돼요.")}</ThemedText><ProfileAction label={tr("사진 다시 확인")} onPress={() => { change(null); reload(); }} disabled={busy} /></View>}
+          </View>
+        </View>}
       </>}
     {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
     {!loading && !profile && <ProfileAction label={tr("다시 불러오기")} onPress={reload} disabled={busy} />}
     {!!notice && <ThemedText type="small" themeColor="accent" accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
+    {profile?.can_edit && <MerchantHelp items={[tr("저장 전 미리보기에서 확인해 주세요."), tr("지도 대표 사진은 연결된 장소 카드에 표시돼요. 사진을 제거하면 기존 장소 사진을 사용해요.")]} />}
   </View>;
 }
 
 const styles = StyleSheet.create({
-  section: { borderWidth: 1, borderRadius: 14, padding: 16, gap: 16 },
+  page: { gap: 16 },
+  card: { borderWidth: 1, borderRadius: 14, padding: 16, gap: 12 },
   row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  end: { justifyContent: 'flex-end' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  mapPhoto: { width: 72, height: 72, borderRadius: 10 },
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  tile: { flexGrow: 1, flexBasis: 200, minWidth: 0, gap: 8 },
+  thumb: { width: '100%', height: 96, borderRadius: 10 },
+  logo: { width: 96, borderRadius: 48 },
+  empty: { borderWidth: 1, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' },
   button: { minHeight: 44, minWidth: 44, paddingHorizontal: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderRadius: 10 },
-  contact: { gap: 8, paddingTop: 12 }, input: { minHeight: 48, borderWidth: 1, borderRadius: 8, padding: 12 },
+  title: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: 8 },
+  fields: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  field: { flexGrow: 1, flexBasis: 240, minWidth: 0, gap: 6 },
+  input: { minHeight: 48, borderWidth: 1, borderRadius: 8, padding: 12 },
   hours: { minHeight: 100, textAlignVertical: 'top' },
 });

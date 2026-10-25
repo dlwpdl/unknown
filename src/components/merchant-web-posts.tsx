@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Pressable } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
+import { MerchantHelp } from '@/components/merchant-ui';
 import { PostDetail } from '@/components/post-detail';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
@@ -17,7 +18,7 @@ import { editMerchantPost, removeMerchantPost } from '@/lib/merchant-posts';
 import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
 
-export function MerchantWebPosts({ merchantId, posts, onChanged }: { merchantId: string; posts: MerchantPost[]; onChanged?: () => void }) {
+export function MerchantWebPosts({ merchantId, posts, onChanged, bare = false }: { merchantId: string; posts: MerchantPost[]; onChanged?: () => void; bare?: boolean }) {
   const { tr } = useLanguage();
   const { isAuthed, me } = useAuth(), theme = useTheme(), { play } = useInteractionFeedback();
   const owner = isAuthed ? `${me.id}:${merchantId}` : '';
@@ -60,17 +61,17 @@ export function MerchantWebPosts({ merchantId, posts, onChanged }: { merchantId:
   };
   if (!isAuthed) return null;
   return <View style={styles.list}>
-    <ThemedText type="subtitle" accessibilityRole="header">{tr("비즈니스의 글과 사진")}</ThemedText>
-    <ThemedText type="small" themeColor="textSecondary">{tr("연결된 글을 열어서 수정·삭제할 수 있어요. 사진을 추가하거나 순서를 바꾸면 첫 사진이 대표 사진이 돼요. 비즈니스에서 관리하려면 소유 확인을 먼저 완료해 주세요.")}</ThemedText>
+    {!bare && <View style={styles.head}><ThemedText type="subtitle" accessibilityRole="header">{tr("글·사진")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("게시한 글을 열어 고치거나 내릴 수 있어요.")}</ThemedText></View>}
     {error && <ThemedText accessibilityRole="alert">{tr(error)}</ThemedText>}
     {busy && <GlingLoader accessibilityLabel={tr("저장된 비즈니스 글과 사진을 여는 중")} />}
     {posts.filter(row => !removed.includes(row.post_id)).map(row => <Pressable key={row.post_id} analyticsId="merchant-web.post.open" accessibilityRole="button"
       accessibilityLabel={tr("{0} · 글과 사진 열기", (titles[row.post_id] ?? row.title))} accessibilityState={{ disabled: busy }} disabled={busy}
       onPress={() => open(row.post_id)} style={({ pressed }) => [styles.row, { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : theme.card, opacity: busy ? 0.6 : 1 }]}>
-      <View style={styles.rowText}><ThemedText type="smallBold" numberOfLines={2}>{titles[row.post_id] ?? row.title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("누적 표시 조회") + " "}{row.displayed_views}{tr("회")}</ThemedText></View>
-      <ThemedText type="smallBold" themeColor="accent">{tr("열기")}</ThemedText>
+      <View style={styles.rowText}><ThemedText type="smallBold" numberOfLines={2}>{titles[row.post_id] ?? row.title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("조회 {0}회", row.displayed_views)}</ThemedText></View>
+      <View style={[styles.open, { borderColor: theme.line }]}><ThemedText type="smallBold" themeColor="accent">{tr("열기")}</ThemedText></View>
     </Pressable>)}
-    {posts.length === 0 && <ThemedText themeColor="textSecondary">{tr("아직 연결된 글이 없어요. 초안을 저장하고 글링에 게시하면 여기에 보여요.")}</ThemedText>}
+    {posts.length === 0 && <ThemedText themeColor="textSecondary">{tr("아직 게시한 글이 없어요. 홍보글에서 첫 글을 올려 보세요.")}</ThemedText>}
+    <MerchantHelp items={[tr("사진을 추가하거나 순서를 바꾸면 첫 사진이 대표 사진이 돼요."), tr("비즈니스에서 관리하려면 소유 확인을 먼저 완료해 주세요.")]} />
     <Modal visible={!!post} animationType="fade" onRequestClose={close}>
       <SafeAreaView style={[styles.modal, { backgroundColor: theme.background }]}>
         {post && <View style={styles.detail}>
@@ -87,4 +88,4 @@ export function MerchantWebPosts({ merchantId, posts, onChanged }: { merchantId:
     </Modal>
   </View>;
 }
-const styles = StyleSheet.create({ list: { gap: 12 }, row: { minHeight: 72, borderWidth: 1, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }, rowText: { flex: 1, minWidth: 0, gap: 4 }, modal: { flex: 1 }, detail: { flex: 1, width: '100%', maxWidth: 760, alignSelf: 'center' }, note: { paddingHorizontal: 16, paddingVertical: 12 } });
+const styles = StyleSheet.create({ list: { gap: 12 }, head: { gap: 2 }, row: { minHeight: 72, borderWidth: 1, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }, rowText: { flex: 1, minWidth: 0, gap: 4 }, open: { minHeight: 44, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, justifyContent: 'center' }, modal: { flex: 1 }, detail: { flex: 1, width: '100%', maxWidth: 760, alignSelf: 'center' }, note: { paddingHorizontal: 16, paddingVertical: 12 } });

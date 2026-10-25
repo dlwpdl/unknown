@@ -5,6 +5,7 @@ import { Image } from 'expo-image';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Alert, Linking, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
+import { MerchantBadge, MerchantHelp, type MerchantBadgeTone } from '@/components/merchant-ui';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
@@ -76,16 +77,17 @@ async function confirm(title: string, body: string) {
   if (Platform.OS === 'web') return window.confirm(`${title}\n\n${body}`);
   return new Promise<boolean>(resolve => Alert.alert(title, body, [{ text: tr("취소"), style: 'cancel', onPress: () => resolve(false) }, { text: tr("확인"), onPress: () => resolve(true) }], { cancelable: true, onDismiss: () => resolve(false) }));
 }
-function CafeAction({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) {
+function CafeAction({ label, onPress, disabled = false, primary = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean }) {
 
   const theme = useTheme(), { play } = useInteractionFeedback();
   return <Pressable lens analyticsId="merchant.naver.action" accessibilityRole="button" accessibilityLabel={label}
     accessibilityState={{ disabled }} disabled={disabled} onPress={() => { play('selection'); onPress(); }}
-    style={[styles.button, { borderColor: theme.line, backgroundColor: theme.backgroundElement, opacity: disabled ? 0.45 : 1 }]}><ThemedText type="smallBold">{label}</ThemedText></Pressable>;
+    style={[styles.button, { borderColor: theme.line, backgroundColor: primary ? theme.accent : theme.backgroundElement, opacity: disabled ? 0.45 : 1 }]}><ThemedText type="smallBold" style={primary ? { color: theme.background } : undefined}>{label}</ThemedText></Pressable>;
 }
 
 type Props = { merchantId: string; drafts: MerchantDraft[]; onChanged?: () => void | Promise<void> };
 type PendingPublish = MerchantNaverPublish & { observedArticleUrl?: string };
+const receiptTones: Record<MerchantNaverStatus['requests'][number]['status'], MerchantBadgeTone> = { prepared: 'accent', in_flight: 'accent', succeeded: 'ok', failed: 'danger', uncertain: 'warn' };
 const safeArticleUrl = (value: string) => /^https:\/\/cafe\.naver\.com\/[A-Za-z0-9_-]{1,100}\/[1-9]\d*$/.test(value);
 export function MerchantNaverCafe(props: Props) {
 
@@ -167,9 +169,13 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
   }
 
   return <View style={[styles.section, { borderColor: theme.line, backgroundColor: theme.card }]}>
-    <ThemedText type="subtitle">{tr("네이버 카페")}</ThemedText>
-    <ThemedText themeColor="textSecondary" type="small">{status ? !status.configured ? tr("미설정 · 네이버 개발자 앱과 서버 연결 설정이 필요해요.") : status.connection ? tr("연결됨 · 카페 가입과 게시판 쓰기 권한이 필요해요.") : tr("연결 안 됨 · 본인 네이버 계정으로 연결해 주세요.") : tr("연결 상태 확인 중")}</ThemedText>
-    <ThemedText themeColor="textSecondary" type="small">{tr("카페 가입·등업은 카페에서 직접 진행해 주세요. 게시 전 저장 원고와 사진을 확인하며, 하루 3회까지 한 건씩 발행해요. 회원 공개로 게시해요.")}</ThemedText>
+    <View style={styles.titleRow}>
+      <ThemedText type="subtitle">{tr("네이버 카페")}</ThemedText>
+      {status ? <MerchantBadge label={!status.configured ? tr("설정 필요") : status.connection ? tr("연결됨") : tr("연결 안 됨")} tone={!status.configured ? 'warn' : status.connection ? 'ok' : 'neutral'} />
+        : <MerchantBadge label={tr("연결 상태 확인 중")} />}
+    </View>
+    {status && !status.configured && <ThemedText themeColor="textSecondary" type="small">{tr("네이버 개발자 앱과 서버 연결 설정이 필요해요.")}</ThemedText>}
+    {status?.configured && !status.connection && <ThemedText themeColor="textSecondary" type="small">{tr("본인 네이버 계정으로 연결해 주세요.")}</ThemedText>}
     <View style={styles.actions}>
       <CafeAction label={tr("상태 다시 확인")} disabled={busy} onPress={() => { void run(refreshStatus); }} />
       <CafeAction label={status?.connection ? tr("네이버 다시 연결") : tr("네이버 계정 연결")} disabled={busy || !status?.configured} onPress={() => { void run(async () => {
@@ -211,18 +217,17 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
         placeholder="https://cafe.naver.com/f-e/cafes/…/menus/…" placeholderTextColor={theme.textSecondary}
         onFocus={() => play('selection')} onChangeText={value => { play('selection'); setBoardUrl(value); }}
         style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.backgroundElement }]} />
-      <ThemedText type="smallBold">{tr("승인된 저장 원고")}</ThemedText>
+      <ThemedText type="smallBold">{tr("올릴 원고 · 승인된 것만")}</ThemedText>
       <View style={styles.actions}>{eligible.map(value => <CafeAction key={value.id} label={value.title} onPress={() => { setDraftId(value.id); }} disabled={busy || !!pending && pending.draftId !== value.id} />)}</View>
-      {!eligible.length && <ThemedText type="small" themeColor="textSecondary">{tr("위 원고 관리에서 최신 초안을 저장·승인하면 여기에서 선택할 수 있어요.")}</ThemedText>}
+      {!eligible.length && <ThemedText type="small" themeColor="textSecondary">{tr("승인된 원고가 없어요. 홍보글에서 초안을 승인해 주세요.")}</ThemedText>}
       {draft && <View style={styles.review}>
         <ThemedText type="smallBold">{draft.title}</ThemedText><ThemedText>{draft.body}</ThemedText>
         {draft.original_url && <ThemedText type="small">{draft.original_url}</ThemedText>}
-        <ThemedText type="small" themeColor="textSecondary">{tr("사진") + " "}{imagePaths.length}{tr("장 · 아래 순서로 첨부해요.")}</ThemedText>
-        {urls.map((uri, index) => <View key={uri}><ThemedText type="small">{index + 1}{index === 0 ? tr(" · 첫 사진") : ''}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{tr("사진 {0}장 · 아래 순서로 첨부해요.", imagePaths.length)}</ThemedText>
+        {urls.map((uri, index) => <View key={uri}><ThemedText type="small">{index === 0 ? tr("{0} · 첫 사진", 1) : String(index + 1)}</ThemedText>
           <Image source={{ uri }} contentFit="contain" style={styles.photo} accessibilityLabel={tr("네이버에 첨부할 사진 {0}", (index + 1))} onError={() => setPhotoFailure(photoKey)} /></View>)}
         {photoFailed && <ThemedText type="small" themeColor="danger">{tr("사진을 확인하지 못해 발행을 멈췄어요. 원고 사진을 다시 확인해 주세요.")}</ThemedText>}
-        {!!imagePaths.length && <ThemedText type="small" themeColor="textSecondary">{tr("네이버에서 저장 사진 형식이 지원되는지는 실제 연결 계정으로 확인이 필요해요. 사진이 거절되면 게시 완료로 표시하지 않아요.")}</ThemedText>}
-        <CafeAction label={unresolved ? tr("게시 결과 확인") : tr("원고 확인 후 카페에 발행")} disabled={busy || !unresolved && (photoFailed || urls.length !== imagePaths.length)} onPress={() => { void run(async () => {
+        <View style={styles.publishRow}><CafeAction primary label={unresolved ? tr("게시 결과 확인") : tr("카페에 발행")} disabled={busy || !unresolved && (photoFailed || urls.length !== imagePaths.length)} onPress={() => { void run(async () => {
           if (unresolved) { await refreshStatus(); setNotice(errors.NAVER_PUBLISH_UNCERTAIN); return; }
           const board = parseCafeBoardUrl(boardUrl);
           if (!await confirm('카페에 이 원고를 발행할까요?', `${draft.title}\n\n${board.url}\n사진 ${imagePaths.length}장 · 표시된 순서\n카페의 게시·홍보 규칙을 확인했어요.`)) return;
@@ -248,18 +253,22 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
           } else setNotice(errors.NAVER_PUBLISH_UNCERTAIN);
           setStatus(await loadMerchantNaverCafe(supabase, merchantId));
         }); }} />
+        <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>{tr("하루 3회까지 한 건씩, 회원 공개로 게시해요.")}</ThemedText></View>
       </View>}
       {pending && !draft && <ThemedText type="small" themeColor="textSecondary">{tr("이전 원고의 결과를 아래에서 확인해 주세요. 현재 원고를 바꾸어 재전송하지 않아요.")}</ThemedText>}
     </>}
     {status?.requests.map(request => <View key={request.id} style={[styles.receipt, { borderColor: theme.line }]}>
-      <ThemedText type="smallBold">{request.error_code === 'NAVER_PREPARATION_CANCELLED' ? tr("발행 준비 취소됨") : labels[request.status]}</ThemedText><ThemedText type="small" themeColor="textSecondary">{request.board_url}</ThemedText>
+      <View style={styles.titleRow}>{request.error_code === 'NAVER_PREPARATION_CANCELLED' ? <MerchantBadge label={tr("발행 준비 취소됨")} /> : <MerchantBadge label={labels[request.status]} tone={receiptTones[request.status]} />}
+        <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>{request.board_url}</ThemedText></View>
       {request.article_url && <CafeAction label={tr("카페 게시글 열기")} disabled={busy} onPress={() => { void run(async () => {
         if (!safeArticleUrl(request.article_url!)) throw new Error('INVALID_NAVER_BOARD_URL');
         await Linking.openURL(request.article_url!);
       }); }} />}
       {['in_flight', 'uncertain'].includes(request.status) && <ThemedText type="small" themeColor="textSecondary">{tr("중복을 막기 위해 재발행하지 않아요. 실제 카페 글을 확인한 뒤 운영자에게 결과 확인을 요청해 주세요.")}</ThemedText>}
-      {request.status === 'failed' && <ThemedText type="small" themeColor="textSecondary">{request.error_code}{" " + tr("· 카페 가입·게시 권한과 사진을 확인한 뒤 원고를 다시 저장·승인해 주세요.")}</ThemedText>}
+      {request.status === 'failed' && request.error_code !== 'NAVER_PREPARATION_CANCELLED' && <ThemedText type="small" themeColor="textSecondary">{tr("{0} · 카페 가입·게시 권한과 사진을 확인한 뒤 원고를 다시 저장·승인해 주세요.", request.error_code || tr("권한 확인"))}</ThemedText>}
     </View>)}
+    <MerchantHelp items={[tr("카페 가입·등업과 게시판 쓰기 권한은 카페에서 직접 받아 주세요."), tr("발행 전에 저장된 원고와 사진을 표시된 순서대로 확인해요."),
+      tr("네이버에서 저장 사진 형식이 지원되는지는 실제 연결 계정으로 확인이 필요해요. 사진이 거절되면 게시 완료로 표시하지 않아요.")]} />
   </View>;
 }
 const styles = StyleSheet.create({
@@ -267,4 +276,5 @@ const styles = StyleSheet.create({
   button: { minHeight: 44, borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, justifyContent: 'center', paddingHorizontal: 14 },
   input: { minHeight: 44, padding: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: 12 }, review: { gap: 12 }, photo: { width: '100%', height: 240 },
   receipt: { gap: 8, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth },
+  titleRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }, publishRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10 }, hint: { flexShrink: 1 },
 });
