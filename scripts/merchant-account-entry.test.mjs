@@ -229,6 +229,7 @@ test('Today Instagram sheet opens the selected business workspace after access r
   view.pending.shift()(context()); await opening; await flush();
   assert.equal(view.routes[0].pathname, '/profile/merchant'); assert.equal(view.routes[0].params.merchant, 'company-a');
   assert.equal(view.routes[0].params.tab, undefined, 'Land on the business overview with writing and photo actions.');
+  assert.ok(view.feedback.includes('selection')); assert.ok(!view.feedback.includes('success'), 'Profile switching must not play the post-saved celebration.');
 });
 
 test('Today sheet rejects revoked business access and never reuses another user connection', async () => {
