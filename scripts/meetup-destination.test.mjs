@@ -159,7 +159,7 @@ test('a late event prefill keeps actual manual draft edits while still attaching
     splitEventMeetupBody: value => ({ intro: value.split('\n\n')[0], details: value.slice(value.indexOf('\n\n')) }), isFestivalEvent: () => false,
     setTitle: value => { title = value; }, setBody: value => { body = value; }, setQuestion() {}, setDraftRevision() {}, setDraftEdited() {}, setAiDraftReady() {},
     setEventDetails: value => { details = value; }, setSourceEvent() {}, setEvent() {}, setEventReady: value => { eventReady = value; }, setEventError() {},
-    View: 'View', ThemedText: 'Text', TextInput: 'Input', styles: {}, theme: {}, saving: false, get eventReady() { return eventReady; },
+    View: 'View', ThemedText: 'Text', TextInput: 'Input', styles: {}, theme: {}, saving: false, errorField: null, fieldY: { current: {} }, inputs: { current: {} }, get eventReady() { return eventReady; },
     require: () => ({ jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) }),
   };
   vm.runInNewContext(ts.transpileModule(editor + '\n' + effect + '\n' + field + '\nexports.edit=editDraftField;exports.field=field;', { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, context);

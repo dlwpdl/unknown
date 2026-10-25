@@ -1,8 +1,8 @@
 import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from 'expo-symbols';
@@ -34,6 +34,7 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
   const { tr, language } = useLanguage();
   const theme = useTheme(), router = useRouter();
   const { isAuthed, me, promptLogin } = useAuth();
+  const viewer = me.id;
   const [initialCity] = useState(me.cityId);
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
@@ -54,7 +55,15 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
   const [cityOpen, setCityOpen] = useState(false), [photoSaving, setPhotoSaving] = useState(false);
   const [error, setError] = useState(''), [loaded, setLoaded] = useState(false), [retry, setRetry] = useState(0);
   const mounted = useRef(true), saveBusy = useRef(false), pickBusy = useRef(false), loadVersion = useRef(0);
-  useLayoutEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const viewerRef = useRef<string | null>(isAuthed ? viewer : null), focused = useRef(true), saveScope = useRef(0);
+  useLayoutEffect(() => {
+    mounted.current = true; viewerRef.current = isAuthed ? viewer : null; saveScope.current++;
+    return () => { mounted.current = false; viewerRef.current = null; };
+  }, [isAuthed, viewer]);
+  useFocusEffect(useCallback(() => {
+    focused.current = isAuthed && viewerRef.current === viewer; saveScope.current++;
+    return () => { focused.current = false; saveScope.current++; };
+  }, [isAuthed, viewer]));
   useEffect(() => {
     if (!isAuthed) return;
     let active = true;
@@ -70,6 +79,7 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
         const publicIndex = value.publicPhotoPath ? (value.photoPaths ?? []).indexOf(value.publicPhotoPath) : -1;
         setPublicPhotoIndex(publicIndex >= 0 ? publicIndex : null);
         setPrivateActivities(value.preferences?.activities.join(', ') ?? '');
+        if (!postId && value.version === 2 && [value.displayName?.trim(), value.cityId, value.intro.trim(), value.promptOne.trim(), value.promptTwo.trim(), value.interests.length].every(Boolean)) setStep(4);
       }
       setLoaded(true);
       if (postId && !value) setError("지금은 이 프로필을 볼 수 없어요.");
@@ -131,7 +141,9 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
   const draftProfile = { ...profile, interests: tags, photoPaths: photos.map((photo, index) => photo.path ?? `${me.id}/pending-${index}.webp`),
     photoUris: photos.map(photo => photo.uri), publicPhotoPath: publicPhotoIndex === null ? null : photos[publicPhotoIndex]?.path ?? `${me.id}/pending-${publicPhotoIndex}.webp` };
   const save = async () => {
-    if (saveBusy.current || !loaded || photoSaving || complete !== 6) return;
+    const request = saveScope.current;
+    const current = () => mounted.current && focused.current && viewerRef.current === viewer && request === saveScope.current;
+    if (!current() || saveBusy.current || !loaded || photoSaving || complete !== 6) return;
     play('selection');
     saveBusy.current = true;
     setSaving(true); setError('');
@@ -143,12 +155,13 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
       const paths: string[] = [];
       for (const photo of photos) {
         if (photo.path) paths.push(photo.path);
-        else if (photo.image) { const path = await uploadMeetupProfilePhoto(supabase, me.id, photo.image); uploaded.push(path); paths.push(path); }
+        else if (photo.image) { const path = await uploadMeetupProfilePhoto(supabase, viewer, photo.image); if (!current()) return; uploaded.push(path); paths.push(path); }
       }
+      if (!current()) return;
       await saveChillingProfile(supabase, { ...draft, photoPaths: paths, publicPhotoPath: publicPhotoIndex === null ? null : paths[publicPhotoIndex] ?? null });
-      if (mounted.current) { play('success'); back(); }
-    } catch (e) { await removeUnsavedMeetupPhotos(supabase, uploaded); if (mounted.current) { play('warning'); setError(getChillingError(e)); } }
-    finally { saveBusy.current = false; if (mounted.current) setSaving(false); }
+      if (current()) { play('success'); back(); }
+    } catch (e) { if (!current()) return; await removeUnsavedMeetupPhotos(supabase, uploaded); if (current()) { play('warning'); setError(getChillingError(e)); } }
+    finally { saveBusy.current = false; if (mounted.current && viewerRef.current === viewer) setSaving(false); }
   };
   return <ThemedView style={styles.fill}><SafeAreaView style={styles.fill}>
     {/* 한 번에 한 질문, 다음 행동은 항상 손 닿는 곳에 둔다. */}
@@ -170,7 +183,7 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
               : loaded && <>
                 <View style={styles.field}>
                   <ThemedText type="subtitle" style={styles.stepTitle}>{tr(steps[step])}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">{step === 4 ? tr("누구에게 무엇이 보이는지 확인해 주세요.") : tr("일반 프로필과 따로 쓰는 모임 소개예요.")}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">{language === 'en' ? 'You have one meetup profile for all your meetups, separate from your personal profile.' : '일반 프로필과 별개로 계정당 하나를 만들고, 모든 모임에서 함께 사용해요.'}</ThemedText>
                 </View>
                 {step === 0 && <>
                 <View style={styles.field}><ThemedText type="smallBold">{tr("모임에서 쓸 이름")}</ThemedText>
@@ -273,8 +286,9 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
           {!loaded && <Pressable analyticsId="app_meetup-profile.pressable.9" onPress={() => { play('selection'); setLoading(true); setError(''); setRetry(x => x + 1); }} accessibilityRole="button" style={styles.button}><ThemedText>{tr("다시 불러오기")}</ThemedText></Pressable>}</>}
       </ScrollView>}
       {isAuthed && !postId && loaded && !loading && <View style={[styles.footer, { borderColor: theme.line, backgroundColor: theme.background }]}>
+        {!!error && <ThemedText accessibilityRole="alert" accessibilityLiveRegion="assertive" themeColor="accent">{tr(error)}</ThemedText>}
         <ThemedText type="small" themeColor="textSecondary">{tr("필수 항목") + " "}{complete}{tr("/6 완료 ·") + " "}{step === 4 ? tr("저장하면 다음 모임에서도 사용할 수 있어요") : tr("답변은 나중에도 바꿀 수 있어요")}</ThemedText>
-        {step === 4 ? <RaisedActionButton analyticsId="app_meetup-profile.pressable.8" disabled={saving || photoSaving || !stepReady} busy={saving} onPress={() => void save()} label={saving ? tr("저장 중…") : returnPostId ? tr("저장하고 신청 계속") : tr("이 프로필로 시작하기")} />
+        {step === 4 ? <RaisedActionButton analyticsId="app_meetup-profile.pressable.8" disabled={saving || photoSaving || !stepReady} busy={saving} onPress={() => void save()} label={saving ? tr("저장 중…") : returnPostId ? tr("저장하고 신청 계속") : language === 'en' ? 'Save meetup profile' : '모임 프로필 저장'} />
           : <RaisedActionButton analyticsId="app_meetup-profile.pressable.13" disabled={saving || photoSaving || !stepReady} onPress={() => { play('selection'); if (step === 3) addTags(tagDraft); changeStep(step + 1); }} label={step === 3 ? tr("내 프로필 미리보기") : tr("다음")} />}
       </View>}
     </KeyboardAvoidingView>
