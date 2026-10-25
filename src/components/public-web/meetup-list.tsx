@@ -8,6 +8,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { chillingAvailability, chillingSchedule } from '@/lib/chilling';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
+import { previewImage } from '@/lib/shared-link-preview';
 import type { Post } from '@/lib/types';
 
 export function PublicMeetupList({ posts, cityName, loading, failed, onRetry }: {
@@ -37,7 +38,7 @@ export function PublicMeetupList({ posts, cityName, loading, failed, onRetry }: 
             const capacity = Number.isSafeInteger(room.capacity) && room.capacity! > 0 ? room.capacity! : null;
             const availability = chillingAvailability({ ...room, memberCount: memberCount ?? undefined, capacity: capacity ?? undefined });
             const state = availability === 'ended' ? ko ? '종료된 모임' : 'Ended' : availability === 'closed' ? ko ? '모집 마감' : 'Closed' : availability === 'full' ? ko ? '정원 마감' : 'Full' : null;
-            const image = post.imageThumbs?.[0] || post.imageUris?.[0];
+            const image = post.imageThumbs?.[0] || post.imageUris?.[0] || (post.imagePaths?.some(Boolean) ? previewImage(post.id) : undefined);
             const photo = image && !failedImages.has(`${post.id}:${image}`) ? image : null;
             const city = tr(CITIES.find(item => item.id === post.cityId)?.name ?? cityName);
             const title = post.title || room.title;
