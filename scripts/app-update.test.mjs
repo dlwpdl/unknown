@@ -17,10 +17,10 @@ test('only an older installed native build is blocked', () => {
 });
 
 function updateGate({ dev = false, os = 'ios', environment = 'bare', build = '61', minimum = 64, failure = false, sessionPending = false } = {}) {
-  let hook = 0, dirty, tree, requests = 0;
-  const hooks = [], pending = [], timers = new Map(), listeners = [], publicClientOptions = [];
+  let hook = 0, dirty, tree, requests = 0, policyPending = false;
+  const hooks = [], pending = [], timers = new Map(), listeners = [], publicClientOptions = [], policyReplies = [];
   const client = (waitForSession = false) => ({ from: () => { const query = { select: () => query, eq: () => query, abortSignal: () => query,
-    maybeSingle: async () => { requests++; if (waitForSession && sessionPending) return new Promise(() => {}); return { data: { minimum_build: minimum }, error: failure ? new Error('network') : null }; } }; return query; } });
+    maybeSingle: async () => { requests++; if (waitForSession && sessionPending) return new Promise(() => {}); const reply = () => ({ data: { minimum_build: minimum }, error: failure ? new Error('network') : null }); if (policyPending) return new Promise(resolve => policyReplies.push(() => resolve(reply()))); return reply(); } }; return query; } });
   const same = (a, b) => a && b && a.length === b.length && a.every((value, index) => Object.is(value, b[index]));
   const imports = {
     react: {
@@ -58,6 +58,8 @@ function updateGate({ dev = false, os = 'ios', environment = 'bare', build = '61
   };
   const nodes = node => !node || typeof node !== 'object' ? [] : Array.isArray(node) ? node.flatMap(nodes) : [node, ...nodes(node.props?.children)];
   return { render, modal, publicClientOptions, title: () => nodes(tree).find(node => node.type === 'StateCard')?.props.title, requests: () => requests,
+    holdPolicy() { policyPending = true; },
+    async completePolicy(nextMinimum = minimum, failed = false) { minimum = nextMinimum; failure = failed; policyPending = false; for (const reply of policyReplies.splice(0)) reply(); await render(); },
     async foreground(nextMinimum = minimum) { minimum = nextMinimum; for (const state of ['background','active']) for (const callback of listeners) callback(state); await render(); } };
 }
 
@@ -90,5 +92,23 @@ test('missing or malformed public minimum-build data remains closed', async () =
   for (const minimum of [null, -1, '69', NaN]) {
     const ui = updateGate({ minimum }); await ui.render();
     assert.equal(ui.title(), '업데이트를 확인할 수 없어요');
+  }
+});
+
+test('a validated release keeps its screen visible while the foreground policy request is pending', async () => {
+  const ui = updateGate({ build: '64' }); await ui.render();
+  assert.equal(ui.modal().props.visible, false);
+  ui.holdPolicy(); await ui.foreground();
+  assert.equal(ui.requests(), 2, 'Resuming must still recheck the published minimum.');
+  assert.equal(ui.modal().props.visible, false, 'A pending refresh must not present another full-screen modal over the current screen.');
+  await ui.completePolicy(); assert.equal(ui.modal().props.visible, false);
+});
+
+test('foreground policy results still block obsolete builds and show network failures', async () => {
+  for (const [minimum, failed, title] of [[65, false, '새 버전으로 업데이트해 주세요'], [64, true, '업데이트를 확인할 수 없어요']]) {
+    const ui = updateGate({ build: '64' }); await ui.render(); ui.holdPolicy(); await ui.foreground();
+    assert.equal(ui.modal().props.visible, false);
+    await ui.completePolicy(minimum, failed);
+    assert.equal(ui.modal().props.visible, true); assert.equal(ui.title(), title);
   }
 });
