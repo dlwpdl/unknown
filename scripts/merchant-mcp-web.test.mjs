@@ -47,6 +47,14 @@ test('social login return stores only a bounded authorization ID and cannot supp
   rememberMerchantMcpReturn(storage,'native-request-123',1000);assert.equal(merchantMcpReturnPath(storage,602000),'/');
   assert.throws(()=>rememberMerchantMcpReturn(storage,'https://evil.example',1000),/INVALID_MCP_INPUT/);
 });
+test('opening AI settings without an authorization request returns to those settings after login',()=>{
+  const data=new Map(),storage={setItem:(k,v)=>data.set(k,v),getItem:k=>data.get(k)??null,removeItem:k=>data.delete(k)};
+  rememberMerchantMcpReturn(storage,undefined,1000);
+  assert.equal(merchantMcpReturnPath(storage,2000),'/ai');
+  assert.equal(merchantMcpReturnPath(storage,2000),'/');
+  rememberMerchantMcpReturn(storage,undefined,1000);
+  assert.equal(merchantMcpReturnPath(storage,602000),'/');
+});
 test('cancel never forwards a code even when the native OAuth provider auto-approves an existing consent',async()=>{
   const client=mockClient({redirect:true});const url=new URL(await denyMerchantMcp(client,user,authorization));
   assert.equal(url.searchParams.get('error'),'access_denied');assert.equal(url.searchParams.get('state'),'original');assert.equal(url.searchParams.has('code'),false);

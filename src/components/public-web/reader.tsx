@@ -4,6 +4,8 @@ import { PublicPostBody } from './shared-post-article';
 import { PublicFestivals } from './festivals';
 import { useReaderAnalytics } from './analytics';
 import { PublicMerchantProfile, PublicMerchantProfileLink } from './merchant-profile';
+import { PublicMeetupList } from './meetup-list';
+import { AppStoreChoices } from './app-store-choices';
 import { FeedAd } from '@/components/feed-ad';
 import { contentAdPosition } from '@/lib/content-ad-placement';
 
@@ -85,15 +87,14 @@ function PostAuthor({ post }: { post: Post }) {
     {post.business.name} · 비즈니스</a> : <>{post.author.nickname}</>;
 }
 
-function AppInvitation({ target, label = '앱에서 대화하기' }: { target: string; label?: string }) {
-  return <section className="reader-invitation" aria-label="앱에서 이어가기">
-    <h2>마음에 드는 이야기를<br />찾았다면, 이제 앱에서.</h2>
-    <p>글을 쓰고, 모임에 참여하고, 대화를 이어가세요.</p>
-    <a data-analytics="web_control_1" className="reader-primary" href={target}>{label} ↗</a>
-    <details><summary data-analytics="web_control_2">아직 앱이 없나요?</summary>
-      <p>iPhone에서는 App Store에서 글링을 받을 수 있어요. Android는 출시 준비 중이에요. 설치 후 이 글의 링크를 다시 열면 같은 글에서 시작할 수 있어요.</p>
-      <a data-analytics="web_control_3" href="https://apps.apple.com/ca/app/id6809273242">iPhone용 글링 받기 ↗</a>
-    </details>
+function AppInvitation({ target, label }: { target: string; label?: string }) {
+  const { language } = useLanguage(), ko = language === 'ko';
+  const { play } = useInteractionFeedback();
+  return <section className="reader-invitation" aria-label={ko ? '앱에서 이어가기' : 'Continue in the app'}>
+    <h2>{ko ? <>함께하고 싶은 모임을<br />찾았다면, 이제 앱에서.</> : <>Found a meetup?<br />Join in the Gling app.</>}</h2>
+    <p>{ko ? '글을 쓰고, 모임에 참여하고, 대화를 이어가세요. 앱이 없다면 스토어를 선택하고 휴대폰으로 QR 코드를 읽어 주세요.' : 'Write posts, join meetups and keep the conversation going. Choose a store and scan its QR code with your phone to get the app.'}</p>
+    <a data-analytics="web_control_1" className="reader-primary" href={target} onClick={() => play('selection')}>{label ?? (ko ? '앱에서 이어가기' : 'Continue in the app')} ↗</a>
+    <AppStoreChoices />
   </section>;
 }
 
@@ -124,7 +125,7 @@ export default function PublicReader() {
 function ReaderContent() {
   const { play } = useInteractionFeedback();
   const { language, tr } = useLanguage(), ko = language === 'ko';
-  const params = useLocalSearchParams<{ id?: string; city?: string; tag?: string }>();
+  const params = useLocalSearchParams<{ id?: string; postId?: string; userId?: string; returnPostId?: string; requestId?: string; city?: string; tag?: string }>();
   const routerPath = usePathname();
   // Static hosts serve 404.html for old /post/:id links; retain the actual URL.
   const pathname = useSyncExternalStore(subscribeLocation, () => window.location.pathname, () => staticReaderPath(routerPath));
@@ -137,6 +138,7 @@ function ReaderContent() {
   const company = path === '/company' || path.startsWith('/company/');
   const merchantId = publicMerchantId(path, readyParams.id);
   const browse = path === '/' || path === '/meetups';
+  const meetupPage = path === '/meetups';
   const city = cities.find((item) => item.id === readyParams.city) ?? cities[0];
   const tag = TAGS.find((item) => item.slug === (path === '/meetups' ? 'meetup' : readyParams.tag));
   const key = `${path}:${postId}:${merchantId}:${city.id}:${tag?.id ?? ''}`;
@@ -144,6 +146,9 @@ function ReaderContent() {
   const [retry, setRetry] = useState(0);
   const [busy, setBusy] = useState(false);
   const [shareMessage, setShareMessage] = useState('');
+  const [meetupPreview, setMeetupPreview] = useState<{ city: string; posts: Post[]; failed: boolean } | null>(null);
+  const [meetupRetry, setMeetupRetry] = useState(0);
+  const showMeetupPreview = browse && !meetupPage && !tag;
   const current = result?.key === key ? result : null;
   const post = detail ? current?.posts[0] : undefined;
   const mappedPost = post ? postMapBody(post.body) : null;
@@ -151,7 +156,7 @@ function ReaderContent() {
   const filters = new URLSearchParams();
   if (cities.some((item) => item.id === readyParams.city)) filters.set('city', city.id);
   if (tag) filters.set('tag', tag.slug);
-  const canonical = metadata?.canonical ?? (browse ? `${PUBLIC_SITE}/${filters.size ? `?${filters}` : ''}` : postId ? `${PUBLIC_SITE}/post?id=${postId}` : merchantId ? `${PUBLIC_SITE}/company?id=${merchantId}` : null);
+  const canonical = metadata?.canonical ?? (browse ? `${PUBLIC_SITE}${meetupPage ? '/meetups' : '/'}${filters.size ? `?${filters}` : ''}` : postId ? `${PUBLIC_SITE}/post?id=${postId}` : merchantId ? `${PUBLIC_SITE}/company?id=${merchantId}` : null);
   const pageTitle = metadata?.title ?? (browse ? `${filters.size ? `${tr(city.name)} · ${tr(tag?.label ?? '동네 이야기')} | ` : ''}${publicSiteName(language)}`
     : detail ? ko ? '글링 공개 글' : 'Public post | Gling' : company ? ko ? '글링 비즈니스 프로필' : 'Business profile | Gling' : ko ? '글링 | 앱에서 이어가기' : 'Gling | Continue in the app');
   const description = metadata?.description ?? (ko ? '캐나다 모임 커뮤니티 글링에서 동네 이야기, 비즈니스와 모임을 둘러보세요. 로그인하면 공개 글의 전체 본문을 웹에서 읽을 수 있어요.'
@@ -160,8 +165,19 @@ function ReaderContent() {
   const noindex = (!browse && !detail && !company) || (detail && hydrated && (!postId || (current && !post))) || (company && hydrated && !merchantId);
   const schema = metadata?.schema ?? (browse ? { '@context': 'https://schema.org', '@type': filters.size ? 'CollectionPage' : 'WebSite', name: publicSiteName(language), url: canonical, description, inLanguage: ko ? 'ko-KR' : 'en-CA' } : null);
   const loading = (browse || Boolean(postId)) && !current;
-  const target = publicWebTarget(path, (company ? merchantId : postId) ?? undefined);
+  const target = publicWebTarget(path, (company ? merchantId : postId) ?? undefined, readyParams);
   useReaderAnalytics(detail ? 'post' : browse ? 'feed' : 'app-invitation', key, hydrated);
+
+  useEffect(() => {
+    if (!hydrated || !showMeetupPreview) return;
+    let active = true;
+    const meetupTag = TAGS.find(item => item.slug === 'meetup');
+    if (!meetupTag) return;
+    void loadPublicFeed(publicWebClient, city.id, meetupTag.id, null, null, { viewerScope: 'guest' })
+      .then(posts => { if (active) setMeetupPreview({ city: city.id, posts: posts.filter(post => post.room).slice(0, 3), failed: false }); })
+      .catch(() => { if (active) setMeetupPreview({ city: city.id, posts: [], failed: true }); });
+    return () => { active = false; };
+  }, [hydrated, showMeetupPreview, city.id, meetupRetry]);
 
   useEffect(() => {
     let active = true;
@@ -217,30 +233,32 @@ function ReaderContent() {
     <a data-analytics="web_control_4" className="reader-skip" href="#reader-main">본문으로 바로가기</a>
     <header className="reader-header">
       <a data-analytics="web_control_5" className="reader-brand" href="/" aria-label="글링 홈"><img src={wordmark} alt="gling" width="144" height="60" /></a>
-      <nav aria-label="주요 메뉴"><a data-analytics="web_control_6" href="/?tag=festival#stories">페스티벌</a><a data-analytics="web_control_7" href="/?tag=meetup#stories">모임</a><a href="/visited" onClick={() => play('selection')}>Gling Visited</a><a href="/#stories">오늘의 이야기</a><a data-analytics="web_control_8" className="reader-header-app" href="#app">앱에서 시작 ↗</a></nav>
+      <nav aria-label={ko ? '주요 메뉴' : 'Main navigation'}><a data-analytics="web_control_6" href="/?tag=festival#stories">{ko ? '페스티벌' : 'Festivals'}</a><a data-analytics="web_control_7" href={`/meetups?city=${city.id}`} onClick={() => play('selection')}>{ko ? '모임' : 'Meetups'}</a><a href="/visited" onClick={() => play('selection')}>Gling Visited</a><a href="/#stories">{ko ? '오늘의 이야기' : 'Local stories'}</a><a data-analytics="web_control_8" className="reader-header-app" href="#app" onClick={() => play('selection')}>{ko ? '앱에서 시작' : 'Get the app'} ↗</a></nav>
     </header>
     <main id="reader-main" className={`reader-main${company ? ' reader-main-company' : ''}`} tabIndex={-1}>
       {browse && <section className="reader-showcase" aria-labelledby="reader-showcase-title">
         <div className="reader-showcase-copy">
-          <h1 id="reader-showcase-title">큰 페스티벌부터<br />동네 한잔까지.</h1>
-          <p>함께 갈 사람을 찾고, 오늘의 이야기를 나눠요. 공개 게시판은 로그인 없이 둘러볼 수 있어요.</p>
+          <h1 id="reader-showcase-title">{meetupPage ? ko ? '함께하고 싶은 모임을 찾아보세요.' : 'Find people to share your next outing.' : ko ? <>큰 페스티벌부터<br />동네 한잔까지.</> : <>From city festivals<br />to a neighborhood coffee.</>}</h1>
+          <p>{ko ? '공개 이야기와 모임을 둘러보고, 로그인하면 글을 읽을 수 있어요. 모임 참여와 대화는 글링 앱에서 이어가요.' : 'Explore public stories and meetups, and sign in to read posts. Join meetups and keep the conversation going in the Gling app.'}</p>
           <div className="reader-showcase-actions">
-            <a data-analytics="web_control_21" className="reader-primary" href="/#stories">오늘의 이야기 보기 <span aria-hidden="true">↗</span></a>
-            <a data-analytics="web_control_22" className="reader-secondary" href="/?tag=meetup#stories">모임 둘러보기 <span aria-hidden="true">↗</span></a>
+            <a data-analytics="web_control_21" className="reader-primary" href={meetupPage ? 'gling://meetup-create' : `/meetups?city=${city.id}`} onClick={() => play('selection')}>{meetupPage ? ko ? '앱에서 모임 만들기' : 'Create a meetup in the app' : ko ? '우리 도시 모임 둘러보기' : 'Explore meetups in your city'} <span aria-hidden="true">↗</span></a>
+            <a data-analytics="web_control_22" className="reader-secondary" href={meetupPage ? '#stories' : '/#stories'} onClick={() => play('selection')}>{meetupPage ? ko ? '모임 목록 보기' : 'Browse meetups' : ko ? '오늘의 이야기 보기' : 'Read local stories'} <span aria-hidden="true">↗</span></a>
           </div>
         </div>
         <div className="reader-showcase-scene" aria-hidden="true"><img src={showcaseArt} alt="" width="768" height="512" fetchPriority="high" /></div>
       </section>}
       <div className="reader-content">
         {browse ? <>
-          <div className="reader-section-heading"><div><h2 id="stories">오늘의 이야기</h2><p>페스티벌 후기부터 동네의 작은 질문까지.</p></div><span>{city.name} · {tag?.label ?? '전체 이야기'}</span></div>
-          <form key={`${city.id}:${tag?.id ?? ''}`} className="reader-filters" action="/" method="get">
-            <label>도시<select name="city" defaultValue={city.id}>{cities.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label>
-            <label>주제<select name="tag" defaultValue={tag?.slug ?? ''}><option value="">전체 이야기</option>{TAGS.map((item) => <option value={item.slug} key={item.id}>{item.label}</option>)}</select></label>
+          {showMeetupPreview && <><PublicMeetupList posts={meetupPreview?.city === city.id ? meetupPreview.posts : []} cityName={tr(city.name)} loading={meetupPreview?.city !== city.id} failed={meetupPreview?.city === city.id && meetupPreview.failed} onRetry={() => { setMeetupPreview(null); setMeetupRetry(value => value + 1); }} />
+            <a className="reader-secondary" href={`/meetups?city=${city.id}`} onClick={() => play('selection')}>{ko ? '이 도시의 공개 모임 더 보기' : 'See more meetups in this city'} →</a></>}
+          <div className="reader-section-heading"><div><h2 id="stories">{meetupPage ? ko ? '우리 도시의 모임' : 'Meetups in your city' : ko ? '오늘의 이야기' : 'Local stories'}</h2><p>{meetupPage ? ko ? '모임을 살펴보고 앱에서 함께해요.' : 'Explore a meetup, then join in the app.' : ko ? '페스티벌 후기부터 동네의 작은 질문까지.' : 'Festival memories and everyday neighborhood questions.'}</p></div><span>{tr(city.name)} · {tr(tag?.label ?? '전체 이야기')}</span></div>
+          <form key={`${city.id}:${tag?.id ?? ''}`} className="reader-filters" action={meetupPage ? '/meetups' : '/'} method="get">
+            <label>{ko ? '도시' : 'City'}<select name="city" defaultValue={city.id}>{cities.map((item) => <option value={item.id} key={item.id}>{tr(item.name)}</option>)}</select></label>
+            {!meetupPage && <label>{ko ? '주제' : 'Topic'}<select name="tag" defaultValue={tag?.slug ?? ''}><option value="">{ko ? '전체 이야기' : 'All stories'}</option>{TAGS.map((item) => <option value={item.slug} key={item.id}>{tr(item.label)}</option>)}</select></label>}
             <button data-analytics="web_control_9" type="submit">보기</button>
           </form>
-          {hydrated && <InteractionFeedbackProvider><PublicFestivals cityId={city.id} cityName={city.name} /></InteractionFeedbackProvider>}
-          <div aria-busy={loading}>
+          {hydrated && !meetupPage && <InteractionFeedbackProvider><PublicFestivals cityId={city.id} cityName={city.name} /></InteractionFeedbackProvider>}
+          {meetupPage ? <PublicMeetupList posts={current?.posts ?? []} cityName={tr(city.name)} loading={loading} failed={!!current?.failed} onRetry={() => setRetry(value => value + 1)} /> : <div aria-busy={loading}>
             {current && <InteractionFeedbackProvider>{current.posts.map((item, index) => { const mapped = postMapBody(item.body); const attached = splitPostAttachments(mapped.body); return <Fragment key={item.id}><article className="reader-card">
               <div><p className="reader-kicker">{hasAdLabel(item.hashtags) && <span aria-label="광고">AD · </span>}{item.tag.label}{item.room?.closed ? ' · 모집 마감' : ''}</p>
                 <h3><a data-analytics="web_control_10" href={`/post?id=${encodeURIComponent(item.id)}`}>{item.title}</a></h3>
@@ -252,8 +270,8 @@ function ReaderContent() {
               </div>
               {(item.imageThumbs?.[0] || item.imageUris?.[0]) && <img src={item.imageThumbs?.[0] || item.imageUris?.[0]} alt="" loading="lazy" className="reader-thumbnail" />}
             </article>{contentAdPosition(index, current.posts.length) && <FeedAd key={`ad-after-${item.id}`} />}</Fragment>; })}</InteractionFeedbackProvider>}
-          </div>
-          {current?.more && <button data-analytics="web_control_11" className="reader-more" onClick={() => void more()} disabled={busy}>{busy ? '불러오는 중…' : '이야기 더 보기'}</button>}
+          </div>}
+          {current?.more && <button data-analytics="web_control_11" className="reader-more" onClick={() => { play('selection'); void more(); }} disabled={busy}>{busy ? ko ? '불러오는 중…' : 'Loading…' : meetupPage ? ko ? '모임 더 보기' : 'More meetups' : ko ? '이야기 더 보기' : 'More stories'}</button>}
         </> : company ? <InteractionFeedbackProvider>{merchantId
           ? <PublicMerchantProfile key={merchantId} merchantId={merchantId} />
           : hydrated ? <div className="reader-notice"><h1>비즈니스 프로필을 찾을 수 없어요</h1><p>올바른 비즈니스 프로필 링크를 열어 주세요.</p></div>
@@ -273,12 +291,12 @@ function ReaderContent() {
             {!!post.commentList?.length && <section className="reader-comments"><h2>공개 댓글</h2>{post.commentList.map((comment) => <article key={comment.id}><strong>{comment.nickname}</strong><p>{comment.body}</p></article>)}<a data-analytics="web_control_15" href={target}>앱에서 댓글 남기기 ↗</a></section>}
           </article></InteractionFeedbackProvider>}
         </> : <section className="reader-hero"><h1>앱에서 이어가세요.</h1><p>웹에서는 공개 이야기와 모임을 둘러볼 수 있어요. 작성·참여·대화와 내 정보 관리는 앱에서 이용해 주세요.</p><a data-analytics="web_control_16" href="/">공개 이야기 둘러보기 →</a></section>}
-        {loading && <p role="status" className="reader-notice">이야기를 불러오고 있어요…</p>}
-        {current?.failed && <div role="alert" className="reader-notice"><p>이야기를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p><button data-analytics="web_control_17" onClick={() => setRetry((value) => value + 1)}>다시 시도</button></div>}
-        {!loading && !current?.failed && (browse || detail) && !current?.posts.length && <div className="reader-notice">{detail ? <h1>글을 찾을 수 없어요</h1> : <h2>아직 공개된 이야기가 없어요</h2>}<p>{detail ? '삭제되었거나 공개되지 않은 글이에요.' : tag?.slug === 'festival' ? '위에서 Ticketmaster의 예정 페스티벌을 확인하거나, 다른 공개 이야기도 둘러보세요.' : '다른 도시나 주제의 이야기도 둘러보세요.'}</p>{browse && tag?.slug === 'festival' && <a className="reader-secondary" href="/#stories">전체 이야기 보기</a>}</div>}
+        {!meetupPage && loading && <p role="status" className="reader-notice">이야기를 불러오고 있어요…</p>}
+        {!meetupPage && current?.failed && <div role="alert" className="reader-notice"><p>이야기를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p><button data-analytics="web_control_17" onClick={() => setRetry((value) => value + 1)}>다시 시도</button></div>}
+        {!meetupPage && !loading && !current?.failed && (browse || detail) && !current?.posts.length && <div className="reader-notice">{detail ? <h1>글을 찾을 수 없어요</h1> : <h2>아직 공개된 이야기가 없어요</h2>}<p>{detail ? '삭제되었거나 공개되지 않은 글이에요.' : tag?.slug === 'festival' ? '위에서 Ticketmaster의 예정 페스티벌을 확인하거나, 다른 공개 이야기도 둘러보세요.' : '다른 도시나 주제의 이야기도 둘러보세요.'}</p>{browse && tag?.slug === 'festival' && <a className="reader-secondary" href="/#stories">전체 이야기 보기</a>}</div>}
       </div>
-      <aside id="app"><AppInvitation target={target} label={post?.room ? post.room.closed ? '앱에서 모임 보기' : '앱에서 참여하기' : undefined} /></aside>
+      <aside id="app"><AppInvitation target={target} label={post?.room ? post.room.closed ? ko ? '앱에서 모임 보기' : 'View the meetup in the app' : ko ? '앱에서 참여하기' : 'Join in the app' : undefined} /></aside>
     </main>
-    <footer className="reader-footer"><span>gling · 같이 갈 사람, 같이 나눌 이야기</span><nav aria-label="정책"><a data-analytics="web_control_18" href="/terms">이용약관</a><a data-analytics="web_control_19" href="/privacy">개인정보처리방침</a><a data-analytics="web_control_20" href="/account-deletion">계정 삭제</a></nav></footer>
+    <footer className="reader-footer"><span>gling · 같이 갈 사람, 같이 나눌 이야기</span><nav aria-label="정책"><a href="/merchant/" onClick={() => play('selection')}>{ko ? '비즈니스 관리' : 'Manage your business'}</a><a data-analytics="web_control_18" href="/terms">이용약관</a><a data-analytics="web_control_19" href="/privacy">개인정보처리방침</a><a data-analytics="web_control_20" href="/account-deletion">계정 삭제</a></nav></footer>
   </div>;
 }

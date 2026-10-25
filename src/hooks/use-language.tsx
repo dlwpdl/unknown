@@ -43,6 +43,10 @@ export function LanguagePreferenceProvider({ children, initialLanguage }: PropsW
   }, []);
 
   useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') document.documentElement.lang = selection.language;
+  }, [selection.language]);
+
+  useEffect(() => {
     let active = true;
     mounted.current = true;
     void AsyncStorage.getItem(STORAGE_KEY).catch(() => null).then((value) => {
