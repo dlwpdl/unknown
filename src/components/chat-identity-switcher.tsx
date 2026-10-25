@@ -80,7 +80,8 @@ export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilit
       setResult(next);
       const selected = next.merchants.find(row => row.id === id && row.role !== 'admin');
       if (!selected) throw new Error('MERCHANT_ACCESS_REQUIRED');
-      selectChatBusiness(me.id, selected); setOpenedFor(null); onChanged?.(); play('success');
+      selectChatBusiness(me.id, selected); setOpenedFor(null); onChanged?.();
+      if (target === 'chat') play('success');
       if (target === 'business') router.push({ pathname: '/profile/merchant', params: { merchant: selected.id } });
     } catch {
       if (user.current === me.id && request === serial.current) { setError('비즈니스 연결을 다시 확인해 주세요. 현재 프로필은 유지돼요.'); play('warning'); }
