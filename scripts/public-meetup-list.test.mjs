@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { toQR } from 'toqr';
 import * as chilling from '../src/lib/chilling.ts';
+import { sharedPostReturnPath } from '../src/lib/sharing.ts';
 import { ControlMetrics, ControlMotion, Typography } from '../src/constants/design-system.ts';
 
 const id = '41000000-0000-4000-8000-000000000001';
@@ -41,14 +42,24 @@ function mount(file, name, initialProps = {}) {
 }
 const props = (patch = {}) => ({ posts: [meetup()], cityName: 'Vancouver', loading: false, failed: false, onRetry() {}, ...patch });
 
-test('public meetup cards show only supplied meetup metadata and preserve the same web/app post ID', () => {
+test('cover, title and metadata share one accessible public invitation link without exposing private fields', () => {
   const ui = mount('meetup-list.tsx', 'PublicMeetupList', props({ posts: [meetup(), meetup({ id: 'ordinary', room: undefined, title: 'Not a meetup' })] }));
   const tree = ui.render(), nodes = elements(tree), body = text(tree);
   assert.equal(nodes.filter(n => n.type === 'article').length, 1);
   assert.ok(body.includes('Synthetic fixture meetup') && body.includes('7') && body.includes('12') && body.includes('밴쿠버'));
   assert.equal(body.includes('PRIVATE_CONTACT'), false); assert.equal(body.includes('PRIVATE_ADDRESS'), false); assert.equal(body.includes('Not a meetup'), false);
-  const read = nodes.find(n => n.props?.href === `/post?id=${id}`), join = nodes.find(n => n.props?.href === `gling://meetup-join?postId=${id}`);
-  assert.ok(read && join); read.props.onClick(); join.props.onClick(); assert.deepEqual(ui.feedback, ['selection', 'selection']);
+  const card = nodes.find(n => n.type === 'article'), links = elements(card).filter(n => n.type === 'a');
+  assert.equal(links.length, 1, 'one tab stop and destination for the entire card');
+  const link = links[0];
+  assert.equal(link.props.href, `/post?id=${id}&invite=1`);
+  assert.equal(sharedPostReturnPath(link.props.href), link.props.href, 'the existing web login return preserves this meetup invitation');
+  assert.notEqual(link.props.tabIndex, -1);
+  assert.match(link.props['aria-label'], /Synthetic fixture meetup/);
+  assert.ok(elements(link).some(n => n.type === 'img'));
+  assert.ok(elements(link).some(n => n.type === 'h3' && text(n) === 'Synthetic fixture meetup'));
+  assert.match(text(link), /모임 살펴보기/);
+  assert.equal(elements(card).some(n => n.type === 'button' || n.props?.href?.startsWith('gling:')), false);
+  link.props.onClick(); assert.deepEqual(ui.feedback, ['selection']);
   assert.ok(nodes.some(n => n.type === 'img' && n.props.loading === 'lazy'));
 });
 
@@ -61,12 +72,12 @@ test('schedule, city and app-only explanation follow the current language withou
   const create = elements(tree).find(n => n.props?.href === 'gling://meetup-create'); assert.ok(create); create.props.onClick(); assert.deepEqual(ui.feedback, ['selection']);
 });
 
-test('ended, closed and full meetups do not promise an available joining action', () => {
+test('ended, closed and full meetups keep their status and use the same gated web invitation', () => {
   for (const patch of [{ endsAt: '2020-01-10T22:00:00Z' }, { closed: true }, { memberCount: 12 }]) {
     const ui = mount('meetup-list.tsx', 'PublicMeetupList', props({ posts: [meetup({ room: { ...meetup().room, ...patch } })] })); ui.language('en');
-    const tree = ui.render(), app = elements(tree).find(n => n.props?.className?.includes('public-meetup-app'));
-    assert.equal(app.props.href, `gling://post/${id}`);
-    assert.match(text(tree), /Ended|Closed|Full/); assert.match(text(app), /View/); assert.doesNotMatch(text(app), /Join/);
+    const tree = ui.render(), card = elements(tree).find(n => n.type === 'article'), links = elements(card).filter(n => n.type === 'a');
+    assert.equal(links.length, 1); assert.equal(links[0].props.href, `/post?id=${id}&invite=1`);
+    assert.match(text(card), /Ended|Closed|Full/); assert.match(text(links[0]), /View meetup/); assert.doesNotMatch(text(links[0]), /Join|Read the preview/);
   }
 });
 
@@ -87,9 +98,23 @@ test('loading, failure and empty states hide old cards and retry plays feedback 
 test('a broken thumbnail is removed without losing its meetup or reusing the failure for a new photo', () => {
   const ui = mount('meetup-list.tsx', 'PublicMeetupList', props()); const image = elements(ui.render()).find(n => n.type === 'img'); image.props.onError();
   assert.equal(elements(ui.render()).filter(n => n.type === 'img').length, 0); assert.equal(elements(ui.render()).filter(n => n.type === 'article').length, 1);
+  assert.match(text(ui.render()), /사진을 불러오지 못했어요/);
+  assert.equal(elements(ui.render()).find(n => n.type === 'article').props['aria-label'], meetup().title);
   const next = ui.render(props({ posts: [meetup({ imageThumbs: ['https://images.example.invalid/new.webp'] })] })); assert.equal(elements(next).filter(n => n.type === 'img').length, 1);
   elements(next).find(n => n.type === 'img').props.onError(); image.props.onError();
   assert.equal(elements(ui.render()).filter(n => n.type === 'img').length, 0, 'a late error for an old URL cannot resurrect the failed replacement');
+});
+
+test('a missing cover is honest and retains the same invitation link in either language', () => {
+  const ui = mount('meetup-list.tsx', 'PublicMeetupList', props({ posts: [meetup({ imageThumbs: [], imageUris: [] })] }));
+  for (const language of ['ko', 'en']) {
+    ui.language(language); const card = elements(ui.render()).find(n => n.type === 'article');
+    assert.equal(elements(card).some(n => n.type === 'img'), false, 'no unrelated replacement image');
+    assert.match(text(card), language === 'ko' ? /모임 사진이 없어요/ : /No meetup photo/);
+    const link = elements(card).find(n => n.type === 'a');
+    assert.equal(link.props.href, `/post?id=${id}&invite=1`);
+    assert.match(text(link), language === 'ko' ? /모임 살펴보기/ : /View meetup/);
+  }
 });
 
 test('store choices start unselected and encode only the explicitly selected store, with a four-cell quiet zone', () => {

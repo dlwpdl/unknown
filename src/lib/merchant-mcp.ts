@@ -11,6 +11,7 @@ export type MerchantMcpPhotoGroup = { label: string; uris: string[] };
 type Grant = { merchantIds: string[]; allowDrafts: boolean; allowPublish: boolean };
 type ReturnStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 const returnKey = 'gling:merchant-ai:return:v1';
+export function clearMerchantMcpReturn(storage: ReturnStorage) { storage.removeItem(returnKey); }
 export const validMerchantMcpAuthorizationId = (value: unknown): value is string => typeof value === 'string' && /^[A-Za-z0-9_-]{8,200}$/.test(value);
 export function rememberMerchantMcpReturn(storage: ReturnStorage, id?: string, now = Date.now()) {
   if (id !== undefined && !validMerchantMcpAuthorizationId(id)) throw new Error('INVALID_MCP_INPUT');
