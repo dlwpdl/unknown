@@ -10,6 +10,7 @@ const profile = { id: merchant, name: '가게', can_edit: true, updated_at: '202
 const settle = () => new Promise(setImmediate);
 const nodes = root => !root || typeof root !== 'object' ? [] : [root, ...Object.values(root).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
 const action = (root, label) => nodes(root).find(node => node.props?.label === label);
+const mapPreview = root => nodes(root).find(node => node.type === 'Image' && node.props.accessibilityLabel === '지도 대표 사진 미리보기');
 const input = (root, label) => nodes(root).find(node => node.type === 'TextInput' && node.props.accessibilityLabel === label);
 
 function editor({ fail = false, sessionUser = user, initialProfile = profile, photoFail = false } = {}) {
@@ -37,7 +38,7 @@ function editor({ fail = false, sessionUser = user, initialProfile = profile, ph
   const exports = {}, source = readFileSync(new URL('../src/components/merchant-profile-editor.tsx', import.meta.url), 'utf8') + '\nexports.Editor=ScopedProfileEditor;';
   vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, { exports, require: withLanguageImports(name => imports[name] ?? {}), Error });
   const onDirty = value => dirty.push(value);
-  return { calls, photoCalls, removed, feedback, dirty, render() { index = 0; return exports.Editor({ merchantId: merchant, onDirty }); } };
+  return { calls, photoCalls, removed, feedback, dirty, render(props = {}) { index = 0; return exports.Editor({ merchantId: merchant, onDirty, ...props }); } };
 }
 
 test('contact save preserves a separately edited logo and uses current server revision', async () => {
@@ -82,7 +83,7 @@ test('map photo selection reuses picker/upload, preserves logo and banner, and c
   assert.deepEqual(view.photoCalls[1].slice(0, 2), ['save', merchant]);
   assert.deepEqual(JSON.parse(JSON.stringify(view.photoCalls[1][2])), { avatarPath: profile.avatar_path, bannerPath: null, mapPhotoPath: 'new-map-path', updatedAt: profile.updated_at });
   assert.ok(view.feedback.includes('success'));
-  const oldPreview = nodes(view.render()).find(node => node.type === 'Image');
+  const oldPreview = mapPreview(view.render());
   action(view.render(), '지도 사진 제거').props.onPress();
   action(view.render(), '프로필 사진 저장').props.onPress(); await settle();
   assert.equal(view.photoCalls.at(-1)[2].mapPhotoPath, null);
@@ -94,7 +95,7 @@ test('map photo selection reuses picker/upload, preserves logo and banner, and c
 test('failed map photo save retains uploaded draft for retry and map preview failure retains its saved path', async () => {
   const view = editor({ photoFail: true }); view.render(); await settle();
   action(view.render(), '지도 사진 선택').props.onPress(); await settle();
-  nodes(view.render()).find(node => node.type === 'Image').props.onError();
+  mapPreview(view.render()).props.onError();
   assert.ok(action(view.render(), '지도 사진 제거'), 'a failed local preview can still be removed');
   action(view.render(), '프로필 사진 저장').props.onPress(); await settle();
   assert.equal(view.dirty.at(-1), true);
@@ -102,8 +103,17 @@ test('failed map photo save retains uploaded draft for retry and map preview fai
   action(view.render(), '프로필 사진 저장').props.onPress(); await settle();
   assert.equal(view.photoCalls.filter(call => call[0] === 'upload').length, 1, 'retry uses the immutable uploaded draft');
   const saved = editor({ initialProfile: { ...profile, map_photo_path: 'saved-map', mapPhotoUri: 'saved-url' } }); saved.render(); await settle();
-  nodes(saved.render()).find(node => node.type === 'Image').props.onError();
+  mapPreview(saved.render()).props.onError();
   assert.ok(action(saved.render(), '지도 사진 제거'));
   assert.ok(action(saved.render(), '사진 다시 확인'));
   assert.equal(action(saved.render(), '프로필 사진 저장').props.disabled, true, 'load failure cannot clear the saved image');
+});
+
+test('bare mode hides the editor title but keeps the public profile link', async () => {
+  const view = editor(); view.render(); await settle();
+  const title = root => nodes(root).some(node => node.props?.children === '비즈니스 프로필');
+  assert.ok(title(view.render()));
+  const bare = view.render({ bare: true });
+  assert.equal(title(bare), false);
+  assert.ok(action(bare, '공개 프로필 보기'));
 });

@@ -44,7 +44,7 @@ function component(file, name, { auth, rpc, postLoader, workspaceLoader, callbac
     'expo-router': { useRouter: () => ({ push: path => calls.push(['navigate', path]) }) },
     'expo-router/head': { default: 'Head' }, 'expo-image': { Image: 'Image' },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
-    '@/components/themed-text': { ThemedText: 'Text' }, '@/components/gling-loader': { GlingLoader: 'Loader' },
+    '@/components/themed-text': { ThemedText: 'Text' }, '@/components/gling-loader': { GlingLoader: 'Loader' }, '@/components/merchant-ui': { MerchantHelp: 'MerchantHelp', MerchantBadge: 'MerchantBadge' },
     '@/components/merchant-naver-cafe': { MerchantNaverCallback: 'MerchantNaverCallback', captureMerchantNaverCallback: () => callback },
     '@/components/merchant-workspace': { MerchantWorkspace: 'MerchantWorkspace' }, '@/components/post-detail': { PostDetail: 'PostDetail' },
     '@/components/public-web/app-store-choices': { AppStoreChoices: 'AppStoreChoices' },

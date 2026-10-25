@@ -128,7 +128,7 @@ test('merchant web selects only assigned businesses even when the account also h
 test('overview exposes every authorized tool, separates draft list/composer, and resumes dirty editing', async () => {
   const screen = mount(); await screen.settle();
   assert.ok(find(screen.tree, '비즈니스 글쓰기')); assert.ok(!find(screen.tree, '직접 작성할게요'));
-  for (const title of ['글·사진', '프로필', '이용 후기', '홍보글 관리', '카페 연결', '원가 계산', '재고', '성과·멤버십', '계정 관리']) assert.ok(find(screen.tree, title), title);
+  for (const title of ['글·사진', '프로필', '이용 후기', '홍보글 관리', '채널 연결', '원가 계산', '재고', '성과·멤버십', '계정 관리']) assert.ok(find(screen.tree, title), title);
   await composer(screen); screen.edit('제목', '돌아와도 남는 제목'); await screen.settle();
   await screen.press('업체 관리'); await screen.press('홍보글 관리');
   assert.ok(!find(screen.tree, '제목'), 'list does not show composer');
@@ -140,7 +140,7 @@ test('overview exposes every authorized tool, separates draft list/composer, and
 test('operator overview keeps private business tools unavailable and OAuth initial channels remains supported', async () => {
   const screen = mount('MerchantTools', { workspace: async () => fixture(false) }); await screen.settle();
   assert.ok(find(screen.tree, '비즈니스 글쓰기'));
-  for (const title of ['이용 후기', '카페 연결', '원가 계산', '재고', '성과·멤버십', '계정 관리']) assert.ok(!find(screen.tree, title), title);
+  for (const title of ['이용 후기', '채널 연결', '원가 계산', '재고', '성과·멤버십', '계정 관리']) assert.ok(!find(screen.tree, title), title);
   const callback = mount('MerchantTools', { props: { initialTab: 'channels' } }); await callback.settle();
   assert.ok(nodes(callback.tree).some(n => n.type === 'MerchantNaverCafe'));
 });

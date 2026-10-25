@@ -37,6 +37,7 @@ function app(component = 'MerchantAccountEntry') {
     if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView' };
     if (name === '@/components/analytics-controls') return { Pressable: 'Pressable', ScrollView: 'ScrollView' };
     if (name === '@/components/themed-text') return { ThemedText: 'ThemedText' };
+    if (name === '@/components/merchant-ui') return { MerchantHelp: 'MerchantHelp', MerchantBadge: 'MerchantBadge' };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ accent: '#CBB9FF' }) };
     if (name === '@/lib/auth') return { useAuth: () => auth };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: value => feedback.push(value) }) };

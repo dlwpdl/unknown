@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
 import { MerchantReviewCard } from '@/components/merchant-reviews';
+import { MerchantHelp, MerchantSegments, MerchantStat, MerchantStats } from '@/components/merchant-ui';
 import { ReportSheet } from '@/components/report-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
@@ -12,13 +13,16 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadMyMerchantReviews, replyToMerchantReview, type MerchantReview } from '@/lib/merchant-reviews';
 import { supabase } from '@/lib/supabase';
 
-export function MerchantReviewInbox({ merchantId, onDirty }: { merchantId: string; onDirty?: (dirty: boolean) => void }) {
+type InboxProps = { merchantId: string; onDirty?: (dirty: boolean) => void; bare?: boolean };
+// Conservative: only usage reviews can be answered, and an existing reply means nothing is waiting.
+const needsReply = (row: MerchantReview) => !row.reply && row.review_kind !== 'employment';
 
+export function MerchantReviewInbox({ merchantId, onDirty, bare = false }: InboxProps) {
   const { me, isAuthed } = useAuth();
-  return <ScopedInbox key={`${merchantId}:${isAuthed ? me.id : 'guest'}`} merchantId={merchantId} onDirty={onDirty} />;
+  return <ScopedInbox key={`${merchantId}:${isAuthed ? me.id : 'guest'}`} merchantId={merchantId} onDirty={onDirty} bare={bare} />;
 }
 
-function ScopedInbox({ merchantId, onDirty }: { merchantId: string; onDirty?: (dirty: boolean) => void }) {
+function ScopedInbox({ merchantId, onDirty, bare = false }: InboxProps) {
   const { tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback(), { me } = useAuth();
   const hidden = useContentVisibility();
@@ -29,6 +33,7 @@ function ScopedInbox({ merchantId, onDirty }: { merchantId: string; onDirty?: (d
   const mounted = useRef(true), replying = useRef(false);
   const [draft, setDraft] = useState<{ id: string; body: string; original: string; updatedAt: string | null } | null>(null);
   const [replyBusy, setReplyBusy] = useState(false), [replyError, setReplyError] = useState('');
+  const [picked, setPicked] = useState<'needs' | 'all' | null>(null);
   const dirty = !!draft && draft.body !== draft.original;
   useEffect(() => { onDirty?.(dirty || replyBusy); }, [dirty, replyBusy, onDirty]);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; onDirty?.(false); }; }, [onDirty]);
@@ -63,14 +68,27 @@ function ScopedInbox({ merchantId, onDirty }: { merchantId: string; onDirty?: (d
       }
     } finally { replying.current = false; if (mounted.current) setReplyBusy(false); }
   };
-  return <View style={[styles.section, { borderColor: theme.line, backgroundColor: theme.card }]}>
+  const visible = rows.filter((row) => !hidden('merchant_review', row.id, row.author_id));
+  const waiting = visible.filter(needsReply).length;
+  const usageScores = visible.filter((row) => row.review_kind !== 'employment' && Number.isFinite(row.score)).map((row) => row.score);
+  const filter = picked ?? (waiting ? 'needs' : 'all');
+  // The open editor always stays listed so a filter switch never hides a draft.
+  const shown = filter === 'needs' ? visible.filter((row) => needsReply(row) || row.id === draft?.id) : visible;
+  return <View style={styles.page}>
+    {visible.length > 0 && <MerchantStats>
+      <MerchantStat label={hasMore ? tr("불러온 후기") : tr("후기")} value={tr("{0}개", visible.length)} />
+      <MerchantStat label={tr("답글 필요")} value={tr("{0}개", waiting)} accent={waiting > 0} />
+      {usageScores.length > 0 && <MerchantStat label={hasMore ? tr("불러온 후기 평균") : tr("평균")}
+        value={`${(usageScores.reduce((sum, score) => sum + score, 0) / usageScores.length).toFixed(1)} / 10`} />}
+    </MerchantStats>}
+    <View style={[styles.section, { borderColor: theme.line, backgroundColor: theme.card }]}>
     <View style={styles.header}>
-      <ThemedText type="subtitle">{tr("받은 후기")}</ThemedText>
+      {!bare && <ThemedText type="subtitle">{tr("받은 후기")}</ThemedText>}
+      {visible.length > 0 && <MerchantSegments items={[{ key: 'needs', label: tr("답글 필요") }, { key: 'all', label: tr("전체") }]} value={filter} onChange={setPicked} />}
       <Pressable analyticsId="merchant.reviews.refresh" accessibilityRole="button" disabled={loading || dirty || replyBusy} accessibilityState={{ disabled: loading || dirty || replyBusy }}
-        style={styles.button} onPress={() => { play('selection'); refresh(); }}><ThemedText type="smallBold" themeColor="accent">{tr("새로 확인")}</ThemedText></Pressable>
+        style={[styles.button, styles.trailing]} onPress={() => { play('selection'); refresh(); }}><ThemedText type="smallBold" themeColor="accent">{tr("새로 확인")}</ThemedText></Pressable>
     </View>
-    <ThemedText type="small" themeColor="textSecondary">{tr("이용 리뷰는 미인증 의견도 확인할 수 있어요. 근무 리뷰는 근무 증빙 인증 후에만 보이며, 증빙 원본은 비즈니스에 공개되지 않아요. 공개 평균은 종류별 인증 후기만 따로 계산해요.")}</ThemedText>
-    {rows.filter((row) => !hidden('merchant_review', row.id, row.author_id)).map((row) => <View key={row.id} style={styles.review}>
+    {shown.map((row) => <View key={row.id} style={styles.review}>
       <MerchantReviewCard review={row} onReport={row.author_id === me.id || draft || replyBusy ? undefined : () => setReport(row)} />
       {row.review_kind !== 'employment' && (draft?.id === row.id ? <View style={[styles.reply, { borderColor: theme.line }]}>
         <ThemedText type="smallBold">{tr("비즈니스 답변")}</ThemedText>
@@ -92,6 +110,7 @@ function ScopedInbox({ merchantId, onDirty }: { merchantId: string; onDirty?: (d
     </View>)}
     {loading && <ThemedText type="small" accessibilityLiveRegion="polite">{tr("후기를 불러오는 중…")}</ThemedText>}
     {!loading && !rows.length && !error && <ThemedText type="small" themeColor="textSecondary">{tr("아직 받은 후기가 없어요.")}</ThemedText>}
+    {!loading && !error && visible.length > 0 && !shown.length && <ThemedText type="small" themeColor="textSecondary">{tr("답글이 필요한 후기가 없어요.")}</ThemedText>}
     {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
     {hasMore && !error && <Pressable analyticsId="merchant.reviews.more" accessibilityRole="button" disabled={loading || dirty || replyBusy} accessibilityState={{ disabled: loading || dirty || replyBusy }}
       style={styles.button} onPress={() => { play('selection'); if (pending.current || dirty || replying.current) return; pending.current = true; setLoading(true); setOffset((value) => value + 20); }}>
@@ -99,11 +118,15 @@ function ScopedInbox({ merchantId, onDirty }: { merchantId: string; onDirty?: (d
     </Pressable>}
     {report && <ReportSheet visible targetType="merchant_review" targetId={report.id} reportedUserId={report.author_id} reportedNickname={report.nickname}
       onClose={() => { setReport(null); if (!dirty && !replying.current) refresh(); }} />}
+    <MerchantHelp items={[tr("이용 리뷰는 미인증 의견도 확인할 수 있어요."), tr("근무 리뷰는 근무 증빙 인증 후에만 보이며, 증빙 원본은 비즈니스에 공개되지 않아요."), tr("공개 평균은 종류별 인증 후기만 따로 계산해요.")]} />
+    </View>
   </View>;
 }
 const styles = StyleSheet.create({
+  page: { gap: 12 },
   section: { padding: 16, gap: 12, borderWidth: 1, borderRadius: 12 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' },
+  trailing: { marginLeft: 'auto' },
   button: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12 },
   review: { gap: 8 }, reply: { borderWidth: 1, borderRadius: 10, padding: 12, gap: 8 },
   input: { borderWidth: 1, borderRadius: 8, minHeight: 88, padding: 12, textAlignVertical: 'top' },
