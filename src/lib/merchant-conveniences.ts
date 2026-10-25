@@ -53,5 +53,5 @@ export async function saveMerchantContact(client: SupabaseClient, merchantId: st
   let profile;
   try { profile = mapMerchantProfile(row); }
   catch { throw new Error('MERCHANT_CONTACT_SAVE_NOT_VERIFIED'); }
-  return attachMerchantProfileImages(client, { ...profile, updated_at: row.updated_at, can_edit: row.can_edit });
+  return attachMerchantProfileImages(client, { ...profile, map_photo_path: row.map_photo_path ?? null, updated_at: row.updated_at, can_edit: row.can_edit });
 }

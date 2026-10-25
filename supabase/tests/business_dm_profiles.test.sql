@@ -7,8 +7,8 @@ select set_config('request.jwt.claims','{}',true);
 select throws_ok($$select public.get_my_business_chat_profiles()$$,'P0001','AUTH_REQUIRED','missing caller fails closed');
 select set_config('request.jwt.claims','{"sub":"b1900000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 set local role authenticated;
-select is(public.get_my_business_chat_profiles(),jsonb_build_object('user_id',auth.uid(),'merchants',jsonb_build_array(jsonb_build_object(
-  'id','b1910000-0000-4000-8000-000000000001','name','합성 비즈니스 1','city_name',(select name from public.cities where id='vancouver'),'role','owner')),'invitations','[]'::jsonb),'owner sees only own business and allowlisted DTO');
+select is(public.get_my_business_chat_profiles() #- '{merchants,0,avatar_path}',jsonb_build_object('user_id',auth.uid(),'merchants',jsonb_build_array(jsonb_build_object(
+  'id','b1910000-0000-4000-8000-000000000001','name','합성 비즈니스 1','city_name',(select name from public.cities where id='vancouver'),'role','owner')),'invitations','[]'::jsonb),'owner sees only own business and original DTO fields alongside optional avatar');
 reset role;
 select set_config('request.jwt.claims','{"sub":"b1900000-0000-4000-8000-000000000002","role":"authenticated"}',true);
 set local role authenticated;

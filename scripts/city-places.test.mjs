@@ -536,7 +536,7 @@ function photoModule(imports = {}) {
   let failed;
   const jsx = (type, props) => ({ type, props });
   return module('src/components/city-place-photo.tsx', {
-    react: { useState: () => [failed, value => { failed = value; }] },
+    react: { useState: initial => { failed ??= initial; return [failed, value => { failed = typeof value === 'function' ? value(failed) : value; }]; } },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { useWindowDimensions: () => ({ width: 390, fontScale: 1 }), StyleSheet: { create: v => v, absoluteFill: {} }, View: 'View' },
     'expo-image': { Image: 'Image' },

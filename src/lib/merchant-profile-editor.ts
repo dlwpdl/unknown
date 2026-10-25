@@ -3,13 +3,13 @@ import { estimatedBase64Bytes, MAX_IMAGE_BYTES } from './image-upload.ts';
 import { attachMerchantProfileImages, type MerchantProfile } from './merchant-profile.ts';
 import { merchantEventId } from './merchant-source.ts';
 
-export type MyMerchantProfile = MerchantProfile & { updated_at: string; can_edit: boolean };
+export type MyMerchantProfile = MerchantProfile & { updated_at: string; can_edit: boolean; map_photo_path: string | null; mapPhotoUri: string | null };
 
 export async function loadMyMerchantProfile(client: SupabaseClient, merchantId: string): Promise<MyMerchantProfile> {
   const result = await client.rpc('get_my_merchant_profile', { p_merchant_id: merchantId });
   if (result.error) throw new Error(result.error.message);
   if (result.data?.id !== merchantId || typeof result.data.can_edit !== 'boolean' || !result.data.updated_at) throw new Error('MERCHANT_PROFILE_READ_FAILED');
-  return attachMerchantProfileImages(client, result.data as MyMerchantProfile);
+  return attachMerchantProfileImages(client, { ...result.data, map_photo_path: result.data.map_photo_path ?? null } as MyMerchantProfile);
 }
 
 export async function uploadMerchantProfileImage(client: SupabaseClient, userId: string, merchantId: string, image: { base64: string; mimeType: string }): Promise<string> {
@@ -28,5 +28,14 @@ export async function saveMyMerchantProfile(client: SupabaseClient, merchantId: 
   if (result.error) throw new Error(result.error.message);
   if (result.data?.id !== merchantId || result.data.avatar_path !== patch.avatarPath || result.data.banner_path !== patch.bannerPath
     || typeof result.data.can_edit !== 'boolean' || !result.data.updated_at) throw new Error('MERCHANT_PROFILE_SAVE_NOT_VERIFIED');
+  return attachMerchantProfileImages(client, { ...result.data, map_photo_path: result.data.map_photo_path ?? null } as MyMerchantProfile);
+}
+
+export async function saveMyMerchantProfilePhotos(client: SupabaseClient, merchantId: string, patch: { avatarPath: string | null; bannerPath: string | null; mapPhotoPath: string | null; updatedAt: string }): Promise<MyMerchantProfile> {
+  const result = await client.rpc('save_my_merchant_profile_photos', { p_merchant_id: merchantId, p_avatar_path: patch.avatarPath,
+    p_banner_path: patch.bannerPath, p_map_photo_path: patch.mapPhotoPath, p_expected_updated_at: patch.updatedAt });
+  if (result.error) throw new Error(result.error.message);
+  if (result.data?.id !== merchantId || result.data.avatar_path !== patch.avatarPath || result.data.banner_path !== patch.bannerPath
+    || result.data.map_photo_path !== patch.mapPhotoPath || typeof result.data.can_edit !== 'boolean' || !result.data.updated_at) throw new Error('MERCHANT_PROFILE_SAVE_NOT_VERIFIED');
   return attachMerchantProfileImages(client, result.data as MyMerchantProfile);
 }
