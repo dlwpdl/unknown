@@ -34,8 +34,8 @@ export function mapMerchantProfile(value: unknown): Omit<MerchantProfile, 'avata
     can_message: row.can_business_message === true || row.can_message === true, saved: row.saved === true, notifications_enabled: row.saved === true && row.notifications_enabled === true, links };
 }
 
-export async function attachMerchantProfileImages<T extends Pick<MerchantProfile, 'avatar_path' | 'banner_path'>>(client: SupabaseClient, profile: T) {
-  const paths = [...new Set([profile.avatar_path, profile.banner_path].filter((path): path is string => !!path))];
+export async function attachMerchantProfileImages<T extends Pick<MerchantProfile, 'avatar_path' | 'banner_path'> & { map_photo_path?: string | null }>(client: SupabaseClient, profile: T) {
+  const paths = [...new Set([profile.avatar_path, profile.banner_path, profile.map_photo_path].filter((path): path is string => !!path))];
   const urls = new Map(paths.flatMap(path => {
     const url = businessMediaUrl(path);
     return url ? [[path, url] as const] : [];
@@ -48,6 +48,7 @@ export async function attachMerchantProfileImages<T extends Pick<MerchantProfile
     } catch { /* A failed photo read must preserve the saved profile paths. */ }
   }
   return { ...profile, avatarUri: urls.get(profile.avatar_path ?? '') ?? null, bannerUri: urls.get(profile.banner_path ?? '') ?? null,
+    mapPhotoUri: urls.get(profile.map_photo_path ?? '') ?? null,
     imageLoadFailed: paths.some((path) => !urls.has(path)) };
 }
 

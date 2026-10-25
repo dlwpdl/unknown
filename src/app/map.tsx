@@ -31,7 +31,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
-import { bindBusinessPlaces, loadCityBusinessLinks, loadCityWebshops, type Webshop } from '@/lib/webshops';
+import { bindBusinessPlaces, loadCityBusinessLinks, loadCityBusinessMapPhotos, loadCityWebshops, type BusinessMapPhotos, type Webshop } from '@/lib/webshops';
 import { DELIVERY_PARTNERS, deliveryPartnerPlace } from '@/lib/delivery-partners';
 import { discoveryDistanceKm, sortDiscoveryItems } from '@/lib/discovery-sort';
 import { DISCOVERY_CATEGORIES, TOP25_GOLD, discoveryDays, discoveryEvent, discoveryEventOnDays, discoveryMatches, discoveryPlace, directionsUrl, mergeCityTop25, type DiscoveryDate, type DiscoveryFilter, type DiscoveryItem } from '@/lib/discovery';
@@ -92,7 +92,9 @@ function CityMap({ city, placeId, onClose, initialFilter }: { city: (typeof CITI
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null), [center, setCenter] = useState<(PostPin & { requestId: number }) | null>(null);
   const [sortBy, setSortBy] = useState<'near' | 'discount'>('near');
-  const [registry, setRegistry] = useState<{ links: Record<string, string>; shops: Webshop[]; failed: boolean; ready: boolean }>({ links: {}, shops: [], failed: false, ready: false });
+  const viewerScope = isAuthed ? me.id : 'guest', registryKey = `${city.id}:${viewerScope}`;
+  const [registrySnapshot, setRegistry] = useState<{ key: string; links: Record<string, string>; shops: Webshop[]; photos: BusinessMapPhotos; failed: boolean; ready: boolean }>({ key: '', links: {}, shops: [], photos: {}, failed: false, ready: false });
+  const registry = registrySnapshot.key === registryKey ? registrySnapshot : { links: {}, shops: [], photos: {}, failed: false, ready: false };
 
   const [closedCardId, setClosedCardId] = useState<string | null | undefined>(undefined);
   const cardOpen = closedCardId !== selectedId;
@@ -109,12 +111,11 @@ function CityMap({ city, placeId, onClose, initialFilter }: { city: (typeof CITI
   useEffect(() => {
     if (!isFocused) return;
     const controller = new AbortController();
-    void Promise.allSettled([loadCityBusinessLinks(supabase, city.id, controller.signal), loadCityWebshops(supabase, city.id, controller.signal)]).then(([links, shops]) => {
-      if (!controller.signal.aborted) setRegistry({ links: links.status === 'fulfilled' ? links.value : {}, shops: shops.status === 'fulfilled' ? shops.value : [], failed: links.status === 'rejected' || shops.status === 'rejected', ready: true });
+    void Promise.allSettled([loadCityBusinessLinks(supabase, city.id, controller.signal), loadCityWebshops(supabase, city.id, controller.signal), loadCityBusinessMapPhotos(supabase, city.id, controller.signal)]).then(([links, shops, photos]) => {
+      if (!controller.signal.aborted) setRegistry({ key: registryKey, links: links.status === 'fulfilled' ? links.value : {}, shops: shops.status === 'fulfilled' ? shops.value : [], photos: photos.status === 'fulfilled' ? photos.value : {}, failed: links.status === 'rejected' || shops.status === 'rejected', ready: true });
     });
     return () => controller.abort();
-  }, [city.id, attempt, isFocused]);
-  const viewerScope = isAuthed ? me.id : 'guest';
+  }, [city.id, attempt, isFocused, registryKey]);
   const days = useMemo(() => discoveryDays(dateFilter, city.id, date, now), [dateFilter, city.id, date, now]);
   const daysKey = days.join(',');
   const key = `${city.id}:${viewerScope}:${selectedFilters.slice().sort().join(',') || 'all'}:${search}:${daysKey}:${attempt}`;
@@ -200,7 +201,7 @@ function CityMap({ city, placeId, onClose, initialFilter }: { city: (typeof CITI
   const publicItems = [...catalogItems, ...(current?.items ?? [])].filter(item => (item.source !== 'post' || !!item.post && item.post.kind === 'listing' && ['housing', 'used'].includes(item.category))
     && (!item.post || (!hidden('post', item.post.id, item.post.author.id) && (item.post.kind !== 'listing' || (['open', 'partial'].includes(item.post.listingStatus ?? '') && Date.parse(item.post.expiresAt ?? '') > now))))
     && (!item.event || discoveryEvent(item.event, item.cityId, now) !== null));
-  const cityItems = bindBusinessPlaces(mergeCityTop25(publicItems, city.id), registry.links, registry.shops);
+  const cityItems = bindBusinessPlaces(mergeCityTop25(publicItems, city.id), registry.links, registry.shops, registry.photos);
   const top25Ready = cityItems.some(item => item.top25);
   const visitedReady = cityItems.some(item => item.glingVisited);
   const matches = cityItems.filter(item => discoveryMatches(item, selectedFilters, query) && discoveryEventOnDays(item, days));
@@ -391,7 +392,7 @@ function DiscoveryCard({ item, viewerScope, onOpen, translationVisible = true, e
   const distanceLabel = distance !== null && Number.isFinite(distance) && distance >= 0 ? distance < .1 ? tr('100m 이내') : tr('약 {0}km', distance.toFixed(1)) : null;
   const discountLabel = Number.isFinite(item.webshopDiscount) && item.webshopDiscount! > 0 && item.webshopDiscount! <= 100 ? tr('확인한 대표 메뉴 최대 할인 {0}%', item.webshopDiscount) : null;
   return <View><Pressable analyticsId="discovery.card" accessibilityRole={externalInfo ? 'link' : 'button'} accessibilityLabel={`${hasAdLabel(item.post?.hashtags) ? tr("광고") + ", " : ""}${item.glingVisited ? tr("글링 직접 방문 장소, ") : ''}${item.top25 ? tr("TOP 50 선정 장소, ") : ''}${tr(category.label)}, ${headline}, ${housing ? `${displayTitle}, ` : ''}${address}, ${distanceLabel ? distanceLabel + ', ' : ''}${discountLabel ? discountLabel + ', ' : ''}${externalInfo ? tr('공개 정보, 외부 페이지 열기') : item.source === 'place' && !item.post && !item.place ? tr("선정 출처 열기") : tr("상세 보기")}`} onPress={onOpen} style={styles.cardBody}>
-    <View style={[styles.thumbnail, { backgroundColor: theme.backgroundElement }]}>{!item.post && item.place?.photo ? <CityPlacePhoto place={item.place} style={StyleSheet.absoluteFill} /> : image ? <Image source={image} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} /> : <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={26} tintColor={category.color} />}</View>
+    <View style={[styles.thumbnail, { backgroundColor: theme.backgroundElement }]}>{item.place && (item.place.mapPhotoUri || !item.post && item.place.photo) ? <CityPlacePhoto place={item.place} style={StyleSheet.absoluteFill} /> : image ? <Image source={image} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} /> : <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={26} tintColor={category.color} />}</View>
     <View style={styles.cardText}>{discountLabel && <ThemedText type="smallBold" style={{ color: theme === Colors.light ? '#276B57' : '#8FD9C4' }}>{discountLabel}</ThemedText>}<View style={styles.badge}><PostAdLabel hashtags={item.post?.hashtags} /><View style={[styles.dot, { backgroundColor: category.color }]} /><ThemedText type="small" themeColor="textSecondary">{tr(category.label)}{!located(item) ? tr(" · 위치 확인 전") : ''}</ThemedText>{item.glingVisited && <GlingVisitedBadge />}{item.top25 && <View style={styles.top25Badge}><ThemedText style={styles.top25BadgeText}>✦ TOP 50</ThemedText></View>}</View><ThemedText type="smallBold" numberOfLines={2} style={housing ? styles.housingPrice : undefined}>{headline}</ThemedText>{housing && <ThemedText type="small" numberOfLines={2}>{displayTitle}</ThemedText>}<ThemedText type="small" themeColor="textSecondary" numberOfLines={housing ? 2 : 1}>{address}</ThemedText>{distanceLabel && <ThemedText type="small" themeColor="accent">{distanceLabel}</ThemedText>}{item.event && <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{eventTime(item.event, appLocale)}</ThemedText>}{!housing && !!price && <ThemedText type="smallBold" themeColor="accent">{price}</ThemedText>}</View>
     <ThemedText type={externalInfo ? 'small' : 'default'} themeColor="textSecondary">{externalInfo ? tr('공개 정보 ↗') : '›'}</ThemedText>
   </Pressable>{translatable && <TranslationControl translation={translation} />}</View>;
