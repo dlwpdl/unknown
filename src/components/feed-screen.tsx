@@ -87,6 +87,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const hidden = useContentVisibility();
   const reducedMotion = useReducedMotion();
   const { fontScale, width: viewportWidth } = useWindowDimensions();
+  const [hasBusinessSwitch, setHasBusinessSwitch] = useState(false);
+  const expandedHeader = fontScale > 1.2 || (hasBusinessSwitch && viewportWidth < 380);
   const router = useRouter();
   const { compose, hashtag } = useLocalSearchParams<{ compose?: string; hashtag?: string }>();
   const { isAuthed, promptLogin, me, isAdmin } = useAuth();
@@ -644,12 +646,12 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   return (
     <TabContent style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={[styles.headRow, fontScale > 1.2 && styles.headRowLarge, { backgroundColor: theme.background }]}>
+        <View style={[styles.headRow, expandedHeader && styles.headRowLarge, { backgroundColor: theme.background }]}>
           <Pressable analyticsId="feed.home" accessibilityRole="button" accessibilityLabel={`${t.appName}, ${t.tabs.today}`}
-            onPress={() => { play('selection'); router.navigate('/'); }} style={[styles.homeButton, fontScale > 1.2 && styles.homeButtonLarge]}>
+            onPress={() => { play('selection'); router.navigate('/'); }} style={[styles.homeButton, expandedHeader && styles.homeButtonLarge]}>
             <Image source={theme === Colors.light ? require('@/assets/brand/gling-night-wordmark-light.png') : require('@/assets/brand/gling-night-wordmark.png')} style={[styles.wordmark, (viewportWidth < 380 || fontScale > 1.2) && styles.wordmarkCompact]} contentFit="contain" accessible={false} />
           </Pressable>
-          <GlassSurface tone="control" interactive style={[styles.cityGlass, fontScale > 1.2 && styles.cityGlassLarge]}><Pressable analyticsId="components_feed-screen.pressable.1"
+          <GlassSurface tone="control" interactive style={[styles.cityGlass, expandedHeader && styles.cityGlassLarge]}><Pressable analyticsId="components_feed-screen.pressable.1"
             onPress={() => { play('reaction'); setCityPicker(true); }} accessibilityRole="button"
             accessibilityLabel={`${tr(city.name)}, ${t.feed.cityPickerTitle}`}
             style={({ pressed }) => [styles.cityButton, controlPresentation(theme, { pressed, reducedMotion }).container]}>
@@ -666,7 +668,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             style={({ pressed }) => [styles.iconButton, controlPresentation(theme, { tone: 'ghost', pressed, reducedMotion }).container]}>
             <SymbolView name={{ ios: 'map', android: 'map', web: 'map' }} size={IconSize.toolbar} tintColor={theme.text} />
           </Pressable></View>}
-          <ProfileAvatarButton />
+          <ProfileAvatarButton enableBusinessSwitch={!meetupsOnly} onBusinessSwitchAvailabilityChange={setHasBusinessSwitch} />
         </View>
         <FlatList analyticsId="components_feed-screen.flatlist.1" ref={feedListRef}
           onViewableItemsChanged={trackTranslationFeed}

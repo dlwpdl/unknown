@@ -1,4 +1,9 @@
 export const uiEnglish: Record<string, string> = {
+  "프로필 전환": "Switch profile",
+  "사진 관리": "Manage photos",
+  "비즈니스 글쓰기": "Write a business post",
+  "이 비즈니스 이름으로 새 소식을 작성해요.": "Write an update as this business.",
+  "연결된 비즈니스만 보여요. 전환한 뒤 글쓰기와 사진 관리를 할 수 있어요.": "Only businesses linked to your account are shown. Switch to write posts and manage photos.",
   "글링 | 캐나다 모임 커뮤니티": "Gling | Canada Meetup Community",
   "비즈니스 찾기": "Find businesses",
   "새 소식으로 돌아가기": "Back to updates",
