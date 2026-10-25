@@ -6,6 +6,7 @@ import { checkMerchantWeb } from './check-merchant-web.mjs';
 const directory = process.argv[2] ?? 'dist';
 assert.ok(existsSync(join(directory, 'index.html')), 'Public web export is missing');
 assert.ok(existsSync(join(directory, 'company.html')), 'Public company route is missing');
+assert.ok(existsSync(join(directory, 'meetups.html')), 'Public meetup discovery route is missing');
 assert.equal(readFileSync(join(directory, 'ads.txt'), 'utf8').trim(), 'google.com, pub-2361293253164911, DIRECT, f08c47fec0942fa0', 'Public web seller declaration is missing');
 for (const page of ['index', 'terms', 'privacy', 'account-deletion', 'child-safety']) {
   const html = readFileSync(join(directory, `${page}.html`), 'utf8');

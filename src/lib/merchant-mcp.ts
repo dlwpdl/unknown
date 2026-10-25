@@ -11,16 +11,17 @@ export type MerchantMcpPhotoGroup = { label: string; uris: string[] };
 type Grant = { merchantIds: string[]; allowDrafts: boolean; allowPublish: boolean };
 type ReturnStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 const returnKey = 'gling:merchant-ai:return:v1';
+export function clearMerchantMcpReturn(storage: ReturnStorage) { storage.removeItem(returnKey); }
 export const validMerchantMcpAuthorizationId = (value: unknown): value is string => typeof value === 'string' && /^[A-Za-z0-9_-]{8,200}$/.test(value);
-export function rememberMerchantMcpReturn(storage: ReturnStorage, id: string, now = Date.now()) {
-  if (!validMerchantMcpAuthorizationId(id)) throw new Error('INVALID_MCP_INPUT');
-  storage.setItem(returnKey, JSON.stringify({ id, at: now }));
+export function rememberMerchantMcpReturn(storage: ReturnStorage, id?: string, now = Date.now()) {
+  if (id !== undefined && !validMerchantMcpAuthorizationId(id)) throw new Error('INVALID_MCP_INPUT');
+  storage.setItem(returnKey, JSON.stringify({ id: id ?? null, at: now }));
 }
-export function merchantMcpReturnPath(storage: ReturnStorage, now = Date.now()): '/' | `/ai?authorization_id=${string}` {
+export function merchantMcpReturnPath(storage: ReturnStorage, now = Date.now()): '/' | '/ai' | `/ai?authorization_id=${string}` {
   try {
     const saved = JSON.parse(storage.getItem(returnKey) ?? 'null'); storage.removeItem(returnKey);
-    return saved && validMerchantMcpAuthorizationId(saved.id) && typeof saved.at === 'number' && now >= saved.at && now - saved.at < 600000
-      ? `/ai?authorization_id=${encodeURIComponent(saved.id)}` : '/';
+    if (!saved || typeof saved.at !== 'number' || now < saved.at || now - saved.at >= 600000) return '/';
+    return saved.id === null ? '/ai' : validMerchantMcpAuthorizationId(saved.id) ? `/ai?authorization_id=${encodeURIComponent(saved.id)}` : '/';
   } catch { return '/'; }
 }
 export function safeMerchantMcpRedirect(value: string, expected: string): string {

@@ -1,0 +1,11 @@
+.public-app-stores{min-width:0;color:var(--text);font:500 var(--store-body)/1.6 system-ui,sans-serif}
+.public-app-stores h3{font-size:var(--store-heading);line-height:1.45;margin:0 0 var(--store-small-gap)}
+.public-app-stores p{margin:0 0 var(--store-gap);color:var(--textSecondary)}
+.public-app-store-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--store-small-gap)}
+.public-app-store-picker button,.public-app-store-result>a{box-sizing:border-box;display:flex;justify-content:center;align-items:center;gap:var(--store-small-gap);min-width:0;min-height:var(--store-action);max-width:100%;border:1px solid var(--line);border-radius:var(--store-radius);padding:12px 14px;background:var(--card);color:var(--text);font:600 var(--store-body)/1.5 system-ui,sans-serif;text-align:center;text-decoration:none;white-space:normal;overflow-wrap:anywhere;cursor:pointer}
+.public-app-store-picker button[aria-pressed=true]{border-color:var(--accent);color:var(--accentInk);background:var(--accent)}
+.public-app-store-picker button:active,.public-app-store-result>a:active{opacity:var(--store-pressed)}
+.public-app-store-picker button:focus-visible,.public-app-store-result>a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.public-app-store-result{display:flex;flex-direction:column;gap:var(--store-gap);margin-top:var(--store-gap);min-width:0}
+.public-app-store-result svg{display:block;width:180px;max-width:100%;height:auto;align-self:center;background:#fff}
+.public-app-store-result p{margin:0;overflow-wrap:anywhere}

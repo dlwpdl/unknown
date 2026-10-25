@@ -136,15 +136,15 @@ function ToolRow({ title, detail, onPress, disabled }: { title: string; detail: 
   </Pressable>;
 }
 
-type WorkspaceProps = { merchantId?: string; refreshSignal?: number; initialMerchantId?: string; initialTab?: MerchantTab };
+type WorkspaceProps = { merchantId?: string; refreshSignal?: number; initialMerchantId?: string; initialTab?: MerchantTab; assignedOnly?: boolean; onBusinessesChanged?: () => void };
 export function MerchantWorkspace(props: WorkspaceProps) {
 
   const [connectionRevision, setConnectionRevision] = useState(0);
   const refreshSignal = (props.refreshSignal ?? 0) + connectionRevision;
-  return <>{!props.merchantId && <MerchantAccountInvitations refreshSignal={refreshSignal} onChanged={() => setConnectionRevision(v => v + 1)} />}
+  return <>{!props.merchantId && <MerchantAccountInvitations refreshSignal={refreshSignal} onChanged={() => { setConnectionRevision(v => v + 1); props.onBusinessesChanged?.(); }} />}
     <MerchantAccessGate refreshSignal={refreshSignal}><MerchantWorkspaceContent {...props} refreshSignal={refreshSignal} /></MerchantAccessGate></>;
 }
-function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMerchantId, initialTab }: WorkspaceProps) {
+function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMerchantId, initialTab, assignedOnly = false, onBusinessesChanged }: WorkspaceProps) {
   const { tr } = useLanguage();
   const { me, isAuthed, isAdmin } = useAuth();
   const [response, setResponse] = useState<{ user: string; rows: BusinessMerchant[]; revision: number; refreshSignal: number } | null>(null);
@@ -160,12 +160,13 @@ function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMercha
     let active = true;
     if (!isAuthed || merchantId) return;
     void loadMyMerchants(supabase).then((next) => { if (active) {
+      if (assignedOnly) next = next.filter(row => row.role === 'owner' || row.role === 'operator');
       setResponse({ user: me.id, rows: next, revision, refreshSignal }); setError('');
       setSelected(current => next.some(m => m.id === current) ? current : next.length === 1 ? next[0].id : null);
     } })
       .catch((e) => { if (active) { if (accessLost(e)) { setResponse(null); setSelected(null); setDirty(false); setRegistering(false); setRegistration({ id: merchantEventId(), name: '', contact: '', city_id: 'vancouver' }); } setError(errorText(e)); } });
     return () => { active = false; };
-  }, [isAuthed, me.id, merchantId, revision, refreshSignal]);
+  }, [isAuthed, me.id, merchantId, revision, refreshSignal, assignedOnly]);
   if (!isAuthed) return <ThemedText>{tr("로그인한 뒤 비즈니스 도구를 이용해 주세요.")}</ThemedText>;
   if (merchantId) return <MerchantTools key={`${me.id}:${merchantId}`} id={merchantId} initialTab={initialTab} refreshSignal={refreshSignal} onDirty={() => {}} />;
   async function choose(id: string | null) {
@@ -194,6 +195,7 @@ function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMercha
       const id = await registerMyMerchant(supabase, registration);
       setRegistration({ id: merchantEventId(), name: '', contact: '', city_id: 'vancouver' });
       setSelected(id); setRegistering(false); setRevision((v) => v + 1);
+      onBusinessesChanged?.();
     } catch (e) { setError(errorText(e)); }
     finally { busyRef.current = false; setBusy(false); }
   }
