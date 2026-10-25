@@ -703,7 +703,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                   accessibilityLabel={tr("글 제목 수정")}
                   style={[styles.postEditInput, { color: theme.text, borderColor: theme.line }]} />
                 <PostBodyEditor value={postDraft.body} cityName={CITIES.find(city => city.id === post.cityId)?.englishName} allowLocation={!post.room} onChangeText={(text) => setPostDraft((current) => current && { ...current, body: text })}
-                  placeholder={tr("내용")} placeholderTextColor={theme.textSecondary} maxLength={4000 - linkedEventDetails.length} multiline editable={!savingPost}
+                  placeholder={tr("내용")} placeholderTextColor={theme.textSecondary} maxLength={Math.max(1000 - linkedEventDetails.length, [...(post.body ?? '')].length)} multiline editable={!savingPost}
                   accessibilityLabel={tr("글 내용 수정")}
                   style={[styles.postEditInput, styles.postEditBody, { color: theme.text, borderColor: theme.line }]} />
                 <ThemedText type="smallBold">{tr("사진") + " "}{postImages?.length ?? 0}/{MAX_POST_IMAGES}</ThemedText>

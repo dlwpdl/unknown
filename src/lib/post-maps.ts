@@ -92,6 +92,6 @@ export function withPostMap(body: string, input: string, label?: string, { prese
   const footer = clean.lastIndexOf('\n\n사진 출처·이용 조건\n');
   const position = footer < 0 ? clean.length : footer;
   const text = url ? `${clean.slice(0, position)}\n\nGoogle 지도: ${url}${name ? `\n위치: ${name}` : ''}${clean.slice(position)}` : preserveWhitespace ? body : body.trim();
-  if ([...text].length > 4000) throw new Error('POST_BODY_TOO_LONG');
+  if ([...text].length > 1000) throw new Error('POST_BODY_TOO_LONG');
   return text;
 }

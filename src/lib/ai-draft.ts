@@ -63,7 +63,7 @@ export function parseAiDraftResponse(value: unknown): AiDraft {
   }
 
   const title = draft.title.trim().slice(0, 80);
-  const body = draft.body.trim().slice(0, 4000);
+  const body = draft.body.trim().slice(0, 1000);
   if (!title || !body || !draft.hashtags.every((item) => typeof item === 'string')) {
     throw new Error('INVALID_AI_DRAFT');
   }
