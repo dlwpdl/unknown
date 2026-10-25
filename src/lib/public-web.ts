@@ -8,7 +8,17 @@ export function publicMerchantId(path: string, queryId?: unknown): string | null
   return typeof id === 'string' && UUID.test(id) ? id.toLowerCase() : null;
 }
 
-export function publicWebTarget(path: string, postId?: string) {
+export function publicWebTarget(path: string, postId?: string, params: Record<string, unknown> = {}) {
+  const meetupKeys: Record<string, string[]> = { '/meetup-join': ['postId'], '/meetup-profile': ['postId', 'userId', 'returnPostId'], '/meetup-application': ['requestId'] };
+  if (Object.hasOwn(meetupKeys, path)) {
+    const query = new URLSearchParams();
+    const values: Record<string, unknown> = { ...params, ...(postId ? { postId } : {}) };
+    for (const key of meetupKeys[path]) {
+      const value = values[key];
+      if (typeof value === 'string' && UUID.test(value)) query.set(key, value);
+    }
+    return query.size ? `gling:/${path}?${query}` : path === '/meetup-application' ? 'gling://chat' : 'gling://meetups';
+  }
   if (path === '/company' || path.startsWith('/company/')) {
     const merchantId = publicMerchantId(path, postId);
     return merchantId ? `gling://company/${merchantId}` : 'gling://';

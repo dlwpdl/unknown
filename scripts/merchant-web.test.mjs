@@ -6,6 +6,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { translateUi } from '../src/i18n/index.ts';
+import * as merchantMcp from '../src/lib/merchant-mcp.ts';
 
 const require = createRequire(import.meta.url);
 const config = require('../app.config.js');
@@ -29,13 +30,14 @@ test('merchant web selects only its own router root and preserves public/admin b
   }
 });
 
-function component(file, name, { auth, rpc, postLoader, workspaceLoader, callback = null, language } = {}) {
-  const exports = {}, state = [], effects = [], calls = [], events = {};
+function component(file, name, { auth, rpc, postLoader, workspaceLoader, callback = null, language, storage = new Map() } = {}) {
+  const exports = {}, state = [], effects = [], calls = [], events = {}, layoutCleanups = [];
+  const sessionStorage = { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value), removeItem: key => storage.delete(key) };
   let index = 0;
   const imports = {
     react: { useState(initial) { const slot = index++; if (!(slot in state)) state[slot] = typeof initial === 'function' ? initial() : initial; return [state[slot], value => { state[slot] = typeof value === 'function' ? value(state[slot]) : value; }]; },
       useRef(initial) { const slot = index++; if (!(slot in state)) state[slot] = { current: initial }; return state[slot]; },
-      useEffect(fn) { effects.push(fn); }, useLayoutEffect(fn) { fn(); } },
+      useEffect(fn) { effects.push(fn); }, useLayoutEffect(fn) { layoutCleanups.push(fn()); } },
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'react-native': { View: 'View', Modal: 'Modal', Platform: { OS: 'web' }, StyleSheet: { create: x => x, hairlineWidth: 1 }, AppState: { addEventListener: () => ({ remove() {} }) } },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
@@ -45,18 +47,21 @@ function component(file, name, { auth, rpc, postLoader, workspaceLoader, callbac
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/gling-loader': { GlingLoader: 'Loader' },
     '@/components/merchant-naver-cafe': { MerchantNaverCallback: 'MerchantNaverCallback', captureMerchantNaverCallback: () => callback },
     '@/components/merchant-workspace': { MerchantWorkspace: 'MerchantWorkspace' }, '@/components/post-detail': { PostDetail: 'PostDetail' },
+    '@/components/public-web/app-store-choices': { AppStoreChoices: 'AppStoreChoices' },
     '@/hooks/use-theme': { useTheme: () => ({ background: '#0B0B12', card: '#171722', line: '#343443', accent: '#CBB9FF' }) },
     '@/lib/auth': { useAuth: () => auth },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => calls.push(['feedback', kind]) }) },
     '@/lib/merchant-workspace': { getMyMerchantAccess: async client => rpc(client), loadMerchantWorkspace: workspaceLoader },
+    '@/lib/merchant-web-access': { loadMerchantWebAccess: async client => { const result = await rpc(client); return typeof result === 'boolean' ? { kind: result ? 'business' : 'member', merchants: [], canConnectMcp: result } : result; } },
+    '@/lib/merchant-mcp': merchantMcp,
     '@/lib/merchant-posts': { editMerchantPost: async (...args) => calls.push(['edit', args]), removeMerchantPost: async (...args) => calls.push(['remove', args]) },
     '@/lib/feed-data': { loadPublicPost: postLoader },
     '@/lib/supabase': { supabase: { auth: { getSession: async () => ({ data: { session: { user: { id: auth.me.id } } } }) } } },
   };
   const source = ts.transpileModule(readFileSync(new URL(file, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;
   const resolve = withLanguageImports(name => { if (name.startsWith('@/assets/')) return 'brand.png'; if (!(name in imports)) throw new Error(`Unexpected import ${name}`); return imports[name]; });
-  vm.runInNewContext(source, { exports, require: name => language && name === '@/hooks/use-language' ? { useLanguage: () => ({ tr: (key, ...args) => translateUi(language(), key, ...args) }) } : resolve(name), window: { addEventListener(name, fn) { events[name] = fn; }, removeEventListener(name) { delete events[name]; } }, document: { visibilityState: 'visible', addEventListener() {}, removeEventListener() {} } });
-  return { render(props) { index = 0; return exports[name](props); }, async effect() { const cleanups = effects.splice(0).map(fn => fn()); await Promise.resolve(); await Promise.resolve(); return () => cleanups.forEach(fn => fn?.()); }, calls, events };
+  vm.runInNewContext(source, { exports, require: name => language && name === '@/hooks/use-language' ? { useLanguage: () => ({ tr: (key, ...args) => translateUi(language(), key, ...args) }) } : resolve(name), window: { sessionStorage, location: { assign: path => calls.push(['assign', path]) }, addEventListener(name, fn) { events[name] = fn; }, removeEventListener(name) { delete events[name]; } }, document: { visibilityState: 'visible', addEventListener() {}, removeEventListener() {} } });
+  return { render(props) { index = 0; return exports[name](props); }, async effect() { const cleanups = effects.splice(0).map(fn => fn()); await Promise.resolve(); await Promise.resolve(); return () => cleanups.forEach(fn => fn?.()); }, unmount() { layoutCleanups.splice(0).forEach(cleanup => cleanup?.()); }, calls, events, sessionStorage };
 }
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
 const authed = () => ({ me: { id: 'owner', nickname: '가게 담당자' }, isAuthed: true, isAuthLoading: false, authError: null, signOut: async () => {}, promptLogin() {} });
@@ -76,11 +81,16 @@ test('an existing merchant error follows language changes without retrying the p
   assert.equal(requests, 1);
 });
 
-test('merchant web cannot mount management when current server access is false', async () => {
+test('a regular member sees an inline app invitation instead of business permission denial', async () => {
   const auth = authed(), screen = component('../src/merchant-web/index.tsx', 'default', { auth, rpc: async () => false });
   screen.render(); await screen.effect();
   assert.ok(!nodes(screen.render()).some(n => n.type === 'MerchantWorkspace'));
-  assert.ok(nodes(screen.render()).some(n => n.props?.children === '비즈니스 관리 권한이 필요해요'));
+  const tree = screen.render();
+  assert.ok(nodes(tree).some(n => n.props?.children === '모임과 대화는 앱에서 이어가요'));
+  assert.ok(nodes(tree).some(n => n.type === 'AppStoreChoices'));
+  assert.ok(!nodes(tree).some(n => n.props?.children === '비즈니스 관리 권한이 필요해요'));
+  nodes(tree).find(n => n.props?.analyticsId === 'merchant-web.member.app').props.onPress();
+  assert.deepEqual(screen.calls.filter(call => call[0] === 'assign'), [['assign', 'gling://']]);
 });
 test('merchant web access belongs to one account and does not carry across account switches', async () => {
   const auth = authed(), screen = component('../src/merchant-web/index.tsx', 'default', { auth, rpc: async () => true });
@@ -151,9 +161,54 @@ test('logged-out web shows the ordinary login action and does not query merchant
   const screen = component('../src/merchant-web/index.tsx', 'default', { auth, rpc: async () => { rightsRead++; return true; } });
   const tree = screen.render(); await screen.effect();
   assert.equal(rightsRead, 0);
-  nodes(tree).find(n => n.props?.accessibilityLabel === '비즈니스 로그인').props.onPress();
+  assert.ok(nodes(tree).some(n => n.props?.children === '글링 로그인'));
+  nodes(tree).find(n => n.props?.accessibilityLabel === '로그인·가입하기').props.onPress();
   assert.equal(logins, 1);
   assert.ok(screen.calls.some(call => call[0] === 'feedback'));
+});
+
+test('normal portal login clears only a cancelled AI return before showing the existing auth prompt', async () => {
+  const storage = new Map([['gling.sharedPostReturn', '/post?id=14010000-0000-4000-8000-000000000001&invite=1'], ['unrelated', 'keep']]);
+  const auth = { ...authed(), isAuthed: false }; let logins = 0;
+  const screen = component('../src/merchant-web/index.tsx', 'default', { auth, storage, rpc: async () => assert.fail('A guest must not query merchant rights') });
+  merchantMcp.rememberMerchantMcpReturn(screen.sessionStorage, 'cancelled-ai-request');
+  auth.promptLogin = () => { assert.equal(merchantMcp.merchantMcpReturnPath(screen.sessionStorage), '/'); logins++; };
+  nodes(screen.render()).find(n => n.props?.analyticsId === 'merchant-web.login').props.onPress();
+  assert.equal(logins, 1);
+  assert.equal(storage.get('gling.sharedPostReturn'), '/post?id=14010000-0000-4000-8000-000000000001&invite=1');
+  assert.equal(storage.get('unrelated'), 'keep');
+});
+
+test('retained guest login cannot clear a new intent or prompt after account/loading changes or unmount', () => {
+  for (const change of ['account', 'loading', 'unmount']) {
+    const auth = { ...authed(), isAuthed: false }; let logins = 0; auth.promptLogin = () => logins++;
+    const screen = component('../src/merchant-web/index.tsx', 'default', { auth });
+    const retained = nodes(screen.render()).find(n => n.props?.analyticsId === 'merchant-web.login').props.onPress;
+    merchantMcp.rememberMerchantMcpReturn(screen.sessionStorage, 'newer-ai-request');
+    if (change === 'unmount') screen.unmount();
+    else { if (change === 'account') { auth.me = { id: 'new-owner' }; auth.isAuthed = true; } else auth.isAuthLoading = true; screen.render(); }
+    retained();
+    assert.equal(logins, 0, change);
+    assert.equal(merchantMcp.merchantMcpReturnPath(screen.sessionStorage), '/ai?authorization_id=newer-ai-request', change);
+  }
+});
+
+test('a failed AI return cleanup keeps normal sign-in retryable without starting the auth prompt', () => {
+  const storage = new Map(), auth = { ...authed(), isAuthed: false }; let logins = 0; auth.promptLogin = () => logins++;
+  storage.delete = () => { throw Error('Storage unavailable'); };
+  const screen = component('../src/merchant-web/index.tsx', 'default', { auth, storage });
+  nodes(screen.render()).find(n => n.props?.analyticsId === 'merchant-web.login').props.onPress();
+  assert.equal(logins, 0);
+  assert.ok(nodes(screen.render()).some(n => n.props?.accessibilityRole === 'alert' && n.props.children === '로그인을 준비하지 못했어요. 다시 시도해 주세요.'));
+  assert.ok(nodes(screen.render()).some(n => n.props?.analyticsId === 'merchant-web.login'));
+});
+
+test('access failures retain a distinct retry screen without pretending to be a regular member', async () => {
+  const screen = component('../src/merchant-web/index.tsx', 'default', { auth: authed(), rpc: async () => { throw Error('Offline'); } });
+  screen.render(); await screen.effect(); const tree = screen.render();
+  assert.ok(nodes(tree).some(n => n.props?.children === '권한을 확인하지 못했어요'));
+  assert.ok(nodes(tree).some(n => n.props?.accessibilityLabel === '권한 다시 확인'));
+  assert.ok(!nodes(tree).some(n => n.type === 'AppStoreChoices' || n.type === 'MerchantWorkspace'));
 });
 
 test('OAuth completion waits for current merchant rights and uses only the server-bound merchant result', async () => {
@@ -182,7 +237,18 @@ test('OAuth completion waits for current merchant rights and uses only the serve
 test('AI connection management stays reachable when business editing access has been withdrawn', async () => {
   const screen = component('../src/merchant-web/index.tsx', 'default', { auth: authed(), rpc: async () => false });
   screen.render(); await screen.effect();
-  nodes(screen.render()).find(n => n.props?.accessibilityLabel === 'AI 연결').props.onPress();
+  nodes(screen.render()).find(n => n.props?.accessibilityLabel === 'AI 연결 관리').props.onPress();
   assert.ok(screen.calls.some(call => call[0] === 'navigate' && call[1] === '/ai'));
   assert.ok(screen.calls.some(call => call[0] === 'feedback'));
+});
+test('business access shows new AI connections only for verified owners and preserves the member boundary', async () => {
+  for (const [kind, canConnectMcp] of [['member', false], ['unassigned', false], ['business', false], ['business', true]]) {
+    const screen = component('../src/merchant-web/index.tsx', 'default', { auth: authed(), rpc: async () => ({ kind, merchants: [], canConnectMcp }) });
+    screen.render(); await screen.effect(); const tree = screen.render();
+    assert.equal(nodes(tree).some(n => n.props?.accessibilityLabel === 'AI 연결'), canConnectMcp);
+    assert.equal(nodes(tree).some(n => n.type === 'MerchantWorkspace'), kind !== 'member');
+    if (kind === 'unassigned') assert.ok(nodes(tree).some(n => n.props?.children === '관리할 비즈니스를 연결해 주세요'));
+    const workspace = nodes(tree).find(n => n.type === 'MerchantWorkspace');
+    if (workspace) assert.equal(workspace.props.assignedOnly, true);
+  }
 });

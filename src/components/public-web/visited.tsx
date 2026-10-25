@@ -8,6 +8,8 @@ import { useEffect, useState, useSyncExternalStore, type CSSProperties } from 'r
 import { CityPlacePhoto } from '@/components/city-place-photo';
 import { DiscoveryMap } from '@/components/discovery-map';
 import { WebNightColors } from '@/constants/theme';
+import { useLanguage } from '@/hooks/use-language';
+import { useAuth } from '@/lib/auth';
 import { cityPlacesRevision, getCityPlaces, replaceCityPlacesCatalog, subscribeCityPlaces } from '@/lib/city-places';
 import { refreshCityPlaces } from '@/lib/city-place-refresh';
 import { placeMapRoute } from '@/lib/discovery';
@@ -22,6 +24,8 @@ const palette = Object.fromEntries(Object.entries(WebNightColors).map(([key, val
 const cities = CITIES.filter(city => city.state === 'open');
 
 export default function PublicVisited() {
+  const { language } = useLanguage(), { isAuthed } = useAuth();
+  const ko = language === 'ko';
   const params = useLocalSearchParams<{ city?: string; placeId?: string }>();
   const router = useRouter(), { play } = useInteractionFeedback();
   useSyncExternalStore(subscribeCityPlaces, cityPlacesRevision, cityPlacesRevision);
@@ -66,10 +70,11 @@ export default function PublicVisited() {
     <a className="reader-skip" href="#visited-main" onClick={() => play('selection')}>본문으로 바로가기</a>
     <header className="reader-header">
       <a href="/" aria-label="글링 홈" onClick={() => play('selection')}><img src={wordmark} alt="gling" width="96" /></a>
-      <nav aria-label="주요 메뉴"><a href="/?tag=festival#stories" onClick={() => play('selection')}>페스티벌</a>
-        <a href="/?tag=meetup#stories" onClick={() => play('selection')}>모임</a>
+      <nav aria-label="주요 메뉴"><a href="/" onClick={() => play('selection')}>{ko ? '오늘' : 'Today'}</a><a href="/?tag=festival#stories" onClick={() => play('selection')}>{ko ? '페스티벌' : 'Festivals'}</a>
+        <a href="/meetups" onClick={() => play('selection')}>{ko ? '모임' : 'Meetups'}</a>
         <a href="/visited" aria-current="page" onClick={() => play('selection')}>Gling Visited</a>
       </nav>
+      <a className="reader-header-account" href="/merchant/" onClick={() => play('selection')}>{isAuthed ? ko ? '내 계정' : 'My account' : ko ? '로그인' : 'Sign in'}</a>
     </header>
     <main id="visited-main" className="reader-main" tabIndex={-1}>
       <div className="visited-heading"><div><h1>Gling Visited</h1><p>글링이 직접 다녀온 곳. 다음에는 함께 가요.</p></div>

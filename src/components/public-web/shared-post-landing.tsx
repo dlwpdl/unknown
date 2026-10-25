@@ -111,7 +111,10 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
     try { await navigator.clipboard.writeText(canonical); setCopyMessage(ko ? '이 글의 링크를 복사했어요.' : 'Link to this post copied.'); play('success'); }
     catch { setCopyMessage(ko ? '복사하지 못했어요. 아래 링크 주소를 직접 복사해 주세요.' : 'Could not copy the link. Please copy the address below.'); play('warning'); }
   }
-  const description = ko ? '로그인하거나 가입하면 웹에서 전체 글을 읽을 수 있어요.' : 'Sign in or sign up to read the full post on the web.';
+  const meetupInvitation = invite && ready && (preview?.kind === 'meetup' || !!post?.room);
+  const description = meetupInvitation
+    ? ko ? '로그인하거나 가입해 모임을 살펴보세요. 모임 참여는 앱에서 이어가요.' : 'Sign in or sign up to explore this meetup. Continue in the app to join.'
+    : ko ? '로그인하거나 가입하면 웹에서 전체 글을 읽을 수 있어요.' : 'Sign in or sign up to read the full post on the web.';
   const title = authenticated ? post?.title : preview?.title;
   const palette = { ...Object.fromEntries(Object.entries(theme).map(([name, value]) => [`--${name}`, value])),
     '--shared-touch': `${ControlMetrics.touch}px`, '--shared-action': `${ControlMetrics.action}px`, '--shared-gap': `${Spacing.three}px`, '--shared-padding': `${Spacing.four}px`,
@@ -124,7 +127,8 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
       <meta property="og:description" content={description} />{canonical && <link rel="canonical" href={canonical} />}</Head>
     <style>{styles}</style>
     <header><a data-analytics="shared.web.home" href="/" aria-label={ko ? '글링 홈' : 'Gling home'} onClick={() => play('selection')}>
-      <img src={theme === Colors.dark ? wordmark : lightWordmark} alt="gling" width={132} height={55} /></a><span>{ko ? '함께 나눈 이야기' : 'A story shared with you'}</span></header>
+      <img src={theme === Colors.dark ? wordmark : lightWordmark} alt="gling" width={132} height={55} /></a><span>{ko ? '함께 나눈 이야기' : 'A story shared with you'}</span>
+      <a href="/merchant/" onClick={() => play('selection')}>{authenticated ? ko ? '내 계정' : 'My account' : ko ? '로그인' : 'Sign in'}</a></header>
     <main>
       <div className="shared-story">
         {ready ? authenticated && post ? <SharedPostArticle post={post} /> : <section className="shared-preview" aria-label={ko ? '공개 미리보기' : 'Public preview'}>
@@ -139,8 +143,8 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
               : authenticated ? ko ? '삭제되었거나 열람할 수 없는 글이에요.' : 'This post was removed or is not available to you.' : ko ? '삭제되었거나 열람할 수 없는 글일 수 있어요. 로그인한 뒤 확인해 주세요.' : 'Sign in to check access. Removed or inaccessible posts stay unavailable.'}</p>
             {status === 'error' && <button type="button" data-analytics="shared.web.retry" className="shared-secondary" onClick={() => { play('selection'); onRetry(); }}>{ko ? '다시 시도' : 'Try again'}</button>}
           </section>}
-        {id && !authenticated && <section className="shared-login"><h2>{ko ? '이어서 읽어보세요' : 'Keep reading'}</h2><p>{description}</p>
-          <button type="button" data-analytics="shared.web.login" className="shared-primary" disabled={authPending} onClick={onLogin}>{authPending ? ko ? '로그인 정보를 확인하고 있어요…' : 'Checking sign-in…' : ko ? '로그인·가입하고 읽기' : 'Sign in or sign up to read'}</button>
+        {id && !authenticated && <section className="shared-login"><h2>{meetupInvitation ? ko ? '이 모임에 함께하고 싶나요?' : 'Want to join this meetup?' : ko ? '이어서 읽어보세요' : 'Keep reading'}</h2><p>{description}</p>
+          <button type="button" data-analytics="shared.web.login" className="shared-primary" disabled={authPending} onClick={onLogin}>{authPending ? ko ? '로그인 정보를 확인하고 있어요…' : 'Checking sign-in…' : meetupInvitation ? ko ? '로그인·가입하고 이어가기' : 'Sign in or sign up to continue' : ko ? '로그인·가입하고 읽기' : 'Sign in or sign up to read'}</button>
           {!!loginError && <p role="alert">{loginError}</p>}</section>}
       </div>
       {id && <aside className="shared-handoff" aria-label={ko ? '앱에서 대화하기' : 'Chat in the app'}>

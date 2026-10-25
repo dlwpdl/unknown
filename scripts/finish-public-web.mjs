@@ -8,7 +8,7 @@ export function finishPublicWeb(directory = 'dist') {
   // GitHub Pages serves this for app-only paths and existing /post/:id links.
   copyFileSync(join(directory, '+not-found.html'), join(directory, '404.html'));
   const cities = CITIES.filter(city => city.state === 'open');
-  const paths = ['/', '/terms', '/privacy', '/account-deletion', '/child-safety', ...cities.map(city => `/?city=${city.id}`)];
+  const paths = ['/', '/meetups', '/terms', '/privacy', '/account-deletion', '/child-safety', ...cities.map(city => `/?city=${city.id}`)];
   writeFileSync(join(directory, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${paths.map(path => `<url><loc>${PUBLIC_SITE}${path}</loc></url>`).join('')}</urlset>\n`);
   const protectedPaths = ['/merchant/', '/auth/', '/admin', '/chat', '/compose', '/profile', '/notifications', '/user/', '/meetup-create', '/meetup-join', '/meetup-application', '/meetup-profile'];
   // Google permits a cross-host sitemap when the site's own robots.txt references it.

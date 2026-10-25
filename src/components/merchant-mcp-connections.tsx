@@ -110,7 +110,7 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
         const businesses = businessResponse.status === 'fulfilled' ? businessResponse.value : [];
         const links = linkResponse.status === 'fulfilled' ? linkResponse.value : [];
         const request = requestResponse.status === 'fulfilled' ? requestResponse.value : null;
-        const owned = businesses.filter(m => m.owner_id === userId && !!m.owner_verified_at);
+        const owned = businesses.filter(m => m.role === 'owner' && m.owner_id === userId && !!m.owner_verified_at);
         setMerchants(owned); setConnections(links); setAuthorization(request); setCheckedAt(Date.now());
         const failure = [businessResponse, linkResponse, requestResponse].find(response => response.status === 'rejected');
         setError(failure?.status === 'rejected' ? errorText(failure.reason) : '');
@@ -170,7 +170,11 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
         <View style={styles.row}><Action label={busy ? tr("처리 중…") : tr("선택한 권한으로 연결")} primary disabled={busy || !selected.length} onPress={() => { void run(async () => redirect(await connectMerchantMcp(supabase, userId, authorization, { merchantIds: selected, allowDrafts: drafts, allowPublish: publish }))); }} />
           <Action label={tr("취소")} disabled={busy} onPress={() => { void run(async () => redirect(await denyMerchantMcp(supabase, userId, authorization))); }} /></View>
       </View>}
-      {!authorizationId && <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      {!merchants.length && <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+        <ThemedText type="subtitle" accessibilityRole="header">{tr("AI 신규 연결은 비즈니스 오너만 이용할 수 있어요.")}</ThemedText>
+        <ThemedText themeColor="textSecondary">{tr("소유권이 확인된 내 비즈니스가 필요해요. 운영 담당자는 웹에서 배정된 비즈니스를 관리할 수 있어요. 이전에 연결한 AI는 아래에서 해제할 수 있어요.")}</ThemedText>
+      </View>}
+      {!authorizationId && merchants.length > 0 && <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <ThemedText type="subtitle" accessibilityRole="header">{tr("AI 도구에서 글링 연결을 추가해요.")}</ThemedText>
         <ThemedText themeColor="textSecondary">{tr("연결 주소를 복사해 AI 도구의 MCP 또는 커넥터 설정에 붙여 넣으세요. 로그인하면 이 화면에서 비즈니스와 권한을 고를 수 있어요.")}</ThemedText>
         <ThemedText type="small" selectable>{endpoint}</ThemedText>
