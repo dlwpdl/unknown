@@ -7,7 +7,7 @@ const url = Deno.env.get('SUPABASE_URL'), key = Deno.env.get('SUPABASE_ANON_KEY'
 const options = { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } };
 const auth = url && key ? createClient(url, key, options).auth : null;
 const service = url && serviceKey ? createClient(url, serviceKey, options) : null;
-const allowedOrigins = ['https://gling.ej-entertainment.com', 'https://dlwpdl.github.io', 'https://chatgpt.com', 'https://claude.ai',
+const allowedOrigins = ['https://gling.ej-entertainment.com', 'https://chatgpt.com', 'https://claude.ai',
   ...(Deno.env.get('GLING_MCP_ALLOWED_ORIGINS') ?? '').split(',').map(value => value.trim()).filter(Boolean)];
 
 Deno.serve(async request => {

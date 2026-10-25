@@ -93,3 +93,15 @@ test('change review loads all twenty ordered photos and rejects twenty-one',asyn
   assert.deepEqual(groups[1].uris,[...groups[0].uris].reverse());
   await assert.rejects(loadMerchantMcpChangePhotos(client,{...edit,changes:{image_paths:[...paths,'owner/20.webp']}}),/MCP_PHOTO_PREVIEW_FAILED/);
 });
+
+test('only known AI callbacks or the owner\'s own computer count as a verified client', async () => {
+  const { mcpClientTrust } = await import('../src/lib/mcp-client-trust.ts');
+  for (const uri of ['https://claude.ai/api/mcp/auth_callback', 'https://claude.com/api/mcp/auth_callback', 'https://chatgpt.com/connector_platform_oauth_redirect',
+    'https://chatgpt.com/connector/oauth/abc_123-XY', 'http://127.0.0.1:5500/callback', 'http://localhost:33418/oauth/callback', 'http://[::1]:8080/cb'])
+    assert.equal(mcpClientTrust(uri).verified, true, uri);
+  for (const uri of ['https://claude.ai.evil.example/api/mcp/auth_callback', 'https://evil.example/api/mcp/auth_callback', 'http://claude.ai/api/mcp/auth_callback',
+    'https://claude.ai/api/mcp/auth_callback/x', 'https://claude.ai:8443/api/mcp/auth_callback', 'https://user@claude.ai/api/mcp/auth_callback',
+    'https://chatgpt.com/connector/oauth/../steal', 'http://192.168.1.2/callback', 'not a url'])
+    assert.equal(mcpClientTrust(uri).verified, false, uri);
+  assert.equal(mcpClientTrust('https://evil.example/cb').host, 'evil.example');
+});
