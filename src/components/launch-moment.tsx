@@ -37,9 +37,11 @@ export function LaunchMoment({ ready, onComplete }: { ready: boolean; onComplete
     let active = true;
     const finish = () => { if (active && !completed.current) { completed.current = true; complete.current(); } };
     if (reducedMotion) { finish(); return; }
+    // A lost native completion must not retain the now-transparent startup modal.
+    const fallback = setTimeout(finish, 1000);
     const exit = Animated.timing(opacity, { toValue: 0, duration: 340, easing: Easing.in(Easing.cubic), useNativeDriver: true });
     exit.start(({ finished }) => { if (finished) finish(); });
-    return () => { active = false; exit.stop(); };
+    return () => { active = false; clearTimeout(fallback); exit.stop(); };
   }, [entered, opacity, ready, reducedMotion]);
 
   useEffect(() => {
@@ -61,6 +63,7 @@ export function LaunchMoment({ ready, onComplete }: { ready: boolean; onComplete
       hold = setTimeout(settle, 2000);
       return () => { active = false; clearTimeout(hold); };
     }
+    const fallback = setTimeout(settle, 2000);
     const entry = Animated.parallel([
       Animated.timing(wordmarkOpacity, { toValue: 1, duration: 920, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
       Animated.timing(glowScale, { toValue: 1.25, duration: 920, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
@@ -75,7 +78,7 @@ export function LaunchMoment({ ready, onComplete }: { ready: boolean; onComplete
       ]),
     ]);
     entry.start(({ finished }) => { if (active && finished) hold = setTimeout(settle, 740); });
-    return () => { active = false; clearTimeout(hold); entry.stop(); };
+    return () => { active = false; clearTimeout(hold); clearTimeout(fallback); entry.stop(); };
   }, [entered, glowOpacity, glowScale, prepared, reducedMotion, wordmarkOpacity, wordmarkScale, wordmarkY]);
 
   return <Animated.View
