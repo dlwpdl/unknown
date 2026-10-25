@@ -1,6 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getLocale, tr } from '../i18n/index.ts';
-import { loadMeetupProfilePhoto } from './chilling-profile-media.ts';
 
 type TimedMessage = { sender_id: string; created_at: string };
 export type ChatRect = { x: number; y: number; width: number; height: number };
@@ -63,12 +62,60 @@ export function chatListTime(value: string, now = new Date(), locale = getLocale
   return date.toDateString() === now.toDateString() ? chatMessageTime(value, locale) : chatDateLabel(value, undefined, now, locale) ?? '';
 }
 
-export type ChatMember = { id: string; nickname: string; avatar_path: string | null; is_host: boolean; avatarUrl?: string };
+export type ChatMember = { id: string; nickname: string; avatar_path: string | null; is_host: boolean };
 export async function loadChatMembers(client: SupabaseClient, postId: string): Promise<ChatMember[]> {
   const result = await client.rpc('get_chilling_roster', { p_post_id: postId });
   if (result.error) throw result.error;
   const members = (result.data ?? []) as { userId: string; displayName: string; photoPaths: string[]; isHost: boolean }[];
-  return Promise.all(members.map(async member => ({ id: member.userId, nickname: member.displayName || tr('모임 멤버'),
-    avatar_path: member.photoPaths?.[0] ?? null, is_host: member.isHost,
-    avatarUrl: member.photoPaths?.[0] ? await loadMeetupProfilePhoto(client, member.photoPaths[0]).catch(() => undefined) : undefined })));
+  return members.map(member => ({ id: member.userId, nickname: member.displayName || tr('모임 멤버'),
+    avatar_path: member.photoPaths?.[0] ?? null, is_host: member.isHost }));
+}
+
+// Share bytes only while an avatar is visible; every later mount rechecks private storage.
+export function createChatMemberPhotoQueue(load: (path: string) => Promise<string>) {
+  type Entry = { key: string; path: string; listeners: Set<() => void>; started: boolean; settled: boolean; uri?: string };
+  const entries = new Map<string, Entry>(), waiting: Entry[] = [];
+  let active = 0;
+  const pump = () => {
+    while (active < 4 && waiting.length) {
+      const entry = waiting.shift()!;
+      if (!entry.listeners.size || entries.get(entry.key) !== entry) continue;
+      active++; entry.started = true;
+      void Promise.resolve().then(() => entry.listeners.size && entries.get(entry.key) === entry ? load(entry.path) : undefined)
+        .then(uri => {
+          if (entries.get(entry.key) === entry) entry.uri = uri;
+        }, () => {}).finally(() => {
+          entry.settled = true;
+          if (entries.get(entry.key) === entry) entry.listeners.forEach(changed => changed());
+          active--; pump();
+        });
+    }
+  };
+  return {
+    read: (scope: string, path: string) => entries.get(JSON.stringify([scope, path]))?.uri,
+    subscribe(scope: string, path: string, changed: () => void) {
+      const key = JSON.stringify([scope, path]);
+      let entry = entries.get(key);
+      if (!entry) {
+        entry = { key, path, listeners: new Set(), started: false, settled: false };
+        entries.set(key, entry); waiting.push(entry);
+      }
+      const current = entry;
+      let cancelled = false;
+      current.listeners.add(changed);
+      if (current.settled) changed();
+      pump();
+      return {
+        read: () => !cancelled && entries.get(key) === current ? current.uri : undefined,
+        cancel() {
+          if (cancelled) return;
+          cancelled = true; current.listeners.delete(changed);
+          if (current.listeners.size) return;
+          current.uri = undefined; entries.delete(key);
+          if (!current.started) waiting.splice(waiting.indexOf(current), 1);
+          // An already-started download holds its slot until its real promise settles.
+        },
+      };
+    },
+  };
 }

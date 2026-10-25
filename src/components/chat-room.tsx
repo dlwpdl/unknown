@@ -20,6 +20,7 @@ import MapScreen from '@/app/map';
 import { SharedLinkCard } from '@/components/shared-link-card';
 import { sharedLinkInMessage } from '@/lib/sharing';
 import { ChatMembers } from '@/components/chat-members';
+import { ChatMemberAvatar } from '@/components/chat-member-avatar';
 import { MeetupManageSheet } from '@/components/meetup-manage-sheet';
 import { MeetupRoomSummary } from '@/components/meetup-room-summary';
 import { MeetupChatOverview } from '@/components/meetup-chat-overview';
@@ -172,7 +173,12 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     if (!access.read) { loadingRequest.current += 1; snapshot.current = null; }
   }, [access.read]);
   const [allMessages, setMessages] = useState<ChatMessageRecord[]>([]);
-  const [groupMembers, setGroupMembers] = useState<ChatMember[] | null>(null);
+  const [memberSnapshot, setMemberSnapshot] = useState<{ scope: string; members: ChatMember[] | null } | null>(null);
+  const groupMembers = memberSnapshot?.scope === scopeKey ? memberSnapshot.members : null;
+  const setGroupMembers = useCallback((members: ChatMember[] | null) => {
+    if (valid()) setMemberSnapshot({ scope: scopeKey, members });
+  }, [scopeKey, valid]);
+  const [visibleMemberMessages, setVisibleMemberMessages] = useState<{ scope: string; ids: Set<string> } | null>(null);
   const [joinResult, setJoinNotices] = useState<{ conversationId: string; members: ChatMember[] } | null>(null);
   const joinNotices = joinResult?.conversationId === conversation.id ? joinResult.members : [];
   const [searchOpen, setSearchOpen] = useState(false);
@@ -324,14 +330,18 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   }, [messages, publicSelfId, loading, readAt, discoveryOpen, overviewOpen]);
 
   const trackVisibleMessages = useCallback(({ viewableItems }: { viewableItems: { item: ChatMessageRecord }[] }) => {
-    if (discoveryVisible.current || !readReady.current || !readAllowed.current || !valid()) return;
+    if (discoveryVisible.current || !readAllowed.current || !valid()) return;
+    const ids = new Set(viewableItems.map(({ item }) => item.id));
+    setVisibleMemberMessages(previous => previous?.scope === scopeKey && previous.ids.size === ids.size && [...ids].every(id => previous.ids.has(id))
+      ? previous : { scope: scopeKey, ids });
+    if (!readReady.current) return;
     const newest = viewableItems.map(({ item }) => item).filter((item): item is ChatMessageRecord => !!item)
       .reduce<ChatMessageRecord | null>((latest, item) => !latest || Date.parse(item.created_at) > Date.parse(latest.created_at) ? item : latest, null);
     if (!newest || Date.parse(newest.created_at) <= lastReadAt.current) return;
     lastReadAt.current = Date.parse(newest.created_at);
     const current = latest.current.conversation;
     void (business ? markBusinessChatRead(supabase, current, newest.id) : markChatRead(supabase, current.id, newest.id)).catch(() => {});
-  }, [business, valid]);
+  }, [business, scopeKey, valid]);
   const onMessageScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (discoveryVisible.current) return;
     closeMessageMenu();
@@ -794,7 +804,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
         ListHeaderComponent={<>{hasOlder && messages.length > 0 && <RoomAction label={loadingOlder ? t.feed.loadingMore : t.chat.loadOlder} onPress={() => void loadOlder()} disabled={loadingOlder} />}{verificationNotice}</>}
         renderItem={({ item: message, index }) => {
           const author = conversationSender(message, conversation, t, groupMembers);
-          const memberPhoto = group ? groupMembers?.find(member => member.id === message.sender_id)?.avatarUrl : undefined;
+          const memberPhotoPath = group ? groupMembers?.find(member => member.id === message.sender_id)?.avatar_path : undefined;
           const date = chatDateLabel(message.created_at, messages[index - 1]?.created_at, undefined, appLocale);
           const mine = message.is_mine ?? message.sender_id === publicSelfId;
           const time = showChatMessageTime(message, messages[index + 1]) ? <ThemedText type="small" themeColor="textSecondary" style={mine ? styles.timeMine : undefined}>{chatMessageTime(message.created_at, appLocale)}</ThemedText> : null;
@@ -843,7 +853,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
             {message.id === unreadStart && <View style={[styles.unreadDivider, { borderColor: theme.accent }]}><ThemedText type="smallBold" themeColor="accent">{tr("여기부터 안 읽은 메시지")}</ThemedText></View>}
             {date && <ThemedText type="small" themeColor="textSecondary" style={styles.date}>{date}</ThemedText>}
             {mine ? <><BubblePressable analyticsId="components_chat-room.pressable.heart" {...menuProps} message={message} onMenu={openMessageMenu} onPress={(event: { nativeEvent?: { timestamp?: number } }) => onBubblePress(event?.nativeEvent?.timestamp ?? 0)} accessibilityRole={message.kind === 'location' ? 'link' : 'button'} accessibilityLabel={tr(message.deleted_at ? tr("삭제된 메시지입니다.") : attachment ? message.kind === 'image' ? tr("사진 크게 보기") : locationAccessibility : tr("메시지에 하트 (두 번 탭)"))} style={[styles.bubbleMine, { backgroundColor: attachment ? theme.card : theme.accent }]}>{content}</BubblePressable>{heart}{time}</>
-              : <View style={styles.row}>{message.sender_kind === 'business' ? <Pressable analyticsId="chat.sender-profile" accessibilityRole="button" accessibilityLabel={tr('{0} 프로필 보기', author.nickname)} onPress={() => { play('selection'); onClose(); router.push({ pathname: '/company/[id]', params: { id: author.id } }); }} style={[styles.avatar, { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.backgroundElement }]}>{message.avatarUri ? <Image source={{ uri: message.avatarUri }} style={{ width: 36, height: 36, borderRadius: 18 }} /> : <ThemedText type="smallBold" themeColor="navy">{author.nickname[0]}</ThemedText>}</Pressable> : <Pressable analyticsId="meetup.message-profile" accessibilityRole={group ? "button" : undefined} accessibilityLabel={tr("{0} 모임 프로필", author.nickname)} disabled={!group} onPress={() => { if (!conversation.groupPostId) return; play('selection'); onClose(); router.push({ pathname: '/meetup-profile', params: { postId: conversation.groupPostId, userId: author.id } }); }} style={[styles.avatar, { backgroundColor: theme.backgroundElement, width: 44, height: 44, borderRadius: 22 }]}>{memberPhoto ? <Image source={{ uri: memberPhoto }} cachePolicy="none" style={{ width: 36, height: 36, borderRadius: 18 }} /> : <ThemedText type="smallBold" themeColor="accent">{author.nickname[0]}</ThemedText>}</Pressable>}<View style={styles.rowBody}><ThemedText type="smallBold">{author.nickname}</ThemedText><BubblePressable analyticsId="components_chat-room.pressable.heart" {...menuProps} message={message} onMenu={openMessageMenu} onPress={(event: { nativeEvent?: { timestamp?: number } }) => onBubblePress(event?.nativeEvent?.timestamp ?? 0)} accessibilityRole={message.kind === 'location' ? 'link' : 'button'} accessibilityLabel={tr(message.deleted_at ? tr("삭제된 메시지입니다.") : attachment ? message.kind === 'image' ? tr("사진 크게 보기") : locationAccessibility : tr("메시지에 하트 (두 번 탭)"))} style={[styles.bubble, { backgroundColor: theme.card, borderColor: theme.line }]}>{content}</BubblePressable>{heart}{time}<View style={styles.messageActions}><RoomAction label={t.report.short} onPress={() => setReport({ targetType: 'message', targetId: message.id, ...(message.sender_kind === 'business' ? { reportedBusinessId: author.id } : { reportedUserId: author.id }), reportedNickname: author.nickname })} />{group && <RoomAction label={t.chat.block} onPress={() => void block(author.id)} />}</View></View></View>}
+              : <View style={styles.row}>{message.sender_kind === 'business' ? <Pressable analyticsId="chat.sender-profile" accessibilityRole="button" accessibilityLabel={tr('{0} 프로필 보기', author.nickname)} onPress={() => { play('selection'); onClose(); router.push({ pathname: '/company/[id]', params: { id: author.id } }); }} style={[styles.avatar, { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.backgroundElement }]}>{message.avatarUri ? <Image source={{ uri: message.avatarUri }} style={{ width: 36, height: 36, borderRadius: 18 }} /> : <ThemedText type="smallBold" themeColor="navy">{author.nickname[0]}</ThemedText>}</Pressable> : <Pressable analyticsId="meetup.message-profile" accessibilityRole={group ? "button" : undefined} accessibilityLabel={tr("{0} 모임 프로필", author.nickname)} disabled={!group} onPress={() => { if (!conversation.groupPostId) return; play('selection'); onClose(); router.push({ pathname: '/meetup-profile', params: { postId: conversation.groupPostId, userId: author.id } }); }} style={[styles.avatar, { backgroundColor: theme.backgroundElement, width: 44, height: 44, borderRadius: 22 }]}>{group ? <ChatMemberAvatar viewerId={currentUserId} roomId={conversation.id} path={memberPhotoPath} active={visibleMemberMessages?.scope === scopeKey && visibleMemberMessages.ids.has(message.id)} style={{ width: 36, height: 36, borderRadius: 18 }} fallback={<ThemedText type="smallBold" themeColor="accent">{author.nickname[0]}</ThemedText>} /> : <ThemedText type="smallBold" themeColor="accent">{author.nickname[0]}</ThemedText>}</Pressable>}<View style={styles.rowBody}><ThemedText type="smallBold">{author.nickname}</ThemedText><BubblePressable analyticsId="components_chat-room.pressable.heart" {...menuProps} message={message} onMenu={openMessageMenu} onPress={(event: { nativeEvent?: { timestamp?: number } }) => onBubblePress(event?.nativeEvent?.timestamp ?? 0)} accessibilityRole={message.kind === 'location' ? 'link' : 'button'} accessibilityLabel={tr(message.deleted_at ? tr("삭제된 메시지입니다.") : attachment ? message.kind === 'image' ? tr("사진 크게 보기") : locationAccessibility : tr("메시지에 하트 (두 번 탭)"))} style={[styles.bubble, { backgroundColor: theme.card, borderColor: theme.line }]}>{content}</BubblePressable>{heart}{time}<View style={styles.messageActions}><RoomAction label={t.report.short} onPress={() => setReport({ targetType: 'message', targetId: message.id, ...(message.sender_kind === 'business' ? { reportedBusinessId: author.id } : { reportedUserId: author.id }), reportedNickname: author.nickname })} />{group && <RoomAction label={t.chat.block} onPress={() => void block(author.id)} />}</View></View></View>}
             {sharedUrl && <SharedLinkCard key={`${message.id}:${currentUserId}`} url={sharedUrl} />}
           </View>;
         }} />{awayFromLatest && <Pressable analyticsId="components_chat-room.jump-latest" accessibilityRole="button" accessibilityLabel={tr("최근 메시지로 내려가기")} onPress={() => { play('selection'); followingLatest.current = true; setAwayFromLatest(false); messageList.current?.scrollToEnd({ animated: true }); }} style={[styles.jumpLatest, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="smallBold" themeColor="accent">{tr("↓ 최근 메시지")}</ThemedText></Pressable>}</View> : <View style={styles.request}><ThemedText type="small" themeColor="textSecondary">{tr("처리되거나 취소된 요청이에요. 대화 목록에서 새로 확인해 주세요.")}</ThemedText></View>}

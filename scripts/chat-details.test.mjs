@@ -64,16 +64,30 @@ test('date separators use local calendar dates, including year and midnight boun
   assert.equal(chatDateLabel('invalid', undefined, now), null);
 });
 
-test('group members use the scoped meetup roster and keep identity if a private photo download fails', async () => {
+test('group roster metadata never starts private photo downloads', async () => {
   const path = '00000000-0000-4000-8000-000000000001/one.webp';
+  let downloads = 0;
   const client = { rpc: async (name, args) => { assert.equal(name, 'get_chilling_roster'); assert.deepEqual(args, { p_post_id: 'post' }); return { data: [{ userId: 'one', displayName: '산책친구', photoPaths: [path], isHost: true }], error: null }; },
-    storage: { from: bucket => { assert.equal(bucket, 'meetup-profiles'); return { download: async () => ({ data: null, error: new Error('offline') }), createSignedUrls() { assert.fail('private photos must not receive bearer URLs'); } }; } } };
+    storage: { from() { downloads++; throw new Error('metadata must not download or sign private photos'); } } };
   const rows = await loadChatMembers(client, 'post');
   assert.equal(rows[0].nickname, '산책친구');
   assert.equal(rows[0].id, 'one');
   assert.equal(rows[0].is_host, true);
+  assert.equal(rows[0].avatar_path, path);
   assert.equal(rows[0].avatarUrl, undefined);
+  assert.equal(downloads, 0);
   await assert.rejects(loadChatMembers({ rpc: async () => ({ error: new Error('FORBIDDEN') }) }, 'room'), /FORBIDDEN/);
+});
+
+test('all five thousand scoped members are available without waiting for any avatar', async () => {
+  let downloads = 0;
+  const records = Array.from({ length: 5000 }, (_, n) => ({ userId: `member-${n}`, displayName: `Member ${n}`, photoPaths: [`00000000-0000-4000-8000-000000000001/photo-${n}.webp`], isHost: n === 0 }));
+  const client = { rpc: async () => ({ data: records, error: null }), storage: { from() { downloads++; throw new Error('must not load'); } } };
+  const rows = await loadChatMembers(client, 'large-room');
+  assert.equal(rows.length, 5000);
+  assert.equal(rows.at(-1).id, 'member-4999');
+  assert.equal(rows.at(-1).avatar_path, '00000000-0000-4000-8000-000000000001/photo-4999.webp');
+  assert.equal(downloads, 0);
 });
 
 

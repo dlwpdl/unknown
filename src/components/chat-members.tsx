@@ -1,12 +1,12 @@
 import { useLanguage } from '@/hooks/use-language';
 import { Pressable, FlatList } from '@/components/analytics-controls';
-import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Modal, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
+import { ChatMemberAvatar } from '@/components/chat-member-avatar';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
@@ -21,7 +21,16 @@ export function ChatMembers({ conversationId, groupPostId, currentUserId, onMemb
   const reducedMotion = useReducedMotion();
   const { play } = useInteractionFeedback();
   const hidden = useContentVisibility();
-  const [members, setMembers] = useState<ChatMember[] | null>(null);
+  const scope = JSON.stringify([currentUserId, conversationId, groupPostId]);
+  const [snapshot, setSnapshot] = useState<{ scope: string; rows: ChatMember[] | null }>({ scope: '', rows: null });
+  const members = snapshot.scope === scope ? snapshot.rows : null;
+  const [viewable, setViewable] = useState<{ scope: string; ids: Set<string> }>({ scope: '', ids: new Set() });
+  const [viewability] = useState(() => ({ itemVisiblePercentThreshold: 1 }));
+  const trackVisibleMembers = useCallback(({ viewableItems }: { viewableItems: { item: ChatMember; isViewable: boolean }[] }) => {
+    const ids = new Set(viewableItems.filter(item => item.isViewable).map(item => item.item.id));
+    setViewable(previous => previous.scope === scope && previous.ids.size === ids.size && [...ids].every(id => previous.ids.has(id))
+      ? previous : { scope, ids });
+  }, [scope]);
   const [open, setOpen] = useState(false);
   const [failed, setFailed] = useState(false);
   const request = useRef(0);
@@ -29,11 +38,11 @@ export function ChatMembers({ conversationId, groupPostId, currentUserId, onMemb
     const generation = ++request.current;
     try {
       const rows = await loadChatMembers(supabase, groupPostId);
-      if (generation === request.current) { setMembers(rows); onMembersChange?.(rows); setFailed(false); }
+      if (generation === request.current) { setSnapshot({ scope, rows }); onMembersChange?.(rows); setFailed(false); }
     } catch {
-      if (generation === request.current) { setMembers(null); onMembersChange?.(null); setFailed(true); }
+      if (generation === request.current) { setSnapshot({ scope, rows: null }); onMembersChange?.(null); setFailed(true); }
     }
-  }, [groupPostId, onMembersChange]);
+  }, [groupPostId, onMembersChange, scope]);
   useEffect(() => {
     let active = true;
     const reload = () => { if (active) void refresh(); };
@@ -48,9 +57,10 @@ export function ChatMembers({ conversationId, groupPostId, currentUserId, onMemb
   return <>
     <Pressable analyticsId="components_chat-members.pressable.1" accessibilityRole="button" accessibilityLabel={tr("대화 멤버 목록")} onPress={() => { play('selection'); setOpen(true); void refresh(); }} style={[styles.button, styles.roster]}>
       <View style={styles.portraits}>
-        {visible?.slice(0, 4).map((member, index) => member.avatarUrl
-          ? <Image key={member.id} source={{ uri: member.avatarUrl }} cachePolicy="none" style={[styles.portrait, { marginLeft: index ? -7 : 0, borderColor: theme.card }]} contentFit="cover" accessibilityLabel={tr("{0} 모임 프로필", member.nickname)} accessibilityIgnoresInvertColors />
-          : <View key={member.id} accessibilityLabel={tr("{0} 프로필", (member.nickname))} style={[styles.portrait, { marginLeft: index ? -7 : 0, borderColor: theme.card, backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" themeColor="accent">{member.nickname[0]}</ThemedText></View>)}
+        {visible?.slice(0, 4).map((member, index) => <ChatMemberAvatar key={member.id} viewerId={currentUserId} roomId={conversationId}
+          path={member.avatar_path} active={!open} style={[styles.portrait, { marginLeft: index ? -7 : 0, borderColor: theme.card }]}
+          accessibilityLabel={tr("{0} 모임 프로필", member.nickname)}
+          fallback={<View accessibilityLabel={tr("{0} 프로필", (member.nickname))} style={[styles.portrait, { marginLeft: index ? -7 : 0, borderColor: theme.card, backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" themeColor="accent">{member.nickname[0]}</ThemedText></View>} />)}
       </View>
       <ThemedText type="smallBold" themeColor="textSecondary">{visible ? tr("멤버 {0}명", (visible.length)) : tr("멤버 보기")} ›</ThemedText>
     </Pressable>
@@ -60,8 +70,12 @@ export function ChatMembers({ conversationId, groupPostId, currentUserId, onMemb
         <View accessibilityViewIsModal style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.three) }]}>
           <View style={styles.header}><ThemedText type="subtitle">{visible ? tr("멤버 {0}명", (visible.length)) : tr("대화 멤버")}</ThemedText><Pressable analyticsId="components_chat-members.pressable.3" accessibilityRole="button" onPress={() => { play('selection'); setOpen(false); }} style={styles.button}><ThemedText type="smallBold">{tr("닫기")}</ThemedText></Pressable></View>
           {failed ? <View style={styles.error}><ThemedText type="small" accessibilityRole="alert">{tr("멤버를 불러오지 못했어요.")}</ThemedText><Pressable analyticsId="components_chat-members.pressable.4" accessibilityRole="button" style={styles.button} onPress={() => { play('selection'); void refresh(); }}><ThemedText type="smallBold" themeColor="accent">{tr("다시 시도")}</ThemedText></Pressable></View>
-            : <FlatList analyticsId="components_chat-members.flatlist.1" data={visible ?? []} keyExtractor={(member) => member.id} ListEmptyComponent={<ThemedText type="small" themeColor="textSecondary">{members ? tr("표시할 멤버가 없어요.") : tr("멤버를 불러오는 중이에요.")}</ThemedText>} renderItem={({ item }) => <Pressable analyticsId="meetup.member-profile" accessibilityRole="button" accessibilityLabel={tr("{0} 모임 프로필", item.nickname)} disabled={!onOpenProfile} onPress={() => { play('selection'); setOpen(false); onOpenProfile?.(item.id); }} style={styles.member}>
-              {item.avatarUrl ? <Image source={{ uri: item.avatarUrl }} cachePolicy="none" recyclingKey={item.id} style={styles.avatar} contentFit="cover" accessibilityIgnoresInvertColors /> : <View style={[styles.avatar, { backgroundColor: theme.backgroundElement, borderColor: theme.line, borderWidth: 1 }]}><ThemedText type="smallBold" themeColor="accent">{item.nickname[0]}</ThemedText></View>}
+            : <FlatList key={scope} analyticsId="components_chat-members.flatlist.1" data={visible ?? []} keyExtractor={(member) => member.id}
+              initialNumToRender={10} maxToRenderPerBatch={10} windowSize={5} onViewableItemsChanged={trackVisibleMembers} viewabilityConfig={viewability}
+              ListEmptyComponent={<ThemedText type="small" themeColor="textSecondary">{members ? tr("표시할 멤버가 없어요.") : tr("멤버를 불러오는 중이에요.")}</ThemedText>} renderItem={({ item }) => <Pressable analyticsId="meetup.member-profile" accessibilityRole="button" accessibilityLabel={tr("{0} 모임 프로필", item.nickname)} disabled={!onOpenProfile} onPress={() => { play('selection'); setOpen(false); onOpenProfile?.(item.id); }} style={styles.member}>
+              <ChatMemberAvatar viewerId={currentUserId} roomId={conversationId} path={item.avatar_path}
+                active={open && viewable.scope === scope && viewable.ids.has(item.id)} style={styles.avatar}
+                fallback={<View style={[styles.avatar, { backgroundColor: theme.backgroundElement, borderColor: theme.line, borderWidth: 1 }]}><ThemedText type="smallBold" themeColor="accent">{item.nickname[0]}</ThemedText></View>} />
               <ThemedText type="smallBold" style={styles.name}>{item.nickname}{item.id === currentUserId ? tr(" (나)") : ''}</ThemedText>
               {item.is_host && <ThemedText type="small" themeColor="accent">{tr("호스트")}</ThemedText>}
             </Pressable>} />}

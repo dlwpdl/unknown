@@ -52,6 +52,11 @@ function mount(file, exportName, data, props = {}, params = {}) {
       }];
     },
     useRef(initial) { const slot = index++; return hooks[slot] ??= { current: initial }; },
+    useSyncExternalStore(subscribe, getSnapshot) {
+      const [, changed] = react.useState(0);
+      effect(() => subscribe(() => changed(value => value + 1)), [subscribe]);
+      return getSnapshot();
+    },
     useCallback(fn, deps) {
       const slot = index++, previous = hooks[slot];
       if (!previous || !deps.every((value, i) => Object.is(value, previous.deps[i]))) hooks[slot] = { fn, deps };
@@ -123,6 +128,7 @@ function mount(file, exportName, data, props = {}, params = {}) {
       if (name === '@/lib/sharing') return { sharedLinkInMessage };
       if (name === '@/components/shared-link-card') return { SharedLinkCard: 'SharedLinkCard' };
       if (name === '@/lib/chat-details') return { ...chatDetails, ...(data.loadChatMembers ? { loadChatMembers: data.loadChatMembers } : {}) };
+      if (name === '@/lib/chilling-profile-media') return { loadMeetupProfilePhoto: data.loadMeetupProfilePhoto };
       if (name === '@/lib/chilling') return { chillingSchedule };
       if (name === '@/lib/chat-location') return chatLocation;
       if (name === '@/lib/location') return { isFreshLocation };
@@ -824,6 +830,77 @@ test('member sheet keeps its slide unless Reduce Motion is enabled', (context) =
     const modal = harness.nodes().find(node => node.type === 'Modal');
     assert.equal(modal.props.animationType, reducedMotion ? 'none' : 'slide');
   }
+});
+
+test('a five-thousand-member sheet keeps every row but activates only previews and viewable photos', async (context) => {
+  const rows = Array.from({ length: 5000 }, (_, n) => ({ id: `member-${n}`, nickname: `Member ${n}`, avatar_path: `photo-${n}`, is_host: n === 0 }));
+  const harness = mount('../src/components/chat-members.tsx', 'ChatMembers', { loadChatMembers: async () => rows },
+    { conversationId: 'room', groupPostId: 'post', currentUserId: 'me' });
+  context.after(() => harness.cleanup());
+  await harness.settle();
+  assert.equal(harness.nodes().find(node => node.type === 'FlatList').props.data.length, 5000);
+  assert.equal(harness.nodes().filter(node => node.type === 'ChatMemberAvatar' && node.props.active).length, 4);
+  harness.nodes().find(node => node.props.accessibilityLabel === '대화 멤버 목록').props.onPress();
+  await harness.settle();
+  let list = harness.nodes().find(node => node.type === 'FlatList');
+  list.props.onViewableItemsChanged({ viewableItems: [{ item: rows[4900], isViewable: true }] });
+  await harness.settle();
+  list = harness.nodes().find(node => node.type === 'FlatList');
+  assert.equal(list.props.data.length, 5000);
+  const avatar = item => list.props.renderItem({ item }).props.children[0];
+  assert.equal(avatar(rows[4900]).props.active, true);
+  assert.equal(avatar(rows[4999]).props.active, false);
+  assert.equal(harness.nodes().filter(node => node.type === 'ChatMemberAvatar' && node.props.active).length, 0, 'covered header previews stop loading');
+});
+
+test('private member avatar ignores old viewer/room results and reauthorizes after becoming visible again', async (context) => {
+  const calls = [], props = { viewerId: 'me', roomId: 'room', path: 'private-photo', active: true, style: {}, fallback: 'initial' };
+  const harness = mount('../src/components/chat-member-avatar.tsx', 'ChatMemberAvatar', {
+    loadMeetupProfilePhoto: (_client, path) => new Promise(resolve => calls.push({ path, resolve })),
+  }, props);
+  context.after(() => harness.cleanup());
+  await harness.settle();
+  assert.equal(calls.length, 1);
+  props.viewerId = 'other-account'; props.roomId = 'other-room'; harness.rerender();
+  await harness.settle();
+  assert.equal(calls.length, 2);
+  calls[0].resolve('old-private-bytes'); await harness.settle();
+  assert.equal(harness.nodes().some(node => node.type === 'Image'), false);
+  calls[1].resolve('current-private-bytes'); await harness.settle();
+  assert.equal(harness.nodes().find(node => node.type === 'Image').props.source.uri, 'current-private-bytes');
+  props.active = false; harness.rerender();
+  assert.equal(harness.nodes().some(node => node.type === 'Image'), false);
+  props.active = true; harness.rerender(); await harness.settle();
+  assert.equal(calls.length, 3);
+  assert.equal(harness.nodes().some(node => node.type === 'Image'), false, 'old bytes do not flash while a new read is pending');
+  harness.cleanup(); calls[2].resolve('late-after-unmount'); await harness.settle();
+  assert.equal(harness.nodes().some(node => node.type === 'Image'), false);
+});
+
+test('sender avatars use metadata only for viewable messages and clear it on room changes', async (context) => {
+  const messages = [message(0), { ...message(1), sender_id: 'other' }];
+  const props = { ...roomProps, conversation: { ...conversation, groupPostId: 'post' } };
+  const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { loadConversationMessages: async () => messages }, props);
+  context.after(() => harness.cleanup());
+  await harness.settle();
+  const changed = harness.nodes().find(node => node.type === 'ChatMembers').props.onMembersChange;
+  changed([{ id: 'neighbor', nickname: 'Neighbor', avatar_path: 'private-neighbor', is_host: false }]);
+  await harness.settle();
+  let list = harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.flatlist.1');
+  list.props.onViewableItemsChanged({ viewableItems: [{ item: messages[0] }] }); await harness.settle();
+  const findAvatar = value => !value || typeof value !== 'object' ? undefined
+    : value.type === 'ChatMemberAvatar' ? value : Object.values(value).map(findAvatar).find(Boolean);
+  list = harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.flatlist.1');
+  assert.equal(findAvatar(list.props.renderItem({ item: messages[0], index: 0 })).props.active, true);
+  assert.equal(findAvatar(list.props.renderItem({ item: messages[0], index: 0 })).props.path, 'private-neighbor');
+  assert.equal(findAvatar(list.props.renderItem({ item: messages[1], index: 1 })).props.active, false);
+  props.conversation = { ...props.conversation, id: 'other-room', groupPostId: 'other-post' }; harness.rerender();
+  changed([{ id: 'neighbor', nickname: 'Stale', avatar_path: 'stale-private-photo', is_host: false }]);
+  await harness.settle();
+  list = harness.nodes().find(node => node.props?.analyticsId === 'components_chat-room.flatlist.1');
+  const next = findAvatar(list.props.renderItem({ item: messages[0], index: 0 }));
+  assert.equal(next.props.path, undefined);
+  assert.equal(next.props.active, false);
 });
 
 test('report and block remove rendered messages immediately and reject late snapshots', async (context) => {
