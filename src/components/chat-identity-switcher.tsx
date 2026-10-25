@@ -18,8 +18,7 @@ import { businessMediaUrl } from '@/lib/business-media';
 import { ControlStyles, Typography, controlPresentation } from '@/constants/design-system';
 
 export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilityChange }: { onChanged?: () => void; target?: 'chat' | 'business'; onAvailabilityChange?: (available: boolean) => void }) {
-  const { me, isAuthed } = useAuth(), chatBusiness = useChatIdentity(), router = useRouter();
-  const business = target === 'business' ? null : chatBusiness;
+  const { me, isAuthed } = useAuth(), business = useChatIdentity(), router = useRouter();
   const { tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback();
   const [openedFor, setOpenedFor] = useState<string | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const [result, setResult] = useState<MyMerchantConnections | null>(null);
