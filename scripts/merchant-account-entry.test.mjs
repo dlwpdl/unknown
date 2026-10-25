@@ -11,7 +11,7 @@ import * as media from '../src/lib/business-media.ts';
 
 function app(component = 'MerchantAccountEntry') {
   const states = [], refs = [], effects = [], calls = [], pending = [], routes = [], feedback = [];
-  let stateIndex = 0, refIndex = 0, effectIndex = 0, auth = { me: { id: 'user-a', nickname: '개인 이름' }, isAuthed: true, isAdmin: false }, foreground;
+  let stateIndex = 0, refIndex = 0, effectIndex = 0, auth = { me: { id: 'user-a', nickname: '개인 이름' }, isAuthed: true, isAdmin: false }, foreground, focusEffect, focusCleanup;
   const client = { rpc: (name, args) => {
     calls.push({ name, args }); return new Promise(resolve => pending.push(data => resolve({ data, error: null })));
   } };
@@ -32,7 +32,7 @@ function app(component = 'MerchantAccountEntry') {
     if (name === 'expo-symbols') return { SymbolView: 'SymbolView' };
     if (name === 'expo-image') return { Image: 'Image' };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if (name === 'expo-router') return { useRouter: () => ({ push: path => routes.push(path) }), useFocusEffect: fn => recordEffect(fn, fn.deps) };
+    if (name === 'expo-router') return { useRouter: () => ({ push: path => routes.push(path) }), useFocusEffect: fn => { focusEffect = fn; recordEffect(() => { focusCleanup = fn(); return focusCleanup; }, fn.deps); } };
     if (name === 'react-native') return { Platform: { OS: 'web' }, View: 'View', Modal: 'Modal', StyleSheet: { create: value => value }, AppState: { addEventListener(name, fn) { foreground = fn; return { remove() {} }; } } };
     if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView' };
     if (name === '@/components/analytics-controls') return { Pressable: 'Pressable', ScrollView: 'ScrollView' };
@@ -52,6 +52,7 @@ function app(component = 'MerchantAccountEntry') {
   return { calls, pending, routes, feedback,
     auth(value) { auth = { ...auth, ...value }; }, props(value) { props = { ...props, ...value }; },
     foreground() { foreground('active'); },
+    blur() { focusCleanup?.(); }, focus() { focusCleanup = focusEffect?.(); },
     render() {
       stateIndex = refIndex = effectIndex = 0;
       const node = exports[component](props);
@@ -285,4 +286,19 @@ test('a new account can select its own business while an old account selection i
   assert.equal(option.props.disabled, false); option.props.onPress();
   assert.equal(view.pending.length, 1); view.pending.shift()(next); await flush();
   assert.equal(view.routes.length, 1); assert.equal(view.routes[0].params.merchant, 'company-b');
+});
+
+
+test('leaving Today cancels a pending switch and refocus can choose again', async () => {
+  const view = app('ChatIdentitySwitcher'); view.props({ target: 'business' }); view.render();
+  view.pending.shift()(context()); await flush();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.open').props.onPress();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.business').props.onPress();
+  const old = view.pending.shift(); view.blur(); old(context()); await flush();
+  assert.deepEqual(view.routes, []); view.focus(); assert.equal(view.pending.length, 1);
+  view.pending.shift()(context()); await flush();
+  nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.open').props.onPress();
+  const row = nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.business');
+  assert.equal(row.props.disabled, false); row.props.onPress();
+  view.pending.shift()(context()); await flush(); assert.equal(view.routes.length, 1);
 });

@@ -26,8 +26,7 @@ export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilit
   const user = useRef(me.id), serial = useRef(0), pending = useRef(false);
   useLayoutEffect(() => {
     user.current = isAuthed ? me.id : ''; serial.current++; pending.current = false;
-    setBusy(false); setError(''); setOpenedFor(null);
-    return () => { user.current = ''; };
+    return () => { user.current = ''; setBusy(false); setError(''); setOpenedFor(null); };
   }, [me.id, isAuthed]);
   useFocusEffect(useCallback(() => {
     if (!isAuthed || target !== 'business') return;
@@ -44,7 +43,7 @@ export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilit
     };
     void refresh();
     const listener = AppState.addEventListener('change', state => { if (state === 'active') void refresh(); });
-    return () => { active = false; serial.current++; listener.remove(); };
+    return () => { active = false; serial.current++; pending.current = false; setBusy(false); setOpenedFor(null); listener.remove(); };
   }, [isAuthed, me.id, target]));
   const rows = isAuthed && result?.user_id === me.id ? result.merchants.filter(row => row.role !== 'admin') : [];
   useEffect(() => {
