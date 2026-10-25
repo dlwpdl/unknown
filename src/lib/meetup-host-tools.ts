@@ -4,7 +4,7 @@ export type MeetupTemplateDraft = { title: string; body: string; applicationQues
 export type MeetupTemplate = { id: string; name: string; draft: MeetupTemplateDraft; updatedAt: string };
 export type MeetupOccurrence = { startsAt: string; endsAt: string };
 export type MeetupHostAggregates = { applications: number; approvals: number; confirmedAttendance: number; repeatParticipants: number };
-export type MeetupHostIdentity = { userId: string; displayName: string };
+export type MeetupHostIdentity = { userId: string; displayName: string; photoPaths: string[]; isHost: boolean };
 export type MeetupHostToolsState = {
   tier: 'free' | 'plus' | 'pro' | 'premium'; isHost: boolean; isCohost: boolean; canManageSessions: boolean;
   canInvite: boolean; kind: 'once' | 'group'; available: boolean; canJoinWaitlist: boolean;
@@ -52,7 +52,15 @@ export async function saveMeetupTemplate(client: SupabaseClient, name: string, d
 }
 export const deleteMeetupTemplate = (client: SupabaseClient, templateId: string) => rpc<null>(client, 'delete_meetup_template', { p_template_id: templateId });
 export const loadMeetupHostTools = (client: SupabaseClient, postId: string) => rpc<MeetupHostToolsState>(client, 'get_meetup_host_tools', { p_post_id: postId });
-export const loadMeetupHostRoster = (client: SupabaseClient, postId: string) => rpc<MeetupHostIdentity[]>(client, 'get_chilling_roster', { p_post_id: postId });
+export async function loadMeetupHostRoster(client: SupabaseClient, postId: string): Promise<MeetupHostIdentity[]> {
+  let result = await client.rpc('get_chilling_roster_v2', { p_post_id: postId });
+  // New clients can still open rooms on servers that have not deployed v2 yet.
+  if (result.error && ['PGRST202', '42883'].includes(result.error.code)) {
+    result = await client.rpc('get_chilling_roster', { p_post_id: postId });
+  }
+  if (result.error) throw new Error(result.error.message);
+  return (result.data ?? []) as MeetupHostIdentity[];
+}
 
 function validateTimes(startsAt: string, endsAt: string) {
   const start = Date.parse(startsAt), end = Date.parse(endsAt);

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getLocale, tr } from '../i18n/index.ts';
+import { loadMeetupHostRoster } from './meetup-host-tools.ts';
 
 type TimedMessage = { sender_id: string; created_at: string };
 export type ChatRect = { x: number; y: number; width: number; height: number };
@@ -64,9 +65,7 @@ export function chatListTime(value: string, now = new Date(), locale = getLocale
 
 export type ChatMember = { id: string; nickname: string; avatar_path: string | null; is_host: boolean };
 export async function loadChatMembers(client: SupabaseClient, postId: string): Promise<ChatMember[]> {
-  const result = await client.rpc('get_chilling_roster', { p_post_id: postId });
-  if (result.error) throw result.error;
-  const members = (result.data ?? []) as { userId: string; displayName: string; photoPaths: string[]; isHost: boolean }[];
+  const members = await loadMeetupHostRoster(client, postId);
   return members.map(member => ({ id: member.userId, nickname: member.displayName || tr('모임 멤버'),
     avatar_path: member.photoPaths?.[0] ?? null, is_host: member.isHost }));
 }

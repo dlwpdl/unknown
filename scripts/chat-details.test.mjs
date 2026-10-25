@@ -67,7 +67,7 @@ test('date separators use local calendar dates, including year and midnight boun
 test('group roster metadata never starts private photo downloads', async () => {
   const path = '00000000-0000-4000-8000-000000000001/one.webp';
   let downloads = 0;
-  const client = { rpc: async (name, args) => { assert.equal(name, 'get_chilling_roster'); assert.deepEqual(args, { p_post_id: 'post' }); return { data: [{ userId: 'one', displayName: '산책친구', photoPaths: [path], isHost: true }], error: null }; },
+  const client = { rpc: async (name, args) => { assert.equal(name, 'get_chilling_roster_v2'); assert.deepEqual(args, { p_post_id: 'post' }); return { data: [{ userId: 'one', displayName: '산책친구', photoPaths: [path], isHost: true }], error: null }; },
     storage: { from() { downloads++; throw new Error('metadata must not download or sign private photos'); } } };
   const rows = await loadChatMembers(client, 'post');
   assert.equal(rows[0].nickname, '산책친구');
@@ -77,6 +77,32 @@ test('group roster metadata never starts private photo downloads', async () => {
   assert.equal(rows[0].avatarUrl, undefined);
   assert.equal(downloads, 0);
   await assert.rejects(loadChatMembers({ rpc: async () => ({ error: new Error('FORBIDDEN') }) }, 'room'), /FORBIDDEN/);
+});
+
+test('new chat clients use the legacy fifty-member contract only when v2 is absent', async () => {
+  for (const code of ['PGRST202', '42883']) {
+    const calls = [], records = Array.from({ length: 50 }, (_, n) => ({ userId: `member-${n}`, displayName: `Member ${n}`, photoPaths: [], isHost: n === 0 }));
+    const client = { rpc: async (name, args) => {
+      calls.push([name, args]);
+      return name === 'get_chilling_roster_v2' ? { error: { code, message: 'Function unavailable' } } : { data: records, error: null };
+    } };
+    assert.equal((await loadChatMembers(client, 'legacy-room')).length, 50);
+    assert.deepEqual(calls, [['get_chilling_roster_v2', { p_post_id: 'legacy-room' }], ['get_chilling_roster', { p_post_id: 'legacy-room' }]]);
+  }
+});
+
+test('v2 denial, hidden empty result, transport failure and legacy denial never retry another roster', async () => {
+  for (const error of [{ code: '42501', message: 'permission denied' }, { code: 'P0001', message: 'ACCOUNT_LOCKED' }, { code: 'PGRST301', message: 'Invalid JWT' }, { message: 'Network failure' }]) {
+    const calls = [];
+    await assert.rejects(loadChatMembers({ rpc: async name => { calls.push(name); return { error }; } }, 'room'));
+    assert.deepEqual(calls, ['get_chilling_roster_v2']);
+  }
+  const calls = [];
+  assert.deepEqual(await loadChatMembers({ rpc: async name => { calls.push(name); return { data: [], error: null }; } }, 'hidden-room'), []);
+  assert.deepEqual(calls, ['get_chilling_roster_v2']);
+  const denied = [];
+  await assert.rejects(loadChatMembers({ rpc: async name => { denied.push(name); return { error: name.endsWith('_v2') ? { code: 'PGRST202', message: 'Function unavailable' } : new Error('FORBIDDEN') }; } }, 'room'), /FORBIDDEN/);
+  assert.deepEqual(denied, ['get_chilling_roster_v2', 'get_chilling_roster']);
 });
 
 test('all five thousand scoped members are available without waiting for any avatar', async () => {

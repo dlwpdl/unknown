@@ -3,10 +3,26 @@ import test from 'node:test';
 import {
   templateDraft, applyMeetupTemplate, loadMeetupTemplates, saveMeetupTemplate, proposeMeetupDates,
   confirmMeetupOccurrence, setMeetupWaitlist, inviteNextMeetupWaitlist,
-  loadMeetupHostAggregates, respondMeetupCohost,
+  loadMeetupHostAggregates, loadMeetupHostRoster, respondMeetupCohost,
 } from '../src/lib/meetup-host-tools.ts';
 
 const post = 'a1600000-0000-0000-0000-000000000001';
+
+test('host management receives all v2 metadata and falls back only for an absent v2 RPC', async () => {
+  for (const missing of [null, 'PGRST202', '42883']) {
+    const calls = [], records = Array.from({ length: missing ? 50 : 5000 }, (_, n) => ({ userId: `member-${n}`, displayName: `Member ${n}`, photoPaths: [], isHost: n === 0 }));
+    const client = { rpc: async (name, args) => {
+      calls.push([name, args]);
+      return missing && name.endsWith('_v2') ? { error: { code: missing, message: 'Function unavailable' } } : { data: records };
+    } };
+    assert.deepEqual(await loadMeetupHostRoster(client, post), records);
+    assert.deepEqual(calls.map(call => call[0]), missing ? ['get_chilling_roster_v2', 'get_chilling_roster'] : ['get_chilling_roster_v2']);
+    assert.ok(calls.every(call => call[1].p_post_id === post));
+  }
+  const calls = [];
+  await assert.rejects(loadMeetupHostRoster({ rpc: async name => { calls.push(name); return { error: { code: '42501', message: 'Permission denied' } }; } }, post), /Permission denied/);
+  assert.deepEqual(calls, ['get_chilling_roster_v2']);
+});
 const draft = { title: '산책', body: '함께 걸어요', applicationQuestion: '어떤 산책을 좋아하세요?' };
 
 test('templates copy content only, preserving explicit empty fields without copying logistics', () => {
