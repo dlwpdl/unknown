@@ -70,6 +70,11 @@ body:has(.reader) { margin: 0; overflow-y: auto !important; }
 .reader-body, .reader-comments p { white-space: pre-wrap; }
 .reader-body { overflow-wrap: anywhere; }
 .reader-body a { color: #CBB9FF; text-decoration: underline; }
+.reader-sections { display: grid; gap: 22px; margin: 22px 0; }
+.reader-sections h2 { font-size: 18px; line-height: 1.45; margin: 0 0 8px; }
+.reader-sections p { margin: 0; }
+.reader-sections ol, .reader-sections ul { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+.reader-purpose { padding: 16px 18px; border-radius: 15px; background: var(--backgroundElement); }
 .reader-photo { display: block; width: 100%; height: auto; max-height: 640px; object-fit: contain; margin: 24px 0; border-radius: 14px; }
 .reader-meetup { margin: 28px 0; padding: 20px; border-radius: 15px; background: var(--backgroundElement); }
 .reader-meetup small { color: var(--textSecondary); }

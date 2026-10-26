@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import * as meetupSections from '../src/lib/meetup-sections.ts';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -128,7 +129,7 @@ function readerMarkup(path, { mounted = false, search = '', directPost = false, 
     '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
     '../../../supabase/functions/_shared/post-links': { instagramPostLink, splitPostAttachments, splitPostLinks },
     '@/components/post-attachment-link': { PostAttachmentLink: () => null },
-    '@/lib/post-maps': { postMapBody: body => ({ body }) }, '@/lib/translation-source': translationSource,
+    '@/lib/post-maps': { postMapBody: body => ({ body }) }, '@/lib/meetup-sections': meetupSections, '@/lib/translation-source': translationSource,
     '@/lib/chilling': { chillingSchedule: () => '공개 일정' },
     '@/lib/interaction-feedback': { InteractionFeedbackProvider: React.Fragment, useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }], TAGS: [] },

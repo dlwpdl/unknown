@@ -9,6 +9,8 @@ test('맛집 글 끝의 📍 주소와 인스타 링크는 정보 카드로, 나
     place: '847 Denman St, Vancouver',
     links: ['https://www.instagram.com/handsonyvr/'],
     credits: [],
+    facts: [],
+    rating: null,
   });
 });
 
@@ -30,4 +32,15 @@ test('링크 이름은 짧게 보인다', () => {
   assert.equal(postLinkLabel('https://www.instagram.com/handsonyvr/'), '@handsonyvr');
   assert.equal(postLinkLabel('https://www.handsonyvr.com/menu/fall'), 'handsonyvr.com/menu');
   assert.equal(postLinkLabel('https://www.instagram.com/reel/DQ4lEx9j3t8/'), 'instagram.com/reel');
+});
+
+test('구인 글의 시급·근무 줄과 장소 후기의 평점·참조 줄은 정보로 빠진다', () => {
+  const hire = postInfoParts('시급: CAD 18.50\n근무: 토·일 11시–7시\n📍 Coquitlam\n\n경험 없어도 괜찮아요.');
+  assert.deepEqual(hire.facts, [{ label: '시급', value: 'CAD 18.50' }, { label: '근무', value: '토·일 11시–7시' }]);
+  assert.equal(hire.place, 'Coquitlam');
+  assert.deepEqual(hire.paragraphs, ['경험 없어도 괜찮아요.']);
+  const review = postInfoParts('글링 평점: 8.0/10\n\n노을이 좋았어요.\n\n장소 후기: https://www.openstreetmap.org/way/123');
+  assert.equal(review.rating, 8);
+  assert.deepEqual(review.paragraphs, ['노을이 좋았어요.']);
+  assert.deepEqual(postInfoParts('시급은 얼마인가요?').facts, []);
 });

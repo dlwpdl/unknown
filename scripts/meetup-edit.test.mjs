@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import * as meetupSections from '../src/lib/meetup-sections.ts';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -51,7 +52,7 @@ function screen({ meId = 'host', meetup = { id: 'p1', cityId: 'vancouver', title
     '@/lib/chilling': { ...chilling, configureChillingEvent: async (_client, postId, draft) => { configured.push({ postId, draft }); if (configure) await configure(draft); } },
     '@/lib/community-data': { MEETUPS_CHANGED_EVENT: 'meetups.changed', editPost: async (_client, postId, patch) => { edited.push({ postId, patch }); if (edit) await edit(patch); } },
     '@/lib/feed-data': { loadPublicMeetupContext: async () => meetup },
-    '@/lib/meetup-ai': { splitEventMeetupBody },
+    '@/lib/meetup-ai': { splitEventMeetupBody }, '@/lib/meetup-sections': meetupSections,
     '@/lib/meetup-destination': destinations,
     '@/lib/supabase': { supabase: {} },
     '@/constants/theme': { Spacing: { two: 8, three: 16, five: 32 } },

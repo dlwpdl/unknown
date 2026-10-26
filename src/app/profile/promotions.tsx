@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { PurchasesPackage } from 'react-native-purchases';
 
 import { LoginPanel } from '@/components/login-panel';
+import { InfoNote, StatusLine } from '@/components/notice-blocks';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -173,12 +174,19 @@ function PromotionsScreen() {
   return <ThemedView style={styles.container}><SafeAreaView edges={['bottom']} style={styles.safeArea}><ScrollView analyticsId="app_profile_promotions.scrollview.1" contentContainerStyle={styles.content}>
     <View style={styles.intro}><ThemedText type="smallBold" themeColor="accent">{tr("내 글을 더 멀리")}</ThemedText><ThemedText type="subtitle" accessibilityRole="header">{tr("홍보 크레딧")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("미리 구매하고, 알리고 싶은 글에 사용해요.")}</ThemedText></View>
     <View style={card}><ThemedText type="small" themeColor="textSecondary">{tr("사용 가능한 크레딧")}</ThemedText><ThemedText style={styles.balance}>{wallet ? tr("{0} 크레딧", (number(wallet.balance))) : loading ? tr("확인 중") : tr("확인 필요")}</ThemedText>{wallet && wallet.testBalance !== 0 && <ThemedText type="small" themeColor="textSecondary">{tr('테스트 크레딧 {0} · 실제 홍보에 사용할 수 없어요.', number(wallet.testBalance))}</ThemedText>}</View>
+    <View style={styles.flow}>{([
+      ['크레딧 충전', '무료 회원도 살 수 있어요.'],
+      ['글 고르고 추가 노출 선택', '원래 보이는 만큼(자연 노출)은 크레딧에서 빠지지 않아요.'],
+      ['추가 노출을 다 채우면 끝', '중간에 멈추면 남은 만큼 크레딧으로 돌려받아요.'],
+    ] as const).map(([title, body], index) => <View key={title} style={styles.step}>
+      <View style={[styles.stepNumber, { backgroundColor: theme.backgroundSelected }]}><ThemedText type="smallBold" themeColor="accent">{index + 1}</ThemedText></View>
+      <View style={styles.flex}><ThemedText type="smallBold">{tr(title)}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr(body)}</ThemedText></View>
+    </View>)}</View>
     {notice && <ThemedText type="small" accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
     {purchasePending === userId && <ThemedText type="small" themeColor="accent" accessibilityLiveRegion="polite">{tr("구매 확인 중이에요. 크레딧 반영을 확인할 때까지 추가 구매는 잠시 기다려 주세요.")}</ThemedText>}
     {purchasePending === userId && <ActionButton label={tr("결제 확인 문의")} onPress={() => router.push('/profile/settings')} disabled={busy} />}
     <ActionButton label={loading ? tr("확인 중…") : tr("잔액과 내역 새로 확인")} onPress={() => void refresh()} disabled={busy || loading} />
     <View style={styles.section}><ThemedText type="smallBold" accessibilityRole="header">{tr("크레딧 구매")}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">{tr("무료 회원도 구매할 수 있어요. 충전한 크레딧은 홍보를 시작할 때 사용해요.")}</ThemedText>
       {visibleOffers.map((offer) => <View key={offer.id} style={card}><View style={styles.row}><ThemedText type="smallBold">{tr('{0} 크레딧', number(offer.credits))}</ThemedText><ThemedText type="smallBold">{offer.price}</ThemedText></View><ActionButton label={tr("{0}에 구매", (offer.price))} onPress={() => void purchase(offer)} disabled={busy || loading || !wallet || !!unavailable || purchasePending === userId} primary /></View>)}
       {!!storeNotice && <ThemedText type="small" themeColor="textSecondary">{tr(storeNotice)}</ThemedText>}
     </View>
@@ -187,10 +195,10 @@ function PromotionsScreen() {
       {posts.length === 0 && !loading && <ThemedText type="small" themeColor="textSecondary">{tr("지금 홍보할 수 있는 내 글이 없어요. 글을 게시한 뒤 여기에서 선택해 주세요.")}</ThemedText>}
       {posts.map((post) => <Pressable analyticsId="app_profile_promotions.pressable.2" key={post.id} accessibilityRole="radio" accessibilityState={{ checked: selected === post.id, disabled: busy }} disabled={busy} onPress={() => { play('selection'); setSelection({ userId, postId, id: post.id }); setConfirmation(''); }} style={[card, selected === post.id && { borderColor: theme.accent }]}><ThemedText type="smallBold">{selected === post.id ? '✓ ' : ''}{post.title}</ThemedText></Pressable>)}
       {!!selected && <View style={card}><ThemedText type="smallBold">{tr("추가 홍보 노출")}</ThemedText><View style={styles.row}>{[900, 1700].map((amount) => <Pressable analyticsId="app_profile_promotions.pressable.3" key={amount} accessibilityRole="radio" accessibilityState={{ checked: amount === budget, disabled: busy }} disabled={busy} onPress={() => { play('selection'); setBudget(amount); setConfirmation(''); }} style={[styles.choice, { borderColor: amount === budget ? theme.accent : theme.line }]}><ThemedText type="smallBold">{tr('{0}회 노출', number(amount))}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('{0} 크레딧', number(amount))}</ThemedText></Pressable>)}</View>
-        <ThemedText type="small" themeColor="textSecondary">{tr("자연 노출은 차감하지 않아요. 구매한 추가 노출을 채우면 홍보가 종료돼요. 문의나 거래 성사를 보장하지는 않아요.")}</ThemedText>
-        <ThemedText type="smallBold">{wallet?.slotStatus === 'ready' && wallet.slotAvailable !== null ? tr("새 대화 수락 가능 {0}개", (wallet.slotAvailable)) : tr("대화 자리 확인 준비 중")}</ThemedText>
-        {wallet?.slotStatus !== 'ready' && <ThemedText type="small" themeColor="textSecondary">{tr("현재 수락할 수 있는 대화 수를 확인할 수 없어요. 홍보 시작으로 대화 자리가 추가되지는 않아요.")}</ThemedText>}
-        {wallet?.slotAvailable === 0 && wallet.slotStatus === 'ready' && <ThemedText type="small" themeColor="textSecondary">{tr("지금은 새 대화를 수락할 자리가 없어요. 요청은 받을 수 있지만, 자리가 생긴 뒤 수락할 수 있어요. 홍보는 계속할 수 있어요.")}</ThemedText>}
+        {wallet?.slotStatus === 'ready' && wallet.slotAvailable !== null
+          ? <StatusLine tone={wallet.slotAvailable === 0 ? 'warn' : 'ok'} title={tr("새 대화 수락 가능 {0}개", (wallet.slotAvailable))} detail={wallet.slotAvailable === 0 ? tr("요청은 계속 받아요. 자리가 생기면 수락할 수 있고, 홍보도 그대로 진행할 수 있어요.") : undefined} />
+          : <StatusLine tone="warn" title={tr("대화 자리 확인 준비 중")} detail={tr("지금 수락할 수 있는 대화 수를 확인하지 못했어요. 홍보를 시작해도 대화 자리가 늘지는 않아요.")} />}
+        <InfoNote>{tr("문의나 거래가 생긴다고 보장하지는 않아요.")}</InfoNote>
         <ActionButton label={confirmNoSlots ? tr("그대로 홍보 시작") : tr("{0} 크레딧 사용하고 홍보 시작", (number(budget)))} onPress={() => void start(confirmNoSlots)} disabled={busy || loading || !wallet?.configured || wallet.balance < budget || !posts.some((post) => post.id === selected)} primary />
         <ActionButton label={tr("홍보 나중에 하기")} onPress={() => router.canGoBack() ? router.back() : router.replace('/profile')} disabled={busy} />
       </View>}
@@ -212,6 +220,9 @@ const styles = StyleSheet.create({
   balance: { fontSize: 26, lineHeight: 34, fontWeight: 700, fontVariant: ['tabular-nums'] },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: Spacing.two },
   flex: { flex: 1, minWidth: 120 },
+  flow: { gap: Spacing.two },
+  step: { flexDirection: 'row', gap: Spacing.three, alignItems: 'flex-start' },
+  stepNumber: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   button: { minHeight: 44, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   choice: { flex: 1, minWidth: 112, minHeight: 44, borderWidth: 1, borderRadius: 12, padding: Spacing.two, gap: Spacing.one },
   history: { minHeight: 44, paddingVertical: Spacing.two, gap: Spacing.one, borderBottomWidth: 1 },

@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LoginPanel } from '@/components/login-panel';
 import { RelationshipSlotCard } from '@/components/relationship-slot-card';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
+import { InfoNote } from '@/components/notice-blocks';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -72,7 +73,6 @@ export default function MembershipScreen() {
     }).catch(() => { if (active) setBusinessError('비즈니스 멤버십을 확인하지 못했어요. 잠시 후 다시 확인해 주세요.'); });
     return () => { active = false; };
   }, [auth.isAuthed, auth.me.id, kind, merchantId, membership]);
-  const [rulesExpanded, setRulesExpanded] = useState(false);
   const [plansExpanded, setPlansExpanded] = useState(true);
   const [periodWidth, setPeriodWidth] = useState(0);
   const [periodPosition] = useState(() => new Animated.Value(0));
@@ -81,6 +81,10 @@ export default function MembershipScreen() {
     if (Platform?.OS === 'android') UIManager?.setLayoutAnimationEnabledExperimental?.(true);
     LayoutAnimation?.configureNext?.(LayoutAnimation.Presets.easeInEaseOut);
   };
+  const perks = (items: string[]) => items.map(item => <View key={item} style={styles.perk}>
+    <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={12} tintColor={theme.accent} />
+    <ThemedText type="small" style={styles.flexText}>{item}</ThemedText>
+  </View>);
   const selectPlan = (next: typeof selection) => {
     play('selection');
     animateLayout();
@@ -173,23 +177,20 @@ export default function MembershipScreen() {
 
 
 
-          <SectionHead title={tr("이용 규칙")} note={tr("필요할 때만 펼쳐 보세요")} />
-          <View style={[styles.details, { borderColor: theme.line }]}>
-            <Pressable analyticsId="app_profile_membership.pressable.2" accessibilityRole="button" aria-expanded={rulesExpanded} accessibilityState={{ expanded: rulesExpanded }}
-              onPress={() => { play('selection'); animateLayout(); setRulesExpanded(value => !value); }}
-              style={({ pressed }) => [styles.disclosure, { opacity: pressed ? 0.65 : 1 }]}>
-              <ThemedText type="smallBold" style={styles.flexText}>{tr("자리 사용 · 반복 이용 제한 안내")}</ThemedText>
-              <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>
-                <SymbolView name={{ ios: rulesExpanded ? 'chevron.up' : 'chevron.down', android: rulesExpanded ? 'keyboard_arrow_up' : 'keyboard_arrow_down', web: rulesExpanded ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }} size={16} tintColor={theme.textSecondary} />
-              </View>
-            </Pressable>
-            {rulesExpanded && <View style={styles.detailContent}>
-              <ThemedText type="small" themeColor="textSecondary">{tr("모임은 동시에 운영·참여하는 개수를 합산해요. 참여는 방장 승인 후 자리를 사용해요. 1:1 대화는 요청·수락 없이 바로 시작해요.")}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">{tr("모임 종료·퇴장 시 자리는 바로 돌아와요. 최근 24시간에 승인된 서로 다른 모임에서 자진 퇴장 3회째부터 새 참여가 12시간 제한돼요. 자연 종료·승인 전 취소·호스트가 내보낸 경우는 제외돼요.")}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">{tr("칠링 개최는 최근 24시간 3회·7일 10회까지예요. 취소해도 개최 횟수는 유지돼요. 참가자가 있는 행사 조기 해산은 최근 7일 2회째부터 새 개최가 24시간 제한돼요. 무료·유료에 동일하게 적용돼요.")}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">{tr("1:1 대화를 종료해도 자리 잠금이 없어요. 차단·신고와 과도한 연락을 막는 전송 속도 제한은 모든 등급에 적용돼요.")}</ThemedText>
-            </View>}
+          <SectionHead title={tr("이용 규칙")} note={tr("모임·대화 규칙")} />
+          <View style={styles.tiles}>
+            {([
+              ['모임 자리', '운영+참여 합산', '방장이 승인한 뒤부터 자리를 차지해요. 끝나거나 나가면 바로 돌아와요.', false],
+              ['1:1 대화', '바로 시작', '요청하고 수락받을 필요가 없어요. 끝내도 자리가 잠기지 않아요.', false],
+              ['스스로 나가기', '24시간 안에 3번째부터 12시간 참여 제한', '승인된 서로 다른 모임 기준이에요. 모임이 자연스럽게 끝났거나, 승인 전에 취소했거나, 호스트가 내보낸 경우는 세지 않아요.', true],
+              ['칠링 열기', '24시간 3번 · 7일 10번까지', '취소해도 연 횟수에 들어가요. 참가자가 있는 행사를 일찍 해산하면 7일 안에 두 번째부터 24시간 동안 새로 열 수 없어요. 무료·유료 모두 같아요.', true],
+            ] as const).map(([label, value, body, wide]) => <View key={label} style={[styles.tile, wide && styles.tileWide, { backgroundColor: theme.card }]}>
+              <ThemedText type="small" themeColor="textSecondary">{tr(label)}</ThemedText>
+              <ThemedText type="smallBold" themeColor="accent" style={styles.tileValue}>{tr(value)}</ThemedText>
+              <ThemedText type="small">{tr(body)}</ThemedText>
+            </View>)}
           </View>
+          <InfoNote>{tr("차단·신고, 과도한 연락을 막는 전송 속도 제한은 모든 등급에 적용돼요.")}</InfoNote>
 
           <MeetupPolicyNotice mode="join" />
           <MeetupPolicyNotice mode="once" />
@@ -216,8 +217,7 @@ export default function MembershipScreen() {
           {plansExpanded && <View style={styles.comparison}>
             <View style={styles.freePlan}>
               <ThemedText type="smallBold">{tr("베이직 · 무료")}</ThemedText>
-              {kind === 'general' ? <><ThemedText type="small" themeColor="textSecondary">{tr('오늘 글 무제한 · 동시 모임 {0}개', MEMBERSHIP_LIMITS.free.meetups)}</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">{t.membership.listingBenefits.free}</ThemedText></> : <ThemedText type="small" themeColor="textSecondary">{tr("월 신규 4편 · 끌어올리기 없음 · 직접 관리")}</ThemedText>}
+              {perks(kind === 'general' ? [tr('오늘 글 무제한 · 동시 모임 {0}개', MEMBERSHIP_LIMITS.free.meetups), t.membership.listingBenefits.free] : [tr("월 신규 4편 · 끌어올리기 없음 · 직접 관리")])}
             </View>
 
             {plans.map((plan) => {
@@ -234,12 +234,9 @@ export default function MembershipScreen() {
                 <View style={styles.priceRow}>
                   <ThemedText style={styles.price}>{offer ? `${offer.price} / ${periodNames[offer.period]}` : offersLoading ? tr("가격 확인 중") : tr("준비 중")}</ThemedText>
                 </View>
-                {kind === 'general' ? <><ThemedText type="small" themeColor="textSecondary">{tr('오늘 글 무제한 · 동시 모임 {0}개', limits.meetups)}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">{tr(plan.tier === 'plus' ? '모임 템플릿 · 질문 재사용' : plan.tier === 'pro' ? '템플릿 · 반복 회차 · 대기 명단 · 공동 호스트' : 'Pro 모임 도구 · 신청·참석 통계')}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">{t.membership.listingBenefits[plan.tier]}</ThemedText></> : <>
-                  <ThemedText type="small" themeColor="textSecondary">{tr('월 신규 {0}편 · 끌어올리기 {1}회', BUSINESS_LIMITS[plan.tier].posts, BUSINESS_LIMITS[plan.tier].bumps)}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">{tr('같은 글은 {0}시간 간격', BUSINESS_LIMITS[plan.tier].bumpCooldownHours)}</ThemedText>
-                  {plan.tier === 'premium' ? <><ThemedText type="small">{tr("운영대행: 신규 4편 · 끌어올리기 8회 · 월간 보고서 1회")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("전체 30편·24회에 포함돼요. 직접·AI 관리분은 신규 26편·끌어올리기 16회예요.")}</ThemedText></> : <ThemedText type="small" themeColor="textSecondary">{tr("직접 관리 · 연결된 AI와 사용량 공유")}</ThemedText>}
+                {kind === 'general' ? perks([tr('오늘 글 무제한 · 동시 모임 {0}개', limits.meetups), tr(plan.tier === 'plus' ? '모임 템플릿 · 질문 재사용' : plan.tier === 'pro' ? '템플릿 · 반복 회차 · 대기 명단 · 공동 호스트' : 'Pro 모임 도구 · 신청·참석 통계'), t.membership.listingBenefits[plan.tier]]) : <>
+                  {perks([tr('월 신규 {0}편 · 끌어올리기 {1}회', BUSINESS_LIMITS[plan.tier].posts, BUSINESS_LIMITS[plan.tier].bumps), tr('같은 글은 {0}시간 간격', BUSINESS_LIMITS[plan.tier].bumpCooldownHours), plan.tier === 'premium' ? tr("운영대행: 신규 4편 · 끌어올리기 8회 · 월간 보고서 1회") : tr("직접 관리 · 연결된 AI와 사용량 공유")])}
+                  {plan.tier === 'premium' && <ThemedText type="small" themeColor="textSecondary">{tr("전체 30편·24회에 포함돼요. 직접·AI 관리분은 신규 26편·끌어올리기 16회예요.")}</ThemedText>}
                 </>}
               </Pressable>;
             })}
@@ -304,11 +301,14 @@ const styles = StyleSheet.create({
   row: { minHeight: 44, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: Spacing.two, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' },
   flexText: { flexShrink: 1 },
   statusNote: { padding: Spacing.three, paddingTop: Spacing.two },
-  details: { borderTopWidth: 1, borderBottomWidth: 1 },
   disclosure: { minHeight: 48, paddingVertical: Spacing.two, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.two },
   detailContent: { paddingBottom: Spacing.three, gap: Spacing.two },
   comparison: { gap: Spacing.three },
   freePlan: { gap: Spacing.one, paddingVertical: Spacing.two },
+  perk: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  tile: { flexGrow: 1, flexBasis: '45%', borderRadius: 14, padding: Spacing.three, gap: 2 }, tileWide: { flexBasis: '100%' },
+  tileValue: { fontSize: 17, lineHeight: 24 },
   plan: { borderWidth: 2, borderRadius: 12, padding: Spacing.three, gap: Spacing.one },
   planHeading: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.two },
   planName: { fontSize: 19, lineHeight: 27, fontWeight: 700 },

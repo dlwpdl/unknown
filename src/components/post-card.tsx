@@ -35,6 +35,8 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { PostShareSheet } from '@/components/post-share-sheet';
 import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
+import { parseMeetupSections } from '@/lib/meetup-sections';
+import { MeetupSectionsView } from '@/components/meetup-sections';
 
 export function PostCard({
   post,
@@ -114,6 +116,7 @@ export function PostCard({
   const introLong = !!meetupDetail && measuredLines != null && measuredLines > 4;
   const shown = splitPostAttachments(displayBody);
   const info = postDetail ? postInfoParts(shown.body) : null;
+  const meetupSections = meetupDetail ? parseMeetupSections(shown.body) : null;
   const infoLinks = info ? [...new Set([...shown.urls.map(url => instagramPostLink(url)?.url ?? url), ...info.links])] : [];
   const infoPlace = !info ? null : mapped.url ? { url: mapped.url, label: mapped.label }
     : info.place ? { url: postLocationUrl(info.place, CITIES.find(city => city.id === post.cityId)?.englishName), label: info.place } : null;
@@ -256,6 +259,19 @@ export function PostCard({
               )}
             </View>
           )}
+          {info && (info.rating != null || info.facts.length > 0) && <View style={styles.info}>
+            {info.rating != null && <View accessible accessibilityLabel={tr('글링 평점 {0} / 10', info.rating.toFixed(1))} style={[styles.rating, { backgroundColor: theme.card }]}>
+              <ThemedText style={styles.ratingScore}>{info.rating.toFixed(1)}<ThemedText themeColor="textSecondary" style={Typography.label}> / 10</ThemedText></ThemedText>
+              <View style={[styles.ratingBar, { backgroundColor: theme.backgroundElement }]}><View style={[styles.ratingFill, { width: `${Math.min(100, info.rating * 10)}%`, backgroundColor: theme.accent }]} /></View>
+              <ThemedText type="smallBold" themeColor="accent">{tr('글링 평점')}</ThemedText>
+            </View>}
+            {info.facts.length > 0 && <View style={[styles.facts, { borderColor: theme.line }]}>
+              {info.facts.map((fact, index) => <View key={fact.label} style={[styles.fact, index > 0 && { borderLeftWidth: 1, borderLeftColor: theme.line }]}>
+                <ThemedText type="small" themeColor="textSecondary">{tr(fact.label)}</ThemedText>
+                <ThemedText style={styles.factValue}>{fact.value}</ThemedText>
+              </View>)}
+            </View>}
+          </View>}
           {info && (infoPlace?.url || infoLinks.length > 0) && <View style={styles.info}>
             {infoPlace?.url && <PostMapLink url={infoPlace.url} label={infoPlace.label} />}
             {infoLinks.length > 0 && <View style={[styles.infoLinks, { borderColor: theme.line }]}>
@@ -276,8 +292,11 @@ export function PostCard({
           {meetupDetail.afterTitle}
           <View style={[styles.intro, { borderTopColor: theme.line }]}>
             <ThemedText accessibilityRole="header" style={Typography.section}>{tr('소개')}</ThemedText>
-            {bodyText}
-            {introLong && <Pressable analyticsId="meetup.detail.intro-more" accessibilityRole="button" accessibilityState={{ expanded: introOpen }}
+            {meetupSections ? <>
+              {!!meetupSections.intro && <PostBody themeColor="text" style={[styles.body, post.room && flat && styles.meetupBody]} linksEnabled={!onPress} body={withPostAttachments(meetupSections.intro, shown.urls)} />}
+              <MeetupSectionsView sections={meetupSections} />
+            </> : bodyText}
+            {!meetupSections && introLong && <Pressable analyticsId="meetup.detail.intro-more" accessibilityRole="button" accessibilityState={{ expanded: introOpen }}
               onPress={() => { play('selection'); setIntroOpen(value => !value); }} style={styles.introMore}>
               <ThemedText type="smallBold" themeColor="accent">{introOpen ? tr('접기') : tr('더 보기')}</ThemedText>
             </Pressable>}
@@ -511,6 +530,13 @@ const styles = StyleSheet.create({
   body: { fontSize: 15, lineHeight: 22, fontWeight: '400', marginTop: Spacing.two },
   detailBody: { fontSize: 16, lineHeight: 27, marginTop: 0 },
   detailBodyWrap: { marginTop: Spacing.three },
+  rating: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12 },
+  ratingScore: { fontSize: 26, lineHeight: 32, fontWeight: '800', letterSpacing: -0.6 },
+  ratingBar: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
+  ratingFill: { height: '100%' },
+  facts: { flexDirection: 'row', borderWidth: 1, borderRadius: 16, overflow: 'hidden' },
+  fact: { flex: 1, padding: 12, gap: 2 },
+  factValue: { fontSize: 15, lineHeight: 22, fontWeight: '600' },
   info: { marginTop: Spacing.one, gap: Spacing.two },
   infoLinks: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12 },
   infoDivider: { borderTopWidth: StyleSheet.hairlineWidth },

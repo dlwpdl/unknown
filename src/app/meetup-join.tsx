@@ -7,6 +7,7 @@ import { Alert, AppState, DeviceEventEmitter, KeyboardAvoidingView, Platform, St
 import { SymbolView } from 'expo-symbols';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
+import { InfoNote, WhoSees } from '@/components/notice-blocks';
 import { MeetupWaitlist } from '@/components/meetup-host-tools';
 import { StateCard } from '@/components/state-card';
 import { RaisedActionButton } from '@/components/raised-action-button';
@@ -204,11 +205,17 @@ function JoinForm({ postId }: { postId: string }) {
                       <TextInput value={answer} onChangeText={setAnswer} accessibilityLabel={tr("신청 답변")} multiline maxLength={300} editable={!sending} placeholder={tr("나답게 편하게 답해주세요.")} placeholderTextColor={theme.textSecondary} style={[styles.input, { borderColor: theme.line, color: theme.text, backgroundColor: theme.background }]} />
                       <ThemedText type="small" themeColor="textSecondary" style={[styles.support, styles.count]}>{answer.length}/300</ThemedText>
                     </View>
-                      {modern && profile?.version === 2 && <ThemedText type="small" style={styles.support} themeColor="textSecondary">{profile.shareWithMembers ? tr("승인 후에는 선택한 사진·짧은 소개가 멤버에게도 공유돼요. 신청 답변은 호스트만 볼 수 있어요.") : tr("승인된 멤버에게는 모임 이름만 보여요. 사진·소개 공유는 프로필에서 바꿀 수 있어요.")}</ThemedText>}
-                      {modern && <Pressable analyticsId="app_meetup-join.pressable.7" onPress={() => { play('selection'); setConsent(v => !v); }} disabled={sending} accessibilityRole="checkbox" accessibilityState={{ checked: consent, disabled: sending }} style={styles.consent}>
-                        <ThemedText style={styles.body} themeColor="accent">{consent ? '☑' : '□'}</ThemedText><ThemedText type="small" style={[styles.support, styles.flex]}>{tr("이 호스트에게 신청 당시 모임 프로필과 답변을 공유하는 데 동의해요. 다른 신청자에게는 공개되지 않아요. 취소·거절·탈퇴·차단·종료 후 새 조회는 제한되지만 이미 본 내용은 회수할 수 없어요.")}</ThemedText>
+                      {modern && profile?.version === 2 && <WhoSees title={tr("보내면 이렇게 공유돼요")} rows={[
+                        { icon: { ios: 'person', android: 'person', web: 'person' }, label: tr("호스트"), detail: tr("모임 프로필 · 신청 답변") },
+                        { icon: { ios: 'person.2', android: 'group', web: 'group' }, label: tr("승인된 뒤 멤버"), detail: profile.shareWithMembers ? tr("모임 이름 · 사진 · 짧은 소개") : tr("모임 이름만 · 사진·소개 공유는 프로필에서 바꿀 수 있어요") },
+                      ]} />}
+                      {modern && <Pressable analyticsId="app_meetup-join.pressable.7" onPress={() => { play('selection'); setConsent(v => !v); }} disabled={sending} accessibilityRole="checkbox" accessibilityState={{ checked: consent, disabled: sending }}
+                        style={[styles.consent, { borderColor: consent ? theme.accent : theme.line, backgroundColor: theme.card }]}>
+                        <View style={[styles.checkbox, consent ? { backgroundColor: theme.accent, borderColor: theme.accent } : { borderColor: theme.textSecondary }]}>{consent && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={13} tintColor={theme.accentInk} />}</View>
+                        <View style={styles.flex}><ThemedText type="smallBold" style={styles.support}>{tr("이 호스트에게 모임 프로필과 답변을 보내는 데 동의해요")}</ThemedText>
+                          <ThemedText type="small" themeColor="textSecondary" style={styles.support}>{tr("다른 신청자에게는 보이지 않아요. 취소·거절·탈퇴·차단·모임 종료 뒤에는 새로 볼 수 없지만, 이미 본 내용은 되돌릴 수 없어요.")}</ThemedText></View>
                       </Pressable>}
-                      <ThemedText type="small" style={styles.support} themeColor="textSecondary">{tr("안전을 위한 자동 분석과 권한 있는 운영자 검토가 적용돼요. 신청 취소는 이 신청 화면에서 할 수 있어요.")}</ThemedText>
+                      <InfoNote>{tr("신청 취소는 이 화면에서 할 수 있어요. 안전을 위해 자동 분석과 권한 있는 운영자 검토가 적용돼요.")}</InfoNote>
                     </>}
                   </>}
         {!!error && !!post && (own || inactive || result) && <><ThemedText style={styles.body} accessibilityRole="alert" themeColor="accent">{tr(error)}</ThemedText>
@@ -230,7 +237,8 @@ const styles = StyleSheet.create({
   body: { fontSize: 16, lineHeight: 24 },
   sectionTitle: { fontSize: 24, lineHeight: 32, fontWeight: '600' }, support: { fontSize: 14, lineHeight: 20 },
   button: { minHeight: 44, justifyContent: 'center' }, secondary: { minHeight: 44, borderWidth: 1, borderRadius: 999, paddingHorizontal: Spacing.four, alignItems: 'center', justifyContent: 'center' }, input: { minHeight: 100, borderWidth: 1, borderRadius: 12, padding: Spacing.three, fontSize: 16, lineHeight: 24, textAlignVertical: 'top' },
-  consent: { minHeight: 44, flexDirection: 'row', gap: Spacing.two, alignItems: 'flex-start' },
+  consent: { minHeight: 44, flexDirection: 'row', gap: Spacing.three, alignItems: 'flex-start', borderWidth: 1, borderRadius: 14, padding: Spacing.three },
+  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   questionCard: { padding: Spacing.four, borderRadius: 22, gap: Spacing.three }, question: { fontSize: 20, lineHeight: 28, fontWeight: '600' }, count: { textAlign: 'right' },
   summary: { borderWidth: 1, borderRadius: 16, padding: Spacing.three }, profilePreview: { borderWidth: 1, borderRadius: 18, padding: Spacing.three, gap: Spacing.three }, previewHead: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   footer: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', borderTopWidth: 1, padding: Spacing.four, gap: Spacing.two },

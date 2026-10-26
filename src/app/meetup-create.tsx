@@ -22,7 +22,8 @@ import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { MeetupTemplatePicker } from '@/components/meetup-template-picker';
 import { MeetupKindSwitch } from '@/components/meetup-kind-switch';
 import { RaisedActionButton } from '@/components/raised-action-button';
-import { relationshipSlotData } from '@/components/relationship-slot-card';
+import { RelationshipSlotCard, relationshipSlotData } from '@/components/relationship-slot-card';
+import { InfoNote, MoreDetails } from '@/components/notice-blocks';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
@@ -33,6 +34,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useMembership } from '@/lib/membership-provider';
 import { supabase } from '@/lib/supabase';
 import { behavior } from '@/lib/behavior-analytics';
+import { MeetupSectionsEditor } from '@/components/meetup-sections';
 import { MEETUP_DRAFT_FIELDS, meetupAiDraftChanges, meetupAiDraftFields, parseMeetupAiDraftResponse, type MeetupDraftField, type MeetupDraftFields, type MeetupDraftRevision } from '@/lib/ai-draft';
 import { splitEventMeetupBody } from '@/lib/meetup-ai';
 import { placeMapRoute } from '@/lib/discovery';
@@ -270,6 +272,8 @@ function MeetupCreateForm() {
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView ref={scroll} analyticsId="app_meetup-create.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
       {invalidDestination && <StateCard kind="error" title={aiCopy('장소·행사 정보를 확인하지 못했어요', 'Couldn’t verify this place or event')} body={aiCopy('원래 상세에서 다시 열어주세요. 작성한 내용은 그대로예요.', 'Open it again from its details. Your writing is unchanged.')} />}
       <>
+      {!isAdmin && slots && <RelationshipSlotCard kind="meetup" membership={membership} />}
+      {slotsFull && <InfoNote tone="warn">{tr("모임을 종료하거나 나가면 자리는 바로 돌아와요.")}</InfoNote>}
       <ThemedText accessibilityRole="header" type="subtitle" style={styles.firstSection}>{aiCopy('01. 어떤 모임인가요?', '01. What are we doing?')}</ThemedText>
       {!ticketmasterEventId && <View onLayout={event => { fieldY.current.kind = event.nativeEvent.layout.y; }} style={styles.field}>
         <MeetupKindSwitch value={kindChosen ? event.kind : null} onChange={changeKind} disabled={saving} analyticsId="app_meetup-create.pressable.2" />
@@ -278,7 +282,9 @@ function MeetupCreateForm() {
       </View>}
       {field(tr("모임 제목"), title, value => editDraftField('title', value), tr("예: 퇴근하고 노을 보러 갈래요?"), 60)}
       <MeetupCoverPicker value={cover} onChange={setCover} onPickingChange={setPickingCover} disabled={saving || creatingDraft || !eventReady} />
-      {field(tr("모임 소개"), body, value => editDraftField('body', value), tr("무엇을 함께 하고 싶은지 알려주세요."), Math.max(1, 5000 - eventDetails.length), true)}
+      <MeetupSectionsEditor value={body} onChange={value => { sourceEdited.current = true; editDraftField('body', value); }} disabled={saving || !eventReady} maxLength={Math.max(1, 5000 - eventDetails.length)} heading={false}>
+        {field(tr("모임 소개"), body, value => editDraftField('body', value), tr("무엇을 함께 하고 싶은지 알려주세요."), Math.max(1, 5000 - eventDetails.length), true)}
+      </MeetupSectionsEditor>
       <Pressable analyticsId="meetup-create.assistance" accessibilityRole="button" accessibilityState={{ expanded: assistanceOpen }} onPress={() => { play('selection'); setAssistanceOpen(value => !value); }} style={({ pressed }) => [styles.disclosure, { opacity: pressed ? 0.82 : 1 }]}>
         <ThemedText style={styles.label} themeColor="accent">{aiCopy('소개 작성 도움받기', 'Help with your introduction')}</ThemedText>
         <SymbolView name={{ ios: assistanceOpen ? 'chevron.up' : 'chevron.down', android: assistanceOpen ? 'expand_less' : 'expand_more', web: assistanceOpen ? 'expand_less' : 'expand_more' }} size={16} tintColor={theme.accent} />
@@ -312,10 +318,11 @@ function MeetupCreateForm() {
         <ChillingDateInput label={tr("시작")} value={event.startsAt} minimumDate={new Date()} onChange={startsAt => { sourceEdited.current = true; setTouched(true); setEvent(current => ({ ...current, ...shiftChillingSchedule(current, startsAt) })); }} disabled={saving || !eventReady} />
         <ChillingDateInput label={tr("종료")} value={event.endsAt} minimumDate={new Date()} onChange={endsAt => { sourceEdited.current = true; setTouched(true); setEvent(current => ({ ...current, endsAt })); }} disabled={saving || !eventReady} />
         {!!ticketmasterEventId && eventReady && <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("모임 종료는 행사 시작 2시간 뒤로 임시 설정했어요. 실제 만날 시간과 종료 시간을 확인해 주세요.")}</ThemedText>}
-        <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{chillingTimezoneLabel({ timezone: event.timezone })}{" " + tr("· 기기 시간대 기준이에요. 활동 지역과 다른 시간대라면 기기 시간에 맞춰 선택해 주세요. 종료 후 신규 신청을 받지 않아요.")}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{chillingTimezoneLabel({ timezone: event.timezone }) ? tr("{0} 기준 · 끝나면 새 신청을 받지 않아요.", chillingTimezoneLabel({ timezone: event.timezone })) : tr("끝나면 새 신청을 받지 않아요.")}</ThemedText>
+        <MoreDetails label={tr("시간대 안내")} analyticsId="meetup-create.timezone-details" items={[tr("이 기기의 시간대 기준이에요. 활동 지역과 시간대가 다르면 기기 시간에 맞춰 골라 주세요.")]} />
         {errorField === 'schedule' && !!error && <ThemedText accessibilityRole="alert" themeColor="accent" style={styles.bodyText}>{tr(error)}</ThemedText>}
       </View>}
-      <View style={styles.field}><ThemedText type="smallBold" style={styles.label}>{tr("활동 지역")}</ThemedText><ThemedText style={styles.bodyText}>{tr(meetupCity?.name ?? city.name)}</ThemedText><ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("지역을 바꾸려면 모임 화면에서 지역을 선택해 주세요.")}</ThemedText></View>
+      <View style={styles.field}><ThemedText type="smallBold" style={styles.label}>{tr("활동 지역")}</ThemedText><ThemedText style={styles.bodyText}>{tr(meetupCity?.name ?? city.name)}</ThemedText><ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("지역을 바꾸려면 모임 화면에서 지역을 선택해 주세요.")}</ThemedText><InfoNote>{tr("정확한 집결 장소는 승인된 멤버에게 모임 대화에서 알려 주세요.")}</InfoNote></View>
       <View onLayout={event => { fieldY.current.capacity = event.nativeEvent.layout.y; }} style={styles.field}><ThemedText type="smallBold" style={styles.label}>{tr("정원 (호스트 포함)")}</ThemedText><TextInput ref={input => { inputs.current.capacity = input; }} accessibilityLabel={aiCopy(`정원, 2명부터 ${capacityLimit}명`, `Capacity, 2 to ${capacityLimit}`)} keyboardType="number-pad" value={capacity} onChangeText={value => { setCapacity(value); if (errorField === 'capacity') { setError(''); setErrorField(null); } }} editable={!saving && eventReady} maxLength={membership ? String(capacityLimit).length : 4} style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.card }]} />
         <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{aiCopy(`현재 멤버십은 호스트를 포함해 최대 ${capacityLimit}명까지예요.`, `Your current membership allows up to ${capacityLimit} people, including the host.`)}</ThemedText>
         {errorField === 'capacity' && !!error && <ThemedText accessibilityRole="alert" themeColor="accent" style={styles.bodyText}>{tr(error)}</ThemedText>}
@@ -332,14 +339,13 @@ function MeetupCreateForm() {
           <TextInput ref={input => { inputs.current.age = input; }} accessibilityLabel={tr("권장 최소 나이, 만 나이")} placeholder={tr("최소, 예: 20")} placeholderTextColor={theme.textSecondary} keyboardType="number-pad" value={ageMin} onChangeText={setAgeMin} editable={!saving && eventReady} maxLength={3} style={[styles.input, { flex: 1, minWidth: 0, color: theme.text, borderColor: theme.line, backgroundColor: theme.card }]} />
           <TextInput accessibilityLabel={tr("권장 최대 나이, 만 나이")} placeholder={tr("최대, 예: 39")} placeholderTextColor={theme.textSecondary} keyboardType="number-pad" value={ageMax} onChangeText={setAgeMax} editable={!saving && eventReady} maxLength={3} style={[styles.input, { flex: 1, minWidth: 0, color: theme.text, borderColor: theme.line, backgroundColor: theme.card }]} />
         </View>
-        <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("비워두면 연령대 무관이에요. 권장 연령대와 달라도 신청할 수 있어요.")}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("비워 두면 연령대 상관없이 받아요. 권장 연령대가 달라도 신청할 수는 있어요.")}</ThemedText>
         {errorField === 'age' && !!error && <ThemedText accessibilityRole="alert" themeColor="accent" style={styles.bodyText}>{tr(error)}</ThemedText>}
       </View>
       </>}
       </>
       <>
       <ThemedText accessibilityRole="header" type="subtitle" style={styles.sectionTitle}>{aiCopy('내 모임 프로필', 'Your meetup profile')}</ThemedText>
-      <ThemedText type="small" style={[styles.helper, [styles.note, { backgroundColor: theme.backgroundElement }]]}>{tr("상세 집결 장소는 승인된 멤버에게 그룹 채팅으로 안내해 주세요. 모임을 열기 전에 공개할 호스트 소개를 확인해요.")}</ThemedText>
       {!hostPreview && <View style={[styles.note, { backgroundColor: theme.backgroundElement }]}>
         <ThemedText style={styles.bodyText}>{aiCopy('모임 프로필은 한 번 저장하고 다음 모임에도 다시 사용해요.', 'Save one meetup profile and reuse it for future meetups.')}</ThemedText>
         <Pressable analyticsId="meetup-create.profile-edit" accessibilityRole="button" disabled={saving} style={styles.membership} onPress={() => { play('selection'); setHostConsent(false); router.push('/meetup-profile'); }}><ThemedText style={styles.label} themeColor="accent">{aiCopy('내 모임 프로필 확인', 'Review your meetup profile')}</ThemedText></Pressable>
@@ -352,11 +358,7 @@ function MeetupCreateForm() {
         <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('로그인한 회원이 볼 수 있어요. 비공개 선호 설정과 나머지 사진은 공유하지 않아요.')}</ThemedText>
         <Pressable analyticsId="meetup-create.profile-edit" accessibilityRole="button" disabled={saving} style={styles.membership} onPress={() => { play('selection'); setHostConsent(false); router.push('/meetup-profile'); }}><ThemedText type="smallBold" themeColor="accent" style={styles.label}>{tr('모임 프로필 수정')}</ThemedText></Pressable>
       </View>}
-      {isAdmin ? <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("관리자 계정 · 모임 자리 제한 없음")}</ThemedText>
-        : slots && <ThemedText type="small" themeColor={slotsFull ? 'accent' : 'textSecondary'} style={styles.helper}>
-        {slotsFull ? tr("동시 모임 자리 {0}개를 모두 사용 중이에요. 모임을 종료하거나 나가면 자리는 바로 돌아와요.", (slots.limit))
-          : tr("동시 모임 자리 {0}/{1} 사용 중 · 남은 자리 {2}개", (slots.active), (slots.limit), (slots.available))}
-      </ThemedText>}
+      {isAdmin && <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("관리자 계정 · 모임 자리 제한 없음")}</ThemedText>}
       {kindChosen && <MeetupPolicyNotice mode={event.kind === 'once' ? 'once' : 'host'} />}
       </>
       {membershipError && <Pressable analyticsId="app_meetup-create.pressable.5" accessibilityRole="button" onPress={() => { play('selection'); router.push('/profile/membership'); }} style={styles.membership}>

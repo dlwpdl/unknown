@@ -5,6 +5,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { chillingSchedule } from '@/lib/chilling';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
+import { parseMeetupSections } from '@/lib/meetup-sections';
 import { postMapBody } from '@/lib/post-maps';
 import { localizeBusinessDisclosure } from '@/lib/translation-source';
 import type { Post } from '@/lib/types';
@@ -12,12 +13,22 @@ import type { Post } from '@/lib/types';
 export function PublicPostBody({ body }: { body: string }) {
   const { play } = useInteractionFeedback(), { language, tr } = useLanguage();
   const attached = splitPostAttachments(body);
-  return <><p className="reader-body">{splitPostLinks(localizeBusinessDisclosure(attached.body, tr)).map((part, index) => part.url
+  const sections = parseMeetupSections(attached.body);
+  const linked = (text: string) => splitPostLinks(localizeBusinessDisclosure(text, tr)).map((part, index) => part.url
     ? <a key={index} href={part.url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" onClick={event => {
         play('selection');
         if (!instagramPostLink(part.url!) && !window.confirm(`${part.url}\n\n${language === 'ko' ? '악성 여부를 아직 확인하지 못한 외부 링크예요. 이동할까요?' : 'This external link hasn’t been checked for safety yet. Open it anyway?'}`)) event.preventDefault();
       }}>{part.text}</a>
-    : part.text)}</p>{attached.urls.map((url, index) => <PostAttachmentLink key={`${url}-${index}`} url={url} />)}</>;
+    : part.text);
+  return <>{sections ? <>
+    {!!sections.intro && <p className="reader-body">{linked(sections.intro)}</p>}
+    <div className="reader-sections">
+      {!!sections.purpose && <section className="reader-purpose"><h2>{tr('모임 목적')}</h2><p>{sections.purpose}</p></section>}
+      {sections.activities.length > 0 && <section><h2>{tr('함께할 활동')}</h2><ol>{sections.activities.map((step, index) => <li key={index}>{step}</li>)}</ol></section>}
+      {!!sections.fit && <section><h2>{tr('이런 분과 맞아요')}</h2><p>{sections.fit}</p></section>}
+      {sections.preparation.length > 0 && <section><h2>{tr('준비할 것')}</h2><ul>{sections.preparation.map((item, index) => <li key={index}>{item}</li>)}</ul></section>}
+    </div>
+  </> : <p className="reader-body">{linked(attached.body)}</p>}{attached.urls.map((url, index) => <PostAttachmentLink key={`${url}-${index}`} url={url} />)}</>;
 }
 
 export function SharedPostArticle({ post }: { post: Post }) {

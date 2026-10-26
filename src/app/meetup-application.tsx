@@ -9,6 +9,7 @@ import { SymbolView } from 'expo-symbols';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
+import { InfoNote } from '@/components/notice-blocks';
 import { MannerSummary } from '@/components/manner-summary';
 import { MeetupHistoryChoice } from '@/components/meetup-room-summary';
 import { RaisedActionButton } from '@/components/raised-action-button';
@@ -123,13 +124,16 @@ function Application({ requestId }: { requestId: string }) {
         </View>
       </View>
       <View style={[styles.answerCard, { backgroundColor: theme.card }]}><ThemedText type="smallBold" themeColor="accent">{tr("모임장 질문에 대한 답변")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{application.question}</ThemedText><ThemedText style={styles.answer}>{application.answer}</ThemedText></View>
-      <ThemedText type="smallBold">{tr("함께할 사람의 모임 프로필")}</ThemedText>
+      <View style={styles.headingRow}><ThemedText type="smallBold">{tr("함께할 사람의 모임 프로필")}</ThemedText>
+        <View style={[styles.tag, { backgroundColor: theme.backgroundSelected }]}><ThemedText type="small" themeColor="accent">{tr("신청 당시")}</ThemedText></View></View>
       <ChillingProfileCard profile={application.profile} />
       {!own && manner && <MannerSummary summary={manner} />}
-      <ThemedText type="small" themeColor="textSecondary">{tr("이름·사진·소개·답변은 신청 당시 공유한 모임 프로필이에요. 이후 프로필을 수정해도 이 신청은 바뀌지 않아요.")}</ThemedText>
-      {canRespond && <>
-        <ThemedText type="small" themeColor="textSecondary">{tr("승인하면 이 모임의 멤버가 되고 모임 대화에 참여해요. 정원이 찼거나 참여 가능한 모임 수를 넘으면 승인할 수 없어요.")}</ThemedText>
-      </>}
+      <InfoNote>{tr("이름·사진·소개·답변은 신청할 때 보낸 그대로예요. 그 뒤에 프로필을 고쳐도 여기는 바뀌지 않아요.")}</InfoNote>
+      {canRespond && <View style={[styles.decide, { backgroundColor: theme.card }]}>
+        <ThemedText type="smallBold">{tr("승인하면")}</ThemedText>
+        <View style={styles.decideRow}><SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={13} tintColor={theme.accent} /><ThemedText type="small" style={styles.flex}>{tr("이 모임의 멤버가 되고 모임 대화에 들어와요.")}</ThemedText></View>
+        <View style={styles.decideRow}><SymbolView name={{ ios: 'exclamationmark.circle', android: 'error', web: 'error' }} size={13} tintColor={theme.danger} /><ThemedText type="small" themeColor="textSecondary" style={styles.flex}>{tr("정원이 찼거나 참여할 수 있는 모임 수를 넘으면 승인할 수 없어요.")}</ThemedText></View>
+      </View>}
     </> : <StateCard kind={error ? 'error' : requestStatus?.status === 'approved' ? 'success' : 'blocked'} title={error ? tr("신청 정보를 불러오지 못했어요") : requestStatus ? { pending: tr("신청은 승인 대기 중이에요"), approved: tr("이미 승인된 신청이에요"), rejected: tr("거절된 신청이에요"), cancelled: tr("취소된 신청이에요") }[requestStatus.status] : tr("신청 프로필을 볼 수 없어요")} body={tr(error || '공유된 신청 프로필은 현재 열람할 수 없어요.')} />}
     {(!!error || !!actionError) && <Pressable analyticsId="app_meetup-application.pressable.2" onPress={() => { play('selection'); setRetry(x => x + 1); }} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent">{tr("현재 상태 다시 확인")}</ThemedText></Pressable>}
   </ScrollView>}
@@ -143,5 +147,7 @@ function Application({ requestId }: { requestId: string }) {
 const styles = StyleSheet.create({ fill: { flex: 1 }, center: { flex: 1, alignItems: 'center', justifyContent: 'center' }, header: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.three }, back: { width: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }, headerTitle: { flex: 1, textAlign: 'center', fontSize: 17, lineHeight: 22, fontWeight: '600' }, content: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', padding: Spacing.four, gap: Spacing.four }, button: { minHeight: 44, justifyContent: 'center' },
   identity: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three }, identityBody: { flex: 1, gap: Spacing.one }, avatar: { width: 80, height: 80, borderRadius: 26 }, initial: { alignItems: 'center', justifyContent: 'center' }, name: { fontSize: 26, lineHeight: 34, fontWeight: '700' },
   answerCard: { borderRadius: 20, padding: Spacing.four, gap: Spacing.two }, answer: { fontSize: 17, lineHeight: 26 },
+  headingRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two }, tag: { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  decide: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two }, decideRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two }, flex: { flex: 1 },
   footer: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', borderTopWidth: 1, padding: Spacing.four, gap: Spacing.one }, reject: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 });

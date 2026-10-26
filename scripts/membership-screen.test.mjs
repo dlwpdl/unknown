@@ -41,6 +41,7 @@ test('membership keeps stories and direct chat free while preserving meetup and 
     if (name === '@/components/gling-loader') return { GlingLoader: 'GlingLoader' };
     if (name === '@/components/relationship-slot-card') return { RelationshipSlotCard: 'RelationshipSlotCard' };
     if (name === '@/components/meetup-policy-notice') return { MeetupPolicyNotice: 'MeetupPolicyNotice' };
+    if (name === '@/components/notice-blocks') return { InfoNote: 'InfoNote' };
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };
     if (name === '@/components/themed-view') return { ThemedView: 'View' };
     if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, five: 32 }, MaxContentWidth: 800, Depth: { card: {}, control: {} } };
@@ -105,14 +106,8 @@ test('membership keeps stories and direct chat free while preserving meetup and 
     assert.match(copy, /베이직은 48시간·플러스는 36시간·프로는 30시간·프리미엄은 24시간/);
     assert.doesNotMatch(copy, /하루에 한 번/);
   }
-  assert.equal(button(tree, '자리 사용 · 반복 이용 제한 안내').props.accessibilityState.expanded, false);
-  assert.equal(button(tree, '자리 사용 · 반복 이용 제한 안내').props['aria-expanded'], false);
-  button(tree, '자리 사용 · 반복 이용 제한 안내').props.onPress();
-  tree = render();
-  assert.equal(button(tree, '자리 사용 · 반복 이용 제한 안내').props.accessibilityState.expanded, true);
-  assert.equal(button(tree, '자리 사용 · 반복 이용 제한 안내').props['aria-expanded'], true);
-  assert.match(text(tree), /자리 잠금이 없어요/);
-  button(tree, '자리 사용 · 반복 이용 제한 안내').props.onPress();
+  assert.match(text(tree), /자리가 잠기지 않아요/, 'usage rules stay visible as tiles, no accordion');
+  assert.match(text(tree), /24시간 안에 3번째부터 12시간 참여 제한/);
   assert.doesNotMatch(text(render()), /처음 요청한 사람/);
   button(tree, '멤버십 비교베이직 · 플러스 · 프로 · 프리미엄').props.onPress();
   tree = render();

@@ -97,7 +97,6 @@
   "app_profile_guidelines.scrollview.1": "src/app/profile/guidelines.tsx",
   "app_profile_membership.scrollview.1": "src/app/profile/membership.tsx",
   "app_profile_membership.pressable.1": "src/app/profile/membership.tsx",
-  "app_profile_membership.pressable.2": "src/app/profile/membership.tsx",
   "app_profile_membership.pressable.3": "src/app/profile/membership.tsx",
   "app_profile_membership.pressable.4": "src/app/profile/membership.tsx",
   "app_profile_membership.pressable.5": "src/app/profile/membership.tsx",

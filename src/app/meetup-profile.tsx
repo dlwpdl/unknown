@@ -1,7 +1,7 @@
 import { Typography } from '@/constants/design-system';
 import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
-import { Pressable, ScrollView } from '@/components/analytics-controls';
+import { Pressable, ScrollView, Switch } from '@/components/analytics-controls';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -11,6 +11,7 @@ import { Alert, AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Modal
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
+import { InfoNote, MoreDetails, WhoSees } from '@/components/notice-blocks';
 import { CityPicker } from '@/components/city-picker';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
@@ -288,16 +289,20 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
                   </View>
                 </View>}
                 {step === 4 && <>
-                <View style={styles.chips}>{(['host', 'members', 'public'] as const).map(value => <Pressable analyticsId="meetup-profile.preview-audience" key={value} accessibilityRole="button" accessibilityState={{ selected: audience === value }} style={[styles.promptChip, { borderColor: theme.line, backgroundColor: audience === value ? theme.backgroundSelected : theme.card }]} onPress={() => { play('selection'); setAudience(value); }}><ThemedText type="smallBold" style={styles.label}>{tr(value === 'host' ? '신청받는 호스트' : value === 'members' ? '승인된 멤버' : '호스트로 공개할 때')}</ThemedText></Pressable>)}</View>
-                <Pressable analyticsId="meetup-profile.share-members" accessibilityRole="checkbox" accessibilityState={{ checked: profile.shareWithMembers === true }} disabled={saving} style={[styles.region, { borderColor: theme.line }]} onPress={() => { play('selection'); setProfile(current => ({ ...current, shareWithMembers: !current.shareWithMembers })); }}><ThemedText type="smallBold" style={styles.label}>{profile.shareWithMembers ? '☑ ' : '☐ '}{tr("승인 후 멤버에게 사진·짧은 소개 공유")}</ThemedText></Pressable>
-                <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("멤버에게는 모임 이름이 표시돼요. 사진·소개 공유는 선택이며 신청 답변은 호스트만 볼 수 있어요.")}</ThemedText>
+                <View accessibilityRole="tablist" style={[styles.segment, { backgroundColor: theme.backgroundElement }]}>{(['host', 'members', 'public'] as const).map(value => <Pressable analyticsId="meetup-profile.preview-audience" key={value} accessibilityRole="tab" accessibilityState={{ selected: audience === value }} style={[styles.segmentItem, audience === value && { backgroundColor: theme.background }]} onPress={() => { play('selection'); setAudience(value); }}><ThemedText type="smallBold" themeColor={audience === value ? 'accent' : undefined}>{tr(value === 'host' ? '호스트' : value === 'members' ? '멤버' : '공개할 때')}</ThemedText></Pressable>)}</View>
+                <ChillingProfileCard profile={chillingProfilePreview(draftProfile, audience)} />
                 {audience === 'public' && <View style={styles.field}><ThemedText type="smallBold" style={styles.label}>{tr("공개 호스트 사진 선택")}</ThemedText><View style={styles.chips}>
                   <Pressable analyticsId="meetup-profile.public-photo-none" accessibilityRole="button" accessibilityState={{ selected: publicPhotoIndex === null }} disabled={saving} style={[styles.promptChip, { borderColor: theme.line, backgroundColor: publicPhotoIndex === null ? theme.backgroundSelected : theme.card }]} onPress={() => { play('selection'); setPublicPhotoIndex(null); }}><ThemedText type="small" style={styles.helper}>{tr("공개 사진 없음")}</ThemedText></Pressable>
                   {photos.map((_, index) => <Pressable analyticsId="meetup-profile.public-photo" key={index} accessibilityRole="button" accessibilityState={{ selected: publicPhotoIndex === index }} disabled={saving} style={[styles.promptChip, { borderColor: theme.line, backgroundColor: publicPhotoIndex === index ? theme.backgroundSelected : theme.card }]} onPress={() => { play('selection'); setPublicPhotoIndex(index); }}><ThemedText type="small" style={styles.helper}>{tr("사진 {0}", index + 1)}</ThemedText></Pressable>)}
-                </View><ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("저장만으로 공개되지 않아요. 모임을 열 때 소개와 이 사진을 다시 확인해요.")}</ThemedText></View>}
-                <ChillingProfileCard profile={chillingProfilePreview(draftProfile, audience)} />
-                <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("프로필을 수정해도 이미 보낸 신청 내용은 바뀌지 않아요. 취소·거절·탈퇴·차단·모임 종료 후에는 해당 경로의 새 조회가 제한돼요. 이미 본 내용이나 저장한 사진은 회수할 수 없어요.")}</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("안전을 위해 자동 분석과 권한 있는 운영자 검토가 적용돼요.")}</ThemedText>
+                </View><InfoNote>{tr("저장만으로 공개되지 않아요. 모임을 열 때 소개와 이 사진을 다시 확인해요.")}</InfoNote></View>}
+                <WhoSees title={tr("누가 무엇을 보나요")} rows={[
+                  { icon: { ios: 'person', android: 'person', web: 'person' }, label: tr("신청받는 호스트"), detail: tr("모임 이름 · 사진 · 소개 · 신청 답변") },
+                  { icon: { ios: 'person.2', android: 'group', web: 'group' }, label: tr("승인된 멤버"), detail: profile.shareWithMembers ? tr("모임 이름, 그리고 사진 · 짧은 소개") : tr("모임 이름만"),
+                    accessory: <Switch analyticsId="meetup-profile.share-members" accessibilityLabel={tr("승인 후 멤버에게 사진·짧은 소개 공유")} value={profile.shareWithMembers === true} disabled={saving} onValueChange={next => { play('selection'); setProfile(current => ({ ...current, shareWithMembers: next })); }} /> },
+                  { icon: { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' }, label: tr("다른 신청자"), detail: tr("보이지 않아요"), hidden: true },
+                ]} />
+                <InfoNote>{tr("상대가 이미 본 내용이나 저장한 사진은 되돌릴 수 없어요.")}</InfoNote>
+                <MoreDetails label={tr("자세히")} analyticsId="meetup-profile.privacy-details" items={[tr("프로필을 고쳐도 이미 보낸 신청은 그대로예요."), tr("신청이 취소·거절되거나 탈퇴·차단·모임 종료가 되면 그 뒤로는 새로 볼 수 없어요."), tr("안전을 위해 자동 분석과 권한 있는 운영자 검토가 적용돼요.")]} />
                 </>}
               </>}
         {!!error && <><ThemedText accessibilityRole="alert" themeColor="accent" style={styles.bodyText}>{tr(error)}</ThemedText>
@@ -337,6 +342,7 @@ const styles = StyleSheet.create({
   photoBody: { flex: 1, gap: Spacing.one },
   ghost: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center', borderWidth: 1, borderRadius: 999, paddingHorizontal: Spacing.three },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
+  segment: { flexDirection: 'row', borderRadius: 12, padding: 3, gap: 3 }, segmentItem: { flex: 1, minHeight: 40, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   promptChip: { minHeight: 44, justifyContent: 'center', borderWidth: 1, borderRadius: 999, paddingHorizontal: Spacing.three },
   tagInput: { minHeight: 44, minWidth: 120, borderWidth: 1, borderRadius: 999, paddingHorizontal: Spacing.three, fontSize: 16, lineHeight: 24 },
   button: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' }, field: { gap: Spacing.two },

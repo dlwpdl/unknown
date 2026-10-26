@@ -69,7 +69,10 @@ export function chillingTimezoneLabel(room: ChillingSchedule, locale = getLocale
   if (!room.timezone) return null;
   try {
     const at = room.startsAt ? new Date(room.startsAt) : new Date();
-    return new Intl.DateTimeFormat(locale, { timeZone: room.timezone, timeZoneName: 'long' }).formatToParts(at).find(part => part.type === 'timeZoneName')?.value ?? room.timezone;
+    // Hermes on iOS tags only the first word of a multi-word zone name ("미 태평양 하계 표준시" → "미"); the zone comes last, so keep the tail.
+    const parts = new Intl.DateTimeFormat(locale, { timeZone: room.timezone, timeZoneName: 'long' }).formatToParts(at);
+    const index = parts.findIndex(part => part.type === 'timeZoneName');
+    return index < 0 ? room.timezone : parts.slice(index).map(part => part.value).join('').trim();
   } catch { return room.timezone; }
 }
 

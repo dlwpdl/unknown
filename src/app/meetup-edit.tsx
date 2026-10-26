@@ -22,6 +22,8 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useMembership } from '@/lib/membership-provider';
 import { splitEventMeetupBody } from '@/lib/meetup-ai';
 import { splitPlaceMeetupBody } from '@/lib/meetup-destination';
+import { joinMeetupSections, parseMeetupSections } from '@/lib/meetup-sections';
+import { MeetupSectionsEditor } from '@/components/meetup-sections';
 import { supabase } from '@/lib/supabase';
 
 type Baseline = { title: string; intro: string; event: ChillingEventDraft; capacity: string };
@@ -60,7 +62,9 @@ function MeetupEditForm({ postId }: { postId: string }) {
       if (!value) return;
       const parts = splitMeetupBody(value.body, value.cityId), room = value.room;
       const draft: ChillingEventDraft = { kind: room.eventKind ?? 'group', startsAt: room.startsAt ?? '', endsAt: room.endsAt ?? '', timezone: room.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone, cadence: room.cadence ?? '', capacity: room.capacity ?? 8, category: room.category };
-      const next = { title: value.title, intro: parts.intro, event: draft, capacity: String(draft.capacity) };
+      // Headed intros are compared in their saved shape, so opening the editor alone never marks the form dirty.
+      const sections = parseMeetupSections(parts.intro);
+      const next = { title: value.title, intro: sections ? joinMeetupSections(sections) : parts.intro, event: draft, capacity: String(draft.capacity) };
       setBase(next); setTitle(next.title); setIntro(next.intro); setDetails(parts.details); setEvent(draft); setCapacity(next.capacity);
     }).catch(cause => { if (active) setLoadError(getChillingError(cause)); })
       .finally(() => { if (active) setLoading(false); });
@@ -88,6 +92,7 @@ function MeetupEditForm({ postId }: { postId: string }) {
     if (busy.current || !meetup || !base || !event || !dirty) return;
     if (!title.trim()) return showValidation(tr('모임 제목을 적어주세요.'), 'title');
     if (!intro.trim()) return showValidation(tr('모임 소개를 적어주세요.'), 'intro');
+    if (intro.trim().length + details.length > 5000) return showValidation(tr('모임 소개가 너무 길어요. 조금 줄여 주세요.'));
     const draft = { ...event, capacity: Number(capacity) };
     if (eventDirty) {
       const limit = Math.max(chillingCapacityLimit(membership), Number(base.capacity));
@@ -144,7 +149,9 @@ function MeetupEditForm({ postId }: { postId: string }) {
       {blocked ?? <>
         <ThemedText accessibilityRole="header" type="subtitle">{tr('기본 정보')}</ThemedText>
         {input('title', tr('모임 제목'), title, setTitle, tr('예: 퇴근하고 노을 보러 갈래요?'), 60)}
-        {input('intro', tr('모임 소개'), intro, setIntro, tr('무엇을 함께 하고 싶은지 알려주세요.'), Math.max(1, 5000 - details.length), true)}
+        <MeetupSectionsEditor value={intro} onChange={next => { setIntro(next); clear('intro'); }} disabled={saving} maxLength={Math.max(1, 5000 - details.length)}>
+          {input('intro', tr('모임 소개'), intro, setIntro, tr('무엇을 함께 하고 싶은지 알려주세요.'), Math.max(1, 5000 - details.length), true)}
+        </MeetupSectionsEditor>
         {!!details && <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('연결된 장소·행사 정보는 그대로 남아요.')}</ThemedText>}
         {modern && event && <>
           <ThemedText accessibilityRole="header" type="subtitle" style={styles.sectionTitle}>{tr('일정과 정원')}</ThemedText>
