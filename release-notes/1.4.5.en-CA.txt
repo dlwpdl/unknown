@@ -1,0 +1,3 @@
+Creating a meetup now fits on one screen, and joining walks you through it one step at a time.
+Switch to your business profile to post and comment under your business name.
+Meetup and post pages are easier to read, and the city picker no longer slides up past the top of the screen.
