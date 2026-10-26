@@ -198,7 +198,7 @@ export default function MembershipScreen() {
             <SectionHead title={tr("이번 달 사용")} note={business ? tr("{0} 초기화", (new Date(business.resetsAt).toLocaleDateString(appLocale))) : tr("비즈니스별 합산")} />
             {business && <ThemedText>{tr('신규 {0} / {1}편 · 끌어올리기 {2} / {3}회', business.postsUsed, business.postLimit ?? tr('기존 약정 유지'), business.bumpsUsed, business.bumpLimit ?? tr('한도 없음'))}</ThemedText>}
             {business?.tier === 'premium' && <ThemedText type="small">{tr('운영대행 사용: 신규 {0}/4편 · 끌어올리기 {1}/8회 · 보고서 {2}/1회', business.managedPostsUsed, business.managedBumpsUsed, business.reportsUsed)}</ThemedText>}
-            <ThemedText type="small" themeColor="textSecondary">{tr("같은 내용은 새 글로 다시 올릴 수 없어요. 기존 글을 수정하거나 끌어올려 주세요. 같은 글은 플러스 72시간·프로 60시간·프리미엄 48시간 간격이에요. 비즈니스 전체는 24시간 간격을 지켜 주세요.")}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{tr("같은 내용은 새 글로 다시 올릴 수 없어요. 기존 글을 수정하거나 끌어올려 주세요. 끌어올리기는 모든 글을 합쳐 무료 5일, 플러스 이틀, 프로 하루, 프리미엄 12시간에 한 번이에요.")}</ThemedText>
           </View>}
 
           <SectionHead title={tr("플랜 비교")} note={tr("현재 플랜이 표시됩니다")} />
@@ -217,7 +217,7 @@ export default function MembershipScreen() {
           {plansExpanded && <View style={styles.comparison}>
             <View style={styles.freePlan}>
               <ThemedText type="smallBold">{tr("베이직 · 무료")}</ThemedText>
-              {perks(kind === 'general' ? [tr('오늘 글 무제한 · 동시 모임 {0}개', MEMBERSHIP_LIMITS.free.meetups), t.membership.listingBenefits.free] : [tr("월 신규 4편 · 끌어올리기 없음 · 직접 관리")])}
+              {perks(kind === 'general' ? [tr('오늘 글 무제한 · 동시 모임 {0}개', MEMBERSHIP_LIMITS.free.meetups), t.membership.listingBenefits.free] : [tr("월 신규 1편 · 끌어올리기 월 2회(5일에 한 번) · 직접 관리")])}
             </View>
 
             {plans.map((plan) => {
@@ -235,8 +235,8 @@ export default function MembershipScreen() {
                   <ThemedText style={styles.price}>{offer ? `${offer.price} / ${periodNames[offer.period]}` : offersLoading ? tr("가격 확인 중") : tr("준비 중")}</ThemedText>
                 </View>
                 {kind === 'general' ? perks([tr('오늘 글 무제한 · 동시 모임 {0}개', limits.meetups), tr(plan.tier === 'plus' ? '모임 템플릿 · 질문 재사용' : plan.tier === 'pro' ? '템플릿 · 반복 회차 · 대기 명단 · 공동 호스트' : 'Pro 모임 도구 · 신청·참석 통계'), t.membership.listingBenefits[plan.tier]]) : <>
-                  {perks([tr('월 신규 {0}편 · 끌어올리기 {1}회', BUSINESS_LIMITS[plan.tier].posts, BUSINESS_LIMITS[plan.tier].bumps), tr('같은 글은 {0}시간 간격', BUSINESS_LIMITS[plan.tier].bumpCooldownHours), plan.tier === 'premium' ? tr("운영대행: 신규 4편 · 끌어올리기 8회 · 월간 보고서 1회") : tr("직접 관리 · 연결된 AI와 사용량 공유")])}
-                  {plan.tier === 'premium' && <ThemedText type="small" themeColor="textSecondary">{tr("전체 30편·24회에 포함돼요. 직접·AI 관리분은 신규 26편·끌어올리기 16회예요.")}</ThemedText>}
+                  {perks([tr('월 신규 {0}편', BUSINESS_LIMITS[plan.tier].posts), BUSINESS_LIMITS[plan.tier].bumpCooldownHours % 24 === 0 ? tr('끌어올리기 {0}일에 한 번 · 모든 글 합쳐서', BUSINESS_LIMITS[plan.tier].bumpCooldownHours / 24) : tr('끌어올리기 {0}시간에 한 번 · 모든 글 합쳐서', BUSINESS_LIMITS[plan.tier].bumpCooldownHours), plan.tier === 'premium' ? tr("운영대행: 신규 4편 · 끌어올리기 8회 · 월간 보고서 1회") : tr("직접 관리 · 연결된 AI와 사용량 공유")])}
+                  {plan.tier === 'premium' && <ThemedText type="small" themeColor="textSecondary">{tr("운영대행 4편은 전체 30편에 포함돼요. 대행 끌어올리기도 12시간에 한 번을 함께 써요.")}</ThemedText>}
                 </>}
               </Pressable>;
             })}

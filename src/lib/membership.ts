@@ -12,11 +12,12 @@ export const MEMBERSHIP_LIMITS = {
 } as const;
 
 export const GENERAL_BUMP_HOURS = { free: 48, plus: 36, pro: 30, premium: 24, admin: 0 } as const;
+// Mirrors private.business_membership_details_base: one bump per interval across all of a business's posts; paid tiers have no monthly bump cap.
 export const BUSINESS_LIMITS = {
-  free: { posts: 4, bumps: 0, bumpCooldownHours: 72, managedPosts: 0, managedBumps: 0, reports: 0 },
-  plus: { posts: 12, bumps: 8, bumpCooldownHours: 72, managedPosts: 0, managedBumps: 0, reports: 0 },
-  pro: { posts: 30, bumps: 16, bumpCooldownHours: 60, managedPosts: 0, managedBumps: 0, reports: 0 },
-  premium: { posts: 30, bumps: 24, bumpCooldownHours: 48, managedPosts: 4, managedBumps: 8, reports: 1 },
+  free: { posts: 1, bumps: 2, bumpCooldownHours: 120, managedPosts: 0, managedBumps: 0, reports: 0 },
+  plus: { posts: 12, bumps: null, bumpCooldownHours: 48, managedPosts: 0, managedBumps: 0, reports: 0 },
+  pro: { posts: 30, bumps: null, bumpCooldownHours: 24, managedPosts: 0, managedBumps: 0, reports: 0 },
+  premium: { posts: 30, bumps: null, bumpCooldownHours: 12, managedPosts: 4, managedBumps: 8, reports: 1 },
 } as const;
 
 export type BusinessMembershipSnapshot = {

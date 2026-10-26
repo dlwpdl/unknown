@@ -19,6 +19,7 @@ select throws_ok($$select private.require_meetup_tool_tier('d4700000-0000-4000-8
 select is(private.business_membership_details('d4710000-0000-4000-8000-000000000001')->>'tier','admin','the operator business has the business admin tier');
 select ok(private.business_membership_details('d4710000-0000-4000-8000-000000000001')->'postLimit'='null'::jsonb,'admin business posts are unlimited');
 select ok(private.business_membership_details('d4710000-0000-4000-8000-000000000001')->'bumpLimit'='null'::jsonb,'admin business bumps are unlimited');
+select is((private.business_membership_details('d4710000-0000-4000-8000-000000000001')->>'bumpCooldownHours')::int,0,'admin business bumps have no wait');
 select is(private.business_membership_details('d4710000-0000-4000-8000-000000000002')->>'tier','free','other businesses keep their tier');
 select is(private.merchant_workspace_plan('d4710000-0000-4000-8000-000000000001'),'pro','admin business has every paid feature');
 select is(private.business_operator_limit('d4710000-0000-4000-8000-000000000001'),1000,'admin business co-managers are effectively unlimited');

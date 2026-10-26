@@ -82,12 +82,12 @@ test('membership keeps stories and direct chat free while preserving meetup and 
   }
   button(render(),'비즈니스').props.onPress();
   assert.deepEqual(planOrder(render()), ['플러스', '프로', '프리미엄'], 'business plans follow Basic, Plus, Pro, Premium');
-  for (const [name, hours] of [['플러스',72], ['프로',60], ['프리미엄',48]]) {
+  for (const [name, every] of [['플러스','2일'], ['프로','1일'], ['프리미엄','12시간']]) {
     const card = nodes(render()).find(node => node.props?.accessibilityRole === 'radio' && text(node).startsWith(name));
-    assert.match(text(card), new RegExp(`같은 글은 ${hours}시간 간격`), `${name} displays its own business cooldown`);
+    assert.match(text(card), new RegExp(`끌어올리기 ${every}에 한 번 · 모든 글 합쳐서`), `${name} displays its own business bump interval`);
   }
-  assert.match(text(render()),/월 신규 4편/);
-  assert.match(text(render()),/월 신규 30편 · 끌어올리기 24회/);
+  assert.match(text(render()),/월 신규 1편/);
+  assert.match(text(render()),/월 신규 30편끌어올리기 12시간에 한 번/);
   assert.match(text(render()),/신규 4편 · 끌어올리기 8회 · 월간 보고서 1회/);
   assert.equal(nodes(render()).filter(node=>node.type==='RelationshipSlotCard').length,0);
   assert.equal(button(render(),'구독 준비 중').props.disabled,true,'unverified business cannot purchase');

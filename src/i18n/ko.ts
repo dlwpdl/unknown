@@ -234,7 +234,7 @@ export const t = {
     DUPLICATE_LISTING: { title: '같은 글이 이미 있어요', body: '같은 제목의 글을 30일 안에 다시 올릴 수 없어요. 기존 글을 끌어올리거나 다시 열어 주세요.', membership: false },
     DUPLICATE_POST: { title: '같은 이야기가 이미 올라갔어요', body: '같은 내용을 반복해서 올리지 말고 기존 글을 확인해 주세요.', membership: false },
     BUMP_COOLDOWN: { title: '조금 뒤에 끌어올릴 수 있어요', body: '베이직은 48시간·플러스는 36시간·프로는 30시간·프리미엄은 24시간 간격으로 끌어올릴 수 있어요. 계정과 같은 글에 함께 적용돼요. 기존 구독 혜택은 유지돼요.', membership: true },
-    BUSINESS_BUMP_COOLDOWN: { title: '비즈니스 끌어올리기를 기다려 주세요', body: '같은 글은 플러스 72시간·프로 60시간·프리미엄 48시간 간격이에요. 비즈니스 전체는 24시간 간격이에요. 계정이나 AI 도구를 바꿔도 같아요.', membership: false },
+    BUSINESS_BUMP_COOLDOWN: { title: '비즈니스 끌어올리기를 기다려 주세요', body: '끌어올리기는 업체의 모든 글을 합쳐 무료 5일, 플러스 이틀, 프로 하루, 프리미엄 12시간에 한 번이에요. 계정이나 AI 도구를 바꿔도 같아요.', membership: false },
     BUSINESS_MONTHLY_LIMIT_REACHED: { title: '이번 달 비즈니스 사용량을 모두 썼어요', body: '신규 글과 끌어올리기 사용량을 확인해 주세요. 운영대행분은 전체 한도에 포함돼요.', membership: true },
     DUPLICATE_PROMOTION: { title: '같은 홍보글이 이미 있어요', body: '기존 글을 수정하거나 끌어올려 주세요. 제목·사진 순서만 바꿔 새 글로 다시 올릴 수 없어요.', membership: false },
     LISTING_NOT_OPEN: { title: '마감된 글이에요', body: '다시 열면 살아있는 글 자리를 하나 사용해요.', membership: false },
