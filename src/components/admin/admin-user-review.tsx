@@ -19,9 +19,13 @@ import { displayName } from '@/lib/admin-labels';
 import { NicknameEditor } from '@/components/nickname-editor';
 import { changeProfileNickname } from '@/lib/nickname';
 import { AdminUserBusiness } from './admin-user-business';
-import { AdminButton, AdminCard, AdminFacts, AdminInfo, AdminPill, AdminTrace } from './admin-ui';
+import { AdminButton, AdminCard, AdminFacts, AdminInfo, AdminPill, AdminTrace, type AdminTone } from './admin-ui';
 
 const MAIN_ACTIVITY_KINDS: ActivityKind[] = ['all', 'post', 'comment', 'message', 'meetup', 'report'];
+const KIND_TONES: Partial<Record<ActivityKind, AdminTone>> = {
+  account: 'success', post: 'accent', comment: 'accent', message: 'navy', conversation: 'navy', meetup: 'accent',
+  report: 'danger', moderation: 'danger', safety: 'danger', block: 'warning', payment: 'warning',
+};
 
 export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevelChange, onProfileChanged, onClose }: {
   userId: string; profiles: Map<string, AdminProfile>; onClose?: () => void;
@@ -275,17 +279,20 @@ function ActivityTimeline({ userId, filters, profiles, nickname, onConversation 
     {page && <ThemedText type="small" accessibilityLiveRegion="polite" style={styles.muted}>{page.total}건 중 {page.rows.length}건</ThemedText>}
     {busy && !page && <ThemedText accessibilityRole="progressbar">활동을 불러오는 중입니다.</ThemedText>}
     {error && <><ThemedText accessibilityRole="alert" style={styles.error}>{error}</ThemedText><Button label="다시 시도" onPress={() => { if (page) void more(); else { setError(null); setBusy(true); setRetry((value) => value + 1); } }} /></>}
-    {page?.rows.map((event) => {
+    {page?.rows.map((event, index) => {
+      const day = formatDay(event.occurred_at);
       const content = MAIN_ACTIVITY_KINDS.includes(event.kind) || ['moderation', 'payment', 'safety'].includes(event.kind);
-      return <View key={event.event_key} style={[styles.card, styles.event]}>
-      <View style={styles.eventHeading}><ThemedText type="smallBold" style={styles.eventKind}>{ACTIVITY_KINDS[event.kind]}</ThemedText><ThemedText type="small" style={styles.muted}>{formatDate(event.occurred_at)}{event.state ? ` · ${statusLabel(event.state)}` : ''}</ThemedText></View>
-      <ThemedText type="smallBold">{content || showTechnical ? event.title : ACTIVITY_KINDS[event.kind]}</ThemedText>
-      {(content || showTechnical) && <ThemedText selectable numberOfLines={expandedEvents.includes(event.event_key) || !event.body || (event.body.length <= 120 && !event.body.includes('\n')) ? undefined : 2}>{event.body || '추가 내용 없음'}</ThemedText>}
-      {(content || showTechnical) && event.body && (event.body.length > 120 || event.body.includes('\n')) && <Button expanded={expandedEvents.includes(event.event_key)} label={expandedEvents.includes(event.event_key) ? '원문 접기' : '원문 펼치기'} onPress={() => setExpandedEvents(keys => keys.includes(event.event_key) ? keys.filter(key => key !== event.event_key) : [...keys, event.event_key])} />}
+      return <View key={event.event_key}>
+      {(index === 0 || formatDay(page.rows[index - 1].occurred_at) !== day) && <ThemedText accessibilityRole="header" type="smallBold" style={styles.dayHeader}>{day}</ThemedText>}
+      <View style={[styles.card, styles.event]}>
+      <View style={styles.eventHeading}><AdminPill label={ACTIVITY_KINDS[event.kind]} tone={KIND_TONES[event.kind] ?? 'neutral'} /><ThemedText type="small" style={styles.muted}>{formatTime(event.occurred_at)}{event.state ? ` · ${statusLabel(event.state)}` : ''}</ThemedText></View>
+      <ThemedText type="smallBold">{event.title}</ThemedText>
+      {(content || !!event.body) && <ThemedText selectable numberOfLines={expandedEvents.includes(event.event_key) || !event.body || (event.body.length <= 120 && !event.body.includes('\n')) ? undefined : 2}>{event.body || '추가 내용 없음'}</ThemedText>}
+      {event.body && (event.body.length > 120 || event.body.includes('\n')) && <Button expanded={expandedEvents.includes(event.event_key)} label={expandedEvents.includes(event.event_key) ? '원문 접기' : '원문 펼치기'} onPress={() => setExpandedEvents(keys => keys.includes(event.event_key) ? keys.filter(key => key !== event.event_key) : [...keys, event.event_key])} />}
       {event.actor_id && (event.actor_id !== userId || showTechnical) && <ThemedText selectable type="small" style={styles.muted}>행위자 · {event.actor_id === userId ? `${nickname} (본인)` : displayName(profiles.get(event.actor_id), event.actor_id)}</ThemedText>}
       {showTechnical && <><ThemedText selectable type="small" style={styles.id}>{event.event_key}</ThemedText>{event.context_id && <ThemedText selectable type="small" style={styles.id}>관련 ID · {event.context_id}</ThemedText>}</>}
       {!filters.conversationId && event.context_id && ['message','conversation'].includes(event.kind) && <Button label="이 대화 앞뒤 내용 보기" onPress={() => onConversation(event.context_id!)} />}
-    </View>; })}
+    </View></View>; })}
     {page?.total === 0 && <ThemedText>이 조건에 맞는 저장된 활동이 없습니다.</ThemedText>}
     {page?.nextCursor && <Button label={busy ? '불러오는 중' : '이전 활동 50개 더 보기'} disabled={busy} onPress={() => void more()} />}
     {page && <Button expanded={showTechnical} label={showTechnical ? '문제 추적 정보 접기' : '문제 추적 정보'} onPress={() => setShowTechnical(value => !value)} />}
@@ -312,6 +319,7 @@ function confirmChange(title: string, message: string, destructive: boolean) {
   ], { cancelable: true, onDismiss: () => resolve(false) }));
 }
 function formatDay(value: string) { return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium' }).format(new Date(value)); }
+function formatTime(value: string) { return new Intl.DateTimeFormat('ko-KR', { timeStyle: 'medium' }).format(new Date(value)); }
 function formatDate(value: string) { return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'medium' }).format(new Date(value)); }
 function statusLabel(value: string) {
   return ({ active: '정상', suspended: '이용 제한', deleted: '삭제됨', reactivation_pending: '재가입 허용', published: '게시중', removed: '숨김', pending: '대기', approved: '승인', rejected: '거절', cancelled: '취소', ended: '종료', open: '미처리', actioned: '조치함', dismissed: '기각', warned: '경고', blocked: '차단' } as Record<string, string>)[value] ?? value;
@@ -342,7 +350,8 @@ const styles = StyleSheet.create({
   input: { minHeight: 44, flexGrow: 1, minWidth: 150, paddingHorizontal: Spacing.three, color: Colors.admin.text, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 10, backgroundColor: Colors.admin.background },
   button: { alignSelf: 'flex-start', minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.three, borderWidth: 1, borderColor: Colors.admin.line, borderRadius: 10, backgroundColor: Colors.admin.card },
   event: { paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: Colors.admin.line },
-  eventHeading: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, alignItems: 'center' }, eventKind: { color: Colors.admin.navy },
+  eventHeading: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, alignItems: 'center' },
+  dayHeader: { marginTop: Spacing.three, paddingBottom: Spacing.one, color: Colors.admin.textSecondary },
   pressed: { opacity: 0.65 }, disabled: { opacity: 0.55 },
   id: { fontFamily: 'monospace', fontSize: 11, color: Colors.admin.textSecondary },
   trustRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },

@@ -179,3 +179,14 @@ test('member timeline folds long text without discarding the original or changin
   nodes(tree).find(n => n.props?.label === '원문 접기').props.onPress(); tree = render(props);
   assert.equal(original().props.numberOfLines, 2); assert.equal(text(original()), body);
 });
+
+test('member timeline names account records instead of repeating the kind label', () => {
+  const rows = [
+    { event_key: 'status:a', kind: 'account', title: '현재 계정 상태', body: '', occurred_at: '2026-10-26T23:19:10Z', actor_id: null, context_id: 'a', state: 'active' },
+    { event_key: 'account:a', kind: 'account', title: '계정 생성', body: '현재 닉네임: 포근한수달', occurred_at: '2026-10-26T23:19:10Z', actor_id: 'a', context_id: 'a', state: null },
+  ];
+  const render = view(390, { file: 'admin-user-review', name: 'ActivityTimeline', append: '\nexports.ActivityTimeline = ActivityTimeline;', initialState: [{ total: 2, rows, nextCursor: null }, null, false] });
+  const all = text(render({ userId: 'a', filters: userData.EMPTY_ACTIVITY_FILTERS, profiles: new Map(), nickname: '포근한수달', onConversation: () => {} }));
+  for (const shown of ['현재 계정 상태', '계정 생성', '현재 닉네임: 포근한수달']) assert.ok(all.includes(shown), shown);
+  assert.ok(!all.includes('추가 내용 없음'));
+});
