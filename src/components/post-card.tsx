@@ -10,14 +10,18 @@ import { ThemedText } from '@/components/themed-text';
 import { PostAdLabel } from '@/components/post-ad-label';
 import { PostBody } from '@/components/post-body';
 import { PostMapLink } from '@/components/post-map-link';
+import { PostAttachmentLink } from '@/components/post-attachment-link';
+import { postInfoParts } from '@/lib/post-info';
+import { CITIES } from '@/lib/mock';
 import { TranslationControl } from '@/components/content-translation';
 import { useContentTranslation } from '@/hooks/use-content-translation';
 import { visibleTranslationSource } from '@/lib/translation-source';
 import { splitPostPhotoCredits } from '@/lib/post-photo-credits';
-import { splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links';
+import { instagramPostLink, splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links';
 import { ReportSheet } from '@/components/report-sheet';
 import { TrustBadge } from '@/components/trust-badge';
 import { Spacing } from '@/constants/theme';
+import { Typography } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import { count } from '@/i18n';
 import { useAuth } from '@/lib/auth';
@@ -25,7 +29,7 @@ import { recordPostShare, togglePostReaction } from '@/lib/community-data';
 import { getPostImageSource, relativeTime } from '@/lib/feed-data';
 import { visibleMeetupBody } from '@/lib/meetup-ai';
 import { uniqueHashtags } from '@/lib/hashtags';
-import { postMapBody } from '@/lib/post-maps';
+import { postLocationUrl, postMapBody } from '@/lib/post-maps';
 import { changePostReaction, postReactionsSnapshot, subscribePostReactions, syncPostReactions } from '@/lib/post-reactions';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { PostShareSheet } from '@/components/post-share-sheet';
@@ -43,6 +47,8 @@ export function PostCard({
   flat = false,
   afterBody,
   translationVisible = true,
+  meetupDetail,
+  postDetail = false,
 }: {
   post: Post;
   onJoin?: () => void;
@@ -54,6 +60,8 @@ export function PostCard({
   flat?: boolean;
   afterBody?: ReactNode;
   translationVisible?: boolean;
+  meetupDetail?: { beforeTitle: ReactNode; afterTitle: ReactNode }; // 모임 상세: 작성자 줄·분류·반응 줄 대신 요약을 끼운다
+  postDetail?: boolean; // 일반 글 상세: 장소·링크는 정보 카드, 본문은 문단, 출처는 접고, 반응은 하단 바로 옮긴다
 }) {
   const { tr, t, locale: appLocale } = useLanguage();
   const theme = useTheme();
@@ -80,6 +88,8 @@ export function PostCard({
   const [shareOpen, setShareOpen] = useState(false);
   const [failedPhoto, setFailedPhoto] = useState<{ postId: string; uri: string } | null>(null);
   const [loadedPhoto, setLoadedPhoto] = useState<{ key: string; aspectRatio: number } | null>(null);
+  const [introLines, setIntroLines] = useState<{ body: string; lines: number } | null>(null), [introOpen, setIntroOpen] = useState(false);
+  const [creditsOpen, setCreditsOpen] = useState(false);
   const isMeetup = post.tag.kind === 'meetup';
   const isListing = post.kind === 'listing';
   const viewerScope = isAuthed ? me.id : 'guest';
@@ -99,6 +109,22 @@ export function PostCard({
   const displayBody = translation.translated && !translation.original
     ? withPostAttachments(translation.display.body + (credited.credits ? attached.body.slice(credited.body.length) : ''), attached.urls)
     : originalBody;
+  // shortcut: measured once per body text, so a later font-size change keeps the first line count until the text changes.
+  const measuredLines = introLines?.body === displayBody ? introLines.lines : null;
+  const introLong = !!meetupDetail && measuredLines != null && measuredLines > 4;
+  const shown = splitPostAttachments(displayBody);
+  const info = postDetail ? postInfoParts(shown.body) : null;
+  const infoLinks = info ? [...new Set([...shown.urls.map(url => instagramPostLink(url)?.url ?? url), ...info.links])] : [];
+  const infoPlace = !info ? null : mapped.url ? { url: mapped.url, label: mapped.label }
+    : info.place ? { url: postLocationUrl(info.place, CITIES.find(city => city.id === post.cityId)?.englishName), label: info.place } : null;
+  const bodyText = <PostBody
+    themeColor={meetupDetail || info ? 'text' : 'textSecondary'}
+    paragraphs={info?.paragraphs}
+    style={[styles.body, post.room && flat && styles.meetupBody, info && styles.detailBody]}
+    numberOfLines={onPress ? 3 : introLong && !introOpen ? 4 : undefined}
+    onTextLayout={meetupDetail && measuredLines == null ? (event) => setIntroLines({ body: displayBody, lines: event.nativeEvent.lines.length }) : undefined}
+    linksEnabled={!onPress}
+    body={displayBody} />;
 
   const toggleLike = async () => {
     if (!isAuthed) return promptLogin(t.auth.reasonLike);
@@ -146,7 +172,7 @@ export function PostCard({
         { backgroundColor: theme.card },
       ]}>
       <View style={[styles.content, photo && !flat && styles.photoContent]}>
-        <View style={styles.head}>
+        {!meetupDetail && <View style={styles.head}>
           <Pressable analyticsId="components_post-card.pressable.4"
             onPress={() => { play('reaction'); onAuthor?.(); }}
             disabled={!onAuthor}
@@ -172,7 +198,7 @@ export function PostCard({
                 )}
               </View>
               <ThemedText type="small" themeColor="textSecondary" style={styles.meta}>
-                {post.createdAt ? relativeTime(post.createdAt, undefined, appLocale) : post.createdAtLabel}{post.bumpedAt ? ` · ${t.detail.bumpedLabel}` : ''}
+                {post.createdAt ? relativeTime(post.createdAt, undefined, appLocale) : post.createdAtLabel}{post.bumpedAt ? ` · ${t.detail.bumpedLabel}` : ''}{postDetail ? ` · ${t.feed.views(post.views)}` : ''}
               </ThemedText>
             </View>
           </Pressable>
@@ -189,7 +215,7 @@ export function PostCard({
               />
             </Pressable>
           )}
-        </View>
+        </View>}
 
         <Pressable analyticsId="components_post-card.pressable.2"
           onPress={openPost}
@@ -197,12 +223,12 @@ export function PostCard({
           accessibilityRole={onPress ? 'button' : undefined}
           accessibilityLabel={onPress ? `${tr(post.tag.label)} · ${translation.display.title}` : undefined}
           style={({ pressed }) => pressed && styles.pressed}>
-          <ThemedText
+          {meetupDetail ? meetupDetail.beforeTitle : <ThemedText
             type="smallBold"
             style={[styles.category, { color: isMeetup ? theme.accent : theme.textSecondary }]}>
             {tr(post.tag.label)}{isListing ? ` · ${t.detail.listingBadge}` : ''}
-          </ThemedText>
-          <ThemedText style={[styles.title, flat && !onPress && styles.detailTitle]}>
+          </ThemedText>}
+          <ThemedText accessibilityRole={meetupDetail ? 'header' : undefined} style={[styles.title, flat && !onPress && styles.detailTitle, meetupDetail && Typography.sheetTitle]}>
             {translation.display.title}
           </ThemedText>
           {photo && (
@@ -230,12 +256,13 @@ export function PostCard({
               )}
             </View>
           )}
-          <PostBody
-            themeColor="textSecondary"
-            style={styles.body}
-            numberOfLines={onPress ? 3 : undefined}
-            linksEnabled={!onPress}
-            body={displayBody} />
+          {info && (infoPlace?.url || infoLinks.length > 0) && <View style={styles.info}>
+            {infoPlace?.url && <PostMapLink url={infoPlace.url} label={infoPlace.label} />}
+            {infoLinks.length > 0 && <View style={[styles.infoLinks, { borderColor: theme.line }]}>
+              {infoLinks.map((url, index) => <View key={url} style={index > 0 && [styles.infoDivider, { borderTopColor: theme.line }]}><PostAttachmentLink url={url} row /></View>)}
+            </View>}
+          </View>}
+          {!meetupDetail && (info ? <View style={styles.detailBodyWrap}>{bodyText}</View> : bodyText)}
           {isListing && (post.price != null || (post.listingStatus && post.listingStatus !== 'open')) && (
             <View style={styles.listingLine}>
               {post.price != null && <ThemedText style={styles.price}>{t.detail.price(post.price)}</ThemedText>}
@@ -245,9 +272,20 @@ export function PostCard({
             </View>
           )}
         </Pressable>
+        {meetupDetail && <>
+          {meetupDetail.afterTitle}
+          <View style={[styles.intro, { borderTopColor: theme.line }]}>
+            <ThemedText accessibilityRole="header" style={Typography.section}>{tr('소개')}</ThemedText>
+            {bodyText}
+            {introLong && <Pressable analyticsId="meetup.detail.intro-more" accessibilityRole="button" accessibilityState={{ expanded: introOpen }}
+              onPress={() => { play('selection'); setIntroOpen(value => !value); }} style={styles.introMore}>
+              <ThemedText type="smallBold" themeColor="accent">{introOpen ? tr('접기') : tr('더 보기')}</ThemedText>
+            </Pressable>}
+          </View>
+        </>}
 
         <TranslationControl translation={translation} />
-        {mapped.url && <PostMapLink url={mapped.url} label={mapped.label} />}
+        {!info && mapped.url && <PostMapLink url={mapped.url} label={mapped.label} />}
         {afterBody}
 
         {chips.length > 0 && (
@@ -270,6 +308,15 @@ export function PostCard({
             ))}
           </View>
         )}
+
+        {info && info.credits.length > 0 && <View style={[styles.credits, { borderTopColor: theme.line }]}>
+          <Pressable analyticsId="post.detail.credits" accessibilityRole="button" accessibilityState={{ expanded: creditsOpen }}
+            onPress={() => { play('selection'); setCreditsOpen(value => !value); }} style={styles.creditsToggle}>
+            <ThemedText type="smallBold" themeColor="textSecondary" style={{ flex: 1 }}>{tr("출처·사진 정보 {0}", info.credits.length)}</ThemedText>
+            <SymbolView name={{ ios: creditsOpen ? 'chevron.up' : 'chevron.down', android: creditsOpen ? 'expand_less' : 'expand_more', web: creditsOpen ? 'expand_less' : 'expand_more' }} size={14} tintColor={theme.textSecondary} />
+          </Pressable>
+          {creditsOpen && <PostBody body="" paragraphs={info.credits} type="small" themeColor="textSecondary" />}
+        </View>}
 
         {post.room && !hideRoom && (
           <View style={[styles.module, { backgroundColor: theme.backgroundElement }]}>
@@ -308,7 +355,7 @@ export function PostCard({
           </View>
         )}
 
-        <View style={[styles.foot, flat && styles.flatFoot, { borderTopColor: theme.line }]}>
+        {!meetupDetail && !postDetail && <View style={[styles.foot, flat && styles.flatFoot, { borderTopColor: theme.line }]}>
           <Pressable lens analyticsId="components_post-card.pressable.7"
             onPress={toggleLike}
             disabled={!!busyReaction}
@@ -394,7 +441,7 @@ export function PostCard({
               {count(post.views)}
             </ThemedText>
           </View>
-        </View>
+        </View>}
       </View>
       {shareOpen && <PostShareSheet key={`${post.id}:${me.id}`} post={post} visible={shareOpen} onClose={() => setShareOpen(false)}
         onShared={() => { void recordPostShare(supabase, post.id).then(setShareCount).catch(() => {}); }} />}
@@ -409,6 +456,41 @@ export function PostCard({
       />
     </View>
   );
+}
+
+/** Like/save toggle for detail layouts without the reaction row; shares the card's reaction store. */
+export function PostReactionToggle({ post, kind, showCount = false }: { post: Post; kind: 'like' | 'save'; showCount?: boolean }) {
+  const { t } = useLanguage();
+  const theme = useTheme();
+  const { isAuthed, me, promptLogin } = useAuth();
+  const { play } = useInteractionFeedback();
+  const viewerId = isAuthed ? me.id : 'guest';
+  const reactions = useSyncExternalStore(subscribePostReactions,
+    useCallback(() => postReactionsSnapshot(viewerId, post.id), [viewerId, post.id]), () => undefined);
+  const like = kind === 'like';
+  const on = reactions?.[kind]?.isOn ?? (like ? post.likedByMe : post.savedByMe) ?? false;
+  const total = reactions?.[kind]?.count ?? (like ? post.likes : post.saves);
+  const busy = reactions?.pending ?? null;
+  const toggle = async () => {
+    if (!isAuthed) return promptLogin(like ? t.auth.reasonLike : t.auth.reasonSave);
+    if (busy) return;
+    play('reaction');
+    try {
+      await changePostReaction(me.id, post.id, kind, { isOn: on, count: total },
+        wasOn => togglePostReaction(supabase, post.id, me.id, kind, wasOn));
+    } catch {
+      play('warning');
+      Alert.alert(t.feed.actionErrorTitle, t.feed.actionErrorBody);
+    }
+  };
+  const icon = like ? { ios: on ? 'heart.fill' : 'heart', android: 'favorite', web: 'favorite' } as const
+    : { ios: on ? 'bookmark.fill' : 'bookmark', android: on ? 'bookmark_added' : 'bookmark', web: on ? 'bookmark_added' : 'bookmark' } as const;
+  return <Pressable analyticsId={like ? 'post.detail.like' : 'post.detail.save'} onPress={() => void toggle()} disabled={!!busy} accessibilityRole="button"
+    accessibilityLabel={like ? t.feed.likes(total) : t.feed.saves(total)}
+    accessibilityState={{ selected: on, disabled: !!busy, busy: busy === kind }} style={({ pressed }) => [styles.more, showCount && styles.reactionToggle, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
+    <SymbolView name={icon} size={21} tintColor={on ? theme.accent : theme.text} />
+    {showCount && total > 0 && <ThemedText type="smallBold" style={{ color: on ? theme.accent : theme.textSecondary }}>{count(total)}</ThemedText>}
+  </Pressable>;
 }
 
 const styles = StyleSheet.create({
@@ -427,6 +509,14 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, lineHeight: 28, fontWeight: '700', letterSpacing: -0.5 },
   detailTitle: { fontSize: 28, lineHeight: 36, letterSpacing: -0.6 },
   body: { fontSize: 15, lineHeight: 22, fontWeight: '400', marginTop: Spacing.two },
+  detailBody: { fontSize: 16, lineHeight: 27, marginTop: 0 },
+  detailBodyWrap: { marginTop: Spacing.three },
+  info: { marginTop: Spacing.one, gap: Spacing.two },
+  infoLinks: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12 },
+  infoDivider: { borderTopWidth: StyleSheet.hairlineWidth },
+  credits: { marginTop: Spacing.two, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: Spacing.one },
+  creditsToggle: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  meetupBody: { fontSize: 16, lineHeight: 24 },
   listingLine: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two, marginTop: Spacing.two },
   price: { fontSize: 17, lineHeight: 24, fontWeight: '700', letterSpacing: -0.3 },
   hashRow: { flexDirection: 'row', flexWrap: 'wrap', columnGap: Spacing.three },
@@ -439,6 +529,9 @@ const styles = StyleSheet.create({
   meta: { fontSize: 12, lineHeight: 18 },
   avatar: { minWidth: 32, minHeight: 32, borderRadius: 16, padding: Spacing.one, alignItems: 'center', justifyContent: 'center' },
   more: { minWidth: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  reactionToggle: { flexDirection: 'row', gap: 4, paddingHorizontal: 6 },
+  introMore: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center' },
+  intro: { borderTopWidth: StyleSheet.hairlineWidth, marginTop: Spacing.three, paddingTop: Spacing.three, gap: Spacing.one },
   module: { marginTop: Spacing.three, borderRadius: 16, padding: Spacing.three, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },
   roomInfo: { flexGrow: 1, flexBasis: 152, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   roomCopy: { flex: 1 },

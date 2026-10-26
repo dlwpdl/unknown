@@ -71,9 +71,11 @@ select throws_ok($$select public.request_meetup_join('63000000-0000-0000-0000-00
 reset role;
 -- Pending request made before expiration; insertion bypass is fixture-only.
 alter table public.meetup_requests disable trigger meetup_requests_chilling_expiry;
+alter table public.meetup_requests disable trigger meetup_requests_z_capacity_admission;
 insert into public.meetup_requests(id,post_id,host_id,requester_id,message) values
  ('63000000-0000-0000-0000-000000000021','63000000-0000-0000-0000-000000000011','63000000-0000-0000-0000-000000000001','63000000-0000-0000-0000-000000000003','earlier request');
 alter table public.meetup_requests enable trigger meetup_requests_chilling_expiry;
+alter table public.meetup_requests enable trigger meetup_requests_z_capacity_admission;
 select throws_ok($$update public.meetup_requests set status='approved' where id='63000000-0000-0000-0000-000000000021'$$,'P0001','MEETUP_EXPIRED','direct approval also rejects expired event');
 select set_config('request.jwt.claims','{"sub":"63000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 set local role authenticated;

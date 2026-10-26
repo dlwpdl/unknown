@@ -14,14 +14,14 @@ export function TranslationControl({ translation }: { translation: ReturnType<ty
   const { language } = useLanguage();
   const { play } = useInteractionFeedback();
   const theme = useTheme();
-  if (!translation.eligible) return null;
+  // A button that cannot translate in this build is noise under every post.
+  if (!translation.eligible || !translation.supported) return null;
   const english = language === 'en';
-  const label = !translation.supported ? english ? 'Translation needs the updated mobile app' : '최신 모바일 앱에서 번역할 수 있어요'
-    : translation.loading ? english ? 'Preparing translation…' : '번역 준비 중…'
+  const label = translation.loading ? english ? 'Preparing translation…' : '번역 준비 중…'
     : translation.translated ? translation.original ? english ? 'See translation' : '번역 보기' : english ? 'Translated · See original' : '번역됨 · 원문 보기'
       : translation.error ? english ? 'Retry translation' : '번역 다시 시도'
         : english ? 'Translate with Google' : 'Google로 번역';
-  const disabled = !translation.supported || translation.loading || !translation.ready;
+  const disabled = translation.loading || !translation.ready;
   return <View>
     {translation.error && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">
       {english ? 'Could not prepare translation. For the first download, connect to Wi-Fi and retry. Showing the original.' : '번역을 준비하지 못했어요. 처음이라면 Wi-Fi에 연결한 뒤 다시 눌러 주세요. 원문을 보여드려요.'}

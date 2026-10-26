@@ -226,20 +226,23 @@ test('신청자 모임 한도를 승인자의 한도로 오인하지 않고 종�
   assert.equal(getCommunityActionError(null), null);
 });
 
-test('내 모임은 진행 모임과 거절·취소 결과를 보존하고 참여 중인 모임만 대화를 연결한다', async () => {
+test('내 모임은 진행 모임과 거절 결과를 보존하고 끝난 모임은 지난 모임으로 내리며 참여 중인 모임만 대화를 연결한다', async () => {
   const post = (id, extra = {}) => ({ id, title: id, city_id: 'vancouver', status: 'published', room_preview: { id: `room-${id}`, memberCount: 5, capacity: 8 }, ...extra });
   const data = {
-    posts: [post('host'), post('closed', { room_preview: { closed: true } }), post('hidden', { status: 'hidden' })],
+    posts: [post('host'), post('closed', { room_preview: { closed: true } }), post('hidden', { status: 'hidden' }), post('past', { room_preview: { eventKind: 'once', startsAt: '2020-01-01T10:00:00Z', endsAt: '2020-01-01T12:00:00Z' } })],
     meetup_requests: [
       { status: 'approved', post: post('joined') }, { status: 'cancelled', post: post('cancelled', { room_preview: { closed: true } }) },
       { status: 'pending', post: post('pending') }, { status: 'rejected', post: post('rejected') },
       { status: 'approved', post: null }, { status: 'pending', post: post('ended', { room_preview: { closed: true } }) },
+      { status: 'cancelled', ended_with_meetup: true, post: post('ended-member', { room_preview: { closed: true } }) },
+      { status: 'cancelled', ended_with_meetup: true, post: post('reopened', { room_preview: {} }) },
+      { status: 'approved', post: post('past-member', { room_preview: { eventKind: 'once', startsAt: '2020-01-01T10:00:00Z', endsAt: '2020-01-01T12:00:00Z' } }) },
     ],
   };
-  const ownershipFilters = [];
+  const ownershipFilters = [], selects = [];
   const client = {
     from(table) {
-      const query = { select() { return this; }, eq(column, value) { if (column === 'author_id' || column === 'requester_id') ownershipFilters.push([table, column, value]); return this; }, not() { return this; }, or() { return this; }, in() { return this; }, order() { return this; },
+      const query = { select(fields) { selects.push(fields); return this; }, eq(column, value) { if (column === 'author_id' || column === 'requester_id') ownershipFilters.push([table, column, value]); return this; }, not() { return this; }, or() { return this; }, in() { return this; }, order() { return this; },
         then(resolve) { return Promise.resolve({ data: data[table], error: null }).then(resolve); } };
       return query;
     },
@@ -249,8 +252,13 @@ test('내 모임은 진행 모임과 거절·취소 결과를 보존하고 참�
       return { data: null, error: null };
     },
   };
-  data.conversations = [{ id: 'joined-chat', group_post_id: 'joined' }, { id: 'old-chat', group_post_id: 'rejected' }, { id: 'closed-chat', group_post_id: 'cancelled' }];
-  assert.deepEqual((await loadMyMeetups(client, 'user-1')).map(({ id, role, conversationId }) => [id, role, conversationId]), [['host', 'host', null], ['joined', 'approved', 'joined-chat'], ['pending', 'pending', null], ['cancelled', 'cancelled', null], ['rejected', 'rejected', null]]);
+  data.conversations = [{ id: 'joined-chat', group_post_id: 'joined' }, { id: 'old-chat', group_post_id: 'rejected' }, { id: 'closed-chat', group_post_id: 'cancelled' },
+    { id: 'host-closed-chat', group_post_id: 'closed' }, { id: 'past-chat', group_post_id: 'past' }, { id: 'ended-chat', group_post_id: 'ended' },
+    { id: 'ended-member-chat', group_post_id: 'ended-member' }, { id: 'reopened-chat', group_post_id: 'reopened' }, { id: 'past-member-chat', group_post_id: 'past-member' }];
+  // Only the host, approved members and members approved when the host ended it keep the (read-only) room; leaving earlier or a pending request does not.
+  assert.deepEqual((await loadMyMeetups(client, 'user-1')).map(({ id, role, conversationId }) => [id, role, conversationId]), [['host', 'host', null], ['joined', 'approved', 'joined-chat'], ['pending', 'pending', null], ['rejected', 'rejected', null], ['reopened', 'cancelled', null],
+    ['closed', 'closed', 'host-closed-chat'], ['past', 'closed', 'past-chat'], ['cancelled', 'closed', null], ['ended-member', 'closed', 'ended-member-chat'], ['past-member', 'closed', 'past-member-chat']]);
+  assert.ok(selects.some(fields => fields.startsWith('status,ended_with_meetup,')), 'requests read the ended-with-meetup flag');
   assert.deepEqual(ownershipFilters, [['posts', 'author_id', 'user-1'], ['meetup_requests', 'requester_id', 'user-1']]);
   await leaveMeetup(client, 'joined');
   client.rpc = async () => ({ error: new Error('AUTH_REQUIRED') });

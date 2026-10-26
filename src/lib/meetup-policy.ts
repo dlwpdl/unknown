@@ -6,7 +6,7 @@ export type MeetupPolicy = {
 export type MeetupPolicyMode = 'join' | 'leave' | 'close' | 'host' | 'once';
 
 function releaseTime(value: string, locale = 'ko-KR') {
-  return new Date(value).toLocaleString(locale, { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' });
+  return new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' }).format(new Date(value));
 }
 
 export function meetupPolicyNotice(policy: MeetupPolicy, mode: MeetupPolicyMode, now = Date.now(), locale = 'ko-KR'): string | null {

@@ -1,6 +1,28 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { discoveryCursor, hasOpenSeat, matchesChilling, matchesChillingWindow, sortChillings } from '../src/lib/chilling-discovery.ts';
+import * as discovery from '../src/lib/chilling-discovery.ts';
+
+test('ALL includes both real types but still excludes expired, closed and ordinary posts', () => {
+  const now = Date.parse('2026-10-25T12:00:00Z');
+  assert.equal(matchesChilling({ room: { eventKind: 'group', cadence: 'weekly' } }, 'all', 'all', now), true);
+  assert.equal(matchesChilling({ room: { eventKind: 'once', endsAt: '2026-10-26T12:00:00Z' } }, 'all', 'all', now), true);
+  assert.equal(matchesChilling({ room: { capacity: 8 } }, 'all', 'all', now), true, 'legacy recurring groups remain discoverable');
+  assert.equal(matchesChilling({ room: { eventKind: 'once', endsAt: '2026-10-24T12:00:00Z' } }, 'all', 'all', now), false);
+  assert.equal(matchesChilling({ room: { closed: true } }, 'all', 'all', now), false);
+  assert.equal(matchesChilling({}, 'all', 'all', now), false);
+});
+
+test('discovery preference defaults to ALL and preserves only supported view/type choices', () => {
+  for (const raw of [null, '', 'not-json', '[]', '{"kind":"bad","view":"bad"}']) {
+    assert.deepEqual(discovery.parseChillingDiscoveryPreference(raw), { kind: 'all', view: 'browse' });
+  }
+  assert.deepEqual(discovery.parseChillingDiscoveryPreference('{"kind":"group","view":"mine"}'), { kind: 'group', view: 'mine' });
+  assert.deepEqual(discovery.parseChillingDiscoveryPreference('{"kind":"once","view":"browse"}'), { kind: 'once', view: 'browse' });
+  assert.deepEqual(discovery.chillingCreateKindParams('all'), {});
+  assert.deepEqual(discovery.chillingCreateKindParams('once'), { kind: 'once' });
+  assert.deepEqual(discovery.chillingCreateKindParams('group'), { kind: 'group' });
+});
 test('advance from raw rows even when kind hides the entire page', () => {
   const page = Array.from({ length: 30 }, (_, i) => ({ id: String(i), createdAt: '2026-09-17', sortAt: '2026-09-18', room: { eventKind: 'group' } }));
   assert.equal(page.filter(p => matchesChilling(p, 'once', 'all')).length, 0);

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { RoomPreview } from './types.ts';
 
 export type MeetupTemplateDraft = { title: string; body: string; applicationQuestion: string; category?: string };
 export type MeetupTemplate = { id: string; name: string; draft: MeetupTemplateDraft; updatedAt: string };
@@ -87,3 +88,30 @@ export const inviteMeetupCohost = (client: SupabaseClient, postId: string, userI
 export const respondMeetupCohost = (client: SupabaseClient, postId: string, accept: boolean) => rpc<null>(client, 'respond_meetup_cohost', { p_post_id: postId, p_accept: accept });
 export const removeMeetupCohost = (client: SupabaseClient, postId: string, userId: string) => rpc<null>(client, 'remove_meetup_cohost', { p_post_id: postId, p_user_id: userId });
 export const loadMeetupHostAggregates = (client: SupabaseClient, postId: string) => rpc<MeetupHostAggregates | null>(client, 'get_meetup_host_aggregates', { p_post_id: postId });
+
+export type MeetupFee = NonNullable<RoomPreview['fee']>;
+/** Mirrors set_meetup_fee: 0 < amount ≤ 10000 with at most 2 decimals, note ≤ 200 characters. */
+export function meetupFeeInput(amount: string, note = '', dueOn = ''): MeetupFee {
+  const text = amount.trim().replace(',', '.'), value = Number(text), memo = note.trim();
+  if (!/^\d+(\.\d{1,2})?$/.test(text) || !(value > 0 && value <= 10000) || (dueOn && !/^\d{4}-\d{2}-\d{2}$/.test(dueOn))) throw new Error('INVALID_MEETUP_FEE');
+  if ([...memo].length > 200) throw new Error('INVALID_MEETUP_FEE_NOTE');
+  return { amount: value, ...(memo ? { note: memo } : {}), ...(dueOn ? { dueOn } : {}) };
+}
+export const meetupFeeAmount = (amount: number) => `$${Number(amount).toFixed(2)}`;
+const feeDay = (dueOn: string) => { const [year, month, day] = dueOn.split('-').map(Number); return new Date(year, month - 1, day, 12); };
+export const meetupFeeDue = (dueOn: string, locale?: string) => feeDay(dueOn).toLocaleDateString(locale, { month: 'long', day: 'numeric' });
+export const meetupFeeDueIso = (dueOn: string) => feeDay(dueOn).toISOString();
+export const meetupFeeDueOn = (iso: string) => { const date = new Date(iso), pad = (value: number) => String(value).padStart(2, '0'); return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`; };
+/** null removes the fee. */
+export async function setMeetupFee(client: SupabaseClient, postId: string, fee: MeetupFee | null) {
+  const value = fee && meetupFeeInput(String(fee.amount), fee.note, fee.dueOn);
+  return rpc<null>(client, 'set_meetup_fee', value ? { p_post_id: postId, p_amount: value.amount, p_note: value.note ?? '', p_due_on: value.dueOn ?? null } : { p_post_id: postId, p_amount: null });
+}
+export const setMeetupFeePaid = (client: SupabaseClient, postId: string, userId: string, paid: boolean) => rpc<null>(client, 'set_meetup_fee_paid', { p_post_id: postId, p_user_id: userId, p_paid: paid });
+/** Host: every member's mark. Member: only their own row. */
+export const loadMeetupFeePayments = async (client: SupabaseClient, postId: string) => (await rpc<{ user_id: string; paid_at: string }[] | null>(client, 'get_meetup_fee_payments', { p_post_id: postId })) ?? [];
+export async function loadMeetupFee(client: SupabaseClient, postId: string): Promise<MeetupFee | null> {
+  const result = await client.from('posts').select('room_preview').eq('id', postId).maybeSingle();
+  if (result.error) throw new Error(result.error.message);
+  return (result.data?.room_preview as RoomPreview | null)?.fee ?? null;
+}

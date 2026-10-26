@@ -12,6 +12,8 @@ export type ThemedTextProps = TextProps & {
 
 export function ThemedText({ children, style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
   const theme = useTheme();
+  // Display sizes are already large; uncapped they wrap screen titles to three lines at accessibility sizes. Body text still scales fully.
+  const display = (StyleSheet.flatten([styles[type], style])?.fontSize ?? 0) >= 24;
 
   return (
     <Text
@@ -23,6 +25,7 @@ export function ThemedText({ children, style, type = 'default', themeColor, ...r
         styles[type],
         style,
       ]}
+      maxFontSizeMultiplier={display ? 1.3 : undefined}
       {...rest}
     >
       {Platform.OS === 'android'

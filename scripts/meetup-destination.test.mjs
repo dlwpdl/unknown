@@ -108,7 +108,7 @@ function discovery({ pages, hidden = () => false, eventResult = null } = {}) {
     loadTicketmasterEvent: async () => ({ event: eventResult }), meetupAllowed: () => true,
     appendUniquePosts: (current, next) => [...current, ...next.filter(p => !current.some(old => old.id === p.id))], discoveryCursor, matchesChilling, matchesChillingWindow, hasOpenSeat, sortChillings, hidden,
     matchesMeetupDestination: a.matchesMeetupDestination, meetupDestinationQuery: a.meetupDestinationQuery,
-    tr: value => value, copy: value => value, theme: {}, listOpacity: 1, StateCard: 'StateCard', View: 'View', GlingLoader: 'Loader', Animated: { View: 'Animated' }, clearDestination() {}, setSearch() {}, setQuery() {}, clearFilters() {},
+    tr: value => value, copy: value => value, theme: {}, listOpacity: 1, createDisabled: false, action() {}, StateCard: 'StateCard', View: 'View', GlingLoader: 'Loader', Animated: { View: 'Animated' }, clearDestination() {}, setSearch() {}, setQuery() {}, clearFilters() {},
     require: () => ({ jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) }),
   };
   const code = `${city}\n${fetch}\nexports.fetch=fetchPage;exports.snapshot=()=>{${filters}\nreturn {visible,cursor,error,empty:(${empty})};};`;

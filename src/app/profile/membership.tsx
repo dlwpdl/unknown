@@ -185,7 +185,7 @@ export default function MembershipScreen() {
             </Pressable>
             {rulesExpanded && <View style={styles.detailContent}>
               <ThemedText type="small" themeColor="textSecondary">{tr("모임은 동시에 운영·참여하는 개수를 합산해요. 참여는 방장 승인 후 자리를 사용해요. 1:1 대화는 요청·수락 없이 바로 시작해요.")}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">{tr("모임 종료·퇴장 시 자리는 바로 돌아와요. 최근 24시간에 승인된 서로 다른 모임에서 자진 퇴장 3회째부터 새 참여가 12시간 제한돼요. 자연 종료·승인 전 취소·강퇴는 제외돼요.")}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{tr("모임 종료·퇴장 시 자리는 바로 돌아와요. 최근 24시간에 승인된 서로 다른 모임에서 자진 퇴장 3회째부터 새 참여가 12시간 제한돼요. 자연 종료·승인 전 취소·호스트가 내보낸 경우는 제외돼요.")}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">{tr("칠링 개최는 최근 24시간 3회·7일 10회까지예요. 취소해도 개최 횟수는 유지돼요. 참가자가 있는 행사 조기 해산은 최근 7일 2회째부터 새 개최가 24시간 제한돼요. 무료·유료에 동일하게 적용돼요.")}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">{tr("1:1 대화를 종료해도 자리 잠금이 없어요. 차단·신고와 과도한 연락을 막는 전송 속도 제한은 모든 등급에 적용돼요.")}</ThemedText>
             </View>}

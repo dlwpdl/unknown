@@ -83,8 +83,11 @@ test('profile save validates bounds and sends only normalized sharing fields', a
   const client = { rpc: async (name, args) => { calls.push([name,args]); return {error:null}; } };
   await data.saveChillingProfile(client, {...profile, ownerId:'forged'});
   assert.deepEqual(calls, [['save_chilling_profile', {p_profile:{...profile,intro:'함께 걸어요',interests:['산책','커피']}}]]);
-  await assert.rejects(data.saveChillingProfile(client,{...profile,interests:[]}), /INVALID_CHILLING_PROFILE/);
-  assert.equal(calls.length,1);
+  // Interests and prompts are optional now; the intro and the bounds still apply.
+  await assert.doesNotReject(data.saveChillingProfile(client,{...profile,interests:[],promptOne:'',promptTwo:''}));
+  await assert.rejects(data.saveChillingProfile(client,{...profile,intro:' '}), /INVALID_CHILLING_PROFILE/);
+  await assert.rejects(data.saveChillingProfile(client,{...profile,interests:Array(9).fill('x')}), /INVALID_CHILLING_PROFILE/);
+  assert.equal(calls.length,2);
 });
 test('sharing requires explicit consent, trims answer, and never uploads a client snapshot', async () => {
   const calls=[];const client={rpc:async(name,args)=>{calls.push([name,args]);return {data:'request-id',error:null};}};
@@ -115,4 +118,22 @@ test('cover uploads before atomic creation and removes upload on rejected creati
   calls.length=0;
   await assert.rejects(data.createChillingEvent(client,{...draft,event:{...draft.event,capacity:5001}}));
   assert.equal(calls.length,0,'invalid event never uploads');
+});
+
+test('approval sends the history choice only for approvals, recruiting pause calls its RPC, and a paused meetup explains itself', async () => {
+  const calls = [];
+  const client = { rpc: async (name, args) => { calls.push([name, args]); return { data: 'room', error: null }; } };
+  assert.equal(await data.respondMeetupRequestV2(client, 'request', 'approved', true), 'room');
+  await data.respondMeetupRequestV2(client, 'request', 'approved');
+  await data.respondMeetupRequestV2(client, 'request', 'rejected', true);
+  await data.setMeetupRecruiting(client, 'post', false);
+  assert.deepEqual(calls, [
+    ['respond_meetup_request_v2', { p_request_id: 'request', p_response: 'approved', p_share_history: true }],
+    ['respond_meetup_request_v2', { p_request_id: 'request', p_response: 'approved', p_share_history: false }],
+    ['respond_meetup_request_v2', { p_request_id: 'request', p_response: 'rejected', p_share_history: false }],
+    ['set_meetup_recruiting', { p_post_id: 'post', p_open: false }],
+  ]);
+  await assert.rejects(data.setMeetupRecruiting({ rpc: async () => ({ error: new Error('MEETUP_CLOSED') }) }, 'post', true), /MEETUP_CLOSED/);
+  assert.equal(data.getChillingErrorCode(new Error('MEETUP_RECRUITING_CLOSED')), 'MEETUP_RECRUITING_CLOSED');
+  assert.match(data.getChillingError(new Error('MEETUP_RECRUITING_CLOSED')), /새 참여 신청을 받지 않아요/);
 });

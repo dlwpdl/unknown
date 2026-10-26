@@ -5,13 +5,14 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import * as data from '../src/lib/chilling-data.ts';
 import { CITIES } from '../src/lib/mock.ts';
+import { translateUi } from '../src/i18n/index.ts';
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
-const saved = { version: 2, revision: 'saved', displayName: '산책친구', cityId: 'vancouver', intro: '주말에 걸어요', interests: ['산책'], promptOne: '함께 걸어요', promptTwo: '느긋하게', promptOneId: 'meet', promptTwoId: 'join', photoPaths: [], publicPhotoPath: null, shareWithMembers: false, preferences: { activities: [], availability: '', pace: 'any' } };
+export const saved = { version: 2, revision: 'saved', displayName: '산책친구', cityId: 'vancouver', intro: '주말에 걸어요', interests: ['산책'], promptOne: '함께 걸어요', promptTwo: '느긋하게', promptOneId: 'meet', promptTwoId: 'join', photoPaths: [], publicPhotoPath: null, shareWithMembers: false, preferences: { activities: [], availability: '', pace: 'any' } };
 const owner = '00000000-0000-4000-8000-000000000001';
-function profile(value, { upload, failSave = true } = {}) {
+export function profile(value, { upload, failSave = true, language = 'ko', theme = {} } = {}) {
   const slots = [], effects = [], writes = [], routes = [], uploads = [], cleanup = [];
-  let at = 0, actor = owner, focused, focusCleanup;
+  let at = 0, actor = owner, focused, focusCleanup, guard;
   const effect = (fn, deps) => { const i = at++, previous = slots[i]; if (!previous || deps.some((dep, index) => dep !== previous.deps[index])) { slots[i] = { deps }; effects.push(() => { previous?.cleanup?.(); slots[i].cleanup = fn(); }); } };
   const react = {
     useState(initial) { const i = at++; if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial; return [slots[i], next => { slots[i] = typeof next === 'function' ? next(slots[i]) : next; }]; },
@@ -23,11 +24,11 @@ function profile(value, { upload, failSave = true } = {}) {
     react,
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { View: 'View', TextInput: 'Input', KeyboardAvoidingView: 'KeyboardAvoidingView', Modal: 'Modal', StyleSheet: { create: x => x }, Platform: { OS: 'web' }, Keyboard: { dismiss() {} } },
-    'expo-router': { useLocalSearchParams: () => ({}), useFocusEffect: fn => { focused = fn; }, useRouter: () => ({ canGoBack: () => true, back: () => routes.push('back') }) },
+    'expo-router': { usePreventRemove: when => { guard = when; }, useLocalSearchParams: () => ({}), useFocusEffect: fn => { focused = fn; }, useRouter: () => ({ canGoBack: () => true, back: () => routes.push('back') }) },
     'expo-image-picker': { UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' }, launchImageLibraryAsync: async () => ({ canceled: false, assets: [{ uri: 'fixture-photo' }] }) },
     'react-native-reanimated': { useReducedMotion: () => true },
-    '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: (s, ...args) => s.replace(/\{(\d+)\}/g, (_, i) => args[i]) }) },
-    '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/hooks/use-language': { useLanguage: () => ({ language, tr: (s, ...args) => translateUi(language, s, ...args) }) },
+    '@/hooks/use-theme': { useTheme: () => theme },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: actor, cityId: 'vancouver' } }) },
     '@/lib/chilling-data': { ...data, loadChillingProfile: async () => value, getChillingError: () => '저장하지 못했어요. 다시 시도해 주세요.' },
     '@/lib/supabase': { supabase: { rpc: async (name, args) => { assert.equal(name, 'save_chilling_profile'); writes.push(args.p_profile); return { data: null, error: failSave ? Error('save failed') : null }; } } },
@@ -40,7 +41,7 @@ function profile(value, { upload, failSave = true } = {}) {
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/app/meetup-profile.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
     exports, require: name => imports[name] ?? new Proxy({}, { get: (_, key) => String(key) }),
   });
-  return { writes, routes, uploads, cleanup, setAccount: id => { actor = id; }, focus: () => { focusCleanup = focused?.(); }, blur: () => focusCleanup?.(), unmount: () => { focusCleanup?.(); slots.forEach(slot => slot?.cleanup?.()); }, render() { at = 0; const route = exports.default(), result = route.type(route.props); effects.splice(0).forEach(fn => fn()); return result; } };
+  return { writes, routes, uploads, cleanup, guarded: () => guard, setAccount: id => { actor = id; }, focus: () => { focusCleanup = focused?.(); }, blur: () => focusCleanup?.(), unmount: () => { focusCleanup?.(); slots.forEach(slot => slot?.cleanup?.()); }, render() { at = 0; const route = exports.default(), result = route.type(route.props); effects.splice(0).forEach(fn => fn()); return result; } };
 }
 
 test('a complete account meetup profile opens its existing review and keeps save failures at the fixed CTA', async () => {
@@ -92,9 +93,19 @@ test('photo completion saves only in the original live scope, never after accoun
     if (leave === 'account') { app.unmount(); app.setAccount('00000000-0000-4000-8000-000000000002'); }
     else if (leave === 'refocus') { app.blur(); app.focus(); }
     finishUpload(`${owner}/new-photo.webp`); await new Promise(setImmediate);
-    assert.equal(app.cleanup.length, 0);
+    assert.deepEqual(JSON.parse(JSON.stringify(app.cleanup)), leave === 'stay' ? [] : [[`${owner}/new-photo.webp`]], 'An abandoned save removes the photo it already uploaded.');
     assert.equal(app.writes.length, leave === 'stay' ? 1 : 0);
     assert.deepEqual(app.routes, leave === 'stay' ? ['back'] : []);
     if (leave === 'stay') assert.equal(app.writes[0].publicPhotoPath, null, 'Saving a photo must not select it for public sharing.');
   }
+});
+
+test('leaving an edited own profile asks first, an untouched one leaves freely', async () => {
+  const app = profile(saved); app.render(); await new Promise(setImmediate);
+  app.render(); app.render();
+  assert.equal(app.guarded(), false, 'The loaded profile itself is not an unsaved change.');
+  for (let i = 0; i < 4; i++) nodes(app.render()).find(node => node.props?.analyticsId === 'app_meetup-profile.pressable.1').props.onPress();
+  nodes(app.render()).find(node => node.props?.accessibilityLabel === '모임에서 쓸 이름').props.onChangeText('새 이름');
+  app.render();
+  assert.equal(app.guarded(), true);
 });

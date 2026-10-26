@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { chillingCountdown, chillingKind, chillingSchedule, configureChillingEvent, normalizeChillingEvent } from '../src/lib/chilling.ts';
+import { chillingCountdown, chillingKind, chillingSchedule, chillingTimezoneLabel, configureChillingEvent, normalizeChillingEvent, shiftChillingSchedule } from '../src/lib/chilling.ts';
 
 test('legacy rooms stay persistent; explicit one-off events have their own category', () => {
   assert.equal(chillingKind({}), 'group');
@@ -19,6 +19,18 @@ test('admission availability separates event expiry, closure and a full host-inc
   assert.equal(chillingAvailability({ memberCount: 1 }, now), 'open');
 });
 
+test('meetup detail bar keeps one action: host review, my request, apply, or a disabled state', async () => {
+  const { meetupBarAction } = await import('../src/lib/chilling.ts');
+  const bar = (state) => meetupBarAction({ own: false, participating: false, loading: false, availability: 'open', ...state });
+  assert.deepEqual(bar({ own: true, availability: 'ended' }), { action: 'review', label: '신청자 검토', disabled: false, busy: false });
+  assert.deepEqual(bar({ loading: true }), { action: null, label: '확인 중…', disabled: true, busy: true });
+  assert.equal(bar({ participating: true, availability: 'full' }).action, 'status', 'an applicant can still open their request when full');
+  assert.equal(bar({}).action, 'apply');
+  for (const [availability, label] of [['full', '정원 마감'], ['closed', '모집 마감'], ['ended', '종료된 모임']]) {
+    assert.deepEqual(bar({ availability }), { action: null, label, disabled: true, busy: false });
+  }
+});
+
 test('countdown marks today, tomorrow and later one-off starts only', () => {
   const now = new Date('2026-09-22T09:00:00').getTime();
   assert.equal(chillingCountdown({ eventKind: 'once', startsAt: '2026-09-22T23:00:00' }, now), '오늘');
@@ -32,7 +44,8 @@ test('countdown marks today, tomorrow and later one-off starts only', () => {
 test('one-off time is formatted in the event timezone and persistent cadence stays distinct', () => {
   assert.match(chillingSchedule({ eventKind: 'once', startsAt: '2026-09-26T17:00:00Z', timezone: 'America/Vancouver' }), /9월 26일.*10:00/);
   assert.equal(chillingSchedule({ eventKind: 'group', cadence: '매주 토요일' }), '매주 토요일');
-  assert.equal(chillingSchedule({}), '지속 모임');
+  assert.equal(chillingSchedule({}), '일정은 모임에서 정해요');
+  assert.equal(chillingSchedule({}, 'en-CA'), 'Schedule set in the group');
   assert.equal(chillingSchedule({ eventKind: 'once', startsAt: 'invalid', timezone: 'bad' }), '일정 확인 필요');
   assert.match(chillingSchedule({ eventKind: 'once', startsAt: '2026-09-26T17:00:00Z', endsAt: '2026-09-27T19:00:00Z', timezone: 'America/Vancouver' }), /9월 26일.*10:00.*9월 27일.*12:00/);
 });
@@ -88,4 +101,21 @@ test('recommended ages validate whole inclusive bounds and never imply an admiss
   assert.match(recommendedAgeMessage(room, 39), /권장 연령대에 해당/);
   assert.match(recommendedAgeMessage(room, 40), /달라도 신청/);
   assert.match(recommendedAgeMessage(room, null), /없어도 신청/);
+});
+
+test('same-day schedules show the date once and zones read as names, not IANA ids', () => {
+  const room = { eventKind: 'once', startsAt: '2026-06-12T17:00:00Z', endsAt: '2026-06-12T19:00:00Z', timezone: 'America/Vancouver' };
+  const ko = chillingSchedule(room, 'ko-KR');
+  assert.equal((ko.match(/6월 12일/g) ?? []).length, 1, ko);
+  assert.match(ko, /– 12:00$/);
+  assert.equal((chillingSchedule({ ...room, endsAt: '2026-06-13T19:00:00Z' }, 'ko-KR').match(/6월/g) ?? []).length, 2);
+  assert.doesNotMatch(chillingTimezoneLabel(room, 'ko-KR'), /America\//);
+  assert.equal(chillingTimezoneLabel({ eventKind: 'once' }, 'ko-KR'), null);
+});
+
+test('moving a start keeps the chosen duration and leaves an unreadable schedule for validation', () => {
+  const draft = { startsAt: '2099-09-26T17:00:00.000Z', endsAt: '2099-09-26T19:30:00.000Z' };
+  assert.deepEqual(shiftChillingSchedule(draft, '2099-09-27T09:00:00.000Z'), { startsAt: '2099-09-27T09:00:00.000Z', endsAt: '2099-09-27T11:30:00.000Z' });
+  assert.deepEqual(shiftChillingSchedule(draft, ''), { startsAt: '', endsAt: draft.endsAt });
+  assert.deepEqual(shiftChillingSchedule({ ...draft, endsAt: '' }, '2099-09-27T09:00:00.000Z'), { startsAt: '2099-09-27T09:00:00.000Z', endsAt: '' });
 });

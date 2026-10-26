@@ -69,6 +69,10 @@ function renderDetail(post, { isAuthed = true, hidden = false } = {}) {
     '@/lib/post-photo-credits': { splitPostPhotoCredits },
     '@/lib/post-maps': maps,
     '@/lib/promotions': { PROMOTIONS_PREVIEW_ENABLED: false },
+    '@/components/chilling-host-profile': { useMeetupParticipation: () => ({ own: false, participation: null, statusLoading: false, statusError: '', retry() {} }),
+      MeetupActionBar: 'MeetupActionBar', MeetupChips: 'MeetupChips', MeetupNotes: 'MeetupNotes', MeetupSummary: 'MeetupSummary' },
+    '@/lib/meetup-destination': { splitPlaceMeetupBody: () => null },
+    '../../supabase/functions/_shared/ticketmaster': { ticketmasterReference: () => null },
   };
   vm.runInNewContext(source, { exports, require: withLanguageImports(name => imports[name] ?? new Proxy({}, { get: (_target, key) => key })) });
   const wrapper = exports.PostDetail({ post, onClose() {} });
@@ -99,4 +103,20 @@ test('address section is limited to visible authenticated housing listings', () 
   const guest = renderDetail(post, { isAuthed: false });
   assert.ok(!nodes(guest).some(node => node.type === 'PostCard'));
   assert.ok(!JSON.stringify(guest).includes('1100 Chestnut Street'));
+});
+
+test('a meetup detail shows one action bar instead of the comment composer while other posts keep the composer', () => {
+  const meetup = { ...listing('소개'), id: 'meetup', kind: 'story', tag: { slug: 'meetup', kind: 'meetup', label: '모임' },
+    room: { id: 'room', title: '모임', memberCount: 1, capacity: 10, verifiedOnly: false, eventKind: 'group' } };
+  const tree = renderDetail(meetup);
+  assert.ok(nodes(tree).some(node => node.type === 'MeetupActionBar'));
+  assert.ok(!nodes(tree).some(node => node.type === 'TextInput'), 'the composer opens only after 질문 남기기, a reply or an edit');
+  assert.ok(nodes(tree).find(node => node.type === 'PostCard').props.meetupDetail);
+  const plain = renderDetail(listing(prose));
+  assert.ok(!nodes(plain).some(node => ['MeetupActionBar', 'MeetupNotes'].includes(node.type)));
+  assert.ok(nodes(plain).some(node => node.type === 'TextInput'));
+  assert.equal(nodes(plain).find(node => node.type === 'PostCard').props.meetupDetail, undefined);
+  assert.equal(nodes(plain).find(node => node.type === 'PostCard').props.postDetail, true);
+  assert.deepEqual(nodes(plain).filter(node => node.type === 'PostReactionToggle').map(node => node.props.kind), ['like', 'save'], 'like and save sit beside the comment input');
+  assert.deepEqual(nodes(tree).filter(node => node.type === 'PostReactionToggle').map(node => node.props.kind), ['save'], 'meetups keep only the header save');
 });

@@ -1,6 +1,7 @@
 import { behavior } from './behavior-analytics.ts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { chillingAvailability } from './chilling.ts';
 import { hideContent } from './content-visibility.ts';
 import { isThumbPath, MAX_IMAGE_BYTES, MAX_POST_IMAGES, thumbPathFor } from './image-upload.ts';
 import { normalizePoll, type PollDraft } from './post-polls.ts';
@@ -106,7 +107,7 @@ export type MeetupRequest = {
   post: { title: string; room?: RoomPreview | null } | null;
 };
 
-export type MyMeetup = { id: string; authorId: string; title: string; cityId: string; room: RoomPreview; role: 'host' | MeetupRequest['status']; conversationId: string | null };
+export type MyMeetup = { id: string; authorId: string; title: string; cityId: string; room: RoomPreview; role: 'host' | MeetupRequest['status'] | 'closed'; conversationId: string | null };
 
 export type ProfileSummary = {
   cityId: string;
@@ -436,8 +437,11 @@ export async function endConversation(client: SupabaseClient, conversationId: st
   if (result.error) throw result.error;
 }
 
-export async function sendDirectMessage(client: SupabaseClient, conversationId: string, body: string, replyToId?: string | null) {
-  const result = replyToId ? await client.rpc('send_message_v2', {
+export async function sendDirectMessage(client: SupabaseClient, conversationId: string, body: string, replyToId?: string | null, clientId?: string) {
+  // A retry with the same client id returns the first message instead of posting twice.
+  const result = clientId ? await client.rpc('send_message_v3', {
+    p_conversation_id: conversationId, p_client_id: clientId, p_body: body.trim(), p_reply_to_id: replyToId ?? null,
+  }) : replyToId ? await client.rpc('send_message_v2', {
     p_conversation_id: conversationId, p_body: body.trim(), p_reply_to_id: replyToId,
   }) : await client.rpc('send_message', {
     conversation_id: conversationId,
@@ -467,6 +471,22 @@ export async function loadChatReadPosition(client: SupabaseClient, conversationI
 
 export async function markChatRead(client: SupabaseClient, conversationId: string, messageId: string) {
   const result = await client.rpc('mark_chat_read', { p_conversation_id: conversationId, p_message_id: messageId });
+  if (result.error) throw result.error;
+}
+
+export async function loadMeetupHistoryAccess(client: SupabaseClient, postId: string) {
+  const result = await client.from('meetup_requests').select('requester_id, share_history').eq('post_id', postId).eq('status', 'approved');
+  if (result.error) throw result.error;
+  return new Map((result.data as { requester_id: string; share_history: boolean }[]).map(row => [row.requester_id, row.share_history]));
+}
+
+export async function setMeetupHistoryAccess(client: SupabaseClient, postId: string, userId: string, share: boolean) {
+  const result = await client.rpc('set_meetup_history_access', { p_post_id: postId, p_user_id: userId, p_share: share });
+  if (result.error) throw result.error;
+}
+
+export async function removeMeetupMember(client: SupabaseClient, postId: string, userId: string) {
+  const result = await client.rpc('remove_meetup_member', { p_post_id: postId, p_user_id: userId });
   if (result.error) throw result.error;
 }
 
@@ -534,7 +554,7 @@ export async function loadConversations(client: SupabaseClient, userId: string, 
   if (result.error) throw result.error;
   const page = result.data as { items: Row[]; pending_count: number; cursor: ConversationCursor | null; selected: Row | null };
   const groupIds = [...new Set([...page.items, page.selected].flatMap((row) => row?.group_post_id ? [row.group_post_id] : []))];
-  const categories = new Map<string, string>();
+  const categories = new Map<string, string>(), closed = new Set<string>();
   if (groupIds.length) {
     // Category is saved on the meetup post; a metadata read must not hide the inbox.
     try {
@@ -542,6 +562,7 @@ export async function loadConversations(client: SupabaseClient, userId: string, 
       for (const post of data ?? []) {
         const category = post.room_preview?.category;
         if (typeof category === 'string') categories.set(post.id, category);
+        if (post.room_preview?.closed === true) closed.add(post.id);
       }
     } catch { /* Titles still identify rooms when post metadata is unavailable. */ }
   }
@@ -550,7 +571,8 @@ export async function loadConversations(client: SupabaseClient, userId: string, 
     return row.kind === 'business' ? mapBusinessConversation(row, userId, asBusinessId) : ({
     id: row.id,
     kind: row.kind,
-    status: row.status,
+    // The server refuses sends to an ended meetup's room, so it opens read-only like any ended chat.
+    status: row.group_post_id && closed.has(row.group_post_id) ? 'ended' : row.status,
     requesterId: row.requester_id,
     groupPostId: row.group_post_id,
     meetupCategory: row.group_post_id ? categories.get(row.group_post_id) ?? null : null,
@@ -562,7 +584,21 @@ export async function loadConversations(client: SupabaseClient, userId: string, 
   });
   };
   return { conversations: page.items.map(map), pendingCount: page.pending_count, cursor: page.cursor,
-    selectedConversation: page.selected ? map(page.selected) : null };
+    selectedConversation: page.selected ? map(page.selected) : conversationId && !asBusinessId ? await loadEndedMeetupRoom(client, userId, conversationId) : null };
+}
+
+// The inbox lists approved members only; a member whose host ended the meetup can still read its room, so a deep link opens it read-only.
+async function loadEndedMeetupRoom(client: SupabaseClient, userId: string, conversationId: string): Promise<ConversationPreview | null> {
+  try {
+    const room = await client.from('conversations').select('id,group_post_id,created_at').eq('id', conversationId).eq('kind', 'group').maybeSingle();
+    if (room.error || !room.data?.group_post_id) return null;
+    const post = await client.from('posts').select('title,author_id,room_preview').eq('id', room.data.group_post_id).maybeSingle();
+    if (post.error || post.data?.room_preview?.closed !== true) return null;
+    const category = post.data.room_preview.category;
+    return { id: room.data.id, kind: 'group', status: 'ended', requesterId: null, groupPostId: room.data.group_post_id,
+      meetupCategory: typeof category === 'string' ? category : null, title: post.data.title, isGroupHost: post.data.author_id === userId,
+      otherUser: { id: post.data.author_id, nickname: '', verificationLevel: 0 }, latestBody: null, latestAt: room.data.created_at };
+  } catch { return null; }
 }
 
 export async function loadConversationMessages(client: SupabaseClient, conversationId: string, before?: FeedCursor) {
@@ -685,9 +721,8 @@ export async function loadMyMeetups(client: SupabaseClient, userId: string): Pro
   const fields = 'id,author_id,title,city_id,status,room_preview';
   const [owned, requested, rooms] = await Promise.all([
     client.from('posts').select(fields).eq('author_id', userId).eq('status', 'published')
-      .not('room_preview', 'is', null).or('room_preview->>closed.is.null,room_preview->>closed.eq.false')
-      .order('created_at', { ascending: false }),
-    client.from('meetup_requests').select(`status,post:posts!meetup_requests_post_id_fkey(${fields})`)
+      .not('room_preview', 'is', null).order('created_at', { ascending: false }),
+    client.from('meetup_requests').select(`status,ended_with_meetup,post:posts!meetup_requests_post_id_fkey(${fields})`)
       .eq('requester_id', userId).in('status', ['approved', 'pending', 'rejected', 'cancelled'])
       .order('status').order('created_at', { ascending: false }),
     client.from('conversations').select('id,group_post_id').eq('kind', 'group').eq('status', 'active'),
@@ -698,13 +733,24 @@ export async function loadMyMeetups(client: SupabaseClient, userId: string): Pro
   const roomIds = new Map((rooms.data ?? []).map((room) => [room.group_post_id, room.id]));
   type Row = { id: string; author_id: string; title: string; city_id: string; status: string; room_preview: RoomPreview | null };
   const entries = [
-    ...((owned.data ?? []) as unknown as Row[]).map((post) => ({ post, role: 'host' as const })),
-    ...((requested.data ?? []) as unknown as { post: Row | null; status: MeetupRequest['status'] }[])
-      .map(({ post, status }) => ({ post, role: status })),
+    ...((owned.data ?? []) as unknown as Row[]).map((post) => ({ post, role: 'host' as const, endedWithMeetup: false })),
+    ...((requested.data ?? []) as unknown as { post: Row | null; status: MeetupRequest['status']; ended_with_meetup?: boolean }[])
+      .map(({ post, status, ended_with_meetup }) => ({ post, role: status, endedWithMeetup: ended_with_meetup === true })),
   ];
-  entries.sort((a, b) => Number(a.role === 'rejected' || a.role === 'cancelled') - Number(b.role === 'rejected' || b.role === 'cancelled'));
-  return entries.flatMap(({ post, role }) => post?.status === 'published' && post.room_preview && (!post.room_preview.closed || role === 'rejected' || role === 'cancelled')
-    ? [{ id: post.id, authorId: post.author_id, title: post.title, cityId: post.city_id, room: post.room_preview, role, conversationId: role === 'host' || role === 'approved' ? roomIds.get(post.id) ?? null : null }] : []);
+  // Ended meetups (host closed it, which cancels members, or a 칠링 past its end) read as 종료된 모임, not as the member's own cancellation.
+  const now = Date.now();
+  const resolved = entries.flatMap(({ post, role, endedWithMeetup }) => {
+    if (post?.status !== 'published' || !post.room_preview) return [];
+    const closed = post.room_preview.closed === true;
+    const ended = chillingAvailability(post.room_preview, now) === 'ended';
+    const status: MyMeetup['role'] = (closed && (role === 'host' || role === 'approved' || role === 'cancelled')) || (ended && (role === 'host' || role === 'approved')) ? 'closed' : role;
+    if (closed && status !== 'closed' && status !== 'rejected' && status !== 'cancelled') return [];
+    // Mirrors private.can_read_conversation: the host, approved members, and members who were approved when the host ended it keep a read-only room.
+    const readable = role === 'host' || role === 'approved' || (role === 'cancelled' && endedWithMeetup && closed);
+    return [{ id: post.id, authorId: post.author_id, title: post.title, cityId: post.city_id, room: post.room_preview, role: status, conversationId: readable ? roomIds.get(post.id) ?? null : null }];
+  });
+  const rank = (role: MyMeetup['role']) => role === 'closed' ? 2 : role === 'rejected' || role === 'cancelled' ? 1 : 0;
+  return resolved.sort((a, b) => rank(a.role) - rank(b.role));
 }
 
 export async function leaveMeetup(client: SupabaseClient, postId: string) {

@@ -32,8 +32,9 @@ export function visibleTranslationSource(kind: TranslationKind, title: string | 
 export function needsContentTranslation(source: TranslationSource, language: TranslationLanguage) {
   const text = [source.title, source.body].filter(Boolean).join('\n')
     .replace(/https?:\/\/\S+|[\w.+-]+@[\w.-]+\.[A-Za-z]+|#[\p{L}\p{N}_]+/gu, '');
-  const korean = /[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af]/.test(text);
-  return language === 'en' ? korean : /[A-Za-z]/.test(text);
+  const korean = text.match(/[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af]+/g)?.length ?? 0;
+  // A Korean reader reads brand and place names in English fine; offer translation only when English carries the post.
+  return language === 'en' ? korean > 0 : (text.match(/[A-Za-z]{2,}/g)?.length ?? 0) >= Math.max(korean, 1);
 }
 
 const protectedValues = () => /https?:\/\/[^\s]+|[\w.+-]+@[\w.-]+\.[A-Za-z]+|@[\p{L}\p{N}_.-]+|#[\p{L}\p{N}_]+|(?:CA\$|C\$|US\$|\$|€|£|₩)\s*\d+(?:[.,]\d+)*|\d+(?:[.,:/-]\d+)*/gu;

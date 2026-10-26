@@ -13,7 +13,8 @@ import { getOAuthCode } from '../src/lib/kakao-auth.ts';
 import { hideContent, subscribeVisibility, visibilityRevision } from '../src/lib/content-visibility.ts';
 import { count, t } from '../src/i18n/ko.ts';
 import { uniqueHashtags } from '../src/lib/hashtags.ts';
-import { postMapBody } from '../src/lib/post-maps.ts';
+import { postLocationUrl, postMapBody } from '../src/lib/post-maps.ts';
+import { postInfoParts } from '../src/lib/post-info.ts';
 import { visibleTranslationSource } from './test-meetup-source-imports.mjs';
 import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
 import * as postLinks from '../supabase/functions/_shared/post-links.ts';
@@ -93,12 +94,13 @@ function mount(file, name, data = {}, props = {}) {
     '@/lib/post-reactions': postReactions,
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 } },
     '../../supabase/functions/_shared/post-links': postLinks, '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
+    '@/components/post-attachment-link': { PostAttachmentLink: 'PostAttachmentLink' }, '@/lib/post-info': { postInfoParts }, '@/lib/mock': { CITIES: [] },
     '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/components/manner-summary': { MannerSummary: 'MannerSummary' },
     '@/components/post-ad-label': { PostAdLabel: 'PostAdLabel' },
     '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' },
     '@/constants/theme': { Depth: {}, Spacing: { one: 4, two: 8, three: 16 } }, '@/i18n/ko': { count, t },
-    '@/lib/hashtags': { uniqueHashtags }, '@/lib/post-maps': { postMapBody }, '@/lib/meetup-ai': { visibleMeetupBody: body => body },
+    '@/lib/hashtags': { uniqueHashtags }, '@/lib/post-maps': { postLocationUrl, postMapBody }, '@/lib/meetup-ai': { visibleMeetupBody: body => body },
     '@/components/post-share-sheet': { PostShareSheet: 'PostShareSheet' }, '@/components/post-detail': { PostDetail: 'PostDetail' }, '@/components/shared-link-card': { SharedPreviewContent: 'SharedPreviewContent' },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/hooks/use-content-visibility': { useContentVisibility: () => data.hidden ?? unhidden },
     '@/hooks/use-chat-identity': { useChatIdentity: () => data.businessIdentity ?? null },

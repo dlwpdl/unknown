@@ -7,7 +7,8 @@ import ts from 'typescript';
 import { getPostImageSource } from '../src/lib/feed-data.ts';
 import { uniqueHashtags } from '../src/lib/hashtags.ts';
 import { count, t } from '../src/i18n/ko.ts';
-import { googleMapsPin, googleMapsUrl, postMapBody } from '../src/lib/post-maps.ts';
+import { googleMapsPin, googleMapsUrl, postLocationUrl, postMapBody } from '../src/lib/post-maps.ts';
+import { postInfoParts } from '../src/lib/post-info.ts';
 import { visibleTranslationSource } from './test-meetup-source-imports.mjs';
 import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
 import * as postLinks from '../supabase/functions/_shared/post-links.ts';
@@ -72,6 +73,9 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 } },
     '../../supabase/functions/_shared/post-links': postLinks,
     '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
+    '@/components/post-attachment-link': { PostAttachmentLink: 'PostAttachmentLink' },
+    '@/lib/post-info': { postInfoParts },
+    '@/lib/mock': { CITIES: [] },
     '@/components/post-pin-map': { PostPinMap: 'PostPinMap' },
     '@/components/post-share-sheet': { PostShareSheet: 'PostShareSheet' },
     '@/components/report-sheet': { ReportSheet: 'ReportSheet' },
@@ -84,7 +88,7 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     '@/lib/feed-data': { getPostImageSource },
     '@/lib/meetup-ai': {},
     '@/lib/hashtags': { uniqueHashtags },
-    '@/lib/post-maps': { googleMapsPin, googleMapsUrl, postMapBody },
+    '@/lib/post-maps': { googleMapsPin, googleMapsUrl, postLocationUrl, postMapBody },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: (kind) => feedback.push(kind) }) },
     '@/lib/sharing': {},
     '@/lib/product-analytics': product,
@@ -353,4 +357,19 @@ test('profile logo/banner failures retain only the business fallback and recover
  images.forEach(n=>n.props.onError());assert.equal(nodes(render()).filter(n=>n.type==='Image').length,0);
  assert.ok(nodes(render()).some(n=>n.type==='ThemedText'&&n.props.children==='지'));
  profile.avatarUri='new-logo';assert.equal(nodes(render()).find(n=>n.type==='Image').props.source.uri,'new-logo');
+});
+
+test('글 상세는 📍 주소·링크를 정보 카드로, 본문을 문단으로, 출처를 접어서 보여주고 반응 줄을 숨긴다', () => {
+  const card = cardRenderer();
+  const body = '첫 문단이에요.\n둘째 문단이에요.\n📍 847 Denman St, Vancouver\n\nhttps://www.instagram.com/handsonyvr/\n사진: Cody Briggs';
+  const tree = card.render({ post: { id: 'detail', title: 'HANDSON', body, cityId: 'vancouver',
+    author: { id: 'author', nickname: '작성자' }, tag: { kind: 'post', label: '맛집' }, likes: 0, saves: 0, comments: 0, views: 104 }, postDetail: true });
+  const bodyNode = nodes(tree).find(node => node.props?.paragraphs && node.props.body !== '');
+  assert.deepEqual(bodyNode.props.paragraphs, ['첫 문단이에요.', '둘째 문단이에요.']);
+  const map = nodes(tree).find(node => node.type === 'PostMapLink');
+  assert.equal(map.props.label, '847 Denman St, Vancouver');
+  assert.ok(new URL(map.props.url).searchParams.get('query').startsWith('847 Denman St'));
+  assert.deepEqual(nodes(tree).filter(node => node.type === 'PostAttachmentLink').map(node => [node.props.url, node.props.row]), [['https://www.instagram.com/handsonyvr/', true]]);
+  assert.ok(nodes(tree).some(node => node.props?.analyticsId === 'post.detail.credits'));
+  assert.ok(!nodes(tree).some(node => node.props?.analyticsId === 'components_post-card.pressable.7'), 'likes move to the bottom bar');
 });

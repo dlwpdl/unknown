@@ -1,9 +1,18 @@
 import type { Post } from './types.ts';
 import { chillingKind, type ChillingKind } from './chilling.ts';
-export function matchesChilling(post: Pick<Post, 'room'>, kind: ChillingKind, category: string, now = Date.now()) {
-  return !!post.room && !post.room.closed && chillingKind(post.room) === kind
+export type ChillingDiscoveryKind = ChillingKind | 'all';
+export type ChillingDiscoveryView = 'browse' | 'mine';
+export function parseChillingDiscoveryPreference(raw: string | null): { kind: ChillingDiscoveryKind; view: ChillingDiscoveryView } {
+  let value;
+  try { value = JSON.parse(raw ?? 'null'); } catch { /* Invalid local preferences fall back to the full list. */ }
+  return { kind: value?.kind === 'once' || value?.kind === 'group' ? value.kind : 'all', view: value?.view === 'mine' ? 'mine' : 'browse' };
+}
+export function chillingCreateKindParams(kind: ChillingDiscoveryKind) { return kind === 'all' ? {} : { kind }; }
+
+export function matchesChilling(post: Pick<Post, 'room'>, kind: ChillingDiscoveryKind, category: string, now = Date.now()) {
+  return !!post.room && !post.room.closed && (kind === 'all' || chillingKind(post.room) === kind)
     && (category === 'all' || post.room.category === category)
-    && !(kind === 'once' && post.room.endsAt && Date.parse(post.room.endsAt) <= now);
+    && !(chillingKind(post.room) === 'once' && post.room.endsAt && Date.parse(post.room.endsAt) <= now);
 }
 
 export type ChillingWindow = 'all' | 'today' | 'week';
@@ -24,8 +33,8 @@ export function hasOpenSeat(room?: Pick<Post, 'room'>['room']) {
 
 // D-day: 다가오는 일회성 모임을 먼저 보여준다. 정기모임은 서버 순서(최신 개설순)를 그대로 둔다.
 // ponytail: 페이지 안에서만 정렬한다. 한 페이지로 다음 모임을 다 못 담게 되면 서버 ORDER BY로 옮긴다.
-export function sortChillings(posts: Post[], kind: ChillingKind) {
-  if (kind === 'group') return posts;
+export function sortChillings(posts: Post[], kind: ChillingDiscoveryKind) {
+  if (kind !== 'once') return posts;
   const start = (post: Post) => { const value = post.room?.startsAt ? Date.parse(post.room.startsAt) : NaN; return Number.isFinite(value) ? value : Infinity; };
   return [...posts].sort((a, b) => start(a) - start(b) || String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')) || a.id.localeCompare(b.id));
 }

@@ -21,7 +21,7 @@ test('actual source renders at 320/1024 in light/dark KO/EN with usable controls
   const require = createRequire(import.meta.url), native = require('react-native-web');
   assert.ok(process.argv[2] && process.argv[3], 'Pass installed Playwright module path and Chrome executable');
   const { chromium } = require(process.argv[2]);
-  const directory = join(tmpdir(), 'meetup-host-tools-render');
+  const directory = process.argv[4] ?? join(tmpdir(), 'meetup-host-tools-render');
   mkdirSync(directory, { recursive: true });
   const browser = await chromium.launch({ executablePath: process.argv[3], headless: true });
   const captures = [];
@@ -53,6 +53,7 @@ test('actual source renders at 320/1024 in light/dark KO/EN with usable controls
         if (typeof node === 'string' || typeof node === 'number') return node;
         if (!node || typeof node !== 'object') return null;
         const { children, ...props } = node.props ?? {};
+        if (node.type === 'TextInput') return React.createElement(native.TextInput, { ...props, key: index });
         assert.ok(components[node.type], `Unknown node ${node.type}`);
         return React.createElement(components[node.type], { ...props, key: index }, ...[children].flat(Infinity).map(element));
       }
@@ -61,18 +62,22 @@ test('actual source renders at 320/1024 in light/dark KO/EN with usable controls
       const app = native.AppRegistry.getApplication(name, {});
       const html = `<!doctype html><html lang="${language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${renderToStaticMarkup(app.getStyleElement())}<style>body{margin:0;background:${theme.background};font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}main{max-width:680px;margin:auto;padding:16px;box-sizing:border-box}</style></head><body><main>${renderToStaticMarkup(app.element)}</main></body></html>`;
       const path = join(directory, `${language}-${mode}.html`); writeFileSync(path, html);
-      for (const width of [320, 1024]) {
+      for (const width of [320, 390, 1024]) for (const fontScale of [1, 1.6]) {
         const page = await browser.newPage({ viewport: { width, height: 900 }, deviceScaleFactor: 1 });
         await page.goto(pathToFileURL(path).href); await page.evaluate(() => document.fonts.ready);
+        if (fontScale !== 1) await page.evaluate(scale => {
+          const values = [...document.querySelectorAll('[dir="auto"],input,textarea,label')].map(element => ({ element, font: parseFloat(getComputedStyle(element).fontSize), line: parseFloat(getComputedStyle(element).lineHeight) }));
+          for (const { element, font, line } of values) { element.style.fontSize = `${font * scale}px`; if (Number.isFinite(line)) element.style.lineHeight = `${line * scale}px`; }
+        }, fontScale);
         const layout = await page.evaluate(() => ({ overflow: document.documentElement.scrollWidth > innerWidth,
           controls: [...document.querySelectorAll('[role="button"],[role="radio"],input')].map(element => ({
             label: element.getAttribute('aria-label') || element.textContent, height: element.getBoundingClientRect().height,
             width: element.getBoundingClientRect().width })) }));
         assert.equal(layout.overflow, false, `${language}/${mode}/${width} horizontal overflow`);
         assert.ok(layout.controls.every(control => control.height >= 44), JSON.stringify(layout));
-        const screenshot = join(directory, `${language}-${mode}-${width}.png`);
+        const screenshot = join(directory, `${language}-${mode}-${width}-${fontScale}.png`);
         await page.screenshot({ path: screenshot, fullPage: true }); await page.close();
-        captures.push({ language, mode, width, html: path, screenshot, layout });
+        captures.push({ language, mode, width, fontScale, html: path, screenshot, layout });
       }
     }
     const sourceHashes = Object.fromEntries(['meetup-host-tools', 'meetup-template-picker'].map(filename => [filename,

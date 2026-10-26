@@ -8,6 +8,7 @@ import { chillingProfilePreview } from '../src/lib/chilling-data.ts';
 import { meetupAllowed, isFestivalEvent, ticketmasterReference } from '../supabase/functions/_shared/ticketmaster.ts';
 import * as designSystem from '../src/constants/design-system.ts';
 import * as chilling from '../src/lib/chilling.ts';
+import { translateUi, translationsFor } from '../src/i18n/index.ts';
 
 import { splitEventMeetupBody, visibleMeetupBody, meetupDestination } from './test-meetup-source-imports.mjs';
 
@@ -32,9 +33,9 @@ test('event meetup descriptions hide saved references while keeping old and new 
 });
 
 const generated = { categorySlug: 'meetup', title: '함께 산책해요', body: '편하게 걸으며 이야기해요.', hashtags: [], purpose: '이웃과 알아가요.', activities: ['인사를 나눠요.', '편한 속도로 걸어요.'], fit: '산책을 좋아하는 분', preparation: [], applicationQuestion: '어떤 산책을 좋아하세요?' };
-const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
+export const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 
-function form({ params = {}, sourceEvent, catalogReady = true, membership = {}, loadProfile, create } = {}) {
+export function form({ params = {}, sourceEvent, catalogReady = true, membership = {}, loadProfile, create, chooseKind = true, language = 'ko', themeOverride } = {}) {
   const slots = [], requests = [], writes = [], feedback = [], layouts = [], effects = [], alerts = [], routes = [], profileReads = [], updates = [], events = [];
   let at = 0, focused, focusCleanup;
   let catalog = catalogReady ? JSON.parse(readFileSync(new URL('../src/lib/city-places.catalog.json', import.meta.url), 'utf8')) : null;
@@ -50,8 +51,8 @@ function form({ params = {}, sourceEvent, catalogReady = true, membership = {}, 
   let hostProfile = { version: 2, revision: 'revision-one', displayName: '호스트', cityId: 'vancouver', intro: '함께 걸어요', interests: ['산책'], promptOne: '이야기해요', promptTwo: '편한 모임', photoPaths: [], publicPhotoPath: null };
   const slot = initial => { const i = at++; if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial; return i; };
   const jsx = (type, props) => ({ type, props });
-  const theme = { text: '#F6F3F0', background: '#0B0B12', backgroundElement: '#222231', backgroundSelected: '#343443', card: '#171722', line: '#343443', textSecondary: '#B7B4C3', accent: '#CBB9FF', accentDepth: '#8169B1', accentInk: '#171123' };
-  const t = { write: { creatingDraft: '만드는 중…', polishDraft: 'AI로 다듬기', createDraft: 'AI로 초안 만들기', reviewDraft: '초안을 확인해 주세요.', aiErrorTitle: '초안 오류', aiErrorBody: '다시 시도해 주세요.' }, actionErrors: {} };
+  const theme = themeOverride ?? { text: '#F6F3F0', background: '#0B0B12', backgroundElement: '#222231', backgroundSelected: '#343443', card: '#171722', line: '#343443', textSecondary: '#B7B4C3', accent: '#CBB9FF', accentDepth: '#8169B1', accentInk: '#171123' };
+  const t = translationsFor(language);
   const imports = {
     react: {
       useCallback: callback => callback,
@@ -68,9 +69,9 @@ function form({ params = {}, sourceEvent, catalogReady = true, membership = {}, 
     },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { View: 'View', TextInput: 'TextInput', KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'web' }, StyleSheet: { create: x => x, hairlineWidth: 1 }, Alert: { alert: (...args) => alerts.push(args) }, DeviceEventEmitter: { emit: value => events.push(value) } },
-    'expo-router': { useLocalSearchParams: () => params, useFocusEffect: callback => { focused = callback; }, useRouter: () => ({ replace: path => routes.push(path), push: path => routes.push(path) }) },
+    'expo-router': { useLocalSearchParams: () => params, useFocusEffect: callback => { focused = callback; }, usePreventRemove() {}, useRouter: () => ({ replace: path => routes.push(path), push: path => routes.push(path) }) },
     'react-native-reanimated': { useReducedMotion: () => true },
-    '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: s => s, t }) },
+    '@/hooks/use-language': { useLanguage: () => ({ language, tr: (s, ...args) => translateUi(language, s, ...args), t }) },
     '@/hooks/use-theme': { useTheme: () => theme },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: 'host' }, isAdmin: false }) },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'vancouver', name: '밴쿠버' } }) },
@@ -100,15 +101,46 @@ function form({ params = {}, sourceEvent, catalogReady = true, membership = {}, 
   const render = () => { at = 0; return exports.default().type(); };
   render(); const unmount = layouts[0]?.();
   const find = key => nodes(render()).find(n => n.props?.analyticsId === key || n.props?.accessibilityLabel === key);
-  const edit = (label, value) => { const input = find(label); assert.ok(input, label); input.props.onChangeText(value); };
+  const openAssistance = () => { const toggle = find('meetup-create.assistance'); if (toggle && !toggle.props.accessibilityState.expanded) toggle.props.onPress(); };
+  const edit = (label, value) => { if (label === '모임 주제') openAssistance(); const input = find(label); assert.ok(input, label); input.props.onChangeText(value); };
+  if (chooseKind) nodes(render()).find(node => node.type === 'MeetupKindSwitch')?.props.onChange('once');
   const flushEffects = () => effects.splice(0).forEach(effect => effect());
-  return { render, find, edit, requests, writes, feedback, alerts, routes, profileReads, updates, events, unmount: () => { focusCleanup?.(); unmount?.(); }, focus: () => { focusCleanup?.(); focusCleanup = focused?.(); }, blur: () => focusCleanup?.(), loadEvent: flushEffects, changeProfileRevision: revision => { hostProfile = { ...hostProfile, revision }; }, removeProfile: () => { hostProfile = null; },
+  return { render, find, edit, openAssistance, requests, writes, feedback, alerts, routes, profileReads, updates, events, unmount: () => { focusCleanup?.(); unmount?.(); }, focus: () => { focusCleanup?.(); focusCleanup = focused?.(); }, blur: () => focusCleanup?.(), loadEvent: flushEffects, changeProfileRevision: revision => { hostProfile = { ...hostProfile, revision }; }, removeProfile: () => { hostProfile = null; },
     hydrateCatalog: () => { catalog = JSON.parse(readFileSync(new URL('../src/lib/city-places.catalog.json', import.meta.url), 'utf8')); render(); flushEffects(); },
     preview: () => nodes(render()).find(n => typeof n.type === 'string' && n.type === 'MeetupAiDraftPreview'),
-    generate: () => { find('app_meetup-create.ai-draft').props.onPress(); },
+    generate: () => { openAssistance(); find('app_meetup-create.ai-draft').props.onPress(); },
   };
 }
 const settle = () => new Promise(setImmediate);
+
+test('generic creation requires an explicit type, while a valid type handoff initializes the form', async () => {
+  const app = form({ chooseKind: false });
+  assert.equal(nodes(app.render()).find(node => node.type === 'MeetupKindSwitch').props.value, null);
+  app.edit('모임 제목', '산책'); app.edit('모임 소개', '함께 걸어요');
+  app.find('app_meetup-create.pressable.4').props.onPress(); await settle();
+  assert.equal(app.writes.length, 0); assert.equal(app.profileReads.length, 0);
+  assert.ok(nodes(app.render()).some(node => node.props?.accessibilityRole === 'alert'));
+  nodes(app.render()).find(node => node.type === 'MeetupKindSwitch').props.onChange('group');
+  assert.equal(nodes(app.render()).find(node => node.type === 'MeetupKindSwitch').props.value, 'group');
+  const handoff = form({ params: { kind: 'group' }, chooseKind: false });
+  assert.equal(nodes(handoff.render()).find(node => node.type === 'MeetupKindSwitch').props.value, 'group');
+  assert.ok(handoff.find('활동 주기'));
+  const malformed = form({ params: { kind: ['once', 'group'] }, chooseKind: false });
+  assert.equal(nodes(malformed.render()).find(node => node.type === 'MeetupKindSwitch').props.value, null);
+});
+
+test('host form starts with readable sections while optional help and advanced settings remain accessible', () => {
+  const app = form(), tree = app.render();
+  const headings = nodes(tree).filter(node => node.props?.accessibilityRole === 'header');
+  assert.ok(headings.some(node => node.props.children === '01. 어떤 모임인가요?'));
+  assert.ok(headings.some(node => node.props.children === '02. 언제, 어디서 만나요?'));
+  assert.ok(headings.some(node => node.props.children === '내 모임 프로필'));
+  assert.equal(app.find('app_meetup-create.ai-draft'), undefined);
+  app.openAssistance(); assert.ok(app.find('app_meetup-create.ai-draft'));
+  assert.equal(app.find('권장 최소 나이, 만 나이'), undefined);
+  app.find('meetup-create.advanced').props.onPress(); assert.ok(app.find('권장 최소 나이, 만 나이'));
+  assert.equal(app.writes.length, 0);
+});
 
 test('returning from the shared meetup-profile editor refreshes consent without replacing the meetup draft', async () => {
   const app = form();
@@ -142,9 +174,9 @@ test('invalid capacity is shown at the input and fixed CTA, focuses that input, 
   app.find('app_meetup-create.pressable.4').props.onPress(); await settle();
   assert.deepEqual(moves, [640, 'focus']);
   const result = app.render();
-  assert.ok(nodes(result).filter(node => node.props?.accessibilityRole === 'alert').length >= 2, 'Field error and fixed-footer error must both be visible in their own regions.');
+  assert.equal(nodes(result).filter(node => node.props?.accessibilityRole === 'alert').length, 1, 'A field-owned error is announced once, at its field.');
   const footer = nodes(result).find(node => node.type === 'View' && node.props?.children?.some?.(child => child?.props?.analyticsId === 'app_meetup-create.pressable.4'));
-  assert.ok(nodes(footer).some(node => node.props?.accessibilityRole === 'alert'));
+  assert.equal(nodes(footer).some(node => node.props?.accessibilityRole === 'alert'), false);
   assert.equal(app.alerts.length, 0); assert.equal(app.writes.length, 0);
 });
 
@@ -176,7 +208,7 @@ test('profile preview reads resolving after blur or unmount cannot update the pr
   assert.equal(app.writes.length, 0); assert.equal(app.routes.length, 0);
 });
 
-test('a created meetup response cannot navigate or celebrate a form that blurred, refocused, or unmounted', async () => {
+test('a created meetup response cannot navigate or celebrate a form that blurred, refocused, or unmounted, but still refreshes lists', async () => {
   for (const leave of ['blur', 'refocus', 'unmount']) {
     let resolve;
     const app = form({ create: () => new Promise(done => { resolve = done; }) });
@@ -189,7 +221,7 @@ test('a created meetup response cannot navigate or celebrate a form that blurred
     resolve('created-server-post'); await settle();
     assert.deepEqual(app.routes, []);
     assert.equal(app.feedback.includes('meetupCreated'), false);
-    assert.deepEqual(app.events, []);
+    assert.deepEqual(app.events, ['meetups.changed'], 'The meetup exists, so lists refresh even after the host left.');
     assert.equal(app.writes.length, 1, 'The completed server post is neither deleted nor dispatched again.');
   }
 });
@@ -325,6 +357,41 @@ test('an applied outline longer than 1000 characters can be refined without trun
   assert.equal(app.requests[0].args[1].body.bodyHint, introduction);
 });
 
+test('the schedule waits for a chosen kind and a loaded event, keeps its duration and rejects a past start', async () => {
+  const dates = app => nodes(app.render()).filter(n => n.type === 'ChillingDateInput');
+  const generic = form({ chooseKind: false });
+  assert.equal(dates(generic).length, 0); assert.equal(nodes(generic.render()).some(n => n.type === 'MeetupPolicyNotice'), false);
+  nodes(generic.render()).find(n => n.type === 'MeetupKindSwitch').props.onChange('once');
+  const [start, end] = dates(generic);
+  assert.ok([start, end].every(n => Math.abs(n.props.minimumDate.getTime() - Date.now()) < 60000), 'Pickers cannot offer past times.');
+  const duration = Date.parse(end.props.value) - Date.parse(start.props.value);
+  const later = new Date(Date.parse(start.props.value) + 3 * 86400000).toISOString();
+  start.props.onChange(later);
+  assert.equal(Date.parse(dates(generic)[1].props.value) - Date.parse(later), duration);
+  dates(generic)[0].props.onChange(new Date(Date.now() - 3600000).toISOString());
+  generic.find('app_meetup-create.pressable.4').props.onPress(); await settle();
+  assert.equal(generic.writes.length, 0); assert.equal(generic.profileReads.length, 0);
+  assert.equal(nodes(generic.render()).filter(n => n.props?.accessibilityRole === 'alert').length, 1);
+
+  const sourceEvent = { id: 'event-race', name: 'Race Festival', country: 'CA', status: 'onsale', startsAt: new Date(Date.now() + 7 * 86400000).toISOString(), ticketUrl: 'https://ticketmaster.ca/example', timeUnconfirmed: false };
+  const event = form({ params: { ticketmasterEventId: sourceEvent.id, ticketmasterCityId: 'vancouver' }, sourceEvent });
+  assert.ok(dates(event).every(n => n.props.disabled), 'Pickers stay locked until the event prefill lands.');
+  assert.equal(nodes(event.render()).some(n => n.props?.children === '모임 종료는 행사 시작 2시간 뒤로 임시 설정했어요. 실제 만날 시간과 종료 시간을 확인해 주세요.'), false);
+  event.loadEvent(); await settle();
+  assert.ok(dates(event).every(n => !n.props.disabled));
+  assert.equal(dates(event)[0].props.value, sourceEvent.startsAt);
+});
+
+test('English hosts get an English event invitation with the fixed reference tail', () => {
+  const bridge = ts.createSourceFile('ticketmaster.ts', readFileSync(new URL('../src/lib/ticketmaster.ts', import.meta.url), 'utf8'), ts.ScriptTarget.Latest, true);
+  const out = {};
+  vm.runInNewContext(ts.transpileModule(bridge.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'eventMeetupDraft').getText(bridge), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, { exports: out, meetupAllowed: () => true, eventNotice: () => '', Date });
+  const event = { id: 'EV_9', name: 'Night Market', startsAt: '2030-01-02T00:00:00Z' };
+  assert.deepEqual([out.eventMeetupDraft(event, 'en').title, out.eventMeetupDraft(event, 'en').body], ["Let's go to Night Market", "I'd like to go to Night Market. Who's in?\n\n행사 ID: EV_9"]);
+  assert.deepEqual([out.eventMeetupDraft(event).title, out.eventMeetupDraft(event).body], ['Night Market 같이 가요', 'Night Market, 함께 가실 분을 찾아요.\n\n행사 ID: EV_9']);
+  assert.deepEqual(splitEventMeetupBody(out.eventMeetupDraft(event, 'en').body), { intro: "I'd like to go to Night Market. Who's in?", details: '\n\n행사 ID: EV_9' });
+});
+
 test('the event bridge preserves its seeded schedule and saved source when applying and publishing an invitation', async () => {
   const sourceEvent = { id: 'event-example', name: 'Example Festival', country: 'CA', status: 'onsale', startsAt: new Date(Date.now() + 7 * 86400000).toISOString(), ticketUrl: 'https://ticketmaster.ca/example', timeUnconfirmed: false };
   const app = form({ params: { ticketmasterEventId: sourceEvent.id, ticketmasterCityId: 'vancouver' }, sourceEvent });
@@ -376,7 +443,7 @@ test('an imported event rejects an oversized template atomically and keeps the e
   const sourceEvent = { id: 'event-budget', name: 'Festival', country: 'CA', status: 'onsale', startsAt: new Date(Date.now() + 7 * 86400000).toISOString(), ticketUrl: 'https://ticketmaster.ca/example', timeUnconfirmed: false };
   const app = form({ params: { ticketmasterEventId: sourceEvent.id, ticketmasterCityId: 'vancouver' }, sourceEvent });
   app.loadEvent(); await settle();
-  app.edit('모임 제목', '기존 제목'); app.edit('모임 소개', '기존 소개'); app.edit('신청할 때 물어볼 질문', '기존 질문');
+  app.edit('모임 제목', '기존 제목'); app.edit('모임 소개', '기존 소개'); app.edit('신청할 때 물어볼 질문', '기존 질문'); app.openAssistance();
   const picker = nodes(app.render()).find(node => node.type === 'MeetupTemplatePicker');
   assert.equal(picker.props.onApply({ title: '새 제목', body: '가'.repeat(5000), applicationQuestion: '새 질문', category: 'hobby' }), false);
   assert.equal(app.find('모임 제목').props.value, '기존 제목');
@@ -385,10 +452,11 @@ test('an imported event rejects an oversized template atomically and keeps the e
   assert.equal(app.writes.length, 0);
 });
 
-test('a sports title selected during generation is preserved and a result after unmount is ignored', async () => {
-  const app = form(); app.edit('모임 주제', '운동'); app.generate();
+test('a sports category and title chosen during generation are preserved and a result after unmount is ignored', async () => {
+  const app = form(); app.edit('모임 주제', '운동'); app.generate(); app.find('meetup-create.advanced').props.onPress();
   const sports = nodes(app.render()).find(n => n.props?.accessibilityRole === 'radio' && nodes(n).some(child => child.props?.children === '스포츠'));
-  sports.props.onPress(); app.find('app_meetup-create.sport').props.onPress();
+  sports.props.onPress(); assert.equal(app.find('app_meetup-create.sport'), undefined, 'Sport chips had no persisted effect and were removed.');
+  app.edit('모임 제목', '테니스 같이해요');
   app.requests[0].resolve({ data: { draft: generated } }); await settle(); app.preview().props.onApply();
   assert.notEqual(app.find('모임 제목').props.value, generated.title);
   const leaving = form(); leaving.edit('모임 주제', '산책'); leaving.generate(); leaving.unmount();

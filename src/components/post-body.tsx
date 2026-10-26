@@ -6,11 +6,12 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { PostAttachmentLink } from '@/components/post-attachment-link';
 import { instagramPostLink, splitPostAttachments, splitPostLinks } from '../../supabase/functions/_shared/post-links';
 
-export function PostBody({ body, linksEnabled = true, ...props }: Omit<ThemedTextProps, 'children'> & { body: string; linksEnabled?: boolean }) {
+// `paragraphs` renders pre-split lines with breathing room; the caller then shows attachments itself.
+export function PostBody({ body, paragraphs, linksEnabled = true, ...props }: Omit<ThemedTextProps, 'children'> & { body: string; paragraphs?: string[]; linksEnabled?: boolean }) {
   const { tr } = useLanguage();
   const { play } = useInteractionFeedback();
   const attached = splitPostAttachments(body);
-  return <View><ThemedText {...props}>{splitPostLinks(attached.body).map((part, index) => !part.url || !linksEnabled ? part.text
+  const linked = (text: string) => splitPostLinks(text).map((part, index) => !part.url || !linksEnabled ? part.text
     : Platform.OS === 'web'
       ? <a key={index} href={part.url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"
           style={{ color: 'inherit', textDecoration: 'underline', overflowWrap: 'anywhere' }}
@@ -27,8 +28,10 @@ export function PostBody({ body, linksEnabled = true, ...props }: Omit<ThemedTex
               { text: tr("취소"), style: 'cancel', onPress: () => play('selection') },
               { text: tr("이동"), onPress: () => { play('selection'); open(); } },
             ]);
-          }}>{part.text}</ThemedText>)}</ThemedText>
+          }}>{part.text}</ThemedText>);
+  if (paragraphs) return <View style={styles.paragraphs}>{paragraphs.map((text, index) => <ThemedText key={index} {...props}>{linked(text)}</ThemedText>)}</View>;
+  return <View><ThemedText {...props}>{linked(attached.body)}</ThemedText>
     {attached.urls.map((url, index) => <PostAttachmentLink key={`${url}-${index}`} url={url} enabled={linksEnabled} />)}
   </View>;
 }
-const styles = StyleSheet.create({ link: { textDecorationLine: 'underline' } });
+const styles = StyleSheet.create({ link: { textDecorationLine: 'underline' }, paragraphs: { gap: 12 } });

@@ -45,9 +45,10 @@ test('translation and original states keep required branding adjacent without ad
   assert.equal(nodes(tree).find(node => node.type === 'Image'), undefined);
 });
 
-test('download preparation and unsupported builds disable submission while errors retain a retry action', () => {
+test('download preparation disables submission, unsupported builds hide the control, and errors retain a retry action', () => {
   const ui = controls();
-  for (const state of [{ loading: true }, { supported: false }, { ready: false }]) {
+  assert.equal(ui.render({ ...initial, supported: false }), null);
+  for (const state of [{ loading: true }, { ready: false }]) {
     const button = nodes(ui.render({ ...initial, ...state })).find(node => node.type === 'Pressable');
     assert.equal(button.props.disabled, true);
   }

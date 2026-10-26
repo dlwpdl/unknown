@@ -164,6 +164,7 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
       isContentRejected: () => false,
     };
     if (name === '@/hooks/use-content-visibility') return { useContentVisibility: () => () => false };
+    if (name === '@/components/chilling-host-profile') return { useMeetupParticipation: () => ({ own: false, participation: null, statusLoading: false, statusError: '', retry() {} }) };
     if (name === '@/lib/comment-threads') return {
       loadCommentThreadContext: async (_client, _postId, targetId) => {
         if (targetId === 'hidden') return [];

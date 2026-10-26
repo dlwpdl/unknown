@@ -36,3 +36,21 @@ test('reply previews follow edited/deleted originals and never show a blocked or
   assert.equal(deleted[1].reply.deleted_at, 'now');
   assert.equal(data.mergeChatMessages(deleted, [], new Set(['neighbor']))[0].reply, null);
 });
+
+test('text retries carry one client id and host member controls call their RPCs', async () => {
+  const calls = [];
+  const client = { rpc: async (name, args) => { calls.push([name, args]); return { data: 'sent', error: null }; } };
+  await data.sendDirectMessage(client, 'room', ' hi ', null, 'client-1');
+  assert.deepEqual(calls[0], ['send_message_v3', { p_conversation_id: 'room', p_client_id: 'client-1', p_body: 'hi', p_reply_to_id: null }]);
+  await data.setMeetupHistoryAccess(client, 'post', 'guest', true);
+  assert.deepEqual(calls[1], ['set_meetup_history_access', { p_post_id: 'post', p_user_id: 'guest', p_share: true }]);
+  await data.removeMeetupMember(client, 'post', 'guest');
+  assert.deepEqual(calls[2], ['remove_meetup_member', { p_post_id: 'post', p_user_id: 'guest' }]);
+  const filters = [];
+  const query = { select: columns => { filters.push(['select', columns]); return query; }, eq: (column, value) => { filters.push([column, value]); return query; },
+    then: resolve => resolve({ data: [{ requester_id: 'guest', share_history: true }], error: null }) };
+  const access = await data.loadMeetupHistoryAccess({ from: table => { filters.push(['from', table]); return query; } }, 'post');
+  assert.deepEqual(filters, [['from', 'meetup_requests'], ['select', 'requester_id, share_history'], ['post_id', 'post'], ['status', 'approved']]);
+  assert.equal(access.get('guest'), true);
+  await assert.rejects(data.removeMeetupMember({ rpc: async () => ({ error: { message: 'REQUEST_NOT_FOUND' } }) }, 'post', 'guest'), { message: 'REQUEST_NOT_FOUND' });
+});

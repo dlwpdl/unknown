@@ -23,7 +23,7 @@ import { MerchantSourceLink } from '@/components/merchant-source-link';
 import { MerchantReviews } from '@/components/merchant-reviews';
 import { MeetupReviews } from '@/components/meetup-reviews';
 import { PostPoll } from '@/components/post-poll';
-import { PostCard } from '@/components/post-card';
+import { PostCard, PostReactionToggle } from '@/components/post-card';
 import { TranslatedCommentBody } from '@/components/content-translation';
 import { CONTENT_TRANSLATION_VIEWABILITY } from '@/lib/content-translation';
 import { PostShareSheet } from '@/components/post-share-sheet';
@@ -31,7 +31,7 @@ import { PostBodyEditor } from '@/components/post-body-editor';
 import { PostPhotoGallery } from '@/components/post-photo-gallery';
 import { PostPhotoEditor, type EditablePostImage } from '@/components/post-photo-editor';
 import { PostPhotoCredits } from '@/components/post-photo-credits';
-import { ChillingHostProfile } from '@/components/chilling-host-profile';
+import { MeetupActionBar, MeetupChips, MeetupNotes, MeetupSummary, useMeetupParticipation } from '@/components/chilling-host-profile';
 import { ReportSheet } from '@/components/report-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -56,7 +56,7 @@ import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/po
 import { splitEventMeetupBody, visibleMeetupBody } from '@/lib/meetup-ai';
 import { splitPlaceMeetupBody } from '@/lib/meetup-destination';
 import { placeMapRoute } from '@/lib/discovery';
-import { ControlStyles, controlPresentation } from '@/constants/design-system';
+import { ControlStyles, Typography, controlPresentation } from '@/constants/design-system';
 import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 import { supabase } from '@/lib/supabase';
 import type { Post, PostComment } from '@/lib/types';
@@ -136,6 +136,9 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const [deletePostOpen, setDeletePostOpen] = useState(false);
   const [pickingPostImages, setPickingPostImages] = useState(false);
   const [savingPost, setSavingPost] = useState(false);
+  // Meetups swap the action bar for the composer only while asking, replying or editing.
+  const [composing, setComposing] = useState(false);
+  const meetupStatus = useMeetupParticipation(post);
   const postEditBusy = useRef(false);
   const sendBusy = useRef(false);
   const likeBusy = useRef(false);
@@ -363,7 +366,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
         await editComment(supabase, editing.id, body);
         if (!active.current) return;
         updateComment(editing.id, (comment) => ({ ...comment, body }));
-        setEditing(null); setDraft(''); play('message');
+        setEditing(null); setDraft(''); setComposing(false); play('message');
       } catch (error) {
         if (!active.current) return;
         play('warning');
@@ -395,6 +398,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
       onCommentCountChange?.(nextTotal);
       setDraft('');
       setReplyTo(null);
+      setComposing(false);
       play('message');
     } catch (error) {
       if (!active.current) return;
@@ -443,10 +447,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     return (
       <View
         key={c.id}
-        style={[
-          styles.comment,
-          mine && { backgroundColor: theme.backgroundElement, borderRadius: 10, padding: 10 },
-        ]}>
+        style={styles.comment}>
         <Pressable analyticsId="components_post-detail.pressable.2"
           onPress={() => {
             play('selection'); setSheetUser({
@@ -643,6 +644,12 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                 <ThemedText themeColor="danger">{tr(savingPost ? tr("삭제 중…") : tr("글 삭제"))}</ThemedText>
               </Pressable>
             </> : <>
+              {post.kind !== 'listing' && post.tag.kind === 'post' && !post.room && <ListingControls post={post} onChanged={onListingChanged} closeMenu={() => setPostMenuOpen(false)} />}
+              {PROMOTIONS_PREVIEW_ENABLED && Platform.OS !== 'web' && isAuthed && post.author.id === me.id && <Pressable analyticsId="components_post-detail.pressable.16" accessibilityRole="button"
+                onPress={() => { play('selection'); setPostMenuOpen(false); onClose(); router.push({ pathname: '/profile/promotions', params: { postId: post.id } }); }} style={styles.menuRow}>
+                <SymbolView name={{ ios: 'arrow.up.circle', android: 'arrow_circle_up', web: 'arrow_circle_up' }} size={20} tintColor={theme.text} />
+                <ThemedText>{tr("이 글 끌어올리기")}</ThemedText>
+              </Pressable>}
               <Pressable analyticsId="components_post-detail.pressable.14" accessibilityRole="button" accessibilityLabel={tr(management ? tr("비즈니스 글 수정") : tr("내 글 수정"))} onPress={() => { play('selection'); startEditPost(); }} style={styles.menuRow}>
                 <SymbolView name={{ ios: 'pencil', android: 'edit', web: 'edit' }} size={20} tintColor={theme.text} />
                 <ThemedText>{tr("글·사진 수정")}</ThemedText>
@@ -662,7 +669,10 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
         <Pressable analyticsId="components_post-detail.pressable.11" onPress={() => { play('selection'); onClose(); }} accessibilityRole="button" accessibilityLabel={t.detail.close} style={({ pressed }) => [styles.closeBtn, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
           <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={22} tintColor={theme.text} />
         </Pressable>
-        <ThemedText accessibilityRole="header" style={styles.headTitle}>{tr(postDraft ? tr("글 수정") : post.room && !commentId ? tr("모임 상세") : commentId ? t.detail.commentsTitle(commentTotal) : tr("글 상세"))}</ThemedText>
+        {!commentId && !postDraft
+          ? <View accessible accessibilityRole="header" accessibilityLabel={tr(post.room ? "모임 상세" : "글 상세")} style={styles.headSpacer} />
+          : <ThemedText accessibilityRole="header" style={styles.headTitle}>{tr(postDraft ? tr("글 수정") : commentId ? t.detail.commentsTitle(commentTotal) : tr("글 상세"))}</ThemedText>}
+        {post.room && !postDraft && <PostReactionToggle post={post} kind="save" />}
         {!postDraft && <Pressable analyticsId="post.detail.share" accessibilityRole="button" accessibilityLabel={tr(post.room ? tr("모임 초대 링크 공유") : tr("게시물 링크 공유"))}
           onPress={() => { play('selection'); setShareOpen(true); }} style={({ pressed }) => [styles.shareBtn, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
           <SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={20} tintColor={theme.accent} />
@@ -736,7 +746,9 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               hidePhoto
               hideRoom={!!post.room}
               flat={!!post.room}
+              postDetail={!post.room}
               post={{ ...post, body: photoCredits.body, views: viewCount }}
+              meetupDetail={post.room ? { beforeTitle: <MeetupChips post={post} />, afterTitle: <MeetupSummary post={post} status={meetupStatus} onClose={onClose} onBeforeNavigate={onJoin ? onClose : undefined} /> } : undefined}
               afterBody={<>
                 {post.kind === 'listing' && post.tag.slug === 'housing' && <View style={{ gap: Spacing.one }}>
                   <ThemedText type="smallBold" accessibilityRole="header">{tr("주소·위치")}</ThemedText>
@@ -762,19 +774,23 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               }}
             />}
             {!postDraft && post.kind === 'story' && !post.room && <PostPoll postId={post.id} />}
-            {!postDraft && post.room && <ChillingHostProfile post={post} onJoin={onJoin} onBeforeNavigate={onJoin ? onClose : undefined} />}
-            {!postDraft && post.room && <MeetupReviews postId={post.id} kind={post.room.eventKind ?? 'group'} onBeforeNavigate={onClose} />}
-            {canManagePost && (post.kind === 'listing' || (post.tag.kind === 'post' && !post.room)) && <ListingControls post={post} onChanged={onListingChanged} />}
-            {PROMOTIONS_PREVIEW_ENABLED && Platform.OS !== 'web' && isAuthed && post.author.id === me.id && <Pressable analyticsId="components_post-detail.pressable.16"
-              accessibilityRole="button"
-              onPress={() => { play('selection'); onClose(); router.push({ pathname: '/profile/promotions', params: { postId: post.id } }); }}
-              style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, opacity: pressed ? 0.65 : 1 })}>
-              <ThemedText type="smallBold" themeColor="accent">{tr("이 글 끌어올리기")}</ThemedText>
-            </Pressable>}
+            {!postDraft && post.room && post.room.eventKind !== 'once' && Platform.OS !== 'web' && <View style={[styles.meetupSection, { borderTopColor: theme.line }]}>
+              <ThemedText accessibilityRole="header" style={Typography.section}>{tr("후기")}</ThemedText>
+              <MeetupReviews postId={post.id} kind="group" reviewsOnly onBeforeNavigate={onClose} />
+            </View>}
+            {!postDraft && post.room && <View style={[styles.meetupSection, styles.meetupSectionRow, { borderTopColor: theme.line }]}>
+              <ThemedText accessibilityRole="header" style={[Typography.section, styles.flexText]}>{tr("질문·댓글")} <ThemedText themeColor="textSecondary" style={Typography.section}>{commentTotal}</ThemedText></ThemedText>
+              <Pressable analyticsId="meetup.detail.ask" accessibilityRole="button" onPress={() => { play('selection'); setComposing(true); inputRef.current?.focus(); }} style={styles.askBtn}>
+                <ThemedText type="smallBold" themeColor="accent">{tr("질문 남기기")}</ThemedText>
+              </Pressable>
+            </View>}
+            {canManagePost && post.kind === 'listing' && <ListingControls post={post} onChanged={onListingChanged} />}
           </View>}
+          ListFooterComponent={post.room && !postDraft ? <MeetupNotes post={post} /> : undefined}
         />
 
-        {!postDraft && <View
+        {!postDraft && post.room && !composing && !replyTo && !editing && <MeetupActionBar post={post} status={meetupStatus} onJoin={onJoin} onBeforeNavigate={onJoin ? onClose : undefined} />}
+        {!postDraft && (!post.room || composing || !!replyTo || !!editing) && <View
           style={[
             styles.composer,
             {
@@ -799,10 +815,13 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           </View>}
           {sendError && <ThemedText type="small" themeColor="accent" accessibilityRole="alert" style={{ paddingHorizontal: Spacing.two, paddingBottom: Spacing.two }}>{sendError}</ThemedText>}
           <View style={styles.composerRow}>
+            {!post.room && !replyTo && !editing && <><PostReactionToggle post={post} kind="like" showCount /><PostReactionToggle post={post} kind="save" showCount /></>}
             <TextInput
               ref={inputRef}
               value={draft}
               onChangeText={(value) => { setDraft(value); setSendError(null); }}
+              autoFocus={!!post.room}
+              onBlur={() => { if (!draft.trim() && !replyTo && !editing) setComposing(false); }}
               editable={!sending}
               multiline
               maxLength={1000}
@@ -850,6 +869,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
   },
   headTitle: { flex: 1, textAlign: 'center', fontSize: 17, lineHeight: 22, fontWeight: '600' },
+  headSpacer: { flex: 1, minHeight: 44 },
+  meetupSection: { gap: Spacing.two, paddingTop: Spacing.three, borderTopWidth: StyleSheet.hairlineWidth },
+  meetupSectionRow: { flexDirection: 'row', alignItems: 'center' },
+  flexText: { flex: 1 },
+  askBtn: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.two },
   shareBtn: { minHeight: 44, minWidth: 44, paddingHorizontal: Spacing.two, borderRadius: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.one },
   closeBtn: {
     width: 44,
@@ -937,7 +961,8 @@ const styles = StyleSheet.create({
 
 // ponytail: 작성자 전용 리스팅 액션. 쿨다운·한도 판정은 서버가 하고 여기선 결과만 반영한다.
 // 저널 톤: 채운 버튼 대신 얇은 선 위의 텍스트 액션, 인주는 첫 번째 액션에만.
-function ListingControls({ post, onChanged }: { post: Post; onChanged: (next: Partial<Post>) => void }) {
+// `closeMenu` renders the same actions as rows of the ··· sheet (regular posts only have the free bump).
+function ListingControls({ post, onChanged, closeMenu }: { post: Post; onChanged: (next: Partial<Post>) => void; closeMenu?: () => void }) {
   const { t } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
@@ -964,11 +989,16 @@ function ListingControls({ post, onChanged }: { post: Post; onChanged: (next: Pa
     }
   };
   const action = (label: string, onPress: () => void, primary = false) => (
-    <Pressable analyticsId="components_post-detail.pressable.20" key={label} accessibilityRole="button" onPress={() => { play('selection'); onPress(); }} disabled={busy} accessibilityState={{ disabled: busy, busy }}
-      style={({ pressed }) => [styles.listingAction, (pressed || busy) && { opacity: 0.6 }]}>
-      <ThemedText type="smallBold" themeColor={primary ? 'accent' : 'textSecondary'}>{label}</ThemedText>
+    <Pressable analyticsId="components_post-detail.pressable.20" key={label} accessibilityRole="button" onPress={() => { play('selection'); closeMenu?.(); onPress(); }} disabled={busy} accessibilityState={{ disabled: busy, busy }}
+      style={({ pressed }) => [closeMenu ? styles.menuRow : styles.listingAction, (pressed || busy) && { opacity: 0.6 }]}>
+      {closeMenu && <SymbolView name={{ ios: 'arrow.up.to.line', android: 'vertical_align_top', web: 'vertical_align_top' }} size={20} tintColor={theme.text} />}
+      <ThemedText type={closeMenu ? undefined : 'smallBold'} themeColor={closeMenu ? undefined : primary ? 'accent' : 'textSecondary'}>{label}</ThemedText>
     </Pressable>
   );
+  if (closeMenu) return alive ? action(t.detail.bump, () => void run(async () => {
+    const result = await bumpListing(supabase, post.id);
+    return { bumpedAt: result.bumpedAt, expiresAt: result.expiresAt, sortAt: result.bumpedAt };
+  }, t.detail.bumped), true) : null;
   return (
     <View style={[styles.listingBar, { borderTopColor: theme.line, borderBottomColor: theme.line }]}>
       {listing && <ThemedText type="small" themeColor="textSecondary" style={styles.listingState}>
