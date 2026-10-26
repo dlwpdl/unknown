@@ -40,6 +40,27 @@ test('group previews use the saved meetup category and keep showing when metadat
   assert.equal(offline.conversations[0].meetupCategory, null);
 });
 
+test('a host-ended meetup room reads as ended, and an ended member deep link opens it read-only', async () => {
+  const group = { ...row, id: 'group-1', kind: 'group', group_post_id: 'post-1', title: '주말 모임', is_group_host: true };
+  const posts = { 'post-1': { title: '주말 모임', author_id: 'host', room_preview: { closed: true, category: 'sports' } }, 'post-2': { title: '열린 모임', author_id: 'host', room_preview: {} } };
+  const rooms = { 'ended-room': { id: 'ended-room', group_post_id: 'post-1', created_at: '2026-10-01T00:00:00Z' }, 'open-room': { id: 'open-room', group_post_id: 'post-2', created_at: '2026-10-01T00:00:00Z' } };
+  const client = { rpc: async (_name, args) => ({ error: null, data: { items: [group], selected: args.p_conversation_id === 'group-1' ? group : null, pending_count: 0, cursor: null } }),
+    from(table) {
+      const filters = {};
+      return { select() { return this; }, eq(key, value) { filters[key] = value; return this; },
+        async in() { return { data: [{ id: 'post-1', room_preview: posts['post-1'].room_preview }], error: null }; },
+        async maybeSingle() { return { error: null, data: table === 'conversations' ? (filters.kind === 'group' ? rooms[filters.id] ?? null : null) : posts[filters.id] ?? null }; } };
+    } };
+  const host = await loadConversations(client, 'host', 'all', null, 'group-1');
+  assert.equal(host.conversations[0].status, 'ended');
+  assert.equal(host.selectedConversation.status, 'ended');
+  const member = await loadConversations(client, 'member', 'all', null, 'ended-room', null);
+  assert.deepEqual({ ...member.selectedConversation, latestAt: undefined }, { id: 'ended-room', kind: 'group', status: 'ended', requesterId: null, groupPostId: 'post-1', meetupCategory: 'sports',
+    title: '주말 모임', isGroupHost: false, otherUser: { id: 'host', nickname: '', verificationLevel: 0 }, latestBody: null, latestAt: undefined });
+  assert.equal((await loadConversations(client, 'member', 'all', null, 'open-room')).selectedConversation, null, 'an open meetup the inbox omits is not forced open');
+  assert.equal((await loadConversations({ ...client, from() { throw new Error('offline'); } }, 'member', 'all', null, 'ended-room')).selectedConversation, null);
+});
+
 test('inbox cursor carries status and equal-time ID; errors do not become an empty inbox', async () => {
   const cursor = { status: 'ended', createdAt: '2026-01-01T00:00:00Z', id: 'cursor-room' };
   const client = { async rpc(name, args) {

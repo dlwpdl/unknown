@@ -14,7 +14,7 @@ select throws_ok($$select public.create_chilling_event('vancouver','산책','함
 select throws_ok($$select public.configure_chilling_event('64000000-0000-0000-0000-000000000011','group',p_cadence=>'weekly')$$,'P0001','CHILLING_PROFILE_REQUIRED','configure RPC cannot bypass hosting profile');
 select lives_ok($$select public.save_chilling_profile('{"intro":"안녕하세요","interests":["산책"],"promptOne":"바다","promptTwo":"주말"}')$$,'owner saves private profile');
 select is(public.get_my_chilling_profile()->>'intro','안녕하세요','owner reads private profile');
-select throws_ok($$select public.save_chilling_profile('{"intro":"a","interests":[],"promptOne":"b","promptTwo":"c"}')$$,'P0001','INVALID_CHILLING_PROFILE','interests are required');
+select throws_ok($$select public.save_chilling_profile('{"intro":"a","interests":["1","2","3","4","5","6","7","8","9"],"promptOne":"b","promptTwo":"c"}')$$,'P0001','INVALID_CHILLING_PROFILE','more than eight interests are rejected');
 select throws_ok($$select public.create_chilling_event('vancouver','실패한 모임','실패하면 글도 없어야 함','{"eventKind":"group","cadence":"","capacity":8}','질문')$$,'P0001','INVALID_EVENT_CADENCE','invalid event rolls back creation');
 select throws_ok($$select public.create_chilling_event('vancouver','실패한 모임','카테고리 검사','{"eventKind":"group","cadence":"weekly","capacity":8,"category":"bad"}','질문')$$,'P0001','INVALID_EVENT_CATEGORY','unknown category rejected');
 select is((select count(*)::integer from public.posts where author_id=auth.uid()),0,'failed event leaves no partial post');

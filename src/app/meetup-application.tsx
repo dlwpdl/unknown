@@ -9,6 +9,8 @@ import { SymbolView } from 'expo-symbols';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
+import { MannerSummary } from '@/components/manner-summary';
+import { MeetupHistoryChoice } from '@/components/meetup-room-summary';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
@@ -18,11 +20,12 @@ import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useAuth } from '@/lib/auth';
-import { getChillingError, getChillingErrorCode, loadChillingApplication, loadMeetupRequestStatus, type ChillingApplication, type MeetupParticipation } from '@/lib/chilling-data';
+import { getChillingError, getChillingErrorCode, loadChillingApplication, loadMeetupRequestStatus, respondMeetupRequestV2, type ChillingApplication, type MeetupParticipation } from '@/lib/chilling-data';
 import { CITIES } from '@/lib/mock';
-import { MEETUPS_CHANGED_EVENT, respondMeetupRequest } from '@/lib/community-data';
+import { MEETUPS_CHANGED_EVENT } from '@/lib/community-data';
 import { useMembership } from '@/lib/membership-provider';
 import { supabase } from '@/lib/supabase';
+import { loadMannerSummary, type MannerSummary as Summary } from '@/lib/user-profile';
 
 export default function MeetupApplicationRoute() {
 
@@ -34,22 +37,25 @@ function Application({ requestId }: { requestId: string }) {
   const router = useRouter(), theme = useTheme(), hidden = useContentVisibility();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
-  const { isAuthed, me } = useAuth();
+  const { isAuthed, me, promptLogin } = useAuth();
   const { refresh: refreshMembership } = useMembership();
   const [application, setApplication] = useState<ChillingApplication | null>(null), [loading, setLoading] = useState(true), [error, setError] = useState(''), [retry, setRetry] = useState(0);
-  const [responding, setResponding] = useState(false), [outcome, setOutcome] = useState<'approved' | 'rejected' | null>(null);
+  const [responding, setResponding] = useState(false), [outcome, setOutcome] = useState<'approved' | 'rejected' | null>(null), [shareHistory, setShareHistory] = useState(false);
   const [requestStatus, setRequestStatus] = useState<MeetupParticipation | null>(null);
+  const [manner, setManner] = useState<Summary | null>(null);
   const [actionError, setActionError] = useState(''), [actionCode, setActionCode] = useState<string | null>(null);
   const revision = useRef(0);
   const busy = useRef(false);
   useFocusEffect(useCallback(() => {
     let active = true;
     revision.current += 1;
-    setApplication(null); setRequestStatus(null); setLoading(true); setError(''); setActionError(''); setActionCode(null); setOutcome(null);
+    setApplication(null); setRequestStatus(null); setManner(null); setLoading(true); setError(''); setActionError(''); setActionCode(null); setOutcome(null);
     if (!isAuthed) { setLoading(false); return; }
     void loadChillingApplication(supabase, requestId, me.id).then(async value => {
       const status = value?.request ?? await loadMeetupRequestStatus(supabase, requestId, me.id);
       if (active) { setApplication(value); setRequestStatus(status); }
+      // Hosts decide with the applicant's past meetup reviews; a failed load just hides the card.
+      if (value && value.requesterId !== me.id) void loadMannerSummary(supabase, value.requesterId).then(summary => { if (active) setManner(summary); }).catch(() => undefined);
     })
       .catch(e => { if (active) setError(getChillingError(e)); }).finally(() => { if (active) {
         if (!reducedMotion && Platform.OS !== 'web') {
@@ -72,7 +78,7 @@ function Application({ requestId }: { requestId: string }) {
     const current = revision.current;
     busy.current = true; setResponding(true); setError(''); setActionError(''); setActionCode(null);
     try {
-      await respondMeetupRequest(supabase, requestId, response);
+      await respondMeetupRequestV2(supabase, requestId, response, shareHistory);
       if (revision.current === current) { setApplication(null); setOutcome(response); }
       play(response === 'approved' ? 'meetup' : 'success');
       DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
@@ -105,19 +111,21 @@ function Application({ requestId }: { requestId: string }) {
     {loading ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={tr("신청 정보 불러오는 중")} /></View> : <ScrollView analyticsId="app_meetup-application.scrollview.1" contentContainerStyle={styles.content}>
     {!!actionError && <StateCard kind="error" title={actionCode === 'MEETUP_FULL' ? tr("정원이 차서 승인하지 못했어요") : tr("처리 결과를 확인해 주세요")} body={tr(actionError)} />}
     {outcome ? <StateCard kind={outcome === 'approved' ? 'success' : 'empty'} title={outcome === 'approved' ? tr("참여를 승인했어요") : tr("신청을 거절했어요")} body={tr("신청자가 참여 신청 화면에서 결과를 확인할 수 있어요.")} actionLabel={tr("신청함 보기")} onAction={() => router.replace({ pathname: '/chat', params: { view: 'requests' } })} />
+      : !isAuthed ? <StateCard kind="blocked" title={tr("로그인이 필요해요")} body={tr("참여 신청을 확인하려면 로그인해 주세요.")} actionLabel={tr("로그인하기")} onAction={() => promptLogin('참여 신청을 확인하려면 로그인해 주세요.')} />
       : visible ? <>
       {application.request?.post && <ThemedText type="small" themeColor="textSecondary">{application.request.post.title}{" " + tr("· 참여 신청")}</ThemedText>}
       <View style={styles.identity}>
         {identity?.photoUri ? <Image source={{ uri: identity.photoUri }} cachePolicy="none" style={styles.avatar} contentFit="cover" accessibilityLabel={tr("{0} 모임 사진", identity.nickname)} />
           : <View style={[styles.avatar, styles.initial, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle">{(identity?.nickname ?? tr("신청자")).slice(0, 1)}</ThemedText></View>}
         <View style={styles.identityBody}><ThemedText style={styles.name}>{identity?.nickname ?? tr("신청자")}</ThemedText>
-          {!!identity?.city_id && <ThemedText type="small" themeColor="textSecondary">{CITIES.find(city => city.id === identity.city_id)?.name ?? identity.city_id}</ThemedText>}
+          {!!identity?.city_id && <ThemedText type="small" themeColor="textSecondary">{tr(CITIES.find(city => city.id === identity.city_id)?.name ?? identity.city_id)}</ThemedText>}
           {application.request && <ThemedText type="smallBold" themeColor="accent">{{ pending: tr("승인 대기"), approved: tr("참여 승인"), rejected: tr("신청 거절"), cancelled: tr("신청 취소됨") }[application.request.status]}</ThemedText>}
         </View>
       </View>
       <View style={[styles.answerCard, { backgroundColor: theme.card }]}><ThemedText type="smallBold" themeColor="accent">{tr("모임장 질문에 대한 답변")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{application.question}</ThemedText><ThemedText style={styles.answer}>{application.answer}</ThemedText></View>
       <ThemedText type="smallBold">{tr("함께할 사람의 모임 프로필")}</ThemedText>
       <ChillingProfileCard profile={application.profile} />
+      {!own && manner && <MannerSummary summary={manner} />}
       <ThemedText type="small" themeColor="textSecondary">{tr("이름·사진·소개·답변은 신청 당시 공유한 모임 프로필이에요. 이후 프로필을 수정해도 이 신청은 바뀌지 않아요.")}</ThemedText>
       {canRespond && <>
         <ThemedText type="small" themeColor="textSecondary">{tr("승인하면 이 모임의 멤버가 되고 모임 대화에 참여해요. 정원이 찼거나 참여 가능한 모임 수를 넘으면 승인할 수 없어요.")}</ThemedText>
@@ -126,6 +134,7 @@ function Application({ requestId }: { requestId: string }) {
     {(!!error || !!actionError) && <Pressable analyticsId="app_meetup-application.pressable.2" onPress={() => { play('selection'); setRetry(x => x + 1); }} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent">{tr("현재 상태 다시 확인")}</ThemedText></Pressable>}
   </ScrollView>}
   {!loading && canRespond && <View style={[styles.footer, { backgroundColor: theme.background, borderColor: theme.line }]}>
+    <MeetupHistoryChoice value={shareHistory} onChange={setShareHistory} disabled={responding} />
     <RaisedActionButton analyticsId="app_meetup-application.pressable.3" disabled={responding || approvalBlocked} busy={responding} onPress={() => { play('selection'); void respond('approved'); }} label={responding ? tr("처리 중…") : approvalBlocked ? tr("현재 승인할 수 없어요") : tr("{0}님 참여 승인", (identity?.nickname ?? tr('신청자')))} />
     <Pressable analyticsId="app_meetup-application.pressable.4" accessibilityRole="button" accessibilityLabel={tr("참여 신청 거절")} disabled={responding} accessibilityState={{ disabled: responding }} onPress={confirmReject} style={styles.reject}><ThemedText type="smallBold" themeColor="textSecondary">{tr("신청 거절")}</ThemedText></Pressable>
   </View>}

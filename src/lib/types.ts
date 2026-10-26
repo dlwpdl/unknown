@@ -48,6 +48,7 @@ export interface RoomPreview {
   capacity?: number;
   verifiedOnly: boolean;
   closed?: boolean;
+  recruitingClosed?: boolean; // host paused new requests; members and pending requests stay
   eventKind?: 'once' | 'group';
   category?: 'casual' | 'hobby' | 'travel' | 'party' | 'festival' | 'sports';
   startsAt?: string | null;
@@ -58,6 +59,7 @@ export interface RoomPreview {
   recommendedAgeMax?: number | null;
   applicationQuestion?: string | null;
   hostDisplayName?: string | null;
+  fee?: { amount: number; note?: string; dueOn?: string }; // dueOn: YYYY-MM-DD; public so applicants see it
 }
 
 export interface PostComment {

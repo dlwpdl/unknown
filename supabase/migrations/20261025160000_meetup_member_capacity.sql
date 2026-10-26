@@ -66,16 +66,21 @@ $$;
 create trigger meetup_requests_z_capacity_admission before insert or update of status,post_id on public.meetup_requests
 for each row execute function private.guard_meetup_capacity_admission();
 
--- The existing privacy projection is also the source for group-chat members.
--- Keep its authenticated participant checks; stop silently dropping members after the first50.
+-- Published clients eagerly download every legacy roster photo. Keep their bound50.
+-- New clients load metadata5000 separately and fetch only visible private photos.
 do $$
-declare definition text; anchor text:='order by is_host desc,id limit 50';
+declare definition text; function_owner text; anchor text:='order by is_host desc,id limit 50';
+  signature text:='FUNCTION public.get_chilling_roster(p_post_id uuid)';
 begin
-  definition:=pg_get_functiondef('public.get_chilling_roster(uuid)'::regprocedure);
-  if strpos(definition,anchor)=0 then raise exception 'chilling roster capacity anchor missing'; end if;
-  execute replace(definition,anchor,'order by is_host desc,id limit 5000');
+  select pg_get_functiondef(oid),pg_get_userbyid(proowner) into definition,function_owner
+    from pg_proc where oid='public.get_chilling_roster(uuid)'::regprocedure;
+  if strpos(definition,anchor)=0 or strpos(definition,signature)=0 then raise exception 'chilling roster capacity anchor missing'; end if;
+  execute replace(replace(definition,signature,'FUNCTION public.get_chilling_roster_v2(p_post_id uuid)'),anchor,'order by is_host desc,id limit 5000');
+  execute format('alter function public.get_chilling_roster_v2(uuid) owner to %I',function_owner);
 end;
 $$;
+revoke all on function public.get_chilling_roster_v2(uuid) from public,anon,authenticated,service_role;
+grant execute on function public.get_chilling_roster_v2(uuid) to authenticated;
 
 revoke all on function private.meetup_capacity_limit(uuid),private.guard_meetup_capacity_setting(),
   private.guard_meetup_capacity_admission() from public,anon,authenticated,service_role;

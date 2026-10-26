@@ -646,7 +646,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
 
   return (
     <TabContent style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}><View style={styles.safeArea}>
         <View style={[styles.headRow, expandedHeader && styles.headRowLarge, { backgroundColor: theme.background }]}>
           <Pressable analyticsId="feed.home" accessibilityRole="button" accessibilityLabel={`${t.appName}, ${t.tabs.today}`}
             onPress={() => { play('selection'); router.navigate('/'); }} style={[styles.homeButton, expandedHeader && styles.homeButtonLarge]}>
@@ -669,7 +669,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             style={({ pressed }) => [styles.iconButton, controlPresentation(theme, { tone: 'ghost', pressed, reducedMotion }).container]}>
             <SymbolView name={{ ios: 'map', android: 'map', web: 'map' }} size={IconSize.toolbar} tintColor={theme.text} />
           </Pressable></View>}
-          <ProfileAvatarButton enableBusinessSwitch={!meetupsOnly} onBusinessSwitchAvailabilityChange={setHasBusinessSwitch} />
+          <ProfileAvatarButton onBusinessSwitchAvailabilityChange={setHasBusinessSwitch} />
         </View>
         <FlatList analyticsId="components_feed-screen.flatlist.1" ref={feedListRef}
           onViewableItemsChanged={trackTranslationFeed}
@@ -759,7 +759,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           )}
         />
 
-      </SafeAreaView>
+      </View></SafeAreaView>
 
       {/* 검색: 제목·내용·해시태그. 입력 전엔 인기 해시태그 칩 (당근 검색 패턴) */}
       <Modal visible={searching} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setSearching(false)}
@@ -1213,6 +1213,8 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+    width: '100%',
+    alignSelf: 'center',
     maxWidth: MaxContentWidth,
   },
   listContent: {

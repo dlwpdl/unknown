@@ -1,3 +1,4 @@
+import { Typography } from '@/constants/design-system';
 import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
 import { useLayoutEffect, useRef, useState } from 'react';
@@ -41,17 +42,18 @@ export function MeetupCoverPicker({ value, onChange, onPickingChange, disabled }
   };
   return <View style={styles.root}>
     <Pressable analyticsId="components_meetup-cover-picker.pressable.1" accessibilityRole="button" accessibilityLabel={value ? tr("모임 사진 변경") : tr("모임 사진 추가")} accessibilityState={{ disabled: disabled || picking, busy: picking }} disabled={disabled || picking} onPress={pick} style={({ pressed }) => [styles.cover, value ? styles.coverFilled : styles.coverEmpty, { borderColor: theme.line, backgroundColor: theme.backgroundElement, opacity: pressed ? 0.65 : 1 }]}>
-      {value ? <Image source={{ uri: value.uri }} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={tr("선택한 모임 사진")} /> : <><SymbolView name={{ ios: 'photo', android: 'photo_library', web: 'photo_library' }} size={20} tintColor={theme.textSecondary} /><ThemedText type="smallBold">{tr("모임 사진 추가")}</ThemedText><ThemedText type="small" themeColor="textSecondary" style={styles.choose}>{tr("선택 ›")}</ThemedText></>}
+      {value ? <Image source={{ uri: value.uri }} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={tr("선택한 모임 사진")} /> : <><SymbolView name={{ ios: 'photo', android: 'photo_library', web: 'photo_library' }} size={20} tintColor={theme.textSecondary} /><ThemedText type="smallBold" style={Typography.menu}>{tr("모임 사진 추가")}</ThemedText><ThemedText type="small" themeColor="textSecondary" style={[styles.helper, styles.choose]}>{tr("선택 ›")}</ThemedText></>}
     </Pressable>
-    <View style={styles.actions}><ThemedText type="small" themeColor="textSecondary">{picking ? tr("사진을 준비하고 있어요…") : value ? tr("사진을 눌러 변경할 수 있어요") : tr("사진 1장 · 무료 · 최대 5MB")}</ThemedText>
-      {value && <Pressable analyticsId="components_meetup-cover-picker.pressable.2" accessibilityRole="button" accessibilityLabel={tr("커버 사진 삭제")} disabled={disabled || picking} accessibilityState={{ disabled: disabled || picking }} onPress={() => { play('selection'); onChange(null); }} style={({ pressed }) => [styles.remove, { opacity: pressed ? 0.65 : 1 }]}><ThemedText type="small" themeColor="accent">{tr("삭제")}</ThemedText></Pressable>}
+    <View style={styles.actions}><ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{picking ? tr("사진을 준비하고 있어요…") : value ? tr("사진을 눌러 변경할 수 있어요") : tr("사진 1장 · 무료 · 최대 2MB")}</ThemedText>
+      {value && <Pressable analyticsId="components_meetup-cover-picker.pressable.2" accessibilityRole="button" accessibilityLabel={tr("커버 사진 삭제")} disabled={disabled || picking} accessibilityState={{ disabled: disabled || picking }} onPress={() => { play('selection'); onChange(null); }} style={({ pressed }) => [styles.remove, { opacity: pressed ? 0.65 : 1 }]}><ThemedText type="small" themeColor="accent" style={Typography.menu}>{tr("삭제")}</ThemedText></Pressable>}
     </View>
-    {!!error && <ThemedText accessibilityRole="alert" type="small" themeColor="accent">{tr(error)}</ThemedText>}
+    {!!error && <ThemedText accessibilityRole="alert" type="small" themeColor="accent" style={styles.helper}>{tr(error)}</ThemedText>}
   </View>;
 }
 const styles = StyleSheet.create({
+  helper: { fontSize: 14, lineHeight: 22 },
   root: { gap: 8 }, cover: { width: '100%', borderWidth: 1, borderRadius: 16, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  coverFilled: { aspectRatio: 2.1 }, coverEmpty: { minHeight: 56, flexDirection: 'row', justifyContent: 'flex-start', paddingHorizontal: 16 },
+  coverFilled: { aspectRatio: 2.1 }, coverEmpty: { minHeight: 72, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'center', justifyContent: 'flex-start', paddingHorizontal: 16, paddingVertical: 12 },
   choose: { marginLeft: 'auto' },
-  actions: { minHeight: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }, remove: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  actions: { minHeight: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }, remove: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 });

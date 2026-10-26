@@ -131,7 +131,7 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
 
   return (
     <TabContent style={styles.screen}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={{ flex: 1, width: '100%' }}><View style={styles.safeArea}>
         {!embedded && <View style={[styles.header, { backgroundColor: theme.background }]}>
           <ThemedText accessibilityRole="header" style={styles.headerTitle}>{t.notifications.title}</ThemedText>
           <ProfileAvatarButton />
@@ -215,14 +215,14 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
             }}
           />
         )}
-      </SafeAreaView>
+      </View></SafeAreaView>
     </TabContent>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, alignItems: 'center' },
-  safeArea: { flex: 1, width: '100%', maxWidth: MaxContentWidth },
+  safeArea: { flex: 1, width: '100%', alignSelf: 'center', maxWidth: MaxContentWidth },
   header: { minHeight: 56, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
   headerTitle: { flex: 1, fontSize: 22, lineHeight: 30, fontWeight: '700' },
   filters: { flexDirection: 'row', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },

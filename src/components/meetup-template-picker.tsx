@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Alert, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
 import { useLanguage } from '@/hooks/use-language';
@@ -96,7 +96,8 @@ function TemplatePicker({ draft, onApply, disabled = false }: MeetupTemplatePick
         onPress={() => void apply(preview.id)}>
         <ThemedText type="smallBold">{say('이 초안 적용', 'Apply this draft')}</ThemedText>
       </Pressable>
-      <Pressable analyticsId="meetup_template_picker.control.3" accessibilityRole="button" disabled={locked} accessibilityState={{ disabled: locked }} style={button} onPress={() => { play('selection'); Alert.alert(say('템플릿 삭제', 'Delete template'), say('이 템플릿을 삭제할까요?', 'Delete this saved template?'), [
+      <Pressable analyticsId="meetup_template_picker.control.3" accessibilityRole="button" disabled={locked} accessibilityState={{ disabled: locked }} style={button} onPress={() => { play('selection'); if (Platform.OS === 'web') { if (globalThis.confirm(say('이 템플릿을 삭제할까요?', 'Delete this saved template?'))) void remove(preview.id); }
+        else Alert.alert(say('템플릿 삭제', 'Delete template'), say('이 템플릿을 삭제할까요?', 'Delete this saved template?'), [
         { text: say('취소', 'Cancel'), style: 'cancel' }, { text: say('삭제', 'Delete'), style: 'destructive', onPress: () => void remove(preview.id) },
       ]); }}>
         <ThemedText type="small" themeColor="danger">{say('이 템플릿 삭제', 'Delete this template')}</ThemedText>

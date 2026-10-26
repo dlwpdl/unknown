@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
+import { Typography } from '@/constants/design-system';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -33,7 +34,7 @@ export function StateCard({ kind = 'empty', title, body, actionLabel, onAction }
     {actionLabel && onAction && <Pressable lens analyticsId="components_state-card.pressable.1" accessibilityRole="button" accessibilityLabel={actionLabel}
       onPress={() => { play(kind === 'error' ? 'warning' : 'selection'); onAction(); }}
       style={({ pressed }) => [styles.action, { backgroundColor: theme.accent, opacity: pressed ? 0.8 : 1 }]}>
-      <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{actionLabel}</ThemedText>
+      <ThemedText type="smallBold" style={[Typography.menu, { color: theme.accentInk }]}>{actionLabel}</ThemedText>
     </Pressable>}
   </View>;
 }
@@ -41,7 +42,7 @@ export function StateCard({ kind = 'empty', title, body, actionLabel, onAction }
 const styles = StyleSheet.create({
   card: { borderWidth: 1, borderRadius: 16, padding: Spacing.four, gap: Spacing.two, alignItems: 'center' },
   glyph: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.one },
-  title: { textAlign: 'center' },
-  body: { textAlign: 'center' },
+  title: { ...Typography.section, textAlign: 'center' },
+  body: { fontSize: 14, lineHeight: 22, textAlign: 'center' },
   action: { minHeight: 44, borderRadius: 999, paddingHorizontal: Spacing.four, alignItems: 'center', justifyContent: 'center', marginTop: Spacing.two },
 });

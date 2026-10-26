@@ -43,6 +43,111 @@ function module(file, imports = {}, dev = true) {
 const externalRatings = () => module('src/lib/place-external-ratings.ts', { './place-external-ratings.json': JSON.parse(readFileSync(new URL('src/lib/place-external-ratings.json', root), 'utf8')) });
 const data = (snapshot) => module('src/lib/city-places.ts', { '@/lib/mock': { CITIES: cities }, './city-places.catalog.json': snapshot, './place-external-ratings': externalRatings() });
 
+function regionalFixture() {
+  const seed = catalog(), city = seed.cities.vancouver;
+  const place = { ...city.places[0], id: 'osm:node:999999999999', name: 'Regional fixture park', address: 'Coquitlam, BC', sourceUrl: 'https://www.openstreetmap.org/node/999999999999' };
+  city.regionalPlaces = [place, { ...city.places[0], name: 'Ignored regional duplicate' }];
+  city.regionalPhotos = [{ ...photos().cities.vancouver[0], placeId: place.id }, { ...photos().cities.vancouver[0], artist: 'Ignored replacement' }];
+  return { seed, city, place };
+}
+
+test('optional regional facts join discovery once without changing legacy base arrays or visited status', () => {
+  const { seed, city, place } = regionalFixture(), original = JSON.stringify(city.places), api = data(seed);
+  const found = api.getCityPlaces('vancouver').filter(row => row.id === place.id);
+  assert.equal(found.length, 1);
+  assert.equal(found[0].address, 'Coquitlam, BC');
+  assert.equal(found[0].photo.imageSha256, city.regionalPhotos[0].imageSha256);
+  assert.equal(found[0].glingVisited, undefined);
+  assert.equal(found[0].recommendation, undefined);
+  assert.equal(api.getCityPlaces('vancouver').filter(row => row.id === city.places[0].id).length, 1);
+  assert.equal(api.getCityPlaces('vancouver').find(row => row.id === city.places[0].id).name, city.places[0].name);
+  const basePhoto = photos().cities.vancouver[0];
+  assert.equal(api.getCityPlaces('vancouver').find(row => row.id === basePhoto.placeId).photo.artist, basePhoto.artist);
+  assert.ok(api.getCityDiscoveryPlaces('vancouver').some(row => row.id === place.id));
+  assert.equal(JSON.stringify(city.places), original);
+  assert.match(api.getCityPlacesCoverage('vancouver'), /인근/);
+});
+
+test('older server omission preserves bundled regional additions while explicit empty arrays remove them', () => {
+  const { seed, place } = regionalFixture(), api = data(seed), next = structuredClone(seed);
+  delete next.cities.vancouver.regionalPlaces; delete next.cities.vancouver.regionalPhotos;
+  next.collectedAt = new Date(fixtureTime).toISOString();
+  assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
+  assert.ok(api.getCityDiscoveryPlaces('vancouver').some(row => row.id === place.id));
+  const removed = structuredClone(next);
+  removed.cities.vancouver.regionalPlaces = []; removed.cities.vancouver.regionalPhotos = [];
+  removed.collectedAt = new Date(fixtureTime + 1000).toISOString();
+  assert.equal(api.replaceCityPlacesCatalog(removed, fixtureNow), true);
+  assert.ok(!api.getCityPlaces('vancouver').some(row => row.id === place.id));
+  assert.ok(!api.getCityPlacesCoverage('vancouver').includes('인근'));
+});
+
+test('invalid regional facts and photos cannot change the last valid catalog', () => {
+  for (const mutate of [
+    city => { city.regionalPlaces = null; },
+    city => { city.regionalPhotos = null; },
+    city => { city.regionalPlaces[0].cityId = 'toronto'; },
+    city => { city.regionalPlaces[0].sourceUrl = 'https://example.org/forged'; },
+    city => { city.regionalPlaces[0].latitude = NaN; },
+    city => { city.regionalPlaces.push({ ...city.regionalPlaces[0] }); },
+    city => { city.regionalPlaces = Array.from({ length: 201 }, (_, index) => ({ ...city.regionalPlaces[0], id: `osm:node:${999990000000 + index}`, sourceUrl: `https://www.openstreetmap.org/node/${999990000000 + index}` })); },
+    city => { city.regionalPhotos[0].placeId = 'osm:node:987654321111'; },
+    city => { city.regionalPhotos[0].license = 'Unknown'; },
+    city => { city.regionalPhotos[0].uri = 'https://example.org/unsigned.jpg'; },
+  ]) {
+    const { seed, city } = regionalFixture(), api = data(), before = api.cityPlacesRevision();
+    seed.collectedAt = new Date(fixtureTime).toISOString(); mutate(city);
+    assert.throws(() => api.replaceCityPlacesCatalog(seed, fixtureNow), /INVALID_PLACE_CATALOG/);
+    assert.equal(api.cityPlacesRevision(), before);
+  }
+});
+
+test('regional Openverse photos reuse the existing exact Flickr identity and licence rules', () => {
+  const seed = catalog(), city = seed.cities.vancouver;
+  const place = { ...city.places[0], id: 'osm:node:9381204484', name: 'Port Coquitlam Cenotaph', address: '2580 Shaughnessy Street, Port Coquitlam, BC', sourceUrl: 'https://www.openstreetmap.org/node/9381204484' };
+  city.regionalPlaces = [place]; city.regionalPhotos = [{ cityId: 'vancouver', placeId: place.id, title: 'Port Coquitlam Cenotaph', artist: 'Niall Williams', discoveredVia: 'Openverse', license: 'CC BY-SA 2.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/2.0/', uri: 'https://live.staticflickr.com/5488/9577330885_201ecb9d5a_b.jpg', sourceUrl: 'https://www.flickr.com/photos/38601566@N00/9577330885', imageSha256: '00490722e63200677042197971b2a2773c5390c1451003eb59366326faf7efb6' }];
+  seed.collectedAt = new Date(fixtureTime).toISOString();
+  const api = data(); assert.equal(api.replaceCityPlacesCatalog(seed, fixtureNow), true);
+  assert.equal(api.getCityPlaces('vancouver').find(row => row.id === place.id).photo.sourceUrl, city.regionalPhotos[0].sourceUrl);
+  for (const [field, value] of [['uri','https://live.staticflickr.com/5488/9577330886_201ecb9d5a_b.jpg'], ['licenseUrl','https://creativecommons.org/licenses/by/2.0/'], ['sourceUrl','https://example.org/photos/38601566@N00/9577330885'], ['uri',city.regionalPhotos[0].uri+'?token=untrusted']]) {
+    const bad = structuredClone(seed); bad.collectedAt = new Date(fixtureTime + 1000).toISOString(); bad.cities.vancouver.regionalPhotos[0][field] = value;
+    assert.throws(() => api.replaceCityPlacesCatalog(bad, fixtureNow), /INVALID_PLACE_CATALOG/);
+  }
+});
+
+test('reviewed Coquitlam-area records use the existing exact map and scoped search contracts', async () => {
+  const seed = catalog(), api = data(), city = seed.cities.vancouver;
+  assert.equal(Object.keys(seed.cities).length, 11);
+  assert.equal(city.places.length, 200);
+  assert.equal(photos().cities.vancouver.length, 147, 'shipped photo bank remains intact; the staged operations payload separately retains its 68 base photos');
+  const reviewed = JSON.parse(readFileSync(new URL('docs/research/coquitlam-regional-catalog-20261024.json', root), 'utf8'));
+  assert.deepEqual(city.regionalPlaces.map(place => place.id).sort(), [...reviewed.placeIds].sort());
+  assert.deepEqual(city.regionalPhotos.map(photo => photo.placeId).sort(), [...reviewed.photoPlaceIds].sort());
+  assert.ok(reviewed.excludedPriorPlaceIds.every(id => !city.regionalPlaces.some(place => place.id === id)));
+  for (const place of city.regionalPlaces) {
+    assert.match(place.address, /(?:Coquitlam|New Westminster), BC/, 'new additions retain an allowed actual municipality');
+    assert.doesNotMatch(place.address, /(?:Surrey|Port Moody|Anmore|Belcarra), BC/, 'scope revision applies to additions without deleting legacy base identities');
+  }
+  const townCentre = api.getCityDiscoveryPlaces('vancouver').find(place => place.id === 'osm:way:41745659');
+  assert.match(townCentre.address, /Coquitlam/);
+  const route = placeMapRoute(townCentre);
+  assert.equal(route.pathname, '/map'); assert.equal(route.params.cityId, 'vancouver'); assert.equal(route.params.placeId, townCentre.id);
+  assert.ok(route.params.placeRequest, 'existing map reselection request remains present');
+  const search = module('src/lib/unified-search.ts', { './city-places.ts': api, './delivery-partners.ts': { DELIVERY_PARTNERS: [] }, './mock.ts': { CITIES: cities.map(city => ({ ...city, state: 'open' })) } });
+  const calls = [], client = { rpc(name, args) { calls.push({ name, args }); return Promise.resolve({ data: { query: args.p_query, cityId: args.p_city_id, kind: args.p_kind, offset: args.p_offset, items: [], links: [], hasMore: false, nextOffset: args.p_offset }, error: null }); } };
+  const page = await search.loadUnifiedSearch(client, { query: 'Town Centre Park', cityId: 'vancouver', kind: 'place' });
+  assert.equal(page.items.length, 1);
+  assert.equal(page.items[0].id, townCentre.id); assert.equal(page.items[0].cityId, 'vancouver');
+  assert.match(page.items[0].subtitle, /Coquitlam/);
+  assert.equal(calls[0].name, 'search_public_directory');
+  assert.deepEqual(Object.keys(calls[0].args.p_places[0]).sort(), ['cityId', 'placeId', 'rank']);
+  for (const id of reviewed.missingPhotoPlaceIds) {
+    assert.equal(api.getCityDiscoveryPlaces('vancouver').find(place => place.id === id).photo, null, 'unverified place photo stays an honest fallback');
+  }
+  assert.match(city.regionalPhotos.find(photo => photo.placeId === 'osm:way:170530924').title, /June 2020.*archival/);
+  assert.ok(city.regionalPlaces.every(place => !api.getCityPlaces('vancouver').find(row => row.id === place.id).glingVisited));
+});
+
 test('an unreviewed catalog never fills city recommendations with ordinary businesses', () => {
   const snapshot = catalog();
   for (const city of Object.values(snapshot.cities)) { delete city.recommendations; delete city.diningRecommendations; }
@@ -307,7 +412,9 @@ test('real OSM data covers every city with canonical IDs, coordinates and extrac
   assert.deepEqual(Object.keys(source.cities).sort(), cities.map(c => c.id).sort());
   for (const city of cities) {
     const stored = source.cities[city.id], places = data().getCityPlaces(city.id);
-    assert.ok(places.length > 0 && places.length <= 200, city.id);
+    assert.ok(stored.places.length > 0 && stored.places.length <= 200, `${city.id}: legacy base remains bounded`);
+    assert.ok((stored.regionalPlaces ?? []).length <= 200, `${city.id}: optional extension remains bounded`);
+    assert.equal(places.length, new Set([...stored.places, ...(stored.regionalPlaces ?? [])].map(place => place.id)).size);
     assert.match(stored.responseSha256, /^[a-f0-9]{64}$/);
     assert.ok(stored.query.includes('area(' + (3600000000 + Number(stored.boundaryId.split(':').at(-1))) + ')'));
     assert.equal(new Set(places.map(p => p.id)).size, places.length);
@@ -442,7 +549,7 @@ test('unknown city and a place belonging to another city are explicit errors', (
 test('every city has at least three licensed same-place photos and missing photos stay empty', () => {
   const bank = photos();
   for (const city of cities) {
-    const accepted = photoRows(bank, city.id);
+    const accepted = [...photoRows(bank, city.id), ...(catalog().cities[city.id].regionalPhotos ?? [])];
     const rows = data().getCityPlaces(city.id), pictured = rows.filter(p => p.photo);
     assert.ok(pictured.length >= 3, city.id + ' needs three verified place photos');
     for (const p of pictured) {
@@ -692,7 +799,7 @@ test('mixed shipped Top lists stay capped and preserve every admitted discovery 
     assert.ok(selected.length >= city.recommendations.length && selected.length <= 50, cityId);
     assert.equal(new Set(selected.map(place => place.id)).size, selected.length, cityId);
     const discovery = Array.from(api.getCityDiscoveryPlaces(cityId));
-    const admitted = new Set([...city.recommendations, ...(city.diningRecommendations ?? [])].map(pick => pick.placeId));
+    const admitted = new Set([...city.recommendations, ...(city.diningRecommendations ?? [])].map(pick => pick.placeId).concat((city.regionalPlaces ?? []).map(place => place.id)));
     assert.deepEqual(new Set(discovery.map(place => place.id)), admitted, `${cityId}: all prior map identities remain`);
     assert.deepEqual(new Set(discovery.filter(place => place.recommendation).map(place => place.id)), new Set(selected.map(place => place.id)), `${cityId}: Top badges agree`);
     const photographed = new Set(photoRows(bank, cityId).map(photo => photo.placeId));

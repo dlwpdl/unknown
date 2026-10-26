@@ -13,7 +13,7 @@ import { ControlStyles, IconSize, controlPresentation } from '@/constants/design
 import { ChatIdentitySwitcher } from '@/components/chat-identity-switcher';
 
 // Top-right entry to "나" on every tab: the member's photo when signed in, the person symbol otherwise.
-export function ProfileAvatarButton({ enableBusinessSwitch = false, onBusinessSwitchAvailabilityChange }: { enableBusinessSwitch?: boolean; onBusinessSwitchAvailabilityChange?: (available: boolean) => void }) {
+export function ProfileAvatarButton({ enableBusinessSwitch = true, onBusinessSwitchAvailabilityChange }: { enableBusinessSwitch?: boolean; onBusinessSwitchAvailabilityChange?: (available: boolean) => void }) {
   const { t } = useLanguage();
   const theme = useTheme();
   const router = useRouter();

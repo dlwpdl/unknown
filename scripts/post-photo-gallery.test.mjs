@@ -13,6 +13,7 @@ function loadGallery(page = null, width = 390, platform = 'ios') {
   }).outputText;
   const values = [], refs = [], effects = [], scrolls = [], feedback = [];
   let stateCall = 0, refCall = 0, effectCall = 0, pending = [], viewer = 'author';
+  let windowDimensions = { width: 390, height: 844 };
   vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
     if (name === 'expo-image') return { Image: (props) => ({ type: 'Image', props }) };
     if (name === 'react') return {
@@ -32,7 +33,7 @@ function loadGallery(page = null, width = 390, platform = 'ios') {
     };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
 
-    if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ top: 44, bottom: 34 }) };
+    if (name === 'react-native-safe-area-context') return { SafeAreaProvider: 'SafeAreaProvider', SafeAreaView: 'SafeAreaView' };
     if (name === 'react-native-reanimated') return {
       __esModule: true, default: { View: 'AnimatedView' }, useReducedMotion: () => true, runOnJS: (fn) => fn,
       useSharedValue: (initial) => refs[refCall++] ??= { value: initial, get() { return this.value; }, set(value) { this.value = value; } },
@@ -49,7 +50,7 @@ function loadGallery(page = null, width = 390, platform = 'ios') {
     if (name === '@/lib/feed-data') return { getPostImageSource };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: (kind) => feedback.push(kind) }) };
     if (name === 'react-native') return {
-      StyleSheet: { create: (value) => value, hairlineWidth: 1 }, Platform: { OS: platform }, View: 'View', Modal: 'Modal', useWindowDimensions: () => ({ width: 390, height: 844 }),
+      StyleSheet: { create: (value) => value, hairlineWidth: 1 }, Platform: { OS: platform }, View: 'View', Modal: 'Modal', useWindowDimensions: () => windowDimensions,
     };
     if (name === '@/components/analytics-controls') return { Pressable: 'Pressable', ScrollView: 'ScrollView' };
     if (name === '@/components/themed-text') return { ThemedText: (props) => ({ type: 'ThemedText', props }) };
@@ -65,7 +66,7 @@ function loadGallery(page = null, width = 390, platform = 'ios') {
     }
     pending.forEach(callback => callback());
     return tree;
-  }, scrolls, feedback, setViewer: (id) => { viewer = id; } };
+  }, scrolls, feedback, setViewer: (id) => { viewer = id; }, setWindowDimensions: (value) => { windowDimensions = value; } };
 }
 
 const nodes = (tree) => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap((value) => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
@@ -300,6 +301,53 @@ test('스와이프와 화면 폭 변경이 같은 선택 사진을 유지한다'
   assert.equal(thumbnails(tree)[0].props.accessibilityState.selected, true);
   hero(tree).props.onScroll({ nativeEvent: { contentOffset: { x: 9000 } } });
   assert.equal(thumbnails(gallery.Gallery(props))[2].props.accessibilityState.selected, true);
+});
+
+test('an already-open photo viewer preserves its selected original through window and available-frame resizing', () => {
+  const gallery = loadGallery(null, 0);
+  const props = { post: { id: 'resize-open', title: 'Resize photos', imageUris: ['one', 'two', 'three'] } };
+  // Child layout frames are independent fixture inputs, not native safe-area predictions.
+  const layouts = [
+    { window: { width: 466, height: 678 }, frame: 434, viewport: { width: 434, height: 500 }, image: [375, 500], maxHeight: 372.9, offset: 868 },
+    { window: { width: 951, height: 669 }, frame: 919, viewport: { width: 919, height: 491 }, image: [368.25, 491], maxHeight: 367.95, offset: 1838 },
+    { window: { width: 669, height: 951 }, frame: 637, viewport: { width: 637, height: 773 }, image: [579.75, 773], maxHeight: 520, offset: 1274 },
+    { window: { width: 466, height: 678 }, frame: 434, viewport: { width: 434, height: 500 }, image: [375, 500], maxHeight: 372.9, offset: 868 },
+  ];
+  gallery.setWindowDimensions(layouts[0].window);
+  let tree = gallery.Gallery(props);
+  tree.props.onLayout({ nativeEvent: { layout: { width: layouts[0].frame } } });
+  tree = gallery.Gallery(props);
+  thumbnails(tree)[2].props.onPress(); tree = gallery.Gallery(props);
+  const selectedImage = nodes(hero(tree)).find(node => node.props?.accessibilityLabel === 'Resize photos 사진 3');
+  selectedImage.props.onLoad({ source: { width: 600, height: 800 } });
+  nodes(hero(tree)).find(node => node.props?.accessibilityLabel === 'Resize photos 사진 3 크게 보기').props.onPress();
+  tree = gallery.Gallery(props);
+  const opened = nodes(tree).find(node => node.type === 'Modal');
+  assert.equal(opened?.props.visible, true);
+
+  for (const layout of layouts) {
+    gallery.setWindowDimensions(layout.window);
+    tree = gallery.Gallery(props);
+    assert.ok(viewport(tree), 'Resizing does not close an already-open viewer');
+    tree.props.onLayout({ nativeEvent: { layout: { width: layout.frame } } });
+    viewport(tree).props.onLayout({ nativeEvent: { layout: layout.viewport } });
+    tree = gallery.Gallery(props);
+    assert.equal(thumbnails(tree)[2].props.accessibilityState.selected, true);
+    assert.equal(thumbnails(tree).filter(node => node.props.accessibilityState.selected).length, 1);
+    const modal = nodes(tree).find(node => node.type === 'Modal');
+    assert.equal(modal?.props.visible, true);
+    const original = nodes(modal).find(node => node.props?.source?.uri);
+    assert.equal(original.props.source.uri, 'three');
+    assert.deepEqual([original.props.style.width, original.props.style.height], layout.image);
+    const inline = nodes(hero(tree)).find(node => node.props?.accessibilityLabel === 'Resize photos 사진 3');
+    assert.equal(inline.props.style.width, layout.frame, 'Use the reported gallery frame, not window width');
+    assert.ok(Math.abs(inline.props.style.maxHeight - layout.maxHeight) < 1e-9, 'Inline height responds to the current window height');
+    assert.equal(gallery.scrolls.filter(call => call.id === 'components_post-photo-gallery.scrollview.1').at(-1).x, layout.offset);
+  }
+  control(tree, 'close').props.onPress(); tree = gallery.Gallery(props);
+  assert.equal(viewport(tree), undefined);
+  assert.equal(thumbnails(tree)[2].props.accessibilityState.selected, true, 'Closing returns to the same selected photo');
+  assert.equal(gallery.scrolls.filter(call => call.id === 'components_post-photo-gallery.scrollview.1').at(-1).x, 868);
 });
 
 test('원본이 없는 위치를 건너뛰어도 썸네일과 원본이 같은 사진을 가리킨다', () => {

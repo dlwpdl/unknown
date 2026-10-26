@@ -2,6 +2,22 @@ begin;
 set local search_path=public,extensions;
 select no_plan();
 
+select is((select proowner from pg_proc where oid='public.get_chilling_roster_v2(uuid)'::regprocedure),
+  (select proowner from pg_proc where oid='public.get_chilling_roster(uuid)'::regprocedure),'V2 preserves the legacy function owner');
+select is((select proconfig::text from pg_proc where oid='public.get_chilling_roster_v2(uuid)'::regprocedure),
+  (select proconfig::text from pg_proc where oid='public.get_chilling_roster(uuid)'::regprocedure),'V2 preserves the fixed search path');
+select is((select prosrc from pg_proc where oid='public.get_chilling_roster_v2(uuid)'::regprocedure),
+  (select replace(prosrc,'order by is_host desc,id limit 50','order by is_host desc,id limit 5000') from pg_proc where oid='public.get_chilling_roster(uuid)'::regprocedure),
+  'V2 changes only the row bound inside the real privacy projection');
+select ok((select prosecdef from pg_proc where oid='public.get_chilling_roster_v2(uuid)'::regprocedure),'V2 retains security definer');
+select ok(has_function_privilege('authenticated','public.get_chilling_roster_v2(uuid)','execute'),'Authenticated callers retain scoped roster access');
+select ok(not has_function_privilege('anon','public.get_chilling_roster_v2(uuid)','execute'),'V2 denies anonymous access');
+select ok(not has_function_privilege('service_role','public.get_chilling_roster_v2(uuid)','execute'),'V2 exposes no service-role RPC');
+select is((select string_agg(grantor||':'||grantee||':'||privilege_type||':'||is_grantable,',' order by grantor,grantee,privilege_type,is_grantable)
+  from pg_proc cross join lateral aclexplode(proacl) where oid='public.get_chilling_roster_v2(uuid)'::regprocedure),
+  (select string_agg(grantor||':'||grantee||':'||privilege_type||':'||is_grantable,',' order by grantor,grantee,privilege_type,is_grantable)
+  from pg_proc cross join lateral aclexplode(proacl) where oid='public.get_chilling_roster(uuid)'::regprocedure),'V2 preserves the exact legacy ACL');
+
 insert into public.cities(id,name,province,timezone) values('capacity-test','Capacity test','BC','America/Vancouver') on conflict do nothing;
 insert into public.tags(id,slug,label,kind) values(31995,'capacity-test','Capacity test','meetup') on conflict do nothing;
 insert into auth.users(id,email)
@@ -90,8 +106,44 @@ select set_config('request.jwt.claims','{"sub":"ca500000-0000-4000-8000-00000000
 set local role authenticated;
 select lives_ok($$select public.respond_meetup_request('ca530000-0000-4000-8000-000000004999','approved')$$,'The real approval RPC fills paid seat5000');
 select throws_ok($$select public.respond_meetup_request('ca530000-0000-4000-8000-000000005000','approved')$$,'P0001','MEETUP_FULL','The next approval cannot overfill5000');
-select is(jsonb_array_length(public.get_chilling_roster('ca520000-0000-4000-8000-000000000003')),5000,'Scoped roster includes every one of the5000 participants');
-select is((select count(*)::integer from public.get_conversation_members((select id from public.conversations where group_post_id='ca520000-0000-4000-8000-000000000003'))),5000,'Group-chat roster is not truncated to fifty');
+select is(jsonb_array_length(public.get_chilling_roster('ca520000-0000-4000-8000-000000000003')),50,'Legacy clients still receive at most fifty members after the capacity migration');
+select is(jsonb_array_length(public.get_chilling_roster_v2('ca520000-0000-4000-8000-000000000003')),5000,'New clients receive metadata for all five thousand participants');
+select is((select count(*)::integer from public.get_conversation_members((select id from public.conversations where group_post_id='ca520000-0000-4000-8000-000000000003'))),50,'The legacy conversation-member RPC keeps its fifty-member contract');
+reset role;
+
+-- A member beyond the old page boundary still uses the unchanged per-photo Storage policy.
+insert into private.chilling_applications(id,author_id,profile,answer,question,consent_version) values
+ ('ca530000-0000-4000-8000-000000004999','ca510000-0000-4000-8000-000000004999',
+  '{"version":2,"displayName":"Late alias","intro":"Private intro","shareWithMembers":false,"photoPaths":["ca510000-0000-4000-8000-000000004999/1792380000000-aabbccdd.webp"]}',
+  'Synthetic answer','Synthetic question','chilling-v2');
+insert into storage.objects(bucket_id,name,owner_id,metadata) values
+ ('meetup-profiles','ca510000-0000-4000-8000-000000004999/1792380000000-aabbccdd.webp','ca510000-0000-4000-8000-000000004999','{"size":1024,"mimetype":"image/webp"}');
+select set_config('storage.operation','storage.object.get_authenticated',true);
+select set_config('request.jwt.claims','{"sub":"ca510000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+set local role authenticated;
+select is(public.get_chilling_member_profile('ca520000-0000-4000-8000-000000000003','ca510000-0000-4000-8000-000000004999')->'photoPaths','[]'::jsonb,'A later member private photo remains hidden without member-sharing consent');
+select is((select count(*)::integer from storage.objects where bucket_id='meetup-profiles' and name='ca510000-0000-4000-8000-000000004999/1792380000000-aabbccdd.webp'),0,'Storage denies a later member photo before consent');
+reset role;
+update private.chilling_applications set profile=profile||'{"shareWithMembers":true}' where id='ca530000-0000-4000-8000-000000004999';
+set local role authenticated;
+select ok(not exists(select 1 from jsonb_array_elements(public.get_chilling_roster('ca520000-0000-4000-8000-000000000003')) item where item->>'userId'='ca510000-0000-4000-8000-000000004999'),'The photo subject is beyond the old fifty-member page');
+select is((select item->'photoPaths'->>0 from jsonb_array_elements(public.get_chilling_roster_v2('ca520000-0000-4000-8000-000000000003')) item where item->>'userId'='ca510000-0000-4000-8000-000000004999'),
+  'ca510000-0000-4000-8000-000000004999/1792380000000-aabbccdd.webp','V2 includes only the consented meetup photo, not general identity');
+select is((select count(*)::integer from storage.objects where bucket_id='meetup-profiles' and name='ca510000-0000-4000-8000-000000004999/1792380000000-aabbccdd.webp'),1,'An approved viewer can read the consented photo beyond legacy fifty');
+reset role;
+insert into public.blocks(blocker_id,blocked_id) values('ca510000-0000-4000-8000-000000000001','ca510000-0000-4000-8000-000000004999');
+set local role authenticated;
+select ok(not exists(select 1 from jsonb_array_elements(public.get_chilling_roster_v2('ca520000-0000-4000-8000-000000000003')) item where item->>'userId'='ca510000-0000-4000-8000-000000004999'),'A current block removes the later member from V2');
+select is((select count(*)::integer from storage.objects where bucket_id='meetup-profiles' and name='ca510000-0000-4000-8000-000000004999/1792380000000-aabbccdd.webp'),0,'A block revokes the later photo independently of roster limits');
+reset role;
+delete from public.blocks where blocker_id='ca510000-0000-4000-8000-000000000001' and blocked_id='ca510000-0000-4000-8000-000000004999';
+select set_config('request.jwt.claims','{"sub":"ca500000-0000-4000-8000-000000000008","role":"authenticated"}',true);
+set local role authenticated;
+select is(public.get_chilling_roster_v2('ca520000-0000-4000-8000-000000000003'),'[]'::jsonb,'A nonmember cannot read the expanded roster');
+reset role;
+select set_config('request.jwt.claims','{"sub":"ca500000-0000-4000-8000-000000000007","role":"authenticated"}',true);
+set local role authenticated;
+select throws_ok($$select public.get_chilling_roster_v2('ca520000-0000-4000-8000-000000000003')$$,'P0001','ACCOUNT_LOCKED','V2 retains active-account enforcement');
 reset role;
 
 -- The existing Free50 room survives at its full host-inclusive capacity.
@@ -141,5 +193,29 @@ reset role;
 select ok(not has_function_privilege('anon','private.meetup_capacity_limit(uuid)','execute'),'Capacity policy exposes no anonymous membership oracle');
 select ok(not has_function_privilege('authenticated','private.meetup_capacity_limit(uuid)','execute'),'Clients cannot inspect another host private billing helper');
 select ok(not has_function_privilege('service_role','private.guard_meetup_capacity_admission()','execute'),'Trigger entry point is not granted as a service RPC');
+select set_config('request.jwt.claims','{"sub":"ca510000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+set local role authenticated;
+select public.create_report('post','ca520000-0000-4000-8000-000000000003','other','Synthetic local privacy check');
+select is(public.get_chilling_roster_v2('ca520000-0000-4000-8000-000000000003'),'[]'::jsonb,'Reporting the post immediately revokes V2 for that viewer');
+select is((select count(*)::integer from storage.objects where bucket_id='meetup-profiles' and name='ca510000-0000-4000-8000-000000004999/1792380000000-aabbccdd.webp'),0,'A current report also revokes the later photo');
+reset role;
+-- Context closure still revokes both contracts immediately.
+update public.posts set room_preview=room_preview||'{"closed":true}' where id='ca520000-0000-4000-8000-000000000003';
+select set_config('request.jwt.claims','{"sub":"ca500000-0000-4000-8000-000000000003","role":"authenticated"}',true);
+set local role authenticated;
+select is(public.get_chilling_roster('ca520000-0000-4000-8000-000000000003'),'[]'::jsonb,'Closed context revokes the legacy roster');
+select is(public.get_chilling_roster_v2('ca520000-0000-4000-8000-000000000003'),'[]'::jsonb,'Closed context revokes V2 without a refresh job');
+reset role;
+-- Advance a fixture to an elapsed event; do not disable the new capacity or privacy guards.
+alter table public.posts disable trigger posts_chilling_event_details;
+alter table public.posts disable trigger posts_membership_limit;
+update public.posts set room_preview=room_preview||jsonb_build_object('eventKind','once','startsAt',now()-interval '2 days','endsAt',now()-interval '1 day')
+  where id='ca520000-0000-4000-8000-000000000001';
+alter table public.posts enable trigger posts_chilling_event_details;
+alter table public.posts enable trigger posts_membership_limit;
+select set_config('request.jwt.claims','{"sub":"ca500000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+set local role authenticated;
+select is(public.get_chilling_roster_v2('ca520000-0000-4000-8000-000000000001'),'[]'::jsonb,'V2 checks actual expiry without a refresh job');
+reset role;
 select * from finish();
 rollback;

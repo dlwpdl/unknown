@@ -10,7 +10,7 @@ import { groupJournalPosts, appendUniquePosts } from '../src/lib/feed-data.ts';
 import { withPostMap, postMapBody } from '../src/lib/post-maps.ts';
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
-function screen({ createdPost, deferPublish = false, os = 'web' } = {}) {
+function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = false, width = 390, fontScale = 1 } = {}) {
   const slots = [], effects = [], calls = [], writes = [], drafts = [], routes = [], feedback = [], params = {};
   let viewer = 'viewer';
   let at = 0;
@@ -21,7 +21,7 @@ function screen({ createdPost, deferPublish = false, os = 'web' } = {}) {
   const imports = {
     react: { useState: initial => { const i = slot(initial); return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; }, useRef: initial => slots[slot(() => ({ current: initial }))], useMemo: fn => fn(), useCallback: fn => fn, useEffect: fn => effects.push(fn) },
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    'react-native': { Platform: { OS: os }, useWindowDimensions: () => ({ width: 390, fontScale: 1 }), View: 'View', KeyboardAvoidingView: 'KeyboardAvoidingView', TextInput: 'TextInput', Modal: 'Modal', StyleSheet: { create: x => x, hairlineWidth: 1 }, Animated: { Value, View: 'AnimatedView', timing: () => ({ start() {} }), spring: () => ({ start() {} }) }, Alert: { alert() {} }, Keyboard: { dismiss() {} }, DeviceEventEmitter: {}, Easing: { out: x => x, quad: 0 } },
+    'react-native': { Platform: { OS: os }, useWindowDimensions: () => ({ width, fontScale }), View: 'View', KeyboardAvoidingView: 'KeyboardAvoidingView', TextInput: 'TextInput', Modal: 'Modal', StyleSheet: { create: x => x, hairlineWidth: 1 }, Animated: { Value, View: 'AnimatedView', timing: () => ({ start() {} }), spring: () => ({ start() {} }) }, Alert: { alert() {} }, Keyboard: { dismiss() {} }, DeviceEventEmitter: {}, Easing: { out: x => x, quad: 0 } },
     'expo-router': { useLocalSearchParams: () => params, useRouter: () => ({ push: path => routes.push(path), navigate: path => routes.push(path), setParams: next => Object.assign(params, next) }), useScrollToTop() {} },
     'react-native-reanimated': { default: { View: 'ReanimatedView' }, useReducedMotion: () => true },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', SafeAreaProvider: 'SafeAreaProvider', useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) },
@@ -46,7 +46,7 @@ function screen({ createdPost, deferPublish = false, os = 'web' } = {}) {
     return new Proxy({}, { get: (_, key) => key === '__esModule' ? true : key === 'Image' ? 'Image' : key === 'default' ? { View: 'ReanimatedView' } : String(key) });
   }), requestAnimationFrame: fn => fn(), queueMicrotask: fn => fn(), setTimeout, clearTimeout });
   let cleanup;
-  const render = () => { at = 0; effects.length = 0; return exports.default({}); };
+  const render = () => { at = 0; effects.length = 0; return exports.default({ meetupsOnly }); };
   const refresh = () => { cleanup?.(); cleanup = effects.find(fn => String(fn).includes('return cancelFeedRequests'))(); };
   const list = () => nodes(render()).find(n => n.props?.analyticsId === 'components_feed-screen.flatlist.1').props;
   return { calls, writes, drafts, routes, feedback, list, refresh, params, render, openWriter() { params.compose = '1'; render(); effects.find(fn => String(fn).includes("compose !== '1'"))(); return render(); }, openTopic: () => { render(); effects.find(fn => String(fn).includes('hashtag: undefined'))(); }, setViewer: next => { viewer = next; }, sort: () => { const props = list(); return props.renderItem({ item: null, index: 1 }).props; },
@@ -272,6 +272,19 @@ test('header logo retains its existing Today navigation and selection feedback',
   home.props.onPress();
   assert.deepEqual(app.routes, ['/']);
   assert.ok(app.feedback.includes('selection'));
+});
+
+test('Today and meetup headers share profile switching and retain narrow-header wrapping', () => {
+  for (const meetupsOnly of [false, true]) {
+    const app = screen({ os: 'ios', meetupsOnly, width: 320 });
+    const avatar = nodes(app.render()).find(n => n.type === 'ProfileAvatarButton');
+    assert.ok(avatar);
+    assert.notEqual(avatar.props.enableBusinessSwitch, false, 'Both own-avatar headers must allow the shared profile menu.');
+    assert.equal(typeof avatar.props.onBusinessSwitchAvailabilityChange, 'function');
+    avatar.props.onBusinessSwitchAvailabilityChange(true);
+    const home = nodes(app.render()).find(n => n.props?.analyticsId === 'feed.home');
+    assert.ok(home.props.style.some(style => style?.width === '100%'), 'The existing narrow-header second row makes room for the extra44pt switch control.');
+  }
 });
 
 

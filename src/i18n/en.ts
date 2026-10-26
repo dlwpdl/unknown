@@ -133,7 +133,7 @@ export const en: Translations = {
     endError: 'Couldn’t end the chat. Check your connection.', block: 'Block', blockDone: 'Blocked. Your chat history is kept.',
     blockError: 'Couldn’t block this person. Try again.', member: 'Meetup member',
     slotSummary: (active, locked, available, limit) => [active, locked, available, limit].every(Number.isFinite) ? `${active} active · ${locked} waiting · ${available} of ${limit} free` : 'Checking chat slots…',
-    slotUnlock: (value) => `1 slot frees up on ${new Date(value).toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`,
+    slotUnlock: (value) => `1 slot frees up on ${new Intl.DateTimeFormat('en-CA', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(value))}`,
     slotsLoading: 'Checking chat slots…', slotsNote: 'Meetups and direct chats have separate slots. Pending requests don’t count.',
     slotsFull: 'All your direct chat slots are in use. Slots come back 24 hours after a chat ends.', membership: 'Membership',
   },

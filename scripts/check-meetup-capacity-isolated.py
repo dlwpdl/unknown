@@ -135,7 +135,11 @@ exec postgres -D /tmp/gling-pg -k /tmp/gling-socket -c listen_addresses='' -c sh
         def check_capacity(database, source, label):
             original_check(database, source, label)
             if label == 'profile identity':
+                legacy_state = "select md5(pg_get_functiondef(oid)),proowner,proacl,prosecdef,proconfig from pg_proc where oid='public.get_chilling_roster(uuid)'::regprocedure;"
+                before_roster = checker['sql'](database, legacy_state).stdout
                 checker['sql'](database, (ROOT / 'supabase/migrations/20261025160000_meetup_member_capacity.sql').read_text())
+                assert checker['sql'](database, legacy_state).stdout == before_roster, 'Legacy roster definition, owner, ACL or security attributes changed.'
+                print('PASS: legacy roster definition, owner, ACL, security definer and fixed search path are unchanged.')
                 original_check(database, (ROOT / 'supabase/tests/meetup_member_capacity.test.sql').read_text(), 'meetup member capacity')
 
         checker['main'].__globals__['check_tap'] = check_capacity

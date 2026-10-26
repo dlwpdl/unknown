@@ -14,7 +14,7 @@ function render(platform, props) {
   vm.runInNewContext(code, { exports, require(name) {
     if (name === 'react') return React;
     if (name === 'react/jsx-runtime') return jsx;
-    if (name === 'react-native') return { Text: 'Text', StyleSheet: { create: value => value }, Platform: { OS: platform, select: values => values[platform] ?? values.default } };
+    if (name === 'react-native') return { Text: 'Text', StyleSheet: { create: value => value, flatten: value => Object.assign({}, ...[value].flat(Infinity).filter(Boolean)) }, Platform: { OS: platform, select: values => values[platform] ?? values.default } };
     if (name === '@/constants/theme') return { Fonts: { mono: 'monospace' } };
     if (name === '@/constants/design-system') return designSystem;
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ text: '#fff' }) };

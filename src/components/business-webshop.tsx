@@ -3,7 +3,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Share, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
 import { ControlStyles } from '@/constants/design-system';
@@ -107,7 +107,7 @@ export function WebshopComparisonSheet({ client, shop, name, visible, onClose }:
     {!visible && !!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
     <Modal visible={visible} transparent animationType={reduced ? 'none' : 'slide'} onRequestClose={close}
       onDismiss={() => { const url = pending.current; pending.current = null; if (url && active.current) void launch(url); }}>
-      <View style={styles.backdrop}><Pressable analyticsId="webshop.close-backdrop" accessibilityRole="button" accessibilityLabel={ko ? '가격 비교 닫기' : 'Close price comparison'} onPress={close} style={StyleSheet.absoluteFill} />
+      <SafeAreaProvider><SafeAreaView edges={['top', 'left', 'right']} style={styles.backdrop}><Pressable analyticsId="webshop.close-backdrop" accessibilityRole="button" accessibilityLabel={ko ? '가격 비교 닫기' : 'Close price comparison'} onPress={close} style={StyleSheet.absoluteFill} />
         <SafeAreaView edges={['bottom']} style={[styles.sheet, { backgroundColor: theme.background }]} accessibilityViewIsModal>
           <View style={styles.handle} accessible={false} />
           <View style={styles.heading}><View style={styles.grow}><ThemedText type="small" themeColor="textSecondary">{name}</ThemedText>
@@ -138,7 +138,7 @@ export function WebshopComparisonSheet({ client, shop, name, visible, onClose }:
           <View style={styles.offer}><Pressable analyticsId="webshop.order" accessibilityRole="button" disabled={busy} accessibilityState={{ busy, disabled: busy }} onPress={order}
             style={({ pressed }) => [ControlStyles.action, { backgroundColor: theme.accent, opacity: busy ? 0.45 : pressed ? 0.82 : 1 }]}><ThemedText type="menu" style={{ color: theme.accentInk }}>{busy ? ko ? '여는 중…' : 'Opening…' : ko ? maximumPercent > 0 ? '할인받고 주문하러 가기 ↗' : '웹샵에서 주문하러 가기 ↗' : 'Order from webshop ↗'}</ThemedText></Pressable><UberOrderNotice /></View>
         </SafeAreaView>
-      </View>
+      </SafeAreaView></SafeAreaProvider>
     </Modal>
   </>;
 }

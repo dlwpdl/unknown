@@ -8,7 +8,7 @@ import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { Alert, Animated, AppState, DeviceEventEmitter, Keyboard, LayoutAnimation, Modal, Platform, StyleSheet, UIManager, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ChatIdentitySwitcher } from '@/components/chat-identity-switcher';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
@@ -16,6 +16,7 @@ import { selectChatBusiness } from '@/lib/chat-identity';
 import { subscribeBusinessChat } from '@/lib/business-chat';
 import { loadMyMerchantConnections } from '@/lib/merchant-connections';
 import { ChatRoom } from '@/components/chat-room';
+import { MeetupHistoryChoice } from '@/components/meetup-room-summary';
 import { GlassSurface } from '@/components/glass-surface';
 import { ProfileAvatarButton } from '@/components/profile-avatar-button';
 import { RaisedActionButton } from '@/components/raised-action-button';
@@ -29,9 +30,9 @@ import { TrustBadge } from '@/components/trust-badge';
 import { Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
-import { getCommunityActionError, loadConversations, loadPendingMeetupRequests, MEETUPS_CHANGED_EVENT, respondMeetupRequest, type ConversationPage, type ConversationFilter, type MeetupRequest } from '@/lib/community-data';
+import { getCommunityActionError, loadConversations, loadPendingMeetupRequests, MEETUPS_CHANGED_EVENT, type ConversationPage, type ConversationFilter, type MeetupRequest } from '@/lib/community-data';
 import { meetupRestrictionError } from '@/lib/meetup-policy';
-import { getChillingError } from '@/lib/chilling-data';
+import { getChillingError, respondMeetupRequestV2 } from '@/lib/chilling-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useMembership } from '@/lib/membership-provider';
 import { supabase } from '@/lib/supabase';
@@ -88,7 +89,7 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<{ userId: string; text: string } | null>(null);
   const [requestBusy, setRequestBusy] = useState<string | null>(null);
-  const [approveId, setApproveId] = useState<string | null>(null);
+  const [approveId, setApproveId] = useState<string | null>(null), [shareHistory, setShareHistory] = useState(false);
   const conversations = routeMatches && inbox?.userId === scopeKey && inbox.filter === filter ? inbox.conversations : [];
   const requests = routeMatches && inbox?.userId === scopeKey ? inbox.requests : [];
   const moreRequests = routeMatches && inbox?.userId === scopeKey && inbox.moreRequests === true;
@@ -258,9 +259,9 @@ export default function ChatScreen() {
     const owner = scopeKey;
     processing.current = true; setRequestBusy(request.id);
     try {
-      const nextId = await respondMeetupRequest(supabase, request.id, response);
+      const nextId = await respondMeetupRequestV2(supabase, request.id, response, shareHistory);
       if (currentUser.current !== owner) return;
-      play(response === 'approved' ? 'meetup' : 'warning');
+      play(response === 'approved' ? 'meetup' : 'selection');
       setApproveId(null);
       DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
       await changed();
@@ -270,13 +271,21 @@ export default function ChatScreen() {
       play('warning');
       const code = getCommunityActionError(failure);
       const message = code ? t.actionErrors[code] : null;
-      Alert.alert(code === 'MEETUP_JOIN_RESTRICTED' ? tr("신청자의 새 모임 참여가 제한 중이에요") : message?.title ?? t.chat.requestError, meetupRestrictionError(failure, appLocale) ?? getChillingError(failure));
+      const title = code === 'MEETUP_JOIN_RESTRICTED' ? tr("신청자의 새 모임 참여가 제한 중이에요") : message?.title ?? t.chat.requestError, body = meetupRestrictionError(failure, appLocale) ?? getChillingError(failure);
+      // react-native-web's Alert.alert is a no-op.
+      if (Platform.OS === 'web') globalThis.alert(`${title}\n${body}`); else Alert.alert(title, body);
       await refresh();
     } finally { processing.current = false; if (currentUser.current === owner) setRequestBusy(null); }
   };
 
+  const confirmReject = (request: MeetupRequest) => {
+    play('selection');
+    if (Platform.OS === 'web') { if (globalThis.confirm(tr("이 참여 신청을 거절할까요?"))) void handleRequest(request, 'rejected'); }
+    else Alert.alert(tr("참여 신청 거절"), tr("이 참여 신청을 거절할까요?"), [{ text: tr("돌아가기"), style: 'cancel' }, { text: tr("거절하기"), style: 'destructive', onPress: () => void handleRequest(request, 'rejected') }]);
+  };
+
   if (!auth.isAuthed) return <LoginPanel reason={t.auth.reasonChat} onApple={auth.signInApple} onKakao={auth.signInKakao} onGoogle={auth.signInGoogle} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} />;
-  return <TabContent style={styles.container}><SafeAreaView style={styles.safeArea} edges={['top']}>
+  return <TabContent style={styles.container}><SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}><View style={styles.safeArea}>
     {/* 홈·모임과 같게 제목 줄은 고정한다. 필터와 안내는 목록과 함께 스크롤된다. */}
     <View style={[styles.headRow, styles.headFixed, { backgroundColor: theme.background }]}>
       <ThemedText accessibilityRole="header" style={styles.heading}>{t.tabs.chat}</ThemedText>
@@ -308,11 +317,12 @@ export default function ChatScreen() {
             </View>
             <ThemedText type="small" themeColor="textSecondary">{request.post?.room?.eventKind ? tr("모임 프로필과 질문 답변이 도착했어요.") : request.message || t.chat.requestMessageEmpty}</ThemedText>
             {request.post?.room?.eventKind ? <Pressable analyticsId="app_tabs_chat.pressable.4" onPress={() => { play('selection'); router.push({ pathname: '/meetup-application', params: { requestId: request.id } }); }} accessibilityRole="button" accessibilityLabel={tr("{0}님의 프로필과 신청 답변 검토", (request.requester?.nickname || t.chat.member))} style={styles.action}><ThemedText type="smallBold" themeColor="accent">{tr("프로필과 답변 검토하기 ›")}</ThemedText></Pressable> : <>
-            {approveId === request.id && <ThemedText type="small" themeColor="textSecondary">{tr("승인하면 신청자의 모임 자리 1개를 사용하고 모임 대화에 참여해요. 기존 멤버의 자리는 추가로 사용하지 않아요.")}</ThemedText>}
-            <View style={styles.requestActions}><Pressable analyticsId="app_tabs_chat.pressable.5" onPress={() => { play('selection'); void handleRequest(request, 'rejected'); }} disabled={requestBusy !== null} accessibilityRole="button" accessibilityState={{ disabled: requestBusy !== null }} style={({ pressed }) => [styles.requestButton, Depth.control, { borderColor: theme.line, backgroundColor: theme.card, }]}><ThemedText type="smallBold">{t.chat.reject}</ThemedText></Pressable>
+            {approveId === request.id && <><ThemedText type="small" themeColor="textSecondary">{tr("승인하면 신청자의 모임 자리 1개를 사용하고 모임 대화에 참여해요. 기존 멤버의 자리는 추가로 사용하지 않아요.")}</ThemedText>
+              <MeetupHistoryChoice value={shareHistory} onChange={setShareHistory} disabled={requestBusy !== null} /></>}
+            <View style={styles.requestActions}><Pressable analyticsId="app_tabs_chat.pressable.5" onPress={() => confirmReject(request)} disabled={requestBusy !== null} accessibilityRole="button" accessibilityState={{ disabled: requestBusy !== null }} style={({ pressed }) => [styles.requestButton, Depth.control, { borderColor: theme.line, backgroundColor: theme.card, }]}><ThemedText type="smallBold">{t.chat.reject}</ThemedText></Pressable>
               {approveId === request.id
                 ? <RaisedActionButton compact analyticsId="app_tabs_chat.pressable.6" onPress={() => { play('selection'); void handleRequest(request, 'approved'); }} disabled={requestBusy !== null} busy={requestBusy === request.id} label={tr("확인하고 승인")} />
-                : <Pressable analyticsId="app_tabs_chat.pressable.6" onPress={() => { play('selection'); setApproveId(request.id); }} disabled={requestBusy !== null} accessibilityRole="button" accessibilityState={{ disabled: requestBusy !== null }} style={({ pressed }) => [styles.requestButton, Depth.control, { borderColor: theme.accentDepth, backgroundColor: theme.accent, borderBottomWidth: 3, }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{t.chat.approve}</ThemedText></Pressable>}</View></>}
+                : <Pressable analyticsId="app_tabs_chat.pressable.6" onPress={() => { play('selection'); setShareHistory(false); setApproveId(request.id); }} disabled={requestBusy !== null} accessibilityRole="button" accessibilityState={{ disabled: requestBusy !== null }} style={({ pressed }) => [styles.requestButton, Depth.control, { borderColor: theme.accentDepth, backgroundColor: theme.accent, borderBottomWidth: 3, }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{t.chat.approve}</ThemedText></Pressable>}</View></>}
           </View>)}
           {moreRequests && <Pressable analyticsId="meetup.requests.more" accessibilityRole="button" disabled={loadingMore} style={styles.requestButton} onPress={() => { play('selection'); void loadOlderRequests(); }}><ThemedText type="smallBold" themeColor="accent">{loadingMore ? tr('신청 불러오는 중…') : tr('이전 모임 신청 더 보기')}</ThemedText></Pressable>}
         </>}
@@ -328,12 +338,12 @@ export default function ChatScreen() {
           <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{item.status === 'pending' ? tr("대화 상태 확인 중") : item.status === 'ended' ? t.chat.ended : item.latestBody != null ? listPreview(item.latestBody, tr) : t.chat.newConversation}</ThemedText></View>
         <View style={styles.roomTime}><ThemedText type="small" themeColor="textSecondary">{chatListTime(item.latestAt, undefined, appLocale)}</ThemedText></View>
       </Pressable>} />
-  </SafeAreaView><Modal key={modalConversation?.key ?? 'closed'} visible={focused && !!modalConversation && !!openConversation && routeMatches} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" allowSwipeDismissal onRequestClose={closeConversation} onDismiss={() => {
+  </View></SafeAreaView><Modal key={modalConversation?.key ?? 'closed'} visible={focused && !!modalConversation && !!openConversation && routeMatches} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" allowSwipeDismissal onRequestClose={closeConversation} onDismiss={() => {
     if (presentation.current !== modalConversation) return;
     presentation.current = undefined;
     setModalConversation(undefined);
   }}>
-    {shownConversation && <ChatRoom key={`${scopeKey}:${shownConversation.id}`} conversation={shownConversation} currentUserId={auth.me.id} onChanged={changed} onClose={closeConversation} />}
+    <SafeAreaProvider style={{ flex: 1 }}>{shownConversation && <ChatRoom key={`${scopeKey}:${shownConversation.id}`} conversation={shownConversation} currentUserId={auth.me.id} onChanged={changed} onClose={closeConversation} />}</SafeAreaProvider>
   </Modal></TabContent>;
 }
 
@@ -373,7 +383,7 @@ function ChatAvatar({ kind, title, meetupCategory, initial, avatarUri, active, d
 
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
-  safeArea: { flex: 1, maxWidth: MaxContentWidth, paddingHorizontal: Spacing.three },
+  safeArea: { flex: 1, width: '100%', alignSelf: 'center', maxWidth: MaxContentWidth, paddingHorizontal: Spacing.three },
   list: { gap: Spacing.two, paddingBottom: TabBarHeight + Spacing.three },
   loadingList: { flexGrow: 1, justifyContent: 'center' },
   slotNote: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 44, borderBottomWidth: StyleSheet.hairlineWidth },

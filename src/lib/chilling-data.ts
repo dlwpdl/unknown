@@ -40,9 +40,10 @@ export function normalizeChillingProfile(profile: ChillingProfile): ChillingProf
     || typeof profile.promptOne !== 'string' || typeof profile.promptTwo !== 'string') throw new Error('INVALID_CHILLING_PROFILE');
   const clean = { intro: profile.intro.trim(), interests: profile.interests.map(x => x.trim()),
     promptOne: profile.promptOne.trim(), promptTwo: profile.promptTwo.trim() };
-  if (!clean.intro || clean.intro.length > 160 || clean.interests.length < 1 || clean.interests.length > 8
-    || clean.interests.some(x => !x || x.length > 30) || !clean.promptOne || clean.promptOne.length > 300
-    || !clean.promptTwo || clean.promptTwo.length > 300) throw new Error('INVALID_CHILLING_PROFILE');
+  // Only the intro is required; prompts and interests can be filled in later (see 20261025200000 migration).
+  if (!clean.intro || clean.intro.length > 160 || clean.interests.length > 8
+    || clean.interests.some(x => !x || x.length > 30) || clean.promptOne.length > 300
+    || clean.promptTwo.length > 300) throw new Error('INVALID_CHILLING_PROFILE');
   if (profile.version === undefined) return clean;
   const paths = profile.photoPaths;
   const preferences = profile.preferences;
@@ -129,6 +130,17 @@ export async function requestChillingJoin(client: SupabaseClient, postId: string
   if (result.error) throw result.error;
   return result.data as string;
 }
+// Approval can let the new member read the chat from before they joined; default is from approval onward.
+export async function respondMeetupRequestV2(client: SupabaseClient, requestId: string, response: 'approved' | 'rejected', shareHistory = false) {
+  const result = await client.rpc('respond_meetup_request_v2', { p_request_id: requestId, p_response: response, p_share_history: response === 'approved' && shareHistory });
+  if (result.error) throw result.error;
+  return result.data as string | null;
+}
+// Pausing only stops new requests; members, chat and already pending requests stay.
+export async function setMeetupRecruiting(client: SupabaseClient, postId: string, open: boolean) {
+  const result = await client.rpc('set_meetup_recruiting', { p_post_id: postId, p_open: open });
+  if (result.error) throw result.error;
+}
 export async function createChillingEvent(client: SupabaseClient, draft: {
   cityId: string; title: string; body: string; event: ChillingEventDraft; question: string; userId?: string; image?: PostDraftImage; hostProfileRevision?: string;
 }) {
@@ -159,7 +171,7 @@ const chillingErrors: Record<string, string> = {
     INVALID_CHILLING_PHOTO: '사진 파일을 확인하고 다시 선택해 주세요.',
     CHILLING_HOST_CONSENT_REQUIRED: '공개할 호스트 소개를 미리 보고 동의해 주세요.',
     INVALID_MEETUP_PHOTO: '사진 파일을 확인하고 다시 선택해 주세요.',
-    INVALID_CHILLING_PROFILE: '소개·관심사·두 가지 답변을 모두 작성해 주세요.',
+    INVALID_CHILLING_PROFILE: '이름·활동 지역·한 줄 소개를 확인해 주세요. 관심사는 8개, 각 30자까지예요.',
     CHILLING_CONSENT_REQUIRED: '프로필과 신청 답변 공유에 동의해 주세요.',
     INVALID_CHILLING_ANSWER: '신청 답변을 1~300자로 작성해 주세요.',
     INVALID_CHILLING_EVENT: '제목·소개·신청 질문을 확인해 주세요.',
@@ -168,12 +180,13 @@ const chillingErrors: Record<string, string> = {
     CONTENT_NOT_ALLOWED: '이 내용은 커뮤니티 기준에 맞지 않아 등록할 수 없어요.',
     MEETUP_EXPIRED: '이미 종료된 모임이에요. 새 참여 신청이나 승인을 할 수 없어요.', MEETUP_CLOSED: '모집이 마감됐어요. 새 참여 신청이나 승인을 할 수 없어요.',
     MEETUP_FULL: '정원이 모두 찼어요.', MEETUP_NOT_FOUND: '이 모임을 찾을 수 없어요.',
+    MEETUP_RECRUITING_CLOSED: '지금은 새 참여 신청을 받지 않아요. 호스트가 모집을 다시 열면 신청할 수 있어요.',
     REQUEST_COOLDOWN: '이 모임의 이전 신청이 거절되거나 취소된 뒤 24시간이 지나야 다시 신청할 수 있어요.',
     REQUEST_ALREADY_RESOLVED: '이 참여 신청은 이미 처리됐어요. 현재 상태를 다시 확인해 주세요.',
     REQUEST_NOT_FOUND: '이 참여 신청을 찾을 수 없어요.',
     AUTH_REQUIRED: '로그인 후 다시 시도해 주세요.', ACCOUNT_LOCKED: '현재 계정으로 이용할 수 없어요.',
     RELATIONSHIP_LIMIT: '현재 이용 가능한 모임 자리를 모두 사용했어요.',
-    INVALID_SCHEDULE: '시작·종료 시각과 시간대 오프셋을 확인해 주세요. 종료는 시작 이후여야 해요.',
+    INVALID_SCHEDULE: '시작·종료 시각을 확인해 주세요. 종료는 시작 이후여야 해요.',
     INVALID_EVENT_SCHEDULE: '시작·종료 시각을 확인해 주세요. 종료는 시작 이후여야 해요.',
     INVALID_TIMEZONE: '올바른 시간대를 입력해 주세요.', INVALID_EVENT_TIMEZONE: '올바른 시간대를 입력해 주세요.',
     INVALID_CAPACITY: '정원은 2명 이상으로 설정해 주세요. 무료는 최대 50명, 유료 멤버십은 최대 5,000명이에요.',
@@ -183,7 +196,8 @@ const chillingErrors: Record<string, string> = {
 
 export function getChillingErrorCode(error: unknown): string | null {
   const message = error && typeof error === 'object' && 'message' in error ? String(error.message) : '';
-  return [...Object.keys(chillingErrors), ...Object.keys(t.actionErrors)].find(code => message.includes(code)) ?? null;
+  // Longest match wins so REQUESTER_MEETUP_LIMIT_REACHED isn't read as MEETUP_LIMIT_REACHED.
+  return [...Object.keys(chillingErrors), ...Object.keys(t.actionErrors)].filter(code => message.includes(code)).sort((a, b) => b.length - a.length)[0] ?? null;
 }
 
 export function getChillingError(error: unknown): string {

@@ -34,9 +34,19 @@ export function chillingAvailability(room: ChillingSchedule & { closed?: boolean
   return 'open';
 }
 
+// The one primary action on a meetup detail. Labels are Korean tr() keys; the host can review requests even after it closes.
+export function meetupBarAction({ own, participating, loading, availability }: { own: boolean; participating: boolean; loading: boolean; availability: ReturnType<typeof chillingAvailability> }) {
+  if (own) return { action: 'review', label: '신청자 검토', disabled: false, busy: false } as const;
+  if (loading) return { action: null, label: '확인 중…', disabled: true, busy: true } as const;
+  if (participating) return { action: 'status', label: '내 신청 보기', disabled: false, busy: false } as const;
+  if (availability === 'open') return { action: 'apply', label: '참여 신청', disabled: false, busy: false } as const;
+  return { action: null, label: ({ full: '정원 마감', closed: '모집 마감', ended: '종료된 모임' } as const)[availability], disabled: true, busy: false } as const;
+}
+
 export function chillingSchedule(room: ChillingSchedule, locale = getLocale()): string {
   const missing = locale === 'en-CA' ? 'Schedule needs confirmation' : '일정 확인 필요';
-  if (chillingKind(room) === 'group') return room.cadence?.trim() || (locale === 'en-CA' ? 'Recurring meetup' : '지속 모임');
+  // Cards already label the kind, so an empty cadence says where the schedule comes from instead of repeating it.
+  if (chillingKind(room) === 'group') return room.cadence?.trim() || (locale === 'en-CA' ? 'Schedule set in the group' : '일정은 모임에서 정해요');
   if (!room.startsAt || !room.timezone) return missing;
   try {
     const formatter = new Intl.DateTimeFormat(locale, {
@@ -44,8 +54,23 @@ export function chillingSchedule(room: ChillingSchedule, locale = getLocale()): 
       hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
     });
     const start = formatter.format(new Date(room.startsAt));
-    return room.endsAt ? `${start} – ${formatter.format(new Date(room.endsAt))}` : start;
+    if (!room.endsAt) return start;
+    const timeZone = room.timezone;
+    const day = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone });
+    const end = day(room.startsAt) === day(room.endsAt)
+      ? new Intl.DateTimeFormat(locale, { timeZone: room.timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(room.endsAt))
+      : formatter.format(new Date(room.endsAt));
+    return `${start} – ${end}`;
   } catch { return missing; }
+}
+
+// Readable zone name ("태평양 하계 표준시") instead of the raw IANA id shown to members.
+export function chillingTimezoneLabel(room: ChillingSchedule, locale = getLocale()): string | null {
+  if (!room.timezone) return null;
+  try {
+    const at = room.startsAt ? new Date(room.startsAt) : new Date();
+    return new Intl.DateTimeFormat(locale, { timeZone: room.timezone, timeZoneName: 'long' }).formatToParts(at).find(part => part.type === 'timeZoneName')?.value ?? room.timezone;
+  } catch { return room.timezone; }
 }
 
 export function recommendedAgeLabel(room: ChillingSchedule, locale = getLocale()): string {
@@ -81,6 +106,12 @@ export function recommendedAgeMessage(room: ChillingSchedule, age: number | null
 export function chillingCapacityLimit(membership: { tier: string; expiresAt: string | null } | null | undefined, now = Date.now()): 50 | 5000 {
   return membership && ['plus', 'pro', 'premium'].includes(membership.tier)
     && membership.expiresAt != null && Date.parse(membership.expiresAt) > now ? 5000 : 50;
+}
+
+// Moving the start keeps the chosen duration; an unreadable start or end leaves the end alone for validation to catch.
+export function shiftChillingSchedule(draft: { startsAt: string; endsAt: string }, startsAt: string) {
+  const start = Date.parse(startsAt), duration = Date.parse(draft.endsAt) - Date.parse(draft.startsAt);
+  return { startsAt, endsAt: Number.isFinite(start) && Number.isFinite(duration) ? new Date(start + duration).toISOString() : draft.endsAt };
 }
 
 export function normalizeChillingEvent(draft: ChillingEventDraft, maxCapacity = 5000) {

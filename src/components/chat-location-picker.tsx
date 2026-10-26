@@ -96,6 +96,7 @@ export function ChatLocationPicker({ sending, onSend, onClose }: { sending: bool
           <View style={styles.place}><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden style={[styles.placeIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={22} tintColor={theme.accent} /></View>
             <View style={{ flex: 1 }}><ThemedText type="smallBold" numberOfLines={3}>{selection ? tr(selection.label) : tr("공유할 위치를 골라주세요.")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("이 대화에 공유")}</ThemedText></View>
           </View>
+          <ThemedText type="small" themeColor="textSecondary">{tr("현재 위치는 정확한 위치로 한 번만 공유돼요. 이 대화의 모든 참여자가 볼 수 있고 메시지로 남아요.")}</ThemedText>
           <LocationAction label={sending ? tr("보내는 중") : tr("이 위치 공유하기")} icon={{ ios: 'paperplane.fill', android: 'send', web: 'send' }} onPress={() => {
             if (!selection) return;
             const operation = revision.current;

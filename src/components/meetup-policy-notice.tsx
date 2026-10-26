@@ -8,8 +8,9 @@ import { meetupPolicyNotice, type MeetupPolicy, type MeetupPolicyMode } from '@/
 import { supabase } from '@/lib/supabase';
 import { MEETUPS_CHANGED_EVENT } from '@/lib/community-data';
 
-export function MeetupPolicyNotice({ mode }: { mode: MeetupPolicyMode }) {
-  const { tr, locale: appLocale } = useLanguage();
+// general=false when the caller already shows the general leave/close rules next to this notice.
+export function MeetupPolicyNotice({ mode, general = true }: { mode: MeetupPolicyMode; general?: boolean }) {
+  const { t, tr, locale: appLocale } = useLanguage();
   const { me, isAuthed } = useAuth();
   const userId = isAuthed ? me.id : null;
   const [state, setState] = useState<{ userId: string; policy: MeetupPolicy | null } | null>(null);
@@ -31,6 +32,6 @@ export function MeetupPolicyNotice({ mode }: { mode: MeetupPolicyMode }) {
   }, [userId]));
   if (!userId) return null;
   const message = state?.userId !== userId ? '이용 상태를 확인하고 있어요…'
-    : state.policy ? meetupPolicyNotice(state.policy, mode, now, appLocale) : '이용 상태를 확인하지 못했어요. 실제 제한 여부는 요청할 때 다시 확인해요. 신고·차단·나가기는 가능해요.';
-  return message ? <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr(message)}</ThemedText> : null;
+    : state.policy ? meetupPolicyNotice(state.policy, mode, now, appLocale) ?? (!general ? null : mode === 'leave' ? t.meetup.leaveBody : mode === 'close' ? t.meetup.endBody : null) : '이용 상태를 확인하지 못했어요. 실제 제한 여부는 요청할 때 다시 확인해요. 신고·차단·나가기는 가능해요.';
+  return message ? <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 14, lineHeight: 22 }} accessibilityLiveRegion="polite">{tr(message)}</ThemedText> : null;
 }
